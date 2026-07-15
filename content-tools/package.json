@@ -1,0 +1,12 @@
+{
+  "name": "content-tools",
+  "private": true,
+  "type": "module",
+  "description": "Tool đồng bộ lesson_content*.js vào lessons.content_json (port Node của db/seed_lesson_content.py)",
+  "scripts": {
+    "sync": "node sync-lesson-content.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

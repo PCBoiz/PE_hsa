@@ -1,0 +1,57 @@
+# CI cho bản migrate (Giai đoạn 6) — thứ project gốc chưa từng có.
+# pytest backend + build/lint/tsc frontend trên mỗi push/PR.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (Django) — pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install deps
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-django
+      - name: Run pytest
+        working-directory: backend
+        env:
+          # Bộ test chạy trên DB thật (rollback cuối test — xem backend/conftest.py).
+          # Khai báo secret DATABASE_URL trong repo settings; thiếu secret thì job fail sớm.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ci-only-secret-key
+        run: python -m pytest -q
+
+  frontend:
+    name: Frontend (Next.js) — lint + tsc + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Enable corepack pnpm
+        run: corepack enable
+      - name: Install deps
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: frontend
+        run: pnpm exec eslint src
+      - name: Typecheck
+        working-directory: frontend
+        run: pnpm exec tsc --noEmit
+      - name: Build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:9000
+        run: pnpm build
