@@ -92,7 +92,13 @@
     if (toBackend) {
       var headers = new Headers(opts.headers || {});
       var access = getAccess();
-      if (access && !headers.has('Authorization')) {
+      // KHÔNG đính token vào login/register/refresh: đây là endpoint công khai,
+      // token cũ hỏng (backend restart đổi SECRET_KEY dev) sẽ làm JWTAuthentication
+      // chặn 401 "Chưa đăng nhập" TRƯỚC khi view kịp xét email/mật khẩu.
+      var isPublicAuth = url.indexOf('/auth/login') === 0 ||
+                         url.indexOf('/auth/register') === 0 ||
+                         url.indexOf('/auth/refresh') === 0;
+      if (access && !isPublicAuth && !headers.has('Authorization')) {
         headers.set('Authorization', 'Bearer ' + access);
       }
       opts = Object.assign({}, opts, { headers: headers });
