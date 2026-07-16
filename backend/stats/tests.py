@@ -145,3 +145,17 @@ def test_mission_complete_streak_active_field_present(auth_api, temp_user, mock_
     _set_streak(temp_user, 5, date.today() - timedelta(days=5))
     data = _complete_mission(auth_api).json()
     assert data['streak_active'] is True
+
+
+# ── memory-plan T4.3: /api/stats không được 500 khi enrollment.progress = NULL ──
+def test_stats_avg_progress_handles_null_progress(auth_api, temp_user):
+    """Cột enrollments.progress nullable → dữ liệu thật có thể NULL. StatsView tính
+    sum(progress)/len phải bỏ qua NULL, không được ném TypeError (500)."""
+    x("INSERT INTO courses (id, title) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING",
+      ('mp_t43_course', 'T43 Course'))
+    x("INSERT INTO enrollments (user_id, course_id, progress) VALUES (%s, %s, NULL) "
+      "ON CONFLICT (user_id, course_id) DO UPDATE SET progress = NULL",
+      (temp_user, 'mp_t43_course'))
+    res = auth_api.get('/api/stats')
+    assert res.status_code == 200
+    assert res.json()['avgProgress'] == 0  # NULL coi như 0

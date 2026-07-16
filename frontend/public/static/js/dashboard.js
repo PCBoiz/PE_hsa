@@ -1097,7 +1097,7 @@ function skSkillToggle(row) {
         '<div class="fpc-top">' +
         '<div class="fpc-avatar" style="background:' + avatarColor(p.author) + '">' + (p.author || '?').charAt(0).toUpperCase() + '</div>' +
         '<div class="fpc-meta">' +
-        '<span class="fpc-author">' + p.author + _followBtnHtml(p) + '</span>' +
+        '<span class="fpc-author">' + escHtml(p.author) + _followBtnHtml(p) + '</span>' +
         '<span class="fpc-time">' + timeAgo(p.time) + '</span>' +
         '</div>' +
         '<span class="fpc-cat-tag" style="background:' + catBg + ';color:' + catColor + '">' + catLabel + '</span>' +
@@ -1186,7 +1186,9 @@ function skSkillToggle(row) {
   };
 
   function escHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   var _AVATAR_COLORS = ['#3B82F6', '#8B5CF6', '#F97316', '#10B981', '#EC4899', '#06B6D4', '#F59E0B', '#EF4444'];

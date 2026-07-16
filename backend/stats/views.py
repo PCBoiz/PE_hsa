@@ -39,7 +39,8 @@ class StatsView(APIView):
             GROUP BY u.id, u.streak, u.certificates, u.last_study_date
         ''', (uid,))
         rows = q('SELECT progress, time_spent FROM enrollments WHERE user_id=%s', (uid,))
-        avg_progress = round(sum(r['progress'] for r in rows) / len(rows)) if rows else 0
+        # progress nullable trong DB → coalesce về 0, tránh TypeError (sum None)
+        avg_progress = round(sum((r['progress'] or 0) for r in rows) / len(rows)) if rows else 0
         total_hours = sum(parse_time_spent(r.get('time_spent')) for r in rows)
         last_date = summary['last_study_date']
         streak_active = (last_date == date.today()) if last_date else False

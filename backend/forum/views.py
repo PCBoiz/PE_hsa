@@ -14,6 +14,25 @@ _REACTIONS = ('like', 'love', 'haha', 'wow', 'sad', 'angry')
 # — f-string SQL an toàn, giữ nguyên cấu trúc bản Flask.
 
 
+def _is_name_mentioned(content, name):
+    """@mention khớp theo RANH GIỚI: '@name' phải đứng cuối chuỗi hoặc theo sau bởi
+    ký tự không phải chữ/số/gạch dưới. Tránh bug substring: user 'An' bị coi là được
+    nhắc trong '@Anh'. Ký tự có dấu tiếng Việt tính là chữ (str.isalnum()=True)."""
+    if not name or not content:
+        return False
+    needle = '@' + name
+    start = 0
+    while True:
+        i = content.find(needle, start)
+        if i == -1:
+            return False
+        after = i + len(needle)
+        nxt = content[after] if after < len(content) else ''
+        if not (nxt.isalnum() or nxt == '_'):
+            return True
+        start = i + 1
+
+
 def _notify_mentions(post_id, actor_id, content, parent_id):
     """Tạo thông báo cho user được @nhắc trong bình luận (reply + @tên)."""
     actor = q1('SELECT name FROM users WHERE id=%s', (actor_id,))
@@ -36,7 +55,7 @@ def _notify_mentions(post_id, actor_id, content, parent_id):
         for p in parts:
             if p['id'] == actor_id or not p['name']:
                 continue
-            if ('@' + p['name']) in content:
+            if _is_name_mentioned(content, p['name']):
                 targets.setdefault(p['id'], 'mention')
 
     snippet = (content or '').strip()

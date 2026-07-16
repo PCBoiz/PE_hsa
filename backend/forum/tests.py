@@ -64,3 +64,31 @@ def test_modify_other_users_post_403(auth_api, api, db):
     api.force_authenticate(user=User.objects.get(id=other))
     res = api.put(f'/api/posts/{post_id}', {'content': 'hack'}, format='json')
     assert res.status_code == 403
+
+
+# ── memory-plan T4.4: @mention phải khớp theo ranh giới, không khớp substring ──
+# Bug gốc: `('@' + name) in content` → user "An" bị nhắc nhầm khi ai đó gõ "@Anh".
+def test_mention_exact_name_is_matched():
+    from forum.views import _is_name_mentioned
+    assert _is_name_mentioned('Chào @An nhé', 'An') is True
+    assert _is_name_mentioned('Chào @An!', 'An') is True
+    assert _is_name_mentioned('@An', 'An') is True
+
+
+def test_mention_not_matched_when_only_prefix_of_another_name():
+    from forum.views import _is_name_mentioned
+    # Chỉ nhắc "@Anh" → KHÔNG được coi là nhắc "An"
+    assert _is_name_mentioned('Chào @Anh', 'An') is False
+    assert _is_name_mentioned('gửi @Anhtuan xem', 'An') is False
+
+
+def test_mention_multiword_vietnamese_name():
+    from forum.views import _is_name_mentioned
+    assert _is_name_mentioned('cc @Nguyễn Văn An, xem nhé', 'Nguyễn Văn An') is True
+
+
+def test_mention_empty_inputs():
+    from forum.views import _is_name_mentioned
+    assert _is_name_mentioned('', 'An') is False
+    assert _is_name_mentioned('không có ai', '') is False
+    assert _is_name_mentioned('không có ai', None) is False

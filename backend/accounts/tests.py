@@ -2,7 +2,7 @@
 import pytest
 
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
-from common.db import q1
+from common.db import q1, x
 
 pytestmark = pytest.mark.django_db
 
@@ -81,3 +81,25 @@ def test_survey_generates_roadmap(auth_api, temp_user):
     assert user['questionnaire_completed'] == 1
     rm = q1('SELECT id, source FROM roadmaps WHERE id=%s', (f'u{temp_user}_generated',))
     assert rm is not None and rm['source'] == 'generated'
+
+
+# ── memory-plan T4.2: đổi email trùng phải trả 400 (không phải 500 IntegrityError) ──
+def test_update_profile_duplicate_email_returns_400(auth_api, temp_user):
+    """users.email có UNIQUE constraint. Đổi email sang email người khác phải báo
+    400 'Email đã được sử dụng' như /auth/register — hiện tại rơi vào 500 vì
+    IntegrityError không được bắt trước."""
+    taken = 'dj_taken_email@example.com'
+    q1("INSERT INTO users (name, email, password) VALUES (%s,%s,%s) RETURNING id",
+       ('Email Owner', taken, 'x'))
+    res = auth_api.put('/api/user', {'name': 'Me', 'email': taken, 'phone': ''}, format='json')
+    assert res.status_code == 400
+    assert 'email' in res.json().get('errors', {})
+
+
+def test_update_profile_same_email_ok(auth_api, temp_user):
+    """Giữ nguyên email của chính mình (không đổi) phải OK — không tự coi là trùng."""
+    x("UPDATE users SET email=%s WHERE id=%s", ('dj_self_email@example.com', temp_user))
+    res = auth_api.put('/api/user',
+                       {'name': 'Me', 'email': 'dj_self_email@example.com', 'phone': ''},
+                       format='json')
+    assert res.status_code == 200

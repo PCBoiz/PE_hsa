@@ -185,8 +185,16 @@ class UserView(APIView):
         if errors:
             return Response({'errors': errors}, status=400)
 
+        # Trùng email/phone của người khác → 400 như /auth/register (tránh 500 do
+        # IntegrityError khi vi phạm UNIQUE constraint users.email). Loại trừ chính mình.
+        uid = request.user.id
+        if email and q1('SELECT id FROM users WHERE email=%s AND id<>%s', (email, uid)):
+            return Response({'errors': {'email': 'Email đã được sử dụng'}}, status=400)
+        if phone and q1('SELECT id FROM users WHERE phone=%s AND id<>%s', (phone, uid)):
+            return Response({'errors': {'phone': 'Số điện thoại đã được sử dụng'}}, status=400)
+
         x('UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s WHERE id=%s',
-          (name, email, phone, birthday, request.user.id))
+          (name, email, phone, birthday, uid))
         return Response({'ok': True})
 
 
