@@ -23,7 +23,9 @@ body {
 /* Tạo 2 luồng sáng tinh vân chuyển động chậm ở nền */
 body::before, body::after {
     content: '';
-    position: absolute;
+    /* fixed (không phải absolute): blob 500px + animation translate không được
+       phép nới rộng scroll area ngang ở mobile (memory-plan/08, DoD #1) */
+    position: fixed;
     width: 500px;
     height: 500px;
     border-radius: 50%;
