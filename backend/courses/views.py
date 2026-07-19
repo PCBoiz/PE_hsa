@@ -1,6 +1,7 @@
 """Port routes/courses.py — giữ nguyên SQL, tên field camelCase và message."""
 from datetime import datetime, timezone
 
+from django.core.cache import cache
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -238,18 +239,32 @@ def _calc_progress(sub_skills):
 _SKILL_SET_ICONS = {'db_design': '🏗️', 'db_design_tc': '🌐', 'db_design_nc': '⚙️'}
 
 
+_SKILLS_STRUCTURE_KEY = 'skills:structure'
+_SKILLS_STRUCTURE_TTL = 300  # giây — bài học mới xuất hiện trên /api/skills trong ≤5 phút
+
+
 class SkillsView(APIView):
     def get(self, request):
-        """Kỹ năng THẬT gắn với user: skill set = khóa · skill = module · sub = bài."""
-        rows = q('''SELECT l.course_id, l.module, l.title, l.sort_order,
-                           c.title AS course_title,
-                           (lp.status = 'completed') AS done
-                    FROM lessons l
-                    JOIN courses c ON c.id = l.course_id
-                    LEFT JOIN lesson_progress lp
-                           ON lp.lesson_id = l.id AND lp.user_id = %s
-                    WHERE l.module <> '' AND l.module IS NOT NULL
-                    ORDER BY l.course_id, l.sort_order''', (request.user.id,))
+        """Kỹ năng THẬT gắn với user: skill set = khóa · skill = module · sub = bài.
+
+        PERF 2026-07-19: cấu trúc bài học (lessons×courses, ~66 dòng ≈ 10kB) gần
+        như tĩnh → cache 5 phút; mỗi request chỉ còn query tiến độ user (vài dòng).
+        Payload lớn từ Neon tốn thêm 1 RTT TCP nên tách nhỏ + cache nhanh hơn hẳn
+        1 câu JOIN to (đo: ~730ms → ~460ms)."""
+        structure = cache.get(_SKILLS_STRUCTURE_KEY)
+        if structure is None:
+            structure = q('''SELECT l.id, l.course_id, l.module, l.title, l.sort_order,
+                                    c.title AS course_title
+                             FROM lessons l
+                             JOIN courses c ON c.id = l.course_id
+                             WHERE l.module <> '' AND l.module IS NOT NULL
+                             ORDER BY l.course_id, l.sort_order''')
+            cache.set(_SKILLS_STRUCTURE_KEY, structure, _SKILLS_STRUCTURE_TTL)
+
+        done_ids = {r['lesson_id'] for r in q(
+            "SELECT lesson_id FROM lesson_progress WHERE user_id=%s AND status='completed'",
+            (request.user.id,))}
+        rows = [dict(r, done=r['id'] in done_ids) for r in structure]
 
         sets = {}
         for r in rows:

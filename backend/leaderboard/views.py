@@ -6,6 +6,31 @@ from common.db import q, q1
 
 MEDALS = {1: '🥇', 2: '🥈', 3: '🥉'}
 
+
+def _json_list(v):
+    """json_agg từ psycopg3 thường đã là list; phòng khi trả str thì parse lại."""
+    if v is None:
+        return []
+    if isinstance(v, str):
+        import json
+        try:
+            return json.loads(v)
+        except ValueError:
+            return []
+    return v
+
+
+def _json_obj(v):
+    if v is None or isinstance(v, dict):
+        return v
+    if isinstance(v, str):
+        import json
+        try:
+            return json.loads(v)
+        except ValueError:
+            return None
+    return None
+
 AVATAR_BY_INITIAL = {
     'A': '🧑‍💻', 'B': '👩‍🎓', 'C': '🧑‍💼', 'D': '👨‍🔬', 'E': '👩‍🔬',
     'F': '🧑‍🎨', 'G': '👨‍🎨', 'H': '👩‍🚀', 'I': '🧑‍🚀', 'J': '👨‍🚀',
@@ -57,24 +82,38 @@ def _attach_medal(entries: list) -> list:
 
 
 def _fetch_top_weekly(uid: int, limit: int = 10):
-    """Top N theo XP TRONG TUẦN (từ thứ 2), từ user_daily_xp_logs."""
-    top_rows = q('''SELECT u.id, u.name, COALESCE(SUM(l.xp_earned), 0) AS wxp
-                    FROM user_daily_xp_logs l
-                    JOIN users u ON u.id = l.user_id
-                    WHERE l.log_date >= date_trunc('week', CURRENT_DATE)::date
-                    GROUP BY u.id, u.name
-                    ORDER BY wxp DESC, u.name ASC
-                    LIMIT %s''', (limit,))
-    me_row = q1('''SELECT COALESCE(SUM(xp_earned), 0) AS wxp
-                   FROM user_daily_xp_logs
-                   WHERE user_id = %s AND log_date >= date_trunc('week', CURRENT_DATE)::date''',
-                (uid,))
-    me_name_row = q1('SELECT id, name FROM users WHERE id=%s', (uid,))
-    rank_row = q1('''SELECT COUNT(*) + 1 AS r FROM (
-                         SELECT user_id, SUM(xp_earned) AS wxp FROM user_daily_xp_logs
-                         WHERE log_date >= date_trunc('week', CURRENT_DATE)::date
-                         GROUP BY user_id
-                     ) t WHERE t.wxp > %s''', (me_row['wxp'],))
+    """Top N theo XP TRONG TUẦN (từ thứ 2), từ user_daily_xp_logs.
+
+    PERF 2026-07-19: gộp 4 query (top, tổng của tôi, tên của tôi, hạng của tôi)
+    thành 1 câu CTE — mỗi round trip tới Neon ~240ms."""
+    row = q1('''WITH weekly AS (
+                    SELECT user_id, SUM(xp_earned) AS wxp
+                    FROM user_daily_xp_logs
+                    WHERE log_date >= date_trunc('week', CURRENT_DATE)::date
+                    GROUP BY user_id
+                ),
+                top AS (
+                    SELECT u.id, u.name, w.wxp
+                    FROM weekly w JOIN users u ON u.id = w.user_id
+                    ORDER BY w.wxp DESC, u.name ASC
+                    LIMIT %s
+                ),
+                me AS (
+                    SELECT COALESCE((SELECT wxp FROM weekly WHERE user_id = %s), 0) AS wxp
+                )
+                SELECT
+                    (SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'wxp', wxp)
+                                              ORDER BY wxp DESC, name ASC), '[]'::json)
+                     FROM top) AS top_rows,
+                    (SELECT wxp FROM me) AS me_wxp,
+                    (SELECT COUNT(*) + 1 FROM weekly, me WHERE weekly.wxp > me.wxp) AS me_rank,
+                    (SELECT name FROM users WHERE id = %s) AS me_name,
+                    EXISTS(SELECT 1 FROM users WHERE id = %s) AS me_exists''',
+             (limit, uid, uid, uid))
+    top_rows = _json_list(row['top_rows'])
+    me_row = {'wxp': row['me_wxp']}
+    me_name_row = {'id': uid, 'name': row['me_name']} if row['me_exists'] else None
+    rank_row = {'r': row['me_rank']}
 
     top_list = [
         {
@@ -104,12 +143,24 @@ def _fetch_top_by(uid: int, order_col: str, limit: int = 10):
     if order_col not in ('xp', 'streak'):
         return None, None  # tránh SQL injection
 
-    top_rows = q(f'SELECT id, name, xp, streak FROM users '
-                 f'ORDER BY {order_col} DESC, name ASC LIMIT %s', (limit,))
-    me_row = q1(f'SELECT id, name, xp, streak, '
-                f'  (SELECT COUNT(*) + 1 FROM users u2 '
-                f'   WHERE u2.{order_col} > u.{order_col}) AS my_rank '
-                f'FROM users u WHERE id = %s', (uid,))
+    # PERF 2026-07-19: top N + hàng của tôi trong 1 câu lệnh (2 query → 1)
+    row = q1(f'''WITH top AS (
+                     SELECT id, name, xp, streak FROM users
+                     ORDER BY {order_col} DESC, name ASC LIMIT %s
+                 )
+                 SELECT
+                     (SELECT COALESCE(json_agg(json_build_object(
+                                 'id', id, 'name', name, 'xp', xp, 'streak', streak)
+                                 ORDER BY {order_col} DESC, name ASC), '[]'::json)
+                      FROM top) AS top_rows,
+                     (SELECT row_to_json(m) FROM (
+                          SELECT id, name, xp, streak,
+                                 (SELECT COUNT(*) + 1 FROM users u2
+                                  WHERE u2.{order_col} > u.{order_col}) AS my_rank
+                          FROM users u WHERE id = %s) m) AS me_row''',
+              (limit, uid))
+    top_rows = _json_list(row['top_rows'])
+    me_row = _json_obj(row['me_row'])
 
     top_list = [
         {
@@ -193,10 +244,6 @@ class LeaderboardView(APIView):
         lb_type = (request.query_params.get('type') or 'weekly').lower()
         uid = request.user.id
 
-        me_row = q1('SELECT id, name, xp, streak FROM users WHERE id=%s', (uid,))
-        me_name = (me_row['name'] if me_row else '') or 'Bạn'
-        me_xp = (me_row['xp'] if me_row else 0) or 0
-
         if lb_type == 'weekly':
             entries, me = _fetch_top_weekly(uid)
             unit, label = 'XP', 'Tuần này'
@@ -204,6 +251,11 @@ class LeaderboardView(APIView):
             entries, me = _fetch_top_by(uid, 'streak')
             unit, label = 'ngày', 'Chuỗi dài nhất'
         elif lb_type == 'friends':
+            # PERF 2026-07-19: chỉ nhánh friends mới cần tên/XP của tôi — dời
+            # query users vào đây (weekly/streak tự lo trong 1 câu CTE của chúng)
+            me_row = q1('SELECT id, name, xp, streak FROM users WHERE id=%s', (uid,))
+            me_name = (me_row['name'] if me_row else '') or 'Bạn'
+            me_xp = (me_row['xp'] if me_row else 0) or 0
             entries, me = _build_friends(uid, me_name, me_xp)
             unit, label = 'XP', 'Bạn bè'
         else:

@@ -1,14 +1,9 @@
 """Port routes/notifications.py — settings (notification_settings) + feed (notifications).
 
-Bổ sung: SSE stream đẩy badge real-time (notifications/service.py gộp comment).
+Bổ sung: /api/notifications/badge cho client poll badge chuông (thay SSE).
 """
-import json
-import time
-
-from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import AccessToken
 
 from common.db import q, q1, x
 from notifications.service import unread_state
@@ -47,57 +42,38 @@ class NotificationSettingsView(APIView):
 
 class FeedView(APIView):
     def get(self, request):
+        # PERF 2026-07-19: unread đếm bằng subquery cùng câu lệnh — 1 round trip
         uid = request.user.id
         rows = q('''SELECT id, type, title, body, ref_type, ref_id, is_read, created_at,
-                           COALESCE(coalesce_count, 1) AS coalesce_count
+                           COALESCE(coalesce_count, 1) AS coalesce_count,
+                           (SELECT COUNT(*) FROM notifications
+                            WHERE user_id=%s AND is_read=FALSE) AS _unread
                     FROM notifications WHERE user_id=%s
-                    ORDER BY created_at DESC LIMIT 30''', (uid,))
-        unread = q1('SELECT COUNT(*) AS n FROM notifications '
-                    'WHERE user_id=%s AND is_read=FALSE', (uid,))['n']
+                    ORDER BY created_at DESC LIMIT 30''', (uid, uid))
+        unread = rows[0].pop('_unread') if rows else 0
+        for r in rows:
+            r.pop('_unread', None)
         return Response({'items': rows, 'unread': unread})
 
 
-def feed_stream(request):
-    """GET /api/notifications/stream?token=<access JWT> — Server-Sent Events.
+class BadgeView(APIView):
+    """GET /api/notifications/badge → {unread, latest} — client poll ~45s.
 
-    EventSource không set được header Authorization nên nhận access token qua
-    query param (chỉ chứa trong URL nội bộ client↔backend, không log referer).
-    Mỗi 3s poll (unread_count, latest_id); chỉ đẩy event khi trạng thái đổi.
-    Kết nối tự đóng sau ~1h — EventSource phía client tự reconnect (retry).
-    Dev: runserver stream tốt (1 thread/kết nối). Prod: chạy gunicorn với
-    worker gthread/gevent để không cạn worker vì kết nối treo.
+    PERF 2026-07-19: thay SSE /api/notifications/stream. SSE giữ 1 thread/user
+    suốt ~1h + poll DB 3s/kết nối → nhiều user online là cạn worker (gunicorn
+    sync) và tự ăn ~30% công suất pool DB. Poll 45s phía client: cùng UX badge
+    (trễ tối đa 45s thay vì 3s — chấp nhận được cho chuông thông báo), server
+    không giữ kết nối treo, không cần gthread/gevent khi deploy.
+
+    throttle_classes rỗng: poll nền chạy tự động (80 lần/giờ/tab) — không được
+    đốt quota per-endpoint per-IP của user thật, nhất là nhiều người sau 1 NAT.
+    Vẫn bắt buộc JWT (permission mặc định) nên không mở cửa cho DoS ẩn danh.
     """
-    try:
-        token = AccessToken(request.GET.get('token', ''))
-        uid = token['user_id']
-    except Exception:
-        return JsonResponse({'error': 'Token không hợp lệ hoặc đã hết hạn'}, status=401)
+    throttle_classes = []
 
-    def gen():
-        yield 'retry: 5000\n\n'
-        last = None
-        quiet = 0
-        for _ in range(1200):  # 1200 vòng × 3s ≈ 1 giờ rồi để client reconnect
-            try:
-                state = unread_state(uid)
-            except Exception:
-                break  # DB lỗi → đóng stream, client tự nối lại
-            if state != last:
-                last = state
-                quiet = 0
-                yield 'data: ' + json.dumps(
-                    {'unread': state[0], 'latest': state[1]}) + '\n\n'
-            else:
-                quiet += 1
-                if quiet >= 8:  # heartbeat ~24s giữ kết nối qua proxy/LB
-                    quiet = 0
-                    yield ': ping\n\n'
-            time.sleep(3)
-
-    resp = StreamingHttpResponse(gen(), content_type='text/event-stream')
-    resp['Cache-Control'] = 'no-cache'
-    resp['X-Accel-Buffering'] = 'no'  # tắt buffering khi đứng sau nginx
-    return resp
+    def get(self, request):
+        unread, latest = unread_state(request.user.id)
+        return Response({'unread': unread, 'latest': latest})
 
 
 class FeedReadView(APIView):

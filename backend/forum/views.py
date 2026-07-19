@@ -184,31 +184,49 @@ class PostsView(APIView):
             'likes': 'p.like_count DESC, p.created_at DESC',
         }.get(sort, 'p.created_at DESC')
 
-        count_where = where.replace('p.', '')
-        total = q1(f'SELECT COUNT(*) AS n FROM posts {count_where}', tuple(params))['n']
-
+        # PERF 2026-07-19: gộp count + reactions + my_reaction + comment_count
+        # vào 1 câu lệnh (trước đây 5 query = 5 RTT ~240ms/câu tới Neon).
+        # COUNT(*) OVER() tính trên tập đã lọc TRƯỚC LIMIT → chính là total.
         posts = q(f'''SELECT p.id, p.user_id, p.category, p.title, p.content,
                              p.like_count, p.created_at, p.updated_at,
-                             u.name AS author_name
+                             u.name AS author_name,
+                             COUNT(*) OVER() AS _total,
+                             (SELECT COALESCE(jsonb_object_agg(r.reaction_type, r.n), '{{}}'::jsonb)
+                              FROM (SELECT reaction_type, COUNT(*) AS n
+                                    FROM post_likes WHERE post_id = p.id
+                                    GROUP BY reaction_type) r) AS _reactions,
+                             (SELECT reaction_type FROM post_likes
+                              WHERE post_id = p.id AND user_id = %s) AS my_reaction,
+                             (SELECT COUNT(*) FROM comments c
+                              WHERE c.post_id = p.id
+                                AND c.parent_comment_id IS NULL) AS comment_count
                       FROM posts p
                       LEFT JOIN users u ON u.id = p.user_id
                       {where}
                       ORDER BY {order}
                       LIMIT %s OFFSET %s''',
-                  tuple(params) + (per_page, offset))
+                  (request.user.id,) + tuple(params) + (per_page, offset))
 
-        ids = [p['id'] for p in posts]
-        counts, my = _reaction_map('post_likes', 'post_id', ids, request.user.id)
-        cmt_counts = {i: 0 for i in ids}
-        if ids:
-            for r in q('SELECT post_id, count(*) AS n FROM comments '
-                       'WHERE post_id = ANY(%s) AND parent_comment_id IS NULL GROUP BY post_id',
-                       (ids,)):
-                cmt_counts[r['post_id']] = r['n']
+        if posts:
+            total = posts[0]['_total']
+        else:
+            # Trang vượt quá dữ liệu (rows rỗng) → window không có total, đếm riêng
+            count_where = where.replace('p.', '')
+            total = q1(f'SELECT COUNT(*) AS n FROM posts {count_where}', tuple(params))['n']
+
         for p in posts:
-            p['reactions'] = counts[p['id']]
-            p['my_reaction'] = my[p['id']]
-            p['comment_count'] = cmt_counts[p['id']]
+            p.pop('_total', None)
+            raw = p.pop('_reactions', None) or {}
+            if isinstance(raw, str):
+                import json as _json
+                try:
+                    raw = _json.loads(raw)
+                except ValueError:
+                    raw = {}
+            reactions = _zero_reactions()
+            reactions.update({k: v for k, v in raw.items() if k in reactions})
+            p['reactions'] = reactions
+            p['comment_count'] = p['comment_count'] or 0
 
         return Response({
             'posts': posts,

@@ -27,5 +27,19 @@ def test_feed_empty_and_read_all(auth_api):
     assert auth_api.post('/api/notifications/feed/read-all').status_code == 200
 
 
+def test_badge_empty(auth_api):
+    res = auth_api.get('/api/notifications/badge')
+    assert res.status_code == 200
+    assert res.json() == {'unread': 0, 'latest': 0}
+
+
+def test_badge_counts_unread(auth_api, temp_user):
+    from notifications.service import notify
+    notify(temp_user, 'system', 'Chào mừng', 'nội dung', 'post', 1)
+    data = auth_api.get('/api/notifications/badge').json()
+    assert data['unread'] == 1 and data['latest'] > 0
+
+
 def test_requires_auth(api, db):
     assert api.get('/api/notifications').status_code == 401
+    assert api.get('/api/notifications/badge').status_code == 401

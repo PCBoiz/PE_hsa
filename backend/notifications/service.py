@@ -54,7 +54,7 @@ def notify(user_id, ntype, title, body, ref_type, ref_id,
 
 
 def unread_state(user_id):
-    """(unread_count, latest_id) — dùng cho badge + SSE change-detection."""
+    """(unread_count, latest_id) — nguồn cho /api/notifications/badge (client poll)."""
     row = q1(
         '''SELECT COUNT(*) FILTER (WHERE is_read = FALSE) AS unread,
                   COALESCE(MAX(id), 0) AS latest

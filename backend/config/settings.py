@@ -112,11 +112,14 @@ if not DATABASE_URL:
     raise RuntimeError('DATABASE_URL chưa được cấu hình trong .env')
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=240,          # tương đương chu kỳ keepalive 240s của bản Flask
-        conn_health_checks=True,
-    )
+    # PERF 2026-07-19: pool psycopg3 native của Django thay CONN_MAX_AGE.
+    # Đo thực tế: mở kết nối mới tới Neon (TLS+SCRAM) mất ~1.9s, mà
+    # CONN_MAX_AGE chỉ giữ kết nối THEO THREAD — runserver/gunicorn sync
+    # mỗi request 1 thread mới → gần như request nào cũng trả 1.9s phí mở.
+    # Pool chia sẻ kết nối ấm giữa mọi thread → chỉ còn RTT query (~260ms/câu
+    # khi dev từ VN; <5ms khi backend deploy cùng region với DB).
+    # Lưu ý: Django cấm dùng pool chung với conn_max_age ≠ 0.
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=0)
 }
 # TCP keepalive như db/connection.py cũ (chống Neon proxy drop connection idle)
 DATABASES['default'].setdefault('OPTIONS', {}).update({
@@ -125,6 +128,22 @@ DATABASES['default'].setdefault('OPTIONS', {}).update({
     'keepalives_idle': 30,
     'keepalives_interval': 10,
     'keepalives_count': 5,
+    'pool': {
+        # LOAD TEST 2026-07-19 (100 user đồng thời): mỗi kết nối chỉ phục vụ
+        # ~4 query/s khi DB ở region xa (RTT 250ms) → max_size là trần
+        # throughput DB; còn trần CPU là ~115 req/s MỖI TIẾN TRÌNH Python
+        # (GIL) — muốn hơn phải tăng số worker gunicorn (gunicorn.conf.py).
+        # QUAN TRỌNG: pool là PER-PROCESS. Tổng kết nối = workers × max_size
+        # phải ≤ ~56 (Neon -pooler cấp 64 backend/user+db, chia sẻ với bản
+        # Flask). Mặc định dưới đây cho 1 process dev; production đặt
+        # DB_POOL_MAX = 56 // số worker (ví dụ 4 worker → 14).
+        'min_size': int(os.environ.get('DB_POOL_MIN', '10')),
+        'max_size': int(os.environ.get('DB_POOL_MAX', '48')),
+        'num_workers': 6,   # mở kết nối nền song song hơn (mặc định 3) — pool
+                            # đầy sau ~12s thay vì ~25s, bớt đuôi chậm sau deploy
+        'timeout': 15,      # chờ tối đa 15s khi pool cạn rồi mới lỗi
+        'max_idle': 240,    # thu hồi kết nối idle sau 240s (như keepalive cũ)
+    },
 })
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
@@ -143,14 +162,20 @@ PASSWORD_HASHERS = [
 REST_FRAMEWORK = {
     # JWT thay session — CSRF middleware của Django không áp lên JWT header auth
     # (tương đương WTF_CSRF_CHECK_DEFAULT=False + csrf.exempt của Flask cũ).
+    # PERF 2026-07-19: bản cache 60s — tránh SELECT users mỗi request
+    # (accounts/authentication.py có giải thích đánh đổi).
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'accounts.authentication.CachedJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'EXCEPTION_HANDLER': 'common.errors.api_exception_handler',
-    # Rate limit mặc định như extensions.py Flask: 200/day + 50/hour theo IP.
+    # Rate limit đếm PER-ENDPOINT per-IP (common/throttling.py).
+    # PERF 2026-07-19: nâng từ 200/day + 50/hour (port nguyên từ Flask-Limiter
+    # defaults) — mức cũ giết trải nghiệm nhiều user thật: cả lớp học sau 1 NAT
+    # chia nhau 50 request/giờ/endpoint, và login 5/phút chặn từ người thứ 6
+    # đăng nhập đầu giờ. Mức mới vẫn chặn được vét cạn/scrape per-endpoint.
     # Static KHÔNG đi qua DRF (Next.js serve) nên bug 429 file tĩnh
     # (AUDIT-FIX 2026-07-07) không thể tái diễn ở kiến trúc mới.
     'DEFAULT_THROTTLE_CLASSES': [
@@ -158,10 +183,10 @@ REST_FRAMEWORK = {
         'common.throttling.HourlyIPThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'ip_day': '200/day',
-        'ip_hour': '50/hour',
-        'login': '5/min',
-        'register': '3/min',
+        'ip_day': '10000/day',
+        'ip_hour': '1000/hour',
+        'login': '20/min',
+        'register': '10/min',
     },
     'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
 }

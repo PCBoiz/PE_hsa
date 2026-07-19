@@ -9,6 +9,20 @@ from achievements.services import check_and_award_achievements
 from common.db import q, q1, x
 
 
+def _json_rows(value):
+    """json_agg từ psycopg3 thường đã là list; phòng trường hợp trả str (như
+    ghi chú roadmap/views._jsonb) thì parse lại."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        import json
+        try:
+            return json.loads(value)
+        except ValueError:
+            return []
+    return value
+
+
 def parse_time_spent(value) -> float:
     if value is None or value == '':
         return 0.0
@@ -29,23 +43,24 @@ def parse_time_spent(value) -> float:
 
 class StatsView(APIView):
     def get(self, request):
+        # PERF 2026-07-19: gộp 2 query thành 1 round trip (RTT tới Neon ~240ms/câu)
         uid = request.user.id
         summary = q1('''
             SELECT u.streak, u.certificates, u.last_study_date,
-                   COUNT(e.course_id) AS enrolled_count
+                   (SELECT COALESCE(json_agg(json_build_object(
+                               'progress', e.progress, 'time_spent', e.time_spent)), '[]'::json)
+                    FROM enrollments e WHERE e.user_id = u.id) AS enroll_rows
             FROM users u
-            LEFT JOIN enrollments e ON e.user_id = u.id
             WHERE u.id = %s
-            GROUP BY u.id, u.streak, u.certificates, u.last_study_date
         ''', (uid,))
-        rows = q('SELECT progress, time_spent FROM enrollments WHERE user_id=%s', (uid,))
+        rows = _json_rows(summary['enroll_rows'])
         # progress nullable trong DB → coalesce về 0, tránh TypeError (sum None)
         avg_progress = round(sum((r['progress'] or 0) for r in rows) / len(rows)) if rows else 0
         total_hours = sum(parse_time_spent(r.get('time_spent')) for r in rows)
         last_date = summary['last_study_date']
         streak_active = (last_date == date.today()) if last_date else False
         return Response({
-            'enrolledCount': summary['enrolled_count'],
+            'enrolledCount': len(rows),
             'avgProgress': avg_progress,
             'totalHours': str(round(total_hours, 1)) + 'h',
             'streakDays': summary['streak'],

@@ -59,6 +59,10 @@ export default function LessonDbDesign({ courseId }: { courseId: string }) {
       <title>Database Design — Bài học</title>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      {/* PERF 2026-07-19: trang này tải 4 script + 2 css từ jsdelivr và css từ
+          cdnjs — preconnect cắt DNS+TLS handshake khỏi đường găng nạp engine */}
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+      <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.7/lib/codemirror.min.css" />
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.7/theme/material-darker.min.css" />

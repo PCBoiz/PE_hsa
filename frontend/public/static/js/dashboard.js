@@ -207,90 +207,50 @@ function markAllBellRead() {
   fetch('/api/notifications/feed/read-all', { method: 'POST' }).catch(function () {});
 }
 
-/* ── Real-time badge qua Server-Sent Events (/api/notifications/stream) ──
- * Server đẩy {unread, latest} mỗi khi trạng thái đổi (poll DB 3s phía server).
- * EventSource không gửi được header Authorization → access token qua query.
- * Access chỉ sống 30 phút còn stream mở hàng giờ: trước MỖI lần (re)connect
- * đều kiểm tra hạn token, sắp/đã hết thì gọi __PE_refreshAccess() (pe-bridge)
- * lấy access mới rồi mới mở kênh — nếu không, sau 30 phút treo máy stream
- * chết với token cũ và không bao giờ sống lại. */
-var _notifES = null;
-var _notifESRetry = null;
+/* ── Badge chuông: client poll /api/notifications/badge mỗi 45s ──
+ * PERF 2026-07-19: thay SSE (/api/notifications/stream đã gỡ). SSE giữ 1
+ * thread/user suốt ~1h phía server + poll DB 3s/kết nối → nhiều user online
+ * là cạn worker. Poll 45s: trễ badge tối đa 45s (chấp nhận được cho chuông),
+ * chỉ poll khi tab đang hiển thị. fetch('/api/...') đi qua pe-bridge nên tự
+ * có Authorization + refresh token — không cần trò token-qua-query của SSE. */
+var _badgeTimer = null;
+var _badgeLastLatest = null;
+var BADGE_POLL_MS = 45000;
 
-// exp (epoch giây) trong payload JWT; 0 = không đọc được (cứ refresh cho chắc)
-function _jwtExp(token) {
-  try {
-    var payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.exp || 0;
-  } catch (e) { return 0; }
+function _pollBadge() {
+  if (document.visibilityState !== 'visible') return;
+  fetch('/api/notifications/badge')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      _bellServerUnread = d.unread || 0;
+      _updateBellDot();
+      // Có notification mới (latest tăng) → nạp lại danh sách nếu panel đang mở
+      var panel = document.getElementById('bell-panel');
+      if (_badgeLastLatest !== null && d.latest > _badgeLastLatest &&
+          panel && panel.classList.contains('open')) {
+        loadBellNotifs();
+      }
+      _badgeLastLatest = d.latest;
+    })
+    .catch(function () {}); // mạng lỗi → thử lại ở lần poll sau
 }
 
-// Gọi cb(token) với access còn hạn ≥60s; refresh qua pe-bridge nếu cần.
-function _freshAccess(cb) {
-  var token = null;
-  try { token = localStorage.getItem('pe_access'); } catch (e) {}
-  if (!token) { cb(null); return; }
-  if (_jwtExp(token) - Date.now() / 1000 > 60) { cb(token); return; }
-  if (typeof window.__PE_refreshAccess === 'function') {
-    window.__PE_refreshAccess().then(cb, function () { cb(null); });
-  } else {
-    cb(token); // không có bridge (trang legacy thuần) — cứ thử token hiện có
-  }
+function _startBadgePolling() {
+  if (_badgeTimer) return;
+  _badgeTimer = setInterval(_pollBadge, BADGE_POLL_MS);
 }
 
-function _startNotifStream() {
-  if (typeof EventSource === 'undefined' || _notifES) return;
-  _freshAccess(function (token) {
-    if (!token || _notifES) return;
-    _openNotifStream(token);
-  });
-}
-
-function _openNotifStream(token) {
-  var origin = window.__PE_API_ORIGIN || '';
-  var lastLatest = null;
-
-  var es = new EventSource(origin + '/api/notifications/stream?token=' + encodeURIComponent(token));
-  _notifES = es;
-
-  es.onmessage = function (ev) {
-    var d;
-    try { d = JSON.parse(ev.data); } catch (e) { return; }
-    _bellServerUnread = d.unread || 0;
-    _updateBellDot();
-    // Có notification mới (latest tăng) → nạp lại danh sách nếu panel đang mở
-    var panel = document.getElementById('bell-panel');
-    if (lastLatest !== null && d.latest > lastLatest && panel && panel.classList.contains('open')) {
-      loadBellNotifs();
-    }
-    lastLatest = d.latest;
-  };
-
-  es.onerror = function () {
-    // 401 (token hết hạn) hoặc server đóng sau ~1h — đóng hẳn rồi nối lại
-    // sau 8s; _startNotifStream tự refresh access nên không kẹt token chết.
-    es.close();
-    _notifES = null;
-    if (!_notifESRetry) {
-      _notifESRetry = setTimeout(function () {
-        _notifESRetry = null;
-        _startNotifStream();
-      }, 8000);
-    }
-  };
-}
-
-// Quay lại tab sau khi máy ngủ/đổi tab lâu: nối lại ngay + đồng bộ badge.
+// Quay lại tab sau khi máy ngủ/đổi tab lâu: đồng bộ badge ngay.
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible' && !_notifES) {
-    if (_notifESRetry) { clearTimeout(_notifESRetry); _notifESRetry = null; }
+  if (document.visibilityState === 'visible') {
     loadBellNotifs();
-    _startNotifStream();
+    _pollBadge();
   }
 });
 
-// Tải thông báo lúc vào trang để cập nhật badge trên chuông + mở kênh real-time
-function _initBell() { loadBellNotifs(); _startNotifStream(); }
+// Tải thông báo lúc vào trang để cập nhật badge trên chuông + bắt đầu poll
+function _initBell() { loadBellNotifs(); _startBadgePolling(); }
 if (document.readyState !== 'loading') _initBell();
 else document.addEventListener('DOMContentLoaded', _initBell);
 

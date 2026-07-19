@@ -33,26 +33,27 @@ class RoadmapsView(APIView):
     def get(self, request):
         """Lộ trình THỰC TẾ cho user theo khảo sát gần nhất; chưa khảo sát → tất cả template."""
         uid = request.user.id
-        survey = q1('SELECT data_json FROM surveys WHERE user_id=%s ORDER BY id DESC LIMIT 1',
-                    (uid,))
+        # PERF 2026-07-19: survey mới nhất lấy kèm trong CÙNG câu lệnh (2 query
+        # → 1 round trip); template chỉ vài dòng nên lọc theo survey ở Python.
+        rows = q("""SELECT id, title, icon, color, mermaid_def,
+                           COALESCE(nodes_json, '{}'::jsonb) AS nodes_json,
+                           COALESCE(edges_json, '[]'::jsonb) AS edges_json,
+                           (SELECT data_json FROM surveys
+                            WHERE user_id=%s ORDER BY id DESC LIMIT 1) AS _survey
+                    FROM roadmaps WHERE user_id IS NULL""" + _TEMPLATE_ORDER,
+                 (uid,))
 
         matched_id = None
-        if survey and survey['data_json']:
-            data = _jsonb(survey['data_json'], {})
+        if rows and rows[0]['_survey']:
+            data = _jsonb(rows[0]['_survey'], {})
             if isinstance(data, dict):
                 matched_id = _pick_roadmap_template(data)
-
-        base = ("SELECT id, title, icon, color, mermaid_def, "
-                "COALESCE(nodes_json, '{}'::jsonb) AS nodes_json, "
-                "COALESCE(edges_json, '[]'::jsonb) AS edges_json "
-                "FROM roadmaps WHERE user_id IS NULL")
         if matched_id:
-            rows = q(base + ' AND id=%s', (matched_id,))
-        else:
-            rows = q(base + _TEMPLATE_ORDER)
+            rows = [r for r in rows if r['id'] == matched_id]
 
         result = []
         for item in rows:
+            item.pop('_survey', None)
             item['nodes'] = _jsonb(item.pop('nodes_json'), {}) or {}
             item['edges'] = _jsonb(item.pop('edges_json'), []) or []
             result.append(item)

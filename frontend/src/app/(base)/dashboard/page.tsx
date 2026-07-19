@@ -32,6 +32,9 @@ export default function DashboardPage() {
     <>
       <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css"]} />
       <title>Programming EDU</title>
+      {/* PERF 2026-07-19: mermaid + svg-pan-zoom tải từ jsdelivr — preconnect
+          cắt DNS+TLS handshake khỏi đường găng nạp script */}
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" />
       <Topbar />
 
       <div id="main">
