@@ -1473,6 +1473,594 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
           { id: 'd8', type: 'mcq', question: 'Dấu hiệu dùng quy tắc nhân là từ?', options: ['và, rồi', 'hoặc', 'nhưng', 'vì'], answer: 'và, rồi' }
         ]
       }
+    },
+
+    {
+      id: 'ql_20',
+      index: 20,
+      title: 'Đọc bảng số liệu',
+      subtitle: 'Kỹ năng đọc và xử lý dữ liệu từ bảng',
+      topic_tag: 'Định lượng · Xử lý số liệu',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về đọc bảng số liệu.',
+        questions: [
+          { id: 't1', type: 'fill', question: 'Một lớp có 20 học sinh nam và 15 học sinh nữ. Tổng số học sinh của lớp là bao nhiêu? (nhập số)',
+            answer: '35', explain: '20 + 15 = 35 học sinh.' },
+          { id: 't2', type: 'mcq', question: 'Khi đọc một bảng số liệu, cần chú ý những gì?',
+            options: ['tên bảng, đơn vị, tiêu đề hàng/cột', 'chỉ con số lớn nhất', 'chỉ dòng đầu', 'màu của bảng'], answer: 'tên bảng, đơn vị, tiêu đề hàng/cột',
+            explain: 'Phải đọc tên bảng, đơn vị đo và ý nghĩa từng hàng/cột để hiểu đúng số liệu.' },
+          { id: 't3', type: 'fill', question: 'Doanh thu tháng 1 là 100 triệu, tháng 2 là 150 triệu. Doanh thu tháng 2 tăng bao nhiêu triệu so với tháng 1? (nhập số)',
+            answer: '50', explain: '150 − 100 = 50 triệu.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-table', title: 'Đọc bảng đúng cách',
+              body: 'Xem TÊN bảng, ĐƠN VỊ đo, tiêu đề HÀNG và CỘT. Xác định vị trí ô cần đọc trước khi tính toán.' },
+            { icon: 'fa-calculator', title: 'Xử lý số liệu',
+              body: 'Các thao tác thường gặp: tính tổng, hiệu, tỉ lệ %, trung bình, tìm max/min, so sánh giữa các dòng/cột.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ đọc bảng số liệu',
+          cards: [
+            { icon: 'fa-table', title: 'Cấu trúc một bảng',
+              body: 'Gồm: tên bảng (nội dung), đơn vị đo, các cột (thường là tiêu chí/năm), các hàng (đối tượng). Ô giao nhau chứa số liệu cụ thể.' },
+            { icon: 'fa-magnifying-glass', title: 'Cách đọc chính xác',
+              body: 'Bước 1: đọc tên bảng và đơn vị. Bước 2: xác định hàng và cột chứa dữ liệu cần. Bước 3: đọc đúng ô, chú ý đơn vị (nghìn, triệu, %).' },
+            { icon: 'fa-calculator', title: 'Các phép tính thường gặp',
+              body: 'Tổng, hiệu (chênh lệch), tỉ lệ phần trăm, số trung bình, tốc độ tăng/giảm. Đọc kỹ câu hỏi yêu cầu tính gì.' },
+            { icon: 'fa-triangle-exclamation', title: 'Lỗi hay mắc',
+              body: 'Nhầm đơn vị (nghìn ↔ triệu), đọc nhầm hàng/cột, quên chuyển %. Luôn kiểm tra đơn vị trước khi ghi đáp án.' }
+          ],
+          examples: [
+            { q: 'Bảng: A = 40, B = 60. Tỉ lệ A trong tổng?', sol: '40/(40+60) × 100 = 40%.' },
+            { q: 'Số liệu 3 năm: 100, 120, 150. Trung bình?', sol: '(100+120+150)/3 = 123,3.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Đọc bảng: xem tên bảng, đơn vị, tiêu đề hàng/cột.',
+          'Xác định đúng ô cần đọc trước khi tính.',
+          'Phép tính hay gặp: tổng, hiệu, %, trung bình, so sánh.',
+          'Chú ý đơn vị (nghìn/triệu/%) để tránh sai.'
+        ],
+        tip: 'Luôn liếc ĐƠN VỊ đo của bảng đầu tiên — nhiều bạn mất điểm vì nhầm nghìn với triệu.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'fill', question: 'Lớp có 18 nam, 12 nữ. Tổng học sinh? (nhập số)', answer: '30' },
+          { id: 'd2', type: 'fill', question: 'T1 = 200, T2 = 260. Chênh lệch T2−T1? (nhập số)', answer: '60' },
+          { id: 'd3', type: 'mcq', question: 'Khi đọc bảng cần chú ý đầu tiên?', options: ['đơn vị đo', 'màu bảng', 'số cột', 'độ rộng'], answer: 'đơn vị đo' },
+          { id: 'd4', type: 'fill', question: 'A = 30, B = 70. A chiếm bao nhiêu % tổng? (nhập số)', answer: '30' },
+          { id: 'd5', type: 'fill', question: 'Ba số 10, 20, 30. Trung bình cộng? (nhập số)', answer: '20' },
+          { id: 'd6', type: 'fill', question: 'Doanh thu 4 quý: 50,50,50,50. Tổng cả năm? (nhập số)', answer: '200' },
+          { id: 'd7', type: 'mcq', question: 'Số liệu “triệu đồng” mà đọc thành “nghìn” sẽ?', options: ['sai kết quả', 'không sao', 'đúng hơn', 'nhanh hơn'], answer: 'sai kết quả' },
+          { id: 'd8', type: 'fill', question: 'Nam 24, nữ 16. Nữ chiếm bao nhiêu % tổng? (nhập số)', answer: '40' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_21',
+      index: 21,
+      title: 'Đọc biểu đồ',
+      subtitle: 'Biểu đồ cột, tròn, đường và cách đọc',
+      topic_tag: 'Định lượng · Xử lý số liệu',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về đọc biểu đồ.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Biểu đồ TRÒN (hình quạt) thường được dùng để thể hiện điều gì?',
+            options: ['tỉ lệ, cơ cấu phần trăm', 'xu hướng theo thời gian', 'khoảng cách', 'nhiệt độ'], answer: 'tỉ lệ, cơ cấu phần trăm',
+            explain: 'Biểu đồ tròn thể hiện cơ cấu, tỉ lệ % của các thành phần trong tổng thể.' },
+          { id: 't2', type: 'mcq', question: 'Biểu đồ CỘT phù hợp nhất để?',
+            options: ['so sánh số lượng giữa các đối tượng', 'thể hiện tỉ lệ %', 'vẽ đường tròn', 'đo góc'], answer: 'so sánh số lượng giữa các đối tượng',
+            explain: 'Biểu đồ cột dùng để so sánh quy mô, số lượng giữa các đối tượng.' },
+          { id: 't3', type: 'mcq', question: 'Biểu đồ ĐƯỜNG (đồ thị) thường dùng để thể hiện?',
+            options: ['sự thay đổi, xu hướng theo thời gian', 'cơ cấu %', 'so sánh diện tích', 'phân loại'], answer: 'sự thay đổi, xu hướng theo thời gian',
+            explain: 'Biểu đồ đường thể hiện sự biến động, xu hướng tăng/giảm theo thời gian.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-chart-pie', title: 'Chọn đúng loại biểu đồ',
+              body: 'TRÒN: cơ cấu, tỉ lệ %. CỘT: so sánh số lượng. ĐƯỜNG: xu hướng theo thời gian. MIỀN: thay đổi cơ cấu theo thời gian.' },
+            { icon: 'fa-magnifying-glass', title: 'Đọc biểu đồ',
+              body: 'Xem TÊN biểu đồ, đơn vị, chú giải (màu/ký hiệu), trục hoành – trục tung. Rồi đọc giá trị và so sánh.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ đọc biểu đồ',
+          cards: [
+            { icon: 'fa-chart-pie', title: 'Biểu đồ tròn',
+              body: 'Thể hiện cơ cấu, tỉ lệ % của các phần trong tổng thể (tổng = 100%). Mỗi hình quạt tương ứng một thành phần.' },
+            { icon: 'fa-chart-column', title: 'Biểu đồ cột',
+              body: 'So sánh quy mô, số lượng giữa các đối tượng hoặc theo thời điểm. Cột càng cao giá trị càng lớn.' },
+            { icon: 'fa-chart-line', title: 'Biểu đồ đường',
+              body: 'Thể hiện diễn biến, xu hướng (tăng/giảm) của một đại lượng theo thời gian. Độ dốc cho biết tốc độ thay đổi.' },
+            { icon: 'fa-layer-group', title: 'Cách đọc chính xác',
+              body: 'Đọc tên biểu đồ, đơn vị, chú giải; xác định trục; đọc giá trị tại điểm cần; so sánh, tính chênh lệch hay tỉ lệ theo yêu cầu.' }
+          ],
+          examples: [
+            { q: 'Muốn thể hiện cơ cấu dân số theo độ tuổi, dùng biểu đồ nào?', sol: 'Biểu đồ tròn (cơ cấu %).' },
+            { q: 'Muốn thể hiện dân số qua các năm, dùng biểu đồ nào?', sol: 'Biểu đồ đường (xu hướng theo thời gian).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Biểu đồ tròn → cơ cấu, tỉ lệ %.',
+          'Biểu đồ cột → so sánh số lượng.',
+          'Biểu đồ đường → xu hướng theo thời gian.',
+          'Đọc: tên, đơn vị, chú giải, trục rồi mới lấy số liệu.'
+        ],
+        tip: 'Nhớ 3 loại lõi: TRÒN–cơ cấu, CỘT–so sánh, ĐƯỜNG–thời gian; nhận đúng loại là hiểu ngay biểu đồ nói gì.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Biểu đồ tròn thể hiện?', options: ['cơ cấu %', 'thời gian', 'khoảng cách', 'nhiệt độ'], answer: 'cơ cấu %' },
+          { id: 'd2', type: 'mcq', question: 'Biểu đồ cột dùng để?', options: ['so sánh số lượng', 'thể hiện %', 'vẽ tròn', 'đo góc'], answer: 'so sánh số lượng' },
+          { id: 'd3', type: 'mcq', question: 'Biểu đồ đường dùng để?', options: ['xu hướng theo thời gian', 'cơ cấu', 'phân loại', 'so sánh diện tích'], answer: 'xu hướng theo thời gian' },
+          { id: 'd4', type: 'mcq', question: 'Tổng các phần của biểu đồ tròn bằng?', options: ['100%', '50%', '360 số', '1000%'], answer: '100%' },
+          { id: 'd5', type: 'mcq', question: 'Cột cao hơn nghĩa là?', options: ['giá trị lớn hơn', 'giá trị nhỏ hơn', 'không đổi', 'bằng 0'], answer: 'giá trị lớn hơn' },
+          { id: 'd6', type: 'mcq', question: 'Thể hiện cơ cấu GDP theo ngành, dùng?', options: ['biểu đồ tròn', 'biểu đồ đường', 'bảng thô', 'biểu đồ điểm'], answer: 'biểu đồ tròn' },
+          { id: 'd7', type: 'mcq', question: 'Đường dốc lên trong biểu đồ đường nghĩa là?', options: ['tăng', 'giảm', 'không đổi', 'bằng 0'], answer: 'tăng' },
+          { id: 'd8', type: 'mcq', question: 'Trước khi đọc biểu đồ, xem?', options: ['tên & chú giải', 'độ rộng giấy', 'màu nền', 'phông chữ'], answer: 'tên & chú giải' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_22',
+      index: 22,
+      title: 'Bài toán thực tế',
+      subtitle: 'Vận dụng toán vào tình huống đời sống',
+      topic_tag: 'Định lượng · Xử lý số liệu',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về toán thực tế.',
+        questions: [
+          { id: 't1', type: 'fill', question: 'Mua 3 quyển vở, mỗi quyển 8 nghìn đồng. Tổng số tiền phải trả là bao nhiêu nghìn đồng? (nhập số)',
+            answer: '24', explain: '3 × 8 = 24 nghìn đồng.' },
+          { id: 't2', type: 'fill', question: 'Một xe đi quãng đường 120 km với vận tốc 40 km/h. Thời gian đi hết bao nhiêu giờ? (nhập số)',
+            answer: '3', explain: 'Thời gian = quãng đường / vận tốc = 120/40 = 3 giờ.' },
+          { id: 't3', type: 'mcq', question: 'Để giải bài toán thực tế, bước quan trọng đầu tiên là?',
+            options: ['đọc kỹ đề, xác định dữ kiện và phép tính/công thức phù hợp', 'bấm máy ngay', 'chọn đáp án dài nhất', 'bỏ qua đơn vị'], answer: 'đọc kỹ đề, xác định dữ kiện và phép tính/công thức phù hợp',
+            explain: 'Phải hiểu đề, tìm dữ kiện và công thức đúng rồi mới tính.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-list-check', title: 'Các bước giải',
+              body: 'Đọc đề → tóm tắt dữ kiện → chọn công thức/phép tính → tính → kiểm tra đơn vị & tính hợp lí của kết quả.' },
+            { icon: 'fa-gauge', title: 'Công thức hay dùng',
+              body: 'Quãng đường = v × t. Tiền = số lượng × đơn giá. Tỉ lệ %, lãi suất, năng suất… đều là bài thực tế quen thuộc.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ bài toán thực tế',
+          cards: [
+            { icon: 'fa-book-open', title: 'Đọc hiểu đề',
+              body: 'Xác định: đề cho gì (dữ kiện), hỏi gì (yêu cầu), đơn vị các đại lượng. Gạch chân số liệu và từ khóa.' },
+            { icon: 'fa-diagram-project', title: 'Chọn mô hình toán',
+              body: 'Chuyển tình huống thực tế thành phép tính/công thức: chuyển động (s=v·t), mua bán (tiền=SL×giá), tỉ lệ %, lãi kép, năng suất.' },
+            { icon: 'fa-calculator', title: 'Tính & kiểm tra',
+              body: 'Thực hiện phép tính, chú ý đổi đơn vị cho đồng nhất. Kiểm tra kết quả có hợp lí với thực tế không (VD thời gian không âm).' },
+            { icon: 'fa-lightbulb', title: 'Dạng bài quen thuộc',
+              body: 'Mua bán – giảm giá, chuyển động, năng suất – công việc, lãi suất ngân hàng, tỉ lệ pha trộn. Nhận dạng để áp công thức nhanh.' }
+          ],
+          examples: [
+            { q: 'Vòi chảy 5 lít/phút, đầy bể 60 lít mất mấy phút?', sol: '60/5 = 12 phút.' },
+            { q: 'Giảm giá 20% cho món 500k, còn?', sol: '500 × 0,8 = 400 nghìn.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Bước giải: đọc đề → tóm tắt → chọn công thức → tính → kiểm tra.',
+          'Chuyển động: s = v × t.',
+          'Mua bán: tiền = số lượng × đơn giá.',
+          'Luôn đổi đơn vị đồng nhất và kiểm tra kết quả hợp lí.'
+        ],
+        formula: 's = v·t   |   tiền = số lượng × đơn giá',
+        tip: 'Đề thực tế dài dòng — gạch chân SỐ LIỆU và câu HỎI trước, bỏ chữ thừa, rồi mới lập phép tính.'
+      },
+      drill: {
+        time_seconds: 85,
+        questions: [
+          { id: 'd1', type: 'fill', question: 'Mua 5 bút, mỗi bút 4 nghìn. Tổng tiền? (nghìn, nhập số)', answer: '20' },
+          { id: 'd2', type: 'fill', question: 'Đi 150 km với 50 km/h. Thời gian? (giờ, nhập số)', answer: '3' },
+          { id: 'd3', type: 'fill', question: 'Vòi 4 lít/phút, đầy bể 40 lít mất mấy phút? (nhập số)', answer: '10' },
+          { id: 'd4', type: 'fill', question: 'Món 300k giảm 10% còn bao nhiêu nghìn? (nhập số)', answer: '270' },
+          { id: 'd5', type: 'fill', question: 'Xe đi 60 km trong 2 giờ. Vận tốc? (km/h, nhập số)', answer: '30' },
+          { id: 'd6', type: 'fill', question: '2 kg táo giá 30 nghìn/kg. Tổng tiền? (nghìn, nhập số)', answer: '60' },
+          { id: 'd7', type: 'mcq', question: 'Quãng đường = ?', options: ['v × t', 'v / t', 't / v', 'v + t'], answer: 'v × t' },
+          { id: 'd8', type: 'fill', question: 'Lương 8 triệu, thưởng thêm 25%. Tổng? (triệu, nhập số)', answer: '10' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_23',
+      index: 23,
+      title: 'Ước lượng & tính nhẩm nhanh',
+      subtitle: 'Kỹ thuật tính nhanh và ước lượng trong phòng thi',
+      topic_tag: 'Định lượng · Xử lý số liệu',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về tính nhẩm.',
+        questions: [
+          { id: 't1', type: 'fill', question: 'Ước lượng nhanh 19 × 21 bằng cách lấy 20 × 20 = ? (nhập số)',
+            answer: '400', explain: '19 × 21 ≈ 20 × 20 = 400 (giá trị chính xác là 399).' },
+          { id: 't2', type: 'mcq', question: 'Tính nhanh 98 × 5 bằng cách nào hiệu quả?',
+            options: ['(100 − 2) × 5 = 500 − 10 = 490', 'nhân từng chữ số', '98 + 5', 'không tính được'], answer: '(100 − 2) × 5 = 500 − 10 = 490',
+            explain: 'Tách 98 = 100 − 2 rồi nhân phân phối: 500 − 10 = 490.' },
+          { id: 't3', type: 'fill', question: '10% của 250 bằng bao nhiêu? (nhập số)',
+            answer: '25', explain: '10% = chia 10 → 250/10 = 25.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-bolt', title: 'Mẹo tính nhanh',
+              body: 'Làm tròn về số đẹp rồi bù trừ: 98 × 5 = (100−2)×5. Nhân/chia 10, 100 bằng dịch dấu phẩy. 10% = chia 10; 5% = nửa của 10%.' },
+            { icon: 'fa-ruler', title: 'Ước lượng',
+              body: 'Với câu trắc nghiệm, ước lượng để LOẠI đáp án vô lí, không cần tính chính xác nếu đề chỉ hỏi khoảng giá trị.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ tính nhẩm & ước lượng',
+          cards: [
+            { icon: 'fa-percent', title: 'Nhẩm phần trăm',
+              body: '10% = chia 10; 1% = chia 100; 5% = nửa của 10%; 25% = chia 4; 50% = chia 2. Ghép lại để nhẩm % bất kì (VD 15% = 10% + 5%).' },
+            { icon: 'fa-plus-minus', title: 'Tách số về số tròn',
+              body: 'Nhân số gần tròn: 99 × 7 = (100−1)×7 = 700 − 7 = 693. 102 × 3 = (100+2)×3 = 306.' },
+            { icon: 'fa-arrows-left-right-to-line', title: 'Dịch dấu phẩy',
+              body: 'Nhân 10, 100, 1000 = dịch dấu phẩy sang phải; chia thì sang trái. VD 3,5 × 100 = 350.' },
+            { icon: 'fa-ruler-combined', title: 'Ước lượng để loại trừ',
+              body: 'Trong trắc nghiệm, ước lượng nhanh để loại đáp án chênh lệch quá xa, tăng khả năng chọn đúng khi thời gian gấp.' }
+          ],
+          examples: [
+            { q: 'Nhẩm 15% của 200.', sol: '10% = 20, 5% = 10 → 15% = 30.' },
+            { q: 'Nhẩm 101 × 6.', sol: '(100+1)×6 = 606.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          '10% = chia 10; 5% = nửa của 10%; 25% = chia 4; 50% = chia 2.',
+          'Tách số gần tròn: 98 = 100 − 2; 101 = 100 + 1.',
+          'Nhân/chia 10,100 = dịch dấu phẩy.',
+          'Ước lượng để LOẠI đáp án vô lí khi làm trắc nghiệm.'
+        ],
+        formula: '15% = 10% + 5%   |   98×n = (100−2)×n',
+        tip: 'Không cần tính chính xác nếu 4 đáp án cách xa nhau — ước lượng nhanh rồi chọn, tiết kiệm thời gian.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'fill', question: '10% của 300 = ? (nhập số)', answer: '30' },
+          { id: 'd2', type: 'fill', question: '99 × 4 = ? (nhập số)', answer: '396' },
+          { id: 'd3', type: 'fill', question: '25% của 80 = ? (nhập số)', answer: '20' },
+          { id: 'd4', type: 'fill', question: '3,5 × 100 = ? (nhập số)', answer: '350' },
+          { id: 'd5', type: 'fill', question: '5% của 200 = ? (nhập số)', answer: '10' },
+          { id: 'd6', type: 'mcq', question: '102 × 3 tính nhanh?', options: ['306', '312', '300', '303'], answer: '306' },
+          { id: 'd7', type: 'fill', question: '50% của 46 = ? (nhập số)', answer: '23' },
+          { id: 'd8', type: 'fill', question: '15% của 200 = ? (nhập số)', answer: '30' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_24',
+      index: 24,
+      title: 'Phân bổ thời gian phần Toán',
+      subtitle: 'Chiến thuật quản lý 75 phút cho 50 câu',
+      topic_tag: 'Định lượng · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> chiến thuật thời gian của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Phần Toán HSA có 50 câu làm trong 75 phút, trung bình mỗi câu khoảng?',
+            options: ['30 giây', 'khoảng 1,5 phút', '3 phút', '5 phút'], answer: 'khoảng 1,5 phút',
+            explain: '75 phút / 50 câu = 1,5 phút/câu — cần phân bổ hợp lí, câu dễ nhanh hơn để dành thời gian câu khó.' },
+          { id: 't2', type: 'mcq', question: 'Chiến thuật phân bổ thời gian tốt nhất là?',
+            options: ['làm câu dễ trước, câu khó để sau', 'làm lần lượt từ đầu đến cuối bất kể độ khó', 'làm câu khó nhất trước', 'chỉ làm 10 câu đầu'], answer: 'làm câu dễ trước, câu khó để sau',
+            explain: 'Quét câu dễ trước để chắc điểm, tránh sa lầy vào câu khó ngay từ đầu.' },
+          { id: 't3', type: 'mcq', question: 'Khi gặp một câu quá khó, tốn thời gian, nên?',
+            options: ['đánh dấu, tạm bỏ qua, quay lại sau', 'ngồi làm bằng được', 'bỏ luôn cả bài', 'chép của bạn'], answer: 'đánh dấu, tạm bỏ qua, quay lại sau',
+            explain: 'Bỏ qua câu khó để không mất thời gian, làm hết câu dễ rồi quay lại.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-stopwatch', title: 'Nguyên tắc thời gian',
+              body: '75 phút / 50 câu ≈ 1,5 phút/câu. Câu dễ làm nhanh (dưới 1 phút) để dành thời gian cho câu khó.' },
+            { icon: 'fa-forward', title: 'Không sa lầy',
+              body: 'Gặp câu khó/rối → đánh dấu, bỏ qua, quay lại sau. Ưu tiên chắc điểm câu dễ trước.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ phân bổ thời gian',
+          cards: [
+            { icon: 'fa-stopwatch', title: 'Chia thời gian hợp lí',
+              body: 'Trung bình 1,5 phút/câu. Lượt 1: làm nhanh câu dễ & vừa (khoảng 45-50 phút). Lượt 2: dồn sức câu khó và câu điền (20-25 phút). Chừa 5 phút rà soát.' },
+            { icon: 'fa-list-ol', title: 'Thứ tự làm bài',
+              body: 'Quét từ đầu, câu nào chắc thì làm ngay; câu nào lăn tăn/khó thì đánh dấu bỏ qua. Không làm tuần tự cứng nhắc.' },
+            { icon: 'fa-flag-checkered', title: 'Chốt điểm câu dễ',
+              body: 'Câu dễ nhiều điểm ẩn: làm cẩn thận, không sai vặt. Đừng “tham” câu khó mà bỏ lỡ điểm câu dễ.' },
+            { icon: 'fa-magnifying-glass', title: 'Rà soát cuối giờ',
+              body: 'Dành vài phút cuối kiểm tra câu đã đánh dấu, kiểm lại phép tính dễ sai, đảm bảo không bỏ trống câu nào (không bị trừ điểm khi đoán).' }
+          ],
+          examples: [
+            { q: 'Còn 10 phút mà 8 câu chưa làm, nên?', sol: 'Ưu tiên câu dễ/quen; câu khó thì ước lượng chọn, không bỏ trống.' },
+            { q: 'Một câu tính mãi không ra sau 3 phút?', sol: 'Đánh dấu, bỏ qua, làm câu khác rồi quay lại.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          '75 phút / 50 câu ≈ 1,5 phút/câu.',
+          'Làm câu dễ trước, câu khó để sau.',
+          'Gặp câu khó → đánh dấu, bỏ qua, quay lại.',
+          'Chừa vài phút cuối để rà soát, không bỏ trống câu nào.'
+        ],
+        tip: 'Điểm câu dễ và câu khó BẰNG NHAU — luôn “gom” hết câu dễ trước khi lao vào câu khó.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Trung bình thời gian mỗi câu Toán HSA?', options: ['1,5 phút', '5 phút', '30 giây', '10 phút'], answer: '1,5 phút' },
+          { id: 'd2', type: 'mcq', question: 'Nên làm câu nào trước?', options: ['câu dễ', 'câu khó nhất', 'câu cuối', 'ngẫu nhiên'], answer: 'câu dễ' },
+          { id: 'd3', type: 'mcq', question: 'Gặp câu quá khó nên?', options: ['bỏ qua, quay lại sau', 'làm bằng được', 'bỏ cả bài', 'đoán bừa ngay'], answer: 'bỏ qua, quay lại sau' },
+          { id: 'd4', type: 'mcq', question: 'Điểm câu dễ so với câu khó?', options: ['bằng nhau', 'ít hơn', 'nhiều hơn', 'bằng 0'], answer: 'bằng nhau' },
+          { id: 'd5', type: 'mcq', question: 'Cuối giờ nên?', options: ['rà soát, không bỏ trống', 'nộp sớm', 'ngồi chơi', 'xóa hết'], answer: 'rà soát, không bỏ trống' },
+          { id: 'd6', type: 'mcq', question: 'Sai vặt câu dễ do?', options: ['chủ quan, cẩu thả', 'đề khó', 'thiếu thời gian', 'may rủi'], answer: 'chủ quan, cẩu thả' },
+          { id: 'd7', type: 'mcq', question: 'Nếu trắc nghiệm không trừ điểm sai, câu chưa làm nên?', options: ['đoán, không bỏ trống', 'bỏ trống', 'chọn A hết', 'nộp bài'], answer: 'đoán, không bỏ trống' },
+          { id: 'd8', type: 'mcq', question: 'Chiến thuật làm bài nên theo?', options: ['dễ trước khó sau', 'khó trước', 'tuần tự cứng nhắc', 'ngẫu hứng'], answer: 'dễ trước khó sau' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_25',
+      index: 25,
+      title: 'Dạng câu điền đáp án',
+      subtitle: 'Kỹ thuật làm 15 câu điền đáp án phần Toán',
+      topic_tag: 'Định lượng · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về dạng câu điền đáp án.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Phần Toán HSA có bao nhiêu câu ĐIỀN ĐÁP ÁN?',
+            options: ['10', '15', '20', '35'], answer: '15',
+            explain: 'Phần Toán gồm 35 câu trắc nghiệm 4 lựa chọn và 15 câu điền đáp án.' },
+          { id: 't2', type: 'mcq', question: 'Câu điền đáp án khác câu trắc nghiệm ở điểm nào?',
+            options: ['phải tự tính ra kết quả, không có sẵn lựa chọn để đoán', 'dễ hơn nhiều', 'không cần tính', 'luôn là số 0'], answer: 'phải tự tính ra kết quả, không có sẵn lựa chọn để đoán',
+            explain: 'Không có phương án cho sẵn nên phải tính chính xác, không thể loại trừ hay đoán mò.' },
+          { id: 't3', type: 'mcq', question: 'Khi làm câu điền đáp án, cần đặc biệt chú ý điều gì?',
+            options: ['nhập đúng định dạng, đơn vị và làm tròn theo yêu cầu', 'nhập càng nhiều số càng tốt', 'bỏ qua đơn vị', 'chỉ ghi phần nguyên'], answer: 'nhập đúng định dạng, đơn vị và làm tròn theo yêu cầu',
+            explain: 'Sai định dạng/đơn vị/làm tròn là mất điểm dù tính đúng bản chất.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-keyboard', title: 'Đặc điểm câu điền',
+              body: 'Không có lựa chọn sẵn → phải TÍNH CHÍNH XÁC. 15/50 câu Toán là dạng này. Không thể đoán mò như trắc nghiệm.' },
+            { icon: 'fa-triangle-exclamation', title: 'Điểm dễ mất',
+              body: 'Sai định dạng, quên đơn vị, làm tròn không đúng yêu cầu. Đọc kỹ đề xem yêu cầu ghi kết quả thế nào.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ câu điền đáp án',
+          cards: [
+            { icon: 'fa-keyboard', title: 'Bản chất dạng câu',
+              body: 'Đề hỏi một giá trị, thí sinh tự tính và điền kết quả. Không có 4 phương án nên độ chính xác quyết định điểm.' },
+            { icon: 'fa-check-double', title: 'Tính cẩn thận',
+              body: 'Vì không loại trừ được, phải tính đúng ngay từ đầu. Kiểm tra lại phép tính, thử thay ngược để chắc chắn.' },
+            { icon: 'fa-ruler', title: 'Định dạng & đơn vị',
+              body: 'Đọc yêu cầu: làm tròn đến hàng nào, đơn vị gì (cm, kg, %), nhập số thập phân theo quy ước. Ghi đúng như đề yêu cầu.' },
+            { icon: 'fa-clock', title: 'Quản lí thời gian',
+              body: 'Câu điền dễ tốn thời gian hơn; nếu bí, đánh dấu quay lại. Không để một câu điền khó “ngốn” hết thời gian.' }
+          ],
+          examples: [
+            { q: 'Đề yêu cầu làm tròn đến 1 chữ số thập phân, kết quả 3,456 ghi?', sol: '3,5.' },
+            { q: 'Kết quả là 0,25 mà đề yêu cầu %?', sol: 'Ghi 25 (%).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Phần Toán: 35 câu trắc nghiệm + 15 câu điền đáp án.',
+          'Câu điền không có lựa chọn → phải tính chính xác.',
+          'Chú ý định dạng, đơn vị, làm tròn theo yêu cầu đề.',
+          'Nếu bí, đánh dấu quay lại, không để ngốn thời gian.'
+        ],
+        tip: 'Đọc kỹ CÁCH GHI kết quả (đơn vị, làm tròn) — nhiều bạn tính đúng nhưng điền sai định dạng nên mất điểm oan.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Phần Toán có bao nhiêu câu điền đáp án?', options: ['10', '15', '20', '35'], answer: '15' },
+          { id: 'd2', type: 'mcq', question: 'Câu điền đáp án đòi hỏi?', options: ['tính chính xác', 'đoán mò', 'chọn A', 'bỏ qua'], answer: 'tính chính xác' },
+          { id: 'd3', type: 'mcq', question: 'Yếu tố dễ mất điểm ở câu điền?', options: ['sai định dạng/đơn vị', 'màu bút', 'chữ xấu', 'số nét'], answer: 'sai định dạng/đơn vị' },
+          { id: 'd4', type: 'fill', question: 'Làm tròn 3,456 đến 1 chữ số thập phân (nhập dạng 3,5)', answer: '3,5' },
+          { id: 'd5', type: 'mcq', question: '0,25 khi đề hỏi % thì ghi?', options: ['25', '0,25', '2,5', '250'], answer: '25' },
+          { id: 'd6', type: 'mcq', question: 'Câu điền so với trắc nghiệm về khả năng đoán?', options: ['không đoán được', 'đoán dễ hơn', 'giống nhau', 'luôn ra 0'], answer: 'không đoán được' },
+          { id: 'd7', type: 'mcq', question: 'Nếu câu điền quá khó nên?', options: ['đánh dấu, quay lại sau', 'ngồi làm mãi', 'bỏ hẳn', 'chép bạn'], answer: 'đánh dấu, quay lại sau' },
+          { id: 'd8', type: 'mcq', question: 'Trước khi điền kết quả nên?', options: ['kiểm tra lại phép tính', 'nộp ngay', 'đổi đáp án', 'xóa hết'], answer: 'kiểm tra lại phép tính' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_26',
+      index: 26,
+      title: 'Mẹo loại trừ nhanh',
+      subtitle: 'Kỹ thuật loại trừ đáp án trong trắc nghiệm',
+      topic_tag: 'Định lượng · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về kỹ thuật loại trừ.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Kỹ thuật loại trừ (loại bớt phương án sai) giúp ích gì?',
+            options: ['tăng xác suất chọn đúng khi chưa chắc chắn', 'làm bài chậm hơn', 'không có tác dụng', 'khiến sai nhiều hơn'], answer: 'tăng xác suất chọn đúng khi chưa chắc chắn',
+            explain: 'Loại 2 đáp án sai rõ ràng → xác suất đúng tăng từ 1/4 lên 1/2.' },
+          { id: 't2', type: 'mcq', question: 'Khi làm trắc nghiệm, nên loại trừ trước những đáp án nào?',
+            options: ['những đáp án vô lí, sai rõ ràng', 'đáp án dài nhất', 'đáp án đầu tiên', 'đáp án cuối cùng'], answer: 'những đáp án vô lí, sai rõ ràng',
+            explain: 'Loại các đáp án phi lí (sai đơn vị, sai dấu, quá lớn/nhỏ) trước.' },
+          { id: 't3', type: 'mcq', question: 'Việc thay từng đáp án vào đề bài để kiểm tra là kỹ thuật gì?',
+            options: ['thử đáp án (thế ngược)', 'đoán mò', 'bỏ qua', 'tính lại từ đầu'], answer: 'thử đáp án (thế ngược)',
+            explain: 'Thế ngược đáp án vào đề để kiểm tra tính đúng — nhanh với một số dạng.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-filter', title: 'Loại trừ',
+              body: 'Loại các đáp án VÔ LÍ (sai đơn vị, sai dấu, quá lớn/nhỏ). Loại càng nhiều, xác suất chọn đúng càng cao.' },
+            { icon: 'fa-rotate-left', title: 'Thử đáp án',
+              body: 'Thay từng phương án vào đề để kiểm tra — nhanh với dạng phương trình, tìm nghiệm.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ kỹ thuật loại trừ',
+          cards: [
+            { icon: 'fa-filter', title: 'Loại đáp án vô lí',
+              body: 'Đối chiếu với thực tế và đơn vị: đáp án âm cho đại lượng dương, sai đơn vị, quá lớn/nhỏ so với đề → loại ngay.' },
+            { icon: 'fa-rotate-left', title: 'Thế ngược đáp án',
+              body: 'Với phương trình/bài tìm x: thay đáp án vào đề, đáp án nào thỏa mãn là đúng. Nhanh hơn giải trực tiếp trong nhiều trường hợp.' },
+            { icon: 'fa-scale-balanced', title: 'Ước lượng khoảng',
+              body: 'Ước lượng nhanh giá trị cần tìm rồi chọn đáp án gần nhất, loại đáp án lệch xa.' },
+            { icon: 'fa-dice', title: 'Khi vẫn phân vân',
+              body: 'Nếu còn 2 đáp án khó phân biệt, chọn theo phán đoán/độ hợp lí; đừng bỏ trống nếu không bị trừ điểm.' }
+          ],
+          examples: [
+            { q: 'Tìm chiều dài, đáp án có số âm?', sol: 'Loại ngay (chiều dài không âm).' },
+            { q: 'Giải x² = 16 mà có sẵn đáp án?', sol: 'Thử: x = 4 hoặc −4 thỏa mãn.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Loại đáp án vô lí (sai đơn vị/dấu, quá lớn/nhỏ) trước.',
+          'Thử đáp án (thế ngược) nhanh với phương trình, tìm x.',
+          'Ước lượng khoảng rồi chọn đáp án gần nhất.',
+          'Loại càng nhiều → xác suất đúng càng cao; không bỏ trống.'
+        ],
+        tip: 'Loại được 2 đáp án là xác suất đúng đã lên 50% — luôn cố loại trước khi đoán.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Loại trừ giúp?', options: ['tăng xác suất đúng', 'giảm điểm', 'làm chậm', 'gây nhầm'], answer: 'tăng xác suất đúng' },
+          { id: 'd2', type: 'mcq', question: 'Nên loại đáp án nào trước?', options: ['vô lí/sai rõ', 'dài nhất', 'ngắn nhất', 'ở giữa'], answer: 'vô lí/sai rõ' },
+          { id: 'd3', type: 'mcq', question: 'Thay đáp án vào đề để thử là?', options: ['thế ngược', 'đoán mò', 'bỏ qua', 'tính lại'], answer: 'thế ngược' },
+          { id: 'd4', type: 'mcq', question: 'Loại 2/4 đáp án thì xác suất đúng?', options: ['50%', '25%', '75%', '100%'], answer: '50%' },
+          { id: 'd5', type: 'mcq', question: 'Tìm chiều cao, đáp án âm nên?', options: ['loại', 'chọn', 'giữ lại', 'không rõ'], answer: 'loại' },
+          { id: 'd6', type: 'mcq', question: 'Ước lượng khoảng dùng để?', options: ['chọn đáp án gần nhất', 'tính chính xác', 'bỏ trống', 'đổi đề'], answer: 'chọn đáp án gần nhất' },
+          { id: 'd7', type: 'mcq', question: 'Còn 2 đáp án khó phân biệt nên?', options: ['chọn theo phán đoán', 'bỏ trống', 'chọn cả hai', 'nộp bài'], answer: 'chọn theo phán đoán' },
+          { id: 'd8', type: 'mcq', question: 'Đáp án sai đơn vị nên?', options: ['loại', 'chọn', 'chần chừ', 'tính lại'], answer: 'loại' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_27',
+      index: 27,
+      title: 'Luyện đề bấm giờ',
+      subtitle: 'Rèn tốc độ và tâm lý qua luyện đề',
+      topic_tag: 'Định lượng · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về luyện đề.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Luyện đề BẤM GIỜ giúp ích gì nhất?',
+            options: ['làm quen áp lực thời gian và tăng tốc độ làm bài', 'chỉ để giải trí', 'không có tác dụng', 'làm mất thời gian'], answer: 'làm quen áp lực thời gian và tăng tốc độ làm bài',
+            explain: 'Bấm giờ mô phỏng phòng thi, giúp quen áp lực và cải thiện tốc độ, độ chính xác.' },
+          { id: 't2', type: 'mcq', question: 'Sau khi làm một đề luyện, việc QUAN TRỌNG NHẤT cần làm là?',
+            options: ['xem lại các câu sai, tìm nguyên nhân và rút kinh nghiệm', 'quên đi làm đề mới', 'chỉ đếm số điểm', 'khoe điểm'], answer: 'xem lại các câu sai, tìm nguyên nhân và rút kinh nghiệm',
+            explain: 'Chữa lỗi sau mỗi đề mới thực sự tiến bộ, tránh lặp lại lỗi cũ.' },
+          { id: 't3', type: 'mcq', question: 'Nên luyện đề trong điều kiện như thế nào để hiệu quả?',
+            options: ['giống thi thật: bấm giờ, không tra cứu, tập trung', 'vừa làm vừa xem đáp án', 'không giới hạn thời gian', 'nhờ người làm hộ'], answer: 'giống thi thật: bấm giờ, không tra cứu, tập trung',
+            explain: 'Luyện sát điều kiện thi thật giúp rèn tốc độ và tâm lý phòng thi.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-stopwatch-20', title: 'Vì sao luyện đề',
+              body: 'Rèn TỐC ĐỘ + TÂM LÝ + độ CHÍNH XÁC dưới áp lực thời gian. Quen dạng câu, phản xạ nhanh hơn trong phòng thi.' },
+            { icon: 'fa-clipboard-check', title: 'Chữa đề',
+              body: 'Sau mỗi đề: xem lại câu sai, hiểu vì sao sai, ghi lại lỗi hay gặp để lần sau tránh. Đây là bước tiến bộ thực sự.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ luyện đề bấm giờ',
+          cards: [
+            { icon: 'fa-stopwatch-20', title: 'Mô phỏng phòng thi',
+              body: 'Đặt đồng hồ đúng thời gian đề (75 phút cho phần Toán), làm liền mạch, không tra cứu, không gián đoạn — như thi thật.' },
+            { icon: 'fa-chart-line', title: 'Theo dõi tiến bộ',
+              body: 'Ghi điểm và thời gian mỗi đề để thấy sự tiến bộ. Đặt mục tiêu tăng dần điểm số và giảm số câu bỏ dở.' },
+            { icon: 'fa-clipboard-check', title: 'Chữa lỗi kỹ',
+              body: 'Phân loại lỗi: sai kiến thức, sai tính toán, sai do vội. Với mỗi loại có cách khắc phục riêng (ôn lại lí thuyết, cẩn thận hơn…).' },
+            { icon: 'fa-brain', title: 'Rèn tâm lý',
+              body: 'Luyện nhiều đề giúp bình tĩnh, không hoảng khi gặp câu khó hoặc khi thời gian gấp; biết bỏ qua và quay lại đúng lúc.' }
+          ],
+          examples: [
+            { q: 'Làm đề xong nên làm gì đầu tiên?', sol: 'Chấm điểm rồi XEM LẠI các câu sai, hiểu nguyên nhân.' },
+            { q: 'Hay sai vì vội, khắc phục?', sol: 'Luyện thêm với ý thức đọc kỹ đề, kiểm tra trước khi ghi đáp án.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Luyện đề bấm giờ = rèn tốc độ + tâm lý + độ chính xác.',
+          'Làm sát điều kiện thi thật (bấm giờ, không tra cứu).',
+          'Sau mỗi đề: xem lại câu sai, tìm nguyên nhân, rút kinh nghiệm.',
+          'Theo dõi điểm & thời gian để thấy tiến bộ.'
+        ],
+        tip: 'Giá trị lớn nhất của luyện đề nằm ở khâu CHỮA ĐỀ — không chữa thì làm bao nhiêu đề cũng ít tiến bộ.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Luyện đề bấm giờ giúp?', options: ['quen áp lực, tăng tốc độ', 'giải trí', 'không tác dụng', 'mất thời gian'], answer: 'quen áp lực, tăng tốc độ' },
+          { id: 'd2', type: 'mcq', question: 'Sau khi làm đề, quan trọng nhất là?', options: ['xem lại câu sai', 'quên đi', 'chỉ đếm điểm', 'khoe điểm'], answer: 'xem lại câu sai' },
+          { id: 'd3', type: 'mcq', question: 'Nên luyện đề trong điều kiện?', options: ['giống thi thật', 'vừa xem đáp án', 'không giới hạn giờ', 'nhờ người khác'], answer: 'giống thi thật' },
+          { id: 'd4', type: 'mcq', question: 'Giá trị lớn nhất của luyện đề ở?', options: ['khâu chữa đề', 'số lượng đề', 'màu giấy', 'thời gian ngồi'], answer: 'khâu chữa đề' },
+          { id: 'd5', type: 'mcq', question: 'Theo dõi điểm mỗi đề để?', options: ['thấy tiến bộ', 'khoe bạn', 'không để làm gì', 'trang trí'], answer: 'thấy tiến bộ' },
+          { id: 'd6', type: 'mcq', question: 'Sai do vội khắc phục bằng?', options: ['đọc kỹ, kiểm tra lại', 'làm nhanh hơn', 'bỏ qua', 'đoán'], answer: 'đọc kỹ, kiểm tra lại' },
+          { id: 'd7', type: 'mcq', question: 'Luyện đề giúp tâm lý?', options: ['bình tĩnh hơn', 'lo lắng hơn', 'không đổi', 'buồn ngủ'], answer: 'bình tĩnh hơn' },
+          { id: 'd8', type: 'mcq', question: 'Khi luyện đề nên?', options: ['tập trung, không gián đoạn', 'vừa làm vừa nhắn tin', 'nghe nhạc to', 'làm nửa chừng'], answer: 'tập trung, không gián đoạn' }
+        ]
+      }
     }
   ]
 };
@@ -2654,6 +3242,524 @@ window.LESSON_CONTENT_HSA['hsa_verbal'] = {
           { id: 'd6', type: 'mcq', question: 'Phân tích tác phẩm cần tách?', options: ['nội dung và nghệ thuật', 'câu và chữ', 'trang và dòng', 'tên và giá'], answer: 'nội dung và nghệ thuật' },
           { id: 'd7', type: 'mcq', question: '"Tắt đèn" nổi bật giá trị?', options: ['hiện thực & nhân đạo', 'chỉ giải trí', 'chỉ hình thức', 'thương mại'], answer: 'hiện thực & nhân đạo' },
           { id: 'd8', type: 'mcq', question: 'Biện pháp tu từ, giọng điệu thuộc?', options: ['giá trị nghệ thuật', 'giá trị nội dung', 'giá trị hiện thực', 'giá trị nhân đạo'], answer: 'giá trị nghệ thuật' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_17',
+      index: 17,
+      title: 'Sự phát triển & biến thể ngôn ngữ',
+      subtitle: 'Từ mượn, từ địa phương và sự biến đổi của tiếng Việt',
+      topic_tag: 'Định tính · Ngôn ngữ – Văn hóa',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về biến thể ngôn ngữ.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Từ mượn là gì?',
+            options: ['từ vay mượn từ ngôn ngữ khác', 'từ chỉ dùng trong thơ', 'từ cổ đã mất', 'từ viết tắt'], answer: 'từ vay mượn từ ngôn ngữ khác',
+            explain: 'Từ mượn là từ tiếng Việt vay mượn từ ngôn ngữ khác (Hán, Pháp, Anh…).' },
+          { id: 't2', type: 'mcq', question: 'Từ địa phương là gì?',
+            options: ['từ chỉ dùng ở một vùng miền nhất định', 'từ dùng toàn quốc', 'từ nước ngoài', 'từ chuyên ngành'], answer: 'từ chỉ dùng ở một vùng miền nhất định',
+            explain: 'Từ địa phương gắn với một vùng (VD "má" ≈ "mẹ", "chén" ≈ "bát").' },
+          { id: 't3', type: 'mcq', question: 'Tiếng Việt vay mượn nhiều nhất từ ngôn ngữ nào?',
+            options: ['tiếng Hán (từ Hán Việt)', 'tiếng Anh', 'tiếng Pháp', 'tiếng Nga'], answer: 'tiếng Hán (từ Hán Việt)',
+            explain: 'Lớp từ Hán Việt chiếm tỉ lệ lớn trong vốn từ tiếng Việt.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-language', title: 'Từ mượn',
+              body: 'Vay mượn từ ngôn ngữ khác: nhiều nhất là HÁN VIỆT (độc lập, gia đình…), rồi Pháp (ga, xà phòng), Anh (internet). Làm giàu vốn từ.' },
+            { icon: 'fa-map-location-dot', title: 'Biến thể vùng miền',
+              body: 'Từ địa phương (má/mẹ, chén/bát, trái/quả). Ngôn ngữ luôn PHÁT TRIỂN: sinh từ mới, thay đổi nghĩa theo thời gian.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ biến thể ngôn ngữ',
+          cards: [
+            { icon: 'fa-language', title: 'Từ thuần Việt & từ mượn',
+              body: 'Từ thuần Việt: có sẵn (nhà, nước, ăn). Từ mượn: vay từ ngôn ngữ khác. Hán Việt chiếm phần lớn (quốc gia, độc lập); mượn Pháp (ga, pê-đan), Anh (ti vi, internet).' },
+            { icon: 'fa-map-location-dot', title: 'Từ toàn dân & từ địa phương',
+              body: 'Từ toàn dân dùng chung cả nước. Từ địa phương gắn vùng miền: Nam Bộ (má, chén, trái), Trung Bộ (mô, tê, răng, rứa). Cùng nghĩa, khác cách gọi.' },
+            { icon: 'fa-clock-rotate-left', title: 'Ngôn ngữ phát triển',
+              body: 'Ngôn ngữ biến đổi theo thời gian: xuất hiện từ mới (theo công nghệ, đời sống), một số từ cổ mai một, nghĩa của từ có thể mở rộng/thu hẹp.' },
+            { icon: 'fa-scale-balanced', title: 'Giữ gìn sự trong sáng',
+              body: 'Dùng từ mượn hợp lí, đúng chỗ; ưu tiên từ thuần Việt khi có; tránh lạm dụng tiếng nước ngoài làm mất sự trong sáng của tiếng Việt.' }
+          ],
+          examples: [
+            { q: '"Ti vi" mượn từ ngôn ngữ nào?', sol: 'Tiếng Anh (television).' },
+            { q: '"Mô, tê, răng, rứa" là từ vùng nào?', sol: 'Từ địa phương miền Trung.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Từ mượn: vay từ ngôn ngữ khác; Hán Việt chiếm phần lớn.',
+          'Từ địa phương gắn vùng miền (má/mẹ, chén/bát).',
+          'Ngôn ngữ phát triển: sinh từ mới, đổi nghĩa theo thời gian.',
+          'Dùng từ mượn hợp lí, giữ sự trong sáng của tiếng Việt.'
+        ],
+        tip: 'Câu về từ Hán Việt hay hỏi nghĩa yếu tố cấu tạo (quốc = nước, gia = nhà) — nhớ vài yếu tố gốc là suy ra nghĩa.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Từ mượn là từ?', options: ['vay từ ngôn ngữ khác', 'chỉ dùng trong thơ', 'viết tắt', 'từ cổ'], answer: 'vay từ ngôn ngữ khác' },
+          { id: 'd2', type: 'mcq', question: 'Tiếng Việt mượn nhiều nhất từ?', options: ['Hán', 'Anh', 'Pháp', 'Nhật'], answer: 'Hán' },
+          { id: 'd3', type: 'mcq', question: '"Má" (chỉ mẹ) là từ?', options: ['địa phương', 'toàn dân', 'mượn Anh', 'Hán Việt'], answer: 'địa phương' },
+          { id: 'd4', type: 'mcq', question: '"Internet" mượn từ?', options: ['tiếng Anh', 'tiếng Hán', 'tiếng Pháp', 'thuần Việt'], answer: 'tiếng Anh' },
+          { id: 'd5', type: 'mcq', question: 'Yếu tố Hán "quốc" nghĩa là?', options: ['nước (quốc gia)', 'nhà', 'người', 'trời'], answer: 'nước (quốc gia)' },
+          { id: 'd6', type: 'mcq', question: '"Mô, tê, răng, rứa" thuộc miền?', options: ['Trung', 'Bắc', 'Nam', 'toàn quốc'], answer: 'Trung' },
+          { id: 'd7', type: 'mcq', question: 'Ngôn ngữ theo thời gian thì?', options: ['biến đổi, phát triển', 'bất biến', 'biến mất', 'không đổi nghĩa'], answer: 'biến đổi, phát triển' },
+          { id: 'd8', type: 'mcq', question: 'Nên dùng từ mượn thế nào?', options: ['hợp lí, đúng chỗ', 'càng nhiều càng tốt', 'thay hết từ Việt', 'không bao giờ'], answer: 'hợp lí, đúng chỗ' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_18',
+      index: 18,
+      title: 'Phong cách hành văn',
+      subtitle: 'Các phong cách ngôn ngữ và đặc điểm',
+      topic_tag: 'Định tính · Ngôn ngữ – Văn hóa',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về phong cách ngôn ngữ.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Phong cách ngôn ngữ BÁO CHÍ có đặc điểm nổi bật là?',
+            options: ['thông tin nhanh, chính xác, khách quan', 'giàu hình ảnh, biểu cảm', 'nhiều thuật ngữ khoa học', 'trang trọng như luật'], answer: 'thông tin nhanh, chính xác, khách quan',
+            explain: 'Báo chí truyền tin thời sự nên đề cao tính nhanh, chính xác, khách quan.' },
+          { id: 't2', type: 'mcq', question: 'Phong cách ngôn ngữ NGHỆ THUẬT (văn chương) chú trọng điều gì?',
+            options: ['tính hình tượng, biểu cảm, thẩm mỹ', 'số liệu chính xác', 'thuật ngữ chuyên ngành', 'điều khoản pháp lý'], answer: 'tính hình tượng, biểu cảm, thẩm mỹ',
+            explain: 'Ngôn ngữ nghệ thuật giàu hình ảnh, cảm xúc, tính thẩm mỹ.' },
+          { id: 't3', type: 'mcq', question: 'Phong cách ngôn ngữ KHOA HỌC có đặc điểm gì?',
+            options: ['chính xác, logic, dùng thuật ngữ', 'giàu cảm xúc', 'nhiều từ địa phương', 'ngẫu hứng'], answer: 'chính xác, logic, dùng thuật ngữ',
+            explain: 'Ngôn ngữ khoa học đề cao tính chính xác, chặt chẽ, dùng thuật ngữ.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-newspaper', title: 'Một số phong cách',
+              body: 'BÁO CHÍ (nhanh, khách quan). NGHỆ THUẬT (hình tượng, biểu cảm). KHOA HỌC (chính xác, thuật ngữ). HÀNH CHÍNH (khuôn mẫu, trang trọng).' },
+            { icon: 'fa-comments', title: 'Sinh hoạt',
+              body: 'Phong cách sinh hoạt (khẩu ngữ): tự nhiên, giàu cảm xúc, dùng trong giao tiếp hằng ngày.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ phong cách ngôn ngữ',
+          cards: [
+            { icon: 'fa-comments', title: 'Phong cách sinh hoạt',
+              body: 'Ngôn ngữ nói/viết hằng ngày: tự nhiên, cụ thể, giàu cảm xúc, có thể dùng từ địa phương, tiếng lóng. VD trò chuyện, nhật ký, thư từ.' },
+            { icon: 'fa-feather', title: 'Phong cách nghệ thuật',
+              body: 'Dùng trong văn chương: giàu HÌNH TƯỢNG, biểu cảm, tính thẩm mỹ; sử dụng biện pháp tu từ để gợi hình, gợi cảm.' },
+            { icon: 'fa-newspaper', title: 'Phong cách báo chí & chính luận',
+              body: 'Báo chí: thông tin thời sự nhanh, chính xác, khách quan. Chính luận: bàn về vấn đề chính trị – xã hội, lập luận chặt chẽ, có tính thuyết phục.' },
+            { icon: 'fa-flask', title: 'Phong cách khoa học & hành chính',
+              body: 'Khoa học: chính xác, logic, dùng thuật ngữ. Hành chính: khuôn mẫu, trang trọng, minh bạch (đơn từ, nghị định, hợp đồng).' }
+          ],
+          examples: [
+            { q: 'Một bản tin thời sự thuộc phong cách nào?', sol: 'Báo chí.' },
+            { q: 'Một bài thơ trữ tình thuộc phong cách nào?', sol: 'Nghệ thuật.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Sinh hoạt: tự nhiên, giàu cảm xúc (giao tiếp hằng ngày).',
+          'Nghệ thuật: hình tượng, biểu cảm, thẩm mỹ (văn chương).',
+          'Báo chí: nhanh, chính xác, khách quan.',
+          'Khoa học: chính xác, thuật ngữ; Hành chính: khuôn mẫu, trang trọng.'
+        ],
+        tip: 'Nhận diện phong cách qua MỤC ĐÍCH và ĐẶC ĐIỂM từ ngữ — thời sự (báo chí), hình ảnh (nghệ thuật), thuật ngữ (khoa học).'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Bản tin thời sự thuộc phong cách?', options: ['báo chí', 'nghệ thuật', 'khoa học', 'hành chính'], answer: 'báo chí' },
+          { id: 'd2', type: 'mcq', question: 'Bài thơ trữ tình thuộc phong cách?', options: ['nghệ thuật', 'báo chí', 'khoa học', 'sinh hoạt'], answer: 'nghệ thuật' },
+          { id: 'd3', type: 'mcq', question: 'Đơn xin nghỉ học thuộc phong cách?', options: ['hành chính', 'nghệ thuật', 'báo chí', 'sinh hoạt'], answer: 'hành chính' },
+          { id: 'd4', type: 'mcq', question: 'Bài báo khoa học chú trọng?', options: ['chính xác, thuật ngữ', 'cảm xúc', 'từ địa phương', 'ngẫu hứng'], answer: 'chính xác, thuật ngữ' },
+          { id: 'd5', type: 'mcq', question: 'Trò chuyện hằng ngày thuộc phong cách?', options: ['sinh hoạt', 'khoa học', 'hành chính', 'báo chí'], answer: 'sinh hoạt' },
+          { id: 'd6', type: 'mcq', question: 'Ngôn ngữ giàu hình tượng, biểu cảm là?', options: ['nghệ thuật', 'khoa học', 'hành chính', 'báo chí'], answer: 'nghệ thuật' },
+          { id: 'd7', type: 'mcq', question: 'Đặc điểm phong cách báo chí?', options: ['khách quan, nhanh', 'nhiều tu từ', 'khuôn mẫu pháp lý', 'nhiều tiếng lóng'], answer: 'khách quan, nhanh' },
+          { id: 'd8', type: 'mcq', question: 'Nghị định, hợp đồng thuộc phong cách?', options: ['hành chính', 'nghệ thuật', 'sinh hoạt', 'báo chí'], answer: 'hành chính' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_19',
+      index: 19,
+      title: 'Văn hóa – Lịch sử – Địa lý trong văn bản',
+      subtitle: 'Vận dụng kiến thức nền để đọc hiểu sâu',
+      topic_tag: 'Định tính · Ngôn ngữ – Văn hóa',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về kiến thức nền.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Hiểu biết về bối cảnh văn hóa – lịch sử giúp ích gì khi đọc một văn bản?',
+            options: ['hiểu sâu hơn ý nghĩa của văn bản', 'không giúp gì', 'làm rối thêm', 'chỉ để trả lời câu phụ'], answer: 'hiểu sâu hơn ý nghĩa của văn bản',
+            explain: 'Nhiều văn bản gắn với bối cảnh cụ thể; hiểu nền tảng giúp giải mã ý nghĩa.' },
+          { id: 't2', type: 'mcq', question: 'Ca dao, tục ngữ Việt Nam chủ yếu phản ánh điều gì?',
+            options: ['đời sống, kinh nghiệm, văn hóa dân gian', 'công thức toán học', 'quy tắc pháp luật', 'thuật ngữ khoa học'], answer: 'đời sống, kinh nghiệm, văn hóa dân gian',
+            explain: 'Ca dao – tục ngữ đúc kết đời sống, lao động và văn hóa của nhân dân.' },
+          { id: 't3', type: 'mcq', question: 'Vì sao kiến thức văn hóa – xã hội lại hỗ trợ đọc hiểu?',
+            options: ['nhiều văn bản gắn với bối cảnh và tri thức cụ thể', 'để đọc chậm hơn', 'không liên quan', 'chỉ dùng cho câu dễ'], answer: 'nhiều văn bản gắn với bối cảnh và tri thức cụ thể',
+            explain: 'Văn bản thường tham chiếu địa danh, sự kiện, phong tục — có kiến thức nền sẽ hiểu đúng.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-landmark', title: 'Kiến thức nền',
+              body: 'Đề HSA phần Định tính lồng ghép văn hóa, lịch sử, địa lý, nghệ thuật. Có kiến thức nền giúp ĐỌC HIỂU SÂU và trả lời chính xác.' },
+            { icon: 'fa-book', title: 'Văn học dân gian',
+              body: 'Ca dao, tục ngữ, truyện cổ… phản ánh đời sống, kinh nghiệm, tâm hồn và văn hóa dân tộc.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ kiến thức nền',
+          cards: [
+            { icon: 'fa-landmark', title: 'Văn bản gắn bối cảnh',
+              body: 'Nhiều văn bản tham chiếu địa danh, sự kiện lịch sử, phong tục. Hiểu bối cảnh giúp nắm đúng thông điệp, tránh hiểu sai.' },
+            { icon: 'fa-book', title: 'Văn hóa dân gian',
+              body: 'Ca dao, tục ngữ, thành ngữ, truyện cổ tích chứa đựng kinh nghiệm sống, đạo lí, quan niệm thẩm mỹ của dân tộc.' },
+            { icon: 'fa-globe', title: 'Liên môn',
+              body: 'Kiến thức lịch sử (mốc, nhân vật), địa lý (vùng miền, địa danh), nghệ thuật (âm nhạc, hội họa) đều có thể xuất hiện trong đề đọc hiểu.' },
+            { icon: 'fa-lightbulb', title: 'Cách vận dụng',
+              body: 'Đọc rộng, tích lũy kiến thức xã hội; khi gặp văn bản, kết nối với hiểu biết nền để suy luận ý nghĩa và trả lời câu hỏi.' }
+          ],
+          examples: [
+            { q: 'Bài thơ nhắc "Điện Biên", cần biết gì?', sol: 'Chiến thắng Điện Biên Phủ 1954 — để hiểu cảm hứng ngợi ca.' },
+            { q: '"Ăn quả nhớ kẻ trồng cây" phản ánh?', sol: 'Đạo lí biết ơn trong văn hóa dân gian.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Đề Định tính lồng ghép văn hóa, lịch sử, địa lý, nghệ thuật.',
+          'Kiến thức nền giúp đọc hiểu sâu và trả lời chính xác.',
+          'Ca dao, tục ngữ phản ánh đời sống, văn hóa dân gian.',
+          'Đọc rộng để tích lũy tri thức xã hội hỗ trợ đọc hiểu.'
+        ],
+        tip: 'Bồi đắp kiến thức xã hội bằng cách đọc báo, sách phổ thông — HSA rất chuộng câu liên môn, hiểu biết rộng.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Hiểu bối cảnh văn hóa-lịch sử giúp?', options: ['hiểu sâu văn bản', 'đọc chậm hơn', 'làm rối', 'không giúp'], answer: 'hiểu sâu văn bản' },
+          { id: 'd2', type: 'mcq', question: 'Ca dao, tục ngữ phản ánh?', options: ['văn hóa dân gian', 'công thức toán', 'luật pháp', 'thuật ngữ'], answer: 'văn hóa dân gian' },
+          { id: 'd3', type: 'mcq', question: 'Đề Định tính HSA thường?', options: ['liên môn (văn-sử-địa…)', 'chỉ toán', 'chỉ tiếng Anh', 'chỉ hình học'], answer: 'liên môn (văn-sử-địa…)' },
+          { id: 'd4', type: 'mcq', question: 'Để có kiến thức nền, nên?', options: ['đọc rộng', 'học vẹt', 'bỏ đọc', 'chỉ xem phim'], answer: 'đọc rộng' },
+          { id: 'd5', type: 'mcq', question: '"Uống nước nhớ nguồn" phản ánh đạo lí?', options: ['biết ơn', 'tiết kiệm', 'dũng cảm', 'cần cù'], answer: 'biết ơn' },
+          { id: 'd6', type: 'mcq', question: 'Truyện cổ tích thuộc?', options: ['văn học dân gian', 'văn bản khoa học', 'văn bản hành chính', 'báo chí'], answer: 'văn học dân gian' },
+          { id: 'd7', type: 'mcq', question: 'Văn bản nhắc địa danh, sự kiện cần?', options: ['kiến thức nền', 'máy tính', 'từ điển toán', 'bản đồ sao'], answer: 'kiến thức nền' },
+          { id: 'd8', type: 'mcq', question: 'Kiến thức xã hội rộng giúp?', options: ['đọc hiểu tốt hơn', 'chậm hơn', 'không ảnh hưởng', 'khó hơn'], answer: 'đọc hiểu tốt hơn' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_20',
+      index: 20,
+      title: 'Đọc lướt & đọc quét',
+      subtitle: 'Kỹ thuật skimming và scanning',
+      topic_tag: 'Định tính · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về kỹ thuật đọc.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Đọc LƯỚT (skimming) nhằm mục đích gì?',
+            options: ['nắm ý chính, nội dung tổng quát một cách nhanh chóng', 'tìm một con số cụ thể', 'đọc từng chữ thật kỹ', 'học thuộc'], answer: 'nắm ý chính, nội dung tổng quát một cách nhanh chóng',
+            explain: 'Đọc lướt để nắm nhanh nội dung chung, không sa vào chi tiết.' },
+          { id: 't2', type: 'mcq', question: 'Đọc QUÉT (scanning) nhằm mục đích gì?',
+            options: ['tìm một thông tin cụ thể (số liệu, tên, ngày…)', 'nắm ý tổng quát', 'thưởng thức văn bản', 'đọc chậm rãi'], answer: 'tìm một thông tin cụ thể (số liệu, tên, ngày…)',
+            explain: 'Đọc quét để tìm nhanh một chi tiết cụ thể trong văn bản.' },
+          { id: 't3', type: 'mcq', question: 'Khi thời gian ít, chiến thuật đọc hợp lí là?',
+            options: ['đọc lướt nắm ý trước, rồi đọc kỹ phần cần thiết', 'đọc từng chữ từ đầu đến cuối', 'chỉ đọc câu đầu', 'không đọc, đoán bừa'], answer: 'đọc lướt nắm ý trước, rồi đọc kỹ phần cần thiết',
+            explain: 'Lướt để định hướng, rồi tập trung đọc kỹ đoạn liên quan đến câu hỏi.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-bolt', title: 'Đọc lướt (skimming)',
+              body: 'Đọc nhanh để nắm Ý CHÍNH, chủ đề, bố cục. Lướt qua câu đầu/cuối đoạn, từ khóa. Không đọc từng chữ.' },
+            { icon: 'fa-magnifying-glass', title: 'Đọc quét (scanning)',
+              body: 'Đọc nhanh để TÌM một thông tin cụ thể (con số, tên, ngày). Mắt "quét" tìm từ khóa cần, bỏ qua phần không liên quan.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ kỹ thuật đọc',
+          cards: [
+            { icon: 'fa-bolt', title: 'Kỹ thuật đọc lướt',
+              body: 'Dùng khi cần nắm nhanh nội dung: đọc tiêu đề, câu chủ đề (đầu/cuối đoạn), từ in đậm. Giúp định hướng trước khi trả lời.' },
+            { icon: 'fa-magnifying-glass', title: 'Kỹ thuật đọc quét',
+              body: 'Dùng khi câu hỏi hỏi chi tiết cụ thể: xác định từ khóa trong câu hỏi rồi "quét" văn bản tìm đúng chỗ, không đọc toàn bộ.' },
+            { icon: 'fa-list-check', title: 'Kết hợp trong đề đọc hiểu',
+              body: 'Lướt nắm ý chung → đọc câu hỏi → quét tìm đoạn liên quan → đọc kỹ đoạn đó để chọn đáp án chính xác.' },
+            { icon: 'fa-clock', title: 'Tiết kiệm thời gian',
+              body: 'Không đọc kỹ toàn bài với mọi câu hỏi. Chỉ đọc kỹ phần liên quan đến câu đang làm — tiết kiệm thời gian đáng kể.' }
+          ],
+          examples: [
+            { q: 'Câu hỏi "Năm nào…" nên dùng kỹ thuật gì?', sol: 'Đọc quét (scanning) tìm con số năm.' },
+            { q: 'Muốn biết đoạn văn nói về chủ đề gì?', sol: 'Đọc lướt (skimming) câu chủ đề.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Đọc lướt (skimming): nắm ý chính nhanh.',
+          'Đọc quét (scanning): tìm thông tin cụ thể.',
+          'Quy trình: lướt → đọc câu hỏi → quét đoạn liên quan → đọc kỹ.',
+          'Chỉ đọc kỹ phần liên quan để tiết kiệm thời gian.'
+        ],
+        tip: 'Đọc CÂU HỎI trước rồi mới quét văn bản — biết cần tìm gì thì đọc nhanh và trúng hơn nhiều.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Đọc lướt để?', options: ['nắm ý chính nhanh', 'tìm số cụ thể', 'học thuộc', 'đọc từng chữ'], answer: 'nắm ý chính nhanh' },
+          { id: 'd2', type: 'mcq', question: 'Đọc quét để?', options: ['tìm thông tin cụ thể', 'nắm ý chung', 'thưởng thức', 'đọc chậm'], answer: 'tìm thông tin cụ thể' },
+          { id: 'd3', type: 'mcq', question: 'Câu hỏi "Năm nào…" nên dùng?', options: ['đọc quét', 'đọc lướt', 'đọc thuộc', 'không đọc'], answer: 'đọc quét' },
+          { id: 'd4', type: 'mcq', question: 'Nắm chủ đề đoạn văn nên?', options: ['đọc lướt câu chủ đề', 'đọc quét số liệu', 'đọc ngược', 'bỏ qua'], answer: 'đọc lướt câu chủ đề' },
+          { id: 'd5', type: 'mcq', question: 'Nên đọc gì trước khi đọc văn bản dài?', options: ['câu hỏi', 'trang cuối', 'chú thích', 'tên tác giả'], answer: 'câu hỏi' },
+          { id: 'd6', type: 'mcq', question: 'Với mỗi câu hỏi, nên đọc kỹ?', options: ['phần liên quan', 'toàn bộ bài', 'câu đầu', 'câu cuối'], answer: 'phần liên quan' },
+          { id: 'd7', type: 'mcq', question: 'Skimming là?', options: ['đọc lướt', 'đọc quét', 'đọc thuộc', 'đọc to'], answer: 'đọc lướt' },
+          { id: 'd8', type: 'mcq', question: 'Scanning là?', options: ['đọc quét', 'đọc lướt', 'đọc kỹ', 'đọc chậm'], answer: 'đọc quét' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_21',
+      index: 21,
+      title: 'Quản lý thời gian đọc hiểu',
+      subtitle: 'Chiến thuật 60 phút cho 50 câu Định tính',
+      topic_tag: 'Định tính · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> chiến thuật thời gian của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Phần Định tính có 50 câu làm trong 60 phút, trung bình mỗi câu khoảng?',
+            options: ['hơn 1 phút một chút', '5 phút', '30 giây', '10 phút'], answer: 'hơn 1 phút một chút',
+            explain: '60 phút / 50 câu ≈ 1,2 phút/câu — cần đọc nhanh và phân bổ hợp lí.' },
+          { id: 't2', type: 'mcq', question: 'Với câu đọc hiểu, nên đọc câu hỏi trước hay đoạn văn trước?',
+            options: ['đọc câu hỏi trước để biết cần tìm gì', 'luôn đọc kỹ đoạn văn từ đầu', 'chỉ đọc đáp án', 'bỏ qua câu hỏi'], answer: 'đọc câu hỏi trước để biết cần tìm gì',
+            explain: 'Biết câu hỏi trước giúp đọc có định hướng, tiết kiệm thời gian.' },
+          { id: 't3', type: 'mcq', question: 'Gặp một đoạn văn dài và khó, nên?',
+            options: ['làm câu dễ trước, quay lại đoạn khó sau', 'ngồi đọc bằng được', 'bỏ luôn phần đọc hiểu', 'đoán tất cả'], answer: 'làm câu dễ trước, quay lại đoạn khó sau',
+            explain: 'Ưu tiên câu dễ để chắc điểm, tránh mất thời gian vào đoạn khó ngay.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-stopwatch', title: 'Thời gian',
+              body: '60 phút / 50 câu ≈ 1,2 phút/câu. Câu từ vựng/ngữ pháp làm nhanh; câu đọc hiểu đoạn dài cần nhiều thời gian hơn — cân đối hợp lí.' },
+            { icon: 'fa-arrow-pointer', title: 'Đọc câu hỏi trước',
+              body: 'Đọc câu hỏi để biết cần tìm gì rồi mới đọc/quét văn bản. Làm câu dễ trước, đoạn khó quay lại sau.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ quản lý thời gian đọc hiểu',
+          cards: [
+            { icon: 'fa-stopwatch', title: 'Phân bổ theo dạng câu',
+              body: 'Câu từ vựng, ngữ pháp: làm nhanh (dưới 1 phút). Câu đọc hiểu đoạn dài: dành nhiều thời gian hơn nhưng có kiểm soát; không để một đoạn ngốn quá lâu.' },
+            { icon: 'fa-arrow-pointer', title: 'Chiến thuật đọc',
+              body: 'Đọc câu hỏi trước → biết cần tìm thông tin gì → đọc lướt/quét văn bản → đọc kỹ đoạn liên quan → chọn đáp án có căn cứ.' },
+            { icon: 'fa-forward', title: 'Ưu tiên câu chắc điểm',
+              body: 'Làm câu dễ, câu quen trước để gom điểm. Câu khó/đoạn dài phức tạp thì đánh dấu, quay lại khi còn thời gian.' },
+            { icon: 'fa-magnifying-glass', title: 'Rà soát',
+              body: 'Chừa vài phút cuối kiểm tra câu đã đánh dấu, không bỏ trống câu nào (nếu không bị trừ điểm).' }
+          ],
+          examples: [
+            { q: 'Bài đọc hiểu 5 câu về một đoạn dài, làm sao?', sol: 'Đọc lướt đoạn, đọc 5 câu hỏi, quét tìm chỗ trả lời từng câu.' },
+            { q: 'Còn 5 phút, 6 câu chưa làm?', sol: 'Ưu tiên câu ngắn/dễ, câu khó ước lượng chọn, không bỏ trống.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          '60 phút / 50 câu ≈ 1,2 phút/câu.',
+          'Đọc câu hỏi trước để đọc có định hướng.',
+          'Làm câu dễ trước, đoạn khó quay lại sau.',
+          'Chừa thời gian rà soát, không bỏ trống câu nào.'
+        ],
+        tip: 'Câu từ vựng-ngữ pháp là "điểm nhanh" — làm gọn để dồn thời gian cho câu đọc hiểu đoạn dài.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Định tính: 50 câu / 60 phút, mỗi câu?', options: ['~1,2 phút', '5 phút', '30 giây', '10 phút'], answer: '~1,2 phút' },
+          { id: 'd2', type: 'mcq', question: 'Nên đọc gì trước?', options: ['câu hỏi', 'đáp án cuối', 'tên tác giả', 'chú thích'], answer: 'câu hỏi' },
+          { id: 'd3', type: 'mcq', question: 'Đoạn văn dài khó nên?', options: ['làm câu dễ trước', 'ngồi đọc mãi', 'bỏ phần đọc hiểu', 'đoán tất cả'], answer: 'làm câu dễ trước' },
+          { id: 'd4', type: 'mcq', question: 'Câu từ vựng nên làm?', options: ['nhanh', 'chậm rãi', 'bỏ qua', 'cuối cùng'], answer: 'nhanh' },
+          { id: 'd5', type: 'mcq', question: 'Đáp án đọc hiểu đúng phải?', options: ['có căn cứ trong bài', 'dài nhất', 'lạ nhất', 'ngắn nhất'], answer: 'có căn cứ trong bài' },
+          { id: 'd6', type: 'mcq', question: 'Cuối giờ nên?', options: ['rà soát, không bỏ trống', 'nộp sớm', 'ngồi chơi', 'xóa bài'], answer: 'rà soát, không bỏ trống' },
+          { id: 'd7', type: 'mcq', question: 'Câu khó tốn thời gian nên?', options: ['đánh dấu, quay lại', 'làm bằng được', 'bỏ cả phần', 'chép bạn'], answer: 'đánh dấu, quay lại' },
+          { id: 'd8', type: 'mcq', question: 'Gom điểm nhanh nhờ câu?', options: ['từ vựng, ngữ pháp', 'đoạn dài', 'suy luận sâu', 'khó nhất'], answer: 'từ vựng, ngữ pháp' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_22',
+      index: 22,
+      title: 'Loại trừ nhanh (đọc hiểu)',
+      subtitle: 'Kỹ thuật loại đáp án trong câu đọc hiểu',
+      topic_tag: 'Định tính · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về loại trừ đáp án.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Trong câu đọc hiểu, đáp án SAI thường có đặc điểm gì?',
+            options: ['không có căn cứ trong bài hoặc trái ý bài', 'luôn dài nhất', 'luôn đứng đầu', 'luôn có số'], answer: 'không có căn cứ trong bài hoặc trái ý bài',
+            explain: 'Đáp án sai thường bịa thêm, suy diễn quá xa hoặc trái với nội dung bài.' },
+          { id: 't2', type: 'mcq', question: 'Đáp án ĐÚNG của câu đọc hiểu phải?',
+            options: ['có căn cứ, bám sát nội dung văn bản', 'nghe hay là được', 'do mình suy đoán tự do', 'khác hoàn toàn bài'], answer: 'có căn cứ, bám sát nội dung văn bản',
+            explain: 'Đáp án đúng luôn dựa trên thông tin có trong văn bản.' },
+          { id: 't3', type: 'mcq', question: 'Kỹ thuật loại trừ giúp gì khi làm câu đọc hiểu?',
+            options: ['thu hẹp lựa chọn, tăng khả năng chọn đúng', 'làm chậm hơn', 'không tác dụng', 'gây rối'], answer: 'thu hẹp lựa chọn, tăng khả năng chọn đúng',
+            explain: 'Loại các đáp án sai rõ ràng giúp tăng xác suất chọn đúng.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-ban', title: 'Đặc điểm đáp án sai',
+              body: 'Bịa thêm thông tin không có trong bài; suy diễn quá xa; nói TRÁI ý bài; đúng một phần nhưng sai chi tiết. Loại chúng trước.' },
+            { icon: 'fa-check', title: 'Đáp án đúng',
+              body: 'Luôn có CĂN CỨ trong văn bản, diễn đạt lại đúng ý bài. Đối chiếu với văn bản để xác nhận.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ loại trừ đáp án đọc hiểu',
+          cards: [
+            { icon: 'fa-ban', title: 'Nhận diện đáp án sai',
+              body: 'Bốn kiểu sai thường gặp: (1) thông tin không có trong bài; (2) suy diễn quá mức; (3) trái với nội dung; (4) đúng một phần, sai một phần (bẫy tinh vi).' },
+            { icon: 'fa-check-double', title: 'Đối chiếu văn bản',
+              body: 'Với mỗi đáp án, tìm căn cứ trong bài. Không có căn cứ → loại. Đáp án đúng phải bám sát ý và từ ngữ của văn bản.' },
+            { icon: 'fa-filter', title: 'Thu hẹp lựa chọn',
+              body: 'Loại 2 đáp án sai rõ → còn 2 → đọc kỹ chi tiết để phân biệt. Chú ý các từ tuyệt đối (luôn luôn, tất cả) thường là bẫy.' },
+            { icon: 'fa-triangle-exclamation', title: 'Tránh chọn theo cảm tính',
+              body: 'Đừng chọn đáp án chỉ vì "nghe hợp lí" nếu không có trong bài. Câu đọc hiểu chấm theo VĂN BẢN, không theo hiểu biết ngoài.' }
+          ],
+          examples: [
+            { q: 'Đáp án chứa thông tin bài không nhắc đến?', sol: 'Loại (không có căn cứ).' },
+            { q: 'Hai đáp án gần giống, khác một chi tiết?', sol: 'Đọc kỹ đối chiếu văn bản để chọn đúng chi tiết.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Đáp án sai: bịa thêm, suy diễn xa, trái ý, đúng-sai lẫn lộn.',
+          'Đáp án đúng: có căn cứ, bám sát văn bản.',
+          'Loại đáp án sai rõ để thu hẹp lựa chọn.',
+          'Chọn theo VĂN BẢN, không theo cảm tính/kiến thức ngoài.'
+        ],
+        tip: 'Cảnh giác các từ TUYỆT ĐỐI ("tất cả", "luôn luôn", "không bao giờ") — thường là đáp án bẫy.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Đáp án sai đọc hiểu thường?', options: ['không có căn cứ/trái ý', 'dài nhất', 'đứng đầu', 'có số'], answer: 'không có căn cứ/trái ý' },
+          { id: 'd2', type: 'mcq', question: 'Đáp án đúng phải?', options: ['có căn cứ trong bài', 'nghe hay', 'suy đoán tự do', 'khác bài'], answer: 'có căn cứ trong bài' },
+          { id: 'd3', type: 'mcq', question: 'Loại trừ giúp?', options: ['tăng khả năng đúng', 'làm chậm', 'gây rối', 'giảm điểm'], answer: 'tăng khả năng đúng' },
+          { id: 'd4', type: 'mcq', question: 'Từ "luôn luôn, tất cả" trong đáp án?', options: ['thường là bẫy', 'luôn đúng', 'luôn dài', 'không quan trọng'], answer: 'thường là bẫy' },
+          { id: 'd5', type: 'mcq', question: 'Đáp án bài không nhắc đến nên?', options: ['loại', 'chọn', 'phân vân', 'giữ lại'], answer: 'loại' },
+          { id: 'd6', type: 'mcq', question: 'Câu đọc hiểu chấm theo?', options: ['văn bản', 'cảm tính', 'kiến thức ngoài', 'may rủi'], answer: 'văn bản' },
+          { id: 'd7', type: 'mcq', question: 'Hai đáp án gần giống nên?', options: ['đối chiếu chi tiết với bài', 'chọn ngẫu nhiên', 'chọn cái dài', 'bỏ trống'], answer: 'đối chiếu chi tiết với bài' },
+          { id: 'd8', type: 'mcq', question: 'Đáp án suy diễn quá xa nên?', options: ['loại', 'chọn', 'giữ', 'phân vân'], answer: 'loại' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_23',
+      index: 23,
+      title: 'Luyện đề (Định tính)',
+      subtitle: 'Luyện đề đọc hiểu và mở rộng vốn từ',
+      topic_tag: 'Định tính · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về luyện đề Định tính.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Luyện đề đọc hiểu (bấm giờ) giúp ích gì?',
+            options: ['quen dạng câu và tăng tốc độ đọc', 'chỉ để giết thời gian', 'không có ích', 'làm giảm vốn từ'], answer: 'quen dạng câu và tăng tốc độ đọc',
+            explain: 'Luyện nhiều giúp quen dạng câu, đọc nhanh và chính xác hơn.' },
+          { id: 't2', type: 'mcq', question: 'Sau khi làm đề đọc hiểu, việc nên làm là?',
+            options: ['xem lại câu sai, hiểu vì sao sai', 'quên đi ngay', 'chỉ đếm điểm', 'không cần xem lại'], answer: 'xem lại câu sai, hiểu vì sao sai',
+            explain: 'Chữa lỗi giúp không lặp lại sai lầm, tiến bộ thực sự.' },
+          { id: 't3', type: 'mcq', question: 'Cách hiệu quả để tăng vốn từ cho phần Định tính là?',
+            options: ['đọc nhiều và ghi chú từ mới', 'chỉ làm bài tập trắc nghiệm', 'học thuộc từ điển', 'không cần đọc'], answer: 'đọc nhiều và ghi chú từ mới',
+            explain: 'Đọc rộng và ghi lại từ mới giúp vốn từ phong phú, tự nhiên.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-stopwatch-20', title: 'Luyện đề',
+              body: 'Làm đề đọc hiểu bấm giờ để quen DẠNG CÂU + tăng TỐC ĐỘ đọc. Sau mỗi đề: chữa lỗi, hiểu vì sao sai.' },
+            { icon: 'fa-book-bookmark', title: 'Mở rộng vốn từ',
+              body: 'Đọc nhiều (sách, báo), ghi chú từ mới, thành ngữ. Vốn từ rộng giúp làm nhanh câu từ vựng và hiểu văn bản sâu hơn.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ luyện đề Định tính',
+          cards: [
+            { icon: 'fa-stopwatch-20', title: 'Luyện đề bấm giờ',
+              body: 'Làm đề mô phỏng (60 phút, 50 câu) để rèn tốc độ đọc và xử lí câu hỏi. Tập thói quen đọc câu hỏi trước, quét văn bản.' },
+            { icon: 'fa-clipboard-check', title: 'Chữa đề',
+              body: 'Xem lại câu sai: sai do không hiểu từ, hiểu sai ý, hay do vội? Với mỗi loại có cách khắc phục riêng.' },
+            { icon: 'fa-book-bookmark', title: 'Bồi đắp vốn từ',
+              body: 'Đọc sách báo đa dạng, ghi sổ tay từ mới, thành ngữ – tục ngữ. Vốn từ và kiến thức nền là nền tảng của phần Định tính.' },
+            { icon: 'fa-brain', title: 'Rèn phản xạ ngôn ngữ',
+              body: 'Luyện nhận diện nhanh từ đồng/trái nghĩa, biện pháp tu từ, ý chính. Càng luyện, phản xạ càng nhanh, giảm thời gian mỗi câu.' }
+          ],
+          examples: [
+            { q: 'Làm đề đọc hiểu xong nên làm gì?', sol: 'Chấm, XEM LẠI câu sai, ghi chú từ/kiến thức còn yếu.' },
+            { q: 'Hay sai câu từ vựng, khắc phục?', sol: 'Mở rộng vốn từ qua đọc và ghi chú từ mới hằng ngày.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Luyện đề bấm giờ: quen dạng câu, tăng tốc độ đọc.',
+          'Sau mỗi đề: xem lại câu sai, hiểu nguyên nhân.',
+          'Mở rộng vốn từ: đọc nhiều, ghi chú từ mới.',
+          'Rèn phản xạ nhận diện từ vựng, tu từ, ý chính.'
+        ],
+        tip: 'Duy trì SỔ TAY từ mới + thành ngữ — mỗi ngày vài từ, sau vài tháng vốn từ giàu lên rõ rệt.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Luyện đề đọc hiểu giúp?', options: ['quen dạng, tăng tốc độ', 'giết thời gian', 'giảm vốn từ', 'không ích'], answer: 'quen dạng, tăng tốc độ' },
+          { id: 'd2', type: 'mcq', question: 'Sau làm đề nên?', options: ['xem lại câu sai', 'quên ngay', 'chỉ đếm điểm', 'bỏ qua'], answer: 'xem lại câu sai' },
+          { id: 'd3', type: 'mcq', question: 'Tăng vốn từ bằng cách?', options: ['đọc nhiều, ghi từ mới', 'học thuộc từ điển', 'không đọc', 'chỉ xem phim'], answer: 'đọc nhiều, ghi từ mới' },
+          { id: 'd4', type: 'mcq', question: 'Vốn từ rộng giúp?', options: ['làm nhanh câu từ vựng', 'chậm hơn', 'khó hơn', 'không ảnh hưởng'], answer: 'làm nhanh câu từ vựng' },
+          { id: 'd5', type: 'mcq', question: 'Nên duy trì?', options: ['sổ tay từ mới', 'bỏ ghi chép', 'chỉ làm trắc nghiệm', 'học vẹt'], answer: 'sổ tay từ mới' },
+          { id: 'd6', type: 'mcq', question: 'Sai do vội khắc phục?', options: ['đọc kỹ, cẩn thận', 'làm nhanh hơn', 'đoán', 'bỏ qua'], answer: 'đọc kỹ, cẩn thận' },
+          { id: 'd7', type: 'mcq', question: 'Luyện đề nên mô phỏng?', options: ['điều kiện thi thật', 'vừa tra từ điển', 'không giới hạn giờ', 'nhờ người làm'], answer: 'điều kiện thi thật' },
+          { id: 'd8', type: 'mcq', question: 'Nền tảng phần Định tính là?', options: ['vốn từ + kiến thức nền', 'công thức toán', 'thí nghiệm', 'lập trình'], answer: 'vốn từ + kiến thức nền' }
         ]
       }
     }
@@ -4083,6 +5189,524 @@ window.LESSON_CONTENT_HSA['hsa_science'] = {
           { id: 'd6', type: 'mcq', question: 'Thế kỉ XX gồm năm?', options: ['1801-1900', '1901-2000', '2001-2100', '1900-1999'], answer: '1901-2000' },
           { id: 'd7', type: 'fill', question: 'Từ 1954 đến 1975 là bao nhiêu năm? (nhập số)', answer: '21' },
           { id: 'd8', type: 'mcq', question: 'Năm 1789 thuộc thế kỉ?', options: ['XVII', 'XVIII', 'XIX', 'XX'], answer: 'XVIII' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_20',
+      index: 20,
+      title: 'Địa lý tự nhiên',
+      subtitle: 'Vị trí, khí hậu, địa hình và sông ngòi Việt Nam',
+      topic_tag: 'Khoa học · Địa lý',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về địa lý tự nhiên.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Việt Nam nằm trong khu vực có kiểu khí hậu nào?',
+            options: ['ôn đới', 'nhiệt đới gió mùa', 'hàn đới', 'hoang mạc'], answer: 'nhiệt đới gió mùa',
+            explain: 'Việt Nam có khí hậu nhiệt đới gió mùa, nóng ẩm, mưa nhiều.' },
+          { id: 't2', type: 'mcq', question: 'Dạng địa hình chiếm phần lớn diện tích lãnh thổ Việt Nam là?',
+            options: ['đồng bằng', 'đồi núi', 'hoang mạc', 'cao nguyên băng'], answer: 'đồi núi',
+            explain: 'Khoảng 3/4 diện tích Việt Nam là đồi núi (chủ yếu đồi núi thấp).' },
+          { id: 't3', type: 'mcq', question: 'Sông ngòi Việt Nam có đặc điểm nổi bật là?',
+            options: ['dày đặc, nhiều nước, giàu phù sa', 'rất ít sông', 'toàn sông băng', 'không có phù sa'], answer: 'dày đặc, nhiều nước, giàu phù sa',
+            explain: 'Mạng lưới sông ngòi dày đặc, nhiều nước, hàm lượng phù sa lớn.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-sun', title: 'Vị trí & khí hậu',
+              body: 'Việt Nam ở Đông Nam Á, khí hậu NHIỆT ĐỚI GIÓ MÙA: nóng ẩm, mưa nhiều, có hai mùa gió (mùa đông – mùa hạ). Miền Bắc có mùa đông lạnh.' },
+            { icon: 'fa-mountain', title: 'Địa hình & sông ngòi',
+              body: 'Đồi núi chiếm ~3/4 (chủ yếu đồi núi thấp), đồng bằng ~1/4. Sông ngòi dày đặc, nhiều nước, giàu phù sa; hai hệ thống lớn: sông Hồng, sông Mê Công.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ địa lý tự nhiên',
+          cards: [
+            { icon: 'fa-location-dot', title: 'Vị trí địa lý',
+              body: 'Việt Nam nằm ở rìa đông bán đảo Đông Dương, khu vực Đông Nam Á; giáp Trung Quốc, Lào, Campuchia và Biển Đông. Vị trí thuận lợi giao thương.' },
+            { icon: 'fa-cloud-sun-rain', title: 'Khí hậu',
+              body: 'Nhiệt đới ẩm gió mùa: nhiệt độ cao, mưa nhiều, độ ẩm lớn. Có sự phân hóa Bắc – Nam (miền Bắc có mùa đông lạnh) và theo độ cao.' },
+            { icon: 'fa-mountain', title: 'Địa hình',
+              body: 'Đồi núi chiếm khoảng 3/4 diện tích (phần lớn là đồi núi thấp), đồng bằng khoảng 1/4. Hai đồng bằng lớn: đồng bằng sông Hồng và đồng bằng sông Cửu Long.' },
+            { icon: 'fa-water', title: 'Sông ngòi',
+              body: 'Mạng lưới sông ngòi dày đặc, nhiều nước, giàu phù sa (bồi đắp đồng bằng). Thủy chế theo mùa (mùa lũ – mùa cạn). Hệ thống lớn: sông Hồng, sông Mê Công (Cửu Long).' }
+          ],
+          examples: [
+            { q: 'Vì sao đồng bằng nước ta màu mỡ?', sol: 'Do sông ngòi giàu phù sa bồi đắp.' },
+            { q: 'Miền Bắc khác miền Nam về khí hậu?', sol: 'Miền Bắc có mùa đông lạnh, miền Nam nóng quanh năm.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Việt Nam: khí hậu nhiệt đới gió mùa (nóng ẩm, mưa nhiều).',
+          'Đồi núi chiếm ~3/4 diện tích; đồng bằng ~1/4.',
+          'Sông ngòi dày đặc, nhiều nước, giàu phù sa.',
+          'Hai đồng bằng lớn: sông Hồng và sông Cửu Long.'
+        ],
+        tip: 'Nhớ "3/4 đồi núi, khí hậu nhiệt đới gió mùa, sông giàu phù sa" — bộ ba đặc điểm tự nhiên VN hay được hỏi.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Khí hậu Việt Nam?', options: ['nhiệt đới gió mùa', 'ôn đới', 'hàn đới', 'hoang mạc'], answer: 'nhiệt đới gió mùa' },
+          { id: 'd2', type: 'mcq', question: 'Dạng địa hình chiếm phần lớn VN?', options: ['đồi núi', 'đồng bằng', 'sa mạc', 'băng'], answer: 'đồi núi' },
+          { id: 'd3', type: 'mcq', question: 'Sông ngòi VN giàu?', options: ['phù sa', 'băng', 'muối', 'dầu'], answer: 'phù sa' },
+          { id: 'd4', type: 'mcq', question: 'Hai đồng bằng lớn nhất VN?', options: ['sông Hồng & Cửu Long', 'Bắc Bộ & Tây Nguyên', 'Trung Bộ & Nam Bộ', 'ven biển'], answer: 'sông Hồng & Cửu Long' },
+          { id: 'd5', type: 'mcq', question: 'Miền Bắc VN có mùa?', options: ['đông lạnh', 'không có đông', 'tuyết quanh năm', 'khô hạn'], answer: 'đông lạnh' },
+          { id: 'd6', type: 'mcq', question: 'Đồi núi VN chủ yếu là?', options: ['đồi núi thấp', 'núi băng', 'núi lửa', 'cao nguyên đá'], answer: 'đồi núi thấp' },
+          { id: 'd7', type: 'mcq', question: 'Việt Nam thuộc khu vực?', options: ['Đông Nam Á', 'Nam Mỹ', 'Bắc Âu', 'Trung Đông'], answer: 'Đông Nam Á' },
+          { id: 'd8', type: 'mcq', question: 'Phù sa sông giúp?', options: ['bồi đắp đồng bằng màu mỡ', 'gây hạn hán', 'làm mặn đất', 'không tác dụng'], answer: 'bồi đắp đồng bằng màu mỡ' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_21',
+      index: 21,
+      title: 'Địa lý kinh tế – xã hội',
+      subtitle: 'Dân cư, nông nghiệp và các vùng kinh tế',
+      topic_tag: 'Khoa học · Địa lý',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về địa lý kinh tế – xã hội.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Ngành nông nghiệp truyền thống, chủ lực của Việt Nam là?',
+            options: ['trồng lúa nước', 'chăn nuôi cừu', 'trồng nho', 'khai thác dầu'], answer: 'trồng lúa nước',
+            explain: 'Việt Nam là nước nông nghiệp, trồng lúa nước là chủ lực, xuất khẩu gạo hàng đầu.' },
+          { id: 't2', type: 'mcq', question: 'Vùng nào là vựa lúa lớn nhất Việt Nam?',
+            options: ['đồng bằng sông Cửu Long', 'Tây Nguyên', 'Đông Bắc', 'ven biển miền Trung'], answer: 'đồng bằng sông Cửu Long',
+            explain: 'Đồng bằng sông Cửu Long là vựa lúa lớn nhất, đóng góp phần lớn sản lượng gạo.' },
+          { id: 't3', type: 'mcq', question: 'Đặc điểm dân số Việt Nam là?',
+            options: ['dân số đông, cơ cấu tương đối trẻ', 'dân số rất ít', 'toàn người già', 'không tăng'], answer: 'dân số đông, cơ cấu tương đối trẻ',
+            explain: 'Việt Nam có dân số đông (top thế giới), cơ cấu dân số còn tương đối trẻ.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-people-group', title: 'Dân cư',
+              body: 'Dân số ĐÔNG (top thế giới), cơ cấu còn tương đối trẻ, phân bố không đều (tập trung đồng bằng, đô thị). Nhiều dân tộc, Kinh chiếm đa số.' },
+            { icon: 'fa-wheat-awn', title: 'Kinh tế',
+              body: 'Nông nghiệp: trồng lúa nước chủ lực (vựa lúa ĐB sông Cửu Long). Công nghiệp – dịch vụ đang phát triển mạnh; đô thị hóa nhanh.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ địa lý kinh tế – xã hội',
+          cards: [
+            { icon: 'fa-people-group', title: 'Dân cư & phân bố',
+              body: 'Dân số đông, cơ cấu tương đối trẻ. Phân bố không đều: tập trung ở đồng bằng, ven biển và đô thị; thưa ở miền núi. 54 dân tộc, người Kinh đa số.' },
+            { icon: 'fa-wheat-awn', title: 'Nông nghiệp',
+              body: 'Trồng lúa nước là chủ lực; ngoài ra cây công nghiệp (cà phê ở Tây Nguyên, cao su), cây ăn quả, thủy sản. Việt Nam xuất khẩu gạo, cà phê, thủy sản hàng đầu.' },
+            { icon: 'fa-industry', title: 'Công nghiệp & dịch vụ',
+              body: 'Công nghiệp chế biến, dệt may, điện tử, khai khoáng phát triển. Dịch vụ (du lịch, thương mại) tăng nhanh. Kinh tế chuyển dịch theo hướng công nghiệp hóa.' },
+            { icon: 'fa-city', title: 'Các vùng & đô thị lớn',
+              body: 'Hai vùng kinh tế trọng điểm: đồng bằng sông Hồng (Hà Nội) và Đông Nam Bộ (TP. Hồ Chí Minh). Đô thị hóa diễn ra nhanh.' }
+          ],
+          examples: [
+            { q: 'Cây công nghiệp chủ lực ở Tây Nguyên?', sol: 'Cà phê (và cao su, hồ tiêu).' },
+            { q: 'Vựa lúa lớn nhất nước ta?', sol: 'Đồng bằng sông Cửu Long.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Dân số đông, cơ cấu tương đối trẻ, phân bố không đều.',
+          'Nông nghiệp: trồng lúa nước chủ lực; vựa lúa ĐB sông Cửu Long.',
+          'Cây công nghiệp: cà phê (Tây Nguyên), cao su…',
+          'Vùng kinh tế trọng điểm: ĐB sông Hồng & Đông Nam Bộ.'
+        ],
+        tip: 'Gắn "sản phẩm – vùng": lúa (Cửu Long), cà phê (Tây Nguyên) — câu địa KT-XH hay hỏi ghép vùng với thế mạnh.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Nông nghiệp chủ lực của VN?', options: ['trồng lúa nước', 'chăn nuôi cừu', 'trồng nho', 'khai thác băng'], answer: 'trồng lúa nước' },
+          { id: 'd2', type: 'mcq', question: 'Vựa lúa lớn nhất VN?', options: ['ĐB sông Cửu Long', 'Tây Nguyên', 'Đông Bắc', 'Trung Bộ'], answer: 'ĐB sông Cửu Long' },
+          { id: 'd3', type: 'mcq', question: 'Cà phê trồng nhiều ở?', options: ['Tây Nguyên', 'ĐB sông Hồng', 'ven biển Bắc', 'hải đảo'], answer: 'Tây Nguyên' },
+          { id: 'd4', type: 'mcq', question: 'Dân số VN?', options: ['đông, tương đối trẻ', 'rất ít', 'toàn người già', 'không tăng'], answer: 'đông, tương đối trẻ' },
+          { id: 'd5', type: 'mcq', question: 'Dân tộc chiếm đa số ở VN?', options: ['Kinh', 'Tày', 'Thái', 'Mường'], answer: 'Kinh' },
+          { id: 'd6', type: 'mcq', question: 'Dân cư tập trung đông ở?', options: ['đồng bằng, đô thị', 'miền núi cao', 'hải đảo', 'sa mạc'], answer: 'đồng bằng, đô thị' },
+          { id: 'd7', type: 'mcq', question: 'VN xuất khẩu hàng đầu về?', options: ['gạo, cà phê, thủy sản', 'ô tô', 'máy bay', 'dầu thô duy nhất'], answer: 'gạo, cà phê, thủy sản' },
+          { id: 'd8', type: 'mcq', question: 'Đô thị lớn nhất phía Nam?', options: ['TP. Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ'], answer: 'TP. Hồ Chí Minh' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_22',
+      index: 22,
+      title: 'Kỹ năng Atlat',
+      subtitle: 'Đọc và khai thác Atlat Địa lí Việt Nam',
+      topic_tag: 'Khoa học · Địa lý',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về kỹ năng Atlat.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Atlat Địa lí Việt Nam được dùng để làm gì?',
+            options: ['tra cứu thông tin địa lý qua hệ thống bản đồ', 'tính toán số học', 'học từ vựng', 'vẽ biểu đồ hàm số'], answer: 'tra cứu thông tin địa lý qua hệ thống bản đồ',
+            explain: 'Atlat là tập bản đồ giúp tra cứu thông tin tự nhiên, kinh tế – xã hội.' },
+          { id: 't2', type: 'mcq', question: 'Khi bắt đầu đọc một trang bản đồ trong Atlat, cần xem trước tiên là?',
+            options: ['bảng chú giải (ký hiệu)', 'số trang', 'màu bìa', 'nhà xuất bản'], answer: 'bảng chú giải (ký hiệu)',
+            explain: 'Chú giải giải thích ý nghĩa các ký hiệu, màu sắc — phải xem để đọc đúng bản đồ.' },
+          { id: 't3', type: 'mcq', question: 'Các ký hiệu trên bản đồ được giải thích ở đâu?',
+            options: ['bảng chú giải', 'lời nói đầu', 'phần mục lục', 'trang bìa'], answer: 'bảng chú giải',
+            explain: 'Bảng chú giải (chú thích) giải thích toàn bộ ký hiệu dùng trên bản đồ.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-map', title: 'Atlat là gì',
+              body: 'Là tập hợp các BẢN ĐỒ theo chủ đề (tự nhiên, dân cư, kinh tế…). Công cụ tra cứu thông tin địa lý trực quan.' },
+            { icon: 'fa-key', title: 'Đọc bản đồ',
+              body: 'Bước 1: đọc CHÚ GIẢI (ký hiệu, màu). Bước 2: xác định phương hướng, tỉ lệ. Bước 3: đọc thông tin cần theo ký hiệu.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ kỹ năng Atlat',
+          cards: [
+            { icon: 'fa-map', title: 'Cấu trúc Atlat',
+              body: 'Gồm nhiều trang bản đồ theo chủ đề: hành chính, địa hình, khí hậu, dân cư, các ngành kinh tế, các vùng. Có mục lục để tra nhanh.' },
+            { icon: 'fa-key', title: 'Bảng chú giải',
+              body: 'Giải thích ý nghĩa từng ký hiệu (điểm, đường, vùng), màu sắc, độ lớn. Luôn đọc chú giải TRƯỚC khi khai thác bản đồ.' },
+            { icon: 'fa-compass', title: 'Phương hướng & tỉ lệ',
+              body: 'Bản đồ có hướng (thường Bắc ở trên) và tỉ lệ (cho biết khoảng cách thực). Dùng để xác định vị trí, ước lượng khoảng cách.' },
+            { icon: 'fa-layer-group', title: 'Khai thác thông tin',
+              body: 'Kết hợp nhiều trang bản đồ để trả lời câu hỏi (VD: đối chiếu bản đồ khí hậu và nông nghiệp để giải thích phân bố cây trồng).' }
+          ],
+          examples: [
+            { q: 'Muốn biết một tỉnh giáp những đâu, xem bản đồ nào?', sol: 'Bản đồ hành chính, đọc theo chú giải ranh giới.' },
+            { q: 'Ký hiệu lạ trên bản đồ, tra ở đâu?', sol: 'Bảng chú giải của trang bản đồ đó.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Atlat = tập bản đồ theo chủ đề, để tra cứu thông tin địa lý.',
+          'Luôn đọc CHÚ GIẢI (ký hiệu, màu) trước khi đọc bản đồ.',
+          'Chú ý phương hướng và tỉ lệ bản đồ.',
+          'Kết hợp nhiều trang bản đồ để trả lời câu hỏi phức tạp.'
+        ],
+        tip: 'Quy tắc số 1 khi dùng Atlat: đọc CHÚ GIẢI trước — không đọc chú giải là dễ hiểu sai ký hiệu.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Atlat dùng để?', options: ['tra cứu qua bản đồ', 'tính toán', 'học từ vựng', 'vẽ hàm'], answer: 'tra cứu qua bản đồ' },
+          { id: 'd2', type: 'mcq', question: 'Đọc bản đồ, xem đầu tiên?', options: ['chú giải', 'số trang', 'màu bìa', 'giá'], answer: 'chú giải' },
+          { id: 'd3', type: 'mcq', question: 'Ký hiệu bản đồ giải thích ở?', options: ['bảng chú giải', 'bìa', 'mục lục', 'lời tựa'], answer: 'bảng chú giải' },
+          { id: 'd4', type: 'mcq', question: 'Hướng Bắc trên bản đồ thường ở?', options: ['phía trên', 'phía dưới', 'bên trái', 'bên phải'], answer: 'phía trên' },
+          { id: 'd5', type: 'mcq', question: 'Tỉ lệ bản đồ cho biết?', options: ['khoảng cách thực', 'màu sắc', 'tên tỉnh', 'dân số'], answer: 'khoảng cách thực' },
+          { id: 'd6', type: 'mcq', question: 'Atlat gồm bản đồ theo?', options: ['chủ đề', 'màu sắc', 'kích thước giấy', 'thứ tự chữ cái'], answer: 'chủ đề' },
+          { id: 'd7', type: 'mcq', question: 'Tra ranh giới tỉnh xem bản đồ?', options: ['hành chính', 'khí hậu', 'địa chất', 'dân số thế giới'], answer: 'hành chính' },
+          { id: 'd8', type: 'mcq', question: 'Quy tắc số 1 khi dùng Atlat?', options: ['đọc chú giải trước', 'đọc từ trang cuối', 'bỏ qua ký hiệu', 'chỉ xem màu'], answer: 'đọc chú giải trước' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_23',
+      index: 23,
+      title: 'Đọc biểu đồ địa lý',
+      subtitle: 'Nhận dạng và đọc biểu đồ trong Địa lý',
+      topic_tag: 'Khoa học · Địa lý',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về đọc biểu đồ địa lý.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Trong Địa lý, biểu đồ TRÒN thường dùng để thể hiện?',
+            options: ['cơ cấu, tỉ lệ % (VD cơ cấu GDP theo ngành)', 'khoảng cách giữa hai điểm', 'độ cao địa hình', 'hướng gió'], answer: 'cơ cấu, tỉ lệ % (VD cơ cấu GDP theo ngành)',
+            explain: 'Biểu đồ tròn thể hiện cơ cấu, tỉ trọng các thành phần trong tổng thể.' },
+          { id: 't2', type: 'mcq', question: 'Biểu đồ CỘT trong Địa lý phù hợp để?',
+            options: ['so sánh quy mô, số lượng giữa các đối tượng', 'thể hiện tỉ lệ %', 'vẽ đường bờ biển', 'đo nhiệt độ'], answer: 'so sánh quy mô, số lượng giữa các đối tượng',
+            explain: 'Biểu đồ cột dùng so sánh sản lượng, dân số… giữa các vùng/năm.' },
+          { id: 't3', type: 'mcq', question: 'Biểu đồ ĐƯỜNG trong Địa lý dùng để thể hiện?',
+            options: ['sự thay đổi của một đại lượng theo thời gian', 'cơ cấu %', 'ranh giới hành chính', 'ký hiệu'], answer: 'sự thay đổi của một đại lượng theo thời gian',
+            explain: 'Biểu đồ đường thể hiện diễn biến (dân số, sản lượng…) qua các năm.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-chart-pie', title: 'Chọn đúng loại',
+              body: 'TRÒN: cơ cấu, tỉ lệ % (cơ cấu GDP, dân số theo độ tuổi). CỘT: so sánh quy mô. ĐƯỜNG: diễn biến theo thời gian. MIỀN: cơ cấu thay đổi theo thời gian.' },
+            { icon: 'fa-magnifying-glass', title: 'Đọc biểu đồ',
+              body: 'Xem tên, đơn vị, chú giải, trục. Rồi đọc giá trị, so sánh, nhận xét xu hướng theo yêu cầu.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ đọc biểu đồ địa lý',
+          cards: [
+            { icon: 'fa-chart-pie', title: 'Biểu đồ tròn & miền',
+              body: 'Tròn: cơ cấu tại một thời điểm (tổng = 100%). Miền: sự thay đổi cơ cấu qua nhiều năm. Dùng khi số liệu là tỉ trọng, cơ cấu %.' },
+            { icon: 'fa-chart-column', title: 'Biểu đồ cột',
+              body: 'So sánh quy mô, số lượng giữa các đối tượng hoặc theo thời điểm (dân số các vùng, sản lượng các năm). Có cột đơn, cột ghép, cột chồng.' },
+            { icon: 'fa-chart-line', title: 'Biểu đồ đường',
+              body: 'Thể hiện tốc độ, xu hướng thay đổi của đại lượng theo thời gian (tăng trưởng dân số, sản lượng lúa qua các năm).' },
+            { icon: 'fa-list-check', title: 'Nhận xét biểu đồ',
+              body: 'Đọc số liệu → nêu xu hướng chung (tăng/giảm) → so sánh giữa các đối tượng → giải thích (nếu có yêu cầu). Bám số liệu, không suy diễn.' }
+          ],
+          examples: [
+            { q: 'Cơ cấu GDP theo ngành nên dùng biểu đồ?', sol: 'Biểu đồ tròn (cơ cấu %).' },
+            { q: 'Dân số qua 5 năm nên dùng biểu đồ?', sol: 'Biểu đồ đường (xu hướng theo thời gian).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Tròn/miền → cơ cấu, tỉ lệ %.',
+          'Cột → so sánh quy mô, số lượng.',
+          'Đường → diễn biến theo thời gian.',
+          'Nhận xét: nêu xu hướng, so sánh, bám số liệu.'
+        ],
+        tip: 'Ghi nhớ: có chữ "cơ cấu/tỉ trọng" → biểu đồ TRÒN; "qua các năm/biến động" → biểu đồ ĐƯỜNG.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Cơ cấu GDP theo ngành dùng biểu đồ?', options: ['tròn', 'đường', 'điểm', 'bảng'], answer: 'tròn' },
+          { id: 'd2', type: 'mcq', question: 'So sánh dân số các vùng dùng?', options: ['cột', 'tròn', 'đường', 'miền'], answer: 'cột' },
+          { id: 'd3', type: 'mcq', question: 'Dân số qua các năm dùng?', options: ['đường', 'tròn', 'cột chồng', 'điểm'], answer: 'đường' },
+          { id: 'd4', type: 'mcq', question: 'Cơ cấu thay đổi qua nhiều năm dùng?', options: ['miền', 'tròn đơn', 'điểm', 'bảng'], answer: 'miền' },
+          { id: 'd5', type: 'mcq', question: 'Từ khóa "cơ cấu/tỉ trọng" gợi biểu đồ?', options: ['tròn', 'đường', 'cột đơn', 'điểm'], answer: 'tròn' },
+          { id: 'd6', type: 'mcq', question: 'Từ khóa "qua các năm" gợi biểu đồ?', options: ['đường', 'tròn', 'miền một năm', 'điểm'], answer: 'đường' },
+          { id: 'd7', type: 'mcq', question: 'Tổng các phần biểu đồ tròn?', options: ['100%', '50%', '360', '1000'], answer: '100%' },
+          { id: 'd8', type: 'mcq', question: 'Nhận xét biểu đồ phải?', options: ['bám số liệu', 'suy diễn tự do', 'bỏ số liệu', 'chỉ đoán'], answer: 'bám số liệu' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_24',
+      index: 24,
+      title: 'Chọn 3/5 theo thế mạnh',
+      subtitle: 'Chiến lược chọn tổ hợp phần Khoa học',
+      topic_tag: 'Khoa học · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> chiến lược chọn tổ hợp của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Phần Khoa học của bài thi HSA yêu cầu thí sinh chọn bao nhiêu chủ đề trong 5?',
+            options: ['chọn 3 trong 5 (Lý, Hóa, Sinh, Sử, Địa)', 'làm cả 5', 'chọn 1 trong 5', 'chọn 4 trong 5'], answer: 'chọn 3 trong 5 (Lý, Hóa, Sinh, Sử, Địa)',
+            explain: 'Phần Khoa học (tự chọn): thí sinh chọn 3 trong 5 chủ đề Lý, Hóa, Sinh, Sử, Địa.' },
+          { id: 't2', type: 'mcq', question: 'Nên chọn 3 chủ đề như thế nào để có lợi nhất?',
+            options: ['3 chủ đề mình học tốt / tự tin nhất', '3 chủ đề khó nhất', '3 chủ đề ngẫu nhiên', '3 chủ đề bạn bè chọn'], answer: '3 chủ đề mình học tốt / tự tin nhất',
+            explain: 'Chọn các chủ đề là thế mạnh để tối đa hóa điểm số.' },
+          { id: 't3', type: 'mcq', question: 'Việc chọn tổ hợp 3 môn nên căn cứ vào?',
+            options: ['thế mạnh cá nhân và định hướng ngành học', 'chọn bừa cho nhanh', 'chọn theo thứ tự bảng chữ cái', 'chọn môn ít câu nhất'], answer: 'thế mạnh cá nhân và định hướng ngành học',
+            explain: 'Nên cân nhắc năng lực bản thân và ngành định xét tuyển.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-list-check', title: 'Quy định chọn tổ hợp',
+              body: 'Phần Khoa học (tự chọn): chọn 3 trong 5 chủ đề Lý, Hóa, Sinh, Sử, Địa. Chọn ĐÚNG thế mạnh giúp tối đa điểm phần này.' },
+            { icon: 'fa-bullseye', title: 'Cách chọn khôn ngoan',
+              body: 'Chọn 3 môn tự tin nhất; cân nhắc định hướng ngành (khối tự nhiên hay xã hội). Xác định sớm để tập trung ôn.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ chiến lược chọn tổ hợp',
+          cards: [
+            { icon: 'fa-list-check', title: 'Cấu trúc phần Khoa học',
+              body: 'Là phần TỰ CHỌN: thí sinh chọn 3 trong 5 chủ đề (Vật lý, Hóa học, Sinh học, Lịch sử, Địa lý), làm 50 câu trong 60 phút.' },
+            { icon: 'fa-bullseye', title: 'Tiêu chí chọn',
+              body: 'Ưu tiên môn mình VỮNG nhất và làm nhanh nhất. Cân nhắc định hướng ngành: khối tự nhiên (Lý-Hóa-Sinh) hay khoa học xã hội (Sử-Địa).' },
+            { icon: 'fa-clock', title: 'Xác định sớm',
+              body: 'Quyết định tổ hợp 3 môn từ sớm để tập trung ôn luyện, tránh dàn trải cả 5 môn gây phân tán, kém hiệu quả.' },
+            { icon: 'fa-scale-balanced', title: 'Cân đối rủi ro',
+              body: 'Có thể ôn "dự phòng" một môn thứ 4 nếu chưa chắc chắn, nhưng trọng tâm vẫn là 3 môn thế mạnh. Không nên ôm đồm cả 5.' }
+          ],
+          examples: [
+            { q: 'Học tốt Toán – Lý – Hóa nên chọn?', sol: 'Lý, Hóa (+ Sinh) — nhóm tự nhiên phù hợp thế mạnh.' },
+            { q: 'Thích khối xã hội nên chọn?', sol: 'Sử, Địa (+ một môn tự tin còn lại).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Phần Khoa học: chọn 3 trong 5 (Lý, Hóa, Sinh, Sử, Địa).',
+          'Chọn 3 môn tự tin / thế mạnh nhất.',
+          'Căn cứ thế mạnh cá nhân + định hướng ngành.',
+          'Xác định sớm để tập trung ôn, không dàn trải cả 5.'
+        ],
+        tip: 'Quyết định 3 môn CÀNG SỚM càng tốt — dồn sức ôn 3 môn hiệu quả hơn nhiều so với học lan man cả 5.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Phần Khoa học chọn mấy trong 5?', options: ['3', '5', '1', '4'], answer: '3' },
+          { id: 'd2', type: 'mcq', question: 'Nên chọn 3 chủ đề?', options: ['học tốt nhất', 'khó nhất', 'ngẫu nhiên', 'ít câu nhất'], answer: 'học tốt nhất' },
+          { id: 'd3', type: 'mcq', question: '5 chủ đề của phần Khoa học?', options: ['Lý, Hóa, Sinh, Sử, Địa', 'Toán, Văn, Anh, Lý, Hóa', 'Sinh, Sử, Địa, Anh, Toán', 'Lý, Hóa, Sinh, Toán, Văn'], answer: 'Lý, Hóa, Sinh, Sử, Địa' },
+          { id: 'd4', type: 'mcq', question: 'Chọn tổ hợp căn cứ?', options: ['thế mạnh + định hướng ngành', 'bảng chữ cái', 'bạn bè', 'may rủi'], answer: 'thế mạnh + định hướng ngành' },
+          { id: 'd5', type: 'mcq', question: 'Khối tự nhiên gồm?', options: ['Lý, Hóa, Sinh', 'Sử, Địa', 'Văn, Anh', 'Toán, Văn'], answer: 'Lý, Hóa, Sinh' },
+          { id: 'd6', type: 'mcq', question: 'Khối xã hội gồm?', options: ['Sử, Địa', 'Lý, Hóa', 'Sinh, Lý', 'Toán, Hóa'], answer: 'Sử, Địa' },
+          { id: 'd7', type: 'mcq', question: 'Nên xác định tổ hợp?', options: ['càng sớm càng tốt', 'ngày thi', 'không cần', 'phút cuối'], answer: 'càng sớm càng tốt' },
+          { id: 'd8', type: 'mcq', question: 'Ôn cả 5 môn thay vì 3 thường?', options: ['dàn trải, kém hiệu quả', 'tốt hơn', 'bắt buộc', 'nhanh hơn'], answer: 'dàn trải, kém hiệu quả' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_25',
+      index: 25,
+      title: 'Chiến thuật từng môn',
+      subtitle: 'Cách ôn hiệu quả cho Lý, Hóa, Sinh, Sử, Địa',
+      topic_tag: 'Khoa học · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> chiến thuật ôn thi của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Với các môn Lịch sử, Địa lý, chiến thuật ôn hiệu quả là?',
+            options: ['nhớ mốc, sự kiện, số liệu chính và hệ thống hóa', 'chỉ làm bài tập tính toán', 'học công thức vật lý', 'bỏ qua sự kiện'], answer: 'nhớ mốc, sự kiện, số liệu chính và hệ thống hóa',
+            explain: 'Sử – Địa cần ghi nhớ mốc, sự kiện, số liệu và hệ thống hóa kiến thức.' },
+          { id: 't2', type: 'mcq', question: 'Với các môn Vật lý, Hóa học, điều quan trọng nhất khi ôn là?',
+            options: ['thuộc công thức và luyện các dạng bài tính', 'chỉ học lý thuyết suông', 'nhớ mốc lịch sử', 'đọc truyện'], answer: 'thuộc công thức và luyện các dạng bài tính',
+            explain: 'Lý – Hóa cần nắm công thức và luyện dạng bài vận dụng.' },
+          { id: 't3', type: 'mcq', question: 'Với môn Sinh học, chiến thuật ôn nên là?',
+            options: ['hiểu khái niệm và nhớ các quá trình', 'chỉ tính toán', 'học thuộc công thức toán', 'bỏ khái niệm'], answer: 'hiểu khái niệm và nhớ các quá trình',
+            explain: 'Sinh học nặng về khái niệm, quá trình (quang hợp, di truyền…), cần hiểu rồi nhớ.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-calculator', title: 'Lý – Hóa',
+              body: 'Nắm CÔNG THỨC + luyện dạng bài tính. Nhớ đơn vị, chú ý đổi đơn vị. Làm nhiều dạng để phản xạ nhanh.' },
+            { icon: 'fa-book', title: 'Sinh – Sử – Địa',
+              body: 'Sinh: hiểu khái niệm, nhớ quá trình. Sử: nhớ mốc, sự kiện, nhân vật. Địa: nhớ đặc điểm vùng, số liệu, đọc bản đồ/biểu đồ.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ chiến thuật từng môn',
+          cards: [
+            { icon: 'fa-bolt', title: 'Vật lý',
+              body: 'Thuộc công thức lõi (F=ma, U=IR, Q=mcΔt…), hiểu bản chất hiện tượng, luyện bài tính. Chú ý đổi đơn vị và ý nghĩa vật lý của kết quả.' },
+            { icon: 'fa-flask', title: 'Hóa học',
+              body: 'Nắm tính chất chất, phương trình phản ứng, công thức mol (n=m/M). Luyện dạng nhận biết, tính toán theo phương trình.' },
+            { icon: 'fa-dna', title: 'Sinh học',
+              body: 'Hiểu khái niệm và các quá trình (tế bào, di truyền, tiến hóa, sinh thái). Học bằng sơ đồ tư duy, liên hệ thực tế để nhớ lâu.' },
+            { icon: 'fa-landmark', title: 'Lịch sử & Địa lý',
+              body: 'Sử: hệ thống mốc thời gian, sự kiện, nhân vật theo trục thời gian. Địa: nhớ đặc điểm vùng, số liệu chính, thành thạo đọc bản đồ/biểu đồ/Atlat.' }
+          ],
+          examples: [
+            { q: 'Môn Địa hay ra kỹ năng gì?', sol: 'Đọc bản đồ, biểu đồ, Atlat — luyện nhiều.' },
+            { q: 'Ôn Sử hiệu quả bằng cách?', sol: 'Lập trục thời gian, gắn sự kiện với mốc và nhân vật.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Lý – Hóa: thuộc công thức + luyện dạng bài tính.',
+          'Sinh: hiểu khái niệm, nhớ các quá trình.',
+          'Sử: nhớ mốc, sự kiện, nhân vật (trục thời gian).',
+          'Địa: nhớ đặc điểm vùng, số liệu; luyện đọc bản đồ/biểu đồ/Atlat.'
+        ],
+        tip: 'Mỗi môn một "chìa khóa": Lý-Hóa (công thức), Sinh (quá trình), Sử (mốc), Địa (bản đồ) — ôn đúng chìa khóa mới hiệu quả.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Lý – Hóa cần?', options: ['công thức + luyện tính', 'chỉ nhớ mốc', 'chỉ đọc', 'bỏ công thức'], answer: 'công thức + luyện tính' },
+          { id: 'd2', type: 'mcq', question: 'Sử – Địa cần?', options: ['nhớ mốc, sự kiện, số liệu', 'chỉ tính toán', 'học công thức lý', 'bỏ sự kiện'], answer: 'nhớ mốc, sự kiện, số liệu' },
+          { id: 'd3', type: 'mcq', question: 'Sinh học nên?', options: ['hiểu khái niệm, nhớ quá trình', 'chỉ tính', 'học thuộc công thức toán', 'bỏ khái niệm'], answer: 'hiểu khái niệm, nhớ quá trình' },
+          { id: 'd4', type: 'mcq', question: '"Chìa khóa" môn Sử là?', options: ['mốc thời gian', 'công thức', 'bản đồ sao', 'thí nghiệm'], answer: 'mốc thời gian' },
+          { id: 'd5', type: 'mcq', question: '"Chìa khóa" môn Địa là?', options: ['bản đồ/biểu đồ', 'phương trình', 'định luật Newton', 'quang hợp'], answer: 'bản đồ/biểu đồ' },
+          { id: 'd6', type: 'mcq', question: 'Hóa cần nhớ công thức?', options: ['n = m/M', 'F = ma', 'U = IR', 'A = F·s'], answer: 'n = m/M' },
+          { id: 'd7', type: 'mcq', question: 'Ôn Sinh nên dùng?', options: ['sơ đồ tư duy', 'chỉ máy tính', 'bảng lượng giác', 'atlat'], answer: 'sơ đồ tư duy' },
+          { id: 'd8', type: 'mcq', question: 'Vật lý chú ý?', options: ['đổi đơn vị', 'màu chữ', 'tên tác giả', 'thể loại'], answer: 'đổi đơn vị' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_26',
+      index: 26,
+      title: 'Luyện đề tổ hợp',
+      subtitle: 'Phân bổ thời gian và luyện đề 3 chủ đề',
+      topic_tag: 'Khoa học · Chiến thuật',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> luyện đề tổ hợp của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Luyện đề tổ hợp (3 chủ đề) trong 60 phút giúp ích gì?',
+            options: ['quen phân bổ thời gian hợp lí giữa 3 chủ đề', 'chỉ để giải trí', 'không có tác dụng', 'làm rối'], answer: 'quen phân bổ thời gian hợp lí giữa 3 chủ đề',
+            explain: 'Luyện đề tổ hợp giúp biết chia thời gian đều/hợp lí cho 3 chủ đề đã chọn.' },
+          { id: 't2', type: 'mcq', question: 'Trong phần Khoa học, khi làm bài nên?',
+            options: ['làm chủ đề mạnh trước, chủ đề yếu hơn sau', 'làm theo thứ tự cố định', 'làm chủ đề khó nhất trước', 'bỏ một chủ đề'], answer: 'làm chủ đề mạnh trước, chủ đề yếu hơn sau',
+            explain: 'Làm phần chắc điểm trước để gom điểm, tránh mất thời gian ở phần yếu.' },
+          { id: 't3', type: 'mcq', question: 'Sau khi luyện đề tổ hợp, điều cần làm là?',
+            options: ['phân tích điểm mạnh – yếu từng chủ đề để điều chỉnh ôn tập', 'quên đi', 'chỉ đếm điểm', 'không xem lại'], answer: 'phân tích điểm mạnh – yếu từng chủ đề để điều chỉnh ôn tập',
+            explain: 'Phân tích để biết chủ đề nào cần củng cố thêm.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-clock', title: 'Phân bổ thời gian',
+              body: '60 phút cho 3 chủ đề → cân đối thời gian (khoảng 20 phút/chủ đề, linh hoạt theo độ khó). Làm chủ đề MẠNH trước để chắc điểm.' },
+            { icon: 'fa-clipboard-check', title: 'Chữa đề',
+              body: 'Sau mỗi đề, phân tích điểm mạnh – yếu từng chủ đề, điều chỉnh kế hoạch ôn cho chủ đề còn yếu.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ luyện đề tổ hợp',
+          cards: [
+            { icon: 'fa-clock', title: 'Cân đối 3 chủ đề',
+              body: 'Phần Khoa học có 50 câu / 60 phút cho 3 chủ đề. Chia thời gian hợp lí, không để một chủ đề chiếm hết thời gian; câu khó thì bỏ qua, quay lại.' },
+            { icon: 'fa-forward', title: 'Thứ tự làm bài',
+              body: 'Làm chủ đề mình MẠNH nhất trước để gom điểm chắc, tạo tâm lý tự tin; chủ đề yếu hơn làm sau với thời gian còn lại.' },
+            { icon: 'fa-clipboard-check', title: 'Phân tích sau luyện',
+              body: 'Xem điểm từng chủ đề: chủ đề nào thấp thì tập trung củng cố. Ghi lại dạng câu hay sai để rút kinh nghiệm.' },
+            { icon: 'fa-brain', title: 'Rèn tâm lý & tốc độ',
+              body: 'Luyện đề tổ hợp bấm giờ nhiều lần giúp quen áp lực, phản xạ nhanh, biết cân đối 3 chủ đề — yếu tố quyết định điểm phần Khoa học.' }
+          ],
+          examples: [
+            { q: 'Mạnh Địa, vừa Sinh, yếu Sử — làm thứ tự?', sol: 'Địa → Sinh → Sử (mạnh trước, yếu sau).' },
+            { q: 'Sau đề thấy Sử điểm thấp?', sol: 'Tập trung ôn thêm mốc – sự kiện của Sử.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Phần Khoa học: 50 câu / 60 phút cho 3 chủ đề.',
+          'Cân đối thời gian ~20 phút/chủ đề (linh hoạt).',
+          'Làm chủ đề mạnh trước, chủ đề yếu sau.',
+          'Sau luyện: phân tích điểm mạnh-yếu, điều chỉnh ôn tập.'
+        ],
+        tip: 'Chiến thuật "mạnh trước, yếu sau" áp dụng cho cả 3 chủ đề — chắc điểm trước, rồi mới liều ở phần yếu.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Luyện đề tổ hợp giúp?', options: ['quen phân bổ thời gian', 'giải trí', 'làm rối', 'không ích'], answer: 'quen phân bổ thời gian' },
+          { id: 'd2', type: 'mcq', question: 'Nên làm chủ đề nào trước?', options: ['mạnh nhất', 'yếu nhất', 'khó nhất', 'cuối cùng'], answer: 'mạnh nhất' },
+          { id: 'd3', type: 'mcq', question: 'Sau luyện đề nên?', options: ['phân tích mạnh-yếu', 'quên đi', 'chỉ đếm điểm', 'bỏ qua'], answer: 'phân tích mạnh-yếu' },
+          { id: 'd4', type: 'mcq', question: 'Phần Khoa học có?', options: ['50 câu / 60 phút', '35 câu / 75 phút', '20 câu / 30 phút', '100 câu / 90 phút'], answer: '50 câu / 60 phút' },
+          { id: 'd5', type: 'mcq', question: 'Thời gian trung bình mỗi chủ đề (3 chủ đề, 60 phút)?', options: ['~20 phút', '~40 phút', '~5 phút', '~60 phút'], answer: '~20 phút' },
+          { id: 'd6', type: 'mcq', question: 'Câu khó trong đề tổ hợp nên?', options: ['bỏ qua, quay lại', 'làm bằng được', 'bỏ cả chủ đề', 'đoán ngay'], answer: 'bỏ qua, quay lại' },
+          { id: 'd7', type: 'mcq', question: 'Chủ đề điểm thấp sau luyện nên?', options: ['ôn củng cố thêm', 'bỏ luôn', 'không quan tâm', 'đổi tổ hợp phút cuối'], answer: 'ôn củng cố thêm' },
+          { id: 'd8', type: 'mcq', question: 'Chiến thuật chung phần Khoa học?', options: ['mạnh trước, yếu sau', 'yếu trước', 'ngẫu nhiên', 'bỏ 1 chủ đề'], answer: 'mạnh trước, yếu sau' }
         ]
       }
     }
