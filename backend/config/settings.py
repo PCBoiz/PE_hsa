@@ -35,6 +35,12 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(','
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 
+# Chatbot "Trợ lý HSA" — DeepSeek (API OpenAI-compatible), key SERVER-SIDE.
+# DeepSeek dùng tạm cho testing (rẻ); đổi provider = đổi 3 biến này.
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
+DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+
 INSTALLED_APPS = [
     # KHÔNG dùng django.contrib.admin — trang quản trị là /admin của frontend
     # (port từ admin.html) + API /api/admin/* trong app courseadmin.
@@ -68,6 +74,7 @@ INSTALLED_APPS = [
     'forum',
     'courseadmin',
     'mockexam',
+    'chatbot',
 ]
 
 MIDDLEWARE = [

@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('forum.urls')),
     path('', include('courseadmin.urls')),
     path('', include('mockexam.urls')),
+    path('', include('chatbot.urls')),
     path('accounts/', include('allauth.urls')),  # /accounts/google/login/ ...
 ]
 

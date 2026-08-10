@@ -247,47 +247,32 @@ function escapeHtml(text) {
  * Call Gemini API
  */
 async function callChatbotGemini(prompt, imageBase64 = null) {
-    if (!CHATBOT_CONFIG.apiKey) {
-        return 'Lỗi: Chưa cấu hình API key. Vui lòng thêm Gemini API key vào file chatbot.js';
-    }
-
-    const url = `${CHATBOT_CONFIG.apiUrl}/${CHATBOT_CONFIG.model}:generateContent?key=${CHATBOT_CONFIG.apiKey}`;
-    
-    const parts = [{ text: prompt }];
-    
-    if (imageBase64) {
-        parts.push({
-            inlineData: {
-                mimeType: 'image/jpeg',
-                data: imageBase64
-            }
-        });
-    }
-
-    const payload = {
-        contents: [{ parts }],
-        systemInstruction: {
-            parts: [{ text: CHATBOT_CONFIG.systemPrompt }]
-        }
-    };
-
+    // Gọi BACKEND /api/chat (LangGraph + DeepSeek, key server-side — không lộ ra
+    // client như bản Gemini cũ). pe-bridge.js rewrite /api sang origin backend +
+    // đính JWT. Giữ lịch sử hội thoại trong chatbotState.messages để có context.
+    // (DeepSeek chat là text-only nên ảnh tạm thời bỏ qua.)
+    chatbotState.messages.push({ role: 'user', content: prompt });
     try {
-        const response = await fetch(url, {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ messages: chatbotState.messages })
         });
-
         if (!response.ok) {
-            const error = await response.json();
-            return `Lỗi API: ${error.error?.message || 'Không xác định'}`;
+            let msg = 'Trợ lý tạm thời chưa sẵn sàng, bạn thử lại sau nhé.';
+            try {
+                const e = await response.json();
+                msg = (typeof e.error === 'string' ? e.error : (e.error && e.error.message)) || msg;
+            } catch (_) { /* body không phải JSON */ }
+            return msg;
         }
-
         const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Không nhận được phản hồi.';
+        const reply = data.reply || 'Mình chưa nhận được phản hồi, bạn hỏi lại giúp nhé.';
+        chatbotState.messages.push({ role: 'assistant', content: reply });
+        return reply;
     } catch (error) {
         console.error('Chatbot Error:', error);
-        return 'Lỗi kết nối. Vui lòng thử lại.';
+        return 'Lỗi kết nối tới trợ lý. Vui lòng thử lại.';
     }
 }
 

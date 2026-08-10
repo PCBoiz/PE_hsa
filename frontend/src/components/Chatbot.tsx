@@ -28,7 +28,7 @@ export default function Chatbot() {
               <i className="fas fa-robot"></i>
             </div>
             <div className="chatbot-header-text">
-              <h3>Ichatbot</h3>
+              <h3>Trợ lý HSA</h3>
               <span className="chatbot-status"><span className="chatbot-status-dot"></span> Trực tuyến</span>
             </div>
           </div>
