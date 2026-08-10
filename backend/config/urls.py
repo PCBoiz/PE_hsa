@@ -28,6 +28,7 @@ urlpatterns = [
     path('', include('achievements.urls')),
     path('', include('forum.urls')),
     path('', include('courseadmin.urls')),
+    path('', include('mockexam.urls')),
     path('accounts/', include('allauth.urls')),  # /accounts/google/login/ ...
 ]
 

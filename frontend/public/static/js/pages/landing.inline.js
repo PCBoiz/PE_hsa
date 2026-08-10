@@ -14,9 +14,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // Fetch real course count + lesson count from API
     function _setHeroStats(courseCount, totalHours) {
       const courseEl = document.getElementById('stat-courses');
-      if (courseEl) courseEl.textContent = (courseCount > 0 ? courseCount : '5') + '+';
+      if (courseEl) courseEl.textContent = (courseCount > 0 ? courseCount : '3') + '+';
       const hoursEl = document.getElementById('stat-hours');
-      if (hoursEl) hoursEl.textContent = (totalHours > 0 ? totalHours : '225') + '+';
+      if (hoursEl) hoursEl.textContent = (totalHours > 0 ? totalHours : '30') + '+';
     }
     fetch('/api/courses')
       .then(r => r.ok ? r.json() : null)

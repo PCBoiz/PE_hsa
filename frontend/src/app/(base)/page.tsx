@@ -1,11 +1,12 @@
 // Port landing.html (extends base.html) — markup 1:1, giữ nguyên class/id.
+// Nội dung đã rebrand sang ProgrammingEdu × TopHSA (luyện thi ĐGNL HSA).
 // Inline script gốc (landing.html block extra_scripts) → /static/js/pages/landing.inline.js
 import type { Metadata } from 'next';
 
 import LegacyScripts from '@/components/LegacyScripts';
 
 export const metadata: Metadata = {
-  title: 'Programming EDU — Học lập trình hiện đại',
+  title: 'ProgrammingEdu × TopHSA — Luyện thi Đánh giá năng lực HSA',
 };
 
 export default function LandingPage() {
@@ -32,7 +33,7 @@ export default function LandingPage() {
       {/* block nav (landing override) */}
       <nav className="landing-nav">
         <div className="landing-logo">
-          Programming <span className="red">EDU</span>
+          ProgrammingEdu <span className="red">× TopHSA</span>
         </div>
         <div className="nav-actions">
           <a href="/login" className="btn-outline">Đăng nhập</a>
@@ -43,16 +44,16 @@ export default function LandingPage() {
       {/* block content */}
       <section className="hero-section reveal-on-scroll">
         <div className="hero-content">
-          <div className="hero-badge neon-badge">🚀 Nền tảng học lập trình hàng đầu Việt Nam</div>
+          <div className="hero-badge neon-badge">🎯 Luyện thi Đánh giá năng lực HSA · ĐHQG Hà Nội</div>
 
           <h1 className="hero-title neon-text">
-            Học <span className="neon-cyan">Lập Trình</span>
+            Chinh Phục <span className="neon-cyan">Đánh Giá Năng Lực</span>
             <br />
-            Theo Cách <span className="neon-pink">Hiện Đại</span>
+            Theo Cách <span className="neon-pink">Thông Minh</span>
           </h1>
 
           <p className="hero-sub fade-in-up delay-1">
-            Từ HTML/CSS đến AI &amp; Backend — nắm vững mọi kỹ năng lập trình với lộ trình được thiết kế bởi chuyên gia.
+            Từ Tư duy Định lượng đến Định tính và Khoa học — luyện đúng dạng câu hỏi HSA, bấm giờ như thi thật, theo lộ trình cá nhân hoá đúng năng lực của bạn.
           </p>
 
           <div className="hero-actions fade-in-up delay-2">
@@ -63,19 +64,19 @@ export default function LandingPage() {
           <div className="hero-stats fade-in-up delay-3">
             <div className="hero-stat">
               <div className="hero-stat-val neon-glow-text" id="stat-courses">—</div>
-              <div className="hero-stat-lbl">Khóa học</div>
+              <div className="hero-stat-lbl">Hợp phần</div>
             </div>
             <div className="hero-stat">
               <div className="hero-stat-val neon-glow-text" id="stat-hours">—</div>
-              <div className="hero-stat-lbl">Giờ học</div>
+              <div className="hero-stat-lbl">Giờ luyện đề</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val neon-glow-text">100%</div>
-              <div className="hero-stat-lbl">Miễn phí</div>
+              <div className="hero-stat-val neon-glow-text">150</div>
+              <div className="hero-stat-lbl">Câu mỗi đề</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val neon-glow-text">4 bước</div>
-              <div className="hero-stat-lbl">Lý thuyết → Thực hành</div>
+              <div className="hero-stat-val neon-glow-text">CBT</div>
+              <div className="hero-stat-lbl">Thi thử trên máy</div>
             </div>
           </div>
         </div>
@@ -83,37 +84,37 @@ export default function LandingPage() {
 
       <section className="landing-section reveal-on-scroll">
         <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Học theo lộ trình thực chiến</h2>
-          <p className="section-sub">Chúng tôi thiết kế từng bài học để bạn có thể làm được việc ngay từ ngày đầu tiên. Mỗi khóa học gồm bài tập thực tế, dự án mini và thử thách tương tác, phù hợp cho người mới lẫn người muốn nâng cấp kỹ năng.</p>
+          <h2 className="section-heading neon-text-sm">Luyện thi theo lộ trình cá nhân hoá</h2>
+          <p className="section-sub">Chúng tôi định vị điểm mạnh — điểm yếu của bạn ở từng hợp phần, rồi thiết kế lộ trình luyện tập bám đúng cấu trúc đề Đánh giá năng lực ĐHQG Hà Nội. Học đúng chỗ cần, luyện đúng dạng, tiến bộ nhìn thấy được.</p>
 
           <div className="section-grid 3d-grid">
             <div className="section-card neon-card">
               <div className="card-icon neon-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               </div>
-              <strong>Học từ căn bản đến chuyên sâu</strong>
-              <p>Chuỗi bài học rõ ràng, dễ hiểu và cập nhật theo xu hướng công nghệ mới nhất.</p>
+              <strong>Chẩn đoán năng lực đầu vào</strong>
+              <p>Bài test + bộ câu hỏi định vị điểm mạnh, điểm yếu của bạn ở từng hợp phần trước khi bắt đầu.</p>
             </div>
             <div className="section-card neon-card">
               <div className="card-icon neon-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
               </div>
-              <strong>Thực hành cùng dự án</strong>
-              <p>Từng module đi kèm bài tập thực tế để bạn xây dựng portfolio ngay trong quá trình học.</p>
+              <strong>Luyện đúng dạng câu hỏi HSA</strong>
+              <p>Ngân hàng câu hỏi bám đúng cấu trúc đề ĐGNL, chia theo chủ đề và độ khó để bạn luyện có trọng tâm.</p>
             </div>
             <div className="section-card neon-card">
               <div className="card-icon neon-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" /></svg>
               </div>
-              <strong>Giáo viên hướng dẫn</strong>
-              <p>Đội ngũ mentor giàu kinh nghiệm luôn hỗ trợ 1:1 khi bạn gặp khó khăn.</p>
+              <strong>Bấm giờ như phòng thi thật</strong>
+              <p>Chế độ luyện tính giờ từng phần, rèn tốc độ xử lý và tâm lý làm bài dưới áp lực thời gian.</p>
             </div>
             <div className="section-card neon-card">
               <div className="card-icon neon-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </div>
-              <strong>Học mọi lúc, mọi nơi</strong>
-              <p>Hỗ trợ học online linh hoạt, dễ dàng trên máy tính và điện thoại.</p>
+              <strong>Thi thử CBT &amp; phân tích</strong>
+              <p>Đề đầy đủ 150 câu trên máy tính, chấm điểm ngay và chỉ rõ hợp phần bạn cần cải thiện.</p>
             </div>
           </div>
         </div>
@@ -121,13 +122,13 @@ export default function LandingPage() {
 
       <section className="landing-section reveal-on-scroll">
         <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Khóa học nổi bật</h2>
-          <p className="section-sub">Bắt đầu với lộ trình được thiết kế bởi chuyên gia. Mỗi khóa học có bài tập thực tế và dự án mini.</p>
+          <h2 className="section-heading neon-text-sm">Ba hợp phần đề HSA</h2>
+          <p className="section-sub">Bắt đầu với đúng ba hợp phần của kỳ thi Đánh giá năng lực. Mỗi hợp phần có bài luyện theo dạng và chế độ bấm giờ như thi thật.</p>
 
           <div className="section-grid 3d-grid" id="course-preview-grid">
             <div className="section-card neon-card" id="course-preview-loading">
               <div className="card-icon neon-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg></div>
-              <strong>Đang tải khóa học…</strong>
+              <strong>Đang tải hợp phần…</strong>
               <p>Vui lòng chờ trong giây lát.</p>
             </div>
           </div>
@@ -136,57 +137,57 @@ export default function LandingPage() {
 
       <section className="landing-section reveal-on-scroll">
         <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Bạn sẽ xây dựng được gì?</h2>
-          <p className="section-sub">Mỗi khóa học kết thúc bằng một dự án thực tế — sản phẩm bạn có thể đưa vào portfolio và khoe với nhà tuyển dụng.</p>
+          <h2 className="section-heading neon-text-sm">Bạn sẽ chinh phục những gì?</h2>
+          <p className="section-sub">Toàn bộ phạm vi kỳ thi ĐGNL cùng những kỹ năng phòng thi quyết định điểm số — luyện đến đâu, thấy tiến bộ đến đó.</p>
 
           <div className="project-grid">
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0E7490 100%)' }}>
-                <div className="project-thumb-icon">🎮</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #4C1D95 100%)' }}>
+                <div className="project-thumb-icon">🔢</div>
               </div>
-              <strong>Hệ thống Catalog Game Shop</strong>
-              <p>Database cho shop game online: bảng game, user, đơn hàng, thể loại. Áp dụng 1NF → BCNF → 4NF.</p>
-              <span className="project-tag">Database Design · 20 bài</span>
+              <strong>Tư duy Định lượng</strong>
+              <p>Đại số, hàm số, hình học, xác suất – thống kê và đọc số liệu theo đúng dạng đề HSA.</p>
+              <span className="project-tag">Hợp phần 1 · Toán học</span>
             </article>
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #FF4D6D 0%, #C9184A 100%)' }}>
-                <div className="project-thumb-icon">🏆</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #F472B6 0%, #9D174D 100%)' }}>
+                <div className="project-thumb-icon">✍️</div>
               </div>
-              <strong>Mạng Xã Hội Gamers</strong>
-              <p>Grand system: users, posts, games, genres, platforms + 4 junction tables đạt chuẩn 4NF.</p>
-              <span className="project-tag">Boss Battle · Tổng hợp</span>
+              <strong>Tư duy Định tính</strong>
+              <p>Đọc hiểu, từ vựng – ngữ pháp tiếng Việt và suy luận ngôn ngữ theo cấu trúc đề.</p>
+              <span className="project-tag">Hợp phần 2 · Ngữ văn – Ngôn ngữ</span>
             </article>
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }}>
-                <div className="project-thumb-icon">⚙️</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #34D399 0%, #065F46 100%)' }}>
+                <div className="project-thumb-icon">🔬</div>
               </div>
-              <strong>App Settings với JSONB</strong>
-              <p>Cột JSON lưu cấu hình người dùng linh hoạt, query bằng toán tử mũi tên -&gt;, -&gt;&gt;.</p>
-              <span className="project-tag">JSON · app_users.settings</span>
+              <strong>Khoa học &amp; Tiếng Anh</strong>
+              <p>Lý – Hoá – Sinh – Sử – Địa hoặc lựa chọn Tiếng Anh theo đúng định dạng HSA.</p>
+              <span className="project-tag">Hợp phần 3 · Khoa học / English</span>
             </article>
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #10B981 0%, #047857 100%)' }}>
-                <div className="project-thumb-icon">🔒</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #B45309 100%)' }}>
+                <div className="project-thumb-icon">⏱️</div>
               </div>
-              <strong>Vault bảo mật người dùng</strong>
-              <p>Login chống SQL Injection với Prepared Statement, lưu password bcrypt + salt an toàn.</p>
-              <span className="project-tag">Security · bcrypt · SQLi</span>
+              <strong>Tốc độ &amp; chiến thuật làm bài</strong>
+              <p>Phân bổ thời gian, thứ tự làm bài và kỹ thuật loại trừ để tối ưu điểm số phòng thi.</p>
+              <span className="project-tag">Kỹ năng · Chiến thuật</span>
             </article>
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}>
-                <div className="project-thumb-icon">📍</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #0F766E 100%)' }}>
+                <div className="project-thumb-icon">🎯</div>
               </div>
-              <strong>App bản đồ tìm tiệm game</strong>
-              <p>Dữ liệu không gian (POINT), truy vấn ST_DWithin tìm chi nhánh gần user nhất.</p>
-              <span className="project-tag">Spatial · PostGIS · ST_Distance</span>
+              <strong>Lộ trình cá nhân hoá</strong>
+              <p>Học đúng chỗ yếu, ưu tiên phần dễ lên điểm nhất dựa trên kết quả chẩn đoán của bạn.</p>
+              <span className="project-tag">Lộ trình · Theo năng lực</span>
             </article>
             <article className="project-card neon-card">
-              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' }}>
-                <div className="project-thumb-icon">🐍</div>
+              <div className="project-thumb" style={{ background: 'linear-gradient(135deg, #818CF8 0%, #3730A3 100%)' }}>
+                <div className="project-thumb-icon">🖥️</div>
               </div>
-              <strong>Log query với Django ORM</strong>
-              <p>Ánh xạ Python class sang bảng SQL, query filter, select_related, values/annotate.</p>
-              <span className="project-tag">ORM · Django · log_events</span>
+              <strong>Thi thử CBT đầy đủ</strong>
+              <p>Trải nghiệm phòng thi máy tính với 150 câu, chấm điểm và phân tích mạnh – yếu tức thì.</p>
+              <span className="project-tag">Mock exam · 150 câu</span>
             </article>
           </div>
         </div>
@@ -194,30 +195,30 @@ export default function LandingPage() {
 
       <section className="landing-section reveal-on-scroll">
         <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Những gì bạn sẽ làm được sau khóa học</h2>
-          <p className="section-sub">Tập trung vào kỹ năng thực tế và kết quả rõ ràng: xây website, lập trình ứng dụng, xử lý dữ liệu, tạo AI đơn giản và tự tin làm việc nhóm.</p>
+          <h2 className="section-heading neon-text-sm">Bạn sẽ đạt được gì sau khi luyện?</h2>
+          <p className="section-sub">Tập trung vào kết quả rõ ràng cho kỳ thi Đánh giá năng lực: giải nhanh, đọc hiểu sắc bén và tự tin kiểm soát phòng thi.</p>
 
           <div className="section-grid 3d-grid">
             <div className="section-card neon-card">
               <span className="value-pill neon-pill">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                Web development
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+                Vững tư duy định lượng
               </span>
-              <p>Xây dựng giao diện responsive, JavaScript tương tác và kết nối backend.</p>
+              <p>Giải nhanh các dạng toán ĐGNL, đọc biểu đồ – số liệu chính xác và không mất điểm oan.</p>
             </div>
             <div className="section-card neon-card">
               <span className="value-pill neon-pill">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                AI &amp; Machine Learning
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                Sắc bén ngôn ngữ &amp; đọc hiểu
               </span>
-              <p>Làm quen với mô hình cơ bản, xử lý dữ liệu và triển khai ứng dụng thông minh.</p>
+              <p>Nắm ý chính nhanh, suy luận chặt chẽ và dùng từ – ngữ pháp chuẩn trong hợp phần định tính.</p>
             </div>
             <div className="section-card neon-card">
               <span className="value-pill neon-pill">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
-                Backend + Database
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Tự tin trong phòng thi
               </span>
-              <p>Xây server, quản lý dữ liệu và tạo API an toàn cho ứng dụng thực tế.</p>
+              <p>Quen giao diện thi CBT, kiểm soát thời gian và giữ tâm lý ổn định để phát huy hết năng lực.</p>
             </div>
           </div>
         </div>
@@ -225,31 +226,31 @@ export default function LandingPage() {
 
       <section className="landing-section reveal-on-scroll">
         <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Học viên nói gì về chúng tôi</h2>
-          <p className="section-sub">Hơn 94.000 học viên đã hoàn thành khóa học và tự tin xây sản phẩm đầu tay chỉ trong vài tuần.</p>
+          <h2 className="section-heading neon-text-sm">Vì sao chọn ProgrammingEdu × TopHSA</h2>
+          <p className="section-sub">Nền tảng luyện tập của ProgrammingEdu kết hợp kinh nghiệm luyện thi và ngân hàng đề của TopHSA — trung tâm chuyên Đánh giá năng lực ĐHQG Hà Nội.</p>
 
           <div className="testimonial-grid">
             <div className="testimonial-card glass-card trust-card">
               <div className="trust-stat">
                 <div className="trust-stat-val neon-glow-text">100%</div>
-                <div className="trust-stat-lbl">Miễn phí mọi khóa học</div>
+                <div className="trust-stat-lbl">Miễn phí luyện tập cơ bản</div>
               </div>
               <div className="trust-stat">
-                <div className="trust-stat-val neon-glow-text">20</div>
-                <div className="trust-stat-lbl">Bài học theo lộ trình Silberschatz</div>
+                <div className="trust-stat-val neon-glow-text">3</div>
+                <div className="trust-stat-lbl">Hợp phần theo đúng cấu trúc HSA</div>
               </div>
               <div className="trust-stat">
-                <div className="trust-stat-val neon-glow-text">4-step</div>
-                <div className="trust-stat-lbl">Lý thuyết → Trắc nghiệm → Kéo thả → Tự code</div>
+                <div className="trust-stat-val neon-glow-text">CBT</div>
+                <div className="trust-stat-lbl">Thi thử trên máy, chấm điểm tức thì</div>
               </div>
             </div>
             <div className="testimonial-card glass-card trust-card">
-              <p className="trust-quote">&quot;Cách giảng dễ hiểu, bài tập thực tế. Mỗi module đi kèm dự án nhỏ giúp mình xây portfolio ngay trong quá trình học.&quot;</p>
-              <div className="trust-note">Đánh giá từ học viên thử nghiệm — phần đánh giá đầy đủ đang được tích hợp vào trang khóa học.</div>
+              <p className="trust-quote">&quot;Luyện theo dạng và bấm giờ như thi thật giúp mình quen áp lực thời gian — vào phòng thi không còn bị cuống.&quot;</p>
+              <div className="trust-note">Trải nghiệm từ nhóm học viên thử nghiệm — phần đánh giá đầy đủ đang được tích hợp.</div>
             </div>
             <div className="testimonial-card glass-card trust-card">
-              <p className="trust-quote">&quot;Pipeline 4 bước (Theory → MCQ → Drag-Query → Code) giúp mình không bị &apos;đọc xong quên&apos;. Phải kéo thả, phải gõ SQL thật.&quot;</p>
-              <div className="trust-note">Trải nghiệm thực tế từ nhóm pilot — chúng tôi đang thu thập đánh giá từ 50 học viên đầu tiên.</div>
+              <p className="trust-quote">&quot;Bài chẩn đoán đầu vào chỉ ra đúng chỗ mình yếu nhất, nên lộ trình luyện tập không bị dàn trải, lên điểm nhanh.&quot;</p>
+              <div className="trust-note">Phản hồi từ nhóm pilot — chúng tôi đang thu thập đánh giá từ những học viên đầu tiên.</div>
             </div>
           </div>
         </div>
@@ -257,8 +258,8 @@ export default function LandingPage() {
 
       <section className="landing-section cta-panel neon-cta reveal-on-scroll">
         <div className="section-container">
-          <h2 className="neon-text-sm">Bắt đầu hành trình lập trình của bạn hôm nay</h2>
-          <p>Đăng ký miễn phí và khám phá lộ trình phù hợp với mục tiêu cá nhân. Từ học viên mới đến người muốn nâng cấp kỹ năng, mọi thứ đã sẵn sàng.</p>
+          <h2 className="neon-text-sm">Sẵn sàng cho kỳ thi Đánh giá năng lực?</h2>
+          <p>Đăng ký miễn phí, làm bài chẩn đoán và nhận ngay lộ trình luyện thi HSA phù hợp với mục tiêu điểm số của bạn.</p>
           <div className="hero-actions">
             <a href="/register" className="btn-hero-primary neon-btn">Tham gia miễn phí</a>
             <a href="/login" className="btn-hero-outline glass-btn">Đã có tài khoản?</a>
@@ -267,7 +268,7 @@ export default function LandingPage() {
       </section>
 
       {/* block footer */}
-      <footer className="landing-footer">© 2026 Programming EDU. All rights reserved.</footer>
+      <footer className="landing-footer">© 2026 ProgrammingEdu × TopHSA · Luyện thi Đánh giá năng lực HSA.</footer>
 
       {/* icons.js của base + inline script landing (block extra_scripts) */}
       <LegacyScripts srcs={['/static/js/icons.js', '/static/js/pages/landing.inline.js']} />

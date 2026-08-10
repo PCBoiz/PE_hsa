@@ -103,9 +103,10 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .brand-always { display: flex !important; align-items: center; gap: 3px; }
 .brand .brand-title,
 .brand-always .brand-title { font-weight: 800; font-size: 0.9rem; letter-spacing: -0.3px; white-space: nowrap; }
-.brand-c1 { color: #06B6D4; }
-.brand-c2 { color: var(--blue); }
-.brand-short { display: none; color: var(--blue); }
+.brand-c1 { color: #8B7CF6; }
+.brand-c2 { color: #2DD4BF; }
+.brand-x { color: var(--t3); font-weight: 700; margin: 0 1px; }
+.brand-short { display: none; color: #8B7CF6; }
 
 /* ── Topbar horizontal nav ── */
 .topbar-nav {

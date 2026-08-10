@@ -258,48 +258,81 @@ class FollowingView(APIView):
 
 # ─────────────────────────── /api/survey ───────────────────────────
 
+# Đáp án đúng mini-test chẩn đoán (khớp questionaire/page.tsx).
+_HSA_DIAG_KEY = {
+    'dq_ql_1': 'C', 'dq_ql_2': 'C',   # Định lượng
+    'dq_qt_1': 'D', 'dq_qt_2': 'B',   # Định tính
+    'dq_kh_1': 'B', 'dq_kh_2': 'C',   # Khoa học
+}
+
+# 3 hợp phần HSA: (nhãn, mô tả gốc).
+_HSA_SECTIONS = {
+    'ql': ('Tư duy Định lượng', 'Đại số, hàm số, hình học, xác suất – thống kê, đọc số liệu.'),
+    'qt': ('Tư duy Định tính', 'Đọc hiểu, từ vựng – ngữ pháp, suy luận ngôn ngữ.'),
+    'kh': ('Khoa học & Tiếng Anh', 'Lý – Hoá – Sinh – Sử – Địa hoặc lựa chọn Tiếng Anh.'),
+}
+
+
 def _pick_roadmap_template(data):
-    """Chọn template lộ trình phù hợp nhất từ câu trả lời khảo sát. (routes/user.py)"""
-    career = (data.get('career_target') or '').lower()
-    langs = (data.get('language') or '').lower()
-    domain = (data.get('domain') or '').lower()
+    """HSA chỉ có 1 template gốc — luôn dùng hsa_master làm nền."""
+    return 'hsa_master'
 
-    if 'frontend' in career:
-        return 'frontend'
-    if 'backend' in career or 'devops' in career or 'sre' in career:
-        return 'backend'
-    if 'ai' in career or 'ml' in career or 'data' in career:
-        return 'python'
-    if 'fullstack' in career:
-        return 'frontend'
 
-    if 'c/c++' in langs or 'c++' in langs:
-        return 'cpp'
-    if 'python' in langs:
-        return 'python'
-    if 'javascript' in langs:
-        return 'frontend'
-    if 'java' in langs:
-        return 'backend'
-
-    if 'ai' in domain or 'machine learning' in domain or 'data' in domain:
-        return 'python'
-    if 'embedded' in domain or 'iot' in domain:
-        return 'cpp'
-    if 'web' in domain:
-        return 'frontend'
-
-    return 'frontend'
+def _hsa_section_scores(data):
+    """Chấm mini-test theo hợp phần (0–2 mỗi phần), hạ nhẹ nếu user tự nhận yếu.
+    Điểm THẤP = yếu hơn → ưu tiên luyện trước."""
+    scores = {'ql': 0, 'qt': 0, 'kh': 0}
+    for qid, correct in _HSA_DIAG_KEY.items():
+        sec = qid.split('_')[1]            # dq_<sec>_<n>
+        if str(data.get(qid, '')).strip().upper() == correct:
+            scores[sec] += 1
+    self_weak = (data.get('self_weak') or '').lower()
+    if 'định lượng' in self_weak or 'toán' in self_weak:
+        scores['ql'] = max(0, scores['ql'] - 1)
+    if 'định tính' in self_weak or 'ngôn ngữ' in self_weak or 'văn' in self_weak:
+        scores['qt'] = max(0, scores['qt'] - 1)
+    if 'khoa học' in self_weak or 'tiếng anh' in self_weak:
+        scores['kh'] = max(0, scores['kh'] - 1)
+    return scores
 
 
 def _generate_user_roadmap(uid, survey_id, data):
-    """Sao chép template khớp khảo sát thành lộ trình cá nhân (source='generated').
+    """Dựng lộ trình HSA CÁ NHÂN HOÁ: hợp phần yếu lên trước, gắn mục tiêu điểm.
     Idempotent theo id 'u<uid>_generated'."""
-    tmpl_id = _pick_roadmap_template(data)
-    tmpl = q1('SELECT title, icon, color, nodes_json, edges_json, mermaid_def '
-              'FROM roadmaps WHERE id=%s AND user_id IS NULL', (tmpl_id,))
-    if not tmpl:
-        return
+    scores = _hsa_section_scores(data)
+    base_order = ['ql', 'qt', 'kh']
+    order = sorted(base_order, key=lambda s: (scores[s], base_order.index(s)))
+    weakest = order[0]
+    target = data.get('target_score') or '—'
+
+    nodes = {
+        'hsa_start': {'title': '1. Chẩn đoán năng lực',
+                      'desc': f'Đã đánh giá năng lực đầu vào. Mục tiêu của bạn: {target} điểm.'},
+    }
+    lines = ['flowchart TD', '    hsa_start["1. Chẩn đoán năng lực"]']
+    ids = ['hsa_start']
+    for i, sec in enumerate(order, start=2):
+        title, desc = _HSA_SECTIONS[sec]
+        nid = f'hsa_{sec}'
+        prio = ' ⚠ ƯU TIÊN' if sec == weakest else ''
+        label = f'{i}. {title}{prio}'
+        note = (f' (mini-test {scores[sec]}/2 — tập trung phần này)'
+                if sec == weakest else f' (mini-test {scores[sec]}/2)')
+        nodes[nid] = {'title': label, 'desc': desc + note}
+        lines.append(f'    {nid}["{label}"]')
+        ids.append(nid)
+    n_mock, n_goal = len(order) + 2, len(order) + 3
+    nodes['hsa_mock'] = {'title': f'{n_mock}. Luyện đề tổng (CBT)',
+                         'desc': 'Thi thử đầy đủ 150 câu trên máy, chấm điểm và phân tích.'}
+    nodes['hsa_goal'] = {'title': f'{n_goal}. Về đích ({target})',
+                         'desc': 'Rà soát điểm yếu còn lại, chốt chiến lược làm bài.'}
+    lines.append(f'    hsa_mock["{n_mock}. Luyện đề tổng (CBT)"]')
+    lines.append(f'    hsa_goal["{n_goal}. Về đích ({target})"]')
+    ids += ['hsa_mock', 'hsa_goal']
+    for a, b in zip(ids, ids[1:]):
+        lines.append(f'    {a} --> {b}')
+    mermaid_def = '\n'.join(lines) + '\n'
+
     rid = f'u{uid}_generated'
     x('''INSERT INTO roadmaps
              (id, user_id, source, generated_from_survey_id,
@@ -314,9 +347,9 @@ def _generate_user_roadmap(uid, survey_id, data):
              edges_json  = EXCLUDED.edges_json,
              mermaid_def = EXCLUDED.mermaid_def,
              updated_at  = now()''',
-      (rid, uid, survey_id, tmpl['title'], tmpl['icon'], tmpl['color'],
-       json.dumps(tmpl['nodes_json']), json.dumps(tmpl['edges_json']),
-       tmpl['mermaid_def']))
+      (rid, uid, survey_id, 'Lộ trình luyện thi HSA của bạn', '🎯', '#8B5CF6',
+       json.dumps(nodes, ensure_ascii=False), json.dumps({}, ensure_ascii=False),
+       mermaid_def))
 
 
 class SurveyView(APIView):

@@ -5,10 +5,12 @@ import type { Metadata } from 'next';
 // (MIGRATION_PLAN.md §4) để tránh class trùng tên giữa các file đè nhau.
 
 export const metadata: Metadata = {
-  title: 'Programming EDU',
+  title: 'ProgrammingEdu × TopHSA — Luyện thi Đánh giá năng lực HSA',
+  description:
+    'Nền tảng luyện thi Đánh giá năng lực (HSA) ĐHQG Hà Nội — ProgrammingEdu hợp tác TopHSA. Chẩn đoán năng lực, lộ trình cá nhân hoá, luyện bấm giờ và thi thử CBT đầy đủ.',
   icons: {
-    // favicon rocket 🚀 y hệt base.html
-    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E",
+    // favicon 🎯 (đổi từ 🚀) — nhận diện luyện thi HSA
+    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E",
   },
 };
 

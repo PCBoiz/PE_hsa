@@ -31,7 +31,7 @@ export default function DashboardPage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css"]} />
-      <title>Programming EDU</title>
+      <title>ProgrammingEdu × TopHSA</title>
       {/* PERF 2026-07-19: mermaid + svg-pan-zoom tải từ jsdelivr — preconnect
           cắt DNS+TLS handshake khỏi đường găng nạp script */}
       <link rel="preconnect" href="https://cdn.jsdelivr.net" />
@@ -46,7 +46,7 @@ export default function DashboardPage() {
             <div className="dash-hero-text">
               <span className="dash-hero-greeting" id="banner-greeting">Chào mừng trở lại 👋</span>
               <h2 id="banner-name">—</h2>
-              <p>Hôm nay bạn sẽ học gì? Tiếp tục hành trình chinh phục kỹ năng lập trình của bạn.</p>
+              <p>Hôm nay luyện phần nào? Tiếp tục hành trình chinh phục kỳ thi Đánh giá năng lực HSA.</p>
             </div>
             <button className="dash-hero-btn" onClick={() => W().navigate('courses')}>
               Khám phá khóa học <span data-icon="arrow-right" data-size="13"></span>

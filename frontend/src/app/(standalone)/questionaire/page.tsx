@@ -1,7 +1,8 @@
 'use client';
 
-// Port questionaire.html — markup 1:1, CSS: chỉ questionaire.css.
-// Toàn bộ logic step/validate/submit nằm nguyên trong questionaire.js (legacy).
+// Khảo sát đầu vào HSA (ProgrammingEdu × TopHSA): 6 câu hồ sơ + 6 câu mini-test
+// chẩn đoán (2/hợp phần). Backend chấm mini-test + sinh lộ trình cá nhân hoá.
+// Logic step/validate/submit ở questionaire.js.
 
 import PageStyles from '@/components/PageStyles';
 import LegacyScripts from '@/components/LegacyScripts';
@@ -12,11 +13,11 @@ export default function QuestionairePage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/questionaire.css"]} />
-      <title>Khảo Sát Học Viên - Programming Edu</title>
+      <title>Khảo sát đầu vào — ProgrammingEdu × TopHSA</title>
 
       <div className="survey-container">
         <div className="tech-logo">
-          <span className="logo-text">Programming EDU</span>
+          <span className="logo-text">ProgrammingEdu × TopHSA</span>
         </div>
 
         <div className="progress-container">
@@ -24,42 +25,92 @@ export default function QuestionairePage() {
         </div>
 
         <form id="surveyForm">
-          {/* ══════ BLOCK 1: BẠN LÀ AI ══════ */}
+          {/* ══════ PHẦN 1: HỒ SƠ & MỤC TIÊU ══════ */}
 
-          {/* Q1 – Nghề nghiệp */}
+          {/* Q1 — Mục tiêu điểm */}
           <div className="step active">
             <div className="question-block">
-              <p className="question">1. Nghề nghiệp hiện tại của bạn là gì?</p>
-              <label className="option"><input type="radio" name="job" value="Học sinh" /> Học sinh</label>
-              <label className="option"><input type="radio" name="job" value="Sinh viên" /> Sinh viên</label>
-              <label className="option"><input type="radio" name="job" value="Người đi làm" /> Người đi làm</label>
-              <label className="option">
-                <input type="radio" name="job" value="other" id="job_other" />
-                Khác:
-                <input type="text" id="job_text" className="custom-text-input" placeholder="Nhập nghề nghiệp..." disabled />
-              </label>
+              <p className="question">1. Mục tiêu điểm HSA của bạn là bao nhiêu?</p>
+              <label className="option"><input type="radio" name="target_score" value="Dưới 75" /> Dưới 75 điểm</label>
+              <label className="option"><input type="radio" name="target_score" value="75–90" /> 75 – 90 điểm</label>
+              <label className="option"><input type="radio" name="target_score" value="90–105" /> 90 – 105 điểm</label>
+              <label className="option"><input type="radio" name="target_score" value="Trên 105" /> Trên 105 điểm</label>
             </div>
             <div className="btn-group">
               <button type="button" className="next-btn">Tiếp tục</button>
             </div>
           </div>
 
-          {/* Q2 – Mục đích học */}
+          {/* Q2 — Khối ngành xét tuyển */}
           <div className="step">
             <div className="question-block">
-              <p className="question">
-                2. Bạn học lập trình để làm gì?
+              <p className="question">2. Bạn dùng kết quả HSA để xét tuyển khối ngành nào?</p>
+              <label className="option"><input type="radio" name="target_major" value="Kinh tế – Quản lý" /> Kinh tế – Quản lý</label>
+              <label className="option"><input type="radio" name="target_major" value="Kỹ thuật – Công nghệ" /> Kỹ thuật – Công nghệ</label>
+              <label className="option"><input type="radio" name="target_major" value="Khoa học tự nhiên" /> Khoa học tự nhiên</label>
+              <label className="option"><input type="radio" name="target_major" value="Khoa học xã hội – Nhân văn" /> Khoa học xã hội – Nhân văn</label>
+              <label className="option"><input type="radio" name="target_major" value="Y – Dược" /> Y – Dược</label>
+              <label className="option"><input type="radio" name="target_major" value="Chưa xác định" /> Chưa xác định</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q3 — Thời điểm thi */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question">3. Bạn dự định thi HSA khi nào?</p>
+              <label className="option"><input type="radio" name="exam_timing" value="Trong 1 tháng" /> Trong 1 tháng</label>
+              <label className="option"><input type="radio" name="exam_timing" value="1–3 tháng" /> 1 – 3 tháng</label>
+              <label className="option"><input type="radio" name="exam_timing" value="3–6 tháng" /> 3 – 6 tháng</label>
+              <label className="option"><input type="radio" name="exam_timing" value="Trên 6 tháng" /> Trên 6 tháng</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q4 — Chọn hợp phần 3 */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question">4. Hợp phần thứ 3 bạn chọn làm bài là gì?</p>
+              <label className="option"><input type="radio" name="section3_choice" value="Khoa học" /> Khoa học (Tự nhiên – Xã hội)</label>
+              <label className="option"><input type="radio" name="section3_choice" value="Tiếng Anh" /> Tiếng Anh</label>
+              <label className="option"><input type="radio" name="section3_choice" value="Chưa quyết định" /> Chưa quyết định</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q5 — Thời gian ôn mỗi ngày */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question">5. Bạn có thể dành bao nhiêu thời gian ôn mỗi ngày?</p>
+              <label className="option"><input type="radio" name="study_time" value="Dưới 1 giờ" /> Dưới 1 giờ</label>
+              <label className="option"><input type="radio" name="study_time" value="1–2 giờ" /> 1 – 2 giờ</label>
+              <label className="option"><input type="radio" name="study_time" value="2–3 giờ" /> 2 – 3 giờ</label>
+              <label className="option"><input type="radio" name="study_time" value="Trên 3 giờ" /> Trên 3 giờ</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q6 — Tự đánh giá hợp phần yếu */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question">6. Bạn tự thấy mình yếu nhất ở hợp phần nào?
                 <span className="note">(Chọn tối đa 2)</span>
               </p>
-              <label className="option"><input type="checkbox" name="purpose" value="Đi làm IT" /> Đi làm IT</label>
-              <label className="option"><input type="checkbox" name="purpose" value="Chuyển ngành" /> Chuyển ngành</label>
-              <label className="option"><input type="checkbox" name="purpose" value="Làm dự án cá nhân" /> Làm dự án cá nhân</label>
-              <label className="option"><input type="checkbox" name="purpose" value="Học cho biết" /> Học cho biết</label>
-              <label className="option">
-                <input type="checkbox" name="purpose" value="other" id="purpose_other" />
-                Khác:
-                <input type="text" id="purpose_text" className="custom-text-input" placeholder="Nhập mục đích..." disabled />
-              </label>
+              <label className="option"><input type="checkbox" name="self_weak" value="Định lượng" /> Tư duy Định lượng (Toán)</label>
+              <label className="option"><input type="checkbox" name="self_weak" value="Định tính" /> Tư duy Định tính (Ngữ văn – Ngôn ngữ)</label>
+              <label className="option"><input type="checkbox" name="self_weak" value="Khoa học" /> Khoa học / Tiếng Anh</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -67,28 +118,17 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* ══════ BLOCK 2: TRÌNH ĐỘ HIỆN TẠI ══════ */}
+          {/* ══════ PHẦN 2: MINI-TEST CHẨN ĐOÁN ══════ */}
 
-          {/* Q3 – Kinh nghiệm + ngôn ngữ */}
+          {/* Q7 — Định lượng 1 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">3. Bạn đã từng học lập trình chưa?</p>
-              <label className="option"><input type="radio" name="experience" value="Chưa từng" /> Chưa từng</label>
-              <label className="option"><input type="radio" name="experience" value="Có (cơ bản)" /> Có (cơ bản)</label>
-              <label className="option"><input type="radio" name="experience" value="Có (trung cấp trở lên)" /> Có (trung cấp trở lên)</label>
-            </div>
-
-            <div className="question-block sub-question" id="sub_language_section" style={{ display: 'none' }}>
-              <p className="question">Nếu có, bạn đã học ngôn ngữ nào?</p>
-              <label className="option"><input type="checkbox" name="language" value="Python" /> Python</label>
-              <label className="option"><input type="checkbox" name="language" value="Java" /> Java</label>
-              <label className="option"><input type="checkbox" name="language" value="C/C++" /> C/C++</label>
-              <label className="option"><input type="checkbox" name="language" value="JavaScript" /> JavaScript</label>
-              <label className="option">
-                <input type="checkbox" name="language" value="other" id="lang_other" />
-                Khác:
-                <input type="text" id="lang_text" className="custom-text-input" placeholder="Nhập ngôn ngữ..." disabled />
-              </label>
+              <p className="question"><span className="note">🧪 Mini-test · Định lượng</span><br />
+                7. Giá trị của biểu thức 2³ + 3² bằng bao nhiêu?</p>
+              <label className="option"><input type="radio" name="dq_ql_1" value="A" /> 15</label>
+              <label className="option"><input type="radio" name="dq_ql_1" value="B" /> 16</label>
+              <label className="option"><input type="radio" name="dq_ql_1" value="C" /> 17</label>
+              <label className="option"><input type="radio" name="dq_ql_1" value="D" /> 18</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -96,13 +136,15 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* Q4 – Tự đánh giá level */}
+          {/* Q8 — Định lượng 2 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">4. Bạn tự đánh giá level của mình:</p>
-              <label className="option"><input type="radio" name="level" value="Beginner" /> Beginner</label>
-              <label className="option"><input type="radio" name="level" value="Intermediate" /> Intermediate</label>
-              <label className="option"><input type="radio" name="level" value="Advanced" /> Advanced</label>
+              <p className="question"><span className="note">🧪 Mini-test · Định lượng</span><br />
+                8. Một số tăng 20% rồi lại giảm 20%. So với ban đầu, số mới:</p>
+              <label className="option"><input type="radio" name="dq_ql_2" value="A" /> Không đổi</label>
+              <label className="option"><input type="radio" name="dq_ql_2" value="B" /> Tăng 4%</label>
+              <label className="option"><input type="radio" name="dq_ql_2" value="C" /> Giảm 4%</label>
+              <label className="option"><input type="radio" name="dq_ql_2" value="D" /> Giảm 40%</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -110,24 +152,15 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* Q5 – Kỹ năng chi tiết đã có */}
+          {/* Q9 — Định tính 1 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">5. Bạn tự tin với kỹ năng nào rồi?
-                <span className="note">(Bỏ qua nếu chưa có)</span>
-              </p>
-              <label className="option"><input type="checkbox" name="skill_detail" value="HTML / CSS" /> HTML / CSS</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="JavaScript / TypeScript" /> JavaScript / TypeScript</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="Framework FE (React, Vue, Angular...)" /> Framework FE (React, Vue, Angular...)</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="Backend / API (Node, Django, Spring...)" /> Backend / API (Node, Django, Spring...)</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="Database (SQL, NoSQL)" /> Database (SQL, NoSQL)</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="Git / CI-CD" /> Git / CI-CD</label>
-              <label className="option"><input type="checkbox" name="skill_detail" value="Docker / Cloud" /> Docker / Cloud</label>
-              <label className="option">
-                <input type="checkbox" name="skill_detail" value="other" id="skill_other" />
-                Khác:
-                <input type="text" id="skill_text" className="custom-text-input" placeholder="Nhập kỹ năng..." disabled />
-              </label>
+              <p className="question"><span className="note">🧪 Mini-test · Định tính</span><br />
+                9. Từ nào KHÁC loại với các từ còn lại?</p>
+              <label className="option"><input type="radio" name="dq_qt_1" value="A" /> Bàn</label>
+              <label className="option"><input type="radio" name="dq_qt_1" value="B" /> Ghế</label>
+              <label className="option"><input type="radio" name="dq_qt_1" value="C" /> Tủ</label>
+              <label className="option"><input type="radio" name="dq_qt_1" value="D" /> Chạy</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -135,20 +168,15 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* ══════ BLOCK 3: MỤC TIÊU ══════ */}
-
-          {/* Q6 – Mong muốn sau khóa học */}
+          {/* Q10 — Định tính 2 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">6. Bạn mong muốn đạt được điều gì sau khóa học?</p>
-              <label className="option"><input type="checkbox" name="goal" value="Có việc làm" /> Có việc làm</label>
-              <label className="option"><input type="checkbox" name="goal" value="Làm được project" /> Làm được project</label>
-              <label className="option"><input type="checkbox" name="goal" value="Hiểu kiến thức cơ bản" /> Hiểu kiến thức cơ bản</label>
-              <label className="option">
-                <input type="checkbox" name="goal" value="other" id="goal_other" />
-                Khác:
-                <input type="text" id="goal_text" className="custom-text-input" placeholder="Nhập mong muốn..." disabled />
-              </label>
+              <p className="question"><span className="note">🧪 Mini-test · Định tính</span><br />
+                10. Từ nào TRÁI nghĩa với &quot;lạc quan&quot;?</p>
+              <label className="option"><input type="radio" name="dq_qt_2" value="A" /> Vui vẻ</label>
+              <label className="option"><input type="radio" name="dq_qt_2" value="B" /> Bi quan</label>
+              <label className="option"><input type="radio" name="dq_qt_2" value="C" /> Tự tin</label>
+              <label className="option"><input type="radio" name="dq_qt_2" value="D" /> Hạnh phúc</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -156,25 +184,15 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* Q7 – Lĩnh vực IT quan tâm */}
+          {/* Q11 — Khoa học 1 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">7. Bạn quan tâm mảng IT nào?
-                <span className="note">(Chọn tối đa 3)</span>
-              </p>
-              <label className="option"><input type="checkbox" name="domain" value="Web Development" /> Web Development</label>
-              <label className="option"><input type="checkbox" name="domain" value="Mobile App" /> Mobile App</label>
-              <label className="option"><input type="checkbox" name="domain" value="Cloud / DevOps" /> Cloud / DevOps</label>
-              <label className="option"><input type="checkbox" name="domain" value="AI / Machine Learning" /> AI / Machine Learning</label>
-              <label className="option"><input type="checkbox" name="domain" value="Data Science / Big Data" /> Data Science / Big Data</label>
-              <label className="option"><input type="checkbox" name="domain" value="Cyber Security" /> Cyber Security</label>
-              <label className="option"><input type="checkbox" name="domain" value="Embedded / IoT" /> Embedded / IoT</label>
-              <label className="option"><input type="checkbox" name="domain" value="Game Development" /> Game Development</label>
-              <label className="option">
-                <input type="checkbox" name="domain" value="other" id="domain_other" />
-                Khác:
-                <input type="text" id="domain_text" className="custom-text-input" placeholder="Nhập lĩnh vực..." disabled />
-              </label>
+              <p className="question"><span className="note">🧪 Mini-test · Khoa học</span><br />
+                11. Ở áp suất thường, nước sôi ở nhiệt độ nào?</p>
+              <label className="option"><input type="radio" name="dq_kh_1" value="A" /> 90°C</label>
+              <label className="option"><input type="radio" name="dq_kh_1" value="B" /> 100°C</label>
+              <label className="option"><input type="radio" name="dq_kh_1" value="C" /> 110°C</label>
+              <label className="option"><input type="radio" name="dq_kh_1" value="D" /> 120°C</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
@@ -182,57 +200,19 @@ export default function QuestionairePage() {
             </div>
           </div>
 
-          {/* Q8 – Vị trí nghề mục tiêu */}
+          {/* Q12 — Khoa học 2 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">8. Bạn muốn trở thành vị trí gì?</p>
-              <label className="option"><input type="radio" name="career_target" value="Frontend Developer" /> Frontend Developer</label>
-              <label className="option"><input type="radio" name="career_target" value="Backend Developer" /> Backend Developer</label>
-              <label className="option"><input type="radio" name="career_target" value="Fullstack Developer" /> Fullstack Developer</label>
-              <label className="option"><input type="radio" name="career_target" value="Mobile Developer" /> Mobile Developer</label>
-              <label className="option"><input type="radio" name="career_target" value="Data Engineer / Analyst" /> Data Engineer / Analyst</label>
-              <label className="option"><input type="radio" name="career_target" value="AI / ML Engineer" /> AI / ML Engineer</label>
-              <label className="option"><input type="radio" name="career_target" value="DevOps / SRE" /> DevOps / SRE</label>
-              <label className="option">
-                <input type="radio" name="career_target" value="other" id="career_other" />
-                Khác:
-                <input type="text" id="career_text" className="custom-text-input" placeholder="Nhập vị trí mong muốn..." disabled />
-              </label>
+              <p className="question"><span className="note">🧪 Mini-test · Khoa học</span><br />
+                12. Hành tinh nào gần Mặt Trời nhất?</p>
+              <label className="option"><input type="radio" name="dq_kh_2" value="A" /> Kim Tinh</label>
+              <label className="option"><input type="radio" name="dq_kh_2" value="B" /> Trái Đất</label>
+              <label className="option"><input type="radio" name="dq_kh_2" value="C" /> Thủy Tinh</label>
+              <label className="option"><input type="radio" name="dq_kh_2" value="D" /> Hỏa Tinh</label>
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
-              <button type="button" className="next-btn">Tiếp tục</button>
-            </div>
-          </div>
-
-          {/* ══════ BLOCK 4: THỜI GIAN ══════ */}
-
-          {/* Q9 – Thời gian học mỗi tuần */}
-          <div className="step">
-            <div className="question-block">
-              <p className="question">9. Bạn có thể dành thời gian học:</p>
-              <label className="option"><input type="radio" name="time" value="< 5h/tuần" /> &lt; 5h/tuần</label>
-              <label className="option"><input type="radio" name="time" value="5–10h/tuần" /> 5–10h/tuần</label>
-              <label className="option"><input type="radio" name="time" value="> 10h/tuần" /> &gt; 10h/tuần</label>
-            </div>
-            <div className="btn-group">
-              <button type="button" className="prev-btn">Quay lại</button>
-              <button type="button" className="next-btn">Tiếp tục</button>
-            </div>
-          </div>
-
-          {/* Q10 – Quỹ thời gian đạt mục tiêu */}
-          <div className="step">
-            <div className="question-block">
-              <p className="question">10. Bạn muốn đạt mục tiêu trong bao lâu?</p>
-              <label className="option"><input type="radio" name="timeline" value="1–3 tháng" /> 1–3 tháng</label>
-              <label className="option"><input type="radio" name="timeline" value="3–6 tháng" /> 3–6 tháng</label>
-              <label className="option"><input type="radio" name="timeline" value="6–12 tháng" /> 6–12 tháng</label>
-              <label className="option"><input type="radio" name="timeline" value="> 1 năm" /> &gt; 1 năm</label>
-            </div>
-            <div className="btn-group">
-              <button type="button" className="prev-btn">Quay lại</button>
-              <button type="submit" className="submit-btn">Hoàn thành Khảo sát</button>
+              <button type="submit" className="submit-btn">Hoàn thành &amp; nhận lộ trình</button>
             </div>
           </div>
         </form>
@@ -241,11 +221,11 @@ export default function QuestionairePage() {
       <div className="thanks-overlay" id="thanksOverlay" aria-hidden="true">
         <div className="thanks-modal" role="dialog" aria-modal="true" aria-labelledby="thanksTitle">
           <div className="thanks-badge">✓</div>
-          <h3 id="thanksTitle" className="thanks-title">Cảm ơn bạn!</h3>
+          <h3 id="thanksTitle" className="thanks-title">Đã có lộ trình cho bạn!</h3>
           <p className="thanks-sub">
-            Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ cá nhân hóa lộ trình học phù hợp hơn.
+            Chúng tôi đã chẩn đoán năng lực và cá nhân hoá lộ trình luyện thi HSA theo điểm mạnh – yếu của bạn.
           </p>
-          <button className="thanks-btn" id="thanksOkBtn" type="button">OK</button>
+          <button className="thanks-btn" id="thanksOkBtn" type="button">Xem lộ trình →</button>
         </div>
       </div>
 

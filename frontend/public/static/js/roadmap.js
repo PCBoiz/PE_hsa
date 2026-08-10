@@ -9,8 +9,9 @@
   var LS_ACTIVE = 'roadmap_active_v1';
   var LS_PROGRESS = 'roadmap_progress_v2';
   var LS_SEEN_GENERATED = 'roadmap_generated_seen_v1';
-  var DEFAULT_PINNED = ['Frontend', 'Backend'];
   var MY_ROADMAP_TAB = 'Lộ trình của tôi';
+  // HSA: không pin sẵn lộ trình lập trình; mặc định mở "Lộ trình của tôi" (roadmap HSA cá nhân).
+  var DEFAULT_PINNED = [];
 
   function getPinned() {
     try {
@@ -19,7 +20,7 @@
     } catch (e) { return DEFAULT_PINNED.slice(); }
   }
   function setPinned(arr) { localStorage.setItem(LS_PINNED, JSON.stringify(arr)); }
-  function getActive() { return localStorage.getItem(LS_ACTIVE) || 'Frontend'; }
+  function getActive() { return localStorage.getItem(LS_ACTIVE) || MY_ROADMAP_TAB; }
   function setActive(name) { localStorage.setItem(LS_ACTIVE, name); }
   function getOverrides() {
     try { return JSON.parse(localStorage.getItem(LS_PROGRESS)) || {}; }

@@ -1560,7 +1560,7 @@ function loadUser() {
       // Nguồn xác định user hiện tại (dùng chung: forum gate mock posts theo role)
       window.__currentUser = u;
       var isNewUser = Boolean(u.is_new_user || u.first_login || u.questionnaire_completed === 0);
-      setText("banner-greeting", isNewUser ? "Chào mừng bạn đến với Programming EDU! 🎉" : "Chào mừng trở lại! 👋");
+      setText("banner-greeting", isNewUser ? "Chào mừng bạn đến với ProgrammingEdu × TopHSA! 🎯" : "Chào mừng trở lại! 👋");
       setText("sidebar-name", u.name.split(" ").slice(-1)[0]);
       setText("sidebar-role", u.role);
       var adminBtn = document.getElementById("nav-admin");

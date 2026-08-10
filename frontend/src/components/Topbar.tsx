@@ -22,8 +22,8 @@ export default function Topbar() {
             style={{ cursor: 'pointer' }}
             title="Về trang chủ"
           >
-            <span className="brand-title brand-full"><span className="brand-c1">Programming</span> <span className="brand-c2">EDU</span></span>
-            <span className="brand-title brand-short">PE</span>
+            <span className="brand-title brand-full"><span className="brand-c1">ProgrammingEdu</span> <span className="brand-x">×</span> <span className="brand-c2">TopHSA</span></span>
+            <span className="brand-title brand-short">PE×T</span>
           </div>
         </div>
 

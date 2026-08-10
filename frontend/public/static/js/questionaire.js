@@ -1,55 +1,32 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // --- 1. ĐIỀU HƯỚNG CHUYỂN TRANG TỪNG BƯỚC ---
+  // --- 1. ĐIỀU HƯỚNG CHUYỂN BƯỚC ---
   const steps = document.querySelectorAll(".step");
   const nextBtns = document.querySelectorAll(".next-btn");
   const prevBtns = document.querySelectorAll(".prev-btn");
   const progressBar = document.getElementById("progressBar");
   let currentStep = 0;
 
-  // Thứ tự step khớp với HTML:
-  // 0  Q1  job            (radio)
-  // 1  Q2  purpose        (checkbox, max 2)
-  // 2  Q3  experience     (radio) + sub language
-  // 3  Q4  level          (radio)
-  // 4  Q5  skill_detail   (checkbox, optional)
-  // 5  Q6  goal           (checkbox)
-  // 6  Q7  domain         (checkbox, max 3)
-  // 7  Q8  career_target  (radio)
-  // 8  Q9  time           (radio)
-  // 9  Q10 timeline       (radio)
+  // 12 bước = 6 câu hồ sơ + 6 câu mini-test chẩn đoán (khớp questionaire/page.tsx).
   const STEP_REQUIRED = [
-    { name: 'job',           otherId: 'job_other',     textId: 'job_text' },
-    { name: 'purpose',       otherId: 'purpose_other', textId: 'purpose_text' },
-    { name: 'experience',    otherId: null,             textId: null },
-    { name: 'level',         otherId: null,             textId: null },
-    { name: 'skill_detail',  otherId: 'skill_other',  textId: 'skill_text', optional: true },
-    { name: 'goal',          otherId: 'goal_other',    textId: 'goal_text' },
-    { name: 'domain',        otherId: 'domain_other',  textId: 'domain_text' },
-    { name: 'career_target', otherId: 'career_other',  textId: 'career_text' },
-    { name: 'time',          otherId: null,             textId: null },
-    { name: 'timeline',      otherId: null,             textId: null },
+    { name: 'target_score' },
+    { name: 'target_major' },
+    { name: 'exam_timing' },
+    { name: 'section3_choice' },
+    { name: 'study_time' },
+    { name: 'self_weak' },   // checkbox — tối đa 2, tối thiểu 1
+    { name: 'dq_ql_1' },
+    { name: 'dq_ql_2' },
+    { name: 'dq_qt_1' },
+    { name: 'dq_qt_2' },
+    { name: 'dq_kh_1' },
+    { name: 'dq_kh_2' },
   ];
 
   function isStepAnswered(stepIndex) {
     const req = STEP_REQUIRED[stepIndex];
     if (!req) return true;
     const hasSelection = document.querySelectorAll(`input[name="${req.name}"]:checked`).length > 0;
-    if (!hasSelection) return !!req.optional;
-    if (req.otherId && req.textId) {
-      const otherChecked = document.querySelector(`#${req.otherId}:checked`);
-      if (otherChecked && !document.getElementById(req.textId).value.trim()) return false;
-    }
-    // Q3 (step 2): nếu sub_language_section đang hiện thì bắt buộc chọn ít nhất 1 ngôn ngữ
-    if (stepIndex === 2) {
-      const langSection = document.getElementById('sub_language_section');
-      if (langSection && langSection.style.display !== 'none') {
-        const hasLang = document.querySelectorAll('input[name="language"]:checked').length > 0;
-        if (!hasLang) return false;
-        const langOther = document.querySelector('#lang_other:checked');
-        if (langOther && !document.getElementById('lang_text').value.trim()) return false;
-      }
-    }
-    return true;
+    return req.optional ? true : hasSelection;
   }
 
   function updateNextBtn() {
@@ -72,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
   nextBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       if (!isStepAnswered(currentStep)) {
-        showStepError('Vui lòng trả lời câu hỏi bắt buộc trước khi tiếp tục.');
+        showStepError('Vui lòng trả lời câu hỏi này trước khi tiếp tục.');
         shakeQuestion();
         return;
       }
@@ -97,86 +74,20 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("surveyForm").addEventListener("change", updateNextBtn);
   document.getElementById("surveyForm").addEventListener("input", updateNextBtn);
 
-  // --- 2. LOGIC BẬT/TẮT Ô NHẬP "KHÁC" ---
-  function setupOtherInput(inputType, name, otherId, textId) {
-    const inputs = document.querySelectorAll(`input[name="${name}"]`);
-    const textInput = document.getElementById(textId);
-    const otherEl = document.getElementById(otherId);
-
-    inputs.forEach((input) => {
-      input.addEventListener("change", () => {
-        if (inputType === "radio") {
-          if (input.value === "other") {
-            textInput.disabled = false;
-            textInput.focus();
-          } else {
-            textInput.disabled = true;
-            textInput.value = "";
-          }
-        } else if (inputType === "checkbox") {
-          if (otherEl.checked) {
-            textInput.disabled = false;
-          } else {
-            textInput.disabled = true;
-            textInput.value = "";
-          }
-        }
-      });
-    });
-  }
-
-  setupOtherInput("radio", "job", "job_other", "job_text");
-  setupOtherInput("checkbox", "purpose", "purpose_other", "purpose_text");
-  setupOtherInput("checkbox", "language", "lang_other", "lang_text");
-  setupOtherInput("checkbox", "skill_detail", "skill_other", "skill_text");
-  setupOtherInput("checkbox", "goal", "goal_other", "goal_text");
-  setupOtherInput("checkbox", "domain", "domain_other", "domain_text");
-  setupOtherInput("radio", "career_target", "career_other", "career_text");
-
-  // --- 3. GIỚI HẠN CHỌN TỐI ĐA (purpose: 2, domain: 3) ---
-  function setupMaxCheck(name, max, otherId, textId) {
+  // --- 2. GIỚI HẠN CHỌN TỐI ĐA (self_weak: 2) ---
+  function setupMaxCheck(name, max) {
     document.querySelectorAll(`input[name="${name}"]`).forEach((cb) => {
       cb.addEventListener("change", () => {
         if (document.querySelectorAll(`input[name="${name}"]:checked`).length > max) {
           cb.checked = false;
           alert(`Bạn chỉ được chọn tối đa ${max} mục!`);
-          if (otherId && cb.id === otherId) {
-            document.getElementById(textId).disabled = true;
-            document.getElementById(textId).value = "";
-          }
         }
       });
     });
   }
+  setupMaxCheck("self_weak", 2);
 
-  setupMaxCheck("purpose", 2, "purpose_other", "purpose_text");
-  setupMaxCheck("domain", 3, "domain_other", "domain_text");
-
-  // --- 4. ẨN/HIỆN CÂU HỎI PHỤ THEO ĐIỀU KIỆN (Q3 – experience) ---
-  const experienceRadios = document.querySelectorAll('input[name="experience"]');
-  const subLanguageSection = document.getElementById("sub_language_section");
-  const languageCheckboxes = document.querySelectorAll('input[name="language"]');
-  const langTextInput = document.getElementById("lang_text");
-
-  experienceRadios.forEach((radio) => {
-    radio.addEventListener("change", () => {
-      if (radio.value.includes("Có")) {
-        subLanguageSection.style.display = "block";
-      } else {
-        subLanguageSection.style.display = "none";
-        languageCheckboxes.forEach((cb) => (cb.checked = false));
-        langTextInput.disabled = true;
-        langTextInput.value = "";
-      }
-    });
-  });
-
-  const preCheckedExperience = document.querySelector('input[name="experience"]:checked');
-  if (preCheckedExperience && preCheckedExperience.value.includes("Có")) {
-    subLanguageSection.style.display = "block";
-  }
-
-  // --- 5. VALIDATE TOÀN BỘ TRƯỚC KHI SUBMIT ---
+  // --- 3. VALIDATE TOÀN BỘ TRƯỚC KHI SUBMIT ---
   function validateAll() {
     for (let i = 0; i < steps.length; i++) {
       if (!isStepAnswered(i)) return i;
@@ -207,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
     errEl._hideTimer = setTimeout(() => { errEl.style.display = 'none'; }, 3000);
   }
 
-  // --- 6. XỬ LÝ LƯU KẾT QUẢ KHI SUBMIT FORM ---
+  // --- 4. SUBMIT: gom dữ liệu → POST /api/survey ---
   document
     .getElementById("surveyForm")
     .addEventListener("submit", async function (event) {
@@ -222,48 +133,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const formData = new FormData(this);
-      let finalSurveyData = {};
-
-      finalSurveyData.purpose = [];
-      finalSurveyData.goal = [];
-      finalSurveyData.language = [];
-      finalSurveyData.domain = [];
-      finalSurveyData.skill_detail = [];
-
-      const OTHER_TEXT_MAP = {
-        job:            'job_text',
-        purpose:        'purpose_text',
-        goal:           'goal_text',
-        language:       'lang_text',
-        career_target:  'career_text',
-        domain:         'domain_text',
-        skill_detail:   'skill_text',
-      };
-
-      for (let [key, value] of formData.entries()) {
-        if (value === "other") {
-          const textId = OTHER_TEXT_MAP[key];
-          if (textId) value = document.getElementById(textId).value.trim();
-          if (!value) {
-            alert("Vui lòng điền thông tin vào ô 'Khác'!");
-            return;
-          }
-        }
-
-        if (Array.isArray(finalSurveyData[key])) {
-          finalSurveyData[key].push(value);
+      const finalSurveyData = { self_weak: [] };
+      for (const [key, value] of formData.entries()) {
+        if (key === 'self_weak') {
+          finalSurveyData.self_weak.push(value);
         } else {
           finalSurveyData[key] = value;
         }
       }
-
-      ['purpose', 'goal', 'language', 'domain', 'skill_detail'].forEach((k) => {
-        if (Array.isArray(finalSurveyData[k]) && finalSurveyData[k].length > 0) {
-          finalSurveyData[k] = finalSurveyData[k].join(", ");
-        }
-      });
-
-      console.log("DỮ LIỆU KHẢO SÁT THU THẬP ĐƯỢC:", finalSurveyData);
+      finalSurveyData.self_weak = finalSurveyData.self_weak.join(", ");
 
       try {
         const res = await fetch("/api/survey", {
@@ -275,14 +153,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const data = await res.json();
         if (!res.ok) {
           let errMsg = "Không thể lưu khảo sát.";
-          if (typeof data.error === 'string') {
-            errMsg = data.error;
-          } else if (data.error && typeof data.error === 'object' && data.error.message) {
-            errMsg = data.error.message;
-          }
+          if (typeof data.error === 'string') errMsg = data.error;
+          else if (data.error && typeof data.error === 'object' && data.error.message) errMsg = data.error.message;
           throw new Error(errMsg);
         }
-
         showThanksModal();
       } catch (err) {
         alert(err.message || "Không thể lưu khảo sát, vui lòng thử lại.");
@@ -293,10 +167,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const overlay = document.getElementById("thanksOverlay");
     const okBtn = document.getElementById("thanksOkBtn");
     if (!overlay || !okBtn) return;
-
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
-
     okBtn.onclick = function () {
       window.location.href = "/dashboard";
     };

@@ -112,8 +112,8 @@ body::after {
 }
 
 .logo-text {
-    /* Hiệu ứng dải màu chuyển từ Xanh lam (#5dade2) sang Đỏ hồng (#ff8a80) */
-    background: linear-gradient(90deg, #5dade2 0%, #ff8a80 100%);
+    /* Brand HSA: violet (#8B7CF6) sang teal (#2DD4BF) */
+    background: linear-gradient(90deg, #8B7CF6 0%, #2DD4BF 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
