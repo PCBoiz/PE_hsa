@@ -36,7 +36,7 @@ body::before, body::after {
 }
 
 body::before {
-    background: #38bdf8;
+    background: #8B7CF6;
     top: 10%;
     left: 10%;
 }
@@ -70,7 +70,7 @@ body::after {
     content: '';
     position: absolute;
     top: -1.5px; left: -1.5px; right: -1.5px; bottom: -1.5px;
-    background: linear-gradient(45deg, #38bdf8, #2563eb, #8B7CF6, #ff7675, #38bdf8);
+    background: linear-gradient(45deg, #8B7CF6, #6D4FE0, #8B7CF6, #2DD4BF, #8B7CF6);
     background-size: 400% 400%;
     z-index: -1;
     border-radius: 17px;
@@ -82,7 +82,7 @@ body::after {
     content: '';
     position: absolute;
     top: -10px; left: -10px; right: -10px; bottom: -10px;
-    background: linear-gradient(45deg, #38bdf8, #2563eb, #8B7CF6, #ff7675, #38bdf8);
+    background: linear-gradient(45deg, #8B7CF6, #6D4FE0, #8B7CF6, #2DD4BF, #8B7CF6);
     background-size: 400% 400%;
     z-index: -2;
     border-radius: 24px;
@@ -143,11 +143,11 @@ h2 {
 
 .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #38bdf8, #ff7675, #38bdf8);
+    background: linear-gradient(90deg, #8B7CF6, #2DD4BF, #8B7CF6);
     background-size: 200% auto;
     width: 0%;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 10px #38bdf8;
+    box-shadow: 0 0 10px #8B7CF6;
     animation: waveGlow 4s linear infinite; /* Thanh tiến trình cũng tự trôi màu nhẹ */
 }
 
@@ -183,9 +183,9 @@ h2 {
 
 .note {
     font-size: 0.75em;
-    color: #ff7b72;
+    color: #8B7CF6;
     font-weight: normal;
-    background-color: rgba(255, 123, 114, 0.15);
+    background-color: rgba(45, 212, 191, 0.15);
     padding: 2px 6px;
     border-radius: 4px;
     margin-left: 5px;
@@ -206,14 +206,14 @@ h2 {
 
 .option:hover {
     background-color: #282e38;
-    border-color: rgba(56, 189, 248, 0.5);
+    border-color: rgba(139, 124, 246, 0.5);
     color: white;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+    box-shadow: 0 0 10px rgba(139, 124, 246, 0.15);
 }
 
 input[type="radio"], input[type="checkbox"] {
     margin-right: 14px;
-    accent-color: #38bdf8;
+    accent-color: #8B7CF6;
     transform: scale(1.15);
 }
 
@@ -232,8 +232,8 @@ input[type="radio"], input[type="checkbox"] {
 
 .custom-text-input:focus {
     outline: none;
-    border-color: #38bdf8;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    border-color: #8B7CF6;
+    box-shadow: 0 0 8px rgba(139, 124, 246, 0.3);
 }
 
 .custom-text-input:disabled {
@@ -275,8 +275,8 @@ input[type="radio"], input[type="checkbox"] {
 .next-btn:hover {
     background-color: #30363d;
     color: white;
-    border-color: #38bdf8;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    border-color: #8B7CF6;
+    box-shadow: 0 0 10px rgba(139, 124, 246, 0.2);
 }
 
 .next-btn.locked {
@@ -303,7 +303,7 @@ input[type="radio"], input[type="checkbox"] {
 
 .question-block.shake {
     animation: shake 0.4s ease;
-    outline: 1px solid rgba(255, 123, 114, 0.45);
+    outline: 1px solid rgba(45, 212, 191, 0.45);
     border-radius: 8px;
     will-change: transform;
 }
@@ -321,7 +321,7 @@ input[type="radio"], input[type="checkbox"] {
 .submit-btn {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(90deg, #8B7CF6, #ff7675);
+    background: linear-gradient(90deg, #8B7CF6, #2DD4BF);
     background-size: 200% auto;
     color: white;
     border: none;
@@ -341,9 +341,9 @@ input[type="radio"], input[type="checkbox"] {
 /* --- 8. Thông báo lỗi validation inline --- */
 .step-error {
     display: none;
-    color: #ff7b72;
-    background-color: rgba(255, 123, 114, 0.1);
-    border: 1px solid rgba(255, 123, 114, 0.3);
+    color: #8B7CF6;
+    background-color: rgba(45, 212, 191, 0.1);
+    border: 1px solid rgba(45, 212, 191, 0.3);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 0.9em;
@@ -376,7 +376,7 @@ input[type="radio"], input[type="checkbox"] {
     width: 100%;
     max-width: 420px;
     background: #0f141b;
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    border: 1px solid rgba(139, 124, 246, 0.2);
     border-radius: 18px;
     padding: 26px 24px 22px;
     text-align: center;
@@ -399,9 +399,9 @@ input[type="radio"], input[type="checkbox"] {
     font-weight: 700;
     font-size: 22px;
     color: #0b1118;
-    background: linear-gradient(135deg, #38bdf8, #ff7675);
+    background: linear-gradient(135deg, #8B7CF6, #2DD4BF);
     border-radius: 50%;
-    box-shadow: 0 6px 16px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 6px 16px rgba(139, 124, 246, 0.25);
 }
 
 .thanks-title {
@@ -424,12 +424,12 @@ input[type="radio"], input[type="checkbox"] {
     border-radius: 10px;
     font-weight: 700;
     color: #0d1117;
-    background: linear-gradient(135deg, #38bdf8, #ff7675);
+    background: linear-gradient(135deg, #8B7CF6, #2DD4BF);
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .thanks-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 10px 20px rgba(139, 124, 246, 0.25);
 }
