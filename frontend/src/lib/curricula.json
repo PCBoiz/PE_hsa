@@ -681,6 +681,66 @@
           ]
         }
       ]
+    },
+    "hsa_quantitative": {
+      "instructor": "ProgrammingEdu × TopHSA",
+      "requirements": [
+        "Nắm kiến thức Toán THPT cơ bản",
+        "Máy tính hoặc điện thoại có internet",
+        "Sẵn sàng luyện đề bấm giờ"
+      ],
+      "skills": [
+        "Tư duy định lượng cho kỳ thi HSA",
+        "Giải nhanh các dạng toán ĐGNL",
+        "Đọc & xử lý số liệu, biểu đồ",
+        "Chiến thuật & tốc độ làm bài phòng thi"
+      ],
+      "modules": [
+        {
+          "title": "Chương 1: Số học & Tỉ lệ",
+          "lessons": [
+            "Bài toán phần trăm"
+          ]
+        }
+      ]
+    },
+    "hsa_verbal": {
+      "instructor": "ProgrammingEdu × TopHSA",
+      "requirements": [
+        "Kỹ năng đọc hiểu tiếng Việt cơ bản",
+        "Máy tính hoặc điện thoại có internet"
+      ],
+      "skills": [
+        "Đọc hiểu & suy luận ngôn ngữ",
+        "Từ vựng – ngữ pháp theo cấu trúc HSA"
+      ],
+      "modules": [
+        {
+          "title": "Chương 1: Đọc hiểu & Ngôn ngữ",
+          "lessons": [
+            "Đọc hiểu văn bản (đang cập nhật)"
+          ]
+        }
+      ]
+    },
+    "hsa_science": {
+      "instructor": "ProgrammingEdu × TopHSA",
+      "requirements": [
+        "Kiến thức khoa học THPT nền tảng",
+        "Máy tính hoặc điện thoại có internet"
+      ],
+      "skills": [
+        "Ôn Lý–Hoá–Sinh–Sử–Địa theo dạng HSA",
+        "Lựa chọn Tiếng Anh nếu phù hợp"
+      ],
+      "modules": [
+        {
+          "title": "Chương 1: Khoa học tổng hợp",
+          "lessons": [
+            "Kiến thức khoa học nền (đang cập nhật)"
+          ]
+        }
+      ]
     }
   },
   "LESSON_URLS": {

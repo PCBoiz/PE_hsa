@@ -9,20 +9,26 @@
 import { use, useEffect } from 'react';
 
 import LessonDbDesign from '@/components/LessonDbDesign';
+import LessonHsa from '@/components/LessonHsa';
 import PageStyles from '@/components/PageStyles';
 
 const DB_COURSES = ['db_design', 'db_design_tc', 'db_design_nc'];
+const HSA_COURSES = ['hsa_quantitative', 'hsa_verbal', 'hsa_science'];
 const LESSON_URLS: Record<string, string> = { cpp: '/interface' };
 
 export default function LessonDispatchPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = use(params);
   const isDb = DB_COURSES.includes(courseId);
+  const isHsa = HSA_COURSES.includes(courseId);
 
   useEffect(() => {
-    if (!isDb) {
+    if (!isDb && !isHsa) {
       window.location.replace(LESSON_URLS[courseId] || `/courses/${courseId}`);
     }
-  }, [courseId, isDb]);
+  }, [courseId, isDb, isHsa]);
+
+  // Bài học HSA (luồng đảo ngược) — component riêng, tái dùng chrome DB.
+  if (isHsa) return <LessonHsa courseId={courseId} />;
 
   if (!isDb) return null;
   return (

@@ -40,6 +40,9 @@ export default function Topbar() {
           <button className="nav-btn" data-page="forum" onClick={() => W().navigate('forum')} aria-label="Diễn đàn">
             <span className="nav-icon">💬</span><span>Diễn đàn</span>
           </button>
+          <button className="nav-btn" onClick={() => { window.location.href = '/mock'; }} aria-label="Thi thử">
+            <span className="nav-icon">🎯</span><span>Thi thử</span>
+          </button>
 
           <button className="nav-btn" id="nav-admin" style={{ display: 'none' }} onClick={() => { window.location.href = '/admin'; }} aria-label="Quản trị">
             <span className="nav-icon">🛠️</span><span>Quản trị</span>

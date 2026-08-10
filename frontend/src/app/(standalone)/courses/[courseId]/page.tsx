@@ -92,7 +92,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   return (
     <>
       <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css"]} />
-      <title>{`${course.title} – Programming EDU`}</title>
+      <title>{`${course.title} – ProgrammingEdu × TopHSA`}</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
       <div id="main">
@@ -100,7 +100,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
         <div className="topbar">
           <div className="topbar-left">
             <div className="brand brand-always" onClick={() => { window.location.href = '/dashboard'; }} style={{ cursor: 'pointer' }} title="Về trang chủ">
-              <div className="brand-title">Programming EDU</div>
+              <div className="brand-title"><span className="brand-c1">ProgrammingEdu</span> <span className="brand-x">×</span> <span className="brand-c2">TopHSA</span></div>
             </div>
           </div>
 
