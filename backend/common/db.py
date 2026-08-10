@@ -9,9 +9,16 @@ flow nhiều câu lệnh cần nguyên tử thì bọc transaction.atomic() ở 
 RESILIENT (2026-08-10): Neon free scale-to-zero đóng connection trong pool sau
 idle → query kế tiếp trên conn chết ném "SSL error: unexpected eof while reading"
 (OperationalError) → 500 (điển hình ở /auth/login sau khi backend idle). Bọc
-q/q1/x trong _run(): bắt lỗi connection, ĐÓNG conn chết (buộc mở conn mới =
+q/q1/x trong _run(): bắt lỗi connection, RESET CẢ POOL (buộc mở conn mới =
 đánh thức Neon) rồi THỬ LẠI tối đa _MAX_TRIES. KHÔNG retry khi đang trong
 transaction (atomic block) để không phá tính nguyên tử.
+
+FIX v2 (2026-08-10): connection.close() CHỈ trả conn chết về pool — pool KHÔNG
+loại nó (conn 'trông vẫn mở' phía client vì TCP chưa nhận ra Neon đóng) nên
+retry cứ bốc phải conn chết khác → cả 6 lần đều fail (login treo ~19s rồi 500).
+Nay dùng connection.close_pool(): HỦY hẳn pool → lần cursor() kế tiếp Django
+dựng pool MỚI toàn conn tươi. Kèm keep-warm ping (common/keepalive.py) để Neon
+gần như không bao giờ scale-to-zero khi backend đang chạy.
 """
 import time
 
@@ -29,14 +36,32 @@ def _dictfetchall(cursor):
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
 
+def _reset_pool():
+    """Vứt TOÀN BỘ connection chết: đóng conn hiện tại + HỦY cả pool.
+
+    connection.close() chỉ trả conn về pool, mà pool KHÔNG loại conn chết (nó
+    'trông vẫn mở' phía client) → retry cứ bốc phải conn chết khác. close_pool()
+    hủy hẳn pool; lần connection.cursor() kế tiếp Django dựng pool MỚI với conn
+    tươi = mở kết nối mới tới Neon (đánh thức compute). Cả hai bọc try để một
+    lỗi không chặn lỗi kia."""
+    try:
+        connection.close()
+    except Exception:
+        pass
+    try:
+        connection.close_pool()
+    except Exception:
+        pass
+
+
 def _run(sql, params, handler):
     """Chạy 1 câu SQL, tự phục hồi khi connection chết (Neon cold-start).
 
     Pool giữ connection tới Neon; khi Neon scale-to-zero (idle ~5 phút) thì MỌI
     connection trong pool chết — query kế tiếp ném 'SSL error: unexpected eof'
     (OperationalError). Django/psycopg check không bắt được (conn 'open' phía
-    client). Ở đây: đóng conn chết (buộc pool mở conn mới = đánh thức Neon) rồi
-    thử lại, backoff tăng dần phủ trọn thời gian Neon thức. KHÔNG retry khi đang
+    client). Ở đây: RESET cả pool (buộc mở conn mới = đánh thức Neon) rồi thử
+    lại, backoff tăng dần phủ trọn thời gian Neon thức. KHÔNG retry khi đang
     trong transaction (đã rollback) để không phá tính nguyên tử."""
     last = None
     for attempt in range(len(_BACKOFF) + 1):
@@ -48,10 +73,7 @@ def _run(sql, params, handler):
             last = e
             if connection.in_atomic_block:
                 raise
-            try:
-                connection.close()  # trả conn chết về pool → pool discard, mở mới
-            except Exception:
-                pass
+            _reset_pool()  # hủy pool chết → cursor() kế tiếp dựng pool tươi
             if attempt < len(_BACKOFF):
                 time.sleep(_BACKOFF[attempt])  # chờ Neon compute thức dậy
     raise last
