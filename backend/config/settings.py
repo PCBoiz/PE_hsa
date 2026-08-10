@@ -151,6 +151,9 @@ DATABASES['default'].setdefault('OPTIONS', {}).update({
                             # đầy sau ~12s thay vì ~25s, bớt đuôi chậm sau deploy
         'timeout': 15,      # chờ tối đa 15s khi pool cạn rồi mới lỗi
         'max_idle': 240,    # thu hồi kết nối idle sau 240s (như keepalive cũ)
+        # LƯU Ý: KHÔNG thêm 'check' ở đây — Django tự truyền check cho pool
+        # (postgresql/base.py) → thêm nữa gây "multiple values for check" crash.
+        # Chống conn chết (Neon scale-to-zero) xử lý ở common/db.py (_run retry).
     },
 })
 

@@ -18,7 +18,7 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {/* Template gốc nào cũng có meta csrf-token; course_detail.js/course_db_design.js

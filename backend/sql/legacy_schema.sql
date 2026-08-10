@@ -246,8 +246,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     ref_type   TEXT,
     ref_id     INTEGER,
     is_read    BOOLEAN DEFAULT FALSE,
+    coalesce_count INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT now()
 );
+-- coalesce_count (gộp thông báo trùng, notifications/service.py) là additive —
+-- bảng cũ chưa có cột này → thêm nếu thiếu để /api/notifications/feed không 500.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS coalesce_count INTEGER NOT NULL DEFAULT 1;
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 
 -- 18. notification_settings -------------------------------------------------
