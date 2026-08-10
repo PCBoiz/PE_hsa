@@ -5,8 +5,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 /* ── LANDING ── */
 .landing-body {
   min-height: 100vh;
-  background: radial-gradient(circle at 20% 10%, rgba(69, 147, 255, 0.12), transparent 20%),
-              radial-gradient(circle at 80% 15%, rgba(230, 70, 69, 0.16), transparent 15%),
+  background: radial-gradient(circle at 20% 10%, rgba(45, 212, 191, 0.12), transparent 20%),
+              radial-gradient(circle at 80% 15%, rgba(139, 124, 246, 0.16), transparent 15%),
               linear-gradient(180deg, #07142a 0%, #0c1d3d 45%, #090715 100%);
   color: #E5E7EB;
   display: flex;
@@ -40,10 +40,10 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   animation: blobFloat 8s ease-in-out infinite alternate;
 }
 
-.b1 { width: 520px; height: 520px; background: radial-gradient(circle, #C62828, #7B0000); top: -120px; right: -120px; animation-duration: 9s; }
-.b2 { width: 420px; height: 420px; background: radial-gradient(circle, #1565C0, #0D47A1); bottom: -100px; left: -100px; animation-duration: 11s; animation-delay: -3s; }
-.b3 { width: 300px; height: 300px; background: radial-gradient(circle, #B71C1C, #C62828); bottom: 10%; right: 20%; animation-duration: 7s; animation-delay: -1.5s; opacity: 0.35; }
-.b4 { width: 250px; height: 250px; background: radial-gradient(circle, #283593, #1565C0); top: 20%; left: 15%; animation-duration: 10s; animation-delay: -5s; opacity: 0.30; }
+.b1 { width: 520px; height: 520px; background: radial-gradient(circle, #7C3AED, #4C1D95); top: -120px; right: -120px; animation-duration: 9s; }
+.b2 { width: 420px; height: 420px; background: radial-gradient(circle, #0F766E, #115E59); bottom: -100px; left: -100px; animation-duration: 11s; animation-delay: -3s; }
+.b3 { width: 300px; height: 300px; background: radial-gradient(circle, #6D28D9, #7C3AED); bottom: 10%; right: 20%; animation-duration: 7s; animation-delay: -1.5s; opacity: 0.35; }
+.b4 { width: 250px; height: 250px; background: radial-gradient(circle, #134E4A, #0F766E); top: 20%; left: 15%; animation-duration: 10s; animation-delay: -5s; opacity: 0.30; }
 
 @keyframes blobFloat {
   0% { transform: translate(0, 0) scale(1); }
@@ -102,7 +102,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 32px;
   padding: 2.8rem 2.4rem;
-  box-shadow: 0 0 0 1px rgba(198, 40, 40, 0.25), 0 32px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(139, 124, 246, 0.25), 0 32px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   animation: cardAppear 0.7s cubic-bezier(0.23, 1, 0.32, 1) both;
   position: relative;
 }
@@ -123,19 +123,19 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 .logo-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, #C62828, #1565C0);
+  background: linear-gradient(135deg, #7C3AED, #0F766E);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(198, 40, 40, 0.5), 0 2px 8px rgba(21, 101, 192, 0.4);
+  box-shadow: 0 4px 20px rgba(139, 124, 246, 0.5), 0 2px 8px rgba(45, 212, 191, 0.4);
   animation: iconPulse 3s ease-in-out infinite;
   flex-shrink: 0;
 }
 
 @keyframes iconPulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(198, 40, 40, 0.5), 0 2px 8px rgba(21, 101, 192, 0.4); }
-  50% { box-shadow: 0 4px 30px rgba(198, 40, 40, 0.8), 0 2px 12px rgba(21, 101, 192, 0.6); }
+  0%, 100% { box-shadow: 0 4px 20px rgba(139, 124, 246, 0.5), 0 2px 8px rgba(45, 212, 191, 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(139, 124, 246, 0.8), 0 2px 12px rgba(45, 212, 191, 0.6); }
 }
 
 .logo-icon svg { width: 22px; height: 22px; }
@@ -144,7 +144,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 1.45rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #EF5350 0%, #FFFFFF 40%, #42A5F5 100%);
+  background: linear-gradient(90deg, #A78BFA 0%, #FFFFFF 40%, #2DD4BF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -164,13 +164,13 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   overflow: hidden;
   transition: transform 0.18s, box-shadow 0.3s;
   margin-bottom: 0;
-  background: linear-gradient(135deg, #C62828 0%, #EF5350 50%, #1565C0 100%);
-  box-shadow: 0 12px 26px rgba(198, 40, 40, 0.35);
+  background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 50%, #0F766E 100%);
+  box-shadow: 0 12px 26px rgba(139, 124, 246, 0.35);
 }
 
 .btn-main:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(198, 40, 40, 0.45);
+  box-shadow: 0 14px 32px rgba(139, 124, 246, 0.45);
 }
 
 .btn-main:active { transform: scale(0.98); }
@@ -216,7 +216,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 14px;
   font-weight: 800;
   line-height: 1.2;
-  background: linear-gradient(90deg, #5db6ff 0%, #7cc1ff 35%, #ff9e7f 70%, #ff6f72 100%);
+  background: linear-gradient(90deg, #8B7CF6 0%, #A78BFA 35%, #5EEAD4 70%, #2DD4BF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -246,7 +246,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   padding: 10px 22px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #ff4d6d, #c9184a);
+  background: linear-gradient(135deg, #8B7CF6, #6D4FE0);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -257,7 +257,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   align-items: center;
   gap: 6px;
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(255, 77, 109, 0.45); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(139, 124, 246, 0.45); }
 
 .landing-hero {
   flex: 1;
@@ -341,9 +341,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  box-shadow: 0 14px 30px rgba(77, 158, 255, 0.3);
+  box-shadow: 0 14px 30px rgba(45, 212, 191, 0.3);
 }
-.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(77, 158, 255, 0.35); }
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(45, 212, 191, 0.35); }
 
 .btn-hero-outline {
   padding: 14px 32px;
@@ -537,7 +537,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 22px;
   font-weight: 800;
   margin-bottom: 8px;
-  background: linear-gradient(90deg, #1A6BB5 0%, #6B5BA6 35%, #B84D5F 70%, #E84545 100%);
+  background: linear-gradient(90deg, #1A6BB5 0%, #6B5BA6 35%, #B84D5F 70%, #8B7CF6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -624,9 +624,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 
 /* ── NEON & DARK MODE REVAMP ── */
 .neon-badge {
-  background: rgba(0, 255, 255, 0.05);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 10px rgba(0, 255, 255, 0.05);
+  background: rgba(139, 124, 246, 0.05);
+  border: 1px solid rgba(139, 124, 246, 0.3);
+  box-shadow: 0 0 10px rgba(139, 124, 246, 0.1), inset 0 0 10px rgba(139, 124, 246, 0.05);
   color: #8B7CF6;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -732,7 +732,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 22px;
   font-weight: 800;
   margin-bottom: 8px;
-  background: linear-gradient(90deg, #1A6BB5 0%, #6B5BA6 35%, #B84D5F 70%, #E84545 100%);
+  background: linear-gradient(90deg, #1A6BB5 0%, #6B5BA6 35%, #B84D5F 70%, #8B7CF6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -819,9 +819,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 
 /* ── NEON & DARK MODE REVAMP ── */
 .neon-badge {
-  background: rgba(0, 255, 255, 0.05);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 10px rgba(0, 255, 255, 0.05);
+  background: rgba(139, 124, 246, 0.05);
+  border: 1px solid rgba(139, 124, 246, 0.3);
+  box-shadow: 0 0 10px rgba(139, 124, 246, 0.1), inset 0 0 10px rgba(139, 124, 246, 0.05);
   color: #8B7CF6;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -841,9 +841,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 
 .neon-btn {
   background: transparent !important;
-  border: 2px solid #ff4d6d !important;
-  color: #ff4d6d !important;
-  box-shadow: 0 0 15px rgba(255, 77, 109, 0.4), inset 0 0 10px rgba(255, 77, 109, 0.2) !important;
+  border: 2px solid #8B7CF6 !important;
+  color: #8B7CF6 !important;
+  box-shadow: 0 0 15px rgba(139, 124, 246, 0.4), inset 0 0 10px rgba(139, 124, 246, 0.2) !important;
   text-transform: uppercase;
   letter-spacing: 1px;
   text-decoration: none !important;
@@ -856,13 +856,13 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
   position: absolute;
   top: 0; left: -100%;
   width: 100%; height: 100%;
-  background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+  background: linear-gradient(135deg, #8B7CF6 0%, #6D4FE0 100%);
   transition: all 0.4s ease;
   z-index: -1;
 }
 .neon-btn:hover {
   color: #fff !important;
-  box-shadow: 0 0 30px rgba(255, 77, 109, 0.8), inset 0 0 20px rgba(255, 77, 109, 0.5) !important;
+  box-shadow: 0 0 30px rgba(139, 124, 246, 0.8), inset 0 0 20px rgba(139, 124, 246, 0.5) !important;
   transform: translateY(-2px);
 }
 .neon-btn:hover::before {
@@ -884,7 +884,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 
 .neon-glow-text {
   color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.5);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(139, 124, 246, 0.5);
 }
 
 .neon-text-sm {
@@ -899,35 +899,35 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 .neon-card {
   background: rgba(10, 14, 25, 0.8) !important;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 240, 255, 0.15) !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.02) !important;
+  border: 1px solid rgba(139, 124, 246, 0.15) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(139, 124, 246, 0.02) !important;
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease !important;
   transform-style: preserve-3d;
 }
 .neon-card:hover {
   transform: translateY(-10px) rotateX(5deg) rotateY(-5deg) !important;
-  border-color: rgba(0, 240, 255, 0.6) !important;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1) !important;
+  border-color: rgba(139, 124, 246, 0.6) !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 124, 246, 0.2), inset 0 0 15px rgba(139, 124, 246, 0.1) !important;
 }
 
 .neon-icon {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: rgba(0, 240, 255, 0.1);
+  background: rgba(139, 124, 246, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00f0ff;
+  color: #8B7CF6;
   margin-bottom: 20px;
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(139, 124, 246, 0.3);
+  box-shadow: 0 0 15px rgba(139, 124, 246, 0.2);
   transition: all 0.3s ease;
 }
 .neon-card:hover .neon-icon {
-  background: #00f0ff;
+  background: #8B7CF6;
   color: #000;
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 25px rgba(139, 124, 246, 0.6);
   transform: scale(1.1) translateZ(20px);
 }
 .neon-icon svg {
@@ -936,14 +936,14 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 }
 
 .neon-pill {
-  background: rgba(255, 0, 85, 0.1) !important;
-  border: 1px solid rgba(255, 0, 85, 0.3) !important;
-  color: #ff0055 !important;
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.1) !important;
+  background: rgba(139, 124, 246, 0.1) !important;
+  border: 1px solid rgba(139, 124, 246, 0.3) !important;
+  color: #8B7CF6 !important;
+  box-shadow: 0 0 10px rgba(139, 124, 246, 0.1) !important;
 }
 .neon-card:hover .neon-pill {
-  box-shadow: 0 0 20px rgba(255, 0, 85, 0.4) !important;
-  border-color: rgba(255, 0, 85, 0.6) !important;
+  box-shadow: 0 0 20px rgba(139, 124, 246, 0.4) !important;
+  border-color: rgba(139, 124, 246, 0.6) !important;
 }
 .neon-pill svg {
   margin-right: 6px;
@@ -962,17 +962,17 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 }
 
 .neon-border {
-  border: 2px solid #ff0055;
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
-  color: #ff0055;
-  background: rgba(255, 0, 85, 0.1) !important;
+  border: 2px solid #8B7CF6;
+  box-shadow: 0 0 10px rgba(139, 124, 246, 0.3);
+  color: #8B7CF6;
+  background: rgba(139, 124, 246, 0.1) !important;
 }
 
 .neon-cta {
   background: rgba(5, 8, 15, 0.8) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 240, 255, 0.2) !important;
-  box-shadow: 0 0 40px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05) !important;
+  border: 1px solid rgba(139, 124, 246, 0.2) !important;
+  box-shadow: 0 0 40px rgba(139, 124, 246, 0.1), inset 0 0 20px rgba(139, 124, 246, 0.05) !important;
 }
 
 /* Animations */
