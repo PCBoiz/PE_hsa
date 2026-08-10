@@ -35,6 +35,25 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(','
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 
+# Render inject RENDER_EXTERNAL_HOSTNAME khi deploy → tự thêm vào ALLOWED_HOSTS
+# (đỡ phải biết trước domain <app>.onrender.com).
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
+
+# CSRF: domain HTTPS được tin cho form POST cross-origin (OAuth allauth qua HTTPS,
+# admin nếu có). Ưu tiên env CSRF_TRUSTED_ORIGINS (phẩy); mặc định suy từ
+# ALLOWED_ORIGINS https + chính domain backend Render.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if o.strip().startswith('https')
+]
+CSRF_TRUSTED_ORIGINS += [
+    o for o in ALLOWED_ORIGINS if o.startswith('https') and o not in CSRF_TRUSTED_ORIGINS
+]
+if _render_host and ('https://' + _render_host) not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://' + _render_host)
+
 # Chatbot "Trợ lý HSA" — DeepSeek (API OpenAI-compatible), key SERVER-SIDE.
 # DeepSeek dùng tạm cho testing (rẻ); đổi provider = đổi 3 biến này.
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
@@ -79,6 +98,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serve static (DRF browsable API, staticfiles) khi DEBUG=0 trên
+    # host chạy-dài (Render) — phải NGAY SAU SecurityMiddleware.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'common.middleware.RequestIDMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -260,6 +282,10 @@ if IS_PRODUCTION:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Render (và mọi PaaS): TLS kết thúc ở proxy, app nhận HTTP kèm header
+    # X-Forwarded-Proto=https. KHÔNG khai báo → request.is_secure()=False →
+    # cookie Secure không set + redirect có thể loop. Chỉ tin header sau proxy.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # CSP y hệt danh sách domain cũ — set trong common.middleware.SecurityHeadersMiddleware
 CSP_POLICY = (
     "default-src 'self'; "
@@ -305,4 +331,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# WhiteNoise nén + serve static trực tiếp (không cần Nginx). Non-manifest để
+# tránh lỗi thiếu file khi hash (backend chủ yếu trả JSON; static chỉ của DRF).
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

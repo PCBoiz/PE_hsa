@@ -9,6 +9,7 @@ python-dotenv>=1.0
 email-validator>=2.1
 requests>=2.32
 gunicorn>=21.2
+whitenoise>=6.7
 # Chatbot Trợ lý HSA (LangGraph + DeepSeek qua API OpenAI-compatible)
 langgraph>=1.2.10
 langchain-openai>=1.4.2

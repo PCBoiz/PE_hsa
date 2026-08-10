@@ -8,10 +8,11 @@ from django.urls import include, path
 
 
 def health(request):
-    """Endpoint cho cron ping ngoài giữ Neon compute ấm (MIGRATION_NOTES §Neon)."""
-    from django.db import connection
-    with connection.cursor() as cur:
-        cur.execute('SELECT 1')
+    """Health check + giữ Neon ấm. Dùng common.db.q (retry + reset pool) để
+    lúc deploy/cold-start Neon vừa được đánh thức vừa KHÔNG 500 làm hỏng
+    healthCheck của Render (MIGRATION_NOTES §Neon)."""
+    from common.db import q
+    q('SELECT 1')
     return JsonResponse({'status': 'ok'})
 
 

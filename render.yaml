@@ -1,0 +1,59 @@
+# ── Render Blueprint — BACKEND Django (phương án A: FE Vercel + BE Render) ──
+# Deploy: Render Dashboard → New → Blueprint → chọn repo PCBoiz/PE_hsa → Apply.
+# Các biến `sync: false` = BÍ MẬT, nhập TAY trên dashboard (KHÔNG commit .env).
+# Region ohio = us-east, CÙNG vùng NeonDB (us-east-2) → RTT query <5ms.
+# Frontend KHÔNG deploy ở đây (Next.js lên Vercel — xem DEPLOY.md).
+services:
+  - type: web
+    name: pe-hsa-backend
+    runtime: python
+    plan: free                      # free: ngủ sau ~15' không dùng (cold-start ~30-50s)
+    region: ohio                    # cùng vùng Neon us-east-2 (đừng đổi tuỳ tiện)
+    rootDir: backend                # monorepo: build/run trong thư mục backend/
+    autoDeploy: true
+    branch: master
+    healthCheckPath: /health        # đã cho retry (không 500 khi Neon cold)
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput
+    startCommand: >-
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+      --workers 2 --threads 2 --timeout 60
+    envVars:
+      # ── Không bí mật (commit được) ──
+      - key: DJANGO_ENV
+        value: production           # bật HSTS + cookie Secure + proxy SSL + rate-limit chặt
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: PYTHON_VERSION
+        value: "3.12.7"             # Render chưa hỗ trợ 3.14; 3.12 có sẵn wheel psycopg
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: ENABLE_KEEPALIVE
+        value: "1"                  # bật luồng ping giữ Neon ấm dưới gunicorn
+      - key: DB_POOL_MIN
+        value: "2"
+      - key: DB_POOL_MAX
+        value: "14"                 # workers(2) × 14 = 28 ≤ trần Neon -pooler ~56
+      # ── BÍ MẬT — nhập tay trên dashboard (sync:false) ──
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false                 # postgres Neon (-pooler, sslmode=require)
+      - key: FRONTEND_URL
+        sync: false                 # https://<app>.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false                 # https://<app>.vercel.app  (thêm domain preview nếu cần)
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false                 # https://<app>.vercel.app,https://pe-hsa-backend.onrender.com
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: FACEBOOK_CLIENT_ID
+        sync: false
+      - key: FACEBOOK_CLIENT_SECRET
+        sync: false
