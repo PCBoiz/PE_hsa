@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const progressBar = document.getElementById("progressBar");
   let currentStep = 0;
 
-  // 12 bước = 6 câu hồ sơ + 6 câu mini-test chẩn đoán (khớp questionaire/page.tsx).
+  // 16 bước = 6 câu hồ sơ + 6 câu mini-test chẩn đoán + 4 câu thái độ-hành vi
+  // (khớp questionaire/page.tsx).
   const STEP_REQUIRED = [
     { name: 'target_score' },
     { name: 'target_major' },
@@ -20,6 +21,10 @@ document.addEventListener("DOMContentLoaded", function () {
     { name: 'dq_qt_2' },
     { name: 'dq_kh_1' },
     { name: 'dq_kh_2' },
+    { name: 'att_persistence' },
+    { name: 'att_schedule' },
+    { name: 'att_stress' },
+    { name: 'att_motivation' },
   ];
 
   function isStepAnswered(stepIndex) {

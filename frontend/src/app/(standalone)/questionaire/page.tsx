@@ -212,6 +212,72 @@ export default function QuestionairePage() {
             </div>
             <div className="btn-group">
               <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* ══════ PHẦN 3: THÁI ĐỘ & THÓI QUEN HỌC ══════ */}
+
+          {/* Q13 — Kiên trì khi gặp khó */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question"><span className="note">🧭 Thái độ · hành vi</span><br />
+                13. Khi gặp câu khó trong lúc ôn, bạn thường làm gì?</p>
+              <label className="option"><input type="radio" name="att_persistence" value="Bỏ qua ngay" /> Bỏ qua ngay, làm câu khác</label>
+              <label className="option"><input type="radio" name="att_persistence" value="Thử rồi bỏ" /> Thử vài phút rồi bỏ nếu chưa ra</label>
+              <label className="option"><input type="radio" name="att_persistence" value="Kiên trì" /> Kiên trì đến khi hiểu bằng được</label>
+              <label className="option"><input type="radio" name="att_persistence" value="Hỏi ngay" /> Hỏi thầy cô / bạn bè ngay</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q14 — Thói quen ôn tập */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question"><span className="note">🧭 Thái độ · hành vi</span><br />
+                14. Thói quen ôn tập của bạn gần nhất với mô tả nào?</p>
+              <label className="option"><input type="radio" name="att_schedule" value="Đều đặn" /> Học đều đặn mỗi ngày</label>
+              <label className="option"><input type="radio" name="att_schedule" value="Học dồn" /> Học dồn khi gần thi</label>
+              <label className="option"><input type="radio" name="att_schedule" value="Tuỳ hứng" /> Tuỳ hứng, không cố định</label>
+              <label className="option"><input type="radio" name="att_schedule" value="Chưa có" /> Chưa có thói quen rõ ràng</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q15 — Tâm lý áp lực */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question"><span className="note">🧭 Thái độ · hành vi</span><br />
+                15. Áp lực thi cử ảnh hưởng đến bạn thế nào?</p>
+              <label className="option"><input type="radio" name="att_stress" value="Kiểm soát tốt" /> Bình tĩnh, kiểm soát tốt</label>
+              <label className="option"><input type="radio" name="att_stress" value="Hơi lo" /> Hơi lo nhưng vẫn ổn</label>
+              <label className="option"><input type="radio" name="att_stress" value="Dễ căng thẳng" /> Dễ căng thẳng, mất tập trung</label>
+              <label className="option"><input type="radio" name="att_stress" value="Rất áp lực" /> Rất áp lực, hay nản</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
+              <button type="button" className="next-btn">Tiếp tục</button>
+            </div>
+          </div>
+
+          {/* Q16 — Động lực & mục tiêu */}
+          <div className="step">
+            <div className="question-block">
+              <p className="question"><span className="note">🧭 Thái độ · hành vi</span><br />
+                16. Mức độ quyết tâm và rõ ràng mục tiêu HSA của bạn?</p>
+              <label className="option"><input type="radio" name="att_motivation" value="Rất quyết tâm" /> Rất rõ ràng, quyết tâm cao</label>
+              <label className="option"><input type="radio" name="att_motivation" value="Khá rõ" /> Khá rõ ràng</label>
+              <label className="option"><input type="radio" name="att_motivation" value="Còn mơ hồ" /> Còn mơ hồ</label>
+              <label className="option"><input type="radio" name="att_motivation" value="Chưa có động lực" /> Chưa có động lực rõ</label>
+            </div>
+            <div className="btn-group">
+              <button type="button" className="prev-btn">Quay lại</button>
               <button type="submit" className="submit-btn">Hoàn thành &amp; nhận lộ trình</button>
             </div>
           </div>

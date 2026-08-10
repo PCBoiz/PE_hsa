@@ -42,7 +42,7 @@ body::before {
 }
 
 body::after {
-    background: #dc2626;
+    background: #8B7CF6;
     bottom: 10%;
     right: 10%;
     animation-delay: -8s;
@@ -70,7 +70,7 @@ body::after {
     content: '';
     position: absolute;
     top: -1.5px; left: -1.5px; right: -1.5px; bottom: -1.5px;
-    background: linear-gradient(45deg, #38bdf8, #2563eb, #dc2626, #ff7675, #38bdf8);
+    background: linear-gradient(45deg, #38bdf8, #2563eb, #8B7CF6, #ff7675, #38bdf8);
     background-size: 400% 400%;
     z-index: -1;
     border-radius: 17px;
@@ -82,7 +82,7 @@ body::after {
     content: '';
     position: absolute;
     top: -10px; left: -10px; right: -10px; bottom: -10px;
-    background: linear-gradient(45deg, #38bdf8, #2563eb, #dc2626, #ff7675, #38bdf8);
+    background: linear-gradient(45deg, #38bdf8, #2563eb, #8B7CF6, #ff7675, #38bdf8);
     background-size: 400% 400%;
     z-index: -2;
     border-radius: 24px;
@@ -321,7 +321,7 @@ input[type="radio"], input[type="checkbox"] {
 .submit-btn {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(90deg, #dc2626, #ff7675);
+    background: linear-gradient(90deg, #8B7CF6, #ff7675);
     background-size: 200% auto;
     color: white;
     border: none;
