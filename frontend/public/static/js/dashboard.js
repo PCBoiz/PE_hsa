@@ -2309,7 +2309,7 @@ function forumClearSearch() {
           : 'Bấm để bắt đầu';
       var onClick = "window.location.href='" + (window.COURSE_URLS && window.COURSE_URLS[c.id]
         ? window.COURSE_URLS[c.id]
-        : '/interface') + "'";
+        : '/lesson/' + c.id) + "'";
       html +=
         '<div class="mini-rm-node mini-rm-node--' + status + '"' +
         ' style="left:' + pos.x + '%; top:' + pos.y + '%;"' +

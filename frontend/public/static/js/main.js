@@ -25,13 +25,11 @@ var searchSuggestions = ["C", "Python", "Java", "HTML", "AI", "Web Development",
 var levelSuggestions = ["Phù hợp người mới", "Trung cấp", "Nâng cao"];
 
 
-// Bảng liên kết khóa học → trang bài học
+// Bảng liên kết khóa học → trang bài học (chỉ HSA — nội dung lập trình đã gỡ 2026-08-10)
 var COURSE_URLS = {
-  cpp: "/interface",
-  python: "/lesson/python",
-  java: "/lesson/java",
-  htmlcss: "/lesson/htmlcss",
-  db_design: "/lesson/db_design",
+  hsa_quantitative: "/lesson/hsa_quantitative",
+  hsa_verbal: "/lesson/hsa_verbal",
+  hsa_science: "/lesson/hsa_science",
 };
 
 var pageLabels = {
@@ -1780,30 +1778,10 @@ function loadNotifications() {
 
 var _COURSES_CACHE_KEY = 'edu_courses_cache_v1';
 
-/* 2026-07-04: DB Design tách 3 KHÓA (saga GameHub 3 phần) — fallback khớp seed DB */
-var _DB_DESIGN_CARDS = [
-  {
-    id: 'db_design', title: 'Thiết kế CSDL: Từ ý tưởng đến hệ dữ liệu hoàn chỉnh', subtitle: 'Phần 1 — Xây nền tảng GameHub',
-    description: 'Từ thực thể đầu tiên đến hệ CSDL hoàn chỉnh: ER Diagram, khóa chính/ngoại, chuẩn hóa 1NF→4NF và SQL ứng dụng thực tế.',
-    image: 'static/images/db_design.svg', level: 'Cơ bản', duration: '~6 giờ',
-    students: '0', rating: 4.9, lessons: 20, color: '#06B6D4', accentColor: '#0E7490',
-    tag: 'DATABASE & BACKEND', enrolled: false
-  },
-  {
-    id: 'db_design_tc', title: 'SQL nâng cao, Dữ liệu lớn & Hiệu năng', subtitle: 'GameHub Community — mạng xã hội của gamers',
-    description: 'Advanced SQL (Trigger, Procedure, Recursive CTE), Big Data & Analytics, Storage & Indexing — xây mạng cộng đồng gamers của GameHub.',
-    image: 'static/images/db_design_tc.svg', level: 'Trung cấp', duration: '~7 giờ',
-    students: '0', rating: 4.9, lessons: 21, color: '#0C4A6E', accentColor: '#38BDF8',
-    tag: 'DATABASE & BACKEND', enrolled: false
-  },
-  {
-    id: 'db_design_nc', title: 'Bên trong Database Engine: Tối ưu, Giao dịch & Phục hồi', subtitle: 'GameHub Marketplace — sàn giao dịch vật phẩm',
-    description: 'Query Processing & Optimization, Concurrency Control, Crash Recovery — vận hành chợ giao dịch triệu người dùng của GameHub.',
-    image: 'static/images/db_design_nc.svg', level: 'Nâng cao', duration: '~9 giờ',
-    students: '0', rating: 4.9, lessons: 25, color: '#7C2D12', accentColor: '#FB923C',
-    tag: 'DATABASE & BACKEND', enrolled: false
-  }
-];
+/* 2026-08-10: GỠ fallback 3 khoá DB Design lập trình kế thừa từ ProgrammingEdu.
+   TopHSA chỉ luyện thi ĐGNL — khoá lấy trực tiếp từ backend (seed 3 khoá hsa_*),
+   không tự chèn khoá lập trình nữa. */
+var _DB_DESIGN_CARDS = [];
 
 function _applyCoursesData(data) {
   courses = data.courses;
