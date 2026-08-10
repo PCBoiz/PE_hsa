@@ -43,7 +43,7 @@
 .cd-block-icon {
   width: 32px; height: 32px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center; font-size: 16px;
-  background: linear-gradient(135deg,rgba(74,158,224,0.12),rgba(232,69,69,0.06));
+  background: linear-gradient(135deg,rgba(139,124,246,0.12),rgba(45,212,191,0.06));
 }
 .cd-block-body { padding: 20px; }
 
@@ -59,7 +59,7 @@
 /* ── Requirements ── */
 .cd-req-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .cd-req-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #374151; }
-.cd-req-list li::before { content: '◆'; color: #4A9EE0; font-size: 10px; flex-shrink: 0; margin-top: 3px; }
+.cd-req-list li::before { content: '◆'; color: #8B7CF6; font-size: 10px; flex-shrink: 0; margin-top: 3px; }
 
 /* ── Curriculum ── */
 .cd-module { border-bottom: 1px solid #F3F4F6; }
@@ -90,19 +90,19 @@
   display: flex; align-items: center; justify-content: center; font-size: 11px;
 }
 .cd-lesson.done    .cd-lesson-icon { background: linear-gradient(135deg,#10B981,#059669); color:#fff; }
-.cd-lesson.current .cd-lesson-icon { background: linear-gradient(135deg,#4A9EE0,#2563EB); color:#fff; }
+.cd-lesson.current .cd-lesson-icon { background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color:#fff; }
 .cd-lesson.locked  .cd-lesson-icon { background:#F3F4F6; color:#D1D5DB; border:1.5px solid #E5E7EB; }
 .cd-lesson-title { font-size: 13px; flex: 1; line-height: 1.4; }
 .cd-lesson.done    .cd-lesson-title { color: #6B7280; text-decoration: line-through; }
-.cd-lesson.current .cd-lesson-title { color: #1D4ED8; font-weight: 600; }
+.cd-lesson.current .cd-lesson-title { color: #7C5CF0; font-weight: 600; }
 .cd-lesson.locked  .cd-lesson-title { color: #9CA3AF; }
 .cd-lesson-num { font-size: 11px; color: #D1D5DB; }
 .cd-lesson-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg,#4A9EE0,#2563EB); color: #fff; white-space: nowrap;
+  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff; white-space: nowrap;
 }
 body.dark .cd-lesson.done:hover, body.dark .cd-lesson.current:hover { background: #293548; }
-body.dark .cd-lesson-badge { background: linear-gradient(135deg,#1D4ED8,#4A9EE0); }
+body.dark .cd-lesson-badge { background: linear-gradient(135deg,#7C5CF0,#8B7CF6); }
 
 /* ── Gameboard lesson path ── */
 .cd-lesson-list { position: relative; }
@@ -114,12 +114,12 @@ body.dark .cd-lesson-badge { background: linear-gradient(135deg,#1D4ED8,#4A9EE0)
 .cd-lesson { position: relative; z-index: 1; }
 .cd-lesson-icon { position: relative; z-index: 2; }
 .cd-lesson.current .cd-lesson-icon {
-  box-shadow: 0 0 0 3px rgba(74,158,224,0.25);
+  box-shadow: 0 0 0 3px rgba(139,124,246,0.25);
   animation: lesson-pulse 2s ease-in-out infinite;
 }
 @keyframes lesson-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(74,158,224,0.25); }
-  50%       { box-shadow: 0 0 0 7px rgba(74,158,224,0.08); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(139,124,246,0.25); }
+  50%       { box-shadow: 0 0 0 7px rgba(139,124,246,0.08); }
 }
 body.dark .cd-lesson-list::before { background: #334155; }
 
@@ -182,10 +182,10 @@ body.dark .coming-soon-note { color: #475569; }
 }
 .cd-enroll-btn.primary {
   margin-top: 14px;
-  background: linear-gradient(135deg,#4A9EE0,#2563EB); color: #fff;
-  box-shadow: 0 4px 12px rgba(74,158,224,0.35);
+  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff;
+  box-shadow: 0 4px 12px rgba(139,124,246,0.35);
 }
-.cd-enroll-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(74,158,224,0.45); }
+.cd-enroll-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(139,124,246,0.45); }
 .cd-enroll-btn.continue {
   background: linear-gradient(135deg,#10B981,#059669); color: #fff;
   box-shadow: 0 4px 12px rgba(16,185,129,0.3);
@@ -196,9 +196,9 @@ body.dark .coming-soon-note { color: #475569; }
 
 .cd-progress-row { margin-top: 14px; margin-bottom: 16px; }
 .cd-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #6B7280; margin-bottom: 6px; }
-.cd-progress-label .pct { font-weight: 700; color: #4A9EE0; }
+.cd-progress-label .pct { font-weight: 700; color: #8B7CF6; }
 .cd-prog-bar { height: 7px; background: #F3F4F6; border-radius: 4px; overflow: hidden; }
-.cd-prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#4A9EE0,#10B981); transition: width 0.4s ease; }
+.cd-prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#8B7CF6,#2DD4BF); transition: width 0.4s ease; }
 
 .cd-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .cd-cs { background: #F9FAFB; border-radius: 10px; padding: 10px; text-align: center; }
@@ -208,7 +208,7 @@ body.dark .coming-soon-note { color: #475569; }
 .cd-includes { border-top: 1px solid #F3F4F6; padding-top: 14px; }
 .cd-includes-title { font-size: 12px; font-weight: 700; color: #6B7280; margin-bottom: 10px; letter-spacing: 0.04em; }
 .cd-inc-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7280; padding: 4px 0; }
-.cd-inc-item i { width: 16px; color: #4A9EE0; }
+.cd-inc-item i { width: 16px; color: #8B7CF6; }
 
 .cd-desc { font-size: 14px; color: #374151; line-height: 1.7; }
 
@@ -233,6 +233,7 @@ body.dark .cd-module-arrow { background: #334155; color: #94A3B8; }
 body.dark .cd-lesson { border-bottom-color: #1E293B; }
 body.dark .cd-lesson.locked .cd-lesson-title { color: #475569; }
 body.dark .cd-lesson.done .cd-lesson-title { color: #475569; }
+body.dark .cd-lesson.current .cd-lesson-title { color: #A78BFA; }
 body.dark .cd-lesson-num { color: #334155; }
 body.dark .cd-req-list li { color: #94A3B8; }
 body.dark .cd-skill-item { color: #94A3B8; }
@@ -247,17 +248,17 @@ body.dark .cd-cs .l { color: #64748B; }
 body.dark .cd-includes { border-top-color: #334155; }
 body.dark .cd-includes-title { color: #64748B; }
 body.dark .cd-inc-item { color: #94A3B8; }
-body.dark .cd-inc-item i { color: #4A9EE0; }
+body.dark .cd-inc-item i { color: #8B7CF6; }
 body.dark .cd-enroll-btn.unenroll { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #F87171; }
 body.dark .cd-progress-label { color: #64748B; }
 body.dark .cd-module-body { background: transparent; }
 
 /* dark mode: topbar brand & nav */
 body.dark .topbar { background: #0F172A; border-bottom-color: #1E293B; }
-body.dark .brand-title { background: linear-gradient(90deg,#60A5FA,#A78BFA,#F472B6,#F87171); -webkit-background-clip: text; background-clip: text; }
+body.dark .brand-title { background: linear-gradient(90deg,#8B7CF6,#A78BFA,#2DD4BF); -webkit-background-clip: text; background-clip: text; }
 body.dark .topbar-nav .nav-btn { color: #94A3B8; }
 body.dark .topbar-nav .nav-btn:hover { background: #1E293B; color: #F1F5F9; }
-body.dark .topbar-nav .nav-btn.active { background: linear-gradient(135deg,rgba(74,158,224,0.18),rgba(232,69,69,0.1)); color: #60A5FA; }
+body.dark .topbar-nav .nav-btn.active { background: linear-gradient(135deg,rgba(139,124,246,0.18),rgba(45,212,191,0.1)); color: #A78BFA; }
 
 /* ── Block 6: Quiz ôn tập (FE-06) ── */
 #review-quiz-block .cd-block-body > #quiz-idle p { color: #6B7280; font-size: 14px; margin-bottom: 12px; }
@@ -269,10 +270,10 @@ body.dark .topbar-nav .nav-btn.active { background: linear-gradient(135deg,rgba(
 }
 .quiz-btn:disabled { opacity: 0.6; cursor: default; }
 .quiz-btn.primary {
-  background: linear-gradient(135deg,#4A9EE0,#2563EB); color: #fff;
-  box-shadow: 0 4px 12px rgba(74,158,224,0.35);
+  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff;
+  box-shadow: 0 4px 12px rgba(139,124,246,0.35);
 }
-.quiz-btn.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(74,158,224,0.45); }
+.quiz-btn.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(139,124,246,0.45); }
 .quiz-btn.secondary { background: #F3F4F6; color: #374151; border: 1px solid #E5E7EB; }
 .quiz-btn.secondary:hover { background: #E5E7EB; }
 

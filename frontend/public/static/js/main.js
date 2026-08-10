@@ -21,8 +21,15 @@ var searchQuery = "";
 var levelFilter = "all";
 var languageFilters = [];
 var searchDebounceTimer = null;
-var searchSuggestions = ["C", "Python", "Java", "HTML", "AI", "Web Development", "Phù hợp người mới", "Cơ bản", "Trung cấp", "Nâng cao"];
-var levelSuggestions = ["Phù hợp người mới", "Trung cấp", "Nâng cao"];
+// HSA: gợi ý theo hợp phần + chủ đề đề thi (KHÔNG còn ngôn ngữ lập trình pe_test).
+var searchSuggestions = ["Định lượng", "Định tính", "Khoa học", "Phần trăm", "Hàm số", "Xác suất", "Đọc hiểu", "Đề thi thử"];
+var levelSuggestions = [];
+// Nhãn hợp phần (chip lọc) → course id để đối chiếu (thay cho lọc ngôn ngữ cũ).
+var SECTION_IDS = {
+  "Định lượng": "hsa_quantitative",
+  "Định tính": "hsa_verbal",
+  "Khoa học": "hsa_science",
+};
 
 
 // Bảng liên kết khóa học → trang bài học (chỉ HSA — nội dung lập trình đã gỡ 2026-08-10)
@@ -782,25 +789,10 @@ function renderCourses() {
       (levelFilter === "Nâng cao" && /nâng cao/i.test(c.level)) ||
       (levelFilter === "Phù hợp người mới" && /phù hợp người mới/i.test(c.level));
 
+    // Lọc theo HỢP PHẦN HSA (đối chiếu course id — thay cho lọc ngôn ngữ pe_test).
     var matchLang =
       languageFilters.length === 0 ||
-      languageFilters.some(function (lang) {
-        var title = c.title.toLowerCase();
-        var subtitle = (c.subtitle || "").toLowerCase();
-        var tag = (c.tag || "").toLowerCase();
-        if (lang === "Python") return title.includes("python") || subtitle.includes("python") || tag.includes("python");
-        if (lang === "JS") return (
-          title.includes("js") ||
-          subtitle.includes("js") ||
-          tag.includes("js") ||
-          title.includes("javascript") ||
-          subtitle.includes("javascript") ||
-          tag.includes("javascript")
-        );
-        if (lang === "Java") return title.includes("java") || subtitle.includes("java") || tag.includes("java");
-        if (lang === "SQL") return title.includes("sql") || subtitle.includes("sql") || tag.includes("sql");
-        return false;
-      });
+      languageFilters.some(function (section) { return c.id === SECTION_IDS[section]; });
     return matchSearch && matchEnroll && matchLevel && matchLang;
   });
 

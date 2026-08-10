@@ -102,6 +102,41 @@
       '<ul class="hsa-rev-list">' + rows + '</ul>';
   }
 
+  /* ── Minh hoạ trực quan cho lý thuyết (đồ thị thanh so sánh) ──────
+     Mỗi card có thể kèm visual:{type:'bars', badge?, caption?, max?,
+     bars:[{label,value,display?,note?,color:'violet|teal|slate|amber'}]}.
+     Engine tự scale theo giá trị lớn nhất → thanh ngang trực quan, không
+     cần ảnh ngoài. Mở rộng type khác sau (number-line, curve…). */
+  var VIZ_COLORS = { violet: 1, teal: 1, slate: 1, amber: 1 };
+  function renderBars(v) {
+    var bars = v.bars || [];
+    if (!bars.length) return '';
+    var max = v.max || Math.max.apply(null, bars.map(function (b) { return Number(b.value) || 0; })) || 1;
+    var rows = bars.map(function (b) {
+      var pct = Math.max(6, Math.min(100, Math.round((Number(b.value) || 0) / max * 100)));
+      var color = VIZ_COLORS[b.color] ? b.color : 'violet';
+      return '<div class="hsa-viz-row">' +
+        '<span class="hsa-viz-blabel">' + esc(b.label) + '</span>' +
+        '<div class="hsa-viz-track">' +
+          '<div class="hsa-viz-bar hsa-viz-bar--' + color + '" style="width:' + pct + '%">' +
+            '<span class="hsa-viz-val">' + esc(b.display != null ? b.display : b.value) + '</span>' +
+          '</div>' +
+          (b.note ? '<span class="hsa-viz-note">' + esc(b.note) + '</span>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="hsa-viz">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<div class="hsa-viz-rows">' + rows + '</div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') +
+    '</div>';
+  }
+  function renderVisual(v) {
+    if (!v || !v.type) return '';
+    if (v.type === 'bars') return renderBars(v);
+    return '';
+  }
+
   /* ── Bước 3: LÝ THUYẾT (thích ứng) ────────────────────────────── */
   function renderTheory() {
     var th = state.lesson.theory || {};
@@ -111,7 +146,8 @@
       : '<span class="hsa-th-badge cond">Bản tóm tắt — bạn đã khá vững</span>';
     var cards = (pick.cards || []).map(function (c) {
       return '<div class="hsa-card"><div class="hsa-card-ic"><i class="fa-solid ' + esc(c.icon || 'fa-book') + '"></i></div>' +
-        '<div class="hsa-card-body"><h4>' + esc(c.title) + '</h4><p>' + c.body + '</p></div></div>';
+        '<div class="hsa-card-body"><h4>' + esc(c.title) + '</h4><p>' + c.body + '</p>' +
+        (c.visual ? renderVisual(c.visual) : '') + '</div></div>';
     }).join('');
     var ex = (pick.examples || []).length
       ? '<div class="hsa-ex"><div class="hsa-ex-label"><i class="fa-solid fa-lightbulb"></i> Ví dụ minh hoạ</div>' +

@@ -73,7 +73,15 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
               icon: 'fa-triangle-exclamation',
               title: 'Bẫy hay gặp',
               body: 'Tăng rồi giảm cùng % <strong>KHÔNG</strong> về lại số cũ (VD ±20% → còn 96%). ' +
-                    'Đừng cộng/trừ % trực tiếp qua nhiều bước — phải nhân các hệ số.'
+                    'Đừng cộng/trừ % trực tiếp qua nhiều bước — phải nhân các hệ số.',
+              visual: {
+                type: 'bars', badge: '±20% → 96%', max: 120,
+                bars: [
+                  { label: 'Gốc', value: 100, display: '100', color: 'slate' },
+                  { label: '+20%', value: 120, display: '120', color: 'violet' },
+                  { label: '−20%', value: 96, display: '96', color: 'amber' }
+                ]
+              }
             }
           ]
         },
@@ -84,25 +92,58 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
               icon: 'fa-percent',
               title: 'Phần trăm là gì?',
               body: 'p% = p/100. Muốn lấy p% của một số, ta nhân số đó với p/100. ' +
-                    'VD 25% của 400.000 = 400.000 × 25/100 = 100.000.'
+                    'VD 25% của 400.000 = 400.000 × 25/100 = 100.000.',
+              visual: {
+                type: 'bars', max: 400,
+                caption: '25% của 400.000 = <strong>100.000</strong>',
+                bars: [
+                  { label: 'Cả số (100%)', value: 400, display: '400.000', color: 'slate' },
+                  { label: '25% của nó', value: 100, display: '100.000', color: 'violet', note: '× 25/100' }
+                ]
+              }
             },
             {
               icon: 'fa-arrow-down',
               title: 'Giảm giá / giảm p%',
               body: 'Giá sau giảm = giá gốc × (1 − p/100). VD giảm 25%: × 0,75. ' +
-                    'Tương tự tăng p%: × (1 + p/100).'
+                    'Tương tự tăng p%: × (1 + p/100).',
+              visual: {
+                type: 'bars', max: 400,
+                caption: 'Áo <b>400.000đ</b> giảm 25% → còn <b>300.000đ</b>',
+                bars: [
+                  { label: 'Giá gốc', value: 400, display: '400.000đ', color: 'slate' },
+                  { label: 'Sau giảm 25%', value: 300, display: '300.000đ', color: 'teal', note: '× 0,75' }
+                ]
+              }
             },
             {
               icon: 'fa-arrows-up-down',
               title: '% thay đổi (tăng/giảm bao nhiêu %)',
               body: '% thay đổi = (giá trị mới − giá trị gốc) / <strong>giá trị gốc</strong> × 100. ' +
-                    'Sai lầm phổ biến: chia cho giá trị mới.'
+                    'Sai lầm phổ biến: chia cho giá trị mới.',
+              visual: {
+                type: 'bars', badge: '+25%', max: 25,
+                caption: 'Tăng 20 → 25 học sinh: <b>(25−20)/20 = 25%</b> (chia cho GỐC = 20)',
+                bars: [
+                  { label: 'Cũ (gốc)', value: 20, display: '20', color: 'slate' },
+                  { label: 'Mới', value: 25, display: '25', color: 'violet', note: '+5' }
+                ]
+              }
             },
             {
               icon: 'fa-triangle-exclamation',
               title: 'Bẫy "tăng rồi giảm"',
               body: 'Tăng p% rồi giảm p% ra kết quả nhỏ hơn ban đầu vì phần giảm tính trên số ĐÃ tăng. ' +
-                    'Luôn nhân các hệ số: (1+p)(1−p) = 1 − p².'
+                    'Luôn nhân các hệ số: (1+p)(1−p) = 1 − p².',
+              visual: {
+                type: 'bars', badge: 'Còn 96% !', max: 120,
+                caption: 'Tăng 20% rồi giảm 20%: 100 → 120 → <b>96</b> (KHÔNG về lại 100)',
+                bars: [
+                  { label: 'Ban đầu', value: 100, display: '100', color: 'slate' },
+                  { label: 'Sau +20%', value: 120, display: '120', color: 'violet', note: '× 1,2' },
+                  { label: 'Sau −20%', value: 96, display: '96', color: 'amber', note: '× 0,8' }
+                ]
+              }
             }
           ],
           examples: [

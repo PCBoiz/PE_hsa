@@ -69,6 +69,42 @@
 .hsa-ex-q { color: var(--t1, #E2E8F0); font-size: 14px; }
 .hsa-ex-sol { color: var(--hsa-teal); font-size: 14px; margin-top: 3px; }
 
+/* ── Minh hoạ trực quan trong lý thuyết (đồ thị thanh so sánh) ── */
+.hsa-viz {
+  position: relative; margin-top: 14px; padding: 14px 16px 12px;
+  background: rgba(139,124,246,.06); border: 1px solid rgba(139,124,246,.16);
+  border-radius: 12px;
+}
+.hsa-viz-badge {
+  position: absolute; top: 12px; right: 14px;
+  font-size: 11px; font-weight: 800; letter-spacing: .3px;
+  color: #FBBF24; background: rgba(251,191,36,.14);
+  border: 1px solid rgba(251,191,36,.3); padding: 3px 9px; border-radius: 999px;
+}
+.hsa-viz-rows { display: flex; flex-direction: column; gap: 9px; }
+.hsa-viz-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; }
+.hsa-viz-blabel { font-size: 12px; color: var(--t2, #94A3B8); text-align: right; line-height: 1.25; }
+.hsa-viz-track { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hsa-viz-bar {
+  height: 28px; border-radius: 8px; min-width: 40px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: flex-end; padding: 0 10px;
+  animation: hsaVizIn .45s ease both;
+}
+@keyframes hsaVizIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.hsa-viz-bar--violet { background: linear-gradient(90deg, rgba(139,124,246,.5), #8B7CF6); }
+.hsa-viz-bar--teal   { background: linear-gradient(90deg, rgba(45,212,191,.45), #2DD4BF); }
+.hsa-viz-bar--amber  { background: linear-gradient(90deg, rgba(251,191,36,.45), #FBBF24); }
+.hsa-viz-bar--slate  { background: linear-gradient(90deg, rgba(100,116,139,.32), rgba(148,163,184,.5)); }
+.hsa-viz-val { font-size: 12.5px; font-weight: 800; color: #0B1020; white-space: nowrap; }
+.hsa-viz-bar--slate .hsa-viz-val { color: #E2E8F0; }
+.hsa-viz-note { font-size: 11.5px; color: var(--t3, #64748B); white-space: nowrap; flex-shrink: 0; }
+.hsa-viz-cap {
+  margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06);
+  font-size: 12.5px; color: var(--t2, #94A3B8); line-height: 1.5;
+}
+.hsa-viz-cap b, .hsa-viz-cap strong { color: var(--hsa-teal); font-weight: 700; }
+@media (max-width: 560px) { .hsa-viz-row { grid-template-columns: 72px 1fr; } }
+
 /* ── Ghi chú ── */
 .hsa-notes-card { background: var(--card, #0C1220); border: 1px solid rgba(255,255,255,.08);
   border-radius: 16px; padding: 20px 22px; }

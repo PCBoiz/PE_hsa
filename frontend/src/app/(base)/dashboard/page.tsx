@@ -161,7 +161,7 @@ export default function DashboardPage() {
                 type="text"
                 id="course-search-input"
                 className="courses-search-bar-input"
-                placeholder="Tìm kiếm khóa học, ngôn ngữ, chủ đề..."
+                placeholder="Tìm khóa học, hợp phần, chủ đề..."
                 autoComplete="off"
                 onClick={() => W().cshOpen()}
                 onInput={(e) => W().cshInput(e.currentTarget.value)}
@@ -171,35 +171,27 @@ export default function DashboardPage() {
                 <div id="csh-static">
                   <div className="csh-label">Gợi ý tìm kiếm</div>
                   <div className="csh-pills">
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Phù hợp người mới')}>✨ Phù hợp người mới</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Cơ bản')}>📘 Cơ bản</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Trung cấp')}>🧠 Trung cấp</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Cao cấp')}>🚀 Cao cấp</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Định lượng')}>📊 Định lượng</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Định tính')}>✍️ Định tính</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Khoa học')}>🔬 Khoa học</button>
 
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Python')}>🐍 Python</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('C++')}>⚙️ C / C++</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Java')}>☕ Java</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('HTML CSS')}>🌐 HTML/CSS</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Phần trăm')}>％ Phần trăm</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Hàm số')}>📈 Hàm số</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Đọc hiểu')}>📖 Đọc hiểu</button>
+                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Đề thi thử')}>⏱️ Đề thi thử</button>
                   </div>
                 </div>
                 <ul id="csh-dynamic" style={{ display: 'none', listStyle: 'none', padding: 0, margin: '8px 0 0' }}></ul>
               </div>
             </div>
 
-            {/* Bộ lọc cấp độ + ngôn ngữ */}
+            {/* Bộ lọc theo hợp phần HSA (đã bỏ 'Cấp độ' + 'Ngôn ngữ' lập trình pe_test) */}
             <div className="course-filter-panel">
-              <div className="filter-pill-row" id="level-filter-row">
-                <span className="pill-label">Cấp độ</span>
-                <button className="pill-btn" onClick={(e) => W().setLevelFilter(e.currentTarget, 'Cơ bản')}>Cơ bản</button>
-                <button className="pill-btn" onClick={(e) => W().setLevelFilter(e.currentTarget, 'Trung cấp')}>Trung cấp</button>
-                <button className="pill-btn" onClick={(e) => W().setLevelFilter(e.currentTarget, 'Nâng cao')}>Nâng cao</button>
-              </div>
-              <div className="filter-pill-row" id="language-filter-row">
-                <span className="pill-label">Ngôn ngữ</span>
-                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Python')}>Python</button>
-                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'JS')}>JS</button>
-                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Java')}>Java</button>
-                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'SQL')}>SQL</button>
+              <div className="filter-pill-row" id="section-filter-row">
+                <span className="pill-label">Hợp phần</span>
+                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Định lượng')}>Định lượng</button>
+                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Định tính')}>Định tính</button>
+                <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Khoa học')}>Khoa học</button>
               </div>
               <div className="active-filters hidden" id="active-filters"></div>
             </div>
@@ -231,7 +223,7 @@ export default function DashboardPage() {
               type="text"
               id="skills-search-input"
               className="courses-search-bar-input"
-              placeholder="Tìm kỹ năng (ví dụ: Python, HTML, Git...)"
+              placeholder="Tìm chủ đề (ví dụ: Phần trăm, Hàm số, Đọc hiểu...)"
               autoComplete="off"
               onInput={(e) => W().skillsSearch(e.currentTarget.value)}
             />

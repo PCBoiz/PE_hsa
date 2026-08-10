@@ -36,10 +36,11 @@
     return ov[name + ':' + nodeId] || fallback;
   }
 
+  // Bảng màu HSA: done = teal (#2DD4BF), active = violet (#8B7CF6), locked = slate.
   var SC = {
-    done:   { mainBg: '#0E2A20', childBg: 'rgba(16,185,129,0.16)', stroke: '#10B981', mainText: '#6EE7B7', childText: '#34D399' },
-    active: { mainBg: '#0E2138', childBg: 'rgba(59,130,246,0.18)', stroke: '#3B82F6', mainText: '#93C5FD', childText: '#60A5FA' },
-    locked: { mainBg: '#101725', childBg: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.16)', mainText: '#CBD5E1', childText: '#64748B' }
+    done:   { mainBg: 'linear-gradient(135deg,#0C2A28,#10322E)', childBg: 'rgba(45,212,191,0.14)', stroke: 'rgba(45,212,191,0.55)', mainText: '#5EEAD4', childText: '#2DD4BF' },
+    active: { mainBg: 'linear-gradient(135deg,#1C1740,#241B4D)', childBg: 'rgba(139,124,246,0.18)', stroke: 'rgba(139,124,246,0.6)', mainText: '#C4B5FD', childText: '#A78BFA' },
+    locked: { mainBg: '#101725', childBg: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.14)', mainText: '#CBD5E1', childText: '#64748B' }
   };
   var RES_CFG = {
     article: { icon: 'file-text', label: 'Bài viết', color: '#60A5FA' },
@@ -98,13 +99,20 @@
   }
 
   /* ── Node box ── */
-  function nodeBoxHtml(name, node, kind) {
+  function nodeBoxHtml(name, node, kind, stepNum) {
     var status = getStatus(name, node.id, node.status);
     var c = SC[status] || SC.locked;
     var cls = 'rm-node rm-node--' + kind + ' rm-node--' + status;
     var onclick = "window.roadmapOpenDrawer('" + esc(name) + "','" + node.id + "','" + esc(node.label) + "')";
     if (kind === 'main') {
-      return '<button type="button" class="' + cls + '" style="background:' + c.mainBg + ';border-color:' + c.stroke + ';color:' + c.mainText + '" onclick="' + onclick + '">' + escHtmlR(node.label) + '</button>';
+      // Milestone: badge số chặng bên trái + tick ✓ khi hoàn thành (kiểu roadmap.sh).
+      var numHtml = (typeof stepNum === 'number')
+        ? '<span class="rm-node-num">' + (status === 'done'
+            ? (window.Icon ? Icon('check', 12, '#052E2B') : '✓')
+            : stepNum) + '</span>'
+        : '';
+      return '<button type="button" class="' + cls + '" style="background:' + c.mainBg + ';border-color:' + c.stroke + ';color:' + c.mainText + '" onclick="' + onclick + '">' +
+        numHtml + '<span class="rm-node-label">' + escHtmlR(node.label) + '</span></button>';
     }
     var dotHtml = status === 'done'
       ? '<span class="rm-node-dot rm-node-dot--done">' + (window.Icon ? Icon('check', 9, '#fff') : '') + '</span>'
@@ -115,7 +123,7 @@
   /* ── HTML cho danh sách section (spine + main + nhánh trái/phải) — dùng chung
      bởi renderFlow (roadmap tĩnh) và renderGeneratedRoadmap (roadmap cá nhân) ── */
   function buildSectionsHtml(name, sections) {
-    return sections.map(function (sec) {
+    return sections.map(function (sec, i) {
       var leftHtml = sec.left.length
         ? '<div class="rm-branch rm-branch--left">' + sec.left.map(function (n) { return nodeBoxHtml(name, n, 'child'); }).join('') + '</div><div class="rm-dash rm-dash--right"></div>'
         : '';
@@ -124,7 +132,7 @@
         : '';
       return '<div class="rm-section">' +
         '<div class="rm-section-left">' + leftHtml + '</div>' +
-        '<div class="rm-section-main">' + nodeBoxHtml(name, sec.main, 'main') + '</div>' +
+        '<div class="rm-section-main">' + nodeBoxHtml(name, sec.main, 'main', i + 1) + '</div>' +
         '<div class="rm-section-right">' + rightHtml + '</div>' +
         '</div>';
     }).join('');
@@ -228,8 +236,8 @@
       });
     });
     pill.innerHTML =
-      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#10B981"></span><b style="color:#10B981">' + done + '</b> Đã học</span>' +
-      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#3B82F6"></span><b style="color:#3B82F6">' + active + '</b> Đang học</span>' +
+      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#2DD4BF"></span><b style="color:#2DD4BF">' + done + '</b> Đã học</span>' +
+      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#8B7CF6"></span><b style="color:#8B7CF6">' + active + '</b> Đang học</span>' +
       '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#64748B"></span><b style="color:#64748B">' + locked + '</b> Chưa học</span>';
   }
 

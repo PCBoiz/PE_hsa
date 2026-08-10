@@ -131,7 +131,7 @@
 .rm-spine {
   position: absolute; top: 20px; bottom: 24px; left: 50%;
   transform: translateX(-50%); width: 2px;
-  background: linear-gradient(to bottom, rgba(59,130,246,0.08), rgba(255,255,255,0.1) 12%, rgba(255,255,255,0.1) 88%, rgba(59,130,246,0.08));
+  background: linear-gradient(to bottom, rgba(139,124,246,0.05), rgba(139,124,246,0.28) 12%, rgba(45,212,191,0.28) 88%, rgba(45,212,191,0.05));
   z-index: 0;
 }
 
@@ -139,7 +139,7 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 28px;
   position: relative;
   z-index: 1;
 }
@@ -151,7 +151,7 @@
 .rm-branch--left { align-items: flex-end; }
 .rm-branch--right { align-items: flex-start; }
 
-.rm-dash { width: 34px; height: 0; border-top: 1.5px dashed rgba(255,255,255,0.14); flex-shrink: 0; }
+.rm-dash { width: 38px; height: 0; border-top: 2px dotted rgba(139,124,246,0.38); flex-shrink: 0; }
 .rm-dash--left { margin: 0 8px 0 0; }
 .rm-dash--right { margin: 0 0 0 8px; }
 
@@ -162,11 +162,23 @@
   animation: fadeUp 0.22s ease both;
 }
 .rm-node--main {
-  border-radius: 9px; border-width: 1.5px; border-style: solid;
-  padding: 9px 18px; min-width: 188px;
-  font-size: 0.86rem; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 10px;
+  border-radius: 12px; border-width: 1.5px; border-style: solid;
+  padding: 11px 18px 11px 12px; min-width: 212px;
+  font-size: 0.87rem; font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.28);
 }
-.rm-node--main:hover { transform: translateY(-1px); }
+.rm-node--main:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(139,124,246,0.22); }
+.rm-node-label { flex: 1; text-align: left; line-height: 1.25; }
+.rm-node-num {
+  flex-shrink: 0; width: 27px; height: 27px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; font-weight: 800;
+  background: rgba(255,255,255,0.08); color: inherit;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+.rm-node--done .rm-node-num { background: #2DD4BF; color: #052E2B; border-color: transparent; }
+.rm-node--active .rm-node-num { background: #8B7CF6; color: #fff; border-color: transparent; box-shadow: 0 0 0 3px rgba(139,124,246,0.22); }
 .rm-node--child {
   position: relative;
   border-radius: 7px; border-width: 1.25px; border-style: solid;
@@ -181,8 +193,8 @@
   width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.rm-node-dot--done { background: #10B981; }
-.rm-node-dot--active { background: #3B82F6; }
+.rm-node-dot--done { background: #2DD4BF; }
+.rm-node-dot--active { background: #8B7CF6; box-shadow: 0 0 0 3px rgba(139,124,246,0.2); }
 .rm-node-dot--locked { background: rgba(255,255,255,0.12); }
 
 /* ── Browse grid ── */
