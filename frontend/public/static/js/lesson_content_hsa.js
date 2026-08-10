@@ -1177,6 +1177,302 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
           { id: 'd8', type: 'mcq', question: 'Vectơ trong không gian có mấy thành phần?', options: ['2', '3', '4', '1'], answer: '3' }
         ]
       }
+    },
+
+    {
+      id: 'ql_16',
+      index: 16,
+      title: 'Tổ hợp – chỉnh hợp',
+      subtitle: 'Quy tắc đếm, hoán vị, chỉnh hợp và tổ hợp',
+      topic_tag: 'Định lượng · Thống kê & Xác suất',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về tổ hợp – chỉnh hợp.',
+        questions: [
+          { id: 't1', type: 'fill', question: 'Số cách xếp 3 người vào 3 ghế (tính 3!) bằng bao nhiêu? (nhập số)',
+            answer: '6', explain: '3! = 3×2×1 = 6.' },
+          { id: 't2', type: 'mcq', question: 'Số cách chọn 2 người trong 4 người (KHÔNG phân biệt thứ tự) là tổ hợp C(4,2). Giá trị bằng?',
+            options: ['4', '6', '8', '12'], answer: '6',
+            explain: 'C(4,2) = 4!/(2!·2!) = 6.' },
+          { id: 't3', type: 'mcq', question: 'Khi THỨ TỰ sắp xếp là quan trọng, ta dùng khái niệm nào?',
+            options: ['tổ hợp', 'chỉnh hợp', 'giai thừa', 'trung bình'], answer: 'chỉnh hợp',
+            explain: 'Có thứ tự → chỉnh hợp (A); không thứ tự → tổ hợp (C).' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-arrow-down-1-9', title: 'Quy tắc đếm & hoán vị',
+              body: 'Quy tắc CỘNG (hoặc … hoặc), quy tắc NHÂN (và … và). Hoán vị n phần tử: <code>Pₙ = n!</code> (n! = n×(n−1)×…×1).' },
+            { icon: 'fa-shuffle', title: 'Chỉnh hợp & tổ hợp',
+              body: 'Chỉnh hợp (CÓ thứ tự): A(n,k) = n!/(n−k)!. Tổ hợp (KHÔNG thứ tự): <code>C(n,k) = n!/[k!·(n−k)!]</code>.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ tổ hợp – chỉnh hợp',
+          cards: [
+            { icon: 'fa-plus', title: 'Quy tắc cộng & nhân',
+              body: 'Quy tắc cộng: công việc có m cách này HOẶC n cách kia (rời nhau) → m + n cách. Quy tắc nhân: gồm hai công đoạn liên tiếp, m cách và n cách → m × n cách.' },
+            { icon: 'fa-arrow-down-1-9', title: 'Hoán vị & giai thừa',
+              body: 'Hoán vị của n phần tử (sắp xếp tất cả) = n! = n×(n−1)×…×1. VD 3! = 6, 4! = 24, 5! = 120.' },
+            { icon: 'fa-list-ol', title: 'Chỉnh hợp (có thứ tự)',
+              body: 'Chọn k trong n phần tử CÓ để ý thứ tự: A(n,k) = n!/(n−k)!. VD A(4,2) = 12 (chọn 2 trong 4 có thứ tự).' },
+            { icon: 'fa-object-group', title: 'Tổ hợp (không thứ tự)',
+              body: 'Chọn k trong n phần tử KHÔNG để ý thứ tự: C(n,k) = n!/[k!(n−k)!]. VD C(4,2) = 6. Luôn có C(n,k) = C(n, n−k).' }
+          ],
+          examples: [
+            { q: 'Có bao nhiêu cách xếp 4 bạn thành hàng?', sol: '4! = 24 cách.' },
+            { q: 'Chọn 3 trong 5 học sinh đi trực (không thứ tự)?', sol: 'C(5,3) = 10.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Quy tắc cộng (hoặc): m + n; quy tắc nhân (và): m × n.',
+          'Hoán vị n phần tử: Pₙ = n!.',
+          'Chỉnh hợp (có thứ tự): A(n,k) = n!/(n−k)!.',
+          'Tổ hợp (không thứ tự): C(n,k) = n!/[k!(n−k)!].'
+        ],
+        formula: 'Pₙ = n!   |   A(n,k) = n!/(n−k)!   |   C(n,k) = n!/[k!(n−k)!]',
+        tip: 'Hỏi “thứ tự có quan trọng không?” — CÓ dùng chỉnh hợp A, KHÔNG dùng tổ hợp C.'
+      },
+      drill: {
+        time_seconds: 85,
+        questions: [
+          { id: 'd1', type: 'fill', question: 'Tính 4! (nhập số)', answer: '24' },
+          { id: 'd2', type: 'fill', question: 'Tính 5! (nhập số)', answer: '120' },
+          { id: 'd3', type: 'mcq', question: 'C(4,2) bằng?', options: ['4', '6', '8', '12'], answer: '6' },
+          { id: 'd4', type: 'fill', question: 'Số cách xếp 3 người thành hàng = 3! = ? (nhập số)', answer: '6' },
+          { id: 'd5', type: 'mcq', question: 'Chọn CÓ thứ tự dùng?', options: ['tổ hợp', 'chỉnh hợp', 'hoán vị', 'giai thừa'], answer: 'chỉnh hợp' },
+          { id: 'd6', type: 'mcq', question: 'Chọn KHÔNG thứ tự dùng?', options: ['tổ hợp', 'chỉnh hợp', 'hoán vị', 'xác suất'], answer: 'tổ hợp' },
+          { id: 'd7', type: 'fill', question: 'C(5,2) bằng bao nhiêu? (nhập số)', answer: '10' },
+          { id: 'd8', type: 'mcq', question: 'Có 3 áo, 2 quần. Số bộ đồ (quy tắc nhân)?', options: ['5', '6', '8', '9'], answer: '6' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_17',
+      index: 17,
+      title: 'Xác suất cơ bản',
+      subtitle: 'Xác suất của biến cố và cách tính',
+      topic_tag: 'Định lượng · Thống kê & Xác suất',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về xác suất.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Xác suất của một biến cố được tính bằng?',
+            options: ['số kết quả thuận lợi / tổng số kết quả', 'tổng số kết quả / số thuận lợi', 'số thuận lợi × tổng', 'tổng − thuận lợi'], answer: 'số kết quả thuận lợi / tổng số kết quả',
+            explain: 'P(A) = số kết quả thuận lợi cho A / tổng số kết quả có thể.' },
+          { id: 't2', type: 'fill', question: 'Tung một con xúc xắc cân đối. Xác suất ra mặt 6 là 1/n. Giá trị của n là bao nhiêu? (nhập số)',
+            answer: '6', explain: 'Có 6 mặt, 1 mặt là số 6 → P = 1/6.' },
+          { id: 't3', type: 'mcq', question: 'Xác suất của một biến cố luôn nhận giá trị trong khoảng nào?',
+            options: ['từ 0 đến 1', 'từ 1 đến 10', 'từ −1 đến 1', 'bất kỳ số nào'], answer: 'từ 0 đến 1',
+            explain: '0 ≤ P(A) ≤ 1. P = 0: không thể xảy ra; P = 1: chắc chắn xảy ra.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-percent', title: 'Công thức xác suất',
+              body: '<code>P(A) = (số kết quả thuận lợi) / (tổng số kết quả)</code>. Luôn có 0 ≤ P(A) ≤ 1.' },
+            { icon: 'fa-dice', title: 'Ý nghĩa',
+              body: 'P = 0: biến cố không thể xảy ra. P = 1: biến cố chắc chắn. P càng gần 1 càng dễ xảy ra.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ xác suất',
+          cards: [
+            { icon: 'fa-dice', title: 'Phép thử & biến cố',
+              body: 'Phép thử ngẫu nhiên: hành động có nhiều kết quả không đoán trước (tung xúc xắc, gieo đồng xu). Biến cố là tập kết quả ta quan tâm.' },
+            { icon: 'fa-percent', title: 'Công thức cổ điển',
+              body: 'Khi các kết quả đồng khả năng: P(A) = số kết quả thuận lợi cho A / tổng số kết quả. VD tung xúc xắc, P(ra số chẵn) = 3/6 = 1/2.' },
+            { icon: 'fa-arrows-left-right', title: 'Tính chất',
+              body: '0 ≤ P(A) ≤ 1. P(biến cố chắc chắn) = 1; P(biến cố không thể) = 0. P(A) + P(không A) = 1.' },
+            { icon: 'fa-plus', title: 'Biến cố đối & kết hợp',
+              body: 'Biến cố đối “không A” có P = 1 − P(A) — dùng khi tính “ít nhất”, “không có” thuận tiện hơn.' }
+          ],
+          examples: [
+            { q: 'Gieo đồng xu, xác suất ra mặt ngửa?', sol: '1/2 (1 trong 2 kết quả đồng khả năng).' },
+            { q: 'Xúc xắc, xác suất ra số lớn hơn 4?', sol: 'Các số 5, 6 → 2/6 = 1/3.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'P(A) = số kết quả thuận lợi / tổng số kết quả.',
+          '0 ≤ P(A) ≤ 1; P = 0 không thể, P = 1 chắc chắn.',
+          'P(A) + P(không A) = 1 (biến cố đối).',
+          'Áp dụng khi các kết quả đồng khả năng.'
+        ],
+        formula: 'P(A) = (thuận lợi)/(tổng)   |   P(không A) = 1 − P(A)',
+        tip: 'Tính “ít nhất một” thường dễ hơn qua biến cố đối: 1 − P(không có cái nào).'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Công thức xác suất P(A) =?', options: ['thuận lợi/tổng', 'tổng/thuận lợi', 'thuận lợi×tổng', 'tổng−thuận lợi'], answer: 'thuận lợi/tổng' },
+          { id: 'd2', type: 'fill', question: 'Gieo đồng xu, xác suất mặt ngửa là 1/n. n = ? (nhập số)', answer: '2' },
+          { id: 'd3', type: 'mcq', question: 'Xác suất ra số chẵn khi tung xúc xắc?', options: ['1/6', '1/3', '1/2', '2/3'], answer: '1/2' },
+          { id: 'd4', type: 'mcq', question: 'P của biến cố chắc chắn bằng?', options: ['0', '0,5', '1', '2'], answer: '1' },
+          { id: 'd5', type: 'mcq', question: 'P của biến cố không thể xảy ra bằng?', options: ['0', '0,5', '1', '−1'], answer: '0' },
+          { id: 'd6', type: 'fill', question: 'Xúc xắc: xác suất ra số 6 là 1/n. n = ? (nhập số)', answer: '6' },
+          { id: 'd7', type: 'mcq', question: 'Nếu P(A) = 0,3 thì P(không A) = ?', options: ['0,3', '0,7', '1', '0'], answer: '0,7' },
+          { id: 'd8', type: 'mcq', question: 'Xác suất luôn nằm trong?', options: ['[0 ; 1]', '[1 ; 10]', '[−1 ; 1]', 'bất kỳ'], answer: '[0 ; 1]' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_18',
+      index: 18,
+      title: 'Thống kê mô tả',
+      subtitle: 'Trung bình, trung vị, mốt và phương sai',
+      topic_tag: 'Định lượng · Thống kê & Xác suất',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về thống kê mô tả.',
+        questions: [
+          { id: 't1', type: 'fill', question: 'Trung bình cộng của ba số 2, 4, 6 bằng bao nhiêu? (nhập số)',
+            answer: '4', explain: '(2 + 4 + 6)/3 = 12/3 = 4.' },
+          { id: 't2', type: 'mcq', question: 'Giá trị xuất hiện NHIỀU NHẤT trong một dãy số liệu được gọi là?',
+            options: ['số trung bình', 'trung vị', 'mốt', 'phương sai'], answer: 'mốt',
+            explain: 'Mốt (mode) là giá trị có tần số lớn nhất.' },
+          { id: 't3', type: 'mcq', question: 'Trung vị của một dãy số liệu là?',
+            options: ['giá trị đứng giữa khi đã sắp xếp', 'giá trị lớn nhất', 'tổng chia số phần tử', 'giá trị nhỏ nhất'], answer: 'giá trị đứng giữa khi đã sắp xếp',
+            explain: 'Trung vị là giá trị ở chính giữa khi sắp xếp số liệu theo thứ tự.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-calculator', title: 'Ba số đo trung tâm',
+              body: 'TRUNG BÌNH = tổng/số phần tử. TRUNG VỊ = giá trị đứng giữa (sau khi sắp xếp). MỐT = giá trị xuất hiện nhiều nhất.' },
+            { icon: 'fa-chart-simple', title: 'Độ phân tán',
+              body: 'Phương sai và độ lệch chuẩn đo mức độ phân tán của số liệu quanh giá trị trung bình. Càng lớn, số liệu càng phân tán.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ thống kê mô tả',
+          cards: [
+            { icon: 'fa-calculator', title: 'Số trung bình cộng',
+              body: 'Bằng tổng tất cả giá trị chia cho số giá trị: x̄ = (x₁ + x₂ + … + xₙ)/n. Đại diện “trung tâm” của số liệu, nhưng nhạy với giá trị cực đoan.' },
+            { icon: 'fa-ruler-horizontal', title: 'Trung vị',
+              body: 'Sắp xếp số liệu tăng dần; trung vị là giá trị ở giữa (n lẻ) hoặc trung bình hai giá trị giữa (n chẵn). Ít bị ảnh hưởng bởi giá trị cực đoan.' },
+            { icon: 'fa-crown', title: 'Mốt',
+              body: 'Là giá trị (hoặc các giá trị) xuất hiện nhiều nhất. Một dãy có thể có một hoặc nhiều mốt, hoặc không có mốt.' },
+            { icon: 'fa-chart-simple', title: 'Phương sai & độ lệch chuẩn',
+              body: 'Phương sai đo trung bình bình phương độ lệch so với x̄; độ lệch chuẩn là căn bậc hai của phương sai. Cho biết số liệu tập trung hay phân tán.' }
+          ],
+          examples: [
+            { q: 'Dãy 3, 5, 7, 9. Trung bình?', sol: '(3+5+7+9)/4 = 24/4 = 6.' },
+            { q: 'Dãy 2, 2, 3, 5. Mốt là?', sol: '2 (xuất hiện nhiều nhất).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Trung bình = tổng / số phần tử.',
+          'Trung vị = giá trị đứng giữa sau khi sắp xếp.',
+          'Mốt = giá trị xuất hiện nhiều nhất.',
+          'Phương sai/độ lệch chuẩn đo độ phân tán.'
+        ],
+        formula: 'x̄ = (x₁ + x₂ + … + xₙ)/n',
+        tip: 'Muốn tính trung vị, luôn SẮP XẾP số liệu trước rồi mới tìm giá trị ở giữa.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'fill', question: 'Trung bình của 4, 6, 8? (nhập số)', answer: '6' },
+          { id: 'd2', type: 'mcq', question: 'Giá trị xuất hiện nhiều nhất gọi là?', options: ['trung bình', 'trung vị', 'mốt', 'phương sai'], answer: 'mốt' },
+          { id: 'd3', type: 'fill', question: 'Trung bình của 10 và 20? (nhập số)', answer: '15' },
+          { id: 'd4', type: 'mcq', question: 'Trung vị của 1, 3, 5, 7, 9 là?', options: ['3', '5', '7', '25'], answer: '5' },
+          { id: 'd5', type: 'mcq', question: 'Mốt của dãy 2, 2, 3, 4 là?', options: ['2', '3', '4', '2,75'], answer: '2' },
+          { id: 'd6', type: 'fill', question: 'Trung bình của 2, 4, 6, 8? (nhập số)', answer: '5' },
+          { id: 'd7', type: 'mcq', question: 'Đại lượng đo độ phân tán số liệu?', options: ['phương sai', 'trung bình', 'mốt', 'trung vị'], answer: 'phương sai' },
+          { id: 'd8', type: 'mcq', question: 'Muốn tìm trung vị, đầu tiên phải?', options: ['sắp xếp số liệu', 'cộng lại', 'chia đôi', 'tìm mốt'], answer: 'sắp xếp số liệu' }
+        ]
+      }
+    },
+
+    {
+      id: 'ql_19',
+      index: 19,
+      title: 'Biến cố & quy tắc đếm',
+      subtitle: 'Quy tắc cộng, quy tắc nhân và ứng dụng',
+      topic_tag: 'Định lượng · Thống kê & Xác suất',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về quy tắc đếm.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Quy tắc CỘNG được dùng khi nào?',
+            options: ['các trường hợp rời nhau (hoặc cái này hoặc cái kia)', 'các công đoạn liên tiếp', 'chỉ có một cách', 'luôn luôn'], answer: 'các trường hợp rời nhau (hoặc cái này hoặc cái kia)',
+            explain: 'Quy tắc cộng: công việc thực hiện theo phương án A HOẶC B (không đồng thời) → cộng số cách.' },
+          { id: 't2', type: 'mcq', question: 'Quy tắc NHÂN được dùng khi nào?',
+            options: ['gồm các công đoạn liên tiếp (và … và)', 'các trường hợp rời nhau', 'chỉ đếm một lần', 'khi có xác suất'], answer: 'gồm các công đoạn liên tiếp (và … và)',
+            explain: 'Quy tắc nhân: công việc gồm nhiều công đoạn nối tiếp → nhân số cách của từng công đoạn.' },
+          { id: 't3', type: 'fill', question: 'Có 2 chiếc áo và 3 chiếc quần. Số cách chọn một bộ (gồm một áo VÀ một quần) là bao nhiêu? (nhập số)',
+            answer: '6', explain: 'Quy tắc nhân: 2 × 3 = 6 cách.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-plus', title: 'Quy tắc cộng',
+              body: 'Công việc thực hiện theo phương án A HOẶC B (rời nhau): m cách và n cách → tổng <code>m + n</code> cách.' },
+            { icon: 'fa-xmark', title: 'Quy tắc nhân',
+              body: 'Công việc gồm hai công đoạn liên tiếp (A VÀ B): m cách rồi n cách → tổng <code>m × n</code> cách.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ biến cố & quy tắc đếm',
+          cards: [
+            { icon: 'fa-plus', title: 'Quy tắc cộng',
+              body: 'Nếu một công việc có thể làm theo một trong hai phương án rời nhau (A có m cách, B có n cách) thì có m + n cách. Dấu hiệu: “HOẶC”.' },
+            { icon: 'fa-xmark', title: 'Quy tắc nhân',
+              body: 'Nếu một công việc gồm hai công đoạn liên tiếp (công đoạn 1 có m cách, công đoạn 2 có n cách) thì có m × n cách. Dấu hiệu: “VÀ”, “rồi”.' },
+            { icon: 'fa-diagram-project', title: 'Biến cố',
+              body: 'Trong bài toán xác suất, dùng quy tắc đếm để tính tổng số kết quả và số kết quả thuận lợi cho biến cố, rồi lập tỉ số.' },
+            { icon: 'fa-lightbulb', title: 'Cách phân biệt',
+              body: 'Hỏi: các phương án có RỜI NHAU (chỉ chọn một) → cộng; hay LIÊN TIẾP (làm hết các bước) → nhân. Đây là gốc của mọi bài đếm.' }
+          ],
+          examples: [
+            { q: 'Đi từ A đến B có 3 đường, từ B đến C có 2 đường. Số cách đi A→C?', sol: 'Quy tắc nhân: 3 × 2 = 6.' },
+            { q: 'Chọn một món: 4 món cơm HOẶC 3 món phở. Số cách?', sol: 'Quy tắc cộng: 4 + 3 = 7.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Quy tắc cộng (HOẶC — rời nhau): m + n cách.',
+          'Quy tắc nhân (VÀ — liên tiếp): m × n cách.',
+          'Dùng quy tắc đếm để tính tổng và số thuận lợi trong xác suất.',
+          'Phân biệt: rời nhau → cộng; liên tiếp → nhân.'
+        ],
+        formula: 'Cộng (hoặc): m + n   |   Nhân (và): m × n',
+        tip: 'Gặp “và/rồi” nghĩ tới NHÂN; gặp “hoặc” nghĩ tới CỘNG — là quyết định đúng ngay.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'fill', question: 'Có 3 áo và 4 quần. Số bộ đồ (áo và quần)? (nhập số)', answer: '12' },
+          { id: 'd2', type: 'mcq', question: 'Quy tắc “hoặc … hoặc” là?', options: ['quy tắc cộng', 'quy tắc nhân', 'hoán vị', 'tổ hợp'], answer: 'quy tắc cộng' },
+          { id: 'd3', type: 'mcq', question: 'Quy tắc “và … và” (liên tiếp) là?', options: ['quy tắc cộng', 'quy tắc nhân', 'chỉnh hợp', 'trung bình'], answer: 'quy tắc nhân' },
+          { id: 'd4', type: 'fill', question: 'A→B có 2 đường, B→C có 5 đường. Số cách A→C? (nhập số)', answer: '10' },
+          { id: 'd5', type: 'fill', question: 'Chọn 1 món: 3 món chè HOẶC 2 loại nước. Số cách? (nhập số)', answer: '5' },
+          { id: 'd6', type: 'mcq', question: 'Gieo 2 con xúc xắc, tổng số kết quả?', options: ['12', '36', '6', '11'], answer: '36' },
+          { id: 'd7', type: 'fill', question: 'Có 4 màu áo và 2 kiểu cổ. Số loại áo? (nhập số)', answer: '8' },
+          { id: 'd8', type: 'mcq', question: 'Dấu hiệu dùng quy tắc nhân là từ?', options: ['và, rồi', 'hoặc', 'nhưng', 'vì'], answer: 'và, rồi' }
+        ]
+      }
     }
   ]
 };
@@ -2062,6 +2358,302 @@ window.LESSON_CONTENT_HSA['hsa_verbal'] = {
           { id: 'd6', type: 'mcq', question: 'Bài bàn luận về một vấn đề xã hội là văn bản?', options: ['nghị luận', 'thông tin', 'miêu tả', 'tự sự'], answer: 'nghị luận' },
           { id: 'd7', type: 'mcq', question: 'Văn bản kể lại một câu chuyện là?', options: ['tự sự', 'nghị luận', 'thông tin', 'thuyết minh'], answer: 'tự sự' },
           { id: 'd8', type: 'mcq', question: 'Để phân loại văn bản, ta xét?', options: ['mục đích chính', 'số câu', 'tên tác giả', 'độ dài'], answer: 'mục đích chính' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_13',
+      index: 13,
+      title: 'Tác giả – tác phẩm trọng tâm',
+      subtitle: 'Ghép đúng tác giả với tác phẩm tiêu biểu',
+      topic_tag: 'Định tính · Văn học',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về tác giả – tác phẩm.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Tác giả của "Truyện Kiều" là ai?',
+            options: ['Nguyễn Du', 'Nguyễn Trãi', 'Hồ Xuân Hương', 'Nam Cao'], answer: 'Nguyễn Du',
+            explain: '"Truyện Kiều" (Đoạn trường tân thanh) là kiệt tác của đại thi hào Nguyễn Du.' },
+          { id: 't2', type: 'mcq', question: 'Các truyện ngắn "Lão Hạc", "Chí Phèo" là của tác giả nào?',
+            options: ['Nam Cao', 'Ngô Tất Tố', 'Vũ Trọng Phụng', 'Thạch Lam'], answer: 'Nam Cao',
+            explain: 'Nam Cao là cây bút hiện thực xuất sắc với "Lão Hạc", "Chí Phèo".' },
+          { id: 't3', type: 'mcq', question: 'Bài thơ "Việt Bắc" là của tác giả nào?',
+            options: ['Tố Hữu', 'Xuân Diệu', 'Huy Cận', 'Chế Lan Viên'], answer: 'Tố Hữu',
+            explain: '"Việt Bắc" là bài thơ nổi tiếng của Tố Hữu – lá cờ đầu của thơ ca cách mạng.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-feather', title: 'Trung đại tiêu biểu',
+              body: 'Nguyễn Trãi (Bình Ngô đại cáo), Nguyễn Du (Truyện Kiều), Hồ Xuân Hương (thơ Nôm). Nắm tác giả – tác phẩm gắn liền.' },
+            { icon: 'fa-book', title: 'Hiện đại tiêu biểu',
+              body: 'Nam Cao (Lão Hạc, Chí Phèo), Ngô Tất Tố (Tắt đèn), Tố Hữu (Việt Bắc), Xuân Diệu (thơ tình), Hồ Chí Minh (Nhật ký trong tù).' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ tác giả – tác phẩm',
+          cards: [
+            { icon: 'fa-scroll', title: 'Văn học trung đại',
+              body: 'Nguyễn Trãi – "Bình Ngô đại cáo"; Nguyễn Du – "Truyện Kiều"; Hồ Xuân Hương – thơ Nôm ("Bánh trôi nước"); Nguyễn Đình Chiểu – "Lục Vân Tiên".' },
+            { icon: 'fa-pen-nib', title: 'Văn học hiện thực (1930-1945)',
+              body: 'Nam Cao – "Lão Hạc", "Chí Phèo"; Ngô Tất Tố – "Tắt đèn"; Vũ Trọng Phụng – "Số đỏ"; Thạch Lam – "Hai đứa trẻ".' },
+            { icon: 'fa-flag', title: 'Thơ ca cách mạng',
+              body: 'Hồ Chí Minh – "Nhật ký trong tù"; Tố Hữu – "Việt Bắc", "Từ ấy"; các nhà thơ kháng chiến khác.' },
+            { icon: 'fa-star', title: 'Phong trào Thơ mới',
+              body: 'Xuân Diệu (ông hoàng thơ tình), Huy Cận, Hàn Mặc Tử, Chế Lan Viên — đổi mới thơ ca Việt Nam đầu thế kỷ XX.' }
+          ],
+          examples: [
+            { q: '"Bình Ngô đại cáo" là của ai?', sol: 'Nguyễn Trãi.' },
+            { q: '"Nhật ký trong tù" là của ai?', sol: 'Hồ Chí Minh.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Nguyễn Du – Truyện Kiều; Nguyễn Trãi – Bình Ngô đại cáo.',
+          'Nam Cao – Lão Hạc, Chí Phèo; Ngô Tất Tố – Tắt đèn.',
+          'Tố Hữu – Việt Bắc; Hồ Chí Minh – Nhật ký trong tù.',
+          'Xuân Diệu – ông hoàng thơ tình (phong trào Thơ mới).'
+        ],
+        tip: 'Học theo cặp “tác giả – tác phẩm – thời kỳ” — câu HSA hay hỏi ghép đúng ba yếu tố này.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Tác giả "Truyện Kiều"?', options: ['Nguyễn Du', 'Nguyễn Trãi', 'Tố Hữu', 'Nam Cao'], answer: 'Nguyễn Du' },
+          { id: 'd2', type: 'mcq', question: 'Tác giả "Chí Phèo"?', options: ['Nam Cao', 'Ngô Tất Tố', 'Vũ Trọng Phụng', 'Thạch Lam'], answer: 'Nam Cao' },
+          { id: 'd3', type: 'mcq', question: 'Tác giả "Bình Ngô đại cáo"?', options: ['Nguyễn Trãi', 'Nguyễn Du', 'Hồ Xuân Hương', 'Tố Hữu'], answer: 'Nguyễn Trãi' },
+          { id: 'd4', type: 'mcq', question: 'Tác giả "Tắt đèn"?', options: ['Ngô Tất Tố', 'Nam Cao', 'Vũ Trọng Phụng', 'Xuân Diệu'], answer: 'Ngô Tất Tố' },
+          { id: 'd5', type: 'mcq', question: 'Tác giả "Nhật ký trong tù"?', options: ['Hồ Chí Minh', 'Tố Hữu', 'Xuân Diệu', 'Huy Cận'], answer: 'Hồ Chí Minh' },
+          { id: 'd6', type: 'mcq', question: 'Tác giả bài thơ "Việt Bắc"?', options: ['Tố Hữu', 'Xuân Diệu', 'Chế Lan Viên', 'Nguyễn Du'], answer: 'Tố Hữu' },
+          { id: 'd7', type: 'mcq', question: 'Nhà thơ được gọi "ông hoàng thơ tình"?', options: ['Xuân Diệu', 'Huy Cận', 'Tố Hữu', 'Hàn Mặc Tử'], answer: 'Xuân Diệu' },
+          { id: 'd8', type: 'mcq', question: '"Bánh trôi nước" là của?', options: ['Hồ Xuân Hương', 'Nguyễn Du', 'Đoàn Thị Điểm', 'Bà Huyện Thanh Quan'], answer: 'Hồ Xuân Hương' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_14',
+      index: 14,
+      title: 'Thể loại văn học',
+      subtitle: 'Tự sự, trữ tình, kịch và các thể thơ',
+      topic_tag: 'Định tính · Văn học',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về thể loại văn học.',
+        questions: [
+          { id: 't1', type: 'mcq', question: '"Truyện Kiều" của Nguyễn Du thuộc thể loại nào?',
+            options: ['truyện thơ', 'tiểu thuyết', 'kịch', 'tùy bút'], answer: 'truyện thơ',
+            explain: '"Truyện Kiều" là truyện thơ Nôm viết theo thể lục bát.' },
+          { id: 't2', type: 'mcq', question: 'Thơ lục bát có đặc điểm nổi bật là gì?',
+            options: ['câu 6 chữ và câu 8 chữ xen kẽ', 'mỗi câu 7 chữ', 'mỗi câu 5 chữ', 'không có luật'], answer: 'câu 6 chữ và câu 8 chữ xen kẽ',
+            explain: 'Lục bát: một câu 6 chữ (lục) nối một câu 8 chữ (bát), có vần điệu đặc trưng.' },
+          { id: 't3', type: 'mcq', question: 'Thể loại TỰ SỰ có đặc điểm gì?',
+            options: ['kể chuyện, có cốt truyện và nhân vật', 'bộc lộ cảm xúc trực tiếp', 'chỉ có đối thoại trên sân khấu', 'chỉ tả cảnh'], answer: 'kể chuyện, có cốt truyện và nhân vật',
+            explain: 'Tự sự dùng để kể lại sự việc, có cốt truyện, nhân vật, diễn biến.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-masks-theater', title: 'Ba loại lớn',
+              body: 'TỰ SỰ (kể chuyện: truyện, tiểu thuyết). TRỮ TÌNH (bộc lộ cảm xúc: thơ). KỊCH (diễn trên sân khấu bằng hành động, đối thoại).' },
+            { icon: 'fa-feather', title: 'Một số thể thơ',
+              body: 'Lục bát (6-8), song thất lục bát, thất ngôn (7 chữ), ngũ ngôn (5 chữ), thơ tự do. Nhận diện qua số chữ mỗi câu và vần.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ thể loại văn học',
+          cards: [
+            { icon: 'fa-book-open', title: 'Tự sự',
+              body: 'Kể lại sự việc, có cốt truyện, nhân vật, tình huống. Gồm truyện ngắn, truyện dài, tiểu thuyết, truyện thơ (Truyện Kiều).' },
+            { icon: 'fa-heart', title: 'Trữ tình',
+              body: 'Bộc lộ tình cảm, cảm xúc, tâm trạng của tác giả. Tiêu biểu là thơ. Không nặng về cốt truyện mà nặng về cảm xúc.' },
+            { icon: 'fa-masks-theater', title: 'Kịch',
+              body: 'Tác phẩm để diễn trên sân khấu, xây dựng bằng hành động và đối thoại của nhân vật, có xung đột kịch. VD chèo, tuồng, kịch nói.' },
+            { icon: 'fa-feather', title: 'Các thể thơ Việt',
+              body: 'Lục bát (câu 6 – câu 8), song thất lục bát, thất ngôn bát cú (Đường luật), ngũ ngôn, thơ tự do. Phân biệt qua số chữ và cách gieo vần.' }
+          ],
+          examples: [
+            { q: '"Lão Hạc" thuộc thể loại nào?', sol: 'Truyện ngắn (tự sự).' },
+            { q: 'Ca dao "Trong đầm gì đẹp bằng sen" theo thể thơ nào?', sol: 'Lục bát.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Ba loại lớn: tự sự (kể chuyện), trữ tình (thơ), kịch (sân khấu).',
+          'Truyện Kiều = truyện thơ (lục bát).',
+          'Lục bát: câu 6 chữ xen câu 8 chữ.',
+          'Nhận diện thể thơ qua số chữ mỗi câu và vần.'
+        ],
+        tip: 'Câu hỏi thể loại: xem tác phẩm KỂ CHUYỆN (tự sự), BỘC LỘ CẢM XÚC (trữ tình) hay DIỄN (kịch).'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: '"Truyện Kiều" thuộc thể loại?', options: ['truyện thơ', 'kịch', 'tùy bút', 'tiểu thuyết'], answer: 'truyện thơ' },
+          { id: 'd2', type: 'mcq', question: 'Lục bát gồm câu?', options: ['6 và 8 chữ', '7 và 7 chữ', '5 và 5 chữ', '8 và 8 chữ'], answer: '6 và 8 chữ' },
+          { id: 'd3', type: 'mcq', question: 'Thể loại kể chuyện, có cốt truyện là?', options: ['tự sự', 'trữ tình', 'kịch', 'nghị luận'], answer: 'tự sự' },
+          { id: 'd4', type: 'mcq', question: 'Thơ bộc lộ cảm xúc thuộc loại?', options: ['trữ tình', 'tự sự', 'kịch', 'thông tin'], answer: 'trữ tình' },
+          { id: 'd5', type: 'mcq', question: 'Tác phẩm diễn trên sân khấu là?', options: ['kịch', 'thơ', 'truyện', 'tùy bút'], answer: 'kịch' },
+          { id: 'd6', type: 'mcq', question: '"Lão Hạc" là?', options: ['truyện ngắn', 'thơ', 'kịch', 'ca dao'], answer: 'truyện ngắn' },
+          { id: 'd7', type: 'mcq', question: 'Thơ mỗi câu 7 chữ gọi là?', options: ['thất ngôn', 'ngũ ngôn', 'lục bát', 'tự do'], answer: 'thất ngôn' },
+          { id: 'd8', type: 'mcq', question: 'Ca dao thường viết theo thể?', options: ['lục bát', 'thất ngôn', 'ngũ ngôn', 'tự do'], answer: 'lục bát' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_15',
+      index: 15,
+      title: 'Biện pháp tu từ',
+      subtitle: 'So sánh, ẩn dụ, nhân hóa, hoán dụ và điệp ngữ',
+      topic_tag: 'Định tính · Văn học',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về biện pháp tu từ.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Câu "Thuyền về có nhớ bến chăng?" dùng biện pháp tu từ nào (thuyền – bến chỉ người)?',
+            options: ['so sánh', 'ẩn dụ', 'nhân hóa', 'điệp ngữ'], answer: 'ẩn dụ',
+            explain: '"Thuyền" và "bến" là ẩn dụ chỉ người đi – kẻ ở, dựa trên nét tương đồng.' },
+          { id: 't2', type: 'mcq', question: 'Câu "Trâu ơi ta bảo trâu này" gọi con vật như gọi người là biện pháp?',
+            options: ['so sánh', 'ẩn dụ', 'nhân hóa', 'hoán dụ'], answer: 'nhân hóa',
+            explain: 'Nhân hóa: gán cho vật đặc điểm, hành động của con người.' },
+          { id: 't3', type: 'mcq', question: 'Cụm "đẹp như hoa" sử dụng biện pháp tu từ nào?',
+            options: ['so sánh', 'ẩn dụ', 'hoán dụ', 'nói quá'], answer: 'so sánh',
+            explain: 'So sánh: đối chiếu hai sự vật qua từ "như", "là", "tựa"…' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-equals', title: 'So sánh & ẩn dụ',
+              body: 'SO SÁNH: đối chiếu hai vật qua "như, là, tựa". ẨN DỤ: gọi tên vật này bằng vật khác dựa trên nét GIỐNG NHAU (so sánh ngầm).' },
+            { icon: 'fa-face-smile', title: 'Nhân hóa & hoán dụ',
+              body: 'NHÂN HÓA: gán đặc điểm con người cho vật. HOÁN DỤ: gọi tên bằng cái GẦN GŨI liên quan (áo nâu = nông dân).' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ biện pháp tu từ',
+          cards: [
+            { icon: 'fa-equals', title: 'So sánh',
+              body: 'Đối chiếu hai sự vật, hiện tượng có nét tương đồng qua từ so sánh: như, là, tựa, bằng. VD "Trẻ em như búp trên cành".' },
+            { icon: 'fa-shuffle', title: 'Ẩn dụ',
+              body: 'So sánh NGẦM: gọi tên sự vật A bằng sự vật B có nét giống, không dùng từ so sánh. VD "Thuyền – bến" chỉ người đi – kẻ ở.' },
+            { icon: 'fa-face-smile', title: 'Nhân hóa',
+              body: 'Gán cho vật, con vật, cây cối… những đặc điểm, hành động, tình cảm của con người. VD "Ông trăng tròn", "cây đa đứng gác".' },
+            { icon: 'fa-link', title: 'Hoán dụ & điệp ngữ',
+              body: 'Hoán dụ: gọi bằng cái gần gũi liên quan (áo nâu, áo xanh = nông dân, công nhân). Điệp ngữ: lặp từ ngữ để nhấn mạnh. Nói quá: phóng đại để gây ấn tượng.' }
+          ],
+          examples: [
+            { q: '"Mặt trời của bắp thì nằm trên đồi / Mặt trời của mẹ, em nằm trên lưng" — biện pháp?', sol: 'Ẩn dụ ("mặt trời của mẹ" chỉ đứa con).' },
+            { q: '"Áo chàm đưa buổi phân li" — biện pháp?', sol: 'Hoán dụ (áo chàm chỉ người dân Việt Bắc).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'So sánh: có từ "như, là, tựa"; Ẩn dụ: so sánh ngầm (nét giống).',
+          'Nhân hóa: gán đặc điểm con người cho vật.',
+          'Hoán dụ: gọi bằng cái gần gũi liên quan.',
+          'Điệp ngữ (lặp từ nhấn mạnh); Nói quá (phóng đại).'
+        ],
+        tip: 'Phân biệt ẩn dụ (nét GIỐNG nhau) và hoán dụ (quan hệ GẦN nhau) — đây là điểm HSA hay “bẫy”.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: '"Đẹp như tiên" là biện pháp?', options: ['so sánh', 'ẩn dụ', 'nhân hóa', 'hoán dụ'], answer: 'so sánh' },
+          { id: 'd2', type: 'mcq', question: '"Ông mặt trời thức dậy" là biện pháp?', options: ['nhân hóa', 'so sánh', 'ẩn dụ', 'nói quá'], answer: 'nhân hóa' },
+          { id: 'd3', type: 'mcq', question: '"Áo nâu" chỉ người nông dân là biện pháp?', options: ['hoán dụ', 'so sánh', 'nhân hóa', 'điệp ngữ'], answer: 'hoán dụ' },
+          { id: 'd4', type: 'mcq', question: 'So sánh NGẦM (không từ so sánh) là?', options: ['ẩn dụ', 'so sánh', 'nhân hóa', 'nói quá'], answer: 'ẩn dụ' },
+          { id: 'd5', type: 'mcq', question: 'Lặp lại từ ngữ để nhấn mạnh là?', options: ['điệp ngữ', 'ẩn dụ', 'so sánh', 'hoán dụ'], answer: 'điệp ngữ' },
+          { id: 'd6', type: 'mcq', question: '"Mồ hôi thánh thót như mưa" là biện pháp?', options: ['so sánh + nói quá', 'chỉ nhân hóa', 'chỉ hoán dụ', 'điệp ngữ'], answer: 'so sánh + nói quá' },
+          { id: 'd7', type: 'mcq', question: 'Phóng đại mức độ để gây ấn tượng là?', options: ['nói quá', 'nói giảm', 'so sánh', 'hoán dụ'], answer: 'nói quá' },
+          { id: 'd8', type: 'mcq', question: 'Ẩn dụ dựa trên quan hệ?', options: ['giống nhau', 'gần nhau', 'đối lập', 'ngẫu nhiên'], answer: 'giống nhau' }
+        ]
+      }
+    },
+
+    {
+      id: 'vb_16',
+      index: 16,
+      title: 'Giá trị nội dung – nghệ thuật',
+      subtitle: 'Đánh giá tư tưởng và hình thức của tác phẩm',
+      topic_tag: 'Định tính · Văn học',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về giá trị tác phẩm.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Giá trị NỘI DUNG của một tác phẩm văn học là gì?',
+            options: ['ý nghĩa, tư tưởng, tình cảm mà tác phẩm gửi gắm', 'số trang của tác phẩm', 'tên nhà xuất bản', 'giá bán'], answer: 'ý nghĩa, tư tưởng, tình cảm mà tác phẩm gửi gắm',
+            explain: 'Giá trị nội dung = điều tác phẩm nói lên: tư tưởng, tình cảm, thông điệp.' },
+          { id: 't2', type: 'mcq', question: 'Giá trị NGHỆ THUẬT của tác phẩm là gì?',
+            options: ['cái hay về hình thức: ngôn từ, hình ảnh, kết cấu, biện pháp tu từ', 'số nhân vật', 'năm sáng tác', 'độ dài'], answer: 'cái hay về hình thức: ngôn từ, hình ảnh, kết cấu, biện pháp tu từ',
+            explain: 'Giá trị nghệ thuật = cách thể hiện: ngôn ngữ, hình ảnh, xây dựng nhân vật, biện pháp tu từ.' },
+          { id: 't3', type: 'mcq', question: 'Giá trị NHÂN ĐẠO của một tác phẩm thường thể hiện ở?',
+            options: ['tình thương con người, bênh vực người khổ', 'số câu văn', 'nhịp điệu', 'màu bìa sách'], answer: 'tình thương con người, bênh vực người khổ',
+            explain: 'Giá trị nhân đạo: đồng cảm, yêu thương, bênh vực con người, tố cáo bất công.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-lightbulb', title: 'Giá trị nội dung',
+              body: 'Là tư tưởng, tình cảm, thông điệp tác phẩm gửi gắm. Gồm giá trị HIỆN THỰC (phản ánh đời sống) và giá trị NHÂN ĐẠO (yêu thương con người).' },
+            { icon: 'fa-palette', title: 'Giá trị nghệ thuật',
+              body: 'Là cái hay về HÌNH THỨC: ngôn từ, hình ảnh, kết cấu, xây dựng nhân vật, biện pháp tu từ, giọng điệu.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ giá trị tác phẩm',
+          cards: [
+            { icon: 'fa-lightbulb', title: 'Giá trị nội dung',
+              body: 'Điều tác phẩm nói lên: chủ đề, tư tưởng, tình cảm, thông điệp. Trả lời câu hỏi "Tác phẩm phản ánh gì, gửi gắm điều gì?".' },
+            { icon: 'fa-eye', title: 'Giá trị hiện thực',
+              body: 'Phản ánh chân thực đời sống, xã hội đương thời (VD "Tắt đèn" phản ánh nỗi khổ của nông dân trước Cách mạng).' },
+            { icon: 'fa-heart', title: 'Giá trị nhân đạo',
+              body: 'Thể hiện tình thương, sự đồng cảm với con người, đặc biệt người bất hạnh; lên án cái ác, bất công; trân trọng phẩm giá con người.' },
+            { icon: 'fa-palette', title: 'Giá trị nghệ thuật',
+              body: 'Cái hay về hình thức: ngôn ngữ giàu hình ảnh, kết cấu chặt chẽ, xây dựng nhân vật sinh động, sử dụng biện pháp tu từ, giọng điệu đặc sắc.' }
+          ],
+          examples: [
+            { q: '"Chí Phèo" có giá trị nhân đạo ở đâu?', sol: 'Cảm thông với bi kịch bị tha hóa của người nông dân, khát khao được làm người lương thiện.' },
+            { q: 'Giá trị nghệ thuật của "Truyện Kiều"?', sol: 'Thể lục bát điêu luyện, ngôn ngữ giàu hình ảnh, tả cảnh ngụ tình bậc thầy.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Giá trị nội dung = tư tưởng, tình cảm, thông điệp (gồm hiện thực + nhân đạo).',
+          'Giá trị hiện thực: phản ánh chân thực đời sống, xã hội.',
+          'Giá trị nhân đạo: yêu thương, bênh vực con người, lên án bất công.',
+          'Giá trị nghệ thuật: cái hay về hình thức (ngôn từ, kết cấu, tu từ…).'
+        ],
+        tip: 'Phân tích tác phẩm luôn tách hai mặt: NÓI GÌ (nội dung) và NÓI HAY THẾ NÀO (nghệ thuật).'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Giá trị nội dung là?', options: ['tư tưởng, tình cảm tác phẩm', 'số trang', 'tên NXB', 'giá sách'], answer: 'tư tưởng, tình cảm tác phẩm' },
+          { id: 'd2', type: 'mcq', question: 'Giá trị nghệ thuật là?', options: ['cái hay về hình thức', 'số nhân vật', 'năm viết', 'độ dài'], answer: 'cái hay về hình thức' },
+          { id: 'd3', type: 'mcq', question: 'Giá trị phản ánh chân thực đời sống gọi là?', options: ['giá trị hiện thực', 'giá trị nghệ thuật', 'giá trị thương mại', 'giá trị sử dụng'], answer: 'giá trị hiện thực' },
+          { id: 'd4', type: 'mcq', question: 'Tình thương, bênh vực con người là giá trị?', options: ['nhân đạo', 'nghệ thuật', 'hiện thực đơn thuần', 'giải trí'], answer: 'nhân đạo' },
+          { id: 'd5', type: 'mcq', question: 'Ngôn từ, hình ảnh, kết cấu thuộc giá trị?', options: ['nghệ thuật', 'nội dung', 'hiện thực', 'nhân đạo'], answer: 'nghệ thuật' },
+          { id: 'd6', type: 'mcq', question: 'Phân tích tác phẩm cần tách?', options: ['nội dung và nghệ thuật', 'câu và chữ', 'trang và dòng', 'tên và giá'], answer: 'nội dung và nghệ thuật' },
+          { id: 'd7', type: 'mcq', question: '"Tắt đèn" nổi bật giá trị?', options: ['hiện thực & nhân đạo', 'chỉ giải trí', 'chỉ hình thức', 'thương mại'], answer: 'hiện thực & nhân đạo' },
+          { id: 'd8', type: 'mcq', question: 'Biện pháp tu từ, giọng điệu thuộc?', options: ['giá trị nghệ thuật', 'giá trị nội dung', 'giá trị hiện thực', 'giá trị nhân đạo'], answer: 'giá trị nghệ thuật' }
         ]
       }
     }
@@ -3192,6 +3784,305 @@ window.LESSON_CONTENT_HSA['hsa_science'] = {
           { id: 'd6', type: 'mcq', question: 'Nơi hấp thụ chất dinh dưỡng chính?', options: ['ruột non', 'dạ dày', 'thực quản', 'ruột già'], answer: 'ruột non' },
           { id: 'd7', type: 'mcq', question: 'Cơ quan lọc máu, tạo nước tiểu?', options: ['thận', 'tim', 'phổi', 'gan'], answer: 'thận' },
           { id: 'd8', type: 'mcq', question: 'Khi vận động mạnh, nhịp thở?', options: ['tăng', 'giảm', 'không đổi', 'dừng'], answer: 'tăng' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_16',
+      index: 16,
+      title: 'Lịch sử Việt Nam',
+      subtitle: 'Các mốc lớn của lịch sử Việt Nam hiện đại',
+      topic_tag: 'Khoa học · Lịch sử',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về lịch sử Việt Nam.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Cách mạng tháng Tám thành công, nước Việt Nam Dân chủ Cộng hòa ra đời vào năm nào?',
+            options: ['1930', '1945', '1954', '1975'], answer: '1945',
+            explain: 'Ngày 2/9/1945, Chủ tịch Hồ Chí Minh đọc Tuyên ngôn Độc lập, khai sinh nước Việt Nam Dân chủ Cộng hòa.' },
+          { id: 't2', type: 'mcq', question: 'Chiến thắng Điện Biên Phủ "lừng lẫy năm châu, chấn động địa cầu" diễn ra năm nào?',
+            options: ['1945', '1954', '1968', '1975'], answer: '1954',
+            explain: 'Chiến thắng Điện Biên Phủ (7/5/1954) kết thúc kháng chiến chống Pháp.' },
+          { id: 't3', type: 'mcq', question: 'Đất nước thống nhất, kết thúc kháng chiến chống Mỹ vào năm nào?',
+            options: ['1954', '1968', '1973', '1975'], answer: '1975',
+            explain: '30/4/1975, miền Nam được giải phóng, đất nước thống nhất.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-flag', title: 'Các mốc "vàng"',
+              body: '1930: Đảng CSVN thành lập. 1945: Cách mạng tháng Tám, VNDCCH ra đời. 1954: Điện Biên Phủ. 1975: Thống nhất đất nước.' },
+            { icon: 'fa-timeline', title: 'Hai cuộc kháng chiến',
+              body: 'Chống Pháp (1945-1954, kết thúc ở Điện Biên Phủ). Chống Mỹ (1954-1975, kết thúc 30/4/1975).' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ lịch sử Việt Nam',
+          cards: [
+            { icon: 'fa-star', title: '1930 – Thành lập Đảng',
+              body: 'Ngày 3/2/1930, Đảng Cộng sản Việt Nam ra đời, do Nguyễn Ái Quốc (Hồ Chí Minh) chủ trì hợp nhất các tổ chức cộng sản.' },
+            { icon: 'fa-flag', title: '1945 – Cách mạng tháng Tám',
+              body: 'Tổng khởi nghĩa tháng Tám thành công. Ngày 2/9/1945, Hồ Chí Minh đọc Tuyên ngôn Độc lập, khai sinh nước Việt Nam Dân chủ Cộng hòa.' },
+            { icon: 'fa-shield-halved', title: '1954 – Điện Biên Phủ',
+              body: 'Chiến thắng Điện Biên Phủ (7/5/1954) buộc Pháp ký Hiệp định Giơ-ne-vơ, kết thúc kháng chiến chống Pháp; đất nước tạm chia hai miền.' },
+            { icon: 'fa-dove', title: '1975 – Thống nhất',
+              body: 'Chiến dịch Hồ Chí Minh toàn thắng, 30/4/1975 giải phóng miền Nam, kết thúc kháng chiến chống Mỹ, thống nhất đất nước.' }
+          ],
+          examples: [
+            { q: 'Tuyên ngôn Độc lập được đọc ngày nào?', sol: '2/9/1945, tại Quảng trường Ba Đình.' },
+            { q: 'Hiệp định Giơ-ne-vơ ký sau sự kiện nào?', sol: 'Sau chiến thắng Điện Biên Phủ 1954.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          '1930: Đảng Cộng sản Việt Nam thành lập.',
+          '1945: Cách mạng tháng Tám, khai sinh VNDCCH (2/9/1945).',
+          '1954: Chiến thắng Điện Biên Phủ, kết thúc chống Pháp.',
+          '1975: Thống nhất đất nước (30/4/1975), kết thúc chống Mỹ.'
+        ],
+        formula: '1930 → 1945 → 1954 → 1975 (các mốc lớn)',
+        tip: 'Nhớ 4 mốc "vàng" 1930-1945-1954-1975 là xử lý được phần lớn câu sử Việt Nam hiện đại.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Cách mạng tháng Tám năm?', options: ['1930', '1945', '1954', '1975'], answer: '1945' },
+          { id: 'd2', type: 'mcq', question: 'Chiến thắng Điện Biên Phủ năm?', options: ['1945', '1954', '1968', '1975'], answer: '1954' },
+          { id: 'd3', type: 'mcq', question: 'Thống nhất đất nước năm?', options: ['1954', '1973', '1975', '1986'], answer: '1975' },
+          { id: 'd4', type: 'mcq', question: 'Đảng Cộng sản Việt Nam thành lập năm?', options: ['1925', '1930', '1945', '1954'], answer: '1930' },
+          { id: 'd5', type: 'mcq', question: 'Người đọc Tuyên ngôn Độc lập 2/9/1945?', options: ['Hồ Chí Minh', 'Võ Nguyên Giáp', 'Tôn Đức Thắng', 'Phạm Văn Đồng'], answer: 'Hồ Chí Minh' },
+          { id: 'd6', type: 'mcq', question: 'Kháng chiến chống Pháp kết thúc bằng chiến thắng?', options: ['Điện Biên Phủ', 'Bạch Đằng', 'Chi Lăng', 'Đống Đa'], answer: 'Điện Biên Phủ' },
+          { id: 'd7', type: 'mcq', question: 'Ngày giải phóng miền Nam?', options: ['30/4/1975', '2/9/1945', '7/5/1954', '19/8/1945'], answer: '30/4/1975' },
+          { id: 'd8', type: 'mcq', question: 'Kháng chiến chống Mỹ diễn ra giai đoạn?', options: ['1954-1975', '1930-1945', '1945-1954', '1975-1986'], answer: '1954-1975' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_17',
+      index: 17,
+      title: 'Lịch sử Thế giới',
+      subtitle: 'Các sự kiện lớn của lịch sử thế giới hiện đại',
+      topic_tag: 'Khoa học · Lịch sử',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về lịch sử thế giới.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Chiến tranh thế giới thứ hai kết thúc vào năm nào?',
+            options: ['1918', '1939', '1945', '1954'], answer: '1945',
+            explain: 'Chiến tranh thế giới thứ hai (1939-1945) kết thúc năm 1945.' },
+          { id: 't2', type: 'mcq', question: 'Cách mạng tháng Mười Nga thành công vào năm nào?',
+            options: ['1789', '1917', '1945', '1991'], answer: '1917',
+            explain: 'Cách mạng tháng Mười Nga (1917) lập nên nhà nước xã hội chủ nghĩa đầu tiên.' },
+          { id: 't3', type: 'mcq', question: 'Liên bang Xô viết (Liên Xô) tan rã vào năm nào?',
+            options: ['1945', '1975', '1991', '2000'], answer: '1991',
+            explain: 'Liên Xô tan rã năm 1991, kết thúc Chiến tranh Lạnh.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-earth-americas', title: 'Các mốc lớn',
+              body: '1917: Cách mạng tháng Mười Nga. 1939-1945: Chiến tranh thế giới thứ hai. 1991: Liên Xô tan rã, kết thúc Chiến tranh Lạnh.' },
+            { icon: 'fa-explosion', title: 'Hai cuộc thế chiến',
+              body: 'Thế chiến I (1914-1918). Thế chiến II (1939-1945) — quy mô lớn nhất lịch sử, kết thúc với thắng lợi của phe Đồng minh.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ lịch sử thế giới',
+          cards: [
+            { icon: 'fa-star', title: 'Cách mạng tháng Mười Nga (1917)',
+              body: 'Do Lê-nin lãnh đạo, lật đổ chế độ cũ, lập nên nhà nước Xô viết — nhà nước xã hội chủ nghĩa đầu tiên trên thế giới.' },
+            { icon: 'fa-explosion', title: 'Chiến tranh thế giới thứ hai (1939-1945)',
+              body: 'Cuộc chiến lớn nhất lịch sử giữa phe Phát xít và phe Đồng minh, kết thúc năm 1945 với thắng lợi của Đồng minh; để lại hậu quả nặng nề.' },
+            { icon: 'fa-handshake-angle', title: 'Chiến tranh Lạnh',
+              body: 'Sau 1945, thế giới chia thành hai cực (Mỹ – Liên Xô), đối đầu căng thẳng nhưng không xung đột trực tiếp. Kết thúc khi Liên Xô tan rã (1991).' },
+            { icon: 'fa-globe', title: 'Xu thế hiện nay',
+              body: 'Sau Chiến tranh Lạnh: xu thế hòa bình, hợp tác, toàn cầu hóa; các quốc gia đẩy mạnh phát triển kinh tế và hội nhập.' }
+          ],
+          examples: [
+            { q: 'Ai lãnh đạo Cách mạng tháng Mười Nga?', sol: 'Lê-nin (V.I. Lenin).' },
+            { q: 'Chiến tranh Lạnh kết thúc khi nào?', sol: 'Năm 1991, khi Liên Xô tan rã.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          '1917: Cách mạng tháng Mười Nga (Lê-nin lãnh đạo).',
+          '1914-1918: Thế chiến I; 1939-1945: Thế chiến II.',
+          'Sau 1945: Chiến tranh Lạnh (Mỹ – Liên Xô hai cực).',
+          '1991: Liên Xô tan rã, kết thúc Chiến tranh Lạnh.'
+        ],
+        formula: '1917 → 1939-1945 → 1991 (mốc lớn LS thế giới hiện đại)',
+        tip: 'Gắn sự kiện với con số năm và nhân vật chủ chốt — câu sử thế giới thường hỏi "năm nào / ai".'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Thế chiến II kết thúc năm?', options: ['1918', '1939', '1945', '1954'], answer: '1945' },
+          { id: 'd2', type: 'mcq', question: 'Cách mạng tháng Mười Nga năm?', options: ['1789', '1917', '1945', '1991'], answer: '1917' },
+          { id: 'd3', type: 'mcq', question: 'Liên Xô tan rã năm?', options: ['1975', '1986', '1991', '2000'], answer: '1991' },
+          { id: 'd4', type: 'mcq', question: 'Thế chiến I diễn ra giai đoạn?', options: ['1914-1918', '1939-1945', '1917-1922', '1945-1991'], answer: '1914-1918' },
+          { id: 'd5', type: 'mcq', question: 'Người lãnh đạo Cách mạng tháng Mười?', options: ['Lê-nin', 'Stalin', 'Napoleon', 'Hitler'], answer: 'Lê-nin' },
+          { id: 'd6', type: 'mcq', question: 'Sau 1945 thế giới bước vào?', options: ['Chiến tranh Lạnh', 'Thế chiến III', 'thời trung cổ', 'thời phục hưng'], answer: 'Chiến tranh Lạnh' },
+          { id: 'd7', type: 'mcq', question: 'Thế chiến II là cuộc chiến giữa?', options: ['Phát xít và Đồng minh', 'Nga và Pháp', 'Anh và Mỹ', 'La Mã và Hy Lạp'], answer: 'Phát xít và Đồng minh' },
+          { id: 'd8', type: 'mcq', question: 'Chiến tranh Lạnh kết thúc khi?', options: ['Liên Xô tan rã (1991)', 'thế chiến II (1945)', '1975', '2001'], answer: 'Liên Xô tan rã (1991)' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_18',
+      index: 18,
+      title: 'Chuyên đề lịch sử',
+      subtitle: 'Nhân vật và sự kiện tiêu biểu',
+      topic_tag: 'Khoa học · Lịch sử',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về nhân vật – sự kiện lịch sử.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Người đọc Tuyên ngôn Độc lập khai sinh nước Việt Nam Dân chủ Cộng hòa (2/9/1945) là?',
+            options: ['Hồ Chí Minh', 'Võ Nguyên Giáp', 'Trần Phú', 'Lê Duẩn'], answer: 'Hồ Chí Minh',
+            explain: 'Chủ tịch Hồ Chí Minh đọc Tuyên ngôn Độc lập tại Quảng trường Ba Đình.' },
+          { id: 't2', type: 'mcq', question: 'Vị tướng chỉ huy chiến dịch Điện Biên Phủ (1954) là?',
+            options: ['Võ Nguyên Giáp', 'Nguyễn Huệ', 'Trần Hưng Đạo', 'Lý Thường Kiệt'], answer: 'Võ Nguyên Giáp',
+            explain: 'Đại tướng Võ Nguyên Giáp là Tổng tư lệnh chiến dịch Điện Biên Phủ.' },
+          { id: 't3', type: 'mcq', question: 'Chiến dịch giải phóng hoàn toàn miền Nam năm 1975 mang tên?',
+            options: ['Chiến dịch Hồ Chí Minh', 'Chiến dịch Điện Biên Phủ', 'Chiến dịch Biên giới', 'Chiến dịch Việt Bắc'], answer: 'Chiến dịch Hồ Chí Minh',
+            explain: 'Chiến dịch Hồ Chí Minh (1975) giải phóng Sài Gòn, thống nhất đất nước.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-user', title: 'Nhân vật lịch sử tiêu biểu',
+              body: 'Hồ Chí Minh (lãnh tụ, đọc Tuyên ngôn Độc lập). Võ Nguyên Giáp (Đại tướng, chỉ huy Điện Biên Phủ, chiến dịch Hồ Chí Minh).' },
+            { icon: 'fa-landmark', title: 'Sự kiện gắn nhân vật',
+              body: 'Nguyễn Ái Quốc – thành lập Đảng (1930). Anh hùng dân tộc chống ngoại xâm: Trần Hưng Đạo, Nguyễn Huệ, Lý Thường Kiệt.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ chuyên đề lịch sử',
+          cards: [
+            { icon: 'fa-user-tie', title: 'Hồ Chí Minh',
+              body: 'Lãnh tụ vĩ đại: tìm đường cứu nước, sáng lập Đảng (1930), lãnh đạo Cách mạng tháng Tám, đọc Tuyên ngôn Độc lập 2/9/1945.' },
+            { icon: 'fa-medal', title: 'Võ Nguyên Giáp',
+              body: 'Đại tướng, Tổng tư lệnh; chỉ huy chiến thắng Điện Biên Phủ (1954) và chiến dịch Hồ Chí Minh (1975).' },
+            { icon: 'fa-shield-halved', title: 'Anh hùng chống ngoại xâm',
+              body: 'Lý Thường Kiệt (chống Tống), Trần Hưng Đạo (ba lần chống Nguyên - Mông), Lê Lợi – Nguyễn Trãi (chống Minh), Quang Trung – Nguyễn Huệ (đại phá quân Thanh).' },
+            { icon: 'fa-flag', title: 'Sự kiện tiêu biểu',
+              body: 'Chiến thắng Bạch Đằng, Chi Lăng, Đống Đa (chống ngoại xâm thời phong kiến); Cách mạng tháng Tám, Điện Biên Phủ, Đại thắng mùa Xuân 1975 (hiện đại).' }
+          ],
+          examples: [
+            { q: 'Ai đại phá quân Thanh (1789)?', sol: 'Vua Quang Trung – Nguyễn Huệ (chiến thắng Ngọc Hồi – Đống Đa).' },
+            { q: 'Ai ba lần lãnh đạo chống quân Nguyên - Mông?', sol: 'Hưng Đạo Vương Trần Quốc Tuấn (Trần Hưng Đạo).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Hồ Chí Minh: sáng lập Đảng, đọc Tuyên ngôn Độc lập 1945.',
+          'Võ Nguyên Giáp: chỉ huy Điện Biên Phủ 1954 & chiến dịch Hồ Chí Minh 1975.',
+          'Chiến dịch Hồ Chí Minh (1975) giải phóng miền Nam.',
+          'Anh hùng chống ngoại xâm: Trần Hưng Đạo, Nguyễn Huệ, Lý Thường Kiệt.'
+        ],
+        tip: 'Học theo cặp NHÂN VẬT – SỰ KIỆN – NĂM để trả lời nhanh câu hỏi ghép nối trong đề.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Người đọc Tuyên ngôn Độc lập 1945?', options: ['Hồ Chí Minh', 'Võ Nguyên Giáp', 'Trần Phú', 'Lê Duẩn'], answer: 'Hồ Chí Minh' },
+          { id: 'd2', type: 'mcq', question: 'Tổng tư lệnh chiến dịch Điện Biên Phủ?', options: ['Võ Nguyên Giáp', 'Nguyễn Huệ', 'Lê Lợi', 'Trần Hưng Đạo'], answer: 'Võ Nguyên Giáp' },
+          { id: 'd3', type: 'mcq', question: 'Chiến dịch giải phóng miền Nam 1975 tên?', options: ['Hồ Chí Minh', 'Điện Biên Phủ', 'Việt Bắc', 'Biên giới'], answer: 'Hồ Chí Minh' },
+          { id: 'd4', type: 'mcq', question: 'Ai đại phá quân Thanh (1789)?', options: ['Nguyễn Huệ', 'Lê Lợi', 'Trần Hưng Đạo', 'Lý Thường Kiệt'], answer: 'Nguyễn Huệ' },
+          { id: 'd5', type: 'mcq', question: 'Ai ba lần chống quân Nguyên - Mông?', options: ['Trần Hưng Đạo', 'Nguyễn Huệ', 'Lê Lợi', 'Ngô Quyền'], answer: 'Trần Hưng Đạo' },
+          { id: 'd6', type: 'mcq', question: 'Ai lãnh đạo khởi nghĩa Lam Sơn chống Minh?', options: ['Lê Lợi', 'Nguyễn Huệ', 'Trần Hưng Đạo', 'Lý Thường Kiệt'], answer: 'Lê Lợi' },
+          { id: 'd7', type: 'mcq', question: 'Người sáng lập Đảng CSVN (1930)?', options: ['Nguyễn Ái Quốc', 'Võ Nguyên Giáp', 'Phạm Văn Đồng', 'Tôn Đức Thắng'], answer: 'Nguyễn Ái Quốc' },
+          { id: 'd8', type: 'mcq', question: 'Chiến thắng chống Tống gắn với ai?', options: ['Lý Thường Kiệt', 'Nguyễn Huệ', 'Lê Lợi', 'Trần Hưng Đạo'], answer: 'Lý Thường Kiệt' }
+        ]
+      }
+    },
+
+    {
+      id: 'kh_19',
+      index: 19,
+      title: 'Kỹ năng mốc – sự kiện',
+      subtitle: 'Sắp xếp trục thời gian và tính thế kỉ',
+      topic_tag: 'Khoa học · Lịch sử',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> của bạn về kỹ năng thời gian.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Sắp xếp ĐÚNG thứ tự thời gian: Cách mạng tháng Tám (1945), Điện Biên Phủ (1954), Thống nhất (1975)?',
+            options: ['1945 → 1954 → 1975', '1954 → 1945 → 1975', '1975 → 1954 → 1945', '1945 → 1975 → 1954'], answer: '1945 → 1954 → 1975',
+            explain: 'Xếp theo năm tăng dần: 1945 trước, rồi 1954, rồi 1975.' },
+          { id: 't2', type: 'mcq', question: 'Trục thời gian (timeline) được dùng để làm gì?',
+            options: ['biểu diễn thứ tự các sự kiện theo thời gian', 'đo chiều dài', 'tính diện tích', 'vẽ bản đồ'], answer: 'biểu diễn thứ tự các sự kiện theo thời gian',
+            explain: 'Trục thời gian sắp xếp sự kiện theo trình tự trước – sau.' },
+          { id: 't3', type: 'mcq', question: 'Thế kỉ XX (20) gồm những năm nào?',
+            options: ['1801 – 1900', '1901 – 2000', '2001 – 2100', '1900 – 1999'], answer: '1901 – 2000',
+            explain: 'Thế kỉ XX từ năm 1901 đến hết năm 2000.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-timeline', title: 'Trục thời gian',
+              body: 'Sắp xếp sự kiện theo năm TĂNG DẦN (trước → sau). Kỹ năng cốt lõi để làm câu hỏi thứ tự sự kiện.' },
+            { icon: 'fa-calendar', title: 'Tính thế kỉ',
+              body: 'Thế kỉ n gồm các năm từ (n−1)×100 + 1 đến n×100. VD thế kỉ XX = 1901-2000; thế kỉ XXI = 2001-2100.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ — cùng ôn kỹ kỹ năng thời gian',
+          cards: [
+            { icon: 'fa-timeline', title: 'Đọc & lập trục thời gian',
+              body: 'Trục thời gian biểu diễn các sự kiện theo trình tự. Đọc trục để biết sự kiện nào trước, nào sau, khoảng cách giữa các sự kiện.' },
+            { icon: 'fa-arrow-down-1-9', title: 'Sắp xếp sự kiện',
+              body: 'Dựa vào NĂM để xếp theo thứ tự tăng dần. Câu hỏi HSA hay cho vài sự kiện + năm, yêu cầu chọn thứ tự đúng.' },
+            { icon: 'fa-calendar', title: 'Cách tính thế kỉ',
+              body: 'Thế kỉ = lấy hai chữ số đầu của năm rồi cộng 1 (với năm không tròn trăm). VD năm 1945 thuộc thế kỉ XX; năm 2025 thuộc thế kỉ XXI.' },
+            { icon: 'fa-hourglass', title: 'Tính khoảng thời gian',
+              body: 'Khoảng cách giữa hai sự kiện = hiệu hai năm. VD từ 1945 đến 1975 là 30 năm. Trước Công nguyên (TCN) tính lùi về quá khứ.' }
+          ],
+          examples: [
+            { q: 'Năm 1789 thuộc thế kỉ mấy?', sol: 'Thế kỉ XVIII (18) — vì 1789 nằm trong 1701-1800.' },
+            { q: 'Từ Điện Biên Phủ (1954) đến Thống nhất (1975) là bao nhiêu năm?', sol: '1975 − 1954 = 21 năm.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Sắp xếp sự kiện theo năm tăng dần (trước → sau).',
+          'Trục thời gian biểu diễn thứ tự các sự kiện.',
+          'Thế kỉ XX = 1901-2000; thế kỉ XXI = 2001-2100.',
+          'Khoảng cách hai sự kiện = hiệu hai năm.'
+        ],
+        formula: 'Thế kỉ XX = 1901–2000   |   khoảng cách = năm sau − năm trước',
+        tip: 'Nhớ: năm 19xx thuộc thế kỉ XX, năm 20xx thuộc thế kỉ XXI — trừ đúng năm tròn trăm.'
+      },
+      drill: {
+        time_seconds: 80,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Thứ tự đúng theo thời gian?', options: ['1945 → 1954 → 1975', '1975 → 1954 → 1945', '1954 → 1945 → 1975', '1945 → 1975 → 1954'], answer: '1945 → 1954 → 1975' },
+          { id: 'd2', type: 'mcq', question: 'Năm 1945 thuộc thế kỉ?', options: ['XIX', 'XX', 'XXI', 'XVIII'], answer: 'XX' },
+          { id: 'd3', type: 'mcq', question: 'Năm 2025 thuộc thế kỉ?', options: ['XX', 'XXI', 'XXII', 'XIX'], answer: 'XXI' },
+          { id: 'd4', type: 'fill', question: 'Từ 1945 đến 1975 là bao nhiêu năm? (nhập số)', answer: '30' },
+          { id: 'd5', type: 'mcq', question: 'Trục thời gian dùng để?', options: ['sắp xếp sự kiện theo thời gian', 'đo chiều dài', 'tính diện tích', 'vẽ đồ thị hàm'], answer: 'sắp xếp sự kiện theo thời gian' },
+          { id: 'd6', type: 'mcq', question: 'Thế kỉ XX gồm năm?', options: ['1801-1900', '1901-2000', '2001-2100', '1900-1999'], answer: '1901-2000' },
+          { id: 'd7', type: 'fill', question: 'Từ 1954 đến 1975 là bao nhiêu năm? (nhập số)', answer: '21' },
+          { id: 'd8', type: 'mcq', question: 'Năm 1789 thuộc thế kỉ?', options: ['XVII', 'XVIII', 'XIX', 'XX'], answer: 'XVIII' }
         ]
       }
     }
