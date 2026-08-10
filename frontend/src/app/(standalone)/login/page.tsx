@@ -19,7 +19,7 @@ export default function LoginPage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/login.css","/static/css/chatbot.css"]} />
-      <title>Programming Edu — Đăng nhập</title>
+      <title>ProgrammingEdu × TopHSA — Đăng nhập</title>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
@@ -54,11 +54,11 @@ export default function LoginPage() {
                       stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span className="logo-text">Programming Edu</span>
+                <span className="logo-text">ProgrammingEdu × TopHSA</span>
               </div>
 
               <p className="form-title">Chào mừng trở lại!</p>
-              <p className="form-subtitle">Tiếp tục hành trình lập trình của bạn 💡</p>
+              <p className="form-subtitle">Tiếp tục hành trình luyện thi HSA của bạn 🎯</p>
 
               <div className="field" id="field-group-email">
                 <label className="field-label" htmlFor="login-email">Email hoặc số điện thoại</label>
@@ -147,7 +147,7 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <p className="success-title">Đăng nhập thành công!</p>
-                <p className="success-sub">Tiếp tục học lập trình thôi nào! 🚀</p>
+                <p className="success-sub">Tiếp tục luyện thi HSA thôi nào! 🎯</p>
               </div>
 
               {/* Error Toast */}
@@ -171,38 +171,38 @@ export default function LoginPage() {
               <div className="brand-canvas-content">
                 <div className="brand-canvas-eyebrow">
                   <span className="brand-canvas-dot"></span>
-                  PE_test · Database Design
+                  ProgrammingEdu × TopHSA · Luyện thi HSA
                 </div>
                 <h1 className="brand-canvas-title">
-                  Học SQL qua<br />
-                  <span className="brand-canvas-grad">dự án thực tế</span>
+                  Chinh phục<br />
+                  <span className="brand-canvas-grad">Đánh giá năng lực</span>
                 </h1>
                 <p className="brand-canvas-sub">
-                  20 bài học tương tác từ ER Model đến Web Services &amp; Password Security.
-                  Mỗi bài có schema trực quan, mini-game, và bài tập code thực chiến.
+                  Luyện thi ĐGNL ĐHQG Hà Nội qua 3 hợp phần: Định lượng, Định tính, Khoa học.
+                  Chẩn đoán năng lực, lộ trình cá nhân hoá, bấm giờ như thi thật và thi thử CBT.
                 </p>
 
                 <div className="brand-canvas-stats">
                   <div className="brand-stat">
-                    <div className="brand-stat-num">20</div>
-                    <div className="brand-stat-lbl">bài học tương tác</div>
-                  </div>
-                  <div className="brand-stat">
                     <div className="brand-stat-num">3</div>
-                    <div className="brand-stat-lbl">module ER/NF/App</div>
+                    <div className="brand-stat-lbl">hợp phần HSA</div>
                   </div>
                   <div className="brand-stat">
-                    <div className="brand-stat-num">Brilliant</div>
-                    <div className="brand-stat-lbl">/Duolingo level</div>
+                    <div className="brand-stat-num">150</div>
+                    <div className="brand-stat-lbl">câu mỗi đề</div>
+                  </div>
+                  <div className="brand-stat">
+                    <div className="brand-stat-num">CBT</div>
+                    <div className="brand-stat-lbl">thi thử trên máy</div>
                   </div>
                 </div>
 
                 <div className="brand-canvas-foot">
-                  <span className="brand-pill">🔑 Primary Key</span>
-                  <span className="brand-pill">🔗 Foreign Key</span>
-                  <span className="brand-pill">⚡ B-Tree</span>
-                  <span className="brand-pill">🛡 BCNF</span>
-                  <span className="brand-pill">💉 SQL Injection</span>
+                  <span className="brand-pill">🔢 Định lượng</span>
+                  <span className="brand-pill">✍️ Định tính</span>
+                  <span className="brand-pill">🔬 Khoa học</span>
+                  <span className="brand-pill">⏱️ Bấm giờ</span>
+                  <span className="brand-pill">🎯 Thi thử CBT</span>
                 </div>
               </div>
             </div>

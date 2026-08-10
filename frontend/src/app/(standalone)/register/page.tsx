@@ -17,7 +17,7 @@ export default function RegisterPage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/register.css"]} />
-      <title>Đăng ký — Programming Edu</title>
+      <title>Đăng ký — ProgrammingEdu × TopHSA</title>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link rel="prefetch" href="/login" />
@@ -49,11 +49,11 @@ export default function RegisterPage() {
                       stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span className="logo-text">Programming Edu</span>
+                <span className="logo-text">ProgrammingEdu × TopHSA</span>
               </div>
 
               <p className="form-title">Tạo tài khoản</p>
-              <p className="form-subtitle">Tham gia cộng đồng lập trình viên hàng ngàn người 🚀</p>
+              <p className="form-subtitle">Bắt đầu hành trình luyện thi HSA của bạn 🎯</p>
 
               <div className="field" id="field-group-name">
                 <label className="field-label" htmlFor="reg-name">Họ và tên</label>
@@ -153,7 +153,7 @@ export default function RegisterPage() {
                   </svg>
                 </div>
                 <p className="success-title">Đăng ký thành công!</p>
-                <p className="success-sub">Chào mừng bạn đến với Programming Edu 🎉</p>
+                <p className="success-sub">Chào mừng bạn đến với ProgrammingEdu × TopHSA 🎯</p>
               </div>
 
               {/* Error Toast */}
@@ -177,15 +177,15 @@ export default function RegisterPage() {
               <div className="brand-canvas-content">
                 <div className="brand-canvas-eyebrow">
                   <span className="brand-canvas-dot"></span>
-                  PE_test · Database Design
+                  ProgrammingEdu × TopHSA · Luyện thi HSA
                 </div>
                 <h1 className="brand-canvas-title">
                   Bắt đầu<br />
-                  <span className="brand-canvas-grad">hành trình SQL</span>
+                  <span className="brand-canvas-grad">luyện thi HSA</span>
                 </h1>
                 <p className="brand-canvas-sub">
-                  Tham gia cộng đồng lập trình viên, học qua dự án thực tế với
-                  schema trực quan, mini-game, và bài tập code chạy thật trên database.
+                  Cùng chinh phục kỳ thi Đánh giá năng lực ĐHQG Hà Nội: chẩn đoán năng lực,
+                  lộ trình cá nhân hoá, luyện bấm giờ như thi thật và thi thử CBT đầy đủ.
                 </p>
 
                 <div className="brand-canvas-stats">
@@ -194,8 +194,8 @@ export default function RegisterPage() {
                     <div className="brand-stat-lbl">100% không thu phí</div>
                   </div>
                   <div className="brand-stat">
-                    <div className="brand-stat-num">20</div>
-                    <div className="brand-stat-lbl">bài học tương tác</div>
+                    <div className="brand-stat-num">3</div>
+                    <div className="brand-stat-lbl">hợp phần HSA</div>
                   </div>
                   <div className="brand-stat">
                     <div className="brand-stat-num">XP</div>
