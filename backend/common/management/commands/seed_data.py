@@ -58,6 +58,9 @@ HSA_COURSES = [
     ),
 ]
 
+# Số bài mỗi khoá — khớp khung curriculum (frontend/src/lib/curricula.json, 2026-08-10).
+HSA_LESSON_COUNT = {"hsa_quantitative": 27, "hsa_verbal": 23, "hsa_science": 26}
+
 HSA_ROADMAP_ID = "hsa_master"
 HSA_ROADMAP_MERMAID = (
     "flowchart TD\n"
@@ -142,10 +145,12 @@ class Command(BaseCommand):
                          students, rating, lessons, color, accent_color, tag,
                          xp_reward, is_published, content_meta)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    ON CONFLICT (id) DO NOTHING
+                    ON CONFLICT (id) DO UPDATE SET
+                        lessons = EXCLUDED.lessons,
+                        content_meta = EXCLUDED.content_meta
                     """,
                     [cid, title, subtitle, desc, f"static/images/{cid}.svg", level,
-                     duration, "0", 5.0, 0, color, accent, tag, 0, True,
+                     duration, "0", 5.0, HSA_LESSON_COUNT.get(cid, 0), color, accent, tag, 0, True,
                      json.dumps(meta, ensure_ascii=False)],
                 )
                 n_courses += cur.rowcount

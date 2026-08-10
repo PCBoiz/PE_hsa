@@ -15,9 +15,60 @@
       ],
       "modules": [
         {
-          "title": "Chương 1: Số học & Tỉ lệ",
+          "title": "Chương 1: Số & Đại số nền tảng",
           "lessons": [
-            "Bài toán phần trăm"
+            "Tỉ lệ & phần trăm",
+            "Dãy số & quy luật",
+            "Biểu thức & rút gọn",
+            "Phương trình & bất phương trình",
+            "Hệ phương trình"
+          ]
+        },
+        {
+          "title": "Chương 2: Hàm số & Giải tích",
+          "lessons": [
+            "Hàm bậc nhất & đồ thị",
+            "Hàm bậc hai & parabol",
+            "Hàm mũ – logarit",
+            "Đạo hàm & ứng dụng",
+            "GTLN – GTNN"
+          ]
+        },
+        {
+          "title": "Chương 3: Hình học & Đo lường",
+          "lessons": [
+            "Hệ thức lượng trong tam giác",
+            "Đường tròn",
+            "Khối & thể tích",
+            "Tọa độ phẳng Oxy",
+            "Tọa độ không gian Oxyz"
+          ]
+        },
+        {
+          "title": "Chương 4: Thống kê & Xác suất",
+          "lessons": [
+            "Tổ hợp – chỉnh hợp",
+            "Xác suất cơ bản",
+            "Thống kê mô tả",
+            "Biến cố & quy tắc đếm"
+          ]
+        },
+        {
+          "title": "Chương 5: Xử lý số liệu & Toán thực tiễn",
+          "lessons": [
+            "Đọc bảng số liệu",
+            "Đọc biểu đồ",
+            "Bài toán thực tế",
+            "Ước lượng & tính nhẩm nhanh"
+          ]
+        },
+        {
+          "title": "Chương 6: Chiến thuật phòng thi",
+          "lessons": [
+            "Phân bổ thời gian phần Toán",
+            "Dạng câu điền đáp án",
+            "Mẹo loại trừ nhanh",
+            "Luyện đề bấm giờ"
           ]
         }
       ]
@@ -34,9 +85,56 @@
       ],
       "modules": [
         {
-          "title": "Chương 1: Đọc hiểu & Ngôn ngữ",
+          "title": "Chương 1: Từ vựng & Nghĩa từ",
           "lessons": [
-            "Từ đồng nghĩa & trái nghĩa"
+            "Từ đồng nghĩa & trái nghĩa",
+            "Nghĩa của từ trong ngữ cảnh",
+            "Từ loại",
+            "Thành ngữ – tục ngữ"
+          ]
+        },
+        {
+          "title": "Chương 2: Ngữ pháp & Câu",
+          "lessons": [
+            "Thành phần câu",
+            "Dấu câu & liên kết",
+            "Lỗi diễn đạt",
+            "Biến đổi câu"
+          ]
+        },
+        {
+          "title": "Chương 3: Đọc hiểu",
+          "lessons": [
+            "Ý chính & ý phụ",
+            "Suy luận & hàm ý",
+            "Thái độ – giọng điệu tác giả",
+            "Văn bản thông tin & nghị luận"
+          ]
+        },
+        {
+          "title": "Chương 4: Văn học",
+          "lessons": [
+            "Tác giả – tác phẩm trọng tâm",
+            "Thể loại văn học",
+            "Biện pháp tu từ",
+            "Giá trị nội dung – nghệ thuật"
+          ]
+        },
+        {
+          "title": "Chương 5: Ngôn ngữ – Văn hóa – Xã hội",
+          "lessons": [
+            "Sự phát triển & biến thể ngôn ngữ",
+            "Phong cách hành văn",
+            "Văn hóa – Lịch sử – Địa lý trong văn bản"
+          ]
+        },
+        {
+          "title": "Chương 6: Chiến thuật phòng thi",
+          "lessons": [
+            "Đọc lướt & đọc quét",
+            "Quản lý thời gian đọc hiểu",
+            "Loại trừ nhanh",
+            "Luyện đề"
           ]
         }
       ]
@@ -53,9 +151,59 @@
       ],
       "modules": [
         {
-          "title": "Chương 1: Khoa học tổng hợp",
+          "title": "Chương 1: Vật lý",
           "lessons": [
-            "Kiến thức khoa học nền tảng"
+            "Cơ học",
+            "Điện học",
+            "Quang – Nhiệt",
+            "Dao động & Sóng",
+            "Vật lý hạt nhân"
+          ]
+        },
+        {
+          "title": "Chương 2: Hóa học",
+          "lessons": [
+            "Nguyên tử & Bảng tuần hoàn",
+            "Liên kết & Phản ứng",
+            "Hóa vô cơ trọng tâm",
+            "Hóa hữu cơ trọng tâm",
+            "Tính toán hóa học"
+          ]
+        },
+        {
+          "title": "Chương 3: Sinh học",
+          "lessons": [
+            "Tế bào & Chuyển hóa",
+            "Di truyền",
+            "Tiến hóa",
+            "Sinh thái",
+            "Sinh lý cơ thể"
+          ]
+        },
+        {
+          "title": "Chương 4: Lịch sử",
+          "lessons": [
+            "Lịch sử Việt Nam",
+            "Lịch sử Thế giới",
+            "Chuyên đề lịch sử",
+            "Kỹ năng mốc – sự kiện"
+          ]
+        },
+        {
+          "title": "Chương 5: Địa lý",
+          "lessons": [
+            "Địa lý tự nhiên",
+            "Địa lý kinh tế – xã hội",
+            "Kỹ năng Atlat",
+            "Đọc biểu đồ địa lý"
+          ]
+        },
+        {
+          "title": "Chương 6: Chọn tổ hợp & Chiến thuật",
+          "lessons": [
+            "Chọn 3/5 theo thế mạnh",
+            "Chiến thuật từng môn",
+            "Luyện đề tổ hợp"
           ]
         }
       ]
