@@ -141,3 +141,163 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
     }
   ]
 };
+
+window.LESSON_CONTENT_HSA['hsa_verbal'] = {
+  course_id: 'hsa_verbal',
+  course_title: 'Tư duy Định tính',
+  accent_color: '#F472B6',
+  lessons: [
+    {
+      id: 'vb_01',
+      index: 1,
+      title: 'Từ đồng nghĩa & trái nghĩa',
+      subtitle: 'Sắc thái nghĩa và cách chọn từ chính xác',
+      topic_tag: 'Định tính · Từ vựng',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> từ vựng của bạn ở chủ đề này.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Từ nào ĐỒNG NGHĨA với “chăm chỉ”?',
+            options: ['lười biếng', 'siêng năng', 'thông minh', 'hiền lành'], answer: 'siêng năng',
+            explain: '“Siêng năng” cùng nghĩa với “chăm chỉ” (cần cù, chịu khó).' },
+          { id: 't2', type: 'mcq', question: 'Từ nào TRÁI NGHĨA với “rộng lượng”?',
+            options: ['hào phóng', 'độ lượng', 'ích kỷ', 'khoan dung'], answer: 'ích kỷ',
+            explain: '“Ích kỷ” (chỉ nghĩ cho mình) trái nghĩa “rộng lượng”. Các từ kia đều gần nghĩa nhau.' },
+          { id: 't3', type: 'fill', question: 'Điền từ TRÁI NGHĨA với “thành công” (1 từ):',
+            answer: 'thất bại', explain: '“Thất bại” là phản nghĩa của “thành công”.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-equals', title: 'Đồng nghĩa – Trái nghĩa',
+              body: 'Từ <b>đồng nghĩa</b> có nghĩa giống/gần nhau; từ <b>trái nghĩa</b> có nghĩa đối lập. Chú ý sắc thái: “chết” – “hi sinh” – “qua đời” cùng nghĩa nhưng khác sắc thái.' },
+            { icon: 'fa-magnifying-glass', title: 'Mẹo loại trừ',
+              body: 'Trong câu tìm từ “khác loại”, hãy tìm nhóm 3 từ gần nghĩa nhau — từ còn lại là đáp án.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ',
+          cards: [
+            { icon: 'fa-equals', title: 'Từ đồng nghĩa',
+              body: 'Là các từ có nghĩa giống hoặc gần giống nhau (VD: to – lớn, chăm chỉ – siêng năng). Có thể thay cho nhau trong nhiều ngữ cảnh.' },
+            { icon: 'fa-not-equal', title: 'Từ trái nghĩa',
+              body: 'Là các từ có nghĩa đối lập (VD: cao – thấp, thành công – thất bại). Dùng để nhấn mạnh sự tương phản.' },
+            { icon: 'fa-palette', title: 'Sắc thái nghĩa',
+              body: 'Nhiều từ đồng nghĩa nhưng khác sắc thái biểu cảm: “chết” (trung tính) – “hi sinh” (trang trọng) – “toi” (suồng sã). Chọn từ hợp ngữ cảnh.' },
+            { icon: 'fa-magnifying-glass', title: 'Chiến thuật làm bài',
+              body: 'Câu “tìm từ khác loại”: gom nhóm từ gần nghĩa; từ lẻ loi là đáp án. Câu điền từ: đọc cả câu để đoán sắc thái phù hợp.' }
+          ],
+          examples: [
+            { q: 'Từ khác loại: Bàn / Ghế / Tủ / Chạy?', sol: '“Chạy” (động từ) — ba từ kia là đồ vật.' },
+            { q: 'Trái nghĩa “siêng năng”?', sol: '“Lười biếng”.' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Đồng nghĩa = nghĩa giống/gần; trái nghĩa = nghĩa đối lập.',
+          'Từ đồng nghĩa vẫn có thể khác SẮC THÁI — chọn theo ngữ cảnh.',
+          'Câu “khác loại”: tìm nhóm 3 từ gần nghĩa, từ còn lại là đáp án.'
+        ],
+        tip: 'Khi phân vân, thử THAY từ vào câu — từ nào đọc lên tự nhiên và đúng sắc thái là đáp án.'
+      },
+      drill: {
+        time_seconds: 70,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Đồng nghĩa với “to lớn”?', options: ['nhỏ bé', 'khổng lồ', 'xinh xắn', 'gầy gò'], answer: 'khổng lồ' },
+          { id: 'd2', type: 'mcq', question: 'Trái nghĩa với “vui vẻ”?', options: ['hạnh phúc', 'buồn bã', 'phấn khởi', 'hân hoan'], answer: 'buồn bã' },
+          { id: 'd3', type: 'fill', question: 'Trái nghĩa với “nhanh” (1 từ):', answer: 'chậm' },
+          { id: 'd4', type: 'mcq', question: 'Từ nào KHÁC loại?', options: ['đỏ', 'xanh', 'vàng', 'ngọt'], answer: 'ngọt' },
+          { id: 'd5', type: 'mcq', question: 'Đồng nghĩa với “dũng cảm”?', options: ['nhút nhát', 'can đảm', 'hèn nhát', 'yếu đuối'], answer: 'can đảm' },
+          { id: 'd6', type: 'fill', question: 'Trái nghĩa với “sáng” (1 từ):', answer: 'tối' },
+          { id: 'd7', type: 'mcq', question: 'Trái nghĩa với “giàu có”?', options: ['sung túc', 'nghèo khó', 'dư dả', 'khá giả'], answer: 'nghèo khó' },
+          { id: 'd8', type: 'mcq', question: 'Từ nào KHÁC loại?', options: ['chạy', 'nhảy', 'bơi', 'bàn'], answer: 'bàn' }
+        ]
+      }
+    }
+  ]
+};
+
+window.LESSON_CONTENT_HSA['hsa_science'] = {
+  course_id: 'hsa_science',
+  course_title: 'Khoa học & Tiếng Anh',
+  accent_color: '#34D399',
+  lessons: [
+    {
+      id: 'kh_01',
+      index: 1,
+      title: 'Kiến thức khoa học nền tảng',
+      subtitle: 'Lý – Hoá – Sinh: những khái niệm cốt lõi',
+      topic_tag: 'Khoa học · Tổng hợp',
+      xp_reward: 50,
+      test: {
+        intro: 'Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong> khoa học nền của bạn.',
+        questions: [
+          { id: 't1', type: 'mcq', question: 'Đơn vị đo cường độ dòng điện là gì?',
+            options: ['Vôn (V)', 'Ampe (A)', 'Ôm (Ω)', 'Oát (W)'], answer: 'Ampe (A)',
+            explain: 'Cường độ dòng điện đo bằng Ampe (A). Vôn đo hiệu điện thế, Ôm đo điện trở, Oát đo công suất.' },
+          { id: 't2', type: 'mcq', question: 'Khí nào chiếm tỉ lệ lớn nhất trong không khí?',
+            options: ['Oxi', 'Cacbonic', 'Nitơ', 'Hidro'], answer: 'Nitơ',
+            explain: 'Nitơ chiếm ~78% thể tích không khí; Oxi ~21%.' },
+          { id: 't3', type: 'fill', question: 'Quá trình cây xanh dùng ánh sáng tạo chất hữu cơ gọi là quang ___ (1 từ):',
+            answer: 'hợp', explain: 'Quang hợp — cây tạo glucose + O₂ từ CO₂ và nước nhờ ánh sáng.' }
+        ]
+      },
+      assess: { strong_min: 3, ok_min: 2 },
+      theory: {
+        condensed: {
+          title: 'Tóm tắt nhanh — bạn đã khá vững',
+          cards: [
+            { icon: 'fa-bolt', title: 'Điện học cơ bản',
+              body: 'Định luật Ôm: <code>U = I × R</code>. Đơn vị: hiệu điện thế U (Vôn), cường độ I (Ampe), điện trở R (Ôm), công suất P = U×I (Oát).' },
+            { icon: 'fa-leaf', title: 'Sinh – Hoá nhớ nhanh',
+              body: 'Không khí: ~78% Nitơ, ~21% Oxi. Quang hợp: CO₂ + H₂O + ánh sáng → glucose + O₂. Nước: H₂O.' }
+          ]
+        },
+        full: {
+          title: 'Lý thuyết đầy đủ',
+          cards: [
+            { icon: 'fa-bolt', title: 'Điện học – Định luật Ôm',
+              body: '<code>U = I × R</code>. U (Vôn) là hiệu điện thế, I (Ampe) là cường độ dòng điện, R (Ôm) là điện trở. Công suất <code>P = U × I</code> (Oát).' },
+            { icon: 'fa-wind', title: 'Thành phần không khí',
+              body: 'Nitơ (N₂) ~78%, Oxi (O₂) ~21%, còn lại ~1% (Argon, CO₂, hơi nước…). Oxi duy trì sự cháy và hô hấp.' },
+            { icon: 'fa-leaf', title: 'Quang hợp',
+              body: 'Cây xanh dùng ánh sáng + diệp lục biến CO₂ và nước thành glucose (chất hữu cơ) và nhả khí O₂. Ngược lại là hô hấp.' },
+            { icon: 'fa-flask', title: 'Một số công thức nhớ',
+              body: 'Nước: H₂O · Muối ăn: NaCl · Khí cacbonic: CO₂ · Khí ta thở ra nhiều: CO₂.' }
+          ],
+          examples: [
+            { q: 'Mạch có U = 6V, R = 3Ω. Cường độ dòng điện I = ?', sol: 'I = U/R = 6/3 = 2A.' },
+            { q: 'Khí nào cây nhả ra khi quang hợp?', sol: 'Khí Oxi (O₂).' }
+          ]
+        }
+      },
+      notes: {
+        key_points: [
+          'Điện: U = I×R; U(Vôn), I(Ampe), R(Ôm), P=U×I (Oát).',
+          'Không khí: ~78% Nitơ, ~21% Oxi.',
+          'Quang hợp: CO₂ + nước + ánh sáng → chất hữu cơ + O₂.',
+          'Nhớ công thức: nước H₂O, muối ăn NaCl, cacbonic CO₂.'
+        ],
+        formula: 'U = I × R    |    P = U × I',
+        tip: 'Câu khoa học HSA thường hỏi đơn vị + công thức cơ bản — thuộc lòng bảng đơn vị (V/A/Ω/W) là ăn điểm nhanh.'
+      },
+      drill: {
+        time_seconds: 75,
+        questions: [
+          { id: 'd1', type: 'mcq', question: 'Đơn vị đo hiệu điện thế là?', options: ['Ampe', 'Vôn', 'Ôm', 'Jun'], answer: 'Vôn' },
+          { id: 'd2', type: 'fill', question: 'Công thức hoá học của muối ăn là gì?', answer: 'NaCl' },
+          { id: 'd3', type: 'mcq', question: 'Mạch U=10V, R=5Ω thì I = ? (A)', options: ['0.5', '2', '5', '50'], answer: '2' },
+          { id: 'd4', type: 'mcq', question: 'Khí cây xanh nhả ra khi quang hợp?', options: ['CO₂', 'Nitơ', 'Oxi', 'Hidro'], answer: 'Oxi' },
+          { id: 'd5', type: 'fill', question: 'Nước sôi ở bao nhiêu °C (áp suất thường)? (nhập số)', answer: '100' },
+          { id: 'd6', type: 'mcq', question: 'Đơn vị đo công suất điện?', options: ['Vôn', 'Ampe', 'Oát', 'Ôm'], answer: 'Oát' },
+          { id: 'd7', type: 'mcq', question: 'Khí chiếm ~21% không khí?', options: ['Nitơ', 'Oxi', 'CO₂', 'Argon'], answer: 'Oxi' },
+          { id: 'd8', type: 'fill', question: 'Công thức hoá học của nước? (viết liền)', answer: 'H2O' }
+        ]
+      }
+    }
+  ]
+};
