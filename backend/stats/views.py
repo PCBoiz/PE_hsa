@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
+from common.clock import local_today
 from common.db import q, q1, x
 
 
@@ -60,7 +61,7 @@ class StatsView(APIView):
         avg_progress = round(sum((r['progress'] or 0) for r in rows) / len(rows)) if rows else 0
         total_hours = sum(parse_time_spent(r.get('time_spent')) for r in rows)
         last_date = summary['last_study_date']
-        streak_active = (last_date == date.today()) if last_date else False
+        streak_active = (last_date == local_today()) if last_date else False
         return Response({
             'enrolledCount': len(rows),
             'avgProgress': avg_progress,
@@ -92,62 +93,111 @@ class XpByCourseView(APIView):
         ]})
 
 
-def _verify_mission_by_course(course_id, condition, action):
-    """MissionRepository.verify_answer_by_course — frontend gửi mission_id = course_id."""
-    return q1('''SELECT * FROM missions
-                 WHERE course_id = %s
-                   AND correct_condition = %s
-                   AND correct_action    = %s
-                   AND is_active = TRUE
-                 LIMIT 1''', (course_id, condition, action))
+# ── Nhiệm vụ hằng ngày ──────────────────────────────────────────────────────
+# Bản cũ (`_verify_mission_by_course`) chấm nhiệm vụ bằng cặp (correct_condition,
+# correct_action) — đó là NHIỆM VỤ SQL của pe_test, vô nghĩa với luyện thi HSA.
+# Nay nhiệm vụ chấm bằng số liệu THẬT của học viên trong ngày hôm nay.
 
 
-class CompleteMissionView(APIView):
+def _today_metrics(uid, today):
+    """Khoá ở đây phải khớp missions.condition_type do seed_data ghi vào."""
+    lessons = (q1("SELECT COUNT(*) AS n FROM lesson_progress "
+                  "WHERE user_id=%s AND status='completed' "
+                  "AND completed_at::date = %s", (uid, today)) or {}).get('n', 0)
+    mocks = (q1("SELECT COUNT(*) AS n FROM mock_attempts "
+                "WHERE user_id=%s AND submitted_at::date = %s", (uid, today)) or {}).get('n', 0)
+    xp = (q1("SELECT xp_earned AS n FROM user_daily_xp_logs "
+             "WHERE user_id=%s AND log_date=%s", (uid, today)) or {}).get('n', 0)
+    return {
+        'lessons_today': lessons or 0,
+        'mocks_today': mocks or 0,
+        'xp_today': xp or 0,
+    }
+
+
+def _missions_for(uid, today):
+    rows = q('SELECT id, code, title, description, xp_reward, condition_type, '
+             'condition_value FROM missions WHERE is_active ORDER BY sort_order, id')
+    claimed = {r['mission_id'] for r in q(
+        'SELECT mission_id FROM user_missions WHERE user_id=%s AND mission_date=%s',
+        (uid, today))}
+    metrics = _today_metrics(uid, today)
+    out = []
+    for m in rows:
+        target = m['condition_value'] or 1
+        progress = metrics.get(m['condition_type'], 0)
+        out.append({
+            'id': m['id'],
+            'code': m['code'],
+            'title': m['title'],
+            'description': m['description'] or '',
+            'xpReward': m['xp_reward'] or 0,
+            'progress': min(progress, target),
+            'target': target,
+            'done': progress >= target,
+            'claimed': m['id'] in claimed,
+        })
+    return out
+
+
+class TodayMissionsView(APIView):
+    """GET /api/missions/today — 3 nhiệm vụ trong ngày + tiến độ thật."""
+
+    def get(self, request):
+        today = local_today()
+        missions = _missions_for(request.user.id, today)
+        return Response({
+            'date': today.isoformat(),
+            'missions': missions,
+            'allDone': bool(missions) and all(m['claimed'] for m in missions),
+        })
+
+
+class ClaimMissionView(APIView):
+    """POST /api/missions/claim {code} — nhận XP thưởng, mỗi ngày một lần.
+
+    Khoá chính (user, mission, ngày) của user_missions lo phần chống nhận trùng:
+    INSERT thứ hai trong cùng ngày rơi vào DO NOTHING nên không cộng XP lần nữa.
+    """
+
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
-        mission_id = data.get('mission_id', '')
-        condition = data.get('condition', '')
-        action = data.get('action', '')
+        code = (data.get('code') or '').strip()
+        if not code:
+            return Response({'error': 'Thiếu mã nhiệm vụ.'}, status=400)
 
-        if not mission_id:
-            return Response({'success': False, 'message': 'Thiếu mission_id'}, status=400)
-
-        mission = _verify_mission_by_course(mission_id, condition, action)
-        if not mission:
-            return Response({'success': False, 'message': 'Câu trả lời chưa đúng, thử lại nhé!'})
-
-        xp_reward = mission['xp_reward']
+        today = local_today()
         uid = request.user.id
+        mission = next((m for m in _missions_for(uid, today) if m['code'] == code), None)
+        if not mission:
+            return Response({'error': 'Không có nhiệm vụ này.'}, status=404)
+        if not mission['done']:
+            return Response({'error': 'Nhiệm vụ chưa hoàn thành.'}, status=400)
+        if mission['claimed']:
+            return Response({'error': 'Hôm nay đã nhận thưởng nhiệm vụ này rồi.'}, status=409)
+
+        xp = mission['xpReward']
         with transaction.atomic():
-            user = q1('SELECT gems, xp, streak, last_study_date FROM users WHERE id=%s', (uid,))
-
-            today = date.today()
-            last_date = user['last_study_date']
-            if last_date is None or last_date < today - timedelta(days=1):
-                new_streak = 1          # bỏ học hơn 1 ngày → reset chuỗi về 1
-            elif last_date == today:
-                new_streak = user['streak']   # đã học hôm nay → giữ nguyên
-            else:
-                new_streak = user['streak'] + 1   # học hôm qua → tăng chuỗi
-
-            x('UPDATE users SET gems = gems + %s, xp = xp + %s, streak = %s, '
-              'last_study_date = %s WHERE id=%s',
-              (xp_reward, xp_reward, new_streak, today, uid))
+            inserted = q1('''INSERT INTO user_missions
+                                 (user_id, mission_id, mission_date, xp_earned)
+                             VALUES (%s, %s, %s, %s)
+                             ON CONFLICT (user_id, mission_id, mission_date) DO NOTHING
+                             RETURNING mission_id''', (uid, mission['id'], today, xp))
+            if not inserted:
+                return Response({'error': 'Hôm nay đã nhận thưởng nhiệm vụ này rồi.'}, status=409)
+            x('UPDATE users SET xp = xp + %s, gems = gems + %s WHERE id=%s', (xp, xp, uid))
             x('''INSERT INTO user_daily_xp_logs (user_id, log_date, xp_earned)
                  VALUES (%s, %s, %s)
                  ON CONFLICT (user_id, log_date)
                  DO UPDATE SET xp_earned = user_daily_xp_logs.xp_earned + EXCLUDED.xp_earned''',
-              (uid, today, xp_reward))
-            user = q1('SELECT gems, xp, streak FROM users WHERE id=%s', (uid,))
-            check_and_award_achievements(uid)
+              (uid, today, xp))
+            newly = check_and_award_achievements(uid)
 
         return Response({
-            'success': True,
-            'message': 'Hoàn thành nhiệm vụ!',
-            'gems': user['gems'],
-            'xp': user['xp'],
-            'streak': user['streak'],
-            'streak_active': True,
+            'ok': True,
+            'xpGained': xp,
+            'missions': _missions_for(uid, today),
+            'newAchievements': newly,
         })
 
 
@@ -262,7 +312,7 @@ def _days_to_exam(exam_timing, exam_date=None, answered_at=None):
     Không suy ra được → None để thẻ hiện dấu gạch kèm nút sửa mốc thi, thay vì
     một con số bịa.
     """
-    today = date.today()
+    today = local_today()
 
     d = _as_date(exam_date)
     if d:
@@ -343,7 +393,7 @@ class HsaGoalsView(APIView):
         # Không ghi lại thời điểm này thì mốc mãi neo vào ngày làm khảo sát —
         # sửa lại sau nửa năm sẽ ra số ngày âm.
         if 'exam_timing' in updates:
-            data['exam_timing_set_at'] = date.today().isoformat()
+            data['exam_timing_set_at'] = local_today().isoformat()
         payload = json.dumps(data, ensure_ascii=False)
         if row:
             x("UPDATE surveys SET data_json=%s WHERE id=%s", (payload, row['id']))

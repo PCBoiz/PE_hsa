@@ -110,6 +110,16 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* Nhiệm vụ hôm nay — cho chuỗi ngày học có việc để làm, thay vì
+                  chỉ đếm số ngày (audit 2026-08-14). */}
+              <div className="section-card fx-fade-up" style={{ animationDelay: '.1s' }}>
+                <div className="section-title" style={{ marginBottom: 14 }}>
+                  <span className="title-icon-blue" data-icon="check" data-size="16"></span>
+                  <span>Nhiệm vụ hôm nay</span>
+                </div>
+                <div className="hsa-missions" id="hsa-missions"></div>
+              </div>
+
               <div className="section-card fx-fade-up" style={{ animationDelay: '.12s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
                   <span className="title-icon-blue" data-icon="bar-chart" data-size="16"></span>

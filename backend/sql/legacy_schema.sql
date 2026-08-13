@@ -297,3 +297,33 @@ CREATE TABLE IF NOT EXISTS user_follows (
     created_at  TIMESTAMP DEFAULT now(),
     PRIMARY KEY (follower_id, followee_id)
 );
+
+-- ============================================================================
+-- 23. Nhiệm vụ hằng ngày & bảo hiểm chuỗi (gamification HSA, 2026-08-14)
+-- ============================================================================
+-- `missions` vốn là NHIỆM VỤ SQL của pe_test: chấm đúng/sai bằng cặp
+-- (correct_condition, correct_action) — vô nghĩa với luyện thi HSA. Đổi thành
+-- nhiệm vụ hằng ngày chấm bằng SỐ LIỆU THẬT trong ngày (số bài xong, XP kiếm
+-- được, số đề đã làm). Bảng rỗng ở mọi môi trường nên đổi cột là an toàn.
+ALTER TABLE missions DROP COLUMN IF EXISTS correct_condition;
+ALTER TABLE missions DROP COLUMN IF EXISTS correct_action;
+ALTER TABLE missions ADD COLUMN IF NOT EXISTS code TEXT;
+ALTER TABLE missions ADD COLUMN IF NOT EXISTS condition_type TEXT;
+ALTER TABLE missions ADD COLUMN IF NOT EXISTS condition_value INTEGER DEFAULT 1;
+ALTER TABLE missions ALTER COLUMN course_id DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_missions_code ON missions(code);
+
+-- Nhận thưởng nhiệm vụ: khoá chính gồm cả NGÀY để mỗi ngày nhận lại được một
+-- lần, và không bao giờ nhận trùng trong cùng ngày.
+CREATE TABLE IF NOT EXISTS user_missions (
+    user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    mission_id   INTEGER REFERENCES missions(id) ON DELETE CASCADE,
+    mission_date DATE NOT NULL,
+    xp_earned    INTEGER DEFAULT 0,
+    claimed_at   TIMESTAMP DEFAULT now(),
+    PRIMARY KEY (user_id, mission_id, mission_date)
+);
+
+-- Bảo hiểm chuỗi: nghỉ đúng 1 ngày thì tiêu 1 vé thay vì mất sạch chuỗi. Thí
+-- sinh ôn 6 tháng mà mất chuỗi vì một ngày bận là điểm bỏ cuộc kinh điển.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_freezes INTEGER NOT NULL DEFAULT 3;

@@ -1,12 +1,12 @@
 """Port routes/lessons.py — API tiến độ bài học (nguồn thật: lesson_progress)."""
-from datetime import date, timedelta
-
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
+from common.clock import local_now, local_today
 from common.db import q1, x
+from common.streak import award_xp, touch_streak
 
 
 def _resolve_lesson_id(course_id, lesson_no, title, module=None):
@@ -61,13 +61,13 @@ class CompleteLessonView(APIView):
 
             x('''INSERT INTO lesson_progress
                      (user_id, lesson_id, course_id, status, quiz_score, xp_earned, completed_at)
-                 VALUES (%s, %s, %s, 'completed', %s, %s, now())
+                 VALUES (%s, %s, %s, 'completed', %s, %s, %s)
                  ON CONFLICT (user_id, lesson_id) DO UPDATE SET
                      status       = 'completed',
                      quiz_score   = COALESCE(EXCLUDED.quiz_score, lesson_progress.quiz_score),
                      xp_earned    = GREATEST(EXCLUDED.xp_earned, lesson_progress.xp_earned),
                      completed_at = COALESCE(lesson_progress.completed_at, EXCLUDED.completed_at)''',
-              (uid, lesson_id, course_id, quiz_score, xp_earned))
+              (uid, lesson_id, course_id, quiz_score, xp_earned, local_now()))
 
             # Tính lại cache enrollments từ nguồn thật lesson_progress
             done_row = q1('''SELECT COUNT(*) AS n,
@@ -84,32 +84,20 @@ class CompleteLessonView(APIView):
                  SET completed_lessons = %s,
                      progress          = %s,
                      time_spent        = %s,
-                     completed_at      = CASE WHEN %s >= 100 THEN COALESCE(completed_at, now())
+                     completed_at      = CASE WHEN %s >= 100 THEN COALESCE(completed_at, %s)
                                               ELSE completed_at END
                  WHERE user_id=%s AND course_id=%s''',
-              (completed_count, progress, time_spent, progress, uid, course_id))
+              (completed_count, progress, time_spent, progress, local_now(), uid, course_id))
 
             gained = 0
+            new_streak, used_freeze = None, False
             if not existed:
                 gained = xp_earned
-                today = date.today()
-                user = q1('SELECT streak, last_study_date FROM users WHERE id=%s', (uid,))
-                last_date = user['last_study_date'] if user else None
-                if last_date is None or last_date < today - timedelta(days=1):
-                    new_streak = 1
-                elif last_date == today:
-                    new_streak = user['streak']
-                else:
-                    new_streak = user['streak'] + 1
-                x('UPDATE users SET xp = xp + %s, gems = gems + %s, streak = %s, '
-                  'last_study_date = %s WHERE id=%s',
-                  (gained, gained, new_streak, today, uid))
-                # Log XP theo ngày (nguồn cho leaderboard tuần) — upsert cộng dồn
-                x('''INSERT INTO user_daily_xp_logs (user_id, log_date, xp_earned)
-                     VALUES (%s, %s, %s)
-                     ON CONFLICT (user_id, log_date)
-                     DO UPDATE SET xp_earned = user_daily_xp_logs.xp_earned + EXCLUDED.xp_earned''',
-                  (uid, today, gained))
+                today = local_today()
+                # Chuỗi + XP dùng chung common/streak.py để thi thử tính y hệt
+                # (và để luật bảo hiểm chuỗi chỉ có một bản duy nhất).
+                award_xp(uid, gained, today)
+                new_streak, used_freeze = touch_streak(uid, today)
 
             newly_awarded = check_and_award_achievements(uid)
 
@@ -118,5 +106,7 @@ class CompleteLessonView(APIView):
             'completedLessons': completed_count,
             'progress': progress,
             'xpGained': gained,
+            'streak': new_streak,
+            'usedStreakFreeze': used_freeze,
             'newAchievements': newly_awarded,
         })

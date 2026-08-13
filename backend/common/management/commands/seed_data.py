@@ -130,8 +130,53 @@ HSA_MOCK_EXAM = {
 }
 
 
+# ── Thành tích ──────────────────────────────────────────────────────────────
+# achievements/services.py đã có đủ logic trao thưởng và chạy trong transaction
+# của lessons.complete — nhưng bảng RỖNG nên vòng lặp không chạy lần nào, không
+# học viên nào từng nhận được gì (audit 2026-08-14).
+# condition_type phải là một trong 4 khoá mà _get_metrics() trả về:
+#   lesson_count · streak_days · xp_total · course_complete
+HSA_ACHIEVEMENTS = [
+    # code, tên, mô tả, icon, condition_type, condition_value
+    ("first_lesson", "Bước đầu tiên", "Hoàn thành bài học đầu tiên của bạn.",
+     "🌱", "lesson_count", 1),
+    ("ten_lessons", "Vào guồng", "Hoàn thành 10 bài học.",
+     "📚", "lesson_count", 10),
+    ("half_way", "Nửa chặng đường", "Hoàn thành 38/76 bài — quá nửa chương trình HSA.",
+     "⛰️", "lesson_count", 38),
+    ("all_lessons", "Cày hết 76 bài", "Hoàn thành toàn bộ chương trình 3 hợp phần.",
+     "🏆", "lesson_count", 76),
+    ("streak_3", "Ba ngày liền", "Học 3 ngày liên tiếp.",
+     "🔥", "streak_days", 3),
+    ("streak_7", "Trọn một tuần", "Học 7 ngày liên tiếp.",
+     "🔥", "streak_days", 7),
+    ("streak_30", "Kỷ luật thép", "Học 30 ngày liên tiếp.",
+     "💎", "streak_days", 30),
+    ("xp_500", "500 XP", "Tích lũy 500 XP.",
+     "⭐", "xp_total", 500),
+    ("xp_2000", "2.000 XP", "Tích lũy 2.000 XP.",
+     "🌟", "xp_total", 2000),
+    ("finish_section", "Xong một hợp phần", "Hoàn thành trọn vẹn một hợp phần của đề HSA.",
+     "🎓", "course_complete", 1),
+]
+
+# ── Nhiệm vụ hằng ngày ──────────────────────────────────────────────────────
+# Chấm bằng SỐ LIỆU THẬT trong ngày, không phải cặp (điều kiện, hành động) SQL
+# của pe_test. condition_type khớp với stats.views._today_metrics().
+HSA_MISSIONS = [
+    # code, tiêu đề, mô tả, xp thưởng, condition_type, condition_value, thứ tự
+    ("daily_lesson", "Học xong 1 bài hôm nay",
+     "Bất kỳ bài nào trong 3 hợp phần đều tính.", 20, "lessons_today", 1, 1),
+    ("daily_xp", "Kiếm 100 XP hôm nay",
+     "Cộng dồn từ bài học và đề thi thử.", 30, "xp_today", 100, 2),
+    ("daily_mock", "Làm 1 đề thi thử",
+     "Quen áp lực thời gian là nửa phần thắng.", 50, "mocks_today", 1, 3),
+]
+
+
 class Command(BaseCommand):
-    help = "Seed khung nội dung HSA tối thiểu (3 course + 1 roadmap template). Idempotent."
+    help = ("Seed khung nội dung HSA tối thiểu (3 course + 1 roadmap template + "
+            "thành tích + nhiệm vụ ngày). Idempotent.")
 
     def handle(self, *args, **options):
         with connection.cursor() as cur:
@@ -186,6 +231,48 @@ class Command(BaseCommand):
                 )
                 n_exam = cur.rowcount
 
+            # ON CONFLICT DO UPDATE (không phải DO NOTHING): sửa tên/mô tả/ngưỡng
+            # rồi seed lại là cập nhật được, khỏi phải xoá tay.
+            for code, name, desc, icon, ctype, cvalue in HSA_ACHIEVEMENTS:
+                cur.execute(
+                    """
+                    INSERT INTO achievements
+                        (code, name, description, icon, condition_type, condition_value)
+                    VALUES (%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (code) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        description = EXCLUDED.description,
+                        icon = EXCLUDED.icon,
+                        condition_type = EXCLUDED.condition_type,
+                        condition_value = EXCLUDED.condition_value
+                    """,
+                    [code, name, desc, icon, ctype, cvalue],
+                )
+
+            for code, title, desc, xp, ctype, cvalue, order in HSA_MISSIONS:
+                cur.execute(
+                    """
+                    INSERT INTO missions
+                        (code, title, description, xp_reward, condition_type,
+                         condition_value, sort_order, is_active)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s, TRUE)
+                    ON CONFLICT (code) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        description = EXCLUDED.description,
+                        xp_reward = EXCLUDED.xp_reward,
+                        condition_type = EXCLUDED.condition_type,
+                        condition_value = EXCLUDED.condition_value,
+                        sort_order = EXCLUDED.sort_order,
+                        is_active = TRUE
+                    """,
+                    [code, title, desc, xp, ctype, cvalue, order],
+                )
+
+            cur.execute("SELECT count(*) FROM achievements")
+            total_ach = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM missions WHERE is_active")
+            total_mis = cur.fetchone()[0]
+
             cur.execute("SELECT count(*) FROM courses")
             total_courses = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM roadmaps")
@@ -195,5 +282,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"[seed_data] +{n_courses} course, +{n_roadmap} roadmap template, +{n_exam} đề thi thử "
-            f"(tổng: {total_courses} course, {total_roadmaps} roadmap, {total_exams} đề)"
+            f"(tổng: {total_courses} course, {total_roadmaps} roadmap, {total_exams} đề, "
+            f"{total_ach} thành tích, {total_mis} nhiệm vụ ngày)"
         ))

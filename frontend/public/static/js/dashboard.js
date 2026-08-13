@@ -1766,10 +1766,13 @@ function skSkillToggle(row) {
     { id: 'hsa_verbal', name: 'Tư duy Định tính', total: 23 },
     { id: 'hsa_science', name: 'Khoa học', total: 26 }
   ];
-  //: nhãn hợp phần trong section_scores_json của đề thi thử → id khoá
+  //: nhãn hợp phần trong section_scores_json của đề thi thử → id khoá.
+  //  Phải khớp ĐÚNG mockexam/views.py:SECTION_LABELS — bản đầu tôi viết là
+  //  "Tư duy định lượng" nên chỉ Khoa học khớp, hai hợp phần kia luôn báo
+  //  "chưa thi thử" dù đã làm đề.
   var SEC_TO_COURSE = {
-    'Tư duy định lượng': 'hsa_quantitative',
-    'Tư duy định tính': 'hsa_verbal',
+    'Định lượng': 'hsa_quantitative',
+    'Định tính': 'hsa_verbal',
     'Khoa học': 'hsa_science'
   };
 
@@ -2605,6 +2608,81 @@ function forumClearSearch() {
       '</a>';
   }
 
+  /* ── Nhiệm vụ hôm nay ──────────────────────────────────────────────────
+     Tiến độ tính từ số liệu THẬT trong ngày; nút "Nhận" chỉ sáng khi đã đạt,
+     và mỗi ngày nhận được đúng một lần (máy chủ chặn bằng khoá chính). */
+  function renderMissions(data) {
+    var box = el('hsa-missions');
+    if (!box) return;
+    var list = (data && data.missions) || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="hsa-mis-empty">Chưa có nhiệm vụ nào cho hôm nay.</div>';
+      return;
+    }
+    box.innerHTML = list.map(function (m) {
+      var pct = Math.min(100, Math.round(m.progress / (m.target || 1) * 100));
+      var state = m.claimed ? 'is-claimed' : (m.done ? 'is-done' : '');
+      var btn = m.claimed
+        ? '<span class="hsa-mis-got">Đã nhận</span>'
+        : (m.done
+          ? '<button class="hsa-mis-claim" data-code="' + m.code + '">Nhận +' + m.xpReward + '</button>'
+          : '<span class="hsa-mis-xp">+' + m.xpReward + ' XP</span>');
+      return '<div class="hsa-mis ' + state + '">'
+        + '<div class="hsa-mis-top">'
+        + '<span class="hsa-mis-title">' + m.title + '</span>'
+        + btn
+        + '</div>'
+        + '<div class="hsa-mis-track"><i style="width:' + pct + '%"></i></div>'
+        + '<div class="hsa-mis-meta">' + m.progress + '/' + m.target + ' · ' + m.description + '</div>'
+        + '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(box.querySelectorAll('.hsa-mis-claim'), function (b) {
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        b.textContent = 'Đang nhận…';
+        fetch('/api/missions/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: b.getAttribute('data-code') })
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            if (!res.ok) { b.disabled = false; b.textContent = 'Thử lại'; return; }
+            renderMissions({ missions: res.d.missions });
+            (res.d.newAchievements || []).forEach(showAchievement);
+            // XP vừa cộng có thể làm xong luôn nhiệm vụ "kiếm 100 XP".
+            if (window.__refreshHsaTiles) window.__refreshHsaTiles();
+          })
+          .catch(function () { b.disabled = false; b.textContent = 'Thử lại'; });
+      });
+    });
+  }
+
+  /* Thành tích vừa mở khoá — báo một lần, tự tắt. */
+  function showAchievement(a) {
+    var t = document.createElement('div');
+    t.className = 'hsa-ach-toast';
+    t.setAttribute('role', 'status');
+    t.innerHTML = '<span class="hsa-ach-ic">' + (a.icon || '🏅') + '</span>'
+      + '<span><b>Mở khoá thành tích</b><br>' + (a.name || '') + '</span>';
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () { t.remove(); }, 400);
+    }, 4200);
+  }
+  window.__showAchievement = showAchievement;
+
+  function loadMissions() {
+    if (!el('hsa-missions')) return;
+    fetch('/api/missions/today')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) renderMissions(d); })
+      .catch(function () { /* giữ khối rỗng */ });
+  }
+
   /* Vẽ lại phần phụ thuộc CẢ HAI lượt gọi, gọi được nhiều lần vô hại. */
   function renderProgressBlocks() {
     if (lastEnrolled) { renderSections(lastEnrolled); renderContinue(lastEnrolled); }
@@ -2632,6 +2710,7 @@ function forumClearSearch() {
         renderProgressBlocks();
       })
       .catch(function () { lastEnrolled = []; renderProgressBlocks(); });
+    loadMissions();
     if (window.mountIcons) mountIcons(document.querySelector('.hsa-tiles'));
   }
 

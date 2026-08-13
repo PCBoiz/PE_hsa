@@ -3940,3 +3940,51 @@ body.dark .prof-post-stats {
 @media (max-width: 560px)  { .hsa-tiles { grid-template-columns: minmax(0, 1fr); }
   .hsa-cont-empty, .hsa-cont-link { flex-wrap: wrap; }
   .hsa-cont-btn, .hsa-cont-go { margin-left: 0; width: 100%; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NHIỆM VỤ HÔM NAY + THÔNG BÁO THÀNH TÍCH (gamification, 2026-08-14)
+   ══════════════════════════════════════════════════════════════════════════ */
+.hsa-missions { display: flex; flex-direction: column; gap: 14px; }
+.hsa-mis-empty { font-size: 13px; color: var(--t3, #6B7280); }
+.hsa-mis-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hsa-mis-title { font-size: 13px; font-weight: 600; color: var(--text-1, #1F2937); }
+.hsa-mis-xp { font-size: 12px; font-weight: 600; color: var(--t3, #6B7280); flex-shrink: 0; }
+.hsa-mis-got { font-size: 12px; font-weight: 700; color: var(--success, #0E7C6B); flex-shrink: 0; }
+.hsa-mis-claim {
+  flex-shrink: 0; border: none; cursor: pointer; border-radius: 999px;
+  /* 44px là sàn vùng chạm; nút nhỏ hơn thì nới bằng padding chứ không thu gọn. */
+  min-height: 32px; padding: 6px 14px;
+  background: var(--brand-fill, #6D5AE6); color: #fff;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  transition: filter .15s, transform .12s;
+}
+.hsa-mis-claim:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.hsa-mis-claim:disabled { opacity: .6; cursor: default; }
+.hsa-mis-track {
+  height: 6px; border-radius: 99px; margin: 7px 0 5px; overflow: hidden;
+  background: var(--rm-track, #E7E9EF);
+}
+.hsa-mis-track > i {
+  display: block; height: 100%; border-radius: 99px;
+  background: var(--brand-fill, #6D5AE6); transition: width .5s ease-out;
+}
+.hsa-mis.is-done  .hsa-mis-track > i,
+.hsa-mis.is-claimed .hsa-mis-track > i { background: var(--success, #0E7C6B); }
+.hsa-mis.is-claimed { opacity: .72; }
+.hsa-mis-meta { font-size: 11.5px; color: var(--t3, #6B7280); line-height: 1.45; }
+
+.hsa-ach-toast {
+  position: fixed; right: 20px; bottom: 20px; z-index: 1200;
+  display: flex; align-items: center; gap: 12px;
+  max-width: 320px; padding: 14px 18px; border-radius: 14px;
+  background: var(--card, #fff); border: 1px solid var(--card-border, #E7E9EF);
+  box-shadow: 0 12px 32px rgba(0,0,0,.16);
+  font-size: 13px; color: var(--text-1, #1F2937);
+  transform: translateY(16px); opacity: 0;
+  transition: transform .32s cubic-bezier(.2,.8,.3,1), opacity .32s;
+}
+.hsa-ach-toast.show { transform: translateY(0); opacity: 1; }
+.hsa-ach-ic { font-size: 26px; line-height: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .hsa-ach-toast { transition: opacity .01ms; transform: none; }
+}

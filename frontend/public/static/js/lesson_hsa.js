@@ -453,7 +453,24 @@
         quizScore: state.total ? Math.round(state.score / state.total * 100) : null,
         xpEarned: xp
       })
-    }).catch(function () { /* mất mạng thì thôi — không chặn màn chúc mừng */ });
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        // Thành tích vừa mở khoá phải được báo NGAY tại đây; học viên hiếm khi
+        // tự mở trang Thành tích để phát hiện ra.
+        (d.newAchievements || []).forEach(function (a, i) {
+          setTimeout(function () {
+            flashNote('🏅 Mở khoá thành tích: ' + (a.name || ''));
+          }, 900 + i * 3000);
+        });
+        if (d.usedStreakFreeze) {
+          setTimeout(function () {
+            flashNote('❄️ Đã dùng 1 vé bảo hiểm chuỗi — chuỗi của bạn vẫn tiếp tục!');
+          }, 500);
+        }
+      })
+      .catch(function () { /* mất mạng thì thôi — không chặn màn chúc mừng */ });
   }
 
   function complete() {

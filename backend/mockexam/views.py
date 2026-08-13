@@ -1,10 +1,24 @@
 """Trụ cột ④ — Thi thử CBT. Raw SQL qua common/db (đồng bộ style toàn app)."""
 import json
-
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from achievements.services import check_and_award_achievements
+from common.clock import local_now, local_today
 from common.db import q, q1, x
+from common.streak import award_xp, touch_streak
+
+#: XP cho một lượt thi thử: 30 XP công sức + tối đa 70 XP theo tỉ lệ đúng.
+#: Trần 100 để một đề không bằng cả buổi học (mỗi bài học 50 XP).
+_MOCK_XP_BASE = 30
+_MOCK_XP_MAX_BONUS = 70
+
+
+def _mock_xp(score, total):
+    if not total:
+        return _MOCK_XP_BASE
+    return _MOCK_XP_BASE + round(_MOCK_XP_MAX_BONUS * max(0, min(score, total)) / total)
 
 SECTION_LABELS = {
     'quantitative': 'Định lượng',
@@ -96,16 +110,29 @@ class MockSubmitView(APIView):
                 key=lambda kv: (kv[1]['correct'] / kv[1]['total']) if kv[1]['total'] else 1.0,
             )[0]
 
-        x("INSERT INTO mock_attempts "
-          "(user_id, exam_id, score, total, section_scores_json, answers_json, duration_seconds, submitted_at) "
-          "VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s, now())",
-          (request.user.id, exam_id, score, total,
-           json.dumps(section_scores, ensure_ascii=False),
-           json.dumps(answers, ensure_ascii=False), duration))
+        uid = request.user.id
+        with transaction.atomic():
+            x("INSERT INTO mock_attempts "
+              "(user_id, exam_id, score, total, section_scores_json, answers_json, duration_seconds, submitted_at) "
+              "VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s)",
+              (uid, exam_id, score, total,
+               json.dumps(section_scores, ensure_ascii=False),
+               json.dumps(answers, ensure_ascii=False), duration, local_now()))
+
+            # Trước 2026-08-14 thi thử KHÔNG cộng XP và KHÔNG tính vào chuỗi:
+            # làm trọn một đề 150 câu vẫn mất chuỗi nếu hôm đó không mở bài học.
+            # Thưởng gồm phần cố định cho công sức + phần theo số câu đúng.
+            xp = _mock_xp(score, total)
+            today = local_today()
+            award_xp(uid, xp, today)
+            streak, used_freeze = touch_streak(uid, today)
+            newly = check_and_award_achievements(uid)
 
         return Response({
             'score': score, 'total': total,
             'section_scores': section_scores, 'weakest': weakest, 'results': results,
+            'xpGained': xp, 'streak': streak, 'usedStreakFreeze': used_freeze,
+            'newAchievements': newly,
         })
 
 
