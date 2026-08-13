@@ -16,12 +16,17 @@ var ROADMAP_LIST = [
 
 var ROADMAP_DATA = {
 
+  // `group` (tuỳ chọn) = tiêu đề giai đoạn, in MỘT lần khi đổi nhóm — giúp lộ
+  // trình dài đọc được thành từng chặng thay vì một chuỗi node liền mạch.
   "Lộ trình tổng HSA": [
-    { main: ["1. Chẩn đoán đầu vào", "active"], right: [["Làm bài khảo sát năng lực", "active"], "Xác định điểm mạnh – yếu", "Nhận lộ trình cá nhân hoá"] },
-    { main: "2. Tư duy Định lượng (Phần 1)", left: ["Số & Đại số nền tảng", "Hàm số & Giải tích", "Hình học & Đo lường", "Thống kê & Xác suất", "Xử lý số liệu"] },
+    { group: "Giai đoạn 1 · Biết mình đang ở đâu",
+      main: ["1. Chẩn đoán đầu vào", "active"], right: [["Làm bài khảo sát năng lực", "active"], "Xác định điểm mạnh – yếu", "Nhận lộ trình cá nhân hoá"] },
+    { group: "Giai đoạn 2 · Ba hợp phần của đề thi",
+      main: "2. Tư duy Định lượng (Phần 1)", left: ["Số & Đại số nền tảng", "Hàm số & Giải tích", "Hình học & Đo lường", "Thống kê & Xác suất", "Xử lý số liệu"] },
     { main: "3. Tư duy Định tính (Phần 2)", right: ["Từ vựng & Ngữ pháp", "Đọc hiểu", "Văn học", "Ngôn ngữ – Văn hóa – Xã hội"] },
     { main: "4. Khoa học (Phần 3 · chọn 3/5)", left: ["Vật lý", "Hóa học", "Sinh học", "Lịch sử", "Địa lý"] },
-    { main: "5. Luyện đề tổng (CBT)", right: ["Thi thử 150 câu bấm giờ", "Phân tích mạnh – yếu", "Điều chỉnh chiến thuật"] },
+    { group: "Giai đoạn 3 · Ráp đề & về đích",
+      main: "5. Luyện đề tổng (CBT)", right: ["Thi thử 150 câu bấm giờ", "Phân tích mạnh – yếu", "Điều chỉnh chiến thuật"] },
     { main: "6. Về đích", left: ["Chiến thuật phòng thi", "Ổn định tâm lý", "Rà soát điểm yếu cuối"] },
   ],
 

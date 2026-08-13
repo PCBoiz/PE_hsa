@@ -19,10 +19,15 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       />
-      {/* Chống FOUC theme — inline đầu body y hệt base.html:20 */}
+      {/* Chống FOUC theme — chạy trước khi vẽ nội dung.
+          Quy tắc (audit 2026-08-13): người dùng đã chọn tay thì theo lựa chọn đó;
+          CHƯA chọn thì theo hệ điều hành (trước đây mặc định cứng là tối, và
+          course_detail.js lại mặc định sáng → hai trang lệch theme nhau). */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `if(localStorage.getItem('theme')!=='light')document.body.classList.add('dark');`,
+          __html: `(function(){var t=null;try{t=localStorage.getItem('theme')}catch(e){}
+var d=t?t==='dark':(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
+document.body.classList.toggle('dark',!!d);document.body.classList.toggle('light',!d)})();`,
         }}
       />
       {children}

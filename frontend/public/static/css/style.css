@@ -91,7 +91,7 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 #main { flex: 1; background: var(--bg); display: flex; flex-direction: column; padding-top: 50px; }
 .topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-  background: rgba(7,9,15,0.96);
+  background: var(--topbar-bg);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 18px;
@@ -512,6 +512,16 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
   .search-wrap { display: none; }
   .chip-name { display: none; }
   .user-chip { padding: 4px 6px; }
+
+  /* Chống TRÀN NGANG ở 390px (audit 2026-08-13: scrollWidth 418 > 390).
+     Nguyên nhân: topbar là flex row, các nhóm con không co được nên đẩy
+     nhóm bên phải ra ngoài khung. Cho phép co + cuộn ngang phần nav. */
+  .topbar > * { min-width: 0; }
+  .topbar-nav { overflow-x: auto; scrollbar-width: none; }
+  .topbar-nav::-webkit-scrollbar { display: none; }
+  .topbar-right { flex-shrink: 0; }
+  .user-chip .dropdown-icon { display: none; }
+  .brand { flex-shrink: 1; min-width: 0; overflow: hidden; }
   .bell-btn { width: 32px; height: 32px; font-size: 14px; }
   .theme-toggle-btn { font-size: 14px; }
   .bell-panel { width: 280px; right: -40px; }

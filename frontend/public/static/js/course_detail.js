@@ -43,9 +43,18 @@ function unenroll() {
   .catch(() => { btn.disabled = false; });
 }
 
+/* Theme nào là mặc định: lựa chọn đã lưu > cài đặt hệ điều hành. */
+function prefersDarkTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('theme'); } catch (e) {}
+  if (saved) return saved === 'dark';
+  return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
 (function () {
   function applyTheme(isDark) {
     document.body.classList.toggle('dark', isDark);
+    document.body.classList.toggle('light', !isDark);   // xem ghi chú ở main.js
     var btn = document.getElementById('theme-toggle');
     if (btn) btn.textContent = isDark ? '☀️' : '🌙';
   }
@@ -54,7 +63,10 @@ function unenroll() {
     applyTheme(isDark);
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   };
-  applyTheme(localStorage.getItem('theme') === 'dark');
+  // Chọn tay thắng; chưa chọn thì theo hệ điều hành (khớp (base)/layout.tsx).
+  // Trước đây dòng này mặc định SÁNG còn dashboard mặc định TỐI → lệch theme
+  // giữa hai trang (audit 2026-08-13).
+  applyTheme(prefersDarkTheme());
 })();
 
 /* ── User dropdown ── */

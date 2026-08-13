@@ -36,12 +36,11 @@
     return ov[name + ':' + nodeId] || fallback;
   }
 
-  // Bảng màu HSA: done = teal (#2DD4BF), active = violet (#8B7CF6), locked = slate.
-  var SC = {
-    done:   { mainBg: 'linear-gradient(135deg,#0C2A28,#10322E)', childBg: 'rgba(45,212,191,0.14)', stroke: 'rgba(45,212,191,0.55)', mainText: '#5EEAD4', childText: '#2DD4BF' },
-    active: { mainBg: 'linear-gradient(135deg,#1C1740,#241B4D)', childBg: 'rgba(139,124,246,0.18)', stroke: 'rgba(139,124,246,0.6)', mainText: '#C4B5FD', childText: '#A78BFA' },
-    locked: { mainBg: '#101725', childBg: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.14)', mainText: '#CBD5E1', childText: '#64748B' }
-  };
+  /* MÀU TRẠNG THÁI KHÔNG nằm ở đây nữa (audit 2026-08-13).
+     Trước đây bảng SC ghi hex tối cứng rồi gán qua style="" → theme sáng
+     không thể ghi đè, khiến trang Lộ trình luôn đen. Nay node chỉ mang class
+     (.rm-node--done/--active/--locked) và toàn bộ màu do token --rm-* trong
+     theme.css quyết định, nên tự đổi theo theme. */
   var RES_CFG = {
     article: { icon: 'file-text', label: 'Bài viết', color: '#60A5FA' },
     video:   { icon: 'youtube', label: 'Video', color: '#F87171' },
@@ -72,6 +71,7 @@
       var left = (sec.left || []).map(norm);
       var right = (sec.right || []).map(norm);
       return {
+        group: sec.group || null,   // tiêu đề nhóm chặng (tuỳ chọn)
         main: Object.assign({ id: i + '-m' }, main),
         left: left.map(function (n, j) { return Object.assign({ id: i + '-l' + j }, n); }),
         right: right.map(function (n, j) { return Object.assign({ id: i + '-r' + j }, n); })
@@ -98,44 +98,83 @@
     if (window.mountIcons) mountIcons(bar);
   }
 
-  /* ── Node box ── */
-  function nodeBoxHtml(name, node, kind, stepNum) {
+  /* ── Node box ──
+     Chỉ gắn class + nội dung; MÀU do CSS/token lo (xem ghi chú ở SC cũ).
+     `pct` (0–100) chỉ dùng cho node chính: vẽ thanh tiến độ của chặng. */
+  function nodeBoxHtml(name, node, kind, stepNum, pct) {
     var status = getStatus(name, node.id, node.status);
-    var c = SC[status] || SC.locked;
     var cls = 'rm-node rm-node--' + kind + ' rm-node--' + status;
     var onclick = "window.roadmapOpenDrawer('" + esc(name) + "','" + node.id + "','" + esc(node.label) + "')";
+    var aria = ' aria-label="' + escHtmlR(node.label) + ' — ' + STATUS_TEXT[status] + '"';
     if (kind === 'main') {
-      // Milestone: badge số chặng bên trái + tick ✓ khi hoàn thành (kiểu roadmap.sh).
+      // Milestone: badge số chặng, đổi thành ✓ khi hoàn thành (ngôn ngữ roadmap.sh).
       var numHtml = (typeof stepNum === 'number')
-        ? '<span class="rm-node-num">' + (status === 'done'
-            ? (window.Icon ? Icon('check', 12, '#052E2B') : '✓')
-            : stepNum) + '</span>'
+        ? '<span class="rm-node-num">' + (status === 'done' ? '✓' : stepNum) + '</span>'
         : '';
-      return '<button type="button" class="' + cls + '" style="background:' + c.mainBg + ';border-color:' + c.stroke + ';color:' + c.mainText + '" onclick="' + onclick + '">' +
-        numHtml + '<span class="rm-node-label">' + escHtmlR(node.label) + '</span></button>';
+      var progHtml = (typeof pct === 'number')
+        ? '<span class="rm-prog" role="img" aria-label="Hoàn thành ' + pct + '%">' +
+            '<i style="width:' + pct + '%"></i></span>' +
+          '<span class="rm-prog-num">' + pct + '%</span>'
+        : '';
+      return '<button type="button" class="' + cls + '"' + aria + ' onclick="' + onclick + '">' +
+        '<span class="rm-node-row">' + numHtml +
+          '<span class="rm-node-label">' + escHtmlR(node.label) + '</span>' +
+        '</span>' +
+        (progHtml ? '<span class="rm-node-foot">' + progHtml + '</span>' : '') +
+        '</button>';
     }
-    var dotHtml = status === 'done'
-      ? '<span class="rm-node-dot rm-node-dot--done">' + (window.Icon ? Icon('check', 9, '#fff') : '') + '</span>'
-      : '<span class="rm-node-dot rm-node-dot--' + status + '"></span>';
-    return '<button type="button" class="' + cls + '" style="background:' + c.childBg + ';border-color:' + c.stroke + ';color:' + c.childText + '" onclick="' + onclick + '">' + escHtmlR(node.label) + dotHtml + '</button>';
+    // Trạng thái node con: KHÔNG chỉ dựa vào màu — done có dấu ✓, đang học có
+    // vòng sáng, chưa học để rỗng (WCAG: không truyền tin bằng mỗi màu sắc).
+    var dotHtml = '<span class="rm-node-dot rm-node-dot--' + status + '">' +
+      (status === 'done' ? '✓' : '') + '</span>';
+    return '<button type="button" class="' + cls + '"' + aria + ' onclick="' + onclick + '">' +
+      '<span class="rm-node-label">' + escHtmlR(node.label) + '</span>' + dotHtml + '</button>';
+  }
+
+  var STATUS_TEXT = { done: 'đã học', active: 'đang học', locked: 'chưa học' };
+
+  /* % hoàn thành của một chặng = tỉ lệ node (chính + con) ở trạng thái done. */
+  function sectionPct(name, sec) {
+    var all = [sec.main].concat(sec.left || [], sec.right || []);
+    if (!all.length) return 0;
+    var done = all.filter(function (n) {
+      return getStatus(name, n.id, n.status) === 'done';
+    }).length;
+    return Math.round(done / all.length * 100);
   }
 
   /* ── HTML cho danh sách section (spine + main + nhánh trái/phải) — dùng chung
      bởi renderFlow (roadmap tĩnh) và renderGeneratedRoadmap (roadmap cá nhân) ── */
   function buildSectionsHtml(name, sections) {
+    var lastGroup = null;
     return sections.map(function (sec, i) {
+      // Tiêu đề nhóm chặng — chỉ in khi đổi nhóm (dữ liệu có thể không khai báo).
+      var groupHtml = '';
+      if (sec.group && sec.group !== lastGroup) {
+        lastGroup = sec.group;
+        groupHtml = '<div class="rm-group">' + escHtmlR(sec.group) + '</div>';
+      }
       var leftHtml = sec.left.length
         ? '<div class="rm-branch rm-branch--left">' + sec.left.map(function (n) { return nodeBoxHtml(name, n, 'child'); }).join('') + '</div><div class="rm-dash rm-dash--right"></div>'
         : '';
       var rightHtml = sec.right.length
         ? '<div class="rm-dash rm-dash--left"></div><div class="rm-branch rm-branch--right">' + sec.right.map(function (n) { return nodeBoxHtml(name, n, 'child'); }).join('') + '</div>'
         : '';
-      return '<div class="rm-section">' +
+      return groupHtml + '<div class="rm-section">' +
         '<div class="rm-section-left">' + leftHtml + '</div>' +
-        '<div class="rm-section-main">' + nodeBoxHtml(name, sec.main, 'main', i + 1) + '</div>' +
+        '<div class="rm-section-main">' + nodeBoxHtml(name, sec.main, 'main', i + 1, sectionPct(name, sec)) + '</div>' +
         '<div class="rm-section-right">' + rightHtml + '</div>' +
         '</div>';
     }).join('');
+  }
+
+  /* Chú giải trạng thái ngay trên canvas — người mới nhìn hiểu ngay màu nghĩa gì. */
+  function legendHtml() {
+    return '<div class="rm-legend">' +
+      '<span class="rm-legend-item"><span class="rm-node-dot rm-node-dot--done">✓</span>Đã học</span>' +
+      '<span class="rm-legend-item"><span class="rm-node-dot rm-node-dot--active"></span>Đang học</span>' +
+      '<span class="rm-legend-item"><span class="rm-node-dot rm-node-dot--locked"></span>Chưa học</span>' +
+      '</div>';
   }
 
   /* ── Header cá nhân hoá cho tab "Lộ trình của tôi" ── */
@@ -205,7 +244,7 @@
       return { main: { id: nid, label: nodeData.title || nid, status: status }, left: [], right: [] };
     });
     renderMyHeader(apiData, sections);
-    wrap.innerHTML = '<div class="rm-spine"></div>' + buildSectionsHtml(MY_ROADMAP_TAB, sections);
+    wrap.innerHTML = '<div class="rm-spine"></div>' + buildSectionsHtml(MY_ROADMAP_TAB, sections) + legendHtml();
     renderStatsPill(MY_ROADMAP_TAB, sections);
     if (window.mountIcons) mountIcons(wrap);
   }
@@ -221,7 +260,7 @@
       renderStatsPill(name, []);
       return;
     }
-    wrap.innerHTML = '<div class="rm-spine"></div>' + buildSectionsHtml(name, sections);
+    wrap.innerHTML = '<div class="rm-spine"></div>' + buildSectionsHtml(name, sections) + legendHtml();
     renderStatsPill(name, sections);
   }
 

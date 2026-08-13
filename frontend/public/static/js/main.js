@@ -1852,9 +1852,21 @@ function updateDate() {
       now.getFullYear();
 }
 
-/* ── Dark / Light mode ── */
+/* ── Dark / Light mode ──
+   Mặc định: lựa chọn đã lưu > cài đặt hệ điều hành (audit 2026-08-13; trước
+   đây mặc định cứng là tối nên người dùng máy sáng vẫn nhận bản tối). */
+function prefersDarkTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('theme'); } catch (e) {}
+  if (saved) return saved === 'dark';
+  return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
 function applyTheme(isDark) {
   document.body.classList.toggle("dark", isDark);
+  // 'light' cần cho chrome bài học (lesson_db_design.css viết dark-first, bản
+  // sáng nằm sau body.light) — trước đây KHÔNG nơi nào set class này.
+  document.body.classList.toggle("light", !isDark);
   var btn = document.getElementById("theme-toggle");
   if (btn) btn.textContent = isDark ? "☀️" : "🌙";
 }
@@ -1924,7 +1936,7 @@ function initDragDrop() {
 
 /* ── Init ── */
 document.addEventListener("DOMContentLoaded", function () {
-  applyTheme(localStorage.getItem("theme") !== "light");
+  applyTheme(prefersDarkTheme());
   updateDate();
   const p = window.location.pathname;
   if (p !== "/login" && p !== "/register") {

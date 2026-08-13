@@ -26,7 +26,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #07090F;
+  background: var(--rm-canvas);      /* theo theme, không ghi hex cứng */
   overflow: hidden;
   min-height: 0;                     /* quan trọng cho flex shrink */
 }
@@ -35,7 +35,7 @@
 .rm-tabbar {
   position: absolute; top: 14px; left: 20px; z-index: 20;
   display: flex; align-items: center; gap: 3px;
-  background: rgba(7,9,15,0.9);
+  background: var(--rm-chrome-bg);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 4px;
@@ -48,8 +48,8 @@
   font-size: 0.78rem; font-weight: 600; color: var(--t3);
   white-space: nowrap; transition: all 0.15s;
 }
-.rm-tab:hover { background: rgba(255,255,255,0.05); color: var(--t2); }
-.rm-tab.active { background: rgba(59,130,246,0.22); border: 1px solid rgba(59,130,246,0.5); color: var(--blue-light); }
+.rm-tab:hover { background: var(--accent-soft); color: var(--t2); }
+.rm-tab.active { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); }
 .rm-tab-divider { width: 1px; height: 18px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 .rm-tab-plus {
   width: 28px; height: 28px; border-radius: 7px; border: none;
@@ -63,7 +63,7 @@
 .rm-stats-pill {
   position: absolute; top: 14px; right: 20px; z-index: 20;
   display: flex; gap: 14px; align-items: center;
-  background: rgba(7,9,15,0.9);
+  background: var(--rm-chrome-bg);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 9px; padding: 7px 14px;
@@ -131,8 +131,24 @@
 .rm-spine {
   position: absolute; top: 20px; bottom: 24px; left: 50%;
   transform: translateX(-50%); width: 2px;
-  background: linear-gradient(to bottom, rgba(139,124,246,0.05), rgba(139,124,246,0.28) 12%, rgba(45,212,191,0.28) 88%, rgba(45,212,191,0.05));
+  background: var(--rm-spine);
   z-index: 0;
+}
+
+/* Nền canvas theo theme: bản sáng = kem kiểu roadmap.sh, bản tối = nền HSA */
+.rm-flow-scroll { background: var(--rm-canvas); }
+
+/* Tiêu đề nhóm chặng — chia lộ trình dài thành các giai đoạn đọc được */
+.rm-group {
+  position: relative; z-index: 1;
+  text-align: center; margin: 4px 0 14px;
+  font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+  font-weight: 700; color: var(--rm-group);
+}
+.rm-group::before,
+.rm-group::after {
+  content: ''; display: inline-block; vertical-align: middle;
+  width: 26px; height: 1px; background: currentColor; opacity: 0.4; margin: 0 10px;
 }
 
 .rm-section {
@@ -151,7 +167,7 @@
 .rm-branch--left { align-items: flex-end; }
 .rm-branch--right { align-items: flex-start; }
 
-.rm-dash { width: 38px; height: 0; border-top: 2px dotted rgba(139,124,246,0.38); flex-shrink: 0; }
+.rm-dash { width: 38px; height: 0; border-top: 2px dotted var(--rm-conn); flex-shrink: 0; }
 .rm-dash--left { margin: 0 8px 0 0; }
 .rm-dash--right { margin: 0 0 0 8px; }
 
@@ -161,41 +177,80 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   animation: fadeUp 0.22s ease both;
 }
+/* Node chính (milestone). Màu LẤY TỪ TOKEN --rm-* nên tự đổi theo theme:
+   bản sáng = hộp vàng viền đậm có bóng khối (ngôn ngữ roadmap.sh),
+   bản tối  = hộp gradient tím/teal phát sáng (nhận diện HSA). */
 .rm-node--main {
-  display: inline-flex; align-items: center; gap: 10px;
-  border-radius: 12px; border-width: 1.5px; border-style: solid;
-  padding: 11px 18px 11px 12px; min-width: 212px;
+  display: inline-flex; flex-direction: column; gap: 7px;
+  border-radius: 12px; border: 1.5px solid var(--rm-main-border);
+  padding: 11px 16px; min-width: 226px;
   font-size: 0.87rem; font-weight: 700;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.28);
+  background: var(--rm-main-bg);
+  color: var(--rm-main-text);
+  box-shadow: var(--rm-main-shadow);
 }
-.rm-node--main:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(139,124,246,0.22); }
+.rm-node--main:hover { transform: translateY(-2px); }
+.rm-node-row { display: flex; align-items: center; gap: 10px; }
 .rm-node-label { flex: 1; text-align: left; line-height: 1.25; }
 .rm-node-num {
-  flex-shrink: 0; width: 27px; height: 27px; border-radius: 8px;
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 0.82rem; font-weight: 800;
-  background: rgba(255,255,255,0.08); color: inherit;
-  border: 1px solid rgba(255,255,255,0.14);
+  font-size: 0.8rem; font-weight: 800;
+  background: var(--rm-num-bg); color: var(--rm-num-text);
 }
-.rm-node--done .rm-node-num { background: #2DD4BF; color: #052E2B; border-color: transparent; }
-.rm-node--active .rm-node-num { background: #8B7CF6; color: #fff; border-color: transparent; box-shadow: 0 0 0 3px rgba(139,124,246,0.22); }
+.rm-node--done .rm-node-num { background: var(--rm-done); color: var(--rm-done-ink); }
+
+/* Thanh tiến độ của chặng — trả lời "mình đi được bao xa" ngay trên node */
+.rm-node-foot { display: flex; align-items: center; gap: 8px; }
+.rm-prog {
+  flex: 1; height: 5px; border-radius: 99px; overflow: hidden;
+  background: var(--rm-track); display: block;
+}
+.rm-prog > i { display: block; height: 100%; border-radius: 99px; background: var(--rm-done); }
+.rm-prog-num {
+  font-size: 0.62rem; font-weight: 800; opacity: 0.75;
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+
+/* Node con (chủ đề trong chặng) */
 .rm-node--child {
   position: relative;
-  border-radius: 7px; border-width: 1.25px; border-style: solid;
-  padding: 6px 13px 6px 13px;
+  border-radius: 7px; border: 1.25px solid var(--rm-kid-border);
+  padding: 6px 10px 6px 13px;
   font-size: 0.77rem; font-weight: 600;
   display: inline-flex; align-items: center; gap: 8px;
+  background: var(--rm-kid-bg); color: var(--rm-kid-text);
+  max-width: 230px; text-align: left;
 }
-.rm-node--child.rm-node--locked { font-weight: 400; }
+.rm-node--child.rm-node--locked { font-weight: 400; opacity: 0.9; }
 .rm-node--child:hover { transform: translateY(-1px); }
 
 .rm-node-dot {
   width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; line-height: 1;
 }
-.rm-node-dot--done { background: #2DD4BF; }
-.rm-node-dot--active { background: #8B7CF6; box-shadow: 0 0 0 3px rgba(139,124,246,0.2); }
-.rm-node-dot--locked { background: rgba(255,255,255,0.12); }
+.rm-node-dot--done { background: var(--rm-done); color: var(--rm-done-ink); }
+.rm-node-dot--active { background: var(--rm-wip); color: var(--rm-wip-ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+.rm-node-dot--locked { background: var(--rm-lock); color: var(--rm-lock-ink); }
+
+/* Chú giải trạng thái */
+.rm-legend {
+  position: relative; z-index: 1;
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 18px;
+  margin-top: 26px; padding-top: 18px;
+  border-top: 1px dashed var(--rm-conn);
+}
+.rm-legend-item {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 0.72rem; font-weight: 600; color: var(--rm-group);
+}
+
+/* Bàn phím: viền focus rõ ở CẢ hai theme (WCAG 2.4.7) */
+.rm-node:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* ── Browse grid ── */
 .rm-browse-backdrop {
@@ -275,7 +330,7 @@
   border-radius: 9px; padding: 11px 13px; text-decoration: none;
   animation: fadeUp 0.22s ease both; transition: background 0.15s, border-color 0.15s;
 }
-.rm-res-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+.rm-res-item:hover { background: var(--accent-soft); border-color: rgba(255,255,255,0.14); }
 .rm-res-icon { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .rm-res-body { flex: 1; min-width: 0; }
 .rm-res-title { display: block; color: #E2E8F0; font-size: 0.81rem; font-weight: 500; }
@@ -346,15 +401,29 @@
   overflow: visible;
 }
 
-/* ── Responsive ── */
+/* ── Responsive ──
+   Điện thoại: xếp 1 cột (node chính → node con ngay dưới), bỏ đường nối
+   ngang và trục giữa vì không còn hai nhánh trái/phải để nối. */
 @media (max-width: 768px) {
   .rm-tabbar { max-width: calc(100vw - 20px); left: 10px; }
   .rm-stats-pill { display: none; }
   .rm-flow-scroll { padding: 64px 12px 40px; }
-  .rm-section { grid-template-columns: 1fr; }
+  .rm-section {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  /* node chính lên trước node con, dù dữ liệu để nhánh bên trái */
+  .rm-section-main  { order: 0; }
+  .rm-section-left  { order: 1; }
+  .rm-section-right { order: 2; }
   .rm-section-left, .rm-section-right { justify-content: center; }
+  .rm-branch { width: 100%; align-items: stretch; }
+  .rm-node--child { max-width: none; width: 100%; justify-content: space-between; }
+  .rm-node--main { width: 100%; min-width: 0; }
   .rm-dash { display: none; }
-  .rm-spine { left: 50%; }
+  .rm-spine { display: none; }
+  .rm-group { margin: 10px 0 12px; }
   .rm-browse, .rm-drawer { width: 100vw; }
   .rm-browse-grid { grid-template-columns: 1fr; }
   #roadmap-personal-view { padding-top: 52px; }

@@ -3125,7 +3125,13 @@ body.dark .page#page-dashboard .stat-lbl { color: #94A3B8; }
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-  .dash-row { grid-template-columns: 1fr; gap: 14px; }
+  /* minmax(0,1fr) chứ KHÔNG phải 1fr: với 1fr, ô lưới lấy min-width = nội
+     dung, nên lịch học 7 cột đẩy thẻ rộng 408px trên máy 390px → tràn ngang
+     cả trang (audit 2026-08-13). minmax(0,…) cho phép ô co nhỏ hơn nội dung. */
+  .dash-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .dash-row > *, .section-card { min-width: 0; }
+  .study-cal-grid { gap: 5px; }
+  .study-cal-grid > * { min-width: 0; }
   .mini-rm-card--full { min-height: 0; }
   .mini-rm-card--full .mini-rm-canvas { min-height: 360px; }
   .page#page-dashboard { padding: 16px 14px !important; }

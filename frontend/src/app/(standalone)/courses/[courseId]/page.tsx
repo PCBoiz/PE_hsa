@@ -91,7 +91,10 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
   return (
     <>
-      <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css"]} />
+      {/* theme.css ĐỨNG ĐẦU — chứa bộ token màu cho cả 2 theme. Thiếu nó thì
+          var(--bg)/var(--card) vô định: ở theme tối body thành TRONG SUỐT
+          (audit 2026-08-13). */}
+      <PageStyles hrefs={["/static/css/theme.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css"]} />
       <title>{`${course.title} – ProgrammingEdu × TopHSA`}</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 

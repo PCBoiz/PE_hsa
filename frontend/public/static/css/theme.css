@@ -1,8 +1,89 @@
-/* ══════════════════════════════════════════════════
-   THEME TOKENS — Programming EDU (dark mode mặc định)
-   Nguồn màu: thiết kế Figma export (src.zip)
-   ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME TOKENS — ProgrammingEdu × TopHSA
+   NGUỒN MÀU DUY NHẤT của toàn site. Mọi file CSS khác chỉ được dùng var(),
+   KHÔNG ghi hex cứng (audit 2026-08-13: hex cứng rải rác là nguyên nhân
+   theme sáng vỡ ở Lộ trình / Bài học / Dashboard).
+
+   CÁCH HOẠT ĐỘNG (quan trọng):
+     :root      → bộ SÁNG (mặc định, để var() không có .dark vẫn đọc được)
+     body.dark  → GHI ĐÈ cùng tên token bằng bộ TỐI
+   Nhờ vậy file nào viết var(--card) cũng tự đổi theo theme mà không cần
+   viết 2 lần. Theme mặc định cho người dùng mới = theo hệ điều hành
+   (xử lý trong js/theme-init.js, chạy TRƯỚC khi render để tránh nháy).
+   ══════════════════════════════════════════════════════════════════════════ */
+
 :root {
+  /* ── Nền & bề mặt (SÁNG) ── */
+  --bg: #F7F7FB;              /* nền trang — trắng lệch tím, không phải trắng trơn */
+  --card: #FFFFFF;            /* mặt thẻ nổi trên nền */
+  --lift: #F1F0F8;            /* mặt chìm: input, ô phụ */
+  --card-border: rgba(20, 16, 35, 0.10);
+  --border: rgba(20, 16, 35, 0.10);
+
+  /* ── Chữ (SÁNG) — đã kiểm tương phản ≥ 4.5:1 trên --card ── */
+  --t1: #16121F;              /* tiêu đề / chữ chính */
+  --t2: #4B4459;              /* chữ phụ */
+  --t3: #675F79;              /* chú thích — 5.6:1 trên trắng */
+  --text-1: var(--t1);
+  --text-2: var(--t2);
+  --text-3: var(--t3);
+
+  /* ── Thương hiệu HSA ──
+     Tím = hành động/đang học · Teal = hoàn thành/đúng.
+     --blue/--purple giữ tên cũ cho tương thích ngược nhưng ĐÃ trỏ về tím
+     thương hiệu, để mọi nút cũ dùng var(--blue) hết bị xanh dương lệch brand. */
+  --brand: #6D5AE6;           /* tím đậm hơn cho nền sáng (đủ tương phản) */
+  --brand-2: #0E7C6B;         /* teal đậm hơn cho nền sáng */
+  --blue: var(--brand);
+  --blue-light: #8B7CF6;
+  --purple: var(--brand);
+  --accent: var(--brand);
+  --accent-light: var(--blue-light);
+  --accent-soft: rgba(109, 90, 230, 0.12);
+
+  /* ── Trạng thái ── */
+  --success: #0E7C6B;
+  --warning: #A45B08;
+  --danger: #BE2A46;
+
+  /* ── Lộ trình (dùng chung roadmap.css + roadmap.js) ──
+     Bản SÁNG mượn ngôn ngữ roadmap.sh: nền kem, hộp vàng viền đậm. */
+  --rm-canvas: #FDFCF7;
+  --rm-chrome-bg: rgba(255, 255, 255, 0.92);   /* tab bar + pill thống kê */
+  --rm-spine: #D9CFA8;
+  --rm-conn: #B9A96A;
+  --rm-group: #8A7C46;
+  --rm-main-bg: #FFE99B;
+  --rm-main-border: #1A1A1A;
+  --rm-main-text: #1A1A1A;
+  --rm-main-shadow: 2px 2px 0 #1A1A1A;
+  --rm-num-bg: #1A1A1A;
+  --rm-num-text: #FFE99B;
+  --rm-kid-bg: #FDF2D3;
+  --rm-kid-border: #57503A;
+  --rm-kid-text: #2A2618;
+  --rm-done: #16A34A;
+  --rm-done-ink: #FFFFFF;
+  --rm-wip: #7C3AED;
+  --rm-wip-ink: #FFFFFF;
+  --rm-lock: #DBD4BF;
+  --rm-lock-ink: #7C755E;
+  --rm-track: #EADFB8;
+
+  /* ── Hình khối & chữ ── */
+  --radius: 10px;
+  --radius-lg: 16px;
+  --font-size-base: 16px;
+  --glass-blur: 20px;
+  --topbar-bg: rgba(255, 255, 255, 0.96);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BỘ TỐI — ghi đè đúng các token trên. Giữ nguyên dải màu tối cũ để không
+   đổi cảm giác sản phẩm; chỉ nâng --t3 cho đạt tương phản (audit: chữ chú
+   thích #64748B chỉ đạt 3.9:1, dưới chuẩn 4.5:1).
+   ══════════════════════════════════════════════════════════════════════════ */
+body.dark {
   --bg: #07090F;
   --card: #0C1220;
   --lift: #101928;
@@ -11,36 +92,60 @@
 
   --t1: #E2E8F0;
   --t2: #94A3B8;
-  --t3: #64748B;
-  /* alias tương thích ngược với các đợt sửa trước */
-  --text-1: var(--t1);
-  --text-2: var(--t2);
-  --text-3: var(--t3);
+  --t3: #8B95A8;              /* nâng từ #64748B → đạt 4.5:1 trên --card */
 
-  --blue: #3B82F6;
-  --blue-light: #60A5FA;
-  --purple: #8B5CF6;
-  --accent: var(--blue);
+  --brand: #8B7CF6;
+  --brand-2: #2DD4BF;
+  --blue: var(--brand);
+  --blue-light: #A78BFA;
+  --purple: var(--brand);
+  --accent: var(--brand);
   --accent-light: var(--blue-light);
-  --accent-soft: rgba(59, 130, 246, 0.15);
+  --accent-soft: rgba(139, 124, 246, 0.15);
 
   --success: #34D399;
   --warning: #FCD34D;
   --danger: #F87171;
 
-  --radius: 10px;
-  --radius-lg: 16px;
-  --font-size-base: 16px;
-  --glass-blur: 20px;
-}
+  /* Lộ trình bản TỐI: giữ nhận diện HSA (tím/teal), cùng cấu trúc bản sáng */
+  --rm-canvas: #0B0917;
+  --rm-chrome-bg: rgba(7, 9, 15, 0.9);
+  --rm-spine: rgba(139, 124, 246, 0.45);
+  --rm-conn: rgba(139, 124, 246, 0.45);
+  --rm-group: #6F6790;
+  --rm-main-bg: linear-gradient(135deg, #231B44, #1B2E3A);
+  --rm-main-border: rgba(139, 124, 246, 0.6);
+  --rm-main-text: #D6CCFB;
+  --rm-main-shadow: 0 0 18px -6px rgba(139, 124, 246, 0.5);
+  --rm-num-bg: #8B7CF6;
+  --rm-num-text: #FFFFFF;
+  --rm-kid-bg: rgba(139, 124, 246, 0.12);
+  --rm-kid-border: rgba(139, 124, 246, 0.32);
+  --rm-kid-text: #B9AEE0;
+  --rm-done: #2DD4BF;
+  --rm-done-ink: #062B26;
+  --rm-wip: #8B7CF6;
+  --rm-wip-ink: #FFFFFF;
+  --rm-lock: rgba(255, 255, 255, 0.13);
+  --rm-lock-ink: #7A7391;
+  --rm-track: rgba(255, 255, 255, 0.09);
 
-body.dark {
+  --topbar-bg: rgba(7, 9, 15, 0.96);
+
   background: var(--bg);
   color: var(--t1);
 }
 
+/* Nền + chữ mặc định cho theme SÁNG (trước đây chỉ body.dark mới set nền,
+   nên bật theme sáng thì nền trang vẫn đen — lỗi P0 trong audit). */
+body {
+  background: var(--bg);
+  color: var(--t1);
+}
+
+.topbar,
 body.dark .topbar {
-  background: rgba(7, 9, 15, 0.96);
+  background: var(--topbar-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
@@ -65,4 +170,14 @@ body.dark .topbar {
 }
 .fx-fade-scale {
   animation: fadeScale 0.13s ease both;
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

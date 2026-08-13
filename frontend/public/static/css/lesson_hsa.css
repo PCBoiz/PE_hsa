@@ -158,3 +158,78 @@
 .hsa-drill-xp { font-size: 28px; font-weight: 800; color: #FBBF24; margin: 8px 0 4px; text-shadow: 0 0 20px rgba(251,191,36,.4); }
 .next-btn.small { padding: 8px 18px; font-size: 14px; margin-top: 8px; }
 @media (max-width: 640px) { .hsa-drill-stats { grid-template-columns: repeat(2, 1fr); } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME SÁNG cho màn hình học (audit 2026-08-13 — lỗi P0).
+   Chrome bài học (lesson_db_design.css) được viết "dark-first": nền và chữ
+   lấy từ bộ token riêng (surface / text / border) chỉ có giá trị TỐI, nên
+   bật theme sáng thì cả màn hình vẫn đen.
+   LƯU Ý khi sửa file này: ĐỪNG viết dấu sao + gạch chéo trong comment (kiểu
+   "surface-<sao><gạch>") — nó đóng comment sớm và phá luôn các rule bên dưới.
+   Thay vì sửa 7000 dòng, ta GHI ĐÈ đúng bộ token đó khi body.light — mọi
+   thành phần dùng var() tự sáng theo. Giá trị chọn để đạt tương phản ≥4.5:1.
+   ══════════════════════════════════════════════════════════════════════════ */
+body.light.lesson-focus-mode,
+body.light .lesson-stage,
+body.light {
+  --surface-0: #F7F7FB;   /* nền trang */
+  --surface-1: #FFFFFF;   /* mặt thẻ */
+  --surface-2: #F1F0F8;   /* mặt chìm */
+  --surface-3: #E7E5F2;
+  --text-100: #16121F;
+  --text-200: #201A2E;
+  --text-300: #2A2438;    /* chữ thân bài */
+  --text-400: #4B4459;
+  --text-500: #675F79;
+  --text-600: #7A7290;
+  --border-subtle: rgba(20,16,35,0.08);
+  --border-default: rgba(20,16,35,0.14);
+  --border-strong: rgba(20,16,35,0.22);
+  /* Accent: bỏ cyan kế thừa pe_test, dùng tím thương hiệu HSA */
+  --primary: #6D5AE6;
+  --primary-glow: rgba(109,90,230,0.28);
+  --primary-soft: rgba(109,90,230,0.10);
+  --primary-deep: #5646C4;
+  /* PHẢI khai lại: --module-accent được tính ở :root nên đã "đóng băng" giá
+     trị cyan cũ; đổi --primary thôi không đủ (tiêu đề bài vẫn cyan). */
+  --module-accent: #6D5AE6;
+  --module-accent-soft: rgba(109,90,230,0.10);
+  --module-accent-glow: rgba(109,90,230,0.28);
+}
+
+/* Vài bề mặt trong chrome ghi màu cứng, không qua token → chỉnh riêng */
+body.light .lesson-header {
+  background: rgba(255,255,255,0.88);
+  border-bottom: 1px solid var(--border-default);
+}
+body.light .lesson-nav-footer { background: rgba(255,255,255,0.92); }
+body.light.lesson-focus-mode::before { opacity: 0.35; }
+body.light .hsa-card-body code,
+body.light .hsa-viz-cap code { background: rgba(20,16,35,.07); }
+body.light .hsa-q,
+body.light .hsa-opt { border-color: var(--border-default); }
+body.light .hsa-viz-val { color: #FFFFFF; }
+body.light .hsa-viz-bar--slate .hsa-viz-val { color: #2A2438; }
+body.light .hsa-drill-xp { text-shadow: none; }
+
+/* Theme TỐI vẫn dùng cyan cũ ở chrome → kéo về tím thương hiệu cho đồng bộ */
+body.dark.lesson-focus-mode,
+body.dark {
+  --primary: #8B7CF6;
+  --primary-glow: rgba(139,124,246,0.35);
+  --primary-soft: rgba(139,124,246,0.12);
+  --primary-deep: #6D5AE6;
+  --module-accent: #8B7CF6;
+  --module-accent-soft: rgba(139,124,246,0.12);
+  --module-accent-glow: rgba(139,124,246,0.35);
+}
+
+/* Viền trắng-mờ (rgba(255,255,255,…)) vô hình trên nền sáng → dùng viền tối */
+body.light .hsa-card,
+body.light .hsa-notes-card,
+body.light .hsa-score-card,
+body.light .hsa-rev,
+body.light .hsa-fill { border-color: var(--border-default); }
+body.light .hsa-viz-cap,
+body.light .hsa-ex-item { border-top-color: rgba(20,16,35,0.10); }
+body.light .hsa-rev { background: var(--surface-1); }
