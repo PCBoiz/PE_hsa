@@ -1,4 +1,6 @@
 """Port routes/stats.py + db/repositories/missions.py (phần verify)."""
+import json
+import re
 from datetime import date, timedelta
 
 from django.db import transaction
@@ -158,3 +160,75 @@ class ReviewQuizStatusView(APIView):
             'is_unlocked': streak >= 5,
             'days_remaining': max(0, 5 - streak),
         })
+
+
+class HsaSummaryView(APIView):
+    """GET /api/hsa/summary — 4 chỉ số cho hàng thẻ đầu Dashboard.
+
+    Gộp trong MỘT lượt gọi thay vì bắt client ghép từ 4 endpoint rời
+    (audit 2026-08-14). Mọi trường đều có giá trị mặc định an toàn để thẻ
+    không bao giờ hiện "undefined" khi học viên chưa có dữ liệu.
+    """
+
+    #: Tổng số bài của chương trình HSA (3 khoá × 6 chương = 76 bài).
+    TOTAL_LESSONS = 76
+
+    def get(self, request):
+        uid = request.user.id
+
+        done = (q1("SELECT COUNT(*) AS n FROM lesson_progress "
+                   "WHERE user_id=%s AND status='completed'", (uid,)) or {}).get('n', 0)
+
+        streak_row = q1("SELECT streak FROM users WHERE id=%s", (uid,)) or {}
+
+        # Mục tiêu điểm + mốc thi lấy từ bài khảo sát gần nhất.
+        target_score, exam_timing = None, None
+        row = q1("SELECT data_json FROM surveys WHERE user_id=%s "
+                 "ORDER BY id DESC LIMIT 1", (uid,))
+        if row and row.get('data_json'):
+            try:
+                data = row['data_json']
+                if isinstance(data, str):
+                    data = json.loads(data)
+                target_score = data.get('target_score')
+                exam_timing = data.get('exam_timing')
+            except Exception:
+                pass
+
+        # Điểm đề thi thử gần nhất (thang 150 câu của HSA).
+        last_score, last_total = None, None
+        att = q1("SELECT score, total FROM mock_attempts "
+                 "WHERE user_id=%s ORDER BY submitted_at DESC LIMIT 1", (uid,))
+        if att:
+            last_score, last_total = att.get('score'), att.get('total')
+
+        return Response({
+            'streakDays': streak_row.get('streak') or 0,
+            'lessonsDone': done or 0,
+            'lessonsTotal': self.TOTAL_LESSONS,
+            'targetScore': target_score,
+            'examTiming': exam_timing,
+            'daysToExam': _days_to_exam(exam_timing),
+            'lastMockScore': last_score,
+            'lastMockTotal': last_total,
+        })
+
+
+def _days_to_exam(exam_timing):
+    """Số ngày còn lại tới kỳ thi.
+
+    Bài khảo sát chỉ hỏi MỐC dự thi dạng "2025"/"đợt 1" chứ không hỏi ngày cụ
+    thể, nên quy ước: kỳ thi HSA đợt đầu thường vào cuối tháng 3. Lấy 31/03 của
+    năm nêu trong exam_timing (hoặc năm tới nếu đã qua). Không rõ → None để
+    thẻ hiện dấu gạch thay vì số bịa.
+    """
+    if not exam_timing:
+        return None
+    m = re.search(r'20\d{2}', str(exam_timing))
+    today = date.today()
+    year = int(m.group()) if m else (today.year if today.month <= 3 else today.year + 1)
+    try:
+        delta = (date(year, 3, 31) - today).days
+    except ValueError:
+        return None
+    return delta if delta >= 0 else None
