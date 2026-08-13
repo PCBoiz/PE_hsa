@@ -1760,49 +1760,131 @@ function skSkillToggle(row) {
     if (page === 'profile') _loadProfile();
   };
 
-  /* ── Kinh nghiệm bài học (XP chart) — dữ liệu thật từ lesson_progress ── */
-  function _courseIcon(courseId) {
-    var c = (window.enrolledCourses || []).filter(function (x) { return x.id === courseId; })[0];
-    return (c && c.icon) || '📘';
+  //: 3 hợp phần HSA + tổng số bài, khớp với dải tiến độ ở Bảng điều khiển.
+  var CAPS = [
+    { id: 'hsa_quantitative', name: 'Tư duy Định lượng', total: 27 },
+    { id: 'hsa_verbal', name: 'Tư duy Định tính', total: 23 },
+    { id: 'hsa_science', name: 'Khoa học', total: 26 }
+  ];
+  //: nhãn hợp phần trong section_scores_json của đề thi thử → id khoá
+  var SEC_TO_COURSE = {
+    'Tư duy định lượng': 'hsa_quantitative',
+    'Tư duy định tính': 'hsa_verbal',
+    'Khoa học': 'hsa_science'
+  };
+
+  function _esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s);
   }
 
-  function _renderXPChart() {
-    var container = document.getElementById('prof-xp-rows');
-    if (!container) return;
-    container.innerHTML = '<div class="prof-empty">Đang tải...</div>';
-    fetch('/api/stats/xp-by-course')
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var subjects = (d && d.subjects) || [];
-        if (!subjects.length) {
-          container.innerHTML = '<div class="prof-empty">Chưa có XP nào — hoàn thành bài học để tích lũy.</div>';
-          return;
-        }
-        // Thang đo: max XP làm tròn lên bội 100 để bar tỉ lệ hợp lý
-        var maxXp = Math.max.apply(null, subjects.map(function (s) { return s.xp; }));
-        var scale = Math.max(100, Math.ceil(maxXp / 100) * 100);
-        container.innerHTML = subjects.map(function (s) {
-          var pct = Math.round(s.xp / scale * 100);
-          return '<div class="prof-xp-row">'
-            + '<span class="prof-xp-row-icon">' + _courseIcon(s.courseId) + '</span>'
-            + '<span class="prof-xp-row-name">' + window.forumShared.escHtml(String(s.title)) + '</span>'
-            + '<div class="prof-xp-bar-wrap">'
-            + '<div class="prof-xp-bar-fill" style="width:0%"'
-            + ' data-pct="' + pct + '"></div>'
-            + '</div>'
-            + '<span class="prof-xp-row-val">' + s.xp + ' XP</span>'
-            + '</div>';
-        }).join('');
-        /* animate bars after paint */
-        requestAnimationFrame(function () {
-          container.querySelectorAll('.prof-xp-bar-fill').forEach(function (bar) {
-            bar.style.width = bar.getAttribute('data-pct') + '%';
-          });
-        });
-      })
-      .catch(function () {
-        container.innerHTML = '<div class="prof-empty">Không thể tải dữ liệu XP.</div>';
+  /* ── Mục tiêu HSA hiện trên hero ── */
+  function _renderGoals(summary) {
+    var box = document.getElementById('prof-goals');
+    if (!box) return;
+    var chips = [];
+    if (summary.targetScore) chips.push(['target', 'Mục tiêu ' + summary.targetScore]);
+    if (summary.daysToExam != null) chips.push(['clock', 'Còn ' + summary.daysToExam + ' ngày']);
+    if (summary.streakDays) chips.push(['flame', summary.streakDays + ' ngày liên tiếp']);
+    if (!chips.length) {
+      box.innerHTML = '<a class="prof-goal-chip prof-goal-chip--cta" href="/questionaire">'
+        + 'Đặt mục tiêu HSA của bạn →</a>';
+      return;
+    }
+    box.innerHTML = chips.map(function (c) {
+      return '<span class="prof-goal-chip"><i data-icon="' + c[0] + '" data-size="13"></i>'
+        + _esc(c[1]) + '</span>';
+    }).join('');
+    if (window.mountIcons) mountIcons(box);
+  }
+
+  /* ── Năng lực theo hợp phần: bài đã xong + độ chính xác thi thử ── */
+  function _renderCaps(summary, attempts) {
+    var box = document.getElementById('prof-caps');
+    if (!box) return;
+    var counted = summary.byCourse || {};
+
+    // Gộp mọi lượt thi thử lại: nhiều lượt cho ước lượng ổn định hơn một lượt.
+    var acc = {};
+    (attempts || []).forEach(function (a) {
+      var ss = a.section_scores_json;
+      if (typeof ss === 'string') { try { ss = JSON.parse(ss); } catch (e) { ss = null; } }
+      if (!ss) return;
+      Object.keys(ss).forEach(function (label) {
+        var cid = SEC_TO_COURSE[label];
+        if (!cid) return;
+        acc[cid] = acc[cid] || { correct: 0, total: 0 };
+        acc[cid].correct += ss[label].correct || 0;
+        acc[cid].total += ss[label].total || 0;
       });
+    });
+
+    box.innerHTML = CAPS.map(function (s) {
+      var done = counted[s.id] || 0;
+      var pct = Math.round(done / s.total * 100);
+      var a = acc[s.id];
+      var accTxt = (a && a.total)
+        ? Math.round(a.correct / a.total * 100) + '% đúng'
+        : 'chưa thi thử';
+      return '<div class="prof-cap">'
+        + '<div class="prof-cap-hd">'
+        + '<span class="prof-cap-name">' + s.name + '</span>'
+        + '<span class="prof-cap-acc' + ((a && a.total) ? '' : ' is-muted') + '">' + accTxt + '</span>'
+        + '</div>'
+        + '<div class="prof-cap-track"><i style="width:' + pct + '%"></i></div>'
+        + '<div class="prof-cap-num">' + done + '/' + s.total + ' bài · ' + pct + '%</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  /* ── Lịch sử thi thử ── */
+  function _renderMocks(attempts) {
+    var box = document.getElementById('prof-mocks');
+    if (!box) return;
+    if (!attempts || !attempts.length) {
+      box.innerHTML = '<div class="prof-empty">Chưa làm đề thi thử nào. '
+        + '<a href="/mock">Thi thử ngay →</a></div>';
+      return;
+    }
+    box.innerHTML = attempts.slice(0, 5).map(function (a) {
+      var pct = a.total ? Math.round(a.score / a.total * 100) : 0;
+      var d = a.submitted_at ? new Date(a.submitted_at) : null;
+      var when = d ? d.toLocaleDateString('vi-VN') : '';
+      var mins = a.duration_seconds ? Math.max(1, Math.round(a.duration_seconds / 60)) + ' phút' : '';
+      return '<div class="prof-mock">'
+        + '<span class="prof-mock-score">' + a.score + '<i>/' + a.total + '</i></span>'
+        + '<span class="prof-mock-body">'
+        + '<span class="prof-mock-title">' + _esc(a.title || 'Đề thi thử') + '</span>'
+        + '<span class="prof-mock-meta">' + when + (mins ? ' · ' + mins : '') + '</span>'
+        + '</span>'
+        + '<span class="prof-mock-pct">' + pct + '%</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  /* ── Vị trí trong cộng đồng ── */
+  function _renderRanks(weekly, streak) {
+    var box = document.getElementById('prof-ranks');
+    if (!box) return;
+    var rows = [];
+    if (weekly && weekly.me) {
+      rows.push(['XP tuần này', '#' + weekly.me.rank, (weekly.me.value || 0) + ' XP']);
+    }
+    if (streak && streak.me) {
+      rows.push(['Chuỗi ngày học', '#' + streak.me.rank, (streak.me.value || 0) + ' ngày']);
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="prof-empty">Chưa có dữ liệu xếp hạng.</div>';
+      return;
+    }
+    box.innerHTML = rows.map(function (r) {
+      return '<div class="prof-rank">'
+        + '<span class="prof-rank-lbl">' + r[0] + '</span>'
+        + '<span class="prof-rank-pos">' + r[1] + '</span>'
+        + '<span class="prof-rank-val">' + r[2] + '</span>'
+        + '</div>';
+    }).join('')
+      + '<a class="prof-rank-link" href="#" onclick="window.navigate(\'dashboard\');return false;">'
+      + 'Xem bảng xếp hạng đầy đủ →</a>';
   }
 
   window.navigateToSkills = function () {
@@ -1818,26 +1900,41 @@ function skSkillToggle(row) {
   };
 
   function _loadProfile() {
-    // Tên & email: lấy từ data đã load sẵn trong settings
-    var name = (document.getElementById('chip-name') || {}).textContent || '—';
+    // Tên & email: lấy từ data đã load sẵn trong settings.
+    // Phải dùng settings-profile-name (họ tên ĐẦY ĐỦ) chứ không phải chip-name —
+    // chip-name chỉ là tên gọi ở góc phải, đã cắt còn chữ cuối ("Quản trị viên"
+    // → "viên"), nên hồ sơ hiện mỗi "viên".
+    var name = (document.getElementById('settings-profile-name') || {}).textContent || '—';
     var email = (document.getElementById('settings-profile-email') || {}).textContent || '—';
-    _set('prof-name', name === '—' ? (document.getElementById('udh-name') || {}).textContent || '—' : name);
+    if (name === '—') name = (document.getElementById('chip-name') || {}).textContent || '—';
+    _set('prof-name', name);
     _set('prof-email', email);
 
     // Số khóa đang học
     _set('prof-enrolled', enrolledCourses ? enrolledCourses.length : '—');
 
-    // prof-streak: lấy trực tiếp từ /api/stats thay vì scrape DOM (không tồn tại)
-    fetch('/api/stats')
-      .then(function (r) { return r.json(); })
-      .then(function (d) { _set('prof-streak', d.streakDays); })
-      .catch(function () { /* giữ nguyên '—' nếu lỗi */ });
+    // Một lượt /api/hsa/summary nuôi cả chuỗi ngày, số bài xong, mục tiêu và
+    // dải năng lực — trước đây gọi /api/stats rồi lại cộng tay completedLessons
+    // từ enrollments (đếm sai với người chưa ghi danh).
+    var pSummary = fetch('/api/hsa/summary').then(function (r) { return r.ok ? r.json() : {}; })
+      .catch(function () { return {}; });
+    var pAttempts = fetch('/api/mock-attempts').then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (d) { return (d && d.attempts) || []; })
+      .catch(function () { return []; });
 
-    // prof-done: cộng completedLessons từ enrolledCourses đã có sẵn, không gọi thêm API
-    var totalDone = (enrolledCourses || []).reduce(function (sum, c) {
-      return sum + (c.completedLessons || 0);
-    }, 0);
-    _set('prof-done', totalDone);
+    pSummary.then(function (s) {
+      _set('prof-streak', s.streakDays != null ? s.streakDays : '—');
+      _set('prof-done', s.lessonsDone != null ? s.lessonsDone : '—');
+      _renderGoals(s);
+    });
+    Promise.all([pSummary, pAttempts]).then(function (r) {
+      _renderCaps(r[0] || {}, r[1] || []);
+      _renderMocks(r[1] || []);
+    });
+    Promise.all([
+      fetch('/api/leaderboard?type=weekly').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+      fetch('/api/leaderboard?type=streak').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (r) { _renderRanks(r[0], r[1]); });
 
     // Thành tích: đếm thật từ API /api/achievements
     fetch('/api/achievements')
@@ -1862,39 +1959,15 @@ function skSkillToggle(row) {
       })
       .catch(function () { /* giữ nguyên '—' nếu lỗi */ });
 
-    // Khóa học đang học: render từ enrolledCourses
-    _renderProfCourses();
-
-    // XP chart
-    _renderXPChart();
-
-    // Forum posts của user
+    // Bài đăng của user trên diễn đàn
     _renderProfPosts();
+
+    if (window.mountIcons) mountIcons(document.getElementById('page-profile'));
   }
 
   function _set(id, val) {
     var el = document.getElementById(id);
     if (el) el.textContent = val;
-  }
-
-  function _renderProfCourses() {
-    var list = document.getElementById('prof-course-list');
-    if (!list) return;
-    if (!enrolledCourses || !enrolledCourses.length) {
-      list.innerHTML = '<div class="prof-empty">Chưa đăng ký khóa học nào.</div>';
-      return;
-    }
-    list.innerHTML = enrolledCourses.slice(0, 4).map(function (c) {
-      var pct = c.progress || 0;
-      return '<div class="prof-course-item">'
-        + '<div class="prof-ci-icon">' + (c.icon || '📖') + '</div>'
-        + '<div class="prof-ci-body">'
-        + '<div class="prof-ci-name">' + (c.title || c.name || 'Khóa học') + '</div>'
-        + '<div class="prof-ci-bar"><div class="prof-ci-fill" style="width:' + pct + '%"></div></div>'
-        + '<div class="prof-ci-pct">' + pct + '% hoàn thành</div>'
-        + '</div>'
-        + '</div>';
-    }).join('');
   }
 
   /* ── Forum posts của user trên profile ── */
@@ -2412,6 +2485,9 @@ function forumClearSearch() {
     { key: 'kh', id: 'hsa_science', name: 'Khoa học', total: 26 }
   ];
   var DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  //: /api/hsa/summary và /api/courses-enrolled chạy song song — giữ kết quả
+  //  summary lại để bên nào về sau cũng vẽ được bằng dữ liệu đầy đủ.
+  var lastSummary = null, lastEnrolled = null;
 
   function el(id) { return document.getElementById(id); }
 
@@ -2421,8 +2497,9 @@ function forumClearSearch() {
     // Thứ trong tuần: JS trả CN=0 → quy về T2=0 cho khớp lịch Việt Nam.
     var todayIdx = (new Date().getDay() + 6) % 7;
     box.innerHTML = DAYS.map(function (d, i) {
+      // streak ĐÃ tính cả hôm nay → số ngày trước đó được tô là streak - 1.
       var cls = i === todayIdx ? ' class="is-today"'
-        : (i < todayIdx && streak > (todayIdx - i - 1) ? ' class="is-done"' : '');
+        : (i < todayIdx && streak > (todayIdx - i) ? ' class="is-done"' : '');
       return '<span' + cls + '>' + d + '</span>';
     }).join('');
   }
@@ -2435,11 +2512,28 @@ function forumClearSearch() {
     if (el('tile-done')) el('tile-done').textContent = done;
     if (el('tile-done-bar')) el('tile-done-bar').style.width = Math.round(done / total * 100) + '%';
 
-    // Đếm ngược: chưa khảo sát thì để dấu gạch + giữ nút dẫn đi làm khảo sát.
+    // Đếm ngược: không suy ra được thì để dấu gạch + nút dẫn tới nơi sửa được.
+    // Đã khảo sát nhưng mốc đã trôi qua → dẫn thẳng vào Cài đặt, không bắt
+    // học viên làm lại toàn bộ khảo sát chỉ để đổi một dòng.
     var days = s.daysToExam;
     if (el('tile-days')) el('tile-days').textContent = (days == null ? '—' : days);
     var dCta = el('tile-days-cta');
-    if (dCta) dCta.classList.toggle('hidden', days != null);
+    if (dCta) {
+      dCta.classList.toggle('hidden', days != null);
+      var surveyed = Boolean(s.examTiming || s.targetScore);
+      dCta.textContent = surveyed ? 'Cập nhật mốc thi' : 'Làm khảo sát để đặt mốc thi';
+      dCta.setAttribute('href', surveyed ? '#hsa-goals' : '/questionaire');
+      if (surveyed) {
+        dCta.onclick = function (e) {
+          e.preventDefault();
+          if (typeof window.navigate === 'function') window.navigate('settings');
+          var box = el('hsa-goals');
+          if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+      } else {
+        dCta.onclick = null;
+      }
+    }
 
     // Điểm thi thử: có mục tiêu thì hiện "điểm / mục tiêu".
     var sc = s.lastMockScore, tot = s.lastMockTotal;
@@ -2460,10 +2554,16 @@ function forumClearSearch() {
     if (!box) return;
     var byId = {};
     (enrolled || []).forEach(function (c) { byId[c.id] = c; });
+    var counted = (lastSummary && lastSummary.byCourse) || {};
     box.innerHTML = SECTIONS.map(function (s) {
       var c = byId[s.id] || {};
-      var pct = Math.max(0, Math.min(100, Math.round(c.progress || 0)));
-      var doneN = Math.round(pct / 100 * s.total);
+      // Số bài đã xong đếm thẳng từ lesson_progress; enrollments.progress chỉ
+      // là bộ nhớ đệm và bằng 0 với người chưa ghi danh.
+      var doneN = counted[s.id];
+      var pct = (doneN != null)
+        ? Math.max(0, Math.min(100, Math.round(doneN / s.total * 100)))
+        : Math.max(0, Math.min(100, Math.round(c.progress || 0)));
+      if (doneN == null) doneN = Math.round(pct / 100 * s.total);
       return '<div class="hsa-sec-row" data-sec="' + s.key + '">' +
         '<span class="hsa-sec-name">' + s.name + '</span>' +
         '<span class="hsa-sec-num">' + doneN + '/' + s.total + ' bài · ' + pct + '%</span>' +
@@ -2475,39 +2575,63 @@ function forumClearSearch() {
   function renderContinue(enrolled) {
     var box = el('hsa-continue');
     if (!box) return;
-    // Khoá đang học dở dang nhất = khoá có tiến độ > 0 và chưa xong; nếu chưa
-    // có thì lấy khoá đầu tiên đã ghi danh.
-    var list = (enrolled || []).slice().sort(function (a, b) { return (b.progress || 0) - (a.progress || 0); });
-    var c = list.filter(function (x) { return (x.progress || 0) < 100; })[0] || list[0];
-    if (!c) return;   // chưa ghi danh khoá nào → giữ nguyên khối rỗng có sẵn
+    var counted = (lastSummary && lastSummary.byCourse) || {};
+    // Số bài đã xong của từng khoá, ưu tiên số đếm thật.
+    function doneOf(c) {
+      var sec = SECTIONS.filter(function (s) { return s.id === c.id; })[0];
+      if (counted[c.id] != null) return counted[c.id];
+      return Math.round((c.progress || 0) / 100 * ((sec && sec.total) || 27));
+    }
+    // Khoá đang học dở dang nhất; chưa động vào khoá nào thì lấy khoá đầu tiên.
+    var list = (enrolled || []).slice().sort(function (a, b) { return doneOf(b) - doneOf(a); });
+    var c = list.filter(function (x) {
+      var sec = SECTIONS.filter(function (s) { return s.id === x.id; })[0];
+      return doneOf(x) < ((sec && sec.total) || 27);
+    })[0] || list[0];
+    if (!c) return;   // chưa có khoá nào → giữ nguyên khối rỗng có sẵn
     var sec = SECTIONS.filter(function (s) { return s.id === c.id; })[0] || { total: 27 };
-    var nextNum = Math.min(sec.total, Math.floor((c.progress || 0) / 100 * sec.total) + 1);
+    var doneN = doneOf(c);
+    var nextNum = Math.min(sec.total, doneN + 1);
+    var pct = Math.round(doneN / sec.total * 100);
     box.innerHTML =
       '<a class="hsa-cont-link" href="/lesson/' + c.id + '?lesson=' + nextNum + '">' +
         '<span class="hsa-cont-badge">' + nextNum + '</span>' +
         '<span class="hsa-cont-txt">' +
           '<span class="hsa-cont-eyebrow">Học tiếp</span>' +
           '<div class="hsa-cont-title">' + (c.title || 'Khoá học') + ' — Bài ' + nextNum + '</div>' +
-          '<span class="hsa-cont-meta">' + Math.round(c.progress || 0) + '% hoàn thành · ' + sec.total + ' bài</span>' +
+          '<span class="hsa-cont-meta">' + pct + '% hoàn thành · ' + sec.total + ' bài</span>' +
         '</span>' +
         '<span class="hsa-cont-go">Vào học →</span>' +
       '</a>';
   }
 
+  /* Vẽ lại phần phụ thuộc CẢ HAI lượt gọi, gọi được nhiều lần vô hại. */
+  function renderProgressBlocks() {
+    if (lastEnrolled) { renderSections(lastEnrolled); renderContinue(lastEnrolled); }
+  }
+
+  /* Nạp lại riêng hàng thẻ — gọi sau khi học viên sửa mục tiêu ở Cài đặt. */
+  window.__refreshHsaTiles = function () {
+    if (!el('tile-streak')) return;
+    fetch('/api/hsa/summary')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
+      .catch(function () { /* giữ nguyên giá trị đang hiện */ });
+  };
+
   function initHsaDashboard() {
     if (!el('tile-streak')) return;   // không phải trang dashboard
     fetch('/api/hsa/summary')
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d) renderTiles(d); })
+      .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
       .catch(function () { /* thẻ giữ giá trị mặc định */ });
     fetch('/api/courses-enrolled')
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (list) {
-        var arr = Array.isArray(list) ? list : (list && list.courses) || [];
-        renderSections(arr);
-        renderContinue(arr);
+        lastEnrolled = Array.isArray(list) ? list : (list && list.courses) || [];
+        renderProgressBlocks();
       })
-      .catch(function () { renderSections([]); });
+      .catch(function () { lastEnrolled = []; renderProgressBlocks(); });
     if (window.mountIcons) mountIcons(document.querySelector('.hsa-tiles'));
   }
 
@@ -2516,4 +2640,101 @@ function forumClearSearch() {
   } else {
     initHsaDashboard();
   }
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MỤC TIÊU HSA trong Cài đặt (audit 2026-08-15)
+   Khảo sát đầu vào chỉ chạy MỘT LẦN, nhưng điểm mục tiêu / mốc thi / hợp phần
+   thứ 3 lại nuôi thẻ đếm ngược + lộ trình cá nhân hoá. Mục này cho sửa lại.
+   Lưu chung nút "Lưu thay đổi" của trang, qua hook window.__saveHsaGoals.
+   ══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  //: khoá API → tên nhóm radio trong DOM
+  var RADIOS = {
+    target_score: 'goal-target-score',
+    exam_timing: 'goal-exam-timing',
+    section3_choice: 'goal-section3'
+  };
+  var loaded = false;
+
+  function setRadio(name, value) {
+    var list = document.querySelectorAll('input[name="' + name + '"]');
+    Array.prototype.forEach.call(list, function (i) { i.checked = (i.value === value); });
+  }
+
+  function getRadio(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+
+  function status(msg, cls) {
+    var el = document.getElementById('goal-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'goal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function loadGoals() {
+    if (loaded || !document.getElementById('hsa-goals')) return;
+    fetch('/api/hsa/goals')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        Object.keys(RADIOS).forEach(function (k) {
+          if (d[k]) setRadio(RADIOS[k], d[k]);
+        });
+        var dt = document.getElementById('goal-exam-date');
+        // Backend có thể trả ISO đầy đủ; <input type="date"> chỉ nhận YYYY-MM-DD.
+        if (dt) dt.value = String(d.exam_date || '').slice(0, 10);
+        loaded = true;
+      })
+      .catch(function () { status('Không tải được mục tiêu hiện tại.', 'is-err'); });
+  }
+
+  /* Trả Promise để nút "Lưu thay đổi" của trang gộp chung một lượt lưu. */
+  window.__saveHsaGoals = function () {
+    if (!document.getElementById('hsa-goals')) return Promise.resolve();
+    var body = {};
+    Object.keys(RADIOS).forEach(function (k) {
+      var v = getRadio(RADIOS[k]);
+      if (v) body[k] = v;
+    });
+    var dt = document.getElementById('goal-exam-date');
+    // Gửi cả khi rỗng: đó là cách học viên XOÁ ngày thi đã nhập.
+    if (dt) body.exam_date = dt.value || '';
+    if (!Object.keys(body).length) return Promise.resolve();
+
+    status('Đang lưu…', '');
+    return fetch('/api/hsa/goals', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (r) {
+        if (r.ok) return r.json();
+        return r.json().then(function (e) { throw new Error(e && e.error || 'Lưu thất bại.'); });
+      })
+      .then(function () {
+        status('Đã lưu mục tiêu HSA.', 'is-ok');
+        // Thẻ đếm ngược ở Bảng điều khiển phải khớp ngay, không đợi tải lại trang.
+        if (typeof window.__refreshHsaTiles === 'function') window.__refreshHsaTiles();
+      })
+      .catch(function (err) {
+        status(err.message || 'Lưu thất bại.', 'is-err');
+        throw err;
+      });
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.navigate !== 'function') return;
+    var _orig = window.navigate;
+    if (_orig.__hookedGoals) return;
+    window.navigate = function (page) {
+      _orig(page);
+      if (page === 'settings') loadGoals();
+    };
+    window.navigate.__hookedGoals = true;
+    // Vào thẳng /dashboard#settings thì navigate không chạy → nạp luôn.
+    if (location.hash.indexOf('settings') > -1 || location.hash.indexOf('hsa-goals') > -1) loadGoals();
+  });
 })();

@@ -41,6 +41,14 @@
   --accent-light: var(--blue-light);
   --accent-soft: rgba(109, 90, 230, 0.12);
 
+  /* Nền ĐẶC có chữ trắng đè lên (nút, chip đã chọn, công tắc bật).
+     Không dùng --brand ở đây: bản nền tối của --brand sáng hơn để chữ tím trên
+     nền tối đọc được, nhưng lấy nó làm NỀN thì chữ trắng chỉ còn 3.3:1.
+     Hai giá trị này giữ nguyên ở cả hai theme → chữ trắng luôn ≥ 4.9:1. */
+  --brand-fill: #6D5AE6;
+  --brand-fill-2: #5B47D4;
+  --brand-grad: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2));
+
   /* ── Trạng thái ── */
   --success: #0E7C6B;
   --warning: #A45B08;

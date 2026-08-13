@@ -364,7 +364,7 @@ export default function DashboardPage() {
         <div className="page" id="page-settings">
           <div className="settings-wrap">
             <div className="settings-section">
-              <div className="settings-section-title"><span className="title-icon-blue">👤</span><span>Thông tin cá nhân</span></div>
+              <div className="settings-section-title"><span className="title-icon-blue" data-icon="user" data-size="16"></span><span>Thông tin cá nhân</span></div>
               <div className="profile-top">
                 <div className="profile-avatar">
                   <img src="/static/images/avatar.svg" alt="avatar" />
@@ -384,8 +384,64 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Mục tiêu HSA — trước đây chỉ đặt được MỘT LẦN lúc làm khảo sát,
+                dù chúng nuôi thẻ đếm ngược ở Bảng điều khiển (audit 2026-08-15). */}
+            <div className="settings-section" id="hsa-goals">
+              <div className="settings-section-title">
+                <span className="title-icon-blue" data-icon="target" data-size="16"></span>
+                <span>Mục tiêu HSA</span>
+              </div>
+              <p className="goal-hint">
+                Đổi ở đây khi mục tiêu hoặc lịch thi thay đổi — thẻ đếm ngược và
+                lộ trình ở Bảng điều khiển cập nhật theo.
+              </p>
+
+              <div className="goal-field">
+                <span className="field-label" id="lbl-goal-score">Điểm mục tiêu</span>
+                <div className="goal-chips" role="radiogroup" aria-labelledby="lbl-goal-score">
+                  {['Dưới 75', '75–90', '90–105', 'Trên 105'].map((v) => (
+                    <label className="goal-chip" key={v}>
+                      <input type="radio" name="goal-target-score" value={v} /><span>{v}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="goal-field">
+                <span className="field-label" id="lbl-goal-timing">Bạn dự định thi khi nào?</span>
+                <div className="goal-chips" role="radiogroup" aria-labelledby="lbl-goal-timing">
+                  {['Trong 1 tháng', '1–3 tháng', '3–6 tháng', 'Trên 6 tháng'].map((v) => (
+                    <label className="goal-chip" key={v}>
+                      <input type="radio" name="goal-exam-timing" value={v} /><span>{v}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="goal-field">
+                <label className="field-label" htmlFor="goal-exam-date">
+                  Ngày thi chính xác <span className="goal-optional">(nếu đã biết)</span>
+                </label>
+                <input type="date" id="goal-exam-date" className="field-input goal-date" />
+                <p className="goal-help">Nhập ngày cụ thể để đếm ngược chính xác thay vì ước lượng từ mốc ở trên.</p>
+              </div>
+
+              <div className="goal-field">
+                <span className="field-label" id="lbl-goal-sec3">Hợp phần thứ 3</span>
+                <div className="goal-chips" role="radiogroup" aria-labelledby="lbl-goal-sec3">
+                  {['Khoa học', 'Tiếng Anh', 'Chưa quyết định'].map((v) => (
+                    <label className="goal-chip" key={v}>
+                      <input type="radio" name="goal-section3" value={v} /><span>{v}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <p className="goal-status" id="goal-status" role="status" aria-live="polite"></p>
+            </div>
+
             <div className="settings-section">
-              <div className="settings-section-title"><span className="title-icon-red">🔔</span><span>Thông báo</span></div>
+              <div className="settings-section-title"><span className="title-icon-red" data-icon="bell" data-size="16"></span><span>Thông báo</span></div>
               <div className="notif-row">
                 <div>
                   <div className="notif-lbl">Thông báo qua Email</div>
@@ -414,11 +470,11 @@ export default function DashboardPage() {
 
             <div className="sec-lang-grid">
               <div className="sec-lang-card">
-                <div className="sec-lang-title"><span className="title-icon-blue">🛡</span><span>Bảo mật</span></div>
+                <div className="sec-lang-title"><span className="title-icon-blue" data-icon="shield" data-size="16"></span><span>Bảo mật</span></div>
                 <button className="change-pw-btn" onClick={() => W().openChangePasswordModal()}>Đổi mật khẩu</button>
               </div>
               <div className="sec-lang-card">
-                <div className="sec-lang-title"><span className="title-icon-red">🌐</span><span>Ngôn ngữ</span></div>
+                <div className="sec-lang-title"><span className="title-icon-red" data-icon="globe" data-size="16"></span><span>Ngôn ngữ</span></div>
                 <select className="lang-select" aria-label="Select language">
                   <option>Tiếng Việt</option>
                   <option>English</option>
@@ -426,7 +482,9 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <button className="save-btn" onClick={() => W().saveSettings()}>💾 Lưu thay đổi</button>
+            <button className="save-btn" onClick={() => W().saveSettings()}>
+              <span data-icon="check" data-size="16"></span> Lưu thay đổi
+            </button>
           </div>
         </div>
 
@@ -444,7 +502,9 @@ export default function DashboardPage() {
                 <div className="prof-hero-info">
                   <div className="prof-name" id="prof-name">—</div>
                   <div className="prof-email" id="prof-email">—</div>
-                  <div className="prof-role-tag">🎓 Học viên</div>
+                  {/* Mục tiêu HSA ngay trên hồ sơ: hồ sơ học viên HSA là mục
+                      tiêu + mốc thi, không phải chỉ tên và email. */}
+                  <div className="prof-goals" id="prof-goals"></div>
                 </div>
                 <button className="prof-edit-btn" onClick={() => W().navigate('settings')}>
                   <span data-icon="pencil" data-size="13"></span> Chỉnh sửa hồ sơ
@@ -481,46 +541,56 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Content grid */}
+            {/* Nội dung: TRÁI = hồ sơ năng lực · PHẢI = cộng đồng.
+                Trước đây cột trái có 2 khối nói cùng một chuyện ("Khóa học đang
+                học" và "XP theo hợp phần" đều là tiến độ khoá), còn năng lực
+                theo hợp phần — thứ quan trọng nhất với thí sinh HSA — thì không
+                có ở đâu (audit 2026-08-15). */}
             <div className="prof-grid">
-              {/* Cột trái: Khóa học + XP card */}
               <div className="prof-col-left">
                 <div className="prof-section fx-fade-up" style={{ animationDelay: '.25s' }}>
                   <div className="prof-section-hd">
-                    <span className="prof-section-icon">📚</span>
-                    <span className="prof-section-title">Khóa học đang học</span>
+                    <span className="prof-section-icon" data-icon="bar-chart" data-size="16"></span>
+                    <span className="prof-section-title">Năng lực theo hợp phần</span>
                   </div>
-                  <div className="prof-course-list" id="prof-course-list">
-                    <div className="prof-empty">Chưa đăng ký khóa học nào.</div>
+                  <div className="prof-caps" id="prof-caps">
+                    <div className="prof-empty">Đang tải…</div>
                   </div>
+                  <p className="prof-caps-note">
+                    Độ chính xác lấy từ các lần thi thử đã làm. Chưa thi thử lần nào thì chưa có số.
+                  </p>
                 </div>
 
-                {/* Khối XP: nhãn còn nguyên tiếng Anh và phân loại theo
-                    "languages" — tàn dư pe_test (audit 2026-08-14). Đổi sang
-                    tiếng Việt và phân theo HỢP PHẦN HSA. */}
-                <div className="prof-xp-card fx-fade-up" style={{ animationDelay: '.3s' }}>
-                  <div className="prof-xp-label">Kinh nghiệm tích luỹ</div>
-                  <div className="prof-xp-inner">
-                    <div className="prof-xp-top">
-                      <span className="prof-xp-top-title">XP theo hợp phần</span>
-                      <span className="prof-xp-sort">Nhiều nhất trước</span>
-                    </div>
-                    <div className="prof-xp-scale">
-                      <span>0</span><span>100</span><span>200</span><span>300</span><span>400</span>
-                    </div>
-                    <div className="prof-xp-rows" id="prof-xp-rows"></div>
-                    <div className="prof-xp-footer">
-                      <span className="prof-xp-footer-link">XP nhận được khi hoàn thành bài học và thi thử</span>
-                    </div>
+                <div className="prof-section fx-fade-up" style={{ animationDelay: '.3s' }}>
+                  <div className="prof-section-hd">
+                    <span className="prof-section-icon" data-icon="file-text" data-size="16"></span>
+                    <span className="prof-section-title">Lịch sử thi thử</span>
+                  </div>
+                  <div className="prof-mocks" id="prof-mocks">
+                    <div className="prof-empty">Đang tải…</div>
                   </div>
                 </div>
               </div>
 
-              {/* Bài đăng */}
-              <div className="prof-section prof-section--posts fx-fade-up" style={{ animationDelay: '.25s' }}>
-                <h3 className="prof-posts-heading">bài đăng</h3>
-                <div className="prof-post-list" id="prof-post-list">
-                  <div className="prof-empty">Chưa có bài đăng nào.</div>
+              <div className="prof-col-right">
+                <div className="prof-section fx-fade-up" style={{ animationDelay: '.25s' }}>
+                  <div className="prof-section-hd">
+                    <span className="prof-section-icon" data-icon="trophy" data-size="16"></span>
+                    <span className="prof-section-title">Vị trí trong cộng đồng</span>
+                  </div>
+                  <div className="prof-ranks" id="prof-ranks">
+                    <div className="prof-empty">Đang tải…</div>
+                  </div>
+                </div>
+
+                <div className="prof-section prof-section--posts fx-fade-up" style={{ animationDelay: '.3s' }}>
+                  <div className="prof-section-hd">
+                    <span className="prof-section-icon" data-icon="message-circle" data-size="16"></span>
+                    <span className="prof-section-title">Bài đăng của tôi</span>
+                  </div>
+                  <div className="prof-post-list" id="prof-post-list">
+                    <div className="prof-empty">Chưa có bài đăng nào.</div>
+                  </div>
                 </div>
               </div>
             </div>

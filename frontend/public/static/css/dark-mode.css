@@ -106,7 +106,7 @@ body.dark .filter-btn {
 }
 body.dark .filter-btn:hover { background: #293548; color: #94A3B8; }
 body.dark .filter-btn.active {
-  background: linear-gradient(135deg, var(--accent), #E84545);
+  background: var(--brand-grad);
   color: #fff;
   border-color: transparent;
 }

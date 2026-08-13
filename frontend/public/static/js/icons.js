@@ -48,7 +48,12 @@
     'bar-chart': '<path d="M4 21V10"/><path d="M10 21V4"/><path d="M16 21v-8"/><path d="M22 21H2"/>',
     microscope: '<path d="M7 18h9a5 5 0 0 0 0-10h-1"/><path d="M4 21h16"/><path d="m9 3 3.5 3.5-3 3L6 6z"/><path d="m8.5 8.5-2 2 3 3 2-2"/>',
     compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5.5-5.5 2 2-5.5z"/>',
-    inbox: '<path d="M3 12h5l1.5 3h5L16 12h5"/><path d="M5.5 5h13l2.5 7v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/>'
+    inbox: '<path d="M3 12h5l1.5 3h5L16 12h5"/><path d="M5.5 5h13l2.5 7v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/>',
+
+    /* ── Bổ sung 2026-08-15: tiêu đề mục trong Cài đặt & Trang của tôi ── */
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.4 8.3-8 9.6C7.4 20.3 4 17 4 12V6z"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>'
   };
 
   function Icon(name, size, color, extraAttrs) {

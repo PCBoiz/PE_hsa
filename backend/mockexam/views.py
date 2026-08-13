@@ -112,7 +112,10 @@ class MockSubmitView(APIView):
 class MockAttemptsView(APIView):
     """GET /api/mock-attempts — lịch sử làm bài của user."""
     def get(self, request):
-        rows = q("SELECT a.id, a.exam_id, e.title, a.score, a.total, a.duration_seconds, a.submitted_at "
+        # section_scores_json: Trang của tôi dựng "độ chính xác theo hợp phần"
+        # từ đây, khỏi phải gọi lại từng lượt thi (audit 2026-08-15).
+        rows = q("SELECT a.id, a.exam_id, e.title, a.score, a.total, a.duration_seconds, "
+                 "a.section_scores_json, a.submitted_at "
                  "FROM mock_attempts a JOIN mock_exams e ON e.id = a.exam_id "
                  "WHERE a.user_id=%s ORDER BY a.submitted_at DESC LIMIT 20", (request.user.id,))
         for r in rows:

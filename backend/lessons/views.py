@@ -9,15 +9,25 @@ from achievements.services import check_and_award_achievements
 from common.db import q1, x
 
 
-def _resolve_lesson_id(course_id, lesson_no, title):
-    """Tìm lesson theo (course_id, sort_order); chưa có thì tạo stub giữ FK hợp lệ."""
-    row = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1',
+def _resolve_lesson_id(course_id, lesson_no, title, module=None):
+    """Tìm lesson theo (course_id, sort_order); chưa có thì tạo stub giữ FK hợp lệ.
+
+    Nội dung bài HSA nằm trong JS phía client, bảng ``lessons`` chỉ giữ stub cho
+    khoá ngoại. Vẫn phải ghi ``module``: trang Kỹ năng lọc
+    ``WHERE module <> '' AND module IS NOT NULL``, nên stub thiếu module khiến
+    trang đó rỗng vĩnh viễn dù học viên học bao nhiêu bài (audit 2026-08-15).
+    """
+    module = (module or '').strip()[:120] or None
+    row = q1('SELECT id, module FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1',
              (course_id, lesson_no))
     if row:
+        # Stub tạo trước khi client biết gửi module → bổ sung ngược lại.
+        if module and not row.get('module'):
+            x('UPDATE lessons SET module=%s WHERE id=%s', (module, row['id']))
         return row['id']
-    row = q1('INSERT INTO lessons (course_id, title, sort_order) '
-             'VALUES (%s, %s, %s) RETURNING id',
-             (course_id, title or f'Bài {lesson_no}', lesson_no))
+    row = q1('INSERT INTO lessons (course_id, title, sort_order, module) '
+             'VALUES (%s, %s, %s, %s) RETURNING id',
+             (course_id, title or f'Bài {lesson_no}', lesson_no, module))
     return row['id']
 
 
@@ -41,7 +51,8 @@ class CompleteLessonView(APIView):
             if not course:
                 return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-            lesson_id = _resolve_lesson_id(course_id, lesson_no, data.get('lessonTitle'))
+            lesson_id = _resolve_lesson_id(course_id, lesson_no,
+                                           data.get('lessonTitle'), data.get('module'))
 
             # Đã completed rồi thì không cộng XP lần nữa (chống spam F5 modal)
             existed = q1("SELECT 1 FROM lesson_progress "

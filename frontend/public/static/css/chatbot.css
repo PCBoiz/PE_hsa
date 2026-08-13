@@ -108,7 +108,7 @@
 /* Header */
 .chatbot-header {
     padding: 16px;
-    background: linear-gradient(135deg, #4A9EE0, #E84545);
+    background: var(--brand-grad, linear-gradient(135deg, #6D5AE6, #5B47D4));
     color: white;
     border-radius: 16px 16px 0 0;
     display: flex;
@@ -233,7 +233,7 @@
 .chatbot-message-avatar {
     width: 28px;
     height: 28px;
-    background: linear-gradient(135deg, #4A9EE0, #E84545);
+    background: var(--brand-grad, linear-gradient(135deg, #6D5AE6, #5B47D4));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -244,7 +244,7 @@
 }
 
 .chatbot-message-user .chatbot-message-avatar {
-    background: linear-gradient(135deg, #4A9EE0, #E84545);
+    background: var(--brand-grad, linear-gradient(135deg, #6D5AE6, #5B47D4));
     color: white; 
 }
 
@@ -264,7 +264,7 @@
 }
 
 .chatbot-message-user .chatbot-message-bubble {
-    background: linear-gradient(135deg, #4A9EE0, #E84545);
+    background: var(--brand-grad, linear-gradient(135deg, #6D5AE6, #5B47D4));
     color: white;
     border: none;
 }
@@ -476,7 +476,7 @@
 .chatbot-send-btn {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, #4A9EE0, #E84545);
+    background: var(--brand-grad, linear-gradient(135deg, #6D5AE6, #5B47D4));
     border: none;
     border-radius: 50%;
     color: white;

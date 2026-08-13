@@ -447,7 +447,10 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .udi-icon { display: flex; flex-shrink: 0; }
 
 /* ── Pages ── */
-.page { padding: 24px; display: none; }
+/* width + box-sizing là BẮT BUỘC, không phải phòng xa: ở mobile #main đổi sang
+   `align-items: center`, .page hết được kéo giãn (stretch) và quay về co theo
+   nội dung — trang nào có khối rộng là đẩy cả tài liệu trượt ngang. */
+.page { padding: 24px; display: none; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; }
 .page.active { display: block; }
 
 /* ── Shared components ── */

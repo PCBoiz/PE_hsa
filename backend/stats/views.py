@@ -176,14 +176,19 @@ class HsaSummaryView(APIView):
     def get(self, request):
         uid = request.user.id
 
-        done = (q1("SELECT COUNT(*) AS n FROM lesson_progress "
-                   "WHERE user_id=%s AND status='completed'", (uid,)) or {}).get('n', 0)
+        # Đếm theo từng khoá luôn: dải tiến độ 3 hợp phần trước đây đọc
+        # enrollments.progress — bộ nhớ đệm chỉ được cập nhật khi học viên ĐÃ
+        # ghi danh, nên người học thẳng từ lộ trình thấy 0% dù đã xong bài.
+        per_course = {r['course_id']: r['n'] for r in q(
+            "SELECT course_id, COUNT(*) AS n FROM lesson_progress "
+            "WHERE user_id=%s AND status='completed' GROUP BY course_id", (uid,))}
+        done = sum(per_course.values())
 
         streak_row = q1("SELECT streak FROM users WHERE id=%s", (uid,)) or {}
 
         # Mục tiêu điểm + mốc thi lấy từ bài khảo sát gần nhất.
-        target_score, exam_timing = None, None
-        row = q1("SELECT data_json FROM surveys WHERE user_id=%s "
+        target_score, exam_timing, exam_date, timing_set_at = None, None, None, None
+        row = q1("SELECT data_json, created_at FROM surveys WHERE user_id=%s "
                  "ORDER BY id DESC LIMIT 1", (uid,))
         if row and row.get('data_json'):
             try:
@@ -192,6 +197,8 @@ class HsaSummaryView(APIView):
                     data = json.loads(data)
                 target_score = data.get('target_score')
                 exam_timing = data.get('exam_timing')
+                exam_date = data.get('exam_date')
+                timing_set_at = data.get('exam_timing_set_at')
             except Exception:
                 pass
 
@@ -206,36 +213,82 @@ class HsaSummaryView(APIView):
             'streakDays': streak_row.get('streak') or 0,
             'lessonsDone': done or 0,
             'lessonsTotal': self.TOTAL_LESSONS,
+            'byCourse': per_course,
             'targetScore': target_score,
             'examTiming': exam_timing,
-            'daysToExam': _days_to_exam(exam_timing),
+            'examDate': exam_date,
+            'daysToExam': _days_to_exam(exam_timing, exam_date,
+                                        timing_set_at or (row or {}).get('created_at')),
             'lastMockScore': last_score,
             'lastMockTotal': last_total,
         })
 
 
-def _days_to_exam(exam_timing):
-    """Số ngày còn lại tới kỳ thi.
+#: Câu "Bạn dự định thi HSA khi nào?" trong khảo sát trả về KHOẢNG thời gian
+#: tương đối chứ không phải năm ("Trong 1 tháng", "1–3 tháng"...). Quy mỗi
+#: khoảng về số ngày tới CUỐI khoảng đó.
+_TIMING_DAYS = (
+    (re.compile(r'trong\s*1\s*th[áa]ng', re.I), 30),
+    (re.compile(r'1\s*[-–—]\s*3\s*th[áa]ng', re.I), 90),
+    (re.compile(r'3\s*[-–—]\s*6\s*th[áa]ng', re.I), 180),
+    (re.compile(r'tr[êe]n\s*6\s*th[áa]ng', re.I), 240),
+)
 
-    Bài khảo sát chỉ hỏi MỐC dự thi dạng "2025"/"đợt 1" chứ không hỏi ngày cụ
-    thể, nên quy ước: kỳ thi HSA đợt đầu thường vào cuối tháng 3. Lấy 31/03 của
-    năm nêu trong exam_timing (hoặc năm tới nếu đã qua). Không rõ → None để
-    thẻ hiện dấu gạch thay vì số bịa.
+
+def _as_date(value):
+    """date/datetime/chuỗi 'YYYY-MM-DD' (hoặc ISO) → date. Không parse được → None."""
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value)[:19].replace(' ', 'T')).date()
+    except ValueError:
+        return None
+
+
+def _days_to_exam(exam_timing, exam_date=None, answered_at=None):
+    """Số ngày còn lại tới kỳ thi, theo thứ tự ưu tiên nguồn dữ liệu.
+
+    1. ``exam_date`` — ngày thi học viên tự nhập ở Cài đặt → chính xác tuyệt đối.
+    2. ``exam_timing`` có ghi năm ("đợt 1/2027") → quy ước kỳ thi đợt đầu cuối
+       tháng 3 của năm đó (năm sau nếu đã qua).
+    3. ``exam_timing`` là khoảng tương đối → neo vào NGÀY LÀM KHẢO SÁT rồi cộng
+       độ dài khoảng. Neo vào hôm nay thì con số đứng yên mãi mãi, không bao giờ
+       đếm ngược — người trả lời "Trong 1 tháng" từ nửa năm trước vẫn thấy 30.
+
+    Không suy ra được → None để thẻ hiện dấu gạch kèm nút sửa mốc thi, thay vì
+    một con số bịa.
     """
+    today = date.today()
+
+    d = _as_date(exam_date)
+    if d:
+        delta = (d - today).days
+        return delta if delta >= 0 else None
+
     if not exam_timing:
         return None
-    m = re.search(r'20\d{2}', str(exam_timing))
-    today = date.today()
-    year = int(m.group()) if m else (today.year if today.month <= 3 else today.year + 1)
-    # Mốc đã qua (vd chọn "2026" nhưng giờ đã tháng 8/2026) → tính sang kỳ thi
-    # năm sau, vì học viên đang nhắm đợt thi KẾ TIẾP chứ không phải đợt đã qua.
-    for y in (year, year + 1):
-        try:
-            delta = (date(y, 3, 31) - today).days
-        except ValueError:
-            return None
-        if delta >= 0:
-            return delta
+    s = str(exam_timing)
+
+    m = re.search(r'20\d{2}', s)
+    if m:
+        for y in (int(m.group()), int(m.group()) + 1):
+            try:
+                delta = (date(y, 3, 31) - today).days
+            except ValueError:
+                return None
+            if delta >= 0:
+                return delta
+        return None
+
+    anchor = _as_date(answered_at) or today
+    for rx, days in _TIMING_DAYS:
+        if rx.search(s):
+            delta = (anchor + timedelta(days=days) - today).days
+            return delta if delta >= 0 else None
     return None
 
 
@@ -248,7 +301,9 @@ class HsaGoalsView(APIView):
     để không phải đổi schema; chưa có khảo sát thì tạo một bản mới.
     """
 
-    FIELDS = ('target_score', 'exam_timing', 'section3_choice')
+    #: ``exam_date`` không có trong khảo sát — thêm ở Cài đặt cho học viên đã
+    #: biết ngày thi chính xác, để thẻ đếm ngược khỏi phải đoán từ khoảng tương đối.
+    FIELDS = ('target_score', 'exam_timing', 'section3_choice', 'exam_date')
 
     def _latest(self, uid):
         return q1("SELECT id, data_json FROM surveys WHERE user_id=%s "
@@ -270,8 +325,13 @@ class HsaGoalsView(APIView):
 
     def patch(self, request):
         body = request.data if isinstance(request.data, dict) else {}
-        # Chỉ nhận đúng 3 trường mục tiêu; phần còn lại của khảo sát giữ nguyên.
+        # Chỉ nhận đúng các trường mục tiêu; phần còn lại của khảo sát giữ nguyên.
         updates = {k: str(body[k])[:120] for k in self.FIELDS if body.get(k) not in (None, '')}
+        # Xoá ngày thi: gửi exam_date rỗng → quay về suy ra từ mốc tương đối.
+        if 'exam_date' in body and not body.get('exam_date'):
+            updates['exam_date'] = None
+        elif 'exam_date' in updates and not _as_date(updates['exam_date']):
+            return Response({'error': 'Ngày thi không hợp lệ (định dạng YYYY-MM-DD).'}, status=400)
         if not updates:
             return Response({'error': 'Không có trường hợp lệ để cập nhật.'}, status=400)
 
@@ -279,6 +339,11 @@ class HsaGoalsView(APIView):
         row = self._latest(uid)
         data = self._as_dict(row)
         data.update(updates)
+        # Mốc tương đối ("Trong 1 tháng") được tính từ lúc học viên NÓI ra nó.
+        # Không ghi lại thời điểm này thì mốc mãi neo vào ngày làm khảo sát —
+        # sửa lại sau nửa năm sẽ ra số ngày âm.
+        if 'exam_timing' in updates:
+            data['exam_timing_set_at'] = date.today().isoformat()
         payload = json.dumps(data, ensure_ascii=False)
         if row:
             x("UPDATE surveys SET data_json=%s WHERE id=%s", (payload, row['id']))

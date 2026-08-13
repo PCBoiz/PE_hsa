@@ -1504,6 +1504,9 @@ function saveSettings() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(notifData),
     }),
+    // Mục "Mục tiêu HSA" tự lo phần lưu của nó (dashboard.js) — gộp vào đây để
+    // một nút "Lưu thay đổi" lưu trọn trang.
+    window.__saveHsaGoals ? window.__saveHsaGoals() : Promise.resolve(),
   ])
     .then(function () {
       loadUser();
@@ -1511,6 +1514,7 @@ function saveSettings() {
     })
     .catch(function (err) {
       console.error("Lỗi lưu:", err);
+      alert("Lưu chưa xong: " + (err && err.message ? err.message : "lỗi kết nối."));
     });
 }
 

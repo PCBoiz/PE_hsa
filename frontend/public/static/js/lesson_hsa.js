@@ -431,10 +431,36 @@
   }
   function navBack() { if (state.step > 1) goToStep(state.step - 1); }
 
+  /* Ghi tiến độ về máy chủ.
+     Trước audit 2026-08-15, complete() chỉ hiện modal chúc mừng — KHÔNG có chỗ
+     nào trong ứng dụng gọi /api/lessons/<n>/complete. Hệ quả: lesson_progress
+     luôn rỗng, nên chuỗi ngày học, số bài đã xong, tiến độ khoá và "Học tiếp"
+     trên Bảng điều khiển đứng yên ở 0 với mọi học viên. */
+  function saveProgress(xp) {
+    var no = state.lesson && state.lesson.index;
+    if (!no) return;
+    // topic_tag dạng "Định lượng · Số học" → module = phần sau dấu ·, dùng làm
+    // nhóm chương cho trang Kỹ năng.
+    var tag = String(state.lesson.topic_tag || '');
+    var module = tag.indexOf('·') > -1 ? tag.split('·').pop().trim() : tag.trim();
+    fetch('/api/lessons/' + no + '/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        courseId: state.courseId,
+        lessonTitle: state.lesson.title || '',
+        module: module,
+        quizScore: state.total ? Math.round(state.score / state.total * 100) : null,
+        xpEarned: xp
+      })
+    }).catch(function () { /* mất mạng thì thôi — không chặn màn chúc mừng */ });
+  }
+
   function complete() {
     stopDrill();
     var m = $('success-modal');
     var xp = (state.lesson.xp_reward || 50) + (drill && drill.xp ? drill.xp : 0);
+    saveProgress(xp);
     if ($('success-lesson-title')) $('success-lesson-title').textContent = state.lesson.title || '';
     if ($('success-message')) $('success-message').textContent =
       'Bạn đã hoàn thành bài "' + (state.lesson.title || '') + '" với ' + state.score + '/' + state.total + ' câu kiểm tra đúng.';
