@@ -60,3 +60,6 @@ htmlcov/
 
 # temp capture scripts (Playwright) — không commit
 frontend/_*.mjs
+
+# Output của collectstatic (Render tự sinh lúc build; đừng commit)
+backend/staticfiles/
