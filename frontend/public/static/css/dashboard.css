@@ -3988,3 +3988,29 @@ body.dark .prof-post-stats {
 @media (prefers-reduced-motion: reduce) {
   .hsa-ach-toast { transition: opacity .01ms; transform: none; }
 }
+
+/* ── Thẻ bài học & nhãn bài mẫu trên bài viết diễn đàn (2026-08-14) ──
+   Diễn đàn rỗng hoàn toàn (0 bài) nên bản demo trông như tính năng chết. Bài
+   mồi giúp thấy được hình hài thật, nhưng BẮT BUỘC có nhãn — người xem không
+   được phép nhầm đây là bài của học viên thật. */
+.fpc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.fpc-sample-tag,
+.fpc-lesson-tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; line-height: 1.6; white-space: nowrap;
+}
+.fpc-sample-tag {
+  color: var(--t3, #6B7280);
+  background: var(--rm-track, #EDEFF3);
+  border: 1px dashed var(--card-border, #D6D9E0);
+}
+.fpc-lesson-tag {
+  color: var(--brand-fill, #6D5AE6); text-decoration: none;
+  background: var(--accent-soft, rgba(109,90,230,.12));
+  border: 1px solid transparent;
+  transition: background .15s, color .15s;
+}
+.fpc-lesson-tag:hover { background: var(--brand-fill, #6D5AE6); color: #fff; }
+body.dark .fpc-lesson-tag { color: var(--brand, #8B7CF6); }
+body.dark .fpc-lesson-tag:hover { color: #fff; }

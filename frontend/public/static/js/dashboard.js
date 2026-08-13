@@ -654,8 +654,32 @@ function skSkillToggle(row) {
       userId: row.user_id || null,
       author: row.author_name || 'Ẩn danh', avatar: '🙋', time: _apiTime(row.created_at),
       reactions: row.reactions || _emptyReactions(), myReaction: row.my_reaction || null,
-      comments: row.comment_count || 0, commentList: null, media: []
+      comments: row.comment_count || 0, commentList: null, media: [],
+      // Thẻ bài học + cờ bài mồi (2026-08-14)
+      courseId: row.course_id || null, lessonNo: row.lesson_no || null,
+      isSample: Boolean(row.is_sample)
     };
+  }
+
+  //: id khoá → tên hợp phần, để nhãn "bài 12 · Định lượng" đọc được ngay
+  var COURSE_SHORT = {
+    hsa_quantitative: 'Định lượng',
+    hsa_verbal: 'Định tính',
+    hsa_science: 'Khoa học'
+  };
+
+  /* Nhãn bài học của một bài viết — bấm vào là mở thẳng bài đó. */
+  function _lessonTagHtml(p) {
+    if (!p.courseId || !p.lessonNo) return '';
+    var name = COURSE_SHORT[p.courseId] || p.courseId;
+    return '<a class="fpc-lesson-tag" href="/lesson/' + p.courseId + '?lesson=' + p.lessonNo + '"' +
+      ' onclick="event.stopPropagation()" title="Mở bài học này">' +
+      'Bài ' + p.lessonNo + ' · ' + name + '</a>';
+  }
+
+  /* Bài mồi PHẢI có nhãn: người xem không được nhầm là bài của học viên thật. */
+  function _sampleTagHtml(p) {
+    return p.isSample ? '<span class="fpc-sample-tag">Bài mẫu</span>' : '';
   }
   function _apiCommentToUi(row) {
     return {
@@ -1062,6 +1086,7 @@ function skSkillToggle(row) {
         '</div>' +
         '<span class="fpc-cat-tag" style="background:' + catBg + ';color:' + catColor + '">' + catLabel + '</span>' +
         '</div>' +
+        '<div class="fpc-tags">' + _sampleTagHtml(p) + _lessonTagHtml(p) + '</div>' +
         '<div class="fpc-title">' + escHtml(p.title) + '</div>' +
         '<div class="fpc-excerpt">' + escHtml(excerpt) + '</div>' +
         mediaPart +

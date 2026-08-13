@@ -174,6 +174,52 @@ HSA_MISSIONS = [
 ]
 
 
+# ── Bài mồi cho diễn đàn ────────────────────────────────────────────────────
+# Diễn đàn có đủ tính năng (đăng bài, bình luận, 6 cảm xúc, theo dõi) nhưng 0
+# bài — với bản demo thì trông như tính năng chết. Mồi vài bài ĐÚNG CHẤT HSA,
+# mỗi bài gắn thẻ đúng bài học tương ứng.
+#
+# is_sample = TRUE để giao diện dán nhãn rõ: người xem KHÔNG được phép nhầm đây
+# là bài của học viên thật. Xoá sạch bằng:
+#   DELETE FROM posts WHERE is_sample;
+HSA_SAMPLE_POSTS = [
+    # category, tiêu đề, nội dung, course_id, lesson_no
+    ('question', 'Câu tính phần trăm giảm giá hai lần — làm sao cho nhanh?',
+     'Mình gặp dạng "giảm 20% rồi giảm tiếp 10%". Mình cứ tính từng bước nên mất '
+     'gần 1 phút. Có mẹo nào nhân thẳng hệ số một lần không ạ?',
+     'hsa_quantitative', 1),
+    ('share', 'Mẹo đọc bảng số liệu: khoanh đơn vị TRƯỚC khi tính',
+     'Mình từng sai 3 câu liên tiếp chỉ vì bảng ghi "nghìn tỉ" mà mình đọc thành '
+     '"tỉ". Giờ mình luôn khoanh tròn dòng đơn vị ngay khi nhìn bảng, sai kiểu này '
+     'gần như biến mất.',
+     'hsa_quantitative', 20),
+    ('question', 'Phân biệt hư từ với động từ trong câu — mình hay nhầm',
+     'Ví dụ chữ "của" trong "sách của tôi" và "được" trong "được điểm cao". Có cách '
+     'thử nhanh nào để biết đâu là hư từ không ạ?',
+     'hsa_verbal', 3),
+    ('discuss', 'Đọc lướt trước hay đọc câu hỏi trước với bài đọc hiểu dài?',
+     'Mình thấy hai trường phái. Đọc câu hỏi trước thì biết cần tìm gì nhưng dễ bỏ '
+     'sót ý chính. Mọi người làm cách nào và mất bao lâu mỗi bài đọc?',
+     'hsa_verbal', 20),
+    ('share', 'Cách mình nhớ mốc lịch sử: gom theo giai đoạn thay vì học từng năm',
+     'Thay vì học rời từng mốc, mình chia thành 4 giai đoạn rồi mới nhét mốc vào. '
+     'Đề hay hỏi thứ tự và khoảng cách giữa các mốc nên nhớ theo cụm dễ hơn hẳn.',
+     'hsa_science', 16),
+    ('question', 'Cơ cấu GDP thì chọn biểu đồ tròn hay biểu đồ miền ạ?',
+     'Đề cho số liệu cơ cấu của 3 năm. Mình phân vân giữa tròn và miền. Dấu hiệu nào '
+     'để chọn đúng ngay từ đầu?',
+     'hsa_science', 23),
+    ('discuss', 'Chọn 3 trong 5 môn Khoa học theo thế mạnh hay theo độ dễ của đề?',
+     'Mình khá Sinh nhưng nghe nói phần Địa thường dễ ăn điểm hơn. Mọi người chọn '
+     'theo tiêu chí nào ạ?',
+     'hsa_science', 24),
+    ('share', 'Lịch ôn 8 tuần mình đang chạy — chia theo hợp phần',
+     'Tuần 1–3 Định lượng, tuần 4–5 Định tính, tuần 6 Khoa học, 2 tuần cuối chỉ luyện '
+     'đề bấm giờ. Mỗi ngày 1 bài + 1 lượt luyện tốc độ, cuối tuần 1 đề đầy đủ.',
+     None, None),
+]
+
+
 class Command(BaseCommand):
     help = ("Seed khung nội dung HSA tối thiểu (3 course + 1 roadmap template + "
             "thành tích + nhiệm vụ ngày). Idempotent.")
@@ -268,6 +314,25 @@ class Command(BaseCommand):
                     [code, title, desc, xp, ctype, cvalue, order],
                 )
 
+            # Bài mồi: gán cho tài khoản quản trị (tài khoản duy nhất chắc chắn
+            # tồn tại). Idempotent theo tiêu đề để chạy lại không nhân đôi.
+            cur.execute("SELECT id FROM users ORDER BY id LIMIT 1")
+            row = cur.fetchone()
+            n_posts = 0
+            if row:
+                author_id = row[0]
+                for cat, title, body, cid, lno in HSA_SAMPLE_POSTS:
+                    cur.execute("SELECT 1 FROM posts WHERE title=%s AND is_sample", [title])
+                    if cur.fetchone():
+                        continue
+                    cur.execute(
+                        """INSERT INTO posts
+                               (user_id, category, title, content, course_id, lesson_no, is_sample)
+                           VALUES (%s,%s,%s,%s,%s,%s, TRUE)""",
+                        [author_id, cat, title, body, cid, lno],
+                    )
+                    n_posts += cur.rowcount
+
             cur.execute("SELECT count(*) FROM achievements")
             total_ach = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM missions WHERE is_active")
@@ -283,5 +348,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"[seed_data] +{n_courses} course, +{n_roadmap} roadmap template, +{n_exam} đề thi thử "
             f"(tổng: {total_courses} course, {total_roadmaps} roadmap, {total_exams} đề, "
-            f"{total_ach} thành tích, {total_mis} nhiệm vụ ngày)"
+            f"{total_ach} thành tích, {total_mis} nhiệm vụ ngày, +{n_posts} bài mồi diễn đàn)"
         ))

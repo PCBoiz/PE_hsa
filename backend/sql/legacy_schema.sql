@@ -327,3 +327,17 @@ CREATE TABLE IF NOT EXISTS user_missions (
 -- Bảo hiểm chuỗi: nghỉ đúng 1 ngày thì tiêu 1 vé thay vì mất sạch chuỗi. Thí
 -- sinh ôn 6 tháng mà mất chuỗi vì một ngày bận là điểm bỏ cuộc kinh điển.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_freezes INTEGER NOT NULL DEFAULT 3;
+
+-- ============================================================================
+-- 24. Gắn bài viết diễn đàn vào BÀI HỌC (2026-08-14)
+-- ============================================================================
+-- Học viên đang ở bài 12 Định lượng cần thấy ngay câu hỏi về bài 12. Lưu
+-- (course_id, lesson_no) chứ KHÔNG phải FK tới lessons: bảng lessons chỉ chứa
+-- stub tạo lười khi có người hoàn thành bài, nên bài chưa ai học sẽ không có
+-- dòng để tham chiếu.
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS course_id TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS lesson_no INTEGER;
+-- Bài mồi để diễn đàn không trống trơn lúc demo. Có cờ riêng để giao diện DÁN
+-- NHÃN rõ ràng — người xem không được phép nhầm đây là bài của học viên thật.
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_sample BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_posts_lesson ON posts(course_id, lesson_no);

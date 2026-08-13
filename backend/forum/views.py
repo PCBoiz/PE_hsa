@@ -177,6 +177,15 @@ class PostsView(APIView):
         if request.query_params.get('mine'):
             conds.append('p.user_id = %s')
             params.append(request.user.id)
+        # Lọc theo bài học: học viên đang mở bài nào thì thấy thảo luận bài đó.
+        course_id = (request.query_params.get('course_id') or '').strip()
+        if course_id:
+            conds.append('p.course_id = %s')
+            params.append(course_id[:60])
+        lesson_no = request.query_params.get('lesson_no')
+        if lesson_no and str(lesson_no).isdigit():
+            conds.append('p.lesson_no = %s')
+            params.append(int(lesson_no))
         where = ('WHERE ' + ' AND '.join(conds)) if conds else ''
 
         order = {
@@ -189,6 +198,7 @@ class PostsView(APIView):
         # COUNT(*) OVER() tính trên tập đã lọc TRƯỚC LIMIT → chính là total.
         posts = q(f'''SELECT p.id, p.user_id, p.category, p.title, p.content,
                              p.like_count, p.created_at, p.updated_at,
+                             p.course_id, p.lesson_no, p.is_sample,
                              u.name AS author_name,
                              COUNT(*) OVER() AS _total,
                              (SELECT COALESCE(jsonb_object_agg(r.reaction_type, r.n), '{{}}'::jsonb)
@@ -246,10 +256,19 @@ class PostsView(APIView):
         if category not in _CATEGORIES:
             category = 'discuss'
         title = (data.get('title') or '').strip()
+        # Thẻ bài học (không bắt buộc): gửi lên khi học viên đăng từ trong bài.
+        course_id = (str(data.get('course_id') or '').strip() or None)
+        if course_id:
+            course_id = course_id[:60]
+        lesson_no = data.get('lesson_no')
+        try:
+            lesson_no = int(lesson_no) if lesson_no not in (None, '') else None
+        except (TypeError, ValueError):
+            lesson_no = None
 
-        row = q1('INSERT INTO posts (user_id, category, title, content) '
-                 'VALUES (%s, %s, %s, %s) RETURNING id',
-                 (request.user.id, category, title, content))
+        row = q1('INSERT INTO posts (user_id, category, title, content, course_id, lesson_no) '
+                 'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                 (request.user.id, category, title, content, course_id, lesson_no))
         return Response({'ok': True, 'id': row['id']})
 
 
@@ -257,6 +276,7 @@ class PostDetailView(APIView):
     def get(self, request, post_id):
         post = q1('''SELECT p.id, p.user_id, p.category, p.title, p.content,
                             p.like_count, p.created_at, p.updated_at,
+                            p.course_id, p.lesson_no, p.is_sample,
                             u.name AS author_name
                      FROM posts p
                      LEFT JOIN users u ON u.id = p.user_id
