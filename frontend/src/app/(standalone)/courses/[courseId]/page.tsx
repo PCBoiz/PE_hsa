@@ -40,14 +40,15 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
     (async () => {
       try {
         // apiFetch (không phải fetch tương đối): pe-bridge chưa nạp ở thời điểm này
-        const [courses, enrolled, stats, user]: any[] = await Promise.all([
-          apiFetch('/api/courses').then((r) => (r.ok ? r.json() : [])),
+        // Lấy ĐÚNG một khoá thay vì tải cả danh sách rồi lọc ở client
+        // (audit 2026-08-13) — gọn payload, bớt việc cho client.
+        const [course, enrolled, stats, user]: any[] = await Promise.all([
+          apiFetch(`/api/courses/${encodeURIComponent(courseId)}`).then((r) => (r.ok ? r.json() : null)),
           apiFetch('/api/enrolled').then((r) => (r.ok ? r.json() : [])),
           apiFetch('/api/stats').then((r) => (r.ok ? r.json() : {})),
           apiFetch('/api/user').then((r) => (r.ok ? r.json() : {})),
         ]);
-        const course = Array.isArray(courses) ? courses.find((c: any) => c.id === courseId) : null;
-        if (!course) {
+        if (!course || !course.id) {
           window.location.replace('/dashboard');
           return;
         }

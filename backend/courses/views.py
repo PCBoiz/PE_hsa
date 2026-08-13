@@ -83,6 +83,29 @@ class CoursesView(APIView):
         return Response(result)
 
 
+class CourseDetailView(APIView):
+    """Một khoá theo id — trả CÙNG shape với /api/courses.
+
+    Trang chi tiết trước đây tải TOÀN BỘ danh sách khoá rồi lọc ở client
+    (audit 2026-08-13): tốn payload và thừa việc. Endpoint này trả đúng khoá
+    cần. 404 nếu không có.
+    """
+
+    def get(self, request, course_id):
+        row = q1('''
+            SELECT c.*,
+                   CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled
+            FROM courses c
+            LEFT JOIN enrollments e ON c.id = e.course_id AND e.user_id = %s
+            WHERE c.id = %s
+        ''', (request.user.id, course_id))
+        if not row:
+            return Response({'error': {'status': 404, 'message': 'Không tìm thấy khoá học'}}, status=404)
+        row['enrolled'] = bool(row['enrolled'])
+        row['accentColor'] = row.pop('accent_color')
+        return Response(row)
+
+
 class EnrolledView(APIView):
     def get(self, request):
         rows = q('''

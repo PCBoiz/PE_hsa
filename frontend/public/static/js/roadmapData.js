@@ -8,10 +8,10 @@
 // Node dạng ["label","status"] (status: done|active|locked) hoặc "label" (=locked).
 
 var ROADMAP_LIST = [
-  { name: "Lộ trình tổng HSA",     emoji: "🎯", group: "Tổng quan",     desc: "Lộ trình luyện thi Đánh giá năng lực ĐHQG Hà Nội từ chẩn đoán đến về đích", isNew: true },
-  { name: "Tư duy Định lượng",     emoji: "🔢", group: "Hợp phần HSA",  desc: "Toán học & xử lý số liệu — Phần 1 (50 câu, 75 phút, bắt buộc)" },
-  { name: "Tư duy Định tính",      emoji: "✍️", group: "Hợp phần HSA",  desc: "Ngôn ngữ – Văn học — Phần 2 (50 câu, 60 phút, bắt buộc)" },
-  { name: "Khoa học",              emoji: "🔬", group: "Hợp phần HSA",  desc: "Lý · Hóa · Sinh · Sử · Địa — Phần 3 (chọn 3/5, 50 câu, 60 phút)" },
+  { name: "Lộ trình tổng HSA",     icon: "target", group: "Tổng quan",     desc: "Lộ trình luyện thi Đánh giá năng lực ĐHQG Hà Nội từ chẩn đoán đến về đích", isNew: true },
+  { name: "Tư duy Định lượng",     icon: "bar-chart", group: "Hợp phần HSA",  desc: "Toán học & xử lý số liệu — Phần 1 (50 câu, 75 phút, bắt buộc)" },
+  { name: "Tư duy Định tính",      icon: "pencil", group: "Hợp phần HSA",  desc: "Ngôn ngữ – Văn học — Phần 2 (50 câu, 60 phút, bắt buộc)" },
+  { name: "Khoa học",              icon: "microscope", group: "Hợp phần HSA",  desc: "Lý · Hóa · Sinh · Sử · Địa — Phần 3 (chọn 3/5, 50 câu, 60 phút)" },
 ];
 
 var ROADMAP_DATA = {

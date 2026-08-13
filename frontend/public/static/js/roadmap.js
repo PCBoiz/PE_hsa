@@ -10,8 +10,11 @@
   var LS_PROGRESS = 'roadmap_progress_v2';
   var LS_SEEN_GENERATED = 'roadmap_generated_seen_v1';
   var MY_ROADMAP_TAB = 'Lộ trình của tôi';
-  // HSA: không pin sẵn lộ trình lập trình; mặc định mở "Lộ trình của tôi" (roadmap HSA cá nhân).
-  var DEFAULT_PINNED = [];
+  // Ghim sẵn 4 lộ trình HSA (audit 2026-08-13): trước đây để rỗng nên người
+  // dùng mới vào trang Lộ trình chỉ thấy tab "Cá nhân" trống trơn và phải tự
+  // bấm "+" mới tìm ra nội dung — mất hẳn phần giá trị nhất của trang.
+  var DEFAULT_PINNED = ['Lộ trình tổng HSA', 'Tư duy Định lượng', 'Tư duy Định tính', 'Khoa học'];
+  var DEFAULT_ACTIVE = 'Lộ trình tổng HSA';
 
   function getPinned() {
     try {
@@ -20,7 +23,9 @@
     } catch (e) { return DEFAULT_PINNED.slice(); }
   }
   function setPinned(arr) { localStorage.setItem(LS_PINNED, JSON.stringify(arr)); }
-  function getActive() { return localStorage.getItem(LS_ACTIVE) || MY_ROADMAP_TAB; }
+  // Mặc định mở lộ trình tổng HSA (có nội dung sẵn) thay vì tab cá nhân —
+  // tab cá nhân rỗng cho tới khi người dùng làm xong bài khảo sát.
+  function getActive() { return localStorage.getItem(LS_ACTIVE) || DEFAULT_ACTIVE; }
   function setActive(name) { localStorage.setItem(LS_ACTIVE, name); }
   function getOverrides() {
     try { return JSON.parse(localStorage.getItem(LS_PROGRESS)) || {}; }
@@ -89,7 +94,9 @@
       var meta = (typeof ROADMAP_LIST !== 'undefined') ? ROADMAP_LIST.find(function (r) { return r.name === name; }) : null;
       var isActive = active === name;
       return '<button type="button" class="rm-tab' + (isActive ? ' active' : '') + '" onclick="window.roadmapSelectTab(\'' + esc(name) + '\')">' +
-        (meta ? meta.emoji + ' ' : '') + escHtmlR(name) + '</button>';
+        // icon SVG thay emoji (emoji đổi hình theo hệ điều hành, không nhận màu theme)
+        (meta && meta.icon ? '<span class="rm-tab-ic" data-icon="' + meta.icon + '" data-size="14"></span>' : '') +
+        escHtmlR(name) + '</button>';
     }).join('');
     html += '<button type="button" class="rm-tab' + (active === 'personal' ? ' active' : '') + '" onclick="window.roadmapSelectTab(\'personal\')">✏️ Cá nhân</button>';
     html += '<span class="rm-tab-divider"></span>';

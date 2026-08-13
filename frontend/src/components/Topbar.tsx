@@ -29,23 +29,23 @@ export default function Topbar() {
 
         <nav className="topbar-nav" role="navigation" aria-label="Main navigation" id="topbar-nav">
           <button className="nav-btn active" data-page="dashboard" onClick={() => W().navigate('dashboard')} aria-label="Dashboard">
-            <span className="nav-icon">🏠</span><span>Dashboard</span>
+            <span className="nav-icon" data-icon="home" data-size="17"></span><span>Dashboard</span>
           </button>
           <button className="nav-btn" data-page="courses" onClick={() => W().navigate('courses')} aria-label="Khóa học">
-            <span className="nav-icon">📚</span><span>Khóa học</span>
+            <span className="nav-icon" data-icon="library" data-size="17"></span><span>Khóa học</span>
           </button>
           <button className="nav-btn" data-page="roadmap" onClick={() => W().navigate('roadmap')} aria-label="Lộ trình">
-            <span className="nav-icon">🗺️</span><span>Lộ trình</span>
+            <span className="nav-icon" data-icon="map" data-size="17"></span><span>Lộ trình</span>
           </button>
           <button className="nav-btn" data-page="forum" onClick={() => W().navigate('forum')} aria-label="Diễn đàn">
-            <span className="nav-icon">💬</span><span>Diễn đàn</span>
+            <span className="nav-icon" data-icon="chat" data-size="17"></span><span>Diễn đàn</span>
           </button>
           <button className="nav-btn" onClick={() => { window.location.href = '/mock'; }} aria-label="Thi thử">
-            <span className="nav-icon">🎯</span><span>Thi thử</span>
+            <span className="nav-icon" data-icon="target" data-size="17"></span><span>Thi thử</span>
           </button>
 
           <button className="nav-btn" id="nav-admin" style={{ display: 'none' }} onClick={() => { window.location.href = '/admin'; }} aria-label="Quản trị">
-            <span className="nav-icon">🛠️</span><span>Quản trị</span>
+            <span className="nav-icon" data-icon="wrench" data-size="17"></span><span>Quản trị</span>
           </button>
           <span className="nav-underline" id="nav-underline"></span>
         </nav>

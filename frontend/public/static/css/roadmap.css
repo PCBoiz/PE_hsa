@@ -428,3 +428,7 @@
   .rm-browse-grid { grid-template-columns: 1fr; }
   #roadmap-personal-view { padding-top: 52px; }
 }
+
+/* Icon SVG trong tab lộ trình (thay emoji) — canh giữa với chữ */
+.rm-tab { display: inline-flex; align-items: center; gap: 6px; }
+.rm-tab-ic { display: inline-flex; align-items: center; flex-shrink: 0; }

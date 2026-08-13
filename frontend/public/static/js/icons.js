@@ -34,7 +34,21 @@
     youtube: '<path d="M2.5 17a24 24 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49 49 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24 24 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49 49 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/>',
     'graduation-cap': '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
     'external-link': '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-    plus: '<path d="M5 12h14M12 5v14"/>'
+    plus: '<path d="M5 12h14M12 5v14"/>',
+
+    /* ── Bổ sung 2026-08-13: thay emoji đang đóng vai icon ở nav / chip lọc /
+       lộ trình. Emoji đổi hình theo hệ điều hành và không nhận màu theme.
+       Vẽ cùng chuẩn lucide: khung 24×24, nét 2, đầu nét bo tròn. ── */
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8"/><path d="M9.5 21v-6h5v6"/>',
+    library: '<path d="M4 4v16"/><path d="M8 4v16"/><rect x="11.5" y="4" width="4.5" height="16" rx="1"/><path d="m18.6 5.4 2.6 14.1"/>',
+    map: '<path d="m9 4 6 2.5L21 4v15l-6 2.5L9 19l-6 2.5V6z"/><path d="M9 4v15"/><path d="M15 6.5v15"/>',
+    chat: '<path d="M21 12a8 8 0 0 1-11.5 7.2L3 21l1.8-6.5A8 8 0 1 1 21 12z"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    wrench: '<path d="M15.5 3.5a5.5 5.5 0 0 0-7 7L3 16v5h5l5.5-5.5a5.5 5.5 0 0 0 7-7l-3.2 3.2-2.8-.7-.7-2.8z"/>',
+    'bar-chart': '<path d="M4 21V10"/><path d="M10 21V4"/><path d="M16 21v-8"/><path d="M22 21H2"/>',
+    microscope: '<path d="M7 18h9a5 5 0 0 0 0-10h-1"/><path d="M4 21h16"/><path d="m9 3 3.5 3.5-3 3L6 6z"/><path d="m8.5 8.5-2 2 3 3 2-2"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5.5-5.5 2 2-5.5z"/>',
+    inbox: '<path d="M3 12h5l1.5 3h5L16 12h5"/><path d="M5.5 5h13l2.5 7v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/>'
   };
 
   function Icon(name, size, color, extraAttrs) {

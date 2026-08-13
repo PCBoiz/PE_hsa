@@ -3830,3 +3830,7 @@ body.dark .prof-post-stats {
 .dash-progress-empty[hidden],
 .dash-progress-list[hidden] { display: none; }
 .dash-prog-meta span { white-space: nowrap; }
+
+/* Icon SVG trong chip gợi ý tìm kiếm (thay emoji) */
+.csh-pill { display: inline-flex; align-items: center; gap: 6px; }
+.csh-ic { display: inline-flex; align-items: center; flex-shrink: 0; }
