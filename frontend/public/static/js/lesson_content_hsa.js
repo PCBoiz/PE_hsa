@@ -373,7 +373,14 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
             { icon: 'fa-scale-balanced', title: 'Định lý Vi-ét',
               body: 'Nếu PT bậc hai có 2 nghiệm: tổng x₁ + x₂ = −b/a, tích x₁·x₂ = c/a. Dùng để nhẩm nghiệm và tính biểu thức đối xứng.' },
             { icon: 'fa-arrow-right-arrow-left', title: 'Bất phương trình',
-              body: 'Giải tương tự PT. Quy tắc VÀNG: khi NHÂN hoặc CHIA cả hai vế cho một số ÂM thì phải ĐỔI CHIỀU dấu bất phương trình.' }
+              body: 'Giải tương tự PT. Quy tắc VÀNG: khi NHÂN hoặc CHIA cả hai vế cho một số ÂM thì phải ĐỔI CHIỀU dấu bất phương trình.',
+              visual: {
+                type: 'numline', min: -4, max: 6, ticks: [-4, -2, 0, 2, 4, 6],
+                badge: 'x > 2',
+                ranges: [{ from: 2, to: 6, label: 'miền nghiệm', color: 'violet', open: true }],
+                marks: [{ at: 2, kind: 'hollow' }],   // không đặt label: vạch chia đã ghi "2"
+                caption: 'Nghiệm của <b>x &gt; 2</b>: vòng tròn RỖNG tại 2 (không lấy 2), tô sang phải. Nếu là x ≥ 2 thì vòng tròn ĐẶC.'
+              } }
           ],
           examples: [
             { q: 'Giải x² − 7x + 12 = 0.', sol: 'Δ = 49 − 48 = 1 → x = (7 ± 1)/2 → x = 4 hoặc x = 3.' },
@@ -591,9 +598,19 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
             { icon: 'fa-function', title: 'Định nghĩa',
               body: 'y = ax² + bx + c với a ≠ 0. VD y = x² − 2x + 1, y = −2x² + 3.' },
             { icon: 'fa-chart-area', title: 'Đồ thị parabol',
-              body: 'Là đường cong parabol. a > 0: bề lõm quay lên (hình chữ U); a < 0: bề lõm quay xuống (hình chữ U ngược).' },
+              body: 'Là đường cong parabol. a > 0: bề lõm quay lên (hình chữ U); a < 0: bề lõm quay xuống (hình chữ U ngược).',
+              visual: {
+                type: 'curve', fn: 'x*x - 2*x - 3', from: -3, to: 5,
+                marks: [{ at: 1, label: 'đỉnh (1; −4)' }],
+                caption: 'y = x² − 2x − 3 (a &gt; 0 → lõm lên). Cắt trục hoành tại x = −1 và x = 3.'
+              } },
             { icon: 'fa-location-dot', title: 'Đỉnh & trục đối xứng',
-              body: 'Trục đối xứng là đường thẳng x = −b/(2a). Đỉnh là điểm thấp nhất (a>0) hoặc cao nhất (a<0) của parabol, có hoành độ x = −b/(2a).' },
+              body: 'Trục đối xứng là đường thẳng x = −b/(2a). Đỉnh là điểm thấp nhất (a>0) hoặc cao nhất (a<0) của parabol, có hoành độ x = −b/(2a).',
+              visual: {
+                type: 'curve', fn: '-(x*x) + 4*x - 1', from: -1, to: 5, badge: 'a < 0',
+                marks: [{ at: 2, label: 'đỉnh — GTLN' }],
+                caption: 'y = −x² + 4x − 1: a &lt; 0 nên lõm xuống, đỉnh tại x = −b/(2a) = <b>2</b> và đó là <b>giá trị lớn nhất</b>.'
+              } },
             { icon: 'fa-arrows-up-down', title: 'Giá trị lớn nhất / nhỏ nhất',
               body: 'Vì parabol có đỉnh nên hàm bậc hai luôn đạt GTLN hoặc GTNN tại đỉnh — rất hay dùng trong bài toán tối ưu.' }
           ],
@@ -2152,7 +2169,17 @@ window.LESSON_CONTENT_HSA['hsa_verbal'] = {
             { icon: 'fa-palette', title: 'Sắc thái nghĩa',
               body: 'Nhiều từ đồng nghĩa nhưng khác sắc thái biểu cảm: “chết” (trung tính) – “hi sinh” (trang trọng) – “toi” (suồng sã). Chọn từ hợp ngữ cảnh.' },
             { icon: 'fa-magnifying-glass', title: 'Chiến thuật làm bài',
-              body: 'Câu “tìm từ khác loại”: gom nhóm từ gần nghĩa; từ lẻ loi là đáp án. Câu điền từ: đọc cả câu để đoán sắc thái phù hợp.' }
+              body: 'Câu “tìm từ khác loại”: gom nhóm từ gần nghĩa; từ lẻ loi là đáp án. Câu điền từ: đọc cả câu để đoán sắc thái phù hợp.',
+              visual: {
+                type: 'flow',
+                steps: [
+                  { label: 'Đọc cả câu', note: 'nắm ngữ cảnh, đừng đọc mỗi từ', color: 'slate' },
+                  { label: 'Gom nhóm nghĩa', note: 'xếp các từ gần nghĩa vào một nhóm', color: 'violet' },
+                  { label: 'Tìm từ lẻ loi', note: 'từ không thuộc nhóm nào', color: 'violet' },
+                  { label: 'Kiểm sắc thái', note: 'trang trọng / trung tính / suồng sã', color: 'teal' }
+                ],
+                caption: 'Bốn bước cố định cho dạng “từ khác loại” — làm đúng thứ tự sẽ nhanh hơn đoán mò.'
+              } }
           ],
           examples: [
             { q: 'Từ khác loại: Bàn / Ghế / Tủ / Chạy?', sol: '“Chạy” (động từ) — ba từ kia là đồ vật.' },
@@ -3856,7 +3883,17 @@ window.LESSON_CONTENT_HSA['hsa_science'] = {
                     'III — lực và phản lực: hai vật tác dụng lẫn nhau bằng nhau, ngược chiều.' },
             { icon: 'fa-bolt', title: 'Công & Công suất',
               body: 'Công: <code>A = F·s·cosα</code> (J) — α là góc giữa lực và hướng đi. Lực vuông góc đường đi (α = 90°) sinh công = 0. ' +
-                    'Công suất: <code>P = A/t</code> (W) — công thực hiện trong một đơn vị thời gian.' },
+                    'Công suất: <code>P = A/t</code> (W) — công thực hiện trong một đơn vị thời gian.',
+              visual: {
+                type: 'flow',
+                steps: [
+                  { label: 'Lực F', note: 'newton (N)', color: 'slate' },
+                  { label: 'Quãng đường s', note: 'mét (m)', color: 'slate' },
+                  { label: 'Công A = F·s·cosα', note: 'joule (J)', color: 'violet' },
+                  { label: 'Công suất P = A/t', note: 'watt (W)', color: 'teal' }
+                ],
+                caption: 'Chuỗi đại lượng cần nhớ: có lực và quãng đường mới ra <b>công</b>; chia thêm thời gian mới ra <b>công suất</b>.'
+              } },
             { icon: 'fa-battery-full', title: 'Năng lượng & Bảo toàn cơ năng',
               body: 'Động năng <code>W_đ = ½mv²</code>, thế năng trọng trường <code>W_t = mgh</code> (g ≈ 9,8 m/s²). ' +
                     'Bỏ qua ma sát: cơ năng W = W_đ + W_t được BẢO TOÀN (khi rơi: thế năng → động năng).' }

@@ -131,9 +131,104 @@
       (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') +
     '</div>';
   }
+  /* TRỤC SỐ — dạy khoảng nghiệm, bất phương trình, miền giá trị.
+     v = {type:'numline', min, max, ticks:[số…], marks:[{at,label,kind}],
+          ranges:[{from,to,label,open?,color?}], caption?} */
+  function renderNumline(v) {
+    var min = v.min, max = v.max, span = (max - min) || 1;
+    var pos = function (x) { return ((x - min) / span * 100); };
+    var ticks = (v.ticks || []).map(function (t) {
+      return '<span class="hsa-nl-tick" style="left:' + pos(t) + '%">' +
+             '<i></i><b>' + esc(t) + '</b></span>';
+    }).join('');
+    var ranges = (v.ranges || []).map(function (r) {
+      var a = Math.max(0, pos(r.from)), b = Math.min(100, pos(r.to));
+      var color = VIZ_COLORS[r.color] ? r.color : 'violet';
+      return '<span class="hsa-nl-range hsa-nl-range--' + color + (r.open ? ' is-open' : '') + '" ' +
+             'style="left:' + a + '%;width:' + (b - a) + '%">' +
+             (r.label ? '<b>' + esc(r.label) + '</b>' : '') + '</span>';
+    }).join('');
+    var marks = (v.marks || []).map(function (m) {
+      return '<span class="hsa-nl-mark hsa-nl-mark--' + (m.kind || 'solid') + '" style="left:' + pos(m.at) + '%">' +
+             (m.label ? '<b>' + esc(m.label) + '</b>' : '') + '</span>';
+    }).join('');
+    return '<div class="hsa-viz hsa-viz--nl">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<div class="hsa-nl"><div class="hsa-nl-axis"></div>' + ranges + ticks + marks + '</div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  /* ĐỒ THỊ HÀM — vẽ y=f(x) bằng SVG polyline, tự lấy mẫu.
+     v = {type:'curve', fn:'x*x-2*x', from, to, points?, marks?, caption?}
+     `fn` chỉ nhận biểu thức toán an toàn (số, x, + - * / ( ) . , ^ và Math.*). */
+  var FN_SAFE = /^[-+*/(). 0-9xeE^,<>=?:|&%\s]*(?:(?:Math\.[a-z0-9]+|abs|sqrt|sin|cos|tan|log|exp|pow|PI)[-+*/(). 0-9xeE^,\s]*)*$/i;
+  function compileFn(src) {
+    if (!FN_SAFE.test(String(src))) return null;
+    var body = String(src).replace(/\^/g, '**')
+      .replace(/\b(abs|sqrt|sin|cos|tan|log|exp|pow)\(/g, 'Math.$1(')
+      .replace(/\bPI\b/g, 'Math.PI');
+    try { /* eslint-disable no-new-func */ return new Function('x', 'return (' + body + ');'); }
+    catch (e) { return null; }
+  }
+  function renderCurve(v) {
+    var f = compileFn(v.fn);
+    if (!f) return '';
+    var from = v.from, to = v.to, n = v.points || 60;
+    var xs = [], ys = [];
+    for (var i = 0; i <= n; i++) {
+      var x = from + (to - from) * i / n, y;
+      try { y = f(x); } catch (e) { y = NaN; }
+      if (isFinite(y)) { xs.push(x); ys.push(y); }
+    }
+    if (!ys.length) return '';
+    var yMin = v.yMin != null ? v.yMin : Math.min.apply(null, ys);
+    var yMax = v.yMax != null ? v.yMax : Math.max.apply(null, ys);
+    if (yMax === yMin) { yMax += 1; yMin -= 1; }
+    var W = 320, H = 170, pad = 6;
+    var sx = function (x) { return pad + (x - from) / ((to - from) || 1) * (W - pad * 2); };
+    var sy = function (y) { return H - pad - (y - yMin) / ((yMax - yMin) || 1) * (H - pad * 2); };
+    var pts = xs.map(function (x, k) { return sx(x).toFixed(1) + ',' + sy(ys[k]).toFixed(1); }).join(' ');
+    var axisY = (yMin <= 0 && yMax >= 0) ? '<line class="hsa-cv-axis" x1="' + pad + '" y1="' + sy(0) + '" x2="' + (W - pad) + '" y2="' + sy(0) + '"/>' : '';
+    var axisX = (from <= 0 && to >= 0) ? '<line class="hsa-cv-axis" x1="' + sx(0) + '" y1="' + pad + '" x2="' + sx(0) + '" y2="' + (H - pad) + '"/>' : '';
+    var dots = (v.marks || []).map(function (m) {
+      var my; try { my = m.y != null ? m.y : f(m.at); } catch (e) { return ''; }
+      if (!isFinite(my)) return '';
+      return '<g class="hsa-cv-mark"><circle cx="' + sx(m.at) + '" cy="' + sy(my) + '" r="4.5"/>' +
+        (m.label ? '<text x="' + (sx(m.at) + 7) + '" y="' + (sy(my) - 7) + '">' + esc(m.label) + '</text>' : '') + '</g>';
+    }).join('');
+    return '<div class="hsa-viz hsa-viz--cv">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<svg class="hsa-cv" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Đồ thị hàm ' + esc(v.fn) + '">' +
+        axisY + axisX + '<polyline class="hsa-cv-line" points="' + pts + '"/>' + dots +
+      '</svg>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  /* SƠ ĐỒ KHỐI — chuỗi bước / quan hệ (hợp cho Văn, Khoa học).
+     v = {type:'flow', steps:[{label, note?, color?}], caption?} */
+  function renderFlow(v) {
+    var steps = (v.steps || []);
+    if (!steps.length) return '';
+    var html = steps.map(function (s, i) {
+      var color = VIZ_COLORS[s.color] ? s.color : 'violet';
+      return (i ? '<span class="hsa-fl-arrow" aria-hidden="true">→</span>' : '') +
+        '<span class="hsa-fl-step hsa-fl-step--' + color + '">' +
+          '<b>' + esc(s.label) + '</b>' +
+          (s.note ? '<i>' + esc(s.note) + '</i>' : '') +
+        '</span>';
+    }).join('');
+    return '<div class="hsa-viz hsa-viz--fl">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<div class="hsa-fl">' + html + '</div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
   function renderVisual(v) {
     if (!v || !v.type) return '';
     if (v.type === 'bars') return renderBars(v);
+    if (v.type === 'numline') return renderNumline(v);
+    if (v.type === 'curve') return renderCurve(v);
+    if (v.type === 'flow') return renderFlow(v);
     return '';
   }
 

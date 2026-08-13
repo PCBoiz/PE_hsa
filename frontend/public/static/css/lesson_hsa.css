@@ -159,6 +159,56 @@
 .next-btn.small { padding: 8px 18px; font-size: 14px; margin-top: 8px; }
 @media (max-width: 640px) { .hsa-drill-stats { grid-template-columns: repeat(2, 1fr); } }
 
+/* ── Trục số ── */
+.hsa-viz--nl .hsa-nl { position: relative; height: 62px; margin: 20px 6px 6px; }
+.hsa-nl-axis { position: absolute; left: 0; right: 0; top: 26px; height: 2px;
+  background: var(--t3, #64748B); opacity: .55; border-radius: 2px; }
+.hsa-nl-tick { position: absolute; top: 26px; transform: translateX(-50%); text-align: center; }
+.hsa-nl-tick i { display: block; width: 1.5px; height: 9px; background: var(--t3, #64748B); opacity: .7; margin: 0 auto; }
+.hsa-nl-tick b { display: block; font-size: 11px; color: var(--t3, #64748B); margin-top: 3px; font-weight: 600; }
+.hsa-nl-range { position: absolute; top: 22px; height: 10px; border-radius: 99px; }
+.hsa-nl-range b { position: absolute; top: -19px; left: 50%; transform: translateX(-50%);
+  font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.hsa-nl-range--violet { background: rgba(139,124,246,.45); }
+.hsa-nl-range--violet b { color: var(--hsa-violet); }
+.hsa-nl-range--teal { background: rgba(45,212,191,.42); }
+.hsa-nl-range--teal b { color: var(--hsa-teal); }
+.hsa-nl-range--amber { background: rgba(251,191,36,.42); }
+.hsa-nl-range--amber b { color: #B45309; }
+.hsa-nl-range.is-open { background-image: repeating-linear-gradient(90deg, transparent 0 5px, rgba(255,255,255,.35) 5px 9px); }
+.hsa-nl-mark { position: absolute; top: 20px; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; border: 2.5px solid var(--hsa-violet); background: var(--card, #0C1220); }
+.hsa-nl-mark--solid { background: var(--hsa-violet); }
+.hsa-nl-mark b { position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 700; color: var(--t2, #94A3B8); white-space: nowrap; }
+
+/* ── Đồ thị hàm ── */
+.hsa-cv { width: 100%; height: auto; display: block; margin-top: 4px; }
+.hsa-cv-axis { stroke: var(--t3, #64748B); stroke-width: 1; opacity: .45; }
+.hsa-cv-line { fill: none; stroke: var(--hsa-violet); stroke-width: 2.5;
+  stroke-linejoin: round; stroke-linecap: round; }
+.hsa-cv-mark circle { fill: var(--hsa-teal); stroke: var(--card, #0C1220); stroke-width: 1.6; }
+/* viewBox 320 rộng bị scale lên ~2x khi hiển thị → đặt cỡ chữ theo đơn vị
+   viewBox (9) để in ra khoảng 13–14px thật, không bị to quá so với đồ thị. */
+.hsa-cv-mark text { fill: var(--hsa-teal); font-size: 9px; font-weight: 700; }
+
+/* ── Sơ đồ khối ── */
+.hsa-fl { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.hsa-fl-arrow { align-self: center; color: var(--t3, #64748B); font-weight: 700; }
+.hsa-fl-step { flex: 1 1 120px; min-width: 0; padding: 9px 12px; border-radius: 10px;
+  display: flex; flex-direction: column; gap: 2px; border: 1px solid; }
+.hsa-fl-step b { font-size: 13px; font-weight: 700; line-height: 1.3; }
+.hsa-fl-step i { font-size: 11.5px; font-style: normal; color: var(--t3, #64748B); line-height: 1.35; }
+.hsa-fl-step--violet { background: rgba(139,124,246,.12); border-color: rgba(139,124,246,.3); }
+.hsa-fl-step--violet b { color: var(--hsa-violet); }
+.hsa-fl-step--teal { background: rgba(45,212,191,.12); border-color: rgba(45,212,191,.3); }
+.hsa-fl-step--teal b { color: var(--hsa-teal); }
+.hsa-fl-step--amber { background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.3); }
+.hsa-fl-step--amber b { color: #B45309; }
+.hsa-fl-step--slate { background: rgba(100,116,139,.14); border-color: rgba(100,116,139,.3); }
+.hsa-fl-step--slate b { color: var(--t2, #94A3B8); }
+@media (max-width: 560px) { .hsa-fl-arrow { display: none; } .hsa-fl-step { flex-basis: 100%; } }
+
 /* ══════════════════════════════════════════════════════════════════════════
    THEME SÁNG cho màn hình học (audit 2026-08-13 — lỗi P0).
    Chrome bài học (lesson_db_design.css) được viết "dark-first": nền và chữ
