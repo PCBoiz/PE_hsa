@@ -223,13 +223,130 @@
       (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
   }
 
+  /* BẢNG SỐ LIỆU — dạng câu hỏi phổ biến NHẤT của hợp phần Định lượng là đọc
+     bảng, mà bộ máy cũ lại không vẽ được bảng (audit 2026-08-14).
+     v = {type:'table', head:[…], rows:[[…]], highlight?:[chỉ số cột], foot?:[…],
+          align?:['left'|'right'…], badge?, caption?} */
+  function renderTable(v) {
+    var head = v.head || [], rows = v.rows || [];
+    if (!head.length || !rows.length) return '';
+    var hi = {};
+    (v.highlight || []).forEach(function (i) { hi[i] = 1; });
+    var align = v.align || [];
+    // Cột không chỉ định thì: cột đầu căn trái (nhãn), còn lại căn phải (số).
+    var cls = function (i) {
+      return ' class="' + (align[i] || (i === 0 ? 'left' : 'right')) + (hi[i] ? ' is-hi' : '') + '"';
+    };
+    var th = head.map(function (h, i) { return '<th' + cls(i) + ' scope="col">' + esc(h) + '</th>'; }).join('');
+    var tb = rows.map(function (r) {
+      return '<tr>' + r.map(function (c, i) {
+        return i === 0
+          ? '<th' + cls(i) + ' scope="row">' + esc(c) + '</th>'
+          : '<td' + cls(i) + '>' + esc(c) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    var tf = (v.foot && v.foot.length)
+      ? '<tfoot><tr>' + v.foot.map(function (c, i) { return '<td' + cls(i) + '>' + esc(c) + '</td>'; }).join('') + '</tr></tfoot>'
+      : '';
+    return '<div class="hsa-viz hsa-viz--tb">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      // Bảng rộng phải tự cuộn NGANG trong khung của nó, không đẩy cả trang trượt.
+      '<div class="hsa-tb-wrap"><table class="hsa-tb">' +
+        '<thead><tr>' + th + '</tr></thead><tbody>' + tb + '</tbody>' + tf +
+      '</table></div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  /* BIỂU ĐỒ TRÒN — cơ cấu, tỉ trọng (Địa lí, đọc số liệu).
+     v = {type:'pie', slices:[{label, value, color?}], unit?, badge?, caption?}
+     Vẽ bằng conic-gradient: không cần thư viện, không cần SVG dài dòng. */
+  var PIE_HEX = { violet: '#6D5AE6', teal: '#0E7C6B', amber: '#A45B08', slate: '#64748B', rose: '#BE2A46' };
+  var PIE_ORDER = ['violet', 'teal', 'amber', 'slate', 'rose'];
+  function renderPie(v) {
+    var slices = (v.slices || []).filter(function (s) { return Number(s.value) > 0; });
+    if (!slices.length) return '';
+    var total = slices.reduce(function (a, s) { return a + Number(s.value); }, 0) || 1;
+    var acc = 0, stops = [], legend = [];
+    slices.forEach(function (s, i) {
+      var hex = PIE_HEX[s.color] || PIE_HEX[PIE_ORDER[i % PIE_ORDER.length]];
+      var pct = Number(s.value) / total * 100;
+      stops.push(hex + ' ' + acc.toFixed(2) + '% ' + (acc + pct).toFixed(2) + '%');
+      acc += pct;
+      legend.push('<li><i style="background:' + hex + '"></i>' +
+        '<span class="hsa-pie-lb">' + esc(s.label) + '</span>' +
+        '<b>' + (Math.round(pct * 10) / 10) + '%</b>' +
+        '<em>' + esc(s.value) + (v.unit ? ' ' + esc(v.unit) : '') + '</em></li>');
+    });
+    return '<div class="hsa-viz hsa-viz--pie">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<div class="hsa-pie-body">' +
+        '<div class="hsa-pie-disc" style="background:conic-gradient(' + stops.join(',') + ')" ' +
+          'role="img" aria-label="Biểu đồ tròn: ' + esc(slices.map(function (s) { return s.label; }).join(', ')) + '"></div>' +
+        '<ul class="hsa-pie-legend">' + legend.join('') + '</ul>' +
+      '</div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  /* SƠ ĐỒ CÂY — phân loại (từ loại trong Ngữ văn, phân loại sinh vật, hoá vô cơ).
+     v = {type:'tree', root:{label, note?}, branches:[{label, note?, color?,
+          children?:[{label, note?}]}], badge?, caption?} */
+  function renderTree(v) {
+    var root = v.root || {}, branches = v.branches || [];
+    if (!branches.length) return '';
+    var cols = branches.map(function (b, i) {
+      var color = VIZ_COLORS[b.color] ? b.color : PIE_ORDER[i % 4];
+      var kids = (b.children || []).map(function (c) {
+        return '<li><b>' + esc(c.label) + '</b>' + (c.note ? '<i>' + esc(c.note) + '</i>' : '') + '</li>';
+      }).join('');
+      return '<div class="hsa-tree-branch hsa-tree-branch--' + (VIZ_COLORS[color] ? color : 'violet') + '">' +
+        '<div class="hsa-tree-node"><b>' + esc(b.label) + '</b>' +
+          (b.note ? '<i>' + esc(b.note) + '</i>' : '') + '</div>' +
+        (kids ? '<ul class="hsa-tree-kids">' + kids + '</ul>' : '') +
+      '</div>';
+    }).join('');
+    return '<div class="hsa-viz hsa-viz--tree">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      (root.label ? '<div class="hsa-tree-root"><b>' + esc(root.label) + '</b>' +
+        (root.note ? '<i>' + esc(root.note) + '</i>' : '') + '</div>' : '') +
+      '<div class="hsa-tree-row">' + cols + '</div>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  /* TRỤC THỜI GIAN — mốc lịch sử, chuỗi sự kiện.
+     v = {type:'timeline', events:[{when, label, note?, color?}], badge?, caption?} */
+  function renderTimeline(v) {
+    var evs = v.events || [];
+    if (!evs.length) return '';
+    var items = evs.map(function (e, i) {
+      var color = VIZ_COLORS[e.color] ? e.color : PIE_ORDER[i % 4];
+      return '<li class="hsa-tl-item hsa-tl-item--' + (VIZ_COLORS[color] ? color : 'violet') + '">' +
+        '<span class="hsa-tl-dot" aria-hidden="true"></span>' +
+        '<span class="hsa-tl-when">' + esc(e.when) + '</span>' +
+        '<span class="hsa-tl-body"><b>' + esc(e.label) + '</b>' +
+          (e.note ? '<i>' + esc(e.note) + '</i>' : '') + '</span>' +
+      '</li>';
+    }).join('');
+    return '<div class="hsa-viz hsa-viz--tl">' +
+      (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
+      '<ol class="hsa-tl">' + items + '</ol>' +
+      (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
+  }
+
+  var VIZ_RENDERERS = {
+    bars: renderBars,
+    numline: renderNumline,
+    curve: renderCurve,
+    flow: renderFlow,
+    table: renderTable,
+    pie: renderPie,
+    tree: renderTree,
+    timeline: renderTimeline
+  };
+
   function renderVisual(v) {
     if (!v || !v.type) return '';
-    if (v.type === 'bars') return renderBars(v);
-    if (v.type === 'numline') return renderNumline(v);
-    if (v.type === 'curve') return renderCurve(v);
-    if (v.type === 'flow') return renderFlow(v);
-    return '';
+    var fn = VIZ_RENDERERS[v.type];
+    return fn ? fn(v) : '';
   }
 
   /* ── Bước 3: LÝ THUYẾT (thích ứng) ────────────────────────────── */

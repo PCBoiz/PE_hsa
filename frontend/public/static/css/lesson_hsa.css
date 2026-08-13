@@ -283,3 +283,140 @@ body.light .hsa-fill { border-color: var(--border-default); }
 body.light .hsa-viz-cap,
 body.light .hsa-ex-item { border-top-color: rgba(20,16,35,0.10); }
 body.light .hsa-rev { background: var(--surface-1); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 KIỂU MINH HOẠ MỚI (audit 2026-08-14): bảng số liệu · biểu đồ tròn ·
+   sơ đồ cây · trục thời gian. Trước đó chỉ 10/76 bài có minh hoạ, và bộ máy
+   thiếu đúng những kiểu HSA hay hỏi nhất — đọc bảng, cơ cấu, phân loại, mốc.
+   File này DARK-FIRST (body.light là bản ghi đè), giữ nguyên quy ước sẵn có.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bảng số liệu ── */
+.hsa-tb-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 2px -4px; padding: 0 4px; }
+.hsa-tb {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  /* Số liệu xếp cột phải thẳng hàng — chữ số cùng bề rộng. */
+  font-variant-numeric: tabular-nums;
+}
+.hsa-tb th, .hsa-tb td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
+.hsa-tb thead th {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .2px; text-transform: uppercase;
+  color: var(--t3, #8B95A8); border-bottom-width: 2px;
+}
+.hsa-tb tbody th { font-weight: 600; color: var(--t1, #E8EBF2); }
+.hsa-tb td { color: var(--t2, #B7BECD); }
+.hsa-tb .left { text-align: left; }
+.hsa-tb .right { text-align: right; }
+.hsa-tb .center { text-align: center; }
+.hsa-tb .is-hi { color: #A78BFA; font-weight: 700; }
+.hsa-tb tbody tr:last-child th, .hsa-tb tbody tr:last-child td { border-bottom: none; }
+.hsa-tb tfoot td { font-weight: 700; color: var(--t1, #E8EBF2); border-top: 2px solid rgba(255,255,255,.14); border-bottom: none; }
+
+/* ── Biểu đồ tròn ── */
+.hsa-pie-body { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.hsa-pie-disc {
+  width: 128px; height: 128px; border-radius: 50%; flex-shrink: 0;
+  /* Lỗ giữa làm vành khuyên: dễ so sánh góc hơn hình tròn đặc. */
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%);
+  mask: radial-gradient(circle, transparent 38%, #000 39%);
+}
+.hsa-pie-legend { flex: 1; min-width: 190px; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.hsa-pie-legend li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.hsa-pie-legend i { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+.hsa-pie-lb { flex: 1; color: var(--t2, #B7BECD); }
+.hsa-pie-legend b { color: var(--t1, #E8EBF2); font-variant-numeric: tabular-nums; }
+.hsa-pie-legend em { font-style: normal; font-size: 11.5px; color: var(--t3, #8B95A8); min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Sơ đồ cây ── */
+.hsa-tree-root {
+  display: inline-flex; flex-direction: column; padding: 8px 14px; border-radius: 10px;
+  background: rgba(139,124,246,.16); border: 1px solid rgba(139,124,246,.34);
+  margin-bottom: 6px;
+}
+.hsa-tree-root b { font-size: 13px; color: var(--t1, #E8EBF2); }
+.hsa-tree-root i { font-style: normal; font-size: 11.5px; color: var(--t3, #8B95A8); }
+.hsa-tree-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.hsa-tree-branch { flex: 1 1 150px; min-width: 0; position: relative; padding-top: 14px; }
+/* Nét nối lên nút gốc — vẽ bằng border, không cần SVG. */
+.hsa-tree-branch::before {
+  content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 14px;
+  background: rgba(255,255,255,.22);
+}
+.hsa-tree-node {
+  display: flex; flex-direction: column; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04);
+}
+.hsa-tree-node b { font-size: 12.5px; color: var(--t1, #E8EBF2); }
+.hsa-tree-node i { font-style: normal; font-size: 11.5px; color: var(--t3, #8B95A8); margin-top: 2px; }
+.hsa-tree-branch--violet .hsa-tree-node { border-color: rgba(139,124,246,.45); }
+.hsa-tree-branch--teal   .hsa-tree-node { border-color: rgba(45,212,191,.45); }
+.hsa-tree-branch--amber  .hsa-tree-node { border-color: rgba(251,191,36,.45); }
+.hsa-tree-branch--slate  .hsa-tree-node { border-color: rgba(148,163,184,.45); }
+.hsa-tree-kids { list-style: none; margin: 8px 0 0; padding: 0 0 0 12px; display: flex; flex-direction: column; gap: 5px; border-left: 1px solid rgba(255,255,255,.14); }
+.hsa-tree-kids li { font-size: 12px; color: var(--t2, #B7BECD); }
+.hsa-tree-kids b { font-weight: 600; }
+.hsa-tree-kids i { font-style: normal; color: var(--t3, #8B95A8); }
+.hsa-tree-kids i::before { content: ' — '; }
+
+/* ── Trục thời gian ── */
+.hsa-tl { list-style: none; margin: 4px 0 0; padding: 0 0 0 8px; position: relative; }
+.hsa-tl::before {
+  content: ''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px;
+  background: rgba(255,255,255,.14); border-radius: 2px;
+}
+.hsa-tl-item { position: relative; padding: 0 0 14px 26px; }
+.hsa-tl-item:last-child { padding-bottom: 0; }
+.hsa-tl-dot {
+  position: absolute; left: 2px; top: 4px; width: 13px; height: 13px; border-radius: 50%;
+  background: #8B7CF6; border: 2px solid var(--surface-1, #14161F);
+}
+.hsa-tl-item--teal  .hsa-tl-dot { background: #2DD4BF; }
+.hsa-tl-item--amber .hsa-tl-dot { background: #FBBF24; }
+.hsa-tl-item--slate .hsa-tl-dot { background: #94A3B8; }
+.hsa-tl-when {
+  display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .3px;
+  color: #A78BFA; font-variant-numeric: tabular-nums;
+}
+.hsa-tl-item--teal  .hsa-tl-when { color: #2DD4BF; }
+.hsa-tl-item--amber .hsa-tl-when { color: #FBBF24; }
+.hsa-tl-item--slate .hsa-tl-when { color: #94A3B8; }
+.hsa-tl-body b { display: block; font-size: 12.5px; color: var(--t1, #E8EBF2); margin-top: 1px; }
+.hsa-tl-body i { font-style: normal; font-size: 11.5px; color: var(--t3, #8B95A8); line-height: 1.5; }
+
+/* ── Bản nền SÁNG (file này dark-first) ── */
+body.light .hsa-tb th,
+body.light .hsa-tb td { border-bottom-color: rgba(20,16,35,.10); }
+body.light .hsa-tb tfoot td { border-top-color: rgba(20,16,35,.18); }
+body.light .hsa-tb .is-hi { color: #5B47D4; }
+body.light .hsa-tree-branch::before,
+body.light .hsa-tree-kids { border-color: rgba(20,16,35,.16); }
+body.light .hsa-tree-branch::before { background: rgba(20,16,35,.16); }
+body.light .hsa-tree-node { background: rgba(20,16,35,.03); border-color: rgba(20,16,35,.12); }
+body.light .hsa-tl::before { background: rgba(20,16,35,.12); }
+body.light .hsa-tl-dot { border-color: #FFFFFF; }
+body.light .hsa-tl-when { color: #5B47D4; }
+body.light .hsa-tl-item--teal .hsa-tl-when { color: #0E7C6B; }
+body.light .hsa-tl-item--amber .hsa-tl-when { color: #A45B08; }
+body.light .hsa-tl-item--slate .hsa-tl-when { color: #475569; }
+body.light .hsa-tl-item--teal .hsa-tl-dot { background: #0E7C6B; }
+body.light .hsa-tl-item--amber .hsa-tl-dot { background: #A45B08; }
+body.light .hsa-tl-item--slate .hsa-tl-dot { background: #475569; }
+
+@media (max-width: 560px) {
+  .hsa-pie-body { flex-direction: column; align-items: flex-start; }
+  .hsa-tree-row { flex-direction: column; }
+  .hsa-tree-branch::before { display: none; }
+}
+
+/* Huy hiệu minh hoạ ở nền SÁNG: vàng #FBBF24 trên nền vàng nhạt chỉ đạt 1.67:1
+   — gần như đọc không ra. Nâu-hổ phách đậm trên cùng nền cho ~5:1. */
+body.light .hsa-viz-badge {
+  color: #7A4405;
+  background: rgba(164, 91, 8, .12);
+  border-color: rgba(164, 91, 8, .32);
+}
+
+/* Chữ in đậm trong chú thích minh hoạ dùng --hsa-teal (#2DD4BF) — hợp nền tối
+   nhưng trên nền sáng chỉ đạt 1.86:1. Nền sáng phải dùng bản teal đậm. */
+body.light .hsa-viz-cap b,
+body.light .hsa-viz-cap strong { color: #0B6355; }

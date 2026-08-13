@@ -1567,7 +1567,19 @@ window.LESSON_CONTENT_HSA['hsa_quantitative'] = {
           title: 'Lý thuyết đầy đủ — cùng ôn kỹ đọc bảng số liệu',
           cards: [
             { icon: 'fa-table', title: 'Cấu trúc một bảng',
-              body: 'Gồm: tên bảng (nội dung), đơn vị đo, các cột (thường là tiêu chí/năm), các hàng (đối tượng). Ô giao nhau chứa số liệu cụ thể.' },
+              body: 'Gồm: tên bảng (nội dung), đơn vị đo, các cột (thường là tiêu chí/năm), các hàng (đối tượng). Ô giao nhau chứa số liệu cụ thể.',
+              visual: {
+                type: 'table', badge: 'ĐỌC THỬ',
+                head: ['Cửa hàng', 'Quý I', 'Quý II', 'Quý III', 'Cả năm'],
+                rows: [
+                  ['Hà Nội', '120', '145', '138', '403'],
+                  ['Đà Nẵng', '86', '92', '101', '279'],
+                  ['TP.HCM', '164', '158', '177', '499']
+                ],
+                foot: ['Tổng', '370', '395', '416', '1.181'],
+                highlight: [4],
+                caption: 'Doanh thu theo quý (đơn vị: <b>triệu đồng</b>). Cột cuối được tô đậm chính là thứ đề hay hỏi: <b>đọc đúng ô giao nhau</b> giữa hàng và cột, rồi mới tính.'
+              } },
             { icon: 'fa-magnifying-glass', title: 'Cách đọc chính xác',
               body: 'Bước 1: đọc tên bảng và đơn vị. Bước 2: xác định hàng và cột chứa dữ liệu cần. Bước 3: đọc đúng ô, chú ý đơn vị (nghìn, triệu, %).' },
             { icon: 'fa-calculator', title: 'Các phép tính thường gặp',
@@ -2324,7 +2336,29 @@ window.LESSON_CONTENT_HSA['hsa_verbal'] = {
             { icon: 'fa-palette', title: 'Tính từ',
               body: 'Chỉ đặc điểm, tính chất, màu sắc (tốt, xanh, cao). Kết hợp với “rất, quá, lắm” (rất đẹp, cao quá).' },
             { icon: 'fa-link', title: 'Đại từ – Quan hệ từ – Số từ',
-              body: 'Đại từ thay thế (tôi, chúng ta, ai, gì). Quan hệ từ nối (và, nhưng, của, để, vì). Số từ chỉ số lượng/thứ tự (một, hai, thứ nhất).' }
+              body: 'Đại từ thay thế (tôi, chúng ta, ai, gì). Quan hệ từ nối (và, nhưng, của, để, vì). Số từ chỉ số lượng/thứ tự (một, hai, thứ nhất).',
+              visual: {
+                type: 'tree', badge: 'BẢN ĐỒ TỪ LOẠI',
+                root: { label: 'Từ tiếng Việt', note: 'chia theo chức năng ngữ pháp' },
+                branches: [
+                  { label: 'Thực từ', note: 'mang nghĩa riêng', color: 'violet', children: [
+                    { label: 'Danh từ', note: 'học sinh, mưa' },
+                    { label: 'Động từ', note: 'đi, yêu' },
+                    { label: 'Tính từ', note: 'xanh, cao' },
+                    { label: 'Số từ', note: 'một, thứ nhất' }
+                  ] },
+                  { label: 'Hư từ', note: 'chỉ có nghĩa ngữ pháp', color: 'teal', children: [
+                    { label: 'Quan hệ từ', note: 'và, nhưng, của' },
+                    { label: 'Phó từ', note: 'đã, đang, rất' },
+                    { label: 'Tình thái từ', note: 'à, nhé, thôi' }
+                  ] },
+                  { label: 'Đại từ', note: 'thay thế cho từ khác', color: 'amber', children: [
+                    { label: 'Xưng hô', note: 'tôi, chúng ta' },
+                    { label: 'Nghi vấn', note: 'ai, gì, nào' }
+                  ] }
+                ],
+                caption: 'Mẹo phân biệt nhanh: <b>thực từ</b> đứng một mình vẫn có nghĩa, <b>hư từ</b> thì không. Đề HSA hay bẫy ở nhóm hư từ vì chúng dễ bị nhầm sang động từ hoặc tính từ.'
+              } }
           ],
           examples: [
             { q: 'Xác định từ loại của “vui”.', sol: 'Tính từ (chỉ trạng thái/đặc điểm; kết hợp “rất vui”).' },
@@ -5014,7 +5048,18 @@ window.LESSON_CONTENT_HSA['hsa_science'] = {
             { icon: 'fa-shield-halved', title: '1954 – Điện Biên Phủ',
               body: 'Chiến thắng Điện Biên Phủ (7/5/1954) buộc Pháp ký Hiệp định Giơ-ne-vơ, kết thúc kháng chiến chống Pháp; đất nước tạm chia hai miền.' },
             { icon: 'fa-dove', title: '1975 – Thống nhất',
-              body: 'Chiến dịch Hồ Chí Minh toàn thắng, 30/4/1975 giải phóng miền Nam, kết thúc kháng chiến chống Mỹ, thống nhất đất nước.' }
+              body: 'Chiến dịch Hồ Chí Minh toàn thắng, 30/4/1975 giải phóng miền Nam, kết thúc kháng chiến chống Mỹ, thống nhất đất nước.',
+              visual: {
+                type: 'timeline', badge: 'MỐC PHẢI NHỚ',
+                events: [
+                  { when: '3/2/1930', label: 'Thành lập Đảng Cộng sản Việt Nam', note: 'Nguyễn Ái Quốc chủ trì hợp nhất ba tổ chức cộng sản', color: 'violet' },
+                  { when: '2/9/1945', label: 'Tuyên ngôn Độc lập', note: 'Khai sinh nước Việt Nam Dân chủ Cộng hòa', color: 'teal' },
+                  { when: '7/5/1954', label: 'Chiến thắng Điện Biên Phủ', note: 'Dẫn tới Hiệp định Giơ-ne-vơ, đất nước tạm chia hai miền', color: 'amber' },
+                  { when: '30/4/1975', label: 'Giải phóng miền Nam', note: 'Chiến dịch Hồ Chí Minh toàn thắng, đất nước thống nhất', color: 'violet' },
+                  { when: '1986', label: 'Đổi Mới', note: 'Đại hội VI mở đầu công cuộc đổi mới kinh tế', color: 'slate' }
+                ],
+                caption: 'Đề HSA rất hay hỏi <b>thứ tự</b> và <b>khoảng cách</b> giữa các mốc, không chỉ hỏi từng năm rời rạc — nhìn theo trục dễ nhớ hơn học thuộc danh sách.'
+              } }
           ],
           examples: [
             { q: 'Tuyên ngôn Độc lập được đọc ngày nào?', sol: '2/9/1945, tại Quảng trường Ba Đình.' },
@@ -5529,7 +5574,17 @@ window.LESSON_CONTENT_HSA['hsa_science'] = {
           title: 'Lý thuyết đầy đủ — cùng ôn kỹ đọc biểu đồ địa lý',
           cards: [
             { icon: 'fa-chart-pie', title: 'Biểu đồ tròn & miền',
-              body: 'Tròn: cơ cấu tại một thời điểm (tổng = 100%). Miền: sự thay đổi cơ cấu qua nhiều năm. Dùng khi số liệu là tỉ trọng, cơ cấu %.' },
+              body: 'Tròn: cơ cấu tại một thời điểm (tổng = 100%). Miền: sự thay đổi cơ cấu qua nhiều năm. Dùng khi số liệu là tỉ trọng, cơ cấu %.',
+              visual: {
+                type: 'pie', badge: 'VÍ DỤ CƠ CẤU', unit: 'nghìn tỉ đồng',
+                slices: [
+                  { label: 'Dịch vụ', value: 42, color: 'violet' },
+                  { label: 'Công nghiệp – Xây dựng', value: 38, color: 'teal' },
+                  { label: 'Nông – Lâm – Thủy sản', value: 12, color: 'amber' },
+                  { label: 'Thuế sản phẩm', value: 8, color: 'slate' }
+                ],
+                caption: 'Cơ cấu GDP theo khu vực kinh tế (số liệu minh hoạ). Dấu hiệu nhận biết đề muốn <b>biểu đồ tròn</b>: câu hỏi có chữ “cơ cấu”, “tỉ trọng”, và tổng các phần bằng 100%.'
+              } },
             { icon: 'fa-chart-column', title: 'Biểu đồ cột',
               body: 'So sánh quy mô, số lượng giữa các đối tượng hoặc theo thời điểm (dân số các vùng, sản lượng các năm). Có cột đơn, cột ghép, cột chồng.' },
             { icon: 'fa-chart-line', title: 'Biểu đồ đường',
