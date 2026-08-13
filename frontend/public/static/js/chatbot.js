@@ -244,6 +244,47 @@ function escapeHtml(text) {
 }
 
 /**
+ * Ngữ cảnh trang hiện tại để trợ lý biết học viên ĐANG học bài nào.
+ *
+ * Nội dung bài nằm ở frontend (lesson_content_hsa.js) nên backend không tự
+ * biết — client gói gọn phần cần thiết (khoá, tên bài, bước đang xem, ý chính,
+ * công thức) rồi gửi kèm. Nhờ vậy trợ lý trả lời BÁM bài đang học thay vì nói
+ * chung chung (audit 2026-08-14). Trang không phải bài học → trả null.
+ */
+function collectLessonContext() {
+    try {
+        var courseId = document.body.getAttribute('data-course');
+        if (!courseId || typeof window.LESSON_CONTENT_HSA === 'undefined') return null;
+        var course = window.LESSON_CONTENT_HSA[courseId];
+        if (!course) return null;
+
+        // Bài đang mở: ?lesson=N (1-based) như engine lesson_hsa.js đọc.
+        var idx = parseInt(new URLSearchParams(location.search).get('lesson'), 10) - 1;
+        if (isNaN(idx) || idx < 0) idx = 0;
+        var lesson = (course.lessons || [])[idx];
+        if (!lesson) return null;
+
+        var stepEl = document.querySelector('.progress-step.active');
+        var stepNames = ['Kiểm tra', 'Đánh giá', 'Lý thuyết', 'Ghi chú', 'Luyện tốc độ'];
+        var stepNum = stepEl ? parseInt(stepEl.getAttribute('data-step'), 10) : 1;
+
+        return {
+            course_id: courseId,
+            course_title: course.course_title || '',
+            lesson_id: lesson.id || '',
+            lesson_index: idx + 1,
+            lesson_title: lesson.title || '',
+            lesson_topic: lesson.topic_tag || '',
+            step: stepNames[(stepNum || 1) - 1] || '',
+            key_points: (lesson.notes && lesson.notes.key_points) || [],
+            formula: (lesson.notes && lesson.notes.formula) || ''
+        };
+    } catch (e) {
+        return null;   // ngữ cảnh chỉ là phần bổ trợ — hỏng thì vẫn chat bình thường
+    }
+}
+
+/**
  * Call Gemini API
  */
 async function callChatbotGemini(prompt, imageBase64 = null) {
@@ -256,7 +297,10 @@ async function callChatbotGemini(prompt, imageBase64 = null) {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: chatbotState.messages })
+            body: JSON.stringify({
+                messages: chatbotState.messages,
+                page_context: collectLessonContext()   // bài & bước đang học
+            })
         });
         if (!response.ok) {
             let msg = 'Trợ lý tạm thời chưa sẵn sàng, bạn thử lại sau nhé.';
