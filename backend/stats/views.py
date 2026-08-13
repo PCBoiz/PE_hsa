@@ -1,7 +1,7 @@
 """Port routes/stats.py + db/repositories/missions.py (phần verify)."""
 import json
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.db import transaction
 from rest_framework.response import Response
@@ -227,8 +227,62 @@ def _days_to_exam(exam_timing):
     m = re.search(r'20\d{2}', str(exam_timing))
     today = date.today()
     year = int(m.group()) if m else (today.year if today.month <= 3 else today.year + 1)
-    try:
-        delta = (date(year, 3, 31) - today).days
-    except ValueError:
-        return None
-    return delta if delta >= 0 else None
+    # Mốc đã qua (vd chọn "2026" nhưng giờ đã tháng 8/2026) → tính sang kỳ thi
+    # năm sau, vì học viên đang nhắm đợt thi KẾ TIẾP chứ không phải đợt đã qua.
+    for y in (year, year + 1):
+        try:
+            delta = (date(y, 3, 31) - today).days
+        except ValueError:
+            return None
+        if delta >= 0:
+            return delta
+    return None
+
+
+class HsaGoalsView(APIView):
+    """GET/PATCH /api/hsa/goals — mục tiêu HSA của học viên.
+
+    Điểm mục tiêu, mốc dự thi và 3 môn Khoa học tự chọn trước đây chỉ đặt được
+    MỘT LẦN lúc làm khảo sát, dù chúng nuôi thẻ đếm ngược ở dashboard và lộ
+    trình cá nhân hoá (audit 2026-08-14). Lưu chung vào bản khảo sát gần nhất
+    để không phải đổi schema; chưa có khảo sát thì tạo một bản mới.
+    """
+
+    FIELDS = ('target_score', 'exam_timing', 'section3_choice')
+
+    def _latest(self, uid):
+        return q1("SELECT id, data_json FROM surveys WHERE user_id=%s "
+                  "ORDER BY id DESC LIMIT 1", (uid,))
+
+    @staticmethod
+    def _as_dict(row):
+        data = (row or {}).get('data_json') or {}
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                data = {}
+        return data if isinstance(data, dict) else {}
+
+    def get(self, request):
+        data = self._as_dict(self._latest(request.user.id))
+        return Response({k: data.get(k) for k in self.FIELDS})
+
+    def patch(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        # Chỉ nhận đúng 3 trường mục tiêu; phần còn lại của khảo sát giữ nguyên.
+        updates = {k: str(body[k])[:120] for k in self.FIELDS if body.get(k) not in (None, '')}
+        if not updates:
+            return Response({'error': 'Không có trường hợp lệ để cập nhật.'}, status=400)
+
+        uid = request.user.id
+        row = self._latest(uid)
+        data = self._as_dict(row)
+        data.update(updates)
+        payload = json.dumps(data, ensure_ascii=False)
+        if row:
+            x("UPDATE surveys SET data_json=%s WHERE id=%s", (payload, row['id']))
+        else:
+            x("INSERT INTO surveys (user_id, data_json, created_at) VALUES (%s, %s, %s)",
+              (uid, payload, datetime.utcnow().isoformat()))
+        return Response({k: data.get(k) for k in self.FIELDS})
