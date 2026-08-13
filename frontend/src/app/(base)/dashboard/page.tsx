@@ -53,32 +53,76 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Row 1: Calendar + Mini-roadmap */}
-          <div className="dash-row dash-row--cal">
-            <div className="section-card study-cal-card fx-fade-up" style={{ animationDelay: '.05s' }}>
-              <div className="study-cal-header">
-                <div className="section-title" style={{ marginBottom: 0 }}><span className="title-icon-blue">📅</span><span>Lịch học tuần này</span></div>
-                <div className="study-cal-streak" id="cal-streak-badge">
-                  <span className="cal-fire">🔥</span>
-                  <span className="cal-streak-num" id="cal-streak-num">0</span>
-                  <span className="cal-streak-lbl">ngày streak</span>
-                </div>
-              </div>
-              <div className="study-cal-grid" id="study-cal-grid">
-                <div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div><div className="skel-cal-day skel"></div>
-              </div>
-              <div className="study-cal-legend">
-                <span className="cal-legend-item"><span className="cal-legend-dot cal-done">✓</span> Đã học</span>
-                <span className="cal-legend-item"><span className="cal-legend-dot cal-todo">○</span> Chưa học</span>
-                <span className="cal-legend-item"><span className="cal-legend-dot cal-today-dot"></span> Hôm nay</span>
+          {/* ── Hàng thẻ số liệu (audit 2026-08-14) ──
+              Trước đây màn hình đầu bị "Lịch học tuần này" chiếm trọn một hàng
+              ngang còn lộ trình thì teo lại. Nay 4 chỉ số quan trọng nhất lên
+              trên cùng, lịch học thu thành dải 7 chấm ngay trong thẻ streak.
+              dashboard.js đổ số vào qua /api/hsa/summary. */}
+          <div className="hsa-tiles fx-fade-up" style={{ animationDelay: '.04s' }}>
+            <div className="hsa-tile">
+              <div className="hsa-tile-ic" data-icon="flame" data-size="18"></div>
+              <div className="hsa-tile-body">
+                <div className="hsa-tile-num" id="tile-streak">0</div>
+                <div className="hsa-tile-lbl">ngày học liên tiếp</div>
+                <div className="hsa-week" id="tile-week" aria-label="Lịch học tuần này"></div>
               </div>
             </div>
-            <div className="cal-tooltip" id="cal-tooltip"></div>
+
+            <div className="hsa-tile">
+              <div className="hsa-tile-ic" data-icon="book-open" data-size="18"></div>
+              <div className="hsa-tile-body">
+                <div className="hsa-tile-num"><span id="tile-done">0</span><span className="hsa-tile-of">/76</span></div>
+                <div className="hsa-tile-lbl">bài đã hoàn thành</div>
+                <div className="hsa-tile-bar"><i id="tile-done-bar" style={{ width: '0%' }}></i></div>
+              </div>
+            </div>
+
+            <div className="hsa-tile">
+              <div className="hsa-tile-ic" data-icon="clock" data-size="18"></div>
+              <div className="hsa-tile-body">
+                <div className="hsa-tile-num" id="tile-days">—</div>
+                <div className="hsa-tile-lbl">ngày nữa tới kỳ thi</div>
+                <a className="hsa-tile-cta" id="tile-days-cta" href="/questionaire">Làm khảo sát để đặt mốc thi</a>
+              </div>
+            </div>
+
+            <div className="hsa-tile">
+              <div className="hsa-tile-ic" data-icon="target" data-size="18"></div>
+              <div className="hsa-tile-body">
+                <div className="hsa-tile-num" id="tile-score">—</div>
+                <div className="hsa-tile-lbl" id="tile-score-lbl">điểm thi thử gần nhất</div>
+                <a className="hsa-tile-cta" id="tile-score-cta" href="/mock">Làm đề thi thử</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Cột trái: học tiếp + tiến độ 3 hợp phần · Cột phải: lộ trình */}
+          <div className="dash-row dash-row--cal">
+            <div className="dash-col-left">
+              <div className="section-card hsa-continue fx-fade-up" id="hsa-continue" style={{ animationDelay: '.08s' }}>
+                <div className="hsa-cont-empty">
+                  <div className="hsa-cont-ic" data-icon="compass" data-size="26"></div>
+                  <div>
+                    <b>Bắt đầu hành trình HSA</b>
+                    <p>Chọn một hợp phần để vào bài học đầu tiên.</p>
+                  </div>
+                  <button className="hsa-cont-btn" onClick={() => W().navigate('courses')}>Khám phá khoá học</button>
+                </div>
+              </div>
+
+              <div className="section-card fx-fade-up" style={{ animationDelay: '.12s' }}>
+                <div className="section-title" style={{ marginBottom: 14 }}>
+                  <span className="title-icon-blue" data-icon="bar-chart" data-size="16"></span>
+                  <span>Tiến độ theo hợp phần</span>
+                </div>
+                <div className="hsa-sections" id="hsa-sections"></div>
+              </div>
+            </div>
 
             <div className="section-card mini-rm-card mini-rm-card--full fx-fade-up" style={{ animationDelay: '.09s' }}>
               <div className="mini-rm-header">
                 <div className="section-title" style={{ marginBottom: 0 }}>
-                  <span className="title-icon-blue">🗺</span><span>Lộ trình của bạn</span>
+                  <span className="title-icon-blue" data-icon="map" data-size="16"></span><span>Lộ trình của bạn</span>
                 </div>
                 <a className="mini-rm-more" href="#" onClick={(e) => { e.preventDefault(); W().navigate('roadmap'); }}>Xem tất cả ›</a>
               </div>
@@ -92,6 +136,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          <div className="cal-tooltip" id="cal-tooltip"></div>
 
           {/* Row 2: Leaderboard + Learning progress */}
           <div className="dash-row dash-row--lb">
