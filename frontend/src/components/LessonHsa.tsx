@@ -6,6 +6,7 @@
 // (engine riêng, KHÔNG đụng 9219 dòng DB). Data: lesson_content_hsa.js.
 import { useEffect } from 'react';
 
+import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 import { apiFetch } from '@/lib/api';
@@ -43,6 +44,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
     'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
     '/static/js/lesson_content_hsa.js',
     '/static/js/lesson_hsa.js',
+    '/static/js/chatbot.js',
   ];
 
   const eyebrow = (n: number, label: string) => (
@@ -57,7 +59,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
       {/* theme.css PHẢI nạp đầu tiên: nó chứa bộ token màu chung (--card,
           --t1…) cho cả 2 theme. Thiếu nó thì var(--card) rơi về fallback tối
           và thẻ câu hỏi vẫn đen dù đang ở theme sáng (audit 2026-08-13). */}
-      <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_db_design.css', '/static/css/lesson_hsa.css']} />
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_db_design.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css']} />
       <title>Bài học HSA — ProgrammingEdu × TopHSA</title>
       <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
       <link
@@ -180,6 +182,10 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
           </div>
         </div>
       </div>
+
+      {/* Trợ lý HSA phải theo học viên VÀO BÀI HỌC, không chỉ ở dashboard
+          (audit 2026-08-14) — đây mới là lúc người học cần hỏi nhất. */}
+      <Chatbot />
 
       <LegacyScripts srcs={scripts} />
     </>

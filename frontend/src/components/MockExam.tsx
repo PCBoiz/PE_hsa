@@ -5,6 +5,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import Chatbot from '@/components/Chatbot';
+import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 import { apiFetch } from '@/lib/api';
 
@@ -77,7 +79,7 @@ export default function MockExam() {
   // ─────────── views ───────────
   return (
     <>
-      <PageStyles hrefs={['/static/css/mock.css']} />
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/mock.css', '/static/css/chatbot.css']} />
       <title>Thi thử CBT — ProgrammingEdu × TopHSA</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
@@ -86,7 +88,18 @@ export default function MockExam() {
           <div className="mk-brand" onClick={() => (window.location.href = '/dashboard')}>
             <span className="mk-c1">ProgrammingEdu</span> <span className="mk-x">×</span> <span className="mk-c2">TopHSA</span>
           </div>
-          <div className="mk-top-tag">🎯 Thi thử CBT</div>
+          {/* Trang này trước đây KHÔNG có điều hướng — vào Thi thử là mất đường
+              về (audit 2026-08-14). Dashboard là SPA nên dùng deep-link #hash
+              (main.js đọc hash lúc khởi động) thay vì gọi navigate() vốn không
+              tồn tại ở trang này. */}
+          <nav className="mk-nav" aria-label="Điều hướng chính">
+            <a className="mk-nav-link" href="/dashboard#dashboard">Dashboard</a>
+            <a className="mk-nav-link" href="/dashboard#courses">Khóa học</a>
+            <a className="mk-nav-link" href="/dashboard#roadmap">Lộ trình</a>
+            <a className="mk-nav-link" href="/dashboard#forum">Diễn đàn</a>
+            <span className="mk-nav-link is-active" aria-current="page">Thi thử</span>
+          </nav>
+          <div className="mk-top-tag">Thi thử CBT</div>
         </div>
 
         {view === 'loading' && <div className="mk-loading"><div className="mk-spinner" /> Đang tải…</div>}
@@ -209,6 +222,11 @@ export default function MockExam() {
           </div>
         )}
       </div>
+
+      {/* Trợ lý HSA cũng có mặt ở phòng thi thử (audit 2026-08-14): sau khi
+          nộp bài, học viên hay muốn hỏi ngay câu vừa sai. */}
+      <Chatbot />
+      <LegacyScripts srcs={['/static/js/chatbot.js']} />
     </>
   );
 }

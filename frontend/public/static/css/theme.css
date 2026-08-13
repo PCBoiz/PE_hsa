@@ -93,6 +93,13 @@ body.dark {
   --t1: #E2E8F0;
   --t2: #94A3B8;
   --t3: #8B95A8;              /* nâng từ #64748B → đạt 4.5:1 trên --card */
+  /* PHẢI khai lại alias: `--text-1: var(--t1)` ở :root đã "đóng băng" giá trị
+     SÁNG; nếu chỉ đổi --t1 thì mọi chỗ dùng --text-1 (pages.css: tiêu đề Trang
+     của tôi…) vẫn giữ màu sáng → chữ tàng hình trên nền tối, tương phản 1.02
+     (audit 2026-08-14). Cùng loại lỗi với --module-accent ở lesson_hsa.css. */
+  --text-1: #E2E8F0;
+  --text-2: #94A3B8;
+  --text-3: #8B95A8;
 
   --brand: #8B7CF6;
   --brand-2: #2DD4BF;

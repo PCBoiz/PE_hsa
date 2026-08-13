@@ -62,14 +62,22 @@ export default function Chatbot() {
         </div>
 
         <div className="chatbot-input-area">
+          {/* Nút gợi ý nhanh — trước đây là "Giải thích code này" / "Tối ưu
+              code", tàn dư của pe_test (audit 2026-08-14). TopHSA luyện thi
+              ĐGNL, không dạy lập trình. chatbot.js sẽ chèn thêm bài đang học
+              vào câu hỏi khi người dùng đứng ở trang bài học. */}
           <div className="chatbot-quick-actions">
-            <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Giải thích code này')}>
+            <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Giải thích giúp mình phần lý thuyết của bài này, cho ví dụ dễ hiểu.')}>
               <i className="fas fa-lightbulb"></i>
-              <span>Giải thích</span>
+              <span>Giảng lại</span>
             </button>
-            <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Tối ưu code')}>
-              <i className="fas fa-wand-magic-sparkles"></i>
-              <span>Tối ưu</span>
+            <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Bài này hay có bẫy gì trong đề HSA? Mẹo làm nhanh là gì?')}>
+              <i className="fas fa-triangle-exclamation"></i>
+              <span>Bẫy &amp; mẹo</span>
+            </button>
+            <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Cho mình 3 câu luyện thêm dạng này, kèm đáp án và lời giải.')}>
+              <i className="fas fa-pen-to-square"></i>
+              <span>Luyện thêm</span>
             </button>
             <button className="chatbot-quick-btn" onClick={() => W().generateChatbotRoadmap()}>
               <i className="fas fa-map"></i>

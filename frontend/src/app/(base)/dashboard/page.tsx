@@ -450,20 +450,22 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
+                {/* Khối XP: nhãn còn nguyên tiếng Anh và phân loại theo
+                    "languages" — tàn dư pe_test (audit 2026-08-14). Đổi sang
+                    tiếng Việt và phân theo HỢP PHẦN HSA. */}
                 <div className="prof-xp-card fx-fade-up" style={{ animationDelay: '.3s' }}>
-                  <div className="prof-xp-label">kinh nghiệm bài học</div>
+                  <div className="prof-xp-label">Kinh nghiệm tích luỹ</div>
                   <div className="prof-xp-inner">
                     <div className="prof-xp-top">
-                      <span className="prof-xp-top-title">Subjects and languages</span>
-                      <span className="prof-xp-sort">Most progress ▾</span>
+                      <span className="prof-xp-top-title">XP theo hợp phần</span>
+                      <span className="prof-xp-sort">Nhiều nhất trước</span>
                     </div>
                     <div className="prof-xp-scale">
                       <span>0</span><span>100</span><span>200</span><span>300</span><span>400</span>
                     </div>
                     <div className="prof-xp-rows" id="prof-xp-rows"></div>
                     <div className="prof-xp-footer">
-                      <span className="prof-xp-footer-link">Learn more about XP</span>
-                      <span className="prof-xp-footer-more">View more details ›</span>
+                      <span className="prof-xp-footer-link">XP nhận được khi hoàn thành bài học và thi thử</span>
                     </div>
                   </div>
                 </div>
