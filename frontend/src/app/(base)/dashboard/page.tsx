@@ -30,7 +30,7 @@ const SCRIPTS = [
 export default function DashboardPage() {
   return (
     <>
-      <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css"]} />
+      <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
       <title>ProgrammingEdu × TopHSA</title>
       {/* PERF 2026-07-19: mermaid + svg-pan-zoom tải từ jsdelivr — preconnect
           cắt DNS+TLS handshake khỏi đường găng nạp script */}

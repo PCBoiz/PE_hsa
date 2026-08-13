@@ -59,7 +59,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
       {/* theme.css PHẢI nạp đầu tiên: nó chứa bộ token màu chung (--card,
           --t1…) cho cả 2 theme. Thiếu nó thì var(--card) rơi về fallback tối
           và thẻ câu hỏi vẫn đen dù đang ở theme sáng (audit 2026-08-13). */}
-      <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_db_design.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css']} />
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_db_design.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
       <title>Bài học HSA — ProgrammingEdu × TopHSA</title>
       <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
       <link

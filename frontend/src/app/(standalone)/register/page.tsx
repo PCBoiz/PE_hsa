@@ -16,7 +16,7 @@ function oauthStart(provider: 'google' | 'facebook') {
 export default function RegisterPage() {
   return (
     <>
-      <PageStyles hrefs={["/static/css/register.css"]} />
+      <PageStyles hrefs={["/static/css/register.css","/static/css/a11y.css"]} />
       <title>Đăng ký — ProgrammingEdu × TopHSA</title>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

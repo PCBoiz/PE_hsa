@@ -12,7 +12,7 @@ const SCRIPTS = ['/static/js/main.js', '/static/js/questionaire.js'];
 export default function QuestionairePage() {
   return (
     <>
-      <PageStyles hrefs={["/static/css/questionaire.css"]} />
+      <PageStyles hrefs={["/static/css/questionaire.css","/static/css/a11y.css"]} />
       <title>Khảo sát đầu vào — ProgrammingEdu × TopHSA</title>
 
       <div className="survey-container">

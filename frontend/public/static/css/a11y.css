@@ -1,0 +1,154 @@
+/* ============================================================================
+ * a11y.css — SÀN kích thước vùng chạm và cỡ chữ. Nạp trên MỌI trang.
+ *
+ * Đo được ở audit 2026-08-14 (Playwright, 390×844): 41 vùng chạm dưới 44px ở
+ * Diễn đàn, 11 ở Bài học, và nút hiện/ẩn mật khẩu ở màn đăng nhập chỉ 17×17px —
+ * nhỏ hơn nửa ngưỡng, ngay ở màn hình đầu tiên người dùng chạm vào.
+ *
+ * Vì sao dùng `!important`: đây là SÀN, không phải gợi ý. File nạp trong layout
+ * nên đứng TRƯỚC CSS của từng trang; không có !important thì mọi khai báo
+ * `height: 32px` viết sau đều vô hiệu hoá nó. Chỉ dùng cho đúng thuộc tính kích
+ * thước, không dùng cho màu sắc hay bố cục.
+ * ========================================================================== */
+
+/* ── Sàn vùng chạm trên thiết bị cảm ứng ──────────────────────────────────
+   Chỉ áp dụng khi con trỏ THÔ (ngón tay). Chuột trỏ chính xác tới từng pixel
+   nên ép 44px trên desktop chỉ làm giao diện phình ra vô ích.
+   Liên kết chữ nằm trong đoạn văn được WCAG 2.5.8 miễn trừ → không đụng tới,
+   chỉ nhắm những thứ TRÔNG như nút. */
+@media (pointer: coarse) {
+  button,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  [role="button"],
+  a.btn,
+  a[class*="-btn"],
+  a[class*="-cta"],
+  a[class*="nav-link"],
+  select,
+  summary {
+    min-height: 44px !important;
+  }
+
+  /* Nút chỉ có icon: phải vuông 44px, không chỉ cao 44. */
+  .bell-btn,
+  .theme-toggle-btn,
+  .toggle-eye,
+  .exit-btn,
+  .avatar-edit-btn,
+  .chatbot-close,
+  .chatbot-send-btn,
+  button[aria-label]:not([class*="chip"]) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* Ô chọn tròn/vuông của khảo sát: bản thân ô 15×15px, nhưng cả NHÃN mới là
+     vùng chạm thật — nới nhãn thay vì phóng to ô cho méo. */
+  label.option,
+  .goal-chip,
+  .questionaire label {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Cách nhau tối thiểu 8px để không bấm nhầm sang nút bên cạnh. */
+  .mk-nav,
+  .goal-chips,
+  .filter-row {
+    gap: 8px;
+  }
+
+  /* Liên kết "xem thêm" tuy là chữ nhưng đứng riêng một dòng như một nút —
+     WCAG chỉ miễn trừ liên kết NẰM TRONG câu văn, nên vẫn phải nới. */
+  .mini-rm-more,
+  .prof-rank-link,
+  .bell-mark-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* ── Sàn 24×24 cho MỌI loại con trỏ ───────────────────────────────────────
+   WCAG 2.5.8 (mức AA) đòi 24×24 kể cả với chuột. Hai thứ dưới đây thủng cả
+   ngưỡng đó nên nâng bất kể thiết bị:
+     · nút hiện/ẩn mật khẩu:  17×17
+     · ô chọn của khảo sát:   13×13 (nhãn tuy bấm được, nhưng chính cái ô cũng
+       là đích bấm hợp lệ và người dùng hay nhắm vào nó) */
+.toggle-eye,
+.cp-toggle-eye {
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step input[type="radio"],
+.step input[type="checkbox"],
+label.option input[type="radio"],
+label.option input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  accent-color: var(--brand-fill, #6D5AE6);
+}
+
+/* ── Sàn cỡ chữ trên màn hình nhỏ ─────────────────────────────────────────
+   Danh sách dưới đây là các lớp ĐO ĐƯỢC là dưới 12px ở 390px, không phải quét
+   bừa: chữ 9–11.5px trên điện thoại là ngưỡng bắt đầu phải nheo mắt. Nhãn hoàn
+   toàn trang trí (chữ cái trong avatar) cố tình để nguyên. */
+@media (max-width: 768px) {
+  .trust-note,
+  .project-tag,
+  .terms,
+  .dash-hero-greeting,
+  .udh-role,
+  .step-num,
+  .step-pill,
+  .hsa-q-type,
+  .player-name,
+  .xp-text,
+  .notif-desc,
+  .goal-help,
+  .prof-cap-num,
+  .prof-caps-note,
+  .prof-mock-meta,
+  .prof-rank-val,
+  .hsa-mis-meta,
+  .fpc-time,
+  .fpc-cat-tag,
+  .fpc-react-count,
+  .forum-post-time,
+  .fc-time,
+  .dash-hero-text p,
+  .hsa-week span,
+  .profile-badge,
+  .prof-stat-lbl,
+  .prof-goal-chip,
+  .mini-rm-more,
+  .prof-rank-link,
+  .hsa-cont-eyebrow,
+  .lb-legend-item,
+  .lb-legend-dot {
+    font-size: 12px !important;
+    line-height: 1.5;
+  }
+
+  /* Ô nhập dưới 16px khiến Safari iOS TỰ PHÓNG TO trang khi focus, đẩy bố cục
+     lệch hẳn — đây là lý do kỹ thuật, không phải sở thích. */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

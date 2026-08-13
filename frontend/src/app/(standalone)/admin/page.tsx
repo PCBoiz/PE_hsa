@@ -12,7 +12,7 @@ const W = () => window as any;
 export default function AdminPage() {
   return (
     <>
-      <PageStyles hrefs={['/static/css/pages/admin.inline.css']} />
+      <PageStyles hrefs={['/static/css/pages/admin.inline.css','/static/css/a11y.css']} />
       <title>Quản trị | Programming EDU</title>
 
       <header>

@@ -18,7 +18,7 @@ function oauthStart(provider: 'google' | 'facebook') {
 export default function LoginPage() {
   return (
     <>
-      <PageStyles hrefs={["/static/css/login.css","/static/css/chatbot.css"]} />
+      <PageStyles hrefs={["/static/css/login.css","/static/css/chatbot.css","/static/css/a11y.css"]} />
       <title>ProgrammingEdu × TopHSA — Đăng nhập</title>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

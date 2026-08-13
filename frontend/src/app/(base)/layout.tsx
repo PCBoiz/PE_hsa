@@ -7,7 +7,7 @@ import PageStyles from '@/components/PageStyles';
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <PageStyles hrefs={["/static/css/theme.css","/static/css/auth.css","/static/css/chatbot.css"]} />
+      <PageStyles hrefs={["/static/css/theme.css","/static/css/auth.css","/static/css/chatbot.css","/static/css/a11y.css"]} />
       {/* Fonts + Font Awesome như base.html */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

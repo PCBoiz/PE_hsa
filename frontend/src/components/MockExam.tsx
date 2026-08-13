@@ -79,7 +79,7 @@ export default function MockExam() {
   // ─────────── views ───────────
   return (
     <>
-      <PageStyles hrefs={['/static/css/theme.css', '/static/css/mock.css', '/static/css/chatbot.css']} />
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/mock.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
       <title>Thi thử CBT — ProgrammingEdu × TopHSA</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
