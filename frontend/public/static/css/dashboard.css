@@ -3834,3 +3834,10 @@ body.dark .prof-post-stats {
 /* Icon SVG trong chip gợi ý tìm kiếm (thay emoji) */
 .csh-pill { display: inline-flex; align-items: center; gap: 6px; }
 .csh-ic { display: inline-flex; align-items: center; flex-shrink: 0; }
+
+/* Khối trống TỰ CO — trước đây canvas lộ trình giữ min-height 300–360px kể
+   cả khi rỗng, tạo mảng trống lớn giữa dashboard (rõ nhất ở theme sáng). */
+.mini-rm-canvas.is-empty,
+.mini-rm-card--full .mini-rm-canvas.is-empty { min-height: 0 !important; height: auto; }
+.mini-rm-empty-icon { color: var(--accent); opacity: .85; display: flex; justify-content: center; }
+.mini-rm-empty { padding: 22px 16px; }

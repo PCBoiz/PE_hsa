@@ -2257,12 +2257,18 @@ function forumClearSearch() {
     if (!canvas) return;
 
     if (!courses || !courses.length) {
+      // Khối trống: icon SVG (không emoji), một câu nói rõ việc cần làm, một
+      // nút hành động. Class is-empty cho khối TỰ CO thay vì giữ chiều cao
+      // 360px — chính chỗ này tạo mảng trống lớn giữa dashboard (audit
+      // 2026-08-13). Nội dung cũ còn sót chữ "học lập trình" của pe_test.
+      canvas.classList.add('is-empty');
       canvas.innerHTML =
         '<div class="mini-rm-empty">' +
-        '<div class="mini-rm-empty-icon">🗺</div>' +
-        '<div>Bạn chưa đăng ký khóa học nào.<br>Hãy bắt đầu hành trình học lập trình nhé!</div>' +
-        '<a class="mini-rm-empty-cta" href="#" onclick="navigate(\'courses\');return false;">Khám phá khóa học</a>' +
+        '<div class="mini-rm-empty-icon" data-icon="map" data-size="30"></div>' +
+        '<div>Bạn chưa đăng ký khoá nào.<br>Chọn một hợp phần HSA để bắt đầu lộ trình của bạn.</div>' +
+        '<a class="mini-rm-empty-cta" href="#" onclick="navigate(\'courses\');return false;">Khám phá khoá học</a>' +
         '</div>';
+      if (window.mountIcons) mountIcons(canvas);
       return;
     }
 
