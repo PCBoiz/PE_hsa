@@ -12,7 +12,13 @@
       const res = await fetch(url, opts);
       let data = {};
       try { data = await res.json(); } catch (e) {}
-      if (!res.ok) throw new Error(data.error || 'Lỗi không xác định');
+      if (!res.ok) {
+        const err = new Error(data.error || 'Lỗi không xác định');
+        // Máy chủ trả kèm `details` — danh sách lỗi có VỊ TRÍ ("bài thứ 2.test…").
+        // Không mang theo thì người soạn chỉ thấy "Nội dung chưa hợp lệ".
+        err.detailList = Array.isArray(data.details) ? data.details : null;
+        throw err;
+      }
       return data;
     }
 
@@ -102,6 +108,8 @@
       document.getElementById('lessonTitle').textContent = 'Bài giảng — ' + (title || id);
       document.getElementById('lessonHint').style.display = 'none';
       document.getElementById('lessonFormBox').style.display = 'block';
+      const ic = document.getElementById('importCourse');
+      if (ic) ic.textContent = 'Nhập vào khoá: ' + (title || id);
       resetLessonForm();
       loadLessons();
     }
@@ -125,6 +133,7 @@
           <td>${esc(l.module || '')}</td>
           <td>${esc(l.title || '')}</td>
           <td style="white-space:nowrap">
+            <button class="btn-primary" onclick="openContent(${l.id})">Soạn</button>
             <button class="btn-ghost" onclick="editLesson(${l.id})">Sửa</button>
             <button class="btn-danger" onclick="delLesson(${l.id})">Xóa</button>
           </td>`;
@@ -183,6 +192,299 @@
       ['lModule','lLessonTitle','lContent'].forEach(id => set(id, ''));
       set('lSort', '0');
     }
+
+
+    /* ══════════════════════════════════════════════════════════════════════
+       SOẠN NỘI DUNG BÀI HỌC — ghi vào lessons.content_json
+       Trước 2026-08-14 trang này chỉ ghi được cột `content` (TEXT) mà engine
+       không đọc, nên bài tạo ở đây học viên không bao giờ thấy.
+       ══════════════════════════════════════════════════════════════════════ */
+    let contentLessonId = null;
+
+    /* ── Khối lặp: câu hỏi ── */
+    function questionRow(q) {
+      q = q || {};
+      const isFill = (q.type || 'mcq') === 'fill';
+      const div = document.createElement('div');
+      div.className = 'rep-item';
+      div.innerHTML =
+        '<div class="rep-head">' +
+          '<select class="q-type">' +
+            '<option value="mcq"' + (isFill ? '' : ' selected') + '>Trắc nghiệm</option>' +
+            '<option value="fill"' + (isFill ? ' selected' : '') + '>Điền đáp án</option>' +
+          '</select>' +
+          '<input class="q-id" placeholder="mã câu (t1)" value="' + esc(q.id || '') + '" />' +
+          '<button class="btn-danger btn-sm" type="button">Xoá</button>' +
+        '</div>' +
+        '<textarea class="q-question" placeholder="Nội dung câu hỏi">' + esc(q.question || '') + '</textarea>' +
+        '<label class="q-opts-wrap">Các lựa chọn — <span class="hint-inline">mỗi dòng một lựa chọn</span>' +
+          '<textarea class="q-options" placeholder="375.000đ&#10;350.000đ&#10;300.000đ">' +
+            esc((q.options || []).join('\n')) + '</textarea>' +
+        '</label>' +
+        '<input class="q-answer" placeholder="Đáp án đúng (phải trùng đúng một dòng ở trên)" value="' +
+          esc(q.answer == null ? '' : q.answer) + '" />' +
+        '<input class="q-explain" placeholder="Giải thích (hiện sau khi chấm)" value="' +
+          esc(q.explain || '') + '" />';
+      div.querySelector('.btn-danger').onclick = () => div.remove();
+      const sel = div.querySelector('.q-type');
+      const optsWrap = div.querySelector('.q-opts-wrap');
+      const syncType = () => { optsWrap.style.display = sel.value === 'fill' ? 'none' : 'block'; };
+      sel.onchange = syncType; syncType();
+      return div;
+    }
+
+    function readQuestions(containerId) {
+      return Array.from(document.getElementById(containerId).children).map((el, i) => {
+        const type = el.querySelector('.q-type').value;
+        const q = {
+          id: el.querySelector('.q-id').value.trim() || ('q' + (i + 1)),
+          type: type,
+          question: el.querySelector('.q-question').value.trim(),
+          answer: el.querySelector('.q-answer').value.trim(),
+        };
+        const ex = el.querySelector('.q-explain').value.trim();
+        if (ex) q.explain = ex;
+        if (type === 'mcq') {
+          q.options = el.querySelector('.q-options').value
+            .split('\n').map(x => x.trim()).filter(Boolean);
+        }
+        return q;
+      });
+    }
+
+    /* ── Khối lặp: thẻ lý thuyết ── */
+    function cardRow(c) {
+      c = c || {};
+      const div = document.createElement('div');
+      div.className = 'rep-item';
+      div.innerHTML =
+        '<div class="rep-head">' +
+          '<input class="c-icon" placeholder="fa-book" value="' + esc(c.icon || '') + '" />' +
+          '<input class="c-title" placeholder="Tiêu đề thẻ" value="' + esc(c.title || '') + '" />' +
+          '<button class="btn-danger btn-sm" type="button">Xoá</button>' +
+        '</div>' +
+        '<textarea class="c-body" placeholder="Nội dung thẻ (cho phép thẻ HTML nhẹ)">' +
+          esc(c.body || '') + '</textarea>' +
+        '<label>Minh hoạ — <span class="hint-inline">JSON, để trống nếu không có. 8 kiểu: ' +
+          'bars · numline · curve · flow · table · pie · tree · timeline</span>' +
+          '<textarea class="c-visual" placeholder=\'{"type":"bars","bars":[{"label":"A","value":10}]}\'>' +
+            (c.visual ? esc(JSON.stringify(c.visual, null, 1)) : '') + '</textarea>' +
+        '</label>';
+      div.querySelector('.btn-danger').onclick = () => div.remove();
+      return div;
+    }
+
+    /* Trả về {cards, errors} — JSON minh hoạ hỏng thì BÁO chứ không nuốt lặng,
+       nếu không người soạn sẽ tưởng đã lưu mà đồ thị thì biến mất. */
+    function readCards(containerId, nhan) {
+      const cards = [], errors = [];
+      Array.from(document.getElementById(containerId).children).forEach((el, i) => {
+        const card = {
+          icon: el.querySelector('.c-icon').value.trim() || 'fa-book',
+          title: el.querySelector('.c-title').value.trim(),
+          body: el.querySelector('.c-body').value.trim(),
+        };
+        const raw = el.querySelector('.c-visual').value.trim();
+        if (raw) {
+          try { card.visual = JSON.parse(raw); }
+          catch (e) { errors.push(nhan + ' — thẻ ' + (i + 1) + ': minh hoạ không phải JSON hợp lệ (' + e.message + ')'); }
+        }
+        cards.push(card);
+      });
+      return { cards: cards, errors: errors };
+    }
+
+    window.addQuestion = id => document.getElementById(id).appendChild(questionRow());
+    window.addCard = id => document.getElementById(id).appendChild(cardRow());
+
+    window.switchVariant = (btn, variant) => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('is-on', t === btn));
+      document.querySelectorAll('.variant-pane').forEach(p => {
+        p.style.display = p.dataset.pane === variant ? 'block' : 'none';
+      });
+    };
+
+    function fillRepeat(containerId, items, factory) {
+      const box = document.getElementById(containerId);
+      box.innerHTML = '';
+      (items || []).forEach(it => box.appendChild(factory(it)));
+    }
+
+    function showErrors(list) {
+      const box = document.getElementById('contentErrors');
+      if (!list || !list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+      box.style.display = 'block';
+      box.className = 'err-box';
+      box.innerHTML = '<b>Chưa lưu được — cần sửa:</b><ul>' +
+        list.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>';
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    window.openContent = async function (lessonId) {
+      try {
+        const row = await api('/api/admin/lessons/' + lessonId + '/content');
+        contentLessonId = lessonId;
+        const c = row.content_json || {};
+        document.getElementById('contentTitle').textContent =
+          'Nội dung bài — ' + (row.title || ('#' + row.sort_order));
+        document.getElementById('contentHint').style.display = 'none';
+        document.getElementById('contentForm').style.display = 'block';
+        document.getElementById('contentActions').style.display = 'flex';
+        const idx = c.index || row.sort_order || 1;
+        document.getElementById('btnPreview').href =
+          '/lesson/' + encodeURIComponent(row.course_id) + '?lesson=' + idx;
+
+        set('fId', c.id || ''); set('fIndex', idx);
+        set('fTitle', c.title || row.title || ''); set('fSubtitle', c.subtitle || '');
+        set('fTopic', c.topic_tag || ''); set('fXp', c.xp_reward == null ? 50 : c.xp_reward);
+
+        const test = c.test || {};
+        set('fTestIntro', test.intro || '');
+        fillRepeat('testQs', test.questions, questionRow);
+        const as = c.assess || {};
+        set('fStrongMin', as.strong_min == null ? '' : as.strong_min);
+        set('fOkMin', as.ok_min == null ? '' : as.ok_min);
+
+        const th = c.theory || {};
+        set('fFullTitle', (th.full || {}).title || '');
+        fillRepeat('fullCards', (th.full || {}).cards, cardRow);
+        set('fCondTitle', (th.condensed || {}).title || '');
+        fillRepeat('condCards', (th.condensed || {}).cards, cardRow);
+
+        const note = c.note || {};
+        set('fNoteTitle', note.title || '');
+        set('fNotePoints', (note.points || []).join('\n'));
+
+        const drill = c.drill || {};
+        set('fDrillIntro', drill.intro || '');
+        set('fDrillSeconds', drill.seconds == null ? 60 : drill.seconds);
+        fillRepeat('drillQs', drill.questions, questionRow);
+
+        showErrors(null);
+        document.getElementById('contentSection').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) { toast(e.message); }
+    };
+
+    function collectContent() {
+      const full = readCards('fullCards', 'Bản đầy đủ');
+      const cond = readCards('condCards', 'Bản tóm tắt');
+      const errors = full.errors.concat(cond.errors);
+
+      const obj = {
+        id: val('fId'),
+        index: parseInt(val('fIndex'), 10),
+        title: val('fTitle'),
+        topic_tag: val('fTopic'),
+        xp_reward: parseInt(val('fXp'), 10) || 50,
+        test: { intro: val('fTestIntro'), questions: readQuestions('testQs') },
+        theory: {},
+      };
+      if (val('fSubtitle')) obj.subtitle = val('fSubtitle');
+
+      const sm = parseInt(val('fStrongMin'), 10), om = parseInt(val('fOkMin'), 10);
+      if (!isNaN(sm) || !isNaN(om)) {
+        obj.assess = {};
+        if (!isNaN(sm)) obj.assess.strong_min = sm;
+        if (!isNaN(om)) obj.assess.ok_min = om;
+      }
+      if (full.cards.length) obj.theory.full = { title: val('fFullTitle'), cards: full.cards };
+      if (cond.cards.length) obj.theory.condensed = { title: val('fCondTitle'), cards: cond.cards };
+
+      const points = val('fNotePoints').split('\n').map(x => x.trim()).filter(Boolean);
+      if (points.length) obj.note = { title: val('fNoteTitle') || 'Ghi nhớ', points: points };
+
+      const dq = readQuestions('drillQs');
+      if (dq.length) {
+        obj.drill = {
+          intro: val('fDrillIntro'),
+          seconds: parseInt(val('fDrillSeconds'), 10) || 60,
+          questions: dq,
+        };
+      }
+      return { obj: obj, errors: errors };
+    }
+
+    window.saveLessonContent = async function () {
+      if (!contentLessonId) return;
+      const res = collectContent();
+      if (res.errors.length) { showErrors(res.errors); return; }
+      try {
+        await api('/api/admin/lessons/' + contentLessonId + '/content', {
+          method: 'PUT', headers: json(), body: JSON.stringify({ content_json: res.obj }),
+        });
+        showErrors(null);
+        toast('Đã lưu nội dung bài học');
+        loadLessons();
+      } catch (e) {
+        // Máy chủ kiểm lần nữa và trả danh sách lỗi có vị trí cụ thể.
+        showErrors(e.detailList || [e.message]);
+      }
+    };
+
+    window.clearLessonContent = async function () {
+      if (!contentLessonId) return;
+      if (!confirm('Xoá nội dung bài này? Bài sẽ quay về dùng nội dung mặc định trong mã nguồn.')) return;
+      try {
+        await api('/api/admin/lessons/' + contentLessonId + '/content', {
+          method: 'PUT', headers: json(), body: JSON.stringify({ content_json: null }),
+        });
+        toast('Đã xoá nội dung — bài dùng lại bản mặc định');
+        openContent(contentLessonId);
+      } catch (e) { toast(e.message); }
+    };
+
+    /* ── Nhập cả khoá từ file JSON ── */
+    function bindImportFile() {
+      const fileInput = document.getElementById('importFile');
+      if (!fileInput) return;
+      fileInput.onchange = () => {
+        const f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => { document.getElementById('importText').value = rd.result; };
+        rd.readAsText(f, 'utf-8');
+      };
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindImportFile);
+    } else { bindImportFile(); }
+
+    window.importCourse = async function () {
+      const box = document.getElementById('importResult');
+      if (!activeCourse) { toast('Chọn một khoá học trước'); return; }
+      const raw = val('importText');
+      if (!raw) { toast('Chưa có dữ liệu để nhập'); return; }
+
+      let payload;
+      try { payload = JSON.parse(raw); }
+      catch (e) {
+        box.style.display = 'block';
+        box.className = 'err-box';
+        box.innerHTML = '<b>File không phải JSON hợp lệ:</b><br>' + esc(e.message);
+        return;
+      }
+      // Chấp nhận cả mảng bài trần lẫn object bọc {lessons:[…]}.
+      if (Array.isArray(payload)) payload = { lessons: payload };
+      const total = parseInt(val('importTotal'), 10);
+      if (!isNaN(total) && total > 0) payload.total_lessons = total;
+
+      try {
+        const res = await api('/api/admin/courses/' + encodeURIComponent(activeCourse) + '/import', {
+          method: 'POST', headers: json(), body: JSON.stringify(payload),
+        });
+        box.style.display = 'block';
+        box.className = 'err-box is-ok';
+        box.innerHTML = '<b>Nhập xong.</b> Tạo mới ' + res.created + ' bài · cập nhật ' + res.updated + ' bài.';
+        toast('Đã nhập ' + res.total + ' bài');
+        loadCourses(); loadLessons();
+      } catch (e) {
+        box.style.display = 'block';
+        box.className = 'err-box';
+        const list = e.detailList || [];
+        box.innerHTML = '<b>' + esc(e.message) + '</b>' +
+          (list.length ? '<ul>' + list.map(d => '<li>' + esc(d) + '</li>').join('') + '</ul>' : '');
+      }
+    };
 
     // ───── Helpers ─────
     function val(id) { return document.getElementById(id).value.trim(); }

@@ -635,10 +635,20 @@
         'Chưa có nội dung bài học cho khoá này. Nội dung HSA đầy đủ sẽ được cập nhật.</div>';
       return;
     }
+    // ?lesson=N là SỐ BÀI (trường `index`), không phải vị trí trong mảng.
+    // Trước đây hai thứ này trùng nhau nên không lộ; từ khi nội dung nạp được
+    // từ DB thì một bài có thể mang index bất kỳ, và tra theo vị trí sẽ mở
+    // nhầm sang bài khác. Tra theo index trước, không thấy mới lùi về vị trí.
     var params = new URLSearchParams(window.location.search);
-    var idx = parseInt(params.get('lesson'), 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= lessons.length) idx = 0;
-    state.lesson = lessons[idx];
+    var want = parseInt(params.get('lesson'), 10);
+    var found = null;
+    if (!isNaN(want)) {
+      for (var i = 0; i < lessons.length; i++) {
+        if (Number(lessons[i].index) === want) { found = lessons[i]; break; }
+      }
+      if (!found && want >= 1 && want <= lessons.length) found = lessons[want - 1];
+    }
+    state.lesson = found || lessons[0];
 
     if ($('lesson-title')) $('lesson-title').textContent = state.lesson.title || '';
     if ($('hsa-topic-tag')) $('hsa-topic-tag').textContent = state.lesson.topic_tag || '';
