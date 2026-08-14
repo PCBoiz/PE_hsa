@@ -4,6 +4,8 @@ from courses import views
 
 urlpatterns = [
     path('api/courses', views.CoursesView.as_view()),
+    # Trang chủ (khách chưa đăng nhập) — xem ghi chú ở PublicCoursesView.
+    path('api/public/courses', views.PublicCoursesView.as_view()),
     path('api/enrolled', views.EnrolledView.as_view()),
     path('api/courses-enrolled', views.CoursesEnrolledView.as_view()),
     path('api/courses/<str:course_id>/enroll', views.EnrollView.as_view()),

@@ -1078,3 +1078,29 @@ a:focus:not(:focus-visible) { outline: none; }
 .project-card > strong { padding: 0 16px; font-size: 16px; color: #fff; }
 .project-card > p { padding: 0 16px; margin: 0; color: rgba(229, 231, 235, 0.78); font-size: 13px; line-height: 1.55; }
 .project-tag { margin: 8px 16px 16px; padding: 4px 10px; align-self: flex-start; border-radius: 6px; background: rgba(255, 255, 255, 0.08); color: #94A3B8; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+
+/* Nhãn "chờ TopHSA xác nhận" cho số liệu về CẤU TRÚC KỲ THI (2026-08-14).
+   Số bài, số khoá là dữ liệu của mình — đếm được, khẳng định được. Số câu mỗi
+   đề, lịch thi, thang điểm là dữ liệu của kỳ thi — không tự khẳng định. */
+.stat-note-mark { color: #A78BFA; font-size: .85em; }
+.stat-note {
+  margin: 14px auto 0; max-width: 620px;
+  font-size: 12.5px; line-height: 1.6; text-align: center;
+  color: rgba(226, 232, 240, .62);
+}
+.stat-note sup { color: #A78BFA; }
+
+/* An toàn cho hiệu ứng cuộn (2026-08-14).
+   `.reveal-on-scroll` để opacity:0 và chỉ JS mới thêm `.visible`. Nghĩa là JS
+   hỏng, trình duyệt không hỗ trợ IntersectionObserver, hoặc observer lỡ nhịp →
+   TOÀN BỘ trang dưới hero biến mất. Với một trang gửi cho đối tác xem thì đó là
+   rủi ro không đáng có. Hai lớp chặn: */
+
+/* 1. Người tắt hiệu ứng chuyển động thì thấy nội dung ngay, không chờ cuộn. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll { opacity: 1 !important; transform: none !important; }
+}
+
+/* 2. `html.no-js` do chính script hiệu ứng gỡ bỏ — script không chạy được thì
+      lớp này còn nguyên và nội dung vẫn hiện. */
+html.no-js .reveal-on-scroll { opacity: 1; transform: none; }

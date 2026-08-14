@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from django.core.cache import cache
 from django.db import transaction
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -324,3 +325,24 @@ class SkillsView(APIView):
         order = {'db_design': 0, 'db_design_tc': 1, 'db_design_nc': 2}
         result.sort(key=lambda s: order.get(s['id'], 99))
         return Response({'skill_sets': result})
+
+
+class PublicCoursesView(APIView):
+    """GET /api/public/courses — danh sách khoá cho TRANG CHỦ, không cần đăng nhập.
+
+    Trang chủ trước đây gọi /api/courses (yêu cầu đăng nhập) nên khách vãng lai
+    nhận 401, khối khoá học không render và để lại một khoảng TRỐNG khổng lồ giữa
+    trang — đúng thứ người ngoài nhìn thấy khi mở link (audit 2026-08-14).
+
+    Không nới quyền cho /api/courses: view đó còn mang bộ lọc theo ngôn ngữ lập
+    trình của pe_test và cần user id để tính cờ "đã ghi danh". Ở đây chỉ trả
+    những trường trang giới thiệu cần, của khoá ĐÃ XUẤT BẢN.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        rows = q("SELECT id, title, subtitle, description, tag, level, duration, "
+                 "lessons, color, accent_color, image, rating "
+                 "FROM courses WHERE is_published IS NOT FALSE ORDER BY id")
+        return Response({'courses': rows, 'count': len(rows)})

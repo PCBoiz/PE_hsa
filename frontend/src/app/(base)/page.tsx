@@ -67,18 +67,84 @@ export default function LandingPage() {
               <div className="hero-stat-lbl">Hợp phần</div>
             </div>
             <div className="hero-stat">
+              {/* Đếm thật từ CSDL — con số này mình chắc chắn. */}
               <div className="hero-stat-val neon-glow-text" id="stat-hours">—</div>
-              <div className="hero-stat-lbl">Giờ luyện đề</div>
+              <div className="hero-stat-lbl">Bài học</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val neon-glow-text">150</div>
-              <div className="hero-stat-lbl">Câu mỗi đề</div>
+              {/* CHỜ XÁC NHẬN: số câu mỗi đề là số liệu về cấu trúc kỳ thi,
+                  không phải số liệu của mình. TopHSA chốt rồi mới bỏ nhãn. */}
+              <div className="hero-stat-val neon-glow-text" data-cho-xac-nhan="so-cau">150</div>
+              <div className="hero-stat-lbl">Câu mỗi đề <sup className="stat-note-mark">*</sup></div>
             </div>
             <div className="hero-stat">
               <div className="hero-stat-val neon-glow-text">CBT</div>
               <div className="hero-stat-lbl">Thi thử trên máy</div>
             </div>
           </div>
+          <p className="stat-note fade-in-up delay-3">
+            <sup>*</sup> Số liệu về cấu trúc đề đang chờ TopHSA xác nhận trước khi công bố.
+          </p>
+        </div>
+      </section>
+
+      {/* HSA là gì — người chưa biết kỳ thi mở trang này thì phải hiểu ngay
+          đang xem sản phẩm phục vụ việc gì (audit 2026-08-14). */}
+      <section className="landing-section reveal-on-scroll">
+        <div className="section-container">
+          <h2 className="section-heading neon-text-sm">HSA là kỳ thi gì?</h2>
+          <p className="section-sub">
+            HSA là bài thi <b>Đánh giá năng lực</b> do Đại học Quốc gia Hà Nội tổ chức. Nhiều trường
+            đại học dùng kết quả này để xét tuyển, song song với điểm thi tốt nghiệp THPT — nghĩa là
+            bạn có thêm một cửa vào đại học.
+          </p>
+
+          <div className="section-grid 3d-grid">
+            <div className="section-card neon-card">
+              <div className="card-icon neon-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14v7m-7-9.5V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-5.5" /></svg>
+              </div>
+              <strong>Đo tư duy, không đo trí nhớ</strong>
+              <p>
+                Đề hỏi cách bạn <b>suy luận và xử lý thông tin</b>, không phải bạn thuộc bao nhiêu
+                công thức. Học tủ gần như không có tác dụng.
+              </p>
+            </div>
+            <div className="section-card neon-card">
+              <div className="card-icon neon-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="13" rx="2" /><path strokeLinecap="round" d="M8 21h8M12 17v4" /></svg>
+              </div>
+              <strong>Làm bài trên máy tính</strong>
+              <p>
+                Thi trên máy tại phòng thi, biết điểm ngay sau khi nộp. Quen giao diện và áp lực
+                bấm giờ từ trước là một lợi thế thật.
+              </p>
+            </div>
+            <div className="section-card neon-card">
+              <div className="card-icon neon-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" /></svg>
+              </div>
+              <strong>Ba hợp phần</strong>
+              <p>
+                Tư duy Định lượng (Toán – số liệu), Tư duy Định tính (Ngữ văn – ngôn ngữ), và
+                Khoa học hoặc Tiếng Anh do bạn chọn.
+              </p>
+            </div>
+            <div className="section-card neon-card">
+              <div className="card-icon neon-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" /></svg>
+              </div>
+              <strong>Thi được nhiều đợt</strong>
+              <p>
+                Mỗi năm có nhiều đợt thi, bạn được lấy kết quả tốt nhất. Ôn sớm và ôn đều quan
+                trọng hơn ôn dồn. <sup className="stat-note-mark">*</sup>
+              </p>
+            </div>
+          </div>
+          <p className="stat-note">
+            <sup>*</sup> Lịch thi, số đợt và cách tính điểm cụ thể theo công bố chính thức từng năm —
+            phần này chờ TopHSA xác nhận.
+          </p>
         </div>
       </section>
 
