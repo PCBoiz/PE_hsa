@@ -615,11 +615,21 @@
     exit: function () { window.location.href = '/dashboard'; }
   };
 
-  function init() {
-    var courseId = (document.body && document.body.dataset.course) || 'hsa_quantitative';
-    state.courseId = courseId;
-    var data = window.LESSON_CONTENT_HSA && window.LESSON_CONTENT_HSA[courseId];
-    if (!data || !data.lessons || !data.lessons.length) {
+  /* Trộn nội dung DB lên trên nội dung trong file JS.
+     DB thắng theo `index`; bài nào DB chưa soạn thì giữ nguyên bản trong file.
+     Nhờ vậy nạp giáo trình đối tác được từng phần, không phải nạp một lượt. */
+  function mergeLessons(fileLessons, dbLessons) {
+    var byIndex = {};
+    (fileLessons || []).forEach(function (l, i) { byIndex[l.index || (i + 1)] = l; });
+    (dbLessons || []).forEach(function (l) { if (l && l.index) byIndex[l.index] = l; });
+    return Object.keys(byIndex)
+      .map(Number)
+      .sort(function (a, b) { return a - b; })
+      .map(function (k) { return byIndex[k]; });
+  }
+
+  function start(courseId, lessons) {
+    if (!lessons.length) {
       var stage = document.querySelector('.lesson-stage');
       if (stage) stage.innerHTML = '<div style="padding:48px;text-align:center;color:#94A3B8">' +
         'Chưa có nội dung bài học cho khoá này. Nội dung HSA đầy đủ sẽ được cập nhật.</div>';
@@ -627,12 +637,28 @@
     }
     var params = new URLSearchParams(window.location.search);
     var idx = parseInt(params.get('lesson'), 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= data.lessons.length) idx = 0;
-    state.lesson = data.lessons[idx];
+    if (isNaN(idx) || idx < 0 || idx >= lessons.length) idx = 0;
+    state.lesson = lessons[idx];
 
     if ($('lesson-title')) $('lesson-title').textContent = state.lesson.title || '';
     if ($('hsa-topic-tag')) $('hsa-topic-tag').textContent = state.lesson.topic_tag || '';
     goToStep(1);
+  }
+
+  function init() {
+    var courseId = (document.body && document.body.dataset.course) || 'hsa_quantitative';
+    state.courseId = courseId;
+    var data = window.LESSON_CONTENT_HSA && window.LESSON_CONTENT_HSA[courseId];
+    var fileLessons = (data && data.lessons) || [];
+
+    // Mạng lỗi / API chưa sẵn sàng → vẫn học được bằng bản trong file, không
+    // để học viên nhìn màn hình trắng chỉ vì máy chủ nội dung trục trặc.
+    fetch('/api/courses/' + encodeURIComponent(courseId) + '/content')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        start(courseId, mergeLessons(fileLessons, d && d.lessons));
+      })
+      .catch(function () { start(courseId, fileLessons); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q1, x
+from lessons.content import course_content
 from common.streak import award_xp, touch_streak
 
 
@@ -110,3 +111,17 @@ class CompleteLessonView(APIView):
             'usedStreakFreeze': used_freeze,
             'newAchievements': newly_awarded,
         })
+
+
+class CourseContentView(APIView):
+    """GET /api/courses/<course_id>/content — nội dung bài đã soạn trong DB.
+
+    Engine bài học gọi endpoint này trước, rồi mới rơi về file JS cho những bài
+    DB chưa có (xem lessons/content.py để biết vì sao).
+    """
+
+    def get(self, request, course_id):
+        if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
+            return Response({'error': 'Không tìm thấy khoá học'}, status=404)
+        lessons = course_content(course_id)
+        return Response({'courseId': course_id, 'count': len(lessons), 'lessons': lessons})

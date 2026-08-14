@@ -1,0 +1,27 @@
+{"lessons":[
+ {
+  "id":"ql_28","index":28,
+  "title":"Bài nhập từ giáo trình đối tác",
+  "subtitle":"Bài này nằm trong DB, không có trong file JS",
+  "topic_tag":"Định lượng · Nhập từ đối tác",
+  "xp_reward":50,
+  "test":{"intro":"Ba câu định vị năng lực.","questions":[
+    {"id":"t1","type":"mcq","question":"2 + 2 bằng mấy?","options":["3","4","5","6"],"answer":"4","explain":"Cộng đơn giản."},
+    {"id":"t2","type":"fill","question":"10% của 200 là bao nhiêu? (nhập số)","answer":"20","explain":"200 × 0,1 = 20."}
+  ]},
+  "assess":{"strong_min":2,"ok_min":1},
+  "theory":{
+    "condensed":{"title":"Tóm tắt nhanh","cards":[
+      {"icon":"fa-bolt","title":"Ý chính","body":"Bài này chứng minh nội dung nạp từ DB hiển thị được cho học viên."}
+    ]},
+    "full":{"title":"Lý thuyết đầy đủ","cards":[
+      {"icon":"fa-book","title":"Nguồn nội dung","body":"Nội dung lấy từ <b>lessons.content_json</b> chứ không phải file JS.",
+       "visual":{"type":"table","badge":"NHẬP TỪ DB","head":["Nguồn","Bài"],"rows":[["File JS","27"],["DB","1"]],"caption":"Engine trộn hai nguồn, DB thắng theo <b>index</b>."}}
+    ]}
+  },
+  "note":{"title":"Ghi chú","points":["Nội dung soạn ở trang Quản trị."]},
+  "drill":{"intro":"Luyện tốc độ.","seconds":60,"questions":[
+    {"id":"d1","type":"mcq","question":"5 × 6 = ?","options":["25","30","35","40"],"answer":"30"}
+  ]}
+ }
+]}
