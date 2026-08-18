@@ -420,3 +420,21 @@ body.light .hsa-viz-badge {
    nhưng trên nền sáng chỉ đạt 1.86:1. Nền sáng phải dùng bản teal đậm. */
 body.light .hsa-viz-cap b,
 body.light .hsa-viz-cap strong { color: #0B6355; }
+
+/* Nội dung bài nay tải qua API — mất mạng thì phải nói rõ chứ không để trắng. */
+.hsa-empty {
+  max-width: 460px; margin: 64px auto; padding: 28px 24px;
+  text-align: center; border-radius: 14px;
+  background: rgba(139,124,246,.06); border: 1px solid rgba(139,124,246,.18);
+}
+.hsa-empty b { display: block; font-size: 15px; color: var(--t1, #E8EBF2); }
+.hsa-empty p { margin: 8px 0 16px; font-size: 13px; line-height: 1.6; color: var(--t3, #8B95A8); }
+.hsa-empty button {
+  padding: 10px 20px; min-height: 44px; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--brand-fill, #6D5AE6); color: #fff; font-size: 13px; font-weight: 700; font-family: inherit;
+}
+
+/* Huy hiệu minh hoạ đặt absolute ở góc phải trên khối .hsa-viz. Với bảng số
+   liệu, nó ĐÈ LÊN tiêu đề cột cuối (thấy rõ ở ảnh chụp bài "Đọc bảng số liệu").
+   Chừa chỗ cho nó thay vì để chồng chữ. */
+.hsa-viz--tb .hsa-tb thead th:last-child { padding-top: 26px; }

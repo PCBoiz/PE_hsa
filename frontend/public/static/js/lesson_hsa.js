@@ -615,60 +615,41 @@
     exit: function () { window.location.href = '/dashboard'; }
   };
 
-  /* Trộn nội dung DB lên trên nội dung trong file JS.
-     DB thắng theo `index`; bài nào DB chưa soạn thì giữ nguyên bản trong file.
-     Nhờ vậy nạp giáo trình đối tác được từng phần, không phải nạp một lượt. */
-  function mergeLessons(fileLessons, dbLessons) {
-    var byIndex = {};
-    (fileLessons || []).forEach(function (l, i) { byIndex[l.index || (i + 1)] = l; });
-    (dbLessons || []).forEach(function (l) { if (l && l.index) byIndex[l.index] = l; });
-    return Object.keys(byIndex)
-      .map(Number)
-      .sort(function (a, b) { return a - b; })
-      .map(function (k) { return byIndex[k]; });
-  }
-
-  function start(courseId, lessons) {
-    if (!lessons.length) {
+  function start(lesson) {
+    if (!lesson) {
       var stage = document.querySelector('.lesson-stage');
-      if (stage) stage.innerHTML = '<div style="padding:48px;text-align:center;color:#94A3B8">' +
-        'Chưa có nội dung bài học cho khoá này. Nội dung HSA đầy đủ sẽ được cập nhật.</div>';
+      if (stage) stage.innerHTML = '<div class="hsa-empty">' +
+        '<b>Chưa tải được nội dung bài học.</b>' +
+        '<p>Máy chủ nội dung đang không phản hồi. Thử tải lại trang sau giây lát.</p>' +
+        '<button onclick="location.reload()">Tải lại</button></div>';
       return;
     }
-    // ?lesson=N là SỐ BÀI (trường `index`), không phải vị trí trong mảng.
-    // Trước đây hai thứ này trùng nhau nên không lộ; từ khi nội dung nạp được
-    // từ DB thì một bài có thể mang index bất kỳ, và tra theo vị trí sẽ mở
-    // nhầm sang bài khác. Tra theo index trước, không thấy mới lùi về vị trí.
-    var params = new URLSearchParams(window.location.search);
-    var want = parseInt(params.get('lesson'), 10);
-    var found = null;
-    if (!isNaN(want)) {
-      for (var i = 0; i < lessons.length; i++) {
-        if (Number(lessons[i].index) === want) { found = lessons[i]; break; }
-      }
-      if (!found && want >= 1 && want <= lessons.length) found = lessons[want - 1];
-    }
-    state.lesson = found || lessons[0];
-
-    if ($('lesson-title')) $('lesson-title').textContent = state.lesson.title || '';
-    if ($('hsa-topic-tag')) $('hsa-topic-tag').textContent = state.lesson.topic_tag || '';
+    state.lesson = lesson;
+    if ($('lesson-title')) $('lesson-title').textContent = lesson.title || '';
+    if ($('hsa-topic-tag')) $('hsa-topic-tag').textContent = lesson.topic_tag || '';
     goToStep(1);
   }
 
   function init() {
     var courseId = (document.body && document.body.dataset.course) || 'hsa_quantitative';
     state.courseId = courseId;
-    var data = window.LESSON_CONTENT_HSA && window.LESSON_CONTENT_HSA[courseId];
-    var fileLessons = (data && data.lessons) || [];
 
-    // Mạng lỗi / API chưa sẵn sàng → vẫn học được bằng bản trong file, không
-    // để học viên nhìn màn hình trắng chỉ vì máy chủ nội dung trục trặc.
-    fetch('/api/courses/' + encodeURIComponent(courseId) + '/content')
+    // ?lesson=N là SỐ BÀI. Chỉ tải ĐÚNG bài đó: trước đây trang nạp cả 76 bài
+    // (440 kB gốc / 87 kB nén) chỉ để hiển thị một bài.
+    var want = parseInt(new URLSearchParams(window.location.search).get('lesson'), 10);
+    if (isNaN(want) || want < 1) want = 1;
+
+    fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=' + want)
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        start(courseId, mergeLessons(fileLessons, d && d.lessons));
+        if (d && d.lesson) { state.total = d.total; start(d.lesson); return; }
+        // Bài yêu cầu chưa có trong CSDL → thử bài 1 trước khi báo lỗi.
+        if (want === 1) { start(null); return; }
+        return fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=1')
+          .then(function (r2) { return r2.ok ? r2.json() : null; })
+          .then(function (d2) { start(d2 && d2.lesson); });
       })
-      .catch(function () { start(courseId, fileLessons); });
+      .catch(function () { start(null); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

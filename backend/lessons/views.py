@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q1, x
-from lessons.content import course_content
+from lessons.content import course_content, one_lesson
 from common.streak import award_xp, touch_streak
 
 
@@ -123,5 +123,16 @@ class CourseContentView(APIView):
     def get(self, request, course_id):
         if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Không tìm thấy khoá học'}, status=404)
+
+        # ?lesson=N → chỉ bài đó. Trang bài học dùng đường này; trả cả khoá chỉ
+        # tốn băng thông cho 75 bài học viên không mở.
+        want = request.query_params.get('lesson')
+        if want and str(want).isdigit():
+            lesson, total = one_lesson(course_id, int(want))
+            if lesson is None:
+                return Response({'error': 'Chưa có nội dung cho bài này',
+                                 'courseId': course_id, 'total': total}, status=404)
+            return Response({'courseId': course_id, 'total': total, 'lesson': lesson})
+
         lessons = course_content(course_id)
         return Response({'courseId': course_id, 'count': len(lessons), 'lessons': lessons})

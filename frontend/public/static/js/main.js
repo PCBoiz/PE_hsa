@@ -1794,6 +1794,31 @@ function _applyCoursesData(data) {
   renderDashProgress();
 }
 
+/* ── Gộp lượt gọi GET trùng (audit 2026-08-19) ───────────────────────────
+   Đo được: mở Bảng điều khiển bắn 10 lượt API, trong đó /api/courses-enrolled
+   bị gọi HAI lần vì main.js và dashboard.js mỗi bên tự fetch. Hàm này gộp các
+   lượt GET cùng URL đang bay làm một, và giữ kết quả trong một khoảng ngắn để
+   hai module gọi cách nhau vài trăm ms không thành hai vòng mạng.
+
+   Chỉ dùng cho GET đọc dữ liệu. KHÔNG dùng cho POST/PUT hay chỗ cần số liệu
+   mới tinh sau khi vừa ghi. */
+var _getCache = {};
+window.__apiGet = function (url, ttlMs) {
+  var ttl = ttlMs == null ? 5000 : ttlMs;
+  var hit = _getCache[url];
+  var now = Date.now();
+  if (hit && (hit.inflight || now - hit.at < ttl)) return hit.p;
+  var entry = { at: now, inflight: true };
+  entry.p = fetch(url)
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { entry.inflight = false; entry.at = Date.now(); return d; })
+    .catch(function (e) { delete _getCache[url]; throw e; });
+  _getCache[url] = entry;
+  return entry.p;
+};
+/* Xoá cache một URL — gọi sau khi ghi dữ liệu để lượt đọc sau lấy số mới. */
+window.__apiGetBust = function (url) { delete _getCache[url]; };
+
 function loadCoursesAndEnrolled() {
   /* Render từ cache ngay lập tức nếu có → UI hiện lên trước khi fetch xong */
   try {
@@ -1801,8 +1826,7 @@ function loadCoursesAndEnrolled() {
     if (cached) _applyCoursesData(JSON.parse(cached));
   } catch (e) {}
 
-  return fetch(API + '/courses-enrolled')
-    .then(handleFetch)
+  return window.__apiGet(API + '/courses-enrolled')
     .then(function(data) {
       if (!data) return;
       try { sessionStorage.setItem(_COURSES_CACHE_KEY, JSON.stringify(data)); } catch (e) {}

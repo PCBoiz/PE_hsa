@@ -28,7 +28,7 @@ Hình dạng một bài (giữ NGUYÊN schema mà engine đang dùng, không ph�
 """
 import json
 
-from common.db import q
+from common.db import q, q1
 
 #: Trường bắt buộc — thiếu một trong số này thì engine sẽ hỏng giữa chừng.
 REQUIRED = ('id', 'index', 'title', 'test', 'theory')
@@ -133,3 +133,28 @@ def course_content(course_id):
         data.setdefault('index', r['sort_order'])
         out.append(data)
     return out
+
+
+def one_lesson(course_id, index):
+    """Nội dung ĐÚNG MỘT bài + tổng số bài của khoá.
+
+    Trang bài học trước đây nạp cả 76 bài (87 kB nén / 440 kB gốc) chỉ để hiển
+    thị một bài. Đọc lẻ từng bài cắt gần hết phần đó.
+    """
+    row = q1("SELECT content_json FROM lessons "
+             "WHERE course_id=%s AND sort_order=%s AND content_json IS NOT NULL",
+             (course_id, index))
+    total = (q1("SELECT COUNT(*) AS n FROM lessons "
+                "WHERE course_id=%s AND content_json IS NOT NULL", (course_id,)) or {}).get('n', 0)
+    if not row:
+        return None, total
+    data = row['content_json']
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except ValueError:
+            return None, total
+    if not isinstance(data, dict):
+        return None, total
+    data.setdefault('index', index)
+    return data, total

@@ -2129,57 +2129,68 @@ function forumClearSearch() {
    Popup nhắc giữ chuỗi học
    ═══════════════════════════════════════════════════════ */
 (function () {
-  function streakShouldShow() {
+  /* Nhắc giữ chuỗi ngày học.
+     Bản cũ là POPUP PHỦ KÍN màn hình (nền đen 55%, z-index 9999, khoá cuộn
+     trang) bật ngay sau mỗi lần đăng nhập — thứ đầu tiên học viên gặp là một
+     bức tường phải bấm bỏ. Nay là thẻ nhỏ trượt vào góc, tự tắt, không chặn
+     thao tác nào (audit 2026-08-19). */
+  function shouldShow() {
     return new URLSearchParams(window.location.search).get('streak') === '1';
   }
 
-  function streakCleanUrl() {
+  function cleanUrl() {
     var url = new URL(window.location.href);
     url.searchParams.delete('streak');
     history.replaceState(null, '', url.toString());
   }
 
-  window.streakClose = function () {
-    var el = document.getElementById('streakPopup');
-    if (el) {
-      el.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-  };
-
-  window.streakGoLearn = function () {
-    streakClose();
-    if (typeof navigate === 'function') navigate('courses');
-  };
-
-  document.addEventListener('click', function (e) {
-    var popup = document.getElementById('streakPopup');
-    if (popup && e.target === popup) streakClose();
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      var popup = document.getElementById('streakPopup');
-      if (popup && popup.classList.contains('active')) streakClose();
-    }
-  });
-
-  function streakShow() {
-    if (!streakShouldShow()) return;
-    streakCleanUrl();
-    var el = document.getElementById('streakPopup');
-    if (!el) return;
-    document.body.style.overflow = 'hidden';
-    el.classList.add('active');
+  function dismiss(el) {
+    if (!el || el.__di) return;
+    el.__di = true;
+    el.classList.remove('show');
+    setTimeout(function () { el.remove(); }, 400);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(streakShow, 800);
-    });
-  } else {
-    setTimeout(streakShow, 800);
+  function show(streak) {
+    var el = document.createElement('div');
+    el.className = 'streak-toast';
+    el.setAttribute('role', 'status');
+    var dong = streak > 0
+      ? 'Bạn đang có <b>' + streak + ' ngày</b> liên tiếp — học một chút hôm nay để giữ chuỗi nhé.'
+      : 'Học một bài hôm nay để bắt đầu chuỗi ngày học của bạn.';
+    el.innerHTML =
+      '<span class="streak-toast-ic">🔥</span>' +
+      '<span class="streak-toast-body">' +
+        '<b>Giữ chuỗi hôm nay</b>' +
+        '<span>' + dong + '</span>' +
+        '<button type="button" class="streak-toast-go">Học tiếp →</button>' +
+      '</span>' +
+      '<button type="button" class="streak-toast-x" aria-label="Đóng">×</button>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('show'); });
+
+    el.querySelector('.streak-toast-x').onclick = function () { dismiss(el); };
+    el.querySelector('.streak-toast-go').onclick = function () {
+      dismiss(el);
+      var link = document.querySelector('#hsa-continue .hsa-cont-link');
+      if (link) { window.location.href = link.getAttribute('href'); return; }
+      if (typeof navigate === 'function') navigate('courses');
+    };
+    setTimeout(function () { dismiss(el); }, 9000);
   }
+
+  function init() {
+    if (!shouldShow()) return;
+    cleanUrl();
+    // Đợi hàng thẻ đổ số xong để nói ĐÚNG số ngày, thay vì câu chung chung.
+    setTimeout(function () {
+      var n = parseInt((document.getElementById('tile-streak') || {}).textContent, 10);
+      show(isNaN(n) ? 0 : n);
+    }, 1400);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 
 /* ═══════════════════════════════════════════════════════
@@ -2728,8 +2739,9 @@ function forumClearSearch() {
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
       .catch(function () { /* thẻ giữ giá trị mặc định */ });
-    fetch('/api/courses-enrolled')
-      .then(function (r) { return r.ok ? r.json() : []; })
+    // Dùng chung lượt gọi với main.js — trước đây mỗi bên tự fetch nên
+    // /api/courses-enrolled bị gọi hai lần mỗi lần mở Bảng điều khiển.
+    window.__apiGet('/api/courses-enrolled')
       .then(function (list) {
         lastEnrolled = Array.isArray(list) ? list : (list && list.courses) || [];
         renderProgressBlocks();

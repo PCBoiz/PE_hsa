@@ -719,19 +719,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ★ POPUP NHẮC GIỮ CHUỖI HỌC */}
-      <div className="streak-overlay" id="streakPopup">
-        <div className="streak-card">
-          <div className="streak-fire-wrap">
-            <div className="streak-ring"></div>
-            <div className="streak-fire-bg">🔥</div>
-          </div>
-          <h3 className="streak-title">Đừng quên giữ chuỗi hôm nay 🔥</h3>
-          <p className="streak-sub">Bạn đang có chuỗi học liên tiếp tuyệt vời.<br />Học một chút hôm nay để không bị gián đoạn nhé!</p>
-          <button className="streak-btn-go" onClick={() => W().streakGoLearn()}>Đi học thôi</button>
-          <button className="streak-btn-skip" onClick={() => W().streakClose()}>Để sau</button>
-        </div>
-      </div>
+      {/* Nhắc giữ chuỗi: KHÔNG còn markup ở đây. Bản cũ là lớp phủ kín màn
+          hình bật sau mỗi lần đăng nhập; nay dashboard.js dựng một thẻ nhỏ ở
+          góc, tự tắt, không chặn thao tác (audit 2026-08-19). */}
 
       <Chatbot />
 
