@@ -35,6 +35,48 @@
     var o = getOverrides();
     o[key] = status;
     localStorage.setItem(LS_PROGRESS, JSON.stringify(o));
+    syncLen(key, status);
+  }
+
+  /* ── Đồng bộ tiến độ lộ trình lên máy chủ (audit 2026-08-19) ──────────
+     Trước đây tiến độ CHỈ nằm trong localStorage: bảng roadmap_progress và
+     /api/roadmap có sẵn nhưng không ai ghi vào. Học viên đổi máy, đổi trình
+     duyệt hay xoá dữ liệu duyệt web là mất sạch tiến độ đã đánh dấu.
+     localStorage vẫn giữ vai trò bộ đệm để giao diện phản hồi tức thì; máy chủ
+     là nơi lưu thật. */
+  function syncLen(key, status) {
+    var i = key.indexOf(':');
+    if (i < 0) return;
+    var roadmapId = key.slice(0, i), itemId = key.slice(i + 1);
+    fetch('/api/roadmap/' + encodeURIComponent(itemId), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roadmap_id: roadmapId, done: status === 'done' })
+    }).catch(function () { /* mất mạng: localStorage vẫn giữ, lần sau đồng bộ lại */ });
+  }
+
+  /* Kéo tiến độ từ máy chủ về, ghi đè bộ đệm cục bộ. Chạy một lần lúc mở
+     trang — nhờ vậy máy mới vẫn thấy đúng những gì đã đánh dấu ở máy cũ. */
+  function syncXuong(xong) {
+    fetch('/api/roadmap')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !Array.isArray(d.doneItems) || !d.doneItems.length) { if (xong) xong(); return; }
+        var o = getOverrides();
+        // API trả item_id trần, không kèm tên lộ trình. Đánh dấu mọi khoá đang
+        // có đuôi khớp, và giữ nguyên phần localStorage đã có.
+        Object.keys(o).forEach(function (k) {
+          var it = k.slice(k.indexOf(':') + 1);
+          if (d.doneItems.indexOf(it) > -1) o[k] = 'done';
+        });
+        d.doneItems.forEach(function (it) {
+          var da = Object.keys(o).some(function (k) { return k.slice(k.indexOf(':') + 1) === it; });
+          if (!da) o[getActive() + ':' + it] = 'done';
+        });
+        localStorage.setItem(LS_PROGRESS, JSON.stringify(o));
+        if (xong) xong();
+      })
+      .catch(function () { if (xong) xong(); });
   }
   function getStatus(name, nodeId, fallback) {
     var ov = getOverrides();
@@ -493,6 +535,9 @@
 
   /* ── Entry point — gọi từ navigate('roadmap') ── */
   window.initRoadmapPage = function () {
+    // Kéo tiến độ đã lưu trên máy chủ về TRƯỚC khi vẽ, để máy mới hiển thị
+    // đúng những gì học viên đã đánh dấu ở máy cũ.
+    syncXuong(function () { renderFlow(getActive()); });
     // Render ngay tab hiện có — không chờ fetch, tránh màn hình trống khi
     // Neon DB cold-start (có thể mất vài giây để phản hồi).
     renderTabs();

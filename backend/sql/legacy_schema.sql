@@ -341,3 +341,13 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS lesson_no INTEGER;
 -- NHÃN rõ ràng — người xem không được phép nhầm đây là bài của học viên thật.
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_sample BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_posts_lesson ON posts(course_id, lesson_no);
+
+-- ============================================================================
+-- 25. Tiến độ lộ trình: bỏ khoá ngoại tới `roadmaps` (2026-08-19)
+-- ============================================================================
+-- Danh mục 26 lộ trình nằm trong roadmapData.js phía client (giống hệt trường
+-- hợp nội dung bài học trước đây), bảng `roadmaps` chỉ có mẫu do seed tạo. Khoá
+-- ngoại này khiến MỌI lần lưu tiến độ đều 500 vì roadmap_id là TÊN lộ trình
+-- tĩnh, không có dòng tương ứng. Hệ quả: tiến độ lộ trình chỉ nằm trong
+-- localStorage, đổi máy là mất sạch.
+ALTER TABLE roadmap_progress DROP CONSTRAINT IF EXISTS roadmap_progress_roadmap_id_fkey;

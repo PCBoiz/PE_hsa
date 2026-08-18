@@ -26,21 +26,28 @@ class GenerateQuizView(APIView):
         if not course:
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-        # step_2 của các bài user đã completed trong khóa này
-        rows = q('''SELECT l.id AS lesson_id, l.lesson_code,
-                           l.content_json->'step_2' AS q
+        # Câu hỏi lấy từ các bài học viên ĐÃ HOÀN THÀNH trong khoá này.
+        #
+        # Bản cũ đọc content_json->'step_2' — đó là schema bài học của pe_test
+        # (5 bước, MCQ nằm ở step_2). Bài HSA để câu hỏi ở test.questions và
+        # drill.questions, nên quiz ôn tập KHÔNG BAO GIỜ tìm thấy câu nào:
+        # endpoint luôn trả 400 "available: 0" và tính năng chết hẳn
+        # (audit 2026-08-19). Nay đọc đúng chỗ, vẫn giữ nhánh step_2 cho dữ
+        # liệu cũ nếu có.
+        rows = q('''SELECT l.id AS lesson_id,
+                           COALESCE(l.lesson_code, l.content_json->>'id') AS lesson_code,
+                           l.content_json AS cj
                     FROM lessons l
                     JOIN lesson_progress lp
                       ON lp.lesson_id = l.id AND lp.user_id = %s
                      AND lp.status = 'completed'
                     WHERE l.course_id = %s
-                      AND l.content_json IS NOT NULL
-                      AND jsonb_exists(l.content_json, 'step_2')''', (uid, course_id))
+                      AND l.content_json IS NOT NULL''', (uid, course_id))
 
-        # step_2 có 2 dạng: {"mcq":[{question,options},...]} hoặc {question,options}
         pool = []
 
-        def _add(lesson, qq):
+        def _add_pe_test(lesson, qq):
+            """Dạng pe_test: options đã là [{id, text, correct}]."""
             if isinstance(qq, dict) and qq.get('question') and isinstance(qq.get('options'), list):
                 pool.append({
                     'lesson_id': lesson['lesson_id'],
@@ -49,20 +56,54 @@ class GenerateQuizView(APIView):
                     'options': qq['options'],
                 })
 
+        def _add_hsa(lesson, qq):
+            """Dạng HSA: options là mảng chuỗi + trường answer riêng.
+
+            Quy về dạng [{id, text, correct}] mà phần chấm điểm đang dùng.
+            Bỏ câu điền đáp án: quiz ôn tập chỉ chấm trắc nghiệm.
+            """
+            if not isinstance(qq, dict):
+                return
+            if qq.get('type') not in (None, 'mcq'):
+                return
+            opts, ans = qq.get('options'), qq.get('answer')
+            if not qq.get('question') or not isinstance(opts, list) or len(opts) < 2:
+                return
+            if ans is None or ans not in opts:
+                return
+            pool.append({
+                'lesson_id': lesson['lesson_id'],
+                'lesson_code': lesson['lesson_code'],
+                'question': qq['question'],
+                'options': [
+                    {'id': f'o{i + 1}', 'text': str(o), 'correct': (o == ans)}
+                    for i, o in enumerate(opts)
+                ],
+            })
+
         for r in rows:
-            s2 = r['q']
-            if isinstance(s2, str):
+            cj = r['cj']
+            if isinstance(cj, str):
                 try:
-                    s2 = json.loads(s2)
+                    cj = json.loads(cj)
                 except ValueError:
                     continue
-            if not isinstance(s2, dict):
+            if not isinstance(cj, dict):
                 continue
-            if isinstance(s2.get('mcq'), list):
-                for item in s2['mcq']:
-                    _add(r, item)
-            else:
-                _add(r, s2)
+
+            for khoi in ('test', 'drill'):
+                block = cj.get(khoi)
+                if isinstance(block, dict) and isinstance(block.get('questions'), list):
+                    for item in block['questions']:
+                        _add_hsa(r, item)
+
+            s2 = cj.get('step_2')
+            if isinstance(s2, dict):
+                if isinstance(s2.get('mcq'), list):
+                    for item in s2['mcq']:
+                        _add_pe_test(r, item)
+                else:
+                    _add_pe_test(r, s2)
 
         if len(pool) < MIN_QUESTIONS:
             return Response({
