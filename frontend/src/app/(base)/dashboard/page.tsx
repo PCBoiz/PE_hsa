@@ -223,6 +223,37 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ── Khu giảng dạy (Giảng viên / Quản trị viên) ── */}
+        <div className="page" id="page-teach">
+          <div className="courses-header fx-fade-up">
+            <div>
+              <h2>👩‍🏫 Giảng dạy</h2>
+              <p className="courses-subtitle">
+                Lớp bạn phụ trách, ai đang cần chú ý, và hồ sơ học tập của từng học viên.
+              </p>
+            </div>
+          </div>
+          <div className="tc-wrap">
+            <div className="section-card tc-side fx-fade-up">
+              <div className="section-title" style={{ marginBottom: 12 }}>
+                <span className="title-icon-blue" data-icon="users" data-size="16"></span>
+                <span>Lớp của tôi</span>
+              </div>
+              <div className="tc-classes" id="tc-classes">
+                <div className="tc-empty">Đang tải…</div>
+              </div>
+            </div>
+            <div className="tc-main">
+              <div className="section-card fx-fade-up" style={{ animationDelay: '.05s' }}>
+                <div className="tc-report" id="tc-report">
+                  <div className="tc-empty">Chọn một lớp để xem báo cáo.</div>
+                </div>
+              </div>
+              <div className="section-card tc-student fx-fade-up" id="tc-student" hidden></div>
+            </div>
+          </div>
+        </div>
+
         {/* ── Kế hoạch học ── */}
         <div className="page" id="page-plan">
           <div className="courses-header fx-fade-up">

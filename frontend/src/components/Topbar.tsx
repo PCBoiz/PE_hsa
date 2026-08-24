@@ -50,6 +50,12 @@ export default function Topbar() {
             <span className="nav-icon" data-icon="target" data-size="17"></span><span>Thi thử</span>
           </button>
 
+          {/* Khu giảng dạy — chỉ hiện với vai trò Giảng viên hoặc admin.
+              dashboard.js bật/tắt theo window.__currentUser.role. */}
+          <button className="nav-btn" id="nav-teach" data-page="teach" style={{ display: 'none' }} onClick={() => W().navigate('teach')} aria-label="Giảng dạy">
+            <span className="nav-icon" data-icon="users" data-size="17"></span><span>Giảng dạy</span>
+          </button>
+
           <button className="nav-btn" id="nav-admin" style={{ display: 'none' }} onClick={() => { window.location.href = '/admin'; }} aria-label="Quản trị">
             <span className="nav-icon" data-icon="wrench" data-size="17"></span><span>Quản trị</span>
           </button>

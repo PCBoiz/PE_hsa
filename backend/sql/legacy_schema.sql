@@ -512,3 +512,53 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_items_lesson
 -- "lịch này lập ngày ..., dựa trên ... bài/tuần".
 ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS generated_at TIMESTAMP;
 ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS basis JSONB;
+
+-- ============================================================================
+-- 29. Lớp học & vai trò Giảng viên (bước đầu thành ERP, 2026-08-24)
+-- ============================================================================
+-- Trước đây hệ thống chỉ có HAI vai trò: 'admin' và 'Học viên', và phân quyền là
+-- NHỊ PHÂN (common/permissions.py: is_admin). Với một trung tâm luyện thi, mô
+-- hình đó sai ngay từ gốc: giảng viên phải thấy được học viên của MÌNH và
+-- KHÔNG thấy của người khác.
+--
+-- Vai trò mới ghi thẳng vào users.role = 'Giảng viên' (cột đã là TEXT tự do,
+-- không cần đổi kiểu). Quyền thì KHÔNG theo vai trò mà theo NGỮ CẢNH: giảng
+-- viên xem được đúng những lớp mình phụ trách.
+--
+-- `courses.instructor_id` đã tồn tại từ lâu nhưng luôn NULL và không chỗ nào
+-- đọc — cố ý KHÔNG dùng lại nó: một giảng viên phụ trách LỚP, không phụ trách
+-- cả khoá (cả ba khoá HSA dùng chung cho mọi lớp).
+CREATE TABLE IF NOT EXISTS classes (
+    id          SERIAL PRIMARY KEY,
+    code        TEXT,
+    name        TEXT NOT NULL,
+    -- Lớp có thể chỉ ôn một hợp phần, hoặc cả ba (NULL).
+    course_id   TEXT REFERENCES courses(id) ON DELETE SET NULL,
+    teacher_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    -- TopHSA dạy lớp online có lịch cố định. Đợt này mới lưu MÔ TẢ lịch và link
+    -- phòng học; từng buổi học và điểm danh là mô-đun riêng (xem đặc tả ERP).
+    schedule    TEXT,
+    meeting_url TEXT,
+    starts_on   DATE,
+    ends_on     DATE,
+    exam_date   DATE,
+    capacity    INTEGER,
+    status      TEXT NOT NULL DEFAULT 'active',
+    note        TEXT,
+    created_at  TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_classes_code ON classes(code) WHERE code IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
+
+-- Học viên trong lớp. Giữ `left_at` thay vì xoá dòng: học viên nghỉ giữa chừng
+-- vẫn phải còn trong báo cáo của kỳ đó, xoá đi là mất luôn lịch sử.
+CREATE TABLE IF NOT EXISTS class_members (
+    class_id  INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP NOT NULL DEFAULT now(),
+    left_at   TIMESTAMP,
+    note      TEXT,
+    PRIMARY KEY (class_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_class_members_user ON class_members(user_id);

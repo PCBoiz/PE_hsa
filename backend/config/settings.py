@@ -94,6 +94,8 @@ INSTALLED_APPS = [
     'courseadmin',
     'mockexam',
     'chatbot',
+    # Lớp học + báo cáo giảng viên (bước đầu thành ERP, 2026-08-24).
+    'teaching',
 ]
 
 MIDDLEWARE = [

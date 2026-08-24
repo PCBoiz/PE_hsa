@@ -495,4 +495,184 @@
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
     }
 
+    /* ───── Lớp học & vai trò (2026-08-24) ─────────────────────────────────
+       Bước đầu biến sản phẩm thành ERP: phải có chỗ TẠO lớp, gán giảng viên và
+       xếp học viên vào lớp, nếu không thì khu Giảng dạy không có gì để hiện.
+
+       Học viên rời lớp được đánh dấu `left_at` chứ KHÔNG xoá dòng — em nghỉ
+       giữa chừng vẫn phải còn trong báo cáo của kỳ đó. */
+    let editClassId = null;
+    let activeClass = null;
+
+    async function loadClasses() {
+      const d = await api('/api/admin/classes');
+      const tb = document.getElementById('classRows');
+      tb.innerHTML = '';
+      (d.classes || []).forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td>${esc(c.code || '—')}</td><td>${esc(c.name)}</td>` +
+          `<td>${esc(c.teacherName || '(chưa gán)')}</td>` +
+          `<td>${esc(c.schedule || '—')}</td>` +
+          `<td>${c.members}${c.capacity ? '/' + c.capacity : ''}</td>` +
+          `<td>${esc(c.status)}</td>` +
+          `<td><button class="btn-ghost" data-act="members" data-id="${c.id}">Học viên</button> ` +
+          `<button class="btn-ghost" data-act="edit" data-id="${c.id}">Sửa</button> ` +
+          `<button class="btn-ghost" data-act="del" data-id="${c.id}">Xóa</button></td>`;
+        tr.querySelector('[data-act="members"]').onclick = () => openMembers(c);
+        tr.querySelector('[data-act="edit"]').onclick = () => editClass(c);
+        tr.querySelector('[data-act="del"]').onclick = () => delClass(c);
+        tb.appendChild(tr);
+      });
+
+      const sel = document.getElementById('klTeacher');
+      sel.innerHTML = '<option value="">(chưa gán giảng viên)</option>' +
+        (d.teachers || []).map(t =>
+          `<option value="${t.id}">${esc(t.name || t.email)}</option>`).join('');
+      const st = document.getElementById('klStatus');
+      st.innerHTML = (d.statuses || []).map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    function classPayload() {
+      return {
+        code: val('klCode'), name: val('klName'),
+        course_id: val('klCourse'),
+        teacher_id: document.getElementById('klTeacher').value || null,
+        schedule: val('klSchedule'), meeting_url: val('klUrl'),
+        starts_on: val('klStart'), exam_date: val('klExam'),
+        capacity: val('klCap'), status: document.getElementById('klStatus').value,
+        note: val('klNote'),
+      };
+    }
+
+    window.saveClass = async function () {
+      const body = classPayload();
+      if (!body.name) { toast('Lớp phải có tên'); return; }
+      try {
+        if (editClassId) {
+          await api('/api/admin/classes/' + editClassId,
+                    { method: 'PUT', headers: json(), body: JSON.stringify(body) });
+        } else {
+          await api('/api/admin/classes',
+                    { method: 'POST', headers: json(), body: JSON.stringify(body) });
+        }
+        toast('Đã lưu lớp');
+        window.resetClassForm();
+        loadClasses();
+      } catch (e) { toast(e.message); }
+    };
+
+    function editClass(c) {
+      editClassId = c.id;
+      document.getElementById('classFormTitle').textContent = 'Sửa lớp: ' + c.name;
+      set('klCode', c.code); set('klName', c.name); set('klCourse', c.course);
+      set('klSchedule', c.schedule); set('klCap', c.capacity);
+      set('klExam', c.examDate);
+      document.getElementById('klStatus').value = c.status || 'active';
+      window.scrollTo({ top: document.getElementById('classFormTitle').offsetTop - 80,
+                        behavior: 'smooth' });
+    }
+
+    window.resetClassForm = function () {
+      editClassId = null;
+      document.getElementById('classFormTitle').textContent = 'Thêm lớp';
+      ['klCode','klName','klCourse','klSchedule','klUrl','klStart','klExam','klCap','klNote']
+        .forEach(id => set(id, ''));
+      document.getElementById('klStatus').value = 'active';
+    };
+
+    async function delClass(c) {
+      if (!confirm('Xóa lớp "' + c.name + '"? Danh sách học viên của lớp cũng mất theo.')) return;
+      try {
+        await api('/api/admin/classes/' + c.id, { method: 'DELETE' });
+        toast('Đã xóa lớp'); loadClasses();
+      } catch (e) { toast(e.message); }
+    }
+
+    // ── Học viên trong lớp ──
+    async function openMembers(c) {
+      activeClass = c;
+      document.getElementById('memberSection').style.display = '';
+      document.getElementById('memberTitle').textContent = 'Học viên lớp: ' + c.name;
+      // Báo cáo lớp mất vài giây (nó tính cả tiến độ từng em) — không có dòng
+      // chờ thì người dùng tưởng nút hỏng và bấm lại.
+      document.getElementById('memberRows').innerHTML =
+        '<tr><td colspan="5">Đang tải danh sách học viên…</td></tr>';
+      document.getElementById('memberSection').scrollIntoView({ behavior: 'smooth' });
+      try {
+        await refreshMembers();
+      } catch (e) {
+        document.getElementById('memberRows').innerHTML =
+          '<tr><td colspan="5">Không tải được: ' + esc(e.message) + '</td></tr>';
+      }
+    }
+
+    async function refreshMembers() {
+      if (!activeClass) return;
+      // Dùng chính báo cáo lớp của khu Giảng dạy: quản trị viên xem được mọi
+      // lớp, và khỏi phải có thêm một endpoint chỉ để liệt kê thành viên.
+      const d = await api('/api/teach/classes/' + activeClass.id);
+      const tb = document.getElementById('memberRows');
+      tb.innerHTML = '';
+      (d.students || []).forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(s.name)}</td><td>${esc(s.email)}</td>` +
+          `<td>${s.lessonsDone}/${s.lessonsTotal}</td>` +
+          `<td>${s.left ? 'đã rời lớp' : 'đang học'}</td>` +
+          `<td><button class="btn-ghost" data-uid="${s.userId}">Cho rời lớp</button></td>`;
+        tr.querySelector('[data-uid]').onclick = () => removeMember(s);
+        tb.appendChild(tr);
+      });
+    }
+
+    window.addMember = async function () {
+      if (!activeClass) return;
+      const email = val('mbEmail');
+      if (!email) { toast('Nhập email học viên'); return; }
+      try {
+        await api('/api/admin/classes/' + activeClass.id + '/members',
+                  { method: 'POST', headers: json(), body: JSON.stringify({ email }) });
+        set('mbEmail', ''); toast('Đã thêm vào lớp');
+        refreshMembers(); loadClasses();
+      } catch (e) { toast(e.message); }
+    };
+
+    async function removeMember(s) {
+      if (!confirm('Cho "' + s.name + '" rời lớp? Dữ liệu học tập vẫn giữ nguyên.')) return;
+      try {
+        await api('/api/admin/classes/' + activeClass.id + '/members?user_id=' + s.userId,
+                  { method: 'DELETE' });
+        toast('Đã cho rời lớp'); refreshMembers(); loadClasses();
+      } catch (e) { toast(e.message); }
+    }
+
+    // ── Tài khoản & vai trò ──
+    window.searchUsers = async function () {
+      const term = val('usQ');
+      const d = await api('/api/admin/users' + (term ? '?q=' + encodeURIComponent(term) : ''));
+      const tb = document.getElementById('userRows');
+      tb.innerHTML = '';
+      (d.users || []).forEach(u => {
+        const tr = document.createElement('tr');
+        const opts = (d.roles || []).map(r =>
+          `<option value="${esc(r)}"${r === u.role ? ' selected' : ''}>${esc(r)}</option>`).join('');
+        tr.innerHTML = `<td>${u.id}</td><td>${esc(u.name || '—')}</td><td>${esc(u.email)}</td>` +
+          `<td><select data-uid="${u.id}">${opts}</select></td>`;
+        tr.querySelector('select').onchange = ev => setRole(u.id, ev.target.value);
+        tb.appendChild(tr);
+      });
+    };
+
+    async function setRole(uid, role) {
+      try {
+        await api('/api/admin/users/' + uid + '/role',
+                  { method: 'PUT', headers: json(), body: JSON.stringify({ role }) });
+        toast('Đã đổi vai trò');
+        window.searchUsers();
+      } catch (e) { toast(e.message); window.searchUsers(); }
+    }
+
+    loadClasses();
+    window.searchUsers();
+
     loadCourses();

@@ -3864,3 +3864,310 @@ function forumClearSearch() {
     load(false);
   }
 })();
+
+
+/* ═══════════════════════════════════════════════════════
+   KHU GIẢNG DẠY  (/api/teach/*)
+   ═══════════════════════════════════════════════════════
+   Bảng điều khiển lớp cho giảng viên. Đây là chỗ năm trụ cột đã dựng trả công:
+   mọi con số per-học-viên đã có sẵn, ở đây chỉ gom theo lớp.
+
+   BA ĐIỀU CỐ Ý:
+   · KHÔNG xếp hạng học viên trong lớp. Bảng sắp theo "cần chú ý trước", nhưng
+     không có cột hạng — bảng xếp hạng nội bộ làm hỏng động lực của đúng những
+     em cần giữ lại nhất, mà giảng viên vẫn đọc được thứ tự từ số liệu.
+   · Mỗi cảnh báo là một câu NÓI ĐƯỢC LÀM GÌ TIẾP. "Nam đang yếu" thì không làm
+     gì được; "Nam 9 ngày không mở bài, chưa làm đề nào" thì gọi điện được.
+   · Hồ sơ một học viên dùng lại ĐÚNG những con số học viên tự thấy. Giảng viên
+     và học viên nhìn hai số khác nhau cho cùng một chủ đề là hỏng buổi tư vấn.
+   ═══════════════════════════════════════════════════════ */
+(function () {
+  var API = '/api/teach';
+  var classes = null;
+  var report = null;
+  var openStudent = null;
+
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+  function el(id) { return document.getElementById(id); }
+  function viDate(iso) {
+    if (!iso) return '—';
+    var p = String(iso).slice(0, 10).split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1]) : iso;
+  }
+  function lvl(m) {
+    if (m == null) return 'none';
+    if (m >= 80) return 'l4'; if (m >= 60) return 'l3';
+    if (m >= 40) return 'l2'; return 'l1';
+  }
+
+  /* ── Danh sách lớp ── */
+  function renderClasses() {
+    var box = el('tc-classes');
+    if (!box) return;
+    var list = (classes && classes.classes) || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="tc-empty">Bạn chưa phụ trách lớp nào. '
+        + 'Quản trị viên tạo lớp và gán giảng viên ở trang Quản trị.</div>';
+      return;
+    }
+    box.innerHTML = list.map(function (c) {
+      return '<button type="button" class="tc-class' + (report && report.class.id === c.id ? ' active' : '')
+        + '" data-id="' + c.id + '">'
+        + '<span class="tc-class-hd">'
+          + (c.code ? '<span class="tc-code">' + esc(c.code) + '</span>' : '')
+          + '<span class="tc-class-n">' + esc(c.name) + '</span>'
+        + '</span>'
+        + '<span class="tc-class-m">' + (c.schedule ? esc(c.schedule) + ' · ' : '')
+          + c.members + (c.capacity ? '/' + c.capacity : '') + ' học viên'
+          + (c.examDate ? ' · thi ' + viDate(c.examDate) : '') + '</span>'
+        + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.tc-class'), function (b) {
+      b.addEventListener('click', function () { loadClass(b.getAttribute('data-id')); });
+    });
+  }
+
+  /* ── Báo cáo lớp ── */
+  function tile(num, label, warn) {
+    return '<div class="tc-tile' + (warn && num > 0 ? ' is-warn' : '') + '">'
+      + '<b>' + num + '</b><span>' + esc(label) + '</span></div>';
+  }
+
+  function renderReport() {
+    var box = el('tc-report');
+    if (!box) return;
+    if (!report) {
+      box.innerHTML = '<div class="tc-empty">Chọn một lớp để xem báo cáo.</div>';
+      return;
+    }
+    var s = report.summary, c = report.class;
+
+    var alerts = report.students.filter(function (st) { return st.alerts.length; });
+    var alertHtml = alerts.length
+      ? alerts.map(function (st) {
+        return '<div class="tc-alert">'
+          + '<button type="button" class="tc-alert-n" data-uid="' + st.userId + '">'
+            + esc(st.name) + '</button>'
+          + '<span class="tc-alert-t">' + st.alerts.map(function (a) {
+              return '<i class="tc-dot is-' + a.level + '"></i>' + esc(a.text);
+            }).join(' ') + '</span></div>';
+      }).join('')
+      : '<div class="tc-ok">Không có học viên nào cần chú ý ngay lúc này.</div>';
+
+    var weak = (s.weakestTopics || []).length
+      ? s.weakestTopics.map(function (t) {
+        return '<span class="tc-weak is-' + lvl(t.avg) + '">' + esc(t.topic)
+          + ' <b>' + t.avg + '</b>'
+          + '<i>' + t.measuredStudents + '/' + t.ofStudents + ' học viên đã đo</i></span>';
+      }).join('')
+      : '<span class="tc-muted">Chưa đủ dữ liệu để chấm chủ đề nào của lớp.</span>';
+
+    box.innerHTML =
+      '<div class="tc-hd">'
+        + '<div><h3>' + esc(c.name) + '</h3>'
+        + '<p class="tc-sub">' + (c.code ? esc(c.code) + ' · ' : '')
+          + (c.courseTitle ? esc(c.courseTitle) + ' · ' : '')
+          + (c.schedule ? esc(c.schedule) : 'chưa đặt lịch')
+          + (c.examDate ? ' · kỳ thi ' + viDate(c.examDate) : '') + '</p></div>'
+        + (c.meetingUrl ? '<a class="tc-link" href="' + esc(c.meetingUrl)
+            + '" target="_blank" rel="noopener">Vào phòng học →</a>' : '')
+      + '</div>'
+      + '<div class="tc-tiles">'
+        + tile(s.students, 'học viên')
+        + tile(s.avgProgress + '%', 'tiến độ trung bình')
+        + tile(s.atRisk, 'cần chú ý ngay', true)
+        + tile(s.noMock, 'chưa làm đề nào', true)
+        + tile(s.idle, 'nghỉ từ ' + s.idleDays + ' ngày', true)
+        + tile(s.behind, 'chậm từ ' + s.lagItems + ' bài', true)
+      + '</div>'
+      + '<div class="tc-sec"><div class="tc-sec-t">Cần chú ý</div>' + alertHtml + '</div>'
+      + '<div class="tc-sec"><div class="tc-sec-t">Chủ đề cả lớp đang yếu</div>'
+        + '<div class="tc-weaks">' + weak + '</div></div>'
+      + '<div class="tc-sec"><div class="tc-sec-t">Học viên ('
+        + report.students.length + ')</div>' + tableHtml() + '</div>';
+
+    Array.prototype.forEach.call(box.querySelectorAll('[data-uid]'), function (b) {
+      b.addEventListener('click', function () { loadStudent(b.getAttribute('data-uid')); });
+    });
+  }
+
+  function tableHtml() {
+    // Sắp "cần chú ý trước" rồi tới tiến độ thấp. KHÔNG có cột hạng.
+    var rows = report.students.slice().sort(function (a, b) {
+      var wa = a.alerts.filter(function (x) { return x.level === 'high'; }).length;
+      var wb = b.alerts.filter(function (x) { return x.level === 'high'; }).length;
+      if (wa !== wb) return wb - wa;
+      if (a.alerts.length !== b.alerts.length) return b.alerts.length - a.alerts.length;
+      return a.progressPct - b.progressPct;
+    });
+    return '<div class="tc-tbl-wrap"><table class="tc-tbl">'
+      + '<thead><tr><th>Học viên</th><th>Tiến độ</th><th>Chuỗi</th>'
+      + '<th>Hoạt động</th><th>Thi thử</th><th>Chậm</th><th>Chủ đề yếu nhất</th><th></th></tr></thead>'
+      + '<tbody>' + rows.map(function (st) {
+        var idle = st.idleDays == null ? 'chưa học'
+          : (st.idleDays === 0 ? 'hôm nay' : st.idleDays + ' ngày trước');
+        var mock = st.mockCount
+          ? st.lastMockPct + '%' + (st.mockTrend != null
+              ? ' <i class="tc-trend is-' + (st.mockTrend >= 0 ? 'up' : 'down') + '">'
+                + (st.mockTrend >= 0 ? '+' : '') + st.mockTrend + '</i>' : '')
+          : '<span class="tc-muted">chưa thi</span>';
+        var weak = st.weakest.length
+          ? st.weakest.map(function (w) {
+              return '<span class="tc-chip is-' + lvl(w.mastery) + '">' + esc(w.topic)
+                + ' ' + w.mastery + '</span>';
+            }).join('')
+          : '<span class="tc-muted">chưa đủ dữ liệu</span>';
+        return '<tr' + (st.left ? ' class="is-left"' : '') + '>'
+          + '<td><b>' + esc(st.name) + '</b>' + (st.left ? ' <i>(đã rời lớp)</i>' : '') + '</td>'
+          + '<td class="tc-num">' + st.lessonsDone + '/' + st.lessonsTotal
+            + ' <i>' + st.progressPct + '%</i></td>'
+          + '<td class="tc-num">' + st.streak + '</td>'
+          + '<td class="' + (st.idleDays == null || st.idleDays >= 7 ? 'tc-bad' : '') + '">'
+            + idle + '</td>'
+          + '<td class="tc-num">' + mock + '</td>'
+          + '<td class="tc-num' + (st.lag >= 5 ? ' tc-bad' : '') + '">' + st.lag + '</td>'
+          + '<td>' + weak + '</td>'
+          + '<td><button type="button" class="tc-view" data-uid="' + st.userId + '">Xem</button></td>'
+          + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  /* ── Hồ sơ một học viên ── */
+  function renderStudent(d) {
+    var box = el('tc-student');
+    if (!box) return;
+    if (!d) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    var u = d.user, g = d.goals || {};
+    var measured = (d.competency.topics || []).filter(function (t) { return t.mastery != null; });
+    var map = measured.length
+      ? measured.sort(function (a, b) { return a.mastery - b.mastery; }).map(function (t) {
+          return '<span class="tc-chip is-' + lvl(t.mastery) + '">' + esc(t.topic)
+            + ' <b>' + t.mastery + '</b></span>';
+        }).join('')
+      : '<span class="tc-muted">Chưa đủ dữ liệu để chấm chủ đề nào ('
+        + d.competency.minActivities + ' hoạt động/chủ đề mới đủ).</span>';
+
+    var book = (d.gradebook.rows || []).slice(0, 8).map(function (r) {
+      return '<div class="tc-row"><span>' + esc(r.kindLabel) + '</span>'
+        + '<span class="tc-row-t">' + esc(r.label) + '</span>'
+        + '<span class="tc-num">' + r.pct + '%</span>'
+        + '<span class="tc-muted">' + viDate(r.at) + '</span></div>';
+    }).join('') || '<span class="tc-muted">Chưa có hoạt động nào được chấm.</span>';
+
+    var jr = (d.journal || []).slice(0, 5).map(function (l) {
+      return '<div class="tc-row"><span>' + viDate(l.date) + '</span>'
+        + '<span class="tc-row-t">' + esc(l.what || l.topic || 'Có học') + '</span>'
+        + '<span class="tc-muted">' + (l.minutes != null ? l.minutes + ph() : '')
+          + (l.difficultyLabel ? ' · ' + esc(l.difficultyLabel) : '') + '</span>'
+        + (l.note ? '<span class="tc-note">' + esc(l.note) + '</span>' : '') + '</div>';
+    }).join('') || '<span class="tc-muted">Học viên chưa ghi nhật ký ngày nào.</span>';
+
+    var wk = (d.plan.weeks || [])[0];
+    // Cắt còn 6 dòng: học viên chưa bắt đầu thì cả tuần bị dồn 14 việc, đọc hết
+    // trong một khung hẹp là vô ích — giảng viên chỉ cần biết đang có gì và bao nhiêu.
+    var PLAN_SHOWN = 6;
+    var plan = wk
+      ? wk.items.slice(0, PLAN_SHOWN).map(function (i) {
+          return '<div class="tc-row is-' + esc(i.state) + '">'
+            + '<span>' + (i.state === 'done' ? 'Xong' : (i.state === 'skipped' ? 'Bỏ qua' : 'Chưa')) + '</span>'
+            + '<span class="tc-row-t">' + esc(i.title) + '</span></div>';
+        }).join('')
+        + (wk.items.length > PLAN_SHOWN
+            ? '<span class="tc-muted">…và ' + (wk.items.length - PLAN_SHOWN)
+              + ' việc nữa trong tuần này.</span>' : '')
+      : '<span class="tc-muted">Học viên chưa lập kế hoạch.</span>';
+
+    box.innerHTML = '<div class="tc-st-hd">'
+      + '<div><h4>' + esc(u.name) + '</h4>'
+      + '<p class="tc-sub">' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '')
+        + ' · mục tiêu ' + esc(g.targetScore || 'chưa đặt')
+        + (g.daysToExam != null ? ' · còn ' + g.daysToExam + ' ngày' : '') + '</p></div>'
+      + '<button type="button" class="tc-close" id="tc-close" aria-label="Đóng hồ sơ">Đóng</button>'
+      + '</div>'
+      + '<div class="tc-st-grid">'
+        + '<div class="tc-st-b"><div class="tc-sec-t">Chủ đề đã đo được ('
+          + measured.length + '/' + d.competency.topics.length + ')</div>'
+          + '<div class="tc-weaks">' + map + '</div></div>'
+        + '<div class="tc-st-b"><div class="tc-sec-t">Kế hoạch tuần này'
+          + (d.plan.lag ? ' — chậm ' + d.plan.lag + ' việc' : '') + '</div>' + plan + '</div>'
+        + '<div class="tc-st-b"><div class="tc-sec-t">Hoạt động gần đây</div>' + book + '</div>'
+        + '<div class="tc-st-b"><div class="tc-sec-t">Nhật ký học viên tự ghi</div>' + jr
+          + '<p class="tc-priv">Đây là phần học viên tự viết cho mình. Dùng để tư vấn, '
+          + 'đừng đọc lại trước lớp.</p></div>'
+      + '</div>';
+    var cl = el('tc-close');
+    if (cl) cl.addEventListener('click', function () { openStudent = null; renderStudent(null); });
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function ph() { return ' phút'; }
+
+  /* ── Nạp ── */
+  function loadClasses() {
+    fetch(API + '/classes')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        classes = d;
+        renderClasses();
+        var list = d.classes || [];
+        if (list.length === 1 && !report) loadClass(list[0].id);
+      })
+      .catch(function () {});
+  }
+
+  function loadClass(id) {
+    var box = el('tc-report');
+    if (box) box.innerHTML = '<div class="tc-empty">Đang tính báo cáo lớp…</div>';
+    renderStudent(null);
+    fetch(API + '/classes/' + id)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) { if (box) box.innerHTML = '<div class="tc-empty">Không tải được lớp này.</div>'; return; }
+        report = d;
+        renderClasses();
+        renderReport();
+      })
+      .catch(function () {});
+  }
+
+  function loadStudent(uid) {
+    if (!report) return;
+    var box = el('tc-student');
+    if (box) { box.hidden = false; box.innerHTML = '<div class="tc-empty">Đang mở hồ sơ học viên…</div>'; }
+    openStudent = uid;
+    fetch(API + '/classes/' + report.class.id + '/students/' + uid)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (openStudent !== uid) return;      // người dùng đã bấm sang em khác
+        if (!d) { renderStudent(null); return; }
+        renderStudent(d);
+      })
+      .catch(function () { renderStudent(null); });
+  }
+
+  var _origNavigateTeach = window.navigate;
+  window.navigate = function (page) {
+    _origNavigateTeach(page);
+    if (page === 'teach' && !classes) loadClasses();
+  };
+
+  // Nút điều hướng chỉ hiện với giảng viên/quản trị viên. main.js đã nạp
+  // /api/user và đặt window.__currentUser; chờ nó rồi mới quyết định.
+  function gate() {
+    var u = window.__currentUser;
+    if (!u) return false;
+    var btn = el('nav-teach');
+    var ok = (u.role === 'Giảng viên' || u.role === 'admin');
+    if (btn) btn.style.display = ok ? '' : 'none';
+    if (ok && !classes) loadClasses();
+    return true;
+  }
+  var tries = 0;
+  var timer = setInterval(function () {
+    if (gate() || ++tries > 40) clearInterval(timer);
+  }, 250);
+})();

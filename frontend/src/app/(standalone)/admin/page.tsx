@@ -52,6 +52,76 @@ export default function AdminPage() {
           </div>
         </section>
 
+        {/* LỚP HỌC — bước đầu thành ERP: có lớp thì khu Giảng dạy mới có gì
+            để hiện, và giảng viên mới có phạm vi để phân quyền theo. */}
+        <section>
+          <h2>Lớp học</h2>
+          <table>
+            <thead><tr><th>Mã</th><th>Tên lớp</th><th>Giảng viên</th><th>Lịch</th><th>Sĩ số</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="classRows"></tbody>
+          </table>
+
+          <div className="form-box">
+            <h3 id="classFormTitle">Thêm lớp</h3>
+            <div className="row">
+              <input id="klCode" placeholder="Mã lớp (vd: HSA-QL-01)" />
+              <input id="klName" placeholder="Tên lớp" />
+            </div>
+            <div className="row">
+              <input id="klCourse" placeholder="Khoá (hsa_quantitative / hsa_verbal / hsa_science — để trống = cả ba)" />
+              <select id="klTeacher" aria-label="Giảng viên phụ trách"></select>
+            </div>
+            <div className="row">
+              <input id="klSchedule" placeholder="Lịch học (vd: Thứ 3, 5 · 19:30–21:00)" />
+              <input id="klUrl" placeholder="Link phòng học online" />
+            </div>
+            <div className="row">
+              <input id="klStart" placeholder="Khai giảng (YYYY-MM-DD)" />
+              <input id="klExam" placeholder="Kỳ thi nhắm tới (YYYY-MM-DD)" />
+            </div>
+            <div className="row">
+              <input id="klCap" placeholder="Sĩ số tối đa" />
+              <select id="klStatus" aria-label="Trạng thái lớp"></select>
+            </div>
+            <textarea id="klNote" placeholder="Ghi chú"></textarea>
+            <button className="btn-primary" onClick={() => W().saveClass()}>Lưu lớp</button>
+            <button className="btn-ghost" onClick={() => W().resetClassForm()}>Hủy</button>
+          </div>
+        </section>
+
+        {/* HỌC VIÊN TRONG LỚP */}
+        <section id="memberSection" style={{ display: 'none' }}>
+          <h2 id="memberTitle">Học viên trong lớp</h2>
+          <p className="hint">
+            Cho rời lớp KHÔNG xoá dữ liệu học tập — học viên nghỉ giữa chừng vẫn còn trong báo cáo của kỳ đó.
+          </p>
+          <table>
+            <thead><tr><th>Tên</th><th>Email</th><th>Bài đã xong</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="memberRows"></tbody>
+          </table>
+          <div className="form-box">
+            <h3>Thêm học viên vào lớp</h3>
+            <input id="mbEmail" placeholder="Email tài khoản học viên" />
+            <button className="btn-primary" onClick={() => W().addMember()}>Thêm vào lớp</button>
+          </div>
+        </section>
+
+        {/* TÀI KHOẢN & VAI TRÒ */}
+        <section>
+          <h2>Tài khoản &amp; vai trò</h2>
+          <p className="hint">
+            Gán vai trò <b>Giảng viên</b> cho tài khoản trước, rồi mới chọn được người đó làm giảng viên phụ trách lớp.
+          </p>
+          <div className="row">
+            <input id="usQ" placeholder="Tìm theo tên hoặc email" />
+            <button className="btn-ghost" onClick={() => W().searchUsers()}>Tìm</button>
+          </div>
+          <table>
+            <thead><tr><th>Id</th><th>Tên</th><th>Email</th><th>Vai trò</th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </section>
+
         {/* BÀI GIẢNG */}
         <section>
           <h2 id="lessonTitle">Bài giảng</h2>
