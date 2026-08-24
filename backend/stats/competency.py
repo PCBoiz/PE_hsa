@@ -75,25 +75,58 @@ def _decayed_mean(items, today):
     return (num / den) if den else None
 
 
+#: Câu hỏi danh mục. Tách ra để chạy được cả bản CÓ và KHÔNG có
+#: topic_self_marks — bảng đó có thể chưa tồn tại nếu mã lên trước bootstrap_schema,
+#: và mất bản đồ năng lực chỉ vì thiếu một cờ tuỳ chọn là cái giá vô lý.
+_CATALOG_SQL = """SELECT l.course_id, l.module AS topic, l.sort_order, l.title,
+                         c.title AS course_title,
+                         (lp.user_id IS NOT NULL) AS done%s
+                  FROM lessons l
+                  LEFT JOIN courses c ON c.id = l.course_id
+                  LEFT JOIN lesson_progress lp
+                         ON lp.lesson_id = l.id AND lp.user_id = %%s
+                        AND lp.status = 'completed'%s
+                  WHERE l.course_id IS NOT NULL
+                    AND l.module IS NOT NULL AND l.module <> ''
+                  ORDER BY l.course_id, l.sort_order"""
+
+_SELF_COL = ", sm.known AS self_known"
+_SELF_JOIN = """
+                  LEFT JOIN topic_self_marks sm
+                         ON sm.user_id = %s AND sm.course_id = l.course_id
+                        AND sm.topic = l.module"""
+
+
+def _catalog_rows(uid, with_self_marks=True):
+    if with_self_marks:
+        try:
+            return q(_CATALOG_SQL % (_SELF_COL, _SELF_JOIN), (uid, uid))
+        except DatabaseError:
+            pass
+    return q(_CATALOG_SQL % ('', ''), (uid,))
+
+
 def _catalog(uid):
-    """Danh mục (khoá, chủ đề) kèm số bài đã xong và bài kế tiếp nên học.
+    """Danh mục (khoá, chủ đề) kèm số bài đã xong, bài kế tiếp, tên khoá và cờ
+    học viên tự đánh dấu đã nắm.
 
     Đọc thẳng từ ``lessons`` chứ không cứng hoá danh sách chủ đề: giáo trình sẽ
     được soạn lại theo TopHSA, lúc đó bản đồ tự đổi theo mà không phải sửa mã.
+
+    Tên khoá và cờ tự đánh dấu ĐƯỢC JOIN VÀO ĐÂY thay vì hỏi riêng hai lượt: mỗi
+    lượt truy vấn tới Neon tốn ~245ms thuần đường truyền, nên gộp được câu nào là
+    cắt thẳng ngần ấy khỏi thời gian chờ của người dùng (đo 24/08: 4 lượt = 0,98s
+    → 2 lượt = 0,49s).
     """
-    rows = q('''SELECT l.course_id, l.module AS topic, l.sort_order, l.title,
-                       (lp.user_id IS NOT NULL) AS done
-                FROM lessons l
-                LEFT JOIN lesson_progress lp
-                       ON lp.lesson_id = l.id AND lp.user_id = %s
-                      AND lp.status = 'completed'
-                WHERE l.course_id IS NOT NULL
-                  AND l.module IS NOT NULL AND l.module <> ''
-                ORDER BY l.course_id, l.sort_order''', (uid,))
+    rows = _catalog_rows(uid)
     cells = {}
     for r in rows:
         key = (r['course_id'], r['topic'])
-        cell = cells.setdefault(key, {'total': 0, 'done': 0, 'next': None})
+        cell = cells.setdefault(key, {
+            'total': 0, 'done': 0, 'next': None,
+            'courseTitle': r['course_title'] or r['course_id'],
+            'known': bool(r.get('self_known')),
+        })
         cell['total'] += 1
         if r['done']:
             cell['done'] += 1
@@ -157,14 +190,6 @@ def compute(uid):
     cells = _catalog(uid)
     by_cell, by_course = _events(uid)
 
-    titles = {r['id']: r['title'] for r in q(
-        'SELECT id, title FROM courses WHERE id = ANY(%s)', (list(COURSE_ORDER),))}
-    try:
-        self_marks = {(r['course_id'], r['topic']): r['known'] for r in q(
-            'SELECT course_id, topic, known FROM topic_self_marks WHERE user_id = %s', (uid,))}
-    except DatabaseError:
-        self_marks = {}
-
     topics = []
     for (course_id, topic), cell in cells.items():
         sources = dict(by_cell.get((course_id, topic), {}))
@@ -182,10 +207,10 @@ def compute(uid):
         if confidence < MIN_ACTIVITIES:
             # Có thể tính ra số, nhưng nói ra thì thành nói dối về độ chắc chắn.
             mastery = None
-        known = self_marks.get((course_id, topic))
+        known = cell['known']
         topics.append({
             'course': course_id,
-            'courseTitle': titles.get(course_id, course_id),
+            'courseTitle': cell['courseTitle'],
             'topic': topic,
             'mastery': mastery,
             'confidence': confidence,
@@ -216,7 +241,7 @@ def compute(uid):
         total = sum(t['lessonsTotal'] for t in cells_of)
         courses.append({
             'id': cid,
-            'title': titles.get(cid, cid),
+            'title': cells_of[0]['courseTitle'],
             'lessonsDone': done,
             'lessonsTotal': total,
             'pct': round(done * 100 / total) if total else 0,

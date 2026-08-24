@@ -1,39 +1,21 @@
 """Endpoint /api/chat — Trợ lý HSA. Key DeepSeek nằm SERVER-SIDE (env), không lộ
-ra frontend như bản Gemini cũ. Context engineering: bơm tên + hợp phần yếu nhất."""
-import json
+ra frontend như bản Gemini cũ.
 
+Context engineering: bơm hồ sơ học tập THẬT của học viên (chatbot/profile.py) +
+bài đang mở. Trước 24/08 chỗ này tự tính "hợp phần yếu nhất" từ lượt thi thử gần
+nhất — một phép tính thứ ba về điểm yếu, thô hơn bản đồ năng lực và có thể mâu
+thuẫn với con số Trang của tôi đang hiện cho cùng học viên đó.
+"""
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatbot.graph import chat
-from common.db import q1
+from chatbot.profile import learner_profile
 
 
 def _user_context(user):
-    parts = []
-    name = getattr(user, "name", None)
-    if name:
-        parts.append(f"Tên: {name}")
-    # Hợp phần yếu nhất từ lần thi thử gần nhất (nếu có) — để trợ lý tư vấn sát hơn.
-    try:
-        row = q1(
-            "SELECT section_scores_json FROM mock_attempts WHERE user_id=%s "
-            "ORDER BY submitted_at DESC LIMIT 1",
-            (user.id,),
-        )
-        ss = row and row.get("section_scores_json")
-        if isinstance(ss, str):
-            ss = json.loads(ss)
-        if ss:
-            weak = min(
-                ss.items(),
-                key=lambda kv: (kv[1]["correct"] / kv[1]["total"]) if kv[1].get("total") else 1.0,
-            )[0]
-            parts.append(f"Hợp phần yếu nhất (đề thi thử gần nhất): {weak}")
-    except Exception:
-        pass
-    return " · ".join(parts)
+    return learner_profile(user.id, getattr(user, "name", None))
 
 
 # Ngữ cảnh trang do client gửi: chỉ nhận đúng các khoá này, cắt độ dài, để nội
