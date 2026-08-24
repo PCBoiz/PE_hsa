@@ -18,4 +18,7 @@ urlpatterns = [
     # Sổ điểm + đường cong tiến bộ — đọc lại learning_events, không thêm bảng.
     path('api/hsa/gradebook', views.GradebookView.as_view()),
     path('api/hsa/progress-curve', views.ProgressCurveView.as_view()),
+    # Học viên tự ghi nhận: nhật ký ngày + mục tiêu tuần (stats/journal.py).
+    path('api/hsa/journal', views.JournalView.as_view()),
+    path('api/hsa/weekly-target', views.WeeklyTargetView.as_view()),
 ]

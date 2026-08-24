@@ -3058,15 +3058,30 @@ function forumClearSearch() {
     var barArea = ph * 0.45;
     var bw = Math.max(3, Math.min(22, pw / Math.max(1, wk.length) * 0.55));
     wk.forEach(function (w, i) {
-      var total = (w.minutes || 0) + (w.selfMinutes || 0);
+      var sys = w.minutes || 0, self = w.selfMinutes || 0;
+      var total = sys + self;
       if (!total || !maxMin) return;
-      var h = total / maxMin * barArea;
       var cx = X(i * 7 + 3.5);
-      parts.push('<rect class="cv-bar" x="' + (cx - bw / 2).toFixed(1) + '" y="'
-        + (PAD.t + ph - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="'
-        + h.toFixed(1) + '" rx="2"><title>Tuần ' + esc(w.label) + ': ' + total
-        + ' phút</title></rect>');
+      var base = PAD.t + ph;
+      // Cột XẾP CHỒNG: đoạn dưới là phút hệ thống bấm giờ, đoạn trên là phút
+      // học viên tự khai. Gộp thành một cột đặc là trộn số đo được với số tự
+      // nhận — đúng cái ranh giới không được xoá nhoà.
+      var hSys = sys / maxMin * barArea;
+      var hSelf = self / maxMin * barArea;
+      var tip = '<title>Tuần ' + esc(w.label) + ': ' + total + ' phút'
+        + (self ? ' (' + sys + ' hệ thống đo, ' + self + ' tự ghi)' : '') + '</title>';
+      if (hSys > 0) {
+        parts.push('<rect class="cv-bar" x="' + (cx - bw / 2).toFixed(1) + '" y="'
+          + (base - hSys).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="'
+          + hSys.toFixed(1) + '" rx="2">' + tip + '</rect>');
+      }
+      if (hSelf > 0) {
+        parts.push('<rect class="cv-bar cv-bar--self" x="' + (cx - bw / 2).toFixed(1) + '" y="'
+          + (base - hSys - hSelf).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="'
+          + hSelf.toFixed(1) + '" rx="2">' + tip + '</rect>');
+      }
     });
+    d._hasSelf = wk.some(function (w) { return (w.selfMinutes || 0) > 0; });
 
     // Đường xu hướng (nét đứt) — chỉ khi đủ số lượt thi.
     if (d.trend) {
@@ -3146,8 +3161,9 @@ function forumClearSearch() {
     box.innerHTML = bits.join('')
       + '<span class="cv-legend">'
       + '<i class="cv-key cv-key--dot"></i> điểm thi thử'
-      + '<i class="cv-key cv-key--bar"></i> thời lượng học/tuần'
+      + '<i class="cv-key cv-key--bar"></i> thời lượng hệ thống đo/tuần'
       + (d._maxMinutes ? ' (cao nhất ' + d._maxMinutes + ' phút)' : '')
+      + (d._hasSelf ? '<i class="cv-key cv-key--self"></i> phút bạn tự ghi trong nhật ký' : '')
       + (d.target ? '<i class="cv-key cv-key--band"></i> dải mục tiêu' : '')
       + '</span>';
 
@@ -3267,5 +3283,324 @@ function forumClearSearch() {
     document.addEventListener('DOMContentLoaded', function () { bindRange(); load(false); });
   } else {
     bindRange(); load(false);
+  }
+})();
+
+
+/* ═══════════════════════════════════════════════════════
+   TUẦN NÀY + NHẬT KÝ HỌC  (/api/hsa/journal, /api/hsa/weekly-target)
+   ═══════════════════════════════════════════════════════
+   Đặt ở Bảng điều khiển chứ không phải Trang của tôi: ghi nhật ký và bám mục
+   tiêu tuần là việc làm HẰNG NGÀY, còn Trang của tôi là nơi nhìn lại. Một việc
+   hằng ngày nằm dưới đáy một trang dài thì không ai dùng.
+
+   BA ĐIỀU KHÔNG ĐƯỢC LÀM SAI:
+   · Phút TỰ KHAI phải nhìn ra được là tự khai. Thanh thời gian tách hai đoạn,
+     chú thích ghi rõ đâu là hệ thống bấm giờ, đâu là học viên tự ghi.
+   · Mục tiêu do hệ thống đề xuất phải kèm LÝ DO. Một con số áp xuống không nói
+     vì sao thì người học không có cơ sở nào để tin, và bỏ ngay tuần đầu.
+   · Không đủ thời gian thì NÓI THẲNG. Lặng lẽ hạ mục tiêu cho vừa sức là cách
+     chắc chắn để học viên tưởng mình đang kịp, tới sát ngày thi mới biết là không.
+   ═══════════════════════════════════════════════════════ */
+(function () {
+  var API = '/api/hsa/journal';
+  var data = null;
+  var editingTarget = false;
+  var showHistory = false;
+
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+  function el(id) { return document.getElementById(id); }
+  function viDate(iso) {
+    if (!iso) return '';
+    var p = String(iso).slice(0, 10).split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1]) : iso;
+  }
+
+  /* ── Tiến độ tuần ─────────────────────────────────────────────────── */
+  /* Ba trạng thái khác nhau, đừng gộp:
+       · chưa đặt mục tiêu cho mục này (undefined) → chỉ hiện số đã làm
+       · đặt bằng 0                                → coi như đã đạt
+       · đặt > 0                                   → thanh theo tỉ lệ
+     Bản đầu dùng `target ?` nên mục tiêu 0 rơi vào nhánh "chưa đặt" và vẽ ra
+     một thanh rỗng trông như hỏng. */
+  function bar(label, done, target, extra, split) {
+    var hasTarget = (target !== undefined && target !== null);
+    var met = hasTarget && done >= target;
+    var pct = !hasTarget ? 0 : (target > 0 ? Math.min(100, Math.round(done / target * 100)) : 100);
+    // Thanh thời gian XẾP CHỒNG hai đoạn: hệ thống bấm giờ và học viên tự ghi.
+    // Chú thích chữ ở dưới đã nói, nhưng chính cái thanh cũng phải nói — người
+    // ta đọc hình trước khi đọc chữ.
+    var fill = '<i style="width:' + pct + '%"></i>';
+    if (split && done > 0 && pct > 0) {
+      var sysPct = Math.round(split.system / done * pct);
+      fill = '<i style="width:' + sysPct + '%"></i>'
+           + '<i class="is-self" style="width:' + Math.max(0, pct - sysPct) + '%"></i>';
+    }
+    return '<div class="jr-bar' + (met ? ' is-met' : '') + (hasTarget ? '' : ' is-noaim') + '">'
+      + '<span class="jr-bar-lbl">' + esc(label) + '</span>'
+      + '<span class="jr-bar-track">' + fill + '</span>'
+      + '<span class="jr-bar-num">' + done + (hasTarget ? '/' + target : '')
+        + (met ? ' ✓' : '') + '</span>'
+      + (extra ? '<span class="jr-bar-sub">' + extra + '</span>' : '')
+      + '</div>';
+  }
+
+  function renderWeek() {
+    var box = el('jr-week');
+    if (!box || !data) return;
+    var w = data.week || {};
+    var done = w.done || {};
+    var t = data.target;
+
+    if (!t) {
+      var s = data.suggestion || {};
+      box.innerHTML = '<div class="jr-noplan">'
+        + '<p class="jr-noplan-h">Bạn chưa đặt mục tiêu tuần.</p>'
+        + '<p class="jr-noplan-s">Hệ thống đề xuất <b>' + s.lessons + ' bài · '
+          + s.mocks + ' đề · ' + s.minutes + ' phút</b> mỗi tuần'
+          + (s.why ? ' — ' + esc(s.why) : '') + '.</p>'
+        + '<div class="jr-actions">'
+          + '<button type="button" class="jr-btn" id="jr-use">Dùng đề xuất này</button>'
+          + '<button type="button" class="jr-btn is-ghost" id="jr-edit">Tự đặt</button>'
+        + '</div>'
+        + (s.warning ? '<p class="jr-warn">' + esc(s.warning) + '</p>' : '')
+        + '</div>';
+      bindTargetButtons();
+      return;
+    }
+
+    // Thời lượng: TÁCH đoạn hệ thống đo và đoạn tự khai, không cộng thành một
+    // con số rồi thôi — người xem phải biết bao nhiêu là đo được.
+    var sysM = w.systemMinutes || 0, selfM = w.selfMinutes || 0;
+    var extra = (sysM || selfM)
+      ? ('<i class="jr-key jr-key--sys"></i>' + sysM + ' phút hệ thống đo'
+         + ' <i class="jr-key jr-key--self"></i>' + selfM + ' phút bạn tự ghi')
+      : '';
+    box.innerHTML =
+      bar('Bài học', done.lessons || 0, t.lessons)
+      + bar('Đề thi thử', done.mocks || 0, t.mocks)
+      + bar('Thời gian', done.minutes || 0, t.minutes, extra,
+            { system: sysM, self: selfM })
+      + '<div class="jr-actions">'
+        + '<button type="button" class="jr-btn is-ghost" id="jr-edit">Sửa mục tiêu</button>'
+      + '</div>'
+      + (data.targetGap ? '<p class="jr-warn">' + esc(data.targetGap) + '</p>' : '')
+      + ((data.suggestion && data.suggestion.warning)
+          ? '<p class="jr-warn">' + esc(data.suggestion.warning) + '</p>' : '');
+    bindTargetButtons();
+  }
+
+  function renderTargetForm() {
+    var box = el('jr-week');
+    if (!box) return;
+    var t = data.target || data.suggestion || {};
+    box.innerHTML = '<div class="jr-form jr-form--target">'
+      + '<label class="jr-f"><span>Bài/tuần</span>'
+        + '<input type="number" id="jr-t-lessons" min="0" max="100" value="' + (t.lessons || 0) + '"></label>'
+      + '<label class="jr-f"><span>Đề/tuần</span>'
+        + '<input type="number" id="jr-t-mocks" min="0" max="20" value="' + (t.mocks || 0) + '"></label>'
+      + '<label class="jr-f"><span>Phút/tuần</span>'
+        + '<input type="number" id="jr-t-minutes" min="0" max="5000" step="30" value="' + (t.minutes || 0) + '"></label>'
+      + '<div class="jr-actions">'
+        + '<button type="button" class="jr-btn" id="jr-t-save">Lưu mục tiêu</button>'
+        + '<button type="button" class="jr-btn is-ghost" id="jr-t-cancel">Huỷ</button>'
+      + '</div></div>';
+    el('jr-t-save').addEventListener('click', function () {
+      saveTarget({
+        lessons: el('jr-t-lessons').value,
+        mocks: el('jr-t-mocks').value,
+        minutes: el('jr-t-minutes').value
+      });
+    });
+    el('jr-t-cancel').addEventListener('click', function () {
+      editingTarget = false; renderWeek();
+    });
+  }
+
+  function bindTargetButtons() {
+    var e = el('jr-edit');
+    if (e) e.addEventListener('click', function () { editingTarget = true; renderTargetForm(); });
+    var u = el('jr-use');
+    if (u) u.addEventListener('click', function () {
+      var s = data.suggestion || {};
+      saveTarget({ lessons: s.lessons, mocks: s.mocks, minutes: s.minutes });
+    });
+  }
+
+  function saveTarget(body) {
+    fetch('/api/hsa/weekly-target', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) { alert(res.d.error || 'Không lưu được mục tiêu.'); return; }
+        data.target = res.d.target;
+        data.week = res.d.week;
+        editingTarget = false;
+        if (window.__apiGetBust) window.__apiGetBust(API + '?days=30');
+        renderWeek();
+      })
+      .catch(function () { alert('Mất kết nối, thử lại nhé.'); });
+  }
+
+  /* ── Nhật ký hôm nay ──────────────────────────────────────────────── */
+  function renderToday() {
+    var box = el('jr-today');
+    if (!box || !data) return;
+    var t = data.today || {};
+    var diffs = data.difficulties || [];
+    box.innerHTML = '<div class="jr-form">'
+      + '<div class="jr-row">'
+        + '<label class="jr-f jr-f--sm"><span>Số phút</span>'
+          + '<input type="number" id="jr-minutes" min="0" max="960" placeholder="45" value="'
+          + (t.minutes != null ? t.minutes : '') + '"></label>'
+        + '<label class="jr-f"><span>Chủ đề</span>'
+          + '<input type="text" id="jr-topic" list="jr-topics" placeholder="Hình học" value="'
+          + esc(t.topic || '') + '"></label>'
+      + '</div>'
+      + '<label class="jr-f"><span>Hôm nay học gì</span>'
+        + '<input type="text" id="jr-what" maxlength="200" placeholder="Ôn hệ thức lượng trong tam giác" value="'
+        + esc(t.what || '') + '"></label>'
+      + '<div class="jr-f"><span>Thấy thế nào</span><div class="jr-diffs" id="jr-diffs">'
+        + diffs.map(function (d) {
+          return '<button type="button" class="jr-diff' + (t.difficulty === d.value ? ' active' : '')
+            + '" data-v="' + d.value + '" aria-pressed="' + (t.difficulty === d.value) + '">'
+            + esc(d.label) + '</button>';
+        }).join('') + '</div></div>'
+      + '<label class="jr-f"><span>Vướng ở đâu (trợ lý AI đọc phần này để tư vấn sát hơn)</span>'
+        + '<textarea id="jr-note" rows="2" maxlength="500" placeholder="Vẫn nhầm khi nào dùng sin, khi nào dùng cos">'
+        + esc(t.note || '') + '</textarea></label>'
+      + '<div class="jr-actions">'
+        + '<button type="button" class="jr-btn" id="jr-save">'
+          + (data.today ? 'Cập nhật nhật ký' : 'Lưu nhật ký hôm nay') + '</button>'
+        + '<span class="jr-msg" id="jr-msg" role="status"></span>'
+      + '</div></div>';
+
+    var diffBox = el('jr-diffs');
+    if (diffBox) {
+      diffBox.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('.jr-diff');
+        if (!b) return;
+        var on = b.getAttribute('aria-pressed') !== 'true';
+        Array.prototype.forEach.call(diffBox.querySelectorAll('.jr-diff'), function (x) {
+          x.classList.remove('active'); x.setAttribute('aria-pressed', 'false');
+        });
+        if (on) { b.classList.add('active'); b.setAttribute('aria-pressed', 'true'); }
+      });
+    }
+    el('jr-save').addEventListener('click', saveToday);
+  }
+
+  function saveToday() {
+    var picked = document.querySelector('#jr-diffs .jr-diff.active');
+    var body = {
+      minutes: el('jr-minutes').value,
+      topic: el('jr-topic').value,
+      what: el('jr-what').value,
+      note: el('jr-note').value,
+      difficulty: picked ? picked.getAttribute('data-v') : ''
+    };
+    var btn = el('jr-save'), msg = el('jr-msg');
+    btn.disabled = true;
+    fetch(API, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        btn.disabled = false;
+        if (!res.ok) { msg.textContent = res.d.error || 'Không lưu được.'; msg.className = 'jr-msg is-err'; return; }
+        msg.textContent = 'Đã lưu ✓'; msg.className = 'jr-msg is-ok';
+        data.today = res.d.log;
+        data.week = res.d.week;
+        // Thay bản ghi hôm nay trong danh sách, hoặc chèn lên đầu nếu mới.
+        data.recent = (data.recent || []).filter(function (l) { return l.date !== res.d.log.date; });
+        data.recent.unshift(res.d.log);
+        if (window.__apiGetBust) window.__apiGetBust(API + '?days=30');
+        renderWeek();
+        renderHistory();
+        setTimeout(function () { msg.textContent = ''; }, 2600);
+      })
+      .catch(function () {
+        btn.disabled = false;
+        msg.textContent = 'Mất kết nối, thử lại nhé.'; msg.className = 'jr-msg is-err';
+      });
+  }
+
+  /* ── Nhật ký 30 ngày ──────────────────────────────────────────────── */
+  function renderHistory() {
+    var box = el('jr-history');
+    var tgl = el('jr-toggle');
+    if (!box || !data) return;
+    var list = data.recent || [];
+    if (tgl) {
+      tgl.textContent = showHistory
+        ? 'Ẩn nhật ký'
+        : ('Xem nhật ký ' + list.length + ' ngày gần đây');
+      tgl.setAttribute('aria-expanded', showHistory ? 'true' : 'false');
+      tgl.hidden = !list.length;
+    }
+    box.hidden = !showHistory;
+    if (!showHistory) return;
+    box.innerHTML = list.map(function (l) {
+      return '<div class="jr-item">'
+        + '<span class="jr-item-d">' + viDate(l.date) + '</span>'
+        + '<span class="jr-item-b">'
+          + '<span class="jr-item-t">' + esc(l.what || l.topic || 'Có học') + '</span>'
+          + '<span class="jr-item-m">'
+            + (l.minutes != null ? l.minutes + ' phút' : '')
+            + (l.topic && l.what ? ' · ' + esc(l.topic) : '')
+            + (l.difficultyLabel ? ' · ' + esc(l.difficultyLabel) : '')
+          + '</span>'
+          + (l.note ? '<span class="jr-item-n">' + esc(l.note) + '</span>' : '')
+        + '</span></div>';
+    }).join('');
+  }
+
+  /* ── Nạp ──────────────────────────────────────────────────────────── */
+  function render() {
+    if (editingTarget) renderTargetForm(); else renderWeek();
+    renderToday();
+    renderHistory();
+  }
+
+  function load() {
+    if (!el('jr-week')) return;
+    var url = API + '?days=30';
+    var p = window.__apiGet ? window.__apiGet(url, 30000)
+      : fetch(url).then(function (r) { return r.ok ? r.json() : null; });
+    p.then(function (d) { if (d) { data = d; render(); } })
+      .catch(function () { /* giữ khối "đang tải" thay vì hiện số sai */ });
+  }
+
+  function init() {
+    if (!el('jr-week')) return;
+    var tgl = el('jr-toggle');
+    if (tgl) tgl.addEventListener('click', function () {
+      showHistory = !showHistory; renderHistory();
+    });
+    // Danh sách chủ đề cho ô gợi ý — lấy từ chính bản đồ năng lực, khỏi cứng hoá.
+    if (window.__apiGet) {
+      window.__apiGet('/api/hsa/competency', 60000).then(function (c) {
+        var dl = el('jr-topics');
+        if (!dl || !c || !c.topics) return;
+        var seen = {};
+        dl.innerHTML = c.topics.filter(function (t) {
+          if (seen[t.topic]) return false; seen[t.topic] = 1; return true;
+        }).map(function (t) { return '<option value="' + esc(t.topic) + '">'; }).join('');
+      }).catch(function () {});
+    }
+    load();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();

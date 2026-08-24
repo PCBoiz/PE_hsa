@@ -12,7 +12,8 @@ mở lại trợ lý là thấy số mới; đủ dài để cả một buổi t
 """
 import time
 
-from stats import competency
+from common.clock import local_today
+from stats import competency, journal
 from stats.goals import read_goals
 
 #: Thời gian sống của một hồ sơ trong bộ nhớ đệm (giây).
@@ -21,6 +22,9 @@ TTL_SECONDS = 300
 MAX_ENTRIES = 200
 #: Số chủ đề yếu / vững nêu tên trong hồ sơ.
 TOP_N = 3
+#: Nhật ký: quét ngần này ngày, nêu chi tiết ngần này bản gần nhất.
+JOURNAL_DAYS = 14
+JOURNAL_SHOWN = 3
 #: Từ mức này trở lên coi là đã vững.
 STRONG_FROM = 75
 
@@ -36,8 +40,20 @@ def _fmt_courses(courses):
     return ', '.join(bits)
 
 
+def _vi_date(iso):
+    p = str(iso).split('-')
+    return '%s/%s/%s' % (p[2], p[1], p[0]) if len(p) == 3 else str(iso)
+
+
 def _build(uid):
-    lines = []
+    # Mốc "hôm nay" phải nói ra: mô hình không có đồng hồ, nên nhận một danh
+    # sách ngày ISO mà không biết hôm nay là ngày nào thì nó suy sai ngay
+    # (đã dính: nhật ký ghi đúng hôm nay, trợ lý vẫn bảo "hôm nay bạn chưa ghi").
+    today = local_today()
+    lines = ['- Hôm nay là %s (thứ trong tuần: %s).'
+             % (_vi_date(today.isoformat()),
+                ('Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu',
+                 'Thứ Bảy', 'Chủ Nhật')[today.weekday()])]
 
     goals = read_goals(uid)
     goal_bits = []
@@ -90,7 +106,44 @@ def _build(uid):
     else:
         lines.append('- Học viên CHƯA làm đề thi thử nào.')
 
+    lines.extend(_journal_lines(uid))
     return '\n'.join(lines)
+
+
+def _journal_lines(uid):
+    """Nhật ký học viên tự ghi — thứ KHÔNG hệ thống nào đo được.
+
+    Điểm số nói học viên sai ở đâu; nhật ký nói VÌ SAO. "Vẫn nhầm khi nào dùng
+    sin, khi nào dùng cos" là thông tin mà cả bản đồ năng lực lẫn sổ điểm đều
+    không suy ra được, và cũng là thứ làm lời khuyên của trợ lý khác hẳn về chất.
+    """
+    logs = journal.recent_logs(uid, JOURNAL_DAYS)
+    if not logs:
+        return []
+    out = ['- Nhật ký tự ghi: %d/%d ngày gần đây có ghi lại việc học.'
+           % (len(logs), JOURNAL_DAYS)]
+    hard = [l for l in logs if l.get('difficulty') == 'hard']
+    if hard:
+        out.append('- Những ngày học viên thấy KHÓ: %s.'
+                   % ', '.join((l.get('topic') or l.get('what') or _vi_date(l['date']))
+                               for l in hard[:TOP_N]))
+    for l in logs[:JOURNAL_SHOWN]:
+        bits = [_vi_date(l['date'])]
+        if l.get('minutes') is not None:
+            bits.append('%d phút' % l['minutes'])
+        if l.get('topic'):
+            bits.append(l['topic'])
+        if l.get('difficultyLabel'):
+            bits.append('thấy %s' % l['difficultyLabel'].lower())
+        line = '  · ' + ' · '.join(bits)
+        if l.get('what'):
+            line += ' — học: %s' % l['what']
+        if l.get('note'):
+            line += ' — vướng: "%s"' % l['note']
+        out.append(line)
+    out.append('- Số phút trong nhật ký là học viên TỰ KHAI, không phải hệ thống '
+               'bấm giờ — đừng nói nó như một số đo được.')
+    return out
 
 
 def learner_profile(uid, name=None):

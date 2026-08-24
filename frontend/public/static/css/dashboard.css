@@ -4011,3 +4011,172 @@ body.dark .hsa-weak-btn.is-ghost { color: var(--blue-light); border-color: var(-
   .hsa-weak-row { flex-wrap: wrap; }
   .hsa-weak-btn { margin-left: auto; }
 }
+
+
+/* ── "Tuần này" + Nhật ký học (Bảng điều khiển) ────────────────────────────
+   Ba lớp thông tin, mỗi lớp một mức nhấn khác nhau:
+     · thanh tiến độ — thứ liếc một cái là biết, nên to và đậm nhất
+     · biểu mẫu nhật ký — thao tác, nên gọn và không tranh sự chú ý
+     · cảnh báo — hiếm khi xuất hiện, nhưng khi xuất hiện thì phải đọc được ngay
+   Thanh thời gian tách đoạn hệ thống đo và đoạn tự khai bằng CHÚ THÍCH CHỮ chứ
+   không chỉ bằng màu: số tự khai mà trộn lẫn với số đo được là mất tin cậy cả
+   phần số liệu. */
+.jr-bar {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center; gap: 9px; margin-bottom: 9px;
+}
+.jr-bar-lbl { font-size: 12px; color: #4B4459; }
+.jr-bar-track {
+  display: flex; height: 7px; border-radius: 99px;
+  background: rgba(20, 16, 35, .09); overflow: hidden;
+}
+.jr-bar-track > i {
+  display: block; height: 100%;
+  background: var(--brand-fill); transition: width .45s ease-out;
+}
+/* Đoạn học viên tự khai — khác MÀU hẳn, không chỉ nhạt hơn. */
+.jr-bar-track > i.is-self { background: #A45B08; }
+.jr-bar.is-met .jr-bar-track > i { background: var(--success); }
+.jr-bar-num {
+  font-size: 12px; font-weight: 700; color: #16121F;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.jr-bar.is-met .jr-bar-num { color: var(--success); }
+.jr-bar-sub {
+  grid-column: 2 / -1; margin-top: -3px;
+  font-size: 10.5px; color: #7A7289;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+}
+.jr-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.jr-key--sys  { background: var(--brand-fill); }
+.jr-key--self { background: #A45B08; }
+
+.jr-noplan-h { font-size: 13px; font-weight: 600; color: #16121F; margin: 0 0 4px; }
+.jr-noplan-s { font-size: 12px; line-height: 1.55; color: #4B4459; margin: 0 0 10px; }
+
+.jr-warn {
+  margin: 10px 0 0; padding: 8px 10px; border-radius: 9px;
+  background: rgba(164, 91, 8, .10); color: #8A4C06;
+  font-size: 11.5px; line-height: 1.5;
+}
+
+.jr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.jr-btn {
+  padding: 8px 13px; border: 1px solid transparent; border-radius: 9px;
+  background: var(--brand-fill); color: #FFF;
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.jr-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.jr-btn:disabled { opacity: .6; cursor: default; }
+.jr-btn.is-ghost { background: transparent; color: var(--brand); border-color: var(--brand); }
+.jr-msg { font-size: 11.5px; font-weight: 600; }
+.jr-msg.is-ok  { color: var(--success); }
+.jr-msg.is-err { color: var(--danger); }
+
+.jr-sep { height: 1px; background: rgba(20, 16, 35, .08); margin: 16px 0 13px; }
+.jr-hd {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #675F79; margin-bottom: 10px;
+}
+
+.jr-form { display: flex; flex-direction: column; gap: 10px; }
+.jr-row { display: flex; gap: 10px; }
+.jr-f { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.jr-f > span { font-size: 11px; color: #675F79; line-height: 1.35; }
+.jr-f--sm { flex: 0 0 96px; }
+.jr-f input, .jr-f textarea {
+  width: 100%; box-sizing: border-box;
+  padding: 9px 10px; border: 1px solid rgba(20, 16, 35, .14); border-radius: 9px;
+  background: #FFF; color: #16121F;
+  /* 16px để iOS không tự phóng to trang khi chạm vào ô nhập. */
+  font-family: inherit; font-size: 16px; line-height: 1.4;
+}
+.jr-f textarea { resize: vertical; }
+.jr-f input:focus, .jr-f textarea:focus {
+  outline: 2px solid var(--brand); outline-offset: 1px; border-color: transparent;
+}
+.jr-form--target { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
+.jr-form--target .jr-f { flex: 1 1 84px; }
+.jr-form--target .jr-actions { width: 100%; margin-top: 2px; }
+
+.jr-diffs { display: flex; flex-wrap: wrap; gap: 6px; }
+.jr-diff {
+  padding: 8px 12px; border: 1px solid rgba(20, 16, 35, .14); border-radius: 99px;
+  background: #FFF; color: #4B4459;
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.jr-diff:hover { border-color: var(--brand); color: var(--brand); }
+.jr-diff.active { background: var(--accent-soft); border-color: var(--brand); color: var(--brand); }
+
+.jr-toggle {
+  /* inline-flex + min-height 24px: WCAG 2.5.8 (AA) đòi 24x24 với MỌI loại con
+     trỏ, không riêng cảm ứng, và đây là nút đứng riêng chứ không phải liên kết
+     nằm trong câu văn nên không được miễn trừ. */
+  display: inline-flex; align-items: center; min-height: 24px;
+  margin-top: 12px; padding: 0; border: 0; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--brand);
+  cursor: pointer; text-align: left;
+}
+.jr-toggle:hover { text-decoration: underline; }
+.jr-history { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 320px; overflow-y: auto; }
+.jr-item { display: flex; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #F9F9FC; }
+.jr-item-d {
+  flex-shrink: 0; width: 40px; font-size: 11px; font-weight: 700; color: #675F79;
+  font-variant-numeric: tabular-nums;
+}
+.jr-item-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jr-item-t { font-size: 12.5px; font-weight: 600; color: #16121F; }
+.jr-item-m { font-size: 10.5px; color: #7A7289; }
+.jr-item-n { font-size: 11px; color: #4B4459; font-style: italic; }
+
+body.dark .jr-bar-lbl   { color: var(--text-2); }
+body.dark .jr-bar-track { background: rgba(255, 255, 255, .12); }
+body.dark .jr-bar-num   { color: var(--text-1); }
+body.dark .jr-bar-track > i.is-self        { background: #F0B45E; }
+body.dark .jr-bar.is-met .jr-bar-track > i { background: #34D3B5; }
+body.dark .jr-bar.is-met .jr-bar-track > i.is-self { background: #F0B45E; }
+body.dark .jr-bar.is-met .jr-bar-num       { color: #34D3B5; }
+body.dark .jr-bar-sub   { color: var(--text-3); }
+body.dark .jr-key--sys  { background: var(--blue-light); }
+body.dark .jr-key--self { background: #F0B45E; }
+body.dark .jr-noplan-h  { color: var(--text-1); }
+body.dark .jr-noplan-s  { color: var(--text-2); }
+body.dark .jr-warn      { background: rgba(240, 180, 94, .12); color: #F0B45E; }
+body.dark .jr-btn.is-ghost { color: var(--blue-light); border-color: var(--blue-light); }
+body.dark .jr-sep       { background: rgba(255, 255, 255, .10); }
+body.dark .jr-hd        { color: var(--text-3); }
+body.dark .jr-f > span  { color: var(--text-3); }
+body.dark .jr-f input, body.dark .jr-f textarea {
+  background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .16); color: var(--text-1);
+}
+body.dark .jr-diff      { background: transparent; border-color: rgba(255, 255, 255, .16); color: var(--text-2); }
+body.dark .jr-diff.active { background: rgba(169, 155, 255, .16); border-color: var(--blue-light); color: var(--blue-light); }
+body.dark .jr-toggle    { color: var(--blue-light); }
+body.dark .jr-item      { background: rgba(255, 255, 255, .04); }
+body.dark .jr-item-d    { color: var(--text-3); }
+body.dark .jr-item-t    { color: var(--text-1); }
+body.dark .jr-item-m    { color: var(--text-3); }
+body.dark .jr-item-n    { color: var(--text-2); }
+
+/* Mục tiêu chưa đặt cho riêng mục này: thanh để trống có gạch chéo, không phải
+   thanh 0% — "chưa đặt đích" và "đặt đích rồi mà chưa làm gì" là hai chuyện. */
+.jr-bar.is-noaim .jr-bar-track {
+  background: repeating-linear-gradient(
+    -45deg, rgba(20, 16, 35, .10) 0 3px, transparent 3px 7px);
+}
+body.dark .jr-bar.is-noaim .jr-bar-track {
+  background: repeating-linear-gradient(
+    -45deg, rgba(255, 255, 255, .14) 0 3px, transparent 3px 7px);
+}
+
+@media (pointer: coarse) {
+  /* a11y.css nâng sàn 44px cho button/select/summary nhưng KHÔNG cho ô nhập
+     chữ; biểu mẫu nhật ký toàn ô nhập nên phải tự nâng ở đây. */
+  .jr-f input, .jr-f textarea { min-height: 44px; }
+}
+
+@media (max-width: 420px) {
+  .jr-bar { grid-template-columns: 62px minmax(0, 1fr) auto; gap: 7px; }
+  .jr-row { flex-wrap: wrap; }
+  .jr-f--sm { flex: 1 1 100%; }
+}

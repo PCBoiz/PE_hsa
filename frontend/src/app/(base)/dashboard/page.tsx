@@ -120,6 +120,27 @@ export default function DashboardPage() {
                 <div className="hsa-missions" id="hsa-missions"></div>
               </div>
 
+              {/* Tuần này + nhật ký học. Đặt ở đây chứ không phải Trang của tôi
+                  vì đây là việc làm HẰNG NGÀY; Trang của tôi là nơi nhìn lại.
+                  Một việc hằng ngày nằm dưới đáy một trang dài thì không ai dùng. */}
+              <div className="section-card fx-fade-up" style={{ animationDelay: '.105s' }}>
+                <div className="section-title" style={{ marginBottom: 14 }}>
+                  <span className="title-icon-blue" data-icon="calendar" data-size="16"></span>
+                  <span>Tuần này</span>
+                </div>
+                <div className="jr-week" id="jr-week">
+                  <div className="hsa-mis-empty">Đang tải…</div>
+                </div>
+
+                <div className="jr-sep"></div>
+                <div className="jr-hd">Nhật ký hôm nay</div>
+                <div className="jr-today" id="jr-today"></div>
+                <datalist id="jr-topics"></datalist>
+
+                <button type="button" className="jr-toggle" id="jr-toggle" aria-expanded="false" hidden></button>
+                <div className="jr-history" id="jr-history" hidden></div>
+              </div>
+
               {/* Ba chủ đề yếu nhất, mỗi chủ đề đúng MỘT nút. Biết mình yếu ở
                   đâu mà không có đường đi tiếp thì thông tin đó chưa dùng được.
                   dashboard.js đổ vào từ /api/hsa/competency. */}

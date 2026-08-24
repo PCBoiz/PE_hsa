@@ -116,9 +116,32 @@ def target_band(target_score):
     return None
 
 
+#: "Mỗi ngày bạn ôn được bao lâu?" trong khảo sát → số PHÚT mỗi ngày, lấy mốc
+#: THẬN TRỌNG (đầu khoảng) chứ không lấy mốc lạc quan: kế hoạch dựng trên con số
+#: đẹp nhất là kế hoạch trượt ngay tuần đầu.
+_STUDY_MINUTES = (
+    (re.compile(r'd[ưu][ớơo]i\s*1\s*gi[ờo]', re.I), 40),
+    (re.compile(r'1\s*[-–—]\s*2\s*gi[ờo]', re.I), 60),
+    (re.compile(r'2\s*[-–—]\s*3\s*gi[ờo]', re.I), 120),
+    (re.compile(r'tr[êe]n\s*3\s*gi[ờo]', re.I), 180),
+)
+
+
+def daily_minutes(study_time):
+    """Số phút ôn mỗi ngày học viên tự khai. Không khai → None (không đoán hộ)."""
+    if not study_time:
+        return None
+    s = str(study_time)
+    for rx, mins in _STUDY_MINUTES:
+        if rx.search(s):
+            return mins
+    return None
+
+
 def read_goals(uid):
     """Mục tiêu + mốc thi từ bản khảo sát gần nhất, kèm số ngày còn lại."""
-    out = {'targetScore': None, 'examTiming': None, 'examDate': None, 'daysToExam': None}
+    out = {'targetScore': None, 'examTiming': None, 'examDate': None,
+           'daysToExam': None, 'studyTime': None, 'dailyMinutes': None}
     row = q1("SELECT data_json, created_at FROM surveys WHERE user_id=%s "
              "ORDER BY id DESC LIMIT 1", (uid,))
     data, timing_set_at = {}, None
@@ -134,6 +157,8 @@ def read_goals(uid):
         out['targetScore'] = data.get('target_score')
         out['examTiming'] = data.get('exam_timing')
         out['examDate'] = data.get('exam_date')
+        out['studyTime'] = data.get('study_time')
+        out['dailyMinutes'] = daily_minutes(out['studyTime'])
         timing_set_at = data.get('exam_timing_set_at')
     out['daysToExam'] = days_to_exam(out['examTiming'], out['examDate'],
                                      timing_set_at or (row or {}).get('created_at'))

@@ -425,3 +425,44 @@ CREATE TABLE IF NOT EXISTS topic_self_marks (
     marked_at TIMESTAMP NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, course_id, topic)
 );
+
+-- ============================================================================
+-- 27. Học viên tự ghi nhận: nhật ký ngày + mục tiêu tuần (2026-08-24)
+-- ============================================================================
+-- Hệ thống đo được điểm số và thời lượng làm bài, nhưng KHÔNG đo được thứ quyết
+-- định nhất: học viên thấy phần nào khó, vướng ở đâu, hôm nay có học ngoài ứng
+-- dụng không. Đó là dữ liệu chỉ người học mới có.
+--
+-- Mỗi bản ghi đẻ kèm một dòng learning_events với kind='self_log' và
+-- source='self'. Cột `source` tồn tại đúng cho việc này: số TỰ KHAI không bao
+-- giờ được trộn lẫn với số hệ thống ĐO ĐƯỢC trong cùng một con số.
+CREATE TABLE IF NOT EXISTS study_logs (
+    id         SERIAL PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    log_date   DATE NOT NULL,
+    minutes    INTEGER,
+    topic      TEXT,
+    what       TEXT,
+    difficulty TEXT,
+    note       TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP,
+    UNIQUE (user_id, log_date)
+);
+CREATE INDEX IF NOT EXISTS idx_study_logs_user ON study_logs(user_id, log_date DESC);
+
+-- Kế hoạch học. Đợt này MỚI DÙNG `weekly_target` (mục tiêu tuần học viên tự
+-- đặt); phần lịch chi tiết là study_plan_items nằm ở việc 5 của đặc tả và chưa
+-- làm. Tạo bảng ở đây thay vì nhét mục tiêu tuần vào chỗ khác rồi phải chuyển
+-- sang sau — mục tiêu tuần vốn là một thuộc tính của kế hoạch.
+CREATE TABLE IF NOT EXISTS study_plans (
+    id            SERIAL PRIMARY KEY,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at    TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMP,
+    exam_date     DATE,
+    weekly_target JSONB,
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_study_plans_active
+    ON study_plans(user_id) WHERE is_active;

@@ -501,3 +501,83 @@ Dựng tạm 11 tuần dữ liệu (58 sự kiện, 5 lượt thi) để nhìn �
 xong **đã xoá sạch**. Ba biến thể sáng/tối/390px: không tràn ngang, không lỗi
 console, không vùng chạm dưới sàn. Trạng thái rỗng (học viên mới) và trạng thái
 thiếu dữ liệu (1 lượt thi) đều hiện câu chữ trung thực thay vì số 0.
+
+---
+
+## 13. Việc 4 — Học viên tự ghi nhận — 24/08/2026
+
+**ĐÃ LÀM cả ba mục.** Mục 6.3 (tự đánh dấu đã nắm chủ đề) xong từ đợt bản đồ
+năng lực; đợt này làm 6.1 nhật ký ngày và 6.2 mục tiêu tuần.
+
+| Phần | Nơi |
+|---|---|
+| Bảng `study_logs`, `study_plans` | `sql/legacy_schema.sql` §27 |
+| Nhật ký + mục tiêu tuần | `stats/journal.py` |
+| API | `GET/PUT/DELETE /api/hsa/journal` · `PUT /api/hsa/weekly-target` |
+| Giao diện | Khối "Tuần này" ở Bảng điều khiển |
+| Trợ lý AI đọc nhật ký | `chatbot/profile.py:_journal_lines` |
+
+### Đổi hướng giữa chừng: mục tiêu tuần thành ADAPTIVE
+
+Bản đầu tôi để mục tiêu mặc định là hằng số `5 bài · 1 đề · 300 phút`. Anh chốt
+hướng sản phẩm là **System-Guided + Adaptive Learning**, và một hằng số cho mọi
+người phản lại cả hai vế: người còn 3 tuần và người còn 8 tháng không thể chung
+một mục tiêu.
+
+Nay `suggest_target()` suy ra con số từ ba ràng buộc:
+
+1. **Số bài còn lại phải hết trước kỳ thi**, chừa 2 tuần cuối luyện đề.
+2. **Sức chứa thật** = số phút mỗi ngày học viên khai trong khảo sát × 7, **trừ**
+   thời gian làm đề, chia cho thời lượng trung bình một bài.
+3. **Không đủ sức chứa thì nói thẳng.**
+
+Ví dụ chạy thật trên hai tài khoản:
+
+- còn 29 tuần, 71 bài, chưa khai giờ học → **3 bài · 1 đề · 150 phút/tuần**
+- còn 3 tuần, 75 bài, khai 60 phút/ngày → **12 bài · 2 đề · 420 phút/tuần**, kèm:
+  *"Với 60 phút/ngày bạn làm được khoảng 12 bài/tuần, mà cần 75 bài/tuần mới hết
+  75 bài trước kỳ thi. Hoặc tăng giờ ôn, hoặc chấp nhận bỏ khoảng 63 bài ít
+  trọng số nhất."*
+
+Mục tiêu luôn **kèm lý do**. Một con số hệ thống áp xuống mà không nói vì sao
+thì người học không có cơ sở nào để tin, và bỏ ngay tuần đầu. `target_gap()` là
+vế còn lại: học viên tự đặt mục tiêu thấp hơn mức cần thì hệ thống nói ra, chứ
+không im lặng chấp nhận một mục tiêu sẽ trượt.
+
+### Ranh giới tự khai / đo được — giữ ở BA nơi
+
+Đây là rủi ro số 1 của cả kiến trúc, nên nó được giữ ở mọi nơi con số xuất hiện:
+
+- **Dữ liệu**: nhật ký đẻ một `learning_events` với `source='self'`.
+- **Thanh thời gian tuần**: xếp chồng hai đoạn — tím là hệ thống bấm giờ, hổ
+  phách là học viên tự ghi — kèm chú thích chữ, không chỉ dựa vào màu.
+- **Đường tiến bộ**: cột mỗi tuần cũng xếp chồng hai đoạn như vậy.
+- **Trợ lý AI**: nhận nguyên câu *"Số phút trong nhật ký là học viên TỰ KHAI,
+  không phải hệ thống bấm giờ — đừng nói nó như một số đo được."*
+
+### Nhật ký để làm gì
+
+Điểm số nói học viên **sai ở đâu**; nhật ký nói **vì sao**. "Vẫn nhầm khi nào
+dùng sin, khi nào dùng cos" là thứ mà cả bản đồ năng lực lẫn sổ điểm đều không
+suy ra được. Trợ lý AI đọc 14 ngày gần nhất, và ô nhập ghi thẳng điều đó cho học
+viên biết: *"Vướng ở đâu (trợ lý AI đọc phần này để tư vấn sát hơn)"*.
+
+### Ba lỗi bắt được lúc chạy thử
+
+1. **Mục tiêu bằng 0 vẽ ra thanh rỗng trông như hỏng.** Nguyên nhân: dùng
+   `target ?` nên số 0 rơi vào nhánh "chưa đặt". Ba trạng thái phải tách: chưa
+   đặt (gạch chéo) · đặt bằng 0 (coi như đạt) · đặt > 0 (theo tỉ lệ).
+2. **Ô nhập trên di động cao 42px**, dưới sàn 44. `a11y.css` nâng sàn cho
+   `button`/`select` nhưng không cho ô nhập chữ, mà biểu mẫu nhật ký thì toàn ô
+   nhập chữ.
+3. **Trợ lý không biết hôm nay là ngày nào** nên bảo "hôm nay bạn chưa ghi nhật
+   ký" trong khi bản ghi mang đúng ngày hôm nay. Mô hình không có đồng hồ — phải
+   nói mốc ngày ra.
+
+### Đã kiểm bằng cách chạy thật
+
+Biểu mẫu rỗng · ngày tương lai · số phút quá trần · số phút không phải số · mức
+khó bịa · mục tiêu sai kiểu · mục tiêu vượt trần: đều trả đúng lỗi tiếng Việt
+hoặc kẹp về biên. Ghi rồi sửa lại trong ngày: cập nhật đúng một bản ghi, thanh
+tuần đổi theo. Ba biến thể sáng/tối/390px: không tràn ngang, không lỗi console,
+không vùng chạm dưới sàn.

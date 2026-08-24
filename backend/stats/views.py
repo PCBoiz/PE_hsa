@@ -10,7 +10,8 @@ from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
-from stats import competency, gradebook
+from chatbot import profile as chat_profile
+from stats import competency, gradebook, journal
 from stats.goals import as_date as _as_date, read_goals
 
 
@@ -394,3 +395,51 @@ class ProgressCurveView(APIView):
     def get(self, request):
         return Response(gradebook.progress_curve(request.user.id,
                                                  request.query_params.get('weeks')))
+
+
+class JournalView(APIView):
+    """GET/PUT/DELETE /api/hsa/journal — nhật ký học hằng ngày.
+
+    GET gộp cả khối (hôm nay + 30 ngày gần đây + mục tiêu tuần + tiến độ tuần)
+    vào MỘT lượt gọi: mỗi lượt tới Neon tốn ~245ms thuần đường truyền, mà bốn
+    thứ này luôn hiện cùng nhau trên màn hình.
+    """
+
+    def get(self, request):
+        return Response(journal.overview(request.user.id,
+                                         request.query_params.get('days')))
+
+    def put(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        row, err = journal.save_log(request.user.id, body)
+        if err:
+            return Response({'error': err}, status=400)
+        # Trợ lý AI đọc nhật ký để tư vấn — bỏ đệm để nó thấy ngay bản vừa ghi.
+        chat_profile.invalidate(request.user.id)
+        return Response({'ok': True, 'log': row,
+                         'week': journal.week_progress(request.user.id,
+                                                       journal.read_target(request.user.id))})
+
+    def delete(self, request):
+        day = request.query_params.get('date') or (request.data or {}).get('date')
+        if not journal.delete_log(request.user.id, day):
+            return Response({'error': 'Ngày không hợp lệ.'}, status=400)
+        chat_profile.invalidate(request.user.id)
+        return Response({'ok': True})
+
+
+class WeeklyTargetView(APIView):
+    """PUT /api/hsa/weekly-target {lessons, mocks, minutes} — mục tiêu tuần.
+
+    Không có giá trị mặc định được LƯU sẵn: chưa đặt thì màn hình nói là chưa
+    đặt, chứ không bày ra một mục tiêu do hệ thống nghĩ hộ rồi báo học viên
+    "chưa đạt" một thứ họ chưa từng nhận.
+    """
+
+    def put(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        target, err = journal.save_target(request.user.id, body)
+        if err:
+            return Response({'error': err}, status=400)
+        return Response({'ok': True, 'target': target,
+                         'week': journal.week_progress(request.user.id, target)})
