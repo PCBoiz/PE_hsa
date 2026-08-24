@@ -351,3 +351,77 @@ CREATE INDEX IF NOT EXISTS idx_posts_lesson ON posts(course_id, lesson_no);
 -- tĩnh, không có dòng tương ứng. Hệ quả: tiến độ lộ trình chỉ nằm trong
 -- localStorage, đổi máy là mất sạch.
 ALTER TABLE roadmap_progress DROP CONSTRAINT IF EXISTS roadmap_progress_roadmap_id_fkey;
+
+-- ============================================================================
+-- 26. learning_events — MỘT dòng sự kiện học tập cho mọi hoạt động (2026-08-24)
+-- ============================================================================
+-- Trước đây dữ liệu học tập nằm ở NĂM bảng rời (lesson_progress, mock_attempts,
+-- review_quiz_results, user_missions, user_daily_xp_logs), mỗi nơi một hình
+-- dạng. Hệ quả: không màn hình nào trả lời được câu hỏi quan trọng nhất của thí
+-- sinh — "tôi mạnh yếu ở đâu, tiến bộ tới đâu?" — và mỗi lần thêm một loại hoạt
+-- động lại phải sửa mọi chỗ hiển thị.
+--
+-- Bảng này mượn ý Completion API của Moodle: hoạt động chỉ việc BÁO CÁO một sự
+-- kiện; sổ điểm, bản đồ năng lực, đường cong tiến bộ và kế hoạch học đều là các
+-- cách ĐỌC KHÁC NHAU trên cùng một bảng.
+--
+-- Hai điểm cố ý:
+--   · `source` tách rạch ròi số hệ thống ĐO ĐƯỢC với số học viên TỰ KHAI. Trộn
+--     hai loại vào một biểu đồ là cách nhanh nhất làm mất tin cậy của số liệu.
+--   · `topic` CHÉP LẠI lúc ghi, không tham chiếu tới lessons.module. Giáo trình
+--     sẽ được soạn lại theo TopHSA; chép giá trị giữ cho số liệu lịch sử không
+--     đổi nghĩa khi chương mục thay đổi.
+--
+-- Từ vựng `kind` (mỗi dòng chỉ mang đúng một nghĩa):
+--   lesson       kiểm tra đầu vào của bài học   (score = phần trăm đúng, max 100)
+--   drill        phòng luyện tốc độ             (score/max = số câu)
+--   review_quiz  quiz ôn tập, MỘT DÒNG MỖI CHỦ ĐỀ trong cùng một lượt
+--   mock         TỔNG một lượt thi thử (course_id NULL) = nguồn của đường cong
+--   mock_section điểm theo hợp phần của chính lượt đó = nguồn của năng lực
+--   mission      nhận thưởng nhiệm vụ ngày (không chấm điểm)
+--   self_log     học viên tự ghi nhận (source='self')
+-- `mock` và `mock_section` cùng một lượt thi: bên đọc CHỌN một trong hai, nên
+-- không bao giờ cộng trùng một lượt vào cùng một phép tính.
+--
+-- `dedup_key` BẮT BUỘC và duy nhất theo từng học viên. Nhờ nó lệnh nạp dữ liệu
+-- cũ chạy lại bao nhiêu lần cũng không nhân đôi số liệu, và học lại một bài thì
+-- sự kiện được CẬP NHẬT chứ không đẻ thêm dòng — khớp đúng với lesson_progress
+-- (bảng đó cũng chỉ giữ một dòng cho mỗi cặp học viên–bài).
+CREATE TABLE IF NOT EXISTS learning_events (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dedup_key   TEXT NOT NULL,
+    occurred_at TIMESTAMP NOT NULL,
+    event_date  DATE NOT NULL,
+    kind        TEXT NOT NULL,
+    course_id   TEXT,
+    topic       TEXT,
+    ref_type    TEXT,
+    ref_id      TEXT,
+    score       NUMERIC(6,2),
+    max_score   NUMERIC(6,2),
+    minutes     INTEGER,
+    xp          INTEGER DEFAULT 0,
+    source      TEXT NOT NULL DEFAULT 'system',
+    meta        JSONB,
+    created_at  TIMESTAMP DEFAULT now(),
+    UNIQUE (user_id, dedup_key)
+);
+CREATE INDEX IF NOT EXISTS idx_levents_user_date ON learning_events(user_id, event_date DESC);
+CREATE INDEX IF NOT EXISTS idx_levents_user_topic ON learning_events(user_id, course_id, topic);
+CREATE INDEX IF NOT EXISTS idx_levents_user_kind ON learning_events(user_id, kind, occurred_at DESC);
+
+-- Tự đánh dấu "đã nắm" một chủ đề.
+-- Khoá gồm course_id vì "Chiến thuật" là chủ đề của CẢ BA hợp phần — bỏ course
+-- ra khỏi khoá thì đánh dấu Chiến thuật ở Định lượng sẽ tắt luôn Chiến thuật
+-- của Khoa học.
+-- QUY TẮC: tự đánh dấu là ĐẦU VÀO ĐỂ XẾP LỊCH, KHÔNG phải bằng chứng năng lực.
+-- Điểm thành thạo vẫn tính theo bài làm thật.
+CREATE TABLE IF NOT EXISTS topic_self_marks (
+    user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id TEXT NOT NULL,
+    topic     TEXT NOT NULL,
+    known     BOOLEAN NOT NULL,
+    marked_at TIMESTAMP NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, course_id, topic)
+);

@@ -120,6 +120,19 @@ export default function DashboardPage() {
                 <div className="hsa-missions" id="hsa-missions"></div>
               </div>
 
+              {/* Ba chủ đề yếu nhất, mỗi chủ đề đúng MỘT nút. Biết mình yếu ở
+                  đâu mà không có đường đi tiếp thì thông tin đó chưa dùng được.
+                  dashboard.js đổ vào từ /api/hsa/competency. */}
+              <div className="section-card fx-fade-up" style={{ animationDelay: '.11s' }}>
+                <div className="section-title" style={{ marginBottom: 14 }}>
+                  <span className="title-icon-blue" data-icon="target" data-size="16"></span>
+                  <span>Nên ôn tiếp</span>
+                </div>
+                <div className="hsa-weak" id="hsa-weak">
+                  <div className="hsa-mis-empty">Đang tính…</div>
+                </div>
+              </div>
+
               <div className="section-card fx-fade-up" style={{ animationDelay: '.12s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
                   <span className="title-icon-blue" data-icon="bar-chart" data-size="16"></span>
@@ -569,6 +582,20 @@ export default function DashboardPage() {
                   <p className="prof-caps-note">
                     Độ chính xác lấy từ các lần thi thử đã làm. Chưa thi thử lần nào thì chưa có số.
                   </p>
+                </div>
+
+                {/* Bản đồ năng lực 20 ô (3 hợp phần × chương mục). Chương mục
+                    đã gắn sẵn cho đủ 76 bài từ lâu nhưng chưa lần nào dùng để
+                    chấm mạnh–yếu — đây là chỗ dùng nó. */}
+                <div className="prof-section fx-fade-up" style={{ animationDelay: '.28s' }}>
+                  <div className="prof-section-hd">
+                    <span className="prof-section-icon" data-icon="map" data-size="16"></span>
+                    <span className="prof-section-title">Bản đồ năng lực theo chủ đề</span>
+                  </div>
+                  <div className="cmp-map" id="cmp-map">
+                    <div className="prof-empty">Đang tải…</div>
+                  </div>
+                  <p className="prof-caps-note" id="cmp-note"></p>
                 </div>
 
                 <div className="prof-section fx-fade-up" style={{ animationDelay: '.3s' }}>

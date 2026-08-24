@@ -396,3 +396,133 @@ body.dark .prof-avatar         { border-color: var(--card); }
   .prof-edit-btn  { margin-left: 0; }
   .prof-chart-canvas { height: 160px !important; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * BẢN ĐỒ NĂNG LỰC THEO CHỦ ĐỀ (Trang của tôi) — dashboard.js dựng DOM.
+ *
+ * Mỗi ô là một chủ đề trong giáo trình. Ba quyết định về mặt nhìn:
+ *
+ * 1. MỘT biến màu cho mỗi bậc. Toàn bộ ô (số, thanh, viền, nền) đọc `--lv` và
+ *    `--lv-bg`, nên đổi bảng màu hay thêm bậc chỉ sửa đúng một chỗ.
+ * 2. Chữ luôn là màu chữ thường trên nền NHẠT, không bao giờ chữ trắng trên
+ *    nền màu. Bốn bậc × hai chế độ sáng/tối là tám tổ hợp; giữ nền nhạt là cách
+ *    duy nhất bảo đảm cả tám đều đủ tương phản mà không phải kiểm từng cái.
+ * 3. Ô chưa đủ dữ liệu KHÔNG có thanh tiến độ — nó có vạch chéo. Một thanh dài
+ *    0% trông y hệt "làm sai hết", trong khi sự thật là "chưa đo".
+ * ════════════════════════════════════════════════════════════════════════ */
+.cmp-map { display: flex; flex-direction: column; gap: 18px; }
+.cmp-group-hd {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #6B7280; margin-bottom: 8px;
+}
+.cmp-grid {
+  display: grid; gap: 10px;
+  /* minmax(0,…) chứ không phải 1fr: 1fr = minmax(auto,1fr) nên tên chủ đề dài
+     ("Thống kê & Xác suất") đẩy cả lưới rộng ra và trang trượt ngang. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 148px), 1fr));
+}
+
+.cmp-tile {
+  --lv: #675F79;
+  --lv-bg: #F1F0F8;
+  position: relative;
+  padding: 10px 11px 11px;
+  border-radius: 12px;
+  background: var(--lv-bg);
+  border: 1px solid transparent;
+  border-left: 3px solid var(--lv);
+  min-width: 0;
+}
+.cmp-tile.is-l4 { --lv: #0E7C6B; --lv-bg: #E6F4F1; }
+.cmp-tile.is-l3 { --lv: #6D5AE6; --lv-bg: #EFECFD; }
+.cmp-tile.is-l2 { --lv: #A45B08; --lv-bg: #FBF0E2; }
+.cmp-tile.is-l1 { --lv: #BE2A46; --lv-bg: #FBEAEE; }
+.cmp-tile.is-none { --lv: #A9A2B8; --lv-bg: #F4F3F8; }
+
+.cmp-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.cmp-name {
+  font-size: 12.5px; font-weight: 600; color: #16121F; line-height: 1.35;
+  min-width: 0; overflow-wrap: anywhere;
+}
+.cmp-num {
+  font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--lv);
+  font-variant-numeric: tabular-nums; margin: 2px 0 6px;
+}
+.cmp-num i { font-size: 13px; font-weight: 700; font-style: normal; margin-left: 1px; }
+/* Ô chưa đo LÙI về sau: người mới học có gần 20 ô như vậy, để chúng cùng cỡ
+   với ô đã đo thì màn hình trông như đang hỏng. Chữ nhỏ và nhạt hơn khiến vài ô
+   ĐÃ ĐO nổi bật lên — đó mới là thứ cần nhìn thấy. */
+.cmp-tile.is-none .cmp-num { font-size: 19px; font-weight: 700; color: #8B839B; }
+
+.cmp-bar { height: 5px; border-radius: 99px; background: rgba(20, 16, 35, .10); overflow: hidden; }
+.cmp-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--lv); }
+/* Vạch chéo = "chưa đo", cố ý KHÁC hẳn một thanh rỗng (= "đo rồi, được 0"). */
+.cmp-bar--empty {
+  background: repeating-linear-gradient(
+    -45deg, rgba(20, 16, 35, .13) 0 3px, transparent 3px 7px);
+}
+
+.cmp-meta {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  margin-top: 7px; font-size: 11px; color: #675F79; font-variant-numeric: tabular-nums;
+}
+/* WCAG 2.5.8 (AA) đòi 24×24 với MỌI loại con trỏ, không riêng cảm ứng. Đây là
+   liên kết đứng riêng như một nút nên không được hưởng miễn trừ "liên kết trong
+   câu văn". */
+.cmp-go {
+  display: inline-flex; align-items: center; min-height: 24px;
+  font-weight: 700; color: var(--brand); text-decoration: none; white-space: nowrap;
+}
+.cmp-go:hover { text-decoration: underline; }
+.cmp-go.is-done { font-weight: 600; color: #0E7C6B; }
+.cmp-sub { margin-top: 2px; font-size: 10.5px; color: #7A7289; }
+
+.cmp-self {
+  flex-shrink: 0; width: 26px; height: 26px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; font-size: 12px; line-height: 1;
+  border: 1px solid rgba(20, 16, 35, .16); background: #FFF; color: #A9A2B8;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.cmp-self:hover { border-color: var(--brand); color: var(--brand); }
+.cmp-self[aria-pressed="true"] { background: var(--brand-fill); border-color: var(--brand-fill); color: #FFF; }
+.cmp-self:disabled { opacity: .5; cursor: default; }
+.cmp-tile.is-self { border-color: rgba(109, 90, 230, .35); }
+
+/* Tự nhận đã nắm nhưng bài làm nói khác — phải nói thẳng, không giấu đi. */
+.cmp-warn {
+  margin-top: 8px; padding: 6px 8px; border-radius: 8px;
+  background: rgba(190, 42, 70, .10); color: #A02038;
+  font-size: 10.5px; line-height: 1.4;
+}
+
+body.dark .cmp-group-hd { color: var(--text-3); }
+body.dark .cmp-name     { color: var(--text-1); }
+body.dark .cmp-meta     { color: var(--text-2); }
+body.dark .cmp-sub      { color: var(--text-3); }
+body.dark .cmp-bar      { background: rgba(255, 255, 255, .12); }
+body.dark .cmp-bar--empty {
+  background: repeating-linear-gradient(
+    -45deg, rgba(255, 255, 255, .16) 0 3px, transparent 3px 7px);
+}
+/* Nền tối cần mực SÁNG hơn; giữ nguyên nguyên tắc "chữ màu trên nền nhạt" bằng
+   cách hạ nền xuống lớp phủ mờ thay vì đảo ngược màu. */
+body.dark .cmp-tile         { --lv: #A9A2B8; --lv-bg: rgba(255, 255, 255, .04); }
+body.dark .cmp-tile.is-l4   { --lv: #34D3B5; --lv-bg: rgba(52, 211, 181, .10); }
+body.dark .cmp-tile.is-l3   { --lv: #A99BFF; --lv-bg: rgba(169, 155, 255, .12); }
+body.dark .cmp-tile.is-l2   { --lv: #F0B45E; --lv-bg: rgba(240, 180, 94, .12); }
+body.dark .cmp-tile.is-l1   { --lv: #FF8FA3; --lv-bg: rgba(255, 143, 163, .12); }
+body.dark .cmp-tile.is-none .cmp-num { color: #8E86A0; }
+body.dark .cmp-go      { color: var(--blue-light); }
+body.dark .cmp-go.is-done { color: #34D3B5; }
+body.dark .cmp-self    { background: transparent; border-color: rgba(255, 255, 255, .18); }
+body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
+
+@media (pointer: coarse) {
+  /* a11y.css nâng sàn cho `button` và `a[class*="-btn"]`; `.cmp-go` là liên kết
+     đứng riêng một dòng như một nút nên cũng phải nới (WCAG 2.5.8 chỉ miễn trừ
+     liên kết nằm TRONG câu văn). */
+  .cmp-go { display: inline-flex; align-items: center; min-height: 44px; }
+  .cmp-meta { min-height: 44px; }
+}

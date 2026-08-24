@@ -2854,3 +2854,200 @@ function forumClearSearch() {
     if (location.hash.indexOf('settings') > -1 || location.hash.indexOf('hsa-goals') > -1) loadGoals();
   });
 })();
+
+
+/* ═══════════════════════════════════════════════════════
+   BẢN ĐỒ NĂNG LỰC THEO CHỦ ĐỀ  (/api/hsa/competency)
+   ═══════════════════════════════════════════════════════
+   Cả 76 bài HSA đã gắn sẵn chương mục từ lâu — Số học, Hình học, Đọc hiểu,
+   Vật lý… — nhưng chưa lần nào dùng để chấm mạnh–yếu. Khối này biến
+   "bạn được 62%" thành "Hình học 45% — yếu nhất, ôn tiếp Bài 12".
+
+   HAI QUY TẮC KHÔNG ĐƯỢC PHÁ:
+   · Ô chưa đủ dữ liệu để TRỐNG (gạch chéo), không hiện 0%. Một con số dựng từ
+     đúng một bài không phải là phép đo, và hiện nó ra còn tệ hơn để trống.
+   · Học viên tự đánh dấu "đã nắm" KHÔNG làm đổi điểm thành thạo. Tự đánh giá là
+     đầu vào để xếp lịch ôn, không phải bằng chứng năng lực — lẫn hai thứ này là
+     cách nhanh nhất khiến số liệu mất giá trị.
+   ═══════════════════════════════════════════════════════ */
+(function () {
+  var API = '/api/hsa/competency';
+  var cache = null;
+
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+
+  /* Bậc thành thạo → lớp CSS. Bốn bậc là đủ để nhìn ra chỗ yếu; chia nhỏ hơn
+     chỉ tạo cảm giác chính xác giả. */
+  function level(m) {
+    if (m == null) return 'none';
+    if (m >= 80) return 'l4';
+    if (m >= 60) return 'l3';
+    if (m >= 40) return 'l2';
+    return 'l1';
+  }
+
+  function lessonHref(course, idx) {
+    return '/lesson/' + encodeURIComponent(course) + '?lesson=' + idx;
+  }
+
+  function tile(t) {
+    var data0 = cache || {};
+    var lv = level(t.mastery);
+    var num = t.mastery == null ? '—' : t.mastery;
+    var bar = t.mastery == null
+      ? '<div class="cmp-bar cmp-bar--empty" aria-hidden="true"></div>'
+      : '<div class="cmp-bar"><i style="width:' + t.mastery + '%"></i></div>';
+    // Ô chưa đo phải nói CẦN GÌ để mở đánh giá. "chưa đủ dữ liệu" đúng nhưng
+    // là ngõ cụt: người đọc không biết phải làm gì tiếp.
+    var thieu = (data0.minActivities || 2) - (t.confidence || 0);
+    var meta = t.mastery == null
+      ? (t.confidence ? ('cần thêm ' + thieu + ' bài nữa') : ('cần ' + thieu + ' bài để đánh giá'))
+      : (t.confidence + ' hoạt động đã đo');
+    var next = t.suggestion
+      ? '<a class="cmp-go" href="' + lessonHref(t.course, t.suggestion.lessonIndex) + '">Bài '
+        + t.suggestion.lessonIndex + ' →</a>'
+      : '<span class="cmp-go is-done">xong chủ đề</span>';
+
+    return '<div class="cmp-tile is-' + lv + (t.selfMarked ? ' is-self' : '') + '">'
+      + '<div class="cmp-hd">'
+        + '<span class="cmp-name" title="' + esc(t.topic) + '">' + esc(t.topic) + '</span>'
+        + '<button type="button" class="cmp-self" aria-pressed="' + (t.selfMarked ? 'true' : 'false')
+          + '" data-course="' + esc(t.course) + '" data-topic="' + esc(t.topic) + '"'
+          // aria-label chứ không phải <span> ẩn: a11y.css nâng sàn vùng chạm
+          // 44×44 theo bộ chọn `button[aria-label]`, và trình đọc màn hình đọc
+          // được ngay mà không cần thêm phần tử.
+          + ' aria-label="' + (t.selfMarked ? 'Bỏ đánh dấu đã nắm ' : 'Tự đánh dấu đã nắm ') + esc(t.topic) + '"'
+          + ' title="' + (t.selfMarked ? 'Bỏ đánh dấu đã nắm' : 'Tự đánh dấu đã nắm chủ đề này') + '">✓'
+        + '</button>'
+      + '</div>'
+      + '<div class="cmp-num">' + num + (t.mastery == null ? '' : '<i>%</i>') + '</div>'
+      + bar
+      + '<div class="cmp-meta"><span>' + t.lessonsDone + '/' + t.lessonsTotal + ' bài</span>' + next + '</div>'
+      + '<div class="cmp-sub">' + meta + '</div>'
+      + (t.conflict
+        ? '<div class="cmp-warn">Bạn đánh dấu đã nắm, nhưng bài làm gần đây mới ' + t.mastery + '%.</div>'
+        : '')
+      + '</div>';
+  }
+
+  function renderMap(data) {
+    var box = document.getElementById('cmp-map');
+    if (!box) return;
+    var topics = (data && data.topics) || [];
+    if (!topics.length) {
+      box.innerHTML = '<div class="prof-empty">Chưa có chương mục nào trong giáo trình.</div>';
+      return;
+    }
+    // Gom theo hợp phần, giữ nguyên thứ tự máy chủ trả về.
+    var groups = [], byId = {};
+    topics.forEach(function (t) {
+      if (!byId[t.course]) {
+        byId[t.course] = { id: t.course, title: t.courseTitle, items: [] };
+        groups.push(byId[t.course]);
+      }
+      byId[t.course].items.push(t);
+    });
+    box.innerHTML = groups.map(function (g) {
+      return '<div class="cmp-group">'
+        + '<div class="cmp-group-hd">' + esc(g.title) + '</div>'
+        + '<div class="cmp-grid">' + g.items.map(tile).join('') + '</div>'
+        + '</div>';
+    }).join('');
+
+    var note = document.getElementById('cmp-note');
+    if (note) {
+      note.textContent = data.hint || ('Điểm thành thạo gộp bốn nguồn: kiểm tra đầu vào, '
+        + 'phòng luyện tốc độ, quiz ôn tập và thi thử — kết quả gần đây tính nặng hơn. '
+        + 'Ô gạch chéo là chưa đủ dữ liệu để đánh giá, không phải điểm 0. Dấu ✓ là bạn tự '
+        + 'đánh dấu đã nắm: nó chỉ đổi thứ tự gợi ý ôn, không đổi điểm.');
+    }
+    bindSelf(box);
+  }
+
+  function bindSelf(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('.cmp-self'), function (b) {
+      b.addEventListener('click', function () {
+        var known = b.getAttribute('aria-pressed') !== 'true';
+        b.disabled = true;
+        fetch('/api/hsa/competency/self', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseId: b.getAttribute('data-course'),
+            topic: b.getAttribute('data-topic'),
+            known: known
+          })
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            b.disabled = false;
+            if (d) window.__refreshCompetency();
+          })
+          .catch(function () { b.disabled = false; });
+      });
+    });
+  }
+
+  /* ── Ba chủ đề yếu nhất, đẩy lên Bảng điều khiển ──
+     Mỗi chủ đề đúng MỘT nút: biết mình yếu ở đâu mà không có đường đi tiếp thì
+     thông tin đó chưa dùng được. */
+  function renderWeak(data) {
+    var box = document.getElementById('hsa-weak');
+    if (!box) return;
+    var weak = (data && data.weakest) || [];
+    if (!weak.length) {
+      box.innerHTML = '<div class="hsa-mis-empty">'
+        + esc((data && data.hint) || 'Học thêm vài bài để hệ thống chấm được chủ đề nào cần ôn.')
+        + '</div>';
+      return;
+    }
+    box.innerHTML = weak.map(function (t) {
+      var go = t.suggestion
+        ? '<a class="hsa-weak-btn" href="' + lessonHref(t.course, t.suggestion.lessonIndex)
+          + '">Ôn Bài ' + t.suggestion.lessonIndex + ' →</a>'
+        : '<a class="hsa-weak-btn is-ghost" href="/mock">Luyện đề →</a>';
+      return '<div class="hsa-weak-row is-' + level(t.mastery) + '">'
+        + '<span class="hsa-weak-pct">' + t.mastery + '<i>%</i></span>'
+        + '<span class="hsa-weak-body">'
+          + '<span class="hsa-weak-name">' + esc(t.topic) + '</span>'
+          + '<span class="hsa-weak-sub">' + esc(t.courseTitle) + ' · '
+            + t.lessonsDone + '/' + t.lessonsTotal + ' bài</span>'
+        + '</span>' + go
+        + '</div>';
+    }).join('');
+  }
+
+  function load(force) {
+    if (!document.getElementById('cmp-map') && !document.getElementById('hsa-weak')) return;
+    if (cache && !force) { renderMap(cache); renderWeak(cache); return; }
+    var p = window.__apiGet ? window.__apiGet(API, force ? 0 : 30000)
+      : fetch(API).then(function (r) { return r.ok ? r.json() : null; });
+    p.then(function (d) {
+      if (!d) return;
+      cache = d;
+      renderMap(d);
+      renderWeak(d);
+    }).catch(function () { /* giữ khối "đang tải" thay vì hiện số sai */ });
+  }
+
+  // Bản đồ nằm ở Trang của tôi → nạp khi mở trang đó. Khối yếu nhất nằm ở Bảng
+  // điều khiển → nạp ngay lúc vào.
+  var _origNavigateCmp = window.navigate;
+  window.navigate = function (page) {
+    _origNavigateCmp(page);
+    if (page === 'profile') load(false);
+  };
+  window.__refreshCompetency = function () {
+    cache = null;
+    if (window.__apiGetBust) window.__apiGetBust(API);
+    load(true);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { load(false); });
+  } else {
+    load(false);
+  }
+})();

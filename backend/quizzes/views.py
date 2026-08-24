@@ -6,11 +6,48 @@ from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.clock import local_now
 from common.db import q, q1, x
+from common.events import KIND_REVIEW_QUIZ, record_event
 
 MIN_QUESTIONS = 5
 MAX_QUESTIONS = 10
 DEFAULT_QUESTIONS = 8
+
+
+def _record_quiz_events(uid, quiz_id, course_id, questions, selected_by_no, now):
+    """Một lượt quiz ôn tập → MỘT sự kiện cho MỖI chủ đề có trong lượt đó.
+
+    Quiz ôn tập bốc câu từ các bài đã học, mỗi bài thuộc một chủ đề khác nhau.
+    Ghi gộp cả lượt thành một điểm số sẽ mất chính cái thông tin đáng giá nhất:
+    "nhớ Hình học 2/5 nhưng nhớ Số học 4/4". Vì thế tách theo chủ đề ngay lúc
+    ghi. Các dòng của cùng một lượt cộng lại vẫn ra đúng điểm tổng.
+    """
+    ids = {qq.get('lesson_id') for qq in questions if qq.get('lesson_id')}
+    if not ids:
+        return
+    topic_of = {r['id']: r['module'] for r in q(
+        'SELECT id, module FROM lessons WHERE id = ANY(%s)', (list(ids),))}
+
+    per_topic = {}
+    for qq in questions:
+        topic = (topic_of.get(qq.get('lesson_id')) or '').strip()
+        if not topic:
+            continue           # bài chưa gắn chương mục → không quy được chủ đề
+        correct_id = next((o.get('id') for o in qq.get('options', []) if o.get('correct')), None)
+        bucket = per_topic.setdefault(topic, [0, 0])
+        bucket[1] += 1
+        if selected_by_no.get(qq.get('question_no')) == correct_id:
+            bucket[0] += 1
+
+    for topic, (correct, n) in per_topic.items():
+        record_event(
+            uid, KIND_REVIEW_QUIZ, f'quiz:{quiz_id}:{topic}',
+            occurred_at=now, course_id=course_id, topic=topic,
+            ref_type='quiz', ref_id=str(quiz_id),
+            score=correct, max_score=n,
+            meta={'quizId': quiz_id},
+        )
 
 
 class GenerateQuizView(APIView):
@@ -161,8 +198,8 @@ class SubmitQuizView(APIView):
 
         uid = request.user.id
         with transaction.atomic():
-            quiz = q1('SELECT id, user_id, status, questions_json FROM quizzes WHERE id=%s',
-                      (quiz_id,))
+            quiz = q1('SELECT id, user_id, course_id, status, questions_json '
+                      'FROM quizzes WHERE id=%s', (quiz_id,))
             if not quiz:
                 return Response({'error': 'Không tìm thấy quiz'}, status=404)
             if quiz['user_id'] != uid:
@@ -205,10 +242,18 @@ class SubmitQuizView(APIView):
                 })
 
             total = len(questions)
-            x('INSERT INTO review_quiz_results (quiz_id, user_id, score, total, answers_json) '
-              'VALUES (%s, %s, %s, %s, %s::jsonb)',
-              (quiz_id, uid, score, total, json.dumps(answers_json, ensure_ascii=False)))
+            # submitted_at ghi thẳng giờ Việt Nam thay vì để DEFAULT now() của
+            # Postgres (Neon trả UTC — lệch 7 tiếng, đúng cái bẫy từng làm nhiệm
+            # vụ ngày đếm sai hồi 14/08).
+            now = local_now()
+            x('INSERT INTO review_quiz_results '
+              '(quiz_id, user_id, score, total, answers_json, submitted_at) '
+              'VALUES (%s, %s, %s, %s, %s::jsonb, %s)',
+              (quiz_id, uid, score, total,
+               json.dumps(answers_json, ensure_ascii=False), now))
             x("UPDATE quizzes SET status='submitted' WHERE id=%s", (quiz_id,))
+            _record_quiz_events(uid, quiz_id, quiz.get('course_id'), questions,
+                                selected_by_no, now)
 
         return Response({
             'score': score,

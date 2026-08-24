@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q, q1, x
+from common.events import KIND_MOCK, KIND_MOCK_SECTION, record_event
 from common.streak import award_xp, touch_streak
 
 #: XP cho một lượt thi thử: 30 XP công sức + tối đa 70 XP theo tỉ lệ đúng.
@@ -26,6 +27,14 @@ SECTION_LABELS = {
     'science': 'Khoa học',
 }
 
+#: Hợp phần của đề thi → khoá học tương ứng. Bản đồ năng lực cần biết điểm thi
+#: thử thuộc khoá nào mới quy được về chủ đề của khoá đó.
+SECTION_COURSE = {
+    'quantitative': 'hsa_quantitative',
+    'verbal': 'hsa_verbal',
+    'science': 'hsa_science',
+}
+
 
 def _norm(s):
     """Chuẩn hoá đáp án điền để so khớp: bỏ hoa/thường, khoảng trắng, '%'."""
@@ -37,6 +46,36 @@ def _questions(exam):
     if isinstance(qs, str):
         qs = json.loads(qs)
     return qs or []
+
+
+def _record_mock_events(uid, attempt_id, exam_id, score, total,
+                        sec_correct, sec_total, duration, xp, now):
+    """Một lượt thi thử → 1 sự kiện tổng + 1 sự kiện cho mỗi hợp phần."""
+    if not attempt_id:
+        return
+    minutes = max(1, round(duration / 60)) if duration else None
+    record_event(
+        uid, KIND_MOCK, f'mock:{attempt_id}',
+        occurred_at=now, ref_type='mock_attempt', ref_id=str(attempt_id),
+        score=score, max_score=total, minutes=minutes, xp=xp,
+        meta={'examId': exam_id},
+    )
+    for sec, n in sec_total.items():
+        course_id = SECTION_COURSE.get(sec)
+        if not course_id or not n:
+            continue
+        # Khoá chống trùng dùng COURSE_ID, không dùng mã hợp phần: lệnh
+        # backfill_learning_events chỉ suy ra được khoá học từ nhãn trong
+        # section_scores_json. Hai bên ghi khác khoá thì nạp lại dữ liệu cũ sẽ
+        # đẻ thêm một dòng nữa cho CÙNG một lượt thi, và hợp phần đó bị đếm hai
+        # lần trong bản đồ năng lực.
+        record_event(
+            uid, KIND_MOCK_SECTION, f'mocksec:{attempt_id}:{course_id}',
+            occurred_at=now, course_id=course_id,
+            ref_type='mock_attempt', ref_id=str(attempt_id),
+            score=sec_correct.get(sec, 0), max_score=n,
+            meta={'examId': exam_id, 'section': SECTION_LABELS.get(sec, sec)},
+        )
 
 
 class MockExamsView(APIView):
@@ -112,12 +151,15 @@ class MockSubmitView(APIView):
 
         uid = request.user.id
         with transaction.atomic():
-            x("INSERT INTO mock_attempts "
-              "(user_id, exam_id, score, total, section_scores_json, answers_json, duration_seconds, submitted_at) "
-              "VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s)",
-              (uid, exam_id, score, total,
-               json.dumps(section_scores, ensure_ascii=False),
-               json.dumps(answers, ensure_ascii=False), duration, local_now()))
+            now = local_now()
+            attempt = q1("INSERT INTO mock_attempts "
+                         "(user_id, exam_id, score, total, section_scores_json, answers_json, "
+                         " duration_seconds, submitted_at) "
+                         "VALUES (%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s) RETURNING id",
+                         (uid, exam_id, score, total,
+                          json.dumps(section_scores, ensure_ascii=False),
+                          json.dumps(answers, ensure_ascii=False), duration, now))
+            attempt_id = (attempt or {}).get('id')
 
             # Trước 2026-08-14 thi thử KHÔNG cộng XP và KHÔNG tính vào chuỗi:
             # làm trọn một đề 150 câu vẫn mất chuỗi nếu hôm đó không mở bài học.
@@ -126,6 +168,15 @@ class MockSubmitView(APIView):
             today = local_today()
             award_xp(uid, xp, today)
             streak, used_freeze = touch_streak(uid, today)
+
+            # ── Dòng sự kiện học tập ────────────────────────────────────────
+            # Hai loại sự kiện cho CÙNG một lượt thi, mỗi loại một người đọc:
+            #   · `mock`         — tổng cả đề, nuôi đường cong tiến bộ.
+            #   · `mock_section` — điểm từng hợp phần, nuôi bản đồ năng lực.
+            # Bên đọc chọn đúng một loại nên không bao giờ cộng trùng một lượt.
+            _record_mock_events(uid, attempt_id, exam_id, score, total,
+                                sec_correct, sec_total, duration, xp, now)
+
             newly = check_and_award_achievements(uid)
 
         return Response({

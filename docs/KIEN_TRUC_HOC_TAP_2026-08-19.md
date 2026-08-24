@@ -348,3 +348,89 @@ giá trị nhìn thấy được sớm nhất (biến số liệu thành lời k
 
 Ba mục đầu là bước tự nhiên **sau khi** TopHSA chốt quy trình vận hành: lúc đó
 `learning_events` đã sẵn sàng làm nguồn cho báo cáo lớp mà không phải dựng lại.
+
+---
+
+## 11. Trạng thái thực hiện — 24/08/2026
+
+**ĐÃ LÀM: việc 1 (dòng sự kiện) và việc 2 (năng lực theo chủ đề).**
+Việc 3, 4, 5 vẫn ở dạng đặc tả.
+
+### Đã dựng
+
+| Phần | Nơi |
+|---|---|
+| Bảng `learning_events` + `topic_self_marks` | `sql/legacy_schema.sql` §26 |
+| Bộ ghi sự kiện (bọc savepoint) | `common/events.py` |
+| Bốn chỗ ghi | `lessons/views.py` · `mockexam/views.py` · `quizzes/views.py` · `stats/views.py` |
+| Nạp dữ liệu cũ | `common/management/commands/backfill_learning_events.py` |
+| Chấm năng lực | `stats/competency.py` |
+| API | `GET /api/hsa/competency` · `PUT /api/hsa/competency/self` |
+| Giao diện | Bản đồ 20 ô ở Trang của tôi · khối "Nên ôn tiếp" ở Bảng điều khiển |
+
+### Bốn chỗ lệch so với đặc tả gốc — và lý do
+
+**1. 20 ô, không phải 19 chủ đề.** Khoá là CẶP (khoá học, chủ đề), không phải
+tên chủ đề. "Chiến thuật" tồn tại ở cả ba hợp phần; gộp theo tên thì chiến thuật
+làm bài Định lượng và chiến thuật Khoa học dồn chung một ô. 20 = 8 + 6 + 6.
+
+**2. `PUT /api/hsa/competency/self` nhận `{courseId, topic, known}` trong body**
+thay vì `/competency/<topic>/self`. Tên chủ đề là tiếng Việt có dấu, và đường
+dẫn không nói được thuộc hợp phần nào.
+
+**3. Thi thử tách làm hai loại sự kiện.** `mock` (tổng cả đề, nuôi đường cong
+tiến bộ ở việc 3) và `mock_section` (theo hợp phần, nuôi bản đồ năng lực). Mỗi
+dòng mang đúng một nghĩa; bên đọc chọn một loại nên không bao giờ cộng trùng.
+
+**4. `dedup_key` bắt buộc, thay cho khoá tổ hợp.** Nhờ nó lệnh nạp dữ liệu cũ
+chạy lại bao nhiêu lần cũng ra đúng một dòng, và học lại một bài thì CẬP NHẬT
+dòng cũ — khớp với `lesson_progress`, bảng cũng chỉ giữ một dòng mỗi cặp
+học viên–bài.
+
+### Thêm ngoài đặc tả
+
+**Phòng luyện tốc độ giờ mới được ghi lại.** Trước đây kết quả chỉ hiện lên màn
+hình rồi biến mất — không nơi nào lưu, dù đó là thứ duy nhất trong sản phẩm đo
+được TỐC ĐỘ dưới đồng hồ, đúng thứ kỳ thi HSA chấm. Nay `lesson_hsa.js` gửi kèm
+lúc hoàn thành bài. Chấm trên TỔNG số câu, không phải số câu kịp làm: hết giờ mà
+chưa xong cũng là một kết quả trong bài thi tính giờ.
+
+**`bootstrap_schema` vào `render.yaml`.** Nó là nguồn DDL duy nhất cho 20+ bảng
+legacy (`managed=False` nên `migrate` không đụng tới) mà trước giờ chạy tay —
+mỗi lần thêm bảng là một lần mã lên production trước schema. Lệnh idempotent nên
+chạy mọi lần deploy là an toàn.
+
+**`review_quiz_results.submitted_at` ghi giờ Việt Nam** thay vì để `now()` của
+Postgres (Neon trả UTC, lệch 7 tiếng — đúng cái bẫy ở mục 9.5).
+
+### Cách chấm, viết gọn
+
+Điểm 0–100 cho mỗi ô, gộp bốn nguồn theo trọng số 30/20/25/25, **chuẩn hoá lại**
+khi thiếu nguồn, và **suy giảm theo thời gian** (bán rã 45 ngày).
+
+Ô chỉ hiện số khi có **từ 2 HOẠT ĐỘNG trở lên** gắn với chính chủ đề đó. Đếm
+theo hoạt động chứ không theo sự kiện: một bài học sinh ra 2 sự kiện (kiểm tra +
+phòng luyện) nhưng vẫn chỉ là một lần chạm vào chủ đề. Điểm thi thử tham gia
+phép tính nhưng **không được tính là bằng chứng về chủ đề** — đề chỉ chia theo
+hợp phần, không biết câu nào thuộc chủ đề nào.
+
+### Đã kiểm bằng cách chạy thật
+
+Học 5 bài (có kèm phòng luyện) → sinh và nộp quiz ôn tập → nộp một đề thi thử,
+tất cả qua HTTP thật với tài khoản thử. Kết quả khớp tay:
+
+- Số học: kiểm tra (50+60)/2 = 55%, phòng luyện (1+2)/10 = 30%
+  → (0,3×55 + 0,2×30) / 0,5 = **45**
+- Quiz ôn tập 8 câu tách đúng theo chủ đề: 2/5 Đại số + 0/3 Số học = 2/8 tổng
+- Một lượt thi thử → 1 dòng `mock` + 3 dòng `mock_section`, không trùng
+- Chạy `backfill_learning_events` ba lần: vẫn đúng 11 dòng
+- Sự kiện hỏng giữa giao dịch ghi tiến độ: giao dịch **vẫn commit** (savepoint)
+
+### Việc còn phải làm khi deploy
+
+Bản deploy hiện tại chưa có hai bảng mới. `render.yaml` đã thêm
+`bootstrap_schema` nên lần deploy tới sẽ tự tạo; sau đó chạy một lần:
+
+```
+python manage.py backfill_learning_events
+```

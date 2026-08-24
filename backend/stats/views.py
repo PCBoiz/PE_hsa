@@ -8,8 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
-from common.clock import local_today
+from common.clock import local_now, local_today
 from common.db import q, q1, x
+from common.events import KIND_MISSION, record_event
+from stats import competency
 
 
 def _json_rows(value):
@@ -191,6 +193,12 @@ class ClaimMissionView(APIView):
                  ON CONFLICT (user_id, log_date)
                  DO UPDATE SET xp_earned = user_daily_xp_logs.xp_earned + EXCLUDED.xp_earned''',
               (uid, today, xp))
+            # Nhiệm vụ không chấm điểm (score để trống) nhưng vẫn là bằng chứng
+            # "hôm nay có học" — đường cong thời lượng và chuỗi ngày đọc tới.
+            record_event(uid, KIND_MISSION, f'mission:{mission["id"]}:{today.isoformat()}',
+                         occurred_at=local_now(), ref_type='mission',
+                         ref_id=str(mission['id']), xp=xp,
+                         meta={'code': mission['code'], 'title': mission['title']})
             newly = check_and_award_achievements(uid)
 
         return Response({
@@ -401,3 +409,49 @@ class HsaGoalsView(APIView):
             x("INSERT INTO surveys (user_id, data_json, created_at) VALUES (%s, %s, %s)",
               (uid, payload, datetime.utcnow().isoformat()))
         return Response({k: data.get(k) for k in self.FIELDS})
+
+
+class CompetencyView(APIView):
+    """GET /api/hsa/competency — bản đồ năng lực 20 ô (khoá × chủ đề).
+
+    Xem stats/competency.py để biết cách chấm và vì sao ô chưa đủ dữ liệu phải
+    để trống thay vì hiện 0%.
+    """
+
+    def get(self, request):
+        return Response(competency.compute(request.user.id))
+
+
+class TopicSelfMarkView(APIView):
+    """PUT /api/hsa/competency/self — học viên tự đánh dấu đã nắm một chủ đề.
+
+    Body ``{courseId, topic, known}``. Đặc tả ban đầu viết chủ đề vào đường dẫn
+    (``/competency/<topic>/self``) nhưng tên chủ đề là tiếng Việt có dấu VÀ
+    "Chiến thuật" tồn tại ở cả ba hợp phần — đường dẫn vừa phải mã hoá phần trăm
+    vừa không nói được thuộc khoá nào. Đưa cả cặp xuống body là cách gọn và
+    không nhập nhằng.
+
+    Tự đánh dấu KHÔNG làm thay đổi điểm thành thạo: nó là đầu vào để xếp lịch ôn
+    (hạ ưu tiên chủ đề đã nắm), không phải bằng chứng về năng lực.
+    """
+
+    def put(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        course_id = (body.get('courseId') or body.get('course') or '').strip()
+        topic = (body.get('topic') or '').strip()
+        known = body.get('known')
+        if not course_id or not topic:
+            return Response({'error': 'Thiếu courseId hoặc topic.'}, status=400)
+        if not isinstance(known, bool):
+            return Response({'error': '"known" phải là true hoặc false.'}, status=400)
+        # Chỉ nhận chủ đề có thật trong giáo trình — chặn rác vào bảng.
+        if not q1('SELECT 1 FROM lessons WHERE course_id=%s AND module=%s LIMIT 1',
+                  (course_id, topic)):
+            return Response({'error': 'Không có chủ đề này trong khoá học.'}, status=404)
+
+        x('''INSERT INTO topic_self_marks (user_id, course_id, topic, known, marked_at)
+             VALUES (%s, %s, %s, %s, %s)
+             ON CONFLICT (user_id, course_id, topic)
+             DO UPDATE SET known = EXCLUDED.known, marked_at = EXCLUDED.marked_at''',
+          (request.user.id, course_id, topic, known, local_now()))
+        return Response({'ok': True, 'courseId': course_id, 'topic': topic, 'known': known})

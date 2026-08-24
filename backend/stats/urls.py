@@ -12,4 +12,7 @@ urlpatterns = [
     path('api/missions/today', views.TodayMissionsView.as_view()),
     path('api/missions/claim', views.ClaimMissionView.as_view()),
     path('api/streak/review-quiz-status', views.ReviewQuizStatusView.as_view()),
+    # Bản đồ năng lực theo chủ đề — 20 ô (khoá × chương mục), xem stats/competency.py.
+    path('api/hsa/competency', views.CompetencyView.as_view()),
+    path('api/hsa/competency/self', views.TopicSelfMarkView.as_view()),
 ]

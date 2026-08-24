@@ -13,9 +13,14 @@ services:
     autoDeploy: true
     branch: master
     healthCheckPath: /health        # đã cho retry (không 500 khi Neon cold)
+    # bootstrap_schema là nguồn DDL DUY NHẤT cho 20+ bảng legacy (managed=False,
+    # `migrate` không đụng tới). Trước đây chạy tay, nên mỗi lần thêm bảng mới là
+    # một lần mã lên production trước schema. Lệnh idempotent (CREATE ... IF NOT
+    # EXISTS) nên chạy mọi lần deploy là an toàn và bỏ hẳn bước thủ công đó.
     buildCommand: >-
       pip install -r requirements.txt &&
       python manage.py collectstatic --noinput &&
+      python manage.py bootstrap_schema &&
       python manage.py migrate --noinput
     startCommand: >-
       gunicorn config.wsgi:application --bind 0.0.0.0:$PORT

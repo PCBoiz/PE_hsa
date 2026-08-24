@@ -553,6 +553,27 @@
      nào trong ứng dụng gọi /api/lessons/<n>/complete. Hệ quả: lesson_progress
      luôn rỗng, nên chuỗi ngày học, số bài đã xong, tiến độ khoá và "Học tiếp"
      trên Bảng điều khiển đứng yên ở 0 với mọi học viên. */
+  /* Kết quả phòng luyện tốc độ, gửi kèm để bản đồ năng lực chấm được TỐC ĐỘ —
+     thứ mà bài kiểm tra đầu vào không đo được và cũng là thứ kỳ thi HSA chấm.
+     Trước đây con số này chỉ hiện lên màn hình rồi biến mất.
+
+     Chấm trên `total` chứ không phải `answered`: hết giờ mà chưa làm xong CŨNG
+     là một kết quả trong bài thi tính giờ. Số câu kịp làm vẫn gửi kèm để phân
+     biệt "làm chậm" với "làm sai".
+     Chưa bấm Bắt đầu thì trả null — không có gì để chấm. */
+  function drillResult() {
+    if (!drill || !drill.total) return null;
+    var elapsed = (drill.timeTotal != null && drill.remaining != null)
+      ? Math.round(drill.timeTotal - Math.max(0, drill.remaining)) : 0;
+    return {
+      correct: drill.correct || 0,
+      answered: drill.answered || 0,
+      total: drill.total,
+      seconds: Math.max(0, elapsed),
+      maxCombo: drill.maxCombo || 0
+    };
+  }
+
   function saveProgress(xp) {
     var no = state.lesson && state.lesson.index;
     if (!no) return;
@@ -568,7 +589,8 @@
         lessonTitle: state.lesson.title || '',
         module: module,
         quizScore: state.total ? Math.round(state.score / state.total * 100) : null,
-        xpEarned: xp
+        xpEarned: xp,
+        drill: drillResult()
       })
     })
       .then(function (r) { return r.ok ? r.json() : null; })

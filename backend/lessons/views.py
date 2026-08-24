@@ -6,12 +6,17 @@ from rest_framework.views import APIView
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q1, x
+from common.events import KIND_DRILL, KIND_LESSON, record_event
 from lessons.content import course_content, one_lesson
 from common.streak import award_xp, touch_streak
 
 
 def _resolve_lesson_id(course_id, lesson_no, title, module=None):
     """Tìm lesson theo (course_id, sort_order); chưa có thì tạo stub giữ FK hợp lệ.
+
+    Trả về ``(lesson_id, module)``. Trả kèm module vì dòng sự kiện học tập cần
+    chủ đề của bài để chấm năng lực, mà client không phải lúc nào cũng gửi lên
+    (bài cũ, hoặc engine khác).
 
     Nội dung bài HSA nằm trong JS phía client, bảng ``lessons`` chỉ giữ stub cho
     khoá ngoại. Vẫn phải ghi ``module``: trang Kỹ năng lọc
@@ -25,11 +30,51 @@ def _resolve_lesson_id(course_id, lesson_no, title, module=None):
         # Stub tạo trước khi client biết gửi module → bổ sung ngược lại.
         if module and not row.get('module'):
             x('UPDATE lessons SET module=%s WHERE id=%s', (module, row['id']))
-        return row['id']
+        return row['id'], (module or row.get('module') or None)
     row = q1('INSERT INTO lessons (course_id, title, sort_order, module) '
              'VALUES (%s, %s, %s, %s) RETURNING id',
              (course_id, title or f'Bài {lesson_no}', lesson_no, module))
-    return row['id']
+    return row['id'], module
+
+
+def _record_drill(uid, drill, lesson_id, lesson_no, course_id, topic, now):
+    """Ghi kết quả phòng luyện tốc độ thành một sự kiện riêng.
+
+    Phòng luyện đo thứ mà bài kiểm tra đầu vào không đo được: TỐC ĐỘ xử lý dưới
+    đồng hồ đếm ngược — đúng thứ kỳ thi HSA chấm. Trước đây kết quả này chỉ hiện
+    trên màn hình rồi biến mất, không có nơi nào lưu.
+
+    Chấm trên TỔNG số câu chứ không phải số câu kịp làm: hết giờ mà chưa xong
+    cũng là một kết quả trong bài thi tính giờ, và đó chính là thứ phòng luyện
+    đo. Số câu kịp làm vẫn giữ trong meta để đọc lại được.
+
+    Dữ liệu do client gửi nên phải kẹp biên: số câu đúng không vượt tổng số câu,
+    tổng số câu có trần, thời lượng không âm.
+    """
+    if not isinstance(drill, dict):
+        return
+    try:
+        total = int(drill.get('total') or 0)
+        correct = int(drill.get('correct') or 0)
+    except (TypeError, ValueError):
+        return
+    if total <= 0 or total > 100:
+        return
+    correct = max(0, min(correct, total))
+    try:
+        seconds = int(drill.get('seconds') or 0)
+    except (TypeError, ValueError):
+        seconds = 0
+    minutes = max(0, min(120, round(seconds / 60))) or None
+    record_event(
+        uid, KIND_DRILL, f'drill:{lesson_id}',
+        occurred_at=now, course_id=course_id, topic=topic,
+        ref_type='lesson', ref_id=str(lesson_id),
+        score=correct, max_score=total, minutes=minutes,
+        meta={'lessonNo': lesson_no, 'maxCombo': drill.get('maxCombo'),
+              # Số câu KỊP làm: phân biệt "làm chậm" với "làm sai" khi đọc lại.
+              'answered': drill.get('answered')},
+    )
 
 
 class CompleteLessonView(APIView):
@@ -52,8 +97,8 @@ class CompleteLessonView(APIView):
             if not course:
                 return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-            lesson_id = _resolve_lesson_id(course_id, lesson_no,
-                                           data.get('lessonTitle'), data.get('module'))
+            lesson_id, topic = _resolve_lesson_id(course_id, lesson_no,
+                                                  data.get('lessonTitle'), data.get('module'))
 
             # Đã completed rồi thì không cộng XP lần nữa (chống spam F5 modal)
             existed = q1("SELECT 1 FROM lesson_progress "
@@ -99,6 +144,23 @@ class CompleteLessonView(APIView):
                 # (và để luật bảo hiểm chuỗi chỉ có một bản duy nhất).
                 award_xp(uid, gained, today)
                 new_streak, used_freeze = touch_streak(uid, today)
+
+            # ── Dòng sự kiện học tập ────────────────────────────────────
+            # Bản đồ năng lực theo chủ đề đọc ở đây chứ không đọc lesson_progress:
+            # bảng đó không giữ điểm phòng luyện, không giữ chủ đề, và sẽ không
+            # bao giờ giữ được sự kiện của thi thử hay quiz ôn tập.
+            now = local_now()
+            record_event(
+                uid, KIND_LESSON, f'lesson:{lesson_id}',
+                occurred_at=now, course_id=course_id, topic=topic,
+                ref_type='lesson', ref_id=str(lesson_id),
+                # quiz_score đã là PHẦN TRĂM đúng của bài kiểm tra đầu vào
+                # (engine gửi lên round(score/total*100)), nên mốc tối đa là 100.
+                score=quiz_score, max_score=(100 if quiz_score is not None else None),
+                xp=xp_earned,
+                meta={'lessonNo': lesson_no, 'title': data.get('lessonTitle') or ''},
+            )
+            _record_drill(uid, data.get('drill'), lesson_id, lesson_no, course_id, topic, now)
 
             newly_awarded = check_and_award_achievements(uid)
 

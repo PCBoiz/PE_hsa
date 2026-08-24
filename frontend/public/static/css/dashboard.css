@@ -3959,3 +3959,55 @@ body.dark .fpc-lesson-tag:hover { color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   .streak-toast { transition: opacity .01ms; transform: none; }
 }
+
+
+/* ── "Nên ôn tiếp": ba chủ đề yếu nhất trên Bảng điều khiển ────────────────
+   Cùng bảng màu bốn bậc với bản đồ năng lực ở Trang của tôi, để một chủ đề
+   trông giống nhau ở cả hai nơi. Mỗi dòng đúng MỘT nút: biết mình yếu ở đâu mà
+   không có đường đi tiếp thì thông tin đó chưa dùng được. */
+.hsa-weak { display: flex; flex-direction: column; gap: 10px; }
+.hsa-weak-row {
+  --lv: #675F79;
+  --lv-bg: #F1F0F8;
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border-radius: 12px;
+  background: var(--lv-bg); border-left: 3px solid var(--lv);
+}
+.hsa-weak-row.is-l4 { --lv: #0E7C6B; --lv-bg: #E6F4F1; }
+.hsa-weak-row.is-l3 { --lv: #6D5AE6; --lv-bg: #EFECFD; }
+.hsa-weak-row.is-l2 { --lv: #A45B08; --lv-bg: #FBF0E2; }
+.hsa-weak-row.is-l1 { --lv: #BE2A46; --lv-bg: #FBEAEE; }
+
+.hsa-weak-pct {
+  flex-shrink: 0; min-width: 46px;
+  font-size: 21px; font-weight: 800; color: var(--lv);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.hsa-weak-pct i { font-size: 11px; font-weight: 700; font-style: normal; }
+.hsa-weak-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.hsa-weak-name { font-size: 13px; font-weight: 600; color: #16121F; overflow-wrap: anywhere; }
+.hsa-weak-sub  { font-size: 11px; color: #675F79; }
+.hsa-weak-btn {
+  flex-shrink: 0; padding: 7px 11px; border-radius: 9px;
+  background: var(--brand-fill); color: #FFF;
+  font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
+.hsa-weak-btn:hover { filter: brightness(1.08); }
+.hsa-weak-btn.is-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+
+body.dark .hsa-weak-row       { --lv: #A9A2B8; --lv-bg: rgba(255, 255, 255, .04); }
+body.dark .hsa-weak-row.is-l4 { --lv: #34D3B5; --lv-bg: rgba(52, 211, 181, .10); }
+body.dark .hsa-weak-row.is-l3 { --lv: #A99BFF; --lv-bg: rgba(169, 155, 255, .12); }
+body.dark .hsa-weak-row.is-l2 { --lv: #F0B45E; --lv-bg: rgba(240, 180, 94, .12); }
+body.dark .hsa-weak-row.is-l1 { --lv: #FF8FA3; --lv-bg: rgba(255, 143, 163, .12); }
+body.dark .hsa-weak-name { color: var(--text-1); }
+body.dark .hsa-weak-sub  { color: var(--text-3); }
+body.dark .hsa-weak-btn.is-ghost { color: var(--blue-light); border-color: var(--blue-light); }
+
+@media (max-width: 420px) {
+  /* Ba thứ trên một hàng ở màn 390px làm tên chủ đề bị bóp còn hai chữ — cho
+     nút xuống hàng thay vì cắt chữ. */
+  .hsa-weak-row { flex-wrap: wrap; }
+  .hsa-weak-btn { margin-left: auto; }
+}
