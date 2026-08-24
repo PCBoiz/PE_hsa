@@ -581,3 +581,98 @@ khó bịa · mục tiêu sai kiểu · mục tiêu vượt trần: đều trả
 hoặc kẹp về biên. Ghi rồi sửa lại trong ngày: cập nhật đúng một bản ghi, thanh
 tuần đổi theo. Ba biến thể sáng/tối/390px: không tràn ngang, không lỗi console,
 không vùng chạm dưới sàn.
+
+---
+
+## 14. Việc 5 — Kế hoạch học có lịch — 24/08/2026
+
+**ĐÃ LÀM.** Đây là việc lớn nhất trong đặc tả, và là vế **System-Guided** rõ
+nhất: học viên tư duy và làm bài, còn lộ trình thì hệ thống lo.
+
+| Phần | Nơi |
+|---|---|
+| Bảng `study_plan_items` | `sql/legacy_schema.sql` §28 |
+| Bộ sinh + bộ đọc lịch | `stats/plan.py` |
+| API | `GET/POST /api/hsa/study-plan` · `PUT /api/hsa/study-plan/items/<id>` |
+| Giao diện | Khối "Tuần này" (Bảng điều khiển) + trang **Kế hoạch** mới |
+
+### Bốn quyết định anh chốt, và chúng thành cái gì
+
+**1. Giáo trình làm xương sống, chen bài ôn của chủ đề yếu.** Lịch đi tuần tự
+theo giáo trình vì kiến thức có thứ tự phụ thuộc — nhảy vào Hình học khi chưa
+xong Số học là dạy sai. Vế thích ứng nằm ở chỗ **chen thêm**: cứ 4 bài mới thì
+xen một buổi ôn cho chủ đề đang dưới 60/100, kèm lý do *"Điểm thành thạo đang
+21/100, dưới ngưỡng 60"*. Chưa đo được chủ đề nào thì **không chen và nói rõ là
+không chen** — hứa suông là thứ phá tin cậy nhanh nhất.
+
+**2. Tự dồn lịch khi chậm.** `week_start` trong DB là **tuần dự kiến lúc sinh**
+và không bao giờ bị ghi đè; lúc đọc, việc chưa xong được dồn vào tuần này trở đi
+theo sức chứa. Tách hai thứ đó mới đo được độ chậm — ghi đè là mất thước đo,
+lịch lúc nào cũng trông đúng hạn. Kiểm bằng cách lùi 6 mục về 2 tuần trước:
+báo đúng *"đang chậm 4 việc"* và dồn cả 4 vào tuần này.
+
+**3. Khối "Tuần này" + trang Kế hoạch riêng.** Không đụng vào trang "Lộ trình"
+cũ. Thêm một mục điều hướng "Kế hoạch".
+
+**4. Bỏ qua từng mục + đổi mục tiêu tuần.** Bỏ qua rồi hoàn lại được. **Không
+có nút "đánh dấu xong"**: xong hay chưa suy ra từ `learning_events` lúc đọc, nên
+không ai tự tick xong một bài chưa học, và không cần tác vụ đồng bộ nào.
+
+### Ba hợp phần xếp xen kẽ
+
+Đề HSA thi cả ba hợp phần trong một buổi. Học dứt điểm Định lượng rồi mới sang
+Định tính là cách chắc chắn để quên phần trước, nên mỗi vòng lấy bài kế tiếp của
+từng khoá: *Hàm bậc nhất (Định lượng) → Từ đồng nghĩa (Định tính) → Cơ học
+(Khoa học) → …*
+
+### Không đủ thời gian thì nói thẳng
+
+Chạy thật trên tài khoản còn 3 tuần và 75 bài chưa học:
+
+> Lịch này **bỏ qua 63 bài** vì không đủ thời gian tới ngày thi. Ưu tiên bỏ bài
+> của chủ đề bạn đang mạnh, ví dụ: Hàm bậc nhất & đồ thị, Thành phần câu, Vật lý
+> hạt nhân… Muốn học đủ thì tăng số phút mỗi ngày ở khảo sát rồi xếp lại lịch.
+
+Và **bỏ bài của chủ đề đang MẠNH trước**, giữ bài của chủ đề yếu — cắt từ cuối
+danh sách là vừa nói dối vừa cắt nhầm.
+
+### Bốn chỗ sửa sau khi nhìn màn hình thật
+
+1. **Câu lý do nói sai.** Bản đầu viết *"thấp nhất trong nhóm"* cho mọi buổi ôn,
+   nhưng chỉ chủ đề đầu tiên mới thấp nhất. Đổi thành con số cụ thể và ngưỡng.
+2. **Việc quá hạn không bao giờ được tick xong.** Bản đầu chấm "đã làm đúng tuần
+   dự kiến"; một mục của tuần trước mà làm tuần này thì vẫn phải là xong. Đổi
+   mốc thành "từ tuần dự kiến trở đi".
+3. **Emoji làm biểu tượng.** Emoji lệ thuộc font hệ điều hành — máy thiếu font
+   thì ra ô vuông, và cỡ/màu không theo được phần còn lại. Đổi sang bộ SVG của
+   dự án, thêm một icon `rotate-ccw` cho "ôn lại".
+4. **Trang lịch dài 7562px.** 29 tuần × 5 việc trải hết thì không ai đọc. Sáu
+   tuần đầu mở sẵn, các tuần xa rút thành một dòng bấm-để-mở → còn 2887px.
+
+Thêm một chỗ tự thấy: hết bài mà còn 6 tuần thì lịch chỉ có mỗi một đề mỗi tuần.
+Nay lấp bằng buổi ôn chủ đề yếu — học xong giáo trình rồi ngồi không hai tháng
+cũng là cách để quên.
+
+### Đã kiểm bằng cách chạy thật
+
+Sinh lịch 29 tuần / 139 việc và 3 tuần / 20 việc (trường hợp không kịp) · bỏ qua
+một mục rồi hoàn lại, lịch dồn lại đúng · giả lập chậm 2 tuần, báo đúng số việc
+chậm · ba biến thể sáng/tối/390px: không tràn ngang, không lỗi console, không
+vùng chạm dưới sàn (đã nâng `.pl-go` — vùng chạm chính của mỗi việc — lên 44px
+trên thiết bị cảm ứng).
+
+---
+
+## 15. Trạng thái đặc tả sau đợt này
+
+| # | Việc | Trạng thái |
+|---|---|---|
+| 1 | `learning_events` + nạp dữ liệu cũ + 4 chỗ ghi | ✅ |
+| 2 | Năng lực 19 chủ đề + bản đồ (thực tế 20 ô) | ✅ |
+| 3 | Sổ điểm + đường cong tiến bộ | ✅ |
+| 4 | Nhật ký, mục tiêu tuần, tự đánh dấu | ✅ |
+| 5 | Kế hoạch học có lịch | ✅ |
+
+Cả năm trụ cột đã dựng. Phần còn lại của đặc tả (mục 10) vẫn cố ý chưa làm: vai
+trò giáo viên/lớp học, nhập điểm thi thử từ nguồn ngoài, ngân hàng câu hỏi tách
+rời — chờ TopHSA chốt quy trình vận hành và giao giáo trình.

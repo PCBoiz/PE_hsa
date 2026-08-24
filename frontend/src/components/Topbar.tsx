@@ -34,6 +34,12 @@ export default function Topbar() {
           <button className="nav-btn" data-page="courses" onClick={() => W().navigate('courses')} aria-label="Khóa học">
             <span className="nav-icon" data-icon="library" data-size="17"></span><span>Khóa học</span>
           </button>
+          {/* Kế hoạch học có lịch — vế System-Guided. Khác "Lộ trình" (danh mục
+              tĩnh 26 lộ trình từ bản cũ): đây là lịch của riêng học viên, sinh
+              từ ngày thi + sức học + chủ đề đang yếu. */}
+          <button className="nav-btn" data-page="plan" onClick={() => W().navigate('plan')} aria-label="Kế hoạch">
+            <span className="nav-icon" data-icon="calendar" data-size="17"></span><span>Kế hoạch</span>
+          </button>
           <button className="nav-btn" data-page="roadmap" onClick={() => W().navigate('roadmap')} aria-label="Lộ trình">
             <span className="nav-icon" data-icon="map" data-size="17"></span><span>Lộ trình</span>
           </button>

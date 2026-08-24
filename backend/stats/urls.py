@@ -21,4 +21,7 @@ urlpatterns = [
     # Học viên tự ghi nhận: nhật ký ngày + mục tiêu tuần (stats/journal.py).
     path('api/hsa/journal', views.JournalView.as_view()),
     path('api/hsa/weekly-target', views.WeeklyTargetView.as_view()),
+    # Kế hoạch học có lịch — vế System-Guided (stats/plan.py).
+    path('api/hsa/study-plan', views.StudyPlanView.as_view()),
+    path('api/hsa/study-plan/items/<int:item_id>', views.StudyPlanItemView.as_view()),
 ]

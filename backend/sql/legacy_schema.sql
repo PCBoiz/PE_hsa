@@ -466,3 +466,49 @@ CREATE TABLE IF NOT EXISTS study_plans (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_study_plans_active
     ON study_plans(user_id) WHERE is_active;
+
+-- ============================================================================
+-- 28. study_plan_items — lịch học chi tiết do hệ thống sinh (2026-08-24)
+-- ============================================================================
+-- Vế "System-Guided" của sản phẩm: học viên vẫn là người tư duy và làm bài, còn
+-- lộ trình, mục tiêu từng giai đoạn và việc theo dõi là do hệ thống lo.
+--
+-- BA ĐIỀU CỐ Ý, đọc kỹ trước khi sửa:
+--
+-- 1. `week_start` là TUẦN DỰ KIẾN LÚC SINH, và KHÔNG bao giờ bị ghi đè. Lúc
+--    đọc, những mục chưa xong được dồn lại vào tuần này trở đi theo sức chứa.
+--    Nhờ tách hai thứ đó mà đo được ĐỘ CHẬM ("đang chậm 3 bài") — ghi đè
+--    week_start là mất luôn thước đo, lịch lúc nào cũng trông đúng hạn.
+--
+-- 2. KHÔNG có trạng thái 'done' được ghi vào đây. Xong hay chưa suy ra từ
+--    `learning_events` lúc đọc, nên không bao giờ lệch với thực tế và không cần
+--    tác vụ đồng bộ. Chỉ 'skipped' mới là quyết định của người dùng nên mới lưu.
+--
+-- 3. `reason` giữ lý do mục này nằm ở đây ("chủ đề Hình học đang 45%"). Một
+--    lịch do hệ thống áp xuống mà không nói vì sao thì học viên không có cơ sở
+--    để tin, và bỏ ngay tuần đầu.
+CREATE TABLE IF NOT EXISTS study_plan_items (
+    id         SERIAL PRIMARY KEY,
+    plan_id    INTEGER NOT NULL REFERENCES study_plans(id) ON DELETE CASCADE,
+    week_start DATE NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    kind       TEXT NOT NULL,
+    course_id  TEXT,
+    lesson_no  INTEGER,
+    topic      TEXT,
+    title      TEXT,
+    reason     TEXT,
+    status     TEXT NOT NULL DEFAULT 'todo',
+    skipped_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_plan_items_plan ON study_plan_items(plan_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_plan_items_week ON study_plan_items(plan_id, week_start);
+-- Một bài chỉ được xếp đúng một lần trong cùng kế hoạch.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_items_lesson
+    ON study_plan_items(plan_id, course_id, lesson_no)
+    WHERE lesson_no IS NOT NULL;
+
+-- Kế hoạch cần nhớ lúc nào sinh và sinh trên cơ sở nào, để màn hình nói được
+-- "lịch này lập ngày ..., dựa trên ... bài/tuần".
+ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS generated_at TIMESTAMP;
+ALTER TABLE study_plans ADD COLUMN IF NOT EXISTS basis JSONB;

@@ -52,6 +52,8 @@
 
     /* ── Bổ sung 2026-08-15: tiêu đề mục trong Cài đặt & Trang của tôi ── */
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    // Mũi tên xoay ngược — dùng cho "ôn lại" trong kế hoạch học.
+    'rotate-ccw': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
     shield: '<path d="M12 3l8 3v6c0 5-3.4 8.3-8 9.6C7.4 20.3 4 17 4 12V6z"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>'
   };

@@ -4180,3 +4180,141 @@ body.dark .jr-bar.is-noaim .jr-bar-track {
   .jr-row { flex-wrap: wrap; }
   .jr-f--sm { flex: 1 1 100%; }
 }
+
+
+/* ── Kế hoạch học có lịch (Bảng điều khiển + trang Kế hoạch) ───────────────
+   Một danh sách việc, ba loại: bài học · thi thử · ôn tập. Ba mức trạng thái
+   phải phân biệt được ngay từ xa:
+     · chưa làm  — nền nhạt, chữ đậm
+     · đã xong   — nhạt đi hẳn, gạch ngang tiêu đề: mắt lướt qua được
+     · đã bỏ qua — nhạt như đã xong nhưng KHÔNG gạch ngang, vì nó không phải
+                   thành tích; và luôn còn nút hoàn lại
+   Dòng cảnh báo (đang chậm / bỏ bớt bài) dùng màu hổ phách, không dùng đỏ:
+   chậm lịch là chuyện thường của người ôn thi, không phải lỗi. */
+.pl-items { display: flex; flex-direction: column; gap: 6px; }
+.pl-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px; background: #F9F9FC;
+}
+.pl-go {
+  display: flex; align-items: center; gap: 9px;
+  flex: 1; min-width: 0; text-decoration: none; color: inherit;
+}
+.pl-go:not(.is-flat):hover .pl-title { color: var(--brand); }
+.pl-ic { flex-shrink: 0; display: inline-flex; color: var(--brand); }
+.pl-item.is-done .pl-ic, .pl-item.is-skipped .pl-ic { color: #7A7289; }
+.pl-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pl-title {
+  font-size: 12.5px; font-weight: 600; color: #16121F;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pl-meta { font-size: 10.5px; color: #7A7289; }
+.pl-why  { font-size: 10.5px; color: #8A4C06; }
+
+.pl-item.is-done { opacity: .55; }
+.pl-item.is-done .pl-title { text-decoration: line-through; }
+.pl-item.is-skipped { opacity: .55; }
+.pl-state { flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--success); }
+.pl-skip {
+  flex-shrink: 0; padding: 5px 9px; border: 1px solid rgba(20, 16, 35, .14);
+  border-radius: 8px; background: transparent; color: #675F79;
+  font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.pl-skip:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.pl-skip:disabled { opacity: .5; cursor: default; }
+
+.pl-lag {
+  margin-bottom: 10px; padding: 8px 10px; border-radius: 9px;
+  background: rgba(164, 91, 8, .10); color: #8A4C06;
+  font-size: 11.5px; line-height: 1.5;
+}
+.pl-lag.is-cut { margin-top: 10px; }
+
+.pl-empty { font-size: 12.5px; color: #4B4459; line-height: 1.55; }
+.pl-empty p { margin: 0 0 10px; }
+
+.pl-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.pl-more {
+  display: inline-flex; align-items: center; min-height: 24px;
+  font-size: 12px; font-weight: 700; color: var(--brand); text-decoration: none;
+}
+.pl-more:hover { text-decoration: underline; }
+.pl-regen {
+  margin-left: auto; padding: 6px 11px; border: 1px solid rgba(20, 16, 35, .14);
+  border-radius: 9px; background: transparent; color: #675F79;
+  font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+}
+.pl-regen:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.pl-regen:disabled { opacity: .5; cursor: default; }
+
+/* ── Trang Kế hoạch ── */
+.pl-sum { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.pl-sum-i {
+  flex: 1 1 110px; min-width: 0; padding: 10px 12px;
+  border-radius: 11px; background: #F4F3F8;
+}
+.pl-sum-i b {
+  display: block; font-size: 20px; font-weight: 800; color: var(--brand);
+  font-variant-numeric: tabular-nums; line-height: 1.15;
+}
+.pl-sum-i span { font-size: 11.5px; color: #675F79; }
+.pl-note { font-size: 11.5px; line-height: 1.6; color: #675F79; margin: 0 0 14px; }
+
+.pl-week { margin-bottom: 16px; }
+.pl-week.is-now .pl-week-t { color: var(--brand); }
+.pl-week-hd {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;
+}
+.pl-week-t {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #4B4459;
+}
+.pl-week-n {
+  margin-left: auto; font-size: 11px; font-weight: 700; color: #675F79;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tuần xa rút thành một dòng bấm được — vẫn thấy cả lịch, không phải cuộn qua
+   121 mục để tới cuối. */
+.pl-week-mini {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  margin-bottom: 6px; padding: 9px 12px; border: 0; border-radius: 10px;
+  background: #F4F3F8; font-family: inherit; cursor: pointer; text-align: left;
+}
+.pl-week-mini:hover { background: #EDEBF5; }
+.pl-week-mini .pl-week-t { margin: 0; }
+.pl-week-sum { font-size: 11.5px; color: #675F79; }
+.pl-week-x { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--brand); }
+
+body.dark .pl-week-mini { background: rgba(255, 255, 255, .05); }
+body.dark .pl-week-mini:hover { background: rgba(255, 255, 255, .09); }
+body.dark .pl-week-sum { color: var(--text-3); }
+body.dark .pl-week-x   { color: var(--blue-light); }
+body.dark .pl-item   { background: rgba(255, 255, 255, .04); }
+body.dark .pl-ic     { color: var(--blue-light); }
+body.dark .pl-item.is-done .pl-ic, body.dark .pl-item.is-skipped .pl-ic { color: var(--text-3); }
+body.dark .pl-title  { color: var(--text-1); }
+body.dark .pl-meta   { color: var(--text-3); }
+body.dark .pl-why    { color: #F0B45E; }
+body.dark .pl-state  { color: #34D3B5; }
+body.dark .pl-skip,
+body.dark .pl-regen  { border-color: rgba(255, 255, 255, .16); color: var(--text-3); }
+body.dark .pl-skip:hover:not(:disabled),
+body.dark .pl-regen:hover:not(:disabled) { border-color: var(--blue-light); color: var(--blue-light); }
+body.dark .pl-lag    { background: rgba(240, 180, 94, .12); color: #F0B45E; }
+body.dark .pl-empty  { color: var(--text-2); }
+body.dark .pl-more   { color: var(--blue-light); }
+body.dark .pl-sum-i  { background: rgba(255, 255, 255, .05); }
+body.dark .pl-sum-i b { color: var(--blue-light); }
+body.dark .pl-sum-i span, body.dark .pl-note, body.dark .pl-week-n { color: var(--text-3); }
+body.dark .pl-week-t { color: var(--text-2); }
+body.dark .pl-week.is-now .pl-week-t { color: var(--blue-light); }
+body.dark .pl-go:not(.is-flat):hover .pl-title { color: var(--blue-light); }
+
+@media (pointer: coarse) {
+  /* a11y.css nâng sàn 44px cho `button`, không cho thẻ `a`. `.pl-go` là vùng
+     chạm CHÍNH của mỗi việc trong lịch (chạm vào là vào thẳng bài học), còn
+     `.pl-more` là liên kết đứng riêng như một nút — cả hai đều phải tự nâng. */
+  .pl-go   { min-height: 44px; }
+  .pl-more { min-height: 44px; }
+}

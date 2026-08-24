@@ -3604,3 +3604,263 @@ function forumClearSearch() {
     init();
   }
 })();
+
+
+/* ═══════════════════════════════════════════════════════
+   KẾ HOẠCH HỌC CÓ LỊCH  (/api/hsa/study-plan)
+   ═══════════════════════════════════════════════════════
+   Vế System-Guided: học viên tư duy và làm bài, còn lịch thì hệ thống lo.
+   Hiện ở hai nơi, cùng một nguồn dữ liệu:
+     · Bảng điều khiển — VIỆC CỦA TUẦN NÀY, ngay trên mục tiêu tuần
+     · Trang Kế hoạch  — toàn bộ lịch tới ngày thi
+
+   BA ĐIỀU KHÔNG ĐƯỢC LÀM SAI:
+   · "Đang chậm N việc" phải hiện, không được giấu. Lịch tự dồn nên nhìn lúc
+     nào cũng đúng hạn; con số chậm là thứ duy nhất nói thật.
+   · Mục nào cũng phải nói được VÌ SAO nó ở đây khi hệ thống có lý do.
+   · Không đủ thời gian thì nói rõ bỏ bao nhiêu bài và bỏ bài nào.
+   ═══════════════════════════════════════════════════════ */
+(function () {
+  var API = '/api/hsa/study-plan';
+  var data = null;
+  var busy = false;
+  //: Số tuần mở sẵn ở trang Kế hoạch. Trải hết 29 tuần × 5 việc ra một trang
+  //  dài 7500px thì không ai đọc; những tuần xa rút thành một dòng, bấm mới mở.
+  var EXPAND_WEEKS = 6;
+  var expanded = {};
+
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+  function el(id) { return document.getElementById(id); }
+  function viWeek(iso) {
+    var p = String(iso).split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1]) : iso;
+  }
+
+  // Dùng bộ icon SVG của dự án (icons.js) chứ không dùng emoji: emoji lệ thuộc
+  // font hệ điều hành — trên máy thiếu font nó ra ô vuông, và cỡ/màu không theo
+  // được phần còn lại của giao diện.
+  var KIND_ICON = { lesson: 'book-open', mock: 'target', review: 'rotate-ccw' };
+  var KIND_NAME = { lesson: 'Bài học', mock: 'Thi thử', review: 'Ôn tập' };
+
+  function itemHtml(it) {
+    var href = null;
+    if (it.kind === 'lesson' && it.course && it.lessonNo) {
+      href = '/lesson/' + encodeURIComponent(it.course) + '?lesson=' + it.lessonNo;
+    } else if (it.kind === 'mock') {
+      href = '/mock';
+    }
+    var body = '<span class="pl-ic" aria-hidden="true" data-icon="'
+      + (KIND_ICON[it.kind] || 'check') + '" data-size="15"></span>'
+      + '<span class="pl-body">'
+        + '<span class="pl-title">' + esc(it.title || KIND_NAME[it.kind]) + '</span>'
+        + '<span class="pl-meta">' + esc(KIND_NAME[it.kind] || it.kind)
+          + (it.topic ? ' · ' + esc(it.topic) : '')
+          + (it.lessonNo ? ' · Bài ' + it.lessonNo : '') + '</span>'
+        + (it.reason ? '<span class="pl-why">' + esc(it.reason) + '</span>' : '')
+      + '</span>';
+
+    var main = href
+      ? '<a class="pl-go" href="' + href + '">' + body + '</a>'
+      : '<span class="pl-go is-flat">' + body + '</span>';
+
+    var act = it.state === 'done'
+      ? '<span class="pl-state is-done">Xong ✓</span>'
+      : (it.state === 'skipped'
+        ? '<button type="button" class="pl-skip" data-id="' + it.id + '" data-to="todo">Bỏ qua ✕ · hoàn lại</button>'
+        : '<button type="button" class="pl-skip" data-id="' + it.id + '" data-to="skipped"'
+          + ' aria-label="Bỏ qua mục này">Bỏ qua</button>');
+
+    return '<div class="pl-item is-' + esc(it.state) + '">' + main + act + '</div>';
+  }
+
+  function weekHtml(w, showHead) {
+    return (showHead
+      ? '<div class="pl-week-hd">'
+        + '<span class="pl-week-t">' + (w.isThisWeek ? 'Tuần này' : 'Tuần ' + viWeek(w.weekStart)) + '</span>'
+        + '<span class="pl-week-n">' + w.done + '/' + w.total + '</span>'
+        + '</div>'
+      : '')
+      + '<div class="pl-items">' + w.items.map(itemHtml).join('') + '</div>';
+  }
+
+  /* ── Khối trên Bảng điều khiển: chỉ tuần này ── */
+  function renderThisWeek() {
+    var box = el('pl-thisweek');
+    if (!box || !data) return;
+    if (!data.hasPlan) {
+      box.innerHTML = '<div class="pl-empty">'
+        + '<p>' + esc(data.hint || '') + '</p>'
+        + '<button type="button" class="jr-btn" id="pl-gen">Lập kế hoạch</button>'
+        + '</div>';
+      bindGen();
+      return;
+    }
+    var w = (data.weeks || [])[0];
+    box.innerHTML = lagHtml()
+      + (w ? weekHtml(w, false) : '<div class="pl-empty"><p>Tuần này chưa có việc nào.</p></div>')
+      + '<div class="pl-foot">'
+        + '<a class="pl-more" href="#" id="pl-open">Xem cả lịch tới ngày thi →</a>'
+        + '<button type="button" class="pl-regen" id="pl-gen">Xếp lại lịch</button>'
+      + '</div>';
+    bindItems(box);
+    bindGen();
+    if (window.mountIcons) mountIcons(box);
+    var open = el('pl-open');
+    if (open) open.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (typeof window.navigate === 'function') window.navigate('plan');
+    });
+  }
+
+  function lagHtml() {
+    if (!data.lag) return '';
+    // Lịch tự dồn nên nhìn lúc nào cũng đúng hạn — con số này là thứ duy nhất
+    // nói thật rằng học viên đang chậm.
+    return '<div class="pl-lag">Đang chậm <b>' + data.lag + ' việc</b> so với lịch. '
+      + 'Những việc đó đã được dồn vào tuần này.</div>';
+  }
+
+  /* ── Trang Kế hoạch: toàn bộ lịch ── */
+  function renderPage() {
+    var box = el('pl-all');
+    if (!box || !data) return;
+    if (!data.hasPlan) {
+      box.innerHTML = '<div class="pl-empty"><p>' + esc(data.hint || '') + '</p>'
+        + '<button type="button" class="jr-btn" id="pl-gen2">Lập kế hoạch</button></div>';
+      var g = el('pl-gen2');
+      if (g) g.addEventListener('click', regenerate);
+      return;
+    }
+    var b = data.basis || {};
+    var weakTxt = (b.weakTopics && b.weakTopics.length)
+      ? ', và chen thêm buổi ôn cho chủ đề bạn đang yếu (' + b.weakTopics.map(esc).join(', ') + ')'
+      // Chưa đo được chủ đề nào thì ĐỪNG hứa chen buổi ôn — lịch sẽ không có
+      // mục nào như vậy, và câu chữ hứa suông là thứ phá tin cậy nhanh nhất.
+      : '. Chưa đủ dữ liệu để chấm chủ đề nào, nên chưa chen buổi ôn — học thêm '
+        + 'vài bài là hệ thống tự thêm vào lịch';
+    var head = '<div class="pl-sum">'
+      + '<div class="pl-sum-i"><b>' + (b.perWeek || '—') + '</b><span>bài/tuần</span></div>'
+      + '<div class="pl-sum-i"><b>' + (b.weeksTotal || '—') + '</b><span>tuần tới kỳ thi</span></div>'
+      + '<div class="pl-sum-i"><b>' + (data.totals ? data.totals.done : 0) + '/'
+        + (data.totals ? data.totals.all : 0) + '</b><span>việc đã xong</span></div>'
+      + '</div>'
+      + '<p class="pl-note">'
+        + 'Lịch xếp theo thứ tự giáo trình, ba hợp phần xen kẽ nhau' + weakTxt
+        + '. Hai tuần cuối chỉ luyện đề, không nạp bài mới.'
+        + (b.usedTarget ? ' Số bài/tuần lấy theo mục tiêu bạn tự đặt.'
+                        : ' Số bài/tuần do hệ thống tính từ ngày thi và sức học bạn khai.')
+      + '</p>';
+
+    if (b.lessonsDropped) {
+      // Không đủ thời gian thì NÓI THẲNG, và nói bỏ bài nào — im lặng cắt bớt
+      // là để học viên tưởng mình đang kịp cho tới sát ngày thi.
+      head += '<div class="pl-lag is-cut">Lịch này <b>bỏ qua ' + b.lessonsDropped + ' bài</b> '
+        + 'vì không đủ thời gian tới ngày thi. Ưu tiên bỏ bài của chủ đề bạn đang mạnh'
+        + ((b.droppedSample && b.droppedSample.length)
+            ? ', ví dụ: ' + b.droppedSample.map(esc).join(', ') + '…' : '.')
+        + ' Muốn học đủ thì tăng số phút mỗi ngày ở khảo sát rồi xếp lại lịch.</div>';
+    }
+
+    box.innerHTML = head + lagHtml()
+      + (data.weeks || []).map(function (w, i) {
+        var open = i < EXPAND_WEEKS || expanded[w.weekStart];
+        if (open) {
+          return '<div class="pl-week' + (w.isThisWeek ? ' is-now' : '') + '">'
+            + weekHtml(w, true) + '</div>';
+        }
+        var kinds = {};
+        w.items.forEach(function (it) { kinds[it.kind] = (kinds[it.kind] || 0) + 1; });
+        var sum = [];
+        if (kinds.lesson) sum.push(kinds.lesson + ' bài');
+        if (kinds.review) sum.push(kinds.review + ' buổi ôn');
+        if (kinds.mock) sum.push(kinds.mock + ' đề');
+        return '<button type="button" class="pl-week-mini" data-week="' + esc(w.weekStart) + '">'
+          + '<span class="pl-week-t">Tuần ' + viWeek(w.weekStart) + '</span>'
+          + '<span class="pl-week-sum">' + sum.join(' · ') + '</span>'
+          + '<span class="pl-week-x">Mở</span>'
+          + '</button>';
+      }).join('')
+      + '<div class="pl-foot"><button type="button" class="pl-regen" id="pl-gen2">Xếp lại lịch</button></div>';
+    bindItems(box);
+    Array.prototype.forEach.call(box.querySelectorAll('.pl-week-mini'), function (b) {
+      b.addEventListener('click', function () {
+        expanded[b.getAttribute('data-week')] = true;
+        renderPage();
+      });
+    });
+    if (window.mountIcons) mountIcons(box);
+    var g2 = el('pl-gen2');
+    if (g2) g2.addEventListener('click', regenerate);
+  }
+
+  /* ── Thao tác ── */
+  function bindGen() {
+    var g = el('pl-gen');
+    if (g) g.addEventListener('click', regenerate);
+  }
+
+  function regenerate() {
+    if (busy) return;
+    busy = true;
+    document.querySelectorAll('#pl-gen, #pl-gen2').forEach(function (b) {
+      b.disabled = true; b.textContent = 'Đang xếp lịch…';
+    });
+    fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        busy = false;
+        if (!res.ok) { alert(res.d.error || 'Không xếp được lịch.'); render(); return; }
+        data = res.d.plan;
+        if (window.__apiGetBust) { window.__apiGetBust(API); window.__apiGetBust(API + '?all=1'); }
+        render();
+      })
+      .catch(function () { busy = false; render(); });
+  }
+
+  function bindItems(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('.pl-skip'), function (b) {
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        fetch(API + '/items/' + b.getAttribute('data-id'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: b.getAttribute('data-to') })
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d) { b.disabled = false; return; }
+            data = d.plan;
+            if (window.__apiGetBust) { window.__apiGetBust(API); window.__apiGetBust(API + '?all=1'); }
+            render();
+          })
+          .catch(function () { b.disabled = false; });
+      });
+    });
+  }
+
+  function render() { renderThisWeek(); renderPage(); }
+
+  function load(force) {
+    if (!el('pl-thisweek') && !el('pl-all')) return;
+    // Trang Kế hoạch cần cả lịch; Bảng điều khiển chỉ cần tuần này. Gọi bản đầy
+    // đủ một lần rồi dùng chung, đỡ một lượt tới máy chủ (mỗi lượt ~245ms).
+    var url = API + '?all=1';
+    var p = window.__apiGet ? window.__apiGet(url, force ? 0 : 30000)
+      : fetch(url).then(function (r) { return r.ok ? r.json() : null; });
+    p.then(function (d) { if (d) { data = d; render(); } }).catch(function () {});
+  }
+
+  var _origNavigatePlan = window.navigate;
+  window.navigate = function (page) {
+    _origNavigatePlan(page);
+    if (page === 'plan') load(false);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { load(false); });
+  } else {
+    load(false);
+  }
+})();

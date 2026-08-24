@@ -128,6 +128,11 @@ export default function DashboardPage() {
                   <span className="title-icon-blue" data-icon="calendar" data-size="16"></span>
                   <span>Tuần này</span>
                 </div>
+                {/* Việc của tuần này do hệ thống xếp (stats/plan.py). Đứng
+                    TRÊN mục tiêu tuần vì đây là "làm gì", còn mục tiêu là
+                    "bao nhiêu" — người ta cần biết làm gì trước. */}
+                <div className="pl-thisweek" id="pl-thisweek"></div>
+
                 <div className="jr-week" id="jr-week">
                   <div className="hsa-mis-empty">Đang tải…</div>
                 </div>
@@ -214,6 +219,23 @@ export default function DashboardPage() {
               </div>
               {/* Danh sách tiến độ thật (bảng enrollments) — main.js renderDashProgress() đổ vào */}
               <div className="dash-progress-list" id="dash-progress-list" hidden></div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Kế hoạch học ── */}
+        <div className="page" id="page-plan">
+          <div className="courses-header fx-fade-up">
+            <div>
+              <h2>🗓️ Kế hoạch học</h2>
+              <p className="courses-subtitle">
+                Lịch tới ngày thi, hệ thống xếp từ ngày thi, sức học bạn khai và chủ đề bạn đang yếu.
+              </p>
+            </div>
+          </div>
+          <div className="section-card fx-fade-up" style={{ animationDelay: '.05s' }}>
+            <div className="pl-all" id="pl-all">
+              <div className="hsa-mis-empty">Đang tải…</div>
             </div>
           </div>
         </div>

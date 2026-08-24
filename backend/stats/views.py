@@ -11,7 +11,7 @@ from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
 from chatbot import profile as chat_profile
-from stats import competency, gradebook, journal
+from stats import competency, gradebook, journal, plan
 from stats.goals import as_date as _as_date, read_goals
 
 
@@ -443,3 +443,42 @@ class WeeklyTargetView(APIView):
             return Response({'error': err}, status=400)
         return Response({'ok': True, 'target': target,
                          'week': journal.week_progress(request.user.id, target)})
+
+
+class StudyPlanView(APIView):
+    """GET/POST /api/hsa/study-plan — kế hoạch học có lịch.
+
+    GET trả tuần này + 3 tuần tới (``?all=1`` cho cả lịch), đã DỒN việc chưa
+    xong vào tuần này trở đi, kèm số việc đang chậm. POST sinh lại kế hoạch từ
+    ngày thi, sức học và bản đồ năng lực hiện tại — xem stats/plan.py.
+    """
+
+    def get(self, request):
+        p = request.query_params
+        return Response(plan.read(request.user.id,
+                                  weeks=p.get('weeks'),
+                                  all_weeks=p.get('all') in ('1', 'true')))
+
+    def post(self, request):
+        basis, err = plan.generate(request.user.id)
+        if err:
+            return Response({'error': err}, status=400)
+        return Response({'ok': True, 'basis': basis,
+                         'plan': plan.read(request.user.id)})
+
+
+class StudyPlanItemView(APIView):
+    """PUT /api/hsa/study-plan/items/<id> {status} — bỏ qua hoặc bỏ đánh dấu.
+
+    Chỉ nhận ``todo``/``skipped``. KHÔNG có ``done``: xong hay chưa suy ra từ
+    learning_events lúc đọc, nên không ai tự đánh dấu xong một bài chưa học.
+    """
+
+    def put(self, request, item_id):
+        body = request.data if isinstance(request.data, dict) else {}
+        status, err = plan.set_item_status(request.user.id, item_id,
+                                           (body.get('status') or '').strip())
+        if err:
+            return Response({'error': err}, status=400)
+        return Response({'ok': True, 'status': status,
+                         'plan': plan.read(request.user.id)})
