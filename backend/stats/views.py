@@ -1,7 +1,6 @@
 """Port routes/stats.py + db/repositories/missions.py (phần verify)."""
 import json
-import re
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 from django.db import transaction
 from rest_framework.response import Response
@@ -11,7 +10,8 @@ from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
-from stats import competency
+from stats import competency, gradebook
+from stats.goals import as_date as _as_date, read_goals
 
 
 def _json_rows(value):
@@ -244,21 +244,9 @@ class HsaSummaryView(APIView):
 
         streak_row = q1("SELECT streak FROM users WHERE id=%s", (uid,)) or {}
 
-        # Mục tiêu điểm + mốc thi lấy từ bài khảo sát gần nhất.
-        target_score, exam_timing, exam_date, timing_set_at = None, None, None, None
-        row = q1("SELECT data_json, created_at FROM surveys WHERE user_id=%s "
-                 "ORDER BY id DESC LIMIT 1", (uid,))
-        if row and row.get('data_json'):
-            try:
-                data = row['data_json']
-                if isinstance(data, str):
-                    data = json.loads(data)
-                target_score = data.get('target_score')
-                exam_timing = data.get('exam_timing')
-                exam_date = data.get('exam_date')
-                timing_set_at = data.get('exam_timing_set_at')
-            except Exception:
-                pass
+        # Mục tiêu điểm + mốc thi lấy từ bài khảo sát gần nhất (stats/goals.py —
+        # dùng chung với đường cong tiến bộ để hai nơi không lệch nhau).
+        goals = read_goals(uid)
 
         # Điểm đề thi thử gần nhất (thang 150 câu của HSA).
         last_score, last_total = None, None
@@ -272,82 +260,13 @@ class HsaSummaryView(APIView):
             'lessonsDone': done or 0,
             'lessonsTotal': self.TOTAL_LESSONS,
             'byCourse': per_course,
-            'targetScore': target_score,
-            'examTiming': exam_timing,
-            'examDate': exam_date,
-            'daysToExam': _days_to_exam(exam_timing, exam_date,
-                                        timing_set_at or (row or {}).get('created_at')),
+            'targetScore': goals['targetScore'],
+            'examTiming': goals['examTiming'],
+            'examDate': goals['examDate'],
+            'daysToExam': goals['daysToExam'],
             'lastMockScore': last_score,
             'lastMockTotal': last_total,
         })
-
-
-#: Câu "Bạn dự định thi HSA khi nào?" trong khảo sát trả về KHOẢNG thời gian
-#: tương đối chứ không phải năm ("Trong 1 tháng", "1–3 tháng"...). Quy mỗi
-#: khoảng về số ngày tới CUỐI khoảng đó.
-_TIMING_DAYS = (
-    (re.compile(r'trong\s*1\s*th[áa]ng', re.I), 30),
-    (re.compile(r'1\s*[-–—]\s*3\s*th[áa]ng', re.I), 90),
-    (re.compile(r'3\s*[-–—]\s*6\s*th[áa]ng', re.I), 180),
-    (re.compile(r'tr[êe]n\s*6\s*th[áa]ng', re.I), 240),
-)
-
-
-def _as_date(value):
-    """date/datetime/chuỗi 'YYYY-MM-DD' (hoặc ISO) → date. Không parse được → None."""
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value)[:19].replace(' ', 'T')).date()
-    except ValueError:
-        return None
-
-
-def _days_to_exam(exam_timing, exam_date=None, answered_at=None):
-    """Số ngày còn lại tới kỳ thi, theo thứ tự ưu tiên nguồn dữ liệu.
-
-    1. ``exam_date`` — ngày thi học viên tự nhập ở Cài đặt → chính xác tuyệt đối.
-    2. ``exam_timing`` có ghi năm ("đợt 1/2027") → quy ước kỳ thi đợt đầu cuối
-       tháng 3 của năm đó (năm sau nếu đã qua).
-    3. ``exam_timing`` là khoảng tương đối → neo vào NGÀY LÀM KHẢO SÁT rồi cộng
-       độ dài khoảng. Neo vào hôm nay thì con số đứng yên mãi mãi, không bao giờ
-       đếm ngược — người trả lời "Trong 1 tháng" từ nửa năm trước vẫn thấy 30.
-
-    Không suy ra được → None để thẻ hiện dấu gạch kèm nút sửa mốc thi, thay vì
-    một con số bịa.
-    """
-    today = local_today()
-
-    d = _as_date(exam_date)
-    if d:
-        delta = (d - today).days
-        return delta if delta >= 0 else None
-
-    if not exam_timing:
-        return None
-    s = str(exam_timing)
-
-    m = re.search(r'20\d{2}', s)
-    if m:
-        for y in (int(m.group()), int(m.group()) + 1):
-            try:
-                delta = (date(y, 3, 31) - today).days
-            except ValueError:
-                return None
-            if delta >= 0:
-                return delta
-        return None
-
-    anchor = _as_date(answered_at) or today
-    for rx, days in _TIMING_DAYS:
-        if rx.search(s):
-            delta = (anchor + timedelta(days=days) - today).days
-            return delta if delta >= 0 else None
-    return None
 
 
 class HsaGoalsView(APIView):
@@ -455,3 +374,23 @@ class TopicSelfMarkView(APIView):
              DO UPDATE SET known = EXCLUDED.known, marked_at = EXCLUDED.marked_at''',
           (request.user.id, course_id, topic, known, local_now()))
         return Response({'ok': True, 'courseId': course_id, 'topic': topic, 'known': known})
+
+
+class GradebookView(APIView):
+    """GET /api/hsa/gradebook?limit=40 — mọi hoạt động có chấm điểm + tổng hợp."""
+
+    def get(self, request):
+        return Response(gradebook.gradebook(request.user.id,
+                                            request.query_params.get('limit')))
+
+
+class ProgressCurveView(APIView):
+    """GET /api/hsa/progress-curve?weeks=12 — điểm thi thử theo thời gian.
+
+    Xem stats/gradebook.py để biết vì sao thời lượng học và điểm số không dùng
+    chung một trục, và vì sao đường xu hướng chỉ vẽ khi đã có từ 3 lượt thi.
+    """
+
+    def get(self, request):
+        return Response(gradebook.progress_curve(request.user.id,
+                                                 request.query_params.get('weeks')))

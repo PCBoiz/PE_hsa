@@ -412,10 +412,29 @@ body.dark .prof-avatar         { border-color: var(--card); }
  *    0% trông y hệt "làm sai hết", trong khi sự thật là "chưa đo".
  * ════════════════════════════════════════════════════════════════════════ */
 .cmp-map { display: flex; flex-direction: column; gap: 18px; }
+/* Đầu nhóm mang luôn tóm tắt hợp phần: tên · số bài · thanh tiến độ · độ chính
+   xác thi thử. Trước đây bốn thứ này là một khối riêng ngay phía trên bản đồ,
+   nói cùng một chuyện bằng ba thanh thô hơn. */
 .cmp-group-hd {
-  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: #6B7280; margin-bottom: 8px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
 }
+.cmp-group-name {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #4B4459;
+}
+.cmp-group-num {
+  font-size: 11px; color: #675F79; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cmp-group-track {
+  flex: 1 1 70px; min-width: 60px; max-width: 200px; height: 5px;
+  border-radius: 99px; background: rgba(20, 16, 35, .09); overflow: hidden;
+}
+.cmp-group-track > i { display: block; height: 100%; border-radius: 99px; background: var(--brand-fill); }
+.cmp-group-acc {
+  margin-left: auto; font-size: 11px; font-weight: 700; color: var(--brand);
+  white-space: nowrap;
+}
+.cmp-group-acc.is-muted { font-weight: 500; color: #7A7289; }
 .cmp-grid {
   display: grid; gap: 10px;
   /* minmax(0,…) chứ không phải 1fr: 1fr = minmax(auto,1fr) nên tên chủ đề dài
@@ -497,7 +516,11 @@ body.dark .prof-avatar         { border-color: var(--card); }
   font-size: 10.5px; line-height: 1.4;
 }
 
-body.dark .cmp-group-hd { color: var(--text-3); }
+body.dark .cmp-group-name { color: var(--text-2); }
+body.dark .cmp-group-num   { color: var(--text-3); }
+body.dark .cmp-group-track { background: rgba(255, 255, 255, .12); }
+body.dark .cmp-group-acc   { color: var(--blue-light); }
+body.dark .cmp-group-acc.is-muted { color: var(--text-3); }
 body.dark .cmp-name     { color: var(--text-1); }
 body.dark .cmp-meta     { color: var(--text-2); }
 body.dark .cmp-sub      { color: var(--text-3); }
@@ -525,4 +548,153 @@ body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
      liên kết nằm TRONG câu văn). */
   .cmp-go { display: inline-flex; align-items: center; min-height: 44px; }
   .cmp-meta { min-height: 44px; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * ĐƯỜNG TIẾN BỘ + SỔ ĐIỂM (Trang của tôi) — dashboard.js dựng SVG.
+ *
+ * Bảng màu cố ý phân vai rõ ràng, vì trong cùng một khung có ba lớp dữ liệu
+ * khác đơn vị nhau:
+ *   · dải mục tiêu  — teal rất nhạt, nằm dưới cùng, KHÔNG viền: nó là bối cảnh
+ *   · cột thời lượng — xám tím mờ, thang riêng, chỉ chiếm nửa dưới khung
+ *   · đường điểm     — tím thương hiệu, đậm nhất: đây mới là thứ cần đọc
+ * Đường xu hướng dùng nét đứt để không ai nhầm nó với dữ liệu thật.
+ * ════════════════════════════════════════════════════════════════════════ */
+/* .prof-section-hd đã là flex ở trên — chỉ cần đẩy bộ chọn khoảng về cuối hàng. */
+.cv-range { margin-left: auto; display: inline-flex; gap: 2px; }
+.cv-range button {
+  padding: 4px 9px; border-radius: 7px; border: 1px solid transparent;
+  background: transparent; color: #675F79; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.cv-range button:hover { background: rgba(20, 16, 35, .05); }
+.cv-range button.active { background: var(--accent-soft); color: var(--brand); }
+
+.cv-chart { margin-top: 10px; min-height: 200px; }
+.cv-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cv-grid   { stroke: rgba(20, 16, 35, .09); stroke-width: 1; }
+.cv-ylbl, .cv-xlbl { fill: #7A7289; font-size: 10px; font-family: inherit; }
+.cv-target { fill: rgba(14, 124, 107, .12); }
+.cv-bar    { fill: rgba(109, 90, 230, .20); }
+.cv-line   { fill: none; stroke: var(--brand-fill); stroke-width: 2.2;
+             stroke-linejoin: round; stroke-linecap: round; }
+.cv-dot    { fill: var(--brand-fill); stroke: #FFF; stroke-width: 1.6; }
+.cv-trend  { stroke: #A45B08; stroke-width: 1.6; stroke-dasharray: 5 4; }
+
+.cv-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 10px; }
+.cv-chip {
+  padding: 4px 9px; border-radius: 99px; background: #F1F0F8;
+  font-size: 11.5px; font-weight: 600; color: #4B4459;
+}
+.cv-chip.is-up   { background: rgba(14, 124, 107, .12); color: #0B6558; }
+.cv-chip.is-down { background: rgba(190, 42, 70, .10); color: #A02038; }
+.cv-chip.is-flat { background: #F1F0F8; color: #4B4459; }
+
+/* Chú giải phải là CHỮ, không chỉ là ô màu: WCAG cấm truyền thông tin bằng
+   riêng màu sắc, và ba lớp ở đây khác đơn vị nên càng phải gọi tên. */
+.cv-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  width: 100%; margin-top: 2px; font-size: 11px; color: #675F79;
+}
+.cv-key { display: inline-block; flex-shrink: 0; margin-left: 8px; }
+.cv-key:first-child { margin-left: 0; }
+.cv-key--dot  { width: 9px; height: 9px; border-radius: 99px; background: var(--brand-fill); }
+.cv-key--bar  { width: 9px; height: 9px; border-radius: 2px; background: rgba(109, 90, 230, .35); }
+.cv-key--band { width: 12px; height: 8px; border-radius: 2px; background: rgba(14, 124, 107, .28); }
+
+.cv-empty {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  padding: 12px 14px; border-radius: 12px; background: #F4F3F8;
+  font-size: 12.5px; color: #4B4459; margin-top: 10px;
+}
+.cv-cta {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px;
+  border-radius: 9px; background: var(--brand-fill); color: #FFF;
+  font-size: 12px; font-weight: 700; text-decoration: none;
+}
+
+/* ── Sổ điểm ─────────────────────────────────────────────────────────── */
+.bk-sums { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.bk-sum {
+  flex: 1 1 110px; min-width: 0; padding: 8px 10px;
+  border-radius: 11px; background: #F4F3F8;
+}
+.bk-sum-pct { display: block; font-size: 19px; font-weight: 800; color: var(--brand);
+              font-variant-numeric: tabular-nums; line-height: 1.15; }
+.bk-sum-pct i { font-size: 11px; font-weight: 700; font-style: normal; }
+.bk-sum-lbl { display: block; font-size: 11.5px; font-weight: 600; color: #16121F; }
+.bk-sum-n   { display: block; font-size: 10.5px; color: #7A7289; }
+
+.bk-rows { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.bk-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 10px; background: #F9F9FC;
+}
+.bk-kind {
+  /* 96px để "Kiểm tra đầu vào" nằm gọn một dòng — xuống dòng làm mỗi hàng cao
+     lệch nhau, danh sách 40 dòng trông như bị lỗi. */
+  flex-shrink: 0; width: 96px; font-size: 10px; font-weight: 700;
+  letter-spacing: .02em; color: #675F79; line-height: 1.25;
+}
+/* Mỗi loại một màu chữ riêng — bốn loại trộn chung một danh sách thì phải
+   phân biệt được ngay, mà không cần đọc hết nhãn. */
+.bk-row[data-kind="mock"]        .bk-kind { color: #0B6558; }
+.bk-row[data-kind="lesson"]      .bk-kind { color: #5B47D4; }
+.bk-row[data-kind="drill"]       .bk-kind { color: #A45B08; }
+.bk-row[data-kind="review_quiz"] .bk-kind { color: #9333A8; }
+.bk-body  { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.bk-label { font-size: 12.5px; font-weight: 600; color: #16121F;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-meta  { font-size: 10.5px; color: #7A7289; }
+.bk-score { flex-shrink: 0; min-width: 58px; text-align: right;
+            font-size: 12.5px; font-weight: 700; color: #4B4459;
+            font-variant-numeric: tabular-nums; }
+.bk-score i { font-weight: 500; font-style: normal; color: #7A7289; }
+.bk-pct   { flex-shrink: 0; min-width: 38px; text-align: right;
+            font-size: 13px; font-weight: 800; color: var(--brand);
+            font-variant-numeric: tabular-nums; }
+
+body.dark .cv-range button        { color: var(--text-3); }
+body.dark .cv-range button:hover  { background: rgba(255, 255, 255, .06); }
+body.dark .cv-range button.active { color: var(--blue-light); }
+body.dark .cv-grid  { stroke: rgba(255, 255, 255, .12); }
+body.dark .cv-ylbl, body.dark .cv-xlbl { fill: var(--text-3); }
+body.dark .cv-target { fill: rgba(52, 211, 181, .14); }
+body.dark .cv-bar    { fill: rgba(169, 155, 255, .22); }
+body.dark .cv-line   { stroke: var(--blue-light); }
+body.dark .cv-dot    { fill: var(--blue-light); stroke: var(--card); }
+body.dark .cv-trend  { stroke: #F0B45E; }
+body.dark .cv-chip         { background: rgba(255, 255, 255, .07); color: var(--text-2); }
+body.dark .cv-chip.is-up   { background: rgba(52, 211, 181, .14); color: #34D3B5; }
+body.dark .cv-chip.is-down { background: rgba(255, 143, 163, .14); color: #FF8FA3; }
+body.dark .cv-legend { color: var(--text-3); }
+body.dark .cv-key--bar  { background: rgba(169, 155, 255, .40); }
+body.dark .cv-key--band { background: rgba(52, 211, 181, .35); }
+body.dark .cv-empty { background: rgba(255, 255, 255, .05); color: var(--text-2); }
+body.dark .bk-sum   { background: rgba(255, 255, 255, .05); }
+body.dark .bk-sum-pct { color: var(--blue-light); }
+body.dark .bk-sum-lbl { color: var(--text-1); }
+body.dark .bk-sum-n   { color: var(--text-3); }
+body.dark .bk-row   { background: rgba(255, 255, 255, .04); }
+body.dark .bk-kind  { color: var(--text-3); }
+body.dark .bk-row[data-kind="mock"]        .bk-kind { color: #34D3B5; }
+body.dark .bk-row[data-kind="lesson"]      .bk-kind { color: #A99BFF; }
+body.dark .bk-row[data-kind="drill"]       .bk-kind { color: #F0B45E; }
+body.dark .bk-row[data-kind="review_quiz"] .bk-kind { color: #E4A2F5; }
+body.dark .bk-label { color: var(--text-1); }
+body.dark .bk-meta  { color: var(--text-3); }
+body.dark .bk-score { color: var(--text-2); }
+body.dark .bk-score i { color: var(--text-3); }
+body.dark .bk-pct   { color: var(--blue-light); }
+
+@media (pointer: coarse) {
+  .cv-range button { min-height: 44px; padding: 0 12px; }
+}
+@media (max-width: 520px) {
+  /* Bộ chọn khoảng thời gian xuống hàng riêng: ở 390px nó chen với tiêu đề
+     làm chữ "Đường tiến bộ" bị bóp. */
+  .prof-section-hd { flex-wrap: wrap; }
+  .cv-range { margin-left: 0; width: 100%; }
+  .bk-kind { width: 62px; font-size: 9.5px; }
 }

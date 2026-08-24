@@ -571,23 +571,13 @@ export default function DashboardPage() {
                 có ở đâu (audit 2026-08-15). */}
             <div className="prof-grid">
               <div className="prof-col-left">
-                <div className="prof-section fx-fade-up" style={{ animationDelay: '.25s' }}>
-                  <div className="prof-section-hd">
-                    <span className="prof-section-icon" data-icon="bar-chart" data-size="16"></span>
-                    <span className="prof-section-title">Năng lực theo hợp phần</span>
-                  </div>
-                  <div className="prof-caps" id="prof-caps">
-                    <div className="prof-empty">Đang tải…</div>
-                  </div>
-                  <p className="prof-caps-note">
-                    Độ chính xác lấy từ các lần thi thử đã làm. Chưa thi thử lần nào thì chưa có số.
-                  </p>
-                </div>
-
                 {/* Bản đồ năng lực 20 ô (3 hợp phần × chương mục). Chương mục
                     đã gắn sẵn cho đủ 76 bài từ lâu nhưng chưa lần nào dùng để
-                    chấm mạnh–yếu — đây là chỗ dùng nó. */}
-                <div className="prof-section fx-fade-up" style={{ animationDelay: '.28s' }}>
+                    chấm mạnh–yếu — đây là chỗ dùng nó.
+                    Khối "Năng lực theo hợp phần" trước đây nằm ngay trên đây và
+                    nói cùng một chuyện bằng ba thanh thô hơn; nay nhập thẳng vào
+                    đầu mỗi nhóm của bản đồ. */}
+                <div className="prof-section fx-fade-up" style={{ animationDelay: '.25s' }}>
                   <div className="prof-section-hd">
                     <span className="prof-section-icon" data-icon="map" data-size="16"></span>
                     <span className="prof-section-title">Bản đồ năng lực theo chủ đề</span>
@@ -598,12 +588,35 @@ export default function DashboardPage() {
                   <p className="prof-caps-note" id="cmp-note"></p>
                 </div>
 
+                {/* Đường tiến bộ — câu hỏi thứ hai của thí sinh, sau "tôi yếu ở
+                    đâu": "mấy tuần qua tôi có khá lên không?". Cột thời lượng và
+                    đường điểm dùng HAI thang riêng, xem dashboard.js. */}
                 <div className="prof-section fx-fade-up" style={{ animationDelay: '.3s' }}>
                   <div className="prof-section-hd">
-                    <span className="prof-section-icon" data-icon="file-text" data-size="16"></span>
-                    <span className="prof-section-title">Lịch sử thi thử</span>
+                    <span className="prof-section-icon" data-icon="trending-up" data-size="16"></span>
+                    <span className="prof-section-title">Đường tiến bộ</span>
+                    <div className="cv-range" id="curve-range" role="group" aria-label="Khoảng thời gian">
+                      <button type="button" data-weeks="8" aria-pressed="false">8 tuần</button>
+                      <button type="button" data-weeks="12" className="active" aria-pressed="true">12 tuần</button>
+                      <button type="button" data-weeks="24" aria-pressed="false">24 tuần</button>
+                    </div>
                   </div>
-                  <div className="prof-mocks" id="prof-mocks">
+                  <div className="cv-empty" id="curve-empty" hidden></div>
+                  <div className="cv-chart" id="curve-chart"></div>
+                  <div className="cv-meta" id="curve-meta"></div>
+                  <p className="prof-caps-note" id="curve-note"></p>
+                </div>
+
+                {/* Sổ điểm THAY cho "Lịch sử thi thử": thi thử chỉ là một trong
+                    bốn loại hoạt động được chấm, hiện riêng nó thì bài học,
+                    phòng luyện và quiz ôn tập không có chỗ nào nhìn lại. */}
+                <div className="prof-section fx-fade-up" style={{ animationDelay: '.34s' }}>
+                  <div className="prof-section-hd">
+                    <span className="prof-section-icon" data-icon="file-text" data-size="16"></span>
+                    <span className="prof-section-title">Sổ điểm</span>
+                  </div>
+                  <div className="bk-sums" id="book-sum"></div>
+                  <div className="bk-rows" id="book-rows">
                     <div className="prof-empty">Đang tải…</div>
                   </div>
                 </div>

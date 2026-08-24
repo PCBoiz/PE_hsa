@@ -434,3 +434,70 @@ Bản deploy hiện tại chưa có hai bảng mới. `render.yaml` đã thêm
 ```
 python manage.py backfill_learning_events
 ```
+
+---
+
+## 12. Việc 3 — Sổ điểm & đường cong tiến bộ — 24/08/2026
+
+**ĐÃ LÀM.** Không thêm bảng nào: cả hai màn hình chỉ là hai cách đọc khác nhau
+trên `learning_events`, đúng như mục 3 đã đặt ra.
+
+| Phần | Nơi |
+|---|---|
+| Mục tiêu & ngày thi (dùng chung) | `stats/goals.py` |
+| Sổ điểm + đường cong | `stats/gradebook.py` |
+| API | `GET /api/hsa/gradebook` · `GET /api/hsa/progress-curve?weeks=` |
+| Giao diện | Khối "Đường tiến bộ" + "Sổ điểm" ở Trang của tôi |
+
+### Ba quy tắc về mặt số liệu, viết thẳng vào mã
+
+**1. Điểm và thời lượng KHÔNG chung một trục.** "Học 300 phút" và "đúng 62%" là
+hai đơn vị; ép chung một thang là vẽ ra tương quan không có thật. Cột thời lượng
+nằm nền, thang riêng, chỉ chiếm 45% chiều cao khung, và chú giải **gọi tên**
+thang đó ("cao nhất 212 phút") thay vì chỉ ghi "thang riêng".
+
+**2. Đường xu hướng chỉ vẽ khi đã có từ 3 lượt thi.** Nối hai điểm rồi gọi là xu
+hướng là trò lừa thị giác: hai điểm thì luôn thẳng hàng. Chưa đủ thì hiện thẳng
+"Cần 2 lượt thi nữa mới đủ để nói về xu hướng".
+
+**3. Tuần không học là một cột TRỐNG nhìn thấy được**, không phải khoảng trắng bị
+bỏ qua — nghỉ một tuần cũng là thông tin.
+
+### Về quy đổi điểm
+
+Đề HSA có 150 câu, mỗi câu 1 điểm, nên phần trăm đúng **chính là** điểm trên
+thang 150 — đây là phép chia, không phải bảng quy đổi. Thứ chưa chắc là đề rút
+gọn trong sản phẩm có đại diện được cho đề 150 câu hay không. Giao diện in đúng
+câu đó dưới biểu đồ, không giấu.
+
+Dải mục tiêu chỉ vẽ khi học viên ĐÃ đặt mục tiêu. Chưa đặt thì bỏ trống — đích do
+hệ thống tự nghĩ ra thì không phải đích của ai cả.
+
+### Ba khối cũ được thay, không phải thêm chồng lên
+
+Đây là phần đáng kể nhất ngoài tính năng mới, vì trang đang có ba khối nói
+chuyện gần nhau:
+
+- **"Lịch sử thi thử" → "Sổ điểm".** Thi thử chỉ là MỘT trong bốn loại hoạt động
+  được chấm; hiện riêng nó thì bài học, phòng luyện và quiz ôn tập không có chỗ
+  nào nhìn lại được.
+- **"Năng lực theo hợp phần" → nhập vào đầu mỗi nhóm của Bản đồ năng lực.** Hai
+  khối nằm sát nhau nói cùng một chuyện, khối trên chỉ thô hơn. Nay đầu nhóm
+  mang luôn: tên hợp phần · số bài đã xong · thanh tiến độ · độ chính xác thi
+  thử. Bỏ được cả lượt gọi `/api/mock-attempts` trên Trang của tôi.
+- **Hai endpoint mới nạp LƯỜI.** Trang của tôi nằm sẵn trong DOM (ẩn) ngay từ
+  lúc mở Bảng điều khiển, nên "phần tử có tồn tại không" không dùng làm điều
+  kiện nạp được. Bảng điều khiển giảm từ 12 xuống 10 lượt gọi API.
+
+### Một lỗi bắt được lúc chạy
+
+Cột `JSONB` đọc qua cursor thô có lúc trả về **chuỗi**, có lúc trả về dict, tuỳ
+đường ghi. Không parse lại thì mọi nhãn lấy từ `meta` im lặng rơi về giá trị mặc
+định — sổ điểm hiện "Bài học" thay vì tên bài thật.
+
+### Đã kiểm bằng cách chạy thật
+
+Dựng tạm 11 tuần dữ liệu (58 sự kiện, 5 lượt thi) để nhìn được đường cong, kiểm
+xong **đã xoá sạch**. Ba biến thể sáng/tối/390px: không tràn ngang, không lỗi
+console, không vùng chạm dưới sàn. Trạng thái rỗng (học viên mới) và trạng thái
+thiếu dữ liệu (1 lượt thi) đều hiện câu chữ trung thực thay vì số 0.

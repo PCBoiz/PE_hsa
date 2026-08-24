@@ -204,10 +204,35 @@ def compute(uid):
     order = {c: i for i, c in enumerate(COURSE_ORDER)}
     topics.sort(key=lambda t: (order.get(t['course'], 9), t['topic']))
 
+    # Tóm tắt cấp hợp phần đi kèm luôn, để giao diện không phải dựng một khối
+    # riêng nói cùng một chuyện ở ngay bên cạnh bản đồ (audit 24/08).
+    courses = []
+    for cid in COURSE_ORDER:
+        cells_of = [t for t in topics if t['course'] == cid]
+        if not cells_of:
+            continue
+        mock_items = by_course.get(cid) or []
+        done = sum(t['lessonsDone'] for t in cells_of)
+        total = sum(t['lessonsTotal'] for t in cells_of)
+        courses.append({
+            'id': cid,
+            'title': titles.get(cid, cid),
+            'lessonsDone': done,
+            'lessonsTotal': total,
+            'pct': round(done * 100 / total) if total else 0,
+            # Độ chính xác thi thử của hợp phần: trung bình có suy giảm theo thời
+            # gian, giống hệt cách chấm chủ đề — hai nơi lệch cách tính thì cùng
+            # một lượt thi lại ra hai con số khác nhau.
+            'mockPct': (round(_decayed_mean([(v, d) for v, d, _ in mock_items], today))
+                        if mock_items else None),
+            'mockCount': len(mock_items),
+        })
+
     measured = [t for t in topics if t['mastery'] is not None]
     weakest = sorted(measured, key=lambda t: t['mastery'])[:3]
     return {
         'topics': topics,
+        'courses': courses,
         'weakest': weakest,
         'measuredCount': len(measured),
         'minActivities': MIN_ACTIVITIES,

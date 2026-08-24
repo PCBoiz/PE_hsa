@@ -1785,22 +1785,6 @@ function skSkillToggle(row) {
     if (page === 'profile') _loadProfile();
   };
 
-  //: 3 hợp phần HSA + tổng số bài, khớp với dải tiến độ ở Bảng điều khiển.
-  var CAPS = [
-    { id: 'hsa_quantitative', name: 'Tư duy Định lượng', total: 27 },
-    { id: 'hsa_verbal', name: 'Tư duy Định tính', total: 23 },
-    { id: 'hsa_science', name: 'Khoa học', total: 26 }
-  ];
-  //: nhãn hợp phần trong section_scores_json của đề thi thử → id khoá.
-  //  Phải khớp ĐÚNG mockexam/views.py:SECTION_LABELS — bản đầu tôi viết là
-  //  "Tư duy định lượng" nên chỉ Khoa học khớp, hai hợp phần kia luôn báo
-  //  "chưa thi thử" dù đã làm đề.
-  var SEC_TO_COURSE = {
-    'Định lượng': 'hsa_quantitative',
-    'Định tính': 'hsa_verbal',
-    'Khoa học': 'hsa_science'
-  };
-
   function _esc(s) {
     return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s);
   }
@@ -1823,70 +1807,6 @@ function skSkillToggle(row) {
         + _esc(c[1]) + '</span>';
     }).join('');
     if (window.mountIcons) mountIcons(box);
-  }
-
-  /* ── Năng lực theo hợp phần: bài đã xong + độ chính xác thi thử ── */
-  function _renderCaps(summary, attempts) {
-    var box = document.getElementById('prof-caps');
-    if (!box) return;
-    var counted = summary.byCourse || {};
-
-    // Gộp mọi lượt thi thử lại: nhiều lượt cho ước lượng ổn định hơn một lượt.
-    var acc = {};
-    (attempts || []).forEach(function (a) {
-      var ss = a.section_scores_json;
-      if (typeof ss === 'string') { try { ss = JSON.parse(ss); } catch (e) { ss = null; } }
-      if (!ss) return;
-      Object.keys(ss).forEach(function (label) {
-        var cid = SEC_TO_COURSE[label];
-        if (!cid) return;
-        acc[cid] = acc[cid] || { correct: 0, total: 0 };
-        acc[cid].correct += ss[label].correct || 0;
-        acc[cid].total += ss[label].total || 0;
-      });
-    });
-
-    box.innerHTML = CAPS.map(function (s) {
-      var done = counted[s.id] || 0;
-      var pct = Math.round(done / s.total * 100);
-      var a = acc[s.id];
-      var accTxt = (a && a.total)
-        ? Math.round(a.correct / a.total * 100) + '% đúng'
-        : 'chưa thi thử';
-      return '<div class="prof-cap">'
-        + '<div class="prof-cap-hd">'
-        + '<span class="prof-cap-name">' + s.name + '</span>'
-        + '<span class="prof-cap-acc' + ((a && a.total) ? '' : ' is-muted') + '">' + accTxt + '</span>'
-        + '</div>'
-        + '<div class="prof-cap-track"><i style="width:' + pct + '%"></i></div>'
-        + '<div class="prof-cap-num">' + done + '/' + s.total + ' bài · ' + pct + '%</div>'
-        + '</div>';
-    }).join('');
-  }
-
-  /* ── Lịch sử thi thử ── */
-  function _renderMocks(attempts) {
-    var box = document.getElementById('prof-mocks');
-    if (!box) return;
-    if (!attempts || !attempts.length) {
-      box.innerHTML = '<div class="prof-empty">Chưa làm đề thi thử nào. '
-        + '<a href="/mock">Thi thử ngay →</a></div>';
-      return;
-    }
-    box.innerHTML = attempts.slice(0, 5).map(function (a) {
-      var pct = a.total ? Math.round(a.score / a.total * 100) : 0;
-      var d = a.submitted_at ? new Date(a.submitted_at) : null;
-      var when = d ? d.toLocaleDateString('vi-VN') : '';
-      var mins = a.duration_seconds ? Math.max(1, Math.round(a.duration_seconds / 60)) + ' phút' : '';
-      return '<div class="prof-mock">'
-        + '<span class="prof-mock-score">' + a.score + '<i>/' + a.total + '</i></span>'
-        + '<span class="prof-mock-body">'
-        + '<span class="prof-mock-title">' + _esc(a.title || 'Đề thi thử') + '</span>'
-        + '<span class="prof-mock-meta">' + when + (mins ? ' · ' + mins : '') + '</span>'
-        + '</span>'
-        + '<span class="prof-mock-pct">' + pct + '%</span>'
-        + '</div>';
-    }).join('');
   }
 
   /* ── Vị trí trong cộng đồng ── */
@@ -1946,19 +1866,16 @@ function skSkillToggle(row) {
     // từ enrollments (đếm sai với người chưa ghi danh).
     var pSummary = fetch('/api/hsa/summary').then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; });
-    var pAttempts = fetch('/api/mock-attempts').then(function (r) { return r.ok ? r.json() : {}; })
-      .then(function (d) { return (d && d.attempts) || []; })
-      .catch(function () { return []; });
 
     pSummary.then(function (s) {
       _set('prof-streak', s.streakDays != null ? s.streakDays : '—');
       _set('prof-done', s.lessonsDone != null ? s.lessonsDone : '—');
       _renderGoals(s);
     });
-    Promise.all([pSummary, pAttempts]).then(function (r) {
-      _renderCaps(r[0] || {}, r[1] || []);
-      _renderMocks(r[1] || []);
-    });
+    // Hai khối cũ của cột này đã được thay: "Lịch sử thi thử" → Sổ điểm (liệt
+    // kê cả bốn loại hoạt động được chấm), "Năng lực theo hợp phần" → nhập vào
+    // đầu mỗi nhóm của Bản đồ năng lực. Nhờ đó trang bỏ luôn được một lượt gọi
+    // /api/mock-attempts.
     Promise.all([
       fetch('/api/leaderboard?type=weekly').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
       fetch('/api/leaderboard?type=streak').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
@@ -2949,9 +2866,24 @@ function forumClearSearch() {
       }
       byId[t.course].items.push(t);
     });
+    // Tóm tắt hợp phần nhập vào ĐẦU NHÓM. Trước đây nó là một khối riêng ngay
+    // phía trên bản đồ, nói đúng cùng một chuyện bằng ba thanh thô hơn — hai
+    // khối cạnh nhau cùng nội dung là thứ người dùng đã phản ánh một lần rồi.
+    var sums = {};
+    (data && data.courses || []).forEach(function (c) { sums[c.id] = c; });
     box.innerHTML = groups.map(function (g) {
+      var c = sums[g.id] || {};
+      var acc = (c.mockPct != null && c.mockCount)
+        ? '<span class="cmp-group-acc">thi thử ' + c.mockPct + '% đúng</span>'
+        : '<span class="cmp-group-acc is-muted">chưa thi thử</span>';
+      var bar = c.lessonsTotal
+        ? '<span class="cmp-group-num">' + c.lessonsDone + '/' + c.lessonsTotal + ' bài</span>'
+          + '<span class="cmp-group-track"><i style="width:' + (c.pct || 0) + '%"></i></span>'
+        : '';
       return '<div class="cmp-group">'
-        + '<div class="cmp-group-hd">' + esc(g.title) + '</div>'
+        + '<div class="cmp-group-hd">'
+          + '<span class="cmp-group-name">' + esc(g.title) + '</span>' + bar + acc
+        + '</div>'
         + '<div class="cmp-grid">' + g.items.map(tile).join('') + '</div>'
         + '</div>';
     }).join('');
@@ -3049,5 +2981,291 @@ function forumClearSearch() {
     document.addEventListener('DOMContentLoaded', function () { load(false); });
   } else {
     load(false);
+  }
+})();
+
+
+/* ═══════════════════════════════════════════════════════
+   ĐƯỜNG TIẾN BỘ + SỔ ĐIỂM  (/api/hsa/progress-curve, /api/hsa/gradebook)
+   ═══════════════════════════════════════════════════════
+   Trả lời câu hỏi thứ hai của thí sinh, sau "tôi yếu ở đâu":
+   "mấy tuần qua tôi có khá lên không, và còn cách đích bao xa?"
+
+   BA QUY TẮC VỀ MẶT SỐ LIỆU:
+   · Điểm và thời lượng KHÔNG chung một trục. "Học 300 phút" và "đúng 62%" là
+     hai đơn vị; ép chung một thang là vẽ ra tương quan không có thật. Cột thời
+     lượng nằm nền, thang riêng, chỉ chiếm nửa dưới khung.
+   · Đường xu hướng chỉ vẽ khi đã có từ 3 lượt thi. Nối hai điểm rồi gọi là xu
+     hướng là trò lừa thị giác: hai điểm thì luôn thẳng hàng.
+   · Tuần không học là một cột TRỐNG nhìn thấy được, không phải khoảng trắng bị
+     bỏ qua — nghỉ một tuần cũng là thông tin.
+
+   Vẽ bằng SVG dựng tay theo bề rộng THẬT của khung (giống mini roadmap), không
+   dùng viewBox co giãn: co giãn sẽ kéo cỡ chữ xuống còn 5px trên màn 390.
+   ═══════════════════════════════════════════════════════ */
+(function () {
+  var CURVE_API = '/api/hsa/progress-curve';
+  var BOOK_API = '/api/hsa/gradebook';
+  var weeks = 12;
+  var lastCurve = null;
+
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+  function el(id) { return document.getElementById(id); }
+
+  /* ── Biểu đồ ───────────────────────────────────────────────────────── */
+  function drawCurve(d) {
+    var box = el('curve-chart');
+    if (!box) return;
+    var W = Math.max(280, box.clientWidth || 640);
+    var H = W < 460 ? 200 : 240;
+    var PAD = { l: 32, r: 10, t: 12, b: 24 };
+    var pw = W - PAD.l - PAD.r;
+    var ph = H - PAD.t - PAD.b;
+    var wk = d.weeks || [];
+    var span = d.spanDays || (wk.length * 7);
+
+    function X(day) { return PAD.l + (span ? day / span * pw : 0); }
+    function Y(pct) { return PAD.t + (100 - Math.max(0, Math.min(100, pct))) / 100 * ph; }
+
+    var parts = [];
+
+    // Dải mục tiêu — chỉ khi học viên ĐÃ đặt mục tiêu. Không có thì bỏ trống,
+    // tuyệt đối không vẽ một đích mặc định do hệ thống nghĩ ra.
+    var tg = d.target;
+    if (tg && (tg.minPct != null || tg.maxPct != null)) {
+      var top = Y(tg.maxPct == null ? 100 : tg.maxPct);
+      var bot = Y(tg.minPct == null ? 0 : tg.minPct);
+      parts.push('<rect class="cv-target" x="' + PAD.l + '" y="' + top.toFixed(1)
+        + '" width="' + pw + '" height="' + Math.max(2, bot - top).toFixed(1) + '"/>');
+    }
+
+    // Lưới ngang + nhãn %
+    [0, 25, 50, 75, 100].forEach(function (p) {
+      var y = Y(p);
+      parts.push('<line class="cv-grid" x1="' + PAD.l + '" y1="' + y.toFixed(1)
+        + '" x2="' + (W - PAD.r) + '" y2="' + y.toFixed(1) + '"/>');
+      parts.push('<text class="cv-ylbl" x="' + (PAD.l - 6) + '" y="' + (y + 3.5).toFixed(1)
+        + '" text-anchor="end">' + p + '%</text>');
+    });
+
+    // Cột thời lượng học — THANG RIÊNG, chỉ dùng nửa dưới khung để không ai
+    // nhầm chiều cao cột với phần trăm điểm.
+    var maxMin = 0;
+    wk.forEach(function (w) { maxMin = Math.max(maxMin, (w.minutes || 0) + (w.selfMinutes || 0)); });
+    d._maxMinutes = maxMin;
+    var barArea = ph * 0.45;
+    var bw = Math.max(3, Math.min(22, pw / Math.max(1, wk.length) * 0.55));
+    wk.forEach(function (w, i) {
+      var total = (w.minutes || 0) + (w.selfMinutes || 0);
+      if (!total || !maxMin) return;
+      var h = total / maxMin * barArea;
+      var cx = X(i * 7 + 3.5);
+      parts.push('<rect class="cv-bar" x="' + (cx - bw / 2).toFixed(1) + '" y="'
+        + (PAD.t + ph - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="'
+        + h.toFixed(1) + '" rx="2"><title>Tuần ' + esc(w.label) + ': ' + total
+        + ' phút</title></rect>');
+    });
+
+    // Đường xu hướng (nét đứt) — chỉ khi đủ số lượt thi.
+    if (d.trend) {
+      parts.push('<line class="cv-trend" x1="' + X(d.trend.x0).toFixed(1) + '" y1="'
+        + Y(d.trend.fromPct).toFixed(1) + '" x2="' + X(d.trend.x1).toFixed(1) + '" y2="'
+        + Y(d.trend.toPct).toFixed(1) + '"/>');
+    }
+
+    // Đường điểm thi thử + từng lượt một chấm.
+    var ms = d.mocks || [];
+    if (ms.length > 1) {
+      parts.push('<polyline class="cv-line" points="' + ms.map(function (m) {
+        return X(m.x).toFixed(1) + ',' + Y(m.pct).toFixed(1);
+      }).join(' ') + '"/>');
+    }
+    ms.forEach(function (m) {
+      parts.push('<circle class="cv-dot" cx="' + X(m.x).toFixed(1) + '" cy="'
+        + Y(m.pct).toFixed(1) + '" r="4"><title>' + esc(_viDate(m.date)) + ': '
+        + m.pct + '% (' + m.score + '/' + m.max + ')</title></circle>');
+    });
+
+    // Nhãn tuần — thưa ra để không chồng chữ trên màn hẹp.
+    var step = Math.max(1, Math.ceil(wk.length / (W < 460 ? 4 : 7)));
+    wk.forEach(function (w, i) {
+      if (i % step) return;
+      parts.push('<text class="cv-xlbl" x="' + X(i * 7 + 3.5).toFixed(1) + '" y="'
+        + (H - 7) + '" text-anchor="middle">' + esc(w.label) + '</text>');
+    });
+
+    var alt = ms.length
+      ? ('Biểu đồ ' + wk.length + ' tuần: ' + ms.length + ' lượt thi thử, từ '
+        + ms[0].pct + '% đến ' + ms[ms.length - 1].pct + '% số câu đúng.')
+      : ('Biểu đồ ' + wk.length + ' tuần, chưa có lượt thi thử nào.');
+
+    box.innerHTML = '<svg class="cv-svg" width="' + W + '" height="' + H
+      + '" role="img" aria-label="' + esc(alt) + '">' + parts.join('') + '</svg>';
+  }
+
+  function _viDate(iso) {
+    if (!iso) return '';
+    var p = String(iso).slice(0, 10).split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+  }
+
+  /* ── Dòng tóm tắt dưới biểu đồ: nói thẳng đang lên hay đang xuống ── */
+  function renderCurveMeta(d) {
+    var box = el('curve-meta');
+    if (!box) return;
+    var bits = [];
+    var ms = d.mocks || [];
+
+    if (d.trend) {
+      var per = d.trend.perWeek;
+      var cls = per > 0.3 ? 'is-up' : (per < -0.3 ? 'is-down' : 'is-flat');
+      var txt = per > 0.3 ? ('đang lên ' + per.toFixed(1).replace('.', ',') + ' điểm %/tuần')
+        : (per < -0.3 ? ('đang xuống ' + Math.abs(per).toFixed(1).replace('.', ',') + ' điểm %/tuần')
+          : 'đang đi ngang');
+      bits.push('<span class="cv-chip ' + cls + '">Xu hướng: ' + txt + '</span>');
+    } else if (ms.length) {
+      bits.push('<span class="cv-chip is-flat">Cần ' + (d.minPointsForTrend - ms.length)
+        + ' lượt thi nữa mới đủ để nói về xu hướng</span>');
+    }
+
+    if (d.target) {
+      var need = d.target.minPct != null ? d.target.minPct : d.target.maxPct;
+      var now = ms.length ? ms[ms.length - 1].pct : null;
+      var reached = (now != null && need != null && now >= need);
+      bits.push('<span class="cv-chip' + (reached ? ' is-up' : '') + '">Mục tiêu '
+        + esc(d.target.raw) + '/' + d.target.maxScoreScale + ' ≈ ' + need + '% đúng'
+        + (now != null ? ' · lượt gần nhất ' + now + '%' : '')
+        + (reached ? ' · đã đạt' : '') + '</span>');
+    }
+    if (d.daysToExam != null) {
+      bits.push('<span class="cv-chip">Còn ' + d.daysToExam + ' ngày tới kỳ thi</span>');
+    }
+
+    box.innerHTML = bits.join('')
+      + '<span class="cv-legend">'
+      + '<i class="cv-key cv-key--dot"></i> điểm thi thử'
+      + '<i class="cv-key cv-key--bar"></i> thời lượng học/tuần'
+      + (d._maxMinutes ? ' (cao nhất ' + d._maxMinutes + ' phút)' : '')
+      + (d.target ? '<i class="cv-key cv-key--band"></i> dải mục tiêu' : '')
+      + '</span>';
+
+    var note = el('curve-note');
+    if (note) note.textContent = d.scaleNote || '';
+  }
+
+  function renderCurve(d) {
+    lastCurve = d;
+    var empty = el('curve-empty');
+    if (empty) {
+      var has = (d.mocks || []).length > 0;
+      empty.hidden = has;
+      if (!has) {
+        empty.innerHTML = '<p>Chưa có lượt thi thử nào — đường tiến bộ cần ít nhất '
+          + 'một lượt để bắt đầu.</p><a class="cv-cta" href="/mock">Làm đề thi thử →</a>';
+      }
+    }
+    drawCurve(d);
+    renderCurveMeta(d);
+  }
+
+  /* ── Sổ điểm ──────────────────────────────────────────────────────────
+     Thay cho khối "Lịch sử thi thử" cũ: thi thử chỉ là MỘT loại hoạt động,
+     hiện riêng nó thì bài học, phòng luyện và quiz ôn tập không có chỗ nào
+     nhìn lại được. */
+  function renderBook(d) {
+    var sum = el('book-sum');
+    if (sum) {
+      var kinds = d.byKind || [];
+      sum.innerHTML = kinds.length ? kinds.map(function (k) {
+        return '<div class="bk-sum">'
+          + '<span class="bk-sum-pct">' + k.avgPct + '<i>%</i></span>'
+          + '<span class="bk-sum-lbl">' + esc(k.label) + '</span>'
+          + '<span class="bk-sum-n">' + k.n + ' lượt</span>'
+          + '</div>';
+      }).join('') : '';
+    }
+    var box = el('book-rows');
+    if (!box) return;
+    var rows = d.rows || [];
+    if (!rows.length) {
+      box.innerHTML = '<div class="prof-empty">' + esc(d.hint || 'Chưa có hoạt động nào.')
+        + ' <a href="/mock">Thi thử ngay →</a></div>';
+      return;
+    }
+    box.innerHTML = rows.map(function (r) {
+      return '<div class="bk-row" data-kind="' + esc(r.kind) + '">'
+        + '<span class="bk-kind">' + esc(r.kindLabel) + '</span>'
+        + '<span class="bk-body">'
+          + '<span class="bk-label">' + esc(r.label) + '</span>'
+          + '<span class="bk-meta">' + esc(_viDate(r.at))
+            + (r.topic ? ' · ' + esc(r.topic) : '')
+            + (r.selfReported ? ' · <b>tự ghi nhận</b>' : '') + '</span>'
+        + '</span>'
+        + '<span class="bk-score">' + (r.score % 1 === 0 ? r.score : r.score.toFixed(1))
+          + '<i>/' + (r.max % 1 === 0 ? r.max : r.max.toFixed(1)) + '</i></span>'
+        + '<span class="bk-pct">' + r.pct + '%</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  /* ── Nạp ──────────────────────────────────────────────────────────── */
+  /* Trang của tôi nằm sẵn trong DOM (ẩn) ngay từ lúc mở Bảng điều khiển, nên
+     "phần tử có tồn tại không" KHÔNG dùng làm điều kiện nạp được: nó khiến hai
+     endpoint chỉ phục vụ Trang của tôi bị gọi trên mọi lượt vào Bảng điều
+     khiển. Chỉ nạp khi trang đó thực sự đang hiển thị. */
+  function onProfile() {
+    var pg = el('page-profile');
+    return !!(pg && pg.classList.contains('active'));
+  }
+
+  function load(force) {
+    if (!el('curve-chart') || !onProfile()) return;
+    var cu = CURVE_API + '?weeks=' + weeks;
+    var g1 = window.__apiGet ? window.__apiGet(cu, force ? 0 : 30000)
+      : fetch(cu).then(function (r) { return r.ok ? r.json() : null; });
+    g1.then(function (d) { if (d) renderCurve(d); }).catch(function () {});
+
+    var g2 = window.__apiGet ? window.__apiGet(BOOK_API, force ? 0 : 30000)
+      : fetch(BOOK_API).then(function (r) { return r.ok ? r.json() : null; });
+    g2.then(function (d) { if (d) renderBook(d); }).catch(function () {});
+  }
+
+  function bindRange() {
+    var box = el('curve-range');
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button[data-weeks]');
+      if (!b) return;
+      weeks = parseInt(b.getAttribute('data-weeks'), 10) || 12;
+      Array.prototype.forEach.call(box.querySelectorAll('button'), function (x) {
+        var on = x === b;
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      load(false);
+    });
+  }
+
+  // Vẽ lại khi đổi bề rộng khung: SVG dựng theo pixel thật nên không tự co.
+  var rt = null;
+  window.addEventListener('resize', function () {
+    if (!lastCurve) return;
+    clearTimeout(rt);
+    rt = setTimeout(function () { drawCurve(lastCurve); }, 180);
+  });
+
+  var _origNavigateCurve = window.navigate;
+  window.navigate = function (page) {
+    _origNavigateCurve(page);
+    // Khung có bề rộng 0 khi trang còn ẩn → phải vẽ lại sau khi hiện ra.
+    if (page === 'profile') { load(false); if (lastCurve) setTimeout(function () { drawCurve(lastCurve); }, 60); }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { bindRange(); load(false); });
+  } else {
+    bindRange(); load(false);
   }
 })();

@@ -15,4 +15,7 @@ urlpatterns = [
     # Bản đồ năng lực theo chủ đề — 20 ô (khoá × chương mục), xem stats/competency.py.
     path('api/hsa/competency', views.CompetencyView.as_view()),
     path('api/hsa/competency/self', views.TopicSelfMarkView.as_view()),
+    # Sổ điểm + đường cong tiến bộ — đọc lại learning_events, không thêm bảng.
+    path('api/hsa/gradebook', views.GradebookView.as_view()),
+    path('api/hsa/progress-curve', views.ProgressCurveView.as_view()),
 ]
