@@ -15,9 +15,26 @@ def test_werkzeug_hasher_roundtrip():
     assert check_werkzeug_password(h, 'WrongPass') is False
 
 
-def test_register_then_login_happy_path(api):
-    email = 'dj_reg_test@example.com'
+def test_register_closed_to_anonymous(api, db):
+    """Người lạ KHÔNG tự mở được tài khoản. Đây là phép kiểm giữ chính sách.
+
+    Đổi ngày 27/08/2026: trung tâm cấp tài khoản, học viên không tự đăng ký.
+    Trang /register đã xoá và nhánh OAuth cũng đã chặn — nhưng cả hai lần vá đó
+    thành vô nghĩa nếu endpoint này hở, vì một lệnh curl thẳng vào backend là có
+    tài khoản, kèm quyền gọi /api/chat (mỗi lượt chat là tiền thật).
+
+    Phép kiểm này TRƯỚC ĐÂY khẳng định điều ngược lại — nó đòi 200 cho một lời
+    gọi ẩn danh. Giữ nguyên thì nó thành cái chốt giữ lại đúng lỗ vừa bịt.
+    """
     res = api.post('/auth/register', {
+        'name': 'Reg Tester', 'email': 'dj_reg_test@example.com', 'password': 'SecretPass123',
+    }, format='json')
+    assert res.status_code in (401, 403), 'tự đăng ký đã mở lại — xem RegisterView'
+
+
+def test_admin_register_then_login_happy_path(admin_api, db):
+    email = 'dj_reg_test@example.com'
+    res = admin_api.post('/auth/register', {
         'name': 'Reg Tester', 'email': email, 'password': 'SecretPass123',
     }, format='json')
     assert res.status_code == 200
@@ -25,16 +42,22 @@ def test_register_then_login_happy_path(api):
     assert data['ok'] is True
     assert 'access' in data and 'refresh' in data  # JWT thêm vào (MIGRATION_NOTES §Auth)
 
-    res2 = api.post('/auth/login', {'email': email, 'password': 'SecretPass123'}, format='json')
+    # Đăng nhập phải dùng một client SẠCH: `admin_api` đang mang danh tính quản
+    # trị viên do force_authenticate, nên gọi /auth/login trên chính nó sẽ đo
+    # nhầm — vẫn 200 kể cả khi mật khẩu sai.
+    from rest_framework.test import APIClient
+    khach = APIClient()
+    res2 = khach.post('/auth/login', {'email': email, 'password': 'SecretPass123'}, format='json')
     assert res2.status_code == 200
     assert res2.json()['name'] == 'Reg Tester'
 
-    res3 = api.post('/auth/login', {'email': email, 'password': 'WrongPass99'}, format='json')
+    res3 = khach.post('/auth/login', {'email': email, 'password': 'WrongPass99'}, format='json')
     assert res3.status_code == 401
 
 
-def test_register_validation_errors(api, db):
-    res = api.post('/auth/register', {'name': '', 'email': 'bad', 'password': '1'}, format='json')
+def test_register_validation_errors(admin_api, db):
+    res = admin_api.post('/auth/register',
+                         {'name': '', 'email': 'bad', 'password': '1'}, format='json')
     assert res.status_code == 400
     errors = res.json()['errors']
     assert 'name' in errors and 'email' in errors and 'password' in errors

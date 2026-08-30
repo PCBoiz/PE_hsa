@@ -49,3 +49,28 @@ def auth_api(api, temp_user):
     from accounts.models import User
     api.force_authenticate(user=User.objects.get(id=temp_user))
     return api
+
+
+@pytest.fixture
+def temp_admin(db):
+    """Quản trị viên tạm — rollback tự dọn.
+
+    Cần từ 27/08/2026: cấp tài khoản đã chuyển thành việc CHỈ quản trị viên làm
+    được, nên mọi phép kiểm đường ``/auth/register`` phải đi kèm một tài khoản
+    có quyền, thay vì gọi ẩn danh như thời còn tự đăng ký.
+    """
+    from common.db import q1
+    from common.permissions import ROLE_ADMIN
+    row = q1(
+        "INSERT INTO users (name, email, password, role, streak, last_study_date) "
+        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        ('Django Admin Tmp', 'django_admin_tmp@example.com', 'x', ROLE_ADMIN, 0, None))
+    return row['id']
+
+
+@pytest.fixture
+def admin_api(api, temp_admin):
+    """APIClient đã đăng nhập với quyền quản trị viên."""
+    from accounts.models import User
+    api.force_authenticate(user=User.objects.get(id=temp_admin))
+    return api
