@@ -154,11 +154,52 @@ API thẳng vẫn đặt lại đúng mật khẩu tạm cũ và cờ `must_chan
 
 ## P2 — Năm mảng audit chưa chạy (3 agent mỗi lượt)
 
-### [ ] T10 · Audit bảo mật
+### [x] T10 · Audit bảo mật — XONG 30/08, đẻ ra T38–T40
 OWASP ASVS + danh mục Django production + mẫu xác thực App Router. Săn kỹ
 `safeTarget` trong `lib/proxy.ts` (đã từng thủng bằng `..%2f`), SSRF, phân quyền
 theo đối tượng, dò tài khoản, SQL injection ở câu dựng động, giới hạn tần suất
 cho endpoint mới. Chạy `manage.py check --deploy`.
+
+**Kết quả:** phân quyền theo đối tượng, SQL injection và lỗ `..%2f` của proxy —
+agent tự tấn công lại toàn bộ, **không thủng**. Đã vá trong đợt này: cổng
+`/auth/session` fail-open · `/api/user` trả `SELECT *` kèm ghi chú nội bộ của
+quản trị viên về học viên · `FollowingView` không kiểm chủ sở hữu · dò tài khoản
+qua thời gian phản hồi (134,8 ms → **4,7 ms**) · `.gitignore` hở `.env.prod`,
+`.env.backup`, `scratchpad/` · lớp trung gian chuyển tiếp `X-Forwarded-For` của
+trình duyệt. Ba việc còn lại cần anh: T38, T39, T40.
+
+### [ ] T38 · Giới hạn tần suất bị vô hiệu bằng một header — CẦN ĐO TRÊN PRODUCTION
+**Đo được:** DRF lấy nguyên chuỗi `X-Forwarded-For` do client gửi làm khoá
+throttle (`NUM_PROXIES` chưa đặt). 300 lần đăng nhập xoay `X-Forwarded-For`
+ngẫu nhiên → **300 lần đều lọt**; cùng 300 lần với IP cố định → 200 lần bị chặn.
+Đã bịt đường đi QUA lớp trung gian (proxy nay loại `x-forwarded-for`). Đường gọi
+THẲNG vào `pe-hsa-backend.onrender.com` vẫn còn.
+
+Vá đúng cần `NUM_PROXIES` = số chặng proxy THẬT, và con số đó phải **đo**, không
+đoán — đặt sai theo hướng ngược lại thì mọi người dùng dồn vào chung một khoá
+throttle và một em gõ sai mật khẩu sẽ khoá cả lớp. Cách đo: gọi một endpoint
+trên Render (a) qua trình duyệt đi đường Vercel, (b) bằng `curl` thẳng, rồi in
+`request.META['HTTP_X_FORWARDED_FOR']` xem có mấy phần tử và phần tử nào là thật.
+
+### [ ] T39 · `SECRET_KEY` 19 byte ký JWT HS256 — CẦN ANH XOAY KHOÁ
+**Đo được:** `len(SECRET_KEY) = 19` byte = 152 bit. RFC 7518 §3.2 nói khoá HS256
+**PHẢI** dài ít nhất bằng đầu ra băm (256 bit). `check --deploy` báo
+`security.W009`. Đã kiểm kỹ: khoá **không** nằm trong lịch sử git (lần quét đầu
+báo có là dương tính giả do `&&` bám vào exit code của `head`).
+
+Khoá lộ = chiếm toàn bộ hệ thống: tự ký JWT `user_id=7, role=admin`, không
+request nào tới máy chủ nên throttle và nhật ký đều không thấy gì, và danh sách
+thu hồi vô dụng vì token đó chưa từng được cấp.
+
+Sinh khoá mới: `python -c "import secrets;print(secrets.token_urlsafe(48))"`.
+Dán vào `backend/.env` và vào Render → Environment. **Hệ quả:** mọi người đang
+đăng nhập bị đăng xuất (mật khẩu KHÔNG bị ảnh hưởng — chúng băm bằng werkzeug,
+độc lập với khoá này).
+
+### [ ] T40 · Bộ đếm giới hạn tần suất nằm trong bộ nhớ tiến trình
+`CACHES` chưa cấu hình → `LocMemCache`. Production chạy `--workers 2` nên bộ đếm
+chia đôi, trần hiệu dụng gấp ~2 lần con số khai báo, và reset mỗi lần deploy.
+Cần cache dùng chung (Redis) hoặc ghi rõ đây là giới hạn "mềm".
 
 ### [ ] T11 · Audit luồng nghiệp vụ đầu-cuối trên trình duyệt thật
 Theo vai người dùng: trợ giảng cấp tài khoản · tìm một em · giảng viên điểm danh

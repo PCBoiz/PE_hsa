@@ -27,6 +27,11 @@ from common.throttling import LoginThrottle, RegisterThrottle
 
 logger = logging.getLogger(__name__)
 
+#: Hash để bằm đối chứng khi không tìm thấy tài khoản (xem LoginView).
+#: Tính sẵn một lần ở tầm module: tính lúc chạy sẽ tự nó thành một chênh lệch
+#: thời gian mới, đúng thứ đang muốn xoá.
+_DUMMY_HASH = make_werkzeug_password('khong-phai-mat-khau-cua-ai')
+
 
 def _tokens_for(user_id):
     """Cấp cặp JWT cho user id (SimpleJWT)."""
@@ -78,6 +83,17 @@ class LoginView(APIView):
         else:
             user = q1('SELECT * FROM users WHERE phone=%s', (norm_phone(identifier),))
         if not user:
+            # Vẫn bằm một lần dù biết chắc sẽ hỏng — để cân thời gian phản hồi.
+            #
+            # Nội dung và mã trạng thái đã giống hệt nhau cho mọi trường hợp,
+            # nhưng ĐỒNG HỒ thì không: tìm thấy tài khoản mới chạy scrypt
+            # (~126ms), không tìm thấy thì trả về ngay. Đo được chênh lệch
+            # +134,8ms rất ổn định (audit 30/08/2026) — đủ để dò xem một email
+            # có từng học ở TopHSA hay không mà không cần biết mật khẩu. Nạn
+            # nhân là trẻ vị thành niên, nên danh sách "ai học ở đây" là dữ liệu
+            # đáng bảo vệ. Chênh lệch này còn nguyên ở production vì nó đến từ
+            # chi phí bằm, không phải từ độ trễ CSDL.
+            check_werkzeug_password(_DUMMY_HASH, password)
             return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
 
         stored = user['password']
@@ -252,12 +268,23 @@ class LogoutView(APIView):
 
 class UserView(APIView):
     def get(self, request):
-        user = q1('SELECT * FROM users WHERE id=%s', (request.user.id,))
+        # Liệt kê cột TRẮNG, không `SELECT *`.
+        #
+        # Bản trước lấy hết rồi chỉ `pop('password')`, nên trả về 25 cột — trong
+        # đó có `status_note`: GHI CHÚ NỘI BỘ của quản trị viên về học viên, ví
+        # dụ lý do khoá tài khoản. Chính em đó đọc được ghi chú viết về mình.
+        # Và mọi cột thêm vào bảng `users` sau này sẽ tự động rò ra API mà không
+        # ai phải làm gì cả — đó mới là phần nguy hiểm lâu dài.
+        user = q1('''SELECT id, name, email, phone, birthday, role, avatar,
+                            streak, streak_freezes, certificates, gems, xp,
+                            questionnaire_completed, last_study_date,
+                            is_verified, created_at, status,
+                            must_change_password, password_changed_at
+                     FROM users WHERE id=%s''', (request.user.id,))
         if not user:
             return Response({}, status=404)
         user['is_new_user'] = not bool(user.get('questionnaire_completed'))
         user['first_login'] = user['is_new_user']
-        user.pop('password', None)  # không trả hash ra ngoài (bản Flask trả cả hash — vá có chủ đích, ghi MIGRATION_NOTES)
         return Response(user)
 
     def put(self, request):
@@ -344,7 +371,18 @@ class FollowView(APIView):
 
 
 class FollowingView(APIView):
+    """Danh sách người mà MÌNH đang theo dõi.
+
+    `user_id` trên đường dẫn phải là chính mình. Trước 30/08/2026 endpoint này
+    nhận bất kỳ id nào, nên một học viên đọc được đồ thị theo dõi của học viên
+    khác (kèm tên, XP, chuỗi ngày). Giữ tham số trên đường dẫn để không phá
+    đường gọi cũ, nhưng chặn ở đây.
+    """
+
     def get(self, request, user_id):
+        if int(user_id) != request.user.id:
+            return Response({'error': 'Không xem được danh sách của người khác.'},
+                            status=403)
         rows = q('''SELECT u.id, u.name, u.xp, u.streak, f.created_at
                     FROM user_follows f
                     JOIN users u ON u.id = f.followee_id

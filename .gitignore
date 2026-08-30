@@ -1,7 +1,15 @@
 # Environment
+# Mẫu RỘNG chứ không liệt kê từng tên: bản cũ chỉ chặn `.env`, `.env.local` và
+# `.env.*.local`, nên `.env.prod` và `.env.backup` KHÔNG bị chặn — một lệnh
+# `git add -A` bất cẩn là đẩy bí mật lên GitHub. Phát hiện khi audit 30/08/2026.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# Thư mục nháp của phiên làm việc: từng chứa JWT còn sống (tokens.json) trong
+# lúc kiểm chứng giao diện.
+scratchpad/
 
 # Node/Next.js
 node_modules/

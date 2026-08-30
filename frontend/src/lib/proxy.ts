@@ -25,6 +25,21 @@ const STRIP = new Set([
   // script trên trang tự gắn `Authorization` là dùng được proxy như một tài
   // khoản khác, và lớp trung gian thôi không còn là nguồn định danh duy nhất.
   'authorization',
+  // Header địa chỉ IP: để nền tảng đặt, KHÔNG chuyển tiếp bản của trình duyệt.
+  //
+  // Django dùng `X-Forwarded-For` làm khoá giới hạn tần suất. Không loại ở đây
+  // thì trình duyệt tự đặt được khoá đó: đo ngày 30/08/2026, gửi 300 lần đăng
+  // nhập kèm một `X-Forwarded-For` NGẪU NHIÊN mỗi lần → **300 lần đều lọt**,
+  // trong khi cùng 300 lần với IP cố định thì 200 lần bị chặn. Tức là hàng rào
+  // "5 lần đăng nhập mỗi phút" không chặn gì cả với người biết đổi một header.
+  // Cùng đường đó mở toang cho spam `/api/chat` — mỗi lượt là tiền thật.
+  //
+  // Loại ở đây bịt đường đi QUA lớp trung gian. Đường gọi THẲNG vào Django trên
+  // Render vẫn còn, và bịt nó cần đặt `NUM_PROXIES` đúng số chặng proxy thật —
+  // con số phải ĐO trên production chứ không đoán (xem TODO T38).
+  'x-forwarded-for',
+  'x-real-ip',
+  'forwarded',
 ]);
 
 function forwardHeaders(req: Request, access: string | null): Headers {

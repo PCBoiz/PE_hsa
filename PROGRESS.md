@@ -146,5 +146,29 @@ mức thay vì thổi phồng.
 **TOÀN BỘ P0 ĐÃ XONG.** Nhánh `erp` giờ đủ điều kiện cân nhắc gộp vào `master`,
 sau khi chạy nốt năm mảng audit ở P2.
 
-**Tiếp theo:** P2 — T10 (bảo mật) + T11 (luồng đầu-cuối) + T12 (CSDL/ERD), chạy
-**3 agent một lượt** theo đúng bài học rate limit.
+### 30/08/2026 — T10 xong: audit bảo mật
+**Tin tốt, đã tự tấn công lại và không thủng:** phân quyền theo đối tượng (ma
+trận đầy đủ cho giảng-viên-không-phụ-trách / học viên / ẩn danh trên mọi endpoint
+`teaching/`) · SQL injection (mọi câu dựng động chỉ ghép định danh trong danh
+sách trắng) · lỗ `..%2f` của proxy (thử lại 9 biến thể mã hoá + hướng SSRF) ·
+kỷ luật một cửa của `common/identity.py`.
+
+**Đã vá trong đợt này, tất cả đều đo lại:**
+| | trước | sau |
+|---|---|---|
+| Dò tài khoản qua thời gian | chênh **134,8 ms** | **4,7 ms** |
+| `/auth/session` thiếu header `Sec-Fetch-Site` | `200` + đặt cookie | `403` |
+| `/api/user` | `SELECT *`, 25 cột, có `status_note` | 21 cột trong danh sách trắng |
+| `/api/users/<id>/following` | ai đọc của ai cũng được | `403` nếu không phải mình |
+| `.gitignore` | hở `.env.prod`, `.env.backup`, `scratchpad/` | chặn hết, giữ `.env.example` |
+| Lớp trung gian | chuyển tiếp `X-Forwarded-For` của trình duyệt | loại bỏ |
+
+`status_note` đáng nói riêng: đó là **ghi chú nội bộ của quản trị viên về học
+viên** (ví dụ lý do khoá tài khoản), và chính em đó đọc được ghi chú viết về
+mình. Nguy hơn về lâu dài là mọi cột thêm vào bảng `users` sau này sẽ tự rò ra
+API mà không ai phải làm gì.
+
+**Ba việc cần anh** — T38 (đo `NUM_PROXIES` trên production), T39 (xoay
+`SECRET_KEY`), T40 (cache dùng chung cho throttle).
+
+**Tiếp theo:** chờ T11 (luồng đầu-cuối) và T12 (CSDL/ERD) — đang chạy.
