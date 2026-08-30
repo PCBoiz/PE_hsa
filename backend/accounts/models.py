@@ -45,6 +45,9 @@ class User(AbstractBaseUser):
     avatar = models.TextField(default='', null=True)
     is_verified = models.BooleanField(default=False, null=True)
     created_at = models.DateTimeField(null=True)
+    # Vòng đời tài khoản (schema §31). 'active' | 'suspended'.
+    status = models.TextField(default='active')
+    must_change_password = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -58,7 +61,16 @@ class User(AbstractBaseUser):
     # ── Tương thích hệ auth Django/allauth (bảng không có các cột này) ──
     @property
     def is_active(self):
-        return True
+        """Tài khoản bị trung tâm khoá thì coi như không hoạt động.
+
+        ĐÂY LÀ CHỖ DUY NHẤT cần chặn, và cố ý đặt ở đây chứ không rải kiểm tra
+        ở từng endpoint: SimpleJWT gọi ``is_active`` ở CẢ hai cửa —
+        ``JWTAuthentication.get_user`` (mọi lời gọi API) và bộ làm mới token
+        (``CHECK_USER_IS_ACTIVE`` mặc định True). Nhờ vậy khoá một tài khoản là
+        cắt hiệu lực NGAY cả với token đã cấp trước đó, không phải chờ nó hết
+        hạn. Rải kiểm tra ở từng endpoint thì chỉ cần quên một chỗ là hở.
+        """
+        return (self.status or 'active') == 'active'
 
     @property
     def is_staff(self):

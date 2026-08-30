@@ -15,6 +15,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
 from accounts.validators import (validate_email_field, validate_name_field,
                                  validate_password_field, validate_phone_field)
+from common.clock import local_now
+from common.identity import looks_like_email, norm_email, norm_phone
+from common.permissions import IsAdminRole
 from common.db import q, q1, x
 from common.throttling import LoginThrottle, RegisterThrottle
 
@@ -50,10 +53,18 @@ class LoginView(APIView):
         if errors:
             return Response({'errors': errors}, status=400)
 
-        if '@' in identifier:
-            user = q1('SELECT * FROM users WHERE email=%s', (identifier,))
+        # Tra theo bản ĐÃ CHUẨN HOÁ, không theo chuỗi người dùng gõ.
+        # Trước 30/08/2026 chỗ này so khớp nguyên văn trong khi bên tạo tài
+        # khoản lại lưu email hạ chữ thường — bàn phím điện thoại tự viết hoa
+        # chữ đầu là đủ để học viên nhận "sai mật khẩu" dù tài khoản nằm ngay
+        # đó, và từ khi bỏ tự đăng ký thì em không có đường nào tự thoát.
+        # Số điện thoại cùng một lỗi: +84912345678 và 0912345678 là một người.
+        # `lower(email)` và `phone` đều có chỉ mục duy nhất (schema §31) nên
+        # câu này vẫn tra theo chỉ mục, không quét bảng.
+        if looks_like_email(identifier):
+            user = q1('SELECT * FROM users WHERE lower(email)=%s', (norm_email(identifier),))
         else:
-            user = q1('SELECT * FROM users WHERE phone=%s', (identifier,))
+            user = q1('SELECT * FROM users WHERE phone=%s', (norm_phone(identifier),))
         if not user:
             return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
 
@@ -72,17 +83,47 @@ class LoginView(APIView):
 
         if not ok:
             return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
+
+        # Tài khoản trung tâm đã khoá (học xong hoặc nghỉ giữa chừng, schema §31).
+        # Đặt SAU khi kiểm mật khẩu là cố ý: trả lời "tài khoản đã khoá" trước
+        # khi biết người gõ có đúng là chủ tài khoản không thì bất kỳ ai cũng
+        # dò được email nào từng học ở TopHSA.
+        # Vẫn phải chặn ở đây dù `User.is_active` đã cắt mọi lời gọi API sau đó:
+        # không có câu này thì đăng nhập vẫn "thành công", cấp token, rồi màn
+        # hình kế tiếp mới đổ 401 — học viên không hiểu chuyện gì xảy ra.
+        if (user.get('status') or 'active') != 'active':
+            return Response({'error': 'Tài khoản này đã được trung tâm khoá. '
+                                      'Liên hệ TopHSA nếu bạn cần mở lại.'}, status=403)
+
         needs_questionnaire = not bool(user['questionnaire_completed'])
         return Response({
             'ok': True,
             'name': user['name'],
             'needs_questionnaire': needs_questionnaire,
+            # Tài khoản do trung tâm cấp kèm mật khẩu tạm — trợ giảng biết mật
+            # khẩu đó, nên phải bắt đổi ngay lần đăng nhập đầu tiên.
+            # Dùng `.get()` chứ không phải `user['...']`: cột này thêm ngày
+            # 27/08/2026 và bootstrap_schema chạy lúc dựng bản; đọc kiểu này thì
+            # mã mới vẫn chạy trên CSDL chưa kịp thêm cột, thay vì làm hỏng đăng
+            # nhập của tất cả mọi người.
+            'must_change_password': bool(user.get('must_change_password')),
             **_tokens_for(user['id']),
         })
 
 
 class RegisterView(APIView):
-    permission_classes = [AllowAny]
+    """Tạo tài khoản. CHỈ QUẢN TRỊ VIÊN, từ 27/08/2026.
+
+    Đổi chính sách: học viên không tự mở tài khoản nữa. Trung tâm lấy email/số
+    điện thoại lúc học viên đăng ký học rồi tạo tài khoản và đưa mật khẩu tạm
+    tận tay — nhờ vậy trung tâm biết chính xác ai đang có mặt trong hệ thống.
+
+    Trang /register phía người dùng đã xoá và nhánh OAuth cũng đã chặn tạo tài
+    khoản mới (accounts/oauth.py). Nếu để endpoint này ở `AllowAny` thì cả hai
+    lần vá kia thành vô nghĩa: một lệnh curl thẳng vào backend là có tài khoản,
+    kèm quyền gọi /api/chat — mỗi lượt chat là tiền thật trả cho DeepSeek.
+    """
+    permission_classes = [IsAdminRole]
     throttle_classes = [RegisterThrottle]   # 3 per minute
 
     def post(self, request):
@@ -111,9 +152,9 @@ class RegisterView(APIView):
         if errors:
             return Response({'errors': errors}, status=400)
 
-        if email and q1('SELECT id FROM users WHERE email=%s', (email,)):
+        if email and q1('SELECT id FROM users WHERE lower(email)=%s', (norm_email(email),)):
             return Response({'errors': {'email': 'Email đã được sử dụng'}}, status=400)
-        if phone and q1('SELECT id FROM users WHERE phone=%s', (phone,)):
+        if phone and q1('SELECT id FROM users WHERE phone=%s', (norm_phone(phone),)):
             return Response({'errors': {'phone': 'Số điện thoại đã được sử dụng'}}, status=400)
 
         try:
@@ -188,13 +229,18 @@ class UserView(APIView):
         # Trùng email/phone của người khác → 400 như /auth/register (tránh 500 do
         # IntegrityError khi vi phạm UNIQUE constraint users.email). Loại trừ chính mình.
         uid = request.user.id
-        if email and q1('SELECT id FROM users WHERE email=%s AND id<>%s', (email, uid)):
+        if email and q1('SELECT id FROM users WHERE lower(email)=%s AND id<>%s',
+                        (norm_email(email), uid)):
             return Response({'errors': {'email': 'Email đã được sử dụng'}}, status=400)
-        if phone and q1('SELECT id FROM users WHERE phone=%s AND id<>%s', (phone, uid)):
+        if phone and q1('SELECT id FROM users WHERE phone=%s AND id<>%s',
+                        (norm_phone(phone), uid)):
             return Response({'errors': {'phone': 'Số điện thoại đã được sử dụng'}}, status=400)
 
+        # Ghi bản ĐÃ chuẩn hoá. Chỉ chuẩn hoá lúc TRA mà không chuẩn hoá lúc
+        # GHI là tái tạo đúng cái khe vừa vá: người dùng tự sửa hồ sơ thành
+        # "An@Gmail.com", lần đăng nhập sau không khớp nữa.
         x('UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s WHERE id=%s',
-          (name, email, phone, birthday, uid))
+          (name, norm_email(email), norm_phone(phone), birthday, uid))
         return Response({'ok': True})
 
 
@@ -216,8 +262,13 @@ class PasswordView(APIView):
         pw_ok = check_werkzeug_password(stored, current) if is_hashed else (stored == current)
         if not pw_ok:
             return Response({'error': 'Mật khẩu hiện tại không đúng'}, status=401)
-        x('UPDATE users SET password=%s WHERE id=%s',
-          (make_werkzeug_password(new_pw), request.user.id))
+        # Đổi xong thì gỡ cờ bắt buộc: mật khẩu tạm do trợ giảng đặt nay đã
+        # được thay bằng mật khẩu chỉ học viên biết.
+        # `local_now()` chứ không phải `now()` của SQL: giờ máy chủ là UTC, lệch
+        # 7 tiếng so với giờ Việt Nam — đủ để ghi sai ngày.
+        x('UPDATE users SET password=%s, must_change_password=FALSE, '
+          'password_changed_at=%s WHERE id=%s',
+          (make_werkzeug_password(new_pw), local_now(), request.user.id))
         return Response({'ok': True})
 
 

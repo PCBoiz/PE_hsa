@@ -66,3 +66,26 @@ def visible_class_ids(user):
         return []
     return [r['id'] for r in q('SELECT id FROM classes WHERE teacher_id=%s ORDER BY id',
                                (user.id,))]
+
+
+def last_active_admin(user_id) -> bool:
+    """Tài khoản này có phải quản trị viên ĐANG HOẠT ĐỘNG cuối cùng không?
+
+    Bất biến duy nhất mà hệ thống không tự phục hồi được khi vỡ: còn không một
+    quản trị viên nào thì không ai vào được trang quản trị để phong lại quyền
+    cho ai — đường duy nhất là sửa tay trong CSDL, thứ mà trung tâm không làm
+    được và cũng không nên làm được.
+
+    Trước 30/08/2026 mỗi endpoint tự chặn một nửa: đổi vai trò thì cấm tự hạ
+    quyền MÌNH, khoá tài khoản thì cấm tự khoá MÌNH. Cả hai đều đúng nhưng cùng
+    bỏ sót một trường hợp — hai quản trị viên hạ quyền hoặc khoá LẪN NHAU, và
+    hệ thống về không mà không câu lệnh nào bị từ chối.
+
+    Đặt luật ở đây chứ không ở từng view vì đây là luật về QUYỀN, và
+    `common/permissions.py` vốn đã là chỗ giữ đúng một bản của mọi luật quyền —
+    mỗi chỗ tự kiểm một kiểu là cách chắc chắn nhất để hở.
+    """
+    row = q1("SELECT COUNT(*) AS n FROM users "
+             "WHERE role=%s AND COALESCE(status, 'active')='active' AND id<>%s",
+             (ROLE_ADMIN, user_id))
+    return (row['n'] if row else 0) == 0
