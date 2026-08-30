@@ -352,12 +352,12 @@ def _split_line(line):
 def _parse_text(text):
     """Văn bản dán vào → danh sách ứng viên ``{line, name, email, phone}``.
 
-    Trả (danh_sách, bị_cắt_bớt). ``line`` là số dòng trong ĐÚNG văn bản trợ
+    Trả (danh_sách, bị_cắt_bớt, có_bỏ_dòng_tiêu_đề). ``line`` là số dòng trong ĐÚNG văn bản trợ
     giảng vừa dán (đếm từ 1, kể cả dòng trống và dòng tiêu đề). Đánh số lại theo
     thứ tự sau khi lọc thì báo "dòng 7 hỏng" chỉ vào một dòng khác trên màn hình
     của trợ giảng, và em ấy sẽ sửa nhầm dòng.
     """
-    out, header_checked, truncated = [], False, False
+    out, header_checked, truncated, header_skipped = [], False, False, False
     for idx, raw in enumerate((text or '').splitlines(), start=1):
         line = raw.strip()
         if not line:
@@ -366,6 +366,7 @@ def _parse_text(text):
             header_checked = True
             low = line.lower()
             if any(word in low for word in _HEADER_WORDS):
+                header_skipped = True
                 continue
         if len(out) >= MAX_PARSE_LINES:
             # Cắt bớt thì phải NÓI ra. Lặng lẽ bỏ 200 dòng cuối là kịch bản tệ
@@ -375,7 +376,7 @@ def _parse_text(text):
             break
         name, email, phone = _split_line(line)
         out.append({'line': idx, 'name': name, 'email': email, 'phone': phone})
-    return out, truncated
+    return out, truncated, header_skipped
 
 
 def _existing_identities(emails, phones):
@@ -511,7 +512,7 @@ class AdminBulkCreateUsersView(APIView):
         else:
             class_id = None
 
-        cands, truncated = _parse_text(text)
+        cands, truncated, header_skipped = _parse_text(text)
         if not cands:
             return Response({'error': 'Không đọc được dòng dữ liệu nào. Mỗi dòng cần '
                                       'có họ tên kèm email hoặc số điện thoại.'}, status=400)
@@ -565,6 +566,13 @@ class AdminBulkCreateUsersView(APIView):
             # cả mẻ, nên trợ giảng bấm xem trước bao nhiêu lần cũng được.
             return Response({'ok': True, 'dryRun': True,
                              'created': len(to_create), 'skipped': skipped,
+                             # Số dòng MÁY CHỦ đọc được, và có bỏ dòng tiêu đề
+                             # hay không. Thiếu hai con số này thì màn hình phải
+                             # tự đếm lấy, và nó đếm khác — nó tính cả dòng tiêu
+                             # đề. Đo được: "8 dòng đã dán" rồi "sẽ tạo 2, bỏ
+                             # qua 5", mà 2+5≠8, không ai giải thích nổi vì sao.
+                             'parsedLines': len(rows),
+                             'headerSkipped': header_skipped,
                              'tooMany': too_many, 'maxPerBatch': MAX_CREATE_PER_BATCH,
                              'warnings': warnings, 'rows': rows})
 
@@ -579,6 +587,7 @@ class AdminBulkCreateUsersView(APIView):
                           'được cả danh sách trong một lượt.'
                           % (MAX_CREATE_PER_BATCH, len(to_create))),
                 'created': 0, 'skipped': skipped, 'wouldCreate': len(to_create),
+                'parsedLines': len(rows), 'headerSkipped': header_skipped,
                 'warnings': warnings, 'rows': rows,
             }, status=400)
 
@@ -644,6 +653,7 @@ class AdminBulkCreateUsersView(APIView):
             'dryRun': False,
             'created': len(created_ids),
             'skipped': sum(1 for r in rows if r['status'] == 'skipped'),
+            'parsedLines': len(rows), 'headerSkipped': header_skipped,
             'addedToClass': added_to_class,
             'className': klass['name'] if klass else None,
             'warnings': warnings,

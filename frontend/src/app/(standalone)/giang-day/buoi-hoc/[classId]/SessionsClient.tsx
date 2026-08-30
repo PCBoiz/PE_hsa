@@ -127,6 +127,46 @@ export default function SessionsClient({
     }
   }, [classId]);
 
+  /**
+   * Xoá một buổi. HAI bước khi buổi đã có điểm danh.
+   *
+   * Backend trả 409 kèm số dòng chuyên cần sẽ mất (`ClassSessionDetailView`), và
+   * chỉ chịu xoá khi gọi lại kèm `?confirm=1`. Ở đây làm đúng vòng đó thay vì
+   * gửi thẳng `confirm=1` ngay từ đầu: hàng rào ấy sinh ra để chặn một cú bấm
+   * nhầm, gửi kèm sẵn là tự tháo nó ra.
+   *
+   * Buổi CHƯA điểm danh thì xoá luôn không hỏi — không có gì để mất, và bắt xác
+   * nhận cho mọi thứ là cách nhanh nhất khiến người ta bấm Đồng ý theo phản xạ.
+   */
+  async function xoaBuoi(s: SessionRow) {
+    const ten = s.topic || fmt(s.startsAt);
+    setErr(null);
+    try {
+      const r = await apiFetch(`/api/teach/sessions/${s.id}`, { method: 'DELETE' });
+      const d = await r.json().catch(() => ({}));
+
+      if (r.status === 409 && d.needsConfirm) {
+        if (
+          !confirm(
+            `Buổi "${ten}" đã có ${d.attendanceRows} dòng điểm danh.\n\n` +
+              'Xoá là mất luôn bản ghi chuyên cần của cả lớp buổi đó, không khôi phục được.',
+          )
+        )
+          return;
+        const r2 = await apiFetch(`/api/teach/sessions/${s.id}?confirm=1`, { method: 'DELETE' });
+        const d2 = await r2.json().catch(() => ({}));
+        if (!r2.ok) throw new Error(errorText(r2.status, d2));
+      } else if (!r.ok) {
+        throw new Error(errorText(r.status, d));
+      }
+
+      if (openId === s.id) setOpenId(null);
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Không xoá được buổi học');
+    }
+  }
+
   return (
     // ToastProvider bọc cả màn hình vì lời xác nhận PHẢI nằm trong khung nhìn.
     // Đo ở 390×844: nút "Lưu điểm danh" ở top=764px còn chữ "Chưa lưu" — thứ
@@ -198,13 +238,22 @@ export default function SessionsClient({
                         )
                       )}
 
-                      <Button
-                        size="sm"
-                        variant={openId === s.id ? 'ghost' : 'primary'}
-                        onClick={() => setOpenId(openId === s.id ? null : s.id)}
-                      >
-                        {openId === s.id ? 'Đóng' : 'Điểm danh'}
-                      </Button>
+                      <span className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={openId === s.id ? 'ghost' : 'primary'}
+                          onClick={() => setOpenId(openId === s.id ? null : s.id)}
+                        >
+                          {openId === s.id ? 'Đóng' : 'Điểm danh'}
+                        </Button>
+                        {/* Backend đã có đường xoá từ đầu (ClassSessionDetailView)
+                            nhưng giao diện chưa từng gọi tới — nên một buổi tạo
+                            nhầm giờ nằm lại vĩnh viễn trong sổ, và lần điểm danh
+                            kế tiếp lại phải nhìn qua nó. */}
+                        <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
+                          Xoá
+                        </Button>
+                      </span>
                     </div>
 
                     {openId === s.id && (

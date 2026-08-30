@@ -311,7 +311,19 @@ cuối. Gắn vào 7 chỗ gọi ở hai màn hình. Đo ba ca đã hỏng:
 màn hình Tài khoản không vào URL · lớp hiện theo tên trên màn hình, theo mã
 trong CSV.
 
-### [ ] T50 · Nhập hàng loạt: con số không cộng lại được, và bấm hai lần gửi hai yêu cầu
+### [x] T50 · Nhập hàng loạt + xoá buổi học — XONG 31/08
+Bốn lỗi, đo lại từng cái trên trình duyệt thật:
+· **Con số** — máy chủ nay báo `parsedLines` và `headerSkipped`, màn hình hiện
+  MỘT cách đếm tại một thời điểm: "Máy chủ đọc được 7 dòng (đã bỏ 1 dòng tiêu
+  đề): 2 sẽ tạo, 5 bỏ qua" — 2+5=7. Trước là "8 dòng đã dán" cạnh "2 và 5".
+· **Vượt trần** — nút nay ghi "Quá 50 — cắt bớt danh sách" thay vì "Tạo 60 tài
+  khoản" (khoá, không nói vì sao) — một lời khẳng định ngược với điều vừa bị từ chối.
+· **Bấm hai lần** — chốt `useRef` đồng bộ; `setBusy` của React không kịp. Đo hai
+  cú bấm trong CÙNG một tick: 2 yêu cầu → **1**.
+· **Bản nháp** — giữ trong `localStorage`, khôi phục khi bấm "Mở ô nhập" (một sự
+  kiện, không phải hiệu ứng — tránh cả lỗi SSR lẫn luật React).
+Thêm: nút **Xoá buổi học** trên từng dòng, đi đúng vòng xác nhận hai bước của
+`ClassSessionDetailView` (409 kèm số dòng chuyên cần sẽ mất → hỏi → `?confirm=1`).
 "8 dòng đã dán" rồi "Sẽ tạo 2, bỏ qua 5" — 2+5≠8 vì hai chỗ đếm khác nhau (máy
 đếm cả dòng tiêu đề, máy chủ thì không). Vượt trần thì nút ghi "Tạo 60 tài khoản"
 (đã khoá, không nói vì sao) cạnh câu "Sẽ tạo 60 tài khoản" — khẳng định ngược với

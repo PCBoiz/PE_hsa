@@ -646,13 +646,54 @@ vào đây" — đẩy người dùng đi hỏi nhầm chỗ. Nay tách hai câu
 
 Kiểm 10 phép trên trình duyệt thật, tất cả đạt. tsc sạch, build exit 0.
 
+### 31/08/2026 — T50 xong: nhập hàng loạt, và xoá được buổi học
+
+Bốn lỗi trong một luồng, cộng một tính năng còn thiếu.
+
+**1 · Con số không cộng lại được.** "8 dòng đã dán" rồi "sẽ tạo 2, bỏ qua 5" —
+hai chỗ đếm khác nhau: màn hình đếm mọi dòng không rỗng, máy chủ bỏ dòng tiêu
+đề. Vá bằng cách để MÁY CHỦ báo con số của nó (`parsedLines`, `headerSkipped`),
+và màn hình hiện đúng MỘT cách đếm tại một thời điểm — chưa gửi thì đếm ở máy,
+gửi rồi thì lấy của máy chủ. Nay: "Máy chủ đọc được 7 dòng (đã bỏ 1 dòng tiêu
+đề): 2 sẽ tạo, 5 bỏ qua."
+
+**2 · Nút nói ngược với hệ thống.** Vượt trần thì nút ghi "Tạo 60 tài khoản",
+khoá lại, không nói vì sao. Nay ghi "Quá 50 — cắt bớt danh sách".
+
+**3 · Bấm hai lần gửi hai yêu cầu.** `setBusy(true)` không có tác dụng ngay —
+React gom việc cập nhật rồi mới dựng lại, nên hai cú bấm cùng đọc thấy
+`busy === false`. Chốt bằng `useRef` (đổi giá trị ngay trong cùng lượt chạy).
+
+Đáng ghi: **phép kiểm đầu của tôi đo nhầm chuyện khác.** Nó dùng
+`Promise.all([click, click])` của Playwright, mà Playwright chờ nút "sẵn sàng"
+giữa hai lần — tức nó đo cảnh "bấm, chờ xong, bấm lại", và cảnh đó gửi hai yêu
+cầu là ĐÚNG. Đo lại bằng hai `click()` trong cùng một tick JS: 1 yêu cầu.
+
+**4 · Bản nháp mất khi tải lại.** Giữ trong `localStorage`. Hai quyết định:
+· Khôi phục lúc bấm "Mở ô nhập", KHÔNG phải lúc trang dựng xong — vừa tránh
+  `localStorage` không tồn tại khi Next dựng ở máy chủ, vừa tránh luật React
+  cấm `setState` đồng bộ trong hiệu ứng (eslint chặn, và nó chặn đúng), vừa đỡ
+  làm người dùng giật mình vì ô nhập tự điền.
+· **Lỗi tôi tự gây ra rồi tự tìm:** hiệu ứng lưu nháp chạy ngay lúc dựng trang
+  với `text` rỗng nên gọi `removeItem` — nó XOÁ chính bản nháp trước khi ai kịp
+  mở ô. Ghi xong đọc lại thấy đúng, tải lại một cái là `null`. Vá bằng đúng
+  cách mà ô tìm kiếm ngay phía trên trong cùng tệp đã né: bỏ qua lượt chạy đầu.
+
+**5 · Thêm nút Xoá buổi học.** `ClassSessionDetailView` có đường xoá từ đầu
+nhưng giao diện chưa từng gọi tới, nên một buổi tạo nhầm giờ nằm lại vĩnh viễn.
+Đi đúng vòng hai bước của backend: gọi trần → 409 kèm số dòng chuyên cần sẽ mất
+→ hỏi người dùng → gọi lại kèm `?confirm=1`. Cố ý KHÔNG gửi sẵn `confirm=1`:
+hàng rào ấy sinh ra để chặn một cú bấm nhầm, gửi kèm sẵn là tự tháo nó ra.
+
+Kiểm 10 phép trên trình duyệt thật, tất cả đạt. CSDL không đổi một dòng.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T47 câu lỗi backend) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T50 nhập hàng loạt) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật

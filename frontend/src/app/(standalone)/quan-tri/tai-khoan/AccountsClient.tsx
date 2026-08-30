@@ -59,6 +59,11 @@ type BulkResultData = {
   rows: BulkRow[];
   warnings?: string[];
   tooMany?: boolean;
+  /** Số dòng MÁY CHỦ đọc được — luôn bằng created + skipped. */
+  parsedLines?: number;
+  /** Máy chủ có bỏ qua một dòng tiêu đề không. */
+  headerSkipped?: boolean;
+  maxPerBatch?: number;
 };
 
 /** Trần một mẻ nhập. Phải khớp `MAX_CREATE_PER_BATCH` trong teaching/admin_users.py —
@@ -487,13 +492,98 @@ function BulkImport({
   const [preview, setPreview] = useState<BulkResultData | null>(null);
   const [done, setDone] = useState<BulkResultData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [khoiPhuc, setKhoiPhuc] = useState(false);
 
-  // Số dòng đếm ở máy: chỉ để hiện cho người dùng biết mình vừa dán bao nhiêu.
-  // KHÔNG dùng nó để chặn — máy chủ mới biết dòng nào hợp lệ, và trần đếm theo
-  // dòng HỢP LỆ chứ không theo dòng đã dán.
+  /**
+   * Bản nháp danh sách đã dán, giữ trong trình duyệt.
+   *
+   * Vì sao cần: trợ giảng dán 200 dòng từ Excel, bấm nhầm nút Tải lại hoặc đóng
+   * tab, và toàn bộ danh sách biến mất — phải sang Excel dán lại từ đầu. Nội
+   * dung ấy chưa gửi đi đâu cả nên không có bản nào khác để lấy lại.
+   *
+   * `localStorage` là đúng chỗ: nó nằm trên MÁY của người đang dán, không đi
+   * đâu cả, và đây là dữ liệu nháp của riêng lượt làm việc đó. Xoá ngay khi mẻ
+   * đã tạo xong — giữ lại danh sách đã dùng chỉ tổ làm người sau tưởng còn việc
+   * chưa xong. Bọc try/catch vì chế độ ẩn danh và trình duyệt chặn lưu trữ đều
+   * ném lỗi ngay ở lệnh đọc.
+   */
+  const KHOA_NHAP = 'pe_hsa.bulk_draft';
+
+  /**
+   * Khôi phục lúc trợ giảng MỞ ô nhập, không phải lúc trang vừa dựng xong.
+   *
+   * Ba lý do, và lý do thứ ba mới là lý do thật:
+   *  · Thành phần này vẫn được dựng ở máy chủ (Next dựng sẵn cả component
+   *    'use client'), mà ở đó không có `localStorage` — nên không đọc được
+   *    trong hàm khởi tạo state.
+   *  · Đọc trong `useEffect` rồi `setState` ngay thì vi phạm luật của React
+   *    (dựng hình dây chuyền) — eslint chặn đúng, không nên tắt đi.
+   *  · Và tự điền lại một ô nhập ngay khi mở trang là làm người dùng giật
+   *    mình: họ không nhớ mình để lại gì trong đó. Bấm "Mở ô nhập" rồi mới
+   *    thấy danh sách cũ, kèm một câu nói rõ, thì dễ hiểu hơn hẳn.
+   */
+  function moONhap() {
+    setOpen(true);
+    try {
+      const cu = localStorage.getItem(KHOA_NHAP);
+      if (cu && cu.trim() && !text.trim()) {
+        setText(cu);
+        setKhoiPhuc(true);
+      }
+    } catch {
+      /* trình duyệt chặn lưu trữ — không sao, chỉ là mất tiện ích */
+    }
+  }
+
+  /**
+   * BỎ QUA lượt chạy đầu tiên của hiệu ứng lưu nháp.
+   *
+   * Không bỏ thì chính nó xoá mất bản nháp: lúc trang vừa dựng, `text` là chuỗi
+   * rỗng, hiệu ứng chạy ngay và gọi `removeItem` — bản nháp biến mất TRƯỚC KHI
+   * trợ giảng kịp bấm "Mở ô nhập". Đo được 31/08/2026: ghi xong đọc lại thấy
+   * giá trị đúng, tải lại trang một cái là `null`.
+   *
+   * Cùng đúng cái bẫy mà ô tìm kiếm phía trên đã né bằng `first.current` — nên
+   * dùng lại y hệt cách đó thay vì nghĩ ra cách thứ hai.
+   */
+  const lanDau = useRef(true);
+  useEffect(() => {
+    if (lanDau.current) {
+      lanDau.current = false;
+      return;
+    }
+    try {
+      if (text.trim()) localStorage.setItem(KHOA_NHAP, text);
+      else localStorage.removeItem(KHOA_NHAP);
+    } catch {
+      /* như trên */
+    }
+  }, [text]);
+
+  /**
+   * Chốt chặn ĐỒNG BỘ chống gửi hai lần.
+   *
+   * `setBusy(true)` không có tác dụng ngay: React gom việc cập nhật trạng thái
+   * rồi mới dựng lại giao diện, nên hai cú bấm cách nhau vài chục mili-giây đều
+   * đọc thấy `busy === false` và cùng lọt vào. Đo được: bấm nhanh "Kiểm tra
+   * trước" hai lần → HAI yêu cầu cùng bay đi.
+   *
+   * Với "Kiểm tra trước" thì chỉ tốn công máy chủ. Với "Tạo" thì đó là hai mẻ
+   * tài khoản: mẻ thứ hai bỏ qua toàn bộ vì trùng email, nhưng trợ giảng nhìn
+   * thấy hai bảng kết quả mâu thuẫn và không biết tin bảng nào.
+   *
+   * `useRef` đổi giá trị NGAY trong cùng lượt chạy nên chặn được; state thì không.
+   */
+  const dangGui = useRef(false);
+
+  // Số dòng đếm ở máy — CHỈ dùng khi chưa có kết quả từ máy chủ. Máy chủ đếm
+  // khác vì nó bỏ dòng tiêu đề, nên để hai con số cạnh nhau là sinh ra cảnh
+  // "8 dòng đã dán" rồi "sẽ tạo 2, bỏ qua 5", mà 2+5≠8.
   const lines = text.split(/\r?\n/).filter((l) => l.trim()).length;
 
   async function send(dryRun: boolean) {
+    if (dangGui.current) return;
+    dangGui.current = true;
     setBusy(true);
     setErr(null);
     try {
@@ -508,12 +598,14 @@ function BulkImport({
       else {
         setDone(d);
         setPreview(null);
-        setText('');
+        setText('');           // useEffect ở trên sẽ xoá luôn bản nháp
+        setKhoiPhuc(false);
         onDone();
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Không gửi được danh sách');
     } finally {
+      dangGui.current = false;
       setBusy(false);
     }
   }
@@ -528,7 +620,7 @@ function BulkImport({
               Dán thẳng danh sách học viên vừa đăng ký từ Excel hoặc Google Sheets.
             </p>
           </div>
-          <Button onClick={() => setOpen(true)}>Mở ô nhập</Button>
+          <Button onClick={moONhap}>Mở ô nhập</Button>
         </div>
       </Card>
     );
@@ -559,7 +651,25 @@ function BulkImport({
         className="w-full rounded-md border border-line bg-sunken p-3 font-mono text-small leading-relaxed text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
       />
 
-      {lines > 0 && <p className="mt-2 text-small text-ink-3">{lines} dòng đã dán</p>}
+      {/* MỘT con số tại một thời điểm. Chưa gửi thì đếm ở máy ("bạn vừa dán
+          bao nhiêu"); gửi rồi thì lấy CÁCH ĐẾM CỦA MÁY CHỦ, vì chỉ nó biết dòng
+          nào là tiêu đề. Hai cách đếm hiện cạnh nhau chính là chỗ đẻ ra
+          "8 dòng đã dán" + "sẽ tạo 2, bỏ qua 5". */}
+      {khoiPhuc && !preview && (
+        <p className="mt-2 text-small text-ink-3">
+          Đã khôi phục danh sách bạn dán lần trước. Xoá hết chữ trong ô là bỏ bản nháp.
+        </p>
+      )}
+
+      {preview ? (
+        <p className="mt-2 text-small text-ink-3">
+          Máy chủ đọc được {preview.parsedLines ?? preview.created + preview.skipped} dòng
+          {preview.headerSkipped && ' (đã bỏ 1 dòng tiêu đề)'}: {preview.created} sẽ tạo,{' '}
+          {preview.skipped} bỏ qua.
+        </p>
+      ) : (
+        lines > 0 && <p className="mt-2 text-small text-ink-3">{lines} dòng đã dán</p>
+      )}
 
       <div className="mt-3 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))]">
         <Select value={role} onChange={setRole} label="Vai trò cấp cho cả danh sách">
@@ -590,7 +700,15 @@ function BulkImport({
           disabled={!preview || preview.created === 0 || !!preview.tooMany}
           onClick={() => void send(false)}
         >
-          {preview ? `Tạo ${preview.created} tài khoản` : 'Tạo tài khoản'}
+          {/* Vượt trần thì nút PHẢI nói vì sao nó khoá. Bản trước ghi "Tạo 60
+              tài khoản" và tắt đi — một lời khẳng định ngược hẳn với điều hệ
+              thống vừa từ chối, cạnh một nút không bấm được và không giải
+              thích. */}
+          {preview?.tooMany
+            ? `Quá ${preview.maxPerBatch ?? MAX_BATCH} — cắt bớt danh sách`
+            : preview
+              ? `Tạo ${preview.created} tài khoản`
+              : 'Tạo tài khoản'}
         </Button>
       </div>
 
