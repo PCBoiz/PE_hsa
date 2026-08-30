@@ -309,7 +309,11 @@ thay đổi được · CI không kiểm cú pháp mô-đun lệnh quản trị.
 chứ không phải ~23; trần tuyệt đối là 14. Không đáng vá. Và `plan.generate` là
 85–139 INSERT chứ không phải 245.
 
-### [ ] T41 · Gộp hai vòng lặp INSERT thành một câu
+### [x] T41 · Gộp các vòng lặp INSERT thành một câu — XONG 31/08
+Đo lại sau khi vá: điểm danh 9 → **3 lượt** (và nay KHÔNG đổi theo sĩ số),
+`plan.generate` 147 → **12 lượt**. Tìm thêm một vòng lặp thứ ba cùng loại:
+`backfill_learning_events` chạy trên toàn bộ lịch sử học — đã gộp qua đệm ở
+`_emit`/`_flush`. Kiểm 11 + 7 phép, dữ liệu ghi ra giống hệt từng ô.
 `sessions.py:_emit_events` đo được **3N+1** câu (lớp 30 em = 91 lượt tới Neon,
 0,46 s production / 23 s từ máy dev) — đây là phần N+1 của T37, và nó bác bỏ
 chú thích đầu mô-đun khẳng định "số câu cố định". `stats/plan.py:245` là 85–139

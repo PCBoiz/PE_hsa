@@ -39,7 +39,7 @@ from common.audit import (ATTENDANCE_MARK, SESSION_CREATE, SESSION_DELETE,
 from common.clock import local_now
 from common.db import q, q1, x
 from common.events import (KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events,
-                           record_event)
+                           record_events)
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats.goals import as_date
 
@@ -777,19 +777,23 @@ class SessionAttendanceView(APIView):
         MỘT câu UPDATE, còn gỡ số liệu đã trộn ra thì không gỡ được.
         """
         when = session['starts_at']
-        for m in marks:
-            record_event(
-                m['user_id'], KIND_ATTENDANCE,
-                # dedup_key đã duy nhất theo từng học viên (UNIQUE
-                # (user_id, dedup_key)), nên khoá theo buổi là đủ — và nhờ vậy
-                # điểm danh lại chỉ CẬP NHẬT đúng dòng cũ.
-                f'attendance:{session["id"]}',
-                occurred_at=when,
-                event_date=when.date() if when else None,
-                course_id=session['class_course_id'],
-                topic=session['topic'],
-                ref_type='class_session', ref_id=session['id'],
-                minutes=None,                       # xem docstring — cố ý
-                xp=0, source=SOURCE_SYSTEM,
-                meta={'attendance': m['status'], 'minutes': m['minutes'],
-                      'class_id': session['class_id']})
+        # MỘT câu cho cả lớp, cùng lý do với câu UPSERT ở trên: vòng lặp
+        # record_event tốn ba lượt gọi Neon mỗi em (SAVEPOINT / INSERT /
+        # RELEASE) — đo 31/08/2026, 3 em = 9 lượt, tức lớp 30 em là 90 lượt cho
+        # một lần bấm Lưu, trong khi giảng viên đang đứng chờ trước cả lớp.
+        record_events([{
+            'uid': m['user_id'], 'kind': KIND_ATTENDANCE,
+            # dedup_key đã duy nhất theo từng học viên (UNIQUE
+            # (user_id, dedup_key)), nên khoá theo buổi là đủ — và nhờ vậy
+            # điểm danh lại chỉ CẬP NHẬT đúng dòng cũ.
+            'dedup_key': f'attendance:{session["id"]}',
+            'occurred_at': when,
+            'event_date': when.date() if when else None,
+            'course_id': session['class_course_id'],
+            'topic': session['topic'],
+            'ref_type': 'class_session', 'ref_id': session['id'],
+            'minutes': None,                        # xem docstring — cố ý
+            'xp': 0, 'source': SOURCE_SYSTEM,
+            'meta': {'attendance': m['status'], 'minutes': m['minutes'],
+                     'class_id': session['class_id']},
+        } for m in marks])

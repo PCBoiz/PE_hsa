@@ -92,6 +92,60 @@ def forget_events(ref_type=None, ref_id=None, *, user_id=None, dedup_key=None):
         return 0
 
 
+# ── Câu INSERT dùng chung cho cả ghi lẻ lẫn ghi mẻ ─────────────────────────
+#
+# Tách ra hằng số để câu lệnh chỉ tồn tại MỘT bản. Nếu ghi lẻ và ghi mẻ mỗi bên
+# giữ một bản chép, chỉ cần bản mẻ thiếu một COALESCE là ghi lẻ giữ được điểm cũ
+# còn ghi mẻ xoá mất — hai đường ghi cùng một bảng cho hai kết quả khác nhau, và
+# không phép kiểm nào bắt được vì cả hai đều "chạy được".
+_COLS = ('user_id, dedup_key, occurred_at, event_date, kind, course_id, topic, '
+         'ref_type, ref_id, score, max_score, minutes, xp, source, meta')
+
+_ROW = '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)'
+
+_ON_CONFLICT = '''ON CONFLICT (user_id, dedup_key) DO UPDATE SET
+        occurred_at = EXCLUDED.occurred_at,
+        event_date  = EXCLUDED.event_date,
+        course_id   = EXCLUDED.course_id,
+        topic       = EXCLUDED.topic,
+        -- COALESCE chứ không ghi đè thẳng: học lại một bài mà lần này không làm
+        -- quiz sẽ gửi score = NULL, và ghi đè thẳng thì XOÁ MẤT điểm đã đo được
+        -- lần trước — ô năng lực tụt về "chưa đủ dữ liệu", sổ điểm mất dòng,
+        -- đường cong mất điểm, không có đường khôi phục. Cùng lý do với COALESCE
+        -- của `minutes` và GREATEST của `xp` ngay dưới. Có điểm mới thì vẫn ghi
+        -- đè như cũ.
+        score       = COALESCE(EXCLUDED.score, learning_events.score),
+        max_score   = COALESCE(EXCLUDED.max_score, learning_events.max_score),
+        minutes     = COALESCE(EXCLUDED.minutes, learning_events.minutes),
+        xp          = GREATEST(EXCLUDED.xp, learning_events.xp),
+        meta        = EXCLUDED.meta'''
+
+#: Số dòng tối đa trong một câu INSERT. Postgres chặn ở 65535 tham số cho mỗi
+#: câu lệnh, mà mỗi dòng ở đây chiếm 15 tham số → trần cứng là 4369 dòng. Lấy
+#: 500 để còn xa ngưỡng đó, và để một câu lệnh không phình tới mức khó đọc khi
+#: nó xuất hiện trong log lỗi.
+_CHUNK = 500
+
+
+def _params(uid, kind, dedup_key, when, day, course_id, topic, ref_type, ref_id,
+            score, max_score, minutes, xp, source, meta):
+    """Xếp tham số đúng thứ tự ``_COLS``. Đây là chỗ DUY NHẤT biết thứ tự đó."""
+    return (uid, dedup_key, when, day, kind, course_id, topic, ref_type, ref_id,
+            score, max_score, minutes, xp or 0, source,
+            json.dumps(meta, ensure_ascii=False) if meta is not None else None)
+
+
+def _write(rows):
+    """Ghi ``rows`` (danh sách tuple từ ``_params``) bằng MỘT câu INSERT.
+
+    Ném lỗi ra ngoài — bên gọi tự bọc savepoint và tự nuốt, xem phần AN TOÀN ở
+    đầu module.
+    """
+    x('INSERT INTO learning_events (' + _COLS + ') VALUES '
+      + ', '.join([_ROW] * len(rows)) + ' ' + _ON_CONFLICT,
+      tuple(v for r in rows for v in r))
+
+
 def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, course_id=None,
                  topic=None, ref_type=None, ref_id=None, score=None, max_score=None,
                  minutes=None, xp=0, source=SOURCE_SYSTEM, meta=None):
@@ -104,6 +158,9 @@ def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, cou
     khi ngày nghiệp vụ đã tính theo giờ Việt Nam — hai thứ lệch nhau đúng một
     ngày trong khung 0h–7h sáng. Chỗ nào biết chắc ngày nghiệp vụ thì đưa vào
     đây thay vì để suy lại từ mốc giờ sai.
+
+    Ghi NHIỀU sự kiện một lúc thì dùng ``record_events`` — vòng lặp gọi hàm này
+    tốn ba lượt gọi CSDL cho mỗi sự kiện (đo 30/08/2026: 3 học viên = 9 lượt).
     """
     when = occurred_at or local_now()
     day = event_date or when.date()
@@ -111,30 +168,9 @@ def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, cou
         # Savepoint riêng: hỏng ở đây thì chỉ cuộn lại đúng câu INSERT này,
         # giao dịch của bên gọi (ghi tiến độ, cộng XP, chuỗi ngày) đi tiếp.
         with transaction.atomic():
-            x('''INSERT INTO learning_events
-                     (user_id, dedup_key, occurred_at, event_date, kind, course_id, topic,
-                      ref_type, ref_id, score, max_score, minutes, xp, source, meta)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
-                 ON CONFLICT (user_id, dedup_key) DO UPDATE SET
-                     occurred_at = EXCLUDED.occurred_at,
-                     event_date  = EXCLUDED.event_date,
-                     course_id   = EXCLUDED.course_id,
-                     topic       = EXCLUDED.topic,
-                     -- COALESCE chứ không ghi đè thẳng: học lại một bài mà
-                     -- lần này không làm quiz sẽ gửi score = NULL, và ghi đè
-                     -- thẳng thì XOÁ MẤT điểm đã đo được lần trước — ô năng
-                     -- lực tụt về "chưa đủ dữ liệu", sổ điểm mất dòng, đường
-                     -- cong mất điểm, không có đường khôi phục. Cùng lý do với
-                     -- COALESCE của `minutes` và GREATEST của `xp` ngay dưới.
-                     -- Có điểm mới thì vẫn ghi đè như cũ.
-                     score       = COALESCE(EXCLUDED.score, learning_events.score),
-                     max_score   = COALESCE(EXCLUDED.max_score, learning_events.max_score),
-                     minutes     = COALESCE(EXCLUDED.minutes, learning_events.minutes),
-                     xp          = GREATEST(EXCLUDED.xp, learning_events.xp),
-                     meta        = EXCLUDED.meta''',
-              (uid, dedup_key, when, day, kind, course_id, topic,
-               ref_type, ref_id, score, max_score, minutes, xp or 0, source,
-               json.dumps(meta, ensure_ascii=False) if meta is not None else None))
+            _write([_params(uid, kind, dedup_key, when, day, course_id, topic,
+                            ref_type, ref_id, score, max_score, minutes, xp,
+                            source, meta)])
         return True
     except DatabaseError as exc:
         # Điển hình: bảng chưa tồn tại vì mã lên trước bootstrap_schema.
@@ -143,6 +179,62 @@ def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, cou
     except Exception as exc:                                  # noqa: BLE001
         logger.warning('learning_events: lỗi không lường trước ở %s — %s', dedup_key, exc)
         return False
+
+
+def record_events(events):
+    """Ghi MỘT MẺ sự kiện. Trả về số dòng đã ghi.
+
+    Mỗi phần tử là một dict nhận đúng các tham số của ``record_event``
+    (``uid``, ``kind``, ``dedup_key`` bắt buộc; phần còn lại tuỳ chọn).
+
+    VÌ SAO CÓ HÀM NÀY: gọi ``record_event`` trong vòng lặp tốn ba lượt gọi CSDL
+    cho mỗi sự kiện — SAVEPOINT, INSERT, RELEASE — vì mỗi lời gọi tự mở một
+    savepoint riêng. Đo được ngày 31/08/2026 trên đường điểm danh: 3 học viên =
+    9 lượt. Một lớp 30 em là 90 lượt cho một lần bấm Lưu, mà giảng viên đang
+    đứng chờ trước mặt cả lớp.
+
+    TRÙNG TRONG CÙNG MẺ được gộp, giữ dòng CUỐI. Bắt buộc phải gộp: Postgres ném
+    "ON CONFLICT DO UPDATE command cannot affect row a second time" nếu một câu
+    INSERT chạm hai lần vào cùng một khoá ``(user_id, dedup_key)`` — tức một
+    danh sách gửi lên có id lặp sẽ thành lỗi 500 thay vì ghi được. Cùng cái bẫy
+    đã gặp ở đường lưu điểm danh (teaching/sessions.py).
+
+    ĐÁNH ĐỔI ĐÃ NHẬN: một câu INSERT thì một dòng hỏng làm hỏng cả mẻ, trong khi
+    vòng lặp cũ chỉ mất đúng dòng đó. Nên khi mẻ hỏng, hàm này QUAY VỀ ghi lẻ
+    từng dòng — chậm, nhưng chỉ chậm trên đường lỗi, và giữ đúng tính chất cũ là
+    một sự kiện hỏng không kéo theo những sự kiện còn lại.
+    """
+    # Giữ CẢ tham số lẫn dict gốc, cùng một thứ tự: nhánh dự phòng ở dưới cần
+    # gọi lại record_event trên đúng những dòng của mẻ vừa hỏng, mà sau khi gộp
+    # trùng thì chỉ số không còn khớp với `events` ban đầu nữa.
+    gom = {}
+    for e in events:
+        when = e.get('occurred_at') or local_now()
+        day = e.get('event_date') or when.date()
+        gom[(e['uid'], e['dedup_key'])] = (_params(
+            e['uid'], e['kind'], e['dedup_key'], when, day,
+            e.get('course_id'), e.get('topic'), e.get('ref_type'), e.get('ref_id'),
+            e.get('score'), e.get('max_score'), e.get('minutes'), e.get('xp', 0),
+            e.get('source', SOURCE_SYSTEM), e.get('meta')), e)
+
+    rows = [p for p, _ in gom.values()]
+    goc = [e for _, e in gom.values()]
+    da_ghi = 0
+    for i in range(0, len(rows), _CHUNK):
+        me = rows[i:i + _CHUNK]
+        try:
+            with transaction.atomic():
+                _write(me)
+            da_ghi += len(me)
+        except Exception as exc:                              # noqa: BLE001
+            logger.warning('learning_events: mẻ %d dòng hỏng, ghi lẻ từng dòng — %s',
+                           len(me), exc)
+            for e in goc[i:i + _CHUNK]:
+                if record_event(e['uid'], e['kind'], e['dedup_key'],
+                                **{k: v for k, v in e.items()
+                                   if k not in ('uid', 'kind', 'dedup_key')}):
+                    da_ghi += 1
+    return da_ghi
 
 
 def pct(score, max_score):

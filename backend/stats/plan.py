@@ -51,6 +51,14 @@ MAX_PLAN_WEEKS = 40
 FALLBACK_WEEKS = 12
 #: Số tuần hiển thị mặc định ở màn hình gọn.
 DEFAULT_VIEW_WEEKS = 4
+#: Số mục tối đa nhét vào MỘT câu INSERT khi lưu kế hoạch.
+#:
+#: Postgres chặn ở 65535 tham số mỗi câu lệnh, mỗi mục ở đây chiếm 9 tham số.
+#: Trần lý thuyết của kế hoạch là MAX_PLAN_WEEKS × (100 bài + 25 buổi ôn + 20
+#: đề) = 5.800 mục = 52.200 tham số — vẫn dưới ngưỡng, nhưng sát đến mức không
+#: nên gửi nguyên khối, và trần đó phụ thuộc TARGET_LIMITS ở một tệp khác nên
+#: một ngày nào đó nó nới ra mà không ai nhớ tới chỗ này.
+ITEM_CHUNK = 500
 
 STATUS_TODO = 'todo'
 STATUS_SKIPPED = 'skipped'
@@ -242,13 +250,21 @@ def generate(uid):
                             VALUES (%s,%s,%s,%s,%s,%s::jsonb,TRUE) RETURNING id''',
                          (uid, now, now, now, goals.get('examDate'),
                           json.dumps(basis, ensure_ascii=False)))['id']
-        for it in items:
-            x('''INSERT INTO study_plan_items
-                     (plan_id, week_start, sort_order, kind, course_id, lesson_no,
-                      topic, title, reason)
-                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
-              (plan_id, it['week_start'], it['sort_order'], it['kind'],
-               it['course_id'], it['lesson_no'], it['topic'], it['title'], it['reason']))
+        # MỘT câu cho cả mẻ thay vì một câu mỗi mục. Đo 31/08/2026: sinh lại kế
+        # hoạch cho một học viên tốn 147 lượt gọi Neon, trong đó 136 là INSERT
+        # từng mục một. Cả vòng lặp nằm trong transaction.atomic() nên mỗi lượt
+        # là một chặng khứ hồi phải chờ xong mới đi tiếp — và người dùng đang
+        # nhìn nút "Sinh lại kế hoạch" quay.
+        for i in range(0, len(items), ITEM_CHUNK):
+            me = items[i:i + ITEM_CHUNK]
+            x('INSERT INTO study_plan_items '
+              '(plan_id, week_start, sort_order, kind, course_id, lesson_no, '
+              'topic, title, reason) VALUES '
+              + ', '.join(['(%s,%s,%s,%s,%s,%s,%s,%s,%s)'] * len(me)),
+              tuple(v for it in me for v in
+                    (plan_id, it['week_start'], it['sort_order'], it['kind'],
+                     it['course_id'], it['lesson_no'], it['topic'], it['title'],
+                     it['reason'])))
 
     return basis, None
 

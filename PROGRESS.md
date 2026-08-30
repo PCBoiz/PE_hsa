@@ -43,7 +43,7 @@ Vai khác: id 11 = Giảng viên · id 12, 13 = Học viên.
 
 ## Trạng thái 30/08/2026
 
-**Nhánh:** `erp`, 18 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
+**Nhánh:** `erp`, 19 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
 chờ người dùng cho phép). `master` có `autoDeploy: true` nên gộp vào đó là deploy
 production ngay.
 
@@ -261,16 +261,73 @@ repo (ví dụ đoạn giải thích trần 50 tài khoản mỗi mẻ) mới th
 màn hình) và T41–T44 (gộp INSERT, bất biến CSDL, `terms`, `attendance_taken_at`).
 Còn T13 (khả năng tiếp cận) + T14 (nhất quán giao diện) chưa chạy.
 
+### 31/08/2026 — T41 xong: ba vòng lặp INSERT gộp thành một câu
+
+Đo trước khi sửa, không suy: mỗi `record_event` tốn **ba** lượt gọi Neon
+(SAVEPOINT / INSERT / RELEASE) vì tự mở savepoint riêng.
+
+```
+                              trước   sau
+diem danh 3 hoc vien             9      3      (va nay KHONG doi theo si so)
+plan.generate user 9           147     12
+plan.generate user 13           95     11
+```
+
+Điểm danh nay là **hằng số** chứ không tuyến tính theo sĩ số — lớp 30 em trước
+đây là 90 lượt cho một lần bấm Lưu, trong khi giảng viên đứng chờ trước cả lớp.
+
+**Tìm thêm vòng lặp THỨ BA** mà T41 không kể tên: `backfill_learning_events`
+gọi `record_event` trong vòng lặp trên **toàn bộ** lịch sử học của mọi học viên,
+tức số lượt tăng theo cỡ dữ liệu (5.000 sự kiện = 15.000 chặng khứ hồi). Điểm
+nghẽn nằm gọn ở `_emit` nên vá bằng đệm + `_flush` sau mỗi nguồn. Nhân tiện bỏ
+một tham số bị truyền lặp ở cả 5 chỗ gọi (`kind` xuất hiện hai lần, hai bản có
+thể lệch nhau mà không ai biết).
+
+**Giữ kỷ luật một cửa:** câu INSERT chỉ còn MỘT bản (`_COLS` / `_ROW` /
+`_ON_CONFLICT`), dùng chung cho cả ghi lẻ lẫn ghi mẻ. Nếu để hai bản chép, chỉ
+cần bản mẻ thiếu một `COALESCE` là ghi lẻ giữ được điểm cũ còn ghi mẻ xoá mất —
+hai đường ghi cùng một bảng cho hai kết quả khác nhau, và không phép kiểm nào
+bắt được vì cả hai đều "chạy được".
+
+**Đánh đổi đã nhận và đã vá:** một câu INSERT thì một dòng hỏng kéo đổ cả mẻ,
+trong khi vòng lặp cũ chỉ mất đúng dòng đó. Nên `record_events` khi mẻ hỏng sẽ
+QUAY VỀ ghi lẻ từng dòng. Phép kiểm 4 đã kích hoạt đúng nhánh này (trộn một
+`user_id` không tồn tại vào mẻ): log báo mẻ hỏng, rồi 3 dòng hợp lệ vẫn vào đủ.
+
+**Kiểm 18 phép, 18 đạt**, mọi thứ chạy trong transaction rồi cuộn lại nên CSDL
+không đổi một dòng:
+```
+ghi me vs ghi le — 15 cot x 3 dong giong het            OK
+diem danh LAI -> CAP NHAT, khong de them dong           OK
+trung user_id trong cung mot me (double-click)          OK   gop, giu dong CUOI
+mot dong hong KHONG keo do nhung dong con lai           OK   3/3 dong hop le vao
+plan.generate gop me vs tung cau — 136/13/85 muc        OK   giong het
+qua CHINH VIEW: HTTP 200, 3 dong, id la duoc bao lai    OK   7/7
+```
+
+Bẫy đã tránh: trần 65.535 tham số mỗi câu lệnh của Postgres. Kế hoạch học có
+trần lý thuyết 40 tuần × (100 bài + 25 buổi ôn + 20 đề) = 5.800 mục = 52.200
+tham số — dưới ngưỡng nhưng sát, nên chia mẻ 500 dòng ở cả hai chỗ.
+
+Một lỗi tự bắt được giữa chừng: nhánh dự phòng ban đầu cắt lát danh sách **gốc**
+trong khi mẻ đã gộp trùng, nên khi mẻ hỏng nó sẽ ghi lại nhầm dòng. Sửa bằng
+cách giữ cả tham số lẫn dict gốc theo cùng thứ tự.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
-Hạn mức phiên cạn lúc ~1h sáng 31/08 (đặt lại 2h). Mọi việc đã commit, không mất gì.
+Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T49) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T41) đã commit xong.
 
 **Ba việc CẦN NGƯỜI DÙNG, không tự làm được:**
-1. `git push -u origin erp` — bị bộ lọc quyền chặn suốt phiên. 18 mốc nằm ở máy.
+1. `git push -u origin erp` — bị bộ lọc quyền của chế độ auto chặn (không
+   phải lỗi git: `git push --dry-run` chạy lọt và GitHub trả lời bình thường).
+   19 mốc nằm ở máy. Ba cách cho qua: anh tự chạy lệnh · thêm
+   `.claude/settings.json` với `"allow": ["Bash(git push -u origin erp:*)"]`
+   (cố ý HẸP — luật `Bash(git push:*)` cho phép luôn push vào `master`, tức
+   deploy production) · hoặc rời auto mode để nó hỏi thay vì chặn.
 2. T39 — xoay `SECRET_KEY` (19 byte, RFC 7518 đòi ≥32). Sinh bằng
    `python -c "import secrets;print(secrets.token_urlsafe(48))"`, dán vào
    `backend/.env` và Render → Environment. Mọi người đang đăng nhập sẽ bị đăng
@@ -278,7 +335,6 @@ Hạn mức phiên cạn lúc ~1h sáng 31/08 (đặt lại 2h). Mọi việc đ
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T41 (gộp INSERT: `_emit_events` 3N+1 và `plan.generate` 85–139 câu) →
 T46 (xác nhận lưu điểm danh — `Toast` đã dựng sẵn, chưa gắn) →
 T45 (bảng giấu 62% cột trên điện thoại) →
 T47 (`serverJson` vứt câu lỗi backend) →

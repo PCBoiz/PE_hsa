@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 from common.clock import local_now
 from common.db import q
 from common.events import (KIND_LESSON, KIND_MISSION, KIND_MOCK,
-                           KIND_MOCK_SECTION, KIND_REVIEW_QUIZ, forget_events, record_event)
+                           KIND_MOCK_SECTION, KIND_REVIEW_QUIZ, forget_events, record_events)
 
 #: Nhãn hợp phần trong section_scores_json → khoá học. PHẢI khớp
 #: mockexam/views.py:SECTION_LABELS; lệch một dấu là cả hợp phần biến mất.
@@ -65,11 +65,16 @@ class Command(BaseCommand):
         self.dry = opts.get('dry_run')
         self.now = local_now()
         self.counts = {}
+        self.buffer = []
 
         self._lessons()
+        self._flush()
         self._mocks()
+        self._flush()
         self._quizzes()
+        self._flush()
         self._missions()
+        self._flush()
 
         for kind, n in sorted(self.counts.items()):
             self.stdout.write('  · %s: %d' % (kind, n))
@@ -78,10 +83,29 @@ class Command(BaseCommand):
             '%sbackfill_learning_events: %d sự kiện' % (head, sum(self.counts.values()))))
 
     # ── tiện ích ────────────────────────────────────────────────────────────
-    def _emit(self, kind, *a, **kw):
+    def _emit(self, kind, uid, dedup_key, **kw):
+        """Xếp một sự kiện vào đệm. KHÔNG ghi ngay — xem ``_flush``."""
         self.counts[kind] = self.counts.get(kind, 0) + 1
         if not self.dry:
-            record_event(*a, **kw)
+            self.buffer.append(dict(kw, uid=uid, kind=kind, dedup_key=dedup_key))
+
+    def _flush(self):
+        """Đẩy cả đệm xuống CSDL bằng ít câu lệnh nhất.
+
+        Trước đây mỗi sự kiện gọi ``record_event`` riêng, tức BA lượt gọi Neon
+        cho một dòng (SAVEPOINT / INSERT / RELEASE — đo 31/08/2026). Lệnh này
+        chạy trên TOÀN BỘ lịch sử học của mọi học viên, nên số lượt tăng tuyến
+        tính theo cỡ dữ liệu: nạp lại 5.000 sự kiện là 15.000 chặng khứ hồi.
+
+        Gọi sau MỖI nguồn chứ không dồn tới cuối lệnh: nguồn sau hỏng thì nguồn
+        trước đã nằm an toàn trong CSDL, và đệm không phình theo cỡ dữ liệu.
+        Riêng với quiz ôn tập, thứ tự này còn bắt buộc về mặt đúng-sai — toàn bộ
+        ``forget_events`` chạy trong vòng lặp, xong mới tới lượt ghi, nên không
+        có cú xoá nào lỡ tay cuốn theo dòng vừa ghi.
+        """
+        if self.buffer:
+            record_events(self.buffer)
+            self.buffer = []
 
     def _where_user(self, col):
         return (' AND %s=%%s' % col, (self.uid_filter,)) if self.uid_filter else ('', ())
@@ -97,7 +121,7 @@ class Command(BaseCommand):
                     WHERE lp.status = 'completed' ''' + cond, params)
         for r in rows:
             self._emit(
-                KIND_LESSON, r['user_id'], KIND_LESSON, 'lesson:%s' % r['lesson_id'],
+                KIND_LESSON, r['user_id'], 'lesson:%s' % r['lesson_id'],
                 occurred_at=_when(r['completed_at'], self.now),
                 course_id=r['course_id'], topic=(r['module'] or None),
                 ref_type='lesson', ref_id=str(r['lesson_id']),
@@ -117,7 +141,7 @@ class Command(BaseCommand):
             when = _when(r['submitted_at'], self.now)
             minutes = max(1, round((r['duration_seconds'] or 0) / 60)) or None
             self._emit(
-                KIND_MOCK, r['user_id'], KIND_MOCK, 'mock:%s' % r['id'],
+                KIND_MOCK, r['user_id'], 'mock:%s' % r['id'],
                 occurred_at=when, ref_type='mock_attempt', ref_id=str(r['id']),
                 score=r['score'], max_score=r['total'], minutes=minutes,
                 meta={'examId': r['exam_id'], 'backfill': True},
@@ -132,7 +156,7 @@ class Command(BaseCommand):
                 # dedup_key dùng course_id (không dùng nhãn) để trùng khớp với
                 # bản ghi trực tiếp của mockexam/views.py, kể cả khi nhãn đổi.
                 self._emit(
-                    KIND_MOCK_SECTION, r['user_id'], KIND_MOCK_SECTION,
+                    KIND_MOCK_SECTION, r['user_id'],
                     'mocksec:%s:%s' % (r['id'], course_id),
                     occurred_at=when, course_id=course_id,
                     ref_type='mock_attempt', ref_id=str(r['id']),
@@ -188,7 +212,7 @@ class Command(BaseCommand):
                     bucket[0] += 1
             for topic, (ok, n) in per_topic.items():
                 self._emit(
-                    KIND_REVIEW_QUIZ, r['user_id'], KIND_REVIEW_QUIZ,
+                    KIND_REVIEW_QUIZ, r['user_id'],
                     'quiz:%s:%s' % (r['quiz_id'], topic),
                     occurred_at=_when(r['submitted_at'], self.now),
                     course_id=r['course_id'], topic=topic,
@@ -207,7 +231,7 @@ class Command(BaseCommand):
                     WHERE TRUE''' + cond, params)
         for r in rows:
             self._emit(
-                KIND_MISSION, r['user_id'], KIND_MISSION,
+                KIND_MISSION, r['user_id'],
                 'mission:%s:%s' % (r['mission_id'], r['mission_date']),
                 occurred_at=_when(r['claimed_at'], self.now),
                 # claimed_at cũ ghi bằng now() của Postgres = UTC, lệch giờ Việt
