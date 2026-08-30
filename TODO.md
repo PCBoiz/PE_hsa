@@ -257,7 +257,7 @@ một tên mang hai nghĩa · tiêu đề bảng nói rõ "3 đang học + 1 đ�
 Ghi nhận thêm: frontend lọc theo `alerts.length` (MỌI mức) trong khi backend
 `atRisk` chỉ đếm mức cao — hai luật khác nhau cho cùng một danh sách.
 
-### [ ] T49 · Ngôn ngữ máy lọt ra giao diện, và hai màn hình cùng khu cư xử ngược nhau
+### [~] T49 · Ngôn ngữ máy lọt ra giao diện — VÁ MỘT PHẦN 30/08
 · Nhật ký hiện thẳng `attendance.mark`, `session.create` làm chip VÀ làm nhãn ô
   chọn — người dùng phải chọn từ thực đơn toàn định danh tiếng Anh có dấu chấm.
 · Ô vai trò hiện `admin` cạnh `Giảng viên`/`Học viên`; bản đồ nhãn
@@ -270,6 +270,18 @@ Ghi nhận thêm: frontend lọc theo `alerts.length` (MỌI mức) trong khi ba
 · Bộ lọc màn hình Tài khoản **không vào URL** (bấm Quay lại nhảy ra
   `about:blank`), trong khi màn hình Nhật ký ngay cạnh lại làm đúng.
 · Lớp hiện theo TÊN trên màn hình nhưng theo MÃ trong CSV.
+
+**Đã vá:** thêm `errorText()` vào `lib/api.ts` — một cửa dịch cả BA hình dạng lỗi
+backend đang trả (`{error: chuỗi}` · `{error: {message}}` của `common/errors.py`
+· `{errors: {trường: câu}}`), có bảng câu tiếng Việt cho từng mã HTTP làm mức
+cuối. Gắn vào 7 chỗ gọi ở hai màn hình. Đo ba ca đã hỏng:
+`429 error=object` → "Bạn thao tác quá nhanh, chờ một chút." ·
+`500 không thân` → "Hệ thống gặp lỗi. Thử lại; nếu vẫn vậy thì báo kỹ thuật." ·
+`400 errors={...}` → câu lỗi của trường. `[object Object]` không còn trên trang.
+
+**Còn lại:** nhật ký hiện `attendance.mark` · ô vai trò hiện `admin` · bộ lọc
+màn hình Tài khoản không vào URL · lớp hiện theo tên trên màn hình, theo mã
+trong CSV.
 
 ### [ ] T50 · Nhập hàng loạt: con số không cộng lại được, và bấm hai lần gửi hai yêu cầu
 "8 dòng đã dán" rồi "Sẽ tạo 2, bỏ qua 5" — 2+5≠8 vì hai chỗ đếm khác nhau (máy

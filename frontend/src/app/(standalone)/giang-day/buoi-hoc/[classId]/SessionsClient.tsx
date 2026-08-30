@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button, Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, errorText } from '@/lib/api';
 
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
@@ -221,7 +221,7 @@ function NewSession({
         }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Không tạo được buổi học');
+      if (!r.ok) throw new Error(errorText(r.status, d));
       if (d.warning) onError(d.warning);
       setTopic('');
       setOpen(false);
@@ -313,7 +313,7 @@ function Attendance({
       try {
         const r = await apiFetch(`/api/teach/sessions/${sessionId}/attendance`);
         const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error || 'Không tải được danh sách lớp');
+        if (!r.ok) throw new Error(errorText(r.status, d));
         if (alive) setRows(d.students ?? []);
       } catch (e) {
         onError(e instanceof Error ? e.message : 'Không tải được danh sách lớp');
@@ -350,7 +350,7 @@ function Attendance({
         body: JSON.stringify({ marks }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Không lưu được điểm danh');
+      if (!r.ok) throw new Error(errorText(r.status, d));
       setDirty(false);
       onSaved();
     } catch (e) {

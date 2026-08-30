@@ -247,6 +247,16 @@ mức cao — hai luật cho cùng một danh sách.
 Đo trên trình duyệt thật sau khi khởi động lại Django: 3 · 3/25 · "3 đang học +
 1 đã rời lớp", bảng vẫn 4 dòng, "Cần chú ý" sạch.
 
+### 30/08/2026 — T49 (một phần): câu lỗi nói tiếng người
+Backend trả lỗi theo BA hình dạng và mỗi màn hình tự đoán một kiểu, nên cùng một
+sự cố ra hai kết quả tệ khác nhau: `[object Object]` khi `error` là đối tượng,
+và "Máy chủ trả lỗi 500" — mã HTTP trần trên màn hình trợ giảng.
+Gom về `errorText()` trong `lib/api.ts`: đọc được cả ba hình dạng, có bảng câu
+tiếng Việt theo mã HTTP làm mức cuối. Nhờ vậy những câu lỗi công phu nhất trong
+repo (ví dụ đoạn giải thích trần 50 tài khoản mỗi mẻ) mới thật sự tới được người
+đọc — trước đây chúng chỉ tới nơi khi trúng đúng một trong ba hình dạng.
+Đo ba ca đã hỏng, cả ba ra câu tiếng Việt đọc hiểu ngay; `[object Object]` biến mất.
+
 **Tiếp theo:** T45–T50 (giao diện điện thoại, xác nhận lưu, ngôn ngữ máy lọt ra
 màn hình) và T41–T44 (gộp INSERT, bất biến CSDL, `terms`, `attendance_taken_at`).
 Còn T13 (khả năng tiếp cận) + T14 (nhất quán giao diện) chưa chạy.

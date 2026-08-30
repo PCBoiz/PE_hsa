@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, Card, CardHead, Chip, EmptyState, Modal, TableWrap, Td, Th, Tr } from '@/components/ui';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, errorText } from '@/lib/api';
 
 export type ClassLite = { id: number; name: string; code?: string | null };
 
@@ -110,7 +110,7 @@ export default function AccountsClient({
       setErr(null);
       try {
         const r = await apiFetch(`/api/admin/users?${query(p)}`);
-        if (!r.ok) throw new Error('Máy chủ trả lỗi ' + r.status);
+        if (!r.ok) throw new Error(errorText(r.status, await r.json().catch(() => null)));
         setData(await r.json());
         setPage(p);
       } catch (e) {
@@ -144,7 +144,7 @@ export default function AccountsClient({
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Máy chủ trả lỗi ' + r.status);
+      if (!r.ok) throw new Error(errorText(r.status, d));
       ok(d as never);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Thao tác không thành công');
@@ -194,7 +194,7 @@ export default function AccountsClient({
           body: JSON.stringify({ role: next }),
         });
         const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error || 'Không đổi được vai trò');
+        if (!r.ok) throw new Error(errorText(r.status, d));
         void load();
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Không đổi được vai trò');
@@ -470,7 +470,7 @@ function BulkImport({
         body: JSON.stringify({ text, role, class_id: classId || null, dry_run: dryRun }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Máy chủ trả lỗi ' + r.status);
+      if (!r.ok) throw new Error(errorText(r.status, d));
       if (dryRun) setPreview(d);
       else {
         setDone(d);
