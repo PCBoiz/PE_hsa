@@ -5,26 +5,46 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
 import { apiFetch } from '@/lib/api';
 
+/**
+ * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
+ *   · thân REQUEST đọc snake_case (`starts_at`, `duration_minutes`, `user_id`)
+ *     — xem `_clean_session_payload` trong teaching/sessions.py
+ *   · thân RESPONSE trả camelCase (`startsAt`, `durationMinutes`, `userId`)
+ *     — xem `_session_dict`, khoá đặt vậy cho khớp teaching/reports.py
+ *
+ * Bản đầu của tệp này (30/08/2026) đọc phản hồi bằng snake_case, nên `startsAt`
+ * luôn `undefined` → ô ngày trống, và `counts` luôn `undefined` → chip "chưa
+ * điểm danh" (con số chú thích trong sessions.py gọi là "giảng viên cần nhất")
+ * KHÔNG BAO GIỜ hiện. Cả màn hình chết mà tsc/eslint/pytest đều xanh.
+ * Đổi tên khoá ở đây thì phải mở trang thật trong trình duyệt xem lại.
+ */
 export type SessionRow = {
   id: number;
-  starts_at: string;
-  duration_minutes: number | null;
+  startsAt: string | null;
+  durationMinutes: number | null;
   topic: string | null;
   status: string;
   note: string | null;
-  meeting_url?: string | null;
-  counts?: { present: number; late: number; absent: number; excused: number; unmarked: number };
+  meetingUrl?: string | null;
+  attendance?: {
+    present: number;
+    late: number;
+    absent: number;
+    excused: number;
+    unmarked: number;
+  };
 };
 
 type Mark = 'present' | 'late' | 'absent' | 'excused';
 
 type Student = {
-  user_id: number;
+  userId: number;
   name: string | null;
   email: string | null;
   status: Mark | null;
   note?: string | null;
-  absences?: number;
+  /** Số buổi vắng luỹ kế trong lớp này (buổi đã huỷ KHÔNG tính). */
+  absentTotal?: number;
 };
 
 /** Bốn trạng thái điểm danh — nhãn tiếng Việt và tông màu dùng chung một chỗ. */
@@ -35,7 +55,8 @@ const MARKS: { key: Mark; label: string; tone: 'good' | 'warn' | 'bad' | 'brand'
   { key: 'excused', label: 'Có phép', tone: 'brand' },
 ];
 
-function fmt(iso: string) {
+function fmt(iso: string | null) {
+  if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const p = (n: number) => String(n).padStart(2, '0');
@@ -94,7 +115,7 @@ export default function SessionsClient({
         ) : (
           <ul className="flex flex-col gap-2">
             {sessions.map((s) => {
-              const c = s.counts;
+              const c = s.attendance;
               return (
                 <li key={s.id}>
                   <Card tone="sunken" padding="sm">
@@ -102,8 +123,8 @@ export default function SessionsClient({
                       <div className="min-w-0 flex-1">
                         <p className="text-subhead text-ink">{s.topic || 'Buổi học'}</p>
                         <p className="mt-0.5 text-small text-ink-3">
-                          {fmt(s.starts_at)}
-                          {s.duration_minutes ? ` · ${s.duration_minutes} phút` : ''}
+                          {fmt(s.startsAt)}
+                          {s.durationMinutes ? ` · ${s.durationMinutes} phút` : ''}
                         </p>
                       </div>
 
@@ -158,14 +179,20 @@ function NewSession({
   const [minutes, setMinutes] = useState('90');
   const [busy, setBusy] = useState(false);
 
-  // Gợi ý sẵn 19:30 hôm nay: lớp online của trung tâm học buổi tối, và ô giờ
-  // trống bắt giảng viên gõ đủ ngày-tháng-năm-giờ-phút mỗi lần tạo buổi.
-  useEffect(() => {
-    if (!open || startsAt) return;
+  /* Gợi ý sẵn 19:30 hôm nay: lớp online của trung tâm học buổi tối, và ô giờ
+     trống bắt giảng viên gõ đủ ngày-tháng-năm-giờ-phút mỗi lần tạo buổi.
+
+     Tính TRONG TRÌNH XỬ LÝ SỰ KIỆN chứ không trong useEffect, vì hai lý do:
+     · `setState` trong effect là thứ eslint `react-hooks/set-state-in-effect`
+       chặn — nó bắt component vẽ hai lần cho một giá trị đã biết trước.
+     · `new Date()` chạy cả lúc dựng phía máy chủ, mà máy chủ ở múi giờ khác
+       máy người dùng — giá trị dựng sẵn sẽ lệch giá trị lúc trang sống dậy. */
+  function openForm() {
     const d = new Date();
     d.setHours(19, 30, 0, 0);
-    setStartsAt(localInputValue(d));
-  }, [open, startsAt]);
+    setStartsAt((v) => v || localInputValue(d));
+    setOpen(true);
+  }
 
   if (!open) {
     return (
@@ -174,7 +201,7 @@ function NewSession({
           <p className="min-w-0 flex-1 text-body text-ink-2">
             Thêm một buổi vào lịch lớp để điểm danh.
           </p>
-          <Button onClick={() => setOpen(true)}>Tạo buổi học</Button>
+          <Button onClick={openForm}>Tạo buổi học</Button>
         </div>
       </Card>
     );
@@ -299,7 +326,7 @@ function Attendance({
   }, [sessionId, onError]);
 
   function set(userId: number, mark: Mark) {
-    setRows((prev) => prev?.map((s) => (s.user_id === userId ? { ...s, status: mark } : s)) ?? prev);
+    setRows((prev) => prev?.map((s) => (s.userId === userId ? { ...s, status: mark } : s)) ?? prev);
     setDirty(true);
   }
 
@@ -316,7 +343,7 @@ function Attendance({
     try {
       const marks = rows
         .filter((s) => s.status)
-        .map((s) => ({ user_id: s.user_id, status: s.status }));
+        .map((s) => ({ user_id: s.userId, status: s.status }));
       const r = await apiFetch(`/api/teach/sessions/${sessionId}/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -364,16 +391,16 @@ function Attendance({
       <ul className="mt-4 flex flex-col gap-2">
         {rows.map((s) => (
           <li
-            key={s.user_id}
+            key={s.userId}
             className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-surface px-3 py-2"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate text-body font-semibold text-ink">
-                {s.name || s.email || `#${s.user_id}`}
+                {s.name || s.email || `#${s.userId}`}
               </span>
-              {typeof s.absences === 'number' && s.absences > 0 && (
+              {!!s.absentTotal && (
                 <span className="block text-small text-warning-ink">
-                  đã nghỉ {s.absences} buổi
+                  đã nghỉ {s.absentTotal} buổi
                 </span>
               )}
             </span>
@@ -385,7 +412,7 @@ function Attendance({
                     key={m.key}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => set(s.user_id, m.key)}
+                    onClick={() => set(s.userId, m.key)}
                     className={[
                       'min-h-11 rounded-md px-3 text-small font-semibold',
                       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',

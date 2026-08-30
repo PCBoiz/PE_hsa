@@ -3973,6 +3973,14 @@ function forumClearSearch() {
           + (c.examDate ? ' · kỳ thi ' + viDate(c.examDate) : '') + '</p></div>'
         + (c.meetingUrl ? '<a class="tc-link" href="' + esc(c.meetingUrl)
             + '" target="_blank" rel="noopener">Vào phòng học →</a>' : '')
+        /* Lối vào sổ buổi học & điểm danh (30/08/2026). Trước dòng này màn hình
+           điểm danh KHÔNG được liên kết từ bất kỳ đâu — giảng viên chỉ tới được
+           nếu gõ tay đường dẫn kèm đúng id lớp. Một tính năng không có lối vào
+           thì bằng không có tính năng, mà mã vẫn phải bảo trì.
+           Đặt ở đây chứ không phải ở danh sách lớp bên trái vì mỗi lớp bên đó
+           là một <button>, mà lồng <a> trong <button> là HTML không hợp lệ. */
+        + '<a class="tc-link" href="/giang-day/buoi-hoc/' + c.id + '">'
+          + 'Sổ buổi học &amp; điểm danh →</a>'
       + '</div>'
       + '<div class="tc-tiles">'
         + tile(s.students, 'học viên')
