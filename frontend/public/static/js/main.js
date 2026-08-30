@@ -92,64 +92,23 @@ window.toggleSidebar = function() {
   }
 };
 
-function _getMermaidTheme() {
-    var dark = document.body.classList.contains('dark');
-    if (dark) {
-        return {
-            theme: 'base',
-            themeVariables: {
-                background:            '#0A101F',
-                primaryColor:          '#050E1F',
-                primaryBorderColor:    '#38BDF8',
-                primaryTextColor:      '#BAE6FD',
-                secondaryColor:        '#011C0E',
-                secondaryBorderColor:  '#4ADE80',
-                secondaryTextColor:    '#BBF7D0',
-                tertiaryColor:         '#0F0520',
-                tertiaryBorderColor:   '#A78BFA',
-                tertiaryTextColor:     '#DDD6FE',
-                lineColor:             '#475569',
-                edgeLabelBackground:   '#1E293B',
-                clusterBkg:            '#1E293B',
-                clusterBorder:         '#334155',
-                titleColor:            '#F1F5F9',
-                nodeTextColor:         '#F1F5F9',
-                fontFamily:            'inherit',
-            }
-        };
-    }
-    return {
-        theme: 'base',
-        themeVariables: {
-            background:            '#FFFFFF',
-            primaryColor:          '#EFF6FF',
-            primaryBorderColor:    '#60A5FA',
-            primaryTextColor:      '#1D4ED8',
-            secondaryColor:        '#F0FDF4',
-            secondaryBorderColor:  '#34D399',
-            secondaryTextColor:    '#065F46',
-            tertiaryColor:         '#F5F3FF',
-            tertiaryBorderColor:   '#A78BFA',
-            tertiaryTextColor:     '#5B21B6',
-            lineColor:             '#94A3B8',
-            edgeLabelBackground:   '#F8FAFC',
-            clusterBkg:            '#FAFAFA',
-            clusterBorder:         '#E5E7EB',
-            titleColor:            '#1F2937',
-            nodeTextColor:         '#1F2937',
-            fontFamily:            'inherit',
-        }
-    };
-}
+/* mermaid + svg-pan-zoom: ĐÃ GỠ ngày 30/08/2026.
+   Hai thư viện này nạp trên MỌI lượt vào dashboard — mermaid 3,41 MB và
+   svg-pan-zoom 29 kB, đo thẳng từ jsdelivr. Cả hai KHÔNG làm gì cả:
+     · svgPanZoom() không được gọi ở bất kỳ đâu trong mã.
+     · mermaid chỉ được gọi đúng một lần, `mermaid.initialize(...)`, để nạp một
+       bộ màu. Không có mermaid.render / .run / .init, không có thẻ
+       `<pre class="mermaid">` nào trong toàn bộ src/ và public/static/. Lộ
+       trình được vẽ bằng bộ vẽ RIÊNG của sản phẩm (_rmVRender) — mermaid ở đây
+       chỉ còn là ĐỊNH DẠNG LƯU của `roadmap.mermaid_def`, một chuỗi văn bản mà
+       chính sản phẩm tự phân tích lấy (_rmVFromMermaid). Đọc định dạng đó
+       không cần thư viện.
+   Nói cách khác: 3,44 MB tải về, phân tích và chạy mỗi lượt mở trang, để cấu
+   hình một bộ vẽ chưa bao giờ vẽ. `#roadmap-mermaid-wrap` trong dashboard.css
+   cũng là CSS chết cùng đợt — giữ lại vô hại nên chưa đụng tới.
+   Muốn dùng lại mermaid thật thì nạp động ngay tại chỗ cần vẽ, đừng nạp sẵn. */
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof mermaid !== 'undefined') {
-        mermaid.initialize(Object.assign({
-            startOnLoad: false,
-            securityLevel: 'strict',
-            suppressErrors: true,
-        }, _getMermaidTheme()));
-    }
     document.addEventListener('click', function(e) {
         var sidebar = document.getElementById('sidebar-detail');
         if (!sidebar || !sidebar.classList.contains('open')) return;

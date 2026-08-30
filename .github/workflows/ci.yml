@@ -44,6 +44,17 @@ jobs:
       - name: Install deps
         working-directory: frontend
         run: pnpm install --frozen-lockfile
+      # 15 file JS thuần trong public/static KHÔNG đi qua bundler, nên `next
+      # build` không hề đọc chúng — một lỗi cú pháp ở đó lọt thẳng lên
+      # production và giết cả trang (đã xảy ra 27/08/2026 với admin.inline.js:
+      # cả màn Quản trị chết, không ai tạo được lớp hay cấp tài khoản).
+      - name: Kiểm cú pháp JS thuần
+        working-directory: frontend
+        run: |
+          for f in public/static/js/*.js public/static/js/pages/*.js; do
+            node --check "$f" || exit 1
+          done
+
       - name: Lint
         working-directory: frontend
         run: pnpm exec eslint src

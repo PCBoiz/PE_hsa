@@ -14,12 +14,12 @@ import Topbar from '@/components/Topbar';
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 const W = () => window as any;
 
-// Thứ tự script y hệt cuối dashboard.html (mermaid → svg-pan-zoom → roadmapData
-// → roadmap → main → chatbot → dashboard); icons.js vốn nằm ở <head> base.html.
+// Thứ tự script y hệt cuối dashboard.html; icons.js vốn nằm ở <head> base.html.
+// GỠ 30/08/2026: mermaid (3,41 MB) và svg-pan-zoom (29 kB) từng nằm giữa
+// icons.js và roadmapData.js. Cả hai không được dùng — xem ghi chú dài trong
+// public/static/js/main.js. Đây là 3,44 MB cắt khỏi mọi lượt mở dashboard.
 const SCRIPTS = [
   '/static/js/icons.js',
-  'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js',
-  'https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js',
   '/static/js/roadmapData.js',
   '/static/js/roadmap.js',
   '/static/js/main.js',
@@ -32,9 +32,6 @@ export default function DashboardPage() {
     <>
       <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
       <title>ProgrammingEdu × TopHSA</title>
-      {/* PERF 2026-07-19: mermaid + svg-pan-zoom tải từ jsdelivr — preconnect
-          cắt DNS+TLS handshake khỏi đường găng nạp script */}
-      <link rel="preconnect" href="https://cdn.jsdelivr.net" />
       <Topbar />
 
       <div id="main">

@@ -6,7 +6,7 @@
  * Flask cũ. KHÔNG rewrite logic legacy; thứ tự mảng src = thứ tự <script> gốc.
  *
  * pe-bridge.js luôn được chèn đầu tiên (fetch/JWT/DOMContentLoaded bridge).
- * CDN script (mermaid, codemirror, confetti...) truyền qua cùng mảng src.
+ * CDN script (confetti, codemirror...) truyền qua cùng mảng src.
  */
 import { useEffect } from 'react';
 
