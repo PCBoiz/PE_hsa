@@ -520,13 +520,58 @@ T1: màn hình không có lối vào từ đâu cả thì coi như không tồn 
 Kiểm 23 phép ở tầng view + 12 phép trên trình duyệt thật (390px và 1280px, có
 kiểm bản in ẩn thanh điều hướng). CSDL không đổi một dòng.
 
+### 31/08/2026 — T45 xong: bảng thành thẻ trên điện thoại
+
+```
+                        truoc                sau
+Tai khoan @390px   bang 796px / khung 306px   306 / 306, giau 0px
+                   -> giau 490px = 62%
+nut "Dat lai mat khau"  ngoai khung           x=133..270, cao 44px
+Nhat ky @390px     giau 45%, mat cot Noi dung 0px, doc duoc
+@1280px            bang                       van la bang (table-cell)
+```
+
+Cách vá: dưới 640px mỗi dòng thành một THẺ — nhãn cột bên trái, giá trị bên
+phải; trên 640px giữ nguyên bảng vì màn hình công cụ cần mật độ cao để quét mắt.
+`overflow-x-auto` vẫn giữ (trang không được trượt ngang), nhưng nó chỉ dời vấn
+đề vào trong khung: không có gợi ý thị giác nào báo còn nội dung bên phải.
+
+**Hàng rào quan trọng hơn bản vá:** `Td` khai `label` là **bắt buộc** trong kiểu.
+Nhờ vậy `tsc` liệt kê ngay 25 ô còn thiếu, và từ nay thêm cột mới mà quên nhãn
+là gãy build — thay vì phải trông chờ ai đó mở đúng trang đó trên điện thoại.
+
+**Một lần phép kiểm của tôi vu oan cho mã.** Nó báo nút chỉ cao 36px, dưới chuẩn
+44px. Nhưng `Button` đã đúng sẵn: `min-h-11`, chỉ co xuống `min-h-9` khi
+`@media(pointer:fine)`. Playwright không bật `hasTouch` nên Chromium báo
+`pointer: fine` → 36px. Đúng cái bẫy PROGRESS đã ghi từ trước mà tôi vẫn vấp.
+Đã thêm `hasTouch` vào `scratchpad/session.mjs` kèm chú thích, để lần sau không
+ai mất lượt đo vì chuyện này.
+
+**Vá kèm — nốt phần còn lại của T49 (ngôn ngữ máy lọt ra màn hình, RULES §10).**
+Ảnh chụp lộ ra ngay: ô vai trò hiện chữ `admin` trần. Gốc là `users.role` chứa
+LẪN hai thứ tiếng — `'admin'` cạnh `'Giảng viên'`/`'Học viên'`. Chỉ sửa chỗ HIỂN
+THỊ, cố ý không đổi giá trị trong CSDL: `'admin'` là thứ `ROLE_ADMIN` và
+`users_role_check` (§35) đang dựa vào.
+
+Và tôi bỏ sót đúng chỗ dễ sót nhất ở lượt đầu: sửa ô chọn TRONG DÒNG mà quên ô
+LỌC bên trên. Chip đọc được tiếng Việt trong khi ô lọc vẫn liệt kê
+`attendance.mark` thì người dùng không nối được hai thứ với nhau — mà ô lọc mới
+là chỗ họ chạm vào trước. Phép kiểm bắt được vì nó quét toàn bộ chữ trên trang,
+không chỉ chỗ tôi vừa sửa.
+
+**Phát hiện mới, chưa vá:** màn `/admin` cũ vẫn giấu cột — đo ở 390px, ba bảng
+giấu 83px / 165px / 234px. Chúng là `<table>` HTML thuần nên không hưởng bố cục
+thẻ. Đã ghi vào T35 (chuyển màn hình cũ sang React) kèm số đo.
+
+Kiểm 12 + 6 phép trên trình duyệt thật, tất cả đạt.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T27 báo cáo phụ huynh) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T45 bảng trên điện thoại) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật
@@ -548,7 +593,7 @@ rồi cuộn lại). pytest KHÔNG có sẵn trong venv — cài bằng
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T45 (bảng giấu 62% cột trên điện thoại) → T51 (báo cáo lớp lọc theo vai) →
+T51 (báo cáo lớp lọc theo vai) →
 T47 (`serverJson` vứt câu lỗi backend) →
 T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
 

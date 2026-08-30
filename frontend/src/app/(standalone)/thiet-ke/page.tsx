@@ -6,8 +6,10 @@ import {
   EmptyState,
   Field,
   TableWrap,
+  Tbody,
   Td,
   Th,
+  Thead,
   Tile,
   TileRow,
   Tr,
@@ -172,49 +174,49 @@ export default function DesignSystemPage() {
       </p>
       <div className="mb-10">
         <TableWrap>
-          <thead>
+          <Thead>
             <tr>
               <Th>Học viên</Th>
               <Th align="right">Tiến độ</Th>
               <Th align="right">Đề đã làm</Th>
               <Th>Trạng thái</Th>
             </tr>
-          </thead>
-          <tbody>
+          </Thead>
+          <Tbody>
             <Tr>
-              <Td>
+              <Td label="Học viên">
                 <b className="text-ink">Nguyễn Minh Anh</b>
                 <div className="text-small text-ink-3">minhanh@email.com</div>
               </Td>
-              <Td num>3/76</Td>
-              <Td num>1</Td>
-              <Td>
+              <Td label="Tiến độ" num>3/76</Td>
+              <Td label="Đề đã làm" num>1</Td>
+              <Td label="Trạng thái">
                 <Chip tone="warn">Nghỉ 10 ngày</Chip>
               </Td>
             </Tr>
             <Tr>
-              <Td>
+              <Td label="Học viên">
                 <b className="text-ink">Trần Bảo Long</b>
                 <div className="text-small text-ink-3">baolong@email.com</div>
               </Td>
-              <Td num>5/76</Td>
-              <Td num>0</Td>
-              <Td>
+              <Td label="Tiến độ" num>5/76</Td>
+              <Td label="Đề đã làm" num>0</Td>
+              <Td label="Trạng thái">
                 <Chip tone="good">Đang học đều</Chip>
               </Td>
             </Tr>
             <Tr dim>
-              <Td>
+              <Td label="Học viên">
                 <b className="text-ink">Lê Thu Hà</b>
                 <div className="text-small text-ink-3">thuha@email.com</div>
               </Td>
-              <Td num>18/76</Td>
-              <Td num>4</Td>
-              <Td>
+              <Td label="Tiến độ" num>18/76</Td>
+              <Td label="Đề đã làm" num>4</Td>
+              <Td label="Trạng thái">
                 <Chip>Đã rời lớp</Chip>
               </Td>
             </Tr>
-          </tbody>
+          </Tbody>
         </TableWrap>
       </div>
 

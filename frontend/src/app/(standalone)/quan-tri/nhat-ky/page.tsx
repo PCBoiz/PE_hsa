@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { Card, CardHead, Chip, EmptyState, TableWrap, Td, Th, Tr } from '@/components/ui';
+import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { serverJson } from '@/lib/server-api';
 
 export const metadata = { title: 'Nhật ký kiểm toán | TopHSA' };
@@ -21,6 +21,34 @@ type Entry = {
 type Payload = { entries: Entry[]; total: number; page: number; per_page: number; actions: string[] };
 
 /** Nhóm hành động → tông màu. Việc chạm tới mật khẩu hay quyền phải nổi lên. */
+/**
+ * Tên việc, bằng tiếng Việt.
+ *
+ * Cột `admin_audit.action` lưu mã máy (`attendance.mark`, `user.password_reset`)
+ * — đúng cho CSDL, nhưng nhật ký này là thứ trợ giảng và quản lý trung tâm đọc
+ * khi có chuyện xảy ra. Hiện mã trần lên màn hình là bắt người đọc tự dịch đúng
+ * lúc họ đang cần đọc nhanh nhất (RULES §10).
+ *
+ * Khoá ở đây phải khớp hằng số trong `backend/common/audit.py`. Mã lạ thì hiện
+ * nguyên mã chứ KHÔNG giấu đi: một dòng nhật ký không đọc được vẫn hơn một dòng
+ * nhật ký biến mất.
+ */
+const VIEC: Record<string, string> = {
+  'user.create': 'Cấp tài khoản',
+  'user.role': 'Đổi vai trò',
+  'user.status': 'Khoá / mở tài khoản',
+  'user.password_reset': 'Đặt lại mật khẩu',
+  'class.create': 'Tạo lớp',
+  'class.update': 'Sửa lớp',
+  'class.delete': 'Xoá lớp',
+  'class.member.add': 'Thêm vào lớp',
+  'class.member.remove': 'Cho rời lớp',
+  'session.create': 'Tạo buổi học',
+  'session.update': 'Sửa buổi học',
+  'session.delete': 'Xoá buổi học',
+  'attendance.mark': 'Điểm danh',
+};
+
 function tone(action: string): 'neutral' | 'brand' | 'warn' | 'bad' {
   if (action.startsWith('user.password') || action === 'user.status') return 'bad';
   if (action === 'user.role') return 'warn';
@@ -91,9 +119,13 @@ export default async function NhatKyPage({
             className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
           >
             <option value="">Mọi hành động</option>
+            {/* Ô LỌC cũng phải dịch, không chỉ chip trong bảng. Chip đọc được
+                tiếng Việt mà ô lọc bên trên vẫn liệt kê `attendance.mark` thì
+                người dùng không nối được hai thứ đó với nhau — và ô lọc mới là
+                chỗ họ chạm vào trước. */}
             {(data?.actions ?? []).map((a) => (
               <option key={a} value={a}>
-                {a}
+                {VIEC[a] || a}
               </option>
             ))}
           </select>
@@ -131,7 +163,7 @@ export default async function NhatKyPage({
         />
       ) : (
         <TableWrap>
-          <thead>
+          <Thead>
             <tr>
               <Th>Lúc</Th>
               <Th>Người làm</Th>
@@ -139,23 +171,29 @@ export default async function NhatKyPage({
               <Th>Nội dung</Th>
               <Th>IP</Th>
             </tr>
-          </thead>
-          <tbody>
+          </Thead>
+          <Tbody>
             {entries.map((e) => (
               <Tr key={e.id}>
-                <Td num>{when(e.occurred_at)}</Td>
-                <Td>
+                <Td label="Lúc" num>
+                  {when(e.occurred_at)}
+                </Td>
+                <Td label="Người làm">
                   <span className="block font-semibold text-ink">{e.actor_name || '(đã xoá)'}</span>
                   <span className="block text-ink-3">{e.actor_role || ''}</span>
                 </Td>
-                <Td>
-                  <Chip tone={tone(e.action)}>{e.action}</Chip>
+                <Td label="Việc">
+                  <Chip tone={tone(e.action)}>{VIEC[e.action] || e.action}</Chip>
                 </Td>
-                <Td>{e.summary || `${e.target_type || ''} ${e.target_label || ''}`.trim() || '—'}</Td>
-                <Td muted>{e.ip || '—'}</Td>
+                <Td label="Nội dung">
+                  {e.summary || `${e.target_type || ''} ${e.target_label || ''}`.trim() || '—'}
+                </Td>
+                <Td label="IP" muted>
+                  {e.ip || '—'}
+                </Td>
               </Tr>
             ))}
-          </tbody>
+          </Tbody>
         </TableWrap>
       )}
 

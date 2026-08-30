@@ -15,5 +15,5 @@ export { default as EmptyState } from './EmptyState';
 export { default as Field } from './Field';
 export { default as Modal } from './Modal';
 export { default as Tile, TileRow } from './Tile';
-export { TableWrap, Td, Th, Tr } from './Table';
+export { TableWrap, Tbody, Td, Th, Thead, Tr } from './Table';
 export { ToastProvider, useToast } from './Toast';

@@ -2,7 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, Card, CardHead, Chip, EmptyState, Modal, TableWrap, Td, Th, Tr } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHead,
+  Chip,
+  EmptyState,
+  Modal,
+  TableWrap,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from '@/components/ui';
 import { apiFetch, errorText } from '@/lib/api';
 
 export type ClassLite = { id: number; name: string; code?: string | null };
@@ -56,6 +69,23 @@ const MAX_BATCH = 50;
 const STATUS_LABEL: Record<string, string> = {
   active: 'Đang hoạt động',
   suspended: 'Đã khoá',
+};
+
+/**
+ * Nhãn tiếng Việt cho vai trò.
+ *
+ * Chỉ có `admin` cần dịch: cột `users.role` đang chứa LẪN hai thứ tiếng —
+ * `'admin'` bên cạnh `'Giảng viên'` và `'Học viên'` (đo trên dữ liệu thật
+ * 31/08/2026). Nên ô chọn vai trò hiện cho quản trị viên đọc đúng chữ `admin`
+ * trần, còn hai vai kia thì tử tế.
+ *
+ * CỐ Ý chỉ sửa chỗ HIỂN THỊ, không đổi giá trị trong CSDL: `'admin'` là giá trị
+ * mà `common/permissions.py:ROLE_ADMIN` và cả `users_role_check` (§35) đang
+ * dựa vào. Đổi nó là đổi dữ liệu quyền trên tài khoản thật, việc đó cần một
+ * lượt riêng có kế hoạch quay lui — không phải một cú sửa nhãn.
+ */
+const ROLE_LABEL: Record<string, string> = {
+  admin: 'Quản trị viên',
 };
 
 /**
@@ -242,7 +272,7 @@ export default function AccountsClient({
             <option value="">Mọi vai trò</option>
             {data.roles.map((r) => (
               <option key={r} value={r}>
-                {r}
+                {ROLE_LABEL[r] || r}
               </option>
             ))}
           </Select>
@@ -274,7 +304,7 @@ export default function AccountsClient({
           />
         ) : (
           <TableWrap>
-            <thead>
+            <Thead>
               <tr>
                 <Th>Học viên</Th>
                 <Th>Liên hệ</Th>
@@ -284,18 +314,18 @@ export default function AccountsClient({
                 <Th>Trạng thái</Th>
                 <Th align="right">Thao tác</Th>
               </tr>
-            </thead>
-            <tbody>
+            </Thead>
+            <Tbody>
               {data.users.map((u) => (
                 <Tr key={u.id} dim={u.status !== 'active'}>
-                  <Td>
+                  <Td label="Học viên">
                     <span className="font-semibold text-ink">{u.name || '(chưa có tên)'}</span>
                   </Td>
-                  <Td muted>
+                  <Td label="Liên hệ" muted>
                     <span className="block break-all">{u.email || '—'}</span>
                     <span className="block">{u.phone || ''}</span>
                   </Td>
-                  <Td>
+                  <Td label="Vai trò">
                     <select
                       value={u.role}
                       onChange={(e) => changeRole(u, e.target.value)}
@@ -304,13 +334,15 @@ export default function AccountsClient({
                     >
                       {(data.roles.length ? data.roles : [u.role]).map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {ROLE_LABEL[r] || r}
                         </option>
                       ))}
                     </select>
                   </Td>
-                  <Td muted>{u.classes?.length ? u.classes.join(', ') : '—'}</Td>
-                  <Td>
+                  <Td label="Lớp" muted>
+                    {u.classes?.length ? u.classes.join(', ') : '—'}
+                  </Td>
+                  <Td label="Mật khẩu">
                     {/* Đọc `must_change_password`, KHÔNG đọc `password_changed_at`.
                         Cột thời gian kia chỉ được ghi ở đúng một chỗ — luồng học
                         viên tự đổi mật khẩu, thêm về sau — nên mọi tài khoản có
@@ -329,12 +361,12 @@ export default function AccountsClient({
                       <Chip tone="neutral">—</Chip>
                     )}
                   </Td>
-                  <Td>
+                  <Td label="Trạng thái">
                     <Chip tone={u.status === 'active' ? 'neutral' : 'bad'}>
                       {STATUS_LABEL[u.status] || u.status}
                     </Chip>
                   </Td>
-                  <Td>
+                  <Td label="Thao tác">
                     <span className="flex flex-wrap justify-end gap-2">
                       <Button size="sm" variant="ghost" onClick={() => resetPassword(u)}>
                         Đặt lại mật khẩu
@@ -350,7 +382,7 @@ export default function AccountsClient({
                   </Td>
                 </Tr>
               ))}
-            </tbody>
+            </Tbody>
           </TableWrap>
         )}
 
@@ -600,7 +632,7 @@ function BulkResult({ data, dryRun = false }: { data: BulkResultData; dryRun?: b
       )}
 
       <TableWrap>
-        <thead>
+        <Thead>
           <tr>
             <Th align="right">Dòng</Th>
             <Th>Họ tên</Th>
@@ -608,17 +640,19 @@ function BulkResult({ data, dryRun = false }: { data: BulkResultData; dryRun?: b
             <Th>Kết quả</Th>
             {!dryRun && <Th>Mật khẩu tạm</Th>}
           </tr>
-        </thead>
-        <tbody>
+        </Thead>
+        <Tbody>
           {data.rows.map((r) => (
             <Tr key={r.line} dim={r.status === 'skipped'}>
-              <Td num>{r.line}</Td>
-              <Td>{r.name || '—'}</Td>
-              <Td muted>
+              <Td label="Dòng" num>
+                {r.line}
+              </Td>
+              <Td label="Họ tên">{r.name || '—'}</Td>
+              <Td label="Liên hệ" muted>
                 <span className="block break-all">{r.email || ''}</span>
                 <span className="block">{r.phone || ''}</span>
               </Td>
-              <Td>
+              <Td label="Kết quả">
                 {r.status === 'created' ? (
                   <Chip tone="good">{dryRun ? 'Sẽ tạo' : 'Đã tạo'}</Chip>
                 ) : (
@@ -629,7 +663,7 @@ function BulkResult({ data, dryRun = false }: { data: BulkResultData; dryRun?: b
                 )}
               </Td>
               {!dryRun && (
-                <Td>
+                <Td label="Mật khẩu tạm">
                   {r.tempPassword ? (
                     <code className="font-mono text-small text-ink select-all">{r.tempPassword}</code>
                   ) : (
@@ -639,7 +673,7 @@ function BulkResult({ data, dryRun = false }: { data: BulkResultData; dryRun?: b
               )}
             </Tr>
           ))}
-        </tbody>
+        </Tbody>
       </TableWrap>
     </div>
   );

@@ -220,7 +220,17 @@ hợp** trang × bộ màu · vùng chạm đạt 44px · bấm Lưu hai lần k
 "Còn mật khẩu tạm" báo động giả 5/5) · G-2 (`ul/ol` chưa reset, ăn 80px trên màn
 390px).
 
-### [ ] T45 · Bảng giấu 62% cột trên điện thoại — nút thao tác không chạm tới được
+### [x] T45 · Bảng giấu 62% cột trên điện thoại — XONG 31/08
+Dưới 640px mỗi dòng thành một THẺ (nhãn cột bên trái, giá trị bên phải), trên
+640px vẫn là bảng nguyên vẹn. Đo lại ở 390px: bảng Tài khoản **796px → 306px,
+giấu 0px**; nút "Đặt lại mật khẩu" nay nằm trong khung, vùng chạm 44px. Nhật ký
+cũng 0px và cột "Nội dung" đọc được.
+Hàng rào: `Td` BẮT BUỘC thuộc tính `label`, nên `tsc` chặn ngay khi ai thêm cột
+mới mà quên — không phải trông chờ ai đó mở trang trên điện thoại mới phát hiện.
+Vá kèm (phần còn lại của T49): ô vai trò và ô lọc hiện "Quản trị viên" thay vì
+`admin`; nhật ký hiện "Điểm danh" thay vì `attendance.mark`, ở CẢ chip lẫn ô lọc.
+CÒN LẠI: màn `/admin` cũ (chưa qua React, xem T35) vẫn giấu cột — đo 31/08 ở
+390px: ba bảng giấu 83px / 165px / 234px.
 Đo ở 390px: bảng Tài khoản rộng 796px trong khung 306px → **giấu 490px**. Cột bị
 mất gồm **Thao tác**, tức trợ giảng KHÔNG bấm được "Đặt lại mật khẩu" và "Khoá"
 trên điện thoại — việc chính của màn hình đó. Nhật ký giấu 45%, mất cột **Nội
@@ -501,4 +511,6 @@ Xếp theo tần suất người dùng thật chạm vào, không theo độ d�
 - [ ] T32 · Bài học (nơi học viên ở lâu nhất)
 - [ ] T33 · Thi thử
 - [ ] T34 · Danh sách khoá
-- [ ] T35 · Trang quản trị nội dung (`/admin`) — tách nốt phần tài khoản còn trùng với `/quan-tri`
+- [ ] T35 · Trang quản trị nội dung (`/admin`) — tách nốt phần tài khoản còn trùng với `/quan-tri`.
+      Đo 31/08 ở 390px: ba bảng còn giấu **83px / 165px / 234px** (chúng là `<table>` HTML
+      thuần nên không hưởng bố cục thẻ của T45). Chuyển sang React là vá luôn chỗ này.
