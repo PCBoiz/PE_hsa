@@ -20,14 +20,35 @@ export default function AdminPage() {
         <a href="/dashboard">← Về dashboard</a>
       </header>
 
+      {/* Trang này quản lý NỘI DUNG (khoá, bài, nhập giáo trình) — việc làm vài
+          lần rồi thôi. Việc hằng ngày với CON NGƯỜI đã chuyển sang khu riêng,
+          nơi có nhập hàng loạt, phân trang, bộ lọc và nhật ký kiểm toán. Hai
+          khối tài khoản bên dưới giữ lại làm đường tắt, nhưng chỉ hiện 50 tài
+          khoản đầu và không lọc được. */}
+      <div className="wrap">
+        <section>
+          <h2>Vận hành trung tâm</h2>
+          <p className="hint">
+            Cấp tài khoản cho cả một danh sách vừa đăng ký, tìm trong vài trăm học viên,
+            khoá tài khoản em đã nghỉ, và xem ai đã sửa gì.
+          </p>
+          <div className="row">
+            <a className="btn-primary btn-link" href="/quan-tri/tai-khoan">Tài khoản →</a>
+            <a className="btn-ghost btn-link" href="/quan-tri/nhat-ky">Nhật ký kiểm toán →</a>
+          </div>
+        </section>
+      </div>
+
       <div className="wrap">
         {/* KHÓA HỌC */}
         <section>
           <h2>Khóa học</h2>
-          <table>
-            <thead><tr><th>Id</th><th>Tiêu đề</th><th>Bài</th><th></th></tr></thead>
-            <tbody id="courseRows"></tbody>
-          </table>
+          <div className="tbl-scroll">
+            <table>
+              <thead><tr><th>Id</th><th>Tiêu đề</th><th>Bài</th><th></th></tr></thead>
+              <tbody id="courseRows"></tbody>
+            </table>
+          </div>
 
           <div className="form-box">
             <h3 id="courseFormTitle">Thêm khóa học</h3>
@@ -56,10 +77,12 @@ export default function AdminPage() {
             để hiện, và giảng viên mới có phạm vi để phân quyền theo. */}
         <section>
           <h2>Lớp học</h2>
-          <table>
-            <thead><tr><th>Mã</th><th>Tên lớp</th><th>Giảng viên</th><th>Lịch</th><th>Sĩ số</th><th>Trạng thái</th><th></th></tr></thead>
-            <tbody id="classRows"></tbody>
-          </table>
+          <div className="tbl-scroll">
+            <table>
+              <thead><tr><th>Mã</th><th>Tên lớp</th><th>Giảng viên</th><th>Lịch</th><th>Sĩ số</th><th>Trạng thái</th><th></th></tr></thead>
+              <tbody id="classRows"></tbody>
+            </table>
+          </div>
 
           <div className="form-box">
             <h3 id="classFormTitle">Thêm lớp</h3>
@@ -95,14 +118,36 @@ export default function AdminPage() {
           <p className="hint">
             Cho rời lớp KHÔNG xoá dữ liệu học tập — học viên nghỉ giữa chừng vẫn còn trong báo cáo của kỳ đó.
           </p>
-          <table>
-            <thead><tr><th>Tên</th><th>Email</th><th>Bài đã xong</th><th>Trạng thái</th><th></th></tr></thead>
-            <tbody id="memberRows"></tbody>
-          </table>
+          <div className="tbl-scroll">
+            <table>
+              <thead><tr><th>Tên</th><th>Email</th><th>Bài đã xong</th><th>Trạng thái</th><th></th></tr></thead>
+              <tbody id="memberRows"></tbody>
+            </table>
+          </div>
           <div className="form-box">
             <h3>Thêm học viên vào lớp</h3>
             <input id="mbEmail" placeholder="Email tài khoản học viên" />
             <button className="btn-primary" onClick={() => W().addMember()}>Thêm vào lớp</button>
+          </div>
+        </section>
+
+        {/* CẤP TÀI KHOẢN — mảnh khép kín chính sách "trung tâm cấp tài khoản".
+            Bỏ tự đăng ký mà không có chỗ này thì không ai vào được hệ thống. */}
+        <section>
+          <h2>Cấp tài khoản cho học viên</h2>
+          <p className="hint">
+            Học viên đăng ký học ở trung tâm, bạn nhập email hoặc số điện thoại của em vào đây.
+            Hệ thống sinh một <b>mật khẩu tạm</b> để bạn đọc cho em, và bắt em đổi ngay lần đăng nhập đầu tiên.
+          </p>
+          <div className="row">
+            <input id="nuName" placeholder="Họ tên học viên" />
+            <input id="nuEmail" placeholder="Email" />
+            <input id="nuPhone" placeholder="Số điện thoại" />
+          </div>
+          <div className="row">
+            <select id="nuRole"></select>
+            <select id="nuClass"></select>
+            <button className="btn-primary" onClick={() => W().createUser()}>Cấp tài khoản</button>
           </div>
         </section>
 
@@ -111,25 +156,31 @@ export default function AdminPage() {
           <h2>Tài khoản &amp; vai trò</h2>
           <p className="hint">
             Gán vai trò <b>Giảng viên</b> cho tài khoản trước, rồi mới chọn được người đó làm giảng viên phụ trách lớp.
+            {' '}Học viên quên mật khẩu thì bấm <b>Đặt lại</b> — hệ thống sinh một mật khẩu tạm để bạn đọc cho em,
+            và bắt em đổi ngay lần đăng nhập đầu tiên.
           </p>
           <div className="row">
             <input id="usQ" placeholder="Tìm theo tên hoặc email" />
             <button className="btn-ghost" onClick={() => W().searchUsers()}>Tìm</button>
           </div>
-          <table>
-            <thead><tr><th>Id</th><th>Tên</th><th>Email</th><th>Vai trò</th></tr></thead>
-            <tbody id="userRows"></tbody>
-          </table>
+          <div className="tbl-scroll">
+            <table>
+              <thead><tr><th>Id</th><th>Tên</th><th>Email</th><th>Vai trò</th><th>Mật khẩu</th></tr></thead>
+              <tbody id="userRows"></tbody>
+            </table>
+          </div>
         </section>
 
         {/* BÀI GIẢNG */}
         <section>
           <h2 id="lessonTitle">Bài giảng</h2>
           <p className="hint" id="lessonHint">Chọn một khóa học để xem bài giảng.</p>
-          <table>
-            <thead><tr><th>#</th><th>Module</th><th>Tiêu đề</th><th></th></tr></thead>
-            <tbody id="lessonRows"></tbody>
-          </table>
+          <div className="tbl-scroll">
+            <table>
+              <thead><tr><th>#</th><th>Module</th><th>Tiêu đề</th><th></th></tr></thead>
+              <tbody id="lessonRows"></tbody>
+            </table>
+          </div>
 
           <div className="form-box" id="lessonFormBox" style={{ display: 'none' }}>
             <h3 id="lessonFormTitle">Thêm bài giảng</h3>
