@@ -234,13 +234,33 @@ def class_report(class_id):
     totals = {r['course_id']: r['n'] for r in q(
         "SELECT course_id, COUNT(*) AS n FROM lessons "
         "WHERE module IS NOT NULL AND module <> '' GROUP BY course_id")}
-    lessons_total = sum(totals.values()) or 1
+
+    # Mẫu số là số bài của KHOÁ LỚP NÀY HỌC, không phải tổng cả ba khoá.
+    #
+    # Lỗi đã có thật, sửa 30/08/2026: trước đây `lessons_total` luôn là tổng của
+    # cả ba hợp phần (27 Định lượng + 26 Khoa học + 23 Định tính = 76), kể cả
+    # với lớp chỉ ôn một hợp phần. Đo trên lớp "Luyện HSA đợt 1/2027 — Ca tối"
+    # (course_id = hsa_quantitative): một em học xong TRỌN VẸN cả 27 bài của
+    # khoá mình sẽ hiện 36%, không phải 100%.
+    #
+    # Con số này không nằm im trong hệ thống: nó đi vào bảng điều khiển lớp, vào
+    # file xuất ra Excel, và từ đó vào buổi họp phụ huynh. Nói với phụ huynh rằng
+    # con họ mới đi được 36% chặng đường trong khi em đã học hết giáo trình là
+    # sai theo hướng tệ nhất.
+    #
+    # `classes.course_id` để NULL nghĩa là lớp ôn cả ba hợp phần — khi đó tổng
+    # cả ba mới đúng, nên vẫn giữ nhánh cũ.
+    scope = info.get('course_id')
+    lessons_total = (totals.get(scope, 0) if scope else sum(totals.values())) or 1
 
     students, cell_scores = [], {}
     for m in members:
         uid = m['user_id']
         done_by_course = progress.get(uid, {})
-        done = sum(done_by_course.values())
+        # Tử số bó theo cùng phạm vi với mẫu số. Không bó thì một em tự học thêm
+        # Định tính ngoài giờ sẽ được cộng vào tiến độ của lớp Định lượng —
+        # và với lớp một hợp phần, tiến độ có thể vượt quá 100%.
+        done = done_by_course.get(scope, 0) if scope else sum(done_by_course.values())
         act = activity.get(uid) or {}
         last_day = act.get('last_day')
         idle = (today - last_day).days if last_day else None
