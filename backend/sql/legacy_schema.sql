@@ -735,3 +735,49 @@ ALTER TABLE class_sessions ADD CONSTRAINT chk_session_status
 ALTER TABLE attendance DROP CONSTRAINT IF EXISTS chk_attendance_status;
 ALTER TABLE attendance ADD CONSTRAINT chk_attendance_status
     CHECK (status IN ('present', 'late', 'absent', 'excused'));
+
+-- ============================================================================
+-- 34. Chỉ mục cho các câu tra đang quét toàn bảng (audit T12, 30/08/2026)
+-- ============================================================================
+-- Mỗi chỉ mục dưới đây tương ứng một câu đã EXPLAIN ra Seq Scan hoặc Filter
+-- trên đường nóng hằng ngày. Tạo lúc bảng còn nhỏ nên tức thì; để muộn thì
+-- chính lệnh tạo sẽ khoá bảng đúng lúc bảng đã lớn.
+
+-- `surveys` không có chỉ mục nào ngoài khoá chính, nên câu "lấy khảo sát mới
+-- nhất của em này" đi NGƯỢC chỉ mục khoá chính rồi LỌC — tức duyệt qua mọi
+-- khảo sát mới hơn của mọi người khác. Đọc ở stats/plan.py, HsaSummaryView,
+-- HsaGoalsView, tức gần như mỗi lần học viên mở trang.
+CREATE INDEX IF NOT EXISTS idx_surveys_user ON surveys(user_id);
+
+-- Màn hình nhật ký chạy `SELECT DISTINCT action` MỖI LẦN MỞ chỉ để dựng ô lọc
+-- mươi giá trị, và bộ lọc `WHERE action=%s` hiện là Filter chứ không phải
+-- Index Cond — duyệt dọc chỉ mục thời gian tới khi gom đủ một trang. Chỉ mục
+-- ghép này giải quyết cả hai.
+CREATE INDEX IF NOT EXISTS idx_audit_action ON admin_audit(action, occurred_at DESC);
+
+-- Ô tìm kiếm tài khoản dùng `LIKE '%...%'` trên tên/email/số điện thoại. Không
+-- chỉ mục B-tree nào phục vụ được dạng đó (đã kiểm: ép enable_seqscan=off vẫn
+-- ra Seq Scan). pg_trgm đã cài sẵn cho `courses`; dùng cùng cách ở đây.
+-- pg_stat cho thấy `users` đã có 3.181 lần quét tuần tự.
+-- Chỉ mục phải khớp ĐÚNG biểu thức trong câu tra. `build_user_filters` viết
+-- `lower(u.name) LIKE %s`, nên chỉ mục trigram đặt trên `name` trần KHÔNG dùng
+-- được — đã đo: ép enable_seqscan=off vẫn ra Seq Scan. Đặt trên `lower(...)`.
+-- Cột `phone` thì câu tra dùng trần nên chỉ mục cũng để trần.
+CREATE INDEX IF NOT EXISTS idx_users_name_trgm
+    ON users USING gin (lower(name) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_users_email_trgm
+    ON users USING gin (lower(email) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_users_phone_trgm
+    ON users USING gin (phone gin_trgm_ops);
+
+-- Khoá ngoại ON DELETE CASCADE mà KHÔNG có chỉ mục: mỗi lần xoá một dòng
+-- `quizzes` là một lần quét toàn bộ bảng con.
+CREATE INDEX IF NOT EXISTS idx_rqr_quiz ON review_quiz_results(quiz_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_user_course ON quizzes(user_id, course_id);
+
+-- Có idx_mock_attempts_user rồi, nhưng câu "lượt thi gần nhất" vẫn phải SORT vì
+-- chỉ mục chỉ trên user_id. Thêm cột thời gian vào là bỏ hẳn bước sắp xếp.
+CREATE INDEX IF NOT EXISTS idx_mock_attempts_user_time
+    ON mock_attempts(user_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_time
+    ON notifications(user_id, created_at DESC);

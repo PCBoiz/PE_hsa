@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 from common.clock import local_now
 from common.db import q
 from common.events import (KIND_LESSON, KIND_MISSION, KIND_MOCK,
-                           KIND_MOCK_SECTION, KIND_REVIEW_QUIZ, record_event)
+                           KIND_MOCK_SECTION, KIND_REVIEW_QUIZ, forget_events, record_event)
 
 #: Nhãn hợp phần trong section_scores_json → khoá học. PHẢI khớp
 #: mockexam/views.py:SECTION_LABELS; lệch một dấu là cả hợp phần biến mất.
@@ -161,6 +161,21 @@ class Command(BaseCommand):
             if ids:
                 topic_of = {t['id']: t['module'] for t in q(
                     'SELECT id, module FROM lessons WHERE id = ANY(%s)', (list(set(ids)),))}
+
+            # XOÁ sự kiện cũ của lượt quiz này TRƯỚC khi ghi lại.
+            #
+            # `dedup_key` của quiz ôn tập là `quiz:<id>:<tên chương mục>`, mà tên
+            # chương mục đọc từ `lessons.module` — một nhãn THAY ĐỔI ĐƯỢC. Và
+            # schema §26 ghi rõ nó SẼ đổi: "giáo trình sẽ được soạn lại theo
+            # TopHSA". Khi đó chạy lại lệnh này sinh khoá mới, không đụng dòng
+            # cũ, nên MỘT lượt làm bài thành HAI dòng — cả hai đều
+            # `kind='review_quiz'` với `max_score > 0` nên cả hai lọt vào phép
+            # tính năng lực và sổ điểm. Đếm đôi, im lặng, không gì báo.
+            #
+            # Xoá-rồi-ghi khiến lệnh này hội tụ về đúng một bộ sự kiện dù giáo
+            # trình đã đổi tên bao nhiêu lần. (Các `kind` khác khoá theo id bất
+            # biến nên không mắc lỗi này — chỉ `review_quiz` khoá theo nhãn.)
+            forget_events('quiz', r['quiz_id'])
 
             per_topic = {}
             for qq in questions:

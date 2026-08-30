@@ -48,7 +48,11 @@ export async function serverFetch(
   { requireAuth = false }: Options = {},
 ): Promise<Response | null> {
   const access = await readAccess();
-  if (!access && requireAuth) redirect('/login');
+  // Thiếu access mà VẪN CÒN refresh thì chưa phải hết phiên — `src/middleware.ts`
+  // lẽ ra đã làm mới trước khi tới đây. Chỉ đá về đăng nhập khi không còn gì cả.
+  // Bản trước đá đi ngay khi thiếu access, và vì cookie `pe_at` có Max-Age đúng
+  // bằng tuổi thọ token (30 phút) nên phiên 8 tiếng thực chất chỉ sống 30 phút.
+  if (!access && !(await readRefresh()) && requireAuth) redirect('/login');
 
   const call = (token: string | null) =>
     fetch(`${backendOrigin()}${path}`, {

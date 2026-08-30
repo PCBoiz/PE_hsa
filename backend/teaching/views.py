@@ -533,8 +533,16 @@ class AdminCreateUserView(APIView):
         added_to_class = False
         if class_id:
             # Lớp đã được kiểm ở trên nên câu này không còn đường hỏng.
-            x('INSERT INTO class_members (class_id, user_id) VALUES (%s, %s) '
-              'ON CONFLICT DO NOTHING', (class_id, uid))
+            # `joined_at` phải truyền `local_now()`, không để `DEFAULT now()`.
+            # DEFAULT của Postgres là UTC (Django đặt TimeZone kết nối = UTC),
+            # lệch 7 tiếng — em được xếp lớp lúc 1h sáng giờ VN sẽ mang ngày vào
+            # lớp của HÔM TRƯỚC, và cột đó đi thẳng vào file mang đi họp phụ
+            # huynh. Hai đường ghi class_members kia đã truyền đúng; đây là chỗ
+            # còn sót.
+            x('INSERT INTO class_members (class_id, user_id, joined_at) '
+              'VALUES (%s, %s, %s) '
+              'ON CONFLICT (class_id, user_id) DO UPDATE SET left_at = NULL',
+              (class_id, uid, local_now()))
             added_to_class = True
 
         audit.record(request, audit.USER_CREATE, target_type='user', target_id=uid,

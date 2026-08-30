@@ -311,12 +311,22 @@ export default function AccountsClient({
                   </Td>
                   <Td muted>{u.classes?.length ? u.classes.join(', ') : '—'}</Td>
                   <Td>
-                    {/* Câu hỏi vận hành thật: tài khoản nào vẫn dùng mật khẩu
-                        trợ giảng đọc cho? Chưa đổi lần nào thì cột này trống. */}
-                    {u.password_changed_at ? (
+                    {/* Đọc `must_change_password`, KHÔNG đọc `password_changed_at`.
+                        Cột thời gian kia chỉ được ghi ở đúng một chỗ — luồng học
+                        viên tự đổi mật khẩu, thêm về sau — nên mọi tài khoản có
+                        trước cột đó vĩnh viễn NULL. Đo ngày 30/08/2026: chip cam
+                        "Còn mật khẩu tạm" hiện cho CẢ 5/5 tài khoản thật, kể cả
+                        tài khoản quản trị đang đăng nhập, trong khi cả 5 đều có
+                        `must_change_password = FALSE`.
+                        Cột này sinh ra để trả lời "phải gọi nhắc em nào", và nó
+                        đang trả lời "gọi tất cả" — đúng loại báo cáo RULES §8 cấm.
+                        `must_change_password` mới là cờ thật sự bắt đổi mật khẩu. */}
+                    {u.must_change_password ? (
+                      <Chip tone="warn">Còn mật khẩu tạm</Chip>
+                    ) : u.password_changed_at ? (
                       <Chip tone="good">Đã tự đổi</Chip>
                     ) : (
-                      <Chip tone="warn">Còn mật khẩu tạm</Chip>
+                      <Chip tone="neutral">—</Chip>
                     )}
                   </Td>
                   <Td>

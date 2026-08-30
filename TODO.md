@@ -201,15 +201,132 @@ Dán vào `backend/.env` và vào Render → Environment. **Hệ quả:** mọi 
 chia đôi, trần hiệu dụng gấp ~2 lần con số khai báo, và reset mỗi lần deploy.
 Cần cache dùng chung (Redis) hoặc ghi rõ đây là giới hạn "mềm".
 
-### [ ] T11 · Audit luồng nghiệp vụ đầu-cuối trên trình duyệt thật
+### [x] T11 · Audit luồng đầu-cuối — XONG 30/08, đẻ ra T45–T50
 Theo vai người dùng: trợ giảng cấp tài khoản · tìm một em · giảng viên điểm danh
 · đọc nhật ký · quyền theo vai · mất mạng giữa chừng · điện thoại 390px.
 
-### [ ] T12 · Audit CSDL, truy vấn và đối chiếu ERD
+**Đi hết mọi luồng trên trình duyệt thật, 28 ảnh chụp đều đã xem lại. CSDL trở
+về nguyên trạng.** Phần TỐT, đã kiểm và không cần soi lại: quyền theo vai kín
+tuyệt đối (5 ca, không màn nào dựng khung rồi mới đổ lỗi) · chấm điểm từng dòng
+khi nhập hàng loạt · đổi bộ lọc lúc đang ở trang 3 không ra danh sách rỗng · CSV
+khớp màn hình cả về số dòng lẫn BOM lẫn dấu · tràn ngang **0 trên toàn bộ 10 tổ
+hợp** trang × bộ màu · vùng chạm đạt 44px · bấm Lưu hai lần không lọt.
+
+**Đã vá trong đợt này:** F-1 (phiên 30 phút → 8 tiếng, xem PROGRESS) · A-8 (chip
+"Còn mật khẩu tạm" báo động giả 5/5) · G-2 (`ul/ol` chưa reset, ăn 80px trên màn
+390px).
+
+### [ ] T45 · Bảng giấu 62% cột trên điện thoại — nút thao tác không chạm tới được
+Đo ở 390px: bảng Tài khoản rộng 796px trong khung 306px → **giấu 490px**. Cột bị
+mất gồm **Thao tác**, tức trợ giảng KHÔNG bấm được "Đặt lại mật khẩu" và "Khoá"
+trên điện thoại — việc chính của màn hình đó. Nhật ký giấu 45%, mất cột **Nội
+dung** (thứ duy nhất nói chuyện gì đã xảy ra). Bảng "Kiểm tra trước" cắt cụt cột
+**Kết quả** — tức chính cơ chế an toàn của nhập hàng loạt trở nên vô hình.
+`TableWrap` cuộn ngang là đúng để trang không trượt, nhưng không có gợi ý thị
+giác nào báo còn nội dung bên phải. Cần bố cục thẻ ở khổ hẹp thay vì bảng.
+
+### [ ] T46 · Lưu điểm danh: không xác nhận, và trên điện thoại tín hiệu nằm DƯỚI khung nhìn
+Mở rộng T37 bằng số đo. Lưu mất **4.716ms**; tín hiệu duy nhất báo xong là chữ
+"Chưa lưu" biến mất. Ở 390×844: nút Lưu ở `top=764px` (trong khung), chữ "Chưa
+lưu" ở `top=868px` — **ngoài khung nhìn 104px**. Đúng tư thế người ta bấm Lưu thì
+không nhìn thấy thứ duy nhất báo đã xong. `Toast` đã dựng sẵn nhưng chưa gắn (T19).
+
+### [ ] T47 · `serverJson` vứt bỏ mọi câu lỗi backend — lỗ hệ thống
+`server-api.ts` `if (!res || !res.ok) return null`. Backend viết sẵn câu tử tế
+(`Ngày "from" không hợp lệ (định dạng YYYY-MM-DD)`) nhưng màn hình chỉ nhận
+`null`. Hậu quả đo được: `/quan-tri/nhat-ky?from=abc` hiện **hai câu mâu thuẫn**
+cùng lúc ("Không đọc được nhật ký" + "Chưa có hành động nào"), tải lại vẫn hỏng
+mãi, và ô chọn Hành động rỗng đi nên **không còn nút nào bấm để thoát** — phải
+tự sửa URL. 400 có hướng dẫn sửa và 500 sập CSDL đến màn hình là một.
+
+### [ ] T48 · Ba con số sĩ số khác nhau trên cùng một màn hình, và giục gọi em đã nghỉ
+Khu Giảng dạy hiện đồng thời "3/25 học viên" · "4 học viên" · "HỌC VIÊN (4)".
+`reports.py:335` trả `summary.students = len(students)` (tính cả em đã rời lớp)
+trong khi mọi chỉ số khác tính trên `active`. Nặng hơn: ô **"Cần chú ý"** liệt kê
+`ntn` — em đã rời lớp 5 ngày trước — và ở khu đó **không có** nhãn "(đã rời lớp)".
+`dashboard.js:3947` thiếu điều kiện `!st.left`; `reports.py:316` `at_risk` cũng
+duyệt toàn bộ `students` thay vì `active`.
+
+### [ ] T49 · Ngôn ngữ máy lọt ra giao diện, và hai màn hình cùng khu cư xử ngược nhau
+· Nhật ký hiện thẳng `attendance.mark`, `session.create` làm chip VÀ làm nhãn ô
+  chọn — người dùng phải chọn từ thực đơn toàn định danh tiếng Anh có dấu chấm.
+· Ô vai trò hiện `admin` cạnh `Giảng viên`/`Học viên`; bản đồ nhãn
+  `ROLE_LABELS` chỉ tồn tại ở `exports.py:71`, màn hình không có (RULES §7).
+· `[object Object]` XÁC NHẬN SỐNG ở nút Đặt lại mật khẩu và ô đổi vai trò (T22)
+  — nhưng KHÔNG ở đường tải danh sách. Sửa T22 mà chỉ vá đường tải là không chạm
+  được lỗi.
+· `Máy chủ trả lỗi 500` hiện thẳng cho trợ giảng (RULES §10) — trong khi cùng
+  tình huống, màn hình điểm danh nói "Không tạo được buổi học".
+· Bộ lọc màn hình Tài khoản **không vào URL** (bấm Quay lại nhảy ra
+  `about:blank`), trong khi màn hình Nhật ký ngay cạnh lại làm đúng.
+· Lớp hiện theo TÊN trên màn hình nhưng theo MÃ trong CSV.
+
+### [ ] T50 · Nhập hàng loạt: con số không cộng lại được, và bấm hai lần gửi hai yêu cầu
+"8 dòng đã dán" rồi "Sẽ tạo 2, bỏ qua 5" — 2+5≠8 vì hai chỗ đếm khác nhau (máy
+đếm cả dòng tiêu đề, máy chủ thì không). Vượt trần thì nút ghi "Tạo 60 tài khoản"
+(đã khoá, không nói vì sao) cạnh câu "Sẽ tạo 60 tài khoản" — khẳng định ngược với
+điều hệ thống vừa từ chối. Bấm "Kiểm tra trước" hai lần nhanh → **2 yêu cầu cùng
+bay đi**; nút "Tạo" dùng chung hàm và chung cờ `busy` nên cùng khe hở, mà
+`admin_users.py:478` gọi đó là "kịch bản tệ nhất trong tất cả". Tải lại trang
+giữa chừng mất trắng danh sách đã dán, không có bản nháp.
+Thêm: không có cách nào xoá hay sửa một buổi học từ giao diện, dù backend đã có
+sẵn `ClassSessionDetailView` (cùng loại với T19).
+
+### [x] T12 · Audit CSDL, truy vấn và đối chiếu ERD — XONG 30/08, đẻ ra T41–T44
 N+1, chỉ mục thiếu/thừa, bất biến còn thiếu ở tầng CSDL, xoá dây chuyền,
 `common/db.py` coi `PoolTimeout` là kết nối chết, múi giờ, kỷ luật một cửa của
 `learning_events`. Đối chiếu ERD với Moodle / Canvas / OpenSIS — đặc biệt khái
 niệm **kỳ học / đợt** mà pe_hsa chưa có.
+
+**Đã vá:** `common/db.py` coi pool-bận là kết nối-chết (vòng xoáy tự khuếch đại,
+xem PROGRESS) · 9 chỉ mục còn thiếu · 4 lỗi múi giờ gồm BXH tuần sai 7 tiếng mỗi
+thứ Hai · `journal.py` phá kỷ luật một cửa · `dedup_key` của quiz khoá theo nhãn
+thay đổi được · CI không kiểm cú pháp mô-đun lệnh quản trị.
+
+**Agent BÁC BỎ một nghi ngờ cũ:** `check_and_award_achievements` đo được **5 câu**
+chứ không phải ~23; trần tuyệt đối là 14. Không đáng vá. Và `plan.generate` là
+85–139 INSERT chứ không phải 245.
+
+### [ ] T41 · Gộp hai vòng lặp INSERT thành một câu
+`sessions.py:_emit_events` đo được **3N+1** câu (lớp 30 em = 91 lượt tới Neon,
+0,46 s production / 23 s từ máy dev) — đây là phần N+1 của T37, và nó bác bỏ
+chú thích đầu mô-đun khẳng định "số câu cố định". `stats/plan.py:245` là 85–139
+INSERT tuần tự, tất cả trong một `atomic()` nên `common/db.py` từ chối thử lại →
+một cú rớt kết nối huỷ trọn kế hoạch. Mẫu `INSERT ... SELECT FROM unnest(...)`
+đã có sẵn ở `admin_users.py:632`.
+
+### [ ] T42 · Dữ liệu rác đã có thật, và bất biến còn thiếu ở tầng CSDL
+**Đã đo trên dữ liệu production:** `surveys` id=4 trỏ `user_id=10` — tài khoản
+KHÔNG tồn tại (bảng `surveys` không có FK nào). Và `class_members` chứa `user_id=7`
+role `admin` — quản trị viên đang là học viên của lớp 1, xuất hiện trong danh
+sách điểm danh và sĩ số.
+Thiếu `CHECK` cho `users.role`, `users.status`, `classes.status` (ba cột khoá
+quyền đang là TEXT tự do) trong khi `class_sessions.status` và `attendance.status`
+ĐÃ có — bất nhất ngay trong cùng một lược đồ. Thiếu FK cho `surveys`,
+`enrollments`, `lesson_progress`, `course_ratings`, `roadmap_progress`.
+Thiếu `forget_events` ở đường xoá lớp (`teaching/views.py`) trong khi đường xoá
+một buổi (`sessions.py`) đã có — bất đối xứng.
+
+### [ ] T43 · `terms` (đợt học) + `class_members` đổi khoá chính — HÔM NAY LÀ NGÀY RẺ NHẤT
+Hai việc kiến trúc duy nhất mà chi phí **chỉ tăng theo thời gian**. Hiện
+`classes` = 1 dòng, `class_members` = 4, `learning_events` = 37.
+· PK `(class_id, user_id)` cho đúng MỘT dòng mỗi cặp, nên em quay lại lớp cũ ở
+  đợt sau sẽ **ghi đè vĩnh viễn** lượt học trước (`ON CONFLICT DO UPDATE SET
+  left_at = NULL` xoá trắng `left_at` cũ). Mâu thuẫn trực diện với §29.
+· "Học xong" và "bỏ học" hiện là cùng một giá trị — hai con số hoàn toàn khác
+  nhau khi trung tâm báo tỉ lệ bỏ học. §31 đã nhận ra đúng điều này cho
+  `users.status` rồi chọn TEXT; lý lẽ đó chưa được áp cho `class_members`.
+· Không có khái niệm ĐỢT, nên "đợt 1/2027 so với đợt 2/2027" phải đoán từ
+  `starts_on` và **đọc tên lớp** — đúng cái bẫy Moodle mắc và phải vá bằng lồng
+  thư mục. Đề xuất: bảng `terms` một tầng (không lồng bốn tầng như openSIS).
+
+### [ ] T44 · `attendance_taken_at/by` — thứ pe_hsa thiếu rõ nhất so với openSIS
+Hôm nay "buổi X không có dòng `attendance` nào" **mơ hồ giữa "cả lớp có mặt" và
+"giảng viên quên tick"**. openSIS có hẳn bảng `attendance_completed` chống lưng
+cho báo cáo "hôm nay ai quên điểm danh". Vá rẻ: hai cột trên `class_sessions`,
+đặt trong `SessionAttendanceView.post`. Kèm: `admin_audit.detail` nên chứa trạng
+thái TRƯỚC khi sửa, để khiếu nại của phụ huynh còn đối chiếu được (openSIS giữ
+cả `attendance_code` lẫn `attendance_teacher_code`).
 
 ### [ ] T13 · Audit khả năng tiếp cận
 axe-core chạy thật + WCAG 2.2 AA. Đo trên pixel thật cả hai bộ màu. **Bẫy:**

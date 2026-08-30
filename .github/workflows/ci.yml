@@ -55,6 +55,15 @@ jobs:
             node --check "$f" || exit 1
           done
 
+      # `manage.py check` KHÔNG nạp mô-đun lệnh quản trị (chúng chỉ được nạp khi
+      # ai đó gọi lệnh), nên một lỗi cú pháp trong `common/management/commands/`
+      # đi thẳng lên production mà mọi cửa kiểm đều xanh. Đã xảy ra thật ngày
+      # 30/08/2026: một dòng import hỏng nằm im qua `manage.py check`.
+      # Cùng loại lỗ với 15 tệp JS thuần không đi qua bundler ở bước trên.
+      - name: Kiểm cú pháp toàn bộ Python
+        working-directory: backend
+        run: python -m compileall -q accounts common teaching stats courses lessons quizzes notifications roadmap leaderboard achievements forum courseadmin mockexam chatbot config
+
       - name: Lint
         working-directory: frontend
         run: pnpm exec eslint src

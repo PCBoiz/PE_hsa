@@ -2,6 +2,9 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from datetime import timedelta
+
+from common.clock import local_today
 from common.db import q, q1
 
 MEDALS = {1: '🥇', 2: '🥈', 3: '🥉'}
@@ -86,10 +89,23 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
 
     PERF 2026-07-19: gộp 4 query (top, tổng của tôi, tên của tôi, hạng của tôi)
     thành 1 câu CTE — mỗi round trip tới Neon ~240ms."""
+    # Mốc đầu tuần tính ở PYTHON theo giờ Việt Nam, không phải bằng
+    # `date_trunc('week', CURRENT_DATE)` của SQL.
+    #
+    # Django đặt TimeZone của kết nối là UTC (đã đo), nên `CURRENT_DATE` là ngày
+    # UTC. Trong khi `user_daily_xp_logs.log_date` được GHI bằng `local_today()`
+    # tức ngày Việt Nam (stats/streak.py). Hai đồng hồ cho cùng một khái niệm
+    # "tuần này" — đúng thứ RULES §7 cấm.
+    # Hậu quả cụ thể: mỗi thứ Hai từ 0h đến 7h sáng giờ VN, `CURRENT_DATE` vẫn
+    # là Chủ nhật nên `date_trunc('week')` trả về thứ Hai TUẦN TRƯỚC — bảng xếp
+    # hạng tuần hiện dữ liệu tuần cũ suốt bảy tiếng, đúng lúc học viên vào xem
+    # tuần mới bắt đầu thế nào.
+    hom_nay = local_today()
+    dau_tuan = hom_nay - timedelta(days=hom_nay.weekday())  # weekday(): thứ Hai = 0
     row = q1('''WITH weekly AS (
                     SELECT user_id, SUM(xp_earned) AS wxp
                     FROM user_daily_xp_logs
-                    WHERE log_date >= date_trunc('week', CURRENT_DATE)::date
+                    WHERE log_date >= %s
                     GROUP BY user_id
                 ),
                 top AS (
@@ -109,7 +125,7 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
                     (SELECT COUNT(*) + 1 FROM weekly, me WHERE weekly.wxp > me.wxp) AS me_rank,
                     (SELECT name FROM users WHERE id = %s) AS me_name,
                     EXISTS(SELECT 1 FROM users WHERE id = %s) AS me_exists''',
-             (limit, uid, uid, uid))
+             (dau_tuan, limit, uid, uid, uid))
     top_rows = _json_list(row['top_rows'])
     me_row = {'wxp': row['me_wxp']}
     me_name_row = {'id': uid, 'name': row['me_name']} if row['me_exists'] else None

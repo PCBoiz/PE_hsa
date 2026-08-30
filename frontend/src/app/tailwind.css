@@ -75,6 +75,20 @@
     margin: 0;
   }
 
+  /* Danh sách: bỏ chấm tròn và thụt lề mặc định.
+     Đo trên trang buổi học ở 390px (30/08/2026): `ul` mặc định có
+     `padding-left: 40px` và `li` có `list-style-type: disc`, nên hai `<ul>`
+     lồng nhau ăn mất **80px trên màn 390px — hơn 20% bề ngang**, kèm một dấu
+     chấm tròn đứng cạnh mỗi thẻ buổi học. Đúng loại lỗi mà chú thích ngay trên
+     mô tả ("người viết TƯỞNG lề đã được reset"), chỉ là lần trước chưa quét
+     hết thẻ. Dùng `ul`/`ol` làm khung bố cục là chuyện thường trong mã mới, và
+     mỗi lần như vậy là một lần dính. */
+  ul, ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
   /* `img { max-width: none }` là mặc định của trình duyệt — một ảnh khoá học
      rộng hơn khung sẽ đẩy cả trang trượt ngang. */
   img, svg, video, canvas {

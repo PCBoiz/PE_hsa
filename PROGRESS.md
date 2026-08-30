@@ -43,7 +43,7 @@ Vai khác: id 11 = Giảng viên · id 12, 13 = Học viên.
 
 ## Trạng thái 30/08/2026
 
-**Nhánh:** `erp`, 12 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
+**Nhánh:** `erp`, 16 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
 chờ người dùng cho phép). `master` có `autoDeploy: true` nên gộp vào đó là deploy
 production ngay.
 
@@ -171,4 +171,70 @@ API mà không ai phải làm gì.
 **Ba việc cần anh** — T38 (đo `NUM_PROXIES` trên production), T39 (xoay
 `SECRET_KEY`), T40 (cache dùng chung cho throttle).
 
-**Tiếp theo:** chờ T11 (luồng đầu-cuối) và T12 (CSDL/ERD) — đang chạy.
+### 30/08/2026 — T12 xong: audit CSDL + đối chiếu ERD
+**Vá nặng nhất:** `common/db.py` coi *pool đang bận* là *kết nối đã chết*.
+`PoolTimeout` kế thừa `psycopg.OperationalError`, Django bọc lại thành
+`django.db.OperationalError` → rơi thẳng vào nhánh **huỷ cả pool dùng chung**.
+Mà `pool.close()` đá ngay mọi luồng đang chờ ra với `PoolClosed` — cũng
+`OperationalError` — nên chúng cũng đi huỷ pool. Vòng xoáy tự khuếch đại: với
+`gunicorn timeout=30`, một yêu cầu vượt ngưỡng ngay ở lần thử **thứ hai** →
+worker bị giết → kéo theo 8 yêu cầu đang chạy dở.
+
+**Bản vá đầu của tôi SAI và phép đo bác bỏ nó.** Tôi viết `except PoolTimeout`
+và `_reset_pool` vẫn bị gọi đủ 6 lần — vì `DatabaseErrorWrapper` **ném ra một
+ngoại lệ MỚI**, bản gốc chỉ còn ở `__cause__`. Sửa lại thành soi `__cause__`:
+```
+OK  pool BAN (khong phai conn chet)    _reset_pool goi 0 lan (mong 0)
+OK  connection CHET that (Neon ngu)    _reset_pool goi 6 lan (mong 6)
+```
+
+**Chỉ mục:** thêm 9 cái, mỗi cái đã EXPLAIN ra `Seq Scan`. Và ở đây tôi cũng tự
+sai một lần: đặt chỉ mục trigram trên `name` trong khi câu tra dùng
+`lower(name)` — ép `enable_seqscan=off` vẫn ra Seq Scan. Đặt lại trên
+`lower(...)` thì mới dùng được.
+
+**Bốn lỗi múi giờ**, nặng nhất là bảng xếp hạng tuần: `log_date` ghi bằng giờ VN
+nhưng mốc đầu tuần so bằng `CURRENT_DATE` (UTC) — **mỗi thứ Hai từ 0h đến 7h
+sáng, BXH hiện dữ liệu tuần trước suốt bảy tiếng.**
+
+**Kỷ luật một cửa:** kéo câu `DELETE learning_events` cuối cùng ở `journal.py` về
+`common/events.py`, và gom luật đặt `dedup_key` về một hàm duy nhất. `dedup_key`
+của quiz khoá theo **tên chương mục** — một nhãn thay đổi được, mà schema §26 ghi
+rõ giáo trình *sẽ* được soạn lại; chạy lại lệnh nạp sau khi đổi tên sẽ **đếm đôi
+mọi quiz, im lặng**. Vá bằng xoá-rồi-ghi.
+
+**Agent BÁC BỎ hai nghi ngờ cũ của tôi:** `check_and_award_achievements` là **5
+câu** chứ không phải ~23 (trần tuyệt đối 14), và `plan.generate` là 85–139 INSERT
+chứ không phải 245. Không thổi phồng theo.
+
+**Dữ liệu rác đã có thật:** `surveys` id=4 trỏ tới `user_id=10` không tồn tại.
+
+### 30/08/2026 — T11 xong: audit luồng đầu-cuối, và lỗi nặng nhất cả đợt
+**F-1 — phiên 8 tiếng thực chất chỉ sống 30 phút.** Hai tầng chồng nhau:
+`pe_at` có `Max-Age` đúng bằng tuổi thọ token nên phút thứ 30 trình duyệt tự xoá
+nó, và `serverFetch` đá người dùng đi **trước khi nhìn tới `pe_rt`** vẫn còn sống
+bảy tiếng rưỡi. Nguy hơn: khi nó CÓ làm mới được thì rotation thu hồi token cũ
+ngay, mà **Server Component không ghi cookie được** — nên việc làm mới ở tầng
+dựng trang không chỉ vô ích, nó **chủ động giết phiên**.
+
+Kịch bản thật: giảng viên đăng nhập trước giờ dạy, dạy 40 phút, mở sổ điểm danh →
+phải gõ lại mật khẩu trước mặt cả lớp.
+
+Vá bằng `src/middleware.ts` — chỗ duy nhất trong App Router vừa chạy trước khi
+dựng trang vừa ghi được cookie. Đo lại:
+```
+OK  ca hai cookie                       -> /quan-tri/tai-khoan
+OK  CHI con pe_rt (sau 30 phut)         -> /quan-tri/tai-khoan   (truoc: /login)
+OK  refresh token da XOAY va ghi lai duoc vao trinh duyet
+OK  vao lai bang refresh token vua xoay -> /quan-tri/tai-khoan
+OK  khong cookie nao                    -> /login
+```
+
+**Phần TỐT, đã kiểm, không cần soi lại:** quyền theo vai kín tuyệt đối · chấm
+điểm từng dòng khi nhập hàng loạt · đổi bộ lọc lúc ở trang 3 không ra danh sách
+rỗng · CSV khớp màn hình · **tràn ngang 0 trên toàn bộ 10 tổ hợp** · vùng chạm
+44px · bấm Lưu hai lần không lọt.
+
+**Tiếp theo:** T45–T50 (giao diện điện thoại, xác nhận lưu, ngôn ngữ máy lọt ra
+màn hình) và T41–T44 (gộp INSERT, bất biến CSDL, `terms`, `attendance_taken_at`).
+Còn T13 (khả năng tiếp cận) + T14 (nhất quán giao diện) chưa chạy.

@@ -18,6 +18,7 @@ from django.db import DatabaseError
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import (KIND_LESSON, KIND_MOCK, KIND_SELF_LOG, SOURCE_SELF,
+                           forget_events,
                            record_event)
 from stats.goals import as_date, read_goals
 
@@ -130,7 +131,7 @@ def save_log(uid, payload):
 
     # Sự kiện đi kèm: source='self' để mọi biểu đồ tách được số tự khai.
     # KHÔNG có score/max_score — nhật ký không phải một phép đo năng lực.
-    record_event(uid, KIND_SELF_LOG, 'selflog:%s' % day.isoformat(),
+    record_event(uid, KIND_SELF_LOG, _selflog_key(day),
                  occurred_at=now, event_date=day, topic=topic,
                  ref_type='study_log', ref_id=day.isoformat(),
                  minutes=minutes, source=SOURCE_SELF,
@@ -138,13 +139,25 @@ def save_log(uid, payload):
     return _row_out(row), None
 
 
+def _selflog_key(day):
+    """Khoá dedup của một ngày nhật ký tự ghi — MỘT chỗ đặt, dùng cho cả ghi lẫn xoá.
+
+    Trước 30/08/2026 chuỗi này được dựng lại ở hai nơi. Đổi tiền tố ở chỗ ghi mà
+    quên chỗ xoá thì lệnh xoá nhật ký ngày sẽ im lặng không xoá gì, và dòng sự
+    kiện tự khai tồn tại vĩnh viễn cho một bản ghi đã bị xoá.
+    """
+    return 'selflog:%s' % day.isoformat()
+
+
 def delete_log(uid, day):
     day = as_date(day)
     if not day:
         return False
     x('DELETE FROM study_logs WHERE user_id=%s AND log_date=%s', (uid, day))
-    x('DELETE FROM learning_events WHERE user_id=%s AND dedup_key=%s',
-      (uid, 'selflog:%s' % day.isoformat()))
+    # Đi qua common/events.py chứ không tự viết DELETE: đó là cửa DUY NHẤT được
+    # đụng vào learning_events, cả ghi lẫn xoá. Câu DELETE cũ ở đây còn tự dựng
+    # lại chuỗi dedup_key, nên luật đặt tên khoá nằm ở hai nơi.
+    forget_events(user_id=uid, dedup_key=_selflog_key(day))
     return True
 
 

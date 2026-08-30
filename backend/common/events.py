@@ -48,7 +48,7 @@ SOURCE_SYSTEM = 'system'
 SOURCE_SELF = 'self'
 
 
-def forget_events(ref_type, ref_id):
+def forget_events(ref_type=None, ref_id=None, *, user_id=None, dedup_key=None):
     """Xoá các sự kiện sinh ra từ một đối tượng đã bị xoá. Trả số dòng đã xoá.
 
     Đối xứng với ``record_event``: module này là cửa duy nhất GHI vào
@@ -61,20 +61,34 @@ def forget_events(ref_type, ref_id):
     NULL nên không lọt vào năng lực hay sổ điểm) nhưng vẫn tính vào "hoạt động
     gần nhất" — tức một buổi đã xoá vẫn làm học viên trông như còn đang học.
 
-    CỐ Ý HẸP: chỉ nhận cặp ``ref_type``/``ref_id``, không nhận điều kiện tự do.
-    Một hàm xoá theo điều kiện tuỳ ý đặt ở đây sớm muộn cũng bị dùng để "dọn dẹp"
-    và cuốn theo dữ liệu học tập thật, thứ không có đường khôi phục.
+    CỐ Ý HẸP: chỉ nhận hai dạng khoá xác định — cặp ``ref_type``/``ref_id``, hoặc
+    cặp ``user_id``/``dedup_key``. KHÔNG nhận điều kiện tự do. Một hàm xoá theo
+    điều kiện tuỳ ý đặt ở đây sớm muộn cũng bị dùng để "dọn dẹp" và cuốn theo dữ
+    liệu học tập thật, thứ không có đường khôi phục.
+
+    Dạng thứ hai (``user_id`` + ``dedup_key``) thêm ngày 30/08/2026 để kéo nốt
+    câu DELETE cuối cùng còn nằm ngoài mô-đun này về đây (``stats/journal.py``
+    xoá nhật ký tự ghi). Trước đó nó tự dựng lại chuỗi ``dedup_key``, tức luật
+    đặt tên khoá nằm ở HAI nơi — đổi tiền tố ở chỗ ghi mà quên chỗ xoá thì việc
+    xoá sẽ im lặng không xoá gì, và dòng sự kiện tự khai sống mãi cho một bản
+    ghi đã bị xoá.
     """
-    if not ref_type or ref_id is None:
+    from common.db import q
+    if ref_type and ref_id is not None:
+        sql = 'DELETE FROM learning_events WHERE ref_type=%s AND ref_id=%s RETURNING id'
+        args = (ref_type, str(ref_id))
+    elif user_id is not None and dedup_key:
+        sql = 'DELETE FROM learning_events WHERE user_id=%s AND dedup_key=%s RETURNING id'
+        args = (user_id, dedup_key)
+    else:
         return 0
     try:
         with transaction.atomic():
-            from common.db import q
-            rows = q('DELETE FROM learning_events WHERE ref_type=%s AND ref_id=%s '
-                     'RETURNING id', (ref_type, str(ref_id)))
+            rows = q(sql, args)
         return len(rows)
     except DatabaseError as exc:
-        logger.error('[events] KHÔNG xoá được sự kiện của %s/%s: %s', ref_type, ref_id, exc)
+        logger.error('[events] KHÔNG xoá được sự kiện (%s/%s, user=%s, key=%s): %s',
+                     ref_type, ref_id, user_id, dedup_key, exc)
         return 0
 
 

@@ -502,7 +502,7 @@ class SurveyView(APIView):
             survey = q1(
                 'INSERT INTO surveys (user_id, data_json, created_at) '
                 'VALUES (%s,%s,%s) RETURNING id',
-                (uid, json.dumps(data, ensure_ascii=False), datetime.utcnow().isoformat()))
+                (uid, json.dumps(data, ensure_ascii=False), local_now().isoformat()))
             x('UPDATE users SET questionnaire_completed=1 WHERE id=%s', (uid,))
             _generate_user_roadmap(uid, survey['id'], data)
         return Response({'ok': True})

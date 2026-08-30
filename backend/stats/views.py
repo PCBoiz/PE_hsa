@@ -327,7 +327,7 @@ class HsaGoalsView(APIView):
             x("UPDATE surveys SET data_json=%s WHERE id=%s", (payload, row['id']))
         else:
             x("INSERT INTO surveys (user_id, data_json, created_at) VALUES (%s, %s, %s)",
-              (uid, payload, datetime.utcnow().isoformat()))
+              (uid, payload, local_now().isoformat()))
         return Response({k: data.get(k) for k in self.FIELDS})
 
 

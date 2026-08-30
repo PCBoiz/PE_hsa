@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.clock import local_now
 from common.db import q, q1, x
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
@@ -235,7 +236,7 @@ class RateCourseView(APIView):
              VALUES (%s, %s, %s, %s)
              ON CONFLICT (user_id, course_id)
              DO UPDATE SET rating = EXCLUDED.rating, created_at = EXCLUDED.created_at''',
-          (uid, course_id, rating, datetime.now(timezone.utc).isoformat()))
+          (uid, course_id, rating, local_now().isoformat()))
         return Response({'ok': True})
 
 

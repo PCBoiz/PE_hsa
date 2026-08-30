@@ -20,15 +20,58 @@ Nay dùng connection.close_pool(): HỦY hẳn pool → lần cursor() kế ti�
 dựng pool MỚI toàn conn tươi. Kèm keep-warm ping (common/keepalive.py) để Neon
 gần như không bao giờ scale-to-zero khi backend đang chạy.
 """
+import logging
 import time
+
+from psycopg import errors as psycopg_errors
 
 from django.db import InterfaceError, OperationalError, connection
 
 # Lỗi báo hiệu connection hỏng/đóng (Neon EOF, SSL abort, conn closed…).
 _CONN_ERR = (OperationalError, InterfaceError)
+
+# ── LOẠI TRỪ: những lỗi TRÔNG như connection chết nhưng KHÔNG phải ────────────
+#
+# `psycopg_pool.PoolTimeout` và họ hàng đều kế thừa `psycopg.OperationalError`,
+# và Django bọc chúng lại thành `django.db.OperationalError` (đã đo: dựng
+# `DatabaseErrorWrapper` rồi ném `PoolTimeout` → bắt được
+# `django.db.utils.OperationalError`, và `isinstance(e, _CONN_ERR)` trả True).
+# Nên chúng rơi thẳng vào nhánh HỦY CẢ POOL bên dưới — trong khi pool hoàn toàn
+# khoẻ, chỉ đang bận.
+#
+# Vì sao đó là vòng xoáy tự khuếch đại chứ không chỉ là một lần chậm:
+#   1. Tải cao, mọi kết nối đều bận. Một luồng chờ trong `getconn()`.
+#   2. Sau `timeout` giây → `PoolTimeout`.
+#   3. `_run` tưởng connection chết → `_reset_pool()` → `close_pool()`.
+#   4. `psycopg_pool.close()` ĐÁ NGAY mọi luồng đang chờ ra với `PoolClosed` —
+#      cũng là OperationalError, nên chúng cũng gọi `_reset_pool()`.
+#   5. Pool mới phải mở lại từ đầu; mở một kết nối tới Neon (TLS + SCRAM) mất
+#      khoảng 1,9 giây (xem chú thích ở config/settings.py).
+#   6. Trong lúc đó các luồng ngủ theo `_BACKOFF` = 19 giây, vẫn giữ chỗ worker.
+#   7. Yêu cầu mới đổ vào, pool mới cạn ngay → quay lại bước 1.
+# Với `gunicorn timeout = 30`, một yêu cầu chờ 15s + ngủ 1s + chờ 15s đã vượt
+# ngưỡng ngay ở lần thử THỨ HAI → gunicorn giết cả worker, kéo theo mọi yêu cầu
+# đang chạy dở trong worker đó.
+#
+# `QueryCanceled` (statement timeout) cũng vậy: hủy pool rồi chạy lại ĐÚNG câu
+# chậm đó sáu lần. `TooManyConnections` (Neon chạm trần) thì còn ngược đời hơn —
+# phản ứng là mở thêm một loạt kết nối mới.
+#
+# Cả bốn đều KHÔNG được sửa bằng cách dựng lại pool. Để chúng bay lên trên: bên
+# gọi nhận 500/503 một lần, còn hơn kéo sập hệ thống cho mọi người.
+_NOT_DEAD_CONN = (
+    psycopg_errors.QueryCanceled,
+)
+try:  # psycopg_pool là phụ thuộc gián tiếp qua Django; không có thì bỏ qua.
+    from psycopg_pool import PoolClosed, PoolTimeout, TooManyRequests
+    _NOT_DEAD_CONN += (PoolTimeout, PoolClosed, TooManyRequests)
+except ImportError:  # pragma: no cover
+    pass
 # Backoff (giây) giữa các lần thử — TỔNG ~20s để phủ trọn cold-start Neon free
 # (compute từ trạng thái scale-to-zero thức dậy mất ~5-20s).
 _BACKOFF = (1, 2, 3, 5, 8)
+
+logger = logging.getLogger(__name__)
 
 
 def _dictfetchall(cursor):
@@ -44,14 +87,18 @@ def _reset_pool():
     hủy hẳn pool; lần connection.cursor() kế tiếp Django dựng pool MỚI với conn
     tươi = mở kết nối mới tới Neon (đánh thức compute). Cả hai bọc try để một
     lỗi không chặn lỗi kia."""
+    # Ghi log chứ không nuốt im lặng (RULES §8): nếu `close_pool()` hỏng thì
+    # vòng thử lại bên dưới cứ chạy tiếp trên một pool đã chết, và không ai biết
+    # vì sao mọi thứ chậm dần rồi đứng hẳn.
     try:
         connection.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning('[db] không đóng được connection: %s', exc)
     try:
         connection.close_pool()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.error('[db] KHÔNG hủy được pool — các lần thử lại sau sẽ chạy '
+                     'trên pool cũ: %s', exc)
 
 
 def _run(sql, params, handler):
@@ -70,6 +117,16 @@ def _run(sql, params, handler):
                 cur.execute(sql, params or ())
                 return handler(cur)
         except _CONN_ERR as e:
+            # PHẢI soi `__cause__`, không bắt trực tiếp bằng `except`.
+            #
+            # `DatabaseErrorWrapper` của Django không ném lại ngoại lệ gốc mà
+            # dựng một ngoại lệ MỚI (`dj_exc_type(*exc_value.args)`) rồi gắn bản
+            # gốc vào `__cause__`. Nên thứ tới đây KHÔNG còn là `PoolTimeout`
+            # nữa — một `except PoolTimeout` đặt phía trên sẽ không bao giờ khớp.
+            # Đã đo: bản vá đầu tiên viết đúng kiểu đó và `_reset_pool` vẫn bị
+            # gọi đủ 6 lần.
+            if isinstance(getattr(e, '__cause__', None), _NOT_DEAD_CONN):
+                raise
             last = e
             if connection.in_atomic_block:
                 raise
