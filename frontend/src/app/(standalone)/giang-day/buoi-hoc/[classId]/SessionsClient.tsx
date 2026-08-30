@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Button, Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHead,
+  Chip,
+  EmptyState,
+  Tile,
+  TileRow,
+  ToastProvider,
+  useToast,
+} from '@/components/ui';
 import { apiFetch, errorText } from '@/lib/api';
 
 /**
@@ -55,6 +65,25 @@ const MARKS: { key: Mark; label: string; tone: 'good' | 'warn' | 'bad' | 'brand'
   { key: 'excused', label: 'Có phép', tone: 'brand' },
 ];
 
+/**
+ * Câu xác nhận sau khi lưu điểm danh, dựng từ `counts` backend trả về.
+ *
+ * Nhắc lại CON SỐ chứ không chỉ nói "Đã lưu": giảng viên vừa tick hai chục ô
+ * liên tiếp, và thứ họ cần yên tâm là máy đếm ra đúng bằng số mình tick. Một
+ * chữ "Đã lưu" trơ trọi không trả lời được câu đó.
+ *
+ * Nhãn lấy từ chính `MARKS` — mảng đang vẽ ra bốn nút bấm — nên câu thông báo
+ * không thể gọi tên trạng thái khác với cái nút mà giảng viên vừa bấm.
+ */
+function cauDaLuu(counts: Partial<Record<Mark, number>> | undefined, marked: number) {
+  const phan = MARKS.filter((m) => counts?.[m.key]).map(
+    (m) => `${counts?.[m.key]} ${m.label.toLowerCase()}`,
+  );
+  return phan.length > 0
+    ? `Đã lưu điểm danh — ${phan.join(', ')}.`
+    : `Đã lưu điểm danh cho ${marked} học viên.`;
+}
+
 function fmt(iso: string | null) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -92,6 +121,13 @@ export default function SessionsClient({
   }, [classId]);
 
   return (
+    // ToastProvider bọc cả màn hình vì lời xác nhận PHẢI nằm trong khung nhìn.
+    // Đo ở 390×844: nút "Lưu điểm danh" ở top=764px còn chữ "Chưa lưu" — thứ
+    // DUY NHẤT báo đã lưu xong, bằng cách biến mất — ở top=868px, tức ngoài
+    // khung nhìn 104px. Đúng tư thế giảng viên bấm Lưu thì không nhìn thấy kết
+    // quả, mà lần lưu mất tới 4,7 giây. Toast neo `fixed bottom-4` nên luôn
+    // hiện, bất kể trang đang cuộn tới đâu.
+    <ToastProvider>
     <div className="flex flex-col gap-5">
       <NewSession classId={classId} onDone={() => void reload()} onError={setErr} />
 
@@ -160,6 +196,7 @@ export default function SessionsClient({
         )}
       </Card>
     </div>
+    </ToastProvider>
   );
 }
 
@@ -306,6 +343,7 @@ function Attendance({
   const [rows, setRows] = useState<Student[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     let alive = true;
@@ -352,6 +390,19 @@ function Attendance({
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
       setDirty(false);
+      toast(cauDaLuu(d.counts, d.marked ?? 0), 'ok');
+
+      // Backend CỐ Ý báo lại những id nó bỏ qua (xem chú thích ở
+      // teaching/sessions.py: "để người gửi biết chứ không tưởng là đã lưu"),
+      // nhưng màn hình vẫn đang vứt đi — tức là báo thành công cho một lần lưu
+      // thiếu người. Trường hợp thật: học viên rời lớp ở tab khác trong lúc
+      // giảng viên đang tick.
+      if (Array.isArray(d.skipped) && d.skipped.length > 0) {
+        onError(
+          `${d.skipped.length} học viên trong danh sách không còn học lớp này nên chưa lưu. ` +
+            'Tải lại trang để thấy danh sách đúng.',
+        );
+      }
       onSaved();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Không lưu được điểm danh');
@@ -431,13 +482,19 @@ function Attendance({
       </ul>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button loading={busy} disabled={!dirty} onClick={() => void save()}>
-          Lưu điểm danh
-        </Button>
+        {/* Nút Lưu và chữ "Chưa lưu" nằm CHUNG một khối, để chúng luôn xuống
+            dòng cùng nhau. Trước đây cả ba phần tử là anh em trực tiếp của một
+            `flex-wrap`, nên ở 390px mỗi cái rơi xuống một dòng và chữ "Chưa
+            lưu" bị đẩy xuống cách nút Lưu tới 104px — ra ngoài khung nhìn. */}
+        <span className="flex items-center gap-2">
+          <Button loading={busy} disabled={!dirty} onClick={() => void save()}>
+            Lưu điểm danh
+          </Button>
+          {dirty && <span className="text-small text-warning-ink">Chưa lưu</span>}
+        </span>
         <Button variant="ghost" onClick={allPresent}>
           Đánh dấu cả lớp có mặt
         </Button>
-        {dirty && <span className="text-small text-warning-ink">Chưa lưu</span>}
       </div>
     </div>
   );

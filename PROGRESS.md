@@ -43,7 +43,7 @@ Vai khác: id 11 = Giảng viên · id 12, 13 = Học viên.
 
 ## Trạng thái 30/08/2026
 
-**Nhánh:** `erp`, 19 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
+**Nhánh:** `erp`, 20 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
 chờ người dùng cho phép). `master` có `autoDeploy: true` nên gộp vào đó là deploy
 production ngay.
 
@@ -313,18 +313,61 @@ Một lỗi tự bắt được giữa chừng: nhánh dự phòng ban đầu c�
 trong khi mẻ đã gộp trùng, nên khi mẻ hỏng nó sẽ ghi lại nhầm dòng. Sửa bằng
 cách giữ cả tham số lẫn dict gốc theo cùng thứ tự.
 
+### 31/08/2026 — T46 xong: bấm Lưu xong thì thấy được là đã lưu
+
+`ToastProvider` dựng từ T19 nhưng **chưa nơi nào gắn** — mã chết. Nay gắn ở màn
+hình buổi học.
+
+Đo trên trình duyệt thật, 390×844, khung nhìn cao 844px:
+```
+                              truoc      sau
+nut "Luu diem danh"          top=764    top=687
+chu "Chua luu"               top=868    top=700   (lech 104px -> 13px)
+loi xac nhan sau khi luu      khong co   top=766 bottom=828  (trong khung)
+```
+
+Trước đây tín hiệu DUY NHẤT báo lưu xong là chữ "Chưa lưu" biến mất — mà nó nằm
+ngoài khung nhìn 104px, tức đúng tư thế giảng viên bấm Lưu thì không nhìn thấy
+kết quả, trong khi lần lưu mất 3,5 giây. Hai vế đều đã vá: lời xác nhận neo
+`fixed bottom-4` nên luôn hiện, và "Chưa lưu" gộp chung một khối với nút Lưu nên
+hai thứ luôn xuống dòng cùng nhau (trước là ba anh em của cùng một `flex-wrap`
+nên ở 390px mỗi cái rơi một dòng).
+
+Lời xác nhận **nhắc lại con số** ("Đã lưu điểm danh — 3 có mặt.") chứ không chỉ
+"Đã lưu": giảng viên vừa tick hai chục ô, thứ họ cần yên tâm là máy đếm đúng
+bằng số mình tick. Nhãn lấy từ chính mảng `MARKS` đang vẽ bốn nút bấm, nên câu
+thông báo không thể gọi tên trạng thái khác với nút vừa bấm.
+
+**Vá kèm:** màn hình nay đọc `skipped` — danh sách id backend CỐ Ý báo lại (chú
+thích trong `sessions.py`: "để người gửi biết chứ không tưởng là đã lưu") mà
+frontend đang vứt đi. Trường hợp thật: học viên rời lớp ở tab khác trong lúc
+giảng viên đang tick, trước đây sẽ báo thành công cho một lần lưu thiếu người.
+
+Kiểm 7 phép qua giao diện thật, 7 đạt (gồm 0 lỗi console, 0 tràn ngang ở 390px).
+Buổi học tạo ra để kiểm đã xoá bằng chính endpoint xoá: CSDL về đúng 5 tài
+khoản / 37 sự kiện / 0 buổi / 0 điểm danh.
+
+**Nhìn thấy trong ảnh chụp, chưa vá:** danh sách điểm danh có một dòng tên
+"Quản trị viên" — bằng chứng thị giác cho T42 (`class_members` chứa `user_id=7`
+role admin). Quản trị viên đang được điểm danh như học viên.
+
+**Còn một điểm nhỏ chưa xử:** lời xác nhận neo đáy màn hình che mất nút "Đánh
+dấu cả lớp có mặt" trong 4 giây. Chấp nhận được vì vừa lưu xong thì khó cần tới
+nút đó ngay, và có nút đóng — nhưng nếu sau này thêm hành động ở đáy thì phải
+xem lại.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T41) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T46) đã commit xong.
 
 **Ba việc CẦN NGƯỜI DÙNG, không tự làm được:**
 1. `git push -u origin erp` — bị bộ lọc quyền của chế độ auto chặn (không
    phải lỗi git: `git push --dry-run` chạy lọt và GitHub trả lời bình thường).
-   19 mốc nằm ở máy. Ba cách cho qua: anh tự chạy lệnh · thêm
+   20 mốc nằm ở máy. Ba cách cho qua: anh tự chạy lệnh · thêm
    `.claude/settings.json` với `"allow": ["Bash(git push -u origin erp:*)"]`
    (cố ý HẸP — luật `Bash(git push:*)` cho phép luôn push vào `master`, tức
    deploy production) · hoặc rời auto mode để nó hỏi thay vì chặn.
@@ -335,7 +378,6 @@ Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T46 (xác nhận lưu điểm danh — `Toast` đã dựng sẵn, chưa gắn) →
 T45 (bảng giấu 62% cột trên điện thoại) →
 T47 (`serverJson` vứt câu lỗi backend) →
 T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).

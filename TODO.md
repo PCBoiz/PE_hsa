@@ -225,7 +225,12 @@ dung** (thứ duy nhất nói chuyện gì đã xảy ra). Bảng "Kiểm tra tr
 `TableWrap` cuộn ngang là đúng để trang không trượt, nhưng không có gợi ý thị
 giác nào báo còn nội dung bên phải. Cần bố cục thẻ ở khổ hẹp thay vì bảng.
 
-### [ ] T46 · Lưu điểm danh: không xác nhận, và trên điện thoại tín hiệu nằm DƯỚI khung nhìn
+### [x] T46 · Lưu điểm danh: xác nhận nay nằm trong khung nhìn — XONG 31/08
+Gắn `ToastProvider` (dựng từ T19, chưa nơi nào dùng). Đo lại ở 390×844 trên
+trình duyệt thật: lời "Đã lưu điểm danh — 3 có mặt." ở top=766, bottom=828 —
+trong khung 844px. Chữ "Chưa lưu" nay cách nút Lưu **13px** (trước 104px) nhờ
+gộp chung một khối để hai thứ luôn xuống dòng cùng nhau. Thêm: màn hình nay
+đọc `skipped` mà backend cố ý báo lại, trước đây vứt đi.
 Mở rộng T37 bằng số đo. Lưu mất **4.716ms**; tín hiệu duy nhất báo xong là chữ
 "Chưa lưu" biến mất. Ở 390×844: nút Lưu ở `top=764px` (trong khung), chữ "Chưa
 lưu" ở `top=868px` — **ngoài khung nhìn 104px**. Đúng tư thế người ta bấm Lưu thì
