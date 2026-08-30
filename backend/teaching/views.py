@@ -7,10 +7,13 @@ cụ thể đều phải đi qua ``can_see_class`` — xem common/permissions.py
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common import audit
 from common.clock import local_now
 from common.db import q1, x
-from common.permissions import (ASSIGNABLE_ROLES, IsAdminRole, IsTeacherOrAdmin,
-                                can_see_class, is_admin, visible_class_ids)
+from common.identity import norm_email, norm_phone
+from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
+                                IsAdminRole, IsTeacherOrAdmin, can_see_class,
+                                is_admin, last_active_admin, visible_class_ids)
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
@@ -89,6 +92,30 @@ class TeachStudentView(APIView):
 
 # ── Quản trị lớp (chỉ quản trị viên) ────────────────────────────────────────
 
+def _user_label(row, fallback_id=None):
+    """Tên người dùng để chép vào nhật ký kiểm toán.
+
+    Tài khoản chưa kịp điền tên thì lấy email, cùng lắm là ``#12``. Một dòng
+    nhật ký ghi 'đã khoá tài khoản None' là một dòng vô dụng, mà nhật ký chỉ
+    được đọc đúng vào lúc người ta cần biết chuyện gì đã xảy ra.
+    """
+    if row:
+        return row.get('name') or row.get('email') or ('#%s' % row.get('id'))
+    return '#%s' % fallback_id
+
+
+def _audit_detail(data):
+    """Đưa payload lớp về dạng JSON ghi được vào nhật ký.
+
+    ``json.dumps`` không nuốt được ``date``, và ``common/audit.py`` bắt luôn
+    ``TypeError`` rồi bỏ dòng nhật ký đó — tức là ngày khai giảng lọt vào
+    payload là mất TRỌN dòng kiểm toán chứ không phải mất mỗi trường ngày, mà
+    lại mất im lặng (chỉ còn vết trong log ứng dụng).
+    """
+    return {k: (v.isoformat() if hasattr(v, 'isoformat') else v)
+            for k, v in data.items()}
+
+
 def _clean_class_payload(body):
     data, err = {}, None
     for field, limit in CLASS_TEXT_FIELDS.items():
@@ -157,6 +184,12 @@ class AdminClassesView(APIView):
         vals = list(data.values()) + [local_now()]
         row = q1('INSERT INTO classes (%s) VALUES (%s) RETURNING id'
                  % (', '.join(cols), ', '.join(['%s'] * len(vals))), tuple(vals))
+        audit.record(request, audit.CLASS_CREATE, target_type='class',
+                     target_id=row['id'], target_label=data['name'],
+                     summary='Tạo lớp "%s"%s.' % (data['name'],
+                                                  ' (mã %s)' % data['code']
+                                                  if data.get('code') else ''),
+                     detail=_audit_detail(data))
         return Response({'ok': True, 'id': row['id']}, status=201)
 
 
@@ -171,7 +204,11 @@ class AdminClassDetailView(APIView):
     permission_classes = [IsAdminRole]
 
     def put(self, request, class_id):
-        if not q1('SELECT 1 FROM classes WHERE id=%s', (class_id,)):
+        # Lấy luôn tên hiện tại (thay cho `SELECT 1`) để nhật ký chép được nhãn
+        # TẠI THỜI ĐIỂM SỬA. Đọc lại tên lúc xem nhật ký thì thấy tên MỚI, và
+        # dòng "đổi tên lớp X" sẽ tự mâu thuẫn với chính nó.
+        before = q1('SELECT id, code, name FROM classes WHERE id=%s', (class_id,))
+        if not before:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
         data, err = _clean_class_payload(body)
@@ -182,11 +219,66 @@ class AdminClassDetailView(APIView):
         sets = ', '.join('%s = %%s' % k for k in data)
         x('UPDATE classes SET %s, updated_at = %%s WHERE id = %%s' % sets,
           tuple(data.values()) + (local_now(), class_id))
+        audit.record(request, audit.CLASS_UPDATE, target_type='class',
+                     target_id=class_id, target_label=before['name'],
+                     summary='Sửa lớp "%s" — đổi: %s.' % (before['name'],
+                                                          ', '.join(sorted(data))),
+                     detail=_audit_detail(data))
         return Response({'ok': True})
 
     def delete(self, request, class_id):
+        """Xoá lớp. ĐÒI `?confirm=1` khi lớp còn dữ liệu.
+
+        Vì sao có hàng rào này (30/08/2026): ba bảng trỏ vào `classes` đều
+        `ON DELETE CASCADE`, nên một lời gọi DELETE quét sạch `class_members`,
+        `class_sessions` VÀ `attendance` của cả lớp. Từ hôm nay có buổi học và
+        điểm danh, sức công phá của nút này lớn hơn hẳn lúc nó được viết.
+
+        Nó còn mâu thuẫn thẳng với nguyên tắc ghi trong schema §29 — "giữ
+        `left_at` thay vì xoá dòng: học viên nghỉ giữa chừng vẫn phải còn trong
+        báo cáo của kỳ đó". Cả sản phẩm cẩn thận giữ lịch sử, rồi một nút xoá
+        không hỏi câu nào lấy đi toàn bộ. Không có đường khôi phục.
+        """
+        # Đọc tên TRƯỚC khi xoá: sau lệnh DELETE thì không còn chỗ nào lấy lại
+        # được, và một dòng nhật ký "đã xoá lớp #7" không nói lên điều gì với
+        # người đọc ba tháng sau.
+        before = q1('SELECT id, code, name FROM classes WHERE id=%s', (class_id,))
+        if not before:
+            # Trước đây trả `{'ok': True}` cho cả id bịa — giao diện báo "đã xoá"
+            # cho một lớp chưa bao giờ tồn tại.
+            return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
+
+        counts = q1('''SELECT (SELECT COUNT(*) FROM class_members WHERE class_id=%s) AS members,
+                             (SELECT COUNT(*) FROM class_sessions WHERE class_id=%s) AS sessions,
+                             (SELECT COUNT(*) FROM attendance a
+                                JOIN class_sessions s ON s.id = a.session_id
+                               WHERE s.class_id=%s) AS attendance''',
+                    (class_id, class_id, class_id))
+        loss = sum(counts.values())
+        if loss and request.query_params.get('confirm') != '1':
+            return Response({
+                'error': 'Lớp "%s" còn dữ liệu. Xoá là mất hẳn, không khôi phục được.'
+                         % before['name'],
+                'willDelete': dict(counts),
+                'needsConfirm': True,
+                'hint': 'Muốn đóng lớp mà giữ lịch sử thì đổi trạng thái lớp sang '
+                        '"đã kết thúc" thay vì xoá.',
+            }, status=409)
+
         x('DELETE FROM classes WHERE id=%s', (class_id,))
-        return Response({'ok': True})
+        if before:
+            # Chỉ ghi khi lớp có thật. Gọi DELETE hai lần (bấm nhầm hai cái) mà
+            # đẻ ra hai dòng nhật ký thì người đọc tưởng có hai lớp bị xoá.
+            audit.record(request, audit.CLASS_DELETE, target_type='class',
+                         target_id=class_id, target_label=before['name'],
+                         summary='Xoá lớp "%s"%s — mất theo %d dòng ghi danh, '
+                                 '%d buổi học và %d lượt điểm danh.'
+                                 % (before['name'],
+                                    ' (mã %s)' % before['code'] if before['code'] else '',
+                                    counts['members'], counts['sessions'],
+                                    counts['attendance']),
+                         detail=dict(_audit_detail(before), **dict(counts)))
+        return Response({'ok': True, 'deleted': dict(counts)})
 
 
 class AdminClassMembersView(APIView):
@@ -194,22 +286,33 @@ class AdminClassMembersView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request, class_id):
-        if not q1('SELECT 1 FROM classes WHERE id=%s', (class_id,)):
+        klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
+        if not klass:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
-        email = (body.get('email') or '').strip().lower()
+        email = norm_email(body.get('email')) or ''
         uid = body.get('user_id')
+        row = None
         if email:
-            row = q1('SELECT id FROM users WHERE lower(email)=%s', (email,))
+            row = q1('SELECT id, name, email FROM users WHERE lower(email)=%s', (email,))
             if not row:
                 return Response({'error': 'Không có tài khoản với email này.'}, status=404)
             uid = row['id']
         if not uid:
             return Response({'error': 'Cần user_id hoặc email.'}, status=400)
+        if row is None:
+            # Tra tên CHỈ để chép vào nhật ký, cố ý KHÔNG chặn khi không thấy:
+            # thêm một cửa 404 ở đây là đổi hành vi của endpoint đang chạy.
+            row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
         x('''INSERT INTO class_members (class_id, user_id, joined_at)
              VALUES (%s, %s, %s)
              ON CONFLICT (class_id, user_id) DO UPDATE SET left_at = NULL''',
           (class_id, uid, local_now()))
+        ten = _user_label(row, uid)
+        audit.record(request, audit.CLASS_MEMBER_ADD, target_type='class',
+                     target_id=class_id, target_label=klass['name'],
+                     summary='Thêm "%s" vào lớp "%s".' % (ten, klass['name']),
+                     detail={'userId': uid, 'userName': ten, 'classId': class_id})
         return Response({'ok': True, 'userId': uid})
 
     def delete(self, request, class_id):
@@ -220,6 +323,15 @@ class AdminClassMembersView(APIView):
         # trong báo cáo của kỳ đó.
         x('UPDATE class_members SET left_at=%s WHERE class_id=%s AND user_id=%s',
           (local_now(), class_id, uid))
+        klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
+        row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
+        ten = _user_label(row, uid)
+        audit.record(request, audit.CLASS_MEMBER_REMOVE, target_type='class',
+                     target_id=class_id,
+                     target_label=klass['name'] if klass else '#%s' % class_id,
+                     summary='Cho "%s" rời lớp "%s". Dữ liệu học của em giữ nguyên.'
+                             % (ten, klass['name'] if klass else '#%s' % class_id),
+                     detail={'userId': uid, 'userName': ten, 'classId': class_id})
         return Response({'ok': True})
 
 
@@ -233,28 +345,215 @@ class AdminUserRoleView(APIView):
         if role not in ASSIGNABLE_ROLES:
             return Response({'error': 'Vai trò phải là một trong: %s.'
                                       % ', '.join(ASSIGNABLE_ROLES)}, status=400)
-        if not q1('SELECT 1 FROM users WHERE id=%s', (user_id,)):
+        # Lấy luôn vai trò CŨ (thay cho `SELECT 1`): nhật ký phải trả lời được
+        # "trước đó em ấy là gì", mà sau lệnh UPDATE thì giá trị cũ không còn ở
+        # đâu để đọc lại.
+        before = q1('SELECT id, name, email, role FROM users WHERE id=%s', (user_id,))
+        if not before:
             return Response({'error': 'Không có tài khoản này.'}, status=404)
         if int(user_id) == request.user.id and role != 'admin':
             # Tự hạ quyền mình xuống là mất luôn đường vào trang quản trị.
             return Response({'error': 'Không tự đổi vai trò của chính mình được.'},
                             status=400)
+        # Câu trên chỉ chặn tự hạ quyền MÌNH. Hai quản trị viên hạ quyền LẪN NHAU
+        # thì cả hai câu đều lọt, và hệ thống về không quản trị viên — không ai
+        # vào được để phong lại quyền cho ai.
+        if role != ROLE_ADMIN and last_active_admin(user_id):
+            return Response({'error': 'Đây là quản trị viên đang hoạt động cuối cùng. '
+                                      'Phong quyền cho một người khác trước đã.'},
+                            status=400)
         x('UPDATE users SET role=%s WHERE id=%s', (role, user_id))
+        ten = _user_label(before, user_id)
+        audit.record(request, audit.USER_ROLE, target_type='user', target_id=user_id,
+                     target_label=ten,
+                     summary='Đổi vai trò của "%s": %s → %s.'
+                             % (ten, before['role'] or '(chưa có)', role),
+                     detail={'from': before['role'], 'to': role})
         return Response({'ok': True, 'role': role})
 
 
-class AdminUsersView(APIView):
-    """GET /api/admin/users?q= — tìm tài khoản để gán lớp hoặc đổi vai trò."""
+# ``AdminUsersView`` chuyển sang teaching/admin_users.py (30/08/2026): bản ở đây
+# cứng LIMIT 50 và không phân trang, nên với vài trăm học viên thì em thứ 51 trở
+# đi không có đường nào hiện ra. Bản mới có tìm/lọc/phân trang và trả kèm danh
+# sách lớp đang theo học.
+
+
+# ─────────────── Đặt lại mật khẩu (chính sách tài khoản do trung tâm cấp) ────
+
+#: Âm tiết tiếng Việt không dấu, dễ đọc qua điện thoại và khó nghe nhầm.
+#: Cố ý bỏ những âm dễ lẫn khi nói ("b/p", "n/l" đứng một mình) và bỏ số 0/1
+#: vì trợ giảng hay đọc nhầm thành chữ O và chữ l.
+_SYLLABLES = ('an', 'binh', 'cao', 'dao', 'gia', 'hoa', 'khanh', 'lam', 'mai',
+              'nam', 'phuc', 'quang', 'son', 'tam', 'vinh', 'yen')
+
+
+def _temp_password() -> str:
+    """Mật khẩu tạm để trợ giảng ĐỌC CHO HỌC VIÊN, không phải để máy sinh cho đẹp.
+
+    Dạng ``hsa-mai-4827``: đọc qua điện thoại không nhầm, gõ trên bàn phím điện
+    thoại không khổ, nhưng vẫn có 16 × 8000 khả năng nên không đoán được trong
+    một buổi. Mật khẩu này chỉ sống tới lần đăng nhập đầu tiên — hệ thống bắt
+    đổi ngay sau đó.
+    """
+    import secrets
+    return f'hsa-{secrets.choice(_SYLLABLES)}-{secrets.randbelow(9000) + 1000}'
+
+
+class AdminResetPasswordView(APIView):
+    """POST /api/admin/users/<id>/reset-password — cấp lại mật khẩu tạm.
+
+    Có endpoint này vì đã bỏ tự đăng ký: học viên quên mật khẩu thì không còn
+    đường nào tự lấy lại, và hệ thống cũng chưa gửi được email. Trợ giảng mở
+    màn hình Quản trị, bấm một nút, đọc mật khẩu tạm cho học viên là xong.
+
+    Mật khẩu tạm được trả về ĐÚNG MỘT LẦN trong phản hồi này và không lưu ở
+    dạng đọc được — muốn xem lại thì phải cấp lại cái mới.
+    """
     permission_classes = [IsAdminRole]
 
-    def get(self, request):
-        from common.db import q
-        term = (request.query_params.get('q') or '').strip().lower()
-        if term:
-            rows = q("SELECT id, name, email, role FROM users "
-                     "WHERE lower(name) LIKE %s OR lower(email) LIKE %s "
-                     "ORDER BY name LIMIT 50", ('%' + term + '%', '%' + term + '%'))
+    def post(self, request, user_id):
+        from accounts.hashers import make_werkzeug_password
+
+        target = q1('SELECT id, name, email, role FROM users WHERE id=%s', (user_id,))
+        if not target:
+            return Response({'error': 'Không tìm thấy tài khoản này'}, status=404)
+
+        temp = _temp_password()
+        x('UPDATE users SET password=%s, must_change_password=TRUE, '
+          'password_changed_at=NULL WHERE id=%s',
+          (make_werkzeug_password(temp), user_id))
+
+        ten = _user_label(target, user_id)
+        audit.record(request, audit.USER_PASSWORD_RESET, target_type='user',
+                     target_id=user_id, target_label=ten,
+                     summary='Đặt lại mật khẩu cho "%s". Mật khẩu cũ ngừng hiệu lực '
+                             'ngay, hệ thống bắt em đổi ở lần đăng nhập kế tiếp.' % ten,
+                     # TUYỆT ĐỐI không có `temp` ở đây. Nhật ký kiểm toán mọi
+                     # quản trị viên đều đọc được và giữ vĩnh viễn; ghi mật khẩu
+                     # tạm vào đó là biến sổ kiểm toán thành kho mật khẩu dạng
+                     # đọc được — hỏng đúng thứ mà việc bắt đổi mật khẩu ở lần
+                     # đăng nhập đầu sinh ra để bảo vệ.
+                     detail={'role': target['role']})
+
+        return Response({
+            'ok': True,
+            'userId': target['id'],
+            'name': target['name'],
+            'email': target['email'],
+            'tempPassword': temp,
+            'note': 'Đọc mật khẩu này cho học viên. Hệ thống sẽ bắt đổi ngay lần '
+                    'đăng nhập đầu tiên.',
+        })
+
+
+class AdminCreateUserView(APIView):
+    """POST /api/admin/users — cấp tài khoản cho học viên.
+
+    Đây là mảnh khép kín chính sách "tài khoản do trung tâm cấp" (27/08/2026).
+    Trước khi có endpoint này, việc bỏ tự đăng ký để lại một khoảng trống chết
+    người: học viên không tự mở tài khoản được nữa, mà trợ giảng cũng KHÔNG có
+    đường nào tạo — quy trình "tạo lớp rồi thêm học viên theo email" chỉ chạy
+    khi học viên đã có tài khoản từ trước.
+
+    Luồng thật ở trung tâm: học viên đăng ký học và để lại email/số điện thoại
+    → trợ giảng nhập vào đây → đọc mật khẩu tạm cho học viên → học viên đăng
+    nhập và bị bắt đổi ngay.
+
+    Nhận luôn `class_id` để xếp vào lớp trong cùng một thao tác: trợ giảng cấp
+    tài khoản là để cho vào một lớp cụ thể, tách làm hai bước chỉ tạo thêm chỗ
+    quên.
+    """
+    permission_classes = [IsAdminRole]
+
+    def post(self, request):
+        from accounts.hashers import make_werkzeug_password
+
+        data = request.data if isinstance(request.data, dict) else {}
+        name = (data.get('name') or '').strip()
+        # Qua common/identity.py, KHÔNG tự chuẩn hoá tại chỗ. `LoginView` tra
+        # bằng `norm_phone(...)`; chỗ này chỉ `.strip()` thì trợ giảng nhập
+        # "+84 964 245 623" là lưu nguyên chuỗi đó, còn học viên gõ
+        # "0964245623" sẽ không bao giờ khớp — em không đăng nhập bằng số điện
+        # thoại được, và `idx_users_phone` cũng không bắt được trùng vì hai
+        # chuỗi khác nhau. Đúng cái khe mà module identity sinh ra để bịt.
+        email = norm_email(data.get('email'))
+        phone = norm_phone(data.get('phone'))
+        role = (data.get('role') or ROLE_STUDENT).strip()
+        class_id = data.get('class_id')
+
+        errors = {}
+        if not name:
+            errors['name'] = 'Nhập họ tên học viên.'
+        if not email and not phone:
+            errors['email'] = 'Cần ít nhất email hoặc số điện thoại để cấp tài khoản.'
+        if role not in ASSIGNABLE_ROLES:
+            errors['role'] = 'Vai trò không hợp lệ.'
+        if errors:
+            return Response({'errors': errors}, status=400)
+
+        # So sánh email KHÔNG phân biệt hoa thường. Cột `users.email` chỉ UNIQUE
+        # trên giá trị nguyên văn, nên 'An@x.vn' và 'an@x.vn' lọt thành HAI tài
+        # khoản — rồi học viên đăng nhập bằng bản chữ thường và nhận "sai mật
+        # khẩu" trong khi tài khoản vẫn nằm đó.
+        if email and q1('SELECT id FROM users WHERE lower(email)=%s', (email,)):
+            return Response({'errors': {'email': 'Email này đã có tài khoản.'}}, status=400)
+        if phone and q1('SELECT id FROM users WHERE phone=%s', (phone,)):
+            return Response({'errors': {'phone': 'Số điện thoại này đã có tài khoản.'}},
+                            status=400)
+
+        # Kiểm lớp TRƯỚC khi tạo tài khoản, không phải sau.
+        #
+        # Bản cũ tạo tài khoản rồi mới thử xếp lớp, bọc trong
+        # `except (TypeError, ValueError)` — mà lỗi thật lại là `IntegrityError`
+        # của khoá ngoại, không nằm trong hai loại đó. Chỉ cần ô chọn lớp còn giữ
+        # một lớp vừa bị xoá: tài khoản ĐÃ ghi (autocommit), phản hồi trả 500,
+        # nên **mật khẩu tạm mất vĩnh viễn** — mà email thì đã bị chiếm nên nhập
+        # lại cũng không tạo lại được. Trợ giảng phải vào tìm tài khoản đó rồi
+        # đặt lại mật khẩu, nếu đoán ra được chuyện gì vừa xảy ra.
+        if class_id not in (None, ''):
+            try:
+                class_id = int(class_id)
+            except (TypeError, ValueError):
+                return Response({'errors': {'class_id': 'Lớp không hợp lệ.'}}, status=400)
+            if not q1('SELECT id FROM classes WHERE id=%s', (class_id,)):
+                return Response({'errors': {'class_id': 'Lớp này không còn tồn tại. '
+                                                        'Tải lại trang rồi chọn lại.'}},
+                                status=400)
         else:
-            rows = q('SELECT id, name, email, role FROM users ORDER BY id DESC LIMIT 50')
-        return Response({'users': [dict(r) for r in rows],
-                         'roles': list(ASSIGNABLE_ROLES)})
+            class_id = None
+
+        temp = _temp_password()
+        row = q1('INSERT INTO users (name, email, phone, role, password, '
+                 'must_change_password, created_at) '
+                 'VALUES (%s, %s, %s, %s, %s, TRUE, %s) RETURNING id',
+                 (name, email, phone, role, make_werkzeug_password(temp),
+                  local_now()))
+        uid = row['id']
+
+        added_to_class = False
+        if class_id:
+            # Lớp đã được kiểm ở trên nên câu này không còn đường hỏng.
+            x('INSERT INTO class_members (class_id, user_id) VALUES (%s, %s) '
+              'ON CONFLICT DO NOTHING', (class_id, uid))
+            added_to_class = True
+
+        audit.record(request, audit.USER_CREATE, target_type='user', target_id=uid,
+                     target_label=name,
+                     summary='Cấp tài khoản "%s" (%s)%s.'
+                             % (name, role, ' và xếp vào lớp' if added_to_class else ''),
+                     # Không ghi mật khẩu tạm — xem chú thích ở
+                     # AdminResetPasswordView.
+                     detail={'email': email or None, 'phone': phone or None,
+                             'role': role,
+                             'classId': int(class_id) if added_to_class else None})
+
+        return Response({
+            'ok': True,
+            'userId': uid,
+            'name': name,
+            'email': email,
+            'addedToClass': added_to_class,
+            'tempPassword': temp,
+            'note': 'Đọc mật khẩu này cho học viên. Hệ thống sẽ bắt đổi ngay lần '
+                    'đăng nhập đầu tiên.',
+        }, status=201)
