@@ -4010,6 +4010,18 @@ function forumClearSearch() {
            ở trong lớp sẽ không lọt vào sĩ số nữa. Loại mà im lặng thì người
            đọc thấy sĩ số tụt một người và không hiểu vì sao — đúng kiểu làm
            mất niềm tin vào con số. */
+        /* Mảng dữ liệu KHÔNG đọc được ở lượt này. Phải nói ra ngay đầu khu
+           báo cáo, vì con số bên dưới trông vẫn bình thường: 'lag' hỏng thì ô
+           "chậm bài" hiện 0, đọc thành "cả lớp đúng tiến độ" — và giảng viên
+           tin câu đó rồi không gọi cho ai. */
+        + (s.incomplete && s.incomplete.length
+            ? '<p class="tc-thieu">Chưa đọc được: '
+              + s.incomplete.map(function (k) {
+                  return { mastery: 'bản đồ năng lực', lag: 'số bài chậm so với kế hoạch' }[k] || k;
+                }).join(' · ')
+              + '. Những con số liên quan bên dưới đang KHÔNG đáng tin — tải lại trang, '
+              + 'nếu vẫn vậy thì báo kỹ thuật.</p>'
+            : '')
         + (s.nonStudents
             ? '<p class="tc-muted">' + s.nonStudents
               + ' tài khoản khác đang ở trong lớp nhưng không mang vai Học viên '

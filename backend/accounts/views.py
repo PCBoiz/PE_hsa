@@ -340,6 +340,23 @@ class PasswordView(APIView):
         pw_ok = check_werkzeug_password(stored, current) if is_hashed else (stored == current)
         if not pw_ok:
             return Response({'error': 'Mật khẩu hiện tại không đúng'}, status=401)
+
+        # Mật khẩu mới KHÔNG được trùng mật khẩu hiện tại.
+        #
+        # Trước 31/08/2026 chỉ giao diện kiểm điều này, nên gọi thẳng API là đặt
+        # lại đúng mật khẩu tạm cũ VÀ được gỡ cờ `must_change_password`. Kết
+        # quả: hệ thống ghi nhận "em đã đổi mật khẩu rồi", trong khi mật khẩu
+        # vẫn là chuỗi trợ giảng đọc qua điện thoại — và trợ giảng đó vẫn nhớ
+        # nó. Cả cơ chế bắt đổi mật khẩu lần đầu bị vô hiệu bằng một lời gọi.
+        #
+        # So sánh ở đây thay vì so hai chuỗi thô: mật khẩu trong CSDL đã băm,
+        # nên "trùng hay không" chỉ trả lời được bằng chính hàm kiểm băm.
+        trung = check_werkzeug_password(stored, new_pw) if is_hashed else (stored == new_pw)
+        if trung:
+            return Response(
+                {'errors': {'new': 'Mật khẩu mới phải khác mật khẩu hiện tại.'}},
+                status=400)
+
         # Đổi xong thì gỡ cờ bắt buộc: mật khẩu tạm do trợ giảng đặt nay đã
         # được thay bằng mật khẩu chỉ học viên biết.
         # `local_now()` chứ không phải `now()` của SQL: giờ máy chủ là UTC, lệch

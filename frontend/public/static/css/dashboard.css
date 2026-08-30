@@ -4453,6 +4453,15 @@ a.tc-view { display: inline-block; text-decoration: none; line-height: 1.4; }
    giữ >= 8px khoảng cách theo chuẩn Material — hai nút 11px sát nhau trên điện
    thoại là bấm nhầm. */
 .tc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Cảnh báo "chưa đọc được dữ liệu". Dùng màu nguy hiểm chứ không phải màu chú
+   thích mờ: đây không phải một ghi chú phụ, nó nói rằng con số bên cạnh đang
+   sai — mà con số đó dùng để quyết định gọi điện cho phụ huynh nào. */
+.tc-thieu {
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 8px;
+  background: rgba(214, 45, 78, .08); border: 1px solid rgba(214, 45, 78, .28);
+  color: var(--danger-ink, #A6243C); font-size: 13px; line-height: 1.5;
+}
+body.dark .tc-thieu { background: rgba(255, 122, 148, .12); color: #FF9DB2; }
 
 /* ── Hồ sơ một học viên ── */
 .tc-st-hd { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }

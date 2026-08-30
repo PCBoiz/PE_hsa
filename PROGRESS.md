@@ -719,13 +719,72 @@ làm gì thêm. Đó là lợi tức của việc vá ở tầng component thay 
 Kiểm 22 phép ở tầng view + 11 phép trên trình duyệt thật. CSDL về đúng nguyên
 trạng (terms 0 dòng — đợt tạo ra để kiểm đã xoá bằng chính nút Xoá).
 
+### 31/08/2026 — T6+T7+T8+T9: báo cáo không được nói dối êm ái
+
+**Tra cứu bên ngoài trước khi sửa**, và nó làm đổi thiết kế. Datadog cố ý tách
+"NaN lan truyền" khỏi "`as_count()` trả 0" thành hai ngữ nghĩa riêng biệt; còn
+nguyên tắc chung của quan trắc dữ liệu nói thẳng: *một tiến trình chạy xong mà
+đẻ ra dữ liệu thiếu còn NGUY HƠN một tiến trình gãy hẳn — vì nó sai trong im
+lặng.* Nên tôi làm hơn kế hoạch ban đầu: không chỉ trả `(data, ok)` cho từng
+hàm, mà báo cáo **mang theo danh sách mảng đang thiếu** để màn hình nói ra được.
+
+**T6.** Bốn chỗ nuốt `DatabaseError` rồi trả rỗng. Nguy nhất là `_lag_by_user`:
+dict rỗng nghĩa là "không ai chậm bài", tức màn hình nói **"cả lớp đúng tiến
+độ"** đúng vào lúc nó không biết gì cả — và giảng viên đọc câu đó rồi không gọi
+cho ai. Đo bằng cách ép câu tra ném lỗi:
+```
+binh thuong          incomplete = []
+mat learning_events  incomplete = ['mastery']
+mat study_plan_items incomplete = ['lag']   (behind van = 0, nhung nay co co)
+```
+File CSV: cột "Số buổi vắng" ghi **"không đọc được"** thay vì 0. File điểm danh
+thì **trả 503 chứ không xuất** — cả tệp ấy chỉ có một nội dung là chuyên cần;
+xuất ra một bảng chỉ có tên học viên là đưa cho người ta thứ trông y hệt "lớp
+chưa học buổi nào", rồi họ mang nó vào buổi họp phụ huynh. Một lần tải hỏng thì
+người ta bấm lại; một file nói dối thì không ai bấm lại.
+
+**Một điều tôi suýt làm sai.** Phép kiểm đầu giả lỗi quá rộng nên trúng cả
+`_last_activity` — và hàm đó KHÔNG bắt lỗi, nó để lỗi nổ ra. Phản xạ đầu tiên
+của tôi là "bọc nốt cho nhất quán". Sai: ba hàm còn lại chưa có đường báo ra
+`incomplete`, nên bọc chúng lại chính là thêm một chỗ nuốt lỗi nữa. Đã ghi thành
+luật ở đầu module để người sau đừng "giúp" theo hướng đó.
+
+**T7.** Hai luật đếm buổi vắng chạy song song: `sessions.py` loại buổi huỷ,
+`exports.py` không. Gom về `teaching/attendance.py`. Đo: 2 buổi cùng tick "vắng",
+một buổi bị huỷ SAU khi đã điểm danh → cả hai đường đều ra **1** (trước: file 2,
+màn hình 1 — hai con số cùng tên trong cùng một buổi họp phụ huynh).
+
+**T8.** Kiểm lại thì cả ba nơi ghi `joined_at` đã dùng `local_now()` từ trước —
+đo được lệch 3 giây, không phải 7 tiếng. Nửa sau của T8 (em quay lại lớp không
+hiện trong sổ điểm danh) đã được §36 giải quyết theo hướng khác hẳn: chỉ mục duy
+nhất MỘT PHẦN khiến em quay lại sinh một lượt học MỚI. Đo lại: em id 13 hiện đủ
+trong bảng tick. **Không sửa gì thêm — task này đã xong từ việc khác.**
+
+**T9.** Đường tạo tài khoản đơn lẻ chỉ kiểm RỖNG và TRÙNG, trong khi nhập hàng
+loạt dùng cả bộ `validate_*`. Đo 4 dữ liệu hỏng (`abc`, `a@`, sđt 3 chữ số, tên
+150 ký tự): đơn lẻ **cho qua hết**, hàng loạt chặn hết. Hai luật cho cùng một
+việc thì luật lỏng hơn mới là luật thật.
+
+Kèm theo, lỗ đáng kể nhất trong ngày: `PasswordView` không kiểm mật khẩu mới có
+trùng mật khẩu hiện tại không — chỉ giao diện kiểm. Gọi thẳng API là **giữ
+nguyên mật khẩu tạm mà vẫn được gỡ cờ `must_change_password`**: hệ thống ghi
+nhận "em đã đổi rồi", trong khi mật khẩu vẫn là chuỗi trợ giảng đọc qua điện
+thoại và trợ giảng đó vẫn nhớ. Cả cơ chế bắt đổi mật khẩu lần đầu bị vô hiệu
+bằng một lời gọi.
+
+**Tôi tự bắt một chỗ viết ẩu ngay khi vừa viết**: biểu thức kiểm trùng mật khẩu
+bản đầu có một vế `check(make(new), new)` — băm rồi kiểm lại chính nó, luôn
+đúng, vô nghĩa. Rút gọn còn đúng một phép so.
+
+Kiểm 10 + 13 phép, tất cả đạt. CSDL không đổi một dòng.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T52 đợt học) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T6–T9) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật

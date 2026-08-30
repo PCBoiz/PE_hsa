@@ -128,7 +128,14 @@ cũng góp vào.
 
 ## P1 — Đúng đắn dữ liệu
 
-### [ ] T6 · Bốn chỗ nuốt lỗi khiến báo cáo nói dối êm ái
+### [x] T6 · Bốn chỗ nuốt lỗi khiến báo cáo nói dối êm ái — XONG 31/08
+Hai hàm trong `reports.py` nay trả `(data, ok)`, và `class_report` gom tên mảng
+hỏng vào `summary.incomplete` — màn hình tự khai phần nào không đáng tin.
+Hai chỗ trong `exports.py`: cột "Số buổi vắng" ghi "không đọc được" thay vì 0;
+file điểm danh **trả 503 chứ không xuất** khi đọc hỏng — cả tệp chỉ có một nội
+dung là chuyên cần, xuất ra một bảng chỉ có tên thì người ta mang nó đi họp.
+Ghi rõ luật vào chú thích đầu module: ĐỪNG thêm `try/except` cho các hàm còn
+lại — chúng để lỗi nổ ra là ĐÚNG, vì chúng chưa có đường báo ra.
 `reports.py:86` `_events_by_user` → bản đồ năng lực trống, đọc thành "chưa đủ dữ
 liệu" · `reports.py:194` `_lag_by_user` → **"cả lớp đúng tiến độ"** ·
 `exports.py:284` `_absence_counts` → cột vắng = 0 toàn lớp · `exports.py:462`
@@ -137,18 +144,31 @@ liệu" · `reports.py:194` `_lag_by_user` → **"cả lớp đúng tiến độ
 Mẫu sửa: trả `(data, ok)`; `ok=False` → ô ghi "không đọc được" hoặc dựng `alert`
 mức `high`. `exports._rate` và `events.pct` đã theo đúng luật đó.
 
-### [ ] T7 · Số buổi vắng tính bằng hai luật
+### [x] T7 · Số buổi vắng tính bằng hai luật — XONG 31/08
+Gom về `teaching/attendance.py:dem_theo_hoc_vien`. Đo: 2 buổi cùng tick "vắng",
+một buổi bị huỷ sau đó → cả file CSV lẫn màn hình đều ra **1**, trước đây file
+ra 2 còn màn hình ra 1.
 `sessions.py:594` loại buổi `cancelled`; `exports.py:277` **không**. Màn hình nói
 "nghỉ 2 buổi", file mang đi họp phụ huynh nói "nghỉ 4". Gom thành
 `teaching/attendance.py` dùng chung.
 
-### [ ] T8 · `class_members.joined_at` ghi bằng hai đồng hồ lệch 7 tiếng
+### [x] T8 · `joined_at` hai đồng hồ + em quay lại không hiện — XONG 31/08
+Cả ba nơi ghi `class_members` đều đã dùng `local_now()`; đo lại: lệch 3 giây so
+với giờ Việt Nam, không phải 7 tiếng. Nửa sau (em quay lại lớp không hiện trong
+sổ điểm danh) đã được §36 giải quyết theo hướng khác — chỉ mục duy nhất MỘT PHẦN
+cho em quay lại sinh một LƯỢT HỌC MỚI; đo lại: em id 13 hiện đủ trong bảng tick.
 `admin_users.py:616` và `views.py:307` dùng `local_now()`; `views.py:536` **không
 truyền** → `DEFAULT now()` = UTC. Cột "Ngày vào lớp" trong CSV sai ngày với em
 được thêm lúc 1h sáng. Cùng dòng: `ON CONFLICT DO NOTHING` thay vì
 `DO UPDATE SET left_at = NULL` → em quay lại lớp không hiện trong sổ điểm danh.
 
-### [ ] T9 · Hai luật kiểm cho cùng việc "tạo tài khoản"
+### [x] T9 · Hai luật kiểm cho cùng việc "tạo tài khoản" — XONG 31/08
+Đường tạo đơn lẻ nay dùng CÙNG `validate_name/email/phone_field` với nhập hàng
+loạt. Đo 4 dữ liệu hỏng (`abc`, `a@`, sđt 3 chữ số, tên 150 ký tự): trước đây
+đơn lẻ cho qua hết, nay cả hai đường cùng từ chối.
+`PasswordView` nay chặn đặt lại ĐÚNG mật khẩu hiện tại — trước đây gọi thẳng API
+là giữ nguyên mật khẩu tạm mà vẫn được gỡ cờ `must_change_password`, tức vô hiệu
+hoá cả cơ chế bắt đổi mật khẩu lần đầu bằng một lời gọi.
 Nhập hàng loạt dùng `validate_name/email/phone_field`; tạo một tài khoản chỉ
 kiểm rỗng và trùng. `"abc"` lọt vào cột email qua form đơn lẻ.
 Phụ: `PasswordView` **không kiểm** `next === current` (chỉ client kiểm), nên gọi

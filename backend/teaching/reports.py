@@ -19,8 +19,32 @@ BA NGUYÊN TẮC:
 3. **Không xếp hạng học viên trong lớp.** Bảng có thể sắp theo tiến độ, nhưng
    KHÔNG có cột "hạng" — bảng xếp hạng nội bộ lớp làm hỏng động lực của đúng
    những em cần được giữ lại nhất, mà giảng viên vẫn đọc được thứ tự từ số liệu.
+
+── ĐỌC ĐƯỢC HAY KHÔNG ĐỌC ĐƯỢC ─────────────────────────────────────────────
+
+Mọi hàm phụ lấy dữ liệu ở đây trả về ``(data, ok)``. ``ok=False`` nghĩa là câu
+tra HỎNG, và nó KHÔNG được lẫn với "không có dòng nào".
+
+Vì sao phải tách: dict rỗng đi tiếp vào phép tính rồi ra những câu nghe rất hợp
+lý — "chưa đủ dữ liệu" cho bản đồ năng lực, và tệ nhất là **"cả lớp đúng tiến
+độ"** cho số bài chậm. Giảng viên đọc câu đó xong không gọi cho ai, trong khi
+thật ra hệ thống vừa không đọc được gì cả. Một báo cáo sai trong im lặng nguy
+hơn hẳn một báo cáo gãy hẳn — gãy thì người ta đi tìm nguyên nhân.
+
+`class_report` gom tên các mảng hỏng vào ``summary.incomplete`` để màn hình tự
+khai phần nào đang thiếu.
+
+ĐỪNG "GIÚP" BẰNG CÁCH THÊM ``try/except`` VÀO NHỮNG HÀM CÒN LẠI.
+``_last_activity``, ``_mocks_by_user`` và ``_progress_by_user`` KHÔNG bắt
+``DatabaseError``, và đó là chủ đích: chúng để lỗi nổ ra, báo cáo trả 500, người
+dùng thấy hỏng và đi hỏi. Bọc lại thành dict rỗng nghe có vẻ "chắc chắn hơn"
+nhưng thật ra là biến một sự cố nhìn thấy được thành một báo cáo sai im lặng —
+đúng cái đang phải đi vá ở đây. Hai hàm được phép nuốt ở trên nuốt vì chúng CÓ
+đường báo ra (`incomplete`); hàm nào chưa có đường đó thì đừng nuốt.
 """
 from datetime import timedelta
+
+import logging
 
 from django.db import DatabaseError
 
@@ -30,6 +54,8 @@ from common.events import KIND_LESSON, KIND_MOCK
 from stats.competency import (COURSE_ORDER, HALF_LIFE_DAYS, KIND_TO_SOURCE,
                               MIN_ACTIVITIES, SOURCE_WEIGHTS, TOPIC_SOURCES)
 from teaching.vocab import chi_hoc_vien
+
+logger = logging.getLogger(__name__)
 
 #: Không hoạt động quá ngần này ngày thì cảnh báo.
 IDLE_DAYS = 7
@@ -87,10 +113,14 @@ def _decayed(items, today):
 
 
 def _events_by_user(uids):
-    """Sự kiện có chấm điểm của CẢ LỚP trong một lượt hỏi."""
+    """Sự kiện có chấm điểm của CẢ LỚP trong một lượt hỏi. Trả ``(dict, ok)``.
+
+    ``ok=False`` = KHÔNG ĐỌC ĐƯỢC, khác hẳn "chưa có sự kiện nào". Xem mục
+    "Đọc được hay không đọc được" ở đầu module.
+    """
     out = {}
     if not uids:
-        return out
+        return out, True
     try:
         rows = q('''SELECT user_id, kind, course_id, topic, score, max_score,
                            event_date, ref_id
@@ -99,10 +129,14 @@ def _events_by_user(uids):
                       AND max_score IS NOT NULL AND max_score > 0''',
                  (list(uids), list(KIND_TO_SOURCE)))
     except DatabaseError:
-        return out
+        # KHÔNG trả dict rỗng lặng lẽ. Dict rỗng đi tiếp vào phép tính năng lực
+        # và ra "chưa đủ dữ liệu" cho CẢ LỚP — một câu nghe hợp lý, nên không ai
+        # nghi ngờ. Cờ `ok` là thứ duy nhất phân biệt được hai chuyện.
+        logger.error('[reports] KHÔNG đọc được learning_events cho %d học viên', len(uids))
+        return out, False
     for r in rows:
         out.setdefault(r['user_id'], []).append(r)
-    return out
+    return out, True
 
 
 def _mastery_by_topic(events, today):
@@ -191,7 +225,7 @@ def _lag_by_user(uids):
     hơn, và với giảng viên thì "chậm mấy bài" đã đủ để gọi điện.
     """
     if not uids:
-        return {}
+        return {}, True
     monday = local_today() - timedelta(days=local_today().weekday())
     try:
         rows = q('''SELECT p.user_id, COUNT(*) AS n
@@ -207,8 +241,12 @@ def _lag_by_user(uids):
                       AND lp.user_id IS NULL
                     GROUP BY p.user_id''', (list(uids), monday))
     except DatabaseError:
-        return {}
-    return {r['user_id']: r['n'] for r in rows}
+        # Đây là chỗ nguy nhất trong bốn chỗ: dict rỗng nghĩa là "không ai chậm
+        # bài", tức màn hình nói "CẢ LỚP ĐÚNG TIẾN ĐỘ" đúng vào lúc nó không
+        # biết gì cả. Giảng viên đọc câu đó rồi không gọi cho ai.
+        logger.error('[reports] KHÔNG đọc được study_plan_items cho %d học viên', len(uids))
+        return {}, False
+    return {r['user_id']: r['n'] for r in rows}, True
 
 
 def _alerts(student):
@@ -240,11 +278,26 @@ def class_report(class_id):
     uids = [m['user_id'] for m in members]
     today = local_today()
 
-    events = _events_by_user(uids)
+    # `thieu` gom tên những mảng KHÔNG đọc được. Nó đi thẳng ra `summary` để
+    # màn hình nói được "phần này đang thiếu", thay vì trình bày một con số 0 mà
+    # người đọc không có cách nào biết là 0 thật hay là không đọc được.
+    #
+    # Đây là điều chỉnh sau khi tra cứu bên ngoài (31/08/2026): Datadog cố ý
+    # tách "NaN lan truyền" khỏi "as_count() trả 0" thành hai ngữ nghĩa riêng,
+    # và nguyên tắc chung của quan trắc dữ liệu là một tiến trình chạy xong mà
+    # đẻ ra dữ liệu thiếu còn NGUY HƠN một tiến trình gãy hẳn — vì nó sai trong
+    # im lặng. Báo cáo lớp là thứ dùng để quyết định gọi điện cho phụ huynh, nên
+    # nó phải tự khai phần nào đang không đáng tin.
+    thieu = []
+    events, ok = _events_by_user(uids)
+    if not ok:
+        thieu.append('mastery')
     progress = _progress_by_user(uids)
     activity = _last_activity(uids)
     mocks = _mocks_by_user(uids)
-    lags = _lag_by_user(uids)
+    lags, ok = _lag_by_user(uids)
+    if not ok:
+        thieu.append('lag')
 
     totals = {r['course_id']: r['n'] for r in q(
         "SELECT course_id, COUNT(*) AS n FROM lessons "
@@ -374,6 +427,9 @@ def class_report(class_id):
             # khỏi mọi con số ở trên — báo ra đây để việc loại đó nhìn thấy
             # được, thay vì một dòng lặng lẽ biến mất khỏi báo cáo.
             'nonStudents': _dem_khong_phai_hoc_vien(class_id),
+            # Mảng dữ liệu KHÔNG đọc được ở lượt này. Rỗng = mọi thứ đọc đủ.
+            # 'mastery' = bản đồ năng lực · 'lag' = số bài chậm so với kế hoạch.
+            'incomplete': thieu,
             'avgProgress': round(sum(s['progressPct'] for s in active) / len(active))
                            if active else 0,
             'noMock': sum(1 for s in active if not s['mockCount']),

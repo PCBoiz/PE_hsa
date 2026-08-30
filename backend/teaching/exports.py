@@ -54,9 +54,15 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1
+from teaching.attendance import dem_theo_hoc_vien
 from teaching.admin_users import any_user_filter, build_user_filters
 from common.permissions import IsAdminRole, IsTeacherOrAdmin, can_see_class
 from teaching import reports
+
+#: Ô ghi khi KHÔNG ĐỌC ĐƯỢC dữ liệu — không bao giờ để trống và không bao giờ
+#: in 0. Ô trống và số 0 đều đọc được thành "không có gì", mà "không đọc được"
+#: là chuyện khác hẳn: người cầm file phải biết đừng tin cột đó.
+KHONG_DOC_DUOC = 'không đọc được'
 
 #: Nhãn tiếng Việt cho `attendance.status`. Ô trong bảng chéo phải NGẮN — một
 #: lớp 30 buổi là 30 cột, chữ dài thì in ra tràn trang.
@@ -265,26 +271,17 @@ def _phones(uids):
 
 
 def _absence_counts(class_id, uids):
-    """Số buổi vắng / có phép của từng học viên trong lớp — MỘT câu cho cả lớp.
+    """Chuyên cần luỹ kế — GỌI THẲNG cửa duy nhất ở `teaching/attendance.py`.
 
-    Bọc ``DatabaseError`` theo đúng nếp của ``reports._events_by_user``: hai
-    bảng §33 mới dựng 30/08, một bản triển khai chưa chạy bootstrap_schema vẫn
-    phải tải được file tiến độ (cột chuyên cần để trống) thay vì nhận 500 —
-    phần tiến độ học tập không liên quan gì tới điểm danh.
+    Trước 31/08/2026 hàm này tự viết câu đếm riêng, và câu đó KHÔNG loại buổi đã
+    huỷ trong khi `sessions.py` thì có. Màn hình nói "em nghỉ 2 buổi", file này
+    nói "nghỉ 4" — hai con số cùng tên trong cùng một buổi họp phụ huynh, không
+    ai ở đó biết bên nào đúng. Nay chỉ còn một luật, ở một chỗ.
+
+    Trả ``(dict, ok)``: `ok=False` là KHÔNG ĐỌC ĐƯỢC, không phải "không vắng
+    buổi nào". Cột trong file sẽ ghi rõ thay vì in số 0.
     """
-    if not uids:
-        return {}
-    try:
-        rows = q('''SELECT a.user_id,
-                           COUNT(*) FILTER (WHERE a.status = 'absent')  AS absent,
-                           COUNT(*) FILTER (WHERE a.status = 'excused') AS excused
-                    FROM attendance a
-                    JOIN class_sessions s ON s.id = a.session_id
-                    WHERE s.class_id = %s AND a.user_id = ANY(%s)
-                    GROUP BY a.user_id''', (class_id, list(uids)))
-    except DatabaseError:
-        return {}
-    return {r['user_id']: r for r in rows}
+    return dem_theo_hoc_vien(class_id, uids)
 
 
 class ClassProgressCsvView(APIView):
@@ -321,7 +318,7 @@ class ClassProgressCsvView(APIView):
         students = data['students']
         uids = [s['userId'] for s in students]
         phones = _phones(uids)
-        absences = _absence_counts(class_id, uids)
+        absences, cham_can_ok = _absence_counts(class_id, uids)
 
         header = [
             'Họ tên', 'Email', 'Số điện thoại', 'Ngày vào lớp', 'Trạng thái',
@@ -358,8 +355,11 @@ class ClassProgressCsvView(APIView):
                 s['mockCount'],
                 s['lastMockPct'],
                 s['mockTrend'],
-                att.get('absent', 0),
-                att.get('excused', 0),
+                # KHÔNG in số 0 khi không đọc được bảng chuyên cần: một cột
+                # "Số buổi vắng = 0" toàn lớp trông y hệt một lớp đi học đầy đủ,
+                # và file này được mang thẳng vào buổi họp phụ huynh.
+                att.get('absent', 0) if cham_can_ok else KHONG_DOC_DUOC,
+                att.get('excused', 0) if cham_can_ok else KHONG_DOC_DUOC,
                 _vn_date(s['lastActive']),
                 s['idleDays'],
                 s['lag'],
@@ -400,7 +400,20 @@ class ClassAttendanceCsvView(APIView):
         if not can_see_class(request.user, class_id):
             return Response(_NOT_FOUND, status=404)
 
-        sessions, marks = self._attendance_data(class_id)
+        sessions, marks, doc_duoc = self._attendance_data(class_id)
+        if not doc_duoc:
+            # KHÔNG trả một file trông bình thường. Cả tệp này chỉ có một nội
+            # dung là chuyên cần; đọc không được mà vẫn xuất ra thì người dùng
+            # nhận một bảng chỉ có tên học viên — trông y hệt "lớp chưa học buổi
+            # nào" — rồi mang nó vào buổi họp phụ huynh.
+            #
+            # Một lần tải hỏng thì người ta bấm lại. Một file nói dối thì không
+            # ai bấm lại, vì họ đâu biết nó sai. Ở đây thà gãy hẳn còn hơn.
+            return Response(
+                {'error': 'Chưa đọc được dữ liệu điểm danh của lớp này. Thử tải lại '
+                          'sau ít phút; nếu vẫn vậy thì báo kỹ thuật — đừng dùng bản '
+                          'tải trước đó, nó có thể thiếu buổi.'},
+                status=503)
         # Dùng lại đúng danh sách thành viên (và đúng thứ tự sắp xếp) của báo
         # cáo lớp thay vì viết câu SELECT thứ hai: hai định nghĩa "ai đang ở
         # trong lớp" sẽ trôi khỏi nhau ngay lần đầu một trong hai được sửa, và
@@ -461,8 +474,10 @@ class ClassAttendanceCsvView(APIView):
                         JOIN class_sessions s ON s.id = a.session_id
                         WHERE s.class_id = %s''', (class_id,))
         except DatabaseError:
-            return [], {}
-        return sessions, {(r['session_id'], r['user_id']): r['status'] for r in rows}
+            # Trả rỗng LẶNG LẼ là sai: file ra chỉ có tên học viên, trông y hệt
+            # một lớp chưa học buổi nào — và người mở file mang nó đi họp.
+            return [], {}, False
+        return sessions, {(r['session_id'], r['user_id']): r['status'] for r in rows}, True
 
     @staticmethod
     def _session_label(s):

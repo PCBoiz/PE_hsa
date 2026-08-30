@@ -7,6 +7,8 @@ cụ thể đều phải đi qua ``can_see_class`` — xem common/permissions.py
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.validators import (validate_email_field, validate_name_field,
+                                 validate_phone_field)
 from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
@@ -550,11 +552,28 @@ class AdminCreateUserView(APIView):
         role = (data.get('role') or ROLE_STUDENT).strip()
         class_id = data.get('class_id')
 
+        # CÙNG bộ luật với nhập hàng loạt (`admin_users.py`), không phải một
+        # bộ riêng. Trước 31/08/2026 đường này chỉ kiểm RỖNG và TRÙNG, nên chuỗi
+        # `"abc"` lọt thẳng vào cột email qua form đơn lẻ trong khi cùng chuỗi
+        # đó bị chặn nếu dán qua ô nhập hàng loạt. Hai luật cho cùng một việc thì
+        # luật lỏng hơn mới là luật thật, còn luật chặt chỉ tạo cảm giác an toàn.
         errors = {}
         if not name:
             errors['name'] = 'Nhập họ tên học viên.'
+        else:
+            loi = validate_name_field(name)
+            if loi:
+                errors['name'] = loi
         if not email and not phone:
             errors['email'] = 'Cần ít nhất email hoặc số điện thoại để cấp tài khoản.'
+        if email:
+            loi = validate_email_field(email)
+            if loi:
+                errors['email'] = loi
+        if phone:
+            loi = validate_phone_field(phone)
+            if loi:
+                errors['phone'] = loi
         if role not in ASSIGNABLE_ROLES:
             errors['role'] = 'Vai trò không hợp lệ.'
         if errors:
