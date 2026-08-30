@@ -43,7 +43,7 @@ Vai khác: id 11 = Giảng viên · id 12, 13 = Học viên.
 
 ## Trạng thái 30/08/2026
 
-**Nhánh:** `erp`, 16 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
+**Nhánh:** `erp`, 18 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
 chờ người dùng cho phép). `master` có `autoDeploy: true` nên gộp vào đó là deploy
 production ngay.
 
@@ -260,3 +260,29 @@ repo (ví dụ đoạn giải thích trần 50 tài khoản mỗi mẻ) mới th
 **Tiếp theo:** T45–T50 (giao diện điện thoại, xác nhận lưu, ngôn ngữ máy lọt ra
 màn hình) và T41–T44 (gộp INSERT, bất biến CSDL, `terms`, `attendance_taken_at`).
 Còn T13 (khả năng tiếp cận) + T14 (nhất quán giao diện) chưa chạy.
+
+---
+
+## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
+
+Hạn mức phiên cạn lúc ~1h sáng 31/08 (đặt lại 2h). Mọi việc đã commit, không mất gì.
+
+**Việc còn dở:** không có. Task cuối (T49) đã commit xong.
+
+**Ba việc CẦN NGƯỜI DÙNG, không tự làm được:**
+1. `git push -u origin erp` — bị bộ lọc quyền chặn suốt phiên. 18 mốc nằm ở máy.
+2. T39 — xoay `SECRET_KEY` (19 byte, RFC 7518 đòi ≥32). Sinh bằng
+   `python -c "import secrets;print(secrets.token_urlsafe(48))"`, dán vào
+   `backend/.env` và Render → Environment. Mọi người đang đăng nhập sẽ bị đăng
+   xuất; mật khẩu KHÔNG ảnh hưởng.
+3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
+
+**Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
+T41 (gộp INSERT: `_emit_events` 3N+1 và `plan.generate` 85–139 câu) →
+T46 (xác nhận lưu điểm danh — `Toast` đã dựng sẵn, chưa gắn) →
+T45 (bảng giấu 62% cột trên điện thoại) →
+T47 (`serverJson` vứt câu lỗi backend) →
+T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
+
+**Nhớ:** Django chạy `--noreload` nên sửa mã Python xong PHẢI khởi động lại mới
+thấy tác dụng — đã mất một lượt đo vì quên. Và token kiểm thử chỉ sống 30 phút.
