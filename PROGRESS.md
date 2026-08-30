@@ -533,7 +533,8 @@ Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 rồi cuộn lại). pytest KHÔNG có sẵn trong venv — cài bằng
 `python -m pip install pytest pytest-django`.
 
-**Ba việc CẦN NGƯỜI DÙNG, không tự làm được:**
+**Việc cần anh Sơn: xem `docs/VIEC_CUA_ANH.md`** — danh sách đầy đủ, có
+đánh dấu tiến độ. Tóm tắt:
 1. `git push -u origin erp` — bị bộ lọc quyền của chế độ auto chặn (không
    phải lỗi git: `git push --dry-run` chạy lọt và GitHub trả lời bình thường).
    20 mốc nằm ở máy. Ba cách cho qua: anh tự chạy lệnh · thêm

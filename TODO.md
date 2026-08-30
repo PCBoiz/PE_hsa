@@ -7,6 +7,10 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong · `[?]` chờ To
 
 ---
 
+> **Việc cần anh Sơn làm tay** (khoá bí mật, bảng điều khiển Render/Vercel,
+> quyết định sản phẩm, câu hỏi cho TopHSA) nằm ở **`docs/VIEC_CUA_ANH.md`**.
+> Tệp này chỉ chứa việc tôi tự làm được.
+
 ## P0 — CHẶN ĐƯỜNG. Phải xong trước khi gộp vào `master`
 
 ### [x] T1 · Màn hình buổi học & điểm danh không chạy được — XONG 30/08
