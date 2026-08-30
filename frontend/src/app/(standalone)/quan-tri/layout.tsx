@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 
 const TABS = [
   { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
+  { href: '/quan-tri/dot-hoc', label: 'Đợt học' },
   { href: '/quan-tri/nhat-ky', label: 'Nhật ký' },
   { href: '/admin', label: 'Nội dung & lớp' },
 ];

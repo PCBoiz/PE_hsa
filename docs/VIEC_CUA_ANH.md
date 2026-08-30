@@ -140,15 +140,17 @@ phút vẫn được giữ nguyên trong `meta`, nên chốt xong chỉ là mộ
 
 ## D · Hai quyết định nhỏ của anh
 
-### [ ] D1. Đợt học đầu tiên
+### [ ] D1. Tạo đợt học đầu tiên
 
-Bảng `terms` đã dựng (§36) nhưng **0 dòng**. Anh muốn:
+Màn hình **đã xong** — vào `/quan-tri/dot-hoc`, bấm **Tạo đợt**. Việc còn lại là
+quyết định của anh, không phải của tôi:
 
-- Đợt đầu tên gì? (ví dụ "Đợt 1/2027")
-- Ngày bắt đầu / kết thúc / ngày thi?
-- Có gán lớp `Luyện HSA đợt 1/2027 — Ca tối` vào đợt đó không?
+- Đợt đầu tên gì? (ví dụ "Đợt 1/2027") và mã đợt nếu trung tâm có quy ước.
+- Ngày bắt đầu / kết thúc / ngày thi.
+- Rồi gán lớp `Luyện HSA đợt 1/2027 — Ca tối` vào đợt đó.
 
-Trả lời xong tôi làm màn hình quản lý đợt và gán lớp.
+Tạo xong báo tôi — lúc ấy mới làm được **báo cáo so sánh giữa các đợt** (tỉ lệ
+bỏ học, điểm trung bình theo đợt), thứ trước đây không có dữ liệu để làm.
 
 ### [ ] D2. Tài khoản quản trị viên đang nằm trong lớp 1
 

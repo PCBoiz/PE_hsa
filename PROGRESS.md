@@ -687,13 +687,45 @@ hàng rào ấy sinh ra để chặn một cú bấm nhầm, gửi kèm sẵn l�
 
 Kiểm 10 phép trên trình duyệt thật, tất cả đạt. CSDL không đổi một dòng.
 
+### 31/08/2026 — T52: đợt học dùng được (đóng nốt §36)
+
+Sáng nay tôi dựng bảng `terms` trong §36 rồi để đó — lược đồ xong, còn trung tâm
+vẫn không có đường nào tạo một đợt. Nửa tính năng là thứ tệ hơn cả chưa làm: nó
+trông như đã xong trong lược đồ, nên lần sau mở ra dễ tưởng chỉ còn thiếu màn
+hình, trong khi thiếu cả API.
+
+Nay có đủ: `teaching/terms.py` (tạo/sửa/xoá + đếm lớp và học viên trong MỘT câu,
+không N+1), `term_id` gán được vào lớp, tên đợt hiện trong danh sách lớp, và màn
+hình `/quan-tri/dot-hoc` với lối vào từ thanh điều hướng khu quản trị.
+
+**Ba quyết định đáng ghi:**
+
+· **Xoá đợt KHÔNG xoá lớp** (`ON DELETE SET NULL`), và câu hỏi xác nhận phải nói
+  thẳng điều đó: "Xoá đợt KHÔNG xoá lớp nào — các lớp đó chỉ mất nhãn đợt".
+  Người đang đọc câu ấy đang sợ mất dữ liệu; không nói rõ thì họ không dám bấm,
+  và một đợt tạo nhầm cứ nằm đó mãi.
+
+· **Kiểm khoảng ngày ở PATCH phải ghép với giá trị ĐANG CÓ.** PATCH chỉ gửi một
+  trường, nên sửa mỗi `ends_on` mà chỉ so với `starts_on` trong body (vắng mặt)
+  là để lọt đúng cái sai mà phép kiểm sinh ra để chặn.
+
+· **Đếm học viên của đợt dùng lại `chi_hoc_vien`** của T51 — nếu không, con số
+  "đợt vừa rồi có bao nhiêu em" lại cộng cả tài khoản quản trị, đúng cái vừa vá
+  xong ở màn hình lớp.
+
+Bảng mới **tự hưởng bố cục thẻ của T45** — đo ở 390px: 0px bị giấu, không phải
+làm gì thêm. Đó là lợi tức của việc vá ở tầng component thay vì từng màn hình.
+
+Kiểm 22 phép ở tầng view + 11 phép trên trình duyệt thật. CSDL về đúng nguyên
+trạng (terms 0 dòng — đợt tạo ra để kiểm đã xoá bằng chính nút Xoá).
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T50 nhập hàng loạt) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T52 đợt học) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật

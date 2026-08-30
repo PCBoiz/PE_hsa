@@ -48,6 +48,13 @@ SESSION_UPDATE = 'session.update'
 SESSION_DELETE = 'session.delete'
 ATTENDANCE_MARK = 'attendance.mark'
 
+#: Đợt học (§36, 31/08/2026). Vòng đời một đợt là thông tin tổ chức của trung
+#: tâm, không phải dữ liệu học của em nào — nhưng xoá một đợt gỡ nhãn khỏi hàng
+#: chục lớp, nên vẫn thuộc nhóm việc SỬA phải ghi lại.
+TERM_CREATE = 'term.create'
+TERM_UPDATE = 'term.update'
+TERM_DELETE = 'term.delete'
+
 
 def _client_ip(request):
     """IP thật sau proxy. Render và Vercel đều đứng trước ứng dụng nên

@@ -151,6 +151,21 @@ def _clean_class_payload(body):
             if row['role'] not in ('Giảng viên', 'admin'):
                 return None, 'Tài khoản này chưa có vai trò Giảng viên.'
             data['teacher_id'] = int(tid)
+    if 'term_id' in body:
+        # Cho phép NULL: lớp đã có từ trước khi bảng `terms` ra đời chưa thuộc
+        # đợt nào, và ép chúng vào một đợt bịa ra thì con số của đợt đó sai ngay
+        # từ đầu (§36).
+        tid = body['term_id']
+        if tid in (None, '', 0):
+            data['term_id'] = None
+        else:
+            try:
+                tid = int(tid)
+            except (TypeError, ValueError):
+                return None, 'Mã đợt học không hợp lệ.'
+            if not q1('SELECT 1 FROM terms WHERE id=%s', (tid,)):
+                return None, 'Không có đợt học này.'
+            data['term_id'] = tid
     if 'capacity' in body:
         try:
             data['capacity'] = max(0, min(500, int(body['capacity'] or 0))) or None

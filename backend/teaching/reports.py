@@ -394,6 +394,7 @@ def class_list(class_ids):
         return []
     rows = q('''SELECT c.id, c.code, c.name, c.course_id, c.schedule, c.status,
                        c.exam_date, c.capacity,
+                       c.term_id, t.name AS term_name, t.code AS term_code,
                        u.name AS teacher_name, co.title AS course_title,
                        (SELECT COUNT(*) FROM class_members m
                           JOIN users mu ON mu.id = m.user_id
@@ -402,6 +403,7 @@ def class_list(class_ids):
                 FROM classes c
                 LEFT JOIN users u ON u.id = c.teacher_id
                 LEFT JOIN courses co ON co.id = c.course_id
+                LEFT JOIN terms t ON t.id = c.term_id
                 WHERE c.id = ANY(%s)
                 ORDER BY c.status, c.name''', (list(class_ids),))
     return [{
@@ -410,4 +412,7 @@ def class_list(class_ids):
         'teacherName': r['teacher_name'], 'schedule': r['schedule'],
         'status': r['status'], 'capacity': r['capacity'], 'members': r['members'],
         'examDate': r['exam_date'].isoformat() if r['exam_date'] else None,
+        # Đợt học (§36). Có tên đợt ở đây thì danh sách lớp không phải đọc tên
+        # lớp để đoán "lớp này thuộc mùa thi nào" nữa.
+        'termId': r['term_id'], 'termName': r['term_name'], 'termCode': r['term_code'],
     } for r in rows]

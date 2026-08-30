@@ -425,6 +425,17 @@ tiến độ lớp. Vá đúng chỗ là lọc theo `users.role` ở `reports.py
 `sessions.py`, để tài khoản quản trị nằm trong lớp bao nhiêu lần cũng không làm
 lệch con số — thay vì trông chờ không ai thêm nhầm.
 
+### [x] T52 · Đợt học dùng được — XONG 31/08
+Bảng `terms` dựng ở §36 nhưng chưa có đường nào tạo hay đọc, tức nửa tính năng.
+Nay có `teaching/terms.py` (CRUD + đếm lớp/học viên trong MỘT câu), `term_id`
+gắn được vào lớp, tên đợt hiện trong danh sách lớp, và màn hình
+`/quan-tri/dot-hoc`.
+Xoá đợt KHÔNG xoá lớp (`ON DELETE SET NULL`) — câu hỏi xác nhận nói rõ điều đó,
+vì người đang đọc nó sợ mất dữ liệu.
+Kiểm 22 phép ở tầng view + 11 phép trên trình duyệt thật.
+CÒN LẠI: báo cáo SO SÁNH giữa các đợt (tỉ lệ bỏ học, điểm trung bình theo đợt) —
+nay đã có đủ dữ liệu để làm, trước thì không.
+
 ### [ ] T13 · Audit khả năng tiếp cận
 axe-core chạy thật + WCAG 2.2 AA. Đo trên pixel thật cả hai bộ màu. **Bẫy:**
 `elementHandle.screenshot()` phá mô phỏng `pointer: coarse` — đo vùng chạm ở
