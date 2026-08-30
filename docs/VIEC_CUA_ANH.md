@@ -4,8 +4,9 @@ Những việc **chỉ anh làm được**: cần khoá bí mật, cần bảng 
 Vercel, cần quyết định sản phẩm, hoặc cần hỏi TopHSA. Mọi thứ khác nằm ở
 `TODO.md` và tôi tự làm.
 
-Cập nhật **31/08/2026**. Nhánh `erp` đang có 24 mốc, đã push lên
-`github.com/PCBoiz/PE_hsa`, chưa gộp vào `master`.
+Cập nhật **31/08/2026**. Nhánh `erp` đã push lên
+`github.com/PCBoiz/PE_hsa`, **chưa** gộp vào `master`.
+Xem đang trước `master` bao nhiêu mốc: `git rev-list --count origin/master..erp`
 
 Đánh dấu `[x]` khi xong để lần sau khỏi đọc lại từ đầu.
 
@@ -181,7 +182,7 @@ phải lỗi git: `git push --dry-run` chạy lọt bình thường). Ba cách:
 
 | | |
 |---|---|
-| Nhánh | `erp`, 24 mốc trước `master`, đã push |
+| Nhánh | `erp`, đã push, chưa gộp vào `master` |
 | Bộ kiểm backend | **94 đạt / 0 hỏng** (trước 31/08: 18 hỏng / 15 lỗi) |
 | `pnpm build` · `tsc` · `eslint` | xanh (2 cảnh báo có sẵn ở `layout.tsx`, `Chatbot.tsx`) |
 | CSDL Neon | 51 bảng · 5 tài khoản · 1 lớp · 4 dòng ghi danh · 37 sự kiện |
