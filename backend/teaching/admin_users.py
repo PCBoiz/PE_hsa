@@ -132,6 +132,21 @@ def _page_with_total(body_sql, order_sql, args, per_page, offset):
     return total, out
 
 
+#: Các tham số lọc của màn hình tài khoản. Khai một chỗ để bộ lọc và câu hỏi
+#: "người dùng có lọc gì không" không bao giờ lệch nhau.
+USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id')
+
+
+def any_user_filter(params) -> bool:
+    """Người dùng có đặt bộ lọc nào không.
+
+    Bản xuất CSV cần biết để đặt tên tệp: một tệp đủ và một tệp đã lọc nằm cạnh
+    nhau trong thư mục Tải về mà không phân biệt được thì sớm muộn có người mang
+    bản thiếu người đi họp.
+    """
+    return any((params.get(k) or '').strip() for k in USER_FILTER_PARAMS)
+
+
 def build_user_filters(params):
     """Dựng mệnh đề WHERE lọc tài khoản → (sql, args). Bí danh bảng bắt buộc: ``u``.
 

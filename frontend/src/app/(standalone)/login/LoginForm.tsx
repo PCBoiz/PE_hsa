@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Button, Field } from '@/components/ui';
 
@@ -33,17 +33,22 @@ const OAUTH_ERRORS: Record<string, string> = {
 
 type FieldErrors = { email?: string; password?: string };
 
-export default function LoginForm() {
+/**
+ * `oauthError` do Server Component đọc từ thanh địa chỉ rồi truyền xuống.
+ *
+ * Bản trước đọc `window.location.search` trong một `useEffect` rồi `setState`.
+ * Hai cái giá: component vẽ hai lần cho một giá trị đã biết trước khi HTML rời
+ * máy chủ, và câu lỗi CHỈ xuất hiện sau khi JavaScript chạy xong — người bị đá
+ * về đây từ Google, trên mạng chậm, sẽ thấy một biểu mẫu trống không giải thích
+ * gì trong suốt khoảng đó. Đọc trên máy chủ thì câu lỗi nằm sẵn trong HTML.
+ */
+export default function LoginForm({ oauthError }: { oauthError?: string | null }) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(
+    (oauthError && OAUTH_ERRORS[oauthError]) || null,
+  );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-  // Lỗi quay về từ OAuth nằm trên thanh địa chỉ.
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('error');
-    if (code && OAUTH_ERRORS[code]) setFormError(OAUTH_ERRORS[code]);
-  }, []);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

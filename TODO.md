@@ -34,7 +34,7 @@ thêm vào báo cáo lớp trong `dashboard.js` (không tạo trang danh sách l
 tạo buổi → chip "3 chưa điểm danh" → tick cả lớp → lưu → chip "3 có mặt" → xoá
 buổi (dọn 3 dòng điểm danh + 3 sự kiện). 0 lỗi console, 0 tràn ngang ở 390px.
 
-### [ ] T2 · Bộ lọc tài khoản của màn hình khác của file xuất
+### [x] T2 · Bộ lọc tài khoản của màn hình khác của file xuất — XONG 30/08
 `admin_users.py:135` `build_user_filters` (có `norm_phone`) vs `exports.py:568`
 `_filters` (chỉ `ILIKE` chuỗi thô). Đo thật: tìm `+84 987 654 321` → màn hình 1
 kết quả, CSV **0 kết quả**. Trợ giảng lọc 30 em, tải về 28, không ai biết.
@@ -44,16 +44,27 @@ Chú thích ở **cả hai** tệp khẳng định sai rằng chúng dùng chung
 Ba điểm lệch khác: `class_id` rác → màn hình trả 0 dòng còn CSV trả 400 ·
 `lower() LIKE` vs `ILIKE` · thứ tự sắp xếp khác nhau.
 
-**Xong khi:** `exports.py` import `build_user_filters`, xoá `_filters`, và một
-phép đo chứng minh hai đường cho cùng kết quả trên ít nhất 4 dạng đầu vào.
+**Đã làm:** `exports.py` dùng `build_user_filters`, xoá `_filters` (2.158 ký tự).
+Thêm `any_user_filter()` cạnh chính bộ lọc để câu hỏi "có lọc gì không" (dùng
+đặt tên tệp) không bao giờ lệch khỏi bộ lọc. Thống nhất luôn thứ tự sắp xếp.
+**Đo 10 ca, 0 lệch**, gồm đúng ca từng lệch (`+84 987 654 321` → cả hai đều 1).
 
-### [ ] T3 · CI đang đỏ trên nhánh `erp`
+### [x] T3 · CI đang đỏ trên nhánh `erp` — XONG 30/08
 `pnpm exec eslint src` → exit 1. Hai lỗi nằm trong tệp mới của chính nhánh này:
 `SessionsClient.tsx:167` và `LoginForm.tsx:45` (`react-hooks/set-state-in-effect`).
 Còn `MockExam.tsx:30,71` (tệp cũ) và 2 cảnh báo.
 
-Cách đúng ở App Router: `LoginForm` nhận `error` qua `searchParams` từ Server
-Component; `NewSession` tính mặc định trong `useState(() => …)`.
+**Đã làm:** 3 lỗi → **0 lỗi**. `LoginForm` nhận `oauthError` qua prop từ Server
+Component (câu lỗi nay nằm sẵn trong HTML thay vì chỉ hiện sau khi JavaScript
+chạy xong — người bị đá về từ Google trên mạng chậm từng thấy biểu mẫu trống
+không giải thích gì). `NewSession` tính giờ gợi ý trong trình xử lý sự kiện.
+`MockExam` gán ref trong effect, và bọc `start` bằng `useCallback` như `submit`.
+
+**Đánh đổi đã nhận:** `/login` chuyển từ dựng sẵn tĩnh sang dựng theo yêu cầu vì
+nay đọc `searchParams`. Chọn đúng hơn thay vì nhanh hơn một chút.
+
+Còn 2 cảnh báo ở tệp cũ (`no-css-tags`, `no-img-element`) — T16 sẽ siết
+`--max-warnings 0`.
 
 ### [ ] T4 · Đăng xuất không thu hồi refresh token
 `accounts/views.py:187-190` — `except Exception: pass` quanh `blacklist()`.

@@ -54,6 +54,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1
+from teaching.admin_users import any_user_filter, build_user_filters
 from common.permissions import IsAdminRole, IsTeacherOrAdmin, can_see_class
 from teaching import reports
 
@@ -530,9 +531,19 @@ class AdminUsersCsvView(APIView):
     renderer_classes = CSV_RENDERERS
 
     def get(self, request):
-        where, params, filtered = self._filters(request)
-        if where is None:
-            return Response({'error': params}, status=400)
+        # ĐÚNG bộ lọc của màn hình danh sách, không phải một bản chép lại.
+        #
+        # Trước 30/08/2026 tệp này tự dựng lấy một bộ điều kiện riêng, và hai bộ
+        # đã lệch nhau thật: màn hình đưa ô tìm kiếm qua `norm_phone` trước khi
+        # so, bản này thì `ILIKE` chuỗi thô. Đo được: tìm '+84 987 654 321' →
+        # màn hình 1 kết quả, tệp CSV 0 kết quả. Trợ giảng lọc ra 30 em rồi tải
+        # về 28 mà không có gì báo. Đúng cái khe `common/identity.py` sinh ra để
+        # bịt, mọc lại ở tầng tìm kiếm.
+        where, params = build_user_filters(request.query_params)
+        filtered = any_user_filter(request.query_params)
+        # Thứ tự sắp xếp cũng phải giống màn hình (`lower(coalesce(name,''))`),
+        # không phải `name NULLS LAST`. Cùng một tập người mà xếp hai kiểu thì
+        # trợ giảng dò từng dòng để đối chiếu tệp với bảng sẽ nhảy loạn.
 
         rows = q('''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
                            u.created_at, u.password_changed_at, u.must_change_password,
@@ -543,7 +554,7 @@ class AdminUsersCsvView(APIView):
                              WHERE m.user_id = u.id AND m.left_at IS NULL) AS classes
                     FROM users u
                     WHERE %s
-                    ORDER BY u.name NULLS LAST, u.id''' % where, params)
+                    ORDER BY lower(coalesce(u.name, '')), u.id''' % where, params)
 
         header = ['Họ tên', 'Email', 'Số điện thoại', 'Vai trò', 'Trạng thái',
                   'Lớp đang theo học', 'Ngày tạo', 'Đã đổi mật khẩu chưa']
@@ -564,56 +575,6 @@ class AdminUsersCsvView(APIView):
         name = 'Danh sách tài khoản%s %s.csv' % (' (đã lọc)' if filtered else '',
                                                  _stamp())
         return _csv_response(name, header, data)
-
-    @staticmethod
-    def _filters(request):
-        """Dựng mệnh đề WHERE từ đúng bộ tham số của GET /api/admin/users.
-
-        Trả ``(None, thông_báo_lỗi, _)`` khi tham số sai. Cố tình KHÔNG bỏ qua
-        tham số hỏng: bỏ qua thì file lặng lẽ chứa NHIỀU người hơn màn hình đang
-        hiện, mà đây là file được gửi đi cho người khác.
-        """
-        params, clauses, filtered = [], ['TRUE'], False
-
-        text = (request.query_params.get('q') or '').strip()
-        if text:
-            filtered = True
-            # Thoát ký tự đại diện của LIKE: tìm "100%" mà để nguyên dấu % thì
-            # câu tra khớp mọi tài khoản và trợ giảng tưởng mình đã lọc.
-            like = '%' + text.replace('\\', '\\\\') \
-                             .replace('%', '\\%').replace('_', '\\_') + '%'
-            clauses.append('(u.name ILIKE %s OR u.email ILIKE %s '
-                           "OR COALESCE(u.phone, '') ILIKE %s)")
-            params += [like, like, like]
-
-        role = (request.query_params.get('role') or '').strip()
-        if role:
-            filtered = True
-            clauses.append('u.role = %s')
-            params.append(role)
-
-        status = (request.query_params.get('status') or '').strip()
-        if status:
-            filtered = True
-            clauses.append('u.status = %s')
-            params.append(status)
-
-        raw_class = (request.query_params.get('class_id') or '').strip()
-        if raw_class:
-            filtered = True
-            try:
-                class_id = int(raw_class)
-            except ValueError:
-                return None, 'Tham số class_id không hợp lệ.', False
-            # "Đang theo học lớp này" = còn trong lớp. Người đã rời lớp thuộc về
-            # báo cáo của LỚP đó (endpoint tiến độ ở trên vẫn giữ họ), không
-            # thuộc về câu hỏi "màn hình quản lý tài khoản đang hiện những ai".
-            clauses.append('EXISTS (SELECT 1 FROM class_members m2 '
-                           'WHERE m2.user_id = u.id AND m2.class_id = %s '
-                           'AND m2.left_at IS NULL)')
-            params.append(class_id)
-
-        return ' AND '.join(clauses), params, filtered
 
     @staticmethod
     def _password_state(row):

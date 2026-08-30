@@ -27,7 +27,12 @@ export default function MockExam() {
   const [result, setResult] = useState<any>(null);
   const startRef = useRef(0);
   const answersRef = useRef<Record<string, string>>({});
-  answersRef.current = answers;
+  // Gán trong effect, KHÔNG gán thẳng lúc dựng: sửa ref giữa lúc dựng khiến
+  // React không đảm bảo component vẽ lại đúng lúc, và với Strict Mode / dựng
+  // lại lần hai thì giá trị ref có thể lệch với thứ đang hiện trên màn hình.
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   useEffect(() => {
     (async () => {
@@ -62,14 +67,17 @@ export default function MockExam() {
     return () => clearInterval(id);
   }, [view, submit]);
 
-  async function start(id: number) {
+  // useCallback như `submit` ở trên: `Date.now()` là hàm không thuần, và một
+  // hàm khai trần trong thân component thì bộ kiểm không chứng minh được là nó
+  // chỉ chạy từ trình xử lý sự kiện. Ở đây `start` chỉ được gọi từ onClick.
+  const start = useCallback(async (id: number) => {
     setView('loading');
     const r = await apiFetch(`/api/mock-exams/${id}`);
     const d = await r.json();
     setExam(d); setAnswers({}); setCur(0);
     setTimeLeft((d.duration_minutes || 20) * 60);
     startRef.current = Date.now(); setView('take');
-  }
+  }, []);
   const setAns = (qid: string, val: string) => setAnswers((a) => ({ ...a, [qid]: val }));
   const answeredCount = () => Object.keys(answers).filter((k) => answers[k] != null && answers[k] !== '').length;
   const confirmSubmit = () => {

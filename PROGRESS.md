@@ -108,4 +108,31 @@ lần khác `has-text("Có mặt")` khớp nhầm cả nút "Đánh dấu cả l
 token trong khi `ROTATE_REFRESH_TOKENS` bật. Cả hai chỉ lộ ra sau 30 phút — tức
 gần như không bao giờ thấy lúc phát triển, và luôn thấy với người dùng thật.
 
-**Tiếp theo:** T2 (bộ lọc CSV lệch màn hình) → T3 (CI đỏ) → T4, T5.
+### 30/08/2026 — T2 xong: file xuất và màn hình nay cùng một bộ lọc
+`exports.py` dùng thẳng `build_user_filters` của màn hình; xoá bản chép lại.
+Đo 10 ca, **0 lệch**:
+
+```
+khong loc — toan bo                             tong=5   5 dong   OK
+so dien thoai dang quoc te (CA DA TUNG LECH)    tong=1   1 dong   OK
+so dien thoai dang noi dia                      tong=1   1 dong   OK
+ky tu dai dien LIKE — "100%"                    tong=0   0 dong   OK
+loc theo vai tro / trang thai / lop / ket hop   ...              OK
+ma lop khong phai so                            tong=0   0 dong   OK
+```
+
+Ca thứ hai chính là ca agent đã chứng minh lệch: trước đây màn hình 1 kết quả,
+tệp CSV 0 kết quả.
+
+### 30/08/2026 — T3 xong: CI xanh lại
+3 lỗi eslint → **0 lỗi**. Cả ba đều là lỗi thật chứ không phải nhiễu:
+`LoginForm` đọc thanh địa chỉ trong effect rồi `setState` (câu lỗi OAuth chỉ
+hiện sau khi JavaScript chạy xong) · `MockExam` gán ref giữa lúc dựng · và
+`Date.now()` trong một hàm khai trần. Nay `LoginForm` nhận lỗi qua prop từ
+Server Component, `MockExam` gán ref trong effect và bọc `start` bằng
+`useCallback`.
+
+Đánh đổi đã nhận: `/login` chuyển từ tĩnh sang dựng theo yêu cầu.
+
+**Tiếp theo:** T4 (đăng xuất không thu hồi token + rò lỗi nội bộ) → T5
+(`RegisterView` ghi định danh chưa chuẩn hoá).

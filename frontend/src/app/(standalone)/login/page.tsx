@@ -41,7 +41,15 @@ function Mark() {
   );
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // Đọc mã lỗi OAuth ngay trên máy chủ để câu giải thích nằm sẵn trong HTML.
+  const sp = await searchParams;
+  const raw = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+
   return (
     <main className="grid min-h-dvh place-items-center bg-ground px-4 py-10">
       <div className="w-full max-w-[420px]">
@@ -58,7 +66,7 @@ export default function LoginPage() {
             Tiếp tục hành trình luyện thi Đánh giá năng lực của bạn.
           </p>
 
-          <LoginForm />
+          <LoginForm oauthError={raw ?? null} />
 
           <div className="mt-6 border-t border-line pt-5">
             <p className="text-small text-ink-3">
