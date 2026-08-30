@@ -43,7 +43,7 @@ Vai khác: id 11 = Giảng viên · id 12, 13 = Học viên.
 
 ## Trạng thái 30/08/2026
 
-**Nhánh:** `erp`, 9 commit trước `master`. **Chưa push** (lệnh `git push` bị chặn,
+**Nhánh:** `erp`, 12 commit trước `master`. **P0 đã xong toàn bộ.** **Chưa push** (lệnh `git push` bị chặn,
 chờ người dùng cho phép). `master` có `autoDeploy: true` nên gộp vào đó là deploy
 production ngay.
 
@@ -134,5 +134,17 @@ Server Component, `MockExam` gán ref trong effect và bọc `start` bằng
 
 Đánh đổi đã nhận: `/login` chuyển từ tĩnh sang dựng theo yêu cầu.
 
-**Tiếp theo:** T4 (đăng xuất không thu hồi token + rò lỗi nội bộ) → T5
-(`RegisterView` ghi định danh chưa chuẩn hoá).
+### 30/08/2026 — T4 + T5 xong: HẾT P0
+Cả hai nằm trong `accounts/views.py`. Đo 15 phép kiểm, 14 đạt — phép kiểm còn
+lại là dương tính giả của chính tôi (tìm chuỗi mà **chú thích** vẫn nhắc lại;
+kiểm lại trên mã đã bỏ chú thích: sạch).
+
+Đáng ghi: bảng thu hồi token **tồn tại và đã thu hồi 17 token**, nên
+`except Exception: pass` là bẫy cho tương lai chứ chưa hỏng hôm nay. Báo đúng
+mức thay vì thổi phồng.
+
+**TOÀN BỘ P0 ĐÃ XONG.** Nhánh `erp` giờ đủ điều kiện cân nhắc gộp vào `master`,
+sau khi chạy nốt năm mảng audit ở P2.
+
+**Tiếp theo:** P2 — T10 (bảo mật) + T11 (luồng đầu-cuối) + T12 (CSDL/ERD), chạy
+**3 agent một lượt** theo đúng bài học rate limit.

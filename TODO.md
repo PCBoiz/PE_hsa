@@ -66,7 +66,7 @@ nay đọc `searchParams`. Chọn đúng hơn thay vì nhanh hơn một chút.
 Còn 2 cảnh báo ở tệp cũ (`no-css-tags`, `no-img-element`) — T16 sẽ siết
 `--max-warnings 0`.
 
-### [ ] T4 · Đăng xuất không thu hồi refresh token
+### [x] T4 · Đăng xuất không thu hồi refresh token — XONG 30/08
 `accounts/views.py:187-190` — `except Exception: pass` quanh `blacklist()`.
 Cookie bị xoá phía Next nên trông như đã ra, **nhưng refresh token còn sống 8
 tiếng**. Trung tâm dùng máy chung → không phải rủi ro lý thuyết.
@@ -76,13 +76,29 @@ chứa tên bảng, tên cột, đôi khi cả SQL và tham số, trả thẳng 
 `except Exception` nuốt luôn `Http404`/`PermissionDenied` thành 500, vô hiệu hoá
 `common/errors.py` đã lo việc này tử tế.
 
-### [ ] T5 · `RegisterView` còn ghi định danh chưa chuẩn hoá
+**Đã làm:** tách `TokenError` (bình thường, log mức info) khỏi `DatabaseError`
+(nghiêm trọng, log mức error kèm câu nói rõ phiên còn sống 8 tiếng). Trả thêm
+`revoked` để bên gọi và log biết chuyện thật sự xảy ra. Bỏ hẳn `except Exception`
+ở `RegisterView`, bắt riêng `IntegrityError` → 400 có câu sửa được.
+**Kiểm chứng:** bảng blacklist tồn tại và đã thu hồi 17 token nên cơ chế đang
+chạy — `except Exception: pass` là bẫy cho tương lai chứ chưa hỏng hôm nay. Đo:
+thu hồi thật `revoked=True`, thu hồi lại `revoked=False`, token rác `revoked=False`,
+và token đã thu hồi thì không dùng lại được.
+
+### [x] T5 · `RegisterView` còn ghi định danh chưa chuẩn hoá — XONG 30/08
 `accounts/views.py:155-165` kiểm trùng bằng `norm_*` rồi **INSERT chuỗi thô**.
 Tạo tài khoản bằng `+84912345678` → `LoginView` tra `0912345678` → **không bao
 giờ khớp**, khoá ngoài vĩnh viễn.
 
 Phụ: `LoginView:49` chạy `validate_phone_field` trên chuỗi **thô**, nên
 `"0912 345 678"` bị 400 trước khi `norm_phone` kịp sửa.
+
+**Đã làm:** chuẩn hoá NGAY khi đọc thân request, để mọi bước sau tự động dùng
+chung một giá trị — không còn chỗ cho hai bên lệch. `LoginView` kiểm định dạng
+trên số ĐÃ chuẩn hoá.
+**Đo:** bốn cách viết số điện thoại (`0964245623`, có dấu cách, dạng quốc tế có
+dấu cách, có dấu gạch) đều qua được bước kiểm định dạng — cả bốn trả 401 "sai
+mật khẩu" tức là ĐÃ TÌM THẤY tài khoản, thay vì 400 chặn ngay từ cửa.
 
 ---
 

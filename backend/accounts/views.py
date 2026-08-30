@@ -6,10 +6,13 @@ cặp JWT access/refresh thay vì set session cookie (frontend ở domain khác)
 import json
 from datetime import datetime
 
-from django.db import transaction
+import logging
+
+from django.db import DatabaseError, IntegrityError, transaction
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
@@ -20,6 +23,9 @@ from common.identity import looks_like_email, norm_email, norm_phone
 from common.permissions import IsAdminRole
 from common.db import q, q1, x
 from common.throttling import LoginThrottle, RegisterThrottle
+
+
+logger = logging.getLogger(__name__)
 
 
 def _tokens_for(user_id):
@@ -42,12 +48,18 @@ class LoginView(APIView):
         errors = {}
         if not identifier:
             errors['email'] = 'Email hoặc số điện thoại không được để trống'
-        elif '@' in identifier:
+        elif looks_like_email(identifier):
             if err := validate_email_field(identifier):
                 errors['email'] = err
-        else:
-            if err := validate_phone_field(identifier):
-                errors['email'] = err
+        # Kiểm SỐ ĐÃ CHUẨN HOÁ, không kiểm chuỗi người dùng gõ.
+        #
+        # `validate_phone_field` chỉ nhận '0' + 9 số hoặc '+' + mã nước + 9 số,
+        # nên '0912 345 678' — cách gần như ai cũng viết khi chép từ phiếu đăng
+        # ký — bị chặn ngay tại đây với câu "số điện thoại phải có 10 số", trong
+        # khi `norm_phone` phía dưới thừa sức đưa nó về đúng dạng. Người dùng bị
+        # từ chối vì mấy dấu cách, và câu lỗi thì bảo họ sai thứ họ không sai.
+        elif err := validate_phone_field(norm_phone(identifier) or identifier):
+            errors['email'] = err
         if not password:
             errors['password'] = 'Mật khẩu không được để trống'
         if errors:
@@ -129,8 +141,18 @@ class RegisterView(APIView):
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
         name = (data.get('name') or '').strip()
-        email = (data.get('email') or '').strip()
-        phone = (data.get('phone') or '').strip()
+        # Chuẩn hoá NGAY tại đây, không phải lúc tra CSDL.
+        #
+        # Bản trước kiểm trùng bằng `norm_email`/`norm_phone` nhưng lại INSERT
+        # chuỗi THÔ. Ai đăng ký bằng '+84912345678' sẽ có một dòng users mang
+        # đúng chuỗi đó, trong khi `LoginView` tra bằng `norm_phone(...)` tức
+        # '0912345678' — không bao giờ khớp. Tài khoản khoá ngoài vĩnh viễn, mà
+        # từ khi bỏ tự đăng ký thì cũng không còn đường nào tự lấy lại.
+        # Chuẩn hoá một phía là tái tạo đúng cái khe common/identity.py sinh ra
+        # để bịt; chuẩn hoá ở đầu vào thì mọi bước sau tự động dùng chung một
+        # giá trị và không còn chỗ cho hai bên lệch nhau.
+        email = norm_email(data.get('email')) or ''
+        phone = norm_phone(data.get('phone')) or ''
         password = data.get('password', '')
 
         errors = {}
@@ -152,19 +174,32 @@ class RegisterView(APIView):
         if errors:
             return Response({'errors': errors}, status=400)
 
-        if email and q1('SELECT id FROM users WHERE lower(email)=%s', (norm_email(email),)):
+        if email and q1('SELECT id FROM users WHERE lower(email)=%s', (email,)):
             return Response({'errors': {'email': 'Email đã được sử dụng'}}, status=400)
-        if phone and q1('SELECT id FROM users WHERE phone=%s', (norm_phone(phone),)):
+        if phone and q1('SELECT id FROM users WHERE phone=%s', (phone,)):
             return Response({'errors': {'phone': 'Số điện thoại đã được sử dụng'}}, status=400)
 
         try:
             user = q1(
                 'INSERT INTO users (name, email, phone, password, role) '
                 'VALUES (%s, %s, %s, %s, %s) RETURNING id, questionnaire_completed',
-                (name, email if email else None, phone if phone else None,
+                (name, email or None, phone or None,
                  make_werkzeug_password(password), 'Học viên'))
-        except Exception as e:
-            return Response({'error': f'Lỗi hệ thống khi đăng ký: {str(e)}'}, status=500)
+        except IntegrityError:
+            # Đụng chỉ mục duy nhất — hai người cùng gửi một email trong khoảng
+            # giữa câu kiểm trùng ở trên và câu ghi này. Hiếm, nhưng có thật, và
+            # đúng ra phải là 400 chứ không phải 500: người dùng sửa được.
+            return Response({'errors': {'email': 'Email hoặc số điện thoại này vừa '
+                                                 'được người khác dùng. Thử lại.'}},
+                            status=400)
+        # KHÔNG bắt `Exception` ở đây nữa.
+        #
+        # Bản trước trả `f'Lỗi hệ thống khi đăng ký: {str(e)}'` — mà `str(e)` của
+        # psycopg chứa tên bảng, tên cột, đôi khi cả câu SQL và giá trị tham số,
+        # gửi thẳng cho client. Nó còn nuốt luôn `Http404`/`PermissionDenied` và
+        # biến chúng thành 500. `common/errors.py` đã lo việc này tử tế: ghi log
+        # kèm request_id rồi trả một câu tiếng Việt trung tính — bắt ở đây chỉ
+        # vô hiệu hoá nó.
 
         needs_questionnaire = not bool(user['questionnaire_completed'])
         return Response({'ok': True, 'needs_questionnaire': needs_questionnaire,
@@ -183,12 +218,28 @@ class LogoutView(APIView):
         token = None
         if isinstance(request.data, dict):
             token = request.data.get('refresh')
+        revoked = False
         if token:
             try:
                 RefreshToken(token).blacklist()
-            except Exception:
-                pass
-        return Response({'ok': True})
+                revoked = True
+            except TokenError as exc:
+                # Token đã hết hạn hoặc đã thu hồi rồi — bình thường, không đáng
+                # báo động, nhưng vẫn phải để lại vết.
+                logger.info('[logout] không thu hồi được refresh token: %s', exc)
+            except DatabaseError as exc:
+                # Bảng blacklist hỏng. ĐÂY mới là chuyện nghiêm trọng: người dùng
+                # bấm "đăng xuất", cookie bị xoá nên trông như đã ra, NHƯNG refresh
+                # token còn sống tới 8 tiếng (SIMPLE_JWT.REFRESH_TOKEN_LIFETIME).
+                # Ai chép được chuỗi đó vẫn cấp lại access token được — mà trung
+                # tâm thì dùng máy chung. `except Exception: pass` của bản trước
+                # giấu kín đúng tình huống này.
+                logger.error('[logout] KHÔNG thu hồi được refresh token, '
+                             'phiên vẫn sống tới 8 tiếng: %s', exc)
+        # `revoked` để bên gọi và log biết chuyện gì thật sự xảy ra. Vẫn luôn
+        # trả ok: người bấm đăng xuất phải luôn được đăng xuất, kể cả khi backend
+        # đang trục trặc — cookie do lớp trung gian Next xoá, không phụ thuộc câu này.
+        return Response({'ok': True, 'revoked': revoked})
 
     def get(self, request):
         return self._logout(request)
