@@ -36,12 +36,46 @@ KIND_MOCK = 'mock'
 KIND_MOCK_SECTION = 'mock_section'
 KIND_MISSION = 'mission'
 KIND_SELF_LOG = 'self_log'
+#: Điểm danh buổi học (30/08/2026). KHÔNG nằm trong GRADED_KINDS: có mặt ở lớp
+#: không phải bằng chứng năng lực, và trộn nó vào phép tính thành thạo sẽ khiến
+#: một em chăm đi học nhưng chưa làm bài trông như đã nắm chủ đề.
+KIND_ATTENDANCE = 'attendance'
 
 #: Sự kiện có chấm điểm — nguồn của mọi phép tính năng lực.
 GRADED_KINDS = (KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ, KIND_MOCK, KIND_MOCK_SECTION)
 
 SOURCE_SYSTEM = 'system'
 SOURCE_SELF = 'self'
+
+
+def forget_events(ref_type, ref_id):
+    """Xoá các sự kiện sinh ra từ một đối tượng đã bị xoá. Trả số dòng đã xoá.
+
+    Đối xứng với ``record_event``: module này là cửa duy nhất GHI vào
+    ``learning_events``, nên nó cũng phải là cửa duy nhất XOÁ. Thiếu hàm này thì
+    nơi cần dọn sẽ tự viết một câu DELETE riêng, và kỷ luật một-cửa — thứ khiến
+    bảng ấy còn tin được — mất ngay từ chỗ đó.
+
+    Dùng khi xoá một buổi học: các sự kiện ``kind='attendance'`` trỏ tới buổi đó
+    không còn đối tượng để trỏ về. Chúng vô hại về số liệu (score và minutes đều
+    NULL nên không lọt vào năng lực hay sổ điểm) nhưng vẫn tính vào "hoạt động
+    gần nhất" — tức một buổi đã xoá vẫn làm học viên trông như còn đang học.
+
+    CỐ Ý HẸP: chỉ nhận cặp ``ref_type``/``ref_id``, không nhận điều kiện tự do.
+    Một hàm xoá theo điều kiện tuỳ ý đặt ở đây sớm muộn cũng bị dùng để "dọn dẹp"
+    và cuốn theo dữ liệu học tập thật, thứ không có đường khôi phục.
+    """
+    if not ref_type or ref_id is None:
+        return 0
+    try:
+        with transaction.atomic():
+            from common.db import q
+            rows = q('DELETE FROM learning_events WHERE ref_type=%s AND ref_id=%s '
+                     'RETURNING id', (ref_type, str(ref_id)))
+        return len(rows)
+    except DatabaseError as exc:
+        logger.error('[events] KHÔNG xoá được sự kiện của %s/%s: %s', ref_type, ref_id, exc)
+        return 0
 
 
 def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, course_id=None,
@@ -72,8 +106,15 @@ def record_event(uid, kind, dedup_key, *, occurred_at=None, event_date=None, cou
                      event_date  = EXCLUDED.event_date,
                      course_id   = EXCLUDED.course_id,
                      topic       = EXCLUDED.topic,
-                     score       = EXCLUDED.score,
-                     max_score   = EXCLUDED.max_score,
+                     -- COALESCE chứ không ghi đè thẳng: học lại một bài mà
+                     -- lần này không làm quiz sẽ gửi score = NULL, và ghi đè
+                     -- thẳng thì XOÁ MẤT điểm đã đo được lần trước — ô năng
+                     -- lực tụt về "chưa đủ dữ liệu", sổ điểm mất dòng, đường
+                     -- cong mất điểm, không có đường khôi phục. Cùng lý do với
+                     -- COALESCE của `minutes` và GREATEST của `xp` ngay dưới.
+                     -- Có điểm mới thì vẫn ghi đè như cũ.
+                     score       = COALESCE(EXCLUDED.score, learning_events.score),
+                     max_score   = COALESCE(EXCLUDED.max_score, learning_events.max_score),
                      minutes     = COALESCE(EXCLUDED.minutes, learning_events.minutes),
                      xp          = GREATEST(EXCLUDED.xp, learning_events.xp),
                      meta        = EXCLUDED.meta''',
