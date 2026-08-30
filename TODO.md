@@ -239,13 +239,23 @@ cùng lúc ("Không đọc được nhật ký" + "Chưa có hành động nào"
 mãi, và ô chọn Hành động rỗng đi nên **không còn nút nào bấm để thoát** — phải
 tự sửa URL. 400 có hướng dẫn sửa và 500 sập CSDL đến màn hình là một.
 
-### [ ] T48 · Ba con số sĩ số khác nhau trên cùng một màn hình, và giục gọi em đã nghỉ
+### [x] T48 · Ba con số sĩ số khác nhau, và giục gọi em đã nghỉ — XONG 30/08
 Khu Giảng dạy hiện đồng thời "3/25 học viên" · "4 học viên" · "HỌC VIÊN (4)".
 `reports.py:335` trả `summary.students = len(students)` (tính cả em đã rời lớp)
 trong khi mọi chỉ số khác tính trên `active`. Nặng hơn: ô **"Cần chú ý"** liệt kê
 `ntn` — em đã rời lớp 5 ngày trước — và ở khu đó **không có** nhãn "(đã rời lớp)".
 `dashboard.js:3947` thiếu điều kiện `!st.left`; `reports.py:316` `at_risk` cũng
 duyệt toàn bộ `students` thay vì `active`.
+
+**Đã làm:** `at_risk` và danh sách "Cần chú ý" nay chỉ tính học viên đang trong
+lớp · `summary.students` đổi nghĩa thành sĩ số ĐANG HỌC (cùng nghĩa với mọi chỉ
+số bên cạnh nó), thêm `enrolledEver` và `left` để tách hai khái niệm thay vì để
+một tên mang hai nghĩa · tiêu đề bảng nói rõ "3 đang học + 1 đã rời lớp".
+**Đo trên trình duyệt thật:** thẻ lớp 3/25 · ô thống kê 3 · tiêu đề "3 đang học
++ 1 đã rời lớp" · bảng vẫn 4 dòng (§29 giữ lịch sử) · "Cần chú ý" không còn em
+đã rời lớp.
+Ghi nhận thêm: frontend lọc theo `alerts.length` (MỌI mức) trong khi backend
+`atRisk` chỉ đếm mức cao — hai luật khác nhau cho cùng một danh sách.
 
 ### [ ] T49 · Ngôn ngữ máy lọt ra giao diện, và hai màn hình cùng khu cư xử ngược nhau
 · Nhật ký hiện thẳng `attendance.mark`, `session.create` làm chip VÀ làm nhãn ô

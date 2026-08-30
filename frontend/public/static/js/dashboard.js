@@ -3944,7 +3944,12 @@ function forumClearSearch() {
     }
     var s = report.summary, c = report.class;
 
-    var alerts = report.students.filter(function (st) { return st.alerts.length; });
+    /* Chỉ giục gọi cho học viên ĐANG trong lớp.
+       Trước 30/08/2026 câu này duyệt toàn bộ `report.students`, nên khu "Cần
+       chú ý" liệt kê một em đã rời lớp năm ngày trước — mà ở khu này KHÔNG có
+       nhãn "(đã rời lớp)", nhãn ấy chỉ có trong bảng học viên phía dưới. Danh
+       sách này tồn tại để giảng viên biết hôm nay phải gọi cho ai. */
+    var alerts = report.students.filter(function (st) { return !st.left && st.alerts.length; });
     var alertHtml = alerts.length
       ? alerts.map(function (st) {
         return '<div class="tc-alert">'
@@ -3993,8 +3998,13 @@ function forumClearSearch() {
       + '<div class="tc-sec"><div class="tc-sec-t">Cần chú ý</div>' + alertHtml + '</div>'
       + '<div class="tc-sec"><div class="tc-sec-t">Chủ đề cả lớp đang yếu</div>'
         + '<div class="tc-weaks">' + weak + '</div></div>'
-      + '<div class="tc-sec"><div class="tc-sec-t">Học viên ('
-        + report.students.length + ')</div>' + tableHtml() + '</div>';
+      /* Bảng này CỐ Ý liệt kê cả học viên đã rời lớp (§29: báo cáo của kỳ đó
+         phải đầy đủ), nên tiêu đề phải nói rõ con số nào là con số nào — nếu
+         không, nó thành con số sĩ số thứ ba trên cùng một màn hình, lệch với
+         thẻ lớp và với ô thống kê. */
+      + '<div class="tc-sec"><div class="tc-sec-t">Học viên (' + s.students
+        + (s.left ? ' đang học + ' + s.left + ' đã rời lớp' : '')
+        + ')</div>' + tableHtml() + '</div>';
 
     Array.prototype.forEach.call(box.querySelectorAll('[data-uid]'), function (b) {
       b.addEventListener('click', function () { loadStudent(b.getAttribute('data-uid')); });

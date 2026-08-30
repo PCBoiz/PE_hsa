@@ -313,11 +313,21 @@ def class_report(class_id):
     order = {c: i for i, c in enumerate(COURSE_ORDER)}
     topics.sort(key=lambda t: (order.get(t['course'], 9), t['topic']))
 
-    at_risk = [s for s in students if any(a['level'] == 'high' for a in s['alerts'])]
+    active = [s for s in students if not s['left']]
+
+    # CẢNH BÁO chỉ tính học viên ĐANG trong lớp.
+    #
+    # Trước 30/08/2026 câu này duyệt toàn bộ `students`, nên khu "Cần chú ý" trên
+    # bảng điều khiển giục giảng viên gọi cho một em đã rời lớp từ năm ngày
+    # trước — và ở khu đó KHÔNG có nhãn "(đã rời lớp)", nhãn ấy chỉ xuất hiện
+    # trong bảng học viên phía dưới. Danh sách "cần chú ý" tồn tại để giảng viên
+    # biết hôm nay phải gọi cho ai; đưa vào đó một người không còn học là làm
+    # hỏng đúng công dụng của nó.
+    # Học viên đã rời lớp vẫn nằm trong `students` và vẫn có `alerts` để đọc
+    # trong báo cáo của kỳ đó — chỉ không bị giục nữa (§29: giữ lịch sử).
+    at_risk = [s for s in active if any(a['level'] == 'high' for a in s['alerts'])]
     weak_class = sorted([t for t in topics if t['avg'] < WEAK_BELOW],
                         key=lambda t: t['avg'])[:3]
-
-    active = [s for s in students if not s['left']]
     return {
         'class': {
             'id': info['id'], 'code': info['code'], 'name': info['name'],
@@ -332,8 +342,18 @@ def class_report(class_id):
         'students': students,
         'topics': topics,
         'summary': {
-            'students': len(students),
+            # `students` = sĩ số ĐANG học, cùng nghĩa với mọi chỉ số bên dưới.
+            #
+            # Trước đây khoá này trả `len(students)` (tính cả em đã rời lớp)
+            # trong khi avgProgress/noMock/idle/behind đều tính trên `active`,
+            # nên một màn hình hiện ba con số sĩ số khác nhau cùng lúc: thẻ lớp
+            # "3/25 học viên", ô thống kê "4 học viên", tiêu đề bảng "HỌC VIÊN (4)".
+            # Số người từng ghi danh vẫn đọc được ở `enrolledEver` ngay dưới —
+            # tách hai khái niệm ra thay vì để một cái tên mang hai nghĩa.
+            'students': len(active),
             'active': len(active),
+            'enrolledEver': len(students),
+            'left': len(students) - len(active),
             'avgProgress': round(sum(s['progressPct'] for s in active) / len(active))
                            if active else 0,
             'noMock': sum(1 for s in active if not s['mockCount']),

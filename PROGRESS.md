@@ -235,6 +235,18 @@ OK  khong cookie nao                    -> /login
 rỗng · CSV khớp màn hình · **tràn ngang 0 trên toàn bộ 10 tổ hợp** · vùng chạm
 44px · bấm Lưu hai lần không lọt.
 
+### 30/08/2026 — T48 xong: ba con số sĩ số giờ khớp nhau
+Khu Giảng dạy từng hiện đồng thời "3/25 học viên", "4 học viên" và
+"HỌC VIÊN (4)". Gốc: `summary.students` đếm cả em đã rời lớp trong khi mọi chỉ
+số bên cạnh tính trên `active`. Nay `students` = sĩ số đang học, thêm
+`enrolledEver` và `left` để tách hai khái niệm.
+Nặng hơn con số: ô **"Cần chú ý"** giục giảng viên gọi cho một em đã rời lớp năm
+ngày trước, mà ở khu đó không có nhãn "(đã rời lớp)". Vá ở cả hai tầng.
+Phát hiện kèm: frontend lọc `alerts.length` (mọi mức), backend `atRisk` chỉ đếm
+mức cao — hai luật cho cùng một danh sách.
+Đo trên trình duyệt thật sau khi khởi động lại Django: 3 · 3/25 · "3 đang học +
+1 đã rời lớp", bảng vẫn 4 dòng, "Cần chú ý" sạch.
+
 **Tiếp theo:** T45–T50 (giao diện điện thoại, xác nhận lưu, ngôn ngữ máy lọt ra
 màn hình) và T41–T44 (gộp INSERT, bất biến CSDL, `terms`, `attendance_taken_at`).
 Còn T13 (khả năng tiếp cận) + T14 (nhất quán giao diện) chưa chạy.
