@@ -628,9 +628,14 @@ class AdminBulkCreateUsersView(APIView):
         # không có gì để xếp.
         added_to_class = False
         if class_id and created_ids:
+            # `WHERE left_at IS NULL` trỏ đúng chỉ mục duy nhất một phần của
+            # §36 (thiếu nó Postgres từ chối cả câu). Kèm theo là đổi hành vi có
+            # chủ đích: người ĐÃ RỜI lớp mà được nhập lại sẽ sinh một dòng MỚI —
+            # một lượt học mới — thay vì hồi sinh dòng cũ và xoá trắng mốc rời
+            # lớp lần trước.
             x('''INSERT INTO class_members (class_id, user_id, joined_at)
                  SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
-                 ON CONFLICT (class_id, user_id) DO UPDATE SET left_at = NULL''',
+                 ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
               (class_id, now, created_ids))
             added_to_class = True
 

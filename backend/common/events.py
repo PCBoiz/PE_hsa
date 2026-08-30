@@ -75,8 +75,21 @@ def forget_events(ref_type=None, ref_id=None, *, user_id=None, dedup_key=None):
     """
     from common.db import q
     if ref_type and ref_id is not None:
-        sql = 'DELETE FROM learning_events WHERE ref_type=%s AND ref_id=%s RETURNING id'
-        args = (ref_type, str(ref_id))
+        # ``ref_id`` nhận cả MỘT id lẫn một danh sách id cùng ``ref_type``.
+        # Dạng danh sách thêm 31/08/2026 cho đường xoá lớp: xoá một lớp là xoá
+        # theo tất cả buổi học của nó, và gọi hàm này trong vòng lặp thì một lớp
+        # đã dạy hai tháng là vài chục lượt tới Neon ngay giữa một request.
+        # Vẫn HẸP đúng như đoạn trên: một loại đối tượng, một danh sách id xác
+        # định, không có điều kiện tự do nào lọt vào.
+        if isinstance(ref_id, (list, tuple, set)):
+            if not ref_id:
+                return 0
+            sql = ('DELETE FROM learning_events WHERE ref_type=%s AND ref_id = ANY(%s) '
+                   'RETURNING id')
+            args = (ref_type, [str(i) for i in ref_id])
+        else:
+            sql = 'DELETE FROM learning_events WHERE ref_type=%s AND ref_id=%s RETURNING id'
+            args = (ref_type, str(ref_id))
     elif user_id is not None and dedup_key:
         sql = 'DELETE FROM learning_events WHERE user_id=%s AND dedup_key=%s RETURNING id'
         args = (user_id, dedup_key)

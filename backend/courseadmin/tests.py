@@ -24,7 +24,10 @@ def test_non_admin_forbidden(auth_api):
 def test_admin_list_courses(admin_api):
     res = admin_api.get('/api/admin/courses')
     assert res.status_code == 200
-    assert any(c['id'] == 'python' for c in res.json()['courses'])
+    # Bản cũ đòi có khoá 'python' — khoá của ProgrammingEdu, CSDL HSA không có.
+    khoa = res.json()['courses']
+    assert khoa, 'phải trả về ít nhất một khoá học'
+    assert all('id' in c and 'title' in c for c in khoa)
 
 
 def test_admin_course_crud(admin_api):

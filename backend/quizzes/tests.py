@@ -7,7 +7,7 @@ from common.db import q1
 
 pytestmark = pytest.mark.django_db
 
-COURSE_ID = 'db_design'
+COURSE_ID = 'hsa_quantitative'   # CSDL HSA khong con khoa 'db_design' cua ProgrammingEdu
 
 
 def _make_step2(idx):

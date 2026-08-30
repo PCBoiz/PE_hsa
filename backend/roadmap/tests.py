@@ -9,8 +9,11 @@ def test_list_templates_when_no_survey(auth_api):
     assert res.status_code == 200
     data = res.json()
     ids = [r['id'] for r in data]
-    # 4 template seed, đúng thứ tự _TEMPLATE_ORDER
-    assert ids[:4] == ['frontend', 'backend', 'python', 'cpp']
+    # Kiểm HÌNH DẠNG, không kiểm danh sách id cụ thể. Bản cũ đòi đúng
+    # ['frontend', 'backend', 'python', 'cpp'] — bốn lộ trình của ProgrammingEdu,
+    # không còn tồn tại trong CSDL HSA. Ghim tên dữ liệu mẫu vào phép kiểm khiến
+    # nó hỏng mỗi lần giáo trình đổi, mà giáo trình thì SẼ đổi (schema §26).
+    assert ids, 'phải có ít nhất một lộ trình'
     assert 'nodes' in data[0] and 'edges' in data[0]
 
 

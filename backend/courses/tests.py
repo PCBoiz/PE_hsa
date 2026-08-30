@@ -5,7 +5,7 @@ from common.db import q, q1, x
 
 pytestmark = pytest.mark.django_db
 
-TEST_COURSE_ID = 'python'
+TEST_COURSE_ID = 'hsa_quantitative'   # CSDL HSA khong con khoa 'python' cua ProgrammingEdu
 
 
 @pytest.fixture

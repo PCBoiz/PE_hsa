@@ -138,3 +138,25 @@ nhánh khác; gộp vào `master` là một quyết định riêng, phải hỏi
 ## 12. Ghi `PROGRESS.md` sau MỖI task
 
 Không phải sau mỗi chặng. Hết hạn mức giữa chừng thì chỉ mất đúng một task.
+
+## 13. "CI xanh" chưa phải bằng chứng — phải biết bộ kiểm CÓ CHẠY
+
+Thêm 31/08/2026, sau khi phát hiện bộ kiểm backend đã đỏ sẵn trên `master`:
+18 hỏng / 15 lỗi, và suốt cả đợt ERP không ai chạy nó lần nào vì `pytest` không
+có trong venv.
+
+Nguy hơn "fail" là **"error"**: một phép kiểm chết ở khâu dựng dữ liệu trông
+giống hệt một phép kiểm chưa viết xong, nên mắt lướt qua. Sáu phép kiểm chuỗi
+ngày đã ở trạng thái đó kể từ lần đổi hệ nhiệm vụ, tức tính năng lõi ấy không có
+ai canh trong nhiều tháng.
+
+**Bắt buộc:**
+- Chạy `python -m pytest -q` TRƯỚC khi kết luận một thay đổi không gây hồi quy,
+  và ghi lại con số đạt/hỏng — không nói "CI sẽ chạy".
+- So với mốc gốc trên `master` (dùng `git worktree`) trước khi đổ lỗi cho nhánh
+  mình. Nhớ xoá worktree kèm mọi bản sao `.env` trong đó.
+- Phép kiểm hỏng vì **dữ liệu mẫu đổi** thì sửa phép kiểm sang kiểm HÌNH DẠNG,
+  đừng ghim tên dữ liệu. Phép kiểm hỏng vì **luật sản phẩm đổi** thì viết lại
+  cho khớp luật mới, ĐỪNG XOÁ — một phép kiểm khẳng định luật cũ chính là cái
+  chốt giữ lại lỗ vừa bịt.
+

@@ -356,13 +356,129 @@ dấu cả lớp có mặt" trong 4 giây. Chấp nhận được vì vừa lưu
 nút đó ngay, và có nút đóng — nhưng nếu sau này thêm hành động ở đáy thì phải
 xem lại.
 
+### 31/08/2026 — T42+T43+T44 xong: bất biến, đợt học, và con dấu điểm danh
+
+**Đo trước khi đề xuất bất cứ câu DDL nào.** Câu hỏi phải trả lời trước là "dữ
+liệu đang có CÓ vi phạm ràng buộc sắp thêm không" — thêm bừa là gãy deploy, vì
+`bootstrap_schema` ném lỗi ở câu đầu tiên hỏng và nó chạy trong `buildCommand`
+của Render.
+
+```
+users.role      'Học viên' 3 | 'admin' 1 | 'Giảng viên' 1   -> khop ASSIGNABLE_ROLES
+users.status    'active' 5                                   -> khong vi pham
+classes.status  'active' 1                                   -> khong vi pham
+dong mo coi     enrollments 0 | lesson_progress 0 | course_ratings 0
+                roadmap_progress 0 | surveys 1  <- DUY NHAT
+```
+
+Đáng chú ý: `users.role` đang chứa **hai thứ tiếng lẫn nhau** — `'admin'` cạnh
+`'Giảng viên'`/`'Học viên'`. Đó chính là lý do nhật ký kiểm toán hiện chuỗi trần
+`admin` cho người đọc (phần còn lại của T49). CHECK viết đúng ba giá trị đang có
+chứ không "dọn" chúng: đổi giá trị vai trò là đổi dữ liệu quyền trên tài khoản
+thật, việc đó cần một lượt riêng có kế hoạch quay lui.
+
+**Chạy thử toàn bộ tệp HAI LƯỢT trong transaction rồi cuộn lại: 310 câu, 0 hỏng**
+— chứng minh DDL chạy lại được trước khi đụng vào Neon.
+
+**§35 — bất biến:** 4 CHECK + 9 khoá ngoại cho 5 bảng trước đây không có cái
+nào, kèm chỉ mục cho cột con (khoá ngoại CASCADE không có chỉ mục thì mỗi lần
+xoá một tài khoản là một lần quét toàn bảng). Dòng mồ côi `surveys` id=4 đã in
+nội dung ra rồi xoá theo quyết định của anh; khoá ngoại đã VALIDATE.
+
+**§36 — học lại lớp cũ.** Khoá chính `(class_id, user_id)` cho đúng MỘT dòng mỗi
+cặp, nên đường thêm vào lớp chạy `ON CONFLICT DO UPDATE SET left_at = NULL` —
+tức xoá trắng mốc rời lớp lần trước. Đi thẳng ngược §29, chỗ đã chốt giữ dữ liệu
+của người rời lớp. Nay khoá chính là `id`, hàng rào chống trùng thành chỉ mục
+duy nhất MỘT PHẦN `WHERE left_at IS NULL` — dựng TRƯỚC khi bỏ khoá cũ nên không
+có khoảnh khắc nào bảng mất hàng rào.
+
+Thay đổi đó **đẻ ra một lỗi mới mà tôi phải tự tìm**: câu `UPDATE class_members
+SET left_at=... WHERE class_id=%s AND user_id=%s` không lọc dòng đang học. Với
+một dòng mỗi cặp thì đúng; với nhiều lượt học thì nó dập mốc rời lớp lên CẢ
+những lượt đã đóng từ đợt trước — ghi đè lịch sử bằng ngày hôm nay. Vá bằng
+`AND left_at IS NULL`, và nhân tiện: câu cũ không khớp dòng nào vẫn trả
+`{'ok': True}`, tức báo "đã cho rời lớp" cho một em không hề ở trong lớp.
+
+**§37 — con dấu điểm danh.** Trước đây "buổi X, 0 vắng" mơ hồ giữa *cả lớp đi
+đủ* và *giảng viên quên tick*. Nay màn hình nói "Chưa mở sổ điểm danh" hoặc
+"3 có mặt · đã điểm danh 31/08 · 02:56". Nhật ký giữ `changed` — từ trạng thái
+nào sang trạng thái nào — để khiếu nại "hôm đó cháu có đi học" còn đối chiếu
+được, thứ openSIS giữ bằng cặp `attendance_code`/`attendance_teacher_code`.
+
+**Kiểm 17 + 7 phép, tất cả đạt.** 17 phép hành vi chạy trong transaction rồi
+cuộn lại; 7 phép qua trình duyệt thật ở 390×844, buổi tạo ra đã xoá bằng chính
+endpoint xoá. CSDL về đúng 5 tài khoản / 1 lớp / 4 thành viên / 37 sự kiện.
+
+Hai lỗi trong phép kiểm của chính tôi, không phải của mã: `LIKE '...%'` bị
+psycopg hiểu `%` là chỗ điền tham số, và `admin_audit.target_id` là TEXT chứ
+không phải số.
+
+### 31/08/2026 — Bộ kiểm: 33 hỏng → 0. CI backend xanh lần đầu.
+
+Bắt đầu từ một việc nhỏ: khoá ngoại `enrollments_course_fk` vừa thêm ở §35 làm
+12 phép kiểm đổi từ "failed" sang "error". Tổng số hỏng không đổi (33) và số đạt
+không đổi (60) — tức không phép nào từ đạt thành hỏng — nhưng phải truy cho ra.
+
+**Ràng buộc không sai; nó PHƠI RA dữ liệu kiểm thử cũ.** `TEST_COURSE_ID =
+'python'` và `COURSE_ID = 'db_design'` là di sản ProgrammingEdu, trong khi CSDL
+HSA chỉ có ba khoá `hsa_*`. Luồng thật an toàn tuyệt đối: `EnrollView` tra khoá
+học và trả 404 nếu không có, nên không đường nào ghi được `course_id` bịa.
+
+Kéo sợi chỉ đó ra thì lòi cả cuộn:
+
+```
+truoc  18 hong / 59 dat / 15 loi   (tren master, do 31/08)
+sau     0 hong / 94 dat /  0 loi
+```
+
+**Ba lớp mục ruỗng, không cái nào do đợt này gây ra:**
+
+1. **Dữ liệu mẫu ghim chết trong phép kiểm.** Bốn phép đòi đúng
+   `['frontend','backend','python','cpp']`, đòi có khoá `'python'`, đòi mã
+   `'xp_1000'` (đã thay bằng `xp_500`/`xp_2000`). Viết lại thành kiểm HÌNH DẠNG
+   — có ít nhất một lộ trình, mỗi khoá có `id` và `title` — vì giáo trình SẼ
+   được soạn lại (schema §26), và phép kiểm ghim tên dữ liệu thì hỏng mỗi lần
+   nội dung đổi mà chẳng ai làm sai gì.
+
+2. **Sáu phép kiểm chuỗi ngày CHƯA TỪNG CHẠY** kể từ khi nhiệm vụ chuyển từ
+   "nhiệm vụ SQL pe_test" sang chấm bằng số liệu HSA. Chúng vá vào
+   `stats.views._verify_mission_by_course`, một cái tên nay chỉ còn trong MỘT
+   DÒNG CHÚ THÍCH ("Bản cũ (...) chấm nhiệm vụ bằng..."). `monkeypatch.setattr`
+   trên tên không tồn tại ném lỗi ngay khâu dựng — và nó báo "error" chứ không
+   "fail", thứ dễ lướt qua hơn nhiều khi nhìn bảng kết quả.
+
+   Viết lại đi qua đường THẬT: hoàn thành một bài học, tức
+   `common/streak.py:touch_streak`, chỗ duy nhất viết cột `streak`. Phát hiện
+   kèm khi đọc: nhận thưởng nhiệm vụ KHÔNG chạm chuỗi ngày, và điều đó đúng —
+   nhiệm vụ chỉ đủ điều kiện sau khi đã học thật.
+
+3. **Một phép kiểm khẳng định luật cũ.** `test_streak_resets_at_exactly_two_days_gap`
+   đòi chuỗi về 1 khi nghỉ đúng một ngày — luật TRƯỚC khi có vé bảo hiểm chuỗi.
+   Tách làm hai để cả hai nhánh đều có người canh: còn vé thì chuỗi tăng và tiêu
+   đúng một vé; hết vé thì về 1.
+
+**Và một LỖI SẢN PHẨM THẬT do bộ kiểm chỉ ra**, không phải lỗi của phép kiểm:
+`AdminLessonsView.post` bơm số bài bằng `sort_order` gửi lên, mà thiếu trường đó
+thì nó mặc định 0 và `_bump_lesson_count` bỏ qua giá trị 0. Hậu quả: thêm bài
+vào một khoá xong, danh sách khoá học vẫn hiện "0 bài". Vá bằng cách lấy sàn từ
+`COUNT(*)` thật trong bảng `lessons` — vẫn giữ đúng luật "chỉ đi lên" của hàm đó.
+
+Đây là lần đầu bộ kiểm được chạy trong cả đợt ERP này (pytest không có sẵn trong
+venv nên chưa ai chạy). Bài học ghi vào RULES: **"CI xanh" không có nghĩa gì nếu
+chưa ai xác nhận bộ kiểm CÓ CHẠY** — và ở đây nó đã đỏ sẵn từ trước.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T46) đã commit xong.
+**Việc còn dở:** không có. Task cuối (dọn bộ kiểm) đã commit xong.
+
+**Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
+`.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật
+rồi cuộn lại). pytest KHÔNG có sẵn trong venv — cài bằng
+`python -m pip install pytest pytest-django`.
 
 **Ba việc CẦN NGƯỜI DÙNG, không tự làm được:**
 1. `git push -u origin erp` — bị bộ lọc quyền của chế độ auto chặn (không
@@ -378,7 +494,7 @@ Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T45 (bảng giấu 62% cột trên điện thoại) →
+T45 (bảng giấu 62% cột trên điện thoại) → T51 (báo cáo lớp lọc theo vai) →
 T47 (`serverJson` vứt câu lỗi backend) →
 T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
 

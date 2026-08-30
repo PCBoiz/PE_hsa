@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 
 from common import audit
 from common.clock import local_now
-from common.db import q1, x
+from common.db import q, q1, x
+from common.events import forget_events
 from common.identity import norm_email, norm_phone
 from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
                                 IsAdminRole, IsTeacherOrAdmin, can_see_class,
@@ -17,6 +18,7 @@ from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
+from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS
 
 #: Trạng thái lớp hợp lệ.
 CLASS_STATUS = ('draft', 'active', 'finished')
@@ -265,7 +267,25 @@ class AdminClassDetailView(APIView):
                         '"đã kết thúc" thay vì xoá.',
             }, status=409)
 
+        # Giữ lại id các buổi TRƯỚC khi xoá: `class_sessions` đi theo lớp bằng
+        # ON DELETE CASCADE, nên sau câu DELETE thì không còn chỗ nào tra ra
+        # chúng nữa.
+        buoi_ids = [r['id'] for r in q('SELECT id FROM class_sessions WHERE class_id=%s',
+                                       (class_id,))]
+
         x('DELETE FROM classes WHERE id=%s', (class_id,))
+
+        # Dọn sự kiện học tập của các buổi vừa mất. Đường xoá MỘT buổi
+        # (`sessions.py`) đã gọi `forget_events` từ đầu, đường xoá cả lớp thì
+        # chưa — bất đối xứng, và hậu quả nghiêng hẳn về phía nặng hơn: xoá một
+        # lớp bỏ lại sự kiện của MỌI buổi trong lớp đó. Chúng vô hại về số liệu
+        # (score và minutes đều NULL) nhưng vẫn tính vào "hoạt động gần nhất",
+        # tức học viên của một lớp đã xoá vẫn trông như đang đi học.
+        #
+        # Đặt SAU câu DELETE là cố ý: xoá lớp hỏng giữa chừng thì sự kiện vẫn
+        # còn nguyên cho một lớp vẫn còn tồn tại, thay vì mất trước rồi mới biết.
+        quen = forget_events('class_session', buoi_ids) if buoi_ids else 0
+
         if before:
             # Chỉ ghi khi lớp có thật. Gọi DELETE hai lần (bấm nhầm hai cái) mà
             # đẻ ra hai dòng nhật ký thì người đọc tưởng có hai lớp bị xoá.
@@ -277,8 +297,9 @@ class AdminClassDetailView(APIView):
                                     ' (mã %s)' % before['code'] if before['code'] else '',
                                     counts['members'], counts['sessions'],
                                     counts['attendance']),
-                         detail=dict(_audit_detail(before), **dict(counts)))
-        return Response({'ok': True, 'deleted': dict(counts)})
+                         detail=dict(_audit_detail(before), **dict(counts),
+                                     forgottenEvents=quen))
+        return Response({'ok': True, 'deleted': dict(counts), 'forgottenEvents': quen})
 
 
 class AdminClassMembersView(APIView):
@@ -304,9 +325,17 @@ class AdminClassMembersView(APIView):
             # Tra tên CHỈ để chép vào nhật ký, cố ý KHÔNG chặn khi không thấy:
             # thêm một cửa 404 ở đây là đổi hành vi của endpoint đang chạy.
             row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
+        # `WHERE left_at IS NULL` trong mệnh đề ON CONFLICT là để trỏ đúng chỉ
+        # mục duy nhất MỘT PHẦN của §36 — và nó cũng chính là thay đổi hành vi:
+        # em ĐANG học lớp này thì không có gì để làm (DO NOTHING), còn em ĐÃ RỜI
+        # lớp và nay quay lại thì không xung đột nữa nên sinh MỘT DÒNG MỚI, tức
+        # một lượt học mới nối tiếp.
+        #
+        # Bản cũ `DO UPDATE SET left_at = NULL` hồi sinh chính dòng cũ, tức XOÁ
+        # TRẮNG mốc rời lớp lần trước — lượt học cũ biến mất không dấu vết.
         x('''INSERT INTO class_members (class_id, user_id, joined_at)
              VALUES (%s, %s, %s)
-             ON CONFLICT (class_id, user_id) DO UPDATE SET left_at = NULL''',
+             ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
           (class_id, uid, local_now()))
         ten = _user_label(row, uid)
         audit.record(request, audit.CLASS_MEMBER_ADD, target_type='class',
@@ -319,20 +348,45 @@ class AdminClassMembersView(APIView):
         uid = request.query_params.get('user_id') or (request.data or {}).get('user_id')
         if not uid:
             return Response({'error': 'Cần user_id.'}, status=400)
+
+        # "Học xong" và "bỏ giữa chừng" là HAI con số khác nhau khi trung tâm
+        # báo tỉ lệ bỏ học của một đợt; gộp lại thì mọi lớp kết thúc đều trông
+        # như bỏ học 100%. Không đoán: thiếu lý do thì để NULL và báo cáo gọi đó
+        # là "chưa ghi lý do", chứ không mặc định thành 'dropped'.
+        ly_do = ((request.query_params.get('leave_reason')
+                  or (request.data or {}).get('leave_reason') or '').strip() or None)
+        if ly_do is not None and ly_do not in LEAVE_REASONS:
+            return Response({'error': 'leave_reason phải là một trong: %s.'
+                                      % ', '.join(LEAVE_REASONS)}, status=400)
+
         # Đánh dấu rời lớp, KHÔNG xoá: học viên nghỉ giữa chừng vẫn phải còn
         # trong báo cáo của kỳ đó.
-        x('UPDATE class_members SET left_at=%s WHERE class_id=%s AND user_id=%s',
-          (local_now(), class_id, uid))
+        #
+        # `AND left_at IS NULL` là BẮT BUỘC từ §36. Trước đây mỗi cặp lớp–người
+        # chỉ có đúng một dòng nên không cần lọc; nay một em học lại lớp cũ sẽ
+        # có nhiều dòng, và câu không lọc sẽ dập mốc rời lớp lên CẢ những lượt
+        # học đã đóng từ đợt trước — ghi đè lịch sử bằng ngày hôm nay.
+        rows = q('''UPDATE class_members SET left_at=%s, leave_reason=%s
+                    WHERE class_id=%s AND user_id=%s AND left_at IS NULL
+                    RETURNING id''',
+                 (local_now(), ly_do, class_id, uid))
+        if not rows:
+            # Trước đây câu UPDATE không khớp dòng nào vẫn trả `{'ok': True}` —
+            # giao diện báo "đã cho rời lớp" cho một em không hề ở trong lớp.
+            return Response({'error': 'Học viên này không đang học lớp đó.'}, status=404)
+
         klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
         row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
         ten = _user_label(row, uid)
         audit.record(request, audit.CLASS_MEMBER_REMOVE, target_type='class',
                      target_id=class_id,
                      target_label=klass['name'] if klass else '#%s' % class_id,
-                     summary='Cho "%s" rời lớp "%s". Dữ liệu học của em giữ nguyên.'
-                             % (ten, klass['name'] if klass else '#%s' % class_id),
-                     detail={'userId': uid, 'userName': ten, 'classId': class_id})
-        return Response({'ok': True})
+                     summary='Cho "%s" rời lớp "%s"%s. Dữ liệu học của em giữ nguyên.'
+                             % (ten, klass['name'] if klass else '#%s' % class_id,
+                                ' (%s)' % LEAVE_LABEL[ly_do] if ly_do else ''),
+                     detail={'userId': uid, 'userName': ten, 'classId': class_id,
+                             'leaveReason': ly_do})
+        return Response({'ok': True, 'leaveReason': ly_do})
 
 
 class AdminUserRoleView(APIView):
@@ -539,9 +593,14 @@ class AdminCreateUserView(APIView):
             # lớp của HÔM TRƯỚC, và cột đó đi thẳng vào file mang đi họp phụ
             # huynh. Hai đường ghi class_members kia đã truyền đúng; đây là chỗ
             # còn sót.
+            # Tài khoản vừa được tạo nên không thể đã ở trong lớp; mệnh đề
+            # ON CONFLICT ở đây chỉ để câu lệnh không hỏng nếu có ai gọi lại.
+            # Vế `WHERE left_at IS NULL` là bắt buộc để trỏ đúng chỉ mục duy
+            # nhất một phần của §36 — thiếu nó Postgres báo "no unique or
+            # exclusion constraint matching the ON CONFLICT specification".
             x('INSERT INTO class_members (class_id, user_id, joined_at) '
               'VALUES (%s, %s, %s) '
-              'ON CONFLICT (class_id, user_id) DO UPDATE SET left_at = NULL',
+              'ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING',
               (class_id, uid, local_now()))
             added_to_class = True
 

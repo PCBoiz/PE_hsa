@@ -36,6 +36,13 @@ export type SessionRow = {
   status: string;
   note: string | null;
   meetingUrl?: string | null;
+  /**
+   * Mốc giờ giảng viên bấm Lưu điểm danh cho buổi này (null = chưa bấm lần nào).
+   *
+   * Không có cột này thì "buổi X, 0 vắng" mơ hồ giữa hai chuyện khác hẳn nhau:
+   * cả lớp đi đủ, hay giảng viên chưa tick. Trên màn hình chúng trông y hệt.
+   */
+  attendanceTakenAt?: string | null;
   attendance?: {
     present: number;
     late: number;
@@ -166,14 +173,29 @@ export default function SessionsClient({
 
                       {/* Số CHƯA điểm danh là con số giảng viên cần nhất: nó trả
                           lời "buổi hôm qua tôi tick xong chưa". Chỉ tô cảnh báo
-                          khi lớn hơn 0 — bảng lúc nào cũng đỏ thì mắt bỏ qua. */}
-                      {c && (
-                        <span className="flex flex-wrap gap-1.5">
-                          {c.present > 0 && <Chip tone="good">{c.present} có mặt</Chip>}
-                          {c.late > 0 && <Chip tone="warn">{c.late} muộn</Chip>}
-                          {c.absent > 0 && <Chip tone="bad">{c.absent} vắng</Chip>}
-                          {c.unmarked > 0 && <Chip tone="warn">{c.unmarked} chưa điểm danh</Chip>}
-                        </span>
+                          khi lớn hơn 0 — bảng lúc nào cũng đỏ thì mắt bỏ qua.
+
+                          Buổi CHƯA ai tick lần nào thì nói thẳng một câu, không
+                          liệt kê con số: "0 vắng, 0 muộn" của một buổi chưa mở
+                          sổ trông y hệt một buổi cả lớp đi đủ, mà đó là hai
+                          chuyện khác hẳn nhau — một cái là việc chưa làm. */}
+                      {!s.attendanceTakenAt ? (
+                        <Chip tone="warn">Chưa mở sổ điểm danh</Chip>
+                      ) : (
+                        c && (
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            {c.present > 0 && <Chip tone="good">{c.present} có mặt</Chip>}
+                            {c.late > 0 && <Chip tone="warn">{c.late} muộn</Chip>}
+                            {c.absent > 0 && <Chip tone="bad">{c.absent} vắng</Chip>}
+                            {c.excused > 0 && <Chip tone="brand">{c.excused} có phép</Chip>}
+                            {c.unmarked > 0 && (
+                              <Chip tone="warn">{c.unmarked} chưa tick</Chip>
+                            )}
+                            <span className="text-small text-ink-3">
+                              đã điểm danh {fmt(s.attendanceTakenAt)}
+                            </span>
+                          </span>
+                        )
                       )}
 
                       <Button

@@ -277,6 +277,12 @@ def _session_dict(r, counts=None, member_count=None):
         'note': r['note'],
         'createdAt': r['created_at'].isoformat() if r.get('created_at') else None,
         'updatedAt': r['updated_at'].isoformat() if r.get('updated_at') else None,
+        # Có con dấu này thì "0 dòng điểm danh" mới đọc được: chưa có dấu là
+        # giảng viên CHƯA tick, có dấu mà 0 vắng là cả lớp đi đủ. Hai chuyện đó
+        # trước đây trông y hệt nhau trên màn hình.
+        'attendanceTakenAt': (r['attendance_taken_at'].isoformat()
+                              if r.get('attendance_taken_at') else None),
+        'attendanceTakenBy': r.get('attendance_taken_by'),
     }
     if 'class_name' in r:
         out['className'] = r['class_name']
@@ -689,6 +695,15 @@ class SessionAttendanceView(APIView):
 
         rows = list(clean.values())
         now = local_now()
+
+        # Đọc trạng thái CŨ trước khi ghi đè. Đây là thứ nhật ký kiểm toán đang
+        # thiếu: hôm nay nó chỉ nói "buổi X: 12 có mặt, 3 vắng", nên khi phụ
+        # huynh khiếu nại "hôm đó cháu có đi học" thì không đối chiếu được ai đã
+        # sửa trạng thái của em từ gì sang gì. openSIS giữ cả `attendance_code`
+        # lẫn `attendance_teacher_code` chính vì tình huống này.
+        truoc = {r['user_id']: r['status'] for r in
+                 q('SELECT user_id, status FROM attendance WHERE session_id=%s', (session_id,))}
+
         params = []
         for m in rows:
             params += [session_id, m['user_id'], m['status'], m['minutes'], m['note'],
@@ -718,6 +733,15 @@ class SessionAttendanceView(APIView):
               '  marked_by = EXCLUDED.marked_by,'
               '  marked_at = EXCLUDED.marked_at', tuple(params))
 
+            # Đóng dấu "buổi này ĐÃ được điểm danh". Không có hai cột này thì
+            # "buổi X không có dòng attendance nào" mơ hồ giữa hai chuyện khác
+            # hẳn nhau — cả lớp có mặt hết, hay giảng viên quên tick — nên không
+            # dựng nổi báo cáo "tối nay ai chưa điểm danh", thứ trung tâm cần
+            # mỗi ngày. Nằm trong cùng khối atomic với câu ghi ở trên là bắt
+            # buộc: đóng dấu mà dòng điểm danh không vào được thì con dấu nói dối.
+            x('UPDATE class_sessions SET attendance_taken_at=%s, attendance_taken_by=%s, '
+              'updated_at=%s WHERE id=%s', (now, request.user.id, now, session_id))
+
         # Sự kiện học tập nằm NGOÀI khối atomic ở trên, có chủ đích. record_event
         # tự bọc savepoint và không bao giờ ném lỗi, nhưng common/db.py từ chối
         # thử lại mọi câu chạy TRONG một atomic block (để không phá tính nguyên
@@ -738,11 +762,20 @@ class SessionAttendanceView(APIView):
         # MỘT dòng nhật ký cho CẢ MẺ. Mỗi học viên một dòng thì một lớp 30 em là
         # 30 dòng cho một thao tác, và nhật ký kiểm toán ngập tới mức không ai
         # đọc nữa — tức là mất tác dụng đúng lúc cần dùng.
+        #
+        # `changed` chỉ chép những em THẬT SỰ đổi trạng thái, kèm giá trị cũ.
+        # Chép cả mẻ thì một lần bấm "đánh dấu cả lớp có mặt" đẻ ra 30 dòng
+        # không có tin tức gì, và phần đáng đọc chìm nghỉm. Ai sửa và sửa lúc
+        # nào thì `audit.record` đã tự ghi.
+        changed = [{'userId': m['user_id'], 'from': truoc.get(m['user_id']),
+                    'to': m['status']}
+                   for m in rows if truoc.get(m['user_id']) != m['status']]
         record(request, ATTENDANCE_MARK,
                target_type='class_session', target_id=session_id,
                target_label=label, summary=summary,
                detail={'class_id': row['class_id'], 'counts': counts,
-                       'marked': len(rows), 'skipped': skipped})
+                       'marked': len(rows), 'skipped': skipped,
+                       'firstTime': not truoc, 'changed': changed})
 
         return Response({
             'ok': True,

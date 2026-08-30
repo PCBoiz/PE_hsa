@@ -120,7 +120,15 @@ class AdminLessonsView(AdminBase):
           'VALUES (%s, %s, %s, %s, %s)',
           (course_id, data.get('module', ''), title,
            data.get('content', ''), data.get('sort_order', 0)))
-        _bump_lesson_count(course_id, data.get('sort_order') or 0)
+        # Lấy sàn từ SỐ BÀI THẬT trong bảng, không chỉ từ `sort_order` gửi lên.
+        # Thiếu `sort_order` thì nó mặc định 0, mà `_bump_lesson_count` bỏ qua
+        # giá trị 0 — nên một khoá vừa được thêm bài vẫn hiện "0 bài" trên danh
+        # sách khoá học. Đếm thật vẫn giữ đúng luật "chỉ đi lên" của hàm đó, vì
+        # COUNT không bao giờ nhỏ hơn số bài đang có.
+        thuc_te = q1('SELECT COUNT(*) AS n FROM lessons WHERE course_id=%s',
+                     (course_id,))['n']
+        _bump_lesson_count(course_id, max(int(thuc_te or 0),
+                                          int(data.get('sort_order') or 0)))
         return Response({'ok': True})
 
 

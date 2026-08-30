@@ -781,3 +781,185 @@ CREATE INDEX IF NOT EXISTS idx_mock_attempts_user_time
     ON mock_attempts(user_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_time
     ON notifications(user_id, created_at DESC);
+
+-- ============================================================================
+-- 35. Bất biến ở tầng CSDL (audit T42, 2026-08-31)
+-- ============================================================================
+-- Lược đồ này đang bất nhất với CHÍNH NÓ: `class_sessions.status` và
+-- `attendance.status` có CHECK, nhưng ba cột khoá quyền — `users.role`,
+-- `users.status`, `classes.status` — thì TEXT tự do. Hậu quả không đối xứng:
+--   · `users.role` gõ sai một dấu ('Giang viên') thì mọi phép kiểm vai đều trả
+--     false, giảng viên mất sạch quyền vào khu Giảng dạy mà không câu lỗi nào.
+--   · `users.status` gõ sai thì `User.is_active` trả false (nó so BẰNG với
+--     'active'), tức KHOÁ TÀI KHOẢN — hỏng theo hướng nguy hơn hẳn.
+-- Ràng buộc ở tầng ứng dụng không cứu được: `manage.py shell`, lệnh nạp dữ
+-- liệu, và mọi câu UPDATE viết tay đều đi vòng qua nó.
+--
+-- Đã đo trên dữ liệu thật 31/08/2026 trước khi thêm: role có đúng ba giá trị
+-- ('admin', 'Giảng viên', 'Học viên' — khớp ASSIGNABLE_ROLES), status và
+-- classes.status đều chỉ có 'active'. Không dòng nào vi phạm.
+--
+-- CHÚ Ý HÌNH DẠNG: bootstrap_schema NÉM LỖI ở câu đầu tiên hỏng và chạy trong
+-- buildCommand của Render, nên mọi câu dưới đây phải chạy lại được. ALTER TABLE
+-- ADD CONSTRAINT không có IF NOT EXISTS, nên dùng cặp DROP IF EXISTS + ADD.
+-- (Không dùng khối DO $$...$$ được: bộ tách câu cắt theo dấu chấm phẩy.)
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check
+    CHECK (role IN ('admin', 'Giảng viên', 'Học viên'));
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check;
+ALTER TABLE users ADD CONSTRAINT users_status_check
+    CHECK (status IN ('active', 'suspended'));
+
+-- 'finished' và 'cancelled' chưa có dòng nào dùng, nhưng để sẵn vì lớp kết thúc
+-- và lớp huỷ là hai con số khác nhau khi trung tâm báo tỉ lệ — cùng lý do đã
+-- ghi cho `class_members.leave_reason` ở §36.
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
+ALTER TABLE classes ADD CONSTRAINT classes_status_check
+    CHECK (status IN ('active', 'finished', 'cancelled'));
+
+-- ── Khoá ngoại còn thiếu ────────────────────────────────────────────────────
+-- Năm bảng dưới đây trỏ tới `users`/`courses`/`lessons` mà KHÔNG có khoá ngoại,
+-- nên xoá một tài khoản là bỏ lại tiến độ, khảo sát và đánh giá không chủ.
+-- Đã đo 31/08/2026: bốn bảng đầu SẠCH (0 dòng mồ côi), nên thêm được ngay.
+ALTER TABLE enrollments DROP CONSTRAINT IF EXISTS enrollments_user_fk;
+ALTER TABLE enrollments ADD CONSTRAINT enrollments_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE enrollments DROP CONSTRAINT IF EXISTS enrollments_course_fk;
+ALTER TABLE enrollments ADD CONSTRAINT enrollments_course_fk
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE;
+
+ALTER TABLE lesson_progress DROP CONSTRAINT IF EXISTS lesson_progress_user_fk;
+ALTER TABLE lesson_progress ADD CONSTRAINT lesson_progress_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE lesson_progress DROP CONSTRAINT IF EXISTS lesson_progress_lesson_fk;
+ALTER TABLE lesson_progress ADD CONSTRAINT lesson_progress_lesson_fk
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE;
+
+ALTER TABLE course_ratings DROP CONSTRAINT IF EXISTS course_ratings_user_fk;
+ALTER TABLE course_ratings ADD CONSTRAINT course_ratings_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE course_ratings DROP CONSTRAINT IF EXISTS course_ratings_course_fk;
+ALTER TABLE course_ratings ADD CONSTRAINT course_ratings_course_fk
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE;
+
+ALTER TABLE roadmap_progress DROP CONSTRAINT IF EXISTS roadmap_progress_user_fk;
+ALTER TABLE roadmap_progress ADD CONSTRAINT roadmap_progress_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- `surveys` là bảng DUY NHẤT còn dòng mồ côi: id=4 trỏ user_id=10, tài khoản đó
+-- không tồn tại. Thêm khoá ngoại thường ở đây sẽ LÀM GÃY DEPLOY, vì Postgres
+-- kiểm toàn bảng lúc tạo ràng buộc.
+--
+-- NOT VALID là lối thoát đúng: ràng buộc có hiệu lực NGAY với mọi dòng ghi mới
+-- (tức từ giây phút này không đẻ thêm được dòng mồ côi nào nữa), chỉ bỏ qua
+-- việc soi lại dữ liệu cũ. Dòng cũ vẫn nằm đó chờ người quyết định — xoá hẳn
+-- hay giữ lại là quyết định về DỮ LIỆU THẬT, không phải việc lược đồ tự làm.
+-- Dọn xong thì chạy tay MỘT lần:
+--     ALTER TABLE surveys VALIDATE CONSTRAINT surveys_user_fk
+ALTER TABLE surveys DROP CONSTRAINT IF EXISTS surveys_user_fk;
+ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
+
+-- Khoá ngoại ON DELETE CASCADE mà không có chỉ mục bên con thì mỗi lần xoá một
+-- tài khoản là một lần quét toàn bảng (cùng lỗi đã vá ở §34 cho review_quiz).
+CREATE INDEX IF NOT EXISTS idx_enrollments_user ON enrollments(user_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_user ON lesson_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_course_ratings_user ON course_ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_roadmap_progress_user ON roadmap_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_surveys_user ON surveys(user_id);
+
+-- ============================================================================
+-- 36. Đợt học, và một học viên học lại lớp cũ (audit T43, 2026-08-31)
+-- ============================================================================
+-- Làm HÔM NAY vì đây là hai thay đổi kiến trúc duy nhất mà chi phí chỉ tăng
+-- theo thời gian. Đo lúc làm: classes = 1 dòng, class_members = 4,
+-- learning_events = 37. Có 100 học viên rồi thì đây thành việc di trú thật.
+--
+-- ── Vì sao PHẢI bỏ khoá chính (class_id, user_id) ───────────────────────────
+-- Khoá đó cho đúng MỘT dòng cho mỗi cặp lớp–người. Nên khi một em học lại lớp
+-- cũ ở đợt sau, đường thêm vào lớp chạy `ON CONFLICT (class_id, user_id) DO
+-- UPDATE SET left_at = NULL` — tức là XOÁ TRẮNG mốc rời lớp lần trước. Lượt học
+-- cũ biến mất vĩnh viễn, không có bản sao nào.
+--
+-- Điều đó đi thẳng ngược lại §29, chỗ đã chốt rằng học viên rời lớp thì GIỮ
+-- NGUYÊN dữ liệu học vì trung tâm cần đọc lại chính những báo cáo ấy. Giữ dữ
+-- liệu của người đã rời mà lại xoá lịch sử của người quay lại là bất nhất.
+--
+-- Cách vá: khoá chính thành cột `id` thay thế, còn "mỗi lớp một người chỉ được
+-- ĐANG HỌC một lần" chuyển thành CHỈ MỤC DUY NHẤT MỘT PHẦN. Vế `WHERE left_at
+-- IS NULL` chính là chỗ mở ra cho nhiều lượt học nối tiếp: dòng đã rời lớp
+-- không nằm trong chỉ mục nên không chặn dòng mới.
+--
+-- Thứ tự bốn câu dưới đây là cố ý — dựng chỉ mục duy nhất TRƯỚC khi bỏ khoá
+-- chính, để không có khoảnh khắc nào bảng mất hàng rào chống trùng.
+
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS id SERIAL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_class_members_dang_hoc
+    ON class_members(class_id, user_id) WHERE left_at IS NULL;
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey;
+ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
+
+-- "Học xong" và "bỏ giữa chừng" hiện là CÙNG một trạng thái: `left_at` có giá
+-- trị. Nhưng đó là hai con số hoàn toàn khác nhau khi trung tâm báo tỉ lệ bỏ
+-- học cho một đợt — gộp lại thì mọi lớp kết thúc đều trông như bỏ học 100%.
+-- §31 đã nhận ra đúng điều này cho `users.status` rồi tách ra; lý lẽ đó chưa
+-- được áp cho chỗ này.
+-- NULL = chưa rời lớp. 'transferred' = chuyển sang lớp khác, không phải bỏ.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS leave_reason TEXT;
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
+ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
+    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred'));
+
+-- ── Đợt học ─────────────────────────────────────────────────────────────────
+-- Chưa có khái niệm ĐỢT, nên "đợt 1/2027 so với đợt 2/2027" phải suy từ
+-- `starts_on` và ĐỌC TÊN LỚP. Đó đúng là cái bẫy Moodle mắc rồi phải vá bằng
+-- lồng thư mục: khi thông tin nghiệp vụ chỉ nằm trong một chuỗi tự do, mọi báo
+-- cáo về sau đều phải đoán lại nó, và đoán sai thì không ai biết.
+--
+-- MỘT TẦNG, cố ý. openSIS lồng bốn tầng (năm học → học kỳ → kỳ nhỏ → đợt) cho
+-- trường phổ thông; một trung tâm luyện thi mở lớp theo mùa thi thì tầng thứ
+-- hai đã là chỗ để trống. Thêm tầng sau này rẻ hơn nhiều so với gỡ tầng thừa.
+CREATE TABLE IF NOT EXISTS terms (
+    id         SERIAL PRIMARY KEY,
+    code       TEXT,
+    name       TEXT NOT NULL,
+    starts_on  DATE,
+    ends_on    DATE,
+    -- Ngày thi của đợt. Lớp vẫn có `exam_date` riêng vì một đợt có thể ôn cho
+    -- hai đợt thi khác nhau; cột ở đây là mặc định, không phải luật.
+    exam_date  DATE,
+    status     TEXT NOT NULL DEFAULT 'active',
+    note       TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+ALTER TABLE terms DROP CONSTRAINT IF EXISTS terms_status_check;
+ALTER TABLE terms ADD CONSTRAINT terms_status_check
+    CHECK (status IN ('active', 'finished', 'cancelled'));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_terms_code ON terms(code) WHERE code IS NOT NULL;
+
+-- Cho phép NULL: lớp đã có từ trước đợt này chưa thuộc đợt nào, và ép chúng vào
+-- một đợt bịa ra thì con số của đợt đó sai ngay từ đầu.
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS term_id INTEGER;
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_term_fk;
+ALTER TABLE classes ADD CONSTRAINT classes_term_fk
+    FOREIGN KEY (term_id) REFERENCES terms(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_classes_term ON classes(term_id);
+
+-- ============================================================================
+-- 37. Ai đã điểm danh buổi này, và lúc nào (audit T44, 2026-08-31)
+-- ============================================================================
+-- Hôm nay "buổi X không có dòng `attendance` nào" MƠ HỒ giữa hai chuyện khác
+-- hẳn nhau: cả lớp có mặt (giảng viên tick xong, không ai vắng nên không dòng
+-- nào khác 'present'... thực ra vẫn có dòng) và giảng viên QUÊN tick. Không
+-- phân biệt được thì không dựng nổi báo cáo "hôm nay ai chưa điểm danh" — thứ
+-- một trung tâm cần mỗi tối.
+--
+-- openSIS chống lưng chỗ này bằng hẳn một bảng `attendance_completed`. Ở đây
+-- hai cột là đủ, vì quan hệ là một-một với buổi học.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS attendance_taken_at TIMESTAMP;
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS attendance_taken_by INTEGER;
+ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_taken_by_fk;
+ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_taken_by_fk
+    FOREIGN KEY (attendance_taken_by) REFERENCES users(id) ON DELETE SET NULL;

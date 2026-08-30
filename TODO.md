@@ -326,7 +326,13 @@ INSERT tuần tự, tất cả trong một `atomic()` nên `common/db.py` từ c
 một cú rớt kết nối huỷ trọn kế hoạch. Mẫu `INSERT ... SELECT FROM unnest(...)`
 đã có sẵn ở `admin_users.py:632`.
 
-### [ ] T42 · Dữ liệu rác đã có thật, và bất biến còn thiếu ở tầng CSDL
+### [x] T42 · Bất biến ở tầng CSDL — XONG 31/08
+Đo trước khi thêm: `users.role` có đúng ba giá trị khớp `ASSIGNABLE_ROLES`,
+`status` và `classes.status` chỉ có 'active' — không dòng nào vi phạm. Thêm 4
+CHECK + 9 khoá ngoại cho 5 bảng trước đây không có cái nào (§35). Dòng mồ côi
+`surveys` id=4 đã xoá (anh duyệt), khoá ngoại đã VALIDATE. `forget_events` nay
+có ở cả đường xoá lớp, nhận danh sách id để không gọi N lần.
+CÒN LẠI: quản trị viên (id 7) vẫn trong lớp 1 — anh chốt GIỮ, xem T51.
 **Đã đo trên dữ liệu production:** `surveys` id=4 trỏ `user_id=10` — tài khoản
 KHÔNG tồn tại (bảng `surveys` không có FK nào). Và `class_members` chứa `user_id=7`
 role `admin` — quản trị viên đang là học viên của lớp 1, xuất hiện trong danh
@@ -338,7 +344,12 @@ quyền đang là TEXT tự do) trong khi `class_sessions.status` và `attendanc
 Thiếu `forget_events` ở đường xoá lớp (`teaching/views.py`) trong khi đường xoá
 một buổi (`sessions.py`) đã có — bất đối xứng.
 
-### [ ] T43 · `terms` (đợt học) + `class_members` đổi khoá chính — HÔM NAY LÀ NGÀY RẺ NHẤT
+### [x] T43 · `terms` + `class_members` đổi khoá chính — XONG 31/08
+Làm đúng lúc rẻ nhất: 1 lớp / 4 thành viên. Khoá chính nay là `id`, hàng rào
+chống trùng chuyển sang chỉ mục duy nhất MỘT PHẦN `WHERE left_at IS NULL` —
+dựng TRƯỚC khi bỏ khoá cũ nên không có khoảnh khắc hở. Em đã rời lớp quay lại
+nay sinh LƯỢT HỌC MỚI thay vì xoá trắng lượt cũ (đo: 1 dòng → 2, mốc cũ nguyên).
+Thêm `leave_reason` (completed/dropped/transferred) + bảng `terms` một tầng.
 Hai việc kiến trúc duy nhất mà chi phí **chỉ tăng theo thời gian**. Hiện
 `classes` = 1 dòng, `class_members` = 4, `learning_events` = 37.
 · PK `(class_id, user_id)` cho đúng MỘT dòng mỗi cặp, nên em quay lại lớp cũ ở
@@ -351,13 +362,25 @@ Hai việc kiến trúc duy nhất mà chi phí **chỉ tăng theo thời gian**
   `starts_on` và **đọc tên lớp** — đúng cái bẫy Moodle mắc và phải vá bằng lồng
   thư mục. Đề xuất: bảng `terms` một tầng (không lồng bốn tầng như openSIS).
 
-### [ ] T44 · `attendance_taken_at/by` — thứ pe_hsa thiếu rõ nhất so với openSIS
+### [x] T44 · `attendance_taken_at/by` — XONG 31/08
+Hai cột trên `class_sessions`, đặt trong cùng khối atomic với câu ghi điểm danh.
+Màn hình nay phân biệt "Chưa mở sổ điểm danh" với "3 có mặt · đã điểm danh
+31/08 02:56" — trước đây hai chuyện đó trông y hệt nhau. `admin_audit.detail`
+giữ `firstTime` và `changed` (từ trạng thái nào sang trạng thái nào), để khiếu
+nại của phụ huynh còn đối chiếu được.
 Hôm nay "buổi X không có dòng `attendance` nào" **mơ hồ giữa "cả lớp có mặt" và
 "giảng viên quên tick"**. openSIS có hẳn bảng `attendance_completed` chống lưng
 cho báo cáo "hôm nay ai quên điểm danh". Vá rẻ: hai cột trên `class_sessions`,
 đặt trong `SessionAttendanceView.post`. Kèm: `admin_audit.detail` nên chứa trạng
 thái TRƯỚC khi sửa, để khiếu nại của phụ huynh còn đối chiếu được (openSIS giữ
 cả `attendance_code` lẫn `attendance_teacher_code`).
+
+### [ ] T51 · Báo cáo lớp nên lọc theo VAI, không chỉ theo tư cách thành viên
+Anh chốt 31/08 giữ tài khoản quản trị viên (id 7) trong lớp 1 để xem giao diện.
+Nhưng hôm nay nó bị đếm như học viên: vào sĩ số, vào bảng điểm danh, vào mẫu số
+tiến độ lớp. Vá đúng chỗ là lọc theo `users.role` ở `reports.py` và
+`sessions.py`, để tài khoản quản trị nằm trong lớp bao nhiêu lần cũng không làm
+lệch con số — thay vì trông chờ không ai thêm nhầm.
 
 ### [ ] T13 · Audit khả năng tiếp cận
 axe-core chạy thật + WCAG 2.2 AA. Đo trên pixel thật cả hai bộ màu. **Bẫy:**
