@@ -114,7 +114,7 @@ Phát sinh khi kiểm T1. Hai lỗi, cả hai chỉ lộ sau khi access token h�
    về trang đăng nhập mà hiện "bạn không phải giảng viên phụ trách lớp này" cho
    đúng người đang phụ trách lớp đó. Vá bằng cách đưa `redirect()` ra ngoài try.
 
-### [ ] T37 · Lưu điểm danh xong không có xác nhận nào
+### [x] T37 · Lưu điểm danh xong không có xác nhận nào — XONG 31/08 (gộp vào T46)
 Đo trên trình duyệt thật: lưu mất **2–5 giây**, và tín hiệu duy nhất báo xong là
 chữ "Chưa lưu" BIẾN MẤT — một tín hiệu phủ định, rất dễ bỏ sót. Giảng viên đang
 dạy, bấm Lưu trên điện thoại, không thấy gì đổi thì sẽ bấm lại hoặc tưởng hỏng.
@@ -450,10 +450,17 @@ một lần mỗi học viên · `legacy_schema.sql:651` ghi `user.password` cò
 là `user.password_reset` · `legacy_schema.sql:725` hai câu mâu thuẫn nhau ·
 `EmptyState.tsx:6` nói "bắt buộc có action hoặc hint" nhưng cả hai đều tuỳ chọn.
 
-### [ ] T22 · Hai hình dạng JSON lỗi → giao diện hiện `[object Object]`
+### [x] T22 · Hai hình dạng JSON lỗi → `[object Object]` — XONG 30/08 (gộp vào T49)
+`errorText()` trong `lib/api.ts` đọc được cả ba hình dạng, có bảng câu tiếng Việt
+theo mã HTTP làm mức cuối. Đo ba ca đã hỏng, `[object Object]` biến mất.
+CÒN LẠI ở T47: `serverJson` (tầng dựng trang) vẫn vứt toàn bộ thân lỗi.
+
+<details><summary>Ghi chép gốc</summary>
+
 `common/errors.py` trả `error` là **object**; view mới trả `error` là **chuỗi**.
 `AccountsClient.tsx:147,197` và `SessionsClient.tsx:197,289,326` chỉ xử lý chuỗi.
 Trợ giảng bấm nhanh → 429 → banner đỏ hiện `[object Object]`.
+</details>
 
 ### [ ] T23 · `MAX_BATCH` khai hai nơi — trong khi máy chủ đã gửi con số xuống
 `admin_users.py:553` **đã trả** `maxPerBatch`; frontend chỉ không khai nó trong
