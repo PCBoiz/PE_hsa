@@ -54,6 +54,22 @@
   --warning: #A45B08;
   --danger: #BE2A46;
 
+  /* Chữ đặt trên nền TÔ NHẠT của chính màu đó (chip, badge, ô cảnh báo).
+     Bốn màu ngữ nghĩa ở trên được chọn để đọc trên nền TRẮNG hoặc để làm nền
+     ĐẶC có chữ trắng đè lên. Đặt nguyên chúng lên bản pha 10-12% của chính
+     mình thì nền sáng lên còn chữ thì không, và tương phản rơi xuống dưới
+     chuẩn — đo ngày 30/08/2026 trên nền trang #F7F7FB:
+       tím 3.96:1 · teal 4.19:1 · cam 4.23:1 · đỏ 4.67:1  (chuẩn AA là 4.5:1)
+     Ba trong bốn tông trượt chuẩn, mà đó lại đúng là chỗ học viên đọc để biết
+     mình yếu chủ đề nào. Bộ dưới đây đậm hơn một bậc và đã đo lại:
+       tím 5.11 · teal 5.87 · cam 5.48 · đỏ 5.74
+     CHỈ dùng khi nền là bản pha nhạt của cùng màu. Trên nền trắng hoặc nền đặc
+     thì vẫn dùng bốn màu gốc ở trên. */
+  --brand-ink: #5B47D4;
+  --success-ink: #0B6357;
+  --warning-ink: #8A4D06;
+  --danger-ink: #A6243C;
+
   /* ── Lộ trình (dùng chung roadmap.css + roadmap.js) ──
      Bản SÁNG mượn ngôn ngữ roadmap.sh: nền kem, hộp vàng viền đậm. */
   --rm-canvas: #FDFCF7;
@@ -121,6 +137,17 @@ body.dark {
   --success: #34D399;
   --warning: #FCD34D;
   --danger: #F87171;
+
+  /* Bộ tối KHÔNG cần đậm thêm: nền pha nhạt ở đây tối đi chứ không sáng lên,
+     nên bốn màu gốc đã đạt sẵn (đo 30/08/2026 trên --card #0C1220:
+     tím 4.64 · teal 8.23 · vàng 10.63 · đỏ 6.00). Vẫn PHẢI khai lại bốn dòng
+     này — nếu để trống thì --brand-ink giữ nguyên mã màu SÁNG #5B47D4 và
+     thành chữ tím sẫm trên nền tím sẫm. Đây đúng là cái bẫy --text-1 ở trên
+     đã mắc một lần. */
+  --brand-ink: var(--brand);
+  --success-ink: var(--success);
+  --warning-ink: var(--warning);
+  --danger-ink: var(--danger);
 
   /* Lộ trình bản TỐI: giữ nhận diện HSA (tím/teal), cùng cấu trúc bản sáng */
   --rm-canvas: #0B0917;

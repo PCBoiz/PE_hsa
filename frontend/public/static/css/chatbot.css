@@ -273,7 +273,7 @@
     background: rgba(0, 0, 0, 0.1);
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
     font-size: 12px;
 }
 
@@ -284,7 +284,7 @@
     border-radius: 8px;
     overflow-x: auto;
     margin: 8px 0;
-    font-family: 'Fira Code', monospace;
+    font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
     font-size: 12px;
 }
 

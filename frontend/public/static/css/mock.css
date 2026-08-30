@@ -19,9 +19,14 @@
 
 body { background: var(--mk-bg); }
 .mk-wrap { min-height: 100dvh; background: var(--mk-bg); color: var(--mk-t1);
-  font-family: Inter, system-ui, -apple-system, sans-serif; }
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif; }
 
-.mk-topbar { display: flex; align-items: center; justify-content: space-between;
+/* flex-wrap BẮT BUỘC: ở màn <=720px, .mk-nav được đặt width:100% để xuống
+   hàng, nhưng thanh cha không cho xuống hàng nên nav bị bóp còn 0px và 5 mục
+   điều hướng tràn ra NGOÀI mép phải màn hình. Thanh khi đó cao 306px và dính
+   trên đỉnh — chiếm 36% màn hình điện thoại suốt lúc học viên làm bài. */
+.mk-topbar {
+  flex-wrap: wrap; display: flex; align-items: center; justify-content: space-between;
   padding: 14px 28px; border-bottom: 1px solid var(--mk-bd); position: sticky; top: 0; z-index: 10;
   background: rgba(7,9,15,.95); backdrop-filter: blur(16px); }
 .mk-brand { font-weight: 800; font-size: .95rem; cursor: pointer; }
@@ -128,4 +133,19 @@ body { background: var(--mk-bg); }
 @media (max-width: 720px) {
   .mk-nav { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
   .mk-nav-link { padding: 5px 9px; font-size: 0.76rem; }
+}
+
+
+/* Ở màn hẹp, cho dãy điều hướng CUỘN NGANG thay vì xếp thành nhiều hàng: thanh
+   này `position: sticky` nên mỗi hàng thêm là một phần màn hình bị chiếm vĩnh
+   viễn trong suốt lúc học viên làm bài bấm giờ. */
+@media (max-width: 720px) {
+  .mk-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mk-nav::-webkit-scrollbar { display: none; }
+  .mk-nav > * { flex: 0 0 auto; }
 }

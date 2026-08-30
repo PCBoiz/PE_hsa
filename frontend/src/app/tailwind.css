@@ -1,0 +1,248 @@
+/* ══════════════════════════════════════════════════════════════════════════
+ * TAILWIND v4 — hệ token của pe_hsa
+ *
+ * HAI QUYẾT ĐỊNH QUAN TRỌNG, đọc trước khi sửa file này:
+ *
+ * 1. KHÔNG nạp preflight (bộ reset của Tailwind).
+ *    `@import "tailwindcss"` bình thường kéo theo preflight, thứ sẽ xoá sạch
+ *    margin, border, cỡ chữ mặc định của MỌI thẻ. Sản phẩm còn 24.000 dòng CSS
+ *    cũ đang dựa vào các mặc định đó, nên nạp preflight là vỡ toàn bộ trang cũ
+ *    ngay lập tức. Ở đây nạp riêng `theme` + `utilities`, bỏ `preflight`. Khi
+ *    nào file CSS cũ cuối cùng biến mất thì bật lại preflight và xoá ghi chú này.
+ *
+ * 2. MÀU KHÔNG khai giá trị mới — trỏ thẳng vào biến của theme.css.
+ *    Bảng màu đã chốt và đã kiểm tương phản; `theme.css` cũng đã lo sẵn việc
+ *    đổi bộ tối qua `body.dark`. Nếu ở đây chép lại mã hex thì sẽ có HAI nguồn
+ *    màu, và chúng sẽ lệch nhau — chuyện đã xảy ra một lần với --module-accent.
+ *    Trỏ var() thì mọi tiện ích Tailwind tự đổi theo theme mà không cần biến
+ *    thể `dark:`.  → `bg-surface` sáng/tối đều đúng, không phải viết
+ *    `bg-surface dark:bg-surface-dark`.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Vì đã bỏ preflight nên KHÔNG có gì gán phông cho trang. Trang nào còn nạp
+   CSS cũ thì chính file đó gán hộ, nhưng trang mới viết bằng component sẽ rơi
+   về phông mặc định của trình duyệt — phông có chân, trông như một trang web
+   năm 1998. Gán ở lớp `base` nên CSS cũ (không nằm trong lớp nào) vẫn thắng
+   được khi cần, và cũng trỏ về đúng biến này. */
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.6;
+  }
+
+  /* Bỏ preflight nghĩa là các thẻ biểu mẫu GIỮ NGUYÊN kiểu mặc định của trình
+     duyệt: `<button>` có viền nổi và phông riêng của hệ điều hành. Hậu quả
+     nhìn thấy được: nút chính có một vòng xám bao quanh dù CSS không hề đặt
+     viền nào.
+     Đây là phần TỐI THIỂU của preflight cần lấy lại. Đặt trong lớp `base` nên
+     CSS cũ (không thuộc lớp nào) vẫn thắng — trang cũ không bị đụng tới. */
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+  }
+
+  button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Lề mặc định của trình duyệt trên thẻ tiêu đề và đoạn văn.
+     Bỏ preflight nghĩa là `h1`–`h6` và `p` giữ nguyên `margin: 0.67em`… trong
+     khi mã component viết `mb-3`, `mt-1`, `gap-2` — tức người viết TƯỞNG lề đã
+     được reset. Đo trên trang /thiet-ke: khoảng cách trong `EmptyState` đáng lẽ
+     8px thì ra 40px (sai 5 lần), tiêu đề `<h1>` của trang đăng nhập cách mép
+     thẻ 41px thay vì 24px. Trang tham chiếu của hệ thiết kế đang hiển thị sai
+     chính nhịp mà nó dạy.
+     Vẫn an toàn cho 24.000 dòng CSS cũ: chúng không nằm trong lớp nào nên có độ
+     ưu tiên cao hơn `@layer base`. */
+  h1, h2, h3, h4, h5, h6,
+  p, figure, blockquote, dl, dd, pre {
+    margin: 0;
+  }
+
+  /* `img { max-width: none }` là mặc định của trình duyệt — một ảnh khoá học
+     rộng hơn khung sẽ đẩy cả trang trượt ngang. */
+  img, svg, video, canvas {
+    display: block;
+    max-width: 100%;
+  }
+  img, video {
+    height: auto;
+  }
+
+  table {
+    border-collapse: collapse;
+    text-indent: 0;
+  }
+
+  /* Thẻ mã là chỗ DUY NHẤT còn rơi về phông mặc định của trình duyệt sau đợt
+     thống nhất phông. */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+  }
+}
+
+@theme {
+  /* ── MÀU: mượn nguyên biến của theme.css, không đặt giá trị mới ────────── */
+  --color-ground: var(--bg);
+  --color-surface: var(--card);
+  --color-sunken: var(--lift);
+  --color-line: var(--border);
+
+  --color-ink: var(--t1); /* chữ chính */
+  --color-ink-2: var(--t2); /* chữ phụ */
+  --color-ink-3: var(--t3); /* chú thích */
+
+  --color-brand: var(--brand); /* tím — hành động, đang học */
+  --color-brand-fill: var(--brand-fill); /* nền đặc có chữ trắng đè lên */
+  --color-brand-soft: var(--accent-soft);
+  --color-success: var(--success); /* teal — hoàn thành, đúng */
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  /* Chữ trên nền tô nhạt của CHÍNH màu đó. Bốn màu ngay trên trượt chuẩn AA
+     khi làm việc đó (tím 3.96:1 trên nền trang) — xem đo đạc trong theme.css. */
+  --color-brand-ink: var(--brand-ink);
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
+
+  /* ── PHÔNG: biến do next/font sinh ra, gán ở app/layout.tsx ───────────── */
+  --font-sans: var(--font-body), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-num), ui-monospace, 'Cascadia Code', monospace;
+
+  /* ── THANG CỠ CHỮ: 8 bậc, thay cho 33 cỡ rời rạc ──────────────────────
+     Sàn tuyệt đối 12px. Mọi chỗ đang 9/10/11px đều nâng lên.
+     Khoảng dòng rộng hơn thông lệ tiếng Anh vì tiếng Việt có dấu chồng hai
+     tầng (ộ, ẫ, ệ) — bó dòng lại là cắt mất dấu. */
+  --text-display: 34px;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 800;
+
+  --text-title: 26px;
+  --text-title--line-height: 1.25;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 700;
+
+  --text-section: 19px;
+  --text-section--line-height: 1.35;
+  --text-section--font-weight: 600;
+
+  --text-subhead: 17px;
+  --text-subhead--line-height: 1.5;
+  --text-subhead--font-weight: 600;
+
+  --text-body: 15px; /* ← cỡ chữ thân bài. Trước đây đa số là 11–13px */
+  --text-body--line-height: 1.6;
+
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+
+  --text-label: 12px; /* ← SÀN. Không có gì nhỏ hơn cỡ này */
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.05em;
+  --text-label--font-weight: 700;
+
+  --text-input: 16px; /* ô nhập: nhỏ hơn 16px thì iOS tự phóng to trang */
+  --text-input--line-height: 1.5;
+
+  /* ── NHỊP: bội số của 4 ───────────────────────────────────────────────
+     Tailwind sinh sẵn spacing theo bội 4 từ --spacing, nên chỉ cần khai gốc.
+     Dùng p-1 p-2 p-3 p-4 p-6 p-8 p-12 = 4 8 12 16 24 32 48px. */
+  --spacing: 4px;
+
+  /* ── BO GÓC: 4 bậc, thay cho 25 giá trị rời rạc ───────────────────────── */
+  --radius-sm: 8px; /* chip, nút nhỏ */
+  --radius-md: 12px; /* thẻ, nút, ô nhập */
+  --radius-lg: 16px; /* khối lớn, hộp thoại */
+  --radius-full: 999px;
+
+  /* ── ĐỘ NỔI: 3 bậc ────────────────────────────────────────────────────── */
+  --shadow-e1: 0 1px 2px rgb(20 16 35 / 0.05);
+  --shadow-e2: 0 1px 2px rgb(20 16 35 / 0.04), 0 8px 24px rgb(20 16 35 / 0.06);
+  --shadow-e3: 0 2px 4px rgb(20 16 35 / 0.05), 0 16px 48px rgb(20 16 35 / 0.1);
+
+  /* ── CHUYỂN ĐỘNG ──────────────────────────────────────────────────────
+     Có mục đích, không trang trí: mỗi chuyển động phải nói một điều có thật
+     (đi tới / lùi lại / vừa xong / đang chờ). Vào chậm hơn ra. */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --animate-duration-in: 220ms;
+  --animate-duration-out: 150ms;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * PHẢI KHAI LẠI TOÀN BỘ BÍ DANH MÀU Ở ĐÂY — đừng xoá khối này.
+ *
+ * CSS thay thế giá trị của một biến NGAY TẠI NƠI NÓ ĐƯỢC KHAI. Khối @theme ở
+ * trên sinh ra `--color-ground: var(--bg)` đặt tại `:root`, nên giá trị của nó
+ * bị "đóng băng" bằng màu SÁNG. Sau đó `body.dark` đổi `--bg` sang màu tối thì
+ * `--color-ground` không đổi theo, và mọi tiện ích `bg-ground`, `text-ink`…
+ * vẫn vẽ màu sáng trên nền tối — chữ tàng hình.
+ *
+ * Khai lại ở `body.dark` khiến phép thay thế chạy lại tại đúng nơi `--bg` đã
+ * là màu tối.
+ *
+ * Đây KHÔNG phải lỗi mới: theme.css đã mắc đúng bẫy này với `--text-1` (xem
+ * ghi chú tại chỗ, audit 2026-08-14, tương phản rơi xuống 1.02). Ghi lại đây
+ * để lần thứ ba không ai mắc lại.
+ * ════════════════════════════════════════════════════════════════════════ */
+body.dark {
+  --color-ground: var(--bg);
+  --color-surface: var(--card);
+  --color-sunken: var(--lift);
+  --color-line: var(--border);
+
+  --color-ink: var(--t1);
+  --color-ink-2: var(--t2);
+  --color-ink-3: var(--t3);
+
+  --color-brand: var(--brand);
+  --color-brand-fill: var(--brand-fill);
+  --color-brand-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-brand-ink: var(--brand-ink);
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
+
+  /* Bóng đen trên nền tối phải đậm hơn mới nhìn thấy */
+  --shadow-e1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-e2: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.35);
+  --shadow-e3: 0 2px 4px rgb(0 0 0 / 0.5), 0 16px 48px rgb(0 0 0 / 0.45);
+}
+
+/* Biến thể `dark:` bám theo `body.dark` của sản phẩm, KHÔNG theo
+   prefers-color-scheme — vì người dùng chọn tay thì lựa chọn đó phải thắng.
+   Phần lớn trường hợp không cần tới biến thể này (màu đã tự đổi qua var), chỉ
+   dùng khi cần đổi cả cấu trúc chứ không riêng màu. */
+@custom-variant dark (&:where(body.dark, body.dark *));
+
+/* Người dùng bật giảm chuyển động thì tắt hẳn, không giảm nửa vời. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -82,7 +82,7 @@ body.lesson-focus-mode {
   margin: 0;
   background: var(--surface-0);
   color: var(--text-300);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -281,7 +281,7 @@ body.lesson-focus-mode::before { animation: none; }
 }
 .player-pill .xp-text {
   color: var(--text-500);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
   font-size: 9px;
 }
 .lesson-stage {
@@ -357,7 +357,7 @@ body.lesson-focus-mode::before { animation: none; }
 .lesson-intro code,
 .lesson-example code,
 .prompt-block code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
   font-size: 0.9em;
   padding: 2px 8px;
   border-radius: 6px;
@@ -376,7 +376,7 @@ body.lesson-focus-mode::before { animation: none; }
   font-weight: 700;
   cursor: pointer;
   transition: all var(--anim-fast);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .next-btn.primary {
   position: relative;
@@ -671,7 +671,7 @@ body.lesson-focus-mode::before { animation: none; }
   font-size: 18px;
   font-weight: 800;
   color: var(--text-100);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
 }
 .reward-label {
   font-size: 10px;
@@ -788,7 +788,7 @@ display: flex;
   font-weight: 600;
   cursor: pointer;
   position: relative;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   transition: color var(--anim-fast);
 }
 
@@ -835,7 +835,7 @@ list-style: none;
   font-size: 16px;
 }
 
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
   font-size: 0.9em;
   padding: 1px 6px;
   background: var(--primary-soft);
@@ -864,7 +864,7 @@ list-style: none;
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   transition: all var(--anim-fast);
 }
 
@@ -883,7 +883,7 @@ list-style: none;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-500);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
 }
 
   color: var(--success);
@@ -986,7 +986,7 @@ list-style: none;
   color: var(--text-200);
   border: none;
   border-radius: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;

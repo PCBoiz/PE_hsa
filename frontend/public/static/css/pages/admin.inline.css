@@ -1,6 +1,6 @@
     * { box-sizing: border-box; }
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
       margin: 0; background: #0f172a; color: #e2e8f0;
     }
     header {
@@ -10,9 +10,14 @@
     }
     header h1 { font-size: 18px; margin: 0; }
     header a { color: #94a3b8; text-decoration: none; font-size: 14px; }
-    .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; }
-    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+    /* minmax(0, 1fr) chứ KHÔNG phải 1fr: ô lưới mặc định có min-width:auto nên nó
+       phình theo nội dung rộng nhất bên trong — một cái bảng 7 cột là đủ đẩy cả
+       trang trượt ngang. Đây là quy tắc đã ghi trong tài liệu bàn giao §7. */
+    .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 24px; padding: 24px; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
     section {
+      min-width: 0;   /* cho phép co lại nhỏ hơn nội dung, xem ghi chú ở .wrap */
       background: #1e293b; border: 1px solid #334155;
       border-radius: 12px; padding: 20px;
     }
@@ -46,7 +51,7 @@
     #toast.show { opacity: 1; }
 
 /* ── Trình soạn nội dung bài học (2026-08-14) ── */
-.wrap--full { grid-template-columns: 1fr; }
+.wrap--full { grid-template-columns: minmax(0, 1fr); }
 .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .sec-head h2 { margin: 0; }
 #contentActions { display: flex; gap: 6px; align-items: center; }
@@ -76,3 +81,23 @@ select { padding: 8px 10px; background: #0f172a; border: 1px solid #334155; bord
 .err-box li { margin: 3px 0; }
 code { background: #0f172a; padding: 2px 6px; border-radius: 5px; font-size: 12px; }
 input[type="file"] { padding: 8px; }
+
+
+/* Bảng phải cuộn ngang TRONG khung của chính nó, để TRANG không bao giờ trượt
+   ngang. Trước 27/08/2026 năm bảng nằm trần trong <section>: ở màn 390px trang
+   dư 141px và cột nút thao tác ("Học viên", "Sửa", "Xóa") nằm ngoài màn hình —
+   giảng viên dùng điện thoại không bấm tới được. */
+.tbl-scroll { overflow-x: auto; }
+.tbl-scroll > table { width: 100%; }
+
+
+/* Ô nhập và ô chọn trong hàng phải co lại được. Mặc định `<select>` rộng bằng
+   lựa chọn DÀI NHẤT của nó — một lớp tên "Luyện HSA đợt 1/2027 — Ca tối" là đủ
+   đẩy cả trang trượt ngang trên điện thoại. */
+.row > input,
+.row > select,
+.row > button {
+  min-width: 0;
+  max-width: 100%;
+}
+.row > select { text-overflow: ellipsis; }
