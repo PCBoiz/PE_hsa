@@ -562,3 +562,176 @@ CREATE TABLE IF NOT EXISTS class_members (
     PRIMARY KEY (class_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_class_members_user ON class_members(user_id);
+
+-- ============================================================================
+-- 30. Vòng đời tài khoản do trung tâm cấp (2026-08-27)
+-- ============================================================================
+-- Đổi chính sách sản phẩm: BỎ TỰ ĐĂNG KÝ. Học viên đăng ký học ở TopHSA, trung
+-- tâm lấy email/số điện thoại đó tạo tài khoản và đưa mật khẩu tạm tận tay.
+-- Nhờ vậy trung tâm biết chính xác ai đang có mặt trong hệ thống — điều không
+-- thể có khi bất kỳ ai cũng tự mở được tài khoản.
+--
+-- Cái giá phải trả: mật khẩu tạm do người khác biết. Nên phải bắt đổi ngay lần
+-- đăng nhập đầu tiên, và đó là việc của cột dưới đây.
+--
+-- Vì sao là cột trên `users` chứ không phải bảng riêng: đây là một trạng thái
+-- nhị phân của chính tài khoản, không có lịch sử cần giữ. Một bảng riêng chỉ để
+-- chứa một cờ true/false là thêm một phép nối cho mọi lần đăng nhập.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Lần đổi mật khẩu gần nhất. Dùng để trả lời câu hỏi vận hành của trung tâm:
+-- "tài khoản nào vẫn còn dùng mật khẩu do trợ giảng đặt?" — chưa từng đổi thì
+-- cột này NULL.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP;
+
+-- ============================================================================
+-- 31. Định danh đăng nhập & vòng đời tài khoản (2026-08-30)
+-- ============================================================================
+-- LỖI ĐANG CÓ THẬT, vá bằng khối này: `AdminCreateUserView` lưu email đã hạ chữ
+-- thường, còn `LoginView` so khớp NGUYÊN VĂN (`WHERE email=%s`). Trợ giảng nhập
+-- 'Nguyen.An@Gmail.com' thì bản lưu là 'nguyen.an@gmail.com'; học viên gõ lại
+-- đúng cách mình vẫn viết (bàn phím điện thoại còn tự viết hoa chữ đầu) là
+-- Postgres không khớp và trả về "sai mật khẩu" — trong khi tài khoản nằm ngay
+-- đó. Từ khi bỏ tự đăng ký thì em đó KHÔNG còn đường nào tự thoát.
+--
+-- Chỉ mục HÀM chứ không phải chỉ mục cột: có nó thì `WHERE lower(email)=%s`
+-- vẫn tra theo chỉ mục. Không có thì mỗi lần đăng nhập quét toàn bảng users.
+-- UNIQUE để chính CSDL giữ bất biến, thay vì tin vào một câu kiểm tra trong mã
+-- mà chỗ khác quên gọi là lọt.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower
+    ON users(lower(email)) WHERE email IS NOT NULL;
+
+-- Số điện thoại cũng là định danh đăng nhập nên cũng phải duy nhất.
+-- HỆ QUẢ VẬN HÀNH, trung tâm cần biết: hai anh em ruột KHÔNG dùng chung được số
+-- điện thoại của bố mẹ — em thứ hai phải cấp bằng email. Thà chặn ở đây còn hơn
+-- để hai dòng cùng số lọt vào rồi một trong hai em vĩnh viễn không đăng nhập
+-- được (câu tra lấy đúng một dòng, em còn lại luôn nhận "sai mật khẩu").
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone
+    ON users(phone) WHERE phone IS NOT NULL AND phone <> '';
+
+-- Vòng đời tài khoản. Anh chốt 30/08/2026: học viên nghỉ hoặc học xong thì KHOÁ
+-- ĐĂNG NHẬP nhưng GIỮ NGUYÊN dữ liệu học — báo cáo của kỳ đó vẫn phải đọc được.
+--
+-- Vì sao TEXT chứ không phải BOOLEAN is_active: trung tâm sẽ còn phân biệt "học
+-- xong" với "nghỉ giữa chừng" (hai con số hoàn toàn khác nhau khi báo cáo tỉ lệ
+-- bỏ học), và có thể thêm "bảo lưu". Một cột TEXT đổi nghĩa được mà không phải
+-- chạy lại migration; một cột BOOLEAN thì hết đường.
+--
+-- KHÁC với class_members.left_at: cột kia nói "rời khỏi LỚP này" (có thể chuyển
+-- sang lớp khác, tài khoản vẫn sống). Cột này nói "rời khỏi TRUNG TÂM".
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status_changed_at TIMESTAMP;
+-- Vì sao khoá. Trung tâm mở lại tài khoản sau vài tháng mà không có dòng này
+-- thì không ai nhớ nổi lý do.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status_note TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status) WHERE status <> 'active';
+
+-- ============================================================================
+-- 32. Nhật ký kiểm toán (2026-08-30)
+-- ============================================================================
+-- Đặc tả ERP §9 xếp việc này thứ 5 nhưng ghi rõ "nên chen lên sớm dù nhỏ: rẻ
+-- khi làm trước, đắt khi làm sau". Đắt vì nếu để muộn thì mọi hành động đã xảy
+-- ra trong khoảng thời gian đó là mất trắng, không dựng lại được từ đâu.
+--
+-- Phạm vi anh chốt 30/08/2026: chỉ ghi hành động SỬA (tạo/khoá tài khoản, đổi
+-- vai trò, đặt lại mật khẩu, thêm/bớt học viên khỏi lớp, điểm danh, sửa điểm).
+-- KHÔNG ghi hành động xem — để sau, khi TopHSA chốt chính sách quyền riêng tư
+-- (đặc tả §8.3).
+CREATE TABLE IF NOT EXISTS admin_audit (
+    id           BIGSERIAL PRIMARY KEY,
+    -- Ai làm. FK để truy ngược, nhưng CHÉP luôn tên và vai trò tại thời điểm đó
+    -- vào hai cột dưới: cùng lý do với learning_events.topic. Xoá tài khoản trợ
+    -- giảng cũ đi mà dòng nhật ký trở thành "NULL đã đặt lại mật khẩu của NULL"
+    -- thì nhật ký kiểm toán mất sạch giá trị — mà đó lại chính là lúc người ta
+    -- cần đọc nó nhất.
+    actor_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    actor_name   TEXT,
+    actor_role   TEXT,
+    -- Động từ dạng máy đọc: user.create, user.status, user.role, user.password,
+    -- class.member.add, class.member.remove, attendance.mark...
+    action       TEXT NOT NULL,
+    target_type  TEXT,
+    -- TEXT chứ không INTEGER: khoá học có id dạng chữ ('dinh-luong'), học viên
+    -- thì id số. Một cột phải chứa được cả hai.
+    target_id    TEXT,
+    target_label TEXT,
+    -- Câu tiếng Việt đọc được, dựng sẵn lúc GHI chứ không dựng lúc đọc: dựng
+    -- lúc đọc là phải nối lại các bảng mà dữ liệu khi đó đã đổi, và câu chuyện
+    -- kể ra sẽ không còn đúng với thời điểm nó xảy ra.
+    summary      TEXT,
+    detail       JSONB,
+    ip           TEXT,
+    occurred_at  TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON admin_audit(occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_actor ON admin_audit(actor_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_target ON admin_audit(target_type, target_id, occurred_at DESC);
+
+-- ============================================================================
+-- 33. Buổi học & điểm danh (2026-08-30) — đặc tả ERP §4
+-- ============================================================================
+-- Trước khối này, `classes.schedule` mới chỉ là một dòng MÔ TẢ lịch ("Tối 2-4-6")
+-- nên không trả lời được câu hỏi vận hành nào: buổi tới học gì, hôm qua ai vắng,
+-- em này nghỉ mấy buổi rồi.
+--
+-- Bản này là GIẢNG VIÊN TICK TAY. Đặc tả §4 đặt câu hỏi cho TopHSA "dạy trên nền
+-- tảng nào, có API lấy danh sách người tham dự không" và ghi rằng hai thiết kế
+-- khác hẳn nhau — nhưng đó là khác nhau ở chỗ ĐIỀN dữ liệu, không phải ở chỗ
+-- CHỨA. Hai bảng này giữ nguyên khi có API; lúc đó chỉ thêm một bộ nhập tự động
+-- ghi vào cùng chỗ, và `marked_by` NULL là dấu hiệu "máy điền".
+CREATE TABLE IF NOT EXISTS class_sessions (
+    id               SERIAL PRIMARY KEY,
+    class_id         INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    starts_at        TIMESTAMP NOT NULL,
+    duration_minutes INTEGER,
+    topic            TEXT,
+    -- Các bài trong giáo trình buổi này dạy. JSONB mảng id bài.
+    lesson_refs      JSONB,
+    meeting_url      TEXT,
+    recording_url    TEXT,
+    -- planned | done | cancelled
+    status           TEXT NOT NULL DEFAULT 'planned',
+    -- Sổ đầu bài: giảng viên ghi buổi hôm nay dạy tới đâu, lớp vướng chỗ nào.
+    note             TEXT,
+    created_by       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at       TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_class ON class_sessions(class_id, starts_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sessions_time ON class_sessions(starts_at DESC);
+
+CREATE TABLE IF NOT EXISTS attendance (
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- present | late | absent | excused
+    status     TEXT NOT NULL,
+    -- Số phút có mặt, nếu nền tảng họp trả về được. Tick tay thì để NULL.
+    minutes    INTEGER,
+    note       TEXT,
+    -- NULL = máy điền (xem ghi chú ở class_sessions).
+    marked_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    marked_at  TIMESTAMP NOT NULL DEFAULT now(),
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
+
+-- Từ vựng trạng thái ràng ở CHÍNH CSDL chứ không chỉ trong mã Python. Tầng ứng
+-- dụng đã kiểm, nhưng bộ nhập điểm danh tự động sau này (khi TopHSA cho biết
+-- nền tảng họp và có API lấy danh sách người tham dự) sẽ ghi thẳng vào bảng —
+-- lúc đó câu kiểm trong view không còn nằm trên đường đi. Một dòng status rác
+-- không làm hỏng gì ngay: nó chỉ nằm im, không lọt vào ô nào trên màn hình, và
+-- lặng lẽ làm sai tỉ lệ chuyên cần mà trung tâm dùng để gọi điện cho phụ huynh.
+-- DO $$ vì ADD CONSTRAINT không có IF NOT EXISTS, mà file này phải chạy lại
+-- được nhiều lần.
+-- Dạng DROP-rồi-ADD chứ không phải khối DO: bộ tách câu của bootstrap_schema
+-- cắt theo dấu chấm phẩy, mà một khối DO $$ ... $$ có chấm phẩy BÊN TRONG nên
+-- bị xé thành từng mảnh vô nghĩa. Hai câu dưới đây đều chạy lại được nhiều lần
+-- và không chứa chấm phẩy nào ở giữa.
+ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS chk_session_status;
+ALTER TABLE class_sessions ADD CONSTRAINT chk_session_status
+    CHECK (status IN ('planned', 'done', 'cancelled'));
+
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS chk_attendance_status;
+ALTER TABLE attendance ADD CONSTRAINT chk_attendance_status
+    CHECK (status IN ('present', 'late', 'absent', 'excused'));
