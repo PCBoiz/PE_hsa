@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
 
+import { errorText } from '@/lib/api';
 import { backendOrigin, readAccess, readRefresh, refreshTokens } from '@/lib/auth';
 
 /**
@@ -92,15 +93,69 @@ export async function serverFetch(
   return res;
 }
 
-/** Gọi và đọc JSON. Trả null khi bất kỳ khâu nào hỏng. */
-export async function serverJson<T>(path: string, opts: Options = {}): Promise<T | null> {
+/**
+ * Kết quả một lời gọi: hoặc có dữ liệu, hoặc có một câu giải thích ĐỌC ĐƯỢC.
+ *
+ * `status` là mã HTTP; `null` nghĩa là chưa tới được máy chủ (backend đang ngủ,
+ * mạng hỏng) — khác hẳn với "máy chủ trả lời rằng không được", và màn hình cần
+ * phân biệt hai chuyện đó để nói đúng.
+ */
+export type Ket<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number | null; message: string };
+
+/**
+ * Gọi và đọc JSON.
+ *
+ * ── Vì sao KHÔNG còn trả `null` ────────────────────────────────────────────
+ * Bản trước là `if (!res || !res.ok) return null`, tức mọi thứ hỏng đều rơi vào
+ * cùng một giá trị: 400 kèm hướng dẫn sửa, 403 không đủ quyền, 500 sập CSDL, và
+ * backend đang ngủ — bốn chuyện khác hẳn nhau, màn hình nhận đúng một `null`.
+ *
+ * Backend viết sẵn những câu tử tế (`Ngày "from" không hợp lệ (định dạng
+ * YYYY-MM-DD)`) và chúng bị vứt ngay tại đây. Hậu quả đo được ngày 30/08/2026 ở
+ * `/quan-tri/nhat-ky?from=abc`: trang hiện HAI câu mâu thuẫn cùng lúc — "Không
+ * đọc được nhật ký" và "Chưa có hành động nào" — tải lại vẫn hỏng mãi, và ô
+ * chọn Hành động rỗng đi nên KHÔNG CÒN NÚT NÀO bấm để thoát; người dùng phải tự
+ * sửa URL. Một lỗi gõ nhầm ngày biến thành một màn hình chết.
+ *
+ * Kiểu trả về là union có thẻ, nên `tsc` bắt buộc mọi nơi gọi phải xử lý nhánh
+ * hỏng — không thể vô tình bỏ qua như khi `null` lẫn vào cùng kiểu dữ liệu.
+ *
+ * Câu lỗi dựng bằng `errorText` — CÙNG hàm mà các màn hình phía trình duyệt
+ * dùng, để một sự cố không ra hai lời khác nhau tuỳ chỗ nó xảy ra.
+ */
+export async function serverJson<T>(path: string, opts: Options = {}): Promise<Ket<T>> {
   const res = await serverFetch(path, opts);
-  if (!res || !res.ok) return null;
-  try {
-    return (await res.json()) as T;
-  } catch {
-    return null;
+  if (!res) {
+    return {
+      ok: false,
+      status: null,
+      message: 'Chưa kết nối được máy chủ. Thử tải lại sau ít phút.',
+    };
   }
+
+  let body: unknown = null;
+  let docDuoc = true;
+  try {
+    body = await res.json();
+  } catch {
+    // Thân rỗng hoặc không phải JSON. Với phản hồi hỏng thì bình thường (một số
+    // lỗi hạ tầng trả HTML), nhưng với phản hồi 2xx thì chính nó là sự cố.
+    docDuoc = false;
+  }
+
+  if (!res.ok) {
+    return { ok: false, status: res.status, message: errorText(res.status, body) };
+  }
+  if (!docDuoc) {
+    return {
+      ok: false,
+      status: res.status,
+      message: 'Máy chủ trả về dữ liệu không đọc được. Báo kỹ thuật giúp nhé.',
+    };
+  }
+  return { ok: true, data: body as T };
 }
 
 /** Đã đăng nhập hay chưa — dùng để chọn nhánh hiển thị ngay trên máy chủ. */

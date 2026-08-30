@@ -27,11 +27,13 @@ export default async function TaiKhoanPage() {
 
   return (
     <AccountsClient
-      initial={data ?? { users: [], total: 0, page: 1, per_page: 25, roles: [] }}
-      classes={classes?.classes ?? []}
+      initial={data.ok ? data.data : { users: [], total: 0, page: 1, per_page: 25, roles: [] }}
+      classes={classes.ok ? classes.data.classes : []}
       /* Backend không với tới được là chuyện khác hẳn với "không có tài khoản
-         nào" — nói rõ để trợ giảng biết nên gọi kỹ thuật hay tự thêm dữ liệu. */
-      offline={data === null}
+         nào" — nói rõ để trợ giảng biết nên gọi kỹ thuật hay tự thêm dữ liệu.
+         Nay truyền thẳng CÂU của backend thay vì một câu chung: 403 thiếu
+         quyền, 400 tham số sai và 500 sập CSDL trước đây ra cùng một dòng chữ. */
+      loi={data.ok ? null : data.message}
     />
   );
 }

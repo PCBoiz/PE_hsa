@@ -610,13 +610,49 @@ công cụ, không qua heredoc.
 
 Kiểm 8 phép ở tầng view + 6 phép trên trình duyệt thật. CSDL không đổi một dòng.
 
+### 31/08/2026 — T47 xong: câu lỗi của backend đi được tới màn hình
+
+`serverJson` cũ là `if (!res || !res.ok) return null` — mọi thứ hỏng rơi vào
+cùng một giá trị: 400 kèm hướng dẫn sửa, 403 thiếu quyền, 500 sập CSDL, backend
+đang ngủ. Bốn chuyện khác hẳn nhau, màn hình nhận đúng một `null`.
+
+Đo lại ca đã hỏng, `/quan-tri/nhat-ky?from=abc`:
+```
+truoc:  "Khong doc duoc nhat ky"  +  "Chua co hanh dong nao duoc ghi"
+        hai cau mau thuan cung luc, khong cau nao noi ngay sai o dau;
+        o chon Hanh dong rong theo nen KHONG CON NUT NAO de thoat.
+sau:    "Khong doc duoc nhat ky"
+        'Ngay "from" khong hop le (dinh dang YYYY-MM-DD).'
+        [Xoa bo loc va xem lai tu dau]  -> bam mot cai la ve 25 hanh dong
+```
+
+Kiểu trả về nay là **union có thẻ** `Ket<T>`, nên `tsc` liệt kê ngay toàn bộ 7
+nơi gọi và bắt buộc từng nơi xử lý nhánh hỏng. Cùng thủ pháp đã dùng cho `label`
+của `Td` ở T45: đưa luật vào KIỂU thì không ai quên được, thay vì trông chờ
+người sau nhớ.
+
+Câu lỗi dựng bằng chính `errorText` mà phía trình duyệt dùng — một sự cố không
+được ra hai lời khác nhau tuỳ chỗ nó xảy ra.
+
+**Một chỗ cố ý KHÔNG đổi:** màn buổi học vẫn nói "không phải giảng viên phụ
+trách lớp này" khi `status === 404`, vì backend cố ý trả cùng mã cho "lớp không
+tồn tại" và "không được xem" (không lộ danh sách lớp). Chỉ những mã KHÁC mới
+được đổi sang câu thật. Đây là chỗ dễ vá quá tay — sửa cả 404 thành `message` là
+làm hỏng một quyết định bảo mật có chủ đích.
+
+Nhân tiện: `quan-tri/layout.tsx` trước đây coi "không đọc được tài khoản" là
+"không đủ quyền", nên backend sập cũng hiện "Tài khoản của bạn không có quyền
+vào đây" — đẩy người dùng đi hỏi nhầm chỗ. Nay tách hai câu.
+
+Kiểm 10 phép trên trình duyệt thật, tất cả đạt. tsc sạch, build exit 0.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T51 lọc theo vai) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T47 câu lỗi backend) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật
@@ -638,7 +674,6 @@ rồi cuộn lại). pytest KHÔNG có sẵn trong venv — cài bằng
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T47 (`serverJson` vứt câu lỗi backend) →
 T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
 
 **Nhớ:** Django chạy `--noreload` nên sửa mã Python xong PHẢI khởi động lại mới

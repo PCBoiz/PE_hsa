@@ -84,18 +84,19 @@ export default async function BaoCaoPhuHuynhPage({
   if (from) qs.set('from', from);
   if (to) qs.set('to', to);
 
-  const bc = await serverJson<BaoCao>(
+  const kq = await serverJson<BaoCao>(
     `/api/teach/classes/${classId}/students/${userId}/parent-report${qs.size ? `?${qs}` : ''}`,
     { requireAuth: true },
   );
 
-  if (!bc) {
+  if (!kq.ok) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16">
         <h1 className="text-title text-ink">Không mở được báo cáo này</h1>
-        <p className="mt-2 text-body text-ink-2">
-          Học viên không thuộc lớp này, hoặc bạn không phải giảng viên phụ trách lớp đó.
-        </p>
+        {/* Nói ĐÚNG chuyện đã xảy ra. Bản trước in một câu cố định "học viên
+            không thuộc lớp này", nên một sự cố máy chủ cũng hiện y hệt và người
+            đọc đi tìm nhầm chỗ. */}
+        <p className="mt-2 text-body text-ink-2">{kq.message}</p>
         <Link
           href={`/giang-day/buoi-hoc/${classId}`}
           className="mt-6 inline-block text-body text-brand-ink underline"
@@ -106,6 +107,7 @@ export default async function BaoCaoPhuHuynhPage({
     );
   }
 
+  const bc = kq.data;
   const { attendance: cc, study: ht, topics: cd } = bc;
   const coMat = cc.present + cc.late;
 

@@ -100,16 +100,17 @@ const ROLE_LABEL: Record<string, string> = {
 export default function AccountsClient({
   initial,
   classes,
-  offline,
+  loi,
 }: {
   initial: Payload;
   classes: ClassLite[];
-  offline: boolean;
+  /** Câu lỗi từ máy chủ khi lượt tải đầu hỏng; null = tải được. */
+  loi: string | null;
 }) {
   const [data, setData] = useState<Payload>(initial);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(
-    offline ? 'Không gọi được máy chủ. Thử tải lại trang; nếu vẫn vậy thì báo kỹ thuật.' : null,
+    loi,
   );
 
   const [q, setQ] = useState('');

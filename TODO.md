@@ -250,7 +250,16 @@ Mở rộng T37 bằng số đo. Lưu mất **4.716ms**; tín hiệu duy nhất 
 lưu" ở `top=868px` — **ngoài khung nhìn 104px**. Đúng tư thế người ta bấm Lưu thì
 không nhìn thấy thứ duy nhất báo đã xong. `Toast` đã dựng sẵn nhưng chưa gắn (T19).
 
-### [ ] T47 · `serverJson` vứt bỏ mọi câu lỗi backend — lỗ hệ thống
+### [x] T47 · `serverJson` vứt bỏ mọi câu lỗi backend — XONG 31/08
+`serverJson` nay trả union có thẻ `Ket<T>` (`{ok,data}` | `{ok,status,message}`),
+nên `tsc` BẮT BUỘC mọi nơi gọi xử lý nhánh hỏng — không thể vô tình bỏ qua như
+khi `null` lẫn vào cùng kiểu dữ liệu. Câu lỗi dựng bằng chính `errorText` mà các
+màn hình phía trình duyệt dùng, để một sự cố không ra hai lời khác nhau.
+Đo lại `?from=abc`: màn hình nay hiện đúng câu backend viết — `Ngày "from" không
+hợp lệ (định dạng YYYY-MM-DD).` — hết hai câu mâu thuẫn, và có liên kết "Xoá bộ
+lọc và xem lại từ đầu" làm đường thoát (trước đây phải tự sửa URL).
+`status === 404` vẫn giữ câu "không phải giảng viên phụ trách" ở màn buổi học —
+backend cố ý trả cùng mã cho hai trường hợp; chỉ mã KHÁC mới đổi câu.
 `server-api.ts` `if (!res || !res.ok) return null`. Backend viết sẵn câu tử tế
 (`Ngày "from" không hợp lệ (định dạng YYYY-MM-DD)`) nhưng màn hình chỉ nhận
 `null`. Hậu quả đo được: `/quan-tri/nhat-ky?from=abc` hiện **hai câu mâu thuẫn**

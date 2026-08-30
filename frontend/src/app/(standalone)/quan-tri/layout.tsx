@@ -23,7 +23,21 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
   // vẫn tải được cả khung trang rồi mới nhận 403 từ API — nhìn như hệ thống
   // hỏng chứ không như "bạn không có quyền".
   const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });
-  if (me?.role !== 'admin') {
+  // Không đọc được tài khoản KHÔNG đồng nghĩa với "không đủ quyền": backend sập
+  // hay mạng hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy
+  // người dùng đi hỏi nhầm chỗ. Tách hai câu ra.
+  if (!me.ok) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="text-title text-ink">Chưa mở được khu quản trị</h1>
+        <p className="mt-2 text-body text-ink-2">{me.message}</p>
+        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+          ← Về trang của tôi
+        </Link>
+      </main>
+    );
+  }
+  if (me.data.role !== 'admin') {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16">
         <h1 className="text-title text-ink">Khu vực dành cho quản trị viên</h1>

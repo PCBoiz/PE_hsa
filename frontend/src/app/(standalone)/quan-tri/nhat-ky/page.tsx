@@ -85,7 +85,8 @@ export default async function NhatKyPage({
   const qs = new URLSearchParams({ page: one('page') || '1', per_page: '50' });
   for (const k of ['action', 'from', 'to']) if (one(k)) qs.set(k, one(k));
 
-  const data = await serverJson<Payload>(`/api/admin/audit?${qs}`, { requireAuth: true });
+  const kq = await serverJson<Payload>(`/api/admin/audit?${qs}`, { requireAuth: true });
+  const data = kq.ok ? kq.data : null;
   const entries = data?.entries ?? [];
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / (data?.per_page || 50)));
   const page = data?.page ?? 1;
@@ -103,7 +104,9 @@ export default async function NhatKyPage({
         hint={
           data
             ? `${data.total} hành động đã ghi. Chỉ ghi việc SỬA — tạo và khoá tài khoản, đổi vai trò, đặt lại mật khẩu, thêm bớt học viên khỏi lớp, điểm danh.`
-            : 'Không đọc được nhật ký. Thử tải lại trang.'
+            : kq.ok
+              ? 'Không đọc được nhật ký. Thử tải lại trang.'
+              : kq.message
         }
       />
 
@@ -156,7 +159,26 @@ export default async function NhatKyPage({
         </button>
       </form>
 
-      {entries.length === 0 ? (
+      {!kq.ok ? (
+        /* Lời gọi HỎNG khác hẳn "không có dòng nào". Bản trước gộp cả hai vào
+           một nhánh, nên `?from=abc` hiện đồng thời "Không đọc được nhật ký" ở
+           tiêu đề và "Chưa có hành động nào được ghi" ở thân — hai câu mâu
+           thuẫn, mà không câu nào nói ngày gõ sai ở đâu.
+
+           "Xoá bộ lọc" là ĐƯỜNG THOÁT. Khi lời gọi hỏng thì ô chọn Hành động
+           cũng rỗng theo (danh sách đó do chính phản hồi này cấp), nên không
+           còn nút nào bấm được — người dùng phải tự sửa URL. */
+        <div className="rounded-md border border-danger/30 bg-danger/5 px-4 py-6" role="alert">
+          <p className="text-subhead text-ink">Không đọc được nhật ký</p>
+          <p className="mt-1 text-body text-ink-2">{kq.message}</p>
+          <Link
+            href="/quan-tri/nhat-ky"
+            className="mt-4 inline-block text-body text-brand-ink underline"
+          >
+            Xoá bộ lọc và xem lại từ đầu
+          </Link>
+        </div>
+      ) : entries.length === 0 ? (
         <EmptyState
           title="Chưa có hành động nào được ghi"
           hint="Nhật ký bắt đầu ghi từ 30/08/2026. Mọi việc trước mốc đó không có ở đây — đó chính là lý do đặc tả khuyên làm phần này sớm."

@@ -35,16 +35,20 @@ export default async function BuoiHocPage({
     }),
   ]);
 
-  const klass = detail?.class;
+  // 404 = lớp không tồn tại HOẶC không phụ trách lớp đó — backend cố ý trả cùng
+  // một mã để không lộ ra lớp có tồn tại hay không, nên chỗ này mới là nơi duy
+  // nhất được nói câu "không phải giảng viên phụ trách". Mọi mã khác (500, mất
+  // kết nối) phải nói đúng câu của nó, không mượn câu này.
+  const klass = detail.ok ? detail.data.class : undefined;
 
-  // Không đọc được lớp = không phụ trách lớp đó (backend trả 404 cho cả hai
-  // trường hợp, cố ý, để không lộ ra lớp có tồn tại hay không).
   if (!klass) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16">
         <h1 className="text-title text-ink">Không mở được lớp này</h1>
         <p className="mt-2 text-body text-ink-2">
-          Lớp không tồn tại, hoặc bạn không phải giảng viên phụ trách lớp đó.
+          {!detail.ok && detail.status !== 404
+            ? detail.message
+            : 'Lớp không tồn tại, hoặc bạn không phải giảng viên phụ trách lớp đó.'}
         </p>
         <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
           ← Về khu Giảng dạy
@@ -68,7 +72,7 @@ export default async function BuoiHocPage({
         <SessionsClient
           classId={Number(classId)}
           className={klass.name}
-          initial={list?.sessions ?? []}
+          initial={list.ok ? list.data.sessions : []}
         />
       </main>
     </div>
