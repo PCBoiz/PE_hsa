@@ -1,0 +1,236 @@
+"""Báo cáo gửi phụ huynh — đặc tả ERP §6.
+
+KHÁC HẲN hồ sơ học viên ở `TeachStudentView`, dù cùng nói về một em. Hồ sơ kia
+là bàn làm việc của giảng viên: đầy đủ, dày, để tư vấn. Cái này là một tờ giấy
+gửi về nhà, và người đọc là phụ huynh — thường không biết "chỉ số thành thạo"
+hay "đường cong tiến bộ" là gì, chỉ cần biết ba chuyện: **con có đi học không,
+có tiến bộ không, và cần giúp chỗ nào**.
+
+Vì thế ở đây cắt hết chỉ số kỹ thuật, giữ đúng những gì trả lời ba câu đó, và
+mỗi con số đi kèm mẫu số để nó tự giải thích ("6/7 buổi" chứ không phải "86%").
+
+BA RANH GIỚI CỐ Ý, đọc trước khi thêm trường:
+
+1. **KHÔNG có nhật ký học viên tự ghi.** Đó là chỗ em viết cho chính mình. Đặc
+   tả ERP mục "Quyền riêng tư" chốt: tiến độ và điểm là hợp lý để phụ huynh xem,
+   nhật ký và ghi chú riêng thì phải hỏi ý học viên trước. Chưa hỏi thì chưa gửi.
+
+2. **Chuyên cần chỉ tính trên những buổi ĐÃ ĐIỂM DANH** (`attendance_taken_at`
+   khác NULL). Buổi giảng viên quên tick mà đem chia vào mẫu số sẽ biến thành
+   "con vắng" trong mắt phụ huynh — một lời buộc tội sai, gửi về tận nhà, và
+   không ai ở đó để đính chính. Số buổi chưa điểm danh vẫn được báo riêng
+   (`sessionsUnmarked`) để trung tâm biết tờ giấy này đang thiếu bao nhiêu.
+
+3. **Không có dữ liệu thì nói KHÔNG CÓ DỮ LIỆU, không viết 0.** "Điểm thi thử
+   trung bình: 0" đọc như con làm bài sai hết, trong khi sự thật là con chưa thi
+   lần nào. Cùng lý do `common/events.py:pct` trả None thay vì 0.
+"""
+from datetime import timedelta
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.clock import local_today
+from common.db import q, q1
+from common.permissions import IsTeacherOrAdmin, can_see_class
+from stats import competency
+from teaching.vocab import trang_thai
+
+#: Kỳ báo cáo mặc định. Bốn tuần vì trung tâm gửi báo cáo theo tháng, và một
+#: tuần thì quá ngắn để thấy xu hướng — một tuần ốm là cả báo cáo xấu.
+DEFAULT_WEEKS = 4
+
+#: Dưới ngưỡng này thì đưa vào mục "cần chú ý". Khớp `stats/plan.py:REVIEW_BELOW`
+#: để lời khuyên gửi phụ huynh không mâu thuẫn với lịch học máy xếp cho em.
+WEAK_BELOW = 60
+
+#: Từ ngưỡng này trở lên thì gọi là điểm mạnh.
+STRONG_FROM = 75
+
+#: Số chủ đề nêu tên ở mỗi mục. Ba là đủ để hành động; liệt kê mười thì phụ
+#: huynh không biết bắt đầu từ đâu, và tờ báo cáo thành bản kiểm điểm.
+TOP_N = 3
+
+
+def _khoang_ngay(request):
+    """Đọc ?from & ?to, mặc định là 4 tuần gần nhất. Trả (từ, đến, có_hợp_lệ)."""
+    hom_nay = local_today()
+    mac_dinh_tu = hom_nay - timedelta(weeks=DEFAULT_WEEKS)
+
+    def doc(ten, mac_dinh):
+        raw = (request.query_params.get(ten) or '').strip()
+        if not raw:
+            return mac_dinh, True
+        try:
+            from datetime import date
+            return date.fromisoformat(raw), True
+        except ValueError:
+            return mac_dinh, False
+
+    tu, ok1 = doc('from', mac_dinh_tu)
+    den, ok2 = doc('to', hom_nay)
+    if tu > den:
+        tu, den = den, tu
+    return tu, den, (ok1 and ok2)
+
+
+def _chuyen_can(class_id, user_id, tu, den):
+    """Chuyên cần trong kỳ, tính trên các buổi ĐÃ điểm danh (xem ranh giới 2)."""
+    buoi = q('''SELECT s.id, s.attendance_taken_at
+                FROM class_sessions s
+                WHERE s.class_id = %s AND s.starts_at::date BETWEEN %s AND %s''',
+             (class_id, tu, den))
+    da_tick = [b['id'] for b in buoi if b['attendance_taken_at']]
+    chua_tick = len(buoi) - len(da_tick)
+
+    dem = {'present': 0, 'late': 0, 'absent': 0, 'excused': 0}
+    if da_tick:
+        for r in q('''SELECT status, COUNT(*) AS n FROM attendance
+                      WHERE user_id = %s AND session_id = ANY(%s)
+                      GROUP BY status''', (user_id, da_tick)):
+            if r['status'] in dem:
+                dem[r['status']] = r['n']
+
+    co_mat = dem['present'] + dem['late']
+    return {
+        'sessionsTotal': len(buoi),
+        'sessionsCounted': len(da_tick),
+        # Buổi chưa ai tick. Báo ra để trung tâm biết tờ giấy này thiếu bao
+        # nhiêu, thay vì im lặng chia cho một mẫu số nhỏ hơn thực tế.
+        'sessionsUnmarked': chua_tick,
+        'present': dem['present'],
+        'late': dem['late'],
+        'absent': dem['absent'],
+        'excused': dem['excused'],
+        # None chứ không 0 khi chưa buổi nào được điểm danh — xem ranh giới 3.
+        'attendedPct': (round(co_mat * 100 / len(da_tick)) if da_tick else None),
+    }
+
+
+def _hoc_tap(user_id, tu, den):
+    """Số bài học xong và số lượt thi thử TRONG KỲ, kèm điểm trung bình."""
+    bai = q1('''SELECT COUNT(*) AS n FROM learning_events
+                WHERE user_id = %s AND kind = 'lesson'
+                  AND event_date BETWEEN %s AND %s''', (user_id, tu, den))['n']
+
+    # SẮP THEO CẢ `occurred_at`, không chỉ `event_date`. Thi hai đề trong cùng
+    # một ngày là chuyện thường (đo trên dữ liệu thật: em id 13 có hai lượt cùng
+    # ngày 25/08), và khi đó sắp theo mỗi ngày thì thứ tự trong ngày là bất kỳ
+    # thứ gì Postgres trả về. Xu hướng tính trên thứ tự ấy sẽ LẬT NGƯỢC ngẫu
+    # nhiên — và câu "con đang đi xuống" gửi về tận nhà cho một em đang tiến bộ
+    # là kiểu sai không có đường đính chính.
+    de = q('''SELECT score, max_score, event_date FROM learning_events
+              WHERE user_id = %s AND kind = 'mock'
+                AND event_date BETWEEN %s AND %s
+                AND score IS NOT NULL AND max_score > 0
+              ORDER BY event_date, occurred_at''', (user_id, tu, den))
+    diem = [float(r['score']) * 100 / float(r['max_score']) for r in de]
+
+    # Xu hướng so nửa sau với nửa đầu kỳ. Cần ít nhất HAI lượt thi mới nói được
+    # "tiến bộ" — một lượt thì không có gì để so, và đoán bừa ở tờ giấy gửi về
+    # nhà là kiểu sai khó sửa nhất.
+    xu_huong = None
+    if len(diem) >= 2:
+        giua = len(diem) // 2
+        dau = sum(diem[:giua or 1]) / (giua or 1)
+        sau = sum(diem[giua:]) / (len(diem) - giua)
+        lech = sau - dau
+        xu_huong = 'up' if lech >= 3 else ('down' if lech <= -3 else 'flat')
+
+    return {
+        'lessonsDone': bai,
+        'mockCount': len(diem),
+        'mockAvg': round(sum(diem) / len(diem)) if diem else None,
+        'mockBest': round(max(diem)) if diem else None,
+        'mockTrend': xu_huong,
+    }
+
+
+def _chu_de(user_id):
+    """Chủ đề cần chú ý và chủ đề đang mạnh — chỉ lấy những ô ĐO ĐƯỢC.
+
+    Bỏ qua ô `status != 'ok'` là bắt buộc: một chủ đề chưa làm bài nào có
+    `mastery = None`, và xếp nó vào "cần chú ý" là nói với phụ huynh rằng con
+    yếu phần đó, trong khi sự thật là con chưa học tới.
+    """
+    comp = competency.compute(user_id)
+    do_duoc = [t for t in (comp.get('topics') or [])
+               if t.get('status') == 'ok' and t.get('mastery') is not None]
+
+    yeu = sorted((t for t in do_duoc if t['mastery'] < WEAK_BELOW),
+                 key=lambda t: t['mastery'])[:TOP_N]
+    manh = sorted((t for t in do_duoc if t['mastery'] >= STRONG_FROM),
+                  key=lambda t: -t['mastery'])[:TOP_N]
+
+    def gon(t):
+        return {'course': t['course'], 'courseTitle': t.get('courseTitle'),
+                'topic': t['topic'], 'mastery': t['mastery']}
+
+    return {
+        'weak': [gon(t) for t in yeu],
+        'strong': [gon(t) for t in manh],
+        'measured': len(do_duoc),
+        'total': len(comp.get('topics') or []),
+        'courses': comp.get('courses') or [],
+    }
+
+
+class ParentReportView(APIView):
+    """GET /api/teach/classes/<id>/students/<uid>/parent-report?from=&to=
+
+    Trả dữ liệu cho tờ báo cáo gửi phụ huynh. Bản in nằm ở frontend — cố ý
+    KHÔNG sinh PDF ở máy chủ: trình duyệt in ra PDF đã đủ tốt, và thêm một bộ
+    sinh PDF là thêm một phông chữ tiếng Việt phải cài trên Render, một khác
+    biệt nữa giữa máy dev và production, và một chỗ nữa để hỏng.
+    """
+    permission_classes = [IsTeacherOrAdmin]
+
+    def get(self, request, class_id, user_id):
+        if not can_see_class(request.user, class_id):
+            return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
+
+        # Lấy CẢ lượt học đã đóng: báo cáo cuối kỳ cho một em vừa học xong vẫn
+        # phải in ra được. Ưu tiên lượt đang mở nếu có.
+        thanh_vien = q1('''SELECT joined_at, left_at, leave_reason, note
+                           FROM class_members
+                           WHERE class_id = %s AND user_id = %s
+                           ORDER BY left_at IS NOT NULL, joined_at DESC
+                           LIMIT 1''', (class_id, user_id))
+        if not thanh_vien:
+            return Response({'error': 'Học viên không thuộc lớp này.'}, status=404)
+
+        lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
+                 (class_id,))
+        gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],)) \
+            if lop['teacher_id'] else None
+        em = q1('SELECT id, name, email, phone FROM users WHERE id=%s', (user_id,))
+        if not em:
+            return Response({'error': 'Không tìm thấy học viên.'}, status=404)
+
+        tu, den, ngay_hop_le = _khoang_ngay(request)
+        canh_bao = ([] if ngay_hop_le else
+                    ['Ngày lọc không đọc được (cần dạng YYYY-MM-DD) — '
+                     'đang dùng kỳ mặc định %d tuần gần nhất.' % DEFAULT_WEEKS])
+
+        return Response({
+            'student': {'id': em['id'], 'name': em['name'],
+                        'email': em['email'], 'phone': em['phone']},
+            'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
+                      'teacher': gv['name'] if gv else None},
+            'membership': {
+                'joinedAt': thanh_vien['joined_at'].isoformat()
+                            if thanh_vien['joined_at'] else None,
+                'leftAt': thanh_vien['left_at'].isoformat()
+                          if thanh_vien['left_at'] else None,
+                'status': trang_thai(thanh_vien['left_at'], thanh_vien['leave_reason']),
+                # Ghi chú của giảng viên VỀ lớp/em này — khác hẳn nhật ký em tự
+                # ghi (xem ranh giới 1). Cái này viết ra để người khác đọc.
+                'teacherNote': thanh_vien['note'],
+            },
+            'period': {'from': tu.isoformat(), 'to': den.isoformat(),
+                       'weeks': DEFAULT_WEEKS},
+            'attendance': _chuyen_can(class_id, user_id, tu, den),
+            'study': _hoc_tap(user_id, tu, den),
+            'topics': _chu_de(user_id),
+            'warnings': canh_bao,
+        })

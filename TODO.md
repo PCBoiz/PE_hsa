@@ -477,7 +477,14 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
 
 - [?] T25 · Điểm danh tự động — **cần TopHSA**: dạy trên nền tảng nào, có API lấy danh sách người tham dự không
 - [?] T26 · Giao bài & chấm tay — **cần TopHSA**: có chấm tự luận không, thang điểm nào, ai chấm
-- [ ] T27 · Báo cáo phụ huynh định kỳ + xuất PDF (ít phụ thuộc, làm được ngay)
+- [x] T27 · Báo cáo phụ huynh + in ra PDF — XONG 31/08
+      `teaching/parent_report.py` + trang in `/giang-day/bao-cao/<lop>/<em>`, lối vào từ
+      bảng học viên trong khu Giảng dạy. Ba ranh giới cố ý: KHÔNG lộ nhật ký em tự ghi ·
+      chuyên cần chỉ tính trên buổi ĐÃ điểm danh (buổi quên tick không được biến thành
+      "con vắng") · không có dữ liệu thì nói không có, không viết 0.
+      In bằng `window.print()` chứ không sinh PDF ở máy chủ — xem chú thích ở `PrintButton`.
+      Kiểm 23 phép ở tầng view + 12 phép trên trình duyệt thật.
+      CÒN LẠI: gửi tự động theo kỳ (cần T28 — kênh gửi, phụ thuộc TopHSA).
 - [?] T28 · Thông báo Zalo/email — **cần TopHSA**: kênh nào, tần suất, ai duyệt
 - [?] T29 · Học phí, công nợ, thù lao — **cần TopHSA**: quy trình kế toán thật
 - [ ] T30 · Quyết định treo: `stats/journal.py:343` cộng `sys_min + self_min` — có tính phút ngồi lớp vào chỉ tiêu tuần không. Điểm danh đang cố ý để `minutes=NULL` chờ chốt.

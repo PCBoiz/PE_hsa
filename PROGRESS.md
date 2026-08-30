@@ -467,13 +467,66 @@ vào một khoá xong, danh sách khoá học vẫn hiện "0 bài". Vá bằng 
 venv nên chưa ai chạy). Bài học ghi vào RULES: **"CI xanh" không có nghĩa gì nếu
 chưa ai xác nhận bộ kiểm CÓ CHẠY** — và ở đây nó đã đỏ sẵn từ trước.
 
+### 31/08/2026 — T27 xong: báo cáo gửi phụ huynh (khối ERP §6)
+
+Tính năng mới, không phải vá lỗi. Đặc tả §9 xếp đây là khối kế tiếp và ghi "ít
+phụ thuộc TopHSA, làm được ngay" — đúng vậy: toàn bộ đọc từ `learning_events` +
+`classes`, không cần bảng mới.
+
+**Khác hẳn hồ sơ học viên đã có** (`TeachStudentView`), dù cùng nói về một em.
+Cái kia là bàn làm việc của giảng viên. Cái này là tờ giấy gửi về nhà, người đọc
+là phụ huynh — thường không biết "chỉ số thành thạo" là gì, chỉ cần ba câu trả
+lời, và trang được dựng đúng theo ba câu đó: **con có đi học không · con có tiến
+bộ không · con cần giúp chỗ nào**.
+
+**Ba ranh giới cố ý:**
+
+1. **Không lộ nhật ký em tự ghi.** Đặc tả mục "Quyền riêng tư" chốt: tiến độ và
+   điểm thì hợp lý, nhật ký thì phải hỏi ý học viên. Chưa hỏi thì chưa gửi.
+2. **Chuyên cần chỉ tính trên buổi ĐÃ điểm danh.** Đây là chỗ T44 vừa làm hôm
+   nay trả công ngay: buổi giảng viên quên tick mà đem chia vào mẫu số sẽ thành
+   "con vắng" trong mắt phụ huynh — một lời buộc tội sai, gửi tới tận nhà, không
+   ai ở đó để đính chính. Số buổi chưa tick báo riêng ở `sessionsUnmarked`.
+3. **Không có dữ liệu thì nói không có, không viết 0.** "Điểm trung bình 0" đọc
+   như con làm sai hết, trong khi sự thật là con chưa thi lần nào.
+
+**Một lỗi tự tìm ra khi đo.** Xu hướng điểm sắp theo `event_date` — mà thi hai
+đề trong cùng một ngày là chuyện thường (dữ liệu thật: em id 13 có hai lượt cùng
+ngày 25/08). Cùng ngày thì thứ tự là bất kỳ thứ gì Postgres trả về, nên xu hướng
+LẬT NGƯỢC ngẫu nhiên. Sửa thành `ORDER BY event_date, occurred_at`. Câu "con
+đang đi xuống" gửi về nhà cho một em đang tiến bộ là kiểu sai không đính chính
+được.
+
+**Một lần tôi nghi oan cho mã của mình.** Phép kiểm báo `mockTrend` sai; hoá ra
+dữ liệu thật là 5/9 rồi 2/9, tức em đó đi xuống thật và mã đúng. Tôi đoán thứ tự
+từ một bản kết xuất trước — mà bản đó cũng sắp theo `event_date` nên chính nó
+cũng tuỳ tiện. Bản vá vẫn giữ: trước đây câu trả lời đúng là do may.
+
+**Lời cũng là một phần tính năng.** Em mới thi đúng một lượt và được 0 điểm thì
+tờ giấy hiện "Điểm trung bình 0%" in đậm — đúng số học, nhưng đọc như kết luận
+về năng lực. Thêm một câu: "Con mới làm một đề nên chưa đủ để nói đang lên hay
+xuống." Và mục "Con đang làm tốt" đứng cạnh mục "Nên tập trung", có chủ đích —
+một tờ giấy chỉ toàn phần kém đọc như bản kiểm điểm, và phụ huynh đọc xong
+thường quay sang trách con thay vì giúp con.
+
+**In bằng `window.print()`, KHÔNG sinh PDF ở máy chủ.** Hộp in của trình duyệt
+đã có "Lưu thành PDF", giữ đúng phông tiếng Việt đang hiển thị, và cho giảng
+viên xem trước khi gửi. Thêm bộ sinh PDF phía máy chủ là thêm một phông phải cài
+trên Render, một khác biệt nữa giữa dev và production, một chỗ nữa để hỏng.
+
+**Lối vào nằm ở BẢNG HỌC VIÊN** trong khu Giảng dạy, cạnh nút "Xem" — bài học từ
+T1: màn hình không có lối vào từ đâu cả thì coi như không tồn tại.
+
+Kiểm 23 phép ở tầng view + 12 phép trên trình duyệt thật (390px và 1280px, có
+kiểm bản in ẩn thanh điều hướng). CSDL không đổi một dòng.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (dọn bộ kiểm) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T27 báo cáo phụ huynh) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật

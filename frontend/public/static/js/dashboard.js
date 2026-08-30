@@ -4047,7 +4047,15 @@ function forumClearSearch() {
           + '<td class="tc-num">' + mock + '</td>'
           + '<td class="tc-num' + (st.lag >= 5 ? ' tc-bad' : '') + '">' + st.lag + '</td>'
           + '<td>' + weak + '</td>'
-          + '<td><button type="button" class="tc-view" data-uid="' + st.userId + '">Xem</button></td>'
+          + '<td class="tc-acts">'
+            + '<button type="button" class="tc-view" data-uid="' + st.userId + '">Xem</button>'
+            /* Lối vào báo cáo gửi phụ huynh. Có lối vào ngay ở BẢNG HỌC VIÊN là
+               cố ý: giảng viên đang nhìn đúng danh sách cần gửi báo cáo thì đó
+               là chỗ tự nhiên để bấm. Một màn hình không có lối vào từ đâu cả
+               thì coi như không tồn tại — bài học từ màn điểm danh (T1). */
+            + '<a class="tc-view" href="/giang-day/bao-cao/' + report.class.id
+              + '/' + st.userId + '" target="_blank" rel="noopener">Báo cáo PH</a>'
+          + '</td>'
           + '</tr>';
       }).join('') + '</tbody></table></div>';
   }

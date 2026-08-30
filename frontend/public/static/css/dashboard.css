@@ -4445,6 +4445,14 @@ body.dark .pl-go:not(.is-flat):hover .pl-title { color: var(--blue-light); }
   font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;
 }
 .tc-view:hover { border-color: var(--brand); color: var(--brand); }
+/* `.tc-view` nay dùng cho cả <button> lẫn <a> (nút "Báo cáo PH"). Thẻ <a> mặc
+   định có gạch chân và là inline, nên phải nói rõ ba thứ dưới đây thì hai nút
+   cạnh nhau mới cao bằng nhau và trông như cùng một loại điều khiển. */
+a.tc-view { display: inline-block; text-decoration: none; line-height: 1.4; }
+/* Hai nút xuống dòng cùng nhau khi cột hẹp, thay vì dính sát nhau. Vùng chạm
+   giữ >= 8px khoảng cách theo chuẩn Material — hai nút 11px sát nhau trên điện
+   thoại là bấm nhầm. */
+.tc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ── Hồ sơ một học viên ── */
 .tc-st-hd { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }

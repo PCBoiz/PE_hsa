@@ -1,6 +1,6 @@
 from django.urls import path
 
-from teaching import admin_users, exports, sessions, views
+from teaching import admin_users, exports, parent_report, sessions, views
 
 urlpatterns = [
     # ── Khu vực giảng dạy — quyền theo NGỮ CẢNH (lớp mình phụ trách) ──
@@ -8,6 +8,10 @@ urlpatterns = [
     path('api/teach/classes/<int:class_id>', views.TeachClassDetailView.as_view()),
     path('api/teach/classes/<int:class_id>/students/<int:user_id>',
          views.TeachStudentView.as_view()),
+    # Báo cáo gửi phụ huynh (đặc tả ERP §6) — khác hồ sơ ở trên: ít số hơn, có
+    # ranh giới riêng tư, và in ra giấy được.
+    path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report',
+         parent_report.ParentReportView.as_view()),
 
     # ── Buổi học & điểm danh (đặc tả ERP §4) ──
     path('api/teach/classes/<int:class_id>/sessions', sessions.ClassSessionsView.as_view()),
