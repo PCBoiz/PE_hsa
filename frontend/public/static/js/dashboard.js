@@ -4004,7 +4004,18 @@ function forumClearSearch() {
          thẻ lớp và với ô thống kê. */
       + '<div class="tc-sec"><div class="tc-sec-t">Học viên (' + s.students
         + (s.left ? ' đang học + ' + s.left + ' đã rời lớp' : '')
-        + ')</div>' + tableHtml() + '</div>';
+        + ')</div>'
+        /* Nói ra phần đã bị loại. Từ 31/08 mọi con số của lớp chỉ tính tài
+           khoản có vai "Học viên", nên quản trị viên hay giảng viên phụ đang
+           ở trong lớp sẽ không lọt vào sĩ số nữa. Loại mà im lặng thì người
+           đọc thấy sĩ số tụt một người và không hiểu vì sao — đúng kiểu làm
+           mất niềm tin vào con số. */
+        + (s.nonStudents
+            ? '<p class="tc-muted">' + s.nonStudents
+              + ' tài khoản khác đang ở trong lớp nhưng không mang vai Học viên '
+              + '(quản trị viên, giảng viên phụ…) nên không tính vào các con số trên.</p>'
+            : '')
+        + tableHtml() + '</div>';
 
     Array.prototype.forEach.call(box.querySelectorAll('[data-uid]'), function (b) {
       b.addEventListener('click', function () { loadStudent(b.getAttribute('data-uid')); });

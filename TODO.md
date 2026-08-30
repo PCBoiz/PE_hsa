@@ -389,7 +389,15 @@ cho báo cáo "hôm nay ai quên điểm danh". Vá rẻ: hai cột trên `class
 thái TRƯỚC khi sửa, để khiếu nại của phụ huynh còn đối chiếu được (openSIS giữ
 cả `attendance_code` lẫn `attendance_teacher_code`).
 
-### [ ] T51 · Báo cáo lớp nên lọc theo VAI, không chỉ theo tư cách thành viên
+### [x] T51 · Báo cáo lớp lọc theo VAI — XONG 31/08
+Luật đặt ở MỘT chỗ (`teaching/vocab.py:chi_hoc_vien`), áp cho 5 câu tra đếm/liệt
+kê thành viên ở `reports.py` và `sessions.py`. Vá ở tầng truy vấn chứ không lọc
+trong Python vì mấy chỗ đếm là subselect `COUNT(*)` — lọc sau khi đã đếm thì
+không lọc được nữa.
+Đo lại: sĩ số 3 → **2**, thẻ lớp 2/25, tiêu đề "2 đang học + 1 đã rời lớp", bảng
+tick bỏ quản trị viên, và tick cho tài khoản không phải học viên bị từ chối.
+Loại bỏ nhưng KHÔNG im lặng: `summary.nonStudents` + một câu trên màn hình nói
+rõ có bao nhiêu tài khoản khác đang trong lớp và vì sao không được tính.
 Anh chốt 31/08 giữ tài khoản quản trị viên (id 7) trong lớp 1 để xem giao diện.
 Nhưng hôm nay nó bị đếm như học viên: vào sĩ số, vào bảng điểm danh, vào mẫu số
 tiến độ lớp. Vá đúng chỗ là lọc theo `users.role` ở `reports.py` và

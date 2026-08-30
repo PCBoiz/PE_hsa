@@ -29,6 +29,7 @@ from common.db import q, q1
 from common.events import KIND_LESSON, KIND_MOCK
 from stats.competency import (COURSE_ORDER, HALF_LIFE_DAYS, KIND_TO_SOURCE,
                               MIN_ACTIVITIES, SOURCE_WEIGHTS, TOPIC_SOURCES)
+from teaching.vocab import chi_hoc_vien
 
 #: Không hoạt động quá ngần này ngày thì cảnh báo.
 IDLE_DAYS = 7
@@ -50,12 +51,26 @@ def _class_row(class_id):
 
 
 def _members(class_id):
+    """Danh sách HỌC VIÊN của lớp — xem `vocab.chi_hoc_vien` để biết vì sao lọc."""
     return q('''SELECT m.user_id, m.joined_at, m.left_at, m.note,
                        u.name, u.email, u.streak, u.last_study_date, u.xp
                 FROM class_members m
                 JOIN users u ON u.id = m.user_id
-                WHERE m.class_id = %s
+                WHERE m.class_id = %s AND ''' + chi_hoc_vien('u') + '''
                 ORDER BY u.name''', (class_id,))
+
+
+def _dem_khong_phai_hoc_vien(class_id):
+    """Bao nhiêu tài khoản trong lớp KHÔNG phải học viên.
+
+    Báo ra thay vì lặng lẽ bỏ qua: một dòng biến mất khỏi báo cáo mà không ai
+    nói gì là cách êm ái nhất để người dùng mất niềm tin vào con số. Cùng lý do
+    với `sessionsUnmarked` ở báo cáo phụ huynh.
+    """
+    return q1('''SELECT COUNT(*) AS n FROM class_members m
+                 JOIN users u ON u.id = m.user_id
+                 WHERE m.class_id = %s AND m.left_at IS NULL
+                   AND NOT (''' + chi_hoc_vien('u') + ')', (class_id,))['n']
 
 
 def _decayed(items, today):
@@ -354,6 +369,11 @@ def class_report(class_id):
             'active': len(active),
             'enrolledEver': len(students),
             'left': len(students) - len(active),
+            # Tài khoản đang ở trong lớp nhưng KHÔNG phải học viên (quản trị
+            # viên vào xem, giảng viên phụ, tài khoản kiểm thử). Chúng bị loại
+            # khỏi mọi con số ở trên — báo ra đây để việc loại đó nhìn thấy
+            # được, thay vì một dòng lặng lẽ biến mất khỏi báo cáo.
+            'nonStudents': _dem_khong_phai_hoc_vien(class_id),
             'avgProgress': round(sum(s['progressPct'] for s in active) / len(active))
                            if active else 0,
             'noMock': sum(1 for s in active if not s['mockCount']),
@@ -376,7 +396,9 @@ def class_list(class_ids):
                        c.exam_date, c.capacity,
                        u.name AS teacher_name, co.title AS course_title,
                        (SELECT COUNT(*) FROM class_members m
-                         WHERE m.class_id = c.id AND m.left_at IS NULL) AS members
+                          JOIN users mu ON mu.id = m.user_id
+                         WHERE m.class_id = c.id AND m.left_at IS NULL
+                           AND ''' + chi_hoc_vien('mu') + ''') AS members
                 FROM classes c
                 LEFT JOIN users u ON u.id = c.teacher_id
                 LEFT JOIN courses co ON co.id = c.course_id

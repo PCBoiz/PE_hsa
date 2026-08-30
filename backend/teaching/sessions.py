@@ -42,6 +42,7 @@ from common.events import (KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events,
                            record_events)
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats.goals import as_date
+from teaching.vocab import chi_hoc_vien
 
 #: Trạng thái một buổi học. Khớp chú thích cột ở legacy_schema.sql §33.
 SESSION_STATUS = ('planned', 'done', 'cancelled')
@@ -181,7 +182,9 @@ def _class_row(class_id):
     """Lớp + sĩ số đang học trong MỘT câu (subselect thay cho một lượt Neon nữa)."""
     return q1('''SELECT c.id, c.code, c.name, c.course_id, c.meeting_url, c.schedule,
                         (SELECT COUNT(*) FROM class_members m
-                          WHERE m.class_id = c.id AND m.left_at IS NULL) AS members
+                           JOIN users mu ON mu.id = m.user_id
+                          WHERE m.class_id = c.id AND m.left_at IS NULL
+                            AND ''' + chi_hoc_vien('mu') + ''') AS members
                  FROM classes c WHERE c.id = %s''', (class_id,))
 
 
@@ -583,6 +586,7 @@ class SessionAttendanceView(APIView):
                              ON a.session_id = %s AND a.user_id = m.user_id
                       LEFT JOIN users mb ON mb.id = a.marked_by
                       WHERE m.class_id = %s AND m.left_at IS NULL
+                        AND ''' + chi_hoc_vien('u') + '''
                       ORDER BY u.name, m.user_id''', (session_id, class_id))
 
         # Câu 2: chuyên cần luỹ kế trong CHÍNH lớp này, một câu cho cả lớp.
@@ -647,8 +651,13 @@ class SessionAttendanceView(APIView):
                                       '[{"user_id": 12, "status": "present"}, ...].'},
                             status=400)
 
+        # CÙNG bộ lọc với bảng tick ở trên: danh sách hiện ra và danh sách
+        # chấp nhận được phải là MỘT. Lệch nhau thì có người hiện trên màn hình
+        # mà gửi lên lại bị báo "không thuộc lớp này" — hoặc ngược lại, tick
+        # được cho người không hề hiện ra.
         members = {r['user_id'] for r in q(
-            'SELECT user_id FROM class_members WHERE class_id = %s AND left_at IS NULL',
+            'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
+            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
             (row['class_id'],))}
 
         clean, skipped = {}, []

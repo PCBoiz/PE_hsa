@@ -11,10 +11,31 @@ CSDL cho phép. Để hai thứ ở hai tệp khác nhau thì thêm một lý do
 qua được CSDL nhưng hiện ra màn hình dưới dạng chuỗi trần — đúng lớp lỗi mà T49
 đã gặp với `attendance.mark` và vai trò `admin`.
 """
+from common.permissions import ROLE_STUDENT
 
 #: Lý do rời lớp. NULL nghĩa là đang học; xem `sql/legacy_schema.sql` §36 —
 #: `class_members_leave_reason_check` phải liệt kê đúng ba giá trị này.
 LEAVE_REASONS = ('completed', 'dropped', 'transferred')
+
+
+def chi_hoc_vien(alias):
+    """Mệnh đề SQL: chỉ tính HỌC VIÊN, cho bảng ``users`` mang bí danh ``alias``.
+
+    VÌ SAO CẦN: `class_members` chỉ trả lời "ai đang ở trong lớp", không trả lời
+    "ai là học viên của lớp". Đo trên dữ liệu thật 31/08/2026: tài khoản quản
+    trị viên (id 7) đang là thành viên lớp 1 — và nó lọt vào sĩ số, vào bảng
+    điểm danh, vào mẫu số tiến độ lớp. Anh chủ sản phẩm chốt GIỮ tài khoản đó
+    trong lớp (để xem giao diện), nên hàng rào phải nằm ở chỗ ĐẾM, không phải
+    trông chờ không ai thêm nhầm.
+
+    Vá ở tầng truy vấn chứ không lọc trong Python là có chủ ý: mấy chỗ đếm là
+    subselect `COUNT(*)`, lọc sau khi đã đếm thì không lọc được nữa.
+
+    Nhúng thẳng giá trị hằng số vào chuỗi SQL AN TOÀN ở đây — `ROLE_STUDENT` là
+    hằng số trong mã nguồn, không phải dữ liệu người dùng gửi lên. Dựng từ hằng
+    số thay vì gõ tay chuỗi 'Học viên' để nó không thể lệch khi ai đó đổi hằng.
+    """
+    return "%s.role = '%s'" % (alias, ROLE_STUDENT)
 
 #: Nhãn hiển thị. Tách "học xong" khỏi "bỏ giữa chừng" là toàn bộ lý do cột
 #: `leave_reason` tồn tại: gộp lại thì mọi lớp kết thúc đều trông như bỏ học

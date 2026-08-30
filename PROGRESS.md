@@ -565,13 +565,58 @@ thẻ. Đã ghi vào T35 (chuyển màn hình cũ sang React) kèm số đo.
 
 Kiểm 12 + 6 phép trên trình duyệt thật, tất cả đạt.
 
+### 31/08/2026 — T51 xong: lớp đếm theo VAI, không theo tư cách thành viên
+
+`class_members` trả lời "ai đang ở trong lớp", không trả lời "ai là học viên của
+lớp". Hai câu đó khác nhau, và sự khác biệt lọt thẳng vào mọi con số: tài khoản
+quản trị viên (id 7) đang là thành viên lớp 1 nên nó vào sĩ số, vào bảng điểm
+danh, vào mẫu số tiến độ. Anh chốt GIỮ tài khoản đó trong lớp (để xem giao
+diện), nên hàng rào phải nằm ở chỗ ĐẾM chứ không trông chờ không ai thêm nhầm.
+
+```
+                         truoc   sau
+si so (summary.students)   3       2
+the lop                    3/25    2/25
+tieu de bang               3 dang hoc + 1 da roi   2 dang hoc + 1 da roi
+bang tick diem danh        co Quan tri vien        chi 2 hoc vien
+tick cho tai khoan admin   ghi duoc                bi tu choi, bao lai id
+```
+
+**Luật đặt ở MỘT chỗ** — `teaching/vocab.py:chi_hoc_vien(alias)` — rồi áp cho
+năm câu tra ở `reports.py` và `sessions.py`. Vá ở tầng truy vấn chứ không lọc
+trong Python là có chủ ý: ba trong năm chỗ là subselect `COUNT(*)`, lọc sau khi
+đã đếm thì không lọc được nữa.
+
+Một chi tiết dễ bỏ: danh sách HIỆN RA để tick và danh sách CHẤP NHẬN được khi
+lưu phải là MỘT. Lệch nhau thì có người hiện trên màn hình mà gửi lên lại bị báo
+"không thuộc lớp này", hoặc ngược lại — tick được cho người không hề hiện ra.
+
+**Loại bỏ nhưng KHÔNG im lặng.** `summary.nonStudents` và một câu trên màn hình:
+"1 tài khoản khác đang ở trong lớp nhưng không mang vai Học viên (quản trị viên,
+giảng viên phụ…) nên không tính vào các con số trên." Sĩ số tự tụt một người mà
+không giải thích là cách chắc chắn để người đọc mất niềm tin vào con số — cùng
+nguyên tắc với `sessionsUnmarked` ở báo cáo phụ huynh.
+
+**Hai lần phép kiểm của tôi đo hụt, cả hai cùng một nguyên nhân:**
+`document.body.innerText` KHÔNG trả về nội dung chưa được dựng hình (phần dưới
+màn, trong nút chưa cuộn tới). Cả hai lần đều báo "không tìm thấy" cho thứ đang
+hiển thị đúng. Phải truy thẳng phần tử (`.tc-sec-t`, `.tc-muted`, `.tc-class`).
+
+Và lần thứ ba tôi vấp bẫy heredoc nuốt `
+` — PROGRESS đã ghi từ trước là phải
+dùng công cụ ghi tệp trực tiếp. Từ giờ mọi tệp có `
+` trong chuỗi đều ghi bằng
+công cụ, không qua heredoc.
+
+Kiểm 8 phép ở tầng view + 6 phép trên trình duyệt thật. CSDL không đổi một dòng.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T45 bảng trên điện thoại) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T51 lọc theo vai) đã commit xong.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật
@@ -593,7 +638,6 @@ rồi cuộn lại). pytest KHÔNG có sẵn trong venv — cài bằng
 3. T38 — đo `NUM_PROXIES` thật trên production trước khi đặt.
 
 **Thứ tự đề nghị cho phiên sau** (giá trị ÷ công sức, theo audit T12):
-T51 (báo cáo lớp lọc theo vai) →
 T47 (`serverJson` vứt câu lỗi backend) →
 T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
 
