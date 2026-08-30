@@ -1,138 +1,72 @@
 /**
- * pe-bridge.js — cầu nối duy nhất giữa 17 file JS legacy (giữ nguyên byte) và
- * kiến trúc mới (Next.js khác origin + Django JWT). PHẢI load TRƯỚC mọi file
- * legacy khác (main.js tự wrap window.fetch lúc load — nó sẽ wrap bản fetch
- * đã được bridge này thay, chuỗi hoạt động đúng thứ tự).
+ * pe-bridge.js — cầu nối giữa JavaScript cũ trong thư mục này và vỏ Next.js.
  *
- * Nhiệm vụ:
- * 1. Rewrite URL tương đối /api/* và /auth/* sang origin backend (NEXT_PUBLIC_API_URL
- *    được layout bơm vào window.__PE_API_ORIGIN trước khi file này chạy).
- * 2. Đính "Authorization: Bearer <access>" vào mọi request tới backend.
- * 3. Tự BẮT access/refresh token từ response /auth/login và /auth/register
- *    (main.js không phải sửa gì — nó chỉ đọc {ok, name, needs_questionnaire}).
- * 4. Khi 401: thử refresh token 1 lần rồi phát lại request; refresh hỏng →
- *    xóa token + đưa về /login (khớp hành vi session hết hạn của bản Flask).
- * 5. Vá DOMContentLoaded: script legacy được nạp SAU khi DOM sẵn sàng (React
- *    mount xong) nên listener DOMContentLoaded đăng ký muộn sẽ không bao giờ
- *    chạy — bridge gọi ngay handler khi readyState đã qua 'loading'.
+ * BẢN RÚT GỌN 27/08/2026. Trước đây file này phải làm rất nhiều: viết lại URL
+ * `/api/*` sang miền backend, đọc token từ localStorage gắn vào từng request,
+ * tự đổi refresh token khi gặp 401, dedupe các lời gọi refresh chạy song song…
+ *
+ * Toàn bộ những việc đó nay do máy chủ Next làm (src/lib/proxy.ts). Trình
+ * duyệt gọi `/api/...` trên chính miền đang đứng, máy chủ đọc cookie httpOnly
+ * rồi gắn `Authorization` giúp. Nghĩa là:
+ *
+ *   · JavaScript cũ giữ nguyên đường dẫn tương đối — không phải sửa gì.
+ *   · Không đoạn script nào trên trang đọc được token nữa, kể cả script chèn
+ *     lậu qua một lỗ XSS. Đó là lý do chính của lần đổi này.
+ *   · Token hết hạn được làm mới ở máy chủ, không còn cảnh hai lời gọi refresh
+ *     song song đá người dùng ra ngoài oan.
+ *
+ * File vẫn PHẢI được nạp trước mọi script cũ khác: `main.js` bọc `window.fetch`
+ * ngay lúc nạp, nên thứ tự quyết định chuỗi bọc có đúng không.
  */
 (function () {
   'use strict';
 
-  var ORIGIN = window.__PE_API_ORIGIN || '';
-  var LS_ACCESS = 'pe_access';
-  var LS_REFRESH = 'pe_refresh';
+  /* Giữ lại cho tương thích: vài chỗ trong mã cũ vẫn đọc biến này để dựng URL.
+     Rỗng = cùng miền, nên phép nối chuỗi vẫn ra đường dẫn đúng. */
+  window.__PE_API_ORIGIN = window.__PE_API_ORIGIN || '';
 
-  function getAccess() { try { return localStorage.getItem(LS_ACCESS); } catch (e) { return null; } }
-  function getRefresh() { try { return localStorage.getItem(LS_REFRESH); } catch (e) { return null; } }
-  function setTokens(access, refresh) {
-    try {
-      if (access) localStorage.setItem(LS_ACCESS, access);
-      if (refresh) localStorage.setItem(LS_REFRESH, refresh);
-    } catch (e) { /* private mode */ }
-  }
-  function clearTokens() {
-    try { localStorage.removeItem(LS_ACCESS); localStorage.removeItem(LS_REFRESH); } catch (e) {}
-  }
-  window.__PE_setTokens = setTokens;
-  window.__PE_clearTokens = clearTokens;
-
-  /* Refresh access token — DÙNG CHUNG cho retry-401 của fetch và SSE.
-   * Dedupe bằng 1 promise đang bay: ROTATE_REFRESH_TOKENS + BLACKLIST nghĩa là
-   * 2 lời gọi refresh song song với cùng refresh token → lời gọi sau bị 401
-   * (token đã vào blacklist) và đá user ra ngoài oan. */
-  var _refreshing = null;
-  function refreshAccess() {
-    if (_refreshing) return _refreshing;
-    var refresh = getRefresh();
-    if (!refresh) return Promise.resolve(null);
-    _refreshing = _origFetch(ORIGIN + '/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh: refresh }),
-    }).then(function (r) {
-      if (r.status === 401 || r.status === 403) { clearTokens(); return null; }
-      if (!r.ok) return null;  // lỗi mạng/5xx: giữ token, thử lại sau
-      return r.json().then(function (d) {
-        setTokens(d.access, d.refresh);
-        return d.access;
-      });
-    }).catch(function () { return null; });
-    _refreshing.then(function () { _refreshing = null; },
-                     function () { _refreshing = null; });
-    return _refreshing;
-  }
-  window.__PE_refreshAccess = refreshAccess;
-
-  /* Body lỗi backend có 2 dạng: {error: 'chuỗi'} và {error: {status, message,
-   * detail}} (400/404/429/500). Legacy JS alert(res.error) thẳng → object sẽ
-   * hiện "[object Object]" — helper này rút message dùng được cho cả hai. */
+  /* Thân lỗi từ backend có hai dạng: {error: 'chuỗi'} và
+     {error: {status, message, detail}}. Mã cũ gọi alert(res.error) thẳng nên
+     dạng thứ hai sẽ hiện "[object Object]" — helper này rút lấy câu tiếng Việt
+     dùng được cho cả hai. Đang được gọi ở 7 chỗ trong course_detail,
+     dashboard, main và review_quiz. */
   window.__PE_errMsg = function (e) {
     if (e && typeof e === 'object') return e.message || JSON.stringify(e);
     return e;
   };
 
-  function isBackendPath(url) {
-    return typeof url === 'string' && (url.indexOf('/api/') === 0 || url.indexOf('/api') === 0 && (url === '/api' || url[4] === '/' || url[4] === '?')
-      || url.indexOf('/auth/') === 0 || url.indexOf('/health') === 0);
-  }
-
+  /* ── Phiên hết hạn thì đưa về trang đăng nhập ───────────────────────────
+     Máy chủ đã thử làm mới token trước khi trả 401, nên 401 tới được đây
+     nghĩa là hết hạn thật. Không chuyển hướng khi đang ở trang công khai: ở đó
+     401 là chuyện bình thường (trang chủ vẫn hỏi /api/user để biết có ai đăng
+     nhập hay chưa), chuyển hướng sẽ thành vòng lặp. */
+  var PUBLIC_PAGES = ['/', '/login'];
   var _origFetch = window.fetch.bind(window);
 
-  function doFetch(url, opts, triedRefresh) {
-    var finalUrl = url;
-    var toBackend = false;
-    if (isBackendPath(url)) {
-      finalUrl = ORIGIN + url;
-      toBackend = true;
-    } else if (typeof url === 'string' && ORIGIN && url.indexOf(ORIGIN) === 0) {
-      toBackend = true;
-    }
-    opts = opts || {};
-    if (toBackend) {
-      var headers = new Headers(opts.headers || {});
-      var access = getAccess();
-      // KHÔNG đính token vào login/register/refresh: đây là endpoint công khai,
-      // token cũ hỏng (backend restart đổi SECRET_KEY dev) sẽ làm JWTAuthentication
-      // chặn 401 "Chưa đăng nhập" TRƯỚC khi view kịp xét email/mật khẩu.
-      var isPublicAuth = url.indexOf('/auth/login') === 0 ||
-                         url.indexOf('/auth/register') === 0 ||
-                         url.indexOf('/auth/refresh') === 0;
-      if (access && !isPublicAuth && !headers.has('Authorization')) {
-        headers.set('Authorization', 'Bearer ' + access);
-      }
-      opts = Object.assign({}, opts, { headers: headers });
-    }
-    return _origFetch(finalUrl, opts).then(function (resp) {
-      // Bắt token từ login/register (main.js không cần biết JWT tồn tại)
-      if (toBackend && resp.ok &&
-          (url.indexOf('/auth/login') === 0 || url.indexOf('/auth/register') === 0)) {
-        resp.clone().json().then(function (data) {
-          if (data && data.access) setTokens(data.access, data.refresh);
-        }).catch(function () {});
-      }
-      // 401 → thử refresh 1 lần (trừ chính các call auth)
-      if (toBackend && resp.status === 401 && !triedRefresh &&
-          url.indexOf('/auth/') !== 0) {
-        return refreshAccess().then(function (access) {
-          if (!access) return resp;
-          // Xóa header cũ để lần phát lại đính access MỚI (headers.has()
-          // ở trên sẽ không ghi đè nếu còn token hết hạn nằm sẵn).
-          if (opts.headers && opts.headers.delete) opts.headers.delete('Authorization');
-          return doFetch(url, opts, true);
-        });
+  window.fetch = function (url, opts) {
+    return _origFetch(url, opts).then(function (resp) {
+      if (
+        resp.status === 401 &&
+        typeof url === 'string' &&
+        url.indexOf('/api/') === 0 &&
+        PUBLIC_PAGES.indexOf(window.location.pathname) === -1
+      ) {
+        window.location.replace('/login?error=het_han');
       }
       return resp;
     });
-  }
+  };
 
-  window.fetch = function (url, opts) { return doFetch(url, opts, false); };
-
-  // ── DOMContentLoaded compat: legacy script nạp sau khi DOM đã sẵn sàng ──
+  /* ── Vá DOMContentLoaded ────────────────────────────────────────────────
+     Script cũ được nạp SAU khi React đã dựng xong DOM, nên listener
+     DOMContentLoaded đăng ký muộn sẽ không bao giờ chạy. Gọi thẳng handler khi
+     tài liệu đã qua giai đoạn 'loading'. */
   var _addEventListener = document.addEventListener.bind(document);
   document.addEventListener = function (type, handler, options) {
     if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
-      setTimeout(function () { handler.call(document, new Event('DOMContentLoaded')); }, 0);
+      setTimeout(function () {
+        handler.call(document, new Event('DOMContentLoaded'));
+      }, 0);
       return;
     }
     return _addEventListener(type, handler, options);

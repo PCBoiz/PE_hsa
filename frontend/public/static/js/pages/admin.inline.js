@@ -657,11 +657,81 @@
         const opts = (d.roles || []).map(r =>
           `<option value="${esc(r)}"${r === u.role ? ' selected' : ''}>${esc(r)}</option>`).join('');
         tr.innerHTML = `<td>${u.id}</td><td>${esc(u.name || '—')}</td><td>${esc(u.email)}</td>` +
-          `<td><select data-uid="${u.id}">${opts}</select></td>`;
+          `<td><select data-uid="${u.id}">${opts}</select></td>` +
+          `<td><button class="btn-ghost" data-reset="${u.id}">Đặt lại</button></td>`;
         tr.querySelector('select').onchange = ev => setRole(u.id, ev.target.value);
+        tr.querySelector('[data-reset]').onclick = () => resetPassword(u);
         tb.appendChild(tr);
       });
     };
+
+    /* ───── Cấp & đặt lại tài khoản (chính sách trung tâm cấp, 27/08/2026) ──
+       Bỏ tự đăng ký thì hai việc này là đường DUY NHẤT để có tài khoản trong
+       hệ thống. Mật khẩu tạm hiện đúng MỘT lần — máy chủ không lưu lại dạng
+       đọc được. Dùng prompt() thay vì toast() để chuỗi không tự biến mất
+       trước khi trợ giảng kịp chép. */
+
+    function showTempPassword(title, temp) {
+      window.prompt(title + '\n(Nhấn Ctrl+C để chép)', temp);
+    }
+
+    window.createUser = async function () {
+      var name = val('nuName'), email = val('nuEmail'), phone = val('nuPhone');
+      if (!name) { toast('Nhập họ tên học viên'); return; }
+      if (!email && !phone) { toast('Cần ít nhất email hoặc số điện thoại'); return; }
+      try {
+        var d = await api('/api/admin/users/create', {
+          method: 'POST', headers: json(),
+          body: JSON.stringify({
+            name: name, email: email, phone: phone,
+            role: document.getElementById('nuRole').value,
+            class_id: document.getElementById('nuClass').value || null,
+          }),
+        });
+        showTempPassword(
+          'Đã cấp tài khoản cho ' + name +
+          (d.addedToClass ? ' và xếp vào lớp.' : '.') +
+          '\nĐọc mật khẩu tạm này cho em — hệ thống sẽ bắt đổi ngay lần đăng nhập đầu tiên.\n',
+          d.tempPassword);
+        ['nuName', 'nuEmail', 'nuPhone'].forEach(function (id) { set(id, ''); });
+        window.searchUsers();
+      } catch (e) { toast(e.message); }
+    };
+
+    async function resetPassword(u) {
+      var ten = u.name || u.email;
+      if (!confirm('Đặt lại mật khẩu cho "' + ten + '"?\n\n' +
+                   'Mật khẩu cũ của học viên sẽ ngừng hoạt động ngay lập tức.')) return;
+      try {
+        var d = await api('/api/admin/users/' + u.id + '/reset-password', { method: 'POST' });
+        showTempPassword(
+          'Đọc mật khẩu tạm này cho ' + ten + '.\n' +
+          'Hệ thống sẽ bắt em đổi ngay lần đăng nhập đầu tiên.\n',
+          d.tempPassword);
+      } catch (e) { toast(e.message); }
+    }
+
+    /* Hai ô chọn của biểu mẫu cấp tài khoản. Vai trò lấy từ chính API quản trị,
+       KHÔNG chép cứng chuỗi 'Học viên' ở đây — sai một dấu là tài khoản mất
+       quyền mà không báo lỗi gì. */
+    async function fillNewUserSelects() {
+      try {
+        var d = await api('/api/admin/users');
+        document.getElementById('nuRole').innerHTML =
+          (d.roles || []).map(function (r) {
+            return '<option value="' + esc(r) + '"' +
+                   (r === 'Học viên' ? ' selected' : '') + '>' + esc(r) + '</option>';
+          }).join('');
+      } catch (e) { /* để trống: vẫn tạo được với vai trò mặc định của máy chủ */ }
+      try {
+        var c = await api('/api/admin/classes');
+        document.getElementById('nuClass').innerHTML =
+          '<option value="">(chưa xếp lớp)</option>' +
+          (c.classes || []).map(function (k) {
+            return '<option value="' + k.id + '">' + esc(k.name) + '</option>';
+          }).join('');
+      } catch (e) { /* như trên */ }
+    }
 
     async function setRole(uid, role) {
       try {
@@ -674,5 +744,6 @@
 
     loadClasses();
     window.searchUsers();
+    fillNewUserSelects();
 
     loadCourses();

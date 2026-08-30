@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function() {
       grid.innerHTML = '';
       courses.slice(0, 4).forEach(c => {
         const card = document.createElement('a');
-        card.href = '/register';
+        card.href = '/login';
         card.className = 'section-card neon-card course-preview-card';
         card.innerHTML =
           '<div class="card-icon neon-icon" style="color:' + (c.accent_color || c.color || '#8B7CF6') + '">' +

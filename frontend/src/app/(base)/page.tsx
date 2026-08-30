@@ -4,6 +4,7 @@
 import type { Metadata } from 'next';
 
 import LegacyScripts from '@/components/LegacyScripts';
+import PageStyles from '@/components/PageStyles';
 
 export const metadata: Metadata = {
   title: 'ProgrammingEdu × TopHSA — Luyện thi Đánh giá năng lực HSA',
@@ -37,7 +38,7 @@ export default function LandingPage() {
         </div>
         <div className="nav-actions">
           <a href="/login" className="btn-outline">Đăng nhập</a>
-          <a href="/register" className="btn-primary">Đăng ký miễn phí →</a>
+          <a href="/login" className="btn-primary">Đăng nhập →</a>
         </div>
       </nav>
 
@@ -57,7 +58,7 @@ export default function LandingPage() {
           </p>
 
           <div className="hero-actions fade-in-up delay-2">
-            <a href="/register" className="btn-main neon-btn">Bắt đầu miễn phí →</a>
+            <a href="/login" className="btn-main neon-btn">Đăng nhập →</a>
             <a href="/login" className="btn-hero-outline glass-btn">Đăng nhập</a>
           </div>
 
@@ -327,7 +328,7 @@ export default function LandingPage() {
           <h2 className="neon-text-sm">Sẵn sàng cho kỳ thi Đánh giá năng lực?</h2>
           <p>Đăng ký miễn phí, làm bài chẩn đoán và nhận ngay lộ trình luyện thi HSA phù hợp với mục tiêu điểm số của bạn.</p>
           <div className="hero-actions">
-            <a href="/register" className="btn-hero-primary neon-btn">Tham gia miễn phí</a>
+            <a href="/login" className="btn-hero-primary neon-btn">Đăng nhập</a>
             <a href="/login" className="btn-hero-outline glass-btn">Đã có tài khoản?</a>
           </div>
         </div>
@@ -337,6 +338,11 @@ export default function LandingPage() {
       <footer className="landing-footer">© 2026 ProgrammingEdu × TopHSA · Luyện thi Đánh giá năng lực HSA.</footer>
 
       {/* icons.js của base + inline script landing (block extra_scripts) */}
+      {/* auth.css chỉ nạp Ở ĐÂY, không nạp ở layout chung: lớp `.section-card`
+          của nó trùng tên với thẻ nội dung của dashboard.css và đè chữ sáng lên
+          nền trắng (đo được 1.16:1). Trang chủ có nền tối riêng nên cần nó; các
+          trang khác trong nhóm (base) thì không. */}
+      <PageStyles hrefs={['/static/css/auth.css']} />
       <LegacyScripts srcs={['/static/js/icons.js', '/static/js/pages/landing.inline.js']} />
     </div>
   );

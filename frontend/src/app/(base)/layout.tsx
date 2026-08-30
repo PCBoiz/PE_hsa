@@ -7,14 +7,15 @@ import PageStyles from '@/components/PageStyles';
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <PageStyles hrefs={["/static/css/theme.css","/static/css/auth.css","/static/css/chatbot.css","/static/css/a11y.css"]} />
+      {/* auth.css ĐÃ RỜI KHỎI ĐÂY (27/08/2026). Nó là CSS của TRANG CHỦ tối, nhưng
+          lớp `.section-card` của nó trùng tên với thẻ nội dung của dashboard.css và
+          có độ đặc hiệu cao hơn — luật `.section-card p { color: rgba(226,232,255,.74) }`
+          đè chữ trắng-xanh lên thẻ TRẮNG, đo được tương phản 1.16:1. Câu bị nuốt
+          nặng nhất là "Bạn chưa đặt mục tiêu tuần." — đúng thông điệp cần đọc nhất.
+          Trên /dashboard file này còn dùng có 2%, tức 29 kB gần như phí sạch.
+          Nay chỉ trang chủ nạp nó. theme.css nạp ở tầng gốc (app/layout.tsx). */}
+      <PageStyles hrefs={["/static/css/chatbot.css","/static/css/a11y.css"]} />
       {/* Fonts + Font Awesome như base.html */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"

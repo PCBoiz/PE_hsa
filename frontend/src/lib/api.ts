@@ -1,61 +1,34 @@
 /**
- * api.ts — fetch backend cho code React (KHÔNG dành cho JS legacy).
+ * api.ts — gọi dữ liệu từ phía TRÌNH DUYỆT (component 'use client').
  *
- * Vì sao không dùng fetch('/api/...') tương đối: URL đó chỉ được pe-bridge.js
- * rewrite sang origin backend SAU khi bridge nạp xong, nhưng nhiều trang chỉ
- * mount <LegacyScripts> sau khi data đã fetch xong (component return null khi
- * chưa có data) → gà-và-trứng: fetch đầu tiên đập vào Next :3000 và 404.
+ * Từ 27/08/2026 hàm này gần như không còn việc gì để làm, và đó là chủ đích.
+ * Trước đây nó phải tự dựng URL tuyệt đối sang miền backend, đọc token trong
+ * localStorage gắn vào header, rồi tự đổi refresh token khi gặp 401 — mỗi
+ * bước là một chỗ có thể sai khác với pe-bridge.js đang làm y hệt bên cạnh.
  *
- * apiFetch trỏ thẳng NEXT_PUBLIC_API_URL + đính "Authorization: Bearer" từ
- * localStorage (cùng key pe_access/pe_refresh với pe-bridge.js) + thử refresh
- * token đúng 1 lần khi 401 — mirror tối thiểu logic của bridge.
+ * Nay `/api/...` là đường dẫn trên chính miền đang đứng; máy chủ Next đọc
+ * cookie httpOnly và lo phần xác thực (src/lib/proxy.ts). Ở đây chỉ còn việc
+ * gọi fetch và nhớ gửi kèm cookie.
+ *
+ * Cần dữ liệu ngay lúc dựng trang thì đừng dùng hàm này — dùng `serverFetch`
+ * trong src/lib/server-api.ts, nội dung sẽ có sẵn trong HTML thay vì phải chờ
+ * thêm một vòng gọi mạng sau khi trang đã hiện.
  */
 
-const LS_ACCESS = 'pe_access';
-const LS_REFRESH = 'pe_refresh';
-
-function origin(): string {
-  const w = window as unknown as { __PE_API_ORIGIN?: string };
-  return w.__PE_API_ORIGIN || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000';
+export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  return fetch(path, {
+    ...opts,
+    credentials: 'same-origin', // cookie httpOnly phải đi cùng request
+  });
 }
 
-function ls(key: string): string | null {
+/** Gọi và tự đọc JSON. Trả null khi lỗi — nơi gọi quyết định hiển thị gì. */
+export async function apiJson<T>(path: string, opts: RequestInit = {}): Promise<T | null> {
   try {
-    return localStorage.getItem(key);
+    const r = await apiFetch(path, opts);
+    if (!r.ok) return null;
+    return (await r.json()) as T;
   } catch {
     return null;
   }
-}
-
-export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
-  const base = origin();
-  const send = (access: string | null) => {
-    const headers = new Headers(opts.headers || {});
-    if (access && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${access}`);
-    return fetch(base + path, { ...opts, headers });
-  };
-
-  let res = await send(ls(LS_ACCESS));
-  if (res.status === 401) {
-    const refresh = ls(LS_REFRESH);
-    if (refresh) {
-      const rr = await fetch(`${base}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh }),
-      });
-      if (rr.ok) {
-        const d = await rr.json().catch(() => null);
-        if (d?.access) {
-          try {
-            localStorage.setItem(LS_ACCESS, d.access);
-          } catch {
-            /* private mode */
-          }
-          res = await send(d.access);
-        }
-      }
-    }
-  }
-  return res;
 }
