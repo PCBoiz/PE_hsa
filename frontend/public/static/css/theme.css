@@ -59,6 +59,11 @@
      31/08/2026 trên chấm chú giải bảng xếp hạng). #047857 với chữ trắng =
      5,48:1, và giữ nguyên nhận diện xanh lá. */
   --success-fill: #047857;
+  /* Chặng thứ hai của cùng dải nền xanh. TRƯỚC ĐÂY nút "Tiếp tục học" lấy
+     `--success-ink` làm chặng này — mà ở bản TỐI token chữ ấy lật thành xanh
+     bạc hà sáng #34D399, nên chữ trắng còn 1,92:1 (đo 01/09/2026). Token nền
+     KHÔNG lật theo chủ đề: nút xanh lá đọc như nhau ở cả hai bản. */
+  --success-fill-2: #0B6357;
   --brand-grad: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2));
 
   /* ── Trạng thái ── */
@@ -163,7 +168,10 @@ body.dark {
      này — nếu để trống thì --brand-ink giữ nguyên mã màu SÁNG #5B47D4 và
      thành chữ tím sẫm trên nền tím sẫm. Đây đúng là cái bẫy --text-1 ở trên
      đã mắc một lần. */
-  --brand-ink: var(--brand);
+  /* KHÔNG dùng `var(--brand)`: #8B7CF6 chỉ được 4,4:1 trên `.cd-card` (đo
+     01/09/2026) — chú thích trên ghi 4,64:1 là đo trên `--card` tối hơn.
+     #A78BFA cho 6,75:1, dư biên cho mọi mặt thẻ. */
+  --brand-ink: #A78BFA;
   --success-ink: var(--success);
   --warning-ink: var(--warning);
   --danger-ink: var(--danger);

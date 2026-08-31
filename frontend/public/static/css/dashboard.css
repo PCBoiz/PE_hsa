@@ -3338,7 +3338,7 @@ body.dark .mini-rm-node-title { color: #E2E8F0; }
 .mini-rm-node-sub {
   font-size: 11px; color: var(--t2); font-weight: 500;
 }
-body.dark .mini-rm-node-sub { color: #64748B; }
+body.dark .mini-rm-node-sub { color: #8B95A8; }  /* #64748B = 3,61:1 */
 
 .mini-rm-legend {
   display: flex; align-items: center; gap: 14px;

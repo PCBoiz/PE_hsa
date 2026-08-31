@@ -74,7 +74,9 @@ body { background: var(--mk-bg); }
   padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: .15s; }
 .mk-btn:hover:not(:disabled) { border-color: rgba(139,124,246,.5); }
 .mk-btn:disabled { opacity: .4; cursor: not-allowed; }
-.mk-btn.primary { background: linear-gradient(135deg, var(--mk-violet), #6D4FE0); border: none; color: #fff; }
+/* `--mk-violet` là `--brand`, tức bản dành cho CHỮ trên nền tối; làm nền đỡ
+   chữ trắng thì chỉ 3,33:1 ở bản tối (đo 01/09/2026). Dùng cặp `--brand-fill`. */
+.mk-btn.primary { background: linear-gradient(135deg, var(--brand-fill, #6D5AE6), var(--brand-fill-2, #5B47D4)); border: none; color: #fff; }
 .mk-btn.ghost { background: transparent; }
 .mk-btn.full { width: 100%; margin-top: 14px; }
 

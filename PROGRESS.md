@@ -2156,3 +2156,21 @@ Suýt báo thêm một lỗi ma: ảnh chụp cho thấy một vòng tròn đè 
 phải phần tử sản phẩm.
 
 Chi tiết đầy đủ, gồm cả bảy lỗi của bộ đo: `TODO.md` mục 01/09/2026.
+
+## 01/09/2026 (tiếp) · Chủ đề TỐI — chưa từng quét, 47 vi phạm
+
+Trong đó một cái là **hồi quy của chính tôi hôm 31/08**: `--module-accent-ink`
+đặt nhầm vào `:root` của một tệp viết theo lối tối-trước, kéo `.step-pill` xuống
+2,88:1 ở 10 chỗ. Lượt đo hôm đó chỉ quét chủ đề sáng nên không ai thấy — đúng
+kiểu lỗi mà "đo một nửa" sinh ra.
+
+Nguyên nhân chung của phần còn lại gói trong một câu: token dành cho CHỮ bị dùng
+làm NỀN và ngược lại. `theme.css` đã có sẵn tiền lệ cho màu đỏ (`--danger` vs
+`--danger-fill`) nhưng chưa ai áp cho xanh lá và tím.
+
+Bộ đo lại lộ thêm hai lỗi (thành chín): gradient bị `background-clip: text` tính
+như nền — vừa đẻ ra một vi phạm 1:1 không có thật, vừa CHE một lỗi thật
+(`.cd-module-prog` 2,54:1); và đo tương phản trên emoji.
+
+Nay: sáng 0 · tối 0, mỗi lượt đều chạy `--tu-kiem` ngay trước khi lấy số.
+Còn nợ: trạng thái rê chuột / lấy nét / vô hiệu.

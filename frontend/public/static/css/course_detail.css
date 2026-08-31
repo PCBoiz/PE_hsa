@@ -77,7 +77,10 @@
 .cd-module-hd.open .cd-module-arrow { transform: rotate(90deg); }
 .cd-module-name { flex: 1; font-size: 13px; font-weight: 600; color: #1F2937; }
 .cd-module-meta { font-size: 12px; color: var(--t3); white-space: nowrap; }
-.cd-module-prog { font-size: 11px; color: #10B981; font-weight: 600; white-space: nowrap; }
+/* #10B981 trên nền trắng = 2,54:1 — cùng cặp màu mà chú thích `--success-fill`
+   trong theme.css đã ghi (tỉ số tương phản đối xứng, đổi vai chữ/nền không đổi
+   số). `--success-ink` là bản dành cho CHỮ và tự lật đúng theo hai chủ đề. */
+.cd-module-prog { font-size: 11px; color: var(--success-ink, #0B6357); font-weight: 600; white-space: nowrap; }
 .cd-module-body { display: none; padding: 0 20px 12px; }
 .cd-module-body.open { display: block; }
 
@@ -107,7 +110,9 @@
   background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff; white-space: nowrap;
 }
 body.dark .cd-lesson.done:hover, body.dark .cd-lesson.current:hover { background: #293548; }
-body.dark .cd-lesson-badge { background: linear-gradient(135deg,#7C5CF0,#8B7CF6); }
+/* Nền đỡ chữ trắng ở cỡ 10px → phải là bản NỀN (#6D5AE6/#5B47D4). Bản cũ
+   #7C5CF0→#8B7CF6 là bản dành cho chữ trên nền tối: chỉ được 3,33:1. */
+body.dark .cd-lesson-badge { background: linear-gradient(135deg,var(--brand-fill,#6D5AE6),var(--brand-fill-2,#5B47D4)); }
 
 /* ── Gameboard lesson path ── */
 .cd-lesson-list { position: relative; }
@@ -204,7 +209,7 @@ body.dark .coming-soon-note { color: var(--t3); }
    đang học bấm mỗi ngày. */
 .cd-enroll-btn.continue {
   background: linear-gradient(135deg, var(--success-fill, #047857),
-                              var(--success-ink, #0B6357));
+                              var(--success-fill-2, #0B6357));
   color: #fff;
   box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
 }
@@ -272,13 +277,13 @@ body.dark .cd-card-price { color: #F1F5F9; }
 body.dark .cd-prog-bar { background: #334155; }
 body.dark .cd-cs { background: #0F172A; }
 body.dark .cd-cs .v { color: #F1F5F9; }
-body.dark .cd-cs .l { color: #64748B; }
+body.dark .cd-cs .l { color: #8B95A8; }   /* #64748B = 3,75:1 trên thẻ tối */
 body.dark .cd-includes { border-top-color: #334155; }
 /* bỏ: `--t3` đã tự đổi theo bộ màu — body.dark .cd-includes-title */
 body.dark .cd-inc-item { color: #94A3B8; }
 body.dark .cd-inc-item i { color: #8B7CF6; }
 body.dark .cd-enroll-btn.unenroll { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #F87171; }
-body.dark .cd-progress-label { color: #64748B; }
+body.dark .cd-progress-label { color: #8B95A8; }  /* #64748B = 3,07:1 */
 body.dark .cd-module-body { background: transparent; }
 
 /* dark mode: topbar brand & nav */

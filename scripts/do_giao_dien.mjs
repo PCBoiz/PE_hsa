@@ -106,7 +106,12 @@ function DO_TRONG_TRANG() {
       const cs = getComputedStyle(n);
       const bi = cs.backgroundImage;
       // Trong một nút, ảnh nền vẽ ĐÈ lên màu nền — nên chèn chỗ dành trước.
-      if (!chang && bi && bi !== 'none' && bi.indexOf('gradient') !== -1) {
+      /* `background-clip: text` KHÔNG phải nền: gradient chỉ tô trong nét chữ
+         của chính nút đó, phía sau chữ con vẫn là nền của tổ tiên. Tính nó là
+         nền làm `.brand-c1` (màu #8B7CF6) nằm trên chặng gradient #8B7CF6 →
+         đúng 1:1, một vi phạm nặng nhất bảng mà không có thật. */
+      const cat = cs.webkitBackgroundClip || cs.backgroundClip;
+      if (!chang && cat !== 'text' && bi && bi !== 'none' && bi.indexOf('gradient') !== -1) {
         const g = (bi.match(/rgba?\([^)]*\)|color\([^)]*\)/g) || [])
           .map((x) => { const v = doc_mau(x); return v.length === 3 ? [v[0], v[1], v[2], 1] : v; })
           .filter((v) => v.length === 4);
@@ -144,11 +149,14 @@ function DO_TRONG_TRANG() {
   const vi_pham = [];
   for (const el of document.querySelectorAll('body *')) {
     if (!hien(el)) continue;
-    let co_chu = false;
-    for (const nd of el.childNodes) {
-      if (nd.nodeType === 3 && nd.textContent.trim().length > 1) { co_chu = true; break; }
-    }
-    if (!co_chu) continue;
+    /* Chỉ xét nút có chữ TRỰC TIẾP, và bỏ nút chỉ chứa biểu tượng cảm xúc:
+       emoji là ảnh nhiều màu do phông màu vẽ, `color` không quyết định pixel
+       nào của nó — đo tương phản trên "📘" là đo một con số vô nghĩa. */
+    let chu_that = '';
+    for (const nd of el.childNodes) if (nd.nodeType === 3) chu_that += nd.textContent;
+    chu_that = chu_that.trim();
+    if (chu_that.length < 2) continue;
+    if (!/[\p{L}\p{N}]/u.test(chu_that.replace(/\p{Extended_Pictographic}/gu, ''))) continue;
 
     const cs = getComputedStyle(el);
     const clip = cs.webkitBackgroundClip || cs.backgroundClip;
@@ -233,6 +241,7 @@ function DO_TRONG_TRANG() {
 const { chromium } = await import(PW);
 const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
 const tu_kiem = process.argv.includes('--tu-kiem');
+const chu_de = process.argv.includes('--toi') ? 'dark' : 'light';
 const i_json = process.argv.indexOf('--json');
 const ra_json = i_json >= 0 ? process.argv[i_json + 1] : null;
 
@@ -247,6 +256,12 @@ for (const kho of KHO) {
      sẽ DỪNG — chứ không lặng lẽ đo cái vỏ đăng nhập. */
   const c = await b.newContext({
     viewport: { width: kho.w, height: kho.h }, hasTouch: kho.cham });
+  /* Chủ đề đọc từ `localStorage.theme` (main.js:1898) rồi mới gắn `body.dark`.
+     Đặt TRƯỚC khi trang chạy, chứ gắn class sau khi tải thì đã đo xong nửa
+     trang bằng bảng màu kia. */
+  await c.addInitScript((t) => {
+    try { localStorage.setItem('theme', t); } catch (e) { /* chế độ riêng tư */ }
+  }, chu_de);
   await c.addCookies([
     { name: 'pe_at', value: tok.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' },
     { name: 'pe_rt', value: tok.refresh, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
@@ -273,12 +288,24 @@ for (const kho of KHO) {
         process.exit(2);
       }
       if (tu_kiem) {
-        // TỰ KIỂM: nhét một quy tắc hỏng rồi đòi bộ đo phải bắt được.
-        await p.addStyleTag({ content: 'body, body * { color: #F2F2F4 !important; }' });
+        /* TỰ KIỂM: nhét một quy tắc hỏng rồi đòi bộ đo phải bắt được.
+           Màu nhét phải GẦN NỀN của chính chủ đề đang đo. Nhét #F2F2F4 vào chủ
+           đề tối thì đó là chữ gần trắng trên nền đen — tương phản CAO, và phép
+           tự kiểm "thất bại" mà chẳng chứng minh được gì về bộ đo. */
+        await p.addStyleTag({ content: 'body, body * { color: '
+          + (chu_de === 'dark' ? '#14141C' : '#F2F2F4') + ' !important; }' });
         await p.waitForTimeout(150);
       }
+      const that = await p.evaluate(() => document.body.classList.contains('dark') ? 'dark' : 'light');
+      if (that !== chu_de) {
+        console.log('');
+        console.log('CHU DE KHONG DUNG: xin ' + chu_de + ' nhung trang dang ' + that
+          + ' — do se ra con so cua bang mau kia.');
+        await b.close();
+        process.exit(3);
+      }
       const d = await p.evaluate(DO_TRONG_TRANG);
-      ket.push({ kho: kho.ten, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
+      ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`);

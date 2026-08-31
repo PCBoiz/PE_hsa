@@ -2079,7 +2079,41 @@ Liên kết tên lớp trong bảng quản trị: 205×36. Kéo lên 44 sẽ ch�
 đợt ngay dưới. 36 vượt chuẩn thật sự đang áp (SC 2.5.8 = 24×24) mà giữ được mật
 độ bảng. Nếu sau này bảng đổi sang bố cục thẻ trên điện thoại thì nâng lên 44.
 
-### Chưa làm
-- Mới đo **chủ đề SÁNG**. Chủ đề tối chưa quét lượt nào.
-- Mới đo **trạng thái tĩnh**. Rê chuột / lấy nét / vô hiệu chưa đo (lỗi
-  `.nav-next:hover` ở trên tìm được bằng mắt, không bằng máy).
+### [x] Chủ đề TỐI — chưa từng quét, và có 47 vi phạm / 12 gốc
+`--toi` đặt `localStorage.theme` TRƯỚC khi trang chạy rồi kiểm lại `body.dark`
+đúng chưa; sai chủ đề thì dừng hẳn. Phép tự kiểm cũng phải theo chủ đề: nhét
+`#F2F2F4` vào nền tối là chữ gần trắng trên nền đen — tương phản CAO, và phép tự
+kiểm "thất bại" mà chẳng chứng minh gì.
+
+Hai lỗi bộ đo nữa lộ ra ở lượt này:
+- **Gradient bị `background-clip: text` bị tính như nền.** Nó chỉ tô trong nét
+  chữ của chính nút đó. Tính là nền làm `.brand-c1` (#8B7CF6) nằm trên chặng
+  gradient #8B7CF6 → đúng **1:1**, vi phạm nặng nhất bảng mà không có thật. Và
+  nó CHE một lỗi thật: `.cd-module-prog` #10B981 trên nền trắng = 2,54:1.
+- **Đo tương phản trên emoji.** "📘" là ảnh nhiều màu do phông màu vẽ, `color`
+  không quyết định pixel nào của nó.
+
+**Một hồi quy do CHÍNH TÔI gây ra hôm 31/08:** `--module-accent-ink: #0A6F80` bị
+đặt vào `:root` của `lesson_chrome.css` — mà `:root` ở tệp đó là bảng màu TỐI.
+`.step-pill` xuống **2,88:1 ở 10 chỗ**, và không ai thấy vì lượt đo hôm đó chỉ
+quét chủ đề sáng. Nay `:root` dùng `var(--module-accent)`, bản tối màu nằm trong
+khối `body.light`.
+
+Nguyên nhân chung của 12 gốc còn lại, đúng một câu: **token dành cho CHỮ bị dùng
+làm NỀN, và ngược lại.** Tệp `theme.css` đã có tiền lệ (`--danger` phải tách khỏi
+`--danger-fill` vì chữ trắng trên nền đỏ-chữ chỉ 2,77:1) nhưng chưa ai áp cho
+xanh lá và tím:
+- `--success-ink` làm chặng gradient nền → bản tối lật thành #34D399, nút "Tiếp
+  tục học" chữ trắng còn **1,92:1**. Thêm `--success-fill-2` (token nền KHÔNG
+  lật theo chủ đề — nút xanh lá đọc như nhau ở cả hai bản).
+- `--mk-violet`/`#8B7CF6` làm nền nút chính → 3,33:1. Dùng cặp `--brand-fill`.
+- `#64748B` viết cứng làm chữ phụ trên thẻ tối, ba chỗ → 3,07–3,75:1.
+- `--brand-ink` bản tối tự ghi 4,64:1 trong chú thích — đo thật trên `.cd-card`
+  còn 4,4:1. Nâng lên `#A78BFA` (6,75:1) cho có biên.
+
+Kết quả: **sáng 0 · tối 0**, cả hai đều đã chạy `--tu-kiem` ngay trước khi lấy số.
+
+### [ ] Chưa làm — trạng thái TƯƠNG TÁC
+Rê chuột / lấy nét / vô hiệu chưa đo lượt nào. Lỗi `.nav-next:hover` (chữ trắng
+trên nền cyan 28% phủ trên trắng, ≈1,2:1) tìm được bằng mắt khi đọc CSS, không
+bằng máy — nghĩa là còn bao nhiêu cái nữa thì chưa biết.
