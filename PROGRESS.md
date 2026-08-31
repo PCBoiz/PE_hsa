@@ -778,13 +778,85 @@ bản đầu có một vế `check(make(new), new)` — băm rồi kiểm lại 
 
 Kiểm 10 + 13 phép, tất cả đạt. CSDL không đổi một dòng.
 
+### 31/08/2026 — Ba agent audit, và bài học về việc TỰ KIỂM
+
+Chạy 3 agent song song: khả năng tiếp cận (T13), nhất quán giao diện (T14), và
+một agent soi lại toàn bộ mã tôi viết trong ngày với yêu cầu "giả định có lỗi,
+chưa tìm ra thôi". Cả ba đều về, không cái nào chết vì rate limit.
+
+**Tôi tự kiểm 10 phát hiện nặng nhất trước khi tin. Cả 10 đều CÓ THẬT.**
+
+**Nặng nhất — và là mã tôi viết sáng nay:** báo cáo gửi phụ huynh chia chuyên
+cần cho số buổi CỦA LỚP thay vì của chính em ấy. Dựng lại: lớp 4 buổi, em vào
+lớp giữa đợt nên chỉ dự 2 buổi cuối và CÓ MẶT cả hai → tờ giấy in "Có mặt 2/4
+(50%)". Sự thật là 100%. Và bốn ô không cộng lại bằng mẫu số, tức chính tờ giấy
+tự mâu thuẫn — đúng lớp lỗi tôi vừa vá ở T50 hôm nay, tái diễn ở chỗ khác.
+
+Kèm theo: `sessionsUnmarked` đếm cả buổi ĐÃ HUỶ và buổi CHƯA TỚI, mà dòng chữ ấy
+IN RA GIẤY — tờ giấy tự tố trung tâm bỏ sót 2 buổi trong khi một buổi đã huỷ và
+một buổi tối nay chưa diễn ra.
+
+**Lỗi khuôn:** `str(body[field]).strip() or None` — gửi `code: null` thì
+`str(None)` ra chuỗi `"None"`, truthy, đi thẳng vào CSDL. Tạo hai đợt học đều bỏ
+trống mã thì cái thứ hai bị chặn bằng câu `Mã đợt "None" đã có rồi.` Và
+`PATCH {note: null}` KHÔNG xoá được ghi chú mà ghi đè thành chữ "None". Đáng nói
+hơn: **cùng lỗi đó có sẵn ở đường tạo lớp** — tôi đã chép lại một khuôn hỏng, và
+`sessions.py` thì viết đúng từ đầu. Vá cả hai.
+
+**Bản in ở bộ tối gần như trắng giấy.** `print-color-adjust: economy` bỏ nền khi
+in nhưng GIỮ màu chữ, nên chữ #e2e8f0 rơi xuống giấy trắng = 1,23:1. 25 đoạn
+chữ dưới ngưỡng. Nguy hơn con số: Chrome VẪN vẽ nền tối trong bản xem trước, nên
+giảng viên thấy trang bình thường, bấm In, và tờ giấy trắng chỉ hiện ra ở máy
+in. Mà đây là tài liệu gửi tới tận nhà phụ huynh. Vá ở tầng token nên mọi trang
+in đều được.
+
+**HAI AGENT MÂU THUẪN NHAU** ở chỗ nhãn cột trên điện thoại: agent soi mã bảo
+trình đọc màn hình mất sạch tên cột, agent khả năng tiếp cận bảo "không phải
+lỗi". Tôi đo bằng CDP: `columnheader` = 0, tên các ô là `"a"`, `"a@gmail.com"` —
+**agent soi mã đúng**. Và phép kiểm đầu của tôi suýt tự lừa mình: nó tìm chuỗi
+"Học viên" trong tên ô và báo CÓ, nhưng đó là *giá trị* cột vai trò chứ không
+phải nhãn cột. Phải in ra tên thật mới thấy.
+
+**Và tôi tự gây một lỗi mới ngay trong lúc vá.** Đổi nút nguy hiểm sang
+`bg-danger-fill`, đo ra 21:1 — một con số quá đẹp. Nghi ngờ nó, đo lại thì nền
+là `rgba(0,0,0,0)`: tôi khai token ở khối `body.dark` (chỉ GHI ĐÈ giá trị) mà
+quên khối `@theme` (nơi SINH RA tiện ích), nên `bg-danger-fill` không có CSS và
+nút mất hẳn nền — tệ hơn cả 2,77:1 ban đầu. Bài học: **một con số đẹp bất thường
+là dấu hiệu phép đo sai, không phải dấu hiệu vá tốt.**
+
+Số đo sau khi vá:
+```
+                              truoc      sau
+bao cao PH in o bo toi        1,23:1     18,41:1  (than bai 2,56 -> 11,42)
+vien o nhap  sang / toi       1,23/1,18  4,49/5,10
+nut nguy hiem bo toi          2,77:1     6,47:1
+ti le chuyen can em vao giua  50%        100%     (dung su that)
+nhan cot tren dien thoai      khong co   "Hoc vien a", "Lien he a@gmail.com"
+lien ket bi gach chan         6/6        0/6
+ma may lot ra nhat ky         term.* x3  0
+"Failed to fetch" tieng Anh   11 cho     0
+```
+
+Vá thêm từ agent soi mã: `record_events` nhánh dự phòng ném `TypeError` ra ngoài
+(mìn nằm đúng trên đường lỗi — đường không phép kiểm nào đi qua) · `refreshTokens`
+trả `null` cho CẢ "token hỏng" lẫn "không với tới máy chủ", nên Neon cold-start
+giữa buổi dạy là giảng viên bị văng ra màn đăng nhập dù refresh token còn sống
+bảy tiếng rưỡi · xoá đợt học chưa gắn lớp không hỏi lại · `status` kiểu số ném
+500 thay vì 400 · và một chú thích SAI về trần 65535 tham số (Django dùng
+`ClientCursor`, nội suy ở phía máy khách nên trần đó không áp dụng).
+
+pytest 94/94, tsc sạch, build exit 0. CSDL không đổi một dòng.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (T6–T9) đã commit xong.
+**Việc còn dở:** không có. Task cuối (vá phát hiện của 3 agent) đã commit xong.
+
+**Nợ audit còn lại gom ở T53** — đã đo hết, chưa vá. Nặng nhất: không đăng
+xuất được bằng bàn phím, và hộp thoại đổi mật khẩu không bẫy tiêu điểm.
 
 **Bộ kiểm backend: 94 đạt / 0 hỏng.** Chạy bằng
 `.venv/Scripts/python.exe -m pytest -q` (mất ~5 phút, chạy trên CSDL thật

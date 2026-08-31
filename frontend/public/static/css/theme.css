@@ -19,6 +19,13 @@
   --lift: #F1F0F8;            /* mặt chìm: input, ô phụ */
   --card-border: rgba(20, 16, 35, 0.10);
   --border: rgba(20, 16, 35, 0.10);
+  /* Viền Ô NHẬP phải ĐẬM HƠN viền trang trí. WCAG 2.2 §1.4.11 đòi 3:1 cho
+     ranh giới của một điều khiển; `--border` ở trên chồng alpha xong chỉ ra
+     #e8e7e9 trên nền trắng = 1,23:1 (đo 31/08/2026). Nền ô so với nền thẻ cũng
+     chỉ 1,13:1, nên CẢ HAI manh mối ranh giới đều dưới ngưỡng — ô nhập tan vào
+     thẻ. Học viên cấp 3 nhìn điện thoại ngoài nắng không thấy ô để bấm.
+     #767680 trên trắng = 3,0:1. */
+  --border-input: #767680;
 
   /* ── Chữ (SÁNG) — đã kiểm tương phản ≥ 4.5:1 trên --card ── */
   --t1: #16121F;              /* tiêu đề / chữ chính */
@@ -53,6 +60,7 @@
   --success: #0E7C6B;
   --warning: #A45B08;
   --danger: #BE2A46;
+  --danger-fill: #BE2A46;
 
   /* Chữ đặt trên nền TÔ NHẠT của chính màu đó (chip, badge, ô cảnh báo).
      Bốn màu ngữ nghĩa ở trên được chọn để đọc trên nền TRẮNG hoặc để làm nền
@@ -113,6 +121,8 @@ body.dark {
   --lift: #101928;
   --card-border: rgba(255, 255, 255, 0.07);
   --border: rgba(255, 255, 255, 0.07);
+  /* Bộ tối: viền ô nhập cũng phải ≥3:1 với nền thẻ (#0c1220). #7c8699 = 3,4:1. */
+  --border-input: #7C8699;
 
   --t1: #E2E8F0;
   --t2: #94A3B8;
@@ -136,7 +146,11 @@ body.dark {
 
   --success: #34D399;
   --warning: #FCD34D;
+  /* #F87171 là đỏ dành cho CHỮ/VIỀN trên nền tối. Dùng nó làm NỀN đỡ chữ
+     trắng thì ra 2,77:1 — đo trên nút "Khoá" ở /quan-tri/tai-khoan, dưới ngưỡng
+     4,5:1. Tách một token NỀN riêng: #B91C1C với chữ trắng = 6,47:1. */
   --danger: #F87171;
+  --danger-fill: #B91C1C;
 
   /* Bộ tối KHÔNG cần đậm thêm: nền pha nhạt ở đây tối đi chứ không sáng lên,
      nên bốn màu gốc đã đạt sẵn (đo 30/08/2026 trên --card #0C1220:

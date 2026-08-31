@@ -41,11 +41,19 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   if (seg === 'refresh') {
     const refresh = readCookie(req, RT);
     const fresh = refresh ? await refreshTokens(refresh) : null;
-    if (!fresh) {
-      return new Response(JSON.stringify({ error: 'Phiên đăng nhập đã hết hạn' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!fresh || !fresh.ok) {
+      // Phân biệt hai chuyện: 401 nghĩa là "đăng nhập lại đi", còn 503 nghĩa là
+      // "chưa hỏi được máy chủ, đừng vội bỏ phiên". Trả 401 cho cả hai thì
+      // trình duyệt xoá phiên vì một sự cố hạ tầng thoáng qua.
+      const mat = !fresh || fresh.lyDo === 'unreachable';
+      return new Response(
+        JSON.stringify({
+          error: mat
+            ? 'Chưa kết nối được máy chủ. Thử lại sau ít phút.'
+            : 'Phiên đăng nhập đã hết hạn',
+        }),
+        { status: mat ? 503 : 401, headers: { 'Content-Type': 'application/json' } },
+      );
     }
     const res = new Response(JSON.stringify({ ok: true }), {
       status: 200,

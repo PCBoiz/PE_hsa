@@ -89,6 +89,17 @@
     list-style: none;
   }
 
+  /* Không nạp preflight của Tailwind nên gạch chân mặc định của trình duyệt
+     lọt qua. Đo 31/08/2026: mọi thẻ `<a>` trên 5 trang React đều bị gạch chân
+     trong khi trang cũ thì không. Hậu quả cụ thể: thanh 4 tab của khu quản trị
+     trông như bốn liên kết trong một đoạn văn chứ không như thanh điều hướng.
+     Gạch chân trở lại CÓ CHỦ ĐÍCH ở liên kết nằm trong câu chữ, bằng class
+     `underline` — chỗ đó nó thật sự giúp phân biệt. */
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
   /* `img { max-width: none }` là mặc định của trình duyệt — một ảnh khoá học
      rộng hơn khung sẽ đẩy cả trang trượt ngang. */
   img, svg, video, canvas {
@@ -117,6 +128,8 @@
   --color-surface: var(--card);
   --color-sunken: var(--lift);
   --color-line: var(--border);
+  /* Viền Ô NHẬP: đậm hơn viền trang trí để đạt 3:1 (WCAG 1.4.11). */
+  --color-line-input: var(--border-input);
 
   --color-ink: var(--t1); /* chữ chính */
   --color-ink-2: var(--t2); /* chữ phụ */
@@ -128,6 +141,7 @@
   --color-success: var(--success); /* teal — hoàn thành, đúng */
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
 
   /* Chữ trên nền tô nhạt của CHÍNH màu đó. Bốn màu ngay trên trượt chuẩn AA
      khi làm việc đó (tím 3.96:1 trên nền trang) — xem đo đạc trong theme.css. */
@@ -221,6 +235,8 @@ body.dark {
   --color-surface: var(--card);
   --color-sunken: var(--lift);
   --color-line: var(--border);
+  /* Viền Ô NHẬP: đậm hơn viền trang trí để đạt 3:1 (WCAG 1.4.11). */
+  --color-line-input: var(--border-input);
 
   --color-ink: var(--t1);
   --color-ink-2: var(--t2);
@@ -232,6 +248,7 @@ body.dark {
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
   --color-brand-ink: var(--brand-ink);
   --color-success-ink: var(--success-ink);
   --color-warning-ink: var(--warning-ink);
@@ -258,5 +275,49 @@ body.dark {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ── Bản IN: luôn là chữ đen trên giấy trắng ─────────────────────────────────
+ *
+ * Đo được 31/08/2026 trên trang "Báo cáo gửi phụ huynh": nếu giảng viên đang
+ * dùng BỘ TỐI rồi bấm In, tờ giấy in ra gần như TRẮNG TRƠN. Cơ chế:
+ *   · `print-color-adjust: economy` (mặc định của trình duyệt) BỎ nền khi in,
+ *     và ô "Background graphics" trong hộp in mặc định TẮT;
+ *   · nhưng MÀU CHỮ thì giữ nguyên màu bộ tối.
+ * Kết quả: chữ #e2e8f0 rơi xuống giấy #ffffff — tỉ lệ tương phản 1,23:1. Đo
+ * được 25 đoạn chữ dưới ngưỡng; tiêu đề tên học viên và các con số lớn đều
+ * trong số đó.
+ *
+ * Nguy hơn cả con số: Chrome VẪN vẽ nền tối trong bản xem trước, nên giảng viên
+ * nhìn thấy một trang bình thường, bấm In, và tờ giấy trắng chỉ hiện ra ở máy
+ * in — nơi không còn tín hiệu nào để sửa. Mà đây là tài liệu GỬI RA KHỎI hệ
+ * thống, tới tận nhà phụ huynh.
+ *
+ * Vá ở tầng token nên MỌI trang in đều được, không phải nhớ thêm class ở từng
+ * trang. Đặt trong `@media print` và nhắm cả `body.dark` để thắng khối bộ tối
+ * ở trên (cùng độ đặc hiệu, khai sau thì thắng).
+ */
+@media print {
+  body,
+  body.dark {
+    --color-ground: #ffffff;
+    --color-surface: #ffffff;
+    --color-sunken: #ffffff;
+    --color-line: #b8b8bd;
+
+    --color-ink: #16121f;
+    --color-ink-2: #3d3748;
+    --color-ink-3: #5b5468;
+
+    --color-brand-ink: #4b3bbd;
+    --color-success-ink: #0a5348;
+    --color-warning-ink: #7a4205;
+    --color-danger-ink: #94203a;
+
+    /* Bóng không in ra được và chỉ tốn mực nếu bật "Background graphics". */
+    --shadow-e1: none;
+    --shadow-e2: none;
+    --shadow-e3: none;
   }
 }

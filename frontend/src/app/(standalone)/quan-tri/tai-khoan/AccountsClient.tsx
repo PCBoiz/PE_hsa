@@ -16,7 +16,7 @@ import {
   Thead,
   Tr,
 } from '@/components/ui';
-import { apiFetch, errorText } from '@/lib/api';
+import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
 export type ClassLite = { id: number; name: string; code?: string | null };
 
@@ -150,7 +150,7 @@ export default function AccountsClient({
         setData(await r.json());
         setPage(p);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : 'Không tải được danh sách');
+        setErr(loiBatDuoc(e, 'Không tải được danh sách'));
       } finally {
         setLoading(false);
       }
@@ -183,7 +183,7 @@ export default function AccountsClient({
       if (!r.ok) throw new Error(errorText(r.status, d));
       ok(d as never);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Thao tác không thành công');
+      setErr(loiBatDuoc(e, 'Thao tác không thành công'));
     }
   }
 
@@ -233,7 +233,7 @@ export default function AccountsClient({
         if (!r.ok) throw new Error(errorText(r.status, d));
         void load();
       } catch (e) {
-        setErr(e instanceof Error ? e.message : 'Không đổi được vai trò');
+        setErr(loiBatDuoc(e, 'Không đổi được vai trò'));
       }
     })();
   }
@@ -272,7 +272,7 @@ export default function AccountsClient({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Tìm theo tên, email, số điện thoại"
             aria-label="Tìm tài khoản"
-            className="min-h-11 min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
+            className="min-h-11 min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
           />
           <Select value={role} onChange={setRole} label="Vai trò">
             <option value="">Mọi vai trò</option>
@@ -336,7 +336,7 @@ export default function AccountsClient({
                       value={u.role}
                       onChange={(e) => changeRole(u, e.target.value)}
                       aria-label={`Vai trò của ${u.name || u.id}`}
-                      className="min-h-11 max-w-full min-w-0 rounded-md border border-line bg-sunken px-2 text-small text-ink"
+                      className="min-h-11 max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-2 text-small text-ink"
                     >
                       {(data.roles.length ? data.roles : [u.role]).map((r) => (
                         <option key={r} value={r}>
@@ -457,7 +457,7 @@ function Select({
       /* `min-w-0` bắt buộc: ô chọn tự co giãn theo lựa chọn DÀI NHẤT, và trong
          lưới thì nó đẩy cả hàng rộng ra khiến trang trượt ngang trên điện
          thoại — đúng lỗi đã phải vá ở trang /admin ngày 27/08/2026. */
-      className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink focus:outline-2 focus:outline-brand"
+      className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink focus:outline-2 focus:outline-brand"
     >
       {children}
     </select>
@@ -603,7 +603,7 @@ function BulkImport({
         onDone();
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Không gửi được danh sách');
+      setErr(loiBatDuoc(e, 'Không gửi được danh sách'));
     } finally {
       dangGui.current = false;
       setBusy(false);

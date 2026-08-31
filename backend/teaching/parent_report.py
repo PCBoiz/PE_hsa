@@ -30,11 +30,11 @@ from datetime import timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.clock import local_today
+from common.clock import local_now, local_today
 from common.db import q, q1
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats import competency
-from teaching.vocab import trang_thai
+from teaching.vocab import chi_hoc_vien, trang_thai
 
 #: Kỳ báo cáo mặc định. Bốn tuần vì trung tâm gửi báo cáo theo tháng, và một
 #: tuần thì quá ngắn để thấy xu hướng — một tuần ốm là cả báo cáo xấu.
@@ -69,39 +69,88 @@ def _khoang_ngay(request):
 
     tu, ok1 = doc('from', mac_dinh_tu)
     den, ok2 = doc('to', hom_nay)
-    if tu > den:
+    dao = tu > den
+    if dao:
+        # Đổi chỗ để không ra kỳ rỗng, NHƯNG phải nói. Người gõ nhầm thứ tự hai
+        # ngày sẽ nhận về một kỳ khác hẳn kỳ họ định lấy, và nếu im lặng thì họ
+        # in tờ giấy đó ra mà không biết.
         tu, den = den, tu
-    return tu, den, (ok1 and ok2)
+    return tu, den, (ok1 and ok2), dao
 
 
-def _chuyen_can(class_id, user_id, tu, den):
-    """Chuyên cần trong kỳ, tính trên các buổi ĐÃ điểm danh (xem ranh giới 2)."""
-    buoi = q('''SELECT s.id, s.attendance_taken_at
-                FROM class_sessions s
-                WHERE s.class_id = %s AND s.starts_at::date BETWEEN %s AND %s''',
-             (class_id, tu, den))
-    da_tick = [b['id'] for b in buoi if b['attendance_taken_at']]
-    chua_tick = len(buoi) - len(da_tick)
+def _chuyen_can(class_id, user_id, tu, den, vao_lop=None, roi_lop=None):
+    """Chuyên cần trong kỳ. Mẫu số là số buổi CHÍNH EM ẤY có thể dự.
+
+    ── Ba bộ lọc, mỗi cái vá một cách buộc tội sai ──────────────────────────
+
+    1. **Chỉ buổi ĐÃ điểm danh** (`attendance_taken_at`). Buổi giảng viên quên
+       tick mà đem chia vào mẫu số sẽ thành "con vắng" trong mắt phụ huynh.
+
+    2. **Chỉ buổi TRONG THỜI GIAN EM Ở LỚP** (`vao_lop`..`roi_lop`). Đây là lỗi
+       đo được ngày 31/08/2026 và là lỗi nặng nhất của tệp này: mẫu số lấy mọi
+       buổi CỦA LỚP, nên em vào lớp giữa đợt bị tính vắng cho những buổi diễn ra
+       trước khi em ghi danh. Kịch bản đã dựng lại: lớp 4 buổi, em dự 2 buổi
+       cuối và CÓ MẶT cả hai — tờ giấy in "Có mặt 2/4 (50%)". Sự thật là 100%.
+       Đối xứng y hệt với em rời lớp giữa kỳ.
+
+    3. **Bỏ buổi ĐÃ HUỶ và buổi CHƯA DIỄN RA**. Chúng từng lọt vào
+       `sessionsUnmarked`, và dòng chữ ấy IN RA GIẤY: "Còn 2 buổi trong kỳ chưa
+       được điểm danh" — tờ giấy tự tố trung tâm bỏ sót, trong khi một buổi đã
+       huỷ và một buổi tối nay chưa tới.
+
+    ── Bốn ô phải CỘNG LẠI bằng mẫu số ─────────────────────────────────────
+    Sau ba bộ lọc trên, vẫn có thể còn buổi mà em không có dòng điểm danh nào
+    (giảng viên tick sót đúng em đó). Số ấy trả riêng ở `noRecord` và ĐƯỢC CỘNG
+    vào, để `present + late + absent + excused + noRecord = sessionsCounted`.
+    Một tờ giấy mà bốn ô không cộng lại bằng mẫu số là tờ giấy tự mâu thuẫn, và
+    người đọc sẽ không tin ô nào nữa.
+    """
+    gio = local_now()
+    dieu_kien = ["s.class_id = %s", "s.starts_at::date BETWEEN %s AND %s"]
+    args = [class_id, tu, den]
+
+    # Buổi diễn ra TRƯỚC khi em vào lớp không phải buổi của em.
+    if vao_lop:
+        dieu_kien.append('s.starts_at >= %s')
+        args.append(vao_lop)
+    if roi_lop:
+        dieu_kien.append('s.starts_at <= %s')
+        args.append(roi_lop)
+
+    buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at '
+             'FROM class_sessions s WHERE ' + ' AND '.join(dieu_kien), tuple(args))
+
+    # Buổi đã huỷ: lớp nghỉ vì giảng viên ốm, không phải việc của em.
+    # Buổi chưa tới: chưa xảy ra thì không thể thiếu điểm danh.
+    da_dien_ra = [b for b in buoi
+                  if b['status'] != 'cancelled' and b['starts_at'] and b['starts_at'] <= gio]
+    da_tick = [b['id'] for b in da_dien_ra if b['attendance_taken_at']]
+    chua_tick = len(da_dien_ra) - len(da_tick)
 
     dem = {'present': 0, 'late': 0, 'absent': 0, 'excused': 0}
     if da_tick:
-        for r in q('''SELECT status, COUNT(*) AS n FROM attendance
+        for r in q("""SELECT status, COUNT(*) AS n FROM attendance
                       WHERE user_id = %s AND session_id = ANY(%s)
-                      GROUP BY status''', (user_id, da_tick)):
+                      GROUP BY status""", (user_id, da_tick)):
             if r['status'] in dem:
                 dem[r['status']] = r['n']
 
+    co_dong = sum(dem.values())
+    khong_co_dong = max(0, len(da_tick) - co_dong)
     co_mat = dem['present'] + dem['late']
     return {
+        # Tổng buổi của lớp trong kỳ, TRƯỚC khi lọc — để trung tâm đối chiếu.
         'sessionsTotal': len(buoi),
         'sessionsCounted': len(da_tick),
-        # Buổi chưa ai tick. Báo ra để trung tâm biết tờ giấy này thiếu bao
-        # nhiêu, thay vì im lặng chia cho một mẫu số nhỏ hơn thực tế.
+        # Buổi ĐÃ diễn ra mà chưa ai tick. Báo riêng để trung tâm biết tờ giấy
+        # này thiếu bao nhiêu, thay vì im lặng chia cho một mẫu số nhỏ hơn.
         'sessionsUnmarked': chua_tick,
         'present': dem['present'],
         'late': dem['late'],
         'absent': dem['absent'],
         'excused': dem['excused'],
+        # Buổi đã tick nhưng KHÔNG có dòng nào cho riêng em này.
+        'noRecord': khong_co_dong,
         # None chứ không 0 khi chưa buổi nào được điểm danh — xem ranh giới 3.
         'attendedPct': (round(co_mat * 100 / len(da_tick)) if da_tick else None),
     }
@@ -191,13 +240,20 @@ class ParentReportView(APIView):
 
         # Lấy CẢ lượt học đã đóng: báo cáo cuối kỳ cho một em vừa học xong vẫn
         # phải in ra được. Ưu tiên lượt đang mở nếu có.
-        thanh_vien = q1('''SELECT joined_at, left_at, leave_reason, note
-                           FROM class_members
-                           WHERE class_id = %s AND user_id = %s
-                           ORDER BY left_at IS NOT NULL, joined_at DESC
+        # `chi_hoc_vien` là BẮT BUỘC ở đây, không phải để làm đẹp con số.
+        # Tài khoản quản trị viên đang là thành viên lớp 1 (anh chủ sản phẩm
+        # chốt giữ), nên thiếu bộ lọc này thì giảng viên in được "báo cáo gửi
+        # phụ huynh" cho chính tài khoản quản trị — kèm email và số điện thoại
+        # của nó. Đo 31/08/2026: HTTP 200, trả về admin@pe-hsa.vn.
+        thanh_vien = q1('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
+                           FROM class_members m
+                           JOIN users u ON u.id = m.user_id
+                           WHERE m.class_id = %s AND m.user_id = %s
+                             AND ''' + chi_hoc_vien('u') + '''
+                           ORDER BY m.left_at IS NOT NULL, m.joined_at DESC
                            LIMIT 1''', (class_id, user_id))
         if not thanh_vien:
-            return Response({'error': 'Học viên không thuộc lớp này.'}, status=404)
+            return Response({'error': 'Không có học viên này trong lớp.'}, status=404)
 
         lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
                  (class_id,))
@@ -207,10 +263,14 @@ class ParentReportView(APIView):
         if not em:
             return Response({'error': 'Không tìm thấy học viên.'}, status=404)
 
-        tu, den, ngay_hop_le = _khoang_ngay(request)
-        canh_bao = ([] if ngay_hop_le else
-                    ['Ngày lọc không đọc được (cần dạng YYYY-MM-DD) — '
-                     'đang dùng kỳ mặc định %d tuần gần nhất.' % DEFAULT_WEEKS])
+        tu, den, ngay_hop_le, dao_ngay = _khoang_ngay(request)
+        canh_bao = []
+        if not ngay_hop_le:
+            canh_bao.append('Ngày lọc không đọc được (cần dạng YYYY-MM-DD) — '
+                            'đang dùng kỳ mặc định %d tuần gần nhất.' % DEFAULT_WEEKS)
+        if dao_ngay:
+            canh_bao.append('Ngày bắt đầu đang muộn hơn ngày kết thúc nên đã đổi chỗ '
+                            'hai ngày. Kiểm lại kỳ báo cáo trước khi in.')
 
         return Response({
             'student': {'id': em['id'], 'name': em['name'],
@@ -229,7 +289,9 @@ class ParentReportView(APIView):
             },
             'period': {'from': tu.isoformat(), 'to': den.isoformat(),
                        'weeks': DEFAULT_WEEKS},
-            'attendance': _chuyen_can(class_id, user_id, tu, den),
+            'attendance': _chuyen_can(class_id, user_id, tu, den,
+                                      vao_lop=thanh_vien['joined_at'],
+                                      roi_lop=thanh_vien['left_at']),
             'study': _hoc_tap(user_id, tu, den),
             'topics': _chu_de(user_id),
             'warnings': canh_bao,

@@ -139,7 +139,8 @@ export async function proxyToBackend(
   if (upstream.status === 401) {
     const refresh = readCookie(req, RT);
     if (refresh) {
-      fresh = await refreshTokens(refresh);
+      const kq = await refreshTokens(refresh);
+      fresh = kq.ok ? { access: kq.access, refresh: kq.refresh } : null;
       if (fresh) {
         upstream = await fetch(target, {
           method: req.method,

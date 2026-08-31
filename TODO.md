@@ -456,12 +456,25 @@ Kiểm 22 phép ở tầng view + 11 phép trên trình duyệt thật.
 CÒN LẠI: báo cáo SO SÁNH giữa các đợt (tỉ lệ bỏ học, điểm trung bình theo đợt) —
 nay đã có đủ dữ liệu để làm, trước thì không.
 
-### [ ] T13 · Audit khả năng tiếp cận
+### [x] T13 · Audit khả năng tiếp cận — CHẠY XONG 31/08, đẻ ra T53
+axe-core 4.12 thật, 7 trang × 2 bộ màu × 2 khổ = 28 lượt. **5 trang React sạch
+hoàn toàn với axe ở bộ sáng**; nợ tập trung ở `/dashboard` cũ.
+ĐÃ VÁ: bản in bộ tối (báo cáo phụ huynh in ra gần trắng giấy — 25 đoạn chữ dưới
+ngưỡng, tiêu đề 1,23:1) · viền ô nhập 1,18–1,23:1 → 4,49/5,10:1 · nút nguy hiểm
+bộ tối 2,77:1 → 6,47:1 · nhãn cột trong cây trợ năng ở khổ điện thoại.
+CÒN LẠI → T53.
 axe-core chạy thật + WCAG 2.2 AA. Đo trên pixel thật cả hai bộ màu. **Bẫy:**
 `elementHandle.screenshot()` phá mô phỏng `pointer: coarse` — đo vùng chạm ở
 lượt không chụp ảnh.
 
-### [ ] T14 · Audit nhất quán giao diện
+### [x] T14 · Audit nhất quán giao diện — CHẠY XONG 31/08, đẻ ra T53
+Đo `getComputedStyle` trên trình duyệt thật. Kết quả đáng chú ý: **7 trang React
+0 lệch thang chữ trên 344 phần tử, 0 lệch bo góc**; `/dashboard` cũ lệch 86/155
+cỡ chữ và 92/124 bo góc.
+ĐÃ VÁ: `term.*` thiếu trong bảng nhãn (mã máy lọt ra ngay sau khi tôi thêm tính
+năng đợt học) · vai trò `admin` trần trong nhật ký · "Failed to fetch" tiếng Anh
+ở 11 chỗ · mọi liên kết React bị gạch chân.
+CÒN LẠI → T53.
 Màn hình mới lệch khỏi hệ thiết kế của chính nó · đứt gãy ở ranh giới cũ–mới ·
 bộ tối · trạng thái rỗng/đang tải/lỗi · ngôn ngữ trên giao diện (nhật ký đang
 hiện thẳng `user.password_reset` cho người dùng đọc).
@@ -469,6 +482,29 @@ hiện thẳng `user.password_reset` cho người dùng đọc).
 ---
 
 ## P3 — Hàng rào tự động (để CI bắt thay vì audit tay)
+
+### [ ] T53 · Nợ khả năng tiếp cận & nhất quán còn lại (từ T13 + T14)
+Xếp theo tác động, đã đo hết, chưa vá:
+· **Không đăng xuất được bằng bàn phím** — `#user-chip-btn` là `<div>` không
+  `tabindex`; Tab 60 lần không chạm tới. Trên máy dùng chung ở trung tâm đó là
+  vấn đề riêng tư. Sửa: đổi thành `<button>`.
+· **Hộp thoại đổi mật khẩu không bẫy tiêu điểm** — Tab 22 lần thì 14 lần rơi ra
+  trang nền. `components/ui/Modal.tsx` đã làm ĐÚNG (0/16), dùng lại mẫu đó.
+· **Hộp thoại đổi mật khẩu không đọc được ở bộ SÁNG** — nhãn 2,09:1, tiêu đề
+  2,57:1; nó được vẽ cho nền tối, không có nhánh bộ sáng.
+· **`/dashboard` hiện SỐ 0 GIẢ khi đang tải** — "0/76 bài", "0 ngày học liên
+  tiếp". Chính `EmptyState.tsx` của hệ mới cấm điều này.
+· Phần trăm tiến độ bộ tối 1,60:1 (màu lấy từ dữ liệu khoá học, không đổi theo
+  bộ màu) · chữ thương hiệu bộ sáng 1,86:1 (đang dùng mã màu của bộ TỐI).
+· Khu quản trị: không đánh dấu tab đang mở, không có `loading.tsx`, không có
+  công tắc bộ màu — cả ba thứ trang cũ ĐÃ có.
+· `HTTP_VI` trong `lib/api.ts` là mã chết: `errorText` ưu tiên `d.error` nên 12
+  câu tiếng Việt đã soạn không bao giờ tới người dùng.
+· `initial={list.ok ? ... : []}` nuốt lỗi tải danh sách con thành "rỗng".
+· Bóng đổ bộ tối là mã chết (Tailwind v4 nội suy token lúc dựng bản).
+· Chính tả dấu lệch giữa hai nửa (khóa/khoá, hủy/huỷ, xóa/xoá).
+· `<dialog>` chưa có `aria-labelledby`; `<nav>` chưa có `aria-label`; bảng chưa
+  có `caption`; `<th>` chưa có `scope`.
 
 ### [ ] T15 · `backend/pyproject.toml` — ruff + mypy
 Cấu hình đã đo sẵn: 28 lỗi trên 12 tệp mới, 137 toàn backend, 24 tự sửa được.

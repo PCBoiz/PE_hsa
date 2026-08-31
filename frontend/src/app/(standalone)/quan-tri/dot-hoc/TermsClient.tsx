@@ -15,7 +15,7 @@ import {
   Thead,
   Tr,
 } from '@/components/ui';
-import { apiFetch, errorText } from '@/lib/api';
+import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
 export type TermRow = {
   id: number;
@@ -113,7 +113,7 @@ export default function TermsClient({
       setOpen(false);
       await nap();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Không tạo được đợt học');
+      setErr(loiBatDuoc(e, 'Không tạo được đợt học'));
     } finally {
       dangGui.current = false;
       setBusy(false);
@@ -132,7 +132,7 @@ export default function TermsClient({
       if (!r.ok) throw new Error(errorText(r.status, d));
       await nap();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Không đổi được trạng thái');
+      setErr(loiBatDuoc(e, 'Không đổi được trạng thái'));
     }
   }
 
@@ -144,6 +144,16 @@ export default function TermsClient({
    * mất, chỉ mất nhãn đợt" — nếu không họ sẽ không dám bấm và đợt sai cứ nằm đó.
    */
   async function xoa(t: TermRow) {
+    // Hỏi TRƯỚC khi gửi. Bản trước gửi DELETE rồi mới hỏi khi backend trả 409,
+    // nên một đợt CHƯA gắn lớp nào bị xoá ngay ở cú bấm đầu tiên — không 409,
+    // không hộp thoại. Mà nút "Xoá" nằm sát ô chọn trạng thái trong cùng một
+    // dòng bảng, tức đúng chỗ dễ bấm nhầm nhất.
+    //
+    // Khác với buổi học (ở đó buổi chưa điểm danh xoá luôn là hợp lý — nó chỉ
+    // chứa đúng thứ vừa gõ vào): một đợt mang tên, mã và ba mốc ngày do người
+    // dùng nhập, và nó là cái nhãn mà mọi báo cáo so sánh giữa các mùa thi dựa
+    // vào. Gõ lại không đắt, nhưng mất mà không kịp biết thì đắt.
+    if (!confirm(`Xoá đợt "${t.name}"?`)) return;
     setErr(null);
     try {
       const r = await apiFetch(`/api/admin/terms/${t.id}`, { method: 'DELETE' });
@@ -164,7 +174,7 @@ export default function TermsClient({
       }
       await nap();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Không xoá được đợt học');
+      setErr(loiBatDuoc(e, 'Không xoá được đợt học'));
     }
   }
 
@@ -175,7 +185,7 @@ export default function TermsClient({
         type="date"
         value={gt}
         onChange={(e) => dat(e.target.value)}
-        className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+        className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
       />
     </label>
   );
@@ -272,7 +282,7 @@ export default function TermsClient({
                     value={t.status}
                     onChange={(e) => void doiTrangThai(t, e.target.value)}
                     aria-label={`Trạng thái đợt ${t.name}`}
-                    className="min-h-11 max-w-full min-w-0 rounded-md border border-line bg-sunken px-2 text-small text-ink"
+                    className="min-h-11 max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-2 text-small text-ink"
                   >
                     {statuses.map((s) => (
                       <option key={s} value={s}>

@@ -13,7 +13,7 @@ import {
   ToastProvider,
   useToast,
 } from '@/components/ui';
-import { apiFetch, errorText } from '@/lib/api';
+import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
@@ -163,7 +163,7 @@ export default function SessionsClient({
       if (openId === s.id) setOpenId(null);
       await reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Không xoá được buổi học');
+      setErr(loiBatDuoc(e, 'Không xoá được buổi học'));
     }
   }
 
@@ -335,7 +335,7 @@ function NewSession({
       setOpen(false);
       onDone();
     } catch (e) {
-      onError(e instanceof Error ? e.message : 'Không tạo được buổi học');
+      onError(loiBatDuoc(e, 'Không tạo được buổi học'));
     } finally {
       setBusy(false);
     }
@@ -358,7 +358,7 @@ function NewSession({
             type="datetime-local"
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
-            className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -367,7 +367,7 @@ function NewSession({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Tỉ lệ & phần trăm"
-            className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -378,7 +378,7 @@ function NewSession({
             min={15}
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
-            className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           />
         </label>
       </div>
@@ -425,7 +425,7 @@ function Attendance({
         if (!r.ok) throw new Error(errorText(r.status, d));
         if (alive) setRows(d.students ?? []);
       } catch (e) {
-        onError(e instanceof Error ? e.message : 'Không tải được danh sách lớp');
+        onError(loiBatDuoc(e, 'Không tải được danh sách lớp'));
         if (alive) setRows([]);
       }
     })();
@@ -476,7 +476,7 @@ function Attendance({
       }
       onSaved();
     } catch (e) {
-      onError(e instanceof Error ? e.message : 'Không lưu được điểm danh');
+      onError(loiBatDuoc(e, 'Không lưu được điểm danh'));
     } finally {
       setBusy(false);
     }

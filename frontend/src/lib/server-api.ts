@@ -72,9 +72,16 @@ export async function serverFetch(
     // cookie sẽ được cập nhật ở lời gọi /api/* kế tiếp qua lớp trung gian.
     if (res.status === 401) {
       const refresh = await readRefresh();
-      const fresh = refresh ? await refreshOnce(refresh) : null;
-      if (fresh) res = await call(fresh.access);
-      else phienHetHan = true;
+      const kq = refresh ? await refreshOnce(refresh) : null;
+      if (kq?.ok) {
+        res = await call(kq.access);
+      } else if (!kq || kq.lyDo === 'invalid') {
+        // CHỈ đá về đăng nhập khi máy chủ đã xem token và TỪ CHỐI nó.
+        // `unreachable` (Render khởi động lại, Neon cold-start, 5xx) thì giữ
+        // nguyên phiên và để trang tự xử lý như mọi lần backend không với tới
+        // được — refresh token còn sống bảy tiếng rưỡi, không có lý do gì bỏ.
+        phienHetHan = true;
+      }
     }
   } catch {
     return null; // backend đang ngủ hoặc mạng hỏng — nơi gọi tự xử lý

@@ -19,7 +19,10 @@ const VARIANT: Record<Variant, string> = {
   primary: 'bg-brand-fill text-white hover:brightness-110 active:brightness-95',
   ghost:
     'bg-transparent text-ink-2 border border-line hover:border-brand hover:text-brand',
-  danger: 'bg-danger text-white hover:brightness-110 active:brightness-95',
+  // `bg-danger-fill` chứ KHÔNG phải `bg-danger`: ở bộ tối `--danger` là #F87171,
+  // một sắc đỏ dành cho CHỮ/VIỀN trên nền tối. Lấy nó làm NỀN đỡ chữ trắng ra
+  // 2,77:1 — đo trên nút "Khoá" ở /quan-tri/tai-khoan, dưới ngưỡng 4,5:1.
+  danger: 'bg-danger-fill text-white hover:brightness-110 active:brightness-95',
 };
 
 const SIZE: Record<Size, string> = {

@@ -17,6 +17,7 @@ ra đúng một dòng, và học lại một bài thì CẬP NHẬT dòng cũ th
 mới (khớp với lesson_progress — bảng đó cũng chỉ giữ một dòng mỗi cặp
 học viên–bài).
 """
+import inspect
 import json
 import logging
 
@@ -133,10 +134,26 @@ _ON_CONFLICT = '''ON CONFLICT (user_id, dedup_key) DO UPDATE SET
         xp          = GREATEST(EXCLUDED.xp, learning_events.xp),
         meta        = EXCLUDED.meta'''
 
-#: Số dòng tối đa trong một câu INSERT. Postgres chặn ở 65535 tham số cho mỗi
-#: câu lệnh, mà mỗi dòng ở đây chiếm 15 tham số → trần cứng là 4369 dòng. Lấy
-#: 500 để còn xa ngưỡng đó, và để một câu lệnh không phình tới mức khó đọc khi
-#: nó xuất hiện trong log lỗi.
+#: Tên tham số tuỳ chọn mà `record_event` nhận. Dựng bằng `inspect` thay vì gõ
+#: tay để nó không thể lệch khi ai đó thêm một tham số mới.
+_THAM_SO_RECORD_EVENT = frozenset(
+    inspect.signature(lambda *, occurred_at=None, event_date=None, course_id=None,
+                      topic=None, ref_type=None, ref_id=None, score=None,
+                      max_score=None, minutes=None, xp=0, source=None,
+                      meta=None: None).parameters)
+
+#: Số dòng tối đa trong một câu INSERT.
+#:
+#: SỬA LẠI LÝ LẼ 31/08/2026. Bản trước ghi "Postgres chặn ở 65535 tham số mỗi
+#: câu lệnh nên trần cứng là 4369 dòng". Con số 500 vẫn đúng nhưng lý lẽ thì
+#: SAI: Django cấu hình psycopg dùng `ClientCursor` (đã kiểm: MRO có
+#: `ClientCursorMixin`), tức tham số được nội suy thẳng vào chuỗi SQL ở phía
+#: máy khách — KHÔNG có tham số nào đi lên máy chủ, nên trần 65535 của giao
+#: thức mở rộng không áp dụng.
+#:
+#: Giữ 500 vì lý do khác và vẫn đúng: một câu lệnh dài hơn thế phình tới mức
+#: không đọc nổi khi nó xuất hiện trong log lỗi, và nếu mai này dự án bật
+#: `server_side_binding` thì trần kia sẽ áp dụng thật.
 _CHUNK = 500
 
 
@@ -243,10 +260,25 @@ def record_events(events):
             logger.warning('learning_events: mẻ %d dòng hỏng, ghi lẻ từng dòng — %s',
                            len(me), exc)
             for e in goc[i:i + _CHUNK]:
-                if record_event(e['uid'], e['kind'], e['dedup_key'],
-                                **{k: v for k, v in e.items()
-                                   if k not in ('uid', 'kind', 'dedup_key')}):
-                    da_ghi += 1
+                # LỌC theo đúng tham số `record_event` nhận, và bọc thêm một
+                # lớp try. Bung thẳng dict gốc bằng `**` thì một khoá thừa là
+                # `TypeError` — mà chỗ này nằm TRONG khối `except`, nên lỗi ấy
+                # bay thẳng ra ngoài và phá vỡ bất biến AN TOÀN ghi ở đầu module
+                # ("không được phép kéo đổ giao dịch của bên gọi").
+                #
+                # Hậu quả cụ thể: `_emit_events` chạy SAU khi điểm danh đã lưu
+                # xong, nên một lỗi ở đây là 500 trả về cho giảng viên trong khi
+                # điểm danh ĐÃ vào CSDL — và họ sẽ tick lại trước mặt cả lớp.
+                # Đây là mìn nằm đúng trên đường lỗi: đường không phép kiểm nào
+                # đi qua, và cũng là đường duy nhất nó nổ.
+                kw = {k: v for k, v in e.items()
+                      if k in _THAM_SO_RECORD_EVENT}
+                try:
+                    if record_event(e['uid'], e['kind'], e['dedup_key'], **kw):
+                        da_ghi += 1
+                except Exception as e2:                       # noqa: BLE001
+                    logger.warning('learning_events: bỏ qua một dòng ở nhánh dự '
+                                   'phòng — %s', e2)
     return da_ghi
 
 

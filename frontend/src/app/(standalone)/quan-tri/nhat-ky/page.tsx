@@ -47,7 +47,21 @@ const VIEC: Record<string, string> = {
   'session.update': 'Sửa buổi học',
   'session.delete': 'Xoá buổi học',
   'attendance.mark': 'Điểm danh',
+  // Nhóm `term.*` thêm 31/08/2026 cùng tính năng đợt học. Đây đúng là cách
+  // bảng nhãn này trôi khỏi backend: thêm hành động mới ở `common/audit.py` mà
+  // quên chỗ này, và mã máy lại lọt ra màn hình — đúng thứ chú thích trên vừa
+  // nói là không được để xảy ra.
+  'term.create': 'Tạo đợt học',
+  'term.update': 'Sửa đợt học',
+  'term.delete': 'Xoá đợt học',
 };
+
+/**
+ * Nhãn vai trò. Cột `users.role` chứa lẫn hai thứ tiếng (`admin` cạnh
+ * `Giảng viên`/`Học viên`), nên nhật ký hiện "Giảng viên" cho người này và
+ * `admin` cho người kia — trong cùng một cột.
+ */
+const VAI: Record<string, string> = { admin: 'Quản trị viên' };
 
 function tone(action: string): 'neutral' | 'brand' | 'warn' | 'bad' {
   if (action.startsWith('user.password') || action === 'user.status') return 'bad';
@@ -119,7 +133,7 @@ export default async function NhatKyPage({
           <select
             name="action"
             defaultValue={one('action')}
-            className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+            className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           >
             <option value="">Mọi hành động</option>
             {/* Ô LỌC cũng phải dịch, không chỉ chip trong bảng. Chip đọc được
@@ -139,7 +153,7 @@ export default async function NhatKyPage({
             type="date"
             name="from"
             defaultValue={one('from')}
-            className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -148,7 +162,7 @@ export default async function NhatKyPage({
             type="date"
             name="to"
             defaultValue={one('to')}
-            className="min-h-11 w-full min-w-0 rounded-md border border-line bg-sunken px-3 text-input text-ink"
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           />
         </label>
         <button
@@ -202,7 +216,7 @@ export default async function NhatKyPage({
                 </Td>
                 <Td label="Người làm">
                   <span className="block font-semibold text-ink">{e.actor_name || '(đã xoá)'}</span>
-                  <span className="block text-ink-3">{e.actor_role || ''}</span>
+                  <span className="block text-ink-3">{VAI[e.actor_role || ''] || e.actor_role || ''}</span>
                 </Td>
                 <Td label="Việc">
                   <Chip tone={tone(e.action)}>{VIEC[e.action] || e.action}</Chip>

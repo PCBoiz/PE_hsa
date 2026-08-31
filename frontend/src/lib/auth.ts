@@ -75,20 +75,59 @@ export function clearTokenCookies(res: Response): void {
  * Đổi refresh token lấy access token mới.
  * Trả null khi refresh cũng hỏng — người gọi phải coi như đã đăng xuất.
  */
-export async function refreshTokens(
-  refresh: string,
-): Promise<{ access: string; refresh?: string } | null> {
+/**
+ * Kết quả làm mới phiên. `lyDo` PHẢI phân biệt được hai chuyện:
+ *  · `'invalid'`  — máy chủ trả lời rằng refresh token hỏng/đã thu hồi. Phiên
+ *                   hết thật, đá về đăng nhập là đúng.
+ *  · `'unreachable'` — chưa hỏi được máy chủ (mất mạng, Render khởi động lại,
+ *                   Neon đang thức dậy, 5xx). Phiên có thể vẫn còn nguyên.
+ */
+export type KetLamMoi =
+  | { ok: true; access: string; refresh?: string }
+  | { ok: false; lyDo: 'invalid' | 'unreachable' };
+
+/**
+ * Đổi refresh token lấy access token mới.
+ *
+ * VÌ SAO TRẢ UNION CHỨ KHÔNG TRẢ `null`. Bản trước trả `null` cho CẢ HAI: fetch
+ * ném (backend không với tới được) và `!r.ok` (backend trả 5xx). Bên gọi
+ * (`server-api.ts`) chỉ thấy `null` nên kết luận "phiên hết hạn" và đá người
+ * dùng về `/login`.
+ *
+ * Hậu quả thật: access token sống 30 phút. Render khởi động lại hoặc Neon
+ * cold-start (chính `common/db.py` ghi 5–20 giây để Neon thức) rơi đúng vào lúc
+ * đó thì giảng viên đang giữa buổi bị văng ra màn đăng nhập — trong khi refresh
+ * token còn sống bảy tiếng rưỡi.
+ *
+ * Đây là ẢNH SOI GƯƠNG của chính lỗi mà `server-api.ts` đã vá ở tầng trên: ở đó
+ * `serverJson` tách rất kỹ `status: null` với `status: 4xx`, rồi đánh mất đúng
+ * sự phân biệt đó ở tầng làm mới này.
+ */
+export async function refreshTokens(refresh: string): Promise<KetLamMoi> {
+  let r: Response;
   try {
-    const r = await fetch(`${backendOrigin()}/auth/refresh`, {
+    r = await fetch(`${backendOrigin()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
       cache: 'no-store',
     });
-    if (!r.ok) return null;
-    const d = (await r.json()) as { access?: string; refresh?: string };
-    return d?.access ? { access: d.access, refresh: d.refresh } : null;
   } catch {
-    return null;
+    return { ok: false, lyDo: 'unreachable' };
   }
+
+  // 401/403 = máy chủ ĐÃ xem token và từ chối → phiên hết thật.
+  // 5xx và mọi mã khác = máy chủ chưa trả lời được → chưa kết luận gì.
+  if (!r.ok) {
+    return { ok: false, lyDo: r.status === 401 || r.status === 403 ? 'invalid' : 'unreachable' };
+  }
+  let d: { access?: string; refresh?: string };
+  try {
+    d = (await r.json()) as { access?: string; refresh?: string };
+  } catch {
+    return { ok: false, lyDo: 'unreachable' };
+  }
+  return d?.access
+    ? { ok: true, access: d.access, refresh: d.refresh }
+    : { ok: false, lyDo: 'invalid' };
 }

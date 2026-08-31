@@ -124,7 +124,15 @@ def _clean_class_payload(body):
     data, err = {}, None
     for field, limit in CLASS_TEXT_FIELDS.items():
         if field in body:
-            val = (str(body[field]).strip() or None)
+            # `body[field] is not None` PHẢI kiểm trước. Thiếu vế đó thì
+            # `str(None)` ra chuỗi "None" — bốn ký tự, truthy — và nó đi thẳng
+            # vào CSDL. Giao diện gửi `code: code.trim() || null` cho ô để
+            # trống, nên đây không phải trường hợp hiếm mà là đường đi THƯỜNG
+            # NHẤT. Đo 31/08/2026: tạo hai đợt học đều bỏ trống mã thì cái thứ
+            # hai bị chặn bằng câu 'Mã đợt "None" đã có rồi.'
+            # Và `PATCH {note: null}` KHÔNG xoá được ghi chú mà ghi đè thành
+            # chữ "None".
+            val = (str(body[field]).strip() or None) if body[field] is not None else None
             data[field] = val[:limit] if val else None
     for field in CLASS_DATE_FIELDS:
         if field in body:
@@ -174,7 +182,11 @@ def _clean_class_payload(body):
         except (TypeError, ValueError):
             return None, 'Sĩ số phải là một số nguyên.'
     if 'status' in body:
-        st = (body['status'] or '').strip()
+        # `str(...)` trước khi `.strip()`: gửi `{"status": 5}` thì
+        # `(5 or '').strip()` ném AttributeError, và DRF biến nó thành 500
+        # "Lỗi máy chủ nội bộ" — một dữ liệu vào sai lại hiện ra như hệ thống
+        # hỏng. Dữ liệu vào sai phải là 400 kèm câu chữ đọc được.
+        st = str(body['status'] or '').strip()
         if st not in CLASS_STATUS:
             return None, 'Trạng thái phải là một trong: %s.' % ', '.join(CLASS_STATUS)
         data['status'] = st

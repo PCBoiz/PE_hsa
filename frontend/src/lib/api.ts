@@ -86,3 +86,29 @@ export function errorText(status: number, data: unknown): string {
 
   return HTTP_VI[status] ?? 'Không thực hiện được. Thử lại, nếu vẫn vậy thì báo kỹ thuật.';
 }
+
+/**
+ * Câu lỗi cho một ngoại lệ bắt được ở `catch`.
+ *
+ * VÌ SAO CẦN: mẫu `catch (e) { e instanceof Error ? e.message : 'câu tiếng Việt' }`
+ * nằm ở 11 chỗ, và nó KHÔNG BAO GIỜ chạy tới vế tiếng Việt — `TypeError` mà
+ * `fetch` ném khi mất mạng CŨNG là một `Error`, nên người dùng nhận đúng chuỗi
+ * `"Failed to fetch"` của trình duyệt. Đo được 31/08/2026 bằng cách chặn lời
+ * gọi ngay trong trình duyệt.
+ *
+ * Đây lại là lỗi hay gặp NHẤT ở một trung tâm chạy 4G chập chờn, và là lỗi duy
+ * nhất hiện ra bằng tiếng Anh. `/login` đã có lời giải đúng từ trước; hàm này
+ * mang lời giải đó ra dùng chung.
+ */
+export function loiBatDuoc(e: unknown, macDinh: string): string {
+  if (e instanceof TypeError) {
+    // `fetch` chỉ ném TypeError khi KHÔNG gửi đi được: mất mạng, DNS hỏng, CORS
+    // chặn. Máy chủ trả lỗi thì `fetch` vẫn thành công — đường đó đi qua
+    // `errorText`, không qua đây.
+    return 'Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.';
+  }
+  if (e instanceof Error && e.message && !/^Failed to fetch$/i.test(e.message)) {
+    return e.message;
+  }
+  return macDinh;
+}

@@ -758,7 +758,7 @@ class SessionAttendanceView(APIView):
         # Neon giữa chừng sẽ cuộn lại CẢ mẻ điểm danh vừa lưu — mất công tick
         # của giảng viên để đổi lấy một bảng thống kê. Ưu tiên ngược lại: dòng
         # điểm danh đã chốt, sự kiện là việc ghi thêm.
-        self._emit_events(row, rows)
+        so_su_kien = self._emit_events(row, rows)
 
         counts = {}
         for m in rows:
@@ -794,6 +794,10 @@ class SessionAttendanceView(APIView):
             # Báo lại id bị bỏ qua để giao diện nói được "3 em không thuộc lớp
             # này nên chưa lưu", thay vì im lặng báo thành công.
             'skipped': skipped,
+            # Số sự kiện học tập ghi được. Bằng `marked` là đủ; ít hơn nghĩa là
+            # dòng điểm danh ĐÃ lưu nhưng đường cong tiến bộ thiếu — bên gọi cần
+            # biết để nói ra, thay vì báo "đã lưu" trơn.
+            'events': so_su_kien,
         })
 
     @staticmethod
@@ -823,7 +827,7 @@ class SessionAttendanceView(APIView):
         # record_event tốn ba lượt gọi Neon mỗi em (SAVEPOINT / INSERT /
         # RELEASE) — đo 31/08/2026, 3 em = 9 lượt, tức lớp 30 em là 90 lượt cho
         # một lần bấm Lưu, trong khi giảng viên đang đứng chờ trước cả lớp.
-        record_events([{
+        return record_events([{
             'uid': m['user_id'], 'kind': KIND_ATTENDANCE,
             # dedup_key đã duy nhất theo từng học viên (UNIQUE
             # (user_id, dedup_key)), nên khoá theo buổi là đủ — và nhờ vậy
@@ -839,3 +843,4 @@ class SessionAttendanceView(APIView):
             'meta': {'attendance': m['status'], 'minutes': m['minutes'],
                      'class_id': session['class_id']},
         } for m in marks])
+

@@ -92,12 +92,18 @@ export function Td({
         .filter(Boolean)
         .join(' ')}
     >
-      {/* Nhãn chỉ hiện ở dạng thẻ. Dùng `aria-hidden` vì ở dạng bảng trình đọc
-          màn hình đã lấy tên cột từ `<th>`; để cả hai thì nó đọc tên cột hai
-          lần cho mỗi ô. */}
-      <span aria-hidden className="hidden text-label text-ink-3 max-sm:block">
-        {label}
-      </span>
+      {/* KHÔNG `aria-hidden`. Chú thích cũ ở đây viết "trình đọc màn hình đã
+          lấy tên cột từ `<th>`" — đúng trên màn rộng, SAI đúng ở chế độ mà đoạn
+          mã này sinh ra: dưới 640px `<thead>` là `display:none`, tức bị loại
+          khỏi cây trợ năng, nên không còn `<th>` nào để lấy tên.
+
+          Đo bằng CDP ngày 31/08/2026 ở khổ 390px: số ô `columnheader` trong cây
+          trợ năng = 0, và tên các ô là "a", "a@gmail.com", "Đang hoạt động" —
+          không ô nào cho biết đó là cột gì. Người dùng trình đọc màn hình trên
+          điện thoại nghe một chuỗi giá trị trần.
+
+          Ở màn rộng nhãn này `display:none` nên không có chuyện đọc hai lần. */}
+      <span className="hidden text-label text-ink-3 max-sm:block">{label}</span>
       <span className="max-sm:min-w-0 max-sm:flex-1 max-sm:text-right">{children}</span>
     </td>
   );
