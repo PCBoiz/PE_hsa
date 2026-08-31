@@ -57,11 +57,20 @@ export default function AssignmentsClient({
   classId,
   className,
   initial,
+  topics,
   loiTai,
 }: {
   classId: number;
   className: string;
   initial: Assignment[];
+  /**
+   * Chủ đề hợp lệ của khoá lớp đang dạy (`lessons.module`), do máy chủ gửi.
+   *
+   * KHÔNG viết cứng ở đây: danh mục đổi theo giáo trình, mà giáo trình thì
+   * TopHSA sẽ soạn lại. Xem `chu_de_cua_lop` trong assignments.py để biết vì
+   * sao đây phải là ô CHỌN chứ không phải ô gõ.
+   */
+  topics: string[];
   /**
    * Lỗi khi máy chủ dựng trang, nếu có.
    *
@@ -143,6 +152,7 @@ export default function AssignmentsClient({
       {moForm ? (
         <FormBai
           classId={classId}
+          topics={topics}
           onXong={() => {
             setMoForm(false);
             void reload();
@@ -250,11 +260,13 @@ export default function AssignmentsClient({
  */
 function FormBai({
   classId,
+  topics,
   onXong,
   onHuy,
   onLoi,
 }: {
   classId: number;
+  topics: string[];
   onXong: () => void;
   onHuy: () => void;
   onLoi: (s: string | null) => void;
@@ -321,12 +333,24 @@ function FormBai({
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))]">
           <label className="flex flex-col gap-1">
             <span className="text-label text-ink-3">Chủ đề</span>
-            <input
+            {/* Ô CHỌN, không phải ô gõ. Gõ tay thì một dấu tiếng Việt thiếu là
+                chủ đề tách thành hai ô trên bản đồ năng lực của giảng viên và
+                biến mất khỏi bản đồ của học viên — xem `chu_de_cua_lop`. */}
+            <select
               name="topic"
-              maxLength={120}
-              placeholder="Đọc hiểu"
-              className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
-            />
+              defaultValue=""
+              disabled={topics.length === 0}
+              className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
+            >
+              <option value="">
+                {topics.length === 0 ? 'Khoá này chưa chia chủ đề' : '— không gắn chủ đề —'}
+              </option>
+              {topics.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-label text-ink-3">Thang điểm</span>

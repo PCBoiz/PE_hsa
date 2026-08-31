@@ -28,10 +28,20 @@ import type { ReactNode } from 'react';
  * ta quét mắt tìm "ai cần gọi điện hôm nay". Nhưng 13px là SÀN — bản cũ có ô
  * 10.5px, không đọc nổi.
  */
-export function TableWrap({ children }: { children: ReactNode }) {
+export function TableWrap({ children, caption }: { children: ReactNode; caption: string }) {
   return (
     <div className="overflow-x-auto rounded-md border border-line bg-surface">
-      <table className="w-full border-collapse text-small max-sm:block">{children}</table>
+      <table className="w-full border-collapse text-small max-sm:block">
+        {/* `caption` BẮT BUỘC (kiểu ép, `tsc` bắt được khi thiếu — cùng lối với
+            `label` của `Td`). Trình đọc màn hình đọc bảng theo thứ tự ô; không
+            có caption thì người dùng nghe một loạt số mà không biết chúng thuộc
+            bảng nào, nhất là khi một trang có nhiều bảng như /quan-tri/tong-quan.
+            Ẩn về mặt thị giác vì tiêu đề đã có ở `CardHead` ngay trên — lặp lại
+            bằng mắt là thừa, nhưng bằng tai thì không: `CardHead` nằm ngoài
+            bảng nên không được đọc kèm. */}
+        <caption className="sr-only">{caption}</caption>
+        {children}
+      </table>
     </div>
   );
 }
@@ -44,7 +54,10 @@ export function Th({
   align?: 'left' | 'right';
 }) {
   return (
+    // `scope="col"`: không có nó thì trình đọc màn hình phải TỰ ĐOÁN ô nào
+    // thuộc cột nào, và đoán sai ở mọi bảng có ô gộp hoặc ô trống.
     <th
+      scope="col"
       className={`whitespace-nowrap border-b border-line bg-sunken px-3 py-2 text-label text-ink-3 ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}

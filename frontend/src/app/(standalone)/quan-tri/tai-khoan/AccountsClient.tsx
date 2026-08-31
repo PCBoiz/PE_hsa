@@ -309,7 +309,7 @@ export default function AccountsClient({
             hint="Thử bỏ bớt bộ lọc, hoặc dán danh sách học viên vừa đăng ký vào ô nhập hàng loạt ở trên."
           />
         ) : (
-          <TableWrap>
+          <TableWrap caption="Danh sách tài khoản, kèm vai trò và trạng thái từng người">
             <Thead>
               <tr>
                 <Th>Học viên</Th>
@@ -750,7 +750,7 @@ function BulkResult({ data, dryRun = false }: { data: BulkResultData; dryRun?: b
         </p>
       )}
 
-      <TableWrap>
+      <TableWrap caption="Kết quả nhập tài khoản hàng loạt, từng dòng một">
         <Thead>
           <tr>
             <Th align="right">Dòng</Th>

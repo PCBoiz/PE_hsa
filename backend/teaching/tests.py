@@ -51,7 +51,7 @@ def lop(db):
 
 
 def _tao_bai(lop, **kw):
-    body = {'title': 'Bai luan 1', 'topic': 'Đọc hiểu', 'max_score': 10, 'status': 'open'}
+    body = {'title': 'Bai luan 1', 'topic': 'Số học', 'max_score': 10, 'status': 'open'}
     body.update(kw)
     kq = _goi(ClassAssignmentsView, 'post', body, ai=lop['gv'], class_id=lop['id'])
     assert kq.status_code == 201, kq.data
@@ -162,14 +162,14 @@ def test_user_id_trung_trong_cung_me_giu_dong_cuoi(lop):
 @pytest.mark.django_db
 def test_cham_xong_de_su_kien_hoc_tap(lop):
     """Điểm tự luận vào bản đồ năng lực qua `learning_events`, không qua luật riêng."""
-    aid = _tao_bai(lop, topic='Đọc hiểu')
+    aid = _tao_bai(lop, topic='Số học')
     _goi(AssignmentGradingView, 'post',
          {'grades': [{'user_id': lop['hv'][0].id, 'score': 8}]},
          ai=lop['gv'], assignment_id=aid)
     sk = q1('SELECT kind, topic, score, max_score, minutes FROM learning_events '
             'WHERE ref_type=%s AND ref_id=%s', ('assignment', str(aid)))
     assert sk['kind'] == 'assignment'
-    assert sk['topic'] == 'Đọc hiểu'
+    assert sk['topic'] == 'Số học'
     assert float(sk['score']) == 8
     # `minutes` CỐ Ý để NULL: không ai đo được thời gian em ngồi viết bài tự
     # luận, và bịa một con số sẽ trộn thẳng vào chỉ tiêu học tuần.
@@ -455,3 +455,131 @@ def _de_thi(uid, diem):
     q1("INSERT INTO learning_events (user_id, dedup_key, occurred_at, event_date, kind, "
        "score, max_score, source) VALUES (%s,%s,%s,%s,'mock',%s,100,'system') RETURNING id",
        (uid, 'test:mock:%s' % uid, local_now(), local_now().date(), diem))
+
+
+# ── Học viên quay lại lớp cũ — hồi quy cho `reports._members` (31/08/2026) ──
+
+@pytest.mark.django_db
+def test_hoc_vien_quay_lai_lop_cu_chi_hien_MOT_dong(db):
+    """Từ §36, một cặp (lớp, người) có thể có nhiều dòng `class_members`.
+
+    Chỉ mục duy nhất là chỉ mục MỘT PHẦN (`WHERE left_at IS NULL`) nên em rời
+    lớp rồi quay lại sinh dòng mới — đúng thiết kế, để giữ lịch sử từng lượt.
+    Nhưng `_members` chưa gộp theo người, nên em đó bị đếm HAI LẦN ở khắp nơi:
+    sổ điểm danh CSV in hai dòng cùng tên, `summary.left` báo có người rời lớp
+    trong khi không ai rời, và mẫu số bản đồ năng lực lớp bị thổi lên.
+    """
+    from teaching.reports import _members, class_report
+    gv = _nguoi('GV Quay Lai', ROLE_TEACHER)
+    a = _nguoi('HV O Yen', ROLE_STUDENT)
+    b = _nguoi('HV Quay Lai', ROLE_STUDENT)
+    c = q1("INSERT INTO classes (name, course_id, teacher_id, status) "
+           "VALUES ('Lop quay lai','hsa_quantitative',%s,'active') RETURNING id", (gv.id,))
+    for u in (a, b):
+        q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+           'RETURNING id', (c['id'], u.id, local_now()))
+    # em B rời lớp rồi quay lại → hai dòng cho cùng một người
+    cu = q1("UPDATE class_members SET left_at=%s, leave_reason='completed' "
+            'WHERE class_id=%s AND user_id=%s RETURNING id', (local_now(), c['id'], b.id))
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+       'RETURNING id', (c['id'], b.id, local_now()))
+    assert q1('SELECT count(*) n FROM class_members WHERE class_id=%s AND user_id=%s',
+              (c['id'], b.id))['n'] == 2, 'kịch bản phải thật sự sinh được hai dòng'
+    assert cu
+
+    ds = _members(c['id'])
+    assert [r['user_id'] for r in ds] == sorted([a.id, b.id], key=lambda i: (
+        'HV O Yen' if i == a.id else 'HV Quay Lai')), [r['name'] for r in ds]
+    assert len(ds) == 2, 'hai con người thì hai dòng, không phải ba'
+
+    # Lượt được giữ phải là lượt ĐANG HỌC, không phải lượt đã kết thúc.
+    dong_b = [r for r in ds if r['user_id'] == b.id][0]
+    assert dong_b['left_at'] is None, 'phải giữ lượt đang học, không giữ lượt đã rời'
+    assert dong_b['luot'] == 2, 'nhưng vẫn phải đếm được là em ấy học hai lượt'
+
+    bc = class_report(c['id'])
+    s = bc['summary']
+    assert s['students'] == 2 and s['active'] == 2, s
+    assert s['left'] == 0, 'không ai đang ở ngoài lớp, `left` phải là 0: %s' % s['left']
+    assert s['enrolledEver'] == 3, 'số LƯỢT ghi danh vẫn là 3: %s' % s['enrolledEver']
+
+
+@pytest.mark.django_db
+def test_chu_de_phai_thuoc_danh_muc_cua_khoa(lop):
+    """Bẫy gõ phím tôi tự tạo ra rồi tự bịt lại, cùng ngày 31/08/2026.
+
+    Bản đầu nhận `topic` là văn bản tự do. Bản đồ năng lực của HỌC VIÊN dựng ô
+    từ `lessons.module`, còn bản đồ của GIẢNG VIÊN dựng ô từ `topic` của sự
+    kiện — nên "Doc hieu" (thiếu dấu) và "Đọc hiểu" thành HAI ô trên màn hình
+    giảng viên và KHÔNG ô nào trên màn hình em. Một dấu tiếng Việt là đủ, và
+    không màn hình nào báo gì.
+    """
+    kq = _goi(ClassAssignmentsView, 'post',
+              {'title': 'Bai lech chu de', 'topic': 'So hoc'},  # thiếu dấu
+              ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 400, 'chủ đề ngoài danh mục phải bị từ chối'
+    assert 'Số học' in kq.data['error'], 'và phải nói ra danh mục hợp lệ: %s' % kq.data
+    # để trống vẫn được — điểm vào sổ, chỉ là không vào được ô nào
+    assert _goi(ClassAssignmentsView, 'post', {'title': 'Bai khong chu de', 'topic': None},
+                ai=lop['gv'], class_id=lop['id']).status_code == 201
+    # danh mục gửi kèm để màn hình vẽ ô CHỌN thay vì ô gõ
+    ds = _goi(ClassAssignmentsView, 'get', ai=lop['gv'], class_id=lop['id']).data
+    assert 'Số học' in ds['topics'], ds.get('topics')
+
+
+# ── Một định nghĩa chuyên cần cho mọi mặt (31/08/2026) ──────────────────────
+
+@pytest.mark.django_db
+def test_ba_mat_cung_noi_MOT_con_so_chuyen_can(db):
+    """Sổ CSV, báo cáo phụ huynh và phép đếm vắng phải khớp nhau.
+
+    Trước bản vá có HAI mẫu số chạy song song và bảng chéo CSV còn cộng cả buổi
+    ĐÃ HUỶ. Đo được trên cùng một em: CSV nói 100%, tờ gửi phụ huynh nói 67% —
+    và tờ giấy là thứ đi ra khỏi hệ thống, về tận nhà.
+    """
+    from datetime import timedelta
+
+    from teaching.attendance import dem_theo_hoc_vien, ti_le
+    from teaching.parent_report import _chuyen_can
+    gv = _nguoi('GV Chuyen Can', ROLE_TEACHER)
+    em = _nguoi('HV Chuyen Can', ROLE_STUDENT)
+    ban = _nguoi('HV Ban Cung Lop', ROLE_STUDENT)
+    c = q1("INSERT INTO classes (name, course_id, teacher_id, status) "
+           "VALUES ('Lop chuyen can','hsa_quantitative',%s,'active') RETURNING id", (gv.id,))
+    for u in (em, ban):
+        q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+           'RETURNING id', (c['id'], u.id, local_now()))
+
+    nay = local_now()
+    buoi = []
+    for i, tt in enumerate(('planned', 'planned', 'planned', 'cancelled')):
+        r = q1('INSERT INTO class_sessions (class_id, starts_at, status, '
+               'attendance_taken_at, created_by) VALUES (%s,%s,%s,%s,%s) RETURNING id',
+               (c['id'], nay - timedelta(days=5 - i), tt, nay, gv.id))
+        buoi.append(r['id'])
+
+    # Em có mặt 2 buổi, vắng 1 buổi ĐÃ HUỶ, và buổi thứ 3 giảng viên SÓT không tick em.
+    for sid, tt in ((buoi[0], 'present'), (buoi[1], 'present'), (buoi[3], 'absent')):
+        q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+           'VALUES (%s,%s,%s,%s,%s) RETURNING session_id', (sid, em.id, tt, nay, gv.id))
+    # Bạn cùng lớp được tick đủ cả ba buổi thật → buổi 3 vẫn nằm trong "đã tick".
+    for sid in (buoi[0], buoi[1], buoi[2]):
+        q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+           'VALUES (%s,%s,%s,%s,%s) RETURNING session_id', (sid, ban.id, 'present', nay, gv.id))
+
+    # SỰ THẬT: em có dòng ở 2 buổi KHÔNG huỷ, có mặt cả 2 → 100%, và thiếu 1 buổi.
+    dem, ok = dem_theo_hoc_vien(c['id'], [em.id])
+    assert ok and dem[em.id]['marked'] == 2, dem
+
+    cc = _chuyen_can(c['id'], em.id, (nay - timedelta(days=30)).date(), nay.date())
+    assert cc['present'] == 2 and cc['absent'] == 0, cc
+    assert cc['noRecord'] == 1, 'buổi giảng viên sót phải được BÁO RIÊNG: %s' % cc
+    assert cc['attendedPct'] == 100, (
+        'em đi đủ mọi buổi có dòng thì phải là 100%%, không phải %s' % cc['attendedPct'])
+    # Bất biến bốn ô: cộng lại phải bằng mẫu số của tờ giấy.
+    assert (cc['present'] + cc['late'] + cc['absent'] + cc['excused'] + cc['noRecord']
+            == cc['sessionsCounted']), cc
+
+    # Cùng công thức, cùng con số, ở cả hai nơi.
+    assert ti_le(cc['present'] + cc['late'], cc['sessionsCounted'] - cc['noRecord']) == 100
+    assert ti_le(0, 0) is None, 'chưa có dòng nào thì None, KHÔNG phải 0'

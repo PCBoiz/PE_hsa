@@ -103,8 +103,13 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .brand-always { display: flex !important; align-items: center; gap: 3px; }
 .brand .brand-title,
 .brand-always .brand-title { font-weight: 800; font-size: 0.9rem; letter-spacing: -0.3px; white-space: nowrap; }
-.brand-c1 { color: #8B7CF6; }
-.brand-c2 { color: #2DD4BF; }
+/* Dùng TOKEN, không viết cứng hex. Bảng màu đã chọn sẵn bản đủ tương phản cho
+   nền sáng (`--brand: #6D5AE6`, `--brand-2: #0E7C6B` — xem chú thích ở
+   theme.css), nhưng chữ hiệu ở đây bỏ qua chúng: đo 31/08/2026 trên nền trắng,
+   "TopHSA" được 1,86:1 và "ProgrammingEdu" 3,33:1. Đây không phải đổi màu
+   thương hiệu — chỉ là dùng đúng bản mà bảng màu đã dành cho nền sáng. */
+.brand-c1 { color: var(--brand); }
+.brand-c2 { color: var(--brand-2); }
 .brand-x { color: var(--t3); font-weight: 700; margin: 0 1px; }
 .brand-short { display: none; color: #8B7CF6; }
 
@@ -140,7 +145,11 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .topbar-nav .nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--t2); }
 .topbar-nav .nav-btn.active {
   background: rgba(59,130,246,0.12);
-  color: var(--blue-light);
+  /* `--brand-ink` chứ không `--blue-light`: họ `-light` là bản LÀM SÁNG dành
+     cho nền tối, đem ra làm chữ trên nền sáng thì đo được 3,33:1 (31/08/2026,
+     chữ "Dashboard" — mục đang mở, tức chữ người dùng cần đọc rõ nhất trên
+     thanh điều hướng). `--brand-ink` tự đổi theo bộ màu. */
+  color: var(--brand-ink);
   font-weight: 700;
   box-shadow: none;
 }

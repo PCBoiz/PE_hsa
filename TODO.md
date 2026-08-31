@@ -652,7 +652,7 @@ viên lớp 1 — email, số điện thoại, mục tiêu, sổ điểm, và **
 Đường trả về ÍT dữ liệu hơn (`parent-report`) thì đã chặn; đường trả về NHIỀU
 hơn thì quên. Đo lại sau bản vá: quản trị viên → 404, học viên thật → 200.
 
-### [ ] T57 · Sổ điểm danh CSV cộng cả buổi ĐÃ HUỶ
+### [x] T57 (XONG 31/08) · Sổ điểm danh CSV cộng cả buổi ĐÃ HUỶ
 `teaching/exports.py` ~440: `counts[status] += 1` không loại `cancelled`, nên
 `_rate` chia cho mẫu số có cả buổi huỷ. `progress.csv` (đi qua
 `attendance.dem_theo_hoc_vien`) thì đúng. Hai file xuất từ CÙNG một màn hình nói
@@ -660,7 +660,7 @@ hai con số khác nhau về cùng một em — trợ giảng tải cả hai cho
 huynh. Đúng loại lỗi mà `teaching/attendance.py` mở đầu bằng câu "nay chỉ còn
 một luật, ở một chỗ": `_absence_counts` đã đi qua cửa đó, bảng chéo thì chưa.
 
-### [ ] T58 · Báo cáo phụ huynh: mẫu số chuyên cần sai
+### [x] T58 (XONG 31/08) · Báo cáo phụ huynh: mẫu số chuyên cần sai
 `teaching/parent_report.py` ~155: `attendedPct = co_mat / len(da_tick)` — mẫu số
 là buổi CẢ LỚP đã tick, không phải buổi em ấy CÓ DÒNG. Giảng viên tick cả lớp mà
 sót một em thì em đó vẫn bị chia. Em đi đủ 2/2 buổi có dòng → **giấy in 50%**.
@@ -669,7 +669,7 @@ nên bốn ô trên giấy cộng lại không bằng mẫu số và không dòn
 Đây là tờ giấy GỬI VỀ NHÀ: lỗi hành chính của giảng viên bị đọc thành hạnh kiểm
 của học sinh, và không ai ở đó đính chính.
 
-### [ ] T59 · Học viên quay lại lớp cũ bị đếm HAI LẦN
+### [x] T59 (XONG 31/08) · Học viên quay lại lớp cũ bị đếm HAI LẦN
 `teaching/reports.py:_members` không lọc `left_at`, không gộp theo `user_id`. Từ
 §36 một cặp lớp–người có thể có nhiều dòng. Hệ quả đo được: sổ điểm danh in hai
 dòng cùng tên; `summary.left = 1` trong khi không ai rời lớp; bản đồ năng lực
@@ -682,7 +682,7 @@ nhưng `_hoc_tap` dùng trọn kỳ và `period` in ra cũng là trọn kỳ. Em
 rồi quay lại 28/08: giấy in "học 5 bài, làm 2 đề, điểm đang lên" cạnh "chuyên
 cần 0%", trong khi sự thật trong kỳ đó là 8/9 = 89%.
 
-### [ ] T61 · Mục kế hoạch mồ côi thành "Chậm N bài"
+### [x] T61 (XONG 31/08) · Mục kế hoạch mồ côi thành "Chậm N bài"
 `teaching/reports.py` ~231: `LEFT JOIN lessons` rồi `WHERE lp.user_id IS NULL` —
 mục trỏ tới bài KHÔNG TỒN TẠI luôn tính là quá hạn. Hôm nay chưa nổ cho mục
 `lesson` (0 mục mồ côi) nhưng ĐÃ CÓ 113 mục `mock`/`review` mồ côi, chúng chỉ
@@ -700,7 +700,7 @@ Không phải lỗi kỹ thuật mà là **quyết định chưa được ghi**.
   `stats/competency.py` dựng từ `lessons.module`. Hôm nay hai bên khớp tuyệt đối
   (31/31, 21/21, 42/42) nên là mìn chờ, kích hoạt khi giáo trình đổi tên chủ đề.
 
-### [ ] T63 · `ORDER BY occurred_at` thiếu tie-breaker
+### [x] T63 (XONG 31/08) · `ORDER BY occurred_at` thiếu tie-breaker
 `teaching/reports.py` ~209, chỗ quyết định DẤU của xu hướng điểm thi thử
 (ngưỡng cảnh báo `<= -8`). `parent_report.py` đã vá đúng lỗi này kèm 6 dòng chú
 thích; `reports.py` thì không. Chưa tái hiện được lật dấu trên bảng nhỏ, nhưng
@@ -727,3 +727,119 @@ Nên vẫn vá, ở ĐƯỜNG GHI chứ không ở đường vẽ: chỉ nhận 
 Ai đó gỡ `target="_blank"`, hoặc dựng một màn hình React mới đổ `meetingUrl` vào
 `<a>`, là lỗ mở lại mà không ai biết mình vừa gỡ hàng rào gì. Ưu tiên THẤP: cần
 quyền quản trị viên/giảng viên mới đặt được, mà vai đó đã tin cậy hơn thế nhiều.
+
+---
+
+## Đợt phản biện 31/08/2026 — agent thứ ba kiểm lại hai agent kia VÀ các bản vá
+
+Kết quả: 6/6 bản vá chạy đúng như tuyên bố, không sinh lỗi mới — kể cả chỗ tôi
+nghi nhất (`hong_hoc_tap` trả None ở tầng cuộn lên đợt). Nhưng nó bắt được
+**lỗi của chính tôi**, và hai chỗ hai agent kia nói quá sự thật.
+
+### [x] C1 (XONG 31/08) · Chú thích tôi viết TỰ NHẬN đã đo nhưng không tái hiện được
+Tôi chép hai con số từ báo cáo của agent tìm lỗi ("lớp thật 11% hiện 85%",
+"93% trong khi thật là 7%") vào chú thích `overview.py` **như thể tự tay đo**.
+Đo lại trên production: lớp thật đi từ **13% → 11%**, và cảnh "học xuyên khoá"
+KHÔNG THỂ xảy ra trên dữ liệu hiện có (100% sự kiện `kind='lesson'` đều thuộc
+`hsa_quantitative`). Hai bộ lọc vẫn đúng và giữ nguyên; chú thích đã sửa cho
+khớp số đo thật, và nói rõ chỗ nào là suy luận chứ chưa đo.
+
+**Đây là lỗi nặng nhất của cả phiên** — nặng hơn mọi lỗi số liệu ở trên. Một
+con số sai thì người sau đo lại là ra; một chú thích tự nhận đã đo thì người
+sau TIN nó và không đo lại nữa.
+
+### [x] C5 (XONG 31/08) · `GRADED_KINDS` là hằng số chết
+Không mô-đun nào import (rà cả repo: ba lần xuất hiện, cả ba trong chính
+`events.py`). Thêm `KIND_ASSIGNMENT` vào đó **không có tác dụng gì** — nguồn
+thật là `competency.KIND_TO_SOURCE`, chỗ đó tôi sửa đúng. Đã sửa chú thích để
+hằng số không còn nói dối về tầm ảnh hưởng của nó.
+
+### [x] C7 (XONG 31/08) · "Còn mấy bài chưa chấm" đếm hụt
+`ungraded = submitted - graded` sai vì hai tập không lồng nhau: chấm điểm cố ý
+không đụng `submitted_at` (bài nộp trên giấy). 5 em nộp online (3 đã chấm) + 2
+em chấm giấy → hiệu bằng 0 trong khi còn 2 bài chưa chấm. Đổi sang một phép
+đếm riêng ở SQL.
+
+### [x] C-mới (XONG 31/08) · `assignments.topic` là ô gõ tự do — bẫy tôi tự tạo ra hôm nay
+Bản đồ năng lực của HỌC VIÊN dựng ô từ `lessons.module`; của GIẢNG VIÊN dựng ô
+từ `topic` của sự kiện. Trước nay luôn khớp vì `topic` do hệ thống sinh. Mã mới
+của tôi nhận `topic` là văn bản 120 ký tự bất kỳ. Đo được: hai bài "Doc hieu"
+(thiếu dấu) + hai bài "Đọc hiểu" → bản đồ giảng viên hiện **hai ô cho cùng một
+chủ đề (16% và 49%)**, bản đồ học viên không có ô nào. Đã ràng vào danh mục
+`lessons.module` của khoá lớp đang dạy (backend từ chối 400, màn hình đổi thành
+ô CHỌN).
+
+### [ ] T66 · `common/audit.py::_client_ip` lấy phần tử ĐẦU của `X-Forwarded-For`
+Cả hai agent tìm lỗi đều bỏ sót. Phần tử đầu là thứ người gọi TỰ ĐẶT, nên cột
+`ip` của nhật ký kiểm toán giả mạo được — ở đúng chỗ sinh ra để làm bằng chứng.
+**Không sửa mù**: đúng vị trí phụ thuộc `NUM_PROXIES`, mà con số đó chưa đo trên
+production. Đã ghi cảnh báo vào mã; vá CÙNG LÚC với A2 trong `VIEC_CUA_ANH.md`.
+
+### [ ] T62 (thay cho bản cũ) · Hai nơi đếm "chậm" — nguyên nhân SÂU HƠN đã nghĩ
+Không chỉ khác bộ lọc `kind`. Hai bên còn hỏi hai BẢNG khác nhau để biết "bài
+này xong chưa": `stats/plan._done_lookup` đọc `learning_events` (`meta.lessonNo`),
+`teaching/reports._lag_by_user` đọc `lesson_progress` JOIN `lessons.sort_order`.
+Hôm nay chúng tình cờ khớp. Một dòng lệch giữa hai bảng là hai con số lệch mà
+không ai giải thích được. Đo thật hôm nay: uid 12 — học viên thấy **14**, giảng
+viên thấy **12**. Cần chốt MỘT nguồn trước khi sửa.
+
+### [ ] T60 (giữ nguyên) · Kỳ in trên giấy ≠ kỳ dùng để tính
+Đã xác nhận lại: `period` in "01/01–31/12", ô học tập đếm trọn năm, ô chuyên cần
+chỉ đếm 2 trong 4 buổi vì bị bó theo một lượt học.
+
+### [x] T64 (XONG 31/08) · `must_change_password` chỉ ép ở frontend
+Hàng rào nay nằm trong LỚP XÁC THỰC (`accounts/authentication.py`), không phải
+ở permission hay middleware — và cả hai chỗ kia đều sai:
+- `DEFAULT_PERMISSION_CLASSES`: view nào khai `permission_classes` riêng (gần
+  như cả khu `teaching/`) ghi đè danh sách mặc định và đi vòng qua hàng rào.
+- middleware: chạy TRƯỚC khi DRF xác thực, lúc đó `request.user` còn ẩn danh.
+
+Bốn đường được phép: `/api/user` (kèm `/api/user/password`), `/auth/refresh`,
+`/auth/logout`. Trả **403 kèm `mustChangePassword: true`**, không phải 401 — 401
+khiến lớp làm mới token ở frontend tưởng phiên hết hạn, thử refresh, rồi đá về
+đăng nhập, và vòng đó lặp mãi vì đăng nhập lại vẫn còn nguyên cờ.
+
+**Hai thứ phải vá CÙNG LÚC, thiếu một là hỏng:**
+1. `PasswordView` nay gọi `invalidate_user_cache`. `CachedJWTAuthentication` giữ
+   đối tượng user 60 giây; không xoá đệm thì em vừa đổi mật khẩu xong vẫn bị
+   chặn thêm tối đa một phút — đúng lúc đang mừng vì vừa làm đúng.
+2. Lỗi 403 phải NÓI RA lý do. Bộ xử lý lỗi chung cố ý làm phẳng mọi
+   `PermissionDenied` thành "Không có quyền truy cập"; ở đây thì ngược lại,
+   người dùng PHẢI biết lý do, nếu không họ gặp tường 403 câm ở mọi trang. Đã
+   thêm lớp `PhaiDoiMatKhau` riêng, và cả hai tầng frontend (SSR + trình duyệt)
+   tự đưa họ tới `/doi-mat-khau`.
+
+Đo được: 403 đúng chỗ, bốn đường cho phép vẫn 200, gỡ cờ là đi lại được NGAY
+(không đợi 60 giây), và điều hướng KHÔNG lặp vô hạn khi đã ở trang đích.
+
+### Ghi chú: bộ đếm sequence của Neon đã nhảy
+Các phép kiểm chạy trong giao dịch cuộn lại KHÔNG trả lại sequence.
+`classes_id_seq` nay ở khoảng ~105, `assignments_id_seq` ~55. Vô hại (không dòng
+nào tồn tại, không ràng buộc nào vỡ) — nhưng lớp học THẬT tiếp theo sẽ mang id
+lớn hơn 100 thay vì 2. Nói ra để anh không giật mình khi thấy.
+
+### [x] T53-a (XONG 31/08) · Ba món tiếp cận nặng nhất
+1. **Người dùng bàn phím không đăng xuất được, trên MỌI trang.** `#user-chip-btn`
+   là `<div>` (Tab 80 lần không lần nào dừng), mà menu `visibility: hidden` khi
+   đóng nên ba nút bên trong cũng không tới được. Đổi sang `<button>` ở CẢ HAI
+   bản sao (Topbar + trang chi tiết khoá học). Đo lại: Tab 19 → Enter → Tab 3 →
+   "Đăng xuất". Chiều cao chip vẫn 34px, có vòng tiêu điểm.
+2. **Tương phản `/dashboard`**: quét 113 phần tử chữ → 12 chỗ dưới ngưỡng ở bộ
+   sáng, 6 ở bộ tối. Nay **0/0** ở cả hai. Thêm 9-10 chỗ trên nền gradient đo
+   riêng bằng pixel: tất cả đạt. Nguyên nhân chung là **hex viết cứng đi vòng
+   qua token đã vá** — `--t3` đã nâng cho đạt 4,5:1 nhưng `.lb-meta` viết
+   `#94A3B8`; token họ `-light`/`--accent` là màu dành cho CHỮ lại bị đem làm
+   NỀN đỡ chữ trắng. Thêm `--success-fill` theo đúng lối `--danger-fill`.
+3. **Hộp đổi mật khẩu**: nhãn 3,17:1 → 15,11:1 (làm tối tấm kính chứ không làm
+   sáng chữ — chữ ở đây trắng); thêm bẫy tiêu điểm dùng chung
+   (`window.bayTieuDiem`) và trả tiêu điểm về chỗ cũ khi đóng. Đo: 25 lần Tab
+   không thoát ra ngoài, đóng xong tiêu điểm về đúng nút đã mở.
+4. **Bảng**: `<caption>` nay BẮT BUỘC (kiểu ép, `tsc` bắt được — cùng lối với
+   `label` của `Td`) và mọi `<th>` có `scope="col"`. Đo trên màn hình thật:
+   caption 1×1px `absolute` (thật sự ẩn), 8/8 `th` có scope.
+
+### [ ] T53-b · Còn lại của khối tiếp cận
+Chưa làm: `/dashboard` hiện số 0 giả lúc đang tải · chưa có `loading.tsx` · chưa
+có nút đổi bộ màu trong khu `(standalone)` · `HTTP_VI` có nhánh chết · bóng đổ
+bộ tối là mã chết · chính tả dấu không nhất quán (khóa/khoá, hủy/huỷ, xóa/xoá) ·
+hộp huỷ ghi danh (`main.js`) NAY đã dùng `window.bayTieuDiem` — đo: 12 lần Tab không thoát, đóng xong tiêu điểm về chỗ cũ, 0 lỗi JS.

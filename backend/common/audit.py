@@ -72,6 +72,22 @@ def _client_ip(request):
     fwd = request.META.get('HTTP_X_FORWARDED_FOR')
     if fwd:
         # Chuỗi dạng "client, proxy1, proxy2" — phần tử đầu là máy khách.
+        #
+        # CẢNH BÁO CHƯA VÁ (T66, 31/08/2026): phần tử ĐẦU là thứ người gọi TỰ
+        # ĐẶT được. Ai gọi thẳng vào Render kèm `X-Forwarded-For: 1.2.3.4` thì
+        # cột `ip` của nhật ký kiểm toán ghi 1.2.3.4 — tức bằng chứng kiểm toán
+        # giả mạo được, ở đúng chỗ sinh ra để làm bằng chứng.
+        #
+        # KHÔNG sửa vội thành phần tử CUỐI: đúng vị trí phụ thuộc số chặng proxy
+        # thật, mà con số đó CHƯA ĐO trên production (mọi dòng `admin_audit`
+        # hiện có đều là ::1 / 127.0.0.1 — chưa request thật nào đi qua
+        # Render/Vercel). Sửa mù ở đây rồi đặt `NUM_PROXIES` theo chiều khác là
+        # hàng rào tần suất và nhật ký kiểm toán chỉ vào HAI IP khác nhau cho
+        # cùng một request — tệ hơn hiện trạng.
+        #
+        # Vá cùng lúc với `REST_FRAMEWORK['NUM_PROXIES']`, sau khi anh đo xong
+        # (xem `docs/VIEC_CUA_ANH.md` mục A2). Hai chỗ phải dùng CÙNG một quy
+        # ước chọn phần tử.
         return fwd.split(',')[0].strip()[:60]
     addr = request.META.get('REMOTE_ADDR')
     return addr[:60] if addr else None

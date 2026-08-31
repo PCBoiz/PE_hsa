@@ -246,7 +246,7 @@ export default function TermsClient({
           hint="Tạo đợt đầu tiên rồi gán lớp vào đó. Lớp chưa thuộc đợt nào vẫn chạy bình thường — nhãn đợt chỉ để báo cáo so sánh được giữa các mùa thi."
         />
       ) : (
-        <TableWrap>
+        <TableWrap caption="Các đợt học của trung tâm, kèm số lớp và số học viên mỗi đợt">
           <Thead>
             <tr>
               <Th>Đợt</Th>

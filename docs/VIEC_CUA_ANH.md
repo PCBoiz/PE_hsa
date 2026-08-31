@@ -63,6 +63,30 @@ tâm bị chặn.
 
 Con số đó chính là `NUM_PROXIES`. Cho tôi biết, tôi đặt vào `settings.py`.
 
+**Bổ sung 31/08/2026 — đo lại bằng chính `LoginThrottle().get_ident()`:**
+
+| kịch bản | `None` (hiện tại) | `=1` | `=2` |
+|---|---|---|---|
+| gọi THẲNG, giả XFF | khoá đổi theo header → **lọt** | **IP thật → chặn** | header điều khiển khoá → **lọt** |
+| qua proxy Vercel | IP egress Vercel | IP egress Vercel | IP egress Vercel |
+
+Ba điều rút ra:
+1. **`=1` gần như chắc chắn là con số đúng**, và nó KHÔNG làm xấu đường qua
+   Vercel (cột `=1` và cột `None` cho cùng một khoá ở dòng dưới). **Tuyệt đối
+   đừng đặt `2`** — khi đó kẻ tấn công điều khiển được khoá, tệ hơn hiện trạng.
+2. **Đường qua Vercel ĐANG gộp chung một xô rồi**, không phải hậu quả của việc
+   đặt `NUM_PROXIES`: `proxy.ts` strip `x-forwarded-for` và `fetch` của Node
+   không thêm lại, nên Django chỉ thấy IP egress của Vercel. Đây là vấn đề
+   riêng, xử sau và xử riêng.
+3. **`common/audit.py::_client_ip` lấy phần tử ĐẦU** (thứ người gọi tự đặt) —
+   ngược chiều với thứ `NUM_PROXIES=1` sẽ dùng (phần tử cuối). Tôi đã ghi cảnh
+   báo vào mã. **Hai chỗ này phải sửa CÙNG LÚC**, nếu không nhật ký kiểm toán và
+   hàng rào tần suất chỉ vào hai IP khác nhau cho cùng một request.
+
+*Vì sao vẫn cần anh đo:* mọi số liệu trên là đo ở máy — toàn bộ 32 dòng
+`admin_audit` hiện có đều là `::1`/`127.0.0.1`, chưa request production nào được
+ghi. Hình dạng chuỗi proxy thật của Render **chưa từng được đo**.
+
 *(Nếu Render không log sẵn header đó, báo tôi — tôi thêm một endpoint chẩn đoán
 tạm, chỉ quản trị viên gọi được, đo xong gỡ đi.)*
 

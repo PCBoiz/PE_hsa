@@ -21,6 +21,21 @@ from common.middleware import get_request_id
 logger = logging.getLogger(__name__)
 
 
+class PhaiDoiMatKhau(exceptions.PermissionDenied):
+    """403 riêng cho tài khoản còn cờ `must_change_password`.
+
+    VÌ SAO CẦN MỘT LỚP RIÊNG. Nhánh `PermissionDenied` ở dưới cố ý làm phẳng mọi
+    lý do thành đúng một câu "Không có quyền truy cập" — đó là chủ ý, để một câu
+    từ chối không tiết lộ vì sao bị từ chối. Nhưng ở ĐÂY thì ngược lại: người
+    dùng không những được biết lý do, mà PHẢI biết — nếu không họ gặp một bức
+    tường 403 câm ở mọi trang và không có cách nào đoán ra việc cần làm là đổi
+    mật khẩu tạm. Đây không phải bí mật gì: chính họ vừa đăng nhập bằng nó.
+
+    Kèm `mustChangePassword: true` để màn hình tự điều hướng được, thay vì bắt
+    người ta đọc chuỗi tiếng Việt rồi tự tìm đường.
+    """
+
+
 def _error_payload(status: int, message: str, detail=None) -> dict:
     payload = {'error': {'status': status, 'message': message}}
     if detail:
@@ -34,6 +49,10 @@ def api_exception_handler(exc, context):
 
     if isinstance(exc, (exceptions.NotAuthenticated, exceptions.AuthenticationFailed)):
         return Response({'error': 'Chưa đăng nhập'}, status=401)
+    # PHẢI kiểm TRƯỚC nhánh PermissionDenied chung — nó là lớp con, nên đặt
+    # sau thì không bao giờ tới lượt.
+    if isinstance(exc, PhaiDoiMatKhau):
+        return Response({'error': str(exc.detail), 'mustChangePassword': True}, status=403)
     if isinstance(exc, exceptions.PermissionDenied):
         return Response({'error': 'Không có quyền truy cập'}, status=403)
     if isinstance(exc, exceptions.Throttled):

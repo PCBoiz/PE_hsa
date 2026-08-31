@@ -16,10 +16,26 @@
  */
 
 export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
-  return fetch(path, {
+  const r = await fetch(path, {
     ...opts,
     credentials: 'same-origin', // cookie httpOnly phải đi cùng request
   });
+
+  // Tài khoản còn mật khẩu tạm → máy chủ chặn mọi đường trừ bốn đường cho phép
+  // (`accounts/authentication.py`). Đưa họ tới đúng nơi thay vì để 403 câm.
+  //
+  // `clone()` BẮT BUỘC: thân phản hồi chỉ đọc được MỘT lần, đọc ở đây là nơi
+  // gọi nhận một luồng đã cạn. Chỉ tốn thêm một lần đọc trên đúng nhánh 403.
+  if (r.status === 403 && typeof window !== 'undefined'
+      && !window.location.pathname.startsWith('/doi-mat-khau')) {
+    try {
+      const d = (await r.clone().json()) as { mustChangePassword?: boolean };
+      if (d?.mustChangePassword) window.location.href = '/doi-mat-khau';
+    } catch {
+      /* 403 vì lý do khác, thân không phải JSON — để nơi gọi tự xử */
+    }
+  }
+  return r;
 }
 
 /** Gọi và tự đọc JSON. Trả null khi lỗi — nơi gọi quyết định hiển thị gì. */

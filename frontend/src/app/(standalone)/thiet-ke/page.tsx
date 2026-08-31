@@ -173,7 +173,7 @@ export default function DesignSystemPage() {
         lớp thì làm mờ, không xoá khỏi bảng.
       </p>
       <div className="mb-10">
-        <TableWrap>
+        <TableWrap caption="Bảng mẫu của bộ component">
           <Thead>
             <tr>
               <Th>Học viên</Th>

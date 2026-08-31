@@ -198,7 +198,7 @@ export default async function NhatKyPage({
           hint="Nhật ký bắt đầu ghi từ 30/08/2026. Mọi việc trước mốc đó không có ở đây — đó chính là lý do đặc tả khuyên làm phần này sớm."
         />
       ) : (
-        <TableWrap>
+        <TableWrap caption="Nhật ký các hành động sửa dữ liệu, mới nhất trước">
           <Thead>
             <tr>
               <Th>Lúc</Th>

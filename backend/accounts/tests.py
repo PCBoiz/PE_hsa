@@ -126,3 +126,53 @@ def test_update_profile_same_email_ok(auth_api, temp_user):
                        {'name': 'Me', 'email': 'dj_self_email@example.com', 'phone': ''},
                        format='json')
     assert res.status_code == 200
+
+
+# ── Hàng rào `must_change_password` (31/08/2026) ────────────────────────────
+
+@pytest.mark.django_db
+def test_mat_khau_tam_chi_di_duoc_bon_duong(db, api):
+    """Trước 31/08/2026 cờ này chỉ được ép ở màn hình đăng nhập.
+
+    Backend không view nào đọc nó: đăng nhập cấp JWT đầy đủ, gõ thẳng URL khác
+    là dùng được cả ứng dụng mà không bao giờ đổi mật khẩu tạm — mật khẩu mà
+    trợ giảng vừa đọc to cho học viên nghe.
+    """
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    from accounts.authentication import invalidate_user_cache
+    from accounts.models import User
+    from common.db import q1
+
+    row = q1("INSERT INTO users (name, email, password, streak, must_change_password) "
+             "VALUES ('MK Tam','mk_tam_tmp@example.com','x',0,TRUE) RETURNING id")
+    u = User.objects.get(id=row['id'])
+    invalidate_user_cache(u.id)
+    # TOKEN THẬT, không `force_authenticate`: hàng rào nằm trong lớp XÁC THỰC,
+    # mà `force_authenticate` gán thẳng `request.user` và bỏ qua lớp đó — phép
+    # kiểm dùng nó sẽ luôn xanh và không kiểm được gì. (Cùng cái bẫy đã gặp với
+    # fixture `admin_api` hôm 30/08: đăng nhập sai mật khẩu vẫn ra 200.)
+    def dat_token(user):
+        api.credentials(HTTP_AUTHORIZATION='Bearer %s'
+                        % RefreshToken.for_user(user).access_token)
+
+    dat_token(u)
+
+    # Đường bị chặn — 403 chứ KHÔNG 401 (401 làm lớp refresh của frontend quay vòng)
+    r = api.get('/api/stats')
+    assert r.status_code == 403, r.status_code
+    assert 'mật khẩu tạm' in str(r.data), 'phải NÓI RA lý do, không phải 403 câm: %s' % r.data
+    assert r.data.get('mustChangePassword') is True, 'và phải máy đọc được để tự điều hướng'
+
+    # Bốn đường được phép
+    assert api.get('/api/user').status_code == 200
+    # sai mật khẩu hiện tại -> 400 (tới được view, tức KHÔNG bị hàng rào chặn)
+    assert api.put('/api/user/password',
+                   {'current_password': 'sai', 'new_password': 'MatKhauMoi123'},
+                   format='json').status_code == 400
+
+    # Gỡ cờ thì đi lại được ngay, KHÔNG phải đợi 60 giây bộ đệm
+    q1('UPDATE users SET must_change_password=FALSE WHERE id=%s RETURNING id', (u.id,))
+    invalidate_user_cache(u.id)
+    dat_token(User.objects.get(id=u.id))
+    assert api.get('/api/stats').status_code == 200

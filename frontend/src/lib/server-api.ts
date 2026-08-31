@@ -152,6 +152,18 @@ export async function serverJson<T>(path: string, opts: Options = {}): Promise<K
     docDuoc = false;
   }
 
+  // Tài khoản còn mật khẩu tạm: máy chủ chặn MỌI đường trừ bốn đường cho phép
+  // (`accounts/authentication.py`). Không đưa họ tới đúng nơi thì họ gặp một
+  // bức tường 403 ở mọi trang và không có cách nào đoán ra việc cần làm.
+  //
+  // `redirect()` nằm NGOÀI mọi khối try — Next chuyển hướng bằng cách NÉM một
+  // lỗi đặc biệt, một `catch` bắt tất sẽ nuốt mất nó (xem chú thích ở
+  // `serverFetch`). Ở đây đã ngoài try, giữ nguyên như vậy.
+  if (res.status === 403
+      && (body as { mustChangePassword?: boolean } | null)?.mustChangePassword) {
+    redirect('/doi-mat-khau');
+  }
+
   if (!res.ok) {
     return { ok: false, status: res.status, message: errorText(res.status, body) };
   }

@@ -54,6 +54,11 @@
      Hai giá trị này giữ nguyên ở cả hai theme → chữ trắng luôn ≥ 4.9:1. */
   --brand-fill: #6D5AE6;
   --brand-fill-2: #5B47D4;
+  /* NỀN xanh lá đỡ chữ trắng. Cùng lý do với --danger-fill ngay dưới: #10B981
+     là xanh dành cho CHỮ/VIỀN; dùng làm nền đỡ chữ trắng ra 2,54:1 (đo
+     31/08/2026 trên chấm chú giải bảng xếp hạng). #047857 với chữ trắng =
+     5,48:1, và giữ nguyên nhận diện xanh lá. */
+  --success-fill: #047857;
   --brand-grad: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2));
 
   /* ── Trạng thái ── */

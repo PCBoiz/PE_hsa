@@ -364,6 +364,12 @@ class PasswordView(APIView):
         x('UPDATE users SET password=%s, must_change_password=FALSE, '
           'password_changed_at=%s WHERE id=%s',
           (make_werkzeug_password(new_pw), local_now(), request.user.id))
+        # XOÁ BỘ ĐỆM NGAY. `CachedJWTAuthentication` giữ đối tượng user 60 giây,
+        # và từ 31/08/2026 nó CHẶN mọi đường khác khi cờ còn TRUE. Không xoá đệm
+        # thì em vừa đổi mật khẩu xong vẫn bị chặn thêm tối đa một phút — đúng
+        # lúc đang mừng vì vừa làm đúng.
+        from accounts.authentication import invalidate_user_cache
+        invalidate_user_cache(request.user.id)
         return Response({'ok': True})
 
 

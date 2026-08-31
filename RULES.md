@@ -180,3 +180,25 @@ npx tsc --noEmit > /tmp/tsc.log 2>&1; echo "exit=$?"; grep ... /tmp/tsc.log
 Cùng họ với §13: "CI xanh" không phải bằng chứng nếu chưa tự xác nhận bộ kiểm đã
 CHẠY. Ở đây còn tệ hơn — bộ kiểm có chạy, có báo lỗi, và tôi đã nhìn thẳng vào
 con số 0 do một lệnh khác sinh ra.
+
+---
+
+## §15 · Chú thích nói "đo được X" thì X phải do CHÍNH MÌNH đo, trên dữ liệu thật
+
+Ngày 31/08/2026 tôi chép hai con số từ báo cáo của một agent tìm lỗi vào chú
+thích `teaching/overview.py` kèm chữ *"đo 31/08/2026"* — như thể tự tay đo. Agent
+phản biện đo lại: lớp thật đi từ **13% → 11%**, không phải "11% hiện 85%"; và
+cảnh "học xuyên khoá" **không thể xảy ra** trên dữ liệu hiện có (100% sự kiện
+`kind='lesson'` đều thuộc một khoá). Bộ lọc vẫn đúng, chỉ chú thích nói dối.
+
+**Vì sao đây là lỗi nặng hơn một con số sai.** Một con số sai thì người sau đo
+lại là ra. Một chú thích tự nhận đã đo thì người sau TIN nó và KHÔNG đo lại —
+nó tắt đúng cái phản xạ mà cả tệp RULES này dựng lên.
+
+**Bắt buộc:**
+- Chữ "đo được", "đã kiểm", kèm ngày tháng, chỉ được viết cho phép đo mình tự
+  chạy và tự nhìn thấy kết quả.
+- Số của agent hay của người khác: ghi rõ nguồn, hoặc tự chạy lại rồi mới ghi.
+- Kịch bản DỰNG RA để minh hoạ (chưa xảy ra trên dữ liệu thật) phải nói thẳng
+  là "chưa đo được trên dữ liệu thật" — nó vẫn là lý do chính đáng để giữ bản
+  vá, chỉ là không được đội lốt số đo.

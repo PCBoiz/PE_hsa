@@ -54,7 +54,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1
-from teaching.attendance import dem_theo_hoc_vien
+from teaching.attendance import dem_theo_hoc_vien, ti_le
 from teaching.admin_users import any_user_filter, build_user_filters
 from common.permissions import IsAdminRole, IsTeacherOrAdmin, can_see_class
 from teaching import reports
@@ -443,10 +443,18 @@ class ClassAttendanceCsvView(APIView):
                 # hẳn "Vắng". Lấp trống bằng "Vắng" là vu cho học viên một buổi
                 # nghỉ mà giảng viên chỉ đơn giản là chưa tick.
                 row.append(ATTENDANCE_LABELS.get(status, status or ''))
-                if status in counts:
+                # Buổi ĐÃ HUỬ KHÔNG cộng vào bất kỳ ô nào — nhãn vẫn in ở trên
+                # để đối chiếu, nhưng không vào tổng.
+                #
+                # Đây chính là luật mà `teaching/attendance.py` mở đầu bằng câu
+                # "nay chỉ còn một luật, ở một chỗ". `_absence_counts` đã đi qua
+                # cửa đó từ hôm trước, bảng chéo này thì chưa — nên hai file xuất
+                # từ CÙNG một màn hình nói hai con số khác nhau về cùng một em.
+                # Đo 31/08/2026: `progress.csv` "vắng 0 buổi" cạnh
+                # `diem-danh.csv` "vắng 1, chuyên cần 75%" — buổi vắng đó đã huỷ.
+                if status in counts and s['status'] != 'cancelled':
                     counts[status] += 1
-                    if s['status'] != 'cancelled':
-                        marked_held += 1
+                    marked_held += 1
             row += [counts[k] for k in ATTENDANCE_ORDER]
             row.append(max(0, len(held) - marked_held))
             row.append(self._rate(counts))
@@ -498,24 +506,13 @@ class ClassAttendanceCsvView(APIView):
 
     @staticmethod
     def _rate(counts):
-        """Tỉ lệ chuyên cần = (có mặt + muộn) / số buổi ĐÃ ĐIỂM DANH.
+        """Tỉ lệ chuyên cần. Công thức nằm ở `attendance.ti_le` — xem giải thích ở đó.
 
-        Mẫu số chỉ đếm buổi đã tick, không đếm buổi giảng viên chưa điểm danh:
-        tính buổi chưa tick thành vắng sẽ kéo tỉ lệ của cả lớp xuống vì lý do
-        hành chính, và con số đó lại đi vào báo cáo phụ huynh.
-
-        "Có phép" NẰM TRONG mẫu số: nghỉ có phép vẫn là một buổi học em không có
-        mặt, và cột này đo mức độ có mặt chứ không phải mức độ ngoan. Lý do nghỉ
-        đã có cột "Có phép" ngay bên cạnh nói hộ.
-
-        Chưa điểm danh buổi nào → ô TRỐNG chứ không phải 0%: "chưa có dữ liệu"
-        và "không đi buổi nào" là hai chuyện khác nhau (cùng luật với
-        ``common.events.pct``).
+        Ô TRỐNG khi chưa có dòng nào (hàm kia trả None): trong một ô CSV thì ô
+        trống mới là cách viết "chưa có dữ liệu", chứ không phải chữ "None".
         """
-        marked = sum(counts.values())
-        if not marked:
-            return ''
-        return round((counts['present'] + counts['late']) * 100 / marked)
+        r = ti_le(counts['present'] + counts['late'], sum(counts.values()))
+        return '' if r is None else r
 
 
 # ── 3. Danh sách tài khoản ──────────────────────────────────────────────────

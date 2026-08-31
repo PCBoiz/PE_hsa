@@ -208,7 +208,7 @@ export default async function TongQuanPage({
             title="So sánh theo đợt"
             hint={`Giữ chân từ ${nguong.good}% trở lên là khoẻ; dưới ${nguong.alarm}% là dấu hiệu hỏng ở khâu đón học viên, chất lượng dạy hoặc học phí.`}
           />
-          <TableWrap>
+          <TableWrap caption="So sánh các đợt học: giữ chân, chuyên cần và điểm thi thử">
             <Thead>
               <tr>
                 <Th>Đợt</Th>
@@ -257,7 +257,7 @@ export default async function TongQuanPage({
             hint="Tạo lớp ở khu Nội dung & lớp, rồi xếp học viên vào. Số liệu ở đây tự có khi lớp bắt đầu học."
           />
         ) : (
-          <TableWrap>
+          <TableWrap caption="Từng lớp của trung tâm: sĩ số, buổi đã dạy, chuyên cần, tiến độ, điểm thi thử">
             <Thead>
               <tr>
                 <Th>Lớp</Th>

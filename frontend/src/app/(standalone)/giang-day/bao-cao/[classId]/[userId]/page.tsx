@@ -27,6 +27,8 @@ type BaoCao = {
     late: number;
     absent: number;
     excused: number;
+    /** Buổi CẢ LỚP đã tick nhưng em này KHÔNG có dòng nào — giảng viên sót. */
+    noRecord: number;
     attendedPct: number | null;
   };
   study: {
@@ -159,9 +161,14 @@ export default async function BaoCaoPhuHuynhPage({
           ) : (
             <>
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {/* Mẫu số PHẢI là số buổi em ấy có dòng, khớp với `attendedPct`
+                    (công thức ở `attendance.ti_le`). Ghi `sessionsCounted` ở đây
+                    trong khi phần trăm tính trên một mẫu số khác là hai con số
+                    cạnh nhau không chia ra nhau được — người đọc tự nhân chia
+                    rồi kết luận tờ giấy sai. */}
                 <O
                   nhan="Có mặt"
-                  so={`${coMat}/${cc.sessionsCounted}`}
+                  so={`${coMat}/${cc.sessionsCounted - cc.noRecord}`}
                   phu={cc.attendedPct !== null ? `${cc.attendedPct}% số buổi` : undefined}
                 />
                 <O nhan="Đi muộn" so={String(cc.late)} phu="đã tính vào có mặt" />
@@ -174,6 +181,17 @@ export default async function BaoCaoPhuHuynhPage({
                 <p className="mt-2 text-small text-ink-3">
                   Còn {cc.sessionsUnmarked} buổi trong kỳ chưa được điểm danh nên không tính vào
                   các con số trên.
+                </p>
+              )}
+              {/* Khoảng trống KHÁC hẳn ở trên: buổi đó lớp ĐÃ được điểm danh,
+                  chỉ riêng em này bị sót. Không nói ra thì bốn ô cộng lại không
+                  bằng số buổi, và người đọc tưởng tờ giấy tính sai — trong khi
+                  cái sai nằm ở sổ điểm danh. */}
+              {cc.noRecord > 0 && (
+                <p className="mt-1 text-small text-warning-ink">
+                  {cc.noRecord} buổi đã điểm danh nhưng không có dòng nào cho em — giảng viên
+                  ghi sót. Những buổi đó không được tính vào tỉ lệ trên; đề nghị bổ sung để
+                  con số này đầy đủ.
                 </p>
               )}
             </>

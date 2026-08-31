@@ -27,7 +27,7 @@ export default async function BaiTapPage({
   const { classId } = await params;
   const [detail, list] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
-    serverJson<{ assignments: Assignment[] }>(
+    serverJson<{ assignments: Assignment[]; topics: string[] }>(
       `/api/teach/classes/${classId}/assignments`,
       { requireAuth: true },
     ),
@@ -75,6 +75,7 @@ export default async function BaiTapPage({
           classId={Number(classId)}
           className={klass.name}
           initial={list.ok ? list.data.assignments : []}
+          topics={list.ok ? (list.data.topics ?? []) : []}
           // KHÔNG nuốt lỗi bằng `initial={ok ? … : []}`. Danh sách rỗng vì chưa
           // có bài, và danh sách rỗng vì không đọc được, trông y hệt nhau — và
           // ở trường hợp thứ hai giảng viên sẽ giao lại một bài đã có.

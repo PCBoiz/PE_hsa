@@ -33,6 +33,35 @@ def _menh_de(alias='s'):
         alias, ', '.join("'%s'" % t for t in KHONG_TINH))
 
 
+def ti_le(co_mat, co_dong):
+    """Tỉ lệ chuyên cần = (có mặt + muộn) / số buổi EM ẤY CÓ DÒNG điểm danh.
+
+    Nơi DUY NHẤT định nghĩa công thức này. Trước 31/08/2026 có HAI mẫu số chạy
+    song song: sổ điểm danh CSV chia cho số buổi EM có dòng, tờ báo cáo gửi phụ
+    huynh chia cho số buổi CẢ LỚP được tick. Đo được trên cùng một em: CSV nói
+    100%, tờ giấy nói 67% — và tờ giấy là thứ đi ra khỏi hệ thống, về tận nhà.
+
+    CHỌN MẪU SỐ "SỐ BUỔI EM ẤY CÓ DÒNG". Giảng viên tick cả lớp mà sót một em
+    thì đó là lỗi hành chính của người lớn; chia em ấy cho mẫu số lớn hơn là
+    biến lỗi đó thành hạnh kiểm của em, in ra giấy, gửi về nhà, không ai ở đó
+    đính chính được.
+
+    Khoảng trống ấy KHÔNG bị giấu đi — nó được báo RIÊNG (`noRecord` ở báo cáo
+    phụ huynh, cột "Chưa điểm danh" ở sổ CSV), để người đọc biết tờ giấy này
+    thiếu bao nhiêu buổi thay vì lặng lẽ chia cho một con số khác.
+
+    "Có phép" NẰM TRONG mẫu số: nghỉ có phép vẫn là một buổi em không có mặt, và
+    con số này đo mức độ CÓ MẮT chứ không đo mức độ ngoan. Lý do nghỉ đã có ô
+    "Có phép" ngay bên cạnh nói hộ.
+
+    Chưa có dòng nào → `None`, KHÔNG phải 0: "chưa có dữ liệu" và "không đi buổi
+    nào" là hai chuyện khác nhau (cùng luật với `common.events.pct`).
+    """
+    if not co_dong:
+        return None
+    return round(co_mat * 100 / co_dong)
+
+
 def dem_theo_hoc_vien(class_id, uids):
     """Chuyên cần luỹ kế của từng học viên trong MỘT lớp. Trả ``(dict, ok)``.
 

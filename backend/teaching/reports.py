@@ -77,13 +77,37 @@ def _class_row(class_id):
 
 
 def _members(class_id):
-    """Danh sách HỌC VIÊN của lớp — xem `vocab.chi_hoc_vien` để biết vì sao lọc."""
-    return q('''SELECT m.user_id, m.joined_at, m.left_at, m.note,
-                       u.name, u.email, u.streak, u.last_study_date, u.xp
-                FROM class_members m
-                JOIN users u ON u.id = m.user_id
-                WHERE m.class_id = %s AND ''' + chi_hoc_vien('u') + '''
-                ORDER BY u.name''', (class_id,))
+    """Danh sách HỌC VIÊN của lớp, MỖI EM MỘT DÒNG.
+
+    Xem `vocab.chi_hoc_vien` để biết vì sao lọc theo vai trò.
+
+    VÌ SAO PHẢI GỘP. Từ §36, một cặp (lớp, người) có thể có NHIỀU dòng
+    `class_members`: chỉ mục duy nhất `idx_class_members_dang_hoc` là chỉ mục
+    MỘT PHẦN (`WHERE left_at IS NULL`), nên em rời lớp rồi quay lại sinh dòng
+    mới — đúng như thiết kế, để giữ được lịch sử từng lượt học.
+
+    Hàm này thì chưa sửa theo, và hậu quả đo được ngày 31/08/2026 với một em
+    quay lại lớp cũ: sổ điểm danh CSV in HAI dòng cùng tên (ai cộng tay thì
+    nhân đôi số buổi vắng), `summary.left = 1` trong khi không ai rời lớp, và
+    mẫu số của bản đồ năng lực lớp thành 3 cho một lớp có 2 con người — chính
+    con số đó nuôi `weakestTopics` mà giảng viên dùng để chọn chủ đề ôn lại.
+
+    Lượt được giữ là lượt ĐANG HỌC nếu có (`left_at IS NOT NULL` xếp sau vì
+    FALSE < TRUE), nếu không thì lượt gần nhất. `luot` đếm tổng số lượt để
+    `enrolledEver` giữ đúng nghĩa "số LƯỢT ghi danh" — hai khái niệm khác nhau
+    thì phải là hai con số khác nhau, không phải một cái tên mang hai nghĩa.
+    """
+    return q('''SELECT * FROM (
+                    SELECT DISTINCT ON (u.id)
+                           m.user_id, m.joined_at, m.left_at, m.note,
+                           u.name, u.email, u.streak, u.last_study_date, u.xp,
+                           COUNT(*) OVER (PARTITION BY u.id) AS luot
+                    FROM class_members m
+                    JOIN users u ON u.id = m.user_id
+                    WHERE m.class_id = %s AND ''' + chi_hoc_vien('u') + '''
+                    ORDER BY u.id, m.left_at IS NOT NULL, m.joined_at DESC
+                ) t
+                ORDER BY name''', (class_id,))
 
 
 def _dem_khong_phai_hoc_vien(class_id):
@@ -210,7 +234,14 @@ def _mocks_by_user(uids):
                 FROM learning_events
                 WHERE user_id = ANY(%s) AND kind = %s
                   AND max_score IS NOT NULL AND max_score > 0
-                ORDER BY occurred_at''', (list(uids), KIND_MOCK)) if uids else []
+                -- `, id` là tie-breaker BẮT BUỘC. `mockTrend` lấy hiệu hai phần
+                -- tử CUỐI, và ngưỡng cảnh báo là `<= -8` — nên hai dòng cùng
+                -- `occurred_at` mà Postgres trả theo thứ tự khác nhau là DẤU
+                -- của xu hướng lật ngược. Dựng lại được: hai lượt thi cùng mốc
+                -- giờ cho ra +60 rồi -60 chỉ sau một câu UPDATE không liên quan.
+                -- `parent_report._hoc_tap` đã vá đúng chỗ này; đường này thì
+                -- chưa — đúng lớp lỗi "vá một nơi, quên nơi kia".
+                ORDER BY occurred_at, id''', (list(uids), KIND_MOCK)) if uids else []
     out = {}
     for r in rows:
         pct = round(float(r['score'] or 0) * 100.0 / float(r['max_score']))
@@ -238,6 +269,16 @@ def _lag_by_user(uids):
                           AND lp.status = 'completed'
                     WHERE p.user_id = ANY(%s) AND i.kind = 'lesson'
                       AND i.status <> 'skipped' AND i.week_start < %s
+                      -- `l.id IS NOT NULL`: mục trỏ tới một bài KHÔNG CÒN TỒN
+                      -- TẠI thì `l` NULL, kéo theo `lp` NULL, và điều kiện ngay
+                      -- dưới tính nó thành QUÁ HẠN. Học viên không có cách nào
+                      -- hoàn thành một mục như thế, nên nó ở lại trong "chậm N
+                      -- bài" vĩnh viễn.
+                      -- Chưa nổ hôm nay (0 mục lesson mồ côi) nhưng đường sinh
+                      -- ra nó có thật: quản trị viên xoá bài, hoặc chỉ cần đổi
+                      -- `sort_order` — mà §26 ghi rõ TopHSA sẽ soạn lại giáo
+                      -- trình. Ngày đó cả lớp cùng lúc vượt ngưỡng LAG_ITEMS=5.
+                      AND l.id IS NOT NULL
                       AND lp.user_id IS NULL
                     GROUP BY p.user_id''', (list(uids), monday))
     except DatabaseError:
@@ -420,7 +461,11 @@ def class_report(class_id):
             # tách hai khái niệm ra thay vì để một cái tên mang hai nghĩa.
             'students': len(active),
             'active': len(active),
-            'enrolledEver': len(students),
+            # `len(students)` nay là SỐ NGƯỜI (mỗi em một dòng), nên số LƯỢT ghi
+            # danh phải cộng riêng từ `luot`. Trước bản vá hai con số này tình cờ
+            # bằng nhau vì mỗi lượt là một dòng — và đó chính là lý do chúng bị
+            # nhập làm một.
+            'enrolledEver': sum(m.get('luot') or 1 for m in members),
             'left': len(students) - len(active),
             # Tài khoản đang ở trong lớp nhưng KHÔNG phải học viên (quản trị
             # viên vào xem, giảng viên phụ, tài khoản kiểm thử). Chúng bị loại

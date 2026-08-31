@@ -1066,19 +1066,37 @@ function toggleEnroll(courseId, isEnrolled) {
 }
 
 var pendingUnenrollId = null;
+/* Nơi tiêu điểm đứng trước khi mở hộp, và hàm tháo bẫy tiêu điểm.
+   Bẫy dùng chung `window.bayTieuDiem` định nghĩa ở dashboard.js — cùng luật thì
+   phải cùng một bản, không viết lại lần thứ hai ở đây. */
+var _unTruocDo = null;
+var _unThaoBay = null;
 
 function unenroll(courseId, courseTitle) {
   pendingUnenrollId = courseId;
   document.getElementById("unenroll-course-name").textContent =
     '"' + courseTitle + '"';
-  document.getElementById("unenrollModal").classList.add("active");
+  var modal = document.getElementById("unenrollModal");
+  _unTruocDo = document.activeElement;
+  modal.classList.add("active");
   document.body.style.overflow = "hidden";
+  if (_unThaoBay) _unThaoBay();
+  /* Kiểm sự tồn tại: main.js còn được nạp ở trang không có dashboard.js. Thiếu
+     bẫy thì hộp vẫn dùng được, chỉ là kém tiếp cận — đó là thoái lui đúng
+     hướng, khác hẳn với ném lỗi và chặn luôn việc huỷ ghi danh. */
+  if (typeof window.bayTieuDiem === "function")
+    _unThaoBay = window.bayTieuDiem(modal);
+  var dau = modal.querySelector("button, a[href], [tabindex]:not([tabindex='-1'])");
+  if (dau) setTimeout(function () { dau.focus(); }, 50);
 }
 
 function closeUnenrollModal() {
   document.getElementById("unenrollModal").classList.remove("active");
   document.body.style.overflow = "";
   pendingUnenrollId = null;
+  if (_unThaoBay) { _unThaoBay(); _unThaoBay = null; }
+  if (_unTruocDo && typeof _unTruocDo.focus === "function") _unTruocDo.focus();
+  _unTruocDo = null;
 }
 
 function handleUnenrollOverlayClick(e) {

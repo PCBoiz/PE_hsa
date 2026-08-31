@@ -38,8 +38,7 @@ from teaching.vocab import chi_hoc_vien
 #: mất thời gian, và một bài soạn dở mà học viên đã thấy thì họ hỏi ngay.
 ASSIGNMENT_STATUS = ('draft', 'open', 'closed')
 
-TEXT_FIELDS = {'title': 200, 'description': 4000, 'topic': 120,
-               'attachment_url': 400}
+TEXT_FIELDS = {'title': 200, 'description': 4000, 'attachment_url': 400}
 
 #: Trần số bài chấm trong MỘT lần gửi. Khác trần 50 của nhập tài khoản (chỗ đó
 #: bị chặn bởi chi phí băm mật khẩu): ở đây mỗi bài chỉ là một dòng UPDATE, nên
@@ -48,6 +47,30 @@ TEXT_FIELDS = {'title': 200, 'description': 4000, 'topic': 120,
 MAX_GRADE_PER_BATCH = 200
 
 _NOT_FOUND = {'error': 'Không tìm thấy bài tập này.'}
+
+
+def chu_de_cua_lop(class_id):
+    """Danh mục chủ đề hợp lệ cho một lớp: `lessons.module` của khoá lớp đang dạy.
+
+    VÌ SAO KHÔNG ĐỂ GÕ TỰ DO. Bản đầu của mô-đun này nhận `topic` là văn bản
+    120 ký tự bất kỳ. Nhưng bản đồ năng lực của HỌC VIÊN
+    (`stats/competency.py`) dựng ô từ `lessons.module`, còn bản đồ của GIẢNG VIÊN
+    (`teaching/reports.py`) dựng ô từ chính `topic` của sự kiện — hai nguồn khác
+    nhau, trước nay luôn khớp vì `topic` do hệ thống sinh ra.
+
+    Đo 31/08/2026: giao hai bài gắn chủ đề "Doc hieu" (thiếu dấu) rồi hai bài
+    "Đọc hiểu" (đúng dấu) → bản đồ của giảng viên hiện HAI ô cho cùng một chủ
+    đề (16% và 49%), còn bản đồ của em thì không có ô nào. Một dấu tiếng Việt
+    gõ thiếu là đủ — và không màn hình nào báo gì.
+
+    Nên chọn từ danh mục chứ không gõ. Để trống vẫn được (điểm vào sổ, không vào
+    bản đồ) — nhưng đã gắn thì phải gắn vào một ô có thật.
+    """
+    return [r['module'] for r in q(
+        """SELECT DISTINCT l.module
+             FROM lessons l JOIN classes c ON c.course_id = l.course_id
+             WHERE c.id = %s AND l.module IS NOT NULL AND l.module <> ''
+             ORDER BY l.module""", (class_id,))]
 
 
 def _so(raw):
@@ -60,7 +83,7 @@ def _so(raw):
         return None
 
 
-def _clean(body):
+def _clean(body, class_id):
     """Body → (dict cột CSDL, lỗi). Chỉ lấy trường thật sự được gửi.
 
     Dùng chung cho POST và PATCH: hai đường kiểm riêng thì sớm muộn tạo được thứ
@@ -75,6 +98,17 @@ def _clean(body):
             raw = body[field]
             val = (str(raw).strip() or None) if raw is not None else None
             data[field] = val[:limit] if val else None
+
+    if 'topic' in body:
+        raw = body['topic']
+        tp = (str(raw).strip() or None) if raw is not None else None
+        if tp is not None:
+            hop_le = chu_de_cua_lop(class_id)
+            if tp not in hop_le:
+                return None, ('Chủ đề phải chọn từ danh mục của khoá lớp đang học. '
+                              'Hợp lệ: %s. Để trống nếu bài này không thuộc chủ đề nào.'
+                              % (', '.join(hop_le) or '(khoá này chưa chia chủ đề)'))
+        data['topic'] = tp
 
     if 'course_id' in body:
         cid = (str(body['course_id']).strip() or None) if body['course_id'] is not None else None
@@ -124,8 +158,14 @@ def _dict(r):
         if k in r:
             out[k] = r[k] or 0
     # Con số giảng viên hỏi mỗi tối: "còn mấy bài chưa chấm".
-    if 'submitted' in r and 'graded' in r:
-        out['ungraded'] = max(0, (r['submitted'] or 0) - (r['graded'] or 0))
+    #
+    # Đếm bằng MỘT phép đếm riêng, KHÔNG lấy `submitted - graded`. Hai tập ấy
+    # không lồng nhau: chấm điểm cố ý không đụng `submitted_at` (giảng viên chấm
+    # bài nộp trên giấy), nên 5 em nộp online (3 đã chấm) + 2 em chấm giấy ra
+    # `submitted=5, graded=5` → hiệu bằng 0, trong khi còn đúng 2 bài chưa chấm.
+    # Một con số nói "đã chấm hết" khi chưa chấm hết là con số tệ hơn không có.
+    if 'ungraded' in r:
+        out['ungraded'] = r['ungraded'] or 0
     return out
 
 
@@ -157,7 +197,9 @@ class ClassAssignmentsView(APIView):
         # bài là đúng cái N+1 mà module này cấm — một lớp 20 bài là 40 lượt Neon.
         rows = q('''SELECT a.*,
                            COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL) AS submitted,
-                           COUNT(s.user_id) FILTER (WHERE s.graded_at IS NOT NULL)    AS graded
+                           COUNT(s.user_id) FILTER (WHERE s.graded_at IS NOT NULL)    AS graded,
+                           COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL
+                                                     AND s.graded_at IS NULL)         AS ungraded
                     FROM assignments a
                     LEFT JOIN submissions s ON s.assignment_id = a.id
                     WHERE a.class_id = %s
@@ -170,13 +212,17 @@ class ClassAssignmentsView(APIView):
         return Response({
             'assignments': [dict(_dict(r), members=si_so) for r in rows],
             'statuses': list(ASSIGNMENT_STATUS),
+            # Danh mục chủ đề gửi kèm để màn hình vẽ ô CHỬN thay vì ô gõ — xem
+            # `chu_de_cua_lop`. Gửi từ máy chủ chứ không viết cứng ở màn hình: danh
+            # mục này đổi theo giáo trình, mà giáo trình thì TopHSA sẽ soạn lại.
+            'topics': chu_de_cua_lop(class_id),
         })
 
     def post(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
-        data, err = _clean(body)
+        data, err = _clean(body, class_id)
         if err:
             return Response({'error': err}, status=400)
         if not data.get('title'):
@@ -209,7 +255,7 @@ class AssignmentDetailView(APIView):
         if not before:
             return Response(_NOT_FOUND, status=404)
         body = request.data if isinstance(request.data, dict) else {}
-        data, err = _clean(body)
+        data, err = _clean(body, before['class_id'])
         if err:
             return Response({'error': err}, status=400)
         if not data:

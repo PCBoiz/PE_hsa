@@ -996,3 +996,80 @@ T57–T64 trong `TODO.md` — đã đọc mã xác nhận là thật, chưa vá 
 `X-Forwarded-For` ở mục A2 — giả header thì 60 lần liên tiếp KHÔNG lần nào bị
 chặn, cùng bộ đó với IP cố định thì dính 429 ở lần 101. Vẫn cần anh đo
 `NUM_PROXIES` thật trên production trước khi tôi đặt.
+
+
+---
+
+## 31/08/2026 (tiếp) — đợt phản biện: agent thứ ba kiểm lại hai agent kia VÀ tôi
+
+Mẫu "Gộp" anh chốt: hai agent tìm lỗi chạy song song, agent thứ ba phản biện lại
+cả hai báo cáo **và** cả sáu bản vá tôi vừa áp.
+
+### Nó xác nhận
+
+6/6 bản vá chạy đúng như tuyên bố, không sinh lỗi mới — kể cả chỗ tôi nghi nhất
+(`hong_hoc_tap` trả `None` rồi cuộn lên cấp đợt). Nhưng nó chỉ ra chỗ đó an toàn
+nhờ một **bất biến ngầm** (`common/db.q()` trả list đã vật chất hoá nên
+`DatabaseError` bay ra trước khi gán được dòng nào), không phải nhờ một hàng rào
+— tức người sau đổi `q()` thành generator là nổ.
+
+Cũng xác nhận quyết định "KHÔNG áp bộ lọc khoá cho đề thi thử" không chỉ hợp lý
+mà **bắt buộc**: mọi dòng `kind='mock'` trên CSDL đều có `course_id` NULL, áp bộ
+lọc là `mockAvg` của mọi lớp về 0 ngay lập tức.
+
+### Nó bắt được lỗi của CHÍNH TÔI — và đó là lỗi nặng nhất phiên này
+
+Tôi chép hai con số từ báo cáo của agent tìm lỗi vào chú thích `overview.py`
+**kèm chữ "đo 31/08/2026"**, như thể tự tay đo. Đo lại: lớp thật đi từ 13% → 11%
+(không phải "11% hiện 85%"), và cảnh "học xuyên khoá" **không thể xảy ra** trên
+dữ liệu hiện có — 100% sự kiện `kind='lesson'` đều thuộc một khoá.
+
+Bộ lọc vẫn đúng và giữ nguyên. Nhưng một chú thích tự nhận đã đo thì người sau
+TIN nó và không đo lại — nó tắt đúng cái phản xạ mà cả tệp RULES dựng lên. Đã
+sửa chú thích cho khớp số đo thật, ghi RULES §15, và lưu vào memory.
+
+### Vá tiếp sau phản biện
+
+| # | Việc | Bằng chứng |
+|---|---|---|
+| T59 | `reports._members` đếm một em thành hai (em quay lại lớp cũ) | test ĐỎ trên mã cũ: 3 dòng cho 2 người |
+| T57+T58 | Ba màn hình, ba mẫu số chuyên cần | công thức về một chỗ `attendance.ti_le`; test dựng cảnh giảng viên tick sót một em |
+| C-mới | `assignments.topic` gõ tự do — bẫy tôi tự tạo hôm nay | "Doc hieu" + "Đọc hiểu" = hai ô trên bản đồ giảng viên, không ô nào bên học viên → ràng vào `lessons.module`, màn hình đổi thành ô CHỌN |
+| T61+T63 | Mục kế hoạch mồ côi tính là "chậm"; `ORDER BY` thiếu tie-breaker | cả hai chưa nổ hôm nay, đường kích hoạt có thật |
+| T64 | `must_change_password` chỉ ép ở lớp vẽ | hàng rào vào LỚP XÁC THỰC + xoá đệm user + 403 nói ra lý do + tự điều hướng |
+| C5/C7 | `GRADED_KINDS` chết; "còn mấy bài chưa chấm" đếm hụt | rà repo: 3 lần xuất hiện, cả 3 trong chính tệp đó |
+
+### Nó cũng nói hai agent kia sai ở đâu
+
+- Mục "mẫu số báo cáo phụ huynh" bị gọi là LỖI, nhưng docstring ghi rõ đó là
+  đánh đổi có chủ ý (bốn ô cộng lại bằng mẫu số). Vá theo lời agent kia là **phá
+  bất biến đó để đổi lấy một con số dễ nhìn hơn**. Tôi làm cách khác: đổi mẫu số
+  của RIÊNG tỉ lệ, giữ nguyên `noRecord` trong tổng — cả hai bất biến cùng đúng.
+- Bằng chứng giả mạo `X-Forwarded-For` đo trên **localhost**, không phải
+  production (toàn bộ 32 dòng `admin_audit` đều là `::1`/`127.0.0.1`). Cơ chế
+  hở là thật, nhưng câu "hàng rào không chặn gì cả" chỉ đúng cho đường gọi
+  THẲNG vào Render. Đã ghi lại đúng như vậy trong `VIEC_CUA_ANH.md`.
+- Và một lỗ **cả hai agent kia bỏ sót**: `_client_ip` lấy phần tử ĐẦU của
+  `X-Forwarded-For` — thứ người gọi tự đặt. Cột `ip` của nhật ký kiểm toán giả
+  mạo được, ở đúng chỗ sinh ra để làm bằng chứng. Chưa vá vì đúng vị trí phụ
+  thuộc `NUM_PROXIES` mà con số đó chưa đo trên production; đã ghi cảnh báo vào
+  mã để hai chỗ được sửa cùng lúc.
+
+### Tiếp cận được bằng bàn phím (T53)
+
+- Quét lại tương phản trên `/dashboard`: **113 phần tử đo được, 12 chỗ dưới
+  ngưỡng ở bộ sáng và 6 ở bộ tối → nay 0/0.** Con số 0 chỉ có nghĩa khi biết mẫu
+  số, nên phép quét in luôn số phần tử đã đo và số bỏ qua. 9-10 chỗ trên nền
+  gradient đo riêng bằng pixel: tất cả đều đạt.
+- Nguyên nhân chung của gần hết: **hex viết cứng đi vòng qua token đã được vá**.
+  `--t3` đã nâng cho đạt 4,5:1 từ trước, nhưng `.lb-meta` viết `#94A3B8`; token
+  họ `-light`/`--accent` là màu dành cho CHỮ lại bị đem làm NỀN đỡ chữ trắng.
+  Thêm `--success-fill` theo đúng lối `--danger-fill` đã có.
+- Hộp đổi mật khẩu: nhãn 3,17:1 → 15,11:1 (làm tối tấm kính, không làm sáng
+  chữ); thêm bẫy tiêu điểm và trả tiêu điểm về chỗ cũ khi đóng.
+
+### Còn nợ
+
+T60 (kỳ in trên giấy ≠ kỳ dùng để tính), T62 (hai nơi đếm "chậm" — cần chốt MỘT
+nguồn trước khi sửa), T65 (`meeting_url` không kiểm lược đồ, chưa khai thác
+được), T66 (`_client_ip`, chờ A2).

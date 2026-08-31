@@ -46,7 +46,17 @@ KIND_ATTENDANCE = 'attendance'
 #: chứng DUY NHẤT có một con người đọc bài rồi mới cho điểm.
 KIND_ASSIGNMENT = 'assignment'
 
-#: Sự kiện có chấm điểm — nguồn của mọi phép tính năng lực.
+#: Sự kiện có chấm điểm.
+#:
+#: KHÔNG PHẢI nguồn của phép tính năng lực — chú thích cũ ở đây nói vậy và nói
+#: sai. Nguồn thật là `stats/competency.KIND_TO_SOURCE`; hằng số này không được
+#: mô-đun nào import (rà toàn bộ repo 31/08/2026: ba lần xuất hiện, cả ba nằm
+#: trong chính tệp này). Thêm một `kind` vào đây KHÔNG có tác dụng gì.
+#:
+#: Giữ lại làm TỪ VUNG — nơi trả lời "loại nào có điểm" bằng một dòng đọc
+#: được — nhưng chú thích phải nói đúng nó đang điều khiển cái gì (là: không gì
+#: cả). Một hằng số nói dối về tầm ảnh hưởng của mình nguy hiểm hơn một hằng
+#: số không tồn tại: người sau thêm `kind` mới vào đây rồi tưởng đã xong việc.
 GRADED_KINDS = (KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ, KIND_MOCK,
                 KIND_MOCK_SECTION, KIND_ASSIGNMENT)
 

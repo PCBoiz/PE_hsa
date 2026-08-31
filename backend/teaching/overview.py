@@ -159,14 +159,19 @@ def tong_quan(term_id=None):
             #
             #  · `m.left_at IS NULL` — mẫu số nhân với `dang_hoc`, nên tử số cũng
             #    chỉ được tính người ĐANG học. Thiếu vế này thì lớp càng nhiều em
-            #    bỏ học trông càng tiến độ tốt (đo 31/08/2026: lớp thật 11% hiện
-            #    85%), và điểm thi thử của người đã bỏ học từ nhiều tháng trước vẫn
-            #    kéo trung bình cả đợt xuống.
+            #    bỏ học trông càng tiến độ tốt, và điểm thi thử của người đã bỏ học
+            #    từ nhiều tháng trước vẫn kéo trung bình cả đợt xuống.
+            #    Đo trên lớp thật duy nhất (31/08/2026): bản cũ 13% → bản mới 11%,
+            #    chính là 1 bài của một em đã rời lớp. Độ lệch nhỏ vì lớp đó mới có
+            #    một người rời; nó lớn dần theo đúng tỷ lệ bỏ học.
             #
             #  · `e.course_id = c.course_id` cho phép đếm BÀI — mẫu số là tổng số
             #    bài của KHOÁ mà lớp đang dạy, nên bài em ấy tự học ở khoá khác
-            #    không được cộng vào. Thiếu vế này thì một em ôn Định lượng nhưng
-            #    học thêm Định tính đẩy lớp lên 93% trong khi tiến độ thật là 7%.
+            #    không được cộng vào.
+            #    CHƯA ĐO ĐƯỢC trên dữ liệu thật: hiện 100% sự kiện `kind='lesson'`
+            #    đều thuộc `hsa_quantitative`, nên chưa có bài xuyên khoá nào để lệch.
+            #    Giữ bộ lọc vì mẫu số ĐÃ bó theo khoá — tử số không bó là sai ngay
+            #    ngày TopHSA mở khoá thứ hai cho cùng một học viên.
             #
             # KHÔNG áp bộ lọc khoá cho ĐỀ THI THỬ: một lượt thi thử là bài thi cả
             # ba hợp phần HSA, không thuộc riêng khoá nào.

@@ -3077,14 +3077,14 @@ body.dark .lb-tabs { background: var(--bg); border-color: var(--card-border); }
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 12px; font-weight: 600;
-  color: #6B7280; cursor: pointer;
+  color: var(--t3); cursor: pointer;
   transition: background 0.18s, color 0.18s;
   white-space: nowrap;
 }
 .lb-tab:hover { color: #1F2937; }
 .lb-tab.active {
   background: #fff;
-  color: #2D7FC1;
+  color: var(--brand-ink);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 body.dark .lb-tab { color: #94A3B8; }
@@ -3096,10 +3096,13 @@ body.dark .lb-tab.active {
 }
 
 .lb-meta {
-  font-size: 12px; color: #94A3B8;
+  /* `var(--t3)` chứ không phải #94A3B8: token đó ĐÃ được nâng cho đạt 4,5:1 ở
+     cả hai bộ màu, còn hex viết cứng ở đây thì không hưởng bản vá ấy. Đo được
+     2,56:1 (sáng) và 3,93:1 (tối) trước khi đổi. */
+  font-size: 12px; color: var(--t3);
   margin: 4px 0 10px; font-weight: 500;
 }
-body.dark .lb-meta { color: #64748B; }
+/* Không cần bản riêng cho bộ tối nữa — `--t3` tự đổi theo bộ màu. */
 
 .lb-list {
   list-style: none; margin: 0; padding: 0;
@@ -3184,11 +3187,11 @@ body.dark .lb-value { color: #CBD5E1; }
 }
 body.dark .lb-me { border-top-color: var(--card-border); }
 .lb-me-label {
-  font-size: 10px; font-weight: 700; color: #94A3B8;
+  font-size: 10px; font-weight: 700; color: var(--t3);
   text-transform: uppercase; letter-spacing: 0.06em;
   margin: 6px 0 4px;
 }
-body.dark .lb-me-label { color: #64748B; }
+/* Không cần bản riêng cho bộ tối nữa — xem `.lb-meta`. */
 
 /* ════════════════════════════════════════════════════════════
    ★ MINI ROADMAP CANVAS (cột phải dashboard)
@@ -3199,7 +3202,7 @@ body.dark .lb-me-label { color: #64748B; }
   gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
 }
 .mini-rm-more {
-  font-size: 12px; color: #2D7FC1; text-decoration: none; font-weight: 600;
+  font-size: 12px; color: var(--brand-ink); text-decoration: none; font-weight: 600;
   transition: color 0.15s;
 }
 .mini-rm-more:hover { color: #1D4ED8; text-decoration: underline; }
@@ -3341,14 +3344,18 @@ body.dark .lb-legend-item { color: #94A3B8; }
   font-size: 10px; font-weight: 700;
   flex-shrink: 0;
 }
+/* NỀN đỡ chữ trắng thì dùng token `-fill`, KHÔNG dùng `--accent`/`--success`.
+   Hai họ token đó là màu dành cho CHỮ trên nền, và ở bộ tối chúng còn được làm
+   SÁNG LÊN có chủ đích — tức càng tệ khi bị đem ra làm nền. Đo trước khi đổi:
+   ✓ trắng trên #10B981 = 2,54:1 · ◐ trắng trên --accent bộ tối = 3,33:1. */
 .lb-legend-dot.lb-done {
-  background: #10B981; color: #fff;
+  background: var(--success-fill); color: #fff;
 }
 .lb-legend-dot.lb-progress {
-  background: var(--accent); color: #fff;
+  background: var(--brand-fill); color: #fff;
 }
 .lb-legend-dot.lb-locked {
-  background: #F3F4F6; color: #9CA3AF; border: 1.5px solid #E5E7EB;
+  background: #F3F4F6; color: var(--t3); border: 1.5px solid #E5E7EB;
 }
 body.dark .lb-legend-dot.lb-locked { background: var(--card); border-color: var(--card-border); }
 
@@ -3364,7 +3371,7 @@ body.dark .lb-legend-dot.lb-locked { background: var(--card); border-color: var(
 .mini-rm-empty-cta {
   margin-top: 4px;
   padding: 6px 14px; border-radius: 8px;
-  background: var(--accent); color: #fff;
+  background: var(--brand-fill); color: #fff;
   border: none; font-weight: 600; cursor: pointer;
   font-size: 12px; text-decoration: none;
 }
@@ -3797,7 +3804,7 @@ body.dark .prof-post-stats {
   background: var(--lift); border: 1px solid transparent;
 }
 .hsa-week span.is-done { background: var(--brand-2); color: #04211E; border-color: transparent; }
-.hsa-week span.is-today { border-color: var(--accent); color: var(--accent); }
+.hsa-week span.is-today { border-color: var(--accent); color: var(--brand-ink); }
 
 /* Cột trái của lưới chính */
 .dash-col-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -3823,7 +3830,7 @@ body.dark .prof-post-stats {
 .hsa-cont-meta { font-size: 12px; color: var(--t3); }
 .hsa-cont-go {
   flex-shrink: 0; padding: 9px 16px; border-radius: 9px; border: none;
-  background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+  background: var(--brand-fill); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
 }
 .hsa-cont-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; }
 .hsa-cont-empty b { color: var(--t1); font-size: 15px; }
@@ -3831,7 +3838,7 @@ body.dark .prof-post-stats {
 .hsa-cont-ic { flex-shrink: 0; color: var(--accent); opacity: .9; }
 .hsa-cont-btn {
   margin-left: auto; flex-shrink: 0; padding: 9px 16px; border-radius: 9px; border: none;
-  background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+  background: var(--brand-fill); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
 }
 
 /* Tiến độ 3 hợp phần */
@@ -3994,7 +4001,11 @@ body.dark .fpc-lesson-tag:hover { color: #fff; }
   display: inline-flex; align-items: center;
 }
 .hsa-weak-btn:hover { filter: brightness(1.08); }
-.hsa-weak-btn.is-ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+/* Chữ nhỏ trên nền pha: dùng `--brand-ink`/`--t3` (bản dành cho CHỮ trên nền
+   SÁNG) thay vì `--brand`/`--accent` hay hex viết cứng. Đo 31/08/2026, tất cả
+   đều 4,2–4,4:1 — dưới ngưỡng AA 4,5 đúng một chút, tức loại lỗi không ai
+   nhìn ra bằng mắt mà vẫn làm chữ khó đọc với người mắt kém. */
+.hsa-weak-btn.is-ghost { background: transparent; color: var(--brand-ink); border: 1px solid var(--brand); }
 
 body.dark .hsa-weak-row       { --lv: #A9A2B8; --lv-bg: rgba(255, 255, 255, .04); }
 body.dark .hsa-weak-row.is-l4 { --lv: #34D3B5; --lv-bg: rgba(52, 211, 181, .10); }
@@ -4208,7 +4219,7 @@ body.dark .jr-bar.is-noaim .jr-bar-track {
   font-size: 12.5px; font-weight: 600; color: #16121F;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pl-meta { font-size: 10.5px; color: #7A7289; }
+.pl-meta { font-size: 10.5px; color: var(--t3); }
 .pl-why  { font-size: 10.5px; color: #8A4C06; }
 
 .pl-item.is-done { opacity: .55; }

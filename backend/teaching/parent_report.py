@@ -34,6 +34,7 @@ from common.clock import local_now, local_today
 from common.db import q, q1
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats import competency
+from teaching.attendance import ti_le
 from teaching.vocab import chi_hoc_vien, trang_thai
 
 #: Kỳ báo cáo mặc định. Bốn tuần vì trung tâm gửi báo cáo theo tháng, và một
@@ -151,8 +152,16 @@ def _chuyen_can(class_id, user_id, tu, den, vao_lop=None, roi_lop=None):
         'excused': dem['excused'],
         # Buổi đã tick nhưng KHÔNG có dòng nào cho riêng em này.
         'noRecord': khong_co_dong,
-        # None chứ không 0 khi chưa buổi nào được điểm danh — xem ranh giới 3.
-        'attendedPct': (round(co_mat * 100 / len(da_tick)) if da_tick else None),
+        # MẪU SỐ là số buổi EM ẤY CÓ DÒNG, không phải số buổi cả lớp được
+        # tick — công thức ở `attendance.ti_le`, dùng chung với sổ điểm danh CSV.
+        #
+        # Bản đầu chia cho `len(da_tick)`: giảng viên tick cả lớp mà sót một em
+        # thì em đi đủ 2/2 buổi có dòng vẫn ra 50% trên tờ giấy gửi về nhà.
+        #
+        # BẤT BIẾN BỐN Ô VẪN GIỮ: present + late + absent + excused + noRecord
+        # = sessionsCounted. Đổi mẫu số của RIÊNG tỉ lệ chứ không bỏ `noRecord` —
+        # khoảng trống phải được nói ra, chỉ là không được tính vào mẫu số.
+        'attendedPct': ti_le(co_mat, co_dong),
     }
 
 
