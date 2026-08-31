@@ -707,7 +707,17 @@ dòng cùng tên; `summary.left = 1` trong khi không ai rời lớp; bản đ�
 của lớp bị kéo lệch (40% thay vì 50%) — và chính con số đó nuôi `weakestTopics`
 mà giảng viên dùng để chọn chủ đề ôn lại.
 
-### [ ] T60 · Kỳ in trên giấy ≠ kỳ dùng để tính, khi em học lại lớp cũ
+### [x] T60 (XONG) · Kỳ in trên giấy ≠ kỳ dùng để tính, khi em học lại lớp cũ
+> Vá 01/09/2026: `parent_report` lấy TẤT CẢ các đợt (`class_members`) chứ không
+> `LIMIT 1`, và chuyên cần bó theo HỢP của các đợt — buổi trong quãng nghỉ vẫn
+> bị loại. Khối `membership` nay lấy ngày vào của đợt ĐẦU, ngày rời để trống
+> nếu còn đợt đang mở, và thêm `stints` để tờ giấy nói được vì sao hai mốc ấy
+> không liền một mạch.
+>
+> Test hồi quy đi qua VIEW thật, ĐỎ trên mã cũ với đúng con số của cảnh này:
+> `sessionsCounted 1, present 0` — tức phụ huynh nhận tờ giấy ghi 0% trong khi
+> em có mặt đủ hai buổi của đợt trước. Hiện 0 cặp (lớp, em) có nhiều đợt, nên
+> đây là lỗi TIỀM ẨN — nhưng nó in ra giấy gửi về nhà.
 `teaching/parent_report.py` ~248 lấy MỘT lượt học (`LIMIT 1`) để bó chuyên cần,
 nhưng `_hoc_tap` dùng trọn kỳ và `period` in ra cũng là trọn kỳ. Em học 01–20/08
 rồi quay lại 28/08: giấy in "học 5 bài, làm 2 đề, điểm đang lên" cạnh "chuyên
@@ -738,13 +748,23 @@ thích; `reports.py` thì không. Chưa tái hiện được lật dấu trên b
 thứ tự vẫn là không xác định theo hợp đồng SQL. Sửa: thêm `, id` — một token,
 khoá vĩnh viễn một lớp lỗi không có đường tái hiện.
 
-### [ ] T64 · `must_change_password` chỉ ép ở frontend
+### [x] T64 (XONG) · `must_change_password` chỉ ép ở frontend
+> Kiểm lại 01/09/2026: hàng rào nằm ở LỚP XÁC THỰC
+> (`accounts/authentication.py::CachedJWTAuthentication`) với danh sách trắng
+> `CHO_PHEP_KHI_PHAI_DOI_MK` so khớp CHÍNH XÁC (không so tiền tố). Đặt ở lớp xác
+> thực chứ không ở `DEFAULT_PERMISSION_CLASSES` vì view khai
+> `permission_classes` riêng sẽ ghi đè danh sách mặc định.
 Backend không view nào từ chối khi cờ còn TRUE: tài khoản mật khẩu tạm gọi
 thẳng `GET /api/user`, `GET /api/stats` đều 200. Trợ giảng biết mật khẩu tạm
 (vừa đọc cho học viên) dùng được toàn quyền tài khoản trong cửa sổ trước khi em
 đổi. Hẹp về thời gian nên xếp sau, nhưng nó là hàng rào chỉ tồn tại ở lớp vẽ.
 
-### [ ] T65 · `meeting_url` không kiểm lược đồ — chưa khai thác được, nhưng hàng rào là tình cờ
+### [x] T65 (XONG) · `meeting_url` không kiểm lược đồ
+> Vá 01/09/2026: danh sách trắng lược đồ ở ĐẦU VÀO (`_clean_class_payload`),
+> chỉ `https://` và `http://`. Chặn ở đầu vào chứ không ở chỗ hiển thị: chỗ
+> hiển thị có thể mọc thêm (bản in, email nhắc lịch, ứng dụng di động), còn
+> đường ghi thì chỉ có một. Test phủ `javascript:`, `JavaScript:`, `data:`,
+> `vbscript:` và một link Google Meet thật — ĐỎ trên mã cũ (nhận 201).
 `teaching/views.py:_clean_class_payload` nhận `meeting_url` là chuỗi bất kỳ; nơi
 duy nhất đổ nó vào `href` là `dashboard.js:3979`, và `escHtml` chỉ thoát HTML —
 `javascript:alert(1)` đi qua nguyên vẹn.
@@ -806,7 +826,10 @@ Cả hai agent tìm lỗi đều bỏ sót. Phần tử đầu là thứ ngườ
 **Không sửa mù**: đúng vị trí phụ thuộc `NUM_PROXIES`, mà con số đó chưa đo trên
 production. Đã ghi cảnh báo vào mã; vá CÙNG LÚC với A2 trong `VIEC_CUA_ANH.md`.
 
-### [ ] T62 (thay cho bản cũ) · Hai nơi đếm "chậm" — nguyên nhân SÂU HƠN đã nghĩ
+### [x] T62 (XONG) · Hai nơi đếm "chậm" — nguyên nhân SÂU HƠN đã nghĩ
+> Kiểm lại 01/09/2026: `teaching/reports.py::_lag_by_user` ỦY QUYỀN cho
+> `stats.plan.do_cham_theo_hoc_vien`. Không viết lại SQL cho giống được vì phép
+> suy "mục nào đã xong" CÓ TRẠNG THÁI.
 Không chỉ khác bộ lọc `kind`. Hai bên còn hỏi hai BẢNG khác nhau để biết "bài
 này xong chưa": `stats/plan._done_lookup` đọc `learning_events` (`meta.lessonNo`),
 `teaching/reports._lag_by_user` đọc `lesson_progress` JOIN `lessons.sort_order`.
@@ -814,7 +837,7 @@ Hôm nay chúng tình cờ khớp. Một dòng lệch giữa hai bảng là hai 
 không ai giải thích được. Đo thật hôm nay: uid 12 — học viên thấy **14**, giảng
 viên thấy **12**. Cần chốt MỘT nguồn trước khi sửa.
 
-### [ ] T60 (giữ nguyên) · Kỳ in trên giấy ≠ kỳ dùng để tính
+### [x] T60 (XONG) · Kỳ in trên giấy ≠ kỳ dùng để tính
 Đã xác nhận lại: `period` in "01/01–31/12", ô học tập đếm trọn năm, ô chuyên cần
 chỉ đếm 2 trong 4 buổi vì bị bó theo một lượt học.
 
@@ -947,7 +970,12 @@ sẫm) — kiểu nội tuyến thắng mọi luật CSS nên `body.dark` không
 **1,6:1 → 5,28:1**, và `style` nội tuyến nay là `null`. `.lb-row-me .lb-name`
 /`.lb-value`: 4,38 → 5,36.
 
-### [ ] T67 · Đặt lại mật khẩu KHÔNG thu hồi token cũ
+### [x] T67 (XONG) · Đặt lại mật khẩu KHÔNG thu hồi token cũ
+> Kiểm lại 01/09/2026: `teaching/views.py` đặt `tokens_valid_from`, gọi
+> `_thu_hoi_refresh(user_id)` và `invalidate_user_cache(user_id)`. Ba thứ, vì
+> mỗi thứ bịt một lỗ khác nhau: danh sách đen chỉ chặn được REFRESH token
+> (access token kiểm bằng chữ ký, sống nốt 30 phút), còn bộ đệm user 60 giây
+> khiến hàng rào chậm một phút.
 Cờ và bộ đệm nay xử đúng, nhưng refresh token cấp trước đó vẫn sống. Nên "đặt
 lại mật khẩu" mới chỉ chặn được lần ĐĂNG NHẬP sau, chưa cắt phiên đang mở —
 đúng cảnh trợ giảng dùng nó để đuổi người đang chiếm tài khoản. Cần đưa token

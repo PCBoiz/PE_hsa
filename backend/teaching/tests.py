@@ -791,3 +791,83 @@ def test_do_cham_giang_vien_va_hoc_vien_KHOP_nhau(db):
     with CaptureQueriesContext(connection) as ctx:
         plan.do_cham_theo_hoc_vien(uids)
     assert len(ctx.captured_queries) <= 3, len(ctx.captured_queries)
+
+
+@pytest.mark.django_db
+def test_hoc_lai_lop_cu__chuyen_can_tinh_CA_HAI_dot(db):
+    """T60 · Kỳ in trên giấy phải khớp kỳ dùng để tính.
+
+    Một em có thể ở lớp NHIỀU ĐỢT (rời rồi học lại). Bản cũ lấy đúng MỘT đợt
+    (`LIMIT 1`, ưu tiên đợt đang mở) để bó chuyên cần, trong khi phần học tập và
+    dòng "Kỳ báo cáo" in ra dùng TRỌN kỳ. Hệ quả trên tờ giấy gửi về nhà: "học 5
+    bài, làm 2 đề, điểm đang lên" nằm ngay cạnh "chuyên cần 0%".
+    """
+    from datetime import timedelta
+    from teaching.parent_report import ParentReportView
+    gv = _nguoi('GV Hoc Lai', ROLE_TEACHER)
+    em = _nguoi('HV Hoc Lai', ROLE_STUDENT)
+    c = q1("INSERT INTO classes (name, course_id, teacher_id, status) "
+           "VALUES ('Lop hoc lai','hsa_quantitative',%s,'active') RETURNING id", (gv.id,))
+    cid = c['id']
+    nay = local_now()
+    # Đợt 1: ngày -20 → -10 (đã rời). Đợt 2: từ ngày -5, còn đang học.
+    q1('INSERT INTO class_members (class_id, user_id, joined_at, left_at, leave_reason) '
+       'VALUES (%s,%s,%s,%s,%s) RETURNING id',
+       (cid, em.id, nay - timedelta(days=20), nay - timedelta(days=10), 'transferred'))
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+       'RETURNING id', (cid, em.id, nay - timedelta(days=5)))
+
+    # Bốn buổi ĐÃ điểm danh: hai buổi trong đợt 1, một buổi trong QUÃNG NGHỈ,
+    # một buổi trong đợt 2.
+    buoi = []
+    for d in (18, 15, 8, 3):
+        r = q1("INSERT INTO class_sessions (class_id, starts_at, status, "
+               "attendance_taken_at, created_by) VALUES (%s,%s,'planned',%s,%s) "
+               "RETURNING id", (cid, nay - timedelta(days=d), nay, gv.id))
+        buoi.append(r['id'])
+    # Em có mặt cả hai buổi của đợt 1; buổi đợt 2 giảng viên chưa tick riêng em.
+    for sid in (buoi[0], buoi[1]):
+        q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+           'VALUES (%s,%s,%s,%s,%s) RETURNING session_id', (sid, em.id, 'present', nay, gv.id))
+
+    req = f.get('/api/teach/classes/%d/report/%d?from=%s&to=%s'
+                % (cid, em.id, (nay - timedelta(days=30)).date(), nay.date()))
+    force_authenticate(req, user=gv)
+    ra = ParentReportView.as_view()(req, class_id=cid, user_id=em.id)
+    assert ra.status_code == 200, ra.data
+    cc = ra.data['attendance']
+
+    # Buổi trong QUÃNG NGHỈ vẫn phải bị loại — đó là bộ lọc số 2 đang giữ.
+    assert cc['sessionsCounted'] == 3, (
+        'mẫu số phải là HỢP của hai đợt (3 buổi), không phải một đợt: %s' % cc)
+    assert cc['present'] == 2, (
+        'chuyên cần chỉ đếm đợt đang mở nên hai buổi có mặt của đợt trước biến '
+        'mất, trong khi phần học tập vẫn in trọn kỳ: %s' % cc)
+    assert ra.data['membership']['stints'] == 2, ra.data['membership']
+
+
+@pytest.mark.django_db
+def test_link_hop_khong_nhan_lieu_do_javascript(db):
+    """T65 · Lược đồ `meeting_url` chặn ở ĐẦU VÀO.
+
+    Đo 31/08/2026: hiện chưa khai thác được, vì nơi duy nhất đổ nó vào `href` có
+    `target="_blank"` và Chromium chặn điều hướng `javascript:` khi mở tab mới.
+    Nhưng hàng rào ấy là một thuộc tính đặt vào vì lý do KHÁC HẲN — ai bỏ nó đi
+    để sửa một chuyện về bố cục sẽ mở lại lỗ này mà không hề biết.
+    """
+    from teaching.views import AdminClassesView
+    ad = _nguoi('AD Link Hop', 'admin')
+    for xau in ('javascript:alert(1)', 'JavaScript:alert(1)', 'data:text/html,<b>x',
+                'vbscript:msgbox(1)'):
+        req = f.post('/api/admin/classes',
+                     {'name': 'Lop link', 'meeting_url': xau}, format='json')
+        force_authenticate(req, user=ad)
+        ra = AdminClassesView.as_view()(req)
+        assert ra.status_code == 400, '%r được nhận: %s' % (xau, ra.data)
+
+    req = f.post('/api/admin/classes',
+                 {'name': 'Lop link that', 'meeting_url': 'https://meet.google.com/abc-defg-hij'},
+                 format='json')
+    force_authenticate(req, user=ad)
+    ra = AdminClassesView.as_view()(req)
+    assert ra.status_code in (200, 201), ('link họp thật phải qua được: %s' % ra.data)

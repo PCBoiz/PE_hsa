@@ -2251,3 +2251,25 @@ hint" mà cả hai đều `?`. Sửa bằng cách ÉP Ở KIỂU chứ không h�
 `tsc` xanh trên cả 11 chỗ đang dùng, và đã kiểm nó ĐỎ được.
 
 Còn 28 mục mở trong TODO.
+
+## 01/09/2026 (tiếp) · T60, T65 vá thật; T62, T64, T67 hoá ra đã xong
+
+Rà tiếp năm mục. **Ba trong năm đã được vá từ trước** mà tiêu đề vẫn ghi mở —
+T64 (hàng rào `must_change_password` nằm ở lớp XÁC THỰC, đúng chỗ để view khai
+`permission_classes` riêng không đi vòng được), T67 (`tokens_valid_from` +
+danh sách đen refresh + xoá đệm — ba thứ vì mỗi thứ bịt một lỗ khác), T62
+(`reports._lag_by_user` ủy quyền cho `stats.plan`).
+
+**T60 vá thật.** Báo cáo gửi phụ huynh lấy MỘT đợt học (`LIMIT 1`) để bó chuyên
+cần trong khi phần học tập và dòng "Kỳ báo cáo" dùng trọn kỳ. Em học rồi nghỉ
+rồi quay lại sẽ nhận tờ giấy ghi "học 5 bài, điểm đang lên" ngay cạnh "chuyên
+cần 0%". Nay bó theo HỢP các đợt (buổi trong quãng nghỉ vẫn loại), và thêm
+`stints` để tờ giấy nói được vì sao ngày vào/ngày rời không liền một mạch.
+Test đi qua view thật, ĐỎ trên mã cũ đúng con số của cảnh ấy.
+
+**T65 vá thật.** Lược đồ `meeting_url` chặn ở ĐẦU VÀO. Đo hôm 31/08 thì chưa
+khai thác được — nhưng hàng rào duy nhất đang giữ chỗ đó là `target="_blank"`,
+một thuộc tính đặt vào vì lý do khác hẳn. Ai bỏ nó đi để sửa bố cục sẽ mở lại lỗ
+mà không biết.
+
+48 phép kiểm `teaching/` xanh. Còn 22 mục mở.

@@ -152,6 +152,21 @@ def _clean_class_payload(body):
             # chữ "None".
             val = (str(body[field]).strip() or None) if body[field] is not None else None
             data[field] = val[:limit] if val else None
+    # Lược đồ của `meeting_url` phải nằm trong danh sách trắng.
+    #
+    # Đo 31/08/2026: hiện KHÔNG khai thác được — nơi duy nhất đổ nó vào `href`
+    # có `target="_blank"`, và Chromium CHẶN điều hướng `javascript:` khi mở tab
+    # mới. Bỏ `target` ra thì chạy. Tức hàng rào duy nhất đang giữ chỗ này là
+    # một thuộc tính đặt vào vì lý do KHÁC HẲN (mở link họp ở tab mới), và ai
+    # bỏ nó đi để sửa một chuyện về bố cục sẽ mở lại lỗ này mà không hề biết.
+    #
+    # Chặn ở ĐẦU VÀO chứ không ở chỗ hiển thị: chỗ hiển thị có thể mọc thêm
+    # (bản in, email nhắc lịch, ứng dụng di động), còn đường ghi thì chỉ có đây.
+    if data.get('meeting_url'):
+        u = data['meeting_url']
+        if not u.lower().startswith(('https://', 'http://')):
+            return None, ('Link họp phải bắt đầu bằng https:// hoặc http:// '
+                          '(đang nhận: "%s").' % u[:40])
     for field in CLASS_DATE_FIELDS:
         if field in body:
             from stats.goals import as_date

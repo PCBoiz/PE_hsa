@@ -79,7 +79,7 @@ def _khoang_ngay(request):
     return tu, den, (ok1 and ok2), dao
 
 
-def _chuyen_can(class_id, user_id, tu, den, vao_lop=None, roi_lop=None):
+def _chuyen_can(class_id, user_id, tu, den, cac_dot=()):
     """Chuyên cần trong kỳ. Mẫu số là số buổi CHÍNH EM ẤY có thể dự.
 
     ── Ba bộ lọc, mỗi cái vá một cách buộc tội sai ──────────────────────────
@@ -87,7 +87,7 @@ def _chuyen_can(class_id, user_id, tu, den, vao_lop=None, roi_lop=None):
     1. **Chỉ buổi ĐÃ điểm danh** (`attendance_taken_at`). Buổi giảng viên quên
        tick mà đem chia vào mẫu số sẽ thành "con vắng" trong mắt phụ huynh.
 
-    2. **Chỉ buổi TRONG THỜI GIAN EM Ở LỚP** (`vao_lop`..`roi_lop`). Đây là lỗi
+    2. **Chỉ buổi TRONG THỜI GIAN EM Ở LỚP** (`cac_dot`). Đây là lỗi
        đo được ngày 31/08/2026 và là lỗi nặng nhất của tệp này: mẫu số lấy mọi
        buổi CỦA LỚP, nên em vào lớp giữa đợt bị tính vắng cho những buổi diễn ra
        trước khi em ghi danh. Kịch bản đã dựng lại: lớp 4 buổi, em dự 2 buổi
@@ -110,13 +110,27 @@ def _chuyen_can(class_id, user_id, tu, den, vao_lop=None, roi_lop=None):
     dieu_kien = ["s.class_id = %s", "s.starts_at::date BETWEEN %s AND %s"]
     args = [class_id, tu, den]
 
-    # Buổi diễn ra TRƯỚC khi em vào lớp không phải buổi của em.
-    if vao_lop:
-        dieu_kien.append('s.starts_at >= %s')
-        args.append(vao_lop)
-    if roi_lop:
-        dieu_kien.append('s.starts_at <= %s')
-        args.append(roi_lop)
+    # Buổi diễn ra TRƯỚC khi em vào lớp không phải buổi của em — và một em có
+    # thể ở lớp NHIỀU ĐỢT (rời rồi học lại). Bản cũ lấy đúng MỘT đợt
+    # (`LIMIT 1`, ưu tiên đợt đang mở) để bó chuyên cần, trong khi phần học tập
+    # và dòng "Kỳ báo cáo" in ra dùng TRỌN kỳ. Em học 01–20/08 rồi quay lại
+    # 28/08 sẽ nhận tờ giấy ghi "học 5 bài, làm 2 đề, điểm đang lên" ngay cạnh
+    # "chuyên cần 0%" — hai nửa của cùng một tờ giấy nói hai chuyện khác nhau,
+    # và người đọc sẽ không tin nửa nào.
+    #
+    # Hợp của các đợt, không phải một đợt. `cac_dot` rỗng = không giới hạn.
+    khoang = []
+    for vao, roi in cac_dot:
+        ve = []
+        if vao:
+            ve.append('s.starts_at >= %s')
+            args.append(vao)
+        if roi:
+            ve.append('s.starts_at <= %s')
+            args.append(roi)
+        khoang.append('(' + ' AND '.join(ve) + ')' if ve else 'TRUE')
+    if khoang:
+        dieu_kien.append('(' + ' OR '.join(khoang) + ')')
 
     buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at '
              'FROM class_sessions s WHERE ' + ' AND '.join(dieu_kien), tuple(args))
@@ -254,15 +268,25 @@ class ParentReportView(APIView):
         # chốt giữ), nên thiếu bộ lọc này thì giảng viên in được "báo cáo gửi
         # phụ huynh" cho chính tài khoản quản trị — kèm email và số điện thoại
         # của nó. Đo 31/08/2026: HTTP 200, trả về admin@pe-hsa.vn.
-        thanh_vien = q1('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
-                           FROM class_members m
-                           JOIN users u ON u.id = m.user_id
-                           WHERE m.class_id = %s AND m.user_id = %s
-                             AND ''' + chi_hoc_vien('u') + '''
-                           ORDER BY m.left_at IS NOT NULL, m.joined_at DESC
-                           LIMIT 1''', (class_id, user_id))
-        if not thanh_vien:
+        # TẤT CẢ các đợt, không phải một. Xem chú thích trong `_chuyen_can`.
+        cac_dot = q('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
+                       FROM class_members m
+                       JOIN users u ON u.id = m.user_id
+                       WHERE m.class_id = %s AND m.user_id = %s
+                         AND ''' + chi_hoc_vien('u') + '''
+                       ORDER BY m.joined_at''', (class_id, user_id))
+        if not cac_dot:
             return Response({'error': 'Không có học viên này trong lớp.'}, status=404)
+        # Đợt MỚI NHẤT quyết định trạng thái và ghi chú hiện tại; ngày vào lấy
+        # đợt đầu, ngày rời để trống nếu còn đợt nào đang mở.
+        moi_nhat = max(cac_dot, key=lambda d: (d['left_at'] is None, d['joined_at']))
+        thanh_vien = {
+            'joined_at': cac_dot[0]['joined_at'],
+            'left_at': None if any(d['left_at'] is None for d in cac_dot)
+                       else max(d['left_at'] for d in cac_dot),
+            'leave_reason': moi_nhat['leave_reason'],
+            'note': moi_nhat['note'],
+        }
 
         lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
                  (class_id,))
@@ -295,12 +319,15 @@ class ParentReportView(APIView):
                 # Ghi chú của giảng viên VỀ lớp/em này — khác hẳn nhật ký em tự
                 # ghi (xem ranh giới 1). Cái này viết ra để người khác đọc.
                 'teacherNote': thanh_vien['note'],
+                # Số ĐỢT em ở lớp. In ra khi > 1 để người đọc hiểu vì sao ngày
+                # vào và ngày rời không liền một mạch.
+                'stints': len(cac_dot),
             },
             'period': {'from': tu.isoformat(), 'to': den.isoformat(),
                        'weeks': DEFAULT_WEEKS},
             'attendance': _chuyen_can(class_id, user_id, tu, den,
-                                      vao_lop=thanh_vien['joined_at'],
-                                      roi_lop=thanh_vien['left_at']),
+                                      cac_dot=[(d['joined_at'], d['left_at'])
+                                               for d in cac_dot]),
             'study': _hoc_tap(user_id, tu, den),
             'topics': _chu_de(user_id),
             'warnings': canh_bao,
