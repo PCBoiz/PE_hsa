@@ -2174,3 +2174,27 @@ như nền — vừa đẻ ra một vi phạm 1:1 không có thật, vừa CHE m
 
 Nay: sáng 0 · tối 0, mỗi lượt đều chạy `--tu-kiem` ngay trước khi lấy số.
 Còn nợ: trạng thái rê chuột / lấy nét / vô hiệu.
+
+## 01/09/2026 (tiếp) · Trạng thái rê chuột — và ba lỗi bộ đo nữa
+
+Đo được trạng thái `:hover`/`:focus` phải trả giá bằng ba lỗi nữa trong bộ đo
+(thành mười hai). Đáng nhớ nhất là lỗi thứ mười: từ Chrome 112, CSS Nesting làm
+MỌI `CSSStyleRule` đều có thuộc tính `cssRules` — rỗng, nhưng tồn tại — nên
+`if (r.cssRules) { đệ quy; continue; }` nuốt sạch luật thường. 371 luật quét
+được, 0 luật chứa `:hover`, và bộ đo báo "0 lỗi rê chuột" vĩnh viễn.
+
+Lỗi thứ mười một dạy một điều về CSS tôi chưa biết: **giá trị đang chuyển tiếp
+thắng cả `!important` nội tuyến**. Ép màu xong đọc ngay thì được màu CŨ.
+
+Lỗi thứ mười hai là lỗi thiết kế: ép KHAI BÁO của một luật `:hover` là bỏ qua
+tầng xếp lớp, nên bản vá đã có vẫn bị báo là lỗi. Nay dùng CDP
+`CSS.forcePseudoState` — để chính trình duyệt giải tầng xếp lớp.
+
+Tự kiểm bằng đúng con lỗi tôi đã tìm bằng MẮT sáng nay: lùi bản vá
+`body.light .nav-next:hover` → bộ đo báo ĐỎ 1,14:1 đúng chỗ; phục hồi → xanh.
+
+Hai lỗi thật ở bản tối, kiểu mà đo tĩnh không thể thấy: chữ phụ ĐẠT lúc đứng yên
+rồi TRƯỢT xuống 4,1:1 lúc rê chuột, vì nền nâng `#293548` quá sáng.
+
+Bốn chiều × hai chủ đề × hai khổ × 11 trang: **tất cả 0**, trừ một vùng chạm cố
+ý giữ. Cả hai chủ đề đều chạy `--tu-kiem` ngay trước khi lấy số.

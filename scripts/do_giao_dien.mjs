@@ -57,17 +57,36 @@ const TRANG = [
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét
    vào template literal — chuỗi lồng chuỗi là chỗ dấu gạch chéo bị nuốt. */
-function DO_TRONG_TRANG() {
+function DO_TRONG_TRANG(do_trang_thai) {
   const SO = /[0-9.]+/g;
 
+  /* Giải mã màu bằng CHÍNH trình duyệt, không tự viết bộ đổi không gian màu.
+     `color-mix(in oklab, ...)` tính ra `oklab(0.958 0.004 -0.0099 / 0.6)` — một
+     màu rất SÁNG — nhưng đọc số thô thì ra [0.958, 0.004, 0.0099] (dấu trừ còn
+     bị nuốt) và hoá thành gần ĐEN: 29 vi phạm 1,05:1 không có thật ở bảng quản
+     trị. Canvas nhận mọi cú pháp CSS Color 4, kể cả cú pháp sinh sau bản này. */
+  const _cv = document.createElement('canvas');
+  _cv.width = 1; _cv.height = 1;
+  const _ctx = _cv.getContext('2d', { willReadFrequently: true });
+  _ctx.globalCompositeOperation = 'copy';
+  const qua_canvas = (s) => {
+    /* Gán một giá trị KHÔNG hợp lệ vào `fillStyle` thì trình duyệt lặng lẽ giữ
+       giá trị cũ. Thử hai mồi khác nhau: khớp nhau nghĩa là chuỗi phân giải
+       được, khác nhau nghĩa là cả hai lần đều giữ mồi cũ. */
+    _ctx.fillStyle = '#000000'; _ctx.fillStyle = s; const a = _ctx.fillStyle;
+    _ctx.fillStyle = '#ffffff'; _ctx.fillStyle = s; const b = _ctx.fillStyle;
+    if (a !== b) return [];
+    _ctx.fillRect(0, 0, 1, 1);
+    const d = _ctx.getImageData(0, 0, 1, 1).data;
+    return d[3] === 255 ? [d[0], d[1], d[2]] : [d[0], d[1], d[2], d[3] / 255];
+  };
+
   const doc_mau = (s) => {
-    const so = (String(s).match(SO) || []).slice(0, 4).map(Number);
-    // `color(srgb 1 1 1 / .95)` — CSS Color 4, thành phần 0–1, không phải 0–255.
-    if (String(s).trim().slice(0, 6).toLowerCase() === 'color(') {
-      const r = so.slice(0, 3).map((v) => Math.round(v * 255));
-      return so.length > 3 ? [r[0], r[1], r[2], so[3]] : r;
-    }
-    return so;
+    const t = String(s).trim();
+    const dau = t.slice(0, 4).toLowerCase();
+    // Đường nhanh cho hai cú pháp chiếm gần hết số lần gọi.
+    if (dau === 'rgb(' || dau === 'rgba') return (t.match(SO) || []).slice(0, 4).map(Number);
+    return qua_canvas(t);
   };
 
   const sang = (rgb) => {
@@ -146,18 +165,21 @@ function DO_TRONG_TRANG() {
     return p.join('>');
   };
 
-  const vi_pham = [];
-  for (const el of document.querySelectorAll('body *')) {
-    if (!hien(el)) continue;
-    /* Chỉ xét nút có chữ TRỰC TIẾP, và bỏ nút chỉ chứa biểu tượng cảm xúc:
-       emoji là ảnh nhiều màu do phông màu vẽ, `color` không quyết định pixel
-       nào của nó — đo tương phản trên "📘" là đo một con số vô nghĩa. */
-    let chu_that = '';
-    for (const nd of el.childNodes) if (nd.nodeType === 3) chu_that += nd.textContent;
-    chu_that = chu_that.trim();
-    if (chu_that.length < 2) continue;
-    if (!/[\p{L}\p{N}]/u.test(chu_that.replace(/\p{Extended_Pictographic}/gu, ''))) continue;
+  /* Điều kiện "nút này có chữ đáng đo": có chữ TRỰC TIẾP, và không phải chỉ
+     biểu tượng cảm xúc — emoji là ảnh nhiều màu do phông màu vẽ, `color` không
+     quyết định pixel nào của nó. */
+  const co_chu = (el) => {
+    let t = '';
+    for (const nd of el.childNodes) if (nd.nodeType === 3) t += nd.textContent;
+    t = t.trim();
+    if (t.length < 2) return false;
+    return /[\p{L}\p{N}]/u.test(t.replace(/\p{Extended_Pictographic}/gu, ''));
+  };
 
+  /* Tương phản của MỘT nút, theo đúng trạng thái đang có trên trang lúc gọi.
+     Tách ra hàm riêng để lượt đo trạng thái tương tác dùng lại y hệt bộ quy
+     tắc — hai bộ quy tắc song song là hai bộ sẽ lệch nhau. */
+  const do_el = (el) => {
     const cs = getComputedStyle(el);
     const clip = cs.webkitBackgroundClip || cs.backgroundClip;
     const fill = String(cs.webkitTextFillColor || '');
@@ -178,15 +200,20 @@ function DO_TRONG_TRANG() {
 
     let xau_nhat = Infinity;
     for (const fg of truoc) for (const bg of sau) xau_nhat = Math.min(xau_nhat, tp(fg, bg));
-    if (!isFinite(xau_nhat)) continue;
+    if (!isFinite(xau_nhat)) return null;
 
     const co = parseFloat(cs.fontSize);
     const dam = (parseInt(cs.fontWeight, 10) || 400) >= 700;
     const lon = co >= 24 || (co >= 18.66 && dam);
-    const nguong = lon ? 3 : 4.5;
-    if (xau_nhat < nguong) {
-      vi_pham.push({ duong: duong(el), tp: Math.round(xau_nhat * 100) / 100, nguong,
-        co: Math.round(co), chu: el.textContent.trim().slice(0, 40) });
+    return { tp: Math.round(xau_nhat * 100) / 100, nguong: lon ? 3 : 4.5, co: Math.round(co) };
+  };
+
+  const vi_pham = [];
+  for (const el of document.querySelectorAll('body *')) {
+    if (!hien(el) || !co_chu(el)) continue;
+    const d = do_el(el);
+    if (d && d.tp < d.nguong) {
+      vi_pham.push({ duong: duong(el), ...d, chu: el.textContent.trim().slice(0, 40) });
     }
   }
 
@@ -230,7 +257,76 @@ function DO_TRONG_TRANG() {
     }
   }
 
+  /* ── TRẠNG THÁI TƯƠNG TÁC — phần ĐÁNH DẤU ───────────────────────────────
+     Phép đo tĩnh bỏ lọt cả một lớp lỗi: `.nav-next:hover` đặt `color:#fff` trên
+     nền cyan 28% phủ trên trắng (1,14:1) — chữ biến mất khi rê chuột, và không
+     lượt quét tĩnh nào thấy.
+
+     KHÔNG tự ép khai báo của luật `:hover` vào kiểu nội tuyến. Làm thế là bỏ
+     qua tầng xếp lớp: một luật khác đè lên nó trong sản phẩm thật vẫn bị ép,
+     nên bản vá đã có lại bị báo là lỗi. Ở đây chỉ ĐÁNH DẤU phần tử ứng viên;
+     việc bật `:hover` giao cho trình duyệt qua CDP `CSS.forcePseudoState`, để
+     chính nó giải tầng xếp lớp.
+
+     `:not(:hover)` phải bỏ qua: cắt `:hover` khỏi nó là ĐẢO ngược ý nghĩa luật. */
+  const dau = [];
+  if (do_trang_thai) {
+    const TRANG_THAI = /:(hover|focus-visible|focus)\b/;
+    const SON = ['color', 'background-color', 'background-image', '-webkit-text-fill-color'];
+    const luat = [];
+    for (const bang of document.styleSheets) {
+      let ds;
+      try { ds = bang.cssRules; } catch (e) { continue; }  // bảng khác nguồn
+      const di = (rs) => {
+        for (const r of rs) {
+          /* KHÔNG viết `if (r.cssRules) { ...; continue; }`. Từ Chrome 112 (CSS
+             Nesting) MỌI `CSSStyleRule` đều CÓ `cssRules` — rỗng, nhưng tồn tại
+             — nên nhánh đó nuốt sạch luật thường: 371 luật quét được, 0 luật
+             chứa `:hover`, và lượt đo báo "0 lỗi rê chuột" vĩnh viễn. */
+          if (r.cssRules && r.cssRules.length) di(r.cssRules);
+          if (!r.selectorText || !TRANG_THAI.test(r.selectorText)) continue;
+          if (/:not\([^)]*:(hover|focus)/.test(r.selectorText)) continue;
+          if (!SON.some((k) => r.style.getPropertyValue(k))) continue;
+          luat.push(r.selectorText);
+        }
+      };
+      di(ds);
+    }
+
+    /* TẮT CHUYỂN TIẾP. Trong tầng xếp lớp CSS, giá trị đang chuyển tiếp thắng
+       CẢ `!important` nội tuyến — nên vừa bật `:hover` là một chuyển tiếp khởi
+       động và `getComputedStyle` ngay sau đó trả về màu CŨ. Không có dòng này
+       thì lượt đo báo 0 vi phạm cho mọi nút có `transition`, tức gần như mọi
+       nút. */
+    const tat = document.createElement('style');
+    tat.id = '__pe_tat_chuyen_tiep';
+    tat.textContent = '*, *::before, *::after { transition: none !important;'
+      + ' animation: none !important; }';
+    document.head.appendChild(tat);
+
+    let n = 0;
+    const da_danh = new Set();
+    for (const sel of luat) {
+      const trang_thai = /focus/.test(sel) ? 'focus' : 'hover';
+      const goc = sel.replace(/:(hover|focus-visible|focus)\b/g, '');
+      let ds2 = [];
+      try { ds2 = [...document.querySelectorAll(goc)]; } catch (e) { continue; }
+      for (const el of ds2.filter(hien).slice(0, 2)) {
+        if (da_danh.has(el)) continue;
+        da_danh.add(el);
+        el.setAttribute('data-pe-tt', String(n));
+        dau.push({ i: n, trang_thai, sel: sel.slice(0, 70) });
+        n++;
+      }
+    }
+  }
+
+  /* Bộ quy tắc dùng lại cho lượt đo trạng thái, chạy từ phía Node sau khi CDP
+     đã bật `:hover`. Hai bộ quy tắc song song là hai bộ sẽ lệch nhau. */
+  globalThis.__pe = { do_el, hien, co_chu, duong };
+
   return {
+    dau,
     vi_pham: vi_pham.slice(0, 60), so_vi_pham: vi_pham.length,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     so_cham: document.querySelectorAll(CHAM).length,
@@ -242,6 +338,7 @@ const { chromium } = await import(PW);
 const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
 const tu_kiem = process.argv.includes('--tu-kiem');
 const chu_de = process.argv.includes('--toi') ? 'dark' : 'light';
+const do_tt = process.argv.includes('--trang-thai');
 const i_json = process.argv.indexOf('--json');
 const ra_json = i_json >= 0 ? process.argv[i_json + 1] : null;
 
@@ -304,11 +401,49 @@ for (const kho of KHO) {
         await b.close();
         process.exit(3);
       }
-      const d = await p.evaluate(DO_TRONG_TRANG);
+      const d = await p.evaluate(DO_TRONG_TRANG, do_tt);
+      d.tuong_tac = [];
+      if (do_tt && d.dau.length) {
+        /* Bật `:hover`/`:focus` bằng CDP `CSS.forcePseudoState` — tức bảo chính
+           trình duyệt coi phần tử đang được rê chuột, rồi để NÓ giải tầng xếp
+           lớp. Ép tay khai báo của một luật thì bỏ qua luật đè lên nó: bản vá
+           `body.light .nav-next:hover` đã có vẫn bị báo là lỗi. */
+        const cdp = await c.newCDPSession(p);
+        await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+        const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+        for (const m of d.dau) {
+          const q = await cdp.send('DOM.querySelector',
+            { nodeId: root.nodeId, selector: `[data-pe-tt="${m.i}"]` });
+          if (!q.nodeId) continue;
+          await cdp.send('CSS.forcePseudoState',
+            { nodeId: q.nodeId, forcedPseudoClasses: [m.trang_thai] });
+          const v = await p.evaluate((i) => {
+            const el = document.querySelector(`[data-pe-tt="${i}"]`);
+            if (!el) return [];
+            const { do_el, hien, co_chu, duong } = globalThis.__pe;
+            const ra = [];
+            for (const dich of [el, ...el.querySelectorAll('*')]
+                .filter(hien).filter(co_chu).slice(0, 3)) {
+              const x = do_el(dich);
+              if (x && x.tp < x.nguong) {
+                ra.push({ duong: duong(dich), ...x, chu: dich.textContent.trim().slice(0, 34) });
+              }
+            }
+            return ra;
+          }, m.i);
+          await cdp.send('CSS.forcePseudoState',
+            { nodeId: q.nodeId, forcedPseudoClasses: [] });
+          for (const x of v) d.tuong_tac.push({ ...x, sel: m.sel, trang_thai: m.trang_thai });
+        }
+        await cdp.detach();
+      }
+      d.so_tuong_tac = d.tuong_tac.length;
+      delete d.dau;
       ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
-        + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`);
+        + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`
+        + (do_tt ? `  rê/nét:${String(d.so_tuong_tac).padStart(3)}` : ''));
     } catch (e) {
       ket.push({ kho: kho.ten, ten, url, loi_tai: String(e.message).slice(0, 80) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} KHONG TAI DUOC: ${String(e.message).slice(0, 50)}`);
@@ -329,6 +464,9 @@ console.log(`  vi phạm tương phản : ${tong_tp}`);
 console.log(`  vùng chạm < 44px   : ${tong_cn}`);
 console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  lỗi JS             : ${tong_js}`);
+if (do_tt) {
+  console.log(`  rê chuột / lấy nét : ${ket.reduce((a, r) => a + (r.so_tuong_tac || 0), 0)}`);
+}
 console.log(`  lời gọi GHI lọt ra : ${ghiLen}`);
 
 if (tu_kiem) {

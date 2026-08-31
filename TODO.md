@@ -2113,7 +2113,47 @@ xanh lá và tím:
 
 Kết quả: **sáng 0 · tối 0**, cả hai đều đã chạy `--tu-kiem` ngay trước khi lấy số.
 
-### [ ] Chưa làm — trạng thái TƯƠNG TÁC
-Rê chuột / lấy nét / vô hiệu chưa đo lượt nào. Lỗi `.nav-next:hover` (chữ trắng
-trên nền cyan 28% phủ trên trắng, ≈1,2:1) tìm được bằng mắt khi đọc CSS, không
-bằng máy — nghĩa là còn bao nhiêu cái nữa thì chưa biết.
+### [x] Trạng thái TƯƠNG TÁC — `--trang-thai`
+Ba lỗi bộ đo nữa (thành mười hai) trước khi lấy được con số nào dùng được:
+
+10. **`if (r.cssRules) { đệ quy; continue; }` nuốt sạch luật thường.** Từ Chrome
+    112 (CSS Nesting) MỌI `CSSStyleRule` đều CÓ `cssRules` — rỗng, nhưng tồn
+    tại. Kết quả: 371 luật quét được, **0 luật chứa `:hover`**, và lượt đo báo
+    "0 lỗi rê chuột" vĩnh viễn. Một số 0 giả nữa, trông hệt số 0 thật.
+11. **Chuyển tiếp thắng cả `!important` nội tuyến.** Vừa ép màu là một
+    `transition` khởi động, và `getComputedStyle` ngay sau đó trả về màu CŨ —
+    tức 0 vi phạm cho mọi nút có `transition`, tức gần như mọi nút. Phải chèn
+    `* { transition: none !important; animation: none !important }` trước khi đo.
+12. **Ép KHAI BÁO của một luật là bỏ qua tầng xếp lớp.** Bản vá
+    `body.light .nav-next:hover` đã có vẫn bị báo là lỗi, vì bộ đo ép thẳng luật
+    gốc đè lên nó. Ba dương tính giả kiểu này. Nay dùng CDP
+    `CSS.forcePseudoState` — bảo trình duyệt coi phần tử đang được rê chuột rồi
+    để CHÍNH NÓ giải tầng xếp lớp.
+
+Và một lỗi giải mã màu: `color-mix(in oklab, …)` tính ra `oklab(0.958 …)` — màu
+rất SÁNG — nhưng đọc số thô ra gần ĐEN (dấu trừ của thành phần `a`/`b` còn bị
+nuốt): **29 vi phạm 1,05:1 không có thật** ở khu quản trị. Nay để canvas của
+trình duyệt giải mã, nhận mọi cú pháp CSS Color 4 kể cả cú pháp sinh sau bản này.
+
+**Đã tự kiểm bằng chính con lỗi tìm được bằng mắt:** lùi bản vá
+`body.light .nav-next:hover` → bộ đo báo ĐỎ 1,14:1 đúng chỗ; phục hồi → xanh.
+
+Hai lỗi THẬT tìm được ở bản tối, cùng một kiểu và là kiểu phép đo tĩnh không thể
+thấy: nền khi rê chuột `#293548` sáng hơn mặt thẻ đủ nhiều để kéo `--t3` xuống
+**4,1:1** — chữ phụ ĐẠT lúc đứng yên rồi TRƯỢT lúc chạm vào. Hạ nấc nâng xuống
+`#1F2937`: vẫn rõ là một nấc nâng, và giữ 4,85:1.
+
+### Bảng cuối — bốn chiều, hai chủ đề, hai khổ, 11 trang
+| | sáng | tối |
+|---|---|---|
+| tương phản tĩnh | 0 | 0 |
+| tương phản khi rê chuột / lấy nét | 0 | 0 |
+| vùng chạm dưới ngưỡng | 1 (cố ý) | 1 (cố ý) |
+| tràn ngang · lỗi JS · lời gọi ghi lọt | 0 · 0 · 0 | 0 · 0 · 0 |
+| tự kiểm bắt được | 1250 | 1296 |
+
+### [ ] Chưa làm
+- Trạng thái **vô hiệu** (`:disabled`) và **lấy nét bàn phím thấy được**
+  (`:focus-visible` có tồn tại vòng nét không) chưa đo — mới đo màu, chưa đo
+  việc vòng nét có hiện hay không.
+- Mới 11 trang. Các trang giảng dạy (`/giang-day/...`) chưa nằm trong danh sách.

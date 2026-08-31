@@ -109,7 +109,11 @@
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff; white-space: nowrap;
 }
-body.dark .cd-lesson.done:hover, body.dark .cd-lesson.current:hover { background: #293548; }
+/* #293548 sáng hơn mặt thẻ đủ nhiều để kéo `--t3` (#8B95A8) xuống 4,1:1 khi rê
+   chuột — chữ phụ ĐẠT lúc đứng yên rồi TRƯỢT lúc chạm vào, kiểu lỗi mà phép đo
+   tĩnh không thể thấy. #1F2937 vẫn là một nấc nâng rõ trên nền #0C1220 nhưng
+   giữ được 4,85:1 (đo 01/09/2026 qua CDP forcePseudoState). */
+body.dark .cd-lesson.done:hover, body.dark .cd-lesson.current:hover { background: #1F2937; }
 /* Nền đỡ chữ trắng ở cỡ 10px → phải là bản NỀN (#6D5AE6/#5B47D4). Bản cũ
    #7C5CF0→#8B7CF6 là bản dành cho chữ trên nền tối: chỉ được 3,33:1. */
 body.dark .cd-lesson-badge { background: linear-gradient(135deg,var(--brand-fill,#6D5AE6),var(--brand-fill-2,#5B47D4)); }
@@ -259,7 +263,7 @@ body.dark .cd-block-hd { border-bottom-color: #334155; }
 body.dark .cd-block-hd h3 { color: #F1F5F9; }
 body.dark .cd-block-body .cd-desc { color: #94A3B8; }
 body.dark .cd-module { border-bottom-color: #334155; }
-body.dark .cd-module-hd:hover { background: #293548; }
+body.dark .cd-module-hd:hover { background: #1F2937; }  /* như trên: 4,1:1 → 4,85:1 */
 body.dark .cd-module-name { color: #F1F5F9; }
 /* bỏ: `--t3` đã tự đổi theo bộ màu — body.dark .cd-module-meta */
 body.dark .cd-module-arrow { background: #334155; color: var(--t1); }
