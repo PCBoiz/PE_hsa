@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   Button,
@@ -20,7 +20,10 @@ export type HocVien = {
   name: string | null;
   email: string | null;
   submittedAt: string | null;
+  /** 400 ký tự ĐẦU của bài làm. Phần còn lại tải khi bấm xem — xem `contentLen`. */
   content: string | null;
+  /** Độ dài THẬT của bài làm. Lớn hơn `content.length` nghĩa là còn phải tải. */
+  contentLen: number | null;
   fileUrl: string | null;
   score: number | null;
   scorePct: number | null;
@@ -122,6 +125,32 @@ function Bang({
   const [err, setErr] = useState<string | null>(loiTai ?? null);
   const [dangLuu, setDangLuu] = useState(false);
   const [mo, setMo] = useState<number | null>(null);
+  /* Bài làm ĐỦ đã tải, theo `userId`. Bảng chấm chỉ nhận 400 ký tự đầu mỗi bài:
+     đo với 35 em × bài 20 000 ký tự, gửi hết tốn 2 272 ms và 1 008 840 byte cho
+     một lần mở màn hình — trong khi giảng viên chỉ đọc đủ một hai bài.
+     Giữ lại sau khi tải để thu gọn rồi mở lại không phải hỏi máy chủ lần nữa. */
+  const [baiDu, setBaiDu] = useState<Record<number, string>>({});
+  const [dangTaiBai, setDangTaiBai] = useState<number | null>(null);
+
+  const moBai = useCallback(async (s: HocVien) => {
+    if (mo === s.userId) { setMo(null); return; }
+    setMo(s.userId);
+    const daDu = s.contentLen == null || s.contentLen <= (s.content?.length ?? 0);
+    if (daDu || baiDu[s.userId] !== undefined) return;
+    setDangTaiBai(s.userId);
+    try {
+      const r = await apiFetch(`/api/teach/assignments/${assignmentId}/submissions/${s.userId}`);
+      const d: unknown = await r.json().catch(() => null);
+      const noi = (d as { content?: unknown } | null)?.content;
+      // Hỏng thì GIỮ đoạn đầu đang có và nói ra, chứ không hiện ô trống: đoạn
+      // đầu vẫn dùng được, còn ô trống làm giảng viên tưởng em nộp bài rỗng.
+      setBaiDu((cu2) => ({ ...cu2, [s.userId]: typeof noi === 'string' ? noi : '' }));
+    } catch {
+      setBaiDu((cu2) => ({ ...cu2, [s.userId]: '' }));
+    } finally {
+      setDangTaiBai(null);
+    }
+  }, [assignmentId, mo, baiDu]);
   const toast = useToast();
 
   const daNop = ds.filter((s) => s.submittedAt).length;
@@ -279,7 +308,7 @@ function Bang({
                     <div className="mt-2">
                       <button
                         type="button"
-                        onClick={() => setMo(dangMo ? null : s.userId)}
+                        onClick={() => void moBai(s)}
                         aria-expanded={dangMo}
                         className="min-h-11 text-small text-brand-ink underline"
                       >
@@ -289,7 +318,15 @@ function Bang({
                         // `whitespace-pre-wrap`: bài tự luận có xuống dòng, và
                         // gộp mất chúng là đọc một bài khác với bài em viết.
                         <p className="mt-1 max-h-96 overflow-y-auto rounded-md bg-sunken px-3 py-2 text-body whitespace-pre-wrap text-ink">
-                          {s.content}
+                          {baiDu[s.userId] || s.content}
+                          {dangTaiBai === s.userId && (
+                            <span className="text-ink-3"> … đang tải phần còn lại</span>
+                          )}
+                          {baiDu[s.userId] === '' && (
+                            <span className="text-ink-3">
+                              {' '}… không tải được phần còn lại, thử mở lại
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>

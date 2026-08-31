@@ -876,3 +876,45 @@ def test_link_hop_khong_nhan_lieu_do_javascript(db):
     force_authenticate(req, user=ad)
     ra = AdminClassesView.as_view()(req)
     assert ra.status_code in (200, 201), ('link họp thật phải qua được: %s' % ra.data)
+
+
+@pytest.mark.django_db
+def test_bang_cham_chi_gui_DOAN_DAU_bai_lam(lop):
+    """T68 · Bảng chấm gửi 400 ký tự đầu, phần còn lại tải khi bấm xem.
+
+    Đo với 35 em × bài 20 000 ký tự, bản cũ tốn 2 272 ms và 1 008 840 byte cho
+    MỘT lần mở màn hình — trong khi giảng viên chỉ đọc đủ một hai bài. Màn hình
+    vốn đã chỉ HIỆN bài khi bấm; chỉ có phần TRUYỀN là gửi hết.
+    """
+    # Khẳng định theo HÀNH VI, không theo hằng `XEM_TRUOC`, và nhập
+    # `AssignmentSubmissionView` muộn: nhập cả hai ở đầu thì trên mã cũ test đỏ
+    # vì `ImportError` — một chứng cứ yếu, nó chỉ nói "thứ mới chưa có" chứ
+    # không nói gì về việc bảng chấm có còn gửi cả bài hay không.
+    from teaching.assignments import MyAssignmentsView
+    aid = _tao_bai(lop)
+    em = lop['hv'][0]
+    dai = 'x' * 5000
+    _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': dai}, ai=em)
+
+    bang = _goi(AssignmentGradingView, 'get', ai=lop['gv'], assignment_id=aid)
+    dong = next(r for r in bang.data['students'] if r['userId'] == em.id)
+    assert len(dong['content'] or '') < 1000, (
+        'bảng chấm phải gửi ĐOẠN ĐẦU, không phải cả bài: %d ký tự'
+        % len(dong['content'] or ''))
+    assert dong.get('contentLen') == 5000, (
+        'phải nói ra độ dài THẬT để màn hình biết còn phải tải: %s'
+        % dong.get('contentLen'))
+
+    from teaching.assignments import AssignmentSubmissionView
+    du = _goi(AssignmentSubmissionView, 'get', ai=lop['gv'],
+              assignment_id=aid, user_id=em.id)
+    assert du.status_code == 200, du.data
+    assert du.data['content'] == dai, 'đường tải đủ phải trả nguyên bài'
+
+    # Ranh giới quyền phải giữ y như bảng chấm: giảng viên lớp KHÁC không đọc được.
+    gv_khac = _nguoi('GV Lop Khac T68', ROLE_TEACHER)
+    cam = _goi(AssignmentSubmissionView, 'get', ai=gv_khac,
+               assignment_id=aid, user_id=em.id)
+    assert cam.status_code == 404, (
+        'giảng viên lớp khác phải nhận 404 (không phải 403 — 403 là tự thú nhận '
+        'bài đó có tồn tại): %s' % cam.status_code)

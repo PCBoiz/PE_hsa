@@ -1047,11 +1047,30 @@ lại mật khẩu" mới chỉ chặn được lần ĐĂNG NHẬP sau, chưa c
 đúng cảnh trợ giảng dùng nó để đuổi người đang chiếm tài khoản. Cần đưa token
 của người bị reset vào danh sách đen.
 
-### [ ] T68 · Bảng chấm lớp lớn: 692 KB JSON dựng trong một lượt
+### [x] T68 (XONG) · Bảng chấm lớp lớn: 692 KB JSON dựng trong một lượt
 Đo với 35 em × bài làm 20 000 ký tự: **2 272 ms, 1 008 840 byte** nhét cả vào
 HTML server-render lẫn state React. Chưa phải lỗi (lớp thật chưa tới cỡ đó)
 nhưng là trần quy mô nhìn thấy được. Hướng: chỉ gửi đoạn đầu bài làm, tải đủ
 khi bấm "Xem bài làm".
+
+> **Làm 01/09/2026.** Cắt ngay ở câu SQL (`left(s.content, 400)`), không cắt ở
+> Python: chỗ tốn không phải bộ nhớ tiến trình mà là ĐƯỜNG TRUYỀN tới Neon.
+> Thêm `contentLen` — độ dài THẬT — để màn hình biết còn phải tải hay không, chứ
+> không đoán bằng cách so với một hằng chép tay ở phía kia.
+>
+> `AssignmentSubmissionView` trả bài đủ của MỘT em, đi qua đúng `_load` của bảng
+> chấm: cùng `can_see_class`, cùng quy ước 404-chứ-không-403, và giữ nguyên
+> `chi_hoc_vien`. Không viết lại phép kiểm quyền — hai bản kiểm quyền là hai bản
+> sẽ trôi, và bản trôi ở phía LỎNG hơn thì không ai thấy.
+>
+> Màn hình vốn ĐÃ chỉ hiện bài khi bấm; nay phần truyền cũng vậy. Hỏng thì GIỮ
+> đoạn đầu và nói ra, chứ không hiện ô trống — ô trống làm giảng viên tưởng em
+> nộp bài rỗng.
+>
+> Test hồi quy khẳng định theo HÀNH VI chứ không theo hằng `XEM_TRUOC`: nhập
+> hằng ở đầu thì trên mã cũ nó đỏ vì `ImportError`, một chứng cứ yếu chỉ nói
+> "thứ mới chưa có". Nay đỏ đúng chỗ: `5000 < 1000` thất bại. Kèm cả ranh giới
+> quyền (giảng viên lớp khác → 404).
 
 ### [x] T69 (XONG — xem mục cùng số ở dưới) · `/courses/<id>` hỏng CSS ở bộ TỐI
 `course_detail.css` còn màu bộ SÁNG lọt vào nền tối: `.cd-lesson-title` 1,93:1,

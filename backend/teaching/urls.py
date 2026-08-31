@@ -35,6 +35,10 @@ urlpatterns = [
          assignments.AssignmentDetailView.as_view()),
     path('api/teach/assignments/<int:assignment_id>/submissions',
          assignments.AssignmentGradingView.as_view()),
+    # Bài làm ĐỦ của MỘT em. Bảng chấm ở trên chỉ gửi 400 ký tự đầu mỗi bài —
+    # xem `assignments.XEM_TRUOC`.
+    path('api/teach/assignments/<int:assignment_id>/submissions/<int:user_id>',
+         assignments.AssignmentSubmissionView.as_view()),
     # Phía học viên: KHÔNG nhận user_id, luôn là chính mình — xem docstring.
     path('api/assignments', assignments.MyAssignmentsView.as_view()),
 
