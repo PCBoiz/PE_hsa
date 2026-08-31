@@ -648,8 +648,10 @@ CREATE TABLE IF NOT EXISTS admin_audit (
     actor_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
     actor_name   TEXT,
     actor_role   TEXT,
-    -- Động từ dạng máy đọc: user.create, user.status, user.role, user.password,
-    -- class.member.add, class.member.remove, attendance.mark...
+    -- Động từ dạng máy đọc. DANH SÁCH ĐẦY ĐỦ nằm ở `common/audit.py` (20 hằng)
+    -- — KHÔNG chép lại ở đây. Bản chép tay trước đó ghi `user.password` trong
+    -- khi hằng thật là `user.password_reset`: một danh sách chép tay là một
+    -- danh sách sẽ trôi, và người đọc tin nó rồi thôi không đi kiểm (§20).
     action       TEXT NOT NULL,
     target_type  TEXT,
     -- TEXT chứ không INTEGER: khoá học có id dạng chữ ('dinh-luong'), học viên
@@ -722,9 +724,8 @@ CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
 -- lúc đó câu kiểm trong view không còn nằm trên đường đi. Một dòng status rác
 -- không làm hỏng gì ngay: nó chỉ nằm im, không lọt vào ô nào trên màn hình, và
 -- lặng lẽ làm sai tỉ lệ chuyên cần mà trung tâm dùng để gọi điện cho phụ huynh.
--- DO $$ vì ADD CONSTRAINT không có IF NOT EXISTS, mà file này phải chạy lại
--- được nhiều lần.
--- Dạng DROP-rồi-ADD chứ không phải khối DO: bộ tách câu của bootstrap_schema
+-- `ADD CONSTRAINT` không có `IF NOT EXISTS`, mà tệp này phải chạy lại được
+-- nhiều lần. Dạng DROP-rồi-ADD chứ không phải khối DO: bộ tách câu của bootstrap_schema
 -- cắt theo dấu chấm phẩy, mà một khối DO $$ ... $$ có chấm phẩy BÊN TRONG nên
 -- bị xé thành từng mảnh vô nghĩa. Hai câu dưới đây đều chạy lại được nhiều lần
 -- và không chứa chấm phẩy nào ở giữa.

@@ -2231,3 +2231,23 @@ do: không có khái niệm khoá trả phí nào trong mã nên ghi danh là t�
 "hai request" không giành thêm quyền gì so với một request `/enroll`.
 
 Còn 31 mục mở. Cả bộ: **221 phép kiểm xanh**.
+
+## 01/09/2026 (tiếp) · T19, T21, T23 — và một bài học về chính TODO này
+
+Rà T19 ("mã chết") thì **bốn trong bảy mục không còn đúng**: `Toast.tsx` nay dùng
+ở 3 màn chứ không phải 0, `alert()` còn 1 chỗ chứ không phải 7, `LEVEL_TONE` và
+`_pick_roadmap_template` đều đang được gọi. Bản ghi chép chính là thứ nó tố cáo:
+danh sách chép tay thì sẽ trôi. Nếu tin nó mà xoá, tôi đã gỡ mất mã đang chạy.
+
+Ba mục còn đúng: gỡ 77 dòng CSS mermaid khỏi `dashboard.css` (thư viện đã gỡ từ
+30/08, CSS ở lại tô màu cho phần tử không còn ai dựng); gỡ `'oauth-complete'`
+khỏi `ISSUES_TOKENS` — đáng gỡ vì BẢO MẬT chứ không chỉ vì chết, nó nới rộng vô
+cớ một danh sách trắng cấp token; và hai endpoint CSV của lớp thì **gắn nút chứ
+không xoá** — xoá đi là vứt một tính năng đã viết xong vì thiếu một cái nút.
+Bấm thử thật: cả hai trả `200 text/csv` với tiêu đề tiếng Việt.
+
+T21: chỗ đáng nói nhất là `EmptyState` — chú thích hứa "bắt buộc có action hoặc
+hint" mà cả hai đều `?`. Sửa bằng cách ÉP Ở KIỂU chứ không hạ giọng chú thích.
+`tsc` xanh trên cả 11 chỗ đang dùng, và đã kiểm nó ĐỎ được.
+
+Còn 28 mục mở trong TODO.

@@ -188,6 +188,30 @@ export default function SessionsClient({
         <CardHead
           title="Các buổi đã lên lịch"
           hint={`${sessions.length} buổi của lớp ${className}. Bấm một buổi để điểm danh.`}
+          action={
+            /* Hai đường xuất này đã có ở máy chủ từ đợt ERP §6 nhưng KHÔNG màn
+               nào bấm được — tức một tính năng đã trả tiền viết mà không ai
+               dùng. Đặt ở đây vì đây là màn giảng viên thực sự mở cho một lớp
+               (không có màn báo cáo cấp lớp; `bao-cao/` chỉ có cấp học viên).
+
+               Thẻ neo thường, KHÔNG fetch rồi tự dựng tệp: cookie đăng nhập đi
+               kèm sẵn và trình duyệt lo phần tải xuống — cùng lối với nút xuất
+               ở màn tài khoản. */
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`/api/teach/classes/${classId}/export/attendance.csv`}
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
+              >
+                Xuất chuyên cần
+              </a>
+              <a
+                href={`/api/teach/classes/${classId}/export/progress.csv`}
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
+              >
+                Xuất tiến độ
+              </a>
+            </div>
+          }
         />
 
         {sessions.length === 0 ? (

@@ -553,13 +553,32 @@ thẳng ra API** (`AdminAuditView`, `UserView.get` — cột mới thêm vào b�
 
 ## P4 — Dọn nợ
 
-### [ ] T19 · Mã chết
-`Toast.tsx` toàn bộ (0 lời gọi, `ToastProvider` chưa gắn vào layout nào, trong
-khi 7 chỗ mã cũ vẫn dùng `alert()`) · `Chip.LEVEL_TONE` (0 lời gọi) ·
-`_pick_roadmap_template` · hai import thừa · 27 bộ chọn CSS `#roadmap-mermaid-wrap`
-và `.svg-pan-zoom-control*` còn sót sau đợt cắt 3,44 MB · `'oauth-complete'`
-trong `ISSUES_TOKENS` (chỉ tồn tại dạng GET redirect) · hai endpoint xuất CSV của
-lớp chưa có nút nào bấm.
+### [x] T19 (XONG) · Mã chết — nhưng DANH SÁCH NÀY PHẦN LỚN ĐÃ SAI
+Rà lại từng mục 01/09/2026. Bốn trong bảy mục **không còn đúng**, và bản ghi chép
+này chính là thứ nó tố cáo: một danh sách chép tay thì sẽ trôi (§20, cùng họ với
+T21 ngay dưới).
+
+| Mục | Sự thật 01/09/2026 |
+|---|---|
+| `Toast.tsx` "0 lời gọi" | SAI — dùng ở 3 màn (`MyAssignments`, `Grading`, `Sessions`) |
+| "7 chỗ còn `alert()`" | SAI — `src/` còn đúng **1**, và nó nằm trong chú thích |
+| `Chip.LEVEL_TONE` "0 lời gọi" | SAI — `Chip.tsx:48` dùng, `ui/index.ts` xuất ra |
+| `_pick_roadmap_template` | SAI — `roadmap/views.py:51` gọi |
+| 27 bộ chọn CSS mermaid | ĐÚNG → gỡ **77 dòng** khỏi `dashboard.css` |
+| `'oauth-complete'` | ĐÚNG → gỡ khỏi `ISSUES_TOKENS` |
+| hai endpoint CSV của lớp | ĐÚNG là chưa có nút — nhưng **KHÔNG xoá** (xem dưới) |
+
+**Hai endpoint CSV: gắn nút chứ không xoá.** `attendance.csv` (bảng chéo, đúng
+hình cuốn sổ điểm danh giấy) và `progress.csv` (lọc theo cột cảnh báo sớm) là thứ
+giảng viên cần; xoá đi là vứt một tính năng đã viết xong vì nó thiếu một cái nút.
+Đặt ở màn buổi học — màn giảng viên thực sự mở cho một lớp, vì không có màn báo
+cáo cấp lớp (`bao-cao/` chỉ có cấp học viên). Kiểm bằng cách bấm thật: cả hai trả
+`200 text/csv` với tiêu đề tiếng Việt, nút cao 46px, 0 lời gọi ghi.
+
+**`'oauth-complete'` đáng gỡ vì lý do BẢO MẬT, không chỉ vì chết:** nhánh dùng nó
+chỉ chạy với `POST`, mà `accounts/oauth.py::oauth_complete` là chuyển hướng GET
+của allauth ở phía Django. Giữ lại là nới rộng vô cớ một danh sách trắng CẤP
+TOKEN — thứ đáng ra phải hẹp nhất có thể.
 
 ### [ ] T20 · Gom trùng lặp
 `common/paging.py` (`read_paging`, `page_with_total` — nhân rộng ý tưởng
@@ -568,11 +587,19 @@ ngày đó" đang viết lại ở hai chỗ), `teaching/classes.py` (hai `_clas
 tên), hạ `_temp_password`/`_user_label` xuống `common/`, `readCookie` ba bản y
 hệt → `lib/auth.ts`, `type Payload` khai hai lần.
 
-### [ ] T21 · Chú thích khẳng định sai sự thật
-`sessions.py:21` nói "số câu cố định" trong khi `_emit_events` gọi `record_event`
-một lần mỗi học viên · `legacy_schema.sql:651` ghi `user.password` còn hằng thật
-là `user.password_reset` · `legacy_schema.sql:725` hai câu mâu thuẫn nhau ·
-`EmptyState.tsx:6` nói "bắt buộc có action hoặc hint" nhưng cả hai đều tuỳ chọn.
+### [x] T21 (XONG) · Chú thích khẳng định sai sự thật
+- `sessions.py:21` "số câu cố định" — **nay ĐÚNG**: `_emit_events` đã chuyển sang
+  `record_events` (một câu cho cả lớp). Không phải sửa gì.
+- `legacy_schema.sql` liệt kê động từ nhật ký, ghi `user.password` trong khi hằng
+  thật là `user.password_reset`. Sửa bằng cách **bỏ hẳn danh sách chép tay** và
+  chỉ tay sang `common/audit.py` (20 hằng): một danh sách chép tay là một danh
+  sách sẽ trôi, và người đọc tin nó rồi thôi không đi kiểm.
+- `legacy_schema.sql` hai câu mâu thuẫn — câu đầu ("DO $$ vì…") còn sót từ thời
+  khối `DO`, trong khi mã đã đổi sang DROP-rồi-ADD. Gộp lại còn một câu đúng.
+- `EmptyState.tsx` nói "bắt buộc có action hoặc hint" mà cả hai đều `?`. Sửa
+  bằng cách **ép ở KIỂU** (union hai nhánh) chứ không hạ giọng chú thích — nay
+  quên cả hai là lỗi biên dịch, không phải một ngõ cụt lặng lẽ. `tsc` xanh trên
+  cả 11 chỗ đang dùng, và đã kiểm nó ĐỎ được (TS2322 với `<EmptyState title/>`).
 
 ### [x] T22 · Hai hình dạng JSON lỗi → `[object Object]` — XONG 30/08 (gộp vào T49)
 `errorText()` trong `lib/api.ts` đọc được cả ba hình dạng, có bảng câu tiếng Việt
@@ -586,9 +613,13 @@ CÒN LẠI ở T47: `serverJson` (tầng dựng trang) vẫn vứt toàn bộ th
 Trợ giảng bấm nhanh → 429 → banner đỏ hiện `[object Object]`.
 </details>
 
-### [ ] T23 · `MAX_BATCH` khai hai nơi — trong khi máy chủ đã gửi con số xuống
-`admin_users.py:553` **đã trả** `maxPerBatch`; frontend chỉ không khai nó trong
-type nên không ai biết nó có ở đó.
+### [x] T23 (XONG) · `MAX_BATCH` khai hai nơi — máy chủ đã gửi con số xuống
+`teaching/admin_users.py` trả `maxPerBatch` trong kết quả xem trước. Frontend nay
+đọc nó (`tranMe = preview?.maxPerBatch ?? MAX_BATCH_DUONG_LUI`) ở CẢ HAI chỗ —
+trước đó câu gợi ý dùng hằng chép tay còn cảnh báo "quá trần" mới đọc máy chủ.
+Hằng còn lại được đổi tên thành `MAX_BATCH_DUONG_LUI` và chú thích nói rõ nó chỉ
+dùng khi CHƯA hỏi máy chủ lần nào — vì con số thật tính từ chi phí băm mật khẩu,
+tức nó sẽ đổi khi đổi máy, còn hằng chép tay thì không.
 
 ### [ ] T24 · Hàm quá dài
 `AdminBulkCreateUsersView.post` 163 dòng (chính chỗ sinh ra lỗi "kiểm trần sau

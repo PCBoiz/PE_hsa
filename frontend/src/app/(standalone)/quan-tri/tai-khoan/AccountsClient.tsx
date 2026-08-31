@@ -66,10 +66,16 @@ type BulkResultData = {
   maxPerBatch?: number;
 };
 
-/** Trần một mẻ nhập. Phải khớp `MAX_CREATE_PER_BATCH` trong teaching/admin_users.py —
- *  con số đó tính từ chi phí băm mật khẩu (~126ms CPU mỗi mật khẩu, gunicorn cắt
- *  ở 30 giây), không phải một giới hạn tuỳ tiện. */
-const MAX_BATCH = 50;
+/** ĐƯỜNG LÙI cho trần một mẻ nhập — KHÔNG phải nguồn sự thật.
+ *
+ *  Nguồn sự thật là `MAX_CREATE_PER_BATCH` ở `teaching/admin_users.py`, và máy
+ *  chủ ĐÃ gửi nó xuống trong `preview.maxPerBatch`. Con số đó tính từ chi phí
+ *  băm mật khẩu (~126ms CPU mỗi mật khẩu, gunicorn cắt ở 30 giây), nên nó sẽ
+ *  đổi khi đổi máy hoặc đổi tham số băm — và hằng chép tay bên này thì không.
+ *
+ *  Chỉ dùng khi CHƯA có kết quả xem trước (lúc đó chưa hỏi máy chủ lần nào).
+ *  Mọi chỗ khác phải đọc `preview.maxPerBatch` trước. */
+const MAX_BATCH_DUONG_LUI = 50;
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Đang hoạt động',
@@ -490,6 +496,8 @@ function BulkImport({
   const [classId, setClassId] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<BulkResultData | null>(null);
+  // Trần THẬT: của máy chủ nếu đã hỏi được, còn không thì đường lùi.
+  const tranMe = preview?.maxPerBatch ?? MAX_BATCH_DUONG_LUI;
   const [done, setDone] = useState<BulkResultData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [khoiPhuc, setKhoiPhuc] = useState(false);
@@ -630,7 +638,7 @@ function BulkImport({
     <Card>
       <CardHead
         title="Cấp tài khoản hàng loạt"
-        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Cần ít nhất email hoặc số điện thoại. Tối đa ${MAX_BATCH} tài khoản mỗi mẻ.`}
+        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Cần ít nhất email hoặc số điện thoại. Tối đa ${tranMe} tài khoản mỗi mẻ.`}
         action={
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Thu gọn
@@ -705,7 +713,7 @@ function BulkImport({
               thống vừa từ chối, cạnh một nút không bấm được và không giải
               thích. */}
           {preview?.tooMany
-            ? `Quá ${preview.maxPerBatch ?? MAX_BATCH} — cắt bớt danh sách`
+            ? `Quá ${tranMe} — cắt bớt danh sách`
             : preview
               ? `Tạo ${preview.created} tài khoản`
               : 'Tạo tài khoản'}

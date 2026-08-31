@@ -1176,83 +1176,12 @@ body.dark #roadmap-container-wrapper {
       0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
-#roadmap-mermaid-wrap {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ── Tab "Cá nhân" — styles đã chuyển sang roadmap.css ── */
-#roadmap-personal-view .rm-split { flex: 1; height: auto; min-height: 0; }
-
-.rm-tab-personal {
-    margin-left: 6px;
-    border-left: 1px solid rgba(148,163,184,0.3);
-    padding-left: 14px;
-}
-
-#roadmap-mermaid-wrap svg {
-    max-width: none !important;
-    width: 100% !important;
-    height: 100% !important;
-}
-
-/* ── SVG nodes ── */
-#roadmap-mermaid-wrap g.node { cursor: pointer; }
-
-/* Text bên trong node: đậm hơn, monospace */
-#roadmap-mermaid-wrap g.node .nodeLabel,
-#roadmap-mermaid-wrap g.node span,
-#roadmap-mermaid-wrap g.node p {
-    font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-    letter-spacing: 0.2px;
-}
-
-/* Light & Dark mode: opacity đầy đủ — màu được set bởi JS inline style */
-#roadmap-mermaid-wrap g.node rect,
-#roadmap-mermaid-wrap g.node polygon,
-#roadmap-mermaid-wrap g.node circle,
-#roadmap-mermaid-wrap g.node ellipse {
-    fill-opacity: 1 !important;
-    stroke-opacity: 1 !important;
-    fill: var(--rm-node-bg) !important;
-    stroke: var(--rm-node-border) !important;
-}
-#roadmap-mermaid-wrap g.node text,
-#roadmap-mermaid-wrap g.node tspan {
-    fill: var(--rm-node-text) !important;
-}
-#roadmap-mermaid-wrap g.node .nodeLabel,
-#roadmap-mermaid-wrap g.node .nodeLabel p,
-#roadmap-mermaid-wrap g.node foreignObject div {
-    color: var(--rm-node-text) !important;
-}
-
-/* Edge / connector lines: light mode — softer blue */
-#roadmap-mermaid-wrap .edgePath path,
-#roadmap-mermaid-wrap .flowchart-link {
-    stroke: #60A5FA !important;
-    stroke-width: 1.5px !important;
-}
-#roadmap-mermaid-wrap marker path,
-#roadmap-mermaid-wrap marker polygon {
-    fill: #60A5FA !important;
-    stroke: #60A5FA !important;
-}
-
-/* Dark mode: edge lines */
-body.dark #roadmap-mermaid-wrap .edgePath path,
-body.dark #roadmap-mermaid-wrap .flowchart-link { stroke: #38BDF8 !important; }
-body.dark #roadmap-mermaid-wrap marker path,
-body.dark #roadmap-mermaid-wrap marker polygon   { fill: #38BDF8 !important; stroke: #38BDF8 !important; }
-body.dark #roadmap-mermaid-wrap .edgeLabel span,
-body.dark #roadmap-mermaid-wrap .edgeLabel p     { color: #94a3b8 !important; background: transparent !important; }
-body.dark #roadmap-mermaid-wrap .svg-pan-zoom-control-background { fill: rgba(15,23,42,0.9) !important; }
-body.dark #roadmap-mermaid-wrap .svg-pan-zoom-control            { fill: #94a3b8 !important; }
+/* GỠ 01/09/2026 · 77 dòng CSS cho `#roadmap-mermaid-wrap` và
+   `.svg-pan-zoom-control*`. Hai thư viện chúng tô màu (mermaid 3,41 MB +
+   svg-pan-zoom 29 kB) đã bị gỡ ngày 30/08/2026 — xem chú thích ở
+   `main.js:117` và `dashboard/page.tsx:18`. CSS ở lại thêm hai ngày, tô
+   màu cho những phần tử không còn ai dựng ra.
+   Giữ lại thì lần sau ai đọc cũng tưởng lộ trình vẫn vẽ bằng mermaid. */
 
 /* ── Loading spinner ── */
 .rm-loading {

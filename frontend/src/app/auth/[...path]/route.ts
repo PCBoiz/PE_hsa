@@ -21,7 +21,12 @@ type Ctx = { params: Promise<{ path: string[] }> };
  *  `/auth/register` là QUẢN TRỊ VIÊN đang tạo tài khoản cho học viên — cắm
  *  token của tài khoản vừa tạo vào cookie sẽ đá quản trị viên ra khỏi phiên
  *  của chính mình và đưa họ vào tài khoản học viên đó. */
-const ISSUES_TOKENS = new Set(['login', 'oauth-complete']);
+/*  BỎ 'oauth-complete' ngày 01/09/2026. Nhánh dưới chỉ chạy với `POST`, mà
+ *  `accounts/oauth.py::oauth_complete` là `LOGIN_REDIRECT_URL` của allauth —
+ *  một chuyển hướng GET ở phía Django, không bao giờ đi qua đây. Giữ nó lại là
+ *  nới rộng vô cớ một danh sách trắng CẤP TOKEN, thứ đáng ra phải hẹp nhất có
+ *  thể. Token OAuth về frontend qua `/auth/callback#access=…` (fragment). */
+const ISSUES_TOKENS = new Set(['login']);
 
 function readCookie(req: Request, name: string): string | null {
   const raw = req.headers.get('cookie');
