@@ -33,7 +33,7 @@ from django.db import DatabaseError, transaction
 
 from common.clock import local_now, local_today
 from common.db import q, q1, x
-from common.events import KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ
+from common.events import KIND_DRILL, KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ
 from stats import competency, journal
 from stats.goals import read_goals
 
@@ -293,6 +293,25 @@ def generate(uid):
 
 # ── Đọc kế hoạch ────────────────────────────────────────────────────────────
 
+def _moc_san(rows, generated_at):
+    """Mốc sàn: hoạt động TRƯỚC mốc này không được tick mục nào trong kế hoạch.
+
+    Phải là lúc SINH kế hoạch, không phải tuần đầu của kế hoạch. Kế hoạch sinh
+    hôm thứ Tư nhưng bắt đầu từ thứ Hai cùng tuần thì hai ngày thứ Hai–thứ Ba
+    nằm TRƯỚC lúc nó tồn tại — mà bản cũ vẫn cho chúng tick, nên kế hoạch vừa
+    lập ra đã có sẵn mục "đã xong". Việc em làm trước khi có kế hoạch là việc
+    thật, nhưng nó không phải là tiến độ của kế hoạch này.
+
+    Lùi về tuần đầu khi chưa có `generated_at` (kế hoạch cũ trước khi cột này
+    được ghi) — thà rộng tay còn hơn tick nhầm về phía ngược lại.
+    """
+    tuan_dau = min((r['week_start'] for r in rows), default=local_today())
+    if not generated_at:
+        return tuan_dau
+    ngay_sinh = generated_at.date() if hasattr(generated_at, 'date') else generated_at
+    return max(tuan_dau, ngay_sinh)
+
+
 def _done_lookup(uid, floor):
     """Những gì học viên ĐÃ làm, đủ để suy ra mục nào trong lịch đã xong.
 
@@ -314,6 +333,19 @@ def _done_lookup(uid, floor):
     except DatabaseError:
         return set(), [], {}
     return _gom_hoat_dong(rows, floor)
+
+
+#: Loại sự kiện KHÔNG được tính là "đã ôn lại chủ đề".
+#:
+#: Học một bài mới trong chủ đề X không phải là ôn lại chủ đề X — và học viên
+#: cũng không hề làm hai việc. Bản cũ để chúng vào chung một rổ, nên MỘT lần
+#: hoàn thành bài tick xong HAI mục kế hoạch: mục "học bài N" (qua
+#: `done_lessons`) và mục "Ôn lại X" (qua `topic_dates`). Phòng luyện cùng lý
+#: do: nó sinh ra từ đúng lần hoàn thành bài ấy, đếm nó là đếm lần thứ ba.
+#:
+#: Còn lại được tính là ôn: quiz ôn tập (đúng tên nó), điểm hợp phần đề thi thử,
+#: và bài tập giảng viên chấm.
+KHONG_TINH_LA_ON_LAI = (KIND_LESSON, KIND_DRILL)
 
 
 def _gom_hoat_dong(rows, floor):
@@ -344,7 +376,7 @@ def _gom_hoat_dong(rows, floor):
             continue
         if r['kind'] == KIND_MOCK:
             mock_dates.append(day)
-        elif r['topic']:
+        elif r['topic'] and r['kind'] not in KHONG_TINH_LA_ON_LAI:
             topic_dates.setdefault((r['course_id'], r['topic']), []).append(day)
     mock_dates.sort()
     for v in topic_dates.values():
@@ -431,11 +463,14 @@ def do_cham_theo_hoc_vien(uids):
         return {}, True
     uids = list(uids)
     try:
-        ke_hoach = q('SELECT id, user_id FROM study_plans '
+        ke_hoach = q('SELECT id, user_id, generated_at FROM study_plans '
                      'WHERE user_id = ANY(%s) AND is_active', (uids,))
         if not ke_hoach:
             return {}, True
         theo_plan = {r['id']: r['user_id'] for r in ke_hoach}
+        # Mốc sàn phải giống hệt bên màn hình học viên — hai bản chép tay là hai
+        # bản sẽ trôi khỏi nhau, đúng lỗi T62 vừa vá.
+        sinh_luc = {r['user_id']: r['generated_at'] for r in ke_hoach}
         muc = q('SELECT plan_id, id, week_start, sort_order, kind, course_id, '
                 '       lesson_no, topic, title, reason, status '
                 '  FROM study_plan_items WHERE plan_id = ANY(%s) '
@@ -458,7 +493,7 @@ def do_cham_theo_hoc_vien(uids):
     this_monday = _monday(local_today())
     ra = {}
     for uid, rows in muc_theo_uid.items():
-        floor = min((r['week_start'] for r in rows), default=local_today())
+        floor = _moc_san(rows, sinh_luc.get(uid))
         done_lessons, mock_dates, topic_dates = _gom_hoat_dong(
             sk_theo_uid.get(uid, []), floor)
         _, _, lag = _duyet_muc(rows, done_lessons, mock_dates, topic_dates, this_monday)
@@ -480,7 +515,7 @@ def read(uid, weeks=DEFAULT_VIEW_WEEKS, all_weeks=False):
                        topic, title, reason, status
                 FROM study_plan_items WHERE plan_id=%s ORDER BY sort_order''',
              (plan['id'],))
-    floor = min((r['week_start'] for r in rows), default=local_today())
+    floor = _moc_san(rows, plan['generated_at'])
     done_lessons, mock_dates, topic_dates = _done_lookup(uid, floor)
     basis = plan['basis']
     if isinstance(basis, str):

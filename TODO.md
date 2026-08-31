@@ -1570,3 +1570,111 @@ Phép kiểm dựng kịch bản hai số nằm HAI BÊN ngưỡng, và có mộ
 đúng điều đó — lần đầu chạy nó bắt được chính tôi đặt số sai (62 vs ngưỡng 60,
 chưa qua bên kia). Lùi mã cũ, nó đỏ đúng hệ quả: *"chủ đề làm 85% vẫn bị xếp
 lịch ôn vì điểm đề kéo xuống"*.
+
+
+---
+
+## 31/08/2026 (tiếp) — L13, L14, L15: ba con số nói dối trên màn hình
+
+### [x] L13 (XONG) · Xem lại quiz ôn tập hiện MÃ lựa chọn và không bao giờ hiện lời giải
+Hai lỗi chồng nhau trong cùng một màn hình:
+
+- `review_quiz.js` in thẳng `your_answer`/`correct_answer`, vốn là `o1`/`o2`.
+  Màn hình hiện **"Bạn chọn: o1 — Đáp án đúng: o2"** — thứ không ai đọc được,
+  kể cả người vừa làm bài xong. Nay máy chủ trả kèm `*_text` và giao diện in chữ
+  (vẫn giữ đường lùi về mã cho quiz sinh TRƯỚC bản vá).
+- `explanation` luôn `None` với mọi câu HSA: dạng HSA để lời giải ở **cấp câu
+  hỏi** (`explain`), còn `_add_hsa` vứt nó đi và phần chấm chỉ tìm
+  `option.explanation` (dạng pe_test). Nghĩa là phần xem lại của quiz ôn tập
+  **chưa bao giờ giải thích gì**. Nay `explain` được giữ qua kho câu hỏi và
+  được đọc trước, rồi mới tới lời giải cấp lựa chọn.
+
+### [x] L14 (XONG) · Một luật mở quiz, ba phát biểu
+Không phải hai như bản audit nêu — rà ra **ba**:
+
+1. `quizzes/views` kiểm số **CÂU HỎI** trong kho (`len(pool) < 5`);
+2. thông báo lỗi của chính nó nói "hoàn thành ít nhất 5 **BÀI**";
+3. `stats/ReviewQuizStatusView` gác bằng **CHUỖI NGÀY** (`streak >= 5`) — thứ
+   không liên quan gì tới việc em đã học đủ chưa, và endpoint ấy **không có nơi
+   nào gọi** (rà cả frontend: 0 kết quả).
+
+Câu (2) sai theo cả hai chiều: một bài có 8 câu là đủ, còn 5 bài mỗi bài một câu
+điền thì vẫn không đủ. Câu (3) là luật KHÔNG được thi hành — chuỗi 30 ngày mà
+chưa xong bài nào thì kho vẫn rỗng và `GenerateQuizView` vẫn từ chối.
+
+Rút `pool_cau_hoi(uid, course_id)` thành nơi DUY NHẤT trả lời câu hỏi ấy. Thông
+báo nay nói đúng thứ đang kiểm và nói em đang có bao nhiêu. `ReviewQuizStatusView`
+hỏi lại chính nơi giữ luật.
+
+Đáng nói: **một phép kiểm cũ đang GHIM câu thông báo sai lại** —
+`assert 'ít nhất 5 bài' in error`. Đúng cái bẫy RULES §19 vừa ghi hôm nay, gặp
+lại sau vài giờ.
+
+### [x] L15 (XONG) · Điểm sao 5.0 trên mọi trang khoá là con số BỊA
+Đo: `courses.rating` = **5.0 cho cả ba khoá**, `course_ratings` **rỗng 0 dòng**.
+`CourseRatingView` tính đúng con số thật nhưng **không nơi nào gọi**. Nghĩa là
+mọi trang khoá và mọi thẻ khoá đang khoe "5.0 ★" trong khi chưa một ai chấm.
+
+Nay ba đường đọc khoá đều lấy trung bình THẬT từ `course_ratings`, kèm số lượt.
+Chưa ai đánh giá thì trả `NULL`, và màn hình nói **"Chưa có đánh giá"** thay vì
+một con số bịa — cùng luật với "không biết điểm khác điểm 100 vì người dùng nói
+thế" ở `CompleteLessonView`.
+
+Đo lại sau khi vá: `rating = None, rating_count = 0` cho cả ba khoá — đúng sự
+thật. Lùi mã cũ, phép kiểm đỏ đúng câu *"chưa ai đánh giá mà vẫn hiện 5.0 sao"*
+và *"assert 5.0 == 3.0"*.
+
+**Bộ kiểm backend xanh mà màn hình vẫn nói dối.** Phép kiểm trình duyệt bắt được
+đường đọc THỨ TƯ tôi bỏ sót: `CourseDetailView` (`/api/courses/<id>`) vẫn trả
+`c.rating` = 5.0, nên trang chi tiết khoá vẫn khoe "5" trong khi ba đường kia đã
+trả `None`. Phép kiểm cũ của tôi chỉ đi qua `/api/courses` — nó đúng, nhưng nó
+không phải đường mà trang chi tiết dùng (RULES §19: *phép kiểm phải đi đúng
+đường mà nó nhận là đang bảo vệ*).
+
+Nay có một phép kiểm duyệt CẢ BỐN đường: `/api/courses` ·
+`/api/courses-enrolled` · `/api/courses/<id>` · `/api/public/courses`. Một đường
+quên là một màn hình nói dối.
+
+**Một lỗi của chính tôi trong lúc đo**: kịch bản kiểm viết
+`c.get('rating_count') or c.get('ratingCount')` — mà `0 or None` là `None`, nên
+tôi suýt báo "rating_count không có". Đúng họ falsy-zero với L10 vừa vá xong
+cùng phiên. Đo lại bằng truy cập thẳng khoá.
+
+### [x] L12 (một phần) · Mục kế hoạch bị tick bởi việc không phải của nó
+
+Hai chỗ, cùng một kiểu sai — một hoạt động tick nhiều thứ hơn phần của nó:
+
+**(a) Mốc sàn lấy TUẦN ĐẦU thay vì lúc SINH kế hoạch.** Kế hoạch lập hôm thứ Tư
+nhưng bắt đầu từ thứ Hai cùng tuần thì hai ngày đầu tuần nằm TRƯỚC lúc nó tồn
+tại — mà bản cũ vẫn cho chúng tick, nên kế hoạch vừa lập ra đã có sẵn mục "đã
+xong". Nay `_moc_san(rows, generated_at)`, và cả bản đọc CHO CẢ LỚP
+(`do_cham_theo_hoc_vien`) dùng chung đúng hàm ấy — hai bản chép tay là hai bản
+sẽ trôi khỏi nhau, đúng lỗi T62 vừa vá.
+
+**(b) Học một bài mới tick luôn một buổi "Ôn lại chủ đề".** `topic_dates` gom
+MỌI sự kiện có `topic`, kể cả `lesson` và `drill`. Nên MỘT lần hoàn thành bài
+tick xong HAI mục: mục "học bài N" (qua `done_lessons`) và mục "Ôn lại X" (qua
+`topic_dates`) — trong khi em chỉ làm một việc. Phòng luyện cùng lý do: nó sinh
+ra từ đúng lần hoàn thành ấy, đếm nó là đếm lần thứ ba.
+
+Nay `KHONG_TINH_LA_ON_LAI = (KIND_LESSON, KIND_DRILL)`. Còn lại vẫn tính là ôn:
+quiz ôn tập (đúng tên nó), điểm hợp phần đề thi thử, bài tập giảng viên chấm —
+có một phép kiểm riêng ghim điều đó, để siết mà không siết luôn việc ôn thật.
+
+**KHÔNG một con số nào của học viên hiện tại đổi.** Đo trước/sau trên cả ba kế
+hoạch đang hoạt động: `user 7 lag=2`, `user 9 lag=4`, `user 12 lag=14`, totals y
+hệt. Bản vá đúng theo cấu trúc nhưng chưa chạm ai — ba kế hoạch ấy tình cờ không
+rơi vào hai trường hợp trên. Nói ra chứ không khoe một tác động không có.
+
+Phép kiểm phải TỰ DỰNG kịch bản, và bản đầu của nó sụp vì hôm nay đúng là thứ
+Hai (mốc "thứ Hai" trùng "hôm nay" nên không còn khoảng cách nào để đo). Đã dựng
+mốc tường minh thay vì suy từ ngày trong tuần.
+
+**CÒN LẠI của L12, chưa làm:** `totals.done` đếm cả mục đã xong ở TUẦN ĐÃ QUA,
+nhưng phần `weeks` lọc `k >= today_key` nên chúng không hiện ở đâu cả. Chú thích
+ngay trên đó viết *"Không giấu đi: nhìn thấy việc đã tick xong trong tuần này
+chính là phần thưởng của cả tuần"*, còn khối ngay dưới thì giấu. Hai chú thích
+mâu thuẫn nhau trong mười dòng. Sửa đúng là cho mục đã xong hiện ở tuần HOÀN
+THÀNH (kẹp về tuần này nếu sớm hơn) chứ không phải tuần dự kiến — nhưng
+`study_plan_items` chưa có cột thời điểm hoàn thành, nên cần thêm cột hoặc suy
+từ `learning_events`. Chưa làm trong phiên này.

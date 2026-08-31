@@ -812,7 +812,9 @@ function renderCourses() {
         '<div class="card-body">',
         '<div class="card-desc">' + c.description + "</div>",
         '<div class="card-stats">',
-        '<span class="card-stat"><span data-icon="star" data-size="11" data-color="#F59E0B" style="display:inline-flex"></span> <span class="rating">' + c.rating + "</span></span>",
+        // Chưa ai đánh giá thì hiện dấu gạch, không hiện 5.0 (L15). `courses
+        // .rating` từng là con số seed trong khi bảng đánh giá rỗng.
+        '<span class="card-stat"><span data-icon="star" data-size="11" data-color="#F59E0B" style="display:inline-flex"></span> <span class="rating">' + (c.rating == null ? "—" : c.rating) + "</span></span>",
         '<span class="card-stat"><span data-icon="users" data-size="11" style="display:inline-flex"></span> ' + c.students + "</span>",
         '<span class="card-stat"><span data-icon="clock" data-size="11" style="display:inline-flex"></span> ' + c.duration + "</span>",
         '<span class="card-stat"><span data-icon="book-open" data-size="11" style="display:inline-flex"></span> ' + c.lessons + "</span>",

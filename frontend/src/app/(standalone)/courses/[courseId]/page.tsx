@@ -341,8 +341,15 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                         <div className="star-avg-fill" data-fill={ratingFill}>★★★★★</div>
                       </div>
                     </div>
-                    <div className="score">{course.rating}</div>
-                    <div className="avg-label">Đánh giá trung bình</div>
+                    {/* Chưa ai đánh giá thì NÓI RA (L15, 31/08/2026). Trước đó
+                        `courses.rating` là con số seed 5.0 và bảng đánh giá thì
+                        rỗng: mọi trang khoá khoe "5.0 ★" mà chưa một ai chấm. */}
+                    <div className="score">{course.rating == null ? '—' : course.rating}</div>
+                    <div className="avg-label">
+                      {course.rating == null
+                        ? 'Chưa có đánh giá'
+                        : 'Đánh giá trung bình · ' + (course.ratingCount ?? course.rating_count ?? 0) + ' lượt'}
+                    </div>
 
                     <div className="user-rate-section">
                       <div className="user-rate-label">Đánh giá của bạn:</div>

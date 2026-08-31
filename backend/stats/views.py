@@ -216,13 +216,35 @@ class ClaimMissionView(APIView):
 
 
 class ReviewQuizStatusView(APIView):
+    """GET /api/streak/review-quiz-status — quiz ôn tập đã mở chưa.
+
+    Bản cũ gác bằng CHUỖI NGÀY (`streak >= 5`) — một thứ không liên quan gì tới
+    việc em đã học đủ chưa: chuỗi 5 ngày mà chưa xong bài nào thì kho câu hỏi
+    vẫn rỗng, và `GenerateQuizView` vẫn từ chối. Hai luật cho một câu hỏi, và
+    luật ở đây là luật KHÔNG được thi hành.
+
+    Nay hỏi đúng nơi giữ luật thật (`quizzes.pool_cau_hoi`). Endpoint này hiện
+    chưa có nơi nào gọi (rà cả frontend: 0 kết quả) — giữ lại vì nó là câu trả
+    lời đúng cho một câu hỏi màn hình sẽ cần, nhưng nếu nó phát biểu SAI luật
+    thì người đọc sau tin nhầm, nên phải sửa chứ không để đó.
+    """
+
     def get(self, request):
-        user = q1('SELECT streak FROM users WHERE id=%s', (request.user.id,))
-        streak = user['streak'] if user else 0
+        from quizzes.views import MIN_QUESTIONS, pool_cau_hoi
+        uid = request.user.id
+        khoa = [r['course_id'] for r in q(
+            'SELECT course_id FROM enrollments WHERE user_id=%s', (uid,))]
+        theo_khoa = {c: len(pool_cau_hoi(uid, c)) for c in khoa}
+        nhieu_nhat = max(theo_khoa.values()) if theo_khoa else 0
         return Response({
-            'streak': streak,
-            'is_unlocked': streak >= 5,
-            'days_remaining': max(0, 5 - streak),
+            # `streak` giữ lại: nó là con số thật và màn hình chuỗi ngày cần nó.
+            # Thứ bị bỏ là việc DÙNG nó làm điều kiện mở quiz.
+            'streak': (q1('SELECT streak FROM users WHERE id=%s', (uid,)) or {}).get('streak') or 0,
+            'minQuestions': MIN_QUESTIONS,
+            'available': nhieu_nhat,
+            'availableByCourse': theo_khoa,
+            'isUnlocked': nhieu_nhat >= MIN_QUESTIONS,
+            'questionsNeeded': max(0, MIN_QUESTIONS - nhieu_nhat),
         })
 
 

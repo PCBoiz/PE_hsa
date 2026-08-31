@@ -78,29 +78,26 @@ def _hoc_xong_mot_bai(client):
                        {'courseId': 'hsa_quantitative', 'xpEarned': 10}, format='json')
 
 
-def test_locked_when_streak_below_5(auth_api, temp_user):
+def test_van_bao_dung_chuoi_ngay(auth_api, temp_user):
+    """`streak` vẫn là con số thật và endpoint vẫn phải nói đúng nó."""
     _set_streak(temp_user, 3, date.today())
     res = auth_api.get('/api/streak/review-quiz-status')
     assert res.status_code == 200
-    data = res.json()
-    assert data['streak'] == 3
-    assert data['is_unlocked'] is False
-    assert data['days_remaining'] == 2
+    assert res.json()['streak'] == 3
 
 
-def test_unlocked_when_streak_reaches_5(auth_api, temp_user):
-    _set_streak(temp_user, 5, date.today())
-    data = auth_api.get('/api/streak/review-quiz-status').json()
-    assert data['streak'] == 5
-    assert data['is_unlocked'] is True
-    assert data['days_remaining'] == 0
-
-
-def test_unlocked_when_streak_above_5(auth_api, temp_user):
+def test_CHUOI_NGAY_khong_con_la_dieu_kien_mo_quiz(auth_api, temp_user):
+    """Ba phép kiểm cũ ở đây khẳng định luật `streak >= 5` — một luật KHÔNG được
+    thi hành: `GenerateQuizView` gác bằng số CÂU HỎI trong kho, nên chuỗi 9 ngày
+    mà chưa xong bài nào thì vẫn không tạo được quiz. Hai chỗ nói hai điều, và
+    chỗ được người dùng chạm vào là chỗ kia (L14, 31/08/2026).
+    """
     _set_streak(temp_user, 9, date.today())
-    data = auth_api.get('/api/streak/review-quiz-status').json()
-    assert data['is_unlocked'] is True
-    assert data['days_remaining'] == 0
+    d = auth_api.get('/api/streak/review-quiz-status').json()
+    assert d['streak'] == 9
+    assert d['isUnlocked'] is False, (
+        'chuỗi 9 ngày mà chưa xong bài nào vẫn báo đã mở khoá: %s' % d)
+    assert d['available'] == 0 and d['questionsNeeded'] == d['minQuestions']
 
 
 def test_requires_login(api, db):
@@ -113,14 +110,14 @@ def test_streak_increments_on_consecutive_day_khi_hoc_xong_bai(auth_api, da_ghi_
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['ok'] is True
     assert data['streak'] == 5
-    assert auth_api.get('/api/streak/review-quiz-status').json()['is_unlocked'] is True
+    # Bỏ phần khẳng định "chuỗi 5 ngày ⇒ mở quiz": đó là luật đã bị gỡ. Phép
+    # kiểm này kiểm CHUỖI NGÀY, và con số ấy vẫn do `/complete` trả về.
 
 
 def test_streak_resets_after_missing_a_day(auth_api, da_ghi_danh):
     _set_streak(da_ghi_danh, 5, date.today() - timedelta(days=3))
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['streak'] == 1
-    assert auth_api.get('/api/streak/review-quiz-status').json()['is_unlocked'] is False
 
 
 def test_streak_unchanged_when_studying_again_same_day(auth_api, da_ghi_danh):
@@ -330,3 +327,86 @@ def test_diem_de_thi_thu_khong_con_keo_chu_de_xuong_duoi_nguong(db):
         'số hiện phải VẪN gộp điểm đề (anh chốt "giữ"): %s' % o)
     assert o['mastery'] < plan.REVIEW_BELOW <= o['masteryTopic'], (
         'phép kiểm chỉ có nghĩa khi hai con số nằm hai bên ngưỡng: %s' % o)
+
+
+# ── L12 · mục kế hoạch chỉ được tick bởi đúng việc, và sau khi kế hoạch có ──
+
+def _ke_hoach(uid, tuan_dau, sinh_luc, muc):
+    """Dựng một kế hoạch tối giản. `muc` là list (kind, course_id, lesson_no, topic)."""
+    pid = q1("INSERT INTO study_plans (user_id, is_active, generated_at, basis) "
+             "VALUES (%s, TRUE, %s, '{}'::jsonb) RETURNING id", (uid, sinh_luc))['id']
+    for i, (kind, cid, no, topic) in enumerate(muc, 1):
+        x("INSERT INTO study_plan_items (plan_id, week_start, sort_order, kind, "
+          "course_id, lesson_no, topic, title, reason, status) "
+          "VALUES (%s,%s,%s,%s,%s,%s,%s,'x','y','todo')",
+          (pid, tuan_dau, i, kind, cid, no, topic))
+    return pid
+
+
+@pytest.mark.django_db
+def test_viec_lam_TRUOC_khi_co_ke_hoach_khong_tick_muc_nao(db):
+    """Kế hoạch sinh hôm nay nhưng bắt đầu từ thứ Hai cùng tuần: hai ngày đầu
+    tuần nằm TRƯỚC lúc nó tồn tại. Bản cũ lấy mốc sàn là TUẦN ĐẦU nên vẫn cho
+    chúng tick — kế hoạch vừa lập ra đã có sẵn mục "đã xong".
+    """
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L12','hv_l12_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    # Mốc dựng TƯỜNG MINH, không phụ thuộc hôm nay là thứ mấy: kế hoạch bắt đầu
+    # từ 3 ngày trước nhưng chỉ được SINH ra hôm nay.
+    ngay_lam = local_today() - timedelta(days=3)
+    _su_kien(uid, 'mock', 'mock_attempt', '901', None, None, diem=50)
+    x("UPDATE learning_events SET event_date=%s WHERE user_id=%s AND kind='mock'",
+      (ngay_lam, uid))
+    _ke_hoach(uid, ngay_lam, local_now(), [('mock', None, None, None)])
+
+    ra = plan.read(uid, all_weeks=True)
+    assert ra['totals']['done'] == 0, (
+        'việc làm trước khi kế hoạch tồn tại vẫn tick xong một mục: %s' % ra['totals'])
+
+
+@pytest.mark.django_db
+def test_hoc_bai_moi_KHONG_tick_muc_ON_LAI_chu_de(db):
+    """Học một bài mới trong chủ đề X không phải là ôn lại chủ đề X — và học
+    viên cũng không hề làm hai việc. Bản cũ để chung một rổ nên MỘT lần hoàn
+    thành bài tick xong HAI mục kế hoạch."""
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L12b','hv_l12b_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    bai = q1("SELECT course_id, module FROM lessons "
+             "WHERE module IS NOT NULL AND module <> '' LIMIT 1")
+    thu_hai = local_today() - timedelta(days=local_today().weekday())
+    _ke_hoach(uid, thu_hai, local_now() - timedelta(days=7),
+              [('review', bai['course_id'], None, bai['module'])])
+    # Hôm nay em học một BÀI MỚI thuộc chủ đề ấy.
+    _su_kien(uid, 'lesson', 'lesson', '55', bai['course_id'], bai['module'])
+
+    ra = plan.read(uid, all_weeks=True)
+    assert ra['totals']['done'] == 0, (
+        'học bài mới đã tick xong một buổi ÔN LẠI: %s' % ra['totals'])
+
+
+@pytest.mark.django_db
+def test_quiz_on_tap_VAN_tick_duoc_muc_on_lai(db):
+    """Siết mà siết luôn cả việc ôn thật thì kế hoạch không bao giờ xong."""
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L12c','hv_l12c_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    bai = q1("SELECT course_id, module FROM lessons "
+             "WHERE module IS NOT NULL AND module <> '' LIMIT 1")
+    thu_hai = local_today() - timedelta(days=local_today().weekday())
+    _ke_hoach(uid, thu_hai, local_now() - timedelta(days=7),
+              [('review', bai['course_id'], None, bai['module'])])
+    _su_kien(uid, 'review_quiz', 'quiz', '55', bai['course_id'], bai['module'])
+
+    ra = plan.read(uid, all_weeks=True)
+    assert ra['totals']['done'] == 1, ra['totals']

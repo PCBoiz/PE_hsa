@@ -60,9 +60,19 @@ def _generate(client, num=None):
 
 
 def test_generate_requires_min_5_completed(other_api):
+    """Thông báo phải nói đúng thứ đang được kiểm: SỐ CÂU, không phải số bài.
+
+    Câu cũ — "hoàn thành ít nhất 5 bài có câu hỏi" — sai theo cả hai chiều: một
+    bài có 8 câu là đủ, còn 5 bài mỗi bài một câu điền thì vẫn không đủ. Và
+    chính phép kiểm này đang GHIM câu sai ấy lại (RULES §19).
+    """
     res = _generate(other_api)
     assert res.status_code == 400
-    assert 'ít nhất 5 bài' in res.json()['error']
+    d = res.json()
+    assert 'câu trắc nghiệm' in d['error'], d['error']
+    assert 'bài' not in d['error'].split('từ các bài')[0], (
+        'thông báo vẫn đếm theo BÀI: %s' % d['error'])
+    assert d['available'] == 0 and d['needed'] == 5, d
 
 
 def test_generate_hides_correct_field(auth_api, quiz_user):
@@ -166,3 +176,57 @@ def test_unknown_question_no_ignored(auth_api, quiz_user):
     res = auth_api.post(f"/api/quizzes/{quiz['quiz_id']}/submit", {'answers': answers}, format='json')
     assert res.status_code == 200
     assert res.json()['score'] == 5
+
+
+# ── L13/L14 · quiz ôn tập: xem lại phải đọc được, và MỘT luật mở quiz ───────
+
+def _quiz_mot_cau(uid, giai='Cộng hai số lại.'):
+    cau = [{'question_no': 1, 'lesson_id': None, 'lesson_code': 'x',
+            'question': '2+2?', 'explain': giai,
+            'options': [{'id': 'o1', 'text': 'ba', 'correct': False},
+                        {'id': 'o2', 'text': 'bốn', 'correct': True}]}]
+    return q1("INSERT INTO quizzes (user_id, course_id, status, questions_json) "
+              "VALUES (%s,%s,'generated',%s::jsonb) RETURNING id",
+              (uid, COURSE_ID, json.dumps(cau, ensure_ascii=False)))['id']
+
+
+def test_xem_lai_hien_CHU_chu_khong_hien_ma_lua_chon(auth_api, temp_user):
+    """Bản cũ in thẳng `your_answer`/`correct_answer` — vốn là `o1`/`o2` — nên
+    màn hình hiện "Bạn chọn: o1 — Đáp án đúng: o2", thứ không ai đọc được, kể
+    cả người vừa làm bài xong."""
+    qid = _quiz_mot_cau(temp_user)
+    res = auth_api.post(f'/api/quizzes/{qid}/submit',
+                        {'answers': [{'question_no': 1, 'selected': 'o1'}]}, format='json')
+    assert res.status_code == 200, res.json()
+    m = res.json()['review'][0]
+    assert m['your_answer_text'] == 'ba', m
+    assert m['correct_answer_text'] == 'bốn', m
+
+
+def test_loi_giai_cap_CAU_HOI_cua_dang_HSA_khong_con_mat(auth_api, temp_user):
+    """Dạng HSA để lời giải ở CẤP CÂU HỎI (`explain`), không nằm trong từng lựa
+    chọn. Bản cũ chỉ tìm `option.explanation` nên mọi câu HSA đều ra None —
+    phần xem lại của quiz ôn tập chưa bao giờ giải thích gì."""
+    qid = _quiz_mot_cau(temp_user)
+    res = auth_api.post(f'/api/quizzes/{qid}/submit',
+                        {'answers': [{'question_no': 1, 'selected': 'o2'}]}, format='json')
+    assert res.json()['review'][0]['explanation'] == 'Cộng hai số lại.', res.json()['review'][0]
+
+
+def test_MOT_luat_mo_quiz_on_tap(auth_api, temp_user):
+    """Ba phát biểu cho một luật là hai phát biểu sai. `ReviewQuizStatusView`
+    trước đây gác bằng CHUỖI NGÀY — thứ không liên quan gì tới việc em đã học
+    đủ chưa, và là luật KHÔNG được thi hành."""
+    from common.db import x as _x
+    from quizzes.views import MIN_QUESTIONS
+    _x("INSERT INTO enrollments (user_id, course_id, progress, completed_lessons, "
+       "time_spent, last_lesson, next_lesson) VALUES (%s,%s,0,0,'0h','','')",
+       (temp_user, COURSE_ID))
+    # Chuỗi ngày dài nhưng CHƯA HỌC BÀI NÀO.
+    _x("UPDATE users SET streak = 30 WHERE id=%s", (temp_user,))
+
+    d = auth_api.get('/api/streak/review-quiz-status').json()
+    assert d['isUnlocked'] is False, (
+        'chuỗi 30 ngày mà chưa xong bài nào vẫn báo đã mở khoá: %s' % d)
+    assert d['minQuestions'] == MIN_QUESTIONS
+    assert d['available'] == 0 and d['questionsNeeded'] == MIN_QUESTIONS, d

@@ -1,6 +1,12 @@
 /* review_quiz.js — FE-06: Quiz ôn tập cấp khóa học (block #review-quiz-block
    trong course_detail.html). Backend: routes/quizzes.py.
-   Đáp án đúng chỉ backend biết — FE chỉ nhận {id, text} cho từng option. */
+   Đáp án đúng chỉ backend biết — FE chỉ nhận {id, text} cho từng option.
+
+   PHẦN XEM LẠI in CHỮ, không in mã lựa chọn (L13, 31/08/2026). Bản cũ in
+   thẳng `your_answer`/`correct_answer` — vốn là `o1`/`o2` — nên màn hình
+   hiện "Bạn chọn: o1 — Đáp án đúng: o2", thứ không ai đọc được, kể cả
+   người vừa làm bài xong. Vẫn giữ đường lùi về mã: một quiz sinh TRƯỚC bản
+   vá không có `*_text` trong phản hồi. */
 
 let currentQuiz = null;
 
@@ -93,8 +99,10 @@ function renderQuizResult(result) {
     ${result.review.map(r => `
       <div class="quiz-review-item ${r.is_correct ? 'correct' : 'wrong'}">
         <p class="quiz-q-text">${r.question_no}. ${_esc(r.question)}</p>
-        <p>Bạn chọn: <b>${r.your_answer != null ? _esc(r.your_answer) : '(bỏ trống)'}</b>
-           — Đáp án đúng: <b>${_esc(r.correct_answer)}</b></p>
+        <p>Bạn chọn: <b>${r.your_answer_text != null ? _esc(r.your_answer_text)
+                          : (r.your_answer != null ? _esc(r.your_answer) : '(bỏ trống)')}</b>
+           — Đáp án đúng: <b>${_esc(r.correct_answer_text != null ? r.correct_answer_text
+                                    : r.correct_answer)}</b></p>
         ${r.explanation ? `<p class="quiz-explain">${_esc(r.explanation)}</p>` : ''}
       </div>`).join('')}
     <button type="button" class="quiz-btn secondary" onclick="location.reload()">Làm lại từ đầu</button>`;

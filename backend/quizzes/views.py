@@ -50,6 +50,107 @@ def _record_quiz_events(uid, quiz_id, course_id, questions, selected_by_no, now)
         )
 
 
+def pool_cau_hoi(uid, course_id):
+    """Kho câu hỏi ôn tập của một học viên trong một khoá.
+
+    NƠI DUY NHẤT trả lời "em đã đủ điều kiện làm quiz ôn tập chưa". Trước
+    31/08/2026 câu hỏi ấy có BA câu trả lời khác nhau trong repo:
+
+      · `quizzes/views` kiểm số CÂU HỎI trong kho (`len(pool) < 5`);
+      · thông báo lỗi của chính nó nói "hoàn thành ít nhất 5 BÀI";
+      · `stats/ReviewQuizStatusView` thì gác bằng CHUỖI NGÀY (`streak >= 5`) —
+        một thứ không liên quan gì tới việc em đã học đủ chưa, và endpoint ấy
+        cũng không có nơi nào gọi (rà cả frontend: 0 kết quả).
+
+    Ba phát biểu cho một luật là hai phát biểu sai.
+    """
+    # Câu hỏi lấy từ các bài học viên ĐÃ HOÀN THÀNH trong khoá này.
+    #
+    # Bản cũ đọc content_json->'step_2' — đó là schema bài học của pe_test
+    # (5 bước, MCQ nằm ở step_2). Bài HSA để câu hỏi ở test.questions và
+    # drill.questions, nên quiz ôn tập KHÔNG BAO GIỜ tìm thấy câu nào:
+    # endpoint luôn trả 400 "available: 0" và tính năng chết hẳn
+    # (audit 2026-08-19). Nay đọc đúng chỗ, vẫn giữ nhánh step_2 cho dữ
+    # liệu cũ nếu có.
+    rows = q('''SELECT l.id AS lesson_id,
+                       COALESCE(l.lesson_code, l.content_json->>'id') AS lesson_code,
+                       l.content_json AS cj
+                FROM lessons l
+                JOIN lesson_progress lp
+                  ON lp.lesson_id = l.id AND lp.user_id = %s
+                 AND lp.status = 'completed'
+                WHERE l.course_id = %s
+                  AND l.content_json IS NOT NULL''', (uid, course_id))
+
+    pool = []
+
+    def _add_pe_test(lesson, qq):
+        """Dạng pe_test: options đã là [{id, text, correct}]."""
+        if isinstance(qq, dict) and qq.get('question') and isinstance(qq.get('options'), list):
+            pool.append({
+                'lesson_id': lesson['lesson_id'],
+                'lesson_code': lesson['lesson_code'],
+                'question': qq['question'],
+                'explain': qq.get('explain'),
+                'options': qq['options'],
+            })
+
+    def _add_hsa(lesson, qq):
+        """Dạng HSA: options là mảng chuỗi + trường answer riêng.
+
+        Quy về dạng [{id, text, correct}] mà phần chấm điểm đang dùng.
+        Bỏ câu điền đáp án: quiz ôn tập chỉ chấm trắc nghiệm.
+        """
+        if not isinstance(qq, dict):
+            return
+        if qq.get('type') not in (None, 'mcq'):
+            return
+        opts, ans = qq.get('options'), qq.get('answer')
+        if not qq.get('question') or not isinstance(opts, list) or len(opts) < 2:
+            return
+        if ans is None or ans not in opts:
+            return
+        pool.append({
+            'lesson_id': lesson['lesson_id'],
+            'lesson_code': lesson['lesson_code'],
+            'question': qq['question'],
+            # Lời giải của dạng HSA nằm ở CẤP CÂU HỎI (`explain`), không nằm
+            # trong từng lựa chọn như dạng pe_test. Bản cũ chỉ tìm
+            # `option.explanation` nên với mọi câu HSA nó LUÔN ra None —
+            # tức phần xem lại của quiz ôn tập chưa bao giờ giải thích gì.
+            'explain': qq.get('explain'),
+            'options': [
+                {'id': f'o{i + 1}', 'text': str(o), 'correct': (o == ans)}
+                for i, o in enumerate(opts)
+            ],
+        })
+
+    for r in rows:
+        cj = r['cj']
+        if isinstance(cj, str):
+            try:
+                cj = json.loads(cj)
+            except ValueError:
+                continue
+        if not isinstance(cj, dict):
+            continue
+
+        for khoi in ('test', 'drill'):
+            block = cj.get(khoi)
+            if isinstance(block, dict) and isinstance(block.get('questions'), list):
+                for item in block['questions']:
+                    _add_hsa(r, item)
+
+        s2 = cj.get('step_2')
+        if isinstance(s2, dict):
+            if isinstance(s2.get('mcq'), list):
+                for item in s2['mcq']:
+                    _add_pe_test(r, item)
+            else:
+                _add_pe_test(r, s2)
+    return pool
+
+
 class GenerateQuizView(APIView):
     def post(self, request, course_id):
         data = request.data if isinstance(request.data, dict) else {}
@@ -63,89 +164,19 @@ class GenerateQuizView(APIView):
         if not course:
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-        # Câu hỏi lấy từ các bài học viên ĐÃ HOÀN THÀNH trong khoá này.
-        #
-        # Bản cũ đọc content_json->'step_2' — đó là schema bài học của pe_test
-        # (5 bước, MCQ nằm ở step_2). Bài HSA để câu hỏi ở test.questions và
-        # drill.questions, nên quiz ôn tập KHÔNG BAO GIỜ tìm thấy câu nào:
-        # endpoint luôn trả 400 "available: 0" và tính năng chết hẳn
-        # (audit 2026-08-19). Nay đọc đúng chỗ, vẫn giữ nhánh step_2 cho dữ
-        # liệu cũ nếu có.
-        rows = q('''SELECT l.id AS lesson_id,
-                           COALESCE(l.lesson_code, l.content_json->>'id') AS lesson_code,
-                           l.content_json AS cj
-                    FROM lessons l
-                    JOIN lesson_progress lp
-                      ON lp.lesson_id = l.id AND lp.user_id = %s
-                     AND lp.status = 'completed'
-                    WHERE l.course_id = %s
-                      AND l.content_json IS NOT NULL''', (uid, course_id))
-
-        pool = []
-
-        def _add_pe_test(lesson, qq):
-            """Dạng pe_test: options đã là [{id, text, correct}]."""
-            if isinstance(qq, dict) and qq.get('question') and isinstance(qq.get('options'), list):
-                pool.append({
-                    'lesson_id': lesson['lesson_id'],
-                    'lesson_code': lesson['lesson_code'],
-                    'question': qq['question'],
-                    'options': qq['options'],
-                })
-
-        def _add_hsa(lesson, qq):
-            """Dạng HSA: options là mảng chuỗi + trường answer riêng.
-
-            Quy về dạng [{id, text, correct}] mà phần chấm điểm đang dùng.
-            Bỏ câu điền đáp án: quiz ôn tập chỉ chấm trắc nghiệm.
-            """
-            if not isinstance(qq, dict):
-                return
-            if qq.get('type') not in (None, 'mcq'):
-                return
-            opts, ans = qq.get('options'), qq.get('answer')
-            if not qq.get('question') or not isinstance(opts, list) or len(opts) < 2:
-                return
-            if ans is None or ans not in opts:
-                return
-            pool.append({
-                'lesson_id': lesson['lesson_id'],
-                'lesson_code': lesson['lesson_code'],
-                'question': qq['question'],
-                'options': [
-                    {'id': f'o{i + 1}', 'text': str(o), 'correct': (o == ans)}
-                    for i, o in enumerate(opts)
-                ],
-            })
-
-        for r in rows:
-            cj = r['cj']
-            if isinstance(cj, str):
-                try:
-                    cj = json.loads(cj)
-                except ValueError:
-                    continue
-            if not isinstance(cj, dict):
-                continue
-
-            for khoi in ('test', 'drill'):
-                block = cj.get(khoi)
-                if isinstance(block, dict) and isinstance(block.get('questions'), list):
-                    for item in block['questions']:
-                        _add_hsa(r, item)
-
-            s2 = cj.get('step_2')
-            if isinstance(s2, dict):
-                if isinstance(s2.get('mcq'), list):
-                    for item in s2['mcq']:
-                        _add_pe_test(r, item)
-                else:
-                    _add_pe_test(r, s2)
+        pool = pool_cau_hoi(uid, course_id)
 
         if len(pool) < MIN_QUESTIONS:
+            # Nói đúng thứ đang được kiểm (SỐ CÂU, không phải số bài) và nói em
+            # đang có bao nhiêu. Câu cũ — "hoàn thành ít nhất 5 bài có câu hỏi"
+            # — sai theo cả hai chiều: một bài có 8 câu là đủ, còn 5 bài mỗi bài
+            # một câu điền cũng vẫn không đủ.
             return Response({
-                'error': 'Cần hoàn thành ít nhất 5 bài có câu hỏi để tạo quiz ôn tập.',
+                'error': 'Cần ít nhất %d câu trắc nghiệm từ các bài đã học để tạo quiz ôn '
+                         'tập. Hiện có %d — học thêm vài bài nữa rồi quay lại.'
+                         % (MIN_QUESTIONS, len(pool)),
                 'available': len(pool),
+                'needed': MIN_QUESTIONS,
             }, status=400)
 
         n = min(num_questions, len(pool))
@@ -156,6 +187,7 @@ class GenerateQuizView(APIView):
                 'lesson_id': p['lesson_id'],
                 'lesson_code': p['lesson_code'],
                 'question': p['question'],
+                'explain': p.get('explain'),
                 'options': p['options'],
             }
             for i, p in enumerate(picked)
@@ -218,18 +250,27 @@ class SubmitQuizView(APIView):
                 selected = selected_by_no.get(qno)
                 correct_answer = next(
                     (o.get('id') for o in qq.get('options', []) if o.get('correct')), None)
-                explanation = next(
+                # Lời giải: cấp CÂU HỎI trước (dạng HSA), rồi mới tới cấp lựa
+                # chọn (dạng pe_test). Bản cũ chỉ có vế sau nên câu HSA nào cũng
+                # ra None.
+                explanation = qq.get('explain') or next(
                     (o.get('explanation') for o in qq.get('options', [])
                      if o.get('id') == (selected if selected is not None else correct_answer)),
                     None)
                 is_correct = selected is not None and selected == correct_answer
                 if is_correct:
                     score += 1
+                # CHỮ chứ không phải MÃ lựa chọn. Bản cũ trả `o1`/`o2` và giao
+                # diện in thẳng ra: "Bạn chọn: o1 — Đáp án đúng: o2". Không ai
+                # đọc được đó là gì, kể cả người vừa làm bài xong.
+                chu = {o.get('id'): o.get('text') for o in qq.get('options', [])}
                 review.append({
                     'question_no': qno,
                     'question': qq.get('question'),
                     'your_answer': selected,
                     'correct_answer': correct_answer,
+                    'your_answer_text': chu.get(selected),
+                    'correct_answer_text': chu.get(correct_answer),
                     'is_correct': is_correct,
                     'explanation': explanation,
                 })

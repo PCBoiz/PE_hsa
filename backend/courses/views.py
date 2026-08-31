@@ -14,6 +14,16 @@ from common.db import q, q1, x
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
 
 
+#: Chú thích SQL dùng chung cho hai câu đọc danh sách khoá.
+CHU_DIEM_SAO = '''-- ĐIỂM SAO LẤY TỪ `course_ratings`, KHÔNG lấy `c.rating` (L15, 31/08/2026).
+            -- `courses.rating` là con số SEED: cả ba khoá đang là 5.0 trong khi
+            -- `course_ratings` RỖNG — tức mọi trang khoá khoe "5.0 ★" mà chưa một
+            -- ai đánh giá. `CourseRatingView` tính đúng con số thật nhưng không
+            -- nơi nào gọi (rà cả frontend: 0 kết quả).
+            -- Chưa ai đánh giá thì trả NULL để màn hình nói "chưa có đánh giá",
+            -- chứ một con số bịa thì không ai đọc ra được là bịa.'''
+
+
 class CoursesView(APIView):
     def get(self, request):
         uid = request.user.id
@@ -70,9 +80,14 @@ class CoursesView(APIView):
 
         query = '''
             SELECT c.*,
+                   ''' + CHU_DIEM_SAO + '''
+                   dg.diem_tb AS rating, COALESCE(dg.so_luot, 0) AS rating_count,
                    CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled
             FROM courses c
             LEFT JOIN enrollments e ON c.id = e.course_id AND e.user_id = %s
+            LEFT JOIN (SELECT course_id, ROUND(AVG(rating)::numeric, 1) AS diem_tb,
+                              COUNT(*) AS so_luot
+                       FROM course_ratings GROUP BY course_id) dg ON dg.course_id = c.id
         '''
         if where_clauses:
             query += ' WHERE ' + ' AND '.join(where_clauses)
@@ -97,9 +112,14 @@ class CourseDetailView(APIView):
     def get(self, request, course_id):
         row = q1('''
             SELECT c.*,
+                   ''' + CHU_DIEM_SAO + '''
+                   dg.diem_tb AS rating, COALESCE(dg.so_luot, 0) AS rating_count,
                    CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled
             FROM courses c
             LEFT JOIN enrollments e ON c.id = e.course_id AND e.user_id = %s
+            LEFT JOIN (SELECT course_id, ROUND(AVG(rating)::numeric, 1) AS diem_tb,
+                              COUNT(*) AS so_luot
+                       FROM course_ratings GROUP BY course_id) dg ON dg.course_id = c.id
             WHERE c.id = %s
         ''', (request.user.id, course_id))
         if not row:
@@ -138,13 +158,24 @@ class CoursesEnrolledView(APIView):
         """Trả về courses + enrolled detail trong 1 query, 1 request."""
         rows = q('''
             SELECT c.id, c.title, c.subtitle, c.description, c.image, c.level,
-                   c.duration, c.students, c.rating, c.lessons,
+                   c.duration, c.students, c.lessons,
                    c.color, c.accent_color, c.tag,
+                   -- ĐIỂM SAO LẤY TỪ `course_ratings`, KHÔNG lấy `c.rating` (L15, 31/08/2026).
+            -- `courses.rating` là con số SEED: cả ba khoá đang là 5.0 trong khi
+            -- `course_ratings` RỖNG — tức mọi trang khoá khoe "5.0 ★" mà chưa một
+            -- ai đánh giá. `CourseRatingView` tính đúng con số thật nhưng không
+            -- nơi nào gọi (rà cả frontend: 0 kết quả).
+            -- Chưa ai đánh giá thì trả NULL để màn hình nói "chưa có đánh giá",
+            -- chứ một con số bịa thì không ai đọc ra được là bịa.
+                   dg.diem_tb AS rating, COALESCE(dg.so_luot, 0) AS rating_count,
                    CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled,
                    e.progress, e.completed_lessons,
                    e.time_spent, e.last_lesson, e.next_lesson
             FROM courses c
             LEFT JOIN enrollments e ON c.id = e.course_id AND e.user_id = %s
+            LEFT JOIN (SELECT course_id, ROUND(AVG(rating)::numeric, 1) AS diem_tb,
+                              COUNT(*) AS so_luot
+                       FROM course_ratings GROUP BY course_id) dg ON dg.course_id = c.id
         ''', (request.user.id,))
 
         courses_list = []
@@ -357,6 +388,10 @@ class PublicCoursesView(APIView):
 
     def get(self, request):
         rows = q("SELECT id, title, subtitle, description, tag, level, duration, "
-                 "lessons, color, accent_color, image, rating "
+                 "lessons, color, accent_color, image, "
+                 "(SELECT ROUND(AVG(r.rating)::numeric, 1) FROM course_ratings r "
+                 " WHERE r.course_id = courses.id) AS rating, "
+                 "(SELECT COUNT(*) FROM course_ratings r "
+                 " WHERE r.course_id = courses.id) AS rating_count "
                  "FROM courses WHERE is_published IS NOT FALSE ORDER BY id")
         return Response({'courses': rows, 'count': len(rows)})
