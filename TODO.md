@@ -2152,8 +2152,23 @@ thấy: nền khi rê chuột `#293548` sáng hơn mặt thẻ đủ nhiều đ�
 | tràn ngang · lỗi JS · lời gọi ghi lọt | 0 · 0 · 0 | 0 · 0 · 0 |
 | tự kiểm bắt được | 1250 | 1296 |
 
+### [x] Vòng nét bàn phím — WCAG 2.4.7, và nó ĐẠT
+Đo màu không trả lời được câu hỏi của 2.4.7: một nút có thể đủ tương phản mà khi
+Tab tới thì **chẳng đổi gì**, và người dùng bàn phím mất dấu hoàn toàn. Cách
+kiểm: chụp dáng vẻ trước, bật `:focus-visible` qua CDP, chụp lại; y hệt nhau là
+không có dấu hiệu nào.
+
+Lấy mẫu theo HÌNH DÁNG (thẻ + hai lớp đầu, tối đa 2 mỗi nhóm, trần 40 mỗi trang)
+chứ không quét hết — trang chính có 258 phần tử lấy nét được, phần lớn là cùng
+một nút lặp lại.
+
+**Kết quả: 0/171 thiếu vòng nét.** Đã tự kiểm: thêm
+`*:focus-visible { outline: none !important; box-shadow: none !important }` →
+báo **60/171**; gỡ ra → 0. (Còn 111 phần tử vẫn khác nhau vì dấu hiệu lấy nét
+của chúng không phải vòng nét mà là đổi nền hoặc viền — vẫn hợp lệ.)
+
 ### [ ] Chưa làm
-- Trạng thái **vô hiệu** (`:disabled`) và **lấy nét bàn phím thấy được**
-  (`:focus-visible` có tồn tại vòng nét không) chưa đo — mới đo màu, chưa đo
-  việc vòng nét có hiện hay không.
+- Trạng thái **vô hiệu** (`:disabled`) chưa đo.
 - Mới 11 trang. Các trang giảng dạy (`/giang-day/...`) chưa nằm trong danh sách.
+- Chưa đo **độ dày / độ tương phản** của vòng nét (SC 2.4.13, mức AAA) — mới đo
+  nó có TỒN TẠI hay không.

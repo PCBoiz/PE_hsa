@@ -2198,3 +2198,10 @@ rồi TRƯỢT xuống 4,1:1 lúc rê chuột, vì nền nâng `#293548` quá s�
 
 Bốn chiều × hai chủ đề × hai khổ × 11 trang: **tất cả 0**, trừ một vùng chạm cố
 ý giữ. Cả hai chủ đề đều chạy `--tu-kiem` ngay trước khi lấy số.
+
+## 01/09/2026 (tiếp) · Vòng nét bàn phím — 0/171 thiếu
+
+WCAG 2.4.7 hỏi một câu mà phép đo màu không trả lời được: Tab tới thì có THẤY
+không. Chụp dáng vẻ trước/sau khi bật `:focus-visible` qua CDP; y hệt nhau là
+không có dấu hiệu nào. Kết quả 0/171 — tự kiểm bằng cách tắt vòng nét toàn cục
+thì báo 60/171, gỡ ra thì về 0.

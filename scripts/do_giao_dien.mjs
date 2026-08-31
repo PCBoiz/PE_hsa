@@ -321,12 +321,48 @@ function DO_TRONG_TRANG(do_trang_thai) {
     }
   }
 
+  /* ── VÒNG NÉT BÀN PHÍM ─────────────────────────────────────────────────
+     WCAG 2.4.7 (AA) chỉ đòi một điều: lấy nét bằng bàn phím thì PHẢI THẤY. Đo
+     màu thôi không trả lời được câu đó — một nút có thể đủ tương phản mà khi
+     Tab tới thì chẳng đổi gì, và người dùng bàn phím mất dấu hoàn toàn.
+
+     Cách kiểm: chụp dáng vẻ trước, bật `:focus-visible` qua CDP, chụp lại. Y
+     hệt nhau = không có dấu hiệu nào.
+
+     Lấy mẫu theo HÌNH DÁNG (thẻ + hai lớp đầu) chứ không quét hết: trang chính
+     có 258 phần tử lấy nét được, phần lớn là cùng một nút lặp lại. */
+  const net_dau = [];
+  if (do_trang_thai) {
+    const nhom = new Map();
+    for (const el of document.querySelectorAll(CHAM)) {
+      if (!hien(el)) continue;
+      const k = el.tagName + '|'
+        + String(el.className || '').trim().split(/\s+/).slice(0, 2).join('.');
+      if ((nhom.get(k) || 0) >= 2) continue;
+      nhom.set(k, (nhom.get(k) || 0) + 1);
+      if (net_dau.length >= 40) break;
+      el.setAttribute('data-pe-net', String(net_dau.length));
+      net_dau.push({ i: net_dau.length, duong: duong(el),
+        chu: String(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 28) });
+    }
+  }
+
   /* Bộ quy tắc dùng lại cho lượt đo trạng thái, chạy từ phía Node sau khi CDP
      đã bật `:hover`. Hai bộ quy tắc song song là hai bộ sẽ lệch nhau. */
-  globalThis.__pe = { do_el, hien, co_chu, duong };
+  globalThis.__pe = {
+    do_el, hien, co_chu, duong,
+    dang: (i) => {
+      const el = document.querySelector(`[data-pe-net="${i}"]`);
+      if (!el) return null;
+      const c = getComputedStyle(el);
+      return [c.outlineStyle, c.outlineWidth, c.outlineColor, c.outlineOffset,
+        c.boxShadow, c.borderColor, c.borderWidth, c.backgroundColor,
+        c.backgroundImage, c.color, c.textDecorationLine].join('|');
+    },
+  };
 
   return {
-    dau,
+    dau, net_dau,
     vi_pham: vi_pham.slice(0, 60), so_vi_pham: vi_pham.length,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     so_cham: document.querySelectorAll(CHAM).length,
@@ -437,13 +473,41 @@ for (const kho of KHO) {
         }
         await cdp.detach();
       }
+      d.thieu_net = [];
+      if (do_tt && d.net_dau.length) {
+        const cdp2 = await c.newCDPSession(p);
+        await cdp2.send('DOM.enable'); await cdp2.send('CSS.enable');
+        const g = await cdp2.send('DOM.getDocument', { depth: -1 });
+        const truoc = await p.evaluate((n) => {
+          const r = [];
+          for (let i = 0; i < n; i++) r.push(globalThis.__pe.dang(i));
+          return r;
+        }, d.net_dau.length);
+        for (const m of d.net_dau) {
+          const q = await cdp2.send('DOM.querySelector',
+            { nodeId: g.root.nodeId, selector: `[data-pe-net="${m.i}"]` });
+          if (!q.nodeId) continue;
+          await cdp2.send('CSS.forcePseudoState',
+            { nodeId: q.nodeId, forcedPseudoClasses: ['focus', 'focus-visible'] });
+          const sau = await p.evaluate((i) => globalThis.__pe.dang(i), m.i);
+          await cdp2.send('CSS.forcePseudoState',
+            { nodeId: q.nodeId, forcedPseudoClasses: [] });
+          if (sau !== null && sau === truoc[m.i]) {
+            d.thieu_net.push({ duong: m.duong, chu: m.chu });
+          }
+        }
+        await cdp2.detach();
+      }
+      d.so_thieu_net = d.thieu_net.length;
+      d.so_net_do = d.net_dau.length;
       d.so_tuong_tac = d.tuong_tac.length;
-      delete d.dau;
+      delete d.dau; delete d.net_dau;
       ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`
-        + (do_tt ? `  rê/nét:${String(d.so_tuong_tac).padStart(3)}` : ''));
+        + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`
+            + `  thiếu nét:${String(d.so_thieu_net).padStart(2)}/${String(d.so_net_do).padStart(2)}` : ''));
     } catch (e) {
       ket.push({ kho: kho.ten, ten, url, loi_tai: String(e.message).slice(0, 80) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} KHONG TAI DUOC: ${String(e.message).slice(0, 50)}`);
@@ -465,7 +529,9 @@ console.log(`  vùng chạm < 44px   : ${tong_cn}`);
 console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  lỗi JS             : ${tong_js}`);
 if (do_tt) {
-  console.log(`  rê chuột / lấy nét : ${ket.reduce((a, r) => a + (r.so_tuong_tac || 0), 0)}`);
+  console.log(`  tương phản khi rê  : ${ket.reduce((a, r) => a + (r.so_tuong_tac || 0), 0)}`);
+  console.log(`  KHÔNG có vòng nét  : ${ket.reduce((a, r) => a + (r.so_thieu_net || 0), 0)}`
+    + ` / ${ket.reduce((a, r) => a + (r.so_net_do || 0), 0)} phần tử đã thử`);
 }
 console.log(`  lời gọi GHI lọt ra : ${ghiLen}`);
 
