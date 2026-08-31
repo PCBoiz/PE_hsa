@@ -114,6 +114,20 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .brand-short { display: none; color: #8B7CF6; }
 
 /* ── Topbar horizontal nav ── */
+/* CO ĐƯỢC VÀ CUỘN ĐƯỢC Ở MỌI KHỔ, không chỉ trên điện thoại.
+   Bản vá này đã tồn tại từ đợt audit 13/08/2026 nhưng bị nhốt trong media
+   query dưới 900px, nên ở khổ laptop nhóm bên phải vẫn bị đẩy ra ngoài khung.
+   Đo 31/08/2026 ở 1280px sau khi thêm một mục nav: học viên còn nhìn thấy 11px
+   của chip người dùng, GIẢNG VIÊN VÀ QUẢN TRỊ VIÊN CÒN 0px — mất luôn đường
+   tới Đăng xuất, Cài đặt và nút đổi bộ màu, mà `scrollWidth == innerWidth` nên
+   cũng không cuộn tới được. Trớ trêu: cùng đợt sửa vừa mở đường đăng xuất cho
+   người dùng BÀN PHÍM lại bịt đường của người dùng CHUỘT.
+
+   `safe center`: căn giữa khi vừa, tự lùi về căn trái khi TRÀN. Không có từ
+   khoá `safe` thì flexbox cho nội dung tràn ra CẢ HAI phía, mà `scrollLeft`
+   không âm được — phần tràn bên trái vĩnh viễn không cuộn tới. Đo được: ở
+   390px mục "Dashboard" không bấm được với mọi vai trò. */
+.topbar > * { min-width: 0; }
 .topbar-nav {
   position: relative;
   display: flex;
@@ -122,8 +136,12 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
   gap: 3px;
   flex: 1;
   padding: 0;
-  justify-content: center;
+  justify-content: safe center;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.topbar-nav::-webkit-scrollbar { display: none; }
+.topbar-right { flex-shrink: 0; }
 
 .topbar-nav .nav-btn {
   width: auto;
@@ -516,7 +534,7 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
   .brand-full { display: none !important; }
   .brand-short { display: block !important; font-size: 18px !important; font-weight: 900 !important; }
   .topbar { padding: 0 10px; height: 48px; gap: 4px; }
-  .topbar-nav { gap: 0; flex: 1; justify-content: center; }
+  .topbar-nav { gap: 0; flex: 1; }
   .topbar-nav .nav-btn { padding: 6px 8px; }
   .topbar-nav .nav-btn span:not(.nav-icon) { display: none; }
   .topbar-nav .nav-btn .nav-icon { width: 20px; height: 20px; font-size: 14px; }
@@ -525,13 +543,8 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
   .chip-name { display: none; }
   .user-chip { padding: 4px 6px; }
 
-  /* Chống TRÀN NGANG ở 390px (audit 2026-08-13: scrollWidth 418 > 390).
-     Nguyên nhân: topbar là flex row, các nhóm con không co được nên đẩy
-     nhóm bên phải ra ngoài khung. Cho phép co + cuộn ngang phần nav. */
-  .topbar > * { min-width: 0; }
-  .topbar-nav { overflow-x: auto; scrollbar-width: none; }
-  .topbar-nav::-webkit-scrollbar { display: none; }
-  .topbar-right { flex-shrink: 0; }
+  /* Bản vá chống tràn ngang (audit 2026-08-13) NAY nằm ở luật gốc phía trên —
+     nó cần cho MỌI khổ, không riêng điện thoại. Xem chú thích ở `.topbar-nav`. */
   .user-chip .dropdown-icon { display: none; }
   .brand { flex-shrink: 1; min-width: 0; overflow: hidden; }
   .bell-btn { width: 32px; height: 32px; font-size: 14px; }

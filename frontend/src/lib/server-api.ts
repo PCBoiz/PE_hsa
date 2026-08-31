@@ -161,7 +161,7 @@ export async function serverJson<T>(path: string, opts: Options = {}): Promise<K
   // `serverFetch`). Ở đây đã ngoài try, giữ nguyên như vậy.
   if (res.status === 403
       && (body as { mustChangePassword?: boolean } | null)?.mustChangePassword) {
-    redirect('/doi-mat-khau');
+    redirect('/doi-mat-khau?lan-dau=1');
   }
 
   if (!res.ok) {

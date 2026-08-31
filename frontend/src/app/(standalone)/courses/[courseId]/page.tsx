@@ -124,6 +124,24 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
             <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#forum'; }} aria-label="Diễn đàn">
               <span className="nav-icon">💬</span><span>Diễn đàn</span>
             </button>
+            {/* Ba mục dưới đây thiếu ở BẢN SAO này của thanh điều hướng.
+                Trang chi tiết khoá chép lại khối topbar thay vì dùng
+                `<Topbar />` — vì nó dùng cơ chế khác (emoji thay `icons.js`,
+                `location.href` thay `navigate()` của main.js), nên tráo thẳng
+                sẽ vỡ. Hệ quả: mọi mục thêm vào thanh chính đều KHÔNG có ở đây,
+                và học viên đang xem khoá không tới được Bài tập hay Thi thử.
+                Hai bản sao của một khối điều hướng là hai bản sẽ trôi khỏi
+                nhau — đã trôi rồi (T70). Vá phần thực dụng trước; gộp về một
+                bản là việc riêng, cần đổi cả cơ chế nạp biểu tượng. */}
+            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#plan'; }} aria-label="Kế hoạch">
+              <span className="nav-icon">🗓️</span><span>Kế hoạch</span>
+            </button>
+            <button className="nav-btn" onClick={() => { window.location.href = '/mock'; }} aria-label="Thi thử">
+              <span className="nav-icon">🎯</span><span>Thi thử</span>
+            </button>
+            <button className="nav-btn" onClick={() => { window.location.href = '/bai-tap'; }} aria-label="Bài tập">
+              <span className="nav-icon">✏️</span><span>Bài tập</span>
+            </button>
           </nav>
 
           <div className="topbar-right">
@@ -223,7 +241,10 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 <div className="cd-block-hd">
                   <div className="cd-block-icon">📚</div>
                   <h3>Giáo trình</h3>
-                  <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9CA3AF' }}>
+                  {/* `var(--t3)` chứ không `#9CA3AF` viết cứng trong kiểu nội tuyến: mã đó
+                      được 2,54:1 trên nền trắng, và kiểu nội tuyến còn thắng mọi
+                      luật `body.dark` nên bộ tối cũng không cứu được. */}
+                  <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--t3)' }}>
                     {modules.length} module · {course.lessons} bài học
                   </span>
                 </div>

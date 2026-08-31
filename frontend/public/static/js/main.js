@@ -9,7 +9,29 @@ var API = "/api";
     if (csrfToken && method !== 'GET' && method !== 'HEAD') {
       opts.headers = Object.assign({ 'X-CSRFToken': csrfToken }, opts.headers);
     }
-    return _fetch(url, opts);
+    return _fetch(url, opts).then(function (r) {
+      /* Mật khẩu tạm: máy chủ chặn mọi đường trừ bốn đường cho phép
+         (`accounts/authentication.py`). Phép kiểm này PHẢI nằm ở đây chứ không
+         chỉ ở `lib/api.ts` — trang cũ gọi `fetch` thô hơn 60 chỗ, không chỗ
+         nào đi qua `apiFetch`.
+
+         Đo 31/08/2026, và đây là lý do nó khẩn: không có dòng này thì
+         `/dashboard` KHÔNG hiện lỗi mà hiện một tài khoản trắng trông hoàn
+         toàn bình thường — "0 ngày học liên tiếp", "0/76 bài", "Bạn chưa đăng
+         ký khoá nào". Một em đã học 27 bài mở lên sẽ kết luận tài khoản mình
+         bị xoá sạch, đi báo trợ giảng "mất hết bài", chứ không đời nào đoán ra
+         việc cần làm là đổi mật khẩu tạm. Hàng rào sinh ra để bảo vệ lại thành
+         thứ nói dối êm ái nhất trong sản phẩm.
+
+         `clone()` bắt buộc: thân phản hồi chỉ đọc được một lần. */
+      if (r.status === 403 && !location.pathname.startsWith('/doi-mat-khau')) {
+        return r.clone().json().then(function (d) {
+          if (d && d.mustChangePassword) location.href = '/doi-mat-khau?lan-dau=1';
+          return r;
+        }, function () { return r; });
+      }
+      return r;
+    });
   };
 })();
 
@@ -960,7 +982,13 @@ function renderDashProgress() {
         '<div class="dash-prog-main">',
         '<div class="dash-prog-head">',
         '<span class="dash-prog-title">' + (c.title || "") + "</span>",
-        '<span class="dash-prog-pct" style="color:' + c.color + '">' + pct + "%</span>",
+        /* KHÔNG gán màu khoá học vào con số phần trăm. Màu ấy do dữ liệu khoá
+           quyết định (`#4C1D95` tím sẫm cho Định lượng), và ở bộ TỐI nó chìm
+           hẳn vào nền — đo 31/08/2026: 1,6:1, chữ "11%" gần như không thấy.
+           Kiểu nội tuyến còn thắng mọi luật CSS nên `body.dark` cũng không cứu
+           được. Màu khoá vẫn giữ ở biểu tượng và thanh tiến độ ngay dưới — đó
+           là chỗ nó làm đúng việc nhận diện; con số thì phải ĐỌC ĐƯỢC. */
+        '<span class="dash-prog-pct">' + pct + "%</span>",
         "</div>",
         '<div class="dash-prog-bar-bg"><div class="dash-prog-bar-fill" style="width:' + pct + "%;background:" + grad + '"></div></div>',
         '<div class="dash-prog-meta">',

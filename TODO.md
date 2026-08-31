@@ -843,3 +843,123 @@ Chưa làm: `/dashboard` hiện số 0 giả lúc đang tải · chưa có `load
 có nút đổi bộ màu trong khu `(standalone)` · `HTTP_VI` có nhánh chết · bóng đổ
 bộ tối là mã chết · chính tả dấu không nhất quán (khóa/khoá, hủy/huỷ, xóa/xoá) ·
 hộp huỷ ghi danh (`main.js`) NAY đã dùng `window.bayTieuDiem` — đo: 12 lần Tab không thoát, đóng xong tiêu điểm về chỗ cũ, 0 lỗi JS.
+
+
+---
+
+## Đợt audit thứ hai 31/08/2026 — soi chính phần vừa viết
+
+Hai agent audit đúng khối §5 và khối hàng rào mật khẩu + giao diện vừa áp. Kết
+quả: **12 + 8 phát hiện**, trong đó hai cái nặng nhất là **hồi quy do chính
+tôi gây ra cùng ngày**.
+
+### [x] A1 (XONG) · Hàng rào mật khẩu tạm khiến trang cũ hiện TÀI KHOẢN TRẮNG GIẢ
+Nặng nhất cả đợt, và nó là hậu quả trực tiếp của bản vá T64 vài giờ trước.
+`apiFetch` có bắt 403 → điều hướng, nhưng **trang cũ gọi `fetch` thô hơn 60
+chỗ**, không chỗ nào đi qua nó. Nên `/dashboard` không hiện lỗi mà hiện một
+dashboard **trông hoàn toàn bình thường của người mới**: "0 ngày học liên tiếp",
+"0/76 bài", "Bạn chưa đăng ký khoá nào". Em đã học 27 bài mở lên sẽ kết luận
+**tài khoản mình bị xoá sạch**, đi báo trợ giảng "mất hết bài" — chứ không đời
+nào đoán ra việc cần làm là đổi mật khẩu tạm.
+
+Hàng rào sinh ra để bảo vệ lại thành thứ nói dối êm ái nhất trong sản phẩm.
+Vá ở đúng chỗ bọc `fetch` sẵn có trong `main.js` — một nơi, phủ hết mọi lời gọi
+cũ. Đo: cả `/dashboard` lẫn `/courses/<id>` nay tới `/doi-mat-khau?lan-dau=1`.
+
+### [x] B1 (XONG) · Nút "Bài tập" tôi thêm đẩy chip người dùng RA NGOÀI màn hình
+Cũng là hồi quy cùng ngày, và trớ trêu: cùng đợt sửa vừa mở đường đăng xuất cho
+người dùng BÀN PHÍM lại bịt đường của người dùng CHUỘT.
+
+Đo ở 1280px (khổ laptop phổ biến nhất): học viên còn nhìn thấy **11px** của
+chip; **giảng viên và quản trị viên còn 0px**, mà `scrollWidth == innerWidth`
+nên cũng không cuộn tới được. Mất luôn Đăng xuất, Cài đặt, chuông và nút đổi
+bộ màu.
+
+Bản vá **đã tồn tại** từ đợt audit 13/08 nhưng bị nhốt trong media query dưới
+900px. Đưa lên luật gốc, thêm `justify-content: safe center`. Đo lại: chip hiện
+đủ (93/93, 97/97, 55/55) ở cả ba vai trò × ba khổ, và **7/7 · 9/9 mục nav đều
+cuộn tới được** — `safe center` sửa luôn lỗi "Dashboard không bấm được ở 390px"
+đã tồn tại từ trước.
+
+### [x] §5 · Điểm bài tập KHÔNG BAO GIỜ vào bản đồ năng lực của học viên
+Lời hứa trung tâm của cả mô-đun, sai trên đường MẶC ĐỊNH. Bản đồ khoá ô theo
+CẶP `(course_id, topic)`; màn hình không gửi `course_id` (rà cả thư mục: 0 kết
+quả), nên mọi bài giao qua giao diện có `course_id = NULL` và sự kiện rơi vào ô
+`(None, 'Số học')` — một ô KHÔNG TỒN TẠI. Đo: chấm 9/10 xong, ô của em không
+đổi một chữ, còn bản đồ giảng viên **mọc thêm ô "Số học" thứ hai**.
+
+Vá: `course_id` SUY RA từ lớp, và thôi nhận từ body (nhận cả hai là mở cửa cho
+một thân request đặt `topic` khoá A với `course_id` khoá B).
+
+### [x] §5 · Bảy lỗi còn lại, đều đã có test đỏ-trên-mã-cũ
+| | Hậu quả |
+|---|---|
+| Gõ "8,5" thành **85** | Ô `type=number` của Chromium XOÁ dấu phẩy. Trên bài thang 100 thì 85 hợp lệ → điểm **gấp mười lần** vào sổ, vào bản đồ, vào báo cáo phụ huynh, không một cảnh báo. Đo cả với locale vi-VN |
+| Nhận xét không xoá/sửa riêng được | Gõ nhầm vào ô em khác thì nằm lại vĩnh viễn; muốn thêm nhận xét mà không đổi điểm thì nút Lưu ghi "Chưa gõ điểm nào" và không nói vì sao |
+| "36/35 đã nộp · còn 1 bài chưa chấm" | Em rời lớp vẫn được đếm trong khi bảng chấm đã giấu đi → huy hiệu vàng không bao giờ tắt, không có ô nào để bấm |
+| Xoá lớp bỏ lại **điểm** mồ côi | Nặng hơn hẳn sự kiện điểm danh (score NULL): điểm của bài không còn tồn tại kéo con số thành thạo của em suốt đời, và không còn đường xoá |
+| Hộp xác nhận xoá lớp nói thiếu | Đọc "mất 4 dòng ghi danh, 0 buổi học" rồi bấm đồng ý — thứ thật sự mất là **bài tự luận của cả lớp**. Lớp chỉ có bài tập thì KHÔNG hỏi câu nào |
+| Học xong khoá là mất sạch bài và nhận xét | Đúng lúc em ôn lại trước ngày thi. Dữ liệu còn nguyên, chỉ mất đường vào |
+| Tiêu đề rỗng / thang điểm biên → **500** | `Decimal('NaN')` là Decimal hợp lệ; PATCH `title="   "` nổ `IntegrityError`. 500 là mã báo "lỗi của chúng tôi" cho thứ thật ra là gõ nhầm |
+
+### [x] Hàng rào mật khẩu — ba lỗ nữa
+- `startswith('/api/user')` cho `/api/users/11/follow` (số NHIỀU) lọt → so khớp CHÍNH XÁC.
+- `AdminResetPasswordView` đặt cờ mà **quên xoá đệm user**: 60 giây sau khi trợ
+  giảng đặt lại mật khẩu vì nghi tài khoản bị chiếm, người đang chiếm vẫn thao
+  tác bình thường.
+- Điều hướng thiếu `?lan-dau=1` nên trang đích tặng người dùng một nút "Quay lại
+  Trang của tôi" — dẫn thẳng về đúng màn hình hỏng ở A1.
+
+### [x] Hai màu còn sót ở bộ tối
+`.dash-prog-pct` nhận màu khoá học qua **kiểu nội tuyến từ JS** (`#4C1D95` tím
+sẫm) — kiểu nội tuyến thắng mọi luật CSS nên `body.dark` không cứu được. Đo:
+**1,6:1 → 5,28:1**, và `style` nội tuyến nay là `null`. `.lb-row-me .lb-name`
+/`.lb-value`: 4,38 → 5,36.
+
+### [ ] T67 · Đặt lại mật khẩu KHÔNG thu hồi token cũ
+Cờ và bộ đệm nay xử đúng, nhưng refresh token cấp trước đó vẫn sống. Nên "đặt
+lại mật khẩu" mới chỉ chặn được lần ĐĂNG NHẬP sau, chưa cắt phiên đang mở —
+đúng cảnh trợ giảng dùng nó để đuổi người đang chiếm tài khoản. Cần đưa token
+của người bị reset vào danh sách đen.
+
+### [ ] T68 · Bảng chấm lớp lớn: 692 KB JSON dựng trong một lượt
+Đo với 35 em × bài làm 20 000 ký tự: **2 272 ms, 1 008 840 byte** nhét cả vào
+HTML server-render lẫn state React. Chưa phải lỗi (lớp thật chưa tới cỡ đó)
+nhưng là trần quy mô nhìn thấy được. Hướng: chỉ gửi đoạn đầu bài làm, tải đủ
+khi bấm "Xem bài làm".
+
+### [ ] T69 · `/courses/<id>` hỏng CSS ở bộ TỐI (ngoài phạm vi đợt này)
+`course_detail.css` còn màu bộ SÁNG lọt vào nền tối: `.cd-lesson-title` 1,93:1,
+`.cd-lesson-num` 1,41:1, `.cd-lesson-icon` 1,34:1. Danh sách bài học không đọc
+được ở bộ tối là chuyện học viên gặp hằng ngày.
+
+### Ghi nhận: một phép kiểm của tôi xanh vì LÝ DO SAI
+`accounts/tests.py` gửi `current_password`/`new_password` trong khi `PasswordView`
+đọc `current`/`new`. Nên 400 nhận được là "thiếu trường", không phải "sai mật
+khẩu" như chú thích nói — **nó vẫn xanh kể cả khi `PasswordView` hỏng hẳn**. Đã
+sửa cho gọi đúng tên trường và khẳng định đúng thứ cần khẳng định.
+
+### [x] T69 (XONG 31/08) · `/courses/<id>` hỏng CSS ở bộ TỐI
+Cùng bệnh với dashboard: hex viết cứng bỏ lỡ đợt chuyển token, và **năm luật
+`body.dark` tự viết hex riêng** nên chúng đè lên token đã được vá. Danh sách bài
+học — thứ học viên mở mỗi ngày — đo được `.cd-lesson-num` **1,41:1**,
+`.cd-lesson-title` 1,93:1, biểu tượng bài khoá còn giữ nguyên nền SÁNG.
+
+Bỏ hẳn năm luật `body.dark` viết cứng (token `--t3` đã có bản cho cả hai bộ màu,
+nên chúng không những thừa mà còn là chỗ để lệch), đổi 14 mã màu sang token.
+Nhân tiện dọn cả bộ sáng: ngôi sao rỗng 1,47:1 → 3,30 (là HÌNH chỉ trạng thái,
+ngưỡng 3:1), điểm đánh giá hổ phách 2,15:1 → dùng `--warning-ink`.
+
+Đo: **6 lỗi bộ tối và 7 lỗi bộ sáng → 0/0**, trên 74 và 79 phần tử. Đã xem ảnh.
+
+### [ ] T70 · Trang chi tiết khoá học có thanh điều hướng RIÊNG, lệch với trang chính
+`courses/[courseId]/page.tsx` chép lại khối topbar thay vì dùng `<Topbar />`:
+nó hiện "Kỹ năng" và thiếu "Kế hoạch", "Thi thử", "Bài tập". Nên mục nav mới
+thêm hôm nay không có ở đó, và mọi mục thêm sau này cũng vậy. Hai bản sao của
+một khối điều hướng là hai bản sẽ trôi khỏi nhau — đã trôi rồi.
+
+**Vá phần thực dụng 31/08:** thêm ba mục còn thiếu ("Kế hoạch", "Thi thử",
+"Bài tập") vào bản sao đó, dùng đúng idiom `location.href` của trang. Đo: 8 mục,
+chip hiện đủ 79/79px ở 1280 và 57/57px ở 390, không tràn ngang. GỘP về một bản
+vẫn còn nợ — nó cần đổi cả cơ chế nạp biểu tượng (emoji ở đây, `icons.js` ở kia)
+và cả cách điều hướng (`location.href` ở đây, `navigate()` của main.js ở kia).

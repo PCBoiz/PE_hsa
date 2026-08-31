@@ -19,6 +19,7 @@ from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
                                 is_admin, last_active_admin, visible_class_ids)
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
+from accounts.authentication import invalidate_user_cache
 from teaching import reports
 from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
 
@@ -292,12 +293,23 @@ class AdminClassDetailView(APIView):
             # cho một lớp chưa bao giờ tồn tại.
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
 
+        # ĐẾM CẢ BÀI TẬP VÀ BÀI ĐÃ NỘP. Thiếu hai dòng này thì hộp xác nhận
+        # nói "mất 4 dòng ghi danh, 0 buổi học, 0 lượt điểm danh" trong khi thứ
+        # thật sự mất là BÀI TỰ LUẬN của cả lớp — thứ các em bỏ công viết ra và
+        # không có bản nào khác. Tệ hơn: lớp CHỈ có bài tập thì tổng bằng 0 nên
+        # KHÔNG hỏi câu nào, xoá luôn (đo 31/08/2026).
         counts = q1('''SELECT (SELECT COUNT(*) FROM class_members WHERE class_id=%s) AS members,
                              (SELECT COUNT(*) FROM class_sessions WHERE class_id=%s) AS sessions,
                              (SELECT COUNT(*) FROM attendance a
                                 JOIN class_sessions s ON s.id = a.session_id
-                               WHERE s.class_id=%s) AS attendance''',
-                    (class_id, class_id, class_id))
+                               WHERE s.class_id=%s) AS attendance,
+                             (SELECT COUNT(*) FROM assignments WHERE class_id=%s)
+                                                                              AS assignments,
+                             (SELECT COUNT(*) FROM submissions sub
+                                JOIN assignments a2 ON a2.id = sub.assignment_id
+                               WHERE a2.class_id=%s AND sub.submitted_at IS NOT NULL)
+                                                                              AS submissions''',
+                    (class_id,) * 5)
         loss = sum(counts.values())
         if loss and request.query_params.get('confirm') != '1':
             return Response({
@@ -314,6 +326,14 @@ class AdminClassDetailView(APIView):
         # chúng nữa.
         buoi_ids = [r['id'] for r in q('SELECT id FROM class_sessions WHERE class_id=%s',
                                        (class_id,))]
+        # Cùng lý do với `buoi_ids`, và ở đây HẬU QUẢ NẶNG HƠN HẲN. Sự kiện của
+        # buổi học có `score` NULL nên vô hại về số liệu; sự kiện bài tập MANG
+        # ĐIỂM, nên để lại là điểm của một bài KHÔNG CÒN TỒN TẠI tiếp tục kéo
+        # con số thành thạo của em suốt đời — và không còn đường nào xoá, vì
+        # `ref_id` trỏ tới một hàng đã mất. Đo 31/08/2026: xoá lớp xong, ô "Số
+        # học" của em vẫn giữ nguyên nguồn `assignment` 90%.
+        bai_ids = [r['id'] for r in q('SELECT id FROM assignments WHERE class_id=%s',
+                                      (class_id,))]
 
         x('DELETE FROM classes WHERE id=%s', (class_id,))
 
@@ -327,6 +347,7 @@ class AdminClassDetailView(APIView):
         # Đặt SAU câu DELETE là cố ý: xoá lớp hỏng giữa chừng thì sự kiện vẫn
         # còn nguyên cho một lớp vẫn còn tồn tại, thay vì mất trước rồi mới biết.
         quen = forget_events('class_session', buoi_ids) if buoi_ids else 0
+        quen += forget_events('assignment', bai_ids) if bai_ids else 0
 
         if before:
             # Chỉ ghi khi lớp có thật. Gọi DELETE hai lần (bấm nhầm hai cái) mà
@@ -334,11 +355,13 @@ class AdminClassDetailView(APIView):
             audit.record(request, audit.CLASS_DELETE, target_type='class',
                          target_id=class_id, target_label=before['name'],
                          summary='Xoá lớp "%s"%s — mất theo %d dòng ghi danh, '
-                                 '%d buổi học và %d lượt điểm danh.'
+                                 '%d buổi học, %d lượt điểm danh, %d bài tập '
+                                 'và %d bài đã nộp.'
                                  % (before['name'],
                                     ' (mã %s)' % before['code'] if before['code'] else '',
                                     counts['members'], counts['sessions'],
-                                    counts['attendance']),
+                                    counts['attendance'], counts['assignments'],
+                                    counts['submissions']),
                          detail=dict(_audit_detail(before), **dict(counts),
                                      forgottenEvents=quen))
         return Response({'ok': True, 'deleted': dict(counts), 'forgottenEvents': quen})
@@ -518,6 +541,18 @@ class AdminResetPasswordView(APIView):
         x('UPDATE users SET password=%s, must_change_password=TRUE, '
           'password_changed_at=NULL WHERE id=%s',
           (make_werkzeug_password(temp), user_id))
+        # XOÁ BỘ ĐỆM NGAY. `CachedJWTAuthentication` giữ đối tượng user 60 giây,
+        # và từ 31/08/2026 cờ `must_change_password` là thứ CHẶN mọi đường khác.
+        # Không xoá đệm thì hàng rào chỉ bắt đầu có hiệu lực sau một phút.
+        #
+        # Đo 31/08/2026: trợ giảng đặt lại mật khẩu vì nghi tài khoản bị người
+        # khác dùng — trong 60 giây kế tiếp người đang chiếm tài khoản vẫn thao
+        # tác bình thường (`/api/user` trả 200).
+        #
+        # CÒN NỢ (T67): token cũ KHÔNG bị thu hồi, nên "đặt lại mật khẩu" chỉ
+        # chặn được lần ĐĂNG NHẬP sau chứ chưa cắt phiên đang mở. Muốn cắt thật
+        # thì phải đưa refresh token của người đó vào danh sách đen.
+        invalidate_user_cache(user_id)
 
         ten = _user_label(target, user_id)
         audit.record(request, audit.USER_PASSWORD_RESET, target_type='user',

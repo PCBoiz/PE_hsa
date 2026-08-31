@@ -19,6 +19,7 @@ CHẤM CẢ LỚP LÀ MỘT LƯỢT GHI. Cùng lý do với điểm danh (T41): 
 trong vòng lặp tốn ba lượt tới Neon cho mỗi em. Giảng viên chấm xong hai chục bài
 rồi bấm Lưu một lần, và đang chờ trước màn hình.
 """
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
@@ -46,7 +47,15 @@ TEXT_FIELDS = {'title': 200, 'description': 4000, 'attachment_url': 400}
 #: SQL vài nghìn tham số.
 MAX_GRADE_PER_BATCH = 200
 
+logger = logging.getLogger(__name__)
+
 _NOT_FOUND = {'error': 'Không tìm thấy bài tập này.'}
+
+
+def khoa_cua_lop(class_id):
+    """`course_id` của khoá mà lớp đang dạy. None nếu lớp không tồn tại."""
+    r = q1('SELECT course_id FROM classes WHERE id = %s', (class_id,))
+    return r['course_id'] if r else None
 
 
 def chu_de_cua_lop(class_id):
@@ -73,14 +82,27 @@ def chu_de_cua_lop(class_id):
              ORDER BY l.module""", (class_id,))]
 
 
+#: Trần của `NUMERIC(6,2)` ở §38. Vượt trần là Postgres ném, mà lỗi CSDL thì
+#: thành 500 — một mã báo "lỗi của chúng tôi" cho thứ thật ra là gõ nhầm.
+DIEM_MIN = Decimal('0.01')
+DIEM_MAX = Decimal('9999.99')
+
+
 def _so(raw):
-    """Chuỗi/số → Decimal, hoặc None. Không bao giờ ném."""
+    """Chuỗi/số → Decimal HỮU HẠN, hoặc None. Không bao giờ ném.
+
+    `Decimal('NaN')` và `Decimal('Infinity')` là Decimal HỢP LỆ — chúng đi lọt
+    qua `try` rồi mới nổ ở tầng CSDL thành 500. Đo 31/08/2026: `max_score` nhận
+    'NaN', 'Infinity', '1e30', '9999.999' và '0.001' đều ra 500 kèm
+    `CheckViolation`/`numeric field overflow` trong log. Chặn ngay ở đây.
+    """
     if raw in (None, ''):
         return None
     try:
-        return Decimal(str(raw))
+        v = Decimal(str(raw))
     except (InvalidOperation, ValueError, TypeError):
         return None
+    return v if v.is_finite() else None
 
 
 def _clean(body, class_id):
@@ -92,6 +114,15 @@ def _clean(body, class_id):
     data = {}
     for field, limit in TEXT_FIELDS.items():
         if field in body:
+            # Tiêu đề rỗng phải chặn Ở ĐÂY, không phải ở riêng đường tạo.
+            # `title TEXT NOT NULL` (§38), nên PATCH với "   " biến thành None,
+            # lọt qua `if not data` (dict khác rỗng!) rồi nổ IntegrityError →
+            # 500. Đúng cái bẫy docstring hàm này cảnh báo: "hai đường kiểm
+            # riêng thì sớm muộn tạo được thứ mà sửa lại không được".
+            if field == 'title':
+                tieu_de = body[field]
+                if tieu_de is None or not str(tieu_de).strip():
+                    return None, 'Bài tập phải có tiêu đề.'
             # `body[field] is not None` PHẢI kiểm trước — thiếu vế đó thì
             # `str(None)` ra chuỗi "None", truthy, và đi thẳng vào CSDL. Đã trả
             # giá cho lỗi này ở `terms.py` và `views.py` ngày 31/08/2026.
@@ -108,13 +139,35 @@ def _clean(body, class_id):
                 return None, ('Chủ đề phải chọn từ danh mục của khoá lớp đang học. '
                               'Hợp lệ: %s. Để trống nếu bài này không thuộc chủ đề nào.'
                               % (', '.join(hop_le) or '(khoá này chưa chia chủ đề)'))
+            # GẮN KHOÁ THEO LỚP, KHÔNG CHỜ MÀN HÌNH GỬI.
+            #
+            # Đây là chỗ đã làm hỏng lời hứa trung tâm của cả mô-đun. Bản đồ
+            # năng lực khoá ô theo CẶP `(course_id, topic)` — xem
+            # `stats/competency.py:134`, và `_CATALOG_SQL` còn đòi
+            # `l.course_id IS NOT NULL`. Màn hình thì không gửi `course_id` (rà
+            # cả thư mục bài tập: 0 kết quả), nên mọi bài giao qua giao diện có
+            # `course_id = NULL`, sự kiện rơi vào ô `(None, 'Số học')` — một ô
+            # KHÔNG TỒN TẠI. Đo 31/08/2026: chấm 9/10 xong, ô "Số học" của em
+            # không đổi một chữ; còn bản đồ của giảng viên mọc thêm một ô "Số
+            # học" thứ hai. Đúng cái "hai bản đồ" mà `chu_de_cua_lop` vừa tuyên
+            # bố đã bịt.
+            #
+            # `topic` ĐÃ được ràng vào `lessons.module` của khoá lớp, nên khoá
+            # suy ra được từ chính lớp — không có gì để người dùng chọn, và
+            # cũng không có gì để họ chọn sai.
+            data['course_id'] = khoa_cua_lop(class_id)
+        else:
+            # Bỏ chủ đề thì bỏ luôn khoá: một sự kiện mang khoá mà không mang
+            # chủ đề vẫn không vào được ô nào, chỉ tốn thêm một cột trông như
+            # có nghĩa.
+            data['course_id'] = None
         data['topic'] = tp
 
-    if 'course_id' in body:
-        cid = (str(body['course_id']).strip() or None) if body['course_id'] is not None else None
-        if cid and not q1('SELECT 1 FROM courses WHERE id=%s', (cid,)):
-            return None, 'Không có khoá học này.'
-        data['course_id'] = cid
+    # `course_id` KHÔNG nhận từ bên ngoài. Nó SUY RA từ lớp (xem nhánh `topic`
+    # ngay trên), nên không có gì để người dùng chọn — và cũng không có gì để
+    # họ chọn mâu thuẫn với chủ đề. Bản đầu vừa nhận từ body vừa suy ra, tức
+    # một thân request khéo tay đặt được `topic` của khoá A với `course_id` của
+    # khoá B, và cái ô sinh ra không thuộc về ai.
 
     if 'due_at' in body:
         raw = body['due_at']
@@ -129,8 +182,12 @@ def _clean(body, class_id):
 
     if 'max_score' in body:
         v = _so(body['max_score'])
-        if v is None or v <= 0:
-            return None, 'Thang điểm phải là số lớn hơn 0.'
+        # `NUMERIC(6,2)` LÀM TRÒN trước khi kiểm ràng buộc, nên 0.001 thành 0.00
+        # rồi mới đụng CHECK `max_score > 0`. Kiểm trần ở đây bằng đúng con số
+        # của cột, không để CSDL nói hộ bằng một mã 500.
+        if v is None or v < DIEM_MIN or v > DIEM_MAX:
+            return None, ('Thang điểm phải là số trong khoảng %s–%s.'
+                          % (DIEM_MIN, DIEM_MAX))
         data['max_score'] = v
 
     if 'status' in body:
@@ -195,13 +252,26 @@ class ClassAssignmentsView(APIView):
 
         # MỘT câu cho cả danh sách, kèm hai con số đếm. Gọi thêm một câu cho mỗi
         # bài là đúng cái N+1 mà module này cấm — một lớp 20 bài là 40 lượt Neon.
+        # Ba phép đếm PHẢI cùng phạm vi với `si_so` ngay dưới và với bảng chấm
+        # (`AssignmentGradingView.get`) — cả hai chỗ đó lọc `left_at IS NULL`.
+        # Không lọc ở đây thì bài của em đã rời lớp vẫn được cộng, ra những con
+        # số như "36/35 đã nộp · còn 1 bài chưa chấm" — một huy hiệu vàng KHÔNG
+        # BAO GIỜ TẮT và không có ô nào để bấm, vì bảng chấm đã giấu em ấy đi.
+        # Sau vài ngày giảng viên học cách bỏ qua nó, và bỏ qua luôn những bài
+        # chưa chấm THẬT. Phân số 36/35 còn tự tố cáo là số liệu hỏng.
         rows = q('''SELECT a.*,
                            COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL) AS submitted,
                            COUNT(s.user_id) FILTER (WHERE s.graded_at IS NOT NULL)    AS graded,
                            COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL
                                                      AND s.graded_at IS NULL)         AS ungraded
                     FROM assignments a
-                    LEFT JOIN submissions s ON s.assignment_id = a.id
+                    LEFT JOIN submissions s
+                           ON s.assignment_id = a.id
+                          AND s.user_id IN (SELECT m.user_id FROM class_members m
+                                            JOIN users u ON u.id = m.user_id
+                                            WHERE m.class_id = a.class_id
+                                              AND m.left_at IS NULL
+                                              AND ''' + chi_hoc_vien('u') + ''')
                     WHERE a.class_id = %s
                     GROUP BY a.id
                     ORDER BY a.due_at DESC NULLS LAST, a.id DESC''', (class_id,))
@@ -413,10 +483,22 @@ class AssignmentGradingView(APIView):
             if diem < 0 or diem > thang:
                 return Response({'error': 'Điểm phải trong khoảng 0–%s theo thang của bài này.'
                                           % thang}, status=400)
-            nx = str(g.get('feedback') or '').strip()[:4000] or None
+            # PHÂN BIỆT "không gửi trường" với "gửi chuỗi rỗng".
+            #
+            # Bản đầu gộp cả hai thành `None` rồi dựa vào
+            # `COALESCE(EXCLUDED.feedback, submissions.feedback)` để giữ nhận
+            # xét cũ — hệ quả: nhận xét gõ nhầm KHÔNG XOÁ ĐƯỢC. Trong một bảng
+            # 35 dòng thì gõ nhầm ô là chuyện thường, và học viên đọc lời nhận
+            # xét dành cho bạn khác trên màn hình của mình.
+            if 'feedback' in g:
+                nx = str(g.get('feedback') or '').strip()[:4000] or None
+                doi_nx = True
+            else:
+                nx, doi_nx = None, False
             # Trùng user_id trong cùng mẻ: giữ dòng CUỐI. Bắt buộc — Postgres ném
             # "ON CONFLICT DO UPDATE command cannot affect row a second time".
-            sach[uid] = {'user_id': uid, 'score': diem, 'feedback': nx}
+            sach[uid] = {'user_id': uid, 'score': diem, 'feedback': nx,
+                         'doi_nx': doi_nx}
 
         if not sach:
             return Response({'error': 'Không có học viên hợp lệ nào trong danh sách '
@@ -425,6 +507,18 @@ class AssignmentGradingView(APIView):
 
         rows = list(sach.values())
         now = local_now()
+
+        # Nhận xét cuối cùng tính SẴN ở đây, không nhờ `COALESCE` ở SQL nói hộ.
+        # Một câu INSERT chạy cho cả mẻ nên không thể mỗi dòng một luật; muốn
+        # dòng này giữ nhận xét cũ còn dòng kia xoá nó thì phải quyết trong
+        # Python rồi mới gửi xuống.
+        cu = {r['user_id']: r['feedback'] for r in q(
+            'SELECT user_id, feedback FROM submissions WHERE assignment_id=%s '
+            'AND user_id = ANY(%s)', (assignment_id, [g['user_id'] for g in rows]))}
+        for g in rows:
+            if not g['doi_nx']:
+                g['feedback'] = cu.get(g['user_id'])
+
         params = []
         for g in rows:
             params += [assignment_id, g['user_id'], g['score'], g['feedback'],
@@ -442,7 +536,10 @@ class AssignmentGradingView(APIView):
               'VALUES ' + values +
               ' ON CONFLICT (assignment_id, user_id) DO UPDATE SET '
               '  score     = EXCLUDED.score,'
-              '  feedback  = COALESCE(EXCLUDED.feedback, submissions.feedback),'
+              # KHÔNG `COALESCE`: giá trị gửi xuống ĐÃ là giá trị cuối cùng
+              # (xem chỗ dựng `cu` ở trên). COALESCE ở đây biến "xoá nhận xét"
+              # thành "giữ nguyên nhận xét cũ", vĩnh viễn.
+              '  feedback  = EXCLUDED.feedback,'
               '  graded_by = EXCLUDED.graded_by,'
               '  graded_at = EXCLUDED.graded_at', tuple(params))
 
@@ -452,12 +549,29 @@ class AssignmentGradingView(APIView):
 
         label = row['title']
         summary = 'Chấm %d bài của "%s" (lớp %s).' % (len(rows), label, row['class_name'])
+        # Điểm đã vào `submissions` nhưng KHÔNG vào được dòng sự kiện: sổ điểm
+        # và bản đồ năng lực nói hai chuyện khác nhau, và không mặt nào báo gì —
+        # màn hình vẫn hiện "đã chấm hết", nhật ký kiểm toán vẫn ghi thành công.
+        # Vết duy nhất là một dòng log trên Render mà không ai đọc.
+        #
+        # Chấm lại chính là đường sửa (sự kiện quay lại), nhưng người ta chỉ
+        # chấm lại nếu BIẾT là cần.
+        thieu = len(rows) - so_su_kien
+        if thieu > 0:
+            logger.error('[assignments] bài %s: chấm %d nhưng chỉ ghi được %d sự kiện '
+                         'học tập — điểm KHÔNG vào bản đồ năng lực của %d em',
+                         assignment_id, len(rows), so_su_kien, thieu)
         audit.record(request, audit.ASSIGNMENT_GRADE, target_type='assignment',
                      target_id=assignment_id, target_label=label, summary=summary,
                      detail={'classId': row['class_id'], 'graded': len(rows),
                              'skipped': bo_qua, 'maxScore': str(thang)})
-        return Response({'ok': True, 'graded': len(rows), 'events': so_su_kien,
-                         'skipped': bo_qua, 'summary': summary})
+        ra = {'ok': True, 'graded': len(rows), 'events': so_su_kien,
+              'skipped': bo_qua, 'summary': summary}
+        if thieu > 0:
+            ra['warning'] = ('Đã lưu %d điểm, nhưng %d điểm CHƯA vào được bản đồ năng '
+                             'lực. Bấm Lưu lại để thử — điểm trong sổ vẫn đúng.'
+                             % (len(rows), thieu))
+        return Response(ra)
 
     @staticmethod
     def _emit(row, rows, now):
@@ -494,6 +608,14 @@ class MyAssignmentsView(APIView):
     Không nhận `user_id` từ bên ngoài, ở CẢ HAI phương thức: nó luôn là
     `request.user.id`. Một endpoint học viên mà nhận id người khác là cửa để đọc
     và ghi đè bài làm của bạn cùng lớp.
+
+    ĐỌC không lọc `left_at`, GHI thì có. Bản đầu lọc `m.left_at IS NULL` ở cả
+    hai, nên học xong khoá là mất sạch đường xem lại bài và nhận xét của thầy —
+    đúng lúc cần nhất, vì em luyện thi HSA ôn lại trước ngày thi. Dữ liệu vẫn
+    còn nguyên trong `submissions`, chỉ mất đường vào. Trái với chính nguyên tắc
+    §29 ("giữ `left_at` thay vì xoá dòng: học viên nghỉ giữa chừng vẫn phải còn
+    trong báo cáo"). Hàng rào ở đường NỘP thì giữ nguyên: đã rời lớp thì không
+    nộp thêm được.
     """
 
     def get(self, request):
@@ -502,8 +624,7 @@ class MyAssignmentsView(APIView):
                            s.submitted_at, s.content, s.score, s.feedback, s.graded_at
                     FROM assignments a
                     JOIN classes c ON c.id = a.class_id
-                    JOIN class_members m ON m.class_id = a.class_id
-                                        AND m.user_id = %s AND m.left_at IS NULL
+                    JOIN class_members m ON m.class_id = a.class_id AND m.user_id = %s
                     LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
                     WHERE a.status <> 'draft'
                     ORDER BY a.due_at NULLS LAST, a.id DESC''', (uid, uid))

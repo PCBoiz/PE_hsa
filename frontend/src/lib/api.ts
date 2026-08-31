@@ -30,7 +30,7 @@ export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Re
       && !window.location.pathname.startsWith('/doi-mat-khau')) {
     try {
       const d = (await r.clone().json()) as { mustChangePassword?: boolean };
-      if (d?.mustChangePassword) window.location.href = '/doi-mat-khau';
+      if (d?.mustChangePassword) window.location.href = '/doi-mat-khau?lan-dau=1';
     } catch {
       /* 403 vì lý do khác, thân không phải JSON — để nơi gọi tự xử */
     }

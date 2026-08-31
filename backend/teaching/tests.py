@@ -67,7 +67,6 @@ def _tao_bai(lop, **kw):
     {'title': 'a', 'max_score': 'abc'},
     {'title': 'a', 'status': 'khong_co_trang_thai_nay'},
     {'title': 'a', 'due_at': 'hom qua'},
-    {'title': 'a', 'course_id': 'khoa_khong_ton_tai'},
 ])
 def test_tao_bai_dau_vao_hong_tra_400(lop, body):
     assert _goi(ClassAssignmentsView, 'post', body, ai=lop['gv'],
@@ -583,3 +582,181 @@ def test_ba_mat_cung_noi_MOT_con_so_chuyen_can(db):
     # Cùng công thức, cùng con số, ở cả hai nơi.
     assert ti_le(cc['present'] + cc['late'], cc['sessionsCounted'] - cc['noRecord']) == 100
     assert ti_le(0, 0) is None, 'chưa có dòng nào thì None, KHÔNG phải 0'
+
+
+# ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
+
+@pytest.mark.django_db
+def test_diem_bai_tap_vao_ban_do_nang_luc_cua_hoc_vien(lop):
+    """Lời hứa trung tâm của cả mô-đun — và nó từng sai trên đường MẶC ĐỊNH.
+
+    Bản đồ năng lực khoá ô theo CẶP `(course_id, topic)` và danh mục ô còn đòi
+    `l.course_id IS NOT NULL` (`stats/competency.py`). Màn hình thì không gửi
+    `course_id` (rà cả thư mục: 0 kết quả), nên mọi bài giao qua giao diện có
+    `course_id = NULL` và sự kiện rơi vào ô `(None, 'Số học')` — một ô KHÔNG
+    TỒN TẠI. Chấm 9/10 xong, ô của em không đổi một chữ, còn bản đồ của giảng
+    viên mọc thêm một ô "Số học" THỨ HAI.
+
+    Test này gọi ĐÚNG thân request mà màn hình gửi: KHÔNG có `course_id`.
+    """
+    from stats import competency
+    aid = _tao_bai(lop, topic='Số học', max_score=10)
+    assert q1('SELECT course_id FROM assignments WHERE id=%s', (aid,))['course_id'] \
+        == 'hsa_quantitative', 'khoá phải được suy ra từ lớp, không chờ màn hình gửi'
+
+    em = lop['hv'][0]
+    _goi(AssignmentGradingView, 'post', {'grades': [{'user_id': em.id, 'score': 9}]},
+         ai=lop['gv'], assignment_id=aid)
+
+    sk = q1('SELECT course_id, topic FROM learning_events WHERE ref_type=%s AND ref_id=%s',
+            ('assignment', str(aid)))
+    assert sk['course_id'] == 'hsa_quantitative' and sk['topic'] == 'Số học', sk
+
+    bd = competency.compute(em.id)
+    o = [c for c in bd['topics']
+         if c['topic'] == 'Số học' and c['course'] == 'hsa_quantitative']
+    assert o, 'ô (hsa_quantitative, Số học) phải tồn tại trên bản đồ của em: %s' % (
+        [(c['course'], c['topic']) for c in bd['topics']][:6])
+    assert 'assignment' in (o[0].get('sources') or {}), (
+        'điểm bài tập phải nằm trong ô đó: %s' % o[0].get('sources'))
+    # Và KHÔNG được đẻ ra một ô mồ côi `(None, 'Số học')` bên cạnh.
+    assert not [c for c in bd['topics'] if c['course'] is None], 'có ô mồ côi'
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('max_score', ['NaN', 'Infinity', '1e30', '9999.999', '0.001', 0])
+def test_thang_diem_bien_tra_400_chu_khong_500(lop, max_score):
+    """`Decimal('NaN')` là Decimal HỢP LỆ — nó lọt qua try rồi mới nổ ở CSDL.
+
+    500 là mã báo "lỗi của chúng tôi" cho thứ thật ra là gõ nhầm.
+    """
+    kq = _goi(ClassAssignmentsView, 'post', {'title': 'a', 'max_score': max_score},
+              ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 400, '%r → %s' % (max_score, kq.status_code)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('title', ['   ', None, ''])
+def test_sua_tieu_de_thanh_rong_tra_400_chu_khong_500(lop, title):
+    """POST có hàng rào, PATCH thì không — `title TEXT NOT NULL` nổ IntegrityError."""
+    aid = _tao_bai(lop)
+    kq = _goi(AssignmentDetailView, 'patch', {'title': title}, ai=lop['gv'],
+              assignment_id=aid)
+    assert kq.status_code == 400, '%r → %s' % (title, kq.status_code)
+    assert q1('SELECT title FROM assignments WHERE id=%s', (aid,))['title'], 'tiêu đề còn nguyên'
+
+
+# ── Vá sau đợt audit thứ hai (31/08/2026) ───────────────────────────────────
+
+@pytest.mark.django_db
+def test_nhan_xet_sua_rieng_va_xoa_duoc(lop):
+    """Gõ nhầm nhận xét vào ô của em khác thì phải xoá được.
+
+    Bản đầu gộp "không gửi trường" với "gửi chuỗi rỗng" rồi dựa vào
+    `COALESCE(EXCLUDED.feedback, submissions.feedback)` — nên nhận xét sai nằm
+    lại vĩnh viễn, và học viên đọc lời dành cho bạn khác trên màn hình mình.
+    """
+    aid = _tao_bai(lop)
+    em = lop['hv'][0]
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em.id, 'score': 7, 'feedback': 'nham cua em khac'}]},
+         ai=lop['gv'], assignment_id=aid)
+    lay = lambda: q1('SELECT score, feedback FROM submissions '  # noqa: E731
+                     'WHERE assignment_id=%s AND user_id=%s', (aid, em.id))
+    assert lay()['feedback'] == 'nham cua em khac'
+
+    # gửi chuỗi rỗng TƯỜNG MINH → xoá
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em.id, 'score': 7, 'feedback': ''}]},
+         ai=lop['gv'], assignment_id=aid)
+    assert lay()['feedback'] is None, 'gửi rỗng tường minh phải XOÁ được nhận xét'
+
+    # KHÔNG gửi trường → giữ nguyên
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em.id, 'score': 7, 'feedback': 'nhan xet dung'}]},
+         ai=lop['gv'], assignment_id=aid)
+    _goi(AssignmentGradingView, 'post', {'grades': [{'user_id': em.id, 'score': 9}]},
+         ai=lop['gv'], assignment_id=aid)
+    r = lay()
+    assert float(r['score']) == 9 and r['feedback'] == 'nhan xet dung', (
+        'không gửi `feedback` thì phải giữ nguyên: %s' % r)
+
+
+@pytest.mark.django_db
+def test_dem_bai_chua_cham_khong_tinh_em_da_roi_lop(lop):
+    """"36/35 đã nộp · còn 1 bài chưa chấm" — huy hiệu không bao giờ tắt.
+
+    Ba phép đếm phải cùng phạm vi với sĩ số và với bảng chấm, cả hai chỗ đó đều
+    lọc `left_at IS NULL`. Không lọc thì bài của em đã rời lớp vẫn được đếm,
+    trong khi bảng chấm đã giấu em ấy đi — giảng viên không có ô nào để bấm.
+    """
+    aid = _tao_bai(lop, status='open')
+    a, b = lop['hv']
+    _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'bai cua a'}, ai=a)
+    _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'bai cua b'}, ai=b)
+    _goi(AssignmentGradingView, 'post', {'grades': [{'user_id': a.id, 'score': 8}]},
+         ai=lop['gv'], assignment_id=aid)
+
+    q1("UPDATE class_members SET left_at=%s, leave_reason='dropped' "
+       'WHERE class_id=%s AND user_id=%s RETURNING id', (local_now(), lop['id'], b.id))
+
+    ds = _goi(ClassAssignmentsView, 'get', ai=lop['gv'], class_id=lop['id']).data
+    bai = [x for x in ds['assignments'] if x['id'] == aid][0]
+    assert bai['members'] == 1, bai
+    assert bai['submitted'] == 1, 'chỉ đếm em còn trong lớp: %s' % bai
+    assert bai['ungraded'] == 0, (
+        'em đã rời lớp không được để lại huy hiệu "còn bài chưa chấm": %s' % bai)
+    # và bảng chấm cũng chỉ còn một em — hai mặt phải nói cùng một chuyện
+    bang = _goi(AssignmentGradingView, 'get', ai=lop['gv'], assignment_id=aid).data
+    assert len(bang['students']) == 1, bang['students']
+
+
+@pytest.mark.django_db
+def test_hoc_xong_khoa_van_xem_lai_duoc_bai_va_nhan_xet(lop):
+    """Em luyện thi HSA ôn lại trước ngày thi — đúng lúc cần nhất thì mất đường."""
+    aid = _tao_bai(lop, status='open')
+    em = lop['hv'][0]
+    _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'bai lam'}, ai=em)
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em.id, 'score': 9, 'feedback': 'Rat tot'}]},
+         ai=lop['gv'], assignment_id=aid)
+
+    q1("UPDATE class_members SET left_at=%s, leave_reason='completed' "
+       'WHERE class_id=%s AND user_id=%s RETURNING id', (local_now(), lop['id'], em.id))
+
+    ds = _goi(MyAssignmentsView, 'get', ai=em).data['assignments']
+    assert len(ds) == 1, 'học xong khoá vẫn phải xem lại được: %s' % ds
+    assert ds[0]['score'] == 9 and ds[0]['feedback'] == 'Rat tot', ds[0]
+    # nhưng KHÔNG nộp thêm được nữa
+    assert _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'nop them'},
+                ai=em).status_code == 404
+
+
+@pytest.mark.django_db
+def test_xoa_lop_don_luon_diem_bai_tap(lop):
+    """Sự kiện bài tập MANG ĐIỂM — để lại là kéo con số thành thạo suốt đời.
+
+    Nặng hơn hẳn sự kiện điểm danh (score NULL, vô hại về số liệu), và không
+    còn đường nào xoá vì `ref_id` trỏ tới một hàng đã mất.
+    """
+    from teaching.views import AdminClassDetailView
+    aid = _tao_bai(lop, status='open')
+    em = lop['hv'][0]
+    _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'x'}, ai=em)
+    _goi(AssignmentGradingView, 'post', {'grades': [{'user_id': em.id, 'score': 9}]},
+         ai=lop['gv'], assignment_id=aid)
+    assert q1('SELECT count(*) c FROM learning_events WHERE ref_type=%s AND ref_id=%s',
+              ('assignment', str(aid)))['c'] == 1
+
+    admin = _nguoi('Admin Xoa Lop', 'admin')
+    kq = _goi(AdminClassDetailView, 'delete', ai=admin, class_id=lop['id'])
+    assert kq.status_code == 409, 'lớp còn dữ liệu thì phải hỏi: %s' % kq.data
+    assert kq.data['willDelete']['assignments'] == 1, (
+        'hộp xác nhận phải nói ra số BÀI TẬP sắp mất: %s' % kq.data['willDelete'])
+    assert kq.data['willDelete']['submissions'] == 1, kq.data['willDelete']
+
+    req = f.delete('/x?confirm=1')
+    force_authenticate(req, user=admin)
+    assert AdminClassDetailView.as_view()(req, class_id=lop['id']).status_code == 200
+    assert q1('SELECT count(*) c FROM learning_events WHERE ref_type=%s AND ref_id=%s',
+              ('assignment', str(aid)))['c'] == 0, 'điểm mồ côi còn sót lại'

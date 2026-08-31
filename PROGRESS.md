@@ -1073,3 +1073,72 @@ sửa chú thích cho khớp số đo thật, ghi RULES §15, và lưu vào memo
 T60 (kỳ in trên giấy ≠ kỳ dùng để tính), T62 (hai nơi đếm "chậm" — cần chốt MỘT
 nguồn trước khi sửa), T65 (`meeting_url` không kiểm lược đồ, chưa khai thác
 được), T66 (`_client_ip`, chờ A2).
+
+
+---
+
+## 31/08/2026 (tiếp) — audit đợt hai: soi chính phần vừa viết, và bắt được hai hồi quy của tôi
+
+Hai agent audit đúng khối §5 và khối hàng rào mật khẩu + giao diện vừa áp trong
+cùng ngày. 12 + 8 phát hiện. **Hai cái nặng nhất là hồi quy do chính tôi gây ra
+vài giờ trước**, và cả hai đều thuộc một lớp: sửa xong một tầng mà không hỏi
+tầng kia có đi qua đây không (RULES §16).
+
+### Hai hồi quy
+
+**Hàng rào mật khẩu tạm khiến trang cũ hiện TÀI KHOẢN TRẮNG GIẢ.** `apiFetch`
+bắt 403 và điều hướng — nhưng trang cũ gọi `fetch` thô hơn 60 chỗ, không chỗ nào
+đi qua nó. `/dashboard` không hiện lỗi mà hiện "0 ngày học liên tiếp · 0/76 bài ·
+Bạn chưa đăng ký khoá nào". Em đã học 27 bài sẽ đi báo trợ giảng là **mất hết
+bài**. Hàng rào sinh ra để bảo vệ lại thành thứ nói dối êm ái nhất trong sản
+phẩm. Vá ở đúng chỗ bọc `fetch` sẵn có trong `main.js`.
+
+**Nút "Bài tập" đẩy chip người dùng ra ngoài màn hình.** Ở 1280px: học viên còn
+11px, **giảng viên và quản trị viên còn 0px** — mất luôn đường đăng xuất, mà
+không cuộn tới được. Trớ trêu: cùng đợt vừa mở đường đăng xuất cho người dùng
+BÀN PHÍM lại bịt đường của người dùng CHUỘT. Bản vá đã tồn tại từ 13/08 nhưng bị
+nhốt trong media query của điện thoại; đưa lên luật gốc + `safe center`.
+
+### Lời hứa trung tâm của §5 sai trên đường mặc định
+
+Bản đồ năng lực khoá ô theo CẶP `(course_id, topic)`. Màn hình không gửi
+`course_id` — rà cả thư mục: 0 kết quả. Nên mọi bài giao qua giao diện có
+`course_id = NULL`, sự kiện rơi vào ô `(None, 'Số học')` — một ô không tồn tại.
+Chấm 9/10 xong: ô của em **không đổi một chữ**, còn bản đồ giảng viên **mọc thêm
+ô "Số học" thứ hai**. Đúng cái "hai bản đồ" mà tôi vừa tuyên bố đã bịt sáng nay.
+
+### Bảy lỗi §5 còn lại, mỗi cái một test đỏ-trên-mã-cũ
+
+Gõ "8,5" thành **85** (ô `type=number` của Chromium xoá dấu phẩy; trên thang 100
+thì hợp lệ nên đi thẳng vào sổ — điểm gấp mười lần, không cảnh báo) · nhận xét
+gõ nhầm không xoá được · "36/35 đã nộp" vĩnh viễn · xoá lớp bỏ lại **điểm** mồ
+côi · hộp xác nhận xoá lớp không nhắc tới bài tự luận · học xong khoá là mất
+đường xem lại bài · tiêu đề rỗng và thang điểm biên trả 500.
+
+### Đo được, không suy ra
+
+- Chip người dùng: 11px/0px/0px → **93/93, 97/97, 55/55** ở ba vai trò × ba khổ.
+- Mục nav: **7/7 và 9/9** đều cuộn tới được (trước đó "Dashboard" không bấm được
+  ở 390px — lỗi có sẵn, `safe center` sửa luôn).
+- `"8,5"` → thân request `{"score":8.5}` (trước là `85`), đo trên cả thang 10 và
+  100, cả locale vi-VN.
+- `.dash-prog-pct` bộ tối: **1,6:1 → 5,28:1**, `style` nội tuyến nay `null`.
+- Cả `/dashboard` lẫn `/courses/<id>` nay tới `/doi-mat-khau?lan-dau=1`.
+
+Để chạy được màn hình chấm mà KHÔNG ghi vào Neon: dựng một backend giả ở cổng
+9001 rồi trỏ Next vào đó bằng `BACKEND_URL` — trang chấm dựng ở máy chủ nên
+`page.route` của Playwright không chặn được. Đã tắt và trả Next về backend thật.
+
+### Học được
+
+**Một phép kiểm của tôi xanh vì LÝ DO SAI.** `accounts/tests.py` gửi
+`current_password`/`new_password` trong khi view đọc `current`/`new` — 400 nhận
+được là "thiếu trường", không phải "sai mật khẩu". Nó vẫn xanh kể cả khi
+`PasswordView` hỏng hẳn. Cùng họ với bài học "phép kiểm hằng đúng" sáng nay,
+nhưng khó thấy hơn: lần này điều kiện có thật, chỉ là kiểm nhầm thứ.
+
+### Còn nợ
+
+T67 (đặt lại mật khẩu chưa thu hồi token cũ) · T68 (bảng chấm lớp 35 em = 692 KB
+JSON một lượt) · T69 (`/courses/<id>` hỏng CSS ở bộ tối, ngoài phạm vi) · và các
+mục T60/T62/T65/T66 từ đợt trước.

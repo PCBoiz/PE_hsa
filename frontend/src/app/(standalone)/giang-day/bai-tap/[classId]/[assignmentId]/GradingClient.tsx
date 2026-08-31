@@ -41,6 +41,24 @@ function fmt(iso: string | null) {
 type Nhap = { score: string; feedback: string };
 
 /**
+ * Chuỗi người dùng gõ → số, hoặc `null` nếu không đọc được.
+ *
+ * MỘT chỗ chuẩn hoá, dùng cho cả ba nơi (danh sách sắp lưu, đếm ô hỏng, viền
+ * đỏ) — ba nơi tự đọc lấy là ba nơi có thể hiểu khác nhau về cùng một ô.
+ *
+ * Nhận dấu PHẨY làm dấu thập phân: đó là cách viết số của tiếng Việt, và người
+ * dùng ở đây là giảng viên người Việt. `Number("8,5")` ra `NaN`.
+ */
+function doSo(raw: string): number | null {
+  const t = raw.trim().replace(',', '.');
+  if (t === '') return null;
+  // `Number` nhận cả "0x10", " 12 " và chuỗi rỗng — chặn bằng một mẫu tường minh.
+  if (!/^\d*\.?\d+$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
  * Bảng chấm cả lớp trên MỘT màn hình.
  *
  * Vì sao không mỗi em một trang: chấm hai chục bài tự luận là hai chục lần tải
@@ -119,23 +137,34 @@ function Bang({
   const sapLuu = useMemo(() => {
     const ra: { user_id: number; score: number; feedback: string }[] = [];
     for (const [uid, v] of Object.entries(nhap)) {
-      const s = v.score.trim();
-      if (s === '') continue;
-      const n = Number(s);
-      if (!Number.isFinite(n) || n < 0 || n > maxScore) continue;
-      ra.push({ user_id: Number(uid), score: n, feedback: v.feedback.trim() });
+      const id = Number(uid);
+      const n = doSo(v.score);
+      if (n !== null && (n < 0 || n > maxScore)) continue;   // ô hỏng, đếm riêng
+      if (n !== null) {
+        ra.push({ user_id: id, score: n, feedback: v.feedback.trim() });
+        continue;
+      }
+      // CHỈ SỬA NHẬN XÉT, không gõ điểm. Bản đầu bỏ qua hẳn những dòng này:
+      // giảng viên gõ nhầm nhận xét vào ô của em khác rồi xoá đi — nút Lưu ghi
+      // "Chưa gõ điểm nào" và không nói vì sao. Muốn thêm nhận xét cho một bài
+      // đã chấm mà không đổi điểm cũng không được.
+      // Chỉ làm được khi em ấy ĐÃ có điểm: máy chủ từ chối `score` rỗng, và
+      // đúng như vậy — "chưa chấm" phải được giữ nguyên là chưa chấm.
+      const cu = ds.find((x) => x.userId === id);
+      if (v.feedback !== '' && cu && cu.score !== null) {
+        ra.push({ user_id: id, score: cu.score, feedback: v.feedback.trim() });
+      }
     }
     return ra;
-  }, [nhap, maxScore]);
+  }, [nhap, maxScore, ds]);
 
   /** Ô đã gõ nhưng SAI — phải đếm riêng, nếu không nút Lưu im lặng bỏ qua chúng. */
   const oHong = useMemo(
     () =>
       Object.entries(nhap).filter(([, v]) => {
-        const s = v.score.trim();
-        if (s === '') return false;
-        const n = Number(s);
-        return !Number.isFinite(n) || n < 0 || n > maxScore;
+        if (v.score.trim() === '') return false;
+        const n = doSo(v.score);
+        return n === null || n < 0 || n > maxScore;
       }).length,
     [nhap, maxScore],
   );
@@ -164,6 +193,10 @@ function Bang({
       const bo = Array.isArray(d.skipped) && d.skipped.length > 0
         ? ` (${d.skipped.length} em không còn học lớp này nên bỏ qua)`
         : '';
+      // Máy chủ báo có điểm KHÔNG vào được bản đồ năng lực → phải nói ra ở
+      // dải đỏ, không phải toast: toast tự biến mất sau vài giây, mà việc cần
+      // làm (bấm Lưu lại) thì còn nguyên.
+      if (typeof d.warning === 'string' && d.warning) setErr(d.warning);
       toast(`Đã chấm ${d.graded} bài${bo}.`);
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không lưu được điểm'));
@@ -223,11 +256,8 @@ function Bang({
               const v = nhap[s.userId];
               const nop = fmt(s.submittedAt);
               const dangMo = mo === s.userId;
-              const sai =
-                v && v.score.trim() !== '' &&
-                (!Number.isFinite(Number(v.score)) ||
-                  Number(v.score) < 0 ||
-                  Number(v.score) > maxScore);
+              const n = v ? doSo(v.score) : null;
+              const sai = !!v && v.score.trim() !== '' && (n === null || n < 0 || n > maxScore);
               return (
                 <li key={s.userId} className="rounded-md border border-line bg-surface px-4 py-3">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -273,13 +303,22 @@ function Bang({
                       >
                         Điểm (0–{maxScore})
                       </label>
+                      {/* `type="text"`, KHÔNG `type="number"`. Chromium XOÁ dấu
+                          phẩy khỏi ô number thay vì từ chối, nên "8,5" — cách
+                          một giáo viên Việt gõ số thập phân — thành "85". Trên
+                          bài thang 100 thì 85 hợp lệ nên đi thẳng lên máy chủ:
+                          điểm gấp mười lần vào sổ, vào bản đồ năng lực, vào báo
+                          cáo gửi phụ huynh, KHÔNG một cảnh báo nào (đo
+                          31/08/2026, kể cả với locale vi-VN).
+                          Ô number còn xoá trắng mọi ký tự không phải số, nên gõ
+                          "giỏi" cũng biến mất im lặng và `oHong` không thể phân
+                          biệt với ô chưa gõ. `text` giữ nguyên thứ người ta gõ,
+                          để phép kiểm bên dưới nhìn thấy và nói ra. */}
                       <input
                         id={`d-${s.userId}`}
-                        type="number"
-                        min={0}
-                        max={maxScore}
-                        step="0.25"
+                        type="text"
                         inputMode="decimal"
+                        autoComplete="off"
                         value={v?.score ?? ''}
                         placeholder={s.score !== null ? String(s.score) : '—'}
                         onChange={(e) => sua(s.userId, { score: e.target.value })}

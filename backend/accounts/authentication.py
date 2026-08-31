@@ -22,11 +22,18 @@ _KEY = 'auth_user:{}'
 #: Đúng bốn thứ, và mỗi thứ có lý do riêng: đọc hồ sơ mình (màn hình cần tên để
 #: vẽ), đổi mật khẩu (chính việc phải làm), làm mới token (phiên không được chết
 #: giữa chừng), đăng xuất (luôn phải thoát được).
-CHO_PHEP_KHI_PHAI_DOI_MK = (
-    '/api/user',            # bao gồm cả /api/user/password
+#:
+#: SO KHỚP CHÍNH XÁC, KHÔNG SO TIỀN TỐ. Bản đầu dùng `startswith('/api/user')`,
+#: và `/api/users/11/follow` (số NHIỀU) bắt đầu bằng đúng chuỗi đó — đo
+#: 31/08/2026: tài khoản còn mật khẩu tạm vẫn theo dõi người khác được. Nhẹ về
+#: nghiệp vụ, nhưng nó chứng minh tiền tố không giữ nổi lời hứa "đúng bốn thứ":
+#: mọi URL `/api/user*` thêm sau này sẽ tự động lọt mà không ai nhận ra.
+CHO_PHEP_KHI_PHAI_DOI_MK = frozenset({
+    '/api/user',
+    '/api/user/password',
     '/auth/refresh',
     '/auth/logout',
-)
+})
 
 
 def invalidate_user_cache(user_id):
@@ -56,8 +63,8 @@ class CachedJWTAuthentication(JWTAuthentication):
             return None
         user, token = kq
         if getattr(user, 'must_change_password', False):
-            duong = request.path or ''
-            if not any(duong.startswith(t) for t in CHO_PHEP_KHI_PHAI_DOI_MK):
+            duong = (request.path or '').rstrip('/')
+            if duong not in CHO_PHEP_KHI_PHAI_DOI_MK:
                 # 403 chứ KHÔNG 401: 401 khiến lớp làm mới token ở frontend
                 # tưởng phiên hết hạn, thử refresh, rồi đá về trang đăng nhập —
                 # và vòng đó lặp mãi vì đăng nhập lại vẫn còn nguyên cờ.

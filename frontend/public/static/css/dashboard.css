@@ -3165,7 +3165,10 @@ body.dark .lb-avatar { background: var(--card); }
   font-size: 13px; font-weight: 600; color: #1F2937;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.lb-row.lb-row-me .lb-name { color: #2D7FC1; }
+/* `--brand-ink` chứ không `#2D7FC1`: hex viết cứng không có bản cho bộ tối,
+   và luật này đặc thù hơn `body.dark .lb-name` nên nó THẮNG — dòng "vị trí
+   của bạn", đúng dòng người dùng tìm đầu tiên, đo được 4,38:1 ở bộ tối. */
+.lb-row.lb-row-me .lb-name { color: var(--brand-ink); }
 body.dark .lb-name { color: #E2E8F0; }
 .lb-sub { font-size: 10px; color: #9CA3AF; }
 body.dark .lb-sub { color: #64748B; }
@@ -3177,7 +3180,7 @@ body.dark .lb-sub { color: #64748B; }
 .lb-row.lb-top1 .lb-value { color: #D97706; }
 .lb-row.lb-top2 .lb-value { color: #475569; }
 .lb-row.lb-top3 .lb-value { color: #92400E; }
-.lb-row.lb-row-me .lb-value { color: #2D7FC1; }
+.lb-row.lb-row-me .lb-value { color: var(--brand-ink); }
 body.dark .lb-value { color: #CBD5E1; }
 
 .lb-me {
@@ -3704,7 +3707,8 @@ body.dark .prof-post-stats {
   font-size: 0.82rem; font-weight: 700; color: var(--t1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dash-prog-pct { font-size: 0.78rem; font-weight: 800; flex-shrink: 0; }
+/* Màu từ TOKEN, không từ dữ liệu khoá học — xem chú thích ở main.js. */
+.dash-prog-pct { font-size: 0.78rem; font-weight: 800; flex-shrink: 0; color: var(--brand-ink); }
 .dash-prog-bar-bg {
   height: 6px; border-radius: 999px; margin: 6px 0 7px;
   background: var(--bd, rgba(255, 255, 255, 0.08));

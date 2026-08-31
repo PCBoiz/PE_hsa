@@ -166,10 +166,30 @@ def test_mat_khau_tam_chi_di_duoc_bon_duong(db, api):
 
     # Bốn đường được phép
     assert api.get('/api/user').status_code == 200
-    # sai mật khẩu hiện tại -> 400 (tới được view, tức KHÔNG bị hàng rào chặn)
-    assert api.put('/api/user/password',
-                   {'current_password': 'sai', 'new_password': 'MatKhauMoi123'},
-                   format='json').status_code == 400
+    # Tên trường là `current`/`new` — KHÔNG phải `current_password`/`new_password`.
+    # Bản đầu của phép kiểm này gõ sai tên, nên 400 nhận được là "thiếu trường",
+    # không phải "sai mật khẩu hiện tại": nó vẫn xanh kể cả khi PasswordView
+    # hỏng hẳn. Một phép kiểm xanh vì lý do sai thì tệ hơn không có.
+    r2 = api.put('/api/user/password', {'current': 'sai-be-be', 'new': 'MatKhauMoi123'},
+                 format='json')
+    assert r2.status_code == 401, r2.data
+    assert 'hiện tại' in str(r2.data), (
+        'phải tới được VIEW và bị từ chối vì sai mật khẩu, chứ không phải bị hàng '
+        'rào chặn: %s' % r2.data)
+
+    # `/api/users/...` (số NHIỀU) bắt đầu bằng chuỗi `/api/user` — bản đầu so
+    # bằng `startswith` nên nó LỌT. Tài khoản còn mật khẩu tạm vẫn theo dõi
+    # người khác được. Nhẹ về nghiệp vụ, nhưng nó chứng minh tiền tố không giữ
+    # nổi lời hứa "đúng bốn thứ": mọi URL `/api/user*` thêm sau này sẽ tự động
+    # lọt mà không ai nhận ra.
+    nguoi_khac = q1("INSERT INTO users (name, email, password, streak) "
+                    "VALUES ('MK Tam Khac','mk_tam_khac_tmp@example.com','x',0) RETURNING id")
+    r3 = api.post('/api/users/%d/follow' % nguoi_khac['id'], {}, format='json')
+    assert r3.status_code == 403, 'đường số NHIỀU phải bị chặn: %s' % r3.status_code
+    # (`/api/user/` có dấu gạch cuối trả 404 từ bộ định tuyến Django, chứ không
+    #  phải từ hàng rào — `rstrip('/')` trong danh sách cho phép là phòng thủ
+    #  cho một trường hợp không tới được. Không khẳng định gì ở đây: khẳng định
+    #  về routing của Django không phải việc của phép kiểm này.)
 
     # Gỡ cờ thì đi lại được ngay, KHÔNG phải đợi 60 giây bộ đệm
     q1('UPDATE users SET must_change_password=FALSE WHERE id=%s RETURNING id', (u.id,))

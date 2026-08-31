@@ -202,3 +202,28 @@ nó tắt đúng cái phản xạ mà cả tệp RULES này dựng lên.
 - Kịch bản DỰNG RA để minh hoạ (chưa xảy ra trên dữ liệu thật) phải nói thẳng
   là "chưa đo được trên dữ liệu thật" — nó vẫn là lý do chính đáng để giữ bản
   vá, chỉ là không được đội lốt số đo.
+
+---
+
+## §16 · Sửa xong một tầng thì phải hỏi "tầng KIA có đi qua đây không"
+
+Ngày 31/08/2026 tôi thêm hàng rào `must_change_password` và cho `apiFetch` tự
+điều hướng khi gặp 403. `apiFetch` là cửa của mã Next mới. Nhưng trang
+`/dashboard` và `/courses/*` là mã cũ, gọi `fetch` thô hơn 60 chỗ — **không chỗ
+nào đi qua nó**. Kết quả không phải một bức tường 403 câm mà là một dashboard
+trông bình thường của người mới: "0 ngày học liên tiếp", "0/76 bài", "Bạn chưa
+đăng ký khoá nào". Học viên sẽ tưởng tài khoản mình bị xoá sạch.
+
+Cùng ngày, cùng lỗi hình dạng: tôi thêm một mục vào thanh điều hướng và không
+đo lại phần bên phải — chip người dùng bị đẩy ra ngoài khung, **giảng viên và
+quản trị viên còn 0 pixel** để bấm vào menu, mất luôn nút Đăng xuất.
+
+**Bắt buộc, cho mọi thay đổi chạm vào tầng dùng chung** (xác thực, xử lý lỗi,
+bố cục khung, CSS token):
+- Liệt kê MỌI đường đi qua tầng đó, kể cả mã cũ. `grep` tên hàm mới là chưa đủ —
+  phải `grep` cả thứ nó thay thế (`fetch(`, `<div class=`…).
+- Đo lại phần KHÔNG sửa nằm cạnh phần vừa sửa. Thêm một mục vào hàng ngang thì
+  đo cả hàng, không chỉ mục vừa thêm.
+- Hỏi "nếu hàng rào này chặn, người dùng NHÌN THẤY GÌ" — và đi xem tận mắt. Một
+  hàng rào im lặng ở đúng chỗ dữ liệu được vẽ ra sẽ trông y hệt "không có dữ
+  liệu", và đó là kiểu nói dối khó phát hiện nhất.
