@@ -562,7 +562,7 @@ chạm DB thật.
 > **Làm 01/09/2026.** Thêm bước `Lint backend (ruff)` TRƯỚC `Run pytest`. Đáng
 > giá: một vòng pytest ở đây mất **16 phút 41** và đi tới Neon thật.
 
-### [ ] T18 · Hàng rào cho lớp lỗi đắt nhất: sai hình dạng JSON
+### [~] T18 (mức 1 XONG) · Hàng rào cho lớp lỗi đắt nhất: sai hình dạng JSON
 **Không bộ luật nào ở trên bắt được T1.** Ba mức, chọn theo giá:
 1. Test hợp đồng: gọi thật endpoint rồi `assert` tên khoá (~1 giờ).
 2. `zod` cho payload màn hình quản trị/giảng dạy; `serverJson` `parse` thay vì
@@ -572,6 +572,23 @@ chạm DB thật.
 Kèm: **chốt `camelCase`** cho mọi khoá do ứng dụng dựng, và **cấm trả `SELECT *`
 thẳng ra API** (`AdminAuditView`, `UserView.get` — cột mới thêm vào bảng sẽ tự
 động rò ra API).
+
+> **Mức 1 làm 01/09/2026** — `common/tests_hop_dong.py`, 5 đường màn hình phụ
+> thuộc nặng nhất, khẳng định tên khoá ở tầng ngoài cùng. Đã tự kiểm CẢ HAI
+> chiều: đổi `hasPlan` → `has_plan` thì đỏ đúng chỗ; thêm cột `password` vào câu
+> SELECT của `/api/user` thì đỏ với câu "RÒ trường bí mật ra API".
+>
+> **Cảnh báo về `SELECT *` trong mục này SAI với hiện trạng.** Rà lại
+> 01/09/2026: `AdminAuditView` và `UserView.get` đều đã liệt kê cột trắng, và
+> mọi `SELECT *`/`RETURNING *` còn lại (`assignments`, `sessions`, `reports`,
+> đăng nhập) đều đi qua một hàm dựng JSON lọc cột (`_dict`, `_session_dict`,
+> whitelist tại chỗ). Không chỗ nào rò. Nhưng mối lo thì vẫn đúng — không có gì
+> CHẶN người sau viết `Response(row)`, và đó chính là thứ phép kiểm hợp đồng
+> đứng canh.
+>
+> Ghi rõ giới hạn: tài khoản kiểm chưa có kế hoạch nên chỉ phủ nhánh
+> `hasPlan: False`. Mức 2 (`zod` cho payload) và mức 3 (sinh type từ OpenAPI)
+> chưa làm.
 
 ---
 
