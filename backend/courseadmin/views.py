@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from common.db import q, q1, x
 from common.permissions import IsAdminRole
 from lessons.content import validate_lesson
+from lessons.grading import quen_dap_an
 
 _COURSE_FIELDS = (
     'title', 'subtitle', 'description', 'image', 'level',
@@ -208,6 +209,13 @@ class AdminLessonContentView(AdminBase):
         x('UPDATE lessons SET content_json=%s::jsonb, title=COALESCE(NULLIF(%s,\'\'), title) '
           'WHERE id=%s',
           (json.dumps(content, ensure_ascii=False), (content.get('title') or '').strip(), lesson_id))
+        # Xoá đệm đáp án. Không có dòng này thì giảng viên sửa một đáp án
+        # sai xong, trong tối đa 60 giây tiếp theo máy chủ vẫn CHẤM bằng
+        # đáp án CŨ — và từ 31/08/2026 con số ấy đi thẳng vào XP và bản đồ
+        # năng lực. `quen_dap_an` có sẵn từ sáng nhưng chưa nơi nào trong mã
+        # chạy thật gọi nó; một hàm chỉ có phép kiểm gọi là một hàm không
+        # tồn tại trên đường chạy thật.
+        quen_dap_an(row['course_id'], row['sort_order'])
         return Response({'ok': True})
 
 
@@ -271,6 +279,9 @@ class AdminCourseImportView(AdminBase):
                       'VALUES (%s,%s,%s,%s,%s::jsonb)',
                       (course_id, title, module, idx, payload))
                     created += 1
+                # Cùng lý do với đường sửa lẻ ở trên: nhập đè nội dung mà không
+                # xoá đệm thì tối đa 60 giây tiếp theo vẫn chấm bằng đáp án cũ.
+                quen_dap_an(course_id, idx)
             total = body.get('total_lessons')
             if isinstance(total, int) and total > 0:
                 _set_lesson_count(course_id, total)

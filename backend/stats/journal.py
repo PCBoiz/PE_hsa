@@ -20,6 +20,7 @@ from common.db import q, q1, x
 from common.events import (KIND_LESSON, KIND_MOCK, KIND_SELF_LOG, SOURCE_SELF,
                            forget_events,
                            record_event)
+from common.params import so_nguyen
 from stats.goals import as_date, read_goals
 
 #: Mức khó học viên tự chấm. Ba bậc là đủ; nhiều hơn chỉ khiến người ta chọn bừa.
@@ -73,7 +74,7 @@ def _row_out(r):
 
 
 def recent_logs(uid, days=DEFAULT_DAYS):
-    days = max(1, min(int(days or DEFAULT_DAYS), MAX_DAYS))
+    days = so_nguyen(days, DEFAULT_DAYS, 1, MAX_DAYS)
     since = local_today() - timedelta(days=days - 1)
     try:
         rows = q('''SELECT log_date, minutes, topic, what, difficulty, note

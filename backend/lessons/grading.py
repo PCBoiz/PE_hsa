@@ -49,22 +49,26 @@ _TTL = 60
 def _chuan(s):
     """Chuẩn hoá một câu trả lời để so sánh.
 
-    Giữ ĐÚNG luật mà engine đang dùng (`norm` trong `lesson_hsa.js`): bỏ khoảng
-    trắng thừa, không phân biệt hoa thường. Thêm hai thứ engine không làm được
-    nhưng người chấm tay nào cũng làm:
+    Giữ ĐÚNG luật mà engine dùng suốt từ đầu (`norm` trong `lesson_hsa.js`):
+    không phân biệt hoa thường, **bỏ hết khoảng trắng**, **bỏ hết dấu `%`**.
+    Thêm một thứ engine không làm được: chuẩn hoá Unicode NFC — "đ" gõ bằng bàn
+    phím Telex và "đ" dán từ Word là hai chuỗi byte khác nhau nhưng cùng một chữ.
 
-      · chuẩn hoá Unicode NFC — "đ" gõ bằng bàn phím Telex và "đ" dán từ Word là
-        hai chuỗi byte khác nhau nhưng cùng một chữ;
-      · gộp mọi khoảng trắng liên tiếp thành một.
+    BỎ `%` KHÔNG PHẢI CHUYỆN NHỎ. Bản đầu ngày 31/08/2026 của hàm này chỉ gộp
+    khoảng trắng và GIỮ `%`, kèm một chú thích tự nhận là "giữ đúng luật engine"
+    trong khi làm ngược lại. Đo trên nội dung thật: 151 câu dạng điền, trong đó
+    **14 câu hỏi "bao nhiêu %" mà đáp án lưu là số trần** — ví dụ *"A = 30,
+    B = 70. A chiếm bao nhiêu % tổng? (nhập số)"* với đáp án `"30"`. Em gõ
+    `30%` thì trước hôm ấy là ĐÚNG, sau đó thành SAI. Cùng lỗi với `x = 3` gõ
+    thành `x=3`.
 
     KHÔNG bỏ dấu tiếng Việt và KHÔNG bỏ dấu chấm phân cách nghìn: "300.000đ" và
-    "300000d" là hai câu trả lời khác nhau, và một bài toán phần trăm thì cách
-    viết số cũng là một phần của đáp án.
+    "300000d" là hai câu trả lời khác nhau — và `norm` cũ cũng không bỏ chúng.
     """
     if s is None:
         return ''
-    s = unicodedata.normalize('NFC', str(s)).strip().lower()
-    return re.sub(r'\s+', ' ', s)
+    s = unicodedata.normalize('NFC', str(s)).lower()
+    return re.sub(r'\s+', '', s).replace('%', '')
 
 
 def _noi_dung(course_id, lesson_no):
@@ -174,3 +178,33 @@ def phan_tram(dung, tong):
     if not tong:
         return None
     return max(0, min(100, round(dung * 100 / tong)))
+
+
+def cham_phong_luyen(course_id, lesson_no, tra_loi):
+    """Chấm phòng luyện tốc độ. Trả ``(dung, tong, combo_dai_nhat)``.
+
+    Trả ``None`` khi bài hoặc phần `drill` không tồn tại — cùng luật với `cham`.
+
+    VÌ SAO CHUỖI COMBO TÍNH Ở ĐÂY. Combo là số câu ĐÚNG LIÊN TIẾP, nên muốn tính
+    nó phải biết THỨ TỰ câu trong đề — thứ chỉ bảng đáp án mới giữ. Trước
+    31/08/2026 con số này do trình duyệt tự đếm rồi tự khai, mà nó đáng 5 XP mỗi
+    nấc; nay máy chủ dựng lại từ chính các câu trả lời nhận được.
+
+    Câu bỏ trống ĐỨT chuỗi và tính là sai: hết giờ mà chưa kịp làm cũng là một
+    kết quả trong bài luyện tính giờ, và đó chính là thứ phòng luyện đo.
+    """
+    bang = dap_an(course_id, lesson_no).get('drill')
+    if not bang:
+        return None
+    if not isinstance(tra_loi, dict):
+        tra_loi = {}
+    dung = combo = dai_nhat = 0
+    for cid, khoa in bang.items():
+        if cid in tra_loi and _chuan(tra_loi[cid]) == _chuan(khoa['answer']):
+            dung += 1
+            combo += 1
+            if combo > dai_nhat:
+                dai_nhat = combo
+        else:
+            combo = 0
+    return dung, len(bang), dai_nhat

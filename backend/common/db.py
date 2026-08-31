@@ -155,3 +155,18 @@ def q1(sql, params=None):
 def x(sql, params=None):
     """INSERT/UPDATE/DELETE không cần kết quả."""
     return _run(sql, params, lambda cur: None)
+
+
+def xn(sql, params=None):
+    """Như ``x`` nhưng TRẢ SỐ DÒNG đã chạm.
+
+    Dùng khi câu lệnh có mệnh đề canh trong ``WHERE`` — kiểu
+    ``WHERE id=%s AND submitted_at IS NULL``. Viết ra một hàng rào rồi vứt kết
+    quả đi là có hàng rào trên giấy: câu lệnh trượt hết mọi dòng vẫn im lặng
+    như lúc nó chạy đúng, và mã đi tiếp như thể đã ghi được.
+
+    Đo 31/08/2026: đúng cái bẫy ấy ở đường nộp bài thi thử — lượt bị đóng bởi
+    một tab khác thì UPDATE trúng 0 dòng, bài làm biến mất, mà XP vẫn cộng và
+    sự kiện vẫn ghi trỏ vào một dòng không còn.
+    """
+    return _run(sql, params, lambda cur: cur.rowcount)

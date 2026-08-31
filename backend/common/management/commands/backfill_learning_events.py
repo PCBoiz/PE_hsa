@@ -136,7 +136,8 @@ class Command(BaseCommand):
         cond, params = self._where_user('user_id')
         rows = q('''SELECT id, user_id, exam_id, score, total, section_scores_json,
                            duration_seconds, submitted_at
-                    FROM mock_attempts WHERE TRUE''' + cond, params)
+                    FROM mock_attempts
+                    WHERE submitted_at IS NOT NULL AND counted''' + cond, params)
         for r in rows:
             when = _when(r['submitted_at'], self.now)
             minutes = max(1, round((r['duration_seconds'] or 0) / 60)) or None

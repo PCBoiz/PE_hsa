@@ -107,6 +107,11 @@ def _today_metrics(uid, today):
     lessons = (q1("SELECT COUNT(*) AS n FROM lesson_progress "
                   "WHERE user_id=%s AND status='completed' "
                   "AND completed_at::date = %s", (uid, today)) or {}).get('n', 0)
+    # CỐ Ý không lọc `counted`: đây là nhiệm vụ THÓI QUEN ("làm 1 đề hôm nay"),
+    # không phải sổ điểm. Đo 31/08/2026 toàn hệ chỉ có MỘT đề đã xuất bản, nên
+    # lọc counted ở đây là làm nhiệm vụ này hỏng vĩnh viễn với người đã thi.
+    # Không cày được: user_missions khoá theo (user, nhiệm vụ, ngày).
+    # Dòng đang mở có submitted_at NULL nên `::date = %s` tự loại nó.
     mocks = (q1("SELECT COUNT(*) AS n FROM mock_attempts "
                 "WHERE user_id=%s AND submitted_at::date = %s", (uid, today)) or {}).get('n', 0)
     xp = (q1("SELECT xp_earned AS n FROM user_daily_xp_logs "
@@ -251,8 +256,13 @@ class HsaSummaryView(APIView):
 
         # Điểm đề thi thử gần nhất (thang 150 câu của HSA).
         last_score, last_total = None, None
+        # `submitted_at IS NOT NULL`: từ 31/08/2026 tồn tại dòng ĐANG MỞ (đã
+        # bấm bắt đầu, chưa nộp) với submitted_at NULL — mà Postgres xếp NULL
+        # LÊN ĐẦU trong `ORDER BY ... DESC`, nên nếu không lọc thì "điểm đề gần
+        # nhất" của mọi người vừa mở đề sẽ là 0/0.
         att = q1("SELECT score, total FROM mock_attempts "
-                 "WHERE user_id=%s ORDER BY submitted_at DESC LIMIT 1", (uid,))
+                 "WHERE user_id=%s AND submitted_at IS NOT NULL "
+                 "ORDER BY submitted_at DESC LIMIT 1", (uid,))
         if att:
             last_score, last_total = att.get('score'), att.get('total')
 

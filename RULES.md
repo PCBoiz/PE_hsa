@@ -273,3 +273,45 @@ phép kiểm GHI theo quán tính, trong cùng một khối lệnh, không dừn
   giao dịch cuộn lại, đừng mượn dữ liệu người thật.
 - Làm hỏng rồi thì **nói ngay, đo chính xác thiệt hại, và hỏi trước khi "sửa"**
   — vì cách sửa sai thứ hai là bịa lại một con số trông hợp lý.
+
+
+---
+
+## §19 · Phép kiểm phải đi ĐÚNG ĐƯỜNG mà nó nhận là đang bảo vệ
+
+Đỏ-trước (§18) là điều kiện cần, không phải điều kiện đủ. Một phép kiểm có thể
+đỏ trên mã cũ, xanh trên mã mới, và vẫn **mô tả đúng cái lỗ hổng** — nếu nó đi
+một con đường khác với đường ta định chặn.
+
+Ngày 31/08/2026 tôi viết bốn phép kiểm cho phòng thi thử, cả bốn nộp bài **không
+qua `/start`** rồi khẳng định `counted is True`. Chúng xanh. Nhưng chính con
+đường ấy là lỗ hổng: bỏ `/start` là bỏ toàn bộ giới hạn giờ. Bộ kiểm không bắt
+được lỗ — nó **ghim lỗ lại**, và mỗi lần chạy xanh tôi lại tin thêm rằng mình đã
+bịt. Một agent đọc mã mới thấy.
+
+**Bắt buộc:** sau khi phép kiểm đã xanh, hỏi thêm hai câu:
+- *"Phép kiểm này đi qua những endpoint nào, theo thứ tự nào?"* — nếu thứ tự ấy
+  khác thứ tự người dùng thật đi, nó đang đo một sản phẩm khác.
+- *"Nếu tôi xoá hẳn hàng rào vừa dựng, phép kiểm nào ĐỎ?"* — không trả lời được
+  bằng một cái tên cụ thể thì hàng rào chưa có phép kiểm nào.
+
+Kèm theo, ba dạng phép kiểm HẰNG ĐÚNG đã gặp thật trong repo này:
+- so với một biên mà **mọi** đường ghi đều đã kẹp (`duration_seconds >= 0`);
+- so hai lần gọi cách nhau vài mili giây rồi kết luận về thời gian
+  (`b.secondsLeft <= a.secondsLeft` — bản luôn cấp lại 1200 giây vẫn thoả);
+- khẳng định một giá trị **trùng với giá trị mặc định** (`xp_reward = 50` trên
+  bài thật, mà mặc định cũng 50 — gõ sai tên khoá SQL vẫn xanh).
+
+## §20 · Chú thích sai nguy hiểm ngang mã sai
+
+Ngày 31/08/2026 tôi viết `_chuan` với docstring *"Giữ ĐÚNG luật mà engine đang
+dùng (`norm` trong `lesson_hsa.js`)"* — trong khi `norm` bỏ hết khoảng trắng và
+bỏ hết dấu `%`, còn `_chuan` thì giữ cả hai. Đo ra: 14 câu hỏi "bao nhiêu %" có
+đáp án là số trần; em gõ `30%` từ đúng thành sai. Bản vá đã lên production.
+
+Mã sai thì phép kiểm còn có cơ bắt. Chú thích sai thì **tắt phản xạ kiểm tra của
+mọi người đọc sau**, kể cả của chính người viết khi quay lại.
+
+**Bắt buộc:** khi viết "giữ đúng luật X", "khớp với Y", "cùng hành vi Z" — mở X
+ra đọc rồi chạy thử vài giá trị đối chiếu, ngay trong lúc viết câu đó. Xem thêm
+§15 (không mượn số đo).

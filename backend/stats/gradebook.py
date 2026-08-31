@@ -23,10 +23,14 @@ from common.clock import local_today
 from common.db import q
 from common.events import (KIND_DRILL, KIND_LESSON, KIND_MISSION, KIND_MOCK,
                            KIND_REVIEW_QUIZ, SOURCE_SELF)
+from common.params import so_nguyen
 from stats.goals import HSA_MAX_SCORE, read_goals, target_band
 
 #: Số tuần mặc định trên đường cong. 12 tuần ≈ một mùa ôn thi.
 DEFAULT_WEEKS = 12
+#: Sàn 4 tuần: dưới ngần ấy thì đường cong chỉ còn vài điểm, nhìn ra xu hướng là
+#: nhìn ra ảo giác. Trước đây con số này chôn trong `max(4, ...)` giữa thân hàm.
+MIN_WEEKS = 4
 MAX_WEEKS = 52
 #: Dưới ngần này lượt thi thử thì KHÔNG vẽ đường xu hướng (xem chú thích ở đầu).
 MIN_POINTS_FOR_TREND = 3
@@ -92,7 +96,7 @@ def gradebook(uid, limit=DEFAULT_ROWS):
     ``mock_section`` cố ý không xuất hiện: nó là bản chi tiết của cùng lượt thi
     đã có ở dòng ``mock``, hiện cả hai là đếm một lượt thi bốn lần.
     """
-    limit = max(1, min(int(limit or DEFAULT_ROWS), MAX_ROWS))
+    limit = so_nguyen(limit, DEFAULT_ROWS, 1, MAX_ROWS)
     kinds = [KIND_MOCK, KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ]
     try:
         rows = q('''SELECT kind, course_id, topic, score, max_score, minutes,
@@ -185,7 +189,7 @@ def _trend(points):
 
 def progress_curve(uid, weeks=DEFAULT_WEEKS):
     """Đường cong tiến bộ: điểm thi thử theo thời gian + thời lượng học mỗi tuần."""
-    weeks = max(4, min(int(weeks or DEFAULT_WEEKS), MAX_WEEKS))
+    weeks = so_nguyen(weeks, DEFAULT_WEEKS, MIN_WEEKS, MAX_WEEKS)
     today = local_today()
     first_monday = _monday(today) - timedelta(weeks=weeks - 1)
 

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, errorText } from '@/lib/api';
 
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.max(0, s % 60)).padStart(2, '0')}`;
@@ -25,6 +25,7 @@ export default function MockExam() {
   const [cur, setCur] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [result, setResult] = useState<any>(null);
+  const [loi, setLoi] = useState<string>('');
   const startRef = useRef(0);
   const answersRef = useRef<Record<string, string>>({});
   // Gán trong effect, KHÔNG gán thẳng lúc dựng: sửa ref giữa lúc dựng khiến
@@ -71,13 +72,52 @@ export default function MockExam() {
   // hàm khai trần trong thân component thì bộ kiểm không chứng minh được là nó
   // chỉ chạy từ trình xử lý sự kiện. Ở đây `start` chỉ được gọi từ onClick.
   const start = useCallback(async (id: number) => {
-    setView('loading');
-    const r = await apiFetch(`/api/mock-exams/${id}`);
-    const d = await r.json();
-    setExam(d); setAnswers({}); setCur(0);
-    setTimeLeft((d.duration_minutes || 20) * 60);
+    setView('loading'); setLoi('');
+    // POST /start chứ không phải GET đề: đường này mở `started_at` Ở MÁY CHỦ.
+    // Số giây còn lại cũng do máy chủ trả — tải lại trang giữa chừng thì nối
+    // tiếp đúng phần thời gian còn lại, không được cấp lại 20 phút.
+    let r: Response;
+    try {
+      r = await apiFetch(`/api/mock-exams/${id}/start`, { method: 'POST' });
+    } catch {
+      // `apiFetch` ném khi không gửi đi được (mất mạng, DNS, CORS). Không bắt
+      // thì promise reject và trang KẸT ở "Đang tải…" cho tới khi người dùng
+      // tự tải lại — vì dòng trên đã setView('loading') rồi.
+      setLoi('Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+      setView('list'); return;
+    }
+    let d: any = null;
+    try { d = await r.json(); } catch { d = null; }
+    if (!r.ok) {
+      // Nói ra chứ không quay về danh sách im lặng: người dùng bấm "Bắt đầu",
+      // màn hình chớp một cái rồi y như cũ, không một chữ giải thích.
+      setLoi(errorText(r.status, d)); setView('list'); return;
+    }
+    if (!d || !Array.isArray(d.questions) || d.questions.length === 0) {
+      setLoi('Đề này chưa có câu hỏi nào.'); setView('list'); return;
+    }
+    // Câu trả lời đã lưu của lượt đang mở: lỡ F5 ở phút thứ 15 thì đồng hồ nối
+    // tiếp mà bài làm cũng phải còn.
+    setExam(d);
+    setAnswers(d.savedAnswers && typeof d.savedAnswers === 'object' ? d.savedAnswers : {});
+    setCur(0);
+    setTimeLeft(typeof d.secondsLeft === 'number' ? d.secondsLeft : (d.duration_minutes || 20) * 60);
     startRef.current = Date.now(); setView('take');
   }, []);
+
+  // Lưu tạm câu trả lời lên máy chủ, gộp nhịp 1,5 giây. Không có nó thì mất
+  // mạng hay đóng tab là mất trắng bài làm, và lượt bỏ dở tới lúc cạn giờ
+  // không còn gì để chấm.
+  useEffect(() => {
+    if (view !== 'take' || !exam) return;
+    const id = setTimeout(() => {
+      apiFetch(`/api/mock-exams/${exam.id}/save`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersRef.current }),
+      }).catch(() => { /* lưu tạm hỏng thì thôi — nộp bài vẫn gửi đủ */ });
+    }, 1500);
+    return () => clearTimeout(id);
+  }, [answers, view, exam]);
   const setAns = (qid: string, val: string) => setAnswers((a) => ({ ...a, [qid]: val }));
   const answeredCount = () => Object.keys(answers).filter((k) => answers[k] != null && answers[k] !== '').length;
   const confirmSubmit = () => {
@@ -116,6 +156,7 @@ export default function MockExam() {
           <div className="mk-list">
             <h1 className="mk-h1">Thi thử Đánh giá năng lực</h1>
             <p className="mk-sub">Làm đề trên máy như thi thật — bấm giờ, chấm điểm và phân tích mạnh–yếu theo từng hợp phần.</p>
+            {loi && <div className="mk-loi" role="alert">{loi}</div>}
             {exams.length === 0 && <div className="mk-empty">Chưa có đề thi thử nào. Đề đầy đủ sẽ được cập nhật.</div>}
             <div className="mk-exam-grid">
               {exams.map((e) => (
@@ -139,7 +180,12 @@ export default function MockExam() {
           return (
             <div className="mk-take">
               <div className="mk-take-head">
-                <div className="mk-progress-txt">Câu {cur + 1}/{exam.questions.length} · đã trả lời {answeredCount()}</div>
+                <div className="mk-progress-txt">
+                  Câu {cur + 1}/{exam.questions.length} · đã trả lời {answeredCount()}
+                  {/* Nói TRƯỚC khi làm, không đợi tới lúc nộp: biết mình đang
+                      luyện hay đang lấy điểm là thứ ảnh hưởng tới cách làm bài. */}
+                  {exam.counts === false && <span className="mk-tag-practice">Lượt luyện · không tính điểm</span>}
+                </div>
                 <div className={'mk-timer' + (timeLeft <= 60 ? ' low' : '')}>
                   <i className="fa-regular fa-clock"></i> {fmt(timeLeft)}
                 </div>
@@ -195,6 +241,17 @@ export default function MockExam() {
               <div className="mk-score-body">
                 <div className="mk-score-pct">{Math.round((result.score / (result.total || 1)) * 100)}% chính xác</div>
                 {result.weakest && <div className="mk-weak">Cần ôn nhất: <b>{result.weakest}</b></div>}
+                {/* Một lượt vào sổ (quyết định 31/08/2026). Nói ra ngay ở đây,
+                    vì im lặng rồi không cộng XP thì học viên tưởng hệ lỗi. */}
+                {result.counted === false && (
+                  <div className="mk-note-practice">
+                    {result.notCountedReason === 'het_gio'
+                      ? 'Nộp quá giờ nên lượt này không vào sổ điểm.'
+                      : 'Lượt luyện tập — bạn đã có một lượt vào sổ cho đề này, nên lượt này không tính điểm và không cộng XP.'}
+                  </div>
+                )}
+                {result.counted !== false && result.xpGained
+                  ? <div className="mk-note-xp">+{result.xpGained} XP</div> : null}
               </div>
             </div>
 
@@ -214,11 +271,18 @@ export default function MockExam() {
 
             <div className="mk-sec-label">Xem lại từng câu</div>
             <ul className="mk-review">
+              {/* Máy chủ chỉ trả đáp án cho câu ĐÃ trả lời (mockexam/views.py
+                  luật 2). Câu bỏ trống về `answer: null` — nói thẳng là chưa
+                  trả lời, đừng in "Đáp án: null". */}
               {(result.results || []).map((r: any, i: number) => (
                 <li className={'mk-rev ' + (r.correct ? 'ok' : 'no')} key={r.id}>
                   <span className="mk-rev-ic">{r.correct ? '✓' : '✕'}</span>
                   <span className="mk-rev-q">Câu {i + 1}</span>
-                  <span className="mk-rev-a">Đáp án: <b>{r.answer}</b>{!r.correct && r.your ? ` · bạn chọn: ${r.your}` : ''}</span>
+                  <span className="mk-rev-a">
+                    {r.answered
+                      ? <>Đáp án: <b>{r.answer}</b>{!r.correct && r.your ? ` · bạn chọn: ${r.your}` : ''}</>
+                      : <em>Bỏ trống — làm lại đề để xem đáp án câu này.</em>}
+                  </span>
                 </li>
               ))}
             </ul>

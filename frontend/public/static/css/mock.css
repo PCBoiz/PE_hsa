@@ -4,8 +4,16 @@
 /* Token trang thi thử NỐI vào hệ token chung (theme.css) thay vì ghi hex cứng
    — nhờ vậy trang tự đổi theo theme sáng/tối (audit 2026-08-14: trước đây
    trang luôn tối kể cả khi người dùng chọn nền sáng). Giá trị sau dấu phẩy
-   chỉ là dự phòng khi thiếu theme.css. */
-:root {
+   chỉ là dự phòng khi thiếu theme.css.
+
+   `:root, body` chứ KHÔNG chỉ `:root` (đo 31/08/2026). Công tắc nền tối của app
+   là class `body.dark`, mà `body` là HẬU DUỆ của `:root`: giá trị `var(--t1)`
+   trong một khai báo đặt ở `:root` được thay ngay tại `:root`, nơi `body.dark`
+   chưa hề tồn tại. Hệ quả đo được: học viên chọn nền tối rồi vào /mock thì
+   `--t1` trên body đổi thành #E2E8F0 nhưng `--mk-t1` vẫn kẹt ở #16121F —
+   trang hiện SÁNG, chỉ còn viền `body` tối lòi ra quanh mép. Khai lại đúng cầu
+   này trên `body` là chỗ duy nhất nhìn thấy được lựa chọn của người dùng. */
+:root, body {
   --mk-violet: var(--brand, #8B7CF6);
   --mk-teal: var(--brand-2, #2DD4BF);
   --mk-bg: var(--bg, #07090F);
@@ -99,6 +107,23 @@ body { background: var(--mk-bg); }
 .mk-score-num span { font-size: 24px; color: var(--mk-t3); }
 .mk-score-pct { font-size: 18px; margin-bottom: 6px; }
 .mk-weak { color: #FBBF24; font-size: 14px; }
+/* Lượt có vào sổ điểm không (L4, 31/08/2026). Lượt luyện dùng tông trung
+   tính chứ không phải đỏ: nó không phải lỗi, chỉ là không tính điểm. */
+/* Nền lấy TỪ màu chữ chứ không phải trắng-mờ: trắng-mờ phủ lên nền sáng thì
+   biến mất, ô ghi chú tụt xuống thành một dòng chữ trần. Dẫn xuất từ
+   `currentColor` thì nó tự sẫm trên nền sáng và tự sáng trên nền tối. */
+.mk-note-practice { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--mk-t2);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  border-left: 3px solid currentColor;
+  border-radius: 0 8px 8px 0; padding: 8px 12px; }
+.mk-note-xp { margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--mk-teal); }
+/* Lời báo lỗi khi không mở được lượt thi. Dùng tông cảnh báo thật chứ không
+   phải màu chữ thường: người dùng vừa bấm một nút và nó không chạy. */
+.mk-loi { margin: 0 0 18px; padding: 12px 16px; border-radius: 10px; font-size: 14px;
+  color: #B42318; background: rgba(217,45,32,.10); border: 1px solid rgba(217,45,32,.28); }
+.mk-tag-practice { margin-left: 10px; font-size: 12px; font-weight: 600; color: var(--mk-t2);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
 .mk-sec-label { font-size: 15px; font-weight: 700; margin: 26px 0 12px; }
 .mk-sections { display: grid; gap: 12px; }
 .mk-sec-row { display: grid; grid-template-columns: 180px 1fr 50px; gap: 14px; align-items: center; }

@@ -152,3 +152,147 @@ def test_cham_bai_khong_ton_tai_tra_None_chu_khong_0_diem(db):
     ket_qua, dung, tong = cham(KHOA, 99999, 'test', {'a': 'b'})
     assert ket_qua is None and dung == 0 and tong == 0, (
         '"không tìm thấy đề" và "làm sai hết" là hai chuyện khác nhau')
+
+
+# ── L5 · bảng `lessons` là bảng DÙNG CHUNG, học viên không được viết vào ─────
+
+@pytest.mark.django_db
+def test_khong_de_ra_duoc_bai_hoc_GIA_trong_bang_dung_chung(em):
+    """Đo được: một dòng `"<b>BAI GIA MAO</b>"` với `sort_order 9999` do chính
+    endpoint của học viên INSERT, và `SkillsView` đọc `lessons` không lọc theo
+    người dùng nên dòng giả ấy hiện trong trang Kỹ năng của MỌI học viên.
+
+    Đỏ trên mã cũ: bản cũ trả 200 và đẻ ra dòng đó.
+    """
+    from lessons.views import CompleteLessonView
+    truoc = q1("SELECT COUNT(*) AS n FROM lessons WHERE course_id=%s", (KHOA,))['n']
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA, 'lessonTitle': '<b>BAI GIA MAO</b>',
+              'module': 'Chủ đề giả', 'xpEarned': 50},
+             ai=em, lesson_no=9999)
+    # Kiểm BẤT BIẾN trước, kiểm mã trả về sau: thứ thật sự nguy hiểm là dòng
+    # ghi vào bảng dùng chung, còn 404 chỉ là cách nói ra điều đó.
+    gia = q1("SELECT id, sort_order FROM lessons WHERE title LIKE %s", ('%BAI GIA MAO%',))
+    assert gia is None, 'học viên đẻ được dòng %r vào bảng lessons' % (gia,)
+    sau = q1("SELECT COUNT(*) AS n FROM lessons WHERE course_id=%s", (KHOA,))['n']
+    assert sau == truoc, 'endpoint của học viên đã ghi thêm %d dòng vào bảng dùng chung' % (sau - truoc)
+    assert r.status_code == 404, 'bài không có trong khoá thì phải nói là không có'
+
+
+@pytest.mark.django_db
+def test_XP_lay_tu_NOI_DUNG_BAI_chu_khong_tu_than_request(em):
+    """Bảng xếp hạng là thứ các em thi nhau thật.
+
+    Đỏ trên mã cũ: bản cũ kẹp 0–500 rồi cộng thẳng con số client gửi, nên
+    `{"xpEarned": 500}` cho 76 bài là 38.000 XP thay vì 3.800.
+    """
+    from lessons.views import CompleteLessonView
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA, 'xpEarned': 500}, ai=em, lesson_no=1)
+    assert r.status_code == 200
+    assert r.data['xpGained'] == 50, 'phải là xp_reward của bài, không phải số client khai'
+    ghi = q1("SELECT xp_earned FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id "
+             "WHERE lp.user_id=%s AND l.course_id=%s AND l.sort_order=1", (em.id, KHOA))
+    assert ghi['xp_earned'] == 50
+
+
+@pytest.mark.django_db
+def test_tieu_de_trong_nhat_ky_lay_tu_CSDL_chu_khong_tu_client(em):
+    """`learning_events.meta.title` hiện lại trong nhật ký học tập của em."""
+    from lessons.views import CompleteLessonView
+    _goi(CompleteLessonView, 'post',
+         {'courseId': KHOA, 'lessonTitle': 'TIEU DE DO CLIENT BIA'}, ai=em, lesson_no=1)
+    ev = q1("SELECT meta FROM learning_events WHERE user_id=%s AND kind='lesson' "
+            "ORDER BY id DESC LIMIT 1", (em.id,))
+    import json as _json
+    meta = ev['meta'] if isinstance(ev['meta'], dict) else _json.loads(ev['meta'])
+    assert meta.get('title') == 'Tỉ lệ & phần trăm', meta
+
+
+# ── L5b · phòng luyện tốc độ cũng phải chấm ở MÁY CHỦ ───────────────────────
+
+#: Bài tạm có phòng luyện 4 câu, đáp án biết trước. Không mượn bài thật: nội
+#: dung bài thật đổi thì phép kiểm phải vẫn đúng.
+NOI_DUNG_LUYEN = {
+    'id': 'tmp_luyen', 'index': 900, 'title': 'Bài tạm luyện', 'xp_reward': 40,
+    'test': {'questions': [{'id': 't1', 'question': '1+1?', 'answer': '2'}]},
+    'theory': {'condensed': {'cards': [{'text': 'x'}]}},
+    'drill': {'time_seconds': 60, 'questions': [
+        {'id': 'd1', 'question': 'a', 'answer': 'A'},
+        {'id': 'd2', 'question': 'b', 'answer': 'B'},
+        {'id': 'd3', 'question': 'c', 'answer': 'C'},
+        {'id': 'd4', 'question': 'd', 'answer': 'D'},
+    ]},
+}
+
+
+@pytest.fixture
+def bai_luyen(db):
+    import json as _json
+    from lessons.grading import quen_dap_an
+    q1("INSERT INTO lessons (course_id, title, module, sort_order, content_json) "
+       "VALUES (%s,'Bài tạm luyện','Chủ đề tạm',900,%s::jsonb) RETURNING id",
+       (KHOA, _json.dumps(NOI_DUNG_LUYEN, ensure_ascii=False)))
+    quen_dap_an(KHOA, 900)   # đệm 60 giây của phép kiểm trước không được lẫn sang
+    yield 900
+    quen_dap_an(KHOA, 900)
+
+
+@pytest.mark.django_db
+def test_phong_luyen_KHONG_nhan_ket_qua_tu_khai(em, bai_luyen):
+    """Đỏ trên mã cũ: bản cũ nhận `correct`/`maxCombo` từ thân request rồi chỉ
+    kẹp biên — mà `{"correct": 4, "maxCombo": 4}` là hợp lệ về biên, đáng 60 XP,
+    và nó nuôi bản đồ năng lực (`KIND_DRILL` là một nguồn của competency)."""
+    from lessons.views import CompleteLessonView
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA,
+              'drill': {'correct': 4, 'total': 4, 'maxCombo': 4, 'answered': 4, 'seconds': 30}},
+             ai=em, lesson_no=bai_luyen)
+    assert r.status_code == 200
+    # Kiểm BẤT BIẾN trước: thứ nguy hiểm là dòng năng lực dựng từ số tự khai.
+    ev = q1("SELECT score, max_score FROM learning_events "
+            "WHERE user_id=%s AND kind='drill'", (em.id,))
+    assert ev is None, 'đã ghi một dòng năng lực %r dựng từ con số tự khai' % (ev,)
+    assert r.data.get('xpDrill') == 0
+    assert r.data['xpGained'] == 40, 'chỉ được cộng xp_reward của bài'
+
+
+@pytest.mark.django_db
+def test_phong_luyen_cham_tu_CAU_TRA_LOI_va_combo_theo_thu_tu_de(em, bai_luyen):
+    """d1 đúng · d2 đúng · d3 SAI · d4 đúng → 3 đúng, combo dài nhất 2.
+
+    Combo phải tính theo THỨ TỰ CÂU TRONG ĐỀ, không theo thứ tự dict gửi lên.
+    """
+    from lessons.views import CompleteLessonView
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA,
+              'drill': {'seconds': 30,
+                        'answers': {'d4': 'D', 'd1': 'A', 'd3': 'sai', 'd2': 'B'}}},
+             ai=em, lesson_no=bai_luyen)
+    assert r.data.get('drill') == {'correct': 3, 'total': 4, 'maxCombo': 2, 'answered': 4}, r.data.get('drill')
+    assert r.data.get('xpDrill') == 3 * 10 + 2 * 5
+    assert r.data['xpGained'] == 40 + 40
+    ev = q1("SELECT score, max_score FROM learning_events "
+            "WHERE user_id=%s AND kind='drill' ORDER BY id DESC LIMIT 1", (em.id,))
+    assert (ev['score'], ev['max_score']) == (3, 4)
+
+
+@pytest.mark.django_db
+def test_cau_bo_trong_dut_chuoi_combo_va_tinh_la_sai(em, bai_luyen):
+    """Hết giờ chưa kịp làm cũng là một kết quả trong bài luyện tính giờ."""
+    from lessons.views import CompleteLessonView
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA, 'drill': {'seconds': 60, 'answers': {'d1': 'A', 'd4': 'D'}}},
+             ai=em, lesson_no=bai_luyen)
+    assert r.data.get('drill') == {'correct': 2, 'total': 4, 'maxCombo': 1, 'answered': 2}, r.data.get('drill')
+
+
+@pytest.mark.django_db
+def test_dap_an_PHONG_LUYEN_cung_khong_di_xuong_trinh_duyet(em, bai_luyen):
+    """Phòng luyện là một nguồn của bản đồ năng lực, nên đáp án của nó cũng
+    phải bí mật y như bài kiểm tra đầu vào."""
+    from lessons.content import one_lesson
+    data, _ = one_lesson(KHOA, bai_luyen)
+    cau = data['drill']['questions']
+    assert all('answer' not in c for c in cau), cau
+    assert cau[0]['question'] == 'a', 'chỉ cắt đáp án, giữ đề bài'

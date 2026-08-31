@@ -448,6 +448,10 @@
   function startDrill() {
     var d = state.lesson.drill;
     drill = { idx: 0, correct: 0, answered: 0, combo: 0, maxCombo: 0, times: [], xp: 0,
+      /* `answers` là thứ DUY NHẤT được gửi lên lúc hoàn thành. Các con số
+         `correct`/`maxCombo` dưới đây chỉ để vẽ HUD tại chỗ; máy chủ dựng lại
+         chúng từ chính các câu trả lời này (`lessons/grading.cham_phong_luyen`). */
+      answers: {},
       total: d.questions.length, remaining: d.time_seconds, timeTotal: d.time_seconds,
       qStart: Date.now(), locked: false, timerId: null };
     $('hsa-drill').innerHTML =
@@ -495,18 +499,40 @@
     el.className = 'hsa-drill-combo' + (drill.combo >= 2 ? ' on' : '');
   }
 
-  function answerDrill(val, btn) {
+  /* Chấm Ở MÁY CHỦ, từng câu một.
+
+     `q.answer` KHÔNG còn đi xuống trình duyệt (`lessons/grading.bo_dap_an` cắt
+     nó ở tầng đọc), nên `norm(val) === norm(q.answer)` của bản cũ so với
+     `undefined` — mọi câu đều sai. Phòng luyện lại là một nguồn của bản đồ năng
+     lực (`KIND_DRILL` trong `stats/competency.KIND_TO_SOURCE`), nên đáp án của
+     nó phải bí mật y như bài kiểm tra đầu vào; việc phải chuyển là chỗ CHẤM.
+
+     Lời gọi nằm gọn trong 470ms hiển thị phản hồi vốn đã có, nên phần lớn độ
+     trễ bị che. Đường chấm có đệm 60 giây cho bảng đáp án và cho phép kiểm ghi
+     danh (đo: 270ms → 1ms từ lần thứ hai). */
+  async function answerDrill(val, btn) {
     if (drill.locked) return;
     drill.locked = true;
     var q = state.lesson.drill.questions[drill.idx];
-    var ok = norm(val) === norm(q.answer);
-    drill.answered++;
+    var qEl = $('hsa-drill-q');
+    drill.answers[q.id] = val;
     drill.times.push((Date.now() - drill.qStart) / 1000);
-    if (ok) { drill.correct++; drill.combo++; if (drill.combo > drill.maxCombo) drill.maxCombo = drill.combo; }
-    else { drill.combo = 0; }
-    updateCombo();
-    if (btn) btn.classList.add(ok ? 'correct' : 'wrong');
-    var qEl = $('hsa-drill-q'); if (qEl) qEl.classList.add(ok ? 'flash-ok' : 'flash-no');
+
+    var d = await checkOnServer('drill', drill.answers);
+    var kq = d && d.results && d.results[q.id];
+    if (!kq) {
+      /* Mất mạng giữa chừng: KHÔNG tô đỏ như thể em làm sai. Câu vẫn nằm trong
+         `drill.answers` nên lúc hoàn thành máy chủ vẫn chấm được nó. */
+      flashNote('Chưa chấm được câu này — vẫn tính khi bạn hoàn thành bài.');
+    } else {
+      var ok = !!kq.correct;
+      drill.answered++;
+      if (ok) { drill.correct++; drill.combo++; if (drill.combo > drill.maxCombo) drill.maxCombo = drill.combo; }
+      else { drill.combo = 0; }
+      updateCombo();
+      if (btn) btn.classList.add(ok ? 'correct' : 'wrong');
+      if (qEl) qEl.classList.add(ok ? 'flash-ok' : 'flash-no');
+    }
     setTimeout(function () {
       if (qEl) qEl.classList.remove('flash-ok', 'flash-no');
       drill.idx++;
@@ -615,16 +641,13 @@
     if (!drill || !drill.total) return null;
     var elapsed = (drill.timeTotal != null && drill.remaining != null)
       ? Math.round(drill.timeTotal - Math.max(0, drill.remaining)) : 0;
-    return {
-      correct: drill.correct || 0,
-      answered: drill.answered || 0,
-      total: drill.total,
-      seconds: Math.max(0, elapsed),
-      maxCombo: drill.maxCombo || 0
-    };
+    /* Chỉ gửi CÂU TRẢ LỜI và thời lượng. `correct` / `maxCombo` / `total` do
+       máy chủ dựng lại — con số tự đếm ở đây đáng 10 XP mỗi câu đúng và 5 XP
+       mỗi nấc combo, tức là một cái cần gạt. */
+    return { answers: drill.answers || {}, seconds: Math.max(0, elapsed) };
   }
 
-  function saveProgress(xp) {
+  function saveProgress() {
     var no = state.lesson && state.lesson.index;
     if (!no) return;
     // topic_tag dạng "Định lượng · Số học" → module = phần sau dấu ·, dùng làm
@@ -636,20 +659,42 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         courseId: state.courseId,
-        lessonTitle: state.lesson.title || '',
-        module: module,
         /* GỬI CÂU TRẢ LỜI, KHÔNG GỬI ĐIỂM. Máy chủ chấm lại từ đáp án trong
            CSDL — xem `lessons/grading.py`. `quizScore` cũ đã bị máy chủ BỎ QUA
            (ghi bài xong nhưng không ghi điểm), nên gửi nó lên chỉ để lại một
-           dòng nhật ký; thôi gửi hẳn cho khỏi ai tưởng nó còn tác dụng. */
+           dòng nhật ký; thôi gửi hẳn cho khỏi ai tưởng nó còn tác dụng.
+
+           `lessonTitle`, `module`, `xpEarned` cũng thôi gửi (L5, 31/08/2026):
+           cả ba nay lấy từ dòng `lessons` ở máy chủ. Tiêu đề và chủ đề do thân
+           request quyết định là cách một học viên đẻ ra bài học giả trong bảng
+           dùng chung; XP do thân request quyết định là cách cộng 500 thay vì
+           50 cho mỗi bài. */
         answers: state.answers,
-        xpEarned: xp,
         drill: drillResult()
       })
     })
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) {
+        /* `/complete` NAY 404 ĐƯỢC (L5, 31/08/2026): bài không có trong khoá thì
+           máy chủ nói thẳng thay vì đẻ ra nó. Nuốt im lặng thì học viên thấy màn
+           chúc mừng, thấy "+50 XP", thấy pháo hoa — mà `lesson_progress` trống,
+           chuỗi ngày không tăng, "Học tiếp" đứng yên. Phải nói ra. */
+        if (!r.ok) {
+          flashNote(r.status === 404
+            ? 'Không lưu được: máy chủ không tìm thấy bài này.'
+            : 'Chưa lưu được tiến độ — kiểm tra mạng rồi mở lại bài.');
+          var rx = $('reward-xp'); if (rx) rx.textContent = '—';
+          return null;
+        }
+        return r.json();
+      })
       .then(function (d) {
         if (!d) return;
+        /* XP hiện trên màn chúc mừng lấy TỪ MÁY CHỦ. Con số ước lượng ở dưới
+           chỉ để modal không trống trong lúc chờ; máy chủ mới là nơi biết bài
+           này thưởng bao nhiêu và phòng luyện được mấy câu. */
+        if ($('reward-xp') && typeof d.xpGained === 'number') {
+          $('reward-xp').textContent = '+' + d.xpGained;
+        }
         // Thành tích vừa mở khoá phải được báo NGAY tại đây; học viên hiếm khi
         // tự mở trang Thành tích để phát hiện ra.
         (d.newAchievements || []).forEach(function (a, i) {
@@ -670,7 +715,7 @@
     stopDrill();
     var m = $('success-modal');
     var xp = (state.lesson.xp_reward || 50) + (drill && drill.xp ? drill.xp : 0);
-    saveProgress(xp);
+    saveProgress();
     if ($('success-lesson-title')) $('success-lesson-title').textContent = state.lesson.title || '';
     if ($('success-message')) $('success-message').textContent =
       'Bạn đã hoàn thành bài "' + (state.lesson.title || '') + '" với ' + state.score + '/' + state.total + ' câu kiểm tra đúng.';

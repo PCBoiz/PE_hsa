@@ -27,6 +27,7 @@ class MockAttempt(models.Model):
     duration_seconds = models.IntegerField(blank=True, null=True)
     started_at = models.DateTimeField(blank=True, null=True)
     submitted_at = models.DateTimeField(blank=True, null=True)
+    counted = models.BooleanField(default=True)
 
     class Meta:
         managed = False

@@ -11,39 +11,102 @@ from common.clock import local_now, local_today
 from common.db import q1, x
 from common.events import KIND_DRILL, KIND_LESSON, record_event
 from lessons.content import course_content, one_lesson
-from lessons.grading import PHAN_CO_CAU_HOI, cham, phan_tram
+from lessons.grading import PHAN_CO_CAU_HOI, cham, cham_phong_luyen, phan_tram
 from common.streak import award_xp, touch_streak
 
 logger = logging.getLogger(__name__)
 
 
-def _resolve_lesson_id(course_id, lesson_no, title, module=None):
-    """Tìm lesson theo (course_id, sort_order); chưa có thì tạo stub giữ FK hợp lệ.
+def _tim_bai(course_id, lesson_no):
+    """Tra bài theo (course_id, sort_order). CHỈ ĐỌC — không tạo dòng nào.
 
-    Trả về ``(lesson_id, module)``. Trả kèm module vì dòng sự kiện học tập cần
-    chủ đề của bài để chấm năng lực, mà client không phải lúc nào cũng gửi lên
-    (bài cũ, hoặc engine khác).
+    Trả ``(lesson_id, module, title, xp_reward)``, hoặc ``(None, …)`` nếu không
+    có bài đó. Trả kèm module vì dòng sự kiện học tập cần chủ đề của bài để chấm
+    năng lực; trả kèm title và xp_reward vì cả hai phải lấy từ MÁY CHỦ.
 
-    Nội dung bài HSA nằm trong JS phía client, bảng ``lessons`` chỉ giữ stub cho
-    khoá ngoại. Vẫn phải ghi ``module``: trang Kỹ năng lọc
-    ``WHERE module <> '' AND module IS NOT NULL``, nên stub thiếu module khiến
-    trang đó rỗng vĩnh viễn dù học viên học bao nhiêu bài (audit 2026-08-15).
+    KHÔNG CÒN TẠO STUB (L5, 31/08/2026). Bản cũ, khi không tìm thấy bài, sẽ
+    INSERT một dòng vào bảng ``lessons`` với `title`/`module` **lấy từ thân
+    request của học viên** và `sort_order` lấy từ URL. Bảng ``lessons`` là bảng
+    DÙNG CHUNG, và `SkillsView` đọc nó không lọc theo người dùng — nên một dòng
+    giả do một học viên tạo hiện trong trang Kỹ năng của MỌI học viên. Đo được
+    một dòng ``"<b>BAI GIA MAO</b>"`` với ``sort_order 9999``.
+
+    Nhánh tạo stub ấy sinh ra thời nội dung bài còn nằm trong tệp JS 364 kB phía
+    client, khi bảng ``lessons`` thật sự chỉ là chỗ giữ khoá ngoại. Nay đo trên
+    dữ liệu thật: **cả 76 bài của ba khoá đều đã có ``content_json``**, không
+    còn dòng stub nào, và bản dự phòng phía client đã bỏ từ 19/08/2026. Bài học
+    viên học được thì luôn có dòng sẵn; nhánh ấy chỉ còn là cái lỗ.
     """
-    module = (module or '').strip()[:120] or None
-    row = q1('SELECT id, module FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1',
+    row = q1("SELECT id, module, title, (content_json->>'xp_reward') AS xp "
+             "FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1",
              (course_id, lesson_no))
-    if row:
-        # Stub tạo trước khi client biết gửi module → bổ sung ngược lại.
-        if module and not row.get('module'):
-            x('UPDATE lessons SET module=%s WHERE id=%s', (module, row['id']))
-        return row['id'], (module or row.get('module') or None)
-    row = q1('INSERT INTO lessons (course_id, title, sort_order, module) '
-             'VALUES (%s, %s, %s, %s) RETURNING id',
-             (course_id, title or f'Bài {lesson_no}', lesson_no, module))
-    return row['id'], module
+    if not row:
+        return None, None, None, None
+    try:
+        xp = int(row['xp'])
+    except (TypeError, ValueError):
+        xp = None
+    return row['id'], (row.get('module') or None), (row.get('title') or ''), xp
 
 
-def _record_drill(uid, drill, lesson_id, lesson_no, course_id, topic, now):
+#: Thưởng phòng luyện. Trước 31/08/2026 hai con số này chỉ tồn tại trong
+#: `lesson_hsa.js` và kết quả do trình duyệt tự khai; nay máy chủ tự tính nên
+#: chúng phải nằm ở đây. Giá trị giữ NGUYÊN như bản JS để không đổi phần thưởng
+#: của học viên giữa chừng.
+DRILL_XP_MOI_CAU_DUNG = 10
+DRILL_XP_MOI_NAC_COMBO = 5
+
+
+def _cham_drill(drill, course_id, lesson_no):
+    """Chấm phòng luyện Ở MÁY CHỦ. Trả dict kết quả, hoặc None nếu không chấm được.
+
+    CHỈ ĐỌC, không ghi — để nơi gọi biết số XP trước khi cộng.
+
+    Bản cũ nhận thẳng `correct` / `maxCombo` / `total` từ thân request rồi kẹp
+    biên. Kẹp biên không cứu được gì ở đây: `{"correct": 8, "maxCombo": 8}` là
+    một kết quả HỢP LỆ về mặt biên, đáng 120 XP, và nó nuôi cả bản đồ năng lực
+    (`KIND_DRILL` nằm trong `stats/competency.KIND_TO_SOURCE`). Nay chỉ nhận CÂU
+    TRẢ LỜI; số câu đúng và chuỗi combo do máy chủ dựng lại từ bảng đáp án.
+    """
+    if not isinstance(drill, dict):
+        return None
+    tra_loi = drill.get('answers')
+    if not isinstance(tra_loi, dict):
+        # Engine bản CŨ gửi `correct`/`maxCombo` tự khai. Không ghi gì cả: một
+        # dòng năng lực dựng từ con số người dùng khai còn tệ hơn không có dòng
+        # nào — cùng lý lẽ với `quizScore` ở `CompleteLessonView`.
+        if drill.get('correct') is not None:
+            logger.info('[lessons] bài %s/%s: engine bản CŨ gửi kết quả phòng luyện '
+                        'tự khai (correct=%r) — BỎ QUA', course_id, lesson_no,
+                        drill.get('correct'))
+        return None
+    ket = cham_phong_luyen(course_id, lesson_no, tra_loi)
+    if not ket:
+        return None
+    dung, tong, combo = ket
+    try:
+        # `OverflowError` phải nằm trong đây: `json.loads('{"seconds": 1e400}')`
+        # cho `inf` — một số thực bình thường, không phải hằng `Infinity` nên
+        # `STRICT_JSON` của DRF không chặn — và `int(inf)` ném `OverflowError`,
+        # thứ không phải TypeError cũng không phải ValueError. Kết quả trước khi
+        # thêm: 500, và học viên mất cả bài vừa học.
+        seconds = int(drill.get('seconds') or 0)
+    except (TypeError, ValueError, OverflowError):
+        seconds = 0
+    return {
+        'dung': dung, 'tong': tong, 'combo': combo,
+        # Số câu KỊP làm = số câu thật sự nhận được, không phải con số client
+        # khai. Trả lời rỗng không tính là đã làm. Kẹp về `tong`: gửi 500 khoá
+        # rác cho một drill 4 câu thì "đã làm 500 / tổng 4" là một con số nói
+        # dối nằm ngay trong bảng giảng viên đọc.
+        'da_lam': min(tong, sum(1 for v in tra_loi.values()
+                                if v is not None and str(v).strip() != '')),
+        'phut': max(0, min(120, round(seconds / 60))) or None,
+        'xp': dung * DRILL_XP_MOI_CAU_DUNG + combo * DRILL_XP_MOI_NAC_COMBO,
+    }
+
+
+def _record_drill(uid, ket, lesson_id, lesson_no, course_id, topic, now):
     """Ghi kết quả phòng luyện tốc độ thành một sự kiện riêng.
 
     Phòng luyện đo thứ mà bài kiểm tra đầu vào không đo được: TỐC ĐỘ xử lý dưới
@@ -54,32 +117,19 @@ def _record_drill(uid, drill, lesson_id, lesson_no, course_id, topic, now):
     cũng là một kết quả trong bài thi tính giờ, và đó chính là thứ phòng luyện
     đo. Số câu kịp làm vẫn giữ trong meta để đọc lại được.
 
-    Dữ liệu do client gửi nên phải kẹp biên: số câu đúng không vượt tổng số câu,
-    tổng số câu có trần, thời lượng không âm.
+    KHÔNG ghi `xp` vào sự kiện này: sự kiện bài học đã mang tổng XP của cả lượt
+    hoàn thành (gồm cả phần phòng luyện), ghi thêm ở đây là đếm hai lần.
     """
-    if not isinstance(drill, dict):
+    if not ket:
         return
-    try:
-        total = int(drill.get('total') or 0)
-        correct = int(drill.get('correct') or 0)
-    except (TypeError, ValueError):
-        return
-    if total <= 0 or total > 100:
-        return
-    correct = max(0, min(correct, total))
-    try:
-        seconds = int(drill.get('seconds') or 0)
-    except (TypeError, ValueError):
-        seconds = 0
-    minutes = max(0, min(120, round(seconds / 60))) or None
     record_event(
         uid, KIND_DRILL, f'drill:{lesson_id}',
         occurred_at=now, course_id=course_id, topic=topic,
         ref_type='lesson', ref_id=str(lesson_id),
-        score=correct, max_score=total, minutes=minutes,
-        meta={'lessonNo': lesson_no, 'maxCombo': drill.get('maxCombo'),
+        score=ket['dung'], max_score=ket['tong'], minutes=ket['phut'],
+        meta={'lessonNo': lesson_no, 'maxCombo': ket['combo'],
               # Số câu KỊP làm: phân biệt "làm chậm" với "làm sai" khi đọc lại.
-              'answered': drill.get('answered')},
+              'answered': ket['da_lam']},
     )
 
 
@@ -148,18 +198,34 @@ class CompleteLessonView(APIView):
             logger.info('[lessons] bài %s/%s: engine bản CŨ gửi quizScore=%r — BỎ QUA, '
                         'ghi bài xong nhưng không ghi điểm',
                         course_id, lesson_no, data.get('quizScore'))
-        xp_earned = data.get('xpEarned')
-        if not isinstance(xp_earned, int) or xp_earned < 0 or xp_earned > 500:
-            xp_earned = 50  # mặc định an toàn, chống client gửi XP tùy ý
-
         uid = request.user.id
         with transaction.atomic():
             course = q1('SELECT id, lessons FROM courses WHERE id=%s', (course_id,))
             if not course:
                 return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-            lesson_id, topic = _resolve_lesson_id(course_id, lesson_no,
-                                                  data.get('lessonTitle'), data.get('module'))
+            lesson_id, topic, lesson_title, xp_bai = _tim_bai(course_id, lesson_no)
+            if lesson_id is None:
+                # Bài không tồn tại trong khoá. Bản cũ ĐẺ RA nó ở đây; nay nói
+                # thẳng là không có, vì đó là sự thật.
+                return Response({'error': 'Không tìm thấy bài học'}, status=404)
+
+            # XP ĐƯỢC TÍNH, KHÔNG ĐƯỢC NHẬN — cùng luật với điểm ở trên.
+            # Bản cũ lấy `xpEarned` từ thân request, kẹp 0–500 rồi cộng thẳng.
+            # Phần thưởng thật mỗi bài là 50, nên `{"xpEarned": 500}` cho 76 bài
+            # là 38.000 XP thay vì 3.800 — mà bảng xếp hạng thì các em thi nhau
+            # thật. Nay lấy `xp_reward` do người soạn bài ghi trong nội dung bài
+            # (đã kiểm 0–500 lúc nhập, `content.validate_lesson`).
+            xp_bai = xp_bai if isinstance(xp_bai, int) and 0 <= xp_bai <= 500 else 50
+            # Phòng luyện chấm TRƯỚC khi cộng XP: phần thưởng của nó là một phần
+            # của tổng, mà tổng thì phải biết trước lúc `award_xp`.
+            drill_ket = _cham_drill(data.get('drill'), course_id, lesson_no)
+            xp_earned = xp_bai + (drill_ket['xp'] if drill_ket else 0)
+            if data.get('xpEarned') is not None and data.get('xpEarned') != xp_earned:
+                logger.info('[lessons] bài %s/%s: client khai xpEarned=%r — BỎ QUA, '
+                            'cộng %s (bài %s + phòng luyện %s)',
+                            course_id, lesson_no, data.get('xpEarned'), xp_earned,
+                            xp_bai, xp_earned - xp_bai)
 
             # Đã completed rồi thì không cộng XP lần nữa (chống spam F5 modal)
             existed = q1("SELECT 1 FROM lesson_progress "
@@ -243,9 +309,11 @@ class CompleteLessonView(APIView):
                 # (engine gửi lên round(score/total*100)), nên mốc tối đa là 100.
                 score=quiz_score, max_score=(100 if quiz_score is not None else None),
                 xp=xp_earned,
-                meta={'lessonNo': lesson_no, 'title': data.get('lessonTitle') or ''},
+                # Tiêu đề lấy từ dòng `lessons` chứ không từ thân request: đây
+                # là thứ hiện lại trong nhật ký học tập của em.
+                meta={'lessonNo': lesson_no, 'title': lesson_title or ''},
             )
-            _record_drill(uid, data.get('drill'), lesson_id, lesson_no, course_id, topic, now)
+            _record_drill(uid, drill_ket, lesson_id, lesson_no, course_id, topic, now)
 
             newly_awarded = check_and_award_achievements(uid)
 
@@ -254,6 +322,13 @@ class CompleteLessonView(APIView):
             'completedLessons': completed_count,
             'progress': progress,
             'xpGained': gained,
+            # Tách ra để màn chúc mừng nói đúng "bài 50 + phòng luyện 70" thay vì
+            # một con số trần mà học viên không biết ở đâu ra.
+            'xpLesson': xp_bai,
+            'xpDrill': (drill_ket['xp'] if drill_ket else 0),
+            'drill': ({'correct': drill_ket['dung'], 'total': drill_ket['tong'],
+                       'maxCombo': drill_ket['combo'], 'answered': drill_ket['da_lam']}
+                      if drill_ket else None),
             'streak': new_streak,
             'usedStreakFreeze': used_freeze,
             'newAchievements': newly_awarded,

@@ -41,6 +41,7 @@ from common.db import q, q1, x
 from common.events import (KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events,
                            record_events)
 from common.permissions import IsTeacherOrAdmin, can_see_class
+from common.params import so_nguyen
 from stats.goals import as_date
 from teaching.vocab import chi_hoc_vien
 
@@ -356,11 +357,7 @@ class ClassSessionsView(APIView):
             where.append('status = %s')
             params.append(raw_status)
 
-        try:
-            limit = int(request.query_params.get('limit') or DEFAULT_LIMIT)
-        except (TypeError, ValueError):
-            limit = DEFAULT_LIMIT
-        limit = max(1, min(MAX_LIMIT, limit))
+        limit = so_nguyen(request.query_params.get('limit'), DEFAULT_LIMIT, 1, MAX_LIMIT)
 
         rows = q(f'''SELECT * FROM class_sessions
                      WHERE {' AND '.join(where)}

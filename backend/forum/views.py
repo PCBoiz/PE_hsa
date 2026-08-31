@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from common.db import q, q1, x
 from common.permissions import is_admin
+from common.params import so_nguyen
 from notifications.service import notify
 
 _CATEGORIES = ('question', 'share', 'discuss')
@@ -139,14 +140,8 @@ def _toggle_reaction(table, id_col, parent_table, row_id, reaction, uid):
 
 
 def _paging(request):
-    try:
-        page = max(1, int(request.query_params.get('page', 1)))
-    except (TypeError, ValueError):
-        page = 1
-    try:
-        per_page = min(50, max(1, int(request.query_params.get('per_page', 10))))
-    except (TypeError, ValueError):
-        per_page = 10
+    page = so_nguyen(request.query_params.get('page'), 1, 1, None)
+    per_page = so_nguyen(request.query_params.get('per_page'), 10, 1, 50)
     return page, per_page, (page - 1) * per_page
 
 

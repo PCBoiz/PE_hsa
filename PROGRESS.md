@@ -1240,3 +1240,240 @@ phép kiểm GHI theo quán tính, không dừng lại hỏi "lệnh này có gh
 
 L4–L15 trong `TODO.md`, trong đó ba cái anh đã chốt hướng: thi thử một lượt tính
 điểm · học lại bài giữ ngày đầu · điểm thi thử giữ nhưng tách hiển thị.
+
+
+---
+
+## 31/08/2026 (tiếp) — L4 phòng thi thử: đồng hồ về máy chủ, một lượt vào sổ
+
+Đẩy `a8f4c5e` (chấm ở máy chủ, L1–L3) lên `origin/erp`: 146 phép kiểm xanh,
+`tsc --noEmit` sạch. Sang L4.
+
+### Đo trước khi sửa
+Trước hết đọc dữ liệu thật chứ không đoán, và ba con số này quyết định thiết kế:
+
+- **Toàn hệ chỉ có MỘT đề đã xuất bản** (9 câu / 20 phút).
+- Nhiệm vụ ngày #3 là `mocks_today >= 1`.
+- Ba học viên đã thi; **hai người đã làm lại**.
+
+### Ba luật mới (`mockexam/views.py`)
+1. **Đồng hồ thuộc máy chủ.** `POST /api/mock-exams/<id>/start` mở dòng
+   `mock_attempts` với `started_at`. Thời lượng = hiệu hai mốc máy chủ tự ghi,
+   không phải con số trình duyệt gửi. F5 giữa chừng thì NỐI TIẾP lượt đang mở
+   với đúng số giây còn lại. Lượt mở quá lâu mà chưa nộp gì thì **bỏ đi** rồi mở
+   lượt mới — nó chưa mang câu trả lời nào, và bấm nhầm "Bắt đầu" rồi đóng máy
+   không đáng phải mất lượt tính điểm duy nhất.
+2. **Đáp án chỉ lộ theo câu ĐÃ trả lời.** Cùng luật với `lessons/grading.py`.
+   Đây là chỗ giết cách khai thác đã đo được: nộp rỗng → nhận cả bộ đáp án.
+3. **Một lượt vào sổ** (anh chốt). Cột `counted` (§40). Lượt đầu nộp đúng giờ
+   mới tính điểm / cộng XP / ghi `learning_events`. Nộp quá giờ + 2 phút ân hạn
+   cũng không vào sổ. Lượt luyện **vẫn được chấm và vẫn lưu** để xem lại.
+
+### Chỗ CỐ Ý không siết — và vì sao
+Nhiệm vụ ngày "Làm 1 đề thi thử" vẫn đếm MỌI lượt nộp. Vì chỉ có một đề, lọc
+`counted` ở đó sẽ làm nhiệm vụ này hỏng **vĩnh viễn** với người đã thi — một hệ
+quả mà quyết định "làm lại không cộng XP" không hàm ý. Hai sổ khác nhau: sổ ĐIỂM
+chỉ nhận lượt đầu, sổ THÓI QUEN đếm mọi lượt; và sổ thói quen đã khoá theo
+(user, nhiệm vụ, ngày) nên không cày được. **Anh không đồng ý thì nói, tôi đảo
+lại một dòng.**
+
+### Ba nơi đọc `mock_attempts` phải tránh dòng ĐANG MỞ
+Dòng `submitted_at IS NULL` là thứ trước nay chưa từng tồn tại, nên mọi bên đọc
+đều chưa phòng nó. Nặng nhất: `stats/views.py` "điểm đề gần nhất" dùng
+`ORDER BY submitted_at DESC LIMIT 1` — Postgres xếp **NULL lên đầu**, nên vừa
+bấm "Bắt đầu" là Trang của tôi báo 0/0. Còn `MockAttemptsView` (lịch sử) và
+`backfill_learning_events` (thêm cả `AND counted`, nếu không nạp lại dữ liệu cũ
+sẽ dựng lại đúng phần lạm phát vừa bịt).
+
+### Kiểm
+- `mockexam/tests.py` mới — 11 phép kiểm. **Lùi mã cũ: 11/11 ĐỎ**, bảy cái đỏ
+  bằng AssertionError đúng lý do, nặng nhất là *"nộp rỗng vẫn nhận được đáp án
+  của 3 câu"*. Bốn cái còn lại đỏ bằng ImportError vì chúng kiểm một view mã cũ
+  không có — nói thẳng ra chứ không tô cho đẹp.
+- Trình duyệt thật: **10/10**. Đồng hồ nhận 90 giây MÁY CHỦ cấp chứ không phải
+  1200 giây của đề — đó là phép kiểm phân biệt được hai bản.
+- Kiểm trình duyệt **chặn cả `/start` lẫn `/submit`** bằng route interception:
+  không một dòng nào rơi vào Neon (RULES §18). Phần máy chủ do 11 phép kiểm
+  chạy trong giao dịch cuộn lại chứng minh.
+
+### L4b — bắt thêm: /mock bỏ qua lựa chọn nền tối của học viên
+Đo tương phản ô ghi chú mới ở hai chế độ thì ra **cùng một con số**. Con số
+trùng nhau không phải "đạt", nó là dấu hiệu phép đo không chạm được thứ định đo.
+Truy ra: `mock.css` khai cầu token ở `:root`, còn công tắc nền tối là class
+`body.dark` — hậu duệ của `:root`, nên `var(--t1)` trong khai báo ở `:root`
+được thay ngay tại đó, nơi `body.dark` chưa tồn tại.
+
+Học viên chọn nền tối rồi vào /mock: `--t1` trên body đổi thành `#E2E8F0` nhưng
+`--mk-t1` kẹt `#16121F` — trang hiện SÁNG, chỉ còn viền `body` tối lòi quanh
+mép. Chạm được thật: `(standalone)/layout.tsx` đặt `body.dark` theo lựa chọn đã
+lưu. Vá `:root, body`. Đo lại: nền tối ra `fg=226,232,240 / bg=7,9,15`, **0 chỗ
+dưới 4.5:1 ở cả hai chế độ**. `lesson_hsa.css` không mắc (dùng token thẳng
+trong quy tắc).
+
+### Còn treo
+L5–L15 trong `TODO.md`. Kế: **L5** (học viên INSERT được bài học giả vào bảng
+`lessons` dùng chung, và bài giả hiện trong trang Kỹ năng của MỌI người).
+
+
+---
+
+## 31/08/2026 (tiếp) — L5, và một hồi quy của chính tôi đã đẩy lên production
+
+### L5 · bảng `lessons` là bảng DÙNG CHUNG, học viên không được viết vào
+`_resolve_lesson_id`, khi không tìm thấy bài, INSERT một dòng vào `lessons` với
+`title`/`module` **lấy từ thân request của học viên** và `sort_order` lấy từ
+URL. `SkillsView` đọc bảng ấy không lọc theo người dùng, nên dòng giả hiện
+trong trang Kỹ năng của MỌI học viên.
+
+Đo trước khi sửa, và chính con số đo quyết định cách sửa: **cả 76 bài của ba
+khoá đều đã có `content_json`**, 0 dòng stub, 0 dòng vượt số bài của khoá, và
+bản dự phòng nội dung phía client đã bỏ từ 19/08/2026. Bài học viên học được thì
+LUÔN có dòng sẵn — nhánh tạo stub sinh ra thời nội dung còn nằm trong tệp JS
+364 kB, nay chỉ còn là cái lỗ. `_tim_bai` nay CHỈ ĐỌC; không có bài thì 404.
+
+Ba thứ cùng một họ với nó, đều là "NHẬN thay vì TÍNH", vá luôn:
+- **XP** lấy từ `content_json.xp_reward`. Bản cũ kẹp `xpEarned` 0–500 rồi cộng
+  thẳng, nên `{"xpEarned": 500}` cho 76 bài là 38.000 XP thay vì 3.800.
+- **Tiêu đề trong nhật ký** lấy từ dòng `lessons`, không từ thân request.
+- **Kết quả phòng luyện** — xem dưới.
+
+KHÔNG làm: chặn "đánh dấu xong bài chưa mở khoá". Rà cả frontend lẫn backend —
+sản phẩm này **không có luật mở khoá tuần tự** ở đâu cả, và kế hoạch học còn cố
+ý giao bài theo CHỦ ĐỀ. Dựng một cái khoá chưa từng tồn tại là bịa ra luật mới.
+
+### TÔI ĐẨY MỘT HỒI QUY LÊN `origin/erp` SÁNG NAY
+`bo_dap_an` trong `a8f4c5e` cắt `answer` khỏi **cả phần `drill`**, mà
+`answerDrill` chấm tại chỗ bằng `norm(val) === norm(q.answer)` — so với
+`undefined`. Kết quả: **mọi câu phòng luyện đều sai**, combo không bao giờ nổ,
+XP luôn 0, "Chính xác 0%". Tôi không phát hiện lúc kiểm L1 vì phép kiểm hôm ấy
+chỉ đi qua bước KIỂM TRA ĐẦU VÀO, không vào phòng luyện.
+
+Cắt đáp án là ĐÚNG — `KIND_DRILL` nằm trong `stats/competency.KIND_TO_SOURCE`,
+tức phòng luyện là một nguồn của bản đồ năng lực, nên đáp án của nó phải bí mật
+y như bài kiểm tra. Cái sai là chỗ CHẤM. Nay chuyển hẳn sang máy chủ:
+- `answerDrill` gọi `/check` từng câu. Nằm gọn trong 470ms hiển thị phản hồi vốn
+  đã có, và đường chấm có đệm 60 giây nên từ câu thứ hai là 1ms. Mất mạng giữa
+  chừng thì KHÔNG tô đỏ như thể em làm sai — câu vẫn nằm trong `drill.answers`
+  nên lúc hoàn thành vẫn chấm được.
+- Lúc hoàn thành chỉ gửi `drill.answers` + `seconds`. `cham_phong_luyen` dựng
+  lại số câu đúng VÀ chuỗi combo theo THỨ TỰ CÂU TRONG ĐỀ — combo đáng 5 XP mỗi
+  nấc, mà trước nay do trình duyệt tự đếm rồi tự khai.
+- Màn chúc mừng lấy XP từ phản hồi máy chủ, không từ ước lượng tại chỗ.
+
+### Kiểm
+- `lessons/tests.py` 8 → **15 phép kiểm**. Lùi mã cũ: 6/7 phép kiểm mới ĐỎ đúng
+  lý do, nói thẳng ra sự việc — *"học viên đẻ được dòng {'id': 1425,
+  'sort_order': 9999} vào bảng lessons"*, *"đã ghi một dòng năng lực
+  {score: 4.00, max_score: 4.00} dựng từ con số tự khai"*, *"assert 500 == 50"*.
+  Phép kiểm thứ bảy (đáp án phòng luyện có lộ không) XANH trên mã cũ vì hàng rào
+  ấy đã đi cùng `a8f4c5e` — nói ra chứ không tính vào thành tích hôm nay.
+- Trình duyệt thật, phòng luyện: gửi 6 đúng 2 sai → **"6/8 Đúng · 75% Chính xác
+  · combo ×3 · +75 XP"**, 8 lời gọi `/check`, thân `/complete` không còn
+  `correct`/`maxCombo`. **10/10.**
+- Đường GHI (`/complete`) bị chặn bằng route interception; đường `/check` để đi
+  thật vì nó chỉ ĐỌC. Kiểm lại Neon sau cả phiên: 76 dòng `lessons`,
+  5 dòng `mock_attempts`, 0 dòng đang mở — **không một dòng nào rơi vào**.
+
+### L11 · bốn endpoint đổ 500 vì một chuỗi trên URL
+`?limit=abc`, `?weeks=abc`, `?days=abc`, `?weeks=1e9` → 500. Gom về
+`common/params.so_nguyen(raw, mặc_định, lo, hi)`, và kéo cả hai nơi đã tự viết
+đúng khối `try/except` ấy (`forum/views._paging`, `teaching/sessions`) về dùng
+chung — ba bản tự viết là ba bản sẽ trôi khỏi nhau.
+
+`common/tests.py` mới, 13 phép kiểm. Lùi mã cũ: **6 phép kiểm endpoint đỏ bằng
+đúng `500 == 200`**; 4 phép kiểm đơn vị đỏ vì mô-đun chưa tồn tại; 3 cái còn lại
+XANH cả trên mã cũ và tôi ghi rõ chúng là hàng rào cho phần đã đúng sẵn, không
+tính vào thành tích.
+
+**Suýt lặp lại một lỗi cũ.** Lần stash đầu tiên `git stash push -- <đường dẫn>`
+IM LẶNG không làm gì vì trong danh sách có một tệp chưa theo dõi
+(`common/params.py`), nên "13 passed" ấy là chạy trên mã MỚI — một màu xanh
+không chứng minh gì. Đúng cái bẫy `git stash` đã vấp với `grading.py` sáng nay.
+Phải `-u`, và phải kiểm `ls` xem tệp đã biến mất thật chưa trước khi tin kết quả.
+
+### Còn treo
+L6–L10, L12–L15 trong `TODO.md`.
+
+**L6 cần anh quyết, tôi không tự chọn.** `lesson_progress.quiz_score` dùng
+COALESCE (điểm MỚI NHẤT thắng) trong khi `xp_earned` dùng GREATEST (điểm CAO
+NHẤT thắng). Bản audit gọi đó là "một bảng hai chính sách", nhưng đọc kỹ thì hai
+cột đo hai thứ khác nhau và cả hai chính sách đều có lý:
+
+- **Giữ CAO NHẤT** — sổ điểm mà phạt người ôn lại thì không ai dám ôn lại. Khớp
+  với quyết định L7 của anh ("học lại giữ ngày ĐẦU"): làm lại không được xoá quá
+  khứ. Và bản đồ năng lực vốn đọc `learning_events` (có suy giảm theo thời gian),
+  nên "mới nhất" đã được thể hiện ở đó rồi.
+- **Giữ MỚI NHẤT** — điểm phải nói đúng mức nắm bài HIỆN TẠI của em, kể cả khi
+  nó tụt.
+
+Tôi nghiêng về **giữ CAO NHẤT**, nhưng đây là quyết định sản phẩm chứ không phải
+lỗi có một đáp án đúng, nên tôi dừng ở đây chờ anh. Một lưu ý kèm theo: lệnh
+`backfill_learning_events` lấy `score` TỪ `lesson_progress.quiz_score`, nên nếu
+hai bảng theo hai luật khác nhau thì chạy nạp lại sẽ kéo `learning_events` về
+theo luật của `lesson_progress`.
+
+
+---
+
+## 31/08/2026 (tiếp) — hai agent soi chéo, và chúng bắt được nhiều thứ của tôi
+
+Gọi hai agent đọc mã: một soi phòng thi thử (L4), một soi khu bài học + phòng
+luyện (L5). Tôi tự kiểm lại từng phát hiện bằng chính mã và bằng số đo trên Neon
+trước khi vá — bác lại ba chỗ, vá mười một chỗ, và ghi rõ sáu chỗ chưa vá.
+
+### Ba thứ đáng viết vào sổ hơn cả danh sách lỗi
+
+**1. Bộ kiểm của tôi đang GHIM một lỗ hổng lại.** Bốn phép kiểm phòng thi thử
+nộp bài KHÔNG qua `/start` rồi khẳng định `counted is True`. Tức là tôi viết
+phép kiểm mô tả đúng cái lỗ, và mỗi lần chạy nó xanh, tôi càng tin là mình đã
+bịt. Một phép kiểm sai còn tệ hơn không có phép kiểm nào — nó tắt phản xạ nghi
+ngờ. Đây là họ hàng gần của bài học "test hồi quy phải đỏ trước" (RULES §18)
+nhưng ở chiều ngược lại: đỏ-trước không đủ, phải hỏi thêm *"phép kiểm này đi
+đường nào, và đường đó có phải đường tôi định bảo vệ không"*.
+
+**2. Tôi vá đúng chỗ nhưng bỏ sót thứ đã mất.** Với lượt thi cạn giờ, tôi viết
+trong docstring: *"dòng ấy chưa mang câu trả lời nào nên không có gì để mất"* —
+đúng về câu trả lời, và bỏ sót rằng **đề đã lộ cho em rồi**. Một lý lẽ nghe rất
+chắc mà chỉ kiểm được một nửa cái nó khẳng định.
+
+**3. Tôi lại làm hồi quy, và lần này đã đẩy lên production.** `_chuan` trong
+`a8f4c5e` giữ dấu `%` trong khi `norm` cũ bỏ nó, kèm một chú thích tự nhận là
+"giữ đúng luật engine đang dùng". Tôi tự đo lại trên nội dung thật: 151 câu điền,
+**14 câu hỏi "bao nhiêu %" mà đáp án lưu là số trần**. Em gõ `30%` cho câu
+*"A chiếm bao nhiêu % tổng?"* thì trước hôm ấy ĐÚNG, sau đó SAI. Chú thích sai
+là thứ nguy hiểm ngang mã sai: nó khiến người đọc sau (kể cả tôi) thôi kiểm.
+
+### Vá được (11)
+A1 bỏ `/start` là bỏ toàn bộ giới hạn giờ · A2 hết giờ rồi bắt đầu lại vẫn tính
+điểm · A3 lỡ F5 mất trắng bài làm · A4 năm `/submit` song song đều tính điểm ·
+A5 `x()` vứt rowcount nên hàng rào chỉ nằm trên giấy · A6 cột `counted` khai sai
+tệp làm hỏng triển khai trên CSDL rỗng · A7 luật so đáp án bị siết · A8
+`OverflowError` với `seconds: 1e400` · A9 engine nuốt im lặng 404 · A10
+`quen_dap_an` chưa nơi nào gọi · A11 ba phép kiểm hằng đúng.
+
+Hai thay đổi thiết kế đáng nói:
+- **`counted` chốt lúc MỞ, không đợi lúc nộp.** Mở đề là đã thấy đề.
+- **Ràng buộc để Postgres giữ, không để mã tự canh.** Hai chỉ mục duy nhất phần
+  (`uq_mock_attempt_dang_mo`, `uq_mock_attempt_tinh_diem`), với điều kiện
+  `started_at IS NOT NULL` để năm dòng lịch sử nằm ngoài — khớp đúng quyết định
+  "không hồi tố" đã ghi trong schema.
+
+### Chưa vá (6) — ghi ra chứ không giấu
+A12 (nặng nhất) `/check` vẫn moi được trọn bộ đáp án bằng MỘT request, áp dụng
+cho cả bài kiểm tra lẫn phòng luyện · A13 phòng luyện nay bắn 9 request/bài,
+một phòng máy dùng chung NAT sẽ đụng trần 1000/giờ · A14 `validate_lesson`
+không kiểm khối `drill` · A15 mẫu nhập giáo trình viết `drill.seconds` còn
+engine đọc `drill.time_seconds` · A16 đường sửa nội dung lẻ không đối chiếu
+`index` với `sort_order` · A17 `/complete` không kiểm ghi danh.
+
+### Kiểm
+- Phòng thi thử: 19 phép kiểm (từ 11), có cả hai phép kiểm bắn thẳng vào ràng
+  buộc CSDL. Khu bài học: 15. Tham số URL: 13.
+- Trình duyệt thật, phòng thi: **12/12** — gồm khôi phục câu trả lời đã lưu và
+  lưu tạm lên máy chủ. Phòng luyện: **10/10** sau khi sửa luật chuẩn hoá.
+- Đường GHI đều bị chặn bằng route interception; đường `/check` để đi thật vì
+  nó chỉ ĐỌC.
+
+### Kế
+**A12 trước tiên** — nó làm rỗng ruột chính bản vá quan trọng nhất hôm nay. Rồi
+mới tới L6 (đang chờ anh chốt), L7–L15.
