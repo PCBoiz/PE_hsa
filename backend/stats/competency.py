@@ -164,6 +164,27 @@ def _catalog(uid):
     return cells
 
 
+def chu_de_trong_giao_trinh():
+    """Tập ``(course_id, topic)`` mà GIÁO TRÌNH hiện tại còn công nhận.
+
+    Nguồn sự thật cho "ô nào có thật" là ``lessons.module``, không phải cột
+    ``topic`` đã đóng băng trong ``learning_events``. Sự kiện giữ tên chủ đề
+    LÚC NÓ XẢY RA; đổi tên một chương thì mọi dòng cũ vẫn mang tên cũ.
+
+    Tách ra để `teaching/reports` dùng CHUNG. Trước 01/09/2026 hai bên khác
+    nhau: bản đồ của học viên giao với danh mục này, bản đồ của giảng viên thì
+    không — nên sau một lần đổi tên chương, màn của em hiện ô MỚI trống trơn còn
+    bảng của giảng viên hiện ô CŨ có dữ liệu. Hôm nay hai bên khớp tuyệt đối nên
+    không ai thấy; đó đúng là định nghĩa của mìn chờ.
+    """
+    try:
+        rows = q("SELECT DISTINCT course_id, module FROM lessons "
+                 "WHERE module IS NOT NULL AND module <> ''")
+    except DatabaseError:
+        return None            # chưa có bảng → KHÔNG lọc, thà thừa còn hơn trống
+    return {(r['course_id'], r['module']) for r in rows}
+
+
 def _events(uid):
     """Sự kiện có chấm điểm, gom sẵn theo (khoá, chủ đề) và theo khoá.
 

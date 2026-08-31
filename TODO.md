@@ -732,7 +732,20 @@ thoát nhờ bộ lọc `kind='lesson'`. §26 ghi rõ TopHSA sẽ soạn lại g
 `LAG_ITEMS = 5`. Sửa: `AND l.id IS NOT NULL`, và báo số mục mồ côi ra
 `incomplete`.
 
-### [ ] T62 · Hai nơi trả lời cùng một câu hỏi bằng hai phép tính
+### [x] T62 (XONG cả hai nửa) · Hai nơi trả lời cùng một câu hỏi bằng hai phép tính
+> Nửa "chậm bao nhiêu": xong 31/08 (`reports._lag_by_user` ủy quyền cho
+> `stats.plan`).
+>
+> Nửa BẢN ĐỒ NĂNG LỰC, vá 01/09/2026. `reports` dựng ô từ cột `topic` của SỰ
+> KIỆN, `competency` giao với danh mục `lessons.module`. Sự kiện giữ tên chủ đề
+> LÚC NÓ XẢY RA, nên sau một lần đổi tên chương: màn của em hiện ô MỚI trống
+> trơn, bảng của giảng viên hiện ô CŨ có dữ liệu — và không ai biết vì sao.
+>
+> Nay cả hai đi qua `competency.chu_de_trong_giao_trinh()`. Và thêm một CHUÔNG
+> BÁO: `stats/tests.py` đọc dữ liệu thật, đỏ ngay ngày ai đó đổi tên chương mà
+> quên chép ngược `learning_events.topic` — chứ không phải sáu tháng sau khi có
+> người hỏi "sao ô Số học của em trống". Đã kiểm chuông REO ĐƯỢC: chèn một chủ
+> đề không có thật trong giao dịch → bắt được; cuộn lại → sạch.
 Không phải lỗi kỹ thuật mà là **quyết định chưa được ghi**. Cần chốt rồi mới sửa:
 - "Chậm bao nhiêu": `reports.py` đếm `kind='lesson'`, `stats/plan.py` đếm mọi
   loại. Trên dữ liệu thật uid 12: giảng viên thấy **12**, học viên thấy **14**.

@@ -2273,3 +2273,27 @@ một thuộc tính đặt vào vì lý do khác hẳn. Ai bỏ nó đi để s�
 mà không biết.
 
 48 phép kiểm `teaching/` xanh. Còn 22 mục mở.
+
+## 01/09/2026 (tiếp) · T62 nửa còn lại, T70, và một trang không vào được
+
+**T62 · bản đồ năng lực.** `reports` dựng ô từ cột `topic` của SỰ KIỆN, còn
+`competency` giao với danh mục `lessons.module`. Sự kiện giữ tên chủ đề lúc nó
+xảy ra, nên sau một lần đổi tên chương thì hai màn nói hai chuyện. Nay cả hai đi
+qua một hàm chung, và có thêm một CHUÔNG BÁO đọc dữ liệu thật — đỏ đúng ngày ai
+đó đổi tên mà quên chép ngược, chứ không phải sáu tháng sau. Đã kiểm chuông reo
+được (chèn chủ đề giả trong giao dịch rồi cuộn lại).
+
+**T70 · thanh nav.** Danh sách mục về một nguồn (`navMuc.ts`). Việc rà nó lộ ra
+trang **"Kỹ năng"** chạy đầy đủ với dữ liệu thật (20 kỹ năng · 1 đạt · 1 cần ôn)
+mà **không có đường nào vào từ thanh điều hướng chính** — chỉ tới được bằng cách
+đi vòng qua màn chi tiết khoá.
+
+**Thanh nav trên điện thoại.** Mục đang mở nằm ngoài tầm nhìn (`scrollLeft` = 0
+trong khi mục ở 238–282 và thanh chỉ thấy 62–221). Nay `navigate()` kéo nó vào
+giữa khung.
+
+**Rà T53-b:** "số 0 giả lúc đang tải" ĐÃ vá từ trước (đo bằng cách làm chậm mọi
+lời gọi đọc rồi chụp: hiện dấu `—`); "`HTTP_VI` là mã chết" thì SAI — nó là
+đường lùi cho lỗi ở tầng DƯỚI DRF (502 lúc Render khởi động lại, 504, 413).
+
+224 phép kiểm xanh.

@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from common.db import q1, x
+from common.db import q, q1, x
 from stats.views import parse_time_spent
 
 pytestmark = pytest.mark.django_db
@@ -489,3 +489,33 @@ def test_muc_lam_xong_HOM_NAY_khong_bien_mat_vi_da_len_lich_tuan_truoc(db):
         'ô tổng đếm %s việc đã xong nhưng không tuần nào hiện việc nào (%s) — '
         'người học tick xong thì việc biến mất'
         % (ra['totals']['done'], [(w['weekStart'], w['done']) for w in ra['weeks']]))
+
+
+@pytest.mark.django_db
+def test_khong_co_chu_de_MO_COI_giua_su_kien_va_giao_trinh(db):
+    """CHUÔNG BÁO cho mìn chờ T62, không phải phép kiểm một hàm.
+
+    `learning_events.topic` giữ tên chủ đề LÚC SỰ KIỆN XẢY RA; `lessons.module`
+    là tên HIỆN TẠI. Đổi tên một chương là hai cột lệch nhau ngay, và cả hai bản
+    đồ năng lực cùng lặng lẽ bỏ rơi dữ liệu cũ — bản đồ của em hiện ô mới trống
+    trơn, bảng của giảng viên (từ 01/09/2026 cũng giao với danh mục) cũng vậy.
+
+    Phép kiểm này ĐỌC DỮ LIỆU THẬT, nên nó đỏ đúng vào ngày ai đó đổi tên chương
+    mà quên chép ngược lại — chứ không phải sáu tháng sau khi có người hỏi "sao ô
+    Số học của em trống".
+
+    Đỏ thì làm gì: chép ngược `learning_events.topic` sang tên mới cho những dòng
+    mồ côi (một câu UPDATE), rồi chạy lại. Đừng nới phép kiểm này ra.
+    """
+    from stats.competency import chu_de_trong_giao_trinh, KIND_TO_SOURCE
+    hop_le = chu_de_trong_giao_trinh()
+    assert hop_le, 'không đọc được danh mục chủ đề từ `lessons.module`'
+    rows = q('''SELECT DISTINCT course_id, topic FROM learning_events
+                WHERE topic IS NOT NULL AND topic <> '' AND kind = ANY(%s)''',
+             (list(KIND_TO_SOURCE),))
+    mo_coi = [(r['course_id'], r['topic']) for r in rows
+              if (r['course_id'], r['topic']) not in hop_le]
+    assert not mo_coi, (
+        'có %d cặp (khoá, chủ đề) trong `learning_events` không còn trong giáo '
+        'trình — dữ liệu của chúng đang bị BỎ RƠI khỏi cả hai bản đồ năng lực: %s'
+        % (len(mo_coi), mo_coi[:10]))

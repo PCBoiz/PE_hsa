@@ -52,7 +52,7 @@ from common.clock import local_today
 from common.db import q, q1
 from common.events import KIND_LESSON, KIND_MOCK
 from stats.competency import (COURSE_ORDER, HALF_LIFE_DAYS, KIND_TO_SOURCE,
-                              MIN_ACTIVITIES, SOURCE_WEIGHTS, TOPIC_SOURCES)
+                              MIN_ACTIVITIES, SOURCE_WEIGHTS, TOPIC_SOURCES, chu_de_trong_giao_trinh)
 from teaching.vocab import chi_hoc_vien
 
 logger = logging.getLogger(__name__)
@@ -197,6 +197,14 @@ def _mastery_by_topic(events, today):
         elif r['topic']:
             by_cell.setdefault((r['course_id'], r['topic']), {}) \
                    .setdefault(source, []).append(item)
+
+    # Giao với DANH MỤC hiện tại, đúng luật `stats/competency` đang dùng. Không
+    # có bước này thì đổi tên một chương sẽ tách đôi hai màn hình: bản đồ của em
+    # giao với danh mục nên hiện ô MỚI trống trơn, còn bảng của giảng viên lặp
+    # thẳng `by_cell` nên hiện ô CŨ có dữ liệu — và không ai biết vì sao.
+    hop_le = chu_de_trong_giao_trinh()
+    if hop_le is not None:
+        by_cell = {k: v for k, v in by_cell.items() if k in hop_le}
 
     out = {}
     for cell, sources in by_cell.items():
