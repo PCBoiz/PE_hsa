@@ -1,3 +1,4 @@
+import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
@@ -64,6 +65,11 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
             ← Trang của tôi
           </Link>
           <h1 className="text-section text-ink">Vận hành trung tâm</h1>
+          {/* Nút đổi sáng/tối: khu này KHÔNG nạp main.js nên nút của Topbar
+              legacy không có ở đây — trước 01/09/2026 giảng viên phải quay về
+              dashboard mới bật/tắt được bản tối. `ml-auto` đẩy nó về cuối hàng
+              để không chen vào giữa tiêu đề và các tab. */}
+          <ThemeToggle className="ml-auto" />
           {/* Cuộn ngang chứ không xuống dòng: thanh điều hướng phải giữ đúng
               một hàng để phần nội dung không bị đẩy xuống trên điện thoại. */}
           <AdminNav tabs={TABS} />

@@ -925,9 +925,20 @@ Hai mục hoá ra **không còn đúng**, một mục hoá ra **sai từ đầu*
   mục đang mở vào giữa tầm nhìn (`block: 'nearest'` để không cuộn dọc cả trang).
   Đo lại: `scrollLeft` 0 → 118, mục nằm gọn trong khung.
 
-Còn thật: chưa có `loading.tsx` · chưa có nút đổi bộ màu trong khu `(standalone)`
-· bóng đổ bộ tối là mã chết · chính tả dấu không nhất quán (khóa/khoá, hủy/huỷ,
-xóa/xoá).
+- **Nút đổi bộ màu trong khu `(standalone)` — VÁ 01/09/2026.** Đo trước: `body.dark`
+  áp đúng ở cả 5 màn `(standalone)` nhưng `#theme-toggle` chỉ có ở 1 (dashboard
+  legacy). Tức các màn ấy THEO được chủ đề mà không ĐỔI được — giảng viên mở
+  `/quan-tri/...` phải quay về dashboard mới bật/tắt bản tối.
+  `components/ui/ThemeToggle.tsx` lặp đúng luật của `main.js::applyTheme`, gồm cả
+  class `light` (`lesson_db_design.css` viết tối-trước, bản sáng nằm sau
+  `body.light`, nên chỉ gỡ `dark` là chưa đủ). Trạng thái đầu đọc từ DOM chứ
+  không từ `localStorage`: layout đã đặt class trước khi React chạy, nên DOM là
+  nguồn đã tính đủ cả "chưa chọn thì theo hệ điều hành".
+  Đo: sáng → tối, `localStorage.theme = 'dark'`, tải lại vẫn tối, nút 44×44,
+  0 lời gọi ghi. Giao diện sau khi thêm: 0 · 0 · 0 · 0/181 ở cả hai chủ đề.
+
+Còn thật: chưa có `loading.tsx` · bóng đổ bộ tối là mã chết · chính tả dấu không
+nhất quán (khóa/khoá, hủy/huỷ, xóa/xoá).
 
 
 ---

@@ -14,6 +14,7 @@ export { default as Chip, LEVEL_TONE } from './Chip';
 export { default as EmptyState } from './EmptyState';
 export { default as Field } from './Field';
 export { default as Modal } from './Modal';
+export { default as ThemeToggle } from './ThemeToggle';
 export { default as Tile, TileRow } from './Tile';
 export { TableWrap, Tbody, Td, Th, Thead, Tr } from './Table';
 export { ToastProvider, useToast } from './Toast';

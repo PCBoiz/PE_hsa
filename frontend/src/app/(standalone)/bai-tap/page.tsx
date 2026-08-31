@@ -1,3 +1,4 @@
+import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
@@ -20,6 +21,7 @@ export default async function BaiTapCuaToiPage() {
             ← Về trang chính
           </Link>
           <h1 className="text-section text-ink">Bài tập</h1>
+          <ThemeToggle className="ml-auto" />
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">
