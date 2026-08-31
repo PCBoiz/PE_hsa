@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { oChu } from '@/lib/form';
 
 import { Button, Field } from '@/components/ui';
 
@@ -56,8 +57,8 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
     setFieldErrors({});
 
     const form = new FormData(e.currentTarget);
-    const email = String(form.get('email') || '').trim();
-    const password = String(form.get('password') || '');
+    const email = oChu(form, 'email').trim();
+    const password = oChu(form, 'password');
 
     if (!email || !password) {
       setFieldErrors({
@@ -102,7 +103,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
   }
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={(e) => void submit(e)} noValidate className="flex flex-col gap-5">
       {formError && (
         <p
           role="alert"

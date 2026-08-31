@@ -232,6 +232,7 @@ NOI_DUNG_LUYEN = {
 @pytest.fixture
 def bai_luyen(db):
     import json as _json
+
     from lessons.grading import quen_dap_an
     q1("INSERT INTO lessons (course_id, title, module, sort_order, content_json) "
        "VALUES (%s,'Bài tạm luyện','Chủ đề tạm',900,%s::jsonb) RETURNING id",
@@ -426,6 +427,7 @@ def test_bo_kiem_moi_KHONG_chan_bai_nao_dang_co(db):
     """Siết bộ kiểm mà chặn luôn nội dung đang chạy thì giảng viên sửa một chữ
     cũng bị từ chối. Đo trên chính 76 bài thật."""
     import json as _json
+
     from common.db import q as _q
     from lessons.content import validate_lesson
     hong = []

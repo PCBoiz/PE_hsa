@@ -1,0 +1,62 @@
+# Cấu hình lint cho backend. Chạy: `python -m ruff check .`
+#
+# CHỌN LUẬT THEO THỨ ĐÃ TỪNG SAI THẬT, không theo mặc định của công cụ.
+# Mỗi bộ dưới đây đều bắt được một lỗi đã xảy ra trong repo này; bộ nào chỉ
+# sinh ra tiếng ồn thì để tắt, và ghi rõ VÌ SAO tắt — một luật tắt mà không có
+# lý do là một luật sẽ có người bật lại rồi lại tắt.
+
+[tool.ruff]
+line-length = 96
+target-version = "py312"
+exclude = [".venv", "__pycache__", "migrations", "staticfiles"]
+
+[tool.ruff.lint]
+select = [
+    "F",    # lỗi thật của pyflakes: biến chưa gán, import thừa, f-string không có chỗ thay
+    "E9",   # lỗi cú pháp / không phân tích được
+    "I",    # thứ tự import — để diff không lẫn việc sắp lại import vào việc nghiệp vụ
+    "B",    # bugbear: `except` trống nuốt lỗi, mặc định là list/dict biến đổi được…
+    "BLE",  # `except Exception:` trần — nuốt cả lỗi lập trình lẫn lỗi hạ tầng
+    "DTZ",  # CƯỠNG CHẾ luật của `common/clock.py`, xem chú thích dưới
+]
+ignore = [
+    "B008",  # gọi hàm trong giá trị mặc định — DRF dùng lối này khắp nơi
+    "B904",  # `raise ... from` — bộ xử lý lỗi của DRF không cần chuỗi nguyên nhân
+]
+
+# `DTZ` là bộ đáng giá nhất ở đây, không phải một luật hình thức.
+#
+# Cả sản phẩm chạy trên MỘT quy ước: `common/clock.local_now()` trả giờ Việt Nam
+# dạng NAIVE, còn `now()` của SQL là UTC. Trộn hai thứ là lệch đúng 7 tiếng — và
+# 7 tiếng thì không làm sập gì, nó chỉ đẩy một buổi học tối thứ Sáu sang thống kê
+# thứ Bảy. Loại lỗi ấy chỉ bị phát hiện khi có người ngồi đếm tay.
+#
+# Đo trước khi bật: `DTZ` bắt được `datetime.utcnow()` THẬT ở `accounts/views.py`.
+# Đó là lý do bộ này nằm trong danh sách bật chứ không nằm trong danh sách "sẽ
+# xem sau".
+
+# ── VÌ SAO KHÔNG BẬT ────────────────────────────────────────────────────────
+# S608  — cảnh báo "SQL ghép chuỗi". Ở repo này raw SQL là CHỦ Ý (xem
+#         `common/db.py`): mọi tham số đều đi qua placeholder `%s`, phần ghép
+#         chuỗi chỉ là tên cột/điều kiện do chính mã dựng. Bật vào là 100% tiếng
+#         ồn, và tiếng ồn làm người ta thôi đọc cảnh báo.
+# DJ     — 145 lỗi trên các model `managed = False` (bảng có sẵn từ bản Flask).
+#          Luật này giả định vòng đời model do Django quản; ở đây thì không.
+# UP031  — ép f-string thay `%`. Câu tiếng Việt trong repo dùng `%s` nhất quán;
+#          đổi hàng loạt là một diff to mà không sửa một lỗi nào.
+# RUF001/2/3 — "ký tự Unicode mơ hồ". Toàn bộ chú thích và câu báo lỗi ở đây là
+#          tiếng Việt CÓ DẤU. Bật vào là gạch đỏ gần như mọi dòng.
+# RUF012 — đòi `ClassVar` cho thuộc tính lớp biến đổi được; DRF khai
+#          `permission_classes = [...]` đúng như thế ở mọi view.
+
+[tool.ruff.lint.per-file-ignores]
+# Bộ kiểm cố ý dựng dữ liệu bằng SQL thô và bắt lỗi rộng để kiểm hành vi.
+"*/tests.py" = ["BLE"]
+"conftest.py" = ["BLE"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "accounts", "achievements", "common", "config", "courseadmin", "courses",
+    "forum", "leaderboard", "lessons", "mockexam", "notifications", "quizzes",
+    "roadmap", "stats", "teaching",
+]

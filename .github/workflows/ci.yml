@@ -21,7 +21,18 @@ jobs:
         working-directory: backend
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-django
+          pip install pytest pytest-django ruff
+      # Lint TRƯỚC pytest: chạy dưới 1 giây và không chạm CSDL, trong khi một
+      # vòng pytest ở đây mất ~16 phút VÀ đi tới Neon thật. Bắt lỗi rẻ trước.
+      #
+      # Bộ luật chọn theo thứ đã từng sai thật ở repo này — xem `pyproject.toml`.
+      # Đáng giá nhất là `DTZ`: nó CƯỠNG CHẾ quy ước của `common/clock.py`
+      # (giờ Việt Nam dạng naive vs `now()` UTC của SQL). Lệch 7 tiếng không làm
+      # sập gì, nó chỉ đẩy buổi học tối thứ Sáu sang thống kê thứ Bảy — loại lỗi
+      # chỉ bị phát hiện khi có người ngồi đếm tay.
+      - name: Lint backend (ruff)
+        working-directory: backend
+        run: python -m ruff check .
       - name: Run pytest
         working-directory: backend
         env:
@@ -64,9 +75,13 @@ jobs:
         working-directory: backend
         run: python -m compileall -q accounts common teaching stats courses lessons quizzes notifications roadmap leaderboard achievements forum courseadmin mockexam chatbot config
 
+      # `pnpm lint` chứ KHÔNG `eslint src`: hai câu ấy quét hai phạm vi khác
+      # nhau. `src` bỏ qua 15 tệp JS thuần trong `public/static/js` — đúng chỗ
+      # đã một lần giết cả màn Quản trị trên production. Nay CI và máy của người
+      # viết chạy CÙNG một câu, với `--max-warnings 0`.
       - name: Lint
         working-directory: frontend
-        run: pnpm exec eslint src
+        run: pnpm lint
       - name: Typecheck
         working-directory: frontend
         run: pnpm exec tsc --noEmit

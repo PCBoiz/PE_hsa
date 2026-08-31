@@ -1,8 +1,8 @@
 """Port routes/leaderboard.py — BXH weekly | streak | friends."""
+from datetime import timedelta
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from datetime import timedelta
 
 from common.clock import local_today
 from common.db import q, q1

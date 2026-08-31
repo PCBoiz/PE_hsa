@@ -12,7 +12,6 @@ import json
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-
 HSA_COURSES = [
     # id, title, subtitle, description, level, duration, tag, color, accent, content_meta
     (

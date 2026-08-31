@@ -7,7 +7,6 @@ Django lưu nguyên chuỗi werkzeug trong cột password; encode() cũng sinh �
 định dạng werkzeug để bản Flask cũ (nếu còn chạy song song) verify được.
 """
 import hashlib
-import hmac
 import secrets
 
 from django.contrib.auth.hashers import BasePasswordHasher

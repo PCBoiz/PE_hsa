@@ -11,6 +11,7 @@ import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from accounts.models import User
+from common.clock import local_today
 from common.db import q1
 
 f = APIRequestFactory()
@@ -165,11 +166,12 @@ def test_hoc_lai_bai_cu_KHONG_viet_lai_qua_khu(em):
     `occurred_at` thì NGƯỢC LẠI — nó phải cập nhật, vì nó trả lời "lần gần nhất
     em chạm vào việc này".
     """
-    from datetime import date, timedelta
+    from datetime import timedelta
+
     from common.db import x as _x
     from common.events import KIND_LESSON, record_event
 
-    cu = date.today() - timedelta(days=30)
+    cu = local_today() - timedelta(days=30)
     record_event(em.id, KIND_LESSON, 'l7:test', occurred_at=cu, event_date=cu,
                  ref_type='lesson', ref_id='777', score=50, max_score=100)
     dong = q1("SELECT event_date, occurred_at FROM learning_events "
@@ -194,12 +196,13 @@ def test_hoc_lai_bai_cu_KHONG_viet_lai_qua_khu(em):
 def test_bang_theo_doi_cua_giang_vien_doc_LAN_GAN_NHAT(em):
     """Giảng viên nhìn cột "hoạt động gần nhất" để biết em nào đang mất hút.
     Đọc `event_date` (nay giữ ngày đầu) là hỏi sai câu."""
-    from datetime import date, timedelta
+    from datetime import timedelta
+
     from common.db import x as _x
     from common.events import KIND_LESSON, record_event
     from teaching.reports import _last_activity
 
-    cu = date.today() - timedelta(days=40)
+    cu = local_today() - timedelta(days=40)
     record_event(em.id, KIND_LESSON, 'l7:hd', occurred_at=cu, event_date=cu,
                  ref_type='lesson', ref_id='778', score=50, max_score=100)
     from common.clock import local_now
@@ -207,7 +210,7 @@ def test_bang_theo_doi_cua_giang_vien_doc_LAN_GAN_NHAT(em):
                  ref_type='lesson', ref_id='778', score=60, max_score=100)
 
     ra = _last_activity([em.id])[em.id]
-    assert ra['last_day'] == date.today(), (
+    assert ra['last_day'] == local_today(), (
         'em vừa ôn bài hôm nay mà bảng nói hoạt động gần nhất là %s' % ra['last_day'])
     _x("DELETE FROM learning_events WHERE user_id=%s AND dedup_key='l7:hd'", (em.id,))
 
@@ -227,6 +230,7 @@ def test_khong_cau_DDL_nao_dung_toi_bang_chua_duoc_tao():
     import io as _io
     import pathlib
     import re
+
     from common.management.commands.bootstrap_schema import _split_statements
 
     TAO = re.compile(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_]\w*)', re.I)

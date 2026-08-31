@@ -17,8 +17,12 @@ from accounts.models import User
 from common.clock import local_now
 from common.db import q, q1
 from common.permissions import ROLE_STUDENT, ROLE_TEACHER
-from teaching.assignments import (AssignmentDetailView, AssignmentGradingView,
-                                  ClassAssignmentsView, MyAssignmentsView)
+from teaching.assignments import (
+    AssignmentDetailView,
+    AssignmentGradingView,
+    ClassAssignmentsView,
+    MyAssignmentsView,
+)
 
 f = APIRequestFactory()
 
@@ -803,6 +807,7 @@ def test_hoc_lai_lop_cu__chuyen_can_tinh_CA_HAI_dot(db):
     bài, làm 2 đề, điểm đang lên" nằm ngay cạnh "chuyên cần 0%".
     """
     from datetime import timedelta
+
     from teaching.parent_report import ParentReportView
     gv = _nguoi('GV Hoc Lai', ROLE_TEACHER)
     em = _nguoi('HV Hoc Lai', ROLE_STUDENT)

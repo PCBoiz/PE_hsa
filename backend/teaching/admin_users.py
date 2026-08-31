@@ -34,15 +34,20 @@ from django.db import IntegrityError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.validators import (validate_email_field, validate_name_field,
-                                 validate_phone_field)
+from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
-from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
-                                IsAdminRole, last_active_admin)
+from common.permissions import (
+    ASSIGNABLE_ROLES,
+    ROLE_ADMIN,
+    ROLE_STUDENT,
+    IsAdminRole,
+    last_active_admin,
+)
 from stats.goals import as_date
+
 # Dùng lại của teaching/views.py, không viết bản thứ hai: mật khẩu tạm sinh hai
 # kiểu khác nhau thì trợ giảng đọc cho học viên hai dạng chuỗi khác nhau, còn
 # nhãn nhật ký dựng hai kiểu thì cùng một người hiện ra hai tên trong cùng một

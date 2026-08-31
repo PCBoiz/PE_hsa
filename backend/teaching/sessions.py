@@ -34,14 +34,12 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.audit import (ATTENDANCE_MARK, SESSION_CREATE, SESSION_DELETE,
-                          SESSION_UPDATE, record)
+from common.audit import ATTENDANCE_MARK, SESSION_CREATE, SESSION_DELETE, SESSION_UPDATE, record
 from common.clock import local_now
 from common.db import q, q1, x
-from common.events import (KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events,
-                           record_events)
-from common.permissions import IsTeacherOrAdmin, can_see_class
+from common.events import KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events, record_events
 from common.params import so_nguyen
+from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats.goals import as_date
 from teaching.vocab import chi_hoc_vien
 
@@ -475,7 +473,10 @@ class ClassSessionDetailView(APIView):
                 data.get('duration_minutes', row['duration_minutes']),
                 exclude_id=session_id)
 
-        sets = ', '.join('%s = %s' % (c, p) for c, p in zip(data, _sql_values(data)))
+        # `strict=True`: lệch một phần tử là ghép nhầm tên cột với placeholder
+        # của cột khác — câu UPDATE vẫn chạy, và ghi giá trị sang sai cột.
+        sets = ', '.join('%s = %s' % (c, p)
+                         for c, p in zip(data, _sql_values(data), strict=True))
         after = q1('UPDATE class_sessions SET %s, updated_at = %%s WHERE id = %%s '
                    'RETURNING *' % sets,
                    tuple(data.values()) + (local_now(), session_id))

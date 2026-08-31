@@ -65,6 +65,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             lên CSS của trang — mà lại là thứ mọi trang đều cần. Nạp ở đây còn
             là điều kiện để token Tailwind (trỏ var() vào chính các biến này)
             hoạt động ở mọi màn hình. */}
+        {/* eslint-disable-next-line @next/next/no-css-tags -- Luật này muốn
+            `import` tệp CSS để Next gộp vào bản dựng. Không áp được ở đây:
+            `theme.css` nằm trong `public/` và được 15 tệp JS THUẦN (nạp bằng
+            thẻ script, không qua bundler) cùng dùng. Đưa nó vào bản dựng là
+            sinh ra HAI bản token màu, và bản của trang legacy sẽ trôi. */}
         <link rel="stylesheet" href="/static/css/theme.css" />
 
         {/* Mọi lời gọi /api/* và /auth/* nay đi qua chính miền này rồi mới

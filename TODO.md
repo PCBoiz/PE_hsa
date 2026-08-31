@@ -497,7 +497,7 @@ Kiểm 16 phép ở tầng view + 10 phép trên trình duyệt thật.
 Vá kèm (một mục của T53): thanh điều hướng khu quản trị nay đánh dấu tab đang mở
 (`aria-current="page"` + nền) và `<nav>` có `aria-label` tiếng Việt.
 
-### [ ] T53 · Nợ khả năng tiếp cận & nhất quán còn lại (từ T13 + T14)
+### [~] T53 (THAY BẰNG T53-b ở dưới) · Nợ khả năng tiếp cận & nhất quán
 Xếp theo tác động, đã đo hết, chưa vá:
 · **Không đăng xuất được bằng bàn phím** — `#user-chip-btn` là `<div>` không
   `tabindex`; Tab 60 lần không chạm tới. Trên máy dùng chung ở trung tâm đó là
@@ -520,7 +520,7 @@ Xếp theo tác động, đã đo hết, chưa vá:
 · `<dialog>` chưa có `aria-labelledby`; `<nav>` chưa có `aria-label`; bảng chưa
   có `caption`; `<th>` chưa có `scope`.
 
-### [ ] T15 · `backend/pyproject.toml` — ruff + mypy
+### [x] T15 (XONG phần ruff) · `backend/pyproject.toml`
 Cấu hình đã đo sẵn: 28 lỗi trên 12 tệp mới, 137 toàn backend, 24 tự sửa được.
 Bật `DTZ` (cưỡng chế luật của `clock.py` — đã bắt được `datetime.utcnow()` thật
 ở `accounts/views.py:416`), `BLE`, `I`, `F`, `B`. **Không** bật `S608` (raw SQL
@@ -528,15 +528,39 @@ là chủ ý), `DJ` (145 lỗi trên model `managed=False`), `UP031`, `RUF001/2/
 tiếng Việt), `RUF012`. mypy `--check-untyped-defs` = 19 lỗi, 2 lỗi thật.
 Chạy `ruff --fix` thành **commit riêng** để không lẫn vào diff nghiệp vụ.
 
-### [ ] T16 · eslint tầng type-aware + `--max-warnings 0`
+> **Làm 01/09/2026.** Bật `F E9 I B BLE DTZ`; tắt `S608 DJ UP031 RUF001/2/3
+> RUF012` — mỗi luật tắt kèm một câu VÌ SAO ngay trong `pyproject.toml`, vì một
+> luật tắt không lý do là một luật sẽ có người bật lại rồi lại tắt.
+>
+> 69 phát hiện → 0. Đáng nói nhất **không phải** 52 lần tự sửa (sắp import, gỡ
+> import thừa) mà là 3 lớp lỗi thật:
+> - **`DTZ011` × 14 — toàn bộ trong tệp kiểm.** `date.today()` trả ngày của MÁY,
+>   mà CI chạy giờ UTC còn logic chuỗi ngày dùng `local_today()`. Lệch 7 tiếng
+>   nghĩa là **sai ngày trong khoảng 17:00–24:00 UTC** — một nguồn chập chờn
+>   nằm im. Đổi hết sang `local_today()`.
+> - **`B905` × 4 — `zip` không khai `strict`.** Hai chỗ (`common/db._dictfetchall`,
+>   `q1`) ghép TÊN CỘT với GIÁ TRỊ: lệch nghĩa là `zip` lặng lẽ CẮT cột cuối.
+>   Một chỗ (`teaching/sessions`) ghép tên cột với placeholder của câu UPDATE:
+>   lệch nghĩa là **ghi giá trị sang sai cột**. Cả ba nay `strict=True`. Chỗ thứ
+>   tư (`zip(ids, ids[1:])`) CỐ Ý lệch → `strict=False`, ghi rõ.
+> - **`BLE001` × 4.** Một chỗ bắt hẹp lại được (`json.loads` → `ValueError`); ba
+>   chỗ còn lại là ranh giới với dịch vụ ngoài và dọn dẹp cố-gắng-hết-sức, đều
+>   GHI LOG chứ không nuốt — `# noqa` kèm lý do tại chỗ.
+>
+> 224 phép kiểm xanh sau khi tự sửa. mypy chưa làm.
+
+### [x] T16 (XONG) · eslint tầng type-aware + `--max-warnings 0`
 Thêm `typescript-eslint` `recommendedTypeChecked`. Đây là tầng duy nhất bắt được
 `as never` ở `AccountsClient.tsx:148`. Thêm `no-restricted-syntax` chặn `as never`
 tái diễn. `globalIgnores` phải loại `public/**` để `pnpm lint` và CI quét cùng
 phạm vi.
 
-### [ ] T17 · CI thêm bước lint backend
+### [x] T17 (XONG) · CI thêm bước lint backend
 `ruff check .` trước `pytest` — chạy dưới 1 giây, bắt lỗi rẻ hơn một vòng pytest
 chạm DB thật.
+
+> **Làm 01/09/2026.** Thêm bước `Lint backend (ruff)` TRƯỚC `Run pytest`. Đáng
+> giá: một vòng pytest ở đây mất **16 phút 41** và đi tới Neon thật.
 
 ### [ ] T18 · Hàng rào cho lớp lỗi đắt nhất: sai hình dạng JSON
 **Không bộ luật nào ở trên bắt được T1.** Ba mức, chọn theo giá:
@@ -1128,7 +1152,7 @@ theo `sort_order`). Nên tách hẳn vòng duyệt ấy thành `stats/plan._duye
 Test hồi quy đỏ trên mã cũ với đúng câu: `em 12: giảng viên thấy 12, chính em
 thấy 14`.
 
-### [ ] Đang chạy · Audit khu HỌC VIÊN (anh chốt "tất cả, theo thứ tự")
+### [x] Audit khu HỌC VIÊN — ĐÃ CHẠY XONG (kết quả là loạt A1–A18 ở dưới)
 Hai agent đang soi `stats/` và `lessons/ quizzes/ roadmap/ courses/` — hai khu
 CHƯA từng được audit lần nào, mà 99% người dùng ở đó.
 
@@ -1451,7 +1475,7 @@ XP và bản đồ năng lực. Đã gọi từ cả hai đường soạn bài.
   là 50 — gõ sai tên khoá SQL thì phép kiểm vẫn xanh. (Phép kiểm phòng luyện
   làm đúng: bài tạm đặt `xp_reward = 40`.)
 
-### [ ] A12 · CHƯA VÁ, và đây là cái nặng nhất còn lại
+### [x] A12 (XONG — xem mục "A12 (XONG)" ở dưới) · `/check` moi được đáp án
 `POST /check` trả `answer` cho MỌI id có mặt trong `answers`, bất kể đúng sai.
 Nên `{"phan":"drill","answers":{"d1":"x",…,"d8":"x"}}` là **một request lấy trọn
 bộ đáp án**, rồi `/complete` với bộ đáp án ấy cho 120 XP phòng luyện + một dòng
@@ -1553,7 +1577,10 @@ Và chính phép đo trình duyệt lộ ra hệ quả thật của luật lần
 trước bỏ dở đã khoá `d2` bằng một đáp án sai, nên lần sau gõ đúng vẫn bị tính
 sai — **5/8 thay vì 6/8**. Đó là lý do nút "Bắt đầu" phải xoá.
 
-### [ ] A18 · RỦI RO CÒN LẠI, nói thẳng
+### [x] A18 (XONG qua B13) · Xoá được thì cũng dò được
+> B13 chốt: `_chot_luot_drill` ghi lượt đang dở vào sổ ngay lúc bấm "Bắt đầu"
+> lại, nên lượt DÒ chính là lượt đầu — đúng luật "một lượt vào sổ" anh đã chốt
+> cho thi thử.
 Xoá được thì cũng dò được: trả lời → xem đúng/sai → bấm "Bắt đầu" → trả lời
 khác. Với câu trắc nghiệm 4 lựa chọn thì việc ấy rẻ. Cái đang chặn nó là XP chỉ
 cộng ở LẦN HOÀN THÀNH ĐẦU của bài (`existed` trong `CompleteLessonView`) — đủ
@@ -2248,7 +2275,7 @@ mất khi rê chuột. Đã vá cùng chỗ.
 Đúng cái bẫy mà chú thích sẵn có trong tệp đã cảnh báo cho `--module-accent`:
 token tính ở `:root` nên đã "đóng băng" mã cyan `#0A6F80` của chủ đề cũ.
 
-### [ ] Còn 1 vùng chạm CỐ Ý giữ nguyên
+### [~] Còn 1 vùng chạm CỐ Ý giữ nguyên (quyết định, không phải việc)
 Liên kết tên lớp trong bảng quản trị: 205×36. Kéo lên 44 sẽ chồng lên dòng tên
 đợt ngay dưới. 36 vượt chuẩn thật sự đang áp (SC 2.5.8 = 24×24) mà giữ được mật
 độ bảng. Nếu sau này bảng đổi sang bố cục thẻ trên điện thoại thì nâng lên 44.

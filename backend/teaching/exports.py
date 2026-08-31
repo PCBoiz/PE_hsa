@@ -54,10 +54,10 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1
-from teaching.attendance import dem_theo_hoc_vien, ti_le
-from teaching.admin_users import any_user_filter, build_user_filters
 from common.permissions import IsAdminRole, IsTeacherOrAdmin, can_see_class
 from teaching import reports
+from teaching.admin_users import any_user_filter, build_user_filters
+from teaching.attendance import dem_theo_hoc_vien, ti_le
 
 #: Ô ghi khi KHÔNG ĐỌC ĐƯỢC dữ liệu — không bao giờ để trống và không bao giờ
 #: in 0. Ô trống và số 0 đều đọc được thành "không có gì", mà "không đọc được"

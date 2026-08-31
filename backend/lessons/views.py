@@ -8,15 +8,27 @@ from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
-from common.throttling import (DailyIPThrottle, DailyUserThrottle,
-                               HourlyIPThrottle, HourlyUserThrottle)
 from common.db import q1, x
 from common.events import KIND_DRILL, KIND_LESSON, record_event
-from lessons.content import course_content, one_lesson
-from lessons.grading import (PHAN_CO_CAU_HOI, cham, cham_phong_luyen, doc_ghi_nhan,
-                             ghi_nhan, id_bai, phan_tram, xoa_ghi_nhan,
-                             xoa_ghi_nhan_phan)
 from common.streak import award_xp, touch_streak
+from common.throttling import (
+    DailyIPThrottle,
+    DailyUserThrottle,
+    HourlyIPThrottle,
+    HourlyUserThrottle,
+)
+from lessons.content import course_content, one_lesson
+from lessons.grading import (
+    PHAN_CO_CAU_HOI,
+    cham,
+    cham_phong_luyen,
+    doc_ghi_nhan,
+    ghi_nhan,
+    id_bai,
+    phan_tram,
+    xoa_ghi_nhan,
+    xoa_ghi_nhan_phan,
+)
 
 logger = logging.getLogger(__name__)
 

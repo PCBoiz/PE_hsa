@@ -2297,3 +2297,34 @@ lời gọi đọc rồi chụp: hiện dấu `—`); "`HTTP_VI` là mã chết"
 đường lùi cho lỗi ở tầng DƯỚI DRF (502 lúc Render khởi động lại, 504, 413).
 
 224 phép kiểm xanh.
+
+## 01/09/2026 (tiếp) · Lint hai đầu — và nó tìm ra lỗi ở màn thi thử
+
+**Backend (T15/T17).** `ruff` với bộ luật chọn theo thứ đã từng sai thật; mỗi
+luật TẮT kèm một câu vì sao. 69 → 0. Đáng nói không phải 52 lần tự sửa mà là ba
+lớp lỗi: `date.today()` trong tệp kiểm (CI chạy UTC → sai ngày trong khoảng
+17:00–24:00 UTC, một nguồn chập chờn nằm im); `zip` không `strict` ở ba chỗ ghép
+TÊN CỘT với GIÁ TRỊ — lệch là cắt mất cột cuối, hoặc ghi giá trị sang sai cột;
+và một `except Exception` bắt hẹp lại được. CI nay lint trước pytest — một vòng
+pytest ở đây mất **16 phút 41** và đi tới Neon thật.
+
+**Frontend (T16).** 113 vấn đề → 0, `--max-warnings 0` đã chốt. KHÔNG bật cả
+`recommendedTypeChecked`: đo ra 576 lỗi mà 561 sinh từ đúng một chỗ
+(`window as any` — ranh giới cố ý), tức chôn 15 phát hiện thật dưới 561 dòng
+tiếng ồn. Chỉ bật ba luật mà chỉ tầng type-aware bắt được.
+
+Và chúng bắt được thật. Nặng nhất ở **màn thi thử**: `submit()` gọi ngay trong
+hàm cập nhật state — hàm ấy phải THUẦN, React có quyền gọi hai lần, nên nộp bài
+có thể bắn hai lần. Sửa nó lộ ra lỗi thứ hai hại người học hơn: **đồng hồ chạy
+chậm khi tab ở nền** (trình duyệt hãm `setInterval` còn ~1 lần/phút), nên em
+chuyển tab tra cứu rồi quay lại thấy còn nhiều thời gian hơn sự thật. Nay tính
+từ mốc hết giờ. Đo bằng đề giả 8 giây: 00:07 → 00:04 → tự nộp, 0 lỗi JS, 0 lời
+gọi ghi thật tới Neon.
+
+Thêm: `String(formData.get('x') || '')` ở 6 chỗ — `get()` trả `string | File`, và
+`String(mộtFile)` ra `"[object File]"`, truthy, lọt mọi phép kiểm "có nhập chưa",
+kể cả ở ô mật khẩu. Và **bản sao thứ BA** của thanh điều hướng (màn thi thử,
+5/8 mục) — nay cả ba cùng một nguồn.
+
+224 phép kiểm backend xanh · eslint 0 · tsc 0 · giao diện 0·0·0·0/181 hai chủ đề.
+TODO còn 10 mục mở, 5 trong đó chờ anh hoặc chờ ngưỡng người dùng.

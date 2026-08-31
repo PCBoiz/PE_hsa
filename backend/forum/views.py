@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.db import q, q1, x
-from common.permissions import is_admin
 from common.params import so_nguyen
+from common.permissions import is_admin
 from notifications.service import notify
 
 _CATEGORIES = ('question', 'share', 'discuss')

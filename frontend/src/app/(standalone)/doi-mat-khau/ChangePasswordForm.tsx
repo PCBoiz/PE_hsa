@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { oChu } from '@/lib/form';
 
 import { Button, Field } from '@/components/ui';
 
@@ -30,9 +31,9 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
     setErrors({});
 
     const f = new FormData(e.currentTarget);
-    const current = String(f.get('current') || '');
-    const next = String(f.get('next') || '');
-    const confirm = String(f.get('confirm') || '');
+    const current = oChu(f, 'current');
+    const next = oChu(f, 'next');
+    const confirm = oChu(f, 'confirm');
 
     const local: typeof errors = {};
     if (!current) local.current = lanDau ? 'Nhập mật khẩu tạm trung tâm đã cấp.' : 'Nhập mật khẩu hiện tại.';
@@ -84,7 +85,7 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={(e) => void submit(e)} noValidate className="flex flex-col gap-5">
       {formError && (
         <p
           role="alert"

@@ -4,24 +4,31 @@ Quyền theo NGỮ CẢNH, không theo vai trò: vào được khu vực này (g
 quản trị viên) không có nghĩa là xem được mọi lớp. Mỗi endpoint chạm vào một lớp
 cụ thể đều phải đi qua ``can_see_class`` — xem common/permissions.py.
 """
+import logging
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.validators import (validate_email_field, validate_name_field,
-                                 validate_phone_field)
+from accounts.authentication import invalidate_user_cache
+from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.events import forget_events
 from common.identity import norm_email, norm_phone
-from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
-                                IsAdminRole, IsTeacherOrAdmin, can_see_class,
-                                is_admin, last_active_admin, visible_class_ids)
+from common.permissions import (
+    ASSIGNABLE_ROLES,
+    ROLE_ADMIN,
+    ROLE_STUDENT,
+    IsAdminRole,
+    IsTeacherOrAdmin,
+    can_see_class,
+    is_admin,
+    last_active_admin,
+    visible_class_ids,
+)
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
-import logging
-
-from accounts.authentication import invalidate_user_cache
 from teaching import reports
 from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
 
@@ -551,7 +558,9 @@ def _thu_hoi_refresh(user_id):
     """
     try:
         from rest_framework_simplejwt.token_blacklist.models import (
-            BlacklistedToken, OutstandingToken)
+            BlacklistedToken,
+            OutstandingToken,
+        )
         n = 0
         for t in OutstandingToken.objects.filter(user_id=user_id):
             _, moi = BlacklistedToken.objects.get_or_create(token=t)

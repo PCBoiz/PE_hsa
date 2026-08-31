@@ -25,8 +25,13 @@ from django.db import DatabaseError
 
 from common.clock import local_today
 from common.db import q
-from common.events import (KIND_ASSIGNMENT, KIND_DRILL, KIND_LESSON, KIND_MOCK_SECTION,
-                           KIND_REVIEW_QUIZ)
+from common.events import (
+    KIND_ASSIGNMENT,
+    KIND_DRILL,
+    KIND_LESSON,
+    KIND_MOCK_SECTION,
+    KIND_REVIEW_QUIZ,
+)
 
 #: Trọng số bốn nguồn. Tổng bằng 1 khi có đủ; thiếu thì chuẩn hoá lại.
 SOURCE_WEIGHTS = {

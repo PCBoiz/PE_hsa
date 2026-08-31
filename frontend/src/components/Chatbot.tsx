@@ -54,6 +54,10 @@ export default function Chatbot() {
           <div className="chatbot-preview-item">
             {/* Không đặt src="" — React cảnh báo (browser có thể tải lại cả trang);
                 chatbot.js sẽ gán .src khi user đính kèm ảnh */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- `next/image`
+                cần biết `src` lúc dựng. Ở đây `src` do `chatbot.js` (mã ngoài
+                React) gán lúc chạy, từ một blob cục bộ người dùng vừa đính kèm:
+                không có URL nào để tối ưu, và cũng không đi qua mạng. */}
             <img id="chatbot-preview-img" alt="Preview" />
             <button className="chatbot-preview-remove" onClick={() => W().removeChatbotImage()} aria-label="Xóa hình ảnh">
               <i className="fas fa-trash"></i>

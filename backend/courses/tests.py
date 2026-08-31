@@ -20,8 +20,9 @@ def test_enrollment(temp_user):
 @pytest.fixture
 def other_api(db):
     """APIClient thứ HAI — cần một người chấm khác để trung bình có nghĩa."""
-    from accounts.models import User
     from rest_framework.test import APIClient
+
+    from accounts.models import User
     row = q1("INSERT INTO users (name, email, password) VALUES (%s,%s,%s) RETURNING id",
              ('Rate Other', 'rate_other_dj@example.com', 'x'))
     client = APIClient()

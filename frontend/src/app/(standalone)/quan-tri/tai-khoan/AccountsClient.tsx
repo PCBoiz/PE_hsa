@@ -177,7 +177,13 @@ export default function AccountsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, role, status, classId]);
 
-  async function act(path: string, body: unknown, ok: (d: never) => void) {
+  /* Tham số kiểu do NƠI GỌI đặt, không dùng `never`.
+     Bản cũ khai `ok: (d: never) => void` rồi ép `ok(d as never)`. `never` nhận
+     được mọi callback vì quy tắc nghịch biến, tức nó BỊT MIỆNG trình biên dịch
+     chứ không mô tả gì — và cả `tsc` lẫn tầng lint cũ đều không kêu một tiếng.
+     `<T>` thì hình dạng vẫn do nơi gọi tuyên bố, nhưng tuyên bố ấy nằm ở chỗ
+     người đọc nhìn thấy, và sai một chữ tên khoá là lỗi biên dịch. */
+  async function act<T>(path: string, body: unknown, ok: (d: T) => void) {
     setErr(null);
     try {
       const r = await apiFetch(path, {
@@ -187,7 +193,7 @@ export default function AccountsClient({
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
-      ok(d as never);
+      ok(d as T);
     } catch (e) {
       setErr(loiBatDuoc(e, 'Thao tác không thành công'));
     }

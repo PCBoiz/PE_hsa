@@ -1,18 +1,18 @@
 """Port routes/stats.py + db/repositories/missions.py (phần verify)."""
 import json
-from datetime import datetime
 
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
+from chatbot import profile as chat_profile
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
-from chatbot import profile as chat_profile
 from stats import competency, gradebook, journal, plan
-from stats.goals import as_date as _as_date, read_goals
+from stats.goals import as_date as _as_date
+from stats.goals import read_goals
 
 
 def _json_rows(value):
@@ -325,7 +325,7 @@ class HsaGoalsView(APIView):
         if isinstance(data, str):
             try:
                 data = json.loads(data)
-            except Exception:
+            except ValueError:   # JSONDecodeError là con của nó
                 data = {}
         return data if isinstance(data, dict) else {}
 

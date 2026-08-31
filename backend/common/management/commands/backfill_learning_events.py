@@ -23,8 +23,15 @@ from django.core.management.base import BaseCommand
 
 from common.clock import local_now
 from common.db import q
-from common.events import (KIND_LESSON, KIND_MISSION, KIND_MOCK,
-                           KIND_MOCK_SECTION, KIND_REVIEW_QUIZ, forget_events, record_events)
+from common.events import (
+    KIND_LESSON,
+    KIND_MISSION,
+    KIND_MOCK,
+    KIND_MOCK_SECTION,
+    KIND_REVIEW_QUIZ,
+    forget_events,
+    record_events,
+)
 
 #: Nhãn hợp phần trong section_scores_json → khoá học. PHẢI khớp
 #: mockexam/views.py:SECTION_LABELS; lệch một dấu là cả hợp phần biến mất.

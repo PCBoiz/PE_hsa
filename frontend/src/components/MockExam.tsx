@@ -4,6 +4,7 @@
 // list → làm bài (bấm giờ, palette câu, MCQ/điền) → kết quả + phân tích hợp phần.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { MUC_NAV } from '@/components/navMuc';
 
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
@@ -27,6 +28,8 @@ export default function MockExam() {
   const [result, setResult] = useState<any>(null);
   const [loi, setLoi] = useState<string>('');
   const startRef = useRef(0);
+  // Mốc hết giờ (ms từ epoch). Đặt cùng lúc với `startRef` khi mở đề.
+  const hanRef = useRef(0);
   const answersRef = useRef<Record<string, string>>({});
   // Gán trong effect, KHÔNG gán thẳng lúc dựng: sửa ref giữa lúc dựng khiến
   // React không đảm bảo component vẽ lại đúng lúc, và với Strict Mode / dựng
@@ -36,7 +39,9 @@ export default function MockExam() {
   }, [answers]);
 
   useEffect(() => {
-    (async () => {
+    // `void`: khối dưới bắt hết mọi lỗi ở chính nó nên lời hứa này không thể
+    // hỏng — `void` nói rõ điều đó thay vì để người đọc tự đoán.
+    void (async () => {
       try {
         const r = await apiFetch('/api/mock-exams');
         if (r.status === 401) { window.location.href = '/login'; return; }
@@ -60,12 +65,34 @@ export default function MockExam() {
     } catch { setView('take'); }
   }, [exam]);
 
+  /* Đồng hồ tính từ MỐC HẾT GIỜ, không trừ dần từng giây.
+     Hai lỗi của bản trừ-dần, và cái thứ hai mới là cái hại người học:
+
+     ① `submit()` gọi NGAY TRONG `setTimeLeft(t => …)`. Hàm cập nhật state phải
+        THUẦN — React có quyền gọi nó hai lần (Strict Mode, hoặc render bị bỏ dở
+        rồi chạy lại) — nên "nộp bài", một lời gọi mạng đổi dữ liệu, có thể bắn
+        hai lần. Máy chủ có chặn (`submitted_at IS NULL`) nên chưa ai mất bài,
+        nhưng hàng rào ấy nằm ở đầu kia chứ không phải ở đây.
+
+     ② Trình duyệt HÃM `setInterval` xuống còn khoảng 1 lần/phút khi tab chạy
+        nền. Đồng hồ trừ dần vì thế chạy CHẬM: em chuyển sang tab khác tra cứu
+        rồi quay lại, màn hình vẫn báo còn nhiều thời gian hơn sự thật. Điểm thì
+        không sai (máy chủ giữ `started_at`), nhưng con số trên màn hình nói dối
+        đúng lúc người ta cần tin nó nhất. Tính từ mốc thì tab nền hay không
+        cũng ra cùng một số. */
   useEffect(() => {
     if (view !== 'take') return;
-    const id = setInterval(() => {
-      setTimeLeft((t) => { if (t <= 1) { clearInterval(id); submit(); return 0; } return t - 1; });
-    }, 1000);
-    return () => clearInterval(id);
+    const dem = () => {
+      const con = Math.max(0, Math.round((hanRef.current - Date.now()) / 1000));
+      setTimeLeft(con);
+      if (con <= 0) { clearInterval(id); void submit(); }
+    };
+    const id = setInterval(dem, 1000);
+    // Chạy ngay một nhịp: quay lại tab sau 5 phút thì không phải chờ thêm 1 giây
+    // mới thấy con số đúng.
+    const khiHien = () => { if (!document.hidden) dem(); };
+    document.addEventListener('visibilitychange', khiHien);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', khiHien); };
   }, [view, submit]);
 
   // useCallback như `submit` ở trên: `Date.now()` là hàm không thuần, và một
@@ -101,8 +128,12 @@ export default function MockExam() {
     setExam(d);
     setAnswers(d.savedAnswers && typeof d.savedAnswers === 'object' ? d.savedAnswers : {});
     setCur(0);
-    setTimeLeft(typeof d.secondsLeft === 'number' ? d.secondsLeft : (d.duration_minutes || 20) * 60);
-    startRef.current = Date.now(); setView('take');
+    const con = typeof d.secondsLeft === 'number' ? d.secondsLeft
+                                                 : (d.duration_minutes || 20) * 60;
+    setTimeLeft(con);
+    startRef.current = Date.now();
+    hanRef.current = startRef.current + con * 1000;
+    setView('take');
   }, []);
 
   // Lưu tạm câu trả lời lên máy chủ, gộp nhịp 1,5 giây. Không có nó thì mất
@@ -121,7 +152,7 @@ export default function MockExam() {
   const setAns = (qid: string, val: string) => setAnswers((a) => ({ ...a, [qid]: val }));
   const answeredCount = () => Object.keys(answers).filter((k) => answers[k] != null && answers[k] !== '').length;
   const confirmSubmit = () => {
-    if (window.confirm(`Nộp bài? Bạn đã trả lời ${answeredCount()}/${exam.questions.length} câu.`)) submit();
+    if (window.confirm(`Nộp bài? Bạn đã trả lời ${answeredCount()}/${exam.questions.length} câu.`)) void submit();
   };
 
   // ─────────── views ───────────
@@ -140,12 +171,16 @@ export default function MockExam() {
               về (audit 2026-08-14). Dashboard là SPA nên dùng deep-link #hash
               (main.js đọc hash lúc khởi động) thay vì gọi navigate() vốn không
               tồn tại ở trang này. */}
+          {/* BẢN SAO THỨ BA của thanh điều hướng, và nó thiếu nhiều nhất: chỉ
+              5 trong 8 mục (không có Kế hoạch, Kỹ năng, Bài tập). Nay đọc từ
+              `navMuc.ts` như hai bản kia. Vẫn dựng riêng vì màn này có chrome
+              của nó (`.mk-nav-link`, không icon) và không nạp main.js. */}
           <nav className="mk-nav" aria-label="Điều hướng chính">
-            <a className="mk-nav-link" href="/dashboard#dashboard">Dashboard</a>
-            <a className="mk-nav-link" href="/dashboard#courses">Khóa học</a>
-            <a className="mk-nav-link" href="/dashboard#roadmap">Lộ trình</a>
-            <a className="mk-nav-link" href="/dashboard#forum">Diễn đàn</a>
-            <span className="mk-nav-link is-active" aria-current="page">Thi thử</span>
+            {MUC_NAV.map((m) => (m.nhan === 'Thi thử' ? (
+              <span className="mk-nav-link is-active" aria-current="page" key={m.nhan}>{m.nhan}</span>
+            ) : (
+              <a className="mk-nav-link" href={m.url} key={m.nhan}>{m.nhan}</a>
+            )))}
           </nav>
           <div className="mk-top-tag">Thi thử CBT</div>
         </div>
@@ -168,7 +203,7 @@ export default function MockExam() {
                     <span><i className="fa-solid fa-list-ol"></i> {e.total_questions} câu</span>
                     <span><i className="fa-regular fa-clock"></i> {e.duration_minutes} phút</span>
                   </div>
-                  <button className="mk-btn primary" onClick={() => start(e.id)}>Bắt đầu làm bài →</button>
+                  <button className="mk-btn primary" onClick={() => void start(e.id)}>Bắt đầu làm bài →</button>
                 </div>
               ))}
             </div>

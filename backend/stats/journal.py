@@ -17,9 +17,14 @@ from django.db import DatabaseError
 
 from common.clock import local_now, local_today
 from common.db import q, q1, x
-from common.events import (KIND_LESSON, KIND_MOCK, KIND_SELF_LOG, SOURCE_SELF,
-                           forget_events,
-                           record_event)
+from common.events import (
+    KIND_LESSON,
+    KIND_MOCK,
+    KIND_SELF_LOG,
+    SOURCE_SELF,
+    forget_events,
+    record_event,
+)
 from common.params import so_nguyen
 from stats.goals import as_date, read_goals
 

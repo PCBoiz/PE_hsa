@@ -21,8 +21,14 @@ from django.db import DatabaseError
 
 from common.clock import local_today
 from common.db import q
-from common.events import (KIND_DRILL, KIND_LESSON, KIND_MISSION, KIND_MOCK,
-                           KIND_REVIEW_QUIZ, SOURCE_SELF)
+from common.events import (
+    KIND_DRILL,
+    KIND_LESSON,
+    KIND_MISSION,
+    KIND_MOCK,
+    KIND_REVIEW_QUIZ,
+    SOURCE_SELF,
+)
 from common.params import so_nguyen
 from stats.goals import HSA_MAX_SCORE, read_goals, target_band
 

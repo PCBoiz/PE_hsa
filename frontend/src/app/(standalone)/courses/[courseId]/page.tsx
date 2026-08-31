@@ -38,7 +38,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
   useEffect(() => {
     // db_design* không vào route này (đã có route tĩnh) — guard giống main.py
-    (async () => {
+    // `void`: khối dưới bắt hết lỗi của chính nó nên lời hứa này không hỏng được.
+    void (async () => {
       try {
         // apiFetch (không phải fetch tương đối): pe-bridge chưa nạp ở thời điểm này
         // Lấy ĐÚNG một khoá thay vì tải cả danh sách rồi lọc ở client

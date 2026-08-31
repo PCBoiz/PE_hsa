@@ -209,8 +209,8 @@ def test_dat_lai_mat_khau_cat_phien_dang_mo(db, api):
     Danh sách đen của SimpleJWT không cứu được, vì nó chỉ chặn REFRESH token
     còn ACCESS token kiểm bằng chữ ký chứ không tra CSDL.
     """
-    from rest_framework_simplejwt.tokens import RefreshToken
     from rest_framework.test import APIClient
+    from rest_framework_simplejwt.tokens import RefreshToken
 
     from accounts.authentication import invalidate_user_cache
     from accounts.models import User

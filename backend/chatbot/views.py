@@ -73,6 +73,9 @@ class ChatView(APIView):
             ctx = (ctx + "\n\n" + lesson_ctx) if ctx else lesson_ctx
         try:
             reply = chat(messages, ctx)
-        except Exception as exc:  # lỗi mạng/key/model → báo gọn, không lộ trace
+        # noqa CÓ LÝ DO: đây là RANH GIỚI với dịch vụ ngoài. Bắt hẹp lại là
+        # phải liệt kê hết loại lỗi của thư viện LLM, và mỗi lần nó nâng bản
+        # là một loại mới lọt ra thành 500 trắng cho học viên.
+        except Exception as exc:  # noqa: BLE001 — lỗi mạng/key/model → báo gọn, không lộ trace
             return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
         return Response({"reply": reply})

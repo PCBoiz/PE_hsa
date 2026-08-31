@@ -42,7 +42,6 @@ nhưng thật ra là biến một sự cố nhìn thấy được thành một b
 đúng cái đang phải đi vá ở đây. Hai hàm được phép nuốt ở trên nuốt vì chúng CÓ
 đường báo ra (`incomplete`); hàm nào chưa có đường đó thì đừng nuốt.
 """
-from datetime import timedelta
 
 import logging
 
@@ -50,9 +49,16 @@ from django.db import DatabaseError
 
 from common.clock import local_today
 from common.db import q, q1
-from common.events import KIND_LESSON, KIND_MOCK
-from stats.competency import (COURSE_ORDER, HALF_LIFE_DAYS, KIND_TO_SOURCE,
-                              MIN_ACTIVITIES, SOURCE_WEIGHTS, TOPIC_SOURCES, chu_de_trong_giao_trinh)
+from common.events import KIND_MOCK
+from stats.competency import (
+    COURSE_ORDER,
+    HALF_LIFE_DAYS,
+    KIND_TO_SOURCE,
+    MIN_ACTIVITIES,
+    SOURCE_WEIGHTS,
+    TOPIC_SOURCES,
+    chu_de_trong_giao_trinh,
+)
 from teaching.vocab import chi_hoc_vien
 
 logger = logging.getLogger(__name__)

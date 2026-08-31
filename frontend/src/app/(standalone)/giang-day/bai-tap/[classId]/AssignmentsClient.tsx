@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 
 import { Button, Card, CardHead, Chip, EmptyState } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { oChu } from '@/lib/form';
 
 /**
  * Hình dạng do `teaching/assignments.py:_dict()` trả về.
@@ -276,7 +277,7 @@ function FormBai({
   async function gui(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const lay = (k: string) => String(fd.get(k) ?? '').trim();
+    const lay = (k: string) => oChu(fd, k).trim();
     onLoi(null);
     setDangGui(true);
     try {
@@ -307,7 +308,7 @@ function FormBai({
   return (
     <Card>
       <CardHead title="Giao bài mới" />
-      <form onSubmit={gui} className="flex flex-col gap-3">
+      <form onSubmit={(e) => void gui(e)} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Tiêu đề</span>
           <input

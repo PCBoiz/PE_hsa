@@ -1,8 +1,9 @@
 """Port tests/test_parse_time_spent.py + tests/test_streak.py (Flask) — cùng case."""
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 
+from common.clock import local_today
 from common.db import q, q1, x
 from stats.views import parse_time_spent
 
@@ -80,7 +81,7 @@ def _hoc_xong_mot_bai(client):
 
 def test_van_bao_dung_chuoi_ngay(auth_api, temp_user):
     """`streak` vẫn là con số thật và endpoint vẫn phải nói đúng nó."""
-    _set_streak(temp_user, 3, date.today())
+    _set_streak(temp_user, 3, local_today())
     res = auth_api.get('/api/streak/review-quiz-status')
     assert res.status_code == 200
     assert res.json()['streak'] == 3
@@ -92,7 +93,7 @@ def test_CHUOI_NGAY_khong_con_la_dieu_kien_mo_quiz(auth_api, temp_user):
     mà chưa xong bài nào thì vẫn không tạo được quiz. Hai chỗ nói hai điều, và
     chỗ được người dùng chạm vào là chỗ kia (L14, 31/08/2026).
     """
-    _set_streak(temp_user, 9, date.today())
+    _set_streak(temp_user, 9, local_today())
     d = auth_api.get('/api/streak/review-quiz-status').json()
     assert d['streak'] == 9
     assert d['isUnlocked'] is False, (
@@ -106,7 +107,7 @@ def test_requires_login(api, db):
 
 
 def test_streak_increments_on_consecutive_day_khi_hoc_xong_bai(auth_api, da_ghi_danh):
-    _set_streak(da_ghi_danh, 4, date.today() - timedelta(days=1))
+    _set_streak(da_ghi_danh, 4, local_today() - timedelta(days=1))
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['ok'] is True
     assert data['streak'] == 5
@@ -115,13 +116,13 @@ def test_streak_increments_on_consecutive_day_khi_hoc_xong_bai(auth_api, da_ghi_
 
 
 def test_streak_resets_after_missing_a_day(auth_api, da_ghi_danh):
-    _set_streak(da_ghi_danh, 5, date.today() - timedelta(days=3))
+    _set_streak(da_ghi_danh, 5, local_today() - timedelta(days=3))
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['streak'] == 1
 
 
 def test_streak_unchanged_when_studying_again_same_day(auth_api, da_ghi_danh):
-    _set_streak(da_ghi_danh, 5, date.today())
+    _set_streak(da_ghi_danh, 5, local_today())
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['ok'] is True
     assert data['streak'] == 5
@@ -136,7 +137,7 @@ def test_nghi_dung_mot_ngay_con_ve_thi_chuoi_khong_dut(auth_api, da_ghi_danh):
     (xem `common/streak.py`). Tách làm hai phép kiểm để cả hai nhánh đều có
     người canh: một nhánh còn vé, một nhánh hết vé.
     """
-    _set_streak(da_ghi_danh, 5, date.today() - timedelta(days=2))
+    _set_streak(da_ghi_danh, 5, local_today() - timedelta(days=2))
     x('UPDATE users SET streak_freezes=1 WHERE id=%s', (da_ghi_danh,))
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['streak'] == 6
@@ -146,7 +147,7 @@ def test_nghi_dung_mot_ngay_con_ve_thi_chuoi_khong_dut(auth_api, da_ghi_danh):
 
 
 def test_nghi_mot_ngay_ma_HET_ve_thi_chuoi_ve_1(auth_api, da_ghi_danh):
-    _set_streak(da_ghi_danh, 5, date.today() - timedelta(days=2))
+    _set_streak(da_ghi_danh, 5, local_today() - timedelta(days=2))
     x('UPDATE users SET streak_freezes=0 WHERE id=%s', (da_ghi_danh,))
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['streak'] == 1
@@ -159,14 +160,14 @@ def test_streak_starts_at_one_for_first_time_user(auth_api, da_ghi_danh):
 
 
 def test_stats_streak_active_true_when_studied_today(auth_api, temp_user):
-    _set_streak(temp_user, 3, date.today())
+    _set_streak(temp_user, 3, local_today())
     res = auth_api.get('/api/stats')
     assert res.status_code == 200
     assert res.json()['streakActive'] is True
 
 
 def test_stats_streak_active_false_when_not_studied_today(auth_api, temp_user):
-    _set_streak(temp_user, 3, date.today() - timedelta(days=1))
+    _set_streak(temp_user, 3, local_today() - timedelta(days=1))
     assert auth_api.get('/api/stats').json()['streakActive'] is False
 
 
@@ -182,7 +183,7 @@ def test_hoc_xong_bai_thi_streak_active_bat_len(auth_api, da_ghi_danh):
     khi học xong một bài thì màn hình chuỗi ngày phải sáng lên trong hôm nay,
     chứ không phải một khoá JSON có tồn tại hay không.
     """
-    _set_streak(da_ghi_danh, 5, date.today() - timedelta(days=5))
+    _set_streak(da_ghi_danh, 5, local_today() - timedelta(days=5))
     assert auth_api.get('/api/stats').json()['streakActive'] is False
     data = _hoc_xong_mot_bai(auth_api).json()
     assert data['streak'] == 1
@@ -271,14 +272,15 @@ def test_ngay_thi_HOM_NAY_van_la_mot_moc_thi(db, con_lai, tuan_toi_da):
     tự viết trong phép kiểm — RULES §19.
     """
     import json as _json
-    from datetime import date, timedelta
+    from datetime import timedelta
+
     from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV L10','hv_l10_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
     x("INSERT INTO surveys (user_id, data_json, created_at) VALUES (%s, %s::jsonb, now())",
       (uid, _json.dumps({'target_score': 100, 'exam_timing': 'Trong 1 tháng',
-                         'exam_date': (date.today() + timedelta(days=con_lai)).isoformat(),
+                         'exam_date': (local_today() + timedelta(days=con_lai)).isoformat(),
                          'study_time': '2h'})))
 
     tom_tat, loi = plan.generate(uid)
@@ -350,8 +352,9 @@ def test_viec_lam_TRUOC_khi_co_ke_hoach_khong_tick_muc_nao(db):
     chúng tick — kế hoạch vừa lập ra đã có sẵn mục "đã xong".
     """
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV L12','hv_l12_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -374,8 +377,9 @@ def test_hoc_bai_moi_KHONG_tick_muc_ON_LAI_chu_de(db):
     viên cũng không hề làm hai việc. Bản cũ để chung một rổ nên MỘT lần hoàn
     thành bài tick xong HAI mục kế hoạch."""
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV L12b','hv_l12b_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -396,8 +400,9 @@ def test_hoc_bai_moi_KHONG_tick_muc_ON_LAI_chu_de(db):
 def test_quiz_on_tap_VAN_tick_duoc_muc_on_lai(db):
     """Siết mà siết luôn cả việc ôn thật thì kế hoạch không bao giờ xong."""
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV L12c','hv_l12c_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -417,8 +422,9 @@ def test_moc_san_ke_hoach_chinh_xac_toi_GIO(db):
     """Mốc sàn cắt về `date` thì kế hoạch sinh lúc 00:30 vẫn bị tick bởi việc
     làm lúc 00:10 CÙNG NGÀY — tức 20 phút TRƯỚC khi nó tồn tại."""
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV B16','hv_b16_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -441,8 +447,9 @@ def test_moc_san_ke_hoach_chinh_xac_toi_GIO(db):
 def test_viec_lam_SAU_khi_sinh_ke_hoach_van_tick_binh_thuong(db):
     """Siết mà siết luôn việc làm thật thì kế hoạch không bao giờ xong."""
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV B16b','hv_b16b_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -469,8 +476,9 @@ def test_muc_lam_xong_HOM_NAY_khong_bien_mat_vi_da_len_lich_tuan_truoc(db):
     còn ô tổng vẫn cộng thêm một. Hai con số cạnh nhau không khớp nhau.
     """
     from datetime import timedelta
-    from stats import plan
+
     from common.clock import local_now, local_today
+    from stats import plan
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV L12c','hv_l12c_tmp@example.com','x',0) RETURNING id")
     uid = r['id']
@@ -507,7 +515,7 @@ def test_khong_co_chu_de_MO_COI_giua_su_kien_va_giao_trinh(db):
     Đỏ thì làm gì: chép ngược `learning_events.topic` sang tên mới cho những dòng
     mồ côi (một câu UPDATE), rồi chạy lại. Đừng nới phép kiểm này ra.
     """
-    from stats.competency import chu_de_trong_giao_trinh, KIND_TO_SOURCE
+    from stats.competency import KIND_TO_SOURCE, chu_de_trong_giao_trinh
     hop_le = chu_de_trong_giao_trinh()
     assert hop_le, 'không đọc được danh mục chủ đề từ `lessons.module`'
     rows = q('''SELECT DISTINCT course_id, topic FROM learning_events

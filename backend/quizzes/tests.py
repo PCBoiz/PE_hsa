@@ -44,8 +44,9 @@ def quiz_user(temp_user):
 @pytest.fixture
 def other_api(db):
     # APIClient RIÊNG (không dùng chung fixture `api` với auth_api)
-    from accounts.models import User
     from rest_framework.test import APIClient
+
+    from accounts.models import User
     from common.db import q1 as _q1
     row = _q1("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id",
               ('Quiz Other', 'quiz_other_dj@example.com', 'x'))

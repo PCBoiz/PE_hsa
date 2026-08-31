@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 /**
  * Nút đổi sáng/tối cho khu `(standalone)`.
@@ -20,15 +20,28 @@ import { useEffect, useState } from 'react';
  * trước khi React chạy (script chống nháy màu), nên DOM là nguồn đã tính đủ cả
  * "chưa chọn thì theo hệ điều hành". Đọc lại `localStorage` ở đây là dựng lại
  * cùng phép suy ở chỗ thứ hai — và hai bản sẽ trôi.
+ *
+ * `useSyncExternalStore` chứ không `useState` + `useEffect`: DOM ở đây là một
+ * kho NGOÀI React, và bản `useEffect` đặt state ngay lúc gắn — một vòng render
+ * thừa, và eslint bắt đúng (`react-hooks/set-state-in-effect`). Bản này còn
+ * được thêm một thứ: `MutationObserver` giữ nút KHỚP với chủ đề kể cả khi thứ
+ * khác đổi nó (main.js trên trang legacy, hoặc một tab khác đã chuyển).
  */
+const dangKy = (goi: () => void) => {
+  const mo = new MutationObserver(goi);
+  mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  return () => mo.disconnect();
+};
+
+const docDOM = () => document.body.classList.contains('dark');
+/* Máy chủ không có `document`. Trả `false` để bản dựng sẵn khớp với nhánh
+   "sáng"; lượt đồng bộ đầu ở trình duyệt sẽ chỉnh lại nếu đang tối. */
+const docMayChu = () => false;
+
 export default function ThemeToggle({ className = '' }: { className?: string }) {
-  const [toi, setToi] = useState(false);
+  const toi = useSyncExternalStore(dangKy, docDOM, docMayChu);
 
-  useEffect(() => {
-    setToi(document.body.classList.contains('dark'));
-  }, []);
-
-  const doi = () => {
+  const doi = useCallback(() => {
     const moi = !document.body.classList.contains('dark');
     document.body.classList.toggle('dark', moi);
     document.body.classList.toggle('light', !moi);
@@ -37,8 +50,8 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     } catch {
       /* chế độ riêng tư chặn ghi — vẫn đổi được cho phiên này */
     }
-    setToi(moi);
-  };
+    // Không `setState`: `MutationObserver` ở trên thấy class đổi và tự đồng bộ.
+  }, []);
 
   return (
     <button

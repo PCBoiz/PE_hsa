@@ -1085,10 +1085,10 @@ function skSkillToggle(row) {
 
     if (!posts.length) {
       list.innerHTML = '';
-      empty && empty.classList.remove('hidden');
+      if (empty) empty.classList.remove('hidden');
       return;
     }
-    empty && empty.classList.add('hidden');
+    if (empty) empty.classList.add('hidden');
 
     list.innerHTML = posts.map(function (p, idx) {
       var catColor = CAT_COLORS[p.cat] || '#6B7280';

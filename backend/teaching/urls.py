@@ -1,7 +1,15 @@
 from django.urls import path
 
-from teaching import (admin_users, assignments, exports, overview, parent_report,
-                      sessions, terms, views)
+from teaching import (
+                      admin_users,
+                      assignments,
+                      exports,
+                      overview,
+                      parent_report,
+                      sessions,
+                      terms,
+                      views,
+)
 
 urlpatterns = [
     # ── Khu vực giảng dạy — quyền theo NGỮ CẢNH (lớp mình phụ trách) ──

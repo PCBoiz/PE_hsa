@@ -207,7 +207,7 @@
     var body = String(src).replace(/\^/g, '**')
       .replace(/\b(abs|sqrt|sin|cos|tan|log|exp|pow)\(/g, 'Math.$1(')
       .replace(/\bPI\b/g, 'Math.PI');
-    try { /* eslint-disable no-new-func */ return new Function('x', 'return (' + body + ');'); }
+    try {   return new Function('x', 'return (' + body + ');'); }
     catch (e) { return null; }
   }
   function renderCurve(v) {
@@ -656,10 +656,9 @@
   function saveProgress() {
     var no = state.lesson && state.lesson.index;
     if (!no) return;
-    // topic_tag dạng "Định lượng · Số học" → module = phần sau dấu ·, dùng làm
-    // nhóm chương cho trang Kỹ năng.
-    var tag = String(state.lesson.topic_tag || '');
-    var module = tag.indexOf('·') > -1 ? tag.split('·').pop().trim() : tag.trim();
+    // GỠ 01/09/2026: hai dòng tách `module` từ `topic_tag` được tính rồi VỨT
+    // ĐI — chú thích ngay dưới đã nói `module` thôi gửi từ L5 (31/08/2026),
+    // nhưng phép tính thì ở lại. Máy chủ tự suy chương từ `lessons.module`.
     fetch('/api/lessons/' + no + '/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -33,7 +33,7 @@ const escBodies = [...code.matchAll(/function\s+escHtml\s*\(s\)\s*\{([\s\S]*?)\n
 if (escBodies.length === 0) throw new Error('Không tìm thấy escHtml trong dashboard.js');
 const payload = '<img src=x onerror=alert(1)>';
 escBodies.forEach((m, i) => {
-  // eslint-disable-next-line no-new-func
+   
   const escHtml = new Function('s', m[1]);
   const escaped = escHtml(payload);
   check(`escHtml#${i + 1} chuyển < thành &lt;`, !escaped.includes('<img'));

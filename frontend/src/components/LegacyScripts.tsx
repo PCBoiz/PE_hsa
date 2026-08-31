@@ -35,7 +35,9 @@ function loadOrdered(srcs: string[]): void {
       document.body.appendChild(el);
     }));
   }
-  Promise.all(pending).then(() => document.dispatchEvent(new Event('pe:legacy-ready')));
+  // `void`: từng lời hứa ở trên `resolve()` cả khi script hỏng (xem nhánh
+  // `onerror`), nên `Promise.all` không thể bị từ chối.
+  void Promise.all(pending).then(() => document.dispatchEvent(new Event('pe:legacy-ready')));
 }
 
 export default function LegacyScripts({

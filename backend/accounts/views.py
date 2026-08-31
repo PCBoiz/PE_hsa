@@ -4,8 +4,6 @@ Khác biệt DUY NHẤT (có chủ đích, MIGRATION_NOTES §Auth): login/regist
 cặp JWT access/refresh thay vì set session cookie (frontend ở domain khác).
 """
 import json
-from datetime import datetime
-
 import logging
 
 from django.db import DatabaseError, IntegrityError, transaction
@@ -16,14 +14,17 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
-from accounts.validators import (validate_email_field, validate_name_field,
-                                 validate_password_field, validate_phone_field)
+from accounts.validators import (
+    validate_email_field,
+    validate_name_field,
+    validate_password_field,
+    validate_phone_field,
+)
 from common.clock import local_now
+from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
 from common.permissions import IsAdminRole
-from common.db import q, q1, x
 from common.throttling import LoginThrottle, RegisterThrottle
-
 
 logger = logging.getLogger(__name__)
 
@@ -498,7 +499,9 @@ def _generate_user_roadmap(uid, survey_id, data):
     lines.append(f'    hsa_mock["{n_mock}. Luyện đề tổng (CBT)"]')
     lines.append(f'    hsa_goal["{n_goal}. Về đích ({target})"]')
     ids += ['hsa_mock', 'hsa_goal']
-    for a, b in zip(ids, ids[1:]):
+    # `strict=False`: hai vế CỐ Ý lệch một phần tử — đây là cách ghép từng cặp
+    # liền kề, không phải ghép hai danh sách song song.
+    for a, b in zip(ids, ids[1:], strict=False):
         lines.append(f'    {a} --> {b}')
     mermaid_def = '\n'.join(lines) + '\n'
 

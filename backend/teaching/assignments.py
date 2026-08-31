@@ -29,8 +29,7 @@ from rest_framework.views import APIView
 from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
-from common.events import (KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct,
-                           record_events)
+from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, record_events
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from teaching.vocab import chi_hoc_vien
 

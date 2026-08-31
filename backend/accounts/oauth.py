@@ -16,8 +16,8 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from common.identity import norm_email
 from common.db import q1, x
+from common.identity import norm_email
 
 
 class LegacySocialAccountAdapter(DefaultSocialAccountAdapter):

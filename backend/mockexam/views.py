@@ -43,7 +43,7 @@ from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
-from common.db import q, q1, x, xn
+from common.db import q, q1, xn
 from common.events import KIND_MOCK, KIND_MOCK_SECTION, record_event
 from common.streak import award_xp, touch_streak
 

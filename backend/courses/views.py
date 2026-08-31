@@ -1,5 +1,4 @@
 """Port routes/courses.py — giữ nguyên SQL, tên field camelCase và message."""
-from datetime import datetime, timezone
 
 from django.core.cache import cache
 from django.db import transaction
@@ -8,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.clock import local_now
-from lessons.views import quen_ghi_danh
 from common.db import q, q1, x
+from lessons.views import quen_ghi_danh
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
 

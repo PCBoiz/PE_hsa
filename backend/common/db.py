@@ -23,9 +23,8 @@ gần như không bao giờ scale-to-zero khi backend đang chạy.
 import logging
 import time
 
-from psycopg import errors as psycopg_errors
-
 from django.db import InterfaceError, OperationalError, connection
+from psycopg import errors as psycopg_errors
 
 # Lỗi báo hiệu connection hỏng/đóng (Neon EOF, SSL abort, conn closed…).
 _CONN_ERR = (OperationalError, InterfaceError)
@@ -76,7 +75,10 @@ logger = logging.getLogger(__name__)
 
 def _dictfetchall(cursor):
     cols = [c[0] for c in cursor.description]
-    return [dict(zip(cols, row)) for row in cursor.fetchall()]
+    # `strict=True`: số cột và số giá trị PHẢI bằng nhau. Lệch nghĩa là hàng
+    # trả về không khớp `cursor.description` — `zip` mặc định sẽ lặng lẽ CẮT
+    # phần thừa, tức mất cột cuối mà không ai biết. Thà nổ ra.
+    return [dict(zip(cols, row, strict=True)) for row in cursor.fetchall()]
 
 
 def _reset_pool():
@@ -90,13 +92,16 @@ def _reset_pool():
     # Ghi log chứ không nuốt im lặng (RULES §8): nếu `close_pool()` hỏng thì
     # vòng thử lại bên dưới cứ chạy tiếp trên một pool đã chết, và không ai biết
     # vì sao mọi thứ chậm dần rồi đứng hẳn.
+    # noqa CÓ LÝ DO ở cả hai chỗ dưới: đây là DỌN DẸP cố-gắng-hết-sức trên một
+    # kết nối ĐÃ hỏng. Bất cứ thứ gì ném ra ở đây cũng không được chặn nhánh
+    # dọn dẹp còn lại — và cả hai đều GHI LOG, không nuốt im lặng (RULES §8).
     try:
         connection.close()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning('[db] không đóng được connection: %s', exc)
     try:
         connection.close_pool()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error('[db] KHÔNG hủy được pool — các lần thử lại sau sẽ chạy '
                      'trên pool cũ: %s', exc)
 
@@ -148,7 +153,7 @@ def q1(sql, params=None):
         if row is None:
             return None
         cols = [c[0] for c in cur.description]
-        return dict(zip(cols, row))
+        return dict(zip(cols, row, strict=True))   # xem `_dictfetchall`
     return _run(sql, params, _one)
 
 
