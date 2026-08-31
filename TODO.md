@@ -892,11 +892,29 @@ lớn hơn 100 thay vì 2. Nói ra để anh không giật mình khi thấy.
    `label` của `Td`) và mọi `<th>` có `scope="col"`. Đo trên màn hình thật:
    caption 1×1px `absolute` (thật sự ẩn), 8/8 `th` có scope.
 
-### [ ] T53-b · Còn lại của khối tiếp cận
-Chưa làm: `/dashboard` hiện số 0 giả lúc đang tải · chưa có `loading.tsx` · chưa
-có nút đổi bộ màu trong khu `(standalone)` · `HTTP_VI` có nhánh chết · bóng đổ
-bộ tối là mã chết · chính tả dấu không nhất quán (khóa/khoá, hủy/huỷ, xóa/xoá) ·
-hộp huỷ ghi danh (`main.js`) NAY đã dùng `window.bayTieuDiem` — đo: 12 lần Tab không thoát, đóng xong tiêu điểm về chỗ cũ, 0 lỗi JS.
+### [~] T53-b · Còn lại của khối tiếp cận — rà lại 01/09/2026
+Hai mục hoá ra **không còn đúng**, một mục hoá ra **sai từ đầu**:
+
+- **`/dashboard` hiện số 0 giả lúc đang tải — ĐÃ VÁ.** Đo bằng cách làm chậm mọi
+  lời gọi đọc 2,5 giây rồi chụp lúc 1,2 giây: bốn ô đều hiện dấu `—`, không phải
+  `0`. Cả thanh tiến trình cũng để trống.
+- **`HTTP_VI` có nhánh chết — SAI.** Mọi lỗi qua DRF đều mang khoá `error`
+  (`common/errors.api_exception_handler` là `EXCEPTION_HANDLER`), nên `errorText`
+  trả câu của máy chủ. Nhưng lỗi ở tầng DƯỚI DRF thì không có khoá ấy: 502 lúc
+  Render khởi động lại, 504, 413 của reverse proxy, trang lỗi HTML thô. Đó đúng
+  là lúc 12 câu tiếng Việt kia được dùng — và ở một trung tâm chạy 4G thì đó là
+  lỗi hay gặp. **Không xoá.**
+- **Mục điều hướng đang mở nằm NGOÀI tầm nhìn trên điện thoại — mục MỚI, đo hôm
+  nay.** Thanh nav `overflow-x: auto` có 8–10 mục mà ở 390px chỉ thấy 159px. Mở
+  `/dashboard#skills` thì trang Kỹ năng hiện đúng nhưng mục "Kỹ năng" nằm ở
+  238–282 trong khi thanh chỉ thấy 62–221 và `scrollLeft` = 0. Người dùng đang ở
+  một trang mà thanh điều hướng không cho biết mình ở đâu. Vá: `navigate()` kéo
+  mục đang mở vào giữa tầm nhìn (`block: 'nearest'` để không cuộn dọc cả trang).
+  Đo lại: `scrollLeft` 0 → 118, mục nằm gọn trong khung.
+
+Còn thật: chưa có `loading.tsx` · chưa có nút đổi bộ màu trong khu `(standalone)`
+· bóng đổ bộ tối là mã chết · chính tả dấu không nhất quán (khóa/khoá, hủy/huỷ,
+xóa/xoá).
 
 
 ---

@@ -688,6 +688,23 @@ function navigate(page) {
     ch.className = "nav-chevron";
     ch.textContent = "›";
     active.appendChild(ch);
+
+    /* KÉO mục đang mở vào tầm nhìn. Thanh nav `overflow-x: auto` và có 8–10
+       mục; ở 390px chỉ thấy được 159px của nó. Đo 01/09/2026: mở
+       `/dashboard#skills` trên điện thoại thì trang Kỹ năng hiện đúng nhưng mục
+       "Kỹ năng" nằm ở 238–282 trong khi thanh chỉ thấy 62–221 và `scrollLeft`
+       = 0 — người dùng đang ở một trang mà thanh điều hướng không hề cho biết
+       mình ở đâu.
+
+       `block: 'nearest'` để KHÔNG cuộn dọc cả trang: không có nó thì mỗi lần
+       chuyển trang là trang tự nhảy lên đầu, kể cả khi thanh nav đã nằm sẵn
+       trong tầm nhìn. */
+    try {
+      active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    } catch (_) {
+      /* trình duyệt cũ không nhận tham số dạng object — bỏ qua, đây là tiện
+         nghi chứ không phải đường đi bắt buộc */
+    }
   }
 
   var titleEl = document.getElementById("topbar-title");
