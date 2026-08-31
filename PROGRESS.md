@@ -1622,3 +1622,68 @@ cũ, đúng như phải thế (chỉ `days = 0` mới rơi vào nhánh sai).
 
 Frontend không mắc lỗi này — nó đã dùng `!= null` ở cả năm chỗ, và còn phân biệt
 "đã khảo sát nhưng mốc đã trôi qua" để dẫn thẳng vào Cài đặt.
+
+
+---
+
+## 31/08/2026 (tiếp) — L7 và L8, hai quyết định anh đã chốt
+
+### [x] L7 (XONG) · Học lại bài cũ GIỮ NGÀY ĐẦU
+`learning_events` có HAI cột thời gian và chúng trả lời HAI câu khác nhau. Bản
+cũ ghi đè cả hai khi học lại, nên chúng nói cùng một câu — và câu đó sai một
+nửa số nơi đọc.
+
+- **`event_date` nay GIỮ NGÀY ĐẦU** (`LEAST(...)`). Nó là trục thời gian của
+  đường cong tiến bộ và của "chỉ tiêu tuần". Ghi đè thẳng thì ôn lại một bài cũ
+  ĐỔI HÌNH DẠNG tuần trước: điểm biến khỏi chỗ nó từng ở, chỉ tiêu tuần nhích
+  lên trong khi nhiệm vụ ngày vẫn 0/1.
+- **`occurred_at` vẫn cập nhật.** Nó trả lời "lần gần nhất em chạm vào việc này".
+
+Đổi cột thì phải đổi cả bên đọc — hai nơi:
+- `teaching/reports._last_activity` chuyển sang `MAX(occurred_at)`. Giảng viên
+  nhìn cột này để biết em nào mất hút; hỏi sai câu thì một em ôn bài hôm nay
+  vẫn hiện là bặt tin từ tháng trước.
+- `stats/competency._events` chuyển sang `occurred_at::date`. Phép suy giảm hỏi
+  "kết quả này ĐO ĐƯỢC bao lâu rồi"; dùng ngày đầu là đánh tụt trọng số của
+  đúng phần em vừa ôn.
+
+Lùi mã cũ, phép kiểm đỏ đúng câu: *"ôn lại hôm nay mà ngày của lần đầu bị đẩy
+sang 2026-08-31"*. Phép kiểm thứ hai ("bảng của giảng viên đọc lần gần nhất")
+XANH cả trên mã cũ — nói ra chứ không tính vào thành tích: trên mã cũ hai cột
+trùng nhau nên nó chưa phân biệt được gì; nó là hàng rào cho tương lai.
+
+### [x] L8 (XONG) · Điểm đề thi thử GIỮ trong số hiện, TÁCH khỏi quyết định
+Đề thi thử chỉ chia theo HỢP PHẦN, không biết câu nào thuộc chủ đề nào — chính
+chú thích trong `competency.py` đã ghi *"dùng để chấm nhưng KHÔNG được tính là
+bằng chứng về chủ đề"*, nhưng mã thì rải đều 25% của nó vào MỌI ô chủ đề.
+
+Đo trên ba học viên thật, trước khi sửa:
+
+| học viên · chủ đề | số hiện (trộn) | chỉ bằng chứng chủ đề | chênh |
+|---|---|---|---|
+| id 9 · Đại số | 42 | **62** | 20 |
+| id 9 · Số học | 22 | 33 | 11 |
+| id 7 · Số học | 31 | 37 | 6 |
+
+Và hệ quả đo được trên lịch học:
+
+```
+mã cũ  → user 9: xếp lịch ôn ['Số học', 'Đại số']
+mã mới → user 9: xếp lịch ôn ['Số học']
+```
+
+"Đại số" biến khỏi danh sách vì 62 đã trên ngưỡng 60 — đúng 17 buổi "Ôn lại Đại
+số" mà bản audit đo được.
+
+Anh chốt "giữ nhưng tách hiển thị", nên:
+- `mastery` GIỮ NGUYÊN cách tính (vẫn gộp điểm đề) — đó là con số lớn trên ô.
+- `masteryTopic` mới, chỉ từ bằng chứng thật của chủ đề.
+- Mọi QUYẾT ĐỊNH (`_weak_topics`, ưu tiên cắt bài) chuyển sang `masteryTopic`.
+- Ô năng lực hiện thêm một dòng khi hai số khác nhau: *"Riêng chủ đề 62% · số
+  lớn đã gộp điểm đề thi thử"*. Im lặng thì con số 42 trông như một lời phán về
+  Đại số.
+
+Phép kiểm dựng kịch bản hai số nằm HAI BÊN ngưỡng, và có một assert riêng canh
+đúng điều đó — lần đầu chạy nó bắt được chính tôi đặt số sai (62 vs ngưỡng 60,
+chưa qua bên kia). Lùi mã cũ, nó đỏ đúng hệ quả: *"chủ đề làm 85% vẫn bị xếp
+lịch ôn vì điểm đề kéo xuống"*.

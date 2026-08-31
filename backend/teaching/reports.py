@@ -223,7 +223,12 @@ def _progress_by_user(uids):
 
 
 def _last_activity(uids):
-    rows = q('''SELECT user_id, MAX(event_date) AS last_day, COUNT(*) AS events
+    # `occurred_at` chứ KHÔNG `event_date`: từ 31/08/2026 `event_date` giữ NGÀY
+    # ĐẦU của một hoạt động (xem `common/events._ON_CONFLICT`), nên nó trả lời
+    # "lần đầu em làm việc này là khi nào" chứ không phải "lần gần nhất". Giảng
+    # viên nhìn cột này để biết em nào đang mất hút — hỏi sai câu thì một em ôn
+    # lại bài cũ hôm nay vẫn hiện là bặt tin từ tháng trước.
+    rows = q('''SELECT user_id, MAX(occurred_at)::date AS last_day, COUNT(*) AS events
                 FROM learning_events WHERE user_id = ANY(%s)
                 GROUP BY user_id''', (list(uids),)) if uids else []
     return {r['user_id']: r for r in rows}

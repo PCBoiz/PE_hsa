@@ -2862,6 +2862,16 @@ function forumClearSearch() {
     var meta = t.mastery == null
       ? (t.confidence ? ('cần thêm ' + thieu + ' bài nữa') : ('cần ' + thieu + ' bài để đánh giá'))
       : (t.confidence + ' hoạt động đã đo');
+    // HAI con số khi chúng khác nhau (L8, anh Sơn chốt "giữ nhưng tách hiển
+    // thị"). Số lớn đã gộp cả điểm đề thi thử — mà đề chỉ chia theo HỢP PHẦN,
+    // không biết câu nào thuộc chủ đề nào, nên nó được rải đều vào mọi ô của
+    // khoá. Đo: Đại số của một em là 62 theo bằng chứng chủ đề nhưng hiện 42
+    // sau khi trộn. Nói ra thì em biết nên ôn cái gì; im lặng thì con số 42
+    // trông như một lời phán về Đại số.
+    var tach = (t.masteryTopic != null && t.mastery != null && t.masteryTopic !== t.mastery)
+      ? '<div class="cmp-split">Riêng chủ đề <b>' + t.masteryTopic + '%</b>'
+        + ' · số lớn đã gộp điểm đề thi thử</div>'
+      : '';
     var next = t.suggestion
       ? '<a class="cmp-go" href="' + lessonHref(t.course, t.suggestion.lessonIndex) + '">Bài '
         + t.suggestion.lessonIndex + ' →</a>'
@@ -2883,6 +2893,7 @@ function forumClearSearch() {
       + bar
       + '<div class="cmp-meta"><span>' + t.lessonsDone + '/' + t.lessonsTotal + ' bài</span>' + next + '</div>'
       + '<div class="cmp-sub">' + meta + '</div>'
+      + tach
       + (t.conflict
         ? '<div class="cmp-warn">Bạn đánh dấu đã nắm, nhưng bài làm gần đây mới ' + t.mastery + '%.</div>'
         : '')

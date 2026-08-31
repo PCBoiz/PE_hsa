@@ -289,3 +289,44 @@ def test_ngay_thi_HOM_NAY_van_la_mot_moc_thi(db, con_lai, tuan_toi_da):
     so_tuan = tom_tat.get('weeksTotal') if isinstance(tom_tat, dict) else None
     assert so_tuan == tuan_toi_da, (
         'còn %d ngày mà kế hoạch dựng %s tuần' % (con_lai, so_tuan))
+
+
+# ── L8 · điểm đề thi thử GIỮ trong số hiện, TÁCH khỏi quyết định xếp lịch ────
+
+@pytest.mark.django_db
+def test_diem_de_thi_thu_khong_con_keo_chu_de_xuong_duoi_nguong(db):
+    """Đề thi thử chỉ chia theo HỢP PHẦN, không biết câu nào thuộc chủ đề nào —
+    nên nó bị rải đều 25% vào MỌI ô chủ đề của khoá.
+
+    Đo 31/08/2026 trên dữ liệu thật: Đại số của em id 9 là 62 theo bằng chứng
+    chủ đề nhưng hiện 42 sau khi trộn — dưới ngưỡng 60 nên hệ xếp lịch ôn lại.
+    Anh Sơn chốt "giữ nhưng tách hiển thị": `mastery` giữ nguyên để HIỆN,
+    `masteryTopic` chỉ từ bằng chứng chủ đề, và QUYẾT ĐỊNH dùng con số sau.
+    """
+    from stats import plan
+    from stats.competency import compute
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L8','hv_l8_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    bai = q1("SELECT course_id, module FROM lessons "
+             "WHERE module IS NOT NULL AND module <> '' LIMIT 1")
+
+    # Chủ đề làm rất tốt…
+    _su_kien(uid, 'lesson', 'lesson', '11', bai['course_id'], bai['module'], diem=85)
+    _su_kien(uid, 'review_quiz', 'quiz', '11', bai['course_id'], bai['module'], diem=85)
+    # …nhưng đề thi thử của cả khoá thì kém.
+    _su_kien(uid, 'mock_section', 'mock_attempt', '11', bai['course_id'], None, diem=0)
+
+    o = next(t for t in compute(uid)['topics']
+             if t['course'] == bai['course_id'] and t['topic'] == bai['module'])
+
+    # HỆ QUẢ trước, con số sau: thứ thật sự hại học viên là buổi ôn bị xếp thừa.
+    yeu = [t['topic'] for t in plan._weak_topics(compute(uid))]
+    assert bai['module'] not in yeu, (
+        'chủ đề làm 85%% vẫn bị xếp lịch ôn vì điểm đề kéo xuống: %s' % yeu)
+
+    assert o.get('masteryTopic') == 85, o
+    assert o['mastery'] < o['masteryTopic'], (
+        'số hiện phải VẪN gộp điểm đề (anh chốt "giữ"): %s' % o)
+    assert o['mastery'] < plan.REVIEW_BELOW <= o['masteryTopic'], (
+        'phép kiểm chỉ có nghĩa khi hai con số nằm hai bên ngưỡng: %s' % o)

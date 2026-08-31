@@ -108,14 +108,28 @@ def _interleave(by_course, order):
     return out
 
 
+def _diem_chu_de(t):
+    """Điểm dùng để QUYẾT ĐỊNH xếp lịch — chỉ từ bằng chứng thật của chủ đề.
+
+    `mastery` gộp cả điểm thi thử, mà đề thi thử chỉ chia theo hợp phần chứ
+    không biết câu nào thuộc chủ đề nào: nó bị rải đều 25% vào MỌI ô của khoá.
+    Đo 31/08/2026: Đại số của em id 9 đáng lẽ 62, hiện 42 vì bị kéo xuống —
+    dưới ngưỡng 60 nên hệ xếp 17 buổi "Ôn lại Đại số" vào lịch của em.
+
+    `mastery` vẫn giữ nguyên để HIỆN (anh Sơn chốt "giữ nhưng tách hiển thị");
+    chỉ QUYẾT ĐỊNH mới chuyển sang con số này.
+    """
+    return t.get('masteryTopic', t.get('mastery'))
+
+
 def _weak_topics(comp):
     """Chủ đề đã ĐO ĐƯỢC và đang dưới ngưỡng, yếu nhất trước.
 
     Chỉ lấy chủ đề có điểm: chưa đủ dữ liệu mà đã xếp lịch ôn là đoán mò.
     """
     measured = [t for t in (comp.get('topics') or [])
-                if t.get('mastery') is not None and t['mastery'] < REVIEW_BELOW]
-    return sorted(measured, key=lambda t: t['mastery'])
+                if _diem_chu_de(t) is not None and _diem_chu_de(t) < REVIEW_BELOW]
+    return sorted(measured, key=_diem_chu_de)
 
 
 def _drop_priority(lesson, mastery_by_cell):
@@ -157,7 +171,7 @@ def generate(uid):
     capacity = per_week * build_weeks
     dropped = []
     if len(lessons) > capacity:
-        mastery_by_cell = {(t['course'], t['topic']): t['mastery']
+        mastery_by_cell = {(t['course'], t['topic']): _diem_chu_de(t)
                            for t in (comp.get('topics') or [])}
         # Cắt bài của chủ đề ĐANG MẠNH trước; giữ bài của chủ đề yếu.
         ranked = sorted(range(len(lessons)),

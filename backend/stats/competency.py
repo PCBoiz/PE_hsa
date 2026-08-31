@@ -152,7 +152,13 @@ def _events(uid):
     đồ hiện "chưa đủ dữ liệu" — đúng sự thật — thay vì làm hỏng cả Trang của tôi.
     """
     try:
-        rows = q('''SELECT kind, course_id, topic, score, max_score, event_date,
+        # `occurred_at` chứ KHÔNG `event_date`: phép suy giảm hỏi "kết quả này
+        # ĐO ĐƯỢC bao lâu rồi", mà từ 31/08/2026 `event_date` giữ NGÀY ĐẦU. Em
+        # ôn lại một bài từ hai tháng trước thì bằng chứng là của HÔM NAY, không
+        # phải của hai tháng trước — dùng nhầm cột là đánh tụt trọng số của đúng
+        # phần em vừa ôn.
+        rows = q('''SELECT kind, course_id, topic, score, max_score,
+                           occurred_at::date AS event_date,
                            ref_type, ref_id
                     FROM learning_events
                     WHERE user_id = %s AND kind = ANY(%s)
@@ -178,11 +184,17 @@ def _events(uid):
     return by_cell, by_course
 
 
-def _mastery(sources, today):
-    """Gộp các nguồn có dữ liệu thành một điểm 0–100, chuẩn hoá lại trọng số."""
+def _mastery(sources, today, chi_chu_de=False):
+    """Gộp các nguồn có dữ liệu thành một điểm 0–100, chuẩn hoá lại trọng số.
+
+    ``chi_chu_de=True`` thì BỎ QUA nguồn không gắn với chủ đề (hiện chỉ có điểm
+    thi thử). Xem `compute` để biết vì sao cần cả hai con số.
+    """
     parts, weight_sum = 0.0, 0.0
     detail = {}
     for name, items in sources.items():
+        if chi_chu_de and name not in TOPIC_SOURCES:
+            continue
         mean = _decayed_mean([(v, d) for v, d, _ in items], today)
         if mean is None:
             continue
@@ -226,16 +238,30 @@ def compute(uid):
                       for _, _, ref in sources.get(name, []) if ref and ref[1]}
         confidence = len(activities)
 
+        # HAI con số, không phải một (L8, anh Sơn chốt 31/08/2026 "giữ nhưng
+        # tách hiển thị"). `mastery` gộp cả điểm thi thử — đề thi thử chỉ chia
+        # theo HỢP PHẦN chứ không biết câu nào thuộc chủ đề nào, nên nó là bối
+        # cảnh cấp khoá được rải đều 25% vào MỌI ô chủ đề của khoá đó.
+        #
+        # Đo được cái giá của việc trộn: Đại số của em id 9 đáng lẽ 62, hiện 42
+        # vì bị kéo xuống bởi điểm đề — dưới ngưỡng 60 nên hệ xếp 17 buổi "Ôn
+        # lại Đại số" vào lịch của em.
+        #
+        # Nên: `mastery` để HIỆN (giữ như anh chốt), `masteryTopic` chỉ từ bằng
+        # chứng thật của chủ đề, và mọi quyết định XẾP LỊCH dùng con số sau.
         mastery, detail = _mastery(sources, today)
+        mastery_topic, _ = _mastery(sources, today, chi_chu_de=True)
         if confidence < MIN_ACTIVITIES:
             # Có thể tính ra số, nhưng nói ra thì thành nói dối về độ chắc chắn.
             mastery = None
+            mastery_topic = None
         known = cell['known']
         topics.append({
             'course': course_id,
             'courseTitle': cell['courseTitle'],
             'topic': topic,
             'mastery': mastery,
+            'masteryTopic': mastery_topic,
             'confidence': confidence,
             'status': 'ok' if mastery is not None else (
                 'no_data' if confidence == 0 else 'low_data'),

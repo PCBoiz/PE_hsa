@@ -496,6 +496,11 @@ body.dark .prof-avatar         { border-color: var(--card); }
 .cmp-go:hover { text-decoration: underline; }
 .cmp-go.is-done { font-weight: 600; color: #0E7C6B; }
 .cmp-sub { margin-top: 2px; font-size: 10.5px; color: #7A7289; }
+/* Con số CHỦ ĐỀ, hiện khi nó khác con số lớn (đã gộp điểm đề thi thử).
+   Dẫn xuất từ currentColor để không phải khai lại cho nền tối. */
+.cmp-split { margin-top: 4px; font-size: 10.5px; line-height: 1.45; color: #7A7289;
+  padding-top: 4px; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+.cmp-split b { color: inherit; font-weight: 700; }
 
 .cmp-self {
   flex-shrink: 0; width: 26px; height: 26px; padding: 0;

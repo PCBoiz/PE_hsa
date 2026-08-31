@@ -133,8 +133,16 @@ _COLS = ('user_id, dedup_key, occurred_at, event_date, kind, course_id, topic, '
 _ROW = '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)'
 
 _ON_CONFLICT = '''ON CONFLICT (user_id, dedup_key) DO UPDATE SET
+        -- `occurred_at` LUÔN cập nhật: nó trả lời "lần gần nhất em chạm vào
+        -- việc này là khi nào", và đó là câu mà bảng theo dõi của giảng viên
+        -- cùng phép suy giảm của bản đồ năng lực cần.
         occurred_at = EXCLUDED.occurred_at,
-        event_date  = EXCLUDED.event_date,
+        -- `event_date` GIỮ NGÀY ĐẦU (anh Sơn chốt 31/08/2026). Nó là trục thời
+        -- gian của đường cong tiến bộ và của "chỉ tiêu tuần": ghi đè thẳng thì
+        -- ôn lại một bài cũ sẽ ĐỔI HÌNH DẠNG tuần trước — điểm biến khỏi chỗ nó
+        -- từng ở, "chỉ tiêu tuần" nhích lên trong khi "nhiệm vụ ngày" vẫn 0/1.
+        -- Quá khứ không được viết lại chỉ vì hôm nay ôn lại.
+        event_date  = LEAST(learning_events.event_date, EXCLUDED.event_date),
         course_id   = EXCLUDED.course_id,
         topic       = EXCLUDED.topic,
         -- COALESCE chứ không ghi đè thẳng: học lại một bài mà lần này không làm

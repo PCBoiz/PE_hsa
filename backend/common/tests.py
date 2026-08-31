@@ -142,3 +142,61 @@ def test_duong_cham_dung_quota_theo_nguoi_dung():
     from common.throttling import DailyUserThrottle, HourlyUserThrottle
     from lessons.views import CheckAnswersView
     assert CheckAnswersView.throttle_classes == [DailyUserThrottle, HourlyUserThrottle]
+
+
+# ── L7 · học lại bài cũ GIỮ NGÀY ĐẦU (anh Sơn chốt 31/08/2026) ──────────────
+
+@pytest.mark.django_db
+def test_hoc_lai_bai_cu_KHONG_viet_lai_qua_khu(em):
+    """`event_date` là trục thời gian của đường cong tiến bộ và "chỉ tiêu tuần".
+    Ghi đè thẳng thì ôn lại một bài cũ ĐỔI HÌNH DẠNG tuần trước: điểm biến khỏi
+    chỗ nó từng ở, chỉ tiêu tuần nhích lên trong khi nhiệm vụ ngày vẫn 0/1.
+
+    `occurred_at` thì NGƯỢC LẠI — nó phải cập nhật, vì nó trả lời "lần gần nhất
+    em chạm vào việc này".
+    """
+    from datetime import date, timedelta
+    from common.db import x as _x
+    from common.events import KIND_LESSON, record_event
+
+    cu = date.today() - timedelta(days=30)
+    record_event(em.id, KIND_LESSON, 'l7:test', occurred_at=cu, event_date=cu,
+                 ref_type='lesson', ref_id='777', score=50, max_score=100)
+    dong = q1("SELECT event_date, occurred_at FROM learning_events "
+              "WHERE user_id=%s AND dedup_key='l7:test'", (em.id,))
+    assert dong['event_date'] == cu
+
+    # Ôn lại hôm nay.
+    from common.clock import local_now
+    now = local_now()
+    record_event(em.id, KIND_LESSON, 'l7:test', occurred_at=now,
+                 ref_type='lesson', ref_id='777', score=90, max_score=100)
+    sau = q1("SELECT event_date, occurred_at, score FROM learning_events "
+             "WHERE user_id=%s AND dedup_key='l7:test'", (em.id,))
+    assert sau['event_date'] == cu, (
+        'ôn lại hôm nay mà ngày của lần đầu bị đẩy sang %s' % sau['event_date'])
+    assert sau['occurred_at'].date() == now.date(), '"lần gần nhất" phải cập nhật'
+    assert sau['score'] == 90, 'điểm mới vẫn phải ghi đè như cũ'
+    _x("DELETE FROM learning_events WHERE user_id=%s AND dedup_key='l7:test'", (em.id,))
+
+
+@pytest.mark.django_db
+def test_bang_theo_doi_cua_giang_vien_doc_LAN_GAN_NHAT(em):
+    """Giảng viên nhìn cột "hoạt động gần nhất" để biết em nào đang mất hút.
+    Đọc `event_date` (nay giữ ngày đầu) là hỏi sai câu."""
+    from datetime import date, timedelta
+    from common.db import x as _x
+    from common.events import KIND_LESSON, record_event
+    from teaching.reports import _last_activity
+
+    cu = date.today() - timedelta(days=40)
+    record_event(em.id, KIND_LESSON, 'l7:hd', occurred_at=cu, event_date=cu,
+                 ref_type='lesson', ref_id='778', score=50, max_score=100)
+    from common.clock import local_now
+    record_event(em.id, KIND_LESSON, 'l7:hd', occurred_at=local_now(),
+                 ref_type='lesson', ref_id='778', score=60, max_score=100)
+
+    ra = _last_activity([em.id])[em.id]
+    assert ra['last_day'] == date.today(), (
+        'em vừa ôn bài hôm nay mà bảng nói hoạt động gần nhất là %s' % ra['last_day'])
+    _x("DELETE FROM learning_events WHERE user_id=%s AND dedup_key='l7:hd'", (em.id,))
