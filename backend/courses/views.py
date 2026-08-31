@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.clock import local_now
+from lessons.views import quen_ghi_danh
 from common.db import q, q1, x
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
@@ -182,11 +183,20 @@ class EnrollView(APIView):
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
         first_lesson = 'Bài 1: ' + course['title']
         with transaction.atomic():
+            # `local_now()` chứ không `now()` của SQL. Kết nối Neon chạy ở UTC,
+            # lệch 7 tiếng so với giờ Việt Nam — đo 31/08/2026: `local_now()`
+            # trả 13:57 trong khi `SELECT now()` trả 06:57. Cửa sổ hỏng là
+            # 00:00–07:00 giờ VN: một thao tác lúc 00:30 ngày 1/9 được lưu
+            # thành 17:30 ngày 31/8, và mọi báo cáo nhóm theo ngày đếm lệch
+            # một ngày. Đây là bẫy mà `common/clock.py` được viết ra để dập;
+            # `lessons/`, `mockexam/`, `quizzes/` đã đi qua nó, ba chỗ này thì
+            # còn sót.
             x('''INSERT INTO enrollments (user_id, course_id, progress, completed_lessons,
-                                          time_spent, last_lesson, next_lesson)
-                 VALUES (%s, %s, 0, 0, '0h', '', %s)
+                                          time_spent, last_lesson, next_lesson, enrolled_at)
+                 VALUES (%s, %s, 0, 0, '0h', '', %s, %s)
                  ON CONFLICT (user_id, course_id) DO NOTHING''',
-              (uid, course_id, first_lesson))
+              (uid, course_id, first_lesson, local_now()))
+            quen_ghi_danh(uid, course_id)
             # Re-enroll sau unenroll: lesson_progress (nguồn thật) vẫn giữ tiến độ
             # cũ — tính lại cache để dashboard không hiển thị 0% sai.
             done_row = q1('''SELECT COUNT(*) AS n,
@@ -205,8 +215,11 @@ class EnrollView(APIView):
         return Response({'ok': True})
 
     def delete(self, request, course_id):
-        x('DELETE FROM enrollments WHERE user_id=%s AND course_id=%s',
-          (request.user.id, course_id))
+        uid = request.user.id
+        x('DELETE FROM enrollments WHERE user_id=%s AND course_id=%s', (uid, course_id))
+        # Xoá đệm NGAY: đệm ghi danh sống 60 giây, không xoá thì em vừa huỷ vẫn
+        # đọc được nội dung khoá thêm một phút.
+        quen_ghi_danh(uid, course_id)
         return Response({'ok': True})
 
 

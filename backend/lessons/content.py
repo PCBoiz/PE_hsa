@@ -29,6 +29,7 @@ Hình dạng một bài (giữ NGUYÊN schema mà engine đang dùng, không ph�
 import json
 
 from common.db import q, q1
+from lessons.grading import bo_dap_an
 
 #: Trường bắt buộc — thiếu một trong số này thì engine sẽ hỏng giữa chừng.
 REQUIRED = ('id', 'index', 'title', 'test', 'theory')
@@ -131,7 +132,10 @@ def course_content(course_id):
             continue
         # sort_order là nguồn thứ tự thật; index trong JSON chỉ để hiển thị.
         data.setdefault('index', r['sort_order'])
-        out.append(data)
+        # CẮT ĐÁP ÁN. Cắt ở đây chứ không ở view: hai đường đọc nội dung
+        # (`course_content` và `one_lesson`) đều đi qua tệp này, và một endpoint
+        # mới quên cắt là lộ lại toàn bộ. Xem `lessons/grading.py`.
+        out.append(bo_dap_an(data))
     return out
 
 
@@ -157,4 +161,4 @@ def one_lesson(course_id, index):
     if not isinstance(data, dict):
         return None, total
     data.setdefault('index', index)
-    return data, total
+    return bo_dap_an(data), total

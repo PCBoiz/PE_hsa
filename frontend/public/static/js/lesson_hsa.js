@@ -8,7 +8,8 @@
 (function () {
   'use strict';
 
-  var state = { courseId: null, lesson: null, step: 1, answers: {}, score: 0, total: 0, level: 'ok', graded: false };
+  var state = { courseId: null, lesson: null, step: 1, answers: {}, results: {},
+              score: 0, total: 0, level: 'ok', graded: false };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -64,31 +65,70 @@
     });
   }
 
-  function gradeTest() {
+  /* Chấm Ở MÁY CHỦ.
+     Trước 31/08/2026 hàm này so `state.answers[q.id]` với `q.answer` — mà
+     `q.answer` đi kèm nội dung bài xuống trình duyệt TRƯỚC khi học viên trả
+     lời. Đo được: một request lấy 297 đáp án của cả khoá, và
+     `POST complete {"quizScore": 999999}` được nhận. Nay `answer` không còn
+     trong nội dung nữa (`lessons/grading.bo_dap_an`), nên hàm này BUỘC phải
+     hỏi máy chủ — và đó chính là điều kiện khiến điểm trở thành bằng chứng.
+
+     Bất đồng bộ: nút gọi phải `await` nó. `state.results` giữ kết quả để bước
+     ĐÁNH GIÁ vẽ lại, thay cho `q.answer` đã biến mất. */
+  async function gradeTest() {
     var qs = (state.lesson.test && state.lesson.test.questions) || [];
     var missing = qs.filter(function (q) { var a = state.answers[q.id]; return a == null || String(a).trim() === ''; });
     if (missing.length) { flashNote('Hãy trả lời đủ ' + qs.length + ' câu trước khi xem đánh giá.'); return false; }
-    var score = 0;
-    qs.forEach(function (q) { if (norm(state.answers[q.id]) === norm(q.answer)) score++; });
-    state.score = score;
+
+    var d = await checkOnServer('test', state.answers);
+    if (!d) {
+      /* Mất mạng giữa chừng: KHÔNG chấm bừa 0 điểm và KHÔNG cho đi tiếp — bài
+         này quyết định nhánh lý thuyết và điểm vào sổ. Thà bảo họ thử lại. */
+      flashNote('Chưa chấm được — kiểm tra mạng rồi bấm lại.');
+      return false;
+    }
+    state.results = d.results || {};
+    state.score = d.correct || 0;
     var a = state.lesson.assess || { strong_min: qs.length, ok_min: Math.ceil(qs.length / 2) };
-    state.level = score >= (a.strong_min || qs.length) ? 'strong' : (score >= (a.ok_min || 1) ? 'ok' : 'weak');
+    state.level = state.score >= (a.strong_min || qs.length) ? 'strong'
+                : (state.score >= (a.ok_min || 1) ? 'ok' : 'weak');
     state.graded = true;
     renderAssess();
     return true;
+  }
+
+  /* Gọi đường chấm. Trả `null` khi không gọi được — nơi gọi tự quyết định nói
+     gì, chứ hàm này không bịa ra một kết quả nào. */
+  async function checkOnServer(phan, answers) {
+    try {
+      var r = await fetch('/api/courses/' + encodeURIComponent(state.courseId) +
+                          '/lessons/' + encodeURIComponent(state.lesson.index) + '/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ phan: phan, answers: answers }),
+      });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (e) {
+      return null;
+    }
   }
 
   /* ── Bước 2: ĐÁNH GIÁ ─────────────────────────────────────────── */
   function renderAssess() {
     var lv = LEVELS[state.level];
     var qs = (state.lesson.test && state.lesson.test.questions) || [];
+    /* Đáp án và lời giải nay đến TỪ MÁY CHỦ, sau khi đã nhận câu trả lời —
+       chúng không còn nằm trong `state.lesson`. */
     var rows = qs.map(function (q, i) {
-      var ok = norm(state.answers[q.id]) === norm(q.answer);
+      var kq = (state.results || {})[q.id] || {};
+      var ok = !!kq.correct;
       return '<li class="hsa-rev ' + (ok ? 'ok' : 'no') + '">' +
         '<span class="hsa-rev-ic">' + (ok ? '✓' : '✕') + '</span>' +
         '<span class="hsa-rev-q">Câu ' + (i + 1) + '</span>' +
-        '<span class="hsa-rev-ans">Đáp án: <b>' + esc(q.answer) + '</b>' +
-        (q.explain ? ' — ' + esc(q.explain) : '') + '</span></li>';
+        '<span class="hsa-rev-ans">Đáp án: <b>' + esc(kq.answer == null ? '—' : kq.answer) + '</b>' +
+        (kq.explain ? ' — ' + esc(kq.explain) : '') + '</span></li>';
     }).join('');
     $('hsa-assess').innerHTML =
       '<div class="hsa-score-card ' + lv.cls + '">' +
@@ -541,9 +581,19 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function navNext() {
-    if (state.step === 1) { gradeTest() && goToStep(2); }
-    else if (state.step === LAST_STEP) { complete(); }
+  var dangCham = false;
+  async function navNext() {
+    if (state.step === 1) {
+      /* `gradeTest` nay BẤT ĐỒNG BỘ (chấm ở máy chủ). Không `await` thì nó trả
+         về một Promise — thứ luôn truthy — nên `&& goToStep(2)` sẽ nhảy sang
+         bước ĐÁNH GIÁ trước khi có kết quả, và màn hình vẽ 0/3 cho một bài làm
+         đúng hết. Đúng loại lỗi "màn hình xanh, số sai" mà cả dự án đang truy.
+         `dangCham` chặn bấm hai lần: một lượt chấm là một lượt ghi. */
+      if (dangCham) return;
+      dangCham = true;
+      try { if (await gradeTest()) goToStep(2); }
+      finally { dangCham = false; }
+    } else if (state.step === LAST_STEP) { complete(); }
     else { goToStep(state.step + 1); }
   }
   function navBack() { if (state.step > 1) goToStep(state.step - 1); }
@@ -588,7 +638,11 @@
         courseId: state.courseId,
         lessonTitle: state.lesson.title || '',
         module: module,
-        quizScore: state.total ? Math.round(state.score / state.total * 100) : null,
+        /* GỬI CÂU TRẢ LỜI, KHÔNG GỬI ĐIỂM. Máy chủ chấm lại từ đáp án trong
+           CSDL — xem `lessons/grading.py`. `quizScore` cũ đã bị máy chủ BỎ QUA
+           (ghi bài xong nhưng không ghi điểm), nên gửi nó lên chỉ để lại một
+           dòng nhật ký; thôi gửi hẳn cho khỏi ai tưởng nó còn tác dụng. */
+        answers: state.answers,
         xpEarned: xp,
         drill: drillResult()
       })

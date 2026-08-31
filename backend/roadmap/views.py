@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.views import _pick_roadmap_template
+from common.clock import local_now
 from common.db import q, q1, x
 
 _TEMPLATE_ORDER = """
@@ -97,11 +98,14 @@ class MyRoadmapView(APIView):
         body = request.data if isinstance(request.data, dict) else {}
         mdef = body.get('mermaid_def', '')
         rid = f'u{uid}_custom'
+        # `local_now()` chứ không `now()` của SQL — xem chú thích ở
+        # `common/clock.py`. Kết nối Neon chạy UTC, lệch 7 tiếng.
+        gio = local_now()
         x('''INSERT INTO roadmaps (id, user_id, source, mermaid_def, updated_at)
-             VALUES (%s, %s, 'custom', %s, now())
+             VALUES (%s, %s, 'custom', %s, %s)
              ON CONFLICT (id) DO UPDATE
-                 SET mermaid_def = EXCLUDED.mermaid_def, updated_at = now()''',
-          (rid, uid, mdef))
+                 SET mermaid_def = EXCLUDED.mermaid_def, updated_at = EXCLUDED.updated_at''',
+          (rid, uid, mdef, gio))
         return Response({'ok': True})
 
 
@@ -120,8 +124,8 @@ class UpdateRoadmapItemView(APIView):
         if not roadmap_id:
             return Response({'error': 'roadmap_id là bắt buộc'}, status=400)
         x('''INSERT INTO roadmap_progress (user_id, roadmap_id, item_id, done, completed_at)
-             VALUES (%s,%s,%s,%s, CASE WHEN %s THEN now() END)
+             VALUES (%s,%s,%s,%s, CASE WHEN %s THEN %s END)
              ON CONFLICT (user_id, roadmap_id, item_id) DO UPDATE
                  SET done=EXCLUDED.done, completed_at=EXCLUDED.completed_at''',
-          (uid, roadmap_id, item_id, done, done))
+          (uid, roadmap_id, item_id, done, done, local_now()))
         return Response({'ok': True})

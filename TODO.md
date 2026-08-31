@@ -1015,3 +1015,123 @@ thấy 14`.
 ### [ ] Đang chạy · Audit khu HỌC VIÊN (anh chốt "tất cả, theo thứ tự")
 Hai agent đang soi `stats/` và `lessons/ quizzes/ roadmap/ courses/` — hai khu
 CHƯA từng được audit lần nào, mà 99% người dùng ở đó.
+
+
+---
+
+## Audit khu HỌC VIÊN 31/08/2026 — hai khu chưa ai soi, và lỗ nặng nhất cả sản phẩm
+
+Hai agent soi `stats/` và `lessons/ quizzes/ roadmap/ courses/`. 8 + 11 phát
+hiện đã chứng minh. Anh chốt ba quyết định trước khi tôi bắt tay.
+
+### [x] L1 (XONG) · Đáp án đi xuống trình duyệt TRƯỚC khi học viên trả lời
+**Nặng nhất cả phiên.** Đo trong trình duyệt thật, ngay khi trang vừa mở:
+`GET /api/courses/hsa_quantitative/content` → **297 trường `answer`** của cả
+khoá, kể cả người chưa ghi danh. Và điểm thì do chính trình duyệt tự chấm rồi
+tự khai: `POST complete {"quizScore": 999999}` → 200, ghi thẳng vào CSDL.
+
+Nghĩa là con số nuôi bản đồ năng lực, sổ điểm của giảng viên và nhánh lý thuyết
+thích ứng là con số HỌC VIÊN TỰ KHAI. Toàn bộ hệ đo lường của trung tâm không
+có giá trị chứng cứ.
+
+Anh chốt **vá toàn diện**. Đã làm:
+- `lessons/grading.py` mới — nơi DUY NHẤT biết đáp án. Ba luật: đáp án không rời
+  máy chủ trước khi học viên trả lời · điểm được TÍNH chứ không được NHẬN · đáp
+  án đúng chỉ lộ SAU khi đã nhận câu trả lời cho đúng câu đó.
+- `bo_dap_an` cắt `answer`/`explain` ở `content.py` — tức ở TẦNG ĐỌC, không ở
+  từng view, để một endpoint mới quên cắt không làm lộ lại toàn bộ.
+- `POST /api/courses/<khoá>/lessons/<số>/check` — chấm ở máy chủ, có đệm 60 giây
+  cho bảng đáp án và cho phép kiểm ghi danh (đo: 270ms → **1ms** từ lần thứ hai,
+  đủ cho phòng luyện bấm giờ).
+- `CompleteLessonView` nhận `answers` và tự chấm. `quizScore` từ engine bản cũ
+  bị **BỎ QUA** — bài vẫn hoàn thành, XP vẫn cộng, nhưng không ghi một con số
+  người dùng tự khai. "Không biết điểm" và "điểm 100 vì người dùng nói thế" là
+  hai chuyện khác nhau.
+- Có ghi danh mới đọc được nội dung.
+- Engine (`lesson_hsa.js`) gọi đường chấm; phần xem lại vẽ đáp án và lời giải
+  TỪ phản hồi máy chủ.
+
+Đo lại end-to-end trong trình duyệt: nội dung **0 đáp án** · em trả lời 2 đúng 1
+sai → máy chủ chấm **2/3** · đáp án và lời giải hiện ra sau khi nộp · thân
+`/complete` gửi `answers`, không còn `quizScore`. **9/9 phép kiểm.**
+
+`lessons/tests.py` mới — 8 phép kiểm, trong đó hai cái quan trọng nhất (đáp án
+có lộ không · chưa ghi danh có đọc được không) CHẠY ĐƯỢC trên mã cũ và đỏ ở đó
+đúng lý do.
+
+### [x] L2 (XONG) · Hai trong bốn học viên thật đang hỏng
+Em id 9 học xong 5 bài nhưng `enrollments` rỗng → "Khoá học của tôi" trống,
+trang khoá 0%, quiz ôn tập khoá vĩnh viễn — trong khi trang Kỹ năng nói 19%.
+Nguyên nhân: đường DUY NHẤT tạo dòng `enrollments` là nút "Đăng ký học" ở trang
+chi tiết khoá; vào thẳng `/lesson/<khoá>` thì học được nhưng không ghi danh — mà
+đó chính là đường mọi liên kết "Học tiếp" dẫn tới.
+
+`CompleteLessonView` nay tự ghi danh. Dữ liệu cũ: anh chốt vá luôn trên Neon —
+chạy khô in ra đúng hai dòng rồi mới áp, `enrollments` 4 → 6, các bảng khác
+không đổi một dòng. Đo lại: `/api/enrolled` của em 9 nay trả 19%.
+
+### [x] L3 (XONG) · Đồng hồ UTC còn sót
+`roadmap_progress.completed_at`, `roadmaps.updated_at`, `enrollments.enrolled_at`
+còn dùng `now()` của SQL — lệch 7 tiếng. Cửa sổ hỏng là 00:00–07:00 giờ VN: ghi
+danh lúc 00:30 ngày 1/9 được lưu thành 17:30 ngày 31/8. Nay đều `local_now()`.
+
+### [ ] L4 · Thi thử — anh chốt "một lượt tính điểm, làm lại không cộng XP"
+Đo được: nộp RỖNG → nhận đủ 9 đáp án → nộp lại → **9/9, +100 XP**; không giới
+hạn lượt; đồng hồ hoàn toàn ở máy khách (`duration_seconds` nhận cả **−5000**);
+`started_at` có cột nhưng KHÔNG dòng mã nào ghi; `MockSubmitView` không lọc
+`is_published`. Chưa làm.
+
+### [ ] L5 · Học viên tạo được bài học GIẢ trong bảng dùng chung
+`_resolve_lesson_id` INSERT vào `lessons` từ endpoint của học viên: đo được một
+dòng `"<b>BAI GIA MAO</b>"` với `sort_order 9999`. `SkillsView` đọc `lessons`
+không lọc theo user, nên dòng giả hiện trong trang Kỹ năng của MỌI học viên.
+Kèm: đánh dấu xong bài chưa mở khoá (bài 27 khi mới học 5 bài) → 200.
+
+### [ ] L6 · Làm lại bài ghi đè điểm cũ bằng điểm mới THẤP HƠN
+`quiz_score` dùng `COALESCE` trong khi `xp_earned` dùng `GREATEST` — cùng một
+bảng, hai chính sách. Ôn lại bài đã 100 rồi bấm cẩu thả là điểm tụt, không có
+đường khôi phục.
+
+### [ ] L7 · Anh chốt: học lại bài cũ GIỮ NGÀY ĐẦU
+`lesson_progress.completed_at` giữ lần đầu nhưng `learning_events.event_date`
+nhảy sang hôm nay → đường cong tiến bộ của tuần trước ĐỔI HÌNH DẠNG, và "Chỉ
+tiêu tuần" nhích lên trong khi "Nhiệm vụ ngày" vẫn 0/1. Cần `event_date` giữ lần
+đầu, "hoạt động gần nhất" chuyển sang đọc `occurred_at`.
+
+### [ ] L8 · Anh chốt: điểm thi thử GIỮ nhưng TÁCH hiển thị
+Điểm cả đề đang tính 25% vào TỪNG ô chủ đề. Đại số của em id 9 đáng lẽ 62, hiện
+42 → dưới ngưỡng 60 → hệ xếp **17 buổi "Ôn lại Đại số"** vào lịch của em. Cần ô
+hiện hai số rõ ràng ("chủ đề 62 · đề thi thử 0") và chốt ngưỡng xếp lịch ôn dùng
+số nào.
+
+### [ ] L9 · `MIN_ACTIVITIES` gộp nhầm hai hoạt động khác loại
+Đếm bằng `ref_id` trần, mà quiz #2 và bài học #2 là hai không gian id riêng. Đo:
+cùng khối lượng học, một bên hiện 36 một bên hiện "—", khác biệt duy nhất là số
+thứ tự trong CSDL. Sửa: khoá `(ref_type, ref_id)` — một dòng.
+
+### [ ] L10 · Ngày thi HÔM NAY bị coi là "chưa đặt mốc thi"
+`days_to_exam` trả `0`, và ba nơi tiêu thụ dùng `if days` — `0` là falsy. Còn 1
+ngày → chế độ báo động (3 đề/tuần, cảnh báo "bỏ 68 bài"); còn 0 ngày → chế độ
+thư thả (1 đề/tuần, cảnh báo biến mất, lịch trải 12 tuần). Và câu chữ "CHƯA ĐẶT
+MỐC THI" là lời nói dối thẳng. Với ngày thi đã qua thì tình trạng này VĨNH VIỄN.
+
+### [ ] L11 · Bốn endpoint trả 500 với tham số không phải số
+`?weeks=abc`, `?limit=abc`, `?days=abc`, `?weeks=1e9` → 500. Cần một helper
+`_so_nguyen(value, mặc_định, lo, hi)` dùng chung.
+
+### [ ] L12 · Kế hoạch vừa sinh đã có mục "đã xong"; `totals.done` không hiện ra
+`floor` dùng thứ Hai của tuần sinh thay vì `generated_at`, nên hoạt động làm
+TRƯỚC khi kế hoạch tồn tại vẫn tick nó. Và mục "Ôn lại" bị tick bởi một bài học
+thường. Riêng `totals.done` thì mã làm NGƯỢC với chú thích của chính nó: chú
+thích viết "không giấu đi", mã lọc `k >= today_key`.
+
+### [ ] L13 · Xem lại quiz ôn tập hiện MÃ lựa chọn, không bao giờ hiện lời giải
+In ra "Bạn chọn: o1 — Đáp án đúng: o2". `explanation` luôn `None` vì pool chỉ
+dựng `{id, text, correct}`, trong khi dữ liệu gốc có `explain` ở cấp câu hỏi.
+
+### [ ] L14 · Ngưỡng mở quiz ôn tập: giao diện nói "5 BÀI", máy chủ kiểm "5 CÂU"
+Ba câu phát biểu khác nhau cho cùng một luật.
+
+### [ ] L15 · Điểm sao 5.0 trên mọi trang khoá là con số CỨNG
+`courses.rating` = 5.0 cho cả ba khoá; `course_ratings` rỗng; `CourseRatingView`
+tính đúng nhưng KHÔNG ai gọi (grep frontend: 0 kết quả).

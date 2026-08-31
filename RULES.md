@@ -243,3 +243,33 @@ khôi phục nội dung của `accounts/views.py` **đè lên** `teaching/views.
 đủ đã thay `/` bằng `_`, không dùng `basename`. Và sau mọi lần khôi phục, kiểm
 lại bằng `git diff --stat` — con số dòng thêm/bớt phải khớp với thứ mình định
 làm, không phải "trông có vẻ ổn".
+
+
+---
+
+## §18 · Kiểm một lỗ hổng GHI thì phải bọc cuộn lại — kể cả khi "chỉ thử một phát"
+
+Ngày 31/08/2026, để chứng minh lỗ "học viên tự khai điểm" đã bịt, tôi gọi thật
+`POST /api/lessons/1/complete {"quizScore": 999999}` **không bọc giao dịch**.
+Nó ghi vào CSDL production của một học viên thật: `quiz_score` bị ghi đè,
+`event_date` bị đẩy từ 24/08 sang 31/08, `meta` mất tên bài.
+
+Giá trị gốc của `quiz_score` **không còn dấu vết nào** — chính kịch bản nạp dữ
+liệu lấy nó từ `lesson_progress`, nên khi tôi ghi đè cả hai thì không còn nguồn
+nào để đối chiếu. Bốn bài còn lại của em là 60/70/80/90 nên bài 1 gần như chắc
+chắn là 50, nhưng "gần như chắc chắn" không phải là số đo. Anh chốt đặt NULL —
+"chưa đo được" — thay vì bịa lại.
+
+**Vì sao tôi mắc:** mọi phép kiểm ĐỌC trước đó đều an toàn, nên tôi trượt sang
+phép kiểm GHI theo quán tính, trong cùng một khối lệnh, không dừng lại hỏi
+"lệnh này có ghi không".
+
+**Bắt buộc:**
+- Trước mỗi lời gọi trong một kịch bản kiểm, hỏi **"nó có GHI không"**. `POST`,
+  `PUT`, `PATCH`, `DELETE` mặc định là CÓ.
+- Mọi phép kiểm chạm đường ghi phải nằm trong `transaction.atomic()` + `raise`,
+  và phải IN số dòng trước/sau. Không có ngoại lệ cho "chỉ thử một phát".
+- Muốn thử nhanh một endpoint ghi thì dựng tài khoản/bản ghi riêng TRONG cùng
+  giao dịch cuộn lại, đừng mượn dữ liệu người thật.
+- Làm hỏng rồi thì **nói ngay, đo chính xác thiệt hại, và hỏi trước khi "sửa"**
+  — vì cách sửa sai thứ hai là bịa lại một con số trông hợp lý.

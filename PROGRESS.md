@@ -1185,3 +1185,58 @@ ngay sau đó, chứ không lệnh nào báo lỗi. Từ nay dùng `git stash`. 
 
 Hai agent soi `stats/` và `lessons/ quizzes/ roadmap/ courses/` — hai khu CHƯA
 từng được audit lần nào, mà 99% người dùng ở đó.
+
+
+---
+
+## 31/08/2026 (tiếp) — audit khu HỌC VIÊN, và lỗ nặng nhất cả sản phẩm
+
+Hai khu chưa ai soi lần nào (`stats/` và `lessons/ quizzes/ roadmap/ courses/`)
+— mà 99% người dùng ở đó. 8 + 11 phát hiện đã chứng minh.
+
+### Lỗ nặng nhất: hệ đo lường năng lực không có giá trị chứng cứ
+
+Đo trong trình duyệt thật, ngay khi trang vừa mở và TRƯỚC khi bấm gì: một
+request lấy **297 đáp án của cả khoá**, kể cả người chưa ghi danh. Và điểm thì
+do chính trình duyệt tự chấm rồi tự khai — `{"quizScore": 999999}` được ghi
+thẳng vào CSDL. Con số đó nuôi bản đồ năng lực, sổ điểm giảng viên và nhánh lý
+thuyết thích ứng.
+
+Anh chốt vá toàn diện. `lessons/grading.py` mới giữ ba luật: đáp án không rời
+máy chủ trước khi học viên trả lời · điểm được TÍNH chứ không được NHẬN · đáp án
+chỉ lộ SAU khi đã nhận câu trả lời cho đúng câu đó (gửi `answers` rỗng không moi
+được gì — nếu không thì endpoint chấm chính là cửa sau thay cho lỗ vừa bịt).
+
+Đo lại end-to-end: nội dung **0 đáp án**, em trả lời 2 đúng 1 sai → máy chủ chấm
+**2/3**, đáp án và lời giải hiện ra sau khi nộp, thân `/complete` gửi `answers`
+chứ không gửi điểm. 9/9. Đệm 60 giây đưa lần chấm thứ hai từ 270ms xuống **1ms**
+— đủ nhanh cho phòng luyện bấm giờ.
+
+### Hai học viên thật đang hỏng, đã vá cả mã lẫn dữ liệu
+
+Em id 9 học xong 5 bài nhưng `enrollments` rỗng → màn hình trống, quiz ôn tập
+khoá vĩnh viễn, trong khi trang Kỹ năng nói 19%. Đường DUY NHẤT tạo dòng ghi
+danh là nút ở trang chi tiết khoá; vào thẳng `/lesson/<khoá>` thì không — mà đó
+là đường mọi liên kết "Học tiếp" dẫn tới. Nay tự ghi danh khi bắt đầu học; dữ
+liệu cũ bù bằng một lệnh chạy khô trước (4 → 6 dòng, bảng khác không đổi).
+
+### TÔI LÀM HỎNG DỮ LIỆU PRODUCTION
+
+Lúc kiểm lỗ "tự khai điểm", tôi gọi thật `POST complete {quizScore: 999999}`
+**không bọc giao dịch cuộn lại**. Nó ghi đè `quiz_score` của bài 1 của em id 9,
+đẩy `event_date` từ 24/08 sang 31/08, xoá `meta.title`.
+
+Giá trị gốc **không còn dấu vết nào** — kịch bản backfill lấy score TỪ
+`lesson_progress`, nên ghi đè cả hai là mất hẳn nguồn đối chiếu. Bốn bài còn lại
+là 60/70/80/90 nên bài 1 gần như chắc chắn là 50, nhưng "gần như chắc chắn"
+không phải số đo. Tôi báo ngay, đo chính xác thiệt hại, và HỎI thay vì tự sửa.
+Anh chốt đặt NULL. Đã khôi phục mọi thứ khôi phục được (`event_date`,
+`occurred_at`, `meta`) từ `completed_at` còn nguyên.
+
+RULES §18. Lỗi ở chỗ: mọi phép kiểm ĐỌC trước đó đều an toàn nên tôi trượt sang
+phép kiểm GHI theo quán tính, không dừng lại hỏi "lệnh này có ghi không".
+
+### Còn nợ
+
+L4–L15 trong `TODO.md`, trong đó ba cái anh đã chốt hướng: thi thử một lượt tính
+điểm · học lại bài giữ ngày đầu · điểm thi thử giữ nhưng tách hiển thị.
