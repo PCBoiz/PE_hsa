@@ -1,6 +1,7 @@
 from django.urls import path
 
-from teaching import admin_users, exports, parent_report, sessions, terms, views
+from teaching import (admin_users, exports, overview, parent_report, sessions,
+                      terms, views)
 
 urlpatterns = [
     # ── Khu vực giảng dạy — quyền theo NGỮ CẢNH (lớp mình phụ trách) ──
@@ -27,6 +28,9 @@ urlpatterns = [
     path('api/admin/export/users.csv', exports.AdminUsersCsvView.as_view()),
 
     # ── Quản trị lớp & vai trò — chỉ quản trị viên ──
+    # ── Bảng điều khiển trung tâm (đặc tả ERP §6) ──
+    path('api/admin/overview', overview.AdminOverviewView.as_view()),
+
     # ── Đợt học (§36) ──
     path('api/teach/terms', terms.TermsLiteView.as_view()),
     path('api/admin/terms', terms.AdminTermsView.as_view()),

@@ -483,6 +483,20 @@ hiện thẳng `user.password_reset` cho người dùng đọc).
 
 ## P3 — Hàng rào tự động (để CI bắt thay vì audit tay)
 
+### [x] T54 · Bảng điều khiển TOÀN TRUNG TÂM — XONG 31/08 (đặc tả ERP §6, nửa "Trung tâm")
+Trước đó mọi báo cáo dừng ở cấp lớp; quản lý học vụ muốn biết lớp nào đang rơi
+thì phải mở từng lớp rồi tự cộng trong đầu.
+Ba con số chọn theo tra cứu chuẩn ngành dạy thêm: **giữ chân** (≥80% khoẻ, <70%
+báo động) · **so sánh theo đợt** · **chỉ báo sớm** (chuyên cần + điểm + tiến độ).
+Tỉ lệ bỏ học CHỈ tính được từ hôm nay, nhờ `leave_reason` của T43 tách "học
+xong" khỏi "bỏ giữa chừng".
+Đúng **5 câu SQL, không đổi theo số lớp** (đo: 1 lớp và 5 lớp cùng số câu).
+Không đoán: rời lớp chưa ghi lý do thì KHÔNG vào tử lẫn mẫu, báo riêng ở
+`leftUnknown`. Chưa tính được thì hiện dấu gạch, không hiện 0.
+Kiểm 16 phép ở tầng view + 10 phép trên trình duyệt thật.
+Vá kèm (một mục của T53): thanh điều hướng khu quản trị nay đánh dấu tab đang mở
+(`aria-current="page"` + nền) và `<nav>` có `aria-label` tiếng Việt.
+
 ### [ ] T53 · Nợ khả năng tiếp cận & nhất quán còn lại (từ T13 + T14)
 Xếp theo tác động, đã đo hết, chưa vá:
 · **Không đăng xuất được bằng bàn phím** — `#user-chip-btn` là `<div>` không

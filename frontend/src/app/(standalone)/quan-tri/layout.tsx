@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
 
+import AdminNav from './AdminNav';
+
 /**
  * Khu VẬN HÀNH của trung tâm — tài khoản, lớp, nhật ký.
  *
@@ -13,6 +15,7 @@ import { serverJson } from '@/lib/server-api';
 export const dynamic = 'force-dynamic';
 
 const TABS = [
+  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm' },
   { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
   { href: '/quan-tri/dot-hoc', label: 'Đợt học' },
   { href: '/quan-tri/nhat-ky', label: 'Nhật ký' },
@@ -63,17 +66,7 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
           <h1 className="text-section text-ink">Vận hành trung tâm</h1>
           {/* Cuộn ngang chứ không xuống dòng: thanh điều hướng phải giữ đúng
               một hàng để phần nội dung không bị đẩy xuống trên điện thoại. */}
-          <nav className="-mx-1 flex min-w-0 flex-1 gap-1 overflow-x-auto px-1">
-            {TABS.map((t) => (
-              <Link
-                key={t.href}
-                href={t.href}
-                className="min-h-11 shrink-0 rounded-md px-3 py-2 text-small font-semibold whitespace-nowrap text-ink-2 hover:bg-sunken hover:text-brand-ink"
-              >
-                {t.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminNav tabs={TABS} />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

@@ -847,13 +847,59 @@ bảy tiếng rưỡi · xoá đợt học chưa gắn lớp không hỏi lại 
 
 pytest 94/94, tsc sạch, build exit 0. CSDL không đổi một dòng.
 
+### 31/08/2026 — T54: bảng điều khiển TOÀN TRUNG TÂM (đóng nửa còn lại của §6)
+
+**Tra cứu trước khi chọn làm gì.** Chỉ số vận hành của một trung tâm dạy thêm
+(Tutorbase) và hệ thống thông tin học sinh (ModernCampus) hội tụ ở ba điểm:
+
+1. **Giữ chân là chỉ số sống còn** của mô hình dạy thêm — giữ người quan trọng
+   hơn tuyển thêm người. Mốc: ≥80% khoẻ, <70% là dấu hiệu hỏng ở khâu đón học
+   viên, chất lượng dạy, hoặc học phí lệch.
+2. **So sánh theo cohort/đợt** để bắt sớm đợt nào rơi.
+3. **Chỉ báo sớm** là chuyên cần + xu hướng điểm + nộp bài.
+
+pe_hsa có đủ cả ba dữ liệu — nhưng **chỉ ở cấp lớp**. Không ai trả lời được
+"trung tâm đang thế nào"; quản lý học vụ phải mở từng lớp rồi cộng trong đầu.
+Đó chính là nửa "Trung tâm" của §6, và nó **không phụ thuộc TopHSA**.
+
+**Tỉ lệ bỏ học chỉ tính được TỪ HÔM NAY.** Trước T43, "học xong" và "bỏ giữa
+chừng" là cùng một giá trị `left_at IS NOT NULL`, nên mọi lớp kết thúc đều trông
+như bỏ học 100%. `leave_reason` của §36 mới tách được hai thứ. Một quyết định
+lược đồ buổi sáng trả công vào buổi chiều.
+
+**Số câu SQL là thiết kế, không phải tối ưu vặt.** Hàm chạy đúng 5 câu, đo bằng
+`CaptureQueriesContext`: thêm 1 lớp và thêm 5 lớp cho CÙNG số câu. Gọi
+`class_report` cho từng lớp sẽ là 6×N — hai chục lớp là 120 lượt tới Neon cho
+một màn hình.
+
+**KHÔNG ĐOÁN, và nói ra chỗ mình không biết.** Học viên rời lớp mà chưa ai ghi
+lý do thì không vào tử lẫn mẫu của tỉ lệ giữ chân — đoán họ bỏ học là thổi phồng
+con số xấu, đoán họ học xong là giấu nó. Số đó báo riêng ở `leftUnknown` kèm một
+câu trên màn hình. Ảnh chụp bộ tối: bốn ô hiện `1 · 2 · — · —`, mỗi dấu gạch có
+một dòng nói vì sao chưa tính được ("chưa ai rời lớp có ghi lý do", "chưa buổi
+nào được điểm danh"). Không một số 0 giả nào.
+
+**Không phát minh chỉ số mới** — chỉ cuộn đúng ba thứ `class_report` đã đo lên
+cấp lớp rồi cấp đợt. Nhờ vậy con số quản lý thấy và con số giảng viên thấy luôn
+truy về cùng một gốc; lệch nhau là lỗi, không phải "hai cách tính".
+
+Kiểm 16 phép ở tầng view + 10 phép trên trình duyệt thật (390px và 1280px, cả
+hai bộ màu, 0 tràn ngang, 0 cột bị giấu, 0 vùng nền sáng kẹt ở bộ tối).
+
+**Vá kèm một mục của T53** vì ảnh chụp lộ ra ngay: thanh điều hướng khu quản trị
+không đánh dấu tab đang mở — bốn tab giống hệt nhau, `aria-current` là null, nên
+bấm xong không có gì xác nhận đã tới nơi. Trang cũ `/dashboard` ĐÃ làm đúng
+chuyện này; khu mới bỏ quên. Tách `AdminNav` thành component client (chỉ vì
+`usePathname` không dùng được ở Server Component) và so bằng TIỀN TỐ để trang
+con vẫn sáng đúng tab cha.
+
 ---
 
 ## MỞ PHIÊN MỚI THÌ BẮT ĐẦU TỪ ĐÂY
 
 Cập nhật 31/08 sau khi xong T41. Mọi việc đã commit, không mất gì.
 
-**Việc còn dở:** không có. Task cuối (vá phát hiện của 3 agent) đã commit xong.
+**Việc còn dở:** không có. Task cuối (T54 bảng điều khiển trung tâm) đã commit xong.
 
 **Nợ audit còn lại gom ở T53** — đã đo hết, chưa vá. Nặng nhất: không đăng
 xuất được bằng bàn phím, và hộp thoại đổi mật khẩu không bẫy tiêu điểm.
