@@ -1036,3 +1036,28 @@ CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id);
 -- Câu "bài nào còn chưa chấm" là câu giảng viên hỏi mỗi tối.
 CREATE INDEX IF NOT EXISTS idx_submissions_chua_cham
     ON submissions(assignment_id) WHERE graded_at IS NULL;
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §39 · Thu hồi phiên khi mật khẩu đổi (T67, 31/08/2026)
+-- ─────────────────────────────────────────────────────────────────────────
+--
+-- Trợ giảng bấm "Đặt lại mật khẩu" vì nghi tài khoản học viên bị người khác
+-- dùng. Trước cột này, token cũ VẪN SỐNG: người đang chiếm tài khoản thao tác
+-- bình thường cho tới khi access token hết hạn (30 phút). Nút ấy không làm được
+-- đúng việc mà người bấm nghĩ nó làm.
+--
+-- VÌ SAO KHÔNG DÙNG LẠI `password_changed_at`. Cột đó đã mang một nghĩa KHÁC và
+-- đang được đọc: `password_changed_at IS NULL` = "tài khoản vẫn dùng mật khẩu
+-- tạm do trợ giảng đặt" (xem `teaching/exports.py`). Chính đường đặt lại mật
+-- khẩu SET nó về NULL — tức đúng lúc ta cần ghi một mốc thì nó phải bị xoá.
+-- Nhồi hai nghĩa vào một cột là cách chắc chắn để một trong hai nghĩa sai.
+--
+-- VÌ SAO KHÔNG CHỈ DỰA VÀO DANH SÁCH ĐEN CỦA SimpleJWT. Danh sách đen chỉ chặn
+-- được REFRESH token; ACCESS token được kiểm bằng chữ ký chứ không tra CSDL,
+-- nên nó vẫn sống đủ 30 phút. Cột này cho phép từ chối cả access token bằng
+-- cách so `iat` của token với mốc ở đây.
+--
+-- NULL = chưa từng thu hồi, mọi token còn hạn đều hợp lệ. Đó là trạng thái của
+-- toàn bộ tài khoản hiện có, nên thêm cột này không đá ai ra ngoài.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_valid_from TIMESTAMP;

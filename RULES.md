@@ -227,3 +227,19 @@ bố cục khung, CSS token):
 - Hỏi "nếu hàng rào này chặn, người dùng NHÌN THẤY GÌ" — và đi xem tận mắt. Một
   hàng rào im lặng ở đúng chỗ dữ liệu được vẽ ra sẽ trông y hệt "không có dữ
   liệu", và đó là kiểu nói dối khó phát hiện nhất.
+
+---
+
+## §17 · Sao lưu bằng `basename` thì hai tệp cùng tên sẽ đè nhau
+
+Ngày 31/08/2026, để chứng minh test đỏ-trên-mã-cũ tôi sao lưu ba tệp bằng
+`cp $f scratchpad/$(basename $f)`. Hai trong ba là `views.py`
+(`backend/teaching/` và `backend/accounts/`), nên bản sau đè bản trước — rồi tôi
+khôi phục nội dung của `accounts/views.py` **đè lên** `teaching/views.py`. Bắt
+được vì đã kiểm `head -3` ngay sau đó, chứ không phải vì lệnh nào báo lỗi.
+
+**Bắt buộc:** để chứng minh test đỏ trên mã cũ thì dùng **`git stash`** hoặc
+`git worktree`, đừng tự chép tay. Nếu vẫn phải chép, đặt tên theo ĐƯỜNG DẪN đầy
+đủ đã thay `/` bằng `_`, không dùng `basename`. Và sau mọi lần khôi phục, kiểm
+lại bằng `git diff --stat` — con số dòng thêm/bớt phải khớp với thứ mình định
+làm, không phải "trông có vẻ ổn".

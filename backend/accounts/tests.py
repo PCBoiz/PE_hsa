@@ -196,3 +196,99 @@ def test_mat_khau_tam_chi_di_duoc_bon_duong(db, api):
     invalidate_user_cache(u.id)
     dat_token(User.objects.get(id=u.id))
     assert api.get('/api/stats').status_code == 200
+
+
+# ── T67 · Đổi mật khẩu CẮT phiên đang mở (31/08/2026) ───────────────────────
+
+@pytest.mark.django_db
+def test_dat_lai_mat_khau_cat_phien_dang_mo(db, api):
+    """Trợ giảng bấm "Đặt lại mật khẩu" vì nghi tài khoản bị người khác dùng.
+
+    Trước §39, token cũ VẪN SỐNG: người đang chiếm tài khoản thao tác bình
+    thường thêm 30 phút — đúng lúc trợ giảng tưởng mình vừa đuổi được họ ra.
+    Danh sách đen của SimpleJWT không cứu được, vì nó chỉ chặn REFRESH token
+    còn ACCESS token kiểm bằng chữ ký chứ không tra CSDL.
+    """
+    from rest_framework_simplejwt.tokens import RefreshToken
+    from rest_framework.test import APIClient
+
+    from accounts.authentication import invalidate_user_cache
+    from accounts.models import User
+    from common.clock import local_now
+    from common.db import q1
+    from common.permissions import ROLE_ADMIN
+    from teaching.views import AdminResetPasswordView
+
+    hv = q1("INSERT INTO users (name, email, password, streak) "
+            "VALUES ('Bi Chiem','bi_chiem_tmp@example.com','x',0) RETURNING id")
+    ad = q1("INSERT INTO users (name, email, password, role, streak) "
+            "VALUES ('Ad Reset','ad_reset_tmp@example.com','x',%s,0) RETURNING id",
+            (ROLE_ADMIN,))
+    u = User.objects.get(id=hv['id'])
+    invalidate_user_cache(u.id)
+
+    # "Người đang chiếm tài khoản" cầm một access token hợp lệ.
+    tok = str(RefreshToken.for_user(u).access_token)
+    api.credentials(HTTP_AUTHORIZATION='Bearer %s' % tok)
+    assert api.get('/api/user').status_code == 200, 'trước khi reset thì đi được'
+
+    # Trợ giảng đặt lại mật khẩu.
+    from rest_framework.test import APIRequestFactory, force_authenticate
+    req = APIRequestFactory().post('/x', {}, format='json')
+    force_authenticate(req, user=User.objects.get(id=ad['id']))
+    kq = AdminResetPasswordView.as_view()(req, user_id=u.id)
+    assert kq.status_code == 200, kq.data
+    assert q1('SELECT tokens_valid_from FROM users WHERE id=%s',
+              (u.id,))['tokens_valid_from'] is not None, 'phải đặt mốc thu hồi'
+
+    # CÙNG token đó, NGAY sau đó → phải bị từ chối.
+    invalidate_user_cache(u.id)
+    r = api.get('/api/user')
+    assert r.status_code == 401, 'token cũ phải chết ngay, không đợi hết hạn: %s' % r.status_code
+
+    # Token cấp SAU mốc thì đi được (không khoá cứng tài khoản).
+    moi = APIClient()
+    moi.credentials(HTTP_AUTHORIZATION='Bearer %s'
+                    % RefreshToken.for_user(User.objects.get(id=u.id)).access_token)
+    r2 = moi.get('/api/user')
+    # Cờ must_change_password nay là TRUE nên `/api/user` vẫn nằm trong danh
+    # sách cho phép → 200. Điều cần khẳng định là KHÔNG phải 401.
+    assert r2.status_code == 200, 'token mới phải đi được: %s %s' % (r2.status_code, r2.data)
+    assert local_now() is not None
+
+
+@pytest.mark.django_db
+def test_moc_thu_hoi_so_bang_EPOCH_chu_khong_lech_7_tieng(db):
+    """`iat` của token là giây UTC; `tokens_valid_from` là naive giờ VIỆT NAM.
+
+    So thẳng hai thứ đó lệch đúng 7 tiếng — chính cái bẫy `common/clock.py`
+    được viết ra để dập. Lệch theo hướng nào cũng hỏng: hoặc token mới bị giết
+    oan, hoặc token cũ sống thêm 7 tiếng sau khi đã thu hồi.
+    """
+    from datetime import timedelta
+
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    from accounts.authentication import CachedJWTAuthentication
+    from accounts.models import User
+    from common.clock import local_now
+    from common.db import q1
+
+    row = q1("INSERT INTO users (name, email, password, streak) "
+             "VALUES ('Moc Epoch','moc_epoch_tmp@example.com','x',0) RETURNING id")
+    u = User.objects.get(id=row['id'])
+    tok = RefreshToken.for_user(u).access_token
+
+    # Mốc đặt 1 phút TRƯỚC lúc cấp token → token còn hiệu lực.
+    u.tokens_valid_from = local_now() - timedelta(minutes=1)
+    assert CachedJWTAuthentication._da_thu_hoi(u, tok) is False, (
+        'lệch 7 tiếng sẽ làm câu này thành True — token mới bị giết oan')
+
+    # Mốc đặt 1 phút SAU → token bị thu hồi.
+    u.tokens_valid_from = local_now() + timedelta(minutes=1)
+    assert CachedJWTAuthentication._da_thu_hoi(u, tok) is True, (
+        'lệch 7 tiếng sẽ làm câu này thành False — token cũ sống thêm 7 tiếng')
+
+    # Chưa từng thu hồi thì không đụng tới ai.
+    u.tokens_valid_from = None
+    assert CachedJWTAuthentication._da_thu_hoi(u, tok) is False

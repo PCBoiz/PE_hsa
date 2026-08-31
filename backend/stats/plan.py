@@ -26,6 +26,7 @@ BỐN QUYẾT ĐỊNH, và vì sao:
    sách là vừa nói dối vừa cắt nhầm.
 """
 import json
+import logging
 from datetime import timedelta
 
 from django.db import DatabaseError, transaction
@@ -35,6 +36,8 @@ from common.db import q, q1, x
 from common.events import KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ
 from stats import competency, journal
 from stats.goals import read_goals
+
+logger = logging.getLogger(__name__)
 
 KIND_LESSON_ITEM = 'lesson'
 KIND_MOCK_ITEM = 'mock'
@@ -284,16 +287,27 @@ def _done_lookup(uid, floor):
     tuần này thì vẫn là XONG. Nên mốc so sánh là "từ tuần dự kiến trở đi", không
     phải "đúng tuần dự kiến".
     """
-    done_lessons = set()
-    mock_dates = []
-    topic_dates = {}
     try:
         rows = q("""SELECT e.kind, e.course_id, e.topic, e.event_date, e.meta
                     FROM learning_events e
                     WHERE e.user_id = %s AND e.kind = ANY(%s)""",
                  (uid, [KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ]))
     except DatabaseError:
-        return done_lessons, mock_dates, topic_dates
+        return set(), [], {}
+    return _gom_hoat_dong(rows, floor)
+
+
+def _gom_hoat_dong(rows, floor):
+    """Phan THUAN TINH cua `_done_lookup`, tach ra de dung lai theo me.
+
+    Tach vi `teaching/reports` can con so "cham" cho CA LOP: goi `_done_lookup`
+    trong vong lap la mot luot toi Neon cho moi em. Nhung luat suy "muc nao da
+    xong" thi phai y het — hai ban chep tay la hai ban se troi khoi nhau, ma
+    dung do la loi T62 dang va.
+    """
+    done_lessons = set()
+    mock_dates = []
+    topic_dates = {}
     for r in rows:
         day = r['event_date']
         if r['kind'] == KIND_LESSON:
@@ -319,35 +333,27 @@ def _done_lookup(uid, floor):
     return done_lessons, mock_dates, topic_dates
 
 
-def read(uid, weeks=DEFAULT_VIEW_WEEKS, all_weeks=False):
-    """Kế hoạch đã DỒN LẠI theo thực tế, kèm độ chậm và lý do từng mục."""
-    plan = q1('''SELECT id, generated_at, basis, exam_date
-                 FROM study_plans WHERE user_id=%s AND is_active LIMIT 1''', (uid,))
-    if not plan:
-        return {'hasPlan': False, 'weeks': [], 'lag': 0,
-                'hint': 'Chưa có kế hoạch. Bấm "Lập kế hoạch" để hệ thống xếp lịch từ '
-                        'ngày thi, sức học và chủ đề bạn đang yếu.'}
+def _duyet_muc(rows, done_lessons, mock_dates, topic_dates, this_monday):
+    """Từng mục kế hoạch → trạng thái, và đếm việc QUÁ HẠN chưa xong.
 
-    rows = q('''SELECT id, week_start, sort_order, kind, course_id, lesson_no,
-                       topic, title, reason, status
-                FROM study_plan_items WHERE plan_id=%s ORDER BY sort_order''',
-             (plan['id'],))
-    floor = min((r['week_start'] for r in rows), default=local_today())
-    done_lessons, mock_dates, topic_dates = _done_lookup(uid, floor)
+    NƠI DUY NHẤT định nghĩa "chậm mấy việc" (T62, anh chốt 31/08/2026: đếm MỌI
+    loại việc quá hạn, không chỉ bài học).
+
+    Trước đó có HAI phép tính chạy song song: màn hình học viên đi qua hàm này,
+    còn báo cáo lớp của giảng viên chạy một câu SQL riêng chỉ đếm `kind='lesson'`
+    VÀ hỏi một bảng khác (`lesson_progress` thay vì `learning_events`) để biết
+    "bài này xong chưa". Đo trên dữ liệu thật: học viên id 12 mở app thấy **14**,
+    giảng viên mở báo cáo thấy **12**. Giảng viên gọi điện nói một số, em mở máy
+    thấy số khác — mất tin vào cả hai.
+
+    Vòng duyệt này CÓ TRẠNG THÁI (`mock_i`, `topic_used` chạy theo `sort_order`),
+    nên không viết lại được bằng một câu SQL. Đó chính là lý do bản cũ ở
+    `teaching/reports` phải tự chế một phép tính khác — và vì sao cách sửa đúng
+    là gọi lại hàm này chứ không phải sửa câu SQL kia cho giống.
+    """
+    pending, finished, lag = [], [], 0
     mock_i = 0
     topic_used = {}
-    basis = plan['basis']
-    if isinstance(basis, str):
-        try:
-            basis = json.loads(basis)
-        except ValueError:
-            basis = {}
-    basis = basis or {}
-    per_week = basis.get('perWeek') or 3
-
-    this_monday = _monday(local_today())
-
-    pending, finished, lag = [], [], 0
     for r in rows:
         item = dict(r)
         item['plannedWeek'] = r['week_start'].isoformat()
@@ -384,7 +390,92 @@ def read(uid, weeks=DEFAULT_VIEW_WEEKS, all_weeks=False):
         else:
             item['week'] = item['plannedWeek']
             finished.append(item)
+    return pending, finished, lag
 
+
+def do_cham_theo_hoc_vien(uids):
+    """Độ chậm của NHIỀU học viên trong BA câu SQL. Trả ``(dict, ok)``.
+
+    Cùng phép tính với màn hình của chính học viên (`read`) — cả hai đi qua
+    `_duyet_muc`. Đó là toàn bộ mục đích của hàm này: `teaching/reports` trước
+    đây tự chế một câu SQL riêng và cho ra con số khác.
+
+    BA câu cho cả lớp, không phải ba câu cho mỗi em: gọi `read()` trong vòng lặp
+    là đúng cái N+1 mà cả khu `teaching/` cấm — một lớp 30 em sẽ là 90 lượt tới
+    Neon cho một lần mở báo cáo.
+
+    ``ok=False`` nghĩa là KHÔNG ĐỌC ĐƯỢC, khác hẳn "không ai chậm" — bên gọi
+    phải phân biệt được, nếu không màn hình sẽ nói "cả lớp đúng tiến độ" đúng
+    vào lúc nó không biết gì cả.
+    """
+    if not uids:
+        return {}, True
+    uids = list(uids)
+    try:
+        ke_hoach = q('SELECT id, user_id FROM study_plans '
+                     'WHERE user_id = ANY(%s) AND is_active', (uids,))
+        if not ke_hoach:
+            return {}, True
+        theo_plan = {r['id']: r['user_id'] for r in ke_hoach}
+        muc = q('SELECT plan_id, id, week_start, sort_order, kind, course_id, '
+                '       lesson_no, topic, title, reason, status '
+                '  FROM study_plan_items WHERE plan_id = ANY(%s) '
+                ' ORDER BY plan_id, sort_order', (list(theo_plan),))
+        su_kien = q('SELECT user_id, kind, course_id, topic, event_date, meta '
+                    '  FROM learning_events '
+                    ' WHERE user_id = ANY(%s) AND kind = ANY(%s)',
+                    (uids, [KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ]))
+    except DatabaseError:
+        logger.error('[plan] KHÔNG đọc được kế hoạch của %d học viên', len(uids))
+        return {}, False
+
+    muc_theo_uid = {}
+    for r in muc:
+        muc_theo_uid.setdefault(theo_plan[r['plan_id']], []).append(r)
+    sk_theo_uid = {}
+    for r in su_kien:
+        sk_theo_uid.setdefault(r['user_id'], []).append(r)
+
+    this_monday = _monday(local_today())
+    ra = {}
+    for uid, rows in muc_theo_uid.items():
+        floor = min((r['week_start'] for r in rows), default=local_today())
+        done_lessons, mock_dates, topic_dates = _gom_hoat_dong(
+            sk_theo_uid.get(uid, []), floor)
+        _, _, lag = _duyet_muc(rows, done_lessons, mock_dates, topic_dates, this_monday)
+        if lag:
+            ra[uid] = lag
+    return ra, True
+
+
+def read(uid, weeks=DEFAULT_VIEW_WEEKS, all_weeks=False):
+    """Kế hoạch đã DỒN LẠI theo thực tế, kèm độ chậm và lý do từng mục."""
+    plan = q1('''SELECT id, generated_at, basis, exam_date
+                 FROM study_plans WHERE user_id=%s AND is_active LIMIT 1''', (uid,))
+    if not plan:
+        return {'hasPlan': False, 'weeks': [], 'lag': 0,
+                'hint': 'Chưa có kế hoạch. Bấm "Lập kế hoạch" để hệ thống xếp lịch từ '
+                        'ngày thi, sức học và chủ đề bạn đang yếu.'}
+
+    rows = q('''SELECT id, week_start, sort_order, kind, course_id, lesson_no,
+                       topic, title, reason, status
+                FROM study_plan_items WHERE plan_id=%s ORDER BY sort_order''',
+             (plan['id'],))
+    floor = min((r['week_start'] for r in rows), default=local_today())
+    done_lessons, mock_dates, topic_dates = _done_lookup(uid, floor)
+    basis = plan['basis']
+    if isinstance(basis, str):
+        try:
+            basis = json.loads(basis)
+        except ValueError:
+            basis = {}
+    basis = basis or {}
+    per_week = basis.get('perWeek') or 3
+
+    this_monday = _monday(local_today())
+
+    pending, finished, lag = _duyet_muc(rows, done_lessons, mock_dates, topic_dates,
+                                        this_monday)
     # Dồn việc chưa xong vào tuần này trở đi, theo sức chứa mỗi tuần.
     # `week_start` trong DB giữ nguyên (để đo độ chậm); `week` là tuần HIỂN THỊ.
     all_by_week = {}

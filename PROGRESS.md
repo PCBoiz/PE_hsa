@@ -1142,3 +1142,46 @@ nhưng khó thấy hơn: lần này điều kiện có thật, chỉ là kiểm 
 T67 (đặt lại mật khẩu chưa thu hồi token cũ) · T68 (bảng chấm lớp 35 em = 692 KB
 JSON một lượt) · T69 (`/courses/<id>` hỏng CSS ở bộ tối, ngoài phạm vi) · và các
 mục T60/T62/T65/T66 từ đợt trước.
+
+
+---
+
+## 31/08/2026 (tiếp) — anh chốt ba quyết định; làm xong hai, đang audit khu học viên
+
+Anh chốt: **(1)** soi tất cả theo thứ tự khu học viên → dọn nợ → ERP · **(2)**
+"chậm" = đếm MỌI việc quá hạn · **(3)** đặt lại mật khẩu = thu hồi hết token.
+
+### T67 — đặt lại mật khẩu nay CẮT phiên đang mở
+
+Danh sách đen của SimpleJWT một mình không đủ: nó chỉ chặn REFRESH token, còn
+ACCESS token kiểm bằng CHỮ KÝ chứ không tra CSDL nên sống đủ 30 phút. Hai hàng
+rào cho hai loại token — lược đồ **§39** (`users.tokens_valid_from`, đã áp vào
+Neon: 24→25 cột, cả 5 tài khoản đều NULL nên không ai bị đá ra) chặn access
+token bằng cách so `iat`; danh sách đen lo refresh token.
+
+Cái bẫy phải né: `iat` là giây UTC, `tokens_valid_from` là naive giờ VN — so
+thẳng là lệch 7 tiếng, hoặc giết oan token mới hoặc để token cũ sống thêm 7
+tiếng sau khi thu hồi. Có test cho **cả hai hướng lệch**.
+
+### T62 — một định nghĩa "chậm"
+
+Không sửa được bằng cách chỉnh câu SQL cho giống: phép suy "mục nào đã xong" CÓ
+TRẠNG THÁI (mỗi lượt thi thử tick đúng một mục theo `sort_order`). Nên tách vòng
+duyệt thành `stats/plan._duyet_muc` — nơi duy nhất định nghĩa "chậm" — rồi
+`plan.read`, `plan.do_cham_theo_hoc_vien` (mẻ, ba câu cho cả lớp) và
+`teaching/reports._lag_by_user` đều đi qua nó. Bỏ 38 dòng SQL riêng.
+
+Test hồi quy đỏ trên mã cũ với đúng câu chuyện: `em 12: giảng viên thấy 12,
+chính em thấy 14`.
+
+### Học được (lần này là lỗi thao tác, không phải lỗi thiết kế)
+
+Để chứng minh test đỏ-trên-mã-cũ, tôi sao lưu ba tệp bằng `$(basename $f)` —
+hai trong ba tên là `views.py`, nên bản sau đè bản trước, rồi tôi khôi phục
+`accounts/views.py` **đè lên** `teaching/views.py`. Bắt được vì kiểm `head -3`
+ngay sau đó, chứ không lệnh nào báo lỗi. Từ nay dùng `git stash`. RULES §17.
+
+### Đang chạy
+
+Hai agent soi `stats/` và `lessons/ quizzes/ roadmap/ courses/` — hai khu CHƯA
+từng được audit lần nào, mà 99% người dùng ở đó.

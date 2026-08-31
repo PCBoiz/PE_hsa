@@ -963,3 +963,55 @@ một khối điều hướng là hai bản sẽ trôi khỏi nhau — đã trô
 chip hiện đủ 79/79px ở 1280 và 57/57px ở 390, không tràn ngang. GỘP về một bản
 vẫn còn nợ — nó cần đổi cả cơ chế nạp biểu tượng (emoji ở đây, `icons.js` ở kia)
 và cả cách điều hướng (`location.href` ở đây, `navigate()` của main.js ở kia).
+
+
+---
+
+## 31/08/2026 (tiếp) — anh chốt ba quyết định, làm luôn hai cái không cần chờ
+
+### [x] T67 (XONG) · Đặt lại mật khẩu nay CẮT phiên đang mở
+Anh chốt: **thu hồi hết, đá ra ngay**.
+
+Danh sách đen của SimpleJWT một mình không đủ — nó chỉ chặn được REFRESH token,
+còn ACCESS token kiểm bằng CHỮ KÝ chứ không tra CSDL nên sống đủ 30 phút bất kể
+ta làm gì. Nên cần **hai hàng rào cho hai loại token**:
+- Lược đồ **§39**: cột `users.tokens_valid_from`. Token có `iat` sớm hơn mốc này
+  bị từ chối ngay ở lớp xác thực. Đã áp vào Neon (24 → 25 cột, 5 tài khoản đều
+  `NULL` nên không ai bị đá ra).
+- Mọi refresh token còn hiệu lực bị đưa vào danh sách đen.
+
+**Không dùng lại `password_changed_at`**: cột đó đã mang nghĩa khác và đang được
+đọc (`IS NULL` = "vẫn dùng mật khẩu tạm", `exports.py`), mà chính đường đặt lại
+mật khẩu SET nó về NULL — đúng lúc cần ghi một mốc thì nó phải bị xoá.
+
+**Cái bẫy 7 tiếng**: `iat` là giây UTC, `tokens_valid_from` là TIMESTAMP naive
+giờ VIỆT NAM. So thẳng hai thứ là lệch đúng 7 tiếng — hoặc giết oan token mới,
+hoặc để token cũ sống thêm 7 tiếng sau khi đã thu hồi. Có test riêng cho cả hai
+hướng lệch.
+
+Tự đổi mật khẩu cũng cắt phiên (người ta đổi chính vì nghi có ai đang dùng tài
+khoản mình), nên màn hình đi thẳng về `/login?vua-doi-mat-khau=1` với câu giải
+thích — thay vì về dashboard rồi bị 401 và nhảy trang hai lần.
+
+### [x] T62 (XONG) · Một định nghĩa "chậm", dùng chung
+Anh chốt: **đếm mọi việc quá hạn**.
+
+Không sửa được bằng cách chỉnh câu SQL bên `teaching/reports` cho giống: phép
+suy "mục nào đã xong" CÓ TRẠNG THÁI (mỗi lượt thi thử tick đúng một mục, duyệt
+theo `sort_order`). Nên tách hẳn vòng duyệt ấy thành `stats/plan._duyet_muc` —
+**nơi duy nhất** định nghĩa "chậm" — rồi:
+- `plan.read` (màn hình học viên) gọi nó;
+- `plan.do_cham_theo_hoc_vien(uids)` mới, gọi nó theo mẻ trong **ba câu SQL cho
+  cả lớp** (gọi `read()` trong vòng lặp là 3 câu × 30 em);
+- `teaching/reports._lag_by_user` **uỷ quyền** cho hàm mẻ đó, bỏ 38 dòng SQL
+  riêng.
+
+Đổi nhãn cả hai phía sang "**việc**" cho khớp phép đếm — trước đó giảng viên nói
+"chậm 12 bài" trong khi em mở app thấy "chậm 14 việc".
+
+Test hồi quy đỏ trên mã cũ với đúng câu: `em 12: giảng viên thấy 12, chính em
+thấy 14`.
+
+### [ ] Đang chạy · Audit khu HỌC VIÊN (anh chốt "tất cả, theo thứ tự")
+Hai agent đang soi `stats/` và `lessons/ quizzes/ roadmap/ courses/` — hai khu
+CHƯA từng được audit lần nào, mà 99% người dùng ở đó.

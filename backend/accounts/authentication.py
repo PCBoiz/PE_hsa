@@ -12,6 +12,8 @@ vào bảng users (xp, gems, streak...) vẫn đúng vì chúng UPDATE bằng SQ
 trực tiếp rồi SELECT lại — không đọc từ request.user.
 """
 from django.core.cache import cache
+from django.utils import timezone
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 USER_CACHE_SECONDS = 60
@@ -40,6 +42,11 @@ def invalidate_user_cache(user_id):
     cache.delete(_KEY.format(user_id))
 
 
+def _epoch_vn(naive_vn):
+    """TIMESTAMP naive theo giờ VN → số giây UTC, để so được với `iat` của token."""
+    return timezone.make_aware(naive_vn, timezone.get_current_timezone()).timestamp()
+
+
 class CachedJWTAuthentication(JWTAuthentication):
     """Xác thực JWT có bộ đệm, kèm hàng rào `must_change_password`.
 
@@ -62,6 +69,16 @@ class CachedJWTAuthentication(JWTAuthentication):
         if kq is None:
             return None
         user, token = kq
+
+        if self._da_thu_hoi(user, token):
+            # 401, KHÁC hẳn hàng rào mật khẩu tạm ở dưới (403). Ở đây phiên
+            # THẬT SỰ đã kết thúc, nên để lớp làm mới token của frontend chạy
+            # đúng vòng của nó: thử refresh → refresh cũng đã bị thu hồi → về
+            # trang đăng nhập. Đó chính là thứ ta muốn.
+            raise AuthenticationFailed(
+                'Phiên đăng nhập đã kết thúc vì mật khẩu vừa được đổi. '
+                'Đăng nhập lại bằng mật khẩu mới.')
+
         if getattr(user, 'must_change_password', False):
             duong = (request.path or '').rstrip('/')
             if duong not in CHO_PHEP_KHI_PHAI_DOI_MK:
@@ -78,6 +95,34 @@ class CachedJWTAuthentication(JWTAuthentication):
                     'Bạn đang dùng mật khẩu tạm. Đổi mật khẩu rồi mới dùng được '
                     'phần còn lại của hệ thống.')
         return kq
+
+    @staticmethod
+    def _da_thu_hoi(user, token):
+        """Token được cấp TRƯỚC lần thu hồi gần nhất của tài khoản này?
+
+        VÌ SAO KHÔNG CHỈ DÙNG DANH SÁCH ĐEN. `token_blacklist` của SimpleJWT chỉ
+        chặn được REFRESH token — access token được kiểm bằng CHỮ KÝ, không tra
+        CSDL, nên nó sống đủ 30 phút bất kể ta làm gì với refresh. Trợ giảng bấm
+        "Đặt lại mật khẩu" vì nghi tài khoản bị người khác dùng, mà người đang
+        chiếm tài khoản vẫn thao tác bình thường thêm nửa tiếng.
+
+        SO BẰNG EPOCH, không so hai đối tượng datetime. `iat` trong token là số
+        giây UTC; `tokens_valid_from` là TIMESTAMP naive theo giờ VIỆT NAM (xem
+        `common/clock.local_now`). So thẳng hai thứ đó là lệch đúng 7 tiếng —
+        chính cái bẫy mà `common/clock.py` được viết ra để dập.
+
+        Thiếu `iat` (token cũ cấp trước khi bật claim này) thì KHÔNG thu hồi:
+        thà để một token cũ sống nốt hạn của nó còn hơn đá tất cả mọi người ra
+        vì một thay đổi hạ tầng.
+        """
+        moc = getattr(user, 'tokens_valid_from', None)
+        if not moc:
+            return False
+        try:
+            iat = int(token['iat'])
+        except (KeyError, TypeError, ValueError):
+            return False
+        return iat < _epoch_vn(moc)
 
     def get_user(self, validated_token):
         try:

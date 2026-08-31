@@ -361,9 +361,15 @@ class PasswordView(APIView):
         # được thay bằng mật khẩu chỉ học viên biết.
         # `local_now()` chứ không phải `now()` của SQL: giờ máy chủ là UTC, lệch
         # 7 tiếng so với giờ Việt Nam — đủ để ghi sai ngày.
+        # `tokens_valid_from` = ĐẶT MỐC THU HỒI. Tự đổi mật khẩu cũng phải cắt
+        # các phiên khác: người ta đổi mật khẩu chính vì nghi có ai đó đang dùng
+        # tài khoản mình. Phiên HIỆN TẠI cũng bị cắt theo — token đang cầm được
+        # cấp trước mốc — nên frontend phải đăng nhập lại ngay sau đó; xem
+        # `ChangePasswordForm`.
+        now = local_now()
         x('UPDATE users SET password=%s, must_change_password=FALSE, '
-          'password_changed_at=%s WHERE id=%s',
-          (make_werkzeug_password(new_pw), local_now(), request.user.id))
+          'password_changed_at=%s, tokens_valid_from=%s WHERE id=%s',
+          (make_werkzeug_password(new_pw), now, now, request.user.id))
         # XOÁ BỘ ĐỆM NGAY. `CachedJWTAuthentication` giữ đối tượng user 60 giây,
         # và từ 31/08/2026 nó CHẶN mọi đường khác khi cờ còn TRUE. Không xoá đệm
         # thì em vừa đổi mật khẩu xong vẫn bị chặn thêm tối đa một phút — đúng

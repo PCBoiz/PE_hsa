@@ -59,7 +59,15 @@ export default function DashboardPage() {
             <div className="hsa-tile">
               <div className="hsa-tile-ic" data-icon="flame" data-size="18"></div>
               <div className="hsa-tile-body">
-                <div className="hsa-tile-num" id="tile-streak">0</div>
+                {/* `—` chứ không `0`. Hai ô bên phải ("ngày nữa tới kỳ thi",
+                    "điểm thi thử") đã làm đúng từ đầu; hai ô này thì viết cứng
+                    số 0 vào HTML. Trong khoảng thời gian chờ dữ liệu — và VĨNH
+                    VIỄN nếu lời gọi hỏng — người dùng đọc được "0 ngày học liên
+                    tiếp, 0/76 bài", tức một tài khoản trắng, thay vì "chưa biết".
+                    Đúng cùng một kiểu nói dối êm ái với vụ hàng rào mật khẩu
+                    tạm sáng nay: con số 0 trông y hệt con số thật.
+                    `dashboard.js:2504` ghi đè bằng số thật khi có dữ liệu. */}
+                <div className="hsa-tile-num" id="tile-streak">—</div>
                 <div className="hsa-tile-lbl">ngày học liên tiếp</div>
                 <div className="hsa-week" id="tile-week" aria-label="Lịch học tuần này"></div>
               </div>
@@ -68,7 +76,7 @@ export default function DashboardPage() {
             <div className="hsa-tile">
               <div className="hsa-tile-ic" data-icon="book-open" data-size="18"></div>
               <div className="hsa-tile-body">
-                <div className="hsa-tile-num"><span id="tile-done">0</span><span className="hsa-tile-of">/76</span></div>
+                <div className="hsa-tile-num"><span id="tile-done">—</span><span className="hsa-tile-of">/76</span></div>
                 <div className="hsa-tile-lbl">bài đã hoàn thành</div>
                 <div className="hsa-tile-bar"><i id="tile-done-bar" style={{ width: '0%' }}></i></div>
               </div>

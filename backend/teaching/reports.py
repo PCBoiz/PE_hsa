@@ -250,44 +250,24 @@ def _mocks_by_user(uids):
 
 
 def _lag_by_user(uids):
-    """Số việc quá hạn chưa xong trong kế hoạch của từng học viên.
+    """Số việc quá hạn chưa xong của từng học viên. Trả ``(dict, ok)``.
 
-    Chỉ đếm mục BÀI HỌC: mục thi thử và ôn tập cần đối chiếu sự kiện phức tạp
-    hơn, và với giảng viên thì "chậm mấy bài" đã đủ để gọi điện.
+    ỦY QUYỀN cho `stats/plan.do_cham_theo_hoc_vien` — cùng phép tính với màn
+    hình của chính học viên (T62, anh chốt 31/08/2026).
+
+    Bản cũ chạy một câu SQL riêng ở đây, và nó khác `stats/plan` ở HAI chỗ:
+      · chỉ đếm `i.kind = 'lesson'`, bỏ mục thi thử và ôn tập;
+      · hỏi `lesson_progress` JOIN `lessons.sort_order` để biết "bài này xong
+        chưa", trong khi bên kia hỏi `learning_events`.
+    Đo trên dữ liệu thật: học viên id 12 mở app thấy **14**, giảng viên mở báo
+    cáo thấy **12**. Giảng viên gọi điện nói một số, em mở máy thấy số khác.
+
+    Không viết lại câu SQL cho giống được: phép suy "mục nào đã xong" có TRẠNG
+    THÁI (mỗi lượt thi thử tick đúng một mục, theo `sort_order`). Nên cách sửa
+    đúng là gọi lại đúng hàm kia.
     """
-    if not uids:
-        return {}, True
-    monday = local_today() - timedelta(days=local_today().weekday())
-    try:
-        rows = q('''SELECT p.user_id, COUNT(*) AS n
-                    FROM study_plan_items i
-                    JOIN study_plans p ON p.id = i.plan_id AND p.is_active
-                    LEFT JOIN lessons l
-                           ON l.course_id = i.course_id AND l.sort_order = i.lesson_no
-                    LEFT JOIN lesson_progress lp
-                           ON lp.lesson_id = l.id AND lp.user_id = p.user_id
-                          AND lp.status = 'completed'
-                    WHERE p.user_id = ANY(%s) AND i.kind = 'lesson'
-                      AND i.status <> 'skipped' AND i.week_start < %s
-                      -- `l.id IS NOT NULL`: mục trỏ tới một bài KHÔNG CÒN TỒN
-                      -- TẠI thì `l` NULL, kéo theo `lp` NULL, và điều kiện ngay
-                      -- dưới tính nó thành QUÁ HẠN. Học viên không có cách nào
-                      -- hoàn thành một mục như thế, nên nó ở lại trong "chậm N
-                      -- bài" vĩnh viễn.
-                      -- Chưa nổ hôm nay (0 mục lesson mồ côi) nhưng đường sinh
-                      -- ra nó có thật: quản trị viên xoá bài, hoặc chỉ cần đổi
-                      -- `sort_order` — mà §26 ghi rõ TopHSA sẽ soạn lại giáo
-                      -- trình. Ngày đó cả lớp cùng lúc vượt ngưỡng LAG_ITEMS=5.
-                      AND l.id IS NOT NULL
-                      AND lp.user_id IS NULL
-                    GROUP BY p.user_id''', (list(uids), monday))
-    except DatabaseError:
-        # Đây là chỗ nguy nhất trong bốn chỗ: dict rỗng nghĩa là "không ai chậm
-        # bài", tức màn hình nói "CẢ LỚP ĐÚNG TIẾN ĐỘ" đúng vào lúc nó không
-        # biết gì cả. Giảng viên đọc câu đó rồi không gọi cho ai.
-        logger.error('[reports] KHÔNG đọc được study_plan_items cho %d học viên', len(uids))
-        return {}, False
-    return {r['user_id']: r['n'] for r in rows}, True
+    from stats.plan import do_cham_theo_hoc_vien
+    return do_cham_theo_hoc_vien(uids)
 
 
 def _alerts(student):
@@ -306,7 +286,11 @@ def _alerts(student):
                             % abs(student['mockTrend'])})
     if student['lag'] >= LAG_ITEMS:
         out.append({'level': 'mid',
-                    'text': 'Chậm %d bài so với kế hoạch.' % student['lag']})
+                    # "VIỆC", không phải "bài" — từ T62 con số này đếm cả mục
+                    # thi thử và ôn tập, đúng như màn hình học viên vẫn đếm
+                    # ("Đang chậm N việc so với lịch", dashboard.js). Hai bên
+                    # nay cùng một con số VÀ cùng một danh từ.
+                    'text': 'Chậm %d việc so với kế hoạch.' % student['lag']})
     return out
 
 
@@ -473,7 +457,7 @@ def class_report(class_id):
             # được, thay vì một dòng lặng lẽ biến mất khỏi báo cáo.
             'nonStudents': _dem_khong_phai_hoc_vien(class_id),
             # Mảng dữ liệu KHÔNG đọc được ở lượt này. Rỗng = mọi thứ đọc đủ.
-            # 'mastery' = bản đồ năng lực · 'lag' = số bài chậm so với kế hoạch.
+            # 'mastery' = bản đồ năng lực · 'lag' = số VIỆC chậm so với kế hoạch.
             'incomplete': thieu,
             'avgProgress': round(sum(s['progressPct'] for s in active) / len(active))
                            if active else 0,

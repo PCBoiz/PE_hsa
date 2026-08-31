@@ -760,3 +760,34 @@ def test_xoa_lop_don_luon_diem_bai_tap(lop):
     assert AdminClassDetailView.as_view()(req, class_id=lop['id']).status_code == 200
     assert q1('SELECT count(*) c FROM learning_events WHERE ref_type=%s AND ref_id=%s',
               ('assignment', str(aid)))['c'] == 0, 'điểm mồ côi còn sót lại'
+
+
+@pytest.mark.django_db
+def test_do_cham_giang_vien_va_hoc_vien_KHOP_nhau(db):
+    """T62 — trước bản vá, cùng một em cho ra hai con số ở hai màn hình.
+
+    `teaching/reports` chạy một câu SQL riêng chỉ đếm `kind='lesson'` VÀ hỏi
+    `lesson_progress`, trong khi màn hình học viên đi qua `stats/plan` đếm mọi
+    loại việc và hỏi `learning_events`. Đo trên dữ liệu thật hôm nay: em id 12
+    mở app thấy 14, giảng viên mở báo cáo thấy 12.
+    """
+    from stats import plan
+    from teaching.reports import _lag_by_user
+
+    uids = [r['id'] for r in q('SELECT id FROM users ORDER BY id')]
+    theo_lop, ok = _lag_by_user(uids)
+    assert ok
+
+    for uid in uids:
+        rieng = plan.read(uid).get('lag', 0)
+        assert theo_lop.get(uid, 0) == rieng, (
+            'em %d: giảng viên thấy %s, chính em thấy %s'
+            % (uid, theo_lop.get(uid, 0), rieng))
+
+    # Và phép đếm theo mẻ KHÔNG được là N+1: ba câu cho cả lớp, không phải ba
+    # câu cho mỗi em.
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    with CaptureQueriesContext(connection) as ctx:
+        plan.do_cham_theo_hoc_vien(uids)
+    assert len(ctx.captured_queries) <= 3, len(ctx.captured_queries)

@@ -64,7 +64,18 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
           );
         return;
       }
-      window.location.href = '/dashboard';
+      // ĐI THẲNG VỀ ĐĂNG NHẬP, không về /dashboard.
+      //
+      // Từ §39 (T67), đổi mật khẩu đặt mốc `tokens_valid_from` và mốc đó cắt
+      // MỌI phiên — kể cả phiên đang gõ. Về `/dashboard` thì lời gọi đầu tiên
+      // của trang đó nhận 401, lớp làm mới token thử refresh, refresh cũng đã
+      // bị thu hồi, rồi mới đá về `/login` — người dùng đi qua hai lần nhảy
+      // trang và một khoảnh khắc màn hình hỏng, ngay sau khi vừa làm đúng.
+      //
+      // Cắt cả phiên hiện tại là CÓ CHỦ Ý: người ta đổi mật khẩu chính vì nghi
+      // có ai khác đang dùng tài khoản mình, nên "đăng nhập lại ở mọi nơi" mới
+      // là thứ họ mong đợi.
+      window.location.href = '/login?vua-doi-mat-khau=1';
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {

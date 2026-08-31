@@ -19,9 +19,13 @@ from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
                                 is_admin, last_active_admin, visible_class_ids)
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
+import logging
+
 from accounts.authentication import invalidate_user_cache
 from teaching import reports
 from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
+
+logger = logging.getLogger(__name__)
 
 #: Trạng thái lớp hợp lệ.
 CLASS_STATUS = ('draft', 'active', 'finished')
@@ -518,6 +522,32 @@ def _temp_password() -> str:
     return f'hsa-{secrets.choice(_SYLLABLES)}-{secrets.randbelow(9000) + 1000}'
 
 
+def _thu_hoi_refresh(user_id):
+    """Đưa MỌI refresh token còn hiệu lực của một tài khoản vào danh sách đen.
+
+    Mốc `tokens_valid_from` (§39) chặn được access token bằng cách so `iat`,
+    nhưng refresh token sống 8 ngày và có thể đã bị lưu sẵn ở một máy khác.
+    Hai hàng rào cho hai loại token; thiếu một là còn đường quay lại.
+
+    KHÔNG ném lỗi ra ngoài: bảng danh sách đen trục trặc thì trợ giảng vẫn phải
+    đặt lại được mật khẩu — mốc `tokens_valid_from` đã chặn phần lớn đường, và
+    một thao tác an ninh đổ vỡ giữa chừng còn tệ hơn một thao tác thành công
+    một nửa nhưng có ghi log.
+    """
+    try:
+        from rest_framework_simplejwt.token_blacklist.models import (
+            BlacklistedToken, OutstandingToken)
+        n = 0
+        for t in OutstandingToken.objects.filter(user_id=user_id):
+            _, moi = BlacklistedToken.objects.get_or_create(token=t)
+            n += 1 if moi else 0
+        return n
+    except Exception as exc:                                  # noqa: BLE001
+        logger.error('[reset] KHÔNG thu hồi được refresh token của user %s: %s',
+                     user_id, exc)
+        return 0
+
+
 class AdminResetPasswordView(APIView):
     """POST /api/admin/users/<id>/reset-password — cấp lại mật khẩu tạm.
 
@@ -538,9 +568,17 @@ class AdminResetPasswordView(APIView):
             return Response({'error': 'Không tìm thấy tài khoản này'}, status=404)
 
         temp = _temp_password()
+        # `tokens_valid_from` = mốc thu hồi (§39). Không có nó thì nút "Đặt lại
+        # mật khẩu" chỉ chặn được lần ĐĂNG NHẬP SAU: người đang chiếm tài khoản
+        # vẫn thao tác bình thường thêm 30 phút nữa, đúng lúc trợ giảng tưởng
+        # mình vừa đuổi được họ ra.
         x('UPDATE users SET password=%s, must_change_password=TRUE, '
-          'password_changed_at=NULL WHERE id=%s',
-          (make_werkzeug_password(temp), user_id))
+          'password_changed_at=NULL, tokens_valid_from=%s WHERE id=%s',
+          (make_werkzeug_password(temp), local_now(), user_id))
+        # Refresh token thì mốc trên chưa đủ: chúng sống 8 ngày và người kia có
+        # thể đã lưu sẵn. Đưa hết vào danh sách đen — hạ tầng đã có sẵn
+        # (`token_blacklist` trong INSTALLED_APPS, `LogoutView` dùng từ trước).
+        _thu_hoi_refresh(user_id)
         # XOÁ BỘ ĐỆM NGAY. `CachedJWTAuthentication` giữ đối tượng user 60 giây,
         # và từ 31/08/2026 cờ `must_change_password` là thứ CHẶN mọi đường khác.
         # Không xoá đệm thì hàng rào chỉ bắt đầu có hiệu lực sau một phút.
@@ -548,10 +586,6 @@ class AdminResetPasswordView(APIView):
         # Đo 31/08/2026: trợ giảng đặt lại mật khẩu vì nghi tài khoản bị người
         # khác dùng — trong 60 giây kế tiếp người đang chiếm tài khoản vẫn thao
         # tác bình thường (`/api/user` trả 200).
-        #
-        # CÒN NỢ (T67): token cũ KHÔNG bị thu hồi, nên "đặt lại mật khẩu" chỉ
-        # chặn được lần ĐĂNG NHẬP sau chứ chưa cắt phiên đang mở. Muốn cắt thật
-        # thì phải đưa refresh token của người đó vào danh sách đen.
         invalidate_user_cache(user_id)
 
         ten = _user_label(target, user_id)

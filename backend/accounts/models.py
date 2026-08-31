@@ -48,6 +48,9 @@ class User(AbstractBaseUser):
     # Vòng đời tài khoản (schema §31). 'active' | 'suspended'.
     status = models.TextField(default='active')
     must_change_password = models.BooleanField(default=False)
+    #: Mốc thu hồi phiên (schema §39). Token cấp TRƯỚC mốc này bị từ chối.
+    #: NULL = chưa từng thu hồi. Xem `accounts/authentication.py`.
+    tokens_valid_from = models.DateTimeField(null=True)
 
     objects = UserManager()
 

@@ -49,6 +49,11 @@ export default async function LoginPage({
   // Đọc mã lỗi OAuth ngay trên máy chủ để câu giải thích nằm sẵn trong HTML.
   const sp = await searchParams;
   const raw = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+  // Vừa đổi mật khẩu xong: phiên cũ đã bị cắt có chủ ý (§39). Nói ra, nếu không
+  // người dùng vừa làm đúng lại thấy mình bị đá về trang đăng nhập và tưởng
+  // hỏng — rồi thử mật khẩu CŨ.
+  const vuaDoi = (Array.isArray(sp['vua-doi-mat-khau']) ? sp['vua-doi-mat-khau'][0]
+                                                       : sp['vua-doi-mat-khau']) === '1';
 
   return (
     <main className="grid min-h-dvh place-items-center bg-ground px-4 py-10">
@@ -65,6 +70,16 @@ export default async function LoginPage({
           <p className="mt-1 mb-6 text-body text-ink-3">
             Tiếp tục hành trình luyện thi Đánh giá năng lực của bạn.
           </p>
+
+          {vuaDoi && (
+            <p
+              role="status"
+              className="mb-5 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-small text-success-ink"
+            >
+              Đã đổi mật khẩu. Mọi thiết bị đang đăng nhập tài khoản này đều bị đăng xuất —
+              kể cả máy bạn vừa dùng. Đăng nhập lại bằng <b>mật khẩu mới</b>.
+            </p>
+          )}
 
           <LoginForm oauthError={raw ?? null} />
 

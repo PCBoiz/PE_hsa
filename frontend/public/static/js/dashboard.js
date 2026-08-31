@@ -4037,7 +4037,11 @@ function forumClearSearch() {
         + tile(s.atRisk, 'cần chú ý ngay', true)
         + tile(s.noMock, 'chưa làm đề nào', true)
         + tile(s.idle, 'nghỉ từ ' + s.idleDays + ' ngày', true)
-        + tile(s.behind, 'chậm từ ' + s.lagItems + ' bài', true)
+        /* "việc" chứ không "bài": từ T62 (31/08/2026) con số này đếm cả mục
+           thi thử và ôn tập, đúng như màn hình học viên vẫn đếm. Hai bên nay
+           cùng một phép tính VÀ cùng một danh từ — trước đó giảng viên nói
+           "chậm 12 bài" trong khi em mở app thấy "chậm 14 việc". */
+        + tile(s.behind, 'chậm từ ' + s.lagItems + ' việc', true)
       + '</div>'
       + '<div class="tc-sec"><div class="tc-sec-t">Cần chú ý</div>' + alertHtml + '</div>'
       + '<div class="tc-sec"><div class="tc-sec-t">Chủ đề cả lớp đang yếu</div>'
