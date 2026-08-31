@@ -391,7 +391,10 @@ def _gom_hoat_dong(rows, floor):
     xong" thi phai y het — hai ban chep tay la hai ban se troi khoi nhau, ma
     dung do la loi T62 dang va.
     """
-    done_lessons = set()
+    # BẢNG TRA ngày, không phải tập hợp: `read` cần biết mục được hoàn thành
+    # TUẦN NÀO để đặt nó vào đúng tuần hiển thị. Giữ ngày SỚM NHẤT — cùng luật
+    # `event_date = LEAST(...)` mà anh chốt cho việc học lại (L7).
+    done_lessons = {}
     mock_dates = []
     topic_dates = {}
     for r in rows:
@@ -411,7 +414,9 @@ def _gom_hoat_dong(rows, floor):
                     meta = {}
             no = (meta or {}).get('lessonNo')
             if r['course_id'] and no is not None:
-                done_lessons.add((r['course_id'], int(no)))
+                k = (r['course_id'], int(no))
+                if k not in done_lessons or day < done_lessons[k]:
+                    done_lessons[k] = day
         if _truoc_moc_san(moc, floor):
             continue
         if r['kind'] == KIND_MOCK:
@@ -451,13 +456,15 @@ def _duyet_muc(rows, done_lessons, mock_dates, topic_dates, this_monday):
         if r['status'] == STATUS_SKIPPED:
             item['state'] = STATUS_SKIPPED
         elif r['kind'] == KIND_LESSON_ITEM:
-            item['state'] = ('done' if (r['course_id'], r['lesson_no']) in done_lessons
-                             else STATUS_TODO)
+            ngay = done_lessons.get((r['course_id'], r['lesson_no']))
+            item['state'] = 'done' if ngay else STATUS_TODO
+            item['doneDate'] = ngay
         elif r['kind'] == KIND_MOCK_ITEM:
             # Mỗi lượt thi thử chỉ tick xong ĐÚNG MỘT mục, và chỉ tick được mục
             # có tuần dự kiến không muộn hơn ngày thi. Duyệt theo sort_order nên
             # mục sớm nhất được tick trước — đúng cảm giác "đã làm 3 đề rồi".
             if mock_i < len(mock_dates) and mock_dates[mock_i] >= r['week_start']:
+                item['doneDate'] = mock_dates[mock_i]
                 mock_i += 1
                 item['state'] = 'done'
             else:
@@ -467,6 +474,7 @@ def _duyet_muc(rows, done_lessons, mock_dates, topic_dates, this_monday):
             days = topic_dates.get(key) or []
             used = topic_used.get(key, 0)
             if used < len(days) and days[used] >= r['week_start']:
+                item['doneDate'] = days[used]
                 topic_used[key] = used + 1
                 item['state'] = 'done'
             else:
@@ -590,9 +598,21 @@ def read(uid, weeks=DEFAULT_VIEW_WEEKS, all_weeks=False):
         item['week'] = wk.isoformat()
         all_by_week.setdefault(item['week'], []).append(item)
 
-    # Mục đã xong / đã bỏ qua hiện ở đúng tuần dự kiến. Không giấu đi: nhìn thấy
-    # việc đã tick xong trong tuần này chính là phần thưởng của cả tuần.
+    # Mục đã xong / đã bỏ qua hiện ở tuần MUỘN HƠN giữa tuần dự kiến và tuần
+    # thực sự hoàn thành.
+    #
+    # Trước đây luôn dùng tuần DỰ KIẾN, nên một bài lên lịch tuần trước mà học
+    # xong hôm nay bị đặt vào tuần đã qua — và tuần đã qua thì không hiện. Người
+    # học tick xong thì mục ấy BIẾN MẤT thay vì hiện ra, trong khi `totals.done`
+    # vẫn đếm nó: hai con số trên cùng màn hình không khớp nhau.
+    #
+    # `max` chứ không phải tuần hoàn thành trần: mục làm SỚM vẫn nằm ở tuần dự
+    # kiến của nó (kế hoạch nhìn về phía trước). Phép này chỉ TĂNG độ hiện, không
+    # bao giờ giảm.
     for item in finished:
+        ngay = item.get('doneDate')
+        if ngay:
+            item['week'] = max(item['week'], _monday(ngay).isoformat())
         all_by_week.setdefault(item['week'], []).append(item)
 
     # Tuần đã qua không hiện: kế hoạch là thứ nhìn về phía trước. Việc quá hạn

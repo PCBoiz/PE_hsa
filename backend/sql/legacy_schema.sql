@@ -1104,3 +1104,38 @@ ALTER TABLE lesson_progress ADD COLUMN IF NOT EXISTS answers_json JSONB;
 ALTER TABLE notification_settings DROP CONSTRAINT IF EXISTS notification_settings_user_fk;
 ALTER TABLE notification_settings ADD CONSTRAINT notification_settings_user_fk
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
+
+
+-- §42 · `roadmaps` là bảng DUY NHẤT của mình còn `NO ACTION` — nó CHẶN xoá tài khoản
+-- ─────────────────────────────────────────────────────────────────────────────
+--
+-- Phát hiện khi trích ERD (01/09/2026). Đếm lại 01/09/2026 trên CSDL thật: 9
+-- khoá ngoại `NO ACTION`, nhưng **7 trong số đó thuộc bảng do Django quản**
+-- (`socialaccount_*`, `token_blacklist_*`) — Django tự lo việc dây chuyền ở tầng
+-- Python, không phải phần mình đặt ra. (Ghi rõ ở đây vì bản ghi chép trước đó
+-- nói "4 khoá", và một con số sai trong tài liệu thì tệ hơn không có con số.)
+--
+-- Của mình đúng HAI, cả hai trên `roadmaps`:
+--
+--   · `user_id` → CASCADE. Lộ trình cá nhân không còn nghĩa gì khi chủ nó biến
+--     mất, và 43 khoá anh em đều đã CASCADE. Bảng này dùng `user_id IS NULL` để
+--     đánh dấu MẪU (xem mục 5 ở đầu tệp), nên mẫu không bị đụng tới: 3 dòng cá
+--     nhân, 1 dòng mẫu.
+--   · `generated_from_survey_id` → SET NULL. Đây là XUẤT XỨ, không phải danh
+--     tính: xoá bản khảo sát thì lộ trình vẫn còn giá trị, chỉ mất đường truy
+--     ngược. Cột đã cho phép NULL nên không phải đổi kiểu.
+--
+-- Vì sao đáng sửa khi CHƯA có đường xoá tài khoản nào trong mã: ngày dựng đường
+-- ấy, `NO ACTION` không báo lỗi lúc viết mã mà báo lúc CHẠY, trên tài khoản thật,
+-- giữa chừng một thao tác đã xoá xong nửa số bảng khác.
+--
+-- Đo trước khi đổi: 0 dòng mồ côi ở cả hai cột (4 dòng `roadmaps`, 5 dòng
+-- `surveys`). `NOT VALID` giữ đúng lối của §33/§41: có hiệu lực NGAY với dòng
+-- ghi mới, không soi lại dữ liệu cũ.
+ALTER TABLE roadmaps DROP CONSTRAINT IF EXISTS roadmaps_user_id_fkey;
+ALTER TABLE roadmaps ADD CONSTRAINT roadmaps_user_id_fkey
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
+
+ALTER TABLE roadmaps DROP CONSTRAINT IF EXISTS roadmaps_generated_from_survey_id_fkey;
+ALTER TABLE roadmaps ADD CONSTRAINT roadmaps_generated_from_survey_id_fkey
+    FOREIGN KEY (generated_from_survey_id) REFERENCES surveys(id) ON DELETE SET NULL NOT VALID;

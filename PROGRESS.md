@@ -2205,3 +2205,29 @@ WCAG 2.4.7 hỏi một câu mà phép đo màu không trả lời được: Tab 
 không. Chụp dáng vẻ trước/sau khi bật `:focus-visible` qua CDP; y hệt nhau là
 không có dấu hiệu nào. Kết quả 0/171 — tự kiểm bằng cách tắt vòng nét toàn cục
 thì báo 60/171, gỡ ra thì về 0.
+
+## 01/09/2026 (tiếp) · L12, N2, N3 — và đối chiếu lại TODO
+
+**L12 (phần còn lại).** Mục đã xong bị đặt vào tuần DỰ KIẾN, nên một việc đến hạn
+tuần trước mà làm xong hôm nay rơi vào tuần đã qua — mà tuần đã qua thì không
+hiện. Người học tick xong thì việc BIẾN MẤT, còn ô tổng vẫn cộng thêm một. Nay
+đặt vào tuần muộn hơn giữa tuần dự kiến và tuần thực sự hoàn thành; phép này chỉ
+tăng độ hiện, không bao giờ giảm. Test hồi quy đã chứng minh ĐỎ trên mã cũ.
+
+**N2.** Chú thích `HALF_LIFE_DAYS` nay nói cả ba điều nó phải nói, kèm một hệ quả
+chưa ghi ở đâu: ngưỡng xếp lịch ôn là 60, nên 11 điểm chênh đủ để một chủ đề nhảy
+qua nhảy lại ranh giới "cần ôn" — con số chưa kiểm chứng này đang quyết định lịch
+học của người ta.
+
+**N3.** Đếm lại trên CSDL thật: **9 khoá `NO ACTION`, không phải 4**; 7 thuộc
+bảng do Django quản. Của mình đúng hai, cả hai trên `roadmaps`. §42 trong
+`legacy_schema.sql`. Đã chạy thử trong giao dịch rồi CUỘN LẠI — Neon nguyên vẹn.
+
+**Đối chiếu TODO.** TODO.md là nhật ký nối thêm nên nhiều mục `[ ]` cũ thực ra đã
+làm ở đoạn sau; không đối chiếu thì điều kiện dừng "hết mọi mục" vô nghĩa. Rà 19
+mục bằng cách ĐỌC MÃ chứ không theo trí nhớ: L6-L10, L13-L15, A13-A16, B12-B16
+đều đã xong (mỗi mục nay kèm một dòng chỉ đúng chỗ trong mã). A17 vẫn BÁC, có lý
+do: không có khái niệm khoá trả phí nào trong mã nên ghi danh là tự phục vụ —
+"hai request" không giành thêm quyền gì so với một request `/enroll`.
+
+Còn 31 mục mở. Cả bộ: **221 phép kiểm xanh**.

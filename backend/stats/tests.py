@@ -457,3 +457,35 @@ def test_viec_lam_SAU_khi_sinh_ke_hoach_van_tick_binh_thuong(db):
 
     ra = plan.read(uid, all_weeks=True)
     assert ra['totals']['done'] == 1, ra['totals']
+
+
+@pytest.mark.django_db
+def test_muc_lam_xong_HOM_NAY_khong_bien_mat_vi_da_len_lich_tuan_truoc(db):
+    """Tick xong một việc quá hạn thì nó phải HIỆN RA, không phải biến mất.
+
+    Bản cũ đặt mục đã xong vào tuần DỰ KIẾN. Một đề lên lịch tuần trước mà làm
+    xong hôm nay rơi vào tuần đã qua, mà tuần đã qua thì không hiện — nên trên
+    màn hình: người học vừa làm xong một việc, việc ấy biến mất khỏi kế hoạch,
+    còn ô tổng vẫn cộng thêm một. Hai con số cạnh nhau không khớp nhau.
+    """
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L12c','hv_l12c_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    thu_hai = local_today() - timedelta(days=local_today().weekday())
+    tuan_truoc = thu_hai - timedelta(days=7)
+    # Kế hoạch có từ hai tuần trước; mục đến hạn TUẦN TRƯỚC; làm xong HÔM NAY.
+    _ke_hoach(uid, tuan_truoc, local_now() - timedelta(days=14),
+              [('mock', None, None, None)])
+    _su_kien(uid, 'mock', 'mock_attempt', '902', None, None, diem=50)
+
+    ra = plan.read(uid)
+    hien = sum(w['done'] for w in ra['weeks'])
+    assert ra['totals']['done'] == 1, (
+        'dựng sai: mục lẽ ra phải được tick xong — %s' % ra['totals'])
+    assert hien == 1, (
+        'ô tổng đếm %s việc đã xong nhưng không tuần nào hiện việc nào (%s) — '
+        'người học tick xong thì việc biến mất'
+        % (ra['totals']['done'], [(w['weekStart'], w['done']) for w in ra['weeks']]))

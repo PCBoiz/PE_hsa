@@ -58,6 +58,25 @@ KIND_TO_SOURCE = {
 TOPIC_SOURCES = ('test', 'drill', 'review_quiz', 'assignment')
 
 #: Sau ngần này ngày, một kết quả chỉ còn nặng một nửa.
+#:
+#: BA ĐIỀU PHẢI NÓI RA, vì gộp chúng lại chính là cách con số 45 sống sót suốt
+#: mấy tháng mà không ai hỏi (N2, 01/09/2026):
+#:
+#: 1. **Chưa được kiểm chứng.** 45 không đến từ dữ liệu của pe_hsa, không đến từ
+#:    một bài báo nào, và chưa lần nào được đối chiếu với kết quả thật. Nó là
+#:    một con số ai đó gõ ra. Muốn kiểm: lấy các cặp (điểm dự đoán hôm nay, điểm
+#:    thật ở lần làm tiếp theo) rồi tìm chu kỳ bán rã làm sai số nhỏ nhất. Chưa
+#:    đủ dữ liệu để làm việc đó — xem N1, ngưỡng 100 học viên.
+#: 2. **Nó KHÔNG vô hại.** Đo 31/08/2026 trên một học viên thật: đổi 45 thành 30
+#:    hay 90 làm ô thành thạo xê dịch tới **11 điểm phần trăm**. Ngưỡng xếp lịch
+#:    ôn là 60, nên 11 điểm đủ để một chủ đề nhảy qua nhảy lại ranh giới "cần ôn"
+#:    — tức con số chưa kiểm chứng này đang QUYẾT ĐỊNH lịch học của người ta.
+#: 3. **Nó là trọng số theo ĐỘ MỚI CỦA BẰNG CHỨNG, không phải mô hình quên.**
+#:    Nó không nói "em quên mất một nửa sau 45 ngày". Nó nói "bài kiểm tra cách
+#:    đây 45 ngày chỉ đáng tin bằng nửa bài hôm nay để đoán trình độ HIỆN TẠI".
+#:    Hai mệnh đề đó khác nhau: một cái về người học, một cái về bằng chứng.
+#:    Nếu ngày nào muốn mô hình quên thật thì đó là việc khác (FSRS/SM-2), có
+#:    tham số riêng, và KHÔNG dùng lại con số này.
 HALF_LIFE_DAYS = 45
 #: Số HOẠT ĐỘNG khác nhau tối thiểu để dám hiện một con số thành thạo.
 #: Đúng một bài học sinh ra 2 sự kiện (kiểm tra + phòng luyện) nhưng vẫn chỉ là

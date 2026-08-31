@@ -1161,29 +1161,36 @@ như bài kiểm tra đầu vào. Cái sai là chỗ CHẤM. Nay:
 combo ×3 · +75 XP"**, 8 lời gọi `/check`, thân `/complete` chỉ mang `answers`.
 **10/10 phép kiểm.**
 
-### [ ] L6 · Làm lại bài ghi đè điểm cũ bằng điểm mới THẤP HƠN
+### [x] L6 (XONG) · Làm lại bài ghi đè điểm cũ bằng điểm mới THẤP HƠN
+> Kiểm lại 01/09/2026: `lessons/views.py:328` nay `quiz_score = COALESCE(cũ, mới)`
+> — điểm ĐẦU giữ, đúng luật "lượt đầu vào sổ".
 `quiz_score` dùng `COALESCE` trong khi `xp_earned` dùng `GREATEST` — cùng một
 bảng, hai chính sách. Ôn lại bài đã 100 rồi bấm cẩu thả là điểm tụt, không có
 đường khôi phục.
 
-### [ ] L7 · Anh chốt: học lại bài cũ GIỮ NGÀY ĐẦU
+### [x] L7 (XONG) · Anh chốt: học lại bài cũ GIỮ NGÀY ĐẦU
+> Kiểm lại 01/09/2026: `common/events.py:145` `event_date = LEAST(cũ, mới)`.
 `lesson_progress.completed_at` giữ lần đầu nhưng `learning_events.event_date`
 nhảy sang hôm nay → đường cong tiến bộ của tuần trước ĐỔI HÌNH DẠNG, và "Chỉ
 tiêu tuần" nhích lên trong khi "Nhiệm vụ ngày" vẫn 0/1. Cần `event_date` giữ lần
 đầu, "hoạt động gần nhất" chuyển sang đọc `occurred_at`.
 
-### [ ] L8 · Anh chốt: điểm thi thử GIỮ nhưng TÁCH hiển thị
+### [x] L8 (XONG) · Anh chốt: điểm thi thử GIỮ nhưng TÁCH hiển thị
+> Kiểm lại 01/09/2026: `competency.py:264` trả `masteryTopic`; `plan.py:111`
+> `_diem_chu_de` dùng nó để xếp lịch ôn; `dashboard.js:2871` hiện hai số.
 Điểm cả đề đang tính 25% vào TỪNG ô chủ đề. Đại số của em id 9 đáng lẽ 62, hiện
 42 → dưới ngưỡng 60 → hệ xếp **17 buổi "Ôn lại Đại số"** vào lịch của em. Cần ô
 hiện hai số rõ ràng ("chủ đề 62 · đề thi thử 0") và chốt ngưỡng xếp lịch ôn dùng
 số nào.
 
-### [ ] L9 · `MIN_ACTIVITIES` gộp nhầm hai hoạt động khác loại
+### [x] L9 (XONG) · `MIN_ACTIVITIES` gộp nhầm hai hoạt động khác loại
+> Kiểm lại 01/09/2026: `competency.py:178` khoá `(ref_type, ref_id)`.
 Đếm bằng `ref_id` trần, mà quiz #2 và bài học #2 là hai không gian id riêng. Đo:
 cùng khối lượng học, một bên hiện 36 một bên hiện "—", khác biệt duy nhất là số
 thứ tự trong CSDL. Sửa: khoá `(ref_type, ref_id)` — một dòng.
 
-### [ ] L10 · Ngày thi HÔM NAY bị coi là "chưa đặt mốc thi"
+### [x] L10 (XONG) · Ngày thi HÔM NAY bị coi là "chưa đặt mốc thi"
+> Kiểm lại 01/09/2026: `journal.py:254` và `plan.py:158` đều `is not None`.
 `days_to_exam` trả `0`, và ba nơi tiêu thụ dùng `if days` — `0` là falsy. Còn 1
 ngày → chế độ báo động (3 đề/tuần, cảnh báo "bỏ 68 bài"); còn 0 ngày → chế độ
 thư thả (1 đề/tuần, cảnh báo biến mất, lịch trải 12 tuần). Và câu chữ "CHƯA ĐẶT
@@ -1204,20 +1211,33 @@ gom về một bản, vì ba bản tự viết là ba bản sẽ trôi khỏi nh
 lại (`?limit=-1`, `?weeks=0`, phân trang diễn đàn) XANH cả trên mã cũ — chúng là
 phép kiểm HÀNG RÀO cho phần đã đúng sẵn, không tính vào thành tích.
 
-### [ ] L12 · Kế hoạch vừa sinh đã có mục "đã xong"; `totals.done` không hiện ra
+### [x] L12 (XONG) · Kế hoạch vừa sinh đã có mục "đã xong"; `totals.done` lệch
+> Phần mốc sàn: xong ở B16 (chính xác tới GIỜ).
+> Phần `totals.done` (01/09/2026): mục đã xong bị đặt vào tuần DỰ KIẾN, nên một
+> việc đến hạn tuần trước mà làm xong hôm nay rơi vào tuần đã qua — mà tuần đã
+> qua thì không hiện. Người học tick xong thì việc BIẾN MẤT, còn ô tổng vẫn
+> cộng thêm một: hai con số cạnh nhau không khớp. Nay đặt vào tuần MUỘN HƠN
+> giữa tuần dự kiến và tuần thực sự hoàn thành — phép này chỉ tăng độ hiện,
+> không bao giờ giảm. Test hồi quy đã chứng minh ĐỎ trên mã cũ (`weeks` rỗng
+> trong khi `totals.done` = 1).
 `floor` dùng thứ Hai của tuần sinh thay vì `generated_at`, nên hoạt động làm
 TRƯỚC khi kế hoạch tồn tại vẫn tick nó. Và mục "Ôn lại" bị tick bởi một bài học
 thường. Riêng `totals.done` thì mã làm NGƯỢC với chú thích của chính nó: chú
 thích viết "không giấu đi", mã lọc `k >= today_key`.
 
-### [ ] L13 · Xem lại quiz ôn tập hiện MÃ lựa chọn, không bao giờ hiện lời giải
+### [x] L13 (XONG) · Xem lại quiz ôn tập hiện MÃ lựa chọn, không hiện lời giải
+> Kiểm lại 01/09/2026: `quizzes/views.py` trả `explain` ở cấp câu hỏi + `*_text`.
 In ra "Bạn chọn: o1 — Đáp án đúng: o2". `explanation` luôn `None` vì pool chỉ
 dựng `{id, text, correct}`, trong khi dữ liệu gốc có `explain` ở cấp câu hỏi.
 
-### [ ] L14 · Ngưỡng mở quiz ôn tập: giao diện nói "5 BÀI", máy chủ kiểm "5 CÂU"
+### [x] L14 (XONG) · Ngưỡng mở quiz ôn tập: ba cách phát biểu một luật
+> Kiểm lại 01/09/2026: `quizzes/views.py:13` `MIN_QUESTIONS = 5`, và câu chữ
+> trả về nói đúng "câu" kèm số đang có.
 Ba câu phát biểu khác nhau cho cùng một luật.
 
-### [ ] L15 · Điểm sao 5.0 trên mọi trang khoá là con số CỨNG
+### [x] L15 (XONG) · Điểm sao 5.0 trên mọi trang khoá là con số CỨNG
+> Kiểm lại 01/09/2026: `courses/views.py` nhắc `course_ratings` 11 lần — cả
+> bốn đường đọc đều JOIN.
 `courses.rating` = 5.0 cho cả ba khoá; `course_ratings` rỗng; `CourseRatingView`
 tính đúng nhưng KHÔNG ai gọi (grep frontend: 0 kết quả).
 
@@ -1327,27 +1347,41 @@ lần đầu cho từng câu, `/complete` chấm trên phần đã ghi nhận ch
 request. Cần thêm bảng/cột và một quyết định về "làm lại bài thì sao" — tôi
 không làm vội trong phiên này. **Đây là việc đầu tiên của phiên sau.**
 
-### [ ] A13 · CHƯA VÁ · phòng luyện nay bắn 9 request/bài, đụng trần rate-limit lớp học
+### [x] A13 (XONG) · phòng luyện bắn 9 request/bài, đụng trần rate-limit lớp học
+> Kiểm lại 01/09/2026: `lessons/views.py:474` `CheckAnswersView` có bốn lớp
+> throttle riêng — và chú thích ngay trên nhắc rằng đặt `throttle_classes` là
+> GHI ĐÈ mặc định chứ không cộng thêm.
 `ip_hour = 1000/giờ` đếm theo IP × theo view, mà một phòng máy dùng chung NAT.
 30 em × 4 bài/giờ × 9 = 1080 request/giờ trên cùng một IP. Chạm trần thì
 `gradeTest` CHẶN HẲN không cho đi tiếp. Cần cho `/check` một luật riêng, hoặc
 gộp lượt chấm phòng luyện.
 
-### [ ] A14 · CHƯA VÁ · `validate_lesson` không kiểm khối `drill` một chữ nào
+### [x] A14 (XONG) · `validate_lesson` không kiểm khối `drill`
+> Kiểm lại 01/09/2026: khối `drill` được kiểm (`questions` phải là mảng ≥ 1).
 Không ai bắt câu drill phải có `id`, `id` phải duy nhất, hay phải có `answer` —
 trong khi XP và bản đồ năng lực nay dựng từ đúng khối đó. Thiếu `id` thì mọi câu
 hiện "Chưa chấm được câu này" và câu an ủi ấy là nói dối.
 
-### [ ] A15 · CHƯA VÁ · mẫu nhập giáo trình chính thức đặt sai tên khoá
+### [x] A15 (XONG) · mẫu nhập giáo trình chính thức đặt sai tên khoá
+> Kiểm lại 01/09/2026: cả `NHAP_GIAO_TRINH.md` lẫn `mau_nhap_giao_trinh.json`
+> nay viết `time_seconds`, khớp engine.
 `docs/NHAP_GIAO_TRINH.md` và `docs/mau_nhap_giao_trinh.json` viết
 `drill.seconds`, engine đọc `drill.time_seconds`. Bài nhập đúng theo mẫu chính
 thức sẽ có đồng hồ phòng luyện **không bao giờ hết giờ** (`NaN <= 0` luôn sai).
 
-### [ ] A16 · CHƯA VÁ · `AdminLessonContentView` không đối chiếu `index` với `sort_order`
+### [x] A16 (XONG) · `AdminLessonContentView` không đối chiếu `index`/`sort_order`
+> Kiểm lại 01/09/2026: `courseadmin/views.py` ép `index == sort_order`, kèm số
+> đo "0/76 bài lệch" nên hàng rào không chặn nội dung nào đang chạy.
 Dán mẫu có `"index": 28` vào ô nội dung của bài đang ở `sort_order = 5`: engine
 đọc `index = 28`, ghi tiến độ sang bài 28, và chấm bằng đáp án của bài 28.
 
-### [ ] A17 · CHƯA VÁ · `/complete` không kiểm ghi danh nên tự mở cửa cho `/content`
+### [~] A17 (BÁC, có lý do) · `/complete` không kiểm ghi danh
+> Kiểm lại 01/09/2026: không có khái niệm khoá TRẢ PHÍ nào trong mã —
+> `courses/views.py` không nhắc `price` một lần. Ghi danh là tự phục vụ, mọi
+> tài khoản đã đăng nhập đều gọi `/enroll` được. Nên "hai request đọc được nội
+> dung khoá chưa ghi danh" không giành thêm quyền gì so với một request
+> `/enroll`. Đây không phải ranh giới phân quyền. Ngày nào có khoá trả phí thì
+> mở lại mục này TRƯỚC khi bật tính năng đó.
 `CourseContentView` và `CheckAnswersView` đều kiểm `_da_ghi_danh`, riêng
 `CompleteLessonView` thì không — mà nó TỰ ghi danh. Hai request là đọc được nội
 dung khoá mình chưa ghi danh.
@@ -1739,11 +1773,17 @@ tụ**. Nếu sau này làm adaptive thì phải tách hai việc ấy.
 tỉ lệ đúng trần. Trước ngưỡng đó thì KHÔNG làm — và lý do đã ghi ở trên để lần
 sau không ai phải tra lại.
 
-### [ ] N2 · Việc làm được ngay, không cần thêm người
+### [x] N2 (XONG) · Việc làm được ngay, không cần thêm người
 Chú thích của `HALF_LIFE_DAYS` phải nói ra: (a) con số này chưa được kiểm chứng,
 (b) đo 31/08/2026 nó đáng tới 11 điểm với một học viên thật, (c) nó là trọng số
 theo ĐỘ MỚI CỦA BẰNG CHỨNG, không phải mô hình quên. Ba thứ đó khác nhau, và
 gộp chúng lại là cách con số 45 sống sót mà không ai hỏi.
+
+> Viết xong 01/09/2026 tại `stats/competency.py`, kèm CÁCH kiểm chứng khi đủ dữ
+> liệu (tìm chu kỳ bán rã làm nhỏ nhất sai số giữa điểm dự đoán và điểm thật ở
+> lần làm sau) và một hệ quả chưa ghi ở đâu: ngưỡng xếp lịch ôn là 60, nên 11
+> điểm đủ để một chủ đề nhảy qua nhảy lại ranh giới "cần ôn" — con số chưa kiểm
+> chứng này đang QUYẾT ĐỊNH lịch học của người ta.
 
 **Nguồn:**
 - [Applications of the Elo rating system in adaptive educational systems](https://www.sciencedirect.com/science/article/abs/pii/S036013151630080X)
@@ -1868,7 +1908,9 @@ Nay KHỞI TẠO từng lớp và đọc `rate`. Và
 `test_luu_tam_khong_phai_cua_sau_de_lay_dap_an` dùng danh sách khoá cứng nên đỏ
 ngay khi thêm một trường vô hại — viết lại theo Ý ĐỊNH (không rò khoá chấm điểm).
 
-### [ ] B12 · CHƯA VÁ · `LocMemCache` theo tiến trình, mà Render chạy 2 worker
+### [x] B12 (XONG phần mã) · `LocMemCache` theo tiến trình, Render chạy 2 worker
+> `config/settings.py` đọc `REDIS_URL`; không có biến thì chạy y như cũ. CHỜ ANH
+> bật hạ tầng (3 bước ghi trong chú thích ở chính tệp đó).
 `config/settings.py` không khai `CACHES` → LocMemCache, sống trong bộ nhớ TỪNG
 tiến trình. Ba hệ quả:
 - `quen_dap_an` (bản vá A10 hôm qua) chỉ xoá đệm của MỘT worker — worker kia vẫn
@@ -1879,25 +1921,32 @@ tiến trình. Ba hệ quả:
 
 Đây chính là hạng mục Redis (A3) đang chờ anh. Ba hệ quả trên là lý do cụ thể.
 
-### [ ] B13 · CHƯA VÁ · phòng luyện vẫn là máy dò đáp án (A18 cũ, có sửa lại)
+### [x] B13 (XONG) · phòng luyện vẫn là máy dò đáp án
+> Kiểm lại 01/09/2026: `lessons/views.py:145` `_chot_luot_drill` chốt lượt đang
+> dở ngay lúc bấm "Bắt đầu" lại — lượt DÒ chính là lượt đầu.
 `reset` cho thử vô hạn; trắc nghiệm 4 lựa chọn thì ≤ 4 lượt/câu là biết chắc.
 **Tôi từng ghi "XP đã chặn" — SAI**: `existed` chỉ chặn lần thứ HAI, còn lần thứ
 nhất (lần duy nhất được tính) đã là 120 XP + ô năng lực 8/8 do dò ra. Cần anh
 chốt hướng, như đã hỏi.
 
-### [ ] B14 · CHƯA VÁ · `CREATE INDEX ON mock_attempts` chạy trước `CREATE TABLE`
+### [x] B14 (XONG) · `CREATE INDEX ON mock_attempts` chạy trước `CREATE TABLE`
+> Kiểm lại 01/09/2026: `sql/mockexam_schema.sql` — mọi `CREATE INDEX` nằm sau
+> `CREATE TABLE` trong cùng tệp, kèm chú thích giải thích thứ tự `sorted()`.
 Nằm ở `legacy_schema.sql:780`, NGOÀI dải commit của phiên (có từ trước). Nhưng
 `bootstrap_schema` nay nằm trong `buildCommand` của Render và `raise` ở câu lệnh
 đầu tiên hỏng, nên trên một CSDL RỖNG (staging, khôi phục sau sự cố) nó làm
 **chết cả lần triển khai**. Chuyển hai dòng ấy sang `mockexam_schema.sql`.
 
-### [ ] B15 · CHƯA VÁ · `/complete` bỏ qua phần phòng luyện ĐÃ ghi nhận
+### [x] B15 (XONG) · `/complete` bỏ qua phần phòng luyện ĐÃ ghi nhận
+> Kiểm lại 01/09/2026: `lessons/views.py:84` đọc `doc_ghi_nhan` khi thân request
+> thiếu — thân chỉ là BẢN SAO LƯU.
 `_cham_drill` trả `None` ngay khi thân request thiếu khoá `drill`, TRƯỚC khi
 chạm tới `answers_json`. Em làm đủ 8 câu rồi tải lại trang trước khi bấm Hoàn
 thành → máy chủ có sẵn bài làm nhưng không dùng, rồi `xoa_ghi_nhan` xoá luôn.
 Không phải hồi quy, nhưng đúng là điều A12 tuyên bố đã sửa.
 
-### [ ] B16 · CHƯA VÁ · `_moc_san` chỉ chính xác tới NGÀY
+### [x] B16 (XONG) · `_moc_san` chỉ chính xác tới NGÀY
+> Kiểm lại 01/09/2026: `stats/plan.py:301` `_truoc_moc_san` so ở mức GIỜ.
 Kế hoạch sinh 00:30 thì việc làm lúc 00:10 cùng ngày vẫn tick. Bất biến trong
 docstring đúng ở mức ngày, không đúng ở mức giờ.
 
@@ -2003,10 +2052,19 @@ xanh. **18/18 khối sạch.**
   trình** — hiện chưa hại ai vì chưa có đường xoá tài khoản nào trong mã.
 - **5 tài khoản thật.** Con số quan trọng nhất khi đọc mọi tài liệu ở đây.
 
-### [ ] N3 · `roadmaps.user_id` là `NO ACTION` trong khi 43 khoá khác `CASCADE`
+### [x] N3 (XONG) · `roadmaps` là bảng DUY NHẤT của mình còn `NO ACTION`
 Chưa hại ai (chưa có đường xoá tài khoản), nhưng ngày dựng đường ấy thì nó chặn.
-Đổi sang `CASCADE` cho khớp phần còn lại — hoặc quyết định giữ lộ trình lại khi
-xoá tài khoản, và ghi lý do ra.
+
+> **Đếm lại 01/09/2026 trên CSDL thật: 9 khoá `NO ACTION`, không phải 4** — và 7
+> trong số đó thuộc bảng do Django quản (`socialaccount_*`, `token_blacklist_*`),
+> Django tự lo dây chuyền ở tầng Python. Của mình đúng HAI, cả hai trên
+> `roadmaps`: `user_id` → `CASCADE` (lộ trình cá nhân chết theo chủ; `user_id
+> IS NULL` là MẪU nên mẫu không bị đụng — 3 dòng cá nhân, 1 dòng mẫu), và
+> `generated_from_survey_id` → `SET NULL` (xuất xứ, không phải danh tính).
+>
+> `legacy_schema.sql` §42. Đo trước khi đổi: 0 dòng mồ côi ở cả hai cột. Đã chạy
+> thử cả hai lệnh trong giao dịch rồi CUỘN LẠI — xác nhận `CASCADE`/`SET NULL`
+> có hiệu lực trong giao dịch và Neon trở về `NO ACTION` sau khi cuộn.
 
 ---
 
