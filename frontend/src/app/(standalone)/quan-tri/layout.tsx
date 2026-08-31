@@ -60,7 +60,7 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
     <div className="min-h-dvh bg-ground">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
-          <Link href="/dashboard" className="text-small text-ink-3 hover:text-brand-ink">
+          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
             ← Trang của tôi
           </Link>
           <h1 className="text-section text-ink">Vận hành trung tâm</h1>

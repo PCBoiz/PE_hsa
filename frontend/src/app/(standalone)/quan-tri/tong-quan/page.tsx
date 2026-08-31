@@ -276,7 +276,7 @@ export default async function TongQuanPage({
                   <Td label="Lớp">
                     <Link
                       href={`/giang-day/buoi-hoc/${c.id}`}
-                      className="font-semibold text-brand-ink underline"
+                      className="-my-2 inline-block py-2 font-semibold text-brand-ink underline"
                     >
                       {c.name}
                     </Link>

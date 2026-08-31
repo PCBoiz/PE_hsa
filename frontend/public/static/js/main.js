@@ -1004,7 +1004,9 @@ function renderDashProgress() {
               : ""),
         pct >= 100
           ? ""
-          : '<button class="dash-prog-cta" style="background:' + grad + '" ' +
+          // KHÔNG gán nền inline nữa: màu khoá là màu trang trí, không đỡ nổi
+          // chữ trắng (2,72:1). Nút lấy nền từ CSS — xem `.dash-prog-cta`.
+          : '<button class="dash-prog-cta" ' +
             "onclick=\"event.stopPropagation();window.location='" + lessonUrl + "'\">Học tiếp →</button>",
         "</div>",
         "</div>",

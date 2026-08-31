@@ -90,7 +90,7 @@
   display: flex; align-items: center; justify-content: center; font-size: 11px;
 }
 .cd-lesson.done    .cd-lesson-icon { background: linear-gradient(135deg,#10B981,#059669); color:#fff; }
-.cd-lesson.current .cd-lesson-icon { background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color:#fff; }
+.cd-lesson.current .cd-lesson-icon { background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color:#fff; }
 .cd-lesson.locked  .cd-lesson-icon { background:var(--lift); color:var(--t3); border:1.5px solid var(--border); }
 .cd-lesson-title { font-size: 13px; flex: 1; line-height: 1.4; }
 .cd-lesson.done    .cd-lesson-title { color: var(--t3); text-decoration: line-through; }
@@ -104,7 +104,7 @@
 .cd-lesson-num { font-size: 11px; color: var(--t3); }
 .cd-lesson-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff; white-space: nowrap;
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff; white-space: nowrap;
 }
 body.dark .cd-lesson.done:hover, body.dark .cd-lesson.current:hover { background: #293548; }
 body.dark .cd-lesson-badge { background: linear-gradient(135deg,#7C5CF0,#8B7CF6); }
@@ -194,32 +194,48 @@ body.dark .coming-soon-note { color: var(--t3); }
 }
 .cd-enroll-btn.primary {
   margin-top: 14px;
-  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff;
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff;
   box-shadow: 0 4px 12px rgba(139,124,246,0.35);
 }
 .cd-enroll-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(139,124,246,0.45); }
+/* Chữ trắng trên `#10B981` chỉ được 2,54:1 (đo 01/09/2026) — `#10B981` là xanh
+   dành cho CHỮ/VIỀN, không phải nền đỡ chữ trắng. `--success-fill` sinh ra đúng
+   cho việc này; xem chú thích của nó trong theme.css. Đây là nút mà học viên
+   đang học bấm mỗi ngày. */
 .cd-enroll-btn.continue {
-  background: linear-gradient(135deg,#10B981,#059669); color: #fff;
-  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+  background: linear-gradient(135deg, var(--success-fill, #047857),
+                              var(--success-ink, #0B6357));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
 }
 .cd-enroll-btn.continue:hover { transform: translateY(-1px); }
-.cd-enroll-btn.unenroll { background: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2; }
+/* #EF4444 trên #FEF2F2 = 3,44:1 (đo 01/09/2026) — đỏ 500 là màu NỀN/BIỂU
+   TƯỢNG, không phải màu chữ trên chính nó. #B91C1C (đỏ 700) = 5,98:1 và vẫn
+   đọc ra là hành động nguy hiểm. */
+.cd-enroll-btn.unenroll { background: #FEF2F2; color: #B91C1C; border: 1px solid #FEE2E2; }
 .cd-enroll-btn.unenroll:hover { background: #FEE2E2; }
 
 .cd-progress-row { margin-top: 14px; margin-bottom: 16px; }
 .cd-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #6B7280; margin-bottom: 6px; }
-.cd-progress-label .pct { font-weight: 700; color: #8B7CF6; }
+/* `#8B7CF6` là tím NHẠT dành cho nền/viền; làm CHỮ 12px trên trắng nó chỉ được
+   3,33:1. `--brand-ink` là bản tím dành cho chữ. */
+.cd-progress-label .pct { font-weight: 700; color: var(--brand-ink); }
 .cd-prog-bar { height: 7px; background: #F3F4F6; border-radius: 4px; overflow: hidden; }
 .cd-prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#8B7CF6,#2DD4BF); transition: width 0.4s ease; }
 
 .cd-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.cd-cs { background: #F9FAFB; border-radius: 10px; padding: 10px; text-align: center; }
-.cd-cs .v { font-size: 16px; font-weight: 700; color: #1F2937; }
-.cd-cs .l { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+/* Mã màu CỨNG ở khối này từng là ba vi phạm tương phản (đo 01/09/2026): nhãn
+   11px `#9CA3AF` trên `#F9FAFB` chỉ được **2,43:1**, cần 4,5:1. Và chính
+   `theme.css` mở đầu bằng câu "KHÔNG ghi hex cứng" — tệp này có 145 mã cứng,
+   là chỗ luật ấy bị vi phạm nhiều nhất. Token thì vừa đạt ngưỡng vừa tự đúng ở
+   nền tối. */
+.cd-cs { background: var(--lift); border-radius: 10px; padding: 10px; text-align: center; }
+.cd-cs .v { font-size: 16px; font-weight: 700; color: var(--t1); }
+.cd-cs .l { font-size: 11px; color: var(--t3); margin-top: 2px; }
 
 .cd-includes { border-top: 1px solid #F3F4F6; padding-top: 14px; }
 .cd-includes-title { font-size: 12px; font-weight: 700; color: var(--t3); margin-bottom: 10px; letter-spacing: 0.04em; }
-.cd-inc-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7280; padding: 4px 0; }
+.cd-inc-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--t3); padding: 4px 0; }
 .cd-inc-item i { width: 16px; color: #8B7CF6; }
 
 .cd-desc { font-size: 14px; color: #374151; line-height: 1.7; }
@@ -282,7 +298,7 @@ body.dark .topbar-nav .nav-btn.active { background: linear-gradient(135deg,rgba(
 }
 .quiz-btn:disabled { opacity: 0.6; cursor: default; }
 .quiz-btn.primary {
-  background: linear-gradient(135deg,#8B7CF6,#7C5CF0); color: #fff;
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff;
   box-shadow: 0 4px 12px rgba(139,124,246,0.35);
 }
 .quiz-btn.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(139,124,246,0.45); }

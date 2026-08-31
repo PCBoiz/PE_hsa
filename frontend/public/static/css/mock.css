@@ -36,9 +36,20 @@ body { background: var(--mk-bg); }
 .mk-topbar {
   flex-wrap: wrap; display: flex; align-items: center; justify-content: space-between;
   padding: 14px 28px; border-bottom: 1px solid var(--mk-bd); position: sticky; top: 0; z-index: 10;
-  background: rgba(7,9,15,.95); backdrop-filter: blur(16px); }
+  /* NỀN THEO THEME, không cứng tối. Bản cũ ghi `rgba(7,9,15,.95)` cho cả hai
+     chế độ, nên ở nền sáng nó là một thanh gần đen trong khi chữ bên trong dùng
+     token của nền sáng (`--t3` = #675F79) — chữ tối trên thanh tối, đo được
+     3,03:1 ở liên kết điều hướng và 3,58–3,7:1 ở tên thương hiệu.
+     `color-mix` giữ được hiệu ứng mờ chồng lớp mà vẫn đổi theo theme. */
+  background: color-mix(in srgb, var(--mk-card) 95%, transparent);
+  backdrop-filter: blur(16px); }
 .mk-brand { font-weight: 800; font-size: .95rem; cursor: pointer; }
-.mk-c1 { color: var(--mk-violet); } .mk-c2 { color: var(--mk-teal); } .mk-x { color: var(--mk-t3); }
+/* Tên thương hiệu là CHỮ, nên dùng bản token dành cho chữ (`--brand-ink`,
+   `--success-ink`) chứ không dùng bản dành cho nền/viền — đo 01/09/2026, bản cũ
+   ra 3,7:1 và 3,58:1 ở cỡ 15px. */
+.mk-c1 { color: var(--brand-ink, #5B47D4); }
+.mk-c2 { color: var(--success-ink, #0E7C6B); }
+.mk-x { color: var(--mk-t3); }
 .mk-top-tag { font-size: 13px; color: var(--mk-violet); font-weight: 600; }
 
 .mk-loading { text-align: center; padding: 100px 0; color: var(--mk-t2); }
@@ -150,11 +161,16 @@ body { background: var(--mk-bg); }
 .mk-nav { display: flex; align-items: center; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
 .mk-nav-link {
   padding: 6px 12px; border-radius: 7px; text-decoration: none;
-  font-size: 0.82rem; font-weight: 600; color: var(--t3, #64748B);
+  /* `--t2` chứ không `--t3`: đây là ĐIỀU HƯỚNG CHÍNH, không phải chú thích.
+     Ở cỡ 0,82rem (~13px) thì `--t3` chỉ vừa đủ trên nền thẻ và trượt ngay khi
+     thanh có nền mờ chồng lớp. */
+  font-size: 0.82rem; font-weight: 600; color: var(--t2, #94A3B8);
   transition: background .15s, color .15s; white-space: nowrap;
 }
 .mk-nav-link:hover { background: var(--accent-soft); color: var(--t1, #E2E8F0); }
-.mk-nav-link.is-active { color: var(--accent); background: var(--accent-soft); }
+/* `--accent` là bản dành cho NỀN/VIỀN; ở 13px nó được 4,2:1 trên thanh gần
+   trắng. Mục đang mở là chữ, nên dùng `--brand-ink` (đo 01/09/2026). */
+.mk-nav-link.is-active { color: var(--brand-ink, #5B47D4); background: var(--accent-soft); }
 @media (max-width: 720px) {
   .mk-nav { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
   .mk-nav-link { padding: 5px 9px; font-size: 0.76rem; }

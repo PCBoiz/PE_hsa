@@ -3137,7 +3137,10 @@ body.dark .lb-row.lb-row-me {
 .lb-rank {
   text-align: center;
   font-size: 13px; font-weight: 700;
-  color: #9CA3AF;
+  /* `#9CA3AF` trên nền thẻ trắng chỉ được 2,33:1 (đo 01/09/2026). Đây là SỐ
+     THỨ HẠNG — thứ người ta tìm bằng mắt trong một danh sách, không phải chú
+     thích mờ. */
+  color: var(--t3);
   font-variant-numeric: tabular-nums;
 }
 .lb-row.lb-top1 .lb-rank { color: #F59E0B; font-size: 18px; }
@@ -3207,6 +3210,9 @@ body.dark .lb-me { border-top-color: var(--card-border); }
 .mini-rm-more {
   font-size: 12px; color: var(--brand-ink); text-decoration: none; font-weight: 600;
   transition: color 0.15s;
+  /* Cao 19px là dưới cả ngưỡng chuột (WCAG 2.2 SC 2.5.8 = 24×24). Đệm 6px trên
+     dưới đưa lên 31px; lề âm trả lại chỗ nên hàng tiêu đề không xê dịch. */
+  display: inline-block; padding: 6px 8px; margin: -6px -8px;
 }
 .mini-rm-more:hover { color: #1D4ED8; text-decoration: underline; }
 body.dark .mini-rm-more { color: #38BDF8; }
@@ -3326,8 +3332,11 @@ body.dark .mini-rm-node--current {
   max-width: 170px; overflow: hidden; text-overflow: ellipsis;
 }
 body.dark .mini-rm-node-title { color: #E2E8F0; }
+/* `#94A3B8` 11px trên gradient xanh nhạt của nút lộ trình = 2,1:1 (đo
+   01/09/2026). Đây là dòng "11% · 3/27" — con số tiến độ, thứ đáng đọc nhất
+   trong nút ấy. */
 .mini-rm-node-sub {
-  font-size: 11px; color: #94A3B8; font-weight: 500;
+  font-size: 11px; color: var(--t2); font-weight: 500;
 }
 body.dark .mini-rm-node-sub { color: #64748B; }
 
@@ -3729,7 +3738,15 @@ body.dark .prof-post-stats {
   margin-top: 5px; font-size: 0.72rem; color: var(--t3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* NỀN CỦA NÚT NÀY KHÔNG PHẢI MÀU KHOÁ.
+   Bản cũ gán inline `style="background: linear-gradient(90deg, c.color,
+   c.accentColor)"` — tức màu TRANG TRÍ của khoá, chọn cho đẹp chứ không chọn để
+   đỡ chữ trắng. Đo 01/09/2026: 2,72:1.
+   Màu khoá vẫn ở nguyên chỗ trang trí (chấm biểu tượng, thanh tiến độ — không
+   có chữ đè lên). Còn nút hành động thì dùng cặp tím ĐẶC, và nhờ vậy "Học tiếp"
+   trông giống nhau ở mọi khoá — nó có nghĩa như nhau ở mọi khoá. */
 .dash-prog-cta {
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2));
   margin-top: 7px;
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 12px; border: none; border-radius: 7px; cursor: pointer;

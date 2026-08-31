@@ -2132,3 +2132,27 @@ xanh. **18/18 khối sạch.**
 Chưa hại ai (chưa có đường xoá tài khoản), nhưng ngày dựng đường ấy thì nó chặn.
 Đổi sang `CASCADE` cho khớp phần còn lại — hoặc quyết định giữ lộ trình lại khi
 xoá tài khoản, và ghi lý do ra.
+
+## 01/09/2026 · Giao diện — 0 vi phạm tương phản, và bộ đo đã tự chứng minh nó đỏ được
+
+Việc chính hôm nay không phải vá giao diện mà là **sửa phép đo**. Bộ đo cũ có 7
+lỗi, mỗi lỗi sinh ra một danh sách việc không có thật — cao điểm là lần nó báo
+"0 vi phạm" trong khi tôi đang cố ý đặt chữ chính gần trắng.
+
+Nay `scripts/do_giao_dien.mjs --tu-kiem` nhét một quy tắc hỏng vào mọi trang rồi
+đòi bộ đo phải bắt được (1291 vi phạm). Chạy nó TRƯỚC mỗi lần báo số.
+
+Sau khi phép đo trung thực: 8 vi phạm tương phản → **0**; 19 vùng chạm dưới
+ngưỡng → **1** (cố ý giữ, đã ghi lý do). 11 trang × 2 khổ, 0 tràn ngang, 0 lỗi
+JS, 0 lời gọi ghi lọt ra Neon.
+
+Sáu gốc tương phản quy về một nguyên nhân: chữ nhỏ dùng bản màu dành cho nền/
+viền. `--brand-ink` đã có sẵn từ đợt 31/08 — đây là những chỗ sót của chính đợt
+đó. Nặng nhất: số XP trong `.player-pill` được 1,69:1 ở cỡ 9px, vì viên thuốc
+thiết kế cho nền tối còn token chữ đã trỏ sang nền sáng.
+
+Suýt báo thêm một lỗi ma: ảnh chụp cho thấy một vòng tròn đè lên nút "Quay lại".
+`elementsFromPoint` cho thấy đó là `NEXTJS-PORTAL` — huy hiệu dev của Next, không
+phải phần tử sản phẩm.
+
+Chi tiết đầy đủ, gồm cả bảy lỗi của bộ đo: `TODO.md` mục 01/09/2026.

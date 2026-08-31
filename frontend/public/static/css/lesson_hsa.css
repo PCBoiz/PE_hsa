@@ -13,8 +13,12 @@
   border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; }
 .hsa-q-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .hsa-q-num { font-weight: 700; color: var(--t1, #E2E8F0); font-size: 14px; }
+/* `--hsa-teal` (#2DD4BF) là teal SÁNG — dành cho nền tối. Làm chữ 11px trên
+   thẻ sáng nó chỉ được 1,86:1 (đo 01/09/2026). `--success-ink` là bản teal dành
+   cho chữ, và nó tự đổi theo theme. */
 .hsa-q-type { font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
-  color: var(--hsa-teal); border: 1px solid rgba(45,212,191,.3); border-radius: 999px; padding: 2px 8px; }
+  color: var(--success-ink, #0B6357); border: 1px solid rgba(45,212,191,.35);
+  border-radius: 999px; padding: 2px 8px; }
 .hsa-q-text { color: var(--t1, #E2E8F0); font-size: 16px; line-height: 1.6; margin: 0 0 14px; }
 .hsa-opts { display: grid; gap: 10px; }
 .hsa-opt { text-align: left; background: var(--lift, #101928); color: var(--t1, #E2E8F0);
@@ -245,6 +249,9 @@ body.light {
   --module-accent: #6D5AE6;
   --module-accent-soft: rgba(109,90,230,0.10);
   --module-accent-glow: rgba(109,90,230,0.28);
+  /* Cùng cái bẫy chú thích ngay trên vừa nói, cho bản DÀNH CHO CHỮ: không khai
+     lại thì `--module-accent-ink` giữ nguyên cyan #0A6F80 của chủ đề cũ. */
+  --module-accent-ink: #5B47D4;
 }
 
 /* Vài bề mặt trong chrome ghi màu cứng, không qua token → chỉnh riêng */
@@ -253,6 +260,26 @@ body.light .lesson-header {
   border-bottom: 1px solid var(--border-default);
 }
 body.light .lesson-nav-footer { background: rgba(255,255,255,0.92); }
+
+/* `.player-pill` được thiết kế cho nền TỐI (lesson_chrome.css:237 — nền
+   `rgba(11,17,33,.5)`, tên dùng `--text-100` vốn là #F1F5F9). Ở chủ đề sáng,
+   nền tối 50% hoà thành xám giữa trong khi `--text-500` đã trỏ sang #675F79:
+   "303/2000" chỉ còn 1,69:1 (đo 01/09/2026).
+   Sửa BỀ MẶT chứ không sửa riêng màu chữ — chỉnh chữ thì lần sau ai đổi nền
+   lại hỏng tiếp, và cái hỏng là quan hệ giữa hai thứ chứ không phải một thứ. */
+body.light .player-pill {
+  background: var(--surface-1);
+  border-color: var(--border-default);
+  box-shadow: 0 1px 3px rgba(20,16,35,0.06);
+}
+body.light .player-pill:hover { background: var(--surface-2); }
+
+/* Nút "Nộp & xem đánh giá": `--primary` trên nền cyan mờ 18% được 4,16:1 ở
+   13,5px — thiếu. Và trạng thái RÊ CHUỘT còn nặng hơn: bản gốc đặt `#fff`,
+   tức chữ trắng trên nền cyan 28% phủ trên trắng ≈ 1,2:1, chữ biến mất.
+   Phép đo tĩnh không bắt được trạng thái rê chuột — chỗ này đọc CSS mới thấy. */
+body.light .nav-next { color: var(--primary-deep); }
+body.light .nav-next:hover:not(:disabled) { color: var(--primary-deep); }
 body.light.lesson-focus-mode::before { opacity: 0.35; }
 body.light .hsa-card-body code,
 body.light .hsa-viz-cap code { background: rgba(20,16,35,.07); }

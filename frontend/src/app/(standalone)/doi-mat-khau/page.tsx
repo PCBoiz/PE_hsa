@@ -50,7 +50,7 @@ export default async function ChangePasswordPage({
 
         {!lanDau && (
           <p className="mt-4 text-center text-small text-ink-3">
-            <a href="/dashboard" className="text-brand hover:underline">
+            <a href="/dashboard" className="-my-3 inline-block py-3 text-brand hover:underline">
               Quay lại Trang của tôi
             </a>
           </p>

@@ -20,6 +20,9 @@
   
   --module-accent: var(--primary);
   --module-accent-soft: var(--primary-soft);
+  /* Bản DÀNH CHO CHỮ của màu chuyên đề. `--module-accent` là màu sáng cho
+     nền/viền; đặt chữ nhỏ bằng nó trên nền mờ thì không đạt 4,5:1. */
+  --module-accent-ink: #0A6F80;
   --module-accent-glow: var(--primary-glow);
 
   
@@ -205,9 +208,11 @@ body.lesson-focus-mode::before { animation: none; }
   transform-origin: left;
   transition: transform var(--anim-medium);
 }
+/* `--module-accent-ink` cho CHỮ: `--module-accent` trên chính nền `-soft` của
+   nó chỉ được 4,3:1 ở 12px (đo 01/09/2026). Nền và viền vẫn dùng bản gốc. */
 .progress-step.active {
   background: var(--module-accent-soft);
-  color: var(--module-accent);
+  color: var(--module-accent-ink, var(--module-accent));
   box-shadow: 0 0 0 1px var(--module-accent-soft);
 }
 .progress-step.active .step-num {
@@ -282,7 +287,9 @@ body.lesson-focus-mode::before { animation: none; }
 .player-pill .xp-text {
   color: var(--text-500);
   font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
-  font-size: 9px;
+  /* 9px là dưới mọi ngưỡng đọc được; 11px vẫn vừa trong viên thuốc cao 40px
+     (11×1,1 + 1 + 11×1,1 = 25px < 32px lòng trong). */
+  font-size: 11px;
 }
 .lesson-stage {
   flex: 1;
@@ -324,13 +331,20 @@ body.lesson-focus-mode::before { animation: none; }
   margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
+/* "Bước 1 / 5" — người học nhìn nó để biết mình đang ở đâu trong bài, nên nó
+   phải đọc được, không phải một vệt màu.
+   `--module-accent` là `#06B6D4` (cyan sáng, dành cho nền tối); trên nền mờ
+   `--module-accent-soft` nó ra 4,07:1 ở cỡ 11px — thiếu đúng 0,43 so với 4,5:1
+   (đo 01/09/2026). Đây là kiểu thiếu nguy hiểm nhất: gần đạt nên nhìn qua thấy
+   ổn, và không ai nghĩ tới việc đo.
+   Tối màu chữ đi và giữ nguyên nền: cùng nhận diện, đủ ngưỡng. */
 .step-pill {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
   border-radius: 8px;
   background: var(--module-accent-soft);
-  color: var(--module-accent);
+  color: var(--module-accent-ink, #0A6F80);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;

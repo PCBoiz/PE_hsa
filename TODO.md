@@ -2007,3 +2007,79 @@ xanh. **18/18 khối sạch.**
 Chưa hại ai (chưa có đường xoá tài khoản), nhưng ngày dựng đường ấy thì nó chặn.
 Đổi sang `CASCADE` cho khớp phần còn lại — hoặc quyết định giữ lộ trình lại khi
 xoá tài khoản, và ghi lý do ra.
+
+---
+
+## 01/09/2026 — Giao diện: đo lại từ đầu vì phép đo cũ nói dối
+
+### Bộ đo — 5 lỗi TRONG CHÍNH NÓ, tìm ra trước khi tin bất cứ con số nào
+`scripts/do_giao_dien.mjs`. Trước khi báo một con số, chạy `--tu-kiem`: nó nhét
+`color: #F2F2F4` vào mọi phần tử rồi đòi bộ đo phải BẮT ĐƯỢC. Đạt: 1291 vi phạm.
+
+Năm lỗi đã mắc, mỗi lỗi từng sinh ra một danh sách việc phải làm mà không có
+việc nào có thật:
+
+1. **Bỏ qua nền gradient** → chữ trắng trên hero tím tính là trắng-trên-trắng,
+   26 dương tính giả.
+2. **Bỏ qua chữ gradient** (`background-clip: text`) → tiêu đề bài ra 1:1.
+3. **Không đọc được `color(srgb 1 1 1 / .95)`** → thanh gần trắng báo 2,1:1.
+4. **`[\d.]` trong template literal bị nuốt gạch chéo** thành `[d.]` → không rút
+   được số nào, mọi tương phản thành `NaN`, và `NaN < 4.5` là FALSE. Bộ đo báo
+   **0 vi phạm** kể cả khi tôi cố ý đặt chữ chính gần trắng. Số 0 giả.
+5. **Chặng gradient TRONG SUỐT bị tính như nền đục** → nút "Nộp & xem đánh giá"
+   phủ `rgba(6,182,212,0.18)` (18%) bị tính như cyan đặc: báo 2,03:1 trong khi
+   thật là 4,94:1.
+
+Và hai lỗi nữa ở phần vùng chạm:
+
+6. **Đo khổ máy tính bằng ngưỡng cảm ứng 44px.** `hasTouch` sai làm Chromium báo
+   `pointer: fine`, nút mang `[@media(pointer:fine)]:min-h-9` co xuống 36px —
+   *và ngay cả khi đúng*, 44 là hướng dẫn CẢM ỨNG; chuột thì chuẩn đang áp là
+   WCAG 2.2 SC 2.5.8 = **24×24**. Hai cái cộng lại: **158 phát hiện, không cái
+   nào vi phạm chuẩn nào**, và chúng chôn mất 11 phát hiện thật.
+7. **Trả hộp của `<label for>` thay vì hộp ô nhập** → ô mật khẩu cao 44px bị báo
+   là 292×17 (đó là dòng chữ nhãn nằm trên nó).
+
+Thêm: mở ngữ cảnh trình duyệt THỨ HAI với cùng cặp thẻ thì lượt sau bị đẩy về
+màn đăng nhập (proxy đã xoay thẻ làm mới ở lượt đầu) — và bộ đo lặng lẽ đo cái
+vỏ đăng nhập. Dấu hiệu: **mọi trang ở khổ sau ra CÙNG một con số**. Nay có chốt
+chặn dừng hẳn thay vì báo số.
+
+### [x] Kết quả sau khi vá — 6 gốc tương phản, 5 gốc vùng chạm
+| | trước | sau |
+|---|---|---|
+| vi phạm tương phản | 8 | **0** |
+| vùng chạm dưới ngưỡng | 19 | **1** (cố ý) |
+| tràn ngang · lỗi JS · lời gọi ghi lọt | 0 · 0 · 0 | 0 · 0 · 0 |
+
+**Một nguyên nhân chung cho cả 6 gốc tương phản:** chữ nhỏ dùng bản màu dành cho
+NỀN/VIỀN thay vì bản dành cho CHỮ. Token `--brand-ink: #5B47D4` đã có sẵn đúng
+cho việc này từ đợt 31/08 — mấy chỗ này bị sót trong chính đợt đó.
+
+- `.brand-short` "PE×T" 3,32:1 — sót đúng ba dòng dưới chỗ `.brand-c1/.brand-c2`
+  đã vá hôm 31/08, cùng tệp, cùng lỗi.
+- `.mk-nav-link.is-active` 4,2:1 · `.progress-step.active` 4,3:1 · `.nav-next`
+  4,16:1 — đều là `--accent`/`--module-accent`/`--primary` dùng làm màu chữ.
+- `.cd-enroll-btn.unenroll` 3,44:1 — đỏ 500 trên nền đỏ 50 → đỏ 700.
+- `.player-pill .xp-text` **1,69:1 ở 9px** — nặng nhất. Viên thuốc thiết kế cho
+  nền TỐI (`rgba(11,17,33,.5)`) nhưng `lesson_hsa.css` đã trỏ `--text-500` sang
+  giá trị nền sáng; nền tối 50% hoà thành xám giữa. Sửa **bề mặt** theo chủ đề
+  chứ không sửa riêng màu chữ — cái hỏng là quan hệ giữa hai thứ.
+
+Và một lỗi phép đo tĩnh KHÔNG bắt được, chỉ đọc CSS mới thấy: `.nav-next:hover`
+đặt `color: #fff` — chữ trắng trên nền cyan 28% phủ trên trắng, ≈1,2:1, chữ biến
+mất khi rê chuột. Đã vá cùng chỗ.
+
+### [x] `--module-accent-ink` phải khai lại trong `lesson_hsa.css`
+Đúng cái bẫy mà chú thích sẵn có trong tệp đã cảnh báo cho `--module-accent`:
+token tính ở `:root` nên đã "đóng băng" mã cyan `#0A6F80` của chủ đề cũ.
+
+### [ ] Còn 1 vùng chạm CỐ Ý giữ nguyên
+Liên kết tên lớp trong bảng quản trị: 205×36. Kéo lên 44 sẽ chồng lên dòng tên
+đợt ngay dưới. 36 vượt chuẩn thật sự đang áp (SC 2.5.8 = 24×24) mà giữ được mật
+độ bảng. Nếu sau này bảng đổi sang bố cục thẻ trên điện thoại thì nâng lên 44.
+
+### Chưa làm
+- Mới đo **chủ đề SÁNG**. Chủ đề tối chưa quét lượt nào.
+- Mới đo **trạng thái tĩnh**. Rê chuột / lấy nét / vô hiệu chưa đo (lỗi
+  `.nav-next:hover` ở trên tìm được bằng mắt, không bằng máy).

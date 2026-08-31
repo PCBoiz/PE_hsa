@@ -16,7 +16,7 @@ export default async function BaiTapCuaToiPage() {
     <div className="min-h-dvh bg-ground">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link href="/dashboard" className="text-small text-ink-3 hover:text-brand-ink">
+          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
             ← Về trang chính
           </Link>
           <h1 className="text-section text-ink">Bài tập</h1>

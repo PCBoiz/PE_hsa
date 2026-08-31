@@ -111,7 +111,10 @@ nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4
 .brand-c1 { color: var(--brand); }
 .brand-c2 { color: var(--brand-2); }
 .brand-x { color: var(--t3); font-weight: 700; margin: 0 1px; }
-.brand-short { display: none; color: #8B7CF6; }
+/* `--brand-ink` chứ không `--brand`: đây là CHỮ, và ở 18px/900 trên nền trắng
+   bản nền `#8B7CF6` chỉ được 3,32:1 (đo 01/09/2026). Cùng lỗi mà .brand-c1/
+   .brand-c2 ngay trên đã vá hôm 31/08 — dòng này bị sót trong đợt đó. */
+.brand-short { display: none; color: var(--brand-ink, #5B47D4); }
 
 /* ── Topbar horizontal nav ── */
 /* CO ĐƯỢC VÀ CUỘN ĐƯỢC Ở MỌI KHỔ, không chỉ trên điện thoại.
