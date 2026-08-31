@@ -265,11 +265,48 @@ document.addEventListener('keydown', function (e) {
 /* ═══════════════════════════════════════════════════════
    Modal đổi mật khẩu
    ═══════════════════════════════════════════════════════ */
+/* Bẫy tiêu điểm cho hộp thoại — viết một lần, dùng chung.
+   Đo 31/08/2026 trên hộp đổi mật khẩu: mở hộp rồi bấm Tab thì tới nút thứ 15
+   là tiêu điểm ĐI RA KHỎI hộp, xuống các nút của trang phía sau — trang mà
+   `aria-modal="true"` vừa tuyên bố là không tồn tại. Người dùng bàn phím và
+   người dùng trình đọc màn hình thấy hai thực tại khác nhau.
+   Viết thành hàm dùng chung chứ không nhét vào riêng hộp mật khẩu: hộp huỷ ghi
+   danh (main.js) cũng hở đúng vậy, và một luật đặt ở hai nơi là một luật sẽ
+   lệch. */
+window.bayTieuDiem = function bayTieuDiem(modal) {
+  var CHON = 'a[href], button:not([disabled]), input:not([disabled]), ' +
+             'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function nhin(e) {
+    if (e.key !== 'Tab' || !modal.classList.contains('active')) return;
+    var ds = Array.prototype.filter.call(modal.querySelectorAll(CHON), function (el) {
+      // Phần tử ẩn không nằm trong vòng: nếu không, Tab sẽ dừng ở một chỗ
+      // không nhìn thấy và người dùng tưởng tiêu điểm biến mất.
+      return el.offsetParent !== null || el === document.activeElement;
+    });
+    if (!ds.length) return;
+    var dau = ds[0], cuoi = ds[ds.length - 1];
+    if (e.shiftKey && document.activeElement === dau) { e.preventDefault(); cuoi.focus(); }
+    else if (!e.shiftKey && document.activeElement === cuoi) { e.preventDefault(); dau.focus(); }
+    else if (!modal.contains(document.activeElement)) { e.preventDefault(); dau.focus(); }
+  }
+  document.addEventListener('keydown', nhin);
+  return function thao() { document.removeEventListener('keydown', nhin); };
+};
+
+/* Nơi tiêu điểm đứng TRƯỚC khi mở hộp, để trả nó về đúng chỗ lúc đóng.
+   Không trả về thì sau khi đóng, tiêu điểm rơi về đầu trang và người dùng bàn
+   phím phải Tab lại từ đầu để tìm chỗ mình đang đứng. */
+var _cpTruocDo = null;
+var _cpThaoBay = null;
+
 function openChangePasswordModal() {
   const modal = document.getElementById('changePasswordModal');
+  _cpTruocDo = document.activeElement;
   modal.classList.add('active');
   document.body.classList.add('cp-modal-open');
   document.body.style.overflow = 'hidden';
+  if (_cpThaoBay) _cpThaoBay();
+  _cpThaoBay = window.bayTieuDiem(modal);
   setTimeout(() => document.getElementById('cpCurrent').focus(), 300);
 }
 
@@ -278,6 +315,9 @@ function closeChangePasswordModal() {
   modal.classList.remove('active');
   document.body.classList.remove('cp-modal-open');
   document.body.style.overflow = '';
+  if (_cpThaoBay) { _cpThaoBay(); _cpThaoBay = null; }
+  if (_cpTruocDo && typeof _cpTruocDo.focus === 'function') _cpTruocDo.focus();
+  _cpTruocDo = null;
   setTimeout(() => {
     document.getElementById('cpForm').reset();
     resetCpUI();
@@ -3986,6 +4026,10 @@ function forumClearSearch() {
            là một <button>, mà lồng <a> trong <button> là HTML không hợp lệ. */
         + '<a class="tc-link" href="/giang-day/buoi-hoc/' + c.id + '">'
           + 'Sổ buổi học &amp; điểm danh →</a>'
+        /* Lối vào giao bài & chấm tay (31/08/2026, đặc tả ERP §5). Cùng lý do
+           với dòng ngay trên: không có liên kết thì tính năng bằng không tồn tại. */
+        + '<a class="tc-link" href="/giang-day/bai-tap/' + c.id + '">'
+          + 'Bài tập &amp; chấm bài →</a>'
       + '</div>'
       + '<div class="tc-tiles">'
         + tile(s.students, 'học viên')

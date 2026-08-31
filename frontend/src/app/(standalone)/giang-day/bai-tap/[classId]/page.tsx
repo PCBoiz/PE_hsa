@@ -2,27 +2,24 @@ import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
 
-import SessionsClient, { type SessionRow } from './SessionsClient';
+import AssignmentsClient, { type Assignment } from './AssignmentsClient';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Buổi học & điểm danh | TopHSA' };
+export const metadata = { title: 'Bài tập & chấm bài | TopHSA' };
 
-/**
- * Hình dạng do `teaching/reports.py:class_report()` trả về.
- *
- * Khoá là `class`, KHÔNG phải `klass`. Bản đầu của tệp này đoán sai tên đó
- * (30/08/2026) và hậu quả là `if (!detail?.class)` luôn đúng — trang LUÔN hiện
- * "Không mở được lớp này" và chưa ai từng vào được màn hình điểm danh.
- * `tsc` không bắt được vì `serverJson<T>` chỉ ép kiểu, không kiểm gì lúc chạy:
- * kiểu ở đây là lời TỰ KHAI về thứ người viết TƯỞNG backend trả.
- *
- * Đừng sửa tên khoá ở đây mà không mở trang thật trong trình duyệt xem lại.
- */
+/** Xem chú thích ở `buoi-hoc/[classId]/page.tsx`: khoá là `class`, KHÔNG phải `klass`. */
 type ClassDetail = {
-  class?: { id: number; name: string; schedule?: string | null; courseTitle?: string | null };
+  class?: { id: number; name: string; schedule?: string | null };
 };
 
-export default async function BuoiHocPage({
+/**
+ * Giao bài & chấm tay — đặc tả ERP §5.
+ *
+ * Màn hình này là cửa duy nhất đưa được ĐÁNH GIÁ CỦA CON NGƯỜI vào hệ thống.
+ * Mọi thứ khác đo được đều là trắc nghiệm chấm máy; phần Định tính của HSA thì
+ * gần như chỉ đo được bằng bài tự luận có người đọc.
+ */
+export default async function BaiTapPage({
   params,
 }: {
   params: Promise<{ classId: string }>;
@@ -30,15 +27,15 @@ export default async function BuoiHocPage({
   const { classId } = await params;
   const [detail, list] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
-    serverJson<{ sessions: SessionRow[] }>(`/api/teach/classes/${classId}/sessions`, {
-      requireAuth: true,
-    }),
+    serverJson<{ assignments: Assignment[] }>(
+      `/api/teach/classes/${classId}/assignments`,
+      { requireAuth: true },
+    ),
   ]);
 
-  // 404 = lớp không tồn tại HOẶC không phụ trách lớp đó — backend cố ý trả cùng
-  // một mã để không lộ ra lớp có tồn tại hay không, nên chỗ này mới là nơi duy
-  // nhất được nói câu "không phải giảng viên phụ trách". Mọi mã khác (500, mất
-  // kết nối) phải nói đúng câu của nó, không mượn câu này.
+  // 404 = lớp không tồn tại HOẶC không phụ trách — backend cố ý trả cùng một mã
+  // để không lộ ra lớp có tồn tại hay không. Mọi mã khác phải nói đúng câu của
+  // nó, không mượn câu này.
   const klass = detail.ok ? detail.data.class : undefined;
 
   if (!klass) {
@@ -65,20 +62,23 @@ export default async function BuoiHocPage({
             ← Khu Giảng dạy
           </Link>
           <h1 className="text-section text-ink">{klass.name}</h1>
-          {klass.schedule && <span className="text-small text-ink-3">{klass.schedule}</span>}
           <Link
-            href={`/giang-day/bai-tap/${klass.id}`}
+            href={`/giang-day/buoi-hoc/${klass.id}`}
             className="text-small text-brand-ink underline"
           >
-            Bài tập &amp; chấm bài
+            Buổi học &amp; điểm danh
           </Link>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <SessionsClient
+        <AssignmentsClient
           classId={Number(classId)}
           className={klass.name}
-          initial={list.ok ? list.data.sessions : []}
+          initial={list.ok ? list.data.assignments : []}
+          // KHÔNG nuốt lỗi bằng `initial={ok ? … : []}`. Danh sách rỗng vì chưa
+          // có bài, và danh sách rỗng vì không đọc được, trông y hệt nhau — và
+          // ở trường hợp thứ hai giảng viên sẽ giao lại một bài đã có.
+          loiTai={list.ok ? null : list.message}
         />
       </main>
     </div>

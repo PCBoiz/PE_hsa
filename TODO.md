@@ -624,3 +624,106 @@ Xếp theo tần suất người dùng thật chạm vào, không theo độ d�
 - [ ] T35 · Trang quản trị nội dung (`/admin`) — tách nốt phần tài khoản còn trùng với `/quan-tri`.
       Đo 31/08 ở 390px: ba bảng còn giấu **83px / 165px / 234px** (chúng là `<table>` HTML
       thuần nên không hưởng bố cục thẻ của T45). Chuyển sang React là vá luôn chỗ này.
+
+
+## P1 — Sai số liệu do audit chéo 31/08/2026 tìm ra (đã đọc mã xác nhận)
+
+Ba agent chạy song song: hai agent tìm lỗi (bảo mật · đúng đắn dữ liệu), một
+agent phản biện lại cả hai. Điểm chung của mọi phát hiện dưới đây: **không cái
+nào làm sập gì cả** — chúng chỉ in ra một con số sai, mà con số sai thì trông y
+hệt con số đúng. Đó là lý do phải có test hồi quy, không phải chỉ có bản vá.
+
+### [x] T55 · Bốn lỗi ở bảng điều khiển trung tâm — XONG 31/08
+Vá ở `teaching/overview.py`, kèm 6 test hồi quy trong `teaching/tests.py`.
+Đã chứng minh test ĐỎ trên mã cũ và XANH trên mã vá (lùi tệp bằng
+`git checkout` rồi chạy lại — 6 fail; phục hồi — 6 pass).
+
+| # | Lỗi | Người đọc làm sai gì |
+|---|---|---|
+| 1 | Câu 4 đếm bài của cả người ĐÃ RỜI LỚP và của KHOÁ KHÁC, còn mẫu số chỉ nhân với số em đang học | Lớp càng nhiều em bỏ học trông càng tiến độ tốt (đo: thật 11% → hiện 85%) |
+| 2 | Câu 3 đếm cả buổi CHƯA DIỄN RA | Màn hình in "11 buổi đã dạy nhưng chưa ai điểm danh" cho lớp mới xếp lịch tuần sau — lớp chuẩn bị kỹ nhất bị quy trách nhiệm nặng nhất |
+| 3 | Câu tra học tập hỏng → trả **0** thay vì **None** | Cả trung tâm hiện "Tiến độ 0%", trông như chưa ai học bài nào |
+| 4 | Lớp mà MỌI thành viên đều không phải học viên bị rơi khỏi `GROUP BY` | Lớp biến mất khỏi bảng điều khiển, `classCount` thiếu, không câu lỗi nào |
+
+### [x] T56 · Rò rỉ hồ sơ qua `TeachStudentView` — XONG 31/08
+`teaching/views.py` thiếu `chi_hoc_vien` mà `parent_report.py` đã có. Giảng viên
+phụ trách lớp đọc được hồ sơ ĐẦY ĐỦ của tài khoản quản trị viên đang là thành
+viên lớp 1 — email, số điện thoại, mục tiêu, sổ điểm, và **nhật ký tự ghi**.
+Đường trả về ÍT dữ liệu hơn (`parent-report`) thì đã chặn; đường trả về NHIỀU
+hơn thì quên. Đo lại sau bản vá: quản trị viên → 404, học viên thật → 200.
+
+### [ ] T57 · Sổ điểm danh CSV cộng cả buổi ĐÃ HUỶ
+`teaching/exports.py` ~440: `counts[status] += 1` không loại `cancelled`, nên
+`_rate` chia cho mẫu số có cả buổi huỷ. `progress.csv` (đi qua
+`attendance.dem_theo_hoc_vien`) thì đúng. Hai file xuất từ CÙNG một màn hình nói
+hai con số khác nhau về cùng một em — trợ giảng tải cả hai cho buổi họp phụ
+huynh. Đúng loại lỗi mà `teaching/attendance.py` mở đầu bằng câu "nay chỉ còn
+một luật, ở một chỗ": `_absence_counts` đã đi qua cửa đó, bảng chéo thì chưa.
+
+### [ ] T58 · Báo cáo phụ huynh: mẫu số chuyên cần sai
+`teaching/parent_report.py` ~155: `attendedPct = co_mat / len(da_tick)` — mẫu số
+là buổi CẢ LỚP đã tick, không phải buổi em ấy CÓ DÒNG. Giảng viên tick cả lớp mà
+sót một em thì em đó vẫn bị chia. Em đi đủ 2/2 buổi có dòng → **giấy in 50%**.
+`noRecord` có trả về nhưng frontend không hiển thị ở đâu (`grep` → 0 kết quả),
+nên bốn ô trên giấy cộng lại không bằng mẫu số và không dòng nào giải thích.
+Đây là tờ giấy GỬI VỀ NHÀ: lỗi hành chính của giảng viên bị đọc thành hạnh kiểm
+của học sinh, và không ai ở đó đính chính.
+
+### [ ] T59 · Học viên quay lại lớp cũ bị đếm HAI LẦN
+`teaching/reports.py:_members` không lọc `left_at`, không gộp theo `user_id`. Từ
+§36 một cặp lớp–người có thể có nhiều dòng. Hệ quả đo được: sổ điểm danh in hai
+dòng cùng tên; `summary.left = 1` trong khi không ai rời lớp; bản đồ năng lực
+của lớp bị kéo lệch (40% thay vì 50%) — và chính con số đó nuôi `weakestTopics`
+mà giảng viên dùng để chọn chủ đề ôn lại.
+
+### [ ] T60 · Kỳ in trên giấy ≠ kỳ dùng để tính, khi em học lại lớp cũ
+`teaching/parent_report.py` ~248 lấy MỘT lượt học (`LIMIT 1`) để bó chuyên cần,
+nhưng `_hoc_tap` dùng trọn kỳ và `period` in ra cũng là trọn kỳ. Em học 01–20/08
+rồi quay lại 28/08: giấy in "học 5 bài, làm 2 đề, điểm đang lên" cạnh "chuyên
+cần 0%", trong khi sự thật trong kỳ đó là 8/9 = 89%.
+
+### [ ] T61 · Mục kế hoạch mồ côi thành "Chậm N bài"
+`teaching/reports.py` ~231: `LEFT JOIN lessons` rồi `WHERE lp.user_id IS NULL` —
+mục trỏ tới bài KHÔNG TỒN TẠI luôn tính là quá hạn. Hôm nay chưa nổ cho mục
+`lesson` (0 mục mồ côi) nhưng ĐÃ CÓ 113 mục `mock`/`review` mồ côi, chúng chỉ
+thoát nhờ bộ lọc `kind='lesson'`. §26 ghi rõ TopHSA sẽ soạn lại giáo trình, tức
+`sort_order` sẽ đổi — ngày đó cả lớp đồng loạt hiện "chậm N bài" và vượt ngưỡng
+`LAG_ITEMS = 5`. Sửa: `AND l.id IS NOT NULL`, và báo số mục mồ côi ra
+`incomplete`.
+
+### [ ] T62 · Hai nơi trả lời cùng một câu hỏi bằng hai phép tính
+Không phải lỗi kỹ thuật mà là **quyết định chưa được ghi**. Cần chốt rồi mới sửa:
+- "Chậm bao nhiêu": `reports.py` đếm `kind='lesson'`, `stats/plan.py` đếm mọi
+  loại. Trên dữ liệu thật uid 12: giảng viên thấy **12**, học viên thấy **14**.
+  Giảng viên gọi điện nói một số, em mở app thấy số khác.
+- Bản đồ năng lực: `reports.py` dựng ô từ `topic` của SỰ KIỆN,
+  `stats/competency.py` dựng từ `lessons.module`. Hôm nay hai bên khớp tuyệt đối
+  (31/31, 21/21, 42/42) nên là mìn chờ, kích hoạt khi giáo trình đổi tên chủ đề.
+
+### [ ] T63 · `ORDER BY occurred_at` thiếu tie-breaker
+`teaching/reports.py` ~209, chỗ quyết định DẤU của xu hướng điểm thi thử
+(ngưỡng cảnh báo `<= -8`). `parent_report.py` đã vá đúng lỗi này kèm 6 dòng chú
+thích; `reports.py` thì không. Chưa tái hiện được lật dấu trên bảng nhỏ, nhưng
+thứ tự vẫn là không xác định theo hợp đồng SQL. Sửa: thêm `, id` — một token,
+khoá vĩnh viễn một lớp lỗi không có đường tái hiện.
+
+### [ ] T64 · `must_change_password` chỉ ép ở frontend
+Backend không view nào từ chối khi cờ còn TRUE: tài khoản mật khẩu tạm gọi
+thẳng `GET /api/user`, `GET /api/stats` đều 200. Trợ giảng biết mật khẩu tạm
+(vừa đọc cho học viên) dùng được toàn quyền tài khoản trong cửa sổ trước khi em
+đổi. Hẹp về thời gian nên xếp sau, nhưng nó là hàng rào chỉ tồn tại ở lớp vẽ.
+
+### [ ] T65 · `meeting_url` không kiểm lược đồ — chưa khai thác được, nhưng hàng rào là tình cờ
+`teaching/views.py:_clean_class_payload` nhận `meeting_url` là chuỗi bất kỳ; nơi
+duy nhất đổ nó vào `href` là `dashboard.js:3979`, và `escHtml` chỉ thoát HTML —
+`javascript:alert(1)` đi qua nguyên vẹn.
+
+**Nhưng ĐO ĐƯỢC 31/08/2026: không khai thác được.** Dựng đúng thẻ đó trong
+Chromium rồi bấm: `target="_blank"` **chặn** điều hướng `javascript:` (false);
+bỏ `target` ra thì chạy (true). Tức hàng rào duy nhất đang giữ chỗ này là một
+thuộc tính đặt vào vì lý do khác hẳn.
+
+Nên vẫn vá, ở ĐƯỜNG GHI chứ không ở đường vẽ: chỉ nhận `http://` và `https://`.
+Ai đó gỡ `target="_blank"`, hoặc dựng một màn hình React mới đổ `meetingUrl` vào
+`<a>`, là lỗ mở lại mà không ai biết mình vừa gỡ hàng rào gì. Ưu tiên THẤP: cần
+quyền quản trị viên/giảng viên mới đặt được, mà vai đó đã tin cậy hơn thế nhiều.

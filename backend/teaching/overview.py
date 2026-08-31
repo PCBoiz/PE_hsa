@@ -40,6 +40,7 @@ from django.db import DatabaseError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.clock import local_now
 from common.db import q
 from common.permissions import IsAdminRole
 from teaching.attendance import KHONG_TINH
@@ -77,22 +78,34 @@ def tong_quan(term_id=None):
     where = ' AND '.join(dieu_kien)
 
     # ── Câu 1: lớp + đợt + ghi danh, tách theo lý do rời lớp ────────────────
+    #
+    # Bộ lọc học viên nằm trong TỬNG PHÉP ĐẾM, không nằm ở mệnh đề WHERE.
+    # Bản đầu (31/08/2026) đặt `AND (m.id IS NULL OR mu.id IS NOT NULL)` ở
+    # WHERE: lớp rỗng thì giữ được, nhưng lớp có thành viên mà KHÔNG thành viên
+    # nào là học viên thì mọi dòng bị loại — cả lớp rơi khỏi GROUP BY và biến
+    # mất khỏi bảng điều khiển, `classCount` thiếu mà không câu lỗi nào.
+    # Không phải giả định: tài khoản quản trị viên đang là thành viên lớp 1, nên
+    # một lớp mới mở mà quản trị viên vào xem trước khi xếp học viên là đúng cảnh đó.
     lop = q('''SELECT c.id, c.code, c.name, c.status, c.course_id, c.capacity,
                       c.term_id, t.name AS term_name, t.code AS term_code,
                       u.name AS teacher_name,
-                      COUNT(m.id) FILTER (WHERE m.left_at IS NULL)            AS dang_hoc,
-                      COUNT(m.id)                                             AS tung_ghi_danh,
-                      COUNT(m.id) FILTER (WHERE m.leave_reason = 'completed') AS hoc_xong,
-                      COUNT(m.id) FILTER (WHERE m.leave_reason = 'dropped')   AS bo_giua,
-                      COUNT(m.id) FILTER (WHERE m.left_at IS NOT NULL
+                      COUNT(m.id) FILTER (WHERE hv AND m.left_at IS NULL)    AS dang_hoc,
+                      COUNT(m.id) FILTER (WHERE hv)                           AS tung_ghi_danh,
+                      COUNT(m.id) FILTER (WHERE hv
+                                            AND m.leave_reason = 'completed') AS hoc_xong,
+                      COUNT(m.id) FILTER (WHERE hv
+                                            AND m.leave_reason = 'dropped')   AS bo_giua,
+                      COUNT(m.id) FILTER (WHERE hv AND m.left_at IS NOT NULL
                                             AND m.leave_reason IS NULL)       AS roi_khong_ro
                FROM classes c
                LEFT JOIN terms t ON t.id = c.term_id
                LEFT JOIN users u ON u.id = c.teacher_id
                LEFT JOIN class_members m ON m.class_id = c.id
-               LEFT JOIN users mu ON mu.id = m.user_id AND ''' + chi_hoc_vien('mu') + '''
+               LEFT JOIN LATERAL (
+                   SELECT TRUE AS hv FROM users mu
+                   WHERE mu.id = m.user_id AND ''' + chi_hoc_vien('mu') + '''
+               ) hvq ON TRUE
                WHERE ''' + where + '''
-                 AND (m.id IS NULL OR mu.id IS NOT NULL)
                GROUP BY c.id, t.name, t.code, u.name
                ORDER BY c.status, c.name''', tuple(args))
     ids = [r['id'] for r in lop]
@@ -121,11 +134,17 @@ def tong_quan(term_id=None):
     if ids:
         try:
             khong = ', '.join("'%s'" % t for t in KHONG_TINH)
+            # `starts_at <= now`: buổi CHƯA TỚI thì chưa thể thiếu điểm danh.
+            # `parent_report.py` đã vá đúng chỗ này; đường này thì quên, và hậu
+            # quả in thẳng ra màn hình quản lý: "N buổi đã dạy nhưng chưa ai
+            # điểm danh" với N gồm cả buổi tuần sau. Lớp nào xếp lịch trước cho cả
+            # kỳ trông như bỏ bê nhất — càng chuẩn bị kỹ càng bị quy trách nhiệm nặng.
             for r in q('''SELECT class_id, COUNT(*) AS tong,
                                  COUNT(*) FILTER (WHERE attendance_taken_at IS NOT NULL) AS da_tick
                           FROM class_sessions
                           WHERE class_id = ANY(%s) AND status NOT IN (''' + khong + ''')
-                          GROUP BY class_id''', (ids,)):
+                            AND starts_at <= %s
+                          GROUP BY class_id''', (ids, local_now())):
                 buoi[r['class_id']] = r
         except DatabaseError:
             logger.error('[overview] KHÔNG đọc được buổi học')
@@ -135,15 +154,34 @@ def tong_quan(term_id=None):
     hoc = {}
     if ids:
         try:
+            # HAI bộ lọc dưới đây phải khớp với MẪU SỐ ở phần ghép, nếu không tử
+            # số và mẫu số đếm hai TẬP NGƯỜI khác nhau:
+            #
+            #  · `m.left_at IS NULL` — mẫu số nhân với `dang_hoc`, nên tử số cũng
+            #    chỉ được tính người ĐANG học. Thiếu vế này thì lớp càng nhiều em
+            #    bỏ học trông càng tiến độ tốt (đo 31/08/2026: lớp thật 11% hiện
+            #    85%), và điểm thi thử của người đã bỏ học từ nhiều tháng trước vẫn
+            #    kéo trung bình cả đợt xuống.
+            #
+            #  · `e.course_id = c.course_id` cho phép đếm BÀI — mẫu số là tổng số
+            #    bài của KHOÁ mà lớp đang dạy, nên bài em ấy tự học ở khoá khác
+            #    không được cộng vào. Thiếu vế này thì một em ôn Định lượng nhưng
+            #    học thêm Định tính đẩy lớp lên 93% trong khi tiến độ thật là 7%.
+            #
+            # KHÔNG áp bộ lọc khoá cho ĐỀ THI THỬ: một lượt thi thử là bài thi cả
+            # ba hợp phần HSA, không thuộc riêng khoá nào.
             for r in q('''SELECT m.class_id,
-                                 COUNT(*) FILTER (WHERE e.kind = 'lesson')  AS bai,
+                                 COUNT(*) FILTER (WHERE e.kind = 'lesson'
+                                              AND e.course_id = c.course_id) AS bai,
                                  COUNT(*) FILTER (WHERE e.kind = 'mock')    AS luot_de,
                                  AVG(e.score * 100.0 / NULLIF(e.max_score, 0))
                                      FILTER (WHERE e.kind = 'mock')         AS diem_tb
                           FROM class_members m
                           JOIN users u ON u.id = m.user_id
+                          JOIN classes c ON c.id = m.class_id
                           JOIN learning_events e ON e.user_id = m.user_id
-                          WHERE m.class_id = ANY(%s) AND ''' + chi_hoc_vien('u') + '''
+                          WHERE m.class_id = ANY(%s) AND m.left_at IS NULL
+                            AND ''' + chi_hoc_vien('u') + '''
                             AND e.kind IN ('lesson','mock')
                           GROUP BY m.class_id''', (ids,)):
                 hoc[r['class_id']] = r
@@ -161,6 +199,7 @@ def tong_quan(term_id=None):
         thieu.append('lessons')
 
     # ── Ghép ────────────────────────────────────────────────────────────────
+    hong_hoc_tap = 'study' in thieu
     ra_lop = []
     for r in lop:
         cc = cham_can.get(r['id']) or {}
@@ -188,9 +227,16 @@ def tong_quan(term_id=None):
             # Buổi đã diễn ra mà chưa ai điểm danh — việc còn tồn của giảng viên.
             'sessionsUnmarked': max(0, (b.get('tong') or 0) - (b.get('da_tick') or 0)),
             'attendedPct': _mot_phan_tram(cc.get('co_mat') or 0, cc.get('tick') or 0),
-            'lessonsDone': h.get('bai') or 0,
-            'progressPct': _mot_phan_tram(h.get('bai') or 0, mau_bai),
-            'mockCount': h.get('luot_de') or 0,
+            # KHÔNG đọc được thì trả None, KHÔNG trả 0 — đúng luật ghi ở đầu
+            # module. Bản đầu để `h` rỗng đi tiếp thành `_mot_phan_tram(0, mẫu)` = 0,
+            # nên một câu SQL hỏng làm CẢ TRUNG TÂM hiện "Tiến độ 0%" — trông y
+            # hệt một trung tâm chưa ai học bài nào. Màn hình vẽ `—` cho None và
+            # `0%` cho 0: hai thứ đó phải khác nhau ở đây thì mới khác nhau trên
+            # màn hình.
+            'lessonsDone': None if hong_hoc_tap else (h.get('bai') or 0),
+            'progressPct': (None if hong_hoc_tap
+                            else _mot_phan_tram(h.get('bai') or 0, mau_bai)),
+            'mockCount': None if hong_hoc_tap else (h.get('luot_de') or 0),
             'mockAvg': round(float(h['diem_tb'])) if h.get('diem_tb') is not None else None,
         })
 

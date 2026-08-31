@@ -928,3 +928,71 @@ T13 + T14 (hai mảng audit chưa chạy, chạy **3 agent một lượt**).
 
 **Nhớ:** Django chạy `--noreload` nên sửa mã Python xong PHẢI khởi động lại mới
 thấy tác dụng — đã mất một lượt đo vì quên. Và token kiểm thử chỉ sống 30 phút.
+
+
+---
+
+## 31/08/2026 — chặng §5 (giao bài & chấm tay) + đợt audit chéo ba agent
+
+### Làm được
+
+**ERP §5 — giao bài & chấm tay.** Khối duy nhất trong ba khối "chờ TopHSA" mà
+câu hỏi của họ KHÔNG đổi cấu trúc: "có chấm tự luận không" đổi việc mô-đun có
+được DÙNG hay không, "thang điểm nào" thì mỗi bài tự khai `max_score`, "ai chấm"
+đổi đúng một dòng `permission_classes`.
+
+- Lược đồ §38 (`assignments` + `submissions`) — chạy khan hai lượt trong giao
+  dịch cuộn lại (328 câu, 0 lỗi) rồi mới áp: Neon **51 → 53 bảng**, 164 câu OK.
+- `teaching/assignments.py` — 4 endpoint. Chấm cả lớp trong MỘT câu INSERT
+  (cùng lý do với điểm danh T41); chấm xong đẻ `learning_events` nên điểm tự
+  luận vào thẳng bản đồ năng lực mà không viết lại phép tính nào.
+- Màn hình: danh sách bài + bảng chấm cả lớp trên một trang, lối vào từ bảng
+  điều khiển giảng dạy và từ màn hình buổi học.
+- **Lỗi tự viết ra, tự bắt được:** đường học viên nộp lại gọi
+  `forget_events('assignment', aid)` — dạng khoá xoá MỌI sự kiện trỏ về bài tập
+  đó, tức một em nộp lại thổi bay điểm đã chấm của CẢ LỚP. Sửa thành
+  `forget_events(user_id=…, dedup_key=…)`. Đã có test giữ.
+
+**`teaching/tests.py` — 29 test, tệp test ĐẦU TIÊN của khu này.** Cả khối ERP
+(lớp, buổi học, điểm danh, đợt, báo cáo phụ huynh, bảng điều khiển, chấm bài)
+được viết mà `teaching/` không có lấy một phép kiểm nào trong bộ chạy được. Từng
+đường đều đã kiểm bằng kịch bản rời — nhưng kịch bản rời nằm ngoài repo, lần sau
+không ai chạy lại và CI không biết nó tồn tại.
+
+**Audit chéo ba agent** (mẫu "Gộp" anh chốt): hai agent tìm lỗi chạy song song,
+một agent thứ ba phản biện lại cả hai. 13 + 3 phát hiện. Tôi **đọc mã xác nhận
+lại 8/8** phát hiện kiểm được, và vá 5 cái nặng nhất ngay (T55, T56).
+
+### Đo được, không suy ra
+
+- 6 test hồi quy cho T55: lùi `overview.py` về bản cũ bằng `git checkout` →
+  **6 fail**; phục hồi bản vá → **6 pass**. Test hồi quy mà xanh trên cả mã cũ
+  lẫn mã mới thì không chứng minh gì.
+- T56 đo lại sau vá trên dữ liệu THẬT: quản trị viên id 7 (đang là thành viên
+  lớp 1) → **404**; học viên thật → **200**.
+- Màn hình mới chạy thật trong trình duyệt: **18/18**, 0 lỗi console, không tràn
+  ngang ở 390px, vùng chạm ≥44px, sáng/tối đều đọc được. Có cài chốt gác đếm
+  request GHI — **0 request ghi rời ra production trong cả lượt kiểm**.
+- Thứ phép đo bỏ sót mà mắt bắt được: ô "Trạng thái" bị cắt chữ ở 1280px
+  ("Đang nhận bài — học viên t✂"). Rút ngắn nhãn, chuyển lời giải thích xuống
+  dòng chú thích. Đo lại: chữ 111px trong ô 239px.
+
+### Học được
+
+**Một phép kiểm có điều kiện hằng đúng là một phép kiểm giả.** Tôi viết
+`check(..., True, ...)` trong kịch bản chấm bài — "44/44" thật ra là 43 thật + 1
+giả. Đúng cái lỗi đã ghi vào RULES sau vụ `check(make(new), new)` ở đường đổi
+mật khẩu. Lần này tự bắt được lúc đọc lại kết quả, không phải lúc viết.
+
+**Test hồi quy phải được chứng minh là ĐỎ trên mã cũ.** Không có bước đó thì nó
+chỉ là một phép kiểm khác, không phải bằng chứng bản vá có tác dụng.
+
+### Còn nợ
+
+T57–T64 trong `TODO.md` — đã đọc mã xác nhận là thật, chưa vá vì agent phản biện
+đang đọc đúng những tệp đó. Vá trước khi nó trả lời là làm hỏng phép đo của nó.
+
+**Việc cần anh:** `docs/VIEC_CUA_ANH.md`. Agent bảo mật độc lập xác nhận lại lỗ
+`X-Forwarded-For` ở mục A2 — giả header thì 60 lần liên tiếp KHÔNG lần nào bị
+chặn, cùng bộ đó với IP cố định thì dính 429 ở lần 101. Vẫn cần anh đo
+`NUM_PROXIES` thật trên production trước khi tôi đặt.

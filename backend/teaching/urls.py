@@ -1,7 +1,7 @@
 from django.urls import path
 
-from teaching import (admin_users, exports, overview, parent_report, sessions,
-                      terms, views)
+from teaching import (admin_users, assignments, exports, overview, parent_report,
+                      sessions, terms, views)
 
 urlpatterns = [
     # ── Khu vực giảng dạy — quyền theo NGỮ CẢNH (lớp mình phụ trách) ──
@@ -19,6 +19,16 @@ urlpatterns = [
     path('api/teach/sessions/<int:session_id>', sessions.ClassSessionDetailView.as_view()),
     path('api/teach/sessions/<int:session_id>/attendance',
          sessions.SessionAttendanceView.as_view()),
+
+    # ── Giao bài & chấm tay (đặc tả ERP §5) ──
+    path('api/teach/classes/<int:class_id>/assignments',
+         assignments.ClassAssignmentsView.as_view()),
+    path('api/teach/assignments/<int:assignment_id>',
+         assignments.AssignmentDetailView.as_view()),
+    path('api/teach/assignments/<int:assignment_id>/submissions',
+         assignments.AssignmentGradingView.as_view()),
+    # Phía học viên: KHÔNG nhận user_id, luôn là chính mình — xem docstring.
+    path('api/assignments', assignments.MyAssignmentsView.as_view()),
 
     # ── Xuất dữ liệu (đặc tả ERP §6) ──
     path('api/teach/classes/<int:class_id>/export/progress.csv',

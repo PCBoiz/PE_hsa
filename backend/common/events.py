@@ -41,9 +41,14 @@ KIND_SELF_LOG = 'self_log'
 #: không phải bằng chứng năng lực, và trộn nó vào phép tính thành thạo sẽ khiến
 #: một em chăm đi học nhưng chưa làm bài trông như đã nắm chủ đề.
 KIND_ATTENDANCE = 'attendance'
+#: Bài tập giảng viên chấm tay (31/08/2026, đặc tả ERP §5). NẰM TRONG
+#: GRADED_KINDS: khác điểm danh, đây là bằng chứng năng lực thật — và là bằng
+#: chứng DUY NHẤT có một con người đọc bài rồi mới cho điểm.
+KIND_ASSIGNMENT = 'assignment'
 
 #: Sự kiện có chấm điểm — nguồn của mọi phép tính năng lực.
-GRADED_KINDS = (KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ, KIND_MOCK, KIND_MOCK_SECTION)
+GRADED_KINDS = (KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ, KIND_MOCK,
+                KIND_MOCK_SECTION, KIND_ASSIGNMENT)
 
 SOURCE_SYSTEM = 'system'
 SOURCE_SELF = 'self'

@@ -152,11 +152,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               </div>
             </div>
             <div className="user-chip-wrap" id="user-chip-wrap">
-              <div className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
+              {/* <button> chứ không <div> — xem chú thích ở components/Topbar.tsx.
+                  Bản sao thứ hai của cùng khối này: sửa một chỗ mà bỏ chỗ kia thì
+                  người dùng bàn phím vẫn kẹt, chỉ là kẹt ở một trang khác. */}
+              <button type="button" className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
                 <img src="/static/images/avatar.svg" alt="avatar" />
                 <span className="chip-name">{userName}</span>
                 <span className="dropdown-icon" id="chip-arrow">▾</span>
-              </div>
+              </button>
               <div className="user-dropdown" id="user-dropdown" role="menu">
                 <div className="user-dropdown-header">
                   <img src="/static/images/avatar.svg" alt="avatar" className="udh-avatar" />

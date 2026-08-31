@@ -20,7 +20,7 @@ from common.permissions import (ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT,
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
-from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS
+from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
 
 #: Trạng thái lớp hợp lệ.
 CLASS_STATUS = ('draft', 'active', 'finished')
@@ -69,8 +69,21 @@ class TeachStudentView(APIView):
     def get(self, request, class_id, user_id):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
-        member = q1('SELECT 1 FROM class_members WHERE class_id=%s AND user_id=%s',
-                    (class_id, user_id))
+        # `chi_hoc_vien` BẮT BUỘC ở đây, không chỉ ở báo cáo phụ huynh.
+        #
+        # Đo 31/08/2026: tài khoản quản trị viên đang là thành viên lớp 1 (anh
+        # chốt giữ). Thiếu bộ lọc này thì giảng viên phụ trách lớp đọc được hồ
+        # sơ ĐẦY ĐỦ của tài khoản ấy — email, số điện thoại, mục tiêu, sổ điểm,
+        # và NHẬT KÝ TỰ GHI. HTTP 200, trả admin@pe-hsa.vn. `parent_report.py`
+        # đã chặn đúng cảnh này; đường này — trả về NHIỀU HƠN — thì quên.
+        #
+        # Không phải chuyện riêng của tài khoản quản trị: lỗ hổng đúng cho MỌI
+        # tài khoản không-học-viên tình cờ nằm trong danh sách lớp, kể cả một
+        # giảng viên khác được thêm vào để dự giờ.
+        member = q1('''SELECT 1 FROM class_members m
+                       JOIN users u ON u.id = m.user_id
+                       WHERE m.class_id = %s AND m.user_id = %s
+                         AND ''' + chi_hoc_vien('u'), (class_id, user_id))
         if not member:
             return Response({'error': 'Học viên không thuộc lớp này.'}, status=404)
         user = q1('SELECT id, name, email, phone, streak, xp, created_at '

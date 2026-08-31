@@ -41,7 +41,13 @@ Mật khẩu **không** ảnh hưởng — băm werkzeug độc lập với `SEC
 ### [ ] A2. Đo `NUM_PROXIES` trên production
 
 **Lỗ đã đo được:** xoay header `X-Forwarded-For` thì **300/300 request lọt qua**
-giới hạn tần suất; cùng bộ đó với IP cố định thì **200/300 bị chặn**. Nghĩa là
+giới hạn tần suất; cùng bộ đó với IP cố định thì **200/300 bị chặn**.
+
+*Xác nhận lại độc lập 31/08/2026* bằng một đợt audit riêng, gọi HTTP thật vào
+`/auth/login` (chỉ dùng email không tồn tại, không đụng tài khoản nào): XFF cố
+định → dính 429 ở lần thứ 101; XFF ngẫu nhiên mỗi lần, chạy ngay sau đó → **60
+lần liên tiếp, 0 lần bị chặn**. Mỗi lần thử làm máy chủ chạy scrypt ~126ms —
+đúng thứ mà giới hạn tần suất sinh ra để bảo vệ. Nghĩa là
 giới hạn đăng nhập, giới hạn tạo tài khoản, giới hạn chat đều vô hiệu với bất kỳ
 ai biết đặt một header.
 
@@ -112,6 +118,12 @@ Hiện tôi đã dựng đường tick tay và để sẵn cột `attendance.min
 động, nên câu trả lời "có API" sẽ không phải đập đi làm lại.
 
 ### [ ] C2. Có chấm tự luận không? Thang điểm nào? Ai chấm — giảng viên hay trợ giảng?
+
+> **Cập nhật 31/08/2026 — câu này KHÔNG còn chặn đường.** Tôi đã dựng xong §5
+> (giao bài & chấm tay) theo cách mà cả ba câu trả lời đều không đổi cấu trúc:
+> "có chấm không" đổi việc mô-đun có được DÙNG hay không · "thang nào" thì mỗi
+> bài tự khai `max_score` và hệ thống quy về % · "ai chấm" đổi đúng một dòng
+> `permission_classes`. Vẫn nên hỏi, nhưng để cấu hình chứ không để viết lại.
 
 → Quyết định khối §5 (giao bài & chấm tay). Đặc tả đã phác sẵn hai bảng
 `assignments` / `submissions`, chấm xong đẻ `learning_events` nên điểm tự luận

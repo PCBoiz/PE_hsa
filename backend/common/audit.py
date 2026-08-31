@@ -55,6 +55,14 @@ TERM_CREATE = 'term.create'
 TERM_UPDATE = 'term.update'
 TERM_DELETE = 'term.delete'
 
+#: Giao bài & chấm tay (§38, 31/08/2026). Chấm điểm PHẢI vào nhật ký: nó là con
+#: số theo em suốt khoá, đi thẳng vào bản đồ năng lực và báo cáo gửi phụ huynh —
+#: nên khi phụ huynh hỏi "điểm này ai cho, cho lúc nào" thì phải trả lời được.
+ASSIGNMENT_CREATE = 'assignment.create'
+ASSIGNMENT_UPDATE = 'assignment.update'
+ASSIGNMENT_DELETE = 'assignment.delete'
+ASSIGNMENT_GRADE = 'assignment.grade'
+
 
 def _client_ip(request):
     """IP thật sau proxy. Render và Vercel đều đứng trước ứng dụng nên

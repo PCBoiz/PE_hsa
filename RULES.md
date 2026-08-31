@@ -160,3 +160,23 @@ ai canh trong nhiều tháng.
   cho khớp luật mới, ĐỪNG XOÁ — một phép kiểm khẳng định luật cũ chính là cái
   chốt giữ lại lỗ vừa bịt.
 
+
+---
+
+## §14 · Nối lệnh qua `| head`/`| tail` thì mã thoát KHÔNG còn là của lệnh đó
+
+`npx tsc --noEmit | head -30` rồi đọc `$?` là đọc mã thoát của `head`, **luôn
+bằng 0**. Ngày 31/08/2026 tôi kết luận "tsc sạch" hai lần liên tiếp trong khi nó
+đang báo hai lỗi TS2783 — và một lần trong số đó chạy nền, nên cái tôi thấy chỉ
+là dòng "completed (exit code 0)" của trình chạy nền.
+
+**Bắt buộc:** với mọi lệnh mà điều mình quan tâm là ĐẠT hay HỎNG — `tsc`,
+`pytest`, `build`, `flake8` — ghi ra tệp rồi mới lọc:
+
+```
+npx tsc --noEmit > /tmp/tsc.log 2>&1; echo "exit=$?"; grep ... /tmp/tsc.log
+```
+
+Cùng họ với §13: "CI xanh" không phải bằng chứng nếu chưa tự xác nhận bộ kiểm đã
+CHẠY. Ở đây còn tệ hơn — bộ kiểm có chạy, có báo lỗi, và tôi đã nhìn thẳng vào
+con số 0 do một lệnh khác sinh ra.

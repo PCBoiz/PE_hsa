@@ -963,3 +963,76 @@ ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS attendance_taken_by INTEGER;
 ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_taken_by_fk;
 ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_taken_by_fk
     FOREIGN KEY (attendance_taken_by) REFERENCES users(id) ON DELETE SET NULL;
+
+-- ============================================================================
+-- 38. Giao bài & chấm tay (đặc tả ERP §5, 2026-08-31)
+-- ============================================================================
+-- Tới hôm nay hệ thống chỉ chấm được TRẮC NGHIỆM. Một trung tâm luyện thi HSA
+-- cần giao bài tự luận, đặc biệt phần Định tính — và đó là phần duy nhất không
+-- có cách nào chấm tự động.
+--
+-- VÌ SAO LÀM ĐƯỢC DÙ CHƯA CÓ CÂU TRẢ LỜI CỦA TopHSA. Đặc tả §5 để ngỏ ba câu:
+-- có chấm tự luận không, thang điểm nào, ai chấm (giảng viên hay trợ giảng).
+-- Không câu nào trong ba câu đó đổi HÌNH DẠNG dữ liệu:
+--   · "có chấm tự luận không" → đổi việc bảng này CÓ ĐƯỢC DÙNG hay không;
+--   · "thang điểm nào"        → `max_score` là số, mỗi bài tự khai thang của nó;
+--   · "ai chấm"               → đổi PHÂN QUYỀN ở tầng view, không đổi cột nào.
+-- Nên dựng bây giờ là an toàn, và chờ thì chỉ mất thời gian.
+--
+-- ĐIỂM TỰ LUẬN VÀO THẲNG BẢN ĐỒ NĂNG LỰC. Chấm xong đẻ một `learning_events`
+-- với `kind='assignment'` và `topic` của bài — không cần luật tính riêng, vì
+-- bản đồ năng lực vốn đọc từ dòng sự kiện chứ không đọc từ bảng nguồn. Đây
+-- chính là lợi tức của kỷ luật một-cửa ở `common/events.py`.
+
+CREATE TABLE IF NOT EXISTS assignments (
+    id          SERIAL PRIMARY KEY,
+    class_id    INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL,
+    description TEXT,
+    -- Chương mục bài này thuộc về. Đây là thứ khiến điểm chấm tay vào được bản
+    -- đồ năng lực đúng ô; để trống thì bài vẫn giao được nhưng điểm chỉ vào sổ
+    -- điểm, không vào năng lực.
+    topic       TEXT,
+    -- Khoá học của chủ đề. Cần vì một chủ đề như "Chiến thuật" xuất hiện ở CẢ
+    -- BA hợp phần (xem §26) — thiếu cột này thì không biết ô nào trên bản đồ.
+    course_id   TEXT REFERENCES courses(id) ON DELETE SET NULL,
+    due_at      TIMESTAMP,
+    -- Thang điểm của RIÊNG bài này. Trung tâm chấm thang 10 hay thang 100 là
+    -- việc của họ; hệ thống quy về phần trăm khi ghi sự kiện.
+    max_score   NUMERIC(6,2) NOT NULL DEFAULT 10,
+    attachment_url TEXT,
+    -- draft: đang soạn, học viên chưa thấy · open: đã giao · closed: hết hạn nộp
+    status      TEXT NOT NULL DEFAULT 'open',
+    created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMP
+);
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_status_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_status_check
+    CHECK (status IN ('draft', 'open', 'closed'));
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_max_score_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_max_score_check
+    CHECK (max_score > 0);
+CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id, due_at DESC);
+
+CREATE TABLE IF NOT EXISTS submissions (
+    assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    submitted_at  TIMESTAMP,
+    content       TEXT,
+    file_url      TEXT,
+    score         NUMERIC(6,2),
+    feedback      TEXT,
+    graded_by     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    graded_at     TIMESTAMP,
+    PRIMARY KEY (assignment_id, user_id)
+);
+-- Khoá chính (assignment_id, user_id) là ĐÚNG ở đây, khác hẳn `class_members`
+-- (§36 phải bỏ khoá kép để cho phép nhiều lượt học). Lý do: một bài tập chỉ nộp
+-- một lần; nộp lại là SỬA bài nộp đó, không phải một lượt nộp mới. Lịch sử sửa
+-- không cần giữ vì `graded_at`/`graded_by` đã trả lời "ai chấm, lúc nào", còn
+-- nội dung cũ thì không ai đọc lại.
+CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id);
+-- Câu "bài nào còn chưa chấm" là câu giảng viên hỏi mỗi tối.
+CREATE INDEX IF NOT EXISTS idx_submissions_chua_cham
+    ON submissions(assignment_id) WHERE graded_at IS NULL;

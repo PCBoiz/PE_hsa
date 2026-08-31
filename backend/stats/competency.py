@@ -25,7 +25,7 @@ from django.db import DatabaseError
 
 from common.clock import local_today
 from common.db import q
-from common.events import (KIND_DRILL, KIND_LESSON, KIND_MOCK_SECTION,
+from common.events import (KIND_ASSIGNMENT, KIND_DRILL, KIND_LESSON, KIND_MOCK_SECTION,
                            KIND_REVIEW_QUIZ)
 
 #: Trọng số bốn nguồn. Tổng bằng 1 khi có đủ; thiếu thì chuẩn hoá lại.
@@ -34,6 +34,15 @@ SOURCE_WEIGHTS = {
     'drill': 0.20,
     'review_quiz': 0.25,
     'mock': 0.25,
+    # Bài tập chấm tay (31/08/2026). Trọng số cao nhất cùng `test`, và đây là
+    # một GIẢ ĐỊNH SẢN PHẨM nên để lộ ra: đó là nguồn duy nhất có một con người
+    # đọc bài rồi mới cho điểm, nên nó nói về hiểu biết thật nhiều hơn mọi
+    # nguồn chấm máy. Phần Định tính của HSA gần như chỉ đo được bằng cách này.
+    #
+    # THÊM MỘT NGUỒN KHÔNG LÀM XÊ DỊCH CON SỐ CỦA AI. `compute` chuẩn hoá theo
+    # tổng trọng số của những nguồn CÓ dữ liệu (`if mean is None: continue`),
+    # nên em nào chưa có bài chấm nào thì mẫu số không đổi. Đã kiểm.
+    'assignment': 0.30,
 }
 #: kind của sự kiện → nguồn tương ứng.
 KIND_TO_SOURCE = {
@@ -41,11 +50,12 @@ KIND_TO_SOURCE = {
     KIND_DRILL: 'drill',
     KIND_REVIEW_QUIZ: 'review_quiz',
     KIND_MOCK_SECTION: 'mock',
+    KIND_ASSIGNMENT: 'assignment',
 }
 #: Nguồn gắn với ĐÚNG một chủ đề. `mock` không nằm ở đây: đề thi thử chỉ chia
 #: theo hợp phần, không biết câu nào thuộc chủ đề nào, nên nó là bối cảnh cấp
 #: khoá — dùng để chấm nhưng KHÔNG được tính là bằng chứng về chủ đề.
-TOPIC_SOURCES = ('test', 'drill', 'review_quiz')
+TOPIC_SOURCES = ('test', 'drill', 'review_quiz', 'assignment')
 
 #: Sau ngần này ngày, một kết quả chỉ còn nặng một nửa.
 HALF_LIFE_DAYS = 45

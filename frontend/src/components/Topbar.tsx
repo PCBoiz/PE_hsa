@@ -50,6 +50,15 @@ export default function Topbar() {
             <span className="nav-icon" data-icon="target" data-size="17"></span><span>Thi thử</span>
           </button>
 
+          {/* Bài tập giảng viên giao (ERP §5, 31/08/2026). Cùng kiểu điều hướng
+              với "Thi thử": rời khỏi trang legacy sang một tuyến Next thật, vì
+              màn hình này dựng bằng bộ component mới chứ không phải main.js.
+              KHÔNG ẩn theo vai trò — giảng viên cũng có thể đang học một khoá,
+              và trang tự trả về danh sách rỗng nếu không có bài nào. */}
+          <button className="nav-btn" onClick={() => { window.location.href = '/bai-tap'; }} aria-label="Bài tập">
+            <span className="nav-icon" data-icon="pencil" data-size="17"></span><span>Bài tập</span>
+          </button>
+
           {/* Khu giảng dạy — chỉ hiện với vai trò Giảng viên hoặc admin.
               dashboard.js bật/tắt theo window.__currentUser.role. */}
           <button className="nav-btn" id="nav-teach" data-page="teach" style={{ display: 'none' }} onClick={() => W().navigate('teach')} aria-label="Giảng dạy">
@@ -99,11 +108,20 @@ export default function Topbar() {
             </div>
           </div>
           <div className="user-chip-wrap" id="user-chip-wrap">
-            <div className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
+            {/* <button>, KHÔNG phải <div>. Đo 31/08/2026: bấm Tab 80 lần từ đầu
+                trang không lần nào dừng ở đây — một <div> không nằm trong thứ tự
+                tiêu điểm — mà menu thì `visibility: hidden` khi đóng nên ba nút
+                bên trong cũng không tới được. Nghĩa là người dùng bàn phím KHÔNG
+                CÓ CÁCH NÀO đăng xuất, trên mọi trang của sản phẩm.
+                Đổi thẻ là đủ: <button> tự có tiêu điểm, tự nhận Enter và Space,
+                và `aria-haspopup`/`aria-expanded` ở đây mới đúng nghĩa. `.user-chip`
+                đã tự đặt nền, viền, bo góc và con trỏ nên hình dạng không đổi;
+                `type="button"` để nó không vô tình gửi form nào bọc ngoài. */}
+            <button type="button" className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
               <span className="chip-avatar" id="chip-avatar">?</span>
               <span className="chip-name" id="chip-name">—</span>
               <span className="dropdown-icon" id="chip-arrow"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
-            </div>
+            </button>
             <div className="user-dropdown" id="user-dropdown" role="menu">
               <div className="user-dropdown-header">
                 <span className="chip-avatar udh-avatar" id="udh-avatar">?</span>
