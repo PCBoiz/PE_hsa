@@ -141,7 +141,12 @@ def generate(uid):
         mocks_per_week = suggestion['mocks']
 
     days = goals.get('daysToExam')
-    weeks_total = max(1, min(-(-days // 7) if days else FALLBACK_WEEKS, MAX_PLAN_WEEKS))
+    # `is not None` chứ KHÔNG phải `if days`: ngày thi HÔM NAY cho `days = 0`,
+    # mà `0` là falsy. Hệ quả đo được: còn 1 ngày → chế độ báo động (3 đề/tuần,
+    # cảnh báo "bỏ N bài"); còn 0 ngày → chế độ thư thả (1 đề/tuần, cảnh báo
+    # biến mất, lịch trải 12 tuần). Đúng cái ngày cần siết nhất thì hệ nới ra.
+    weeks_total = max(1, min(-(-days // 7) if days is not None else FALLBACK_WEEKS,
+                             MAX_PLAN_WEEKS))
     drill_weeks = min(journal.FINAL_DRILL_WEEKS, max(0, weeks_total - 1))
     build_weeks = max(1, weeks_total - drill_weeks)
 

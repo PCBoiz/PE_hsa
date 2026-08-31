@@ -204,3 +204,88 @@ def test_stats_avg_progress_handles_null_progress(auth_api, temp_user):
     res = auth_api.get('/api/stats')
     assert res.status_code == 200
     assert res.json()['avgProgress'] == 0  # NULL coi như 0
+
+
+# ── L9 · đếm hoạt động theo CẶP (ref_type, ref_id) ─────────────────────────
+
+def _su_kien(uid, kind, ref_type, ref_id, course_id, topic, diem=50):
+    from common.clock import local_today
+    x('''INSERT INTO learning_events
+             (user_id, kind, dedup_key, occurred_at, event_date, course_id, topic,
+              ref_type, ref_id, score, max_score)
+         VALUES (%s,%s,%s, now(), %s, %s, %s, %s, %s, %s, 100)''',
+      (uid, kind, '%s:%s:%s' % (kind, ref_type, ref_id), local_today(),
+       course_id, topic, ref_type, ref_id, diem))
+
+
+@pytest.mark.django_db
+def test_bai_hoc_2_va_quiz_2_la_HAI_hoat_dong_khac_nhau():
+    """Mỗi loại tham chiếu có KHÔNG GIAN ID RIÊNG. Đếm bằng `ref_id` trần thì
+    bài học #2 và quiz ôn tập #2 gộp thành một, và ô chủ đề tụt xuống dưới
+    ngưỡng `MIN_ACTIVITIES` → hiện "chưa đủ dữ liệu" thay vì con số có thật.
+
+    Đo 31/08/2026 trên dữ liệu thật: chủ đề "Số học" của em id 9 đi từ
+    `mastery=None, confidence=1` sang `mastery=22, confidence=2` sau khi vá.
+    """
+    from stats.competency import compute
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L9','hv_l9_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    bai = q1("SELECT course_id, module FROM lessons "
+             "WHERE module IS NOT NULL AND module <> '' LIMIT 1")
+    _su_kien(uid, 'lesson', 'lesson', '2', bai['course_id'], bai['module'])
+    _su_kien(uid, 'review_quiz', 'quiz', '2', bai['course_id'], bai['module'])
+
+    o = next(t for t in compute(uid)['topics']
+             if t['course'] == bai['course_id'] and t['topic'] == bai['module'])
+    assert o['confidence'] == 2, (
+        'hai hoạt động khác loại trùng số thứ tự bị đếm thành %s' % o['confidence'])
+    assert o['status'] == 'ok' and o['mastery'] is not None
+
+
+@pytest.mark.django_db
+def test_bai_hoc_va_phong_luyen_cung_bai_VAN_la_mot_hoat_dong():
+    """Chỗ CỐ Ý gộp phải giữ nguyên: một bài học sinh ra hai sự kiện (kiểm tra
+    + phòng luyện) nhưng vẫn chỉ là một lần chạm vào chủ đề."""
+    from stats.competency import compute
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L9b','hv_l9b_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    bai = q1("SELECT course_id, module FROM lessons "
+             "WHERE module IS NOT NULL AND module <> '' LIMIT 1")
+    _su_kien(uid, 'lesson', 'lesson', '7', bai['course_id'], bai['module'])
+    _su_kien(uid, 'drill', 'lesson', '7', bai['course_id'], bai['module'])
+
+    o = next(t for t in compute(uid)['topics']
+             if t['course'] == bai['course_id'] and t['topic'] == bai['module'])
+    assert o['confidence'] == 1, o['confidence']
+
+
+# ── L10 · ngày thi HÔM NAY (`days = 0`) không được coi là "chưa đặt mốc" ────
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('con_lai,tuan_toi_da', [(0, 1), (1, 1), (13, 2)])
+def test_ngay_thi_HOM_NAY_van_la_mot_moc_thi(db, con_lai, tuan_toi_da):
+    """`days = 0` là falsy trong Python. Bản cũ dùng `if days`, nên đúng cái
+    ngày cần siết nhất thì hệ NỚI RA: còn 1 ngày → kế hoạch 1 tuần; còn 0 ngày →
+    kế hoạch trải 12 tuần như thể chưa đặt mốc thi.
+
+    Đi qua đường THẬT (`stats.plan.generate`) chứ không kiểm lại một biểu thức
+    tự viết trong phép kiểm — RULES §19.
+    """
+    import json as _json
+    from datetime import date, timedelta
+    from stats import plan
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV L10','hv_l10_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    x("INSERT INTO surveys (user_id, data_json, created_at) VALUES (%s, %s::jsonb, now())",
+      (uid, _json.dumps({'target_score': 100, 'exam_timing': 'Trong 1 tháng',
+                         'exam_date': (date.today() + timedelta(days=con_lai)).isoformat(),
+                         'study_time': '2h'})))
+
+    tom_tat, loi = plan.generate(uid)
+    assert not loi, loi
+    so_tuan = tom_tat.get('weeksTotal') if isinstance(tom_tat, dict) else None
+    assert so_tuan == tuan_toi_da, (
+        'còn %d ngày mà kế hoạch dựng %s tuần' % (con_lai, so_tuan))

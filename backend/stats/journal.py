@@ -251,7 +251,11 @@ def suggest_target(uid, goals=None):
     left = max(0, total - done)
 
     days = goals.get('daysToExam')
-    weeks_left = max(1, -(-days // 7)) if days else None
+    # `is not None` chứ KHÔNG phải `if days`: ngày thi HÔM NAY cho `days = 0`,
+    # mà `0` là falsy. Hệ quả đo được: còn 1 ngày → chế độ báo động (3 đề/tuần,
+    # cảnh báo "bỏ N bài"); còn 0 ngày → chế độ thư thả (1 đề/tuần, cảnh báo
+    # biến mất, lịch trải 12 tuần). Đúng cái ngày cần siết nhất thì hệ nới ra.
+    weeks_left = max(1, -(-days // 7)) if days is not None else None
     # Tuần dành cho bài mới = tổng trừ giai đoạn luyện đề cuối.
     build_weeks = max(1, (weeks_left or FALLBACK_WEEKS) - FINAL_DRILL_WEEKS)
 

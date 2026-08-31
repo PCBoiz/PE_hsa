@@ -1577,3 +1577,48 @@ khoá chưa ghi danh". Đúng về cơ chế, sai về hệ quả: **ghi danh l�
 là ranh giới phân quyền — nó là hàng rào TOÀN VẸN DỮ LIỆU (đừng để tiến độ rơi
 vào một khoá không có dòng ghi danh). Dựng thêm rào ở `/complete` chỉ làm hỏng
 đúng bản vá L2 hôm nay, cái sinh ra để TỰ ghi danh.
+
+
+---
+
+## 31/08/2026 (tiếp) — L9 và L10: hai lỗi nhỏ, hai con số thật đổi
+
+### [x] L9 (XONG) · Bài học #2 và quiz ôn tập #2 bị đếm thành MỘT hoạt động
+`stats/competency` đếm "số hoạt động khác nhau" bằng `ref_id` TRẦN. Nhưng mỗi
+loại tham chiếu có KHÔNG GIAN ID RIÊNG: bài học #2 và quiz ôn tập #2 chỉ trùng
+số thứ tự trong CSDL. Gộp nhầm làm `confidence` tụt xuống dưới `MIN_ACTIVITIES`,
+và ô chủ đề hiện **"chưa đủ dữ liệu"** thay vì một con số có thật.
+
+Đo trên dữ liệu thật trước khi sửa — va chạm CÓ THẬT, không phải giả định:
+
+```
+user 9, ref_id '2' → ['lesson', 'quiz']
+user 7, ref_id '3' → ['lesson', 'mock_attempt']
+```
+
+Và tác động đo được, trên chính em id 9, chủ đề **"Số học"**:
+
+| | trước | sau |
+|---|---|---|
+| mastery | `None` | **22** |
+| confidence | 1 | 2 |
+| status | `low_data` | `ok` |
+
+Khoá nay là CẶP `(ref_type, ref_id)`. Cặp này vẫn giữ đúng chỗ CỐ Ý gộp: sự kiện
+`lesson` và `drill` của cùng một bài dùng chung cả `ref_type` lẫn `ref_id` nên
+vẫn là một lần chạm vào chủ đề — có phép kiểm riêng ghim điều đó lại.
+
+### [x] L10 (XONG) · Ngày thi HÔM NAY bị coi là "chưa đặt mốc thi"
+`days_to_exam` trả `0` cho ngày thi hôm nay, và `0` là falsy trong Python. Hai
+nơi tiêu thụ dùng `if days`, nên **đúng cái ngày cần siết nhất thì hệ NỚI RA**:
+
+- còn 1 ngày → kế hoạch 1 tuần, chế độ luyện đề dày;
+- còn 0 ngày → kế hoạch **12 tuần**, chế độ thư thả, như thể chưa đặt mốc thi.
+
+Phép kiểm đi qua đường THẬT (`stats.plan.generate`) chứ không kiểm lại một biểu
+thức tự viết trong chính phép kiểm — RULES §19. Lùi mã cũ, nó đỏ đúng câu:
+*"còn 0 ngày mà kế hoạch dựng 12 tuần"*, và hai tham số còn lại XANH cả trên mã
+cũ, đúng như phải thế (chỉ `days = 0` mới rơi vào nhánh sai).
+
+Frontend không mắc lỗi này — nó đã dùng `!= null` ở cả năm chỗ, và còn phân biệt
+"đã khảo sát nhưng mốc đã trôi qua" để dẫn thẳng vào Cài đặt.

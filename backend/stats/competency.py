@@ -152,7 +152,8 @@ def _events(uid):
     đồ hiện "chưa đủ dữ liệu" — đúng sự thật — thay vì làm hỏng cả Trang của tôi.
     """
     try:
-        rows = q('''SELECT kind, course_id, topic, score, max_score, event_date, ref_id
+        rows = q('''SELECT kind, course_id, topic, score, max_score, event_date,
+                           ref_type, ref_id
                     FROM learning_events
                     WHERE user_id = %s AND kind = ANY(%s)
                       AND max_score IS NOT NULL AND max_score > 0''',
@@ -168,7 +169,7 @@ def _events(uid):
             value = max(0.0, min(100.0, float(r['score'] or 0) * 100.0 / float(r['max_score'])))
         except (TypeError, ValueError, ZeroDivisionError):
             continue
-        item = (value, r['event_date'], r['ref_id'])
+        item = (value, r['event_date'], (r['ref_type'], r['ref_id']))
         if source == 'mock':
             by_course.setdefault(r['course_id'], []).append(item)
         elif r['topic']:
@@ -207,10 +208,22 @@ def compute(uid):
         if mock_items:
             sources['mock'] = mock_items
 
-        # Đếm theo HOẠT ĐỘNG (ref_id khác nhau), và chỉ đếm nguồn gắn với chủ
-        # đề — điểm thi thử là bối cảnh cấp khoá, không phải bằng chứng chủ đề.
+        # Đếm theo HOẠT ĐỘNG, và chỉ đếm nguồn gắn với chủ đề — điểm thi thử là
+        # bối cảnh cấp khoá, không phải bằng chứng chủ đề.
+        #
+        # Khoá là CẶP `(ref_type, ref_id)`, không phải `ref_id` trần. Mỗi loại
+        # tham chiếu có KHÔNG GIAN ID RIÊNG: bài học #2 và quiz ôn tập #2 là hai
+        # hoạt động khác nhau, chỉ trùng số thứ tự trong CSDL. Đo 31/08/2026
+        # trên dữ liệu thật: em id 9 có `ref_id='2'` cho cả `lesson` lẫn `quiz`,
+        # và cặp ấy bị đếm thành MỘT — đủ để một ô chủ đề tụt xuống dưới ngưỡng
+        # `MIN_ACTIVITIES` và hiện "chưa đủ dữ liệu" thay vì một con số có thật.
+        #
+        # Cặp này vẫn giữ đúng chỗ CỐ Ý gộp: sự kiện `lesson` và `drill` của
+        # cùng một bài dùng chung `ref_type='lesson'` VÀ chung `ref_id`, nên
+        # chúng vẫn là một lần chạm vào chủ đề, đúng như chú thích ở
+        # `MIN_ACTIVITIES`.
         activities = {ref for name in TOPIC_SOURCES
-                      for _, _, ref in sources.get(name, []) if ref}
+                      for _, _, ref in sources.get(name, []) if ref and ref[1]}
         confidence = len(activities)
 
         mastery, detail = _mastery(sources, today)
