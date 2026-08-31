@@ -34,7 +34,7 @@ import unicodedata
 
 from django.core.cache import cache
 
-from common.db import q1
+from common.db import q1, x
 
 #: Các phần có câu hỏi trong `content_json`. Khớp `lessons/content.py`.
 PHAN_CO_CAU_HOI = ('test', 'drill')
@@ -43,6 +43,7 @@ PHAN_CO_CAU_HOI = ('test', 'drill')
 TRUONG_BI_MAT = ('answer', 'explain')
 
 _KEY = 'dapan:{}:{}'
+_KEY_ID = 'baiid:{}:{}'
 _TTL = 60
 
 
@@ -113,9 +114,31 @@ def dap_an(course_id, lesson_no):
     return ra
 
 
+def id_bai(course_id, lesson_no):
+    """`lessons.id` của một bài, có đệm 60 giây. `None` nếu không có bài đó.
+
+    CÓ ĐỆM vì phòng luyện gọi `/check` MỖI CÂU, và mỗi lượt tới Neon tốn ~270ms
+    thuần đường truyền. Đo 31/08/2026 khi mới thêm việc ghi nhận câu trả lời:
+    ba câu SQL mỗi lời gọi → **810ms mỗi câu drill**, trong một trò bấm giờ 75
+    giây cho 8 câu. Bỏ đệm này là trả lại 270ms ấy cho mỗi câu.
+
+    Cùng đệm và cùng vòng đời với `dap_an`: `quen_dap_an` xoá cả hai.
+    """
+    key = _KEY_ID.format(course_id, lesson_no)
+    ra = cache.get(key)
+    if ra is not None:
+        return ra or None
+    row = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1',
+             (course_id, lesson_no))
+    ra = (row or {}).get('id') or 0
+    cache.set(key, ra, _TTL)
+    return ra or None
+
+
 def quen_dap_an(course_id, lesson_no):
     """Xoá đệm khi nội dung bài vừa được sửa. Gọi từ đường soạn bài."""
     cache.delete(_KEY.format(course_id, lesson_no))
+    cache.delete(_KEY_ID.format(course_id, lesson_no))
 
 
 def bo_dap_an(data):
@@ -208,3 +231,97 @@ def cham_phong_luyen(course_id, lesson_no, tra_loi):
         else:
             combo = 0
     return dung, len(bang), dai_nhat
+
+
+def ghi_nhan(uid, lesson_id, phan, tra_loi):
+    """GHI NHẬN câu trả lời cho một phần. LẦN ĐẦU THẮNG. Trả lại bộ đã chốt.
+
+    Đây là mảnh còn thiếu của luật "điểm được TÍNH, không được NHẬN". Chấm ở máy
+    chủ mới chỉ bỏ được con số client tự khai; chừng nào `/complete` còn chấm
+    trên CÂU TRẢ LỜI TRONG THÂN REQUEST thì cả bản vá vẫn đi vòng được bằng hai
+    lời gọi: `/check` với đáp án bừa để moi bảng đáp án, rồi `/complete` với bộ
+    đáp án vừa lấy.
+
+    LẦN ĐẦU THẮNG là toàn bộ ý nghĩa của hàm này: một câu chỉ được trả lời một
+    lần trong một lượt học. Ai xem đáp án bằng cách gửi bừa thì con số bừa ấy
+    chính là bài làm của họ.
+
+    Dòng `lesson_progress` được tạo nếu chưa có, với `status='in_progress'` — mọi
+    bên đọc tiến độ đều lọc `status='completed'` nên dòng ấy vô hình với chúng.
+    """
+    if not isinstance(tra_loi, dict) or not tra_loi:
+        return _da_ghi_nhan(uid, lesson_id).get(phan, {})
+    moi = json.dumps({phan: {str(k): v for k, v in tra_loi.items()}}, ensure_ascii=False)
+    # `||` của jsonb là gộp NÔNG: bên phải thắng ở cấp khoá thứ nhất. Muốn "lần
+    # đầu thắng" ở cấp CÂU thì phải đặt bộ MỚI bên trái và bộ CŨ bên phải trong
+    # phép gộp con, rồi mới gán lại vào khoá `phan`.
+    #
+    # `RETURNING` chứ không SELECT lại: phòng luyện gọi đường này mỗi câu, và
+    # mỗi lượt tới Neon tốn ~270ms thuần đường truyền.
+    row = q1('''INSERT INTO lesson_progress (user_id, lesson_id, status, answers_json)
+                VALUES (%s, %s, 'in_progress', %s::jsonb)
+                ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+                    answers_json = COALESCE(lesson_progress.answers_json, '{}'::jsonb)
+                        || jsonb_build_object(
+                               %s,
+                               (%s::jsonb -> %s)
+                               || COALESCE(lesson_progress.answers_json -> %s, '{}'::jsonb))
+                RETURNING answers_json''',
+             (uid, lesson_id, moi, phan, moi, phan, phan))
+    return _tach(row).get(phan, {})
+
+
+def _tach(row):
+    a = (row or {}).get('answers_json')
+    if isinstance(a, str):
+        try:
+            a = json.loads(a)
+        except ValueError:
+            return {}
+    return a if isinstance(a, dict) else {}
+
+
+def _da_ghi_nhan(uid, lesson_id):
+    return _tach(q1('SELECT answers_json FROM lesson_progress '
+                    'WHERE user_id=%s AND lesson_id=%s', (uid, lesson_id)))
+
+
+def doc_ghi_nhan(uid, lesson_id, phan):
+    """Bộ câu trả lời ĐÃ CHỐT của một phần. `{}` nếu chưa ghi nhận câu nào."""
+    ra = _da_ghi_nhan(uid, lesson_id).get(phan)
+    return ra if isinstance(ra, dict) else {}
+
+
+def xoa_ghi_nhan_phan(uid, lesson_id, phan):
+    """Xoá phần đã ghi nhận của MỘT phần — dùng khi phòng luyện bắt đầu lại.
+
+    VÌ SAO PHÒNG LUYỆN ĐƯỢC LÀM LẠI MÀ BÀI KIỂM TRA ĐẦU VÀO THÌ KHÔNG. Bài kiểm
+    tra đầu vào có đúng một lượt: nó quyết định nhánh lý thuyết và điểm vào sổ,
+    và `/check` của nó TRẢ ĐÁP ÁN cho phần xem lại — nên khoá lần đầu là thứ duy
+    nhất ngăn "gửi bừa để moi đáp án rồi gửi lại bộ đúng".
+
+    Phòng luyện thì nút "Bắt đầu" vốn là nút LÀM LẠI, và `/check` của nó chỉ trả
+    đúng/sai chứ không trả đáp án. Không xoá thì lần luyện thứ hai hỏng hẳn: em
+    bấm một lựa chọn khác mà màn hình vẫn tô theo câu trả lời lần trước — đo
+    được đúng vậy trong trình duyệt 31/08/2026 (5/8 thay vì 6/8 vì một câu bị
+    khoá bằng đáp án sai của lần bỏ dở).
+
+    RỦI RO CÒN LẠI, nói thẳng: xoá được thì cũng dò được — trả lời, xem đúng/sai,
+    bắt đầu lại, trả lời khác. Với câu trắc nghiệm 4 lựa chọn thì việc ấy rẻ.
+    Cái chặn nó là XP chỉ cộng ở LẦN HOÀN THÀNH ĐẦU của bài (`existed` trong
+    `CompleteLessonView`). Chưa đủ kín cho bản đồ năng lực — xem TODO A18.
+    """
+    x("""UPDATE lesson_progress
+            SET answers_json = COALESCE(answers_json, '{}'::jsonb) - %s
+          WHERE user_id=%s AND lesson_id=%s""", (phan, uid, lesson_id))
+
+
+def xoa_ghi_nhan(uid, lesson_id):
+    """Xoá phần đã ghi nhận — gọi khi `/complete` chấm xong.
+
+    Để lần học lại bài đó bắt đầu từ giấy trắng: bài đã hoàn thành rồi thì câu
+    trả lời cũ không còn việc gì để làm, mà giữ lại thì em ôn lại sẽ bị kẹt với
+    đúng những câu đã trả lời hôm trước.
+    """
+    x('UPDATE lesson_progress SET answers_json = NULL '
+      'WHERE user_id=%s AND lesson_id=%s', (uid, lesson_id))

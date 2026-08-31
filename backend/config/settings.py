@@ -220,6 +220,10 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'ip_day': '10000/day',
         'ip_hour': '1000/hour',
+        # Quota theo NGƯỜI DÙNG cho đường chấm bài — xem common/throttling.py.
+        # Một em học tối đa vài chục bài mỗi ngày, mỗi bài ~10 lượt chấm.
+        'user_day': '2000/day',
+        'user_hour': '600/hour',
         'login': '20/min',
         'register': '10/min',
     },

@@ -8,10 +8,13 @@ from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
+from common.throttling import DailyUserThrottle, HourlyUserThrottle
 from common.db import q1, x
 from common.events import KIND_DRILL, KIND_LESSON, record_event
 from lessons.content import course_content, one_lesson
-from lessons.grading import PHAN_CO_CAU_HOI, cham, cham_phong_luyen, phan_tram
+from lessons.grading import (PHAN_CO_CAU_HOI, cham, cham_phong_luyen, doc_ghi_nhan,
+                             ghi_nhan, id_bai, phan_tram, xoa_ghi_nhan,
+                             xoa_ghi_nhan_phan)
 from common.streak import award_xp, touch_streak
 
 logger = logging.getLogger(__name__)
@@ -57,7 +60,7 @@ DRILL_XP_MOI_CAU_DUNG = 10
 DRILL_XP_MOI_NAC_COMBO = 5
 
 
-def _cham_drill(drill, course_id, lesson_no):
+def _cham_drill(drill, course_id, lesson_no, uid, lesson_id):
     """Chấm phòng luyện Ở MÁY CHỦ. Trả dict kết quả, hoặc None nếu không chấm được.
 
     CHỈ ĐỌC, không ghi — để nơi gọi biết số XP trước khi cộng.
@@ -80,6 +83,9 @@ def _cham_drill(drill, course_id, lesson_no):
                         'tự khai (correct=%r) — BỎ QUA', course_id, lesson_no,
                         drill.get('correct'))
         return None
+    # Cùng luật với bài kiểm tra: chấm trên phần ĐÃ GHI NHẬN qua `/check`,
+    # thân request chỉ bù cho những câu chưa kịp qua đó.
+    tra_loi = ghi_nhan(uid, lesson_id, 'drill', tra_loi)
     ket = cham_phong_luyen(course_id, lesson_no, tra_loi)
     if not ket:
         return None
@@ -182,11 +188,8 @@ class CompleteLessonView(APIView):
         # để nó gãy hẳn là làm mất bài của người đang học giữa chừng. Có kẹp
         # biên 0–100, và có ghi nhật ký để biết còn bao nhiêu máy dùng bản cũ.
         answers = data.get('answers')
-        quiz_score = None
-        if isinstance(answers, dict):
-            _, dung, tong = cham(course_id, lesson_no, 'test', answers)
-            quiz_score = phan_tram(dung, tong)
-        elif data.get('quizScore') is not None:
+        answers = answers if isinstance(answers, dict) else None
+        if answers is None and data.get('quizScore') is not None:
             # Engine bản CŨ còn nằm trong bộ nhớ đệm trình duyệt của học viên
             # đang học dở. KHÔNG để nó gãy — bài vẫn hoàn thành, XP vẫn cộng —
             # nhưng điểm thì để TRỐNG chứ không nhận con số nó tự khai.
@@ -198,6 +201,7 @@ class CompleteLessonView(APIView):
             logger.info('[lessons] bài %s/%s: engine bản CŨ gửi quizScore=%r — BỎ QUA, '
                         'ghi bài xong nhưng không ghi điểm',
                         course_id, lesson_no, data.get('quizScore'))
+        quiz_score = None
         uid = request.user.id
         with transaction.atomic():
             course = q1('SELECT id, lessons FROM courses WHERE id=%s', (course_id,))
@@ -216,10 +220,21 @@ class CompleteLessonView(APIView):
             # là 38.000 XP thay vì 3.800 — mà bảng xếp hạng thì các em thi nhau
             # thật. Nay lấy `xp_reward` do người soạn bài ghi trong nội dung bài
             # (đã kiểm 0–500 lúc nhập, `content.validate_lesson`).
+            # CHẤM TRÊN PHẦN ĐÃ GHI NHẬN, không trên thân request (A12).
+            # `/check` đã chốt từng câu ngay lúc học viên trả lời; thân request
+            # chỉ còn là bản sao lưu cho những câu chưa kịp qua `/check` (mất
+            # mạng giữa chừng, hoặc engine bản cũ chưa gọi nó). Lần đầu vẫn
+            # thắng, nên gửi lại một bộ đáp án "đẹp" ở bước này không đổi được gì.
+            test_chot = ghi_nhan(uid, lesson_id, 'test', answers or {})
+            if test_chot:
+                _, dung, tong = cham(course_id, lesson_no, 'test', test_chot)
+                quiz_score = phan_tram(dung, tong)
+
             xp_bai = xp_bai if isinstance(xp_bai, int) and 0 <= xp_bai <= 500 else 50
             # Phòng luyện chấm TRƯỚC khi cộng XP: phần thưởng của nó là một phần
             # của tổng, mà tổng thì phải biết trước lúc `award_xp`.
-            drill_ket = _cham_drill(data.get('drill'), course_id, lesson_no)
+            drill_ket = _cham_drill(data.get('drill'), course_id, lesson_no,
+                                    uid, lesson_id)
             xp_earned = xp_bai + (drill_ket['xp'] if drill_ket else 0)
             if data.get('xpEarned') is not None and data.get('xpEarned') != xp_earned:
                 logger.info('[lessons] bài %s/%s: client khai xpEarned=%r — BỎ QUA, '
@@ -315,6 +330,11 @@ class CompleteLessonView(APIView):
             )
             _record_drill(uid, drill_ket, lesson_id, lesson_no, course_id, topic, now)
 
+            # Xoá phần đã ghi nhận: bài xong rồi thì câu trả lời cũ không còn
+            # việc gì, mà giữ lại thì em ôn lại sẽ kẹt với đúng những câu hôm
+            # trước. Xoá SAU khi đã chấm xong cả hai phần.
+            xoa_ghi_nhan(uid, lesson_id)
+
             newly_awarded = check_and_award_achievements(uid)
 
         return Response({
@@ -345,8 +365,23 @@ class CheckAnswersView(APIView):
     ĐÁP ÁN CHỈ VỀ CÙNG KẾT QUẢ CỦA CÂU ĐÃ TRẢ LỜI. Gửi `answers` rỗng thì không
     moi được gì — nếu không, endpoint chấm chính là cửa sau thay cho lỗ vừa bịt.
 
+    VÀ CÂU TRẢ LỜI BỊ GHI NHẬN, LẦN ĐẦU THẮNG (A12, 31/08/2026). Không có phần
+    này thì hàng rào trên vẫn đi vòng được bằng hai lời gọi: gửi bừa cả 8 câu để
+    lấy trọn bảng đáp án, rồi `/complete` với bộ đáp án vừa lấy. Nay bộ gửi bừa
+    ấy CHÍNH LÀ bài làm, và `/complete` chấm trên nó.
+
+    Phòng luyện KHÔNG nhận `answer`: giao diện của nó chỉ cần biết đúng hay sai
+    để tô màu, còn đáp án thì phần xem lại sau khi nộp mới cần. Trả ít hơn mức
+    cần là cách rẻ nhất để một endpoint không thành cửa sau.
+
     Có ghi danh mới chấm được: cùng hàng rào với đường đọc nội dung.
+
+    Quota đếm theo NGƯỜI DÙNG chứ không theo IP: cả phòng máy của trung tâm đi
+    ra bằng một địa chỉ NAT, mà đường này bị gọi 10 lần mỗi bài. Xem
+    `common/throttling._PerViewUserThrottle`.
     """
+
+    throttle_classes = [DailyUserThrottle, HourlyUserThrottle]
 
     def post(self, request, course_id, lesson_no):
         data = request.data if isinstance(request.data, dict) else {}
@@ -356,13 +391,34 @@ class CheckAnswersView(APIView):
                                       % ', '.join(PHAN_CO_CAU_HOI)}, status=400)
         answers = data.get('answers')
         if not isinstance(answers, dict):
-            return Response({'error': 'Thiếu answers.'}, status=400)
+            if not data.get('reset'):
+                return Response({'error': 'Thiếu answers.'}, status=400)
+            answers = {}
         if not _da_ghi_danh(request.user.id, course_id):
             return Response({'error': 'Bạn chưa ghi danh khoá này.'}, status=403)
 
-        ket_qua, dung, tong = cham(course_id, lesson_no, phan, answers)
+        # `id_bai` chứ không `_tim_bai`: đường này bị gọi MỖI CÂU trong phòng
+        # luyện, và nó chỉ cần đúng một con số. Có đệm 60 giây.
+        lesson_id = id_bai(course_id, lesson_no)
+        if lesson_id is None:
+            return Response({'error': 'Chưa có nội dung cho bài này.'}, status=404)
+
+        # `reset` chỉ dành cho phòng luyện — nút "Bắt đầu" của nó là nút LÀM
+        # LẠI. Bài kiểm tra đầu vào KHÔNG được reset: `/check` của nó trả đáp án,
+        # nên cho reset là mở lại đúng cửa vừa bịt.
+        if data.get('reset') and phan == 'drill':
+            xoa_ghi_nhan_phan(request.user.id, lesson_id, phan)
+
+        da_chot = ghi_nhan(request.user.id, lesson_id, phan, answers)
+        ket_qua, dung, tong = cham(course_id, lesson_no, phan, da_chot)
         if ket_qua is None:
             return Response({'error': 'Chưa có nội dung cho bài này.'}, status=404)
+        # Chỉ trả kết quả của những câu LẦN NÀY gửi lên. Bộ đã chốt gồm cả các
+        # câu trước đó; nhắc lại chúng mỗi lượt gọi là phát lại đáp án cũ không
+        # ai hỏi, và trong phòng luyện thì đó là toàn bộ những câu đã qua.
+        ket_qua = {k: v for k, v in ket_qua.items() if k in answers}
+        if phan == 'drill':
+            ket_qua = {k: {'correct': v['correct']} for k, v in ket_qua.items()}
         return Response({'results': ket_qua, 'correct': dung, 'total': tong,
                          'scorePct': phan_tram(dung, tong)})
 

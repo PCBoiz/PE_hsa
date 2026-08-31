@@ -1061,3 +1061,30 @@ CREATE INDEX IF NOT EXISTS idx_submissions_chua_cham
 -- NULL = chưa từng thu hồi, mọi token còn hạn đều hợp lệ. Đó là trạng thái của
 -- toàn bộ tài khoản hiện có, nên thêm cột này không đá ai ra ngoài.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_valid_from TIMESTAMP;
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §40 · Câu trả lời ĐÃ GHI NHẬN của một lượt học (A12, 31/08/2026)
+-- ─────────────────────────────────────────────────────────────────────────
+--
+-- Bản vá sáng 31/08 chuyển việc chấm về máy chủ, nhưng vẫn để `/complete` chấm
+-- trên CÂU TRẢ LỜI TRONG THÂN REQUEST. Kết hợp với `/check` — nơi trả đáp án
+-- đúng cho mọi câu có mặt trong `answers` — thì cả bản vá đi vòng được bằng hai
+-- request:
+--
+--   1. POST .../check {"phan":"drill","answers":{"d1":"x", … ,"d8":"x"}}
+--      → nhận trọn 8 đáp án (sai hết thì cũng vẫn nhận, đó là chỗ hở)
+--   2. POST /api/lessons/N/complete với đúng 8 đáp án vừa lấy
+--      → 8/8, 120 XP phòng luyện, và một dòng bản đồ năng lực 8/8
+--
+-- Cột này khiến câu trả lời trở thành thứ ĐÃ CHỐT chứ không phải thứ gửi kèm:
+-- `/check` GHI NHẬN câu trả lời lần đầu cho từng câu (lần sau cho cùng câu đó
+-- không ghi đè), và `/complete` chấm trên phần đã ghi nhận. Ai xem đáp án bằng
+-- cách gửi bừa thì con số bừa ấy chính là bài làm của họ.
+--
+-- Dạng: {"test": {"t1": "…"}, "drill": {"d1": "…"}}. Xoá về NULL khi
+-- `/complete` chạy xong, để lần học lại bài đó bắt đầu từ giấy trắng.
+--
+-- NULL = chưa ghi nhận câu nào. Đó là trạng thái của toàn bộ dòng hiện có, nên
+-- thêm cột này không đổi hành vi của một ai.
+ALTER TABLE lesson_progress ADD COLUMN IF NOT EXISTS answers_json JSONB;

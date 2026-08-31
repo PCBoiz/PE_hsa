@@ -27,6 +27,38 @@ class HourlyIPThrottle(_PerViewIPThrottle):
     scope = 'ip_hour'
 
 
+class _PerViewUserThrottle(SimpleRateThrottle):
+    """Đếm theo NGƯỜI DÙNG, không theo IP — vẫn tách riêng từng view.
+
+    VÌ SAO CẦN (A13, 31/08/2026). Quota theo IP là đúng cho đường ẩn danh, nhưng
+    sai cho một trung tâm luyện thi: cả phòng máy đi ra Internet bằng MỘT địa
+    chỉ NAT, nên 30 em ngồi cùng phòng chia nhau đúng một quota. Từ 31/08 phòng
+    luyện gọi `/check` MỖI CÂU (8 câu + 1 lượt chấm bài kiểm tra + 1 lượt xoá
+    khi bắt đầu lại = 10 request mỗi bài), nên 30 em × 4 bài/giờ đã là 1200 —
+    vượt trần 1000/giờ. Chạm trần thì bước kiểm tra đầu vào CHẶN HẲN không cho
+    đi tiếp: cả lớp đứng.
+
+    Ẩn danh thì trả `None` để throttle theo IP lo phần đó — đường này vốn đòi
+    đăng nhập, nên nhánh ấy chỉ là phòng xa.
+    """
+    def get_cache_key(self, request, view):
+        nguoi = getattr(request, 'user', None)
+        if not (nguoi and nguoi.is_authenticated):
+            return None
+        return self.cache_format % {
+            'scope': f'{self.scope}.{view.__class__.__module__}.{view.__class__.__name__}',
+            'ident': nguoi.pk,
+        }
+
+
+class HourlyUserThrottle(_PerViewUserThrottle):
+    scope = 'user_hour'
+
+
+class DailyUserThrottle(_PerViewUserThrottle):
+    scope = 'user_day'
+
+
 class LoginThrottle(SimpleRateThrottle):
     """@limiter.limit("5 per minute") trên /auth/login."""
     scope = 'login'

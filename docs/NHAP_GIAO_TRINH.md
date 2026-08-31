@@ -122,7 +122,7 @@ File mẫu chạy được: [`docs/mau_nhap_giao_trinh.json`](mau_nhap_giao_trin
   },
 
   "note":  { "title": "Ghi chú", "points": ["…"] },
-  "drill": { "intro": "…", "seconds": 60, "questions": [ … ] }
+  "drill": { "intro": "…", "time_seconds": 60, "questions": [ … ] }
 }
 ```
 

@@ -101,6 +101,54 @@ def validate_lesson(obj, path='bài'):
     elif theory is not None:
         errors.append(_err(path + '.theory', 'phải là object'))
 
+    # ── Phòng luyện tốc độ ──────────────────────────────────────────────────
+    # Trước 31/08/2026 khối này KHÔNG được kiểm một chữ nào, dù XP phòng luyện
+    # (tối đa 120, gấp 2,4 lần phần thưởng cả bài) và một trong bốn nguồn của
+    # bản đồ năng lực đều dựng từ nó. Ba thứ dưới đây là ba cách nó hỏng câm:
+    #
+    #   · thiếu `id`   → `grading.dap_an` lọc câu đó ra khỏi bảng đáp án; thiếu
+    #     hết thì bảng rỗng, mọi câu hiện "Chưa chấm được câu này — vẫn tính khi
+    #     bạn hoàn thành bài", và câu an ủi ấy là nói dối vì lúc hoàn thành cũng
+    #     không có gì để tính.
+    #   · `id` TRÙNG   → dict đáp án giữ câu SAU, `max_score` ngắn đi; phía
+    #     trình duyệt `drill.answers[q.id]` cũng ghi đè câu trước.
+    #   · sai tên khoá thời lượng → `remaining` là `undefined`, `NaN <= 0` luôn
+    #     sai nên đồng hồ CHẠY MÃI. Mẫu nhập chính thức từng ghi `seconds`
+    #     trong khi engine đọc `time_seconds`.
+    drill = obj.get('drill')
+    if isinstance(drill, dict):
+        cau = drill.get('questions')
+        if not isinstance(cau, list) or not cau:
+            errors.append(_err(path + '.drill', '"questions" phải là mảng có ít nhất 1 câu'))
+        else:
+            da_thay = set()
+            for i, c in enumerate(cau, 1):
+                pd = f'{path}.drill.questions[{i}]'
+                if not isinstance(c, dict):
+                    errors.append(_err(pd, 'phải là object')); continue
+                cid = c.get('id')
+                if not cid:
+                    errors.append(_err(pd, 'thiếu "id" — thiếu nó thì câu này không chấm được'))
+                elif cid in da_thay:
+                    errors.append(_err(pd, f'"id" trùng với câu trước ("{cid}")'))
+                else:
+                    da_thay.add(cid)
+                if c.get('answer') in (None, ''):
+                    errors.append(_err(pd, 'thiếu "answer"'))
+                if not str(c.get('question') or '').strip():
+                    errors.append(_err(pd, 'thiếu "question"'))
+                if c.get('type', 'mcq') == 'mcq' and not isinstance(c.get('options'), list):
+                    errors.append(_err(pd, 'câu trắc nghiệm cần "options" là mảng'))
+        if 'seconds' in drill and 'time_seconds' not in drill:
+            errors.append(_err(path + '.drill',
+                               'dùng "time_seconds" chứ không phải "seconds" — '
+                               'sai tên thì đồng hồ phòng luyện chạy mãi không hết giờ'))
+        ts = drill.get('time_seconds')
+        if ts is not None and (not isinstance(ts, int) or not 5 <= ts <= 3600):
+            errors.append(_err(path + '.drill', '"time_seconds" phải là số nguyên 5–3600'))
+    elif drill is not None:
+        errors.append(_err(path + '.drill', 'phải là object'))
+
     try:
         size = len(json.dumps(obj, ensure_ascii=False).encode('utf-8'))
         if size > MAX_LESSON_BYTES:

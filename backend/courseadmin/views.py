@@ -203,6 +203,21 @@ class AdminLessonContentView(AdminBase):
                 return Response({'error': f'JSON không hợp lệ: {exc}'}, status=400)
 
         errors = validate_lesson(content, path=f'bài #{row["sort_order"]}')
+        # `index` PHẢI khớp `sort_order` của chính dòng đang sửa (A16,
+        # 31/08/2026). Engine đọc `index` để biết mình là bài số mấy rồi gọi
+        # `/complete` và `/check` theo số đó. Dán mẫu có `"index": 28` vào ô nội
+        # dung của bài đang ở `sort_order = 5` thì em học bài 5 nhưng tiến độ ghi
+        # sang bài 28, và bài 5 được chấm bằng đáp án của bài 28.
+        #
+        # Đường nhập cả khoá ép `sort_order = index` nên không hở; chỉ đường sửa
+        # lẻ này mới nhận hai con số rồi để chúng lệch nhau. Đo trên 76 bài đang
+        # có: 0 bài lệch, nên hàng rào này không chặn nội dung nào đang chạy.
+        idx = content.get('index')
+        if idx != row['sort_order']:
+            errors = list(errors) + [
+                'bài #%s: "index" trong nội dung là %r nhưng bài này đang ở vị trí %s. '
+                'Sửa "index" cho khớp, hoặc dùng đường nhập cả khoá nếu muốn đổi vị trí.'
+                % (row['sort_order'], idx, row['sort_order'])]
         if errors:
             return Response({'error': 'Nội dung chưa hợp lệ.', 'details': errors}, status=400)
 

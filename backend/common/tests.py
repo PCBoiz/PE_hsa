@@ -100,3 +100,45 @@ def test_dien_dan_khong_do_vi_phan_trang_rac(em):
     from forum.views import PostsView
     r = _goi(PostsView, '/api/forum/posts?page=abc&per_page=xyz', em)
     assert r.status_code == 200, r.status_code
+
+
+# ── A13 · quota đường chấm đếm theo NGƯỜI DÙNG, không theo IP ────────────────
+
+@pytest.mark.django_db
+def test_quota_duong_cham_tach_theo_tung_hoc_vien_dung_chung_IP(em, db):
+    """Cả phòng máy của trung tâm đi ra Internet bằng MỘT địa chỉ NAT. Đếm theo
+    IP nghĩa là 30 em chia nhau một quota — mà từ 31/08/2026 phòng luyện gọi
+    `/check` 10 lần mỗi bài, nên 30 em × 4 bài/giờ đã vượt trần 1000/giờ.
+
+    Kiểm THẲNG danh tính mà bộ đếm dùng, chứ không bắn 1000 request.
+    """
+    from common.throttling import HourlyIPThrottle, HourlyUserThrottle
+    from lessons.views import CheckAnswersView
+
+    r2 = q1("INSERT INTO users (name, email, password, streak) "
+            "VALUES ('HV Hai','hv_hai_tmp@example.com','x',0) RETURNING id")
+    em2 = User.objects.get(id=r2['id'])
+    view = CheckAnswersView()
+
+    def khoa(lop, ai, ip):
+        # Gán thẳng `req.user`: throttle đọc đúng thuộc tính đó. `force_authenticate`
+        # chỉ có tác dụng khi request đi qua lớp Request của DRF.
+        req = f.post('/x', {}, format='json')
+        req.user = ai
+        req.META['REMOTE_ADDR'] = ip
+        return lop().get_cache_key(req, view)
+
+    # Hai em CÙNG một IP phải có hai bộ đếm khác nhau…
+    assert khoa(HourlyUserThrottle, em, '1.1.1.1') != khoa(HourlyUserThrottle, em2, '1.1.1.1')
+    # …và một em đổi máy/đổi mạng vẫn là một bộ đếm.
+    assert khoa(HourlyUserThrottle, em, '1.1.1.1') == khoa(HourlyUserThrottle, em, '9.9.9.9')
+    # Bộ đếm theo IP thì ngược lại — đó chính là lý do không dùng nó ở đây.
+    assert khoa(HourlyIPThrottle, em, '1.1.1.1') == khoa(HourlyIPThrottle, em2, '1.1.1.1')
+
+
+def test_duong_cham_dung_quota_theo_nguoi_dung():
+    """Đặt `throttle_classes` trên view là GHI ĐÈ mặc định, không phải bổ sung —
+    nên phải kiểm rằng danh sách ấy đúng là bộ theo người dùng."""
+    from common.throttling import DailyUserThrottle, HourlyUserThrottle
+    from lessons.views import CheckAnswersView
+    assert CheckAnswersView.throttle_classes == [DailyUserThrottle, HourlyUserThrottle]

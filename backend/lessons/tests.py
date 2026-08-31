@@ -79,11 +79,14 @@ def test_may_chu_cham_dung_va_chi_lo_dap_an_cua_cau_DA_TRA_LOI(em):
     assert kq.status_code == 200, kq.data
     assert kq.data['correct'] == len(ids) and kq.data['scorePct'] == 100
 
-    # sai hết
+    # LẦN ĐẦU THẮNG (A12): gửi lại bộ SAI HẾT cho đúng những câu ấy không đổi
+    # được gì. Một câu chỉ được trả lời một lần trong một lượt học — nếu không
+    # thì `/check` là chỗ thử đáp án miễn phí.
     kq2 = _goi(CheckAnswersView, 'post',
                {'phan': 'test', 'answers': {i: 'khong phai dap an' for i in ids}},
                ai=em, course_id=KHOA, lesson_no=1)
-    assert kq2.data['correct'] == 0 and kq2.data['scorePct'] == 0
+    assert kq2.data['correct'] == len(ids), (
+        'gửi lại đáp án khác cho câu đã trả lời mà điểm đổi được: %s' % kq2.data)
 
     # CỬA SAU: gửi rỗng để moi đáp án
     kq3 = _goi(CheckAnswersView, 'post', {'phan': 'test', 'answers': {}},
@@ -296,3 +299,142 @@ def test_dap_an_PHONG_LUYEN_cung_khong_di_xuong_trinh_duyet(em, bai_luyen):
     cau = data['drill']['questions']
     assert all('answer' not in c for c in cau), cau
     assert cau[0]['question'] == 'a', 'chỉ cắt đáp án, giữ đề bài'
+
+
+# ── A12 · `/check` không còn là chỗ moi đáp án miễn phí ─────────────────────
+
+@pytest.mark.django_db
+def test_moi_dap_an_qua_check_thi_BO_DOAN_BUA_AY_chinh_la_bai_lam(em):
+    """Đo được (audit chéo 31/08/2026): `/check` trả `answer` cho MỌI id có mặt
+    trong `answers`, bất kể đúng sai. Nên hai request là xong:
+
+        1. /check {"phan":"drill","answers":{"d1":"x", … ,"d8":"x"}} → trọn đáp án
+        2. /complete với đúng bộ đáp án vừa lấy → 8/8, 120 XP, năng lực 8/8
+
+    Nó làm rỗng ruột chính bản vá "chấm ở máy chủ" của cùng ngày hôm ấy.
+
+    Nay câu trả lời bị GHI NHẬN ngay ở bước 1, lần đầu thắng — nên bộ đoán bừa
+    CHÍNH LÀ bài làm, và bước 2 không cứu được.
+    """
+    from lessons.grading import dap_an
+    from lessons.views import CheckAnswersView, CompleteLessonView
+    bang = dap_an(KHOA, 1).get('test') or {}
+    ids = sorted(bang)
+    assert ids, 'bài 1 phải có phần test để kiểm'
+
+    # Bước 1 — đoán bừa để moi đáp án.
+    moi = _goi(CheckAnswersView, 'post',
+               {'phan': 'test', 'answers': {i: 'doan bua' for i in ids}},
+               ai=em, course_id=KHOA, lesson_no=1)
+    assert moi.data['correct'] == 0
+
+    # Bước 2 — nộp lại bằng đúng bộ đáp án vừa moi được.
+    dung_het = {i: bang[i]['answer'] for i in ids}
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA, 'answers': dung_het}, ai=em, lesson_no=1)
+    assert r.status_code == 200
+    ghi = q1("SELECT quiz_score FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id "
+             "WHERE lp.user_id=%s AND l.course_id=%s AND l.sort_order=1", (em.id, KHOA))
+    assert ghi['quiz_score'] == 0, (
+        'điểm ghi vào sổ phải là điểm của bộ ĐOÁN BỪA, không phải bộ moi được: %s' % ghi)
+
+
+@pytest.mark.django_db
+def test_moi_dap_an_PHONG_LUYEN_cung_khong_an_duoc_XP(em):
+    """Cùng cửa, nhưng phòng luyện là nơi phần thưởng lớn hơn: 8 câu đúng +
+    combo 8 = 120 XP, gấp 2,4 lần phần thưởng của cả bài học."""
+    from lessons.grading import dap_an
+    from lessons.views import CheckAnswersView, CompleteLessonView
+    bang = dap_an(KHOA, 1).get('drill') or {}
+    ids = sorted(bang)
+    assert ids, 'bài 1 phải có phòng luyện để kiểm'
+
+    moi = _goi(CheckAnswersView, 'post',
+               {'phan': 'drill', 'answers': {i: 'doan bua' for i in ids}},
+               ai=em, course_id=KHOA, lesson_no=1)
+    assert moi.status_code == 200
+    lo = [k for k, v in moi.data['results'].items() if 'answer' in v]
+    assert lo == [], 'phòng luyện không được trả `answer`, chỉ cần đúng/sai: %s' % lo
+
+    dung_het = {i: bang[i]['answer'] for i in ids}
+    r = _goi(CompleteLessonView, 'post',
+             {'courseId': KHOA, 'drill': {'answers': dung_het, 'seconds': 40}},
+             ai=em, lesson_no=1)
+    assert r.data.get('xpDrill') == 0, (
+        'XP phòng luyện phải tính trên bộ ĐOÁN BỪA: %s' % r.data.get('drill'))
+    assert (r.data.get('drill') or {}).get('correct') == 0
+
+
+@pytest.mark.django_db
+def test_hoan_thanh_xong_thi_XOA_phan_da_ghi_nhan(em):
+    """Ôn lại bài phải bắt đầu từ giấy trắng, không kẹt với câu hôm trước."""
+    from lessons.grading import dap_an, doc_ghi_nhan
+    from lessons.views import CheckAnswersView, CompleteLessonView
+    bang = dap_an(KHOA, 1).get('test') or {}
+    ids = sorted(bang)
+    _goi(CheckAnswersView, 'post', {'phan': 'test', 'answers': {ids[0]: 'x'}},
+         ai=em, course_id=KHOA, lesson_no=1)
+    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1", (KHOA,))['id']
+    assert doc_ghi_nhan(em.id, lid, 'test') != {}
+    _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'answers': {}},
+         ai=em, lesson_no=1)
+    assert doc_ghi_nhan(em.id, lid, 'test') == {}
+
+
+# ── A14/A15 · khối `drill` cũng phải được kiểm lúc nhập ────────────────────
+
+def _bai_mau(drill):
+    return {'id': 'x', 'index': 1, 'title': 't',
+            'test': {'questions': [{'id': 't1', 'question': 'q', 'answer': 'a', 'type': 'fill'}]},
+            'theory': {'condensed': {'cards': [{'text': 'x'}]}},
+            'drill': drill}
+
+
+def test_khoi_drill_hop_le_thi_qua():
+    from lessons.content import validate_lesson
+    assert validate_lesson(_bai_mau(
+        {'time_seconds': 60,
+         'questions': [{'id': 'd1', 'question': 'q', 'answer': 'a', 'type': 'fill'}]})) == []
+
+
+def test_sai_ten_khoa_thoi_luong_bi_chan():
+    """Mẫu nhập giáo trình CHÍNH THỨC từng ghi `seconds` trong khi engine đọc
+    `time_seconds`: bài nhập đúng theo mẫu sẽ có đồng hồ phòng luyện chạy mãi
+    không hết giờ (`NaN <= 0` luôn sai)."""
+    from lessons.content import validate_lesson
+    loi = validate_lesson(_bai_mau(
+        {'seconds': 60,
+         'questions': [{'id': 'd1', 'question': 'q', 'answer': 'a', 'type': 'fill'}]}))
+    assert any('time_seconds' in e for e in loi), loi
+
+
+def test_cau_drill_thieu_id_hoac_trung_id_bi_chan():
+    """Thiếu `id` thì `dap_an` lọc câu đó ra, và học viên thấy mọi câu hiện
+    "Chưa chấm được câu này" — một câu an ủi nói dối."""
+    from lessons.content import validate_lesson
+    assert validate_lesson(_bai_mau(
+        {'time_seconds': 60,
+         'questions': [{'question': 'q', 'answer': 'a', 'type': 'fill'}]})) != []
+    assert validate_lesson(_bai_mau(
+        {'time_seconds': 60,
+         'questions': [{'id': 'd1', 'question': 'q', 'answer': 'a', 'type': 'fill'},
+                       {'id': 'd1', 'question': 'q2', 'answer': 'b', 'type': 'fill'}]})) != []
+
+
+@pytest.mark.django_db
+def test_bo_kiem_moi_KHONG_chan_bai_nao_dang_co(db):
+    """Siết bộ kiểm mà chặn luôn nội dung đang chạy thì giảng viên sửa một chữ
+    cũng bị từ chối. Đo trên chính 76 bài thật."""
+    import json as _json
+    from common.db import q as _q
+    from lessons.content import validate_lesson
+    hong = []
+    for r in _q('SELECT course_id, sort_order, content_json FROM lessons '
+                'WHERE content_json IS NOT NULL'):
+        d = r['content_json']
+        if isinstance(d, str):
+            d = _json.loads(d)
+        e = validate_lesson(d, path='%s#%s' % (r['course_id'], r['sort_order']))
+        if e:
+            hong.append(e[0])
+    assert hong == [], hong[:5]

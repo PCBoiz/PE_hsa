@@ -315,3 +315,27 @@ mọi người đọc sau**, kể cả của chính người viết khi quay l�
 **Bắt buộc:** khi viết "giữ đúng luật X", "khớp với Y", "cùng hành vi Z" — mở X
 ra đọc rồi chạy thử vài giá trị đối chiếu, ngay trong lúc viết câu đó. Xem thêm
 §15 (không mượn số đo).
+
+## §21 · "Đường chỉ ĐỌC" là một nhãn hết hạn được
+
+Ngày 31/08/2026 tôi viết trong đầu mọi kịch bản kiểm trình duyệt của phiên:
+*"chặn `/complete` vì nó GHI; để `/check` đi thật vì nó chỉ ĐỌC"*. Câu ấy đúng
+lúc tôi viết nó. Rồi vài giờ sau, chính tôi thêm `ghi_nhan` vào `/check` để vá
+A12 — và **không quay lại sửa nhãn**. Kịch bản tiếp tục cho nó đi thật, và nó
+ghi `answers_json` vào dòng `lesson_progress` của một học viên thật.
+
+Thiệt hại lần này nhỏ và khôi phục được CHÍNH XÁC (cột vừa thêm trong ngày, đo
+được 0 dòng có giá trị ngay sau lệnh ALTER, nên đặt lại NULL là giá trị gốc chứ
+không phải một con số hợp lý). Nhưng nguyên nhân thì không nhỏ: §18 dạy hỏi
+*"lệnh này có ghi không"*, và tôi đã hỏi — chỉ là hỏi MỘT LẦN, rồi dùng lại câu
+trả lời cũ cho một endpoint đã đổi.
+
+**Bắt buộc:** danh sách "đường được đi thật" phải được kiểm lại **mỗi lần sửa
+một endpoint có tên trong đó**. Cụ thể: sửa xong một view, hỏi ngay *"view này
+có đang nằm trong kịch bản kiểm nào không, và ở đó nó đang được coi là gì?"*
+Nhãn "chỉ đọc" đi kèm mã, không đi kèm trí nhớ — nên khi thêm một câu ghi vào
+một view, phải sửa cả chú thích của kịch bản kiểm trong cùng lượt sửa ấy.
+
+Và sau MỖI phiên chạm đường ghi: đếm lại số dòng của các bảng liên quan, kèm cả
+các CỘT VỪA THÊM trong phiên. Cột mới là chỗ dễ rò nhất vì chưa ai có thói quen
+nhìn nó.

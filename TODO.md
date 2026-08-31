@@ -1360,3 +1360,103 @@ dung khoá mình chưa ghi danh.
   mọi bên đọc rồi bị nhặt và dọn ở lần `/start` kế tiếp.
 - **Test ghi rò ra Neon**: không có. Đã kiểm lại sau cả phiên — 76 dòng
   `lessons`, `mock_attempts` không thêm dòng nào.
+
+
+---
+
+## A12 (XONG) · `/check` không còn là chỗ moi đáp án miễn phí
+
+Đây là lỗ làm **rỗng ruột chính bản vá quan trọng nhất hôm nay**. Chấm ở máy chủ
+mới chỉ bỏ được con số client tự khai; chừng nào `/complete` còn chấm trên CÂU
+TRẢ LỜI TRONG THÂN REQUEST thì cả bản vá đi vòng được bằng hai lời gọi:
+
+```
+1. POST .../check {"phan":"drill","answers":{"d1":"x", … ,"d8":"x"}}
+   → nhận trọn 8 đáp án (sai hết vẫn nhận — đó là chỗ hở)
+2. POST /api/lessons/1/complete với đúng 8 đáp án vừa lấy
+   → 8/8, 120 XP phòng luyện, một dòng bản đồ năng lực 8/8
+```
+
+Vá bằng cột `lesson_progress.answers_json` (§40) và luật **LẦN ĐẦU THẮNG**:
+`/check` GHI NHẬN câu trả lời ngay lúc học viên trả lời, `/complete` chấm trên
+phần đã ghi nhận chứ không trên thân request. Ai xem đáp án bằng cách gửi bừa
+thì con số bừa ấy **chính là bài làm của họ**. Xoá về NULL khi `/complete` xong,
+để lần ôn lại bắt đầu từ giấy trắng.
+
+Kèm hai điều chỉnh:
+- **Phòng luyện không nhận `answer`** nữa, chỉ nhận đúng/sai. Giao diện của nó
+  chỉ cần thế để tô màu. Trả ít hơn mức cần là cách rẻ nhất để một endpoint
+  không thành cửa sau.
+- **Nút "Bắt đầu" của phòng luyện xoá phần đã ghi nhận** của riêng phần `drill`.
+  Nó vốn là nút LÀM LẠI. Bài kiểm tra đầu vào thì KHÔNG được reset — `/check`
+  của nó có trả đáp án, cho reset là mở lại đúng cửa vừa bịt.
+
+### Đo, không đoán
+Thêm việc ghi nhận làm `/check` chậm hẳn: **810ms mỗi câu drill** (3 câu SQL),
+trong một trò bấm giờ 75 giây cho 8 câu. Phát hiện được vì phép kiểm trình duyệt
+chỉ bắt được **4/8 lời gọi** — nhịp bấm của kịch bản vượt qua nhịp phản hồi.
+
+Gộp còn một câu SQL (`RETURNING` thay cho SELECT lại, và đệm 60 giây cho
+`id_bai`): **810ms → 259ms**, lọt gọn trong 470ms hiển thị phản hồi vốn đã có.
+
+Và chính phép đo trình duyệt lộ ra hệ quả thật của luật lần-đầu-thắng: lần chạy
+trước bỏ dở đã khoá `d2` bằng một đáp án sai, nên lần sau gõ đúng vẫn bị tính
+sai — **5/8 thay vì 6/8**. Đó là lý do nút "Bắt đầu" phải xoá.
+
+### [ ] A18 · RỦI RO CÒN LẠI, nói thẳng
+Xoá được thì cũng dò được: trả lời → xem đúng/sai → bấm "Bắt đầu" → trả lời
+khác. Với câu trắc nghiệm 4 lựa chọn thì việc ấy rẻ. Cái đang chặn nó là XP chỉ
+cộng ở LẦN HOÀN THÀNH ĐẦU của bài (`existed` trong `CompleteLessonView`) — đủ
+cho XP, **chưa đủ cho bản đồ năng lực**, vì `record_event` dùng
+`COALESCE(EXCLUDED.score, …)` nên lần chạy sau ghi đè điểm lần trước.
+
+Cách vá đúng: dòng sự kiện phòng luyện chỉ ghi ở LẦN CHẠY ĐẦU của bài, cùng luật
+"một lượt vào sổ" mà anh đã chốt cho thi thử. Chưa làm — cần anh xác nhận vì nó
+đổi ý nghĩa của con số phòng luyện trên bản đồ năng lực.
+
+### [x] A13 (XONG) · quota đường chấm nay đếm theo NGƯỜI DÙNG, không theo IP
+Quota theo IP đúng cho đường ẩn danh, sai cho một trung tâm luyện thi: cả phòng
+máy đi ra Internet bằng MỘT địa chỉ NAT, nên 30 em ngồi cùng phòng chia nhau
+đúng một quota 1000/giờ. Mà từ hôm nay phòng luyện gọi `/check` 10 lần mỗi bài
+(8 câu + 1 lượt chấm bài kiểm tra + 1 lượt xoá khi bắt đầu lại), nên 30 em ×
+4 bài/giờ = 1200 — vượt trần. Chạm trần thì bước kiểm tra đầu vào **chặn hẳn**
+không cho đi tiếp: cả lớp đứng.
+
+`_PerViewUserThrottle` mới, `user_hour: 600/giờ`, `user_day: 2000/ngày`. Phép
+kiểm bắn thẳng vào DANH TÍNH mà bộ đếm dùng (hai em cùng IP phải ra hai bộ đếm;
+một em đổi mạng vẫn một bộ đếm) chứ không bắn 1000 request.
+
+Kèm một cái bẫy đã ghi ra thành phép kiểm: đặt `throttle_classes` trên view là
+**GHI ĐÈ** mặc định chứ không bổ sung — cùng cái bẫy với `permission_classes`.
+
+### [x] A14 (XONG) · `validate_lesson` nay kiểm cả khối `drill`
+Khối này trước nay không được kiểm một chữ, dù XP phòng luyện (tối đa 120, gấp
+2,4 lần phần thưởng cả bài) và một trong bốn nguồn của bản đồ năng lực đều dựng
+từ nó. Ba cách nó hỏng câm: thiếu `id` (câu bị lọc khỏi bảng đáp án, học viên
+thấy mọi câu hiện *"Chưa chấm được câu này — vẫn tính khi bạn hoàn thành bài"*,
+mà câu an ủi ấy là nói dối) · `id` trùng · sai tên khoá thời lượng.
+
+Đo trước khi siết: **0/76 bài đang có bị bộ kiểm mới chặn** — có phép kiểm hồi
+quy chạy trên chính 76 bài thật, để lần sau siết thêm cũng không ai chặn nhầm
+nội dung đang chạy.
+
+### [x] A15 (XONG) · mẫu nhập giáo trình chính thức ghi sai tên khoá
+`docs/NHAP_GIAO_TRINH.md` và `docs/mau_nhap_giao_trinh.json` viết
+`drill.seconds`, engine đọc `drill.time_seconds`. Bài nhập ĐÚNG theo mẫu chính
+thức sẽ có đồng hồ phòng luyện chạy mãi không hết giờ (`NaN <= 0` luôn sai). Đã
+sửa cả hai tệp, và bộ kiểm nay từ chối `seconds` với thông báo nói rõ vì sao.
+
+### [x] A16 (XONG) · đường sửa nội dung lẻ không đối chiếu `index` với `sort_order`
+Engine đọc `index` để biết mình là bài số mấy rồi gọi `/complete` và `/check`
+theo số đó. Dán mẫu có `"index": 28` vào ô nội dung của bài đang ở
+`sort_order = 5`: em học bài 5 nhưng tiến độ ghi sang bài 28, và bài 5 được chấm
+bằng đáp án của bài 28. Đường nhập cả khoá ép `sort_order = index` nên không hở;
+chỉ đường sửa lẻ nhận hai con số rồi để chúng lệch. Đo: 0/76 bài đang lệch.
+
+### [x] A17 · KHÔNG PHẢI LỖ HỔNG — tôi bác lại agent
+Agent báo `/complete` không kiểm ghi danh nên "hai request là đọc được nội dung
+khoá chưa ghi danh". Đúng về cơ chế, sai về hệ quả: **ghi danh là việc tự làm
+được**, `CourseEnrollView` mở cho chính học viên. Hàng rào ghi danh chưa bao giờ
+là ranh giới phân quyền — nó là hàng rào TOÀN VẸN DỮ LIỆU (đừng để tiến độ rơi
+vào một khoá không có dòng ghi danh). Dựng thêm rào ở `/complete` chỉ làm hỏng
+đúng bản vá L2 hôm nay, cái sinh ra để TỰ ghi danh.

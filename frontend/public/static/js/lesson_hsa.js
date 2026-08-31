@@ -99,14 +99,14 @@
 
   /* Gọi đường chấm. Trả `null` khi không gọi được — nơi gọi tự quyết định nói
      gì, chứ hàm này không bịa ra một kết quả nào. */
-  async function checkOnServer(phan, answers) {
+  async function checkOnServer(phan, answers, reset) {
     try {
       var r = await fetch('/api/courses/' + encodeURIComponent(state.courseId) +
                           '/lessons/' + encodeURIComponent(state.lesson.index) + '/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ phan: phan, answers: answers }),
+        body: JSON.stringify({ phan: phan, answers: answers, reset: !!reset }),
       });
       if (!r.ok) return null;
       return await r.json();
@@ -447,6 +447,12 @@
 
   function startDrill() {
     var d = state.lesson.drill;
+    /* Xin máy chủ xoá câu trả lời phòng luyện đã ghi nhận. Nút này là nút LÀM
+       LẠI; không xoá thì lần luyện thứ hai tô màu theo câu trả lời lần trước
+       (đo được: 5/8 thay vì 6/8 vì một câu bị khoá bằng đáp án sai của lần bỏ
+       dở). Không `await`: xoá xong hay chưa thì câu đầu cũng phải mất ~2 giây
+       nữa mới tới, và hỏng thì cũng chỉ mất đúng lần luyện này. */
+    checkOnServer('drill', {}, true);
     drill = { idx: 0, correct: 0, answered: 0, combo: 0, maxCombo: 0, times: [], xp: 0,
       /* `answers` là thứ DUY NHẤT được gửi lên lúc hoàn thành. Các con số
          `correct`/`maxCombo` dưới đây chỉ để vẽ HUD tại chỗ; máy chủ dựng lại
