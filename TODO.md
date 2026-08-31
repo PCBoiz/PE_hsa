@@ -987,7 +987,7 @@ HTML server-render lẫn state React. Chưa phải lỗi (lớp thật chưa t�
 nhưng là trần quy mô nhìn thấy được. Hướng: chỉ gửi đoạn đầu bài làm, tải đủ
 khi bấm "Xem bài làm".
 
-### [ ] T69 · `/courses/<id>` hỏng CSS ở bộ TỐI (ngoài phạm vi đợt này)
+### [x] T69 (XONG — xem mục cùng số ở dưới) · `/courses/<id>` hỏng CSS ở bộ TỐI
 `course_detail.css` còn màu bộ SÁNG lọt vào nền tối: `.cd-lesson-title` 1,93:1,
 `.cd-lesson-num` 1,41:1, `.cd-lesson-icon` 1,34:1. Danh sách bài học không đọc
 được ở bộ tối là chuyện học viên gặp hằng ngày.
@@ -1011,17 +1011,32 @@ ngưỡng 3:1), điểm đánh giá hổ phách 2,15:1 → dùng `--warning-ink`
 
 Đo: **6 lỗi bộ tối và 7 lỗi bộ sáng → 0/0**, trên 74 và 79 phần tử. Đã xem ảnh.
 
-### [ ] T70 · Trang chi tiết khoá học có thanh điều hướng RIÊNG, lệch với trang chính
+### [x] T70 (XONG) · Trang chi tiết khoá học có thanh điều hướng RIÊNG
 `courses/[courseId]/page.tsx` chép lại khối topbar thay vì dùng `<Topbar />`:
 nó hiện "Kỹ năng" và thiếu "Kế hoạch", "Thi thử", "Bài tập". Nên mục nav mới
 thêm hôm nay không có ở đó, và mọi mục thêm sau này cũng vậy. Hai bản sao của
 một khối điều hướng là hai bản sẽ trôi khỏi nhau — đã trôi rồi.
 
 **Vá phần thực dụng 31/08:** thêm ba mục còn thiếu ("Kế hoạch", "Thi thử",
-"Bài tập") vào bản sao đó, dùng đúng idiom `location.href` của trang. Đo: 8 mục,
-chip hiện đủ 79/79px ở 1280 và 57/57px ở 390, không tràn ngang. GỘP về một bản
-vẫn còn nợ — nó cần đổi cả cơ chế nạp biểu tượng (emoji ở đây, `icons.js` ở kia)
-và cả cách điều hướng (`location.href` ở đây, `navigate()` của main.js ở kia).
+"Bài tập") vào bản sao đó, dùng đúng idiom `location.href` của trang.
+
+**Vá phần GỐC 01/09/2026 — và nó lộ ra một trang KHÔNG VÀO ĐƯỢC.** Rà lại thì
+danh sách đã trôi theo **cả hai chiều**: bản CHÍNH thiếu **"Kỹ năng"**. Mà
+`page-skills` không phải khung trống — đo 01/09/2026 nó chạy đầy đủ với dữ liệu
+thật: *20 kỹ năng · 1 đạt · 1 cần ôn · 18 chưa bắt đầu*, có ô tìm kiếm riêng và
+`dashboard.js::renderSkills` nạp dữ liệu. Nghĩa là suốt thời gian đó, cách duy
+nhất vào được trang ấy là **đi vòng qua màn chi tiết khoá học**, hoặc tự gõ
+`#skills`. Một trang đầy đủ mà không có đường nào tới từ thanh điều hướng chính.
+
+Không gộp hai BẢN DỰNG (làm thế phải kéo main.js + dashboard.js vào màn học viên
+mở hằng ngày — rủi ro lớn hơn giá trị). Thay vào đó tách phần SINH RA sự trôi:
+danh sách mục nay nằm ở `components/navMuc.ts`, cả hai bản dựng cùng đọc từ đó.
+Bản dựng vẫn riêng (emoji vs `icons.js`, `location.href` vs `navigate()`), nhưng
+thêm một mục là sửa đúng một chỗ.
+
+Đo sau khi vá: hai thanh ra **cùng 8 mục, cùng thứ tự**, trạng thái "đang mở"
+đúng ở mỗi bên; bấm "Kỹ năng" từ dashboard → `page-skills`. Giao diện đo lại:
+0 · 0 · 0 · 0/171.
 
 
 ---

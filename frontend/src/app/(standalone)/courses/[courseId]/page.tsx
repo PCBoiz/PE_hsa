@@ -9,6 +9,7 @@
 // vì tổ hợp CSS khác (course_db_design.css đè 63 class trùng tên).
 
 import PageStyles from '@/components/PageStyles';
+import { MUC_NAV } from '@/components/navMuc';
 import { use, useEffect, useState } from 'react';
 
 import Chatbot from '@/components/Chatbot';
@@ -108,40 +109,23 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
             </div>
           </div>
 
+          {/* Danh sách mục nằm ở `components/navMuc.ts` — CÙNG nguồn với
+              `<Topbar />`. Bản dựng thì vẫn riêng (emoji thay `icons.js`,
+              `location.href` thay `navigate()`), vì trang này cố ý KHÔNG nạp
+              main.js. Nhưng phần sinh ra sự trôi là danh sách, không phải cách
+              dựng: nay thêm một mục là sửa đúng một chỗ. */}
           <nav className="topbar-nav" role="navigation" aria-label="Main navigation">
-            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard'; }} aria-label="Dashboard">
-              <span className="nav-icon">🏠</span><span>Dashboard</span>
-            </button>
-            <button className="nav-btn active" aria-label="Khóa học">
-              <span className="nav-icon">📖</span><span>Khóa học</span>
-            </button>
-            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#roadmap'; }} aria-label="Lộ trình">
-              <span className="nav-icon">🗺️</span><span>Lộ trình</span>
-            </button>
-            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#skills'; }} aria-label="Kỹ năng">
-              <span className="nav-icon">🏅</span><span>Kỹ năng</span>
-            </button>
-            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#forum'; }} aria-label="Diễn đàn">
-              <span className="nav-icon">💬</span><span>Diễn đàn</span>
-            </button>
-            {/* Ba mục dưới đây thiếu ở BẢN SAO này của thanh điều hướng.
-                Trang chi tiết khoá chép lại khối topbar thay vì dùng
-                `<Topbar />` — vì nó dùng cơ chế khác (emoji thay `icons.js`,
-                `location.href` thay `navigate()` của main.js), nên tráo thẳng
-                sẽ vỡ. Hệ quả: mọi mục thêm vào thanh chính đều KHÔNG có ở đây,
-                và học viên đang xem khoá không tới được Bài tập hay Thi thử.
-                Hai bản sao của một khối điều hướng là hai bản sẽ trôi khỏi
-                nhau — đã trôi rồi (T70). Vá phần thực dụng trước; gộp về một
-                bản là việc riêng, cần đổi cả cơ chế nạp biểu tượng. */}
-            <button className="nav-btn" onClick={() => { window.location.href = '/dashboard#plan'; }} aria-label="Kế hoạch">
-              <span className="nav-icon">🗓️</span><span>Kế hoạch</span>
-            </button>
-            <button className="nav-btn" onClick={() => { window.location.href = '/mock'; }} aria-label="Thi thử">
-              <span className="nav-icon">🎯</span><span>Thi thử</span>
-            </button>
-            <button className="nav-btn" onClick={() => { window.location.href = '/bai-tap'; }} aria-label="Bài tập">
-              <span className="nav-icon">✏️</span><span>Bài tập</span>
-            </button>
+            {MUC_NAV.map((m) => (
+              <button
+                key={m.nhan}
+                className={'nav-btn' + (m.trang === 'courses' ? ' active' : '')}
+                onClick={m.trang === 'courses' ? undefined
+                  : () => { window.location.href = m.url; }}
+                aria-label={m.nhan}
+              >
+                <span className="nav-icon">{m.emoji}</span><span>{m.nhan}</span>
+              </button>
+            ))}
           </nav>
 
           <div className="topbar-right">

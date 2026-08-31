@@ -1,11 +1,13 @@
 'use client';
 
+import { MUC_NAV } from './navMuc';
+
 // Port block nav của base.html (topbar + search + bell + user-chip) — markup 1:1.
 // Mọi handler gọi hàm global của main.js (giữ nguyên logic legacy).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const W = () => window as any;
 
-export default function Topbar() {
+export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
   return (
     <>
       <span id="sidebar-name" style={{ display: 'none' }}>—</span>
@@ -28,39 +30,28 @@ export default function Topbar() {
         </div>
 
         <nav className="topbar-nav" role="navigation" aria-label="Main navigation" id="topbar-nav">
-          <button className="nav-btn active" data-page="dashboard" onClick={() => W().navigate('dashboard')} aria-label="Dashboard">
-            <span className="nav-icon" data-icon="home" data-size="17"></span><span>Dashboard</span>
-          </button>
-          <button className="nav-btn" data-page="courses" onClick={() => W().navigate('courses')} aria-label="Khóa học">
-            <span className="nav-icon" data-icon="library" data-size="17"></span><span>Khóa học</span>
-          </button>
-          {/* Kế hoạch học có lịch — vế System-Guided. Khác "Lộ trình" (danh mục
-              tĩnh 26 lộ trình từ bản cũ): đây là lịch của riêng học viên, sinh
-              từ ngày thi + sức học + chủ đề đang yếu. */}
-          <button className="nav-btn" data-page="plan" onClick={() => W().navigate('plan')} aria-label="Kế hoạch">
-            <span className="nav-icon" data-icon="calendar" data-size="17"></span><span>Kế hoạch</span>
-          </button>
-          <button className="nav-btn" data-page="roadmap" onClick={() => W().navigate('roadmap')} aria-label="Lộ trình">
-            <span className="nav-icon" data-icon="map" data-size="17"></span><span>Lộ trình</span>
-          </button>
-          <button className="nav-btn" data-page="forum" onClick={() => W().navigate('forum')} aria-label="Diễn đàn">
-            <span className="nav-icon" data-icon="chat" data-size="17"></span><span>Diễn đàn</span>
-          </button>
-          <button className="nav-btn" onClick={() => { window.location.href = '/mock'; }} aria-label="Thi thử">
-            <span className="nav-icon" data-icon="target" data-size="17"></span><span>Thi thử</span>
-          </button>
+          {/* Danh sách nằm ở `navMuc.ts` — MỘT nguồn, dùng chung với bản dựng
+              riêng của màn chi tiết khoá. Trước đó hai bản chép tay và đã trôi
+              khỏi nhau theo cả hai chiều; xem chú thích đầu tệp đó. */}
+          {MUC_NAV.map((m) => (
+            <button
+              key={m.nhan}
+              className={'nav-btn' + (m.trang && m.trang === trang ? ' active' : '')}
+              {...(m.trang ? { 'data-page': m.trang } : {})}
+              onClick={() => {
+                // `navigate()` là của main.js. Trang nào không nạp main.js thì
+                // rơi về điều hướng thường — thanh này phải dùng được một mình.
+                if (m.trang && typeof W().navigate === 'function') W().navigate(m.trang);
+                else window.location.href = m.url;
+              }}
+              aria-label={m.nhan}
+            >
+              <span className="nav-icon" data-icon={m.icon} data-size="17"></span><span>{m.nhan}</span>
+            </button>
+          ))}
 
-          {/* Bài tập giảng viên giao (ERP §5, 31/08/2026). Cùng kiểu điều hướng
-              với "Thi thử": rời khỏi trang legacy sang một tuyến Next thật, vì
-              màn hình này dựng bằng bộ component mới chứ không phải main.js.
-              KHÔNG ẩn theo vai trò — giảng viên cũng có thể đang học một khoá,
-              và trang tự trả về danh sách rỗng nếu không có bài nào. */}
-          <button className="nav-btn" onClick={() => { window.location.href = '/bai-tap'; }} aria-label="Bài tập">
-            <span className="nav-icon" data-icon="pencil" data-size="17"></span><span>Bài tập</span>
-          </button>
-
-          {/* Khu giảng dạy — chỉ hiện với vai trò Giảng viên hoặc admin.
-              dashboard.js bật/tắt theo window.__currentUser.role. */}
+          {/* Hai mục dưới KHÔNG nằm trong danh sách chung: chúng bị dashboard.js
+              bật/tắt theo vai trò qua `id`, và chỉ có mặt ở bản dựng này. */}
           <button className="nav-btn" id="nav-teach" data-page="teach" style={{ display: 'none' }} onClick={() => W().navigate('teach')} aria-label="Giảng dạy">
             <span className="nav-icon" data-icon="users" data-size="17"></span><span>Giảng dạy</span>
           </button>
