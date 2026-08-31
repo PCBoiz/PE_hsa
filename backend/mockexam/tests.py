@@ -290,9 +290,14 @@ def test_luu_tam_cau_tra_loi_va_lay_lai_duoc_khi_vao_lai(em, de):
 
 @pytest.mark.django_db
 def test_luu_tam_khong_phai_cua_sau_de_lay_dap_an(em, de):
+    """Kiểm theo Ý ĐỊNH (không rò thông tin chấm) chứ không theo danh sách khoá
+    cứng: bản cũ dùng `set(r.data) <= {'ok','saved'}` nên nó đỏ ngay khi thêm
+    `secondsLeft` — một trường vô hại mà client vốn đã biết."""
     _bat_dau(em, de)
     r = _luu(em, de, {'q1': '4'})
-    assert set(r.data) <= {'ok', 'saved'}, r.data
+    cam = {'results', 'score', 'total', 'answer', 'answers', 'correct',
+           'section_scores', 'weakest'}
+    assert not (set(r.data) & cam), r.data
 
 
 @pytest.mark.django_db
@@ -342,3 +347,57 @@ def test_diem_de_gan_nhat_khong_bi_luot_dang_mo_de_len(em, de):
     _bat_dau(em, de)
     r = _goi(HsaSummaryView, 'get', ai=em)
     assert r.data['lastMockScore'] == 3 and r.data['lastMockTotal'] == 3
+
+
+# ── Audit chéo 01/09/2026 · nộp muộn KHÔNG được trả lại lượt tính điểm ─────
+
+@pytest.mark.django_db
+def test_nop_muon_KHONG_tra_lai_luot_tinh_diem(em, de):
+    """Lỗ nặng nhất mà đợt audit bắt được, và là lỗi của chính bản vá L4.
+
+    `/submit` ghi `counted = tinh_diem`, mà `tinh_diem` là FALSE khi nộp muộn →
+    cờ bị HẠ → dòng rơi khỏi `uq_mock_attempt_tinh_diem` → lượt tính điểm được
+    TRẢ LẠI. Cộng với việc phản hồi trả đáp án cho mọi câu đã điền:
+
+        /start → chờ quá giờ → /submit rác (nhận trọn đáp án VÀ lấy lại lượt)
+              → /start → /submit đúng → 9/9 + 100 XP
+
+    Đường `/start` (`_dong_luot_qua_gio`) đã cố ý không đụng cột này ngay từ
+    đầu. Hai đường, hai luật, và đường lỏng hơn là đường học viên gọi được.
+    """
+    a = _bat_dau(em, de)
+    assert a.data.get('counts') is True
+    _lui_dong_ho(a.data['attemptId'], 20 * 60 + 300)
+
+    tre = _nop(em, de, {'q1': 'bua', 'q2': 'bua', 'q3': 'bua'})
+    assert tre.data.get('notCountedReason') == 'het_gio'
+
+    con = q1("SELECT counted FROM mock_attempts WHERE id=%s", (a.data['attemptId'],))
+    assert con['counted'] is True, 'nộp muộn đã HẠ cờ và trả lại lượt tính điểm'
+
+    b = _bat_dau(em, de)
+    assert b.data.get('counts') is False, 'lượt tính điểm đã bị tiêu, không được cấp lại'
+    r = _nop(em, de, DUNG_HET)
+    assert r.data.get('counted') is False
+    assert r.data.get('xpGained') == 0
+
+
+@pytest.mark.django_db
+def test_luu_tam_SAU_CHUONG_bi_tu_choi(em, de):
+    """Không có hàng rào giờ ở `/save` thì nó thành đường vòng TỐT HƠN đường
+    trung thực: hết giờ → tra cứu vài ngày → `/save` bộ hoàn hảo → `/start` →
+    `_dong_luot_qua_gio` chấm chính bộ ấy và GIỮ NGUYÊN `counted`, tức 9/9 vào
+    sổ. Trong khi nộp muộn tử tế qua `/submit` thì không được tính điểm.
+    """
+    a = _bat_dau(em, de)
+    assert _luu(em, de, {'q1': '4'}).status_code == 200
+    _lui_dong_ho(a.data['attemptId'], 20 * 60 + 300)
+
+    tre = _luu(em, de, DUNG_HET)
+    assert tre.status_code == 409, tre.data
+    dong = q1("SELECT answers_json FROM mock_attempts WHERE id=%s", (a.data['attemptId'],))
+    import json as _json
+    da_luu = dong['answers_json']
+    if isinstance(da_luu, str):
+        da_luu = _json.loads(da_luu)
+    assert da_luu == {'q1': '4'}, 'bài viết sau chuông vẫn ghi được: %s' % (da_luu,)

@@ -31,6 +31,19 @@ CREATE TABLE IF NOT EXISTS mock_attempts (
 CREATE INDEX IF NOT EXISTS idx_mock_attempts_user ON mock_attempts(user_id);
 CREATE INDEX IF NOT EXISTS idx_mock_attempts_exam ON mock_attempts(exam_id);
 
+-- Có idx_mock_attempts_user rồi, nhưng câu "lượt thi gần nhất" vẫn phải SORT vì
+-- chỉ mục chỉ trên user_id. Thêm cột thời gian vào là bỏ hẳn bước sắp xếp.
+--
+-- Chỉ mục này TỪNG nằm ở `legacy_schema.sql`, mà `bootstrap_schema` đọc thư mục
+-- sql/ theo `sorted()` nên "legacy" chạy TRƯỚC "mockexam" — tức nó chạy khi
+-- bảng `mock_attempts` chưa tồn tại. `IF NOT EXISTS` chỉ bỏ qua khi CHỈ MỤC đã
+-- có, không cứu được khi BẢNG chưa có. Trên CSDL đang chạy thì lỗi này ngủ (bảng
+-- có sẵn); nó thức dậy đúng lúc dựng môi trường mới — staging, hay khôi phục sau
+-- sự cố — và làm CHẾT cả lần triển khai vì `bootstrap_schema` nằm trong
+-- `buildCommand` của Render và `raise` ở câu lệnh đầu tiên hỏng.
+CREATE INDEX IF NOT EXISTS idx_mock_attempts_user_time
+    ON mock_attempts(user_id, submitted_at DESC);
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- Lượt thi thử nào VÀO SỔ (L4, 31/08/2026)
 -- ─────────────────────────────────────────────────────────────────────────

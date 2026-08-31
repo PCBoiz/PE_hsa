@@ -214,8 +214,13 @@ def generate(uid):
                         'title': 'Ôn lại: ' + t['topic'],
                         # KHÔNG viết "thấp nhất": chỉ chủ đề đầu tiên mới thấp
                         # nhất, các chủ đề sau đều là câu nói sai.
+                        # In ĐÚNG con số đã quyết định (`masteryTopic`), không
+                        # in con số đã trộn điểm đề. Bản cũ in `t['mastery']`,
+                        # nên một chủ đề có bằng chứng 45 mà điểm đề 100 cho ra
+                        # câu "Điểm thành thạo đang 62/100, dưới ngưỡng 60" —
+                        # tự mâu thuẫn, in thẳng cho học viên đọc.
                         'reason': ('Điểm thành thạo đang %d/100, dưới ngưỡng %d.'
-                                   % (t['mastery'], REVIEW_BELOW)),
+                                   % (_diem_chu_de(t), REVIEW_BELOW)),
                     })
 
             # Hết bài mà vẫn còn tuần: lấp bằng buổi ôn chủ đề yếu, đừng để
@@ -343,8 +348,19 @@ def _done_lookup(uid, floor):
 #: `done_lessons`) và mục "Ôn lại X" (qua `topic_dates`). Phòng luyện cùng lý
 #: do: nó sinh ra từ đúng lần hoàn thành bài ấy, đếm nó là đếm lần thứ ba.
 #:
-#: Còn lại được tính là ôn: quiz ôn tập (đúng tên nó), điểm hợp phần đề thi thử,
-#: và bài tập giảng viên chấm.
+#: Còn lại được tính là ôn: quiz ôn tập (đúng tên nó).
+#:
+#: CHÚ THÍCH NÀY TỪNG NÓI THÊM "điểm hợp phần đề thi thử, và bài tập giảng viên
+#: chấm" — SAI. Hai đường đọc sự kiện (`_done_lookup` và `do_cham_theo_hoc_vien`)
+#: chỉ lấy `[KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ]`, nên `mock_section` và
+#: `assignment` không bao giờ tới được nhánh `topic_dates`. Nói một luật mà truy
+#: vấn không thi hành là cách chắc chắn để người đọc sau tin nhầm.
+#:
+#: HỆ QUẢ ĐANG CHẤP NHẬN: mục "Ôn lại X" chỉ có MỘT cách được tick — làm quiz ôn
+#: tập có câu thuộc chủ đề X. Mà quiz ôn tập cần đủ 5 câu trong kho mới mở được,
+#: nên em chưa học đủ sẽ thấy mọi mục "Ôn lại" đứng `todo` vĩnh viễn và cộng vào
+#: con số "đang chậm N việc". Nới ra là một quyết định sản phẩm (bài tập chấm
+#: tay có tính là ôn không?) — chưa chốt, xem TODO.
 KHONG_TINH_LA_ON_LAI = (KIND_LESSON, KIND_DRILL)
 
 

@@ -438,3 +438,73 @@ def test_bo_kiem_moi_KHONG_chan_bai_nao_dang_co(db):
         if e:
             hong.append(e[0])
     assert hong == [], hong[:5]
+
+
+# ── Audit chéo 01/09/2026 · ba lỗ nặng của chính bản A12 ───────────────────
+
+@pytest.mark.django_db
+def test_check_KHONG_de_ra_dong_lesson_progress_thieu_course_id(em):
+    """Trước A12, đường DUY NHẤT tạo dòng `lesson_progress` là `/complete`, và
+    nó luôn điền `course_id`. Từ khi `/check` ghi nhận câu trả lời, đường này
+    chèn TRƯỚC — để trống thì cột ấy ở NULL VĨNH VIỄN (nhánh `DO UPDATE` của
+    `/complete` không đụng tới nó).
+
+    Bảy chỗ đọc lọc theo `lp.course_id`, nặng nhất là câu tính lại
+    `enrollments` ngay sau khi hoàn thành bài → tiến độ đứng ở 0%.
+    """
+    from lessons.grading import dap_an
+    from lessons.views import CheckAnswersView
+    ids = sorted(dap_an(KHOA, 1).get('test') or {})
+    _goi(CheckAnswersView, 'post', {'phan': 'test', 'answers': {ids[0]: 'x'}},
+         ai=em, course_id=KHOA, lesson_no=1)
+    dong = q1("SELECT lp.course_id FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id "
+              "WHERE lp.user_id=%s AND l.course_id=%s AND l.sort_order=1", (em.id, KHOA))
+    assert dong and dong['course_id'] == KHOA, dong
+
+
+@pytest.mark.django_db
+def test_hoan_thanh_LAN_HAI_khong_ghi_de_diem_lan_dau(em):
+    """Đường vòng hai agent cùng chỉ ra: `/check` trả đáp án cho câu đã trả lời,
+    `/complete` XOÁ khoá "lần đầu thắng" để lần ôn sau bắt đầu từ giấy trắng.
+    Hai thứ cộng lại: gửi bừa để moi đáp án → hoàn thành (0 điểm vào sổ) →
+    hoàn thành lại bằng bộ vừa moi → 100 GHI ĐÈ số 0.
+
+    Giữ điểm CAO NHẤT cũng không chặn được, vì 0 → 100 là đi LÊN.
+    """
+    from lessons.grading import dap_an
+    from lessons.views import CheckAnswersView, CompleteLessonView
+    bang = dap_an(KHOA, 1).get('test') or {}
+    ids = sorted(bang)
+    dung_het = {i: bang[i]['answer'] for i in ids}
+
+    # Vòng 1 — đoán bừa để moi, rồi hoàn thành.
+    _goi(CheckAnswersView, 'post', {'phan': 'test', 'answers': {i: 'bua' for i in ids}},
+         ai=em, course_id=KHOA, lesson_no=1)
+    _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'answers': dung_het},
+         ai=em, lesson_no=1)
+    # Vòng 2 — nộp lại bằng bộ đáp án đã moi được.
+    _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'answers': dung_het},
+         ai=em, lesson_no=1)
+
+    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1", (KHOA,))['id']
+    ghi = q1("SELECT quiz_score FROM lesson_progress WHERE user_id=%s AND lesson_id=%s",
+             (em.id, lid))
+    assert ghi['quiz_score'] == 0, (
+        'điểm vào sổ bị nâng lên %s bằng bộ đáp án đã moi' % ghi['quiz_score'])
+    ev = q1("SELECT score FROM learning_events WHERE user_id=%s AND dedup_key=%s",
+            (em.id, 'lesson:%s' % lid))
+    assert ev and int(ev['score']) == 0, (
+        'dòng năng lực bị nâng lên %s trong khi sổ điểm giữ 0' % (ev or {}).get('score'))
+
+
+@pytest.mark.django_db
+def test_bo_cau_tra_loi_khong_lo_bi_kep_bien(em):
+    """`ghi_nhan` GỘP THÊM chứ không thay thế, nên không trần thì mỗi request
+    nạp thêm tới 2,5 MB khoá rác vào ĐÚNG MỘT dòng. Vài chục lượt là mỗi lần
+    chấm kéo cả trăm MB từ Neon về — một tài khoản đủ giết một worker."""
+    from lessons.grading import MAX_CAU_TRA_LOI, MAX_DAI_TRA_LOI, kep_tra_loi
+    to = {('k%d' % i): ('x' * 2000) for i in range(5000)}
+    ra, cat = kep_tra_loi(to)
+    assert cat is True
+    assert len(ra) <= MAX_CAU_TRA_LOI, len(ra)
+    assert all(len(v) <= MAX_DAI_TRA_LOI for v in ra.values())

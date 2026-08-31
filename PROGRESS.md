@@ -1803,3 +1803,239 @@ mâu thuẫn nhau trong mười dòng. Sửa đúng là cho mục đã xong hi�
 THÀNH (kẹp về tuần này nếu sớm hơn) chứ không phải tuần dự kiến — nhưng
 `study_plan_items` chưa có cột thời điểm hoàn thành, nên cần thêm cột hoặc suy
 từ `learning_events`. Chưa làm trong phiên này.
+
+
+---
+
+## Nghiên cứu 31/08/2026 — bản đồ năng lực đang hứa nhiều hơn nó đo được
+
+Tra tài liệu ngoài rồi soi lại chính mô hình mình đang cho là ổn. Hai kết luận,
+cả hai đều có số đo trên dữ liệu thật của pe_hsa.
+
+### 1. Hằng số `HALF_LIFE_DAYS = 45` là con số ĐƯỢC GÕ, không phải được chọn
+
+Chú thích của nó chỉ MÔ TẢ — *"sau ngần này ngày, một kết quả chỉ còn nặng một
+nửa"* — chứ không biện minh: không nguồn, không phép đo, không thí nghiệm.
+
+Đo độ nhạy trên cả bốn học viên có dữ liệu, đổi chu kỳ bán rã từ 7 ngày tới
+"không suy giảm":
+
+```
+user   chủ đề            7     14     30     45     90    180   ∞
+7      Số học           40     35     32     31     30     29    29   ← chênh 11
+9      Số học           22     22     22     22     22     22    22   ← chênh 0
+9      Đại số           42     42     42     42     42     42    42   ← chênh 0
+```
+
+Hai điều đọc ra:
+
+- **Với em id 9 nó không làm gì cả.** Mọi bằng chứng của em cùng 7 ngày tuổi,
+  nên trọng số bằng nhau và con số y hệt ở mọi chu kỳ. Câu "có suy giảm theo
+  thời gian" trong tài liệu, với em ấy, là một lời hứa rỗng.
+- **Với em id 7 nó đổi 11 điểm** (40 ↔ 29) — chỉ vì hai bằng chứng cách nhau 5
+  và 18 ngày. Một hằng số không ai chọn đang quyết định 11 điểm trên bản đồ mà
+  giảng viên nhìn vào để xếp lịch ôn.
+
+Chưa đổi con số: đổi 45 thành một con số gõ đại khác thì không khá hơn. Cái phải
+đổi là CHÚ THÍCH — nói thẳng nó chưa được kiểm chứng và nó đáng bao nhiêu điểm.
+
+### 2. Mô hình hiện tại KHÔNG biết độ khó, và chưa đủ người để biết
+
+Rà toàn bộ nội dung: một câu hỏi chỉ có `answer, explain, id, options, question,
+type`. **Không câu nào mang tín hiệu độ khó.** (Trường `difficulty` duy nhất
+trong repo là học viên tự ghi "hôm nay thấy khó/dễ" trong nhật ký — không liên
+quan tới câu hỏi.)
+
+Nghĩa là hai em cùng đúng 8/10 thì ra cùng một con số, dù một em làm toàn câu dễ
+và em kia làm toàn câu khó. Đây đúng là *"Proportion Correct method"* mà tài
+liệu về Elo trong giáo dục nói là kém hơn Elo ở mẫu nhỏ.
+
+**Nhưng đừng vội xây Elo.** Tra tiếp về ngưỡng mẫu: Elo cần **ít nhất 100 học
+viên** mới cho ước lượng độ khó dùng được, và **200–250** mới đáng tin. pe_hsa
+đang có **5 học viên**. Xây bây giờ là dựng một mô hình phức tạp trên dữ liệu
+không nuôi nổi nó — nó sẽ cho ra những con số trông tinh vi hơn mà kém đúng hơn.
+
+Kèm một cảnh báo trong tài liệu đáng nhớ: khi hệ thống vừa CHỌN câu theo rating
+vừa CẬP NHẬT rating, phương sai phình lên theo thời gian và rating **không hội
+tụ**. Nếu sau này làm adaptive thì phải tách hai việc ấy.
+
+### [ ] N1 · Việc phải làm khi đủ người (ngưỡng: 100 học viên hoạt động)
+Ước lượng độ khó từng câu bằng Elo, rồi chấm năng lực theo độ khó thay vì theo
+tỉ lệ đúng trần. Trước ngưỡng đó thì KHÔNG làm — và lý do đã ghi ở trên để lần
+sau không ai phải tra lại.
+
+### [ ] N2 · Việc làm được ngay, không cần thêm người
+Chú thích của `HALF_LIFE_DAYS` phải nói ra: (a) con số này chưa được kiểm chứng,
+(b) đo 31/08/2026 nó đáng tới 11 điểm với một học viên thật, (c) nó là trọng số
+theo ĐỘ MỚI CỦA BẰNG CHỨNG, không phải mô hình quên. Ba thứ đó khác nhau, và
+gộp chúng lại là cách con số 45 sống sót mà không ai hỏi.
+
+**Nguồn:**
+- [Applications of the Elo rating system in adaptive educational systems](https://www.sciencedirect.com/science/article/abs/pii/S036013151630080X)
+- [Keeping Elo alive: Evaluating and improving measurement properties of learning systems based on Elo ratings](https://pmc.ncbi.nlm.nih.gov/articles/PMC12784335/)
+- [Adaptive Assessment and Content Recommendation in Online Programming Courses: On the Use of Elo-rating](https://dl.acm.org/doi/fullHtml/10.1145/3511886)
+- [On-the-fly parameter estimation based on item response theory in item-based adaptive learning systems](https://link.springer.com/article/10.3758/s13428-022-01953-x)
+- [The FSRS Algorithm (open-spaced-repetition wiki)](https://github.com/open-spaced-repetition/awesome-fsrs/wiki/The-Algorithm)
+
+
+---
+
+## Audit chéo đợt hai 01/09/2026 — hai agent soi 7 commit của cả phiên
+
+Một agent soi BẢO MẬT, một soi TÍNH ĐÚNG ĐẮN. Cái nặng nhất của cả hai đều là
+hồi quy của chính những bản vá tôi vừa viết trong phiên này.
+
+### [x] B1 (VÁ) · NẶNG NHẤT — nộp muộn TRẢ LẠI lượt tính điểm, kèm trọn đáp án
+`/submit` ghi `counted = tinh_diem`, mà `tinh_diem` là FALSE khi nộp muộn. Nên
+nộp muộn **HẠ cờ xuống FALSE**, dòng rơi khỏi `uq_mock_attempt_tinh_diem`, và
+`_da_dung_luot_tinh_diem` lại trả False — lượt tính điểm được cấp lại. Cộng với
+việc phản hồi trả đáp án cho mọi câu ĐÃ ĐIỀN (kể cả điền rác):
+
+```
+/start → chờ quá giờ → /submit rác (nhận trọn đáp án VÀ lấy lại lượt)
+       → /start → /submit đúng → 9/9 + 100 XP
+```
+
+Đường `/start` (`_dong_luot_qua_gio`) đã cố ý KHÔNG đụng cột ấy ngay từ đầu.
+**Hai đường, hai luật, và đường lỏng hơn là đường học viên gọi được trực tiếp.**
+Đúng cái lớp lỗi tôi đi vá cả phiên, lần này trong mã của chính mình.
+
+Vá: `counted` chốt lúc `/start` và KHÔNG BAO GIỜ đổi sau đó — đúng như docstring
+đầu tệp vẫn hứa.
+
+### [x] B2 (VÁ) · NẶNG — `/check` GHI mà `ghi_nhan` không điền `course_id`
+Trước A12, đường DUY NHẤT tạo dòng `lesson_progress` là `/complete`, và nó luôn
+điền `course_id`. Từ khi `/check` ghi nhận câu trả lời, đường này chèn TRƯỚC —
+để trống thì lần chèn đầu không có `course_id`, mọi lần sau rơi vào `DO UPDATE`
+(không đụng cột ấy), và cột ở **NULL vĩnh viễn**.
+
+Bảy chỗ đọc lọc theo `lp.course_id`, nặng nhất là câu tính lại `enrollments`
+NGAY SAU khi hoàn thành bài → **tiến độ đứng ở 0%** cho mọi học viên từ nay.
+
+Đáng sợ nhất: `learning_events` KHÔNG hỏng (nó lấy `course_id` từ thân request),
+nên bản đồ năng lực vẫn đúng — hai màn hình cùng nói về một em sẽ lệch nhau mà
+không ai đoán được vì sao.
+
+Đo: **0 dòng đã hỏng** trên Neon — bắt kịp trước khi có ai chạm vào. Vá cả hai
+đầu: `ghi_nhan` điền `course_id` bằng truy vấn con, và `/complete` thêm
+`course_id = COALESCE(cũ, mới)` để dòng hỏng lành lại ở lần hoàn thành kế tiếp.
+
+### [x] B3 (VÁ) · NẶNG — `/complete` tự mở khoá, vòng thứ hai ghi đè điểm
+Đúng lỗ mà A12 sinh ra để bịt, chỉ dịch đi một bước. `/check` trả đáp án cho câu
+đã trả lời (phần xem lại cần), còn `/complete` XOÁ khoá "lần đầu thắng" để lần
+ôn sau bắt đầu từ giấy trắng. Hai thứ cộng lại:
+
+```
+/check bừa (moi trọn đáp án) → /complete (điểm 0 vào sổ, khoá bị xoá)
+                             → /complete lại bằng bộ vừa moi → 100 GHI ĐÈ số 0
+```
+
+**Giữ điểm CAO NHẤT cũng không chặn được**, vì 0 → 100 là đi LÊN. Chỉ "lần đầu
+thắng" mới đóng. Đảo thứ tự `COALESCE`: ô đã có số thì giữ, ô trống thì điền.
+
+Kèm: dòng sự kiện nay lấy đúng con số VỪA VÀO SỔ (đọc lại sau khi ghi) chứ không
+lấy con số vừa chấm — nếu không thì `lesson_progress` giữ 0 còn `learning_events`
+bị nâng lên 100, và đường vòng vẫn nâng được ô năng lực.
+
+**Điều này quyết định luôn L6 — nhưng bằng ép buộc, không phải bằng sở thích.**
+Tôi từng nghiêng về "giữ điểm cao nhất"; phép đo cho thấy nó không đóng được lỗ.
+
+### [x] B4 (VÁ) · `answers_json` phình không trần — một tài khoản giết một worker
+`ghi_nhan` GỘP THÊM chứ không thay thế (luật lần-đầu-thắng chỉ giữ khoá đã có,
+khoá mới luôn được nhận), nên mỗi request nạp thêm tới 2,5 MB khoá rác vào ĐÚNG
+MỘT dòng. Sau vài chục lượt, mỗi lần chấm kéo cả trăm MB từ Neon về rồi giải mã
+JSON trong tiến trình — instance Render 512 MB hết bộ nhớ. Không cần quyền gì.
+
+Vá: `kep_tra_loi` — trần 200 câu, 500 ký tự mỗi câu trả lời, 64 ký tự mỗi khoá.
+Cắt lặng lẽ chứ không từ chối cả request (đừng để học viên mất bài).
+
+### [x] B5 (VÁ) · `/save` không kiểm hạn giờ — đường vòng TỐT HƠN đường trung thực
+Hết giờ → tra cứu vài ngày → `/save` bộ đáp án hoàn hảo → `/start` →
+`_dong_luot_qua_gio` chấm chính bộ ấy và GIỮ NGUYÊN `counted` → 9/9 vào sổ.
+Trong khi nộp muộn tử tế qua `/submit` thì không được tính điểm. Nay `/save` sau
+chuông trả 409.
+
+### [x] B6 (VÁ) · `teaching/reports` là bản song sinh mà tôi bỏ quên
+Docstring của nó tự nhận *"lấy trực tiếp từ module kia (import), nên không thể
+lệch nhau"*. Hai bản vá hôm qua (L7 đọc `occurred_at`; L9 đếm theo cặp
+`(ref_type, ref_id)`) chỉ áp ở `stats/competency`, và bản này lệch ngay: cùng
+một em, màn hình của em và bảng của giảng viên ra hai con số — đúng lớp lỗi T62
+mà tôi đã vá một lần rồi.
+
+Đã sửa cả mã lẫn docstring: **nhập chung HẰNG SỐ không bảo đảm chung LUẬT**;
+phần luật nằm trong câu SQL và trong vòng duyệt thì vẫn phải sửa hai chỗ.
+
+### [x] B7 (VÁ) · Câu chữ tự mâu thuẫn in thẳng cho học viên
+Chủ đề được chọn bằng `masteryTopic` (L8) nhưng lý do in `mastery`. Với chủ đề có
+bằng chứng 45 mà điểm đề 100: **"Điểm thành thạo đang 62/100, dưới ngưỡng 60."**
+
+### [x] B8 (VÁ) · Chú thích nói một luật mà truy vấn không thi hành
+`KHONG_TINH_LA_ON_LAI` bảo "điểm hợp phần đề thi thử và bài tập chấm tay vẫn
+tính là ôn" — nhưng hai đường đọc chỉ lấy `[lesson, mock, review_quiz]`. Đã sửa
+chú thích cho đúng, và ghi ra hệ quả đang chấp nhận (mục "Ôn lại" chỉ tick được
+bằng quiz ôn tập). §20 lần thứ hai trong hai ngày.
+
+### [x] B9 (VÁ) · Endpoint chấm mất hẳn trần theo MÁY
+Đặt `throttle_classes` là GHI ĐÈ chứ không bổ sung. Bản đầu chỉ để hai lớp theo
+người dùng, nên một máy giữ N tài khoản đẩy được N × 600 request/giờ. Nay giữ cả
+bốn lớp. **KHÔNG phải lỗ xác thực** — agent kiểm đúng: `IsAuthenticated` chạy
+TRƯỚC tầng throttle nên request ẩn danh nhận 401.
+
+### [x] B10 (VÁ) · `SELECT c.*` cộng alias `rating` = hai cột cùng tên
+`dict(zip(cols, row))` ra đúng chỉ nhờ thứ tự cột. Đúng vì may, không vì hàng
+rào nào. Đã liệt kê cột tường minh.
+
+### [x] B11 (VÁ) · Hai phép kiểm hằng đúng
+`test_duong_cham_dung_quota_theo_nguoi_dung` chỉ so danh sách LỚP — chép lại
+đúng dòng khai báo, nên nó xanh cả khi thiếu `user_day` trong
+`DEFAULT_THROTTLE_RATES` (thứ làm view ném `ImproperlyConfigured` ở MỌI request).
+Nay KHỞI TẠO từng lớp và đọc `rate`. Và
+`test_luu_tam_khong_phai_cua_sau_de_lay_dap_an` dùng danh sách khoá cứng nên đỏ
+ngay khi thêm một trường vô hại — viết lại theo Ý ĐỊNH (không rò khoá chấm điểm).
+
+### [ ] B12 · CHƯA VÁ · `LocMemCache` theo tiến trình, mà Render chạy 2 worker
+`config/settings.py` không khai `CACHES` → LocMemCache, sống trong bộ nhớ TỪNG
+tiến trình. Ba hệ quả:
+- `quen_dap_an` (bản vá A10 hôm qua) chỉ xoá đệm của MỘT worker — worker kia vẫn
+  chấm bằng đáp án CŨ tới hết 60 giây TTL. Bản vá ấy đang có tác dụng một nửa.
+- `quen_ghi_danh` y hệt: huỷ ghi danh xong vẫn đọc được nội dung thêm một phút.
+- **Trần request thực tế GẤP ĐÔI con số cấu hình**: mỗi worker đếm riêng, nên
+  `user_hour = 600` thực tế là ~1200/giờ/người.
+
+Đây chính là hạng mục Redis (A3) đang chờ anh. Ba hệ quả trên là lý do cụ thể.
+
+### [ ] B13 · CHƯA VÁ · phòng luyện vẫn là máy dò đáp án (A18 cũ, có sửa lại)
+`reset` cho thử vô hạn; trắc nghiệm 4 lựa chọn thì ≤ 4 lượt/câu là biết chắc.
+**Tôi từng ghi "XP đã chặn" — SAI**: `existed` chỉ chặn lần thứ HAI, còn lần thứ
+nhất (lần duy nhất được tính) đã là 120 XP + ô năng lực 8/8 do dò ra. Cần anh
+chốt hướng, như đã hỏi.
+
+### [ ] B14 · CHƯA VÁ · `CREATE INDEX ON mock_attempts` chạy trước `CREATE TABLE`
+Nằm ở `legacy_schema.sql:780`, NGOÀI dải commit của phiên (có từ trước). Nhưng
+`bootstrap_schema` nay nằm trong `buildCommand` của Render và `raise` ở câu lệnh
+đầu tiên hỏng, nên trên một CSDL RỖNG (staging, khôi phục sau sự cố) nó làm
+**chết cả lần triển khai**. Chuyển hai dòng ấy sang `mockexam_schema.sql`.
+
+### [ ] B15 · CHƯA VÁ · `/complete` bỏ qua phần phòng luyện ĐÃ ghi nhận
+`_cham_drill` trả `None` ngay khi thân request thiếu khoá `drill`, TRƯỚC khi
+chạm tới `answers_json`. Em làm đủ 8 câu rồi tải lại trang trước khi bấm Hoàn
+thành → máy chủ có sẵn bài làm nhưng không dùng, rồi `xoa_ghi_nhan` xoá luôn.
+Không phải hồi quy, nhưng đúng là điều A12 tuyên bố đã sửa.
+
+### [ ] B16 · CHƯA VÁ · `_moc_san` chỉ chính xác tới NGÀY
+Kế hoạch sinh 00:30 thì việc làm lúc 00:10 cùng ngày vẫn tick. Bất biến trong
+docstring đúng ở mức ngày, không đúng ở mức giờ.
+
+### Những chỗ agent kiểm mà KHÔNG có vấn đề (ghi lại để khỏi tra lại)
+- **SQL injection**: không có. Mọi câu SQL mới đều tham số hoá; `CHU_DIEM_SAO`
+  là hằng tĩnh toàn chú thích `--`, không giá trị người dùng nào chạm vào.
+- **IDOR**: không có. `/start`, `/save`, `/submit`, `/mock-attempts` đều lấy
+  `request.user.id` từ token, không nhận `user_id` từ thân request hay URL.
+- **Phép gộp `jsonb` của `ghi_nhan`**: ĐÚNG "lần đầu thắng" ở cấp câu — toán
+  hạng phải của `||` thắng, và bộ CŨ đứng bên phải trong phép gộp con.
+- **Dòng `status='in_progress'`**: cả 12 chỗ đọc `lesson_progress` đều lọc
+  `status='completed'`, nên nó thật sự vô hình với chúng.
+- **Đua tranh trên `mock_attempts`**: hai chỉ mục duy nhất chặn được ở tầng CSDL.
+- **Rò bí mật trong log**: không có dòng nào in token, mật khẩu, hay đáp án.
+- **Test ghi rò ra Neon**: không có. (Nhưng ba phép kiểm mới chạy
+  `DELETE FROM course_ratings` của một khoá THẬT — an toàn CHỈ nhờ cuộn lại.)

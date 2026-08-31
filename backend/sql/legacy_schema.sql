@@ -775,10 +775,6 @@ CREATE INDEX IF NOT EXISTS idx_users_phone_trgm
 CREATE INDEX IF NOT EXISTS idx_rqr_quiz ON review_quiz_results(quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quizzes_user_course ON quizzes(user_id, course_id);
 
--- Có idx_mock_attempts_user rồi, nhưng câu "lượt thi gần nhất" vẫn phải SORT vì
--- chỉ mục chỉ trên user_id. Thêm cột thời gian vào là bỏ hẳn bước sắp xếp.
-CREATE INDEX IF NOT EXISTS idx_mock_attempts_user_time
-    ON mock_attempts(user_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_time
     ON notifications(user_id, created_at DESC);
 

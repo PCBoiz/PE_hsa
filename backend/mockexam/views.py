@@ -334,10 +334,29 @@ class MockSaveView(APIView):
         answers = data.get('answers')
         if not isinstance(answers, dict):
             return Response({'error': 'Thiếu answers'}, status=400)
+
+        exam = q1("SELECT id, duration_minutes FROM mock_exams "
+                  "WHERE id=%s AND is_published=TRUE", (exam_id,))
+        if not exam:
+            return Response({'error': 'Không tìm thấy đề thi'}, status=404)
+
+        # HẾT GIỜ THÌ THÔI GHI. Không có hàng rào này thì đường lưu tạm trở
+        # thành đường vòng TỐT HƠN đường trung thực: `/start` (lượt tính điểm,
+        # đọc hết đề) → để hết giờ → tra cứu vài ngày → `/save` bộ đáp án hoàn
+        # hảo → `/start` lần nữa → `_dong_luot_qua_gio` chấm chính bộ ấy và GIỮ
+        # NGUYÊN `counted`, tức 9/9 vào sổ. Trong khi nộp muộn tử tế qua
+        # `/submit` thì không được tính điểm.
+        mo = _luot_dang_mo(request.user.id, exam_id)
+        if not mo or not mo.get('started_at'):
+            return Response({'error': 'Chưa mở lượt thi nào'}, status=409)
+        con = _gioi_han_giay(exam) - int((local_now() - mo['started_at']).total_seconds())
+        if con <= 0:
+            return Response({'error': 'Đã hết giờ làm bài', 'secondsLeft': 0}, status=409)
+
         n = xn("UPDATE mock_attempts SET answers_json=%s::jsonb "
-               "  WHERE user_id=%s AND exam_id=%s AND submitted_at IS NULL",
-               (json.dumps(answers, ensure_ascii=False), request.user.id, exam_id))
-        return Response({'ok': bool(n), 'saved': n or 0})
+               "  WHERE id=%s AND user_id=%s AND submitted_at IS NULL",
+               (json.dumps(answers, ensure_ascii=False), mo['id'], request.user.id))
+        return Response({'ok': bool(n), 'saved': n or 0, 'secondsLeft': con})
 
 
 class MockSubmitView(APIView):
@@ -388,10 +407,26 @@ class MockSubmitView(APIView):
                 # chống nộp hai lần, và một hàng rào không ai đọc kết quả là
                 # hàng rào trên giấy. Trượt hết mọi dòng nghĩa là lượt vừa bị
                 # một tab khác đóng — khi ấy KHÔNG được cộng XP.
+                #
+                # KHÔNG ghi `counted` ở đây. Cột ấy được chốt lúc `/start` và
+                # KHÔNG BAO GIỜ đổi sau đó — đúng như docstring đầu tệp hứa.
+                #
+                # Bản đầu ngày 01/09/2026 ghi `counted = tinh_diem`, mà
+                # `tinh_diem` là FALSE khi nộp muộn. Hệ quả: nộp muộn HẠ cờ
+                # xuống FALSE, dòng ấy rơi ra khỏi `uq_mock_attempt_tinh_diem`,
+                # và `_da_dung_luot_tinh_diem` lại trả False — tức lượt tính
+                # điểm được TRẢ LẠI. Cộng với việc phản hồi trả đáp án cho mọi
+                # câu đã điền (kể cả điền rác), chuỗi khai thác là:
+                #   /start → chờ quá giờ → /submit rác → nhận trọn đáp án VÀ
+                #   lấy lại lượt → /start → /submit đúng → 9/9 + 100 XP.
+                #
+                # Đường `/start` (`_dong_luot_qua_gio`) đã cố ý không đụng cột
+                # này ngay từ đầu. Hai đường, hai luật, và đường lỏng hơn là
+                # đường học viên gọi được trực tiếp.
                 n = xn("UPDATE mock_attempts SET score=%s, total=%s, section_scores_json=%s::jsonb, "
-                       "    answers_json=%s::jsonb, duration_seconds=%s, submitted_at=%s, counted=%s "
+                       "    answers_json=%s::jsonb, duration_seconds=%s, submitted_at=%s "
                        "  WHERE id=%s AND user_id=%s AND submitted_at IS NULL",
-                       (score, total, sec_json, ans_json, duration, now, tinh_diem,
+                       (score, total, sec_json, ans_json, duration, now,
                         mo['id'], uid))
                 if n:
                     attempt_id = mo['id']

@@ -146,8 +146,11 @@ def _events_by_user(uids):
     if not uids:
         return out, True
     try:
+        # `occurred_at::date` và `ref_type` — hai thứ `stats/competency` vừa đổi
+        # (L7, L9, 31/08/2026) và bản này bỏ quên, khiến giảng viên với học viên
+        # nhìn hai con số khác nhau về cùng một em.
         rows = q('''SELECT user_id, kind, course_id, topic, score, max_score,
-                           event_date, ref_id
+                           occurred_at::date AS event_date, ref_type, ref_id
                     FROM learning_events
                     WHERE user_id = ANY(%s) AND kind = ANY(%s)
                       AND max_score IS NOT NULL AND max_score > 0''',
@@ -168,8 +171,15 @@ def _mastery_by_topic(events, today):
 
     Lặp lại luật của stats/competency.py có chủ đích: ở đó tính cho một người
     bằng nhiều câu SQL, ở đây tính cho cả lớp từ một mảng sự kiện đã nạp sẵn.
-    Trọng số và công thức lấy trực tiếp từ module kia (import), nên không thể
-    lệch nhau.
+    Trọng số và công thức lấy trực tiếp từ module kia (import).
+
+    CÂU "NÊN KHÔNG THỂ LỆCH NHAU" TỪNG SAI. Hai bản vá ngày 31/08/2026 (đọc
+    `occurred_at` thay cho `event_date`; đếm hoạt động theo cặp
+    `(ref_type, ref_id)`) chỉ được áp ở module kia, và bản này lệch ngay — cùng
+    một em, màn hình của em và bảng của giảng viên ra hai con số. Nhập chung
+    HẰNG SỐ không bảo đảm chung LUẬT; phần luật nằm trong câu SQL và trong vòng
+    duyệt thì vẫn phải sửa hai chỗ. Sửa ở đây thì phải sang `stats/competency`
+    kiểm lại, và ngược lại — cho tới khi ai đó gộp hẳn được hai bản.
     """
     by_cell, by_course = {}, {}
     for r in events:
@@ -181,7 +191,7 @@ def _mastery_by_topic(events, today):
                                float(r['score'] or 0) * 100.0 / float(r['max_score'])))
         except (TypeError, ValueError, ZeroDivisionError):
             continue
-        item = (pct, r['event_date'], r['ref_id'])
+        item = (pct, r['event_date'], (r['ref_type'], r['ref_id']))
         if source == 'mock':
             by_course.setdefault(r['course_id'], []).append(item)
         elif r['topic']:
@@ -194,8 +204,11 @@ def _mastery_by_topic(events, today):
         mock_items = by_course.get(cell[0])
         if mock_items:
             srcs['mock'] = mock_items
+        # Khoá là CẶP `(ref_type, ref_id)` — bài học #2 và quiz ôn tập #2 là
+        # hai không gian id riêng. Giống hệt `stats/competency`, để hai màn hình
+        # không nói hai điều.
         activities = {ref for name in TOPIC_SOURCES
-                      for _, _, ref in srcs.get(name, []) if ref}
+                      for _, _, ref in srcs.get(name, []) if ref and ref[1]}
         if len(activities) < MIN_ACTIVITIES:
             continue                      # chưa đủ dữ liệu — không bịa ra số
         parts = weight_sum = 0.0

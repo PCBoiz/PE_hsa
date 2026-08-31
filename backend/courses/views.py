@@ -78,8 +78,15 @@ class CoursesView(APIView):
         if lang_clauses:
             where_clauses.append('(' + ' OR '.join(lang_clauses) + ')')
 
+        # Liệt kê cột tường minh chứ KHÔNG `c.*`: `courses` có sẵn cột
+        # `rating` (con số seed), nên `SELECT c.*` cộng alias `rating` cho HAI
+        # cột cùng tên, và `dict(zip(cols, row))` chỉ ra đúng nhờ thứ tự cột.
+        # Đúng vì may, không phải vì có hàng rào nào.
         query = '''
-            SELECT c.*,
+            SELECT c.id, c.title, c.subtitle, c.description, c.image, c.level,
+                   c.duration, c.students, c.lessons, c.color, c.accent_color,
+                   c.tag, c.is_published, c.xp_reward, c.instructor_id,
+                   c.content_meta, c.created_at,
                    ''' + CHU_DIEM_SAO + '''
                    dg.diem_tb AS rating, COALESCE(dg.so_luot, 0) AS rating_count,
                    CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled
@@ -110,8 +117,12 @@ class CourseDetailView(APIView):
     """
 
     def get(self, request, course_id):
+        # Cột tường minh, cùng lý do với `CoursesView` ở trên.
         row = q1('''
-            SELECT c.*,
+            SELECT c.id, c.title, c.subtitle, c.description, c.image, c.level,
+                   c.duration, c.students, c.lessons, c.color, c.accent_color,
+                   c.tag, c.is_published, c.xp_reward, c.instructor_id,
+                   c.content_meta, c.created_at,
                    ''' + CHU_DIEM_SAO + '''
                    dg.diem_tb AS rating, COALESCE(dg.so_luot, 0) AS rating_count,
                    CASE WHEN e.course_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled

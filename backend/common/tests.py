@@ -136,12 +136,22 @@ def test_quota_duong_cham_tach_theo_tung_hoc_vien_dung_chung_IP(em, db):
     assert khoa(HourlyIPThrottle, em, '1.1.1.1') == khoa(HourlyIPThrottle, em2, '1.1.1.1')
 
 
-def test_duong_cham_dung_quota_theo_nguoi_dung():
-    """Đặt `throttle_classes` trên view là GHI ĐÈ mặc định, không phải bổ sung —
-    nên phải kiểm rằng danh sách ấy đúng là bộ theo người dùng."""
-    from common.throttling import DailyUserThrottle, HourlyUserThrottle
+def test_duong_cham_giu_ca_hai_truc_quota():
+    """Đặt `throttle_classes` trên view là GHI ĐÈ mặc định, không phải bổ sung.
+    Bản đầu chỉ để hai lớp theo người dùng, nên endpoint mất hẳn trần theo MÁY.
+
+    Kiểm bằng cách KHỞI TẠO từng lớp và đọc `rate` — bản cũ chỉ so danh sách
+    lớp, tức chép lại đúng dòng khai báo, nên nó xanh cả khi `user_day` vắng
+    mặt trong `DEFAULT_THROTTLE_RATES` (thứ làm view ném `ImproperlyConfigured`
+    ở MỌI request).
+    """
     from lessons.views import CheckAnswersView
-    assert CheckAnswersView.throttle_classes == [DailyUserThrottle, HourlyUserThrottle]
+    scope = {}
+    for lop in CheckAnswersView.throttle_classes:
+        t = lop()                      # ném ImproperlyConfigured nếu thiếu rate
+        scope[t.scope] = (t.num_requests, t.duration)
+    assert set(scope) == {'user_hour', 'user_day', 'ip_hour', 'ip_day'}, scope
+    assert all(n and n > 0 for n, _ in scope.values()), scope
 
 
 # ── L7 · học lại bài cũ GIỮ NGÀY ĐẦU (anh Sơn chốt 31/08/2026) ──────────────
@@ -200,3 +210,43 @@ def test_bang_theo_doi_cua_giang_vien_doc_LAN_GAN_NHAT(em):
     assert ra['last_day'] == date.today(), (
         'em vừa ôn bài hôm nay mà bảng nói hoạt động gần nhất là %s' % ra['last_day'])
     _x("DELETE FROM learning_events WHERE user_id=%s AND dedup_key='l7:hd'", (em.id,))
+
+
+# ── B14 · thứ tự DDL: `bootstrap_schema` chạy trong buildCommand của Render ─
+
+def test_khong_cau_DDL_nao_dung_toi_bang_chua_duoc_tao():
+    """`bootstrap_schema` `raise` ở câu lệnh ĐẦU TIÊN hỏng, và nó nằm trong
+    `buildCommand` của Render — nên một câu đứng sai chỗ làm CHẾT cả lần triển
+    khai trên CSDL rỗng. Trên CSDL đang chạy thì lỗi ấy NGỦ (bảng có sẵn); nó
+    thức dậy đúng lúc dựng staging hoặc khôi phục sau sự cố.
+
+    Đã bắt được thật 01/09/2026: `CREATE INDEX … ON mock_attempts` nằm ở
+    `legacy_schema.sql`, mà `sorted()` cho "legacy" chạy trước "mockexam".
+    `IF NOT EXISTS` chỉ bỏ qua khi CHỈ MỤC đã có, không cứu được khi BẢNG chưa có.
+    """
+    import io as _io
+    import pathlib
+    import re
+    from common.management.commands.bootstrap_schema import _split_statements
+
+    TAO = re.compile(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_]\w*)', re.I)
+    SUA = re.compile(r'ALTER\s+TABLE\s+(?:ONLY\s+)?([A-Za-z_]\w*)', re.I)
+    # Bám vào cụm "INDEX … ON" để không bắt nhầm `ON DELETE CASCADE`.
+    IDX = re.compile(r'CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:CONCURRENTLY\s+)?'
+                     r'(?:IF\s+NOT\s+EXISTS\s+)?\w+\s+ON\s+([A-Za-z_]\w*)', re.I)
+
+    thu_muc = pathlib.Path(__file__).resolve().parent.parent / 'sql'
+    da_tao, loi = set(), []
+    for f in sorted(thu_muc.glob('*.sql')):
+        for st in _split_statements(_io.open(f, encoding='utf-8').read()):
+            m = TAO.search(st)
+            if m:
+                da_tao.add(m.group(1).lower())
+                continue
+            for rx in (SUA, IDX):
+                m = rx.search(st)
+                if m:
+                    if m.group(1).lower() not in da_tao:
+                        loi.append('%s: %s' % (f.name, ' '.join(st.split())[:70]))
+                    break
+    assert loi == [], loi

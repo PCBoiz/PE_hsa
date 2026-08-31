@@ -42,6 +42,19 @@ PHAN_CO_CAU_HOI = ('test', 'drill')
 #: Trường bị cắt trước khi nội dung rời máy chủ.
 TRUONG_BI_MAT = ('answer', 'explain')
 
+#: Trần cho một bộ câu trả lời gửi lên. Bài dài nhất hiện có 8 câu drill và
+#: vài câu kiểm tra; 200 khoá là rộng gấp hơn mười lần.
+#:
+#: VÌ SAO PHẢI CÓ. `ghi_nhan` GỘP THÊM chứ không thay thế (luật lần-đầu-thắng
+#: chỉ giữ khoá đã có, khoá mới luôn được nhận), nên không trần thì mỗi request
+#: nạp thêm tới 2,5 MB khoá rác vào ĐÚNG MỘT dòng `lesson_progress`. Sau vài
+#: chục lượt, mỗi lần chấm kéo cả trăm MB từ Neon về rồi giải mã JSON trong tiến
+#: trình — một tài khoản học viên đủ giết một worker 512 MB của Render.
+MAX_CAU_TRA_LOI = 200
+#: Trần độ dài một câu trả lời. Đáp án dài nhất trong nội dung thật là một chuỗi
+#: tiền tệ ngắn; 500 ký tự là rộng thừa.
+MAX_DAI_TRA_LOI = 500
+
 _KEY = 'dapan:{}:{}'
 _KEY_ID = 'baiid:{}:{}'
 _TTL = 60
@@ -233,6 +246,34 @@ def cham_phong_luyen(course_id, lesson_no, tra_loi):
     return dung, len(bang), dai_nhat
 
 
+def kep_tra_loi(tra_loi):
+    """Kẹp một bộ câu trả lời về kích thước dùng được. Trả (bộ đã kẹp, có_cắt).
+
+    Cắt lặng lẽ chứ không từ chối cả request: một engine cũ hay một bài dài bất
+    thường không đáng làm học viên mất bài. Nhưng phải BÁO ra để nơi gọi ghi
+    nhật ký — nếu chuyện này xảy ra thật thì hoặc có bài dài quá dự kiến, hoặc
+    có người đang thử phá.
+    """
+    if not isinstance(tra_loi, dict):
+        return {}, False
+    ra, cat = {}, False
+    for k, v in tra_loi.items():
+        if len(ra) >= MAX_CAU_TRA_LOI:
+            cat = True
+            break
+        khoa = str(k)[:64]
+        if v is None:
+            ra[khoa] = None
+            continue
+        gia_tri = str(v)
+        if len(gia_tri) > MAX_DAI_TRA_LOI:
+            gia_tri, cat = gia_tri[:MAX_DAI_TRA_LOI], True
+        ra[khoa] = gia_tri
+    if len(tra_loi) > MAX_CAU_TRA_LOI:
+        cat = True
+    return ra, cat
+
+
 def ghi_nhan(uid, lesson_id, phan, tra_loi):
     """GHI NHẬN câu trả lời cho một phần. LẦN ĐẦU THẮNG. Trả lại bộ đã chốt.
 
@@ -251,15 +292,30 @@ def ghi_nhan(uid, lesson_id, phan, tra_loi):
     """
     if not isinstance(tra_loi, dict) or not tra_loi:
         return _da_ghi_nhan(uid, lesson_id).get(phan, {})
-    moi = json.dumps({phan: {str(k): v for k, v in tra_loi.items()}}, ensure_ascii=False)
+    tra_loi, _cat = kep_tra_loi(tra_loi)
+    if not tra_loi:
+        return _da_ghi_nhan(uid, lesson_id).get(phan, {})
+    moi = json.dumps({phan: tra_loi}, ensure_ascii=False)
     # `||` của jsonb là gộp NÔNG: bên phải thắng ở cấp khoá thứ nhất. Muốn "lần
     # đầu thắng" ở cấp CÂU thì phải đặt bộ MỚI bên trái và bộ CŨ bên phải trong
     # phép gộp con, rồi mới gán lại vào khoá `phan`.
     #
     # `RETURNING` chứ không SELECT lại: phòng luyện gọi đường này mỗi câu, và
     # mỗi lượt tới Neon tốn ~270ms thuần đường truyền.
-    row = q1('''INSERT INTO lesson_progress (user_id, lesson_id, status, answers_json)
-                VALUES (%s, %s, 'in_progress', %s::jsonb)
+    # `course_id` PHẢI được điền ngay ở câu chèn này. Trước 01/09/2026 đường
+    # DUY NHẤT tạo dòng `lesson_progress` là `CompleteLessonView`, và nó luôn
+    # điền cột ấy. Từ khi `/check` ghi nhận câu trả lời, đường này chèn TRƯỚC —
+    # nên nếu để trống thì lần chèn đầu không có `course_id`, mọi lần sau rơi
+    # vào `DO UPDATE` (không đụng cột ấy), và cột ở NULL VĨNH VIỄN.
+    #
+    # Bảy chỗ đọc lọc/gộp theo `lp.course_id`: tính lại `enrollments` ngay sau
+    # khi hoàn thành bài (→ tiến độ đứng ở 0%), XP theo khoá, dải tiến độ ba hợp
+    # phần, báo cáo lớp của giảng viên, và lệnh nạp lại dòng sự kiện. Đáng sợ
+    # hơn cả: `learning_events` KHÔNG hỏng, nên bản đồ năng lực vẫn đúng — hai
+    # màn hình cùng nói về một em sẽ lệch nhau mà không ai biết vì sao.
+    row = q1('''INSERT INTO lesson_progress (user_id, lesson_id, course_id, status, answers_json)
+                VALUES (%s, %s, (SELECT course_id FROM lessons WHERE id = %s),
+                        'in_progress', %s::jsonb)
                 ON CONFLICT (user_id, lesson_id) DO UPDATE SET
                     answers_json = COALESCE(lesson_progress.answers_json, '{}'::jsonb)
                         || jsonb_build_object(
@@ -267,7 +323,7 @@ def ghi_nhan(uid, lesson_id, phan, tra_loi):
                                (%s::jsonb -> %s)
                                || COALESCE(lesson_progress.answers_json -> %s, '{}'::jsonb))
                 RETURNING answers_json''',
-             (uid, lesson_id, moi, phan, moi, phan, phan))
+             (uid, lesson_id, lesson_id, moi, phan, moi, phan, phan))
     return _tach(row).get(phan, {})
 
 

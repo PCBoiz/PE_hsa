@@ -339,3 +339,31 @@ một view, phải sửa cả chú thích của kịch bản kiểm trong cùng 
 Và sau MỖI phiên chạm đường ghi: đếm lại số dòng của các bảng liên quan, kèm cả
 các CỘT VỪA THÊM trong phiên. Cột mới là chỗ dễ rò nhất vì chưa ai có thói quen
 nhìn nó.
+
+## §22 · Chặn theo PHƯƠNG THỨC, đừng chặn theo tên đường
+
+§21 dạy "nhãn chỉ-đọc hết hạn được". Tôi ghi luật ấy, viết một dòng cảnh báo vào
+đầu kịch bản kiểm — rồi **mắc lại đúng lỗi ấy vài giờ sau**: kịch bản vẫn để
+`/check` đi thật, và nó lại ghi `lesson_progress.answers_json` của một học viên
+thật. Lần thứ hai trong một ngày.
+
+Cảnh báo bằng chữ chỉ nhắc được người đọc nó. Cái chặn phải nằm trong mã.
+
+**Bắt buộc:** trong mọi kịch bản kiểm trình duyệt, chặn theo PHƯƠNG THỨC chứ
+đừng liệt kê đường:
+
+```js
+await p.route('**/api/**', (r, req) => {
+  const m = req.method();
+  if (m === 'GET' || m === 'HEAD') return r.fallback();   // chỉ đọc thì cho qua
+  ghiLen.push(m + ' ' + req.url());                       // còn lại: ghi lại
+  return r.fulfill({ status: 200, ... });                 // và giả lập
+});
+```
+
+rồi thêm một phép kiểm `assert ghiLen.length === 0`. Danh sách trắng theo tên
+đường hết hạn mỗi lần ai đó thêm một câu `INSERT`; danh sách đen theo phương
+thức thì không.
+
+**Và sau MỖI phiên chạm đường ghi**, đếm lại số dòng CÙNG các CỘT VỪA THÊM —
+cột mới là chỗ dễ rò nhất vì chưa ai có thói quen nhìn nó.

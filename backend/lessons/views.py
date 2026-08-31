@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
-from common.throttling import DailyUserThrottle, HourlyUserThrottle
+from common.throttling import (DailyIPThrottle, DailyUserThrottle,
+                               HourlyIPThrottle, HourlyUserThrottle)
 from common.db import q1, x
 from common.events import KIND_DRILL, KIND_LESSON, record_event
 from lessons.content import course_content, one_lesson
@@ -252,7 +253,23 @@ class CompleteLessonView(APIView):
                  VALUES (%s, %s, %s, 'completed', %s, %s, %s)
                  ON CONFLICT (user_id, lesson_id) DO UPDATE SET
                      status       = 'completed',
-                     quiz_score   = COALESCE(EXCLUDED.quiz_score, lesson_progress.quiz_score),
+                     -- Vá lại dòng cũ có `course_id` NULL. `COALESCE` chứ không
+                     -- ghi đè thẳng: dòng đã đúng thì không đụng, dòng hỏng thì
+                     -- lành lại ngay lần hoàn thành kế tiếp.
+                     course_id    = COALESCE(lesson_progress.course_id, EXCLUDED.course_id),
+                     -- ĐIỂM VÀO SỔ LÀ ĐIỂM CỦA LẦN ĐẦU ĐO ĐƯỢC. Đảo thứ tự
+                     -- COALESCE so với bản cũ: ô đã có số thì giữ, ô còn trống
+                     -- thì điền.
+                     --
+                     -- Vì sao BUỘC phải thế, chứ không phải một sở thích: `/check`
+                     -- trả đáp án cho câu đã trả lời (phần xem lại cần), và
+                     -- `/complete` XOÁ khoá "lần đầu thắng" để lần ôn sau bắt
+                     -- đầu từ giấy trắng. Hai thứ ấy cộng lại cho một đường
+                     -- vòng: gửi bừa để moi đáp án → hoàn thành (điểm 0 vào sổ)
+                     -- → hoàn thành lại bằng bộ vừa moi → điểm 100 GHI ĐÈ số 0.
+                     -- Giữ điểm cao nhất cũng không chặn được, vì 0 → 100 là đi
+                     -- LÊN. Chỉ "lần đầu thắng" mới đóng được.
+                     quiz_score   = COALESCE(lesson_progress.quiz_score, EXCLUDED.quiz_score),
                      xp_earned    = GREATEST(EXCLUDED.xp_earned, lesson_progress.xp_earned),
                      completed_at = COALESCE(lesson_progress.completed_at, EXCLUDED.completed_at)''',
               (uid, lesson_id, course_id, quiz_score, xp_earned, local_now()))
@@ -316,13 +333,21 @@ class CompleteLessonView(APIView):
             # bảng đó không giữ điểm phòng luyện, không giữ chủ đề, và sẽ không
             # bao giờ giữ được sự kiện của thi thử hay quiz ôn tập.
             now = local_now()
+            # Điểm ghi vào DÒNG SỰ KIỆN phải là đúng con số vừa vào sổ, không
+            # phải con số vừa chấm. Nếu không thì `lesson_progress` giữ điểm lần
+            # đầu còn `learning_events` (nguồn của bản đồ năng lực) bị ghi đè
+            # bằng lần sau — hai bảng nói hai điều về cùng một bài, và đường
+            # vòng moi đáp án vẫn nâng được ô năng lực.
+            da_vao_so = (q1('SELECT quiz_score FROM lesson_progress '
+                            'WHERE user_id=%s AND lesson_id=%s', (uid, lesson_id))
+                         or {}).get('quiz_score')
             record_event(
                 uid, KIND_LESSON, f'lesson:{lesson_id}',
                 occurred_at=now, course_id=course_id, topic=topic,
                 ref_type='lesson', ref_id=str(lesson_id),
                 # quiz_score đã là PHẦN TRĂM đúng của bài kiểm tra đầu vào
                 # (engine gửi lên round(score/total*100)), nên mốc tối đa là 100.
-                score=quiz_score, max_score=(100 if quiz_score is not None else None),
+                score=da_vao_so, max_score=(100 if da_vao_so is not None else None),
                 xp=xp_earned,
                 # Tiêu đề lấy từ dòng `lessons` chứ không từ thân request: đây
                 # là thứ hiện lại trong nhật ký học tập của em.
@@ -381,7 +406,17 @@ class CheckAnswersView(APIView):
     `common/throttling._PerViewUserThrottle`.
     """
 
-    throttle_classes = [DailyUserThrottle, HourlyUserThrottle]
+    # BỐN lớp, không phải hai. Đặt `throttle_classes` trên view là GHI ĐÈ
+    # `DEFAULT_THROTTLE_CLASSES` chứ không bổ sung — cùng cái bẫy với
+    # `permission_classes`. Bản đầu chỉ để hai lớp theo NGƯỜI DÙNG, nên endpoint
+    # này mất hẳn trần theo MÁY: một máy giữ N tài khoản đẩy được N × 600
+    # request/giờ vào đúng đường ghi `jsonb`.
+    #
+    # Giữ cả hai trục: theo người dùng để cả phòng NAT không chia nhau một
+    # quota (đó là lý do sinh ra hai lớp kia), và theo IP để một máy không thay
+    # mặt cả trăm tài khoản.
+    throttle_classes = [DailyUserThrottle, HourlyUserThrottle,
+                        DailyIPThrottle, HourlyIPThrottle]
 
     def post(self, request, course_id, lesson_no):
         data = request.data if isinstance(request.data, dict) else {}
