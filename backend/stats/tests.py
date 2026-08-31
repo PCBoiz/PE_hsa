@@ -410,3 +410,50 @@ def test_quiz_on_tap_VAN_tick_duoc_muc_on_lai(db):
 
     ra = plan.read(uid, all_weeks=True)
     assert ra['totals']['done'] == 1, ra['totals']
+
+
+@pytest.mark.django_db
+def test_moc_san_ke_hoach_chinh_xac_toi_GIO(db):
+    """Mốc sàn cắt về `date` thì kế hoạch sinh lúc 00:30 vẫn bị tick bởi việc
+    làm lúc 00:10 CÙNG NGÀY — tức 20 phút TRƯỚC khi nó tồn tại."""
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV B16','hv_b16_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    hom_nay = local_today()
+    sinh_luc = local_now().replace(hour=12, minute=30, second=0, microsecond=0)
+
+    _su_kien(uid, 'mock', 'mock_attempt', '902', None, None, diem=50)
+    # Cùng NGÀY nhưng SỚM HƠN hai tiếng so với lúc kế hoạch được sinh.
+    x("UPDATE learning_events SET event_date=%s, occurred_at=%s "
+      "WHERE user_id=%s AND kind='mock'",
+      (hom_nay, sinh_luc - timedelta(hours=2), uid))
+    _ke_hoach(uid, hom_nay, sinh_luc, [('mock', None, None, None)])
+
+    ra = plan.read(uid, all_weeks=True)
+    assert ra['totals']['done'] == 0, (
+        'việc làm 2 tiếng TRƯỚC khi kế hoạch tồn tại vẫn tick: %s' % ra['totals'])
+
+
+@pytest.mark.django_db
+def test_viec_lam_SAU_khi_sinh_ke_hoach_van_tick_binh_thuong(db):
+    """Siết mà siết luôn việc làm thật thì kế hoạch không bao giờ xong."""
+    from datetime import timedelta
+    from stats import plan
+    from common.clock import local_now, local_today
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV B16b','hv_b16b_tmp@example.com','x',0) RETURNING id")
+    uid = r['id']
+    hom_nay = local_today()
+    sinh_luc = local_now().replace(hour=8, minute=0, second=0, microsecond=0)
+
+    _su_kien(uid, 'mock', 'mock_attempt', '903', None, None, diem=50)
+    x("UPDATE learning_events SET event_date=%s, occurred_at=%s "
+      "WHERE user_id=%s AND kind='mock'",
+      (hom_nay, sinh_luc + timedelta(hours=3), uid))
+    _ke_hoach(uid, hom_nay, sinh_luc, [('mock', None, None, None)])
+
+    ra = plan.read(uid, all_weeks=True)
+    assert ra['totals']['done'] == 1, ra['totals']

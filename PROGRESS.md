@@ -2039,3 +2039,96 @@ docstring đúng ở mức ngày, không đúng ở mức giờ.
 - **Rò bí mật trong log**: không có dòng nào in token, mật khẩu, hay đáp án.
 - **Test ghi rò ra Neon**: không có. (Nhưng ba phép kiểm mới chạy
   `DELETE FROM course_ratings` của một khoá THẬT — an toàn CHỈ nhờ cuộn lại.)
+
+
+---
+
+## 01/09/2026 — bốn việc treo + bộ tài liệu kiến trúc
+
+Anh chốt bốn việc treo và chọn "Markdown + Mermaid trong repo" cho tài liệu.
+
+### [x] B13 (XONG) · Phòng luyện: LƯỢT ĐẦU vào sổ
+Cùng luật anh đã chốt cho thi thử. Nhưng gắn ở `/complete` thôi thì KHÔNG đóng
+được máy dò đáp án: em cứ trả lời → xem đúng/sai → bấm Bắt đầu → thử khác, **và
+không bao giờ gọi `/complete`**, cho tới khi biết hết; rồi mới làm một lượt sạch
+— và lượt SẠCH ấy trở thành "lượt đầu".
+
+Nên chốt ở CẢ HAI đầu: `_chot_luot_drill` ghi lượt đang dở vào sổ ngay lúc bấm
+"Bắt đầu" lại, tức **lượt DÒ chính là lượt đầu**. Cùng ý với thi thử: mở đề là
+đã thấy đề.
+
+Và tôi phải sửa lại một điều đã nói sai hôm qua: tôi ghi "XP đã chặn, chỉ bản đồ
+năng lực chưa" — SAI. `existed` chỉ chặn lần thứ HAI; lần thứ nhất, tức lần duy
+nhất được tính, đã là 120 XP do dò ra.
+
+### [x] B15 (XONG) · `/complete` bỏ qua phần phòng luyện đã ghi nhận
+Em làm đủ 8 câu (mỗi câu một `/check` đã ghi nhận) rồi TẢI LẠI TRANG trước khi
+bấm Hoàn thành: thân gửi `"drill": null` và bản cũ trả `None` ngay — máy chủ có
+sẵn bài làm nhưng không dùng, rồi `xoa_ghi_nhan` xoá luôn. Nay thân request chỉ
+là BẢN SAO LƯU đúng như A12 tuyên bố; thiếu nó thì đọc phần đã ghi nhận.
+
+### [x] B16 (XONG) · Mốc sàn kế hoạch chính xác tới GIỜ
+Cắt về `date` thì kế hoạch sinh lúc 00:30 vẫn bị tick bởi việc làm lúc 00:10
+cùng ngày — 20 phút TRƯỚC khi nó tồn tại. Nay so `occurred_at` ở mức giờ, và
+`event_date` giữ làm đường lùi cho dòng cũ chưa có `occurred_at`.
+
+### [x] B12 (XONG phần mã) · Redis — anh chỉ việc bật hạ tầng
+`config/settings.py` nay đọc `REDIS_URL`; **không có biến thì chạy y như cũ**
+(LocMemCache), nên bật/tắt không phải sửa một dòng mã nào. `IGNORE_EXCEPTIONS`
+để Redis chết không kéo cả app chết theo — bộ đệm ở đây chỉ để nhanh hơn và để
+đếm quota, không phải nguồn sự thật nào.
+
+**Anh làm ba bước:** Render → New → Key Value (Redis), cùng region `ohio` → copy
+Internal Redis URL → thêm biến `REDIS_URL` cho service `pe-hsa-backend`. Ba hệ
+quả nó chữa đã ghi ngay trong chú thích ở `settings.py`.
+
+### [x] §41 · Khoá ngoại còn thiếu, phát hiện khi trích ERD
+`notification_settings` là bảng nghiệp vụ DUY NHẤT không có khoá ngoại — có khoá
+chính nên không đẻ dòng trùng, nhưng xoá một tài khoản là bỏ lại dòng mồ côi
+vĩnh viễn, trong khi mọi bảng anh em đều đã `ON DELETE CASCADE`. Đo trước khi
+thêm: 0 dòng mồ côi. Nay 57 khoá ngoại, 0 bảng đứng ngoài lưới.
+
+---
+
+## Bộ tài liệu kiến trúc — `docs/KIEN_TRUC/`
+
+Bốn tệp, mỗi tệp trả lời một câu hỏi khác nhau. Nguyên tắc bao trùm: **sơ đồ vẽ
+sai còn tệ hơn không có sơ đồ** — nó tắt phản xạ đi đọc mã (RULES §20).
+
+| Tệp | Câu hỏi | Sinh ra hay viết tay |
+|---|---|---|
+| `C4.md` | Hệ gồm gì, chạy ở đâu, ai gọi ai | viết tay |
+| `ERD.md` | Dữ liệu nằm đâu, nối thế nào | **SINH RA** |
+| `USE_CASE.md` | Ai làm được gì | viết tay |
+| `LUONG_CHAM_DIEM.md` | Một câu trả lời đi đường nào để thành con số | viết tay |
+
+### ERD được SINH RA, không vẽ
+`python manage.py ve_erd` đọc `information_schema` rồi ghi thẳng
+`docs/KIEN_TRUC/ERD.md`. Sơ đồ vẽ tay đúng đúng một ngày — ngày người ta vẽ nó.
+Phần DUY NHẤT bảo trì tay là bảng phân miền `MIEN`; thêm bảng mà quên xếp miền
+thì tài liệu **tự in ra cảnh báo**, không im lặng bỏ qua.
+
+Lệnh TỰ GHI TỆP chứ không in ra stdout để người dùng chuyển hướng: trên Windows
+`OutputWrapper` của Django đổi xuống dòng thành CRLF, và **cả 8 khối mermaid của
+ERD lọt khỏi bộ kiểm cú pháp mà không ai biết** — đúng vì thế mới phát hiện.
+
+### Bộ kiểm sơ đồ — và nó ĐỎ ĐƯỢC
+`node scripts/kiem_so_do.mjs` gọi `mermaid.parse`, tức đúng bộ phân tích trình
+duyệt dùng. Đếm dấu ``` không chứng minh gì: nó xanh cả khi bên trong là rác.
+
+Đã tự kiểm: cố ý làm hỏng một sơ đồ → báo ĐỎ đúng khối, đúng số dòng; sửa lại →
+xanh. **18/18 khối sạch.**
+
+### Ba thứ chỉ đọc SỐ mới thấy, nay nằm trong tài liệu
+- **12 bảng đang RỖNG** — một nửa hệ thống đang chờ người dùng đầu tiên: bài tập
+  chấm tay, điểm danh, đợt học, đánh giá khoá, bình luận, theo dõi, thông báo.
+  Danh sách này đáng đọc TRƯỚC khi thêm tính năng mới.
+- **Luật xoá trộn ba kiểu**: 43 `CASCADE`, 10 `SET NULL`, 4 `NO ACTION`. Trong
+  đó `roadmaps.user_id NO ACTION` nghĩa là **không xoá được tài khoản đã có lộ
+  trình** — hiện chưa hại ai vì chưa có đường xoá tài khoản nào trong mã.
+- **5 tài khoản thật.** Con số quan trọng nhất khi đọc mọi tài liệu ở đây.
+
+### [ ] N3 · `roadmaps.user_id` là `NO ACTION` trong khi 43 khoá khác `CASCADE`
+Chưa hại ai (chưa có đường xoá tài khoản), nhưng ngày dựng đường ấy thì nó chặn.
+Đổi sang `CASCADE` cho khớp phần còn lại — hoặc quyết định giữ lộ trình lại khi
+xoá tài khoản, và ghi lý do ra.

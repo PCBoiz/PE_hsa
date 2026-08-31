@@ -72,10 +72,21 @@ def _cham_drill(drill, course_id, lesson_no, uid, lesson_id):
     (`KIND_DRILL` nằm trong `stats/competency.KIND_TO_SOURCE`). Nay chỉ nhận CÂU
     TRẢ LỜI; số câu đúng và chuỗi combo do máy chủ dựng lại từ bảng đáp án.
     """
+    # B15 · thân request chỉ là BẢN SAO LƯU, không phải điều kiện. Em làm đủ 8
+    # câu (mỗi câu một `/check` đã ghi nhận) rồi TẢI LẠI TRANG trước khi bấm
+    # Hoàn thành: `drill` phía client về `undefined`, thân gửi `"drill": null`,
+    # và bản cũ trả `None` ngay — máy chủ có sẵn bài làm nhưng không dùng, rồi
+    # `xoa_ghi_nhan` xoá luôn. Đúng cái mà A12 tuyên bố đã sửa.
     if not isinstance(drill, dict):
-        return None
+        drill = {}
     tra_loi = drill.get('answers')
     if not isinstance(tra_loi, dict):
+        tra_loi = doc_ghi_nhan(uid, lesson_id, 'drill')
+        if tra_loi:
+            logger.info('[lessons] uid=%s bài %s/%s: thân request không có phần phòng '
+                        'luyện — chấm trên %d câu đã ghi nhận qua /check',
+                        uid, course_id, lesson_no, len(tra_loi))
+    if not isinstance(tra_loi, dict) or not tra_loi:
         # Engine bản CŨ gửi `correct`/`maxCombo` tự khai. Không ghi gì cả: một
         # dòng năng lực dựng từ con số người dùng khai còn tệ hơn không có dòng
         # nào — cùng lý lẽ với `quizScore` ở `CompleteLessonView`.
@@ -90,6 +101,11 @@ def _cham_drill(drill, course_id, lesson_no, uid, lesson_id):
     ket = cham_phong_luyen(course_id, lesson_no, tra_loi)
     if not ket:
         return None
+    # LƯỢT ĐẦU VÀO SỔ (anh Sơn chốt 01/09/2026), cùng luật với thi thử. Lượt sau
+    # vẫn được chấm và vẫn hiện kết quả để luyện, nhưng không cộng XP và không
+    # ghi dòng năng lực — nếu không thì `reset` + `/check` là một máy dò đáp án
+    # cho 120 XP và một ô năng lực 8/8.
+    lan_dau = not _da_ghi_drill(uid, lesson_id)
     dung, tong, combo = ket
     try:
         # `OverflowError` phải nằm trong đây: `json.loads('{"seconds": 1e400}')`
@@ -109,8 +125,48 @@ def _cham_drill(drill, course_id, lesson_no, uid, lesson_id):
         'da_lam': min(tong, sum(1 for v in tra_loi.values()
                                 if v is not None and str(v).strip() != '')),
         'phut': max(0, min(120, round(seconds / 60))) or None,
-        'xp': dung * DRILL_XP_MOI_CAU_DUNG + combo * DRILL_XP_MOI_NAC_COMBO,
+        'lan_dau': lan_dau,
+        'xp': (dung * DRILL_XP_MOI_CAU_DUNG + combo * DRILL_XP_MOI_NAC_COMBO
+               if lan_dau else 0),
     }
+
+
+def _da_ghi_drill(uid, lesson_id):
+    """Bài này đã có LƯỢT PHÒNG LUYỆN nào vào sổ chưa?
+
+    Hỏi thẳng dòng sự kiện — `dedup_key = 'drill:<lesson_id>'` vốn đã là duy
+    nhất cho mỗi (học viên, bài), nên không cần thêm cột nào để nhớ.
+    """
+    return bool(q1("SELECT 1 AS co FROM learning_events "
+                   "WHERE user_id=%s AND dedup_key=%s LIMIT 1",
+                   (uid, 'drill:%s' % lesson_id)))
+
+
+def _chot_luot_drill(uid, lesson_id, course_id, lesson_no, topic=None):
+    """Chốt lượt phòng luyện ĐANG DỞ vào sổ, nếu đây là lượt đầu của bài.
+
+    Gọi từ đường `reset` — tức lúc học viên bấm "Bắt đầu" lại. Không có chỗ này
+    thì "lượt đầu vào sổ" không đóng được máy dò đáp án: em cứ trả lời → xem
+    đúng/sai → bấm Bắt đầu → thử khác, **không bao giờ gọi `/complete`**, cho
+    tới khi biết hết đáp án; rồi mới làm một lượt sạch và lượt SẠCH ấy trở thành
+    "lượt đầu". Chốt ngay lúc bỏ dở thì lượt dò CHÍNH LÀ lượt đầu.
+
+    Cùng luật với thi thử anh Sơn đã chốt: mở đề là đã thấy đề.
+    """
+    if _da_ghi_drill(uid, lesson_id):
+        return
+    da_chot = doc_ghi_nhan(uid, lesson_id, 'drill')
+    if not da_chot:
+        return                      # chưa trả lời câu nào thì không có gì để chốt
+    ket = cham_phong_luyen(course_id, lesson_no, da_chot)
+    if not ket:
+        return
+    dung, tong, combo = ket
+    _record_drill(uid, {'dung': dung, 'tong': tong, 'combo': combo,
+                        'da_lam': len(da_chot), 'phut': None},
+                  lesson_id, lesson_no, course_id, topic, local_now())
+    logger.info('[lessons] uid=%s bài %s/%s: chốt lượt phòng luyện đang dở (%s/%s) '
+                'vì bấm Bắt đầu lại', uid, course_id, lesson_no, dung, tong)
 
 
 def _record_drill(uid, ket, lesson_id, lesson_no, course_id, topic, now):
@@ -127,7 +183,7 @@ def _record_drill(uid, ket, lesson_id, lesson_no, course_id, topic, now):
     KHÔNG ghi `xp` vào sự kiện này: sự kiện bài học đã mang tổng XP của cả lượt
     hoàn thành (gồm cả phần phòng luyện), ghi thêm ở đây là đếm hai lần.
     """
-    if not ket:
+    if not ket or ket.get('lan_dau') is False:
         return
     record_event(
         uid, KIND_DRILL, f'drill:{lesson_id}',
@@ -442,6 +498,7 @@ class CheckAnswersView(APIView):
         # LẠI. Bài kiểm tra đầu vào KHÔNG được reset: `/check` của nó trả đáp án,
         # nên cho reset là mở lại đúng cửa vừa bịt.
         if data.get('reset') and phan == 'drill':
+            _chot_luot_drill(request.user.id, lesson_id, course_id, lesson_no)
             xoa_ghi_nhan_phan(request.user.id, lesson_id, phan)
 
         da_chot = ghi_nhan(request.user.id, lesson_id, phan, answers)

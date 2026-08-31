@@ -13,3 +13,6 @@ whitenoise>=6.7
 # Chatbot Trợ lý HSA (LangGraph + DeepSeek qua API OpenAI-compatible)
 langgraph>=1.2.10
 langchain-openai>=1.4.2
+# Bộ đệm dùng chung cho 2 worker gunicorn — chỉ được dùng khi có biến REDIS_URL
+# (xem chú thích ở config/settings.py). Không có biến thì gói này nằm im.
+django-redis==5.4.0

@@ -239,6 +239,53 @@ if not IS_PRODUCTION:
         'register': '100/min',
     })
 
+# ── Bộ đệm ───────────────────────────────────────────────────────────────────
+#
+# VÌ SAO PHẢI CÓ MỘT BỘ ĐỆM DÙNG CHUNG (B12, audit 01/09/2026).
+#
+# Không khai `CACHES` thì Django dùng `LocMemCache` — sống trong bộ nhớ TỪNG
+# TIẾN TRÌNH. Mà `render.yaml` chạy `gunicorn --workers 2`. Ba hệ quả đo được
+# trên chính mã đang chạy:
+#
+#   · `quen_dap_an` (bản vá A10) chỉ xoá đệm của MỘT worker. Giảng viên sửa một
+#     đáp án sai xong, worker kia vẫn CHẤM bằng đáp án cũ tới hết 60 giây TTL —
+#     và con số ấy đi thẳng vào XP và bản đồ năng lực. Bản vá ấy đang có tác
+#     dụng đúng một nửa.
+#   · `quen_ghi_danh` y hệt: huỷ ghi danh xong vẫn đọc được nội dung khoá thêm
+#     một phút qua worker còn lại.
+#   · Trần request THỰC TẾ GẤP ĐÔI con số cấu hình: `SimpleRateThrottle` đếm
+#     trong cache, mỗi worker một bộ đếm riêng. `user_hour = 600` thực tế là
+#     ~1200/giờ/người, và mọi kịch bản làm nghẽn đều được nhân đôi ngân sách.
+#
+# CÁCH BẬT (anh Sơn làm, tôi không tự tạo dịch vụ tốn tiền):
+#   1. Render Dashboard → New → Key Value (Redis) → cùng region `ohio`.
+#   2. Copy "Internal Redis URL" → thêm biến môi trường `REDIS_URL` cho
+#      service `pe-hsa-backend`.
+#   3. Deploy lại. Không có `REDIS_URL` thì mọi thứ chạy y như cũ (LocMemCache),
+#      nên bật/tắt không cần sửa một dòng mã nào.
+#
+# `django-redis` đã nằm trong requirements.txt.
+REDIS_URL = os.getenv('REDIS_URL', '').strip()
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                # Redis chết KHÔNG được làm chết cả app: bộ đệm ở đây chỉ để
+                # nhanh hơn và để đếm quota, không phải nguồn sự thật nào.
+                # `IGNORE_EXCEPTIONS` cho `cache.get` trả None và mã rơi về
+                # đường đọc CSDL — chậm hơn, vẫn đúng.
+                'IGNORE_EXCEPTIONS': True,
+                'SOCKET_CONNECT_TIMEOUT': 3,
+                'SOCKET_TIMEOUT': 3,
+            },
+            'KEY_PREFIX': 'pehsa',
+        }
+    }
+    DJANGO_REDIS_IGNORE_EXCEPTIONS = True
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     # PERMANENT_SESSION_LIFETIME của Flask là 8h → refresh token 8h giữ UX cũ

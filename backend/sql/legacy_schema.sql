@@ -1084,3 +1084,23 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_valid_from TIMESTAMP;
 -- NULL = chưa ghi nhận câu nào. Đó là trạng thái của toàn bộ dòng hiện có, nên
 -- thêm cột này không đổi hành vi của một ai.
 ALTER TABLE lesson_progress ADD COLUMN IF NOT EXISTS answers_json JSONB;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §41 · `notification_settings` là bảng nghiệp vụ DUY NHẤT không có khoá ngoại
+-- ─────────────────────────────────────────────────────────────────────────
+--
+-- Phát hiện khi trích ERD THẬT từ `information_schema` (01/09/2026) để vẽ sơ đồ
+-- kiến trúc: 38 bảng nghiệp vụ, 56 khoá ngoại, và đúng một bảng đứng ngoài lưới.
+--
+-- Nó CÓ khoá chính trên `user_id` nên không đẻ dòng trùng, nhưng không có khoá
+-- ngoại nên xoá một tài khoản là bỏ lại một dòng mồ côi vĩnh viễn — và mọi bảng
+-- anh em của nó (`notifications`, `study_logs`, `topic_self_marks`…) đều đã
+-- `ON DELETE CASCADE`. Một bảng lệch khỏi lưới là một bảng không ai nghĩ tới
+-- lúc dọn dữ liệu.
+--
+-- Đo trước khi thêm: 0 dòng mồ côi (2 dòng, cả hai trỏ tới tài khoản có thật).
+-- `NOT VALID` giữ đúng lối của §33: có hiệu lực NGAY với dòng ghi mới, không
+-- soi lại dữ liệu cũ.
+ALTER TABLE notification_settings DROP CONSTRAINT IF EXISTS notification_settings_user_fk;
+ALTER TABLE notification_settings ADD CONSTRAINT notification_settings_user_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;

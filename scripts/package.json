@@ -1,0 +1,13 @@
+{
+  "name": "pe-hsa-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Công cụ kiểm tài liệu. Không phải một phần của app.",
+  "scripts": {
+    "kiem-so-do": "node kiem_so_do.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^27",
+    "mermaid": "^11"
+  }
+}

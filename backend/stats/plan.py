@@ -298,6 +298,19 @@ def generate(uid):
 
 # ── Đọc kế hoạch ────────────────────────────────────────────────────────────
 
+def _truoc_moc_san(moc, floor):
+    """Sự kiện xảy ra TRƯỚC mốc sàn của kế hoạch?
+
+    `floor` là `date` khi kế hoạch cũ chưa có `generated_at`, và là `datetime`
+    khi có — so đúng kiểu ở từng nhánh thay vì cắt tất cả về ngày.
+    """
+    if hasattr(floor, 'hour') and hasattr(moc, 'hour'):
+        return moc < floor
+    ngay = moc.date() if hasattr(moc, 'date') else moc
+    san = floor.date() if hasattr(floor, 'date') else floor
+    return ngay < san
+
+
 def _moc_san(rows, generated_at):
     """Mốc sàn: hoạt động TRƯỚC mốc này không được tick mục nào trong kế hoạch.
 
@@ -313,8 +326,13 @@ def _moc_san(rows, generated_at):
     tuan_dau = min((r['week_start'] for r in rows), default=local_today())
     if not generated_at:
         return tuan_dau
+    # Giữ NGUYÊN `datetime` chứ không cắt về `date`: cắt đi thì kế hoạch sinh
+    # lúc 00:30 vẫn bị tick bởi việc làm lúc 00:10 cùng ngày. Chỉ lùi về `date`
+    # khi tuần đầu muộn hơn ngày sinh (kế hoạch bắt đầu ở tương lai).
     ngay_sinh = generated_at.date() if hasattr(generated_at, 'date') else generated_at
-    return max(tuan_dau, ngay_sinh)
+    if tuan_dau > ngay_sinh:
+        return tuan_dau
+    return generated_at
 
 
 def _done_lookup(uid, floor):
@@ -331,7 +349,8 @@ def _done_lookup(uid, floor):
     phải "đúng tuần dự kiến".
     """
     try:
-        rows = q("""SELECT e.kind, e.course_id, e.topic, e.event_date, e.meta
+        rows = q("""SELECT e.kind, e.course_id, e.topic, e.event_date,
+                           e.occurred_at, e.meta
                     FROM learning_events e
                     WHERE e.user_id = %s AND e.kind = ANY(%s)""",
                  (uid, [KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ]))
@@ -376,7 +395,12 @@ def _gom_hoat_dong(rows, floor):
     mock_dates = []
     topic_dates = {}
     for r in rows:
+        # So ở mức GIỜ khi có `occurred_at`, không chỉ mức ngày. Mốc sàn cắt về
+        # `date` thì kế hoạch sinh lúc 00:30 vẫn bị tick bởi việc làm lúc 00:10
+        # cùng ngày — tức 20 phút TRƯỚC khi nó tồn tại. `event_date` giữ lại làm
+        # đường lùi cho dòng cũ chưa có `occurred_at`.
         day = r['event_date']
+        moc = r.get('occurred_at') or day
         if r['kind'] == KIND_LESSON:
             # Bài đã học là đã học, bất kể học lúc nào — không áp mốc floor.
             meta = r['meta']
@@ -388,7 +412,7 @@ def _gom_hoat_dong(rows, floor):
             no = (meta or {}).get('lessonNo')
             if r['course_id'] and no is not None:
                 done_lessons.add((r['course_id'], int(no)))
-        if day < floor:
+        if _truoc_moc_san(moc, floor):
             continue
         if r['kind'] == KIND_MOCK:
             mock_dates.append(day)
@@ -491,7 +515,8 @@ def do_cham_theo_hoc_vien(uids):
                 '       lesson_no, topic, title, reason, status '
                 '  FROM study_plan_items WHERE plan_id = ANY(%s) '
                 ' ORDER BY plan_id, sort_order', (list(theo_plan),))
-        su_kien = q('SELECT user_id, kind, course_id, topic, event_date, meta '
+        su_kien = q('SELECT user_id, kind, course_id, topic, event_date, '
+                    '       occurred_at, meta '
                     '  FROM learning_events '
                     ' WHERE user_id = ANY(%s) AND kind = ANY(%s)',
                     (uids, [KIND_LESSON, KIND_MOCK, KIND_REVIEW_QUIZ]))

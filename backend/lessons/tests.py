@@ -508,3 +508,62 @@ def test_bo_cau_tra_loi_khong_lo_bi_kep_bien(em):
     assert cat is True
     assert len(ra) <= MAX_CAU_TRA_LOI, len(ra)
     assert all(len(v) <= MAX_DAI_TRA_LOI for v in ra.values())
+
+
+# ── B13/B15 · phòng luyện: lượt ĐẦU vào sổ, và thân request chỉ là bản sao lưu ─
+
+@pytest.mark.django_db
+def test_phong_luyen_chi_LUOT_DAU_cong_XP_va_ghi_nang_luc(em, bai_luyen):
+    """Anh Sơn chốt 01/09/2026, cùng luật với thi thử. Không có nó thì `reset`
+    + `/check` là một máy dò đáp án: trả lời → xem đúng/sai → bấm Bắt đầu →
+    thử khác, cho tới khi biết hết — rồi làm một lượt sạch lấy 120 XP và ô năng
+    lực 8/8."""
+    from lessons.views import CompleteLessonView
+    dung = {'d1': 'A', 'd2': 'B', 'd3': 'C', 'd4': 'D'}
+    mot = _goi(CompleteLessonView, 'post',
+               {'courseId': KHOA, 'drill': {'answers': dung, 'seconds': 30}},
+               ai=em, lesson_no=bai_luyen)
+    assert mot.data.get('xpDrill') == 4 * 10 + 4 * 5, mot.data
+
+    hai = _goi(CompleteLessonView, 'post',
+               {'courseId': KHOA, 'drill': {'answers': dung, 'seconds': 30}},
+               ai=em, lesson_no=bai_luyen)
+    assert hai.data.get('xpDrill') == 0, 'lượt sau vẫn cộng XP: %s' % hai.data
+    assert (hai.data.get('drill') or {}).get('correct') == 4, 'vẫn phải được chấm để luyện'
+    n = q1("SELECT COUNT(*) AS n FROM learning_events "
+           "WHERE user_id=%s AND kind='drill'", (em.id,))['n']
+    assert n == 1, n
+
+
+@pytest.mark.django_db
+def test_bam_BAT_DAU_lai_CHOT_luot_dang_do_vao_so(em, bai_luyen):
+    """Chốt ngay lúc bỏ dở thì lượt DÒ chính là lượt đầu. Không có chỗ này thì
+    em cứ dò mà KHÔNG BAO GIỜ gọi `/complete`, rồi lượt sạch trở thành lượt đầu.
+    """
+    from lessons.views import CheckAnswersView
+    # Lượt một: trả lời sai hết rồi bấm Bắt đầu lại.
+    _goi(CheckAnswersView, 'post',
+         {'phan': 'drill', 'answers': {'d1': 'sai', 'd2': 'sai'}},
+         ai=em, course_id=KHOA, lesson_no=bai_luyen)
+    _goi(CheckAnswersView, 'post', {'phan': 'drill', 'reset': True, 'answers': {}},
+         ai=em, course_id=KHOA, lesson_no=bai_luyen)
+
+    ev = q1("SELECT score, max_score FROM learning_events "
+            "WHERE user_id=%s AND kind='drill'", (em.id,))
+    assert ev is not None, 'lượt bỏ dở không được chốt — máy dò đáp án vẫn mở'
+    assert int(ev['score']) == 0, ev
+
+
+@pytest.mark.django_db
+def test_tai_lai_trang_van_cham_duoc_phan_phong_luyen_da_ghi_nhan(em, bai_luyen):
+    """Em làm đủ 4 câu qua `/check` rồi TẢI LẠI TRANG trước khi bấm Hoàn thành:
+    thân gửi `"drill": null`. Máy chủ có sẵn bài làm — phải dùng nó."""
+    from lessons.views import CheckAnswersView, CompleteLessonView
+    for cid, val in (('d1', 'A'), ('d2', 'B'), ('d3', 'C'), ('d4', 'D')):
+        _goi(CheckAnswersView, 'post', {'phan': 'drill', 'answers': {cid: val}},
+             ai=em, course_id=KHOA, lesson_no=bai_luyen)
+    r = _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'drill': None},
+             ai=em, lesson_no=bai_luyen)
+    assert (r.data.get('drill') or {}).get('correct') == 4, (
+        'bỏ qua phần đã ghi nhận: %s' % r.data.get('drill'))
+    assert r.data.get('xpDrill') == 4 * 10 + 4 * 5
