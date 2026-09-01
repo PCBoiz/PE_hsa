@@ -382,8 +382,8 @@ def week_progress(uid, target=None):
 def overview(uid, days=DEFAULT_DAYS):
     """Cả khối nhật ký trong MỘT lượt gọi.
 
-    Mỗi lượt truy vấn tới Neon tốn ~245ms thuần đường truyền, nên gộp bốn thứ mà
-    màn hình luôn hiện cùng nhau vào một endpoint là cách rẻ nhất để nó mở nhanh.
+    Gộp bốn thứ mà màn hình luôn hiện cùng nhau vào một endpoint là cách rẻ nhất
+    để nó mở nhanh: thứ phải trả tiền là SỐ vòng gọi Neon (`common/db.py`).
     """
     target = read_target(uid)
     logs = recent_logs(uid, days)

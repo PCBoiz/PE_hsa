@@ -5,8 +5,8 @@ thử gần nhất — tức một phép tính THỨ BA về điểm yếu, thô
 thuẫn với con số Trang của tôi đang hiện. Nay dùng chung đúng bản đồ năng lực:
 một nguồn sự thật, và trợ lý nói được "Hình học 45%" thay vì "Định lượng".
 
-Vì sao có bộ nhớ đệm: dựng hồ sơ tốn 3 lượt truy vấn tới Neon (RTT ~245ms mỗi
-lượt). Trò chuyện đi theo tràng — hỏi liên tiếp vài câu — nên chỉ câu đầu của
+Vì sao có bộ nhớ đệm: dựng hồ sơ tốn 3 lượt truy vấn tới Neon (giá một vòng gọi:
+xem `common/db.py`). Trò chuyện đi theo tràng — hỏi liên tiếp vài câu — nên chỉ câu đầu của
 mỗi tràng nên phải trả cái giá đó. 5 phút là đủ ngắn để vừa học xong một bài,
 mở lại trợ lý là thấy số mới; đủ dài để cả một buổi trò chuyện không lặp lại.
 """

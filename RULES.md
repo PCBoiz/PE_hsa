@@ -38,8 +38,9 @@ Mọi khẳng định phải kèm số đo thật.
 | "không ai dùng" | lệnh grep nào, chạy trên phạm vi nào |
 
 Đã có ba lần suy sai: "FontAwesome cho 13 icon" (thật: 193) · "bảng màu đã kiểm
-tương phản" (thật: 5 chỗ dưới chuẩn) · "245ms mỗi vòng gọi Neon" (thật: chỉ đúng
-khi dev từ VN; production cùng vùng nên dưới 5ms).
+tương phản" (thật: 5 chỗ dưới chuẩn) · "245ms mỗi vòng gọi Neon" (đo 01/09: đúng
+239ms — nhưng đó là máy dev ở VN; production Render `ohio` cùng vùng Neon
+us-east-2 nên cỡ vài ms. Số đo và giới hạn của nó: `backend/common/db.py`).
 
 ## 3. Nghi ngờ chính mình, và nghi ngờ cả agent
 

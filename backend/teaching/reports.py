@@ -8,9 +8,10 @@ gom nhóm — không phải một kho dữ liệu mới.
 BA NGUYÊN TẮC:
 
 1. **Một lượt truy vấn cho cả lớp, không phải một lượt cho mỗi học viên.**
-   Mỗi lượt tới Neon tốn ~245ms thuần đường truyền; gọi ``competency.compute``
-   cho từng người trong lớp 30 học viên là 60 lượt = 15 giây. Ở đây mọi thứ gom
-   theo lớp trong vài câu SQL.
+   Gọi ``competency.compute`` cho từng người trong lớp 30 học viên là 60 lượt
+   tới Neon — 15 giây trên máy dev, cỡ 0,3 giây trên production (xem
+   ``common/db.py``: con số ms là của máy dev, không phải của production). Ở đây
+   mọi thứ gom theo lớp trong vài câu SQL.
 
 2. **Cảnh báo sớm phải nói ĐƯỢC LÀM GÌ TIẾP.** "Nam đang yếu" thì giảng viên
    không làm gì được; "Nam 9 ngày không mở bài, chưa làm đề nào" thì gọi điện
@@ -180,7 +181,7 @@ def _events_by_user(uids):
     return out, True
 
 
-def _mastery_by_topic(events, today):
+def _mastery_by_topic(events, today, hop_le):
     """Điểm thành thạo từng (khoá, chủ đề) của MỘT học viên, từ sự kiện đã có.
 
     Lặp lại luật của stats/competency.py có chủ đích: ở đó tính cho một người
@@ -212,11 +213,21 @@ def _mastery_by_topic(events, today):
             by_cell.setdefault((r['course_id'], r['topic']), {}) \
                    .setdefault(source, []).append(item)
 
+    # `hop_le` TRUYỀN VÀO, không tự gọi ở đây: hàm này chạy MỘT LẦN MỖI HỌC
+    # VIÊN, nên một câu `SELECT DISTINCT ... FROM lessons` đặt bên trong là một
+    # lượt tới Neon cho MỖI em. Đo 01/09/2026 trên lớp 3 em: đúng 3 lượt cho
+    # cùng một câu, chỉ để hỏi lại một danh mục không đổi trong suốt request.
+    #
+    # Lớp 200 em là 200 vòng gọi thừa: ~1 giây ở production, ~50 giây trên máy
+    # dev (`common/db.py` — con số ms là của máy dev, đừng nhân nó ra rồi kết
+    # luận về production).
+    #
+    # (Lỗi này do chính bản vá T62 sáng cùng ngày đẻ ra, và chỉ lộ ra khi đếm
+    # số lượt truy vấn — đọc mã không thấy, vì câu SQL nằm đúng chỗ hợp lý.)
     # Giao với DANH MỤC hiện tại, đúng luật `stats/competency` đang dùng. Không
     # có bước này thì đổi tên một chương sẽ tách đôi hai màn hình: bản đồ của em
     # giao với danh mục nên hiện ô MỚI trống trơn, còn bảng của giảng viên lặp
     # thẳng `by_cell` nên hiện ô CŨ có dữ liệu — và không ai biết vì sao.
-    hop_le = chu_de_trong_giao_trinh()
     if hop_le is not None:
         by_cell = {k: v for k, v in by_cell.items() if k in hop_le}
 
@@ -342,6 +353,10 @@ def class_report(class_id):
     members = _members(class_id)
     uids = [m['user_id'] for m in members]
     today = local_today()
+    # MỘT lượt cho cả lớp. Danh mục chủ đề không đổi trong suốt request, nên
+    # hỏi lại nó cho từng em là trả thêm một vòng gọi Neon mỗi em để nhận về
+    # cùng một câu trả lời — xem chú thích trong `_mastery_by_topic`.
+    hop_le = chu_de_trong_giao_trinh()
 
     # `thieu` gom tên những mảng KHÔNG đọc được. Nó đi thẳng ra `summary` để
     # màn hình nói được "phần này đang thiếu", thay vì trình bày một con số 0 mà
@@ -403,7 +418,7 @@ def class_report(class_id):
         if len(my_mocks) >= 2:
             trend = my_mocks[-1]['pct'] - my_mocks[-2]['pct']
 
-        mastery = _mastery_by_topic(events.get(uid, []), today)
+        mastery = _mastery_by_topic(events.get(uid, []), today, hop_le)
         for cell, val in mastery.items():
             cell_scores.setdefault(cell, []).append(val)
         weakest = sorted(mastery.items(), key=lambda kv: kv[1])[:3]

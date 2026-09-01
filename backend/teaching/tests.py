@@ -1210,3 +1210,38 @@ def test_tro_giang_tai_CSV_lop_nhung_KHONG_kem_email_va_so_dien_thoai(lop, vai_t
         # Và không lộ qua THÂN file: email của học viên không được xuất hiện.
         assert lop['hv'][0].email not in noi, (
             '%s bỏ cột nhưng dữ liệu vẫn còn trong thân file' % view.__name__)
+
+
+@pytest.mark.django_db
+def test_bao_cao_lop_KHONG_lap_lai_cau_SQL_nao(lop):
+    """Số lượt tới Neon phải CỐ ĐỊNH, không tăng theo sĩ số.
+
+    Một câu SQL nằm nhầm trong vòng lặp học viên làm số lượt tăng theo sĩ số.
+    Ở production (Render và Neon cùng vùng, ~5ms/lượt) lớp 200 em mất thêm ~1
+    giây; trên máy dev ở VN (~245ms) là gần một phút. Đọc mã KHÔNG
+    thấy được lỗi này — câu SQL nằm đúng chỗ hợp lý, chỉ sai ở chỗ hàm bao quanh
+    nó chạy một lần mỗi em.
+
+    Đã xảy ra thật 01/09/2026: bản vá T62 cùng ngày đặt
+    `chu_de_trong_giao_trinh()` vào trong `_mastery_by_topic`, và phép đếm cho
+    ra ĐÚNG 3 lượt cho cùng một câu trên lớp 3 người.
+
+    Phép kiểm đếm CÂU LẶP chứ không đếm tổng số lượt: tổng số lượt còn đổi khi
+    thêm tính năng, còn "cùng một câu chạy hai lần trong một request" thì gần
+    như luôn là lỗi.
+    """
+    import re
+    from collections import Counter
+
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from teaching.reports import class_report
+
+    with CaptureQueriesContext(connection) as c:
+        class_report(lop['id'])
+    dem = Counter(re.sub(r'\s+', ' ', x['sql']) for x in c.captured_queries)
+    lap = {sql[:90]: n for sql, n in dem.items() if n > 1}
+    assert not lap, (
+        'có câu SQL chạy nhiều lần trong MỘT báo cáo lớp — gần như chắc chắn nó '
+        'nằm trong vòng lặp học viên: %s' % lap)

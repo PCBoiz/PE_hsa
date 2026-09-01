@@ -433,8 +433,8 @@ class JournalView(APIView):
     """GET/PUT/DELETE /api/hsa/journal — nhật ký học hằng ngày.
 
     GET gộp cả khối (hôm nay + 30 ngày gần đây + mục tiêu tuần + tiến độ tuần)
-    vào MỘT lượt gọi: mỗi lượt tới Neon tốn ~245ms thuần đường truyền, mà bốn
-    thứ này luôn hiện cùng nhau trên màn hình.
+    vào MỘT lượt gọi: bốn thứ này luôn hiện cùng nhau trên màn hình, mà thứ phải
+    trả tiền là SỐ vòng gọi Neon (`common/db.py`).
     """
 
     def get(self, request):

@@ -147,10 +147,10 @@ def _catalog(uid):
     Đọc thẳng từ ``lessons`` chứ không cứng hoá danh sách chủ đề: giáo trình sẽ
     được soạn lại theo TopHSA, lúc đó bản đồ tự đổi theo mà không phải sửa mã.
 
-    Tên khoá và cờ tự đánh dấu ĐƯỢC JOIN VÀO ĐÂY thay vì hỏi riêng hai lượt: mỗi
-    lượt truy vấn tới Neon tốn ~245ms thuần đường truyền, nên gộp được câu nào là
-    cắt thẳng ngần ấy khỏi thời gian chờ của người dùng (đo 24/08: 4 lượt = 0,98s
-    → 2 lượt = 0,49s).
+    Tên khoá và cờ tự đánh dấu ĐƯỢC JOIN VÀO ĐÂY thay vì hỏi riêng hai lượt: gộp
+    được câu nào là cắt thẳng một vòng gọi khỏi thời gian chờ (đo 24/08 TRÊN MÁY
+    DEV: 4 lượt = 0,98s → 2 lượt = 0,49s; production nhanh hơn cỡ 50 lần — xem
+    `common/db.py`).
     """
     rows = _catalog_rows(uid)
     cells = {}

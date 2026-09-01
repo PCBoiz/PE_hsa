@@ -18,11 +18,11 @@ nghĩa là xem được mọi lớp. Mọi endpoint ở đây nhận ``class_id`
 không được xem — 403 là tự thú nhận "lớp đó có tồn tại", tức là rò rỉ danh sách
 lớp của trung tâm cho bất kỳ giảng viên nào biết đoán số.
 
-SỐ CÂU TRUY VẤN LÀ THIẾT KẾ, KHÔNG PHẢI TỐI ƯU HOÁ VẶT. Mỗi lượt tới Neon tốn
-~245ms thuần đường truyền (teaching/reports.py, nguyên tắc 1). Một lớp 30 học
-viên với 24 buổi mà mỗi buổi một câu đếm điểm danh là 24 lượt ≈ 6 giây cho một
-màn hình danh sách, và mỗi học viên một câu UPSERT khi tick là 30 lượt ≈ 7 giây
-cho một lần bấm Lưu. Nên: mọi endpoint ở đây dùng SỐ CÂU CỐ ĐỊNH (không phụ
+SỐ CÂU TRUY VẤN LÀ THIẾT KẾ, KHÔNG PHẢI TỐI ƯU HOÁ VẶT. Một lớp 30 học viên với
+24 buổi mà mỗi buổi một câu đếm điểm danh là 24 lượt tới Neon cho một màn hình
+danh sách, và mỗi học viên một câu UPSERT khi tick là 30 lượt cho một lần bấm
+Lưu — trên máy dev là ~6 và ~7 giây (`common/db.py`: giá một vòng gọi, và vì sao
+số ấy KHÔNG phải số của production). Nên: mọi endpoint ở đây dùng SỐ CÂU CỐ ĐỊNH (không phụ
 thuộc số buổi/số học viên) rồi ghép trong Python, và điểm danh cả lớp là MỘT câu
 INSERT nhiều dòng.
 """

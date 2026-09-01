@@ -33,8 +33,8 @@ LẠI kết quả đó rồi đổ ra hàng và cột. Nếu tính song song m�
 màn hình và file mang đi họp sẽ lệch nhau, và không ai biết bản nào đúng —
 đúng cái tình huống làm mất niềm tin vào cả hệ thống báo cáo.
 
-HIỆU NĂNG. Mỗi lượt tới Neon tốn ~245ms thuần đường truyền, nên SỐ CÂU truy vấn
-mới là thứ quyết định chứ không phải độ phức tạp câu. Cả ba endpoint dùng số câu
+HIỆU NĂNG. SỐ CÂU truy vấn mới là thứ quyết định chứ không phải độ phức tạp câu
+(giá một vòng gọi Neon: xem `common/db.py`). Cả ba endpoint dùng số câu
 CỐ ĐỊNH, không phụ thuộc sĩ số lớp hay số buổi học: lấy đủ dữ liệu rồi xoay bảng
 trong Python.
 """
@@ -396,7 +396,7 @@ class ClassProgressCsvView(APIView):
             ])
 
         # Lấy mã lớp từ báo cáo đã nạp thay vì hỏi CSDL thêm một lượt: dòng
-        # `classes` đã nằm sẵn trong kết quả, hỏi lại là 245ms cho không.
+        # `classes` đã nằm sẵn trong kết quả, hỏi lại là một vòng gọi cho không.
         info = data['class']
         name = 'Tiến độ lớp %s %s.csv' % (
             _label_from(info['code'], info['name'], class_id), _stamp())
@@ -420,7 +420,9 @@ class ClassAttendanceCsvView(APIView):
 
     BA CÂU TRUY VẤN, KHÔNG PHỤ THUỘC SĨ SỐ: một câu lấy buổi, một câu lấy học
     viên, một câu lấy TOÀN BỘ điểm danh của lớp; xoay bảng bằng Python. Hỏi theo
-    từng học viên thì lớp 30 em × 30 buổi thành 900 lượt × 245ms ≈ 4 phút.
+    từng học viên thì lớp 30 em × 30 buổi thành 900 lượt — 4 phút trên máy dev,
+    vài giây trên production (`common/db.py` giải thích vì sao hai con số chênh
+    nhau chừng 50 lần).
     """
     permission_classes = [IsTeachingStaff]
     renderer_classes = CSV_RENDERERS

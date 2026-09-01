@@ -6,6 +6,31 @@ on:
   push:
   pull_request:
 
+# CHỈ MỘT LƯỢT CI CHẠY TẠI MỘT THỜI ĐIỂM — và nhóm là TOÀN CỤC, không tách theo
+# nhánh.
+#
+# Vì sao: job `backend` chạy pytest thẳng vào **Neon production** (xem env
+# DATABASE_URL ở dưới), và tài nguyên phải giữ ấy là CSDL — nó chỉ có một, chung
+# cho mọi nhánh. Tách nhóm theo `github.ref` sẽ vẫn cho hai nhánh cùng đập vào
+# một CSDL.
+#
+# Cụ thể chỗ vỡ: fixture `temp_user` trong `backend/conftest.py` chèn một email
+# CỐ ĐỊNH (`django_test_tmp@example.com`) vào `users`, mà `users.email` là
+# `TEXT UNIQUE`. Hai lượt chồng nhau thì lượt sau CHẶN ở ràng buộc unique cho
+# tới khi lượt trước rollback — nhân lên với mỗi test dùng fixture, trên một
+# vòng dài ~16 phút. Đẩy ba commit liên tiếp (đúng nhịp của vòng lặp tự trị) là
+# ba vòng như thế chồng lên production.
+#
+# `cancel-in-progress: true` được, vì CI KHÔNG phải cửa chặn deploy: Render tự
+# triển khai khi `master` được gộp, không đợi CI. Nên thứ đáng giá ở đây là tín
+# hiệu của commit MỚI NHẤT, không phải chạy cho xong lượt cũ.
+#
+# Đây là VÁ, không phải cách sửa đúng. Cách đúng là CI trỏ vào một nhánh Neon
+# riêng thay vì CSDL thật — xem TODO.
+concurrency:
+  group: ci-neon-production
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend (Django) — pytest
@@ -85,6 +110,22 @@ jobs:
       - name: Typecheck
         working-directory: frontend
         run: pnpm exec tsc --noEmit
+
+      # Unit test Node thuần trong `e2e/unit/`. Trước 01/09/2026 CI KHÔNG chạy
+      # chúng: `forum-xss.test.mjs` được viết ra để giữ một lỗ stored-XSS đã vá
+      # (tên tác giả bài viết nối thô vào innerHTML) và suốt thời gian đó không
+      # ai chạy nó lần nào — một phép kiểm hồi quy không chạy là một phép kiểm
+      # không tồn tại, chỉ tệ hơn ở chỗ nó làm người ta yên tâm.
+      #
+      # Vòng lặp chứ không liệt kê từng tệp: thêm một bộ kiểm mới thì nó tự vào
+      # CI, không phải nhớ sửa thêm chỗ này.
+      - name: Unit test (Node thuần)
+        working-directory: frontend
+        run: |
+          for f in e2e/unit/*.test.mjs; do
+            echo "── $f"
+            node "$f" || exit 1
+          done
       - name: Build
         working-directory: frontend
         env:

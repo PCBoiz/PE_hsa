@@ -19,6 +19,29 @@ retry cứ bốc phải conn chết khác → cả 6 lần đều fail (login tr
 Nay dùng connection.close_pool(): HỦY hẳn pool → lần cursor() kế tiếp Django
 dựng pool MỚI toàn conn tươi. Kèm keep-warm ping (common/keepalive.py) để Neon
 gần như không bao giờ scale-to-zero khi backend đang chạy.
+
+── ĐỘ TRỄ MỘT VÒNG GỌI NEON: SỐ ĐO, VÀ CHỖ NÓ KHÔNG ÁP DỤNG ─────────────────
+
+Đây là chỗ DUY NHẤT trong repo ghi con số này. Trước 01/09/2026 nó được nhắc
+lại ở 9 tệp khác nhau như một sự thật phổ quát — và bị nhân ra thành những kết
+luận về production mà không ai đo (nặng nhất: "900 lượt × 245ms ≈ 4 phút" cho
+một file CSV lớp, ở teaching/exports.py).
+
+Đo 01/09/2026, `SELECT 1` lặp 30 lần sau một câu mồi (bỏ bắt tay TLS ra ngoài):
+
+    máy dev (VN) → ep-billowing-fog...us-east-2    trung vị 239ms, p90 240ms
+
+Con số ấy **là độ trễ xuyên Thái Bình Dương, không phải giá của một câu truy
+vấn.** Trên production, Render chạy ở `ohio` (render.yaml) — tức chính vùng
+us-east-2 của Neon — nên vòng gọi là nội vùng, cỡ vài ms. CHƯA đo trên
+production: không có đường chạy mã đo ở đó, nên đây là suy ra từ vùng đặt máy,
+và phải đọc như một suy luận.
+
+Hệ quả cho người đọc mã: **luật "gộp truy vấn" vẫn đúng** — số câu truy vấn vẫn
+là thứ quyết định, và mọi endpoint vẫn nên dùng số câu CỐ ĐỊNH. Nhưng khi thấy
+một chú thích quy đổi số câu ra giây, hãy đọc nó là **giây trên máy dev**; chia
+cho khoảng 50 để ước lượng production. Đừng dùng con số dev để kết luận rằng
+một màn hình đang chậm với người dùng thật.
 """
 import logging
 import time

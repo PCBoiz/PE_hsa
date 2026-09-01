@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { AT, RT, AT_MAX_AGE, RT_MAX_AGE, backendOrigin } from '@/lib/auth';
+import { AT, RT, AT_MAX_AGE, RT_MAX_AGE, refreshTokens } from '@/lib/auth';
 
 /**
  * Làm mới phiên đăng nhập TRƯỚC khi trang được dựng.
@@ -69,29 +69,35 @@ export async function middleware(req: NextRequest) {
   // Còn hạn, hoặc không có gì để làm mới → đi tiếp, không đụng vào.
   if (conHan(access) || !refresh) return NextResponse.next();
 
-  let moi: { access?: string; refresh?: string } | null = null;
-  try {
-    const r = await fetch(`${backendOrigin()}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh }),
-      cache: 'no-store',
-    });
-    if (r.ok) moi = (await r.json()) as { access?: string; refresh?: string };
-  } catch {
-    // Backend đang ngủ hoặc mạng hỏng: đi tiếp với cookie cũ. Trang sẽ tự xử lý
-    // như mọi lần backend không với tới được, thay vì đá người dùng ra vô cớ.
-    return NextResponse.next();
-  }
+  /* GỌI `refreshTokens`, KHÔNG tự viết lại lời gọi `/auth/refresh`.
+     Bản chép tay trước đây bắt lỗi bằng `try/catch` quanh `fetch` và coi mọi
+     phản hồi không-ok là "phiên hết thật". Nhưng `catch` chỉ chạy khi `fetch`
+     NÉM — tức mất mạng, DNS hỏng. Một phản hồi **502/503** thì `fetch` thành
+     công, `r.ok` là false, và luồng rơi thẳng xuống nhánh XOÁ CẢ HAI COOKIE.
 
-  if (!moi?.access) {
-    // Refresh token đã hết hạn hoặc bị thu hồi — phiên hết thật. Xoá cookie để
-    // lần sau khỏi gọi lại vô ích; trang sẽ tự đưa về đăng nhập.
+     Đó chính là kịch bản mà `refreshTokens` được viết ra để dập, và nó phân
+     biệt rất kỹ `invalid` (401/403 — máy chủ ĐÃ xem token và từ chối) với
+     `unreachable` (5xx — máy chủ chưa trả lời được, chưa kết luận gì).
+
+     Không phải giả thiết: Render gói free ngủ sau ~15 phút, nên 502 lúc tỉnh
+     dậy là chuyện thường ngày — và hậu quả là giảng viên đang giữa buổi dạy bị
+     văng ra màn đăng nhập trong khi refresh token còn sống bảy tiếng rưỡi. */
+  const kq = await refreshTokens(refresh);
+
+  if (!kq.ok) {
+    if (kq.lyDo === 'unreachable') {
+      // Chưa kết luận được gì: đi tiếp với cookie cũ. Trang sẽ tự xử lý như
+      // mọi lần backend không với tới được, thay vì đá người dùng ra vô cớ.
+      return NextResponse.next();
+    }
+    // `invalid`: máy chủ đã xem token và từ chối — phiên hết thật. Xoá cookie
+    // để lần sau khỏi gọi lại vô ích; trang sẽ tự đưa về đăng nhập.
     const res = NextResponse.next();
     res.cookies.delete(AT);
     res.cookies.delete(RT);
     return res;
   }
+  const moi = { access: kq.access, refresh: kq.refresh };
 
   // Ghi đè cookie TRÊN CHÍNH REQUEST đang đi, để lượt dựng trang ngay sau đây
   // đọc được token mới — không phải chờ tới lượt tải trang kế tiếp.
