@@ -163,3 +163,49 @@ def test_MOI_duong_doc_khoa_deu_lay_diem_sao_that(auth_api):
         kh = lay(auth_api.get(url).json())
         assert kh['rating'] is None, '%s vẫn trả %r' % (url, kh['rating'])
         assert kh['rating_count'] == 0, url
+
+
+# ── Ghi danh lại KHÔNG được đánh mất ngày học xong (01/09/2026) ─────────────
+
+def test_ghi_danh_lai_giu_nguyen_ngay_hoc_xong(auth_api, temp_user):
+    """Học xong khoá → huỷ ghi danh → ghi danh lại: ``completed_at`` phải dựng lại.
+
+    LỖI GỐC. Có HAI bản của phép "tính lại bộ đệm tiến độ từ lesson_progress":
+    một ở ``lessons/views.py`` (học xong một bài) và một ở ``courses/views.py``
+    (ghi danh lại). Câu SELECT của hai bản giống nhau tới từng ký tự; câu UPDATE
+    lệch đúng một cột — bản ghi danh lại quên ``completed_at``. Huỷ ghi danh xoá
+    cả dòng, nên ghi danh lại dựng được tiến độ 100% mà KHÔNG có ngày xong.
+
+    VÌ SAO ĐI QUA HTTP chứ không gọi thẳng hàm gộp: gọi hàm gộp là kiểm rằng hàm
+    ấy đúng, thứ vốn hiển nhiên. Điều cần biết là ĐƯỜNG GHI DANH LẠI có đi qua
+    nó hay không — đúng chỗ mà bản cũ đi vòng.
+
+    ``lesson_progress`` gieo thẳng bằng SQL: nó là NGUỒN THẬT, không phải thứ
+    đang được kiểm. Đi qua đường học-xong-bài để dựng cảnh sẽ làm phép kiểm đỏ ở
+    bước dựng cảnh thay vì ở khẳng định — đã mắc đúng lỗi ấy một lần khi viết
+    bài này.
+    """
+    bai = [r['id'] for r in q('SELECT id FROM lessons WHERE course_id=%s', (TEST_COURSE_ID,))]
+    assert bai, 'khoá kiểm thử phải có bài, nếu không phép kiểm này vô nghĩa'
+
+    r = auth_api.post('/api/courses/%s/enroll' % TEST_COURSE_ID, {}, format='json')
+    assert r.status_code == 200, r.status_code
+    for lid in bai:
+        x("""INSERT INTO lesson_progress (user_id, course_id, lesson_id, status, completed_at)
+             VALUES (%s, %s, %s, 'completed', now())
+             ON CONFLICT (user_id, lesson_id) DO UPDATE SET status='completed' """,
+          (temp_user, TEST_COURSE_ID, lid))
+
+    # Huỷ — xoá sạch cả dòng, kể cả mốc học xong.
+    r = auth_api.delete('/api/courses/%s/enroll' % TEST_COURSE_ID)
+    assert r.status_code == 200, r.status_code
+    assert q1('SELECT 1 AS x FROM enrollments WHERE user_id=%s AND course_id=%s',
+              (temp_user, TEST_COURSE_ID)) is None, 'huỷ phải xoá dòng'
+
+    # ĐƯỜNG ĐANG KIỂM: ghi danh lại phải dựng lại ĐỦ, không thiếu cột nào.
+    r = auth_api.post('/api/courses/%s/enroll' % TEST_COURSE_ID, {}, format='json')
+    assert r.status_code == 200, r.status_code
+    sau = q1('SELECT progress, completed_at FROM enrollments '
+             'WHERE user_id=%s AND course_id=%s', (temp_user, TEST_COURSE_ID))
+    assert sau['progress'] == 100, 'tiến độ phải dựng lại được từ lesson_progress: %s' % sau
+    assert sau['completed_at'] is not None,         'ghi danh lại đánh mất ngày học xong — bản ghi nói "100%" mà không có ngày'

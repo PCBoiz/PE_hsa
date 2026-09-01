@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1, x
+from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
 from lessons.views import quen_ghi_danh
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
@@ -240,19 +241,17 @@ class EnrollView(APIView):
             quen_ghi_danh(uid, course_id)
             # Re-enroll sau unenroll: lesson_progress (nguồn thật) vẫn giữ tiến độ
             # cũ — tính lại cache để dashboard không hiển thị 0% sai.
-            done_row = q1('''SELECT COUNT(*) AS n,
-                                    COALESCE(SUM(COALESCE(l.estimated_minutes, 15)), 0) AS minutes
-                             FROM lesson_progress lp
-                             JOIN lessons l ON l.id = lp.lesson_id
-                             WHERE lp.user_id=%s AND lp.course_id=%s AND lp.status='completed' ''',
-                          (uid, course_id))
-            if done_row['n']:
-                total = q1('SELECT lessons FROM courses WHERE id=%s', (course_id,))['lessons'] or 0
-                done = done_row['n']
-                progress = min(100, round(done * 100 / total)) if total else 0
-                x('UPDATE enrollments SET completed_lessons=%s, progress=%s, time_spent=%s '
-                  'WHERE user_id=%s AND course_id=%s',
-                  (done, progress, str(round(done_row['minutes'] / 60, 1)) + 'h', uid, course_id))
+            #
+            # Bản trước ở đây là một BẢN CHÉP của đoạn trong `lessons/views.py`,
+            # giống tới từng ký tự ở câu SELECT và thiếu đúng một cột ở câu
+            # UPDATE (`completed_at`). Nay cả hai đường đi qua một hàm — và
+            # đường này được sửa lên cho bằng, chứ không phải đường kia bị hạ
+            # xuống. Chi tiết: `courses/enrollment.py`.
+            #
+            # Chạy vô điều kiện, không còn `if done_row['n']`: chưa học bài nào
+            # thì nó ghi lại đúng 0/0%/'0h' — bằng giá trị mà câu INSERT ngay
+            # trên vừa đặt, nên không đổi gì.
+            tinh_lai_ghi_danh(uid, course_id)
         return Response({'ok': True})
 
     def delete(self, request, course_id):

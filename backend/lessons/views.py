@@ -17,6 +17,7 @@ from common.throttling import (
     HourlyIPThrottle,
     HourlyUserThrottle,
 )
+from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
 from lessons.content import course_content, one_lesson
 from lessons.grading import (
     PHAN_CO_CAU_HOI,
@@ -366,25 +367,12 @@ class CompleteLessonView(APIView):
               (uid, course_id, local_now()))
             quen_ghi_danh(uid, course_id)
 
-            # Tính lại cache enrollments từ nguồn thật lesson_progress
-            done_row = q1('''SELECT COUNT(*) AS n,
-                                    COALESCE(SUM(COALESCE(l.estimated_minutes, 15)), 0) AS minutes
-                             FROM lesson_progress lp
-                             JOIN lessons l ON l.id = lp.lesson_id
-                             WHERE lp.user_id=%s AND lp.course_id=%s AND lp.status='completed' ''',
-                          (uid, course_id))
-            completed_count = done_row['n']
-            time_spent = str(round(done_row['minutes'] / 60, 1)) + 'h'
-            total_lessons = course['lessons'] or 0
-            progress = min(100, round(completed_count * 100 / total_lessons)) if total_lessons else 0
-            x('''UPDATE enrollments
-                 SET completed_lessons = %s,
-                     progress          = %s,
-                     time_spent        = %s,
-                     completed_at      = CASE WHEN %s >= 100 THEN COALESCE(completed_at, %s)
-                                              ELSE completed_at END
-                 WHERE user_id=%s AND course_id=%s''',
-              (completed_count, progress, time_spent, progress, local_now(), uid, course_id))
+            # Tính lại cache enrollments từ nguồn thật lesson_progress.
+            # MỘT bản duy nhất, dùng chung với đường ghi danh lại — xem
+            # `courses/enrollment.py` để biết hai bản trước đây lệch ở đâu.
+            dem = tinh_lai_ghi_danh(uid, course_id, course['lessons'])
+            completed_count = dem['completed_lessons']
+            progress = dem['progress']
 
             gained = 0
             new_streak, used_freeze = None, False
