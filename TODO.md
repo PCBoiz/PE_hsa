@@ -2577,3 +2577,27 @@ Máy chủ cho phép rồi mà thanh điều hướng không hiện nút thì b�
 Đo bằng cách chặn `GET /api/user` rồi đổi ĐÚNG một trường `role` — không tạo tài
 khoản nào: trợ giảng thấy *Giảng dạy* · học vụ thấy *Giảng dạy + Vận hành* ·
 giảng viên và học viên không đổi. 0 lời gọi ghi.
+
+### Bảng khoảng cách ERP — đo lại sau hai việc trên
+Theo đúng sáu nhóm ở `ERP_TOPHSA §2` (định nghĩa "ERP đầy đủ" của chính đặc tả).
+
+| Nhóm | Trước hôm nay | Sau |
+|---|---|---|
+| Tổ chức | 2/6 | **4/6** — thêm trợ giảng + quản lý học vụ. Còn: cổng phụ huynh, nhiều cơ sở |
+| Vận hành | 3/4 | **4/4** — sổ đầu bài nay nhập được |
+| Báo cáo | 3,5/4 | 3,5/4 — "báo cáo phụ huynh ĐỊNH KỲ" còn thiếu phần định kỳ (chờ kênh gửi) |
+| Kinh doanh | 0/6 | 0/6 |
+| Chăm sóc | 0/3 | 0/3 |
+| Nền tảng | 1,5/3 | **2,5/3** — phân quyền nhiều cấp xong. Còn: sao lưu |
+| **Tổng** | 10,5/26 | **14/26** |
+
+Con số ấy vẫn dễ gây hiểu nhầm: khối Kinh doanh một mình chiếm 6 hạng mục và
+đặc tả tự xếp nó "lớn nhất", đồng thời tự khuyến nghị **đừng viết** — nên nối
+với phần mềm kế toán TopHSA đang dùng.
+
+**Phần dạy–học coi như xong.** Việc còn lại chia ba loại, và chỉ loại đầu là
+việc kỹ thuật thuần:
+1. Cổng phụ huynh + sao lưu — làm được ngay, không vướng ai.
+2. Kênh gửi ngoài (Zalo/email) + gửi báo cáo định kỳ — **chờ TopHSA** trả lời
+   gửi qua đâu.
+3. Kinh doanh — chờ quy trình thu chi thật, và nên nối chứ không viết lại.
