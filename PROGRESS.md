@@ -2440,3 +2440,42 @@ middleware đỏ đúng 3 khẳng định về 5xx và giữ xanh 8 khẳng đ�
 `completed_at` đỏ ở khẳng định cuối trong khi `progress == 100` vẫn xanh. Bản
 viết đầu của bộ kiểm sau đỏ ở bước DỰNG CẢNH (vì bước ấy cũng đi qua đường đang
 hỏng) nên đã viết lại — đỏ-trước chưa đủ, còn phải đỏ đúng chỗ.
+
+### Cùng ngày, sau báo cáo — A3: chỉ mục cho mọi khoá ngoại (`§43`)
+
+19/69 khoá ngoại không có chỉ mục lấy đúng cột ấy làm cột dẫn đầu → **0**. Áp
+tay lên Neon vì là DDL THÊM; hai câu `ALTER` đi kèm thì KHÔNG (chúng thay ràng
+buộc, không phải thêm) nên chờ deploy.
+
+**Không lặp lại lỗi của `§35`.** Mục ấy thêm 5 chỉ mục theo đúng luật này mà
+không xem khoá chính, và 4 trong 5 đã có sẵn. Phép đo lần này hỏi thẳng
+`indkey[0]` nên chỉ mục khoá chính được tính vào — 19 cột là 19 cột thật sự
+thiếu. Kịch bản chạy còn TỪ CHỐI mọi câu không bắt đầu bằng `CREATE INDEX IF NOT
+EXISTS`, và rút danh sách RA TỪ chính tệp lược đồ thay vì gõ lại, để bản chạy và
+bản trong tệp không thể lệch nhau.
+
+**Không nói quá về kết quả.** Ở 37 dòng, bộ lập kế hoạch vẫn chọn quét tuần tự
+và đó là lựa chọn đúng — nên tôi không đo "nhanh hơn bao nhiêu". Thứ chứng minh
+được là chỉ mục PHỤC VỤ ĐƯỢC vị từ: ép `enable_seqscan=off` trong một transaction
+rồi cuộn lại, cả 5 mẫu thử đều chuyển sang dùng đúng chỉ mục mới. Giá trị nằm ở
+lúc bảng lớn, và lý do làm hôm nay là lúc ấy chính lệnh `CREATE INDEX` sẽ khoá
+bảng.
+
+**Hai thứ lộ ra trong lúc làm.**
+
+`§42` viết "9 khoá ngoại NO ACTION, 7 thuộc Django, của mình đúng HAI", và tiêu
+đề gọi `roadmaps` là bảng DUY NHẤT của mình còn NO ACTION. Đếm lại bằng
+`pg_catalog`: **16 NO ACTION · 12 của Django · 4 của mình** — sai ở cả hai vế, và
+hai khoá bị bỏ sót là `courses.instructor_id` với `missions.course_id`. Chính
+đoạn viết sai ấy kết bằng câu "một con số sai trong tài liệu thì tệ hơn không có
+con số". Bài học không phải "đếm cẩn thận hơn" mà là đừng đếm bằng mắt trên một
+danh sách đã lọc sẵn.
+
+Hai khoá bỏ sót nay có chính sách: `courses.instructor_id` → **SET NULL** (khoá
+học là tài sản của trung tâm, không phải của người dạy — CASCADE ở đây là xoá
+tài khoản giảng viên thì mất luôn khoá, lớp, buổi, điểm danh); `missions.course_id`
+→ **CASCADE** (SET NULL tệ hơn: NULL ở cột này mang nghĩa "nhiệm vụ toàn cục",
+nên xoá một khoá sẽ lặng lẽ giao nhiệm vụ riêng của nó cho mọi học viên).
+
+Và: **tệp lược đồ đang đi trước CSDL thật** — `§41` có trên Neon, `§42` không.
+Không có gì hỏng, nhưng cũng không có gì nói ra chuyện đó. Vào TODO mục A9.

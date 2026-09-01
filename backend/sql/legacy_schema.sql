@@ -1153,16 +1153,26 @@ ALTER TABLE notification_settings ADD CONSTRAINT notification_settings_user_fk
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
 
 
--- §42 · `roadmaps` là bảng DUY NHẤT của mình còn `NO ACTION` — nó CHẶN xoá tài khoản
+-- §42 · `roadmaps` còn `NO ACTION` — nó CHẶN xoá tài khoản
 -- ─────────────────────────────────────────────────────────────────────────────
 --
--- Phát hiện khi trích ERD (01/09/2026). Đếm lại 01/09/2026 trên CSDL thật: 9
--- khoá ngoại `NO ACTION`, nhưng **7 trong số đó thuộc bảng do Django quản**
--- (`socialaccount_*`, `token_blacklist_*`) — Django tự lo việc dây chuyền ở tầng
--- Python, không phải phần mình đặt ra. (Ghi rõ ở đây vì bản ghi chép trước đó
--- nói "4 khoá", và một con số sai trong tài liệu thì tệ hơn không có con số.)
+-- Phát hiện khi trích ERD (01/09/2026).
 --
--- Của mình đúng HAI, cả hai trên `roadmaps`:
+-- ĐÍNH CHÍNH (kiểm định 01/09/2026, cuối ngày). Mục này ban đầu viết "9 khoá
+-- ngoại NO ACTION, 7 thuộc Django, của mình đúng HAI" — và tiêu đề gọi
+-- `roadmaps` là bảng DUY NHẤT của mình còn NO ACTION. Đếm lại bằng
+-- `pg_catalog`, phân loại theo tiền tố bảng của Django:
+--
+--     69 khoá ngoại   ·  57 của mình  ·  12 của Django
+--     16 NO ACTION    ·   4 của mình  ·  12 của Django
+--
+-- Tức con số cũ sai ở CẢ HAI vế, và hai khoá bị bỏ sót — `courses.instructor_id`
+-- và `missions.course_id` — được xử ở §43. Mỉa mai là chính đoạn viết sai ấy
+-- kết bằng câu "một con số sai trong tài liệu thì tệ hơn không có con số".
+-- Bài học không phải "đếm cẩn thận hơn" mà là: đừng đếm bằng mắt trên một danh
+-- sách đã lọc sẵn, hãy để CSDL tự phân loại.
+--
+-- Hai khoá của `roadmaps`:
 --
 --   · `user_id` → CASCADE. Lộ trình cá nhân không còn nghĩa gì khi chủ nó biến
 --     mất, và 43 khoá anh em đều đã CASCADE. Bảng này dùng `user_id IS NULL` để
@@ -1186,3 +1196,93 @@ ALTER TABLE roadmaps ADD CONSTRAINT roadmaps_user_id_fkey
 ALTER TABLE roadmaps DROP CONSTRAINT IF EXISTS roadmaps_generated_from_survey_id_fkey;
 ALTER TABLE roadmaps ADD CONSTRAINT roadmaps_generated_from_survey_id_fkey
     FOREIGN KEY (generated_from_survey_id) REFERENCES surveys(id) ON DELETE SET NULL NOT VALID;
+
+
+-- §43 · Chỉ mục cho MỌI khoá ngoại, và hai chính sách xoá còn sót
+-- ─────────────────────────────────────────────────────────────────────────────
+--
+-- Kiểm định 01/09/2026. Đo bằng `pg_catalog`, không đọc tệp này: với mỗi khoá
+-- ngoại, hỏi xem có chỉ mục nào lấy đúng cột ấy làm cột DẪN ĐẦU không.
+--
+--     19 / 69 khoá ngoại không có.
+--
+-- VÌ SAO ĐÁNG SỬA. Postgres không tự tạo chỉ mục cho phía CON của khoá ngoại
+-- (phía CHA thì có, vì nó phải là khoá chính hoặc unique). Nên mỗi lần xoá một
+-- dòng CHA, nó phải quét TOÀN BỘ bảng con để tìm dòng cần dọn — kể cả với
+-- `NO ACTION`, vì vẫn phải kiểm là không còn ai tham chiếu.
+--
+-- Xoá MỘT tài khoản hiện chạm mười bảng như thế: comment_likes, post_likes,
+-- user_follows, attendance.marked_by, class_sessions ×2, submissions.graded_by,
+-- assignments.created_by, courses.instructor_id, roadmaps.user_id.
+--
+-- LÀM HÔM NAY, KHÔNG ĐỂ SAU. Bảng còn nhỏ nên `CREATE INDEX` xong tức thì. Để
+-- tới lúc có 100 học viên thì chính lệnh tạo sẽ khoá bảng đúng lúc bảng đã lớn
+-- — cùng lý lẽ đã ghi ở §33.
+--
+-- ĐÃ HỌC TỪ §35: mục ấy thêm năm chỉ mục theo đúng luật này mà không xem khoá
+-- chính, và bốn trong năm đã có sẵn (khoá chính GHÉP dẫn đầu bằng `user_id`).
+-- Phép đo ở đây hỏi thẳng `indkey[0]`, nên chỉ mục khoá chính được tính — 19
+-- cột dưới đây là 19 cột thật sự không có.
+
+CREATE INDEX IF NOT EXISTS idx_assignments_course     ON assignments(course_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_created_by ON assignments(created_by);
+CREATE INDEX IF NOT EXISTS idx_attendance_marked_by   ON attendance(marked_by);
+CREATE INDEX IF NOT EXISTS idx_sessions_taken_by      ON class_sessions(attendance_taken_by);
+CREATE INDEX IF NOT EXISTS idx_sessions_created_by    ON class_sessions(created_by);
+CREATE INDEX IF NOT EXISTS idx_classes_course         ON classes(course_id);
+CREATE INDEX IF NOT EXISTS idx_comment_likes_user     ON comment_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent        ON comments(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_courses_instructor     ON courses(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson ON lesson_progress(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_missions_course        ON missions(course_id);
+CREATE INDEX IF NOT EXISTS idx_post_likes_user        ON post_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_course         ON quizzes(course_id);
+CREATE INDEX IF NOT EXISTS idx_roadmaps_survey        ON roadmaps(generated_from_survey_id);
+CREATE INDEX IF NOT EXISTS idx_roadmaps_user          ON roadmaps(user_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_graded_by  ON submissions(graded_by);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_ach  ON user_achievements(achievement_id);
+CREATE INDEX IF NOT EXISTS idx_user_follows_followee  ON user_follows(followee_id);
+CREATE INDEX IF NOT EXISTS idx_user_missions_mission  ON user_missions(mission_id);
+
+-- ── Hai chính sách xoá mà §42 bỏ sót ────────────────────────────────────────
+--
+-- `courses.instructor_id` → SET NULL, KHÔNG phải CASCADE.
+--   CASCADE ở đây nghĩa là xoá tài khoản một giảng viên thì XOÁ LUÔN khoá học
+--   họ đứng tên, kéo theo mọi lớp, buổi và điểm danh treo dưới nó. Khoá học là
+--   tài sản của trung tâm, không phải của người dạy. Cột đã cho phép NULL.
+--   Để nguyên `NO ACTION` cũng không được: nó khiến việc xoá BÁO LỖI ngay giữa
+--   chừng một thao tác đã dọn xong nửa số bảng khác — nghĩa là hôm nay không
+--   xoá nổi tài khoản một giảng viên đang đứng tên bất kỳ khoá nào.
+--
+-- `missions.course_id` → CASCADE.
+--   Nhiệm vụ gắn với một khoá ("học 3 bài trong Định lượng") mất hết nghĩa khi
+--   khoá biến mất. SET NULL thì tệ hơn hẳn: cột NULL ở bảng này mang nghĩa
+--   "nhiệm vụ TOÀN CỤC", nên xoá một khoá sẽ lặng lẽ biến nhiệm vụ riêng của nó
+--   thành nhiệm vụ giao cho mọi học viên.
+--
+-- Đo trước khi đổi: `courses` 3 dòng, `instructor_id` NULL cả 3, 0 mồ côi;
+-- `missions` 3 dòng, `course_id` NULL cả 3, 0 mồ côi. `NOT VALID` giữ đúng lối
+-- của §33/§41/§42.
+ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_instructor_id_fkey;
+ALTER TABLE courses ADD CONSTRAINT courses_instructor_id_fkey
+    FOREIGN KEY (instructor_id) REFERENCES users(id) ON DELETE SET NULL NOT VALID;
+
+ALTER TABLE missions DROP CONSTRAINT IF EXISTS missions_course_id_fkey;
+ALTER TABLE missions ADD CONSTRAINT missions_course_id_fkey
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE NOT VALID;
+
+-- ── TỆP NÀY ĐANG ĐI TRƯỚC CSDL THẬT ─────────────────────────────────────────
+--
+-- Đo 01/09/2026: `notification_settings_user_fk` của §41 CÓ trên Neon, nhưng cả
+-- hai khoá của §42 thì KHÔNG — chúng vẫn là `NO ACTION`.
+--
+-- Không có gì hỏng ở đây, nhưng cũng không có gì NÓI ra chuyện đó: tệp này chỉ
+-- chạy qua `bootstrap_schema` ở `buildCommand` của Render, tức chỉ khi `master`
+-- được gộp. Mọi mục viết trên nhánh `erp` nằm chờ tới lúc ấy, và cách duy nhất
+-- để biết mục nào đã tới nơi là đi hỏi `pg_catalog` từng cái một.
+--
+-- Cho tới khi có một bảng ghi phiên bản lược đồ: mở mục mới thì ghi rõ mục ấy
+-- ĐÃ áp dụng hay CHỜ deploy, như hai dòng trên.
+--   · §41 — đã áp dụng
+--   · §42 — chờ deploy
+--   · §43 — chỉ mục: áp dụng tay 01/09 (DDL THÊM). Hai ALTER: chờ deploy.

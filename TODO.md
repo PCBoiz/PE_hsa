@@ -2619,7 +2619,12 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   ngăn hai lượt đập nhau; nó không đổi việc pytest đang chạy trên dữ liệu học
   viên thật, mỗi lần push. Neon tạo nhánh gần như tức thì; đây là việc cấu hình,
   không phải viết mã.
-- [ ] A3 · **Chỉ mục cho 9 khoá ngoại CASCADE** — xoá một tài khoản hiện chạm 10
+- [x] A3 · **Chỉ mục cho MỌI khoá ngoại** — làm 01/09, `§43`. Đo bằng
+  `pg_catalog`: 19/69 khoá ngoại thiếu chỉ mục dẫn đầu → **0**. Đã áp tay lên
+  Neon (DDL THÊM). Ép `enable_seqscan=off` để chứng minh chỉ mục phục vụ được
+  vị từ — ở kích thước bảng hiện nay bộ lập kế hoạch vẫn chọn quét tuần tự, và
+  đó là lựa chọn đúng; giá trị của việc này nằm ở lúc bảng lớn.
+  ~~Chỉ mục cho 9 khoá ngoại CASCADE~~ — xoá một tài khoản hiện chạm 10
   lần quét toàn bảng. DDL THÊM nên tự chạy được, nhưng phải làm TRƯỚC khi bảng
   lớn: để muộn thì chính lệnh tạo chỉ mục khoá bảng đúng lúc không nên khoá.
   Danh sách đo bằng `pg_catalog` nằm trong báo cáo.
@@ -2634,7 +2639,9 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   và triệu chứng là 400 trên toàn miền chứ không phải một lỗi cấu hình đọc được.
 - [ ] A6 · `DELETE FROM learning_events WHERE ref_type=… AND ref_id=…` là
   `Seq Scan` (đã `EXPLAIN`). Hôm nay bảng 37 dòng nên rẻ; nó đắt dần đúng theo
-  mức dùng. Gộp vào A3 khi làm.
+  mức dùng. KHÔNG được A3 vá: `ref_type`/`ref_id` không phải khoá ngoại (không
+  trỏ tới bảng nào — chúng mang tên bảng dạng chuỗi), nên phép đo của A3 không
+  nhìn thấy chúng. Cần một chỉ mục riêng trên `(ref_type, ref_id)`.
 - [ ] A7 · **Đặt hạn cho tầng frontend cũ** — 15.604 dòng JS không qua bundler
   so với 10.510 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
   production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần
@@ -2643,3 +2650,10 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   hai câu như thế và CẢ HAI đều đã sai (`attendance.ti_le`, và số 245ms ở
   `common/db.py` trước khi gom). Một câu khẳng định độc quyền là một lời hứa, và
   không có gì đang cưỡng chế nó.
+- [ ] A9 · **Tệp lược đồ đang đi trước CSDL thật, và không có gì nói ra điều đó.**
+  Đo 01/09: `§41` CÓ trên Neon, cả hai khoá của `§42` thì KHÔNG. `legacy_schema.sql`
+  chỉ chạy qua `bootstrap_schema` ở `buildCommand` của Render, tức chỉ khi `master`
+  được gộp — nên mọi mục viết trên `erp` nằm chờ, và cách duy nhất để biết mục nào
+  đã tới nơi là đi hỏi `pg_catalog` từng cái một. Tạm thời mỗi mục tự ghi trạng
+  thái (xem cuối `§43`); cần một bảng ghi phiên bản lược đồ thật.
+  Đang chờ deploy: `§42` (2 khoá `roadmaps`) · `§43` (2 khoá `courses`/`missions`).
