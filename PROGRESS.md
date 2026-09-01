@@ -2363,3 +2363,36 @@ lối anh đã chốt cho B12/Redis. Đường ấy CHỈ trả header proxy, kh
 **TODO còn 5 mục — tất cả đều chờ anh hoặc chờ ngưỡng người dùng:** xoay
 `SECRET_KEY` (T39) · bật Redis (T40) · đo `NUM_PROXIES` rồi vá `_client_ip`
 (T38+T66, đã có sẵn đường đo) · Elo khi đủ 100 học viên (N1).
+
+## 01/09/2026 (tiếp) · Vá nốt khoảng cách ERP làm được ngay
+
+Anh chốt: làm phần không vướng ai. Hai việc.
+
+**① Buổi học — 5 trường có cột mà không có đường nhập.** `ClassSessionDetailView.patch`
+đã dựng đủ từ đầu, kèm cảnh báo trùng giờ và nhật ký ghi cả GIÁ TRỊ CŨ — nhưng
+giao diện chưa từng gọi PATCH một lần nào, và form tạo chỉ hỏi 3/8 trường. Hệ
+quả: **sổ đầu bài**, một mục trong bảng khoảng cách của chính đặc tả, chưa bao
+giờ dùng được. Nay có nút Sửa mở bảng đủ 7 trường, và CHỈ GỬI TRƯỜNG ĐÃ ĐỔI —
+gửi cả nắm thì nhật ký đọc thành "đã đổi 7 trường" mọi lần, làm hỏng đúng thứ nó
+vừa dựng ra.
+
+Tìm thêm một lỗ đúng lúc sắp mở ô nhập cho nó: `meeting_url` của BUỔI HỌC còn
+nguyên lỗ T65 (vá sáng nay mới bịt cho LỚP). Suýt tự mở lại lỗ vừa đóng.
+
+**② Hai vai trò: Trợ giảng và Quản lý học vụ.** Anh chốt bản HẸP. Không đổi lược
+đồ (`class_members` vốn chứa được người không phải học viên), không đổi một dòng
+frontend nào (ô chọn đọc `ASSIGNABLE_ROLES` từ máy chủ).
+
+Lỗi đã mắc: thêm hằng vào Python rồi tưởng xong, trong khi CSDL có
+`users_role_check` riêng — câu báo lỗi là tên ràng buộc, thứ không ai đọc ra là
+"thiếu một dòng trong legacy_schema.sql".
+
+Và một lỗ **tôi tự tạo ra rồi tự tìm thấy**: chặn trợ giảng xem báo cáo phụ huynh
+vì nó có email + số điện thoại, nhưng `progress.csv` có ĐÚNG hai cột ấy và vẫn
+để ngỏ. Chặn một cửa mà bỏ cửa kia thì hàng rào chỉ là một câu tuyên bố. Nay
+ranh giới nói rõ trong `permissions.py`: **nhìn được khi làm việc, không mang ra
+ngoài được** — email vẫn hiện trên ba màn hình phải dùng (tên học viên có thể
+rỗng), nhưng hai đường đưa dữ liệu RA KHỎI hệ thống thì cắt.
+
+Mọi phép kiểm canh CẢ HAI chiều và đều đã tự kiểm ĐỎ ĐƯỢC: tháo chốt xoá buổi →
+403 thành 409; gỡ lời gọi lọc cột → CSV lộ lại Email.

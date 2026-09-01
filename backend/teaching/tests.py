@@ -15,7 +15,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from accounts.models import User
 from common.clock import local_now
-from common.db import q, q1
+from common.db import q, q1, x
 from common.permissions import ROLE_STUDENT, ROLE_TEACHER
 from teaching.assignments import (
     AssignmentDetailView,
@@ -1054,3 +1054,159 @@ def test_sua_mot_truong_thi_nhat_ky_chi_ghi_MOT_truong(lop):
     assert kq2.status_code == 200, kq2.data
     assert kq2.data['session']['status'] == 'done'
     assert kq2.data['session']['recordingUrl'] == 'https://drive.google.com/file/d/x'
+
+
+@pytest.fixture
+def vai_tro_moi(db):
+    """Nới `users_role_check` để nhận hai vai trò mới — TRONG giao dịch của test.
+
+    Ràng buộc thật ở Neon vẫn chỉ có ba vai trò cũ: bản nới nằm ở
+    `sql/legacy_schema.sql` và sẽ được `bootstrap_schema` áp lúc deploy, đúng
+    lối đã làm với §42. Không áp tay vào CSDL production chỉ để test chạy.
+
+    DDL trong Postgres nằm trong giao dịch, nên câu dưới đây cuộn lại cùng mọi
+    thứ khác — chạy xong CSDL trở về đúng ba vai trò cũ.
+
+    Fixture này CHÍNH LÀ chỗ ghi lại một lỗi đã mắc hôm nay: thêm hằng vào
+    `ASSIGNABLE_ROLES` rồi tưởng xong, trong khi CSDL có `CHECK` riêng — và câu
+    báo lỗi là `users_role_check`, thứ không ai đọc ra được là "thiếu một dòng
+    trong legacy_schema.sql".
+    """
+    x("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check")
+    x("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN "
+      "('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng', 'Học viên'))")
+
+
+# ── Hai vai trò thêm 01/09/2026: trợ giảng và quản lý học vụ ────────────────
+#
+# Ranh giới do anh Sơn chốt, và cố ý HẸP: mở rộng một vai trò về sau dễ hơn thu
+# hẹp lại. Nên bộ kiểm dưới đây canh CẢ HAI chiều — làm được gì, và không làm
+# được gì. Chỉ canh chiều "làm được" thì một lần nới tay sẽ đi qua mà không ai
+# thấy, mà nới tay ở đây nghĩa là thêm người đọc được dữ liệu của một đứa trẻ.
+
+@pytest.mark.django_db
+def test_tro_giang_chi_thay_lop_duoc_gan(lop, vai_tro_moi):
+    from common.permissions import ROLE_ASSISTANT, can_see_class, visible_class_ids
+    tg = _nguoi('TG Mot', ROLE_ASSISTANT)
+    khac = q1("INSERT INTO classes (name, course_id, status) "
+              "VALUES ('Lop khong lien quan','hsa_quantitative','active') RETURNING id")
+
+    assert can_see_class(tg, lop['id']) is False, 'chưa gán thì chưa được xem'
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+       'RETURNING id', (lop['id'], tg.id, local_now()))
+    assert can_see_class(tg, lop['id']) is True
+    assert can_see_class(tg, khac['id']) is False, 'lớp khác thì không'
+    assert visible_class_ids(tg) == [lop['id']]
+
+    # Gỡ khỏi lớp = ghi `left_at`. Thiếu vế đó thì gỡ xong vẫn xem được.
+    x('UPDATE class_members SET left_at=%s WHERE class_id=%s AND user_id=%s',
+      (local_now(), lop['id'], tg.id))
+    assert can_see_class(tg, lop['id']) is False, 'gỡ khỏi lớp rồi vẫn xem được'
+
+
+@pytest.mark.django_db
+def test_tro_giang_diem_danh_duoc_nhung_KHONG_xoa_va_KHONG_xem_bao_cao_PH(lop, vai_tro_moi):
+    from datetime import timedelta
+
+    from common.permissions import ROLE_ASSISTANT
+    from teaching.parent_report import ParentReportView
+    from teaching.sessions import ClassSessionDetailView, SessionAttendanceView
+    tg = _nguoi('TG Hai', ROLE_ASSISTANT)
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+       'RETURNING id', (lop['id'], tg.id, local_now()))
+    nay = local_now()
+    s = q1("INSERT INTO class_sessions (class_id, starts_at, status, created_by) "
+           "VALUES (%s,%s,'planned',%s) RETURNING id",
+           (lop['id'], nay - timedelta(hours=1), lop['gv'].id))
+
+    # LÀM ĐƯỢC: điểm danh.
+    kq = _goi(SessionAttendanceView, 'post',
+              {'marks': [{'user_id': lop['hv'][0].id, 'status': 'present'}]},
+              ai=tg, session_id=s['id'])
+    assert kq.status_code == 200, ('trợ giảng phải điểm danh được: %s' % kq.data)
+
+    # KHÔNG LÀM ĐƯỢC: xoá buổi (mất luôn dòng điểm danh vừa ghi).
+    xoa = _goi(ClassSessionDetailView, 'delete', ai=tg, session_id=s['id'])
+    assert xoa.status_code == 403, ('trợ giảng không được xoá buổi: %s' % xoa.status_code)
+    assert q1('SELECT count(*) n FROM attendance WHERE session_id=%s',
+              (s['id'],))['n'] == 1, 'dòng điểm danh phải còn nguyên'
+
+    # KHÔNG LÀM ĐƯỢC: báo cáo phụ huynh (có email + số điện thoại của em).
+    bc = _goi(ParentReportView, 'get', ai=tg,
+              class_id=lop['id'], user_id=lop['hv'][0].id)
+    assert bc.status_code == 403, ('trợ giảng không được xem báo cáo phụ huynh: %s'
+                                   % bc.status_code)
+
+
+@pytest.mark.django_db
+def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop, vai_tro_moi):
+    from common.permissions import ROLE_ACADEMIC, can_see_class
+    from teaching.terms import AdminTermsView
+    from teaching.views import AdminClassesView, AdminResetPasswordView, AdminUserRoleView
+    hv = _nguoi('HV Hoc Vu', ROLE_ACADEMIC)
+
+    # LÀM ĐƯỢC: xem mọi lớp dù không phụ trách lớp nào.
+    assert can_see_class(hv, lop['id']) is True
+    assert _goi(AdminClassesView, 'get', ai=hv).status_code == 200
+    assert _goi(AdminTermsView, 'get', ai=hv).status_code == 200
+    tao = _goi(AdminClassesView, 'post', {'name': 'Lop do hoc vu tao'}, ai=hv)
+    assert tao.status_code in (200, 201), tao.data
+
+    # KHÔNG LÀM ĐƯỢC: đổi vai trò, đặt lại mật khẩu.
+    vai = _goi(AdminUserRoleView, 'post', {'role': 'admin'}, ai=hv,
+               user_id=lop['hv'][0].id)
+    assert vai.status_code == 403, ('học vụ không được đổi vai trò: %s' % vai.status_code)
+    mk = _goi(AdminResetPasswordView, 'post', {}, ai=hv, user_id=lop['hv'][0].id)
+    assert mk.status_code == 403, ('học vụ không được đặt lại mật khẩu: %s' % mk.status_code)
+
+
+@pytest.mark.django_db
+def test_hai_vai_tro_moi_KHONG_bi_dem_la_hoc_vien(lop, vai_tro_moi):
+    """`chi_hoc_vien` lọc đúng `role = 'Học viên'`, nên vai trò mới không lọt vào
+    sĩ số, bảng điểm danh hay mẫu số tiến độ. Canh lại vì đó là thứ đã sai một
+    lần với tài khoản quản trị viên (id 7 nằm trong lớp 1)."""
+    from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT
+    from teaching.reports import _members
+    truoc = len(_members(lop['id']))
+    for ten, vai in (('TG Dem', ROLE_ASSISTANT), ('HocVu Dem', ROLE_ACADEMIC)):
+        u = _nguoi(ten, vai)
+        q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+           'RETURNING id', (lop['id'], u.id, local_now()))
+    assert len(_members(lop['id'])) == truoc, (
+        'trợ giảng / học vụ trong lớp bị đếm thành học viên')
+
+
+@pytest.mark.django_db
+def test_tro_giang_tai_CSV_lop_nhung_KHONG_kem_email_va_so_dien_thoai(lop, vai_tro_moi):
+    """Chặn báo cáo phụ huynh mà bỏ ngỏ file CSV là hàng rào chỉ có trên giấy.
+
+    Hai file CSV của lớp chứa ĐÚNG hai cột đã khiến báo cáo phụ huynh bị chặn:
+    `progress.csv` có Email + Số điện thoại, `attendance.csv` có Email. Trợ giảng
+    vẫn tải được (họ cần số chuyên cần và tiến độ của lớp mình) — chỉ không kèm
+    cách liên lạc với phụ huynh.
+    """
+    from common.permissions import ROLE_ASSISTANT
+    from teaching.exports import ClassAttendanceCsvView, ClassProgressCsvView
+    tg = _nguoi('TG CSV', ROLE_ASSISTANT)
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) '
+       'RETURNING id', (lop['id'], tg.id, local_now()))
+
+    for view in (ClassProgressCsvView, ClassAttendanceCsvView):
+        # Giảng viên: vẫn có đủ cột.
+        gv = _goi(view, 'get', ai=lop['gv'], class_id=lop['id'])
+        assert gv.status_code == 200, (view.__name__, gv.status_code)
+        dong_dau_gv = gv.content.decode('utf-8-sig').split('\r\n')[0]
+        assert 'Email' in dong_dau_gv, (view.__name__, dong_dau_gv)
+
+        # Trợ giảng: tải được, nhưng KHÔNG có cột liên lạc.
+        r = _goi(view, 'get', ai=tg, class_id=lop['id'])
+        assert r.status_code == 200, (view.__name__, r.status_code)
+        noi = r.content.decode('utf-8-sig')
+        dong_dau = noi.split('\r\n')[0]
+        assert 'Email' not in dong_dau, (
+            '%s vẫn lộ cột Email cho trợ giảng: %s' % (view.__name__, dong_dau))
+        assert 'Số điện thoại' not in dong_dau, (
+            '%s vẫn lộ số điện thoại cho trợ giảng: %s' % (view.__name__, dong_dau))
+        # Và không lộ qua THÂN file: email của học viên không được xuất hiện.
+        assert lop['hv'][0].email not in noi, (
+            '%s bỏ cột nhưng dữ liệu vẫn còn trong thân file' % view.__name__)

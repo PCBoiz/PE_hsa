@@ -23,7 +23,7 @@ from rest_framework.views import APIView
 
 from common import audit
 from common.db import q, q1, x
-from common.permissions import IsAdminRole, IsTeacherOrAdmin
+from common.permissions import IsAdminOrAcademic, IsTeachingStaff
 from stats.goals import as_date
 
 #: Vòng đời một đợt. Khớp `terms_status_check` ở §36 — hai nơi lệch nhau thì một
@@ -102,7 +102,8 @@ def _dict(r):
 
 class AdminTermsView(APIView):
     """GET/POST /api/admin/terms — danh sách & tạo đợt."""
-    permission_classes = [IsAdminRole]
+    # Đợt học là việc của HỌC VỤ. Xem chú thích cùng ngày ở `teaching/views.py`.
+    permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
         # Đếm lớp VÀ học viên trong cùng một câu. Đây là hai con số đầu tiên ai
@@ -146,7 +147,8 @@ class AdminTermsView(APIView):
 
 class AdminTermDetailView(APIView):
     """PATCH/DELETE /api/admin/terms/<id>."""
-    permission_classes = [IsAdminRole]
+    # Đợt học là việc của HỌC VỤ. Xem chú thích cùng ngày ở `teaching/views.py`.
+    permission_classes = [IsAdminOrAcademic]
 
     def patch(self, request, term_id):
         before = q1('SELECT * FROM terms WHERE id=%s', (term_id,))
@@ -220,7 +222,7 @@ class TermsLiteView(APIView):
     mà họ KHÔNG được vào khu quản trị. Trả đúng những gì một ô chọn cần, không
     kèm con số thống kê.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request):
         rows = q('''SELECT id, code, name, starts_on, ends_on, exam_date, status, note

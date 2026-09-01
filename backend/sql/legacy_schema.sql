@@ -801,9 +801,14 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_time
 -- ADD CONSTRAINT không có IF NOT EXISTS, nên dùng cặp DROP IF EXISTS + ADD.
 -- (Không dùng khối DO $$...$$ được: bộ tách câu cắt theo dấu chấm phẩy.)
 
+-- Thêm 'Quản lý học vụ' và 'Trợ giảng' ngày 01/09/2026. Danh sách này PHẢI
+-- khớp `ASSIGNABLE_ROLES` trong `common/permissions.py` — hai nơi lệch nhau thì
+-- một vai trò mới đi qua tầng Python rồi đổ ở CSDL, và câu báo lỗi là
+-- `users_role_check` chứ không phải một câu người dùng hiểu được.
+-- (Đúng lỗi đã mắc hôm nay: thêm hằng ở Python, quên `CHECK` ở đây.)
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check
-    CHECK (role IN ('admin', 'Giảng viên', 'Học viên'));
+    CHECK (role IN ('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng', 'Học viên'));
 
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check;
 ALTER TABLE users ADD CONSTRAINT users_status_check

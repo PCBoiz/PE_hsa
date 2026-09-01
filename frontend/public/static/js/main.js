@@ -1585,6 +1585,15 @@ function loadUser() {
       setText("sidebar-role", u.role);
       var adminBtn = document.getElementById("nav-admin");
       if (adminBtn) adminBtn.style.display = (u.role === "admin") ? "" : "none";
+      // Khu VẬN HÀNH (`/quan-tri/*`) — quản trị viên và quản lý học vụ.
+      // Trước 01/09/2026 khu này chỉ vào được qua trang `/admin`, mà trang đó
+      // chỉ quản trị viên mở được; nên quản lý học vụ có quyền quản lý lớp và
+      // đợt học mà không có một đường nào đi tới.
+      var vanHanhBtn = document.getElementById("nav-vanhanh");
+      if (vanHanhBtn) {
+        vanHanhBtn.style.display =
+          (u.role === "admin" || u.role === "Quản lý học vụ") ? "" : "none";
+      }
       setText("banner-name", u.name.split(" ").slice(-1)[0]);
       setText("chip-name", u.name.split(" ").slice(-1)[0]);
       var _initial = (u.name || "?").trim().charAt(0).toUpperCase();

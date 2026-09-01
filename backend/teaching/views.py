@@ -21,8 +21,9 @@ from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
     ROLE_STUDENT,
+    IsAdminOrAcademic,
     IsAdminRole,
-    IsTeacherOrAdmin,
+    IsTeachingStaff,
     can_see_class,
     is_admin,
     last_active_admin,
@@ -46,7 +47,7 @@ CLASS_DATE_FIELDS = ('starts_on', 'ends_on', 'exam_date')
 
 class TeachClassesView(APIView):
     """GET /api/teach/classes — lớp tôi phụ trách (quản trị viên thấy tất cả)."""
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request):
         ids = visible_class_ids(request.user)
@@ -58,7 +59,7 @@ class TeachClassesView(APIView):
 
 class TeachClassDetailView(APIView):
     """GET /api/teach/classes/<id> — báo cáo đầy đủ một lớp."""
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
@@ -77,7 +78,7 @@ class TeachStudentView(APIView):
     kế hoạch, mục tiêu tuần). Giảng viên và học viên phải nhìn CÙNG một con số:
     hai bên thấy hai số khác nhau cho cùng một chủ đề là hỏng cả buổi tư vấn.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, class_id, user_id):
         if not can_see_class(request.user, class_id):
@@ -234,7 +235,10 @@ def _clean_class_payload(body):
 
 class AdminClassesView(APIView):
     """GET/POST /api/admin/classes — danh sách & tạo lớp."""
-    permission_classes = [IsAdminRole]
+    # `IsAdminOrAcademic`: quản lý học vụ xếp lớp và đợt học là việc HÀNG NGÀY
+    # của họ. Đổi vai trò và đặt lại mật khẩu thì KHÔNG — hai việc ấy vẫn
+    # `IsAdminRole` (anh Sơn chốt 01/09/2026).
+    permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
         return Response({
@@ -271,7 +275,10 @@ def _teachers():
 
 class AdminClassDetailView(APIView):
     """PUT/DELETE /api/admin/classes/<id> — sửa hoặc xoá lớp."""
-    permission_classes = [IsAdminRole]
+    # `IsAdminOrAcademic`: quản lý học vụ xếp lớp và đợt học là việc HÀNG NGÀY
+    # của họ. Đổi vai trò và đặt lại mật khẩu thì KHÔNG — hai việc ấy vẫn
+    # `IsAdminRole` (anh Sơn chốt 01/09/2026).
+    permission_classes = [IsAdminOrAcademic]
 
     def put(self, request, class_id):
         # Lấy luôn tên hiện tại (thay cho `SELECT 1`) để nhật ký chép được nhãn
@@ -394,7 +401,10 @@ class AdminClassDetailView(APIView):
 
 class AdminClassMembersView(APIView):
     """POST/DELETE /api/admin/classes/<id>/members — thêm/bớt học viên."""
-    permission_classes = [IsAdminRole]
+    # `IsAdminOrAcademic`: quản lý học vụ xếp lớp và đợt học là việc HÀNG NGÀY
+    # của họ. Đổi vai trò và đặt lại mật khẩu thì KHÔNG — hai việc ấy vẫn
+    # `IsAdminRole` (anh Sơn chốt 01/09/2026).
+    permission_classes = [IsAdminOrAcademic]
 
     def post(self, request, class_id):
         klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))

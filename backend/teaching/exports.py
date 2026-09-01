@@ -54,7 +54,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1
-from common.permissions import IsAdminRole, IsTeacherOrAdmin, can_see_class
+from common.permissions import IsAdminRole, IsTeachingStaff, can_see_class, is_assistant
 from teaching import reports
 from teaching.admin_users import any_user_filter, build_user_filters
 from teaching.attendance import dem_theo_hoc_vien, ti_le
@@ -122,6 +122,34 @@ def _cell(value):
         # Dấu nháy đơn ở đầu = cách vô hiệu hoá công thức mà OWASP khuyến nghị.
         return "'" + text
     return text
+
+
+#: Cột chứa dữ liệu LIÊN LẠC của học viên. Trợ giảng không được xem.
+COT_LIEN_LAC = ('Email', 'Số điện thoại')
+
+
+def bo_cot_lien_lac(header, rows, user):
+    """Bỏ cột email/số điện thoại khỏi file xuất, nếu người tải là TRỢ GIẢNG.
+
+    Vì sao cần. Anh Sơn chốt 01/09/2026 rằng trợ giảng KHÔNG mở được báo cáo
+    phụ huynh, lý do là tờ đó in email và số điện thoại của em. Nhưng hai file
+    CSV của lớp chứa ĐÚNG hai cột ấy và vẫn để ngỏ — chặn một cửa mà bỏ cửa kia
+    thì hàng rào chỉ là một câu tuyên bố.
+
+    Không CHẶN hẳn file: trợ giảng cần số chuyên cần và tiến độ của lớp mình để
+    làm việc. Thứ họ không cần là cách liên lạc với phụ huynh.
+
+    Làm ở MỘT chỗ cho cả hai file — hai bản lọc là hai bản sẽ trôi, và bản trôi
+    ở phía LỎNG hơn thì không ai thấy.
+    """
+    if not is_assistant(user):
+        return header, rows
+    bo = [i for i, ten in enumerate(header) if ten in COT_LIEN_LAC]
+    if not bo:
+        return header, rows
+    giu = [i for i in range(len(header)) if i not in bo]
+    return ([header[i] for i in giu],
+            [[r[i] for i in giu] for r in rows])
 
 
 def _phone_cell(value):
@@ -304,7 +332,7 @@ class ClassProgressCsvView(APIView):
     vào đó là "Tiến độ (%)", "Điểm thi thử gần nhất" và "Chủ đề yếu nhất" —
     đều là số ĐÃ có sẵn, không phải phép tính mới đẻ ra ở tệp này.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
     renderer_classes = CSV_RENDERERS
 
     def get(self, request, class_id):
@@ -372,6 +400,7 @@ class ClassProgressCsvView(APIView):
         info = data['class']
         name = 'Tiến độ lớp %s %s.csv' % (
             _label_from(info['code'], info['name'], class_id), _stamp())
+        header, rows = bo_cot_lien_lac(header, rows, request.user)
         return _csv_response(name, header, rows)
 
 
@@ -393,7 +422,7 @@ class ClassAttendanceCsvView(APIView):
     viên, một câu lấy TOÀN BỘ điểm danh của lớp; xoay bảng bằng Python. Hỏi theo
     từng học viên thì lớp 30 em × 30 buổi thành 900 lượt × 245ms ≈ 4 phút.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
     renderer_classes = CSV_RENDERERS
 
     def get(self, request, class_id):
@@ -461,6 +490,7 @@ class ClassAttendanceCsvView(APIView):
             rows.append(row)
 
         name = 'Điểm danh lớp %s %s.csv' % (_class_label(class_id), _stamp())
+        header, rows = bo_cot_lien_lac(header, rows, request.user)
         return _csv_response(name, header, rows)
 
     @staticmethod

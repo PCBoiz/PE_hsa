@@ -4269,7 +4269,11 @@ function forumClearSearch() {
     var u = window.__currentUser;
     if (!u) return false;
     var btn = el('nav-teach');
-    var ok = (u.role === 'Giảng viên' || u.role === 'admin');
+    // Bốn vai trò, khớp `IsTeachingStaff` ở máy chủ (01/09/2026). Trước đó chỉ
+    // có hai: trợ giảng và quản lý học vụ đăng nhập vào sẽ KHÔNG có nút nào tới
+    // lớp mình — quyền ở máy chủ đã mở mà không có đường đi tới thì bằng không.
+    var ok = (u.role === 'Giảng viên' || u.role === 'admin'
+              || u.role === 'Trợ giảng' || u.role === 'Quản lý học vụ');
     if (btn) btn.style.display = ok ? '' : 'none';
     if (ok && !classes) loadClasses();
     return true;

@@ -12,7 +12,7 @@ chỗ CHỨA: hai bảng ``class_sessions``/``attendance`` giữ nguyên khi có
 đó chỉ thêm một bộ nhập tự động ghi vào cùng chỗ, và ``marked_by IS NULL`` là
 dấu hiệu "máy điền". Vì vậy không chờ TopHSA trả lời mới làm được phần này.
 
-QUYỀN THEO NGỮ CẢNH. Vào được khu vực giảng dạy (``IsTeacherOrAdmin``) không có
+QUYỀN THEO NGỮ CẢNH. Vào được khu vực giảng dạy (``IsTeachingStaff``) không có
 nghĩa là xem được mọi lớp. Mọi endpoint ở đây nhận ``class_id`` hoặc
 ``session_id`` đều đi qua ``can_see_class`` và trả **404 chứ không 403** khi
 không được xem — 403 là tự thú nhận "lớp đó có tồn tại", tức là rò rỉ danh sách
@@ -39,7 +39,7 @@ from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events, record_events
 from common.params import kiem_lien_ket, so_nguyen
-from common.permissions import IsTeacherOrAdmin, can_see_class
+from common.permissions import IsTeachingStaff, can_see_class, is_assistant
 from stats.goals import as_date
 from teaching.vocab import chi_hoc_vien
 
@@ -322,7 +322,7 @@ class ClassSessionsView(APIView):
     tổng hợp — bắt giao diện gọi thêm một lượt cho từng buổi là đúng cái lỗi
     N+1 mà nguyên tắc 1 của teaching/reports.py đặt ra để tránh.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
@@ -443,7 +443,7 @@ class ClassSessionDetailView(APIView):
     buổi và không được xem lớp trả CÙNG một 404, để không dò được id buổi của
     lớp người khác bằng cách so sánh mã lỗi.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def _load(self, request, session_id):
         row = _session_row(session_id)
@@ -514,6 +514,18 @@ class ClassSessionDetailView(APIView):
         if not row:
             return Response(_NOT_FOUND_SESSION, status=404)
 
+        # Trợ giảng KHÔNG xoá buổi. Xoá một buổi kéo theo mọi dòng điểm danh của
+        # nó (ON DELETE CASCADE), tức xoá luôn bằng chứng em nào đã đi học —
+        # thứ mà báo cáo gửi phụ huynh đọc tới. Anh Sơn chốt 01/09/2026: trợ
+        # giảng điểm danh và chấm bài được, việc XOÁ thì không.
+        #
+        # Kiểm ở đây chứ không đổi `permission_classes`: lớp quyền áp cho CẢ
+        # view, mà trợ giảng vẫn phải GET và PATCH được buổi mình phụ.
+        if is_assistant(request.user):
+            return Response({'error': 'Trợ giảng không xoá được buổi học. '
+                                      'Nhờ giảng viên phụ trách lớp hoặc quản lý '
+                                      'học vụ xoá giúp.'}, status=403)
+
         marked = q1('SELECT COUNT(*) AS n FROM attendance WHERE session_id = %s',
                     (session_id,))
         n = int((marked or {}).get('n') or 0)
@@ -566,7 +578,7 @@ class SessionAttendanceView(APIView):
     biết còn ai chưa điểm danh — đúng việc mà máy chủ vừa làm xong và làm chính
     xác hơn, vì nó biết ai đã rời lớp.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def _load(self, request, session_id):
         row = _session_row(session_id)

@@ -32,7 +32,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now, local_today
 from common.db import q, q1
-from common.permissions import IsTeacherOrAdmin, can_see_class
+from common.permissions import IsSeniorTeachingStaff, can_see_class
 from stats import competency
 from teaching.attendance import ti_le
 from teaching.vocab import chi_hoc_vien, trang_thai
@@ -255,7 +255,11 @@ class ParentReportView(APIView):
     sinh PDF là thêm một phông chữ tiếng Việt phải cài trên Render, một khác
     biệt nữa giữa máy dev và production, và một chỗ nữa để hỏng.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    # `IsSeniorTeachingStaff`, KHÔNG phải cửa chung: tờ này in ra email và số điện
+    # thoại của học viên, và trợ giảng không được xem (anh Sơn chốt 01/09/2026 —
+    # §8 của đặc tả: càng nhiều vai trò thì càng nhiều người nhìn thấy dữ liệu
+    # của một đứa trẻ).
+    permission_classes = [IsSeniorTeachingStaff]
 
     def get(self, request, class_id, user_id):
         if not can_see_class(request.user, class_id):

@@ -30,7 +30,7 @@ from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, record_events
-from common.permissions import IsTeacherOrAdmin, can_see_class
+from common.permissions import IsTeachingStaff, can_see_class
 from teaching.vocab import chi_hoc_vien
 
 #: Vòng đời một bài tập. Khớp `assignments_status_check` ở §38.
@@ -247,7 +247,7 @@ def _load(request, assignment_id):
 
 class ClassAssignmentsView(APIView):
     """GET/POST /api/teach/classes/<class_id>/assignments."""
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
@@ -321,7 +321,7 @@ class ClassAssignmentsView(APIView):
 
 class AssignmentDetailView(APIView):
     """PATCH/DELETE /api/teach/assignments/<id>."""
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def patch(self, request, assignment_id):
         before = _load(request, assignment_id)
@@ -407,7 +407,7 @@ class AssignmentGradingView(APIView):
     điểm danh: giảng viên mở ra phải thấy ngay cả lớp, không phải tự đối chiếu
     hai danh sách trong đầu để biết ai còn thiếu.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, assignment_id):
         row = _load(request, assignment_id)
@@ -723,7 +723,7 @@ class AssignmentSubmissionView(APIView):
     ``chi_hoc_vien`` cũng phải giữ: thiếu nó thì giảng viên đọc được "bài làm"
     của chính tài khoản quản trị đang là thành viên lớp 1.
     """
-    permission_classes = [IsTeacherOrAdmin]
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, assignment_id, user_id):
         row = _load(request, assignment_id)

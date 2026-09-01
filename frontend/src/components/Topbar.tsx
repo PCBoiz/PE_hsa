@@ -56,6 +56,10 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
             <span className="nav-icon" data-icon="users" data-size="17"></span><span>Giảng dạy</span>
           </button>
 
+          <button className="nav-btn" id="nav-vanhanh" style={{ display: 'none' }} onClick={() => { window.location.href = '/quan-tri/tong-quan'; }} aria-label="Vận hành">
+            <span className="nav-icon" data-icon="shield" data-size="17"></span><span>Vận hành</span>
+          </button>
+
           <button className="nav-btn" id="nav-admin" style={{ display: 'none' }} onClick={() => { window.location.href = '/admin'; }} aria-label="Quản trị">
             <span className="nav-icon" data-icon="wrench" data-size="17"></span><span>Quản trị</span>
           </button>

@@ -2511,3 +2511,69 @@ lẫn `meeting_url` + `recording_url` của buổi. Test ĐỎ trên mã cũ: nh
 Lượt quét giao diện KHÔNG mở bảng sửa (nó nằm sau một cú bấm và cần một buổi có
 thật), nên 7 ô mới chưa được đo trực tiếp — chúng dùng đúng lớp CSS của các ô đã
 đo sạch. Ghi ra để lần sau không ai tưởng chúng đã nằm trong con số 0.
+
+### [x] Hai vai trò mới: Trợ giảng và Quản lý học vụ
+Đặc tả §10 cố ý HOÃN hai chức danh này ("chưa biết TopHSA có những chức danh
+nào"). Anh Sơn chốt 01/09/2026 và cố ý chọn bản **HẸP** — mở rộng một vai trò về
+sau dễ hơn thu hẹp lại, vì thu hẹp là lấy đi thứ người ta đã quen dùng.
+
+| | Làm được | KHÔNG làm được |
+|---|---|---|
+| **Trợ giảng** | Xem lớp ĐƯỢC GÁN, tạo/sửa buổi, điểm danh, giao bài & chấm | Xoá buổi · báo cáo phụ huynh |
+| **Quản lý học vụ** | Xem MỌI lớp, báo cáo trung tâm, quản lý lớp và đợt học | Đổi vai trò · đặt lại mật khẩu · báo cáo phụ huynh |
+
+Hai thứ trợ giảng không chạm đều có lý do cụ thể: xoá buổi kéo theo mọi dòng
+điểm danh của nó (`ON DELETE CASCADE`) — tức xoá luôn bằng chứng em nào đã đi
+học, thứ mà tờ giấy gửi phụ huynh đọc tới; còn báo cáo phụ huynh in ra **email và
+số điện thoại** của em (§8: càng nhiều vai trò thì càng nhiều người nhìn thấy dữ
+liệu của một đứa trẻ).
+
+**KHÔNG đổi lược đồ.** `class_members` vốn chứa được người không phải học viên —
+báo cáo lớp đã có sẵn câu *"1 tài khoản khác đang ở trong lớp nhưng không mang
+vai Học viên"* — nên trợ giảng gán vào lớp bằng đúng cơ chế đó. Và `chi_hoc_vien`
+lọc đúng `role = 'Học viên'`, nên hai vai trò mới **tự động** không lọt vào sĩ số,
+bảng điểm danh hay mẫu số tiến độ. Thiết kế cũ trả công.
+
+**Không đổi một dòng frontend nào.** Ô chọn vai trò đọc `ASSIGNABLE_ROLES` từ máy
+chủ và dùng `ROLE_LABEL[r] || r`; hai vai mới vốn đã là tiếng Việt. Đo lại: cả
+hai ô nay hiện đủ 5 vai theo bậc thang quyền.
+
+**Đổi tên `IsTeacherOrAdmin` → `IsTeachingStaff`** (21 chỗ). Giữ tên cũ là để lại
+một cái tên NÓI DỐI về thứ nó cho qua — nay nó nhận bốn vai trò (§20).
+
+**Lỗi đã mắc trong lúc làm, ghi lại vì nó sẽ tái diễn:** thêm hằng vào
+`ASSIGNABLE_ROLES` rồi tưởng xong, trong khi CSDL có `users_role_check` riêng.
+Câu báo lỗi là `users_role_check` — thứ không ai đọc ra được là "thiếu một dòng
+trong legacy_schema.sql". Nay §35 liệt kê đủ 5 vai và có chú thích nói hai nơi
+PHẢI khớp. Đã áp vào Neon (DDL thuần NỚI THÊM giá trị được phép; đo trước/sau:
+5 dòng `users`, phân bố vai trò y nguyên).
+
+Phép kiểm canh CẢ HAI chiều — làm được gì VÀ không làm được gì. Chỉ canh chiều
+"làm được" thì một lần nới tay sẽ đi qua mà không ai thấy. Đã tự kiểm: tháo chốt
+xoá buổi → test ĐỎ (403 → 409, tức trợ giảng lọt qua cổng quyền); phục hồi → xanh.
+
+**Một lỗ TÔI TỰ TẠO RA rồi tự tìm thấy.** Chặn trợ giảng xem báo cáo phụ huynh vì
+nó có email + số điện thoại — nhưng `progress.csv` có ĐÚNG hai cột ấy và vẫn để
+ngỏ, `attendance.csv` có email. Chặn một cửa mà bỏ cửa kia thì hàng rào chỉ là
+một câu tuyên bố.
+
+Ranh giới nay ghi rõ trong `permissions.py`: **nhìn được khi LÀM VIỆC, không MANG
+RA NGOÀI được.** Email vẫn hiện trên ba màn hình trợ giảng phải dùng (bảng điểm
+danh, bảng chấm bài, báo cáo lớp) vì `users.name` có thể rỗng và khi đó email là
+thứ duy nhất để biết đang tick cho em nào — chặn ở đó sẽ ra một hàng trắng không
+ai nhận ra là ai. Nhưng hai đường ĐƯA DỮ LIỆU RA KHỎI hệ thống thì cắt: báo cáo
+phụ huynh (403) và hai file CSV (`bo_cot_lien_lac`, bỏ cột chứ không chặn file —
+trợ giảng vẫn cần số chuyên cần lớp mình). Chú thích trong `exports.py` nói thẳng
+file đó "đi qua Zalo", tức nó rời tầm kiểm soát ngay khi ai bấm tải.
+
+### [x] Và một lỗ end-to-end: quyền mở mà KHÔNG CÓ ĐƯỜNG ĐI TỚI
+Máy chủ cho phép rồi mà thanh điều hướng không hiện nút thì bằng không.
+- `dashboard.js::gate()` chỉ hiện nút **Giảng dạy** cho `'Giảng viên'` và
+  `'admin'` → trợ giảng và học vụ đăng nhập vào không có đường tới lớp nào.
+- Khu **Vận hành** (`/quan-tri/*`) trước nay chỉ vào được qua trang `/admin`, mà
+  trang đó chỉ quản trị viên mở → quản lý học vụ có quyền quản lý lớp và đợt học
+  mà không có một đường nào đi tới. Thêm nút "Vận hành" (admin + học vụ).
+
+Đo bằng cách chặn `GET /api/user` rồi đổi ĐÚNG một trường `role` — không tạo tài
+khoản nào: trợ giảng thấy *Giảng dạy* · học vụ thấy *Giảng dạy + Vận hành* ·
+giảng viên và học viên không đổi. 0 lời gọi ghi.
