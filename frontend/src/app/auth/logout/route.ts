@@ -7,23 +7,13 @@
  * xoá được — và đó cũng là điểm mạnh: một đoạn script lạ trên trang không thể
  * đăng xuất người dùng, mà cũng không thể đọc trộm token.
  */
-import { RT, backendOrigin, clearTokenCookies } from '@/lib/auth';
+import { RT, backendOrigin, clearTokenCookies, docCookie } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-function readCookie(req: Request, name: string): string | null {
-  const raw = req.headers.get('cookie');
-  if (!raw) return null;
-  for (const part of raw.split(';')) {
-    const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return null;
-}
-
 async function handle(req: Request): Promise<Response> {
-  const refresh = readCookie(req, RT);
+  const refresh = docCookie(req, RT);
 
   // Thu hồi refresh token ở backend — cố gắng, nhưng hỏng cũng vẫn đăng xuất:
   // người bấm "đăng xuất" phải luôn được đăng xuất, kể cả lúc backend đang ngủ.

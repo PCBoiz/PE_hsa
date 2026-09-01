@@ -7,7 +7,7 @@
  * ({ok, name, needs_questionnaire}) giữ nguyên — `main.js` cũ chỉ đọc chừng đó
  * nên không phải sửa gì.
  */
-import { RT, backendOrigin, refreshTokens, setTokenCookies } from '@/lib/auth';
+import { RT, backendOrigin, docCookie, refreshTokens, setTokenCookies } from '@/lib/auth';
 import { proxyToBackend } from '@/lib/proxy';
 
 export const dynamic = 'force-dynamic';
@@ -28,23 +28,13 @@ type Ctx = { params: Promise<{ path: string[] }> };
  *  thể. Token OAuth về frontend qua `/auth/callback#access=…` (fragment). */
 const ISSUES_TOKENS = new Set(['login']);
 
-function readCookie(req: Request, name: string): string | null {
-  const raw = req.headers.get('cookie');
-  if (!raw) return null;
-  for (const part of raw.split(';')) {
-    const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return null;
-}
-
 async function handle(req: Request, ctx: Ctx): Promise<Response> {
   const { path } = await ctx.params;
   const seg = path.join('/');
 
   // ── /auth/refresh: refresh token nằm trong cookie, không nằm ở thân request ──
   if (seg === 'refresh') {
-    const refresh = readCookie(req, RT);
+    const refresh = docCookie(req, RT);
     const fresh = refresh ? await refreshTokens(refresh) : null;
     if (!fresh || !fresh.ok) {
       // Phân biệt hai chuyện: 401 nghĩa là "đăng nhập lại đi", còn 503 nghĩa là

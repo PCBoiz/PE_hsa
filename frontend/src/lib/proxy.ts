@@ -11,7 +11,7 @@
  * trình duyệt và có lúc đá người dùng ra ngoài oan khi hai lời gọi refresh
  * chạy song song.
  */
-import { AT, RT, backendOrigin, refreshTokens, setTokenCookies } from '@/lib/auth';
+import { AT, RT, backendOrigin, docCookie, refreshTokens, setTokenCookies } from '@/lib/auth';
 
 /** Header không được chuyển tiếp: do fetch/hạ tầng tự quản. */
 const STRIP = new Set([
@@ -52,16 +52,6 @@ function forwardHeaders(req: Request, access: string | null): Headers {
   const proto = req.headers.get('x-forwarded-proto') || 'https';
   h.set('X-Forwarded-Proto', proto);
   return h;
-}
-
-function readCookie(req: Request, name: string): string | null {
-  const raw = req.headers.get('cookie');
-  if (!raw) return null;
-  for (const part of raw.split(';')) {
-    const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return null;
 }
 
 /** Response giữ nguyên thân + kiểu nội dung, bỏ header hạ tầng của Django. */
@@ -125,7 +115,7 @@ export async function proxyToBackend(
   const body =
     req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer();
 
-  const access = readCookie(req, AT);
+  const access = docCookie(req, AT);
   let upstream = await fetch(target, {
     method: req.method,
     headers: forwardHeaders(req, access),
@@ -137,7 +127,7 @@ export async function proxyToBackend(
   // ── Access hết hạn → đổi refresh lấy cái mới, phát lại đúng MỘT lần ──
   let fresh: { access: string; refresh?: string } | null = null;
   if (upstream.status === 401) {
-    const refresh = readCookie(req, RT);
+    const refresh = docCookie(req, RT);
     if (refresh) {
       const kq = await refreshTokens(refresh);
       fresh = kq.ok ? { access: kq.access, refresh: kq.refresh } : null;

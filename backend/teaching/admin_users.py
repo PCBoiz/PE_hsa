@@ -39,6 +39,7 @@ from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
+from common.params import doc_trang
 from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
@@ -71,22 +72,8 @@ MAX_PARSE_LINES = 1000
 # ── Trợ giúp chung ──────────────────────────────────────────────────────────
 
 def _paging(params, default_per_page, max_per_page):
-    """Đọc ``page``/``per_page`` từ query string → (page, per_page, offset).
-
-    Tham số rác (``page=abc``, ``per_page=-3``, ``per_page=100000``) được kéo về
-    khoảng hợp lệ chứ không trả 400: đây là tham số của thanh phân trang, người
-    dùng không gõ tay: một liên kết cũ hay một lần sửa URL nhầm mà làm hỏng cả
-    màn hình quản trị thì lỗi nằm ở phía ta.
-    """
-    def _num(name, fallback):
-        try:
-            return int(params.get(name) or fallback)
-        except (TypeError, ValueError):
-            return fallback
-
-    page = max(1, _num('page', 1))
-    per_page = max(1, min(max_per_page, _num('per_page', default_per_page)))
-    return page, per_page, (page - 1) * per_page
+    """Bọc mỏng quanh `common.params.doc_trang` — giữ tên cũ cho 6 chỗ đang gọi."""
+    return doc_trang(params, default_per_page, max_per_page)
 
 
 def _like(term):
@@ -451,6 +438,54 @@ def _check_row(cand, by_email, by_phone, seen_email, seen_phone):
     return name, email, phone, None
 
 
+def _cham_tung_dong(cands, by_email, by_phone, dry_run, truncated):
+    """Chấm điểm từng dòng, CHƯA GHI GÌ → ``(rows, to_create, skipped, warnings,
+    too_many)``.
+
+    Tách khỏi `AdminBulkCreateUsersView.post` (T24, 01/09/2026) vì đây là phần
+    THUẦN của một hàm 180 dòng, và cũng là chỗ đã đẻ ra lỗi đắt nhất của cả khối:
+    câu kiểm TRẦN từng nằm SAU nhánh `if dry_run`, nên trợ giảng dán 60 dòng,
+    bấm "Kiểm tra trước", màn hình báo "sẽ tạo 60 tài khoản", bấm "Tạo" — rồi
+    mới nhận lời từ chối. Bất ngờ rơi đúng vào bước mà bản xem trước sinh ra để
+    bảo vệ.
+
+    Thứ tự ấy giờ nằm trong một hàm thuần, gọi được thẳng từ phép kiểm mà không
+    phải dựng cả một request.
+    """
+    seen_email, seen_phone = {}, {}
+    rows, to_create = [], []
+    for cand in cands:
+        name, email, phone, reason = _check_row(cand, by_email, by_phone,
+                                                seen_email, seen_phone)
+        entry = {'line': cand['line'], 'name': name or None,
+                 'email': email, 'phone': phone}
+        if reason:
+            rows.append(dict(entry, status='skipped', reason=reason))
+            continue
+        if email:
+            seen_email[email] = cand['line']
+        if phone:
+            seen_phone[phone] = cand['line']
+        rows.append(dict(entry, status='created',
+                         reason='Hợp lệ — sẽ cấp tài khoản.' if dry_run else None))
+        to_create.append((rows[-1], name, email, phone))
+
+    skipped = sum(1 for r in rows if r['status'] == 'skipped')
+    warnings = []
+    if truncated:
+        warnings.append('Danh sách dài hơn %d dòng nên phần còn lại CHƯA được đọc. '
+                        'Dán nốt phần sau ở lần tiếp theo.' % MAX_PARSE_LINES)
+
+    # Trần tính Ở ĐÂY, tức TRƯỚC mọi nhánh trả lời — xem docstring.
+    too_many = len(to_create) > MAX_CREATE_PER_BATCH
+    if too_many:
+        warnings.append(
+            'Danh sách có %d dòng hợp lệ, vượt trần %d mỗi lần. Giữ lại %d dòng '
+            'đầu rồi dán phần còn lại ở mẻ sau.'
+            % (len(to_create), MAX_CREATE_PER_BATCH, MAX_CREATE_PER_BATCH))
+    return rows, to_create, skipped, warnings, too_many
+
+
 class AdminBulkCreateUsersView(APIView):
     """POST /api/admin/users/bulk — cấp tài khoản cho cả một danh sách.
 
@@ -526,45 +561,8 @@ class AdminBulkCreateUsersView(APIView):
             {norm_email(c['email']) for c in cands if norm_email(c['email'])},
             {norm_phone(c['phone']) for c in cands if norm_phone(c['phone'])})
 
-        # ── Vòng 1: chấm điểm từng dòng, chưa ghi gì ──
-        seen_email, seen_phone = {}, {}
-        rows, to_create = [], []
-        for cand in cands:
-            name, email, phone, reason = _check_row(cand, by_email, by_phone,
-                                                    seen_email, seen_phone)
-            entry = {'line': cand['line'], 'name': name or None,
-                     'email': email, 'phone': phone}
-            if reason:
-                rows.append(dict(entry, status='skipped', reason=reason))
-                continue
-            if email:
-                seen_email[email] = cand['line']
-            if phone:
-                seen_phone[phone] = cand['line']
-            rows.append(dict(entry, status='created',
-                             reason='Hợp lệ — sẽ cấp tài khoản.' if dry_run else None))
-            to_create.append((rows[-1], name, email, phone))
-
-        skipped = sum(1 for r in rows if r['status'] == 'skipped')
-        warnings = []
-        if truncated:
-            warnings.append('Danh sách dài hơn %d dòng nên phần còn lại CHƯA được đọc. '
-                            'Dán nốt phần sau ở lần tiếp theo.' % MAX_PARSE_LINES)
-
-        # Tính trần TRƯỚC nhánh xem trước, không phải sau.
-        #
-        # Bản đầu đặt câu kiểm này sau `if dry_run` (phát hiện khi kiểm chứng
-        # 30/08/2026): trợ giảng dán 60 dòng, bấm "Kiểm tra trước", màn hình báo
-        # "sẽ tạo 60 tài khoản", bấm "Tạo" — rồi mới nhận lời từ chối. Bất ngờ
-        # rơi đúng vào bước mà bản xem trước sinh ra để bảo vệ.
-        # Xem trước vẫn trả 200 kèm đủ từng dòng: người dùng cần thấy dòng nào
-        # hỏng VÀ cần cắt ở đâu, chứ không phải một câu lỗi trống rỗng.
-        too_many = len(to_create) > MAX_CREATE_PER_BATCH
-        if too_many:
-            warnings.append(
-                'Danh sách có %d dòng hợp lệ, vượt trần %d mỗi lần. Giữ lại %d dòng '
-                'đầu rồi dán phần còn lại ở mẻ sau.'
-                % (len(to_create), MAX_CREATE_PER_BATCH, MAX_CREATE_PER_BATCH))
+        rows, to_create, skipped, warnings, too_many = _cham_tung_dong(
+            cands, by_email, by_phone, dry_run, truncated)
 
         if dry_run:
             # Không một lệnh ghi nào chạy tới đây. Tổng cộng đúng 1–2 câu SQL cho

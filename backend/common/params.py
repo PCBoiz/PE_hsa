@@ -35,3 +35,22 @@ def so_nguyen(raw, mac_dinh, lo=None, hi=None):
     if hi is not None:
         gia_tri = min(hi, gia_tri)
     return gia_tri
+
+
+def doc_trang(params, mac_dinh_moi_trang, tran_moi_trang):
+    """``page``/``per_page`` từ query string → ``(page, per_page, offset)``.
+
+    Tham số rác (``page=abc``, ``per_page=-3``, ``per_page=100000``) được KẸP về
+    khoảng hợp lệ chứ không trả 400: đây là tham số của thanh phân trang, người
+    dùng không gõ tay. Một liên kết cũ hay một lần sửa URL nhầm mà làm hỏng cả
+    màn hình thì lỗi nằm ở phía ta.
+
+    GOM 01/09/2026 (T20): trước đó có hai bản — `forum/views._paging` (nhận
+    `request`, trần cứng 50) và `teaching/admin_users._paging` (nhận `params`,
+    trần truyền vào, tự viết lại khối try/except mà `so_nguyen` ngay trên đã
+    làm). Hai bản của một phép đọc phân trang là hai bản sẽ trôi — và cái trôi
+    ở đây là TRẦN, tức là bao nhiêu dòng một lượt tới Neon phải bốc về.
+    """
+    page = so_nguyen(params.get('page'), 1, 1, None)
+    per_page = so_nguyen(params.get('per_page'), mac_dinh_moi_trang, 1, tran_moi_trang)
+    return page, per_page, (page - 1) * per_page

@@ -918,3 +918,65 @@ def test_bang_cham_chi_gui_DOAN_DAU_bai_lam(lop):
     assert cam.status_code == 404, (
         'giảng viên lớp khác phải nhận 404 (không phải 403 — 403 là tự thú nhận '
         'bài đó có tồn tại): %s' % cam.status_code)
+
+
+@pytest.mark.django_db
+def test_diem_danh_bao_HET_dong_hong_mot_lan(lop):
+    """T24 · Gửi lên nhiều dòng hỏng thì phải biết HẾT trong một lần.
+
+    Bản cũ có bốn điểm `return 400` nằm giữa vòng lặp: giảng viên tick 30 em,
+    dòng 25 sai một chữ trạng thái thì nhận đúng một câu — không nói dòng nào —
+    và không dòng nào được lưu. Sửa xong dòng ấy gửi lại mới lộ ra dòng 28 cũng
+    sai, và cứ thế từng vòng một, trong khi cả lớp đang đứng chờ.
+    """
+    from datetime import timedelta
+
+    from teaching.sessions import SessionAttendanceView
+    nay = local_now()
+    s = q1("INSERT INTO class_sessions (class_id, starts_at, status, created_by) "
+           "VALUES (%s,%s,'planned',%s) RETURNING id",
+           (lop['id'], nay - timedelta(hours=1), lop['gv'].id))
+    a, b = lop['hv'][0], lop['hv'][1]
+
+    kq = _goi(SessionAttendanceView, 'post', {'marks': [
+        {'user_id': a.id, 'status': 'present'},        # đúng
+        {'user_id': b.id, 'status': 'co_mat'},         # sai trạng thái
+        {'user_id': 'abc', 'status': 'present'},       # sai user_id
+        {'user_id': a.id, 'status': 'present', 'minutes': 'nhieu'},  # sai minutes
+    ]}, ai=lop['gv'], session_id=s['id'])
+
+    assert kq.status_code == 400, kq.data
+    dong = {r['dong'] for r in kq.data['rows']}
+    assert dong == {1, 2, 3}, (
+        'phải báo HẾT ba dòng hỏng trong một lần, kèm số thứ tự: %s' % kq.data)
+
+    # Và KHÔNG lưu một phần: điểm danh là bản ghi của cả buổi.
+    assert q1('SELECT count(*) n FROM attendance WHERE session_id=%s', (s['id'],))['n'] == 0, (
+        'có lỗi thì không được lưu dòng nào — nửa danh sách đã tick không phân '
+        'biệt được với một buổi giảng viên tick dở rồi bỏ')
+
+
+@pytest.mark.django_db
+def test_xem_truoc_da_bao_VUOT_TRAN_chu_khong_doi_toi_luc_bam_tao(db):
+    """T24 · Trần phải kiểm TRƯỚC nhánh xem trước, không phải sau.
+
+    Lỗi đã xảy ra thật (phát hiện 30/08/2026): trợ giảng dán 60 dòng, bấm "Kiểm
+    tra trước", màn hình báo "sẽ tạo 60 tài khoản", bấm "Tạo" — rồi mới nhận lời
+    từ chối. Bất ngờ rơi đúng vào bước mà bản xem trước sinh ra để bảo vệ.
+
+    Gọi thẳng hàm THUẦN, không dựng request: thứ cần canh ở đây là THỨ TỰ, và
+    thứ tự thì không cần một vòng HTTP để kiểm.
+    """
+    from teaching.admin_users import MAX_CREATE_PER_BATCH, _cham_tung_dong
+    n = MAX_CREATE_PER_BATCH + 10
+    cands = [{'line': i, 'name': 'Em %d' % i, 'email': 'tran_%d@example.com' % i,
+              'phone': None} for i in range(n)]
+
+    for dry_run in (True, False):
+        _, to_create, _, warnings, too_many = _cham_tung_dong(
+            cands, {}, {}, dry_run, truncated=False)
+        assert len(to_create) == n, len(to_create)
+        assert too_many is True, 'quá trần mà không nhận ra (dry_run=%s)' % dry_run
+        assert any('vượt trần' in w for w in warnings), (
+            'bản XEM TRƯỚC phải nói ra ngay là sẽ bị từ chối, chứ không để người '
+            'ta bấm Tạo rồi mới biết (dry_run=%s): %s' % (dry_run, warnings))

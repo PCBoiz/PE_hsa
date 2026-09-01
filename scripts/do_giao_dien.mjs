@@ -53,6 +53,10 @@ const TRANG = [
   ['/quan-tri/dot-hoc', 'Quản trị · đợt học'],
   ['/quan-tri/nhat-ky', 'Quản trị · nhật ký'],
   ['/doi-mat-khau', 'Đổi mật khẩu'],
+  /* Khu GIẢNG DẠY. Cần một lớp có thật; `1` là lớp duy nhất đang có. Ba màn này
+     giảng viên mở mỗi buổi, và trước 01/09/2026 chưa lượt quét nào chạm tới. */
+  ['/giang-day/buoi-hoc/1', 'Giảng dạy · buổi học'],
+  ['/giang-day/bai-tap/1', 'Giảng dạy · bài tập'],
 ];
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét

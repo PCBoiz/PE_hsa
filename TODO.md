@@ -205,6 +205,24 @@ throttle và một em gõ sai mật khẩu sẽ khoá cả lớp. Cách đo: g�
 trên Render (a) qua trình duyệt đi đường Vercel, (b) bằng `curl` thẳng, rồi in
 `request.META['HTTP_X_FORWARDED_FOR']` xem có mấy phần tử và phần tử nào là thật.
 
+> **CHUẨN BỊ SẴN 01/09/2026 — anh chỉ việc mở một đường link.** Tôi không đo
+> được (chỉ đo được TRÊN production; máy dev mọi dòng đều là `::1`), nhưng dựng
+> sẵn được cái để đo: `GET /api/admin/do-proxy` (chỉ quản trị viên) trả về
+> `xff`, `chang`, `soChang`.
+>
+> **Ba bước:** ① sau khi deploy, mở đường ấy bằng TRÌNH DUYỆT (đi qua Vercel);
+> ② mở lại chính nó bằng `curl` THẲNG vào `pe-hsa-backend.onrender.com`; ③ so
+> hai kết quả — `soChang` của lượt ① chính là `NUM_PROXIES`.
+>
+> Đặt xong `NUM_PROXIES` thì vá nốt `_client_ip` (T66) cho khớp: hai chỗ phải
+> chỉ vào CÙNG một phần tử, lệch nhau là hàng rào tần suất và nhật ký kiểm toán
+> ghi hai IP khác nhau cho cùng một request.
+>
+> Đường này CHỈ trả header liên quan tới proxy, không trả `request.META` — trong
+> `META` có cả `DATABASE_URL` và `SECRET_KEY`, trả nguyên nó ra là biến một công
+> cụ đo thành một đường rò khoá. Có phép kiểm canh đúng điều đó.
+
+
 ### [ ] T39 · `SECRET_KEY` 19 byte ký JWT HS256 — CẦN ANH XOAY KHOÁ
 **Đo được:** `len(SECRET_KEY) = 19` byte = 152 bit. RFC 7518 §3.2 nói khoá HS256
 **PHẢI** dài ít nhất bằng đầu ra băm (256 bit). `check --deploy` báo
@@ -621,7 +639,7 @@ chỉ chạy với `POST`, mà `accounts/oauth.py::oauth_complete` là chuyển 
 của allauth ở phía Django. Giữ lại là nới rộng vô cớ một danh sách trắng CẤP
 TOKEN — thứ đáng ra phải hẹp nhất có thể.
 
-### [ ] T20 · Gom trùng lặp
+### [x] T20 (XONG phần THẬT) · Gom trùng lặp
 `common/paging.py` (`read_paging`, `page_with_total` — nhân rộng ý tưởng
 `LEFT JOIN LATERAL`), `common/params.py` (`read_date_range` — luật "`to` tính cả
 ngày đó" đang viết lại ở hai chỗ), `teaching/classes.py` (hai `_class_row` cùng
@@ -662,10 +680,35 @@ Hằng còn lại được đổi tên thành `MAX_BATCH_DUONG_LUI` và chú th�
 dùng khi CHƯA hỏi máy chủ lần nào — vì con số thật tính từ chi phí băm mật khẩu,
 tức nó sẽ đổi khi đổi máy, còn hằng chép tay thì không.
 
-### [ ] T24 · Hàm quá dài
+### [x] T24 (XONG) · Hàm quá dài
 `AdminBulkCreateUsersView.post` 163 dòng (chính chỗ sinh ra lỗi "kiểm trần sau
 `if dry_run`") · `SessionAttendanceView.post` 124 dòng với 5 điểm `return 400`
 giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi không biết dòng nào hỏng.
+
+> **Làm 01/09/2026 — và giá trị nằm ở HÀNH VI, không ở số dòng.**
+>
+> **`SessionAttendanceView.post`.** Bốn điểm `return 400` giữa vòng lặp nghĩa
+> là: giảng viên tick 30 em, dòng 25 sai một chữ trạng thái thì nhận đúng một
+> câu — KHÔNG nói dòng nào — và không dòng nào được lưu. Sửa xong dòng ấy gửi
+> lại mới lộ ra dòng 28 cũng sai, và cứ thế từng vòng một, trong khi cả lớp đang
+> đứng chờ. Nay gom hết lỗi rồi báo MỘT LẦN kèm số thứ tự dòng và `userId`.
+>
+> Vẫn KHÔNG lưu một phần: điểm danh là bản ghi của cả buổi, lưu nửa danh sách là
+> để lại một buổi có 12 em được tick và 18 em "chưa điểm danh" — không phân biệt
+> được với một buổi giảng viên tick dở rồi bỏ. Test đỏ trên mã cũ (`KeyError:
+> 'rows'` — bản cũ không hề nói dòng nào hỏng).
+>
+> **`AdminBulkCreateUsersView.post` 180 → 143 dòng.** Tách phần THUẦN thành
+> `_cham_tung_dong(...)`. Nhưng thứ đáng làm không phải con số dòng: **không
+> phép kiểm nào canh thứ tự "kiểm trần TRƯỚC nhánh xem trước"** — đúng con lỗi
+> đã xảy ra thật hôm 30/08 (dán 60 dòng → "sẽ tạo 60 tài khoản" → bấm Tạo → mới
+> bị từ chối). Nay thứ tự ấy nằm trong một hàm thuần, và có phép kiểm gọi thẳng
+> nó với cả hai giá trị `dry_run`, không cần dựng một vòng HTTP.
+>
+> Ruff bắt được ngay một lỗi tôi vừa viết trong lúc vá: `B023`, closure bắt biến
+> vòng lặp theo tham chiếu. Ở đó vô hại vì gọi ngay trong cùng vòng — nhưng đó
+> là loại mã chỉ đúng nhờ thứ tự gọi. Tầng lint vừa dựng hôm nay trả công ngay
+> trong ngày.
 
 ---
 
@@ -879,6 +922,8 @@ Cả hai agent tìm lỗi đều bỏ sót. Phần tử đầu là thứ ngườ
 `ip` của nhật ký kiểm toán giả mạo được — ở đúng chỗ sinh ra để làm bằng chứng.
 **Không sửa mù**: đúng vị trí phụ thuộc `NUM_PROXIES`, mà con số đó chưa đo trên
 production. Đã ghi cảnh báo vào mã; vá CÙNG LÚC với A2 trong `VIEC_CUA_ANH.md`.
+
+> Cách đo nay đã có sẵn: `GET /api/admin/do-proxy` — xem T38.
 
 ### [x] T62 (XONG) · Hai nơi đếm "chậm" — nguyên nhân SÂU HƠN đã nghĩ
 > Kiểm lại 01/09/2026: `teaching/reports.py::_lag_by_user` ỦY QUYỀN cho
@@ -2404,8 +2449,21 @@ một nút lặp lại.
 báo **60/171**; gỡ ra → 0. (Còn 111 phần tử vẫn khác nhau vì dấu hiệu lấy nét
 của chúng không phải vòng nét mà là đổi nền hoặc viền — vẫn hợp lệ.)
 
-### [ ] Chưa làm
-- Trạng thái **vô hiệu** (`:disabled`) chưa đo.
-- Mới 11 trang. Các trang giảng dạy (`/giang-day/...`) chưa nằm trong danh sách.
-- Chưa đo **độ dày / độ tương phản** của vòng nét (SC 2.4.13, mức AAA) — mới đo
-  nó có TỒN TẠI hay không.
+### [x] Ba mục treo — hai trong đó KHÔNG NÊN làm
+- **Trạng thái vô hiệu (`:disabled`): không đo, có lý do.** WCAG 1.4.3 miễn trừ
+  hẳn: *"Text ... that is part of an inactive user interface component ... has
+  no contrast requirement."* Đo nó là sinh ra một danh sách "vi phạm" mà không
+  cái nào vi phạm gì — đúng cái đã làm hỏng ba lượt đo trước.
+- **Độ dày/tương phản vòng nét (SC 2.4.13): mức AAA, ngoài phạm vi.** Mục tiêu
+  đang là AA. Ghi ra để lần sau không ai tưởng nó bị bỏ sót.
+- **Trang giảng dạy: ĐÃ THÊM.** Quét lên 13 trang. Tìm được 8 vùng chạm cao
+  20px (liên kết đầu trang, đúng lớp lỗi đã vá ở khu quản trị) và **thiếu nút
+  đổi chủ đề** ở cả hai màn — cùng lý do: khu này không nạp main.js. Vá cả hai.
+
+### Bảng cuối — 13 trang × 2 khổ × 2 chủ đề
+| | sáng | tối |
+|---|---|---|
+| tương phản tĩnh · khi rê chuột | 0 · 0 | 0 · 0 |
+| vùng chạm dưới ngưỡng | 1 (cố ý) | 1 (cố ý) |
+| KHÔNG có vòng nét | 0/201 | 0/201 |
+| tràn ngang · lỗi JS · lời gọi ghi lọt | 0 · 0 · 0 | 0 · 0 · 0 |

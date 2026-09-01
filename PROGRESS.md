@@ -2328,3 +2328,38 @@ kể cả ở ô mật khẩu. Và **bản sao thứ BA** của thanh điều h�
 
 224 phép kiểm backend xanh · eslint 0 · tsc 0 · giao diện 0·0·0·0/181 hai chủ đề.
 TODO còn 10 mục mở, 5 trong đó chờ anh hoặc chờ ngưỡng người dùng.
+
+## 01/09/2026 (tiếp) · T20, T24, T68, T18 — và TODO cạn phần tôi làm được
+
+**T20 · gom trùng lặp — nhưng hai mục trong danh sách KHÔNG phải trùng lặp.**
+`readCookie` ba bản y hệt từng ký tự (proxy, `/auth/*`, logout) → gom về
+`lib/auth.docCookie`; đã thử đường thật (`POST /auth/refresh` → 200 và xoay cả
+hai cookie, `GET /auth/logout` → 303). `_paging` hai bản khác chữ ký → gom về
+`common.params.doc_trang`. Nhưng `_class_row` × 2 là trùng TÊN chứ không trùng
+mã — hai hàm trả bộ cột khác nhau cho việc khác nhau, và trùng tên còn nguy hơn:
+người đọc thấy tên quen rồi thôi không mở ra xem. Đổi tên cho đúng việc. Còn
+`type Payload` × 4 thì là bốn kiểu KHÁC NHAU, mỗi cái cục bộ một trang — không
+phải bản chép.
+
+**T24 · giá trị nằm ở HÀNH VI, không ở số dòng.** Điểm danh có bốn điểm
+`return 400` giữa vòng lặp: giảng viên tick 30 em, dòng 25 sai một chữ thì nhận
+đúng một câu không nói dòng nào, sửa xong gửi lại mới lộ ra dòng 28 — từng vòng
+một, trong khi cả lớp đứng chờ. Nay gom hết lỗi báo một lần kèm số dòng. Và cấp
+tài khoản hàng loạt: **không phép kiểm nào canh thứ tự "kiểm trần TRƯỚC nhánh
+xem trước"** — đúng con lỗi đã xảy ra thật hôm 30/08. Nay thứ tự ấy nằm trong
+một hàm thuần, có phép kiểm gọi thẳng.
+
+Ruff bắt được ngay một lỗi tôi vừa viết trong lúc vá (`B023` — closure bắt biến
+vòng lặp). Tầng lint dựng sáng nay trả công ngay trong ngày.
+
+**T68 · bảng chấm** gửi 400 ký tự đầu, tải đủ khi bấm xem. **T18 mức 1** · phép
+kiểm hợp đồng hình dạng JSON, tự kiểm đỏ được cả hai chiều.
+
+**Và T38/T66:** tôi không đo được `NUM_PROXIES` (chỉ đo được trên production),
+nhưng dựng sẵn `GET /api/admin/do-proxy` để anh đo bằng một lần mở link — đúng
+lối anh đã chốt cho B12/Redis. Đường ấy CHỈ trả header proxy, không trả
+`request.META` (trong đó có `DATABASE_URL`, `SECRET_KEY`), và có phép kiểm canh.
+
+**TODO còn 5 mục — tất cả đều chờ anh hoặc chờ ngưỡng người dùng:** xoay
+`SECRET_KEY` (T39) · bật Redis (T40) · đo `NUM_PROXIES` rồi vá `_client_ip`
+(T38+T66, đã có sẵn đường đo) · Elo khi đủ 100 học viên (N1).

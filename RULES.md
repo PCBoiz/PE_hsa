@@ -56,15 +56,37 @@ Trước khi báo xong một task:
 
 ```bash
 cd backend  && ./.venv/Scripts/python.exe manage.py check
-cd backend  && ruff check .
-cd frontend && npx --yes pnpm@11.12.0 build          # gồm cả tsc
-cd frontend && npx --yes pnpm@11.12.0 exec eslint src --max-warnings 0
+cd backend  && ./.venv/Scripts/python.exe -m ruff check .
+cd frontend && npx --yes pnpm@11.12.0 build            # gồm cả tsc
+cd frontend && npx --yes pnpm@11.12.0 lint             # = eslint --max-warnings 0
 cd frontend && for f in public/static/js/*.js public/static/js/pages/*.js; do node --check "$f"; done
 ```
 
 Dòng cuối không thừa: 15 tệp JS thuần trong `public/static` **không đi qua
 bundler**, nên `next build` chưa bao giờ đọc tới. Một lỗi cú pháp ở đó lên
 thẳng production và đã từng làm chết cả trang quản trị.
+
+`pnpm lint` chứ KHÔNG `eslint src` (sửa 01/09/2026): hai câu ấy quét hai phạm vi
+khác nhau, và `src` bỏ qua đúng 15 tệp nói trên. Nay CI chạy CÙNG một câu.
+
+`ruff` có cấu hình thật từ 01/09/2026 (`backend/pyproject.toml`), trước đó lệnh
+này chạy với mặc định của công cụ. Bộ luật chọn theo thứ đã từng sai thật ở đây,
+và mỗi luật TẮT đều kèm một câu vì sao — một luật tắt không lý do là một luật sẽ
+có người bật lại rồi lại tắt.
+
+**Hai cổng nữa, thêm 01/09/2026:**
+
+```bash
+# Hợp đồng hình dạng JSON — bắt việc đổi tên khoá, thứ tsc không thấy
+cd backend && ./.venv/Scripts/python.exe -m pytest common/tests_hop_dong.py -q
+
+# Giao diện. CHẠY --tu-kiem TRƯỚC, luôn luôn: bộ đo này đã nói dối 12 lần,
+# ba lần trong đó là báo 0 trong khi lỗi có thật.
+node scripts/do_giao_dien.mjs --tu-kiem            # phải ĐẠT (~1250)
+node scripts/do_giao_dien.mjs --toi --tu-kiem      # phải ĐẠT (~1296)
+node scripts/do_giao_dien.mjs --trang-thai
+node scripts/do_giao_dien.mjs --toi --trang-thai
+```
 
 ## 5. CSDL production — chạm tối thiểu
 

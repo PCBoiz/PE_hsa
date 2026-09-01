@@ -46,6 +46,28 @@ export const AT_MAX_AGE = 30 * 60;
 export const RT_MAX_AGE = 8 * 60 * 60;
 
 /** Đọc access token phía máy chủ (Server Component, route handler). */
+/**
+ * Đọc một cookie ra khỏi `Request` — dùng ở tầng máy chủ Next.
+ *
+ * Khác `readAccess`/`readRefresh` ngay dưới: hai hàm ấy đọc từ kho cookie của
+ * Next (`cookies()`), chỉ dùng được trong Server Component / Route Handler đã
+ * có ngữ cảnh. Hàm này đọc thẳng từ HEADER của một `Request` cụ thể, tức dùng
+ * được cả ở chỗ đang cầm request trên tay (proxy, route `/auth/*`).
+ *
+ * GOM 01/09/2026: ba bản chép tay y hệt nhau ở `lib/proxy.ts`,
+ * `auth/[...path]/route.ts` và `auth/logout/route.ts` (T20). Ba bản của một
+ * hàm đọc cookie là ba bản sẽ trôi — mà cookie ở đây giữ token phiên.
+ */
+export function docCookie(req: Request, ten: string): string | null {
+  const raw = req.headers.get('cookie');
+  if (!raw) return null;
+  for (const phan of raw.split(';')) {
+    const i = phan.indexOf('=');
+    if (i > 0 && phan.slice(0, i).trim() === ten) return phan.slice(i + 1).trim();
+  }
+  return null;
+}
+
 export async function readAccess(): Promise<string | null> {
   const jar = await cookies();
   return jar.get(AT)?.value ?? null;

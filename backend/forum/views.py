@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.db import q, q1, x
-from common.params import so_nguyen
+from common.params import doc_trang
 from common.permissions import is_admin
 from notifications.service import notify
 
@@ -140,9 +140,8 @@ def _toggle_reaction(table, id_col, parent_table, row_id, reaction, uid):
 
 
 def _paging(request):
-    page = so_nguyen(request.query_params.get('page'), 1, 1, None)
-    per_page = so_nguyen(request.query_params.get('per_page'), 10, 1, 50)
-    return page, per_page, (page - 1) * per_page
+    """Bọc mỏng quanh `common.params.doc_trang` — diễn đàn nhận `request`."""
+    return doc_trang(request.query_params, 10, 50)
 
 
 def _can_modify(table, row_id, user):

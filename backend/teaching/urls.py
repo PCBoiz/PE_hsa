@@ -1,5 +1,6 @@
 from django.urls import path
 
+from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
@@ -73,4 +74,7 @@ urlpatterns = [
 
     # ── Nhật ký kiểm toán (đặc tả ERP §9, khối 5) ──
     path('api/admin/audit', admin_users.AdminAuditView.as_view()),
+    # ĐO số chặng proxy — thứ duy nhất còn thiếu để đóng T38 và T66.
+    # Chỉ quản trị viên, chỉ trả header liên quan tới proxy. Xem common/do_proxy.py.
+    path('api/admin/do-proxy', do_proxy.DoProxyView.as_view()),
 ]

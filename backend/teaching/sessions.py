@@ -177,7 +177,7 @@ def _sql_values(cols):
 
 # ── Truy vấn dùng chung ────────────────────────────────────────────────────
 
-def _class_row(class_id):
+def _lop_kem_si_so(class_id):
     """Lớp + sĩ số đang học trong MỘT câu (subselect thay cho một lượt Neon nữa)."""
     return q1('''SELECT c.id, c.code, c.name, c.course_id, c.meeting_url, c.schedule,
                         (SELECT COUNT(*) FROM class_members m
@@ -320,7 +320,7 @@ class ClassSessionsView(APIView):
         if not can_see_class(request.user, class_id):
             # 404 chứ không 403: không tiết lộ lớp đó có tồn tại hay không.
             return Response(_NOT_FOUND_CLASS, status=404)
-        info = _class_row(class_id)
+        info = _lop_kem_si_so(class_id)
         if not info:
             return Response(_NOT_FOUND_CLASS, status=404)
 
@@ -380,7 +380,7 @@ class ClassSessionsView(APIView):
     def post(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response(_NOT_FOUND_CLASS, status=404)
-        info = _class_row(class_id)
+        info = _lop_kem_si_so(class_id)
         if not info:
             return Response(_NOT_FOUND_CLASS, status=404)
 
@@ -658,24 +658,49 @@ class SessionAttendanceView(APIView):
             'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
             (row['class_id'],))}
 
-        clean, skipped = {}, []
-        for m in marks:
+        # GOM HẾT lỗi rồi báo MỘT LẦN, kèm số thứ tự dòng (T24).
+        #
+        # Bản cũ có bốn điểm `return 400` nằm GIỮA vòng lặp: giảng viên tick 30
+        # em, dòng thứ 25 sai một chữ trạng thái thì nhận về đúng một câu —
+        # không nói dòng nào — và **không dòng nào được lưu**. Sửa xong dòng ấy
+        # gửi lại thì mới lộ ra dòng 28 cũng sai, và cứ thế từng vòng một, trong
+        # khi cả lớp đang đứng chờ.
+        #
+        # Vẫn KHÔNG lưu một phần: điểm danh là một bản ghi của cả buổi, lưu nửa
+        # danh sách rồi báo lỗi là để lại một buổi học có 12 em được tick và 18
+        # em "chưa điểm danh" — không ai phân biệt được với một buổi giảng viên
+        # tick dở rồi bỏ.
+        clean, skipped, loi = {}, [], []
+
+        # Khai NGOÀI vòng lặp và nhận `dong` làm tham số. Khai bên trong thì
+        # closure bắt biến vòng lặp theo THAM CHIẾU — ở đây vô hại vì gọi ngay
+        # trong cùng một vòng, nhưng đó là loại mã chỉ đúng nhờ thứ tự gọi.
+        # (ruff B023 bắt được ngay lúc viết, 01/09/2026.)
+        def _sai(dong, vi_sao, uid=None):
+            loi.append({'dong': dong, 'userId': uid, 'loi': vi_sao})
+
+        for i, m in enumerate(marks):
             if not isinstance(m, dict):
-                return Response({'error': 'Mỗi phần tử của marks phải là một đối tượng '
-                                          '{user_id, status}.'}, status=400)
+                _sai(i, 'phải là một đối tượng {user_id, status}')
+                continue
             try:
                 uid = int(m.get('user_id'))
             except (TypeError, ValueError):
-                return Response({'error': 'user_id phải là số.'}, status=400)
+                _sai(i, 'user_id phải là số (nhận: %r)' % (m.get('user_id'),))
+                continue
             status = str(m.get('status') or '').strip()
             if status not in ATTENDANCE_STATUS:
-                return Response({'error': 'Trạng thái điểm danh phải là một trong: %s.'
-                                          % ', '.join(ATTENDANCE_STATUS)}, status=400)
+                _sai(i, 'trạng thái phải là một trong: %s (nhận: %r)'
+                     % (', '.join(ATTENDANCE_STATUS), status), uid)
+                continue
             if uid not in members:
                 # KHÔNG ghi bừa id lạ: attendance không ràng buộc user phải thuộc
                 # lớp, nên một id gõ nhầm sẽ nằm im trong bảng chuyên cần của lớp
                 # khác và không màn hình nào hiện ra. Bỏ qua và BÁO LẠI, để người
                 # gửi biết chứ không tưởng là đã lưu.
+                #
+                # Đây KHÁC lỗi: id lạ thường là dấu vết của một em vừa rời lớp
+                # giữa lúc màn hình đang mở, chứ không phải người gửi làm sai.
                 skipped.append(uid)
                 continue
             minutes = m.get('minutes')
@@ -685,8 +710,8 @@ class SessionAttendanceView(APIView):
                 try:
                     minutes = max(0, int(minutes))
                 except (TypeError, ValueError):
-                    return Response({'error': 'minutes phải là số phút nguyên.'},
-                                    status=400)
+                    _sai(i, 'minutes phải là số phút nguyên (nhận: %r)' % (minutes,), uid)
+                    continue
             note = str(m.get('note') or '').strip()[:500] or None
             # Trùng user_id trong cùng một mẻ: giữ dòng CUỐI. Bắt buộc phải gộp
             # ở đây — Postgres ném "ON CONFLICT DO UPDATE command cannot affect
@@ -694,6 +719,16 @@ class SessionAttendanceView(APIView):
             # khoá, tức là một cú double-click ở giao diện sẽ thành lỗi 500.
             clean[uid] = {'user_id': uid, 'status': status,
                           'minutes': minutes, 'note': note}
+
+        if loi:
+            return Response({
+                'error': 'Có %d dòng không hợp lệ nên CHƯA LƯU dòng nào. '
+                         'Sửa các dòng dưới rồi gửi lại.' % len(loi),
+                # Trần 50: một mẻ hỏng hoàn toàn không nên đẻ ra một phản hồi
+                # dài hơn cả dữ liệu gửi lên.
+                'rows': loi[:50],
+                'skipped': skipped,
+            }, status=400)
 
         if not clean:
             return Response({'error': 'Không có học viên hợp lệ nào trong danh sách '

@@ -71,7 +71,15 @@ LAG_ITEMS = 5
 WEAK_BELOW = 60
 
 
-def _class_row(class_id):
+def _lop_kem_giang_vien(class_id):
+    """Lớp + tên giảng viên + tên khoá. KHÔNG có sĩ số.
+
+    Đổi tên 01/09/2026 (T20): `teaching/sessions` cũng có một `_class_row`,
+    trả BỘ CỘT KHÁC (kèm sĩ số, không kèm giảng viên/khoá). Trùng tên mà khác
+    việc còn nguy hơn trùng mã: người đọc thấy tên quen rồi thôi không mở ra
+    xem, và dùng nhầm một hàm thiếu đúng cột mình cần.
+    """
+
     return q1('''SELECT c.id, c.code, c.name, c.course_id, c.teacher_id, c.schedule,
                         c.meeting_url, c.starts_on, c.ends_on, c.exam_date,
                         c.capacity, c.status, c.note,
@@ -328,7 +336,7 @@ def _alerts(student):
 
 def class_report(class_id):
     """Toàn bộ số liệu một lớp trong 6 lượt truy vấn, không phải 2×N lượt."""
-    info = _class_row(class_id)
+    info = _lop_kem_giang_vien(class_id)
     if not info:
         return None
     members = _members(class_id)

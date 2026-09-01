@@ -73,3 +73,27 @@ def test_hop_dong_de_thi_thu(auth_api):
     """`/api/mock-exams` — màn thi thử lặp qua `exams`."""
     co = _khoa(auth_api.get('/api/mock-exams'))
     assert 'exams' in co, 'thiếu `exams`: %s' % sorted(co)
+
+
+@pytest.mark.django_db
+def test_do_proxy_chi_quan_tri_va_khong_ro_bien_moi_truong(auth_api, temp_admin, api):
+    """`/api/admin/do-proxy` — công cụ đo, nên phải kín và hẹp.
+
+    Nó đọc `request.META`, mà trong đó có cả biến môi trường của tiến trình
+    (`DATABASE_URL`, `SECRET_KEY`). Trả nguyên `META` ra là biến một công cụ đo
+    thành một đường rò khoá.
+    """
+    from accounts.models import User
+    assert auth_api.get('/api/admin/do-proxy').status_code in (403, 401), (
+        'học viên thường không được vào đường quản trị')
+
+    api.force_authenticate(user=User.objects.get(id=temp_admin))
+    r = api.get('/api/admin/do-proxy',
+                HTTP_X_FORWARDED_FOR='1.2.3.4, 10.0.0.1, 10.0.0.2')
+    assert r.status_code == 200, r.data
+    assert r.data['chang'] == ['1.2.3.4', '10.0.0.1', '10.0.0.2'], r.data
+    assert r.data['soChang'] == 2, r.data
+
+    tho = ' '.join(str(v) for v in r.data.values())
+    for cam in ('DATABASE_URL', 'SECRET_KEY', 'postgres://', 'postgresql://'):
+        assert cam not in tho, 'RÒ %s ra phản hồi' % cam
