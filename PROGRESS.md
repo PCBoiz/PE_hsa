@@ -2396,3 +2396,47 @@ rỗng), nhưng hai đường đưa dữ liệu RA KHỎI hệ thống thì cắ
 
 Mọi phép kiểm canh CẢ HAI chiều và đều đã tự kiểm ĐỎ ĐƯỢC: tháo chốt xoá buổi →
 403 thành 409; gỡ lời gọi lọc cột → CSV lộ lại Email.
+
+---
+
+## 01/09/2026 — Kiểm định toàn phần (mã · hạ tầng · ERD)
+
+Báo cáo: <https://claude.ai/code/artifact/29e9bb49-10bd-4b7c-adec-ebf1e7b18b7e>
+Điểm tổng **6,5/10**. Bảy phát hiện đã vá, bốn còn mở, một chờ duyệt, ba cáo
+buộc bị bác bỏ. Mục còn mở nằm ở `TODO.md` mục A1–A8.
+
+**Chủ đề chung của lượt này: mã nghiệp vụ chắc, hàng rào thì mỏng.** Ba trong
+bốn phát hiện nặng nhất đều KHÔNG phải lỗi nghiệp vụ — chúng là những thứ được
+cho là đang canh gác mà thật ra không canh gì:
+
+- một phép kiểm an ninh mang tên "cắt phiên đang mở" **xanh trong khi phiên
+  không bị cắt**. Chứng minh bằng thử nghiệm: xoá hẳn dòng bảo vệ khỏi mã
+  production → vẫn `15 passed`. Nó tự tay gọi hàm xoá đệm trước khi khẳng định;
+- một thư mục unit test mà **CI chưa từng chạy**, trong đó có phép kiểm giữ một
+  lỗ stored-XSS đã vá;
+- một chú thích nói `if (r.ok)` là đủ để phân biệt "phiên hết" với "máy chủ
+  chưa trả lời" — nên mỗi lần Render tỉnh dậy sau giấc ngủ 15 phút là một lần
+  giảng viên bị đá về màn đăng nhập giữa buổi dạy.
+
+**Sai của chính tôi, tìm ra trong lượt này.** Con số "245ms mỗi vòng gọi Neon"
+được tôi dùng suốt các phiên trước và đã viết vào 9 tệp như một hằng số phổ
+quát, rồi nhân ra thành "900 lượt × 245ms ≈ 4 phút". Đo lại: **239ms trung vị,
+n=30** — con số đúng, nhưng nó là độ trễ xuyên Thái Bình Dương của máy dev.
+Render chạy `ohio`, cùng vùng us-east-2 với Neon. Bốn phút kia thật ra là vài
+giây. Nay số đo nằm ở MỘT chỗ (`common/db.py`) kèm giới hạn của nó.
+
+Cùng loại: `§35` của lượt audit 31/08 thêm 5 chỉ mục theo một luật đúng, nhưng
+4 bảng trong đó đã có khoá chính GHÉP dẫn đầu bằng `user_id` — tức chỉ mục đã
+có sẵn. Luật đúng, áp sai chỗ, vì không mở khoá chính ra xem trước.
+
+**Ba cáo buộc của agent đã bác bỏ** sau khi tự dựng lại phép đo: `/auth/register`
+trả token thô (đã gỡ từ 27/08); ba nguồn cấu hình gunicorn mâu thuẫn (có hai
+nguồn, cờ khớp từng chữ); 70 chỉ mục không dùng (`idx_scan = 0` ở đây nghĩa là
+chưa ai truy vấn tới — bảng lớn nhất có 37 dòng, tiền đề của phép đo không
+đứng, nên phép đo không được tính).
+
+**Mọi phép kiểm mới đều đã chứng minh ĐỎ ĐƯỢC**, và đỏ đúng chỗ: bộ kiểm
+middleware đỏ đúng 3 khẳng định về 5xx và giữ xanh 8 khẳng định còn lại; bộ kiểm
+`completed_at` đỏ ở khẳng định cuối trong khi `progress == 100` vẫn xanh. Bản
+viết đầu của bộ kiểm sau đỏ ở bước DỰNG CẢNH (vì bước ấy cũng đi qua đường đang
+hỏng) nên đã viết lại — đỏ-trước chưa đủ, còn phải đỏ đúng chỗ.

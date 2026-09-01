@@ -2601,3 +2601,45 @@ việc kỹ thuật thuần:
 2. Kênh gửi ngoài (Zalo/email) + gửi báo cáo định kỳ — **chờ TopHSA** trả lời
    gửi qua đâu.
 3. Kinh doanh — chờ quy trình thu chi thật, và nên nối chứ không viết lại.
+
+---
+
+## Kiểm định toàn phần 01/09/2026 — mục còn mở
+
+Báo cáo đầy đủ (điểm theo trục + phép đo sinh ra điểm + ba cáo buộc đã bác bỏ):
+<https://claude.ai/code/artifact/29e9bb49-10bd-4b7c-adec-ebf1e7b18b7e>
+
+Điểm tổng **6,5/10**. Bảy phát hiện đã vá trong lượt này (xem git log 01/09);
+dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
+
+- [ ] A1 · **Đóng ba cổng an ninh** — xoay `SECRET_KEY`, đặt `NUM_PROXIES`, cắm
+  Redis. Đang chặn mọi thứ khác đi lên `master` (T38/T39/T40/T66, gộp lại ở đây
+  để thấy chúng là MỘT nút thắt chứ không phải bốn việc rời).
+- [ ] A2 · **Nhánh Neon riêng cho CI** — nhóm `concurrency` thêm hôm nay chỉ
+  ngăn hai lượt đập nhau; nó không đổi việc pytest đang chạy trên dữ liệu học
+  viên thật, mỗi lần push. Neon tạo nhánh gần như tức thì; đây là việc cấu hình,
+  không phải viết mã.
+- [ ] A3 · **Chỉ mục cho 9 khoá ngoại CASCADE** — xoá một tài khoản hiện chạm 10
+  lần quét toàn bảng. DDL THÊM nên tự chạy được, nhưng phải làm TRƯỚC khi bảng
+  lớn: để muộn thì chính lệnh tạo chỉ mục khoá bảng đúng lúc không nên khoá.
+  Danh sách đo bằng `pg_catalog` nằm trong báo cáo.
+  Kèm: `courses.instructor_id` là `NO ACTION` → hiện KHÔNG xoá nổi tài khoản
+  giảng viên đang đứng tên một khoá. Cần chốt chính sách xoá, không chỉ chỉ mục.
+- [ ] A4 · **Duyệt 6 câu `DROP INDEX`** — đã soạn sẵn trong `§35` của
+  `backend/sql/legacy_schema.sql`. Cần anh gật đầu: luật repo là chỉ DDL THÊM
+  mới được tự chạy trên CSDL thật ở `buildCommand`.
+- [ ] A5 · `ALLOWED_HOSTS` và `ALLOWED_ORIGINS` tách chuỗi mà không `.strip()`
+  (`config/settings.py:32,36`), trong khi `CSRF_TRUSTED_ORIGINS` ngay dưới thì
+  có. Viết `"a.com, b.com"` cho ra một host tên `" b.com"` không bao giờ khớp,
+  và triệu chứng là 400 trên toàn miền chứ không phải một lỗi cấu hình đọc được.
+- [ ] A6 · `DELETE FROM learning_events WHERE ref_type=… AND ref_id=…` là
+  `Seq Scan` (đã `EXPLAIN`). Hôm nay bảng 37 dòng nên rẻ; nó đắt dần đúng theo
+  mức dùng. Gộp vào A3 khi làm.
+- [ ] A7 · **Đặt hạn cho tầng frontend cũ** — 15.604 dòng JS không qua bundler
+  so với 10.510 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
+  production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần
+  biết màn nào chuyển tiếp, theo thứ tự nào.
+- [ ] A8 · **Quét lại mọi chú thích tự nhận "nơi duy nhất"** — lượt này tìm được
+  hai câu như thế và CẢ HAI đều đã sai (`attendance.ti_le`, và số 245ms ở
+  `common/db.py` trước khi gom). Một câu khẳng định độc quyền là một lời hứa, và
+  không có gì đang cưỡng chế nó.
