@@ -142,7 +142,8 @@ CREATE TABLE IF NOT EXISTS enrollments (
     completed_at      TIMESTAMP,
     PRIMARY KEY (user_id, course_id)
 );
-CREATE INDEX IF NOT EXISTS idx_enrollments_user_id ON enrollments(user_id);
+-- (BỎ 01/09/2026 — thừa: PRIMARY KEY (user_id, ...) đã phục vụ `WHERE user_id`.
+--  Xem §35 để biết danh sách đầy đủ và câu DROP chờ duyệt.)
 CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id);
 
 -- 9. course_ratings ---------------------------------------------------------
@@ -154,7 +155,8 @@ CREATE TABLE IF NOT EXISTS course_ratings (
     PRIMARY KEY (user_id, course_id)
 );
 CREATE INDEX IF NOT EXISTS idx_course_ratings_course_id ON course_ratings(course_id);
-CREATE INDEX IF NOT EXISTS idx_course_ratings_user_id ON course_ratings(user_id);
+-- (BỎ 01/09/2026 — thừa: PRIMARY KEY (user_id, ...) đã phục vụ `WHERE user_id`.
+--  Xem §35 để biết danh sách đầy đủ và câu DROP chờ duyệt.)
 
 -- 10. lesson_progress -------------------------------------------------------
 CREATE TABLE IF NOT EXISTS lesson_progress (
@@ -167,7 +169,8 @@ CREATE TABLE IF NOT EXISTS lesson_progress (
     completed_at TIMESTAMP,
     PRIMARY KEY (user_id, lesson_id)
 );
-CREATE INDEX IF NOT EXISTS idx_lesson_progress_user ON lesson_progress(user_id);
+-- (BỎ 01/09/2026 — thừa: PRIMARY KEY (user_id, lesson_id) đã phục vụ
+--  `WHERE user_id`. Xem §35 để biết danh sách đầy đủ và câu DROP chờ duyệt.)
 
 -- 11. quizzes ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS quizzes (
@@ -866,11 +869,49 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 
 -- Khoá ngoại ON DELETE CASCADE mà không có chỉ mục bên con thì mỗi lần xoá một
 -- tài khoản là một lần quét toàn bảng (cùng lỗi đã vá ở §34 cho review_quiz).
-CREATE INDEX IF NOT EXISTS idx_enrollments_user ON enrollments(user_id);
-CREATE INDEX IF NOT EXISTS idx_lesson_progress_user ON lesson_progress(user_id);
-CREATE INDEX IF NOT EXISTS idx_course_ratings_user ON course_ratings(user_id);
-CREATE INDEX IF NOT EXISTS idx_roadmap_progress_user ON roadmap_progress(user_id);
-CREATE INDEX IF NOT EXISTS idx_surveys_user ON surveys(user_id);
+--
+-- SỬA 01/09/2026 — LUẬT ĐÚNG, ÁP SAI CHỖ. Bản đầu của khối này tạo năm chỉ mục;
+-- BỐN trong số đó đã có sẵn, vì khoá chính của các bảng ấy là khoá GHÉP dẫn đầu
+-- bằng `user_id`, và chỉ mục của khoá chính phục vụ luôn `WHERE user_id = ?`:
+--
+--     enrollments      PRIMARY KEY (user_id, course_id)
+--     course_ratings   PRIMARY KEY (user_id, course_id)
+--     lesson_progress  PRIMARY KEY (user_id, lesson_id)
+--     roadmap_progress PRIMARY KEY (user_id, roadmap_id, item_id)
+--     surveys          PRIMARY KEY (id)            ← chỉ bảng NÀY thiếu thật
+--
+-- Không kiểm khoá chính trước khi thêm là cách một luật đúng đẻ ra việc thừa:
+-- mỗi chỉ mục thừa là một cây B-tree phải ghi thêm ở MỌI lần INSERT/UPDATE của
+-- bảng, đổi lấy đúng không gì.
+--
+-- Còn `surveys` thì cần thật — nhưng nó ĐÃ được tạo ở §33 phía trên, kèm đủ lý
+-- lẽ (khoá chính là `id`, nên "khảo sát mới nhất của em này" phải duyệt qua
+-- khảo sát của mọi người khác). Khai lại ở đây là bản thứ hai của cùng một
+-- dòng: `IF NOT EXISTS` khiến nó vô hại khi CHẠY, nhưng người đọc gặp hai lần
+-- sẽ không biết bản nào là bản có lý do.
+
+-- DỌN 6 CHỈ MỤC THỪA — CẦN DUYỆT TRƯỚC KHI CHẠY.
+--
+-- Bốn cái §35 tạo nhầm ở trên, cộng hai cái đã trùng sẵn từ §8/§9 (cùng bảng,
+-- cùng cột, khác tên, nên `IF NOT EXISTS` không đỡ được):
+--
+--     enrollments     (user_id) → PK + idx_enrollments_user + idx_enrollments_user_id
+--     course_ratings  (user_id) → PK + idx_course_ratings_user + idx_course_ratings_user_id
+--
+-- KHÔNG đặt câu DROP vào tệp này để `bootstrap_schema` tự chạy: tệp này chạy ở
+-- buildCommand của Render trên CSDL THẬT, và luật của repo là chỉ DDL THÊM mới
+-- được tự động (RULES). Bỏ một chỉ mục là việc bỏ đi được nhưng phải có người
+-- gật đầu. Duyệt xong thì chạy tay MỘT lần:
+--
+--     DROP INDEX IF EXISTS idx_enrollments_user;
+--     DROP INDEX IF EXISTS idx_enrollments_user_id;
+--     DROP INDEX IF EXISTS idx_course_ratings_user;
+--     DROP INDEX IF EXISTS idx_course_ratings_user_id;
+--     DROP INDEX IF EXISTS idx_lesson_progress_user;
+--     DROP INDEX IF EXISTS idx_roadmap_progress_user;
+--
+-- GIỮ LẠI: idx_enrollments_course_id và idx_course_ratings_course_id. `course_id`
+-- là cột THỨ HAI của khoá ghép nên khoá chính KHÔNG phục vụ được nó.
 
 -- ============================================================================
 -- 36. Đợt học, và một học viên học lại lớp cũ (audit T43, 2026-08-31)
