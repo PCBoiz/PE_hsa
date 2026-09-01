@@ -36,6 +36,7 @@ export type SessionRow = {
   status: string;
   note: string | null;
   meetingUrl?: string | null;
+  recordingUrl?: string | null;
   /**
    * Mốc giờ giảng viên bấm Lưu điểm danh cho buổi này (null = chưa bấm lần nào).
    *
@@ -116,6 +117,7 @@ export default function SessionsClient({
 }) {
   const [sessions, setSessions] = useState<SessionRow[]>(initial);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [suaId, setSuaId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -274,6 +276,19 @@ export default function SessionsClient({
                             nhưng giao diện chưa từng gọi tới — nên một buổi tạo
                             nhầm giờ nằm lại vĩnh viễn trong sổ, và lần điểm danh
                             kế tiếp lại phải nhìn qua nó. */}
+                        {/* Đường PATCH đã có ở máy chủ từ đầu
+                            (`ClassSessionDetailView`) — kèm cả cảnh báo trùng
+                            giờ và nhật ký ghi GIÁ TRỊ CŨ — nhưng giao diện
+                            chưa từng gọi tới. Hệ quả: sổ đầu bài, link bản ghi
+                            và trạng thái buổi có cột trong CSDL mà không có
+                            đường nào để nhập. */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSuaId(suaId === s.id ? null : s.id)}
+                        >
+                          {suaId === s.id ? 'Đóng sửa' : 'Sửa'}
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
                           Xoá
                         </Button>
@@ -282,6 +297,14 @@ export default function SessionsClient({
 
                     {openId === s.id && (
                       <Attendance sessionId={s.id} onSaved={() => void reload()} onError={setErr} />
+                    )}
+
+                    {suaId === s.id && (
+                      <SuaBuoi
+                        buoi={s}
+                        onXong={() => { setSuaId(null); void reload(); }}
+                        onError={setErr}
+                      />
                     )}
                   </Card>
                 </li>
@@ -292,6 +315,188 @@ export default function SessionsClient({
       </Card>
     </div>
     </ToastProvider>
+  );
+}
+
+/**
+ * Sửa một buổi đã có — và là NƠI DUY NHẤT nhập được sổ đầu bài.
+ *
+ * Ba trường dưới đây có cột trong CSDL và được API nhận từ ngày đầu, nhưng
+ * giao diện chưa bao giờ gọi `PATCH` nên không có đường nào để điền:
+ *   · `note` — **sổ đầu bài**, một hạng mục trong bảng khoảng cách của đặc tả
+ *     ERP (§2, nhóm Vận hành). Cột có, nên nhìn vào lược đồ thì tưởng đã xong.
+ *   · `recording_url` — link bản ghi, thứ chỉ tồn tại SAU buổi học, nên nó
+ *     không thuộc về form tạo buổi.
+ *   · `status` — `planned` → `done`/`cancelled`. Buổi ĐÃ HUỶ được loại khỏi
+ *     mẫu số chuyên cần (xem `parent_report._chuyen_can`), nên không đánh dấu
+ *     được huỷ nghĩa là lớp nghỉ vì giảng viên ốm vẫn tính là em vắng.
+ *
+ * Máy chủ tự cảnh báo trùng giờ khi dời buổi và ghi nhật ký kèm GIÁ TRỊ CŨ —
+ * hai thứ đã có sẵn, chỉ thiếu người gọi.
+ */
+function SuaBuoi({
+  buoi,
+  onXong,
+  onError,
+}: {
+  buoi: SessionRow;
+  onXong: () => void;
+  onError: (m: string | null) => void;
+}) {
+  const [topic, setTopic] = useState(buoi.topic ?? '');
+  const [startsAt, setStartsAt] = useState(
+    buoi.startsAt ? localInputValue(new Date(buoi.startsAt)) : '',
+  );
+  const [minutes, setMinutes] = useState(String(buoi.durationMinutes ?? ''));
+  const [meetingUrl, setMeetingUrl] = useState(buoi.meetingUrl ?? '');
+  const [recordingUrl, setRecordingUrl] = useState(buoi.recordingUrl ?? '');
+  const [note, setNote] = useState(buoi.note ?? '');
+  const [status, setStatus] = useState(buoi.status || 'planned');
+  const [busy, setBusy] = useState(false);
+
+  /* CHỈ GỬI TRƯỜNG ĐÃ ĐỔI.
+     Máy chủ ghi vào nhật ký kiểm toán đúng danh sách trường có trong thân
+     request (`', '.join(sorted(data))` ở `ClassSessionDetailView.patch`), nên
+     gửi cả bảy trường mỗi lần khiến MỌI lần sửa đọc thành "đã đổi 7 trường" —
+     và chính chú thích ở đó nói "đổi từ đâu mới là thứ cần khi phải dựng lại
+     một buổi bị sửa nhầm". Gửi hết là làm hỏng đúng thứ nó vừa dựng ra.
+     Thêm một cái lợi: `starts_at` không gửi kèm thì phép kiểm trùng giờ không
+     chạy vô cớ, nên sửa mỗi sổ đầu bài sẽ không hiện cảnh báo trùng lịch. */
+  const doi: Record<string, unknown> = {};
+  if (topic !== (buoi.topic ?? '')) doi.topic = topic.trim() || null;
+  if (startsAt !== (buoi.startsAt ? localInputValue(new Date(buoi.startsAt)) : '')) {
+    doi.starts_at = startsAt;
+  }
+  if (minutes !== String(buoi.durationMinutes ?? '')) {
+    doi.duration_minutes = Number(minutes) || null;
+  }
+  if (meetingUrl !== (buoi.meetingUrl ?? '')) doi.meeting_url = meetingUrl.trim() || null;
+  if (recordingUrl !== (buoi.recordingUrl ?? '')) {
+    doi.recording_url = recordingUrl.trim() || null;
+  }
+  if (note !== (buoi.note ?? '')) doi.note = note.trim() || null;
+  if (status !== (buoi.status || 'planned')) doi.status = status;
+  const soDoi = Object.keys(doi).length;
+
+  async function luu() {
+    setBusy(true);
+    onError(null);
+    try {
+      const r = await apiFetch(`/api/teach/sessions/${buoi.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(doi),
+      });
+      const d: { warning?: string } = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(errorText(r.status, d));
+      // Cảnh báo trùng giờ KHÔNG phải lỗi: buổi đã lưu. Nói ra rồi vẫn đóng.
+      if (d.warning) onError(d.warning);
+      onXong();
+    } catch (e) {
+      onError(loiBatDuoc(e, 'Không lưu được buổi học'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const o = 'min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70';
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))]">
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Chủ đề buổi</span>
+          <input value={topic} onChange={(e) => setTopic(e.target.value)} className={o} />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Bắt đầu lúc</span>
+          <input
+            type="datetime-local"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className={o}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Thời lượng (phút)</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={15}
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            className={o}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Trạng thái</span>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className={o}>
+            <option value="planned">Đã lên lịch</option>
+            <option value="done">Đã dạy</option>
+            <option value="cancelled">Đã huỷ</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Link phòng học</span>
+          <input
+            type="url"
+            inputMode="url"
+            value={meetingUrl}
+            onChange={(e) => setMeetingUrl(e.target.value)}
+            placeholder="https://meet.google.com/..."
+            className={o}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Link bản ghi</span>
+          <input
+            type="url"
+            inputMode="url"
+            value={recordingUrl}
+            onChange={(e) => setRecordingUrl(e.target.value)}
+            placeholder="https://drive.google.com/..."
+            className={o}
+          />
+        </label>
+      </div>
+
+      <label className="mt-3 flex flex-col gap-1">
+        <span className="text-label text-ink-3">Sổ đầu bài</span>
+        {/* `whitespace-pre-wrap` ở chỗ đọc, và textarea ở chỗ ghi: sổ đầu bài là
+            văn xuôi nhiều dòng — "em A vắng có phép, lớp chậm 10 phút vì mạng" —
+            chứ không phải một nhãn ngắn. */}
+        <textarea
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={2000}
+          placeholder="Đã dạy tới đâu, lớp gặp khó ở chỗ nào, việc giao về nhà…"
+          className="w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 py-2 text-input text-ink placeholder:text-ink-3/70"
+        />
+        {/* `maxLength` chặn gõ thêm, nhưng chặn IM LẶNG: người viết đang gõ dở
+            một câu thì bàn phím thôi ăn chữ, không một dấu hiệu nào. Chỉ hiện
+            số khi đã qua 3/4 quãng — hiện suốt là một con số nhấp nháy vô cớ
+            trong lúc người ta đang nghĩ. */}
+        {note.length >= 1500 && (
+          <span className={`text-small ${note.length >= 2000 ? 'text-danger-ink' : 'text-ink-3'}`}>
+            {note.length === 2000
+              ? 'Đã chạm trần 2000 ký tự — gõ thêm sẽ không vào.'
+              : `${note.length}/2000 ký tự`}
+          </span>
+        )}
+      </label>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Button loading={busy} disabled={!startsAt || soDoi === 0} onClick={() => void luu()}>
+          Lưu buổi học
+        </Button>
+        {/* Nói ra SỐ thay đổi sẽ gửi, không chỉ bật/tắt nút: người sửa biết mình
+            vừa chạm vào gì, và biết vì sao nút đang mờ. */}
+        <span className="text-small text-ink-3">
+          {soDoi === 0 ? 'Chưa đổi gì.' : `Sẽ lưu ${soDoi} thay đổi.`}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -309,6 +514,7 @@ function NewSession({
   const [startsAt, setStartsAt] = useState('');
   const [topic, setTopic] = useState('');
   const [minutes, setMinutes] = useState('90');
+  const [meetingUrl, setMeetingUrl] = useState('');
   const [busy, setBusy] = useState(false);
 
   /* Gợi ý sẵn 19:30 hôm nay: lớp online của trung tâm học buổi tối, và ô giờ
@@ -350,12 +556,14 @@ function NewSession({
           starts_at: startsAt,
           topic: topic.trim() || null,
           duration_minutes: Number(minutes) || null,
+          meeting_url: meetingUrl.trim() || null,
         }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
       if (d.warning) onError(d.warning);
       setTopic('');
+      setMeetingUrl('');
       setOpen(false);
       onDone();
     } catch (e) {
@@ -403,6 +611,19 @@ function NewSession({
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
             className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          {/* Để trống thì buổi dùng link chung của lớp. Máy chủ chặn lược đồ
+              lạ (`javascript:`…) ngay ở đầu vào — xem `kiem_lien_ket`. */}
+          <span className="text-label text-ink-3">Link phòng học (tuỳ chọn)</span>
+          <input
+            type="url"
+            inputMode="url"
+            value={meetingUrl}
+            onChange={(e) => setMeetingUrl(e.target.value)}
+            placeholder="https://meet.google.com/..."
+            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
           />
         </label>
       </div>

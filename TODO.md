@@ -2467,3 +2467,47 @@ của chúng không phải vòng nét mà là đổi nền hoặc viền — v�
 | vùng chạm dưới ngưỡng | 1 (cố ý) | 1 (cố ý) |
 | KHÔNG có vòng nét | 0/201 | 0/201 |
 | tràn ngang · lỗi JS · lời gọi ghi lọt | 0 · 0 · 0 | 0 · 0 · 0 |
+
+---
+
+## 01/09/2026 (tiếp) — vá nốt khoảng cách ERP làm được ngay
+
+Anh chốt: làm phần KHÔNG vướng ai. Đo lại đặc tả `ERP_TOPHSA §9` thì phần dạy–học
+(khối 1→5) gần xong; ba lỗ dưới đây là chỗ "có cột, có API, không có đường nhập".
+
+### [x] Buổi học: form chỉ hỏi 3/8 trường, và KHÔNG có đường sửa
+`class_sessions` có 15 cột, `_clean_session_payload` nhận 8 trường, và
+`ClassSessionDetailView.patch` đã dựng đủ — kèm cảnh báo trùng giờ lẫn nhật ký
+ghi cả GIÁ TRỊ CŨ. **Giao diện chưa từng gọi PATCH một lần nào.**
+
+Hệ quả cụ thể: **sổ đầu bài** — một mục trong bảng khoảng cách của chính đặc tả —
+chưa bao giờ dùng được. Cột có, API nhận, không ai nhập được. Cùng cảnh với
+`recording_url` và `status`; mà `status='cancelled'` là thứ LOẠI buổi khỏi mẫu số
+chuyên cần, nên không đánh dấu huỷ được nghĩa là lớp nghỉ vì giảng viên ốm vẫn
+tính là em vắng.
+
+Nay: form tạo thêm ô link phòng học; mỗi buổi có nút **Sửa** mở bảng đủ 7 trường
+(chủ đề · giờ · thời lượng · trạng thái · link phòng học · link bản ghi · sổ đầu
+bài, kèm đếm ký tự khi sắp chạm trần 2000).
+
+**Chỉ gửi trường ĐÃ ĐỔI.** Máy chủ ghi vào nhật ký đúng danh sách trường có trong
+thân request, nên gửi cả bảy khiến mọi lần sửa đọc thành "đã đổi 7 trường" — làm
+hỏng đúng thứ mà chú thích ở đó vừa dựng ra ("đổi từ đâu mới là thứ cần khi phải
+dựng lại một buổi bị sửa nhầm"). Thêm cái lợi: không gửi `starts_at` thì phép
+kiểm trùng giờ không chạy vô cớ.
+
+Đo trên trình duyệt, giả lập cả POST lẫn PATCH nên **0 lời gọi ghi thật**:
+mở bảng → "Chưa đổi gì." · gõ sổ đầu bài → "Sẽ lưu 1 thay đổi." · thân PATCH
+đúng `{"note": "…"}`. 0 lỗi JS.
+
+### [x] `meeting_url` của BUỔI HỌC còn nguyên lỗ T65
+Vá T65 hôm nay mới bịt cho LỚP. `_clean_session_payload` không kiểm lược đồ, và
+tôi phát hiện đúng lúc sắp mở ô nhập cho nó — tức sắp tự mở lại lỗ vừa đóng.
+Gom thành `common.params.kiem_lien_ket`, dùng chung cho cả `meeting_url` của lớp
+lẫn `meeting_url` + `recording_url` của buổi. Test ĐỎ trên mã cũ: nhận
+`javascript:alert(1)` với HTTP 201.
+
+### Giới hạn của lượt đo
+Lượt quét giao diện KHÔNG mở bảng sửa (nó nằm sau một cú bấm và cần một buổi có
+thật), nên 7 ô mới chưa được đo trực tiếp — chúng dùng đúng lớp CSS của các ô đã
+đo sạch. Ghi ra để lần sau không ai tưởng chúng đã nằm trong con số 0.

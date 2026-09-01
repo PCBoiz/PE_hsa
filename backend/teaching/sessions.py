@@ -38,7 +38,7 @@ from common.audit import ATTENDANCE_MARK, SESSION_CREATE, SESSION_DELETE, SESSIO
 from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events, record_events
-from common.params import so_nguyen
+from common.params import kiem_lien_ket, so_nguyen
 from common.permissions import IsTeacherOrAdmin, can_see_class
 from stats.goals import as_date
 from teaching.vocab import chi_hoc_vien
@@ -143,6 +143,14 @@ def _clean_session_payload(body):
         if field in body:
             val = (str(body[field]).strip() or None) if body[field] is not None else None
             data[field] = val[:limit] if val else None
+
+    # Hai trường này đều được đổ vào `href` ở màn giảng viên. Cùng hàng rào với
+    # `meeting_url` của LỚP (T65) — dùng chung một hàm để hai chỗ không trôi.
+    for truong, ten in (('meeting_url', 'Link phòng học'),
+                        ('recording_url', 'Link bản ghi')):
+        loi_link = kiem_lien_ket(data.get(truong), ten)
+        if loi_link:
+            return None, loi_link
 
     if 'lesson_refs' in body:
         refs = body['lesson_refs']

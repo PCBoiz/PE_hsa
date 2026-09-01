@@ -16,6 +16,7 @@ from common.clock import local_now
 from common.db import q, q1, x
 from common.events import forget_events
 from common.identity import norm_email, norm_phone
+from common.params import kiem_lien_ket
 from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
@@ -169,11 +170,9 @@ def _clean_class_payload(body):
     #
     # Chặn ở ĐẦU VÀO chứ không ở chỗ hiển thị: chỗ hiển thị có thể mọc thêm
     # (bản in, email nhắc lịch, ứng dụng di động), còn đường ghi thì chỉ có đây.
-    if data.get('meeting_url'):
-        u = data['meeting_url']
-        if not u.lower().startswith(('https://', 'http://')):
-            return None, ('Link họp phải bắt đầu bằng https:// hoặc http:// '
-                          '(đang nhận: "%s").' % u[:40])
+    loi_link = kiem_lien_ket(data.get('meeting_url'), 'Link họp')
+    if loi_link:
+        return None, loi_link
     for field in CLASS_DATE_FIELDS:
         if field in body:
             from stats.goals import as_date

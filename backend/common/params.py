@@ -54,3 +54,28 @@ def doc_trang(params, mac_dinh_moi_trang, tran_moi_trang):
     page = so_nguyen(params.get('page'), 1, 1, None)
     per_page = so_nguyen(params.get('per_page'), mac_dinh_moi_trang, 1, tran_moi_trang)
     return page, per_page, (page - 1) * per_page
+
+
+#: Lược đồ URL cho phép ở những trường người dùng NHẬP rồi hệ thống đổ vào
+#: `href`. Danh sách TRẮNG, không phải danh sách đen: `javascript:`, `data:`,
+#: `vbscript:` chỉ là ba cái nghĩ ra được hôm nay.
+LUOC_DO_CHO_PHEP = ('https://', 'http://')
+
+
+def kiem_lien_ket(gia_tri, ten_hien_thi):
+    """``None`` nếu hợp lệ (hoặc để trống), ngược lại trả CÂU BÁO LỖI.
+
+    Chặn ở ĐẦU VÀO chứ không ở chỗ hiển thị: chỗ hiển thị có thể mọc thêm (bản
+    in, email nhắc lịch, ứng dụng di động), còn đường ghi thì chỉ có một.
+
+    Đo 31/08/2026 trên link phòng học của LỚP: `javascript:alert(1)` đi qua
+    nguyên vẹn, và thứ duy nhất chặn nó lúc chạy là `target="_blank"` — một
+    thuộc tính đặt vào vì lý do KHÁC HẲN (mở link ở tab mới). Ai bỏ nó đi để
+    sửa một chuyện về bố cục sẽ mở lại lỗ này mà không hề biết.
+    """
+    if not gia_tri:
+        return None
+    if not str(gia_tri).lower().startswith(LUOC_DO_CHO_PHEP):
+        return ('%s phải bắt đầu bằng https:// hoặc http:// (đang nhận: "%s").'
+                % (ten_hien_thi, str(gia_tri)[:40]))
+    return None

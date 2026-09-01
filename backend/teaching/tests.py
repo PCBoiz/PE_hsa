@@ -980,3 +980,77 @@ def test_xem_truoc_da_bao_VUOT_TRAN_chu_khong_doi_toi_luc_bam_tao(db):
         assert any('vượt trần' in w for w in warnings), (
             'bản XEM TRƯỚC phải nói ra ngay là sẽ bị từ chối, chứ không để người '
             'ta bấm Tạo rồi mới biết (dry_run=%s): %s' % (dry_run, warnings))
+
+
+@pytest.mark.django_db
+def test_link_buoi_hoc_cung_hang_rao_luoc_do_voi_link_lop(lop):
+    """Hai link của BUỔI HỌC phải chặn như link của LỚP (T65 mở rộng).
+
+    Lỗ này còn nguyên ở buổi học sau khi đã vá cho lớp — và nó chỉ lộ ra lúc
+    sắp mở ô nhập trên giao diện, tức đúng lúc sắp có người gõ vào đó.
+    """
+    from datetime import timedelta
+
+    from teaching.sessions import ClassSessionsView
+    nay = local_now()
+    for truong in ('meeting_url', 'recording_url'):
+        for xau in ('javascript:alert(1)', 'data:text/html,<b>x', 'vbscript:msgbox(1)'):
+            body = {'starts_at': (nay + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
+                    'topic': 'Thu', truong: xau}
+            kq = _goi(ClassSessionsView, 'post', body, ai=lop['gv'], class_id=lop['id'])
+            assert kq.status_code == 400, '%s=%r được nhận: %s' % (truong, xau, kq.data)
+
+    ok = _goi(ClassSessionsView, 'post',
+              {'starts_at': (nay + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
+               'topic': 'That', 'meeting_url': 'https://meet.google.com/abc-defg-hij',
+               'recording_url': 'https://drive.google.com/file/d/abc'},
+              ai=lop['gv'], class_id=lop['id'])
+    assert ok.status_code in (200, 201), ('link thật phải qua được: %s' % ok.data)
+
+
+@pytest.mark.django_db
+def test_sua_mot_truong_thi_nhat_ky_chi_ghi_MOT_truong(lop):
+    """Sổ đầu bài: sửa một trường thì nhật ký phải nói đúng một trường.
+
+    `ClassSessionDetailView.patch` ghi vào nhật ký danh sách trường CÓ TRONG
+    thân request. Giao diện gửi cả bảy trường mỗi lần thì mọi lần sửa đọc thành
+    "đã đổi 7 trường", và chính chú thích ở đó nói "đổi từ đâu mới là thứ cần
+    khi phải dựng lại một buổi bị sửa nhầm" — gửi hết là làm hỏng đúng thứ nó
+    vừa dựng ra.
+
+    Kiểm luôn ba trường mà TRƯỚC 01/09/2026 không có đường nào để nhập: sổ đầu
+    bài, link bản ghi, trạng thái buổi.
+    """
+    from datetime import timedelta
+
+    from teaching.sessions import ClassSessionDetailView, ClassSessionsView
+    nay = local_now()
+    tao = _goi(ClassSessionsView, 'post',
+               {'starts_at': (nay + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
+                'topic': 'Buoi goc'}, ai=lop['gv'], class_id=lop['id'])
+    assert tao.status_code == 201, tao.data
+    sid = tao.data['id']
+
+    kq = _goi(ClassSessionDetailView, 'patch', {'note': 'Day het phan tram co ban.'},
+              ai=lop['gv'], session_id=sid)
+    assert kq.status_code == 200, kq.data
+    assert kq.data['session']['note'] == 'Day het phan tram co ban.'
+    # Không gửi `starts_at` thì phép kiểm trùng giờ không chạy — sửa mỗi sổ đầu
+    # bài mà hiện cảnh báo trùng lịch là một câu nhiễu người ta sẽ học cách bỏ qua.
+    assert 'warning' not in kq.data, kq.data
+
+    dong = q1("SELECT detail, summary FROM admin_audit WHERE action='session.update' "
+              'ORDER BY id DESC LIMIT 1')
+    import json as _json
+    ct = dong['detail'] if isinstance(dong['detail'], dict) else _json.loads(dong['detail'])
+    assert ct['fields'] == ['note'], (
+        'nhật ký phải ghi ĐÚNG trường đã đổi, không phải cả bảy: %s' % ct['fields'])
+    assert ct['before'] == {'note': None}, ct['before']
+
+    # Ba trường trước đây không có đường nhập.
+    kq2 = _goi(ClassSessionDetailView, 'patch',
+               {'status': 'done', 'recording_url': 'https://drive.google.com/file/d/x'},
+               ai=lop['gv'], session_id=sid)
+    assert kq2.status_code == 200, kq2.data
+    assert kq2.data['session']['status'] == 'done'
+    assert kq2.data['session']['recordingUrl'] == 'https://drive.google.com/file/d/x'
