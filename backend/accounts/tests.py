@@ -242,7 +242,20 @@ def test_dat_lai_mat_khau_cat_phien_dang_mo(db, api):
               (u.id,))['tokens_valid_from'] is not None, 'phải đặt mốc thu hồi'
 
     # CÙNG token đó, NGAY sau đó → phải bị từ chối.
-    invalidate_user_cache(u.id)
+    #
+    # KHÔNG gọi `invalidate_user_cache` ở đây. Bản trước có gọi, và vì thế phép
+    # kiểm này KHÔNG kiểm gì cả: `CachedJWTAuthentication` giữ đối tượng user 60
+    # giây, nên thứ quyết định 401 hay 200 là việc `AdminResetPasswordView` có
+    # tự xoá bộ đệm hay không — mà bộ kiểm lại tự tay xoá hộ nó.
+    #
+    # Đo 01/09/2026: xoá hẳn dòng `invalidate_user_cache(user_id)` khỏi
+    # `teaching/views.py` rồi chạy lại → **15 passed**. Tức phép kiểm mang tên
+    # "cắt phiên đang mở" vẫn xanh trong khi phiên KHÔNG bị cắt, và thứ nó canh
+    # là một hàng rào an ninh: trợ giảng bấm đặt lại mật khẩu vì nghi tài khoản
+    # bị chiếm, mà người đang chiếm vẫn thao tác bình thường thêm một phút.
+    #
+    # Cùng loại lỗi với RULES §"test phải đi đúng đường thật": đỏ-trước chưa đủ,
+    # phép kiểm còn phải đi qua ĐÚNG đoạn mã mà nó nói là đang canh.
     r = api.get('/api/user')
     assert r.status_code == 401, 'token cũ phải chết ngay, không đợi hết hạn: %s' % r.status_code
 

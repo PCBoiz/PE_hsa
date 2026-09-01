@@ -43,7 +43,7 @@ from rest_framework.views import APIView
 from common.clock import local_now
 from common.db import q
 from common.permissions import IsAdminRole
-from teaching.attendance import KHONG_TINH
+from teaching.attendance import KHONG_TINH, ti_le
 from teaching.vocab import chi_hoc_vien
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,13 @@ def _mot_phan_tram(tu, mau):
     None chứ không 0: "chưa em nào rời lớp" và "chưa có ai để mà tính" là hai
     chuyện khác nhau, và một bảng điều khiển gộp chúng lại sẽ nói dối đúng vào
     lúc trung tâm mới mở đợt.
+
+    DÙNG CHO tỉ lệ giữ chân và tiến độ bài. KHÔNG dùng cho chuyên cần: chuyên
+    cần có một định nghĩa riêng, có tên, ở `attendance.ti_le` — kèm cả một
+    trang lý lẽ về việc chọn mẫu số nào. Hai hàm này hôm nay cho ra cùng một
+    con số, nên đổi `_mot_phan_tram` (chẳng hạn làm tròn xuống cho tỉ lệ bỏ
+    học) sẽ lặng lẽ đổi luôn chuyên cần của cả trung tâm — mà chuyên cần là
+    thứ đi ra khỏi hệ thống, in vào tờ báo cáo gửi phụ huynh.
     """
     return round(tu * 100 / mau) if mau else None
 
@@ -231,7 +238,7 @@ def tong_quan(term_id=None):
             'sessionsMarked': b.get('da_tick') or 0,
             # Buổi đã diễn ra mà chưa ai điểm danh — việc còn tồn của giảng viên.
             'sessionsUnmarked': max(0, (b.get('tong') or 0) - (b.get('da_tick') or 0)),
-            'attendedPct': _mot_phan_tram(cc.get('co_mat') or 0, cc.get('tick') or 0),
+            'attendedPct': ti_le(cc.get('co_mat') or 0, cc.get('tick') or 0),
             # KHÔNG đọc được thì trả None, KHÔNG trả 0 — đúng luật ghi ở đầu
             # module. Bản đầu để `h` rỗng đi tiếp thành `_mot_phan_tram(0, mẫu)` = 0,
             # nên một câu SQL hỏng làm CẢ TRUNG TÂM hiện "Tiến độ 0%" — trông y
@@ -271,7 +278,7 @@ def tong_quan(term_id=None):
         dot.append({
             k: v for k, v in d.items() if not k.startswith('_')
         } | {
-            'attendedPct': _mot_phan_tram(d['_comat'], d['_tick']),
+            'attendedPct': ti_le(d['_comat'], d['_tick']),
             'dropRate': _mot_phan_tram(d['dropped'], roi_co_ly_do),
             # Giữ chân = phần KHÔNG bỏ giữa chừng. Ngưỡng tham chiếu ở hằng số
             # đầu module; màn hình tô màu theo đó.

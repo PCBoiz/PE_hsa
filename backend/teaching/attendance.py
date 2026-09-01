@@ -36,7 +36,11 @@ def _menh_de(alias='s'):
 def ti_le(co_mat, co_dong):
     """Tỉ lệ chuyên cần = (có mặt + muộn) / số buổi EM ẤY CÓ DÒNG điểm danh.
 
-    Nơi DUY NHẤT định nghĩa công thức này. Trước 31/08/2026 có HAI mẫu số chạy
+    Nơi DUY NHẤT định nghĩa công thức này — kể cả bảng điều khiển toàn trung
+    tâm: `overview.attendedPct` gọi thẳng vào đây chứ không tự tính (tới
+    01/09/2026 nó vẫn tự tính bằng `_mot_phan_tram`, ra đúng cùng con số, nên
+    không ai thấy — nhưng thứ giữ hai bản khớp nhau chỉ là việc chưa ai sửa một
+    bên). Trước 31/08/2026 có HAI mẫu số chạy
     song song: sổ điểm danh CSV chia cho số buổi EM có dòng, tờ báo cáo gửi phụ
     huynh chia cho số buổi CẢ LỚP được tick. Đo được trên cùng một em: CSV nói
     100%, tờ giấy nói 67% — và tờ giấy là thứ đi ra khỏi hệ thống, về tận nhà.
