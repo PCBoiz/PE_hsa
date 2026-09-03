@@ -2581,3 +2581,45 @@ nó không đủ.
 Nguyên nhân gốc: `collectContent` DỰNG LẠI đối tượng bài từ đầu, nên mọi trường
 nó không biết đều mất. Anh chốt làm dứt điểm bằng React (T35) thay vì vá tại chỗ
 — bản mới sẽ GỘP vào bản đã nạp, để trường lạ sống sót.
+
+### Cùng ngày — khu Soạn giáo trình bằng React (T35)
+
+Anh chốt làm dứt điểm bằng React thay vì vá tại chỗ. Xong.
+
+**Thứ quyết định: GỘP, không dựng lại.** `src/lib/soanBai.ts` là một hàm THUẦN
+(`hopNhat`) bắt đầu từ bản đã nạp và chỉ đè lên trường biểu mẫu quản. Bộ kiểm
+riêng chạy trong CI (`e2e/unit/soan-bai.test.mjs`, 28 phép). Phép kiểm quan
+trọng nhất ở đó KHÔNG phải "trường tôi biết lưu đúng" — đó là thứ hiển nhiên và
+luôn xanh — mà **"trường tôi KHÔNG biết vẫn còn"**: bài mẫu cố ý mang hai trường
+lạ (`nguon_bien_soan`, `phien_ban`) và phép kiểm đòi chúng sống sót qua một vòng
+nạp→lưu. Trường thứ ba thêm vào tháng sau sẽ được bảo vệ mà không ai phải nhớ.
+
+**Đã mở THẬT trong trình duyệt** (`RULES §1`), đã đăng nhập bằng access token
+cấp cho tài khoản có sẵn, chặn ghi theo PHƯƠNG THỨC (`RULES §22`):
+· h1 "Soạn giáo trình" · 3 khoá · 27 bài của Định lượng
+· **ô "Thời gian (giây)" hiện 75** — đúng `time_seconds` thật trong CSDL; bộ
+  soạn cũ ở đúng chỗ này hiện 60
+· 0 lỗi console · 0 lời gọi GHI lọt ra · 0px tràn ngang ở khổ 390px
+
+**Ba lỗi giao diện chỉ nhìn ảnh mới thấy**, đã vá rồi đo lại: bảng khoá bị bóp
+(tên khoá vỡ 3 dòng, nút gãy đôi) → mã khoá xuống dưới tên · biểu mẫu cao
+**9.615px** với nút Lưu chỉ ở đỉnh → thanh Lưu dính đáy (đo lại: ở 55% độ sâu
+cuộn, nút nằm ở y=844 trong khung 900) + hai khối dài gập được bằng `<details>` ·
+ô JSON minh hoạ 3 dòng chỉ hiện `{ "max": 25, "bars": [` → 8 dòng.
+
+**Tầng lint type-aware bật sáng nay trả công ngay**: nó bắt 13 lỗi trong mã tôi
+vừa viết, trong đó `no-base-to-string` chỉ đúng chỗ `String(assess.strong_min)`
+với `strong_min` kiểu `unknown` — `String({})` ra `"[object Object]"`, 15 ký tự,
+truthy, đi lọt mọi phép kiểm "có nhập chưa". Đúng lớp lỗi T22. Sửa gốc, không
+tắt luật.
+
+**Xoá 749 dòng khỏi tầng ngoài bundler.** `admin.inline.js` + `admin.inline.css`
+nay không mã nào gọi tới (đã grep cả repo trước khi xoá — nhớ T19, nơi danh sách
+"mã chết" sai 4 trên 7 mục). Tầng JS thuần: **15.604 → 14.855 dòng**. Đây là
+tiến độ thật cho TODO A7.
+
+**Một lỗi giả của CI vừa được dập.** Hai bộ kiểm dùng loader hook gọi
+`process.exit()` trong khi worker còn sống → libuv nổ assertion trên Windows và
+trả mã 127, nhưng CHỈ khi stdout có ống dẫn (chạy trần thì exit 0). Nay dùng
+`process.exitCode`. Hỏng giả trong CI đắt hơn hỏng thật vì nó dạy người ta chạy
+lại cho qua.

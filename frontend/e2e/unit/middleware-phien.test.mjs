@@ -166,4 +166,10 @@ const json = (o, status) =>
 }
 
 console.log(failures === 0 ? '\nOK — middleware giữ phiên đúng cách' : `\n${failures} lỗi`);
-process.exit(failures === 0 ? 0 : 1);
+/* `process.exitCode` chứ KHÔNG `process.exit()`. Tệp này đăng ký một loader
+   hook, tức có một worker chạy nền; cắt ngang tiến trình trong lúc worker còn
+   sống làm libuv nổ assertion trên Windows và trả mã thoát 127 — một lần hỏng
+   GIẢ, và hỏng giả trong CI đắt hơn hỏng thật vì nó dạy người ta chạy lại cho
+   qua. Đặt mã thoát rồi để Node tự kết thúc thì không có cuộc đua nào.
+   (Đo 04/09: chỉ nổ khi stdout có ống dẫn, nên chạy trần thì không thấy.) */
+process.exitCode = failures === 0 ? 0 : 1;

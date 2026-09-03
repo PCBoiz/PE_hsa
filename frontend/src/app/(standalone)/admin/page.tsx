@@ -1,323 +1,82 @@
-'use client';
+import Link from 'next/link';
 
-// Port admin.html — trang quản trị (style + script inline gốc trích verbatim).
-// Backend guard: mọi /api/admin/* yêu cầu role admin (403 nếu không) — giống
-// @api_admin_required cũ; trang chỉ là shell gọi API.
-import LegacyScripts from '@/components/LegacyScripts';
-import PageStyles from '@/components/PageStyles';
+import { serverJson } from '@/lib/server-api';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const W = () => window as any;
+import SoanClient, { type KhoaRow } from './SoanClient';
 
-export default function AdminPage() {
+/**
+ * SOẠN GIÁO TRÌNH — khoá học, bài học, và nội dung 5 bước của một bài.
+ *
+ * ── VÌ SAO VIẾT LẠI BẰNG REACT (T35, 04/09/2026) ──────────────────────────
+ *
+ * Bản cũ là một vỏ HTML tĩnh được `public/static/js/pages/admin.inline.js`
+ * (749 dòng, KHÔNG đi qua bundler) làm cho sống. Hai hệ quả đo được:
+ *
+ * 1. **Bộ soạn nội dung không dùng được.** Nó đọc/ghi `drill.seconds` trong khi
+ *    engine đọc `drill.time_seconds`, nên bộ kiểm phía máy chủ từ chối mọi lần
+ *    lưu bài có phòng luyện — tức cả 76 bài đang có. Và nó xử lý `note` số ít,
+ *    một trường KHÔNG bài nào có, trong khi khối `notes` thật (`tip`,
+ *    `formula`, `key_points`) không hiện ra ở đâu và sẽ bị bỏ khi lưu.
+ * 2. Một lỗi cú pháp trong tệp ấy đi thẳng lên production qua MỌI cửa kiểm —
+ *    đã xảy ra 27/08 và giết cả màn Quản trị. Đó là lý do CI phải chạy
+ *    `node --check` riêng cho 15 tệp JS thuần.
+ *
+ * Lỗi ① là lỗi TÊN TRƯỜNG, thứ `tsc` bắt được ngay lúc biên dịch nếu có kiểu.
+ * Nay có: `src/lib/soanBai.ts` khai kiểu, và phép gộp nằm ở một hàm THUẦN có
+ * bộ kiểm riêng chạy trong CI (`e2e/unit/soan-bai.test.mjs`).
+ *
+ * ── GÁC QUYỀN Ở MÁY CHỦ ───────────────────────────────────────────────────
+ *
+ * Bản cũ không gác gì cả — nó dựng cả trang rồi để API trả 403, nên người
+ * không có quyền thấy một màn hình đầy bảng trống trông như hệ thống hỏng.
+ */
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Soạn giáo trình | TopHSA' };
+
+const DUOC_VAO = new Set(['admin', 'Biên tập nội dung']);
+
+export default async function SoanGiaoTrinhPage() {
+  const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });
+
+  // "Không đọc được tài khoản" KHÁC "không đủ quyền": backend ngủ dậy hay mạng
+  // hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy người dùng
+  // đi hỏi nhầm chỗ. Cùng luật với khu `/quan-tri`.
+  if (!me.ok) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="text-title text-ink">Chưa mở được khu soạn giáo trình</h1>
+        <p className="mt-2 text-body text-ink-2">{me.message}</p>
+        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+          ← Về trang của tôi
+        </Link>
+      </main>
+    );
+  }
+
+  const vai = me.data.role || '';
+  if (!DUOC_VAO.has(vai)) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="text-title text-ink">Khu này dành cho người soạn giáo trình</h1>
+        <p className="mt-2 text-body text-ink-2">
+          Tài khoản của bạn đang ở vai <b>{vai || 'chưa đặt'}</b>. Cần vai{' '}
+          <b>Biên tập nội dung</b> hoặc <b>quản trị viên</b> để vào đây — nhờ quản trị viên
+          đổi giúp nếu bạn phụ trách nội dung.
+        </p>
+        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+          ← Về trang của tôi
+        </Link>
+      </main>
+    );
+  }
+
+  const kq = await serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true });
+
   return (
-    <>
-      <PageStyles hrefs={['/static/css/pages/admin.inline.css','/static/css/a11y.css']} />
-      <title>Quản trị | Programming EDU</title>
-
-      <header>
-        <h1>🛠️ Trang quản trị</h1>
-        <a href="/dashboard">← Về dashboard</a>
-      </header>
-
-      {/* Trang này quản lý NỘI DUNG (khoá, bài, nhập giáo trình) — việc làm vài
-          lần rồi thôi. Việc hằng ngày với CON NGƯỜI đã chuyển sang khu riêng,
-          nơi có nhập hàng loạt, phân trang, bộ lọc và nhật ký kiểm toán. Hai
-          khối tài khoản bên dưới giữ lại làm đường tắt, nhưng chỉ hiện 50 tài
-          khoản đầu và không lọc được. */}
-      <div className="wrap">
-        <section>
-          <h2>Vận hành trung tâm</h2>
-          <p className="hint">
-            Cấp tài khoản cho cả một danh sách vừa đăng ký, tìm trong vài trăm học viên,
-            khoá tài khoản em đã nghỉ, và xem ai đã sửa gì.
-          </p>
-          <div className="row">
-            <a className="btn-primary btn-link" href="/quan-tri/tai-khoan">Tài khoản →</a>
-            <a className="btn-ghost btn-link" href="/quan-tri/nhat-ky">Nhật ký kiểm toán →</a>
-          </div>
-        </section>
-      </div>
-
-      <div className="wrap">
-        {/* KHÓA HỌC */}
-        <section>
-          <h2>Khóa học</h2>
-          <div className="tbl-scroll">
-            <table>
-              <thead><tr><th>Id</th><th>Tiêu đề</th><th>Bài</th><th></th></tr></thead>
-              <tbody id="courseRows"></tbody>
-            </table>
-          </div>
-
-          <div className="form-box">
-            <h3 id="courseFormTitle">Thêm khóa học</h3>
-            <input id="cId" placeholder="id (vd: python)" />
-            <input id="cTitle" placeholder="Tiêu đề" />
-            <input id="cSubtitle" placeholder="Phụ đề" />
-            <textarea id="cDescription" placeholder="Mô tả"></textarea>
-            <div className="row">
-              <input id="cLevel" placeholder="Cấp độ" />
-              <input id="cDuration" placeholder="Thời lượng" />
-            </div>
-            <div className="row">
-              <input id="cTag" placeholder="Tag" />
-              <input id="cImage" placeholder="Đường dẫn ảnh" />
-            </div>
-            <div className="row">
-              <input id="cColor" placeholder="color" />
-              <input id="cAccentColor" placeholder="accent_color" />
-            </div>
-            <button className="btn-primary" onClick={() => W().saveCourse()}>Lưu</button>
-            <button className="btn-ghost" onClick={() => W().resetCourseForm()}>Hủy</button>
-          </div>
-        </section>
-
-        {/* LỚP HỌC — bước đầu thành ERP: có lớp thì khu Giảng dạy mới có gì
-            để hiện, và giảng viên mới có phạm vi để phân quyền theo. */}
-        <section>
-          <h2>Lớp học</h2>
-          <div className="tbl-scroll">
-            <table>
-              <thead><tr><th>Mã</th><th>Tên lớp</th><th>Giảng viên</th><th>Lịch</th><th>Sĩ số</th><th>Trạng thái</th><th></th></tr></thead>
-              <tbody id="classRows"></tbody>
-            </table>
-          </div>
-
-          <div className="form-box">
-            <h3 id="classFormTitle">Thêm lớp</h3>
-            <div className="row">
-              <input id="klCode" placeholder="Mã lớp (vd: HSA-QL-01)" />
-              <input id="klName" placeholder="Tên lớp" />
-            </div>
-            <div className="row">
-              <input id="klCourse" placeholder="Khoá (hsa_quantitative / hsa_verbal / hsa_science — để trống = cả ba)" />
-              <select id="klTeacher" aria-label="Giảng viên phụ trách"></select>
-            </div>
-            <div className="row">
-              <input id="klSchedule" placeholder="Lịch học (vd: Thứ 3, 5 · 19:30–21:00)" />
-              <input id="klUrl" placeholder="Link phòng học online" />
-            </div>
-            <div className="row">
-              <input id="klStart" placeholder="Khai giảng (YYYY-MM-DD)" />
-              <input id="klExam" placeholder="Kỳ thi nhắm tới (YYYY-MM-DD)" />
-            </div>
-            <div className="row">
-              <input id="klCap" placeholder="Sĩ số tối đa" />
-              <select id="klStatus" aria-label="Trạng thái lớp"></select>
-            </div>
-            <textarea id="klNote" placeholder="Ghi chú"></textarea>
-            <button className="btn-primary" onClick={() => W().saveClass()}>Lưu lớp</button>
-            <button className="btn-ghost" onClick={() => W().resetClassForm()}>Hủy</button>
-          </div>
-        </section>
-
-        {/* HỌC VIÊN TRONG LỚP */}
-        <section id="memberSection" style={{ display: 'none' }}>
-          <h2 id="memberTitle">Học viên trong lớp</h2>
-          <p className="hint">
-            Cho rời lớp KHÔNG xoá dữ liệu học tập — học viên nghỉ giữa chừng vẫn còn trong báo cáo của kỳ đó.
-          </p>
-          <div className="tbl-scroll">
-            <table>
-              <thead><tr><th>Tên</th><th>Email</th><th>Bài đã xong</th><th>Trạng thái</th><th></th></tr></thead>
-              <tbody id="memberRows"></tbody>
-            </table>
-          </div>
-          <div className="form-box">
-            <h3>Thêm học viên vào lớp</h3>
-            <input id="mbEmail" placeholder="Email tài khoản học viên" />
-            <button className="btn-primary" onClick={() => W().addMember()}>Thêm vào lớp</button>
-          </div>
-        </section>
-
-        {/* CẤP TÀI KHOẢN — mảnh khép kín chính sách "trung tâm cấp tài khoản".
-            Bỏ tự đăng ký mà không có chỗ này thì không ai vào được hệ thống. */}
-        <section>
-          <h2>Cấp tài khoản cho học viên</h2>
-          <p className="hint">
-            Học viên đăng ký học ở trung tâm, bạn nhập email hoặc số điện thoại của em vào đây.
-            Hệ thống sinh một <b>mật khẩu tạm</b> để bạn đọc cho em, và bắt em đổi ngay lần đăng nhập đầu tiên.
-          </p>
-          <div className="row">
-            <input id="nuName" placeholder="Họ tên học viên" />
-            <input id="nuEmail" placeholder="Email" />
-            <input id="nuPhone" placeholder="Số điện thoại" />
-          </div>
-          <div className="row">
-            <select id="nuRole"></select>
-            <select id="nuClass"></select>
-            <button className="btn-primary" onClick={() => W().createUser()}>Cấp tài khoản</button>
-          </div>
-        </section>
-
-        {/* TÀI KHOẢN & VAI TRÒ */}
-        <section>
-          <h2>Tài khoản &amp; vai trò</h2>
-          <p className="hint">
-            Gán vai trò <b>Giảng viên</b> cho tài khoản trước, rồi mới chọn được người đó làm giảng viên phụ trách lớp.
-            {' '}Học viên quên mật khẩu thì bấm <b>Đặt lại</b> — hệ thống sinh một mật khẩu tạm để bạn đọc cho em,
-            và bắt em đổi ngay lần đăng nhập đầu tiên.
-          </p>
-          <div className="row">
-            <input id="usQ" placeholder="Tìm theo tên hoặc email" />
-            <button className="btn-ghost" onClick={() => W().searchUsers()}>Tìm</button>
-          </div>
-          <div className="tbl-scroll">
-            <table>
-              <thead><tr><th>Id</th><th>Tên</th><th>Email</th><th>Vai trò</th><th>Mật khẩu</th></tr></thead>
-              <tbody id="userRows"></tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* BÀI GIẢNG */}
-        <section>
-          <h2 id="lessonTitle">Bài giảng</h2>
-          <p className="hint" id="lessonHint">Chọn một khóa học để xem bài giảng.</p>
-          <div className="tbl-scroll">
-            <table>
-              <thead><tr><th>#</th><th>Module</th><th>Tiêu đề</th><th></th></tr></thead>
-              <tbody id="lessonRows"></tbody>
-            </table>
-          </div>
-
-          <div className="form-box" id="lessonFormBox" style={{ display: 'none' }}>
-            <h3 id="lessonFormTitle">Thêm bài giảng</h3>
-            <input id="lModule" placeholder="Module" />
-            <input id="lLessonTitle" placeholder="Tiêu đề bài giảng" />
-            <textarea id="lContent" placeholder="Nội dung"></textarea>
-            <input id="lSort" type="number" placeholder="Thứ tự" defaultValue={0} />
-            <button className="btn-primary" onClick={() => W().saveLesson()}>Lưu</button>
-            <button className="btn-ghost" onClick={() => W().resetLessonForm()}>Hủy</button>
-          </div>
-        </section>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SOẠN NỘI DUNG BÀI HỌC (2026-08-14)
-          Trước đây trang này chỉ ghi được cột `content` (TEXT) mà engine
-          không đọc, nên bài tạo ở đây học viên KHÔNG BAO GIỜ thấy. Khối này
-          soạn thẳng vào lessons.content_json — đúng thứ engine phục vụ.
-          ══════════════════════════════════════════════════════════════════ */}
-      <div className="wrap wrap--full">
-        <section id="contentSection">
-          <div className="sec-head">
-            <h2 id="contentTitle">Nội dung bài học</h2>
-            <div id="contentActions" style={{ display: 'none' }}>
-              <a className="btn-ghost btn-link" id="btnPreview" target="_blank" rel="noreferrer">Xem thử ↗</a>
-              <button className="btn-danger" onClick={() => W().clearLessonContent()}>Xoá nội dung</button>
-              <button className="btn-primary" onClick={() => W().saveLessonContent()}>Lưu nội dung</button>
-            </div>
-          </div>
-          <p className="hint" id="contentHint">
-            Chọn một khoá học rồi bấm <b>Soạn</b> ở dòng bài giảng để bắt đầu.
-            Bài chưa soạn ở đây vẫn dùng nội dung mặc định trong mã nguồn.
-          </p>
-
-          <div id="contentErrors" className="err-box" style={{ display: 'none' }}></div>
-
-          <div id="contentForm" style={{ display: 'none' }}>
-            {/* ── Thông tin bài ── */}
-            <fieldset>
-              <legend>Thông tin bài</legend>
-              <div className="row">
-                <label>Mã bài<input id="fId" placeholder="ql_01" /></label>
-                <label>Số thứ tự<input id="fIndex" type="number" min={1} placeholder="1" /></label>
-              </div>
-              <label>Tiêu đề<input id="fTitle" placeholder="Tỉ lệ &amp; phần trăm" /></label>
-              <label>Phụ đề<input id="fSubtitle" placeholder="Tăng – giảm phần trăm và bài toán thực tế" /></label>
-              <div className="row">
-                <label>Thẻ chủ đề<input id="fTopic" placeholder="Định lượng · Số học" /></label>
-                <label>XP thưởng<input id="fXp" type="number" min={0} max={500} placeholder="50" /></label>
-              </div>
-            </fieldset>
-
-            {/* ── Bước 1 ── */}
-            <fieldset>
-              <legend>Bước 1 — Kiểm tra đầu vào</legend>
-              <label>Lời dẫn<textarea id="fTestIntro" placeholder="Làm nhanh 3 câu để hệ thống định vị năng lực của bạn."></textarea></label>
-              <div id="testQs" className="repeat"></div>
-              <button className="btn-ghost" onClick={() => W().addQuestion('testQs')}>+ Thêm câu hỏi</button>
-              <div className="row" style={{ marginTop: 10 }}>
-                <label>Đúng ≥ mấy câu thì &quot;vững&quot;?<input id="fStrongMin" type="number" min={0} placeholder="3" /></label>
-                <label>Đúng ≥ mấy câu thì &quot;ổn&quot;?<input id="fOkMin" type="number" min={0} placeholder="2" /></label>
-              </div>
-              <p className="hint">
-                Đạt mốc &quot;vững&quot; → học viên nhận <b>bản tóm tắt</b>. Dưới mốc → nhận <b>bản đầy đủ</b>.
-              </p>
-            </fieldset>
-
-            {/* ── Bước 3 ── */}
-            <fieldset>
-              <legend>Bước 3 — Lý thuyết</legend>
-              <div className="tabs">
-                <button className="tab is-on" data-variant="full" onClick={(e) => W().switchVariant(e.currentTarget, 'full')}>Bản đầy đủ</button>
-                <button className="tab" data-variant="condensed" onClick={(e) => W().switchVariant(e.currentTarget, 'condensed')}>Bản tóm tắt</button>
-              </div>
-              <p className="hint">
-                Minh hoạ đặt ở hai bản là <b>hai bản riêng</b> — chỉ đặt ở bản đầy đủ thì học viên giỏi
-                sẽ không bao giờ nhìn thấy đồ thị.
-              </p>
-              <div className="variant-pane" data-pane="full">
-                <label>Tiêu đề phần lý thuyết<input id="fFullTitle" placeholder="Lý thuyết đầy đủ — cùng ôn kỹ…" /></label>
-                <div id="fullCards" className="repeat"></div>
-                <button className="btn-ghost" onClick={() => W().addCard('fullCards')}>+ Thêm thẻ lý thuyết</button>
-              </div>
-              <div className="variant-pane" data-pane="condensed" style={{ display: 'none' }}>
-                <label>Tiêu đề phần lý thuyết<input id="fCondTitle" placeholder="Tóm tắt nhanh — bạn đã khá vững" /></label>
-                <div id="condCards" className="repeat"></div>
-                <button className="btn-ghost" onClick={() => W().addCard('condCards')}>+ Thêm thẻ lý thuyết</button>
-              </div>
-            </fieldset>
-
-            {/* ── Bước 4 ── */}
-            <fieldset>
-              <legend>Bước 4 — Ghi chú</legend>
-              <label>Tiêu đề<input id="fNoteTitle" placeholder="Ghi nhớ" /></label>
-              <label>Các ý — <span className="hint-inline">mỗi dòng một ý</span>
-                <textarea id="fNotePoints" placeholder="Giảm 25% nghĩa là còn 75%&#10;Nhân thẳng hệ số, đừng tính hai bước"></textarea>
-              </label>
-            </fieldset>
-
-            {/* ── Bước 5 ── */}
-            <fieldset>
-              <legend>Bước 5 — Luyện tốc độ</legend>
-              <div className="row">
-                <label>Lời dẫn<input id="fDrillIntro" placeholder="Trả lời càng nhanh càng nhiều điểm." /></label>
-                <label>Thời gian (giây)<input id="fDrillSeconds" type="number" min={10} placeholder="60" /></label>
-              </div>
-              <div id="drillQs" className="repeat"></div>
-              <button className="btn-ghost" onClick={() => W().addQuestion('drillQs')}>+ Thêm câu luyện</button>
-            </fieldset>
-          </div>
-        </section>
-
-        {/* ── Nhập cả khoá ── */}
-        <section id="importSection">
-          <h2>Nhập cả khoá từ file JSON</h2>
-          <p className="hint">
-            Đây là đường nhận giáo trình đối tác bàn giao. Hệ thống <b>kiểm toàn bộ trước khi ghi</b> —
-            sai một bài thì không bài nào được ghi. Cấu trúc file: xem <code>docs/NHAP_GIAO_TRINH.md</code>.
-          </p>
-          <p className="hint" id="importCourse">Chọn một khoá học ở trên trước.</p>
-          <input type="file" id="importFile" accept=".json,application/json" />
-          <textarea id="importText" placeholder='{"lessons": [ … ], "total_lessons": 27}'></textarea>
-          <div className="row">
-            <label>Tổng số bài của khoá — <span className="hint-inline">bỏ trống nếu chưa bàn giao trọn</span>
-              <input id="importTotal" type="number" min={1} placeholder="27" />
-            </label>
-            <div style={{ alignSelf: 'end' }}>
-              <button className="btn-primary" onClick={() => W().importCourse()}>Nhập vào khoá</button>
-            </div>
-          </div>
-          <div id="importResult" className="err-box" style={{ display: 'none' }}></div>
-        </section>
-      </div>
-
-      <div id="toast"></div>
-
-      <LegacyScripts srcs={['/static/js/pages/admin.inline.js']} />
-    </>
+    <SoanClient
+      initial={kq.ok ? kq.data.courses : []}
+      laQuanTri={vai === 'admin'}
+      loi={kq.ok ? null : kq.message}
+    />
   );
 }
