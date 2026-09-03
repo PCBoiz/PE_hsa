@@ -736,7 +736,11 @@ Xếp theo tần suất người dùng thật chạm vào, không theo độ d�
 - [ ] T32 · Bài học (nơi học viên ở lâu nhất)
 - [ ] T33 · Thi thử
 - [ ] T34 · Danh sách khoá
-- [ ] T35 · Trang quản trị nội dung (`/admin`) — tách nốt phần tài khoản còn trùng với `/quan-tri`.
+- [x] T35 · Trang quản trị nội dung (`/admin`) — **XONG 04/09**, viết lại bằng React
+      thành khu **Soạn giáo trình**. Gác quyền ở máy chủ (admin + Biên tập nội dung);
+      phép gộp nội dung tách thành hàm thuần có bộ kiểm riêng trong CI; xoá 749 dòng
+      `admin.inline.js`/`.css` khỏi tầng ngoài bundler. Đã mở thật trong trình duyệt.
+      CÒN LẠI (tách ra vì là việc khác): khối tài khoản trùng với `/quan-tri`.
       Đo 31/08 ở 390px: ba bảng còn giấu **83px / 165px / 234px** (chúng là `<table>` HTML
       thuần nên không hưởng bố cục thẻ của T45). Chuyển sang React là vá luôn chỗ này.
 
@@ -2643,8 +2647,8 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   mức dùng. KHÔNG được A3 vá: `ref_type`/`ref_id` không phải khoá ngoại (không
   trỏ tới bảng nào — chúng mang tên bảng dạng chuỗi), nên phép đo của A3 không
   nhìn thấy chúng. Cần một chỉ mục riêng trên `(ref_type, ref_id)`.
-- [ ] A7 · **Đặt hạn cho tầng frontend cũ** — 15.604 dòng JS không qua bundler
-  so với 10.510 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
+- [ ] A7 · **Đặt hạn cho tầng frontend cũ** — **14.855** dòng JS không qua bundler
+  (đã bớt 749 dòng ngày 04/09 khi `/admin` sang React) so với ~11.500 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
   production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần
   biết màn nào chuyển tiếp, theo thứ tự nào.
 - [ ] A8 · **Quét lại mọi chú thích tự nhận "nơi duy nhất"** — lượt này tìm được
