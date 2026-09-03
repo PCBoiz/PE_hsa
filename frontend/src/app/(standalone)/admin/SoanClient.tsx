@@ -130,7 +130,13 @@ export default function SoanClient({
             Khoá học, bài học, và nội dung 5 bước của từng bài.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Đường VỀ phải có cho MỌI vai, không chỉ quản trị viên: người biên
+              tập vào thẳng đây từ thanh điều hướng và nếu không có lối ra thì
+              họ phải gõ tay địa chỉ. */}
+          <Link href="/dashboard" className="text-body text-brand-ink underline">
+            ← Trang của tôi
+          </Link>
           {laQuanTri && (
             <Link href="/quan-tri/tong-quan" className="text-body text-brand-ink underline">
               Khu vận hành →

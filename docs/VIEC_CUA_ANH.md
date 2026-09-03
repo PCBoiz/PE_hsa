@@ -220,6 +220,23 @@ quyết định của anh, không phải của tôi:
 Tạo xong báo tôi — lúc ấy mới làm được **báo cáo so sánh giữa các đợt** (tỉ lệ
 bỏ học, điểm trung bình theo đợt), thứ trước đây không có dữ liệu để làm.
 
+### [ ] D3. Cấp vai "Biên tập nội dung" cho một tài khoản
+
+Khu **Soạn giáo trình** (`/admin`) xong 04/09 và mở cho vai trò này. Nhưng hiện
+CHƯA tài khoản nào mang vai ấy, nên đường đi của người biên tập mới chỉ được
+kiểm ở tầng API (`courseadmin/tests.py`) và ở nhánh rẽ của thanh điều hướng
+(đã đo trên trình duyệt bằng cách chặn `/api/user` rồi đổi mỗi trường `role`).
+
+Thứ CHƯA đo được: hàng rào phía máy chủ của trang `/admin` với một tài khoản
+thật mang vai ấy — nó gọi `/api/user` từ tiến trình Next chứ không qua trình
+duyệt, nên không chặn từ ngoài được.
+
+Anh vào `/quan-tri/tai-khoan`, đổi vai một tài khoản (hoặc cấp một tài khoản
+mới) sang **Biên tập nội dung**. Báo tôi thì tôi chạy nốt lượt kiểm end-to-end.
+Tôi không tự làm vì đó là một câu UPDATE trên CSDL thật.
+
+---
+
 ### [ ] D2. Tài khoản quản trị viên đang nằm trong lớp 1
 
 Anh chốt **giữ** (để xem giao diện). Tôi đã ghi T51: báo cáo lớp nên lọc theo

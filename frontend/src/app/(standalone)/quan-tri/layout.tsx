@@ -20,7 +20,9 @@ const TABS = [
   { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
   { href: '/quan-tri/dot-hoc', label: 'Đợt học' },
   { href: '/quan-tri/nhat-ky', label: 'Nhật ký' },
-  { href: '/admin', label: 'Nội dung & lớp' },
+  // Nhãn cũ là "Nội dung & lớp" — sai từ 04/09: trang đó nay chỉ soạn giáo
+  // trình, phần lớp đã nằm trong khu này.
+  { href: '/admin', label: 'Soạn giáo trình' },
 ];
 
 export default async function QuanTriLayout({ children }: { children: React.ReactNode }) {

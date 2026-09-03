@@ -1583,8 +1583,23 @@ function loadUser() {
       setText("banner-greeting", isNewUser ? "Chào mừng bạn đến với ProgrammingEdu × TopHSA! 🎯" : "Chào mừng trở lại! 👋");
       setText("sidebar-name", u.name.split(" ").slice(-1)[0]);
       setText("sidebar-role", u.role);
+      // Khu SOẠN GIÁO TRÌNH (`/admin`) — quản trị viên và Biên tập nội dung.
+      //
+      // LỖI NÀY ĐÃ MẮC HAI LẦN, và lần thứ hai là ngay dưới chú thích kể lại
+      // lần thứ nhất. 01/09 thêm vai `Quản lý học vụ` mà quên nút, nên họ có
+      // quyền quản lý lớp và đợt học mà không có đường nào đi tới (xem khối
+      // ngay dưới). 04/09 thêm vai `Biên tập nội dung`, dựng xong cả một khu
+      // React cho họ — và lại quên đúng dòng này.
+      //
+      // Nên: THÊM MỘT VAI TRÒ LÀ BA VIỆC, không phải một. Hằng số ở
+      // `common/permissions.py` · `CHECK` ở `sql/legacy_schema.sql` · và ĐƯỜNG
+      // ĐI TỚI ở đây. Thiếu việc thứ ba thì tính năng vẫn "xong" theo mọi phép
+      // kiểm và vẫn không ai dùng được.
       var adminBtn = document.getElementById("nav-admin");
-      if (adminBtn) adminBtn.style.display = (u.role === "admin") ? "" : "none";
+      if (adminBtn) {
+        adminBtn.style.display =
+          (u.role === "admin" || u.role === "Biên tập nội dung") ? "" : "none";
+      }
       // Khu VẬN HÀNH (`/quan-tri/*`) — quản trị viên và quản lý học vụ.
       // Trước 01/09/2026 khu này chỉ vào được qua trang `/admin`, mà trang đó
       // chỉ quản trị viên mở được; nên quản lý học vụ có quyền quản lý lớp và

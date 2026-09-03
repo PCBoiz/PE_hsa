@@ -2623,3 +2623,37 @@ tiến độ thật cho TODO A7.
 trả mã 127, nhưng CHỈ khi stdout có ống dẫn (chạy trần thì exit 0). Nay dùng
 `process.exitCode`. Hỏng giả trong CI đắt hơn hỏng thật vì nó dạy người ta chạy
 lại cho qua.
+
+### Cùng ngày — lỗi tôi vừa lặp lại lần thứ hai
+
+Dựng xong cả khu React cho vai `Biên tập nội dung` rồi **quên đường đi tới nó**:
+`main.js` chỉ hiện nút "Quản trị" cho `u.role === "admin"`.
+
+Điều đáng nói không phải cái lỗi mà là **chú thích nằm ngay dưới dòng ấy** kể
+lại đúng lỗi này, xảy ra hôm 01/09 với vai `Quản lý học vụ`: *"khu này chỉ vào
+được qua trang /admin, mà trang đó chỉ quản trị viên mở được; nên quản lý học vụ
+có quyền quản lý lớp và đợt học mà không có một đường nào đi tới."* Tôi đọc
+dòng đó trong lúc sửa và vẫn mắc lại.
+
+Nay ghi thành luật ngay tại chỗ: **thêm một vai trò là BA việc** — hằng số ở
+`common/permissions.py`, `CHECK` ở `sql/legacy_schema.sql`, và ĐƯỜNG ĐI TỚI ở
+`main.js`. Thiếu việc thứ ba thì tính năng vẫn "xong" theo mọi phép kiểm và vẫn
+không ai dùng được.
+
+Đo trên trình duyệt thật, chặn `/api/user` rồi đổi mỗi trường `role` (không tạo
+tài khoản nào — đó là GHI):
+
+    admin              → Soạn giáo trình HIỆN · Vận hành HIỆN
+    Biên tập nội dung  → Soạn giáo trình HIỆN · Vận hành ẩn
+    Quản lý học vụ     → Soạn giáo trình ẩn   · Vận hành HIỆN
+    Giảng viên         → ẩn cả hai
+    Học viên           → ẩn cả hai
+
+Lùi `main.js` về bản cũ → vai Biên tập nội dung mất cả hai lối vào. Đỏ đúng chỗ.
+
+Kèm: nhãn tab `/admin` trong khu quản trị vẫn là "Nội dung & lớp" — sai từ hôm
+nay, phần lớp đã nằm trong khu ấy rồi; đổi thành "Soạn giáo trình". Và trang
+`/admin` chỉ có lối ra cho quản trị viên; nay mọi vai đều có "← Trang của tôi".
+
+CHƯA đo được: hàng rào máy chủ của `/admin` với một tài khoản THẬT mang vai mới
+— cần một câu UPDATE trên CSDL thật. Đã ghi vào `VIEC_CUA_ANH` mục D3.
