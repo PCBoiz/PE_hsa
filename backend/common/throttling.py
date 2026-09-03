@@ -9,8 +9,25 @@ endpoint chung 1 quota → 1 lần load dashboard (~20 API call) sẽ đốt g�
 """
 from rest_framework.throttling import SimpleRateThrottle
 
+from common.net import client_ip
 
-class _PerViewIPThrottle(SimpleRateThrottle):
+
+class _IPKhach:
+    """Lấy IP khách qua `common.net.client_ip`, KHÔNG qua `get_ident` của DRF.
+
+    Hai hàm ấy cùng công thức và cùng đọc `NUM_PROXIES`, nên hôm nay chúng bằng
+    nhau. Nhưng nhật ký kiểm toán cũng phải trả lời đúng câu hỏi này, và một
+    trong hai bản sẽ được sửa trước bản kia — đã xảy ra: `audit._client_ip` lấy
+    phần tử ĐẦU trong khi `get_ident` lấy phần tử CUỐI, tức cùng một request bị
+    chặn vì IP này lại vào sổ dưới IP kia.
+
+    Nên ở đây là MỘT cửa (`RULES §6`), không phải hai bản trùng khớp.
+    """
+    def get_ident(self, request):
+        return client_ip(request)
+
+
+class _PerViewIPThrottle(_IPKhach, SimpleRateThrottle):
     def get_cache_key(self, request, view):
         ident = self.get_ident(request)  # IP (get_remote_address tương đương)
         return self.cache_format % {
@@ -59,7 +76,7 @@ class DailyUserThrottle(_PerViewUserThrottle):
     scope = 'user_day'
 
 
-class LoginThrottle(SimpleRateThrottle):
+class LoginThrottle(_IPKhach, SimpleRateThrottle):
     """@limiter.limit("5 per minute") trên /auth/login."""
     scope = 'login'
 
@@ -67,7 +84,7 @@ class LoginThrottle(SimpleRateThrottle):
         return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
 
-class RegisterThrottle(SimpleRateThrottle):
+class RegisterThrottle(_IPKhach, SimpleRateThrottle):
     """@limiter.limit("3 per minute") trên /auth/register."""
     scope = 'register'
 

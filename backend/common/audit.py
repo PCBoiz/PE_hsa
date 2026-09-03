@@ -28,6 +28,7 @@ from django.db import DatabaseError, transaction
 
 from common.clock import local_now
 from common.db import x
+from common.net import client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -65,32 +66,19 @@ ASSIGNMENT_GRADE = 'assignment.grade'
 
 
 def _client_ip(request):
-    """IP thật sau proxy. Render và Vercel đều đứng trước ứng dụng nên
-    ``REMOTE_ADDR`` luôn là IP của proxy — vô dụng cho kiểm toán."""
-    if request is None:
-        return None
-    fwd = request.META.get('HTTP_X_FORWARDED_FOR')
-    if fwd:
-        # Chuỗi dạng "client, proxy1, proxy2" — phần tử đầu là máy khách.
-        #
-        # CẢNH BÁO CHƯA VÁ (T66, 31/08/2026): phần tử ĐẦU là thứ người gọi TỰ
-        # ĐẶT được. Ai gọi thẳng vào Render kèm `X-Forwarded-For: 1.2.3.4` thì
-        # cột `ip` của nhật ký kiểm toán ghi 1.2.3.4 — tức bằng chứng kiểm toán
-        # giả mạo được, ở đúng chỗ sinh ra để làm bằng chứng.
-        #
-        # KHÔNG sửa vội thành phần tử CUỐI: đúng vị trí phụ thuộc số chặng proxy
-        # thật, mà con số đó CHƯA ĐO trên production (mọi dòng `admin_audit`
-        # hiện có đều là ::1 / 127.0.0.1 — chưa request thật nào đi qua
-        # Render/Vercel). Sửa mù ở đây rồi đặt `NUM_PROXIES` theo chiều khác là
-        # hàng rào tần suất và nhật ký kiểm toán chỉ vào HAI IP khác nhau cho
-        # cùng một request — tệ hơn hiện trạng.
-        #
-        # Vá cùng lúc với `REST_FRAMEWORK['NUM_PROXIES']`, sau khi anh đo xong
-        # (xem `docs/VIEC_CUA_ANH.md` mục A2). Hai chỗ phải dùng CÙNG một quy
-        # ước chọn phần tử.
-        return fwd.split(',')[0].strip()[:60]
-    addr = request.META.get('REMOTE_ADDR')
-    return addr[:60] if addr else None
+    """IP thật sau proxy — nay đi qua `common.net.client_ip`.
+
+    TRƯỚC 04/09/2026 hàm này tự lấy phần tử **ĐẦU** của `X-Forwarded-For`, tức
+    đúng phần khách tự viết. Hậu quả: ai gọi thẳng vào Render kèm một header tự
+    đặt thì cột `ip` của nhật ký kiểm toán ghi luôn con số ấy — bằng chứng kiểm
+    toán giả mạo được, ở đúng chỗ sinh ra để làm bằng chứng.
+
+    Chú thích cũ ở đây dặn "KHÔNG sửa vội thành phần tử CUỐI" vì sợ lệch với
+    `NUM_PROXIES`. Lời dặn ấy đúng, và cách giữ nó không phải là để nguyên hai
+    bản mà là **bỏ hẳn bản thứ hai**: nay chỉ còn một hàm quyết định, nên hai
+    chỗ không thể lệch nữa dù ai sửa.
+    """
+    return client_ip(request)
 
 
 def record(request, action, *, target_type=None, target_id=None, target_label=None,

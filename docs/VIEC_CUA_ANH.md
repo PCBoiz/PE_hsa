@@ -16,10 +16,16 @@ Xem đang trước `master` bao nhiêu mốc: `git rev-list --count origin/maste
 
 ### [ ] A1. Xoay `SECRET_KEY`
 
-**Vì sao gấp:** khoá hiện tại dài **19 byte**. RFC 7518 yêu cầu tối thiểu 32 byte
-cho HS256 — thuật toán đang ký mọi JWT của hệ thống. Thư viện `pyjwt` cảnh báo
-đúng chuyện này mỗi lần sinh token; cảnh báo đó xuất hiện suốt phiên làm việc
-31/08.
+**Vì sao gấp:** khoá hiện tại dài **19 byte**. RFC 7518 §3.2 yêu cầu tối thiểu
+32 byte cho HS256 — thuật toán đang ký mọi JWT của hệ thống. Thư viện `pyjwt`
+cảnh báo đúng chuyện này mỗi lần sinh token; cảnh báo đó xuất hiện suốt phiên
+làm việc 31/08, và vẫn xuất hiện ở phiên 04/09.
+
+> **Đổi 04/09/2026 — nay production KHÔNG KHỞI ĐỘNG với khoá ngắn.**
+> `config/settings.py` kiểm độ dài và ném lỗi kèm đúng câu lệnh sinh khoá. Một
+> cảnh báo lặp lại mỗi request là một cảnh báo người ta học cách không đọc; đây
+> là lý do đổi nó thành điều kiện. Máy dev không chạm vào nhánh này (nó tự sinh
+> khoá 64 ký tự khi thiếu).
 
 ```bash
 python -c "import secrets;print(secrets.token_urlsafe(48))"
@@ -63,25 +69,46 @@ tâm bị chặn.
 
 Con số đó chính là `NUM_PROXIES`. Cho tôi biết, tôi đặt vào `settings.py`.
 
-**Bổ sung 31/08/2026 — đo lại bằng chính `LoginThrottle().get_ident()`:**
+**ĐO LẠI 04/09/2026 — và bảng cũ ở đây SAI, đã thay.**
 
-| kịch bản | `None` (hiện tại) | `=1` | `=2` |
-|---|---|---|---|
-| gọi THẲNG, giả XFF | khoá đổi theo header → **lọt** | **IP thật → chặn** | header điều khiển khoá → **lọt** |
-| qua proxy Vercel | IP egress Vercel | IP egress Vercel | IP egress Vercel |
+Bảng ghi ngày 31/08 nói `=1` khiến lời gọi THẲNG có giả header bị quy về IP
+thật. Không đúng. Đo lại bằng `SimpleRateThrottle.get_ident` với `RequestFactory`
+thật của Django (IP khách thật là `203.0.113.9`):
+
+| kịch bản | `None` (cũ) | `=0` | `=1` | `=2` |
+|---|---|---|---|---|
+| gọi thẳng, không header | 203.0.113.9 | 203.0.113.9 | 203.0.113.9 | 203.0.113.9 |
+| gọi thẳng, **giả** 1 chặng | 9.9.9.9 ✗ | **203.0.113.9 ✓** | 9.9.9.9 ✗ | 9.9.9.9 ✗ |
+| gọi thẳng, **giả** 3 chặng | cả chuỗi ✗ | **203.0.113.9 ✓** | 3.3.3.3 ✗ | 2.2.2.2 ✗ |
+| qua 1 proxy thật | 203.0.113.9 | ip proxy | **203.0.113.9 ✓** | 203.0.113.9 |
+| qua 1 proxy, khách **giả** thêm | 9.9.9.9 ✗ | ip proxy | **203.0.113.9 ✓** | 9.9.9.9 ✗ |
+| qua 2 proxy thật | cả chuỗi | ip proxy | ip proxy 2 | **203.0.113.9 ✓** |
 
 Ba điều rút ra:
-1. **`=1` gần như chắc chắn là con số đúng**, và nó KHÔNG làm xấu đường qua
-   Vercel (cột `=1` và cột `None` cho cùng một khoá ở dòng dưới). **Tuyệt đối
-   đừng đặt `2`** — khi đó kẻ tấn công điều khiển được khoá, tệ hơn hiện trạng.
-2. **Đường qua Vercel ĐANG gộp chung một xô rồi**, không phải hậu quả của việc
-   đặt `NUM_PROXIES`: `proxy.ts` strip `x-forwarded-for` và `fetch` của Node
-   không thêm lại, nên Django chỉ thấy IP egress của Vercel. Đây là vấn đề
-   riêng, xử sau và xử riêng.
-3. **`common/audit.py::_client_ip` lấy phần tử ĐẦU** (thứ người gọi tự đặt) —
-   ngược chiều với thứ `NUM_PROXIES=1` sẽ dùng (phần tử cuối). Tôi đã ghi cảnh
-   báo vào mã. **Hai chỗ này phải sửa CÙNG LÚC**, nếu không nhật ký kiểm toán và
-   hàng rào tần suất chỉ vào hai IP khác nhau cho cùng một request.
+
+1. **`=1` vẫn là con số đúng cho production — nhưng vì lý do KHÁC với lý do ghi
+   ở bảng cũ.** Nó không "phát hiện ra header giả"; nó lấy phần tử CUỐI, và trên
+   production phần tử cuối là thứ *tầng biên của Render nối vào*, không phải thứ
+   khách viết. Không gì tới được Django mà không qua tầng ấy.
+2. **Trên máy dev thì `=1` không bảo vệ gì** (không có chặng nào để nối IP thật)
+   — nên mã nay mặc định `0` ở dev và `1` ở production, đọc được từ biến môi
+   trường `NUM_PROXIES` nếu anh đo ra chuỗi proxy dài hơn. **Đừng đặt `2` khi
+   chỉ có một chặng**: khi đó khoá lại rơi vào phần khách tự viết.
+3. **Đường qua Vercel vẫn gộp chung MỘT xô**, và `NUM_PROXIES` không sửa được:
+   `proxy.ts` cố ý gỡ `x-forwarded-for`, `fetch` của Node không thêm lại, nên
+   Django chỉ thấy IP egress của Vercel. Với trần đăng nhập 5 lượt/phút, người
+   thứ sáu đăng nhập trong cùng một phút bị chặn dù ở đầu kia đất nước. Đây là
+   việc RIÊNG, đã ghi vào `TODO.md`.
+
+> **Phần mã đã xong 04/09/2026.** `common/net.py` nay là nơi DUY NHẤT trả lời
+> "request này đến từ đâu"; cả hàng rào tần suất lẫn nhật ký kiểm toán đều gọi
+> nó. Trước đó chúng lấy hai đầu ĐỐI NGHỊCH của cùng chuỗi header — cùng một
+> request bị chặn vì IP này lại vào sổ dưới IP kia. Có phép kiểm canh đúng bất
+> biến ấy, đã chứng minh ĐỎ khi lùi lại bản cũ.
+>
+> **Việc còn của anh:** đo chuỗi proxy thật của Render (cách đo ở trên). Ra `1`
+> thì không phải làm gì — mã đã mặc định thế. Ra số khác thì đặt biến môi trường
+> `NUM_PROXIES` trên Render, không cần sửa mã.
 
 *Vì sao vẫn cần anh đo:* mọi số liệu trên là đo ở máy — toàn bộ 32 dòng
 `admin_audit` hiện có đều là `::1`/`127.0.0.1`, chưa request production nào được
@@ -98,8 +125,13 @@ tạm, chỉ quản trị viên gọi được, đo xong gỡ đi.)*
 `LocMemCache` **riêng**, mà bộ đếm giới hạn tần suất nằm trong đó. Nên **mọi
 giới hạn đang bị nhân đôi** — đặt 5 lần/phút thì thực tế là 10.
 
-**Việc của anh:** Render → **New** → **Key Value** (Redis), rồi đưa tôi
-`REDIS_URL`. Phần mã tôi làm.
+**Việc của anh:** Render → **New** → **Key Value** (Redis), rồi đặt biến
+`REDIS_URL` cho service `pe-hsa-backend`.
+
+> **Phần mã ĐÃ XONG từ trước** (`config/settings.py`, khối `REDIS_URL`): có biến
+> thì dùng Redis, không có thì chạy y như cũ bằng `LocMemCache`. Không cần đưa
+> URL cho tôi, và không cần sửa một dòng mã nào — chỉ cần đặt biến rồi deploy
+> lại. `django-redis` đã nằm trong `requirements.txt`.
 
 ---
 

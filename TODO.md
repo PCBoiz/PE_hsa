@@ -2633,10 +2633,11 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 - [ ] A4 · **Duyệt 6 câu `DROP INDEX`** — đã soạn sẵn trong `§35` của
   `backend/sql/legacy_schema.sql`. Cần anh gật đầu: luật repo là chỉ DDL THÊM
   mới được tự chạy trên CSDL thật ở `buildCommand`.
-- [ ] A5 · `ALLOWED_HOSTS` và `ALLOWED_ORIGINS` tách chuỗi mà không `.strip()`
-  (`config/settings.py:32,36`), trong khi `CSRF_TRUSTED_ORIGINS` ngay dưới thì
-  có. Viết `"a.com, b.com"` cho ra một host tên `" b.com"` không bao giờ khớp,
-  và triệu chứng là 400 trên toàn miền chứ không phải một lỗi cấu hình đọc được.
+- [x] A5 · `ALLOWED_HOSTS` và `ALLOWED_ORIGINS` tách chuỗi mà không `.strip()`
+  (`config/settings.py`), trong khi `CSRF_TRUSTED_ORIGINS` ngay dưới thì có.
+  Viết `"a.com, b.com"` cho ra một host tên `" b.com"` không bao giờ khớp, và
+  triệu chứng là 400 trên toàn miền chứ không phải một lỗi cấu hình đọc được.
+  — **XONG 04/09**, vá cùng lượt với ba cổng an ninh (cùng tệp).
 - [ ] A6 · `DELETE FROM learning_events WHERE ref_type=… AND ref_id=…` là
   `Seq Scan` (đã `EXPLAIN`). Hôm nay bảng 37 dòng nên rẻ; nó đắt dần đúng theo
   mức dùng. KHÔNG được A3 vá: `ref_type`/`ref_id` không phải khoá ngoại (không
@@ -2657,3 +2658,15 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   đã tới nơi là đi hỏi `pg_catalog` từng cái một. Tạm thời mỗi mục tự ghi trạng
   thái (xem cuối `§43`); cần một bảng ghi phiên bản lược đồ thật.
   Đang chờ deploy: `§42` (2 khoá `roadmaps`) · `§43` (2 khoá `courses`/`missions`).
+- [ ] A10 · **Mọi người dùng thật đang chung MỘT xô giới hạn tần suất.**
+  `src/lib/proxy.ts` cố ý gỡ `x-forwarded-for` của khách (đúng — để khách không
+  giả được), nhưng `fetch` của Node không thêm lại, nên Django chỉ thấy IP
+  egress của Vercel. Với trần đăng nhập 5 lượt/phút ở production, người thứ sáu
+  đăng nhập trong cùng một phút bị chặn dù ngồi ở đầu kia đất nước — tức hàng
+  rào tần suất, thứ dựng ra để chống vét cạn, trở thành máy sinh sự cố cho một
+  lớp 30 em vào học cùng giờ.
+  `NUM_PROXIES` KHÔNG sửa được (đã đo 04/09, xem `common/net.py`).
+  Cách sửa cần chốt: `proxy.ts` chuyển tiếp IP mà CHÍNH VERCEL đã tính
+  (`x-real-ip` / `x-vercel-forwarded-for`) sang một header riêng, và Django chỉ
+  tin header đó khi kèm một bí mật chung — nếu không thì ai gọi thẳng Render
+  cũng đặt được. Đây là thiết kế có bí mật, nên hỏi trước khi làm.

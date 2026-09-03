@@ -254,3 +254,67 @@ def test_khong_cau_DDL_nao_dung_toi_bang_chua_duoc_tao():
                         loi.append('%s: %s' % (f.name, ' '.join(st.split())[:70]))
                     break
     assert loi == [], loi
+
+
+# ── IP máy khách: MỘT cửa cho cả hàng rào tần suất lẫn nhật ký kiểm toán ────
+#
+# LỖI GỐC (đo 04/09/2026). `audit._client_ip` lấy phần tử ĐẦU của
+# `X-Forwarded-For`, còn `get_ident` của DRF lấy phần tử CUỐI. Phần đầu là thứ
+# khách TỰ VIẾT, nên: cùng một request bị chặn vì IP này lại vào sổ kiểm toán
+# dưới IP kia — và cột `ip` của nhật ký, thứ sinh ra để làm bằng chứng, giả mạo
+# được chỉ bằng một header.
+#
+# Ba phép kiểm dưới đây canh ba việc KHÁC nhau, cố ý:
+#   1. hai bên có CÙNG một câu trả lời (bất biến bị vỡ);
+#   2. `NUM_PROXIES=1` bỏ qua được chặng khách bịa (giá trị đúng);
+#   3. `=0` thì không tin header nào (đường máy dev).
+
+from django.test import RequestFactory, override_settings  # noqa: E402
+
+from common import audit as _audit  # noqa: E402
+from common.throttling import LoginThrottle  # noqa: E402
+
+_rf = RequestFactory()
+
+
+def _req(remote='203.0.113.9', xff=None):
+    kw = {'REMOTE_ADDR': remote}
+    if xff is not None:
+        kw['HTTP_X_FORWARDED_FOR'] = xff
+    return _rf.get('/', **kw)
+
+
+@override_settings(NUM_PROXIES=1)
+def test_hang_rao_tan_suat_va_nhat_ky_luon_thay_CUNG_mot_ip():
+    """Bất biến: hai hệ thống phải nói cùng một con số cho cùng một request.
+
+    Không khẳng định con số ấy BẰNG BAO NHIÊU — đó là việc của phép kiểm dưới.
+    Ở đây chỉ khẳng định chúng KHÔNG LỆCH, vì lệch là kiểu hỏng mà cả hai bên
+    đều trông vẫn đúng khi nhìn riêng.
+    """
+    t = LoginThrottle.__new__(LoginThrottle)   # bỏ qua __init__ (nó đọc rate)
+    for xff in (None, '9.9.9.9', '9.9.9.9, 203.0.113.9', '1.1.1.1, 2.2.2.2, 3.3.3.3'):
+        r = _req(xff=xff)
+        assert t.get_ident(r) == _audit._client_ip(r), (
+            'lệch với X-Forwarded-For=%r: tần suất thấy %r, nhật ký ghi %r'
+            % (xff, t.get_ident(r), _audit._client_ip(r)))
+
+
+@override_settings(NUM_PROXIES=1)
+def test_mot_chang_tin_cay_thi_bo_qua_phan_khach_tu_bia():
+    from common.net import client_ip
+    # Khách bịa thêm một chặng vào ĐẦU; chặng tin cậy nối IP thật vào CUỐI.
+    assert client_ip(_req(remote='10.0.0.5', xff='9.9.9.9, 203.0.113.9')) == '203.0.113.9'
+    # Bịa nhiều chặng cũng vậy — chỉ phần tử cuối là do proxy thật nối vào.
+    assert client_ip(_req(remote='10.0.0.5',
+                          xff='1.1.1.1, 2.2.2.2, 203.0.113.9')) == '203.0.113.9'
+
+
+@override_settings(NUM_PROXIES=0)
+def test_khong_co_chang_tin_cay_thi_khong_tin_header_nao():
+    """Đường máy dev: không có proxy nào, nên `REMOTE_ADDR` là câu trả lời duy
+    nhất không giả được. Đây là lý do mặc định theo MÔI TRƯỜNG chứ không phải
+    một hằng số dùng chung cho cả dev lẫn production."""
+    from common.net import client_ip
+    assert client_ip(_req(xff='9.9.9.9')) == '203.0.113.9'
+    assert client_ip(_req(xff='1.1.1.1, 2.2.2.2')) == '203.0.113.9'

@@ -2479,3 +2479,54 @@ nên xoá một khoá sẽ lặng lẽ giao nhiệm vụ riêng của nó cho m�
 
 Và: **tệp lược đồ đang đi trước CSDL thật** — `§41` có trên Neon, `§42` không.
 Không có gì hỏng, nhưng cũng không có gì nói ra chuyện đó. Vào TODO mục A9.
+
+---
+
+## 04/09/2026 — Ba cổng an ninh: phần mã đã sẵn
+
+Anh chốt: anh làm phần bảng điều khiển Render, tôi chuẩn bị mã. Xong phần tôi.
+
+**`SECRET_KEY` nay là điều kiện chặn, không còn là cảnh báo.** Khoá 19 byte,
+RFC 7518 §3.2 đòi 32 cho HS256. `pyjwt` cảnh báo đúng chuyện đó ở mỗi lượt sinh
+token, suốt từ 31/08 tới nay — một cảnh báo lặp lại mỗi request là một cảnh báo
+người ta học cách không đọc. Nay production không khởi động được với khoá ngắn,
+kèm đúng câu lệnh sinh khoá trong thông báo lỗi. Dev không chạm nhánh này.
+
+**`NUM_PROXIES`: bảng đo cũ trong `VIEC_CUA_ANH` §A2 SAI, đã thay.** Bảng ấy ghi
+`=1` khiến lời gọi thẳng có giả header bị quy về IP thật. Đo lại bằng
+`SimpleRateThrottle.get_ident` với `RequestFactory` thật: `=1` lấy phần tử CUỐI,
+mà gọi thẳng thì phần tử cuối vẫn do khách đặt (`9.9.9.9`, không phải IP thật).
+
+`=1` **vẫn là con số đúng cho production**, nhưng vì lý do khác: không gì tới
+được Django mà không qua tầng biên của Render, và chính tầng ấy nối IP thật vào
+cuối. Trên máy dev thì không có chặng nào, nên ở đó `0` mới đúng. Mã nay mặc
+định theo môi trường, đọc được từ biến `NUM_PROXIES` nếu chuỗi proxy dài hơn.
+
+Đây đúng loại lỗi `RULES §15` cấm: một "số đo" được khẳng định mà sai. Người sau
+đọc nó sẽ TIN và không đo lại.
+
+**Thứ đáng giá hơn con số: gộp về MỘT cửa.** `get_ident` của DRF và
+`audit._client_ip` là hai bản cài đặt của cùng một câu hỏi, và chúng chọn hai
+đầu ĐỐI NGHỊCH của cùng chuỗi header — nên cùng một request bị chặn vì IP này
+lại vào sổ kiểm toán dưới IP kia. Cột `ip` của nhật ký, thứ sinh ra để làm bằng
+chứng, giả mạo được chỉ bằng một header. Nay `common/net.py` là nơi duy nhất trả
+lời, cả hai bên gọi nó.
+
+Phép kiểm canh đúng **bất biến** (hai bên phải nói cùng một số) chứ không canh
+giá trị — vì lệch là kiểu hỏng mà cả hai bên đều trông đúng khi nhìn riêng. Lùi
+`audit._client_ip` về bản cũ → đỏ đúng phép kiểm ấy, ba phép kia vẫn xanh.
+
+**`REDIS_URL`: phần mã đã có sẵn từ trước**, chỉ cần anh tạo Key Value và đặt
+biến. Không có biến thì chạy y như cũ.
+
+**Kèm theo, cùng tệp:** A5 — `ALLOWED_HOSTS`/`ALLOWED_ORIGINS` nay `.strip()`
+(dòng `CSRF_TRUSTED_ORIGINS` ngay dưới vốn đã có; hai dòng cạnh nhau, cùng một
+việc, một có một không).
+
+**Phát hiện mới, chưa vá — TODO A10.** `NUM_PROXIES` không sửa được chuyện MỌI
+người dùng thật đang chung một xô: `proxy.ts` gỡ `x-forwarded-for` (đúng), nhưng
+không thêm lại IP mà Vercel đã tính, nên Django chỉ thấy IP egress của Vercel.
+Trần đăng nhập 5/phút → người thứ sáu bị chặn dù ở đầu kia đất nước. Cách sửa
+cần một bí mật chung giữa proxy và Django, nên hỏi trước khi làm.
+
+36 phép kiểm đạt (`common` + `accounts`); `manage.py check` sạch.

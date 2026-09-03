@@ -27,13 +27,36 @@ if not SECRET_KEY:
     import secrets as _secrets
     SECRET_KEY = _secrets.token_hex(32)
 
+# ĐỘ DÀI KHOÁ LÀ MỘT ĐIỀU KIỆN, KHÔNG PHẢI MỘT LỜI KHUYÊN (04/09/2026).
+#
+# Khoá đang dùng dài 19 byte. RFC 7518 §3.2 đòi tối thiểu 32 byte cho HS256 —
+# đúng thuật toán đang ký MỌI JWT của hệ thống. `pyjwt` có cảnh báo chuyện này,
+# và nó in ra ở mỗi lượt sinh token suốt nhiều ngày mà không ai làm gì.
+#
+# Đó là lý do đổi cảnh báo thành CHẶN: một cảnh báo lặp lại mỗi request là một
+# cảnh báo người ta học cách không đọc. Chỉ chặn ở production — máy dev sinh
+# khoá 64 ký tự ở nhánh trên nên không bao giờ chạm vào đây.
+if IS_PRODUCTION and len(SECRET_KEY.encode()) < 32:
+    raise RuntimeError(
+        'SECRET_KEY dài %d byte, cần tối thiểu 32 cho HS256 (RFC 7518 §3.2). '
+        'Sinh khoá mới: python -c "import secrets;print(secrets.token_urlsafe(48))"'
+        % len(SECRET_KEY.encode()))
+
 DEBUG = os.environ.get('DJANGO_DEBUG', os.environ.get('FLASK_DEBUG', '0')) == '1'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# `.strip()` KHÔNG thừa (A5, 04/09/2026). Cách viết tự nhiên nhất của một danh
+# sách là `"a.com, b.com"` — có dấu cách. Thiếu `strip` thì phần tử thứ hai
+# thành host tên `" b.com"`, không bao giờ khớp, và triệu chứng là 400 trên
+# toàn miền chứ không phải một câu lỗi cấu hình đọc được.
+# `CSRF_TRUSTED_ORIGINS` ngay dưới ĐÃ strip từ đầu — hai dòng cạnh nhau, cùng
+# một việc, một dòng có và một dòng không.
+ALLOWED_HOSTS = [h.strip() for h in
+                 os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
 
 # Frontend Next.js (origin khác) — dùng cho CORS + redirect sau OAuth
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
+ALLOWED_ORIGINS = [o.strip() for o in
+                   os.environ.get('ALLOWED_ORIGINS', FRONTEND_URL).split(',') if o.strip()]
 
 # Render inject RENDER_EXTERNAL_HOSTNAME khi deploy → tự thêm vào ALLOWED_HOSTS
 # (đỡ phải biết trước domain <app>.onrender.com).
@@ -194,6 +217,24 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.ScryptPasswordHasher',
 ]
 
+# ── Số chặng proxy TIN CẬY đứng trước Django ────────────────────────────────
+#
+# `X-Forwarded-For` là chuỗi mà MỖI proxy nối thêm vào cuối; phần đầu là thứ
+# khách tự viết. Nên "IP thật" = phần tử thứ NUM_PROXIES tính từ cuối.
+#
+# Đo 04/09/2026 (`SimpleRateThrottle.get_ident`, RequestFactory thật):
+#   · để trống (hiện trạng cũ) → dùng CẢ chuỗi làm khoá → xoay header là lọt
+#     mọi giới hạn. Đã đo trước đó: 300/300 request qua được hàng rào.
+#   · `=1` trên máy dev KHÔNG bảo vệ gì (không có chặng nào, phần tử cuối vẫn
+#     do khách đặt) — nên dev dùng `0`, tức `REMOTE_ADDR`, thứ không giả được.
+#   · `=1` trên production đúng, vì không gì tới được Django mà không qua tầng
+#     biên của Render, và chính nó nối IP thật vào cuối.
+#
+# Đặt được bằng biến môi trường: nếu anh đo ra chuỗi proxy của Render dài hơn
+# một chặng thì đổi biến, không phải sửa mã. TUYỆT ĐỐI đừng đặt `2` khi chỉ có
+# một chặng — khi đó khoá lại rơi vào phần khách tự viết, tệ hơn hiện trạng.
+NUM_PROXIES = int(os.environ.get('NUM_PROXIES', '1' if IS_PRODUCTION else '0'))
+
 REST_FRAMEWORK = {
     # JWT thay session — CSRF middleware của Django không áp lên JWT header auth
     # (tương đương WTF_CSRF_CHECK_DEFAULT=False + csrf.exempt của Flask cũ).
@@ -213,6 +254,10 @@ REST_FRAMEWORK = {
     # đăng nhập đầu giờ. Mức mới vẫn chặn được vét cạn/scrape per-endpoint.
     # Static KHÔNG đi qua DRF (Next.js serve) nên bug 429 file tĩnh
     # (AUDIT-FIX 2026-07-07) không thể tái diễn ở kiến trúc mới.
+    # Giữ cho mọi throttle của DRF mà mã này KHÔNG ghi đè cũng hiểu đúng chuỗi
+    # proxy. Các throttle trong `common/throttling.py` thì đi qua
+    # `common.net.client_ip` — xem chú thích ở đó về việc vì sao phải MỘT cửa.
+    'NUM_PROXIES': NUM_PROXIES,
     'DEFAULT_THROTTLE_CLASSES': [
         'common.throttling.DailyIPThrottle',
         'common.throttling.HourlyIPThrottle',
