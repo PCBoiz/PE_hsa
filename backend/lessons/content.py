@@ -27,6 +27,7 @@ Hình dạng một bài (giữ NGUYÊN schema mà engine đang dùng, không ph�
     }
 """
 import json
+import re
 
 from common.db import q, q1
 from lessons.grading import bo_dap_an
@@ -35,6 +36,67 @@ from lessons.grading import bo_dap_an
 REQUIRED = ('id', 'index', 'title', 'test', 'theory')
 #: Trần độ dài để một lần nhập sai không nhét cả cuốn sách vào DB.
 MAX_LESSON_BYTES = 400_000
+
+# ── HTML TRONG NỘI DUNG BÀI: CHO PHÉP, NHƯNG CÓ DANH SÁCH ───────────────────
+#
+# VÌ SAO CẦN (vá 04/09/2026). Engine bài học đổ HAI trường vào `innerHTML` mà
+# KHÔNG escape — cố ý, vì người soạn cần in đậm và gõ công thức:
+#
+#     lesson_hsa.js:33    test.intro
+#     lesson_hsa.js:401   theory.{full,condensed}.cards[].body
+#
+# Chuyện ấy vô hại khi người soạn CHÍNH LÀ quản trị viên. Nhưng từ 04/09 có vai
+# `Biên tập nội dung` — vai trò sinh ra để KHÔNG phải cấp quyền quản trị cho
+# người gõ bài. Không có bộ lọc thì vai ấy leo thẳng lên quyền quản trị: nhét
+# `<img src=x onerror=fetch('/api/admin/users/create', …)>` vào `intro`, rồi đợi
+# một quản trị viên mở bài ra xem thử. Mã chạy trên miền Vercel nơi cookie phiên
+# sống, nên không cần đọc token — chỉ cần dùng nó.
+#
+# ĐO TRƯỚC KHI CHỌN DANH SÁCH. Quét cả 76 bài đang có:
+#     <strong> 160 lần · <code> 134 · <b> 62 · và KHÔNG một thuộc tính nào.
+# Nên danh sách dưới đây rộng hơn thực tế đang dùng, mà vẫn không có chỗ nào
+# treo được mã: không thuộc tính = không `onerror`, không `href`, không `style`.
+THE_CHO_PHEP = frozenset({
+    'b', 'strong', 'i', 'em', 'u', 'code', 'br', 'sub', 'sup',
+})
+
+# `<` MỞ THẺ chỉ khi liền sau là chữ cái hoặc `/` — đúng luật của bộ phân tích
+# HTML. Nếu bỏ qua chi tiết này thì `0 < a < 1` (có thật trong
+# `hsa_quantitative#8`) bị coi là thẻ `<a>` và nội dung toán học bị chặn oan.
+# Chính phép đo đầu tiên của tôi đã sập đúng bẫy ấy và báo "có 1 thẻ <a>".
+_MO_THE = re.compile(r'<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>')
+
+
+def _kiem_html(chuoi, path, errors):
+    """Bắt lỗi thẻ lạ và MỌI thuộc tính trong một chuỗi nội dung."""
+    for dong, ten, duoi in _MO_THE.findall(chuoi or ''):
+        t = ten.lower()
+        if t not in THE_CHO_PHEP:
+            errors.append(_err(path, 'không cho phép thẻ <%s>. Chỉ dùng được: %s'
+                               % (t, ', '.join('<%s>' % x for x in sorted(THE_CHO_PHEP)))))
+        elif not dong and duoi.strip().rstrip('/').strip():
+            # Thuộc tính là chỗ treo mã (`onerror`, `href`, `style`), nên cấm
+            # HẾT thay vì lọc từng cái — lọc từng cái là một danh sách đen, và
+            # danh sách đen luôn thiếu một dòng.
+            errors.append(_err(path, 'thẻ <%s> không được mang thuộc tính (thấy: %s)'
+                               % (t, duoi.strip()[:60])))
+
+
+def _duyet_chuoi(o, path, errors):
+    """Đi hết mọi chuỗi trong nội dung bài rồi soi HTML của từng chuỗi.
+
+    Duyệt TOÀN BỘ chứ không chỉ hai trường đang được đổ vào `innerHTML`: chỗ
+    hiển thị có thể mọc thêm (bản in, ứng dụng di động), và lúc ấy không ai nhớ
+    quay lại nới bộ lọc. Chặn ở đường GHI thì chỉ phải đúng một lần.
+    """
+    if isinstance(o, str):
+        _kiem_html(o, path, errors)
+    elif isinstance(o, dict):
+        for k, v in o.items():
+            _duyet_chuoi(v, f'{path}.{k}', errors)
+    elif isinstance(o, list):
+        for i, v in enumerate(o):
+            _duyet_chuoi(v, f'{path}[{i}]', errors)
 
 
 def _err(path, msg):
@@ -47,6 +109,10 @@ def validate_lesson(obj, path='bài'):
     errors = []
     if not isinstance(obj, dict):
         return [_err(path, 'phải là một object JSON')]
+
+    # HTML trước tiên: một thẻ <script> lọt qua thì mọi phép kiểm cấu trúc phía
+    # dưới có đúng cũng không cứu được ai.
+    _duyet_chuoi(obj, path, errors)
 
     for key in REQUIRED:
         if key not in obj or obj[key] in (None, '', [], {}):

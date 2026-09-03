@@ -569,3 +569,87 @@ def test_tai_lai_trang_van_cham_duoc_phan_phong_luyen_da_ghi_nhan(em, bai_luyen)
     assert (r.data.get('drill') or {}).get('correct') == 4, (
         'bỏ qua phần đã ghi nhận: %s' % r.data.get('drill'))
     assert r.data.get('xpDrill') == 4 * 10 + 4 * 5
+
+
+# ── HTML trong nội dung bài: cho phép in đậm, chặn mã (vá 04/09/2026) ───────
+#
+# Engine đổ HAI trường vào `innerHTML` mà KHÔNG escape, cố ý, vì người soạn cần
+# in đậm và gõ công thức: `test.intro` (lesson_hsa.js:33) và
+# `theory.*.cards[].body` (:401).
+#
+# Vô hại khi người soạn CHÍNH LÀ quản trị viên. Nhưng từ 04/09 có vai `Biên tập
+# nội dung` — vai sinh ra để KHÔNG phải cấp quyền quản trị cho người gõ bài.
+# Không lọc thì vai ấy leo thẳng lên quyền quản trị: nhét một thẻ có `onerror`
+# vào bài, đợi quản trị viên mở xem thử. Mã chạy trên miền Vercel nơi cookie
+# phiên sống, nên không cần đọc token — chỉ cần dùng nó.
+
+def _bai(**doi):
+    """Một bài hợp lệ tối thiểu; `doi` ghi đè để thử từng chỗ."""
+    b = {
+        'id': 'x1', 'index': 1, 'title': 'Bài thử',
+        'test': {'intro': 'Làm nhanh 3 câu.',
+                 'questions': [{'id': 't1', 'type': 'fill',
+                                'question': '2+2?', 'answer': '4'}]},
+        'theory': {'full': {'title': 'Lý thuyết',
+                            'cards': [{'title': 'A', 'body': 'nội dung'}]}},
+    }
+    for k, v in doi.items():
+        if k == 'intro':
+            b['test']['intro'] = v
+        elif k == 'body':
+            b['theory']['full']['cards'][0]['body'] = v
+        else:
+            b[k] = v
+    return b
+
+
+def _loi_html(kq):
+    return [e for e in kq if 'thẻ' in e]
+
+
+def test_the_treo_ma_bi_chan_o_moi_truong():
+    from lessons.content import validate_lesson
+    for cho, bai in (('test.intro', _bai(intro='<img src=x onerror=alert(1)>')),
+                     ('cards[].body', _bai(body='<img src=x onerror=alert(1)>'))):
+        assert _loi_html(validate_lesson(bai)), 'lọt <img> ở ' + cho
+    assert _loi_html(validate_lesson(_bai(intro='<script>fetch("/api/admin")</script>')))
+    assert _loi_html(validate_lesson(_bai(body='<iframe src="x"></iframe>')))
+    # `<a>` không nằm trong danh sách → chặn luôn cả `javascript:`, không cần
+    # một luật riêng cho lược đồ liên kết.
+    assert _loi_html(validate_lesson(_bai(body='<a href="javascript:alert(1)">x</a>')))
+
+
+def test_the_duoc_phep_nhung_MANG_THUOC_TINH_van_bi_chan():
+    """Cấm HẾT thuộc tính, không lọc từng cái. Danh sách đen luôn thiếu một dòng —
+    `onerror`, `onload`, `onpointerover`, `style` với `expression()`…"""
+    from lessons.content import validate_lesson
+    assert _loi_html(validate_lesson(_bai(intro='<b onmouseover="alert(1)">x</b>')))
+    assert _loi_html(validate_lesson(_bai(body='<code style="x">y</code>')))
+    assert not _loi_html(validate_lesson(_bai(intro='<b>x</b>'))), 'thẻ sạch phải qua'
+
+
+def test_dau_be_hon_trong_toan_hoc_KHONG_bi_chan():
+    """`0 < a < 1` có THẬT trong `hsa_quantitative#8`.
+
+    Theo chuẩn HTML, `<` chỉ mở thẻ khi LIỀN SAU là chữ cái hoặc `/`; có dấu
+    cách thì nó là ký tự thường. Bộ lọc phải dùng đúng luật ấy.
+
+    Đây không phải trường hợp lý thuyết: phép ĐO đầu tiên của tôi dùng regex
+    `<\s*/?\s*([a-zA-Z]…)` và báo "76 bài có 1 thẻ <a>" — thật ra là chuỗi
+    `0 < a < 1`. Chặn theo phép đo ấy là chặn oan nội dung toán học của cả khoá
+    Định lượng.
+    """
+    from lessons.content import validate_lesson
+    for chuoi in ('y = aˣ (a > 0, a ≠ 1). Nếu a > 1: đồng biến; 0 < a < 1: nghịch biến.',
+                  'x < y < z', 'a<b là sai cú pháp nhưng 3 < 5 thì không'):
+        assert not _loi_html(validate_lesson(_bai(body=chuoi))), 'chặn oan: ' + chuoi
+
+
+def test_the_in_dam_va_ma_lenh_van_dung_duoc():
+    """Đo trên 76 bài đang chạy: <strong> 160 lần, <code> 134, <b> 62.
+    Bộ lọc mà chặn chúng là làm hỏng cả giáo trình."""
+    from lessons.content import validate_lesson
+    assert not _loi_html(validate_lesson(_bai(
+        intro='Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong>.')))
+    assert not _loi_html(validate_lesson(_bai(
+        body='Giảm p%: <code>× (1 - p/100)</code> · <b>giá trị gốc</b>')))
