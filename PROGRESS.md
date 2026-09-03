@@ -2719,3 +2719,49 @@ Nay kiểm hai tính chất: payload không tạo thêm được dấu `<` nào,
 lỗi in thẳng HTML khai thác ra.
 
 13 passed (forum) · lint · node --check · 3 bộ unit: sạch.
+
+### Cùng ngày — nghiên cứu Wayground/Kahoot, và nhập đề bằng bảng tính
+
+Anh bảo tra cách Wayground (Quizizz cũ) và Kahoot cho người dùng tự dựng bài.
+Tra 04/09, thứ đáng chép và thứ không:
+
+**Kahoot — nhập từ bảng tính.** Tải mẫu `.xlsx` → điền → tải lên → sai thì báo
+TỪNG DÒNG kèm số dòng. Ba chi tiết: trần độ dài hiện ra dưới dạng LỖI chứ không
+cắt ngầm · nêu đủ MỌI dòng sai trong một lượt · không có trạng thái nửa vời. Hai
+cái sau repo đã có ở đường JSON.
+
+**Wayground — 20 kiểu câu hỏi.** Bốn kiểu khớp thẳng với thứ
+`TOPHSA_STRATEGY_PLAN` đã tự đặt ra mà chưa có engine: Reorder ("sắp các bước
+giải"), Match ("ghép dạng câu ↔ chiến thuật"), Hot Text ("bẫy ngữ nghĩa" phần
+Định tính), Categorize. Và **Math Response** với *Mathematical Equivalence* —
+chấm `1/2`, `0,5`, `50%` là một, đúng lỗi repo này đã mắc khi hàm chuẩn hoá bỏ
+dấu `%` làm em gõ `30%` từ đúng thành sai.
+
+**Kahoot — themes.** Anh chốt chỉ lấy phần tương phản, bỏ phần trang trí. Tôi
+đồng ý và đã nói thẳng: với ba khoá và người dùng là học sinh ôn thi, phần trang
+trí là thứ ít giá trị nhất.
+
+**Đã làm: nhập đề thi thử từ bảng tính.** Đo trước: đúng MỘT đề tồn tại, đến từ
+`seed_data`, và KHÔNG có API quản trị nào — đường duy nhất để có đề thứ hai là
+sửa mã nguồn. `common/bangtinh.py` là một cửa đọc `.xlsx/.csv` dùng chung cho cả
+ba loại nội dung anh chọn; số dòng báo lỗi khớp đúng số dòng Excel.
+
+Luật tinh tế nhất: đáp án nhận cả "nguyên văn" lẫn "A/B/C/D", và **nguyên văn
+thắng** — để chữ cái thắng trước thì một câu hỏi VỀ trắc nghiệm (phương án đúng
+là chuỗi "B") bị hiểu thành "phương án thứ hai".
+
+**Và phép kiểm đầu của tôi cho luật ấy không kiểm gì**: nó dùng
+`options=['A','B','C','D']` với đáp án `'B'` — ca SUY BIẾN, hai cách hiểu ra
+cùng kết quả. Đảo thứ tự hai luật rồi chạy lại → vẫn xanh. Xáo phương án thành
+`['B','A','C','D']` mới tách được. Lần thứ ba trong ngày một phép kiểm của tôi
+tự nó không kiểm gì.
+
+**Đã vá: xoá một bài là xoá tiến độ đã học của người thật.** Agent chỉ ra,
+tôi tự kiểm: `lesson_progress_lesson_fk` là ON DELETE CASCADE, và bài id=1 đang
+treo **4 dòng của học viên thật**. Cửa xoá KHOÁ đã có hàng rào loại này từ đầu;
+cửa xoá BÀI thì không — và từ sáng nay nó mở cho vai `Biên tập nội dung`. Nay
+biên tập không bao giờ xoá được bài có tiến độ; quản trị viên phải `?confirm=1`.
+
+**Đã vá: khu soạn giáo trình không ghi một dòng nhật ký kiểm toán nào.** Chấp
+nhận được khi người soạn chính là quản trị viên, sai hẳn từ lúc có vai mới. Nay
+8 loại hành động vào sổ, và có phép kiểm khẳng định `actor_role` ghi đúng.

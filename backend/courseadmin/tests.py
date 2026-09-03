@@ -166,3 +166,89 @@ def test_hoc_vien_van_bi_chan(auth_api):
     Học viên để việc nới quyền không âm thầm nới luôn cho người học."""
     assert auth_api.get('/api/admin/courses').status_code == 403
     assert auth_api.get('/api/admin/lessons/1/content').status_code == 403
+
+
+# ── Xoá một bài là xoá TIẾN ĐỘ ĐÃ HỌC của người thật (vá 04/09/2026) ────────
+#
+# `lesson_progress_lesson_fk` là ON DELETE CASCADE (đo trên CSDL thật), nên câu
+# DELETE một dòng ở `AdminLessonDetailView` kéo theo mọi dòng `lesson_progress`
+# trỏ tới bài ấy — điểm, XP, ngày hoàn thành. Đo 04/09: bài id=1 đang treo 4
+# dòng của học viên thật.
+#
+# Cửa xoá KHOÁ đã có hàng rào đúng loại này từ đầu (còn `enrollments` thì 409).
+# Cửa xoá BÀI thì không — và từ 04/09 nó mở cho vai `Biên tập nội dung`.
+
+def _bai_co_tien_do(db):
+    """Trả id một bài ĐANG có tiến độ học thật, hoặc None."""
+    from common.db import q1
+    return q1('''SELECT l.id FROM lessons l
+                 JOIN lesson_progress p ON p.lesson_id = l.id
+                 GROUP BY l.id ORDER BY COUNT(*) DESC LIMIT 1''')
+
+
+def test_bien_tap_KHONG_xoa_duoc_bai_da_co_nguoi_hoc(bien_tap_api, db):
+    """Vai biên tập không bao giờ xoá được số liệu học tập của người thật."""
+    from common.db import q1
+    bai = _bai_co_tien_do(db)
+    if not bai:
+        pytest.skip('CSDL chưa có bài nào có tiến độ để dựng cảnh')
+
+    truoc = q1('SELECT COUNT(*) AS n FROM lesson_progress WHERE lesson_id=%s',
+               (bai['id'],))['n']
+    r = bien_tap_api.delete('/api/admin/lessons/%s' % bai['id'])
+    assert r.status_code == 403, r.status_code
+    assert 'lượt học' in r.json()['error']
+    assert q1('SELECT COUNT(*) AS n FROM lesson_progress WHERE lesson_id=%s',
+              (bai['id'],))['n'] == truoc, 'bị từ chối rồi thì KHÔNG được xoá dòng nào'
+    assert q1('SELECT id FROM lessons WHERE id=%s', (bai['id'],)), 'bài phải còn'
+
+
+def test_quan_tri_phai_XAC_NHAN_moi_xoa_duoc_bai_co_tien_do(admin_api, db):
+    """Quản trị viên làm được, nhưng phải nói rõ ý định — câu xác nhận trên giao
+    diện chỉ hỏi "Xoá bài ...?" và không một chữ nào về tiến độ học viên."""
+    from common.db import q1
+    bai = _bai_co_tien_do(db)
+    if not bai:
+        pytest.skip('CSDL chưa có bài nào có tiến độ để dựng cảnh')
+
+    r = admin_api.delete('/api/admin/lessons/%s' % bai['id'])
+    assert r.status_code == 409, r.status_code
+    assert r.json().get('needsConfirm') is True
+    assert r.json().get('progressRows', 0) > 0
+    assert q1('SELECT id FROM lessons WHERE id=%s', (bai['id'],)), 'chưa xác nhận thì bài phải còn'
+
+
+def test_bai_KHONG_co_tien_do_thi_xoa_binh_thuong(bien_tap_api, db):
+    """Hàng rào không được chặn việc dọn một bài vừa tạo nhầm."""
+    from common.db import q1
+    r = bien_tap_api.post('/api/admin/lessons',
+                          {'course_id': 'hsa_quantitative', 'title': 'Bài tạo nhầm',
+                           'sort_order': 998}, format='json')
+    assert r.status_code == 200, r.json()
+    moi = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=998',
+             ('hsa_quantitative',))
+    assert moi
+    assert bien_tap_api.delete('/api/admin/lessons/%s' % moi['id']).status_code == 200
+    assert not q1('SELECT id FROM lessons WHERE id=%s', (moi['id'],))
+
+
+def test_moi_viec_o_khu_soan_giao_trinh_deu_vao_nhat_ky(bien_tap_api, db):
+    """Khu này KHÔNG ghi một dòng nhật ký nào cho tới 04/09.
+
+    Chấp nhận được khi người soạn chính là quản trị viên; sai hẳn từ lúc có vai
+    `Biên tập nội dung`. Không ghi thì câu "ai xoá bài này, lúc nào" không trả
+    lời được — mà đó đúng là câu sẽ được hỏi.
+    """
+    from common.db import q1
+    truoc = q1('SELECT COUNT(*) AS n FROM admin_audit')['n']
+    r = bien_tap_api.post('/api/admin/lessons',
+                          {'course_id': 'hsa_quantitative', 'title': 'Bài ghi nhật ký',
+                           'sort_order': 997}, format='json')
+    assert r.status_code == 200, r.json()
+    assert q1('SELECT COUNT(*) AS n FROM admin_audit')['n'] > truoc, \
+        'thêm một bài mà nhật ký kiểm toán không có dòng nào'
+    dong = q1("SELECT action, target_label, actor_role FROM admin_audit "
+              "ORDER BY id DESC LIMIT 1")
+    assert dong['action'] == 'lesson.create', dong
+    assert dong['target_label'] == 'Bài ghi nhật ký'
+    assert dong['actor_role'] == 'Biên tập nội dung', dong

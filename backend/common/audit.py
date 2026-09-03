@@ -65,6 +65,21 @@ ASSIGNMENT_DELETE = 'assignment.delete'
 ASSIGNMENT_GRADE = 'assignment.grade'
 
 
+#: Giáo trình (04/09/2026). Khu `courseadmin` KHÔNG ghi một dòng nhật ký nào
+#: cho tới hôm nay — chấp nhận được khi người soạn CHÍNH LÀ quản trị viên, sai
+#: hẳn từ lúc có vai `Biên tập nội dung`. Mọi việc họ làm — xoá bài, đè nội dung
+#: 76 bài bằng một lần nhập, đổi mọi trường của khoá — đều là sửa thứ dùng chung
+#: cho mọi học viên. Không ghi lại thì câu "ai xoá bài này, lúc nào" không trả
+#: lời được, và đó đúng là câu sẽ được hỏi.
+COURSE_CREATE = 'course.create'
+COURSE_UPDATE = 'course.update'
+COURSE_DELETE = 'course.delete'
+COURSE_IMPORT = 'course.import'
+LESSON_CREATE = 'lesson.create'
+LESSON_UPDATE = 'lesson.update'
+LESSON_DELETE = 'lesson.delete'
+LESSON_CONTENT_UPDATE = 'lesson.content'
+
 #: Đề thi thử (04/09/2026). Nhập đề là hành động SỬA nội dung dùng chung cho
 #: mọi học viên, và từ 04/09 người làm việc đó có thể KHÔNG phải quản trị viên
 #: (vai `Biên tập nội dung`). Không ghi lại thì câu "ai đổi đề này, lúc nào"

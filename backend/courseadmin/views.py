@@ -20,6 +20,7 @@ from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common import audit
 from common.db import q, q1, x
 from common.permissions import IsContentEditor, IsCourseOwner, is_admin
 from lessons.content import validate_lesson
@@ -99,6 +100,9 @@ class AdminCoursesView(_ChuKhoa, AdminBase):
         vals = [course_id, title] + [data.get(f) for f in _COURSE_FIELDS if f != 'title']
         placeholders = ', '.join(['%s'] * len(cols))
         x(f'INSERT INTO courses ({", ".join(cols)}) VALUES ({placeholders})', tuple(vals))
+        audit.record(request, audit.COURSE_CREATE, target_type='course',
+                     target_id=course_id, target_label=title,
+                     summary='Tạo khoá học "%s" (mã %s).' % (title, course_id))
         return Response({'ok': True})
 
 
@@ -117,6 +121,10 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
         set_clause = ', '.join(f'{col}=%s' for col in updates)
         x(f'UPDATE courses SET {set_clause} WHERE id=%s',
           tuple(updates.values()) + (course_id,))
+        audit.record(request, audit.COURSE_UPDATE, target_type='course',
+                     target_id=course_id, target_label=updates.get('title') or course_id,
+                     summary='Sửa khoá học %s (%s).' % (course_id, ', '.join(updates)),
+                     detail={k: str(v)[:200] for k, v in updates.items()})
         return Response({'ok': True})
 
     def delete(self, request, course_id):
@@ -129,6 +137,9 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
                 {'error': 'Không thể xóa: vẫn còn học viên đăng ký khóa học này'}, status=409)
 
         x('DELETE FROM courses WHERE id=%s', (course_id,))
+        audit.record(request, audit.COURSE_DELETE, target_type='course',
+                     target_id=course_id, target_label=course_id,
+                     summary='Xoá khoá học %s — bài học của khoá bị xoá theo.' % course_id)
         return Response({'ok': True})
 
 
@@ -166,6 +177,10 @@ class AdminLessonsView(AdminBase):
                      (course_id,))['n']
         _bump_lesson_count(course_id, max(int(thuc_te or 0),
                                           int(data.get('sort_order') or 0)))
+        audit.record(request, audit.LESSON_CREATE, target_type='lesson',
+                     target_label=title,
+                     summary='Thêm bài "%s" vào khoá %s.' % (title, course_id),
+                     detail={'courseId': course_id, 'sortOrder': data.get('sort_order')})
         return Response({'ok': True})
 
 
@@ -185,16 +200,57 @@ class AdminLessonDetailView(AdminBase):
         set_clause = ', '.join(f'{col}=%s' for col in updates)
         x(f'UPDATE lessons SET {set_clause} WHERE id=%s',
           tuple(updates.values()) + (lesson_id,))
+        audit.record(request, audit.LESSON_UPDATE, target_type='lesson',
+                     target_id=lesson_id, target_label=updates.get('title') or str(lesson_id),
+                     summary='Sửa bài #%s (%s).' % (lesson_id, ', '.join(updates)),
+                     detail={k: str(v)[:200] for k, v in updates.items()})
         return Response({'ok': True})
 
     def delete(self, request, lesson_id):
-        row = q1('SELECT course_id FROM lessons WHERE id=%s', (lesson_id,))
+        row = q1('SELECT course_id, title FROM lessons WHERE id=%s', (lesson_id,))
         if not row:
             return Response({'error': 'Không tìm thấy bài giảng'}, status=404)
+
+        # XOÁ MỘT BÀI LÀ XOÁ TIẾN ĐỘ ĐÃ HỌC CỦA NGƯỜI THẬT (vá 04/09/2026).
+        #
+        # `lesson_progress_lesson_fk` là `ON DELETE CASCADE` (đo trên CSDL thật),
+        # nên câu `DELETE` một dòng ở đây kéo theo mọi dòng `lesson_progress`
+        # trỏ tới bài ấy — điểm, XP, ngày hoàn thành. Đo 04/09: bài id=1 đang
+        # treo 4 dòng của học viên thật.
+        #
+        # Cửa xoá KHOÁ đã có hàng rào đúng loại này từ đầu (còn `enrollments`
+        # thì 409). Cửa xoá BÀI thì không — và từ 04/09 nó mở cho vai `Biên tập
+        # nội dung`, tức người KHÔNG phải quản trị viên. Câu xác nhận trên giao
+        # diện cũng chỉ hỏi "Xoá bài ...?", không một chữ nào về tiến độ.
+        #
+        # Chặn theo hai mức, đúng lối `terms.py` đã dùng: người biên tập thì
+        # không bao giờ; quản trị viên thì phải nói rõ ý định bằng `?confirm=1`.
+        hoc = q1('SELECT COUNT(*) AS n FROM lesson_progress WHERE lesson_id=%s',
+                 (lesson_id,))['n']
+        if hoc:
+            xac_nhan = str(request.query_params.get('confirm') or '') in ('1', 'true')
+            if not is_admin(request.user):
+                return Response(
+                    {'error': 'Bài này đã có %d lượt học được ghi nhận. Xoá bài sẽ xoá '
+                              'luôn tiến độ ấy, nên chỉ quản trị viên làm được. Muốn bỏ '
+                              'bài khỏi giáo trình thì sửa nội dung, đừng xoá dòng.' % hoc},
+                    status=403)
+            if not xac_nhan:
+                return Response(
+                    {'error': 'Bài này đã có %d lượt học được ghi nhận, và xoá bài sẽ XOÁ '
+                              'HẲN số liệu ấy — không khôi phục được. Gửi lại kèm '
+                              '?confirm=1 nếu chắc chắn.' % hoc,
+                     'needsConfirm': True, 'progressRows': hoc}, status=409)
 
         # Xoá bài KHÔNG hạ tổng số bài của khoá: bản trong file JS vẫn còn đó,
         # học viên vẫn học được. Muốn đổi tổng thì dùng total_lessons khi nhập.
         x('DELETE FROM lessons WHERE id=%s', (lesson_id,))
+        audit.record(request, audit.LESSON_DELETE, target_type='lesson',
+                     target_id=lesson_id, target_label=row['title'],
+                     summary='Xoá bài "%s" của khoá %s%s.'
+                             % (row['title'], row['course_id'],
+                                ' — kèm %d lượt học đã ghi nhận' % hoc if hoc else ''),
+                     detail={'courseId': row['course_id'], 'progressRows': hoc})
         return Response({'ok': True})
 
 
@@ -267,6 +323,11 @@ class AdminLessonContentView(AdminBase):
         # chạy thật gọi nó; một hàm chỉ có phép kiểm gọi là một hàm không
         # tồn tại trên đường chạy thật.
         quen_dap_an(row['course_id'], row['sort_order'])
+        audit.record(request, audit.LESSON_CONTENT_UPDATE, target_type='lesson',
+                     target_id=lesson_id, target_label=content.get('title') or str(lesson_id),
+                     summary='Sửa nội dung bài #%s (%s, bài số %s).'
+                             % (lesson_id, row['course_id'], row['sort_order']),
+                     detail={'courseId': row['course_id'], 'index': content.get('index')})
         return Response({'ok': True})
 
 
@@ -357,5 +418,11 @@ class AdminCourseImportView(AdminBase):
             else:
                 _bump_lesson_count(course_id, max(int(o['index']) for o in lessons))
 
+        audit.record(request, audit.COURSE_IMPORT, target_type='course',
+                     target_id=course_id, target_label=course_id,
+                     summary='Nhập giáo trình vào khoá %s — thêm %d bài, cập nhật %d bài.'
+                             % (course_id, created, updated),
+                     detail={'created': created, 'updated': updated,
+                             'totalLessons': body.get('total_lessons')})
         return Response({'ok': True, 'created': created, 'updated': updated,
                          'total': created + updated})
