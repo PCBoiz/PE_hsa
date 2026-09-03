@@ -401,3 +401,184 @@ def test_luu_tam_SAU_CHUONG_bi_tu_choi(em, de):
     if isinstance(da_luu, str):
         da_luu = _json.loads(da_luu)
     assert da_luu == {'q1': '4'}, 'bài viết sau chuông vẫn ghi được: %s' % (da_luu,)
+
+
+# ── Nhập đề thi thử từ bảng tính (04/09/2026) ───────────────────────────────
+#
+# Đo trước khi làm: đúng MỘT đề tồn tại trên CSDL, đến từ `seed_data`, và không
+# có API quản trị nào — tức đường duy nhất để có đề thứ hai là sửa mã nguồn.
+# Cách làm lấy từ Kahoot: tải mẫu → điền → tải lên → báo lỗi TỪNG DÒNG.
+
+import io as _io  # noqa: E402
+
+import pytest as _pytest  # noqa: E402
+
+_TIEU_DE = ['Phần thi', 'Câu hỏi', 'Lựa chọn A', 'Lựa chọn B', 'Lựa chọn C',
+            'Lựa chọn D', 'Đáp án', 'Mã câu', 'Chủ đề', 'Giải thích']
+
+
+def _xlsx(hang):
+    """Dựng một tệp .xlsx trong bộ nhớ từ danh sách dòng."""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    for h in hang:
+        wb.active.append(h)
+    buf = _io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _ban_ghi(hang):
+    from common.bangtinh import thanh_ban_ghi
+    from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC
+    return thanh_ban_ghi(hang, cot_bat_buoc=COT_BAT_BUOC, ten_khac=TEN_KHAC)
+
+
+def test_dap_an_nguyen_van_THANG_chu_cai():
+    """Luật tinh tế nhất của cả đường nhập, và nó có thật trong đề HSA.
+
+    Đáp án nhận hai cách viết: chép nguyên văn phương án đúng, hoặc ghi A/B/C/D.
+    Nếu để chữ cái thắng trước thì một câu hỏi VỀ trắc nghiệm — phương án đúng
+    là chuỗi "B" — sẽ bị hiểu thành "phương án thứ hai". Sai âm thầm, và chỉ lộ
+    ra khi học viên đã thi xong.
+    """
+    from mockexam.nhap import doc_cau_hoi
+
+    # PHƯƠNG ÁN PHẢI XÁO THỨ TỰ. Bản đầu của phép kiểm này dùng
+    # options = ['A','B','C','D'] với đáp án 'B' — một ca SUY BIẾN: đọc "B" là
+    # nguyên văn hay là "phương án thứ hai" đều ra cùng chữ B. Đảo thứ tự hai
+    # luật trong `nhap.py` rồi chạy lại → VẪN XANH, tức nó không kiểm gì.
+    # Xáo đi thì hai cách hiểu tách hẳn: nguyên văn → 'B' (ở vị trí 1),
+    # chữ cái → 'A' (phương án thứ hai).
+    cau, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'Đáp án đúng của câu 7 là chữ nào?',
+         'B', 'A', 'C', 'D', 'B', '', '', ''],
+    ]))
+    assert not loi, loi
+    assert cau[0]['answer'] == 'B', \
+        'đọc "B" thành "phương án thứ hai" (%r) — nguyên văn phải thắng' % cau[0]['answer']
+    assert cau[0]['options'] == ['B', 'A', 'C', 'D']
+
+    # Còn khi KHÔNG có phương án nào trùng chữ cái thì chữ cái mới được dùng.
+    cau2, loi2 = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', '2+2?', '3', '4', '5', '6', 'B', '', '', ''],
+    ]))
+    assert not loi2, loi2
+    assert cau2[0]['answer'] == '4'
+
+
+def test_so_dong_bao_loi_khop_voi_excel():
+    """Báo "dòng 4" thì người soạn nhấn Ctrl+G là tới nơi; báo "phần tử thứ 3
+    của mảng" thì họ phải tự đếm, và đếm sai."""
+    from mockexam.nhap import doc_cau_hoi
+    _, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'ok', 'a', 'b', '', '', 'a', '', '', ''],   # dòng 2 — đúng
+        ['Định lượng', '', 'a', 'b', '', '', 'a', '', '', ''],      # dòng 3 — thiếu câu hỏi
+        ['Sai phần', 'x', 'a', 'b', '', '', 'a', '', '', ''],       # dòng 4 — sai phần thi
+    ]))
+    assert len(loi) == 2, loi
+    assert loi[0].startswith('Dòng 3:'), loi[0]
+    assert loi[1].startswith('Dòng 4:'), loi[1]
+
+
+def test_bo_trong_het_lua_chon_thi_thanh_cau_dien():
+    from mockexam.nhap import doc_cau_hoi
+    cau, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'Điền số còn thiếu: 2,4,8,…', '', '', '', '', '16', '', '', ''],
+    ]))
+    assert not loi, loi
+    assert cau[0]['type'] == 'fill' and 'options' not in cau[0]
+
+
+def test_hai_phuong_an_trung_nhau_bi_chan():
+    """Máy chấm so theo NỘI DUNG phương án, nên hai phương án giống hệt nhau là
+    một câu không chấm được — chặn ở đường nhập, đừng để lộ ra lúc thi."""
+    from mockexam.nhap import doc_cau_hoi
+    _, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE, ['Định lượng', 'x', '10', '10', '20', '', '10', '', '', ''],
+    ]))
+    assert loi and 'trùng nhau' in loi[0], loi
+
+
+def test_thieu_cot_bat_buoc_noi_ro_thieu_cot_nao():
+    from common.bangtinh import LoiBangTinh
+    with _pytest.raises(LoiBangTinh) as e:
+        _ban_ghi([['Phần thi', 'Câu hỏi'], ['Định lượng', 'x']])
+    assert 'đáp án' in str(e.value), str(e.value)
+
+
+def test_nhap_de_qua_HTTP_tao_de_CHUA_xuat_ban(admin_api, db):
+    """Đề nhập vào mặc định CHƯA xuất bản: nhập nhầm cột đáp án mà học viên thấy
+    ngay là chấm sai cho cả lớp trước khi ai kịp nhận ra."""
+    import json as _json
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from common.db import q1
+
+    tep = SimpleUploadedFile('de.xlsx', _xlsx([
+        _TIEU_DE,
+        ['Định lượng', '2+2?', '3', '4', '5', '6', 'B', '', 'Số học', 'Cộng hai số.'],
+        ['Định tính', 'Điền từ còn thiếu', '', '', '', '', 'nhà', '', '', ''],
+    ]), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    r = admin_api.post('/api/admin/mock-exams/import',
+                       {'file': tep, 'title': 'Đề thử nhập', 'duration_minutes': '30'},
+                       format='multipart')
+    assert r.status_code == 201, r.json()
+    assert r.json()['questions'] == 2
+
+    row = q1('SELECT title, total_questions, is_published, questions_json '
+             'FROM mock_exams WHERE id=%s', (r.json()['id'],))
+    assert row['is_published'] is False, 'đề mới KHÔNG được tự xuất bản'
+    assert row['total_questions'] == 2
+    qs = row['questions_json']
+    if isinstance(qs, str):
+        qs = _json.loads(qs)
+    assert qs[0]['answer'] == '4' and qs[0]['section'] == 'quantitative'
+    assert qs[1]['type'] == 'fill' and qs[1]['section'] == 'verbal'
+
+
+def test_khong_ghi_de_len_de_da_co_nguoi_lam(admin_api, db):
+    """Đổi đề đã có lượt chấm là làm điểm cũ mất ý nghĩa — chúng chấm trên bộ
+    câu hỏi khác. Chặn thẳng và nói rõ đường đi tiếp."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from common.db import q1
+
+    co_luot = q1('SELECT exam_id FROM mock_attempts WHERE exam_id IS NOT NULL LIMIT 1')
+    if not co_luot:
+        _pytest.skip('CSDL chưa có lượt thi nào để dựng cảnh')
+
+    tep = SimpleUploadedFile('de.xlsx', _xlsx([
+        _TIEU_DE, ['Định lượng', 'x', 'a', 'b', '', '', 'a', '', '', ''],
+    ]), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    r = admin_api.post('/api/admin/mock-exams/import',
+                       {'file': tep, 'title': 'Ghi đè thử', 'duration_minutes': '30',
+                        'exam_id': str(co_luot['exam_id'])}, format='multipart')
+    assert r.status_code == 409, r.status_code
+    assert 'lượt làm bài' in r.json()['error']
+
+
+def test_hoc_vien_khong_vao_duoc_khu_soan_de(auth_api):
+    assert auth_api.get('/api/admin/mock-exams').status_code == 403
+    assert auth_api.get('/api/admin/mock-exams/template.xlsx').status_code == 403
+
+
+def test_mau_tai_ve_doc_nguoc_lai_duoc(admin_api):
+    """Mẫu và bộ đọc phải khớp nhau. Sinh mẫu tại chỗ rồi ĐỌC LẠI chính nó — ai
+    đổi tên cột ở một bên thì phép kiểm này đỏ ngay, thay vì để TopHSA điền cả
+    một ngân hàng câu hỏi rồi mới phát hiện."""
+    from common.bangtinh import doc
+    from mockexam.nhap import doc_cau_hoi
+
+    r = admin_api.get('/api/admin/mock-exams/template.xlsx')
+    assert r.status_code == 200
+    hang = doc('mau.xlsx', r.content)
+    cau, loi = doc_cau_hoi(_ban_ghi(hang))
+    assert not loi, loi
+    assert len(cau) == 3, cau

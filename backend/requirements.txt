@@ -16,3 +16,8 @@ langchain-openai>=1.4.2
 # Bộ đệm dùng chung cho 2 worker gunicorn — chỉ được dùng khi có biến REDIS_URL
 # (xem chú thích ở config/settings.py). Không có biến thì gói này nằm im.
 django-redis==5.4.0
+# Đọc/ghi bảng tính .xlsx cho đường NHẬP nội dung (đề thi thử, giáo trình).
+# Thuần Python, không phần mở rộng C — cài trên Render không cần trình biên dịch.
+# Vì sao .xlsx chứ không chỉ .csv: Excel bản tiếng Việt lưu CSV theo bảng mã hệ
+# thống, nên "Định lượng" quay về thành ký tự hỏng. Ô .xlsx là chuỗi Unicode.
+openpyxl>=3.1

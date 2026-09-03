@@ -65,6 +65,15 @@ ASSIGNMENT_DELETE = 'assignment.delete'
 ASSIGNMENT_GRADE = 'assignment.grade'
 
 
+#: Đề thi thử (04/09/2026). Nhập đề là hành động SỬA nội dung dùng chung cho
+#: mọi học viên, và từ 04/09 người làm việc đó có thể KHÔNG phải quản trị viên
+#: (vai `Biên tập nội dung`). Không ghi lại thì câu "ai đổi đề này, lúc nào"
+#: không trả lời được — mà đó đúng là câu sẽ được hỏi khi một lượt thi chấm sai.
+MOCK_EXAM_CREATE = 'mock_exam.create'
+MOCK_EXAM_UPDATE = 'mock_exam.update'
+MOCK_EXAM_PUBLISH = 'mock_exam.publish'
+
+
 def _client_ip(request):
     """IP thật sau proxy — nay đi qua `common.net.client_ip`.
 
