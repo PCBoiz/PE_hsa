@@ -1,4 +1,19 @@
-"""Port routes/admin.py — CRUD khóa học + bài giảng (quyền admin)."""
+"""Soạn giáo trình — CRUD khoá học, bài giảng, và nội dung 5 bước của một bài.
+
+AI ĐƯỢC LÀM GÌ (chốt 04/09/2026, xem `common/permissions.py`):
+
+    quản trị viên      · tất cả
+    Biên tập nội dung  · tất cả, TRỪ tạo và xoá một khoá học
+
+Vì sao hai việc ấy giữ riêng cho quản trị viên: xoá một khoá kéo theo `lessons`
+treo dưới nó và tiến độ đã học của người thật; tạo một khoá thì rẻ nhưng khoá
+rỗng hiện ngay trên danh sách của mọi học viên. Sửa NỘI DUNG thì sai còn sửa
+lại được, nên mở rộng.
+
+Trước 04/09 mọi đường ở đây đòi `IsAdminRole`, tức người soạn giáo trình phải là
+quản trị viên — mà quản trị viên thì thấy luôn tài khoản, mật khẩu, học viên.
+Cấp quyền quản trị cho một người chỉ để họ gõ bài học là cấp thừa rất nhiều.
+"""
 import json
 
 from django.db import transaction
@@ -6,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.db import q, q1, x
-from common.permissions import IsAdminRole
+from common.permissions import IsContentEditor, IsCourseOwner, is_admin
 from lessons.content import validate_lesson
 from lessons.grading import quen_dap_an
 
@@ -40,10 +55,29 @@ def _set_lesson_count(course_id, total):
 
 
 class AdminBase(APIView):
-    permission_classes = [IsAdminRole]
+    """Mặc định của khu soạn giáo trình: quản trị viên hoặc Biên tập nội dung."""
+
+    permission_classes = [IsContentEditor]
 
 
-class AdminCoursesView(AdminBase):
+class _ChuKhoa:
+    """Trộn vào view nào có phương thức CHỈ quản trị viên được gọi.
+
+    DRF khai quyền theo VIEW chứ không theo phương thức, nên tách bằng
+    `get_permissions`. Liệt kê tên phương thức trong `CHI_QUAN_TRI`.
+    """
+
+    CHI_QUAN_TRI: tuple = ()
+
+    def get_permissions(self):
+        if (self.request.method or '').lower() in self.CHI_QUAN_TRI:
+            return [IsCourseOwner()]
+        return super().get_permissions()
+
+
+class AdminCoursesView(_ChuKhoa, AdminBase):
+    CHI_QUAN_TRI = ('post',)          # tạo khoá mới
+
     def get(self, request):
         rows = q('SELECT * FROM courses ORDER BY id')
         return Response({'courses': rows})
@@ -68,7 +102,9 @@ class AdminCoursesView(AdminBase):
         return Response({'ok': True})
 
 
-class AdminCourseDetailView(AdminBase):
+class AdminCourseDetailView(_ChuKhoa, AdminBase):
+    CHI_QUAN_TRI = ('delete',)        # xoá khoá — kéo theo bài và tiến độ
+
     def put(self, request, course_id):
         data = request.data if isinstance(request.data, dict) else {}
         updates = {f: data[f] for f in _COURSE_FIELDS if f in data}
@@ -245,10 +281,27 @@ class AdminCourseImportView(AdminBase):
     """
 
     def post(self, request, course_id):
+        body = request.data if isinstance(request.data, dict) else {}
+
+        # QUYỀN KIỂM TRƯỚC, dữ liệu kiểm sau. Đặt sau thì cùng một việc bị cấm
+        # trả về hai mã khác nhau tuỳ file người ta gửi có hợp lệ hay không —
+        # người biên tập sẽ đi sửa file, sửa xong mới biết mình không có quyền.
+        # Đúng lỗi thứ tự đã mắc hôm 30/08 ở đường tạo tài khoản hàng loạt (dán
+        # 60 dòng → "sẽ tạo 60 tài khoản" → bấm Tạo → mới bị từ chối vì quá trần).
+        #
+        # `total_lessons` là ĐƯỜNG DUY NHẤT hạ được tổng số bài của khoá, và
+        # tổng ấy là mẫu số của mọi phần trăm tiến độ: nhập một file 10 bài kèm
+        # `total_lessons: 10` cho khoá 27 bài là kéo tiến độ của mọi học viên
+        # lên gần gấp ba, im lặng. Nên nó giữ cho quản trị viên.
+        if body.get('total_lessons') is not None and not is_admin(request.user):
+            return Response(
+                {'error': 'Chỉ quản trị viên đặt được tổng số bài của khoá. '
+                          'Bỏ trường "total_lessons" thì hệ thống tự nâng tổng '
+                          'lên theo bài có số thứ tự lớn nhất.'}, status=403)
+
         if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-        body = request.data if isinstance(request.data, dict) else {}
         lessons = body.get('lessons')
         if isinstance(lessons, str):
             try:
@@ -297,6 +350,7 @@ class AdminCourseImportView(AdminBase):
                 # Cùng lý do với đường sửa lẻ ở trên: nhập đè nội dung mà không
                 # xoá đệm thì tối đa 60 giây tiếp theo vẫn chấm bằng đáp án cũ.
                 quen_dap_an(course_id, idx)
+            # Quyền đặt `total_lessons` đã kiểm ở ĐẦU `post()` — xem lý do ở đó.
             total = body.get('total_lessons')
             if isinstance(total, int) and total > 0:
                 _set_lesson_count(course_id, total)

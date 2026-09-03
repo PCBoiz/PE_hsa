@@ -1286,3 +1286,27 @@ ALTER TABLE missions ADD CONSTRAINT missions_course_id_fkey
 --   · §41 — đã áp dụng
 --   · §42 — chờ deploy
 --   · §43 — chỉ mục: áp dụng tay 01/09 (DDL THÊM). Hai ALTER: chờ deploy.
+
+
+-- §44 · Vai trò `Biên tập nội dung` (04/09/2026)
+-- ─────────────────────────────────────────────────────────────────────────────
+--
+-- Anh chốt 04/09: người soạn giáo trình là một vai trò RIÊNG, không phải mở
+-- `/api/admin/*` cho `Giảng viên`. Lý do trong `common/permissions.py`
+-- (`IsContentEditor`): vai trò này đứng ở một TRỤC KHÁC — bốn vai trò kia định
+-- nghĩa theo LỚP (ai dạy lớp nào), vai trò này chạm vào GIÁO TRÌNH, thứ dùng
+-- chung cho mọi lớp. Nên nó không thấy học viên, không thấy điểm, không thấy
+-- email của ai.
+--
+-- ĐỪNG QUÊN CÂU NÀY. §35 đã ghi đúng bài học ấy: thêm hằng số ở Python mà quên
+-- `CHECK` ở đây thì màn hình đổi vai trò báo lỗi bằng tên ràng buộc
+-- (`users_role_check`), một chuỗi không ai đọc ra là "thiếu một dòng SQL".
+--
+-- Nới một `CHECK` là thao tác CHỈ NỚI RỘNG: không dòng nào đang hợp lệ có thể
+-- trở thành không hợp lệ. Vì thế áp tay được ngay, khác với §42/§43 (đổi hành vi
+-- xoá của khoá ngoại) đang chờ deploy.
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check
+    CHECK (role IN ('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng',
+                    'Học viên', 'Biên tập nội dung'));
+--   · §44 — áp dụng tay 04/09 (chỉ nới rộng CHECK).

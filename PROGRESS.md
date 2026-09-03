@@ -2530,3 +2530,54 @@ Trần đăng nhập 5/phút → người thứ sáu bị chặn dù ở đầu 
 cần một bí mật chung giữa proxy và Django, nên hỏi trước khi làm.
 
 36 phép kiểm đạt (`common` + `accounts`); `manage.py check` sạch.
+
+---
+
+## 04/09/2026 — Vai trò "Biên tập nội dung" (phần máy chủ)
+
+Anh chốt: người soạn giáo trình là một vai trò RIÊNG, không phải mở
+`/api/admin/*` cho `Giảng viên`.
+
+**Vì sao tách đúng.** Bốn vai trò cũ đều định nghĩa theo LỚP — ai dạy lớp nào,
+ai xem được lớp nào. Vai trò này đứng ở một TRỤC KHÁC: nó chạm vào giáo trình,
+thứ dùng chung cho mọi lớp. Nên nó không thấy học viên, không thấy điểm, không
+thấy email của ai. Mở `/api/admin/*` cho `Giảng viên` sẽ cho luôn quyền xem mọi
+thứ khác nằm dưới cùng tiền tố ấy.
+
+Ranh giới: người biên tập làm được tất cả TRỪ **tạo** và **xoá** một khoá học,
+và trừ đặt `total_lessons`. Xoá khoá kéo theo bài và tiến độ đã học của người
+thật; `total_lessons` là đường DUY NHẤT hạ được tổng số bài, mà tổng ấy là mẫu
+số của mọi phần trăm tiến độ.
+
+**Không quên `users_role_check` lần này.** §35 đã ghi đúng bài học ấy (thêm hằng
+ở Python, quên CHECK ở CSDL → màn hình báo lỗi bằng tên ràng buộc). §44 nới CHECK
+lên 6 vai trò, đã áp tay lên Neon — nới một CHECK là thao tác chỉ-nới-rộng nên
+không dòng nào đang hợp lệ thành không hợp lệ.
+
+**Sửa một lỗi thứ tự.** Phép kiểm quyền `total_lessons` ban đầu nằm SAU khâu xác
+thực dữ liệu, nên cùng một việc bị cấm trả về hai mã khác nhau tuỳ file gửi lên
+có hợp lệ không — người biên tập sẽ đi sửa file, sửa xong mới biết mình không có
+quyền. Đúng lỗi đã mắc hôm 30/08 ở đường tạo tài khoản hàng loạt. Nay quyền kiểm
+trước.
+
+**Và một phép kiểm của tôi không kiểm gì.** Lùi `AdminBase` về mô hình chỉ-admin
+→ vẫn **9 passed**. Nguyên nhân: `test_bien_tap_soan_duoc_bai_va_noi_dung` nhận
+cả `bien_tap_api` lẫn `admin_api`, mà hai fixture gọi `force_authenticate` trên
+CÙNG một `APIClient` — client kết thúc ở vai admin. Bỏ tham số thừa → nay đỏ
+đúng chỗ khi lùi, xanh khi vá. Cùng họ với lỗi tìm được sáng nay ở
+`accounts/tests.py`; lần này là do chính tôi vừa viết ra.
+
+24 phép kiểm đạt (`courseadmin` + `accounts`).
+
+**Phát hiện kèm theo, chưa vá — bộ soạn nội dung cũ.** Đo trên 76 bài:
+`admin.inline.js` đọc/ghi `drill.seconds` trong khi engine đọc
+`drill.time_seconds`, và xử lý `note` số ít trong khi dữ liệu thật + engine dùng
+`notes` (`{tip, formula, key_points}`). Bộ kiểm phía máy chủ CHẶN được cái thứ
+nhất (400, câu lỗi rõ) — nên nó không xoá dữ liệu, nó **không dùng được** cho bất
+kỳ bài nào có phòng luyện, tức cả 76. Nhưng sửa đúng cái tên ấy thôi thì payload
+qua bộ kiểm với 0 lỗi trong khi `notes` biến mất: hàng rào hiện tại đang gánh và
+nó không đủ.
+
+Nguyên nhân gốc: `collectContent` DỰNG LẠI đối tượng bài từ đầu, nên mọi trường
+nó không biết đều mất. Anh chốt làm dứt điểm bằng React (T35) thay vì vá tại chỗ
+— bản mới sẽ GỘP vào bản đã nạp, để trường lạ sống sót.

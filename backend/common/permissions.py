@@ -19,10 +19,15 @@ ROLE_ACADEMIC = 'Quản lý học vụ'
 ROLE_TEACHER = 'Giảng viên'
 ROLE_ASSISTANT = 'Trợ giảng'
 ROLE_STUDENT = 'Học viên'
+ROLE_EDITOR = 'Biên tập nội dung'
 #: Vai trò hợp lệ khi quản trị viên đổi vai trò cho một tài khoản.
 #: Thứ tự = từ quyền RỘNG tới HẸP, để ô chọn trên màn hình đọc như một bậc thang.
+#: `Biên tập nội dung` đứng RIÊNG ở cuối, không xen vào bậc thang ấy: nó không
+#: rộng hơn hay hẹp hơn `Trợ giảng`, nó đứng ở một TRỤC KHÁC (giáo trình, không
+#: phải lớp học). Xếp nó vào giữa thang sẽ làm người chọn tưởng nó bao hàm các
+#: vai trò dưới.
 ASSIGNABLE_ROLES = (ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT,
-                    ROLE_STUDENT)
+                    ROLE_STUDENT, ROLE_EDITOR)
 
 # ── Hai vai trò thêm 01/09/2026 ──────────────────────────────────────────────
 #
@@ -77,6 +82,10 @@ def is_assistant(user) -> bool:
     return bool(user and user.is_authenticated and user.role == ROLE_ASSISTANT)
 
 
+def is_editor(user) -> bool:
+    return bool(user and user.is_authenticated and user.role == ROLE_EDITOR)
+
+
 def _la_tro_giang_cua_lop(user, class_id) -> bool:
     """Trợ giảng có được gán vào ĐÚNG lớp này không (và chưa rời)?
 
@@ -92,6 +101,41 @@ def _la_tro_giang_cua_lop(user, class_id) -> bool:
 
 class IsAdminRole(BasePermission):
     """@api_admin_required — 403 'Không có quyền truy cập' (message do errors.py)."""
+
+    def has_permission(self, request, view):
+        return is_admin(request.user)
+
+
+class IsContentEditor(BasePermission):
+    """Soạn giáo trình: quản trị viên hoặc `Biên tập nội dung`.
+
+    VAI TRÒ NÀY ĐỨNG Ở MỘT TRỤC KHÁC với bốn vai trò kia (04/09/2026). Trợ
+    giảng, giảng viên, quản lý học vụ đều được định nghĩa theo LỚP — ai dạy lớp
+    nào, ai xem được lớp nào. Biên tập nội dung thì không dính tới lớp nào cả:
+    họ chạm vào GIÁO TRÌNH, thứ dùng chung cho mọi lớp.
+
+    Hệ quả cố ý: người biên tập KHÔNG thấy học viên, không thấy điểm, không thấy
+    email hay số điện thoại của ai. Đó là lý do tách vai trò riêng thay vì mở
+    `/api/admin/*` cho `Giảng viên` — mở như thế là cho luôn quyền xem mọi thứ
+    khác nằm dưới cùng tiền tố ấy.
+
+    KHÔNG bao gồm việc XOÁ một khoá học: xem `IsCourseOwner` ngay dưới.
+    """
+
+    def has_permission(self, request, view):
+        return is_admin(request.user) or is_editor(request.user)
+
+
+class IsCourseOwner(BasePermission):
+    """Việc chỉ quản trị viên làm được: TẠO và XOÁ một khoá học.
+
+    Xoá một khoá là xoá cả `lessons` treo dưới nó, và `lesson_progress` của mọi
+    học viên trỏ tới các bài ấy — tức xoá tiến độ đã học của người thật, không
+    phải xoá một bản nháp. Tạo khoá thì rẻ nhưng một khoá rỗng hiện ngay trên
+    danh sách của mọi học viên.
+
+    Sửa NỘI DUNG thì thoải mái (`IsContentEditor`) — sai thì sửa lại được.
+    """
 
     def has_permission(self, request, view):
         return is_admin(request.user)
