@@ -534,6 +534,11 @@ def class_list(class_ids):
         return []
     rows = q('''SELECT c.id, c.code, c.name, c.course_id, c.schedule, c.status,
                        c.exam_date, c.capacity,
+                       -- Năm cột dưới THÊM 04/09/2026 cho màn hình sửa lớp.
+                       -- Thiếu chúng thì biểu mẫu sửa hiện ô TRỐNG cho những
+                       -- trường đang có giá trị, và bấm Lưu là xoá trắng —
+                       -- đúng lớp lỗi vừa vá ở bộ soạn bài học sáng nay.
+                       c.teacher_id, c.starts_on, c.ends_on, c.meeting_url, c.note,
                        c.term_id, t.name AS term_name, t.code AS term_code,
                        u.name AS teacher_name, co.title AS course_title,
                        (SELECT COUNT(*) FROM class_members m
@@ -552,6 +557,10 @@ def class_list(class_ids):
         'teacherName': r['teacher_name'], 'schedule': r['schedule'],
         'status': r['status'], 'capacity': r['capacity'], 'members': r['members'],
         'examDate': r['exam_date'].isoformat() if r['exam_date'] else None,
+        'teacherId': r['teacher_id'],
+        'startsOn': r['starts_on'].isoformat() if r['starts_on'] else None,
+        'endsOn': r['ends_on'].isoformat() if r['ends_on'] else None,
+        'meetingUrl': r['meeting_url'], 'note': r['note'],
         # Đợt học (§36). Có tên đợt ở đây thì danh sách lớp không phải đọc tên
         # lớp để đoán "lớp này thuộc mùa thi nào" nữa.
         'termId': r['term_id'], 'termName': r['term_name'], 'termCode': r['term_code'],

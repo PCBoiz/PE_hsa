@@ -2657,3 +2657,65 @@ nay, phần lớp đã nằm trong khu ấy rồi; đổi thành "Soạn giáo t
 
 CHƯA đo được: hàng rào máy chủ của `/admin` với một tài khoản THẬT mang vai mới
 — cần một câu UPDATE trên CSDL thật. Đã ghi vào `VIEC_CUA_ANH` mục D3.
+
+---
+
+## 04/09/2026 (chiều) — Ba agent tấn công, và một báo động giả của tôi
+
+Anh cho phép dùng agent. Thả ba con: việc tôi vừa làm · bảo mật production ·
+luồng nghiệp vụ ERP. Tự kiểm lại từng phát hiện trước khi tin.
+
+### Báo động giả: tôi nói CSDL chỉ-đọc, nó không hề
+
+Giữa lúc agent chạy, `pytest` báo `cannot execute INSERT in a read-only
+transaction`. Tôi đo được `default_transaction_read_only = on`, kết luận Neon
+đã khoá project vì hết hạn mức, và **báo cho anh đi mở console**.
+
+Sai. Đo lại sau khi agent xong: `off`, nguồn `default`; `pg_roles.rolconfig` là
+NULL; sáu phép kiểm hợp đồng chạy lại **6 passed**.
+
+Chuyện thật: host có `-pooler` (pgbouncer chế độ transaction), và một agent tự
+nói ở cuối báo cáo rằng nó chạy **mọi câu lệnh dưới `SET
+default_transaction_read_only = on`**. Lệnh `SET` ấy bám vào kết nối phía máy
+chủ rồi được pooler phát lại cho khách khác — tôi rơi vào một kết nối đã nhiễm.
+
+**Chỗ tôi lẽ ra phải dừng**: `pg_settings.source` ghi `session`. Chữ ấy nói
+thẳng "có ai đó SET trên phiên này", tức KHÔNG phải nền tảng ép. Tôi đọc nó, ghi
+nó vào báo cáo, rồi vẫn nhảy sang giả thuyết hết hạn mức — vì giả thuyết ấy
+"giải thích được" và tôi đã thôi tìm.
+
+Còn lại một phát hiện thật: **trạng thái phiên rò qua pooler giữa các khách**.
+Bất kỳ đường mã nào chạy `SET` sẽ dính sang request của người khác.
+
+### XSS lưu trữ ở diễn đàn — vá cả hai đầu
+
+`forum/views.py` nhận `course_id` là chuỗi TỰ DO, chỉ cắt 60 ký tự.
+`dashboard.js::_lessonTagHtml` nối nó thô vào `href` VÀ vào chữ hiển thị. Payload
+`"><img src=x onerror=…>` vừa 60 ký tự. Ngay dưới 15 dòng, `p.title` và
+`excerpt` đều đã qua `escHtml` — đúng chỗ này sót.
+
+Nặng vì mã chạy trên **miền Vercel**, nơi cookie `pe_at`/`pe_rt` sống. Cookie
+httpOnly không cứu được: không cần ĐỌC token, chỉ cần DÙNG nó bằng một `fetch`
+cùng origin — lớp trung gian tự gắn `Authorization` hộ. Bất kỳ học viên nào cũng
+đăng được; ai mở tab Diễn đàn cũng dính, kể cả quản trị viên.
+
+Vá: `encodeURIComponent` cho phần trong thuộc tính, `escHtml` cho phần nội dung
+(hai chỗ cần hai cách thoát khác nhau — `escHtml` không chặn `javascript:` trong
+href, `encodeURIComponent` để nguyên `<` khi nằm ngoài thuộc tính), và danh sách
+trắng `course_id` ở đường GHI.
+
+### Hai phép kiểm của tôi tự cắt mất bằng chứng
+
+Bản đầu đòi chuỗi `onerror` không được xuất hiện — nó **ĐỎ trên bản vá ĐÚNG**,
+vì `onerror` vẫn còn dưới dạng văn bản chết (`&lt;img … onerror=…&gt;`). Kiểm chuỗi
+con thay vì kiểm tính chất.
+
+Bản thứ hai bóc `href` bằng `/href="([^"]*)"/` rồi hỏi giá trị có dấu nháy
+không. Nhưng chính dấu nháy của payload làm regex **dừng sớm**, nên nó bóc ra
+`/lesson/` sạch sẽ và báo XANH trên mã hỏng.
+
+Nay kiểm hai tính chất: payload không tạo thêm được dấu `<` nào, và số dấu nháy
+đúng bằng 8 của khuôn mẫu. Trên mã cũ: **4 dấu `<`, 10 dấu nháy** — và dòng báo
+lỗi in thẳng HTML khai thác ra.
+
+13 passed (forum) · lint · node --check · 3 bộ unit: sạch.

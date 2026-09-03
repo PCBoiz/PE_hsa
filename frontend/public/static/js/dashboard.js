@@ -708,13 +708,37 @@ function skSkillToggle(row) {
     hsa_science: 'Khoa học'
   };
 
-  /* Nhãn bài học của một bài viết — bấm vào là mở thẳng bài đó. */
+  /* Nhãn bài học của một bài viết — bấm vào là mở thẳng bài đó.
+
+     XSS LƯU TRỮ, vá 04/09/2026. `p.courseId` là chuỗi NGƯỜI DÙNG GỬI LÊN:
+     `forum/views.py` nhận `course_id` tự do, chỉ cắt 60 ký tự. Bản cũ nối nó
+     thô vào `href` VÀ vào chữ hiển thị, nên một bài viết với
+     `course_id = '"><img src=x onerror=…>'` (vừa 60 ký tự) chạy được mã trên
+     máy MỌI người mở tab Diễn đàn, kể cả quản trị viên.
+
+     Vì sao nặng: mã chạy trên miền Vercel, nơi cookie `pe_at`/`pe_rt` sống.
+     Cookie httpOnly KHÔNG cứu được — kẻ tấn công không cần ĐỌC token, chỉ cần
+     DÙNG nó: `fetch('/api/admin/users/create', …)` cùng origin là lớp trung
+     gian tự gắn `Authorization` hộ.
+     Trang Vercel không có CSP (`next.config.ts` rỗng, không có `vercel.json`),
+     nên không có lớp phòng thủ thứ hai.
+
+     Ngay dưới 15 dòng, `p.title` và `excerpt` ĐỀU đã qua `escHtml` — đúng một
+     chỗ này sót. `p.lessonNo` thì an toàn: backend ép `int()` (`views.py:259`).
+
+     Hai chỗ, hai cách thoát khác nhau, cố ý không dùng chung một hàm:
+       · trong THUỘC TÍNH → `encodeURIComponent`, nó biến `"` thành `%22` nên
+         không thoát ra khỏi dấu nháy được;
+       · trong NỘI DUNG   → `escHtml`.
+     Dùng nhầm cửa nào cũng để lọt: `escHtml` không chặn `javascript:` trong
+     href, còn `encodeURIComponent` để nguyên `<` khi nằm ngoài thuộc tính. */
   function _lessonTagHtml(p) {
     if (!p.courseId || !p.lessonNo) return '';
     var name = COURSE_SHORT[p.courseId] || p.courseId;
-    return '<a class="fpc-lesson-tag" href="/lesson/' + p.courseId + '?lesson=' + p.lessonNo + '"' +
+    return '<a class="fpc-lesson-tag" href="/lesson/' + encodeURIComponent(p.courseId) +
+      '?lesson=' + p.lessonNo + '"' +
       ' onclick="event.stopPropagation()" title="Mở bài học này">' +
-      'Bài ' + p.lessonNo + ' · ' + name + '</a>';
+      'Bài ' + p.lessonNo + ' · ' + escHtml(name) + '</a>';
   }
 
   /* Bài mồi PHẢI có nhãn: người xem không được nhầm là bài của học viên thật. */

@@ -251,9 +251,26 @@ class PostsView(APIView):
             category = 'discuss'
         title = (data.get('title') or '').strip()
         # Thẻ bài học (không bắt buộc): gửi lên khi học viên đăng từ trong bài.
+        #
+        # PHẢI LÀ MỘT KHOÁ CÓ THẬT (vá 04/09/2026). Bản cũ nhận chuỗi tự do và
+        # chỉ cắt 60 ký tự — mà `dashboard.js::_lessonTagHtml` nối nó thô vào
+        # `href` và vào chữ hiển thị, nên `course_id = '"><img src=x onerror=…>'`
+        # (vừa 60 ký tự) là XSS lưu trữ: bất kỳ học viên nào cũng chạy được mã
+        # trên máy mọi người mở tab Diễn đàn, kể cả quản trị viên.
+        #
+        # Đã vá cả hai đầu. Đầu này chặt hơn và là đầu đáng tin hơn: chỗ hiển
+        # thị có thể mọc thêm (bản in, ứng dụng di động, một trang React sau
+        # này), còn đường GHI thì chỉ có đây. Cùng lý lẽ với `kiem_lien_ket` ở
+        # `teaching/views.py`.
+        #
+        # Từ chối THẲNG chứ không lặng lẽ bỏ thẻ: gửi lên một khoá không có là
+        # lỗi của bên gọi, và nuốt nó đi thì bài viết mất thẻ mà không ai biết
+        # vì sao (`RULES §8`).
         course_id = (str(data.get('course_id') or '').strip() or None)
         if course_id:
             course_id = course_id[:60]
+            if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
+                return Response({'error': 'Không có khoá học này.'}, status=400)
         lesson_no = data.get('lesson_no')
         try:
             lesson_no = int(lesson_no) if lesson_no not in (None, '') else None

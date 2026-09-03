@@ -92,3 +92,54 @@ def test_mention_empty_inputs():
     assert _is_name_mentioned('', 'An') is False
     assert _is_name_mentioned('không có ai', '') is False
     assert _is_name_mentioned('không có ai', None) is False
+
+
+# ── XSS lưu trữ qua `course_id` (vá 04/09/2026) ─────────────────────────────
+#
+# `course_id` là thẻ bài học gắn vào bài viết, gửi lên khi học viên đăng từ
+# trong một bài. Bản cũ nhận CHUỖI TỰ DO, chỉ cắt 60 ký tự — mà
+# `dashboard.js::_lessonTagHtml` nối nó thô vào `href` và vào chữ hiển thị.
+# Payload thoát khỏi thuộc tính vừa đúng 60 ký tự, và mã chạy trên miền Vercel
+# nơi cookie phiên sống: kẻ tấn công không cần ĐỌC token, chỉ cần DÙNG nó qua
+# lớp trung gian cùng origin.
+#
+# Vá cả hai đầu. Phép kiểm phía hiển thị nằm ở `frontend/e2e/unit/forum-xss.test.mjs`
+# (chạy hàm dựng HTML thật với payload). Ba phép dưới đây canh đầu GHI — đầu
+# đáng tin hơn, vì chỗ hiển thị có thể mọc thêm còn đường ghi thì chỉ có một.
+
+def test_course_id_phai_la_khoa_co_that(auth_api):
+    """Payload XSS không phải là mã khoá → 400, và KHÔNG có bài nào được tạo."""
+    from common.db import q1
+    truoc = q1('SELECT COUNT(*) AS n FROM posts')['n']
+
+    res = auth_api.post('/api/posts', {
+        'content': 'hi', 'category': 'question', 'title': 'T',
+        'lesson_no': 1,
+        'course_id': '"><img src=x onerror=alert(document.domain)>',
+    }, format='json')
+
+    assert res.status_code == 400, res.status_code
+    assert q1('SELECT COUNT(*) AS n FROM posts')['n'] == truoc, \
+        'bị từ chối rồi thì KHÔNG được ghi bài nào'
+
+
+def test_course_id_hop_le_van_dang_duoc(auth_api):
+    """Hàng rào không được chặn đường đi thường: đăng bài từ trong một bài học."""
+    res = auth_api.post('/api/posts', {
+        'content': 'Em chưa hiểu câu 3', 'category': 'question', 'title': 'Hỏi bài',
+        'lesson_no': 3, 'course_id': 'hsa_quantitative',
+    }, format='json')
+    assert res.status_code == 200, res.json()
+
+    from common.db import q1
+    row = q1('SELECT course_id, lesson_no FROM posts WHERE id=%s', (res.json()['id'],))
+    assert row['course_id'] == 'hsa_quantitative'
+    assert row['lesson_no'] == 3
+
+
+def test_khong_gan_the_bai_hoc_thi_van_dang_duoc(auth_api):
+    """Bỏ trống `course_id` là đường phổ biến nhất — không được vướng hàng rào."""
+    res = auth_api.post('/api/posts', {
+        'content': 'Chào cả nhà', 'category': 'discuss', 'title': 'Chào',
+    }, format='json')
+    assert res.status_code == 200, res.json()
