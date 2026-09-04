@@ -11,8 +11,24 @@
   var state = { courseId: null, lesson: null, step: 1, answers: {}, results: {},
               score: 0, total: 0, level: 'ok', graded: false };
 
+  /* Thoát ĐỦ NĂM ký tự, kể cả hai dấu nháy.
+     
+     BẢN CŨ CHỈ THOÁT `& < >`, mà hàm này được dùng NGAY TRONG THUỘC TÍNH:
+     `data-val="' + esc(op) + '"`, `data-qid="…"`, `aria-label="…"`,
+     `class="fa-solid ' + esc(c.icon) + '"`. Một phương án trả lời chứa dấu nháy
+     kép là thoát ra khỏi thuộc tính và gắn được `onmouseover=` vào chính nút
+     đáp án — thứ học viên buộc phải bấm để làm bài.
+     
+     Và nó đi VÒNG QUA bộ lọc HTML thêm cùng ngày (`lessons/content.py`): payload
+     thoát-thuộc-tính không chứa một ký tự `<` nào, nên biểu thức tìm thẻ của bộ
+     lọc không thấy gì. Hai hàng rào, cùng một ngày, và khe nằm ĐÚNG giữa chúng.
+     
+     `'` dùng `&#39;` chứ không `&apos;`: `&apos;` không có trong HTML4 và một
+     số bộ phân tích cũ để nguyên nó. */
   function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function $(id) { return document.getElementById(id); }
   function norm(s) { return String(s == null ? '' : s).trim().toLowerCase().replace(/\s/g, '').replace(/%/g, ''); }

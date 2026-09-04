@@ -95,7 +95,16 @@
     docs:    { icon: 'book-open', label: 'Tài liệu', color: '#34D399' }
   };
 
-  function escHtmlR(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  /* Thoát ĐỦ NĂM ký tự — bản cũ thiếu cả hai dấu nháy, mà `escHtmlR` được dùng
+     trong `onclick="…"` ở `:383` và `:426`. Hàm `esc` ngay dưới là chuyện KHÁC:
+     nó thoát cho ngữ cảnh JS (gạch chéo ngược + nháy đơn), đúng khi không đụng
+     tới `&<>`. Hai ngữ cảnh, hai hàm — đừng gộp.
+     Phép kiểm quét cả tầng: `e2e/unit/thoat-html.test.mjs`. */
+  function escHtmlR(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
   function esc(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
   /* Sắp xếp node id theo số thứ tự thực (rm_2 < rm_10), không theo alphabet */

@@ -78,7 +78,13 @@ function _bellTimeAgo(iso) {
 }
 
 function _escBell(s) {
-  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  /* Thoát ĐỦ NĂM ký tự. Bản cũ thiếu hai dấu nháy — vô hại chừng nào hàm chỉ
+     dùng trong NỘI DUNG thẻ, nhưng "chừng nào" là một hàng rào phụ thuộc vào
+     việc người sau không đổi chỗ dùng. Có phép kiểm quét cả tầng:
+     `e2e/unit/thoat-html.test.mjs`. */
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function loadBellNotifs() {

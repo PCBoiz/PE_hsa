@@ -170,7 +170,10 @@ var _RMV_COLORS = 6;
 
 /* ── Helpers ── */
 function _rmVEsc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    /* Thiếu `'` ở bản cũ. Xem `e2e/unit/thoat-html.test.mjs`. */
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 /* ── Default starter diagram ── */
