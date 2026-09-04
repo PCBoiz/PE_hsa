@@ -2678,18 +2678,21 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   đã tới nơi là đi hỏi `pg_catalog` từng cái một. Tạm thời mỗi mục tự ghi trạng
   thái (xem cuối `§43`); cần một bảng ghi phiên bản lược đồ thật.
   Đang chờ deploy: `§42` (2 khoá `roadmaps`) · `§43` (2 khoá `courses`/`missions`).
-- [ ] A10 · **Mọi người dùng thật đang chung MỘT xô giới hạn tần suất.**
-  `src/lib/proxy.ts` cố ý gỡ `x-forwarded-for` của khách (đúng — để khách không
-  giả được), nhưng `fetch` của Node không thêm lại, nên Django chỉ thấy IP
-  egress của Vercel. Với trần đăng nhập 5 lượt/phút ở production, người thứ sáu
-  đăng nhập trong cùng một phút bị chặn dù ngồi ở đầu kia đất nước — tức hàng
-  rào tần suất, thứ dựng ra để chống vét cạn, trở thành máy sinh sự cố cho một
-  lớp 30 em vào học cùng giờ.
-  `NUM_PROXIES` KHÔNG sửa được (đã đo 04/09, xem `common/net.py`).
-  Cách sửa cần chốt: `proxy.ts` chuyển tiếp IP mà CHÍNH VERCEL đã tính
-  (`x-real-ip` / `x-vercel-forwarded-for`) sang một header riêng, và Django chỉ
-  tin header đó khi kèm một bí mật chung — nếu không thì ai gọi thẳng Render
-  cũng đặt được. Đây là thiết kế có bí mật, nên hỏi trước khi làm.
+- [x] A10 · **XONG 05/09** — mọi người dùng thật hết chung một xô.
+  `proxy.ts` gửi IP khách (do CHÍNH VERCEL tính: `x-real-ip`, hoặc phần tử CUỐI
+  của `x-forwarded-for` đi vào) trong header riêng `X-PE-Client-IP`, kèm bí mật
+  `X-PE-Proxy-Secret`. Django chỉ tin header IP khi bí mật khớp
+  (`hmac.compare_digest`) — thiếu bước ấy thì ai gọi THẲNG Render cũng đặt được,
+  tức mở lại đúng cái lỗ vừa bịt, chỉ đổi tên header.
+  **Mặc định ĐÓNG:** chưa đặt biến môi trường (hoặc bí mật < 16 ký tự) thì cả
+  hai đầu chạy y như trước. Một bản vá an ninh mà cấu hình sai thành mở toang là
+  bản vá tệ hơn không vá.
+  **CÒN LẠI CHO ANH — đặt CÙNG một giá trị ở hai nơi:**
+      Render  →  PROXY_SHARED_SECRET
+      Vercel  →  PE_PROXY_SECRET   (server-side, KHÔNG `NEXT_PUBLIC_`)
+      sinh:  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  `x-forwarded-for` của khách VẪN bị gỡ — bản vá không mở lại đường cũ.
+
 - [ ] A11 · **Quiz ôn tập chưa cộng XP, và không thể cộng trước khi có trần.**
   Ba đường chấm điểm anh em: bài học và thi thử đều `award_xp + touch_streak`;
   quiz ôn tập trước 04/09 không gọi cái nào. Phần **chuỗi ngày đã vá** — nó

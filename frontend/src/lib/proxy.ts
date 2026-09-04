@@ -42,6 +42,28 @@ const STRIP = new Set([
   'forwarded',
 ]);
 
+/**
+ * IP KHÁCH do NỀN TẢNG tính — không phải chuỗi khách tự gửi.
+ *
+ * Trên Vercel, `x-forwarded-for` của request ĐI VÀO đã được biên của Vercel
+ * dựng lại và `x-real-ip` là IP khách. Ta chỉ ĐỌC chúng ở đây (đầu vào) rồi gửi
+ * xuống Django trong một header RIÊNG — không chuyển tiếp nguyên bản, vì `STRIP`
+ * ở trên tồn tại đúng để chặn việc ấy.
+ *
+ * Lấy phần tử CUỐI của `x-forwarded-for`: mỗi chặng nối thêm vào cuối, nên phần
+ * cuối là thứ chặng tin cậy gần nhất nhìn thấy, còn phần đầu là thứ khách tự
+ * viết. Cùng một luật với `backend/common/net.py` — hai bên chọn hai đầu khác
+ * nhau là kiểu lỗi đã xảy ra một lần trong repo này rồi.
+ */
+export function ipKhach(req: Request): string | null {
+  const real = (req.headers.get('x-real-ip') || '').trim();
+  if (real) return real;
+  const xff = (req.headers.get('x-forwarded-for') || '').trim();
+  if (!xff) return null;
+  const phan = xff.split(',').map((s) => s.trim()).filter(Boolean);
+  return phan.length ? phan[phan.length - 1] : null;
+}
+
 function forwardHeaders(req: Request, access: string | null): Headers {
   const h = new Headers();
   req.headers.forEach((v, k) => {
@@ -51,6 +73,33 @@ function forwardHeaders(req: Request, access: string | null): Headers {
   // Django dựng URL tuyệt đối cho OAuth từ các header này.
   const proto = req.headers.get('x-forwarded-proto') || 'https';
   h.set('X-Forwarded-Proto', proto);
+
+  /* ── IP KHÁCH, GỬI TRONG HEADER RIÊNG CÓ BÍ MẬT (05/09/2026) ─────────────
+   *
+   * `STRIP` ở trên gỡ `x-forwarded-for` của khách — đúng, vì để nguyên thì
+   * trình duyệt tự đặt được khoá giới hạn tần suất (đo 30/08: 300 lần đăng nhập
+   * kèm XFF ngẫu nhiên thì 300 lần đều lọt). Nhưng `fetch` của Node không thêm
+   * lại, nên Django chỉ thấy IP egress của Vercel: **mọi người dùng thật chung
+   * MỘT xô**. Với trần 5 lượt đăng nhập/phút, người thứ sáu bị chặn dù ngồi ở
+   * đầu kia đất nước — hàng rào chống vét cạn thành máy sinh sự cố cho một lớp
+   * 30 em vào học cùng giờ.
+   *
+   * Bí mật là BẮT BUỘC: Render vẫn nhận lời gọi THẲNG, không qua Vercel. Thiếu
+   * nó thì ai cũng đặt được `X-PE-Client-IP` — mở lại đúng cái lỗ vừa bịt, chỉ
+   * đổi tên header. Django cũng chỉ tin header IP khi bí mật khớp
+   * (`common/net.py::_bi_mat_khop`), nên hai đầu phải cùng bật.
+   *
+   * Chưa đặt biến môi trường → KHÔNG gửi gì cả, mọi thứ chạy như trước. Một bản
+   * vá an ninh mà cấu hình sai thành mở toang là bản vá tệ hơn không vá.
+   *
+   * `PE_PROXY_SECRET` phải là biến SERVER-SIDE. Đặt tên `NEXT_PUBLIC_…` là nhúng
+   * bí mật vào gói JavaScript gửi cho mọi trình duyệt. */
+  const biMat = process.env.PE_PROXY_SECRET || '';
+  const ip = ipKhach(req);
+  if (biMat.length >= 16 && ip) {
+    h.set('X-PE-Client-IP', ip);
+    h.set('X-PE-Proxy-Secret', biMat);
+  }
   return h;
 }
 

@@ -235,6 +235,28 @@ PASSWORD_HASHERS = [
 # một chặng — khi đó khoá lại rơi vào phần khách tự viết, tệ hơn hiện trạng.
 NUM_PROXIES = int(os.environ.get('NUM_PROXIES', '1' if IS_PRODUCTION else '0'))
 
+# ── BÍ MẬT GIỮA VERCEL VÀ RENDER (05/09/2026) ────────────────────────────────
+#
+# `NUM_PROXIES` KHÔNG sửa được chuyện MỌI người dùng thật chung một xô giới hạn:
+# `src/lib/proxy.ts` gỡ `x-forwarded-for` của khách (đúng — để khách không tự
+# đặt khoá giới hạn), và `fetch` của Node không thêm lại, nên chuỗi tới Django
+# không còn IP khách nào để chọn phần tử.
+#
+# Nên `proxy.ts` gửi IP khách trong header RIÊNG `X-PE-Client-IP`, kèm bí mật
+# này trong `X-PE-Proxy-Secret`. Django chỉ tin header IP khi bí mật khớp —
+# không có bước ấy thì ai gọi THẲNG Render cũng đặt được, tức mở lại đúng cái lỗ
+# vừa bịt, chỉ đổi tên header. Xem `common/net.py`.
+#
+# ĐẶT Ở HAI NƠI, CÙNG MỘT GIÁ TRỊ:
+#   Render  → biến môi trường  PROXY_SHARED_SECRET
+#   Vercel  → biến môi trường  PE_PROXY_SECRET   (server-side, KHÔNG `NEXT_PUBLIC_`)
+#
+# Sinh giá trị:  python -c "import secrets; print(secrets.token_urlsafe(32))"
+#
+# Để TRỐNG thì mọi thứ chạy y như trước — mặc định ĐÓNG, xem `net._bi_mat_khop`.
+# Ngắn hơn 16 ký tự cũng bị coi như chưa có.
+PROXY_SHARED_SECRET = os.environ.get('PROXY_SHARED_SECRET', '')
+
 REST_FRAMEWORK = {
     # JWT thay session — CSRF middleware của Django không áp lên JWT header auth
     # (tương đương WTF_CSRF_CHECK_DEFAULT=False + csrf.exempt của Flask cũ).

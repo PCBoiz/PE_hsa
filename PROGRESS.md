@@ -3418,3 +3418,40 @@ báo lỗi hiện ra chính là kịch bản "đổ tội cho người dùng" m�
   nơi gọi.
 * `courses/enrollment.py` "không mã nào đọc `enrollments.completed_at`" — grep
   lại: vẫn không ai đọc.
+
+## 05/09/2026 — A10: mọi người dùng thật hết chung một xô giới hạn
+
+`proxy.ts` gỡ `x-forwarded-for` của khách — **đúng**, vì để nguyên thì trình
+duyệt tự đặt được khoá giới hạn (đo 30/08: 300 lần đăng nhập kèm XFF ngẫu nhiên
+thì **300 lần đều lọt**, cùng 300 lần với IP cố định thì bị chặn 200). Nhưng
+`fetch` của Node không thêm lại, nên Django chỉ thấy IP egress của Vercel: với
+trần 5 lượt đăng nhập/phút, người thứ sáu bị chặn dù ngồi ở đầu kia đất nước —
+hàng rào chống vét cạn biến thành **máy sinh sự cố cho một lớp 30 em vào học
+cùng giờ**. `NUM_PROXIES` không sửa được: nó chọn phần tử trong một chuỗi mà
+chuỗi ấy không còn IP khách nào.
+
+Vá: IP khách đi trong header RIÊNG `X-PE-Client-IP`, kèm bí mật
+`X-PE-Proxy-Secret`. Django chỉ tin khi bí mật khớp.
+
+**Vì sao phải có bí mật:** Render vẫn nhận lời gọi THẲNG, không qua Vercel.
+Thiếu nó thì ai cũng đặt được header IP — mở lại đúng cái lỗ vừa bịt, chỉ đổi
+tên header.
+
+**Ba quyết định nhỏ, mỗi cái có lý do:**
+* IP lấy từ `x-real-ip`, hoặc phần tử **CUỐI** của `x-forwarded-for` đi vào.
+  Lấy phần ĐẦU là lấy đúng con số kẻ tấn công gửi — và khi ấy bản vá **tệ hơn**
+  hiện trạng, vì nó phát con số giả kèm một bí mật nói "hãy tin tôi".
+* `hmac.compare_digest` chứ không `==`: so bằng `==` rò rỉ độ dài tiền tố khớp
+  qua thời gian chạy, và đây là thứ chạy trên MỌI request.
+* Bí mật < 16 ký tự coi như **chưa có**. Một chuỗi bốn ký tự đặt vội "cho chạy
+  được" là thứ đoán ra trong vài giây, mà nó bật một đường tin cậy.
+
+**Mặc định ĐÓNG.** Chưa cấu hình → cả hai đầu chạy y như trước.
+
+**Chứng minh ĐỎ:** bỏ kiểm bí mật ở Django → 3/5 phép kiểm đỏ (đúng ba cái về an
+ninh). Ở Vercel: đổi sang lấy phần tử ĐẦU và bỏ cửa gác độ dài → 3 phép kiểm đỏ.
+
+**Một lỗi tôi tự gây ra và bắt được ngay:** hàm trợ giúp mới đặt trùng tên `_req`
+với hàm đã có trong `common/tests.py`, nên định nghĩa sau ghi đè định nghĩa
+trước và hai phép kiểm `NUM_PROXIES` viết từ 04/09 lặng lẽ gọi nhầm hàm. Đổi tên
+thành `_req_hdr` kèm chú thích nói rõ đó là bắt buộc, không phải sở thích.

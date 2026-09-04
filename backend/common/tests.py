@@ -318,3 +318,102 @@ def test_khong_co_chang_tin_cay_thi_khong_tin_header_nao():
     from common.net import client_ip
     assert client_ip(_req(xff='9.9.9.9')) == '203.0.113.9'
     assert client_ip(_req(xff='1.1.1.1, 2.2.2.2')) == '203.0.113.9'
+
+
+# ── IP KHÁCH QUA HEADER RIÊNG CÓ BÍ MẬT (05/09/2026) ────────────────────────
+#
+# Trước bản vá, MỌI người dùng thật chung MỘT xô giới hạn: `proxy.ts` gỡ
+# `x-forwarded-for` của khách (đúng), `fetch` của Node không thêm lại, nên Django
+# chỉ thấy IP egress của Vercel. Với trần 5 lượt đăng nhập/phút, người thứ sáu bị
+# chặn dù ngồi ở đầu kia đất nước.
+
+def _req_hdr(**headers):
+    """Request giả với đúng các header cần — không đụng mạng, không đụng CSDL.
+
+    Tên khác `_req` ở trên là BẮT BUỘC, không phải sở thích: đặt trùng tên thì
+    định nghĩa sau ghi đè định nghĩa trước, và hai phép kiểm `NUM_PROXIES` viết
+    từ 04/09 lặng lẽ gọi nhầm hàm này. Đã xảy ra ngay lần chạy đầu.
+    """
+    from django.test import RequestFactory
+    return RequestFactory().get('/', **headers)
+
+
+def test_ip_rieng_CHI_duoc_tin_khi_bi_mat_khop(settings):
+    from common.net import client_ip
+
+    settings.PROXY_SHARED_SECRET = 'x' * 32
+    settings.NUM_PROXIES = 0
+
+    r = _req_hdr(HTTP_X_PE_CLIENT_IP='203.0.113.9', HTTP_X_PE_PROXY_SECRET='x' * 32,
+             REMOTE_ADDR='10.0.0.1')
+    assert client_ip(r) == '203.0.113.9', 'bí mật khớp mà không tin header IP'
+
+
+def test_GIA_bi_mat_thi_KHONG_lot(settings):
+    """Đây là lý do phải có bí mật: Render vẫn nhận lời gọi THẲNG, không qua
+    Vercel. Không kiểm thì ai cũng đặt `X-PE-Client-IP` — mở lại đúng cái lỗ vừa
+    bịt, chỉ đổi tên header."""
+    from common.net import client_ip
+
+    settings.PROXY_SHARED_SECRET = 'x' * 32
+    settings.NUM_PROXIES = 0
+
+    for gia in ('', 'sai', 'x' * 31, 'x' * 33, 'X' * 32):
+        r = _req_hdr(HTTP_X_PE_CLIENT_IP='9.9.9.9', HTTP_X_PE_PROXY_SECRET=gia,
+                 REMOTE_ADDR='10.0.0.1')
+        assert client_ip(r) == '10.0.0.1', 'bí mật %r lọt qua' % gia
+
+    # Không gửi header bí mật gì cả cũng phải rơi về REMOTE_ADDR.
+    r = _req_hdr(HTTP_X_PE_CLIENT_IP='9.9.9.9', REMOTE_ADDR='10.0.0.1')
+    assert client_ip(r) == '10.0.0.1'
+
+
+def test_CHUA_cau_hinh_bi_mat_thi_chay_y_NHU_TRUOC(settings):
+    """Mặc định ĐÓNG. Một chỗ triển khai quên đặt biến môi trường thì mất tính
+    năng tách xô, chứ KHÔNG mở đường cho ai giả IP."""
+    from common.net import client_ip
+
+    settings.NUM_PROXIES = 0
+    for bimat in ('', None, 'ngan'):
+        settings.PROXY_SHARED_SECRET = bimat
+        r = _req_hdr(HTTP_X_PE_CLIENT_IP='9.9.9.9',
+                 HTTP_X_PE_PROXY_SECRET=(bimat or ''), REMOTE_ADDR='10.0.0.1')
+        assert client_ip(r) == '10.0.0.1', 'bí mật %r (chưa cấu hình) mà vẫn tin' % bimat
+
+
+def test_bi_mat_NGAN_bi_coi_nhu_chua_co(settings):
+    """Một chuỗi bốn ký tự đặt vội "cho chạy được" là thứ đoán ra trong vài giây,
+    mà nó bật một đường tin cậy. Dưới 16 ký tự → coi như chưa cấu hình."""
+    from common.net import client_ip
+
+    settings.NUM_PROXIES = 0
+    settings.PROXY_SHARED_SECRET = 'a' * 15
+    r = _req_hdr(HTTP_X_PE_CLIENT_IP='9.9.9.9', HTTP_X_PE_PROXY_SECRET='a' * 15,
+             REMOTE_ADDR='10.0.0.1')
+    assert client_ip(r) == '10.0.0.1'
+
+    settings.PROXY_SHARED_SECRET = 'a' * 16
+    r2 = _req_hdr(HTTP_X_PE_CLIENT_IP='9.9.9.9', HTTP_X_PE_PROXY_SECRET='a' * 16,
+              REMOTE_ADDR='10.0.0.1')
+    assert client_ip(r2) == '9.9.9.9', 'đúng 16 ký tự phải được nhận'
+
+
+def test_hai_hoc_vien_khac_IP_thi_KHAC_XO_gioi_han(settings):
+    """Đây mới là điều bản vá sinh ra để làm: khoá giới hạn phải TÁCH theo người.
+
+    Kiểm qua chính `get_ident` của lớp throttle, không qua `client_ip` trực tiếp
+    — nếu ai đó sau này cho throttle quay lại `get_ident` của DRF thì phép kiểm
+    này phải đỏ.
+    """
+    from common.throttling import HourlyIPThrottle
+
+    settings.PROXY_SHARED_SECRET = 's' * 24
+    settings.NUM_PROXIES = 1
+    t = HourlyIPThrottle()
+
+    khoa = set()
+    for ip in ('203.0.113.9', '198.51.100.7', '192.0.2.3'):
+        r = _req_hdr(HTTP_X_PE_CLIENT_IP=ip, HTTP_X_PE_PROXY_SECRET='s' * 24,
+                 HTTP_X_FORWARDED_FOR='10.0.0.1', REMOTE_ADDR='10.0.0.1')
+        khoa.add(t.get_ident(r))
+    assert len(khoa) == 3, 'ba học viên khác IP mà chỉ ra %d khoá: %s' % (len(khoa), khoa)
