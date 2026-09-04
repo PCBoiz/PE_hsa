@@ -890,7 +890,40 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 -- dòng: `IF NOT EXISTS` khiến nó vô hại khi CHẠY, nhưng người đọc gặp hai lần
 -- sẽ không biết bản nào là bản có lý do.
 
--- DỌN 6 CHỈ MỤC THỪA — CẦN DUYỆT TRƯỚC KHI CHẠY.
+-- DỌN 6 CHỈ MỤC THỪA — ĐÃ CHẠY 04/09/2026, anh Sơn duyệt.
+--
+-- ĐO TRƯỚC KHI CHẠY, không tin ghi chép cũ: cả sáu đều là `btree (user_id)`, và
+-- cả bốn bảng đều có khoá chính BẮT ĐẦU bằng `user_id`, nên chúng bị phủ HOÀN
+-- TOÀN — một B-tree phục vụ được mọi TIỀN TỐ của khoá ghép:
+--
+--     enrollments_pkey      (user_id, course_id)
+--     course_ratings_pkey   (user_id, course_id)
+--     lesson_progress_pkey  (user_id, lesson_id)
+--     roadmap_progress_pkey (user_id, roadmap_id, item_id)
+--
+-- Sau khi xoá: khoá chính nguyên vẹn cả bốn bảng, và `WHERE user_id=…` trên cả
+-- bốn vẫn trả đúng số dòng.
+--
+-- NÓI THẲNG VỀ CÁI ĐƯỢC: đây KHÔNG phải một bản vá tốc độ. Bốn bảng đang ở cỡ
+-- 48–80 kB nên trình lập kế hoạch quét tuần tự bất kể có chỉ mục hay không —
+-- một phép `EXPLAIN` ở đây sẽ nói "Seq Scan" và không chứng minh được gì. Cái
+-- được là mỗi lượt INSERT/UPDATE thôi phải cập nhật thêm SÁU cây B-tree.
+--
+-- VÀ CHÚNG KHÔNG PHẢI CHỈ MỤC CHẾT: lúc xoá, `idx_enrollments_user_id` có
+-- `idx_scan = 1271` và `idx_lesson_progress_user` có 1270 — đang được dùng
+-- thật. Sau khi xoá, những lượt quét ấy chuyển sang khoá chính, cùng cột dẫn
+-- đầu. Ghi ra đây để người sau không tưởng là tôi xoá nhầm thứ đang chạy.
+--
+-- DỰNG LẠI (nếu cần) — lấy NGUYÊN VĂN từ `pg_indexes` ngay trước khi xoá:
+--
+--     CREATE INDEX idx_course_ratings_user    ON public.course_ratings   USING btree (user_id);
+--     CREATE INDEX idx_course_ratings_user_id ON public.course_ratings   USING btree (user_id);
+--     CREATE INDEX idx_enrollments_user       ON public.enrollments      USING btree (user_id);
+--     CREATE INDEX idx_enrollments_user_id    ON public.enrollments      USING btree (user_id);
+--     CREATE INDEX idx_lesson_progress_user   ON public.lesson_progress  USING btree (user_id);
+--     CREATE INDEX idx_roadmap_progress_user  ON public.roadmap_progress USING btree (user_id);
+--
+-- ── Ghi chép gốc, giữ nguyên vì nó mang lý do ───────────────────────────────
 --
 -- Bốn cái §35 tạo nhầm ở trên, cộng hai cái đã trùng sẵn từ §8/§9 (cùng bảng,
 -- cùng cột, khác tên, nên `IF NOT EXISTS` không đỡ được):
@@ -901,7 +934,7 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 -- KHÔNG đặt câu DROP vào tệp này để `bootstrap_schema` tự chạy: tệp này chạy ở
 -- buildCommand của Render trên CSDL THẬT, và luật của repo là chỉ DDL THÊM mới
 -- được tự động (RULES). Bỏ một chỉ mục là việc bỏ đi được nhưng phải có người
--- gật đầu. Duyệt xong thì chạy tay MỘT lần:
+-- gật đầu. Anh Sơn gật 04/09/2026 và sáu câu dưới đây ĐÃ chạy tay một lần:
 --
 --     DROP INDEX IF EXISTS idx_enrollments_user;
 --     DROP INDEX IF EXISTS idx_enrollments_user_id;

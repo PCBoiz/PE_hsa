@@ -31,6 +31,30 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function $(id) { return document.getElementById(id); }
+
+  /* Câu báo lỗi khi lưu tiến độ thất bại — hàm THUẦN để kiểm được
+     (`e2e/unit/loi-may-chu.test.mjs`).
+
+     ── LỖI ĐANG CHẶN (vá 04/09/2026) ────────────────────────────────────────
+     Bản cũ chỉ phân biệt 404 với "mọi thứ khác", và "mọi thứ khác" hiện ra là
+     *"kiểm tra mạng rồi mở lại bài"*. Nhưng máy chủ trả về những câu RẤT cụ thể:
+
+         403  "Bạn chưa ghi danh khoá này."
+         400  "Bài này có phần luyện tập — làm ít nhất một câu rồi mới…"
+
+     Nói "kiểm tra mạng" ở đó là NÓI DỐI: mạng vẫn tốt, máy chủ đã trả lời tử tế,
+     và học viên bị đẩy đi sửa nhầm chỗ — họ sẽ tắt wifi bật lại, đổi trình
+     duyệt, rồi kết luận là sản phẩm hỏng.
+
+     `error` có HAI hình dạng trong repo: chuỗi (view tự trả) và object
+     `{status, message, detail}` (bộ xử lý lỗi chung). Đọc cả hai. */
+  function cauLoiMayChu(status, d) {
+    var e = d && d.error;
+    if (typeof e === 'string' && e.trim()) return e;
+    if (e && typeof e.message === 'string' && e.message.trim()) return e.message;
+    if (status === 404) return 'Không lưu được: máy chủ không tìm thấy bài này.';
+    return 'Chưa lưu được tiến độ — kiểm tra mạng rồi mở lại bài.';
+  }
   function norm(s) { return String(s == null ? '' : s).trim().toLowerCase().replace(/\s/g, '').replace(/%/g, ''); }
 
   var LEVELS = {
@@ -700,11 +724,22 @@
            chúc mừng, thấy "+50 XP", thấy pháo hoa — mà `lesson_progress` trống,
            chuỗi ngày không tăng, "Học tiếp" đứng yên. Phải nói ra. */
         if (!r.ok) {
-          flashNote(r.status === 404
-            ? 'Không lưu được: máy chủ không tìm thấy bài này.'
-            : 'Chưa lưu được tiến độ — kiểm tra mạng rồi mở lại bài.');
+          /* ĐỌC CÂU CỦA MÁY CHỦ TRƯỚC (vá 04/09/2026).
+
+             Bản cũ chỉ phân biệt 404 với "mọi thứ khác", và "mọi thứ khác" hiện
+             ra là *"kiểm tra mạng rồi mở lại bài"*. Với 403 ("Bạn chưa ghi danh
+             khoá này") hay 400 ("làm ít nhất một câu rồi mới đánh dấu hoàn thành
+             được") thì câu ấy là NÓI DỐI: mạng vẫn tốt, máy chủ đã trả lời tử
+             tế, và học viên bị đẩy đi sửa nhầm chỗ.
+
+             `error` có HAI hình dạng trong repo: chuỗi (view tự trả) và object
+             `{status, message, detail}` (bộ xử lý lỗi chung). Đọc cả hai; không
+             đọc được thì mới về câu chung. */
           var rx = $('reward-xp'); if (rx) rx.textContent = '—';
-          return null;
+          return r.json().catch(function () { return null; }).then(function (d) {
+            flashNote(cauLoiMayChu(r.status, d));
+            return null;
+          });
         }
         return r.json();
       })

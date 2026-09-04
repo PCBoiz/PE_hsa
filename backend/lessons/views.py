@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q1, x
-from common.events import KIND_DRILL, KIND_LESSON, record_event
+from common.events import KIND_DRILL, KIND_LESSON, SOURCE_SELF, SOURCE_SYSTEM, record_event
 from common.streak import award_xp, touch_streak
 from common.throttling import (
     DailyIPThrottle,
@@ -23,6 +23,7 @@ from lessons.grading import (
     PHAN_CO_CAU_HOI,
     cham,
     cham_phong_luyen,
+    dap_an,
     doc_ghi_nhan,
     ghi_nhan,
     gioi_han_giay_drill,
@@ -186,6 +187,21 @@ def _chot_luot_drill(uid, lesson_id, course_id, lesson_no, topic=None):
     "lượt đầu". Chốt ngay lúc bỏ dở thì lượt dò CHÍNH LÀ lượt đầu.
 
     Cùng luật với thi thử anh Sơn đã chốt: mở đề là đã thấy đề.
+
+    ── CHỦ ĐỀ PHẢI TỰ TRA (vá 04/09/2026) ─────────────────────────────────
+
+    Đường `/check` gọi hàm này KHÔNG truyền `topic`, nên mọi lượt phòng luyện bỏ
+    dở vào `learning_events` với `topic = NULL`. Mà `stats/competency.py` khoá
+    bản đồ năng lực theo `(course_id, topic)` — một dòng không có chủ đề là một
+    dòng VÔ HÌNH với bản đồ ấy.
+
+    Tức lượt dò đáp án — thứ mà cả cơ chế "chốt lượt đang dở" sinh ra để bắt —
+    được ghi vào sổ nhưng không đếm vào đâu cả. Nửa mục đích bị mất.
+
+    `/check` không truyền được là ĐÚNG: nó chạy MỖI CÂU và cố ý dùng `id_bai`
+    (một con số, có đệm 60 giây) thay vì `_tim_bai`. Nên tra ở ĐÂY, và tra SAU
+    các cửa thoát sớm — nhánh này chỉ chạy đúng một lần cho mỗi bài, lúc học
+    viên bấm "Bắt đầu" lại và thật sự có bài làm để chốt.
     """
     if _da_ghi_drill(uid, lesson_id):
         return
@@ -195,6 +211,8 @@ def _chot_luot_drill(uid, lesson_id, course_id, lesson_no, topic=None):
     ket = cham_phong_luyen(course_id, lesson_no, da_chot)
     if not ket:
         return
+    if topic is None:
+        topic = _tim_bai(course_id, lesson_no)[1]
     dung, tong, combo = ket
     _record_drill(uid, {'dung': dung, 'tong': tong, 'combo': combo,
                         'da_lam': len(da_chot), 'phut': None},
@@ -327,16 +345,55 @@ class CompleteLessonView(APIView):
             drill_ket = _cham_drill(data.get('drill'), course_id, lesson_no,
                                     uid, lesson_id)
             xp_earned = xp_bai + (drill_ket['xp'] if drill_ket else 0)
+
+            # ── HOÀN THÀNH PHẢI CÓ BẰNG CHỨNG (anh Sơn chốt 04/09/2026) ──────
+            #
+            # Trước hôm nay đường này KHÔNG đòi gì cả: gọi thẳng 76 lần là được
+            # 76 bài "đã hoàn thành", 3.800 XP và chuỗi ngày học, không trả lời
+            # một câu nào. Mọi hàng rào chống gian lận phía trên — chấm ở máy
+            # chủ, "lần đầu thắng", "lượt đầu vào sổ" — đều canh chuyện TRẢ LỜI
+            # THẾ NÀO, và không cái nào canh chuyện CÓ TRẢ LỜI KHÔNG.
+            #
+            # Với một sản phẩm bán bằng số đo thì một dòng "đã hoàn thành" không
+            # có gì đứng sau làm hỏng mọi báo cáo đọc nó.
+            #
+            # HAI NHÁNH, vì hai tình huống khác hẳn nhau:
+            #
+            #   bài CÓ câu hỏi mà chưa trả lời câu nào → CHẶN (400)
+            #   bài KHÔNG có câu hỏi nào               → cho qua, nhưng ghi
+            #                                            `source='self'`
+            #
+            # Nhánh hai dùng đúng cơ chế repo đã có: `stats/gradebook.py` tách
+            # hai xô `minutes` / `selfMinutes` theo cột `source`, nghĩa là "máy
+            # đo" và "học viên tự khai". Một bài không có gì để đo thì hoàn
+            # thành nó LÀ một lời tự khai — nói thế trong dữ liệu là trung thực,
+            # không phải là phạt.
+            #
+            # `existed` được miễn: bài đã hoàn thành từ trước (kể cả những bài
+            # hoàn thành trước bản vá này) thì gọi lại không bị chặn — đường này
+            # vốn nhận cú bấm lặp, và chặn ở đó là phạt người dùng vì lỗi cũ.
+            co_cau_hoi = any(dap_an(course_id, lesson_no).get(p)
+                             for p in ('test', 'drill'))
+            da_lam = bool(test_chot) or bool(doc_ghi_nhan(uid, lesson_id, 'drill'))
+            # MỘT câu tra cho MỘT sự thật. `existed` vừa là cửa miễn ở đây,
+            # vừa là điều kiện "đã cộng XP rồi" ở dưới — hai tên cho cùng một
+            # dòng CSDL là cách chúng trôi khỏi nhau.
+            existed = q1("SELECT 1 FROM lesson_progress "
+                         "WHERE user_id=%s AND lesson_id=%s AND status='completed'",
+                         (uid, lesson_id))
+            if co_cau_hoi and not da_lam and not existed:
+                return Response({'error': (
+                    'Bài này có phần luyện tập — làm ít nhất một câu rồi mới '
+                    'đánh dấu hoàn thành được.')}, status=400)
+            nguon = SOURCE_SYSTEM if da_lam else SOURCE_SELF
             if data.get('xpEarned') is not None and data.get('xpEarned') != xp_earned:
                 logger.info('[lessons] bài %s/%s: client khai xpEarned=%r — BỎ QUA, '
                             'cộng %s (bài %s + phòng luyện %s)',
                             course_id, lesson_no, data.get('xpEarned'), xp_earned,
                             xp_bai, xp_earned - xp_bai)
 
-            # Đã completed rồi thì không cộng XP lần nữa (chống spam F5 modal)
-            existed = q1("SELECT 1 FROM lesson_progress "
-                         "WHERE user_id=%s AND lesson_id=%s AND status='completed'",
-                         (uid, lesson_id))
+            # `existed` (tra ở khối kiểm bằng chứng phía trên) cũng là cửa
+            # chống cộng XP hai lần khi học viên bấm F5 trên hộp chúc mừng.
 
             x('''INSERT INTO lesson_progress
                      (user_id, lesson_id, course_id, status, quiz_score, xp_earned, completed_at)
@@ -426,6 +483,11 @@ class CompleteLessonView(APIView):
                 # (engine gửi lên round(score/total*100)), nên mốc tối đa là 100.
                 score=da_vao_so, max_score=(100 if da_vao_so is not None else None),
                 xp=xp_earned,
+                # `self` khi KHÔNG có bằng chứng nào (bài không có câu hỏi, hoặc
+                # bài đã xong từ trước nên được miễn cửa chặn). `gradebook.py`
+                # đọc đúng cột này để tách "máy đo" khỏi "học viên tự khai" —
+                # xem chú thích dài ở chỗ kiểm bằng chứng phía trên.
+                source=nguon,
                 # Tiêu đề lấy từ dòng `lessons` chứ không từ thân request: đây
                 # là thứ hiện lại trong nhật ký học tập của em.
                 meta={'lessonNo': lesson_no, 'title': lesson_title or ''},

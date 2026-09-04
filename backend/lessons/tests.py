@@ -183,6 +183,23 @@ def test_khong_de_ra_duoc_bai_hoc_GIA_trong_bang_dung_chung(em):
 
 
 @pytest.mark.django_db
+def _mot_cau_test(course_id, lesson_no):
+    """Một `(id_câu, đáp_án_đúng)` của phần `test` — để phép kiểm vượt được cửa
+    "hoàn thành phải có bằng chứng" (anh Sơn chốt 04/09/2026) mà không phải ghim
+    id câu hỏi vào mã kiểm.
+
+    Cửa ấy là HÀNH VI MỚI, không phải phép kiểm bị nới: ba phép kiểm dưới đây
+    trước kia gọi `/complete` mà không trả lời gì, và nay đường đó trả 400. Mỗi
+    cái vẫn đo đúng thứ nó vốn đo — nguồn của XP, nguồn của tiêu đề, và việc
+    kết quả phòng luyện tự khai bị bỏ qua.
+    """
+    from lessons.grading import dap_an
+    bang = dap_an(course_id, lesson_no).get('test') or {}
+    for cid, v in bang.items():
+        return cid, v.get('answer')
+    return None, None
+
+
 def test_XP_lay_tu_NOI_DUNG_BAI_chu_khong_tu_than_request(em):
     """Bảng xếp hạng là thứ các em thi nhau thật.
 
@@ -190,8 +207,10 @@ def test_XP_lay_tu_NOI_DUNG_BAI_chu_khong_tu_than_request(em):
     `{"xpEarned": 500}` cho 76 bài là 38.000 XP thay vì 3.800.
     """
     from lessons.views import CompleteLessonView
+    cid, dap = _mot_cau_test(KHOA, 1)
     r = _goi(CompleteLessonView, 'post',
-             {'courseId': KHOA, 'xpEarned': 500}, ai=em, lesson_no=1)
+             {'courseId': KHOA, 'xpEarned': 500,
+              'answers': {cid: dap} if cid else {}}, ai=em, lesson_no=1)
     assert r.status_code == 200
     assert r.data['xpGained'] == 50, 'phải là xp_reward của bài, không phải số client khai'
     ghi = q1("SELECT xp_earned FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id "
@@ -203,8 +222,10 @@ def test_XP_lay_tu_NOI_DUNG_BAI_chu_khong_tu_than_request(em):
 def test_tieu_de_trong_nhat_ky_lay_tu_CSDL_chu_khong_tu_client(em):
     """`learning_events.meta.title` hiện lại trong nhật ký học tập của em."""
     from lessons.views import CompleteLessonView
+    cid, dap = _mot_cau_test(KHOA, 1)
     _goi(CompleteLessonView, 'post',
-         {'courseId': KHOA, 'lessonTitle': 'TIEU DE DO CLIENT BIA'}, ai=em, lesson_no=1)
+         {'courseId': KHOA, 'lessonTitle': 'TIEU DE DO CLIENT BIA',
+          'answers': {cid: dap} if cid else {}}, ai=em, lesson_no=1)
     ev = q1("SELECT meta FROM learning_events WHERE user_id=%s AND kind='lesson' "
             "ORDER BY id DESC LIMIT 1", (em.id,))
     import json as _json
@@ -250,6 +271,9 @@ def test_phong_luyen_KHONG_nhan_ket_qua_tu_khai(em, bai_luyen):
     from lessons.views import CompleteLessonView
     r = _goi(CompleteLessonView, 'post',
              {'courseId': KHOA,
+              # Bằng chứng qua phần TEST, không qua drill: một câu drill thật sẽ
+              # tạo ra đúng dòng năng lực mà phép kiểm này khẳng định KHÔNG có.
+              'answers': {'t1': '2'},
               'drill': {'correct': 4, 'total': 4, 'maxCombo': 4, 'answered': 4, 'seconds': 30}},
              ai=em, lesson_no=bai_luyen)
     assert r.status_code == 200
@@ -799,3 +823,95 @@ def test_payload_khong_dong_THUC_SU_dung_ra_the_img_chay_duoc():
     # Và bộ lọc phải chặn nó. Ba khẳng định trên là lý do; dòng này là hàng rào.
     from lessons.content import loi_html
     assert loi_html(body, 'body'), 'bộ lọc để lọt payload vừa chứng minh là chạy được'
+
+
+def test_luot_phong_luyen_bo_do_van_co_CHU_DE(temp_user, db):
+    """Lượt bỏ dở phải vào sổ KÈM chủ đề, nếu không nó vô hình với bản đồ năng lực.
+
+    `stats/competency.py` khoá theo `(course_id, topic)`. Đường `/check` gọi
+    `_chot_luot_drill` mà không truyền `topic` — nên trước bản vá, đúng cái lượt
+    dò đáp án mà cơ chế này sinh ra để bắt lại được ghi với `topic = NULL` và
+    không đếm vào đâu cả.
+    """
+    from common.db import q1
+    from lessons.grading import ghi_nhan, id_bai
+    from lessons.views import _chot_luot_drill, _tim_bai
+
+    course_id, lesson_no = 'hsa_quantitative', 1
+    lesson_id = id_bai(course_id, lesson_no)
+    chu_de_that = _tim_bai(course_id, lesson_no)[1]
+    assert chu_de_that, 'bài mẫu phải có module — nếu không, phép kiểm không kiểm gì'
+
+    # Học viên trả lời một câu rồi bấm "Bắt đầu" lại.
+    ghi_nhan(temp_user, lesson_id, 'drill', {'q1': 'x'})
+    _chot_luot_drill(temp_user, lesson_id, course_id, lesson_no)
+
+    dong = q1('SELECT topic, kind FROM learning_events '
+              'WHERE user_id=%s AND dedup_key=%s', (temp_user, 'drill:%s' % lesson_id))
+    assert dong, 'lượt bỏ dở phải vào sổ'
+    assert dong['topic'] == chu_de_that, dong
+
+
+# ── HOÀN THÀNH PHẢI CÓ BẰNG CHỨNG (anh Sơn chốt 04/09/2026) ──────────────────
+#
+# Trước bản vá, `POST …/complete` KHÔNG đòi gì: gọi thẳng 76 lần là được 76 bài
+# "đã hoàn thành", 3.800 XP và chuỗi ngày học, không trả lời một câu nào. Mọi
+# hàng rào chống gian lận phía trên canh chuyện TRẢ LỜI THẾ NÀO; không cái nào
+# canh chuyện CÓ TRẢ LỜI KHÔNG.
+
+#: `course_id` đi trong THÂN request, không trong đường dẫn — xem `lessons/urls.py`.
+_COMPLETE = '/api/lessons/%d/complete'
+
+
+def test_hoan_thanh_bai_CO_cau_hoi_ma_chua_lam_gi_bi_chan(auth_api, temp_user, db):
+    from common.db import q1
+
+    r = auth_api.post(_COMPLETE % 1, {'courseId': 'hsa_quantitative'}, format='json')
+    assert r.status_code == 400, r.status_code
+    assert 'ít nhất một câu' in r.json()['error'], r.json()
+
+    # VÀ KHÔNG GHI GÌ: chặn rồi thì không được để lại dấu vết nào.
+    assert not q1("SELECT 1 FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id "
+                  "WHERE p.user_id=%s AND l.course_id='hsa_quantitative' "
+                  "AND l.sort_order=1 AND p.status='completed'", (temp_user,))
+
+
+def test_lam_mot_cau_roi_thi_hoan_thanh_duoc_va_ghi_la_MAY_DO(auth_api, temp_user, db):
+    """Hàng rào không được chặn việc thật — làm một câu là đủ."""
+    from common.db import q1
+    from lessons.grading import ghi_nhan, id_bai
+
+    lesson_id = id_bai('hsa_quantitative', 1)
+    ghi_nhan(temp_user, lesson_id, 'drill', {'q1': 'x'})
+
+    r = auth_api.post(_COMPLETE % 1, {'courseId': 'hsa_quantitative'}, format='json')
+    assert r.status_code == 200, r.json()
+
+    sk = q1('SELECT source FROM learning_events WHERE user_id=%s AND dedup_key=%s',
+            (temp_user, 'lesson:%s' % lesson_id))
+    assert sk and sk['source'] == 'system', sk
+
+
+def test_bai_da_xong_TU_TRUOC_duoc_mien_cua_chan(auth_api, temp_user, db):
+    """Bài đã hoàn thành từ trước — kể cả trước bản vá này — gọi lại KHÔNG bị chặn.
+
+    Đường này vốn nhận cú bấm lặp (F5 trên hộp chúc mừng), và chặn ở đó là phạt
+    người dùng vì một lỗ hổng cũ của hệ thống. Cửa miễn là `existed`.
+    """
+    from common.db import q1, x
+    from lessons.grading import id_bai
+
+    lesson_id = id_bai('hsa_quantitative', 2)
+    x("""INSERT INTO lesson_progress (user_id, lesson_id, course_id, status, completed_at)
+         VALUES (%s, %s, 'hsa_quantitative', 'completed', NOW())
+         ON CONFLICT (user_id, lesson_id) DO UPDATE SET status='completed'""",
+      (temp_user, lesson_id))
+
+    # Không trả lời câu nào, nhưng đã completed từ trước → cho qua.
+    r = auth_api.post(_COMPLETE % 2, {'courseId': 'hsa_quantitative'}, format='json')
+    assert r.status_code == 200, r.json()
+
+    # Và ghi là TỰ KHAI, vì lần gọi này không mang bằng chứng nào.
+    sk = q1('SELECT source FROM learning_events WHERE user_id=%s AND dedup_key=%s',
+            (temp_user, 'lesson:%s' % lesson_id))
+    assert sk and sk['source'] == 'self', sk

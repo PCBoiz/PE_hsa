@@ -3151,3 +3151,61 @@ Hai chuyện về chính phép kiểm, đáng ghi:
   chính là ràng buộc thiết kế cần canh: `gopTienDo` phải THUẦN thì mới kiểm
   được, mà bản cũ gọi `getActive()` để ĐOÁN, và chỗ đoán ấy là nửa thứ hai của
   lỗi lem.
+
+## 04/09/2026 — hai quyết định của anh Sơn, đã làm xong
+
+### ① Hoàn thành bài phải CÓ BẰNG CHỨNG — anh chốt "cả hai: chặn + đánh dấu"
+
+Trước hôm nay `POST …/complete` không đòi gì cả: gọi thẳng 76 lần là được 76 bài
+"đã hoàn thành", 3.800 XP và chuỗi ngày học, **không trả lời một câu nào**. Mọi
+hàng rào chống gian lận đã dựng — chấm ở máy chủ, "lần đầu thắng", "lượt đầu vào
+sổ" — đều canh chuyện **trả lời thế nào**, và không cái nào canh chuyện **có trả
+lời không**.
+
+    bài CÓ câu hỏi mà chưa trả lời câu nào  →  CHẶN (400, kèm câu chỉ đường)
+    bài KHÔNG có câu hỏi nào                →  cho qua, ghi `source='self'`
+    bài đã hoàn thành TỪ TRƯỚC              →  miễn cửa chặn
+
+Nhánh hai dùng đúng cơ chế repo đã có: `gradebook.py` tách hai xô `minutes` /
+`selfMinutes` theo cột `source`. Một bài không có gì để đo thì hoàn thành nó
+**là** một lời tự khai — nói thế trong dữ liệu là trung thực, không phải phạt.
+
+Cửa miễn cho `existed` là cố ý: đường này vốn nhận cú bấm lặp (F5 trên hộp chúc
+mừng), và chặn ở đó là phạt người dùng vì một lỗ hổng cũ của hệ thống.
+
+**Cửa chặn mới làm ĐỎ ba phép kiểm cũ** — chúng gọi `/complete` mà không trả lời
+gì, để đo chuyện khác (nguồn của XP, nguồn của tiêu đề, việc kết quả phòng luyện
+tự khai bị bỏ qua). Đây là **hành vi mới**, không phải phép kiểm bị nới: mỗi cái
+nay trả lời một câu thật rồi vẫn đo đúng thứ nó vốn đo. Phép kiểm thứ ba phải
+dùng phần **test** chứ không phải drill — thêm một câu drill thật sẽ tạo ra đúng
+dòng năng lực mà nó khẳng định KHÔNG được có.
+
+**Và một lỗi lộ ra ngay khi vá:** engine sẽ hiện 400 mới này thành *"Chưa lưu
+được tiến độ — kiểm tra mạng rồi mở lại bài."* Bản cũ chỉ phân biệt 404 với "mọi
+thứ khác". Với 403 ("Bạn chưa ghi danh khoá này") hay 400 ("làm ít nhất một
+câu…") thì câu ấy là **nói dối**: mạng vẫn tốt, máy chủ đã trả lời tử tế, và học
+viên bị đẩy đi sửa nhầm chỗ — họ sẽ tắt wifi bật lại, đổi trình duyệt, rồi kết
+luận là sản phẩm hỏng. Nay engine đọc câu của máy chủ (cả hai hình dạng `error`:
+chuỗi và `{status, message, detail}`), và phần chọn câu tách thành hàm thuần
+`cauLoiMayChu` có bộ kiểm riêng.
+
+Đây cũng chính là phát hiện "engine nuốt 403 rồi báo máy chủ không phản hồi" của
+đợt audit đường học viên — cùng một dòng mã.
+
+### ② Dọn 6 chỉ mục thừa trên Neon — anh duyệt, đã chạy
+
+Đo TRƯỚC khi chạy chứ không tin ghi chép cũ: cả sáu đều là `btree (user_id)`, và
+cả bốn bảng đều có khoá chính **bắt đầu bằng** `user_id`, nên bị phủ hoàn toàn.
+Sau khi xoá: khoá chính nguyên vẹn cả bốn bảng, `WHERE user_id=…` vẫn trả đúng
+số dòng.
+
+**Nói thẳng về cái được:** đây KHÔNG phải bản vá tốc độ. Bốn bảng ở cỡ 48–80 kB
+nên trình lập kế hoạch quét tuần tự bất kể có chỉ mục hay không — một phép
+`EXPLAIN` ở đây sẽ nói "Seq Scan" và không chứng minh được gì. Cái được là mỗi
+lượt INSERT/UPDATE thôi phải cập nhật thêm sáu cây B-tree.
+
+**Và chúng không phải chỉ mục chết:** lúc xoá, `idx_enrollments_user_id` có
+`idx_scan = 1271`, `idx_lesson_progress_user` có 1270. Những lượt quét ấy nay
+chuyển sang khoá chính, cùng cột dẫn đầu. Ghi vào `legacy_schema.sql` kèm câu
+`CREATE` nguyên văn để dựng lại được — và sửa luôn câu dẫn cũ đang nói "cần
+duyệt trước khi chạy", vì nó đã hết đúng.
