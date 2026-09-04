@@ -3903,3 +3903,39 @@ người đọc sau, kể cả của chính người viết.
 Kết quả cổng sau khi sửa: e2e **8/8 XANH, 0 bỏ qua** (lần đầu tiên bộ Playwright
 chạy trọn) · 15/15 unit · ruff sạch · pytest chatbot+common 43/43 · bộ đo giao
 diện 32/32 lượt sạch với thẻ chỉ-access, không lần nào bị đẩy về đăng nhập.
+
+## 05/09/2026 — Dọn 6 dòng tôi chèn nhầm; T58 tài khoản kiểm thử
+
+**Dọn.** Xoá đúng 6 dòng `token_blacklist_outstandingtoken` (id 821–826) và 2
+dòng `blacklistedtoken` tham chiếu chúng, trong một giao dịch có bảo hiểm: số
+dòng xoá khác dự kiến thì cuộn lại. Đo: 493 → **487**, id lớn nhất còn lại 820,
+**0 dòng mồ côi**, dữ liệu của bốn người dùng khác nguyên vẹn.
+
+**Và cái 401 hôm qua KHÔNG phải lỗi sản phẩm.** Lần theo mới thấy dòng 822 có
+một dòng blacklist trỏ vào — tức nó ĐÃ được xoay vòng thành công. Kiểm lại cho
+chắc: cấp một thẻ mới, đổi lần một → **200 kèm access mới**, đổi lần hai bằng
+đúng thẻ ấy → **401**. Đó là `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION`
+làm đúng việc (thẻ refresh dùng MỘT lần). Suýt nữa tôi báo một lỗi ma.
+
+**T58.** `scripts/tai_khoan_e2e.py`: xem trước mặc định, `--that` mới ghi, `--xoa`
+gỡ sạch; đếm `users`/`enrollments` trước/sau và cuộn lại nếu số dòng khác dự kiến.
+Đo: users 5 → 6, enrollments 6 → 7.
+
+- Tên hiện ra là "KIỂM THỬ TỰ ĐỘNG (không phải học viên)" — nó SẼ nằm trong danh
+  sách tài khoản khu quản trị, nên phải nhìn là biết ngay.
+- XP = 0 → không lọt bảng xếp hạng (`leaderboard/views.py:164` sắp theo xp DESC).
+- Mật khẩu NGẪU NHIÊN, ghi vào `.the/e2e.json` (đã gitignore). Repo không còn
+  mật khẩu mặc định nào; bản cũ ghi cứng `AuditPass123`, và nếu tài khoản ấy có
+  thật thì đó là một cánh cửa vào production nằm sẵn trong mã nguồn.
+
+**Tạo xong chưa phải xong.** Lần đầu tôi chọn email `.invalid` (RFC 2606, chắc
+chắn không gửi tới đâu) — và `email_validator` mà `accounts/validators.py` gọi
+TỪ CHỐI nó: "special-use or reserved name". Tài khoản tạo ra không đăng nhập nổi.
+Chỉ vì tôi thử đăng nhập THẬT mới thấy. Đã xoá và làm lại với `example.com` (cũng
+RFC 2606, nhưng thư viện chấp nhận).
+
+**Kiểm:** đăng nhập qua Django → 200 kèm access + refresh. Rồi XOÁ hẳn tệp thẻ
+JWT để bộ e2e buộc phải đi đường tài khoản, chạy lại: **8/8 XANH, 0 bỏ qua**.
+Sau lượt chạy, tài khoản ấy để lại **0 dòng** ở `lesson_progress`,
+`learning_events`, `review_quiz_results`, `admin_audit`, `notifications`; xp và
+streak vẫn 0.

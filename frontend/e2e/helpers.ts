@@ -21,18 +21,38 @@ import { join } from 'node:path';
 
 import { Page, expect } from '@playwright/test';
 
-export const E2E_EMAIL = process.env.E2E_EMAIL || 'audit@example.com';
-export const E2E_PASSWORD = process.env.E2E_PASSWORD || 'AuditPass123';
+/* Tài khoản kiểm thử. Thứ tự lấy: biến môi trường → `.the/e2e.json` (do
+   `python scripts/tai_khoan_e2e.py --that` sinh ra) → không có.
+
+   KHÔNG có mật khẩu mặc định trong mã nguồn nữa. Bản trước ghi cứng
+   `audit@example.com` / `AuditPass123` — một tài khoản không tồn tại, nên ba
+   phép kiểm luôn bỏ qua; và nếu nó TỪNG tồn tại thì đó là một cánh cửa vào CSDL
+   production nằm sẵn trong repo. */
+function docTaiKhoan(): { email: string; password: string } | null {
+  if (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) {
+    return { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD };
+  }
+  for (const p of [join(process.cwd(), '..', '.the', 'e2e.json'),
+                   join(process.cwd(), '.the', 'e2e.json')]) {
+    try {
+      const d = JSON.parse(readFileSync(p, 'utf8'));
+      if (d.email && d.password) return d;
+    } catch { /* thử đường sau */ }
+  }
+  return null;
+}
+
+const TAI_KHOAN = docTaiKhoan();
+export const E2E_EMAIL = TAI_KHOAN?.email || '(chưa có tài khoản kiểm thử)';
 
 /** Khoá mặc định để mở bài — phải là khoá CÓ THẬT trong CSDL. */
 export const KHOA = process.env.E2E_COURSE || 'hsa_quantitative';
 
 /** Câu giải thích khi bỏ qua — để người đọc log biết PHẢI LÀM GÌ. */
 export const LY_DO_BO_QUA =
-  'không vào được bằng thẻ lẫn bằng mật khẩu. Thẻ access sống 30 PHÚT — hết hạn '
-  + 'thì cấp lại: `python scripts/cap_the.py`. Hoặc đặt E2E_EMAIL / E2E_PASSWORD cho một tài '
-  + `khoản có thật — ${E2E_EMAIL} không có trong CSDL này, và tạo nó là một lượt `
-  + 'GHI vào Neon production.';
+  'không vào được. Tạo tài khoản kiểm thử: `python scripts/tai_khoan_e2e.py --that` '
+  + '(xem trước không cần cờ). Hoặc đặt E2E_EMAIL / E2E_PASSWORD. Đường thẻ JWT '
+  + '(`python scripts/cap_the.py`) cũng dùng được nhưng thẻ chỉ sống 30 phút.';
 
 /* Tệp thẻ do `scripts/cap_the.py` sinh ra.
 
@@ -118,19 +138,25 @@ export async function vaoBangThe(page: Page): Promise<boolean> {
  * định BỎ QUA hay báo đỏ.
  */
 export async function login(page: Page): Promise<boolean> {
-  if (await vaoBangThe(page)) return true;
+  /* TÀI KHOẢN TRƯỚC, THẺ SAU — ngược với bản hôm qua.
+     Thẻ access sống 30 phút; một lượt chạy đầy đủ dài hơn thế, và hai phép kiểm
+     cuối đã bỏ qua chỉ vì lý do ấy. Phiên đăng nhập thật không có hạn đó. */
+  if (TAI_KHOAN) {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#login-email', { timeout: 30_000 });
+    await page.fill('#login-email', TAI_KHOAN.email);
+    await page.fill('#login-password', TAI_KHOAN.password);
+    await page.click('#loginBtn');
+    try {
+      await page.waitForURL('**/dashboard**', { timeout: 20_000 });
+      return true;
+    } catch { /* rơi xuống đường thẻ */ }
+  }
 
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#login-email', { timeout: 30_000 });
-  await page.fill('#login-email', E2E_EMAIL);
-  await page.fill('#login-password', E2E_PASSWORD);
-  await page.click('#loginBtn');
-  try {
-    await page.waitForURL('**/dashboard**', { timeout: 20_000 });
-    return true;
-  } catch {
-    // In ra, chứ không chỉ trả `false`. Một phép kiểm bị bỏ qua mà không ai đọc
-    // lý do thì cũng là một im lặng — đúng thứ đang sửa ở khắp phiên này.
+  // Đường lùi: thẻ JWT. Và nếu cả hai hỏng thì IN RA lý do — một phép kiểm bị
+  // bỏ qua mà không ai đọc lý do thì cũng là một im lặng.
+  {
+    if (await vaoBangThe(page)) return true;
     console.warn(`[e2e] BỎ QUA phép kiểm cần đăng nhập — ${LY_DO_BO_QUA}`);
     return false;
   }
