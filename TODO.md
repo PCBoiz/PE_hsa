@@ -771,6 +771,25 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
 
 Xếp theo tần suất người dùng thật chạm vào, không theo độ dễ.
 
+- [x] T60 · **XONG 05/09 — bật `no-undef` cho tầng cũ, và nó bắt được một lỗi
+      đang sống.** Làm việc này TRƯỚC T31/T32 vì nó chạm đúng RỦI RO mà hai mục
+      kia sinh ra để giảm, với 1% chi phí và không phải viết lại thứ đang chạy.
+      Đo hai kiểu hỏng trên một tệp của tầng này:
+          lỗi CÚ PHÁP           → `node --check` ĐỎ · `pnpm lint` ĐỎ
+          gọi hàm KHÔNG TỒN TẠI → cả hai đều XANH
+      Tức câu "lỗi cú pháp lọt qua mọi cửa kiểm" ở T31 nay đã CŨ (cấu hình đã
+      sửa từ 27/08); khoảng trống thật là khoảng thứ hai — đúng lớp lỗi A13.
+      Bật lên: 46 vi phạm / 20 tên. Soi từng tên — 16 khai ở cấp trang của tệp
+      anh em, 3 do React bơm qua `LegacyScripts globals`, và **1 lỗi thật**:
+      `forumSearch` ở cấp cao nhất gọi `renderPosts`, thứ chỉ sống trong IIFE
+      của chính `dashboard.js`. Tái hiện trong trình duyệt: gõ MỘT ký tự vào ô
+      tìm kiếm diễn đàn → `ReferenceError: renderPosts is not defined`. Tìm kiếm
+      diễn đàn hỏng hoàn toàn, nút xoá cũng hỏng.
+      Vá: chuyển hai hàm vào trong khối và xuất ra `window` y như
+      `forumSetCat`/`forumSetSort` ngay cạnh — đó vốn là lối của tệp ấy.
+      Kiểm chạy thật: 9 bài → lọc còn 0 kèm trạng thái trống → xoá lọc về 9,
+      0 lỗi JS. Chứng minh đỏ: gọi hàm không tồn tại → đỏ; lùi đúng lỗi vừa vá
+      → đỏ và nêu tên `renderPosts`; khôi phục → xanh.
 - [ ] T31 · Dashboard (màn đầu tiên mọi học viên thấy mỗi ngày) — **và T34 nằm
       TRONG đây**: "danh sách khoá" không phải màn riêng, nó là
       `<div id="page-courses">` bên trong chính `dashboard/page.tsx`, do

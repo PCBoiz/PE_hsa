@@ -1266,6 +1266,36 @@ function skSkillToggle(row) {
     renderPosts();
   };
 
+  /* Ô TÌM KIẾM DIỄN ĐÀN — TỪNG NÉM Ở MỌI LẦN GÕ (vá 05/09/2026).
+
+     Hai hàm này trước nằm ở CẤP CAO NHẤT của tệp (dòng ~2129), ngoài khối
+     `(function () { … })()` mở ở dòng 642. Chúng gọi `renderPosts()`, mà
+     `renderPosts` chỉ tồn tại BÊN TRONG khối ấy. Kết quả, tái hiện trong trình
+     duyệt: gõ một ký tự vào ô tìm kiếm →
+
+         ReferenceError: renderPosts is not defined
+
+     Tìm kiếm diễn đàn hỏng hoàn toàn, và `forumClearSearch` (nút xoá) cũng hỏng
+     vì nó gọi `forumSearch`.
+
+     Không có cửa kiểm nào bắt được: `node --check` chỉ đọc cú pháp, còn ESLint
+     thì `no-undef` đang TẮT cho thư mục này. Bật luật ấy lên là thứ tìm ra lỗi
+     này — xem `eslint.config.mjs`.
+
+     Nay nằm trong khối và xuất ra `window` y như `forumSetCat`/`forumSetSort`
+     ngay trên — đó vốn là lối của tệp này; hai hàm kia là ngoại lệ, không phải
+     ngược lại. `_forumTextQ` vẫn ở cấp trang vì dòng 1069 đọc nó. */
+  window.forumSearch = function (val) {
+    _sbToggleClear('forum-search-clear', val);
+    _forumTextQ = val.trim().toLowerCase();
+    renderPosts();
+  };
+
+  window.forumClearSearch = function () {
+    var el = document.getElementById('forum-search-input');
+    if (el) { el.value = ''; window.forumSearch(''); el.focus(); }
+  };
+
   window.forumToggleLike = function (postId) {
     forumSetReaction(postId, 'like');
   };
@@ -2126,16 +2156,9 @@ function skillsClearSearch() {
 
 var _forumTextQ = '';
 
-function forumSearch(val) {
-  _sbToggleClear('forum-search-clear', val);
-  _forumTextQ = val.trim().toLowerCase();
-  renderPosts();
-}
-
-function forumClearSearch() {
-  var el = document.getElementById('forum-search-input');
-  if (el) { el.value = ''; forumSearch(''); el.focus(); }
-}
+/* `forumSearch` / `forumClearSearch` ĐÃ CHUYỂN vào khối diễn đàn ở trên
+   (tìm `window.forumSearch`). Xem lý do ngay tại đó — chúng gọi `renderPosts`,
+   thứ chỉ tồn tại BÊN TRONG khối ấy. */
 
 /* ═══════════════════════════════════════════════════════
    Popup nhắc giữ chuỗi học

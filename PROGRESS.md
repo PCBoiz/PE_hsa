@@ -3975,3 +3975,55 @@ docstring của nó đã nói rõ vì sao, chỉ đúng chỗ quyết định (`
 và rằng bật lên là một dòng còn gỡ số đã trộn thì không gỡ được. Đo: **0 sự kiện
 điểm danh** trong CSDL — chưa lớp nào chạy. Phần còn lại thuần là câu hỏi của
 TopHSA (C5), không phải việc kỹ thuật. Bỏ mục T30 cũ vì nó nói cùng một việc.
+
+## 05/09/2026 — T60: hỏi rủi ro trước khi viết lại 5.200 dòng
+
+T31/T32 (chuyển dashboard + engine bài học sang React) là việc lớn duy nhất còn
+lại. Trước khi bắt đầu, tôi hỏi: **rủi ro mà việc ấy sinh ra để giảm là gì?**
+TODO trả lời: tầng cũ là "chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên production
+qua mọi cửa kiểm".
+
+Đo lại câu ấy trên một tệp thật của tầng này:
+
+    lỗi CÚ PHÁP           → node --check ĐỎ · pnpm lint ĐỎ
+    gọi hàm KHÔNG TỒN TẠI → cả hai đều XANH
+
+Câu trong TODO đã CŨ: ESLint có phủ `public/static/js/**` (chỉ tắt riêng
+`no-unused-vars`, có ghi lý do), nên lỗi cú pháp bị chặn ở cả hai cửa. Khoảng
+trống THẬT là khoảng thứ hai — gọi một thứ không còn ở đó, đúng lớp lỗi đã làm
+trợ lý chat chết lặng ba tuần.
+
+Bật `no-undef` cho thư mục ấy: **46 vi phạm / 20 tên**. Không tin con số, soi
+từng tên bằng một phép phân tích phạm vi:
+
+  · 16 tên khai ở CẤP TRANG của một tệp anh em — hợp lệ (eslint không biết các
+    tệp `<script>` dùng chung phạm vi trang).
+  · 3 tên do React bơm qua `LegacyScripts globals` — đã mở `page.tsx` xác nhận.
+  · **1 lỗi THẬT.**
+
+`dashboard.js` có một khối `(function () { … })()` từ dòng 642 đến 1871.
+`renderPosts` nằm trong đó. `forumSearch` thì nằm ở CẤP CAO NHẤT (dòng ~2129) và
+gọi `renderPosts()`. Tái hiện trong trình duyệt, tài khoản thật, tab Diễn đàn:
+
+    gõ một ký tự vào ô tìm kiếm → ReferenceError: renderPosts is not defined
+
+Tìm kiếm diễn đàn hỏng hoàn toàn, và nút xoá cũng hỏng vì nó gọi `forumSearch`.
+Không cửa kiểm nào bắt được: `node --check` chỉ đọc cú pháp, `no-undef` thì đang
+tắt. Dòng 1069 còn có `typeof _forumTextQ !== 'undefined'` — dấu vết của một
+người từng chạm vào chỗ nứt này mà không nhìn ra nó.
+
+Vá bằng lối của chính tệp ấy: chuyển hai hàm vào trong khối, xuất ra `window`
+y như `forumSetCat`/`forumSetSort` ngay cạnh — hai hàm kia mới là ngoại lệ.
+Kiểm chạy thật: 9 bài → lọc còn 0 kèm trạng thái trống → xoá lọc về 9, 0 lỗi JS.
+
+Danh sách 20 global phải khai tay trong `eslint.config.mjs`. Đó là cái giá, và
+cũng là cái lợi: mỗi dòng là một lời khai "tên này đến từ tệp khác". Ghi rõ ngay
+đó: TUYỆT ĐỐI không khai một tên chỉ sống trong IIFE — làm thế là bịt miệng đúng
+phép kiểm vừa bắt được lỗi.
+
+Chứng minh đỏ: gọi hàm không tồn tại → đỏ; lùi đúng lỗi vừa vá → đỏ và nêu tên
+`renderPosts`; khôi phục → xanh.
+
+**T31/T32 vẫn mở**, và tôi không tự ý bắt đầu: viết lại 5.200 dòng đang chạy
+đúng là quyết định về thứ tự ưu tiên, không phải về kỹ thuật. Phần rủi ro cụ thể
+mà chúng nêu ra thì nay đã đóng bằng một cổng kiểm.

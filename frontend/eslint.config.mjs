@@ -83,6 +83,56 @@ const eslintConfig = defineConfig([
     files: ["public/static/js/**/*.js"],
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
+
+      /* ── `no-undef` BẬT, và nó tìm ra một lỗi đang sống (05/09/2026) ──────
+         Đo hai kiểu hỏng trên một tệp của tầng này:
+             lỗi CÚ PHÁP           → `node --check` ĐỎ, `pnpm lint` ĐỎ
+             gọi hàm KHÔNG TỒN TẠI → cả hai đều XANH
+         Khoảng trống thứ hai chính là lớp lỗi đã làm trợ lý chat chết lặng ba
+         tuần: gọi một thứ không còn ở đó, và không gì kêu lên.
+         (Nhân tiện: câu "lỗi cú pháp lọt qua mọi cửa kiểm" trong TODO nay đã
+         CŨ — đo lại thì cả hai cửa đều bắt được.)
+
+         Bật lên ra 46 vi phạm / 20 tên. Soi từng tên: 16 tên khai ở CẤP TRANG
+         của một tệp anh em (khai lại dưới đây), 3 tên do React bơm qua
+         `LegacyScripts globals`, và **một tên là lỗi thật** — `forumSearch` ở
+         cấp cao nhất gọi `renderPosts`, thứ chỉ sống trong IIFE của chính tệp
+         ấy. Tái hiện trong trình duyệt: gõ một ký tự vào ô tìm kiếm diễn đàn →
+         `ReferenceError: renderPosts is not defined`. Đã vá.
+
+         Danh sách dưới đây phải KHAI TAY, vì eslint không biết các tệp
+         `<script>` dùng chung một phạm vi trang. Đó là cái giá, và cũng là cái
+         lợi: mỗi dòng là một lời khai "tên này đến từ tệp khác".
+
+         TUYỆT ĐỐI KHÔNG khai một tên chỉ sống trong IIFE (ví dụ `renderPosts`):
+         làm thế là bịt miệng đúng phép kiểm vừa bắt được lỗi. */
+      "no-undef": "error",
+    },
+    languageOptions: {
+      sourceType: "script",
+      globals: {
+        Icon: "readonly",                    // icons.js
+        mountIcons: "readonly",              // icons.js
+        API: "readonly",                     // main.js
+        navigate: "writable",                // main.js
+        closeSidebar: "readonly",            // main.js
+        closeUnenrollModal: "readonly",      // main.js
+        enrolledCourses: "writable",         // main.js
+        renderStudyCalendar: "readonly",     // main.js
+        calMoveTip: "readonly",              // main.js
+        loadPersonalRoadmap: "readonly",     // main.js
+        _rmVInitCanvas: "readonly",          // main.js
+        _rmVRender: "readonly",              // main.js
+        ROADMAP_LIST: "readonly",            // roadmapData.js
+        ROADMAP_DATA: "readonly",            // roadmapData.js
+        ROADMAP_DETAILS: "readonly",         // roadmapData.js
+        forumRenderComments: "readonly",     // dashboard.js
+        forumSetReaction: "readonly",        // dashboard.js
+        // React bơm qua `LegacyScripts globals` (courses/[courseId]/page.tsx)
+        COURSE_ID: "readonly",
+        CURRENT_LESSON_IDX: "readonly",
+        LESSON_URL: "readonly",
+      },
     },
   },
 ]);
