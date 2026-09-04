@@ -276,7 +276,12 @@ export default async function TongQuanPage({
                   <Td label="Lớp">
                     <Link
                       href={`/giang-day/buoi-hoc/${c.id}`}
-                      className="-my-2 inline-block py-2 font-semibold text-brand-ink underline"
+                      /* `py-2` cho ra vùng chạm cao 36px — đo 04/09/2026 trên
+                         khổ điện thoại, dưới ngưỡng 44px. `py-3.5` cho 48px,
+                         và `-my-3.5` giữ nguyên chiều cao hàng bảng. Lấy dư
+                         một chút thay vì đúng 44: làm tròn nửa điểm ảnh ở tỉ lệ
+                         hiển thị khác là rơi lại xuống dưới ngưỡng. */
+                      className="-my-3.5 inline-block py-3.5 font-semibold text-brand-ink underline"
                     >
                       {c.name}
                     </Link>

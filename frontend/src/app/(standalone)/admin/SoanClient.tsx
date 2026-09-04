@@ -137,11 +137,19 @@ export default function SoanClient({
           {/* Đường VỀ phải có cho MỌI vai, không chỉ quản trị viên: người biên
               tập vào thẳng đây từ thanh điều hướng và nếu không có lối ra thì
               họ phải gõ tay địa chỉ. */}
-          <Link href="/dashboard" className="text-body text-brand-ink underline">
+          {/* `-my-3 py-3` nới VÙNG CHẠM lên 48px mà không đẩy bố cục — đo
+              04/09/2026: hai liên kết này cao 24px trên khổ điện thoại, dưới
+              ngưỡng 44px. Cùng cách khu Vận hành đã dùng
+              (`quan-tri/layout.tsx`); thêm `py` mà không kèm `-my` thì hàng
+              tiêu đề cao thêm 24px trên MỌI khổ, kể cả máy tính. */}
+          <Link href="/dashboard" className="-my-3 py-3 text-body text-brand-ink underline">
             ← Trang của tôi
           </Link>
           {laQuanTri && (
-            <Link href="/quan-tri/tong-quan" className="text-body text-brand-ink underline">
+            <Link
+              href="/quan-tri/tong-quan"
+              className="-my-3 py-3 text-body text-brand-ink underline"
+            >
               Khu vận hành →
             </Link>
           )}

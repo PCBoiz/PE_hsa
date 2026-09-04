@@ -3305,3 +3305,73 @@ form {max:500}`. Phép kiểm đọc THẲNG tệp Python, không chép số san
 Cùng lượt: `§45` chỉ mục `learning_events(ref_type, ref_id)` (A6) — nói thẳng là
 ở 37 dòng nó chưa đổi gì đo được; thêm vì hình dạng truy cập đúng là thứ chỉ mục
 phục vụ, và thêm lên bảng đã lớn là một lượt khoá bảng. A4/A6/T66 đánh dấu xong.
+
+## 04/09/2026 — tương phản: 121 vi phạm báo về, 1 cái có thật
+
+Anh chốt "chỉ lấy phần tương phản" từ nghiên cứu themes. Bộ đo giao diện đã có
+sẵn phần ấy, nên việc là chạy nó — và việc thật hoá ra là **sửa chính bộ đo**.
+
+### Trước tiên: danh sách trang thiếu ba màn quan trọng nhất
+
+`scripts/do_giao_dien.mjs` đo 13 trang, và **không có `/`** — TRANG CHỦ, không
+cần đăng nhập, chỗ hiển thị có tầm với rộng nhất trong cả sản phẩm. Cũng không
+có `/admin` và `/quan-tri/lop-hoc` (dựng hôm nay). Một con số "0 vi phạm" tính
+trên tập không đầy đủ là một tờ giấy chứng nhận sạch cấp cho phần chưa ai xem.
+
+Thêm ba trang → **108 vi phạm**, trong đó **54 ở trang chủ**.
+
+### Rồi: 106 trong 108 là DƯƠNG TÍNH GIẢ của bộ đo
+
+Cả 54 cái ở trang chủ đều `tp = 1,00` — tỉ lệ đúng 1:1 nghĩa là bộ đo đọc RA
+CÙNG MỘT MÀU cho chữ và nền, tức nó **không phân giải được nền**, chứ không phải
+trang trắng-trên-trắng. Ảnh chụp xác nhận ngay: hero là chữ sáng trên nền
+tím-navy, tương phản rất tốt.
+
+Nguyên nhân đo được: `body` có **9 lớp** `background-image`, và lớp CUỐI —
+`linear-gradient(rgb(7,20,42), rgb(12,29,61), rgb(9,7,21))` — là **đục**, tức
+nền thật của cả trang. Bản cũ gom chặng màu của cả 9 lớp vào một rổ rồi phủ từng
+cái lên nền mặc định **trắng**, nên một chặng `rgba(45,212,191,0.12)` ra gần
+trắng và chữ trắng thành 1,00:1.
+
+Vá: tách `background-image` thành từng lớp (đếm ngoặc, không `split(',')` — dấu
+phẩy nằm khắp trong `rgba()` và `radial-gradient()`), duyệt **từ đáy lên**, gặp
+lớp có chặng đục thì lớp ấy là nền đáy. **108 → 2.**
+
+### Và bản TỐI: 13 vi phạm, cả 6 cái lấy mẫu đều giả
+
+Đo bằng điểm ảnh thật (ẩn màu chữ, chụp đúng ô, lấy màu xuất hiện nhiều nhất):
+
+    .mini-rm-node-title   bộ đo 1,04  →  THẬT 14,93
+    .nav-btn-label        bộ đo 1,53  →  THẬT 14,91
+    .lb-name              bộ đo 2,56  →  THẬT  6,38
+    .lb-value             bộ đo 2,56  →  THẬT  6,55
+    .mini-rm-node-sub     bộ đo 2,54  →  THẬT  6,21
+    .lb-rank-num          bộ đo 2,84  →  THẬT  5,58
+
+Suýt nữa tôi đi "sửa" 13 vấn đề không tồn tại, trên đúng ba trang học viên dùng
+nhiều nhất.
+
+### Nên bộ đo nay TỰ XÁC MINH BẰNG ĐIỂM ẢNH trước khi tính là vi phạm
+
+Phép dò nền bằng CSS phải ĐOÁN; điểm ảnh thì không. Vi phạm vốn hiếm nên giá
+phải trả có giới hạn — và nếu nó không hiếm thì chậm một chút là điều nhỏ nhất
+đang xảy ra. Không soi được (phần tử biến mất, ngoài vùng cuộn) thì **GIỮ LẠI**
+vi phạm: bỏ đi là biến một lỗi soi được thành một trang sạch, im lặng, và đúng
+theo hướng có lợi cho người viết bộ đo.
+
+Kèm một lỗ trong chính đoạn tôi vừa viết: `vi_pham` bị cắt còn 60 TRƯỚC khi xác
+minh, nên quá 60 là đếm thiếu. Nay cắt ở 300 và phần chưa soi được cộng lại.
+
+### Vi phạm THẬT: đúng một cái, và nó ở nút chính của trang chủ
+
+`.btn-primary` — chữ trắng 14px trên `linear-gradient(#8B7CF6, …)` ra **3,33:1**,
+dưới ngưỡng AA 4,5. Đây là nút khách vãng lai và đối tác nhìn thấy đầu tiên.
+`#7360EA` là tím **sáng nhất còn đạt** (4,57:1) — tính chứ không đoán, để giữ
+nhận diện ở mức sáng nhất có thể thay vì hạ đại cho an toàn.
+
+Ba vùng chạm dưới 44px, **hai cái là của tôi hôm nay** (`← Trang của tôi` và
+`Khu vận hành →` trên `/admin`, cao 24px). Dùng `-my-3 py-3` — nới vùng chạm mà
+không đẩy bố cục, đúng cách khu Vận hành đã dùng.
+
+**Kết quả cuối: 16 trang × 2 khổ × 2 chủ đề — 0 vi phạm tương phản, 0 vùng chạm
+nhỏ, 0 tràn ngang, 0 lỗi JS, 0 lời gọi ghi lọt ra.**

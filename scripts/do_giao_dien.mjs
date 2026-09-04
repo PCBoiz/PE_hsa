@@ -57,6 +57,19 @@ const TRANG = [
      giảng viên mở mỗi buổi, và trước 01/09/2026 chưa lượt quét nào chạm tới. */
   ['/giang-day/buoi-hoc/1', 'Giảng dạy · buổi học'],
   ['/giang-day/bai-tap/1', 'Giảng dạy · bài tập'],
+  /* Ba trang thêm 04/09/2026. Trước hôm nay bộ đo báo "0 vi phạm tương phản"
+     trong khi ba màn này chưa từng được nhìn tới — một con số 0 tính trên tập
+     KHÔNG ĐẦY ĐỦ là một tờ giấy chứng nhận sạch cấp cho phần chưa ai xem.
+
+     `/` là TRANG CHỦ, không cần đăng nhập: chỗ hiển thị có tầm với rộng nhất
+     trong cả sản phẩm và là chỗ duy nhất khách vãng lai lẫn đối tác đều mở.
+     Nó vắng mặt ở danh sách này từ đầu.
+
+     `/admin` và `/quan-tri/lop-hoc` dựng trong ngày 04/09 — khu soạn giáo trình
+     (kèm khối nhập đề thi) và khu xếp lớp. */
+  ['/', 'Trang chủ (công khai)'],
+  ['/admin', 'Soạn giáo trình'],
+  ['/quan-tri/lop-hoc', 'Quản trị · lớp học'],
 ];
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét
@@ -106,6 +119,24 @@ function DO_TRONG_TRANG(do_trang_thai) {
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   };
 
+  /* Tách `background-image` thành từng LỚP. Không dùng `split(',')`: dấu phẩy
+     nằm khắp nơi bên trong `rgba(…)` và `radial-gradient(…)`. Đếm ngoặc.
+
+     Thứ tự CSS: lớp ĐẦU vẽ TRÊN CÙNG, lớp CUỐI nằm dưới đáy. */
+  const tach_lop = (bi) => {
+    const ra = [];
+    let sau = 0;
+    let dau = 0;
+    for (let i = 0; i < bi.length; i++) {
+      const c = bi[i];
+      if (c === '(') sau += 1;
+      else if (c === ')') sau -= 1;
+      else if (c === ',' && sau === 0) { ra.push(bi.slice(dau, i)); dau = i + 1; }
+    }
+    ra.push(bi.slice(dau));
+    return ra.map((s) => s.trim()).filter(Boolean);
+  };
+
   const phu = (lop, goc) => {
     let acc = goc.slice(0, 3);
     for (const l of lop) {
@@ -135,10 +166,43 @@ function DO_TRONG_TRANG(do_trang_thai) {
          đúng 1:1, một vi phạm nặng nhất bảng mà không có thật. */
       const cat = cs.webkitBackgroundClip || cs.backgroundClip;
       if (!chang && cat !== 'text' && bi && bi !== 'none' && bi.indexOf('gradient') !== -1) {
-        const g = (bi.match(/rgba?\([^)]*\)|color\([^)]*\)/g) || [])
-          .map((x) => { const v = doc_mau(x); return v.length === 3 ? [v[0], v[1], v[2], 1] : v; })
-          .filter((v) => v.length === 4);
-        if (g.length) { chang = g; lop.unshift(null); }
+        /* TÁCH THÀNH TỪNG LỚP, và nhớ rằng lớp CUỐI nằm DƯỚI CÙNG.
+           `background-image` nhận nhiều lớp; lớp đầu vẽ TRÊN, lớp cuối là đáy.
+
+           Dương tính giả thứ NĂM của bộ đo này (đo 04/09/2026): trang chủ có
+           **9 lớp** trên `body`, lớp cuối là
+           `linear-gradient(rgb(7,20,42) 0%, rgb(12,29,61) 45%, rgb(9,7,21))` —
+           ĐỤC và navy đậm, tức nền thật của cả trang. Bản cũ gom chặng màu của
+           CẢ CHÍN lớp vào một rổ rồi phủ từng cái lên nền mặc định TRẮNG, nên
+           một chặng `rgba(45,212,191,0.12)` ra gần trắng và chữ trắng thành
+           1,00:1. Kết quả: **54 vi phạm không có thật** trên đúng trang có tầm
+           với rộng nhất — và không cái nào là lỗi của trang.
+
+           Nên: duyệt từ ĐÁY LÊN, gặp lớp nào có chặng ĐỤC thì lớp ấy là nền
+           đáy — dừng, và lấy chính các chặng đục ấy làm nền khả dĩ. */
+        const lop_anh = tach_lop(bi);
+        for (let i = lop_anh.length - 1; i >= 0 && !chang; i--) {
+          const g = (lop_anh[i].match(/rgba?\([^)]*\)|color\([^)]*\)/g) || [])
+            .map((x) => { const v = doc_mau(x); return v.length === 3 ? [v[0], v[1], v[2], 1] : v; })
+            .filter((v) => v.length === 4);
+          if (!g.length) continue;
+          const duc = g.filter((v) => v[3] >= 0.999);
+          if (duc.length) {
+            // Lớp đục = NỀN ĐÁY. Đặt chỗ dành ở ĐÁY chồng lớp để mỗi chặng đục
+            // thành MỘT ứng viên riêng — không gộp chúng lại, vì một gradient
+            // navy→đen cho hai nền rất khác nhau và chữ phải đạt trên cả hai.
+            chang = duc;
+            lop.unshift(null);
+          }
+        }
+        // Không lớp nào đục: giữ nguyên cách cũ — coi các chặng là lớp phủ.
+        if (!chang) {
+          const g = (bi.match(/rgba?\([^)]*\)|color\([^)]*\)/g) || [])
+            .map((x) => { const v = doc_mau(x); return v.length === 3 ? [v[0], v[1], v[2], 1] : v; })
+            .filter((v) => v.length === 4);
+          if (g.length) { chang = g; lop.unshift(null); }
+        }
+        if (chang) break;   // đã có nền đáy thật, không leo tiếp
       }
       const bg = doc_mau(cs.backgroundColor);
       if (bg.length === 3) { goc = bg; break; }        // đục → hết đường xuống
@@ -217,7 +281,15 @@ function DO_TRONG_TRANG(do_trang_thai) {
     if (!hien(el) || !co_chu(el)) continue;
     const d = do_el(el);
     if (d && d.tp < d.nguong) {
-      vi_pham.push({ duong: duong(el), ...d, chu: el.textContent.trim().slice(0, 40) });
+      /* Đánh dấu để bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node tìm lại được phần tử.
+         Cùng cách với `data-pe-net` của phép đo vòng nét. */
+      el.dataset.peVp = String(vi_pham.length);
+      const r = el.getBoundingClientRect();
+      vi_pham.push({
+        duong: duong(el), ...d, chu: el.textContent.trim().slice(0, 40),
+        i: vi_pham.length, mau_chu: getComputedStyle(el).color,
+        hop: { x: r.x, y: r.y, w: r.width, h: r.height },
+      });
     }
   }
 
@@ -367,7 +439,12 @@ function DO_TRONG_TRANG(do_trang_thai) {
 
   return {
     dau, net_dau,
-    vi_pham: vi_pham.slice(0, 60), so_vi_pham: vi_pham.length,
+    /* Cắt ở 300 chứ không 60: bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node chỉ soi được
+       những mục có trong mảng này, nên cắt sớm là loại bỏ mục chưa ai nhìn rồi
+       báo một con số nhỏ hơn sự thật. `so_vi_pham_tho` giữ số THÔ để biết có bị
+       cắt hay không. */
+    vi_pham: vi_pham.slice(0, 300),
+    so_vi_pham: vi_pham.length, so_vi_pham_tho: vi_pham.length,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     so_cham: document.querySelectorAll(CHAM).length,
     tran_ngang: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -502,6 +579,90 @@ for (const kho of KHO) {
         }
         await cdp2.detach();
       }
+      /* ── XÁC MINH TỪNG VI PHẠM BẰNG ĐIỂM ẢNH THẬT ─────────────────────
+       *
+       * Phép dò nền bằng CSS phải đoán: nó leo cây tìm một màu đục, và khi
+       * không thấy thì lấy TRẮNG làm đáy. Đoán sai là ra 1,00:1 — trắng trên
+       * trắng — cho một trang thật ra chữ sáng trên nền tối.
+       *
+       * Đo 04/09/2026, hai lượt liên tiếp:
+       *   · bản SÁNG: 108 vi phạm báo về, **106 không có thật** (nền đáy là lớp
+       *     gradient thứ 9 của `body`, đục và navy đậm — bản cũ gom chặng màu
+       *     của cả 9 lớp rồi phủ lên trắng);
+       *   · bản TỐI: 13 vi phạm, và cả 6 cái tôi lấy mẫu đều giả — giá trị THẬT
+       *     là 5,58 đến 14,93, tức đạt thoải mái.
+       *
+       * Một bộ đo kêu 121 lần mà đúng 1 lần thì lần sau sẽ không ai đọc nó nữa.
+       *
+       * Nên: vi phạm chỉ được TÍNH sau khi soi điểm ảnh. Ẩn màu chữ đi, chụp
+       * đúng ô ấy, lấy màu XUẤT HIỆN NHIỀU NHẤT làm nền thật, rồi tính lại. Giá
+       * phải trả có giới hạn vì vi phạm vốn hiếm — và nếu nó KHÔNG hiếm thì
+       * chậm một chút là điều nhỏ nhất đang xảy ra.
+       */
+      if (d.vi_pham.length) {
+        const sangN = (c) => {
+          const [r, g, b2] = [c[0], c[1], c[2]].map((v) => {
+            const x = v / 255;
+            return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+          });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b2;
+        };
+        const tpN = (a, c) => {
+          const [x, y] = [sangN(a) + 0.05, sangN(c) + 0.05];
+          return Math.max(x, y) / Math.min(x, y);
+        };
+        const con = [];
+        for (const v of d.vi_pham) {
+          const el = p.locator(`[data-pe-vp="${v.i}"]`).first();
+          let nen = null;
+          try {
+            await el.scrollIntoViewIfNeeded({ timeout: 3000 });
+            const hop = await el.boundingBox();
+            if (!hop || hop.width < 2 || hop.height < 2) throw new Error('không hiện');
+            await el.evaluate((e) => { e.dataset.peMau = e.style.color; e.style.color = 'transparent'; });
+            const anh = await p.screenshot({
+              clip: { x: Math.round(hop.x), y: Math.round(hop.y),
+                      width: Math.max(2, Math.round(hop.width)),
+                      height: Math.max(2, Math.round(hop.height)) },
+            });
+            await el.evaluate((e) => { e.style.color = e.dataset.peMau || ''; });
+            nen = await p.evaluate(async (b64) => {
+              const img = new Image();
+              img.src = 'data:image/png;base64,' + b64;
+              await img.decode();
+              const cv = document.createElement('canvas');
+              cv.width = img.width; cv.height = img.height;
+              const g = cv.getContext('2d');
+              g.drawImage(img, 0, 0);
+              const px = g.getImageData(0, 0, img.width, img.height).data;
+              const dem = new Map();
+              for (let i = 0; i < px.length; i += 4) {
+                const k = `${px[i]},${px[i + 1]},${px[i + 2]}`;
+                dem.set(k, (dem.get(k) || 0) + 1);
+              }
+              return [...dem.entries()].sort((a, c2) => c2[1] - a[1])[0][0];
+            }, anh.toString('base64'));
+          } catch {
+            /* Không soi được (phần tử biến mất, nằm ngoài trang cuộn được…):
+               GIỮ LẠI vi phạm. Bỏ đi thì một lỗi soi được biến thành một trang
+               sạch — im lặng, và đúng theo hướng có lợi cho người viết bộ đo. */
+            con.push({ ...v, chua_soi: true });
+            continue;
+          }
+          const chu = (String(v.mau_chu).match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+          const that = tpN(chu, nen.split(',').map(Number));
+          if (that < v.nguong) con.push({ ...v, tp_that: Math.round(that * 100) / 100, nen_that: nen });
+        }
+        const bo = d.vi_pham.length - con.length;
+        // Mục bị cắt ở `slice(0, 300)` KHÔNG được soi, nên KHÔNG được bỏ: cộng
+        // lại phần chưa soi thay vì lặng lẽ coi chúng là sạch.
+        const chua_soi = Math.max(0, d.so_vi_pham_tho - d.vi_pham.length);
+        d.vi_pham = con;
+        d.so_vi_pham = con.length + chua_soi;
+        d.bo_qua_gia = bo;
+        d.chua_soi = chua_soi;
+      }
+
       d.so_thieu_net = d.thieu_net.length;
       d.so_net_do = d.net_dau.length;
       d.so_tuong_tac = d.tuong_tac.length;

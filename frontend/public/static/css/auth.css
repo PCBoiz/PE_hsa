@@ -242,11 +242,22 @@ body { font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans
 }
 .btn-outline:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.12); }
 
+/* TƯƠNG PHẢN (vá 04/09/2026). Đầu sáng của gradient là #8B7CF6 — chữ trắng
+   14px trên nó ra 3,33:1, dưới ngưỡng WCAG AA 4,5:1. Đây là nút chính của TRANG
+   CHỦ CÔNG KHAI, tức nút mà khách vãng lai và đối tác nhìn thấy đầu tiên.
+
+   #7360EA là tím SÁNG NHẤT còn đạt (4,57:1) — tính chứ không đoán, để giữ nhận
+   diện ở mức sáng nhất có thể thay vì hạ đại cho an toàn. Đầu tối xuống #5F44D6
+   (7,00:1) để gradient còn thấy được chiều sâu.
+
+   Trước hôm nay bộ đo báo 54 vi phạm ở trang này và KHÔNG cái nào là thật —
+   nó không phân giải được nền gradient nên tính chữ trắng trên nền trắng. Vá bộ
+   đo xong mới lộ ra đúng MỘT vi phạm, và nó nằm ở đây. */
 .btn-primary {
   padding: 10px 22px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #8B7CF6, #6D4FE0);
+  background: linear-gradient(135deg, #7360EA, #5F44D6);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
