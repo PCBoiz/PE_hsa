@@ -246,33 +246,45 @@ function escapeHtml(text) {
 /**
  * Ngữ cảnh trang hiện tại để trợ lý biết học viên ĐANG học bài nào.
  *
- * Nội dung bài nằm ở frontend (lesson_content_hsa.js) nên backend không tự
- * biết — client gói gọn phần cần thiết (khoá, tên bài, bước đang xem, ý chính,
- * công thức) rồi gửi kèm. Nhờ vậy trợ lý trả lời BÁM bài đang học thay vì nói
- * chung chung (audit 2026-08-14). Trang không phải bài học → trả null.
+ * Máy chủ không tự biết em đang mở bài nào, nên client gói gọn phần cần thiết
+ * (bài, bước đang xem, ý chính, công thức) rồi gửi kèm. Nhờ vậy trợ lý trả lời
+ * BÁM bài đang học thay vì nói chung chung (audit 2026-08-14).
+ *
+ * ── TÍNH NĂNG NÀY ĐÃ CHẾT LẶNG BA TUẦN (vá 05/09/2026) ──────────────────────
+ *
+ * Bản cũ đọc `window.LESSON_CONTENT_HSA` — biến do `lesson_content_hsa.js` đặt.
+ * Tệp ấy THÔI ĐƯỢC NẠP từ 19/08/2026 khi 76 bài chuyển vào CSDL (`LessonHsa.tsx`
+ * bỏ nó khỏi danh sách script), nên hàm này rơi vào nhánh `typeof … undefined`
+ * và trả `null` cho MỌI lần gọi, suốt ba tuần.
+ *
+ * Không log, không màn hình đỏ, không ai báo hỏng: trợ lý vẫn trả lời, chỉ là
+ * trả lời chung chung hơn — thứ không ai quy được về một nguyên nhân. Đây là
+ * kiểu hỏng tệ nhất của một tính năng phụ, và chính cái guard `typeof …
+ * undefined` (viết ra để phòng thủ) là thứ biến sự cố thành im lặng.
+ *
+ * Nay đọc `window.__PE_BAI_DANG_MO` — do `lesson_hsa.js` công bố NGAY SAU khi
+ * tải bài từ API. Engine đã cầm đúng bài ấy trong tay; nó chỉ chưa nói ra.
+ *
+ * `course_title` KHÔNG còn gửi từ đây: tên khoá không có trong DOM bài học lẫn
+ * payload nội dung, nên mọi cách lấy ở client đều là bịa. Máy chủ tra nó từ
+ * `course_id` (`chatbot/views.py::_ten_khoa`) — nơi có sự thật.
+ *
+ * Trang không phải bài học → trả null (đúng như trước).
  */
 function collectLessonContext() {
     try {
-        var courseId = document.body.getAttribute('data-course');
-        if (!courseId || typeof window.LESSON_CONTENT_HSA === 'undefined') return null;
-        var course = window.LESSON_CONTENT_HSA[courseId];
-        if (!course) return null;
-
-        // Bài đang mở: ?lesson=N (1-based) như engine lesson_hsa.js đọc.
-        var idx = parseInt(new URLSearchParams(location.search).get('lesson'), 10) - 1;
-        if (isNaN(idx) || idx < 0) idx = 0;
-        var lesson = (course.lessons || [])[idx];
-        if (!lesson) return null;
+        var mo = window.__PE_BAI_DANG_MO;
+        if (!mo || !mo.lesson) return null;
+        var lesson = mo.lesson;
 
         var stepEl = document.querySelector('.progress-step.active');
         var stepNames = ['Kiểm tra', 'Đánh giá', 'Lý thuyết', 'Ghi chú', 'Luyện tốc độ'];
         var stepNum = stepEl ? parseInt(stepEl.getAttribute('data-step'), 10) : 1;
 
         return {
-            course_id: courseId,
-            course_title: course.course_title || '',
+            course_id: mo.courseId || document.body.getAttribute('data-course') || '',
             lesson_id: lesson.id || '',
-            lesson_index: idx + 1,
+            lesson_index: mo.index || null,
             lesson_title: lesson.title || '',
             lesson_topic: lesson.topic_tag || '',
             step: stepNames[(stepNum || 1) - 1] || '',

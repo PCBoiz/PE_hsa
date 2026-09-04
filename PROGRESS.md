@@ -3544,3 +3544,75 @@ tin là nó đúng: `postgresql://nguoi:matkhau@ep-…` → `…@ep-…`.
 
 Ba việc cấu hình còn lại của anh gom vào `docs/VIEC_CUA_ANH.md` §D4–D6, mỗi việc
 kèm cách kiểm sau khi đặt.
+
+## 05/09/2026 — A13: trợ lý chat đã chết LẶNG ba tuần
+
+`chatbot.js::collectLessonContext` đọc `window.LESSON_CONTENT_HSA`. Ngày
+19/08/2026, khi 76 bài chuyển vào CSDL, `LessonHsa.tsx` bỏ `lesson_content_hsa.js`
+khỏi danh sách script. Từ hôm đó hàm ấy rơi vào nhánh `typeof … === 'undefined'`
+và trả `null` cho **mọi** lần gọi: trợ lý mất hẳn khả năng biết học viên đang ở
+bài nào.
+
+Không log, không màn hình đỏ, không ai báo hỏng. Nó "vẫn chạy", chỉ là chạy
+rỗng — câu trả lời chung chung hơn, thứ không ai quy được về một nguyên nhân. Và
+chính cái guard `typeof … undefined`, viết ra để PHÒNG THỦ, là thứ biến sự cố
+thành im lặng. Đây là kiểu hỏng tệ nhất của một tính năng phụ.
+
+Engine đã cầm đúng bài ấy trong tay, chỉ chưa nói ra — nay công bố
+`window.__PE_BAI_DANG_MO` ngay sau khi tải bài.
+
+**Bản đầu của tôi tự bịa một trường.** Tôi công bố `state.lessonNo` mà `state`
+không có trường ấy; nó sẽ lặng lẽ thành `undefined` và tôi sẽ báo "xong". Số bài
+trước nay chỉ tồn tại như biến cục bộ `want` trong `init()`. Nay lưu vào `state`,
+kể cả ở nhánh **rơi về bài 1** — thiếu nhánh ấy thì trợ lý nói số bài học viên
+yêu cầu, còn nội dung là bài 1.
+
+`course_title` thôi gửi từ client: tên khoá không có trong DOM bài học lẫn payload
+nội dung, nên mọi cách lấy ở client đều là bịa — suýt nữa tôi viết
+`.lesson-course-title`, một selector không tồn tại. Máy chủ tra từ `courses`.
+Kèm theo là một lợi ích không nhỏ: **client hết cửa tự viết một dòng system
+prompt**, và phép kiểm hồi quy đỏ ở mã cũ đúng bằng câu ấy —
+`AssertionError: client tự đặt được một dòng system prompt qua course_title`.
+
+**Phép kiểm phải kiểm cái đã hỏng, không phải cái tôi vừa viết.** Một test gọi
+`collectLessonContext` với global đúng tên sẽ xanh cả trước lẫn sau. Thứ hỏng là
+MỐI NỐI, nên `e2e/unit/ngu-canh-tro-ly.test.mjs` đọc danh sách script từ chính
+`LessonHsa.tsx`, gom mọi global chúng GHI, rồi đòi mọi global chatbot.js ĐỌC phải
+nằm trong đó. Lùi mã cũ → đỏ đúng dòng `không ai ghi: LESSON_CONTENT_HSA`.
+Phải bỏ chú thích trước khi quét, nếu không đoạn văn giải thích lỗi trong chính
+chatbot.js bị tính là một lần đọc.
+
+Khu `chatbot/` trước nay **không có tệp test nào** — nay có `chatbot/tests.py`.
+
+## 05/09/2026 — A7: chốt hãm cho tầng frontend cũ (không phải hạn chót)
+
+Đo trước khi làm: TODO ghi 14.855 dòng, thực tế **15.134**. Tầng đáng lẽ teo đi
+thì đã LỚN THÊM, và không ai nhận ra vì không ai đo.
+
+Một hạn chót ("xoá xong trước 01/10") hoặc trượt hoặc ép làm ẩu. Chốt hãm chỉ
+nói một điều: hôm nay tầng này lớn thế này, không được lớn hơn. Dời được bao
+nhiêu thì hạ số xuống bấy nhiêu — việc hạ số là một dòng diff, và nó biến tiến
+độ thành thứ nhìn thấy được trong lịch sử git.
+
+Trần đặt trên **dòng mã**, không phải tổng dòng: phần lớn mức tăng 279 dòng là
+chú thích tôi viết khi vá lỗi. Một luật khiến người ta xoá lời giải thích để lọt
+CI là một luật tệ.
+
+Trần lấy từ **bộ đếm của chính test** (7.353), không từ câu grep ước lượng của
+tôi (7.832 — nó không hiểu khối `/* */` nhiều dòng, chênh 479). Trần đo bằng một
+thước còn đo lại bằng thước khác thì lần sau so hai thứ khác nhau.
+
+Đã kiểm chốt hãm **cắn thật**: thêm một tệp 1 dòng → thoát 1. Và kiểm **không
+qua ống** — `| tail` ăn mất mã thoát, và một chốt hãm mà CI không thấy đỏ chỉ là
+đồ trang trí.
+
+Xoá `lesson_content_hsa.js`: **5.847 dòng, 44% cả tầng**. Nó cung cấp đúng một
+global mà từ 19/08 không script nào đang nạp còn đọc. Trước khi xoá đã đối chiếu
+**tập** 76 mã bài với CSDL, không phải hai con số cùng bằng 76 — thiếu `tq_09`
+và thừa `tq_28` thì tổng vẫn là 76.
+
+Còn lại **9.332 dòng / 7.353 dòng mã / 13 tệp**. `dashboard.js` (3.500 dòng mã)
+và `main.js` (1.700) chiếm 71% phần còn lại.
+
+Bên lề: hai lỗi `ruff I001` tồn sẵn từ A10/A11 hôm nay mới lộ — CI sẽ chặn ngay
+lượt push kế tiếp. Đã vá.

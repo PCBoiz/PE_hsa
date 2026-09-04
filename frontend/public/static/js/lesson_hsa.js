@@ -2,14 +2,18 @@
  * lesson_hsa.js — engine bài học HSA luồng ĐẢO NGƯỢC (cô Hương):
  *   1 KIỂM TRA đầu vào → 2 ĐÁNH GIÁ năng lực → 3 LÝ THUYẾT (thích ứng) → 4 GHI CHÚ.
  * Tái dùng chrome/CSS của lesson_db_design (header, .progress-track, .step-pane,
- * .lesson-nav-footer, .next-btn, #success-modal). Data: window.LESSON_CONTENT_HSA.
+ * .lesson-nav-footer, .next-btn, #success-modal).
+ * Data: CSDL, qua /api/courses/<id>/content?lesson=N — ĐÚNG một bài mỗi lần.
+ * (Trước 19/08/2026 là `window.LESSON_CONTENT_HSA`, cả 76 bài trong một tệp JS
+ *  5.847 dòng; tệp ấy xoá hẳn 05/09/2026 sau khi đối chiếu đủ 76 mã bài với
+ *  CSDL — không thiếu, không thừa bài nào.)
  * KHÔNG đụng lesson_db_design.js (9219 dòng DB) — engine riêng, tối giản.
  * ============================================================================ */
 (function () {
   'use strict';
 
-  var state = { courseId: null, lesson: null, step: 1, answers: {}, results: {},
-              score: 0, total: 0, level: 'ok', graded: false };
+  var state = { courseId: null, lesson: null, lessonNo: 1, step: 1, answers: {},
+              results: {}, score: 0, total: 0, level: 'ok', graded: false };
 
   /* Thoát ĐỦ NĂM ký tự, kể cả hai dấu nháy.
      
@@ -831,6 +835,27 @@
       return;
     }
     state.lesson = lesson;
+
+    /* CÔNG BỐ BÀI ĐANG MỞ cho trợ lý chat (vá 05/09/2026).
+     *
+     * `chatbot.js::collectLessonContext` đọc `window.LESSON_CONTENT_HSA` — biến
+     * do `lesson_content_hsa.js` đặt ra. Tệp ấy THÔI ĐƯỢC NẠP từ 19/08/2026 khi
+     * 76 bài chuyển vào CSDL, nên hàm ấy rơi vào nhánh `typeof … undefined` và
+     * lặng lẽ trả `null` suốt ba tuần: trợ lý mất hẳn khả năng biết học viên
+     * đang ở bài nào, mà không một lỗi nào hiện ra.
+     *
+     * Đây là kiểu hỏng tệ nhất của một tính năng phụ: nó "vẫn chạy", chỉ là
+     * chạy rỗng. Không log, không màn hình đỏ, chỉ có câu trả lời chung chung
+     * hơn — thứ không ai quy được về một nguyên nhân.
+     *
+     * Engine ĐÃ có đúng bài ấy trong tay; nó chỉ chưa nói ra. Một biến toàn cục
+     * là đủ, và nó KHÔNG dựng lại tệp 5.847 dòng: chỉ đúng bài đang mở. */
+    window.__PE_BAI_DANG_MO = {
+      courseId: state.courseId,
+      index: state.lessonNo || null,
+      lesson: lesson,
+    };
+
     if ($('lesson-title')) $('lesson-title').textContent = lesson.title || '';
     if ($('hsa-topic-tag')) $('hsa-topic-tag').textContent = lesson.topic_tag || '';
     goToStep(1);
@@ -844,6 +869,9 @@
     // (440 kB gốc / 87 kB nén) chỉ để hiển thị một bài.
     var want = parseInt(new URLSearchParams(window.location.search).get('lesson'), 10);
     if (isNaN(want) || want < 1) want = 1;
+    // Lưu vào `state`: trợ lý chat cần SỐ BÀI, và trước đây con số ấy chỉ tồn
+    // tại như một biến cục bộ của `init()` — tức không ai ngoài hàm này đọc được.
+    state.lessonNo = want;
 
     fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=' + want)
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -853,7 +881,12 @@
         if (want === 1) { start(null); return; }
         return fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=1')
           .then(function (r2) { return r2.ok ? r2.json() : null; })
-          .then(function (d2) { start(d2 && d2.lesson); });
+          .then(function (d2) {
+            // Đã RƠI VỀ bài 1 — cập nhật số bài, nếu không trợ lý sẽ nói tên
+            // bài 1 kèm số bài mà học viên vừa yêu cầu và không có.
+            state.lessonNo = 1;
+            start(d2 && d2.lesson);
+          });
       })
       .catch(function () { start(null); });
   }

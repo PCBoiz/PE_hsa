@@ -2662,10 +2662,25 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   mục này chưa đổi gì ĐO ĐƯỢC — thêm bây giờ vì hình dạng truy cập đúng là thứ
   chỉ mục phục vụ, nó đắt dần theo mức dùng, và thêm chỉ mục lên bảng đã lớn là
   một lượt khoá bảng.
-- [ ] A7 · **Đặt hạn cho tầng frontend cũ** — **14.855** dòng JS không qua bundler
-  (đã bớt 749 dòng ngày 04/09 khi `/admin` sang React) so với ~11.500 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
-  production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần
-  biết màn nào chuyển tiếp, theo thứ tự nào.
+- [x] A7 · **XONG 05/09** — chốt hãm cho tầng frontend cũ, KHÔNG phải hạn chót.
+  Đo lại trước khi làm: TODO ghi 14.855 dòng, thực tế **15.134** — tầng đáng lẽ
+  teo đi thì đã LỚN THÊM, và không ai nhận ra vì không ai đo. Một hạn chót thì
+  hoặc trượt hoặc ép làm ẩu; chốt hãm chỉ nói "hôm nay lớn thế này, không được
+  lớn hơn", và mỗi lần dời được thì HẠ số xuống — tiến độ thành thứ nhìn thấy
+  trong lịch sử git.
+  · Trần đặt trên **dòng mã**, không phải tổng dòng: phần lớn mức tăng 279 dòng
+    là chú thích tôi viết khi vá lỗi, và một luật khiến người ta xoá lời giải
+    thích để lọt CI là một luật tệ.
+  · `e2e/unit/chot-ham-tang-cu.test.mjs` — 13 tệp / 7.353 dòng mã. Đã kiểm nó
+    CẮN thật: thêm một tệp 1 dòng → thoát 1 (kiểm KHÔNG qua ống, vì `| tail` ăn
+    mất mã thoát và biến một chốt hãm thành đồ trang trí).
+  · Xoá `lesson_content_hsa.js` (5.847 dòng, **44%** cả tầng). Nó cung cấp đúng
+    một global mà từ 19/08 không script nào đang nạp còn đọc — xem A13 (đợt
+    05/09) ở dưới. Đối
+    chiếu ĐỦ 76 mã bài với CSDL trước khi xoá (không thiếu, không thừa), chứ
+    không tin vào việc hai số cùng bằng 76.
+  · Còn lại **9.332 dòng / 7.353 dòng mã / 13 tệp**. `dashboard.js` (3.500 dòng
+    mã) và `main.js` (1.700) là hai khối tiếp theo, chiếm 71% phần còn lại.
 - [x] A8 · **XONG 04/09** — quét 14 câu tự nhận độc quyền ("nơi/chỗ/cửa/đường
   duy nhất"). **12 đúng, 2 sai — và cả hai cái sai đều viết trong ngày hôm ấy:**
   · `common/bangtinh.py` nhận là "nơi duy nhất trong repo BIẾT định dạng bảng
@@ -2720,3 +2735,32 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   đề), ghi đủ số lên từng dòng là biến một lượt 30 XP thành 90 XP với bất kỳ báo
   cáo nào cộng cột `learning_events.xp`.
   Màn hình nói ra khi XP bằng 0, kèm lý do — im lặng cho 0 XP trông y hệt lỗi.
+
+- [x] A13 · **XONG 05/09** — trợ lý chat đã CHẾT LẶNG ba tuần, không ai biết.
+  `chatbot.js::collectLessonContext` đọc `window.LESSON_CONTENT_HSA`. Ngày
+  19/08/2026, khi 76 bài chuyển vào CSDL, `LessonHsa.tsx` bỏ `lesson_content_hsa.js`
+  khỏi danh sách script. Từ hôm đó hàm ấy rơi vào nhánh `typeof … === 'undefined'`
+  và trả `null` cho MỌI lần gọi: trợ lý mất hẳn khả năng biết học viên đang ở
+  bài nào.
+  **Không log, không màn hình đỏ, không ai báo hỏng.** Nó "vẫn chạy", chỉ là
+  chạy rỗng — câu trả lời chung chung hơn, thứ không ai quy được về một nguyên
+  nhân. Và chính cái guard `typeof … undefined`, viết ra để PHÒNG THỦ, là thứ
+  biến sự cố thành im lặng.
+  · Engine ĐÃ cầm đúng bài ấy trong tay, chỉ chưa nói ra: `lesson_hsa.js` công
+    bố `window.__PE_BAI_DANG_MO` ngay sau khi tải bài. Không dựng lại tệp 5.847
+    dòng — chỉ đúng bài đang mở.
+  · Bản đầu của tôi công bố `state.lessonNo` — một trường TÔI BỊA RA, không có
+    trong khai báo `state`, và sẽ lặng lẽ thành `undefined`. Số bài trước nay
+    chỉ là biến cục bộ `want` trong `init()`. Nay lưu vào `state`, kể cả ở
+    nhánh RƠI VỀ bài 1 — thiếu nhánh ấy thì trợ lý nói số bài học viên yêu cầu
+    còn nội dung là bài 1.
+  · `course_title` thôi gửi từ client: tên khoá không có trong DOM bài học lẫn
+    payload nội dung, nên mọi cách lấy ở client đều là bịa. Máy chủ tra từ
+    `courses`. Kèm một lợi ích không nhỏ — **client hết cửa tự viết một dòng
+    system prompt**; phép kiểm hồi quy đỏ ở mã cũ đúng bằng câu ấy.
+  · Phép kiểm không chỉ gọi hàm mới (nó sẽ xanh cả trước lẫn sau, tức không
+    kiểm gì): `e2e/unit/ngu-canh-tro-ly.test.mjs` đọc danh sách script từ chính
+    `LessonHsa.tsx`, gom mọi global chúng GHI, rồi đòi mọi global chatbot.js ĐỌC
+    phải nằm trong đó. Lùi mã cũ → đỏ đúng dòng `không ai ghi: LESSON_CONTENT_HSA`.
+  · Khu `chatbot/` trước nay KHÔNG có tệp test nào — nay có `chatbot/tests.py`
+    (5 phép kiểm) giữ đầu máy chủ.

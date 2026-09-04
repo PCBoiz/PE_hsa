@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from chatbot.graph import chat
 from chatbot.profile import learner_profile
+from common.db import q1
 
 
 def _user_context(user):
@@ -21,7 +22,6 @@ def _user_context(user):
 # Ngữ cảnh trang do client gửi: chỉ nhận đúng các khoá này, cắt độ dài, để nội
 # dung người dùng bơm vào không làm phình/điều khiển system prompt.
 _CTX_FIELDS = {
-    "course_title": ("Khoá đang học", 80),
     "lesson_index": ("Bài số", 8),
     "lesson_title": ("Tên bài", 120),
     "lesson_topic": ("Chủ đề", 80),
@@ -30,11 +30,33 @@ _CTX_FIELDS = {
 }
 
 
+def _ten_khoa(course_id):
+    """Tên khoá TRA TỪ CSDL, không lấy theo lời client.
+
+    Trước 05/09/2026 client gửi thẳng `course_title`. Nó lấy được vì cả 76 bài
+    khi ấy nằm trong một tệp JS có sẵn tên khoá; nay nội dung ở CSDL và trang
+    bài học KHÔNG hiện tên khoá ở đâu cả, nên mọi cách lấy phía client đều là
+    bịa. Ở đây thì chỉ là một lần đọc `courses` — chỗ giữ sự thật.
+
+    Kèm theo là một điều nhỏ mà đáng: client hết cửa nhét chuỗi tuỳ ý vào một
+    dòng system prompt. `course_id` vẫn do client gửi, nhưng nó chỉ dùng làm
+    tham số truy vấn — sai id thì không có dòng nào, chứ không chèn được gì.
+    """
+    cid = str(course_id or "").strip()[:64]
+    if not cid:
+        return ""
+    r = q1("SELECT title FROM courses WHERE id = %s", (cid,))
+    return (r or {}).get("title") or ""
+
+
 def _lesson_context(page_context):
     """Mô tả gọn bài học viên đang mở, để trợ lý bám đúng nội dung đang học."""
     if not isinstance(page_context, dict):
         return ""
     lines = []
+    ten = _ten_khoa(page_context.get("course_id"))
+    if ten:
+        lines.append(f"- Khoá đang học: {ten[:80]}")
     for key, (label, limit) in _CTX_FIELDS.items():
         val = page_context.get(key)
         if val in (None, "", []):

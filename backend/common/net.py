@@ -67,8 +67,8 @@ AN TOÀN KHI CHƯA CẤU HÌNH: thiếu bí mật ở một trong hai đầu th�
 hơn không vá; ở đây cấu hình sai chỉ đưa về nguyên trạng.
 """
 import hmac
-from django.conf import settings
 
+from django.conf import settings
 
 #: Header do `src/lib/proxy.ts` đặt. Tiền tố `X-PE-` để không đụng header chuẩn
 #: nào, và để đọc log là biết ngay nó của mình.

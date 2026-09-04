@@ -240,12 +240,12 @@ def test_nop_quiz_on_tap_TINH_VAO_CHUOI_NGAY(auth_api, temp_user, db):
     nguyên văn lý do — "làm trọn một đề 150 câu vẫn mất chuỗi nếu hôm đó không
     mở bài học". Quiz ôn tập là anh em thứ ba và bị bỏ sót.
     """
-    from common.db import q1, x
-
-    # Dựng cảnh: em đã học hôm KIA, chuỗi đang là 3, hôm qua nghỉ.
     from datetime import timedelta
 
     from common.clock import local_today
+    from common.db import q1, x
+
+    # Dựng cảnh: em đã học hôm KIA, chuỗi đang là 3, hôm qua nghỉ.
     hom_qua = local_today() - timedelta(days=1)
     x('UPDATE users SET streak=3, last_study_date=%s, streak_freezes=0 WHERE id=%s',
       (hom_qua, temp_user))
