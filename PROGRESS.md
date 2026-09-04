@@ -3759,3 +3759,58 @@ thừa). Trong shell, `a | tail && echo ok` báo cáo về `tail`, không về `
 **Chưa làm được, và vì sao:** ba phép kiểm cần đăng nhập vẫn bỏ qua. Tạo tài
 khoản e2e là một lượt INSERT vào Neon production — ngoài phạm vi anh đã cho phép
 (SELECT tự do, DDL bổ sung được, GHI thì không). Cần anh quyết.
+
+## 05/09/2026 — Đi trọn bài học như học viên; ba "phát hiện" là lỗi phép đo
+
+Mở trình duyệt, chặn đúng hai lời gọi API, rồi đi hết 5 bước bằng tương tác thật:
+trả lời → nộp → đánh giá → lý thuyết → ghi chú → hoàn thành. Cả năm bước chạy
+đúng; điểm 2/3 hiện đúng; phần xem lại từng câu có đáp án và lời giải.
+
+**Ba thứ trông như lỗi, cả ba là lỗi của phép đo tôi tự dựng:**
+
+- `POST .../lessons/undefined/check` — chữ `undefined` trong URL, bài kẹt ở
+  bước 1. Nhưng engine đọc `state.lesson.index`, mà **stub của tôi thiếu trường
+  ấy**; API thật luôn đặt (`one_lesson: data.setdefault('index', …)`).
+- Bước 2 hiện **0/3** trong khi máy chủ trả 2 đúng. Engine đọc `d.correct`; stub
+  của tôi gửi `score`. Đã đối chiếu `lessons/views.py:597` — máy chủ trả
+  `{results:{id:{correct,answer,explain}}, correct, total}`, engine khớp CHÍNH XÁC.
+- "Bấm nộp khi trống thì không có lời nhắc nào" — engine CÓ gọi `flashNote`, còn
+  tôi thì tìm chữ "chưa" trong một câu không chứa chữ ấy, rồi lần sau chỉ bắt
+  `alert` trong khi `flashNote` không phải hộp thoại.
+
+Ba lần liên tiếp thước sai trông y hệt mã sai. Đọc mã trước khi báo là thứ duy
+nhất ngăn tôi ghi ba lỗi ma vào TODO.
+
+**Nhưng có MỘT lỗi thật, và nó cùng họ với A13.**
+
+`#hsa-flash` là kênh phản hồi DUY NHẤT của cả trang bài học, và nó là một `<div>`
+trơn: không `role`, không `aria-live`. Bảy câu đi qua đó, bốn câu trong số ấy là
+LÝ DO màn hình không nhúc nhích khi bấm nút:
+
+    "Hãy trả lời đủ N câu trước khi xem đánh giá."
+    "Chưa chấm được — kiểm tra mạng rồi bấm lại."
+    "Hãy hoàn thành bài kiểm tra ở Bước 1 trước."
+    cauLoiMayChu(...)   ← đúng những câu được viết lại cho chính xác hôm 04/09
+
+Với người dùng trình đọc màn hình, trải nghiệm đúng bằng "bấm mãi mà chẳng có gì
+xảy ra". Và công sức làm cho mấy câu lỗi máy chủ nói đúng sự thật thì vô hình.
+
+Vá: HAI vùng sống cố định (`role="alert"` assertive cho việc bị chặn,
+`role="status"` polite cho tin vui) — không đổi `role` trên cùng phần tử, vì
+nhiều trình đọc màn hình gắn kiểu vùng sống lúc phần tử vào DOM. Chữ được gán
+sau một nhịp để vùng nằm sẵn trong DOM trước khi có nội dung.
+Đo trong trình duyệt: `role=alert`, `aria-live=assertive`, `aria-atomic=true`,
+opacity 1, đúng câu. Lùi mã cũ → spec đỏ (`toHaveCount: Expected 1, Received 0`).
+
+**Chốt hãm A7 chặn chính bản vá này, và nó đúng.** +17 dòng mã ở tầng cũ. Luật
+"CHỈ ĐƯỢC HẠ" tôi viết sáng nay quá cứng ngay lần đầu gặp thực tế: viết mã tệ
+hơn để lọt một bộ đếm dòng là đúng thứ luật ấy sinh ra để chống. Nên ghi rõ MỘT
+ngoại lệ — vá lỗi trong tệp đã có thì được nâng trần, kèm lý do; màn hình mới và
+tính năng mới thì không. Chốt hãm vẫn giữ nguyên giá trị: nó buộc dừng lại và
+nói ra lý do.
+
+Và một phép kiểm hồi quy gãy vì lý do sai: `loi-may-chu.test.mjs` khớp
+`flashNote(cauLoiMayChu(r.status, d))` sát tới dấu `)` cuối, nên thêm một đối số
+là đỏ dù bất biến nó canh vẫn đúng nguyên. Đã nới về đúng hành vi, và thêm một
+phép kiểm mới cho cờ `khan`. Một phép kiểm gãy vì cách viết dạy người sửa rằng
+"đỏ ở đây thường vô hại" — đó mới là cái giá thật.

@@ -726,6 +726,23 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       CÒN LẠI: gửi tự động theo kỳ (cần T28 — kênh gửi, phụ thuộc TopHSA).
 - [?] T28 · Thông báo Zalo/email — **cần TopHSA**: kênh nào, tần suất, ai duyệt
 - [?] T29 · Học phí, công nợ, thù lao — **cần TopHSA**: quy trình kế toán thật
+- [ ] T57 · **`/questionaire` bắn 4 lời gọi API không dùng** (đo 05/09/2026).
+      `main.js:2050` gọi `loadAll()` cho MỌI đường trừ `/login` và `/register`.
+      Đo bằng trình duyệt thật, đếm request: `/questionaire` → **4** lời gọi
+      (`/api/user`, `/api/stats`, `/api/courses-enrolled`, `/api/notifications`);
+      `/mock` → 1; `/` → 1. Đây là màn ĐẦU TIÊN của học viên mới.
+      CHƯA SỬA, và nói rõ vì sao: để chọn điều kiện đúng (theo DOM thay vì theo
+      danh sách đường dẫn — danh sách sẽ trôi) thì phải nhìn được DOM thật của
+      `/questionaire` và `/dashboard`. Cả hai chuyển hướng về `/login` khi chưa
+      đăng nhập, mà không có tài khoản e2e. Sửa mù đường nạp dữ liệu của
+      dashboard — màn đông người dùng nhất — là đúng thứ không nên làm.
+      MỞ KHOÁ BẰNG: một tài khoản e2e (xem T58).
+- [ ] T58 · **Tài khoản e2e** — `audit@example.com` trong `frontend/e2e/helpers.ts`
+      KHÔNG tồn tại trong CSDL (đã tra). Ba phép kiểm Playwright cần đăng nhập
+      đang tự bỏ qua, và nó chặn luôn T41 + mọi việc phải xem `/dashboard` thật
+      (T31). Tạo tài khoản là một lượt INSERT vào Neon production — ngoài phạm
+      vi anh đã cho phép, nên cần anh quyết: tạo tay trên Neon, hay cho phép tôi
+      INSERT một tài khoản học viên riêng cho việc kiểm.
 - [ ] T30 · Quyết định treo: `stats/journal.py:343` cộng `sys_min + self_min` — có tính phút ngồi lớp vào chỉ tiêu tuần không. Điểm danh đang cố ý để `minutes=NULL` chờ chốt.
 
 ## P6 — Chuyển màn hình cũ sang React

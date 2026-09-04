@@ -151,13 +151,13 @@
   async function gradeTest() {
     var qs = (state.lesson.test && state.lesson.test.questions) || [];
     var missing = qs.filter(function (q) { var a = state.answers[q.id]; return a == null || String(a).trim() === ''; });
-    if (missing.length) { flashNote('Hãy trả lời đủ ' + qs.length + ' câu trước khi xem đánh giá.'); return false; }
+    if (missing.length) { flashNote('Hãy trả lời đủ ' + qs.length + ' câu trước khi xem đánh giá.', true); return false; }
 
     var d = await checkOnServer('test', state.answers);
     if (!d) {
       /* Mất mạng giữa chừng: KHÔNG chấm bừa 0 điểm và KHÔNG cho đi tiếp — bài
          này quyết định nhánh lý thuyết và điểm vào sổ. Thà bảo họ thử lại. */
-      flashNote('Chưa chấm được — kiểm tra mạng rồi bấm lại.');
+      flashNote('Chưa chấm được — kiểm tra mạng rồi bấm lại.', true);
       return false;
     }
     state.results = d.results || {};
@@ -664,7 +664,7 @@
 
   function goToStep(n) {
     if (n < 1 || n > LAST_STEP) return;
-    if (n >= 2 && !state.graded) { flashNote('Hãy hoàn thành bài kiểm tra ở Bước 1 trước.'); return; }
+    if (n >= 2 && !state.graded) { flashNote('Hãy hoàn thành bài kiểm tra ở Bước 1 trước.', true); return; }
     if (state.step === 5 && n !== 5) stopDrill();   // rời phòng luyện → dừng đồng hồ
     state.step = n;
     if (STEP_RENDER[n]) STEP_RENDER[n]();
@@ -770,7 +770,7 @@
              đọc được thì mới về câu chung. */
           var rx = $('reward-xp'); if (rx) rx.textContent = '—';
           return r.json().catch(function () { return null; }).then(function (d) {
-            flashNote(cauLoiMayChu(r.status, d));
+            flashNote(cauLoiMayChu(r.status, d), true);
             return null;
           });
         }
@@ -812,11 +812,56 @@
     if (m) { m.classList.remove('hidden'); if (window.confetti) try { window.confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (e) {} }
   }
 
-  function flashNote(msg) {
-    var el = $('hsa-flash');
-    if (!el) { el = document.createElement('div'); el.id = 'hsa-flash'; el.className = 'hsa-flash'; document.body.appendChild(el); }
-    el.textContent = msg; el.classList.add('show');
-    clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  /* Lời nhắc nổi — KÊNH PHẢN HỒI DUY NHẤT của cả trang bài học.
+   *
+   * ── VÙNG SỐNG, THÊM 05/09/2026 ────────────────────────────────────────────
+   *
+   * Bản cũ chỉ là một `<div>` trơn: không `role`, không `aria-live`. Người dùng
+   * trình đọc màn hình KHÔNG nghe được câu nào trong bảy câu đi qua đây:
+   *
+   *   "Hãy trả lời đủ N câu trước khi xem đánh giá."   ← CHẶN, không đi tiếp được
+   *   "Chưa chấm được — kiểm tra mạng rồi bấm lại."    ← CHẶN
+   *   "Hãy hoàn thành bài kiểm tra ở Bước 1 trước."    ← CHẶN
+   *   cauLoiMayChu(...)                                 ← CHẶN
+   *   "🏅 Mở khoá thành tích…" / "❄️ Đã dùng 1 vé…"     ← tin vui
+   *
+   * Bốn câu đầu chính là LÝ DO màn hình không nhúc nhích khi bấm nút. Không
+   * nghe được chúng thì trải nghiệm đúng bằng "bấm mãi mà chẳng có gì xảy ra".
+   * Và mấy câu lỗi máy chủ vừa được viết lại cho chính xác hôm 04/09 — công sức
+   * ấy vô hình với họ.
+   *
+   * HAI vùng chứ không một, và KHÔNG đổi `role` trên cùng phần tử: nhiều trình
+   * đọc màn hình gắn kiểu vùng sống lúc phần tử vào DOM rồi bỏ qua thay đổi sau
+   * đó. Hai vùng cố định thì không phụ thuộc vào điều ấy.
+   *   · `role="alert"`  (assertive) — việc bị CHẶN, phải nghe ngay.
+   *   · `role="status"` (polite)    — tin vui, chờ đọc xong câu đang đọc.
+   */
+  function _vungNhac(khan) {
+    var id = khan ? 'hsa-flash-alert' : 'hsa-flash';
+    var el = $(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.className = 'hsa-flash';
+      el.setAttribute('role', khan ? 'alert' : 'status');
+      el.setAttribute('aria-live', khan ? 'assertive' : 'polite');
+      el.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function flashNote(msg, khan) {
+    var el = _vungNhac(!!khan);
+    /* Tách một nhịp: vùng sống phải NẰM SẴN trong DOM trước khi có chữ. Chèn
+       một phần tử đã mang sẵn chữ thì phần lớn trình đọc màn hình không đọc gì
+       — không có thay đổi nào để chúng bám vào. */
+    setTimeout(function () {
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(function () { el.classList.remove('show'); }, 2600);
+    }, 0);
   }
 
   /* ── API cho chrome (buttons React gọi qua window) ────────────── */

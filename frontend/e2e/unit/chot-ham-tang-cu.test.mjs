@@ -41,14 +41,30 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    tầng — nó cung cấp đúng một global `window.LESSON_CONTENT_HSA` mà từ
    19/08/2026 không script nào đang nạp còn đọc).
 
-   Dời thêm được tệp nào thì HẠ hai số này xuống. Chỉ được hạ.
+   Dời thêm được tệp nào thì HẠ hai số này xuống.
 
-   7.353 là số của BỘ ĐẾM DƯỚI ĐÂY, không phải của một câu grep. Ước lượng thô
+   ── MỘT NGOẠI LỆ, VÀ CHỈ MỘT (ghi ngay trong ngày viết luật) ─────────────
+
+   Luật đầu tiên tôi viết ở đây là "CHỈ ĐƯỢC HẠ". Vài giờ sau nó chặn đúng một
+   thứ đáng làm: `#hsa-flash` — kênh phản hồi DUY NHẤT của trang bài học — không
+   có `role`/`aria-live`, nên người dùng trình đọc màn hình không nghe được câu
+   nào trong bốn câu giải thích VÌ SAO màn hình không nhúc nhích khi bấm nút.
+   Bản vá tốn 17 dòng mã, và nó thuộc về engine, tức thuộc về tầng này.
+
+   Viết mã tệ hơn để lọt một bộ đếm dòng là đúng thứ luật này sinh ra để chống.
+   Nên ngoại lệ là: **VÁ LỖI trong tệp ĐÃ CÓ thì được nâng trần**, kèm lý do ở
+   commit. Thêm màn hình mới hay tính năng mới thì KHÔNG — chúng thuộc `src/`.
+   Ranh giới ấy nhìn thấy được trong một diff, và chốt hãm vẫn giữ giá trị của
+   nó: nó BUỘC dừng lại và nói ra lý do. Lần này nó đã làm đúng việc.
+
+       7353 → 7370   (+17)   vùng sống aria-live cho `flashNote`, 05/09/2026
+
+   Con số là của BỘ ĐẾM DƯỚI ĐÂY, không phải của một câu grep. Ước lượng thô
    bằng `grep -vE '^\s*($|//|/\*|\*)'` cho ra 7.832 vì nó không hiểu khối
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
 const TRAN_TEP = 13;
-const TRAN_DONG_MA = 7353;
+const TRAN_DONG_MA = 7370;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -97,8 +97,21 @@ if (typeof cau === 'function') {
   // ── Và chỗ GỌI phải thật sự dùng nó ─────────────────────────────────────
   //
   // Hàm đúng mà không ai gọi thì phép kiểm ở trên chỉ chứng nhận một hàm chết.
-  const goi = /flashNote\(cauLoiMayChu\(r\.status,\s*d\)\)/.test(MA);
+  //
+  // Biểu thức KHÔNG chốt vào dấu `)` cuối: ngày 05/09/2026 `flashNote` nhận
+  // thêm tham số `khan`, và phép kiểm này đỏ lên dù bất biến nó canh vẫn đúng
+  // nguyên. Một phép kiểm gãy vì một đối số được thêm vào là phép kiểm đang
+  // canh CÁCH VIẾT chứ không canh hành vi — và cái giá thật của nó là người
+  // sửa dần học được rằng "đỏ ở chỗ này thường vô hại".
+  const goi = /flashNote\(\s*cauLoiMayChu\(r\.status,\s*d\)/.test(MA);
   check('nhánh `!r.ok` của complete() gọi `cauLoiMayChu`', goi);
+
+  // Và câu ấy phải vào vùng sống KHẨN: nó là LÝ DO màn hình không nhúc nhích,
+  // nên người dùng trình đọc màn hình phải nghe được ngay, không chờ đọc xong
+  // câu đang đọc (xem `e2e/loi-nhac-doc-duoc.spec.ts`).
+  check('câu lỗi máy chủ được báo KHẨN (assertive)',
+    /flashNote\(cauLoiMayChu\(r\.status,\s*d\),\s*true\)/.test(MA),
+    'thiếu cờ `khan` → câu lỗi rơi vào vùng polite, có thể bị nuốt');
 
   console.log(failures === 0 ? '\nOK — engine nói lại đúng câu của máy chủ' : `\n${failures} lỗi`);
 }
