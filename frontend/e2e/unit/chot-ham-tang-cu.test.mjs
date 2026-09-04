@@ -58,13 +58,15 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    nó: nó BUỘC dừng lại và nói ra lý do. Lần này nó đã làm đúng việc.
 
        7353 → 7370   (+17)   vùng sống aria-live cho `flashNote`, 05/09/2026
+       7370 → 7369   (-1)    vá tìm-kiếm-diễn-đàn (T60), 05/09/2026 — hạ trần
+                             theo đúng luật ngay trên: dời được thì HẠ.
 
    Con số là của BỘ ĐẾM DƯỚI ĐÂY, không phải của một câu grep. Ước lượng thô
    bằng `grep -vE '^\s*($|//|/\*|\*)'` cho ra 7.832 vì nó không hiểu khối
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
 const TRAN_TEP = 13;
-const TRAN_DONG_MA = 7370;
+const TRAN_DONG_MA = 7369;
 
 let failures = 0;
 function check(name, cond, them) {

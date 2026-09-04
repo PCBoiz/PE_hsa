@@ -316,6 +316,54 @@ khoản sẽ bị chặn thay vì dọn theo. Gộp `master` là Render tự ch�
 
 ---
 
+## D++ · Công cụ mới, và MỘT dòng dữ liệu tôi đã tạo (05/09/2026)
+
+### Tài khoản kiểm thử — ĐÃ TẠO, anh có thể xoá bất cứ lúc nào
+
+```
+users id=13231   e2e-kiem-thu@example.com   "KIỂM THỬ TỰ ĐỘNG (không phải học viên)"
+```
+
+Nó sẽ hiện trong danh sách tài khoản khu Quản trị — cố ý đặt tên như vậy để nhìn
+là biết. XP = 0 nên không lọt bảng xếp hạng. Sau một lượt chạy đủ bộ kiểm, nó để
+lại **0 dòng** ở `lesson_progress`, `learning_events`, `review_quiz_results`,
+`admin_audit`, `notifications` (đã đo).
+
+    python scripts/tai_khoan_e2e.py              # xem trước, không ghi
+    python scripts/tai_khoan_e2e.py --that       # tạo / đặt lại mật khẩu
+    python scripts/tai_khoan_e2e.py --xoa --that # gỡ sạch
+
+Mật khẩu ngẫu nhiên, nằm ở `.the/e2e.json` (không vào git). Repo không còn mật
+khẩu mặc định nào.
+
+**Tôi cũng đã chèn NHẦM 6 dòng** vào `token_blacklist_outstandingtoken` khi viết
+`scripts/cap_the.py` — tôi tin một suy luận thay vì đo, và tuyên bố sai rằng nó
+"không ghi CSDL". Đã xoá sạch (493 → 487, 0 dòng mồ côi, dữ liệu người khác
+nguyên vẹn) và sửa script thành access-only.
+
+### Chạy bộ đo giao diện
+
+```
+python scripts/cap_the.py                    # thẻ 30 phút, KHÔNG ghi CSDL
+cd scripts
+node do_giao_dien.mjs --tu-kiem              # bộ đo có ĐỎ ĐƯỢC không (chạy trước)
+node do_giao_dien.mjs                        # chủ đề sáng
+node do_giao_dien.mjs --toi                  # chủ đề tối
+```
+
+Số đo 05/09: **cả hai chủ đề × 2 khổ × 16 trang = 0 vi phạm** tương phản, 0 vùng
+chạm dưới 44px, 0 tràn ngang, 0 lỗi JS. Tự kiểm ĐẠT 32/32.
+
+### Chạy bộ kiểm giao diện đầu-cuối
+
+```
+cd frontend && E2E_BASE_URL=http://localhost:3100 pnpm e2e
+```
+
+8/8 xanh, không phép kiểm nào bị bỏ qua.
+
+---
+
 ## E · Tuỳ chọn — cho tôi tự push
 
 Suốt phiên 30–31/08, lệnh `git push` bị bộ lọc quyền của chế độ auto chặn (không
