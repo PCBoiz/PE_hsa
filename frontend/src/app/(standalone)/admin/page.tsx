@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
 
+import { type DeRow } from './DeThi';
 import SoanClient, { type KhoaRow } from './SoanClient';
 
 /**
@@ -70,11 +71,18 @@ export default async function SoanGiaoTrinhPage() {
     );
   }
 
-  const kq = await serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true });
+  const [kq, de] = await Promise.all([
+    serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true }),
+    serverJson<{ exams: DeRow[] }>('/api/admin/mock-exams', { requireAuth: true }),
+  ]);
 
   return (
     <SoanClient
       initial={kq.ok ? kq.data.courses : []}
+      // Danh sách đề hỏng thì khối giáo trình vẫn phải dùng được: hai thứ độc
+      // lập nhau, và cho một lỗi phụ đánh sập cả trang là đổi một khối hỏng
+      // thành một trang hỏng.
+      deThi={de.ok ? de.data.exams : []}
       laQuanTri={vai === 'admin'}
       loi={kq.ok ? null : kq.message}
     />

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
+import DeThi, { type DeRow } from './DeThi';
 import NoiDungBai from './NoiDungBai';
 
 export type KhoaRow = {
@@ -55,10 +56,12 @@ async function doc(path: string, opts?: RequestInit) {
  */
 export default function SoanClient({
   initial,
+  deThi,
   laQuanTri,
   loi,
 }: {
   initial: KhoaRow[];
+  deThi: DeRow[];
   laQuanTri: boolean;
   loi: string | null;
 }) {
@@ -198,6 +201,14 @@ export default function SoanClient({
           />
         </div>
       )}
+
+      {/* Đề thi thử nằm CÙNG khu với giáo trình vì cùng một ranh giới quyền:
+          `IsContentEditor`. Đề thi là NỘI DUNG, không phải dữ liệu học viên —
+          xếp nó sang khu Vận hành sẽ buộc người soạn đề phải có quyền nhìn thấy
+          tài khoản và mật khẩu của học viên. */}
+      <div className="mt-6">
+        <DeThi initial={deThi} loi={null} />
+      </div>
     </main>
   );
 }

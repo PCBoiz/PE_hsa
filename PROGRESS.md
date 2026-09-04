@@ -2951,3 +2951,44 @@ là GHI vào Neon production — chưa xin phép. Phần đã lái thật là đ
 gửi lên null`, và gỡ một ô khỏi màn hình → kiểm ③ đỏ. Lùi bảng vai về chỉ-quản-trị
 và gỡ một cổng trang → 4 phép kiểm đỏ. Phục hồi → 7/7 bộ unit xanh, tsc, eslint,
 `next build` sạch.
+
+## 04/09/2026 — màn hình nhập đề thi: bốn endpoint không có nút bấm thì bằng không
+
+Đường nhập đề ở máy chủ dựng xong sáng nay nhưng **không có cửa nào để dùng** —
+tức tính năng ấy chưa tồn tại với người dùng. Nay có, nằm cùng khu Soạn giáo
+trình vì cùng một ranh giới quyền (`IsContentEditor`): đề thi là NỘI DUNG, xếp
+nó sang khu Vận hành sẽ buộc người soạn đề phải có quyền nhìn thấy tài khoản và
+mật khẩu học viên.
+
+Chi tiết quan trọng nhất là **lỗi TỪNG DÒNG**. `errorText()` dùng chung của repo
+chỉ trả về MỘT chuỗi và bỏ mảng `details`, nên `details` có state riêng ở đây,
+không đi qua nó. Sửa một lỗi rồi tải lên lại để gặp lỗi thứ hai là một vòng lặp
+làm người ta bỏ cuộc — đó là lý do Kahoot báo hết trong một lượt.
+
+**Đã lái CẢ CHUỖI THẬT mà ghi ZERO dòng.** Đường nhập kiểm hết rồi mới ghi:
+`return 400` xảy ra TRƯỚC `with transaction.atomic()`, kể cả dòng nhật ký kiểm
+toán cũng nằm trong khối atomic. Nên một tệp CỐ Ý SAI đi được trọn vẹn trình
+duyệt → Next → Django → openpyxl → bộ kiểm mà không chạm CSDL. Đếm trước/sau:
+`mock_exams` 1→1, `admin_audit` 32→32.
+
+Nếu chặn POST và trả một phản hồi giả thì phép đo chỉ chứng minh được rằng tôi
+biết tự viết dữ liệu giả cho chính mình.
+
+Kết quả đo — và nó xác nhận hai bản vá sáng nay trên đường THẬT, không phải chỉ
+trong pytest:
+
+    Dòng 4: "phần thi" là 'Sai hợp phần' — phải là một trong: …
+    Dòng 5: thiếu "câu hỏi".
+    Dòng 6: "đáp án" ghi 'C' nhưng cột "Lựa chọn C" đang để trống… (đang có: A, B, D)
+
+Tệp có một dòng TRỐNG ở dòng 3, và lỗi vẫn báo đúng 4/5/6 — số dòng không trôi.
+Mẫu `.xlsx` tải về thật: 6.740 byte, đúng chữ ký zip.
+
+**Ảnh chụp bắt hai lỗi giao diện của chính tôi**, cả hai chỉ thấy được bằng mắt:
+
+* Đặt viền và `min-h` thẳng lên `<input type=file>` thì Chromium dựng hộp cao
+  hơn hàng và **tràn xuống ô bên dưới** — ô chọn tệp có bố cục nội tại riêng,
+  không nhận `items-center`. Nay khung ở thẻ bọc, ô nhập để trần bên trong.
+* **Hai hộp đỏ chồng nhau nói cùng một con số** ("3 lỗi trong tệp" và "3 dòng
+  cần sửa"), hộp trên không thêm gì mà hộp dưới chưa nói. Lặp lại một cảnh báo
+  làm nó nhẹ đi, không nặng thêm.
