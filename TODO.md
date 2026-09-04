@@ -732,10 +732,22 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
 
 Xếp theo tần suất người dùng thật chạm vào, không theo độ dễ.
 
-- [ ] T31 · Dashboard (màn đầu tiên mọi học viên thấy mỗi ngày)
-- [ ] T32 · Bài học (nơi học viên ở lâu nhất)
-- [ ] T33 · Thi thử
-- [ ] T34 · Danh sách khoá
+- [ ] T31 · Dashboard (màn đầu tiên mọi học viên thấy mỗi ngày) — **và T34 nằm
+      TRONG đây**: "danh sách khoá" không phải màn riêng, nó là
+      `<div id="page-courses">` bên trong chính `dashboard/page.tsx`, do
+      `main.js::navigate()` bật/tắt. Hai mục rời trong danh sách này là sai từ
+      đầu; gộp lại để khỏi lên kế hoạch cho một màn không tồn tại.
+      Khối phải chuyển: `dashboard.js` (3.500 dòng mã) + `main.js` (1.700) =
+      71% tầng cũ còn lại. `main.js` KHÔNG dời được một mình: nó vá
+      `window.fetch` để gắn CSRF + chặn mật khẩu tạm, và trang cũ gọi `fetch`
+      thô hơn 60 chỗ — bỏ nó là gỡ hàng rào ấy khỏi mọi trang còn nạp nó.
+- [ ] T32 · Bài học (nơi học viên ở lâu nhất) — vỏ đã là React (`LessonHsa.tsx`),
+      còn `lesson_hsa.js` 641 dòng mã là engine.
+- [x] T33 · **XONG TỪ TRƯỚC — mục này đang nói sai (sửa 05/09).** `/mock` là
+      `MockExam.tsx`, 339 dòng React; tầng cũ không còn tệp nào cho thi thử
+      (trang chỉ nạp `chatbot.js`). Một mục "chưa làm" cho việc đã làm cũng làm
+      hỏng kế hoạch y như một mục "đã làm" cho việc chưa làm.
+- [x] T34 · Gộp vào T31 — xem lý do ở trên.
 - [x] T35 · Trang quản trị nội dung (`/admin`) — **XONG 04/09**, viết lại bằng React
       thành khu **Soạn giáo trình**. Gác quyền ở máy chủ (admin + Biên tập nội dung);
       phép gộp nội dung tách thành hàm thuần có bộ kiểm riêng trong CI; xoá 749 dòng

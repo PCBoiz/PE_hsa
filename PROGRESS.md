@@ -3664,3 +3664,45 @@ trong audit.py" — việc ấy làm xong 04/09, và làm theo lời dặn là d
 bản sao thứ hai vừa bỏ. Đã sửa, và thêm `ipHienTai` + `numProxiesHienTai` vào
 phản hồi: câu hỏi thật của người mở đường ấy là "với cấu hình hôm nay, máy chủ
 nghĩ tôi là ai", và đó là thứ trả lời được bằng một dòng.
+
+## 05/09/2026 — Quét lớp lỗi A13 ra TOÀN ứng dụng; ba lần thước sai
+
+Sau A13, câu hỏi đúng là: còn chỗ nào nữa đọc một global không ai ghi? Viết một
+bản quét mọi trang. Bản thăm dò đầu báo **12 mồ côi**. Soi từng cái:
+
+- 7 là lỗi của THƯỚC: `icons.js` xuất qua IIFE `(function(global){…})(window)`;
+  `var` ở cột 0 của script cổ điển vốn LÀ thuộc tính `window`; `confetti` nạp từ
+  CDN; `requestIdleCallback` là global trình duyệt.
+- 5 còn lại là ĐÚNG THIẾT KẾ, và bốn trong số đó đã có chú thích giải thích sẵn
+  tại chỗ gọi. Ví dụ `main.js:1152`: "thiếu bẫy thì hộp vẫn dùng được, chỉ kém
+  tiếp cận — đó là thoái lui đúng hướng."
+
+Tức **không còn lỗ thật nào cùng lớp với A13.** Nhưng để nói được câu đó thì
+phải sửa thước ba lần.
+
+**Lần sai thứ hai, và là lần đáng giá nhất: phép chứng minh đỏ THẤT BẠI.** Tôi
+bỏ `review_quiz.js` khỏi trang khoá học — đúng thao tác đã gây ra sự cố 19/08 —
+và test vẫn XANH. Lý do: `review_quiz.js` được gọi từ `onClick` phía React, chứ
+không qua một `window.X` nào trong mã JS. Bản quét chỉ nhìn JS→JS, nên **phần
+lớn mặt ghép nối thật của tầng này vô hình với nó**. Đo ra 55 tên global mà TSX
+gọi thẳng sang tầng cũ. Nếu tôi chỉ chạy test, thấy xanh, rồi commit, thì đã cắm
+vào CI một phép kiểm gần như không kiểm gì — và tin rằng lớp lỗi ấy đã được canh.
+
+Thêm chiều TSX→JS. Trang phải gom theo CÂY IMPORT chứ không theo tệp rời:
+`Topbar.tsx`, `RoadmapSection.tsx`, `Chatbot.tsx` gọi `W().X` nhưng không tự nạp
+script — chúng dựa vào trang cha.
+
+**Lần sai thứ ba:** bản mới báo `quickChatbotAsk` và `startReviewQuiz` là mồ côi.
+Cả hai là `async function` ở cột 0, mà biểu thức chỉ khớp `function`. Đã vá, và
+thêm 9 ca kiểm cho CHÍNH THƯỚC (`async`, `function*`, `let`/`const` không tính,
+hàm thụt lề không tính) — vì đây là lần thứ ba nó sai theo cùng một kiểu.
+
+Nay phép chứng minh đỏ chạy đúng: bỏ `review_quiz.js` → đỏ; bỏ `lesson_hsa.js`
+→ đỏ; khôi phục → xanh.
+
+Sửa luôn hai mục sai trong TODO, phát hiện khi khảo sát:
+- **T33 "Thi thử" đã xong từ trước** — `/mock` là `MockExam.tsx` 339 dòng React,
+  tầng cũ không còn tệp nào cho thi thử.
+- **T34 "Danh sách khoá" không phải màn riêng** — nó là `<div id="page-courses">`
+  bên trong `dashboard/page.tsx`. Hai mục rời là sai từ đầu, gộp vào T31.
+Một mục "chưa làm" cho việc đã làm cũng làm hỏng kế hoạch y như chiều ngược lại.
