@@ -3939,3 +3939,39 @@ JWT để bộ e2e buộc phải đi đường tài khoản, chạy lại: **8/8
 Sau lượt chạy, tài khoản ấy để lại **0 dòng** ở `lesson_progress`,
 `learning_events`, `review_quiz_results`, `admin_audit`, `notifications`; xp và
 streak vẫn 0.
+
+## 05/09/2026 — T59: màn khảo sát thôi phớt lờ chủ đề; T30 không cần sửa
+
+**Đo trước khi quyết**, đăng nhập thật rồi đặt `localStorage.theme`:
+
+    chủ đề SÁNG:  /dashboard nền 250 · /login nền 247 · /questionaire nền 17
+    chủ đề TỐI :  cả bốn trang nền 9
+
+`/login` — trang anh em cùng luồng vào — VẪN theo chủ đề. Nên `/questionaire` là
+lỗi chứ không phải một màn tối cố ý; câu hỏi tôi định hỏi anh đã tự trả lời bằng
+số đo.
+
+Vá 29 dòng của `questionaire.css` sang token chủ đề. Thay theo SỐ DÒNG chứ không
+`replace` toàn cục: cùng một mã màu mang hai vai trong tệp ấy — `#0d1117` là nền
+trang ở dòng 10/224 nhưng là MỰC trên nút nền gradient sáng ở 424; `#30363d` là
+viền ở 245 nhưng là nền hover ở 274. Thay toàn cục là biến chữ trên nút sáng
+thành màu nền trang, tức mất chữ. Script vá kiểm từng dòng phải chứa đúng chuỗi
+cũ, và không sửa gì cả nếu một dòng lệch.
+
+Giữ nguyên có chủ ý: màu thương hiệu (#8B7CF6, #2DD4BF) đọc được trên cả hai
+nền; và mực tối trên hai nút gradient sáng — chỗ ấy phải tối ở cả hai chủ đề.
+
+Đo sau khi vá: sáng → nền 247, chữ 20, thẻ 255, tuỳ chọn 241/71; tối → nền 9,
+chữ 231, thẻ 18, tuỳ chọn 24/161.
+
+**Và lần đầu đo CHỦ ĐỀ TỐI.** Bộ đo mặc định chỉ chạy chủ đề sáng (`--toi` mới
+sang tối), nên suốt từ đầu nửa còn lại của sản phẩm chưa ai đo. Nay cả hai:
+tự kiểm 32/32 đỏ được (1662 và 1684 vi phạm khi bị nhét quy tắc hỏng), đo thật
+**0 vi phạm tương phản · 0 vùng chạm nhỏ · 0 tràn ngang · 0 lỗi JS** ở cả hai.
+
+**T30 — soi lại thì không cần sửa gì.** `_emit_events` ghi điểm danh với
+`minutes=None` ở cấp cao nhất nhưng giữ số phút thật trong `meta.minutes`, và
+docstring của nó đã nói rõ vì sao, chỉ đúng chỗ quyết định (`journal.py:343`),
+và rằng bật lên là một dòng còn gỡ số đã trộn thì không gỡ được. Đo: **0 sự kiện
+điểm danh** trong CSDL — chưa lớp nào chạy. Phần còn lại thuần là câu hỏi của
+TopHSA (C5), không phải việc kỹ thuật. Bỏ mục T30 cũ vì nó nói cùng một việc.

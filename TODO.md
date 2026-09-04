@@ -726,16 +726,29 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       CÒN LẠI: gửi tự động theo kỳ (cần T28 — kênh gửi, phụ thuộc TopHSA).
 - [?] T28 · Thông báo Zalo/email — **cần TopHSA**: kênh nào, tần suất, ai duyệt
 - [?] T29 · Học phí, công nợ, thù lao — **cần TopHSA**: quy trình kế toán thật
-- [ ] T59 · **`/questionaire` luôn TỐI bất kể chủ đề người dùng chọn** (đo 05/09).
-      `questionaire.css` ghi cứng `body { background-color: #0d1117; color: #e6edf3 }`
-      và gần như không có luật nào theo chủ đề. Đo trong trình duyệt: `body` mang
-      `class="light"` mà nền là `rgb(13,17,23)` — **tên chủ đề nói dối về chính nó**.
-      Hệ quả trực tiếp đã cắn: phép tự kiểm của bộ đo giao diện suy màu nhét từ
-      TÊN chủ đề, nên trên trang này nó nhét chữ sáng lên nền tối = tương phản
-      CAO, và bộ đo báo **0 vi phạm** cho một trang nó chưa từng đo nổi.
-      Cần anh chốt: trang khảo sát CỐ Ý là một màn tối riêng (thì nên bỏ luôn
-      `class` chủ đề khỏi nó, để không ai suy sai nữa), hay nó phải theo chủ đề
-      như mọi trang khác (thì phải viết lại `questionaire.css` theo token màu)?
+- [x] T59 · **XONG 05/09** — `/questionaire` nay theo chủ đề.
+      Đo trong trình duyệt, đăng nhập thật, đặt `localStorage.theme`:
+          chủ đề SÁNG: /dashboard nền 250 · /login nền 247 · **/questionaire 17**
+          chủ đề TỐI : cả bốn trang nền 9
+      `/login` — trang anh em cùng luồng vào — VẪN theo chủ đề, nên đây là lỗi
+      chứ không phải màn tối cố ý. Và `body` vẫn mang `class="light"`, tức chính
+      tên chủ đề nói dối về trang nó mô tả.
+      Vá: 29 dòng của `questionaire.css` chuyển sang token (`--bg --card --lift
+      --border --t1 --t2 --t3`), thay theo SỐ DÒNG chứ không replace toàn cục —
+      cùng một mã màu mang hai vai (`#0d1117` là nền trang ở dòng 10/224 nhưng là
+      MỰC trên nút gradient sáng ở 424; `#30363d` là viền ở 245, nền hover ở 274).
+      GIỮ NGUYÊN màu thương hiệu và mực tối trên hai nút gradient sáng.
+      Đo sau khi vá: sáng → nền 247/chữ 20/thẻ 255; tối → nền 9/chữ 231/thẻ 18.
+      Bộ đo giao diện **cả hai chủ đề**: 0 vi phạm, tự kiểm 32/32 đỏ được.
+- [~] T30 · **KHÔNG CẦN SỬA GÌ — chờ TopHSA** (soi lại 05/09, xem C5).
+      Điểm danh ghi `learning_events` với `minutes=None` ở cấp cao nhất nhưng GIỮ
+      số phút thật trong `meta.minutes` (`teaching/sessions.py::_emit_events`).
+      Tức phần kỹ thuật đã ở đúng trạng thái "chờ, đảo được": bật lên là một dòng
+      (`'minutes': m['minutes']`) cộng một câu UPDATE cho dữ liệu cũ, còn gỡ số
+      liệu đã trộn ra thì không gỡ được.
+      Đo 05/09: **0 sự kiện điểm danh** trong CSDL — chưa lớp nào chạy, nên chưa
+      có gì để trộn nhầm. Câu hỏi còn lại thuần là của TopHSA: phút ngồi lớp có
+      tính vào chỉ tiêu TỰ HỌC hằng tuần không.
 - [ ] T57 · **`/questionaire` bắn 4 lời gọi API không dùng** (đo 05/09/2026).
       `main.js:2050` gọi `loadAll()` cho MỌI đường trừ `/login` và `/register`.
       Đo bằng trình duyệt thật, đếm request: `/questionaire` → **4** lời gọi
@@ -753,7 +766,6 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       (T31). Tạo tài khoản là một lượt INSERT vào Neon production — ngoài phạm
       vi anh đã cho phép, nên cần anh quyết: tạo tay trên Neon, hay cho phép tôi
       INSERT một tài khoản học viên riêng cho việc kiểm.
-- [ ] T30 · Quyết định treo: `stats/journal.py:343` cộng `sys_min + self_min` — có tính phút ngồi lớp vào chỉ tiêu tuần không. Điểm danh đang cố ý để `minutes=NULL` chờ chốt.
 
 ## P6 — Chuyển màn hình cũ sang React
 

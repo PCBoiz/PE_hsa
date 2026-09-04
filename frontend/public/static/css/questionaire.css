@@ -1,3 +1,23 @@
+/* Khảo sát đầu vào — THEO TOKEN CHỦ ĐỀ (vá T59, 05/09/2026).
+ *
+ * Trước bản vá, tệp này ghi cứng bảng màu tối kiểu GitHub (#0d1117, #161b22,
+ * #21262d…). Hệ quả đo được trong trình duyệt:
+ *
+ *     chủ đề SÁNG:  /dashboard nền 250 · /login nền 247 · /questionaire nền 17
+ *     chủ đề TỐI :  cả bốn trang nền 9
+ *
+ * Tức em chọn giao diện sáng thì mọi trang sáng, RIÊNG màn khảo sát vẫn tối —
+ * và `body` vẫn mang `class="light"`, nên chính cái tên chủ đề nói dối về trang
+ * nó đang mô tả. Nó còn làm hỏng phép tự kiểm của bộ đo giao diện: bộ đo suy màu
+ * nhét từ TÊN chủ đề, nên ở trang này nó nhét chữ sáng lên nền tối, tương phản
+ * CAO, và báo "0 vi phạm" cho một trang nó chưa từng đo nổi.
+ *
+ * `/login` — trang anh em cùng luồng vào — VẪN theo chủ đề. Nên đây là lỗi, không
+ * phải một màn tối cố ý.
+ *
+ * GIỮ NGUYÊN: màu thương hiệu (#8B7CF6, #2DD4BF) đọc được trên cả hai nền; và
+ * mực TỐI trên hai nút nền gradient sáng — chỗ ấy phải tối ở cả hai chủ đề.
+ */
 /* --- 1. ĐỊNH DẠNG CHUNG & NỀN ĐỘNG CHUYỂN MÀU TỪ TỪ --- */
 * {
     box-sizing: border-box;
@@ -7,8 +27,8 @@
 }
 
 body {
-    background-color: #0d1117;
-    color: #e6edf3;
+    background-color: var(--bg);
+    color: var(--t1);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -54,7 +74,7 @@ body::after {
 
 /* --- 2. KHUNG CHỨA CÂU HỎI VỚI VIỀN LED CHUYỂN MÀU TỪ TỪ --- */
 .survey-container {
-    background-color: #161b22; /* Giữ nền trong phòng tối */
+    background-color: var(--card); /* Giữ nền trong phòng tối */
     width: 100%;
     max-width: 580px;
     padding: 35px;
@@ -121,7 +141,7 @@ body::after {
 
 h2 {
     text-align: center;
-    color: white;
+    color: var(--t1);
     font-size: 1.1em;
     margin-bottom: 25px;
     font-weight: 500;
@@ -132,7 +152,7 @@ h2 {
 /* --- 4. THANH TIẾN TRÌNH LED NEON ĐỘNG --- */
 .progress-container {
     width: 100%;
-    background-color: #21262d;
+    background-color: var(--lift);
     height: 4px;
     border-radius: 2px;
     margin-bottom: 30px;
@@ -174,7 +194,7 @@ h2 {
 .question {
     font-size: 1.2em;
     font-weight: 600;
-    color: #f0f6fc;
+    color: var(--t1);
     margin-bottom: 18px;
     line-height: 1.4;
 }
@@ -194,18 +214,18 @@ h2 {
     align-items: center;
     margin-bottom: 12px;
     cursor: pointer;
-    color: #c9d1d9;
+    color: var(--t2);
     padding: 14px;
     border-radius: 8px;
-    background-color: #21262d;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--lift);
+    border: 1px solid var(--card-border);
     transition: all 0.2s ease;
 }
 
 .option:hover {
-    background-color: #282e38;
+    background-color: color-mix(in oklab, var(--lift) 82%, var(--t1));
     border-color: rgba(139, 124, 246, 0.5);
-    color: white;
+    color: var(--t1);
     box-shadow: 0 0 10px rgba(139, 124, 246, 0.15);
 }
 
@@ -218,11 +238,11 @@ input[type="radio"], input[type="checkbox"] {
 .custom-text-input {
     margin-left: 12px;
     padding: 6px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 0.9em;
-    background-color: #0d1117;
-    color: white;
+    background-color: var(--bg);
+    color: var(--t1);
     flex-grow: 1;
     max-width: 260px;
     transition: all 0.3s;
@@ -242,7 +262,7 @@ input[type="radio"], input[type="checkbox"] {
 .sub-question {
     margin-top: 20px;
     padding-left: 15px;
-    border-left: 2px dashed #30363d;
+    border-left: 2px dashed var(--border);
 }
 
 
@@ -264,15 +284,15 @@ input[type="radio"], input[type="checkbox"] {
 }
 
 .next-btn {
-    background-color: #21262d;
-    color: #c9d1d9;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--lift);
+    color: var(--t2);
+    border: 1px solid var(--border);
     margin-left: auto;
 }
 
 .next-btn:hover {
-    background-color: #30363d;
-    color: white;
+    background-color: color-mix(in oklab, var(--lift) 70%, var(--t1));
+    color: var(--t1);
     border-color: #8B7CF6;
     box-shadow: 0 0 10px rgba(139, 124, 246, 0.2);
 }
@@ -280,14 +300,14 @@ input[type="radio"], input[type="checkbox"] {
 .next-btn.locked {
     opacity: 0.35;
     cursor: not-allowed;
-    border-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--card-border);
     box-shadow: none;
 }
 
 .next-btn.locked:hover {
-    background-color: #21262d;
-    color: #c9d1d9;
-    border-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--lift);
+    color: var(--t2);
+    border-color: var(--card-border);
     box-shadow: none;
 }
 
@@ -308,11 +328,11 @@ input[type="radio"], input[type="checkbox"] {
 
 .prev-btn {
     background-color: transparent;
-    color: #8b949e;
+    color: var(--t3);
 }
 
 .prev-btn:hover {
-    color: white;
+    color: var(--t1);
 }
 
 /* Nút hoàn thành rực lửa đồng bộ hiệu ứng chuyển màu */
@@ -373,7 +393,7 @@ input[type="radio"], input[type="checkbox"] {
 .thanks-modal {
     width: 100%;
     max-width: 420px;
-    background: #0f141b;
+    background: var(--card);
     border: 1px solid rgba(139, 124, 246, 0.2);
     border-radius: 18px;
     padding: 26px 24px 22px;
@@ -405,12 +425,12 @@ input[type="radio"], input[type="checkbox"] {
 .thanks-title {
     font-size: 1.4em;
     margin-bottom: 8px;
-    color: #f0f6fc;
+    color: var(--t1);
 }
 
 .thanks-sub {
     font-size: 0.95em;
-    color: #9aa4b2;
+    color: var(--t3);
     line-height: 1.5;
     margin-bottom: 18px;
 }
