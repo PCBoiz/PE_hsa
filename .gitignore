@@ -71,3 +71,6 @@ frontend/_*.mjs
 
 # Output của collectstatic (Render tự sinh lúc build; đừng commit)
 backend/staticfiles/
+
+# Thẻ JWT do scripts/cap_the.py sinh ra — BÍ MẬT, không bao giờ commit.
+.the/

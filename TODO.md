@@ -726,6 +726,16 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       CÒN LẠI: gửi tự động theo kỳ (cần T28 — kênh gửi, phụ thuộc TopHSA).
 - [?] T28 · Thông báo Zalo/email — **cần TopHSA**: kênh nào, tần suất, ai duyệt
 - [?] T29 · Học phí, công nợ, thù lao — **cần TopHSA**: quy trình kế toán thật
+- [ ] T59 · **`/questionaire` luôn TỐI bất kể chủ đề người dùng chọn** (đo 05/09).
+      `questionaire.css` ghi cứng `body { background-color: #0d1117; color: #e6edf3 }`
+      và gần như không có luật nào theo chủ đề. Đo trong trình duyệt: `body` mang
+      `class="light"` mà nền là `rgb(13,17,23)` — **tên chủ đề nói dối về chính nó**.
+      Hệ quả trực tiếp đã cắn: phép tự kiểm của bộ đo giao diện suy màu nhét từ
+      TÊN chủ đề, nên trên trang này nó nhét chữ sáng lên nền tối = tương phản
+      CAO, và bộ đo báo **0 vi phạm** cho một trang nó chưa từng đo nổi.
+      Cần anh chốt: trang khảo sát CỐ Ý là một màn tối riêng (thì nên bỏ luôn
+      `class` chủ đề khỏi nó, để không ai suy sai nữa), hay nó phải theo chủ đề
+      như mọi trang khác (thì phải viết lại `questionaire.css` theo token màu)?
 - [ ] T57 · **`/questionaire` bắn 4 lời gọi API không dùng** (đo 05/09/2026).
       `main.js:2050` gọi `loadAll()` cho MỌI đường trừ `/login` và `/register`.
       Đo bằng trình duyệt thật, đếm request: `/questionaire` → **4** lời gọi

@@ -26,11 +26,38 @@
  * Vì lỗi cuối, luôn tự kiểm bằng `--tu-kiem`: nó đặt một quy tắc hỏng vào trang
  * rồi đòi bộ đo phải BẮT ĐƯỢC. Một bộ đo không đỏ được là một bộ đo giả.
  */
+import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const PW = 'file:///D:/pe_hsa/frontend/node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs';
-const TOKEN = process.env.PE_TOKENS
-  || 'C:/Users/sonkh/AppData/Local/Temp/claude/d--PE-test/5192ee2d-32a6-400e-b0de-d9b2020fb7a3/scratchpad/tokens_ad.json';
+const DAY = dirname(fileURLToPath(import.meta.url));
+
+/* Playwright: HỎI Node nó nằm đâu, đừng ghi cứng đường dẫn.
+   Bản trước ghim `D:/pe_hsa/frontend/node_modules/.pnpm/playwright@1.61.1/...`
+   — đúng ổ đĩa, đúng trình quản lý gói, ĐÚNG SỐ PHIÊN BẢN. Nâng playwright một
+   lần là công cụ chết, và triệu chứng sẽ là "không tìm thấy mô-đun", không phải
+   "bạn vừa nâng cấp gói". */
+const _doi = createRequire(join(DAY, '..', 'frontend', 'package.json'));
+let PW = null;
+for (const ten of ['@playwright/test', 'playwright']) {
+  try { PW = pathToFileURL(_doi.resolve(ten)).href; break; } catch { /* thử tên sau */ }
+}
+if (!PW) {
+  console.error('Không tìm thấy Playwright. Cài ở frontend:  pnpm install');
+  process.exit(1);
+}
+
+/* Thẻ JWT. Mặc định là `<gốc repo>/.the/tokens_ad.json`, sinh bằng
+   `python scripts/cap_the.py` (thư mục `.the/` đã vào .gitignore).
+
+   BẢN TRƯỚC GHI CỨNG MỘT ĐƯỜNG DẪN TRONG THƯ MỤC TẠM CỦA MỘT PHIÊN LÀM VIỆC.
+   Thư mục ấy bị dọn, nên bộ đo bị đẩy về màn đăng nhập và không đo được 15/16
+   trang — trong khi vẫn in ra một bảng số trông rất bình thường. Nó có nói
+   "cấp thẻ mới (mint_ad.py) rồi đo lại", nhưng `mint_ad.py` cũng là script nháp
+   chưa từng được commit: công cụ chỉ người đọc tới một tệp không tồn tại, để
+   sửa một đường dẫn không tồn tại. */
+const TOKEN = process.env.PE_TOKENS || join(DAY, '..', '.the', 'tokens_ad.json');
 const GOC = process.env.PE_URL || 'http://localhost:3100';
 
 const KHO = [
@@ -451,7 +478,9 @@ function DO_TRONG_TRANG(do_trang_thai) {
   };
 }
 
-const { chromium } = await import(PW);
+const _pw = await import(PW);
+const chromium = _pw.chromium || (_pw.default && _pw.default.chromium);
+if (!chromium) { console.error('Nạp được Playwright nhưng không thấy `chromium`.'); process.exit(1); }
 const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
 const tu_kiem = process.argv.includes('--tu-kiem');
 const chu_de = process.argv.includes('--toi') ? 'dark' : 'light';
@@ -497,17 +526,48 @@ for (const kho of KHO) {
       // Bị đẩy về màn đăng nhập thì DỪNG, đừng báo một con số của cái vỏ.
       if (/(dang-nhap|login)/.test(new URL(p.url()).pathname)) {
         console.log('');
-        console.log('BI DAY VE DANG NHAP tai ' + url + ' - cap the moi (mint_ad.py) roi do lai.');
+        console.log('BI DAY VE DANG NHAP tai ' + url + ' - the het han hoac khong hop le.');
+        console.log('Cap the moi:  python scripts/cap_the.py     (khong ghi gi vao CSDL)');
+        console.log('Roi do lai :  cd scripts && node do_giao_dien.mjs');
         await b.close();
         process.exit(2);
       }
       if (tu_kiem) {
         /* TỰ KIỂM: nhét một quy tắc hỏng rồi đòi bộ đo phải bắt được.
-           Màu nhét phải GẦN NỀN của chính chủ đề đang đo. Nhét #F2F2F4 vào chủ
-           đề tối thì đó là chữ gần trắng trên nền đen — tương phản CAO, và phép
-           tự kiểm "thất bại" mà chẳng chứng minh được gì về bộ đo. */
+
+           Màu nhét phải GẦN NỀN THẬT của trang. Bản trước suy nó từ TÊN chủ đề
+           (`light` → #F2F2F4), và tên ấy NÓI DỐI ở hai trang: `/questionaire`
+           và `/` đều mang `class="light"` trong khi nền `body` là
+           `rgb(13,17,23)` — gần đen. Nhét màu sáng vào đó là chữ sáng trên nền
+           tối, tương phản CAO, nên bộ đo bắt được **0** vi phạm ở cả hai và
+           phép tự kiểm không nói được gì về chúng. Đo 05/09/2026.
+
+           Nay ĐỌC nền thật, theo thứ tự XẾP LỚP tại một điểm giữa màn hình,
+           và đọc cả `background-image`. Trang landing để `html` và `body` cùng
+           trong suốt; thứ vẽ nền tối là `div.bg-canvas` bằng một
+           `linear-gradient(135deg, rgb(26,5,5) …)`. Chỉ soi `background-color`
+           là mù hẳn với nó — bản vá đầu của tôi lùi về màu trắng và trang ấy
+           vẫn bắt được 0 vi phạm. */
+        const nen = await p.evaluate(() => {
+          const sang = (c) => {
+            const n = (c || '').match(/\d+(\.\d+)?/g);
+            if (!n || n.length < 3) return null;
+            if (n.length >= 4 && parseFloat(n[3]) === 0) return null;   // trong suốt
+            return 0.2126 * +n[0] + 0.7152 * +n[1] + 0.0722 * +n[2];
+          };
+          const diem = document.elementsFromPoint(innerWidth / 2, innerHeight / 2);
+          for (const el of [...diem, document.body, document.documentElement]) {
+            const cs = getComputedStyle(el);
+            const c = sang(cs.backgroundColor);
+            if (c !== null) return c;
+            // Gradient/ảnh nền: lấy màu ĐẦU TIÊN nêu trong khai báo.
+            const m = (cs.backgroundImage || '').match(/rgba?\([^)]*\)/);
+            if (m) { const g = sang(m[0]); if (g !== null) return g; }
+          }
+          return 255;   // không đọc được gì → coi như nền sáng
+        });
         await p.addStyleTag({ content: 'body, body * { color: '
-          + (chu_de === 'dark' ? '#14141C' : '#F2F2F4') + ' !important; }' });
+          + (nen < 128 ? '#14141C' : '#F2F2F4') + ' !important; }' });
         await p.waitForTimeout(150);
       }
       const that = await p.evaluate(() => document.body.classList.contains('dark') ? 'dark' : 'light');
@@ -702,11 +762,22 @@ console.log(`  lời gọi GHI lọt ra : ${ghiLen}`);
 
 if (tu_kiem) {
   console.log(`\n── TỰ KIỂM ──`);
-  if (tong_tp > 50) {
-    console.log(`  ĐẠT: bộ đo bắt được ${tong_tp} vi phạm khi bị nhét quy tắc hỏng.`);
-    process.exit(0);
+  /* XÉT TỪNG TRANG, không chỉ một con số gộp.
+
+     Tiêu chí cũ là `tong_tp > 50` trên toàn bộ 32 lượt đo. Nó ĐẠT dễ dàng nhờ
+     vài trang nhiều chữ, và che mất việc `/questionaire` bắt được ĐÚNG 0 ở cả
+     hai khổ màn hình — tức con số "0 vi phạm" của trang ấy trong lần đo thật
+     không chứng minh điều gì. Một màu xanh GỘP che một số 0 của TỪNG MỤC là
+     đúng cái bẫy bộ kiểm này sinh ra để tránh. */
+  const cam = ket.filter((r) => !(r.so_vi_pham > 0));
+  if (cam.length) {
+    console.log(`  HỎNG: ${cam.length}/${ket.length} lượt đo KHÔNG đỏ nổi dù đã bị nhét`
+      + ' quy tắc hỏng —\n        con số của chúng trong lần đo thật là vô nghĩa:');
+    for (const r of cam) console.log(`          ${r.kho} · ${r.ten}`);
+    process.exit(1);
   }
-  console.log(`  HỎNG: chỉ bắt được ${tong_tp} — một bộ đo không đỏ được là bộ đo giả.`);
-  process.exit(1);
+  console.log(`  ĐẠT: cả ${ket.length} lượt đo đều đỏ khi bị nhét quy tắc hỏng`
+    + ` — tổng ${tong_tp} vi phạm.`);
+  process.exit(0);
 }
 process.exit(ghiLen ? 1 : 0);

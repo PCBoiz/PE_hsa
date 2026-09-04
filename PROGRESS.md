@@ -3814,3 +3814,53 @@ Và một phép kiểm hồi quy gãy vì lý do sai: `loi-may-chu.test.mjs` kh�
 là đỏ dù bất biến nó canh vẫn đúng nguyên. Đã nới về đúng hành vi, và thêm một
 phép kiểm mới cho cờ `khan`. Một phép kiểm gãy vì cách viết dạy người sửa rằng
 "đỏ ở đây thường vô hại" — đó mới là cái giá thật.
+
+## 05/09/2026 — Bộ đo giao diện: chết ba tuần theo đúng một kiểu, và tự kiểm nói dối
+
+Ghi chú dự án nhắc `scripts/do_giao_dien.mjs` như công cụ đo giao diện. Chạy thử
+thì nó bị đẩy về màn đăng nhập: đường dẫn thẻ mặc định ghi cứng vào **thư mục
+tạm của một phiên làm việc**, thư mục ấy bị dọn. Nó có in hướng dẫn "cấp thẻ mới
+(mint_ad.py) rồi đo lại" — nhưng `mint_ad.py` là script nháp CHƯA TỪNG ĐƯỢC
+COMMIT. Công cụ chỉ người đọc tới một tệp không tồn tại, để sửa một đường dẫn
+không tồn tại. Cùng một họ với A13: hỏng, nhưng không hỏng ra tiếng.
+
+- `scripts/cap_the.py` (mới): ký JWT cho một tài khoản ĐÃ CÓ. **Không ghi gì vào
+  CSDL** — chỉ SELECT một lần để xác nhận tài khoản, rồi ký bằng SECRET_KEY.
+  Không in thẻ ra màn hình (nó vào bản ghi phiên và lịch sử shell). `.the/` vào
+  `.gitignore`.
+- Đường dẫn Playwright cũng ghim cứng `D:/pe_hsa/.../playwright@1.61.1/...` —
+  đúng ổ đĩa, đúng trình quản lý gói, ĐÚNG SỐ PHIÊN BẢN. Nay hỏi Node.
+
+**RỒI PHÉP TỰ KIỂM HOÁ RA CŨNG NÓI DỐI.** Nó nhét một quy tắc CSS hỏng rồi đòi
+bộ đo phải bắt được. Màu nhét suy từ TÊN chủ đề (`light` → màu sáng). Nhưng tên
+ấy nói dối ở hai trang: `/questionaire` và `/` đều mang `class="light"` trong
+khi nền là gần đen. Nhét màu sáng vào đó = chữ sáng trên nền tối = tương phản
+CAO → bắt được **0**. Hai trang ấy chưa từng được đo, mà bảng kết quả vẫn ghi
+"0 vi phạm" cho chúng — con số y hệt một trang thật sự sạch.
+
+Và tiêu chí ĐẠT là một con số GỘP (`tong_tp > 50`), nên nó xanh dễ dàng nhờ vài
+trang nhiều chữ, che mất hai số 0 kia. Một màu xanh gộp che số 0 của từng mục là
+đúng cái bẫy chính bộ kiểm này sinh ra để tránh.
+
+Vá hai lớp:
+1. Tự kiểm xét TỪNG lượt đo. Lượt nào không đỏ nổi thì gọi tên nó ra và HỎNG.
+2. Màu nhét lấy từ nền THẬT, theo thứ tự xếp lớp tại giữa màn hình, và đọc cả
+   `background-image`. Bản vá đầu của tôi chỉ đọc `background-color` nên vẫn mù:
+   trang landing để `html` và `body` cùng trong suốt, thứ vẽ nền tối là
+   `div.bg-canvas` bằng `linear-gradient(135deg, rgb(26,5,5) …)`.
+
+Đo được, ba vòng:
+    trước    : Khảo sát 0/0 · Trang chủ 0/0   → tự kiểm ĐẠT (gộp)  ← nói dối
+    vá lớp 1 : Khảo sát 6/6 · Trang chủ 0/1   → tự kiểm HỎNG 1/32  ← đúng
+    vá lớp 2 : Khảo sát 6/6 · Trang chủ 89/89 → tự kiểm ĐẠT 32/32
+
+**Rồi mới đo thật.** 32 lượt (2 khổ × 16 trang): 0 vi phạm tương phản, 0 vùng
+chạm dưới 44px, 0 trang tràn ngang, 0 lỗi JS, 0 lời gọi GHI lọt ra. Số 0 này
+đáng tin, vì bộ đo vừa chứng minh nó đỏ được ở cả 32 lượt.
+
+Bên lề: `MÃ THOÁT` phải đọc KHÔNG QUA ỐNG. Lần chạy tự kiểm đầu tiên hôm nay tôi
+đọc qua `| tail` nên thấy 0, trong khi script `exit(2)` ở nhánh "bị đẩy về đăng
+nhập". Đó là lần thứ ba trong phiên này cùng một cái bẫy.
+
+Ghi T59 vào TODO: `/questionaire` luôn tối bất kể chủ đề — cần anh chốt là màn
+tối cố ý (thì bỏ `class` chủ đề khỏi nó) hay phải theo chủ đề (thì viết lại CSS).
