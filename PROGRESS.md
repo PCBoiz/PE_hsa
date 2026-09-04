@@ -2798,3 +2798,91 @@ in thẳng ra sự hỏng (thẻ "Không đồ thị" mọc `visual` của thẻ
 nhiễm `options` của câu trắc nghiệm). React: bỏ `key` rồi mở trên TRÌNH DUYỆT
 THẬT → mở bài 2 vẫn thấy JSON đồ thị của bài 1, dù mã bài đã đổi sang `ql_02`.
 Phục hồi → cả hai xanh. 39 phép kiểm đơn vị.
+
+---
+
+## 04/09/2026 — vá bốn lỗi ÂM THẦM của chính đường nhập bảng tính vừa viết
+
+Đường nhập được dựng hôm qua với đúng một lời hứa — *kiểm hết rồi mới ghi, sai
+thì báo đúng số dòng*. Bốn lỗi dưới đây phá được lời hứa ấy mà **không báo gì**,
+tức là loại duy nhất mà chính người soạn cũng không phát hiện ra.
+
+**① Cột "Lựa chọn" trống ở GIỮA làm đáp án chữ cái trỏ sai phương án.** `A, B,
+(C trống), D` bị nén còn `[A, B, D]`, nhưng đáp án vẫn tra bằng `ord(chữ)-65`
+trên danh sách đã nén: đáp án `"C"` thành `[A,B,D][2]` = **D**. Không báo gì,
+ghi thẳng vào ngân hàng đề. Nó lộ ra dưới dạng "học viên chọn đúng mà bị trừ
+điểm" nhiều tuần sau, không dấu vết. Nay tra theo **CỘT**, và cột trống thì báo
+đúng tên cột.
+
+**② Ô hiện `30%` đọc ra `"0.3"`.** Excel lưu phần trăm dưới dạng số thập phân,
+và `values_only=True` vứt mất `number_format`. Chuỗi `"0.3"` hoàn toàn hợp lệ
+nên không hàng rào nào chặn — nó chỉ **sai**. Người soạn gõ 30% vào ô đáp án,
+học viên phải trả lời "0.3" mới được tính đúng. Đo được ô ngày tháng cũng thế
+(`2026-09-04 00:00:00`). Nay đọc kèm `number_format` — đã đo là nó **có** ở chế
+độ `read_only`, chỉ cần bỏ đường tắt `values_only`.
+
+**③ Số dòng trong thông báo lỗi trôi theo số dòng trống.** Lọc dòng trống RỒI
+mới đánh số. Docstring hứa "số dòng như người dùng thấy trong Excel"; mã thì đếm
+theo vị trí trong mảng đã lọc. Hậu quả không phải một con số xấu: người soạn mở
+Excel, nhấn Ctrl+G tới dòng được báo, và thấy một dòng **không có lỗi gì**.
+
+**④ `exam_id='abc'` → 500.** `mock_exams.id` là INTEGER, `request.data` của biểu
+mẫu nhiều phần thì toàn chuỗi. Trang báo "lỗi máy chủ" cho một việc người dùng
+gõ sai.
+
+Vá thêm hai thứ gặp trên đường:
+
+* **Dữ liệu ở trang thứ hai không đọc được** — dù MẪU do chính mình sinh ra
+  cũng có hai trang. Bản cũ cứng `worksheets[0]` rồi báo "thiếu cột bắt buộc":
+  một thông báo đúng chữ, chỉ tới chỗ không có gì sai. Nay lấy trang đầu tiên
+  **có dữ liệu**.
+* **`MAX_O` là một hằng số chưa ai dùng**, kèm chú thích "Vượt thì BÁO, không
+  cắt". Một lời hứa không có mã đứng sau còn tệ hơn không hứa gì. Nay nó báo thật.
+
+**Chứng minh ĐỎ:** cất ba tệp vá đi (`git stash`) → **6/6 phép kiểm đỏ**, mỗi
+cái đỏ vì đúng lý do của nó (`DID NOT RAISE`, `'0.3' != '30%'`, `Dòng 3` thay vì
+`Dòng 4`, thiếu cột bắt buộc, 500 thay vì 400). Phục hồi → 6/6 xanh.
+
+## 04/09/2026 — hai lỗ XSS: một cái ở TRANG CHỦ, một cái ai cũng khai thác được
+
+**① Trường khoá học đổ thô vào `innerHTML`, kể cả `landing.inline.js` — trang
+chủ, không cần đăng nhập.** Chỗ hiển thị có tầm với rộng nhất trong cả sản phẩm
+và là chỗ duy nhất không có hàng rào đăng nhập đứng trước. Vá hai tầng: đường
+ghi ép `color` là hex / `image` là đường dẫn tương đối / trường chữ đi qua **cùng
+danh sách trắng** với nội dung bài học; chỗ hiển thị thoát đủ 5 ký tự, và chỗ
+`onclick=` thoát **hai tầng đúng thứ tự** (JS trước, HTML sau).
+
+**② Tên học viên đặt trong `onclick` — hàng rào đặc quyền THẤP NHẤT.**
+
+    onclick="forumToggleReply('12','34','" + escHtml(c.author) + "')"
+
+Nhìn thì có thoát. Nhưng trình duyệt **giải mã thực thể trước khi biên dịch JS**,
+nên `&#39;` quay lại thành `'` đúng lúc trình biên dịch nhìn vào — bước thoát bị
+hoàn tác bởi chính bước giải mã ấy. Đặt đúng hàm thoát vào sai ngữ cảnh thì nó
+không yếu đi, nó **bằng không**. Khai thác cần đúng một tài khoản học viên và ô
+"Họ tên" (chỉ bị kiểm độ dài).
+
+Không ép khuôn tên người được như ép mã màu thành hex — dấu nháy trong tên người
+là bình thường. Nên **bỏ hẳn ngữ cảnh JS**: tên đi qua `data-mention` (chỗ
+`escHtml` là đúng công cụ) và hàm đọc nó từ `this.dataset.mention`.
+
+**③ `courses.id` không kiểm gì** ngoài "khác rỗng" và "chưa trùng", trong khi nó
+nội suy thô vào **năm** chuỗi JS-trong-thuộc-tính. Ép slug ở cửa ghi khoá cả năm
+chỗ cùng lúc — và `id` **đã là** một đoạn đường dẫn (`/lesson/<id>`), nên slug là
+hình dạng duy nhất chạy đúng.
+
+**Phép kiểm chạy thật, không đọc chữ.** Kiểm "có gọi `escHtml` không" thì bản
+hỏng cũng xanh — nó *có* gọi. Nên `e2e/unit/onclick-noi-suy.test.mjs` làm đúng
+việc trình duyệt làm: rút thuộc tính `onclick`, **giải mã thực thể**, rồi **chạy**
+đoạn JS thu được với `ATTACK` là hàm gián điệp. Biểu thức dựng nút được rút ra
+từ `dashboard.js` chứ không chép sang — bản chép sẽ được vá còn tệp thật thì không.
+
+Bản đầu của phép kiểm có một khẳng định **sai**: quét chuỗi thô tìm
+`/\son[a-z]+=/` nên báo đỏ trên mã **đã vá** (tên `x" onmouseover="…` sau khi
+thoát vẫn còn chuỗi con ấy — nhưng là *chữ* trong giá trị thuộc tính, vô hại).
+Phân biệt "thuộc tính thật" với "chữ trông giống thuộc tính" đòi hỏi **bóc tách**
+chứ không đòi hỏi một biểu thức chính quy khéo hơn. Một phép kiểm báo đỏ đúng lúc
+mã đã đúng thì lần sau sẽ bị ai đó tắt đi.
+
+**Chứng minh ĐỎ:** lùi `dashboard.js` → *"ATTACK bị gọi 1 lần"* ở cả hai chỗ; gỡ
+dòng kiểm slug → nhận 200 thay vì 400.

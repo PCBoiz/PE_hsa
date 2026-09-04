@@ -154,12 +154,26 @@ class AdminMockExamImportView(_Base):
             return Response({'error': 'Thời gian làm bài phải là số phút trong khoảng 1–600.'},
                             status=400)
 
-        exam_id = request.data.get('exam_id') or None
+        # `mock_exams.id` là INTEGER, còn `request.data` của một biểu mẫu nhiều
+        # phần thì toàn chuỗi. Chuyền thẳng vào truy vấn thì `exam_id='abc'` làm
+        # psycopg ném `invalid input syntax for type integer` — tức 500, tức
+        # trang báo "lỗi máy chủ" cho một việc người dùng gõ sai. 400 kèm câu
+        # giải thích mới là đúng chuyện đang xảy ra.
+        tho_exam_id = request.data.get('exam_id') or None
+        exam_id = None
+        if tho_exam_id is not None:
+            try:
+                exam_id = int(tho_exam_id)
+            except (TypeError, ValueError):
+                return Response({'error': 'exam_id phải là số (mã đề cần ghi đè). '
+                                          'Bỏ trống nếu muốn tạo đề mới.'}, status=400)
+
         than = json.dumps(cau, ensure_ascii=False)
 
         with transaction.atomic():
             if exam_id:
-                cu = q1('SELECT id, title FROM mock_exams WHERE id=%s', (exam_id,))
+                cu = q1('SELECT id, title, is_published FROM mock_exams WHERE id=%s',
+                        (exam_id,))
                 if not cu:
                     return Response({'error': 'Không tìm thấy đề thi này.'}, status=404)
                 # Đề đã có người làm thì ĐỔI ĐỀ là làm hỏng ý nghĩa của các lượt
@@ -177,6 +191,12 @@ class AdminMockExamImportView(_Base):
                          total_questions=%s, questions_json=%s::jsonb WHERE id=%s''',
                   (title, phut, len(cau), than, exam_id))
                 hanh_dong, ma = audit.MOCK_EXAM_UPDATE, exam_id
+                # Ghi đè KHÔNG đụng tới `is_published` — nên phải đọc giá trị
+                # thật, không suy ra. Bản đầu trả `published: bool(exam_id)`,
+                # tức "đã ghi đè" bị trình bày thành "đã xuất bản": một đề đang
+                # ẩn vẫn báo về `published: true`, và người soạn tin là học viên
+                # đã thấy đề rồi trong khi chưa ai thấy gì.
+                da_hien = bool(cu['is_published'])
             else:
                 row = q1('''INSERT INTO mock_exams
                                 (title, description, duration_minutes, total_questions,
@@ -184,6 +204,7 @@ class AdminMockExamImportView(_Base):
                             VALUES (%s, '', %s, %s, %s::jsonb, FALSE) RETURNING id''',
                          (title, phut, len(cau), than))
                 hanh_dong, ma = audit.MOCK_EXAM_CREATE, row['id']
+                da_hien = False        # đề mới luôn ẩn cho tới khi bấm xuất bản
 
             audit.record(request, hanh_dong, target_type='mock_exam', target_id=ma,
                          target_label=title,
@@ -193,7 +214,7 @@ class AdminMockExamImportView(_Base):
                                  'file': tep.name})
 
         return Response({'ok': True, 'id': ma, 'questions': len(cau),
-                         'published': bool(exam_id)}, status=200 if exam_id else 201)
+                         'published': da_hien}, status=200 if exam_id else 201)
 
 
 class AdminMockExamPublishView(_Base):

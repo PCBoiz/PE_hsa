@@ -104,8 +104,11 @@ def doc_cau_hoi(ban_ghi):
                    ', '.join(sorted(set(SECTION_LABELS.values())))))
             continue
 
-        lua_chon = [b.get(c, '') for c in COT_LUA_CHON]
-        lua_chon = [x for x in lua_chon if x]
+        # Giữ HAI danh sách, cố ý:
+        #   `theo_cot` — đúng vị trí cột A/B/C/D, kể cả cột bỏ trống ở giữa
+        #   `lua_chon` — chỉ những phương án CÓ nội dung, để lưu và để hiện
+        theo_cot = [b.get(c, '') for c in COT_LUA_CHON]
+        lua_chon = [x for x in theo_cot if x]
         qua_dai = [x for x in lua_chon if len(x) > MAX_LUA_CHON]
         if qua_dai:
             sai('một phương án dài %d ký tự, tối đa %d.'
@@ -130,12 +133,26 @@ def doc_cau_hoi(ban_ghi):
             if dap_an in lua_chon:
                 dung = dap_an
             elif len(dap_an) == 1 and dap_an.upper() in 'ABCD':
+                # Tra theo CỘT, không theo vị trí trong danh sách đã nén.
+                #
+                # Bản đầu tra `lua_chon[ord(x)-65]` trên danh sách ĐÃ BỎ các ô
+                # trống. Một cột "Lựa chọn C" để trống là đủ để đáp án "D" trỏ
+                # sang phương án khác: A,B,_,D nén lại thành [A,B,D], và
+                # `[A,B,D][3]` thì hết chỉ số nên báo "chỉ có 3 phương án" —
+                # nhưng đáp án "C" thì `[A,B,D][2]` = D, KHÔNG báo gì và lưu SAI.
+                #
+                # Sai âm thầm ở đây không dừng lại ở một câu hỏi: nó vào ngân
+                # hàng đề, được chấm, và lộ ra dưới dạng "học viên thắc mắc vì
+                # sao chọn đúng mà bị trừ điểm" — nhiều tuần sau, không dấu vết.
                 vt = ord(dap_an.upper()) - 65
-                if vt >= len(lua_chon):
-                    sai('"đáp án" là %r nhưng câu này chỉ có %d phương án.'
-                        % (dap_an, len(lua_chon)))
+                if not theo_cot[vt]:
+                    sai('"đáp án" ghi %r nhưng cột "Lựa chọn %s" đang để trống. '
+                        'Điền phương án vào cột ấy, hoặc sửa đáp án cho khớp cột '
+                        'có nội dung (đang có: %s).'
+                        % (dap_an, dap_an.upper(),
+                           ', '.join(chr(65 + i) for i, v in enumerate(theo_cot) if v)))
                     continue
-                dung = lua_chon[vt]
+                dung = theo_cot[vt]
             else:
                 sai('"đáp án" (%r) không trùng phương án nào. Chép đúng nguyên văn '
                     'một phương án, hoặc ghi chữ cái A/B/C/D.' % dap_an[:60])

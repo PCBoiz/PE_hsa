@@ -29,6 +29,7 @@ mã hệ thống, nên "Định lượng" quay về thành ký tự hỏng — r
 `.xlsx` để người dùng đi đường ít bẫy nhất.
 """
 import csv
+import datetime
 import io
 
 #: Trần số dòng một lần nhập. Không phải để tiết kiệm bộ nhớ — để một file dán
@@ -54,12 +55,39 @@ def _chuan_tieu_de(s):
     return ' '.join(str(s or '').split()).lower()
 
 
-def _o(v):
-    """Một ô về chuỗi. `None` → rỗng; số nguyên → không có đuôi `.0`."""
+def _o(v, dinh_dang=None):
+    """Một ô về chuỗi — CÁI NGƯỜI SOẠN NHÌN THẤY, không phải cái Excel lưu.
+
+    Hai chỗ hai thứ ấy khác nhau, và cả hai hỏng ÂM THẦM (đo 04/09/2026):
+
+        ô hiện "30%"        → Excel lưu 0.3        → bản cũ trả "0.3"
+        ô hiện "04/09/2026" → Excel lưu datetime   → "2026-09-04 00:00:00"
+
+    Không chỗ nào báo lỗi: chuỗi ấy hợp lệ, nó chỉ SAI. Người soạn gõ "30%" vào
+    ô đáp án, và học viên phải trả lời "0.3" mới được tính đúng — lộ ra vào đúng
+    lúc đang thi. Đây là loại lỗi mà bộ kiểm nội dung không thể bắt được, vì tới
+    lúc nó nhìn thì dữ liệu đã sai từ trước rồi.
+
+    `number_format` phân biệt được hai thứ, và nó CÓ ở chế độ `read_only` — đã
+    đo — nhưng chỉ khi đọc bằng `values_only=False`, tức phải bỏ đường tắt cũ.
+    """
     if v is None:
         return ''
-    if isinstance(v, float) and v.is_integer():
-        return str(int(v))
+    if isinstance(v, datetime.datetime):
+        # Excel không có kiểu "chỉ ngày": ngày về là datetime lúc 00:00.
+        if v.hour or v.minute or v.second:
+            return v.strftime('%d/%m/%Y %H:%M')
+        return v.strftime('%d/%m/%Y')
+    if isinstance(v, datetime.date):
+        return v.strftime('%d/%m/%Y')
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        if dinh_dang and '%' in dinh_dang:
+            pt = v * 100
+            if abs(pt - round(pt)) < 1e-9:
+                return '%d%%' % round(pt)
+            return '%s%%' % ('%.4f' % pt).rstrip('0').rstrip('.')
+        if isinstance(v, float) and v.is_integer():
+            return str(int(v))
     return str(v).strip()
 
 
@@ -70,8 +98,23 @@ def doc_xlsx(du_lieu):
         wb = openpyxl.load_workbook(io.BytesIO(du_lieu), read_only=True, data_only=True)
     except Exception as e:  # noqa: BLE001 — mọi lỗi đọc tệp đều là "tệp hỏng"
         raise LoiBangTinh('Không mở được tệp .xlsx: %s' % e) from e
-    ws = wb.worksheets[0]
-    return [[_o(c) for c in hang] for hang in ws.iter_rows(values_only=True)]
+
+    def doc_trang(ws):
+        return [[_o(c.value, getattr(c, 'number_format', None)) for c in hang]
+                for hang in ws.iter_rows()]
+
+    # Lấy trang ĐẦU TIÊN CÓ DỮ LIỆU, không cứng `worksheets[0]`. Người ta hay để
+    # trang 1 là "Hướng dẫn" rồi mới tới dữ liệu ở trang 2; bản cũ đọc trang 1
+    # rồi báo "thiếu cột bắt buộc" trong khi dữ liệu nằm ngay trang bên cạnh —
+    # một thông báo lỗi chỉ đúng chữ, còn chỗ nó chỉ tới thì không có gì sai.
+    #
+    # Cần ÍT NHẤT 2 dòng (tiêu đề + một dòng dữ liệu): một trang chỉ có một dòng
+    # chữ giới thiệu không phải là bảng dữ liệu.
+    for ws in wb.worksheets:
+        rows = doc_trang(ws)
+        if sum(1 for h in rows if any(o for o in h)) >= 2:
+            return rows
+    return doc_trang(wb.worksheets[0]) if wb.worksheets else []
 
 
 def doc_csv(du_lieu):
@@ -114,11 +157,17 @@ def thanh_ban_ghi(hang, cot_bat_buoc=(), ten_khac=None):
     ``ten_khac`` cho phép một cột có nhiều tên gọi (ví dụ "đáp án" và "dap an"),
     khai TƯỜNG MINH chứ không đoán bằng cách bỏ dấu.
     """
-    hang = [h for h in hang if any(o for o in h)]
-    if not hang:
+    # ĐÁNH SỐ TRƯỚC, LỌC SAU. Bản đầu làm ngược lại — lọc dòng trống rồi mới
+    # `enumerate` — nên mỗi dòng trống trong tệp đẩy toàn bộ số dòng phía dưới
+    # lệch đi một. Docstring ngay trên đây HỨA "số dòng như người dùng thấy
+    # trong Excel"; mã thì đếm theo vị trí trong mảng đã lọc. Chú thích sai
+    # nguy hiểm hơn không có chú thích: nó tắt phản xạ kiểm tra của người sau,
+    # và ở đây nó còn gửi người soạn tới sửa NHẦM DÒNG.
+    danh = [(i, h) for i, h in enumerate(hang, start=1) if any(o for o in h)]
+    if not danh:
         raise LoiBangTinh('Tệp không có dòng nào.')
 
-    tieu_de = [_chuan_tieu_de(o) for o in hang[0]]
+    tieu_de = [_chuan_tieu_de(o) for o in danh[0][1]]
     if ten_khac:
         tieu_de = [ten_khac.get(t, t) for t in tieu_de]
 
@@ -130,16 +179,23 @@ def thanh_ban_ghi(hang, cot_bat_buoc=(), ten_khac=None):
             % (', '.join('"%s"' % c for c in thieu),
                ', '.join('"%s"' % t for t in tieu_de if t) or '(không có tiêu đề nào)'))
 
-    than = hang[1:]
+    than = danh[1:]
     if len(than) > MAX_DONG:
         raise LoiBangTinh('Tối đa %d dòng một lần nhập (tệp đang có %d). '
                           'Chia nhỏ ra rồi nhập nhiều lượt.' % (MAX_DONG, len(than)))
 
     ra = []
-    for i, h in enumerate(than, start=2):   # +2: dòng 1 là tiêu đề, Excel đếm từ 1
+    for so_dong, h in than:
         ban = {}
         for j, ten in enumerate(tieu_de):
             if ten:
-                ban[ten] = h[j] if j < len(h) else ''
-        ra.append((i, ban))
+                o = h[j] if j < len(h) else ''
+                if len(o) > MAX_O:
+                    raise LoiBangTinh(
+                        'Dòng %d, cột "%s": ô dài %d ký tự, tối đa %d. '
+                        'Cắt bớt trong Excel rồi nhập lại — hệ thống KHÔNG tự cắt, '
+                        'vì cắt ngầm thì nội dung mất mà không ai biết.'
+                        % (so_dong, ten, len(o), MAX_O))
+                ban[ten] = o
+        ra.append((so_dong, ban))
     return ra

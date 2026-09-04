@@ -582,3 +582,156 @@ def test_mau_tai_ve_doc_nguoc_lai_duoc(admin_api):
     cau, loi = doc_cau_hoi(_ban_ghi(hang))
     assert not loi, loi
     assert len(cau) == 3, cau
+
+
+# ── BỐN LỖI CỦA CHÍNH ĐƯỜNG NHẬP NÀY (vá 04/09/2026, một ngày sau khi viết) ──
+#
+# Cả bốn đều thuộc loại KHÔNG BÁO GÌ. Đường nhập được dựng với đúng một lời hứa
+# — "kiểm hết rồi mới ghi, sai thì báo đúng số dòng" — và lỗi im lặng là thứ
+# duy nhất phá được lời hứa ấy mà không ai thấy.
+
+
+def _xlsx_dinh_dang(hang, dinh_dang=None, ten_trang=None):
+    """Như `_xlsx` nhưng đặt được `number_format` cho từng ô: {(dòng, cột): fmt}."""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    if ten_trang:
+        ws.title = ten_trang
+    for h in hang:
+        ws.append(h)
+    for (d, c), fmt in (dinh_dang or {}).items():
+        ws.cell(row=d, column=c).number_format = fmt
+    buf = _io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def test_cot_lua_chon_trong_khong_lam_lech_dap_an():
+    """① Một cột "Lựa chọn" bỏ trống ở GIỮA làm đáp án chữ cái trỏ sai phương án.
+
+    A, B, (C trống), D — bản đầu nén danh sách còn [A, B, D] rồi vẫn tra
+    `ord(chữ)-65` trên nó. Đáp án "C" thành `[A,B,D][2]` = D: KHÔNG báo gì, ghi
+    thẳng vào ngân hàng đề, và lộ ra dưới dạng "học viên chọn đúng mà bị trừ
+    điểm" nhiều tuần sau, không dấu vết.
+    """
+    from mockexam.nhap import doc_cau_hoi
+
+    # Đáp án "D" — cột D CÓ nội dung, phải lấy ĐÚNG nội dung cột D.
+    cau, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'Chọn đi', 'quả táo', 'quả lê', '', 'quả nho',
+         'D', '', '', ''],
+    ]))
+    assert not loi, loi
+    assert cau[0]['answer'] == 'quả nho', cau[0]['answer']
+    assert cau[0]['options'] == ['quả táo', 'quả lê', 'quả nho']
+
+    # Đáp án "C" — cột C TRỐNG. Phải BÁO, tuyệt đối không được lặng lẽ lấy D.
+    cau2, loi2 = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'Chọn đi', 'quả táo', 'quả lê', '', 'quả nho',
+         'C', '', '', ''],
+    ]))
+    assert loi2, 'đáp án C trỏ vào cột trống mà không báo gì'
+    assert 'Lựa chọn C' in loi2[0], loi2
+    assert not cau2, 'đã báo lỗi thì không được ghi câu nào'
+
+
+def test_o_phan_tram_giu_dung_cai_nguoi_soan_nhin_thay():
+    """② Ô hiện "30%" — Excel lưu 0.3 — bản đầu trả chuỗi "0.3".
+
+    Không chỗ nào báo lỗi vì "0.3" là một chuỗi hợp lệ; nó chỉ SAI. Người soạn
+    gõ 30% vào ô đáp án và học viên phải trả lời "0.3" mới được tính đúng.
+    """
+    from common.bangtinh import doc
+
+    du = _xlsx_dinh_dang(
+        [_TIEU_DE,
+         ['Định lượng', 'Lãi suất là bao nhiêu?', '', '', '', '', 0.3, '', '', '']],
+        dinh_dang={(2, 7): '0%'})
+    hang = doc('de.xlsx', du)
+    cot_dap_an = hang[1][6]
+    assert cot_dap_an == '30%', 'ô hiện 30%% mà đọc ra %r' % cot_dap_an
+
+    from mockexam.nhap import doc_cau_hoi
+    cau, loi = doc_cau_hoi(_ban_ghi(hang))
+    assert not loi, loi
+    assert cau[0]['answer'] == '30%', cau[0]['answer']
+
+
+def test_dong_trong_khong_lam_lech_so_dong_bao_loi():
+    """③ Số dòng trong thông báo lỗi phải là số dòng NHƯ TRONG EXCEL.
+
+    Bản đầu lọc dòng trống RỒI mới đánh số, nên mỗi dòng trống đẩy toàn bộ phần
+    dưới lệch một. Docstring của `thanh_ban_ghi` hứa đúng điều nó không làm — và
+    hậu quả không phải là một con số xấu, mà là người soạn mở Excel, nhấn Ctrl+G
+    tới dòng được báo, và thấy một dòng KHÔNG có lỗi gì.
+    """
+    from mockexam.nhap import doc_cau_hoi
+
+    _, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,                                                    # dòng 1
+        ['Định lượng', '2+2?', '3', '4', '', '', '4', '', '', ''],   # dòng 2 — đúng
+        ['', '', '', '', '', '', '', '', '', ''],                    # dòng 3 — TRỐNG
+        ['Định lượng', '', '', '', '', '', '5', '', '', ''],         # dòng 4 — thiếu câu hỏi
+    ]))
+    assert loi, 'dòng 4 thiếu "câu hỏi" mà không báo'
+    assert loi[0].startswith('Dòng 4:'), loi[0]
+
+
+def test_du_lieu_o_trang_thu_hai_van_doc_duoc():
+    """④ Trang 1 là "Hướng dẫn", dữ liệu ở trang 2 — chính hình dạng MẪU của mình.
+
+    `AdminMockExamTemplateView` sinh mẫu có hai trang. Người dùng đảo thứ tự
+    hoặc thêm một trang ghi chú lên đầu là chuyện bình thường, và bản đầu cứng
+    `worksheets[0]` nên báo "thiếu cột bắt buộc" trong khi dữ liệu nằm ngay
+    trang bên cạnh — một thông báo đúng chữ, chỉ tới chỗ không có gì sai.
+    """
+    import openpyxl
+
+    from common.bangtinh import doc
+
+    wb = openpyxl.Workbook()
+    wb.active.title = 'Hướng dẫn'
+    wb.active.append(['Điền vào trang "Câu hỏi" nhé.'])
+    ws = wb.create_sheet('Câu hỏi')
+    ws.append(_TIEU_DE)
+    ws.append(['Định lượng', '2+2?', '3', '4', '', '', 'B', '', '', ''])
+    buf = _io.BytesIO()
+    wb.save(buf)
+
+    from mockexam.nhap import doc_cau_hoi
+    cau, loi = doc_cau_hoi(_ban_ghi(doc('de.xlsx', buf.getvalue())))
+    assert not loi, loi
+    assert cau[0]['answer'] == '4'
+
+
+def test_exam_id_khong_phai_so_tra_400_chu_khong_no(admin_api, db):
+    """⑤ `mock_exams.id` là INTEGER; `exam_id` từ biểu mẫu là chuỗi.
+
+    Chuyền thẳng `'abc'` vào truy vấn thì psycopg ném — tức 500, tức trang báo
+    "lỗi máy chủ" cho một việc người dùng gõ sai.
+    """
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    tep = SimpleUploadedFile('de.xlsx', _xlsx([
+        _TIEU_DE, ['Định lượng', 'x', 'a', 'b', '', '', 'a', '', '', ''],
+    ]), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    r = admin_api.post('/api/admin/mock-exams/import',
+                       {'file': tep, 'title': 'Đề thử', 'duration_minutes': '30',
+                        'exam_id': 'abc'}, format='multipart')
+    assert r.status_code == 400, r.status_code
+    assert 'exam_id' in r.json()['error']
+
+
+def test_o_qua_dai_thi_BAO_chu_khong_cat_ngam():
+    """⑥ `MAX_O` được khai kèm chú thích "Vượt thì BÁO, không cắt" — và trước
+    bản vá này KHÔNG DÒNG NÀO trong repo dùng tới nó. Một lời hứa không có mã
+    đứng sau còn tệ hơn không hứa gì."""
+    from common.bangtinh import MAX_O, LoiBangTinh
+
+    with _pytest.raises(LoiBangTinh) as e:
+        _ban_ghi([_TIEU_DE,
+                  ['Định lượng', 'x' * (MAX_O + 1), '', '', '', '', 'a', '', '', '']])
+    assert 'Dòng 2' in str(e.value) and 'câu hỏi' in str(e.value), str(e.value)
