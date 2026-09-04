@@ -169,6 +169,82 @@ const BAI_THAT = {
   check('`hopNhat` không sửa bản gốc', JSON.stringify(BAI_THAT) === truoc);
 }
 
+// ── 9) XOÁ một phần tử KHÔNG được làm phần tử khác đổi nội dung ────────────
+//
+// Đây là thao tác mà tám khối kiểm đầu tiên bỏ sót hoàn toàn — chúng chỉ thử
+// SỬA. Bản gộp đầu khớp theo VỊ TRÍ, nên xoá phần tử thứ i làm mọi phần tử sau
+// tụt lên một chỗ và thừa hưởng khoá lạ của người khác.
+//
+// Đo trên 76 bài thật: 8/456 lượt xoá thẻ và 227/836 lượt xoá câu làm một phần
+// tử KHÁC đổi nội dung. Với thẻ, thứ rò là `visual` — đồ thị mà engine VẼ RA,
+// tức hiển thị sai cho học viên chứ không phải rác ẩn.
+{
+  const bai = {
+    id: 'x', index: 1, title: 'T',
+    test: { intro: '', questions: [
+      { id: 't1', type: 'mcq', question: 'A?', options: ['1', '2'], answer: '1' },
+      { id: 't2', type: 'fill', question: 'B?', answer: '9' },
+    ] },
+    theory: { full: { title: 'LT', cards: [
+      { icon: 'i1', title: 'Có đồ thị', body: 'x', visual: { type: 'curve', fn: 'x*x' } },
+      { icon: 'i2', title: 'Không đồ thị', body: 'y' },
+    ] } },
+  };
+
+  // Xoá THẺ ĐẦU (thẻ mang đồ thị). Thẻ còn lại vốn không có `visual`.
+  const m1 = docRaBieuMau(bai, 1);
+  m1.fullCards = m1.fullCards.slice(1);
+  const the = hopNhat(bai, m1).theory.full.cards;
+  check('xoá thẻ: còn đúng 1 thẻ', the.length === 1, the);
+  check('xoá thẻ: thẻ còn lại giữ đúng tiêu đề của NÓ', the[0].title === 'Không đồ thị', the[0]);
+  check('xoá thẻ: KHÔNG thừa hưởng đồ thị của thẻ bị xoá', !('visual' in the[0]), the[0]);
+  check('xoá thẻ: không rò khoá nội bộ `_k` xuống CSDL', !('_k' in the[0]), the[0]);
+
+  // Xoá CÂU ĐẦU (câu trắc nghiệm có `options`). Câu còn lại là dạng điền.
+  const m2 = docRaBieuMau(bai, 1);
+  m2.testQuestions = m2.testQuestions.slice(1);
+  const cau = hopNhat(bai, m2).test.questions;
+  check('xoá câu: còn đúng 1 câu', cau.length === 1, cau);
+  check('xoá câu: câu còn lại vẫn là dạng điền', cau[0].type === 'fill', cau[0]);
+  check('xoá câu: KHÔNG nhiễm `options` của câu bị xoá', !('options' in cau[0]), cau[0]);
+  check('xoá câu: không rò `_k`', !('_k' in cau[0]), cau[0]);
+}
+
+// ── 10) Đảo thứ tự: khoá lạ phải đi THEO PHẦN TỬ ──────────────────────────
+{
+  const bai = {
+    id: 'x', index: 1, title: 'T',
+    test: { intro: '', questions: [
+      { id: 'a', type: 'fill', question: 'A?', answer: '1', ghi_chu_la: 'của A' },
+      { id: 'b', type: 'fill', question: 'B?', answer: '2', ghi_chu_la: 'của B' },
+    ] },
+    theory: { full: { title: 'LT', cards: [{ title: 'c', body: 'd' }] } },
+  };
+  const m = docRaBieuMau(bai, 1);
+  m.testQuestions = [m.testQuestions[1], m.testQuestions[0]];
+  const q = hopNhat(bai, m).test.questions;
+  check('đảo thứ tự: khoá lạ đi theo CÂU, không theo vị trí',
+    q[0].ghi_chu_la === 'của B' && q[1].ghi_chu_la === 'của A', q);
+}
+
+// ── 11) Phần tử MỚI không được gộp nhầm vào phần tử cũ ────────────────────
+{
+  const bai = {
+    id: 'x', index: 1, title: 'T',
+    test: { intro: '', questions: [
+      { id: 'a', type: 'mcq', question: 'A?', options: ['1', '2'], answer: '1', rieng: 1 },
+    ] },
+    theory: { full: { title: 'LT', cards: [{ title: 'c', body: 'd' }] } },
+  };
+  const m = docRaBieuMau(bai, 1);
+  m.testQuestions = [...m.testQuestions,
+    { id: 'moi', type: 'fill', question: 'Mới?', answer: '5' }];
+  const q = hopNhat(bai, m).test.questions;
+  check('câu mới KHÔNG thừa hưởng gì của câu cũ',
+    !('rieng' in q[1]) && !('options' in q[1]), q[1]);
+  check('câu cũ vẫn giữ khoá lạ của nó', q[0].rieng === 1, q[0]);
+}
+
 console.log(failures === 0 ? '\nOK — soạn bài không làm mất dữ liệu' : `\n${failures} lỗi`);
 /* `process.exitCode` chứ KHÔNG `process.exit()`. Tệp này đăng ký một loader
    hook, tức có một worker chạy nền; cắt ngang tiến trình trong lúc worker còn

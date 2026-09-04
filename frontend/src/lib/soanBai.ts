@@ -36,7 +36,14 @@
 /** Nội dung bài như nó nằm trong `lessons.content_json`. Trường lạ được phép. */
 export type NoiDungBai = Record<string, unknown>;
 
-export type CauHoi = {
+/** Khoá NỘI BỘ của biểu mẫu, KHÔNG bao giờ được ghi xuống CSDL.
+ *
+ * Nó tồn tại vì một lý do duy nhất: nối một dòng trên màn hình với đúng phần tử
+ * gốc của nó, kể cả sau khi người soạn xoá một dòng phía trên. Xem `gopTheoKhoa`.
+ */
+export type CoKhoa = { _k?: number };
+
+export type CauHoi = CoKhoa & {
   id: string;
   type: 'mcq' | 'fill';
   question: string;
@@ -45,7 +52,7 @@ export type CauHoi = {
   explain?: string;
 };
 
-export type The = {
+export type The = CoKhoa & {
   icon?: string;
   title: string;
   body: string;
@@ -91,21 +98,41 @@ function la(o: unknown): o is Record<string, unknown> {
   return typeof o === 'object' && o !== null && !Array.isArray(o);
 }
 
-/** Gộp mảng câu hỏi THEO VỊ TRÍ, giữ mọi khoá lạ của từng câu.
+/** Gộp một danh sách THEO KHOÁ `_k`, không theo vị trí.
  *
- * Theo vị trí chứ không theo `id`: biểu mẫu cho sửa `id`, nên khớp theo id sẽ
- * làm một câu vừa đổi mã trở thành "câu mới" và mất khoá lạ của nó. Đánh đổi:
- * ĐẢO thứ tự câu thì khoá lạ đi theo vị trí chứ không theo câu. Chấp nhận được
- * vì hôm nay chưa câu nào có khoá lạ (đo 04/09 trên 76 bài), và cách này không
- * bao giờ mất dữ liệu khi chỉ SỬA — thao tác chiếm gần hết số lần dùng. */
-function gopCauHoi(goc: unknown, moi: CauHoi[]): unknown[] {
+ * ── VÌ SAO KHÔNG THEO VỊ TRÍ (vá 04/09/2026) ───────────────────────────────
+ *
+ * Bản đầu gộp theo vị trí, và chú thích của nó chỉ cảnh báo trường hợp ĐẢO thứ
+ * tự. Nhưng thao tác nguy hiểm là XOÁ — thứ có nút riêng ngay trên màn hình.
+ * Xoá phần tử thứ i làm mọi phần tử sau đó tụt lên một chỗ, nên chúng gộp vào
+ * SAI phần tử gốc và thừa hưởng khoá lạ của người khác.
+ *
+ * Đo trên toàn bộ 76 bài đang chạy, mô phỏng "xoá đúng một phần tử" ở mọi vị trí:
+ *
+ *     thẻ lý thuyết:  8 / 456 lượt xoá làm một thẻ KHÁC đổi nội dung
+ *     câu hỏi:      227 / 836 lượt xoá làm một câu KHÁC đổi nội dung
+ *
+ * Ví dụ thật (`hsa_quantitative#7`): xoá thẻ "Đỉnh & trục đối xứng" thì thẻ
+ * "Giá trị lớn nhất / nhỏ nhất" — vốn KHÔNG có minh hoạ — mọc ra đồ thị parabol
+ * của thẻ vừa bị xoá. `visual` là thứ engine VẼ RA, nên đó là hiển thị sai cho
+ * học viên, không phải rác ẩn.
+ *
+ * ── VÌ SAO KHOÁ RIÊNG, KHÔNG DÙNG `id` ─────────────────────────────────────
+ *
+ * Biểu mẫu cho sửa `id` của câu hỏi. Khớp theo `id` thì một câu vừa đổi mã trở
+ * thành "câu mới" và mất khoá lạ. `_k` do `docRaBieuMau` gán lúc NẠP và không
+ * ai sửa được, nên nó bám đúng phần tử qua mọi thao tác — xoá, chèn, đảo.
+ * Phần tử mới thêm không có `_k` → gộp vào không cái nào, đúng như mong đợi.
+ *
+ * `_k` bị BỎ khỏi kết quả: nó là chuyện của màn hình, không phải của giáo trình.
+ */
+function gopTheoKhoa<T extends CoKhoa>(goc: unknown, moi: T[]): unknown[] {
   const cu = Array.isArray(goc) ? goc : [];
-  return moi.map((c, i) => (la(cu[i]) ? { ...cu[i], ...c } : { ...c }));
-}
-
-function gopThe(goc: unknown, moi: The[]): unknown[] {
-  const cu = Array.isArray(goc) ? goc : [];
-  return moi.map((t, i) => (la(cu[i]) ? { ...cu[i], ...t } : { ...t }));
+  return moi.map((m) => {
+    const { _k, ...sach } = m;
+    const nen = typeof _k === 'number' && la(cu[_k]) ? cu[_k] : null;
+    return nen ? { ...nen, ...sach } : { ...sach };
+  });
 }
 
 /**
@@ -128,7 +155,7 @@ export function hopNhat(goc: NoiDungBai | null | undefined, m: BieuMau): NoiDung
 
   // ── test: bắt buộc, luôn có ────────────────────────────────────────────
   const testGoc = la(ra.test) ? ra.test : {};
-  ra.test = { ...testGoc, intro: m.testIntro, questions: gopCauHoi(testGoc.questions, m.testQuestions) };
+  ra.test = { ...testGoc, intro: m.testIntro, questions: gopTheoKhoa(testGoc.questions, m.testQuestions) };
 
   // ── assess: chỉ giữ khi có ít nhất một ngưỡng ──────────────────────────
   const sm = m.strongMin.trim() === '' ? null : Number(m.strongMin);
@@ -147,11 +174,11 @@ export function hopNhat(goc: NoiDungBai | null | undefined, m: BieuMau): NoiDung
   const th: Record<string, unknown> = { ...thGoc };
   if (m.fullCards.length) {
     const b = la(thGoc.full) ? thGoc.full : {};
-    th.full = { ...b, title: m.fullTitle, cards: gopThe(b.cards, m.fullCards) };
+    th.full = { ...b, title: m.fullTitle, cards: gopTheoKhoa(b.cards, m.fullCards) };
   } else delete th.full;
   if (m.condCards.length) {
     const b = la(thGoc.condensed) ? thGoc.condensed : {};
-    th.condensed = { ...b, title: m.condTitle, cards: gopThe(b.cards, m.condCards) };
+    th.condensed = { ...b, title: m.condTitle, cards: gopTheoKhoa(b.cards, m.condCards) };
   } else delete th.condensed;
   ra.theory = th;
 
@@ -178,7 +205,7 @@ export function hopNhat(goc: NoiDungBai | null | undefined, m: BieuMau): NoiDung
     // chủ từ chối cả bài (`lessons/content.py`), và câu lỗi sẽ nói về một
     // trường mà màn hình này không hề hiện ra.
     delete d.seconds;
-    d.questions = gopCauHoi(d.questions, m.drillQuestions);
+    d.questions = gopTheoKhoa(d.questions, m.drillQuestions);
     ra.drill = d;
   }
 
@@ -215,6 +242,15 @@ export function docRaBieuMau(goc: NoiDungBai | null | undefined, sortOrder: numb
   const soChuoi = (v: unknown) =>
     typeof v === 'number' || typeof v === 'string' ? String(v) : '';
   const ds = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+  /* Gán `_k` = vị trí LÚC NẠP. Từ đó trở đi nó là danh tính của phần tử, và
+     không thao tác nào trên màn hình đổi được nó.
+     RIÊNG cho mảng ĐỐI TƯỢNG. Bản đầu tôi dùng chung một hàm cho mọi mảng, và
+     nó bọc `_k` vào cả `notes.key_points` — một mảng CHUỖI. Trải một chuỗi ra
+     thành object thì `"…".trim` biến mất, và `hopNhat` ném ngay ở lượt đầu.
+     Chính bộ kiểm mới thêm bắt được, chứ `tsc` thì không: `ds<string>` khớp
+     kiểu hoàn toàn. */
+  const dsKhoa = <T,>(v: unknown): (T & CoKhoa)[] =>
+    (Array.isArray(v) ? (v as T[]) : []).map((x, i) => ({ ...(x as T), _k: i }));
 
   return {
     id: ch(c.id),
@@ -224,13 +260,13 @@ export function docRaBieuMau(goc: NoiDungBai | null | undefined, sortOrder: numb
     topic_tag: ch(c.topic_tag),
     xp_reward: so(c.xp_reward, 50),
     testIntro: ch(test.intro),
-    testQuestions: ds<CauHoi>(test.questions),
+    testQuestions: dsKhoa<CauHoi>(test.questions),
     strongMin: soChuoi(assess.strong_min),
     okMin: soChuoi(assess.ok_min),
     fullTitle: ch(full.title),
-    fullCards: ds<The>(full.cards),
+    fullCards: dsKhoa<The>(full.cards),
     condTitle: ch(cond.title),
-    condCards: ds<The>(cond.cards),
+    condCards: dsKhoa<The>(cond.cards),
     notesTip: ch(notes.tip),
     notesFormula: ch(notes.formula),
     notesKeyPoints: ds<string>(notes.key_points),
@@ -238,6 +274,6 @@ export function docRaBieuMau(goc: NoiDungBai | null | undefined, sortOrder: numb
     // Đọc `time_seconds`. Nếu gặp bản do bộ soạn CŨ ghi (`seconds`) thì vẫn đọc
     // được, để người soạn không phải gõ lại một con số vốn đã có.
     drillSeconds: so(drill.time_seconds, so(drill.seconds, 60)),
-    drillQuestions: ds<CauHoi>(drill.questions),
+    drillQuestions: dsKhoa<CauHoi>(drill.questions),
   };
 }

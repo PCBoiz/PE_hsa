@@ -453,8 +453,14 @@ function DsCauHoi({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* `key` theo `_k` (danh tính của câu), KHÔNG theo vị trí. Với `key={i}`,
+          xoá câu đầu làm React GIỮ NGUYÊN state của mỗi instance rồi gán dữ liệu
+          của câu kế tiếp vào — ô "Minh hoạ" của thẻ lý thuyết là chỗ thấy rõ
+          nhất, vì nó có `useState` riêng. Cùng một họ lỗi với phép gộp: định
+          danh theo vị trí trong một danh sách xoá được. */}
       {ds.map((c, i) => (
-        <div key={i} className="flex flex-col gap-3 rounded-md border border-line p-3">
+        <div key={c._k ?? `moi-${i}`}
+             className="flex flex-col gap-3 rounded-md border border-line p-3">
           <div className="flex flex-wrap items-center gap-2">
             <select
               aria-label={`Kiểu câu ${i + 1}`}
@@ -562,7 +568,8 @@ function BanLyThuyet({
       </div>
 
       {the.map((t, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded-md border border-line/60 p-3">
+        <div key={t._k ?? `moi-${i}`}
+             className="flex flex-col gap-2 rounded-md border border-line/60 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <input
               aria-label={`Biểu tượng thẻ ${i + 1} — ${nhan}`}
@@ -632,8 +639,22 @@ function MinhHoa({
   gia: unknown;
   onDoi: (v: unknown) => void;
 }) {
+  /* `key` ở bên gọi đã lo phần lớn: đổi phần tử là dựng instance mới. Nhưng
+     `key` chỉ cứu được khi danh tính ĐỔI; mở một BÀI KHÁC mà thẻ số 1 vẫn có
+     `_k === 0` thì instance được dùng lại và ô này giữ JSON của bài trước.
+     `useEffect` dưới đây đồng bộ lại khi giá trị nạp vào đổi — và chỉ khi ấy,
+     nên nó không đè lên thứ người soạn đang gõ dở. */
   const [tho, setTho] = useState(() => (gia == null ? '' : JSON.stringify(gia, null, 1)));
   const [loi, setLoi] = useState<string | null>(null);
+  const nap = gia == null ? '' : JSON.stringify(gia, null, 1);
+  const napTruoc = useRef(nap);
+  useEffect(() => {
+    if (napTruoc.current !== nap) {
+      napTruoc.current = nap;
+      setTho(nap);
+      setLoi(null);
+    }
+  }, [nap]);
 
   return (
     <label className="flex flex-col gap-1">

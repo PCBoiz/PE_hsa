@@ -183,7 +183,13 @@ export default function SoanClient({
 
       {soanBaiId !== null && (
         <div className="mt-6">
+          {/* `key` BẮT BUỘC: không có nó, bấm "Soạn nội dung" ở một bài khác
+              chỉ đổi prop `baiId` — React giữ nguyên cây, `NoiDungBai` không
+              unmount, và mọi ô có state riêng (rõ nhất là ô JSON minh hoạ) vẫn
+              giữ nội dung của BÀI TRƯỚC. Sửa một chữ trong ô ấy là ghi đồ thị
+              của bài trước sang bài này. */}
           <NoiDungBai
+            key={soanBaiId}
             baiId={soanBaiId}
             onDong={() => setSoanBaiId(null)}
             onLuuXong={() => {

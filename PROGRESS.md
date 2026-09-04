@@ -2765,3 +2765,36 @@ biên tập không bao giờ xoá được bài có tiến độ; quản trị v
 **Đã vá: khu soạn giáo trình không ghi một dòng nhật ký kiểm toán nào.** Chấp
 nhận được khi người soạn chính là quản trị viên, sai hẳn từ lúc có vai mới. Nay
 8 loại hành động vào sổ, và có phép kiểm khẳng định `actor_role` ghi đúng.
+
+### Cùng ngày — vá ba lỗi CÙNG MỘT HỌ: định danh theo vị trí
+
+Agent đo được hai lỗi trong hàm gộp tôi viết sáng nay; tự dựng lại phép đo thì
+đúng, và chúng cùng nguyên nhân với một lỗi thứ ba trong React.
+
+**Gốc chung: định danh một phần tử bằng VỊ TRÍ của nó trong danh sách xoá được.**
+
+    hàm gộp  · xoá thẻ thứ i → thẻ sau tụt lên, thừa hưởng khoá lạ của thẻ bị xoá
+    React    · `key={i}` → xoá phần tử đầu, instance giữ state rồi nhận dữ liệu
+               của phần tử kế tiếp
+    React    · `<NoiDungBai baiId={...}>` không có `key` → đổi bài chỉ đổi prop,
+               cây không dựng lại, ô có state riêng giữ nội dung BÀI TRƯỚC
+
+Đo trên 76 bài, mô phỏng xoá một phần tử ở mọi vị trí: **8/456** lượt xoá thẻ và
+**227/836** lượt xoá câu làm một phần tử KHÁC đổi nội dung. Với thẻ, thứ rò là
+`visual` — đồ thị engine VẼ RA, tức hiển thị sai cho học viên chứ không phải rác
+ẩn.
+
+Vá: mỗi phần tử nhận một khoá `_k` lúc NẠP, không ai sửa được, và phép gộp khớp
+theo khoá ấy. `_k` bị bỏ khỏi kết quả — nó là chuyện của màn hình, không phải
+của giáo trình.
+
+**Bộ kiểm mới bắt ngay một lỗi tôi vừa tạo trong lúc vá**: hàm gán khoá bọc `_k`
+vào MỌI mảng, kể cả `notes.key_points` — một mảng CHUỖI. Trải một chuỗi ra thành
+object thì `.trim` biến mất. `tsc` không thấy (`ds<string>` khớp kiểu hoàn
+toàn); chỉ phép kiểm chạy thật mới thấy.
+
+**Chứng minh ĐỎ ở cả hai tầng.** Hàm gộp: lùi về khớp theo vị trí → dòng báo lỗi
+in thẳng ra sự hỏng (thẻ "Không đồ thị" mọc `visual` của thẻ bị xoá; câu `fill`
+nhiễm `options` của câu trắc nghiệm). React: bỏ `key` rồi mở trên TRÌNH DUYỆT
+THẬT → mở bài 2 vẫn thấy JSON đồ thị của bài 1, dù mã bài đã đổi sang `ql_02`.
+Phục hồi → cả hai xanh. 39 phép kiểm đơn vị.
