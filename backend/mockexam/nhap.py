@@ -29,11 +29,31 @@ import unicodedata
 
 from mockexam.views import SECTION_LABELS
 
-#: Cột bắt buộc trong bảng tính. Tên tiếng Việt, chép nguyên từ mẫu tải về.
-COT_BAT_BUOC = ('phần thi', 'câu hỏi', 'đáp án')
+#: CỘT CỦA BẢNG TÍNH — bảng gốc DUY NHẤT, theo đúng thứ tự của mẫu tải về.
+#:
+#: Trước 04/09/2026 (chiều) danh sách này tồn tại HAI BẢN: bộ đọc khai ở đây
+#: dạng chữ thường, còn bộ sinh mẫu `mockexam/quan_tri.py` khai lại một mảng
+#: chữ hoa của riêng nó — kèm một chú thích tự nhận "tên cột ở đây lấy thẳng từ
+#: hằng số mà bộ đọc dùng". Câu ấy KHÔNG đúng: nó là một mảng gõ tay.
+#:
+#: Hậu quả nếu trôi: mẫu tải về ghi một tên cột mà bộ đọc không nhận, và người
+#: soạn điền đúng theo mẫu rồi nhận "Thiếu cột bắt buộc" — thông báo lỗi đổ tội
+#: cho người dùng về một mâu thuẫn của chính hệ thống.
+COT = ('Phần thi', 'Câu hỏi',
+       'Lựa chọn A', 'Lựa chọn B', 'Lựa chọn C', 'Lựa chọn D',
+       'Đáp án', 'Mã câu', 'Chủ đề', 'Giải thích')
+
+#: Tiêu đề của mẫu `.xlsx` — CHÍNH là bảng trên, không phải một bản chép.
+TIEU_DE_MAU = list(COT)
+
+#: Khoá so khớp: `_chuan_tieu_de` hạ chữ thường trước khi đối chiếu.
+_thuong = tuple(c.lower() for c in COT)
+
+#: Cột bắt buộc. Thiếu một trong ba thì không dựng nổi một câu hỏi.
+COT_BAT_BUOC = (_thuong[0], _thuong[1], _thuong[6])
 
 #: Cột phương án. Bốn là đủ cho HSA; thừa cột thì bỏ qua, thiếu thì thành câu điền.
-COT_LUA_CHON = ('lựa chọn a', 'lựa chọn b', 'lựa chọn c', 'lựa chọn d')
+COT_LUA_CHON = _thuong[2:6]
 
 #: Tên cột người dùng hay gõ khác đi. Khai TƯỜNG MINH — xem `common/bangtinh.py`
 #: về việc vì sao không tự bỏ dấu để đoán.

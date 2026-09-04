@@ -1,4 +1,8 @@
-"""Đọc một bảng tính thành các DÒNG — nơi duy nhất trong repo biết định dạng ấy.
+"""Đọc một bảng tính thành các DÒNG — nơi duy nhất trong repo ĐỌC định dạng ấy.
+
+Nói "đọc" chứ không nói "biết", vì hai chỗ khác cũng biết: `mockexam/quan_tri.py`
+DỰNG mẫu `.xlsx` và `teaching/exports.py` GHI `.csv`. Câu cũ ở đây nhận độc
+quyền cho cả ba việc — một lời hứa rộng hơn thứ tệp này thật sự giữ.
 
 ── VÌ SAO CÓ TỆP NÀY (04/09/2026) ──────────────────────────────────────────
 

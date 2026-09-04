@@ -886,3 +886,37 @@ def test_csv_o_qua_dai_tra_LoiBangTinh_chu_khong_no():
     with _pytest.raises(LoiBangTinh) as e:
         doc('de.csv', noi_dung)
     assert 'quá dài' in str(e.value), str(e.value)
+
+
+def test_MAU_TAI_VE_nap_lai_duoc_bang_chinh_bo_doc(admin_api, db):
+    """Vòng khép kín: sinh mẫu → đọc lại bằng chính đường nhập → phải SẠCH.
+
+    Trước 04/09/2026 (chiều), tiêu đề mẫu là một mảng GÕ TAY trong
+    `mockexam/quan_tri.py`, ngay dưới một chú thích nói rằng nó "lấy thẳng từ
+    hằng số mà bộ đọc dùng". Câu ấy không đúng — và chú thích canh cho hai bên
+    khớp thì chính nó là thứ sai.
+
+    Nếu trôi: mẫu tải về ghi một tên cột bộ đọc không nhận, người soạn điền ĐÚNG
+    THEO MẪU rồi nhận "Thiếu cột bắt buộc" — thông báo lỗi đổ tội cho người dùng
+    về một mâu thuẫn của chính hệ thống.
+
+    Phép kiểm này không so hai danh sách với nhau (hai bản chép giống nhau vẫn
+    xanh); nó đi TRỌN đường: mẫu thật → bộ đọc thật → câu hỏi thật.
+    """
+    from common.bangtinh import doc, thanh_ban_ghi
+    from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC, doc_cau_hoi
+
+    r = admin_api.get('/api/admin/mock-exams/template.xlsx')
+    assert r.status_code == 200, r.status_code
+    assert r['Content-Type'].startswith('application/vnd.openxml'), r['Content-Type']
+
+    hang = doc('mau.xlsx', r.content)
+    ban_ghi = thanh_ban_ghi(hang, cot_bat_buoc=COT_BAT_BUOC, ten_khac=TEN_KHAC)
+    cau, loi = doc_cau_hoi(ban_ghi)
+
+    assert not loi, 'mẫu do chính mình sinh ra mà bộ đọc của chính mình từ chối: %s' % loi
+    assert len(cau) >= 3, 'mẫu phải có dòng ví dụ để người soạn thấy ngay hình dạng'
+
+    # Ba dòng mẫu cố ý phủ ba dạng: đáp án nguyên văn, đáp án chữ cái, và câu điền.
+    dang = {c['type'] for c in cau}
+    assert 'mcq' in dang and 'fill' in dang, dang

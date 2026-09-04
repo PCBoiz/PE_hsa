@@ -2659,10 +2659,18 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   (đã bớt 749 dòng ngày 04/09 khi `/admin` sang React) so với ~11.500 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
   production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần
   biết màn nào chuyển tiếp, theo thứ tự nào.
-- [ ] A8 · **Quét lại mọi chú thích tự nhận "nơi duy nhất"** — lượt này tìm được
-  hai câu như thế và CẢ HAI đều đã sai (`attendance.ti_le`, và số 245ms ở
-  `common/db.py` trước khi gom). Một câu khẳng định độc quyền là một lời hứa, và
-  không có gì đang cưỡng chế nó.
+- [x] A8 · **XONG 04/09** — quét 14 câu tự nhận độc quyền ("nơi/chỗ/cửa/đường
+  duy nhất"). **12 đúng, 2 sai — và cả hai cái sai đều viết trong ngày hôm ấy:**
+  · `common/bangtinh.py` nhận là "nơi duy nhất trong repo BIẾT định dạng bảng
+    tính", trong khi `mockexam/quan_tri.py` dựng `.xlsx` và `teaching/exports.py`
+    ghi `.csv`. Sửa thành "nơi duy nhất ĐỌC".
+  · `mockexam/quan_tri.py` nhận rằng tiêu đề mẫu "lấy thẳng từ hằng số mà bộ đọc
+    dùng" — thật ra là một mảng gõ tay. Không chỉ sửa câu chữ: gộp về một bảng
+    `nhap.COT` để câu ấy thành SỰ THẬT, và thêm phép kiểm đi trọn vòng (sinh mẫu
+    → đọc lại bằng chính đường nhập).
+  12 câu đúng đều đã ĐO chứ không đọc lướt — trong đó "grading.py là nơi duy
+  nhất biết đáp án" kiểm bằng cách gọi API như học viên thật: 110 kB nội dung,
+  **0 lần** xuất hiện `"answer"` hay `"explain"`.
 - [ ] A9 · **Tệp lược đồ đang đi trước CSDL thật, và không có gì nói ra điều đó.**
   Đo 01/09: `§41` CÓ trên Neon, cả hai khoá của `§42` thì KHÔNG. `legacy_schema.sql`
   chỉ chạy qua `bootstrap_schema` ở `buildCommand` của Render, tức chỉ khi `master`

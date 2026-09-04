@@ -3375,3 +3375,46 @@ không đẩy bố cục, đúng cách khu Vận hành đã dùng.
 
 **Kết quả cuối: 16 trang × 2 khổ × 2 chủ đề — 0 vi phạm tương phản, 0 vùng chạm
 nhỏ, 0 tràn ngang, 0 lỗi JS, 0 lời gọi ghi lọt ra.**
+
+## 04/09/2026 — A8: quét chú thích tự nhận độc quyền
+
+Một câu khẳng định "nơi duy nhất" là một LỜI HỨA, và không có gì cưỡng chế nó.
+Quét 14 câu như thế trong backend. **12 đúng, 2 sai — và cả hai cái sai đều do
+tôi viết trong chính ngày hôm nay.**
+
+**Sai ①** `common/bangtinh.py`: "nơi duy nhất trong repo BIẾT định dạng ấy" —
+trong khi `mockexam/quan_tri.py` DỰNG `.xlsx` và `teaching/exports.py` GHI
+`.csv`. Nó chỉ là nơi duy nhất **ĐỌC**. Câu cũ nhận độc quyền cho cả ba việc.
+
+**Sai ②** `mockexam/quan_tri.py`: tiêu đề mẫu `.xlsx` tự nhận "lấy thẳng từ hằng
+số mà bộ đọc dùng" — thật ra là một **mảng gõ tay**, bản thứ hai của cùng một
+danh sách cột. Nếu trôi: mẫu tải về ghi một tên cột bộ đọc không nhận, người
+soạn điền **đúng theo mẫu** rồi nhận "Thiếu cột bắt buộc" — một thông báo lỗi
+đổ tội cho người dùng về mâu thuẫn của chính hệ thống.
+
+Không chỉ sửa câu chữ: gộp về một bảng `nhap.COT` (thứ tự + chữ hoa của mẫu),
+rồi dẫn xuất `COT_BAT_BUOC`, `COT_LUA_CHON` và `TIEU_DE_MAU` từ đó. Đối chiếu:
+ba hằng số mới **khớp nguyên văn** ba hằng cũ, tức không đổi hành vi.
+
+Và một phép kiểm đi TRỌN VÒNG: sinh mẫu → đọc lại bằng chính đường nhập → phải
+ra câu hỏi hợp lệ. Nó không so hai danh sách với nhau (hai bản chép giống nhau
+vẫn xanh); nó đi hết đường thật.
+
+**Chứng minh ĐỎ — và lần thử đầu KHÔNG đỏ.** Tôi đổi `'Phần thi'` thành
+`'Phan thi'` trong mẫu: phép kiểm vẫn xanh, vì `TEN_KHAC` có sẵn bí danh
+`'phan thi'` — bộ đọc dung được lỗi gõ ấy, đúng như thiết kế. Phải chọn một
+trôi mà bảng bí danh KHÔNG phủ (`'Đáp án'` → `'Kết quả'`) mới thấy đỏ, và thông
+báo lỗi hiện ra chính là kịch bản "đổ tội cho người dùng" mà phép kiểm mô tả.
+
+**12 câu đúng đều ĐO chứ không đọc lướt:**
+
+* `common/events.py` là cửa duy nhất ghi/xoá `learning_events` — grep mọi
+  INSERT/DELETE/UPDATE: chỉ `events.py` (tệp kiểm thì tự dựng cảnh, không tính).
+* `lessons/grading.py` "nơi duy nhất biết đáp án" — gọi API bằng thẻ HỌC VIÊN
+  thật: 110 kB nội dung khoá, **0 lần** `"answer"`, **0 lần** `"explain"`.
+* `teaching/views.py` "nơi duy nhất đổ `meeting_url` vào `href`" — còn đúng một
+  chỗ (`dashboard.js:4085`), và nó có `target="_blank" rel="noopener"`.
+* `teaching/exports.py` gọi thẳng `attendance.ti_le` — hàm ấy khai một lần, bốn
+  nơi gọi.
+* `courses/enrollment.py` "không mã nào đọc `enrollments.completed_at`" — grep
+  lại: vẫn không ai đọc.

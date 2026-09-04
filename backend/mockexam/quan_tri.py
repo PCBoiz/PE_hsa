@@ -20,7 +20,7 @@ from common import audit
 from common.bangtinh import LoiBangTinh, doc, thanh_ban_ghi
 from common.db import q, q1, x
 from common.permissions import IsContentEditor
-from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC, doc_cau_hoi
+from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC, TIEU_DE_MAU, doc_cau_hoi
 
 #: Trần kích thước tệp. Một bảng tính câu hỏi thật nặng vài trăm kB; 5 MB là
 #: rộng rãi mà vẫn chặn được việc dán nhầm một tệp ảnh vào ô tải lên.
@@ -38,8 +38,10 @@ DONG_MAU = [
      '32', '', 'Dãy số', 'Bỏ trống hết cột Lựa chọn thì thành câu ĐIỀN đáp án.'],
 ]
 
-TIEU_DE_MAU = ['Phần thi', 'Câu hỏi', 'Lựa chọn A', 'Lựa chọn B', 'Lựa chọn C',
-               'Lựa chọn D', 'Đáp án', 'Mã câu', 'Chủ đề', 'Giải thích']
+# `TIEU_DE_MAU` nay NHẬP TỪ `mockexam/nhap.py` — xem `nhap.COT`. Trước 04/09
+# (chiều) nó là một mảng gõ tay ở đây, ngay dưới một chú thích nói rằng nó "lấy
+# thẳng từ hằng số mà bộ đọc dùng". Hai bản cho một danh sách, và câu chú thích
+# canh cho chúng khớp thì chính nó là câu sai.
 
 
 class _Base(APIView):
