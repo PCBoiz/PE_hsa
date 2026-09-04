@@ -252,3 +252,86 @@ def test_moi_viec_o_khu_soan_giao_trinh_deu_vao_nhat_ky(bien_tap_api, db):
     assert dong['action'] == 'lesson.create', dong
     assert dong['target_label'] == 'Bài ghi nhật ký'
     assert dong['actor_role'] == 'Biên tập nội dung', dong
+
+
+# ── Trường khoá học đổ THÔ vào innerHTML, kể cả TRANG CHỦ (vá 04/09/2026) ───
+#
+# `main.js:817` `'<img src="/' + c.image + '" alt="' + c.title + '"'`,
+# `main.js:828` `c.tag`, `:832` `c.description`, `:819` `c.color` vào
+# `linear-gradient(...)`, và `pages/landing.inline.js:74` `c.title` —
+# TRANG CHỦ, không cần đăng nhập, khách vãng lai cũng chạy.
+#
+# `PUT /api/admin/courses/<id>` mở cho vai `Biên tập nội dung` từ 04/09 — vai
+# sinh ra để KHÔNG phải cấp quyền quản trị cho người gõ nội dung. Không kiểm ở
+# đường ghi thì vai ấy leo thẳng lên quyền quản trị qua trình duyệt người khác.
+#
+# Chặn ở ĐƯỜNG GHI là đòn bẩy: `c.color` một mình xuất hiện ở SÁU chỗ dựng CSS
+# trong `main.js`. Ép nó là hex thì cả sáu an toàn cùng lúc, và chỗ thứ bảy mọc
+# ra ngày mai cũng thế.
+
+def _khoa_con_nguyen(cid, truoc):
+    from common.db import q1
+    assert q1('SELECT title FROM courses WHERE id=%s', (cid,))['title'] == truoc, \
+        'bị từ chối rồi thì KHÔNG được ghi gì'
+
+
+def test_the_treo_ma_trong_ten_khoa_bi_chan(bien_tap_api):
+    from common.db import q1
+    cid = 'hsa_quantitative'
+    truoc = q1('SELECT title FROM courses WHERE id=%s', (cid,))['title']
+    r = bien_tap_api.put('/api/admin/courses/%s' % cid,
+                         {'title': '<img src=x onerror=alert(1)>'}, format='json')
+    assert r.status_code == 400, r.status_code
+    _khoa_con_nguyen(cid, truoc)
+
+
+def test_mau_phai_la_hex(bien_tap_api):
+    """`color` đi thẳng vào `linear-gradient(...)`, tức là CSS. Một chuỗi tự do
+    ở đó đóng được dấu ngoặc rồi viết tiếp luật CSS của riêng nó."""
+    from common.db import q1
+    cid = 'hsa_quantitative'
+    truoc = q1('SELECT title FROM courses WHERE id=%s', (cid,))['title']
+    for xau in ('red;}body{display:none', 'url(javascript:alert(1))', '#12345678901'):
+        r = bien_tap_api.put('/api/admin/courses/%s' % cid, {'color': xau}, format='json')
+        assert r.status_code == 400, '%r lọt qua' % xau
+    _khoa_con_nguyen(cid, truoc)
+
+
+def test_duong_dan_anh_khong_duoc_thoat_ra_ngoai(bien_tap_api):
+    """`image` nằm trong `src="/…"`. Chặn cả lược đồ lẫn đi lùi thư mục."""
+    for xau in ('x" onerror="alert(1)', 'javascript:alert(1)',
+                '../../etc/passwd', 'https://kẻ-khác/x.png'):
+        r = bien_tap_api.put('/api/admin/courses/hsa_quantitative',
+                             {'image': xau}, format='json')
+        assert r.status_code == 400, '%r lọt qua' % xau
+
+
+def test_ba_khoa_dang_chay_VAN_hop_le(bien_tap_api):
+    """Bộ lọc không được chặn oan dữ liệu đang chạy — đó là cách một hàng rào
+    an toàn biến thành một sự cố."""
+    from common.db import q1
+    from courseadmin.views import _COURSE_FIELDS, _clean_course_payload
+    rows = q1('SELECT COUNT(*) AS n FROM courses')['n']
+    assert rows >= 3
+
+    from common.db import q
+    for row in q('SELECT id, %s FROM courses' % ', '.join(_COURSE_FIELDS)):
+        cid = row.pop('id')
+        _, loi = _clean_course_payload(row)
+        assert not loi, 'chặn oan khoá %s: %s' % (cid, loi)
+
+
+def test_sua_khoa_binh_thuong_van_chay(bien_tap_api):
+    """Hàng rào không được cản việc sửa nội dung thật — có in đậm là bình thường."""
+    from common.db import q1
+    cid = 'hsa_quantitative'
+    cu = q1('SELECT title, subtitle FROM courses WHERE id=%s', (cid,))
+    r = bien_tap_api.put('/api/admin/courses/%s' % cid,
+                         {'subtitle': 'Toán & xử lý <strong>số liệu</strong>',
+                          'color': '#4C1D95'}, format='json')
+    assert r.status_code == 200, r.json()
+    assert q1('SELECT subtitle FROM courses WHERE id=%s', (cid,))['subtitle'] \
+        == 'Toán & xử lý <strong>số liệu</strong>'
+    # Trả lại như cũ trong cùng giao dịch (conftest cuộn lại, nhưng nói rõ ý định).
+    bien_tap_api.put('/api/admin/courses/%s' % cid,
+                     {'subtitle': cu['subtitle'] or ''}, format='json')

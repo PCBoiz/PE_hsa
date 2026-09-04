@@ -15,6 +15,7 @@ quản trị viên — mà quản trị viên thì thấy luôn tài khoản, m�
 Cấp quyền quản trị cho một người chỉ để họ gõ bài học là cấp thừa rất nhiều.
 """
 import json
+import re
 
 from django.db import transaction
 from rest_framework.response import Response
@@ -23,13 +24,70 @@ from rest_framework.views import APIView
 from common import audit
 from common.db import q, q1, x
 from common.permissions import IsContentEditor, IsCourseOwner, is_admin
-from lessons.content import validate_lesson
+from lessons.content import loi_html, validate_lesson
 from lessons.grading import quen_dap_an
 
 _COURSE_FIELDS = (
     'title', 'subtitle', 'description', 'image', 'level',
     'duration', 'students', 'color', 'accent_color', 'tag',
 )
+
+# ── KIỂM TRƯỜNG KHOÁ HỌC TRƯỚC KHI GHI (vá 04/09/2026) ──────────────────────
+#
+# Mọi trường trên đây được đổ THÔ vào `innerHTML` ở tầng frontend cũ:
+#
+#     main.js:817   '<img src="/' + c.image + '" alt="' + c.title + '" …'
+#     main.js:825   '<div class="card-tag">' + c.tag + '</div>'
+#     main.js:830   '<div class="card-desc">' + c.description + '</div>'
+#     main.js:822   style="background:linear-gradient(135deg,' + c.color + ',' + c.accentColor + ')"
+#     pages/landing.inline.js:58   '<strong>' + c.title + '</strong>'      ← TRANG CHỦ CÔNG KHAI
+#
+# Trang chủ không cần đăng nhập, nên một khoá học bị sửa tên là mã chạy trên
+# máy của khách vãng lai và của cả đối tác mở link. Và từ 04/09 đường
+# `PUT /api/admin/courses/<id>` mở cho vai `Biên tập nội dung` — vai sinh ra để
+# KHÔNG phải cấp quyền quản trị cho người gõ nội dung. Không kiểm ở đây thì vai
+# ấy leo thẳng lên quyền quản trị qua trình duyệt của người khác.
+#
+# CHẶN Ở ĐƯỜNG GHI, không chỉ ở chỗ hiển thị: `c.color` một mình xuất hiện ở SÁU
+# chỗ dựng CSS trong `main.js`. Ép nó là mã màu hex thì cả sáu an toàn cùng lúc,
+# và chỗ thứ bảy mọc ra ngày mai cũng thế.
+#
+# Trường CHỮ đi qua `lessons.content.loi_html` — CÙNG danh sách trắng với nội
+# dung bài học, không phải một bản chép.
+
+#: Mã màu: chỉ hex. Hai cột này đi thẳng vào `linear-gradient(...)`, tức là CSS.
+_MAU = re.compile(r'^#[0-9a-fA-F]{3,8}$')
+
+#: Ảnh: đường dẫn tương đối trong `static/`. Không lược đồ, không `..`, không
+#: dấu nháy — nó nằm trong `src="/…"`.
+_ANH = re.compile(r'^[A-Za-z0-9._/-]{1,200}$')
+
+
+def _clean_course_payload(data):
+    """Trả ``(updates, loi)``. ``loi`` khác None thì KHÔNG ghi gì."""
+    updates = {f: data[f] for f in _COURSE_FIELDS if f in data}
+    for truong, gia in list(updates.items()):
+        if gia is None:
+            continue
+        chuoi = str(gia)
+        if truong in ('color', 'accent_color'):
+            if chuoi and not _MAU.match(chuoi):
+                return None, ('"%s" phải là mã màu hex, ví dụ #8B7CF6 '
+                              '(đang nhận %r).' % (truong, chuoi[:40]))
+        elif truong == 'image':
+            if chuoi and (not _ANH.match(chuoi) or '..' in chuoi):
+                return None, ('"image" phải là đường dẫn ảnh trong thư mục static, '
+                              'ví dụ img/hsa-quantitative.png (đang nhận %r).' % chuoi[:60])
+        elif truong == 'students':
+            if chuoi and not chuoi.isdigit():
+                return None, '"students" phải là số.'
+        else:
+            e = loi_html(chuoi, truong)
+            if e:
+                return None, e[0]
+            if len(chuoi) > 2000:
+                return None, '"%s" dài %d ký tự, tối đa 2000.' % (truong, len(chuoi))
+    return updates, None
 
 
 def _bump_lesson_count(course_id, at_least=None):
@@ -96,6 +154,10 @@ class AdminCoursesView(_ChuKhoa, AdminBase):
         if q1('SELECT id FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Id khóa học đã tồn tại'}, status=400)
 
+        _, loi = _clean_course_payload(data)
+        if loi:
+            return Response({'error': loi}, status=400)
+
         cols = ['id', 'title'] + [f for f in _COURSE_FIELDS if f != 'title']
         vals = [course_id, title] + [data.get(f) for f in _COURSE_FIELDS if f != 'title']
         placeholders = ', '.join(['%s'] * len(cols))
@@ -111,7 +173,9 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
 
     def put(self, request, course_id):
         data = request.data if isinstance(request.data, dict) else {}
-        updates = {f: data[f] for f in _COURSE_FIELDS if f in data}
+        updates, loi = _clean_course_payload(data)
+        if loi:
+            return Response({'error': loi}, status=400)
         if not updates:
             return Response({'error': 'Không có dữ liệu để cập nhật'}, status=400)
 

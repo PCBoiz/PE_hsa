@@ -813,24 +813,34 @@ function renderCourses() {
     .map(function (c, i) {
       return [
         '<div class="course-card fx-fade-up" style="animation-delay:' + Math.min(i * 0.05, 0.4) + 's">',
-        '<div class="card-img-wrap" style="cursor:pointer" onclick="window.location=\'/courses/' + c.id + '\'">',
-        '<img src="/' + c.image + '" alt="' + c.title + '" loading="lazy" />',
+        /* THOÁT Ở CHỖ HIỂN THỊ là lớp thứ hai (vá 04/09/2026).
+           Lớp thứ nhất ở đường ghi — `courseadmin/views.py::_clean_course_payload`
+           ép `image` là đường dẫn tương đối và `color` là mã hex. Nhưng nó CỐ Ý
+           vẫn cho dấu nháy trong trường CHỮ: tên khoá có dấu nháy là chuyện
+           bình thường. Nên chỗ này phải thoát, nếu không một dấu nháy kép trong
+           tiêu đề là thoát ra khỏi `alt="…"`.
+           Cùng dữ liệu này còn hiện ở TRANG CHỦ CÔNG KHAI
+           (`pages/landing.inline.js`), nơi khách vãng lai cũng mở được. */
+        '<div class="card-img-wrap" style="cursor:pointer" onclick="window.location=\'/courses/' +
+          encodeURIComponent(c.id) + '\'">',
+        '<img src="/' + encodeURIComponent(c.image || '') + '" alt="' + _rmVEsc(c.title) +
+          '" loading="lazy" />',
         '<div class="card-overlay"></div>',
         '<div class="badge-level" style="background:linear-gradient(135deg,' +
           c.color +
           "," +
           c.accentColor +
           ')">' +
-          c.level +
+          _rmVEsc(c.level) +
           "</div>",
         c.enrolled ? '<div class="badge-enrolled"><span data-icon="check" data-size="11"></span> Đã đăng ký</div>' : "",
         '<div class="card-title-overlay">',
-        '<div class="card-tag">' + c.tag + "</div>",
-        "<h3>" + c.title + "</h3>",
+        '<div class="card-tag">' + _rmVEsc(c.tag) + "</div>",
+        "<h3>" + _rmVEsc(c.title) + "</h3>",
         "</div>",
         "</div>",
         '<div class="card-body">',
-        '<div class="card-desc">' + c.description + "</div>",
+        '<div class="card-desc">' + _rmVEsc(c.description) + "</div>",
         '<div class="card-stats">',
         // Chưa ai đánh giá thì hiện dấu gạch, không hiện 5.0 (L15). `courses
         // .rating` từng là con số seed trong khi bảng đánh giá rỗng.
@@ -840,7 +850,7 @@ function renderCourses() {
         '<span class="card-stat"><span data-icon="book-open" data-size="11" style="display:inline-flex"></span> ' + c.lessons + "</span>",
         "</div>",
         '<div class="card-footer">',
-        '<span class="card-level-pill">' + c.level + "</span>",
+        '<span class="card-level-pill">' + _rmVEsc(c.level) + "</span>",
         '<div class="card-footer-spacer"></div>',
         '<button class="card-btn-ghost" onclick="window.location=\'/courses/' + c.id + '\'">Học thử</button>',
         (function () {
@@ -889,11 +899,11 @@ function renderMyCourses() {
           "10);border:2px solid " +
           c.color +
           '30">' +
-          c.icon +
+          _rmVEsc(c.icon) +
           "</div>",
         '<div class="enrolled-info">',
-        "<h3>" + c.title + "</h3>",
-        '<div class="subtitle">' + c.subtitle + "</div>",
+        "<h3>" + _rmVEsc(c.title) + "</h3>",
+        '<div class="subtitle">' + _rmVEsc(c.subtitle) + "</div>",
         '<div class="enrolled-meta">',
         "<span>✅ " + c.completedLessons + "/" + c.totalLessons + " bài</span>",
         "<span>⏰ " + c.timeSpent + " / " + c.duration + "</span>",
@@ -1062,7 +1072,7 @@ function renderProgress() {
           "</div>",
         '<div class="prog-bar-wrap">',
         '<div class="prog-header">',
-        '<span class="prog-name">' + c.title + "</span>",
+        '<span class="prog-name">' + _rmVEsc(c.title) + "</span>",
         '<span class="prog-pct" style="color:' +
           c.color +
           '">' +
@@ -1271,8 +1281,16 @@ function cshInput(val) {
       }).slice(0, 6);
       dynEl.innerHTML = hits.length
         ? hits.map(function (c) {
-            var s = c.title.replace(/'/g,"\\'");
-            return '<li class="csh-result-item" onclick="cshPick(\''+s+'\')">' + c.title + '</li>';
+            /* HAI TẦNG THOÁT, ĐÚNG THỨ TỰ (vá 04/09/2026). Đây là JS nằm TRONG
+               một thuộc tính HTML, nên trình duyệt giải mã thực thể TRƯỚC rồi
+               mới biên dịch JS. Chỉ thoát dấu nháy đơn bằng gạch chéo ngược như
+               bản cũ là vô dụng: một dấu nháy KÉP trong tên khoá đóng luôn thuộc
+               tính `onclick="` và phần còn lại thành thuộc tính mới.
+               Thoát JS trước, rồi thoát HTML cả chuỗi — ngược thứ tự thì thực
+               thể bị thoát hai lần và tên khoá hiện ra sai. */
+            var s = _rmVEsc(String(c.title || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+            return '<li class="csh-result-item" onclick="cshPick(\''+s+'\')">' +
+                   _rmVEsc(c.title) + '</li>';
           }).join('')
         : '<li class="csh-no-result">Không tìm thấy kết quả</li>';
     }

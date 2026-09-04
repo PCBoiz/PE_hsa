@@ -38,6 +38,21 @@ document.addEventListener("DOMContentLoaded", function() {
       if (lessons > 0) hoursEl.textContent = lessons;
     }
 
+    /* Thoát ĐỦ NĂM ký tự. Tệp này KHÔNG có hàm thoát nào cho tới 04/09/2026,
+       trong khi nó dựng thẻ khoá học bằng `innerHTML` từ dữ liệu do quản trị
+       viên (và từ 04/09 là cả vai `Biên tập nội dung`) nhập.
+
+       Đây là TRANG CHỦ, không cần đăng nhập: khách vãng lai và đối tác mở link
+       đều chạy đoạn này. Nên nó là chỗ hiển thị có tầm với rộng nhất trong cả
+       sản phẩm, và là chỗ duy nhất không có hàng rào đăng nhập ở trước.
+
+       Có phép kiểm quét mọi hàm thoát của tầng này: `e2e/unit/thoat-html.test.mjs`. */
+    function escL(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     function renderCourses(courses) {
       const grid = document.getElementById('course-preview-grid');
       const loading = document.getElementById('course-preview-loading');
@@ -49,17 +64,18 @@ document.addEventListener("DOMContentLoaded", function() {
         card.href = '/login';
         card.className = 'section-card neon-card course-preview-card';
         card.innerHTML =
-          '<div class="card-icon neon-icon" style="color:' + (c.accent_color || c.color || '#8B7CF6') + '">' +
+          '<div class="card-icon neon-icon" style="color:' +
+            escL(c.accent_color || c.color || '#8B7CF6') + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
             '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 ' +
             '7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 ' +
             '14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>' +
             '</svg></div>' +
-          '<strong>' + (c.title || 'Khoá học') + '</strong>' +
-          '<p>' + (c.subtitle || c.description || '') + '</p>' +
+          '<strong>' + escL(c.title || 'Khoá học') + '</strong>' +
+          '<p>' + escL(c.subtitle || c.description || '') + '</p>' +
           '<span class="course-preview-meta">' +
-            (c.lessons ? c.lessons + ' bài' : '') +
-            (c.duration ? ' · ' + c.duration : '') +
+            (c.lessons ? escL(c.lessons) + ' bài' : '') +
+            (c.duration ? ' · ' + escL(c.duration) : '') +
           '</span>';
         grid.appendChild(card);
       });

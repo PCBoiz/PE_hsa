@@ -82,6 +82,19 @@ def _kiem_html(chuoi, path, errors):
                                % (t, duoi.strip()[:60])))
 
 
+def loi_html(chuoi, ten_truong):
+    """Trả danh sách lỗi HTML của MỘT chuỗi. Cửa dùng chung cho mọi đường ghi.
+
+    Bộ lọc này ra đời cho nội dung bài học, nhưng bài toán thì giống hệt ở mọi
+    trường chữ do người dùng nhập rồi được đổ vào `innerHTML`. Mở ra để
+    `courseadmin` dùng lại — chép sang một bản thứ hai là cách chắc chắn để hai
+    danh sách trắng trôi khỏi nhau.
+    """
+    e = []
+    _kiem_html(chuoi, ten_truong, e)
+    return e
+
+
 def _duyet_chuoi(o, path, errors):
     """Đi hết mọi chuỗi trong nội dung bài rồi soi HTML của từng chuỗi.
 
