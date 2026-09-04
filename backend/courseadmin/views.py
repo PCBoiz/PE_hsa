@@ -62,6 +62,25 @@ _MAU = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 #: dấu nháy — nó nằm trong `src="/…"`.
 _ANH = re.compile(r'^[A-Za-z0-9._/-]{1,200}$')
 
+# `id` là trường DUY NHẤT của khoá học không đi qua `_clean_course_payload` —
+# nó tới từ `data['id']` trên POST, và trước bản vá này chỉ bị kiểm "khác rỗng"
+# và "chưa trùng". Trong khi nó được nội suy THÔ vào NĂM chuỗi JS nằm bên trong
+# thuộc tính HTML:
+#
+#     main.js:855   onclick="window.location='/courses/'      + c.id + "'"
+#     main.js:861   onclick="toggleEnroll('                   + c.id + "',false)"
+#     main.js:923   onclick="window.location='" + COURSE_URLS[c.id] + "'"
+#     main.js:1005  lessonUrl = COURSE_URLS[c.id] || '/lesson/' + c.id
+#     dashboard.js:2415  onclick="window.location.href='" + '/lesson/' + c.id + "'"
+#
+# Một dấu nháy đơn trong `id` là đủ ở cả năm chỗ. `COURSE_URLS` là bảng cứng ba
+# dòng nên khoá lạ luôn rơi vào nhánh nối chuỗi.
+#
+# Ép slug KHÔNG phải là làm cho đẹp: `id` đã là một đoạn ĐƯỜNG DẪN
+# (`/courses/<id>`, `/lesson/<id>`), nên slug là hình dạng duy nhất chạy đúng.
+# Ba khoá đang chạy — hsa_quantitative, hsa_science, hsa_verbal — đều khớp.
+_MA_KHOA = re.compile(r'^[a-z0-9][a-z0-9_-]{0,63}$')
+
 
 def _clean_course_payload(data):
     """Trả ``(updates, loi)``. ``loi`` khác None thì KHÔNG ghi gì."""
@@ -148,6 +167,12 @@ class AdminCoursesView(_ChuKhoa, AdminBase):
 
         if not course_id:
             return Response({'error': 'Thiếu id khóa học'}, status=400)
+        if not _MA_KHOA.match(course_id):
+            return Response({'error': (
+                'Mã khoá học chỉ gồm chữ thường, số, gạch dưới và gạch ngang, '
+                'bắt đầu bằng chữ hoặc số, tối đa 64 ký tự — nó là một đoạn '
+                'đường dẫn (/lesson/<mã>). Ví dụ: hsa_quantitative. '
+                'Đang nhận %r.' % course_id[:60])}, status=400)
         if not title:
             return Response({'error': 'Thiếu tiêu đề khóa học'}, status=400)
 

