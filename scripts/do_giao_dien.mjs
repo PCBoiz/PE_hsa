@@ -304,8 +304,15 @@ function DO_TRONG_TRANG(do_trang_thai) {
   };
 
   const vi_pham = [];
+  /* MẪU SỐ, không chỉ tử số.
+     "0 vi phạm" trên một trang chỉ soi được 7 phần tử nói ít hơn nhiều so với
+     "0 vi phạm" trên trang soi 260 — mà bảng cũ in cả hai giống hệt nhau. Trang
+     Khảo sát hiện MỘT câu mỗi lần và có 32 câu: 136 phần tử có chữ, chỉ 7 phần
+     tử NHÌN THẤY. In mẫu số ra để không ai đọc số 0 ấy thành "đã soi cả bài". */
+  let so_soi = 0;
   for (const el of document.querySelectorAll('body *')) {
     if (!hien(el) || !co_chu(el)) continue;
+    so_soi += 1;
     const d = do_el(el);
     if (d && d.tp < d.nguong) {
       /* Đánh dấu để bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node tìm lại được phần tử.
@@ -471,7 +478,7 @@ function DO_TRONG_TRANG(do_trang_thai) {
        báo một con số nhỏ hơn sự thật. `so_vi_pham_tho` giữ số THÔ để biết có bị
        cắt hay không. */
     vi_pham: vi_pham.slice(0, 300),
-    so_vi_pham: vi_pham.length, so_vi_pham_tho: vi_pham.length,
+    so_vi_pham: vi_pham.length, so_vi_pham_tho: vi_pham.length, so_soi,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     so_cham: document.querySelectorAll(CHAM).length,
     tran_ngang: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -731,6 +738,7 @@ for (const kho of KHO) {
       delete d.dau; delete d.net_dau;
       ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
+        + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`
         + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`

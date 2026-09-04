@@ -310,9 +310,23 @@ Không phải sửa mã: job pytest đã đọc `DATABASE_URL_CI` trước, rơi
 ### [ ] D6. Chạy bốn câu DDL còn chờ, hoặc gộp `master`
 
 `python manage.py kiem_luoc_do` trả lời "còn phải chạy gì". Đo 05/09: **4/9 mục
-chưa tới** — bốn khoá ngoại `§42`/`§43` vẫn là `NO ACTION`, tức xoá một tài
-khoản sẽ bị chặn thay vì dọn theo. Gộp `master` là Render tự chạy
-`bootstrap_schema`; hoặc áp tay từng câu trong `backend/sql/legacy_schema.sql`.
+chưa tới** — bốn khoá ngoại `§42`/`§43` vẫn là `NO ACTION`.
+
+**KHÔNG GẤP, và đây là số đo chứ không phải trấn an.** `NO ACTION` nghĩa là xoá
+một tài khoản sẽ bị CHẶN thay vì dọn theo — nhưng đo lại thì **không có đường
+nào trong mã xoá `users`** (khu quản trị đổi `status`, không xoá). Tức bốn mục
+này chưa chặn tính năng nào đang chạy; chúng chỉ là chỗ CSDL còn lệch so với
+lược đồ đã khai.
+
+Ngoài bốn mục ấy, còn 5 khoá ngoại khác trỏ vào `users` cũng đang `NO ACTION`
+(`account_emailaddress`, `socialaccount_socialaccount`,
+`token_blacklist_outstandingtoken`, …). Nên nếu sau này anh muốn có nút "xoá
+hẳn tài khoản", việc phải làm rộng hơn bốn câu này.
+
+Gộp `master` là Render tự chạy `bootstrap_schema`; hoặc áp tay từng câu trong
+`backend/sql/legacy_schema.sql`. **Tôi không tự chạy** — đổi chính sách xoá của
+một khoá ngoại là đổi ngữ nghĩa xoá trên CSDL thật, không thuộc phần "DDL bổ
+sung" anh đã cho phép.
 
 ---
 
