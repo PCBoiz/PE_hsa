@@ -26,7 +26,13 @@ on:
 # hiệu của commit MỚI NHẤT, không phải chạy cho xong lượt cũ.
 #
 # Đây là VÁ, không phải cách sửa đúng. Cách đúng là CI trỏ vào một nhánh Neon
-# riêng thay vì CSDL thật — xem TODO.
+# riêng thay vì CSDL thật.
+#
+# 05/09/2026: phần MÃ đã sẵn — job pytest đọc `DATABASE_URL_CI` trước, rơi về
+# `DATABASE_URL` khi chưa có. Còn lại đúng một thao tác trên tài khoản Neon:
+# tạo nhánh, rồi khai secret ấy. Khi đã khai, nhóm `concurrency` này vẫn nên
+# giữ — hai lượt cùng ghi vào một nhánh vẫn đập nhau ở ràng buộc unique của
+# `temp_user`.
 concurrency:
   group: ci-neon-production
   cancel-in-progress: true
@@ -58,12 +64,45 @@ jobs:
       - name: Lint backend (ruff)
         working-directory: backend
         run: python -m ruff check .
+      # NÓI RA CI ĐANG NỐI VÀO ĐÂU (05/09/2026).
+      #
+      # Trước bước này, câu trả lời cho "lượt CI vừa rồi có đập vào CSDL học
+      # viên thật không" phải đi đọc cấu hình secret — tức không ai đọc. Một
+      # dòng máy chủ trong log là đủ để thấy ngay, và nó không lộ mật khẩu:
+      # chỉ in phần host, cắt trước dấu `?`.
+      - name: Nói rõ CSDL đang dùng
+        env:
+          DB_CI: ${{ secrets.DATABASE_URL_CI }}
+          DB: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -n "$DB_CI" ]; then
+            echo "::notice::CI dùng NHÁNH RIÊNG (DATABASE_URL_CI)."
+            echo "$DB_CI" | sed -E 's#^[^@]*@#…@#; s#\?.*##'
+          else
+            echo "::warning::CI đang chạy trên CSDL của secret DATABASE_URL."
+            echo "::warning::Nếu đó là Neon production thì pytest đang ghi lên dữ liệu học viên THẬT mỗi lần push."
+            echo "::warning::Cách bịt: tạo một nhánh Neon rồi khai secret DATABASE_URL_CI — job này tự chuyển, không phải sửa mã."
+            echo "$DB" | sed -E 's#^[^@]*@#…@#; s#\?.*##'
+          fi
+
       - name: Run pytest
         working-directory: backend
         env:
-          # Bộ test chạy trên DB thật (rollback cuối test — xem backend/conftest.py).
-          # Khai báo secret DATABASE_URL trong repo settings; thiếu secret thì job fail sớm.
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # ƯU TIÊN NHÁNH RIÊNG. `DATABASE_URL_CI` có thì dùng nó; không thì rơi
+          # về `DATABASE_URL` như trước.
+          #
+          # Viết theo hướng này để việc chuyển sang nhánh Neon là MỘT thao tác
+          # cấu hình, không phải một lượt sửa mã: khai secret xong là lượt CI kế
+          # tiếp đã thôi đụng vào dữ liệu học viên thật.
+          #
+          # Vì sao không đơn giản đổi thẳng `DATABASE_URL` sang nhánh: cùng một
+          # tên secret cho hai nghĩa khác nhau là cách chắc chắn để một hôm nào
+          # đó ai đó trỏ nhầm nó về production và không ai nhận ra.
+          #
+          # Bộ test vẫn cuộn lại ở cuối mỗi test (xem `backend/conftest.py`),
+          # nhưng "cuộn lại" không phải "không đụng": nó vẫn chiếm kết nối, vẫn
+          # giữ khoá, và một test viết ngoài giao dịch thì cuộn lại không cứu.
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CI || secrets.DATABASE_URL }}
           SECRET_KEY: ci-only-secret-key
         run: python -m pytest -q
 

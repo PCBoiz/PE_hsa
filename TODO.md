@@ -2622,10 +2622,17 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 - [ ] A1 · **Đóng ba cổng an ninh** — xoay `SECRET_KEY`, đặt `NUM_PROXIES`, cắm
   Redis. Đang chặn mọi thứ khác đi lên `master` (T38/T39/T40/T66, gộp lại ở đây
   để thấy chúng là MỘT nút thắt chứ không phải bốn việc rời).
-- [ ] A2 · **Nhánh Neon riêng cho CI** — nhóm `concurrency` thêm hôm nay chỉ
-  ngăn hai lượt đập nhau; nó không đổi việc pytest đang chạy trên dữ liệu học
-  viên thật, mỗi lần push. Neon tạo nhánh gần như tức thì; đây là việc cấu hình,
-  không phải viết mã.
+- [~] A2 · **Nhánh Neon riêng cho CI** — PHẦN MÃ XONG 05/09, còn một thao tác
+  cấu hình của anh (`docs/VIEC_CUA_ANH.md` §D5).
+  Job pytest đọc `DATABASE_URL_CI` TRƯỚC, rơi về `DATABASE_URL` khi chưa có —
+  nên khai secret là lượt CI kế tiếp đã thôi đụng dữ liệu học viên thật, không
+  phải sửa mã. Không đổi thẳng `DATABASE_URL` sang nhánh: một tên secret cho hai
+  nghĩa là cách chắc chắn để một hôm nào đó ai đó trỏ nhầm nó về production.
+  Mỗi lượt CI nay IN RA máy chủ đang nối (che mật khẩu bằng `sed`, đã thử trên
+  URL thật dạng Neon) — trước đó câu hỏi "lượt vừa rồi có đập vào CSDL thật
+  không" phải đi đọc cấu hình secret, tức không ai đọc.
+  Nhóm `concurrency` VẪN nên giữ sau khi có nhánh: hai lượt cùng ghi vào một
+  nhánh vẫn đập nhau ở ràng buộc unique của `temp_user`.
 - [x] A3 · **Chỉ mục cho MỌI khoá ngoại** — làm 01/09, `§43`. Đo bằng
   `pg_catalog`: 19/69 khoá ngoại thiếu chỉ mục dẫn đầu → **0**. Đã áp tay lên
   Neon (DDL THÊM). Ép `enable_seqscan=off` để chứng minh chỉ mục phục vụ được

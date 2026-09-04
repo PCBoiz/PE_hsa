@@ -3522,3 +3522,25 @@ Phép kiểm cho chính lệnh **tự hiệu chuẩn**: đọc chính sách TH�
 ngoại bất kỳ đang có, rồi đòi `_fk` đồng ý với nó và **bất đồng** với một chính
 sách khác. Không ghim tên khoá nào — ghim là gắn phép kiểm vào trạng thái trôi
 của một CSDL cụ thể, đúng thứ lệnh này sinh ra để đo.
+
+## 05/09/2026 — A2: CI tự chuyển sang nhánh Neon ngay khi secret có mặt
+
+`pytest` đang chạy thẳng vào **CSDL học viên thật** mỗi lần push. Bộ test cuộn
+lại ở cuối mỗi test, nhưng "cuộn lại" không phải "không đụng": nó vẫn chiếm kết
+nối, vẫn giữ khoá, và một test viết ngoài giao dịch thì cuộn lại không cứu.
+
+Tạo nhánh Neon là thao tác trên tài khoản anh. Phần mã thì làm trọn được: job
+pytest đọc `DATABASE_URL_CI` **trước**, rơi về `DATABASE_URL` khi chưa có — nên
+khai secret là lượt CI kế tiếp đã thôi đụng dữ liệu thật.
+
+Không đổi thẳng `DATABASE_URL` sang nhánh: **một tên secret cho hai nghĩa** là
+cách chắc chắn để một hôm nào đó ai đó trỏ nhầm nó về production và không ai
+nhận ra.
+
+Và mỗi lượt CI nay **in ra máy chủ đang nối**. Trước đó, câu hỏi "lượt vừa rồi
+có đập vào CSDL học viên thật không" phải đi đọc cấu hình secret — tức không ai
+đọc. Câu `sed` che mật khẩu đã **thử trên một URL thật dạng Neon**, không phải
+tin là nó đúng: `postgresql://nguoi:matkhau@ep-…` → `…@ep-…`.
+
+Ba việc cấu hình còn lại của anh gom vào `docs/VIEC_CUA_ANH.md` §D4–D6, mỗi việc
+kèm cách kiểm sau khi đặt.

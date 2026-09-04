@@ -246,6 +246,59 @@ anh biết con số hiện tại đang cộng cả tài khoản đó.
 
 ---
 
+## D+ · Ba việc cấu hình mới (05/09/2026)
+
+Cả ba đều là **phần mã đã xong**, chỉ còn thao tác trên bảng điều khiển.
+
+### [ ] D4. Bí mật giữa Vercel và Render — tách xô giới hạn tần suất
+
+Hiện **mọi người dùng thật chung MỘT xô**: `proxy.ts` gỡ `x-forwarded-for` của
+khách (đúng — để khách không tự đặt khoá giới hạn), nhưng `fetch` của Node không
+thêm lại, nên Django chỉ thấy IP egress của Vercel. Với trần **5 lượt đăng
+nhập/phút**, người thứ sáu bị chặn dù ngồi ở đầu kia đất nước — một lớp 30 em
+vào học cùng giờ là một sự cố.
+
+Mã đã sẵn: `proxy.ts` gửi IP khách trong header riêng kèm bí mật, Django chỉ tin
+khi bí mật khớp. **Chưa đặt biến thì mọi thứ chạy y như trước** (mặc định đóng).
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Dán CÙNG một giá trị vào hai nơi:
+
+| Nơi | Tên biến | Ghi chú |
+|---|---|---|
+| Render | `PROXY_SHARED_SECRET` | |
+| Vercel | `PE_PROXY_SECRET` | **KHÔNG** đặt tên `NEXT_PUBLIC_…` — Next nhúng mọi biến như thế vào gói JavaScript gửi cho mọi trình duyệt |
+
+Kiểm sau khi đặt: đăng nhập sai mật khẩu 6 lần từ một máy → lần thứ 6 bị chặn;
+từ một máy khác (hoặc mạng khác) vẫn vào được ngay.
+
+### [ ] D5. Nhánh Neon riêng cho CI
+
+`pytest` đang chạy thẳng vào **CSDL học viên thật** mỗi lần push. Bộ test cuộn
+lại ở cuối mỗi test, nhưng "cuộn lại" không phải "không đụng": nó vẫn chiếm kết
+nối, vẫn giữ khoá, và một test viết ngoài giao dịch thì cuộn lại không cứu.
+
+1. Neon → **Branches** → tạo nhánh từ `main`, đặt tên `ci`.
+2. Copy connection string của nhánh ấy.
+3. GitHub → repo → *Settings › Secrets and variables › Actions* → thêm secret
+   **`DATABASE_URL_CI`**.
+
+Không phải sửa mã: job pytest đã đọc `DATABASE_URL_CI` trước, rơi về
+`DATABASE_URL` khi chưa có. Mỗi lượt CI nay in ra nó đang nối vào máy chủ nào
+(che mật khẩu), nên nhìn log là biết đã chuyển hay chưa.
+
+### [ ] D6. Chạy bốn câu DDL còn chờ, hoặc gộp `master`
+
+`python manage.py kiem_luoc_do` trả lời "còn phải chạy gì". Đo 05/09: **4/9 mục
+chưa tới** — bốn khoá ngoại `§42`/`§43` vẫn là `NO ACTION`, tức xoá một tài
+khoản sẽ bị chặn thay vì dọn theo. Gộp `master` là Render tự chạy
+`bootstrap_schema`; hoặc áp tay từng câu trong `backend/sql/legacy_schema.sql`.
+
+---
+
 ## E · Tuỳ chọn — cho tôi tự push
 
 Suốt phiên 30–31/08, lệnh `git push` bị bộ lọc quyền của chế độ auto chặn (không
