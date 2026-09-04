@@ -1,63 +1,36 @@
 import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
-
 import AdminNav from './AdminNav';
+import { KhongDocDuoc, KhongDuQuyen } from './ChanVai';
+import { layVai } from './layVai';
+import { VAI_VAO_KHU, duocVao, tabsCho } from './vai';
 
 /**
- * Khu VẬN HÀNH của trung tâm — tài khoản, lớp, nhật ký.
+ * Khu VẬN HÀNH của trung tâm — tài khoản, lớp, đợt học, nhật ký.
  *
  * Tách khỏi trang /admin cũ là có chủ đích. Trang đó quản lý NỘI DUNG (khoá,
  * bài, nhập giáo trình) — việc làm vài lần rồi thôi. Khu này quản lý CON NGƯỜI
  * — việc làm mỗi ngày, mỗi khi có học viên mới đăng ký học. Trộn hai thứ vào
  * một trang dài 700 dòng thì việc hằng ngày bị chôn dưới việc hằng quý.
+ *
+ * CỔNG Ở ĐÂY CHỈ CHẶN "VÀO KHU", KHÔNG CHẶN TỪNG TRANG. Năm trang trong khu
+ * không cùng một mức quyền — `lop-hoc` và `dot-hoc` mở cho `Quản lý học vụ`,
+ * ba trang còn lại thì không — nên mỗi trang có `layout.tsx` riêng của nó làm
+ * cổng của mình. Bảng vai duy nhất nằm ở `./vai.ts`.
+ *
+ * Trước 04/09/2026 cổng này là `role !== 'admin'`, tức nó chặn `Quản lý học vụ`
+ * khỏi ĐÚNG hai trang mà backend vừa mở cho họ.
  */
 export const dynamic = 'force-dynamic';
 
-const TABS = [
-  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm' },
-  { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
-  { href: '/quan-tri/dot-hoc', label: 'Đợt học' },
-  { href: '/quan-tri/nhat-ky', label: 'Nhật ký' },
-  // Nhãn cũ là "Nội dung & lớp" — sai từ 04/09: trang đó nay chỉ soạn giáo
-  // trình, phần lớp đã nằm trong khu này.
-  { href: '/admin', label: 'Soạn giáo trình' },
-];
-
 export default async function QuanTriLayout({ children }: { children: React.ReactNode }) {
-  // Chặn ngay trên máy chủ. Không có câu này thì người không phải quản trị viên
-  // vẫn tải được cả khung trang rồi mới nhận 403 từ API — nhìn như hệ thống
-  // hỏng chứ không như "bạn không có quyền".
-  const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });
-  // Không đọc được tài khoản KHÔNG đồng nghĩa với "không đủ quyền": backend sập
-  // hay mạng hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy
-  // người dùng đi hỏi nhầm chỗ. Tách hai câu ra.
-  if (!me.ok) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <h1 className="text-title text-ink">Chưa mở được khu quản trị</h1>
-        <p className="mt-2 text-body text-ink-2">{me.message}</p>
-        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
-          ← Về trang của tôi
-        </Link>
-      </main>
-    );
-  }
-  if (me.data.role !== 'admin') {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <h1 className="text-title text-ink">Khu vực dành cho quản trị viên</h1>
-        <p className="mt-2 text-body text-ink-2">
-          Tài khoản của bạn không có quyền vào đây. Nếu bạn là trợ giảng của TopHSA và cần
-          quyền này, liên hệ người quản lý hệ thống.
-        </p>
-        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
-          ← Về trang của tôi
-        </Link>
-      </main>
-    );
-  }
+  // Chặn ngay trên máy chủ. Không có câu này thì người không đủ quyền vẫn tải
+  // được cả khung trang rồi mới nhận 403 từ API — nhìn như hệ thống hỏng chứ
+  // không như "bạn không có quyền".
+  const kq = await layVai();
+  if (!kq.ok) return <KhongDocDuoc loi={kq.loi} />;
+  if (!duocVao(kq.vai, VAI_VAO_KHU)) return <KhongDuQuyen />;
 
   return (
     <div className="min-h-dvh bg-ground">
@@ -72,9 +45,10 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
               dashboard mới bật/tắt được bản tối. `ml-auto` đẩy nó về cuối hàng
               để không chen vào giữa tiêu đề và các tab. */}
           <ThemeToggle className="ml-auto" />
-          {/* Cuộn ngang chứ không xuống dòng: thanh điều hướng phải giữ đúng
-              một hàng để phần nội dung không bị đẩy xuống trên điện thoại. */}
-          <AdminNav tabs={TABS} />
+          {/* Chỉ hiện tab người này VÀO ĐƯỢC. Hiện đủ tab rồi chặn ở trang đích
+              là mời người ta bấm vào một bức tường — và họ sẽ báo là hệ thống
+              lỗi, không phải là họ thiếu quyền. */}
+          <AdminNav tabs={tabsCho(kq.vai)} />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

@@ -2886,3 +2886,68 @@ mã đã đúng thì lần sau sẽ bị ai đó tắt đi.
 
 **Chứng minh ĐỎ:** lùi `dashboard.js` → *"ATTACK bị gọi 1 lần"* ở cả hai chỗ; gỡ
 dòng kiểm slug → nhận 200 thay vì 400.
+
+## 04/09/2026 — dựng lại khu Quản lý lớp (lỗi hồi quy do TÔI gây ra) + vá cổng vai
+
+**Tôi xoá mất giao diện quản lý lớp.** Khi chuyển khu Soạn giáo trình sang React
+(`0af1c26`) tôi xoá cả `public/static/js/pages/admin.inline.js`. Tôi CÓ grep cả
+repo trước khi xoá — nhưng chỉ grep xem có ai **tham chiếu** tới tệp không, chứ
+không hỏi tệp ấy **cung cấp** chức năng gì. Không ai tham chiếu tới nó là đúng:
+nó là một trang tự chạy. Tám chỗ gọi biến mất theo, trong đó có đường **duy
+nhất** để xếp một học viên vào lớp — không có nó thì cả khu Giảng dạy (điểm
+danh, giao bài, báo cáo phụ huynh) không có gì để hiện.
+
+Đối chiếu lại từng chỗ gọi: khoá/bài/nội dung/nhập giáo trình đã có trong React;
+tài khoản/vai trò/đặt lại mật khẩu đã có ở `/quan-tri/tai-khoan`. Thứ mất thật
+là **lớp học và thành viên lớp**. Nay là `/quan-tri/lop-hoc`.
+
+**Dựng lại, không chép lại.** Bản cũ có một lỗi thật, và chép nguyên là chép cả
+lỗi: biểu mẫu SỬA đổ **7 trong 11** trường rồi `PUT` gửi cả 11 — bốn trường
+không được đổ (`meeting_url`, `starts_on`, `ends_on`, `note`) lên máy chủ dưới
+dạng chuỗi rỗng, mà `_clean_class_payload` hiểu chuỗi rỗng là `NULL`. **Sửa tên
+lớp là xoá trắng link họp và ghi chú của lớp đó**, không hỏi, không báo. Cùng họ
+với lỗi "dựng lại thay vì đè lên" của bộ soạn bài học.
+
+Lỗi ấy không thấy được khi đọc mã — chỗ đổ và chỗ gửi cách nhau 60 dòng, mỗi
+chỗ đọc riêng đều hợp lý. Nó chỉ lộ ra khi đặt hai hàm CẠNH NHAU và hỏi "vòng
+đi–về có giữ nguyên không". Nên hai hàm ấy nay nằm trong `lop.ts`, cạnh nhau,
+và `e2e/unit/lop-hoc.test.mjs` hỏi đúng câu đó với **mọi** trường — duyệt theo
+bảng `TRUONG` chứ không chép một danh sách sang, để trường thứ 14 thêm tháng sau
+cũng được kiểm.
+
+Thêm một thứ bản cũ không có: **hỏi LÝ DO khi cho rời lớp**. Backend nhận
+`leave_reason` từ 31/08 và nói rõ trong chú thích vì sao cần — "học xong" và "bỏ
+giữa chừng" là hai con số khác nhau khi báo tỉ lệ bỏ học của một đợt, gộp lại thì
+mọi lớp kết thúc đều trông như bỏ học 100%. Bản cũ luôn gửi `DELETE ?user_id=`
+trần nên mọi lượt rời lớp vào CSDL với `leave_reason = NULL`.
+
+**Cổng vai trò: ba bảng cho một câu hỏi, và chúng đã lệch.**
+
+    layout.tsx  · `role !== 'admin'` → chặn tất cả trừ quản trị viên
+    AdminNav    · hiện ĐỦ mọi tab cho ai qua được cổng trên
+    backend     · `/api/admin/classes`, `/api/admin/terms` = `IsAdminOrAcademic`
+
+Tức cổng chặn `Quản lý học vụ` khỏi **đúng hai trang** backend đã mở cho họ — và
+vai ấy sinh ra để KHÔNG phải cấp quyền quản trị cho người xếp lớp. Nay một bảng
+duy nhất (`vai.ts`) khai vai NGAY CẠNH đường dẫn, nav chỉ hiện tab người ấy vào
+được, và **ba trang chỉ-quản-trị có `layout.tsx` cổng riêng** — nới cổng khu mà
+quên dựng cổng trang là nới QUYỀN, không phải sửa lỗi.
+
+`e2e/unit/cong-quan-tri.test.mjs` đối chiếu bảng ở frontend với
+`permission_classes` **đọc thẳng từ .py**. Kiểm bảng tự nhất quán với chính nó
+thì cả ba bảng lệch nhau vẫn xanh — thứ cần chặn là hai bên TRÔI KHỎI NHAU.
+
+**Đã mở THẬT trong trình duyệt** (RULES §1), chặn ghi theo phương thức (§22):
+1 lớp · biểu mẫu sửa đổ đủ 13 ô · ba ô trống đã đối chiếu CSDL đúng là `NULL`
+(`term_id`, `ends_on`, `note`) chứ không phải đổ hụt · panel học viên 3 em, em đã
+rời lớp bị làm mờ và ô lý do khoá lại · không lỗi console · không lời gọi ghi nào
+lọt ra.
+
+**Chưa lái được bằng tài khoản `Quản lý học vụ` thật**: CSDL không có tài khoản
+nào mang vai đó (đo: admin ×1, Giảng viên ×1, Học viên ×3), và tạo một tài khoản
+là GHI vào Neon production — chưa xin phép. Phần đã lái thật là đường ADMIN.
+
+**Chứng minh ĐỎ:** lùi `formTuLop` về hành vi 7/11 → 4 trường báo `gốc "…" →
+gửi lên null`, và gỡ một ô khỏi màn hình → kiểm ③ đỏ. Lùi bảng vai về chỉ-quản-trị
+và gỡ một cổng trang → 4 phép kiểm đỏ. Phục hồi → 7/7 bộ unit xanh, tsc, eslint,
+`next build` sạch.
