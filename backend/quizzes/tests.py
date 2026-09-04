@@ -231,3 +231,47 @@ def test_MOT_luat_mo_quiz_on_tap(auth_api, temp_user):
         'chuỗi 30 ngày mà chưa xong bài nào vẫn báo đã mở khoá: %s' % d)
     assert d['minQuestions'] == MIN_QUESTIONS
     assert d['available'] == 0 and d['questionsNeeded'] == MIN_QUESTIONS, d
+
+
+def test_nop_quiz_on_tap_TINH_VAO_CHUOI_NGAY(auth_api, temp_user, db):
+    """Ba đường chấm điểm anh em, trước 04/09/2026 chỉ hai đường đếm vào chuỗi.
+
+    Đây KHÔNG phải luật mới: đúng lỗi này đã vá cho thi thử ngày 14/08/2026 kèm
+    nguyên văn lý do — "làm trọn một đề 150 câu vẫn mất chuỗi nếu hôm đó không
+    mở bài học". Quiz ôn tập là anh em thứ ba và bị bỏ sót.
+    """
+    from common.db import q1, x
+
+    # Dựng cảnh: em đã học hôm KIA, chuỗi đang là 3, hôm qua nghỉ.
+    from datetime import timedelta
+
+    from common.clock import local_today
+    hom_qua = local_today() - timedelta(days=1)
+    x('UPDATE users SET streak=3, last_study_date=%s, streak_freezes=0 WHERE id=%s',
+      (hom_qua, temp_user))
+
+    # Đủ điều kiện sinh quiz: cần ≥5 CÂU trắc nghiệm từ bài ĐÃ HOÀN THÀNH.
+    # Dựng cảnh thật thay vì `skip` — một phép kiểm tự bỏ qua mình là một phép
+    # kiểm không bao giờ đỏ.
+    from common.db import q
+    for row in q("SELECT id FROM lessons WHERE course_id='hsa_quantitative' "
+                 "AND content_json IS NOT NULL ORDER BY sort_order LIMIT 3"):
+        x("""INSERT INTO lesson_progress (user_id, lesson_id, course_id, status, completed_at)
+             VALUES (%s, %s, 'hsa_quantitative', 'completed', NOW())
+             ON CONFLICT (user_id, lesson_id) DO UPDATE SET status='completed'""",
+          (temp_user, row['id']))
+
+    r = auth_api.post('/api/courses/hsa_quantitative/quiz/generate',
+                      {'num_questions': 5}, format='json')
+    assert r.status_code == 200, r.json()
+    qid = r.json().get('quiz_id') or r.json().get('id')
+    assert qid, r.json()
+
+    truoc = q1('SELECT streak, last_study_date FROM users WHERE id=%s', (temp_user,))
+    rs = auth_api.post('/api/quizzes/%s/submit' % qid,
+                       {'answers': [{'question_no': 1, 'selected': 'x'}]}, format='json')
+    assert rs.status_code == 200, rs.json()
+
+    sau = q1('SELECT streak, last_study_date FROM users WHERE id=%s', (temp_user,))
+    assert sau['last_study_date'] == local_today(), (truoc, sau)
+    assert sau['streak'] == 4, (truoc, sau)

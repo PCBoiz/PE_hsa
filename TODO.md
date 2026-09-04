@@ -2674,3 +2674,16 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   (`x-real-ip` / `x-vercel-forwarded-for`) sang một header riêng, và Django chỉ
   tin header đó khi kèm một bí mật chung — nếu không thì ai gọi thẳng Render
   cũng đặt được. Đây là thiết kế có bí mật, nên hỏi trước khi làm.
+- [ ] A11 · **Quiz ôn tập chưa cộng XP, và không thể cộng trước khi có trần.**
+  Ba đường chấm điểm anh em: bài học và thi thử đều `award_xp + touch_streak`;
+  quiz ôn tập trước 04/09 không gọi cái nào. Phần **chuỗi ngày đã vá** — nó
+  không cần trần vì `touch_streak` chỉ đặt "đã học hôm nay", gọi bao nhiêu lần
+  trong ngày cũng ra một kết quả.
+  Phần **XP thì chưa**, và cố ý: `GenerateQuizView` KHÔNG có giới hạn số quiz
+  mỗi ngày, nên trong hạn mức 1000 request/giờ một em sinh và nộp được hàng
+  trăm lượt. Cộng XP khi chưa có trần là đẻ ra một lỗ tệ hơn lỗ vừa vá.
+  Cần anh Sơn chốt HAI thứ: (a) hình dạng trần — mỗi ngày mấy lượt được tính,
+  hay mỗi khoá mấy lượt; (b) con số thưởng. Tiền lệ đã có để tham chiếu: bài
+  học 50 XP, thi thử `30 + tối đa 70 theo tỉ lệ đúng` với trần 100 và lý do ghi
+  rõ "để một đề không bằng cả buổi học". Quiz ôn tập là 5–10 câu, ôn lại thứ đã
+  học, nên phải thấp hơn hẳn một bài học.

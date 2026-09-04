@@ -3209,3 +3209,31 @@ lượt INSERT/UPDATE thôi phải cập nhật thêm sáu cây B-tree.
 chuyển sang khoá chính, cùng cột dẫn đầu. Ghi vào `legacy_schema.sql` kèm câu
 `CREATE` nguyên văn để dựng lại được — và sửa luôn câu dẫn cũ đang nói "cần
 duyệt trước khi chạy", vì nó đã hết đúng.
+
+## 04/09/2026 — quiz ôn tập không tính vào chuỗi ngày
+
+Ba đường chấm điểm anh em, và trước hôm nay chỉ hai đường đếm vào chuỗi:
+
+    lessons/views.py   award_xp + touch_streak
+    mockexam/views.py  award_xp + touch_streak
+    quizzes/views.py   — KHÔNG GỌI CÁI NÀO
+
+Đây **không phải luật mới**: đúng lỗi này đã vá cho thi thử ngày 14/08/2026, và
+chú thích của lần vá ấy còn nguyên trong mã — *"làm trọn một đề 150 câu vẫn mất
+chuỗi nếu hôm đó không mở bài học"*. Quiz ôn tập là anh em thứ ba và bị bỏ sót.
+`touch_streak` tự khai nghĩa của nó: "ghi nhận HÔM NAY CÓ HỌC".
+
+**Chỉ chuỗi, CHƯA XP — và đó là một quyết định, không phải làm dở.**
+`GenerateQuizView` không có giới hạn số quiz mỗi ngày; trong hạn mức 1000
+request/giờ một em sinh và nộp được hàng trăm lượt. Cộng XP khi chưa có trần là
+đẻ ra một lỗ **tệ hơn** lỗ đang vá. Con số thưởng và hình dạng trần là quyết
+định của anh Sơn — mọi mốc XP khác trong repo đều do anh chốt. Ghi thành TODO
+A11 kèm các tiền lệ để tham chiếu.
+
+`touch_streak` thì không cần trần: nó chỉ đặt "đã học hôm nay".
+
+**Phép kiểm dựng cảnh THẬT thay vì `skip`.** Bản đầu của tôi `skip` khi tài
+khoản thử chưa đủ điều kiện sinh quiz — một phép kiểm tự bỏ qua mình là một phép
+kiểm không bao giờ đỏ. Nay nó đánh dấu ba bài hoàn thành rồi mới sinh quiz.
+**Chứng minh ĐỎ:** gỡ `touch_streak` → `last_study_date` không đổi sang hôm nay.
+14 passed.

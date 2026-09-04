@@ -6,9 +6,10 @@ from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.clock import local_now
+from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_REVIEW_QUIZ, record_event
+from common.streak import touch_streak
 
 MIN_QUESTIONS = 5
 MAX_QUESTIONS = 10
@@ -295,6 +296,31 @@ class SubmitQuizView(APIView):
             x("UPDATE quizzes SET status='submitted' WHERE id=%s", (quiz_id,))
             _record_quiz_events(uid, quiz_id, quiz.get('course_id'), questions,
                                 selected_by_no, now)
+
+            # ── LÀM QUIZ ÔN TẬP LÀ CÓ HỌC HÔM NAY (vá 04/09/2026) ───────────
+            #
+            # Ba đường chấm điểm anh em, và trước hôm nay chỉ hai đường đếm vào
+            # chuỗi ngày:
+            #
+            #     lessons/views.py   award_xp + touch_streak
+            #     mockexam/views.py  award_xp + touch_streak
+            #     quizzes/views.py   — KHÔNG GỌI CÁI NÀO
+            #
+            # Đây KHÔNG phải luật mới: ĐÚNG lỗi này đã vá cho thi thử ngày
+            # 14/08/2026, kèm nguyên văn lý do — "làm trọn một đề 150 câu vẫn
+            # mất chuỗi nếu hôm đó không mở bài học". Quiz ôn tập là anh em thứ
+            # ba và bị bỏ sót. `touch_streak` tự khai nghĩa của nó: "ghi nhận
+            # HÔM NAY CÓ HỌC".
+            #
+            # CHỈ chuỗi, CHƯA XP. `GenerateQuizView` không có trần theo ngày —
+            # trong hạn mức 1000 request/giờ, một em sinh và nộp được hàng trăm
+            # quiz. Cộng XP khi chưa có trần là đẻ ra lỗ tệ hơn lỗ đang vá; con
+            # số thưởng và hình dạng trần là quyết định của anh Sơn (mọi mốc XP
+            # khác trong repo đều do anh chốt). Đã ghi TODO.
+            #
+            # `touch_streak` KHÔNG cần trần: nó chỉ đặt "đã học hôm nay", gọi
+            # bao nhiêu lần trong ngày cũng ra cùng một kết quả.
+            touch_streak(uid, local_today())
 
         return Response({
             'score': score,
