@@ -3491,3 +3491,34 @@ nói gì, nên em làm xong mười lượt rồi tự hỏi vì sao chỉ số 
 **Chứng minh ĐỎ:** gỡ trần và ghi XP lên mọi dòng → 3 phép kiểm đỏ, trong đó
 `test_XP_dat_len_DUNG_MOT_dong_su_kien` bắt đúng chỗ tổng cột `xp` vượt XP thật.
 51 passed (quizzes + stats).
+
+## 05/09/2026 — A9: `manage.py kiem_luoc_do`, so lược đồ với CSDL thật
+
+`legacy_schema.sql` chỉ chạy qua `bootstrap_schema` ở `buildCommand` của Render,
+tức **chỉ khi `master` được gộp**. Mọi mục viết trên `erp` nằm chờ, và cách duy
+nhất để biết mục nào đã tới nơi là đi hỏi `pg_catalog` từng cái một.
+
+**Kiểm THỰC TẾ, không ghi sổ ý định.** Cách thường gặp là một bảng
+`schema_versions` ghi "đã chạy §43" — nhưng bảng ấy nói rằng câu lệnh đã được
+**phát**, không phải rằng kết quả **còn ở đó**. Một `ALTER` bị đảo ngược, một
+lần khôi phục từ bản sao lưu cũ, một nhánh CSDL dựng lại: bảng ấy vẫn nói "đã
+chạy". Hỏi `pg_catalog` thì câu trả lời **chính là** sự thật.
+
+Cái giá là mỗi mục phải viết một câu kiểm — và đó là giá đúng: viết câu kiểm
+buộc người thêm mục phải nói rõ "tới nơi" nghĩa là gì, mà một mục không diễn đạt
+nổi điều đó thì cũng không kiểm được bằng tay.
+
+Đo ngày viết: **4/9 mục chưa tới** — đúng bốn khoá ngoại `§42`/`§43` mà tệp lược
+đồ tự khai là đang chờ deploy.
+
+**Bản đầu của lệnh có một dương tính giả**, và tôi tìm ra bằng cách không tin
+kết quả của chính mình: nó báo `§42b` là "không có khoá ngoại này", nhưng khoá
+ấy CÓ, đã là CASCADE, và tôi còn tra nhầm cả bảng (`roadmap_progress` thay vì
+`roadmaps.generated_from_survey_id`). Một dòng đỏ giả ở lệnh này đắt hơn chỗ
+khác: nó sinh ra để trả lời "còn phải chạy gì trên production", nên một dòng sai
+là một người đi chạy DDL không cần chạy trên CSDL thật.
+
+Phép kiểm cho chính lệnh **tự hiệu chuẩn**: đọc chính sách THẬT của một khoá
+ngoại bất kỳ đang có, rồi đòi `_fk` đồng ý với nó và **bất đồng** với một chính
+sách khác. Không ghim tên khoá nào — ghim là gắn phép kiểm vào trạng thái trôi
+của một CSDL cụ thể, đúng thứ lệnh này sinh ra để đo.

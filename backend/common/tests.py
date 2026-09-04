@@ -417,3 +417,69 @@ def test_hai_hoc_vien_khac_IP_thi_KHAC_XO_gioi_han(settings):
                  HTTP_X_FORWARDED_FOR='10.0.0.1', REMOTE_ADDR='10.0.0.1')
         khoa.add(t.get_ident(r))
     assert len(khoa) == 3, 'ba học viên khác IP mà chỉ ra %d khoá: %s' % (len(khoa), khoa)
+
+
+# ── A9 · LỆNH SO LƯỢC ĐỒ VỚI CSDL THẬT (05/09/2026) ─────────────────────────
+#
+# `legacy_schema.sql` chỉ chạy khi `master` được gộp, nên mọi mục viết trên `erp`
+# nằm chờ — và cách duy nhất để biết mục nào đã tới nơi là hỏi `pg_catalog` từng
+# cái một. Lệnh `kiem_luoc_do` làm việc ấy.
+#
+# Kiểm THỰC TẾ chứ không ghi sổ ý định: một bảng `schema_versions` ghi rằng câu
+# lệnh đã được PHÁT, không phải rằng kết quả CÒN Ở ĐÓ.
+
+def test_kiem_luoc_do_phan_biet_duoc_chinh_sach_xoa(db):
+    """`_fk` phải TRẢ LỜI ĐÚNG, không phải trả lời cho có.
+
+    Tự hiệu chuẩn: đọc chính sách THẬT của một khoá ngoại bất kỳ đang có trên
+    CSDL này, rồi đòi `_fk` đồng ý với nó và BẤT ĐỒNG với một chính sách khác.
+    Không ghim tên khoá nào vào đây — ghim là gắn phép kiểm vào trạng thái trôi
+    của một CSDL cụ thể, đúng thứ lệnh này sinh ra để đo.
+    """
+    from common.db import q1
+    from common.management.commands.kiem_luoc_do import _XOA, _fk
+
+    r = q1("""SELECT conname, conrelid::regclass::text AS bang, confdeltype
+              FROM pg_constraint WHERE contype='f' ORDER BY conname LIMIT 1""")
+    assert r, 'CSDL không có khoá ngoại nào — phép kiểm này không kiểm được gì'
+
+    that = _XOA[r['confdeltype']]
+    ok, _ = _fk(r['bang'], r['conname'], that)
+    assert ok, 'nói SAI về %s (%s thật là %s)' % (r['conname'], r['bang'], that)
+
+    khac = next(v for v in _XOA.values() if v != that)
+    ok2, vi_sao = _fk(r['bang'], r['conname'], khac)
+    assert not ok2, 'chấp nhận %r trong khi thật là %r' % (khac, that)
+    assert that in vi_sao and khac in vi_sao, vi_sao
+
+
+def test_kiem_luoc_do_bao_KHONG_CO_khi_khoa_khong_ton_tai(db):
+    from common.management.commands.kiem_luoc_do import _fk
+
+    ok, vi_sao = _fk('users', 'khong_bao_gio_co_rang_buoc_nay', 'CASCADE')
+    assert not ok and 'không có' in vi_sao, vi_sao
+
+
+def test_kiem_luoc_do_moi_muc_deu_CHAY_DUOC(db):
+    """Một mục ném lỗi sẽ bị `except` của lệnh nuốt thành "chưa tới nơi" — tức
+    một lỗi lập trình hiện ra y hệt một mục đang chờ deploy, và người đọc sẽ đi
+    chạy DDL không cần chạy."""
+    from common.management.commands.kiem_luoc_do import MUC
+
+    assert len(MUC) >= 5, 'danh sách mục quá ngắn, chắc chắn đang thiếu'
+    for ma, mo_ta, kiem in MUC:
+        ok, vi_sao = kiem()          # không bọc try: lỗi phải nổ ra ở đây
+        assert isinstance(ok, bool), (ma, ok)
+        assert isinstance(vi_sao, str), (ma, vi_sao)
+        assert mo_ta, ma
+
+
+def test_kiem_luoc_do_phu_du_bon_muc_dang_CHO_DEPLOY(db):
+    """Bốn khoá ngoại của §42/§43 là thứ tệp lược đồ tự khai là đang chờ. Thiếu
+    một trong bốn thì lệnh im lặng báo "sạch" cho một mục nó chưa nhìn tới —
+    đúng cái bẫy bộ đo giao diện đã mắc (danh sách trang thiếu ba màn)."""
+    from common.management.commands.kiem_luoc_do import MUC
+
+    ma = {m[0] for m in MUC}
+    for can in ('§42a', '§42b', '§43a', '§43b'):
+        assert can in ma, 'thiếu %s trong danh sách kiểm' % can

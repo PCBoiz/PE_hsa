@@ -2671,13 +2671,20 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   12 câu đúng đều đã ĐO chứ không đọc lướt — trong đó "grading.py là nơi duy
   nhất biết đáp án" kiểm bằng cách gọi API như học viên thật: 110 kB nội dung,
   **0 lần** xuất hiện `"answer"` hay `"explain"`.
-- [ ] A9 · **Tệp lược đồ đang đi trước CSDL thật, và không có gì nói ra điều đó.**
-  Đo 01/09: `§41` CÓ trên Neon, cả hai khoá của `§42` thì KHÔNG. `legacy_schema.sql`
-  chỉ chạy qua `bootstrap_schema` ở `buildCommand` của Render, tức chỉ khi `master`
-  được gộp — nên mọi mục viết trên `erp` nằm chờ, và cách duy nhất để biết mục nào
-  đã tới nơi là đi hỏi `pg_catalog` từng cái một. Tạm thời mỗi mục tự ghi trạng
-  thái (xem cuối `§43`); cần một bảng ghi phiên bản lược đồ thật.
-  Đang chờ deploy: `§42` (2 khoá `roadmaps`) · `§43` (2 khoá `courses`/`missions`).
+- [x] A9 · **XONG 05/09** — `python manage.py kiem_luoc_do`.
+  So `legacy_schema.sql` với CSDL ĐANG NỐI, in từng mục đã tới / chưa tới.
+  `--ma-loi` thoát khác 0 (để cắm CI hoặc bước sau deploy); mặc định KHÔNG bật,
+  vì trên máy dev thì lược đồ đi trước là chuyện có chủ ý.
+  **Kiểm THỰC TẾ, không ghi sổ ý định.** Một bảng `schema_versions` ghi rằng câu
+  lệnh đã được PHÁT, không phải rằng kết quả CÒN Ở ĐÓ — một `ALTER` bị đảo
+  ngược, một lần khôi phục từ bản sao lưu cũ, một nhánh CSDL dựng lại thì bảng
+  ấy vẫn nói "đã chạy". Hỏi `pg_catalog` thì câu trả lời CHÍNH LÀ sự thật.
+  Đo ngày viết: **4/9 mục chưa tới** — đúng bốn khoá ngoại của `§42`/`§43` mà
+  tệp lược đồ tự khai là đang chờ deploy.
+  Bản đầu của lệnh có MỘT dương tính giả (tra nhầm bảng và nhầm tên ràng buộc
+  cho `§42b`); đã sửa và ghi lý do ngay tại dòng ấy — một dòng đỏ giả ở đây là
+  một người đi chạy DDL không cần chạy trên CSDL thật.
+
 - [x] A10 · **XONG 05/09** — mọi người dùng thật hết chung một xô.
   `proxy.ts` gửi IP khách (do CHÍNH VERCEL tính: `x-real-ip`, hoặc phần tử CUỐI
   của `x-forwarded-for` đi vào) trong header riêng `X-PE-Client-IP`, kèm bí mật
