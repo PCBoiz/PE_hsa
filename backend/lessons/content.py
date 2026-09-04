@@ -30,6 +30,7 @@ import json
 import re
 
 from common.db import q, q1
+from lessons import luoc_do
 from lessons.grading import bo_dap_an
 
 #: Trường bắt buộc — thiếu một trong số này thì engine sẽ hỏng giữa chừng.
@@ -135,6 +136,35 @@ def loi_html(chuoi, ten_truong):
     return e
 
 
+def _kiem_so(gia_tri, khoa, path, errors):
+    """Kiểm một trường SỐ theo `lessons/luoc_do.SO` — bảng dùng chung với biểu
+    mẫu soạn bài.
+
+    Trước 04/09/2026 ba khoảng số này viết cứng ở đây VÀ viết cứng lần nữa trong
+    `admin/NoiDungBai.tsx` (`min=`/`max=`). Hôm ấy chúng khớp nhau; không có gì
+    giữ cho chúng khớp. Đổi trần XP ở đây mà quên bên kia thì màn hình vẫn cho
+    gõ 500, người soạn bấm Lưu và nhận một lỗi máy chủ cho con số mà chính màn
+    hình vừa bảo là hợp lệ.
+
+    Câu lỗi dựng TỪ bảng, nên nó không thể nói một khoảng khác với khoảng đang
+    được kiểm — thứ đã xảy ra ở chỗ khác trong repo và mất nhiều thời gian hơn
+    cả lỗi thật.
+    """
+    if gia_tri is None:
+        return
+    rb = luoc_do.SO[khoa]
+    ten = khoa.rsplit('.', 1)[-1]
+    if not isinstance(gia_tri, int) or isinstance(gia_tri, bool):
+        errors.append(_err(path, '"%s" phải là số nguyên' % ten))
+        return
+    if gia_tri < rb['min'] or (rb['max'] is not None and gia_tri > rb['max']):
+        errors.append(_err(path, '"%s" phải là số nguyên %s (%s)'
+                           % (ten,
+                              ('≥ %d' % rb['min']) if rb['max'] is None
+                              else ('trong khoảng %d–%d' % (rb['min'], rb['max'])),
+                              rb['vi_sao'])))
+
+
 def _duyet_chuoi(o, path, errors):
     """Đi hết mọi chuỗi trong nội dung bài rồi soi HTML của từng chuỗi.
 
@@ -171,13 +201,8 @@ def validate_lesson(obj, path='bài'):
         if key not in obj or obj[key] in (None, '', [], {}):
             errors.append(_err(path, f'thiếu trường bắt buộc "{key}"'))
 
-    idx = obj.get('index')
-    if idx is not None and (not isinstance(idx, int) or idx < 1):
-        errors.append(_err(path, '"index" phải là số nguyên ≥ 1'))
-
-    xp = obj.get('xp_reward')
-    if xp is not None and (not isinstance(xp, int) or not 0 <= xp <= 500):
-        errors.append(_err(path, '"xp_reward" phải là số nguyên trong khoảng 0–500'))
+    _kiem_so(obj.get('index'), 'index', path, errors)
+    _kiem_so(obj.get('xp_reward'), 'xp_reward', path, errors)
 
     test = obj.get('test')
     if isinstance(test, dict):
@@ -262,9 +287,8 @@ def validate_lesson(obj, path='bài'):
             errors.append(_err(path + '.drill',
                                'dùng "time_seconds" chứ không phải "seconds" — '
                                'sai tên thì đồng hồ phòng luyện chạy mãi không hết giờ'))
-        ts = drill.get('time_seconds')
-        if ts is not None and (not isinstance(ts, int) or not 5 <= ts <= 3600):
-            errors.append(_err(path + '.drill', '"time_seconds" phải là số nguyên 5–3600'))
+        _kiem_so(drill.get('time_seconds'), 'drill.time_seconds',
+                 path + '.drill', errors)
     elif drill is not None:
         errors.append(_err(path + '.drill', 'phải là object'))
 

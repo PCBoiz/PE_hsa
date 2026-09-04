@@ -3257,3 +3257,51 @@ sắp được nhập từ bảng tính, bởi người khác. Sửa lúc còn r
 Một màn hình nói sai về CHÍNH NÓ thì mọi thứ khác nó nói cũng mất giá.
 Phần chọn tách thành hàm thuần `chonLyThuyet`; **chứng minh ĐỎ** bằng cách lùi
 `renderTheory` về hai nguồn.
+
+## 04/09/2026 — MỘT LƯỢC ĐỒ, HAI BÊN DÙNG (anh Sơn chốt hướng A)
+
+Ba khoảng số của nội dung bài được viết ở **hai nơi, hai ngôn ngữ**:
+
+    lessons/content.py     `not 0 <= xp <= 500`     `idx < 1`     `not 5 <= ts <= 3600`
+    admin/NoiDungBai.tsx   `min={0} max={500}`      `min={1}`     `min={5} max={3600}`
+
+Hôm nay chúng khớp. Không có gì giữ cho chúng khớp: đổi trần XP ở Python là biểu
+mẫu vẫn cho gõ 500, người soạn bấm Lưu và nhận một lỗi máy chủ cho **con số mà
+chính màn hình vừa bảo là hợp lệ**.
+
+Và chúng **đã lệch sẵn ở hai chỗ** — hai ràng buộc chỉ có ở máy chủ, biểu mẫu
+không nói gì: `answer` của câu trắc nghiệm phải nằm trong `options`, và câu
+phòng luyện bắt buộc có `id` không trùng. Người soạn dựng xong cả bài, bấm Lưu,
+rồi mới biết — mà thông báo lỗi nói "câu thứ mấy" chứ không trỏ vào ô.
+
+**Bản gốc đặt ở Python** vì đó là bên CƯỠNG CHẾ: một ràng buộc chỉ có ở trình
+duyệt là một lời gợi ý; một ràng buộc chỉ có ở máy chủ vẫn là hàng rào. Lược đồ
+đi kèm phản hồi của `GET /api/admin/lessons/<id>/content` — endpoint biểu mẫu
+VỐN ĐÃ gọi. Không thêm cửa, không thêm lượt tải, không thêm chỗ hỏng được.
+
+**Không dựng bộ sinh biểu mẫu kiểu `semantics.json` của H5P.** Sinh cả biểu mẫu
+từ lược đồ nghe gọn hơn, nhưng nó đổi 699 dòng giao diện đang chạy lấy một bộ
+dịch tổng quát mà mọi ô đặc thù (JSON đồ thị, thẻ lý thuyết, đáp án nhiều dạng)
+đều phải trổ một cửa ngoại lệ. Thứ ĐANG hỏng là các con số trôi khỏi nhau và hai
+luật thiếu bên client — đúng phần ấy được gộp, không hơn.
+
+Người soạn nay đọc được **lý do** của mỗi con số ngay cạnh ô nhập ("trần 500 để
+một bài không bằng cả một khoá"). Biết lý do thì không đi tìm cách lách.
+
+**ĐÃ MỞ THẬT TRONG TRÌNH DUYỆT** — và lần đo đầu tiên là một bài học: cả ba ô
+hiện đúng khoảng nhưng **không ô nào hiện lý do**, tức chúng đang chạy đường DỰ
+PHÒNG. Django chạy `--noreload` nên chưa nạp mã mới. Nếu dừng ở đó tôi đã báo
+"chạy tốt" trong khi đường thật chưa hề được đi qua. Khởi động lại, đo lại: lý
+do từ máy chủ tới nơi, hai cảnh báo hiện đúng lúc gõ sai, không lời gọi ghi nào
+lọt ra.
+
+Ảnh chụp lộ thêm một chuyện: ô "Lựa chọn" cố định 3 dòng nên câu 4 phương án
+luôn bị cắt mất dòng cuối — người soạn phải cuộn trong một ô cao ba dòng để kiểm
+lại đúng cái danh sách mà đáp án bắt buộc phải khớp.
+
+**Chứng minh ĐỎ:** đổi trần XP ở MỘT bên → phép kiểm báo `python {max:300} ·
+form {max:500}`. Phép kiểm đọc THẲNG tệp Python, không chép số sang.
+
+Cùng lượt: `§45` chỉ mục `learning_events(ref_type, ref_id)` (A6) — nói thẳng là
+ở 37 dòng nó chưa đổi gì đo được; thêm vì hình dạng truy cập đúng là thứ chỉ mục
+phục vụ, và thêm lên bảng đã lớn là một lượt khoá bảng. A4/A6/T66 đánh dấu xong.

@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from common import audit
 from common.db import q, q1, x
 from common.permissions import IsContentEditor, IsCourseOwner, is_admin
+from lessons import luoc_do
 from lessons.content import loi_html, validate_lesson
 from lessons.grading import quen_dap_an
 
@@ -375,6 +376,18 @@ class AdminLessonContentView(AdminBase):
             except ValueError:
                 data = None
         row['content_json'] = data
+        # LƯỢC ĐỒ ĐI KÈM (04/09/2026, anh Sơn chốt "một lược đồ, hai bên dùng").
+        #
+        # Ba khoảng số của nội dung bài — `index`, `xp_reward`,
+        # `drill.time_seconds` — trước đây viết cứng ở `lessons/content.py` VÀ
+        # viết cứng lần nữa trong `admin/NoiDungBai.tsx`. Hôm ấy chúng khớp;
+        # không có gì giữ cho chúng khớp.
+        #
+        # Gửi kèm ở ĐÂY chứ không mở một endpoint riêng: biểu mẫu soạn bài vốn
+        # đã gọi đúng đường này để nạp nội dung. Thêm một cửa nữa là thêm một
+        # lượt tải, một trạng thái chờ, và một chỗ hỏng được — cho một bảng hằng
+        # số vài dòng.
+        row['schema'] = luoc_do.cho_client()
         return Response(row)
 
     def put(self, request, lesson_id):

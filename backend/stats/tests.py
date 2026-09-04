@@ -74,9 +74,22 @@ def _hoc_xong_mot_bai(client):
     Nó chỉ được gọi từ hai nơi: hoàn thành bài học và nộp đề thi thử. Nhận
     thưởng nhiệm vụ KHÔNG chạm vào chuỗi ngày — hợp lý, vì nhiệm vụ chỉ đủ điều
     kiện sau khi đã học thật, nên chuỗi đã cộng từ trước đó rồi.
+
+    ── PHẢI TRẢ LỜI MỘT CÂU (04/09/2026) ──────────────────────────────────
+    Đường `/complete` nay ĐÒI BẰNG CHỨNG: bài có câu hỏi mà chưa trả lời câu
+    nào thì trả 400 (anh Sơn chốt). Bảy phép kiểm chuỗi ngày ở tệp này dùng
+    "hoàn thành một bài" làm PHƯƠNG TIỆN, nên chúng phải đi đúng đường mà học
+    viên thật đi. Không phải nới hàng rào.
+
+    Mã câu lấy từ chính bảng đáp án chứ không ghim vào đây: ghim một mã là gắn
+    bảy phép kiểm chuỗi ngày vào nội dung của một bài cụ thể.
     """
+    from lessons.grading import dap_an
+    bang = dap_an('hsa_quantitative', 1).get('test') or {}
+    cid, dung = next(((k, v.get('answer')) for k, v in bang.items()), (None, None))
     return client.post('/api/lessons/1/complete',
-                       {'courseId': 'hsa_quantitative', 'xpEarned': 10}, format='json')
+                       {'courseId': 'hsa_quantitative', 'xpEarned': 10,
+                        'answers': ({cid: dung} if cid else {})}, format='json')
 
 
 def test_van_bao_dung_chuoi_ngay(auth_api, temp_user):

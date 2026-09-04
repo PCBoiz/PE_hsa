@@ -1343,3 +1343,31 @@ ALTER TABLE users ADD CONSTRAINT users_role_check
     CHECK (role IN ('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng',
                     'Học viên', 'Biên tập nội dung'));
 --   · §44 — áp dụng tay 04/09 (chỉ nới rộng CHECK).
+
+-- ── §45 · Chỉ mục cho đường XOÁ theo `(ref_type, ref_id)` (04/09/2026) ──────
+--
+-- `common/events.py::forget_events` — cửa DUY NHẤT xoá khỏi `learning_events` —
+-- luôn xoá theo cặp ấy, và ở dạng HÀNG LOẠT:
+--
+--     DELETE FROM learning_events WHERE ref_type=%s AND ref_id = ANY(%s)
+--
+-- Xoá một lớp là xoá theo TẤT CẢ buổi học của nó cùng lúc, nên danh sách `ANY`
+-- dài đúng bằng số buổi lớp ấy đã dạy.
+--
+-- NÓI THẲNG: hôm nay bảng có **37 dòng**, nên chỉ mục này KHÔNG đổi gì đo được
+-- — trình lập kế hoạch vẫn quét tuần tự, và một phép `EXPLAIN` ở đây chỉ nói
+-- "Seq Scan". Thêm bây giờ vì hai lý do khác:
+--
+--   · hình dạng truy cập là "tra theo khoá xác định", đúng thứ chỉ mục sinh ra
+--     để phục vụ, và nó đắt dần ĐÚNG THEO mức dùng sản phẩm;
+--   · thêm chỉ mục lên một bảng đã lớn là một lượt khoá bảng. Rẻ nhất là lúc
+--     bảng còn nhỏ.
+--
+-- `ref_type` trước vì nó luôn là điều kiện bằng, và nó cũng lọc được một mình
+-- khi ai đó cần đếm sự kiện theo loại đối tượng.
+--
+-- KHÔNG phải khoá ngoại, nên §43 (chỉ mục cho mọi khoá ngoại) không nhìn thấy
+-- nó: hai cột này mang TÊN BẢNG dạng chuỗi, không trỏ tới bảng nào cả.
+CREATE INDEX IF NOT EXISTS idx_levents_ref
+    ON learning_events (ref_type, ref_id);
+--   · §45 — áp dụng tay 04/09 (chỉ THÊM chỉ mục, không đổi hành vi).

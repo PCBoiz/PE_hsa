@@ -921,7 +921,10 @@ chủ đề (16% và 49%)**, bản đồ học viên không có ô nào. Đã r�
 `lessons.module` của khoá lớp đang dạy (backend từ chối 400, màn hình đổi thành
 ô CHỌN).
 
-### [ ] T66 · `common/audit.py::_client_ip` lấy phần tử ĐẦU của `X-Forwarded-For`
+### [x] T66 (XONG 04/09) · `_client_ip` lấy phần tử ĐẦU của `X-Forwarded-For`
+> Vá cùng lượt với `common/net.py` — nay `audit._client_ip` uỷ quyền cho
+> `common.net.client_ip`, và cả `throttling` lẫn `audit` đi qua CÙNG một cửa.
+> Trước đó hai bên lấy HAI ĐẦU ĐỐI NGHỊCH của cùng một header.
 Cả hai agent tìm lỗi đều bỏ sót. Phần tử đầu là thứ người gọi TỰ ĐẶT, nên cột
 `ip` của nhật ký kiểm toán giả mạo được — ở đúng chỗ sinh ra để làm bằng chứng.
 **Không sửa mù**: đúng vị trí phụ thuộc `NUM_PROXIES`, mà con số đó chưa đo trên
@@ -2634,19 +2637,24 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   Danh sách đo bằng `pg_catalog` nằm trong báo cáo.
   Kèm: `courses.instructor_id` là `NO ACTION` → hiện KHÔNG xoá nổi tài khoản
   giảng viên đang đứng tên một khoá. Cần chốt chính sách xoá, không chỉ chỉ mục.
-- [ ] A4 · **Duyệt 6 câu `DROP INDEX`** — đã soạn sẵn trong `§35` của
-  `backend/sql/legacy_schema.sql`. Cần anh gật đầu: luật repo là chỉ DDL THÊM
-  mới được tự chạy trên CSDL thật ở `buildCommand`.
+- [x] A4 · **6 câu `DROP INDEX`** — anh Sơn duyệt 04/09/2026, **đã chạy**.
+  Đo lại trước khi chạy chứ không tin ghi chép cũ: cả sáu là `btree (user_id)`
+  và cả bốn bảng có khoá chính BẮT ĐẦU bằng `user_id` → bị phủ hoàn toàn. Sau
+  khi xoá: khoá chính nguyên vẹn, `WHERE user_id=…` vẫn trả đúng số dòng.
+  KHÔNG phải bản vá tốc độ (bảng 48–80 kB, `EXPLAIN` vẫn nói "Seq Scan"); cái
+  được là mỗi lượt ghi thôi phải cập nhật thêm sáu cây B-tree. Câu `CREATE`
+  nguyên văn lưu trong `§35` để dựng lại được.
 - [x] A5 · `ALLOWED_HOSTS` và `ALLOWED_ORIGINS` tách chuỗi mà không `.strip()`
   (`config/settings.py`), trong khi `CSRF_TRUSTED_ORIGINS` ngay dưới thì có.
   Viết `"a.com, b.com"` cho ra một host tên `" b.com"` không bao giờ khớp, và
   triệu chứng là 400 trên toàn miền chứ không phải một lỗi cấu hình đọc được.
   — **XONG 04/09**, vá cùng lượt với ba cổng an ninh (cùng tệp).
-- [ ] A6 · `DELETE FROM learning_events WHERE ref_type=… AND ref_id=…` là
-  `Seq Scan` (đã `EXPLAIN`). Hôm nay bảng 37 dòng nên rẻ; nó đắt dần đúng theo
-  mức dùng. KHÔNG được A3 vá: `ref_type`/`ref_id` không phải khoá ngoại (không
-  trỏ tới bảng nào — chúng mang tên bảng dạng chuỗi), nên phép đo của A3 không
-  nhìn thấy chúng. Cần một chỉ mục riêng trên `(ref_type, ref_id)`.
+- [x] A6 · **XONG 04/09** — `idx_levents_ref (ref_type, ref_id)` (`§45`), đã áp
+  tay lên Neon. `forget_events` xoá theo cặp ấy ở dạng HÀNG LOẠT (xoá một lớp là
+  xoá theo tất cả buổi của nó cùng lúc). Nói thẳng: bảng đang 37 dòng nên chỉ
+  mục này chưa đổi gì ĐO ĐƯỢC — thêm bây giờ vì hình dạng truy cập đúng là thứ
+  chỉ mục phục vụ, nó đắt dần theo mức dùng, và thêm chỉ mục lên bảng đã lớn là
+  một lượt khoá bảng.
 - [ ] A7 · **Đặt hạn cho tầng frontend cũ** — **14.855** dòng JS không qua bundler
   (đã bớt 749 dòng ngày 04/09 khi `/admin` sang React) so với ~11.500 dòng Next. Đây là chỗ DUY NHẤT mà một lỗi cú pháp đi thẳng lên
   production qua mọi cửa kiểm (đã xảy ra 27/08). Không cần viết lại hết; cần

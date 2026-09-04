@@ -14,13 +14,43 @@ import {
   type The,
 } from '@/lib/soanBai';
 
+type RangBuocSo = { min: number; max: number | null; nhan?: string; vi_sao?: string };
+type LuocDo = { so?: Record<string, RangBuocSo>; luat?: Record<string, { nhan: string }> };
+
 type Ban = {
   id: number;
   course_id: string;
   title: string;
   sort_order: number;
   content_json: TNoiDung | null;
+  /** Bảng ràng buộc do MÁY CHỦ gửi kèm — xem `backend/lessons/luoc_do.py`. */
+  schema?: LuocDo;
 };
+
+/* Giá trị dự phòng khi máy chủ chưa gửi lược đồ (bản backend cũ, hoặc phản hồi
+   thiếu trường). Ô nhập vẫn dùng được, chỉ mất phần gợi ý — một biểu mẫu soạn
+   bài không được chết vì một bảng hằng số vài dòng.
+
+   Các con số ở đây KHÔNG phải bản gốc: bản gốc ở `backend/lessons/luoc_do.py`.
+   Phép kiểm `e2e/unit/luoc-do.test.mjs` đối chiếu hai bên. */
+const DU_PHONG: Record<string, RangBuocSo> = {
+  index: { min: 1, max: null },
+  xp_reward: { min: 0, max: 500 },
+  'drill.time_seconds': { min: 5, max: 3600 },
+};
+
+/** Ràng buộc số của một trường, ưu tiên bảng máy chủ gửi. */
+function rb(schema: LuocDo | undefined, khoa: string): RangBuocSo {
+  return schema?.so?.[khoa] ?? DU_PHONG[khoa];
+}
+
+/** Gợi ý đọc được cho ô nhập: lý do của con số, viết ngay cạnh nó. */
+function goiY(r: RangBuocSo, them?: string): string {
+  const khoang = r.max === null ? `từ ${r.min} trở lên` : `${r.min}–${r.max}`;
+  return [them, `Nhận ${khoang}${r.vi_sao ? ` — ${r.vi_sao}` : ''}.`]
+    .filter(Boolean)
+    .join(' ');
+}
 
 const O = 'w-full rounded-md border border-line bg-surface px-3 py-2 text-body text-ink';
 
@@ -201,9 +231,11 @@ export default function NoiDungBai({
             <Field
               id="nd-index"
               label="Số thứ tự (index)"
-              hint="PHẢI bằng số bài ở cột # — máy chủ từ chối nếu lệch."
+              hint={goiY(rb(ban?.schema, 'index'),
+                'PHẢI bằng số bài ở cột # — máy chủ từ chối nếu lệch.')}
               type="number"
-              min={1}
+              min={rb(ban?.schema, 'index').min}
+              max={rb(ban?.schema, 'index').max ?? undefined}
               value={m.index}
               onChange={(e) => dat('index', Number(e.target.value))}
             />
@@ -229,9 +261,10 @@ export default function NoiDungBai({
             <Field
               id="nd-xp"
               label="XP thưởng"
+              hint={goiY(rb(ban?.schema, 'xp_reward'))}
               type="number"
-              min={0}
-              max={500}
+              min={rb(ban?.schema, 'xp_reward').min}
+              max={rb(ban?.schema, 'xp_reward').max ?? undefined}
               value={m.xp_reward}
               onChange={(e) => dat('xp_reward', Number(e.target.value))}
             />
@@ -348,10 +381,11 @@ export default function NoiDungBai({
             <Field
               id="nd-dsec"
               label="Thời gian (giây)"
-              hint="Ghi ra trường time_seconds — đúng tên engine đọc."
+              hint={goiY(rb(ban?.schema, 'drill.time_seconds'),
+                'Ghi ra trường time_seconds — đúng tên engine đọc.')}
               type="number"
-              min={5}
-              max={3600}
+              min={rb(ban?.schema, 'drill.time_seconds').min}
+              max={rb(ban?.schema, 'drill.time_seconds').max ?? undefined}
               value={m.drillSeconds}
               onChange={(e) => dat('drillSeconds', Number(e.target.value))}
             />
@@ -360,6 +394,9 @@ export default function NoiDungBai({
             ten="luyện"
             ds={m.drillQuestions}
             onDoi={(v) => dat('drillQuestions', v)}
+            // Câu phòng luyện BẮT BUỘC có mã: máy chủ ghi nhận câu trả lời theo
+            // mã, nên thiếu mã là câu ấy không chấm được (`lessons/luoc_do.LUAT`).
+            maBatBuoc
           />
         </Khoi>
 
@@ -439,14 +476,45 @@ function Khoi({
   );
 }
 
+/* Hai luật mà TRƯỚC 04/09/2026 chỉ có ở máy chủ (`lessons/luoc_do.LUAT`):
+ *
+ *     · đáp án trắc nghiệm phải nằm trong danh sách lựa chọn
+ *     · câu phòng luyện phải có mã, và mã không được trùng
+ *
+ * Người soạn dựng xong cả bài, bấm Lưu, rồi mới biết — và thông báo lỗi nói
+ * "câu thứ mấy" chứ không trỏ vào ô. Với một bài 8 câu drill đó là một vòng
+ * đi–về dài cho một lỗi đánh máy.
+ *
+ * Cảnh báo ở đây KHÔNG thay hàng rào máy chủ; nó chỉ nói sớm hơn. Máy chủ vẫn
+ * là bên cưỡng chế — một ràng buộc chỉ có ở trình duyệt là một lời gợi ý. */
+function loiCau(c: CauHoi, i: number, ds: CauHoi[], maBatBuoc: boolean): string | null {
+  const ma = (c.id || '').trim();
+  if (maBatBuoc) {
+    if (!ma) return 'Thiếu mã câu — thiếu nó thì máy chủ KHÔNG chấm được câu này.';
+    if (ds.some((k, j) => j !== i && (k.id || '').trim() === ma)) {
+      return `Mã "${ma}" trùng với một câu khác trong khối này.`;
+    }
+  }
+  if ((c.type || 'mcq') === 'mcq') {
+    const dap = (c.answer ?? '').trim();
+    const ds_lc = (c.options || []).map((o) => (o ?? '').trim()).filter(Boolean);
+    if (dap && ds_lc.length && !ds_lc.includes(dap)) {
+      return 'Đáp án không trùng ĐÚNG một dòng nào ở ô Lựa chọn.';
+    }
+  }
+  return null;
+}
+
 function DsCauHoi({
   ten,
   ds,
   onDoi,
+  maBatBuoc = false,
 }: {
   ten: string;
   ds: CauHoi[];
   onDoi: (v: CauHoi[]) => void;
+  maBatBuoc?: boolean;
 }) {
   const sua = (i: number, p: Partial<CauHoi>) =>
     onDoi(ds.map((c, j) => (i === j ? { ...c, ...p } : c)));
@@ -498,9 +566,13 @@ function DsCauHoi({
           {(c.type || 'mcq') === 'mcq' && (
             <label className="flex flex-col gap-1">
               <span className="text-label text-ink-3">Lựa chọn — mỗi dòng một</span>
+              {/* Cao theo SỐ PHƯƠNG ÁN, không cố định 3 dòng. Thấy trên ảnh
+                  chụp 04/09: câu 4 phương án luôn bị cắt mất dòng cuối, nên
+                  người soạn phải cuộn trong một ô cao ba dòng để kiểm lại đúng
+                  cái danh sách mà đáp án bắt buộc phải khớp. */}
               <textarea
                 className={O}
-                rows={3}
+                rows={Math.max(3, (c.options || []).length + 1)}
                 value={(c.options || []).join('\n')}
                 onChange={(e) => sua(i, { options: e.target.value.split('\n') })}
               />
@@ -520,6 +592,11 @@ function DsCauHoi({
             value={c.explain || ''}
             onChange={(e) => sua(i, { explain: e.target.value })}
           />
+          {loiCau(c, i, ds, maBatBuoc) && (
+            <p role="status" className="text-small text-danger-ink">
+              ⚠ {loiCau(c, i, ds, maBatBuoc)}
+            </p>
+          )}
         </div>
       ))}
       <div>
