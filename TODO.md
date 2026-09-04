@@ -2619,9 +2619,31 @@ Báo cáo đầy đủ (điểm theo trục + phép đo sinh ra điểm + ba cá
 Điểm tổng **6,5/10**. Bảy phát hiện đã vá trong lượt này (xem git log 01/09);
 dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 
-- [ ] A1 · **Đóng ba cổng an ninh** — xoay `SECRET_KEY`, đặt `NUM_PROXIES`, cắm
-  Redis. Đang chặn mọi thứ khác đi lên `master` (T38/T39/T40/T66, gộp lại ở đây
-  để thấy chúng là MỘT nút thắt chứ không phải bốn việc rời).
+- [~] A1 · **Ba cổng an ninh — PHẦN MÃ ĐÃ KIỂM XONG 05/09**, còn ba thao tác
+  cấu hình của anh (`docs/VIEC_CUA_ANH.md` §A1–A3). Đang chặn đường lên `master`
+  (T38/T39/T40/T66 — gộp ở đây để thấy chúng là MỘT nút thắt, không phải bốn
+  việc rời).
+  Kiểm bằng ĐO, chạy thật `settings.py` qua từng kịch bản, không đọc lướt:
+  · `SECRET_KEY` — production: 19 byte → chặn, 31 → chặn, 32 → qua, thiếu hẳn →
+    chặn. Dev: 19 byte vẫn chạy, thiếu thì tự sinh 64 byte. Đúng như tài liệu.
+    (Lần đo đầu tôi đặt nhầm biến `RENDER` nên cổng "không nổ" — `IS_PRODUCTION`
+    đọc `DJANGO_ENV`. Suýt báo một cổng đang tốt là hỏng.)
+  · `REDIS_URL` — trống → LocMemCache; toàn dấu cách → LocMemCache (nhờ
+    `.strip()`); có URL → RedisCache + `IGNORE_EXCEPTIONS`. Đúng như tài liệu.
+  · `NUM_PROXIES` — mặc định `1` ở production, `0` ở dev, đọc được từ env.
+  **TÌM RA MỘT LỖI:** câu "`common/net.py` là nơi DUY NHẤT trả lời request này
+  đến từ đâu" — chép cả vào tài liệu bàn giao §A2 — đang SAI. `logging.py::log_5xx`
+  là người đọc thứ ba, và nó đọc `META['REMOTE_ADDR']` thô. Đo với `NUM_PROXIES=1`:
+  cửa chung trả `203.0.113.9` (học viên), nhật ký ghi `10.0.0.7` (chặng biên) —
+  **giống nhau ở mọi request**, và mâu thuẫn với `admin_audit` của cùng request.
+  Đã vá + cắm phép kiểm QUÉT TOÀN BỘ mã nguồn để người đọc thứ tư không lặng lẽ
+  xuất hiện. Bản đầu của phép kiểm ấy cho 3 dương tính giả vì nó bắt CHỮ
+  (`remote_addr` là tên khoá dict, và hai lần trong chú thích) chứ không bắt
+  hành vi đọc — đã siết về `META[...]`/`headers.get(...)`, phân biệt hoa thường.
+  · `/api/admin/do-proxy` nay trả thêm `ipHienTai` + `numProxiesHienTai` — KẾT
+    LUẬN với cấu hình đang chạy, không chỉ nguyên liệu để anh tự suy. Và bỏ câu
+    hướng dẫn cũ "đặt xong thì vá nốt `_client_ip` trong audit.py": việc ấy làm
+    xong 04/09, làm theo là dựng lại đúng bản sao thứ hai vừa bỏ.
 - [~] A2 · **Nhánh Neon riêng cho CI** — PHẦN MÃ XONG 05/09, còn một thao tác
   cấu hình của anh (`docs/VIEC_CUA_ANH.md` §D5).
   Job pytest đọc `DATABASE_URL_CI` TRƯỚC, rơi về `DATABASE_URL` khi chưa có —

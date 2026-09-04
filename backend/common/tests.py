@@ -483,3 +483,139 @@ def test_kiem_luoc_do_phu_du_bon_muc_dang_CHO_DEPLOY(db):
     ma = {m[0] for m in MUC}
     for can in ('§42a', '§42b', '§43a', '§43b'):
         assert can in ma, 'thiếu %s trong danh sách kiểm' % can
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CỬA DUY NHẤT ĐỌC IP — phép kiểm giữ đúng một câu tự nhận (A1, 05/09/2026)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def test_khong_ai_doc_IP_khach_ngoai_common_net():
+    """`common/net.py` tự nhận là nơi DUY NHẤT trả lời "request này từ đâu".
+
+    ── VÌ SAO CÓ PHÉP KIỂM NÀY ────────────────────────────────────────────────
+
+    Câu tự nhận ấy được chép nguyên văn vào `docs/VIEC_CUA_ANH.md` §A2 cho anh
+    Sơn đọc trước khi mở cổng production. Ngày 05/09 kiểm lại thì nó SAI: ngoài
+    `throttling.py` và `audit.py` (cả hai đều gọi `client_ip`), còn một người
+    đọc thứ ba — `logging.py::log_5xx` lấy thẳng `META['REMOTE_ADDR']`.
+
+    Đo được (NUM_PROXIES=1, một chặng biên Render):
+
+        client_ip(req)       → 203.0.113.9   ← học viên thật
+        META['REMOTE_ADDR']  → 10.0.0.7      ← chặng biên, MỌI request
+
+    Nghĩa là mọi dòng nhật ký 5xx mang cùng một IP vô nghĩa, và nó mâu thuẫn với
+    dòng `admin_audit` của chính request đó. Đi truy sự cố mà gặp hai con số cho
+    cùng một request thì tệ hơn không có số nào: phải dừng lại chọn tin cái nào.
+
+    ── VÌ SAO QUÉT MÃ, KHÔNG GỌI HÀM ─────────────────────────────────────────
+
+    Lỗi ở đây không phải "hàm trả sai" — mỗi hàm đều trả đúng thứ nó đọc. Lỗi là
+    một NGƯỜI ĐỌC THỨ BA xuất hiện. Chỉ phép kiểm nhìn được toàn bộ mã nguồn mới
+    bắt được lớp lỗi ấy, và bắt được cả người đọc thứ TƯ chưa ai viết.
+
+    Đợt A8 (04/09) quét 14 câu tự nhận độc quyền và tìm ra 2 câu sai. Đây là câu
+    thứ ba — và là câu duy nhất từ đó tới nay được cắm phép kiểm để không sai
+    lại lần nữa.
+    """
+    import re
+    import subprocess
+    from pathlib import Path
+
+    goc = Path(__file__).resolve().parent.parent
+
+    # Chỉ tệp ĐANG THEO DÕI, để bản build/venv/tệp rác không lọt vào.
+    ra = subprocess.run(['git', 'ls-files', '*.py'], cwd=goc,
+                        capture_output=True, text=True, check=True)
+    tep = [goc / t for t in ra.stdout.split('\n') if t.strip()]
+    assert len(tep) > 20, 'không liệt kê được mã nguồn (%d tệp)' % len(tep)
+
+    # HÀNH VI ĐỌC nguồn IP thô, không phải chữ "remote_addr" ở bất kỳ đâu.
+    #
+    # Bản đầu của biểu thức này là `REMOTE_ADDR|HTTP_X_FORWARDED_FOR|
+    # X-Forwarded-For` với cờ IGNORECASE, và nó cho BA dương tính giả ngay lần
+    # chạy đầu:
+    #     · `extra['remote_addr'] = client_ip(request)`  ← tên khoá dict, đã vá
+    #     · `# IP (get_remote_address tương đương)`      ← một chú thích
+    #     · một dòng docstring nhắc tên header
+    # Tức thước đo đang bắt chữ, còn thứ cần bắt là *lấy giá trị ra khỏi
+    # `request`*. Neo vào `META[...]`/`META.get(...)` và `headers.get(...)` thì
+    # nói đúng điều ấy — và văn xuôi giải thích lỗi thôi bị phạt.
+    #
+    # Không dùng IGNORECASE: khoá `META` của Django là CHỮ HOA, còn `headers`
+    # là chữ thường. Phân biệt hoa thường ở đây chính là phần thông tin.
+    THO = re.compile(
+        r"""META\s*(?:\.get\s*\(|\[)\s*['"](?:REMOTE_ADDR|HTTP_X_FORWARDED_FOR|"""
+        r"""HTTP_X_REAL_IP)['"]"""
+        r"""|headers\s*(?:\.get\s*\(|\[)\s*['"](?:x-forwarded-for|x-real-ip)['"]""")
+
+    # Được phép, kèm LÝ DO — mỗi dòng ở đây là một ngoại lệ có ý thức.
+    MIEN = {
+        'common/net.py':       'chính là cửa',
+        'common/do_proxy.py':  'đường CHẨN ĐOÁN, việc của nó là hiện header THÔ',
+        'common/tests.py':     'phép kiểm phải dựng được request giả',
+        'common/tests_hop_dong.py': 'phép kiểm hợp đồng, như trên',
+    }
+
+    pham = []
+    for t in tep:
+        rel = t.relative_to(goc).as_posix()
+        if rel in MIEN:
+            continue
+        try:
+            ma = t.read_text(encoding='utf-8')
+        except (OSError, UnicodeDecodeError):
+            continue
+        for i, dong in enumerate(ma.split('\n'), 1):
+            # Bỏ chú thích: cả tệp này lẫn `logging.py` GIẢI THÍCH lỗi bằng đúng
+            # những chữ ấy. Một phép kiểm phạt lời giải thích là phép kiểm tệ.
+            if dong.lstrip().startswith('#'):
+                continue
+            if THO.search(dong):
+                pham.append('%s:%d  %s' % (rel, i, dong.strip()[:90]))
+
+    assert not pham, (
+        'Có người đọc IP khách ngoài `common/net.py` — câu "cửa duy nhất" trong '
+        'net.py VÀ trong docs/VIEC_CUA_ANH.md §A2 thành sai:\n  '
+        + '\n  '.join(pham)
+        + '\n\nSửa: gọi `common.net.client_ip(request)`. Nếu thật sự cần header '
+          'thô (đường chẩn đoán), thêm tệp vào `MIEN` kèm lý do.')
+
+
+def test_log_5xx_ghi_dung_IP_hoc_vien_khong_phai_IP_chang_bien():
+    """Đi trọn đường thật: `log_5xx` phải ghi IP khách, không phải IP proxy.
+
+    Phép kiểm trên quét MÃ; phép kiểm này CHẠY hàm. Cần cả hai — quét mã bắt
+    được người đọc thứ tư trong tương lai, nhưng nó không chứng minh được rằng
+    thứ thay vào chỗ cũ trả đúng số.
+    """
+    import logging as _logging
+
+    from django.test import RequestFactory, override_settings
+
+    from common.logging import log_5xx
+
+    bat = []
+
+    class _Bat(_logging.Handler):
+        def emit(self, record):
+            bat.append(record)
+
+    lg = _logging.getLogger('thu_log_5xx')
+    lg.addHandler(_Bat())
+    lg.setLevel(_logging.ERROR)
+
+    # Hình dạng THẬT sau một chặng biên: khách 203.0.113.9, biên nối IP nó thấy
+    # vào cuối; REMOTE_ADDR là IP của chính chặng biên.
+    req = RequestFactory().get(
+        '/x', REMOTE_ADDR='10.0.0.7',
+        HTTP_X_FORWARDED_FOR='9.9.9.9, 203.0.113.9')
+
+    with override_settings(NUM_PROXIES=1):
+        log_5xx(lg, message='thu', request=req)
+
+    assert bat, 'không ghi được dòng nào'
+    ghi = getattr(bat[-1], 'remote_addr', None)
+    assert ghi == '203.0.113.9', (
+        'nhật ký 5xx ghi %r — đó là IP chặng biên, giống nhau ở MỌI request, '
+        'và mâu thuẫn với dòng admin_audit của cùng request này.' % ghi)

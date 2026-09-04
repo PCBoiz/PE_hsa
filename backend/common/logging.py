@@ -51,7 +51,29 @@ def log_5xx(logger: logging.Logger, exc: BaseException | None = None,
     if request is not None:
         extra['http_method'] = request.method
         extra['path'] = request.path
-        extra['remote_addr'] = request.META.get('REMOTE_ADDR')
+        # IP QUA CỬA DUY NHẤT, không đọc `REMOTE_ADDR` thô (A1, 05/09/2026).
+        #
+        # `common/net.py` tự nhận là "nơi duy nhất trả lời request này đến từ
+        # đâu", và `docs/VIEC_CUA_ANH.md` §A2 chép lại nguyên câu ấy cho anh
+        # đọc. Dòng này làm câu ấy thành SAI: nó là người đọc IP thứ ba, và nó
+        # đọc một nguồn khác.
+        #
+        # Đo trên production (NUM_PROXIES=1, một chặng biên Render):
+        #     client_ip(req)          → 203.0.113.9   ← IP học viên thật
+        #     META['REMOTE_ADDR']     → 10.0.0.7      ← chặng biên, MỌI request
+        #
+        # Tức mọi dòng nhật ký 5xx đều mang CÙNG một IP vô nghĩa, và nó mâu
+        # thuẫn với dòng `admin_audit` của chính request đó. Khi đi truy một sự
+        # cố, hai con số khác nhau cho cùng một request tệ hơn không có số nào:
+        # người đọc phải dừng lại chọn tin cái nào.
+        # Nhập TRONG hàm chứ không ở đầu tệp: `settings.LOGGING` trỏ tới
+        # `common.logging.RequestIDFilter`, nên tệp này được nạp ngay lúc
+        # `dictConfig` chạy. Kéo thêm một mô-đun đọc `settings` vào đúng lúc ấy
+        # là một rủi ro không cần chuốc, đổi lấy đúng một lần `import` đã nằm
+        # sẵn trong `sys.modules` ở mọi lượt gọi sau.
+        from common.net import client_ip
+
+        extra['remote_addr'] = client_ip(request)
     if exc is not None:
         extra['stack_trace'] = traceback.format_exc()
         logger.error(message, exc_info=exc, extra=extra)

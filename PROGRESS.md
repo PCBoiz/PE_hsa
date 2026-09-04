@@ -3616,3 +3616,51 @@ và `main.js` (1.700) chiếm 71% phần còn lại.
 
 Bên lề: hai lỗi `ruff I001` tồn sẵn từ A10/A11 hôm nay mới lộ — CI sẽ chặn ngay
 lượt push kế tiếp. Đã vá.
+
+## 05/09/2026 — A1: kiểm ba cổng an ninh bằng ĐO, tìm ra một câu tự nhận sai
+
+Kiểm bằng cách chạy thật `settings.py` qua từng kịch bản, không đọc lướt:
+
+| cổng | kịch bản | kết quả |
+|---|---|---|
+| `SECRET_KEY` | prod 19 / 31 / 32 byte / thiếu | chặn / chặn / qua / chặn |
+| `SECRET_KEY` | dev 19 byte · dev thiếu | chạy · tự sinh 64 byte |
+| `REDIS_URL` | trống · toàn dấu cách · có URL | LocMem · LocMem · RedisCache |
+| `NUM_PROXIES` | mặc định | `1` ở prod, `0` ở dev, đọc được từ env |
+
+Ba cổng đúng như tài liệu nói. Lần đo đầu tôi đặt nhầm biến (`RENDER` thay vì
+`DJANGO_ENV`) nên cổng SECRET_KEY "không nổ" — suýt báo một cổng đang tốt là
+hỏng. Thước sai trông y hệt mã sai.
+
+**Nhưng một câu tự nhận thì SAI.** `common/net.py` nhận là "nơi DUY NHẤT trả lời
+request này đến từ đâu", và câu ấy được chép nguyên văn vào `docs/VIEC_CUA_ANH.md`
+§A2 cho anh Sơn đọc trước khi mở cổng production. Còn một người đọc thứ ba:
+`logging.py::log_5xx` lấy thẳng `META['REMOTE_ADDR']`.
+
+Đo với `NUM_PROXIES=1` và một chặng biên:
+
+    common.net.client_ip  → 203.0.113.9   ← học viên thật
+    META['REMOTE_ADDR']   → 10.0.0.7      ← chặng biên, MỌI request
+
+Tức mọi dòng nhật ký 5xx mang cùng một IP vô nghĩa, và nó mâu thuẫn với dòng
+`admin_audit` của chính request đó. Đi truy một sự cố mà gặp hai con số cho cùng
+một request thì tệ hơn không có số nào: phải dừng lại chọn tin cái nào.
+
+Đây là câu tự nhận độc quyền thứ ba bị bắt (đợt A8 ngày 04/09 quét 14 câu, sai
+2). Khác ở chỗ: câu này nay có phép kiểm QUÉT TOÀN BỘ mã nguồn canh nó, nên
+người đọc thứ tư không lặng lẽ xuất hiện được.
+
+**Bản đầu của phép kiểm ấy sai — và nó tự khai ra ngay lần chạy đầu.** Ba dương
+tính giả, cả ba là lỗi của THƯỚC chứ không của mã: nó bắt chữ `remote_addr` ở
+bất kỳ đâu, nên khớp phải một tên khoá dict, một chú thích, và một dòng docstring.
+Đã siết về đúng HÀNH VI ĐỌC (`META[...]` / `headers.get(...)`, phân biệt hoa
+thường). Rồi chứng minh nó vẫn cắn: lùi `logging.py` → đỏ đúng dòng ấy.
+
+Đúng cái đã xảy ra với bộ đo tương phản (106/108 "vi phạm" là lỗi của chính bộ
+đo). Một phép kiểm mới phải bị nghi ngờ như mã mới.
+
+Bên lề, `common/do_proxy.py` dặn người đọc "đặt xong thì vá nốt `_client_ip`
+trong audit.py" — việc ấy làm xong 04/09, và làm theo lời dặn là dựng lại đúng
+bản sao thứ hai vừa bỏ. Đã sửa, và thêm `ipHienTai` + `numProxiesHienTai` vào
+phản hồi: câu hỏi thật của người mở đường ấy là "với cấu hình hôm nay, máy chủ
+nghĩ tôi là ai", và đó là thứ trả lời được bằng một dòng.

@@ -106,9 +106,26 @@ Ba điều rút ra:
 > request bị chặn vì IP này lại vào sổ dưới IP kia. Có phép kiểm canh đúng bất
 > biến ấy, đã chứng minh ĐỎ khi lùi lại bản cũ.
 >
+> **KIỂM LẠI 05/09/2026 — câu "duy nhất" ở trên khi ấy đang SAI, đã vá.**
+> Còn một người đọc thứ ba: `common/logging.py::log_5xx` lấy thẳng
+> `META['REMOTE_ADDR']`. Đo với `NUM_PROXIES=1` và một chặng biên:
+> cửa chung trả `203.0.113.9` (học viên thật), còn dòng nhật ký ghi `10.0.0.7`
+> (chặng biên) — **giống nhau ở mọi request**, và mâu thuẫn với dòng
+> `admin_audit` của chính request đó. Đi truy một sự cố mà gặp hai con số cho
+> cùng một request thì tệ hơn không có số nào.
+> Nay `log_5xx` cũng đi qua cửa chung, và có phép kiểm QUÉT TOÀN BỘ mã nguồn
+> (`common/tests.py::test_khong_ai_doc_IP_khach_ngoai_common_net`) để người đọc
+> thứ tư không lặng lẽ xuất hiện. Bản đầu của phép kiểm ấy cho ba dương tính
+> giả vì nó bắt CHỮ chứ không bắt hành vi đọc — đã siết lại.
+>
 > **Việc còn của anh:** đo chuỗi proxy thật của Render (cách đo ở trên). Ra `1`
 > thì không phải làm gì — mã đã mặc định thế. Ra số khác thì đặt biến môi trường
 > `NUM_PROXIES` trên Render, không cần sửa mã.
+>
+> **Cách kiểm nhanh nhất (05/09):** `/api/admin/do-proxy` nay trả thêm
+> `ipHienTai` và `numProxiesHienTai` — tức KẾT LUẬN với cấu hình đang chạy, chứ
+> không chỉ nguyên liệu để anh tự suy. Mở nó bằng trình duyệt: `ipHienTai` bằng
+> IP thật của anh (đối chiếu whatismyip) thì con số đang đúng, không phải sửa gì.
 
 *Vì sao vẫn cần anh đo:* mọi số liệu trên là đo ở máy — toàn bộ 32 dòng
 `admin_audit` hiện có đều là `::1`/`127.0.0.1`, chưa request production nào được

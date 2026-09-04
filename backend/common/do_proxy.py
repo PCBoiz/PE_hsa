@@ -19,9 +19,11 @@ chặng Vercel + Render thật sự thêm vào. Trên máy dev mọi dòng đề
 CHỈ QUẢN TRỊ VIÊN, và chỉ trả về HEADER LIÊN QUAN TỚI PROXY. Không trả toàn bộ
 ``request.META``: trong đó có biến môi trường của tiến trình.
 """
+from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.net import client_ip
 from common.permissions import IsAdminRole
 
 
@@ -40,11 +42,19 @@ class DoProxyView(APIView):
             'remoteAddr': request.META.get('REMOTE_ADDR'),
             'proto': request.META.get('HTTP_X_FORWARDED_PROTO'),
             'host': request.META.get('HTTP_X_FORWARDED_HOST'),
+            # KẾT LUẬN HIỆN TẠI, không chỉ nguyên liệu (thêm 05/09/2026).
+            #
+            # Bản đầu chỉ trả header thô rồi bảo người đọc tự suy ra `NUM_PROXIES`
+            # từ `soChang`. Nhưng câu hỏi thật của người mở đường này là "với cấu
+            # hình HÔM NAY, máy chủ nghĩ tôi là ai" — và đó là câu trả lời được
+            # bằng một dòng. Có nó thì kiểm rất gọn: `ipHienTai` có đúng là IP
+            # thật của anh không? Đúng → không phải làm gì.
+            'numProxiesHienTai': settings.NUM_PROXIES,
+            'ipHienTai': client_ip(request),
             'huongDan':
                 'Mở đường này BẰNG TRÌNH DUYỆT (qua Vercel) và bằng curl THẲNG '
                 'vào Render, rồi so `chang`. `soChang` của lượt qua trình duyệt '
-                'chính là NUM_PROXIES. Đặt xong thì vá nốt `_client_ip` trong '
-                'common/audit.py (T66) cho khớp — hai chỗ phải chỉ vào CÙNG một '
-                'phần tử, lệch nhau là hàng rào tần suất và nhật ký kiểm toán '
-                'ghi hai IP khác nhau cho cùng một request.',
+                'chính là NUM_PROXIES. Cách kiểm nhanh nhất: `ipHienTai` có bằng '
+                'IP thật của anh (whatismyip) không — bằng thì `numProxiesHienTai` '
+                'đang đúng, không phải sửa gì.',
         })
