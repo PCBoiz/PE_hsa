@@ -3706,3 +3706,56 @@ Sửa luôn hai mục sai trong TODO, phát hiện khi khảo sát:
 - **T34 "Danh sách khoá" không phải màn riêng** — nó là `<div id="page-courses">`
   bên trong `dashboard/page.tsx`. Hai mục rời là sai từ đầu, gộp vào T31.
 Một mục "chưa làm" cho việc đã làm cũng làm hỏng kế hoạch y như chiều ngược lại.
+
+## 05/09/2026 — Bộ e2e Playwright: hai spec của dự án khác, một tệp suýt xoá nhầm
+
+Sau khi vá A13 tôi mới nhận ra mọi bằng chứng đến lúc đó đều là TĨNH: chưa lần
+nào mở trình duyệt xem `__PE_BAI_DANG_MO` có thật sự được nạp không.
+
+Đi tìm bộ e2e để chạy, và phát hiện nó không chạy được. Đo trên CSDL:
+`db_design` không có trong bảng `courses` (chỉ có ba khoá HSA), và
+`audit@example.com` không có trong `users`. Tức `helpers.ts::openLesson` và
+`login` đều không thể thành công. `playwright.config.ts` còn trỏ cổng **3000**
+(pe_hsa chạy 3100) và tự mô tả là "bộ e2e regression engine chấm SQL, port từ
+test_e2.py bản Flask" — toàn bộ là di sản PE_test chép sang lúc tách repo.
+
+Chạy thật một spec để chắc chứ không suy: `pe-run-sql.spec.ts` chết đúng ở dòng
+`waitForFunction` chờ `LESSON_CONTENT.db_design`, sau 30 giây.
+
+Một bộ kiểm không thể chạy qua, mà CI cũng không chạy, là thứ tệ hơn không có:
+nó trông như vùng phủ. Đúng câu đã viết trong CI hôm 01/09 về `forum-xss`.
+
+**Nhưng suýt xoá nhầm.** Trước khi xoá tôi hỏi mỗi tệp CUNG CẤP gì.
+`mobile-responsive.spec.ts` có ba phép kiểm KHÔNG cần đăng nhập (`/`, `/login`,
+`/register`) — chạy thử thì cả ba XANH. Nếu xoá cả cụm theo một kết luận chung
+"bộ này chết", tôi đã vứt đi một phép đo tràn ngang đang hoạt động.
+
+Đã làm:
+- Xoá `drag-regression.spec.ts` + `pe-run-sql.spec.ts` — không mã nào trong repo
+  này cung cấp `PE_runSQL` hay `drag_game` (chúng chỉ còn trong tài liệu migration).
+- `helpers.ts` viết lại cho HSA. `login()` thôi nuốt lỗi bằng `.catch(() => {})`:
+  nó TRẢ VỀ false và IN RA lý do. Phép kiểm cần đăng nhập nay tự BỎ QUA kèm câu
+  giải thích phải làm gì — bỏ qua có tiếng, không phải đỏ khó hiểu ở tận nơi khác.
+- `openLesson` chờ `__PE_BAI_DANG_MO`, tức chờ đúng thứ trợ lý chat đọc.
+- `playwright.config.ts`: cổng 3100, và `testMatch: /\.spec\.ts$/` — mặc định
+  của Playwright khớp cả `*.test.mjs` nên `testDir: '.'` đang nuốt luôn
+  `e2e/unit/` (script node thuần CI chạy bằng `node <tệp>`).
+- `ngu-canh-bai-hoc.spec.ts` mới: A13 kiểm trong TRÌNH DUYỆT THẬT.
+
+**Bằng chứng chạy thật, trên chính trang thật:**
+
+    hàm CŨ  (bản 19/08–05/09)  →  null
+    hàm MỚI (sau bản vá)       →  bài 3: "Tỉ lệ phần trăm"
+
+Chặn đúng một lời gọi `/api/courses/*/content`; mọi thứ khác là thật.
+
+Kết quả cổng: 15/15 unit XANH · playwright 4 xanh, 3 bỏ qua có lý do, exit 0.
+
+**Hai lần suýt báo xanh giả trong cùng phiên, cùng một nguyên nhân:** `| tail`
+nuốt mã thoát. Lần một ở chốt hãm A7 (đã bắt được), lần hai ở `pnpm lint` — tôi
+đã in "lint sạch" trong khi ESLint đang trả về 1 (một chỉ thị `eslint-disable`
+thừa). Trong shell, `a | tail && echo ok` báo cáo về `tail`, không về `a`.
+
+**Chưa làm được, và vì sao:** ba phép kiểm cần đăng nhập vẫn bỏ qua. Tạo tài
+khoản e2e là một lượt INSERT vào Neon production — ngoài phạm vi anh đã cho phép
+(SELECT tự do, DDL bổ sung được, GHI thì không). Cần anh quyết.

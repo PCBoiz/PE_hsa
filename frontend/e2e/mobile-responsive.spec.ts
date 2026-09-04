@@ -6,7 +6,7 @@
 // (sk-grid repeat(4,1fr), dash-row minmax(0,1fr) 280px, bảng leaderboard);
 // login/register dự kiến pass (đã có breakpoint auth.css).
 import { test, expect, Page } from '@playwright/test';
-import { login } from './helpers';
+import { KHOA, LY_DO_BO_QUA, login } from './helpers';
 
 test.use({ viewport: { width: 375, height: 812 } });
 
@@ -71,7 +71,7 @@ for (const path of ['/', '/login', '/register']) {
 
 // ── App chính sau đăng nhập: từng tab SPA của dashboard ─────────────────────
 test('dashboard + các tab SPA hiển thị đủ, không tràn ngang', async ({ page }) => {
-  await login(page);
+  test.skip(!(await login(page)), LY_DO_BO_QUA);
   await page.waitForSelector('.topbar', { timeout: 30_000 });
 
   // Topbar phải hiện và dùng được (nội dung "đầy đủ": nav/search/bell còn đó)
@@ -105,15 +105,16 @@ test('dashboard + các tab SPA hiển thị đủ, không tràn ngang', async ({
 });
 
 // ── Trang standalone nặng nội dung ──────────────────────────────────────────
-test('trang course detail (db_design) không tràn ngang', async ({ page }) => {
-  await login(page);
-  await page.goto('/courses/db_design', { waitUntil: 'domcontentloaded' });
+// `db_design` là khoá của PE_test, không có trong CSDL này (sửa 05/09/2026).
+test(`trang course detail (${KHOA}) không tràn ngang`, async ({ page }) => {
+  test.skip(!(await login(page)), LY_DO_BO_QUA);
+  await page.goto(`/courses/${KHOA}`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2000);
-  await expectNoHorizontalOverflow(page, '/courses/db_design');
+  await expectNoHorizontalOverflow(page, `/courses/${KHOA}`);
 });
 
 test('trang questionaire không tràn ngang', async ({ page }) => {
-  await login(page);
+  test.skip(!(await login(page)), LY_DO_BO_QUA);
   await page.goto('/questionaire', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1500);
   await expectNoHorizontalOverflow(page, '/questionaire');

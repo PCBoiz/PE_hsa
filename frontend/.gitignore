@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Kết quả chạy Playwright — rác của mỗi lượt chạy, không phải mã nguồn.
+# (`.last-run.json` đã suýt lọt vào một commit ngày 05/09/2026.)
+/test-results/
+/playwright-report/
