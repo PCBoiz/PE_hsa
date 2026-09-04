@@ -2047,8 +2047,25 @@ function initDragDrop() {
 document.addEventListener("DOMContentLoaded", function () {
   applyTheme(prefersDarkTheme());
   updateDate();
-  const p = window.location.pathname;
-  if (p !== "/login" && p !== "/register") {
+  /* NẠP DỮ LIỆU DASHBOARD KHI TRANG CÓ CHỖ ĐỂ HIỆN NÓ (vá 05/09/2026).
+
+     Bản cũ loại trừ theo ĐƯỜNG DẪN: mọi trang trừ `/login` và `/register`. Danh
+     sách ấy trôi ngay khi có trang mới, và nó đã trôi. `/questionaire` cũng nạp
+     `main.js` — vì `main.js` vá `window.fetch` để gắn CSRF và chặn mật khẩu tạm
+     — nên nó bắn cả BỐN lời gọi của `loadAll()`.
+
+     Đo trong trình duyệt, phiên đã đăng nhập thật:
+         /questionaire → 4 lời gọi (/api/user · /api/stats · /api/courses-enrolled
+                         · /api/notifications), 0 khung SPA, KHÔNG topbar, và
+                         KHÔNG một id nào khớp /user|stat|notif|bell|course/
+         /dashboard    → 9 khung SPA, có topbar, có #courses-grid
+     Tức bốn lượt đi mạng ấy không có chỗ nào để hiện — trên đúng màn hình đầu
+     tiên của một học viên mới.
+
+     Điều kiện nay hỏi thẳng: TRANG NÀY CÓ KHUNG SPA KHÔNG. Cả bốn loader đều
+     ghi vào khung ấy hoặc vào topbar đi kèm nó, nên đó là câu hỏi đúng — và nó
+     tự đúng với mọi trang thêm về sau, không ai phải nhớ sửa một danh sách. */
+  if (document.querySelector('.page[id^="page-"]')) {
     loadAll();
   }
   initDragDrop();

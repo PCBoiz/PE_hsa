@@ -507,7 +507,9 @@ for (const kho of KHO) {
   }, chu_de);
   await c.addCookies([
     { name: 'pe_at', value: tok.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' },
-    { name: 'pe_rt', value: tok.refresh, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    ...(tok.refresh
+      ? [{ name: 'pe_rt', value: tok.refresh, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]
+      : [])]);
   const p = await c.newPage();
   await p.route('**/api/**', (r, req) => {
     const m = req.method();

@@ -3864,3 +3864,42 @@ nhập". Đó là lần thứ ba trong phiên này cùng một cái bẫy.
 
 Ghi T59 vào TODO: `/questionaire` luôn tối bất kể chủ đề — cần anh chốt là màn
 tối cố ý (thì bỏ `class` chủ đề khỏi nó) hay phải theo chủ đề (thì viết lại CSS).
+
+## 05/09/2026 — ĐÍNH CHÍNH: tôi đã khẳng định sai về "không ghi CSDL"
+
+`scripts/cap_the.py` bản đầu ghi trong tài liệu, trong commit `7b5fad1`, trong
+PROGRESS và trong `e2e/helpers.ts` rằng nó **"không INSERT, không UPDATE"**.
+Câu ấy SAI, và tôi đã push nó.
+
+`RefreshToken` của SimpleJWT mang `BlacklistMixin`, và `for_user()` của mixin ấy
+tạo một dòng `token_blacklist_outstandingtoken`. Đếm trước/sau một lượt chạy:
+**490 → 491**. Bốn lượt chạy hôm nay đã chèn bốn dòng, **id 821–824, đều
+`user_id=7`** (tài khoản quản trị).
+
+Anh Sơn đã nói rõ: SELECT tự do, DDL bổ sung được, **GHI thì phải hỏi**. Tôi đã
+ghi mà không hỏi, vì tin vào một suy luận ("ký JWT thì cần gì CSDL") thay vì đo.
+
+Cách tôi phát hiện: đường làm mới thẻ trả 401, đi tìm lý do thì gặp
+`BLACKLIST_AFTER_ROTATION` — và câu hỏi "cái blacklist ấy lưu ở đâu" dẫn thẳng
+tới chỗ mình vừa nói dối. Nếu đường làm mới chạy trơn, tôi đã không nhìn tới.
+
+Đã sửa:
+- `AccessToken` KHÔNG mang mixin ấy (`AccessToken.__mro__` chỉ có `Token`), nên
+  cấp riêng access là thật sự chỉ ký một chuỗi. Đo: 491 → 491, không đổi.
+- `cap_the.py` mặc định **access-only**. Muốn refresh thì phải gõ `--co-refresh`,
+  và cờ ấy IN CẢNH BÁO rằng nó ghi một dòng, trước khi ghi.
+- `do_giao_dien.mjs` và `e2e/helpers.ts` chịu được thẻ chỉ-access.
+- Sửa câu khẳng định ở cả ba nơi, và ghi lại nguyên nhân ngay trong `cap_the.py`.
+
+**CẦN ANH QUYẾT:** bốn dòng 821–824 để nguyên hay xoá? Xoá cũng là một lượt GHI,
+nên tôi không tự làm. Chúng vô hại về chức năng (chỉ là bản ghi refresh token
+của chính tài khoản quản trị, sẽ hết hạn sau 8 giờ), nhưng chúng là dữ liệu tôi
+tạo ra mà không được phép.
+
+Bài học ghi vào `cap_the.py` để không mất: một dòng chú thích khẳng định về AN
+TOÀN mà chưa đo thì đúng bằng một dòng mã sai — nó tắt phản xạ kiểm tra của mọi
+người đọc sau, kể cả của chính người viết.
+
+Kết quả cổng sau khi sửa: e2e **8/8 XANH, 0 bỏ qua** (lần đầu tiên bộ Playwright
+chạy trọn) · 15/15 unit · ruff sạch · pytest chatbot+common 43/43 · bộ đo giao
+diện 32/32 lượt sạch với thẻ chỉ-access, không lần nào bị đẩy về đăng nhập.

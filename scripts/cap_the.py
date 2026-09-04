@@ -1,4 +1,4 @@
-"""Cấp cặp thẻ JWT cho một tài khoản ĐÃ CÓ, để bộ đo giao diện mở được trang thật.
+"""Cấp thẻ JWT cho một tài khoản ĐÃ CÓ, để bộ đo giao diện mở được trang thật.
 
 ── VÌ SAO CÓ TỆP NÀY (05/09/2026) ──────────────────────────────────────────
 
@@ -15,20 +15,38 @@ người đọc tới một tệp không tồn tại, để sửa một đườn
 Một công cụ đo mà không chạy được thì tệ hơn không có: người ta vẫn nhắc tới nó
 trong ghi chú, vẫn tưởng có ai đó đang đo.
 
-── KHÔNG GHI GÌ VÀO CSDL ───────────────────────────────────────────────────
+── MẶC ĐỊNH KHÔNG GHI CSDL, VÀ ĐÂY LÀ CHỖ TÔI ĐÃ NÓI SAI ───────────────────
 
-Cấp thẻ chỉ là KÝ một chuỗi bằng `SECRET_KEY` cho một `user_id` đã tồn tại —
-không `INSERT`, không `UPDATE`. Tệp này chỉ `SELECT` một lần để xác nhận tài
-khoản có thật và đúng vai, rồi ký.
+Bản đầu của tệp này cấp CẢ CẶP access + refresh và tuyên bố "không INSERT, không
+UPDATE". **Sai.** `RefreshToken` của SimpleJWT mang `BlacklistMixin`, và
+`for_user()` của mixin ấy tạo một dòng `token_blacklist_outstandingtoken`.
 
-Bộ đo cũng đã tự chặn mọi lời gọi không phải GET (`do_giao_dien.mjs`, khối
-`p.route`), nên một lượt đo không đổi được gì dù thẻ có quyền quản trị.
+Đo trực tiếp (đếm trước/sau một lượt chạy): 490 → 491. Bốn lượt chạy ngày
+05/09/2026 đã chèn bốn dòng id 821–824, đều `user_id=7`.
 
-    python scripts/cap_the.py                 # vai admin, ghi ra .the/tokens_ad.json
+`AccessToken` KHÔNG mang mixin ấy (`AccessToken.__mro__` chỉ có `Token`), nên
+cấp riêng access là thật sự chỉ ký một chuỗi. Đã đo: 491 → 491.
+
+Nên MẶC ĐỊNH nay là access-only. Muốn có refresh thì phải nói ra bằng
+`--co-refresh`, và cờ ấy in rõ rằng nó GHI một dòng.
+
+Bài học ghi lại ở đây vì nó đắt: tôi viết "không ghi gì vào CSDL" dựa trên suy
+luận "ký JWT thì cần gì CSDL", rồi chép câu ấy vào commit, vào PROGRESS, vào
+`e2e/helpers.ts`. Một dòng chú thích khẳng định về AN TOÀN mà không đo thì đúng
+bằng một dòng mã sai — nó tắt phản xạ kiểm tra của mọi người đọc sau.
+
+Bộ đo cũng tự chặn mọi lời gọi không phải GET (`do_giao_dien.mjs`, khối
+`p.route`), nên một lượt ĐO không đổi được gì dù thẻ có quyền quản trị.
+
+    python scripts/cap_the.py                 # access-only, KHÔNG ghi CSDL
+    python scripts/cap_the.py --co-refresh    # + refresh (GHI 1 dòng)
     python scripts/cap_the.py --vai "Giảng viên"
     python scripts/cap_the.py --id 7 --ra duong/dan.json
 
-Tệp thẻ nằm trong `.the/` và thư mục ấy ĐÃ vào `.gitignore` — thẻ là bí mật.
+Thẻ access sống 30 phút. Hết hạn thì chạy lại lệnh trên — rẻ hơn nhiều so với
+việc giữ một refresh token và phải ghi vào CSDL production.
+
+Tệp thẻ nằm trong `.the/`, thư mục ấy ĐÃ vào `.gitignore` — thẻ là bí mật.
 """
 import argparse
 import json
@@ -45,7 +63,7 @@ import django  # noqa: E402
 
 django.setup()
 
-from rest_framework_simplejwt.tokens import RefreshToken  # noqa: E402
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken  # noqa: E402
 
 from accounts.models import User  # noqa: E402
 from common.db import q1  # noqa: E402
@@ -57,6 +75,9 @@ def main():
     ap.add_argument('--id', type=int, help='chỉ định thẳng user_id, bỏ qua --vai')
     ap.add_argument('--ra', default=str(GOC / '.the' / 'tokens_ad.json'),
                     help='tệp JSON để ghi thẻ')
+    ap.add_argument('--co-refresh', action='store_true',
+                    help='cấp kèm refresh token — GHI một dòng vào '
+                         'token_blacklist_outstandingtoken của CSDL đang nối')
     a = ap.parse_args()
 
     if a.id:
@@ -75,14 +96,28 @@ def main():
             print('   %-22s %d' % (r['role'], r['n']))
         raise SystemExit(1)
 
-    ref = RefreshToken.for_user(User.objects.get(id=row['id']))
+    nguoi = User.objects.get(id=row['id'])
+    if a.co_refresh:
+        # `RefreshToken.for_user` GHI một dòng `token_blacklist_outstandingtoken`
+        # (BlacklistMixin). Nói ra trước khi làm, chứ không để người dùng phát
+        # hiện sau — đây là CSDL production.
+        print('CẢNH BÁO: --co-refresh sẽ GHI một dòng vào '
+              'token_blacklist_outstandingtoken.')
+        ref = RefreshToken.for_user(nguoi)
+        the = {'access': str(ref.access_token), 'refresh': str(ref)}
+    else:
+        # `AccessToken` không mang BlacklistMixin → chỉ ký, không chạm CSDL.
+        the = {'access': str(AccessToken.for_user(nguoi))}
+
     ra = Path(a.ra)
     ra.parent.mkdir(parents=True, exist_ok=True)
-    ra.write_text(json.dumps({'access': str(ref.access_token), 'refresh': str(ref)}),
-                  encoding='utf-8')
+    ra.write_text(json.dumps(the), encoding='utf-8')
 
     # KHÔNG in thẻ ra màn hình: nó vào bản ghi phiên làm việc, vào lịch sử shell.
-    print('Đã cấp thẻ cho id=%s (%s, vai %s)' % (row['id'], row['name'], row['role']))
+    print('Đã cấp thẻ cho id=%s (%s, vai %s)%s'
+          % (row['id'], row['name'], row['role'],
+             ' — kèm refresh' if a.co_refresh else ' — access-only, không ghi CSDL'))
+    print('Thẻ access sống 30 phút; hết hạn thì chạy lại lệnh này.')
     print('Ghi vào: %s' % ra)
     print('Đo:  cd scripts && PE_TOKENS="%s" node do_giao_dien.mjs' % ra)
 
