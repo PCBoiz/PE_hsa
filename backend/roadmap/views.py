@@ -62,16 +62,40 @@ class RoadmapsView(APIView):
 
 
 class RoadmapProgressView(APIView):
+    """GET /api/roadmap — những mục học viên đã đánh dấu xong.
+
+    ── VÌ SAO TRẢ THÊM `done` (vá 04/09/2026) ─────────────────────────────
+
+    `doneItems` là danh sách `item_id` TRẦN, không kèm lộ trình. Mà `item_id` do
+    `roadmap.js::normalize` sinh theo VỊ TRÍ — `0-m`, `1-l0`, `2-r1` — nên `0-m`
+    tồn tại trong CẢ 26 lộ trình tĩnh.
+
+    Hệ quả ở client: đánh dấu xong chặng đầu của "Tư duy Định lượng" thì chặng
+    đầu của cả 25 lộ trình còn lại cũng hiện ✓. Chính chú thích trong
+    `roadmap.js` tự thú điều đó ("đánh dấu mọi khoá đang có đuôi khớp") — nó mô
+    tả đúng việc đang làm, chỉ không nói rằng việc ấy sai.
+
+    Bảng `roadmap_progress` LUÔN lưu `roadmap_id` (client gửi trong thân `PUT`),
+    và view này đã có sẵn bộ lọc `?roadmap_id=`. Thứ thiếu chỉ là trả CẶP về để
+    client khỏi phải đoán: một lượt gọi, khớp chính xác.
+
+    Giữ `doneItems` để không phá bản client đang chạy — một trang đã mở sẵn
+    trong trình duyệt học viên vẫn đọc khoá cũ cho tới khi họ tải lại.
+    """
+
     def get(self, request):
         uid = request.user.id
         roadmap_id = request.query_params.get('roadmap_id')
         if roadmap_id:
-            rows = q('SELECT item_id FROM roadmap_progress '
+            rows = q('SELECT roadmap_id, item_id FROM roadmap_progress '
                      'WHERE user_id=%s AND roadmap_id=%s AND done=TRUE', (uid, roadmap_id))
         else:
-            rows = q('SELECT item_id FROM roadmap_progress WHERE user_id=%s AND done=TRUE',
-                     (uid,))
-        return Response({'doneItems': [r['item_id'] for r in rows]})
+            rows = q('SELECT roadmap_id, item_id FROM roadmap_progress '
+                     'WHERE user_id=%s AND done=TRUE', (uid,))
+        return Response({
+            'doneItems': [r['item_id'] for r in rows],
+            'done': [{'roadmapId': r['roadmap_id'], 'itemId': r['item_id']} for r in rows],
+        })
 
 
 class MyRoadmapView(APIView):

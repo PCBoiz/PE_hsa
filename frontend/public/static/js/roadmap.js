@@ -55,25 +55,49 @@
     }).catch(function () { /* mất mạng: localStorage vẫn giữ, lần sau đồng bộ lại */ });
   }
 
+  /* GỘP tiến độ máy chủ vào bộ đệm cục bộ. Hàm THUẦN để kiểm được —
+     `e2e/unit/lo-trinh.test.mjs` rút thẳng hàm này ra khỏi tệp rồi chạy.
+
+     ── LỖI ĐANG CHẶN (vá 04/09/2026) ────────────────────────────────────
+     Bản cũ khớp theo ĐUÔI của khoá:
+
+         var it = k.slice(k.indexOf(':') + 1);
+         if (d.doneItems.indexOf(it) > -1) o[k] = 'done';
+
+     Mà `item_id` do `normalize()` ngay dưới sinh theo VỊ TRÍ — `0-m`, `1-l0`,
+     `2-r1` — nên `0-m` tồn tại trong CẢ 26 lộ trình tĩnh. Đánh dấu xong chặng
+     đầu của "Tư duy Định lượng" là chặng đầu của 25 lộ trình còn lại cũng hiện
+     ✓. Chú thích cũ ("đánh dấu mọi khoá đang có đuôi khớp") mô tả ĐÚNG việc
+     đang làm — nó chỉ không nói rằng việc ấy sai.
+
+     Nhánh thứ hai còn tệ hơn: mục chưa có trong localStorage bị gán cho lộ
+     trình ĐANG MỞ (`getActive()`), tức tiến độ của lộ trình A hiện lên lộ trình
+     B chỉ vì B đang mở lúc tải trang.
+
+     `roadmap_progress` LUÔN lưu `roadmap_id`; nay API trả kèm nó (`done` là
+     danh sách cặp), nên khớp CHÍNH XÁC được. Không đoán nữa. */
+  function gopTienDo(cucBo, capDaXong) {
+    var o = {};
+    Object.keys(cucBo || {}).forEach(function (k) { o[k] = cucBo[k]; });
+    (capDaXong || []).forEach(function (c) {
+      if (!c || !c.roadmapId || !c.itemId) return;
+      o[c.roadmapId + ':' + c.itemId] = 'done';
+    });
+    return o;
+  }
+
   /* Kéo tiến độ từ máy chủ về, ghi đè bộ đệm cục bộ. Chạy một lần lúc mở
      trang — nhờ vậy máy mới vẫn thấy đúng những gì đã đánh dấu ở máy cũ. */
   function syncXuong(xong) {
     fetch('/api/roadmap')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        if (!d || !Array.isArray(d.doneItems) || !d.doneItems.length) { if (xong) xong(); return; }
-        var o = getOverrides();
-        // API trả item_id trần, không kèm tên lộ trình. Đánh dấu mọi khoá đang
-        // có đuôi khớp, và giữ nguyên phần localStorage đã có.
-        Object.keys(o).forEach(function (k) {
-          var it = k.slice(k.indexOf(':') + 1);
-          if (d.doneItems.indexOf(it) > -1) o[k] = 'done';
-        });
-        d.doneItems.forEach(function (it) {
-          var da = Object.keys(o).some(function (k) { return k.slice(k.indexOf(':') + 1) === it; });
-          if (!da) o[getActive() + ':' + it] = 'done';
-        });
-        localStorage.setItem(LS_PROGRESS, JSON.stringify(o));
+        // Chỉ đọc `done` (danh sách CẶP). Máy chủ vẫn trả `doneItems` cũ cho
+        // bản client đang mở dở, nhưng ở đây thì KHÔNG dùng nữa: một danh sách
+        // item_id trần không đủ thông tin để khớp đúng, và đoán bằng đuôi chính
+        // là lỗi vừa vá.
+        if (!d || !Array.isArray(d.done) || !d.done.length) { if (xong) xong(); return; }
+        localStorage.setItem(LS_PROGRESS, JSON.stringify(gopTienDo(getOverrides(), d.done)));
         if (xong) xong();
       })
       .catch(function () { if (xong) xong(); });

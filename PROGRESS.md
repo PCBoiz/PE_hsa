@@ -3099,3 +3099,55 @@ dùng nháy kép nên dấu nháy mở chuỗi JS là nháy TRẦN, không phả
 `main.js` lùi → phép quét đỏ đúng dòng. Lần lùi ĐẦU TIÊN của tôi cho kết quả
 xanh giả vì script lùi làm mất dấu gạch chéo ngược — kiểm lại mới thấy là **bản
 lùi hỏng, không phải phép kiểm sai**.
+
+## 04/09/2026 — hai lỗi trên ĐƯỜNG HỌC VIÊN
+
+**① Phút phòng luyện: con số CLIENT KHAI nằm trong xô của MÁY.**
+`_cham_drill` nhận `drill.seconds` từ thân request, đổi ra phút, ghi vào
+`learning_events.minutes` với `source='system'` — mà `stats/gradebook.py` tách
+hai xô `minutes` / `selfMinutes` **đúng theo cột `source` ấy**. Toàn bộ ý nghĩa
+của phép tách là "cái này máy đo, cái kia học viên tự khai".
+
+Trần cũ là `min(120, …)` **phút** cho một bài luyện **75 giây**: khai được 120
+phút mỗi bài × 76 bài = **152 giờ tự học giả**, hiện trong bảng giảng viên đọc
+và trong báo cáo gửi phụ huynh. Ba chú thích ngay trong hàm ấy đã nói vì sao
+không tin số client khai (`correct`, `maxCombo`, `da_lam` đều dựng lại ở máy
+chủ) — `seconds` lọt qua vì nó trông như một con số vô hại.
+
+Nay kẹp về **trần đồng hồ của chính bài ấy**, thứ máy chủ BIẾT (`time_seconds`
+trong giáo trình, `lessons/content.py` bắt buộc 5–3600). Client chỉ còn khai
+được ÍT hơn sự thật. Chứng minh ĐỎ: gỡ dòng kẹp → `assert 120 == 1`.
+
+Nhân đây kiểm lại một phát hiện cũ của agent — "XP phòng luyện hiện ra nhưng
+không được cộng": **SAI**. `_record_drill` cố ý không ghi `xp` để khỏi đếm hai
+lần; XP thật đi qua `xp_earned = xp_bai + drill_ket['xp']` ở đường `/complete`.
+
+**② Tiến độ lộ trình lem sang 25 lộ trình còn lại.**
+`normalize()` sinh id mục theo VỊ TRÍ (`0-m`, `1-l0`, `2-r1`), nên `0-m` tồn tại
+trong **cả 26 lộ trình tĩnh**. `syncXuong` khớp tiến độ máy chủ theo **đuôi**
+của khoá localStorage, và chú thích cũ tự thú điều đó ("đánh dấu mọi khoá đang
+có đuôi khớp") — nó mô tả đúng việc đang làm, chỉ không nói rằng việc ấy sai.
+Nhánh thứ hai còn gán mục lạ cho lộ trình **đang mở**, tức tiến độ của A hiện
+lên B chỉ vì B đang mở lúc tải trang.
+
+`roadmap_progress` **luôn lưu `roadmap_id`** và API đã có sẵn bộ lọc
+`?roadmap_id=`; thứ thiếu chỉ là trả CẶP về. Nay `GET /api/roadmap` trả thêm
+`done` = danh sách `{roadmapId, itemId}` (giữ `doneItems` cho bản client đang
+mở dở), và phép gộp tách thành hàm **thuần** `gopTienDo` để kiểm được.
+
+Bảng đang có **0 dòng** — lỗi chưa cắn ai, nhưng cắn ngay ở học viên đầu tiên
+bấm "đã học".
+
+**Chứng minh ĐỎ:** lùi phép gộp về khớp-theo-đuôi → 8 khẳng định đỏ; lùi API →
+`KeyError: 'done'`.
+
+Hai chuyện về chính phép kiểm, đáng ghi:
+
+* Bản lùi ĐẦU TIÊN cho kết quả **xanh giả** vì script lùi làm mất dấu gạch chéo
+  ngược. Kiểm lại mới thấy là **bản lùi hỏng, không phải phép kiểm sai** — suýt
+  nữa tôi đi "sửa" một phép kiểm đang đúng.
+* Bản lùi thứ hai **ném `ReferenceError`** giữa chừng và giết cả tệp, che mất
+  bốn khẳng định phía sau. Nay lời gọi đi qua một vỏ bọc bắt ném — và cú ném ấy
+  chính là ràng buộc thiết kế cần canh: `gopTienDo` phải THUẦN thì mới kiểm
+  được, mà bản cũ gọi `getActive()` để ĐOÁN, và chỗ đoán ấy là nửa thứ hai của
+  lỗi lem.
