@@ -501,7 +501,10 @@ def test_hai_phuong_an_trung_nhau_bi_chan():
     _, loi = doc_cau_hoi(_ban_ghi([
         _TIEU_DE, ['Định lượng', 'x', '10', '10', '20', '', '10', '', '', ''],
     ]))
-    assert loi and 'trùng nhau' in loi[0], loi
+    # Câu chữ đổi 04/09: bộ chặn nay dùng CHÍNH phép so của máy chấm, nên nó
+    # nói "máy chấm coi là một" thay vì "trùng nhau" — hai phương án khác
+    # nhau từng ký tự vẫn có thể là một với máy chấm.
+    assert loi and 'COI LÀ MỘT' in loi[0], loi
 
 
 def test_thieu_cot_bat_buoc_noi_ro_thieu_cot_nao():
@@ -735,3 +738,151 @@ def test_o_qua_dai_thi_BAO_chu_khong_cat_ngam():
         _ban_ghi([_TIEU_DE,
                   ['Định lượng', 'x' * (MAX_O + 1), '', '', '', '', 'a', '', '', '']])
     assert 'Dòng 2' in str(e.value) and 'câu hỏi' in str(e.value), str(e.value)
+
+
+# ── VÒNG KIỂM ĐỊNH THỨ HAI (04/09/2026): sáu đường sai ÂM THẦM còn lại ────────
+#
+# Vòng đầu vá bốn lỗi; ba agent tấn công lại chính bản vá ấy và tìm ra sáu đường
+# nữa, trong đó có MỘT đường do CHÍNH BẢN VÁ SÁNG NAY tạo ra (`'%' in fmt`).
+
+
+def _xlsx_fmt(hang, fmt):
+    """Dựng .xlsx và đặt `number_format` cho từng ô: {(dòng, cột): 'mã'}."""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    for h in hang:
+        ws.append(h)
+    for (d, c), f in fmt.items():
+        ws.cell(row=d, column=c).number_format = f
+    buf = _io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def test_dinh_dang_co_dau_phan_tram_THOAT_khong_bi_nhan_100():
+    """① Bản vá phần trăm sáng nay tự tạo ra một đường sai GẤP 100 LẦN.
+
+    `0\%` và `0" %"` là hai thủ thuật Excel rất hay dùng để HIỆN dấu `%` mà
+    KHÔNG để Excel chia 100 — tức đúng những ô mà người soạn đã cẩn thận nhất.
+    Điều kiện `'%' in fmt` khớp cả hai và nhân thêm 100 lần nữa.
+    """
+    from common.bangtinh import doc
+
+    du = _xlsx_fmt([_TIEU_DE,
+                    ['Định lượng', 'Lãi suất?', '', '', '', '', 30, '', '', ''],
+                    ['Định lượng', 'Tỉ lệ?', '', '', '', '', 30, '', '', ''],
+                    ['Định lượng', 'Phần trăm thật?', '', '', '', '', 0.3, '', '', '']],
+                   {(2, 7): r'0\%', (3, 7): '0" %"', (4, 7): '0%'})
+    hang = doc('de.xlsx', du)
+    assert hang[1][6] == '30', 'ô hiện 30%% (định dạng thoát) mà đọc ra %r' % hang[1][6]
+    assert hang[2][6] == '30', 'ô hiện "30 %%" mà đọc ra %r' % hang[2][6]
+    # Ô phần trăm THẬT vẫn phải đúng — vá cái này không được làm hỏng cái kia.
+    assert hang[3][6] == '30%', hang[3][6]
+
+
+def test_o_dinh_dang_PHAN_SO_bi_TU_CHOI_chu_khong_doan():
+    """② Excel lưu `1/2` là 0.5. Dựng lại `1/2` thì được, nhưng `2 1/2` ra `5/2`
+    — cùng giá trị, KHÁC CHUỖI, mà máy chấm so chuỗi. Từ chối rẻ hơn đoán."""
+    from common.bangtinh import LoiBangTinh, doc
+
+    du = _xlsx_fmt([_TIEU_DE,
+                    ['Định lượng', 'Bằng mấy?', '', '', '', '', 0.5, '', '', '']],
+                   {(2, 7): '# ?/?'})
+    with _pytest.raises(LoiBangTinh) as e:
+        doc('de.xlsx', du)
+    assert 'Phân số' in str(e.value) and 'G2' in str(e.value), str(e.value)
+
+
+def test_hai_cot_cung_ten_bi_chan_chu_khong_ghi_de_im_lang():
+    """③ `TEN_KHAC` gộp "Đáp án đúng" về "đáp án", nên bảng có cả hai cột thì
+    cột SAU ghi đè cột TRƯỚC và ngân hàng đề nhận đáp án sai, không một chữ báo."""
+    from common.bangtinh import LoiBangTinh
+
+    with _pytest.raises(LoiBangTinh) as e:
+        _ban_ghi([
+            ['Phần thi', 'Câu hỏi', 'Lựa chọn A', 'Lựa chọn B', 'Đáp án', 'Đáp án đúng'],
+            ['Định lượng', '2+2?', '3', '4', '4', '3'],
+        ])
+    assert 'cùng tên' in str(e.value) and 'đáp án' in str(e.value), str(e.value)
+
+    # Cột phụ tên vỏn vẹn "A" cũng gộp về "lựa chọn a" — cùng cái bẫy.
+    with _pytest.raises(LoiBangTinh) as e2:
+        _ban_ghi([
+            ['Phần thi', 'Câu hỏi', 'Lựa chọn A', 'A', 'Đáp án'],
+            ['Định lượng', '2+2?', '3', '', '3'],
+        ])
+    assert 'cùng tên' in str(e2.value), str(e2.value)
+
+
+def test_khoang_trang_khong_ngat_o_GIUA_bi_doi_thanh_dau_cach():
+    """④ Dán từ web vào Excel mang theo `\u00a0`. Ô hiện "Hà Nội" y hệt ô bình
+    thường, nhưng máy chấm chỉ bỏ dấu cách ASCII — đáp án ấy là BẤT KHẢ."""
+    from common.bangtinh import doc
+    from mockexam.nhap import doc_cau_hoi
+
+    du = _xlsx([_TIEU_DE,
+                ['Định lượng', 'Thủ đô?', '', '', '', '', 'Hà Nội', '', '', '']])
+    hang = doc('de.xlsx', du)
+    assert ' ' not in hang[1][6], repr(hang[1][6])
+    cau, loi = doc_cau_hoi(_ban_ghi(hang))
+    assert not loi, loi
+    assert cau[0]['answer'] == 'Hà Nội', repr(cau[0]['answer'])
+
+
+def test_o_cong_thuc_chua_tinh_thi_BAO_chu_khong_thanh_o_trong():
+    """⑤ `data_only=True` trả `None` cho công thức chưa lưu kết quả — KHÔNG phân
+    biệt được với ô trống. Một phương án biến mất, câu vẫn vào ngân hàng đề."""
+    import openpyxl
+
+    from common.bangtinh import LoiBangTinh, doc
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(_TIEU_DE)
+    ws.append(['Định lượng', '2+2?', '3', '4', '5', '=CONCATENATE("6")',
+               '4', '', '', ''])
+    ws.append(['Định lượng', '3+3?', '5', '6', '', '', '6', '', '', ''])
+    buf = _io.BytesIO()
+    wb.save(buf)
+
+    with _pytest.raises(LoiBangTinh) as e:
+        doc('de.xlsx', buf.getvalue())
+    assert 'CÔNG THỨC' in str(e.value) and 'F2' in str(e.value), str(e.value)
+
+
+def test_hai_phuong_an_MAY_CHAM_COI_LA_MOT_bi_chan():
+    """⑥ Bộ chặn trùng lặp dùng `set()` thô, còn máy chấm bỏ hoa/thường, khoảng
+    trắng và dấu `%`. Bốn phương án 30%/30/3%/300% là câu hỏi toán bình thường,
+    và học viên chọn `30` (SAI) vẫn được điểm."""
+    from mockexam.nhap import doc_cau_hoi
+
+    for pa in (['30%', '30', '3%', '300%'],
+               ['Hà Nội', 'hà nội', 'Huế', 'Đà Nẵng'],
+               ['a b', 'ab', 'c', 'd']):
+        _, loi = doc_cau_hoi(_ban_ghi([
+            _TIEU_DE,
+            ['Định lượng', 'Chọn đi', pa[0], pa[1], pa[2], pa[3], pa[0], '', '', ''],
+        ]))
+        assert loi, 'lọt bộ phương án %r' % pa
+        assert 'MÁY CHẤM COI LÀ MỘT' in loi[0], loi[0]
+
+    # Bốn phương án THẬT SỰ khác nhau vẫn phải qua — chặn oan cũng là hỏng.
+    cau, loi = doc_cau_hoi(_ban_ghi([
+        _TIEU_DE,
+        ['Định lượng', 'Chọn đi', '15', '16', '17', '18', '17', '', '', ''],
+    ]))
+    assert not loi, loi
+    assert cau[0]['answer'] == '17'
+
+
+def test_csv_o_qua_dai_tra_LoiBangTinh_chu_khong_no():
+    """⑦ `csv.reader` có trần ô cứng 131.072 ký tự và ném `_csv.Error` — không
+    phải `LoiBangTinh` — nên nó lọt ra ngoài `except` của view thành HTTP 500."""
+    from common.bangtinh import LoiBangTinh, doc
+
+    dong = 'Định lượng,Câu hỏi rất dài,%s\n' % ('x' * 200000)
+    noi_dung = ('Phần thi,Câu hỏi,Giải thích\n' + dong).encode('utf-8')
+    with _pytest.raises(LoiBangTinh) as e:
+        doc('de.csv', noi_dung)
+    assert 'quá dài' in str(e.value), str(e.value)

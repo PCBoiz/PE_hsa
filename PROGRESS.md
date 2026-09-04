@@ -2992,3 +2992,110 @@ Mẫu `.xlsx` tải về thật: 6.740 byte, đúng chữ ký zip.
 * **Hai hộp đỏ chồng nhau nói cùng một con số** ("3 lỗi trong tệp" và "3 dòng
   cần sửa"), hộp trên không thêm gì mà hộp dưới chưa nói. Lặp lại một cảnh báo
   làm nó nhẹ đi, không nặng thêm.
+
+## 04/09/2026 — vòng kiểm định thứ hai: ba agent tấn công chính bản vá sáng nay
+
+Ba agent, ba mặt (đường nhập bảng tính · cổng vai trò + quản lý lớp · hàng rào
+XSS). Tôi tự dựng lại từng phép đo trước khi tin — và lần này **cả ba báo cáo
+đều đúng ở phần nặng nhất**.
+
+### Nặng nhất: stored XSS xuyên qua chính bộ lọc HTML dựng sáng nay
+
+`_MO_THE` bắt buộc thẻ phải có `>` đóng. Một thẻ mở ở CUỐI chuỗi thì `findall`
+trả rỗng và bộ lọc báo "không có lỗi":
+
+    loi_html('<img src=x onerror=alert(1)//')  →  []
+
+Mà chỗ hiển thị **cung cấp luôn** dấu `>` còn thiếu: `lesson_hsa.js:417` là
+`'…<p>' + c.body + '</p>'`. Dựng lại bằng `html.parser` thật thì phần tử `<img>`
+mọc ra với `onerror="alert(1)//</p"`, và `//` biến phần thừa thành chú thích nên
+đoạn JS ấy hợp lệ và **chạy**.
+
+Vai `Biên tập nội dung` — vai sinh ra để KHÔNG phải có quyền quản trị — nhét
+payload vào `theory.cards[].body`, rồi bất kỳ ai mở bước Lý thuyết, kể cả quản
+trị viên, chạy mã ấy trên phiên của chính họ.
+
+**Bài học:** bộ lọc phải đọc chuỗi ĐÚNG NHƯ TRÌNH DUYỆT SẼ ĐỌC NÓ SAU KHI NỐI
+vào trang, không phải như một chuỗi đứng một mình. 76/76 bài thật vẫn hợp lệ.
+
+Phép kiểm cũ `test_dau_be_hon_trong_toan_hoc_KHONG_bi_chan` khẳng định
+`a<b là sai cú pháp nhưng 3 < 5 thì không` phải ĐƯỢC đi qua. **Sai** — đo được:
+chuỗi ấy dựng ra một `<b>` với 11 "thuộc tính" và **chỉ mỗi chữ `a` còn hiện
+ra**. Bản cũ không "cho qua nội dung toán học", nó cho qua một nội dung sẽ bị
+hỏng khi hiển thị mà không ai được báo. Nay chặn, kèm câu chỉ đường (`&lt;`).
+
+### Sáu đường sai ÂM THẦM nữa ở đường nhập bảng tính
+
+* **Hai cột trùng tên** → cột sau ghi đè cột trước. `TEN_KHAC` gộp "Đáp án đúng"
+  về "đáp án", nên bảng có cả hai cột ghi vào ngân hàng đề `answer='3'` trong
+  khi đáp án đúng là `4` — **không một chữ báo**.
+* **`'%' in fmt` quá lỏng** — và đây là đường sai do **chính bản vá sáng nay**
+  tạo ra: `0\%` và `0" %"` là thủ thuật Excel để hiện dấu `%` mà KHÔNG chia 100,
+  tức đúng những ô người soạn đã cẩn thận nhất, và chúng bị nhân thêm 100 lần.
+* **Định dạng Phân số** → ô hiện `1/2`, lưu `0.5`. Nay **TỪ CHỐI** chứ không
+  đoán: `2 1/2` dựng lại thành `5/2` — cùng giá trị, khác chuỗi, mà máy chấm so
+  chuỗi. Từ chối thì người soạn sửa trong 10 giây; đọc sai thì cả lớp mất điểm.
+* **Khoảng trắng không ngắt ở GIỮA** — dán từ web mang theo `\u00a0`. Máy chấm
+  chỉ bỏ dấu cách ASCII, nên đáp án ấy là **bất khả**: 100% học viên sai câu đó.
+* **Ô công thức chưa được Excel tính** → `None`, không phân biệt được với ô
+  trống. Một phương án biến mất, câu vẫn vào ngân hàng đề với 3 lựa chọn.
+* **Bộ chặn "hai phương án trùng nhau" dùng phép so KHÁC máy chấm.** Máy chấm bỏ
+  hoa/thường, khoảng trắng và dấu `%`, nên bốn phương án `30% · 30 · 3% · 300%`
+  lọt qua — và học viên chọn `30` (SAI) vẫn được điểm. Nay dùng chính `_norm`.
+
+Cộng hai đường 500 (`csv` ô > 131.072 ký tự; XML hỏng giữa chừng do `read_only`
+phân tích LƯỜI nên lỗi nổ NGOÀI `try` bọc `load_workbook`).
+
+Và một chuyện đáng ghi: `except Exception` của tôi **hoá trang một lỗi lập
+trình** (thiếu `import re`) thành "tệp .xlsx của bạn hỏng". Nay `NameError`,
+`AttributeError`, `ImportError` được ném lại nguyên vẹn.
+
+### Cổng vai trò: phép kiểm hằng đúng ĐÚNG ở chỗ nó tuyên bố canh
+
+Cửa sổ `[\s\S]{0,600}` sau `class IsAdminOrAcademic` **tràn 331 ký tự** (thân
+lớp chỉ dài 269) và với sang một `is_academic` khác trong `can_see_class`. Siết
+lớp quyền về chỉ-quản-trị thì regex vẫn khớp, cả bộ kiểm vẫn xanh. Một cửa sổ
+đếm bằng ký tự là một phỏng đoán về bố cục tệp.
+
+Kèm ba lỗ nữa: `VAI_VAO_KHU` là hằng số vừa nới mà **chưa ai canh**; `dot-hoc`
+là trang duy nhất không có cổng riêng; `admin/page.tsx` là **bảng vai thứ tư**
+với hai chuỗi gõ tay (nay lấy từ `src/lib/vaiTro.ts`).
+
+### Nút "Xoá lớp" là ngõ cụt với MỌI lớp còn dữ liệu
+
+Backend đòi hai bước (409 `needsConfirm` → `?confirm=1`); màn hình tôi viết chỉ
+có nửa đầu. Lớp duy nhất trên CSDL thật có 4 thành viên, tức nút Xoá chưa từng
+dùng được. Trang anh em `dot-hoc` làm đúng luật này — tôi chép được nửa đầu.
+
+### Gõ "25 em" vào ô Sĩ số → XOÁ TRẮNG sĩ số, báo thành công
+
+`Number('25 em')` là `NaN`, `JSON.stringify(NaN)` là **`null`**, và backend đọc
+`null` đúng như đọc một ô người dùng CỐ Ý xoá. "Để trống" và "gõ sai" đi ra cùng
+một giá trị trên đường truyền, nên phải tách chúng TRƯỚC khi rời trình duyệt.
+
+Phép kiểm canh đúng ô ấy thì mù với nó: `typeof NaN === 'number'`. Dùng `typeof`
+để canh một con số là canh cái vỏ, không canh giá trị.
+
+### Họ lỗi "thoát sai ngữ cảnh" — ba chỗ nữa, và một phép quét mới
+
+Cùng một sai lầm ở ba hàm thoát KHÁC NHAU trong CÙNG một ngày:
+
+    dashboard.js  escHtml(c.author)              trong onclick="forumToggleReply('…')"
+    roadmap.js    esc(node.label)                trong onclick="roadmapOpenDrawer('…')"
+    main.js       c.title.replace(/'/g,"\'")    trong onclick="unenroll('…')"
+
+Không phép kiểm nào bắt được cả ba, vì mỗi cái sai một kiểu. Cái CHUNG là **hình
+dạng**: một chuỗi JS dựng bên trong `onclick="`. Nay `thoat-html.test.mjs` chặn
+hình dạng ấy, kèm **bánh cóc 16 dòng miễn trừ** — mỗi dòng một lý do đã tra tận
+nguồn (id số của CSDL, mảng hằng, slug ép ở đường ghi…). Chỗ MỚI thì đỏ ngay.
+
+Phép quét ấy suýt mắc đúng lỗi tôi vừa phê bình: bản đầu báo cả
+`onclick="navigate('courses')"` — hằng số viết thẳng trong mã. Một phép kiểm báo
+oan sẽ bị tắt. Và nó còn **mù với chính chỗ `unenroll` vừa vá**, vì chuỗi ngoài
+dùng nháy kép nên dấu nháy mở chuỗi JS là nháy TRẦN, không phải `\'`.
+
+**Chứng minh ĐỎ:** 7/7 phép kiểm nhập bảng tính đỏ khi lùi; bộ lọc HTML lùi →
+`assert []`; bảng vai lùi → 4 đỏ; `thanForm` lùi → 10 đỏ; `roadmap.js` và
+`main.js` lùi → phép quét đỏ đúng dòng. Lần lùi ĐẦU TIÊN của tôi cho kết quả
+xanh giả vì script lùi làm mất dấu gạch chéo ngược — kiểm lại mới thấy là **bản
+lùi hỏng, không phải phép kiểm sai**.

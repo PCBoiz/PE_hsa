@@ -923,11 +923,21 @@ function renderMyCourses() {
             ? " onclick=\"window.location='" + COURSE_URLS[c.id] + "'\""
             : "") +
           ">▶ Tiếp tục học</button>",
-        "<button onclick=\"unenroll('" +
-          c.id +
-          "','" +
-          c.title.replace(/'/g, "\\'") +
-          "')\"" +
+        // Tên khoá đi qua THUỘC TÍNH, không qua đối số JS (vá 04/09/2026).
+        //
+        // Bản cũ thoát MỘT MÌNH bằng `c.title.replace(/'/g, "\\'")` — thoát cho
+        // ngữ cảnh JS, mà chỗ nó đứng là `onclick="…"`, một thuộc tính bọc dấu
+        // nháy KÉP. Nó khoá dấu nháy đơn và bất lực với dấu nháy kép: một tên
+        // khoá chứa `"` đóng luôn thuộc tính rồi mở thuộc tính mới.
+        //
+        // Hàng rào ở đường ghi KHÔNG đóng chỗ này, và cố ý thế:
+        // `_clean_course_payload` chỉ chặn thẻ HTML, còn dấu nháy trong tên là
+        // bình thường. Nên phải bỏ hẳn ngữ cảnh JS — cùng cách chữa với
+        // `forumToggleReply` (dashboard.js) và `roadmap.js` cùng ngày.
+        "<button data-unen-id=\"" + encodeURIComponent(c.id) + "\"" +
+          " data-unen-title=\"" + _rmVEsc(c.title) + "\"" +
+          " onclick=\"unenroll(decodeURIComponent(this.dataset.unenId)," +
+          " this.dataset.unenTitle)\"" +
           ' style="background:none;border:1px solid #E5E7EB;color:#9CA3AF;font-size:12px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;transition:all 0.2s;white-space:nowrap"' +
           " onmouseenter=\"this.style.borderColor='#FCA5A5';this.style.color='#EF4444';this.style.background='#FEF2F2'\"" +
           " onmouseleave=\"this.style.borderColor='#E5E7EB';this.style.color='#9CA3AF';this.style.background='none'\">",

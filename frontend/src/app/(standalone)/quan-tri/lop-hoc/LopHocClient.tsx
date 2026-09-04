@@ -55,6 +55,23 @@ const LY_DO: { ma: string; nhan: string }[] = [
   { ma: 'transferred', nhan: 'Chuyển lớp' },
 ];
 
+/**
+ * Nhãn cho `willDelete` của backend (`teaching/views.py`, năm khoá đúng tên các
+ * cột `AS members / sessions / attendance / assignments / submissions`).
+ *
+ * Có nhãn thì hộp thoại nói "Điểm danh: 12" thay vì "attendance: 12" — người
+ * đọc nó là nhân viên học vụ, không phải người viết truy vấn. Khoá lạ vẫn hiện
+ * nguyên (`?? k`): thêm một cột ở backend thì thà thấy tên kỹ thuật còn hơn
+ * biến mất khỏi danh sách những thứ sắp mất.
+ */
+const NHAN_MAT: Record<string, string> = {
+  members: 'Học viên trong lớp',
+  sessions: 'Buổi học',
+  attendance: 'Lượt điểm danh',
+  assignments: 'Bài đã giao',
+  submissions: 'Bài học viên đã nộp',
+};
+
 function ngay(iso: string | null) {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
@@ -109,6 +126,15 @@ export default function LopHocClient({
 
   async function luu() {
     if (dangGui.current) return;
+    // Ô SỐ gõ sai thì dừng NGAY Ở ĐÂY, đừng gửi. `JSON.stringify(NaN)` là
+    // `null`, và backend đọc `null` đúng như đọc một ô người dùng CỐ Ý xoá —
+    // nên gõ "25 em" vào ô Sĩ số sẽ xoá trắng sĩ số và báo thành công.
+    // Xem chú thích dài ở `lop.ts::thanForm`.
+    const { body, loi: loiSo } = thanForm(form);
+    if (loiSo) {
+      setErr(loiSo);
+      return;
+    }
     dangGui.current = true;
     setBusy(true);
     setErr(null);
@@ -117,7 +143,7 @@ export default function LopHocClient({
       const r = await apiFetch(moi ? '/api/admin/classes' : `/api/admin/classes/${dangSua}`, {
         method: moi ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(thanForm(form)),
+        body: JSON.stringify(body),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
@@ -132,24 +158,52 @@ export default function LopHocClient({
     }
   }
 
+  /**
+   * Xoá lớp — HAI BƯỚC khi lớp còn dữ liệu.
+   *
+   * Backend trả 409 kèm `needsConfirm` và `willDelete` (đếm từng loại: thành
+   * viên, buổi học, điểm danh, bài giao, bài nộp), rồi mới nhận `?confirm=1`.
+   *
+   * Bản đầu của màn hình này KHÔNG gửi bước hai — nó ném thẳng câu 409 ra dải
+   * đỏ và dừng. Tức nút Xoá là NGÕ CỤT với mọi lớp còn dữ liệu, mà lớp duy nhất
+   * đang tồn tại trên CSDL thật có 4 thành viên. Trang anh em `dot-hoc` xử lý
+   * đúng luật này; ở đây tôi chép được nửa đầu và bỏ nửa sau.
+   *
+   * Hộp thoại thứ hai liệt kê ĐÚNG con số backend đếm, không đoán lại: người
+   * đang đọc nó cần biết chính xác cái gì mất trước khi gật.
+   */
   async function xoa(c: LopRow) {
-    // Hỏi TRƯỚC khi gửi, và nói rõ cái gì mất cái gì không: người đang đọc câu
-    // này sợ mất dữ liệu học tập của học viên. Dữ liệu ấy KHÔNG mất — nó nằm ở
+    // Hỏi TRƯỚC khi gửi. Dữ liệu học tập của từng em KHÔNG mất — nó nằm ở
     // `learning_events`/`lesson_progress`, gắn với tài khoản chứ không gắn với
-    // lớp. Cái mất là danh sách lớp và điểm danh của lớp.
+    // lớp. Cái mất là danh sách lớp, điểm danh và bài giao của lớp.
     if (
       !confirm(
         `Xoá lớp "${c.name}"?\n\n` +
-          `Danh sách ${c.members} học viên của lớp và toàn bộ điểm danh của lớp này sẽ mất.\n` +
-          'Tiến độ học của từng em thì KHÔNG mất — nó gắn với tài khoản, không gắn với lớp.',
+          'Tiến độ học của từng em KHÔNG mất — nó gắn với tài khoản, không gắn với lớp.\n' +
+          'Muốn đóng lớp mà giữ lịch sử thì đổi trạng thái sang “Đã kết thúc” thay vì xoá.',
       )
     )
       return;
     setErr(null);
     try {
       const r = await apiFetch(`/api/admin/classes/${c.id}`, { method: 'DELETE' });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(errorText(r.status, d));
+      const d = (await r.json().catch(() => ({}))) as {
+        needsConfirm?: boolean;
+        willDelete?: Record<string, number>;
+        hint?: string;
+      };
+      if (r.status === 409 && d.needsConfirm) {
+        const ke = Object.entries(d.willDelete ?? {})
+          .filter(([, n]) => n > 0)
+          .map(([k, n]) => `  · ${NHAN_MAT[k] ?? k}: ${n}`)
+          .join('\n');
+        if (!confirm(`Lớp "${c.name}" còn dữ liệu. Xoá là mất hẳn:\n\n${ke}\n\nVẫn xoá?`)) return;
+        const r2 = await apiFetch(`/api/admin/classes/${c.id}?confirm=1`, { method: 'DELETE' });
+        const d2 = await r2.json().catch(() => ({}));
+        if (!r2.ok) throw new Error(errorText(r2.status, d2));
+      } else if (!r.ok) {
+        throw new Error(errorText(r.status, d));
+      }
       if (lopMoRong?.id === c.id) {
         setLopMoRong(null);
         setHocVien(null);
@@ -215,6 +269,24 @@ export default function LopHocClient({
       setErr(loiBatDuoc(e, 'Không cập nhật được'));
     }
   }
+
+  /** Ô SỐ. `inputMode` mở bàn phím số trên điện thoại; `type=number` chặn được
+      phần lớn ca gõ nhầm ngay trên trình duyệt. Hàng rào thật vẫn ở
+      `thanForm` — `type=number` không chặn được dán chuỗi trong mọi trình duyệt. */
+  const oSo = (k: string, nhan: string, goi?: string) => (
+    <label className="flex flex-col gap-1">
+      <span className="text-label text-ink-3">{nhan}</span>
+      <input
+        value={form[k] ?? ''}
+        onChange={(e) => dat(k, e.target.value)}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        placeholder={goi}
+        className={O_CHUNG}
+      />
+    </label>
+  );
 
   const oChu = (k: string, nhan: string, goi?: string) => (
     <label className="flex flex-col gap-1">
@@ -315,7 +387,7 @@ export default function LopHocClient({
                 trangThai.map((s) => ({ gt: s, nhan: TRANG_THAI[s]?.nhan ?? s })),
               )}
               {oChu('schedule', 'Lịch học', 'T3–T5 19:30')}
-              {oChu('capacity', 'Sĩ số tối đa', '30')}
+              {oSo('capacity', 'Sĩ số tối đa', '30')}
               {oNgay('startsOn', 'Khai giảng')}
               {oNgay('endsOn', 'Kết thúc')}
               {oNgay('examDate', 'Ngày thi')}

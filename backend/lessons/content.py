@@ -64,22 +64,62 @@ THE_CHO_PHEP = frozenset({
 # HTML. Nếu bỏ qua chi tiết này thì `0 < a < 1` (có thật trong
 # `hsa_quantitative#8`) bị coi là thẻ `<a>` và nội dung toán học bị chặn oan.
 # Chính phép đo đầu tiên của tôi đã sập đúng bẫy ấy và báo "có 1 thẻ <a>".
-_MO_THE = re.compile(r'<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>')
+#
+# ── DẤU `>` KHÔNG ĐƯỢC LÀ ĐIỀU KIỆN (vá 04/09/2026, cùng ngày dựng bộ lọc) ──
+#
+# Bản đầu là `r'<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>'` — BẮT BUỘC có `>` đóng.
+# Một thẻ mở ở CUỐI chuỗi thì `findall` trả rỗng và bộ lọc báo "không có lỗi":
+#
+#     loi_html('<img src=x onerror=alert(1)//')  →  []      ← LỌT
+#
+# Mà chỗ hiển thị CUNG CẤP LUÔN dấu `>` còn thiếu. `lesson_hsa.js:417`:
+#
+#     '…<p>' + c.body + '</p>' + …
+#
+# Cái `>` của `</p>` đóng nốt thẻ `<img>` của kẻ tấn công. Dựng lại bằng một bộ
+# phân tích HTML thật thì phần tử `<img>` mọc ra với `onerror="alert(1)//</p"`,
+# và `//` biến phần thừa thành chú thích nên đoạn JS ấy HỢP LỆ VÀ CHẠY.
+#
+# Hậu quả: vai `Biên tập nội dung` — vai sinh ra để KHÔNG phải có quyền quản
+# trị — nhét payload vào `theory.cards[].body`, rồi bất kỳ ai mở bước Lý thuyết
+# của bài đó, kể cả quản trị viên, chạy mã ấy trên phiên đăng nhập của chính họ.
+#
+# Bài học: bộ lọc phải đọc chuỗi ĐÚNG NHƯ TRÌNH DUYỆT SẼ ĐỌC NÓ SAU KHI ĐÃ NỐI
+# vào trang, không phải như một chuỗi đứng một mình. Nên nay `>` là tuỳ chọn:
+# HẾT CHUỖI cũng kết thúc một thẻ.
+_MO_THE = re.compile(r'<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)(?:>|$)')
 
 
 def _kiem_html(chuoi, path, errors):
     """Bắt lỗi thẻ lạ và MỌI thuộc tính trong một chuỗi nội dung."""
-    for dong, ten, duoi in _MO_THE.findall(chuoi or ''):
+    for m in _MO_THE.finditer(chuoi or ''):
+        dong, ten, duoi = m.group(1), m.group(2), m.group(3)
         t = ten.lower()
-        if t not in THE_CHO_PHEP:
+        # Thẻ KHÔNG có `>` đóng: dấu `>` sẽ do markup xung quanh cung cấp, nên
+        # trình duyệt vẫn dựng ra một phần tử — và nuốt luôn phần chữ phía sau.
+        # Đã đo bằng bộ phân tích HTML thật với chuỗi
+        # `a<b là sai cú pháp nhưng 3 < 5 thì không`: nó dựng ra `<b>` với 11
+        # "thuộc tính", và chỉ mỗi chữ `a` còn hiện ra trên màn hình.
+        chua_dong = not m.group(0).endswith('>')
+        if chua_dong and t not in THE_CHO_PHEP:
+            errors.append(_err(path,
+                               'chuỗi "<%s…" bị trình duyệt đọc thành THẺ HTML — dấu `<` '
+                               'đứng ngay trước chữ cái là mở thẻ, và dấu `>` còn thiếu sẽ '
+                               'do đoạn HTML bao quanh cung cấp. Viết `&lt;` nếu bạn muốn '
+                               'dấu bé hơn, hoặc thêm dấu cách: `a < b`.'
+                               % ten[:20]))
+        elif t not in THE_CHO_PHEP:
             errors.append(_err(path, 'không cho phép thẻ <%s>. Chỉ dùng được: %s'
                                % (t, ', '.join('<%s>' % x for x in sorted(THE_CHO_PHEP)))))
         elif not dong and duoi.strip().rstrip('/').strip():
             # Thuộc tính là chỗ treo mã (`onerror`, `href`, `style`), nên cấm
             # HẾT thay vì lọc từng cái — lọc từng cái là một danh sách đen, và
             # danh sách đen luôn thiếu một dòng.
-            errors.append(_err(path, 'thẻ <%s> không được mang thuộc tính (thấy: %s)'
-                               % (t, duoi.strip()[:60])))
+            them = ('' if not chua_dong else
+                    ' (thẻ này không có dấu `>` đóng — nếu bạn định viết dấu bé hơn '
+                    'thì dùng `&lt;` hoặc thêm dấu cách: `a < b`)')
+            errors.append(_err(path, 'thẻ <%s> không được mang thuộc tính (thấy: %s)%s'
+                               % (t, duoi.strip()[:60], them)))
 
 
 def loi_html(chuoi, ten_truong):

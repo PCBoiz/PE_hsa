@@ -126,8 +126,29 @@ def doc_cau_hoi(ban_ghi):
                     'Bỏ trống hết các cột "Lựa chọn" thì thành câu điền đáp án.'
                     % len(lua_chon))
                 continue
-            if len(set(lua_chon)) != len(lua_chon):
-                sai('có hai phương án trùng nhau — máy chấm sẽ không phân biệt được.')
+            # SO BẰNG CHÍNH PHÉP SO CỦA MÁY CHẤM, không bằng `set()` thô.
+            #
+            # Chú thích cũ nói "máy chấm sẽ không phân biệt được" trong khi nó
+            # dùng một phép so mà máy chấm KHÔNG dùng: `mockexam/views.py::_norm`
+            # bỏ hoa/thường, khoảng trắng và cả dấu `%`. Nên bốn phương án
+            #
+            #     30%  ·  30  ·  3%  ·  300%
+            #
+            # — một câu hỏi toán hoàn toàn bình thường — lọt qua cửa này, rồi
+            # học viên chọn `30` (SAI) vẫn được tính đúng vì máy chấm thấy nó
+            # bằng `30%`. Điểm và bản đồ mạnh–yếu đều lệch, không dấu vết.
+            #
+            # Nhập trễ để tránh vòng import: `mockexam/views.py` không nhập
+            # ngược lại tệp này, nhưng nhập ở đầu tệp thì đường nhập kéo theo cả
+            # module chấm thi chỉ để dùng một hàm ba dòng.
+            from mockexam.views import _norm
+            gon = [_norm(x) for x in lua_chon]
+            if len(set(gon)) != len(gon):
+                trung = sorted({g for g in gon if gon.count(g) > 1})
+                sai('có hai phương án MÁY CHẤM COI LÀ MỘT (%s). Máy chấm bỏ '
+                    'hoa/thường, khoảng trắng và dấu %%, nên "30%%" và "30" là '
+                    'cùng một đáp án — học viên chọn cái sai vẫn được điểm.'
+                    % ', '.join('%r' % t for t in trung))
                 continue
             # NGUYÊN VĂN trước, chữ cái sau. Xem lý do ở đầu tệp.
             if dap_an in lua_chon:

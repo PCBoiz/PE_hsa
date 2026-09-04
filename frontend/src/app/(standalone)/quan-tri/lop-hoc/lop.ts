@@ -87,22 +87,62 @@ export function formTuLop(row: Partial<LopRow>): Form {
   return f;
 }
 
+export type ThanKetQua = {
+  body: Record<string, string | number | null>;
+  /** Câu lỗi đọc được, hoặc `null` nếu gửi được. Có lỗi thì ĐỪNG gửi `body`. */
+  loi: string | null;
+};
+
 /**
  * Biểu mẫu → thân request.
  *
  * Ô để trống thành `null`, KHÔNG thành chuỗi rỗng: `_clean_class_payload` coi
  * chuỗi rỗng là `NULL` nên hai đằng cùng nghĩa, nhưng gửi `null` thì ý định
  * hiện rõ ngay trên đường truyền khi ai đó soi request.
+ *
+ * ── "ĐỂ TRỐNG" VÀ "GÕ SAI" LÀ HAI Ý ĐỊNH KHÁC NHAU (vá 04/09/2026) ──────────
+ *
+ * Bản đầu gửi `Number(v)` thẳng. Gõ `25 em` vào ô Sĩ số thì `Number('25 em')`
+ * là `NaN`, `JSON.stringify` biến `NaN` thành **`null`**, và backend đọc `null`
+ * đúng như đọc một ô người dùng CỐ Ý xoá: `int(None or 0)` = 0 → `0 or None` =
+ * NULL. Lớp đang có sĩ số 25 mất sạch sĩ số, trả **200 OK**, không hỏi, không
+ * báo — chính cái lỗi mà tệp này mở đầu bằng lời hứa sẽ chặn.
+ *
+ * "Người dùng xoá ô" và "người dùng gõ sai" đi ra cùng một giá trị trên đường
+ * truyền, nên chúng phải được tách ra Ở ĐÂY, trước khi ra khỏi trình duyệt.
+ *
+ * Và phép kiểm canh đúng ô này thì mù với nó: `typeof NaN === 'number'`.
  */
-export function thanForm(f: Form): Record<string, string | number | null> {
+export function thanForm(f: Form): ThanKetQua {
   const body: Record<string, string | number | null> = {};
+  const hong: string[] = [];
   for (const t of TRUONG) {
     const v = (f[t.form] ?? '').trim();
     if (t.kieu === 'so') {
-      body[t.than] = v === '' ? null : Number(v);
+      if (v === '') {
+        body[t.than] = null;
+      } else if (!/^\d+$/.test(v)) {
+        hong.push(t.than);
+        body[t.than] = null;
+      } else {
+        body[t.than] = Number(v);
+      }
     } else {
       body[t.than] = v === '' ? null : v;
     }
   }
-  return body;
+  return {
+    body,
+    loi: hong.length
+      ? `Ô ${hong.map((h) => `"${NHAN_SO[h] ?? h}"`).join(', ')} phải là số — ` +
+        'để trống nếu chưa có. Chưa gửi gì cả.'
+      : null,
+  };
 }
+
+/** Nhãn tiếng Việt của các ô SỐ, để câu lỗi gọi đúng tên người dùng nhìn thấy. */
+const NHAN_SO: Record<string, string> = {
+  capacity: 'Sĩ số tối đa',
+  teacher_id: 'Giảng viên',
+  term_id: 'Đợt học',
+};

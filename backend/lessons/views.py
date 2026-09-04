@@ -25,6 +25,7 @@ from lessons.grading import (
     cham_phong_luyen,
     doc_ghi_nhan,
     ghi_nhan,
+    gioi_han_giay_drill,
     id_bai,
     phan_tram,
     xoa_ghi_nhan,
@@ -129,6 +130,26 @@ def _cham_drill(drill, course_id, lesson_no, uid, lesson_id):
         seconds = int(drill.get('seconds') or 0)
     except (TypeError, ValueError, OverflowError):
         seconds = 0
+    # KẸP VỀ TRẦN ĐỒNG HỒ CỦA CHÍNH BÀI ẤY (vá 04/09/2026).
+    #
+    # `seconds` là con số CLIENT KHAI, và nó đi thẳng vào
+    # `learning_events.minutes` với `source='system'` — trong khi `gradebook.py`
+    # tách hai xô `minutes` / `selfMinutes` đúng theo cột `source` ấy. Toàn bộ ý
+    # nghĩa của phép tách là "cái này máy đo, cái kia học viên tự khai", và con
+    # số học viên khai đang nằm trong xô của máy.
+    #
+    # Trần cũ `min(120, …)` là 120 PHÚT cho một bài luyện 75 GIÂY: khai được 120
+    # phút mỗi bài × 76 bài = 152 giờ tự học giả, hiện trong bảng giảng viên đọc
+    # và trong báo cáo gửi phụ huynh.
+    #
+    # Ba chú thích ngay trên đây đã nói vì sao không tin số client khai —
+    # `correct`, `maxCombo`, `da_lam` đều dựng lại ở máy chủ. `seconds` lọt qua
+    # vì nó trông như một con số vô hại.
+    #
+    # Không có trần trong giáo trình thì KHÔNG ghi phút nào: một ô trống đọc
+    # được là "chưa đo", còn một con số bịa thì không ai biết là bịa.
+    gioi_han = gioi_han_giay_drill(course_id, lesson_no)
+    seconds = min(seconds, gioi_han) if gioi_han else 0
     return {
         'dung': dung, 'tong': tong, 'combo': combo,
         # Số câu KỊP làm = số câu thật sự nhận được, không phải con số client

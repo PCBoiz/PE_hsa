@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { serverJson } from '@/lib/server-api';
+import { VAI_BIEN_TAP, VAI_QUAN_TRI } from '@/lib/vaiTro';
 
 import { type DeRow } from './DeThi';
 import SoanClient, { type KhoaRow } from './SoanClient';
@@ -34,7 +35,10 @@ import SoanClient, { type KhoaRow } from './SoanClient';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Soạn giáo trình | TopHSA' };
 
-const DUOC_VAO = new Set(['admin', 'Biên tập nội dung']);
+// Lấy từ bảng vai CHUNG, không gõ lại chuỗi. Hai chuỗi gõ tay ở đây là bảng
+// thứ tư trả lời câu "ai vào được đâu" — và ba bảng trước đã trôi khỏi nhau
+// đúng vì thế (xem `quan-tri/vai.ts`). Một hàng rào quyền trôi thì không kêu.
+const DUOC_VAO = new Set([VAI_QUAN_TRI, VAI_BIEN_TAP]);
 
 export default async function SoanGiaoTrinhPage() {
   const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });

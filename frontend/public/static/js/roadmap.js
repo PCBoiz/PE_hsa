@@ -95,17 +95,35 @@
     docs:    { icon: 'book-open', label: 'Tài liệu', color: '#34D399' }
   };
 
-  /* Thoát ĐỦ NĂM ký tự — bản cũ thiếu cả hai dấu nháy, mà `escHtmlR` được dùng
-     trong `onclick="…"` ở `:383` và `:426`. Hàm `esc` ngay dưới là chuyện KHÁC:
-     nó thoát cho ngữ cảnh JS (gạch chéo ngược + nháy đơn), đúng khi không đụng
-     tới `&<>`. Hai ngữ cảnh, hai hàm — đừng gộp.
-     Phép kiểm quét cả tầng: `e2e/unit/thoat-html.test.mjs`. */
+  /* Thoát ĐỦ NĂM ký tự — bản cũ thiếu cả hai dấu nháy.
+     Phép kiểm quét cả tầng: `e2e/unit/thoat-html.test.mjs`.
+
+     Từ 04/09/2026 đây là hàm thoát DUY NHẤT của tệp: `esc()` (thoát cho ngữ
+     cảnh JS) đã bị xoá cùng cả ba chỗ dùng nó — xem chú thích ngay dưới. */
   function escHtmlR(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function esc(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+  /* ĐÃ XOÁ `esc()` (04/09/2026) — hàm thoát cho ngữ cảnh JS, chỉ thoát gạch
+     chéo ngược và nháy đơn.
+
+     Cả BA chỗ dùng nó đều đặt kết quả vào `onclick="…"`, tức một thuộc tính bọc
+     dấu nháy KÉP. Một dấu nháy kép trong dữ liệu đóng luôn thuộc tính rồi mở
+     thuộc tính mới: dựng lại bằng một bộ phân tích HTML thật thì `node.label`
+     mang payload sẽ mọc ra một phần tử `<img>` có trình xử lý chạy được.
+
+     Đường dữ liệu có thật: `accounts/views.py` nhét `target_score` — do học viên
+     tự khai trong khảo sát — vào nhãn node ("Về đích (…)"). Hiện chỉ ở mức
+     self-XSS vì không ai xem được lộ trình cá nhân của người khác; nhưng đây
+     ĐÚNG là họ lỗi mà `forumToggleReply` vừa vá sáng nay, còn nguyên ở tệp này.
+
+     Cách chữa cũng giống hệt: BỎ HẲN ngữ cảnh JS. Dữ liệu đi qua thuộc tính
+     `data-*` (chỗ `escHtmlR` là đúng công cụ) và trình xử lý đọc lại từ `this`.
+
+     Phép quét `e2e/unit/thoat-html.test.mjs` KHÔNG soi `esc` cũ, và đúng ra là
+     không nên: nó lọc theo "có thực thể HTML trong thân", mà `esc` tự khai là
+     hàm thoát JS. Bỏ hẳn hàm đi thì không còn gì để bỏ sót. */
 
   /* Sắp xếp node id theo số thứ tự thực (rm_2 < rm_10), không theo alphabet */
   function sortNodeIds(ids) {
@@ -144,7 +162,9 @@
     var html = pinned.map(function (name) {
       var meta = (typeof ROADMAP_LIST !== 'undefined') ? ROADMAP_LIST.find(function (r) { return r.name === name; }) : null;
       var isActive = active === name;
-      return '<button type="button" class="rm-tab' + (isActive ? ' active' : '') + '" onclick="window.roadmapSelectTab(\'' + esc(name) + '\')">' +
+      return '<button type="button" class="rm-tab' + (isActive ? ' active' : '') + '"' +
+        ' data-rm-tab="' + escHtmlR(name) + '"' +
+        ' onclick="window.roadmapSelectTab(this.dataset.rmTab)">' +
         // icon SVG thay emoji (emoji đổi hình theo hệ điều hành, không nhận màu theme)
         (meta && meta.icon ? '<span class="rm-tab-ic" data-icon="' + meta.icon + '" data-size="14"></span>' : '') +
         escHtmlR(name) + '</button>';
@@ -162,7 +182,13 @@
   function nodeBoxHtml(name, node, kind, stepNum, pct) {
     var status = getStatus(name, node.id, node.status);
     var cls = 'rm-node rm-node--' + kind + ' rm-node--' + status;
-    var onclick = "window.roadmapOpenDrawer('" + esc(name) + "','" + node.id + "','" + esc(node.label) + "')";
+    // Ba đối số đi qua THUỘC TÍNH, không qua chuỗi JS — xem chú thích ở chỗ
+    // hàm `esc` đã bị xoá. `node.label` mang dữ liệu học viên tự khai.
+    var duLieu = ' data-rm-name="' + escHtmlR(name) + '"' +
+      ' data-rm-node="' + escHtmlR(node.id) + '"' +
+      ' data-rm-label="' + escHtmlR(node.label) + '"';
+    var onclick = 'window.roadmapOpenDrawer(this.dataset.rmName, this.dataset.rmNode, ' +
+      'this.dataset.rmLabel)';
     var aria = ' aria-label="' + escHtmlR(node.label) + ' — ' + STATUS_TEXT[status] + '"';
     if (kind === 'main') {
       // Milestone: badge số chặng, đổi thành ✓ khi hoàn thành (ngôn ngữ roadmap.sh).
@@ -174,7 +200,7 @@
             '<i style="width:' + pct + '%"></i></span>' +
           '<span class="rm-prog-num">' + pct + '%</span>'
         : '';
-      return '<button type="button" class="' + cls + '"' + aria + ' onclick="' + onclick + '">' +
+      return '<button type="button" class="' + cls + '"' + aria + duLieu + ' onclick="' + onclick + '">' +
         '<span class="rm-node-row">' + numHtml +
           '<span class="rm-node-label">' + escHtmlR(node.label) + '</span>' +
         '</span>' +
@@ -185,7 +211,7 @@
     // vòng sáng, chưa học để rỗng (WCAG: không truyền tin bằng mỗi màu sắc).
     var dotHtml = '<span class="rm-node-dot rm-node-dot--' + status + '">' +
       (status === 'done' ? '✓' : '') + '</span>';
-    return '<button type="button" class="' + cls + '"' + aria + ' onclick="' + onclick + '">' +
+    return '<button type="button" class="' + cls + '"' + aria + duLieu + ' onclick="' + onclick + '">' +
       '<span class="rm-node-label">' + escHtmlR(node.label) + '</span>' + dotHtml + '</button>';
   }
 
@@ -517,7 +543,10 @@
         return '<div class="rm-browse-card">' +
           '<div class="rm-browse-card-hd"><span class="rm-browse-emoji">' + r.emoji + '</span>' +
           '<span class="rm-browse-name">' + escHtmlR(r.name) + (r.isNew ? ' <span class="rm-browse-new">MỚI</span>' : '') + '</span>' +
-          '<button type="button" class="rm-browse-pin' + (isPinned ? ' active' : '') + '" onclick="window.roadmapTogglePin(\'' + esc(r.name) + '\')">' + (isPinned ? '✓' : '+') + '</button>' +
+          '<button type="button" class="rm-browse-pin' + (isPinned ? ' active' : '') + '"' +
+            ' data-rm-pin="' + escHtmlR(r.name) + '"' +
+            ' onclick="window.roadmapTogglePin(this.dataset.rmPin)">' +
+            (isPinned ? '✓' : '+') + '</button>' +
           '</div>' +
           '<p class="rm-browse-desc">' + escHtmlR(r.desc) + '</p>' +
           '</div>';

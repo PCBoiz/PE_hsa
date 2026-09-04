@@ -58,9 +58,21 @@ _COURSE_FIELDS = (
 #: Mã màu: chỉ hex. Hai cột này đi thẳng vào `linear-gradient(...)`, tức là CSS.
 _MAU = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
-#: Ảnh: đường dẫn tương đối trong `static/`. Không lược đồ, không `..`, không
+#: Ảnh: đường dẫn TƯƠNG ĐỐI trong `static/`. Không lược đồ, không `..`, không
 #: dấu nháy — nó nằm trong `src="/…"`.
-_ANH = re.compile(r'^[A-Za-z0-9._/-]{1,200}$')
+#:
+#: Không cho `/` ở ĐẦU (vá 04/09/2026, vòng kiểm định thứ hai). Bản trước cho
+#: phép, mà sink dựng `"/" + image`, nên `image = /evil.com/x.png` thành
+#: `src="//evil.com/x.png"` — URL GIAO THỨC TƯƠNG ĐỐI, tức trình duyệt tải ảnh
+#: từ máy chủ của kẻ khác. Không chạy được JS (nó là `src` của `<img>`), nhưng
+#: mọi người mở trang khoá đều gửi IP và referrer sang đó, và nội dung ảnh do
+#: kẻ ấy quyết định. Sink còn sống ở React: `courses/[courseId]/page.tsx:93`
+#: dựng `/${course.image}` rồi đổ thẳng vào `<img src>`.
+#:
+#: Ý định của hàng rào vốn ĐÃ là "đường dẫn trong thư mục static", mà đường dẫn
+#: như thế không bao giờ bắt đầu bằng `/`. Đây là siết cho khớp ý định, không
+#: phải thêm luật mới. Ba khoá đang chạy đều dạng `static/images/…`.
+_ANH = re.compile(r'^[A-Za-z0-9._-][A-Za-z0-9._/-]{0,199}$')
 
 # `id` là trường DUY NHẤT của khoá học không đi qua `_clean_course_payload` —
 # nó tới từ `data['id']` trên POST, và trước bản vá này chỉ bị kiểm "khác rỗng"

@@ -25,11 +25,9 @@
  * trang tải xong rồi mọi ô đều báo lỗi 403 — thứ trông y hệt hệ thống hỏng.
  */
 
-export const VAI_QUAN_TRI = 'admin';
-export const VAI_HOC_VU = 'Quản lý học vụ';
+import { VAI_BIEN_TAP, VAI_HOC_VU, VAI_QUAN_TRI } from '@/lib/vaiTro';
 
-/** Vai được vào khu Soạn giáo trình (`/admin`) — xem `common/permissions.py`. */
-export const VAI_BIEN_TAP = 'Biên tập nội dung';
+export { VAI_BIEN_TAP, VAI_HOC_VU, VAI_QUAN_TRI };
 
 export type Tab = {
   href: string;
@@ -50,8 +48,13 @@ export const TABS: readonly Tab[] = [
   { href: '/quan-tri/dot-hoc', label: 'Đợt học', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — nhật ký kiểm toán (teaching/admin_users.py::AdminAuditView).
   { href: '/quan-tri/nhat-ky', label: 'Nhật ký', vai: [VAI_QUAN_TRI] },
-  // Liên kết SANG khu khác, không phải trang của khu này.
-  { href: '/admin', label: 'Soạn giáo trình', vai: [VAI_QUAN_TRI, VAI_BIEN_TAP] },
+  // Liên kết SANG khu khác, không phải trang của khu này — nên vai ở đây là
+  // "ai ĐANG Ở TRONG khu này thì thấy đường sang", không phải "ai vào được
+  // /admin". `Biên tập nội dung` vào được /admin nhưng KHÔNG vào được khu này
+  // (họ không có trang nào ở đây), nên họ bị chặn ở `VAI_VAO_KHU` trước khi
+  // `AdminNav` kịp dựng: để `VAI_BIEN_TAP` ở đây là một nhánh chết trông như
+  // một quyền. Cổng thật của /admin nằm ở `admin/page.tsx`.
+  { href: '/admin', label: 'Soạn giáo trình', vai: [VAI_QUAN_TRI] },
 ] as const;
 
 /** Vai nào vào được khu này (bất kỳ trang nào của nó). */

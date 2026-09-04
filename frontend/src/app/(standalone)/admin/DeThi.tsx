@@ -81,6 +81,13 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
 
   async function nhap() {
     if (dangGui.current) return;
+    // Dọn danh sách dòng lỗi TRƯỚC mọi cửa thoát sớm. Bản đầu dọn nó SAU cửa
+    // "chưa chọn tệp", mà dải đỏ tóm tắt lại bị ẩn khi `dongLoi` còn dữ liệu
+    // (xem chỗ render) — nên bấm "Tải lên và kiểm" mà chưa chọn tệp thì KHÔNG
+    // CÓ PHẢN HỒI NÀO: câu lỗi được đặt rồi bị chính danh sách cũ che đi.
+    setDongLoi([]);
+    setErr(null);
+    setXong(null);
     const tep = oTep.current?.files?.[0];
     if (!tep) {
       setErr('Chưa chọn tệp bảng tính.');
@@ -88,9 +95,6 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
     }
     dangGui.current = true;
     setBusy(true);
-    setErr(null);
-    setDongLoi([]);
-    setXong(null);
     try {
       const fd = new FormData();
       fd.append('file', tep);
@@ -105,13 +109,25 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
         error?: string;
         details?: string[];
         questions?: number;
+        published?: boolean;
       };
       if (!r.ok) {
         setDongLoi(Array.isArray(d.details) ? d.details : []);
         throw new Error(errorText(r.status, d));
       }
+      // ĐỌC `published` THẬT, đừng viết cứng "đề đang ẩn".
+      //
+      // Câu ấy chỉ đúng với đề MỚI. Ghi đè một đề ĐANG HIỆN thì backend
+      // `UPDATE` mà không đụng `is_published` — bộ câu hỏi mới công khai NGAY
+      // LẬP TỨC — trong khi màn hình vẫn bảo người soạn rằng họ còn thời gian
+      // rà lại. Backend đã trả đúng giá trị (`quan_tri.py` vá cùng ngày, sau
+      // khi `published: bool(exam_id)` bị bắt là nói dối); frontend thì không
+      // đọc nó. Hai chỗ trên cùng màn hình nói ngược nhau: chip trong bảng
+      // hiện "đang hiện", dòng thông báo hiện "đang ẩn".
       setXong(
-        `Đã nhập ${d.questions} câu hỏi. Đề đang ẩn — bấm “Hiện cho học viên” khi đã xem lại.`,
+        d.published
+          ? `Đã nhập ${d.questions} câu hỏi. Đề này ĐANG HIỆN cho học viên — bộ câu hỏi mới có hiệu lực ngay. Kiểm lại vài câu, sai thì bấm “Ẩn đi”.`
+          : `Đã nhập ${d.questions} câu hỏi. Đề đang ẩn — bấm “Hiện cho học viên” khi đã xem lại.`,
       );
       setTen('');
       setGhiDe('');
@@ -127,6 +143,10 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
   }
 
   async function doiHien(d: DeRow) {
+    // Dọn cả `dongLoi`: nó thuộc về LƯỢT NHẬP TRƯỚC, và nếu còn đó thì dải đỏ
+    // của nút này không bao giờ được render — bấm nút mà không thấy gì xảy ra.
+    setDongLoi([]);
+    setXong(null);
     setErr(null);
     if (
       !d.isPublished &&
@@ -259,6 +279,7 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
                   .map((d) => (
                     <option key={d.id} value={String(d.id)}>
                       {d.title}
+                      {d.isPublished ? ' — ĐANG HIỆN cho học viên' : ''}
                     </option>
                   ))}
               </select>

@@ -57,6 +57,7 @@ MAX_DAI_TRA_LOI = 500
 
 _KEY = 'dapan:{}:{}'
 _KEY_ID = 'baiid:{}:{}'
+_KEY_GIAY = 'drillgiay:{}:{}'
 _TTL = 60
 
 
@@ -148,10 +149,54 @@ def id_bai(course_id, lesson_no):
     return ra or None
 
 
+def gioi_han_giay_drill(course_id, lesson_no):
+    """Trần đồng hồ của phòng luyện, tính bằng GIÂY, **theo giáo trình**.
+
+    Trả ``None`` khi bài không có phòng luyện hoặc không khai ``time_seconds``.
+
+    VÌ SAO CẦN (vá 04/09/2026). `_cham_drill` nhận `drill.seconds` từ THÂN
+    REQUEST rồi đổi ra phút và ghi vào ``learning_events.minutes`` với
+    ``source = 'system'``. Mà `stats/gradebook.py` tách hai xô ``minutes`` và
+    ``selfMinutes`` đúng theo cột ``source`` ấy — toàn bộ ý nghĩa của phép tách
+    là "cái này máy đo, cái kia học viên tự khai". Con số học viên khai đang
+    nằm trong xô của máy.
+
+    Đo mức thổi phồng: trần cũ là ``min(120, …)`` PHÚT cho một bài luyện 75
+    GIÂY. Tức khai được 120 phút mỗi bài, và `dedup_key` cho một lượt mỗi bài
+    × 76 bài = **152 giờ tự học giả**, hiện thẳng trong bảng giảng viên đọc và
+    trong báo cáo gửi phụ huynh.
+
+    Trần thật thì máy chủ BIẾT: `time_seconds` nằm trong giáo trình và
+    `lessons/content.py` bắt buộc nó là số nguyên 5–3600. Kẹp về trần ấy thì
+    client chỉ khai được ÍT hơn sự thật, không nhiều hơn — mà khai ít thì không
+    đổi được gì có lợi cho ai.
+
+    Ba chú thích ngay trong `_cham_drill` đã nói vì sao không tin số client khai
+    (`correct`, `maxCombo`, `da_lam` đều dựng lại ở máy chủ). `seconds` lọt qua
+    vì nó trông như một con số vô hại.
+    """
+    key = _KEY_GIAY.format(course_id, lesson_no)
+    ra = cache.get(key)
+    if ra is not None:
+        # `-1` là "đã tra, bài này KHÔNG có trần". Phải phân biệt với đệm trượt,
+        # nếu không thì mỗi lần chấm một bài không có drill lại tra CSDL lại.
+        return None if ra == -1 else ra
+    data = _noi_dung(course_id, lesson_no) or {}
+    drill = data.get('drill')
+    ts = drill.get('time_seconds') if isinstance(drill, dict) else None
+    ra = (int(ts) if isinstance(ts, (int, float)) and not isinstance(ts, bool)
+          and 0 < ts <= 3600 else None)
+    cache.set(key, -1 if ra is None else ra, _TTL)
+    return ra
+
+
 def quen_dap_an(course_id, lesson_no):
     """Xoá đệm khi nội dung bài vừa được sửa. Gọi từ đường soạn bài."""
     cache.delete(_KEY.format(course_id, lesson_no))
     cache.delete(_KEY_ID.format(course_id, lesson_no))
+    # Trần đồng hồ nằm TRONG nội dung bài, nên sửa bài là nó đổi được. Quên
+    # dòng này thì trần cũ còn sống thêm 60 giây sau khi người soạn đã đổi.
+    cache.delete(_KEY_GIAY.format(course_id, lesson_no))
 
 
 def bo_dap_an(data):

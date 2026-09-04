@@ -641,8 +641,31 @@ def test_dau_be_hon_trong_toan_hoc_KHONG_bi_chan():
     """
     from lessons.content import validate_lesson
     for chuoi in ('y = aˣ (a > 0, a ≠ 1). Nếu a > 1: đồng biến; 0 < a < 1: nghịch biến.',
-                  'x < y < z', 'a<b là sai cú pháp nhưng 3 < 5 thì không'):
+                  'x < y < z', '3 < 5 và 5 > 3', 'nhiệt độ < 0 độ C'):
         assert not _loi_html(validate_lesson(_bai(body=chuoi))), 'chặn oan: ' + chuoi
+
+
+def test_dau_be_hon_DINH_chu_cai_thi_PHAI_bi_chan():
+    """Ngược lại của phép kiểm trên, và nó sửa một niềm tin SAI của chính nó.
+
+    Phép kiểm này trước 04/09/2026 khẳng định `a<b là sai cú pháp nhưng 3 < 5
+    thì không` phải ĐƯỢC ĐI QUA. Sai. Đo bằng bộ phân tích HTML thật, chuỗi ấy
+    trong `<p>…</p>` dựng ra một phần tử `<b>` với 11 "thuộc tính", và **chỉ mỗi
+    chữ `a` còn hiện ra trên màn hình** — phần còn lại bị nuốt vào trong thẻ.
+
+    Tức bản cũ không "cho qua nội dung toán học", nó cho qua một nội dung SẼ BỊ
+    HỎNG KHI HIỂN THỊ mà không ai được báo. Chặn là đúng, và thông báo lỗi phải
+    chỉ đường: viết `&lt;` hoặc thêm dấu cách.
+
+    Ranh giới đúng vẫn là luật HTML: `<` mở thẻ CHỈ KHI liền sau là chữ cái —
+    nên `0 < a < 1` (có dấu cách) vẫn đi qua, xem phép kiểm ngay trên.
+    """
+    from lessons.content import validate_lesson
+    for chuoi in ('a<b là sai cú pháp nhưng 3 < 5 thì không',
+                  'nếu x<y thì...'):
+        loi = _loi_html(validate_lesson(_bai(body=chuoi)))
+        assert loi, 'lọt chuỗi sẽ bị nuốt khi hiển thị: ' + chuoi
+        assert '&lt;' in loi[0], 'thông báo lỗi phải chỉ đường sửa: ' + loi[0]
 
 
 def test_the_in_dam_va_ma_lenh_van_dung_duoc():
@@ -653,3 +676,126 @@ def test_the_in_dam_va_ma_lenh_van_dung_duoc():
         intro='Làm nhanh 3 câu để hệ thống <strong>định vị năng lực</strong>.')))
     assert not _loi_html(validate_lesson(_bai(
         body='Giảm p%: <code>× (1 - p/100)</code> · <b>giá trị gốc</b>')))
+
+
+# ── PHÚT PHÒNG LUYỆN: con số CLIENT KHAI nằm trong xô của MÁY (vá 04/09/2026) ──
+#
+# `_cham_drill` nhận `drill.seconds` từ thân request, đổi ra phút, rồi ghi vào
+# `learning_events.minutes` với `source='system'`. Mà `stats/gradebook.py` tách
+# hai xô `minutes` / `selfMinutes` ĐÚNG THEO cột `source` ấy — toàn bộ ý nghĩa
+# của phép tách là "cái này máy đo, cái kia học viên tự khai".
+#
+# Trần cũ `min(120, …)` là 120 PHÚT cho một bài luyện 75 GIÂY.
+
+def test_phut_phong_luyen_kep_ve_tran_dong_ho_cua_bai(temp_user, db):
+    """Khai 6 tiếng cho một bài luyện 75 giây thì chỉ được ghi 1 phút."""
+    from lessons.grading import gioi_han_giay_drill, id_bai
+    from lessons.views import _cham_drill
+
+    course_id, lesson_no = 'hsa_quantitative', 1
+    tran = gioi_han_giay_drill(course_id, lesson_no)
+    assert tran, 'bài mẫu phải có time_seconds — nếu không, phép kiểm không kiểm gì'
+
+    lesson_id = id_bai(course_id, lesson_no)
+    ket = _cham_drill({'answers': {'q1': 'x'}, 'seconds': 21600},
+                      course_id, lesson_no, temp_user, lesson_id)
+    assert ket is not None
+    toi_da = max(0, min(120, round(tran / 60))) or None
+    assert ket['phut'] == toi_da, (
+        'khai 21600 giây (6 tiếng) cho bài luyện %d giây mà ghi %r phút'
+        % (tran, ket['phut']))
+
+
+def test_phut_phong_luyen_van_giu_con_so_that(temp_user, db):
+    """Hàng rào không được làm mất con số ĐÚNG — chặn oan cũng là hỏng."""
+    from lessons.grading import id_bai
+    from lessons.views import _cham_drill
+
+    course_id, lesson_no = 'hsa_quantitative', 1
+    lesson_id = id_bai(course_id, lesson_no)
+    ket = _cham_drill({'answers': {'q1': 'x'}, 'seconds': 40},
+                      course_id, lesson_no, temp_user, lesson_id)
+    assert ket is not None
+    assert ket['phut'] == 1, ket['phut']    # round(40/60) = 1
+
+
+def test_tran_dong_ho_doc_dung_tu_giao_trinh(db):
+    """`gioi_han_giay_drill` phải đọc ĐÚNG `time_seconds`, và nhớ cả ca KHÔNG có.
+
+    Ca "không có trần" phải được đệm riêng: nếu nó rơi vào nhánh đệm-trượt thì
+    mỗi lần chấm một bài không có phòng luyện lại tra CSDL thêm một lượt, ngay
+    trong đường `/complete`.
+    """
+    from common.db import q1
+    from lessons.grading import gioi_han_giay_drill
+
+    that = q1("SELECT (content_json->'drill'->>'time_seconds')::int AS ts "
+              "FROM lessons WHERE course_id='hsa_quantitative' AND sort_order=1")
+    assert gioi_han_giay_drill('hsa_quantitative', 1) == that['ts']
+    # Bài không tồn tại → None, và gọi lại vẫn None (đi qua đệm `-1`).
+    assert gioi_han_giay_drill('khong_co_khoa_nay', 999) is None
+    assert gioi_han_giay_drill('khong_co_khoa_nay', 999) is None
+
+
+# ── THẺ KHÔNG ĐÓNG `>`: bộ lọc phải đọc như TRÌNH DUYỆT SẼ ĐỌC SAU KHI NỐI ──
+#
+# Bộ lọc dựng sáng 04/09 bắt buộc thẻ phải có `>` đóng, nên một thẻ mở ở CUỐI
+# chuỗi thì `findall` trả rỗng và nó báo "không có lỗi". Mà chỗ hiển thị CUNG
+# CẤP LUÔN dấu `>` còn thiếu — `lesson_hsa.js:417` là `'…<p>' + c.body + '</p>'`,
+# và cái `>` của `</p>` đóng nốt thẻ của kẻ tấn công.
+#
+# Vai `Biên tập nội dung` nhét payload vào `theory.cards[].body` → bất kỳ ai mở
+# bước Lý thuyết, KỂ CẢ QUẢN TRỊ VIÊN, chạy mã ấy trên phiên của chính họ.
+
+_KHONG_DONG = [
+    '<img src=x onerror=alert(1)//',
+    'Câu dẫn bình thường <img src=x onerror=alert(1)//',
+    '<svg/onload=alert(1)',
+    '</p><script',
+    '<iframe src=//x',
+]
+
+
+def test_the_KHONG_DONG_ngoac_van_bi_chan():
+    """Dấu `>` không được là điều kiện để bộ lọc nhìn thấy một thẻ."""
+    from lessons.content import loi_html, validate_lesson
+    for xau in _KHONG_DONG:
+        assert loi_html(xau, 'body'), 'lọt %r' % xau
+        assert _loi_html(validate_lesson(_bai(body=xau))), 'lọt qua validate_lesson: %r' % xau
+        assert _loi_html(validate_lesson(_bai(intro=xau))), 'lọt ở intro: %r' % xau
+
+
+def test_payload_khong_dong_THUC_SU_dung_ra_the_img_chay_duoc():
+    """Chứng minh vì sao phép kiểm trên đáng có — bằng một bộ PHÂN TÍCH HTML thật.
+
+    Không có bước này thì "thẻ không đóng" nghe như chuyện hình thức. Nó không
+    hình thức: dấu `>` còn thiếu do CHÍNH TRANG cung cấp. Dựng lại đúng chuỗi mà
+    `lesson_hsa.js:417` phát ra rồi cho `html.parser` (thư viện chuẩn, cùng luật
+    với trình duyệt ở điểm này) đọc — nó dựng ra một phần tử `<img>` MANG
+    `onerror`, tức một chỗ treo mã thật.
+    """
+    from html.parser import HTMLParser
+
+    class Doc(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.the = []
+
+        def handle_starttag(self, tag, attrs):
+            self.the.append((tag, dict(attrs)))
+
+    body = '<img src=x onerror=alert(1)//'
+    # ĐÚNG chuỗi lesson_hsa.js phát ra: `c.body` đổ thô, ngay sau là `</p>`.
+    html = '<div class="hsa-card-body"><h4>T</h4><p>' + body + '</p></div>'
+    d = Doc()
+    d.feed(html)
+
+    img = [a for t, a in d.the if t == 'img']
+    assert img, 'không dựng ra <img> — nếu vậy thì lỗ này không có thật, xoá phép kiểm đi'
+    assert 'onerror' in img[0], img[0]
+    # `//` biến phần thừa `</p` thành chú thích, nên phần THỰC THI là `alert(1)`.
+    assert img[0]['onerror'].split('//')[0].strip() == 'alert(1)', img[0]['onerror']
+
+    # Và bộ lọc phải chặn nó. Ba khẳng định trên là lý do; dòng này là hàng rào.
+    from lessons.content import loi_html
+    assert loi_html(body, 'body'), 'bộ lọc để lọt payload vừa chứng minh là chạy được'
