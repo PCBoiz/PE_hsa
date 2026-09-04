@@ -3237,3 +3237,23 @@ khoản thử chưa đủ điều kiện sinh quiz — một phép kiểm tự b
 kiểm không bao giờ đỏ. Nay nó đánh dấu ba bài hoàn thành rồi mới sinh quiz.
 **Chứng minh ĐỎ:** gỡ `touch_streak` → `last_study_date` không đổi sang hôm nay.
 14 passed.
+
+## 04/09/2026 — nhãn "Bản đầy đủ" tính từ bản ĐƯỢC YÊU CẦU, không từ bản ĐANG HIỆN
+
+`renderTheory` tính hai thứ từ hai nguồn khác nhau:
+
+    pick  = th[mucDo] || th.full || th.condensed || {}       ← CÓ đường lùi
+    badge = (mucDo === 'full') ? 'Bản đầy đủ' : 'Bản tóm tắt'   ← KHÔNG
+
+Nhãn bám vào bản được YÊU CẦU (suy từ kết quả bài kiểm tra đầu vào), nội dung
+bám vào bản THẬT SỰ CÓ. Em "Cần ôn 📘" mở một bài thiếu `full` sẽ đọc bản tóm
+tắt dưới nhãn *"Bản đầy đủ — theo kết quả kiểm tra"*.
+
+**Đây là một lỗ CHƯA CẮN, và tôi nói thẳng thế:** đo trên CSDL thật, cả 76 bài
+đều có ĐỦ hai bản, nên nhãn chưa nói dối lần nào. Nhưng thứ giữ nó đúng là một
+sự trùng hợp về **dữ liệu**, không phải một luật của **mã** — và giáo trình thì
+sắp được nhập từ bảng tính, bởi người khác. Sửa lúc còn rẻ.
+
+Một màn hình nói sai về CHÍNH NÓ thì mọi thứ khác nó nói cũng mất giá.
+Phần chọn tách thành hàm thuần `chonLyThuyet`; **chứng minh ĐỎ** bằng cách lùi
+`renderTheory` về hai nguồn.

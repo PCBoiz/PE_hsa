@@ -48,6 +48,35 @@
 
      `error` có HAI hình dạng trong repo: chuỗi (view tự trả) và object
      `{status, message, detail}` (bộ xử lý lỗi chung). Đọc cả hai. */
+  /* Chọn bản lý thuyết + NÓI ĐÚNG bản nào đang hiện — hàm THUẦN, có bộ kiểm
+     riêng (`e2e/unit/ly-thuyet.test.mjs`).
+
+     ── VÌ SAO TÁCH RA (04/09/2026) ──────────────────────────────────────────
+     Bản cũ tính hai thứ từ HAI nguồn khác nhau:
+
+         pick  = th[mucDo] || th.full || th.condensed || {}     ← có đường lùi
+         badge = (mucDo === 'full') ? 'Bản đầy đủ' : 'Bản tóm tắt'  ← KHÔNG
+
+     Nhãn bám vào bản được YÊU CẦU, nội dung bám vào bản THẬT SỰ CÓ. Hai thứ ấy
+     lệch nhau ngay khi một bài thiếu một bản: em "Cần ôn" mở một bài không có
+     `full` sẽ đọc bản tóm tắt dưới nhãn "Bản đầy đủ — theo kết quả kiểm tra".
+
+     Đo trên dữ liệu thật 04/09: cả 76 bài đều có ĐỦ hai bản, nên nhãn hiện chưa
+     nói dối lần nào. Đây là vá một lỗ CHƯA cắn — sửa lúc nó rẻ, vì thứ giữ nó
+     đúng là một sự trùng hợp về dữ liệu, không phải một luật của mã.
+
+     Một màn hình nói sai về CHÍNH NÓ thì mọi thứ khác nó nói cũng mất giá. */
+  function chonLyThuyet(theory, mucDo) {
+    var th = theory || {};
+    var thu = [mucDo, 'full', 'condensed'];
+    for (var i = 0; i < thu.length; i++) {
+      var k = thu[i];
+      if (k && th[k]) return { ban: th[k], la_day_du: k === 'full' };
+    }
+    // Không có bản nào: đừng khẳng định gì về thứ không hiện ra.
+    return { ban: {}, la_day_du: false };
+  }
+
   function cauLoiMayChu(status, d) {
     var e = d && d.error;
     if (typeof e === 'string' && e.trim()) return e;
@@ -431,9 +460,9 @@
 
   /* ── Bước 3: LÝ THUYẾT (thích ứng) ────────────────────────────── */
   function renderTheory() {
-    var th = state.lesson.theory || {};
-    var pick = th[LEVELS[state.level].theory] || th.full || th.condensed || {};
-    var badge = LEVELS[state.level].theory === 'full'
+    var chon = chonLyThuyet(state.lesson.theory, LEVELS[state.level].theory);
+    var pick = chon.ban;
+    var badge = chon.la_day_du
       ? '<span class="hsa-th-badge full">Bản đầy đủ — theo kết quả kiểm tra</span>'
       : '<span class="hsa-th-badge cond">Bản tóm tắt — bạn đã khá vững</span>';
     var cards = (pick.cards || []).map(function (c) {
