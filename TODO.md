@@ -2693,16 +2693,16 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
       sinh:  python -c "import secrets; print(secrets.token_urlsafe(32))"
   `x-forwarded-for` của khách VẪN bị gỡ — bản vá không mở lại đường cũ.
 
-- [ ] A11 · **Quiz ôn tập chưa cộng XP, và không thể cộng trước khi có trần.**
-  Ba đường chấm điểm anh em: bài học và thi thử đều `award_xp + touch_streak`;
-  quiz ôn tập trước 04/09 không gọi cái nào. Phần **chuỗi ngày đã vá** — nó
-  không cần trần vì `touch_streak` chỉ đặt "đã học hôm nay", gọi bao nhiêu lần
-  trong ngày cũng ra một kết quả.
-  Phần **XP thì chưa**, và cố ý: `GenerateQuizView` KHÔNG có giới hạn số quiz
-  mỗi ngày, nên trong hạn mức 1000 request/giờ một em sinh và nộp được hàng
-  trăm lượt. Cộng XP khi chưa có trần là đẻ ra một lỗ tệ hơn lỗ vừa vá.
-  Cần anh Sơn chốt HAI thứ: (a) hình dạng trần — mỗi ngày mấy lượt được tính,
-  hay mỗi khoá mấy lượt; (b) con số thưởng. Tiền lệ đã có để tham chiếu: bài
-  học 50 XP, thi thử `30 + tối đa 70 theo tỉ lệ đúng` với trần 100 và lý do ghi
-  rõ "để một đề không bằng cả buổi học". Quiz ôn tập là 5–10 câu, ôn lại thứ đã
-  học, nên phải thấp hơn hẳn một bài học.
+- [x] A11 · **XONG 05/09** — quiz ôn tập cộng XP, có trần theo ngày.
+  Công thức cùng HÌNH DẠNG với thi thử (luật anh đã chốt 14/08): `10 + tối đa 20
+  theo tỉ lệ đúng` → trần **30**. Mốc đối chiếu: bài học 50, thi thử 30+70=100
+  (150 câu). Quiz ôn 5–10 câu, bốc từ chính những bài em ĐÃ hoàn thành — tức em
+  đã được thưởng cho việc học chúng lần đầu — nên phải thấp hơn hẳn một bài học.
+  **Trần 3 lượt/ngày.** Ba lượt × 8 câu ≈ một bài học về khối lượng luyện, và
+  3 × 30 = 90 XP vẫn dưới hai bài học. Lượt thứ tư trở đi VẪN được chấm, vẫn vào
+  bản đồ năng lực, vẫn tính chuỗi ngày — chỉ XP dừng. Ôn thêm là việc tốt;
+  thưởng thêm cho việc bấm nút thì không.
+  XP đặt lên ĐÚNG MỘT dòng sự kiện: một lượt thành nhiều dòng (một cho mỗi chủ
+  đề), ghi đủ số lên từng dòng là biến một lượt 30 XP thành 90 XP với bất kỳ báo
+  cáo nào cộng cột `learning_events.xp`.
+  Màn hình nói ra khi XP bằng 0, kèm lý do — im lặng cho 0 XP trông y hệt lỗi.

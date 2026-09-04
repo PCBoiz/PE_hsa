@@ -9,14 +9,61 @@ from rest_framework.views import APIView
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_REVIEW_QUIZ, record_event
-from common.streak import touch_streak
+from common.streak import award_xp, touch_streak
 
 MIN_QUESTIONS = 5
 MAX_QUESTIONS = 10
 DEFAULT_QUESTIONS = 8
 
+# ── THƯỞNG CHO QUIZ ÔN TẬP (anh Sơn duyệt 05/09/2026) ───────────────────────
+#
+# Cùng HÌNH DẠNG với thi thử — một phần cố định cho công sức, một phần theo tỉ lệ
+# đúng — vì đó là luật anh đã chốt cho thi thử ngày 14/08 và hai thứ cùng loại
+# thì không nên tính hai kiểu.
+#
+# Mốc để đối chiếu:
+#     bài học    50 XP   (lý thuyết + kiểm tra + 8 câu phòng luyện)
+#     thi thử    30 + tối đa 70 = 100   (150 câu, một buổi ngồi thật)
+#     quiz ôn    10 + tối đa 20 =  30   ← 5–10 câu, ÔN LẠI thứ đã học
+#
+# Quiz ôn tập phải THẤP HƠN HẲN một bài học: nó bốc câu từ chính những bài em đã
+# hoàn thành, tức em đã được thưởng cho việc học chúng lần đầu.
+_QUIZ_XP_BASE = 10
+_QUIZ_XP_MAX_BONUS = 20
 
-def _record_quiz_events(uid, quiz_id, course_id, questions, selected_by_no, now):
+#: Số lượt được TÍNH XP mỗi ngày. TRẦN NÀY LÀ ĐIỀU KIỆN, không phải tuỳ chọn:
+#: `GenerateQuizView` không giới hạn số quiz, nên trong hạn mức 1000 request/giờ
+#: một em sinh và nộp được hàng TRĂM lượt. Cộng XP mà không có trần là đẻ ra một
+#: lỗ tệ hơn lỗ đang vá — bảng xếp hạng thành cuộc thi bấm nút.
+#:
+#: Ba lượt × 8 câu ≈ một bài học về khối lượng luyện tập, và 3 × 30 = 90 XP vẫn
+#: dưới hai bài học. Lượt thứ tư trở đi VẪN được chấm, vẫn vào bản đồ năng lực,
+#: vẫn tính chuỗi ngày — chỉ không cộng XP nữa.
+_QUIZ_XP_MOI_NGAY = 3
+
+
+def _xp_quiz(score, total):
+    """XP của MỘT lượt quiz ôn tập. Cùng công thức với `mockexam._mock_xp`."""
+    if not total:
+        return _QUIZ_XP_BASE
+    dung = max(0, min(score, total))
+    return _QUIZ_XP_BASE + round(_QUIZ_XP_MAX_BONUS * dung / total)
+
+
+def _con_quota_xp(uid, hom_nay):
+    """Lượt này còn được tính XP không? Đếm CẢ lượt vừa ghi.
+
+    Đếm ở `review_quiz_results` chứ không ở `learning_events`: bảng kia mới là sổ
+    gốc của "em đã nộp mấy lượt hôm nay", còn dòng sự kiện tách theo CHỦ ĐỀ nên
+    một lượt có thể thành nhiều dòng — đếm ở đó là đếm sai theo hướng chặn oan.
+    """
+    n = q1('SELECT COUNT(*) AS n FROM review_quiz_results '
+           'WHERE user_id=%s AND submitted_at::date = %s', (uid, hom_nay))['n']
+    return int(n or 0) <= _QUIZ_XP_MOI_NGAY
+
+
+
+def _record_quiz_events(uid, quiz_id, course_id, questions, selected_by_no, now, xp=0):
     """Một lượt quiz ôn tập → MỘT sự kiện cho MỖI chủ đề có trong lượt đó.
 
     Quiz ôn tập bốc câu từ các bài đã học, mỗi bài thuộc một chủ đề khác nhau.
@@ -41,12 +88,24 @@ def _record_quiz_events(uid, quiz_id, course_id, questions, selected_by_no, now)
         if selected_by_no.get(qq.get('question_no')) == correct_id:
             bucket[0] += 1
 
-    for topic, (correct, n) in per_topic.items():
+    # XP đặt lên ĐÚNG MỘT dòng, không phải mỗi dòng.
+    #
+    # Một lượt quiz thành nhiều dòng sự kiện (một cho mỗi chủ đề). `xp` là
+    # trường "XP của sự kiện này", nên ghi đủ số lên từng dòng là biến một lượt
+    # 30 XP thành 90 XP với bất kỳ báo cáo nào cộng cột ấy — hôm nay chưa có báo
+    # cáo nào cộng, nhưng cột ấy tồn tại đúng để được cộng.
+    #
+    # Sắp xếp chủ đề để chọn dòng mang XP một cách XÁC ĐỊNH: thứ tự của `dict`
+    # theo thứ tự chèn, tức theo thứ tự câu hỏi bốc ngẫu nhiên — cùng một lượt
+    # chạy lại có thể chọn dòng khác, và một con số nhảy chỗ giữa hai lần đọc là
+    # thứ không ai truy được.
+    for i, topic in enumerate(sorted(per_topic)):
+        correct, n = per_topic[topic]
         record_event(
             uid, KIND_REVIEW_QUIZ, f'quiz:{quiz_id}:{topic}',
             occurred_at=now, course_id=course_id, topic=topic,
             ref_type='quiz', ref_id=str(quiz_id),
-            score=correct, max_score=n,
+            score=correct, max_score=n, xp=(xp if i == 0 else 0),
             meta={'quizId': quiz_id},
         )
 
@@ -294,8 +353,21 @@ class SubmitQuizView(APIView):
               (quiz_id, uid, score, total,
                json.dumps(answers_json, ensure_ascii=False), now))
             x("UPDATE quizzes SET status='submitted' WHERE id=%s", (quiz_id,))
+
+            # ── XP, CÓ TRẦN THEO NGÀY (anh Sơn duyệt 05/09/2026) ───────────
+            #
+            # Trần đếm ở `review_quiz_results`, SAU khi dòng của lượt này đã ghi
+            # — nên lượt thứ tư trong ngày là lượt đầu tiên không được cộng.
+            #
+            # Lượt quá trần VẪN được chấm, vẫn vào bản đồ năng lực, vẫn tính
+            # chuỗi ngày. Chỉ XP dừng lại. Ôn thêm là việc tốt; thưởng thêm cho
+            # việc bấm nút thì không.
+            hom_nay = local_today()
+            xp = _xp_quiz(score, total) if _con_quota_xp(uid, hom_nay) else 0
+
             _record_quiz_events(uid, quiz_id, quiz.get('course_id'), questions,
-                                selected_by_no, now)
+                                selected_by_no, now, xp=xp)
+            award_xp(uid, xp, hom_nay)
 
             # ── LÀM QUIZ ÔN TẬP LÀ CÓ HỌC HÔM NAY (vá 04/09/2026) ───────────
             #
@@ -320,12 +392,18 @@ class SubmitQuizView(APIView):
             #
             # `touch_streak` KHÔNG cần trần: nó chỉ đặt "đã học hôm nay", gọi
             # bao nhiêu lần trong ngày cũng ra cùng một kết quả.
-            touch_streak(uid, local_today())
+            touch_streak(uid, hom_nay)
 
         return Response({
             'score': score,
             'total': total,
             'percentage': round(score * 100 / total) if total else 0,
+            # Trả XP về để màn hình nói ĐÚNG con số máy chủ vừa cộng, thay vì tự
+            # đoán. `xpDaTran` cho phép giao diện giải thích vì sao lượt này 0 XP
+            # — im lặng cho 0 XP trông y hệt một lỗi.
+            'xpGained': xp,
+            'xpDaTran': xp == 0,
+            'xpMoiNgay': _QUIZ_XP_MOI_NGAY,
             'review': review,
         })
 

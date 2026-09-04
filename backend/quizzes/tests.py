@@ -275,3 +275,101 @@ def test_nop_quiz_on_tap_TINH_VAO_CHUOI_NGAY(auth_api, temp_user, db):
     sau = q1('SELECT streak, last_study_date FROM users WHERE id=%s', (temp_user,))
     assert sau['last_study_date'] == local_today(), (truoc, sau)
     assert sau['streak'] == 4, (truoc, sau)
+
+
+# ── XP QUIZ ÔN TẬP, CÓ TRẦN THEO NGÀY (anh Sơn duyệt 05/09/2026) ────────────
+#
+# Trần là ĐIỀU KIỆN, không phải tuỳ chọn: `GenerateQuizView` không giới hạn số
+# quiz, nên trong hạn mức 1000 request/giờ một em sinh và nộp được hàng TRĂM
+# lượt. Cộng XP mà không có trần là đẻ ra một lỗ tệ hơn lỗ đang vá.
+
+def _cho_du_dieu_kien(temp_user):
+    """Đánh dấu vài bài hoàn thành để đủ kho câu hỏi sinh quiz."""
+    from common.db import q, x
+    for row in q("SELECT id FROM lessons WHERE course_id='hsa_quantitative' "
+                 "AND content_json IS NOT NULL ORDER BY sort_order LIMIT 3"):
+        x("""INSERT INTO lesson_progress (user_id, lesson_id, course_id, status, completed_at)
+             VALUES (%s, %s, 'hsa_quantitative', 'completed', NOW())
+             ON CONFLICT (user_id, lesson_id) DO UPDATE SET status='completed'""",
+          (temp_user, row['id']))
+
+
+def _mot_luot(auth_api):
+    r = auth_api.post('/api/courses/hsa_quantitative/quiz/generate',
+                      {'num_questions': 5}, format='json')
+    assert r.status_code == 200, r.json()
+    qid = r.json().get('quiz_id') or r.json().get('id')
+    rs = auth_api.post('/api/quizzes/%s/submit' % qid,
+                       {'answers': [{'question_no': 1, 'selected': 'x'}]}, format='json')
+    assert rs.status_code == 200, rs.json()
+    return rs.json()
+
+
+def test_quiz_on_tap_cong_XP_va_DUNG_LAI_o_tran_ngay(auth_api, temp_user, db):
+    from common.db import q1
+    from quizzes.views import _QUIZ_XP_MOI_NGAY
+
+    _cho_du_dieu_kien(temp_user)
+    truoc = q1('SELECT xp FROM users WHERE id=%s', (temp_user,))['xp'] or 0
+
+    duoc = []
+    for _ in range(_QUIZ_XP_MOI_NGAY + 2):
+        duoc.append(_mot_luot(auth_api)['xpGained'])
+
+    assert all(x > 0 for x in duoc[:_QUIZ_XP_MOI_NGAY]), duoc
+    assert all(x == 0 for x in duoc[_QUIZ_XP_MOI_NGAY:]), (
+        'lượt quá trần vẫn cộng XP: %s' % duoc)
+
+    sau = q1('SELECT xp FROM users WHERE id=%s', (temp_user,))['xp'] or 0
+    assert sau - truoc == sum(duoc), (truoc, sau, duoc)
+
+
+def test_luot_qua_tran_VAN_duoc_cham_va_van_vao_ban_do_nang_luc(auth_api, temp_user, db):
+    """Ôn thêm là việc tốt; chỉ có thưởng dừng lại. Nếu lượt quá trần bị chặn
+    hẳn thì trần biến từ một hàng rào chống cày XP thành một hàng rào chống HỌC."""
+    from common.db import q1
+    from quizzes.views import _QUIZ_XP_MOI_NGAY
+
+    _cho_du_dieu_kien(temp_user)
+    for _ in range(_QUIZ_XP_MOI_NGAY):
+        _mot_luot(auth_api)
+
+    d = _mot_luot(auth_api)
+    assert d['xpGained'] == 0 and d['xpDaTran'] is True, d
+    assert d['total'] > 0, 'vẫn phải chấm'
+    # Vẫn có dòng năng lực cho lượt ấy.
+    n = q1("SELECT COUNT(*) AS n FROM learning_events "
+           "WHERE user_id=%s AND kind='review_quiz'", (temp_user,))['n']
+    assert n >= _QUIZ_XP_MOI_NGAY + 1, n
+
+
+def test_XP_dat_len_DUNG_MOT_dong_su_kien(auth_api, temp_user, db):
+    """Một lượt quiz thành nhiều dòng (một cho mỗi chủ đề). Ghi đủ XP lên từng
+    dòng là biến một lượt 30 XP thành 90 XP với bất kỳ báo cáo nào cộng cột ấy."""
+    from common.db import q1
+
+    _cho_du_dieu_kien(temp_user)
+    d = _mot_luot(auth_api)
+    assert d['xpGained'] > 0
+
+    tong = q1("SELECT COALESCE(SUM(xp),0) AS s, COUNT(*) AS n FROM learning_events "
+              "WHERE user_id=%s AND kind='review_quiz'", (temp_user,))
+    assert tong['s'] == d['xpGained'], (
+        'tổng cột xp (%s) khác XP thật của lượt (%s) trên %s dòng'
+        % (tong['s'], d['xpGained'], tong['n']))
+
+
+def test_cong_thuc_XP_theo_ti_le_dung():
+    """Cùng hình dạng với thi thử: một phần cố định + một phần theo tỉ lệ."""
+    from quizzes.views import _QUIZ_XP_BASE, _QUIZ_XP_MAX_BONUS, _xp_quiz
+
+    assert _xp_quiz(0, 8) == _QUIZ_XP_BASE
+    assert _xp_quiz(8, 8) == _QUIZ_XP_BASE + _QUIZ_XP_MAX_BONUS
+    assert _xp_quiz(4, 8) == _QUIZ_XP_BASE + _QUIZ_XP_MAX_BONUS // 2
+    assert _xp_quiz(0, 0) == _QUIZ_XP_BASE, 'chia cho 0 phải an toàn'
+    # Điểm âm hoặc vượt tổng (không xảy ra qua API, nhưng hàm phải chịu được).
+    assert _xp_quiz(-5, 8) == _QUIZ_XP_BASE
+    assert _xp_quiz(99, 8) == _QUIZ_XP_BASE + _QUIZ_XP_MAX_BONUS
+    # Và phải THẤP HƠN HẲN một bài học (50): quiz bốc câu từ bài đã hoàn thành,
+    # tức em đã được thưởng cho việc học chúng lần đầu.
+    assert _QUIZ_XP_BASE + _QUIZ_XP_MAX_BONUS < 50

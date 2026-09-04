@@ -94,8 +94,28 @@ async function submitReviewQuiz() {
 
 function renderQuizResult(result) {
   const runner = document.getElementById('quiz-runner');
+
+  /* XP LẤY TỪ MÁY CHỦ, và nói rõ khi nó bằng 0 (05/09/2026).
+
+     Trước hôm nay quiz ôn tập không cộng XP nào, và màn hình cũng không nói gì —
+     em làm xong mười lượt rồi tự hỏi vì sao chỉ số không nhúc nhích.
+
+     Nay có XP, kèm trần 3 lượt/ngày. Trần ấy BẮT BUỘC: `GenerateQuizView` không
+     giới hạn số quiz, nên không có trần thì bảng xếp hạng thành cuộc thi bấm
+     nút. Nhưng một lượt 0 XP mà IM LẶNG thì trông y hệt một lỗi — nên nói ra,
+     và nói cả lý do. Lượt quá trần vẫn được chấm, vẫn vào bản đồ năng lực, vẫn
+     tính chuỗi ngày. */
+  const xp = typeof result.xpGained === 'number' ? result.xpGained : null;
+  const soMoiNgay = Number(result.xpMoiNgay) || 3;
+  const dongXp = xp === null ? ''
+    : (xp > 0
+      ? `<p class="quiz-xp">+${xp} XP</p>`
+      : `<p class="quiz-xp quiz-xp--het">Hôm nay đã đủ ${soMoiNgay} lượt tính XP.`
+        + ' Lượt này vẫn được chấm và vẫn tính vào bản đồ năng lực.</p>');
+
   runner.innerHTML = `
     <p class="quiz-score">Điểm: ${result.score}/${result.total} (${result.percentage}%)</p>
+    ${dongXp}
     ${result.review.map(r => `
       <div class="quiz-review-item ${r.is_correct ? 'correct' : 'wrong'}">
         <p class="quiz-q-text">${r.question_no}. ${_esc(r.question)}</p>

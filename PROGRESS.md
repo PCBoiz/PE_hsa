@@ -3455,3 +3455,39 @@ ninh). Ở Vercel: đổi sang lấy phần tử ĐẦU và bỏ cửa gác đ�
 với hàm đã có trong `common/tests.py`, nên định nghĩa sau ghi đè định nghĩa
 trước và hai phép kiểm `NUM_PROXIES` viết từ 04/09 lặng lẽ gọi nhầm hàm. Đổi tên
 thành `_req_hdr` kèm chú thích nói rõ đó là bắt buộc, không phải sở thích.
+
+## 05/09/2026 — A11: quiz ôn tập cộng XP, có trần
+
+Công thức cùng **hình dạng** với thi thử — một phần cố định cho công sức, một
+phần theo tỉ lệ đúng — vì đó là luật anh đã chốt cho thi thử ngày 14/08, và hai
+thứ cùng loại thì không nên tính hai kiểu.
+
+    bài học    50 XP   (lý thuyết + kiểm tra + 8 câu phòng luyện)
+    thi thử    30 + tối đa 70 = 100   (150 câu, một buổi ngồi thật)
+    quiz ôn    10 + tối đa 20 =  30   ← 5–10 câu, ÔN LẠI thứ đã học
+
+Quiz ôn phải thấp hơn hẳn một bài học: nó bốc câu từ chính những bài em **đã
+hoàn thành**, tức em đã được thưởng cho việc học chúng lần đầu.
+
+**Trần 3 lượt/ngày, và trần là ĐIỀU KIỆN chứ không phải tuỳ chọn.**
+`GenerateQuizView` không giới hạn số quiz; trong hạn mức 1000 request/giờ một em
+sinh và nộp được hàng trăm lượt. Không có trần thì bảng xếp hạng thành cuộc thi
+bấm nút. Lượt thứ tư trở đi **vẫn được chấm, vẫn vào bản đồ năng lực, vẫn tính
+chuỗi ngày** — chỉ XP dừng. Ôn thêm là việc tốt; thưởng thêm cho việc bấm nút
+thì không.
+
+**XP đặt lên ĐÚNG MỘT dòng sự kiện.** Một lượt quiz thành nhiều dòng (một cho
+mỗi chủ đề). `xp` là trường "XP của sự kiện này", nên ghi đủ số lên từng dòng là
+biến một lượt 30 XP thành 90 XP với bất kỳ báo cáo nào cộng cột ấy — hôm nay
+chưa có báo cáo nào cộng, nhưng cột ấy tồn tại đúng để được cộng. Chọn dòng mang
+XP theo chủ đề đã **sắp xếp**, không theo thứ tự `dict`: thứ tự chèn đi theo thứ
+tự câu hỏi bốc ngẫu nhiên, và một con số nhảy chỗ giữa hai lần đọc là thứ không
+ai truy được.
+
+**Màn hình nói ra khi XP bằng 0, kèm lý do.** Một lượt 0 XP mà im lặng trông y
+hệt một lỗi — và trước hôm nay quiz ôn tập không cộng XP nào cả mà cũng không
+nói gì, nên em làm xong mười lượt rồi tự hỏi vì sao chỉ số không nhúc nhích.
+
+**Chứng minh ĐỎ:** gỡ trần và ghi XP lên mọi dòng → 3 phép kiểm đỏ, trong đó
+`test_XP_dat_len_DUNG_MOT_dong_su_kien` bắt đúng chỗ tổng cột `xp` vượt XP thật.
+51 passed (quizzes + stats).
