@@ -4128,7 +4128,7 @@ phần lớn là `<a href>` rời trang, mà lượt quét cố ý không bấm.
 
 ## 05/09/2026 — Audit tổng thể trước khi gộp `master`
 
-`docs/GOP_MASTER.md` là bản đầy đủ. Ba điều đáng nói nhất:
+Bản đầy đủ nay nằm trong `docs/VIEC_CUA_ANH.md` (tệp `GOP_MASTER.md` riêng đã gộp vào đó ngày 05/09). Ba điều đáng nói nhất:
 
 **Bước DDL an toàn, và tôi ĐO chứ không đọc.** `bootstrap_schema` ném ở câu lệnh
 lỗi đầu tiên, nên tính idempotent là điều kiện sống còn của build. Mở một giao
@@ -4160,3 +4160,25 @@ rào chống giả header không bị nới ra.
 
 Cổng đầy đủ, lần đầu chạy TRỌN: **pytest 324/324** (22 phút) và **`next build`
 thành công** — bước Vercel sẽ chạy mà trước hôm nay tôi chưa lần nào chạy.
+
+## 05/09/2026 — Gộp việc-của-anh về MỘT tệp
+
+Anh bảo ghi tất cả vào một tệp để đọc dần. Trước đó việc của anh nằm rải ở sáu
+mục A/B/C/D/D+/D++ mọc dần theo thời gian, cộng `GOP_MASTER.md` viết riêng vài
+giờ trước — đọc xong không biết cái nào còn, cái nào đã xong, cái nào bị mục sau
+ghi đè.
+
+`docs/VIEC_CUA_ANH.md` nay là tệp DUY NHẤT, 640 dòng, 9 phần, mở đầu bằng bảng
+"đọc 3 phút" cho ba việc chặn đường lên production. `GOP_MASTER.md` xoá, và sửa
+luôn dòng trong PROGRESS trỏ tới nó để người đọc không gặp tệp trống.
+
+Mỗi mục có bốn phần cố định: **vì sao** (kèm số đo), **quên thì sao**, **làm thế
+nào** (lệnh chép dán được), **kiểm đã xong chưa**. Phần "quên thì sao" là phần
+tôi thấy thiếu nhất ở bản cũ: nó phân biệt một việc *bắt buộc* với một việc
+*nên làm*, mà bản cũ để lẫn cả hai trong cùng một danh sách gạch đầu dòng.
+
+Thêm hai phần chưa từng có:
+- **Phần 8 "chưa đo được"** — bốn thứ tôi không đo nổi, nói thẳng thay vì im.
+- **Phần 9** — chính xác những gì tôi đã tạo và đã xoá trên CSDL production, gồm
+  cả 6 dòng chèn nhầm và cách chúng được dọn. Đây là CSDL thật của anh; anh có
+  quyền biết tôi đã chạm vào cái gì mà không phải đi đọc lịch sử git.
