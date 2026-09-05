@@ -4125,3 +4125,38 @@ gọi ghi lọt ra**.
 Giới hạn nói thẳng: các trang quản trị chỉ bấm được 1–4 nút vì điều khiển ở đó
 phần lớn là `<a href>` rời trang, mà lượt quét cố ý không bấm. Tự kiểm vẫn ĐẠT ở
 đó, nhưng "0 lỗi" trên 1 nút thì đúng bằng 1 nút.
+
+## 05/09/2026 — Audit tổng thể trước khi gộp `master`
+
+`docs/GOP_MASTER.md` là bản đầy đủ. Ba điều đáng nói nhất:
+
+**Bước DDL an toàn, và tôi ĐO chứ không đọc.** `bootstrap_schema` ném ở câu lệnh
+lỗi đầu tiên, nên tính idempotent là điều kiện sống còn của build. Mở một giao
+dịch trên chính CSDL production, chạy **cả 193 câu**, rồi cuộn lại: chạy sạch,
+bốn khoá ngoại §42/§43 thành đúng chính sách mong muốn, và 53 bảng / 75 khoá /
+167 chỉ mục không đổi trước sau. DDL của Postgres có giao dịch — đó là cách duy
+nhất trả lời câu hỏi này mà không đánh cược.
+
+**Quên xoay `SECRET_KEY` là deploy TRƯỢT, không phải sập.** Đo từng bước
+`buildCommand` với khoá 19 byte: cổng nổ ngay ở `collectstatic`, tức trước khi
+chạm CSDL và trước khi gunicorn khởi động. Render giữ bản cũ. Khác hẳn với điều
+tôi lo lúc đầu.
+
+**Nhưng có một chặn cứng thật, và nó dễ bị bỏ sót.** `master` hôm nay gọi thẳng
+Django nên mỗi người một khoá giới hạn. Sau khi gộp, lưu lượng đi qua `proxy.ts`
+— thứ CỐ Ý gỡ `x-forwarded-for` — nên Django chỉ thấy IP egress của Vercel:
+
+    qua Vercel, người A → khoá = 76.76.21.9
+    qua Vercel, người B → khoá = 76.76.21.9      ← CÙNG khoá
+
+Tôi đã suýt phóng đại chỗ này: nói "1000/giờ cho toàn bộ người dùng". Đọc kỹ thì
+khoá throttle CÓ kèm tên view, nên `ip_hour` là mỗi-endpoint. Nhưng
+`LoginThrottle` thì KHÔNG kèm — nên `20 đăng nhập/phút` là dùng chung thật. Một
+lớp 30 em vào cùng giờ thì 10 em ăn 429 ngay ngày đầu.
+
+Đặt `PROXY_SHARED_SECRET` + `PE_PROXY_SECRET` là hết, và tôi kiểm cả chiều
+ngược: kẻ gọi thẳng Render với bí mật sai vẫn bị quy về IP thật của họ, tức hàng
+rào chống giả header không bị nới ra.
+
+Cổng đầy đủ, lần đầu chạy TRỌN: **pytest 324/324** (22 phút) và **`next build`
+thành công** — bước Vercel sẽ chạy mà trước hôm nay tôi chưa lần nào chạy.
