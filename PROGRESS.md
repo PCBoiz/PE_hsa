@@ -4027,3 +4027,101 @@ Chứng minh đỏ: gọi hàm không tồn tại → đỏ; lùi đúng lỗi v
 **T31/T32 vẫn mở**, và tôi không tự ý bắt đầu: viết lại 5.200 dòng đang chạy
 đúng là quyết định về thứ tự ưu tiên, không phải về kỹ thuật. Phần rủi ro cụ thể
 mà chúng nêu ra thì nay đã đóng bằng một cổng kiểm.
+
+## 05/09/2026 — Lượt quét BẤM THỬ, và một cuộc đua trên topbar
+
+`do_giao_dien.mjs` mở 16 trang và báo "lỗi JS: 0" trên tất cả. Con số ấy đúng —
+và mù với một lớp lỗi: nó chỉ TẢI trang, không BẤM gì. Lỗi tìm-kiếm-diễn-đàn
+sáng nay nằm gọn trong khoảng cách giữa "tải được" và "dùng được".
+
+Viết `scripts/go_moi_nut.mjs`: đăng nhập rồi bấm mọi điều khiển của 9 màn (kể cả
+9 tab SPA), chặn mọi lời gọi không phải GET như `do_giao_dien.mjs` vẫn làm.
+
+**Lượt chạy đầu tiên tìm ra hai lỗi thật** — và cả hai đều là MỘT lỗi:
+
+    W(...).showSearchSuggestions is not a function
+    W(...).filterCourses is not a function
+
+React dựng `Topbar` và gắn handler NGAY; `LegacyScripts` nạp `main.js` SAU. Giữa
+hai mốc có một cửa sổ mà handler đã sống còn hàm nó gọi thì chưa. Trên máy này
+cửa sổ ~200ms nên hiếm khi trúng — nên tôi KHÔNG rình trúng thời điểm mà **giữ
+chậm `main.js` 6 giây**: bấm ô tìm kiếm → ném, gõ chữ → ném. Một cuộc đua chỉ
+kiểm được khi mình cầm được nhịp.
+
+Dashboard nạp SÁU tệp thực thi nối tiếp (riêng `main.js` + `dashboard.js` đã
+5.200 dòng); trên điện thoại mạng chậm cửa sổ ấy tính bằng giây — đúng lúc một
+người sốt ruột bấm vào ô tìm kiếm.
+
+**Không sửa bằng `?.`.** `W().filterCourses?.()` hết ném, nhưng cú bấm BIẾN MẤT:
+gõ mà không gì xảy ra, không gì giải thích. Đó là đổi một lỗi ồn lấy một lỗi
+câm — thứ cả phiên này đi sửa. Có sẵn một tín hiệu tử tế: `LegacyScripts` phát
+`pe:legacy-ready` sau khi mọi script nạp xong. Nên `src/lib/goiLegacy.ts` gọi
+ngay nếu hàm đã có, chưa có thì CHỜ tín hiệu ấy rồi gọi; quá 8 giây thì báo ra
+console (script không bao giờ tới là sự cố thật).
+
+Đo sau khi vá, vẫn giữ chậm `main.js`: 0 lỗi JS, chữ "lượng" còn nguyên trong ô,
+và khối gợi ý mở ra `display: block` sau khi script tới — **cú gõ được thực hiện
+muộn chứ không bị nuốt**. `Topbar.tsx` thay cả 13 chỗ gọi.
+
+`e2e/topbar-truoc-khi-script-toi.spec.ts` giữ lại cuộc đua ấy, và đòi HAI điều
+chứ không một: không ném, VÀ việc người dùng yêu cầu vẫn được làm. Chỉ đòi điều
+đầu thì `?.` cũng qua. Lùi `Topbar.tsx` về bản cũ → đỏ với 9 lỗi; khôi phục →
+xanh.
+
+**Lượt quét cũng tự tố cáo mình.** Tự kiểm phiên bản đầu "ĐẠT" nhờ 7 màn, trong
+khi 9 màn không đỏ nổi — đúng cái bẫy "xanh gộp che số 0 từng mục" vừa vá ở bộ
+đo tương phản, tôi mắc lại ngay trong ngày. Nay tự kiểm gài lỗi vào TỪNG màn và
+gọi tên màn nào không đỏ được. Nó cũng chỉ bấm ĐÚNG 7 nút trên mọi tab dashboard
+(trang có 260 vùng chạm): giữ một mảng handle từ đầu, cú bấm đầu đổi tab, phần
+còn lại thành ẩn rồi hết giờ. Một con số đều đặn đến thế đáng ra phải làm tôi
+dừng lại sớm hơn. Nay truy vấn lại sau mỗi cú bấm và khôi phục đúng tab.
+
+## 05/09/2026 — Lượt quét BẤM THỬ tìm ra hai lỗi nữa, và tự tố cáo mình ba lần
+
+`scripts/go_moi_nut.mjs` chạy thật: 267 nút trên 17 màn, chặn mọi lời gọi không
+phải GET. Nó tìm ra **hai lỗi cùng một họ** — tin hình dạng phản hồi sau khi chỉ
+kiểm `r.ok`.
+
+**1. Nhật ký báo "Đã lưu ✓" cho một lần chưa chắc đã lưu.**
+`saveToday` dùng thẳng `res.d.log.date`. Cho máy chủ trả 200 với thân `{}`:
+
+    màn hình  : "Đã lưu ✓"                              ← NÓI DỐI
+    danh sách : unshift(undefined) — một bản ghi MA
+    nhãn      : "Xem nhật ký 1 ngày gần đây"
+    mở ra     : Cannot read properties of undefined (reading 'date')
+
+Dòng `.filter()` ngay trên KHÔNG chặn được: với học viên MỚI thì `recent` rỗng
+nên callback không chạy lần nào — chính người mới là người trúng. Nay kiểm hình
+dạng trước, và nếu thiếu thì nói "chưa chắc đã lưu, tải lại trang để kiểm" thay
+vì báo thành công. Đường bình thường kiểm lại bằng phản hồi ĐÚNG hình dạng lấy
+từ `stats/views.py:451`: "Đã lưu ✓", 1 dòng, "04/09 Ôn tập 30 phút · Số học".
+
+**2. Khối phản ứng diễn đàn ghi đè state bằng `undefined`.**
+`forumApi.react().then` chỉ kiểm `res.error` rồi gán `post.reactions =
+res.reactions`, truyền tiếp vào `Object.values(reactions)` → ném `Cannot convert
+undefined or null to object`. Máy chủ hiện luôn trả trường ấy
+(`forum/views.py:139`); guard là để một thay đổi hợp đồng sau này không lặng lẽ
+làm hỏng khối phản ứng.
+
+**Và lượt quét tự tố cáo mình BA lần** — mỗi lần đều là "con số trông ổn":
+
+  · Bấm ĐÚNG 7 nút trên mọi tab dashboard (trang có 260 vùng chạm). Nó giữ một
+    mảng handle từ đầu; cú bấm đầu đổi tab, phần còn lại thành ẩn rồi hết giờ và
+    bị `catch` nuốt. Một con số đều đặn đến thế đáng ra phải làm tôi dừng sớm
+    hơn. Nay truy vấn lại sau mỗi cú bấm → 267 nút.
+  · Tự kiểm "ĐẠT" nhờ 7 màn trong khi 9 màn không đỏ nổi — đúng cái bẫy xanh-gộp
+    tôi vừa vá ở bộ đo tương phản, mắc lại trong cùng ngày. Nay xét TỪNG màn.
+  · Rồi tự kiểm báo oan 3 màn: nút gài nằm cuối `body`, còn vòng lặp có trần 45
+    lượt và chọn theo thứ tự tài liệu, nên màn nhiều nút chạm trần trước khi tới
+    nó. Nay bấm thẳng nút gài. Một phép tự kiểm báo oan cũng làm người ta thôi
+    tin nó, y như báo sót.
+
+Kết quả cuối: tự kiểm ĐẠT **17/17 màn**, chạy thật **267 nút · 0 lỗi JS · 0 lời
+gọi ghi lọt ra**.
+
+`e2e/nhat-ky-phan-hoi-thieu.spec.ts` giữ cả hai chiều (thiếu dữ liệu → nói thật;
+đúng hình dạng → vẫn lưu). Lùi `dashboard.js` → đỏ; khôi phục → xanh.
+
+Giới hạn nói thẳng: các trang quản trị chỉ bấm được 1–4 nút vì điều khiển ở đó
+phần lớn là `<a href>` rời trang, mà lượt quét cố ý không bấm. Tự kiểm vẫn ĐẠT ở
+đó, nhưng "0 lỗi" trên 1 nút thì đúng bằng 1 nút.

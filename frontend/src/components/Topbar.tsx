@@ -1,11 +1,17 @@
 'use client';
 
+import { goiLegacy } from '@/lib/goiLegacy';
+
 import { MUC_NAV } from './navMuc';
 
 // Port block nav của base.html (topbar + search + bell + user-chip) — markup 1:1.
 // Mọi handler gọi hàm global của main.js (giữ nguyên logic legacy).
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const W = () => window as any;
+//
+// GỌI QUA `goiLegacy`, KHÔNG gọi thẳng `window.X()` (vá 05/09/2026). Topbar được
+// React gắn handler NGAY, còn `main.js` thì `LegacyScripts` nạp SAU — giữa hai
+// mốc ấy, chạm vào ô tìm kiếm ném `W(...).filterCourses is not a function`. Tái
+// hiện được bằng cách giữ chậm `main.js`. Xem `@/lib/goiLegacy` để biết vì sao
+// KHÔNG chỉ thêm `?.`: làm thế thì cú bấm biến mất, đổi một lỗi ồn lấy một lỗi câm.
 
 export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
   return (
@@ -18,7 +24,7 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
           <div
             className="brand brand-always"
             onClick={() => {
-              W().navigate('dashboard');
+              goiLegacy('navigate', 'dashboard');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             style={{ cursor: 'pointer' }}
@@ -41,7 +47,7 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
               onClick={() => {
                 // `navigate()` là của main.js. Trang nào không nạp main.js thì
                 // rơi về điều hướng thường — thanh này phải dùng được một mình.
-                if (m.trang && typeof W().navigate === 'function') W().navigate(m.trang);
+                if (m.trang) goiLegacy('navigate', m.trang);
                 else window.location.href = m.url;
               }}
               aria-label={m.nhan}
@@ -52,7 +58,7 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
 
           {/* Hai mục dưới KHÔNG nằm trong danh sách chung: chúng bị dashboard.js
               bật/tắt theo vai trò qua `id`, và chỉ có mặt ở bản dựng này. */}
-          <button className="nav-btn" id="nav-teach" data-page="teach" style={{ display: 'none' }} onClick={() => W().navigate('teach')} aria-label="Giảng dạy">
+          <button className="nav-btn" id="nav-teach" data-page="teach" style={{ display: 'none' }} onClick={() => goiLegacy('navigate', 'teach')} aria-label="Giảng dạy">
             <span className="nav-icon" data-icon="users" data-size="17"></span><span>Giảng dạy</span>
           </button>
 
@@ -73,10 +79,10 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
               type="text"
               id="search-input"
               placeholder="Tìm kiếm..."
-              onInput={() => { W().filterCourses(); W().showSearchSuggestions(); }}
-              onFocus={() => W().showSearchSuggestions()}
-              onClick={() => W().showSearchSuggestions()}
-              onBlur={() => W().closeSearchSuggestions()}
+              onInput={() => { goiLegacy('filterCourses'); goiLegacy('showSearchSuggestions'); }}
+              onFocus={() => goiLegacy('showSearchSuggestions')}
+              onClick={() => goiLegacy('showSearchSuggestions')}
+              onBlur={() => goiLegacy('closeSearchSuggestions')}
               autoComplete="off"
             />
             <div className="search-suggestions hidden" id="search-suggestions">
@@ -86,18 +92,18 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
               <div className="suggestion-levels" id="suggestion-levels"></div>
             </div>
           </div>
-          <button className="theme-toggle-btn" id="theme-toggle" onClick={() => W().toggleTheme()} title="Đổi giao diện" aria-label="Đổi giao diện">
+          <button className="theme-toggle-btn" id="theme-toggle" onClick={() => goiLegacy('toggleTheme')} title="Đổi giao diện" aria-label="Đổi giao diện">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
           </button>
           <div className="bell-wrap" id="bell-wrap">
-            <button className="bell-btn" id="bell-btn" onClick={() => W().toggleBellPanel()} aria-haspopup="true" aria-expanded="false" aria-label="Thông báo">
+            <button className="bell-btn" id="bell-btn" onClick={() => goiLegacy('toggleBellPanel')} aria-haspopup="true" aria-expanded="false" aria-label="Thông báo">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
               <span className="bell-dot" id="bell-dot"></span>
             </button>
             <div className="bell-panel" id="bell-panel" role="dialog" aria-label="Thông báo">
               <div className="bell-panel-header">
                 <span className="bell-panel-title">🔔 Thông báo</span>
-                <button className="bell-mark-all" onClick={() => W().markAllBellRead()}>Đánh dấu đã đọc</button>
+                <button className="bell-mark-all" onClick={() => goiLegacy('markAllBellRead')}>Đánh dấu đã đọc</button>
               </div>
               <div className="bell-panel-body" id="bell-panel-body"></div>
             </div>
@@ -112,7 +118,7 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
                 và `aria-haspopup`/`aria-expanded` ở đây mới đúng nghĩa. `.user-chip`
                 đã tự đặt nền, viền, bo góc và con trỏ nên hình dạng không đổi;
                 `type="button"` để nó không vô tình gửi form nào bọc ngoài. */}
-            <button type="button" className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
+            <button type="button" className="user-chip" id="user-chip-btn" onClick={() => goiLegacy('toggleUserMenu')} aria-haspopup="true" aria-expanded="false">
               <span className="chip-avatar" id="chip-avatar">?</span>
               <span className="chip-name" id="chip-name">—</span>
               <span className="dropdown-icon" id="chip-arrow"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
@@ -126,10 +132,10 @@ export default function Topbar({ trang = 'dashboard' }: { trang?: string }) {
                 </div>
               </div>
               <div className="user-dropdown-divider"></div>
-              <button className="user-dropdown-item" onClick={() => { W().navigate('profile'); W().closeUserMenu(); }} role="menuitem">
+              <button className="user-dropdown-item" onClick={() => { goiLegacy('navigate', 'profile'); goiLegacy('closeUserMenu'); }} role="menuitem">
                 <span className="udi-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span> Trang của tôi
               </button>
-              <button className="user-dropdown-item" onClick={() => { W().navigate('settings'); W().closeUserMenu(); }} role="menuitem">
+              <button className="user-dropdown-item" onClick={() => { goiLegacy('navigate', 'settings'); goiLegacy('closeUserMenu'); }} role="menuitem">
                 <span className="udi-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></span> Cài đặt
               </button>
               <div className="user-dropdown-divider"></div>

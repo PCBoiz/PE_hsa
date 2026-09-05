@@ -1377,6 +1377,16 @@ function skSkillToggle(row) {
       // Gọi API nền — nếu server trả khác thì patch lại
       forumApi.react(postId, key).then(function (res) {
         if (!res || res.error) return;
+        /* Thiếu `reactions` thì GIỮ trạng thái lạc quan vừa vẽ, đừng ghi đè
+           bằng `undefined` (vá 05/09/2026). Bản cũ gán thẳng rồi truyền xuống
+           `Object.values(reactions)` — ném `Cannot convert undefined or null to
+           object`, và `post.reactions` thành undefined. Máy chủ hiện luôn trả
+           trường này (`forum/views.py:139`); guard ở đây là để một thay đổi hợp
+           đồng sau này không lặng lẽ làm hỏng khối phản ứng. */
+        if (!res.reactions) {
+          console.error('[forum] phản hồi react thiếu `reactions` — giữ nguyên số đang hiện.');
+          return;
+        }
         if (post) {
           post.reactions = res.reactions;
           post.myReaction = res.my_reaction;
@@ -1770,6 +1780,10 @@ function skSkillToggle(row) {
       if (node) {
         node.reactions = res.reactions;
         node.myReaction = res.my_reaction;
+        if (!res.reactions) {
+          console.error('[forum] phản hồi react (bình luận) thiếu `reactions`.');
+          return;
+        }
         _patchCmtReactionDOM(postId, targetId, res.reactions, res.my_reaction);
       }
     });
@@ -3644,12 +3658,33 @@ var _forumTextQ = '';
       .then(function (res) {
         btn.disabled = false;
         if (!res.ok) { msg.textContent = res.d.error || 'Không lưu được.'; msg.className = 'jr-msg is-err'; return; }
+
+        /* KIỂM HÌNH DẠNG PHẢN HỒI, không chỉ kiểm `r.ok` (vá 05/09/2026).
+           Tái hiện được: cho máy chủ trả 200 với thân `{}` (thiếu `log`) rồi
+           bấm Lưu —
+             · màn hình báo "Đã lưu ✓"                        ← NÓI DỐI
+             · `unshift(undefined)` nhét một bản ghi MA vào danh sách
+             · nhãn đổi thành "Xem nhật ký 1 ngày gần đây"
+             · mở nhật ký ra thì ném
+               `Cannot read properties of undefined (reading 'date')`
+           Dòng `.filter()` ngay dưới KHÔNG chặn được: với học viên MỚI thì
+           `recent` rỗng nên callback không chạy lần nào — tức chính người mới là
+           người trúng.
+           Nói thẳng "chưa chắc đã lưu" còn hơn báo thành công rồi vỡ ở màn sau:
+           người dùng cần biết để tải lại mà kiểm, chứ không phải yên tâm. */
+        var ghi = res.d && res.d.log;
+        if (!ghi || !ghi.date) {
+          msg.textContent = 'Máy chủ trả lời thiếu dữ liệu — chưa chắc đã lưu. Tải lại trang để kiểm.';
+          msg.className = 'jr-msg is-err';
+          return;
+        }
+
         msg.textContent = 'Đã lưu ✓'; msg.className = 'jr-msg is-ok';
-        data.today = res.d.log;
+        data.today = ghi;
         data.week = res.d.week;
         // Thay bản ghi hôm nay trong danh sách, hoặc chèn lên đầu nếu mới.
-        data.recent = (data.recent || []).filter(function (l) { return l.date !== res.d.log.date; });
-        data.recent.unshift(res.d.log);
+        data.recent = (data.recent || []).filter(function (l) { return l && l.date !== ghi.date; });
+        data.recent.unshift(ghi);
         if (window.__apiGetBust) window.__apiGetBust(API + '?days=30');
         renderWeek();
         renderHistory();
