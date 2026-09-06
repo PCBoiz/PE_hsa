@@ -277,6 +277,7 @@ class UserView(APIView):
         # Và mọi cột thêm vào bảng `users` sau này sẽ tự động rò ra API mà không
         # ai phải làm gì cả — đó mới là phần nguy hiểm lâu dài.
         user = q1('''SELECT id, name, email, phone, birthday, role, avatar,
+                            parent_name, parent_phone,
                             streak, streak_freezes, certificates, gems, xp,
                             questionnaire_completed, last_study_date,
                             is_verified, created_at, status,
@@ -294,6 +295,11 @@ class UserView(APIView):
         email = (data.get('email') or '').strip()
         phone = (data.get('phone') or '').strip()
         birthday = (data.get('birthday') or '').strip()
+        # Liên hệ phụ huynh — người NHẬN báo cáo tiến độ. Học viên tự điền được
+        # vì chính các em biết số của bố mẹ; bắt học vụ nhập hộ cho từng em là
+        # cách chắc chắn để ô này mãi mãi trống.
+        parent_name = (data.get('parent_name') or '').strip()
+        parent_phone = (data.get('parent_phone') or '').strip()
 
         errors = {}
         if err := validate_name_field(name):
@@ -302,6 +308,11 @@ class UserView(APIView):
             errors['email'] = err
         if err := validate_phone_field(phone):
             errors['phone'] = err
+        # Cùng bộ luật với số của học viên: rỗng thì bỏ qua, có thì phải đúng
+        # dạng. Sai dạng mà vẫn lưu là một tin ZNS gửi vào hư không, mất phí,
+        # và không ai biết cho tới khi phụ huynh hỏi vì sao chưa nhận được gì.
+        if err := validate_phone_field(parent_phone):
+            errors['parent_phone'] = err
         if errors:
             return Response({'errors': errors}, status=400)
 
@@ -318,8 +329,15 @@ class UserView(APIView):
         # Ghi bản ĐÃ chuẩn hoá. Chỉ chuẩn hoá lúc TRA mà không chuẩn hoá lúc
         # GHI là tái tạo đúng cái khe vừa vá: người dùng tự sửa hồ sơ thành
         # "An@Gmail.com", lần đăng nhập sau không khớp nữa.
-        x('UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s WHERE id=%s',
-          (name, norm_email(email), norm_phone(phone), birthday, uid))
+        # `parent_phone` KHÔNG kiểm trùng như `phone`. Hai anh em cùng học ở
+        # trung tâm thì dùng chung số của mẹ — đó là chuyện bình thường, không
+        # phải xung đột danh tính. `users.phone` phải duy nhất vì nó là một
+        # cách ĐĂNG NHẬP; số phụ huynh chỉ là một địa chỉ để gửi tới.
+        x('''UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s,
+                              parent_name=%s, parent_phone=%s
+             WHERE id=%s''',
+          (name, norm_email(email), norm_phone(phone), birthday,
+           parent_name, norm_phone(parent_phone) or '', uid))
         return Response({'ok': True})
 
 

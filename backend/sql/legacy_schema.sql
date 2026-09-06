@@ -1371,3 +1371,20 @@ ALTER TABLE users ADD CONSTRAINT users_role_check
 CREATE INDEX IF NOT EXISTS idx_levents_ref
     ON learning_events (ref_type, ref_id);
 --   · §45 — áp dụng tay 04/09 (chỉ THÊM chỉ mục, không đổi hành vi).
+
+-- ── LIÊN HỆ PHỤ HUYNH (07/09/2026) ──────────────────────────────────────────
+-- Báo cáo tiến độ gửi phụ huynh qua Zalo ZNS cần một số điện thoại ĐỂ GỬI TỚI.
+-- `users.phone` là số của chính học viên; với học sinh lớp 12 thì Zalo ở số ấy
+-- là của các em, không phải của bố mẹ — gửi vào đó là "báo cáo cho phụ huynh"
+-- mà phụ huynh không bao giờ đọc.
+--
+-- Hai cột rời chứ không một bảng liên hệ riêng: hôm nay mỗi em cần đúng một
+-- người nhận. Khi nào thật sự cần nhiều người nhận (bố, mẹ, người giám hộ, mỗi
+-- người chọn loại tin riêng) thì dựng bảng — dựng trước là dựng một màn quản lý
+-- cho bốn học viên.
+--
+-- DEFAULT '' chứ không NULL: `''` nghĩa là "chưa ai điền", và mã đọc nó chỉ cần
+-- một phép so chuỗi. Trộn cả NULL lẫn '' vào một cột là mọi chỗ đọc đều phải
+-- nhớ xử lý hai trường hợp cho cùng một ý nghĩa.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_name  TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_phone TEXT NOT NULL DEFAULT '';

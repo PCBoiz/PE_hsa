@@ -71,7 +71,7 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
 const TRAN_TEP = 13;
-const TRAN_DONG_MA = 7380;
+const TRAN_DONG_MA = 7346;
 
 let failures = 0;
 function check(name, cond, them) {

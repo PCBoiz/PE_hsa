@@ -16,6 +16,8 @@ export const metadata = { title: 'Báo cáo gửi phụ huynh | TopHSA' };
  */
 type BaoCao = {
   student: { id: number; name: string | null; email: string | null; phone: string | null };
+  /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. */
+  parent: { name: string; phone: string };
   class: { id: number; name: string; code: string | null; teacher: string | null };
   membership: { joinedAt: string | null; leftAt: string | null; status: string; teacherNote: string | null };
   period: { from: string; to: string; weeks: number };
@@ -126,6 +128,14 @@ export default async function BaoCaoPhuHuynhPage({
             ← Về lớp
           </Link>
           <h1 className="flex-1 text-section text-ink">Báo cáo gửi phụ huynh</h1>
+          {/* Nói ngay ở thanh: tờ này sẽ tới ai. Trước 07/09/2026 màn hình
+              không có chỗ nào cho biết, nên giảng viên in ra rồi mới phát hiện
+              không có số nào để gửi. */}
+          <span className="text-small text-ink-3">
+            {bc.parent.phone
+              ? <>Gửi tới {bc.parent.name || 'phụ huynh'} · {bc.parent.phone}</>
+              : <span className="text-warning-ink">Chưa có số Zalo của phụ huynh</span>}
+          </span>
           <PrintButton />
         </div>
       </header>
@@ -146,6 +156,11 @@ export default async function BaoCaoPhuHuynhPage({
             Lớp {bc.class.name}
             {bc.class.teacher && ` · Giảng viên ${bc.class.teacher}`}
           </p>
+          {/* Lời chào trên tờ IN. Chỉ hiện khi đã biết tên: "Kính gửi quý phụ
+              huynh" thì thừa — người nhận biết tờ này gửi cho mình. */}
+          {bc.parent.name && (
+            <p className="mt-2 text-body text-ink-2">Kính gửi ông/bà {bc.parent.name},</p>
+          )}
           <p className="mt-0.5 text-small text-ink-3">
             Kỳ báo cáo {ngay(bc.period.from)} – {ngay(bc.period.to)} · {bc.membership.status}
           </p>

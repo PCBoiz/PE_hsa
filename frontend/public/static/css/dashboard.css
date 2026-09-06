@@ -986,11 +986,23 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   width: 100%;
 }
 
+/* `min-block-size: 44px` — ngưỡng chạm Apple HIG. Đo 07/09/2026: cả SÁU ô hồ
+   sơ ở Cài đặt đều thấp hơn ngưỡng (`padding 8 + chữ 13px + 8`). Lỗi có sẵn từ
+   trước, lộ ra khi thêm mục "Liên hệ phụ huynh" — bộ đo cũ không quét trang
+   Cài đặt vì nó nằm sau một `#hash`, tức phải điều hướng mới thấy.
+
+   `font-size: 1rem` chứ không 13px trên khổ hẹp: dưới 16px thì Safari trên
+   iPhone TỰ PHÓNG TO cả trang khi người dùng chạm vào ô nhập, và không thu lại
+   — người ta phải tự vuốt để đọc tiếp phần còn lại của biểu mẫu. */
 .field-input {
   height: auto;
-  font-size: 13px;
-  border-radius: 12px;
-  padding: 8px 12px;
+  min-block-size: 44px;
+  font-size: 0.8125rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+@media (max-width: 36rem) {
+  .field-input { font-size: 1rem; }
 }
 
 .settings-section-title {

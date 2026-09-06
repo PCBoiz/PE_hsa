@@ -296,7 +296,8 @@ class ParentReportView(APIView):
                  (class_id,))
         gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],)) \
             if lop['teacher_id'] else None
-        em = q1('SELECT id, name, email, phone FROM users WHERE id=%s', (user_id,))
+        em = q1('''SELECT id, name, email, phone, parent_name, parent_phone
+                    FROM users WHERE id=%s''', (user_id,))
         if not em:
             return Response({'error': 'Không tìm thấy học viên.'}, status=404)
 
@@ -312,6 +313,11 @@ class ParentReportView(APIView):
         return Response({
             'student': {'id': em['id'], 'name': em['name'],
                         'email': em['email'], 'phone': em['phone']},
+            # Người NHẬN tờ báo cáo này. Trả về chuỗi rỗng chứ không None khi
+            # chưa ai điền: màn hình cần phân biệt "chưa điền" với "đã điền
+            # rồi xoá", và cả hai đều là '' — nên đừng bịa ra hai trạng thái.
+            'parent': {'name': em['parent_name'] or '',
+                       'phone': em['parent_phone'] or ''},
             'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
                       'teacher': gv['name'] if gv else None},
             'membership': {

@@ -1519,10 +1519,6 @@ function setText(id, val) {
   var el = document.getElementById(id);
   if (el) el.textContent = val;
 }
-function setVal(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.value = val;
-}
 function setToggle(id, on) {
   var el = document.getElementById(id);
   if (!el) return;
@@ -1532,12 +1528,12 @@ function setToggle(id, on) {
 
 /* ── Save settings ── */
 function saveSettings() {
-  var userData = {
-    name: document.getElementById("field-name").value,
-    email: document.getElementById("field-email").value,
-    phone: document.getElementById("field-phone").value,
-    birthday: document.getElementById("field-birthday").value,
-  };
+  // Đọc THEO NHÃN `data-ho-so` thay vì gọi tên từng ô: thêm một trường hồ sơ
+  // nay là thêm một thẻ <input> ở React, không phải sửa hai chỗ trong tệp này.
+  var userData = {};
+  document.querySelectorAll("[data-ho-so]").forEach(function (o) {
+    userData[o.getAttribute("data-ho-so")] = o.value;
+  });
   var notifData = {
     emailNotif: document
       .getElementById("toggle-email")
@@ -1649,10 +1645,9 @@ function loadUser() {
       });
       setText("settings-profile-name", u.name);
       setText("settings-profile-email", u.email);
-      setVal("field-name", u.name);
-      setVal("field-email", u.email);
-      setVal("field-phone", u.phone || "");
-      setVal("field-birthday", u.birthday || "");
+      document.querySelectorAll("[data-ho-so]").forEach(function (o) {
+        o.value = u[o.getAttribute("data-ho-so")] || "";
+      });
     });
 }
 

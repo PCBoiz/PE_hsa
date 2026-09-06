@@ -482,11 +482,45 @@ export default function DashboardPage() {
                   <span className="profile-badge">Học viên</span>
                 </div>
               </div>
+              {/* `data-ho-so` là hợp đồng với `main.js::saveSettings` và
+                  `loadUser`: cả hai đọc THEO NHÃN này chứ không gọi tên từng ô,
+                  nên thêm một trường hồ sơ chỉ cần thêm một <input> ở đây.
+                  Giá trị của nhãn phải khớp tên khoá `PUT /api/user` nhận. */}
               <div className="fields-grid">
-                <div><label className="field-label">Họ và tên</label><input id="field-name" className="field-input" placeholder="Nhập họ và tên" /></div>
-                <div><label className="field-label">Email</label><input id="field-email" className="field-input" placeholder="Nhập email" /></div>
-                <div><label className="field-label">Số điện thoại</label><input id="field-phone" className="field-input" placeholder="Nhập số điện thoại" /></div>
-                <div><label className="field-label">Ngày sinh</label><input id="field-birthday" className="field-input" placeholder="Chọn ngày sinh" /></div>
+                <div><label className="field-label" htmlFor="field-name">Họ và tên</label><input id="field-name" data-ho-so="name" className="field-input" placeholder="Nhập họ và tên" /></div>
+                <div><label className="field-label" htmlFor="field-email">Email</label><input id="field-email" data-ho-so="email" className="field-input" placeholder="Nhập email" /></div>
+                <div><label className="field-label" htmlFor="field-phone">Số điện thoại</label><input id="field-phone" data-ho-so="phone" className="field-input" placeholder="Nhập số điện thoại" /></div>
+                <div><label className="field-label" htmlFor="field-birthday">Ngày sinh</label><input id="field-birthday" data-ho-so="birthday" className="field-input" placeholder="Chọn ngày sinh" /></div>
+              </div>
+            </div>
+
+            {/* ── LIÊN HỆ PHỤ HUYNH ────────────────────────────────────────
+                Trung tâm gửi báo cáo tiến độ về Zalo của phụ huynh. Số ở mục
+                trên là số của CHÍNH EM — với học sinh lớp 12 thì Zalo ở số ấy
+                là của các em, nên gửi vào đó là "báo cáo cho phụ huynh" mà phụ
+                huynh không bao giờ đọc.
+
+                Để học viên tự điền chứ không bắt học vụ nhập hộ từng em: chính
+                các em biết số của bố mẹ, và một ô phải chờ người khác điền hộ
+                là một ô sẽ trống mãi. */}
+            <div className="settings-section" id="lien-he-phu-huynh">
+              <div className="settings-section-title">
+                <span className="title-icon-blue" data-icon="users" data-size="16"></span>
+                <span>Liên hệ phụ huynh</span>
+              </div>
+              <p className="goal-hint">
+                Trung tâm gửi báo cáo tiến độ học của bạn về số Zalo này. Bỏ trống
+                thì không gửi cho ai cả — không có gì tự động xảy ra.
+              </p>
+              <div className="fields-grid">
+                <div>
+                  <label className="field-label" htmlFor="field-parent-name">Tên phụ huynh</label>
+                  <input id="field-parent-name" data-ho-so="parent_name" className="field-input" placeholder="VD: Nguyễn Văn A" />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="field-parent-phone">Số Zalo của phụ huynh</label>
+                  <input id="field-parent-phone" data-ho-so="parent_phone" className="field-input" inputMode="tel" placeholder="VD: 0912345678" />
+                </div>
               </div>
             </div>
 

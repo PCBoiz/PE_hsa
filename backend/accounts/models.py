@@ -31,6 +31,10 @@ class User(AbstractBaseUser):
     name = models.TextField(null=True)
     email = models.TextField(unique=True, null=True)
     phone = models.TextField(default='', null=True)
+    # Người NHẬN báo cáo tiến độ (Zalo ZNS). Khác `phone` ở trên: đó là số của
+    # chính học viên, và với học sinh lớp 12 thì Zalo ở số ấy là của các em.
+    parent_name = models.TextField(default='')
+    parent_phone = models.TextField(default='')
     birthday = models.TextField(default='', null=True)
     role = models.TextField(default='Học viên', null=True)
     password = models.TextField(null=True)  # hash werkzeug scrypt:/pbkdf2:

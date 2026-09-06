@@ -4481,3 +4481,79 @@ Cả hai đều rơi vào cùng một lỗi: đo thứ dễ lấy thay vì thứ
 
 Cổng: tsc 0 · eslint 0 · 18/18 unit (sửa `cong-quan-tri` theo `mucCho`, và
 **thêm** một vế chặn `mucCho` tự dựng danh sách riêng thay vì lọc qua `tabsCho`).
+
+---
+
+## 07/09/2026 (tiếp) — T6: liên hệ phụ huynh, và một khám phá đổi hẳn phần việc còn lại
+
+### Báo cáo phụ huynh ĐÃ CÓ SẴN — không dựng lại
+
+Trước khi viết dòng nào cho phần báo cáo, tra ra `teaching/parent_report.py`
+(338 dòng) và trang `/giang-day/bao-cao/[classId]/[userId]` — tiêu đề đúng là
+**"Báo cáo gửi phụ huynh"**, có sẵn nút "In / Lưu PDF", có `@media print`, và
+ba ranh giới thiết kế viết rõ ở đầu tệp (không gửi nhật ký riêng của em; chuyên
+cần chỉ tính trên buổi ĐÃ điểm danh; không có dữ liệu thì nói không có, không
+viết 0).
+
+Nó cũng đã chọn ĐÚNG cách tôi định đề xuất: không sinh PDF ở máy chủ, dùng hộp
+in của trình duyệt — đỡ một phông chữ phải cài trên Render và một khác biệt
+dev/production.
+
+Nên phần còn thiếu THẬT SỰ chỉ là ba mảnh: (a) số để gửi tới, (b) một đường
+link phụ huynh mở được mà không cần tài khoản, (c) hàng chờ + nút gửi + ZNS.
+
+### T6 — hai cột mới, và một đường nhập liệu không cần chờ ai
+
+DDL thêm mới trên `users` (đo trước/sau): **25 → 27 cột, 6 dòng KHÔNG đổi**,
+cả 6 dòng nhận `''`. Ghi vào `sql/legacy_schema.sql` vì `User.Meta.managed =
+False` — Django không quản bảng này, migration không phải là nguồn sự thật.
+
+Kiểm bằng GHI THẬT rồi CUỘN LẠI (`transaction.atomic` + raise): ghi được, và
+`goc == sau` sau khi cuộn. Production nguyên vẹn.
+
+`parent_phone` **KHÔNG kiểm trùng** như `phone`: hai anh em cùng học thì dùng
+chung số của mẹ — chuyện bình thường, không phải xung đột danh tính.
+`users.phone` phải duy nhất vì nó là một cách ĐĂNG NHẬP; số phụ huynh chỉ là
+một địa chỉ để gửi tới.
+
+Ô nhập đặt ở **Cài đặt của học viên**, không ở màn học vụ: chính các em biết số
+của bố mẹ, còn một ô phải chờ người khác điền hộ là một ô sẽ trống mãi.
+
+### Thêm trường mà tầng cũ NHỎ ĐI
+
+`main.js::saveSettings` và `loadUser` gọi TÊN từng ô, nên thêm một trường là
+sửa ba chỗ ở hai tầng — quên một chỗ thì ô hiện ra bình thường, gõ được, bấm
+Lưu báo thành công, và không lưu gì cả.
+
+Đổi sang đọc theo nhãn `data-ho-so`. Kết quả: **7353 → 7346 dòng** tầng cũ
+(`setVal` thành mã chết, gỡ luôn) trong khi thêm được hai trường. Hạ trần chốt
+7380 → **7346**.
+
+Cách ấy DỜI rủi ro chứ không xoá — nhãn gõ sai hoặc API không nhận khoá thì vẫn
+im lặng. Nên thêm `ho-so-truong.test.mjs` đọc CẢ BA tầng (React → main.js →
+`views.py`) và bắt chúng khớp. Đỏ trước: gỡ `parent_phone` khỏi câu SELECT →
+`✗ GET /api/user trả parent_phone`.
+
+### Thước của tôi lại đo nhầm vật — lần thứ ba trong phiên
+
+Phép kiểm trên báo đỏ `status_note` và `password` "rò ra API". Gọi HTTP thật:
+chúng KHÔNG có trong phản hồi. Nó đang khớp phải chính **chú thích** giải thích
+vì sao hai cột ấy bị loại — tức đo văn xuôi, và cách "sửa" hiển nhiên sẽ là xoá
+chú thích, làm mã tệ đi để cái thước xanh.
+
+Sửa thành cắt danh sách cột giữa SELECT và FROM. Chạy phép đỏ-trước thì lộ tiếp
+lỗi thứ hai: ngay TRÊN câu truy vấn có một chú thích viết `SELECT *`, và regex
+`SELECT` trần khớp từ đó, nuốt cả chú thích vào "danh sách cột". Neo vào
+`q1('''SELECT` mới ra đúng 21 tên cột.
+
+Chính phép đỏ-trước bắt được lỗi này — chạy xanh thì nó ẩn, vì cột đúng vẫn nằm
+trong đoạn bắt nhầm.
+
+### Lỗi vùng chạm thứ hai trong ngày
+
+Cả **sáu** ô nhập hồ sơ đều dưới 44px (`padding 8 + chữ 13px + 8`). Lỗi có sẵn,
+lộ ra vì mục mới. Bộ đo cũ không thấy: trang Cài đặt nằm sau một `#hash`, phải
+điều hướng mới tới. Kèm `font-size: 1rem` ở khổ hẹp — dưới 16px thì Safari
+iPhone tự phóng to cả trang khi chạm vào ô nhập và không thu lại.
+
+Cổng: tsc 0 · eslint 0 · unit **18/18** (thêm `ho-so-truong`).
