@@ -1142,3 +1142,163 @@ a:focus:not(:focus-visible) { outline: none; }
 /* 2. `html.no-js` do chính script hiệu ứng gỡ bỏ — script không chạy được thì
       lớp này còn nguyên và nội dung vẫn hiện. */
 html.no-js .reveal-on-scroll { opacity: 1; transform: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TRANG GIỚI THIỆU — nền shader + ô "thử một câu"  (thêm 07/09/2026)
+
+   Anh Sơn chốt: hiệu ứng mạnh ở ĐÂY, kềm bên trong sản phẩm. Đây là bề mặt
+   bán hàng, người ta ở 30 giây; màn học và màn vận hành là nơi người ta ngồi
+   lâu và làm việc.
+
+   Không px cứng: mọi kích thước theo `clamp()`/`rem`, mọi mốc `@media` theo
+   `rem`. Ngoại lệ vẫn là ngưỡng chạm 44px (Apple HIG) và viền 1px.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Nền CỰC QUANG, thuần CSS ──────────────────────────────────────────────
+   Thay cho một nền WebGL đã gỡ. Lý do gỡ nằm ở `app/(base)/page.tsx`; phần
+   đáng nhớ: khi KHÔNG đo được, đừng đẩy lên trang công khai.
+
+   Ba lớp chuyển màu hình nón trôi chậm ngược chiều nhau, hoà bằng `screen`
+   trên nền tối. Khác shader ở một điểm quyết định: bộ đo giao diện CHỤP ĐƯỢC
+   nó, nên tương phản chữ hero được kiểm ở mọi lượt quét — không phải tin lời.
+
+   Độ mờ giữ thấp (0,5) và ba màu đều tối, nên nền hoà ra vẫn đủ tối cho chữ
+   trắng. Con số này BỘ ĐO canh, không phải tôi hứa. */
+.hero-cuc-quang {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    conic-gradient(from 210deg at 22% 28%, #4c2fa8 0deg, transparent 120deg, transparent 360deg),
+    conic-gradient(from 40deg  at 78% 22%, #17518f 0deg, transparent 130deg, transparent 360deg),
+    conic-gradient(from 300deg at 55% 82%, #0f6e66 0deg, transparent 110deg, transparent 360deg);
+  filter: blur(clamp(2.5rem, 1.5rem + 4vw, 5rem));
+  animation: cuc-quang 34s ease-in-out infinite alternate;
+}
+@keyframes cuc-quang {
+  0%   { transform: translate3d(-3%, -2%, 0) scale(1.08); }
+  50%  { transform: translate3d( 2%,  3%, 0) scale(1.16); }
+  100% { transform: translate3d( 4%, -1%, 0) scale(1.10); }
+}
+/* Nội dung hero phải nằm TRÊN nền. */
+.hero-section > .hero-content { position: relative; z-index: 1; }
+
+/* `overflow: clip` — lớp cực quang có `scale(1.16)` và `translate3d(4%,…)`
+   nên nó THÒ RA ngoài hero. Không cắt thì nó nới cả trang: đo 07/09/2026 ngay
+   sau khi thêm, trang chủ tràn ngang 21px trên máy tính và 6px trên điện thoại.
+
+   Một lớp TRANG TRÍ không bao giờ được phép đổi bố cục. `clip` chứ không
+   `hidden`: `hidden` dựng một vùng cuộn (và `position: sticky` bên trong sẽ
+   neo vào vùng ấy thay vì vào trang), `clip` chỉ cắt. */
+.hero-section { overflow: clip; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Giữ nền, bỏ chuyển động: người đặt giảm chuyển động vẫn nên thấy một trang
+     đẹp, chỉ là một trang ĐỨNG YÊN. Khác hẳn shader — ở đó bỏ chuyển động
+     nghĩa là bỏ luôn cả hình. */
+  .hero-cuc-quang { animation: none; }
+}
+
+/* ── Ô "thử một câu" ───────────────────────────────────────────────────────
+   Ô tương tác DUY NHẤT của trang. Trước 07/09 cả trang chỉ có sáu liên kết và
+   gần như một hành động là "Đăng nhập" — mà khách vãng lai thì chưa có tài
+   khoản để đăng nhập. */
+.thu-cau {
+  position: relative;
+  z-index: 1;
+  margin-block-start: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+  margin-inline: auto;
+  max-inline-size: 40rem;
+  text-align: start;
+  padding: clamp(1rem, 0.75rem + 1.2vw, 1.5rem);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 12, 28, 0.62);
+  backdrop-filter: blur(0.75rem);
+  -webkit-backdrop-filter: blur(0.75rem);
+  box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.35);
+}
+.thu-cau-dau {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 0.5rem;
+  margin-block-end: 0.75rem;
+}
+.thu-cau-nhan {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #A5B4FC;
+}
+.thu-cau-hp {
+  font-size: 0.72rem; font-weight: 600;
+  padding: 0.2rem 0.6rem; border-radius: 999px;
+  color: #99F6E4; background: rgba(20, 184, 166, 0.16);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+.thu-cau-de {
+  font-size: clamp(0.95rem, 0.88rem + 0.3vw, 1.1rem);
+  line-height: 1.55; color: #E9EBF5; margin: 0 0 0.875rem;
+}
+.thu-cau-dsach { display: flex; flex-direction: column; gap: 0.5rem; }
+.thu-cau-nut {
+  display: flex; align-items: center; gap: 0.75rem;
+  inline-size: 100%; min-block-size: 44px;         /* Apple HIG */
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #E9EBF5; font-size: 0.9rem; text-align: start;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s, transform 0.16s;
+}
+.thu-cau-nut:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(167, 139, 250, 0.55);
+}
+.thu-cau-nut:disabled { cursor: default; }
+.thu-cau-ky {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 1.5rem; block-size: 1.5rem; flex-shrink: 0;
+  border-radius: 0.375rem; font-size: 0.75rem; font-weight: 700;
+  background: rgba(255, 255, 255, 0.1); color: #C7D2FE;
+}
+/* Sau khi chọn: đáp án đúng luôn sáng lên, kể cả khi người dùng chọn sai.
+   Chỉ tô cái họ chọn thì người sai biết mình sai mà không biết đúng là gì. */
+.thu-cau-nut.la-dung {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.6); color: #D1FAE5;
+}
+.thu-cau-nut.la-dung .thu-cau-ky { background: rgba(16, 185, 129, 0.35); color: #ECFDF5; }
+.thu-cau-nut.la-sai {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.5); color: #FECDD3;
+}
+.thu-cau-nut.mo-di { opacity: 0.45; }
+.thu-cau-giai {
+  margin-block-start: 0.875rem; padding-block-start: 0.75rem;
+  border-block-start: 1px solid rgba(255, 255, 255, 0.12);
+}
+.thu-cau-ket { margin: 0 0 0.35rem; font-weight: 700; font-size: 0.95rem; }
+.thu-cau-ket.dung { color: #6EE7B7; }
+.thu-cau-ket.sai { color: #FDA4AF; }
+.thu-cau-vi-sao {
+  margin: 0; font-size: 0.875rem; line-height: 1.6; color: #C3C8DE;
+}
+.thu-cau-cuoi {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 0.5rem;
+  margin-block-start: 0.875rem;
+}
+.thu-cau-tiep {
+  min-block-size: 44px; padding: 0 1rem;
+  border-radius: 0.625rem; border: 1px solid rgba(167, 139, 250, 0.5);
+  background: rgba(139, 92, 246, 0.18); color: #DDD6FE;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  transition: background 0.16s;
+}
+.thu-cau-tiep:hover { background: rgba(139, 92, 246, 0.3); }
+.thu-cau-luu-y { font-size: 0.72rem; color: #9096B4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .thu-cau-nut, .thu-cau-tiep { transition: none; }
+}

@@ -6,6 +6,8 @@ import type { Metadata } from 'next';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 
+import ThuMotCau from './ThuMotCau';
+
 export const metadata: Metadata = {
   title: 'ProgrammingEdu × TopHSA — Luyện thi Đánh giá năng lực HSA',
 };
@@ -48,6 +50,16 @@ export default function LandingPage() {
 
       {/* block content */}
       <section className="hero-section reveal-on-scroll">
+        {/* NỀN CỰC QUANG, THUẦN CSS — xem `.hero-cuc-quang` trong `auth.css`.
+            Ở đây từng có một nền WebGL viết tay (07/09/2026). Đã GỠ, và lý do
+            đáng ghi lại: ảnh chụp headless không bắt được nội dung canvas GPU,
+            nên mọi phép đo tôi làm được đều báo hero bị nhạt (255,255,255 rồi
+            105-135 rồi 231). Đường ống GL thì chạy đúng — `readPixels` trả về
+            đúng màu vừa vẽ — nhưng "chắc là ổn trên trình duyệt thật" không
+            phải căn cứ để đẩy một hồi quy lên tiêu đề chính của trang công
+            khai. Bản CSS này cho cùng cảm giác chuyển động mà bộ đo NHÌN THẤY
+            ĐƯỢC, nên nó kiểm được ở mọi lượt quét về sau. */}
+        <div className="hero-cuc-quang" aria-hidden="true" />
         <div className="hero-content">
           <div className="hero-badge neon-badge">🎯 Luyện thi Đánh giá năng lực HSA · ĐHQG Hà Nội</div>
 
@@ -73,6 +85,15 @@ export default function LandingPage() {
           <p className="hero-note fade-in-up delay-2">
             Tài khoản do TopHSA cấp khi bạn đăng ký học tại trung tâm.
           </p>
+
+          {/* Ô TƯƠNG TÁC DUY NHẤT của trang, đặt ngay dưới nút đăng nhập có
+              chủ ý: khách vãng lai CHƯA CÓ tài khoản để bấm nút kia, nên nếu
+              không có gì khác để làm thì họ chỉ còn cách rời đi.
+
+              Đo trước 07/09: cả trang 5343px chỉ có sáu liên kết. Với một sản
+              phẩm luyện thi, ba mươi giây làm thử một câu nói được nhiều hơn
+              cả trang chữ mô tả. */}
+          <ThuMotCau />
 
           <div className="hero-stats fade-in-up delay-3">
             <div className="hero-stat">

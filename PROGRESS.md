@@ -4987,3 +4987,74 @@ CHƯA VÁ — đây là quyết định về chính sách bộ đệm, chạm m�
 xuất: thêm `Cache-Control: private, no-store` cho đường `/api/` trong
 `SecurityHeadersMiddleware` (nơi ấy đã dùng `setdefault` nên view nào muốn khác
 vẫn tự đặt được). Hỏi anh Sơn trước.
+
+---
+
+## 07/09/2026 (tiếp) — Trang giới thiệu, và một hiệu ứng tôi đã GỠ ĐI
+
+Anh Sơn nhắc: *"nhớ cải tiến cả landing đấy, và xem + áp dụng các nguồn tôi gửi"*.
+
+### Đo trước khi sửa
+
+    cao 5343px (máy tính) · 9651px (điện thoại)
+    SÁU liên kết trên toàn trang · gần như một hành động duy nhất: "Đăng nhập"
+    hero thuần chữ — người vào không nhìn thấy sản phẩm trông thế nào
+    296 nút DOM (nhẹ — đây là điểm mạnh, phải giữ)
+
+Vấn đề lớn nhất không phải thẩm mỹ: **khách vãng lai chưa có tài khoản để bấm
+nút kia**, nên nếu không có gì khác để làm thì họ chỉ còn cách rời đi.
+
+### "Thử một câu HSA" — ô tương tác duy nhất
+
+Với sản phẩm luyện thi, ba mươi giây làm thử một câu nói được nhiều hơn cả
+trang chữ. Ba câu mẫu (một mỗi hợp phần), chấm ngay, kèm lời giải nói VÌ SAO.
+
+Không lấy câu thật từ CSDL: ngân hàng đề là tài sản của TopHSA và học viên sẽ
+gặp lại chính những câu ấy khi thi thử. Ô này nói thẳng "câu mẫu, không nằm
+trong đề thi thử nào".
+
+Sau khi chọn, **đáp án đúng luôn sáng lên** kể cả khi người dùng chọn sai — chỉ
+tô cái họ chọn thì người sai biết mình sai mà không biết đúng là gì.
+
+### Nền WebGL: dựng xong rồi GỠ, và đây là phần đáng ghi nhất
+
+Anh chốt cho phép hiệu ứng mạnh ở trang này, nên tôi viết một nền shader WebGL
+**không thư viện** (~30 dòng fragment shader) với bốn cửa tắt.
+
+Nó hỏng, và mất ba vòng mới hiểu vì sao:
+
+    opacity 0,85 → nền hero 255,255,255 · chữ trắng biến mất SẠCH
+    opacity 0,38 → nền hero ~105-135    · tương phản còn ~2,5:1
+    mix-blend-mode: color → 231,232,233 · vẫn hỏng
+
+Nguyên nhân KHÔNG phải shader: `readPixels` trả đúng `[255,0,0,255]` sau một
+lệnh `clearColor` đỏ, tức đường ống GL chạy hoàn hảo. Thứ hỏng là **ảnh chụp
+headless không bắt được nội dung canvas GPU** — ngay cả đỏ đặc cũng ra
+rgb(218,220,221) trong ảnh.
+
+Nghĩa là **không bộ đo nào ở đây kiểm được tương phản chữ hero trên nền ấy**,
+kể cả `do_giao_dien.mjs`. Trang có thể hoàn toàn ổn trên trình duyệt thật —
+nhưng tôi không chứng minh được.
+
+**Nên tôi gỡ.** "Chắc là ổn trên trình duyệt thật" không phải căn cứ để đẩy một
+hồi quy lên tiêu đề chính của trang công khai duy nhất. Thay bằng nền cực quang
+**thuần CSS**: cùng cảm giác chuyển động, và bộ đo NHÌN THẤY ĐƯỢC nên nó được
+kiểm ở mọi lượt quét về sau. Nền đo lại: rgb(10-60) — tối, đúng.
+
+Dọc đường còn hai bài học nhỏ:
+* `IntersectionObserver` gọi callback NGAY khi `observe()`, trước khi bố cục
+  ổn định — nó báo "ngoài màn" và giết khung đầu tiên.
+* `readPixels` trả 0 sau khi ghép là BÌNH THƯỜNG (bộ đệm bị xoá) trừ khi bật
+  `preserveDrawingBuffer`. Suýt kết luận nhầm rằng shader không chạy.
+
+### Và một hồi quy của chính tôi, bắt bằng bộ đo
+
+Lớp cực quang có `scale(1.16)` nên nó thò ra ngoài hero và **nới cả trang**:
+tràn ngang 21px (máy tính) / 6px (điện thoại). Vá bằng `overflow: clip` trên
+`.hero-section` — một lớp TRANG TRÍ không bao giờ được đổi bố cục. `clip` chứ
+không `hidden`: `hidden` dựng một vùng cuộn.
+
+### Sau khi sửa
+
+    6 → 11 liên kết · 296 → 318 nút DOM · 0 lỗi JS
+    bộ đo 21 trang × 2 khổ × 2 chủ đề: 0/0/0/0 · e2e 30/30
