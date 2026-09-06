@@ -254,6 +254,21 @@ body { font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans
    nó không phân giải được nền gradient nên tính chữ trắng trên nền trắng. Vá bộ
    đo xong mới lộ ra đúng MỘT vi phạm, và nó nằm ở đây. */
 .btn-primary {
+  /* CAO TỐI THIỂU 44px, TỰ NÓ (vá 06/09/2026).
+
+     Nút này `border: none` nên chiều cao tự nhiên là 10+10+22 = 42px — thiếu 2px
+     so với ngưỡng chạm 44px. Suốt thời gian qua nó vẫn ĐỦ, nhưng chỉ vì nằm cạnh
+     `.btn-outline` (padding y hệt, cộng `border: 1.5px` → ~45px) trong một
+     `.nav-actions` là flex với `align-items: stretch` mặc định: nút thấp bị KÉO
+     cao bằng nút bên cạnh.
+
+     Hôm nay gỡ nút thừa ấy đi thì nút này tụt về 42px, và bộ đo bắt được ngay
+     (trang chủ: 0/9 vùng chạm nhỏ → 1/6). Một nút chỉ đạt chuẩn nhờ hàng xóm là
+     một nút chưa đạt chuẩn — nên đặt `min-height` để nó đứng được một mình. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 22px;
   border: none;
   border-radius: 10px;
@@ -340,6 +355,18 @@ body { font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans
 }
 
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 56px; }
+
+/* Câu nói cách LẤY tài khoản, ngay dưới nút đăng nhập (06/09/2026).
+   Từ 27/08 không còn tự đăng ký, nên người lạ vào trang chủ cần biết tài khoản
+   đến từ đâu TRƯỚC khi bấm — chứ không phải tới màn đăng nhập mới biết mình
+   không có gì để gõ. Mờ hơn `.hero-sub` vì đây là chú thích, không phải lời mời;
+   `margin-top` âm để nó dính vào cụm nút thay vì trôi thành một đoạn riêng. */
+.hero-note {
+  margin-top: -40px;
+  margin-bottom: 44px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.62);
+}
 
 .btn-hero-primary {
   padding: 14px 32px;

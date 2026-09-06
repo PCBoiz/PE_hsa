@@ -4182,3 +4182,46 @@ Thêm hai phần chưa từng có:
 - **Phần 9** — chính xác những gì tôi đã tạo và đã xoá trên CSDL production, gồm
   cả 6 dòng chèn nhầm và cách chúng được dọn. Đây là CSDL thật của anh; anh có
   quyền biết tôi đã chạm vào cái gì mà không phải đi đọc lịch sử git.
+
+## 06/09/2026 — Trang chủ: ba cụm nút trùng, và một nút chỉ đủ chuẩn nhờ hàng xóm
+
+Anh gộp `master` xong, mở trang chủ thấy vẫn còn "Đăng ký miễn phí →" và "BẮT
+ĐẦU MIỄN PHÍ →", trong khi chính sách bỏ tự đăng ký chốt từ 27/08.
+
+**Thứ anh nhìn thấy là bản build CŨ.** Commit cha của `3a2d491` chứa đúng nút ấy:
+`<a href="/register" className="btn-primary">Đăng ký miễn phí →</a>`. Nó bị gỡ
+**30/08/2026 20:31**. Trang anh xem là bản từ trước hôm đó — cũ hơn cả lần gộp.
+Phép thử anh tự làm được: bấm vào nút ấy. Mã hiện tại KHÔNG có chuỗi `/register`
+nào, và tuyến `/register` trả **404**.
+
+**Hàng rào máy chủ thì vẫn đứng** — tôi kiểm vì bỏ nút chỉ là bỏ cái cửa, không
+bỏ cái lỗ cửa: `POST /auth/register` khách vãng lai → **401**, học viên đã đăng
+nhập → **403** (`IsAdminRole`, đặt từ 27/08). Không dòng nào được tạo khi kiểm.
+
+**Nhưng có ba lỗi thật trên trang, cùng một nguyên nhân.** Commit "bỏ tự đăng ký"
+ĐỔI NHÃN nút đăng ký thành "Đăng nhập" thay vì gỡ nó. Kết quả: ba cụm, mỗi cụm
+hai nút giống hệt nhau cùng trỏ `/login` — thanh đầu trang, hero, và khối cuối.
+Khối cuối còn tự mâu thuẫn: câu dẫn mời "Đăng ký miễn phí" — thứ không còn tồn
+tại — rồi đưa hai nút, một nút hỏi "Đã có tài khoản?", ngụ ý nút kia dành cho
+người chưa có. Người chưa có bấm vào đâu cũng tới màn đăng nhập rồi mắc kẹt.
+
+Vá: mỗi cụm một nút, và nói thẳng đường đi thật — "Tài khoản do TopHSA cấp khi
+bạn đăng ký học tại trung tâm", trùng câu đã có ở màn đăng nhập.
+
+**Và bộ đo bắt được thứ tôi vừa gây ra.** Trang chủ trước: 0/9 vùng chạm nhỏ.
+Sau khi gỡ nút thừa: **1/6**. Phần tử là `.btn-primary` ở thanh đầu trang, 136×42
+— thiếu 2px. Đo mã cũ để chắc mình gây ra chứ không đổ cho sẵn có: 9 vùng chạm,
+0 nhỏ.
+
+Cơ chế: `.btn-outline` có `border: 1.5px` nên cao ~45px; `.btn-primary`
+`border: none` nên cao tự nhiên 42px; `.nav-actions` là flex với
+`align-items: stretch` mặc định, tức **nút tím chỉ đạt 44px nhờ nút bên cạnh kéo
+lên**. Gỡ nút thừa là nó tụt xuống. Một nút chỉ đạt chuẩn nhờ hàng xóm là một nút
+chưa đạt chuẩn — nên đặt `min-height: 44px` cho nó đứng một mình.
+
+CHƯA SỬA, cần anh chốt: dòng "100% — Miễn phí luyện tập cơ bản". Nó có thể vẫn
+đúng (miễn phí cho học viên đã ghi danh), cũng có thể là lời hứa sót từ thời tự
+đăng ký. Đó là câu về GIÁ, không phải về cơ chế, nên không phải việc tôi tự quyết.
+
+Cổng: tsc 0 · eslint 0 · 15/15 unit · `next build` 0 · e2e 11/11 · bộ đo 2 chủ
+đề × 32 lượt: 0 vi phạm tương phản, **0 vùng chạm nhỏ**, tự kiểm ĐẠT 32/32.

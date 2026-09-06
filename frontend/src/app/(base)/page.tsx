@@ -36,8 +36,12 @@ export default function LandingPage() {
         <div className="landing-logo">
           ProgrammingEdu <span className="red">× TopHSA</span>
         </div>
+        {/* MỘT nút, không phải hai (vá 06/09/2026).
+            Trước đây là cặp "Đăng nhập" + "Đăng ký miễn phí". Khi bỏ tự đăng ký
+            (27/08/2026), nút thứ hai bị ĐỔI NHÃN thành "Đăng nhập" thay vì gỡ
+            đi — nên trang chủ hiện hai nút giống hệt nhau, cùng trỏ /login. Ba
+            chỗ trên trang này mắc đúng lỗi ấy; xem hero và khối cuối. */}
         <div className="nav-actions">
-          <a href="/login" className="btn-outline">Đăng nhập</a>
           <a href="/login" className="btn-primary">Đăng nhập →</a>
         </div>
       </nav>
@@ -57,10 +61,18 @@ export default function LandingPage() {
             Từ Tư duy Định lượng đến Định tính và Khoa học — luyện đúng dạng câu hỏi HSA, bấm giờ như thi thật, theo lộ trình cá nhân hoá đúng năng lực của bạn.
           </p>
 
+          {/* Một nút, và MỘT CÂU nói thật cách lấy tài khoản.
+              Người lạ vào đây không tự mở được tài khoản, nên đưa họ hai nút
+              cùng dẫn tới màn đăng nhập là dẫn họ vào ngõ cụt: tới nơi mới biết
+              mình không có gì để gõ. Câu dưới đây trùng với câu đã có ở màn
+              đăng nhập (`login/page.tsx`) — cùng một sự thật thì phải nói cùng
+              một kiểu, ở cả hai nơi người ta có thể gặp nó trước. */}
           <div className="hero-actions fade-in-up delay-2">
             <a href="/login" className="btn-main neon-btn">Đăng nhập →</a>
-            <a href="/login" className="btn-hero-outline glass-btn">Đăng nhập</a>
           </div>
+          <p className="hero-note fade-in-up delay-2">
+            Tài khoản do TopHSA cấp khi bạn đăng ký học tại trung tâm.
+          </p>
 
           <div className="hero-stats fade-in-up delay-3">
             <div className="hero-stat">
@@ -325,11 +337,20 @@ export default function LandingPage() {
 
       <section className="landing-section cta-panel neon-cta reveal-on-scroll">
         <div className="section-container">
+          {/* Khối này TỰ MÂU THUẪN trước bản vá 06/09/2026:
+              câu dẫn mời "Đăng ký miễn phí" — thứ không còn tồn tại — rồi đưa
+              HAI nút cùng trỏ /login, một nút hỏi "Đã có tài khoản?". Nhãn ấy
+              ngụ ý nút kia dành cho người CHƯA có; mà người chưa có thì bấm vào
+              đâu cũng tới màn đăng nhập rồi mắc kẹt ở đó.
+              Nay nói đúng đường đi thật: tài khoản đến từ trung tâm. */}
           <h2 className="neon-text-sm">Sẵn sàng cho kỳ thi Đánh giá năng lực?</h2>
-          <p>Đăng ký miễn phí, làm bài chẩn đoán và nhận ngay lộ trình luyện thi HSA phù hợp với mục tiêu điểm số của bạn.</p>
+          <p>
+            Học viên TopHSA đăng nhập để làm bài chẩn đoán và nhận lộ trình luyện thi
+            HSA theo đúng mục tiêu điểm số. Chưa có tài khoản? Tài khoản được cấp khi
+            bạn đăng ký học tại trung tâm.
+          </p>
           <div className="hero-actions">
             <a href="/login" className="btn-hero-primary neon-btn">Đăng nhập</a>
-            <a href="/login" className="btn-hero-outline glass-btn">Đã có tài khoản?</a>
           </div>
         </div>
       </section>
