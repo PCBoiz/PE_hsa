@@ -4726,3 +4726,68 @@ cả trạng thái CHƯA CÓ OA, vốn là trạng thái thật hôm nay.
 
 Cổng: tsc 0 · eslint 0 · **e2e 30/30** (thêm `khu-giang-day.spec.ts`) ·
 **pytest teaching/ 86/86**.
+
+---
+
+## 07/09/2026 (tiếp) — T4: bảng quyền nhìn thấy được, và không trôi được
+
+Anh Sơn chốt: **làm CƠ CHẾ ngay, điền nội dung khi bảng của cô Hương về.**
+
+### Vấn đề không phải thiếu phân quyền — mà là không ai NHÌN THẤY nó
+
+Hệ thống đã có sáu vai trò và sáu lớp quyền cưỡng chế. Nhưng muốn biết
+`Trợ giảng` làm được gì thì phải đọc `common/permissions.py` rồi grep xem view
+nào dùng lớp nào. Anh Sơn không đọc Python mỗi lần cần trả lời câu ấy, cô Hương
+càng không.
+
+### Luật quan trọng nhất: KHÔNG gõ tay vai cho từng việc
+
+Mỗi việc chỉ khai nó bị chặn bởi **lớp quyền** nào; danh sách vai suy ra từ
+`VAI_CUA_LOP_QUYEN`. Gõ tay vai cho từng việc là dựng bản chép thứ hai của
+`permissions.py` — và bản chép thứ hai luôn trôi theo hướng **nới** chứ không
+siết (người ta thêm vai vào bảng cho tiện, không ai gỡ).
+
+`quyen-vai.test.mjs` đọc THẲNG `permissions.py`, **hai chiều**:
+
+    → mỗi lớp quyền khai ở frontend phải tồn tại và cho ĐÚNG ngần ấy vai
+    ← mỗi `nguon` phải là view CÓ THẬT, khai ĐÚNG lớp quyền được nói
+
+Chỉ kiểm chiều đầu thì một dòng bịa — "Trợ giảng xem được báo cáo phụ huynh,
+nguồn: parent_report.py" — vẫn xanh, vì lớp quyền ấy tồn tại và đúng vai.
+
+**Đỏ trước:** thêm `or is_assistant(u)` vào `IsSeniorTeachingStaff` →
+
+    ✗ `IsSeniorTeachingStaff` cho đúng ngần ấy vai
+    ✗ Trợ giảng KHÔNG xem được tờ báo cáo phụ huynh
+
+Đó đúng là kiểu nới quyền im lặng mà không màn hình nào kêu lên.
+
+### Thước lại đo nhầm — lần thứ tư, và lần này CHÍNH NÓ bắt được
+
+Phép kiểm báo `IsAdminOrAcademic` cho cả bốn vai, trong khi mã đúng. Nguyên
+nhân: `IsAdminOrAcademic` là lớp CUỐI trong `permissions.py`, nên lát cắt "tới
+`class` kế tiếp" chạy tới hết tệp và nuốt luôn `can_see_class` và
+`visible_class_ids` — hai hàm ấy gọi `is_teacher`/`is_assistant`.
+
+Chặn lát cắt ở cả `class` lẫn `def`. Ghi vào mã: **đọc kỹ một dòng ĐỎ trước khi
+tin rằng mã sai — thước hỏng và mã hỏng trông giống hệt nhau.**
+
+(`cong-quan-tri.test.mjs` đã có sẵn `thanPython()` cắt đúng cách và một phép
+kiểm canh riêng chuyện tràn này. Tôi viết lại một bản cắt sai bên cạnh một bản
+cắt đúng — đúng lỗi mà cả hai tệp sinh ra để chặn.)
+
+### Trang `/quan-tri/vai-tro`
+
+Sáu thẻ vai + năm bảng nhóm việc, mỗi dòng in ra **chỗ cưỡng chế thật**
+(`tệp.py::View · LopQuyen`) nên bảng không thể là một lời khẳng định suông. Tiêu
+đề cột dựng đứng (`writing-mode`) để sáu vai vừa một trang A4 — cuộc họp với cô
+Hương sẽ diễn ra quanh một tờ giấy có người khoanh bút vào.
+
+Ô ✓/— kèm chữ ẩn cho trình đọc màn hình: một ô chỉ có dấu ✓ thì người dùng trình
+đọc nghe một hàng im lặng.
+
+Mục "Còn thiếu gì" nói thẳng: chưa có vai **Quản lý**, và ba vai
+(`Quản lý học vụ`, `Trợ giảng`, `Biên tập nội dung`) **chưa có ai** — tức ba cột
+trong bảng chưa từng được dùng thử trên tài khoản thật.
+
+Cổng: tsc 0 · eslint 0 · unit **19/19** (thêm `quyen-vai`).

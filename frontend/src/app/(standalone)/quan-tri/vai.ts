@@ -56,6 +56,11 @@ export const TABS: readonly Tab[] = [
   { href: '/quan-tri/dot-hoc', label: 'Đợt học', icon: 'calendar', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — nhật ký kiểm toán (teaching/admin_users.py::AdminAuditView).
   { href: '/quan-tri/nhat-ky', label: 'Nhật ký', icon: 'file-text', vai: [VAI_QUAN_TRI] },
+  // KHÔNG có API riêng — đây là trang THAM CHIẾU, dựng từ bảng `lib/quyenVai.ts`.
+  // Mở cho cả học vụ: câu "ai làm được gì" là câu họ phải trả lời cho giảng
+  // viên mới mỗi lần có người vào làm, và bắt họ đi hỏi quản trị viên mỗi lần
+  // là cách chắc chắn để không ai đọc nó.
+  { href: '/quan-tri/vai-tro', label: 'Ai làm được gì', icon: 'shield', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // Liên kết SANG khu khác, không phải trang của khu này — nên vai ở đây là
   // "ai ĐANG Ở TRONG khu này thì thấy đường sang", không phải "ai vào được
   // /admin". `Biên tập nội dung` vào được /admin nhưng KHÔNG vào được khu này
