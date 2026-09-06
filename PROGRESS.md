@@ -4294,3 +4294,28 @@ kiểm mới bắt ngay một lỗi TÔI vừa gây ra: ba nút theo vai mất `
 Thanh có TÁM mục cấp một, năm trong số đó chỉ là `#hash` của cùng trang
 dashboard. Tám mục có nhãn cần 818px — không vừa laptop 1440, nên dưới 96rem
 phải rút về biểu tượng. Đó là câu hỏi về cấu trúc thông tin, không phải CSS.
+
+### 3. Gom năm mục `#hash` vào nhóm "Học" (`1105b74`) — anh Sơn chốt
+
+    trước:  Dashboard · Khóa học · Kế hoạch · Lộ trình · Kỹ năng · Diễn đàn ·
+            Thi thử · Bài tập          (8 mục cấp một)
+    sau:    Dashboard · Học ▾ · Diễn đàn · Thi thử · Bài tập        (5)
+
+Bốn nút con **vẫn là nút thật** trong DOM, chỉ nằm trong panel — `main.js` tìm
+`.nav-btn[data-page='…']` để tô mục đang mở; dựng lại bằng danh sách khác là
+trạng thái "đang ở đâu" biến mất im lặng. Nút nhóm sáng nhờ `:has()`.
+
+Ba cái bẫy, đều bắt bằng đo: `.topbar-nav` có `overflow-x` + `mask` nên **cắt
+panel** còn một vệt; luật "trong panel luôn hiện nhãn" vô tình bật lại mũi `›`
+mà main.js gắn thêm; mũi ▾ của nhóm bị ẩn ở chế độ biểu tượng làm nút "Học"
+trông y hệt mục thường.
+
+Ngưỡng phải đo lại vì đổi cấu trúc là ngưỡng cũ thành sai im lặng: nhãn chữ
+96rem → **70rem**, rút gọn tên 52rem → **48rem**, thêm ẩn tên chip ở điện thoại.
+
+Spec `mobile-responsive` cũng phải sửa theo — nó đòi nút "Khóa học" hiện ở cấp
+một. Sửa thành MỞ nhóm rồi mới kiểm, chứ không hạ xuống `toHaveCount(1)` cho
+xanh (như thế là bỏ mất điều nó định chứng minh).
+
+Cổng: 0 tương phản · 0 chạm nhỏ · 0 tràn · 0 lỗi JS · tự kiểm 32/32 · 220 nút ·
+tsc 0 · eslint 0 · 17/17 unit · build 0 · **e2e 16/16**.
