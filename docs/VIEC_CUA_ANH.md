@@ -17,17 +17,27 @@ xong không biết cái nào còn, cái nào đã xong.*
 
 ## Đọc 3 phút — nếu chỉ có ngần ấy thời gian
 
-| | việc | mất bao lâu | không làm thì sao |
-|---|---|---|---|
-| 1 | Xoay `SECRET_KEY` trên Render | 2 phút | Gộp `master` xong **deploy trượt** (không sập) |
-| 2 | Đặt bí mật proxy ở Render + Vercel | 5 phút | **Lớp 30 em vào cùng giờ, 10 em ăn lỗi 429** |
-| 3 | Gộp `master` | 1 phút | — |
+*Cập nhật 07/09/2026.*
 
-Ba việc ấy là **Phần 1** và **Phần 2**. Mọi thứ còn lại đọc lúc nào cũng được.
+| | việc | mất bao lâu | không làm thì sao | ở đâu |
+|---|---|---|---|---|
+| 1 | Xoay `SECRET_KEY` trên Render | 2 phút | Deploy trượt (không sập) | 1.1 |
+| 2 | Đặt bí mật proxy ở Render + Vercel | 5 phút | **Lớp 30 em vào cùng giờ, 10 em ăn lỗi 429** | 1.2 |
+| 3 | **Nhắc học viên điền số Zalo phụ huynh** | nói một câu | **0/4 em đã điền — không gửi được báo cáo cho ai** | 11.1 |
+| 4 | **Đăng ký Zalo OA + duyệt mẫu ZNS** | vài ngày chờ duyệt | Hệ thống không tự nhắn được; vẫn cấp link gửi tay | 10 |
+| 5 | **Tạo đợt học đầu tiên** | 5 phút | **0 đợt · 0 buổi · 0 điểm danh** — mọi số vận hành là dấu `—` | 4.1 |
+| 6 | Gộp `erp` → `master` | 1 phút | Chín commit của đợt 07/09 chưa lên production | 2 |
 
-Nhánh `erp` đang đi trước `master` **112 commit**. Bộ kiểm đầy đủ xanh:
-`pytest 324/324`, `next build` thành công, bốn lượt quét giao diện đều sạch
-(bảng đầy đủ ở Phần 8).
+Hai quyết định đang chờ anh, tôi **chưa làm gì cả**: bộ đệm API (11.2) và tài
+khoản e2e (11.3).
+
+Nhánh `erp` đi trước `master` **9 commit** (lần gộp trước đã xong 06/09). Cổng
+kiểm đợt 07/09: `pytest teaching/ 86/86` · `mockexam/ 48/48` · e2e **30/30** ·
+unit **21/21** · `next build` thành công · bộ đo giao diện **21 trang × 2 khổ ×
+2 chủ đề: 0 vi phạm** (tự kiểm 40/40 đỏ được) · 231 nút bấm thử, 0 lỗi JS ·
+**hiệu năng đo lần đầu**: LCP 1036–2168ms trên máy CPU chậm 4×.
+
+Bảng đầy đủ ở **Phần 8**.
 
 ---
 
@@ -40,8 +50,10 @@ Nhánh `erp` đang đi trước `master` **112 commit**. Bộ kiểm đầy đ�
 - **Phần 5 — Năm câu hỏi cho TopHSA**
 - **Phần 6 — Nên làm, không gấp** (nhánh Neon cho CI · bốn câu DDL · `/thiet-ke`)
 - **Phần 7 — Công cụ: chạy thế nào**
-- **Phần 8 — Trạng thái hiện tại, đo ngày 05/09**
+- **Phần 8 — Trạng thái hiện tại, đo ngày 07/09**
 - **Phần 9 — Dữ liệu tôi đã tạo và đã xoá trên CSDL thật**
+- **Phần 10 — Zalo OA** — việc duy nhất chặn phần gửi báo cáo tự động
+- **Phần 11 — Việc mới sau đợt 07/09** (số phụ huynh · bộ đệm API · tài khoản e2e)
 
 ---
 
@@ -193,7 +205,14 @@ chỉ để nhanh hơn và đếm quota, không phải nguồn sự thật nào.
 
 ---
 
-# Phần 2 — Gộp `master`: từng bước
+# Phần 2 — Gộp `master`: từng bước — ✅ **ĐÃ XONG 06/09/2026**
+
+> **Anh đã gộp rồi.** `origin/master` = `2a4d7e7`, và bản vá deploy hỏng
+> (`747bc13` — pnpm 11.12.0 là bản LỖI) đã lên production. Phần dưới giữ lại
+> làm hướng dẫn cho các lần gộp sau; các bước vẫn đúng nguyên.
+>
+> **Lần gộp tiếp theo:** `erp` hiện đi trước `master` **9 commit** (đợt
+> 07/09 — xem `PROGRESS.md`). Lệnh y hệt Phần 2.
 
 ## Trước hết: gộp là deploy NGAY
 
@@ -562,24 +581,36 @@ cd D:\pe_hsa\backend && .venv\Scripts\python.exe manage.py kiem_luoc_do
 
 ---
 
-# Phần 8 — Trạng thái hiện tại, đo ngày 05/09
+# Phần 8 — Trạng thái hiện tại, đo ngày 07/09
 
 | | |
 |---|---|
-| Nhánh | `erp`, đã push, **chưa gộp** vào `master` |
-| Đi trước `master` | 112 commit · 232 tệp · +45.425 / −11.030 dòng |
-| **`pytest` đầy đủ** | **324 đạt / 0 hỏng** (~22 phút) |
-| `ruff` · `compileall` | 0 · 0 |
-| **`next build`** | **thành công, 22 tuyến** |
-| `pnpm lint` · `tsc` | 0 · 0 |
-| `node --check` 13 tệp JS cũ | sạch |
-| 15 bộ kiểm đơn vị Node | xanh |
-| e2e Playwright | **11/11**, 0 phép bị bỏ qua |
-| Bộ đo giao diện | 2 chủ đề × 32 lượt: **0 vi phạm**; tự kiểm ĐẠT 32/32 |
-| Lượt quét bấm thử | 267 nút / 17 màn: **0 lỗi JS**; tự kiểm ĐẠT 17/17 |
-| CSDL Neon | 53 bảng · 6 tài khoản · 1 lớp · 7 dòng ghi danh |
-| Tầng JS cũ (không bundler) | 13 tệp · 7.383 dòng mã (đầu phiên 05/09: 15.134 dòng) |
-| ERP §9 | khối 1, 2, 5 xong · khối 3 xong phần báo cáo, còn phần gửi · khối 4, 6, 7 chờ TopHSA |
+| Nhánh | `erp`, đã push. `master` = `2a4d7e7` (gộp 06/09) |
+| Đi trước `master` | **9 commit** (đợt 07/09) |
+| `pytest` `mockexam/` · `teaching/` | **48/48** · **86/86** |
+| `pytest` đầy đủ (đo 07/09) | 322 đạt / **2 hỏng — cả hai CÓ SẴN**, xác minh bằng cách lùi về `HEAD` sạch |
+| `next build` | thành công |
+| `tsc` · `eslint` | 0 · 0 |
+| Bộ kiểm đơn vị Node | **21/21** |
+| e2e Playwright | **30/30** |
+| Bộ đo giao diện | **21 trang** × 2 khổ × 2 chủ đề: **0 vi phạm**; tự kiểm ĐẠT 40/40 |
+| Lượt quét bấm thử | **231 nút** / 21 màn: 0 lỗi JS |
+| **Hiệu năng** (mới đo lần đầu) | production, CPU chậm 4×: LCP 1036–2168ms · CLS ≤ 0,011 · JS 222kB |
+| CSDL Neon | **55 bảng** · 6 tài khoản (4 học viên · 1 giảng viên · 1 quản trị) |
+| Dữ liệu vận hành | 1 lớp · **0 đợt học** · **0 buổi** · **0 lượt điểm danh** · 13 lượt thi thử |
+| Số Zalo phụ huynh | **0 / 4 học viên** |
+| Tầng JS cũ (không bundler) | 13 tệp · **7.346 dòng** (giảm 7 dòng trong khi thêm 2 trường hồ sơ) |
+| ERP §9 | khối 1, 2, 3, 5 xong · khối 6 xong phần mã, **chờ Zalo OA** · khối 4, 7 chờ TopHSA |
+
+## Ba con số đáng chú ý nhất
+
+1. **0 đợt học, 0 buổi, 0 điểm danh.** Chưa lớp nào thật sự chạy trên hệ thống.
+   Mọi con số vận hành (chuyên cần, giữ chân) vì thế đều là dấu `—`, và đó là
+   ĐÚNG — không phải lỗi hiển thị. Xem 4.1.
+2. **0/4 học viên có số Zalo phụ huynh.** Có Zalo OA mà không có số thì vẫn
+   không gửi được cho ai. Xem Phần 11.
+3. **"Trang của tôi" nằm ngay sát ngưỡng hiệu năng** — ba lượt đo cho
+   2168/2528/2400ms so với ngưỡng 2500ms. Đó là màn học viên mở nhiều nhất.
 
 ## Chưa đo được — nói thẳng
 
@@ -589,6 +620,12 @@ cd D:\pe_hsa\backend && .venv\Scripts\python.exe manage.py kiem_luoc_do
   phép đo nào cho 30 người cùng lúc.
 - **Thời gian build trên Render** sau khi thêm `openpyxl` + `django-redis`.
 - **Hàng rào `/admin` với một tài khoản vai "Biên tập nội dung" thật** (xem 4.2).
+- **Ba vai chưa có ai dùng thử:** `Quản lý học vụ`, `Trợ giảng`,
+  `Biên tập nội dung` đều 0 tài khoản (đo 07/09). Ba cột trong bảng
+  `/quan-tri/vai-tro` vì thế chưa từng được lái thật.
+- **Đường `/bc/<chìa>` dưới lượt quét tự động.** Nó cần một chìa THẬT, tức một
+  dòng ghi vào Neon mỗi lượt chạy. Đã đo TAY ở ngữ cảnh không cookie (07/09);
+  15 phép kiểm pytest phủ đường ấy trong giao dịch cuộn lại.
 
 ---
 
@@ -641,7 +678,7 @@ dụng phụ mà chưa đo thì đúng bằng một dòng mã sai.
 
 ---
 
-# Phần 7 — Zalo OA: việc DUY NHẤT chặn phần gửi báo cáo tự động
+# Phần 10 — Zalo OA: việc DUY NHẤT chặn phần gửi báo cáo tự động
 
 **Thêm 07/09/2026.** Anh chốt: báo cáo tiến độ gửi phụ huynh qua **ZNS kèm
 link**. Phần mã đã xong và chạy được; phần còn lại là một tài khoản, và chỉ anh
@@ -707,3 +744,77 @@ kỳ `<ky>`. Xem chi tiết: `<duong_dan>`"*
 Đo 07/09/2026: **0/4 học viên** có `parent_phone`. Ô nhập đã có ở
 **Cài đặt → Liên hệ phụ huynh** để các em tự điền. Có OA mà không có số thì vẫn
 không gửi được cho ai — nên việc này nên nhắc các em cùng lúc với việc đăng ký OA.
+
+---
+
+# Phần 11 — Việc mới sau đợt 07/09
+
+Ba việc. Việc 11.1 chặn thật; 11.2 và 11.3 là quyết định của anh, tôi chưa làm
+gì cả và sẽ không tự làm.
+
+## [ ] 11.1 · Nhắc học viên điền số Zalo của phụ huynh — **chặn thật**
+
+**Đo 07/09: 0 / 4 học viên đã điền.** Có Zalo OA mà không có số thì vẫn không
+gửi được cho ai — nên việc này chặn ngang hàng với việc đăng ký OA (Phần 10).
+
+Học viên **tự điền được**, không cần học vụ nhập hộ: **Cài đặt → Liên hệ phụ
+huynh**. Đặt ở đó có chủ ý — chính các em biết số của bố mẹ, còn một ô phải chờ
+người khác điền hộ là một ô sẽ trống mãi.
+
+Cách kiểm còn bao nhiêu em chưa điền, không cần mở CSDL: vào lớp →
+**Báo cáo phụ huynh**. Trang liệt kê thẳng tên những em chưa có số.
+
+## [ ] 11.2 · Quyết định: có đặt `Cache-Control` cho mọi phản hồi API không?
+
+**Đo 07/09:** KHÔNG phản hồi API nào đặt `Cache-Control` — kể cả `/api/user`,
+`/api/admin/overview`, và đường báo cáo công khai
+`/api/public/parent-report/<chìa>`.
+
+Trang Next `/bc/<chìa>` thì có (`private, no-cache, no-store`), nên **trình
+duyệt của phụ huynh không lưu**. Rủi ro còn lại hẹp: một proxy trung gian
+(CDN, mạng công ty) có thể tự suy diễn mà lưu phản hồi API.
+
+**Đề xuất:** thêm `Cache-Control: private, no-store` cho đường `/api/` trong
+`common/middleware.py::SecurityHeadersMiddleware`. Chỗ ấy đã dùng
+`setdefault` nên view nào muốn khác vẫn tự đặt được.
+
+**Vì sao hỏi thay vì tự làm:** nó chạm MỌI phản hồi API. Hôm nay không có gì
+đang được cache (vì không có header nào), nên đổi là an toàn — nhưng nó khoá
+luôn khả năng cache `/api/public/courses` cho trang chủ về sau. Nếu anh muốn
+giữ cửa ấy mở thì tôi đặt riêng cho các đường nhạy cảm thay vì cả `/api/`.
+
+- [ ] **Đặt `no-store` cho cả `/api/`** (đơn giản, an toàn nhất)
+- [ ] **Chỉ đặt cho các đường có dữ liệu người dùng**, chừa `/api/public/courses`
+- [ ] **Chưa làm** — rủi ro hiện tại hẹp, để sau
+
+## [ ] 11.3 · Quyết định: tài khoản e2e — cho tôi INSERT một dòng?
+
+`frontend/e2e/helpers.ts` trỏ tới `audit@example.com`, **tài khoản này không
+tồn tại**. Hôm nay bộ kiểm vẫn chạy được vì tôi cấp thẻ JWT cho tài khoản quản
+trị có sẵn (`scripts/cap_the.py`) — nhưng thẻ ấy **sống 30 phút**, nên mỗi lượt
+chạy dài đều phải cấp lại giữa chừng, và CI thì không cấp được.
+
+Nó cũng chặn việc đo `/dashboard` bằng một tài khoản **học viên thật** thay vì
+tài khoản quản trị (tài khoản quản trị thấy thêm ba nút theo vai, nên số đo
+lệch với thứ học viên thật nhìn thấy).
+
+**Cần anh quyết** — luật anh đặt là ghi thì phải hỏi:
+
+- [ ] **Cho phép tôi INSERT một tài khoản học viên riêng cho việc kiểm**
+      (email `e2e-kiem-thu@example.com`, không ghi danh lớp nào, không đụng dữ
+      liệu ai)
+- [ ] **Anh tự tạo trên Neon** rồi báo tôi email + mật khẩu
+- [ ] **Giữ nguyên cách cấp thẻ 30 phút** — chấp nhận CI không chạy được ba
+      phép kiểm ấy
+
+## Không cần làm gì — chỉ để anh biết
+
+- **`erp` đi trước `master` 9 commit.** Lệnh gộp y hệt Phần 2. Gộp là deploy
+  ngay.
+- **Bốn màn mới** đã vào bộ đo giao diện và bộ quét bấm thử. Trước khi thêm,
+  chúng nằm ngoài tầm nhìn của cả hai bộ — và cả hai đều đang báo "0 vi phạm".
+- **Trang `/quan-tri/vai-tro`** ("Ai làm được gì") in ra A4 được. Đó là tờ giấy
+  để đối chiếu với bảng cô Hương đang soạn — mỗi dòng ghi rõ chỗ cưỡng chế thật
+  trong mã, nên nó không thể là một lời khẳng định suông.
+- **Trang `/quan-tri/huong-dan`** là tài liệu vận hành viết theo VIỆC, in ra
+  giấy đưa người mới được.
