@@ -42,7 +42,13 @@ export default function HuongDanPage() {
             <li key={b.ma}>
               {/* Mục lục là neo trong trang, không phải tuyến riêng: người đọc
                   in ra giấy thì một mục lục dẫn sang trang khác là vô dụng. */}
-              <a href={`#${b.ma}`} className="text-small text-brand-ink underline">
+              {/* `min-h-11` = 44px (Apple HIG). Bộ đo bắt được 17 vùng chạm
+                  nhỏ ở trang này, và 8 trong số đó là chính mục lục — chữ cao
+                  16px. Mục lục là thứ người dùng bấm ĐẦU TIÊN trên điện thoại. */}
+              <a
+                href={`#${b.ma}`}
+                className="inline-flex min-h-11 items-center text-small text-brand-ink underline"
+              >
                 {b.tieu_de}
               </a>
             </li>
@@ -73,7 +79,13 @@ export default function HuongDanPage() {
                 {s.o && (
                   <>
                     {' '}
-                    <Link href={s.o} className="text-brand-ink underline">
+                    <Link
+                      href={s.o}
+                      /* `-my-2 py-2` cho vùng chạm 44px mà KHÔNG kéo giãn
+                         khoảng cách giữa các bước — cùng lối các bảng trong
+                         khu Vận hành đã dùng. */
+                      className="-my-2.5 inline-block py-2.5 text-brand-ink underline"
+                    >
                       Mở màn hình này
                     </Link>
                   </>

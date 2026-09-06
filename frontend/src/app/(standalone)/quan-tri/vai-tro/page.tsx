@@ -48,7 +48,49 @@ export default function VaiTroPage() {
       {cacNhom().map((nhom) => (
         <Card key={nhom}>
           <CardHead title={nhom} />
-          <div className="overflow-x-auto overflow-y-hidden rounded-md border border-line bg-surface">
+          {/* ── KHỔ HẸP: mỗi việc một THẺ ─────────────────────────────────
+              Ma trận bảy cột trên màn 390px không đọc được, kể cả khi nó
+              không tràn. Đo 07/09/2026: bảng rộng tối thiểu 593px, và bề rộng
+              ấy làm phình khung chứa gốc tới 639px — thanh `position: fixed`
+              co giãn theo, nên CẢ TRANG trượt ngang 249px.
+
+              Ba cách vá thử đều không đủ: `w:auto min-w:100%` không đổi gì,
+              `overflow-x: clip` ở body không đổi gì, kẹp bề ngang thanh chỉ
+              giấu triệu chứng. Thứ thật sự sửa là KHÔNG dựng bảng rộng ở khổ
+              ấy — cùng lối `Table.tsx` đã dùng: dưới 640px, mỗi dòng thành
+              một thẻ tự mang nhãn của nó. */}
+          <ul className="flex flex-col gap-3 sm:hidden">
+            {VIEC.filter((v) => v.nhom === nhom).map((v) => {
+              const duoc = vaiLamDuoc(v);
+              return (
+                <li key={v.nhan} className="rounded-md border border-line bg-surface px-4 py-3">
+                  <p className="text-body font-semibold text-ink">{v.nhan}</p>
+                  <p className="mt-0.5 text-small text-ink-2">{v.giaiThich}</p>
+                  {v.chan_them && (
+                    <p className="mt-1 text-small text-warning-ink">
+                      Thêm điều kiện: {v.chan_them}
+                    </p>
+                  )}
+                  <p className="mt-2 text-label text-ink-3">Làm được:</p>
+                  <p className="text-small text-ink">
+                    {VAI_TRO.filter((r) => duoc.includes(r.ma)).map((r) => r.nhan).join(' · ')}
+                  </p>
+                  {/* `[overflow-wrap:anywhere]` — `teaching/admin_users.py::
+                      AdminBulkCreateUsersView` là một chuỗi ĐƠN CÁCH không có
+                      khoảng trắng nào để ngắt. Đo 07/09/2026: nó đẩy thẻ rộng
+                      372px trong khung 274px, và bề rộng ấy làm phình khung
+                      chứa gốc → thanh `position: fixed` giãn theo → cả trang
+                      trượt ngang 56px. Một dòng chữ không ngắt được là một lỗi
+                      bố cục, không phải chuyện thẩm mỹ. */}
+                  <p className="mt-1 font-mono text-label text-ink-3 [overflow-wrap:anywhere]">
+                    {v.nguon} · {v.lopQuyen}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="hidden overflow-x-auto overflow-y-hidden rounded-md border border-line bg-surface sm:block">
             <table className="w-full border-collapse text-small">
               <caption className="sr-only">
                 {`Việc thuộc nhóm ${nhom} và vai trò làm được từng việc`}

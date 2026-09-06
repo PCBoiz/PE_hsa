@@ -4914,3 +4914,76 @@ Không màn nào vượt ngưỡng — **nhưng "Trang của tôi" nằm ngay s�
 nạp cả tầng JS cũ. Chưa tối ưu; ghi lại để lần sau có chỗ bắt đầu.
 
 Cổng: pytest `mockexam/` **48/48**.
+
+---
+
+## 07/09/2026 (tiếp) — AUDIT ĐẦY ĐỦ, và bộ đo bỏ sót đúng phần vừa dựng
+
+Anh Sơn yêu cầu audit đầy đủ. Việc ĐẦU TIÊN không phải chạy bộ đo — mà là hỏi
+bộ đo có nhìn thấy gì.
+
+### Bộ đo phủ 17 trang; bốn trang dựng hôm nay KHÔNG có trong đó
+
+`scripts/do_giao_dien.mjs` và `scripts/go_moi_nut.mjs` đều thiếu
+`/quan-tri/vai-tro`, `/quan-tri/huong-dan`, `/giang-day/bao-cao/<lop>` và
+`/giang-day/bao-cao/<lop>/<em>`.
+
+Chính chú thích trong `do_giao_dien.mjs` đã cảnh báo chuyện này từ 04/09: *"một
+con số 0 tính trên tập KHÔNG ĐẦY ĐỦ là một tờ giấy chứng nhận sạch cấp cho phần
+chưa ai xem."* Nếu chạy trước khi thêm, nó đã báo **0 vi phạm**.
+
+Thêm vào rồi chạy — và toàn bộ lỗi nằm đúng ở bốn trang ấy, 17 trang cũ sạch:
+
+    trước: 38 vùng chạm < 44px · 1 trang tràn ngang 249px
+    sau  :  0                  · 0
+
+### Ba lỗi, và lỗi thứ ba mất công nhất
+
+1. **Hướng dẫn: 17 vùng chạm nhỏ** — mục lục (8 neo cao 16px) và các liên kết
+   "Mở màn hình này". Vá bằng `min-h-11` và `-my-2.5 py-2.5`.
+2. **Hai nút "← Về lớp" cao 20px.** Vá bằng `-my-3 py-3`.
+3. **Trang bảng quyền tràn ngang 249px ở khổ điện thoại.**
+
+Lỗi 3 không nằm ở chỗ trông có vẻ. Bảng đã nằm trong `overflow-x: auto` và
+CUỘN ĐÚNG (`bodyScroll` 374 < 390). Nhưng bề rộng tối thiểu của bảng (593px)
+làm phình khung chứa gốc, và `.topbar` — `position: fixed; left:0; right:0` —
+giãn theo tới 639px. Tức thanh điều hướng bị kéo rộng bởi một cái bảng nằm
+trong vùng cuộn của nó.
+
+Thử ba cách vá, **đo từng cách**: `w:auto min-w:100%` không đổi gì ·
+`overflow-x: clip` ở body không đổi gì · kẹp `max-inline-size: 100vw` cho thanh
+chỉ giấu triệu chứng (639 → 426, doc vẫn 639).
+
+Thứ thật sự sửa: **không dựng bảng rộng ở khổ ấy**. Ma trận bảy cột trên màn
+390px vốn đã không đọc được kể cả khi không tràn. Dưới 640px nay mỗi việc là
+một THẺ — đúng lối `Table.tsx` đã dùng.
+
+Sửa xong vẫn còn tràn **56px**: chuỗi `teaching/admin_users.py::AdminBulkCreate
+UsersView` trong thẻ mới là một dòng đơn cách không có chỗ ngắt, đẩy thẻ rộng
+372px trong khung 274px. `[overflow-wrap:anywhere]` → 390/390.
+
+### Kết quả audit
+
+    do_giao_dien (21 trang × 2 khổ × 2 chủ đề)
+      tương phản 0 · vùng chạm 0 · tràn ngang 0 · lỗi JS 0 · gọi GHI lọt 0
+      tự kiểm: 40/40 lượt đo ĐỎ ĐƯỢC khi nhét quy tắc hỏng
+    go_moi_nut: 231 nút · 0 lỗi JS · 14 lời gọi GHI bị chặn
+    e2e 30/30 · unit 21/21
+
+### Soi an ninh bề mặt công khai
+
+Toàn sản phẩm có **bốn** tuyến `AllowAny`: `api/public/courses`,
+`api/public/parent-report/<token>`, `auth/login`, `auth/logout`. Tuyến báo cáo
+có `authentication_classes = []`, giới hạn tần suất kế thừa mặc định
+(production: 1000/giờ + 10000/ngày mỗi IP mỗi view).
+
+**Tìm ra một lỗ có thật, và nó là lỗ HỆ THỐNG:** không API nào đặt
+`Cache-Control` — kể cả `/api/user`, `/api/admin/overview`, và đường báo cáo
+công khai. Trang Next `/bc/<chìa>` thì có (`private, no-cache, no-store`), nên
+trình duyệt không lưu; nhưng một proxy trung gian có thể tự suy diễn mà lưu
+phản hồi API.
+
+CHƯA VÁ — đây là quyết định về chính sách bộ đệm, chạm mọi phản hồi API. Đề
+xuất: thêm `Cache-Control: private, no-store` cho đường `/api/` trong
+`SecurityHeadersMiddleware` (nơi ấy đã dùng `setdefault` nên view nào muốn khác
+vẫn tự đặt được). Hỏi anh Sơn trước.

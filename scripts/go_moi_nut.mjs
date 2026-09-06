@@ -67,6 +67,13 @@ const TRANG = [
   ['/quan-tri/lop-hoc', 'Quản trị · lớp học', false],
   ['/admin', 'Soạn giáo trình', false],
   ['/giang-day/buoi-hoc/1', 'Giảng dạy · buổi học', false],
+  /* Bốn màn dựng 07/09/2026, thêm cùng lượt với `do_giao_dien.mjs`. Bộ này bấm
+     MỌI nút và bắt lỗi JS; không thêm thì "0 lỗi" là con số tính trên tập
+     không có chúng — đúng lỗi đã ghi ở đầu tệp kia. */
+  ['/quan-tri/vai-tro', 'Quản trị · ai làm được gì', false],
+  ['/quan-tri/huong-dan', 'Quản trị · hướng dẫn', false],
+  ['/giang-day/bao-cao/1', 'Giảng dạy · báo cáo cả lớp', false],
+  ['/giang-day/bao-cao/1/9', 'Giảng dạy · tờ báo cáo một em', false],
 ];
 
 const tk = taiKhoan();

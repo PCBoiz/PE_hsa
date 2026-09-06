@@ -97,6 +97,19 @@ const TRANG = [
   ['/', 'Trang chủ (công khai)'],
   ['/admin', 'Soạn giáo trình'],
   ['/quan-tri/lop-hoc', 'Quản trị · lớp học'],
+  /* Bốn màn dựng 07/09/2026. Thêm vào đây NGAY trong cùng phiên, vì chú thích
+     ba dòng phía trên đã nói rõ chuyện gì xảy ra khi quên: bộ đo báo "0 vi
+     phạm" trên một tập không đầy đủ, và con số 0 ấy là giấy chứng nhận sạch
+     cấp cho phần chưa ai nhìn tới.
+
+     `/bc/<chìa>` (trang phụ huynh) KHÔNG có ở đây: nó cần một chìa THẬT, tức
+     một dòng ghi vào Neon production mỗi lượt quét. Đã đo tay trong phiên
+     07/09 ở ngữ cảnh không cookie; ghi ra đây để không ai tưởng nó cũng nằm
+     trong lượt quét tự động. */
+  ['/quan-tri/vai-tro', 'Quản trị · ai làm được gì'],
+  ['/quan-tri/huong-dan', 'Quản trị · hướng dẫn'],
+  ['/giang-day/bao-cao/1', 'Giảng dạy · báo cáo cả lớp'],
+  ['/giang-day/bao-cao/1/9', 'Giảng dạy · tờ báo cáo một em'],
 ];
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét

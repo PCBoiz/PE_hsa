@@ -73,7 +73,7 @@ export default async function BaoCaoCaLopPage({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Link
           href={`/giang-day/buoi-hoc/${classId}`}
-          className="text-small text-ink-3 hover:text-brand-ink"
+          className="-my-3 inline-block py-3 text-small text-ink-3 hover:text-brand-ink"
         >
           ← Về lớp
         </Link>

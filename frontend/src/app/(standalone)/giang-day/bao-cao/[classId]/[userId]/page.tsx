@@ -62,7 +62,7 @@ export default async function BaoCaoPhuHuynhPage({
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
           <Link
             href={`/giang-day/buoi-hoc/${classId}`}
-            className="text-small text-ink-3 hover:text-brand-ink"
+            className="-my-3 inline-block py-3 text-small text-ink-3 hover:text-brand-ink"
           >
             ← Về lớp
           </Link>
