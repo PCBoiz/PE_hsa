@@ -247,6 +247,117 @@ def _chu_de(user_id):
     }
 
 
+def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
+    """Dựng payload báo cáo. KHÔNG kiểm quyền — nơi gọi phải tự lo.
+
+    Tách ra khỏi view (07/09/2026) vì nay có HAI đường tới cùng tờ giấy này:
+    đường của giảng viên (`ParentReportView`, sau cổng `IsSeniorTeachingStaff`)
+    và đường CÔNG KHAI bằng chìa (`teaching/parent_link.py`, cho phụ huynh mở
+    từ tin Zalo). Hai đường mà hai bản dựng thì chúng sẽ trôi khỏi nhau, và
+    kiểu trôi tệ nhất ở đây là bản công khai còn giữ một trường mà bản kia đã
+    bỏ đi vì lý do riêng tư.
+
+    Trả `(payload, loi)`. `loi` khác None thì payload là None.
+    """
+    canh_bao = list(canh_bao or [])
+
+    # Lấy CẢ lượt học đã đóng: báo cáo cuối kỳ cho một em vừa học xong vẫn
+    # phải in ra được. Ưu tiên lượt đang mở nếu có.
+    # `chi_hoc_vien` là BẮT BUỘC ở đây, không phải để làm đẹp con số.
+    # Tài khoản quản trị viên đang là thành viên lớp 1 (anh chủ sản phẩm
+    # chốt giữ), nên thiếu bộ lọc này thì giảng viên in được "báo cáo gửi
+    # phụ huynh" cho chính tài khoản quản trị — kèm email và số điện thoại
+    # của nó. Đo 31/08/2026: HTTP 200, trả về admin@pe-hsa.vn.
+    # TẤT CẢ các đợt, không phải một. Xem chú thích trong `_chuyen_can`.
+    cac_dot = q('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
+                   FROM class_members m
+                   JOIN users u ON u.id = m.user_id
+                   WHERE m.class_id = %s AND m.user_id = %s
+                     AND ''' + chi_hoc_vien('u') + '''
+                   ORDER BY m.joined_at''', (class_id, user_id))
+    if not cac_dot:
+        return None, 'Không có học viên này trong lớp.'
+
+    # Đợt MỚI NHẤT quyết định trạng thái và ghi chú hiện tại; ngày vào lấy
+    # đợt đầu, ngày rời để trống nếu còn đợt nào đang mở.
+    moi_nhat = max(cac_dot, key=lambda d: (d['left_at'] is None, d['joined_at']))
+    thanh_vien = {
+        'joined_at': cac_dot[0]['joined_at'],
+        'left_at': None if any(d['left_at'] is None for d in cac_dot)
+                   else max(d['left_at'] for d in cac_dot),
+        'leave_reason': moi_nhat['leave_reason'],
+        'note': moi_nhat['note'],
+    }
+
+    lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
+             (class_id,))
+    if not lop:
+        return None, 'Không tìm thấy lớp này.'
+    gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],))         if lop['teacher_id'] else None
+    em = q1('''SELECT id, name, email, phone, parent_name, parent_phone
+                FROM users WHERE id=%s''', (user_id,))
+    if not em:
+        return None, 'Không tìm thấy học viên.'
+
+    return {
+        'student': {'id': em['id'], 'name': em['name'],
+                    'email': em['email'], 'phone': em['phone']},
+        # Người NHẬN tờ báo cáo này. Trả về chuỗi rỗng chứ không None khi
+        # chưa ai điền: màn hình cần phân biệt "chưa điền" với "đã điền
+        # rồi xoá", và cả hai đều là '' — nên đừng bịa ra hai trạng thái.
+        'parent': {'name': em['parent_name'] or '',
+                   'phone': em['parent_phone'] or ''},
+        'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
+                  'teacher': gv['name'] if gv else None},
+        'membership': {
+            'joinedAt': thanh_vien['joined_at'].isoformat()
+                        if thanh_vien['joined_at'] else None,
+            'leftAt': thanh_vien['left_at'].isoformat()
+                      if thanh_vien['left_at'] else None,
+            'status': trang_thai(thanh_vien['left_at'], thanh_vien['leave_reason']),
+            # Ghi chú của giảng viên VỀ lớp/em này — khác hẳn nhật ký em tự
+            # ghi (xem ranh giới 1). Cái này viết ra để người khác đọc.
+            'teacherNote': thanh_vien['note'],
+            # Số ĐỢT em ở lớp. In ra khi > 1 để người đọc hiểu vì sao ngày
+            # vào và ngày rời không liền một mạch.
+            'stints': len(cac_dot),
+        },
+        'period': {'from': tu.isoformat(), 'to': den.isoformat(),
+                   'weeks': DEFAULT_WEEKS},
+        'attendance': _chuyen_can(class_id, user_id, tu, den,
+                                  cac_dot=[(d['joined_at'], d['left_at'])
+                                           for d in cac_dot]),
+        'study': _hoc_tap(user_id, tu, den),
+        'topics': _chu_de(user_id),
+        'warnings': canh_bao,
+    }, None
+
+
+def rut_gon_cho_link(payload):
+    """Bỏ những trường KHÔNG được đi qua một đường mở bằng chìa.
+
+    Chìa là chìa: ai cầm link cũng xem được — chuyển tiếp trong nhóm chat, máy
+    mượn, điện thoại chung. Nên tờ đi qua đường ấy phải mỏng hơn tờ giảng viên
+    xem.
+
+    Bỏ `student.email` và `student.phone`: chính vì hai trường này mà cổng của
+    `ParentReportView` là `IsSeniorTeachingStaff` chứ không phải cửa chung —
+    "càng nhiều vai trò thì càng nhiều người nhìn thấy dữ liệu của một đứa
+    trẻ" (§8 đặc tả). Một đường KHÔNG CÓ VAI NÀO thì càng phải bỏ.
+
+    Bỏ `parent.phone`: phụ huynh không cần đọc lại số của chính mình, và nó là
+    một số điện thoại thật nằm sau một chìa có thể bị chuyển tiếp.
+
+    GIỮ `membership.teacherNote`: nó được viết ra ĐỂ phụ huynh đọc (khác nhật
+    ký riêng của em — xem ranh giới 1 ở đầu tệp).
+    """
+    ra = dict(payload)
+    ra['student'] = {k: v for k, v in payload['student'].items()
+                     if k not in ('email', 'phone')}
+    ra['parent'] = {'name': payload['parent']['name']}
+    return ra
+
+
 class ParentReportView(APIView):
     """GET /api/teach/classes/<id>/students/<uid>/parent-report?from=&to=
 
@@ -265,42 +376,6 @@ class ParentReportView(APIView):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
 
-        # Lấy CẢ lượt học đã đóng: báo cáo cuối kỳ cho một em vừa học xong vẫn
-        # phải in ra được. Ưu tiên lượt đang mở nếu có.
-        # `chi_hoc_vien` là BẮT BUỘC ở đây, không phải để làm đẹp con số.
-        # Tài khoản quản trị viên đang là thành viên lớp 1 (anh chủ sản phẩm
-        # chốt giữ), nên thiếu bộ lọc này thì giảng viên in được "báo cáo gửi
-        # phụ huynh" cho chính tài khoản quản trị — kèm email và số điện thoại
-        # của nó. Đo 31/08/2026: HTTP 200, trả về admin@pe-hsa.vn.
-        # TẤT CẢ các đợt, không phải một. Xem chú thích trong `_chuyen_can`.
-        cac_dot = q('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
-                       FROM class_members m
-                       JOIN users u ON u.id = m.user_id
-                       WHERE m.class_id = %s AND m.user_id = %s
-                         AND ''' + chi_hoc_vien('u') + '''
-                       ORDER BY m.joined_at''', (class_id, user_id))
-        if not cac_dot:
-            return Response({'error': 'Không có học viên này trong lớp.'}, status=404)
-        # Đợt MỚI NHẤT quyết định trạng thái và ghi chú hiện tại; ngày vào lấy
-        # đợt đầu, ngày rời để trống nếu còn đợt nào đang mở.
-        moi_nhat = max(cac_dot, key=lambda d: (d['left_at'] is None, d['joined_at']))
-        thanh_vien = {
-            'joined_at': cac_dot[0]['joined_at'],
-            'left_at': None if any(d['left_at'] is None for d in cac_dot)
-                       else max(d['left_at'] for d in cac_dot),
-            'leave_reason': moi_nhat['leave_reason'],
-            'note': moi_nhat['note'],
-        }
-
-        lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
-                 (class_id,))
-        gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],)) \
-            if lop['teacher_id'] else None
-        em = q1('''SELECT id, name, email, phone, parent_name, parent_phone
-                    FROM users WHERE id=%s''', (user_id,))
-        if not em:
-            return Response({'error': 'Không tìm thấy học viên.'}, status=404)
-
         tu, den, ngay_hop_le, dao_ngay = _khoang_ngay(request)
         canh_bao = []
         if not ngay_hop_le:
@@ -310,35 +385,7 @@ class ParentReportView(APIView):
             canh_bao.append('Ngày bắt đầu đang muộn hơn ngày kết thúc nên đã đổi chỗ '
                             'hai ngày. Kiểm lại kỳ báo cáo trước khi in.')
 
-        return Response({
-            'student': {'id': em['id'], 'name': em['name'],
-                        'email': em['email'], 'phone': em['phone']},
-            # Người NHẬN tờ báo cáo này. Trả về chuỗi rỗng chứ không None khi
-            # chưa ai điền: màn hình cần phân biệt "chưa điền" với "đã điền
-            # rồi xoá", và cả hai đều là '' — nên đừng bịa ra hai trạng thái.
-            'parent': {'name': em['parent_name'] or '',
-                       'phone': em['parent_phone'] or ''},
-            'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
-                      'teacher': gv['name'] if gv else None},
-            'membership': {
-                'joinedAt': thanh_vien['joined_at'].isoformat()
-                            if thanh_vien['joined_at'] else None,
-                'leftAt': thanh_vien['left_at'].isoformat()
-                          if thanh_vien['left_at'] else None,
-                'status': trang_thai(thanh_vien['left_at'], thanh_vien['leave_reason']),
-                # Ghi chú của giảng viên VỀ lớp/em này — khác hẳn nhật ký em tự
-                # ghi (xem ranh giới 1). Cái này viết ra để người khác đọc.
-                'teacherNote': thanh_vien['note'],
-                # Số ĐỢT em ở lớp. In ra khi > 1 để người đọc hiểu vì sao ngày
-                # vào và ngày rời không liền một mạch.
-                'stints': len(cac_dot),
-            },
-            'period': {'from': tu.isoformat(), 'to': den.isoformat(),
-                       'weeks': DEFAULT_WEEKS},
-            'attendance': _chuyen_can(class_id, user_id, tu, den,
-                                      cac_dot=[(d['joined_at'], d['left_at'])
-                                               for d in cac_dot]),
-            'study': _hoc_tap(user_id, tu, den),
-            'topics': _chu_de(user_id),
-            'warnings': canh_bao,
-        })
+        data, loi = dung_bao_cao(class_id, user_id, tu, den, canh_bao)
+        if loi:
+            return Response({'error': loi}, status=404)
+        return Response(data)

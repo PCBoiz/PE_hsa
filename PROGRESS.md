@@ -4557,3 +4557,89 @@ lộ ra vì mục mới. Bộ đo cũ không thấy: trang Cài đặt nằm sau
 iPhone tự phóng to cả trang khi chạm vào ô nhập và không thu lại.
 
 Cổng: tsc 0 · eslint 0 · unit **18/18** (thêm `ho-so-truong`).
+
+---
+
+## 07/09/2026 (tiếp) — T5b: đường phụ huynh mở được, không cần tài khoản
+
+Đây là bề mặt **đầu tiên** trong sản phẩm mở cho người KHÔNG có tài khoản, nên
+phần lớn công sức nằm ở ranh giới chứ không ở tính năng.
+
+### Vì sao phải có
+
+ZNS là tin theo MẪU ĐÃ DUYỆT — **không đính kèm được tệp**. Nên "gửi file PDF
+qua ZNS" là điều không tồn tại; đường duy nhất là gửi một địa chỉ web, và địa
+chỉ ấy phải tự mang quyền xem của nó. Mà `ParentReportView` đứng sau
+`IsSeniorTeachingStaff`: phụ huynh bấm vào là rơi thẳng về màn đăng nhập.
+
+### Bảng, không phải JWT ký sẵn
+
+Token ký (JWT/itsdangerous) không cần bảng, nhưng **không thu hồi được**. Phụ
+huynh chuyển tiếp nhầm vào nhóm lớp thì không có cách nào rút lại trước khi nó
+hết hạn. Một dòng trong bảng thì `revoked_at = now()` là xong. Thu hồi được
+đáng giá hơn một bảng.
+
+DDL đo trước/sau: **53 → 55 bảng**, `users` 6 và `classes` 1 KHÔNG đổi. Chỉ mục
+cho mọi khoá ngoại theo §43.
+
+### Bốn ranh giới, viết thẳng vào đầu tệp
+
+1. **Ai có link là xem được** — bản chất của việc gửi link qua tin nhắn, không
+   phải sơ suất. Bù bằng chìa 32 byte, hạn 45 ngày, thu hồi được, `noindex`.
+2. **Kỳ báo cáo ghim cứng vào chìa**, không đọc `?from=`. Đọc từ query là cho
+   người cầm link xem cả lịch sử ngoài kỳ trung tâm định gửi.
+3. **Tờ đi qua chìa MỎNG HƠN** tờ giảng viên xem: bỏ `student.email`,
+   `student.phone`, `parent.phone`. Cổng của `ParentReportView` là
+   `IsSeniorTeachingStaff` CHÍNH VÌ tờ ấy in email và số điện thoại — trợ giảng
+   còn không được xem. Một đường KHÔNG CÓ VAI NÀO thì càng phải bỏ.
+4. **Không ghi IP, không ghi user agent.** Người mở link không phải người dùng
+   của hệ thống.
+
+Cộng thêm: ba lý do từ chối (chìa sai / hết hạn / bị thu hồi) trả về **cùng một
+câu**. Nói rõ "đã bị thu hồi" là xác nhận với người cầm link rằng nó TỪNG đúng.
+
+`authentication_classes = []` chứ không chỉ `AllowAny`: để trống thì DRF vẫn
+chạy bộ xác thực JWT, và một cookie `pe_at` hết hạn nằm sẵn trong máy sẽ làm cả
+request đổ 401 — tức phụ huynh nào từng đăng nhập thử trên máy đó thì không mở
+nổi link, người khác thì mở được. Một lỗi chỉ xảy ra với vài người là một lỗi
+rất khó được báo lại.
+
+### Một bản dựng, hai đường vào
+
+`dung_bao_cao()` tách khỏi view; `ToBaoCao.tsx` tách khỏi trang. Hai đường mà
+hai bản dựng thì kiểu trôi tệ nhất không phải lệch chữ — mà là một bên sửa cách
+tính chuyên cần còn bên kia không, tức phụ huynh và giảng viên đọc hai con số
+khác nhau về cùng một đứa trẻ rồi cãi nhau về việc ai đúng. Trang giảng viên:
+310 → **95 dòng**.
+
+### Kiểm
+
+`teaching/tests_parent_link.py` — **15 phép kiểm**, chạy trên DB thật trong giao
+dịch cuộn lại. Đỏ trước: bỏ `rut_gon_cho_link` →
+`AssertionError: 'email' not in {... 'email': 'HV_Link_tmp@example.com' ...}`.
+
+Kiểm trình duyệt ở ngữ cảnh **không cookie**, khổ 420px: 200, không lọt email,
+không lọt số 10 chữ số, có `meta robots noindex`, không tràn ngang, chìa sai thì
+nói rõ chứ không trang trắng.
+
+Bốn dòng tạo ra để kiểm đã **xoá hết** (0 dòng; `users` 6 và `class_members` 4
+không đổi).
+
+### Hai lần thước sai nữa
+
+* Chọn `class_members LIMIT 1` để kiểm → trúng **user_id 7, tài khoản quản trị**
+  → API trả 404. Đó là `chi_hoc_vien()` làm ĐÚNG việc của nó, không phải lỗi.
+* `count()` của Playwright **không tự chờ** (khác `inputValue()`), nên đếm ngay
+  sau khi bấm là ra 0 trong khi mã hoàn toàn đúng — lượt cấp chìa đi một vòng
+  tới Neon rồi dựng cả báo cáo, mất hơn 2,5 giây.
+
+### Còn nợ
+
+Chưa có spec Playwright thường trực cho `/bc/<chìa>`: nó cần một chìa THẬT, tức
+một dòng ghi vào Neon production mỗi lượt chạy. 15 phép kiểm pytest đã phủ đường
+ấy trong giao dịch cuộn lại; nói rõ ở đây để không ai tưởng nó cũng nằm trong
+bộ e2e.
+
+Backend: `322 passed, 2 failed` — cả hai lỗi **có sẵn**, đã xác minh bằng cách
+lùi về `HEAD` sạch và thấy chúng đỏ y hệt (`stats::test_quiz_on_tap_VAN_tick…`
+tái hiện được; `accounts::test_dat_lai_mat_khau_cat_phien_dang_mo` chập chờn).

@@ -1388,3 +1388,65 @@ CREATE INDEX IF NOT EXISTS idx_levents_ref
 -- nhớ xử lý hai trường hợp cho cùng một ý nghĩa.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_name  TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_phone TEXT NOT NULL DEFAULT '';
+
+-- ── LINK BÁO CÁO GỬI PHỤ HUYNH (07/09/2026) ─────────────────────────────────
+--
+-- Anh Sơn chốt: gửi phụ huynh một tin Zalo ZNS kèm LINK báo cáo. Nhưng báo cáo
+-- hiện nằm sau cổng `IsSeniorTeachingStaff` — phụ huynh không có tài khoản, nên
+-- bấm vào link là rơi thẳng về màn đăng nhập.
+--
+-- Bảng này cấp một đường vào KHÔNG cần tài khoản, và `token` chính là chìa. Ba
+-- điều phải nói thẳng vì chúng là đánh đổi, không phải sơ suất:
+--
+--   1. AI CÓ LINK LÀ XEM ĐƯỢC. Đó là bản chất của "gửi một link qua Zalo".
+--      Bù lại bằng: chìa 32 byte ngẫu nhiên (không dò được), có HẠN, thu hồi
+--      được, và trang đặt `noindex` để không lọt vào máy tìm kiếm.
+--   2. `period_from`/`period_to` GHIM CỨNG vào link. Không đọc từ query — nếu
+--      không thì ai có link cũng đổi được kỳ báo cáo, tức xem được cả lịch sử
+--      học ngoài kỳ mà trung tâm định gửi.
+--   3. `opened_count`/`last_opened_at` để trung tâm biết phụ huynh đã mở chưa.
+--      KHÔNG ghi IP hay user agent: đó là dữ liệu về một người không phải người
+--      dùng của hệ thống, và biết "đã mở lúc nào" đã đủ cho việc cần làm.
+--
+-- Chỉ mục cho MỌI khoá ngoại theo §43: `(class_id, user_id)` phủ `class_id` ở
+-- vị trí dẫn đầu, nên chỉ cần thêm hai chỉ mục nữa.
+CREATE TABLE IF NOT EXISTS parent_report_links (
+    id             SERIAL PRIMARY KEY,
+    token          TEXT      NOT NULL UNIQUE,
+    class_id       INTEGER   NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    user_id        INTEGER   NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+    period_from    DATE      NOT NULL,
+    period_to      DATE      NOT NULL,
+    created_by     INTEGER   NOT NULL REFERENCES users(id),
+    created_at     TIMESTAMP NOT NULL DEFAULT now(),
+    expires_at     TIMESTAMP NOT NULL,
+    revoked_at     TIMESTAMP,
+    opened_count   INTEGER   NOT NULL DEFAULT 0,
+    last_opened_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_prl_lop_em     ON parent_report_links (class_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_prl_em         ON parent_report_links (user_id);
+CREATE INDEX IF NOT EXISTS idx_prl_nguoi_tao  ON parent_report_links (created_by);
+
+-- Mỗi lượt GỬI. Tách khỏi bảng link vì một link có thể gửi lại nhiều lần (phụ
+-- huynh báo chưa nhận được), và vì lượt gửi có vòng đời riêng: chờ → đã gửi →
+-- lỗi. Gộp vào một bảng là mất lịch sử ngay lần gửi lại đầu tiên.
+--
+-- `status` chỉ ba giá trị, cưỡng chế bằng CHECK: một chuỗi gõ tay sai chính tả
+-- sẽ làm mọi bộ đếm "đã gửi" im lặng thiếu đi một dòng.
+CREATE TABLE IF NOT EXISTS parent_report_sends (
+    id           SERIAL PRIMARY KEY,
+    link_id      INTEGER   NOT NULL REFERENCES parent_report_links(id) ON DELETE CASCADE,
+    phone        TEXT      NOT NULL,
+    status       TEXT      NOT NULL DEFAULT 'cho',
+    provider_id  TEXT,
+    error        TEXT,
+    requested_by INTEGER   NOT NULL REFERENCES users(id),
+    created_at   TIMESTAMP NOT NULL DEFAULT now(),
+    sent_at      TIMESTAMP,
+    CONSTRAINT parent_report_sends_status_check
+        CHECK (status IN ('cho', 'da_gui', 'loi'))
+);
+CREATE INDEX IF NOT EXISTS idx_prs_link      ON parent_report_sends (link_id);
+CREATE INDEX IF NOT EXISTS idx_prs_nguoi_yc  ON parent_report_sends (requested_by);
+CREATE INDEX IF NOT EXISTS idx_prs_trang_thai ON parent_report_sends (status, created_at);

@@ -6,6 +6,7 @@ from teaching import (
                       assignments,
                       exports,
                       overview,
+                      parent_link,
                       parent_report,
                       sessions,
                       terms,
@@ -22,6 +23,20 @@ urlpatterns = [
     # ranh giới riêng tư, và in ra giấy được.
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report',
          parent_report.ParentReportView.as_view()),
+    # Cấp / liệt kê ĐƯỜNG DẪN công khai của tờ ấy. Cùng cổng với chính tờ báo
+    # cáo: cấp một đường vào KHÔNG CẦN TÀI KHOẢN là hành vi nặng hơn xem, nên
+    # tuyệt đối không nới rộng hơn.
+    path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report/link',
+         parent_link.ParentReportLinkView.as_view()),
+    path('api/teach/parent-report/links/<int:link_id>/revoke',
+         parent_link.ParentReportLinkRevokeView.as_view()),
+
+    # ── ĐƯỜNG CÔNG KHAI ──
+    # KHÔNG nằm dưới `api/teach/`: tiền tố ấy mang nghĩa "sau cổng giảng dạy",
+    # và một tuyến AllowAny nấp trong đó là thứ người đọc sau sẽ bỏ sót khi rà
+    # bề mặt công khai. Đặt tên `api/public/` để nó tự khai mình là gì.
+    path('api/public/parent-report/<str:token>',
+         parent_link.PublicParentReportView.as_view()),
 
     # ── Buổi học & điểm danh (đặc tả ERP §4) ──
     path('api/teach/classes/<int:class_id>/sessions', sessions.ClassSessionsView.as_view()),
