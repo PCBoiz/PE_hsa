@@ -5109,7 +5109,7 @@ tính một con số đang hiển thị.
 
 ### Và bộ đầy đủ bắt được một lỗi nữa của tôi
 
- ĐẠT khi chạy riêng, ĐỎ trong bộ đầy đủ:
+`test_duong_cong_khai_bao_cao_cung_co` ĐẠT khi chạy riêng, ĐỎ trong bộ đầy đủ:
 view trả 500 thay vì 404. Nguyên nhân là phép kiểm thiếu fixture `db` —
 pytest-django chặn truy cập CSDL, view đổ lỗi. Đường thật trả 404 đúng (đã đo
 bằng `curl` trên máy chủ đang chạy).
