@@ -764,28 +764,19 @@ người khác điền hộ là một ô sẽ trống mãi.
 Cách kiểm còn bao nhiêu em chưa điền, không cần mở CSDL: vào lớp →
 **Báo cáo phụ huynh**. Trang liệt kê thẳng tên những em chưa có số.
 
-## [ ] 11.2 · Quyết định: có đặt `Cache-Control` cho mọi phản hồi API không?
+## [x] 11.2 · `Cache-Control` cho API — **ĐÃ LÀM 07/09**, anh đã chốt
 
-**Đo 07/09:** KHÔNG phản hồi API nào đặt `Cache-Control` — kể cả `/api/user`,
-`/api/admin/overview`, và đường báo cáo công khai
-`/api/public/parent-report/<chìa>`.
+Anh chọn "đặt `no-store` cho cả `/api/`". Xong: một dòng trong
+`common/middleware.py::SecurityHeadersMiddleware`, nơi ấy dùng `setdefault` nên
+view nào muốn cho phép cache về sau chỉ cần tự đặt header của nó.
 
-Trang Next `/bc/<chìa>` thì có (`private, no-cache, no-store`), nên **trình
-duyệt của phụ huynh không lưu**. Rủi ro còn lại hẹp: một proxy trung gian
-(CDN, mạng công ty) có thể tự suy diễn mà lưu phản hồi API.
+`no-store` chứ không `no-cache`: `no-cache` vẫn CHO PHÉP lưu, chỉ bắt hỏi lại
+trước khi dùng. Với dữ liệu học tập của một đứa trẻ thì thứ cần là "đừng ghi ra
+đĩa".
 
-**Đề xuất:** thêm `Cache-Control: private, no-store` cho đường `/api/` trong
-`common/middleware.py::SecurityHeadersMiddleware`. Chỗ ấy đã dùng
-`setdefault` nên view nào muốn khác vẫn tự đặt được.
-
-**Vì sao hỏi thay vì tự làm:** nó chạm MỌI phản hồi API. Hôm nay không có gì
-đang được cache (vì không có header nào), nên đổi là an toàn — nhưng nó khoá
-luôn khả năng cache `/api/public/courses` cho trang chủ về sau. Nếu anh muốn
-giữ cửa ấy mở thì tôi đặt riêng cho các đường nhạy cảm thay vì cả `/api/`.
-
-- [ ] **Đặt `no-store` cho cả `/api/`** (đơn giản, an toàn nhất)
-- [ ] **Chỉ đặt cho các đường có dữ liệu người dùng**, chừa `/api/public/courses`
-- [ ] **Chưa làm** — rủi ro hiện tại hẹp, để sau
+5 phép kiểm, đỏ trước (gỡ dòng vá → `assert 'no-store' in ''`). Trong đó có
+phép kiểm rằng view tự đặt header thì KHÔNG bị đè, và đường không phải `/api/`
+thì không bị đụng tới.
 
 ## [x] 11.3 · Tài khoản e2e — **KHÔNG CẦN ANH LÀM GÌ** (xác minh 07/09)
 
@@ -798,6 +789,48 @@ trước; ghi chú trong `TODO.md` nói nó không tồn tại là ghi chú **đ
 `login()` bằng một thẻ hỏng → **2/2 đạt**, không phép nào bỏ qua.
 
 Số dòng trong bảng `users` trước và sau lượt kiểm này: **6 → 6**.
+
+## [ ] 11.4 · Quyết định: ngày vào lớp có nhập tay được không?
+
+**Đo 07/09/2026:** `AdminClassMembersView` (đường mà màn "Lớp học" gọi khi xếp
+học viên) **không nhận ngày vào lớp** — nó luôn ghi `joined_at = bây giờ`.
+
+**Khi nào điều đó sai.** Trung tâm nhập vào hệ thống những em ĐANG học dở — đã
+vào lớp từ tháng trước. Với họ, mọi em sẽ mang ngày vào lớp là *hôm nay*. Hệ
+quả dây chuyền:
+
+* chuyên cần tính trên một khoảng ngắn hơn thực tế;
+* tờ báo cáo phụ huynh bó theo lượt học, nên **bỏ qua mọi buổi trước ngày nhập
+  liệu** — phụ huynh nhận một tờ giấy nói con mới học được vài buổi;
+* tỉ lệ giữ chân của đợt bị tính sai.
+
+Hôm nay chưa ảnh hưởng ai: đo 07/09 có **0 đợt học, 0 buổi, 0 lượt điểm danh**,
+tức chưa lớp nào chạy. Đây là việc nên quyết **trước** lớp đầu tiên, không phải
+sau.
+
+- [ ] **Cho nhập ngày vào lớp** — thêm một ô ngày ở màn xếp lớp, mặc định là
+      hôm nay. Tôi làm được, nhưng nó đổi hành vi một endpoint đang chạy nên
+      cần anh gật.
+- [ ] **Không cần** — trung tâm chỉ nhập em MỚI, không nhập em đang học dở.
+      Khi ấy ghi `joined_at = bây giờ` là đúng và không phải sửa gì.
+
+## [ ] 11.5 · Điểm danh cho buổi TRƯỚC ngày vào lớp: hai màn nói khác nhau
+
+Phát hiện dọc đường khi rà luồng. Nếu một buổi học nằm **trước** ngày em vào
+lớp mà giảng viên vẫn tick điểm danh cho em ấy (hệ thống cho phép), thì:
+
+    bảng toàn trung tâm  → đếm dòng điểm danh ấy
+    tờ báo cáo phụ huynh → bỏ qua (nó bó theo lượt học, CỐ Ý)
+
+Hai màn ra hai số cho cùng một sự thật. Chưa xảy ra trong thực tế (chưa lớp nào
+chạy), và mỗi bên đều đang làm đúng ý định riêng của nó — nhưng đặc tả §6 nói
+"nếu hai bên lệch nhau thì đó là LỖI".
+
+- [ ] **Chặn ở nguồn** — không cho tick điểm danh cho em chưa vào lớp tại thời
+      điểm buổi ấy. Sạch nhất, nhưng có thể cản việc nhập liệu bù.
+- [ ] **Cho toàn trung tâm bó theo lượt học** giống tờ phụ huynh — hai màn khớp
+      nhau, nhưng đổi cách tính một con số đang hiển thị.
+- [ ] **Để nguyên, ghi vào tài liệu** — rủi ro hẹp cho tới khi có lớp chạy thật.
 
 ## Không cần làm gì — chỉ để anh biết
 

@@ -639,8 +639,15 @@ def test_api_dat_cache_control_no_store(client):
     assert 'no-store' in r.headers.get('Cache-Control', ''), dict(r.headers)
 
 
-def test_duong_cong_khai_bao_cao_cung_co(client):
-    """Đường mở cho người KHÔNG có tài khoản — đáng lo nhất trong cả sản phẩm."""
+def test_duong_cong_khai_bao_cao_cung_co(client, db):
+    """Đường mở cho người KHÔNG có tài khoản — đáng lo nhất trong cả sản phẩm.
+
+    `db` BẮT BUỘC: view này TRA CSDL để đọc chìa, và pytest-django chặn mọi
+    truy cập CSDL ở phép kiểm không khai fixture ấy — view đổ 500 thay vì 404.
+    Bản đầu thiếu nó và ĐẠT khi chạy riêng (một phép kiểm khác trong cùng lượt
+    chọn đã mở kết nối), rồi ĐỎ trong bộ đầy đủ. Đường thật trả 404 đúng — đã
+    đo bằng `curl` trên máy chủ đang chạy.
+    """
     r = client.get('/api/public/parent-report/khong-he-ton-tai')
     assert r.status_code == 404
     assert 'no-store' in r.headers.get('Cache-Control', ''), dict(r.headers)

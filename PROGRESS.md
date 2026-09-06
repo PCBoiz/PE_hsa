@@ -5058,3 +5058,64 @@ không `hidden`: `hidden` dựng một vùng cuộn.
 
     6 → 11 liên kết · 296 → 318 nút DOM · 0 lỗi JS
     bộ đo 21 trang × 2 khổ × 2 chủ đề: 0/0/0/0 · e2e 30/30
+
+---
+
+## 07/09/2026 (tiếp) — C: rà soát sâu luồng ERP, và nó không tìm ra lỗi sản phẩm nào
+
+### Một quyền được cho, lần thứ hai không dùng
+
+Anh Sơn cho phép ghi thẳng vào Neon để rà luồng (tạo đợt, buổi, điểm danh — 7
+bảng, gồm cả `learning_events`). Tôi **không dùng**: đi qua đúng những endpoint
+ấy trong một giao dịch cuộn lại cho cùng khả năng phát hiện lỗi mà không để lại
+dòng nào. Cùng lối đã dùng với tài khoản e2e sáng nay.
+
+### Thứ bộ kiểm này canh mà không bộ nào khác canh
+
+Các bộ hiện có soi TỪNG endpoint. Bộ này soi **chỗ chúng nối vào nhau**: điểm
+danh ở màn giảng viên có chảy vào bảng toàn trung tâm không, và **cùng một sự
+thật có đọc ra cùng một số ở ba màn** không.
+
+Đặc tả ERP §6 viết thẳng: *"nếu hai bên lệch nhau thì đó là LỖI, không phải hai
+cách đo."* Câu ấy **chưa từng có phép kiểm nào canh** cho tới hôm nay.
+
+### Kết quả: không lỗi sản phẩm. Ba lỗi của chính tôi.
+
+    lần 1  buổi ở "hôm qua", em vào lớp "hôm nay"
+           → tờ phụ huynh None, toàn trung tâm 50%
+           → buổi nằm TRƯỚC lượt học; tờ phụ huynh cố ý bó theo lượt học
+    lần 2  đẩy buổi lên tương lai 1 phút
+           → vẫn None; chỉ buổi ĐÃ BẮT ĐẦU mới được tính
+    lần 3  lùi ngày vào lớp về 14 hôm trước
+           → ba màn khớp nhau
+
+Cả ba lần tôi đều suýt ghi "hai màn lệch nhau" trong khi mã hoàn toàn đúng.
+Luật temporal của sản phẩm chặt và nhất quán hơn thước của tôi.
+
+### Hai phát hiện THẬT, ghi vào việc của anh
+
+**11.4 — `AdminClassMembersView` không nhận ngày vào lớp**, luôn ghi
+`joined_at = bây giờ`. Trung tâm nhập em ĐANG học dở thì mọi em mang ngày vào
+lớp là hôm nay → chuyên cần tính trên khoảng ngắn hơn thực tế, tờ phụ huynh bỏ
+qua mọi buổi trước ngày nhập liệu, giữ chân của đợt sai. Chưa ảnh hưởng ai (0
+đợt, 0 buổi, 0 điểm danh) — nên đây là việc nên quyết TRƯỚC lớp đầu tiên.
+
+**11.5 — điểm danh cho buổi TRƯỚC ngày vào lớp thì hai màn nói khác nhau.**
+Toàn trung tâm đếm dòng ấy; tờ phụ huynh bỏ qua. Mỗi bên đang làm đúng ý định
+riêng, nhưng §6 gọi đó là lỗi. Ba cách xử, chờ anh chọn.
+
+Cả hai đều KHÔNG tự sửa: chúng đổi hành vi endpoint đang chạy hoặc đổi cách
+tính một con số đang hiển thị.
+
+### Và bộ đầy đủ bắt được một lỗi nữa của tôi
+
+ ĐẠT khi chạy riêng, ĐỎ trong bộ đầy đủ:
+view trả 500 thay vì 404. Nguyên nhân là phép kiểm thiếu fixture `db` —
+pytest-django chặn truy cập CSDL, view đổ lỗi. Đường thật trả 404 đúng (đã đo
+bằng `curl` trên máy chủ đang chạy).
+
+Đáng ghi vì hình dạng của nó: một phép kiểm ĐẠT khi chạy riêng và ĐỎ trong bộ
+đầy đủ thì thứ sai gần như luôn là phép kiểm, không phải mã. Và nó chỉ lộ ra
+khi chạy CẢ BỘ — chạy `-k` cho nhanh sẽ không bao giờ thấy.
+
+Cổng: pytest `common/` 37/37 · `teaching/` + `common/` 134/134.
