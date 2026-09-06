@@ -61,6 +61,9 @@ export const TABS: readonly Tab[] = [
   // viên mới mỗi lần có người vào làm, và bắt họ đi hỏi quản trị viên mỗi lần
   // là cách chắc chắn để không ai đọc nó.
   { href: '/quan-tri/vai-tro', label: 'Ai làm được gì', icon: 'shield', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // Tài liệu vận hành, viết theo VIỆC. Cùng vai với bảng quyền: người phải trả
+  // lời câu "làm thế nào" cho giảng viên mới chính là học vụ.
+  { href: '/quan-tri/huong-dan', label: 'Hướng dẫn', icon: 'book-open', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // Liên kết SANG khu khác, không phải trang của khu này — nên vai ở đây là
   // "ai ĐANG Ở TRONG khu này thì thấy đường sang", không phải "ai vào được
   // /admin". `Biên tập nội dung` vào được /admin nhưng KHÔNG vào được khu này

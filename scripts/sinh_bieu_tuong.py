@@ -38,6 +38,8 @@ CAN = [
     'bar-chart', 'graduation-cap', 'file-text',
     # Trang "Hôm nay cần làm gì" — việc còn tồn, việc đã xong, chỗ trống.
     'clock', 'check-circle-2', 'inbox', 'arrow-right',
+    # Tab 'Hướng dẫn' của khu Vận hành (07/09/2026).
+    'book-open',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════

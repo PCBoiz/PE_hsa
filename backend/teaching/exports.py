@@ -217,7 +217,11 @@ def _csv_response(filename, header, rows):
     writer.writerow([_cell(c) for c in header])
     for row in rows:
         writer.writerow([_cell(c) for c in row])
-    body = ('﻿' + buf.getvalue()).encode('utf-8')
+    # BOM viết bằng CHUỖI THOÁT, không phải ký tự thật. Ký tự BOM vô hình,
+    # nên bản cũ đọc ra là "('' + buf...)" và không ai biết trong dấu nháy
+    # có gì — đúng loại thứ mà `e2e/unit/ky-tu-vo-hinh.test.mjs` sinh ra để
+    # chặn. Hành vi y hệt; ý định thì nhìn thấy được.
+    body = ('\ufeff' + buf.getvalue()).encode('utf-8')
 
     resp = HttpResponse(body, content_type='text/csv; charset=utf-8')
     resp['Content-Disposition'] = _disposition(filename)

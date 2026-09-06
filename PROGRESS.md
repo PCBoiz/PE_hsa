@@ -4791,3 +4791,53 @@ Mục "Còn thiếu gì" nói thẳng: chưa có vai **Quản lý**, và ba vai
 trong bảng chưa từng được dùng thử trên tài khoản thật.
 
 Cổng: tsc 0 · eslint 0 · unit **19/19** (thêm `quyen-vai`).
+
+---
+
+## 07/09/2026 (tiếp) — T9: hướng dẫn trong ứng dụng, và một byte vô hình
+
+### Tài liệu xếp theo VIỆC, không theo màn hình
+
+Anh Sơn chốt: đặt **trong ứng dụng**, in ra được. Người đọc là học vụ và giảng
+viên — họ không mở GitHub, và họ đọc lúc đang cần làm một việc cụ thể. Tài liệu
+xếp theo màn hình bắt người mới tự dịch từ *việc-họ-cần* sang *màn-hình-nào*, mà
+đó chính là phần họ chưa biết.
+
+Tám bài. Mỗi bài có **"Trông như hỏng thì làm gì"** — người mới không mắc ở bước
+"bấm nút nào", họ mắc ở lúc màn hình hiện sáu dấu `—` và không biết đó là lỗi
+hay bình thường.
+
+### Đi lệch một chút so với lựa chọn của anh, và nói ra
+
+Anh chọn phương án "có ảnh chụp màn thật". Tôi dùng **đường dẫn sống** thay ảnh:
+ảnh hỏng *im lặng* (giao diện đổi, ảnh vẫn nằm đó dạy sai), còn đường dẫn hỏng
+thì `huong-dan.test.mjs` bắt được — nó quét thư mục `app/` và đối chiếu từng
+đường. Đánh đổi: người đọc phải nhìn màn hình thật thay vì một bức ảnh; bù lại,
+thứ họ nhìn luôn là thứ đang chạy. **Nếu anh vẫn muốn ảnh thì nói, tôi thêm.**
+
+### Thước bỏ sót — lần thứ năm, và lần này vì một BYTE VÔ HÌNH
+
+Phép kiểm đường dẫn ban đầu neo `o:` vào đầu/cuối dòng, nên một bước viết gọn
+trên một dòng — `{ lam: '…', o: '/admin' }` — bị bỏ qua im lặng.
+
+Sửa xong thì nó báo **0 đường dẫn**. Nguyên nhân không phải logic: một lượt sửa
+bằng script của tôi đã ghi ký tự **`0x08` (backspace)** vào giữa biểu thức
+chính quy. Tệp mở ra trông bình thường; `node` không ném; `eslint` không kêu;
+`tsc` không thấy (tệp `.mjs`). Chỉ `cat -A` hiện ra `^H`.
+
+Rồi bản sửa tiếp lại quá RỘNG: nó báo đỏ ba chỗ hoàn toàn hợp lệ — `👩‍💻` và
+`🧑‍💻` là emoji ghép bằng ZWJ (U+200D), và một BOM đầu tệp CSS. **Thước quá hẹp
+thì bỏ sót im lặng; thước quá rộng thì báo oan — và báo oan còn tệ hơn, vì nó
+dạy người ta bỏ qua chính cái thước ấy.**
+
+Kết quả: `ky-tu-vo-hinh.test.mjs` quét 400+ tệp mã, chỉ bắt thứ **không bao giờ**
+hợp lệ (điều khiển C0, U+200B, U+2028/2029, dấu đảo chiều hai chiều
+"Trojan Source"), và BOM chỉ khi nằm GIỮA tệp. Kèm ba phép tự kiểm chứng minh
+bộ dò vừa bắt được `0x08` vừa KHÔNG bắt nhầm emoji ZWJ.
+
+Nó bắt được một chỗ có thật: `teaching/exports.py` ghi BOM cho Excel bằng **ký
+tự thật** trong chuỗi, nên người đọc thấy `('' + buf.getvalue())` và không biết
+trong dấu nháy có gì. Đổi sang `'﻿'` — hành vi y hệt, ý định nhìn thấy
+được. Phép kiểm xuất CSV vẫn xanh.
+
+Cổng: tsc 0 · eslint 0 · unit **21/21** (thêm `huong-dan`, `ky-tu-vo-hinh`).

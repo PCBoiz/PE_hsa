@@ -41,7 +41,7 @@ from mockexam.views import SECTION_LABELS
 #: cho người dùng về một mâu thuẫn của chính hệ thống.
 COT = ('Phần thi', 'Câu hỏi',
        'Lựa chọn A', 'Lựa chọn B', 'Lựa chọn C', 'Lựa chọn D',
-       'Đáp án', 'Mã câu', 'Chủ đề', 'Giải thích')
+       'Đáp án', 'Mã câu', 'Chủ đề', 'Cấp độ', 'Giải thích')
 
 #: Tiêu đề của mẫu `.xlsx` — CHÍNH là bảng trên, không phải một bản chép.
 TIEU_DE_MAU = list(COT)
@@ -66,7 +66,55 @@ TEN_KHAC = {
     'a': 'lựa chọn a', 'b': 'lựa chọn b', 'c': 'lựa chọn c', 'd': 'lựa chọn d',
     'ma cau': 'mã câu', 'giai thich': 'giải thích', 'lời giải': 'giải thích',
     'chu de': 'chủ đề', 'topic': 'chủ đề',
+    'cap do': 'cấp độ', 'mức độ': 'cấp độ', 'muc do': 'cấp độ',
+    'cấp độ nhận thức': 'cấp độ', 'cap do nhan thuc': 'cấp độ', 'level': 'cấp độ',
 }
+
+#: CẤP ĐỘ NHẬN THỨC — trục thứ hai của ma trận trong báo cáo TopHSA.
+#:
+#: Thêm 07/09/2026. Bản báo cáo mẫu của TopHSA chấm theo `đơn vị kiến thức ×
+#: cấp độ nhận thức` (Biết / Hiểu / Vận dụng / Vận dụng cao). Cột `Chủ đề` đã
+#: có sẵn nên trục thứ nhất dựng được; trục này thì chưa có gì mang.
+#:
+#: Đo 07/09/2026 trước khi thêm: câu hỏi trong `questions_json` chỉ có
+#: `id/section/type/answer` — nên ma trận ấy KHÔNG dựng được từ dữ liệu đang
+#: có, và không cách nào dựng ngược cho các đề đã nhập. Thêm cột từ hôm nay để
+#: đề nhập MỚI tự đủ dữ liệu; đề cũ cần nhập lại nhãn nếu muốn có ma trận.
+#:
+#: Bốn giá trị CỐ ĐỊNH, không phải chuỗi tự do: một ma trận gộp theo chuỗi tự
+#: do sẽ có "Vận dụng", "vận dụng", "VD" thành ba cột khác nhau, và người đọc
+#: kết luận đề mất cân đối trong khi chỉ là gõ khác nhau.
+CAP_DO = ('Biết', 'Hiểu', 'Vận dụng', 'Vận dụng cao')
+
+#: Cách gõ khác cho từng cấp độ. Nhận cả bản không dấu và viết tắt hay gặp.
+_CAP_DO_KHAC = {}
+for _c in CAP_DO:
+    _CAP_DO_KHAC[_c.lower()] = _c
+_CAP_DO_KHAC.update({
+    'biet': 'Biết', 'nhận biết': 'Biết', 'nhan biet': 'Biết', 'nb': 'Biết',
+    'hieu': 'Hiểu', 'thông hiểu': 'Hiểu', 'thong hieu': 'Hiểu', 'th': 'Hiểu',
+    'van dung': 'Vận dụng', 'vd': 'Vận dụng',
+    'van dung cao': 'Vận dụng cao', 'vdc': 'Vận dụng cao',
+    'vận dụng cao': 'Vận dụng cao',
+})
+
+
+def _cap_do(gia_tri):
+    """Chuẩn hoá cấp độ. Trả ``(giá trị, lỗi)`` — rỗng thì không phải lỗi.
+
+    Cột này KHÔNG bắt buộc: phần lớn ngân hàng đề hiện có chưa gắn nhãn, và bắt
+    buộc nó sẽ chặn cả những đề vốn nhập được. Nhưng gõ SAI thì phải báo — âm
+    thầm bỏ qua một ô đã điền là cách chắc chắn để người soạn tưởng đã gắn nhãn
+    xong cả đề.
+    """
+    raw = str(gia_tri or '').strip()
+    if not raw:
+        return None, None
+    chuan = _CAP_DO_KHAC.get(raw.lower()) or _CAP_DO_KHAC.get(_bo_dau(raw))
+    if chuan:
+        return chuan, None
+    return None, ('"cấp độ" %r không hợp lệ. Nhận: %s.'
+                  % (raw, ', '.join(CAP_DO)))
 
 #: Trần độ dài. BÁO chứ không cắt — cắt ngầm thì người soạn tưởng đã vào đủ, và
 #: phát hiện ra vào đúng lúc học viên đang thi.
@@ -212,6 +260,15 @@ def doc_cau_hoi(ban_ghi):
         mot.update({'id': ma, 'section': phan, 'question': noi_dung})
         if b.get('chủ đề'):
             mot['topic'] = b['chủ đề']
+        # Cấp độ nhận thức — trục thứ hai của ma trận báo cáo. Không bắt buộc,
+        # nhưng gõ sai thì BÁO chứ không bỏ qua: một ô đã điền mà bị nuốt là
+        # người soạn tưởng đã gắn nhãn xong cả đề.
+        muc, loi_muc = _cap_do(b.get('cấp độ'))
+        if loi_muc:
+            sai(loi_muc)
+            continue
+        if muc:
+            mot['level'] = muc
         # `giải thích` được nhận và lưu, dù engine hiện CHƯA hiện nó. Cố ý: nội
         # dung do đối tác bàn giao một lần, và bắt họ nhập lại cả ngân hàng khi
         # engine biết hiện lời giải là chuyện không nên xảy ra.
