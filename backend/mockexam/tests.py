@@ -920,3 +920,72 @@ def test_MAU_TAI_VE_nap_lai_duoc_bang_chinh_bo_doc(admin_api, db):
     # Ba dòng mẫu cố ý phủ ba dạng: đáp án nguyên văn, đáp án chữ cái, và câu điền.
     dang = {c['type'] for c in cau}
     assert 'mcq' in dang and 'fill' in dang, dang
+
+
+# ── CẤP ĐỘ NHẬN THỨC (thêm 07/09/2026) ──────────────────────────────────────
+#
+# Bản báo cáo mẫu của TopHSA chấm theo `đơn vị kiến thức × cấp độ nhận thức`.
+# Cột `Chủ đề` đã có sẵn nên trục thứ nhất dựng được; trục này thì chưa có gì
+# mang. Đo trước khi thêm: câu hỏi trong `questions_json` chỉ có
+# `id/section/type/answer`.
+#
+# Thứ đáng canh KHÔNG phải "đọc được cột mới" — mà là ba chuyện im lặng:
+#   · gõ sai cấp độ bị NUỐT thay vì báo (người soạn tưởng đã gắn nhãn xong);
+#   · cấp độ viết khác nhau ('VD', 'vận dụng') thành nhiều giá trị khác nhau;
+#   · thêm cột làm TRÔI các ô của dòng mẫu.
+
+def _doc(hang):
+    from common.bangtinh import thanh_ban_ghi
+    from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC, doc_cau_hoi
+    return doc_cau_hoi(thanh_ban_ghi(hang, cot_bat_buoc=COT_BAT_BUOC, ten_khac=TEN_KHAC))
+
+
+def _hang(cap_do):
+    from mockexam.nhap import TIEU_DE_MAU
+    d = {'Phần thi': 'Định lượng', 'Câu hỏi': '1 + 1 = ?', 'Đáp án': '2',
+         'Mã câu': 'x1', 'Chủ đề': 'Số học', 'Cấp độ': cap_do}
+    return [TIEU_DE_MAU, [d.get(c, '') for c in TIEU_DE_MAU]]
+
+
+def test_cap_do_doc_duoc_va_chuan_hoa():
+    for gõ, mong in (('Vận dụng', 'Vận dụng'), ('van dung', 'Vận dụng'),
+                     ('VD', 'Vận dụng'), ('vdc', 'Vận dụng cao'),
+                     ('nhận biết', 'Biết'), ('TH', 'Hiểu')):
+        cau, loi = _doc(_hang(gõ))
+        assert not loi, (gõ, loi)
+        assert cau[0]['level'] == mong, (gõ, cau[0].get('level'))
+
+
+def test_cap_do_go_SAI_thi_BAO_chu_khong_nuot():
+    """Âm thầm bỏ qua một ô ĐÃ ĐIỀN là cách chắc chắn để người soạn tưởng đã
+    gắn nhãn xong cả đề — rồi phát hiện ra khi ma trận báo cáo trống."""
+    cau, loi = _doc(_hang('trung bình'))
+    assert loi and 'cấp độ' in loi[0], loi
+    assert not cau, cau
+
+
+def test_cap_do_BO_TRONG_khong_phai_loi():
+    """Phần lớn ngân hàng đề hiện có chưa gắn nhãn; bắt buộc cột này sẽ chặn cả
+    những đề vốn nhập được."""
+    cau, loi = _doc(_hang(''))
+    assert not loi, loi
+    assert 'level' not in cau[0], cau[0]
+
+
+def test_them_cot_khong_lam_troi_o_cua_dong_mau():
+    """Dòng mẫu khai theo TÊN cột, không theo vị trí — nên `Giải thích` phải
+    nằm ở ô `Giải thích`, không trôi sang ô `Cấp độ`."""
+    from mockexam.nhap import CAP_DO, TIEU_DE_MAU
+    from mockexam.quan_tri import DONG_MAU, _hang_mau
+    i_cap = TIEU_DE_MAU.index('Cấp độ')
+    for d in DONG_MAU:
+        h = _hang_mau(d)
+        assert len(h) == len(TIEU_DE_MAU), (len(h), len(TIEU_DE_MAU))
+        assert h[i_cap] in CAP_DO, h[i_cap]
+
+
+def test_cap_do_chi_bon_gia_tri():
+    """Một ma trận gộp theo chuỗi TỰ DO sẽ có 'Vận dụng', 'vận dụng', 'VD'
+    thành ba cột khác nhau, và người đọc kết luận đề mất cân đối."""
+    from mockexam.nhap import CAP_DO
+    assert CAP_DO == ('Biết', 'Hiểu', 'Vận dụng', 'Vận dụng cao'), CAP_DO

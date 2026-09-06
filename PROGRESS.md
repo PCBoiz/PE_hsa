@@ -4841,3 +4841,76 @@ trong dấu nháy có gì. Đổi sang `'﻿'` — hành vi y hệt, ý định 
 được. Phép kiểm xuất CSV vẫn xanh.
 
 Cổng: tsc 0 · eslint 0 · unit **21/21** (thêm `huong-dan`, `ky-tu-vo-hinh`).
+
+---
+
+## 07/09/2026 (tiếp) — T8: cột "Cấp độ", và trục hiệu năng anh Sơn chỉ ra
+
+### T8 nhỏ hơn tưởng: `Chủ đề` đã có sẵn
+
+Tra ra `mockexam/nhap.py` **đã có cột `Chủ đề` → `topic`**. Nên trục thứ nhất
+của ma trận TopHSA dựng được rồi; chỉ thiếu trục **cấp độ nhận thức**.
+
+Thêm cột `Cấp độ` với **bốn giá trị cố định** (Biết / Hiểu / Vận dụng / Vận
+dụng cao) chứ không chuỗi tự do: một ma trận gộp theo chuỗi tự do sẽ có
+"Vận dụng", "vận dụng", "VD" thành ba cột khác nhau, và người đọc kết luận đề
+mất cân đối trong khi chỉ là gõ khác nhau. Nhận bí danh (`VD`, `VDC`, `nhận
+biết`, không dấu).
+
+Cột **không bắt buộc** — phần lớn ngân hàng đề hiện có chưa gắn nhãn, bắt buộc
+sẽ chặn cả những đề vốn nhập được. Nhưng gõ SAI thì **báo**, không nuốt: âm
+thầm bỏ qua một ô đã điền là cách chắc chắn để người soạn tưởng đã gắn nhãn
+xong cả đề, rồi phát hiện khi ma trận trống.
+
+### Phép kiểm sẵn có bắt lỗi của tôi ngay lập tức
+
+Thêm cột vào `COT` xong, `test_MAU_TAI_VE_nap_lai_duoc_bang_chinh_bo_doc` đỏ:
+
+    mẫu do chính mình sinh ra mà bộ đọc của chính mình từ chối:
+    Dòng 2: "cấp độ" '2³=8, 3²=9, tổng là 17.' không hợp lệ
+
+`DONG_MAU` là ba danh sách **phẳng theo vị trí**, nên thêm một cột làm mọi giá
+trị từ đó trở đi trôi đi một ô — câu giải thích rơi vào ô cấp độ.
+
+Sửa tận gốc chứ không chèn thêm một ô: `DONG_MAU` nay khai theo **TÊN CỘT** và
+chiếu qua `TIEU_DE_MAU`. Thêm cột không thể làm lệch ô nào nữa.
+
+Đỏ trước cho cột mới: bỏ nhánh báo lỗi → `assert loi and 'cấp độ' in loi[0]`
+nhận `[]`.
+
+### `git add -A` cuốn việc đang dở vào commit — hai lần
+
+`common/zalo.py` và `mockexam/nhap.py` đều vào commit trước khi có phép kiểm,
+vì tôi gõ `git add -A` theo phản xạ. Lần này stage tường minh từng tệp. Ghi lại
+vì nó làm thông điệp commit nói sai về nội dung của chính nó.
+
+### Hiệu năng — trục anh Sơn chỉ ra là tôi còn trống
+
+Anh Sơn: *"chrome-devtools-mcp có vẻ sẽ giúp bạn kiểm tra, phân tích và audit
+luồng hoạt động của người dùng thoải mái hơn"*. Đúng, và nó chỉ ra một lỗ thật:
+cả phiên này tôi đo bố cục, vùng chạm, tương phản, lỗi JS — **chưa đo hiệu năng
+lần nào**.
+
+MCP ấy chưa nối vào phiên, nhưng Playwright mở được đúng giao thức bên dưới nó
+(`newCDPSession`) nên đo được ngay. `scripts/do_hieu_nang.mjs`.
+
+**Và lượt đo đầu suýt thành một con số nói dối:** đo trên máy chủ DEV cho
+`Ai làm được gì` = **5480ms**, vượt ngưỡng gấp đôi. Dựng bản production đo lại:
+**1036ms**. Toàn bộ phần chênh là chi phí biên dịch theo yêu cầu của dev server.
+
+Số thật (production, CPU chậm 4×):
+
+    màn hình               LCP      CLS    JS(kB)   DOM
+    Trang của tôi        2168ms        0      222    889
+    Thi thử              1612ms    0.002      237    244
+    Vận hành             1956ms    0.005      222    248
+    Báo cáo phụ huynh    1168ms        0      222    187
+    Ai làm được gì       1036ms    0.006      222    783
+    Hướng dẫn            1508ms        0      222    353
+
+Không màn nào vượt ngưỡng — **nhưng "Trang của tôi" nằm ngay sát**: ba lượt cho
+2168 / 2528 / 2400ms, tức vượt ở một trong ba. Ghi cả ba chứ không lấy lượt
+đẹp. Riêng màn ấy có 889 nút DOM (gấp 3–4 lần màn khác) và là màn DUY NHẤT còn
+nạp cả tầng JS cũ. Chưa tối ưu; ghi lại để lần sau có chỗ bắt đầu.
+
+Cổng: pytest `mockexam/` **48/48**.

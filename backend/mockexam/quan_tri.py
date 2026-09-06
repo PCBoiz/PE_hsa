@@ -29,14 +29,35 @@ MAX_BYTES = 5 * 1024 * 1024
 #: Dòng mẫu, để người soạn thấy NGAY hình dạng thay vì đọc tài liệu. Kahoot làm
 #: đúng thế và đó là chi tiết khiến mẫu của họ dùng được mà không cần hướng dẫn.
 DONG_MAU = [
-    ['Định lượng', 'Giá trị của biểu thức 2³ + 3² bằng bao nhiêu?',
-     '15', '16', '17', '18', '17', 'ql_01', 'Số học', '2³=8, 3²=9, tổng là 17.'],
-    ['Định lượng', 'Một số tăng 20% rồi giảm 20% thì so với ban đầu?',
-     'Không đổi', 'Tăng 4%', 'Giảm 4%', 'Giảm 20%', 'C', 'ql_02', 'Tỉ lệ',
-     'Nhân hệ số: 1,2 × 0,8 = 0,96 → giảm 4%.'],
-    ['Định tính', 'Điền số còn thiếu: 2, 4, 8, 16, …', '', '', '', '',
-     '32', '', 'Dãy số', 'Bỏ trống hết cột Lựa chọn thì thành câu ĐIỀN đáp án.'],
+    {'Phần thi': 'Định lượng',
+     'Câu hỏi': 'Giá trị của biểu thức 2³ + 3² bằng bao nhiêu?',
+     'Lựa chọn A': '15', 'Lựa chọn B': '16', 'Lựa chọn C': '17', 'Lựa chọn D': '18',
+     'Đáp án': '17', 'Mã câu': 'ql_01', 'Chủ đề': 'Số học', 'Cấp độ': 'Biết',
+     'Giải thích': '2³=8, 3²=9, tổng là 17.'},
+    {'Phần thi': 'Định lượng',
+     'Câu hỏi': 'Một số tăng 20% rồi giảm 20% thì so với ban đầu?',
+     'Lựa chọn A': 'Không đổi', 'Lựa chọn B': 'Tăng 4%',
+     'Lựa chọn C': 'Giảm 4%', 'Lựa chọn D': 'Giảm 20%',
+     'Đáp án': 'C', 'Mã câu': 'ql_02', 'Chủ đề': 'Tỉ lệ', 'Cấp độ': 'Vận dụng',
+     'Giải thích': 'Nhân hệ số: 1,2 × 0,8 = 0,96 → giảm 4%.'},
+    {'Phần thi': 'Định tính', 'Câu hỏi': 'Điền số còn thiếu: 2, 4, 8, 16, …',
+     'Đáp án': '32', 'Chủ đề': 'Dãy số', 'Cấp độ': 'Hiểu',
+     'Giải thích': 'Bỏ trống hết cột Lựa chọn thì thành câu ĐIỀN đáp án.'},
 ]
+
+#: Dòng mẫu khai theo TÊN CỘT, không theo vị trí (đổi 07/09/2026).
+#:
+#: Bản cũ là ba danh sách phẳng, nên thêm cột `Cấp độ` vào `nhap.COT` làm mọi
+#: giá trị từ đó trở đi TRÔI ĐI MỘT Ô: câu giải thích rơi vào ô cấp độ, và mẫu
+#: do chính hệ thống sinh ra bị chính bộ đọc của nó từ chối.
+#:
+#: `test_MAU_TAI_VE_nap_lai_duoc_bang_chinh_bo_doc` bắt được ngay — nó tồn tại
+#: đúng để bắt chuyện này. Nhưng bắt được một lỗi khác với việc không sinh ra
+#: nó: khai theo tên thì thêm cột không thể làm lệch ô nào nữa, và cột nào
+#: thiếu trong dòng mẫu thì ra ô trống chứ không đẩy hàng.
+def _hang_mau(d):
+    """Chiếu một dòng mẫu qua đúng thứ tự cột của `TIEU_DE_MAU`."""
+    return [d.get(c, '') for c in TIEU_DE_MAU]
 
 # `TIEU_DE_MAU` nay NHẬP TỪ `mockexam/nhap.py` — xem `nhap.COT`. Trước 04/09
 # (chiều) nó là một mảng gõ tay ở đây, ngay dưới một chú thích nói rằng nó "lấy
@@ -80,7 +101,7 @@ class AdminMockExamTemplateView(_Base):
         ws = wb.active
         ws.title = 'Câu hỏi'
         ws.append(TIEU_DE_MAU)
-        for d in DONG_MAU:
+        for d in (_hang_mau(x) for x in DONG_MAU):
             ws.append(d)
         for i, w in enumerate([14, 60, 18, 18, 18, 18, 16, 12, 16, 46], start=1):
             ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
