@@ -760,8 +760,19 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       đăng nhập, mà không có tài khoản e2e. Sửa mù đường nạp dữ liệu của
       dashboard — màn đông người dùng nhất — là đúng thứ không nên làm.
       MỞ KHOÁ BẰNG: một tài khoản e2e (xem T58).
-- [ ] T58 · **Tài khoản e2e** — `audit@example.com` trong `frontend/e2e/helpers.ts`
-      KHÔNG tồn tại trong CSDL (đã tra). Ba phép kiểm Playwright cần đăng nhập
+- [x] T58 · **Tài khoản e2e — XONG (xác minh lại 07/09/2026, không ghi thêm gì)**
+      Ghi chú cũ bên dưới nói `audit@example.com` không tồn tại. Điều đó ĐÃ HẾT
+      ĐÚNG: `scripts/tai_khoan_e2e.py` đã chạy, và `e2e-kiem-thu@example.com`
+      (id 13231, vai Học viên) có thật trong CSDL. `helpers.ts` không còn đọc
+      `audit@example.com` mà đọc `.the/e2e.json`.
+      Đo 07/09: `POST /auth/login` với tài khoản ấy trả về `access` + `refresh`.
+      Ép Playwright rơi xuống đường `login()` bằng một thẻ hỏng → **2/2 đạt**,
+      không phép nào bỏ qua.
+      Anh Sơn đã cho phép tôi INSERT một tài khoản cho việc này — **tôi không
+      dùng quyền ấy**, vì đo ra là không cần. Ghi lại để lần sau không ai mở
+      lại một việc đã xong.
+
+      *(ghi chú cũ, giữ để đối chiếu)* `audit@example.com` KHÔNG tồn tại trong CSDL (đã tra). Ba phép kiểm Playwright cần đăng nhập
       đang tự bỏ qua, và nó chặn luôn T41 + mọi việc phải xem `/dashboard` thật
       (T31). Tạo tài khoản là một lượt INSERT vào Neon production — ngoài phạm
       vi anh đã cho phép, nên cần anh quyết: tạo tay trên Neon, hay cho phép tôi

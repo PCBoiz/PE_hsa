@@ -787,25 +787,17 @@ giữ cửa ấy mở thì tôi đặt riêng cho các đường nhạy cảm th
 - [ ] **Chỉ đặt cho các đường có dữ liệu người dùng**, chừa `/api/public/courses`
 - [ ] **Chưa làm** — rủi ro hiện tại hẹp, để sau
 
-## [ ] 11.3 · Quyết định: tài khoản e2e — cho tôi INSERT một dòng?
+## [x] 11.3 · Tài khoản e2e — **KHÔNG CẦN ANH LÀM GÌ** (xác minh 07/09)
 
-`frontend/e2e/helpers.ts` trỏ tới `audit@example.com`, **tài khoản này không
-tồn tại**. Hôm nay bộ kiểm vẫn chạy được vì tôi cấp thẻ JWT cho tài khoản quản
-trị có sẵn (`scripts/cap_the.py`) — nhưng thẻ ấy **sống 30 phút**, nên mỗi lượt
-chạy dài đều phải cấp lại giữa chừng, và CI thì không cấp được.
+Anh đã cho phép tôi INSERT một tài khoản. **Tôi không dùng quyền ấy** — đo ra
+là không cần.
 
-Nó cũng chặn việc đo `/dashboard` bằng một tài khoản **học viên thật** thay vì
-tài khoản quản trị (tài khoản quản trị thấy thêm ba nút theo vai, nên số đo
-lệch với thứ học viên thật nhìn thấy).
+`e2e-kiem-thu@example.com` (id 13231, vai Học viên) đã có sẵn trong CSDL từ
+trước; ghi chú trong `TODO.md` nói nó không tồn tại là ghi chú **đã hết đúng**.
+Đo 07/09: đăng nhập trả về `access` + `refresh`; ép Playwright rơi xuống đường
+`login()` bằng một thẻ hỏng → **2/2 đạt**, không phép nào bỏ qua.
 
-**Cần anh quyết** — luật anh đặt là ghi thì phải hỏi:
-
-- [ ] **Cho phép tôi INSERT một tài khoản học viên riêng cho việc kiểm**
-      (email `e2e-kiem-thu@example.com`, không ghi danh lớp nào, không đụng dữ
-      liệu ai)
-- [ ] **Anh tự tạo trên Neon** rồi báo tôi email + mật khẩu
-- [ ] **Giữ nguyên cách cấp thẻ 30 phút** — chấp nhận CI không chạy được ba
-      phép kiểm ấy
+Số dòng trong bảng `users` trước và sau lượt kiểm này: **6 → 6**.
 
 ## Không cần làm gì — chỉ để anh biết
 

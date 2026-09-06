@@ -619,3 +619,69 @@ def test_log_5xx_ghi_dung_IP_hoc_vien_khong_phai_IP_chang_bien():
     assert ghi == '203.0.113.9', (
         'nhật ký 5xx ghi %r — đó là IP chặng biên, giống nhau ở MỌI request, '
         'và mâu thuẫn với dòng admin_audit của cùng request này.' % ghi)
+
+
+# ── Cache-Control cho phản hồi API (thêm 07/09/2026) ─────────────────────────
+#
+# Audit đo được: KHÔNG phản hồi API nào đặt header này, kể cả đường công khai
+# `/api/public/parent-report/<chìa>` trả dữ liệu học tập của một đứa trẻ cho
+# người không có tài khoản. Thiếu header thì bộ đệm trung gian được phép TỰ SUY
+# DIỄN (RFC 9111 §4.2.2) mà giữ lại phản hồi.
+#
+# Ba điều được canh ở đây, và cả ba đều im lặng khi hỏng:
+#   · đường `/api/` có header;
+#   · đường CÔNG KHAI cũng có (nó là đường đáng lo nhất, và nó KHÔNG đi qua
+#     lớp xác thực nên dễ bị bỏ sót khi ai đó thêm ngoại lệ);
+#   · view nào tự đặt header thì KHÔNG bị đè — `setdefault` là cả điểm.
+
+def test_api_dat_cache_control_no_store(client):
+    r = client.get('/api/public/courses')
+    assert 'no-store' in r.headers.get('Cache-Control', ''), dict(r.headers)
+
+
+def test_duong_cong_khai_bao_cao_cung_co(client):
+    """Đường mở cho người KHÔNG có tài khoản — đáng lo nhất trong cả sản phẩm."""
+    r = client.get('/api/public/parent-report/khong-he-ton-tai')
+    assert r.status_code == 404
+    assert 'no-store' in r.headers.get('Cache-Control', ''), dict(r.headers)
+
+
+def test_no_store_chu_khong_phai_no_cache():
+    """`no-cache` vẫn CHO PHÉP lưu, chỉ bắt hỏi lại trước khi dùng. Với dữ liệu
+    của một đứa trẻ thì thứ cần là "đừng ghi ra đĩa"."""
+    from common.middleware import SecurityHeadersMiddleware
+
+    class _R:
+        headers = {}
+        def __init__(self): self.headers = {}
+    class _Req:
+        path = '/api/user'
+    mw = SecurityHeadersMiddleware(lambda _req: _R())
+    kq = mw(_Req())
+    assert kq.headers['Cache-Control'] == 'private, no-store', kq.headers
+
+
+def test_view_tu_dat_thi_KHONG_bi_de():
+    """`setdefault` là cả điểm: view nào muốn cho phép cache (danh mục khoá học
+    công khai về sau) chỉ cần tự đặt, không phải sửa middleware."""
+    from common.middleware import SecurityHeadersMiddleware
+
+    class _R:
+        def __init__(self): self.headers = {'Cache-Control': 'public, max-age=300'}
+    class _Req:
+        path = '/api/public/courses'
+    mw = SecurityHeadersMiddleware(lambda _req: _R())
+    assert mw(_Req()).headers['Cache-Control'] == 'public, max-age=300'
+
+
+def test_duong_KHONG_phai_api_thi_khong_dat():
+    """Trang HTML do Next dựng, không phải Django — đặt header ở đây là nói về
+    một thứ mình không phục vụ."""
+    from common.middleware import SecurityHeadersMiddleware
+
+    class _R:
+        def __init__(self): self.headers = {}
+    class _Req:
+        path = '/static/css/shell.css'
+    mw = SecurityHeadersMiddleware(lambda _req: _R())
+    assert 'Cache-Control' not in mw(_Req()).headers
