@@ -25,21 +25,42 @@
  * ── SỐ ĐO 07/09/2026 (production, CPU chậm 4×) ───────────────────────────
  *
  *     màn hình               LCP      CLS    JS(kB)   DOM
- *     Trang của tôi        2168ms        0      222    889
+ *     Trang của tôi        2740ms        0      329   1030    ← VƯỢT ngưỡng
  *     Thi thử              1612ms    0.002      237    244
  *     Vận hành             1956ms    0.005      222    248
  *     Báo cáo phụ huynh    1168ms        0      222    187
  *     Ai làm được gì       1036ms    0.006      222    783
  *     Hướng dẫn            1508ms        0      222    353
  *
- * Không màn nào vượt ngưỡng Core Web Vitals (LCP 2500ms, CLS 0.1) — NHƯNG
- * "Trang của tôi" nằm NGAY SÁT: ba lượt đo cho 2168 / 2528 / 2400ms, tức nó
- * vượt ở một trong ba lượt. Ghi cả ba chứ không lấy lượt đẹp nhất.
+ * Năm màn dưới đạt ngưỡng Core Web Vitals (LCP 2500ms, CLS 0.1). "Trang của
+ * tôi" thì KHÔNG: ba lượt cho 2740 / 2824 / 2972ms. Ghi cả ba, không lấy lượt
+ * đẹp nhất.
  *
- * Vì sao riêng màn ấy: 889 nút DOM (gấp 3-4 lần các màn khác) và nó là màn
- * DUY NHẤT còn nạp cả tầng JS cũ (main.js + dashboard.js + icons.js…). Đó
- * cũng đúng là màn học viên mở nhiều nhất. Chưa tối ưu ở đây — ghi lại để
- * lần sau có chỗ bắt đầu, và để ai đó đừng đi tối ưu một màn đang 1036ms.
+ * ĐÍNH CHÍNH: bản đầu của bảng này ghi "Trang của tôi 2168ms · 222kB · 889
+ * nút" và kết luận "sát ngưỡng nhưng chưa vượt". SAI — lúc ấy tệp này chưa có
+ * chốt `/login` bên dưới, nên lượt đo rơi ra ngoài hạn thẻ đã đo MÀN ĐĂNG NHẬP
+ * và in ra một bảng đẹp hơn sự thật. Giữ lại dòng này để số cũ nếu còn nằm
+ * trong ghi chép nào đó thì tra ra được ngay là nó hỏng ở đâu.
+ *
+ * CẢNH BÁO VỀ CỘT `DOM` (đo 07/09): cột này đọc `querySelectorAll('*')` sau
+ * `networkidle` + 1200ms. Trên "Trang của tôi" trang lúc ấy CHƯA dựng xong —
+ * cột báo 1030 nút, còn trang thật đứng lại ở 1922 (DOM tăng gấp đôi trong
+ * quãng 2,5s → 4s, tức sau cả mốc LCP). Nên ngưỡng `> 1500` bên dưới chưa bao
+ * giờ nổ dù trang thật vượt. Cùng họ với bẫy `/login`: im lặng cho số đẹp hơn
+ * sự thật. CHƯA vá — vá là đổi ngữ nghĩa cột, phải đo lại cả sáu màn.
+ *
+ * Vì sao riêng màn ấy: DOM lớn nhất trong sáu màn và
+ * nó là màn DUY NHẤT còn nạp cả tầng JS cũ (main.js + dashboard.js +
+ * icons.js…). Đó cũng đúng là màn học viên mở nhiều nhất. Đã gỡ Font Awesome
+ * (-100kB CSS) và tải trước tầng JS cũ; phần còn lại là T31/T32.
+ *
+ * ── SỐ CHỈ TIN ĐƯỢC KHI TRANG THẬT SỰ MỞ ─────────────────────────────────
+ *
+ * Mỗi màn được kiểm là có rơi về `/login` không TRƯỚC khi lấy số. Màn đăng nhập
+ * nhẹ (LCP thấp, DOM nhỏ, JS ít) nên một lượt đo trượt xác thực sẽ in ra một
+ * bảng số ĐẸP HƠN sự thật — và không có gì trong bảng ấy nói rằng nó sai.
+ * Thẻ access sống 30 phút, nên hãy cấp lại ngay trước mỗi lượt đo:
+ *     python scripts/cap_the.py --id 7 --ra .the/tokens_ad.json
  *
  * Chạy:
  *     cd frontend && npx next build && npx next start -p 3100
@@ -85,6 +106,16 @@ for (const [ten, url] of MAN) {
 
   await p.goto('http://localhost:3100' + url, { waitUntil: 'networkidle' });
   await p.waitForTimeout(1200);
+
+  /* Rơi về màn đăng nhập thì mọi số bên dưới đều VÔ NGHĨA mà vẫn in ra đẹp —
+     màn đăng nhập nhẹ nên LCP thấp, DOM nhỏ, JS ít. Đúng cái bẫy đã sửa cho
+     `do_giao_dien.mjs` hôm 05/09, và tôi dựng lại nó ở đây (07/09).
+     Thẻ access sống 30 phút; một lượt đo dài là nó hết hạn giữa chừng. */
+  if (p.url().includes('/login')) {
+    console.log(ten.padEnd(20), 'BỎ QUA — rơi về /login (thẻ hết hạn?):', p.url());
+    await p.close();
+    continue;
+  }
 
   const d = await p.evaluate(() => new Promise((res) => {
     let lcp = 0, cls = 0;

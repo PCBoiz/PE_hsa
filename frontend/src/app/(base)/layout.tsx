@@ -15,11 +15,17 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
           Trên /dashboard file này còn dùng có 2%, tức 29 kB gần như phí sạch.
           Nay chỉ trang chủ nạp nó. theme.css nạp ở tầng gốc (app/layout.tsx). */}
       <PageStyles hrefs={["/static/css/chatbot.css","/static/css/a11y.css"]} />
-      {/* Fonts + Font Awesome như base.html */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      />
+      {/* Font Awesome ĐÃ GỠ khỏi tầng này (07/09/2026).
+          Đo: 100 kB CSS tải từ CDN cho nhóm `(base)` — tức TRANG CHỦ và TRANG
+          CỦA TÔI, hai màn có nhiều người mở nhất. Grep cả hai màn: **0 lần**
+          dùng class `fa-`. Một trăm kilobyte cho không icon nào.
+
+          Font Awesome vẫn còn ở ba chỗ THẬT SỰ dùng nó (`LessonHsa.tsx`,
+          `lesson_hsa.js`, `MockExam.tsx`) và chúng tự nạp lấy.
+
+          Ghi rõ để không ai "khôi phục cho chắc": nếu thêm một icon `fa-` vào
+          nhóm này thì nó sẽ KHÔNG hiện, và cách đúng là dùng `BieuTuong`
+          (bộ SVG riêng, sinh từ `icons.js`) chứ không phải nạp lại 100 kB. */}
       {/* Chống FOUC theme — chạy trước khi vẽ nội dung.
           Quy tắc (audit 2026-08-13): người dùng đã chọn tay thì theo lựa chọn đó;
           CHƯA chọn thì theo hệ điều hành (trước đây mặc định cứng là tối, và

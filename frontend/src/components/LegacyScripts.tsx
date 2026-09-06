@@ -10,7 +10,15 @@
  */
 import { useEffect } from 'react';
 
-const BRIDGE = '/static/js/pe-bridge.js';
+/** Tệp cầu nối, LUÔN chạy trước mọi script cũ khác.
+ *
+ * XUẤT RA (07/09/2026) để `NapTruocScript` tải trước được đúng nó. Trước hôm
+ * nay nó chỉ nằm trong tệp này, nên danh sách preload ở trang gọi thiếu mất —
+ * và vì script chèn với `async=false` THỰC THI theo thứ tự chèn, mọi tệp khác
+ * đều phải chờ nó. Đo được: sáu tệp kia xong ở 75ms nhờ preload, còn
+ * `pe-bridge.js` mãi 2381ms mới bắt đầu tải. */
+export const CAU_NOI = '/static/js/pe-bridge.js';
+const BRIDGE = CAU_NOI;
 
 function loadOrdered(srcs: string[]): void {
   // Chèn TẤT CẢ thẻ script một lượt: async=false đảm bảo THỰC THI theo thứ tự

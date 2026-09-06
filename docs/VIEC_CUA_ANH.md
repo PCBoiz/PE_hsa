@@ -595,7 +595,7 @@ cd D:\pe_hsa\backend && .venv\Scripts\python.exe manage.py kiem_luoc_do
 | e2e Playwright | **30/30** |
 | Bộ đo giao diện | **21 trang** × 2 khổ × 2 chủ đề: **0 vi phạm**; tự kiểm ĐẠT 40/40 |
 | Lượt quét bấm thử | **231 nút** / 21 màn: 0 lỗi JS |
-| **Hiệu năng** (mới đo lần đầu) | production, CPU chậm 4×: LCP 1036–2168ms · CLS ≤ 0,011 · JS 222kB |
+| **Hiệu năng** | production, CPU chậm 4×. **Trang của tôi 2740–2972ms — VƯỢT ngưỡng 2500ms.** Năm màn còn lại 840–1844ms, đạt |
 | CSDL Neon | **55 bảng** · 6 tài khoản (4 học viên · 1 giảng viên · 1 quản trị) |
 | Dữ liệu vận hành | 1 lớp · **0 đợt học** · **0 buổi** · **0 lượt điểm danh** · 13 lượt thi thử |
 | Số Zalo phụ huynh | **0 / 4 học viên** |
@@ -609,8 +609,13 @@ cd D:\pe_hsa\backend && .venv\Scripts\python.exe manage.py kiem_luoc_do
    ĐÚNG — không phải lỗi hiển thị. Xem 4.1.
 2. **0/4 học viên có số Zalo phụ huynh.** Có Zalo OA mà không có số thì vẫn
    không gửi được cho ai. Xem Phần 11.
-3. **"Trang của tôi" nằm ngay sát ngưỡng hiệu năng** — ba lượt đo cho
-   2168/2528/2400ms so với ngưỡng 2500ms. Đó là màn học viên mở nhiều nhất.
+3. **"Trang của tôi" VƯỢT ngưỡng hiệu năng** — 2740/2824/2972ms so với ngưỡng
+   2500ms, và đó là màn học viên mở nhiều nhất.
+
+   *Đính chính:* bản trước của mục này ghi 2168/2528/2400ms và gọi là "sát
+   ngưỡng". Số ấy SAI — bộ đo hiệu năng khi đó chưa kiểm trang có rơi về
+   `/login` không, và màn đăng nhập thì nhẹ nên nó cho ra một bảng số đẹp hơn
+   sự thật. Đã vá bộ đo (07/09) và đo lại bằng thẻ còn hạn.
 
 ## Chưa đo được — nói thẳng
 

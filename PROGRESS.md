@@ -5119,3 +5119,88 @@ bằng `curl` trên máy chủ đang chạy).
 khi chạy CẢ BỘ — chạy `-k` cho nhanh sẽ không bao giờ thấy.
 
 Cổng: pytest `common/` 37/37 · `teaching/` + `common/` 134/134.
+
+---
+
+## 07/09/2026 (tiếp) — D: tối ưu Trang của tôi, và một ĐÍNH CHÍNH
+
+### Đính chính: số hiệu năng tôi báo hôm nay là SAI
+
+Bộ đo hiệu năng tôi viết sáng nay **thiếu chốt kiểm trang có rơi về `/login`
+không** — đúng cái bẫy đã vá cho `do_giao_dien.mjs` hôm 05/09, và tôi dựng lại
+nó. Thẻ access sống 30 phút; lượt đo nào rơi ra ngoài hạn thì đo màn đăng nhập,
+mà màn ấy nhẹ nên bảng số **đẹp hơn sự thật** và không có gì trong bảng nói
+rằng nó sai.
+
+    tôi đã báo   LCP 2168 / 2528 / 2400ms · JS 222kB · DOM 889  → "sát ngưỡng"
+    sự thật      LCP 2832 / 3084 / 2944ms · JS 429kB · DOM ~1100 → VƯỢT hẳn
+
+Số sai ấy đã vào PROGRESS, thông điệp commit và `VIEC_CUA_ANH` Phần 8. Sửa cả
+ba; giữ nguyên dấu vết chứ không xoá.
+
+### Đo cho ra gốc rễ
+
+    TTFB              11-20ms     máy chủ nhanh
+    HTML tải xong    326-637ms    và HTML CÓ ĐỦ nội dung (63kB, mọi chữ đều ở đó)
+    CSS xong           76ms       13 tệp, không phải thủ phạm
+    FCP             1964-2304ms   trang trắng suốt hơn một giây
+    LCP             2740-2972ms
+
+Bỏ hãm CPU thì FCP còn **1128ms**. Tức phần lớn chi phí là **CPU**: phân tích
+~350kB CSS, dựng ~2000 nút DOM, hydrate React — không phải mạng.
+
+### Hai việc đã làm
+
+**Gỡ Font Awesome khỏi nhóm `(base)`.** 100kB CSS tải từ CDN cho TRANG CHỦ và
+TRANG CỦA TÔI — hai màn nhiều người mở nhất — mà grep cả hai ra **0 lần** dùng
+class `fa-`. Ba chỗ thật sự dùng (`LessonHsa`, `lesson_hsa.js`, `MockExam`) tự
+nạp lấy, không đụng tới.
+
+**Tải trước bảy tệp JS cũ.** `LegacyScripts` chèn chúng trong `useEffect`, nên
+chúng chỉ bắt đầu tải SAU khi React hydrate — đo được chúng xong ở ~2550ms
+trong khi trang load xong ở 759ms. Thêm `<link rel="preload" as="script">` từ
+HTML máy chủ: chúng xong ở **75ms**.
+
+Kèm một lỗ nhỏ: `pe-bridge.js` chỉ khai bên trong `LegacyScripts` nên danh sách
+preload thiếu nó, và vì script chèn `async=false` thực thi theo thứ tự, MỌI tệp
+khác chờ nó (2381ms). Xuất `CAU_NOI` ra để nơi gọi preload đúng cả nó.
+
+### Kết quả, nói thẳng
+
+    LCP 2832/3084/2944ms  →  2740/2824/2972ms
+    CSS  ~457kB           →  ~357kB
+
+Cải thiện có thật nhưng **NHỎ, và màn này vẫn vượt ngưỡng**. Phần còn lại là
+cấu trúc. Nhưng KHÔNG phải cấu trúc tôi vừa đoán — xem mục dưới.
+
+### Đo lại DOM: giả thuyết của chính tôi bị bác
+
+Tôi vừa viết "1300 trong ~2000 nút DOM là panel dựng sẵn rồi ẩn". Trước khi để
+câu ấy nằm lại trong hồ sơ, tôi đi đếm. Nó **sai**:
+
+    t (ms)   nút DOM   đang ẩn
+      500       886       232
+     1500       886       232
+     2500      1033       239
+     4000      1922       242
+     6000      1922       242      ← đứng yên
+
+Nút ẩn là **242, không phải 1300** — 12% chứ không phải 65%. Panel ẩn không
+phải thủ phạm, và nếu tôi cứ theo giả thuyết ấy thì T31/T32 sẽ được biện minh
+bằng một lý do không có thật.
+
+Bảng trên còn lộ ra một điều khác. **DOM tăng gấp đôi trong khoảng 2,5s → 4s**,
+tức LÂU SAU mốc LCP 2740ms. Còn từ 500ms đến 2500ms — đúng quãng quyết định
+LCP — DOM đứng im ở 886. Nên chi phí làm LCP chậm KHÔNG nằm ở việc dựng nút.
+Nó nằm ở quãng trước đó: phân tích CSS, hydrate, chạy tầng JS cũ.
+
+### Bẫy thứ hai của bộ đo hiệu năng
+
+Cột `DOM` của `do_hieu_nang.mjs` đọc `querySelectorAll('*')` sau `networkidle`
++ 1200ms. Trang này lúc ấy **chưa dựng xong** — bộ đo thấy 1030 nút, trang thật
+kết thúc ở 1922. Cột ấy đang báo một ảnh chụp giữa chừng chứ không phải DOM của
+trang, và ngưỡng cảnh báo `> 1500` vì thế chưa bao giờ nổ dù trang thật vượt.
+
+Đây là bẫy CÙNG HỌ với bẫy `/login` sáng nay: bộ đo im lặng cho ra số đẹp hơn
+sự thật. Ghi lại chứ chưa vá — vá nó là đổi ngữ nghĩa cột đo, cần đo lại cả
+sáu màn để bảng số nhất quán, và tôi không mở việc ấy ở cuối phiên.

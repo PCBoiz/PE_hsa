@@ -7,7 +7,8 @@
 
 import PageStyles from '@/components/PageStyles';
 import Chatbot from '@/components/Chatbot';
-import LegacyScripts from '@/components/LegacyScripts';
+import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
+import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
 import AppShell from '@/components/AppShell';
 
@@ -31,6 +32,12 @@ export default function DashboardPage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/shell.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
+      {/* TẢI TRƯỚC bảy tệp JS cũ, ngay từ HTML máy chủ trả về.
+          `LegacyScripts` chèn chúng trong `useEffect` nên chúng chỉ bắt đầu
+          tải SAU khi React hydrate — đo được 1,4 giây trang trắng (load xong
+          759ms, FCP 2184ms). Xem `NapTruocScript.tsx`.
+          CÙNG một mảng `SCRIPTS` cho cả hai; hai mảng chép tay sẽ trôi. */}
+      <NapTruocScript srcs={[CAU_NOI, ...SCRIPTS]} />
       <title>ProgrammingEdu × TopHSA</title>
       {/* Khung chung — CÙNG component với màn khoá học và màn thi thử.
           `spa`: trang này có main.js nên điều hướng bằng `navigate()`.
