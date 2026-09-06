@@ -602,6 +602,14 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 
 /* Tôn trọng lựa chọn của hệ điều hành: ai bật "giảm chuyển động" thì thanh
    đứng yên hoàn toàn, kể cả gạch chân đang trượt. */
+/* ── IN RA GIẤY ─────────────────────────────────────────────────────────────
+   Thanh điều hướng KHÔNG in. Tờ báo cáo gửi phụ huynh in ra từ trang này, và
+   một hàng nút bấm trên đầu tờ giấy vừa vô nghĩa vừa tốn mực. `position: fixed`
+   còn tệ hơn khi in: một số trình duyệt lặp lại nó ở MỌI trang giấy. */
+@media print {
+  .topbar { display: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .topbar *, .bell-panel, .user-dropdown, .nav-underline {
     transition-duration: 0.01ms !important;

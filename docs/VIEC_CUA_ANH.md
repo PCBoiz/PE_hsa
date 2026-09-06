@@ -638,3 +638,72 @@ gì); muốn kèm refresh thì phải gõ `--co-refresh` và nó in cảnh báo 
 Luật anh đặt là SELECT tự do, DDL bổ sung được, **ghi thì phải hỏi**. Tôi đã ghi
 mà không hỏi. Bài học ghi lại ngay trong `cap_the.py`: một câu khẳng định về tác
 dụng phụ mà chưa đo thì đúng bằng một dòng mã sai.
+
+---
+
+# Phần 7 — Zalo OA: việc DUY NHẤT chặn phần gửi báo cáo tự động
+
+**Thêm 07/09/2026.** Anh chốt: báo cáo tiến độ gửi phụ huynh qua **ZNS kèm
+link**. Phần mã đã xong và chạy được; phần còn lại là một tài khoản, và chỉ anh
+làm được.
+
+## Hôm nay hệ thống làm được gì mà không cần anh
+
+Vào `/giang-day/bao-cao/<lớp>` → bấm **"Cấp đường dẫn cho N em"**. Nó dựng báo
+cáo cho cả lớp và cấp cho mỗi em một đường dẫn `/bc/<chìa>` mà **phụ huynh mở
+được không cần tài khoản**. Học vụ chép đi gửi tay qua Zalo cá nhân.
+
+Chìa sống 45 ngày, thu hồi được, và trang đặt `noindex`.
+
+## Cần gì để nó TỰ nhắn
+
+| Việc | Ai làm | Ghi chú |
+|---|---|---|
+| Zalo OA đã **xác thực** (tích vàng) | anh / TopHSA | ZNS bắt buộc phải có |
+| Duyệt **mẫu tin ZNS** | anh / TopHSA | nội dung phải thuộc nhóm *chăm sóc khách hàng* |
+| Điền 2 biến môi trường trên Render | anh | xem dưới |
+
+```
+ZALO_OA_ACCESS_TOKEN=<access token của OA>
+ZALO_ZNS_TEMPLATE_ID=<id mẫu đã được duyệt>
+```
+
+Điền xong là xong — **không cần deploy lại**, mã đọc biến môi trường ở mỗi lần
+gọi chứ không nhớ ở tầng module (cố ý: nhớ ở module thì đổi biến trên Render
+phải khởi động lại tiến trình, mà người đổi sẽ không biết điều đó rồi kết luận
+"điền rồi mà vẫn không gửi được").
+
+Nút ở màn báo cáo tự đổi nhãn từ *"Cấp đường dẫn cho N em"* sang *"Gửi cho N
+phụ huynh"*. Không ai phải học lại thao tác nào.
+
+## Mẫu tin — bốn tham số mã đang chờ
+
+Khi tạo mẫu trên Zalo, đặt đúng bốn tên tham số này (khai ở
+`backend/teaching/parent_send.py::THAM_SO_MAU`):
+
+```
+ten_hoc_vien · ten_lop · ky · duong_dan
+```
+
+Gợi ý nội dung: *"TopHSA — báo cáo học tập của `<ten_hoc_vien>` lớp `<ten_lop>`,
+kỳ `<ky>`. Xem chi tiết: `<duong_dan>`"*
+
+Đặt tên khác cũng được, nhưng phải sửa `THAM_SO_MAU` cho khớp — và chỉ sửa ở
+đúng chỗ ấy.
+
+## Ba điều về ZNS nên biết trước khi đăng ký
+
+1. **ZNS không đính kèm được tệp.** Nó là tin theo mẫu duyệt trước. Vì thế
+   phương án là gửi *link*, không phải gửi PDF.
+2. **Mất phí theo tin** (~100–200đ/tin, bên gửi trả). Đây là lý do nút "Gửi cả
+   lớp" có một bước hỏi lại nêu **đúng số người** sẽ nhận — một vòng lặp sai là
+   một hoá đơn thật.
+3. **Chỉ gửi được tới số đã có quan hệ với OA.** Số phụ huynh của học viên đang
+   học thoả điều đó, nhưng Zalo mới là bên quyết — nên mã không đoán trước, cứ
+   gửi và đọc mã lỗi trả về, rồi ghi vào `parent_report_sends`.
+
+## Còn một việc nhỏ nhưng chặn thật: học viên chưa ai điền số phụ huynh
+
+Đo 07/09/2026: **0/4 học viên** có `parent_phone`. Ô nhập đã có ở
+**Cài đặt → Liên hệ phụ huynh** để các em tự điền. Có OA mà không có số thì vẫn
+không gửi được cho ai — nên việc này nên nhắc các em cùng lúc với việc đăng ký OA.

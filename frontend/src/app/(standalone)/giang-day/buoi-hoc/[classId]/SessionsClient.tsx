@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -193,13 +195,23 @@ export default function SessionsClient({
           action={
             /* Hai đường xuất này đã có ở máy chủ từ đợt ERP §6 nhưng KHÔNG màn
                nào bấm được — tức một tính năng đã trả tiền viết mà không ai
-               dùng. Đặt ở đây vì đây là màn giảng viên thực sự mở cho một lớp
-               (không có màn báo cáo cấp lớp; `bao-cao/` chỉ có cấp học viên).
+               dùng. Đặt ở đây vì đây là màn giảng viên thực sự mở cho một lớp.
+
+               (Câu cũ ở đây viết "không có màn báo cáo cấp lớp" — ĐÃ HẾT ĐÚNG
+               từ 07/09/2026: `bao-cao/<lop>` nay là màn soạn & gửi báo cáo cho
+               cả lớp. Một chú thích hết đúng thì nguy hiểm ngang một dòng mã
+               sai, vì người đọc sau tin nó mà không kiểm.)
 
                Thẻ neo thường, KHÔNG fetch rồi tự dựng tệp: cookie đăng nhập đi
                kèm sẵn và trình duyệt lo phần tải xuống — cùng lối với nút xuất
                ở màn tài khoản. */
             <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/giang-day/bao-cao/${classId}`}
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
+              >
+                Báo cáo phụ huynh
+              </Link>
               <a
                 href={`/api/teach/classes/${classId}/export/attendance.csv`}
                 className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"

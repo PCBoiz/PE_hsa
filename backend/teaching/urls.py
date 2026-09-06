@@ -8,6 +8,7 @@ from teaching import (
                       overview,
                       parent_link,
                       parent_report,
+                      parent_send,
                       sessions,
                       terms,
                       views,
@@ -30,6 +31,11 @@ urlpatterns = [
          parent_link.ParentReportLinkView.as_view()),
     path('api/teach/parent-report/links/<int:link_id>/revoke',
          parent_link.ParentReportLinkRevokeView.as_view()),
+    # Gửi CẢ LỚP. GET = bản soạn sẵn (không ghi gì), POST = gửi thật. Tách hai
+    # bước có chủ ý: tin đã tới Zalo phụ huynh thì không thu về được, và mỗi
+    # tin ZNS đều mất phí.
+    path('api/teach/classes/<int:class_id>/parent-report/send-all',
+         parent_send.ParentReportSendAllView.as_view()),
 
     # ── ĐƯỜNG CÔNG KHAI ──
     # KHÔNG nằm dưới `api/teach/`: tiền tố ấy mang nghĩa "sau cổng giảng dạy",

@@ -4643,3 +4643,86 @@ bộ e2e.
 Backend: `322 passed, 2 failed` — cả hai lỗi **có sẵn**, đã xác minh bằng cách
 lùi về `HEAD` sạch và thấy chúng đỏ y hệt (`stats::test_quiz_on_tap_VAN_tick…`
 tái hiện được; `accounts::test_dat_lai_mat_khau_cat_phien_dang_mo` chập chờn).
+
+---
+
+## 07/09/2026 (tiếp) — T7: gửi cả lớp, và lỗ "không có Đăng xuất" lần THỨ BA
+
+### Gửi cả lớp: hai bước, hai phương thức
+
+Anh Sơn chốt "hệ thống soạn sẵn — NGƯỜI bấm gửi", nên đường này có đúng hai
+bước và chúng là hai phương thức khác nhau có chủ ý:
+
+    GET   → soạn sẵn: ai sẽ nhận, ai thiếu số      (KHÔNG ghi gì)
+    POST  → gửi thật
+
+Gộp vào một lời gọi là biến một cú bấm nhầm thành một hoá đơn thật và 25 tin
+nhắn không rút lại được.
+
+Trước hôm nay, gửi báo cáo cho 25 em là mở 25 trang, bấm 25 lần, chép 25 đường
+dẫn — đó là lý do tính năng ấy chưa từng được dùng cho một lớp thật.
+
+### Chưa có OA thì KHÔNG tạo hàng chờ
+
+Trung tâm chưa có Zalo OA xác thực. Khi ấy `POST` **không tạo dòng
+`parent_report_sends` nào**: một hàng chờ mà không có gì xử lý là một danh sách
+việc giả, và người nhìn nó tưởng tin đang trên đường đi.
+
+Thay vào đó nó vẫn cấp link cho cả lớp để học vụ gửi tay. Nhãn nút đổi theo
+trạng thái (`Cấp đường dẫn cho N em` ↔ `Gửi cho N phụ huynh`) — không im lặng
+làm một việc khác với chữ trên nút.
+
+`common/zalo.py` đọc biến môi trường ở **mỗi lần gọi**, không nhớ ở tầng module:
+nhớ ở module nghĩa là đổi biến trên Render phải khởi động lại tiến trình, và
+người đổi sẽ không biết điều đó rồi kết luận "điền rồi mà vẫn không gửi được".
+
+Ghi vào `docs/VIEC_CUA_ANH.md` Phần 7: hai biến môi trường, bốn tên tham số của
+mẫu, và ba điều về ZNS. Kèm một số đo chặn thật: **0/4 học viên** đã điền
+`parent_phone` — có OA mà không có số thì vẫn không gửi được cho ai.
+
+### Cửa xác nhận nêu ĐÚNG SỐ người
+
+"Bạn có chắc không" thì ai cũng bấm Có. "Gửi tin Zalo tới 25 phụ huynh ngay bây
+giờ? Tin đã gửi không thu về được, và mỗi tin đều tính phí" thì người ta dừng
+lại một nhịp.
+
+### Lỗ "không có Đăng xuất" — lần thứ BA
+
+    06/09  màn Thi thử     → vá bằng AppShell
+    07/09  khu Vận hành    → vá bằng prop `khu`/`muc`
+    07/09  khu Giảng dạy   → lần này
+
+Khu Giảng dạy có NĂM trang mà **không có `layout.tsx` nào**. Đo trước khi sửa:
+`.topbar` = 0 ở cả bốn trang kiểm.
+
+Lỗ lặp vì mỗi khu mới đều bắt đầu bằng "một trang thôi, chưa cần khung". Ghi
+thẳng vào `KhungGiangDay.tsx`: **khu nào có nhiều hơn một trang thì cần khung
+chung**.
+
+Ba tab (Buổi học · Bài tập · Báo cáo phụ huynh) đọc `classId` từ
+`usePathname()` — `layout.tsx` của Next KHÔNG nhận `params` của trang con. Phép
+kiểm canh đúng chỗ ấy: bấm tab phải tới ĐÚNG lớp, không phải
+`/giang-day/bai-tap/undefined` (trang vẫn dựng, thanh vẫn đẹp, chỉ hỏng khi có
+người bấm).
+
+Thêm `@media print { .topbar { display: none } }`: tờ báo cáo IN RA GIẤY gửi
+phụ huynh, và `position: fixed` khi in còn bị một số trình duyệt lặp lại ở MỌI
+trang giấy.
+
+### Sửa một chú thích đã hết đúng
+
+`SessionsClient.tsx` viết "không có màn báo cáo cấp lớp; `bao-cao/` chỉ có cấp
+học viên" — hết đúng kể từ commit này. Sửa tại chỗ, kèm lý do: một chú thích
+hết đúng nguy hiểm ngang một dòng mã sai, vì người đọc sau tin nó mà không kiểm
+(RULES §20).
+
+### Kiểm
+
+`tests_parent_send.py` — **12 phép kiểm**, `zalo.gui_zns` thay bằng bản GIẢ
+(gọi Zalo thật trong bộ kiểm là gửi tin thật, mất phí thật, tới số thật). Phủ
+cả trạng thái CHƯA CÓ OA, vốn là trạng thái thật hôm nay.
+
+Đỏ trước cho khu Giảng dạy: gỡ `layout.tsx` → `.topbar` Expected 1, Received 0.
+
+Cổng: tsc 0 · eslint 0 · **e2e 30/30** (thêm `khu-giang-day.spec.ts`) ·
+**pytest teaching/ 86/86**.
