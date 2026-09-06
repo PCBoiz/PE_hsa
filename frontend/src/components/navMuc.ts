@@ -31,21 +31,38 @@ export type MucNav = {
   url: string;
   /** Câu giải thích, chỉ để đọc mã. */
   ghi_chu?: string;
+  /**
+   * Mục này nằm TRONG nhóm nào trên thanh (bỏ trống = đứng ở cấp một).
+   *
+   * Vì sao có nhóm (06/09/2026, anh Sơn chốt). Thanh từng có TÁM mục cấp một,
+   * mà năm trong số đó chỉ là `#hash` của cùng một trang dashboard — tức thanh
+   * đang trình bày các PHẦN của một màn như thể chúng là những nơi khác nhau.
+   * Đo được hệ quả: tám mục có nhãn cần 818px, không vừa laptop 1440, nên nhãn
+   * chữ phải biến mất và người mới nhìn vào tám biểu tượng trần.
+   */
+  nhom?: string;
+};
+
+/** Các nhóm trên thanh. `icon` dùng chung bộ với `MUC_NAV`. */
+export const NHOM_NAV: Record<string, { nhan: string; icon: string }> = {
+  hoc: { nhan: 'Học', icon: 'library' },
 };
 
 export const MUC_NAV: MucNav[] = [
   { trang: 'dashboard', nhan: 'Dashboard', icon: 'home', emoji: '🏠', url: '/dashboard' },
-  { trang: 'courses', nhan: 'Khóa học', icon: 'library', emoji: '📖', url: '/dashboard#courses' },
+  { trang: 'courses', nhan: 'Khóa học', icon: 'library', emoji: '📖', url: '/dashboard#courses', nhom: 'hoc' },
   {
     trang: 'plan', nhan: 'Kế hoạch', icon: 'calendar', emoji: '🗓️', url: '/dashboard#plan',
     ghi_chu: 'Vế System-Guided. Khác "Lộ trình" (danh mục tĩnh 26 lộ trình của '
       + 'bản cũ): đây là lịch của riêng học viên, sinh từ ngày thi + sức học + '
       + 'chủ đề đang yếu.',
+    nhom: 'hoc',
   },
-  { trang: 'roadmap', nhan: 'Lộ trình', icon: 'map', emoji: '🗺️', url: '/dashboard#roadmap' },
+  { trang: 'roadmap', nhan: 'Lộ trình', icon: 'map', emoji: '🗺️', url: '/dashboard#roadmap', nhom: 'hoc' },
   {
     trang: 'skills', nhan: 'Kỹ năng', icon: 'medal', emoji: '🏅', url: '/dashboard#skills',
     ghi_chu: 'Mục BỊ MẤT khỏi thanh chính cho tới 01/09/2026 — xem đầu tệp.',
+    nhom: 'hoc',
   },
   { trang: 'forum', nhan: 'Diễn đàn', icon: 'chat', emoji: '💬', url: '/dashboard#forum' },
   {

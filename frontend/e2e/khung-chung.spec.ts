@@ -63,7 +63,7 @@ test.describe('khung chung', () => {
       await expect(page.locator('.user-dropdown-item.danger')).toHaveCount(1);
       await expect(page.locator('#theme-toggle')).toHaveCount(1);
 
-      // Mỗi nút điều hướng phải có TÊN cho trình đọc màn hình: dưới 96rem
+      // Mỗi nút điều hướng phải có TÊN cho trình đọc màn hình: dưới 70rem
       // `shell.css` đặt `display:none` cho nhãn chữ, mà phần tử display:none
       // thì trình đọc màn hình cũng bỏ qua.
       const thieuTen = await page.evaluate(() => [...document.querySelectorAll('.topbar-nav .nav-btn')]
@@ -91,6 +91,59 @@ test.describe('khung chung', () => {
       await expect(page.locator('#user-dropdown')).toBeHidden();
     });
   }
+
+  /* ── NHÓM "Học" ─────────────────────────────────────────────────────────
+     Anh Sơn chốt 06/09/2026: gom năm mục `#hash` lại. Điều đáng ngờ nhất không
+     phải panel mở được, mà là BỐN NÚT CON có còn nằm trong DOM để
+     `main.js::navigate()` tô `.active` hay không — dựng lại panel bằng một
+     danh sách khác là trạng thái "đang ở đâu" biến mất, im lặng. */
+  test('nhóm "Học" gom bốn mục mà không cắt đứt hợp đồng với main.js', async ({ page }) => {
+    const vao = (await vaoBangThe(page)) || (await login(page));
+    test.skip(!vao, LY_DO_BO_QUA);
+
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
+    expect(page.url()).not.toContain('/login');
+
+    // Năm mục cấp một thay vì tám. TRỪ ba nút theo VAI: `dashboard.js` mở chúng
+    // cho tài khoản quản trị, đếm cả vào là đỏ oan — thước sai, không phải mã sai.
+    const capMot = await page.locator(
+      '.topbar-nav > .nav-btn:visible:not(#nav-teach):not(#nav-vanhanh):not(#nav-admin), .topbar-nav > .nav-nhom',
+    ).count();
+    expect(capMot, 'thanh còn 5 mục cấp một').toBe(5);
+
+    // Bốn nút con vẫn là NÚT THẬT, giữ nguyên `data-page`.
+    for (const dp of ['courses', 'plan', 'roadmap', 'skills']) {
+      await expect(page.locator(`.nav-nhom-panel .nav-btn[data-page="${dp}"]`)).toHaveCount(1);
+    }
+
+    await page.locator('.nav-nhom-nut').click();
+    await expect(page.locator('.nav-nhom-panel')).toBeVisible();
+
+    /* Panel KHÔNG được để `.topbar-nav` cắt. Vùng ấy có `overflow-x: auto` và
+       một `mask` — cả hai đều cắt con tràn ra ngoài, kể cả theo chiều DỌC. */
+    const hop = await page.locator('.nav-nhom-panel').boundingBox();
+    const thanh = await page.locator('.topbar').boundingBox();
+    expect(hop!.height, 'panel cao thật, không còn một vệt').toBeGreaterThan(120);
+    expect(hop!.y + hop!.height, 'panel thòi ra ngoài thanh')
+      .toBeGreaterThan(thanh!.y + thanh!.height);
+
+    // Chọn một mục con → điều hướng thật, và nút nhóm sáng lên nhờ `:has()`.
+    await page.locator('.nav-nhom-panel .nav-btn[data-page="skills"]').click();
+    await expect(page.locator('.nav-nhom-panel')).toBeHidden();
+    await expect(page.locator('.nav-btn[data-page="skills"].active')).toHaveCount(1);
+    await expect(page.locator('#page-skills.active')).toHaveCount(1);
+    const sang = await page.locator('.nav-nhom-nut').evaluate((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      return bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+    });
+    expect(sang, 'nút "Học" sáng khi mục con đang mở').toBe(true);
+
+    // Escape đóng panel.
+    await page.locator('.nav-nhom-nut').click();
+    await expect(page.locator('.nav-nhom-panel')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.nav-nhom-panel')).toBeHidden();
+  });
 
   test('đang làm bài thì thanh bị tước, và đồng hồ không cuộn mất', async ({ page }) => {
     const vao = (await vaoBangThe(page)) || (await login(page));

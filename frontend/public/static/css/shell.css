@@ -162,6 +162,75 @@
 }
 .nav-chevron { display: none; }
 
+/* ══ NHÓM TRÊN THANH ═════════════════════════════════════════════════════
+ * Anh Sơn chốt 06/09/2026: gom năm mục `#hash` lại. Thanh từng có TÁM mục cấp
+ * một, mà năm trong số đó chỉ là các PHẦN của cùng một trang dashboard — thanh
+ * trình bày chúng như thể là năm nơi khác nhau. Nay bốn mục học tập nằm trong
+ * nhóm "Học", còn Diễn đàn đứng riêng vì nó không phải chuyện học.
+ *
+ * BỐN NÚT CON VẪN LÀ NÚT THẬT trong DOM, chỉ nằm trong một panel. Đó không
+ * phải chi tiết vặt: `main.js::navigate()` tìm `.nav-btn[data-page=…]` để tô
+ * mục đang mở. Dựng lại panel bằng một danh sách khác là JS cũ không còn gì để
+ * tô, và trạng thái "đang ở đâu" biến mất — im lặng. */
+.nav-nhom { position: relative; display: flex; align-items: center; }
+.nav-nhom-mui { display: inline-flex; color: var(--t3); transition: transform 0.18s; }
+.nav-nhom.mo .nav-nhom-mui { transform: rotate(180deg); }
+
+/* Nút nhóm sáng lên khi MỘT MỤC CON đang mở — đọc thẳng từ `.active` mà
+   `main.js` vừa đặt, bằng `:has()`. Không dựng một state React thứ hai để theo
+   dõi cùng một sự thật: hai nguồn thì sẽ trôi, và bản của React sẽ không biết
+   khi người dùng đổi trang bằng đường khác (deep-link, nút Quay lại). */
+.nav-nhom:has(.nav-btn.active) > .nav-nhom-nut,
+.nav-nhom-nut.active {
+  background: var(--accent-soft); color: var(--brand-ink); font-weight: 700;
+}
+
+.nav-nhom-panel {
+  position: absolute; top: calc(100% + 0.4rem); left: 0;
+  min-width: 12rem; padding: 0.4rem;
+  display: flex; flex-direction: column; gap: 0.15rem;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 0.85rem; box-shadow: var(--shell-shadow);
+  z-index: 1000;
+  opacity: 0; visibility: hidden;
+  transform: translateY(-0.35rem) scale(0.97);
+  transform-origin: top left;
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+}
+.nav-nhom.mo .nav-nhom-panel { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+
+/* PANEL BỊ CHÍNH VÙNG CUỘN CẮT — bẫy dễ bỏ sót.
+   `.topbar-nav` có `overflow-x: auto` (để dãy dài cuộn được) và một `mask` làm
+   mờ mép. Cả hai đều CẮT phần tử con tràn ra ngoài, kể cả tràn theo chiều DỌC:
+   panel thả xuống sẽ mất gần hết, chỉ còn một vệt trong lòng thanh.
+   Khi có nhóm đang mở thì bỏ cả hai. Nay thanh chỉ còn năm mục nên gần như
+   không bao giờ phải cuộn cùng lúc với việc mở nhóm; và nếu có, thà thấy đủ
+   panel còn hơn thấy đủ vệt mờ. */
+.topbar-nav:has(.nav-nhom.mo) {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Trong panel thì mục nào cũng có nhãn chữ — kể cả ở khổ hẹp, nơi thanh chính
+   rút về biểu tượng trần. Panel có chỗ, nên không có lý do gì bắt người ta
+   đoán; đây chính là thứ nhóm đánh đổi lấy được. */
+.nav-nhom-panel .nav-btn {
+  width: 100%; justify-content: flex-start; min-width: 0;
+  padding: 0 0.7rem;
+}
+.nav-nhom-panel .nav-btn span:not(.nav-icon) { display: inline !important; }
+/* ...trừ mũi `›` mà `main.js::navigate` GẮN THÊM vào nút đang mở. Luật trên là
+   `span:not(.nav-icon)` nên nó vô tình bật lại cái mũi ấy — thấy trong ảnh chụp
+   06/09/2026: "Kỹ năng ›". Viên thuốc màu đã nói mục nào đang mở rồi. */
+.nav-nhom-panel .nav-chevron { display: none !important; }
+
+/* Gạch chân do `main.js` kéo theo `.nav-btn.active`. Khi mục đang mở nằm trong
+   panel ĐÓNG thì `getBoundingClientRect()` trả về số 0 và gạch chân co về một
+   chấm ở mép trái — trông như lỗi vẽ. Ẩn hẳn nó trong trường hợp ấy; viên
+   thuốc màu trên nút nhóm đã nói đủ "bạn đang ở trong đây". */
+.topbar-nav:has(.nav-nhom .nav-btn.active) .nav-underline { opacity: 0; }
+
 .nav-underline {
   position: absolute; bottom: 0; height: 2px;
   background: var(--brand); border-radius: 2px 2px 0 0;
@@ -426,29 +495,28 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 }
 
 /* NHÃN CHỮ CỦA ĐIỀU HƯỚNG — ngưỡng suy từ NỘI DUNG, không từ máy nào.
-   ĐO ĐƯỢC, không ước lượng: tám mục CÓ NHÃN cần 818px, và chỗ trống chỉ đủ
-   818px khi cửa sổ rộng khoảng 1512px. Dưới mốc đó nhãn không vừa — ở 1440px
-   thiếu 40px, ở 1366px thiếu 108px.
 
-   TÔI ĐÃ KHÔNG bóp chữ xuống nữa để nhét cho vừa. Cỡ chữ điều hướng đang là
-   0,83rem; kéo xuống 0,78rem thì đủ chỗ, nhưng đó là hạ chữ của thanh điều
-   hướng CHÍNH xuống dưới cỡ đọc thoải mái để che một vấn đề khác.
+   ĐO LẠI SAU KHI GOM NHÓM (06/09/2026). Bản trước ghi 96rem, vì lúc đó thanh
+   có TÁM mục cấp một và dãy có nhãn cần 818px — không vừa laptop 1440. Nay
+   năm mục `#hash` đã gom vào nhóm "Học", thanh còn năm mục, và dãy có nhãn chỉ
+   cần 458–507px. Đo trực tiếp: ở 1152px cần 458 / có 502 (vừa, còn dư); dưới
+   ~1120px thì hết chỗ. Nên 70rem.
 
-   Vấn đề khác ấy: thanh có TÁM mục cấp một, mà năm trong số đó
-   (Khóa học, Kế hoạch, Lộ trình, Kỹ năng, Diễn đàn) chỉ là `#hash` của cùng
-   một trang dashboard. Tám mục cấp một không vừa một laptop 1440 — và đó là
-   câu hỏi về cấu trúc thông tin, không phải về CSS. Đang chờ anh Sơn chốt. Dưới mốc đó chúng KHÔNG vừa, và không công thức co giãn
-   nào cứu được: thu nhỏ dần thì tới lúc chữ đứt giữa từ ("Dashb…"), để nguyên
-   thì phải kéo ngang mới thấy mục thứ ba (đo 06/09/2026 ở 768px: nhìn thấy 184
-   trong 718px cần thiết — 2 trong 8 mục).
+   Đây chính là điều chú thích cũ đã dặn — "thêm/bớt một mục nav thì sửa đúng
+   một chỗ này" — và lần này nó đúng: đổi cấu trúc xong thì ngưỡng cũ thành sai,
+   phải đo lại chứ không để nguyên. Một con số đúng hôm qua mà không ai kiểm là
+   một con số sai im lặng.
+
    Ẩn hẳn một phần tử là THAY ĐỔI BỐ CỤC, thứ duy nhất `@media` nên dùng để
-   làm. 91rem không phải bề ngang của một cái máy nào — nó là chỗ NỘI DUNG NÀY
-   hết vừa, nên thêm/bớt một mục nav thì sửa đúng một chỗ này.
-   Nút vẫn giữ `aria-label` và `title` (AppShell.tsx): phần tử `display:none`
-   thì trình đọc màn hình cũng bỏ qua, nên thiếu hai thuộc tính ấy là nút mất
-   hẳn TÊN, chứ không phải chỉ mất chữ hiện ra. */
-@media (max-width: 96rem) {
-  .nav-btn span:not(.nav-icon) { display: none; }
+   làm. Nút vẫn giữ `aria-label` và `title` (AppShell.tsx): phần tử
+   `display:none` thì trình đọc màn hình cũng bỏ qua, nên thiếu hai thuộc tính
+   ấy là nút mất hẳn TÊN, chứ không phải chỉ mất chữ hiện ra. Còn trong panel
+   của nhóm thì nhãn LUÔN hiện — panel có chỗ. */
+@media (max-width: 70rem) {
+  /* `:not(.nav-nhom-mui)` — GIỮ LẠI MŨI của nhóm. Đo 06/09/2026: ở chế độ chỉ
+     biểu tượng, mũi bị ẩn theo và nút "Học" trông y hệt một mục thường; không
+     dấu hiệu nào nói nó MỞ RA thêm bốn mục. 11px đổi lấy điều đó là rẻ. */
+  .nav-btn span:not(.nav-icon):not(.nav-nhom-mui) { display: none; }
 }
 
 /* Mốc thứ hai, cũng là bố cục thật, không phải chỉnh dần kích thước.
@@ -457,13 +525,14 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
    thương hiệu rút về "PE×T". Cả hai đều là bỏ/đổi phần tử, không phải thu nhỏ
    dần — đó là lý do chúng cần một mốc còn mọi thứ khác thì không. */
 /* Tên thương hiệu rút gọn — ngưỡng RIÊNG, cũng suy từ nội dung.
-   "ProgrammingEdu × TopHSA" chiếm ~13rem. Khi tổng bề ngang xuống dưới ~52rem
-   thì 13rem ấy là thứ đắt nhất còn cắt được mà KHÔNG mất chức năng nào: "PE×T"
-   vẫn dẫn về trang chủ y như cũ, còn tên đầy đủ thì có mặt khắp nơi khác trong
-   sản phẩm. Đo 06/09/2026 ở 768px: tên đầy đủ chiếm 183px và đẩy dãy điều
-   hướng thiếu 69px; rút gọn xong thì dư chỗ. Tách khỏi mốc điện thoại bên dưới
-   vì đây là một quyết định khác, xảy ra ở một chỗ khác. */
-@media (max-width: 52rem) {
+   "ProgrammingEdu × TopHSA" chiếm ~183px. Nó là thứ đắt nhất còn cắt được mà
+   KHÔNG mất chức năng nào: "PE×T" vẫn dẫn về trang chủ y như cũ, còn tên đầy
+   đủ thì có mặt khắp nơi khác trong sản phẩm.
+   ĐO ĐỂ CHỌN MỐC (06/09/2026), không ước lượng: giữ tên đầy đủ thì ở 700px dãy
+   điều hướng thiếu 6px và ở 660px thiếu 43px; ở 768px thì còn dư. Nên 48rem.
+   Bản trước đặt 52rem — quá sớm, cắt tên khi vẫn còn chỗ. Tách khỏi mốc điện
+   thoại bên dưới vì đây là một quyết định khác, xảy ra ở một chỗ khác. */
+@media (max-width: 48rem) {
   .brand-full { display: none !important; }
   .brand-short { display: block !important; font-weight: 900 !important;
     font-size: clamp(0.95rem, 0.8rem + 1vw, 1.15rem); }
@@ -472,6 +541,11 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 @media (max-width: 36rem) {
   .search-wrap { display: none; }
   .topbar-right .shell-chia { display: none; }
+  /* Ẩn hẳn TÊN trên chip — ảnh đại diện đã đủ để nhận ra "đây là tôi", và tên
+     đầy đủ vẫn nằm nguyên trong menu thả xuống. Đo 06/09/2026 ở 390px: giữ tên
+     thì dãy điều hướng thiếu 28px và phải cuộn ngay từ mục thứ tư; bỏ tên là
+     vừa. Đây là đổi thứ ít giá trị nhất lấy thứ người ta dùng nhiều nhất. */
+  .user-chip .chip-name { display: none; }
   .user-chip .dropdown-icon { display: none; }
   .brand { flex-shrink: 1; min-width: 0; overflow: hidden; }
 

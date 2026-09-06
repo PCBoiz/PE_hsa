@@ -76,7 +76,17 @@ test('dashboard + các tab SPA hiển thị đủ, không tràn ngang', async ({
 
   // Topbar phải hiện và dùng được (nội dung "đầy đủ": nav/search/bell còn đó)
   await expect(page.locator('.topbar')).toBeVisible();
+
+  /* "Khóa học" NAY NẰM TRONG NHÓM "Học" (anh Sơn chốt 06/09/2026: gom năm mục
+     `#hash` lại). Nó vẫn là nút thật với `data-page` nguyên vẹn — hợp đồng với
+     `main.js::navigate()` — nhưng panel đóng thì nó `visibility: hidden`.
+     Nên kiểm ĐÚNG cái phải đúng: nút nhóm hiện ở cấp một, và MỞ nhóm ra thì
+     thấy mục con. Đổi thành `toHaveCount(1)` cho xanh là hạ phép kiểm xuống
+     chỗ nó không còn chứng minh gì — người dùng vẫn có thể không tới được. */
+  await expect(page.locator('#topbar-nav .nav-nhom-nut')).toBeVisible();
+  await page.locator('#topbar-nav .nav-nhom-nut').click();
   await expect(page.locator('#topbar-nav .nav-btn[data-page="courses"]')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   // main.js (legacy) nạp async sau khi React mount — chờ navigate() sẵn sàng
   await page.waitForFunction(() => typeof (window as unknown as { navigate?: unknown }).navigate === 'function', undefined, { timeout: 30_000 });

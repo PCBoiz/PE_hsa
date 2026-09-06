@@ -6,7 +6,7 @@ import { doiChuDe, useDangToi } from '@/lib/chuDe';
 import { goiLegacy } from '@/lib/goiLegacy';
 
 import { BieuTuong } from './bieuTuong';
-import { MUC_NAV } from './navMuc';
+import { MUC_NAV, NHOM_NAV } from './navMuc';
 
 /* ══════════════════════════════════════════════════════════════════════════
  * KHUNG CHUNG — một thanh trên cho MỌI màn.
@@ -80,6 +80,11 @@ export default function AppShell({
   const toi = useDangToi();
   const [moMenu, setMoMenu] = useState(false);
   const oMenu = useRef<HTMLDivElement>(null);
+  /* Nhóm nào đang mở trên thanh (`null` = không nhóm nào).
+     KHÁC menu người dùng ở chỗ: nhóm là UI của CHÍNH component này, không có
+     bản legacy nào tranh — nên nó tự giữ trạng thái ở mọi chế độ. */
+  const [moNhom, setMoNhom] = useState<string | null>(null);
+  const oNav = useRef<HTMLElement>(null);
 
   /* Bấm ra ngoài và phím Escape — CHỈ ở chế độ React. Trên trang legacy,
      `dashboard.js` đã gắn đúng hai hành vi này lên `document`; gắn thêm một bộ
@@ -97,6 +102,24 @@ export default function AppShell({
       document.removeEventListener('keydown', esc);
     };
   }, [dieuKhien, moMenu]);
+
+  /* Bấm ra ngoài và Escape thì đóng nhóm. Áp dụng cho MỌI chế độ: đây là menu
+     do component này dựng, không phải của `dashboard.js`, nên không có ai khác
+     đóng hộ. Một menu chỉ đóng được bằng cách bấm đúng vào nút vừa mở nó là
+     một cái bẫy — người ta bấm ra chỗ khác và nó vẫn treo đó. */
+  useEffect(() => {
+    if (!moNhom) return;
+    const ngoai = (e: MouseEvent) => {
+      if (oNav.current && !oNav.current.contains(e.target as Node)) setMoNhom(null);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoNhom(null); };
+    document.addEventListener('click', ngoai);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('click', ngoai);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [moNhom]);
 
   const doiTheme = useCallback(() => {
     // Trang legacy: gọi hàm của main.js để nó cũng cập nhật những gì nó giữ.
@@ -181,33 +204,73 @@ export default function AppShell({
   const dangMo = (m: (typeof MUC_NAV)[number]) =>
     (m.trang != null && m.trang === trang) || m.url === trang;
 
+  /* Một mục điều hướng — dùng CHUNG cho mục ở cấp một và mục nằm trong nhóm.
+     Phải là cùng một hàm dựng: hai bản chép tay của cùng một nút là đúng thứ
+     phiên làm việc này đi dọn (ba thanh điều hướng, ba bản `.nav-btn`). */
+  const nutMuc = (m: (typeof MUC_NAV)[number]) => (
+    <button
+      key={m.nhan}
+      type="button"
+      className={'nav-btn' + (dangMo(m) ? ' active' : '')}
+      /* `data-page` là hợp đồng với `main.js::navigate()`: nó tìm
+         `.nav-btn[data-page='…']` để tô mục đang mở và kéo gạch chân. ĐÂY là
+         lý do bốn mục trong nhóm vẫn là NÚT THẬT nằm trong DOM chứ không phải
+         một danh sách dựng lại — gỡ chúng ra là main.js không còn gì để tô. */
+      {...(m.trang ? { 'data-page': m.trang } : {})}
+      {...(dangMo(m) ? { 'aria-current': 'page' as const } : {})}
+      /* `aria-label` và `title` BẮT BUỘC: dưới 96rem `shell.css` đặt
+         `display: none` cho nhãn chữ, mà phần tử `display:none` thì trình đọc
+         màn hình cũng bỏ qua — nút sẽ KHÔNG CÒN TÊN nào. `title` lo cho người
+         dùng chuột: rê lên một biểu tượng lạ thì hiện chữ. */
+      aria-label={m.nhan}
+      title={m.nhan}
+      onClick={() => { setMoNhom(null); di(m); }}
+    >
+      <span className="nav-icon"><BieuTuong ten={m.icon} co={17} /></span>
+      <span>{m.nhan}</span>
+    </button>
+  );
+
+  /* Dựng danh sách hiển thị: mục có `nhom` được thu vào panel của nhóm, và
+     nhóm xuất hiện ĐÚNG chỗ mục đầu tiên của nó — thứ tự trong `navMuc.ts`
+     vẫn là thứ tự người dùng thấy. */
+  const daVe = new Set<string>();
+  const dayNav = MUC_NAV.flatMap((m) => {
+    if (!m.nhom) return [nutMuc(m)];
+    if (daVe.has(m.nhom)) return [];
+    daVe.add(m.nhom);
+    const khoa = m.nhom;
+    const nhomTin = NHOM_NAV[khoa];
+    const con = MUC_NAV.filter((x) => x.nhom === khoa);
+    const dangXem = con.some(dangMo);
+    return [(
+      <div className={'nav-nhom' + (moNhom === khoa ? ' mo' : '')} key={'nhom-' + khoa}>
+        <button
+          type="button"
+          className={'nav-btn nav-nhom-nut' + (dangXem ? ' active' : '')}
+          aria-haspopup="true"
+          aria-expanded={moNhom === khoa}
+          aria-label={nhomTin.nhan}
+          title={nhomTin.nhan}
+          onClick={() => setMoNhom((v) => (v === khoa ? null : khoa))}
+        >
+          <span className="nav-icon"><BieuTuong ten={nhomTin.icon} co={17} /></span>
+          <span>{nhomTin.nhan}</span>
+          <span className="nav-nhom-mui"><BieuTuong ten="chevron-down" co={11} /></span>
+        </button>
+        <div className="nav-nhom-panel" role="menu" aria-label={nhomTin.nhan}>
+          {con.map(nutMuc)}
+        </div>
+      </div>
+    )];
+  });
+
   return (
     <div className="topbar">
       <div className="topbar-left">{thuongHieu}</div>
 
-      <nav className="topbar-nav" role="navigation" aria-label="Điều hướng chính" id="topbar-nav">
-        {MUC_NAV.map((m) => (
-          <button
-            key={m.nhan}
-            type="button"
-            className={'nav-btn' + (dangMo(m) ? ' active' : '')}
-            /* `data-page` là hợp đồng với `main.js::navigate()`: nó tìm
-               `.nav-btn[data-page='…']` để tô mục đang mở và kéo gạch chân. */
-            {...(m.trang ? { 'data-page': m.trang } : {})}
-            {...(dangMo(m) ? { 'aria-current': 'page' as const } : {})}
-            /* `aria-label` và `title` là BẮT BUỘC, không phải trang trí: dưới
-               1150px `shell.css` đặt `display: none` cho nhãn chữ, mà phần tử
-               bị `display:none` thì trình đọc màn hình cũng bỏ qua — nút sẽ
-               KHÔNG CÒN TÊN nào cả. `title` lo nốt cho người dùng chuột: rê lên
-               một biểu tượng lạ thì hiện chữ. */
-            aria-label={m.nhan}
-            title={m.nhan}
-            onClick={() => di(m)}
-          >
-            <span className="nav-icon"><BieuTuong ten={m.icon} co={17} /></span>
-            <span>{m.nhan}</span>
-          </button>
-        ))}
+      <nav className="topbar-nav" role="navigation" aria-label="Điều hướng chính" id="topbar-nav" ref={oNav}>
+        {dayNav}
 
         {/* Ba mục dưới do `dashboard.js` bật/tắt theo VAI qua `id` — nên chúng
             không nằm trong `navMuc.ts`, và chỉ có nghĩa ở trang có main.js.
