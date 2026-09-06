@@ -1,5 +1,6 @@
 import { Card, CardHead } from '@/components/ui';
 import { VAI_TRO, VIEC, cacNhom, vaiLamDuoc } from '@/lib/quyenVai';
+import SoDoVaiTro from './SoDoVaiTro';
 
 /**
  * "Ai làm được gì" — bảng quyền, nhìn thấy được.
@@ -43,6 +44,17 @@ export default function VaiTroPage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* HÌNH trước BẢNG. Người mở trang này lần đầu cần biết hệ thống có
+          HÌNH DẠNG gì trước khi tra từng ô — và trong buổi họp thì hình là
+          thứ chỉ tay vào được, bảng là thứ tra sau. */}
+      <Card>
+        <CardHead
+          title="Hình dạng của hệ thống quyền"
+          hint="Bốn lớp quyền lồng khít vào nhau; biên tập nội dung đứng ở trục khác. Hình này SUY RA từ cùng dữ liệu với bảng dưới — không vẽ tay, nên không lệch được."
+        />
+        <SoDoVaiTro />
       </Card>
 
       {cacNhom().map((nhom) => (

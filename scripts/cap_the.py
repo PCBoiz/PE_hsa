@@ -55,6 +55,23 @@ import sys
 from pathlib import Path
 
 GOC = Path(__file__).resolve().parent.parent
+
+# GIỮ thư mục người dùng ĐANG ĐỨNG, trước khi Django bắt ta rời khỏi nó.
+#
+# `os.chdir` ngay dưới đây là bắt buộc để `django.setup()` tìm được cấu hình.
+# Nhưng nó cũng làm mọi đường dẫn TƯƠNG ĐỐI ở phần dưới trỏ sang `backend/`.
+#
+# Hậu quả đã xảy ra thật (07/09/2026): chạy
+#     python scripts/cap_the.py --id 7 --ra .the/tokens_ad.json
+# từ gốc repo thì thẻ rơi vào `backend/.the/tokens_ad.json`, còn `.the/` ở gốc
+# — nơi mọi bộ đo đọc — giữ nguyên thẻ CŨ. Kịch bản vẫn in "Đã cấp thẻ" và
+# "Ghi vào: .the	okens_ad.json", nên không có dấu hiệu nào cả. Ba mươi phút
+# sau thẻ cũ hết hạn và các bộ đo lặng lẽ đo màn ĐĂNG NHẬP thay vì trang thật.
+#
+# Cùng đúng một họ với bẫy `/login` trong `do_hieu_nang.mjs`: một công cụ báo
+# thành công trong khi việc nó làm rơi ra chỗ khác.
+CWD_GOI = Path.cwd()
+
 sys.path.insert(0, str(GOC / 'backend'))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 os.chdir(GOC / 'backend')
@@ -109,7 +126,12 @@ def main():
         # `AccessToken` không mang BlacklistMixin → chỉ ký, không chạm CSDL.
         the = {'access': str(AccessToken.for_user(nguoi))}
 
+    # Giải đường dẫn theo thư mục NGƯỜI DÙNG đứng lúc gọi, không theo
+    # `backend/` mà `os.chdir` ở trên vừa đưa ta tới. Đường dẫn tuyệt đối thì
+    # `CWD_GOI / ra` trả về chính nó, nên nhánh này an toàn cho cả hai kiểu.
     ra = Path(a.ra)
+    if not ra.is_absolute():
+        ra = (CWD_GOI / ra).resolve()
     ra.parent.mkdir(parents=True, exist_ok=True)
     ra.write_text(json.dumps(the), encoding='utf-8')
 
@@ -118,7 +140,7 @@ def main():
           % (row['id'], row['name'], row['role'],
              ' — kèm refresh' if a.co_refresh else ' — access-only, không ghi CSDL'))
     print('Thẻ access sống 30 phút; hết hạn thì chạy lại lệnh này.')
-    print('Ghi vào: %s' % ra)
+    print('Ghi vào: %s' % ra)  # tuyệt đối — xem chú thích ở CWD_GOI
     print('Đo:  cd scripts && PE_TOKENS="%s" node do_giao_dien.mjs' % ra)
 
 

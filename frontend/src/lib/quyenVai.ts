@@ -275,3 +275,123 @@ export function vaiLamDuoc(v: Viec): readonly string[] {
 export function cacNhom(): string[] {
   return [...new Set(VIEC.map((v) => v.nhom))];
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUY RA HÌNH DẠNG CỦA HỆ THỐNG QUYỀN, ĐỂ VẼ ĐƯỢC
+
+   ── VÌ SAO (07/09/2026) ────────────────────────────────────────────────────
+
+   Bảng ô vuông ở `/quan-tri/vai-tro` trả lời đúng câu "vai X làm được việc Y
+   không". Nhưng nó KHÔNG nói được điều quan trọng hơn: sáu lớp quyền kia
+   **lồng vào nhau**. Đếm thật trên chính dữ liệu ở trên:
+
+       IsAdminRole            {QT}
+       IsAdminOrAcademic      {QT, HV}              ⊃ IsAdminRole
+       IsSeniorTeachingStaff  {QT, HV, GV}          ⊃ IsAdminOrAcademic
+       IsTeachingStaff        {QT, HV, GV, TG}      ⊃ IsSeniorTeachingStaff
+
+       IsContentEditor        {QT, BT}              ⊄ và ⊅ ba lớp giữa
+
+   Tức bốn lớp đầu là BỐN VÒNG ĐỒNG TÂM — mỗi vòng ra ngoài thì thêm đúng một
+   vai — còn biên tập nội dung là một NHÁNH RIÊNG chạm vào lõi quản trị. Nhìn
+   ra hình ấy thì trả lời được những câu bảng không trả lời nổi: "nới quyền cho
+   trợ giảng thì ai bị ảnh hưởng", "vai Quản lý sắp thêm sẽ nằm ở vòng nào".
+
+   ── VÌ SAO PHẢI SUY RA CHỨ KHÔNG VẼ TAY ───────────────────────────────────
+
+   Vẽ tay bốn vòng là ghim một khẳng định vào hình ảnh. Hôm nay nó đúng; ngày
+   ai đó thêm một lớp quyền cắt ngang (ví dụ `{HV, GV}` — không có quản trị)
+   thì chuỗi gãy, mà HÌNH thì vẫn vẽ y như cũ và vẫn trông rất thuyết phục.
+
+   Nên hàm này TỰ TÌM chuỗi lồng nhau từ dữ liệu, và mọi lớp không xếp được
+   vào chuỗi đều bị đẩy sang `nhanh` — không có lớp nào bị bỏ im lặng. Trang
+   vẽ phải hiện `nhanh` ra; `e2e/unit/quyen-vai.test.mjs` kiểm rằng tổng số
+   lớp trong `vong` + `nhanh` đúng bằng số lớp đã khai.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+export type Vong = {
+  /** Lớp quyền mở ra ở vòng này. */
+  lopQuyen: string;
+  /** Vai MỚI được thêm so với vòng trong. Vòng lõi thì là toàn bộ vai của nó. */
+  vaiThem: readonly string[];
+  /** Tất cả vai qua được vòng này. */
+  vaiTatCa: readonly string[];
+  /** Số việc trong `VIEC` do lớp này chặn. 0 = lớp có khai nhưng chưa việc nào dùng. */
+  soViec: number;
+};
+
+export type SoDo = {
+  /** Từ LÕI ra ngoài. Vòng sau chứa trọn vòng trước. */
+  vong: readonly Vong[];
+  /** Lớp không xếp được vào chuỗi — trục khác. Phải được vẽ ra, không được giấu. */
+  nhanh: readonly Vong[];
+  /** Vai không qua được lớp quyền nào: đứng ngoài mọi vòng. */
+  vaiNgoai: readonly string[];
+};
+
+/** Đếm việc do một lớp quyền chặn. */
+function demViec(lop: string): number {
+  return VIEC.filter((v) => v.lopQuyen === lop).length;
+}
+
+/**
+ * Tìm hình dạng: chuỗi vòng lồng nhau DÀI NHẤT, phần còn lại là nhánh.
+ *
+ * Cách tìm: xếp mọi lớp theo số vai tăng dần, rồi đi từ hẹp nhất ra — lớp nào
+ * CHỨA TRỌN vòng đang đứng thì nối tiếp vào chuỗi, không thì thành nhánh.
+ *
+ * Lớp TRÙNG tập vai (`IsAdminRole` và `IsCourseOwner` đều là {quản trị}) gộp
+ * vào cùng một vòng chứ không dựng hai vòng chồng khít — hai vòng vẽ trùng
+ * nhau thì người xem tưởng có hai mức, mà thật ra chỉ có một.
+ */
+export function soDoVai(): SoDo {
+  const cac = Object.entries(VAI_CUA_LOP_QUYEN)
+    .map(([lop, vai]) => ({ lop, vai }))
+    .sort((a, b) => a.vai.length - b.vai.length);
+
+  const vong: Vong[] = [];
+  const nhanh: Vong[] = [];
+  let trong: readonly string[] = [];
+
+  for (const { lop, vai } of cac) {
+    const chuaTron = trong.every((r) => vai.includes(r));
+    const trungVongCuoi = vong.length > 0
+      && vai.length === vong[vong.length - 1].vaiTatCa.length
+      && chuaTron;
+
+    if (trungVongCuoi) {
+      // Cùng tập vai với vòng ngoài cùng: gộp nhãn, không dựng vòng mới.
+      const v = vong[vong.length - 1];
+      vong[vong.length - 1] = {
+        ...v,
+        lopQuyen: `${v.lopQuyen} · ${lop}`,
+        soViec: v.soViec + demViec(lop),
+      };
+      continue;
+    }
+
+    if (chuaTron) {
+      vong.push({
+        lopQuyen: lop,
+        vaiThem: vai.filter((r) => !trong.includes(r)),
+        vaiTatCa: vai,
+        soViec: demViec(lop),
+      });
+      trong = vai;
+    } else {
+      nhanh.push({ lopQuyen: lop, vaiThem: vai, vaiTatCa: vai, soViec: demViec(lop) });
+    }
+  }
+
+  const quaDuoc = new Set([...vong, ...nhanh].flatMap((v) => v.vaiTatCa));
+  return {
+    vong,
+    nhanh,
+    vaiNgoai: VAI_TRO.map((v) => v.ma).filter((m) => !quaDuoc.has(m)),
+  };
+}
+
+/** Nhãn tiếng Việt của một mã vai; trả lại chính mã nếu chưa khai (để lộ ra). */
+export function nhanVai(ma: string): string {
+  return VAI_TRO.find((v) => v.ma === ma)?.nhan ?? ma;
+}
