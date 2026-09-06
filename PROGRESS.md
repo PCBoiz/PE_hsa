@@ -13,9 +13,15 @@ Ghi lại sau **mỗi** task, không phải sau mỗi chặng.
 Start-Process D:\pe_hsa\backend\.venv\Scripts\python.exe `
   -ArgumentList "manage.py","runserver","9000","--noreload" `
   -WorkingDirectory D:\pe_hsa\backend -WindowStyle Hidden
-# Next 3100
-cd frontend && npx --yes pnpm@11.12.0 dev
+# Next 3100 — `next dev` mặc định bám 3000, PHẢI khai cổng, vì CORS của
+# Django và `baseURL` của Playwright đều ghi 3100.
+cd frontend && npx next dev -p 3100
 ```
+
+> `npx --yes pnpm@11.12.0 dev` (bản cũ của dòng trên) **không chạy được**:
+> 11.12.0 là bản LỖI, npm đánh dấu deprecated "This release is broken", gói
+> `@pnpm/exe` chỉ 16 KB / 11 tệp thay vì 18 MB / 451 tệp. Chính nó làm Vercel
+> chết ở bước `pnpm install` suốt bốn lần build (vá ở `747bc13`, 06/09/2026).
 
 **Phiên trình duyệt ĐÃ ĐĂNG NHẬP, không ghi CSDL** — bắt buộc cho mọi việc kiểm
 giao diện (xem `RULES.md` §1):
@@ -4319,3 +4325,71 @@ xanh (như thế là bỏ mất điều nó định chứng minh).
 
 Cổng: 0 tương phản · 0 chạm nhỏ · 0 tràn · 0 lỗi JS · tự kiểm 32/32 · 220 nút ·
 tsc 0 · eslint 0 · 17/17 unit · build 0 · **e2e 16/16**.
+
+---
+
+## 07/09/2026 — vòng hỏi trước khi làm, và T1: lộ trình hết bóp méo
+
+Anh Sơn: *"phần lộ trình vẫn bị bóp méo nhỏ đi rất khó chịu, và phần vận hành
+vẫn còn xấu, lỗi… nghiên cứu thêm phần tạo báo cáo tiến độ học như file PDF cho
+phụ huynh qua zalo (tự động hoá)… phân vai trò… Đặt câu hỏi trước khi thực hiện."*
+
+### Hỏi hai vòng (kỹ thuật "grilling"), tám quyết định đã chốt
+
+Ba dữ kiện đo được trước khi hỏi, vì hỏi thứ mình tự tra được là đẩy việc sang
+người khác:
+
+| Đo | Kết quả | Đổi gì |
+|---|---|---|
+| `questions_json` có nhãn chủ đề? | **Không** — chỉ `id/section/type/answer` | Bản PDF TopHSA (ma trận 9 đơn vị × 4 cấp độ + radar) **KHÔNG dựng được** từ dữ liệu hiện có |
+| Có trường phụ huynh? | **Không** — chỉ `users.phone` của chính học viên | ZNS chưa có số để gửi |
+| Dữ liệu production | 6 tài khoản · 4 học viên (2 có sđt) · 1 lớp · 8 lượt thi | Màn Vận hành đầy dấu `—` **không phải lỗi** — hệ thống thật sự chưa có dữ liệu |
+
+Chốt: (1) báo cáo **tiến độ học** từ dữ liệu thật, đồng thời thêm cột *đơn vị
+kiến thức* + *cấp độ* vào mẫu nhập đề để sau này đủ dữ liệu cho ma trận;
+(2) **ZNS gửi LINK** báo cáo; (3) làm **cơ chế** phân quyền ngay, nội dung điền
+khi có bảng của cô Hương; (4) Vận hành: vá lỗi **và** đổi trang đầu sang "hôm
+nay cần làm gì"; (5) hệ thống soạn sẵn, **người bấm gửi**; (6) thêm
+`parent_name`/`parent_phone`; (7) hướng dẫn **trong ứng dụng**, in được;
+(8) hiệu ứng mạnh chỉ ở trang giới thiệu.
+
+Việc của anh, không chặn tôi: **Zalo OA đã xác thực + duyệt mẫu tin ZNS**.
+
+### T1 — lộ trình rút gọn (xong)
+
+Nguyên nhân là ba lỗi chồng nhau, không phải một:
+
+1. `<svg preserveAspectRatio="none">` — nghĩa đen là *cho phép bóp méo*. viewBox
+   lấy từ `clientWidth/clientHeight` đúng khoảnh khắc vẽ, khung đổi cỡ sau đó là
+   hình kéo dãn lệch trục.
+2. `height: 560px` + `flex: 1` trong cột `align-self: stretch` → khung bị kéo
+   theo cột lịch bên cạnh. **Đo được: 2673px.**
+3. Sáu vị trí phần trăm cứng cho đúng 6 nút — nhưng HSA chỉ có **ba** khoá
+   (`hsa_quantitative`, `hsa_verbal`, `hsa_science`) và học viên ghi danh 1–2.
+   Chỗ trống là trường hợp **thường**, không phải hiếm.
+
+Bản mới không còn hệ toạ độ nào: các chặng là danh sách thật, chiều cao do nội
+dung quyết định, đường nối do CSS vẽ (`::after` trong đúng khoảng `gap`, nét
+liền cho chặng đã qua). Thêm thanh tiến độ đọc được bằng mắt — chiếc xe chạy
+trên đường cong không nói được đã đi bao xa. Nút thành `<a href>` thay
+`<div onclick>`: bàn phím đi tới được, không tốn dòng mã nào.
+
+**Đỏ trước, đo được:**
+
+    mã cũ:  khung 2673px · các chặng 61px  →  2612px trống thừa  + preserveAspectRatio
+    mã mới: khung  108px · các chặng 71px  →     2px (đệm đã trừ)
+
+**Thước đo này từng SAI, ghi lại để không ai dựng lại.** Bản đầu lấy
+`khung.firstElementChild` làm "nội dung". Trên mã cũ con đầu tiên là chính cái
+`<svg>` phủ kín khung (`position:absolute; inset:0`) — nên "nội dung" bằng đúng
+"khung", tỉ lệ ra 1.0, và phép kiểm **xanh trên chính đoạn mã nó phải bắt**. Nay
+nó đo hợp hình bao của các `.mini-rm-node` thật.
+
+Luật "không hardcode px" áp cho cả khối: bỏ `560px`, `460px`, `360px`, `320px`,
+`300px`, `max-width: 170px`, `width/height: 34px`, cột phải `280px` →
+`clamp(15rem, 12rem + 8vw, 21rem)`. Ba `@media` chỉnh-dần-kích-thước bị xoá
+hẳn — `clamp()` co giãn liên tục thì không còn gì để bù ở một mốc cụ thể. Giữ
+lại đúng `44px` (ngưỡng chạm Apple HIG) và viền `1.5px`: đó là quy định, không
+phải số tôi đo trên máy mình.
+
+Cổng: **e2e 18/18** (thêm `lo-trinh-rut-gon.spec.ts`, 2 phép kiểm).

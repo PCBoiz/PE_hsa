@@ -2394,16 +2394,34 @@ var _forumTextQ = '';
     window.setLbTab(type, btn);
   });
 
-  /* ─── Mini roadmap canvas ─── */
-  // Vẽ zigzag 6 node trong 1 canvas cố định (height 420, width theo container)
-  var POSITIONS = [
-    { x: 28, y: 14 },
-    { x: 72, y: 28 },
-    { x: 28, y: 44 },
-    { x: 72, y: 60 },
-    { x: 28, y: 76 },
-    { x: 72, y: 90 },
-  ];
+  /* ─── Lộ trình rút gọn ở Trang của tôi ──────────────────────────────────────
+   *
+   * ── VÌ SAO VIẾT LẠI (07/09/2026) ─────────────────────────────────────────
+   *
+   * Anh Sơn: "phần lộ trình vẫn bị bóp méo nhỏ đi rất khó chịu".
+   *
+   * Bản cũ vẽ zigzag 6 nút đặt TUYỆT ĐỐI theo phần trăm trên một khung cao
+   * CỨNG 560px, đường nối là `<svg preserveAspectRatio="none">` — nghĩa đen
+   * của thuộc tính ấy là "cho phép bóp méo". Ba lỗi chồng lên nhau:
+   *
+   *   1. viewBox lấy từ `clientWidth`/`clientHeight` ĐÚNG KHOẢNH KHẮC VẼ. Khung
+   *      đổi cỡ sau đó — xoay máy, đổi cỡ chữ hệ thống, thanh cuộn hiện ra —
+   *      là hình bị kéo dãn lệch trục. Vòng tròn thành bầu dục.
+   *   2. 560px là chiều cao cho ĐÚNG 6 nút. Nhưng HSA chỉ có BA khoá (đo
+   *      07/09/2026: hsa_quantitative, hsa_verbal, hsa_science) và học viên
+   *      ghi danh 1–2 khoá. Chỗ trống không phải trường hợp hiếm — nó là
+   *      trường hợp THƯỜNG. Một nút cao 54px ngồi giữa 560px là mảng trống
+   *      gấp mười lần chính nội dung.
+   *   3. `clientHeight` bằng 0 khi trang chưa xếp xong; bản cũ rơi về 320×420
+   *      rồi vẽ theo con số tưởng tượng ấy.
+   *
+   * Bản này KHÔNG có toạ độ nào. Các nút là một danh sách thật, chiều cao do
+   * NỘI DUNG quyết định, đường nối do CSS vẽ. Một khoá hay sáu khoá đều đúng —
+   * và không còn gì để bóp méo, vì không còn hệ toạ độ nào để kéo dãn.
+   *
+   * Nút cũng thành `<a href>` thay cho `<div onclick>`: bàn phím và trình đọc
+   * màn hình đi tới được, không cần thêm dòng mã nào.
+   */
 
   function classifyNode(c) {
     if (!c) return 'locked';
@@ -2411,6 +2429,12 @@ var _forumTextQ = '';
     if (p >= 100) return 'done';
     if (p > 0) return 'current';
     return 'locked';
+  }
+
+  function urlKhoa(c) {
+    return (window.COURSE_URLS && window.COURSE_URLS[c.id])
+      ? window.COURSE_URLS[c.id]
+      : '/lesson/' + c.id;
   }
 
   function renderMiniCanvas(courses) {
@@ -2433,64 +2457,41 @@ var _forumTextQ = '';
       return;
     }
 
-    // Pad thêm "khoá học tiếp theo" nếu có enrolled ít hơn 6
+    canvas.classList.remove('is-empty');
+
     var nodes = courses.slice(0, 6);
-    var svgW = canvas.clientWidth || 320;
-    var svgH = canvas.clientHeight || 420;
-
-    var svgPaths = '';
-    for (var i = 0; i < nodes.length - 1; i++) {
-      var a = POSITIONS[i], b = POSITIONS[i + 1];
-      var x1 = (a.x / 100) * svgW, y1 = (a.y / 100) * svgH;
-      var x2 = (b.x / 100) * svgW, y2 = (b.y / 100) * svgH;
-      // Đường cong Bezier đơn giản
-      var midX = (x1 + x2) / 2;
-      var path = 'M ' + x1 + ' ' + y1 + ' C ' + midX + ' ' + y1 + ', ' + midX + ' ' + y2 + ', ' + x2 + ' ' + y2;
-      var isActive = classifyNode(nodes[i]) === 'done' || classifyNode(nodes[i]) === 'current';
-      svgPaths += '<path id="mini-rm-path-' + i + '" class="mini-rm-arrow ' + (isActive ? 'mini-rm-arrow--solid' : '') + '" d="' + path + '"></path>';
-    }
-
-    // Truck animation: chạy từ current node đến next node. Tìm index current.
-    var currentIdx = -1;
+    var html = '';
     nodes.forEach(function (c, i) {
-      if (classifyNode(c) === 'current') currentIdx = i;
-    });
-
-    var html = '<svg class="mini-rm-arrows" viewBox="0 0 ' + svgW + ' ' + svgH + '" preserveAspectRatio="none">' + svgPaths;
-    if (currentIdx >= 0 && currentIdx < nodes.length - 1) {
-      html += '<g class="mini-rm-truck">' +
-              '<circle r="11" fill="#FCD34D" stroke="#F59E0B" stroke-width="2"/>' +
-              '<text x="0" y="5" text-anchor="middle" font-size="14">🚚</text>' +
-              '<animateMotion dur="6s" repeatCount="indefinite" rotate="auto">' +
-              '<mpath href="#mini-rm-path-' + currentIdx + '"/>' +
-              '</animateMotion>' +
-              '</g>';
-    }
-    html += '</svg>';
-    nodes.forEach(function (c, i) {
-      var pos = POSITIONS[i];
       var status = classifyNode(c);
       var lessons = (c.completedLessons != null ? c.completedLessons : 0) + '/' + (c.totalLessons || 0);
       var sub = status === 'done' ? '✓ Hoàn thành'
         : status === 'current' ? (c.progress || 0) + '% · ' + lessons
           : 'Bấm để bắt đầu';
-      var onClick = "window.location.href='" + (window.COURSE_URLS && window.COURSE_URLS[c.id]
-        ? window.COURSE_URLS[c.id]
-        : '/lesson/' + c.id) + "'";
+      // `aria-current` cho khoá đang học: trình đọc màn hình đọc "mục hiện
+      // tại" thay vì bắt người dùng suy ra từ màu nền.
       html +=
-        '<div class="mini-rm-node mini-rm-node--' + status + '"' +
-        ' style="left:' + pos.x + '%; top:' + pos.y + '%;"' +
-        ' onclick="' + onClick + '"' +
-        ' title="' + escHtml(c.title || '') + '">' +
-        '<div class="mini-rm-node-icon">' + escHtml(c.icon || '📘') + '</div>' +
-        '<div class="mini-rm-node-body">' +
-        '<div class="mini-rm-node-title">' + escHtml(c.title || 'Khóa học') + '</div>' +
-        '<div class="mini-rm-node-sub">' + escHtml(sub) + '</div>' +
-        '</div>' +
-        '</div>';
+        '<li class="mini-rm-chang mini-rm-chang--' + status + '">' +
+        '<a class="mini-rm-node mini-rm-node--' + status + '" href="' + escHtml(urlKhoa(c)) + '"' +
+        (status === 'current' ? ' aria-current="step"' : '') + '>' +
+        '<span class="mini-rm-node-icon" aria-hidden="true">' + escHtml(c.icon || '📘') + '</span>' +
+        '<span class="mini-rm-node-body">' +
+        '<span class="mini-rm-node-title">' + escHtml(c.title || 'Khóa học') + '</span>' +
+        '<span class="mini-rm-node-sub">' + escHtml(sub) + '</span>' +
+        // Thanh tiến độ mảnh dưới dòng phụ. Con số "11%" đã có ở dòng chữ,
+        // nhưng một tỉ lệ ĐỌC ĐƯỢC BẰNG MẮT là thứ bản cũ hoàn toàn thiếu —
+        // chiếc xe chạy trên đường cong không nói được đã đi bao xa. Nó nằm
+        // TRONG thẻ <a> để cả ô là một vùng bấm, không phải hai.
+        (status === 'locked' ? '' :
+          '<span class="mini-rm-thanh" aria-hidden="true">' +
+          '<span class="mini-rm-thanh-day" style="inline-size:' +
+          Math.max(0, Math.min(100, Number(c.progress || 0))) + '%"></span>' +
+          '</span>') +
+        '</span>' +
+        '</a>' +
+        '</li>';
     });
 
-    canvas.innerHTML = html;
+    canvas.innerHTML = '<ol class="mini-rm-duong">' + html + '</ol>';
   }
 
   function loadMiniRoadmap() {
