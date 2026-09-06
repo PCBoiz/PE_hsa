@@ -9,7 +9,7 @@ import PageStyles from '@/components/PageStyles';
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import RoadmapSection from '@/components/RoadmapSection';
-import Topbar from '@/components/Topbar';
+import AppShell from '@/components/AppShell';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 const W = () => window as any;
@@ -30,9 +30,13 @@ const SCRIPTS = [
 export default function DashboardPage() {
   return (
     <>
-      <PageStyles hrefs={["/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
+      <PageStyles hrefs={["/static/css/shell.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
       <title>ProgrammingEdu × TopHSA</title>
-      <Topbar />
+      {/* Khung chung — CÙNG component với màn khoá học và màn thi thử.
+          `spa`: trang này có main.js nên điều hướng bằng `navigate()`.
+          `dieuKhien="legacy"`: dashboard.js sở hữu menu người dùng và
+          chuông (kể cả bấm-ra-ngoài và phím Escape) — đừng dựng lại. */}
+      <AppShell trang="dashboard" spa dieuKhien="legacy" />
 
       <div id="main">
         {/* ── Dashboard ── */}

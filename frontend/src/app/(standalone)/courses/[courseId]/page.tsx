@@ -9,7 +9,7 @@
 // vì tổ hợp CSS khác (course_db_design.css đè 63 class trùng tên).
 
 import PageStyles from '@/components/PageStyles';
-import { MUC_NAV } from '@/components/navMuc';
+import AppShell from '@/components/AppShell';
 import { use, useEffect, useState } from 'react';
 
 import Chatbot from '@/components/Chatbot';
@@ -97,95 +97,23 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
       {/* theme.css ĐỨNG ĐẦU — chứa bộ token màu cho cả 2 theme. Thiếu nó thì
           var(--bg)/var(--card) vô định: ở theme tối body thành TRONG SUỐT
           (audit 2026-08-13). */}
-      <PageStyles hrefs={["/static/css/theme.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css","/static/css/a11y.css"]} />
+      <PageStyles hrefs={["/static/css/theme.css","/static/css/shell.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css","/static/css/a11y.css"]} />
       <title>{`${course.title} – ProgrammingEdu × TopHSA`}</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
       <div id="main">
-        {/* Topbar (bản riêng của course_detail.html — khác base.html) */}
-        <div className="topbar">
-          <div className="topbar-left">
-            <div className="brand brand-always" onClick={() => { window.location.href = '/dashboard'; }} style={{ cursor: 'pointer' }} title="Về trang chủ">
-              <div className="brand-title"><span className="brand-c1">ProgrammingEdu</span> <span className="brand-x">×</span> <span className="brand-c2">TopHSA</span></div>
-            </div>
-          </div>
+        {/* Khung chung — CÙNG component với dashboard và màn thi thử.
+            Trước 06/09/2026 chỗ này là BẢN DỰNG RIÊNG, và nó dùng EMOJI thay
+            biểu tượng (🔍 🌙 🔔 ▾ 🙋 ⚙️ 🚪) vì trang này cố ý không nạp
+            `icons.js`. Emoji do phông màu của HỆ ĐIỀU HÀNH vẽ nên không nhận
+            `currentColor` và mỗi máy một kiểu — hai thanh điều hướng của cùng
+            một sản phẩm không tài nào trông giống nhau.
 
-          {/* Danh sách mục nằm ở `components/navMuc.ts` — CÙNG nguồn với
-              `<Topbar />`. Bản dựng thì vẫn riêng (emoji thay `icons.js`,
-              `location.href` thay `navigate()`), vì trang này cố ý KHÔNG nạp
-              main.js. Nhưng phần sinh ra sự trôi là danh sách, không phải cách
-              dựng: nay thêm một mục là sửa đúng một chỗ. */}
-          <nav className="topbar-nav" role="navigation" aria-label="Main navigation">
-            {MUC_NAV.map((m) => (
-              <button
-                key={m.nhan}
-                className={'nav-btn' + (m.trang === 'courses' ? ' active' : '')}
-                onClick={m.trang === 'courses' ? undefined
-                  : () => { window.location.href = m.url; }}
-                aria-label={m.nhan}
-              >
-                <span className="nav-icon">{m.emoji}</span><span>{m.nhan}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="topbar-right">
-            <div className="search-wrap">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm khóa học..."
-                onKeyDown={(e) => {
-                  const v = e.currentTarget.value.trim();
-                  if (e.key === 'Enter' && v) window.location.href = '/dashboard?q=' + encodeURIComponent(v);
-                }}
-              />
-            </div>
-            <button className="theme-toggle-btn" id="theme-toggle" onClick={() => W().toggleTheme()} title="Đổi giao diện">🌙</button>
-            <div className="bell-wrap" id="bell-wrap">
-              <button className="bell-btn" id="bell-btn" onClick={() => W().toggleBellPanel()} aria-haspopup="true" aria-expanded="false" aria-label="Thông báo">
-                🔔<span className="bell-dot" id="bell-dot"></span>
-              </button>
-              <div className="bell-panel" id="bell-panel" role="dialog" aria-label="Thông báo">
-                <div className="bell-panel-header">
-                  <span className="bell-panel-title">🔔 Thông báo</span>
-                  <button className="bell-mark-all" onClick={() => W().markAllBellRead()}>Đánh dấu đã đọc</button>
-                </div>
-                <div className="bell-panel-body" id="bell-panel-body"></div>
-              </div>
-            </div>
-            <div className="user-chip-wrap" id="user-chip-wrap">
-              {/* <button> chứ không <div> — xem chú thích ở components/Topbar.tsx.
-                  Bản sao thứ hai của cùng khối này: sửa một chỗ mà bỏ chỗ kia thì
-                  người dùng bàn phím vẫn kẹt, chỉ là kẹt ở một trang khác. */}
-              <button type="button" className="user-chip" id="user-chip-btn" onClick={() => W().toggleUserMenu()} aria-haspopup="true" aria-expanded="false">
-                <img src="/static/images/avatar.svg" alt="avatar" />
-                <span className="chip-name">{userName}</span>
-                <span className="dropdown-icon" id="chip-arrow">▾</span>
-              </button>
-              <div className="user-dropdown" id="user-dropdown" role="menu">
-                <div className="user-dropdown-header">
-                  <img src="/static/images/avatar.svg" alt="avatar" className="udh-avatar" />
-                  <div>
-                    <div className="udh-name">{userName}</div>
-                    <div className="udh-role">Học viên</div>
-                  </div>
-                </div>
-                <div className="user-dropdown-divider"></div>
-                <button className="user-dropdown-item" onClick={() => { window.location.href = '/dashboard'; }} role="menuitem">
-                  <span className="udi-icon">🙋</span> Trang của tôi
-                </button>
-                <button className="user-dropdown-item" onClick={() => { window.location.href = '/dashboard#settings'; }} role="menuitem">
-                  <span className="udi-icon">⚙️</span> Cài đặt
-                </button>
-                <div className="user-dropdown-divider"></div>
-                <button className="user-dropdown-item danger" onClick={() => { window.location.href = '/auth/logout'; }} role="menuitem">
-                  <span className="udi-icon">🚪</span> Đăng xuất
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+            `spa={false}`: trang này không nạp main.js, nên điều hướng bằng
+            `location.href`. Nhưng `dieuKhien="legacy"` vì `course_detail.js`
+            CÓ định nghĩa `toggleUserMenu`/`toggleBellPanel`/`toggleTheme` —
+            hai trục khác nhau, xem chú thích ở AppShell.tsx. */}
+        <AppShell trang="courses" spa={false} dieuKhien="legacy" ten={userName} />
 
         {/* Page content */}
         <div className="page active" style={{ padding: 0 }}>

@@ -1,57 +1,29 @@
 'use client';
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback } from 'react';
+
+import { doiChuDe, useDangToi } from '@/lib/chuDe';
 
 /**
  * Nút đổi sáng/tối cho khu `(standalone)`.
  *
- * VÌ SAO CẦN MỘT BẢN RIÊNG. Nút của trang legacy nằm trong `Topbar.tsx` và gọi
- * `window.toggleTheme()` của `main.js`. Khu `(standalone)` cố ý KHÔNG nạp
- * main.js, nên suốt thời gian qua các màn quản trị, bài tập và đổi mật khẩu
- * **theo được chủ đề nhưng không đổi được** — giảng viên mở `/quan-tri/...` phải
- * quay về dashboard mới bật/tắt được bản tối. Đo 01/09/2026: `body.dark` áp
- * đúng ở cả 5 màn, `#theme-toggle` có ở 1.
+ * VÌ SAO CẦN MỘT BẢN RIÊNG. Khu này cố ý KHÔNG nạp `main.js`, nên suốt thời
+ * gian qua các màn quản trị, bài tập và đổi mật khẩu **theo được chủ đề nhưng
+ * không đổi được** — giảng viên mở `/quan-tri/...` phải quay về dashboard mới
+ * bật/tắt được bản tối. Đo 01/09/2026: `body.dark` áp đúng ở cả 5 màn,
+ * `#theme-toggle` có ở 1.
  *
- * LUẬT PHẢI GIỐNG HỆT `main.js::applyTheme`, gồm cả class `light`:
- * `lesson_db_design.css` viết theo lối tối-trước và bản sáng nằm sau
- * `body.light`, nên chỉ gỡ class `dark` là chưa đủ.
- *
- * Trạng thái đầu đọc từ DOM chứ không từ `localStorage`: layout đã đặt class
- * trước khi React chạy (script chống nháy màu), nên DOM là nguồn đã tính đủ cả
- * "chưa chọn thì theo hệ điều hành". Đọc lại `localStorage` ở đây là dựng lại
- * cùng phép suy ở chỗ thứ hai — và hai bản sẽ trôi.
- *
- * `useSyncExternalStore` chứ không `useState` + `useEffect`: DOM ở đây là một
- * kho NGOÀI React, và bản `useEffect` đặt state ngay lúc gắn — một vòng render
- * thừa, và eslint bắt đúng (`react-hooks/set-state-in-effect`). Bản này còn
- * được thêm một thứ: `MutationObserver` giữ nút KHỚP với chủ đề kể cả khi thứ
- * khác đổi nó (main.js trên trang legacy, hoặc một tab khác đã chuyển).
+ * PHẦN LOGIC ĐÃ RA `@/lib/chuDe` (06/09/2026). Cùng một phép logic từng nằm ở
+ * ba chỗ — `main.js`, `course_detail.js`, và tệp này — và khi khung điều hướng
+ * gộp về `AppShell` thì sắp có chỗ thứ tư. Ở đây nay chỉ còn phần HÌNH DẠNG
+ * (nút Tailwind của khu ERP); `AppShell` có hình dạng riêng của nó nhưng gọi
+ * đúng hai hàm này.
  */
-const dangKy = (goi: () => void) => {
-  const mo = new MutationObserver(goi);
-  mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  return () => mo.disconnect();
-};
-
-const docDOM = () => document.body.classList.contains('dark');
-/* Máy chủ không có `document`. Trả `false` để bản dựng sẵn khớp với nhánh
-   "sáng"; lượt đồng bộ đầu ở trình duyệt sẽ chỉnh lại nếu đang tối. */
-const docMayChu = () => false;
 
 export default function ThemeToggle({ className = '' }: { className?: string }) {
-  const toi = useSyncExternalStore(dangKy, docDOM, docMayChu);
+  const toi = useDangToi();
 
-  const doi = useCallback(() => {
-    const moi = !document.body.classList.contains('dark');
-    document.body.classList.toggle('dark', moi);
-    document.body.classList.toggle('light', !moi);
-    try {
-      localStorage.setItem('theme', moi ? 'dark' : 'light');
-    } catch {
-      /* chế độ riêng tư chặn ghi — vẫn đổi được cho phiên này */
-    }
-    // Không `setState`: `MutationObserver` ở trên thấy class đổi và tự đồng bộ.
-  }, []);
+  const doi = useCallback(() => doiChuDe(), []);
 
   return (
     <button

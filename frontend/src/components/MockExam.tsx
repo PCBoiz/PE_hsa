@@ -4,7 +4,7 @@
 // list → làm bài (bấm giờ, palette câu, MCQ/điền) → kết quả + phân tích hợp phần.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MUC_NAV } from '@/components/navMuc';
+import AppShell from '@/components/AppShell';
 
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
@@ -27,6 +27,11 @@ export default function MockExam() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [result, setResult] = useState<any>(null);
   const [loi, setLoi] = useState<string>('');
+  /* Tên cho chip người dùng ở thanh trên. Trang này trước đây không có chip
+     nên cũng không cần tên; nay có thì phải lấy thật — một chip hiện "—" là
+     một điều khiển nửa chết, và người dùng không biết mình đang đăng nhập bằng
+     tài khoản nào. */
+  const [ten, setTen] = useState<string | undefined>(undefined);
   const startRef = useRef(0);
   // Mốc hết giờ (ms từ epoch). Đặt cùng lúc với `startRef` khi mở đề.
   const hanRef = useRef(0);
@@ -48,6 +53,13 @@ export default function MockExam() {
         const d = await r.json();
         setExams(d.exams || []); setView('list');
       } catch { setExams([]); setView('list'); }
+      /* Tên người dùng — lời gọi RIÊNG, cố tình đặt SAU. Danh sách đề là thứ
+         người ta vào đây để xem; tên chỉ để hiện trên chip. Gộp vào cùng một
+         `Promise.all` là để một lỗi mạng ở chỗ phụ giữ chỗ chính lại. */
+      try {
+        const u = await apiFetch('/api/user');
+        if (u.ok) { const d = await u.json(); if (d?.name) setTen(d.name); }
+      } catch { /* không có tên thì chip hiện dấu gạch — không chặn việc thi */ }
     })();
   }, []);
 
@@ -158,32 +170,39 @@ export default function MockExam() {
   // ─────────── views ───────────
   return (
     <>
-      <PageStyles hrefs={['/static/css/theme.css', '/static/css/mock.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css', '/static/css/mock.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
       <title>Thi thử CBT — ProgrammingEdu × TopHSA</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
       <div className="mk-wrap">
-        <div className="mk-topbar">
-          <div className="mk-brand" onClick={() => (window.location.href = '/dashboard')}>
-            <span className="mk-c1">ProgrammingEdu</span> <span className="mk-x">×</span> <span className="mk-c2">TopHSA</span>
-          </div>
-          {/* Trang này trước đây KHÔNG có điều hướng — vào Thi thử là mất đường
-              về (audit 2026-08-14). Dashboard là SPA nên dùng deep-link #hash
-              (main.js đọc hash lúc khởi động) thay vì gọi navigate() vốn không
-              tồn tại ở trang này. */}
-          {/* BẢN SAO THỨ BA của thanh điều hướng, và nó thiếu nhiều nhất: chỉ
-              5 trong 8 mục (không có Kế hoạch, Kỹ năng, Bài tập). Nay đọc từ
-              `navMuc.ts` như hai bản kia. Vẫn dựng riêng vì màn này có chrome
-              của nó (`.mk-nav-link`, không icon) và không nạp main.js. */}
-          <nav className="mk-nav" aria-label="Điều hướng chính">
-            {MUC_NAV.map((m) => (m.nhan === 'Thi thử' ? (
-              <span className="mk-nav-link is-active" aria-current="page" key={m.nhan}>{m.nhan}</span>
-            ) : (
-              <a className="mk-nav-link" href={m.url} key={m.nhan}>{m.nhan}</a>
-            )))}
-          </nav>
-          <div className="mk-top-tag">Thi thử CBT</div>
-        </div>
+        {/* KHUNG CHUNG — cùng component với dashboard và màn chi tiết khoá.
+            Bản cũ ở đây là BẢN DỰNG THỨ BA (`.mk-topbar`, chữ trần, không biểu
+            tượng) và nó THIẾU chip người dùng: grep `user-chip|logout` trong
+            tệp này ra 0. Nghĩa là vào Thi thử là học viên mất luôn đường Đăng
+            xuất và nút đổi sáng/tối — không phải chuyện thẩm mỹ.
+
+            `dieuKhien="react"`: trang này không nạp main.js lẫn dashboard.js,
+            nên menu người dùng do chính AppShell giữ (kể cả bấm-ra-ngoài và
+            phím Escape). Chuông thì KHÔNG dựng — không có nguồn dữ liệu ở đây,
+            và một cái nút không ai nghe còn tệ hơn một cái nút vắng mặt.
+
+            Lúc ĐANG làm bài thì tước xuống chế độ `lam-bai`: bỏ hết điều hướng
+            để không ai bấm nhầm mà mất bài, và ĐỒNG HỒ chuyển lên thanh cố
+            định. Trước đây đồng hồ nằm trong thân trang nên cuộn xuống là mất
+            — đúng lúc thí sinh cần nhìn nó nhất. */}
+        {view === 'take' && exam ? (
+          <AppShell
+            cheDo="lam-bai"
+            nhan={exam.counts === false ? 'Lượt luyện · không tính điểm' : 'Đang làm bài'}
+            phai={
+              <div className={'mk-timer' + (timeLeft <= 60 ? ' low' : '')}>
+                <i className="fa-regular fa-clock"></i> {fmt(timeLeft)}
+              </div>
+            }
+          />
+        ) : (
+          <AppShell trang="/mock" spa={false} dieuKhien="react" ten={ten} />
+        )}
 
         {view === 'loading' && <div className="mk-loading"><div className="mk-spinner" /> Đang tải…</div>}
 
@@ -217,13 +236,10 @@ export default function MockExam() {
               <div className="mk-take-head">
                 <div className="mk-progress-txt">
                   Câu {cur + 1}/{exam.questions.length} · đã trả lời {answeredCount()}
-                  {/* Nói TRƯỚC khi làm, không đợi tới lúc nộp: biết mình đang
-                      luyện hay đang lấy điểm là thứ ảnh hưởng tới cách làm bài. */}
-                  {exam.counts === false && <span className="mk-tag-practice">Lượt luyện · không tính điểm</span>}
+                  {/* Nhãn "lượt luyện" nay nằm ở thanh trên — nói MỘT lần,
+                      và nói ở chỗ luôn nhìn thấy kể cả khi cuộn. */}
                 </div>
-                <div className={'mk-timer' + (timeLeft <= 60 ? ' low' : '')}>
-                  <i className="fa-regular fa-clock"></i> {fmt(timeLeft)}
-                </div>
+                {/* Đồng hồ nay ở thanh trên (cố định), xem AppShell phía trên. */}
               </div>
 
               <div className="mk-take-body">

@@ -27,30 +27,17 @@
 
 body { background: var(--mk-bg); }
 .mk-wrap { min-height: 100dvh; background: var(--mk-bg); color: var(--mk-t1);
+  /* Thanh chung là `position: fixed` (thanh cũ của trang này là `sticky`,
+     tức vẫn chiếm chỗ trong luồng). Không chừa chỗ thì dòng đầu của nội
+     dung nằm KHUẤT dưới thanh. */
+  padding-top: var(--topbar-h);
   font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif; }
 
-/* flex-wrap BẮT BUỘC: ở màn <=720px, .mk-nav được đặt width:100% để xuống
-   hàng, nhưng thanh cha không cho xuống hàng nên nav bị bóp còn 0px và 5 mục
-   điều hướng tràn ra NGOÀI mép phải màn hình. Thanh khi đó cao 306px và dính
-   trên đỉnh — chiếm 36% màn hình điện thoại suốt lúc học viên làm bài. */
-.mk-topbar {
-  flex-wrap: wrap; display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 28px; border-bottom: 1px solid var(--mk-bd); position: sticky; top: 0; z-index: 10;
-  /* NỀN THEO THEME, không cứng tối. Bản cũ ghi `rgba(7,9,15,.95)` cho cả hai
-     chế độ, nên ở nền sáng nó là một thanh gần đen trong khi chữ bên trong dùng
-     token của nền sáng (`--t3` = #675F79) — chữ tối trên thanh tối, đo được
-     3,03:1 ở liên kết điều hướng và 3,58–3,7:1 ở tên thương hiệu.
-     `color-mix` giữ được hiệu ứng mờ chồng lớp mà vẫn đổi theo theme. */
-  background: color-mix(in srgb, var(--mk-card) 95%, transparent);
-  backdrop-filter: blur(16px); }
-.mk-brand { font-weight: 800; font-size: .95rem; cursor: pointer; }
-/* Tên thương hiệu là CHỮ, nên dùng bản token dành cho chữ (`--brand-ink`,
-   `--success-ink`) chứ không dùng bản dành cho nền/viền — đo 01/09/2026, bản cũ
-   ra 3,7:1 và 3,58:1 ở cỡ 15px. */
-.mk-c1 { color: var(--brand-ink, #5B47D4); }
-.mk-c2 { color: var(--success-ink, #0E7C6B); }
-.mk-x { color: var(--mk-t3); }
-.mk-top-tag { font-size: 13px; color: var(--mk-violet); font-weight: 600; }
+/* THANH TRÊN ĐÃ CHUYỂN SANG `shell.css` (06/09/2026).
+   Trang này từng dựng thanh của riêng nó (`.mk-topbar`, `.mk-nav-link`, chữ
+   trần không biểu tượng) — bản dựng THỨ BA của cùng một thanh. Và nó thiếu chip
+   người dùng, nên vào Thi thử là mất đường Đăng xuất. Nay dùng chung `AppShell`
+   như mọi màn, kể cả chế độ tước gọn lúc đang làm bài. */
 
 .mk-loading { text-align: center; padding: 100px 0; color: var(--mk-t2); }
 .mk-spinner { width: 34px; height: 34px; border: 3px solid rgba(139,124,246,.25); border-top-color: var(--mk-violet);
@@ -84,9 +71,19 @@ body { background: var(--mk-bg); }
 .mk-take { max-width: 1080px; margin: 0 auto; padding: 26px 24px 60px; }
 .mk-take-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .mk-progress-txt { color: var(--mk-t2); font-size: 14px; }
-.mk-timer { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--mk-teal);
-  background: var(--mk-card); border: 1px solid var(--mk-bd); border-radius: 12px; padding: 8px 18px; }
-.mk-timer.low { color: #F87171; border-color: rgba(248,113,113,.5); animation: mkpulse 1s infinite; }
+/* Đồng hồ nay sống TRONG thanh trên cố định (trước đây nằm trong thân trang,
+   nên cuộn xuống câu 5 là mất — đúng lúc thí sinh cần nhìn nó nhất). Cỡ chữ và
+   đệm vì thế phải vừa thanh cao 56px, không phải vừa một khối trong trang.
+   `tabular-nums` giữ nguyên: chữ số phải thẳng cột, nếu không thì mỗi giây
+   trôi qua con số lại nhích ngang một chút. */
+.mk-timer { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--mk-teal); background: var(--mk-lift); border: 1px solid var(--mk-bd);
+  border-radius: 10px; padding: 7px 13px; display: flex; align-items: center; gap: 7px;
+  line-height: 1; white-space: nowrap; }
+/* `--danger` chứ không #F87171: bản cũ ghi cứng bản màu dành cho NỀN TỐI, nên ở
+   bộ sáng nó là hồng nhạt trên nền trắng — đúng lúc còn dưới một phút. */
+.mk-timer.low { color: var(--danger-ink); border-color: var(--danger);
+  animation: mkpulse 1s infinite; }
 @keyframes mkpulse { 50% { opacity: .55; } }
 
 .mk-take-body { display: grid; grid-template-columns: 1fr 240px; gap: 22px; align-items: start; }
@@ -159,36 +156,9 @@ body { background: var(--mk-bg); }
 
 /* Điều hướng trên trang Thi thử (audit 2026-08-14: trang này trước đây không
    có nav, vào là mất đường về). Dùng token nên đúng cả 2 theme. */
-.mk-topbar { gap: 16px; }
-.mk-nav { display: flex; align-items: center; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
-.mk-nav-link {
-  padding: 6px 12px; border-radius: 7px; text-decoration: none;
-  /* `--t2` chứ không `--t3`: đây là ĐIỀU HƯỚNG CHÍNH, không phải chú thích.
-     Ở cỡ 0,82rem (~13px) thì `--t3` chỉ vừa đủ trên nền thẻ và trượt ngay khi
-     thanh có nền mờ chồng lớp. */
-  font-size: 0.82rem; font-weight: 600; color: var(--t2, #94A3B8);
-  transition: background .15s, color .15s; white-space: nowrap;
-}
-.mk-nav-link:hover { background: var(--accent-soft); color: var(--t1, #E2E8F0); }
 /* `--accent` là bản dành cho NỀN/VIỀN; ở 13px nó được 4,2:1 trên thanh gần
    trắng. Mục đang mở là chữ, nên dùng `--brand-ink` (đo 01/09/2026). */
-.mk-nav-link.is-active { color: var(--brand-ink, #5B47D4); background: var(--accent-soft); }
 @media (max-width: 720px) {
-  .mk-nav { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
-  .mk-nav-link { padding: 5px 9px; font-size: 0.76rem; }
 }
 
 
-/* Ở màn hẹp, cho dãy điều hướng CUỘN NGANG thay vì xếp thành nhiều hàng: thanh
-   này `position: sticky` nên mỗi hàng thêm là một phần màn hình bị chiếm vĩnh
-   viễn trong suốt lúc học viên làm bài bấm giờ. */
-@media (max-width: 720px) {
-  .mk-nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .mk-nav::-webkit-scrollbar { display: none; }
-  .mk-nav > * { flex: 0 0 auto; }
-}

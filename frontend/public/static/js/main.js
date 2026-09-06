@@ -1976,8 +1976,18 @@ function applyTheme(isDark) {
   // 'light' cần cho chrome bài học (lesson_db_design.css viết dark-first, bản
   // sáng nằm sau body.light) — trước đây KHÔNG nơi nào set class này.
   document.body.classList.toggle("light", !isDark);
-  var btn = document.getElementById("theme-toggle");
-  if (btn) btn.textContent = isDark ? "☀️" : "🌙";
+  /* KHÔNG đụng vào nút nữa (vá 06/09/2026). Dòng cũ là
+       `btn.textContent = isDark ? "☀️" : "🌙"`
+     và nó XOÁ SẠCH ruột nút — kể cả biểu tượng SVG mà React vừa vẽ — rồi thay
+     bằng một emoji. Nghĩa là nút đổi chủ đề trên dashboard KHÔNG BAO GIỜ hiện
+     đúng biểu tượng của bộ thiết kế: mỗi lần áp chủ đề (gồm cả lúc trang vừa
+     mở) là SVG bị thổi bay. Emoji trong ảnh chụp không tới từ markup — nó tới
+     từ dòng đó. Emoji còn vẽ theo phông hệ điều hành nên mỗi máy một kiểu,
+     trong khi SVG ăn theo `currentColor` và giống nhau ở mọi máy.
+
+     Không thay bằng một thuộc tính đánh dấu nào cả: `body.dark` ĐÃ là nguồn sự
+     thật (script chống nháy màu đặt nó trước cả khi React chạy), nên `shell.css`
+     đọc thẳng chỗ đó. Dựng thêm một dấu thứ hai là dựng thêm một thứ sẽ trôi. */
 }
 
 function toggleTheme() {
@@ -2079,6 +2089,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var initActive = document.querySelector(".nav-btn.active");
     if (initActive) _updateNavUnderline(initActive);
   }
+
 });
 
 /* -- giaodien -- */

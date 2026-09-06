@@ -6,6 +6,9 @@
   var PATHS = {
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    /* Trăng — cặp với `sun` cho nút đổi chủ đề. Trước đây bộ này chỉ có
+       mặt trời, nên nút phải rơi về emoji 🌙 cho nửa còn lại. */
+    moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',

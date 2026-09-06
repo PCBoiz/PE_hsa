@@ -55,8 +55,8 @@ function prefersDarkTheme() {
   function applyTheme(isDark) {
     document.body.classList.toggle('dark', isDark);
     document.body.classList.toggle('light', !isDark);   // xem ghi chú ở main.js
-    var btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+    // Bản sao thứ hai của lỗi ghi-đè-emoji, đã gỡ — xem chú thích ở main.js.
+    // `body.dark` ở trên là đủ; shell.css chọn hiện mặt trời hay mặt trăng.
   }
   window.toggleTheme = function () {
     var isDark = !document.body.classList.contains('dark');

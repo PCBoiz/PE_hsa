@@ -1,0 +1,498 @@
+/* ============================================================================
+ * shell.css — KHUNG CHUNG của sản phẩm: thanh trên, điều hướng, tìm kiếm,
+ * chuông, menu người dùng. MỘT tệp, dùng cho MỌI màn.
+ *
+ * ── VÌ SAO TỆP NÀY RA ĐỜI (06/09/2026) ─────────────────────────────────────
+ *
+ * Trước đó thanh điều hướng có BA bản dựng khác nhau, và chỉ dùng chung mỗi
+ * cái danh sách mục (`navMuc.ts`):
+ *
+ *   · `Topbar.tsx`          — `.topbar`, biểu tượng SVG, có tìm kiếm/chuông/chip
+ *   · `courses/[courseId]`  — `.topbar`, nhưng biểu tượng là EMOJI 🔍🌙🔔▾
+ *   · `MockExam.tsx`        — `.mk-topbar`, chữ trần, KHÔNG có chip người dùng
+ *
+ * Hệ quả đo được, không phải chuyện thẩm mỹ: vào màn Thi thử là học viên mất
+ * luôn đường Đăng xuất và nút đổi sáng/tối (grep `user-chip|logout` trong
+ * MockExam.tsx = 0).
+ *
+ * ── VÌ SAO TÁCH KHỎI style.css ─────────────────────────────────────────────
+ *
+ * 88 luật của thanh vốn nằm trong `style.css`. Nhưng tệp ấy còn ghi
+ * `body { background: #F9FAFB }` cứng và một mục "Shared components" dùng bảng
+ * màu CHỈ-SÁNG (`#fff`, `#1F2937`, `#F3F4F6`). Nạp cả tệp vào /mock để lấy cái
+ * thanh là rước theo va chạm — đúng loại tai nạn `auth.css` đã gây ra một lần
+ * trên /dashboard (`.section-card` đè chữ trắng lên thẻ trắng, đo 1,16:1).
+ * Tách ra thì cái thanh đi được tới mọi trang mà không kéo theo gì.
+ *
+ * ── HỢP ĐỒNG VỚI JAVASCRIPT CŨ — ĐỪNG ĐỔI TÊN ──────────────────────────────
+ *
+ * `main.js` và `dashboard.js` bám thẳng vào các tên dưới đây. Đổi một cái là
+ * chết một tính năng ở nơi khác, và bản dựng sẽ KHÔNG báo lỗi:
+ *
+ *   #topbar-nav #nav-underline .nav-btn .nav-btn.active [data-page]
+ *   #search-wrap #search-input #search-suggestions
+ *   #bell-wrap #bell-btn #bell-dot #bell-panel #bell-panel-body
+ *   #user-chip-wrap #user-chip-btn #chip-name #udh-name #user-dropdown
+ *   #theme-toggle #nav-teach #nav-vanhanh #nav-admin
+ *
+ * ── LUẬT MÀU: KHÔNG MỘT MÃ HEX MỚI NÀO ─────────────────────────────────────
+ *
+ * Bản cũ trộn BA hệ màu trong một thanh: tím (thương hiệu), xanh dương
+ * `rgba(59,130,246,…)` của một thương hiệu đã chết (7 chỗ), và cam #F59E0B
+ * chẳng thuộc về đâu. Mục đang mở là CHỮ TÍM TRÊN VIÊN THUỐC XANH DƯƠNG.
+ *
+ * Và bản cũ viết cho nền TỐI rồi đem dùng cho cả hai bộ:
+ *   `rgba(255,255,255,.05)` làm nền khi rê chuột → nền sáng là TRẮNG TRÊN
+ *   TRẮNG, không thấy gì; `.bell-dot` viền `#07090F` → vòng ĐEN quanh chấm đỏ.
+ *
+ * Nay mọi lớp phủ dùng `color-mix` trên `--t1` (màu chữ chính). `--t1` tự đảo
+ * theo bộ màu, nên một luật chạy đúng ở CẢ HAI — thay vì hai luật sẽ trôi.
+ * ========================================================================== */
+
+/* Chiều cao thanh là TOKEN. Trước đây `50px` được ghim cứng ở 8 chỗ thuộc 3
+   tệp (style.css, dashboard.css, roadmap.css) — mỗi lần chỉnh là sót một chỗ,
+   và chỗ sót thì nội dung chui xuống dưới thanh. */
+:root, body {
+  /* CO GIÃN, không phải một con số. `clamp` cho thanh tự cao dần theo bề ngang
+     máy: chật thì 3,25rem, rộng thì 3,75rem. Ghim một số px là ghim đúng cái
+     màn hình mình đang ngồi đo. */
+  --topbar-h: clamp(3.25rem, 3rem + 1.1vw, 3.75rem);
+  /* Lớp phủ THEO CHỦ ĐỀ. Nền sáng: --t1 tối → phủ một lớp tối nhạt.
+     Nền tối:  --t1 sáng → phủ một lớp sáng nhạt. Một luật, hai bộ màu. */
+  --shell-hover: color-mix(in srgb, var(--t1) 7%, transparent);
+  --shell-press: color-mix(in srgb, var(--t1) 12%, transparent);
+  /* Bóng đổ cũng theo chủ đề: bản cũ ghi cứng rgba(0,0,0,.6) — hợp với nền tối,
+     nhưng trên nền sáng là một vệt xám nặng dưới mỗi panel. */
+  --shell-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--t1) 18%, transparent);
+}
+
+/* ══ Thanh trên ══════════════════════════════════════════════════════════ */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  height: var(--topbar-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0 1.125rem;
+  /* `color-mix` chứ không một hex ghi cứng: kính mờ phải thấy được nền trang
+     phía sau, mà nền trang thì đổi theo chủ đề. */
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  backdrop-filter: blur(1.25rem); -webkit-backdrop-filter: blur(1.25rem);
+  border-bottom: 1px solid var(--border);
+}
+.topbar > * { min-width: 0; }
+.topbar-left { display: flex; align-items: center; flex-shrink: 0; }
+
+/* ── Tên thương hiệu ── */
+.brand-always { display: flex !important; align-items: center; gap: 3px; }
+.brand { display: flex; align-items: center; }
+.brand .brand-title,
+.brand-always .brand-title {
+  font-weight: 800; letter-spacing: -0.02em; white-space: nowrap;
+  font-size: clamp(0.78rem, 0.62rem + 0.42vw, 0.95rem);
+}
+/* Bản `-ink` là bản dành cho CHỮ. Bản nền (`--brand` = #8B7CF6) đặt làm chữ
+   trên nền trắng chỉ được 3,32:1 — đã đo và đã vá hai lần trước đây, giữ đúng. */
+.brand-c1 { color: var(--brand-ink); }
+.brand-c2 { color: var(--success-ink); }
+.brand-x  { color: var(--t3); font-weight: 700; margin: 0 1px; }
+.brand-short { display: none; color: var(--brand-ink); }
+
+/* ══ Điều hướng ══════════════════════════════════════════════════════════ */
+/* CO ĐƯỢC VÀ CUỘN ĐƯỢC Ở MỌI KHỔ, không riêng điện thoại (audit 31/08/2026:
+   ở 1280px sau khi thêm một mục, giảng viên và quản trị viên còn thấy 0px của
+   chip người dùng — mất luôn đường Đăng xuất, mà `scrollWidth == innerWidth`
+   nên cũng không cuộn tới được).
+
+   `safe center`: căn giữa khi vừa, TỰ LÙI VỀ CĂN TRÁI khi tràn. Không có từ
+   khoá `safe` thì flexbox đẩy nội dung tràn ra CẢ HAI phía, mà `scrollLeft`
+   không âm được — phần tràn bên trái vĩnh viễn không cuộn tới. */
+.topbar-nav {
+  position: relative;
+  display: flex; flex-direction: row; align-items: center;
+  gap: 1px; flex: 1; padding: 0;
+  justify-content: safe center;
+  overflow-x: auto; scrollbar-width: none;
+  /* VỆT MỜ Ở MÉP. Dãy này cuộn ngang được, nhưng khi bị cắt thì mục cuối đứt
+     giữa chữ ("Thi th…") và trông y như giao diện vỡ — đo 06/09/2026 ở 1440px:
+     dãy cần 860px, chỉ có 744px. Thắt lại (bên dưới) gỡ được phần lớn, nhưng
+     tài khoản có thêm ba mục theo vai thì vẫn tràn. Vệt mờ nói cho mắt biết
+     "còn nữa, kéo sang" — thay vì để người ta tưởng nút bị hỏng.
+     Chỉ mờ khi THỰC SỰ tràn: `mask` bám vào chính vùng cuộn nên khi vừa khít
+     thì hai đầu mask nằm ngoài tầm nhìn và không ai thấy vệt nào. */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.875rem,
+    #000 calc(100% - 0.875rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 0.875rem,
+    #000 calc(100% - 0.875rem), transparent 100%);
+}
+.topbar-nav::-webkit-scrollbar { display: none; }
+
+.nav-btn {
+  display: flex; align-items: center; justify-content: center; gap: 0.4375rem;
+  /* 44px là SÀN vùng chạm (Apple HIG) — một NGƯỠNG CHUẨN, nên nó được phép
+     là px trong khi mọi kích thước khác ở tệp này là rem/clamp. Thanh cao
+     tối thiểu 3,25rem nên nút 44px luôn còn chỗ thở. */
+  min-height: 44px;
+  /* Đệm và cỡ chữ CO GIÃN theo bề ngang máy, không ghim số.
+     Trước đó tôi đi đo từng khổ (1440 thiếu 116px, 1280 thiếu 191px…) rồi ghim
+     một mốc `@media` cho mỗi lần thiếu. Cách ấy hỏng im lặng: con số chỉ đúng
+     với đúng cái màn hình, đúng độ dài tên người dùng và đúng số mục điều hướng
+     lúc tôi đo. Thêm một mục nav là mọi mốc sai hết.
+     `clamp` để trình duyệt tự chia — nó biết bề ngang thật, tôi thì không. */
+  padding: 0 clamp(0.4rem, 0.12rem + 0.55vw, 0.7rem);
+  border: none; border-radius: 0.6rem;
+  background: transparent; color: var(--t3);
+  font-weight: 600; white-space: nowrap;
+  font-size: clamp(0.72rem, 0.66rem + 0.16vw, 0.83rem);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
+}
+/* Lớp phủ THEO CHỦ ĐỀ (xem đầu tệp). Bản cũ dùng `rgba(255,255,255,.04)` — ở
+   bộ sáng đó là trắng trên trắng, tức rê chuột lên mục điều hướng KHÔNG có
+   phản hồi nào. Đây là một nửa của cảm giác "giao diện chết cứng". */
+.nav-btn:hover { background: var(--shell-hover); color: var(--t1); }
+.nav-btn:active { transform: scale(0.97); }
+.nav-btn.active {
+  background: var(--accent-soft);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+.nav-btn .nav-icon {
+  width: 1.125rem; height: 1.125rem; border-radius: 0.375rem; background: transparent;
+  font-size: 0.8125rem; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.nav-chevron { display: none; }
+
+.nav-underline {
+  position: absolute; bottom: 0; height: 2px;
+  background: var(--brand); border-radius: 2px 2px 0 0;
+  transition: left 0.25s cubic-bezier(.4,0,.2,1), width 0.25s cubic-bezier(.4,0,.2,1);
+}
+
+/* ══ Nhóm bên phải ═══════════════════════════════════════════════════════ */
+.topbar-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* Vạch phân cách trước cụm DANH TÍNH. Bản cũ xếp năm thứ cạnh nhau cùng một
+   trọng số nên mắt không biết dừng ở đâu; vạch này tách "công cụ" khỏi "bạn là
+   ai", tức phân cấp bằng hình chứ không bằng thêm màu. */
+.topbar-right .shell-chia {
+  width: 1px; height: 1.375rem; background: var(--border); flex-shrink: 0; margin: 0 2px;
+}
+
+/* ── Tìm kiếm ── */
+.search-wrap { position: relative; z-index: 30; }
+.search-wrap input {
+  /* Co theo bề ngang máy và tự nhường chỗ cho điều hướng. `min()` chứ không
+     một bề ngang cố định: ô tìm kiếm là việc PHỤ, nên nó phải là thứ nhường
+     chỗ trước, và nhường dần chứ không nhường theo bậc. */
+  width: min(10rem, 15vw); min-width: 6.5rem;
+  height: clamp(2.25rem, 2rem + 0.5vw, 2.5rem);
+  padding: 0 0.6rem 0 2rem;
+  border-radius: 0.6rem;
+  /* `--border-input` chứ không `--border`: WCAG 2.2 §1.4.11 đòi 3:1 cho ranh
+     giới của một ĐIỀU KHIỂN, và `--border` chồng alpha xong chỉ ra 1,23:1. */
+  border: 1px solid var(--border-input);
+  background: var(--card); color: var(--t1);
+  font-size: 0.8rem; outline: none;
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+}
+.search-wrap input::placeholder { color: var(--t3); }
+.search-wrap input:focus {
+  border-color: var(--brand);
+  background: var(--lift);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search-icon {
+  position: absolute; left: 0.6875rem; top: 50%; transform: translateY(-50%);
+  color: var(--t3); pointer-events: none; display: flex;
+}
+
+.search-suggestions {
+  position: absolute; top: calc(100% + 0.375rem); right: 0; width: 18.75rem;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 0.75rem; box-shadow: var(--shell-shadow);
+  padding: 0.5rem; z-index: 1000;
+}
+.search-suggestions.hidden { display: none; }
+.search-suggestions .suggestions-header {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--t3); padding: 0.375rem 0.5rem 0.25rem;
+}
+.search-suggestions .suggestions-row,
+.search-suggestions .suggestion-levels {
+  display: flex; flex-wrap: wrap; gap: 0.375rem; padding: 0 0.5rem 0.5rem;
+}
+
+/* ── Nút biểu tượng (đổi chủ đề, chuông) ── */
+.theme-toggle-btn,
+.bell-btn {
+  position: relative;
+  width: 44px; height: 44px;          /* sàn vùng chạm, xem .nav-btn */
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  background: var(--card); color: var(--t2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s, color 0.16s, transform 0.1s;
+}
+/* MỘT hành vi rê chuột cho cả hai nút. Bản cũ cho nút đổi chủ đề màu hổ phách
+   #F59E0B — một màu thứ ba không có trong bảng màu, chỉ vì biểu tượng là mặt
+   trời. Màu không nên nói "đây là mặt trời"; nó nên nói "bấm được". */
+.theme-toggle-btn:hover,
+.bell-btn:hover {
+  background: var(--lift); border-color: var(--border-input); color: var(--t1);
+}
+.theme-toggle-btn:active,
+.bell-btn:active { transform: scale(0.94); }
+
+/* Mặt trời / mặt trăng: CSS chọn, không phải JavaScript ghi đè.
+   `main.js::applyTheme` trước đây làm `btn.textContent = "☀️"`, tức thổi bay
+   SVG mà React vừa vẽ và thay bằng emoji — mỗi lần áp chủ đề, gồm cả lúc trang
+   vừa mở. Nay nút chứa CẢ HAI biểu tượng và `body.dark` quyết định hiện cái
+   nào. `body.dark` là nguồn sự thật đã có sẵn: script chống nháy màu đặt nó
+   trước cả khi React chạy, nên không có khoảnh khắc nào nút hiện sai.
+   Đang TỐI thì hiện mặt trời (bấm để sang sáng), và ngược lại. */
+.theme-toggle-btn .shell-ic-troi { display: none; }
+.theme-toggle-btn .shell-ic-trang { display: flex; }
+body.dark .theme-toggle-btn .shell-ic-troi { display: flex; }
+body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
+
+.bell-dot {
+  position: absolute; top: 0.5625rem; right: 0.5625rem;
+  width: 0.5rem; height: 0.5rem; border-radius: 50%;
+  background: var(--danger);
+  /* Viền phải là màu NỀN CỦA NÚT, không phải một hex tối ghim cứng (#07090F) —
+     ở bộ sáng cái viền ấy là một vòng đen quanh chấm đỏ. */
+  border: 1.5px solid var(--card);
+  animation: pulseDot 2s ease infinite;
+}
+.bell-dot.bell-dot-count {
+  width: auto; height: auto; min-width: 1rem;
+  top: 0.25rem; right: 0.25rem; padding: 1px 0.25rem;
+  font-size: 0.5938rem; font-weight: 800; line-height: 1.2;
+  color: #fff; text-align: center; border-radius: 62.4375rem;
+}
+
+/* ══ Panel thả xuống (chuông + người dùng) ═══════════════════════════════ */
+.bell-wrap, .user-chip-wrap { position: relative; }
+
+.bell-panel, .user-dropdown {
+  position: absolute; top: calc(100% + 0.5rem); right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  box-shadow: var(--shell-shadow);
+  z-index: 1000;
+  opacity: 0; visibility: hidden;
+  transform: translateY(-0.375rem) scale(0.97);
+  transform-origin: top right;
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+}
+.bell-panel { width: 20rem; overflow: hidden; }
+.user-dropdown { width: 11.875rem; padding: 0.5rem; }
+.bell-panel.open, .user-dropdown.open {
+  opacity: 1; visibility: visible; transform: translateY(0) scale(1);
+}
+
+.bell-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 0.875rem; border-bottom: 1px solid var(--border);
+}
+.bell-panel-title { font-size: 0.82rem; font-weight: 700; color: var(--t1); }
+.bell-mark-all {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 0.72rem; font-weight: 600; color: var(--t3);
+  padding: 0.25rem 0.375rem; border-radius: 0.375rem; transition: color 0.15s, background 0.15s;
+}
+.bell-mark-all:hover { color: var(--brand-ink); background: var(--accent-soft); }
+.bell-panel-body { max-height: 21.25rem; overflow-y: auto; }
+
+.bell-item {
+  display: flex; gap: 0.625rem; padding: 0.6875rem 0.875rem;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: background 0.15s;
+}
+.bell-item:last-child { border-bottom: none; }
+.bell-item:hover { background: var(--lift); }
+.bell-item.unread { background: var(--accent-soft); }
+.bell-item.unread:hover { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+.bell-item-icon {
+  width: 1.875rem; height: 1.875rem; border-radius: 0.5625rem; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lift); font-size: 0.875rem;
+}
+.bell-item.unread .bell-item-icon { background: var(--accent-soft); }
+.bell-item-body { flex: 1; min-width: 0; }
+.bell-item-text { font-size: 0.78rem; color: var(--t2); line-height: 1.45; }
+.bell-item-time { font-size: 0.68rem; color: var(--t3); margin-top: 3px; }
+.bell-unread-dot {
+  width: 0.4375rem; height: 0.4375rem; border-radius: 50%;
+  background: var(--brand); flex-shrink: 0; margin-top: 0.375rem;
+}
+.bell-empty { padding: 2.125rem 1.25rem; text-align: center; color: var(--t3); font-size: 0.78rem; }
+.bell-empty-icon { font-size: 1.875rem; margin-bottom: 0.625rem; }
+
+/* ── Chip người dùng ── */
+.user-chip {
+  display: flex; align-items: center; gap: 0.5rem;
+  height: 44px; padding: 0 0.625rem;
+  border-radius: 0.625rem; border: 1px solid var(--border);
+  background: var(--card); cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+}
+.user-chip:hover { background: var(--lift); border-color: var(--border-input); }
+/* Mở ra thì dùng màu THƯƠNG HIỆU, không phải xanh dương của thương hiệu cũ. */
+.user-chip.open { background: var(--accent-soft); border-color: var(--brand); }
+.chip-avatar {
+  width: 1.625rem; height: 1.625rem; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--brand), var(--purple));
+  color: #fff; font-size: 0.6875rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+/* course_detail dùng <img> trần trong chip (không có .chip-avatar) — SVG không
+   bị ràng kích thước sẽ phóng to nguyên bản đè lên cả thanh. */
+.user-chip > img { width: 1.625rem; height: 1.625rem; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.user-chip .chip-name { font-size: 0.8rem; font-weight: 600; color: var(--t1); }
+.user-chip .dropdown-icon { display: inline-flex; color: var(--t3); transition: transform 0.18s; }
+.user-chip.open .dropdown-icon { transform: rotate(180deg); }
+
+.user-dropdown-header { display: flex; align-items: center; gap: 0.625rem; padding: 0.625rem 0.625rem 0.75rem; }
+.udh-avatar { width: 2.375rem; height: 2.375rem; font-size: 0.875rem; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.udh-name {
+  font-size: 0.82rem; font-weight: 700; color: var(--t1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.udh-role { font-size: 0.7rem; color: var(--t3); margin-top: 2px; }
+.user-dropdown-divider { height: 1px; background: var(--border); margin: 0.25rem 0; }
+.user-dropdown-item {
+  display: flex; align-items: center; gap: 0.625rem; width: 100%;
+  min-height: 2.5rem; padding: 0 0.625rem;
+  border: none; border-radius: 0.5625rem; background: transparent;
+  color: var(--t2); font-size: 0.8rem; font-weight: 600;
+  text-align: left; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+/* Lại là lỗi trắng-trên-trắng: bản cũ `rgba(255,255,255,.05)` nghĩa là ở bộ
+   sáng, rê chuột lên "Đăng xuất" không có phản hồi nào. */
+.user-dropdown-item:hover { background: var(--shell-hover); color: var(--t1); }
+.user-dropdown-item.danger { color: var(--danger-ink); }
+.user-dropdown-item.danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.udi-icon { display: flex; flex-shrink: 0; }
+
+/* ══ CHẾ ĐỘ LÀM BÀI ══════════════════════════════════════════════════════
+ * Khi học viên ĐANG làm bài thi thử, thanh bị tước xuống còn tên sản phẩm và
+ * đồng hồ. Đây là CHỦ Ý, không phải thiếu sót: một cú bấm nhầm vào điều hướng
+ * giữa lúc thi là mất bài đang làm. Màn chọn đề và màn kết quả vẫn dùng thanh
+ * đầy đủ như mọi trang khác. */
+.topbar.shell-lam-bai { justify-content: space-between; gap: 0.75rem; }
+.shell-lam-bai-nhan {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--brand-ink);
+  padding: 0.3125rem 0.6875rem; border-radius: 62.4375rem; background: var(--accent-soft);
+  white-space: nowrap;
+}
+.shell-lam-bai-phai { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+
+/* ══ Tiêu điểm bàn phím ══════════════════════════════════════════════════
+ * `:focus-visible` chứ không `:focus`: chuột bấm thì không hiện vòng, bàn phím
+ * Tab thì hiện. Bản cũ không có luật nào — người dùng bàn phím đi qua thanh mà
+ * không biết mình đang ở nút nào. */
+.topbar :focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.625rem;
+}
+
+/* ══ CO GIÃN ═════════════════════════════════════════════════════════════
+ * KHÔNG ghim mốc pixel. Bản trước của tệp này đi đo từng khổ máy (1440 thiếu
+ * 116px, 1280 thiếu 191px, 1024 thiếu 447px…) rồi ghim một `@media` cho mỗi
+ * lần thiếu — bốn mốc chồng nhau. Cách ấy sai im lặng: mỗi con số chỉ đúng với
+ * đúng cái màn hình tôi ngồi đo, đúng độ dài tên người dùng lúc đó, và đúng số
+ * mục điều hướng lúc đó. Tài khoản quản trị có thêm ba mục là cả bốn mốc sai;
+ * thêm một mục vào `navMuc.ts` cũng thế. Và không có gì báo.
+ *
+ * Nay mọi kích thước là `clamp()`/`min()` theo `vw` và `rem`: trình duyệt biết
+ * bề ngang thật, tôi thì không. Còn phần KHÔNG chia được bằng công thức — dãy
+ * điều hướng dài hơn chỗ trống — thì để nó CUỘN, và vệt mờ ở mép nói cho mắt
+ * biết là còn nữa. Cuộn được thì mọi số mục đều dùng được; ghim mốc thì chỉ số
+ * mục hôm nay dùng được.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Tên trên chip co theo bề ngang máy, và tính bằng `ch` — đơn vị của CHỮ, nên
+   nó nói "khoảng chừng này ký tự" thay vì một số pixel. Tên ĐẦY ĐỦ vẫn nằm
+   nguyên trong menu thả xuống (`.udh-name`), chỗ người ta thật sự đọc nó. */
+.user-chip .chip-name {
+  max-width: clamp(0ch, 6vw, 9ch);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* NHÃN CHỮ CỦA ĐIỀU HƯỚNG — ngưỡng suy từ NỘI DUNG, không từ máy nào.
+   ĐO ĐƯỢC, không ước lượng: tám mục CÓ NHÃN cần 818px, và chỗ trống chỉ đủ
+   818px khi cửa sổ rộng khoảng 1512px. Dưới mốc đó nhãn không vừa — ở 1440px
+   thiếu 40px, ở 1366px thiếu 108px.
+
+   TÔI ĐÃ KHÔNG bóp chữ xuống nữa để nhét cho vừa. Cỡ chữ điều hướng đang là
+   0,83rem; kéo xuống 0,78rem thì đủ chỗ, nhưng đó là hạ chữ của thanh điều
+   hướng CHÍNH xuống dưới cỡ đọc thoải mái để che một vấn đề khác.
+
+   Vấn đề khác ấy: thanh có TÁM mục cấp một, mà năm trong số đó
+   (Khóa học, Kế hoạch, Lộ trình, Kỹ năng, Diễn đàn) chỉ là `#hash` của cùng
+   một trang dashboard. Tám mục cấp một không vừa một laptop 1440 — và đó là
+   câu hỏi về cấu trúc thông tin, không phải về CSS. Đang chờ anh Sơn chốt. Dưới mốc đó chúng KHÔNG vừa, và không công thức co giãn
+   nào cứu được: thu nhỏ dần thì tới lúc chữ đứt giữa từ ("Dashb…"), để nguyên
+   thì phải kéo ngang mới thấy mục thứ ba (đo 06/09/2026 ở 768px: nhìn thấy 184
+   trong 718px cần thiết — 2 trong 8 mục).
+   Ẩn hẳn một phần tử là THAY ĐỔI BỐ CỤC, thứ duy nhất `@media` nên dùng để
+   làm. 91rem không phải bề ngang của một cái máy nào — nó là chỗ NỘI DUNG NÀY
+   hết vừa, nên thêm/bớt một mục nav thì sửa đúng một chỗ này.
+   Nút vẫn giữ `aria-label` và `title` (AppShell.tsx): phần tử `display:none`
+   thì trình đọc màn hình cũng bỏ qua, nên thiếu hai thuộc tính ấy là nút mất
+   hẳn TÊN, chứ không phải chỉ mất chữ hiện ra. */
+@media (max-width: 96rem) {
+  .nav-btn span:not(.nav-icon) { display: none; }
+}
+
+/* Mốc thứ hai, cũng là bố cục thật, không phải chỉnh dần kích thước.
+   36rem ≈ ranh giới điện thoại. Ở đó ô tìm kiếm phải biến mất hẳn (một ô nhập
+   6,5rem cạnh tám mục điều hướng thì cả hai đều không dùng được), và tên
+   thương hiệu rút về "PE×T". Cả hai đều là bỏ/đổi phần tử, không phải thu nhỏ
+   dần — đó là lý do chúng cần một mốc còn mọi thứ khác thì không. */
+/* Tên thương hiệu rút gọn — ngưỡng RIÊNG, cũng suy từ nội dung.
+   "ProgrammingEdu × TopHSA" chiếm ~13rem. Khi tổng bề ngang xuống dưới ~52rem
+   thì 13rem ấy là thứ đắt nhất còn cắt được mà KHÔNG mất chức năng nào: "PE×T"
+   vẫn dẫn về trang chủ y như cũ, còn tên đầy đủ thì có mặt khắp nơi khác trong
+   sản phẩm. Đo 06/09/2026 ở 768px: tên đầy đủ chiếm 183px và đẩy dãy điều
+   hướng thiếu 69px; rút gọn xong thì dư chỗ. Tách khỏi mốc điện thoại bên dưới
+   vì đây là một quyết định khác, xảy ra ở một chỗ khác. */
+@media (max-width: 52rem) {
+  .brand-full { display: none !important; }
+  .brand-short { display: block !important; font-weight: 900 !important;
+    font-size: clamp(0.95rem, 0.8rem + 1vw, 1.15rem); }
+}
+
+@media (max-width: 36rem) {
+  .search-wrap { display: none; }
+  .topbar-right .shell-chia { display: none; }
+  .user-chip .dropdown-icon { display: none; }
+  .brand { flex-shrink: 1; min-width: 0; overflow: hidden; }
+
+  /* ĐÍCH CHẠM ĐỦ 44px CẢ HAI CHIỀU — đây là NGƯỠNG CHUẨN (Apple HIG), không
+     phải một con số tôi đo ra, nên nó được phép là px.
+     Đo 06/09/2026: khi ẩn nhãn chữ, các nút ra **36×44** — cao đủ, NGANG thiếu
+     8px. Lần vá trước tôi nâng CHIỀU CAO và số vi phạm không nhúc nhích, vì tôi
+     sửa chiều không hỏng: bộ đo bắt `width < 44 || height < 44`. Đọc luật của
+     thước trước khi vá thì đã không mất một lượt. */
+  .nav-btn { min-width: 44px; }
+  .user-chip { min-width: 44px; }
+  /* Bảng thông báo rộng theo màn hình, không theo một số cố định. */
+  .bell-panel { width: min(20rem, calc(100vw - 1.5rem)); right: -2.5rem; }
+}
+
+/* Tôn trọng lựa chọn của hệ điều hành: ai bật "giảm chuyển động" thì thanh
+   đứng yên hoàn toàn, kể cả gạch chân đang trượt. */
+@media (prefers-reduced-motion: reduce) {
+  .topbar *, .bell-panel, .user-dropdown, .nav-underline {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .nav-btn:active, .theme-toggle-btn:active, .bell-btn:active { transform: none; }
+}
