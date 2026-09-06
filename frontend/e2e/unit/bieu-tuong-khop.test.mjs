@@ -46,7 +46,12 @@ const check = (ten, ok, chiTiet = '') => {
 const doc = (duong) => {
   const s = readFileSync(duong, 'utf8');
   const ra = new Map();
-  for (const m of s.matchAll(/^\s*['"]?([a-z-]+)['"]?:\s*'(.*?)',?\s*$/gm)) ra.set(m[1], m[2]);
+  /* `[a-z0-9-]` chứ KHÔNG phải `[a-z-]`: tên có chữ số (`check-circle-2`)
+     thì regex cũ không khớp NỔI CẢ DÒNG, nên biểu tượng ấy vô hình với phép
+     kiểm — và phép kiểm vẫn báo "khớp". Đây là lần thứ hai đúng tệp này bị
+     một lớp ký tự quá hẹp làm mù: lần trước là `'?` không khớp dấu nháy kép
+     do JSON sinh ra. Bộ đếm dòng bên dưới là thứ bắt được cả hai. */
+  for (const m of s.matchAll(/^\s*['"]?([a-z0-9-]+)['"]?:\s*'(.*?)',?\s*$/gm)) ra.set(m[1], m[2]);
   return ra;
 };
 

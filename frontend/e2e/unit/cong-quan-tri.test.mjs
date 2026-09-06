@@ -163,7 +163,18 @@ check('`VAI_VAO_KHU` đúng bằng HỢP các vai vào được ít nhất một
 const LAYOUT_KHU = doc(KHU, 'layout.tsx');
 check('layout khu dùng `VAI_VAO_KHU` làm cổng',
   /duocVao\(kq\.vai,\s*VAI_VAO_KHU\)/.test(LAYOUT_KHU));
-check('layout khu chỉ hiện tab người ấy vào được', /tabsCho\(kq\.vai\)/.test(LAYOUT_KHU));
+/* Layout khu nay gọi `mucCho(kq.vai)` chứ không `tabsCho(kq.vai)`: từ
+   07/09/2026 khu này dùng chung `AppShell`, và `mucCho` là bộ đổi hình dạng
+   từ bảng tab sang danh sách mục của thanh.
+
+   Kiểm HAI vế chứ không chỉ đổi tên hàm cho phép kiểm xanh lại: (1) layout
+   lọc theo vai, (2) hàm lọc ấy THẬT SỰ dựng trên `tabsCho`. Chỉ kiểm vế đầu
+   thì ai đó viết một `mucCho` trả về cả bảng TABS sẽ lọt — mà đó đúng là lỗi
+   phép kiểm này sinh ra để chặn. */
+check('layout khu chỉ hiện tab người ấy vào được',
+  /(?:tabsCho|mucCho)\(kq\.vai\)/.test(LAYOUT_KHU));
+check('`mucCho` lọc qua `tabsCho`, không tự dựng danh sách riêng',
+  /export function mucCho[\s\S]{0,200}?tabsCho\(vai\)/.test(doc(KHU, 'vai.ts')));
 
 // MỌI trang phải có cổng RIÊNG, kể cả trang mở cho học vụ: cổng khu chỉ hỏi
 // "vào được ÍT NHẤT MỘT trang", nên nó không thay được cổng của từng trang.

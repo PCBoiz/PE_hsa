@@ -79,7 +79,11 @@
   border-bottom: 1px solid var(--border);
 }
 .topbar > * { min-width: 0; }
-.topbar-left { display: flex; align-items: center; flex-shrink: 0; }
+/* `gap` — không có nó thì tên khu dính liền vào tên sản phẩm ("…TopHSAVận
+   hành trung tâm", đo 07/09/2026). Trước hôm nay `.topbar-left` chỉ có MỘT
+   đứa con nên thiếu `gap` không lộ ra. */
+.topbar-left { display: flex; align-items: center; flex-shrink: 0;
+  gap: clamp(0.5rem, 0.35rem + 0.6vw, 0.875rem); }
 
 /* ── Tên thương hiệu ── */
 .brand-always { display: flex !important; align-items: center; gap: 3px; }
@@ -105,6 +109,21 @@
    `safe center`: căn giữa khi vừa, TỰ LÙI VỀ CĂN TRÁI khi tràn. Không có từ
    khoá `safe` thì flexbox đẩy nội dung tràn ra CẢ HAI phía, mà `scrollLeft`
    không âm được — phần tràn bên trái vĩnh viễn không cuộn tới. */
+/* ── TÊN KHU ────────────────────────────────────────────────────────────────
+   Khu Vận hành / Soạn giáo trình dùng CHUNG thanh này, chỉ đổi hàng mục. Nhãn
+   khu nói người dùng đang ở đâu — thứ mà một hàng tab không tự nói được, vì
+   tab nào cũng là tên một trang chứ không phải tên của nơi chứa chúng.
+
+   Ẩn ở khổ hẹp: khi đó thương hiệu đã rút thành "PE×T" và hàng mục cần từng
+   điểm ảnh. Tên khu vẫn còn trong `aria-label` của <nav>, nên trình đọc màn
+   hình không mất gì. */
+.shell-khu {
+  font-size: clamp(0.78rem, 0.72rem + 0.18vw, 0.92rem);
+  font-weight: 700;
+  color: var(--t1);
+  white-space: nowrap;
+}
+
 .topbar-nav {
   position: relative;
   display: flex; flex-direction: row; align-items: center;
@@ -243,8 +262,13 @@
 /* Vạch phân cách trước cụm DANH TÍNH. Bản cũ xếp năm thứ cạnh nhau cùng một
    trọng số nên mắt không biết dừng ở đâu; vạch này tách "công cụ" khỏi "bạn là
    ai", tức phân cấp bằng hình chứ không bằng thêm màu. */
-.topbar-right .shell-chia {
-  width: 1px; height: 1.375rem; background: var(--border); flex-shrink: 0; margin: 0 2px;
+/* Không giới hạn ở `.topbar-right` nữa (07/09/2026): bên TRÁI cũng cần đúng
+   vạch ấy để tách tên sản phẩm khỏi tên khu ("TopHSA │ Vận hành trung tâm").
+   Bản cũ viết `.topbar-right .shell-chia`, nên `<span class="shell-chia">`
+   đặt bên trái là một phần tử KHÔNG có kích thước — có mặt trong DOM, vô hình
+   trên màn, đúng loại lỗi khó lần nhất. */
+.shell-chia {
+  width: 1px; height: 1.375rem; background: var(--border); flex-shrink: 0;
 }
 
 /* ── Tìm kiếm ── */
@@ -432,9 +456,19 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 }
 .udh-role { font-size: 0.7rem; color: var(--t3); margin-top: 2px; }
 .user-dropdown-divider { height: 1px; background: var(--border); margin: 0.25rem 0; }
+/* `min-height: 44px`, KHÔNG `2.5rem`. Đo 07/09/2026: `2.5rem` cho ra đúng
+   **39px** ở cỡ chữ gốc của trang này — dưới ngưỡng chạm 44px của Apple HIG,
+   trên CẢ BA mục ("Trang của tôi", "Cài đặt", "Đăng xuất") và ở MỌI màn dùng
+   khung chung. Nó lọt suốt vì bộ đo bỏ qua phần tử `width === 0`, mà menu này
+   đóng lại thì đúng bằng 0 — tức mọi lượt đo trước đây chưa từng nhìn thấy nó.
+   Bắt được khi khu Vận hành lần đầu có menu người dùng.
+
+   44px là quy định chứ không phải số đo trên một khổ máy, nên viết thẳng px:
+   đổi sang `rem` là để nó trôi theo cỡ chữ gốc và tụt lại dưới ngưỡng, đúng
+   như `2.5rem` đã làm. */
 .user-dropdown-item {
   display: flex; align-items: center; gap: 0.625rem; width: 100%;
-  min-height: 2.5rem; padding: 0 0.625rem;
+  min-height: 44px; padding: 0 0.625rem;
   border: none; border-radius: 0.5625rem; background: transparent;
   color: var(--t2); font-size: 0.8rem; font-weight: 600;
   text-align: left; cursor: pointer;
@@ -539,8 +573,13 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 }
 
 @media (max-width: 36rem) {
+  /* Tên khu nhường chỗ cho hàng mục. Không mất thông tin: `aria-label` của
+     <nav> vẫn mang tên khu, và tiêu đề trang nói lại ngay bên dưới. */
+  .shell-khu { display: none; }
   .search-wrap { display: none; }
   .topbar-right .shell-chia { display: none; }
+  /* Vạch bên trái đi cùng tên khu — mà tên khu đã ẩn ở khổ này. */
+  .topbar-left .shell-chia { display: none; }
   /* Ẩn hẳn TÊN trên chip — ảnh đại diện đã đủ để nhận ra "đây là tôi", và tên
      đầy đủ vẫn nằm nguyên trong menu thả xuống. Đo 06/09/2026 ở 390px: giữ tên
      thì dãy điều hướng thiếu 28px và phải cuộn ngay từ mục thứ tư; bỏ tên là

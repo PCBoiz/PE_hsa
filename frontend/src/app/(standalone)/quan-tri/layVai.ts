@@ -13,7 +13,8 @@ import { serverJson } from '@/lib/server-api';
  */
 
 export type KetVai =
-  | { ok: true; vai: string | undefined }
+  /** `ten` để thanh chung hiện đúng ai đang đăng nhập — xem `layout.tsx`. */
+  | { ok: true; vai: string | undefined; ten: string | undefined }
   | { ok: false; loi: string };
 
 /**
@@ -25,10 +26,13 @@ export type KetVai =
  * trang, và cái giá ấy tăng đúng theo số cổng mình dựng thêm.
  */
 export const layVai = cache(async (): Promise<KetVai> => {
-  const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });
+  const me = await serverJson<{ role?: string; name?: string }>('/api/user', { requireAuth: true });
   // Không đọc được tài khoản KHÔNG đồng nghĩa với "không đủ quyền": backend sập
   // hay mạng hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy
   // người dùng đi hỏi nhầm chỗ. Tách hai câu ra.
   if (!me.ok) return { ok: false, loi: me.message };
-  return { ok: true, vai: me.data.role };
+  /* `ten` lấy luôn từ CÙNG lượt gọi này. Khu Vận hành không nạp `dashboard.js`
+     nên không có ai điền `#chip-name` hộ — không lấy ở đây thì chip người dùng
+     trên thanh sẽ mang chữ "?" giữa một khu mà việc chính là quản lý CON NGƯỜI. */
+  return { ok: true, vai: me.data.role, ten: me.data.name };
 });

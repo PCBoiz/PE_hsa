@@ -4393,3 +4393,91 @@ lại đúng `44px` (ngưỡng chạm Apple HIG) và viền `1.5px`: đó là qu
 phải số tôi đo trên máy mình.
 
 Cổng: **e2e 18/18** (thêm `lo-trinh-rut-gon.spec.ts`, 2 phép kiểm).
+
+---
+
+## 07/09/2026 (tiếp) — T2+T3: khu Vận hành vào chung khung, và đổi câu hỏi của trang
+
+Anh Sơn chốt "sửa lỗi **và** thiết kế lại theo VIỆC".
+
+### Bản dựng thanh điều hướng THỨ TƯ
+
+Đợt gộp 06/09 hợp nhất ba bản. Còn sót một bản nữa mà hôm ấy không ai hỏi tới:
+`quan-tri/layout.tsx` tự dựng `<header>` Tailwind riêng. Đo `/quan-tri/tong-quan`
+trước khi sửa:
+
+    .topbar                    = 0     ← không dùng khung chung
+    .user-dropdown-item.danger = 0     ← KHÔNG CÓ ĐƯỜNG ĐĂNG XUẤT
+    #search-input              = 0
+
+Đúng lỗ đã vá ở màn Thi thử hôm 06/09, lặp lại ở khu khác: người trong khu Vận
+hành muốn thoát phải quay về `/dashboard` trước, và không chỗ nào cho biết đang
+đăng nhập bằng ai — giữa một khu mà việc chính là quản lý CON NGƯỜI.
+
+`AppShell` nay nhận hai prop mới: `muc` (thay hẳn hàng mục) và `khu` (tên khu,
+và gỡ ô tìm kiếm). Ô tìm kiếm nối thẳng `filterCourses` — nó tìm KHOÁ HỌC, để
+lại trong khu Vận hành là một ô nhập nuốt chữ rồi vứt đi. Điều hướng trong khu
+đi bằng `router.push` chứ không `location.href`: `AdminNav` cũ dùng `<Link>`,
+đổi sang nạp lại cả trang sẽ là một hồi quy tốc độ đội lốt "gộp khung".
+
+`AdminNav.tsx` xoá — `AppShell` cung cấp đúng thứ nó cung cấp, không chỉ trùng
+tên. Bảng `TABS` thêm cột `icon` (bắt buộc trong kiểu): dưới 70rem `shell.css`
+ẩn nhãn chữ, nên tab thiếu biểu tượng sẽ thành một ô TRỐNG bấm được.
+
+### Bốn lỗi đo được, ba trong số đó có ở MỌI màn
+
+1. **Thanh cuộn dọc ma trên bảng một dòng.** Bảng cao `77.296875px` (phân số)
+   → `clientHeight` 77, `scrollHeight` 79. Và `overflow-x: auto` làm
+   `overflow-y` **tính thành** `auto` theo đặc tả, nên 2px ma ấy đủ để trình
+   duyệt vẽ một thanh cuộn đầy đủ mũi tên. Vá ở `TableWrap` — một chỗ, mọi bảng.
+2. **Menu người dùng 40px, dưới ngưỡng chạm 44px.** Có ở mọi màn dùng khung
+   chung. Lọt suốt vì bộ đo bỏ qua phần tử `width === 0`, mà menu đóng lại thì
+   đúng bằng 0 — **mọi lượt đo trước đây chưa từng nhìn thấy nó**.
+3. **Nội dung nằm dưới thanh cố định** — chữ "Toàn trung tâm" bị cắt ngang.
+4. **`.shell-chia` chỉ khai dưới `.topbar-right`**, nên vạch đặt bên trái là
+   một phần tử có mặt trong DOM mà không có kích thước.
+
+### Lỗ trong chính bộ đo: regex `[a-z-]+` không nhận chữ số
+
+Thêm biểu tượng cho khu thì bộ sinh báo "thiếu `check-circle-2` trong icons.js"
+— nhưng nó CÓ ở đó. Lớp ký tự `[a-z-]+` không khớp chữ số, nên mọi tên có số là
+**vô hình** với cả bộ sinh lẫn phép kiểm trôi, mà phép kiểm vẫn báo "khớp". Đây
+là lần thứ HAI đúng cặp công cụ này bị một lớp ký tự quá hẹp làm mù (lần trước:
+`'?` không khớp dấu nháy kép). Nới thành `[a-z0-9-]` ở cả hai. 19 → 26 biểu tượng.
+
+### T3 — trang đầu đổi từ "mọi thứ thế nào" sang "hôm nay cần làm gì"
+
+Dữ liệu production 07/09/2026: 1 lớp, 2 học viên đang học. Nên màn hình đầu tiên
+của người quản lý là **sáu dấu `—` và một ô `0%`**. Không dấu nào sai — hệ thống
+thật sự chưa có dữ liệu — nhưng đọc thì y hệt một trang hỏng.
+
+`0%` cũng là THẬT: có lượt thi ghi 0/9 trong CSDL. Không "sửa" một con số đúng.
+
+Khối mới đọc đúng payload `/api/admin/overview` đang có, **không thêm API, không
+thêm chỉ số**: buổi chưa điểm danh · học viên rời lớp chưa ghi lý do · lớp chưa
+phân công giảng viên · lớp vượt sĩ số · lớp có tỉ lệ bỏ đáng lo. Mỗi mục bắt
+buộc có `href` (kiểu ép, `tsc` bắt) — một dòng nhắc không bấm được thì mới đi
+nửa đường. Hai dòng chữ vàng cũ **chuyển hẳn** lên đây, không để lại bản sao:
+một việc hiện hai chỗ là người ta làm xong rồi tưởng còn sót.
+
+Ngưỡng "lớp đang rơi" lật từ `nguong.alarm` do máy chủ cấp (`dropRate >= 100 −
+alarm`) chứ không ghi thẳng 30 — chép tay một con số là nó không đổi theo khi
+bên kia đổi.
+
+### Đỏ trước
+
+Lùi `layout.tsx` + `Table.tsx`, phục hồi `AdminNav.tsx`, chạy lại
+`khu-van-hanh.spec.ts`: **`.topbar` Expected 1, Received 0**.
+
+### Và HAI lần thước của tôi đo nhầm vật, ghi lại cả hai
+
+* Đo "nội dung có bị thanh che không" bằng `main.getBoundingClientRect().top` —
+  mà `padding-top` nằm BÊN TRONG hộp, nên `rect.top` vẫn là 0 dù nội dung đã
+  được đẩy xuống. Phép kiểm báo đỏ oan cả năm trang **sau khi đã sửa xong**.
+* Đo vùng chạm lúc menu ĐÓNG — trạng thái đóng mang `transform: scale(<1)`, nên
+  mọi số đọc ra đều là kích thước đã bị thu nhỏ (39px cho một ô 40px thật).
+
+Cả hai đều rơi vào cùng một lỗi: đo thứ dễ lấy thay vì thứ cần biết.
+
+Cổng: tsc 0 · eslint 0 · 18/18 unit (sửa `cong-quan-tri` theo `mucCho`, và
+**thêm** một vế chặn `mucCho` tự dựng danh sách riêng thay vì lọc qua `tabsCho`).

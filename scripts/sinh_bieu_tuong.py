@@ -33,6 +33,11 @@ CAN = [
     'home', 'library', 'calendar', 'map', 'medal', 'chat', 'target', 'pencil',
     'users', 'shield', 'wrench', 'search', 'sun', 'moon', 'bell',
     'chevron-down', 'user', 'settings', 'log-out',
+    # Khu VẬN HÀNH (07/09/2026): khu ấy nay dùng chung `AppShell` thay vì tự
+    # dựng một thanh Tailwind riêng, nên các tab của nó cần biểu tượng cùng bộ.
+    'bar-chart', 'graduation-cap', 'file-text',
+    # Trang "Hôm nay cần làm gì" — việc còn tồn, việc đã xong, chỗ trống.
+    'clock', 'check-circle-2', 'inbox', 'arrow-right',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════
@@ -87,7 +92,12 @@ export function BieuTuong({ ten, co = 17 }: { ten: string; co?: number }) {
 
 def doc_nguon() -> dict:
     s = NGUON.read_text(encoding='utf-8')
-    return dict(re.findall(r"^\s*'?([a-z-]+)'?:\s*'(.*?)',?\s*$", s, re.M))
+    # `[a-z0-9-]` chứ KHÔNG phải `[a-z-]`. Bản cũ không nhận chữ số, nên
+    # `check-circle-2` trong icons.js là VÔ HÌNH với cả bộ sinh lẫn phép kiểm
+    # trôi — tên nào có số thì cả hai công cụ lặng lẽ bỏ qua (phát hiện
+    # 07/09/2026 khi thêm biểu tượng cho khu Vận hành). Một thước bỏ sót một
+    # phần vật cần đo thì tệ hơn không có thước: nó vẫn báo "khớp".
+    return dict(re.findall(r"^\s*'?([a-z0-9-]+)'?:\s*'(.*?)',?\s*$", s, re.M))
 
 
 def main():

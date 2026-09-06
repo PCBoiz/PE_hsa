@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { serverJson } from '@/lib/server-api';
 
+import { ViecCanLam, type Viec } from './ViecCanLam';
+
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Toàn trung tâm | TopHSA' };
 
@@ -103,6 +105,87 @@ function O({ nhan, so, phu }: { nhan: string; so: string; phu?: string }) {
 }
 
 /**
+ * Suy ra VIỆC CÒN TỒN từ đúng payload đang có — không thêm chỉ số, không thêm
+ * lượt gọi API. Mỗi việc phải kèm chỗ để LÀM nó; xem `ViecCanLam.tsx`.
+ *
+ * Thứ tự trong mảng là thứ tự người đọc thấy, nên nó phải là thứ tự ƯU TIÊN
+ * thật: việc làm sai CON SỐ đứng trước việc chỉ gây bất tiện. Điểm danh thiếu
+ * làm tỉ lệ chuyên cần sai; lý do rời lớp thiếu làm tỉ lệ giữ chân sai — hai
+ * cái đó bóp méo chính những con số nằm ngay bên dưới, nên chúng lên đầu.
+ */
+function suyViec(
+  s: Payload['summary'],
+  lop: LopRow[],
+  nguong: Payload['thresholds'],
+): Viec[] {
+  const ra: Viec[] = [];
+
+  if (s.sessionsUnmarked > 0) {
+    // Trỏ thẳng vào LỚP có buổi chưa điểm danh, không trỏ vào danh sách lớp:
+    // một dòng nhắc mà còn bắt người ta đi tìm chỗ làm thì mới đi nửa đường.
+    const o = lop.find((c) => c.sessionsUnmarked > 0);
+    ra.push({
+      nang: 'gap',
+      icon: 'clock',
+      chu: `${s.sessionsUnmarked} buổi đã dạy chưa ai điểm danh`,
+      phu: 'Tỉ lệ chuyên cần bên dưới đang thiếu đúng ngần ấy buổi, nên nó thấp hơn sự thật.',
+      href: o ? `/giang-day/buoi-hoc/${o.id}` : '/quan-tri/lop-hoc',
+    });
+  }
+
+  if (s.leftUnknown > 0) {
+    ra.push({
+      nang: 'gap',
+      icon: 'inbox',
+      chu: `${s.leftUnknown} học viên rời lớp mà chưa ghi lý do`,
+      phu: 'Chưa ghi thì hệ thống không đoán, nên các em đó không nằm trong tỉ lệ giữ chân.',
+      href: '/quan-tri/lop-hoc',
+    });
+  }
+
+  const chuaGV = lop.filter((c) => c.status === 'active' && !c.teacherName);
+  if (chuaGV.length > 0) {
+    ra.push({
+      nang: 'gap',
+      icon: 'users',
+      chu: `${chuaGV.length} lớp đang chạy chưa phân công giảng viên`,
+      phu: 'Không có giảng viên thì không ai điểm danh và không ai giao bài cho lớp đó.',
+      href: '/quan-tri/lop-hoc',
+    });
+  }
+
+  const quaTai = lop.filter((c) => c.capacity != null && c.active > c.capacity);
+  if (quaTai.length > 0) {
+    ra.push({
+      nang: 'nhac',
+      icon: 'graduation-cap',
+      chu: `${quaTai.length} lớp đã vượt sĩ số`,
+      phu: 'Xếp thêm học viên vào lớp đầy là lý do bỏ giữa chừng hay gặp nhất.',
+      href: '/quan-tri/lop-hoc',
+    });
+  }
+
+  /* `dropRate` là tỉ lệ BỎ, `nguong.alarm` là ngưỡng GIỮ CHÂN — hai chiều
+     ngược nhau, nên phải lật: giữ chân dưới 70% tức bỏ từ 30% trở lên. Viết
+     phép lật ra thay vì ghi thẳng 30: ngưỡng do máy chủ cấp, và một con số
+     chép tay ở đây sẽ không đổi theo khi bên kia đổi. */
+  const dangRoi = lop.filter(
+    (c) => c.status === 'active' && c.dropRate !== null && c.dropRate >= 100 - nguong.alarm,
+  );
+  if (dangRoi.length > 0) {
+    ra.push({
+      nang: 'nhac',
+      icon: 'bar-chart',
+      chu: `${dangRoi.length} lớp có tỉ lệ bỏ giữa chừng đáng lo`,
+      phu: `Giữ chân dưới ${nguong.alarm}% thường là dấu hiệu hỏng ở khâu đón học viên hoặc chất lượng dạy.`,
+      href: '/quan-tri/lop-hoc',
+    });
+  }
+
+  return ra;
+}
+
+/**
  * Bảng điều khiển TOÀN TRUNG TÂM — nửa "Trung tâm" của đặc tả ERP §6.
  *
  * Mọi báo cáo trước hôm nay dừng ở cấp lớp. Quản lý học vụ muốn biết lớp nào
@@ -138,26 +221,47 @@ export default async function TongQuanPage({
   }
 
   const { classes: lop, terms: dot, summary: s, thresholds: nguong } = kq.data;
+  const viec = suyViec(s, lop, nguong);
 
   return (
     <div className="flex flex-col gap-5">
+      {/* ── VIỆC TRƯỚC, SỐ SAU ─────────────────────────────────────────────
+          Trang này từng mở đầu bằng bốn ô số. Với dữ liệu thật ngày
+          07/09/2026 (1 lớp, 2 học viên đang học) màn hình đầu tiên của người
+          quản lý là sáu dấu `—` và một ô `0%` — không dấu nào sai, nhưng đọc
+          thì y hệt một trang hỏng.
+
+          Người học vụ mở trang này lúc 8 giờ sáng không hỏi "mọi thứ thế nào",
+          họ hỏi "hôm nay tôi phải làm gì". Câu ấy trang cũ CÓ trả lời, nhưng
+          chôn dưới bảng dưới dạng hai dòng chữ vàng nhỏ. */}
+      <Card>
+        <CardHead
+          title="Hôm nay cần làm gì"
+          hint="Việc còn tồn, xếp theo thứ tự việc nào đang làm sai con số bên dưới."
+        />
+
+        {/* Mảng dữ liệu KHÔNG đọc được. Đứng trên cả danh sách việc: khi máy
+            chủ không đọc nổi một mảng thì chính DANH SÁCH VIỆC cũng thiếu, và
+            người đọc không có cách nào tự biết điều đó. */}
+        {s.incomplete.length > 0 && (
+          <p
+            role="alert"
+            className="mb-3 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-small text-danger-ink"
+          >
+            Chưa đọc được: {s.incomplete.map((k) => THIEU_NHAN[k] ?? k).join(' · ')}. Những cột
+            liên quan bên dưới đang KHÔNG đáng tin, và danh sách việc cũng có thể thiếu — tải
+            lại trang, nếu vẫn vậy thì báo kỹ thuật.
+          </p>
+        )}
+
+        <ViecCanLam viec={viec} />
+      </Card>
+
       <Card>
         <CardHead
           title="Toàn trung tâm"
           hint="Cuộn số liệu của mọi lớp lên một chỗ. Cùng cách tính với báo cáo từng lớp — nếu hai bên lệch nhau thì đó là lỗi, không phải hai cách đo."
         />
-
-        {/* Mảng dữ liệu KHÔNG đọc được. Phải nói ngay trên đầu: con số bên dưới
-            trông vẫn bình thường, nên người đọc không có cách nào tự biết. */}
-        {s.incomplete.length > 0 && (
-          <p
-            role="alert"
-            className="mb-4 rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-small text-danger-ink"
-          >
-            Chưa đọc được: {s.incomplete.map((k) => THIEU_NHAN[k] ?? k).join(' · ')}. Những cột
-            liên quan bên dưới đang KHÔNG đáng tin — tải lại trang, nếu vẫn vậy thì báo kỹ thuật.
-          </p>
-        )}
 
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))]">
           <O
@@ -182,24 +286,11 @@ export default async function TongQuanPage({
           />
         </div>
 
-        {/* Hai con số này là VIỆC CÒN TỒN, không phải thành tích — tách khỏi
-            hàng ô trên để mắt không đọc nhầm chúng thành chỉ số. */}
-        {(s.sessionsUnmarked > 0 || s.leftUnknown > 0) && (
-          <ul className="mt-3 flex flex-col gap-1">
-            {s.sessionsUnmarked > 0 && (
-              <li className="text-small text-warning-ink">
-                {s.sessionsUnmarked} buổi đã dạy nhưng chưa ai điểm danh — chuyên cần ở trên
-                đang thiếu đúng ngần ấy buổi.
-              </li>
-            )}
-            {s.leftUnknown > 0 && (
-              <li className="text-small text-warning-ink">
-                {s.leftUnknown} học viên đã rời lớp mà chưa ghi lý do. Chưa ghi thì hệ thống
-                không đoán, nên các em đó không nằm trong tỉ lệ giữ chân.
-              </li>
-            )}
-          </ul>
-        )}
+        {/* Hai dòng chữ vàng từng nằm ở đây ("N buổi chưa điểm danh", "N học
+            viên rời lớp chưa ghi lý do") đã LÊN khối "Hôm nay cần làm gì" —
+            chúng là việc phải làm, không phải chú thích của một bảng số, và ở
+            đây thì chúng bấm không được. Không lặp lại ở cả hai chỗ: một việc
+            hiện hai lần là người ta làm xong một lần rồi tưởng còn sót. */}
       </Card>
 
       {dot.length > 1 && (

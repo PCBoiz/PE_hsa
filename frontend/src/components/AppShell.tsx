@@ -1,12 +1,13 @@
 'use client';
 
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { doiChuDe, useDangToi } from '@/lib/chuDe';
 import { goiLegacy } from '@/lib/goiLegacy';
 
 import { BieuTuong } from './bieuTuong';
-import { MUC_NAV, NHOM_NAV } from './navMuc';
+import { MUC_NAV, NHOM_NAV, type MucNav } from './navMuc';
 
 /* ══════════════════════════════════════════════════════════════════════════
  * KHUNG CHUNG — một thanh trên cho MỌI màn.
@@ -58,6 +59,22 @@ export type AppShellProps = {
   /** Vai hiển thị trong menu. */
   vai?: string;
   cheDo?: CheDo;
+  /**
+   * KHU RIÊNG: thay hẳn danh sách mục trên thanh.
+   *
+   * Khu Vận hành và khu Soạn giáo trình không phải là "một mục" của thanh học
+   * viên — chúng là những NƠI KHÁC, có tập việc riêng. Trước 07/09/2026 khu
+   * Vận hành tự dựng một thanh Tailwind riêng, tức bản dựng THỨ TƯ (ba bản kia
+   * đã gộp hôm 06/09). Hậu quả giống hệt màn Thi thử ngày ấy: trong khu đó
+   * **không có đường Đăng xuất** và không thấy mình đang đăng nhập bằng ai.
+   *
+   * Nay cùng một khung, chỉ đổi nội dung hàng mục. Danh sách truyền vào phải
+   * ĐÃ LỌC THEO VAI ở máy chủ — hiện đủ tab rồi chặn ở trang đích là mời người
+   * ta bấm vào một bức tường.
+   */
+  muc?: MucNav[];
+  /** Tên khu, hiện cạnh thương hiệu. Có `khu` thì ô tìm kiếm bị gỡ. */
+  khu?: string;
   /** Nhãn ngắn ở chế độ làm bài, ví dụ "Đang làm bài". */
   nhan?: string;
   /** Nội dung bên phải ở chế độ làm bài: đồng hồ, nút nộp. */
@@ -74,10 +91,14 @@ export default function AppShell({
   ten,
   vai = 'Học viên',
   cheDo = 'day-du',
+  muc,
+  khu,
   nhan = 'Đang làm bài',
   phai,
 }: AppShellProps) {
   const toi = useDangToi();
+  const duong = usePathname();
+  const router = useRouter();
   const [moMenu, setMoMenu] = useState(false);
   const oMenu = useRef<HTMLDivElement>(null);
   /* Nhóm nào đang mở trên thanh (`null` = không nhóm nào).
@@ -134,10 +155,16 @@ export default function AppShell({
   }, [dieuKhien]);
 
   /** Đi tới một mục điều hướng. */
-  const di = useCallback((muc: (typeof MUC_NAV)[number]) => {
-    if (spa && muc.trang) goiLegacy('navigate', muc.trang);
-    else window.location.href = muc.url;
-  }, [spa]);
+  const di = useCallback((m: MucNav) => {
+    if (spa && m.trang) { goiLegacy('navigate', m.trang); return; }
+    /* Trong khu riêng thì đi bằng router của Next: `AdminNav` cũ dùng `<Link>`
+       nên chuyển tab là tức thì. Đổi sang `location.href` sẽ là nạp lại CẢ
+       trang mỗi lần bấm tab — một hồi quy tốc độ đội lốt "gộp khung". Ngoài
+       khu thì giữ `location.href`: các đích ấy nằm ở tầng JS cũ, cần lượt tải
+       đầy đủ để `main.js` chạy. */
+    if (khu) router.push(m.url);
+    else window.location.href = m.url;
+  }, [spa, khu, router]);
 
   /* Ô tìm kiếm ở trang KHÔNG có main.js: Enter thì sang dashboard kèm `?q=`. */
   const timNgoaiSpa = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -201,13 +228,19 @@ export default function AppShell({
     );
   }
 
-  const dangMo = (m: (typeof MUC_NAV)[number]) =>
-    (m.trang != null && m.trang === trang) || m.url === trang;
+  /* Trong khu riêng, so bằng TIỀN TỐ đường dẫn chứ không so bằng nhau: trang
+     con (`/quan-tri/tai-khoan/123`) vẫn phải sáng đúng tab cha. Đây là hành vi
+     của `AdminNav` cũ, giữ nguyên — bỏ nó đi là mất dấu "đang ở đâu" ở mọi
+     trang con, mà mất dấu thì người dùng bấm lại vì tưởng chưa tới nơi. */
+  const dangMo = (m: MucNav) => {
+    if (khu) return duong === m.url || duong.startsWith(m.url + '/');
+    return (m.trang != null && m.trang === trang) || m.url === trang;
+  };
 
   /* Một mục điều hướng — dùng CHUNG cho mục ở cấp một và mục nằm trong nhóm.
      Phải là cùng một hàm dựng: hai bản chép tay của cùng một nút là đúng thứ
      phiên làm việc này đi dọn (ba thanh điều hướng, ba bản `.nav-btn`). */
-  const nutMuc = (m: (typeof MUC_NAV)[number]) => (
+  const nutMuc = (m: MucNav) => (
     <button
       key={m.nhan}
       type="button"
@@ -234,14 +267,15 @@ export default function AppShell({
   /* Dựng danh sách hiển thị: mục có `nhom` được thu vào panel của nhóm, và
      nhóm xuất hiện ĐÚNG chỗ mục đầu tiên của nó — thứ tự trong `navMuc.ts`
      vẫn là thứ tự người dùng thấy. */
+  const dsMuc = muc ?? MUC_NAV;
   const daVe = new Set<string>();
-  const dayNav = MUC_NAV.flatMap((m) => {
+  const dayNav = dsMuc.flatMap((m) => {
     if (!m.nhom) return [nutMuc(m)];
     if (daVe.has(m.nhom)) return [];
     daVe.add(m.nhom);
     const khoa = m.nhom;
     const nhomTin = NHOM_NAV[khoa];
-    const con = MUC_NAV.filter((x) => x.nhom === khoa);
+    const con = dsMuc.filter((x) => x.nhom === khoa);
     const dangXem = con.some(dangMo);
     return [(
       <div className={'nav-nhom' + (moNhom === khoa ? ' mo' : '')} key={'nhom-' + khoa}>
@@ -267,9 +301,25 @@ export default function AppShell({
 
   return (
     <div className="topbar">
-      <div className="topbar-left">{thuongHieu}</div>
+      <div className="topbar-left">
+        {thuongHieu}
+        {/* Tên khu, và đường VỀ. Người trong khu Vận hành cần biết hai điều mà
+            thanh học viên không nói: mình đang ở khu nào, và lối ra ở đâu. */}
+        {khu && (
+          <>
+            <span className="shell-chia" aria-hidden="true" />
+            <span className="shell-khu">{khu}</span>
+          </>
+        )}
+      </div>
 
-      <nav className="topbar-nav" role="navigation" aria-label="Điều hướng chính" id="topbar-nav" ref={oNav}>
+      <nav
+        className="topbar-nav"
+        role="navigation"
+        aria-label={khu ? `Điều hướng ${khu}` : 'Điều hướng chính'}
+        id="topbar-nav"
+        ref={oNav}
+      >
         {dayNav}
 
         {/* Ba mục dưới do `dashboard.js` bật/tắt theo VAI qua `id` — nên chúng
@@ -307,6 +357,10 @@ export default function AppShell({
       </nav>
 
       <div className="topbar-right">
+        {/* Ô tìm kiếm nối thẳng vào `filterCourses` — nó tìm KHOÁ HỌC. Trong
+            khu Vận hành nó sẽ là một ô nhập nuốt chữ rồi vứt đi, đúng lỗi đã
+            vá ở màn chi tiết khoá hôm 06/09. Nên trong khu riêng: gỡ hẳn. */}
+        {!khu && (
         <div className="search-wrap" id="search-wrap">
           <span className="search-icon"><BieuTuong ten="search" co={14} /></span>
           <input
@@ -339,6 +393,7 @@ export default function AppShell({
             </div>
           )}
         </div>
+        )}
 
         <span className="shell-chia" aria-hidden="true" />
 

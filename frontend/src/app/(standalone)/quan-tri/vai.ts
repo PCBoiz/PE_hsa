@@ -32,30 +32,49 @@ export { VAI_BIEN_TAP, VAI_HOC_VU, VAI_QUAN_TRI };
 export type Tab = {
   href: string;
   label: string;
+  /**
+   * Biểu tượng, cùng bộ với thanh học viên (`components/bieuTuong.tsx`, sinh
+   * từ `icons.js`). BẮT BUỘC từ 07/09/2026, khi khu này bỏ thanh Tailwind
+   * riêng để dùng chung `AppShell`: dưới 70rem `shell.css` ẩn nhãn chữ và chỉ
+   * còn biểu tượng, nên tab thiếu biểu tượng sẽ thành một ô TRỐNG bấm được.
+   * Khai trong kiểu để `tsc` chặn ngay khi thêm tab mà quên.
+   */
+  icon: string;
   /** Vai trò vào được trang này. Phải khớp `permission_classes` của API nó gọi. */
   vai: readonly string[];
 };
 
 export const TABS: readonly Tab[] = [
   // `IsAdminRole` — bảng điều khiển toàn trung tâm (teaching/overview.py).
-  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', vai: [VAI_QUAN_TRI] },
+  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI] },
   // `IsAdminRole` — đổi vai trò và đặt lại mật khẩu KHÔNG mở cho học vụ
   // (anh Sơn chốt 01/09/2026).
-  { href: '/quan-tri/tai-khoan', label: 'Tài khoản', vai: [VAI_QUAN_TRI] },
+  { href: '/quan-tri/tai-khoan', label: 'Tài khoản', icon: 'users', vai: [VAI_QUAN_TRI] },
   // `IsAdminOrAcademic` — teaching/views.py::AdminClassesView.
-  { href: '/quan-tri/lop-hoc', label: 'Lớp học', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  { href: '/quan-tri/lop-hoc', label: 'Lớp học', icon: 'graduation-cap', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/terms.py.
-  { href: '/quan-tri/dot-hoc', label: 'Đợt học', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  { href: '/quan-tri/dot-hoc', label: 'Đợt học', icon: 'calendar', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — nhật ký kiểm toán (teaching/admin_users.py::AdminAuditView).
-  { href: '/quan-tri/nhat-ky', label: 'Nhật ký', vai: [VAI_QUAN_TRI] },
+  { href: '/quan-tri/nhat-ky', label: 'Nhật ký', icon: 'file-text', vai: [VAI_QUAN_TRI] },
   // Liên kết SANG khu khác, không phải trang của khu này — nên vai ở đây là
   // "ai ĐANG Ở TRONG khu này thì thấy đường sang", không phải "ai vào được
   // /admin". `Biên tập nội dung` vào được /admin nhưng KHÔNG vào được khu này
   // (họ không có trang nào ở đây), nên họ bị chặn ở `VAI_VAO_KHU` trước khi
   // `AdminNav` kịp dựng: để `VAI_BIEN_TAP` ở đây là một nhánh chết trông như
   // một quyền. Cổng thật của /admin nằm ở `admin/page.tsx`.
-  { href: '/admin', label: 'Soạn giáo trình', vai: [VAI_QUAN_TRI] },
+  { href: '/admin', label: 'Soạn giáo trình', icon: 'pencil', vai: [VAI_QUAN_TRI] },
 ] as const;
+
+/** Đổi bảng tab thành danh sách mục của `AppShell`. Một nguồn, hai hình dạng. */
+export function mucCho(vai: string | undefined) {
+  return tabsCho(vai).map((t) => ({
+    trang: null,          // tuyến Next thật, không phải trang trong SPA legacy
+    nhan: t.label,
+    icon: t.icon,
+    emoji: '',            // khu này không có màn nào thiếu `icons.js`
+    url: t.href,
+  }));
+}
 
 /** Vai nào vào được khu này (bất kỳ trang nào của nó). */
 export const VAI_VAO_KHU: readonly string[] = [VAI_QUAN_TRI, VAI_HOC_VU];

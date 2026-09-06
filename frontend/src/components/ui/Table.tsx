@@ -30,7 +30,24 @@ import type { ReactNode } from 'react';
  */
 export function TableWrap({ children, caption }: { children: ReactNode; caption: string }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-line bg-surface">
+    /* `overflow-y-hidden` KHÔNG thừa — nó vá một thanh cuộn dọc MA.
+     *
+     * Đo 07/09/2026 ở `/quan-tri/tong-quan`, bảng "Từng lớp" có ĐÚNG MỘT dòng:
+     *
+     *     <table>   cao 77.296875px       (phân số, do py-3 + line-height)
+     *     khung     clientHeight 77       (cắt xuống)
+     *               scrollHeight 79       (làm tròn lên)
+     *
+     * Chênh 2px ấy là ảo, nhưng trình duyệt tin. Và `overflow-x: auto` làm
+     * `overflow-y` TÍNH THÀNH `auto` theo đặc tả (một trục khác `visible` thì
+     * trục kia không thể giữ `visible`) — nên 2px ma đủ để nó vẽ một thanh
+     * cuộn dọc đầy đủ mũi tên trên một bảng MỘT DÒNG. Đó chính là thanh cuộn
+     * anh Sơn thấy trong ảnh chụp màn hình 07/09/2026.
+     *
+     * Chiều dọc thì trang tự cuộn, bảng không bao giờ cần cuộn dọc riêng — nên
+     * khoá hẳn trục ấy vừa đúng ý định vừa hết 2px ma. Cuộn NGANG giữ nguyên:
+     * đó mới là trục có nội dung thật bị giấu. */
+    <div className="overflow-x-auto overflow-y-hidden rounded-md border border-line bg-surface">
       <table className="w-full border-collapse text-small max-sm:block">
         {/* `caption` BẮT BUỘC (kiểu ép, `tsc` bắt được khi thiếu — cùng lối với
             `label` của `Td`). Trình đọc màn hình đọc bảng theo thứ tự ô; không
