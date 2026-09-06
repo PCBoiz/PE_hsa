@@ -4225,3 +4225,72 @@ CHƯA SỬA, cần anh chốt: dòng "100% — Miễn phí luyện tập cơ b�
 
 Cổng: tsc 0 · eslint 0 · 15/15 unit · `next build` 0 · e2e 11/11 · bộ đo 2 chủ
 đề × 32 lượt: 0 vi phạm tương phản, **0 vùng chạm nhỏ**, tự kiểm ĐẠT 32/32.
+
+---
+
+## 06/09/2026 — Vá deploy hỏng, và gộp ba thanh điều hướng thành MỘT
+
+### 1. Deploy production đang HỎNG, và không phải vì mã của mình (`747bc13`)
+
+Vercel dừng ở bước đầu tiên, chưa chạy dòng mã nào:
+
+    [ERROR] pnpm v11.12.0 is a broken release and cannot be installed
+    Error: Command "pnpm install" exited with 1
+
+Đo thẳng trên registry npm, không suy luận:
+
+| gói | giải nén | số tệp | trạng thái |
+|---|---|---|---|
+| `@pnpm/exe@11.12.0` (đang ghim) | **16 KB** | 11 | deprecated — "This release is broken" |
+| `@pnpm/exe@11.25.0` | **18,5 MB** | 451 | bình thường |
+
+16 KB không chứa nổi một tệp thực thi. Ghim ấy vào từ `1bbbfdb` lúc 11.12.0 còn
+lành; nó hỏng VỀ SAU, và một con số ghim cứng thì không tự biết mình đã hỏng.
+Nâng lên 11.25.0 — cùng major nên `lockfileVersion: '9.0'` giữ nguyên.
+
+**Hệ quả:** bản đang chạy trên production là bản TRƯỚC `5e51697`. Mọi thứ anh
+nhìn thấy — kể cả nút "Đăng ký miễn phí" — là mã cũ, không phải mã trong repo.
+
+### 2. Khung chung — một thanh cho mọi màn (`13bc3d3`)
+
+Thanh điều hướng có BA bản dựng, chỉ dùng chung mỗi danh sách mục. Màn Thi thử
+là bản thiếu nhất: KHÔNG có chip người dùng, tức vào đó là **mất đường Đăng
+xuất và nút đổi sáng/tối** (grep `user-chip|logout` = 0).
+
+Bốn lỗi tìm ra trong lúc làm, đều đo được:
+
+- `main.js::applyTheme` chạy `btn.textContent = "☀️"` — XOÁ SẠCH ruột nút, kể cả
+  SVG React vừa vẽ, mỗi lần áp chủ đề. Emoji trong ảnh chụp không tới từ markup
+  mà từ dòng đó. `course_detail.js` có bản sao y hệt.
+- KHÔNG dòng nào trong FE đọc `?q=`, trong khi màn khoá học vẫn gửi người dùng
+  tới `/dashboard?q=…`. Ô tìm kiếm nuốt chữ rồi vứt đi.
+- Thanh trộn BA hệ màu: tím thương hiệu, xanh dương của một thương hiệu đã chết
+  (7 chỗ), cam #F59E0B không thuộc về đâu.
+- CSS viết cho nền tối rồi dùng cho cả hai bộ: rê chuột = trắng trên trắng
+  (không phản hồi gì — một nửa của "giao diện chết cứng"), chấm chuông viền đen.
+
+**Không ghim px** (anh yêu cầu giữa chừng). Bản trước của tôi đo từng khổ máy
+rồi ghim bốn mốc `@media` chồng nhau. Nay 91 giá trị px đã sang rem, kích thước
+là `clamp()/min()`, và chỉ còn ba `@media` — cả ba là thay đổi BỐ CỤC thật,
+tính bằng rem, suy từ nội dung. Px chỉ còn ở viền 1px và ngưỡng chạm 44px.
+
+**Dọn:** `style.css` 674 → 200 dòng; 86 dòng là di sản sidebar dọc, trong đó có
+`nav { flex-direction: column }` — selector THẺ TRẦN áp lên mọi `<nav>`.
+
+### Đo được (dev thật, hai máy chủ dựng lại sạch)
+
+- bộ đo giao diện × 2 bộ màu × 2 khổ × 16 trang: **0** vi phạm tương phản, **0**
+  vùng chạm <44px, **0** tràn ngang, **0** lỗi JS; tự kiểm ĐẠT 32/32
+- bấm 245 nút trên 17 màn: 0 lỗi JS
+- dãy điều hướng vừa khít ở 1920/1600/1512/1440/1366/1280/1024/900/768
+- tsc 0 · eslint 0 · 17/17 unit · `next build` 0 · **e2e 15/15**
+
+Hai phép ĐỎ đã chứng minh: lùi `MockExam.tsx` về bản cũ thì `khung-chung.spec.ts`
+đỏ đúng 5 khẳng định; đổi một ký tự đường vẽ thì `bieu-tuong-khop` đỏ. Và phép
+kiểm mới bắt ngay một lỗi TÔI vừa gây ra: ba nút theo vai mất `aria-label`.
+
+### Còn treo, chờ anh chốt
+
+Thanh có TÁM mục cấp một, năm trong số đó chỉ là `#hash` của cùng trang
+dashboard. Tám mục có nhãn cần 818px — không vừa laptop 1440, nên dưới 96rem
+phải rút về biểu tượng. Đó là câu hỏi về cấu trúc thông tin, không phải CSS.
