@@ -180,3 +180,29 @@ def test_404_chu_khong_phai_403_de_khong_lo_lop_co_ton_tai(hai_lop):
     cua_ban = _goi(TeachClassDetailView, 'get', hai_lop['gb'], class_id=hai_lop['la'])
     assert khong_co.status_code == cua_ban.status_code == 404
     assert khong_co.data == cua_ban.data, (khong_co.data, cua_ban.data)
+
+
+# ══ TỰ NÂNG VAI CHO CHÍNH MÌNH ══════════════════════════════════════════════
+
+@pytest.mark.django_db
+def test_hoc_vien_khong_tu_nang_vai_qua_ho_so(hai_em):
+    """Gửi kèm `role` vào lời sửa hồ sơ — cột kinh điển của mass assignment.
+
+    `UserView.put` hiện đọc ĐÚNG SÁU trường có tên (name, email, phone,
+    birthday, parent_name, parent_phone), nên `role` rơi xuống đất. Nhưng đó là
+    một tính chất của cách viết, không phải một hàng rào có tên — ai đó đổi
+    sang `for k, v in data.items()` cho gọn là mở toang, và không có gì kêu lên
+    vì màn hình hồ sơ vẫn chạy y hệt.
+
+    Đường đổi vai HỢP LỆ duy nhất là `AdminUserRoleView` (IsAdminRole), và nó
+    còn chặn tự hạ vai của chính mình lẫn xoá quản trị viên cuối cùng.
+    """
+    from accounts.views import UserView
+
+    truoc = q1('SELECT role FROM users WHERE id=%s', (hai_em['b'].id,))['role']
+    _goi(UserView, 'put', hai_em['b'], {
+        'name': 'Em B', 'email': 'em_b_moi_dck@example.com',
+        'role': ROLE_ADMIN, 'is_staff': True, 'is_superuser': True,
+    })
+    sau = q1('SELECT role FROM users WHERE id=%s', (hai_em['b'].id,))['role']
+    assert sau == truoc == ROLE_STUDENT, (truoc, sau)

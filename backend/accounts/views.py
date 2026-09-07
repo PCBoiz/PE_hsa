@@ -45,7 +45,7 @@ def _tokens_for(user_id):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
-    throttle_classes = [LoginThrottle]   # 5 per minute (Flask @limiter.limit)
+    throttle_classes = [LoginThrottle]   # mức thật ở DEFAULT_THROTTLE_RATES (20/phút prod)
 
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
@@ -153,7 +153,7 @@ class RegisterView(APIView):
     kèm quyền gọi /api/chat — mỗi lượt chat là tiền thật trả cho DeepSeek.
     """
     permission_classes = [IsAdminRole]
-    throttle_classes = [RegisterThrottle]   # 3 per minute
+    throttle_classes = [RegisterThrottle]   # mức thật ở DEFAULT_THROTTLE_RATES (10/phút prod)
 
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}

@@ -4,3 +4,29 @@ allowBuilds:
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# ── ÉP PHIÊN BẢN cho thư viện GIÁN TIẾP của Next (audit bảo mật 07/09/2026) ──
+#
+# `pnpm audit --prod` báo 17 lỗ hổng. Nâng Next 16.2.10 → 16.2.11 đóng 9 cái
+# (4 HIGH, trong đó có "Middleware / Proxy bypass in App Router" — đúng cơ chế
+# `src/middleware.ts` dùng để làm mới phiên).
+#
+# Bảy cái còn lại nằm ở thư viện Next kéo theo lúc DỰNG. Next ghim bản cũ nên
+# phải ép ở đây. Chúng chạy lúc build chứ không phục vụ request, nên rủi ro
+# thấp hơn — nhưng "thấp hơn" không phải "không có": PostCSS đọc được tệp .map
+# tuỳ ý qua `sourceMappingURL` do kẻ tấn công đặt, mà CSS đi qua PostCSS thì có
+# cả tệp của bên thứ ba.
+#
+# `>=` chứ không ghim cứng: chỗ nào phải sửa tay mỗi lần vá thì chỗ đó sẽ bị quên.
+#
+# Đặt ở ĐÂY chứ không ở `package.json`: pnpm v11 không còn đọc trường
+# `pnpm.overrides` trong package.json — nó cảnh báo rồi BỎ QUA, tức tưởng đã vá
+# mà chưa vá gì.
+#
+# `allowBuilds` ở trên PHẢI giữ nguyên: `sharp` là thư viện gốc (native), thiếu
+# script dựng thì phần tối ưu ảnh của Next hỏng. Tôi đã lỡ ghi đè cả tệp một
+# lần vì không đọc nó trước — pnpm báo "Ignored build scripts: sharp" ngay.
+overrides:
+  postcss: '>=8.5.23'
+  browserslist: '>=4.28.7'
+  sharp: '>=0.35.0'

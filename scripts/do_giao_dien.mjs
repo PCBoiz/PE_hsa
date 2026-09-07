@@ -108,6 +108,12 @@ const TRANG = [
      trong lượt quét tự động. */
   ['/quan-tri/vai-tro', 'Quản trị · ai làm được gì'],
   ['/quan-tri/huong-dan', 'Quản trị · hướng dẫn'],
+  /* Thêm 07/09/2026 cùng ngày trang được dựng. Lần audit chiều nay bộ đo
+     chạy sạch 20 trang và KHÔNG có trang này — đúng cái bẫy đã vá hôm
+     04/09 ("bộ đo không nhìn thấy bốn trang vừa dựng") lặp lại. Trang mới
+     mà không vào danh sách này thì nó là trang DUY NHẤT không ai đo, và
+     bảng tổng vẫn in ra một dãy số 0 rất thuyết phục. */
+  ['/quan-tri/co-so-hoc-phi', 'Quản trị · cơ sở học phí'],
   ['/giang-day/bao-cao/1', 'Giảng dạy · báo cáo cả lớp'],
   ['/giang-day/bao-cao/1/9', 'Giảng dạy · tờ báo cáo một em'],
 ];

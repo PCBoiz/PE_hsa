@@ -147,10 +147,18 @@ export default function DuongDanDaCap({
                 {c.openedCount === 0
                   ? 'Chưa ai mở lần nào'
                   : `Đã mở ${c.openedCount} lần${c.lastOpenedAt ? `, gần nhất ${ngay(c.lastOpenedAt)}` : ''}`}
-                {/* Nói rõ giới hạn của con số. "Đã mở 3 lần" rất dễ bị đọc
-                    thành "phụ huynh đã đọc", trong khi nó chỉ đếm lượt mở
-                    chìa — có thể là chính giảng viên bấm thử. */}
-                {c.openedCount > 0 && ' — số lượt mở chìa, không cho biết ai mở.'}
+                {/* Nói rõ giới hạn của con số.
+                    "Đã mở 3 lần" rất dễ bị đọc thành "phụ huynh đã đọc". Nó
+                    KHÔNG nói được thế, vì hai lý do:
+                      · không ghi ai mở (cố ý — xem `parent_link.py`);
+                      · trang `/bc/<chìa>` dựng ở MÁY CHỦ, nên MỌI lượt GET đều
+                        tính, kể cả lượt bot xem trước liên kết của Zalo hay
+                        Messenger lấy về khi vừa dán link vào khung chat.
+                    Tức con số này thường đã ≥ 1 trước khi phụ huynh nhìn. Audit
+                    07/09/2026; cách đếm cho đúng là một quyết định đang chờ anh
+                    Sơn (xem VIEC_CUA_ANH 14.2). */}
+                {c.openedCount > 0
+                  && ' — đếm cả lượt bot chat xem trước liên kết, nên chưa chắc phụ huynh đã mở.'}
               </p>
             </div>
 

@@ -77,7 +77,27 @@ class DailyUserThrottle(_PerViewUserThrottle):
 
 
 class LoginThrottle(_IPKhach, SimpleRateThrottle):
-    """@limiter.limit("5 per minute") trên /auth/login."""
+    """Chống dò mật khẩu ở /auth/login. Mức THẬT nằm ở `DEFAULT_THROTTLE_RATES`.
+
+    ── CHÚ THÍCH NÀY TỪNG NÓI DỐI (sửa 07/09/2026) ──────────────────────────
+
+    Nó ghi `@limiter.limit("5 per minute")` — mức của bản Flask cũ. Mức đang
+    chạy là **20/phút ở production**, 100/phút ở dev. Người đọc tin vào dòng
+    ấy sẽ tưởng cửa đăng nhập chặt gấp bốn lần sự thật, và đó là loại hiểu sai
+    đắt nhất: nó nằm ở đúng chỗ người ta đến để KIỂM TRA an ninh.
+
+    20/phút là con số CÓ CÂN NHẮC, không phải lỏng lẻo: giới hạn đếm theo IP,
+    mà cả một lớp học ngồi sau một NAT dùng chung một IP (xem chú thích ở
+    `settings.py`). Siết xuống 5 là khoá cửa với một lớp đang đăng nhập vào
+    đầu buổi học.
+
+    ĐÃ ĐO 07/09/2026: bắn liên tiếp ở dev, bị chặn (429) đúng ở lần thứ 101
+    trong 36,4 giây — khớp mức 100/phút.
+
+    (Lần đo đầu dùng vòng lặp `curl` trong bash mất hơn 60 giây, tức vượt cửa
+    sổ một phút, và suýt kết luận "không có giới hạn". Phép đo về tần suất phải
+    tính cả thời gian nó chạy.)
+    """
     scope = 'login'
 
     def get_cache_key(self, request, view):
@@ -85,7 +105,14 @@ class LoginThrottle(_IPKhach, SimpleRateThrottle):
 
 
 class RegisterThrottle(_IPKhach, SimpleRateThrottle):
-    """@limiter.limit("3 per minute") trên /auth/register."""
+    """Giới hạn ở /auth/register. Mức THẬT nằm ở `DEFAULT_THROTTLE_RATES`.
+
+    Cùng lỗi với `LoginThrottle`: chú thích ghi "3 per minute" (mức Flask cũ),
+    mức đang chạy là 10/phút ở production, 100/phút ở dev. Sửa 07/09/2026.
+
+    Từ 27/08/2026 đường này còn đòi `IsAdminRole` (không còn tự đăng ký), nên
+    giới hạn tần suất ở đây là lớp thứ hai chứ không phải lớp duy nhất.
+    """
     scope = 'register'
 
     def get_cache_key(self, request, view):
