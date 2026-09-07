@@ -83,11 +83,18 @@ cd backend && ./.venv/Scripts/python.exe -m pytest common/tests_hop_dong.py -q
 
 # Giao diện. CHẠY --tu-kiem TRƯỚC, luôn luôn: bộ đo này đã nói dối 12 lần,
 # ba lần trong đó là báo 0 trong khi lỗi có thật.
-node scripts/do_giao_dien.mjs --tu-kiem            # phải ĐẠT (~1250)
-node scripts/do_giao_dien.mjs --toi --tu-kiem      # phải ĐẠT (~1296)
+node scripts/do_giao_dien.mjs --tu-kiem            # phải in "ĐẠT"
+node scripts/do_giao_dien.mjs --toi --tu-kiem      # phải in "ĐẠT"
 node scripts/do_giao_dien.mjs --trang-thai
 node scripts/do_giao_dien.mjs --toi --trang-thai
 ```
+
+**Đừng canh CON SỐ của lượt tự kiểm.** Luật này viết ngày còn "~1250 / ~1296";
+đo lại 07/09/2026 ra **2449 / 2561**, và không có gì hỏng cả — con số ấy đếm số
+vi phạm mà quy tắc HỎNG (cố ý nhét vào) sinh ra, nên nó lớn lên theo số trang và
+số phần tử của sản phẩm. Thứ phải đọc là chữ **ĐẠT**: "cả 42 lượt đo đều đỏ khi
+bị nhét quy tắc hỏng". Ghim một con số ở đây thì mỗi lần thêm trang là một lần
+người sau tưởng bộ đo hỏng, rồi đi sửa thứ không sai.
 
 ## 5. CSDL production — chạm tối thiểu
 
