@@ -5314,3 +5314,80 @@ thấy. Ghép XP vào `skill_sets` (đủ ba hợp phần) chứ không vẽ th�
 `xp-by-course` — endpoint ấy chỉ trả khoá ĐÃ CÓ XP, vẽ thẳng thì màn hình giấu
 đúng cái nó sinh ra để chỉ. Đặt ở tab Kỹ năng vì tab ấy nạp lười, không đụng
 LCP của Trang của tôi.
+
+---
+
+## 07/09/2026 (tối) — MERGE LÊN PRODUCTION, và audit bảo mật
+
+### Cổng trước khi merge
+
+    376 → 385 pytest      (thêm 9 phép kiểm bảo mật mới)
+    35/35 e2e
+    .env                  không có trong 23 commit
+    chuỗi bí mật          quét diff: 0
+    schema mới            parent_report_links, parent_report_sends,
+                          users.parent_name/parent_phone — ĐÃ CÓ SẴN trên Neon
+                          (dev và prod dùng chung một CSDL)
+    biến môi trường mới   3 biến Zalo; thiếu thì `gui_zns` trả lỗi mềm,
+                          không ném — đã đọc lại `common/zalo.py` để chắc
+
+Merge fast-forward 23 commit, `2a4d7e7..ca9bb02`.
+
+### Xác nhận deploy đã lên, không tin vào việc "đã push"
+
+    /api/admin/co-so-hoc-phi                  401   ← trước merge là 404
+    /api/teach/parent-report/links/1/revoke   401
+    /api/public/parent-report/<sai>           404
+    connect-src trên production               'self'
+
+Frontend nằm ở Vercel với domain khai bằng biến môi trường, không có trong
+repo — phần ấy anh Sơn tự xem.
+
+### Audit bảo mật: ba câu hỏi, ba họ lỗi khác nhau
+
+**Cửa nào mở cho ai** — `scripts/quet_quyen.py` liệt kê 106 view api/ qua chính
+bộ định tuyến đang chạy (không grep: `permission_classes` kế thừa được, và grep
+chỉ thấy chỗ CÓ khai chứ không thấy chỗ THIẾU). 2 `AllowAny` đều có chủ ý; 60
+chỉ `IsAuthenticated` — đúng thiết kế.
+
+**Sáu vai gõ vào từng cửa** — `tests_ma_tran_quyen.py`. Chỉ gửi GET, và thế là
+đủ: DRF kiểm quyền trong `initial()`, TRƯỚC khi chọn hàm xử lý theo method. Một
+bộ kiểm quyền tự gửi POST/DELETE vào từng cửa của CSDL production còn nguy hơn
+thứ nó đi tìm.
+
+**Đúng vai nhưng đồ của người khác** — `tests_do_cua_nguoi_khac.py`. Ma trận vai
+không hỏi được câu này, mà với sản phẩm này nó nặng hơn: 60 view chỉ khai
+`IsAuthenticated`, nhiều cái nhận một ID trên đường dẫn, và "đúng người" nằm
+trong thân view ở một mệnh đề `WHERE user_id=%s` mà quên thì không ai kêu.
+
+### Không tìm thấy lỗ hổng — và tôi đã bắt phép kiểm ĐỎ để chắc
+
+    nới IsAdminRole cho học viên     → 11 ô sai, gồm admin/users và admin/audit
+                                        cùng trả HTTP 200
+    bỏ teacher_id khỏi can_see_class
+    + bỏ so chủ sở hữu ở QuizView    → 5/7 đỏ, đúng 5 phép phụ thuộc hai hàng
+                                        rào ấy; 2 phép còn lại vẫn xanh
+
+Khôi phục cả ba tệp, `git diff` trống, 9/9 xanh lại.
+
+### Một cái bẫy chưa sập, đã gỡ
+
+`chatbot.js` in ra console của MỌI người dùng: *"Hãy thêm key vào
+static/js/chatbot.js"* — lời mời dán khoá production vào tệp gửi tới từng trình
+duyệt. Và CSP khi ấy cho `connect-src` gọi thẳng Google, nên ai làm theo thì nó
+CHẠY ĐƯỢC và rò thật. Chưa ai làm; nhưng bẫy chưa sập vẫn là bẫy.
+
+Gỡ `apiKey`/`apiUrl`/hàm cảnh báo, siết `connect-src 'self'`. Đo trước khi gỡ:
+grep `googleapis` → 1 dòng chú thích; grep `fetch('http`, XMLHttpRequest,
+WebSocket → 0. Trình duyệt không gọi ra ngoài chỗ nào cả.
+
+### SÁU lần thước đo báo oan trong một ngày
+
+Liên kết "bấm không đi đâu" (chờ cố định 2,5s) · dashboard "20 nút đổi giao
+diện" (khớp chữ "chủ đề" trong "đã nắm <chủ đề>") · Đợt học "ngõ cụt" (nút ở
+góc phải) · "study-plan/items không có màn nào" (JS cũ ghép chuỗi URL — số này
+kịp vào tài liệu, commit, VÀ một câu hỏi anh Sơn đã trả lời) · "/admin mở cho
+học viên" (cổng nói "Khu này dành cho người soạn giáo trình") · "học viên thấy
+trang trống ở /giang-day" (ngưỡng đếm ký tự hụt đúng 7).
+
+Không lần nào sản phẩm sai. Sáu lần đều là thước.
