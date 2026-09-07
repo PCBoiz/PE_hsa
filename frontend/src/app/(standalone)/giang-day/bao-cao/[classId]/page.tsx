@@ -24,6 +24,11 @@ type Em = {
   name: string | null;
   parentName: string;
   parentPhone: string;
+  parentEmail: string;
+  /** Em này có số hoặc email phụ huynh chưa — GIẢNG VIÊN sửa nếu thiếu. */
+  coLienLac: boolean;
+  /** Kênh gửi được NGAY BÂY GIỜ, hoặc null nếu chưa cấu hình kênh nào hợp. */
+  kenh: 'email' | 'zns' | null;
   guiDuoc: boolean;
 };
 
@@ -31,6 +36,8 @@ type SoanSan = {
   period: { from: string; to: string };
   znsSanSang: boolean;
   znsThieu: string[];
+  emailSanSang: boolean;
+  emailThieu: string[];
   students: Em[];
 };
 
@@ -57,7 +64,7 @@ export default async function BaoCaoCaLopPage({
         <p className="mt-2 text-body text-ink-2">{kq.message}</p>
         <Link
           href={`/giang-day/buoi-hoc/${classId}`}
-          className="mt-6 inline-block text-body text-brand-ink underline"
+          className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline"
         >
           ← Về lớp
         </Link>
@@ -66,7 +73,13 @@ export default async function BaoCaoCaLopPage({
   }
 
   const d = kq.data;
-  const thieu = d.students.filter((e) => !e.guiDuoc);
+  // HAI danh sách khác nhau, vì hai người khác nhau đi sửa:
+  //   · thiếu liên lạc  → giảng viên đi hỏi phụ huynh số hoặc email;
+  //   · có liên lạc mà chưa gửi được → người quản trị chưa nối kênh.
+  // Gộp lại thành một câu "N em sẽ không nhận được tin" thì người đọc màn hình
+  // không biết phải làm gì tiếp.
+  const thieu = d.students.filter((e) => !e.coLienLac);
+  const ketNoiThieu = d.students.filter((e) => e.coLienLac && !e.guiDuoc);
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6">
@@ -90,9 +103,19 @@ export default async function BaoCaoCaLopPage({
             kết quả là bắt họ đối chiếu ngược một danh sách. */}
         {thieu.length > 0 && (
           <p className="mb-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-small text-warning-ink">
-            {thieu.length} em chưa có số Zalo của phụ huynh nên sẽ không nhận được tin:{' '}
-            {thieu.map((e) => e.name || `#${e.id}`).join(' · ')}. Các em tự điền được ở
-            Cài đặt → Liên hệ phụ huynh.
+            {thieu.length} em chưa có email hoặc số Zalo của phụ huynh nên sẽ không
+            nhận được báo cáo: {thieu.map((e) => e.name || `#${e.id}`).join(' · ')}. Các
+            em tự điền được ở Cài đặt → Liên hệ phụ huynh.
+          </p>
+        )}
+
+        {ketNoiThieu.length > 0 && (
+          <p className="mb-3 rounded-md border border-line bg-sunken px-3 py-2 text-small text-ink-2">
+            {ketNoiThieu.length} em CÓ liên lạc phụ huynh nhưng hệ thống chưa nối được
+            kênh tương ứng, nên lượt này chỉ cấp đường dẫn để gửi tay.
+            {d.emailThieu.length > 0 && (
+              <> Còn thiếu cấu hình email: <code className="font-mono">{d.emailThieu.join(', ')}</code>.</>
+            )}
           </p>
         )}
 
@@ -101,6 +124,8 @@ export default async function BaoCaoCaLopPage({
           soEm={d.students.filter((e) => e.guiDuoc).length}
           znsSanSang={d.znsSanSang}
           znsThieu={d.znsThieu}
+          emailSanSang={d.emailSanSang}
+          emailThieu={d.emailThieu}
         />
       </Card>
 

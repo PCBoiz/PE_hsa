@@ -87,7 +87,40 @@ export default function DuongDanDaCap({
     }
   }, [classId, userId]);
 
-  useEffect(() => { void nap(); }, [nap, lamMoiKhi]);
+  /* Nạp lần đầu và mỗi khi `lamMoiKhi` đổi.
+   *
+   * ── VÌ SAO KHÔNG PHẢI `useEffect(() => { void nap(); }, [nap, lamMoiKhi])`
+   *
+   * Luật `react-hooks/set-state-in-effect` (theo cùng đợt nâng thư viện
+   * 06/09/2026) báo đỏ dòng ấy, và nó báo đúng một chuyện có thật: hàm gọi
+   * trong thân effect dẫn thẳng tới `setState`.
+   *
+   * Nhưng thứ đáng sửa không phải cái nhãn đỏ. Bản cũ KHÔNG HUỶ được lượt gọi
+   * đang bay: đổi học viên hay bấm làm mới hai lần thì lượt cũ về sau vẫn
+   * `setDs`, và danh sách chìa của em TRƯỚC hiện dưới tên em SAU. Trên màn
+   * quản lý chìa xem báo cáo của một đứa trẻ thì đó là nhầm dữ liệu giữa hai
+   * gia đình, không phải một lỗi hiển thị.
+   *
+   * Nên nạp ngay trong effect kèm cờ huỷ. `nap` vẫn giữ nguyên cho đường bấm
+   * tay sau khi thu hồi chìa — ở đó không có chuyện gắn/gỡ thành phần. */
+  useEffect(() => {
+    let huy = false;
+    void (async () => {
+      try {
+        const r = await apiFetch(
+          `/api/teach/classes/${classId}/students/${userId}/parent-report/link`,
+        );
+        const body: unknown = await r.json().catch(() => null);
+        if (huy) return;
+        if (!r.ok) { setLoi(errorText(r.status, body)); return; }
+        setLoi(null);
+        setDs(((body as { links?: ChiaKhoa[] })?.links) ?? []);
+      } catch (e) {
+        if (!huy) setLoi(loiBatDuoc(e, 'Chưa đọc được danh sách đường dẫn.'));
+      }
+    })();
+    return () => { huy = true; };
+  }, [classId, userId, lamMoiKhi]);
 
   async function thuHoi(id: number) {
     setDangThuHoi(id);

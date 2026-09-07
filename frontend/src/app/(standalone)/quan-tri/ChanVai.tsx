@@ -15,7 +15,7 @@ function Khung({ tieu_de, children }: { tieu_de: string; children: React.ReactNo
     <main className="mx-auto max-w-3xl px-4 py-16">
       <h1 className="text-title text-ink">{tieu_de}</h1>
       <p className="mt-2 text-body text-ink-2">{children}</p>
-      <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+      <Link href="/dashboard" className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline">
         ← Về trang của tôi
       </Link>
     </main>

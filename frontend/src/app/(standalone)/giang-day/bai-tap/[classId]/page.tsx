@@ -48,7 +48,7 @@ export default async function BaiTapPage({
             ? detail.message
             : 'Lớp không tồn tại, hoặc bạn không phải giảng viên phụ trách lớp đó.'}
         </p>
-        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+        <Link href="/dashboard" className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline">
           ← Về khu Giảng dạy
         </Link>
       </main>

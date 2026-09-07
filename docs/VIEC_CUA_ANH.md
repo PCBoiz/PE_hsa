@@ -1240,3 +1240,300 @@ Free. Nó luôn 0×0px — từ trước khi tôi đụng vào. Đã thay bằng
      21×2    trang giao diện: 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS
       6/6    bề mặt XSS an toàn
         0    lỗ hổng thư viện (trước audit: 17)
+
+
+---
+
+# Phần 16 — Đăng nhập hỏng, ZNS chế độ thử, và landing nói thật (07/09, khuya)
+
+## 16.1 Mật khẩu của anh ĐÚNG — thứ hỏng là backend
+
+Anh báo *"không đăng nhập bằng tài khoản admin được nữa, đụng chạm gì database
+rồi"*. Tôi đo:
+
+| kiểm | kết quả |
+|---|---|
+| `HSA@admin2026` qua **đúng hàm máy chủ dùng** (`check_werkzeug_password`) | **True** ✓ |
+| Tài khoản `admin@pe-hsa.vn` | còn, `role=admin`, `status=active` ✓ |
+| Tổng tài khoản | 6, không thiếu ai ✓ |
+| Backend production | **503 suốt 169 giây** (đo bằng trình duyệt thật, 12 lần) |
+| WSGI + collectstatic + migrate + bootstrap_schema ở chế độ production | **tất cả chạy được** ✓ |
+
+**CSDL không bị đụng gì cả.** Thứ hỏng là dịch vụ backend trên Render.
+
+### Và màn đăng nhập đã đổ lỗi cho anh
+
+`LoginForm` để "Sai email/số điện thoại hoặc mật khẩu" làm câu **mặc định** cho
+mọi phản hồi lỗi không kèm thân JSON — nên 500/502/503/504 đều hiện thành lỗi
+của người gõ. Nhánh `catch` không cứu được: `fetch` chỉ *ném* khi mất mạng, còn
+503 là fetch **thành công** với `res.ok === false`.
+
+Đây đúng cái bẫy `src/middleware.ts` của chính dự án đã ghi và đã vá cho đường
+làm mới phiên. Chỗ này sót. **Đã vá**: từ 500 trở lên nói thẳng *"máy chủ không
+phản hồi, ĐÂY KHÔNG PHẢI lỗi mật khẩu"*.
+
+### ⚠️ CẦN ANH LÀM
+
+Mở Render → dịch vụ `pe-hsa-backend` → tab **Events / Logs**, xem lần deploy
+gần nhất **failed** hay dịch vụ bị **suspended** (gói free 750 giờ/tháng). Tôi
+không nhìn được bảng điều khiển ấy. Tôi đã merge lên master hai lần hôm nay nên
+rất có thể một lần deploy hỏng — nhưng mọi lệnh build đều chạy sạch tại máy,
+nên tôi chưa dám khẳng định là do tôi.
+
+## 16.2 ZNS: chế độ THỬ đã dựng, chưa gửi thật
+
+Anh chốt dựng chế độ thử trước. `ZALO_CHE_DO_THU=1` đi trọn luồng, dựng đúng
+thân request, **không một byte nào rời khỏi máy chủ**.
+
+    ZALO_CHE_DO_THU=1 python manage.py thu_zns --so 0812315276
+
+In ra đúng thứ sẽ gửi, kèm đường dẫn mẫu dài 43 ký tự bằng chìa thật (Zalo đếm
+ký tự lúc duyệt mẫu). Không có chế độ thử **và** không có cấu hình thì lệnh
+DỪNG chứ không thử gửi.
+
+Chế độ thử **không ghi** `parent_report_sends`: sổ ấy là sổ của tin ĐÃ ĐI, và
+một dòng "đã gửi" cho tin chưa từng rời máy chủ là loại nói dối khó thấy nhất.
+
+### ⚠️ CẦN ANH LÀM để gửi thật tới 0812315276
+
+    ZALO_OA_ACCESS_TOKEN     lấy ở Zalo OA → Quản lý ứng dụng
+    ZALO_ZNS_TEMPLATE_ID     lấy ở Zalo OA → ZNS → template đã DUYỆT
+
+Mẫu phải khai đúng bốn tham số mã đang gửi: `ten_hoc_vien`, `ten_lop`, `ky`,
+`duong_dan`. Và 0/4 học viên đã khai số phụ huynh.
+
+## 16.3 Landing: gỡ ba lời khẳng định SAI
+
+Anh nói trang chán và vô nghĩa. Đúng — nhưng khi mở ra tôi còn tìm thấy ba thứ
+**không đúng sự thật**, đang chạy trên production:
+
+1. **"100% — Miễn phí luyện tập cơ bản"**. Không có gói miễn phí nào; tài khoản
+   do trung tâm cấp khi đăng ký học.
+2. **Một trích dẫn học viên** *"Luyện theo dạng và bấm giờ như thi thật…"* — chú
+   là *"trải nghiệm từ nhóm học viên thử nghiệm"*.
+3. **Một trích dẫn nữa** *"Bài chẩn đoán đầu vào chỉ ra đúng chỗ mình yếu
+   nhất…"* — chú là *"phản hồi từ nhóm pilot"*.
+
+Không có nhóm pilot nào: 0 đợt học, 0 buổi, 0 lượt điểm danh. Hai câu ấy là lời
+chứng thực **bịa**, trên trang nhắm vào phụ huynh học sinh lớp 12. **Đã gỡ.**
+
+### Thay bằng gì
+
+| khối | nội dung |
+|---|---|
+| **Mỗi kỳ, phụ huynh nhận đúng tờ này** | Render CHÍNH component tờ báo cáo — cùng dòng mã với thứ phụ huynh mở từ Zalo. Số liệu của một em không có thật, và trang nói thẳng điều đó. |
+| **Thử ba câu** (thay "thử một câu") | Mỗi hợp phần một câu, kết bằng bảng phân tích theo hợp phần — đó mới là thứ sản phẩm bán. |
+| **Chúng tôi chưa có gì để khoe** | Hai cột: thứ CÓ THẬT kiểm được ngay, và thứ SẼ KHÔNG LÀM. |
+
+### Ô "Bài học" hiện dấu gạch ngang
+
+Ảnh anh gửi còn lộ một lỗi nữa: **"— Bài học"**. Con số ấy do JS gọi API điền,
+mà backend đang 503. Một trang giới thiệu không được phụ thuộc API sống để nói
+mình có bao nhiêu bài — nay dựng sẵn trong HTML, JS chỉ làm mới khi API sống.
+`tests_so_lieu_landing.py` canh nó khớp CSDL.
+
+## 16.4 Bốn thứ dọn kèm
+
+- **Tám liên kết thoát** ("← Về trang của tôi", "← Về lớp"…) cao 24px, dưới
+  ngưỡng chạm 44px — mà trên trang CHẶN thì đó là hành động duy nhất.
+- **Bộ đo giao diện báo oan**: nó lọc phần tử ẩn bằng `width < 1`, mà lối giấu
+  chữ cho trình đọc màn hình dựng hộp đúng 1×1px. Người đọc báo cáo sẽ đi "sửa"
+  một đoạn chữ cố ý bị giấu — tức bộ đo a11y làm hỏng a11y.
+- **`ToBaoCao` in ra `· active`** trên landing — hoá ra không phải lỗi sản phẩm
+  (backend gửi nhãn tiếng Việt), mà dữ liệu mẫu của tôi ghi mã thô.
+- **Số liệu mẫu tự mâu thuẫn**: "Có mặt 7/7" ngay cạnh "Vắng 1".
+
+Cổng: 21 trang × 2 khổ → 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS ·
+35/35 e2e · 21/21 đơn vị · 15/15 pytest ZNS · 3/3 pytest số liệu landing.
+
+---
+
+# Phần 17 — Zalo OA: cái cửa thật, và ba đường vòng
+
+**07/09/2026.** Anh báo không tạo được OA access token vì Zalo bắt xác thực
+doanh nghiệp, và hỏi thử SMS xem sao.
+
+## 17.1 SMS KHÔNG đi vòng được — nó vướng đúng cái cửa ấy
+
+| đường | yêu cầu | |
+|---|---|---|
+| **ZNS** | OA **đã xác thực** + tài khoản ZCA + mẫu được Zalo duyệt | vướng |
+| **SMS brandname VN** (eSMS / Viettel / VNPT / FPT) | Giấy phép kinh doanh — công ty **hoặc hộ kinh doanh cá thể**. Cá nhân không GPKD chỉ được dùng brandname *dùng chung* của nhà cung cấp, không đăng ký tên riêng. Duyệt hồ sơ ~5 ngày làm việc | vướng |
+| **Twilio / AWS gửi vào VN** | Phải **đăng ký trước sender ID** kèm giấy tờ công ty; không đăng ký thì nhà mạng chặn thẳng (Twilio trả lỗi 30018) | vướng, lại đắt hơn |
+
+Nên SMS không phải lối tránh: cùng một thủ tục, cộng thêm phí và thời gian chờ.
+
+## 17.2 Tôi đã nói option "OA chưa xác thực" quá lạc quan — sửa lại
+
+Lần đầu tôi xếp nó là "chưa chắc, thử miễn phí". Tra tiếp thì ba nguồn **đá
+nhau**:
+
+- trang chính sách gửi tin của Zalo liệt kê tin Tư vấn / Giao dịch kèm điều
+  kiện "người dùng có phát sinh tương tác", **không nhắc** phải xác thực;
+- trang khởi tạo OA nói người **chưa có GPKD chỉ lập được "Hồ sơ quảng cáo"**,
+  và hồ sơ ấy **không dùng được Nhắn tin / Broadcast / Bài viết / Chatbot**;
+- nhiều nguồn khác: từ **01/12/2020**, muốn gửi tin chủ động thì phải xác thực.
+
+Ba câu ấy không thể cùng đúng, và không tài liệu công khai nào phân xử được.
+
+**Và có một cái giá tôi chưa nói lần trước:** OA tạo ra mà **không nộp hồ sơ
+xác thực trong 14 ngày thì Zalo khoá**, và **OA đã khoá không mở lại**. Nên
+"cứ tạo thử xem sao" không miễn phí như tôi tưởng — nó tiêu mất một cái tên OA.
+
+## 17.3 Nếu anh vẫn muốn thử: chạy một lệnh là biết
+
+```
+cd backend
+python manage.py chan_doan_oa --token <access_token>
+```
+
+Ba bước — **hai bước đầu chỉ ĐỌC**, không gửi gì:
+
+1. token còn sống không, và **OA này đã xác thực chưa** (theo lời Zalo, không
+   theo phán đoán khi nhìn giao diện) — `v2.0/oa/getoa`
+2. có ai đang quan tâm OA không, và `user_id` của họ — `v2.0/oa/getfollowers`
+3. gửi thử **một** tin tư vấn — `v3.0/oa/message/cs`
+
+Bước 3 **không tự chạy**: phải thêm `--gui-toi <user_id>`, và lệnh in nguyên
+thân request trước khi gửi. `ZALO_CHE_DO_THU=1` thì nó in ra rồi dừng.
+
+Lệnh không in đủ token (đầu ra sẽ bị chép vào chat, tài liệu, ảnh chụp màn
+hình) — chỉ vài ký tự đầu/cuối đủ để đối chiếu.
+
+Đã đo trên Zalo thật với token giả, trả về đúng `{"error": -216, "message":
+"Access token is invalid"}` — tức endpoint và cách gắn header là đúng.
+
+**Đường lấy token** (miễn phí, không cần giấy tờ ở bước tạo): tạo OA ở
+`oa.zalo.me` → tạo một Ứng dụng ở `developers.zalo.me` → uỷ quyền Ứng dụng cho
+OA → lấy access token. Token OA **sống 25 giờ**, phải làm mới bằng refresh
+token — nên đừng dán vào biến môi trường rồi quên.
+
+## 17.4 Đường dùng được HÔM NAY mà không cần giấy tờ nào
+
+Sản phẩm đã sinh sẵn link `/bc/<chìa>`; thứ thiếu chỉ là **đường vận chuyển**.
+`zalo.me/<số điện thoại>` là link click-to-chat có thật — bấm một cái mở đúng
+cửa sổ chat với người đó.
+
+Với 4 học viên thì giảng viên chép link gửi tay là việc **một trung tâm nhỏ sẽ
+làm thật**, không phải bản tạm. Màn `GuiCaLop` đã có nhánh "cấp đường dẫn"; thứ
+nó còn thiếu là lời nhắn soạn sẵn, nút chép, nút mở thẳng chat, và sổ ghi ai đã
+gửi lúc nào. **Anh chưa chọn hướng này** — nói một tiếng là tôi dựng.
+
+## 17.5 Đường mở khoá thật, khi nào anh muốn
+
+Zalo nhận xác thực OA **theo tên hộ kinh doanh**, không bắt buộc phải là công
+ty. Đăng ký hộ kinh doanh ở phường rẻ và nhanh hơn lập công ty nhiều, và nó mở
+khoá **cả ZNS lẫn SMS brandname** cùng lúc. Đây là việc giấy tờ, không phải
+việc mã — nên tôi để anh quyết.
+
+
+---
+
+# Phần 18 — Email đã dựng xong, cần anh một chuỗi 16 ký tự
+
+**07/09/2026.** Anh chốt: đi đường email, nội dung là **tóm tắt + tệp PDF**
+giống tờ "Báo cáo kết quả thi thử HSA" anh gửi.
+
+## 18.1 Việc của anh: App Password (2 phút)
+
+1. Mở `myaccount.google.com` → **Bảo mật** → bật **Xác minh 2 bước** (bắt buộc,
+   không bật thì Google không cho tạo App Password).
+2. Vào `myaccount.google.com/apppasswords` → đặt tên "TopHSA" → **Tạo**.
+3. Google hiện **16 ký tự**. Đưa tôi, hoặc đặt thẳng vào biến môi trường:
+
+```
+EMAIL_USER=<gmail của anh>
+EMAIL_APP_PASSWORD=<16 ký tự, không có dấu cách>
+EMAIL_TU_TEN=TopHSA
+```
+
+Rồi gửi thật một lá về hộp thư của anh:
+
+```
+cd backend
+python manage.py thu_email --toi naman20052011@gmail.com
+```
+
+**Xem trước mà chưa cần mật khẩu** — đặt `EMAIL_CHE_DO_THU=1` thì lệnh ghi ra
+một tệp `.eml` trong `.thu_email/`. Mở bằng Outlook, Thunderbird, hoặc kéo vào
+cửa sổ soạn thư Gmail là thấy **đúng** thứ phụ huynh sẽ thấy, kể cả tệp đính kèm.
+
+Giới hạn cần biết: Gmail cho khoảng **500 người nhận/ngày**. Vài chục học viên
+thì thoải mái; tới vài trăm thì đổi sang dịch vụ gửi thư chuyên dụng, và lúc ấy
+chỉ phải đổi một khối trong `common/mail.py`.
+
+## 18.2 Trong thư có gì
+
+| phần | nội dung | vì sao |
+|---|---|---|
+| **Tóm tắt** trong thân thư | chuyên cần, số bài đã xong, điểm thi thử, 2 chủ đề yếu nhất | phụ huynh mở thư trên điện thoại và thường không bấm gì thêm |
+| **PDF đính kèm** | 5 mục: thông tin chung · chuyên cần · tiến độ theo hợp phần (kèm biểu đồ) · chủ đề theo dải · nhận xét giảng viên | bản in được, mang đi họp được, còn nguyên khi link hết hạn |
+| **Đường dẫn** | nút "Xem bản đầy đủ" | bản luôn mới; thư nói rõ PDF giữ số của lúc gửi |
+
+Học từ tờ của TopHSA: đánh số mục, nhóm chủ đề theo **dải phần trăm** kèm một
+đoạn nhận xét cho cả dải, và mỗi con số đi kèm mẫu số. **Không** mang sang phần
+quảng cáo khoá học + hotline tuyển sinh ở cuối tờ của họ — thư này gửi cho phụ
+huynh của học viên **đang học**, bán thêm ở đây thì mọi con số phía trên bị đọc
+như lời chào hàng.
+
+## 18.3 Hai chỗ trình bày SAI, tìm ra khi chạy trên dữ liệu thật
+
+Chạy thử với học viên id 9 của lớp 1:
+
+- **"Điểm thi thử trung bình: 0%"** — số ĐÚNG (em ấy thi một lần, được 0/9)
+  nhưng chữ sai. Gọi kết quả của **một** lượt là "trung bình" thì phụ huynh đọc
+  ra một xu hướng, trong khi mới có một điểm và điểm ấy có thể là em bấm nhầm
+  rồi thoát. Nay ghi **"0% (mới thi 1 lượt)"**.
+- **"Chuyên cần: 0/0 buổi đã điểm danh"** — đọc như con không đi buổi nào, mà
+  sự thật là lớp chưa có buổi nào được điểm danh. Nay ghi **"lớp chưa có buổi
+  nào được điểm danh"**.
+
+Cả hai đều chỉ lộ ra khi chạy trên dữ liệu thật; dữ liệu mẫu của tôi không có
+em nào thi đúng một lượt.
+
+## 18.4 Còn thiếu: chưa em nào có email phụ huynh
+
+Đã thêm cột `users.parent_email` (chỉ THÊM cột, không sửa ràng buộc nào; đã đối
+chiếu số dòng trước/sau: 6 người dùng, 4 thành viên lớp — không đổi).
+
+Nhưng **0/3 em đang học có email phụ huynh**, nên bấm "Gửi cả lớp" bây giờ vẫn
+ra "thiếu liên lạc". Học viên tự điền được ở **Cài đặt → Liên hệ phụ huynh**,
+hoặc học vụ điền hộ ở hồ sơ học viên.
+
+Màn hình nay tách **hai lý do khác nhau** vì hai người khác nhau đi sửa:
+
+- *thiếu liên lạc* → giảng viên đi hỏi phụ huynh;
+- *có liên lạc mà chưa gửi được* → người quản trị chưa nối kênh.
+
+## 18.5 Đường nối kết quả thi — TÔI NGHĨ NÓ KHÔNG ĐÓNG
+
+Anh trả lời hệ thống khảo thí `uranustech` **"chỉ xem được trên web"**, nên tôi
+đã định gạch đường đồng bộ kết quả thi.
+
+Nhưng tệp anh gửi tôi — `Báo cáo kết quả thi thử HSA.pdf` — trông đúng là **bản
+xuất từ chính hệ thống ấy** (khớp liên kết "Xem Báo cáo Kết quả thi" trong màn
+chi tiết học sinh). Và tôi đọc được sạch sẽ toàn bộ dữ liệu trong đó:
+
+- họ tên, mã học sinh, ngày thi, hình thức thi, địa điểm;
+- ba điểm phần (27/50 · 38/50 · 40/50) và tổng 105/150;
+- **và cả danh sách từng đơn vị kiến thức kèm phần trăm** — "Phần 1: Định lượng
+  và Xử lí số liệu: Hình học Oxyz (50%)", 30 dòng như thế.
+
+Đó chính xác là thứ `pe_hsa` cần để ô "điểm thi thử" và mục "chủ đề yếu" trong
+báo cáo phụ huynh sống dậy bằng số thật, thay vì số của bộ thi thử nội bộ.
+
+**Nên câu hỏi cho anh:** tải được tệp PDF ấy cho **từng học viên** từ hệ thống
+kia không? Nếu được thì tôi dựng màn **nhập báo cáo PDF**: học vụ kéo thả tệp
+vào, hệ thống bóc số ra, hiện bảng xem trước, báo em nào không khớp được với
+học viên bên mình, rồi mới ghi. Không cần API, không cần họ mở gì cho mình.
+
+## 18.6 Bốn hướng ERP anh chọn — thứ tự tôi đề nghị
+
+Anh chọn cả bốn. Chúng không làm song song được, nên thứ tự tôi đề nghị:
+
+| # | việc | vì sao đặt ở đây |
+|---|---|---|
+| 1 | **Nhập báo cáo PDF từ hệ thống khảo thí** | Rẻ nhất trong bốn, và nó làm sống lại phần đã dựng sẵn (ô điểm thi thử, chủ đề yếu). Chờ anh trả lời §18.5 |
+| 2 | **Xuất Excel/PDF báo cáo lớp** (ERP §9 mục 3) | PDF đã dựng xong cho từng em; mở rộng ra cả lớp là việc nhỏ. Đặc tả ghi "bắt buộc với trung tâm" |
+| 3 | **CRM tuyển sinh** | Landing mới sửa đang dẫn người tới mà chưa có chỗ hứng. Nhưng cần anh mô tả quy trình thật: ai nghe điện, ghi gì, khi nào thành học viên |
+| 4 | **Ngân hàng câu hỏi + ma trận đề** | Nặng nhất, và là **làm lại thứ uranustech đã có**. Chỉ đáng làm nếu anh định THAY hệ thống kia — cần anh nói rõ trước khi tôi bắt đầu |

@@ -3,45 +3,50 @@
 import { useState } from 'react';
 
 /**
- * "Thử một câu HSA" — ô tương tác duy nhất trên trang giới thiệu.
+ * "Thử ba câu" — bản rút gọn của trải nghiệm thi thử, chạy ngay trên trang.
  *
- * ── VÌ SAO THÊM (07/09/2026) ──────────────────────────────────────────────
+ * ── VÌ SAO VIẾT LẠI (07/09/2026) ──────────────────────────────────────────
  *
- * Đo trang giới thiệu trước hôm nay: cao 5343px trên máy tính, 9651px trên
- * điện thoại, và **sáu liên kết trên toàn trang** — gần như chỉ MỘT hành động
- * là "Đăng nhập". Tức một người vào xem không làm được gì ngoài việc bỏ đi
- * hoặc đăng nhập, mà họ chưa có tài khoản để đăng nhập.
+ * Bản trước cho làm MỘT câu rồi hiện đáp án. Anh Sơn: *"ai lại cho 1 câu thử ở
+ * landing cơ chứ, mình phải thu hút học viên mà?"* — đúng.
  *
- * Với một sản phẩm LUYỆN THI, thứ thuyết phục nhất không phải câu chữ mô tả —
- * là để người ta làm thử một câu và thấy ngay mình đúng hay sai, kèm lời giải.
- * Ba mươi giây ấy nói được nhiều hơn cả trang.
+ * Một câu chỉ chứng minh "trang này có ô bấm được". Nó KHÔNG chứng minh thứ
+ * TopHSA thật sự bán: **làm xong thì biết mình yếu hợp phần nào.** Mà để nói
+ * được câu đó thì cần ít nhất một câu cho mỗi hợp phần — đúng ba câu, đúng cấu
+ * trúc đề HSA.
+ *
+ * Nên ô này nay đi trọn một vòng nhỏ của sản phẩm: làm ba câu → nhận bảng phân
+ * tích theo hợp phần → thấy ngay mình lệch ở đâu. Đó là bản rút gọn TRUNG THỰC
+ * của đề 150 câu, không phải một trò chơi khác.
  *
  * ── VÌ SAO KHÔNG LẤY CÂU THẬT TỪ CSDL ────────────────────────────────────
  *
  * Ngân hàng đề là tài sản của TopHSA và học viên sẽ gặp lại chính những câu ấy
- * khi thi thử. Đưa một câu thật lên trang công khai là đem đáp án ra ngoài.
- * Ba câu dưới đây viết riêng cho trang này, ĐÚNG DẠNG của ba hợp phần nhưng
- * không nằm trong đề nào — và nói thẳng điều đó cho người đọc.
+ * khi thi thử. Đưa câu thật lên trang công khai là đem đáp án ra ngoài. Ba câu
+ * dưới đây viết riêng cho trang này, ĐÚNG DẠNG của ba hợp phần nhưng không nằm
+ * trong đề nào — và ô này nói thẳng điều đó.
  *
  * ── KHÔNG HỨA CON SỐ NÀO ─────────────────────────────────────────────────
  *
- * Ô này không nói "95% học viên đỗ" hay bất kỳ thống kê nào. Trung tâm chưa có
+ * Không "95% học viên đỗ", không "điểm trung bình tăng N". Trung tâm chưa có
  * khoá nào chạy xong (đo 07/09: 0 đợt học, 0 buổi). Một con số bịa trên trang
  * bán hàng là thứ đắt nhất trong cả sản phẩm khi bị phát hiện.
  */
 
 type Cau = {
   hop_phan: string;
+  ma: 'dinh_luong' | 'dinh_tinh' | 'khoa_hoc';
   de: string;
   lua_chon: readonly string[];
   dung: number;
   giai: string;
 };
 
-/** Ba câu MẪU, mỗi hợp phần một câu. Không nằm trong đề thi thử nào. */
+/** Ba câu MẪU, mỗi hợp phần một câu — đúng cấu trúc đề HSA. */
 const CAU: readonly Cau[] = [
   {
     hop_phan: 'Tư duy Định lượng',
+    ma: 'dinh_luong',
     de: 'Một số tăng 20%, sau đó giảm 20%. So với ban đầu, số ấy thay đổi thế nào?',
     lua_chon: ['Không đổi', 'Tăng 4%', 'Giảm 4%', 'Giảm 20%'],
     dung: 2,
@@ -50,6 +55,7 @@ const CAU: readonly Cau[] = [
   },
   {
     hop_phan: 'Tư duy Định tính',
+    ma: 'dinh_tinh',
     de: 'Trong câu "Anh ấy chạy rất nhanh nhưng vẫn không kịp chuyến tàu", '
       + 'từ "nhưng" thể hiện quan hệ gì?',
     lua_chon: ['Nguyên nhân – kết quả', 'Tương phản', 'Bổ sung', 'Điều kiện'],
@@ -60,6 +66,7 @@ const CAU: readonly Cau[] = [
   },
   {
     hop_phan: 'Khoa học & Tiếng Anh',
+    ma: 'khoa_hoc',
     de: 'Choose the word that best completes the sentence: '
       + '"Despite the heavy rain, the match ___ as scheduled."',
     lua_chon: ['was cancelled', 'went ahead', 'was postponed', 'had ended'],
@@ -72,17 +79,101 @@ const CAU: readonly Cau[] = [
 
 export default function ThuMotCau() {
   const [i, setI] = useState(0);
-  const [chon, setChon] = useState<number | null>(null);
+  const [chon, setChon] = useState<(number | null)[]>([null, null, null]);
+  const [xongHet, setXongHet] = useState(false);
+
   const c = CAU[i];
-  const xong = chon !== null;
-  const dung = chon === c.dung;
+  const daChon = chon[i];
+  const xong = daChon !== null;
+  const dung = daChon === c.dung;
+  const soDung = chon.filter((v, k) => v === CAU[k].dung).length;
+
+  function traLoi(k: number) {
+    if (xong) return;
+    const moi = [...chon];
+    moi[i] = k;
+    setChon(moi);
+  }
+
+  function tiep() {
+    if (i < CAU.length - 1) setI(i + 1);
+    else setXongHet(true);
+  }
+
+  function lamLai() {
+    setChon([null, null, null]);
+    setI(0);
+    setXongHet(false);
+  }
+
+  /* ── MÀN KẾT: bảng phân tích theo hợp phần ───────────────────────────────
+     Đây là lý do ô này tồn tại. Một câu đúng/sai thì trang nào cũng làm được;
+     thứ người học chưa từng thấy ở nơi khác là NHÌN RA MÌNH LỆCH Ở ĐÂU. */
+  if (xongHet) {
+    return (
+      <div className="thu-cau">
+        <div className="thu-cau-dau">
+          <span className="thu-cau-nhan">Kết quả — {soDung}/{CAU.length} câu đúng</span>
+        </div>
+
+        <ul className="thu-cau-bang" aria-label="Kết quả theo hợp phần">
+          {CAU.map((q, k) => {
+            const ok = chon[k] === q.dung;
+            return (
+              <li key={q.ma} className={'thu-cau-hang ' + (ok ? 'la-dung' : 'la-sai')}>
+                <span className="thu-cau-hp-ten">{q.hop_phan}</span>
+                {/* Ký hiệu KÈM CHỮ: một ô chỉ có màu thì người dùng trình đọc
+                    màn hình nghe một hàng im lặng. */}
+                <span className="thu-cau-hp-kq">{ok ? 'Đúng' : 'Chưa đúng'}</span>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p className="thu-cau-vi-sao">
+          {soDung === CAU.length
+            ? 'Cả ba hợp phần đều đúng. Đề thật dài hơn nhiều, nên thứ quyết định điểm là giữ đều được ở cả ba — không phải giỏi một phần.'
+            : 'Điểm HSA cộng cả ba hợp phần, nên phần bạn vừa sai chính là phần kéo điểm xuống nhiều nhất. Học viên TopHSA nhận đúng bảng này sau mỗi đề thi thử, nhưng chi tiết tới từng chủ đề.'}
+        </p>
+
+        <div className="thu-cau-cuoi">
+          <button type="button" className="thu-cau-tiep" onClick={lamLai}>
+            Làm lại
+          </button>
+          <span className="thu-cau-luu-y">
+            Bản rút gọn 3 câu · đề thi thử thật bấm giờ như thi trên máy
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="thu-cau">
       <div className="thu-cau-dau">
-        <span className="thu-cau-nhan">Thử một câu — không cần tài khoản</span>
+        <span className="thu-cau-nhan">
+          Thử {CAU.length} câu — không cần tài khoản · câu {i + 1}/{CAU.length}
+        </span>
         <span className="thu-cau-hp">{c.hop_phan}</span>
       </div>
+
+      {/* Ba ô tiến độ: người dùng biết còn bao lâu thì xong, tức ô này hứa một
+          việc NGẮN chứ không phải một bài kiểm tra. */}
+      <ol className="thu-cau-buoc" aria-label={`Câu ${i + 1} trên ${CAU.length}`}>
+        {CAU.map((q, k) => (
+          <li
+            key={q.ma}
+            className={
+              'thu-cau-buoc-o'
+              + (k === i ? ' dang-lam' : '')
+              + (chon[k] !== null ? (chon[k] === q.dung ? ' la-dung' : ' la-sai') : '')
+            }
+            aria-current={k === i ? 'step' : undefined}
+          >
+            <span className="sr-only">{q.hop_phan}</span>
+          </li>
+        ))}
+      </ol>
 
       <p className="thu-cau-de">{c.de}</p>
 
@@ -92,15 +183,15 @@ export default function ThuMotCau() {
              lựa chọn SAI của họ màu đỏ. Chỉ tô cái họ chọn thì người chọn sai
              biết mình sai mà không biết đúng là gì — nửa vời, và đúng thứ làm
              người ta bỏ đi. */
-          const lop = !xong ? '' : k === c.dung ? ' la-dung' : k === chon ? ' la-sai' : ' mo-di';
+          const lop = !xong ? '' : k === c.dung ? ' la-dung' : k === daChon ? ' la-sai' : ' mo-di';
           return (
             <button
               key={v}
               type="button"
               className={'thu-cau-nut' + lop}
-              onClick={() => { if (!xong) setChon(k); }}
+              onClick={() => traLoi(k)}
               disabled={xong}
-              aria-pressed={chon === k}
+              aria-pressed={daChon === k}
             >
               <span className="thu-cau-ky" aria-hidden="true">{String.fromCharCode(65 + k)}</span>
               <span>{v}</span>
@@ -121,12 +212,8 @@ export default function ThuMotCau() {
       )}
 
       <div className="thu-cau-cuoi">
-        <button
-          type="button"
-          className="thu-cau-tiep"
-          onClick={() => { setI((v) => (v + 1) % CAU.length); setChon(null); }}
-        >
-          {xong ? 'Câu tiếp →' : 'Đổi câu khác'}
+        <button type="button" className="thu-cau-tiep" onClick={tiep} disabled={!xong}>
+          {i < CAU.length - 1 ? 'Câu tiếp →' : 'Xem kết quả →'}
         </button>
         {/* Nói rõ đây là câu MẪU. Người học gặp lại một câu ở đề thi thử rồi
             phát hiện nó nằm sẵn trên trang chủ thì niềm tin vào cả ngân hàng

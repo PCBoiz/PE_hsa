@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 
+import PhuHuynhNhanGi from './PhuHuynhNhanGi';
 import ThuMotCau from './ThuMotCau';
 
 export const metadata: Metadata = {
@@ -96,13 +97,20 @@ export default function LandingPage() {
           <ThuMotCau />
 
           <div className="hero-stats fade-in-up delay-3">
+            {/* SỐ DỰNG SẴN, KHÔNG CHỜ API.
+                Trước 07/09 hai ô này để "—" rồi đợi `landing.inline.js` gọi
+                `/api/public/courses` điền vào. Hôm ấy backend trả 503 và anh
+                Sơn chụp lại đúng cảnh trang giới thiệu hiện "— Bài học".
+                Một trang bán hàng không được phụ thuộc API sống để nói mình có
+                bao nhiêu bài: con số ấy chỉ đổi khi ai đó SOẠN THÊM BÀI, tức
+                vài tháng một lần, không phải dữ liệu thời gian thực.
+                `e2e/unit/so-lieu-landing.test.mjs` canh nó khớp CSDL. */}
             <div className="hero-stat">
-              <div className="hero-stat-val neon-glow-text" id="stat-courses">—</div>
+              <div className="hero-stat-val neon-glow-text" id="stat-courses">3</div>
               <div className="hero-stat-lbl">Hợp phần</div>
             </div>
             <div className="hero-stat">
-              {/* Đếm thật từ CSDL — con số này mình chắc chắn. */}
-              <div className="hero-stat-val neon-glow-text" id="stat-hours">—</div>
+              <div className="hero-stat-val neon-glow-text" id="stat-hours">76</div>
               <div className="hero-stat-lbl">Bài học</div>
             </div>
             <div className="hero-stat">
@@ -121,6 +129,13 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* PHỤ HUYNH TRƯỚC (anh Sơn chốt 07/09/2026).
+          Người quyết định cho con học ở đâu là phụ huynh, và thứ thuyết phục
+          họ không phải câu "lộ trình cá nhân hoá" — là nhìn thấy đúng tờ giấy
+          họ sẽ nhận mỗi kỳ. Đặt ngay sau hero vì phần lớn người xem không cuộn
+          quá màn hình thứ hai. */}
+      <PhuHuynhNhanGi />
 
       {/* HSA là gì — người chưa biết kỳ thi mở trang này thì phải hiểu ngay
           đang xem sản phẩm phục vụ việc gì (audit 2026-08-14). */}
@@ -324,35 +339,69 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="landing-section reveal-on-scroll">
-        <div className="section-container">
-          <h2 className="section-heading neon-text-sm">Vì sao chọn ProgrammingEdu × TopHSA</h2>
-          <p className="section-sub">Nền tảng luyện tập của ProgrammingEdu kết hợp kinh nghiệm luyện thi và ngân hàng đề của TopHSA — trung tâm chuyên Đánh giá năng lực ĐHQG Hà Nội.</p>
+      {/* ═══════════════════════════════════════════════════════════════════
+          KHỐI NÀY THAY CHO "VÌ SAO CHỌN …" — gỡ BA lời khẳng định SAI
+          ═══════════════════════════════════════════════════════════════════
 
-          <div className="testimonial-grid">
-            <div className="testimonial-card glass-card trust-card">
-              <div className="trust-stat">
-                <div className="trust-stat-val neon-glow-text">100%</div>
-                <div className="trust-stat-lbl">Miễn phí luyện tập cơ bản</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-stat-val neon-glow-text">3</div>
-                <div className="trust-stat-lbl">Hợp phần theo đúng cấu trúc HSA</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-stat-val neon-glow-text">CBT</div>
-                <div className="trust-stat-lbl">Thi thử trên máy, chấm điểm tức thì</div>
-              </div>
+          Bản cũ có ba thứ không đúng sự thật, và cả ba đang chạy trên
+          production tới 07/09/2026:
+
+            1. "100% — Miễn phí luyện tập cơ bản". Không có gói miễn phí nào.
+               Tài khoản do trung tâm cấp khi đăng ký HỌC, và từ 27/08/2026 đã
+               bỏ hẳn tự đăng ký.
+            2. Một trích dẫn học viên: "Luyện theo dạng và bấm giờ như thi thật
+               giúp mình quen áp lực thời gian…" — chú là "trải nghiệm từ nhóm
+               học viên thử nghiệm".
+            3. Một trích dẫn nữa: "Bài chẩn đoán đầu vào chỉ ra đúng chỗ mình
+               yếu nhất…" — chú là "phản hồi từ nhóm pilot".
+
+          Không có nhóm pilot nào. Đo trên CSDL thật ngày 07/09/2026: 0 đợt
+          học, 0 buổi học, 0 lượt điểm danh, 4 học viên. Chưa khoá nào chạy
+          xong, nên chưa ai có gì để nói về việc học ở đây.
+
+          Hai câu ấy là lời chứng thực BỊA, đặt trên một trang bán hàng nhắm
+          vào phụ huynh của học sinh lớp 12. Ngày một người hỏi "em nào nói câu
+          này" thì mất nhiều hơn hẳn thứ chúng mang lại.
+
+          Anh Sơn chốt 07/09: chưa có gì thật thì DÙNG CHÍNH SẢN PHẨM làm bằng
+          chứng. Khối này nói thẳng cái chưa có — và với phụ huynh đang chọn
+          chỗ cho con, một trung tâm dám nói "chúng tôi mới, đây là thứ chúng
+          tôi có" đáng tin hơn một trung tâm có sẵn lời khen không kiểm được. */}
+      <section className="landing-section reveal-on-scroll" id="minh-bach">
+        <div className="section-container">
+          <h2 className="section-heading neon-text-sm">Chúng tôi chưa có gì để khoe</h2>
+          <p className="section-sub">
+            Trung tâm mới, chưa khoá nào chạy xong. Nên trang này không có
+            &ldquo;95% học viên đỗ&rdquo;, không có lời khen của học viên cũ, và
+            không có con số nào chúng tôi không tự kiểm được.
+          </p>
+
+          <div className="mb-hai-cot">
+            <div className="mb-cot mb-co">
+              <h3 className="mb-tieu">Thứ có thật, kiểm được ngay</h3>
+              <ul>
+                <li><strong>76 bài học</strong> chia theo ba hợp phần HSA — 27 Định lượng, 23 Định tính, 26 Khoa học &amp; Tiếng Anh.</li>
+                <li><strong>Thi thử trên máy</strong>, bấm giờ, chấm xong là có phân tích theo từng hợp phần.</li>
+                <li><strong>Tờ báo cáo phụ huynh</strong> ở phần trên trang này — bản thật, không phải ảnh minh hoạ.</li>
+                <li><strong>Lộ trình theo chủ đề</strong>: hệ thống chỉ ra chủ đề đang yếu, không phải nhận xét chung chung.</li>
+              </ul>
             </div>
-            <div className="testimonial-card glass-card trust-card">
-              <p className="trust-quote">&quot;Luyện theo dạng và bấm giờ như thi thật giúp mình quen áp lực thời gian — vào phòng thi không còn bị cuống.&quot;</p>
-              <div className="trust-note">Trải nghiệm từ nhóm học viên thử nghiệm — phần đánh giá đầy đủ đang được tích hợp.</div>
-            </div>
-            <div className="testimonial-card glass-card trust-card">
-              <p className="trust-quote">&quot;Bài chẩn đoán đầu vào chỉ ra đúng chỗ mình yếu nhất, nên lộ trình luyện tập không bị dàn trải, lên điểm nhanh.&quot;</p>
-              <div className="trust-note">Phản hồi từ nhóm pilot — chúng tôi đang thu thập đánh giá từ những học viên đầu tiên.</div>
+
+            <div className="mb-cot mb-khong">
+              <h3 className="mb-tieu">Thứ chúng tôi sẽ không làm</h3>
+              <ul>
+                <li>Không bịa tỉ lệ đỗ hay điểm trung bình khi chưa có khoá nào thi xong.</li>
+                <li>Không dựng lời khen của học viên không có thật.</li>
+                <li>Không đưa dữ liệu của học viên thật lên trang công khai, kể cả khi đã che tên.</li>
+                <li>Không tự động bắn tin cho phụ huynh — mỗi tờ báo cáo do giảng viên phụ trách bấm gửi.</li>
+              </ul>
             </div>
           </div>
+
+          <p className="stat-note">
+            Khi khoá đầu tiên thi xong, số liệu thật sẽ được đưa lên đây kèm cách
+            tính. Trước lúc đó, chỗ này để trống là đúng.
+          </p>
         </div>
       </section>
 

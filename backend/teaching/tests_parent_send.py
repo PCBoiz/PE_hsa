@@ -22,7 +22,7 @@ import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from accounts.models import User
-from common import zalo
+from common import mail, zalo
 from common.clock import local_now
 from common.db import q1
 from common.permissions import ROLE_STUDENT, ROLE_TEACHER
@@ -89,6 +89,32 @@ def oa_gia(monkeypatch):
     return da_goi
 
 
+@pytest.fixture
+def mail_gia(monkeypatch):
+    """Email ĐÃ cấu hình, và `mail.gui` là bản GIẢ — không mở kết nối SMTP nào."""
+    da_goi = []
+    monkeypatch.setattr(mail, 'da_cau_hinh', lambda: True)
+    monkeypatch.setattr(mail, 'che_do_thu', lambda: False)
+    monkeypatch.setattr(mail, 'thieu_gi', lambda: [])
+
+    def gia(den, tieu_de, chu, html=None, dinh_kem=()):
+        da_goi.append({'den': den, 'tieuDe': tieu_de, 'chu': chu, 'html': html,
+                       'dinhKem': list(dinh_kem)})
+        return True, '<gia-%d@tophsa.vn>' % len(da_goi), None
+    monkeypatch.setattr(mail, 'gui', gia)
+    return da_goi
+
+
+@pytest.fixture
+def em_co_email(lop):
+    """Cho em `HV Khong So` một email phụ huynh — em ấy KHÔNG có số điện thoại,
+    nên nó chứng minh email đi được ở nơi ZNS bó tay."""
+    from common.db import x as _x
+    _x('UPDATE users SET parent_email=%s WHERE id=%s',
+       ('me.a@example.com', lop['khong'].id))
+    return lop
+
+
 # ── GET: bản soạn sẵn ───────────────────────────────────────────────────────
 
 @pytest.mark.django_db
@@ -96,8 +122,16 @@ def test_get_noi_truoc_ai_gui_duoc_ai_khong(lop, chua_oa):
     kq = _goi('get', ai=lop['gv'], class_id=lop['id'])
     assert kq.status_code == 200, kq.data
     theo_ten = {e['name']: e for e in kq.data['students']}
-    assert theo_ten['HV Co So']['guiDuoc'] is True
-    assert theo_ten['HV Khong So']['guiDuoc'] is False
+    # `coLienLac`, KHÔNG phải `guiDuoc`. Từ 07/09/2026 hai cờ này trả lời hai
+    # câu khác nhau: `coLienLac` hỏi em có số/email phụ huynh chưa (giảng viên
+    # sửa), `guiDuoc` hỏi gửi được ngay bây giờ không (người quản trị sửa, vì
+    # nó còn phụ thuộc đã cấu hình kênh nào). Phép kiểm này canh câu thứ nhất
+    # — đúng thứ nó canh từ đầu, chỉ là ngày ấy chỉ có một cờ.
+    assert theo_ten['HV Co So']['coLienLac'] is True
+    assert theo_ten['HV Khong So']['coLienLac'] is False
+    # Chưa cấu hình kênh nào thì KHÔNG ai gửi được, kể cả em có số.
+    assert theo_ten['HV Co So']['guiDuoc'] is False
+    assert theo_ten['HV Co So']['kenh'] is None
     # Em đã rời lớp KHÔNG có trong danh sách: gửi báo cáo tiến độ cho một việc
     # đã kết thúc là nhắc phụ huynh về chuyện không còn xảy ra.
     assert 'HV Da Roi' not in theo_ten, list(theo_ten)
@@ -135,7 +169,10 @@ def test_chua_co_oa_thi_cap_link_chu_KHONG_tao_dong_cho(lop, chua_oa):
 def test_thieu_so_phu_huynh_duoc_NEU_TEN(lop, chua_oa):
     kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
     theo_ten = {r['name']: r for r in kq.data['ketQua']}
-    assert theo_ten['HV Khong So']['trangThai'] == 'thieu_so'
+    # `thieu_lienlac` chứ không còn `thieu_so`: từ 07/09/2026 có thêm kênh
+    # email, nên "thiếu số" không còn mô tả đúng — em có email mà không có số
+    # thì vẫn gửi được.
+    assert theo_ten['HV Khong So']['trangThai'] == 'thieu_lienlac'
     # Vẫn có link: giảng viên có thể gửi qua kênh khác, hoặc đi hỏi số.
     assert '/bc/' in theo_ten['HV Khong So']['duongDan']
 
@@ -213,3 +250,195 @@ def test_giang_vien_lop_khac_khong_gui_duoc(lop, chua_oa):
     la = _nguoi('GV La Gui', ROLE_TEACHER)
     assert _goi('post', {}, ai=la, class_id=lop['id']).status_code == 404
     assert _goi('get', ai=la, class_id=lop['id']).status_code == 404
+
+
+# ══ CHẾ ĐỘ THỬ — xem trước nội dung, KHÔNG gửi, KHÔNG ghi sổ ════════════════
+#
+# Anh Sơn chốt 07/09/2026: dựng chế độ thử trước khi bật ZNS thật. Mỗi tin ZNS
+# mất phí và không thu về được, còn người nhận là phụ huynh học viên — nên phải
+# xem được ĐÚNG nội dung sẽ đi trước khi bấm gửi.
+#
+# Ba phép kiểm dưới đây canh ba lời hứa của chế độ ấy, và lời hứa nặng nhất là
+# lời hứa THỨ HAI: không ghi sổ. Sổ `parent_report_sends` là sổ của những tin ĐÃ
+# ĐI; một dòng 'da_gui' cho tin chưa từng rời máy chủ là loại nói dối khó thấy
+# nhất — lần sau mở sổ ra sẽ tưởng phụ huynh đã nhận, và không ai gửi lại.
+
+
+@pytest.fixture
+def che_do_thu(monkeypatch):
+    """Bật chế độ thử qua ĐÚNG biến môi trường thật, không vá hàm.
+
+    Vá `zalo.che_do_thu` thì phép kiểm chỉ chứng minh nhánh `if` chạy đúng.
+    Đặt biến thì nó đi qua cả `_thong_so`, `soan_zns` và `gui_zns` thật — tức
+    kiểm đúng thứ sẽ chạy trên máy chủ.
+    """
+    monkeypatch.setenv('ZALO_CHE_DO_THU', '1')
+    # Không có OA: đây đúng trạng thái hôm nay, và chế độ thử phải chạy được
+    # trong trạng thái ấy — nếu nó đòi token thì nó vô dụng đúng lúc cần nhất.
+    monkeypatch.delenv('ZALO_OA_ACCESS_TOKEN', raising=False)
+    monkeypatch.delenv('ZALO_ZNS_TEMPLATE_ID', raising=False)
+
+
+@pytest.mark.django_db
+def test_che_do_thu_KHONG_ghi_dong_nao_vao_so_gui(lop, che_do_thu):
+    truoc = q1('SELECT count(*) AS n FROM parent_report_sends')['n']
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 200, kq.data
+    sau = q1('SELECT count(*) AS n FROM parent_report_sends')['n']
+    assert sau == truoc, 'chế độ thử đã ghi %d dòng vào sổ gửi' % (sau - truoc)
+
+
+@pytest.mark.django_db
+def test_che_do_thu_tra_ve_dung_noi_dung_se_gui(lop, che_do_thu):
+    """Toàn bộ mục đích của chế độ này: người bấm DUYỆT được nội dung."""
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.data['znsCheDoThu'] is True, kq.data
+
+    em = next(r for r in kq.data['ketQua'] if r['id'] == lop['co'].id)
+    assert em['trangThai'] == 'thu', em
+    assert em['soNhan'] == '0912345678', em
+    # Đúng bốn tham số của mẫu ZNS, không thiếu không thừa.
+    from teaching.parent_send import THAM_SO_MAU
+    assert set(em['noiDung']) == set(THAM_SO_MAU), em['noiDung']
+    assert em['noiDung']['ten_hoc_vien'] == 'HV Co So', em['noiDung']
+    assert em['noiDung']['duong_dan'].startswith('http'), em['noiDung']
+
+    # Em chưa khai số phụ huynh vẫn phải được báo là thiếu số, không lẫn vào
+    # nhóm "đã thử" — người bấm cần biết ai sẽ KHÔNG nhận được gì.
+    khong = next(r for r in kq.data['ketQua'] if r['id'] == lop['khong'].id)
+    assert khong['trangThai'] == 'thieu_lienlac', khong
+
+
+@pytest.mark.django_db
+def test_che_do_thu_KHONG_goi_mang(lop, che_do_thu, monkeypatch):
+    """Không một byte nào được rời khỏi máy chủ.
+
+    Vá `requests.post` thành một hàm NỔ: nếu chế độ thử lỡ gọi mạng thật thì
+    phép kiểm đỏ ngay, thay vì im lặng gửi tin mất phí trong lúc chạy CI.
+    """
+    import requests
+
+    def no(*a, **k):
+        raise AssertionError('chế độ thử ĐÃ gọi mạng — đúng thứ nó sinh ra để tránh')
+    monkeypatch.setattr(requests, 'post', no)
+
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 200, kq.data
+    assert any(r['trangThai'] == 'thu' for r in kq.data['ketQua']), kq.data
+
+
+# ── KÊNH EMAIL (07/09/2026) ─────────────────────────────────────────────────
+#
+# ZNS đòi Zalo OA đã xác thực, mà xác thực đòi giấy phép kinh doanh — anh Sơn
+# không có, và đây mới là thử nghiệm. Nên email là kênh CHÍNH, ZNS là kênh cho
+# ngày có OA.
+
+
+@pytest.mark.django_db
+def test_email_gui_duoc_cho_em_KHONG_co_so_dien_thoai(em_co_email, chua_oa, mail_gia):
+    """Đây là toàn bộ lý do mở kênh email: gửi được ở nơi ZNS bó tay."""
+    lop = em_co_email
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+
+    theo_ten = {r['name']: r for r in kq.data['ketQua']}
+    em = theo_ten['HV Khong So']
+    assert em['trangThai'] == 'da_gui', em
+    assert em['kenh'] == 'email', em
+
+    assert len(mail_gia) == 1, mail_gia
+    assert mail_gia[0]['den'] == 'me.a@example.com'
+    # Em CÓ số nhưng chưa cấu hình ZNS thì không gửi được — và đó phải là
+    # "gửi tay", không phải "thiếu liên lạc": em ấy có số, chỉ là hệ thống
+    # chưa nối được kênh.
+    assert theo_ten['HV Co So']['trangThai'] == 'gui_tay', theo_ten['HV Co So']
+
+
+@pytest.mark.django_db
+def test_thu_email_co_PDF_dinh_kem_va_duong_dan_trong_than(em_co_email, chua_oa, mail_gia):
+    lop = em_co_email
+    _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+
+    thu = mail_gia[0]
+    ten_tep, kieu, du_lieu = thu['dinhKem'][0]
+    assert kieu == 'application/pdf'
+    assert du_lieu[:5] == b'%PDF-', 'tệp đính kèm không phải PDF'
+    assert ten_tep.endswith('.pdf')
+    # Tên học viên trong tiêu đề: phụ huynh có hai con học ở đây thì hai lá
+    # thư phải phân biệt được ngay ở danh sách hộp thư.
+    assert 'HV Khong So' in thu['tieuDe']
+    # Đường dẫn báo cáo phải có trong CẢ phần chữ thuần — người đọc bằng ứng
+    # dụng thư chỉ hiện chữ thuần vẫn phải tới được tờ giấy.
+    assert '/bc/' in thu['chu']
+
+
+@pytest.mark.django_db
+def test_email_duoc_uu_tien_hon_zns_khi_ca_hai_san_sang(lop, oa_gia, mail_gia):
+    """Em `HV Co So` có SỐ; cho thêm email thì phải đi đường email.
+
+    Không phải vì email tốt hơn — vì anh Sơn chốt email là kênh chính khi ZNS
+    còn vướng xác thực. Nếu ai đổi thứ tự trong `_kenh_cho` thì phép kiểm này
+    đỏ, và người đổi phải nói rõ vì sao.
+    """
+    from common.db import x as _x
+    _x('UPDATE users SET parent_email=%s WHERE id=%s',
+       ('me.b@example.com', lop['co'].id))
+
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    em = {r['name']: r for r in kq.data['ketQua']}['HV Co So']
+
+    assert em['kenh'] == 'email', em
+    assert len(mail_gia) == 1 and mail_gia[0]['den'] == 'me.b@example.com'
+    assert oa_gia == [], 'đã gửi ZNS trong khi email sẵn sàng'
+
+
+@pytest.mark.django_db
+def test_lan_gui_email_vao_so_dung_kenh_va_dung_dia_chi(em_co_email, chua_oa, mail_gia):
+    lop = em_co_email
+    _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+
+    d = q1('''SELECT channel, email, phone, status FROM parent_report_sends
+                ORDER BY id DESC LIMIT 1''')
+    assert d['channel'] == 'email'
+    assert d['email'] == 'me.a@example.com'
+    # `phone` là cột của kênh ZNS. Nhét địa chỉ email vào đó thì mọi truy vấn
+    # thống kê theo số điện thoại đọc phải một thứ không phải số điện thoại.
+    assert d['phone'] == ''
+    assert d['status'] == 'da_gui'
+
+
+@pytest.mark.django_db
+def test_che_do_thu_EMAIL_khong_ghi_so_va_van_duyet_duoc_noi_dung(
+        em_co_email, chua_oa, monkeypatch):
+    """Chế độ thử của email phải giữ ĐÚNG hai tính chất của chế độ thử ZNS."""
+    lop = em_co_email
+    monkeypatch.setattr(mail, 'da_cau_hinh', lambda: False)
+    monkeypatch.setattr(mail, 'che_do_thu', lambda: True)
+    goi = []
+    monkeypatch.setattr(mail, 'gui',
+                        lambda *a, **k: (goi.append(a) or (True, 'THU:x', None)))
+
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    em = {r['name']: r for r in kq.data['ketQua']}['HV Khong So']
+
+    assert em['trangThai'] == 'thu' and em['kenh'] == 'email'
+    # Sổ gửi là sổ của những thư ĐÃ ĐI.
+    assert q1('SELECT COUNT(*) AS n FROM parent_report_sends')['n'] == 0
+    # Và người bấm vẫn phải DUYỆT được nội dung — đó là toàn bộ mục đích.
+    assert 'tieuDe' in em['noiDung'] and 'dinhKem' in em['noiDung']
+    assert em['noiDung']['dinhKem'][0]['ten'].endswith('.pdf')
+    assert em['noiDung']['dinhKem'][0]['kb'] > 0
+
+
+@pytest.mark.django_db
+def test_GET_noi_ro_kenh_nao_dung_duoc_cho_tung_em(em_co_email, chua_oa, mail_gia):
+    lop = em_co_email
+    kq = _goi('get', ai=lop['gv'], class_id=lop['id'])
+
+    assert kq.data['emailSanSang'] is True
+    theo_ten = {e['name']: e for e in kq.data['students']}
+    assert theo_ten['HV Khong So']['kenh'] == 'email'
+    assert theo_ten['HV Khong So']['parentEmail'] == 'me.a@example.com'
+    # Em có SỐ mà chưa cấu hình ZNS: CÓ liên lạc nhưng CHƯA gửi được. Hai cờ
+    # phải nói ra hai chuyện ấy riêng rẽ.
+    assert theo_ten['HV Co So']['coLienLac'] is True
+    assert theo_ten['HV Co So']['kenh'] is None

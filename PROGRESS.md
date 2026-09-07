@@ -5460,3 +5460,125 @@ phép kiểm đỏ oan chỉ trên Windows do CRLF.
 
 Cổng sau tất cả: 391/391 pytest · 35/35 e2e · 21/21 unit · 21×2 trang giao diện
 sạch · 6/6 bề mặt XSS an toàn · 0 lỗ hổng thư viện (trước: 17).
+
+---
+
+## 07/09/2026 (khuya) — đăng nhập, ZNS chế độ thử, landing nói thật
+
+### Mật khẩu ĐÚNG, CSDL nguyên vẹn, backend chết
+
+Anh Sơn báo không đăng nhập được và nghi tôi đụng CSDL. Đo: `HSA@admin2026`
+khớp qua chính hàm máy chủ dùng; 6 tài khoản không thiếu ai; backend production
+503 suốt 169 giây; mọi lệnh build chạy sạch tại máy ở chế độ production.
+
+Và màn đăng nhập ĐỔ LỖI CHO NGƯỜI DÙNG: "Sai email/mật khẩu" là câu mặc định
+cho mọi phản hồi lỗi không kèm thân JSON, nên 503 hiện thành lỗi mật khẩu.
+`catch` không cứu được vì fetch chỉ ném khi mất mạng. Cùng bẫy `middleware.ts`
+đã vá cho đường khác. Đã vá.
+
+### ZNS chế độ thử
+
+`ZALO_CHE_DO_THU=1` + `manage.py thu_zns --so <số>`. `soan_zns()` dùng chung
+cho cả gửi thật lẫn thử để bản xem trước không trôi khỏi bản gửi. Không ghi
+`parent_report_sends` — sổ ấy là sổ của tin đã đi.
+
+### Landing có BA lời khẳng định sai đang chạy production
+
+"100% miễn phí" (không có gói nào) và HAI trích dẫn học viên chú là "nhóm
+pilot" / "nhóm học viên thử nghiệm" — trong khi 0 đợt học, 0 buổi. Lời chứng
+thực bịa trên trang nhắm vào phụ huynh. Đã gỡ, thay bằng khối "Chúng tôi chưa
+có gì để khoe".
+
+Bằng chứng nay là chính sản phẩm: render CHÍNH component `ToBaoCao` lên trang,
+số liệu của một em không có thật và nói rõ điều đó. "Thử một câu" → "thử ba
+câu" kết bằng bảng phân tích theo hợp phần.
+
+### Bộ đo lại báo oan (lần thứ 15)
+
+Lọc phần tử ẩn bằng `width < 1`, mà `.sr-only` dựng hộp đúng 1×1px nên lọt qua
+và bị chấm tương phản. Người đọc báo cáo sẽ đi xoá đoạn chữ cố ý giấu cho người
+khiếm thị — bộ đo a11y làm hỏng a11y. Nay `<= 1` kèm nhận diện `clip-path`.
+
+## 07/09/2026 — Zalo OA: đo thay vì suy
+
+### SMS không đi vòng được
+
+Brandname VN yêu cầu GPKD (công ty **hoặc hộ kinh doanh cá thể**); cá nhân chỉ
+dùng được brandname dùng chung. Twilio/AWS vào VN cũng phải đăng ký trước sender
+ID kèm giấy tờ công ty, không thì nhà mạng chặn (lỗi 30018). Cùng một cửa với
+ZNS, thêm phí và thêm chờ.
+
+### Tôi đã nói "OA chưa xác thực" quá lạc quan
+
+Ba nguồn tài liệu đá nhau về việc OA chưa xác thực có nhắn tin được không, và
+tôi xếp nó là "thử miễn phí" khi chưa biết một điều: **OA không nộp hồ sơ xác
+thực trong 14 ngày thì Zalo khoá, và OA đã khoá không mở lại.** Không miễn phí.
+
+### `manage.py chan_doan_oa`
+
+Không suy tiếp từ tài liệu mâu thuẫn — gọi thật rồi in đúng chữ Zalo trả lời.
+Hai bước đầu chỉ đọc; bước gửi đòi `--gui-toi <user_id>` viết rõ và in nguyên
+thân request trước. Không in đủ token.
+
+Đo trên Zalo thật với token giả → `{"error": -216, "message": "Access token is
+invalid"}`, tức endpoint + header đúng, Zalo đọc được request.
+
+4 tính chất chứng minh ĐỎ ĐƯỢC trước khi nhận là xanh — đáng kể nhất là "chế độ
+thử KHÔNG được kết luận là gửi được": nó dừng trước khi Zalo kịp có ý kiến, tự
+khen mình ở đó là hỏng đúng câu hỏi cả lệnh sinh ra để trả lời. 10/10 mới,
+15/15 parent_send cũ vẫn xanh.
+
+
+## 07/09/2026 (chiều) — Kênh email: thư + PDF
+
+### Vì sao email
+
+ZNS đòi OA đã xác thực → đòi giấy phép kinh doanh. SMS brandname vướng đúng cửa
+ấy (Twilio/AWS vào VN cũng phải đăng ký sender ID kèm giấy tờ công ty). Email là
+kênh duy nhất mở được hôm nay. Anh Sơn chốt nội dung: **tóm tắt + PDF đính kèm**.
+
+### Dựng gì
+
+`common/mail.py` (SMTP + chế độ thử ghi `.eml`), `teaching/bao_cao_pdf.py`
+(reportlab, 5 mục, font DejaVu nhúng vào repo vì Vera thiếu 40/57 ký tự Việt),
+`teaching/thu_bao_cao.py` (soạn thư), `manage.py thu_email`. Nối vào
+`ParentReportSendAllView`: email là kênh CHÍNH, ZNS là kênh cho ngày có OA.
+
+DDL chỉ THÊM cột: `users.parent_email`, `parent_report_sends.channel/email`.
+Đếm dòng trước/sau: 6 người dùng, 4 thành viên lớp — không đổi.
+
+### Ba lỗi bố cục chỉ thấy được khi MỞ TỆP PDF RA NHÌN
+
+"Bài đã hoàn thành19 bài" (ô bảng chuỗi thuần không xuống dòng, tràn đè ô bên
+cạnh); ngắt trang cứng bỏ trống nửa trang; biểu đồ rộng cố định làm hai cột
+mảnh nằm hai đầu trục dài. Trích xuất chữ không thấy cái nào.
+
+### Và một lỗi tôi tự tạo trong chính bản đầu
+
+`escape()` đặt vào ô bảng chuỗi thuần là thoát THỪA — reportlab không phân tích
+đánh dấu ở đó, nên giấy in ra "Khoa học &amp; Tiếng Anh". Sửa bằng cách bọc ô
+thành `Paragraph`: khi ấy đánh dấu ĐƯỢC phân tích, `escape` trở lại đúng vai, và
+ô lại tự xuống dòng.
+
+### Phép kiểm "chữ Việt ra chữ Việt" BẢN ĐẦU LÀ PHÉP KIỂM GIẢ
+
+Nó liệt kê bốn chuỗi và đòi có mặt. Lùi font thường về Vera thì nó VẪN XANH —
+cả bốn chuỗi còn xuất hiện lần nữa ở font ĐẬM (không bị lùi), mà bộ kiểm gộp cả
+tài liệu. Nó chứng minh "có một bản lành ở đâu đó", không chứng minh "không có
+bản hỏng nào". Nay canh dấu vết của HỎNG: ô glyph khuyết `\x00` ở bất kỳ đâu.
+
+Bảy tính chất chứng minh đỏ được. 45 phép kiểm không cần CSDL + 21 phép kiểm
+`parent_send` (6 cái mới cho kênh email).
+
+### Hai chỗ trình bày sai, chỉ lộ trên dữ liệu THẬT
+
+Em id 9 thi đúng một lần được 0/9 → "Điểm thi thử trung bình: 0%" (số đúng, chữ
+sai — một lượt không phải trung bình). Lớp 0 buổi điểm danh → "0/0 buổi" (đọc
+như con không đi buổi nào). Đã sửa cả hai.
+
+### Lint đỏ có sẵn
+
+`DuongDanDaCap.tsx` vi phạm `react-hooks/set-state-in-effect` từ đợt nâng thư
+viện `ff3f18a` — CI đang đỏ, không phải do việc hôm nay. Vá luôn, và đằng sau
+cái nhãn đỏ là một lỗi thật: lượt gọi không huỷ được, nên đổi học viên nhanh
+thì danh sách chìa của em TRƯỚC hiện dưới tên em SAU.

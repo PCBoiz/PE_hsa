@@ -21,3 +21,14 @@ django-redis==5.4.0
 # Vì sao .xlsx chứ không chỉ .csv: Excel bản tiếng Việt lưu CSV theo bảng mã hệ
 # thống, nên "Định lượng" quay về thành ký tự hỏng. Ô .xlsx là chuỗi Unicode.
 openpyxl>=3.1
+# Dựng PDF báo cáo phụ huynh (`teaching/bao_cao_pdf.py`). Thuần Python, không
+# phần mở rộng C và không phụ thuộc thư viện hệ thống — cùng lý lẽ đã chọn
+# openpyxl ở trên. Đường HTML→PDF đẹp hơn nhưng đòi một Chromium chạy cạnh máy
+# chủ; trên gói Render hiện tại đó là vài trăm MB và một tiến trình cho mỗi lượt in.
+#
+# Font đi kèm reportlab (Vera) THIẾU 40/57 ký tự tiếng Việt đã đo, nên DejaVuSans
+# được nhúng vào repo tại backend/assets/fonts/ — đừng gỡ.
+reportlab>=4.0
+# Chỉ dùng trong phép kiểm: đọc lại chính tệp PDF vừa dựng để canh thứ ĐÃ VẼ,
+# thay vì tin rằng mã vẽ đúng. Nhẹ, thuần Python.
+pypdf>=4.0
