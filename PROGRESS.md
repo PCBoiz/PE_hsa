@@ -5204,3 +5204,71 @@ trang, và ngưỡng cảnh báo `> 1500` vì thế chưa bao giờ nổ dù tra
 Đây là bẫy CÙNG HỌ với bẫy `/login` sáng nay: bộ đo im lặng cho ra số đẹp hơn
 sự thật. Ghi lại chứ chưa vá — vá nó là đổi ngữ nghĩa cột đo, cần đo lại cả
 sáu màn để bảng số nhất quán, và tôi không mở việc ấy ở cuối phiên.
+
+---
+
+## 07/09/2026 (chiều) — sơ đồ phân quyền, audit luồng đợt 2
+
+### Vì sao chrome-devtools MCP không chạy — tái hiện được
+
+Không phải gói hỏng. `chrome-devtools-mcp@1.8.0` bắt tay bình thường khi gọi
+tay. Lỗi ở cách Windows sinh tiến trình:
+
+    spawn('npx', […])              → ENOENT     ← Claude Code đang làm thế này
+    spawn('cmd', ['/c','npx',…])   → BẮT TAY OK
+
+`npx` trên Windows là `npx.cmd`, một shim chứ không phải tệp thực thi; spawn
+không qua shell không tìm ra → tiến trình chết ngay → `CONNECTION_CLOSED`.
+Sửa ở `C:\Users\sonkh\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
+chờ vẫn đo bằng chính CDP nằm dưới MCP ấy qua Playwright.
+
+### Vẽ phân quyền — hình dạng có thật, và tôi đã vẽ ngược một lần
+
+Đếm trên dữ liệu: bốn lớp quyền lồng khít nhau (admin ⊂ +học vụ ⊂ +giảng viên
+⊂ +trợ giảng), còn biên tập nội dung ở trục khác chạm vào lõi. `soDoVai()` tự
+tìm chuỗi ấy và đẩy mọi lớp không xếp được sang `nhanh`.
+
+Vẽ bằng HỘP LỒNG HỘP chứ không SVG: toạ độ là thứ vỡ đầu tiên khi khổ máy đổi
+— đúng vết xe khối lộ trình. Đo: 0px tràn ngang ở cả 1440px lẫn 390px.
+
+Bản đầu dùng `reduceRight` và lồng NGƯỢC — ngoài cùng là lớp 2 vai, trong cùng
+là lớp 4 vai, tức hình nói ngược cái nhãn in ngay trên nó. TypeScript nhận cả
+hai chiều. Chỉ thấy vì mở ảnh chụp ra nhìn. Phép kiểm mới đòi: với mọi cặp hộp
+lồng nhau, hộp ngoài phải nhiều vai hơn hộp trong — đã chứng minh đỏ trên bản
+cũ rồi xanh sau khi sửa.
+
+### Audit luồng: hai hướng, vì mỗi hướng bắt loại lỗi khác
+
+**Đi bằng mắt** 11 màn: 0 lỗi JS, 0 API ≥400, 0 tràn ngang. Không có gì.
+
+**Dò ngược 104 endpoint** xem cái nào không có nơi gọi: 7. Hướng này mới ra
+được thứ hướng kia không thấy — vì một tính năng KHÔNG có đường vào thì không
+màn nào hỏng cả.
+
+Hai cái nằm trên đường nhạy cảm nhất (đường người không tài khoản đi được):
+danh sách chìa + THU HỒI chìa. Đã dựng, có phép kiểm, bảng quyền có liệt kê —
+mà không nút nào bấm được. Và ngay trong màn cấp chìa có câu dặn "đừng dán vào
+nhóm lớp", tức một lời cảnh báo không kèm lối thoát. Đã nối cả hai.
+
+### Nút điều hướng → liên kết
+
+Đo: mọi mục thanh trong khu là `BUTTON` không `href`, trong khi bấm thì URL
+đổi thật. Sửa theo câu hỏi phân loại "bấm xong URL có đổi không": trong khu →
+`<a href>`, ngoài khu (SPA đổi tab, URL đứng yên) → giữ `<button>`.
+
+Đo lại: khu `A,A,A`; bấm thường vẫn đi phía client (dấu vết trên `window`
+còn); Ctrl+bấm mở đúng tab mới. 34/34 e2e xanh.
+
+### Ba lần thước đo của tôi báo oan
+
+Phần tốn thời gian nhất của đợt, ghi lại vì suýt đi "sửa" ba thứ không hỏng:
+liên kết Bài tập "không đi đâu" (tôi chờ cố định 2,5s); dashboard "có 20 nút
+đổi giao diện" (bộ lọc khớp chữ "chủ đề" trong *"Tự đánh dấu đã nắm <chủ đề>"*);
+màn Đợt học "là ngõ cụt" (nút Tạo đợt ở góc phải, bộ dò chỉ nhìn trong thẻ cha).
+
+### Một lỗi công cụ, cùng họ với bẫy /login
+
+`cap_the.py` chdir sang `backend/` để `django.setup()` chạy được, RỒI mới giải
+`--ra`. Chạy từ gốc repo thì thẻ rơi vào `backend/.the/`, còn `.the/` ở gốc —
+nơi mọi bộ đo đọc — giữ thẻ CŨ, mà kịch bản vẫn in "Đã cấp thẻ". Mất ~30 phút.
+Nay giải theo thư mục người gọi và in đường dẫn tuyệt đối.
