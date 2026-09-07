@@ -1080,3 +1080,113 @@ Học viên mở `/giang-day/...` vẫn thấy **thanh điều hướng khu Gi�
 (Buổi học · Bài tập · Báo cáo phụ huynh) ở phía trên câu "không có quyền".
 Mọi tab đều bị chặn nên không rò dữ liệu gì — chỉ là họ nhìn thấy cấu trúc một
 khu không dành cho mình. Chưa sửa; nói ra để anh quyết có đáng sửa không.
+
+
+---
+
+# Phần 14 — Audit sâu: XSS, tiêm SQL, CSRF, thư viện (07/09, đêm)
+
+Phần 13 kiểm **ai vào được cửa nào**. Phần này kiểm những thứ nằm sau cửa: dữ
+liệu người dùng đi vào trang thế nào, SQL dựng ra sao, phiên có bị chiếm được
+không, và thư viện đang dùng có lỗ hổng đã biết chưa.
+
+## 14.1 Đã tìm được MỘT lỗ hổng thật — và đã vá
+
+**XSS trong tab Kỹ năng.** Quét sáu bề mặt nội dung người dùng bằng cách viết
+lại phản hồi API ngay trong trình duyệt (không ghi CSDL), nhồi payload vào mọi
+trường chữ rồi hỏi trang xem có mã nào chạy:
+
+    Diễn đàn · Thông báo · Bảng xếp hạng · Hồ sơ · Kế hoạch    an toàn
+    Kỹ năng                          mã chạy 3 lần · tạo 102 thẻ   *** XSS ***
+
+`renderSkills` nối thẳng bốn trường vào `innerHTML` mà không thoát chuỗi, dù
+chính tệp ấy có sẵn hàm thoát và dùng nó ở mọi khối khác.
+
+Ba trường ấy đến từ `courses.title`, `lessons.module`, `lessons.title` — học
+viên không nhập được, **biên tập viên thì có**. Và đường ghi bài giảng không
+lọc HTML: `loi_html` trước hôm nay chỉ được gọi cho trường KHOÁ HỌC.
+
+Ghép lại: một tài khoản `Biên tập nội dung` đặt `<img src=x onerror=...>` vào
+tên một bài giảng, mã ấy chạy trong trình duyệt của **mọi học viên** mở tab Kỹ
+năng — đủ để đọc phiên của các em. Phá đúng lời hứa in trong bảng phân quyền:
+*"biên tập viên không đụng tới con người"*.
+
+Vai ấy hiện chưa có ai nên chưa từng bị khai thác. Nhưng nó tồn tại đúng để sắp
+tới có người vào.
+
+**Đã vá hai đầu**: thoát chuỗi lúc vẽ (phòng tuyến thật), và lọc HTML lúc ghi
+(giữ dữ liệu sạch — nhãn bài còn đi tới CSV, tờ báo cáo phụ huynh, Excel, những
+chỗ trình duyệt không với tới). Năm phép kiểm, đã chứng minh đỏ được. Đo lại:
+3 lần chạy → 0, 102 thẻ → 0.
+
+## 14.2 Một con số đang nói dối với giảng viên — **cần anh quyết**
+
+Trang `/bc/<chìa>` dựng ở máy chủ, nên **mọi lượt GET đều tăng `opened_count`**
+— kể cả bot xem trước liên kết mà Zalo/Messenger lấy về ngay khi giảng viên dán
+link vào khung chat.
+
+Tức "Đã mở 1 lần" xuất hiện **trước khi phụ huynh nhìn**, trong một tính năng
+sinh ra để trả lời đúng câu "phụ huynh xem chưa". Giảng viên đọc con số ấy rồi
+quyết định có nhắc lại hay không.
+
+Tôi đã sửa **lời trên màn** cho đúng sự thật ngay. Cách đếm thì chờ anh:
+
+| cách | được | mất |
+|---|---|---|
+| **A. Giữ nguyên, chỉ nói rõ** (đang là vậy) | không thêm gì | con số vẫn gần như vô dụng |
+| **B. Đếm bằng một tiếng ping từ trình duyệt** | bot không chạy JS nên không tính; con số thành thật | thêm một endpoint nhỏ |
+| **C. Bỏ hẳn cột "đã mở"** | không ai bị lừa | mất luôn câu trả lời hữu ích nhất sau khi gửi |
+
+Tôi nghiêng về **B**, và nó nên làm TRƯỚC khi Zalo OA chạy — lúc chưa có chìa
+nào thì đổi cách đếm không phải xử lý dữ liệu cũ.
+
+## 14.3 Những thứ KHÔNG tìm thấy lỗi
+
+Ghi ra để lần sau khỏi kiểm lại từ đầu, và để anh biết đã kiểm những gì.
+
+| kiểm | cách làm | kết quả |
+|---|---|---|
+| **Tiêm SQL** | đọc TỪNG chỗ dựng SQL bằng nối chuỗi / f-string (20 chỗ) | sạch — mọi chỗ nội suy đều là hằng hoặc khoá từ danh sách trắng; giá trị người dùng luôn qua tham số |
+| **XSS 5 bề mặt kia** | nhồi payload qua đường vẽ thật | sạch |
+| **CSRF** | cờ cookie + tìm endpoint GET có ghi | `httpOnly` + `sameSite=lax` + `secure` ở prod. Đúng 1 GET có ghi, và nó là đường công khai không cần phiên → không có gì để lợi dụng |
+| **Leo thang vai** | gửi `role: admin` kèm lời sửa hồ sơ | vai không đổi; đường đổi vai duy nhất là `IsAdminRole`, còn chặn tự hạ vai và xoá quản trị viên cuối cùng |
+| **Băm mật khẩu** | đọc bộ băm + mẫu thật trong CSDL | `pbkdf2:sha256`, 600.000 vòng |
+| **Dò mật khẩu** | bắn liên tiếp, có tính giờ | chặn (429) đúng ở lần 101 trong 36,4s — khớp mức dev 100/phút |
+| **Khoá API lọt ra trình duyệt** | grep + đọc | không có. Đã gỡ một cấu hình chết mời người ta dán khoá vào mã trình duyệt |
+| **Giao diện** | 21 trang × 2 khổ | 0 tương phản / 0 vùng chạm nhỏ / 0 tràn ngang / 0 lỗi JS |
+
+## 14.4 Thư viện: 17 lỗ hổng → 0
+
+    trước:  10 HIGH + 7 MODERATE
+    sau:    No known vulnerabilities found
+
+Chín cái nằm ở **Next 16.2.10**, bốn trong đó là HIGH — gồm **"Middleware /
+Proxy bypass in App Router"**, đúng cơ chế `middleware.ts` dùng để làm mới
+phiên. Nâng lên 16.2.11 (một bản vá) đóng cả chín. Bảy cái còn lại là thư viện
+Next kéo theo lúc dựng, ép qua `overrides`.
+
+*Lưu ý cho lần sau:* pnpm v11 **không còn đọc** `pnpm.overrides` trong
+`package.json` — nó cảnh báo rồi bỏ qua. Phải đặt ở `pnpm-workspace.yaml`.
+
+## 14.5 Ba chú thích nói dối về an ninh, đã sửa
+
+    "@limiter.limit(5 per minute)"  →  thật là 20/phút ở production
+    "# 5 per minute"                →  thật là 20/phút
+    "# 3 per minute"                →  thật là 10/phút
+
+Mức 20/phút là con số có cân nhắc (cả lớp ngồi sau một NAT), không phải lỏng
+lẻo. Nhưng một chú thích sai ở đúng chỗ người ta đến để kiểm an ninh thì đắt
+hơn ở bất kỳ đâu khác.
+
+## 14.6 Thêm bảy lần thước đo báo oan (tổng cả ngày: **mười ba**)
+
+Ba lần nữa trong đợt này, đều suýt thành báo cáo sai:
+
+7. *"Không có giới hạn đăng nhập"* — vòng lặp `curl` chạy quá 60 giây nên cửa
+   sổ một phút tự reset. Đo lại bằng Node có tính giờ: chặn đúng ở lần 101.
+8. *"`/api/auth/login` trả 404"* — đường thật là `/auth/login`.
+9. *"Có user id 13231, bộ kiểm rò dữ liệu"* — đó là tài khoản e2e có từ 04/09;
+   đếm thật vẫn đúng 6 tài khoản.
+
+Cộng với sáu lần ở Phần 13. **Không lần nào sản phẩm sai; mười ba lần đều là
+thước.** Đó là lý do mọi con số trong hai phần này đều đã được kiểm tay.

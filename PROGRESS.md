@@ -5391,3 +5391,56 @@ học viên" (cổng nói "Khu này dành cho người soạn giáo trình") · 
 trang trống ở /giang-day" (ngưỡng đếm ký tự hụt đúng 7).
 
 Không lần nào sản phẩm sai. Sáu lần đều là thước.
+
+---
+
+## 07/09/2026 (đêm) — audit sâu: XSS, tiêm SQL, CSRF, thư viện
+
+### Tìm được một lỗ hổng thật
+
+XSS trong tab Kỹ năng. Quét sáu bề mặt bằng cách viết lại phản hồi API ngay
+trong trình duyệt (không ghi CSDL): năm bề mặt sạch, Kỹ năng cho **mã chạy 3
+lần, tạo 102 thẻ**.
+
+`renderSkills` nối thẳng bốn trường vào `innerHTML`. Chúng đến từ
+`lessons.module/title` và `courses.title` — biên tập viên nhập được, và đường
+ghi BÀI GIẢNG không lọc HTML (`loi_html` chỉ được gọi cho trường KHOÁ HỌC).
+
+Tức vai `Biên tập nội dung` chạy được mã trong trình duyệt mọi học viên. Phá
+đúng lời hứa "biên tập viên không đụng tới con người" in trong bảng phân quyền.
+Vá cả hai đầu, 5 phép kiểm, đã chứng minh đỏ được, đo lại 3→0 và 102→0.
+
+### Một con số đang nói dối, chờ anh Sơn quyết
+
+`/bc/<chìa>` dựng ở máy chủ nên MỌI lượt GET tăng `opened_count` — kể cả bot
+xem trước liên kết của Zalo lấy về lúc vừa dán link. "Đã mở 1 lần" xuất hiện
+trước khi phụ huynh nhìn, trong tính năng sinh ra để trả lời đúng câu ấy.
+
+Sửa lời trên màn ngay; cách đếm ghi vào VIEC_CUA_ANH 14.2 với ba lựa chọn.
+
+### Thư viện: 17 → 0
+
+Chín lỗ ở Next 16.2.10, bốn HIGH, gồm "Middleware / Proxy bypass in App Router"
+— đúng cơ chế `middleware.ts` dùng. Nâng một bản vá đóng cả chín; bảy cái còn
+lại ép qua `overrides`.
+
+GOTCHA: pnpm v11 KHÔNG còn đọc `pnpm.overrides` trong package.json — cảnh báo
+rồi bỏ qua. Phải đặt ở `pnpm-workspace.yaml`. Và tệp ấy đã có sẵn
+`allowBuilds`; tôi ghi đè mất nó một lượt (sharp là thư viện gốc, thiếu script
+dựng thì tối ưu ảnh của Next hỏng) — pnpm báo ngay, khôi phục rồi NỐI THÊM.
+
+### Không tìm thấy lỗi ở
+
+Tiêm SQL (đọc từng chỗ trong 20 chỗ dựng SQL động), CSRF (cookie httpOnly +
+sameSite=lax, đúng 1 GET có ghi và nó là đường công khai không cần phiên), leo
+thang vai, băm mật khẩu (pbkdf2:sha256 600k vòng), dò mật khẩu, khoá API lọt ra
+trình duyệt, giao diện (21 trang × 2 khổ, 0 vi phạm).
+
+### Mười ba lần thước báo oan trong một ngày
+
+Thêm bảy lần ở đợt này. Đáng nhớ nhất: "không có giới hạn đăng nhập" — vòng lặp
+`curl` chạy quá 60 giây nên cửa sổ một phút tự reset. Đo lại bằng Node CÓ TÍNH
+GIỜ: chặn đúng ở lần 101 trong 36,4 giây.
+
+**Phép đo về TẦN SUẤT phải tính cả thời gian chính nó chạy.** Không lần nào
+trong mười ba lần ấy sản phẩm sai.
