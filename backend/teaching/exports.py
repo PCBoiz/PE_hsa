@@ -5,10 +5,20 @@ mang đi họp."* Người mở ba file dưới đây không phải lập trình
 và quản lý học vụ của TopHSA, mở bằng Excel trên Windows, lọc, tô màu, in ra
 mang đi họp phụ huynh. Mọi quyết định trong tệp này bám vào đúng cảnh đó.
 
-VÌ SAO CSV CHỨ KHÔNG PHẢI .XLSX. Ghi .xlsx cần openpyxl; mỗi dependency thêm vào
-là thêm một thứ có thể vỡ lúc dựng bản trên Render, mà CSV mở bằng Excel đã đủ
-cho việc lọc – tô màu – in. Đổi lại phải làm ĐÚNG ba việc dưới đây; sai một việc
-thì file mở ra thành rác và trung tâm bỏ dùng ngay từ lần đầu:
+VÌ SAO VẪN LÀ CSV CHỨ KHÔNG PHẢI .XLSX. Lý do ghi ở đây lúc đầu là "ghi .xlsx
+cần openpyxl, mỗi dependency là một thứ có thể vỡ khi dựng bản trên Render" —
+**lý do ấy đã HẾT HẠN**: `openpyxl` vào `requirements.txt` từ đường NHẬP đề thi
+thử, nên nó đã nằm sẵn trên Render rồi.
+
+Lý do còn đứng vững là lý do khác: CSV mở được bằng MỌI thứ — Excel, Google
+Sheets, Numbers, và cả `pandas` khi ai đó muốn tính thêm — trong khi .xlsx buộc
+người nhận phải có công cụ đọc được nó. Với một tệp dùng để LỌC – TÔ MÀU – IN
+thì .xlsx không thêm được gì; thứ nó thêm được (công thức, nhiều trang, định
+dạng ô) đều không phải việc của tệp này. Đường cần .xlsx là đường NHẬP, và ở đó
+`mockexam/quan_tri.py` đã dùng .xlsx đúng chỗ.
+
+Đổi lại phải làm ĐÚNG ba việc dưới đây; sai một việc thì file mở ra thành rác
+và trung tâm bỏ dùng ngay từ lần đầu:
 
 1. **BOM ``\\ufeff`` ở đầu file.** Không có BOM, Excel trên Windows đọc CSV theo
    bảng mã ANSI của hệ thống chứ không phải UTF-8: "Nguyễn" hiện thành
@@ -410,6 +420,48 @@ class ClassProgressCsvView(APIView):
 
 # ── 2. Điểm danh (bảng chéo) ────────────────────────────────────────────────
 
+def dem_chuyen_can(class_id):
+    """Đếm chuyên cần từng học viên của lớp. Trả ``(theo_uid, đọc_được)``.
+
+    ── VÌ SAO TÁCH RA (07/09/2026) ──────────────────────────────────────────
+
+    Luật đếm này trước nằm TRONG thân vòng lặp của ``ClassAttendanceCsvView``.
+    Nay có thêm tờ PDF cấp lớp (``bao_cao_lop_pdf``) cần đúng con số ấy, và
+    chép luật sang tệp thứ hai là cách chắc chắn nhất để hai bản xuất từ CÙNG
+    một màn hình nói hai con số khác nhau.
+
+    Chính tệp này đã ghi lại lần trước chuyện đó xảy ra: đo 31/08/2026,
+    ``progress.csv`` ghi "vắng 0 buổi" ngay cạnh ``diem-danh.csv`` ghi "vắng 1,
+    chuyên cần 75%" — buổi vắng ấy đã huỷ, và hai chỗ áp luật khác nhau.
+
+    HAI LUẬT NẰM TRONG ĐÂY, cả hai đều đã trả giá để học:
+      · buổi ĐÃ HUỶ không cộng vào ô nào — nhãn vẫn in ra để đối chiếu;
+      · không có dòng điểm danh KHÁC HẲN "vắng". Lấp trống bằng "vắng" là vu
+        cho học viên một buổi nghỉ mà giảng viên chỉ chưa tick.
+
+    ``chuaTick`` là việc còn tồn của giảng viên, không phải lỗi của học viên —
+    nên nó là một ô riêng, không nằm trong mẫu số của tỉ lệ.
+    """
+    sessions, marks, doc_duoc = ClassAttendanceCsvView._attendance_data(class_id)
+    if not doc_duoc:
+        return None, False
+
+    held = [s for s in sessions if s['status'] != 'cancelled']
+    ra = {}
+    for m in reports._members(class_id):
+        uid = m['user_id']
+        counts = dict.fromkeys(ATTENDANCE_ORDER, 0)
+        da_tick = 0
+        for s in sessions:
+            st = marks.get((s['id'], uid))
+            if st in counts and s['status'] != 'cancelled':
+                counts[st] += 1
+                da_tick += 1
+        r = ti_le(counts['present'] + counts['late'], sum(counts.values()))
+        ra[uid] = dict(counts, chuaTick=max(0, len(held) - da_tick), tiLe=r)
+    return ra, True
+
+
 class ClassAttendanceCsvView(APIView):
     """GET /api/teach/classes/<class_id>/export/attendance.csv
 
@@ -454,6 +506,7 @@ class ClassAttendanceCsvView(APIView):
         # trong lớp" sẽ trôi khỏi nhau ngay lần đầu một trong hai được sửa, và
         # khi đó sổ điểm danh thiếu người mà không ai nhận ra.
         members = reports._members(class_id)
+        tong, _ = dem_chuyen_can(class_id)
 
         header = ['Họ tên', 'Email', 'Trạng thái']
         for s in sessions:
@@ -461,38 +514,28 @@ class ClassAttendanceCsvView(APIView):
         header += ['Có mặt', 'Muộn', 'Vắng', 'Có phép',
                    'Chưa điểm danh', 'Tỉ lệ chuyên cần (%)']
 
-        # Buổi đã huỷ không tính vào "chưa điểm danh": cột đó để trống là đúng,
-        # không phải là việc còn tồn của giảng viên.
-        held = [s for s in sessions if s['status'] != 'cancelled']
-
         rows = []
         for m in members:
             uid = m['user_id']
             row = [m['name'] or m['email'], m['email'],
                    'Đã rời lớp' if m['left_at'] else 'Đang học']
-            counts = dict.fromkeys(ATTENDANCE_ORDER, 0)
-            marked_held = 0
             for s in sessions:
-                status = marks.get((s['id'], uid))
                 # Ô TRỐNG khi chưa có dòng điểm danh — và đó là thông tin khác
                 # hẳn "Vắng". Lấp trống bằng "Vắng" là vu cho học viên một buổi
                 # nghỉ mà giảng viên chỉ đơn giản là chưa tick.
-                row.append(ATTENDANCE_LABELS.get(status, status or ''))
-                # Buổi ĐÃ HUỬ KHÔNG cộng vào bất kỳ ô nào — nhãn vẫn in ở trên
-                # để đối chiếu, nhưng không vào tổng.
-                #
-                # Đây chính là luật mà `teaching/attendance.py` mở đầu bằng câu
-                # "nay chỉ còn một luật, ở một chỗ". `_absence_counts` đã đi qua
-                # cửa đó từ hôm trước, bảng chéo này thì chưa — nên hai file xuất
-                # từ CÙNG một màn hình nói hai con số khác nhau về cùng một em.
-                # Đo 31/08/2026: `progress.csv` "vắng 0 buổi" cạnh
-                # `diem-danh.csv` "vắng 1, chuyên cần 75%" — buổi vắng đó đã huỷ.
-                if status in counts and s['status'] != 'cancelled':
-                    counts[status] += 1
-                    marked_held += 1
-            row += [counts[k] for k in ATTENDANCE_ORDER]
-            row.append(max(0, len(held) - marked_held))
-            row.append(self._rate(counts))
+                row.append(ATTENDANCE_LABELS.get(marks.get((s['id'], uid)), ''))
+            # Phần TỔNG lấy từ `dem_chuyen_can` — CÙNG hàm mà tờ PDF cấp lớp
+            # dùng. Vòng lặp trên chỉ còn dựng ô THEO BUỔI (việc riêng của bảng
+            # chéo này) và KHÔNG tự cộng nữa: hai chỗ cộng là hai chỗ sẽ lệch.
+            #
+            # Luật "buổi đã huỷ không vào tổng" nay nằm trong `dem_chuyen_can`.
+            # Nó từng nằm ở đây và đã trả giá: đo 31/08/2026, `progress.csv` ghi
+            # "vắng 0 buổi" cạnh `diem-danh.csv` ghi "vắng 1, chuyên cần 75%" —
+            # buổi vắng ấy đã huỷ, và hai chỗ áp luật khác nhau.
+            t = (tong or {}).get(uid) or {}
+            row += [t.get(k, 0) for k in ATTENDANCE_ORDER]
+            row.append(t.get('chuaTick', 0))
+            row.append('' if t.get('tiLe') is None else t['tiLe'])
             rows.append(row)
 
         name = 'Điểm danh lớp %s %s.csv' % (_class_label(class_id), _stamp())
@@ -643,3 +686,45 @@ class AdminUsersCsvView(APIView):
         if row['must_change_password']:
             return 'Đã đặt lại %s — chờ đổi' % changed.strftime('%d/%m/%Y')
         return 'Rồi · %s' % changed.strftime('%d/%m/%Y')
+
+
+# ── 4. Báo cáo lớp dạng PDF ─────────────────────────────────────────────────
+
+class ClassReportPdfView(APIView):
+    """GET /api/teach/classes/<class_id>/export/report.pdf
+
+    Ai mở tệp này: giảng viên và học vụ, trước buổi họp phụ huynh hoặc buổi
+    review lớp — nhưng khác hai tệp CSV ở trên, tệp này để **đưa cho người khác
+    đọc**, không phải để làm việc trên đó. Xem đầu `bao_cao_lop_pdf.py`.
+
+    KHÔNG tính lại con số nào: `reports.class_report` cho phần học tập,
+    `dem_chuyen_can` cho phần chuyên cần — cùng hai nguồn mà màn hình và CSV
+    dùng.
+
+    `renderer_classes` để mặc định (JSON): view trả thẳng `HttpResponse` với
+    `application/pdf`, nên bộ dựng của DRF không nằm trên đường đi. Nhưng nhánh
+    LỖI thì trả `Response`, và nhánh ấy cần một bộ dựng — nên không được bỏ.
+    """
+    permission_classes = [IsTeachingStaff]
+
+    def get(self, request, class_id):
+        if not can_see_class(request.user, class_id):
+            return Response(_NOT_FOUND, status=404)
+
+        bc = reports.class_report(class_id)
+        if not bc:
+            return Response(_NOT_FOUND, status=404)
+
+        # `None` chứ không phải `{}`: tờ giấy phân biệt "đọc được, chưa có buổi
+        # nào" với "KHÔNG đọc được", và in hai câu khác nhau. Gộp lại thì bảng
+        # chuyên cần toàn số 0 trông y hệt một lớp chưa học buổi nào — rồi được
+        # mang vào buổi họp phụ huynh.
+        cc, doc_duoc = dem_chuyen_can(class_id)
+
+        from teaching.bao_cao_lop_pdf import dung_pdf_lop
+        pdf = dung_pdf_lop(bc, cc if doc_duoc else None)
+
+        ten = 'Bao cao lop %s %s.pdf' % (_class_label(class_id), _stamp())
+        resp = HttpResponse(pdf, content_type='application/pdf')
+        resp['Content-Disposition'] = _disposition(ten)
+        return resp

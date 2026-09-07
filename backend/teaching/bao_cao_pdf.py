@@ -101,7 +101,7 @@ DAI = [
 ]
 
 
-def _nap_font():
+def nap_font():
     """Đăng ký DejaVu. Gọi nhiều lần vô hại — reportlab ghi đè cùng tên."""
     pdfmetrics.registerFont(TTFont(FONT, str(FONT_DIR / 'DejaVuSans.ttf')))
     pdfmetrics.registerFont(TTFont(FONT_DAM, str(FONT_DIR / 'DejaVuSans-Bold.ttf')))
@@ -112,13 +112,13 @@ def _nap_font():
                                   italic=FONT, boldItalic=FONT_DAM)
 
 
-def _kieu(ten, co, mau=MUC, dam=False, truoc=0, sau=2, dan=1.35):
+def kieu(ten, co, mau=MUC, dam=False, truoc=0, sau=2, dan=1.35):
     return ParagraphStyle(ten, fontName=FONT_DAM if dam else FONT, fontSize=co,
                           leading=co * dan, textColor=mau, alignment=TA_LEFT,
                           spaceBefore=truoc, spaceAfter=sau)
 
 
-def _an(v) -> str:
+def an(v) -> str:
     """Chuỗi AN TOÀN cho `Paragraph`.
 
     `Paragraph` phân tích một tập con của HTML, nên tên học viên chứa `&` hoặc
@@ -132,7 +132,7 @@ def _an(v) -> str:
     return escape('' if v is None else str(v))
 
 
-def _o(v, kieu):
+def o_bang(v, kieu):
     """Một ô bảng CHỨA DỮ LIỆU NGƯỜI DÙNG.
 
     Ô bảng của reportlab nhận chuỗi thuần thì KHÔNG phân tích đánh dấu — nên
@@ -140,13 +140,13 @@ def _o(v, kieu):
     Anh". Đo được bằng cách đọc lại chính tệp PDF vừa dựng, không đoán.
 
     Bọc thành `Paragraph` sửa cả hai chuyện một lúc: đánh dấu được phân tích
-    nên `_an` trở lại đúng vai, và ô tự XUỐNG DÒNG khi tên lớp hoặc tên chủ đề
+    nên `an` trở lại đúng vai, và ô tự XUỐNG DÒNG khi tên lớp hoặc tên chủ đề
     dài hơn bề ngang cột — chuỗi thuần thì tràn ra ngoài mà không báo gì.
     """
-    return Paragraph(_an(v), kieu)
+    return Paragraph(an(v), kieu)
 
 
-def _ngay(s) -> str:
+def ngay(s) -> str:
     """'2026-08-10' → '10/08/2026'. Phụ huynh Việt đọc ngày trước."""
     if not s:
         return '—'
@@ -169,9 +169,9 @@ def _bang(du_lieu, rong):
     Nhãn nhạt và thường, giá trị đậm và đen — cùng thứ bậc với thân thư HTML,
     để phụ huynh đọc thư rồi mở tệp không phải học lại cách đọc.
     """
-    k_nhan = _kieu('bang_nhan', 8.5, NHAT, sau=0)
-    k_gt = _kieu('bang_gt', 8.5, MUC, dam=True, sau=0)
-    hang = [[Paragraph(_an(a), k_nhan), Paragraph(_an(b), k_gt)] for a, b in du_lieu]
+    k_nhan = kieu('bang_nhan', 8.5, NHAT, sau=0)
+    k_gt = kieu('bang_gt', 8.5, MUC, dam=True, sau=0)
+    hang = [[Paragraph(an(a), k_nhan), Paragraph(an(b), k_gt)] for a, b in du_lieu]
     t = Table(hang, colWidths=rong, hAlign='LEFT')
     t.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -245,7 +245,7 @@ def dung_pdf(bc: dict) -> bytes:
     KHÔNG chạm CSDL và KHÔNG kiểm quyền: nơi gọi đã làm cả hai. Nhờ vậy hàm
     này kiểm được bằng dữ liệu dựng tay, không cần một lớp và một học viên thật.
     """
-    _nap_font()
+    nap_font()
 
     em = bc.get('student') or {}
     lop = bc.get('class') or {}
@@ -264,30 +264,30 @@ def dung_pdf(bc: dict) -> bytes:
         author='TopHSA',
     )
 
-    h1 = _kieu('h1', 15, NHAN, dam=True, sau=1)
-    h2 = _kieu('h2', 10.5, MUC, dam=True, truoc=11, sau=5)
-    p = _kieu('p', 9)
-    nho = _kieu('nho', 7.8, NHAT, dan=1.45)
+    h1 = kieu('h1', 15, NHAN, dam=True, sau=1)
+    h2 = kieu('h2', 10.5, MUC, dam=True, truoc=11, sau=5)
+    p = kieu('p', 9)
+    nho = kieu('nho', 7.8, NHAT, dan=1.45)
     kq = []
 
     # ── ĐẦU TỜ ──────────────────────────────────────────────────────────
     kq.append(Paragraph('BÁO CÁO HỌC TẬP', h1))
     kq.append(Paragraph(
         '%s &nbsp;·&nbsp; kỳ %s – %s' % (
-            _an(lop.get('name')), _ngay(ky.get('from')), _ngay(ky.get('to'))),
-        _kieu('duoi_h1', 9, NHAT, sau=8)))
+            an(lop.get('name')), ngay(ky.get('from')), ngay(ky.get('to'))),
+        kieu('duoi_h1', 9, NHAT, sau=8)))
 
     # ── I. THÔNG TIN CHUNG ─────────────────────────────────────────────
     kq.append(Paragraph('I. THÔNG TIN CHUNG', h2))
 
-    o = _kieu('o', 8.5, MUC, sau=0)
+    o = kieu('o', 8.5, MUC, sau=0)
     trai = [
         ['Học viên', em.get('name')],
         ['Phụ huynh', (bc.get('parent') or {}).get('name') or '—'],
         ['Lớp', lop.get('name')],
         ['Giảng viên', lop.get('teacher') or '—'],
         ['Trạng thái', tv.get('status')],
-        ['Vào lớp', _ngay(tv.get('joinedAt'))],
+        ['Vào lớp', ngay(tv.get('joinedAt'))],
     ]
     # "Chưa thi lần nào" chứ KHÔNG phải "0 điểm" — ranh giới 3 của
     # `parent_report.py`: viết 0 ở đây đọc như con làm sai hết.
@@ -306,7 +306,7 @@ def dung_pdf(bc: dict) -> bytes:
     ti_le_cc = ('%d%%' % cc['attendedPct']) if cc.get('attendedPct') is not None else '—'
     da_tick = cc.get('sessionsCounted', 0)
     phai = [
-        ['Kỳ báo cáo', '%s – %s' % (_ngay(ky.get('from')), _ngay(ky.get('to')))],
+        ['Kỳ báo cáo', '%s – %s' % (ngay(ky.get('from')), ngay(ky.get('to')))],
         # "0 có mặt / 0 buổi" đọc như con không đi buổi nào; sự thật là lớp
         # chưa có buổi nào được điểm danh. Ranh giới 3 của `parent_report.py`.
         ['Chuyên cần', '%s có mặt / %s buổi đã điểm danh (%s)' % (
@@ -364,7 +364,7 @@ def dung_pdf(bc: dict) -> bytes:
     if khoa:
         hang = [['Hợp phần', 'Bài đã xong', 'Tỉ lệ']]
         for k in khoa:
-            hang.append([_o(k.get('title'), o),
+            hang.append([o_bang(k.get('title'), o),
                          '%s/%s' % (k.get('lessonsDone', 0), k.get('lessonsTotal', 0)),
                          '%s%%' % int(k.get('pct') or 0)])
         t = Table(hang, colWidths=[86 * mm, 32 * mm, 20 * mm], hAlign='LEFT')
@@ -417,9 +417,9 @@ def dung_pdf(bc: dict) -> bytes:
             theo_dai.setdefault((ten_dai, loi), []).append(t)
 
         for (ten_dai, loi), ds in theo_dai.items():
-            khoi = [Paragraph(_an(ten_dai), _kieu('dai', 9.5, NHAN, dam=True,
+            khoi = [Paragraph(an(ten_dai), kieu('dai', 9.5, NHAN, dam=True,
                                                   truoc=7, sau=2))]
-            hang = [[_o('%s — %s' % (t.get('courseTitle') or '', t.get('topic') or ''), o),
+            hang = [[o_bang('%s — %s' % (t.get('courseTitle') or '', t.get('topic') or ''), o),
                      '%d%%' % int(t.get('mastery') or 0)] for t in ds]
             tb = Table(hang, colWidths=[130 * mm, 18 * mm], hAlign='LEFT')
             tb.setStyle(TableStyle([
@@ -433,7 +433,7 @@ def dung_pdf(bc: dict) -> bytes:
             ]))
             khoi.append(tb)
             khoi.append(Spacer(1, 3))
-            khoi.append(Paragraph(_an(loi), nho))
+            khoi.append(Paragraph(an(loi), nho))
             # `KeepTogether`: một dải bị cắt ngang giữa bảng và lời khuyên thì
             # người đọc thấy danh sách chủ đề ở cuối trang này và lời khuyên ở
             # đầu trang sau, không nối được với nhau.
@@ -445,7 +445,7 @@ def dung_pdf(bc: dict) -> bytes:
 
     # ── V. NHẬN XÉT CỦA GIẢNG VIÊN ─────────────────────────────────────
     kq.append(Paragraph('V. NHẬN XÉT CỦA GIẢNG VIÊN', h2))
-    kq.append(Paragraph(_an(tv.get('teacherNote')) or
+    kq.append(Paragraph(an(tv.get('teacherNote')) or
                         '<i>Giảng viên chưa ghi nhận xét cho kỳ này.</i>', p))
 
     # ── CUỐI TỜ: những điều tờ này KHÔNG nói ───────────────────────────

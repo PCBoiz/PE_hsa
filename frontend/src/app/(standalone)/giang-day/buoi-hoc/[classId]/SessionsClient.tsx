@@ -224,6 +224,18 @@ export default function SessionsClient({
               >
                 Xuất tiến độ
               </a>
+              {/* PDF đứng RIÊNG và được nhấn mạnh, không xếp lẫn hai nút CSV:
+                  nó dùng cho việc khác hẳn. Hai tệp CSV là bảng để LÀM VIỆC
+                  trên đó (lọc, sắp, gọi điện theo danh sách); PDF là bản để
+                  ĐƯA CHO NGƯỜI KHÁC ĐỌC trong phòng họp. Xếp chung một hàng
+                  xám thì người trực sẽ bấm nhầm rồi mở Excel trên điện thoại
+                  giữa buổi họp phụ huynh. */}
+              <a
+                href={`/api/teach/classes/${classId}/export/report.pdf`}
+                className="inline-flex min-h-11 items-center rounded-md border border-brand bg-brand/5 px-4 text-small font-semibold text-brand-ink hover:bg-brand/10"
+              >
+                Báo cáo lớp (PDF)
+              </a>
             </div>
           }
         />

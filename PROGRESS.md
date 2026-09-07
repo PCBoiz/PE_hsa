@@ -5697,3 +5697,50 @@ trong lớp. Đã xoá 4 buổi ấy.
 | Báo cáo phụ huynh | "lớp chưa có buổi nào được điểm danh" | "2/3 buổi đã điểm danh" + cảnh báo 1 buổi chưa tick |
 | Cơ sở học phí | 0 lớp | 1 lớp, 4 buổi đã mở, 2 học viên kèm số buổi có mặt/muộn/vắng |
 | Đợt học | 0 | 1 đợt, lớp đã gắn vào đợt |
+
+
+## 07/09/2026 (khuya, tiếp) — Báo cáo lớp dạng PDF
+
+Anh Sơn chọn "Xuất Excel/PDF cả lớp" làm việc tiếp. Hoá ra `exports.py` **đã có**
+CSV tiến độ + CSV chuyên cần; thứ còn thiếu đúng là **PDF**.
+
+### Hai định dạng, hai việc khác nhau
+
+CSV là bảng để LÀM VIỆC TRÊN ĐÓ (lọc cột cảnh báo, sắp lại, gọi điện theo danh
+sách). PDF là bản để ĐƯA CHO NGƯỜI KHÁC ĐỌC — không lọc được, và đó là điểm
+mạnh: cả phòng họp nhìn cùng một trang, cùng thứ tự, cùng phần diễn giải. Đưa
+CSV vào buổi họp thì người ta phải mở Excel trên điện thoại.
+
+Nút trên giao diện cũng tách riêng, không xếp lẫn hai nút CSV xám — xếp chung
+thì người trực bấm nhầm rồi mở Excel giữa buổi họp phụ huynh.
+
+### Tách luật ĐẾM chuyên cần ra khỏi thân vòng lặp
+
+Luật ấy nằm trong `ClassAttendanceCsvView.get`. Chép sang tệp PDF là cách chắc
+chắn nhất để hai bản xuất từ CÙNG một màn hình nói hai con số khác nhau — và
+chính `exports.py` đã ghi lại lần trước chuyện đó xảy ra (31/08: `progress.csv`
+"vắng 0 buổi" cạnh `diem-danh.csv` "vắng 1, chuyên cần 75%", vì buổi ấy đã huỷ).
+
+Nay có `dem_chuyen_can(class_id)` dùng chung. `ruff` bắt ngay ba biến chết còn
+lại trong vòng lặp cũ. Đã đối chiếu: CSV và hàm chung ra cùng 67% / 100%.
+
+### Đổi tên 5 hàm dựng PDF thành dùng chung
+
+`_nap_font → nap_font`, `_kieu → kieu`, `_an → an`, `_o → o_bang`, `_ngay → ngay`.
+Nay có hai tờ giấy (một em và cả lớp) và chúng phải trông giống hệt nhau — hai
+tờ của cùng một trung tâm mà khác phông chữ là thứ người nhận nhận ra ngay.
+
+### Chú thích hết hạn trong `exports.py`
+
+Nó nói không dùng .xlsx vì "mỗi dependency thêm vào là một thứ có thể vỡ trên
+Render". `openpyxl` đã vào `requirements.txt` từ đường nhập đề thi thử, nên lý do
+ấy hết đúng. Đã thay bằng lý do còn đứng vững: CSV mở được bằng MỌI thứ, còn
+thứ .xlsx thêm được (công thức, nhiều trang) đều không phải việc của tệp này.
+
+### Cổng
+
+Toàn bộ pytest backend: **453 passed** (29 phút, chạy thẳng vào Neon). 12 phép
+kiểm mới cho báo cáo lớp, gồm cả hai cổng quyền (học viên 403, giảng viên lớp
+khác 404 chứ không 403 — 403 là xác nhận lớp ấy tồn tại). Đo giao diện bộ sáng
+và bộ tối: 21 trang × 2 khổ, 0/0/0/0 cả hai. `build`, `eslint`, `tsc`, `ruff`
+đều sạch.

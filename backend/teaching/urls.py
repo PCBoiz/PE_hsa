@@ -70,6 +70,9 @@ urlpatterns = [
          exports.ClassProgressCsvView.as_view()),
     path('api/teach/classes/<int:class_id>/export/attendance.csv',
          exports.ClassAttendanceCsvView.as_view()),
+    # PDF cấp lớp: bản ĐỌC, khác hai tệp CSV ở trên là bản LÀM VIỆC.
+    path('api/teach/classes/<int:class_id>/export/report.pdf',
+         exports.ClassReportPdfView.as_view()),
     path('api/admin/export/users.csv', exports.AdminUsersCsvView.as_view()),
 
     # ── Quản trị lớp & vai trò — chỉ quản trị viên ──
