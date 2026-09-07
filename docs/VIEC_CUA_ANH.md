@@ -970,3 +970,113 @@ còn `.the/` ở gốc — nơi mọi bộ đo đọc — giữ nguyên thẻ C�
 Mất khoảng 30 phút: cấp thẻ, chạy đo, rơi về `/login`, cấp lại, vẫn rơi. Cùng
 đúng một họ với bẫy `/login`: công cụ báo thành công trong khi việc nó làm rơi
 ra chỗ khác. Nay giải theo thư mục người gọi đứng và in đường dẫn tuyệt đối.
+
+
+---
+
+# Phần 13 — Audit bảo mật và ma trận vai (07/09, tối)
+
+Anh yêu cầu kiểm mọi luồng giữa quản trị viên, giảng viên và học viên. Tôi hỏi
+**ba câu khác nhau**, vì mỗi câu bắt một họ lỗi mà hai câu kia không thấy.
+
+## 13.1 Câu thứ nhất: cửa nào đang mở cho ai
+
+`scripts/quet_quyen.py` liệt kê **106 view `api/`** cùng lớp quyền của từng
+cái, đi qua chính bộ định tuyến đang chạy. Không grep — `permission_classes`
+kế thừa được, và grep chỉ thấy chỗ CÓ khai chứ không thấy chỗ THIẾU.
+
+| nhóm | số view | đọc lại |
+|---|---|---|
+| `AllowAny` — không cần đăng nhập | **2** | `public/courses` và `public/parent-report/<token>`. Cả hai có chủ ý, đã rà. |
+| chỉ `IsAuthenticated` | **60** | Đúng thiết kế: chúng phục vụ dữ liệu của chính người đăng nhập (bài học, tiến độ, diễn đàn). |
+| có hàng rào vai | **44** | Ma trận ở 13.2 gõ vào từng cái. |
+
+Lớp lỗ hổng nguy nhất của dự án nằm ở dòng giữa: `DEFAULT_PERMISSION_CLASSES`
+là `IsAuthenticated`, nên một view **quên** khai `permission_classes` không đổ
+lỗi, không cảnh báo — nó lặng lẽ mở cho mọi tài khoản đăng nhập, kể cả học
+viên. Không có triệu chứng nào.
+
+## 13.2 Câu thứ hai: sáu vai gõ vào từng cửa
+
+`backend/common/tests_ma_tran_quyen.py` cầm thẻ của **sáu vai** gõ vào **mọi
+view có hàng rào**, rồi đối chiếu với một bảng kỳ vọng **chép tay**. Chép tay
+là có chủ ý: suy kỳ vọng ra từ chính `permissions.py` thì phép kiểm chỉ chứng
+minh tệp ấy bằng chính nó.
+
+Phép thứ hai trong tệp cầm **thẻ học viên** gõ vào từng đường `admin/` và
+`teach/` — đúng để bắt lớp lỗ hổng ở 13.1.
+
+Chỉ gửi GET, và thế là đủ: DRF kiểm quyền TRƯỚC khi chọn hàm xử lý theo
+method. Một bộ kiểm quyền tự gửi POST/DELETE vào từng cửa của CSDL production
+còn nguy hơn thứ nó đi tìm.
+
+## 13.3 Câu thứ ba: đúng vai, nhưng đồ của người khác
+
+Ma trận vai **không** hỏi được câu này. `backend/common/tests_do_cua_nguoi_khac.py`
+hỏi: hai người CÙNG VAI có chạm được vào đồ của nhau không.
+
+| thử | kết quả |
+|---|---|
+| Học viên B mở bài quiz của học viên A | 404 ✓ |
+| Học viên B bỏ qua mục kế hoạch của A | 400, và dòng KHÔNG đổi ✓ |
+| Học viên B đánh dấu đọc thông báo của A | dòng KHÔNG đổi ✓ |
+| Giảng viên B mở lớp của giảng viên A | 404 ✓ |
+| Giảng viên B đọc hồ sơ học viên lớp A | 404 ✓ |
+| Giảng viên B đọc tờ báo cáo phụ huynh lớp A | 404 ✓ |
+| "lớp không có" và "lớp không phải của bạn" trả GIỐNG nhau | ✓ |
+
+Dòng cuối quan trọng hơn vẻ ngoài của nó: trả 403 cho lớp người khác và 404
+cho lớp không tồn tại là một kênh rò — dò id từ 1 tới n rồi đọc mã trả về là
+biết trung tâm có bao nhiêu lớp.
+
+## 13.4 Ma trận giao diện: ba vai × mười lăm đường
+
+Đây là câu "bị chặn thì có HIỂU không" — chặn mà hiện trang hỏng thì người
+dùng báo là hệ thống lỗi chứ không báo là mình thiếu quyền.
+
+| đường | Quản trị | Giảng viên | Học viên |
+|---|---|---|---|
+| `/dashboard`, `/mock`, `/doi-mat-khau` | vào | vào | vào |
+| `/quan-tri/*` (8 trang) | vào | **chặn, có lời** | **chặn, có lời** |
+| `/giang-day/*` (3 trang) | vào | vào | **chặn, có lời** |
+| `/admin` | vào | **chặn, có lời** | **chặn, có lời** |
+
+## 13.5 Kết luận: KHÔNG tìm thấy lỗ hổng
+
+Chín phép kiểm mới xanh ngay lượt đầu. Nên tôi đi chứng minh chúng **đỏ được**,
+vì một phép kiểm hằng đúng là một phép kiểm giả:
+
+    nới `IsAdminRole` cho học viên      → 11 ô sai, gồm `admin/users` (HTTP 200)
+                                          và `admin/audit` (HTTP 200)
+    bỏ `teacher_id` khỏi can_see_class
+    + bỏ so chủ sở hữu ở QuizView       → 5/7 đỏ, đúng 5 phép phụ thuộc hai
+                                          hàng rào ấy
+
+Khôi phục cả ba tệp (`git diff` trống), 9/9 xanh lại.
+
+## 13.6 Sáu lần thước đo của tôi báo oan trong một ngày
+
+Ghi đủ, vì đây là điều đáng nhớ nhất của cả ngày:
+
+1. Liên kết "Bài tập" *"bấm không đi đâu"* — tôi chờ cố định 2,5 giây.
+2. Dashboard *"có 20 nút đổi giao diện"* — bộ lọc khớp chữ "chủ đề" trong nhãn
+   *"Tự đánh dấu đã nắm &lt;chủ đề&gt;"*.
+3. Màn Đợt học *"là ngõ cụt"* — nút "Tạo đợt" ở góc phải, bộ dò chỉ nhìn thẻ cha.
+4. *"`study-plan/items` không có màn nào"* — tầng JS cũ ghép chuỗi URL. **Số
+   này kịp vào tài liệu, vào một commit, và vào một câu hỏi anh đã trả lời.**
+5. *"`/admin` mở cho học viên"* — cổng nói "Khu này dành cho người soạn giáo
+   trình", đúng nghĩa nhưng khác chữ với cụm tôi tìm. Suýt báo một lỗ hổng
+   không có thật.
+6. *"Học viên thấy trang trống ở `/giang-day`"* — trang nói "Không mở được lớp
+   này · Không có quyền truy cập"; ngưỡng đếm ký tự của tôi hụt đúng 7 ký tự.
+
+**Không lần nào sản phẩm sai. Sáu lần đều là thước.** Bài học không phải "viết
+bộ dò cẩn thận hơn" — mà là: số của một bộ dò phải kiểm tay TRƯỚC KHI nó đi
+vào tài liệu hay vào một câu hỏi cho người khác quyết.
+
+## 13.7 Một điều nhỏ, ghi để anh biết
+
+Học viên mở `/giang-day/...` vẫn thấy **thanh điều hướng khu Giảng dạy**
+(Buổi học · Bài tập · Báo cáo phụ huynh) ở phía trên câu "không có quyền".
+Mọi tab đều bị chặn nên không rò dữ liệu gì — chỉ là họ nhìn thấy cấu trúc một
+khu không dành cho mình. Chưa sửa; nói ra để anh quyết có đáng sửa không.
