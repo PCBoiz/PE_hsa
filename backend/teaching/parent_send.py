@@ -31,6 +31,7 @@ Có link còn sống cùng kỳ thì dùng lại: cấp chìa mới mỗi lượ
 mới — kỳ ghim cứng vào chìa, nên gửi lại chìa tháng trước là gửi báo cáo tháng
 trước.
 """
+import secrets
 from datetime import timedelta
 
 from rest_framework.response import Response
@@ -44,8 +45,6 @@ from teaching.parent_link import HAN_NGAY, SO_BYTE
 from teaching.parent_report import DEFAULT_WEEKS, dung_bao_cao
 from teaching.thu_bao_cao import soan_thu
 from teaching.vocab import chi_hoc_vien
-
-import secrets
 
 #: Tên tham số của MẪU ZNS. Do mẫu Zalo duyệt quy định, KHÔNG phải mã này tự
 #: đặt — khi anh Sơn tạo mẫu thì sửa đúng ở đây cho khớp, và chỉ ở đây.

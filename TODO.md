@@ -192,7 +192,25 @@ qua thời gian phản hồi (134,8 ms → **4,7 ms**) · `.gitignore` hở `.en
 `.env.backup`, `scratchpad/` · lớp trung gian chuyển tiếp `X-Forwarded-For` của
 trình duyệt. Ba việc còn lại cần anh: T38, T39, T40.
 
-### [ ] T38 · Giới hạn tần suất bị vô hiệu bằng một header — CẦN ĐO TRÊN PRODUCTION
+### [~] T38 · Giới hạn tần suất — ĐÃ ĐO TRÊN PRODUCTION 07/09/2026
+**Đo được (gọi thẳng vào Render, `/api/admin/do-proxy`):**
+```
+xff        = 117.1.110.124, 172.70.130.172, 10.29.203.2
+soChang    = 2      numProxiesHienTai = 1
+ipHienTai  = 10.29.203.2      ← IP NỘI BỘ CỦA RENDER, không phải IP khách
+```
+**Hai điều tốt, đã kiểm:** giả `X-Forwarded-For: 1.2.3.4` KHÔNG đổi được
+`ipHienTai` (lỗ 300/300 cũ đã bịt); `X-PE-Client-IP` kèm bí mật SAI bị bỏ qua
+(mặc định đóng, đúng).
+
+**Điều còn lại:** khoá throttle là IP nội bộ Render → MỌI người dùng chung
+một xô `login 100/min`, nên một người (hoặc một bot) khoá được cả lớp. Lời
+giải đã có sẵn trong mã, chỉ chờ HAI biến môi trường cùng giá trị:
+Render `PROXY_SHARED_SECRET` + Vercel `PE_PROXY_SECRET`.
+**Cách anh tự kiểm sau khi đặt:** mở `/api/admin/do-proxy` bằng TRÌNH DUYỆT
+qua tên miền Vercel; `ipHienTai` phải bằng IP thật của anh (whatismyip).
+
+<sub>Nguyên văn mục cũ giữ lại bên dưới.</sub>
 **Đo được:** DRF lấy nguyên chuỗi `X-Forwarded-For` do client gửi làm khoá
 throttle (`NUM_PROXIES` chưa đặt). 300 lần đăng nhập xoay `X-Forwarded-For`
 ngẫu nhiên → **300 lần đều lọt**; cùng 300 lần với IP cố định → 200 lần bị chặn.
@@ -223,7 +241,11 @@ trên Render (a) qua trình duyệt đi đường Vercel, (b) bằng `curl` th�
 > cụ đo thành một đường rò khoá. Có phép kiểm canh đúng điều đó.
 
 
-### [ ] T39 · `SECRET_KEY` 19 byte ký JWT HS256 — CẦN ANH XOAY KHOÁ
+### [x] T39 · `SECRET_KEY` 19 byte ký JWT HS256 — XONG (đo lại 07/09/2026)
+**Đo 07/09/2026:** `len(SECRET_KEY) = 64` byte = 512 bit, vượt mức 256 bit mà
+RFC 7518 §3.2 đòi. Khoá đã được xoay. Mục này khép lại.
+
+<sub>Nguyên văn mục cũ giữ lại bên dưới để tra lịch sử.</sub>
 **Đo được:** `len(SECRET_KEY) = 19` byte = 152 bit. RFC 7518 §3.2 nói khoá HS256
 **PHẢI** dài ít nhất bằng đầu ra băm (256 bit). `check --deploy` báo
 `security.W009`. Đã kiểm kỹ: khoá **không** nằm trong lịch sử git (lần quét đầu

@@ -37,10 +37,10 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from accounts.models import User
 from common.db import q1
 from common.permissions import (
+    ROLE_ACADEMIC,
     ROLE_ADMIN,
     ROLE_ASSISTANT,
     ROLE_EDITOR,
-    ROLE_ACADEMIC,
     ROLE_STUDENT,
     ROLE_TEACHER,
 )
@@ -136,7 +136,12 @@ def test_moi_view_co_hang_rao_chan_dung_sau_vai(sau_vai):
             try:
                 kq = cls.as_view()(req, **_tham_so(duong))
                 ma = kq.status_code
-            except Exception:
+            except Exception:  # noqa: BLE001 — bắt RỘNG là đúng ở đây:
+                # phép kiểm đang hỏi "cửa có mở không", và một view nổ vì
+                # tham số vô nghĩa nghĩa là cửa ĐÃ mở. Bắt hẹp lại thì mọi
+                # kiểu nổ chưa lường trước sẽ làm ĐỎ phép kiểm thay vì
+                # được ghi nhận là "lọt", tức đổi một phát hiện thành một
+                # lỗi công cụ.
                 # View đủ quyền mà nổ vì tham số vô nghĩa: cửa ĐÃ mở, và đó
                 # đúng là thứ đang đo. Cửa đóng thì DRF trả 403 chứ không ném.
                 ma = 500
@@ -181,7 +186,7 @@ def test_khong_view_nao_bo_trong_hang_rao_o_khu_quan_tri(sau_vai):
         force_authenticate(req, user=hoc_vien)
         try:
             ma = cls.as_view()(req, **_tham_so(duong)).status_code
-        except Exception:
+        except Exception:  # noqa: BLE001 — xem chú thích ở khối trên
             ma = 500
         if ma != 403:
             lot.append('%s → HTTP %s (%s)' % (duong, ma, cls.__name__))

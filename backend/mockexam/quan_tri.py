@@ -101,7 +101,11 @@ class AdminMockExamTemplateView(_Base):
         ws = wb.active
         ws.title = 'Câu hỏi'
         ws.append(TIEU_DE_MAU)
-        for d in (_hang_mau(x) for x in DONG_MAU):
+        # `mau` chứ không phải `x`: `x` là hàm GHI CSDL nhập ở đầu tệp, và
+        # một biến vòng lặp trùng tên nó là cái bẫy đọc — người sửa sau nhìn
+        # `x` ở đây rồi tưởng chỗ này đang ghi CSDL. (Sinh biểu thức có phạm
+        # vi riêng nên KHÔNG có lỗi chạy; thứ hỏng là người đọc.)
+        for d in (_hang_mau(mau) for mau in DONG_MAU):
             ws.append(d)
         for i, w in enumerate([14, 60, 18, 18, 18, 18, 16, 12, 16, 46], start=1):
             ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w

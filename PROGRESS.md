@@ -5582,3 +5582,73 @@ như con không đi buổi nào). Đã sửa cả hai.
 viện `ff3f18a` — CI đang đỏ, không phải do việc hôm nay. Vá luôn, và đằng sau
 cái nhãn đỏ là một lỗi thật: lượt gọi không huỷ được, nên đổi học viên nhanh
 thì danh sách chìa của em TRƯỚC hiện dưới tên em SAU.
+
+
+## 07/09/2026 (tối) — Gửi thư thật, merge master, và audit
+
+### Thư đã đi thật
+
+App Password anh Sơn đưa KHÔNG thuộc `naman20052011@gmail.com` — Gmail trả
+`535 5.7.8 BadCredentials`. Thử tài khoản còn lại trong CSDL
+(`sonthaiha07@gmail.com`, vai Giảng viên) thì đăng nhập được. Thư báo cáo kèm
+PDF 52,8 KB đã tới hộp thư của anh.
+
+Bài học nhỏ: câu lỗi gốc của Gmail chỉ nói "sai tài khoản hoặc mật khẩu"; thứ
+phân xử được là THỬ từng tài khoản có thật, không phải đoán.
+
+### Merge erp → master, và chính lượt deploy ấy chữa production
+
+Trước merge: `curl` production trả 503 kèm header `x-render-routing:
+hibernate-wake-error` **bốn lần liên tiếp** — tức chính Render không đánh thức
+được dịch vụ. Sau khi push master (autoDeploy): `/health` trả **200 trong 1,16
+giây**.
+
+Nên chẩn đoán cũ ("deploy hỏng") SAI. Đúng là: gói free ngủ đông, và bước đánh
+thức thỉnh thoảng lỗi. Một lượt deploy dựng lại container nên gỡ được.
+
+### Giữ ấm — và chỗ suýt phản tác dụng
+
+Render free cho **750 giờ/tháng cho cả workspace**, dịch vụ ĐANG NGỦ không tốn
+giờ, hết giờ thì **treo tới hết tháng**. Ping mỗi 10 phút suốt ngày đêm =
+~730 giờ = tiêu sạch hạn mức, và quãng ngày 28–31 sập hẳn. Tức đổi một cú chờ
+40 giây lấy một cú sập vài ngày. Nên chỉ ping 06:00–23:00 giờ VN (~558 giờ).
+
+Và một lỗi trong chính workflow: `[ $giay -gt 15 ] && echo` trả mã 1 khi điều
+kiện sai, mà GitHub chạy bước bằng `bash -e` — mọi lượt ping NHANH sẽ báo hỏng.
+Workflow chỉ xanh khi production đang ngủ. Đã đổi sang `if` và chạy thử dưới
+`bash -e` để chứng minh.
+
+### Audit đường email: chặn được chèn header, nhưng chặn SAI CÁCH
+
+Thử `"\nBcc: ke-trom@evil.com"` qua địa chỉ người nhận và qua tiêu đề thư.
+`EmailMessage` chặn cả hai — bằng cách NÉM `ValueError`. Đó là lỗi: `gui()` ghi
+"KHÔNG ném ngoại lệ", và cả vòng lặp gửi cả lớp dựa vào lời hứa ấy. Tiêu đề thư
+chứa TÊN HỌC VIÊN lấy từ CSDL, nên một em có tên chứa xuống dòng làm hỏng lượt
+gửi của 24 em còn lại.
+
+Địa chỉ → TỪ CHỐI (gửi tới địa chỉ đã bị sửa là gửi cho người lạ). Tiêu đề và
+tên hiển thị → DỌN (từ chối cả lá thư vì một cái tên lạ nghĩa là em ấy vĩnh
+viễn không nhận báo cáo). Bốn tính chất chứng minh đỏ được.
+
+### CI đang đỏ ở CẢ HAI tầng, không phải do việc hôm nay
+
+- `ruff` (chạy trong CI): **6 lỗi**, 3 có từ trước. Trong đó `F402` ở
+  `mockexam/quan_tri.py` là biến vòng lặp trùng tên hàm GHI CSDL `x` — không
+  phải lỗi chạy (sinh biểu thức có phạm vi riêng) nhưng là bẫy đọc thật.
+- `eslint`: 1 lỗi ở `DuongDanDaCap.tsx` từ đợt nâng thư viện `ff3f18a`.
+
+Đã vá cả bảy. Hai `except Exception` trong `tests_ma_tran_quyen.py` là CỐ Ý và
+đúng — nay ghi lý do vào mã bằng `# noqa` kèm chú thích, thay vì để ruff đỏ.
+
+### Ba mục bảo mật treo — đo lại
+
+| | trạng thái đo được |
+|---|---|
+| **T39** `SECRET_KEY` 19 byte | **ĐÃ VÁ** — nay 64 byte (512 bit), vượt mức RFC 7518 đòi. TODO chưa cập nhật |
+| **T38** khoá throttle | Đo được LẦN ĐẦU (trước bị chặn vì production sập). Gọi thẳng Render: `xff` 3 chặng, `ipHienTai = 10.31.215.52` — **IP nội bộ của Render, không phải IP khách**. Giả `X-Forwarded-For` KHÔNG đổi được khoá ✓, và `X-PE-Client-IP` kèm bí mật sai bị bỏ qua ✓ |
+| **T40** bộ đếm trong bộ nhớ | Vẫn `LocMemCache`, production `--workers 2` → trần hiệu dụng gấp đôi, reset mỗi lần deploy |
+
+Hệ quả T38 còn lại: mọi người dùng thật vẫn chung MỘT xô `login 100/min`, nên
+một người có thể khoá cả lớp. Mã đã có lời giải (`X-PE-Client-IP` + bí mật
+chung `PROXY_SHARED_SECRET`/`PE_PROXY_SECRET`) — chỉ chờ hai biến môi trường,
+việc của anh Sơn.
