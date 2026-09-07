@@ -39,6 +39,10 @@ const TRANG = [
   '/quan-tri/lop-hoc',
   '/quan-tri/dot-hoc',
   '/quan-tri/nhat-ky',
+  // Thêm 07/09/2026 cùng lúc với trang: mỗi trang mới trong khu phải vào danh
+  // sách này, nếu không nó là trang DUY NHẤT không ai canh khung chung — và
+  // khung chung đúng là thứ đã hỏng bốn lần ở bốn khu khác nhau.
+  '/quan-tri/co-so-hoc-phi',
 ];
 
 test.describe('khu vận hành', () => {

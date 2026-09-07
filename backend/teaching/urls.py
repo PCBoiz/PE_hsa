@@ -4,6 +4,7 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      co_so_hoc_phi,
                       exports,
                       overview,
                       parent_link,
@@ -98,4 +99,6 @@ urlpatterns = [
     # ĐO số chặng proxy — thứ duy nhất còn thiếu để đóng T38 và T66.
     # Chỉ quản trị viên, chỉ trả header liên quan tới proxy. Xem common/do_proxy.py.
     path('api/admin/do-proxy', do_proxy.DoProxyView.as_view()),
+    # CƠ SỞ TÍNH học phí — không có trường tiền nào, xem co_so_hoc_phi.py
+    path('api/admin/co-so-hoc-phi', co_so_hoc_phi.AdminBillingBasisView.as_view()),
 ]
