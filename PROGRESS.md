@@ -5444,3 +5444,19 @@ GIỜ: chặn đúng ở lần 101 trong 36,4 giây.
 
 **Phép đo về TẦN SUẤT phải tính cả thời gian chính nó chạy.** Không lần nào
 trong mười ba lần ấy sản phẩm sai.
+
+### Hồi quy do chính tôi gây ra, audit bắt được
+
+Sáng nay gỡ Font Awesome và viết "grep ra 0 lần dùng `fa-`" — SAI. `Chatbot.tsx`
+dùng 10 biểu tượng, `chatbot.js` thêm 4. Đo chiều nay: 12 biểu tượng ở 0×0px,
+trợ lý AI trắng trơn, và bản ấy đã lên production.
+
+Không gì chặn được vì biểu tượng biến mất không làm hỏng gì. Nay có phép kiểm
+canh: tệp nào dùng `fa-` thì phải tự nạp Font Awesome.
+
+Kèm: `fa-sparkles` là biểu tượng bản PRO nên chưa từng hiện; khối "ba hợp phần"
+chuyển từ tầng JS cũ sang React (chốt hãm bắt đúng, trần hạ 7346 → 7337); một
+phép kiểm đỏ oan chỉ trên Windows do CRLF.
+
+Cổng sau tất cả: 391/391 pytest · 35/35 e2e · 21/21 unit · 21×2 trang giao diện
+sạch · 6/6 bề mặt XSS an toàn · 0 lỗ hổng thư viện (trước: 17).

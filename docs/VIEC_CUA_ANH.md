@@ -1190,3 +1190,53 @@ Ba lần nữa trong đợt này, đều suýt thành báo cáo sai:
 
 Cộng với sáu lần ở Phần 13. **Không lần nào sản phẩm sai; mười ba lần đều là
 thước.** Đó là lý do mọi con số trong hai phần này đều đã được kiểm tay.
+
+
+---
+
+# Phần 15 — Một hồi quy do chính tôi gây ra, và đã vá
+
+Đợt audit giao diện bắt được thứ tôi làm hỏng cùng ngày.
+
+## 15.1 Chatbot mất sạch biểu tượng
+
+Sáng 07/09 tôi gỡ Font Awesome khỏi trang để tiết kiệm 100kB, và viết trong
+commit: *"grep cả hai màn ra 0 lần dùng class `fa-`"*. Câu ấy **sai** —
+`Chatbot.tsx` dùng 10 biểu tượng, `chatbot.js` dùng thêm 4.
+
+Đo lại chiều nay trên Trang của tôi: **12 biểu tượng hiện ở 0×0px**. Trợ lý AI
+không còn hình nào, và bản ấy đã lên production.
+
+Không gì chặn tôi lại, vì biểu tượng biến mất không làm hỏng gì cả: không lỗi
+JS, không lỗi build, không phép kiểm nào đỏ. Nay có
+`font-awesome-tu-nap.test.mjs` canh: tệp nào dùng thì phải tự nạp.
+
+**Cái giá của bản vá:** Trang của tôi nhận lại 100kB CSS, tức mất phần lớn
+phần tối ưu sáng nay (LCP 2740ms sẽ nhích lên). Lấy lại được bằng cách chuyển
+11 biểu tượng ấy sang bộ SVG riêng của dự án — 4 trong 11 đã có sẵn. Việc nhỏ,
+chưa làm vì không nên chen vào lúc đang vá hồi quy.
+
+## 15.2 Một biểu tượng chưa từng hiện
+
+`fa-sparkles` là biểu tượng **bản Pro** của Font Awesome, mà dự án nạp bản
+Free. Nó luôn 0×0px — từ trước khi tôi đụng vào. Đã thay bằng bộ SVG của dự án.
+
+## 15.3 Ba việc dọn kèm theo
+
+- **Khối "ba hợp phần" chuyển từ tầng JS cũ sang React.** Chốt hãm của dự án
+  bắt đúng: tầng cũ chỉ được nhỏ đi, mà tôi vừa thêm 38 dòng logic vào đúng
+  tầng vừa lộ lỗ XSS thứ ba. Trần hạ 7346 → 7337.
+- **Một phép kiểm đỏ oan chỉ trên máy Windows** (`huong-dan`): nó đòi dấu phẩy
+  liền trước `
+`, mà bản checkout Windows dùng CRLF. CI chạy Linux nên xanh
+  suốt — đỏ đúng chỗ anh ngồi, xanh ở chỗ không ai nhìn.
+- **`chatbot.js` không còn cấu hình mời dán khoá API** vào mã trình duyệt.
+
+## 15.4 Trạng thái cổng sau tất cả
+
+    391/391  pytest (gồm 9 phép kiểm bảo mật mới + 5 phép nhãn bài sạch)
+     35/35   e2e
+     21/21   phép kiểm đơn vị
+     21×2    trang giao diện: 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS
+      6/6    bề mặt XSS an toàn
+        0    lỗ hổng thư viện (trước audit: 17)
