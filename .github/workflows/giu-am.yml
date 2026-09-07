@@ -1,0 +1,117 @@
+# Giữ ấm backend production — chống ngủ đông của gói Render free.
+#
+# ── VÌ SAO CÓ TỆP NÀY (07/09/2026) ──────────────────────────────────────────
+#
+# Anh Sơn báo không đăng nhập được. Đo trên production hôm nay: lời gọi đầu
+# tiên sau một quãng vắng mất **39,5 giây** rồi mới trả HTTP 200. Gói Render
+# free TẮT HẲN dịch vụ sau ~15 phút không ai dùng, và lần gọi sau đó phải dựng
+# lại cả container.
+#
+# Người dùng không chờ 40 giây. Trình duyệt, `middleware.ts`, và bộ đếm giờ của
+# `fetch` đều bỏ cuộc trước đó — nên với người bấm Đăng nhập, nó hiện ra như
+# "hệ thống hỏng", không như "hệ thống đang thức dậy".
+#
+# ── VÌ SAO KHÔNG DÙNG `common/keepalive.py` ĐÃ CÓ ──────────────────────────
+#
+# Nó ping Neon TỪ BÊN TRONG tiến trình backend, và giải đúng một bài khác: giữ
+# CSDL khỏi ngủ trong lúc backend đang chạy. Khi Render tắt cả container thì
+# luồng ấy chết theo — một dịch vụ đang ngủ không thể tự đánh thức mình. Muốn
+# chống ngủ đông thì tiếng gõ cửa phải đến TỪ NGOÀI.
+#
+# ── VÌ SAO 10 PHÚT ─────────────────────────────────────────────────────────
+#
+# Ngưỡng ngủ của Render là ~15 phút. 10 phút để dư một nhịp: lịch cron của
+# GitHub là "cố gắng", không phải cam kết — GitHub bỏ bớt lượt khi hệ thống
+# bận, và trễ 5–20 phút là chuyện thường. Đặt đúng 15 phút thì mỗi lượt trễ là
+# một lần ngủ.
+#
+# ── VÌ SAO CHỈ PING BAN NGÀY, KHÔNG PING 24/7 ──────────────────────────────
+#
+# Đây là chỗ suýt nữa lời khuyên tự phản lại mình.
+#
+# Render free cho **750 giờ chạy mỗi tháng cho cả workspace**, và dịch vụ ĐANG
+# NGỦ thì KHÔNG tốn giờ. Hết 750 giờ thì dịch vụ bị **treo tới hết tháng**.
+#
+# Ping mỗi 10 phút suốt ngày đêm = giữ nó thức 24/7 = ~730 giờ/tháng. Tức là
+# vừa đủ tiêu sạch hạn mức, và khoảng ngày 28–31 dịch vụ sẽ bị treo HẲN. Như
+# thế là đổi một cú chờ 40 giây thỉnh thoảng lấy một cú sập vài ngày mỗi tháng
+# — tệ hơn hẳn thứ đang chữa.
+#
+# Nên chỉ giữ ấm trong khoảng người ta thật sự dùng: 06:00–23:00 giờ Việt Nam.
+# Cron của GitHub chạy theo UTC, mà Việt Nam là UTC+7, nên đó là giờ UTC 23 và
+# 0–16. Khoảng 18 giờ/ngày × 31 ngày ≈ 558 giờ — dưới 750 còn dư.
+#
+# Ngoài khoảng ấy dịch vụ ngủ, và người đầu tiên vào lúc sáng sớm vẫn phải chờ
+# ~40 giây. Đó là đánh đổi CÓ CHỦ Ý, không phải sơ suất.
+#
+# ── ĐIỀU NÀY *KHÔNG* GIẢI QUYẾT ĐƯỢC ───────────────────────────────────────
+#
+# Nó chỉ GIẢM XÁC SUẤT, không loại bỏ:
+#
+#   · lượt cron bị bỏ thì dịch vụ vẫn ngủ (lịch cron GitHub là "cố gắng");
+#   · GitHub tự tắt cron ở repo không có hoạt động nào suốt 60 ngày;
+#   · và nó KHÔNG chữa được `hibernate-wake-error` — đo 07/09/2026: Render trả
+#     503 kèm đúng chữ ấy bốn lần liên tiếp, tức chính Render không đánh thức
+#     được dịch vụ. Ping chỉ làm nó ít phải thức dậy hơn, không làm việc thức
+#     dậy bớt hỏng.
+#
+# Cách dứt điểm cả ba là gói Render trả phí (~7 USD/tháng): không ngủ, không
+# đếm giờ, không có bước đánh thức để mà hỏng. Ghi ở đây để người sau không
+# tưởng vấn đề đã xong.
+
+name: Giữ ấm production
+
+on:
+  schedule:
+    # UTC. 23 và 0–16 UTC = 06:00–23:00 giờ Việt Nam — xem chú thích "VÌ SAO
+    # CHỈ PING BAN NGÀY" ở trên trước khi mở rộng thành 24/7.
+    - cron: '*/10 23,0-16 * * *'
+  # Gọi tay được: trước một buổi trình bày thì đánh thức trước cho chắc.
+  workflow_dispatch:
+
+# Không cần đọc gì trong repo — chỉ gõ cửa một địa chỉ công khai.
+permissions: {}
+
+concurrency:
+  # Lượt trước còn đang chờ cold-start thì lượt này khỏi chen vào.
+  group: giu-am
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Gõ cửa /health
+        run: |
+          URL="${{ vars.URL_BACKEND || 'https://pe-hsa-backend.onrender.com' }}/health"
+          echo "gõ cửa: $URL"
+
+          # `--max-time 120`: cold-start đo được là ~40 giây, và đó là lúc máy
+          # chủ RẢNH. Hạn 10 giây như mặc định của phần lớn công cụ giám sát sẽ
+          # báo "chết" cho một dịch vụ chỉ đang thức dậy — tức báo động giả mỗi
+          # lần nó thật sự làm đúng việc.
+          for lan in 1 2 3; do
+            batdau=$(date +%s)
+            ma=$(curl -sS -o /tmp/than -w '%{http_code}' --max-time 120 "$URL" || echo 000)
+            giay=$(( $(date +%s) - batdau ))
+            echo "  lần $lan: HTTP $ma sau ${giay}s"
+            if [ "$ma" = "200" ]; then
+              # In ra thời gian để lịch sử chạy thành một BẢN ĐO: nhìn lại vài
+              # chục lượt là biết dịch vụ ngủ bao nhiêu lần một ngày, thay vì
+              # chỉ biết "có lúc chậm".
+              # `if` chứ KHÔNG phải `[ ... ] && echo`: GitHub chạy bước này bằng
+              # `bash -e`, và một danh sách `&&` có vế trái sai thì trả mã 1 —
+              # tức mọi lượt ping NHANH (dịch vụ đang khoẻ) sẽ bị báo hỏng.
+              # Đúng cái nghịch lý: workflow chỉ xanh khi production đang ngủ.
+              if [ "$giay" -gt 15 ]; then
+                echo "  (lượt này phải đánh thức — dịch vụ đã ngủ)"
+              fi
+              cat /tmp/than; echo
+              exit 0
+            fi
+            sleep 20
+          done
+
+          echo "::error::Backend không trả 200 sau 3 lần thử. Kiểm tra Render → pe-hsa-backend → Logs."
+          exit 1
