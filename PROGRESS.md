@@ -5460,3 +5460,41 @@ phép kiểm đỏ oan chỉ trên Windows do CRLF.
 
 Cổng sau tất cả: 391/391 pytest · 35/35 e2e · 21/21 unit · 21×2 trang giao diện
 sạch · 6/6 bề mặt XSS an toàn · 0 lỗ hổng thư viện (trước: 17).
+
+---
+
+## 07/09/2026 (khuya) — đăng nhập, ZNS chế độ thử, landing nói thật
+
+### Mật khẩu ĐÚNG, CSDL nguyên vẹn, backend chết
+
+Anh Sơn báo không đăng nhập được và nghi tôi đụng CSDL. Đo: `HSA@admin2026`
+khớp qua chính hàm máy chủ dùng; 6 tài khoản không thiếu ai; backend production
+503 suốt 169 giây; mọi lệnh build chạy sạch tại máy ở chế độ production.
+
+Và màn đăng nhập ĐỔ LỖI CHO NGƯỜI DÙNG: "Sai email/mật khẩu" là câu mặc định
+cho mọi phản hồi lỗi không kèm thân JSON, nên 503 hiện thành lỗi mật khẩu.
+`catch` không cứu được vì fetch chỉ ném khi mất mạng. Cùng bẫy `middleware.ts`
+đã vá cho đường khác. Đã vá.
+
+### ZNS chế độ thử
+
+`ZALO_CHE_DO_THU=1` + `manage.py thu_zns --so <số>`. `soan_zns()` dùng chung
+cho cả gửi thật lẫn thử để bản xem trước không trôi khỏi bản gửi. Không ghi
+`parent_report_sends` — sổ ấy là sổ của tin đã đi.
+
+### Landing có BA lời khẳng định sai đang chạy production
+
+"100% miễn phí" (không có gói nào) và HAI trích dẫn học viên chú là "nhóm
+pilot" / "nhóm học viên thử nghiệm" — trong khi 0 đợt học, 0 buổi. Lời chứng
+thực bịa trên trang nhắm vào phụ huynh. Đã gỡ, thay bằng khối "Chúng tôi chưa
+có gì để khoe".
+
+Bằng chứng nay là chính sản phẩm: render CHÍNH component `ToBaoCao` lên trang,
+số liệu của một em không có thật và nói rõ điều đó. "Thử một câu" → "thử ba
+câu" kết bằng bảng phân tích theo hợp phần.
+
+### Bộ đo lại báo oan (lần thứ 15)
+
+Lọc phần tử ẩn bằng `width < 1`, mà `.sr-only` dựng hộp đúng 1×1px nên lọt qua
+và bị chấm tương phản. Người đọc báo cáo sẽ đi xoá đoạn chữ cố ý giấu cho người
+khiếm thị — bộ đo a11y làm hỏng a11y. Nay `<= 1` kèm nhận diện `clip-path`.

@@ -1240,3 +1240,108 @@ Free. Nó luôn 0×0px — từ trước khi tôi đụng vào. Đã thay bằng
      21×2    trang giao diện: 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS
       6/6    bề mặt XSS an toàn
         0    lỗ hổng thư viện (trước audit: 17)
+
+
+---
+
+# Phần 16 — Đăng nhập hỏng, ZNS chế độ thử, và landing nói thật (07/09, khuya)
+
+## 16.1 Mật khẩu của anh ĐÚNG — thứ hỏng là backend
+
+Anh báo *"không đăng nhập bằng tài khoản admin được nữa, đụng chạm gì database
+rồi"*. Tôi đo:
+
+| kiểm | kết quả |
+|---|---|
+| `HSA@admin2026` qua **đúng hàm máy chủ dùng** (`check_werkzeug_password`) | **True** ✓ |
+| Tài khoản `admin@pe-hsa.vn` | còn, `role=admin`, `status=active` ✓ |
+| Tổng tài khoản | 6, không thiếu ai ✓ |
+| Backend production | **503 suốt 169 giây** (đo bằng trình duyệt thật, 12 lần) |
+| WSGI + collectstatic + migrate + bootstrap_schema ở chế độ production | **tất cả chạy được** ✓ |
+
+**CSDL không bị đụng gì cả.** Thứ hỏng là dịch vụ backend trên Render.
+
+### Và màn đăng nhập đã đổ lỗi cho anh
+
+`LoginForm` để "Sai email/số điện thoại hoặc mật khẩu" làm câu **mặc định** cho
+mọi phản hồi lỗi không kèm thân JSON — nên 500/502/503/504 đều hiện thành lỗi
+của người gõ. Nhánh `catch` không cứu được: `fetch` chỉ *ném* khi mất mạng, còn
+503 là fetch **thành công** với `res.ok === false`.
+
+Đây đúng cái bẫy `src/middleware.ts` của chính dự án đã ghi và đã vá cho đường
+làm mới phiên. Chỗ này sót. **Đã vá**: từ 500 trở lên nói thẳng *"máy chủ không
+phản hồi, ĐÂY KHÔNG PHẢI lỗi mật khẩu"*.
+
+### ⚠️ CẦN ANH LÀM
+
+Mở Render → dịch vụ `pe-hsa-backend` → tab **Events / Logs**, xem lần deploy
+gần nhất **failed** hay dịch vụ bị **suspended** (gói free 750 giờ/tháng). Tôi
+không nhìn được bảng điều khiển ấy. Tôi đã merge lên master hai lần hôm nay nên
+rất có thể một lần deploy hỏng — nhưng mọi lệnh build đều chạy sạch tại máy,
+nên tôi chưa dám khẳng định là do tôi.
+
+## 16.2 ZNS: chế độ THỬ đã dựng, chưa gửi thật
+
+Anh chốt dựng chế độ thử trước. `ZALO_CHE_DO_THU=1` đi trọn luồng, dựng đúng
+thân request, **không một byte nào rời khỏi máy chủ**.
+
+    ZALO_CHE_DO_THU=1 python manage.py thu_zns --so 0812315276
+
+In ra đúng thứ sẽ gửi, kèm đường dẫn mẫu dài 43 ký tự bằng chìa thật (Zalo đếm
+ký tự lúc duyệt mẫu). Không có chế độ thử **và** không có cấu hình thì lệnh
+DỪNG chứ không thử gửi.
+
+Chế độ thử **không ghi** `parent_report_sends`: sổ ấy là sổ của tin ĐÃ ĐI, và
+một dòng "đã gửi" cho tin chưa từng rời máy chủ là loại nói dối khó thấy nhất.
+
+### ⚠️ CẦN ANH LÀM để gửi thật tới 0812315276
+
+    ZALO_OA_ACCESS_TOKEN     lấy ở Zalo OA → Quản lý ứng dụng
+    ZALO_ZNS_TEMPLATE_ID     lấy ở Zalo OA → ZNS → template đã DUYỆT
+
+Mẫu phải khai đúng bốn tham số mã đang gửi: `ten_hoc_vien`, `ten_lop`, `ky`,
+`duong_dan`. Và 0/4 học viên đã khai số phụ huynh.
+
+## 16.3 Landing: gỡ ba lời khẳng định SAI
+
+Anh nói trang chán và vô nghĩa. Đúng — nhưng khi mở ra tôi còn tìm thấy ba thứ
+**không đúng sự thật**, đang chạy trên production:
+
+1. **"100% — Miễn phí luyện tập cơ bản"**. Không có gói miễn phí nào; tài khoản
+   do trung tâm cấp khi đăng ký học.
+2. **Một trích dẫn học viên** *"Luyện theo dạng và bấm giờ như thi thật…"* — chú
+   là *"trải nghiệm từ nhóm học viên thử nghiệm"*.
+3. **Một trích dẫn nữa** *"Bài chẩn đoán đầu vào chỉ ra đúng chỗ mình yếu
+   nhất…"* — chú là *"phản hồi từ nhóm pilot"*.
+
+Không có nhóm pilot nào: 0 đợt học, 0 buổi, 0 lượt điểm danh. Hai câu ấy là lời
+chứng thực **bịa**, trên trang nhắm vào phụ huynh học sinh lớp 12. **Đã gỡ.**
+
+### Thay bằng gì
+
+| khối | nội dung |
+|---|---|
+| **Mỗi kỳ, phụ huynh nhận đúng tờ này** | Render CHÍNH component tờ báo cáo — cùng dòng mã với thứ phụ huynh mở từ Zalo. Số liệu của một em không có thật, và trang nói thẳng điều đó. |
+| **Thử ba câu** (thay "thử một câu") | Mỗi hợp phần một câu, kết bằng bảng phân tích theo hợp phần — đó mới là thứ sản phẩm bán. |
+| **Chúng tôi chưa có gì để khoe** | Hai cột: thứ CÓ THẬT kiểm được ngay, và thứ SẼ KHÔNG LÀM. |
+
+### Ô "Bài học" hiện dấu gạch ngang
+
+Ảnh anh gửi còn lộ một lỗi nữa: **"— Bài học"**. Con số ấy do JS gọi API điền,
+mà backend đang 503. Một trang giới thiệu không được phụ thuộc API sống để nói
+mình có bao nhiêu bài — nay dựng sẵn trong HTML, JS chỉ làm mới khi API sống.
+`tests_so_lieu_landing.py` canh nó khớp CSDL.
+
+## 16.4 Bốn thứ dọn kèm
+
+- **Tám liên kết thoát** ("← Về trang của tôi", "← Về lớp"…) cao 24px, dưới
+  ngưỡng chạm 44px — mà trên trang CHẶN thì đó là hành động duy nhất.
+- **Bộ đo giao diện báo oan**: nó lọc phần tử ẩn bằng `width < 1`, mà lối giấu
+  chữ cho trình đọc màn hình dựng hộp đúng 1×1px. Người đọc báo cáo sẽ đi "sửa"
+  một đoạn chữ cố ý bị giấu — tức bộ đo a11y làm hỏng a11y.
+- **`ToBaoCao` in ra `· active`** trên landing — hoá ra không phải lỗi sản phẩm
+  (backend gửi nhãn tiếng Việt), mà dữ liệu mẫu của tôi ghi mã thô.
+- **Số liệu mẫu tự mâu thuẫn**: "Có mặt 7/7" ngay cạnh "Vắng 1".
+
+Cổng: 21 trang × 2 khổ → 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS ·
+35/35 e2e · 21/21 đơn vị · 15/15 pytest ZNS · 3/3 pytest số liệu landing.
