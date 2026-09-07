@@ -104,6 +104,32 @@ def thieu_gi() -> list[str]:
     return ra
 
 
+#: Ký tự chấm dứt dòng trong header thư. `\r` và `\n` là hai ký tự mở ra lỗ
+#: CHÈN HEADER: một tiêu đề chứa "\nBcc: ke-trom@..." sẽ thành một header Bcc
+#: thật, và báo cáo của một đứa trẻ đi kèm tới một địa chỉ lạ.
+#:
+#: `\x0b`, `\x0c` và `\u2028`/`\u2029` cũng bị một số bộ phân tích header coi
+#: là xuống dòng, nên dọn luôn thay vì chỉ dọn hai ký tự hiển nhiên.
+_XUONG_DONG = '\r\n\x0b\x0c\x1c\x1d\x1e\u2028\u2029'
+
+
+def don_header(v) -> str:
+    """Bỏ mọi ký tự xuống dòng khỏi một giá trị sắp đặt vào header thư.
+
+    ── VÌ SAO DỌN CHỨ KHÔNG TỪ CHỐI (07/09/2026) ────────────────────────────
+
+    Tiêu đề thư chứa TÊN HỌC VIÊN, mà tên đến từ CSDL. Từ chối cả lá thư vì
+    một cái tên có ký tự lạ nghĩa là một em không bao giờ nhận được báo cáo, và
+    người trực không hiểu vì sao. Dọn thì em ấy vẫn nhận, chỉ là tên hiển thị
+    mất một ký tự vô hình mà không ai nhìn thấy.
+
+    Với ĐỊA CHỈ người nhận thì ngược lại — xem `gui()`: ở đó một ký tự lạ nghĩa
+    là dữ liệu hỏng hoặc có người đang thử chèn, và gửi tới một địa chỉ đã bị
+    sửa là gửi nhầm người.
+    """
+    return ''.join(c for c in ('' if v is None else str(v)) if c not in _XUONG_DONG)
+
+
 def soan(den: str, tieu_de: str, chu: str, html: str | None = None,
          dinh_kem: tuple = ()) -> EmailMessage:
     """Dựng thư. Dùng CHUNG cho cả gửi thật lẫn chế độ thử.
@@ -120,8 +146,14 @@ def soan(den: str, tieu_de: str, chu: str, html: str | None = None,
     """
     t = _thong_so()
     m = EmailMessage()
-    m['Subject'] = tieu_de
-    m['From'] = formataddr((t['ten'], t['user'] or 'khong-cau-hinh@localhost'))
+    # DỌN mọi giá trị đi vào header. Tiêu đề chứa tên học viên lấy từ CSDL, và
+    # `EMAIL_TU_TEN` lấy từ biến môi trường — cả hai đều là chuỗi người khác
+    # nhập. `EmailMessage` NÉM `ValueError` khi gặp xuống dòng trong header, mà
+    # hàm này nằm giữa một vòng lặp gửi cả lớp: ném ở em thứ ba thì 22 em còn
+    # lại không được gửi. Đo được: một tên chứa "\nBcc:" làm hỏng cả lượt.
+    m['Subject'] = don_header(tieu_de)
+    m['From'] = formataddr((don_header(t['ten']),
+                            t['user'] or 'khong-cau-hinh@localhost'))
     m['To'] = den
     # Tự đặt Message-ID chứ không để máy chủ đặt: `smtplib.send_message` KHÔNG
     # thêm trường này, nên không tự đặt thì `gui()` trả về dấu vết rỗng và sổ
@@ -153,10 +185,20 @@ def gui(den: str, tieu_de: str, chu: str, html: str | None = None,
 
     `dấu_vết` là `Message-ID` khi gửi thật, hoặc đường dẫn tệp `.eml` khi thử.
     """
-    if not den or '@' not in den:
+    # ĐỊA CHỈ thì TỪ CHỐI chứ không dọn — xem `don_header`. Một ký tự xuống
+    # dòng ở đây nghĩa là dữ liệu hỏng hoặc có người đang thử chèn header, và
+    # gửi tới một địa chỉ đã bị sửa là gửi báo cáo của một đứa trẻ cho người lạ.
+    if not den or '@' not in den or any(c in str(den) for c in _XUONG_DONG):
         return False, None, 'Địa chỉ email người nhận không hợp lệ: %r' % den
 
-    m = soan(den, tieu_de, chu, html, dinh_kem)
+    try:
+        m = soan(den, tieu_de, chu, html, dinh_kem)
+    except (ValueError, TypeError, UnicodeError) as e:
+        # LƯỚI CHẶN CUỐI. `don_header` đã dọn những lối đã biết, nhưng hàm này
+        # hứa với mọi nơi gọi là "KHÔNG ném ngoại lệ", và một lời hứa như thế
+        # chỉ đáng tin khi có chỗ bắt tất cả. Chú thích nói một đằng mà mã làm
+        # một nẻo thì chú thích ấy nguy hiểm hơn là không có.
+        return False, None, 'Không dựng được lá thư: %s' % e
 
     if che_do_thu():
         # Tới đây là ĐÃ dựng xong đúng lá thư sẽ gửi. Ghi ra đĩa rồi dừng —

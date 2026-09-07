@@ -204,3 +204,80 @@ def test_ten_tep_eml_khong_chua_ky_tu_windows_tu_choi(monkeypatch):
     ten = Path(dau_vet[4:]).name
     for c in '\\/:*?"<>|':
         assert c not in ten, 'tên tệp chứa %r — Windows từ chối' % c
+
+
+# ── CHÈN HEADER THƯ (audit 07/09/2026) ─────────────────────────────────────
+#
+# Tiêu đề thư chứa TÊN HỌC VIÊN lấy từ CSDL, và địa chỉ người nhận là
+# `users.parent_email` — cả hai là chuỗi người khác nhập. Một ký tự xuống dòng
+# trong đó biến thành một header THẬT: "\nBcc: ke-trom@..." làm báo cáo của một
+# đứa trẻ đi kèm tới một địa chỉ lạ.
+#
+# Audit đo được: `EmailMessage` CHẶN được, nhưng chặn bằng `ValueError` — mà
+# `gui()` hứa với mọi nơi gọi là không ném ngoại lệ, và nó nằm giữa vòng lặp
+# gửi cả lớp. Một em có tên lạ làm hỏng lượt gửi của 24 em còn lại.
+
+XUONG_DONG = ['\n', '\r', '\r\n', '\u2028']
+
+
+def test_dia_chi_co_xuong_dong_bi_TU_CHOI_bang_gia_tri(monkeypatch, smtp_gia):
+    """Địa chỉ thì TỪ CHỐI, không dọn: gửi tới một địa chỉ đã bị sửa là gửi
+    báo cáo của một đứa trẻ cho người khác."""
+    monkeypatch.setenv('EMAIL_USER', 'gui@gmail.com')
+    monkeypatch.setenv('EMAIL_APP_PASSWORD', 'x' * 16)
+
+    for nl in XUONG_DONG:
+        xau = 'a@b.com%sBcc: ke-trom@evil.com' % nl
+        ok, dau_vet, loi = mail.gui(xau, 'Thử', 'x')   # KHÔNG được ném
+        assert ok is False and dau_vet is None
+        assert 'không hợp lệ' in loi
+    assert smtp_gia['gui'] == [], 'đã gửi một lá thư có địa chỉ bị chèn'
+
+
+def test_tieu_de_co_xuong_dong_bi_DON_chu_khong_lam_hong_ca_luot(monkeypatch, smtp_gia):
+    """Tiêu đề thì DỌN: tên học viên có ký tự lạ không được biến thành lý do
+    em ấy vĩnh viễn không nhận báo cáo."""
+    monkeypatch.setenv('EMAIL_USER', 'gui@gmail.com')
+    monkeypatch.setenv('EMAIL_APP_PASSWORD', 'x' * 16)
+
+    ok, _, loi = mail.gui('nhan@example.com',
+                          'Báo cáo của Lê An\nBcc: ke-trom@evil.com', 'x')
+    assert ok is True and loi is None, loi
+
+    m = smtp_gia['gui'][0]
+    assert m.get('Bcc') is None, 'chèn được header Bcc qua tiêu đề'
+    # Và không có DÒNG header Bcc nào trong thân thô — kiểm ở tầng byte, vì
+    # `m.get` chỉ đọc những header mà bộ phân tích công nhận.
+    assert not any(d.startswith(b'Bcc:') for d in bytes(m).split(b'\r\n'))
+
+
+def test_ten_hien_thi_co_xuong_dong_cung_bi_don(monkeypatch, smtp_gia):
+    """`EMAIL_TU_TEN` đọc từ biến môi trường — trên Render là ô người ta gõ tay."""
+    monkeypatch.setenv('EMAIL_USER', 'gui@gmail.com')
+    monkeypatch.setenv('EMAIL_APP_PASSWORD', 'x' * 16)
+    monkeypatch.setenv('EMAIL_TU_TEN', 'TopHSA\nBcc: ke-trom@evil.com')
+
+    ok, _, _ = mail.gui('nhan@example.com', 'Thử', 'x')
+    assert ok is True
+    assert not any(d.startswith(b'Bcc:') for d in bytes(smtp_gia['gui'][0]).split(b'\r\n'))
+
+
+def test_gui_KHONG_BAO_GIO_nem_du_soan_thu_hong(monkeypatch, smtp_gia):
+    """Lưới chặn cuối. `gui()` hứa "lỗi là giá trị" với một vòng lặp gửi cả
+    lớp; lời hứa ấy chỉ đáng tin khi có chỗ bắt tất cả."""
+    monkeypatch.setenv('EMAIL_USER', 'gui@gmail.com')
+    monkeypatch.setenv('EMAIL_APP_PASSWORD', 'x' * 16)
+
+    def no(*a, **k):
+        raise ValueError('hỏng giả lập')
+    monkeypatch.setattr(mail, 'soan', no)
+
+    ok, dau_vet, loi = mail.gui('a@b.com', 'Thử', 'x')   # KHÔNG được ném
+    assert ok is False and dau_vet is None
+    assert 'hỏng giả lập' in loi
+
+
+def test_don_header_giu_nguyen_chu_viet():
+    """Dọn xuống dòng KHÔNG được đụng tới dấu tiếng Việt."""
+    assert mail.don_header('Nguyễn Thị Hà — kỳ 10/08') == 'Nguyễn Thị Hà — kỳ 10/08'
+    assert mail.don_header(None) == ''
