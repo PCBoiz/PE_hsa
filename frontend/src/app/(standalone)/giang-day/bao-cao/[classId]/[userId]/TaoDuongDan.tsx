@@ -37,10 +37,13 @@ export default function TaoDuongDan({
   classId,
   userId,
   coSoPhuHuynh,
+  khiCapXong,
 }: {
   classId: string;
   userId: string;
   coSoPhuHuynh: boolean;
+  /** Gọi sau khi cấp chìa mới, để danh sách chìa đang hiệu lực nạp lại. */
+  khiCapXong?: () => void;
 }) {
   const [dangChay, setDangChay] = useState(false);
   const [kq, setKq] = useState<Cap | null>(null);
@@ -67,6 +70,10 @@ export default function TaoDuongDan({
       }
       setKq(body as Cap);
       setDaChep(false);
+      // Chìa mới phải xuất hiện NGAY trong danh sách bên dưới. Không báo ra
+      // thì màn hình có hai sự thật: ô đường dẫn vừa cấp ở trên, và một danh
+      // sách bên dưới nói chưa có chìa nào.
+      khiCapXong?.();
     } catch (e) {
       setLoi(loiBatDuoc(e, 'Chưa cấp được đường dẫn. Thử lại sau ít phút.'));
     } finally {

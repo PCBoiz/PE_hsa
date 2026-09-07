@@ -242,3 +242,66 @@ def test_quan_tri_vien_cung_cap_duoc(canh):
     kq = _goi(ParentReportLinkView, 'post', {}, ai=qt,
               class_id=canh['lop'], user_id=canh['em'].id)
     assert kq.status_code == 201, kq.data
+
+
+# ── DANH SÁCH CHÌA — hợp đồng mà màn hình dựa vào ───────────────────────────
+#
+# Thêm 07/09/2026 cùng lúc với `DuongDanDaCap.tsx`.
+#
+# Audit luồng hôm nay phát hiện GET này và cả đường thu hồi đã dựng xong,
+# có phép kiểm cho việc thu hồi, được liệt kê trong bảng "Ai làm được gì" —
+# nhưng KHÔNG màn nào gọi tới. Nay màn báo cáo gọi cả hai.
+#
+# Màn ấy đọc `links[].id`, `.openedCount`, `.lastOpenedAt`, `.expiresAt`. Bên
+# frontend `apiFetch` chỉ ÉP KIỂU chứ không kiểm gì lúc chạy, nên đổi tên một
+# khoá ở đây sẽ hiện ra thành `undefined` trên màn — không lỗi, không cảnh
+# báo, chỉ là một danh sách trống hoặc chữ "NaN". Ba phép kiểm dưới đây là
+# chỗ duy nhất phát hiện được điều đó.
+
+@pytest.mark.django_db
+def test_danh_sach_chia_du_khoa_man_hinh_can(canh):
+    _cap(canh)
+    kq = _goi(ParentReportLinkView, 'get', ai=canh['gv'],
+              class_id=canh['lop'], user_id=canh['em'].id)
+    assert kq.status_code == 200, kq.data
+    ds = kq.data['links']
+    assert len(ds) == 1, ds
+    # Đúng những khoá `DuongDanDaCap.tsx` đọc. Thiếu khoá nào là màn hỏng câm.
+    for k in ('id', 'from', 'to', 'createdAt', 'expiresAt', 'openedCount', 'lastOpenedAt'):
+        assert k in ds[0], (k, ds[0])
+    assert ds[0]['openedCount'] == 0
+    assert ds[0]['lastOpenedAt'] is None
+
+
+@pytest.mark.django_db
+def test_chia_da_thu_hoi_bien_khoi_danh_sach(canh):
+    """Màn hình nạp LẠI danh sách sau khi thu hồi thay vì tự xoá khỏi mảng.
+
+    Cách ấy chỉ đúng nếu máy chủ thật sự loại chìa đã thu hồi ra. Không kiểm
+    thì một ngày `revoked_at IS NULL` rơi khỏi câu WHERE, và giảng viên bấm
+    thu hồi xong vẫn thấy y nguyên dòng cũ — tưởng là bấm hụt, bấm lại lần
+    nữa, rồi kết luận nút hỏng.
+    """
+    token = _cap(canh)
+    d = q1('SELECT id FROM parent_report_links WHERE token=%s', (token,))
+    kq = _goi(ParentReportLinkRevokeView, 'post', {}, ai=canh['gv'], link_id=d['id'])
+    assert kq.status_code == 200, kq.data
+
+    con = _goi(ParentReportLinkView, 'get', ai=canh['gv'],
+               class_id=canh['lop'], user_id=canh['em'].id)
+    assert con.data['links'] == [], con.data
+
+
+@pytest.mark.django_db
+def test_danh_sach_khong_hien_chia_het_han(canh):
+    """Chìa hết hạn cũng phải rơi khỏi danh sách, không chỉ chìa bị thu hồi.
+
+    Hai điều kiện nằm trong CÙNG một câu WHERE nên rất dễ sửa nhầm một cái mà
+    tưởng đã lo cả hai.
+    """
+    token = _cap(canh)
+    q1("UPDATE parent_report_links SET expires_at = now() - INTERVAL '1 day' "
+       'WHERE token=%s RETURNING id', (token,))
+    kq = _goi(ParentReportLinkView, 'get', ai=canh['gv'],
+              class_id=canh['lop'], user_id=canh['em'].id)
+    assert kq.data['links'] == [], kq.data

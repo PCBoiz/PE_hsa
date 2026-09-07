@@ -4,7 +4,7 @@ import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
 import { serverJson } from '@/lib/server-api';
 
-import TaoDuongDan from './TaoDuongDan';
+import KhoiDuongDan from './KhoiDuongDan';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Báo cáo gửi phụ huynh | TopHSA' };
@@ -83,7 +83,7 @@ export default async function BaoCaoPhuHuynhPage({
         {/* Cấp đường dẫn cho phụ huynh mở. Đặt TRÊN tờ báo cáo chứ không dưới:
             đây là việc giảng viên vào trang này để làm, còn tờ báo cáo là thứ
             họ liếc qua để kiểm trước khi gửi. */}
-        <TaoDuongDan classId={classId} userId={userId} coSoPhuHuynh={!!bc.parent.phone} />
+        <KhoiDuongDan classId={classId} userId={userId} coSoPhuHuynh={!!bc.parent.phone} />
 
         {bc.warnings.length > 0 && (
           <p
