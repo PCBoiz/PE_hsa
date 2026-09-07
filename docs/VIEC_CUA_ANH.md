@@ -848,3 +848,98 @@ chạy), và mỗi bên đều đang làm đúng ý định riêng của nó —
   trong mã, nên nó không thể là một lời khẳng định suông.
 - **Trang `/quan-tri/huong-dan`** là tài liệu vận hành viết theo VIỆC, in ra
   giấy đưa người mới được.
+
+---
+
+# Phần 12 — Audit luồng đợt 2 (07/09, chiều)
+
+Đợt này đi theo hai hướng khác nhau, vì mỗi hướng bắt được loại lỗi mà hướng
+kia không thấy.
+
+## 12.1 Đi bằng mắt: mười một màn
+
+Mở từng màn như người dùng thật, đo lỗi JS, lời gọi API hỏng, tràn ngang.
+
+    màn                     chữ   nút  tràn  lỗiJS  API≥400
+    Trang của tôi          1856    57     0      0       -
+    Tổng quan vận hành      894    15     0      0       -
+    Tài khoản              1634    27     0      0       -
+    Lớp học                 548    17     0      0       -
+    Đợt học                 439    14     0      0       -
+    Nhật ký                4982    14     0      0       -
+    Ai làm được gì        10985    13     0      0       -
+    Hướng dẫn              6801    30     0      0       -
+    Thi thử                 370    16     0      0       -
+    Đổi mật khẩu            209     2     0      0       -
+    Trang giới thiệu       5093    11     0      0       -
+
+**Không màn nào lỗi.** Đây là kết quả tốt và tôi không cố tìm ra điều gì khác
+từ nó.
+
+## 12.2 Đi bằng cách dò ngược: 104 endpoint
+
+Hướng thứ hai hỏi câu ngược lại — **máy chủ làm được gì mà không màn nào gọi
+tới?** Dò 104 endpoint `api/`: **7 cái không có nơi gọi.**
+
+| endpoint | là gì | kết luận |
+|---|---|---|
+| `teach/…/parent-report/link` (GET) | danh sách chìa + số lượt mở | **ĐÃ NỐI hôm nay** |
+| `teach/parent-report/links/<id>/revoke` | thu hồi chìa | **ĐÃ NỐI hôm nay** |
+| `admin/do-proxy` | đo `NUM_PROXIES` | công cụ chẩn đoán, đúng như thiết kế |
+| `streak/review-quiz-status` | quiz ôn đã mở chưa | mã tự ghi rõ là chưa dùng, có lý do |
+| `course/rating` | học viên chấm sao khoá học | **chưa có màn nào** — anh quyết |
+| `stats/xp-by-course` | XP theo từng khoá | **chưa có màn nào** — anh quyết |
+| `hsa/study-plan/items/<id>` | bỏ qua / bỏ đánh dấu một mục kế hoạch | **chưa có màn nào** |
+
+Ba dòng cuối là tính năng đã dựng, đã chạy được, mà học viên không chạm tới
+được. Không cái nào hỏng — chỉ là **chưa ai mở đường vào**. Tôi không tự dựng
+màn cho chúng vì cả ba đều là quyết định sản phẩm chứ không phải lỗi:
+
+- **Chấm sao khoá học** — có nên cho học viên chấm sao không, và ai đọc điểm ấy?
+- **XP theo khoá** — trung tâm có muốn nói chuyện với học viên bằng ngôn ngữ
+  điểm thưởng không?
+- **Bỏ qua một mục kế hoạch** — cho phép em tự bỏ qua một chủ đề trong lộ trình,
+  hay lộ trình là thứ giảng viên giữ?
+
+## 12.3 Hai cái đã sửa
+
+**Thu hồi đường dẫn phụ huynh.** Việc này đã dựng ở máy chủ, đã có phép kiểm,
+và bảng "Ai làm được gì" LIỆT KÊ nó như một việc giảng viên làm được — nhưng
+không nút nào bấm được. Nguy hơn thiếu tính năng: màn cấp chìa có câu dặn
+"đừng dán vào nhóm lớp", mà người lỡ dán rồi thì không có đường lùi.
+
+Nay màn báo cáo hiện danh sách chìa đang hiệu lực, kèm số lượt phụ huynh đã
+mở, và nút thu hồi.
+
+**Mục điều hướng trong khu nay là liên kết.** Đo được: mọi mục trên thanh của
+khu Vận hành và khu Giảng dạy là `<button>` không `href`, trong khi bấm chúng
+thì URL đổi thật. Mất hết những gì trình duyệt cho không — Ctrl-bấm mở tab mới,
+bấm chuột giữa, chuột phải "Mở trong tab mới", chép địa chỉ — và trình đọc màn
+hình đọc "nút" cho một thứ đang chuyển trang.
+
+Đã đo lại sau khi sửa: khu → `A,A,A`; `/dashboard` và `/mock` giữ `BUTTON` (ở
+đó bấm chỉ đổi tab trong cùng trang, URL đứng yên nên `href` sẽ là lời hứa sai).
+Bấm thường vẫn đi phía client, không nạp lại trang; Ctrl+bấm mở đúng tab mới.
+
+## 12.4 Ba lần thước đo của tôi báo oan
+
+Ghi lại vì nó là phần tốn thời gian nhất của đợt audit, và vì nếu tin ngay thì
+tôi đã đi "sửa" ba thứ không hỏng:
+
+1. **"Liên kết Bài tập bấm không đi đâu."** Sai — tôi chờ cố định 2,5 giây.
+   Chờ đúng bằng `waitForURL` thì nó đi ngay.
+2. **"Dashboard có 20 nút đổi giao diện."** Sai — bộ lọc của tôi khớp chữ "chủ
+   đề" trong nhãn *"Tự đánh dấu đã nắm <chủ đề>"*. Chỉ có một nút.
+3. **"Màn Đợt học là ngõ cụt."** Sai — nút "Tạo đợt" nằm ở góc phải trên, chỉ
+   là bộ dò của tôi chỉ nhìn trong thẻ cha.
+
+## 12.5 Một lỗi công cụ đã sửa
+
+`scripts/cap_the.py` gọi `os.chdir(GOC/'backend')` để `django.setup()` chạy
+được, rồi mới giải `--ra`. Nên chạy từ gốc repo thì thẻ rơi vào `backend/.the/`
+còn `.the/` ở gốc — nơi mọi bộ đo đọc — giữ nguyên thẻ CŨ. Kịch bản vẫn in
+"Đã cấp thẻ".
+
+Mất khoảng 30 phút: cấp thẻ, chạy đo, rơi về `/login`, cấp lại, vẫn rơi. Cùng
+đúng một họ với bẫy `/login`: công cụ báo thành công trong khi việc nó làm rơi
+ra chỗ khác. Nay giải theo thư mục người gọi đứng và in đường dẫn tuyệt đối.

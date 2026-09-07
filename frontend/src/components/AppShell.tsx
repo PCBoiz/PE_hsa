@@ -240,29 +240,76 @@ export default function AppShell({
   /* Một mục điều hướng — dùng CHUNG cho mục ở cấp một và mục nằm trong nhóm.
      Phải là cùng một hàm dựng: hai bản chép tay của cùng một nút là đúng thứ
      phiên làm việc này đi dọn (ba thanh điều hướng, ba bản `.nav-btn`). */
-  const nutMuc = (m: MucNav) => (
-    <button
-      key={m.nhan}
-      type="button"
-      className={'nav-btn' + (dangMo(m) ? ' active' : '')}
+  const nutMuc = (m: MucNav) => {
+    /* ── LIÊN KẾT hay NÚT? Hỏi: bấm xong URL có đổi không ─────────────────
+       Trong KHU (`khu` có giá trị) mỗi mục là một trang riêng — `di()` gọi
+       `router.push(m.url)`, thanh địa chỉ đổi thật. Ngoài khu, ở chế độ SPA,
+       bấm chỉ đổi tab trong cùng một trang qua `goiLegacy('navigate')` và URL
+       đứng yên.
+
+       Đo 07/09/2026 trên `/giang-day/buoi-hoc/1` và `/quan-tri/tong-quan`:
+       MỌI mục thanh đều là `BUTTON`, không mục nào có `href`. Trong khu thì đó
+       là sai: một nút không Ctrl-bấm được, không bấm-giữa được, không chuột
+       phải "Mở trong tab mới" được, không chép được địa chỉ — và trình đọc màn
+       hình đọc "nút" cho một thứ đang chuyển trang.
+
+       Việc ấy không nhỏ với người dùng thật: giảng viên so hai em thì mở hai
+       tab báo cáo cạnh nhau, quản trị viên đang xem nhật ký muốn mở lớp học ra
+       bên cạnh chứ không muốn rời trang đang đọc.
+
+       Ngoài khu thì GIỮ NGUYÊN `<button>`. Gắn `href` cho một thứ không đổi
+       URL còn tệ hơn: Ctrl-bấm sẽ mở một tab mới nạp lại cả trang rồi rơi về
+       tab mặc định, tức lời hứa của `href` là lời hứa hão. */
+    const chung = {
+      className: 'nav-btn' + (dangMo(m) ? ' active' : ''),
       /* `data-page` là hợp đồng với `main.js::navigate()`: nó tìm
          `.nav-btn[data-page='…']` để tô mục đang mở và kéo gạch chân. ĐÂY là
          lý do bốn mục trong nhóm vẫn là NÚT THẬT nằm trong DOM chứ không phải
          một danh sách dựng lại — gỡ chúng ra là main.js không còn gì để tô. */
-      {...(m.trang ? { 'data-page': m.trang } : {})}
-      {...(dangMo(m) ? { 'aria-current': 'page' as const } : {})}
+      ...(m.trang ? { 'data-page': m.trang } : {}),
+      ...(dangMo(m) ? { 'aria-current': 'page' as const } : {}),
       /* `aria-label` và `title` BẮT BUỘC: dưới 96rem `shell.css` đặt
          `display: none` cho nhãn chữ, mà phần tử `display:none` thì trình đọc
          màn hình cũng bỏ qua — nút sẽ KHÔNG CÒN TÊN nào. `title` lo cho người
          dùng chuột: rê lên một biểu tượng lạ thì hiện chữ. */
-      aria-label={m.nhan}
-      title={m.nhan}
-      onClick={() => { setMoNhom(null); di(m); }}
-    >
-      <span className="nav-icon"><BieuTuong ten={m.icon} co={17} /></span>
-      <span>{m.nhan}</span>
-    </button>
-  );
+      'aria-label': m.nhan,
+      title: m.nhan,
+      children: (
+        <>
+          <span className="nav-icon"><BieuTuong ten={m.icon} co={17} /></span>
+          <span>{m.nhan}</span>
+        </>
+      ),
+    };
+
+    if (khu) {
+      return (
+        <a
+          key={m.nhan}
+          href={m.url}
+          {...chung}
+          onClick={(e) => {
+            /* Để NGUYÊN cho trình duyệt lo khi người dùng bấm kèm phím bổ trợ —
+               đó chính là toàn bộ lý do dùng `<a>`. Chặn hết rồi tự `push` thì
+               thẻ `<a>` chỉ còn là trang trí. */
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            e.preventDefault();
+            setMoNhom(null);
+            di(m);
+          }}
+        />
+      );
+    }
+
+    return (
+      <button
+        key={m.nhan}
+        type="button"
+        {...chung}
+        onClick={() => { setMoNhom(null); di(m); }}
+      />
+    );
+  };
 
   /* Dựng danh sách hiển thị: mục có `nhom` được thu vào panel của nhóm, và
      nhóm xuất hiện ĐÚNG chỗ mục đầu tiên của nó — thứ tự trong `navMuc.ts`
