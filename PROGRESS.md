@@ -5498,3 +5498,32 @@ câu" kết bằng bảng phân tích theo hợp phần.
 Lọc phần tử ẩn bằng `width < 1`, mà `.sr-only` dựng hộp đúng 1×1px nên lọt qua
 và bị chấm tương phản. Người đọc báo cáo sẽ đi xoá đoạn chữ cố ý giấu cho người
 khiếm thị — bộ đo a11y làm hỏng a11y. Nay `<= 1` kèm nhận diện `clip-path`.
+
+## 07/09/2026 — Zalo OA: đo thay vì suy
+
+### SMS không đi vòng được
+
+Brandname VN yêu cầu GPKD (công ty **hoặc hộ kinh doanh cá thể**); cá nhân chỉ
+dùng được brandname dùng chung. Twilio/AWS vào VN cũng phải đăng ký trước sender
+ID kèm giấy tờ công ty, không thì nhà mạng chặn (lỗi 30018). Cùng một cửa với
+ZNS, thêm phí và thêm chờ.
+
+### Tôi đã nói "OA chưa xác thực" quá lạc quan
+
+Ba nguồn tài liệu đá nhau về việc OA chưa xác thực có nhắn tin được không, và
+tôi xếp nó là "thử miễn phí" khi chưa biết một điều: **OA không nộp hồ sơ xác
+thực trong 14 ngày thì Zalo khoá, và OA đã khoá không mở lại.** Không miễn phí.
+
+### `manage.py chan_doan_oa`
+
+Không suy tiếp từ tài liệu mâu thuẫn — gọi thật rồi in đúng chữ Zalo trả lời.
+Hai bước đầu chỉ đọc; bước gửi đòi `--gui-toi <user_id>` viết rõ và in nguyên
+thân request trước. Không in đủ token.
+
+Đo trên Zalo thật với token giả → `{"error": -216, "message": "Access token is
+invalid"}`, tức endpoint + header đúng, Zalo đọc được request.
+
+4 tính chất chứng minh ĐỎ ĐƯỢC trước khi nhận là xanh — đáng kể nhất là "chế độ
+thử KHÔNG được kết luận là gửi được": nó dừng trước khi Zalo kịp có ý kiến, tự
+khen mình ở đó là hỏng đúng câu hỏi cả lệnh sinh ra để trả lời. 10/10 mới,
+15/15 parent_send cũ vẫn xanh.

@@ -1345,3 +1345,83 @@ mình có bao nhiêu bài — nay dựng sẵn trong HTML, JS chỉ làm mới k
 
 Cổng: 21 trang × 2 khổ → 0 tương phản / 0 vùng chạm / 0 tràn / 0 lỗi JS ·
 35/35 e2e · 21/21 đơn vị · 15/15 pytest ZNS · 3/3 pytest số liệu landing.
+
+---
+
+# Phần 17 — Zalo OA: cái cửa thật, và ba đường vòng
+
+**07/09/2026.** Anh báo không tạo được OA access token vì Zalo bắt xác thực
+doanh nghiệp, và hỏi thử SMS xem sao.
+
+## 17.1 SMS KHÔNG đi vòng được — nó vướng đúng cái cửa ấy
+
+| đường | yêu cầu | |
+|---|---|---|
+| **ZNS** | OA **đã xác thực** + tài khoản ZCA + mẫu được Zalo duyệt | vướng |
+| **SMS brandname VN** (eSMS / Viettel / VNPT / FPT) | Giấy phép kinh doanh — công ty **hoặc hộ kinh doanh cá thể**. Cá nhân không GPKD chỉ được dùng brandname *dùng chung* của nhà cung cấp, không đăng ký tên riêng. Duyệt hồ sơ ~5 ngày làm việc | vướng |
+| **Twilio / AWS gửi vào VN** | Phải **đăng ký trước sender ID** kèm giấy tờ công ty; không đăng ký thì nhà mạng chặn thẳng (Twilio trả lỗi 30018) | vướng, lại đắt hơn |
+
+Nên SMS không phải lối tránh: cùng một thủ tục, cộng thêm phí và thời gian chờ.
+
+## 17.2 Tôi đã nói option "OA chưa xác thực" quá lạc quan — sửa lại
+
+Lần đầu tôi xếp nó là "chưa chắc, thử miễn phí". Tra tiếp thì ba nguồn **đá
+nhau**:
+
+- trang chính sách gửi tin của Zalo liệt kê tin Tư vấn / Giao dịch kèm điều
+  kiện "người dùng có phát sinh tương tác", **không nhắc** phải xác thực;
+- trang khởi tạo OA nói người **chưa có GPKD chỉ lập được "Hồ sơ quảng cáo"**,
+  và hồ sơ ấy **không dùng được Nhắn tin / Broadcast / Bài viết / Chatbot**;
+- nhiều nguồn khác: từ **01/12/2020**, muốn gửi tin chủ động thì phải xác thực.
+
+Ba câu ấy không thể cùng đúng, và không tài liệu công khai nào phân xử được.
+
+**Và có một cái giá tôi chưa nói lần trước:** OA tạo ra mà **không nộp hồ sơ
+xác thực trong 14 ngày thì Zalo khoá**, và **OA đã khoá không mở lại**. Nên
+"cứ tạo thử xem sao" không miễn phí như tôi tưởng — nó tiêu mất một cái tên OA.
+
+## 17.3 Nếu anh vẫn muốn thử: chạy một lệnh là biết
+
+```
+cd backend
+python manage.py chan_doan_oa --token <access_token>
+```
+
+Ba bước — **hai bước đầu chỉ ĐỌC**, không gửi gì:
+
+1. token còn sống không, và **OA này đã xác thực chưa** (theo lời Zalo, không
+   theo phán đoán khi nhìn giao diện) — `v2.0/oa/getoa`
+2. có ai đang quan tâm OA không, và `user_id` của họ — `v2.0/oa/getfollowers`
+3. gửi thử **một** tin tư vấn — `v3.0/oa/message/cs`
+
+Bước 3 **không tự chạy**: phải thêm `--gui-toi <user_id>`, và lệnh in nguyên
+thân request trước khi gửi. `ZALO_CHE_DO_THU=1` thì nó in ra rồi dừng.
+
+Lệnh không in đủ token (đầu ra sẽ bị chép vào chat, tài liệu, ảnh chụp màn
+hình) — chỉ vài ký tự đầu/cuối đủ để đối chiếu.
+
+Đã đo trên Zalo thật với token giả, trả về đúng `{"error": -216, "message":
+"Access token is invalid"}` — tức endpoint và cách gắn header là đúng.
+
+**Đường lấy token** (miễn phí, không cần giấy tờ ở bước tạo): tạo OA ở
+`oa.zalo.me` → tạo một Ứng dụng ở `developers.zalo.me` → uỷ quyền Ứng dụng cho
+OA → lấy access token. Token OA **sống 25 giờ**, phải làm mới bằng refresh
+token — nên đừng dán vào biến môi trường rồi quên.
+
+## 17.4 Đường dùng được HÔM NAY mà không cần giấy tờ nào
+
+Sản phẩm đã sinh sẵn link `/bc/<chìa>`; thứ thiếu chỉ là **đường vận chuyển**.
+`zalo.me/<số điện thoại>` là link click-to-chat có thật — bấm một cái mở đúng
+cửa sổ chat với người đó.
+
+Với 4 học viên thì giảng viên chép link gửi tay là việc **một trung tâm nhỏ sẽ
+làm thật**, không phải bản tạm. Màn `GuiCaLop` đã có nhánh "cấp đường dẫn"; thứ
+nó còn thiếu là lời nhắn soạn sẵn, nút chép, nút mở thẳng chat, và sổ ghi ai đã
+gửi lúc nào. **Anh chưa chọn hướng này** — nói một tiếng là tôi dựng.
+
+## 17.5 Đường mở khoá thật, khi nào anh muốn
+
+Zalo nhận xác thực OA **theo tên hộ kinh doanh**, không bắt buộc phải là công
+ty. Đăng ký hộ kinh doanh ở phường rẻ và nhanh hơn lập công ty nhiều, và nó mở
+khoá **cả ZNS lẫn SMS brandname** cùng lúc. Đây là việc giấy tờ, không phải
+việc mã — nên tôi để anh quyết.
