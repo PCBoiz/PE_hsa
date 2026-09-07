@@ -4550,3 +4550,103 @@ body.dark .tc-weak, body.dark .tc-chip { --lv: #A9A2B8; --lv-bg: rgba(255, 255, 
 @media (max-width: 900px) {
   .tc-wrap { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BA HỢP PHẦN — dồn sức vào đâu   (tab Kỹ năng)
+
+   Thêm 07/09/2026 cùng `dashboard.js::renderXp`. Xem chú thích ở đó về việc vì
+   sao khối này KHÔNG phải bảng điểm thưởng.
+
+   KHÔNG GHIM PX. Bề rộng cột tên dùng `ch` (đo theo chính cỡ chữ đang hiển
+   thị), khoảng cách dùng `rem`, và cả hàng là grid ba cột nên nó tự xếp lại
+   khi hết chỗ. Một mốc px ở đây chỉ đúng trên đúng một khổ máy.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sk-hopphan:empty { display: none; }   /* chưa có dữ liệu thì không chiếm chỗ */
+
+.sk-hopphan {
+  margin-block: 1rem;
+  padding: clamp(0.875rem, 0.6rem + 1vw, 1.25rem);
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: var(--radius, 0.75rem);
+  background: var(--card);
+}
+
+.sk-hp-tit {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--t1);
+  margin-block-end: 0.75rem;
+}
+
+/* MỘT lưới cho cả ba hàng, không phải ba lưới rời.
+   Mỗi hàng một lưới riêng thì cột thứ ba rộng theo nội dung CỦA RIÊNG HÀNG ĐÓ,
+   nên "195 XP" và "chưa bắt đầu" không dóng thẳng được. Ghim cứng `8ch` thì
+   dóng thẳng nhưng bó "chưa bắt đầu" xuống hai dòng — đã thấy trên ảnh chụp.
+   `display: contents` ở hàng bỏ hộp hàng đi, để chín ô thành ô của CÙNG một
+   lưới: cột ba tự rộng theo nhãn dài nhất, và ba dòng vẫn thẳng cột. */
+.sk-hp-ds {
+  display: grid;
+  grid-template-columns: minmax(7rem, 18ch) minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.625rem;
+}
+
+.sk-hp-hang { display: contents; }
+
+.sk-hp-ten {
+  font-size: 0.875rem;
+  color: var(--t2);
+  overflow-wrap: anywhere;
+}
+
+.sk-hp-thanh {
+  display: block;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--lift);
+  overflow: hidden;
+}
+
+.sk-hp-thanh > i {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2, var(--brand)));
+  /* `width` đổi theo dữ liệu chứ không theo tương tác, nên chuyển động ở đây
+     chỉ để mắt bắt kịp lúc khối vừa hiện — giữ ngắn, và tôn `prefers-reduced-motion`. */
+  transition: inline-size .35s ease-out;
+}
+
+.sk-hp-so {
+  font-size: 0.8125rem;
+  color: var(--t3);
+  text-align: end;
+  font-variant-numeric: tabular-nums;   /* ba dòng số dóng thẳng cột */
+}
+
+.sk-hp-luu {
+  margin-block-start: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--t3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-hp-thanh > i { transition: none; }
+}
+
+/* Khổ hẹp: tên xuống dòng riêng, thanh và số chia nhau hàng dưới. Ba cột trên
+   màn 390px làm cột tên chỉ còn vài ký tự rồi ngắt giữa chữ. */
+@media (max-width: 30rem) {
+  .sk-hp-ds {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    row-gap: 0.375rem;
+  }
+  /* Tên chiếm trọn một dòng, thanh và số chia nhau dòng dưới. Ba cột trên màn
+     390px làm cột tên chỉ còn vài ký tự rồi ngắt giữa chữ. */
+  .sk-hp-ten { grid-column: 1 / -1; }
+  /* Khoảng cách GIỮA các hợp phần phải lớn hơn khoảng cách trong một hợp phần,
+     nếu không ba hợp phần đọc thành sáu dòng rời rạc. */
+  .sk-hp-hang + .sk-hp-hang .sk-hp-ten { margin-block-start: 0.5rem; }
+}

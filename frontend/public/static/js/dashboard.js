@@ -514,6 +514,14 @@ function skSkillToggle(row) {
 (function () {
   var _skillsLoaded = false;
 
+  // Cùng bộ thoát chuỗi với các khối khác trong tệp. Tên hợp phần đến từ CSDL
+  // của mình chứ không từ người dùng, nhưng một hàm dựng HTML bằng nối chuỗi
+  // thì không nên có ngoại lệ "chỗ này an toàn" — ngoại lệ ấy là thứ người sau
+  // chép sang chỗ không an toàn.
+  function esc(s) {
+    return window.forumShared ? window.forumShared.escHtml(String(s)) : String(s == null ? '' : s);
+  }
+
   function badge(pct) {
     if (pct === 0) return '<span class="sk-badge new">Chưa bắt đầu</span>';
     if (pct >= 70) return '<span class="sk-badge achieved">Đạt ✓</span>';
@@ -608,13 +616,95 @@ function skSkillToggle(row) {
     }).join('');
   }
 
+  /* ═══════════════════════════════════════════════════════
+     BA HỢP PHẦN — dồn sức vào đâu   (/api/stats/xp-by-course)
+     ═══════════════════════════════════════════════════════
+
+     VÌ SAO THÊM (07/09/2026). Audit luồng dò 105 endpoint xem cái nào không có
+     nơi gọi. `stats/xp-by-course` đã dựng xong, có dữ liệu thật (đo hôm nay:
+     195 XP ở Tư duy Định lượng) mà không màn nào đọc. Anh Sơn chốt MỞ.
+
+     VÌ SAO KHÔNG PHẢI LÀ ĐIỂM THƯỞNG. Bài thi HSA có ba hợp phần và điểm cuối
+     cộng cả ba. Học lệch một hợp phần là cách hỏng điểm phổ biến nhất, và học
+     viên thường không tự thấy vì mỗi lần vào học đều thấy mình có tiến bộ.
+
+     Nên khối này KHÔNG bày một con số để đuổi theo. Nó trả lời đúng một câu:
+     **ba hợp phần của bạn có lệch nhau không**. Hợp phần chưa đụng tới hiện
+     rõ là "chưa bắt đầu", vì đó mới là thông tin đáng giá.
+
+     VÌ SAO GHÉP VÀO `/api/skills` CHỨ KHÔNG GỌI RIÊNG DANH SÁCH KHOÁ.
+     `xp-by-course` chỉ trả về khoá ĐÃ CÓ XP — hợp phần chưa học thì vắng mặt
+     hẳn khỏi phản hồi. Vẽ thẳng phản hồi ấy ra thì màn hình nói "bạn đã học
+     Định lượng 195 XP" và im lặng về hai hợp phần kia, tức nó giấu đúng cái nó
+     sinh ra để chỉ. `/api/skills` đã trả đủ cả ba (`skill_sets[].id/title`) và
+     đã được tải sẵn ở đây, nên lấy khung ba hợp phần từ đó rồi ghép XP vào.
+
+     VÌ SAO Ở TAB KỸ NĂNG. Tab này nạp LƯỜI — chỉ chạy khi người dùng bấm sang.
+     Trang của tôi đang là màn chậm nhất (LCP 2740ms, vượt ngưỡng 2500ms), nên
+     thêm một lượt tải vào đường găng của nó là đi ngược việc vừa làm sáng nay. */
+  function renderXp(sets, xpTheoKhoa) {
+    var hop = document.getElementById('sk-hopphan');
+    if (!hop) return;
+    var tong = 0;
+    var ds = (sets || []).map(function (bs) {
+      var xp = xpTheoKhoa[bs.id] || 0;
+      tong += xp;
+      return { ten: bs.title, xp: xp };
+    });
+    if (!ds.length) { hop.innerHTML = ''; return; }
+
+    var chuaBatDau = ds.filter(function (d) { return d.xp === 0; });
+    var loiNhac = '';
+    if (tong === 0) {
+      loiNhac = 'Chưa hợp phần nào có bài hoàn thành.';
+    } else if (chuaBatDau.length) {
+      loiNhac = 'Chưa đụng tới: <strong>'
+        + chuaBatDau.map(function (d) { return esc(d.ten); }).join('</strong>, <strong>')
+        + '</strong>. Điểm HSA cộng cả ba hợp phần.';
+    } else {
+      loiNhac = 'Cả ba hợp phần đều đã có bài hoàn thành.';
+    }
+
+    hop.innerHTML =
+      '<div class="sk-hp-tit">Ba hợp phần — bạn đang dồn sức vào đâu</div>'
+      + '<div class="sk-hp-ds">'
+      + ds.map(function (d) {
+        // Bề rộng theo TỈ LỆ trong tổng, không theo một mốc cố định: mốc cố
+        // định thì mọi thanh đều ngắn ở người mới học và mọi thanh đều đầy ở
+        // người học lâu — cả hai trường hợp đều không nói được gì về sự lệch.
+        var pct = tong > 0 ? Math.round(d.xp * 100 / tong) : 0;
+        return '<div class="sk-hp-hang">'
+          + '<span class="sk-hp-ten">' + esc(d.ten) + '</span>'
+          + '<span class="sk-hp-thanh"><i style="width:' + pct + '%"></i></span>'
+          + '<span class="sk-hp-so">' + (d.xp ? d.xp + ' XP' : 'chưa bắt đầu') + '</span>'
+          + '</div>';
+      }).join('')
+      + '</div>'
+      + '<p class="sk-hp-luu">' + loiNhac
+      + ' Con số này đếm XP của bài đã hoàn thành, không phải dự đoán điểm thi.</p>';
+  }
+
   var _skillsData = null;
   function loadSkills() {
     if (_skillsLoaded) return;
     _skillsLoaded = true;
     fetch('/api/skills')
       .then(function (r) { return r.json(); })
-      .then(function (data) { _skillsData = data; renderSkills(data); })
+      .then(function (data) {
+        _skillsData = data;
+        renderSkills(data);
+        /* Gọi XP SAU khi kỹ năng đã vẽ xong, và lỗi ở đây KHÔNG được làm hỏng
+           tab. Khối ba hợp phần là phần thêm; mất nó thì tab vẫn dùng được,
+           còn để nó kéo cả tab xuống thì đổi một thứ có ích lấy một thứ phụ. */
+        return fetch('/api/stats/xp-by-course')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (xp) {
+            var theo = {};
+            ((xp && xp.subjects) || []).forEach(function (s) { theo[s.courseId] = s.xp; });
+            renderXp(data.skill_sets || [], theo);
+          })
+          .catch(function () { /* im lặng: khối phụ, không phải lỗi của tab */ });
+      })
       .catch(function () {
         document.getElementById('sk-grid').innerHTML =
           '<div style="color:#EF4444;font-size:14px;padding:24px;">Không tải được dữ liệu kỹ năng.</div>';

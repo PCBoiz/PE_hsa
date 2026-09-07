@@ -881,25 +881,43 @@ từ nó.
 Hướng thứ hai hỏi câu ngược lại — **máy chủ làm được gì mà không màn nào gọi
 tới?** Dò 104 endpoint `api/`: **7 cái không có nơi gọi.**
 
+> **ĐÍNH CHÍNH — mục này đã viết lại.** Bản đầu ghi **7 endpoint mồ côi**, trong
+> đó có `hsa/study-plan/items`. SAI. Bộ dò của tôi tìm chuỗi đường dẫn đầy đủ
+> trong mã frontend, mà tầng JS cũ **ghép chuỗi**: `fetch(API + '/items/' + id)`
+> ở `dashboard.js:3991`. Chuỗi `study-plan/items` không xuất hiện ở đâu cả, nên
+> bộ dò kết luận không ai gọi.
+>
+> Vá bộ dò cho tìm cả hậu tố thì bản vá lại BỎ SÓT `course/rating` và
+> `teach/terms` theo chiều ngược lại. Nên bảng dưới **kiểm tay từng cái**.
+>
+> Hậu quả thật: câu hỏi tôi đặt cho anh có một lựa chọn — "bỏ qua một mục trong
+> lộ trình" — dựa trên tiền đề sai. **Việc ấy ĐÃ CÓ RỒI**: trang Kế hoạch có
+> nút "Bỏ qua" và "Bỏ qua ✕ · hoàn lại". Không có gì để dựng.
+
 | endpoint | là gì | kết luận |
 |---|---|---|
 | `teach/…/parent-report/link` (GET) | danh sách chìa + số lượt mở | **ĐÃ NỐI hôm nay** |
 | `teach/parent-report/links/<id>/revoke` | thu hồi chìa | **ĐÃ NỐI hôm nay** |
 | `admin/do-proxy` | đo `NUM_PROXIES` | công cụ chẩn đoán, đúng như thiết kế |
 | `streak/review-quiz-status` | quiz ôn đã mở chưa | mã tự ghi rõ là chưa dùng, có lý do |
-| `course/rating` | học viên chấm sao khoá học | **chưa có màn nào** — anh quyết |
-| `stats/xp-by-course` | XP theo từng khoá | **chưa có màn nào** — anh quyết |
-| `hsa/study-plan/items/<id>` | bỏ qua / bỏ đánh dấu một mục kế hoạch | **chưa có màn nào** |
+| `stats/xp-by-course` | XP theo từng khoá | chưa có màn nào — **anh chốt MỞ** |
+| `course/rating` | học viên chấm sao khoá học | chưa có màn nào — anh chốt chưa mở |
+| `courses/<id>/quiz/history` | lịch sử làm quiz một khoá | chưa có màn nào — **mới lộ ra** |
+| `roadmaps` | danh sách lộ trình | chưa có màn nào — giao diện dùng `/me/roadmap` |
+| `teach/terms` | đợt học, bản nhẹ cho giảng viên | chưa có màn nào — giao diện dùng `/admin/terms` |
 
-Ba dòng cuối là tính năng đã dựng, đã chạy được, mà học viên không chạm tới
-được. Không cái nào hỏng — chỉ là **chưa ai mở đường vào**. Tôi không tự dựng
-màn cho chúng vì cả ba đều là quyết định sản phẩm chứ không phải lỗi:
+`hsa/study-plan/items` **KHÔNG** nằm trong bảng này: nó đang được gọi thật.
 
-- **Chấm sao khoá học** — có nên cho học viên chấm sao không, và ai đọc điểm ấy?
-- **XP theo khoá** — trung tâm có muốn nói chuyện với học viên bằng ngôn ngữ
-  điểm thưởng không?
-- **Bỏ qua một mục kế hoạch** — cho phép em tự bỏ qua một chủ đề trong lộ trình,
-  hay lộ trình là thứ giảng viên giữ?
+Năm dòng dưới `streak/review-quiz-status` là tính năng đã dựng, chạy được, mà
+không ai chạm tới. Không cái nào hỏng — chỉ là chưa ai mở đường vào. Mỗi cái là
+một quyết định sản phẩm chứ không phải một lỗi:
+
+- **XP theo khoá** — trung tâm có muốn nói chuyện với học viên luyện thi bằng
+  ngôn ngữ điểm thưởng không? *(anh chốt 07/09: MỞ)*
+- **Chấm sao khoá học** — ai đọc điểm ấy, có hiện công khai cho học viên khác
+  không? *(anh chốt 07/09: chưa mở)*
+- **Lịch sử quiz, danh sách lộ trình, đợt bản nhẹ** — ba cái mới lộ ra sau khi
+  vá bộ dò; tôi chưa hỏi anh về chúng.
 
 ## 12.3 Hai cái đã sửa
 
@@ -932,6 +950,15 @@ tôi đã đi "sửa" ba thứ không hỏng:
    đề" trong nhãn *"Tự đánh dấu đã nắm <chủ đề>"*. Chỉ có một nút.
 3. **"Màn Đợt học là ngõ cụt."** Sai — nút "Tạo đợt" nằm ở góc phải trên, chỉ
    là bộ dò của tôi chỉ nhìn trong thẻ cha.
+4. **"Bỏ qua một mục lộ trình chưa có màn nào."** Sai, và là lần đắt nhất: số
+   ấy kịp vào tài liệu này, vào một thông điệp commit, và vào một câu hỏi tôi
+   đặt cho anh — tức anh đã quyết trên một tiền đề sai. Bộ dò tìm đường dẫn đầy
+   đủ, tầng JS cũ thì ghép chuỗi. Bản vá cho bộ dò lại bỏ sót hai cái khác theo
+   chiều ngược lại, nên cuối cùng phải kiểm tay từng endpoint một.
+
+Bốn lần trong một buổi. Bài học không phải "viết bộ dò cẩn thận hơn" — mà là
+**một bộ dò báo OAN thì phải kiểm tay trước khi con số của nó đi vào tài liệu
+hay vào một câu hỏi cho người khác quyết.**
 
 ## 12.5 Một lỗi công cụ đã sửa
 
