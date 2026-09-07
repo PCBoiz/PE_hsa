@@ -252,6 +252,45 @@ class AdminCourseLessonsView(AdminBase):
         return Response({'lessons': rows})
 
 
+#: Trường chữ của BÀI GIẢNG được vẽ ra `innerHTML` ở tầng JS cũ.
+#:
+#: `content` KHÔNG nằm đây: nó là JSON nội dung bài, đi qua `validate_lesson`
+#: với bộ luật riêng (thẻ sạch như <b> vẫn được phép). `module` và `title` thì
+#: là nhãn thuần — không có lý do gì để chứa thẻ.
+_LESSON_TEXT = ('module', 'title')
+
+
+def _loi_van_ban_bai(updates):
+    """Chặn HTML trong nhãn bài giảng. Trả câu lỗi, hoặc None.
+
+    ── VÌ SAO CÓ HÀM NÀY (audit 07/09/2026) ──────────────────────────────────
+
+    `loi_html` trước hôm nay chỉ được gọi cho trường KHOÁ HỌC
+    (`_clean_course_payload`). Đường ghi BÀI GIẢNG không lọc gì.
+
+    Đo được hậu quả: `/api/skills` trả `lessons.module` và `lessons.title` lên
+    tab Kỹ năng, và `dashboard.js::renderSkills` nối thẳng chúng vào
+    `innerHTML`. Viết lại phản hồi ở trình duyệt để thử: payload chạy 3 lần,
+    tạo 102 thẻ thật.
+
+    Nghĩa là một tài khoản `Biên tập nội dung` chạy được mã trong trình duyệt
+    của MỌI học viên — phá đúng lời hứa "biên tập viên không đụng tới con
+    người" ghi trong bảng phân quyền.
+
+    Đã vá phòng tuyến thật (thoát chuỗi lúc vẽ). Hàm này là phòng tuyến thứ
+    hai, và là thứ giữ cho dữ liệu trong CSDL sạch chứ không chỉ hiển thị sạch
+    — nhãn bài giảng còn đi tới bản xuất CSV, tờ báo cáo phụ huynh, và Excel.
+    """
+    for truong in _LESSON_TEXT:
+        if truong not in updates:
+            continue
+        chuoi = str(updates[truong] or '')
+        e = loi_html(chuoi, truong)
+        if e:
+            return e[0]
+    return None
+
+
 class AdminLessonsView(AdminBase):
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
@@ -265,6 +304,10 @@ class AdminLessonsView(AdminBase):
 
         if not q1('SELECT id FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
+
+        loi = _loi_van_ban_bai({'module': data.get('module', ''), 'title': title})
+        if loi:
+            return Response({'error': loi}, status=400)
 
         x('INSERT INTO lessons (course_id, module, title, content, sort_order) '
           'VALUES (%s, %s, %s, %s, %s)',
@@ -295,6 +338,10 @@ class AdminLessonDetailView(AdminBase):
             return Response({'error': 'Không có dữ liệu để cập nhật'}, status=400)
         if 'title' in updates and not (updates['title'] or '').strip():
             return Response({'error': 'Tiêu đề bài giảng không được để trống'}, status=400)
+
+        loi = _loi_van_ban_bai(updates)
+        if loi:
+            return Response({'error': loi}, status=400)
 
         if not q1('SELECT id FROM lessons WHERE id=%s', (lesson_id,)):
             return Response({'error': 'Không tìm thấy bài giảng'}, status=404)

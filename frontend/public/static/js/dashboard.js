@@ -542,6 +542,26 @@ function skSkillToggle(row) {
       '</div>';
   }
 
+  /* MỌI trường chữ ở đây PHẢI đi qua `esc()`.
+   *
+   * ── VÌ SAO (audit 07/09/2026) ────────────────────────────────────────────
+   *
+   * Bốn dòng dưới trước hôm nay nối thẳng `bs.title`, `sk.title`, `sub.title`,
+   * `bs.icon` vào `innerHTML`. Đo bằng cách viết lại phản hồi `/api/skills` ở
+   * trình duyệt (không ghi CSDL): payload chạy 3 lần, tạo 102 thẻ thật.
+   *
+   * Ba trường ấy đến từ `courses.title`, `lessons.module`, `lessons.title`.
+   * Không phải học viên nhập — nhưng biên tập viên thì nhập được, và đường ghi
+   * BÀI GIẢNG không lọc HTML (`loi_html` chỉ được gọi cho trường KHOÁ HỌC).
+   * Nghĩa là một tài khoản `Biên tập nội dung` chạy được mã trong trình duyệt
+   * của MỌI học viên mở tab Kỹ năng.
+   *
+   * Điều đó phá đúng lời hứa ghi trong bảng phân quyền: "Biên tập nội dung
+   * đứng ở TRỤC KHÁC — không đụng tới con người". Chạy được script trong phiên
+   * của một học viên chính là đụng tới con người.
+   *
+   * Đã vá cả hai đầu: thoát chuỗi ở đây (phòng tuyến thật), và `loi_html` cho
+   * đường ghi bài giảng (phòng tuyến thứ hai). */
   function renderSkills(data) {
     var sets = data.skill_sets || [];
     var total = 0, achieved = 0, review = 0, unstarted = 0;
@@ -580,13 +600,13 @@ function skSkillToggle(row) {
           var cls = sub.done ? 'done' : 'todo';
           return '<div class="sk-sub">' +
             '<span class="sk-sub-dot ' + cls + '"></span>' +
-            '<span class="sk-sub-title ' + cls + '">' + sub.title + '</span>' +
+            '<span class="sk-sub-title ' + cls + '">' + esc(sub.title) + '</span>' +
             '</div>';
         }).join('');
         return '<div class="sk-skill">' +
           '<div class="sk-skill-row" onclick="skSkillToggle(this)">' +
           '<div class="sk-skill-top">' +
-          '<span class="sk-skill-name">' + sk.title + '</span>' +
+          '<span class="sk-skill-name">' + esc(sk.title) + '</span>' +
           '<span class="sk-skill-pct">' + sk.progress + '%</span>' +
           badge(sk.progress) +
           '</div>' +
@@ -602,9 +622,9 @@ function skSkillToggle(row) {
       var setTotal = bs.skills.length;
       return '<div class="sk-set">' +
         '<div class="sk-set-hd" onclick="skSetToggle(this)">' +
-        '<span class="sk-set-icon">' + bs.icon + '</span>' +
+        '<span class="sk-set-icon">' + esc(bs.icon) + '</span>' +
         '<div class="sk-set-info">' +
-        '<div class="sk-set-title">' + bs.title + '</div>' +
+        '<div class="sk-set-title">' + esc(bs.title) + '</div>' +
         '<div class="sk-set-meta">' + setAchieved + '/' + setTotal + ' kỹ năng đạt</div>' +
         '</div>' +
         badge(bs.progress) +
