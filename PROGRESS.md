@@ -5744,3 +5744,53 @@ kiểm mới cho báo cáo lớp, gồm cả hai cổng quyền (học viên 403
 khác 404 chứ không 403 — 403 là xác nhận lớp ấy tồn tại). Đo giao diện bộ sáng
 và bộ tối: 21 trang × 2 khổ, 0/0/0/0 cả hai. `build`, `eslint`, `tsc`, `ruff`
 đều sạch.
+
+
+## 07/09/2026 (đêm) — Hồ sơ sản phẩm gửi TopHSA
+
+Anh Sơn cần một tài liệu tổng hợp: tính năng, vai trò, use case, phân quyền,
+kiến trúc, C4, luồng hoạt động, và những gì cần từ phía TopHSA. Chốt: cả ba
+nhóm người đọc (lãnh đạo · học vụ+giảng viên · kỹ thuật), 25–35 trang, C4 mức
+1+2+3 kèm sơ đồ nghiệp vụ.
+
+### Sinh bằng mã, không gõ tay
+
+`scripts/kiem_ke_san_pham.py` đọc thẳng mã nguồn + CSDL ra JSON;
+`scripts/ho_so_tophsa.mjs` đọc JSON ấy rồi dựng HTML → in PDF bằng trình duyệt.
+Chạy lại lệnh là hồ sơ đúng lại. Một tài liệu gửi đối tác mà nói sai con số thì
+hỏng đúng thứ nó sinh ra để làm.
+
+### Bộ kiểm kê báo SAI ngay lần đầu
+
+Nó đếm "chỉ cần đăng nhập: 0 đường, có cổng: 105" — trong khi `quet_quyen.py`
+đếm 60/45. Lỗi phân loại: view không tự khai `permission_classes` thì DRF vẫn
+trả về danh sách MẶC ĐỊNH `[IsAuthenticated]`, không phải rỗng. Sau khi sửa,
+hai bộ đếm khớp nhau: 107 · 2 · 60 · 45.
+
+Nhân đó thêm cờ `khaiTay` để phân biệt "tự khai cổng" với "dựa vào mặc định" —
+đó chính là chỗ nguy hiểm, vì một view mới quên khai sẽ mở cho mọi người đã
+đăng nhập, im lặng, trông y hệt một quyết định có chủ ý. Đo được: 60 view.
+
+### Ba lỗi bố cục, mỗi lỗi tìm ra bằng một cách khác nhau
+
+1. **Sơ đồ bị cắt ngang trang** — sơ đồ use case xé làm ba trang, sơ đồ dữ liệu
+   cắt làm đôi. `break-inside: avoid` không cứu được: một sơ đồ CAO HƠN một
+   trang thì không có chỗ nào để mà tránh. Phải tính từ `viewBox` rồi đặt chiều
+   ngang; chiều cao tự theo tỉ lệ. Thêm cổng tự kiểm chiều cao sau khi in.
+2. **Trang gần trắng** — chú thích rơi sang trang sau một mình (220 và 198 ký
+   tự). Ghim `break-before: avoid` cho chú thích đứng ngay sau sơ đồ.
+3. **Backtick trong chú thích JS kết thúc sớm chuỗi template** của cả khối HTML
+   — cùng họ lỗi với backtick trong thông điệp `git commit` sáng nay.
+
+### Nội dung
+
+25 trang, 10 sơ đồ. Phần A cho lãnh đạo (sản phẩm là gì, khác gì hệ thống khảo
+thí, 4 việc cần quyết) · Phần B cho học vụ và giảng viên (6 vai trò, use case,
+4 luồng thao tác, 26 màn hình, ma trận phân quyền) · Phần C cho kỹ thuật (C4
+mức 1–2–3, mô hình dữ liệu, phân quyền, điểm nối, bảo mật, quyền riêng tư,
+chất lượng) · Phần D cần gì từ TopHSA · Phần E làm tiếp được ngay.
+
+### Cổng riêng tư trước khi giao
+
+Quét tài liệu tìm tên, email, số điện thoại và mật khẩu thật: **không cái nào
+lọt vào**. Email duy nhất trong tài liệu là chỗ trống mẫu `tên@tophsa.vn`.
