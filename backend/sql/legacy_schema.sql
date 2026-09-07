@@ -1389,6 +1389,13 @@ CREATE INDEX IF NOT EXISTS idx_levents_ref
 ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_name  TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_phone TEXT NOT NULL DEFAULT '';
 
+-- Email phụ huynh (07/09/2026). Zalo ZNS bắt buộc OA đã xác thực, mà xác thực
+-- đòi giấy phép kinh doanh; SMS brandname vướng đúng cửa ấy. Anh Sơn chốt đi
+-- đường EMAIL trước — nên phải có chỗ để cất địa chỉ.
+--
+-- Vẫn DEFAULT '' chứ không NULL, cùng lý do hai cột trên.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_email TEXT NOT NULL DEFAULT '';
+
 -- ── LINK BÁO CÁO GỬI PHỤ HUYNH (07/09/2026) ─────────────────────────────────
 --
 -- Anh Sơn chốt: gửi phụ huynh một tin Zalo ZNS kèm LINK báo cáo. Nhưng báo cáo
@@ -1450,3 +1457,15 @@ CREATE TABLE IF NOT EXISTS parent_report_sends (
 CREATE INDEX IF NOT EXISTS idx_prs_link      ON parent_report_sends (link_id);
 CREATE INDEX IF NOT EXISTS idx_prs_nguoi_yc  ON parent_report_sends (requested_by);
 CREATE INDEX IF NOT EXISTS idx_prs_trang_thai ON parent_report_sends (status, created_at);
+
+-- KÊNH GỬI (07/09/2026). Sổ này dựng khi mới có một kênh (ZNS), nên `phone` là
+-- người nhận. Nay có thêm email, và một dòng phải nói được nó đi đường nào —
+-- không thì đọc sổ sáu tháng sau không ai biết vì sao có dòng `phone` rỗng.
+--
+-- Thêm CỘT chứ không sửa ràng buộc `status`: `status` vẫn là ('cho','da_gui',
+-- 'loi') cho cả hai kênh, vì ba trạng thái ấy đúng với cả hai. Nhét 'da_gui_mail'
+-- vào đó là bắt mọi truy vấn thống kê phải liệt kê từng kênh.
+ALTER TABLE parent_report_sends
+    ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'zns';
+ALTER TABLE parent_report_sends
+    ADD COLUMN IF NOT EXISTS email   TEXT NOT NULL DEFAULT '';

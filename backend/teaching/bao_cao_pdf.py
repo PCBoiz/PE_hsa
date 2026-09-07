@@ -285,15 +285,29 @@ def dung_pdf(bc: dict) -> bytes:
     ]
     # "Chưa thi lần nào" chứ KHÔNG phải "0 điểm" — ranh giới 3 của
     # `parent_report.py`: viết 0 ở đây đọc như con làm sai hết.
-    diem_tb = ('%d%%' % ht['mockAvg']) if ht.get('mockAvg') is not None else 'chưa thi lần nào'
+    so_luot = ht.get('mockCount') or 0
+    if ht.get('mockAvg') is None:
+        diem_tb = 'chưa thi lần nào'
+    elif so_luot == 1:
+        # Gọi kết quả của MỘT lượt là "trung bình" thì phụ huynh đọc ra một xu
+        # hướng, trong khi mới có một điểm. Đo trên CSDL thật: em id 9 thi đúng
+        # một lần và được 0/9 — và "Điểm thi thử TB: 0%" gửi về nhà là một bản
+        # án cho một lượt bấm.
+        diem_tb = '%d%% — mới thi 1 lượt' % ht['mockAvg']
+    else:
+        diem_tb = '%d%%' % ht['mockAvg']
     diem_cao = ('%d%%' % ht['mockBest']) if ht.get('mockBest') is not None else '—'
     ti_le_cc = ('%d%%' % cc['attendedPct']) if cc.get('attendedPct') is not None else '—'
+    da_tick = cc.get('sessionsCounted', 0)
     phai = [
         ['Kỳ báo cáo', '%s – %s' % (_ngay(ky.get('from')), _ngay(ky.get('to')))],
+        # "0 có mặt / 0 buổi" đọc như con không đi buổi nào; sự thật là lớp
+        # chưa có buổi nào được điểm danh. Ranh giới 3 của `parent_report.py`.
         ['Chuyên cần', '%s có mặt / %s buổi đã điểm danh (%s)' % (
-            (cc.get('present', 0) + cc.get('late', 0)), cc.get('sessionsCounted', 0), ti_le_cc)],
+            (cc.get('present', 0) + cc.get('late', 0)), da_tick, ti_le_cc)
+         if da_tick else 'lớp chưa có buổi nào được điểm danh'],
         ['Bài đã hoàn thành', '%s bài' % ht.get('lessonsDone', 0)],
-        ['Lượt thi thử', '%s lượt' % ht.get('mockCount', 0)],
+        ['Lượt thi thử', '%s lượt' % so_luot],
         ['Điểm thi thử TB', diem_tb],
         ['Điểm cao nhất', diem_cao],
     ]

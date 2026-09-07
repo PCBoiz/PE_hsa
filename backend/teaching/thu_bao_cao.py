@@ -92,13 +92,26 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
     da_tick = cc.get('sessionsCounted') or 0
     # "chưa thi lần nào" chứ KHÔNG phải "0 điểm" — ranh giới 3 của
     # `parent_report.py`. Viết 0 ở đây đọc như con làm sai hết.
-    diem = ('%d%%' % ht['mockAvg']) if ht.get('mockAvg') is not None else 'chưa thi lần nào'
+    # KÈM SỐ LƯỢT. Em 9 trên CSDL thật thi ĐÚNG MỘT lần và được 0/9; bản đầu
+    # in "Điểm thi thử trung bình: 0%" — số đúng, chữ sai. Phụ huynh đọc chữ
+    # "trung bình" ra một xu hướng, trong khi mới có một điểm và điểm ấy có thể
+    # là em bấm nhầm rồi thoát. Nói mẫu số ra thì câu ấy tự đúng lại.
+    so_luot = ht.get('mockCount') or 0
+    if ht.get('mockAvg') is None:
+        diem = 'chưa thi lần nào'
+    elif so_luot == 1:
+        diem = '%d%% (mới thi 1 lượt)' % ht['mockAvg']
+    else:
+        diem = '%d%% (%d lượt)' % (ht['mockAvg'], so_luot)
     yeu = _diem_yeu(bc)
 
     dong = [
-        ('Chuyên cần', '%d/%d buổi đã điểm danh' % (co_mat, da_tick)),
+        # "0/0 buổi" đọc như con không đi buổi nào, trong khi sự thật là lớp
+        # chưa có buổi nào được điểm danh — hai câu khác hẳn nhau với bố mẹ.
+        ('Chuyên cần', '%d/%d buổi đã điểm danh' % (co_mat, da_tick) if da_tick
+                       else 'lớp chưa có buổi nào được điểm danh'),
         ('Bài đã hoàn thành', '%d bài' % (ht.get('lessonsDone') or 0)),
-        ('Điểm thi thử trung bình', diem),
+        ('Điểm thi thử', diem),
     ]
     if yeu:
         dong.append(('Cần chú ý',

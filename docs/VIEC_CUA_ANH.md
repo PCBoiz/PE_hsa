@@ -1425,3 +1425,115 @@ Zalo nhận xác thực OA **theo tên hộ kinh doanh**, không bắt buộc ph
 ty. Đăng ký hộ kinh doanh ở phường rẻ và nhanh hơn lập công ty nhiều, và nó mở
 khoá **cả ZNS lẫn SMS brandname** cùng lúc. Đây là việc giấy tờ, không phải
 việc mã — nên tôi để anh quyết.
+
+
+---
+
+# Phần 18 — Email đã dựng xong, cần anh một chuỗi 16 ký tự
+
+**07/09/2026.** Anh chốt: đi đường email, nội dung là **tóm tắt + tệp PDF**
+giống tờ "Báo cáo kết quả thi thử HSA" anh gửi.
+
+## 18.1 Việc của anh: App Password (2 phút)
+
+1. Mở `myaccount.google.com` → **Bảo mật** → bật **Xác minh 2 bước** (bắt buộc,
+   không bật thì Google không cho tạo App Password).
+2. Vào `myaccount.google.com/apppasswords` → đặt tên "TopHSA" → **Tạo**.
+3. Google hiện **16 ký tự**. Đưa tôi, hoặc đặt thẳng vào biến môi trường:
+
+```
+EMAIL_USER=<gmail của anh>
+EMAIL_APP_PASSWORD=<16 ký tự, không có dấu cách>
+EMAIL_TU_TEN=TopHSA
+```
+
+Rồi gửi thật một lá về hộp thư của anh:
+
+```
+cd backend
+python manage.py thu_email --toi naman20052011@gmail.com
+```
+
+**Xem trước mà chưa cần mật khẩu** — đặt `EMAIL_CHE_DO_THU=1` thì lệnh ghi ra
+một tệp `.eml` trong `.thu_email/`. Mở bằng Outlook, Thunderbird, hoặc kéo vào
+cửa sổ soạn thư Gmail là thấy **đúng** thứ phụ huynh sẽ thấy, kể cả tệp đính kèm.
+
+Giới hạn cần biết: Gmail cho khoảng **500 người nhận/ngày**. Vài chục học viên
+thì thoải mái; tới vài trăm thì đổi sang dịch vụ gửi thư chuyên dụng, và lúc ấy
+chỉ phải đổi một khối trong `common/mail.py`.
+
+## 18.2 Trong thư có gì
+
+| phần | nội dung | vì sao |
+|---|---|---|
+| **Tóm tắt** trong thân thư | chuyên cần, số bài đã xong, điểm thi thử, 2 chủ đề yếu nhất | phụ huynh mở thư trên điện thoại và thường không bấm gì thêm |
+| **PDF đính kèm** | 5 mục: thông tin chung · chuyên cần · tiến độ theo hợp phần (kèm biểu đồ) · chủ đề theo dải · nhận xét giảng viên | bản in được, mang đi họp được, còn nguyên khi link hết hạn |
+| **Đường dẫn** | nút "Xem bản đầy đủ" | bản luôn mới; thư nói rõ PDF giữ số của lúc gửi |
+
+Học từ tờ của TopHSA: đánh số mục, nhóm chủ đề theo **dải phần trăm** kèm một
+đoạn nhận xét cho cả dải, và mỗi con số đi kèm mẫu số. **Không** mang sang phần
+quảng cáo khoá học + hotline tuyển sinh ở cuối tờ của họ — thư này gửi cho phụ
+huynh của học viên **đang học**, bán thêm ở đây thì mọi con số phía trên bị đọc
+như lời chào hàng.
+
+## 18.3 Hai chỗ trình bày SAI, tìm ra khi chạy trên dữ liệu thật
+
+Chạy thử với học viên id 9 của lớp 1:
+
+- **"Điểm thi thử trung bình: 0%"** — số ĐÚNG (em ấy thi một lần, được 0/9)
+  nhưng chữ sai. Gọi kết quả của **một** lượt là "trung bình" thì phụ huynh đọc
+  ra một xu hướng, trong khi mới có một điểm và điểm ấy có thể là em bấm nhầm
+  rồi thoát. Nay ghi **"0% (mới thi 1 lượt)"**.
+- **"Chuyên cần: 0/0 buổi đã điểm danh"** — đọc như con không đi buổi nào, mà
+  sự thật là lớp chưa có buổi nào được điểm danh. Nay ghi **"lớp chưa có buổi
+  nào được điểm danh"**.
+
+Cả hai đều chỉ lộ ra khi chạy trên dữ liệu thật; dữ liệu mẫu của tôi không có
+em nào thi đúng một lượt.
+
+## 18.4 Còn thiếu: chưa em nào có email phụ huynh
+
+Đã thêm cột `users.parent_email` (chỉ THÊM cột, không sửa ràng buộc nào; đã đối
+chiếu số dòng trước/sau: 6 người dùng, 4 thành viên lớp — không đổi).
+
+Nhưng **0/3 em đang học có email phụ huynh**, nên bấm "Gửi cả lớp" bây giờ vẫn
+ra "thiếu liên lạc". Học viên tự điền được ở **Cài đặt → Liên hệ phụ huynh**,
+hoặc học vụ điền hộ ở hồ sơ học viên.
+
+Màn hình nay tách **hai lý do khác nhau** vì hai người khác nhau đi sửa:
+
+- *thiếu liên lạc* → giảng viên đi hỏi phụ huynh;
+- *có liên lạc mà chưa gửi được* → người quản trị chưa nối kênh.
+
+## 18.5 Đường nối kết quả thi — TÔI NGHĨ NÓ KHÔNG ĐÓNG
+
+Anh trả lời hệ thống khảo thí `uranustech` **"chỉ xem được trên web"**, nên tôi
+đã định gạch đường đồng bộ kết quả thi.
+
+Nhưng tệp anh gửi tôi — `Báo cáo kết quả thi thử HSA.pdf` — trông đúng là **bản
+xuất từ chính hệ thống ấy** (khớp liên kết "Xem Báo cáo Kết quả thi" trong màn
+chi tiết học sinh). Và tôi đọc được sạch sẽ toàn bộ dữ liệu trong đó:
+
+- họ tên, mã học sinh, ngày thi, hình thức thi, địa điểm;
+- ba điểm phần (27/50 · 38/50 · 40/50) và tổng 105/150;
+- **và cả danh sách từng đơn vị kiến thức kèm phần trăm** — "Phần 1: Định lượng
+  và Xử lí số liệu: Hình học Oxyz (50%)", 30 dòng như thế.
+
+Đó chính xác là thứ `pe_hsa` cần để ô "điểm thi thử" và mục "chủ đề yếu" trong
+báo cáo phụ huynh sống dậy bằng số thật, thay vì số của bộ thi thử nội bộ.
+
+**Nên câu hỏi cho anh:** tải được tệp PDF ấy cho **từng học viên** từ hệ thống
+kia không? Nếu được thì tôi dựng màn **nhập báo cáo PDF**: học vụ kéo thả tệp
+vào, hệ thống bóc số ra, hiện bảng xem trước, báo em nào không khớp được với
+học viên bên mình, rồi mới ghi. Không cần API, không cần họ mở gì cho mình.
+
+## 18.6 Bốn hướng ERP anh chọn — thứ tự tôi đề nghị
+
+Anh chọn cả bốn. Chúng không làm song song được, nên thứ tự tôi đề nghị:
+
+| # | việc | vì sao đặt ở đây |
+|---|---|---|
+| 1 | **Nhập báo cáo PDF từ hệ thống khảo thí** | Rẻ nhất trong bốn, và nó làm sống lại phần đã dựng sẵn (ô điểm thi thử, chủ đề yếu). Chờ anh trả lời §18.5 |
+| 2 | **Xuất Excel/PDF báo cáo lớp** (ERP §9 mục 3) | PDF đã dựng xong cho từng em; mở rộng ra cả lớp là việc nhỏ. Đặc tả ghi "bắt buộc với trung tâm" |
+| 3 | **CRM tuyển sinh** | Landing mới sửa đang dẫn người tới mà chưa có chỗ hứng. Nhưng cần anh mô tả quy trình thật: ai nghe điện, ghi gì, khi nào thành học viên |
+| 4 | **Ngân hàng câu hỏi + ma trận đề** | Nặng nhất, và là **làm lại thứ uranustech đã có**. Chỉ đáng làm nếu anh định THAY hệ thống kia — cần anh nói rõ trước khi tôi bắt đầu |

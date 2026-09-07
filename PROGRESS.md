@@ -5527,3 +5527,58 @@ invalid"}`, tức endpoint + header đúng, Zalo đọc được request.
 thử KHÔNG được kết luận là gửi được": nó dừng trước khi Zalo kịp có ý kiến, tự
 khen mình ở đó là hỏng đúng câu hỏi cả lệnh sinh ra để trả lời. 10/10 mới,
 15/15 parent_send cũ vẫn xanh.
+
+
+## 07/09/2026 (chiều) — Kênh email: thư + PDF
+
+### Vì sao email
+
+ZNS đòi OA đã xác thực → đòi giấy phép kinh doanh. SMS brandname vướng đúng cửa
+ấy (Twilio/AWS vào VN cũng phải đăng ký sender ID kèm giấy tờ công ty). Email là
+kênh duy nhất mở được hôm nay. Anh Sơn chốt nội dung: **tóm tắt + PDF đính kèm**.
+
+### Dựng gì
+
+`common/mail.py` (SMTP + chế độ thử ghi `.eml`), `teaching/bao_cao_pdf.py`
+(reportlab, 5 mục, font DejaVu nhúng vào repo vì Vera thiếu 40/57 ký tự Việt),
+`teaching/thu_bao_cao.py` (soạn thư), `manage.py thu_email`. Nối vào
+`ParentReportSendAllView`: email là kênh CHÍNH, ZNS là kênh cho ngày có OA.
+
+DDL chỉ THÊM cột: `users.parent_email`, `parent_report_sends.channel/email`.
+Đếm dòng trước/sau: 6 người dùng, 4 thành viên lớp — không đổi.
+
+### Ba lỗi bố cục chỉ thấy được khi MỞ TỆP PDF RA NHÌN
+
+"Bài đã hoàn thành19 bài" (ô bảng chuỗi thuần không xuống dòng, tràn đè ô bên
+cạnh); ngắt trang cứng bỏ trống nửa trang; biểu đồ rộng cố định làm hai cột
+mảnh nằm hai đầu trục dài. Trích xuất chữ không thấy cái nào.
+
+### Và một lỗi tôi tự tạo trong chính bản đầu
+
+`escape()` đặt vào ô bảng chuỗi thuần là thoát THỪA — reportlab không phân tích
+đánh dấu ở đó, nên giấy in ra "Khoa học &amp; Tiếng Anh". Sửa bằng cách bọc ô
+thành `Paragraph`: khi ấy đánh dấu ĐƯỢC phân tích, `escape` trở lại đúng vai, và
+ô lại tự xuống dòng.
+
+### Phép kiểm "chữ Việt ra chữ Việt" BẢN ĐẦU LÀ PHÉP KIỂM GIẢ
+
+Nó liệt kê bốn chuỗi và đòi có mặt. Lùi font thường về Vera thì nó VẪN XANH —
+cả bốn chuỗi còn xuất hiện lần nữa ở font ĐẬM (không bị lùi), mà bộ kiểm gộp cả
+tài liệu. Nó chứng minh "có một bản lành ở đâu đó", không chứng minh "không có
+bản hỏng nào". Nay canh dấu vết của HỎNG: ô glyph khuyết `\x00` ở bất kỳ đâu.
+
+Bảy tính chất chứng minh đỏ được. 45 phép kiểm không cần CSDL + 21 phép kiểm
+`parent_send` (6 cái mới cho kênh email).
+
+### Hai chỗ trình bày sai, chỉ lộ trên dữ liệu THẬT
+
+Em id 9 thi đúng một lần được 0/9 → "Điểm thi thử trung bình: 0%" (số đúng, chữ
+sai — một lượt không phải trung bình). Lớp 0 buổi điểm danh → "0/0 buổi" (đọc
+như con không đi buổi nào). Đã sửa cả hai.
+
+### Lint đỏ có sẵn
+
+`DuongDanDaCap.tsx` vi phạm `react-hooks/set-state-in-effect` từ đợt nâng thư
+viện `ff3f18a` — CI đang đỏ, không phải do việc hôm nay. Vá luôn, và đằng sau
+cái nhãn đỏ là một lỗi thật: lượt gọi không huỷ được, nên đổi học viên nhanh
+thì danh sách chìa của em TRƯỚC hiện dưới tên em SAU.
