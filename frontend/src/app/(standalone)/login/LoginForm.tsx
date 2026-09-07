@@ -81,12 +81,35 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
       if (!res.ok) {
         if (data.errors) {
           setFieldErrors(data.errors as FieldErrors);
+        } else if (typeof data.error === 'string' || data.error?.message) {
+          // Máy chủ có nói lý do → nói lại đúng lời nó.
+          setFormError(typeof data.error === 'string' ? data.error : data.error.message);
         } else {
-          const msg =
-            typeof data.error === 'string'
-              ? data.error
-              : data.error?.message || 'Sai email/số điện thoại hoặc mật khẩu.';
-          setFormError(msg);
+          /* MÁY CHỦ HỎNG ≠ SAI MẬT KHẨU.
+           *
+           * ── VÌ SAO SỬA (07/09/2026) ─────────────────────────────────────
+           *
+           * Bản cũ để "Sai email/số điện thoại hoặc mật khẩu" làm câu MẶC ĐỊNH
+           * cho mọi phản hồi không-ok không kèm thân JSON — tức 500, 502, 503,
+           * 504 đều hiện ra thành "bạn gõ sai mật khẩu".
+           *
+           * Nhánh `catch` bên dưới KHÔNG cứu được: `fetch` chỉ NÉM khi mất
+           * mạng. Một phản hồi 503 là `fetch` THÀNH CÔNG với `res.ok === false`.
+           * Đây đúng cái bẫy `src/middleware.ts` đã ghi và đã vá cho đường làm
+           * mới phiên — cùng lý lẽ, mà chỗ này thì sót.
+           *
+           * Trả giá thật: anh Sơn báo "không đăng nhập bằng tài khoản admin
+           * được nữa, đụng chạm gì database rồi". Đo lại hôm ấy: mật khẩu
+           * ĐÚNG (kiểm bằng chính `check_werkzeug_password` của máy chủ),
+           * CSDL nguyên vẹn, còn backend trên Render trả 503 suốt 169 giây.
+           * Màn hình đã đổ lỗi cho người dùng thay vì báo máy chủ đang hỏng —
+           * và câu đổ lỗi ấy dẫn cả buổi đi tìm sai chỗ. */
+          setFormError(
+            res.status >= 500
+              ? `Máy chủ đang không phản hồi (lỗi ${res.status}). Đây KHÔNG phải lỗi mật khẩu — `
+                + 'thử lại sau vài phút, nếu vẫn vậy thì báo người quản trị hệ thống.'
+              : 'Sai email/số điện thoại hoặc mật khẩu.',
+          );
         }
         return;
       }

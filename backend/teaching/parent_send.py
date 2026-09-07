@@ -127,7 +127,8 @@ class ParentReportSendAllView(APIView):
         ds = _hoc_vien_dang_hoc(class_id)
         return Response({
             'period': {'from': tu.isoformat(), 'to': den.isoformat()},
-            'znsSanSang': zalo.da_cau_hinh(),
+            'znsSanSang': zalo.da_cau_hinh() or zalo.che_do_thu(),
+            'znsCheDoThu': zalo.che_do_thu(),
             'znsThieu': zalo.thieu_gi(),
             'students': [{
                 'id': e['id'],
@@ -149,7 +150,10 @@ class ParentReportSendAllView(APIView):
         if not ds:
             return Response({'error': 'Lớp này chưa có học viên nào đang học.'}, status=400)
 
-        san_sang = zalo.da_cau_hinh()
+        # `che_do_thu()` đi trọn luồng nhưng không gọi Zalo — anh Sơn chốt
+        # 07/09/2026: xem đúng nội dung sẽ gửi trước khi bật gửi thật.
+        thu = zalo.che_do_thu()
+        san_sang = zalo.da_cau_hinh() or thu
         goc = _goc(request)
         ky_chu = '%s – %s' % (tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y'))
         lop = q1('SELECT name FROM classes WHERE id=%s', (class_id,))
@@ -173,12 +177,29 @@ class ParentReportSendAllView(APIView):
                             'duongDan': duong_dan, 'loi': None})
                 continue
 
-            ok, ma, loi = zalo.gui_zns(so, {
+            noi_dung = {
                 'ten_hoc_vien': e['name'] or '',
                 'ten_lop': ten_lop,
                 'ky': ky_chu,
                 'duong_dan': duong_dan,
-            })
+            }
+            ok, ma, loi = zalo.gui_zns(so, noi_dung)
+
+            if thu:
+                # CHẾ ĐỘ THỬ: KHÔNG ghi `parent_report_sends`.
+                #
+                # Sổ ấy là sổ của những tin ĐÃ ĐI. Một dòng 'da_gui' cho tin
+                # chưa từng rời máy chủ là loại nói dối khó thấy nhất: lần sau
+                # mở sổ ra sẽ tưởng phụ huynh đã nhận, và không ai gửi lại.
+                # Cùng lý lẽ với nhánh `gui_tay` ngay trên.
+                #
+                # Bù lại, trả về ĐÚNG nội dung sẽ gửi để người bấm duyệt được —
+                # đó là toàn bộ mục đích của chế độ này.
+                ket.append({'id': e['id'], 'name': e['name'], 'trangThai': 'thu',
+                            'duongDan': duong_dan, 'loi': None,
+                            'soNhan': so, 'noiDung': noi_dung})
+                continue
+
             link = q1('SELECT id FROM parent_report_links WHERE token=%s', (token,))
             # Vào sổ CẢ lượt hỏng. Một tin gửi lỗi mà không ghi lại thì lần sau
             # không ai biết em nào đã thử và trượt — và phụ huynh chỉ biết là
@@ -197,6 +218,7 @@ class ParentReportSendAllView(APIView):
         return Response({
             'period': {'from': tu.isoformat(), 'to': den.isoformat()},
             'znsSanSang': san_sang,
+            'znsCheDoThu': thu,
             'znsThieu': zalo.thieu_gi(),
             'tong': len(ket),
             'dem': dem,

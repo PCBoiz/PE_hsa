@@ -66,8 +66,45 @@ def _thong_so():
     }
 
 
+def che_do_thu() -> bool:
+    """`ZALO_CHE_DO_THU` — đi trọn luồng nhưng KHÔNG gọi Zalo.
+
+    ── VÌ SAO CÓ (07/09/2026, anh Sơn chốt) ─────────────────────────────────
+
+    Mỗi tin ZNS mất phí và không thu về được, còn người nhận là phụ huynh học
+    viên — gửi nhầm một lượt là gửi nhầm cho hàng chục gia đình. Nên phải xem
+    được ĐÚNG nội dung sẽ đi trước khi bật gửi thật.
+
+    Chế độ này KHÔNG giả vờ đã gửi: `gui_zns` trả về mã bắt đầu bằng `THU:`,
+    và `parent_send` không ghi dòng nào vào `parent_report_sends`. Sổ gửi là sổ
+    của những tin ĐÃ ĐI; một dòng "đã gửi" cho tin chưa từng rời máy là loại
+    nói dối khó phát hiện nhất — lần sau đọc sổ sẽ tưởng phụ huynh đã nhận.
+    """
+    v = (os.environ.get('ZALO_CHE_DO_THU') or '').strip().lower()
+    return v in ('1', 'true', 'yes', 'on', 'co', 'có')
+
+
+def soan_zns(phone: str, tham_so: dict) -> dict:
+    """Thân request ĐÚNG như sẽ gửi đi. Dùng chung cho cả gửi thật lẫn chế độ thử.
+
+    Tách ra là có chủ ý: nếu chế độ thử tự dựng lấy một bản xem trước riêng thì
+    nó sẽ trôi khỏi bản gửi thật, và người dùng duyệt một nội dung KHÁC với nội
+    dung sẽ đi — tức chế độ thử biến thành thứ nguy hiểm hơn là không có nó.
+    """
+    return {
+        'phone': phone,
+        'template_id': _thong_so()['template'],
+        'template_data': tham_so,
+    }
+
+
 def da_cau_hinh() -> bool:
-    """Đủ thông số để gửi chưa. Thiếu MỘT trong hai là chưa."""
+    """Đủ thông số để gửi THẬT chưa. Thiếu MỘT trong hai là chưa.
+
+    KHÔNG tính chế độ thử vào đây: màn hình dùng hàm này để nói "ZNS sẵn sàng",
+    và nói sẵn sàng trong khi chưa có OA là đẩy người dùng đi bấm một nút không
+    gửi được gì.
+    """
     t = _thong_so()
     return bool(t['token'] and t['template'])
 
@@ -91,16 +128,23 @@ def gui_zns(phone: str, tham_so: dict) -> tuple[bool, str | None, str | None]:
     đây không tự đặt. Nơi gọi biết mẫu của mình, chỗ này chỉ chuyển tiếp.
     """
     t = _thong_so()
-    if not (t['token'] and t['template']):
-        return False, None, 'Chưa cấu hình Zalo OA (%s).' % ', '.join(thieu_gi())
     if not phone:
         return False, None, 'Chưa có số điện thoại người nhận.'
+
+    if che_do_thu():
+        # Đi tới đây là ĐÃ dựng xong đúng thân request. Ghi nó vào log rồi
+        # dừng — không một byte nào rời khỏi máy chủ.
+        log.info('ZNS [CHẾ ĐỘ THỬ] không gửi thật: %s', soan_zns(phone, tham_so))
+        return True, 'THU:%s' % phone[-4:], None
+
+    if not (t['token'] and t['template']):
+        return False, None, 'Chưa cấu hình Zalo OA (%s).' % ', '.join(thieu_gi())
 
     try:
         r = requests.post(
             API,
             headers={'access_token': t['token'], 'Content-Type': 'application/json'},
-            json={'phone': phone, 'template_id': t['template'], 'template_data': tham_so},
+            json=soan_zns(phone, tham_so),
             timeout=CHO_GIAY,
         )
     except requests.RequestException as e:

@@ -213,3 +213,78 @@ def test_giang_vien_lop_khac_khong_gui_duoc(lop, chua_oa):
     la = _nguoi('GV La Gui', ROLE_TEACHER)
     assert _goi('post', {}, ai=la, class_id=lop['id']).status_code == 404
     assert _goi('get', ai=la, class_id=lop['id']).status_code == 404
+
+
+# ══ CHẾ ĐỘ THỬ — xem trước nội dung, KHÔNG gửi, KHÔNG ghi sổ ════════════════
+#
+# Anh Sơn chốt 07/09/2026: dựng chế độ thử trước khi bật ZNS thật. Mỗi tin ZNS
+# mất phí và không thu về được, còn người nhận là phụ huynh học viên — nên phải
+# xem được ĐÚNG nội dung sẽ đi trước khi bấm gửi.
+#
+# Ba phép kiểm dưới đây canh ba lời hứa của chế độ ấy, và lời hứa nặng nhất là
+# lời hứa THỨ HAI: không ghi sổ. Sổ `parent_report_sends` là sổ của những tin ĐÃ
+# ĐI; một dòng 'da_gui' cho tin chưa từng rời máy chủ là loại nói dối khó thấy
+# nhất — lần sau mở sổ ra sẽ tưởng phụ huynh đã nhận, và không ai gửi lại.
+
+
+@pytest.fixture
+def che_do_thu(monkeypatch):
+    """Bật chế độ thử qua ĐÚNG biến môi trường thật, không vá hàm.
+
+    Vá `zalo.che_do_thu` thì phép kiểm chỉ chứng minh nhánh `if` chạy đúng.
+    Đặt biến thì nó đi qua cả `_thong_so`, `soan_zns` và `gui_zns` thật — tức
+    kiểm đúng thứ sẽ chạy trên máy chủ.
+    """
+    monkeypatch.setenv('ZALO_CHE_DO_THU', '1')
+    # Không có OA: đây đúng trạng thái hôm nay, và chế độ thử phải chạy được
+    # trong trạng thái ấy — nếu nó đòi token thì nó vô dụng đúng lúc cần nhất.
+    monkeypatch.delenv('ZALO_OA_ACCESS_TOKEN', raising=False)
+    monkeypatch.delenv('ZALO_ZNS_TEMPLATE_ID', raising=False)
+
+
+@pytest.mark.django_db
+def test_che_do_thu_KHONG_ghi_dong_nao_vao_so_gui(lop, che_do_thu):
+    truoc = q1('SELECT count(*) AS n FROM parent_report_sends')['n']
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 200, kq.data
+    sau = q1('SELECT count(*) AS n FROM parent_report_sends')['n']
+    assert sau == truoc, 'chế độ thử đã ghi %d dòng vào sổ gửi' % (sau - truoc)
+
+
+@pytest.mark.django_db
+def test_che_do_thu_tra_ve_dung_noi_dung_se_gui(lop, che_do_thu):
+    """Toàn bộ mục đích của chế độ này: người bấm DUYỆT được nội dung."""
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.data['znsCheDoThu'] is True, kq.data
+
+    em = next(r for r in kq.data['ketQua'] if r['id'] == lop['co'].id)
+    assert em['trangThai'] == 'thu', em
+    assert em['soNhan'] == '0912345678', em
+    # Đúng bốn tham số của mẫu ZNS, không thiếu không thừa.
+    from teaching.parent_send import THAM_SO_MAU
+    assert set(em['noiDung']) == set(THAM_SO_MAU), em['noiDung']
+    assert em['noiDung']['ten_hoc_vien'] == 'HV Co So', em['noiDung']
+    assert em['noiDung']['duong_dan'].startswith('http'), em['noiDung']
+
+    # Em chưa khai số phụ huynh vẫn phải được báo là thiếu số, không lẫn vào
+    # nhóm "đã thử" — người bấm cần biết ai sẽ KHÔNG nhận được gì.
+    khong = next(r for r in kq.data['ketQua'] if r['id'] == lop['khong'].id)
+    assert khong['trangThai'] == 'thieu_so', khong
+
+
+@pytest.mark.django_db
+def test_che_do_thu_KHONG_goi_mang(lop, che_do_thu, monkeypatch):
+    """Không một byte nào được rời khỏi máy chủ.
+
+    Vá `requests.post` thành một hàm NỔ: nếu chế độ thử lỡ gọi mạng thật thì
+    phép kiểm đỏ ngay, thay vì im lặng gửi tin mất phí trong lúc chạy CI.
+    """
+    import requests
+
+    def no(*a, **k):
+        raise AssertionError('chế độ thử ĐÃ gọi mạng — đúng thứ nó sinh ra để tránh')
+    monkeypatch.setattr(requests, 'post', no)
+
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 200, kq.data
+    assert any(r['trangThai'] == 'thu' for r in kq.data['ketQua']), kq.data
