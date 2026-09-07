@@ -5272,3 +5272,45 @@ màn Đợt học "là ngõ cụt" (nút Tạo đợt ở góc phải, bộ dò 
 `--ra`. Chạy từ gốc repo thì thẻ rơi vào `backend/.the/`, còn `.the/` ở gốc —
 nơi mọi bộ đo đọc — giữ thẻ CŨ, mà kịch bản vẫn in "Đã cấp thẻ". Mất ~30 phút.
 Nay giải theo thư mục người gọi và in đường dẫn tuyệt đối.
+
+### Cơ sở tính học phí (anh Sơn chốt: chỉ dựng cơ sở, không dựng kế toán)
+
+Đặc tả §7 cảnh báo "sai một chi tiết là sai sổ sách". Nên view này không có
+một trường tiền nào — và một phép kiểm canh đúng điều đó bằng cách soi TÊN
+KHOÁ của phản hồi. Nó canh một QUYẾT ĐỊNH chứ không canh một lỗi.
+
+Hai cột đếm chứ không một: "buổi lớp mở trong quãng em là thành viên" (thu
+theo thời gian) và "buổi em thật sự tới" (thu theo buổi). Gộp thành một cột là
+ngầm quyết chính sách thu tiền của trung tâm mình không điều hành.
+
+Cột `lechGhiDanh` — điểm danh ngoài quãng ghi danh — là chỗ dễ ra tiền sai
+nhất: hoặc là buổi học thử (không thu), hoặc là ngày ghi danh nhập sai (phải
+thu). Máy không phân biệt được nên nó là một CỘT, không bị nuốt vào tổng.
+
+Lỗi tôi mắc: lượt gọi thật đầu tiên trả về "Quản trị viên · admin@pe-hsa.vn"
+giữa danh sách học viên phải tính tiền. `teaching/vocab.py::chi_hoc_vien` viết
+ra ĐÚNG vì lỗi này và chú thích của nó nêu đúng trường hợp id 7 lớp 1. Tôi vẫn
+mắc lại. Vá bằng chính hàm ấy; đo lại: 4 dòng → 3.
+
+### Lần thứ TƯ thước đo báo oan, và là lần đắt nhất
+
+Tôi báo "7 endpoint mồ côi", trong đó có `study-plan/items`. Sai — tầng JS cũ
+ghép chuỗi `fetch(API + '/items/' + id)` nên chuỗi đầy đủ không tồn tại trong
+mã. Việc "bỏ qua một mục lộ trình" ĐÃ CÓ SẴN (đo: 30 mục, 30 nút, cả nút hoàn
+lại).
+
+Số sai ấy kịp vào tài liệu, vào một commit, VÀ vào một câu hỏi tôi đặt cho anh
+Sơn chọn — tức anh quyết trên tiền đề sai. Bản vá cho bộ dò lại bỏ sót hai cái
+khác theo chiều ngược lại, nên cuối cùng phải kiểm tay từng endpoint.
+
+Bài học không phải "viết bộ dò cẩn thận hơn". Là: **số của một bộ dò phải được
+kiểm tay TRƯỚC KHI nó đi vào tài liệu hay vào một câu hỏi cho người khác quyết.**
+
+### XP theo khoá → "ba hợp phần, bạn đang dồn sức vào đâu"
+
+Cánh cửa thật sự còn đóng. Không dựng thành bảng điểm thưởng: bài HSA cộng cả
+ba hợp phần, học lệch là cách hỏng điểm phổ biến nhất mà học viên không tự
+thấy. Ghép XP vào `skill_sets` (đủ ba hợp phần) chứ không vẽ thẳng phản hồi
+`xp-by-course` — endpoint ấy chỉ trả khoá ĐÃ CÓ XP, vẽ thẳng thì màn hình giấu
+đúng cái nó sinh ra để chỉ. Đặt ở tab Kỹ năng vì tab ấy nạp lười, không đụng
+LCP của Trang của tôi.
