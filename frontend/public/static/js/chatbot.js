@@ -2,11 +2,25 @@
    GEMINI AI CHATBOT - JavaScript Logic
    ═══════════════════════════════════════════════════════════ */
 
-// Configuration
+/* Cấu hình.
+ *
+ * ── `apiKey` và `apiUrl` ĐÃ GỠ (07/09/2026, audit bảo mật) ────────────────
+ *
+ * Chúng là tàn dư của bản đầu gọi thẳng Gemini từ trình duyệt. Không dòng nào
+ * còn dùng tới: lượt gọi DUY NHẤT trong tệp này là `fetch('/api/chat')`, và
+ * khoá thật nằm ở máy chủ (`backend/chatbot/views.py`).
+ *
+ * Vì sao gỡ chứ không để đó cho gọn: `verifyChatbotApiKey()` in ra console
+ * của MỌI người dùng câu "Hãy thêm key vào static/js/chatbot.js" — tức một lời
+ * mời dán khoá production vào một tệp gửi tới từng trình duyệt. Và
+ * `connect-src` trong CSP khi ấy còn cho phép gọi thẳng
+ * generativelanguage.googleapis.com, nên ai làm theo thì nó CHẠY ĐƯỢC, rò
+ * thật, và không có gì kêu lên.
+ *
+ * Một cấu hình chết mà mời người ta làm sai thì nguy hơn không có cấu hình.
+ */
 const CHATBOT_CONFIG = {
-    apiKey: '', // Add your Gemini API key here
     model: 'gemini-2.5-flash-preview-09-2025',
-    apiUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
     systemPrompt: 'Bạn là trợ lý AI thân thiện và chuyên nghiệp. Trả lời ngắn gọn, sử dụng Markdown cho code, luôn dùng tiếng Việt. Giúp người dùng với lập trình và học tập.'
 };
 
@@ -393,32 +407,22 @@ async function sendChatbotMessage() {
     }
 }
 
-/**
- * Verify API Key Status
- */
-function verifyChatbotApiKey() {
-    if (!CHATBOT_CONFIG.apiKey || CHATBOT_CONFIG.apiKey === '') {
-        console.warn('⚠️ Chatbot: Chưa cấu hình Gemini API key. Hãy thêm key vào static/js/chatbot.js');
-    } else {
-        console.log('✅ Chatbot: API key đã được cấu hình.');
-    }
-}
+/* `verifyChatbotApiKey()` ĐÃ GỠ (07/09/2026) — xem chú thích ở CHATBOT_CONFIG.
+   Trình duyệt không giữ khoá nào cả; nơi duy nhất kiểm được cấu hình là máy
+   chủ, và `backend/chatbot/views.py` đã trả lời rõ khi thiếu khoá. */
 
 /**
  * Initialize on DOM Ready
  */
 document.addEventListener('DOMContentLoaded', () => {
     initializeChatbot();
-    verifyChatbotApiKey();
 });
 
 // Support for dynamic loading
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initializeChatbot();
-        verifyChatbotApiKey();
-    });
+        });
 } else {
     initializeChatbot();
-    verifyChatbotApiKey();
 }

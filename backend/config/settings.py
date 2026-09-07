@@ -415,7 +415,19 @@ CSP_POLICY = (
     "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
     "img-src 'self' data: blob:; "
-    "connect-src 'self' https://generativelanguage.googleapis.com; "
+    # `connect-src 'self'` — KHÔNG còn generativelanguage.googleapis.com.
+    #
+    # Gỡ 07/09/2026 sau audit bảo mật. Cấu hình gọi thẳng Gemini từ trình duyệt
+    # là tàn dư của bản đầu: `chatbot.js` chỉ `fetch('/api/chat')`, khoá nằm ở
+    # `backend/chatbot/views.py`. Nhưng tệp ấy vẫn in ra console của MỌI người
+    # dùng câu "Hãy thêm key vào static/js/chatbot.js" — một lời mời dán khoá
+    # production vào tệp gửi tới từng trình duyệt, và dòng CSP này là thứ khiến
+    # lời mời ấy CHẠY ĐƯỢC nếu có người làm theo.
+    #
+    # Đã đo trước khi gỡ: grep toàn bộ frontend cho `googleapis` → chỉ còn một
+    # dòng chú thích; grep cho `fetch('http`, `XMLHttpRequest`, `new WebSocket`
+    # → 0 kết quả. Trình duyệt không gọi ra ngoài chỗ nào cả.
+    "connect-src 'self'; "
     "frame-ancestors 'self'"
 )
 
