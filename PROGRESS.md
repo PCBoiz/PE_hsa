@@ -5652,3 +5652,48 @@ Hệ quả T38 còn lại: mọi người dùng thật vẫn chung MỘT xô `lo
 một người có thể khoá cả lớp. Mã đã có lời giải (`X-PE-Client-IP` + bí mật
 chung `PROXY_SHARED_SECRET`/`PE_PROXY_SECRET`) — chỉ chờ hai biến môi trường,
 việc của anh Sơn.
+
+
+## 07/09/2026 (khuya) — Tầng ERP có dữ liệu thật lần đầu
+
+Anh Sơn cho phép hai thao tác GHI vào production. Đã làm, có sao lưu, có đếm
+dòng trước/sau.
+
+### Xoá tài khoản e2e — và một cái bẫy của "chạy thử khô"
+
+Chạy thử khô trong giao dịch cuộn lại cho thấy xoá `id 13231` là an toàn. Chạy
+thật thì **hỏng ở bước COMMIT**: `token_blacklist_outstandingtoken` để khoá
+ngoại `NO ACTION`, và ràng buộc ấy chỉ kiểm lúc commit — mà bản thử cuộn lại
+bằng cách ném ngoại lệ TRƯỚC commit, nên không bao giờ chạm tới.
+
+**Một phép thử khô cuộn lại là bằng chứng tốt cho "xoá lan tới đâu", KHÔNG phải
+bằng chứng cho "lệnh này chạy được".**
+
+Tài khoản e2e giữ **226 thẻ JWT còn hạn** — bộ kiểm tự động cấp thẻ mỗi lượt
+chạy và bảng ấy cứ phình. Xoá thẻ trước rồi xoá tài khoản.
+
+### KHÔNG xoá id 9, và vì sao
+
+Lúc hỏi tôi nói nó giữ "5 bài học + 1 lượt thi thử". Đo lại: **12/38 sự kiện
+học, 5/10 bài, và 1/1 nhật ký + quiz + kết quả ôn** — hơn nửa lịch sử học tập
+của cả CSDL. Xoá nó thì đúng việc thứ hai anh duyệt (tạo dữ liệu để xem sản
+phẩm chạy) mất chính thứ nó cần. Đã sao lưu ra JSON; một lệnh là xoá được.
+
+### Đợt học đầu tiên
+
+`terms` 0→1, `class_sessions` 0→4, `attendance` 0→6. Buổi cuối **cố ý để trống**
+để nhánh "còn N buổi chưa điểm danh" của báo cáo phụ huynh chạy thật.
+
+Bản đầu tạo 8 buổi, trong đó 4 buổi nằm TRƯỚC ngày học viên vào lớp (24/08) —
+tức điểm danh cho em chưa ghi danh. Sản phẩm lọc đúng (chỉ tính từ ngày vào
+lớp, như `_chuyen_can` ghi) nên báo cáo vẫn đúng, nhưng dữ liệu thì tự mâu
+thuẫn và người mở màn điểm danh sẽ thấy em được tick ở ngày em chưa tồn tại
+trong lớp. Đã xoá 4 buổi ấy.
+
+### Ba màn từng rỗng, nay chạy bằng số thật
+
+| màn | trước | nay |
+|---|---|---|
+| Báo cáo phụ huynh | "lớp chưa có buổi nào được điểm danh" | "2/3 buổi đã điểm danh" + cảnh báo 1 buổi chưa tick |
+| Cơ sở học phí | 0 lớp | 1 lớp, 4 buổi đã mở, 2 học viên kèm số buổi có mặt/muộn/vắng |
+| Đợt học | 0 | 1 đợt, lớp đã gắn vào đợt |
