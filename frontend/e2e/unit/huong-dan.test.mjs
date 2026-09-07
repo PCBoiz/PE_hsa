@@ -83,7 +83,23 @@ check('không đường dẫn nào chứa tham số động',
   DUONG.filter((d) => /\[|<|:\w/.test(d)).join(', '));
 
 // ── Mỗi bài phải có đủ phần ───────────────────────────────────────────────
-const BAI = [...DL.matchAll(/^\s*ma: '([a-z-]+)',\n\s*tieu_de: '([^']+)',/gm)]
+/* `
+?
+`, KHÔNG phải `
+`.
+ *
+ * Bản cũ đòi dấu phẩy đứng LIỀN NGAY TRƯỚC `
+`. Trên bản checkout
+ * Windows, `huongDan.ts` có kết thúc dòng CRLF (đo: 262 CRLF, 0 LF đơn),
+ * nên giữa `,` và `
+` còn một `
+` — regex không khớp gì cả và phép
+ * kiểm báo "đọc được 0 bài" trong khi tệp có 9.
+ *
+ * CI chạy trên Linux nên nó XANH ở đó suốt. Tức phép kiểm này đỏ đúng ở
+ * chỗ người viết mã ngồi, và xanh ở chỗ không ai nhìn — kiểu hỏng dạy
+ * người ta bỏ qua màu đỏ. Sửa 07/09/2026. */
+const BAI = [...DL.matchAll(/^\s*ma: '([a-z-]+)',\r?\n\s*tieu_de: '([^']+)',/gm)]
   .map((m) => ({ ma: m[1], tieu_de: m[2] }));
 check('đọc được danh sách bài', BAI.length >= 6, String(BAI.length));
 check('không mã bài nào trùng',

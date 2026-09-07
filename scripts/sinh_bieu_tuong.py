@@ -38,6 +38,10 @@ CAN = [
     'bar-chart', 'graduation-cap', 'file-text',
     # Trang "Hôm nay cần làm gì" — việc còn tồn, việc đã xong, chỗ trống.
     'clock', 'check-circle-2', 'inbox', 'arrow-right',
+    # Trợ lý AI (07/09/2026). `Chatbot.tsx` trước dùng `fa-sparkles`, mà
+    # `sparkles` là biểu tượng bản PRO của Font Awesome — trên bộ Free nó
+    # chưa từng hiện: đo được 0×0px, `::before` rỗng. Bộ của dự án thì có.
+    'sparkles',
     # Tab 'Hướng dẫn' của khu Vận hành (07/09/2026).
     'book-open',
 ]

@@ -1,5 +1,7 @@
 'use client';
 
+import { BieuTuong } from './bieuTuong';
+
 // Port chatbot.html (Jinja partial include ở 6 trang) — markup 1:1.
 // Logic nằm nguyên trong chatbot.js (legacy); handler gọi global.
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -8,6 +10,38 @@ const W = () => window as any;
 export default function Chatbot() {
   return (
     <>
+      {/* Font Awesome — component này TỰ nạp, không trông chờ trang cha.
+        *
+        * ── VÌ SAO (hồi quy do chính tôi gây ra, 07/09/2026) ──────────────────
+        *
+        * Sáng nay tôi gỡ Font Awesome khỏi `(base)/layout.tsx` để tiết kiệm
+        * 100kB, sau khi grep và kết luận "0 lần dùng class `fa-`". Kết luận ấy
+        * SAI: chính tệp này dùng 10 biểu tượng `fa-`, và `chatbot.js` dùng thêm
+        * 4. Đo sau đó trên `/dashboard`: 12 thẻ `<i class="fa-*">` hiện ở
+        * **0×0px**, `::before` rỗng — trợ lý AI mất sạch biểu tượng, và bản ấy
+        * đã lên production.
+        *
+        * Vì sao tự nạp chứ không trả Font Awesome về layout: chatbot được gắn ở
+        * BỐN nơi (`/dashboard`, `courses/[courseId]`, `LessonHsa`, `MockExam`).
+        * Ba nơi kia đã tự nạp sẵn, nên chỉ `/dashboard` hỏng. Nếu vá bằng cách
+        * sửa layout thì nơi gắn thứ NĂM sẽ lại hỏng y hệt, và lại không ai
+        * biết. Đặt lời nạp cạnh chỗ dùng thì hai thứ không thể rời nhau.
+        *
+        * Cái giá: `/dashboard` nhận lại 100kB CSS, tức mất phần lớn phần tối ưu
+        * sáng nay. Nói thẳng ra đây thay vì giấu. Cách đúng để lấy lại là
+        * chuyển 11 biểu tượng này sang bộ SVG riêng của dự án (`icons.js` có 45
+        * biểu tượng; 4 trong 11 đã có sẵn: sparkles, pencil, map, user) — việc
+        * riêng, không làm chen vào lúc đang vá hồi quy.
+        *
+        * `e2e/unit/font-awesome-tu-nap.test.mjs` canh: tệp .tsx nào dùng `fa-`
+        * thì phải tự nạp Font Awesome. Đó là phép kiểm mà sáng nay tôi không
+        * có, nên không có gì chặn tôi lại. */}
+      <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      />
+
       {/* Floating Chat Button */}
       <button id="chatbot-toggle" className="chatbot-floating-btn" aria-label="Mở trợ lý AI">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="chatbot-btn-icon">
@@ -40,7 +74,12 @@ export default function Chatbot() {
         <div id="chatbot-messages" className="chatbot-messages">
           <div className="chatbot-message chatbot-message-ai">
             <div className="chatbot-message-avatar">
-              <i className="fas fa-sparkles"></i>
+              {/* `fa-sparkles` là biểu tượng bản PRO của Font Awesome. Trên bộ
+                  Free đang nạp, nó CHƯA TỪNG hiện — đo 07/09/2026: 0×0px,
+                  `::before` rỗng, trong khi `fa-robot`/`fa-user` cạnh đó đều
+                  vẽ bình thường. Không lỗi nào, chỉ là một ô trống.
+                  Dùng bộ SVG của dự án (`icons.js` có `sparkles`). */}
+              <BieuTuong ten="sparkles" co={16} />
             </div>
             <div className="chatbot-message-content">
               <div className="chatbot-message-bubble">

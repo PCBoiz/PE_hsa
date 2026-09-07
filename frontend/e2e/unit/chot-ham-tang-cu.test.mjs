@@ -71,7 +71,9 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
 const TRAN_TEP = 13;
-const TRAN_DONG_MA = 7346;
+// 07/09/2026: 7346 → 7337. Khối "ba hợp phần" viết nhầm vào tầng này rồi
+// chuyển sang `src/components/BaHopPhan.tsx` — chốt hãm bắt đúng lúc.
+const TRAN_DONG_MA = 7337;
 
 let failures = 0;
 function check(name, cond, them) {

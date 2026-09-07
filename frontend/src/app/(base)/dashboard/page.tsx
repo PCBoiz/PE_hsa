@@ -6,6 +6,7 @@
 // CSS đúng tổ hợp gốc (dashboard.html block extra_head, thứ tự giữ nguyên).
 
 import PageStyles from '@/components/PageStyles';
+import BaHopPhan from '@/components/BaHopPhan';
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
 import NapTruocScript from '@/components/NapTruocScript';
@@ -390,10 +391,10 @@ export default function DashboardPage() {
 
           <div id="skills-search-empty" style={{ display: 'none', textAlign: 'center', padding: '32px 0', color: 'var(--t3)', fontSize: 14 }}>🔍 Không tìm thấy kỹ năng phù hợp.</div>
           <div className="sk-summary fx-fade-up" id="sk-summary" style={{ animationDelay: '.12s' }}></div>
-          {/* Ba hợp phần HSA — dựng bởi `dashboard.js::renderXp` sau khi tab
-              này được mở. Để TRỐNG ở đây là có chủ ý: khối chỉ có nghĩa khi đã
-              có dữ liệu, và tab nạp lười nên nó không tồn tại lúc trang tải. */}
-          <div className="sk-hopphan fx-fade-up" id="sk-hopphan" style={{ animationDelay: '.14s' }}></div>
+          {/* Ba hợp phần HSA. Component TỰ tải dữ liệu khi tab hiện ra
+              (IntersectionObserver), nên không đụng vào LCP của trang này —
+              màn chậm nhất của sản phẩm. Xem `BaHopPhan.tsx`. */}
+          <BaHopPhan />
           <div className="sk-grid" id="sk-grid">
             <div style={{ color: '#9CA3AF', fontSize: 14, padding: 24 }}>Đang tải...</div>
           </div>

@@ -177,13 +177,32 @@ function addChatbotMessage(text, isUser = false, imageData = null) {
 /**
  * Add Typing Indicator
  */
+/* Biểu tượng của ô "đang gõ" là `fa-robot`, CÙNG biểu tượng với mọi tin nhắn
+ * AI khác — ô này chính là một tin nhắn AI.
+ *
+ * ── HAI LẦN SỬA TRƯỚC ĐÓ (07/09/2026) ────────────────────────────────────
+ *
+ * Trước đây chỗ này là `fa-sparkles`: một biểu tượng bản PRO của Font Awesome,
+ * nên trên bộ Free đang nạp nó CHƯA TỪNG hiện (đo: 0×0px, `::before` rỗng,
+ * trong khi `fa-robot` cạnh đó vẽ bình thường).
+ *
+ * Bản vá đầu của tôi gọi hàm `Icon` toàn cục từ bộ SVG riêng của dự án.
+ * `ngu-canh-tro-ly.test.mjs` ĐỎ ngay: `LessonHsa` và `MockExam` nạp tệp này mà
+ * KHÔNG nạp `icons.js`, nên hàm ấy không tồn tại ở đó và biểu tượng lại biến
+ * mất lặng lẽ — đúng loại lỗi đang đi vá.
+ *
+ * Rồi bản thứ hai vẫn đỏ, vì lời giải thích tôi viết bằng chú thích HTML NẰM
+ * TRONG template string: bộ dò có bóc chú thích JS (`//`, `/* *\/`) nhưng
+ * không bóc `<!-- -->` trong chuỗi, nên nó vẫn đọc thấy tên hàm ấy. Chuyển
+ * lời giải thích ra đây thì bộ dò bóc đúng, và HTML gửi tới trình duyệt cũng
+ * gọn hơn. */
 function addChatbotTyping() {
     const messageEl = document.createElement('div');
     messageEl.className = 'chatbot-message chatbot-message-ai';
     messageEl.id = 'chatbot-typing-indicator';
     messageEl.innerHTML = `
         <div class="chatbot-message-avatar">
-            <i class="fas fa-sparkles"></i>
+            <i class="fas fa-robot"></i>
         </div>
         <div class="chatbot-message-content">
             <div class="chatbot-message-bubble">
