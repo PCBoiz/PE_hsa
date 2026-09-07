@@ -261,8 +261,22 @@ function DO_TRONG_TRANG(do_trang_thai) {
 
   const hien = (el) => {
     const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) return false;
+    /* `<= 1`, KHÔNG phải `< 1`.
+     *
+     * Lối giấu chữ cho trình đọc màn hình (`.sr-only`) dựng hộp ĐÚNG 1×1px —
+     * `1 < 1` là false, nên chữ ấy lọt qua bộ lọc và bị chấm tương phản. Đo
+     * 07/09/2026 trên trang chủ: nhãn `.sr-only` trong thanh tiến độ "Thử ba
+     * câu" bị báo 2.2:1, trong khi nó không hiện ra pixel nào.
+     *
+     * Báo oan ở đây đắt: người đọc báo cáo sẽ đi "sửa" một đoạn chữ vốn CỐ Ý
+     * bị giấu, và cách sửa dễ nhất là xoá nó — tức xoá đúng phần dành cho
+     * người khiếm thị. Một bộ đo a11y làm hỏng a11y. */
+    if (r.width <= 1 || r.height <= 1) return false;
     const cs = getComputedStyle(el);
+    /* Giấu bằng CẮT: `clip-path: inset(50%)` (lối mới) và `clip: rect(0…)`
+       (lối cũ) đều để hộp có kích thước thật nhưng không vẽ pixel nào. */
+    const cat = cs.clipPath || '';
+    if (cat.includes('inset(50%)') || /rect\(0px[, ]/.test(cs.clip || '')) return false;
     return cs.visibility !== 'hidden' && cs.display !== 'none'
       && parseFloat(cs.opacity) > 0.05;
   };

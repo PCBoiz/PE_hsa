@@ -43,7 +43,7 @@ export default async function ChamBaiPage({
         </p>
         <Link
           href={`/giang-day/bai-tap/${classId}`}
-          className="mt-6 inline-block text-body text-brand-ink underline"
+          className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline"
         >
           ← Về danh sách bài tập
         </Link>

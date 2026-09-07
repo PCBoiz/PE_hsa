@@ -1302,3 +1302,213 @@ html.no-js .reveal-on-scroll { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .thu-cau-nut, .thu-cau-tiep { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   "PHỤ HUYNH NHẬN ĐƯỢC GÌ" — khối bằng chứng của trang giới thiệu
+
+   Thêm 07/09/2026. Anh Sơn: "landing chán ngắt, trừ nút đăng nhập ra thì cả
+   đoạn kia vô nghĩa". Trang cũ toàn câu mô tả mà trung tâm nào cũng viết được;
+   khối này thay bằng thứ chỉ TopHSA có — chính tờ báo cáo phụ huynh sẽ nhận.
+
+   KHÔNG khai lại bảng màu ở đây. Cám dỗ là ép tờ báo cáo sáng như tờ giấy dù
+   trang nền tối, nhưng làm thế là dựng bản chép thứ hai của bộ token sáng
+   (`theme.css :root`) — và bản chép ấy sẽ trôi. Tờ giấy theo chủ đề của trang;
+   nếu sau này muốn nó luôn sáng thì cách đúng là `theme.css` mở ra một lớp
+   phạm vi, không phải chép màu vào đây.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ph-y-nghia {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: clamp(0.75rem, 0.5rem + 1vw, 1.25rem);
+  margin-block: clamp(1.25rem, 1rem + 1vw, 2rem);
+  padding: 0;
+  list-style: none;
+}
+
+/* MÀU CHỮ LẤY TỪ BẢNG CỦA TRANG NÀY, KHÔNG LẤY TỪ `theme.css`.
+ *
+ * Bẫy đã sập một lần ở đây: trang giới thiệu đặt `body.landing-body` chứ KHÔNG
+ * đặt `body.dark`, nên `var(--t2)` giải về bộ SÁNG (#4B4459) trong khi nền
+ * trang thì tối. Thẻ nào có nền trắng riêng (`.ph-y-nghia li`, tờ báo cáo) thì
+ * vẫn đúng; thẻ nào để nền trong suốt thì thành chữ xám đậm trên nền tối —
+ * đúng cái đã xảy ra với dòng cảnh báo bên dưới, và nó là dòng CAM KẾT RIÊNG
+ * TƯ, thứ bắt buộc phải đọc được.
+ *
+ * `auth.css` có bảng riêng cho nền tối (#E5E7EB thân bài, #F8FAFC tiêu đề),
+ * dùng đúng bảng ấy cho mọi thẻ KHÔNG có nền trắng riêng. */
+.ph-y-nghia li {
+  padding: clamp(0.875rem, 0.7rem + 0.6vw, 1.125rem);
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: var(--radius, 0.75rem);
+  /* Thẻ này CÓ nền trắng riêng nên token sáng ở đây là đúng. */
+  background: var(--card);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--t2);
+}
+
+.ph-y-nghia strong { display: block; color: var(--t1); margin-block-end: 0.25rem; }
+
+/* Nhãn "số liệu là mẫu" phải ĐỌC ĐƯỢC, không phải chú thích mờ ở góc: nó là
+   một lời cam kết về quyền riêng tư, không phải một dòng miễn trừ. */
+.ph-nhan-mau {
+  margin-block: 0 clamp(0.75rem, 0.6rem + 0.5vw, 1.25rem);
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid #F59E0B;
+  border-radius: 0 var(--radius, 0.5rem) var(--radius, 0.5rem) 0;
+  /* Nền ĐẶC, không phải alpha 10%: nền trong suốt để lộ nền trang tối phía
+     sau, và khi ấy không màu chữ nào vừa hợp nền sáng vừa hợp nền tối. */
+  background: #2A2115;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #F3E8D2;
+}
+
+.ph-nhan-mau strong { color: #FDE68A; }
+
+/* Khung "tờ giấy": cho tờ báo cáo một mép rõ ràng để người xem hiểu đây là một
+   TÀI LIỆU rời, không phải một phần của trang bán hàng. */
+.ph-khung-giay {
+  padding: clamp(0.75rem, 0.5rem + 1vw, 1.5rem);
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: var(--radius-lg, 1rem);
+  background: var(--card);
+  /* Bóng nhẹ theo một hướng — gợi tờ giấy đặt trên mặt bàn, không phải một
+     hộp phát sáng. Giữ nhẹ: trang này đã có nhiều hiệu ứng rồi. */
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.08);
+  /* Tờ báo cáo dựng bằng Tailwind của tầng React; nó tự lo bố cục bên trong.
+     Ở đây chỉ chặn tràn ngang cho khổ hẹp. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* ── "THỬ BA CÂU": thanh tiến độ + bảng kết quả theo hợp phần ──────────────
+   Thêm 07/09/2026 cùng bản viết lại. Ô cũ chỉ có MỘT câu, và anh Sơn nói đúng:
+   một câu chỉ chứng minh trang có nút bấm được, không chứng minh thứ sản phẩm
+   thật sự bán — làm xong thì biết mình lệch hợp phần nào.
+
+   Màu ở đây lấy từ bảng của `auth.css` (trang nền tối) chứ không lấy token của
+   `theme.css`: trang đặt `body.landing-body`, KHÔNG đặt `body.dark`, nên token
+   giải về bộ SÁNG và chữ sẽ chìm. Bẫy này đã sập một lần ở khối phụ huynh. */
+
+.thu-cau-buoc {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.thu-cau-buoc-o {
+  block-size: 0.25rem;
+  flex: 1;
+  border-radius: 999px;
+  background: rgba(226, 232, 255, 0.18);
+  transition: background-color .2s ease-out;
+}
+
+.thu-cau-buoc-o.dang-lam { background: #A78BFA; }
+.thu-cau-buoc-o.la-dung  { background: #34D399; }
+.thu-cau-buoc-o.la-sai   { background: #F87171; }
+
+@media (prefers-reduced-motion: reduce) {
+  .thu-cau-buoc-o { transition: none; }
+}
+
+.thu-cau-bang {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.25rem 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.thu-cau-hang {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid rgba(226, 232, 255, 0.14);
+  border-radius: 0.625rem;
+  background: rgba(226, 232, 255, 0.04);
+}
+
+/* Viền TRÁI dày mang nghĩa đúng/sai — thêm một kênh ngoài màu chữ, cho người
+   không phân biệt được màu. Chữ "Đúng"/"Chưa đúng" là kênh thứ ba. */
+.thu-cau-hang.la-dung { border-inline-start: 3px solid #34D399; }
+.thu-cau-hang.la-sai  { border-inline-start: 3px solid #F87171; }
+
+.thu-cau-hp-ten { font-size: 0.9375rem; color: #E5E7EB; }
+
+.thu-cau-hp-kq {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.thu-cau-hang.la-dung .thu-cau-hp-kq { color: #6EE7B7; }
+.thu-cau-hang.la-sai  .thu-cau-hp-kq { color: #FCA5A5; }
+
+/* Nút "Câu tiếp" khoá cho tới khi người dùng chọn một phương án. Trạng thái
+   khoá phải NHÌN THẤY được, không chỉ là `disabled` câm: nút trông bấm được mà
+   không phản ứng là lỗi khó chịu hơn cả nút mờ. */
+.thu-cau-tiep:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── KHỐI MINH BẠCH: "có thật" vs "sẽ không làm" ──────────────────────────
+   Thêm 07/09/2026, thay khối "Vì sao chọn …" vốn chứa ba lời khẳng định sai
+   (một giá "100% miễn phí" không tồn tại và hai lời chứng thực bịa).
+
+   Hai cột đặt CẠNH NHAU có chủ ý: đọc riêng cột trái là một danh sách tính
+   năng như mọi trang khác; đọc cùng cột phải mới thành một lời cam kết. Trên
+   khổ hẹp chúng xếp dọc, cột "có thật" LÊN TRƯỚC. */
+
+.mb-hai-cot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: clamp(1rem, 0.75rem + 1vw, 1.75rem);
+  margin-block: clamp(1.25rem, 1rem + 1vw, 2rem);
+  text-align: start;
+}
+
+.mb-cot {
+  padding: clamp(1rem, 0.8rem + 0.8vw, 1.5rem);
+  border: 1px solid rgba(226, 232, 255, 0.14);
+  border-radius: 0.875rem;
+  background: rgba(226, 232, 255, 0.04);
+}
+
+/* Viền trái mang nghĩa, kèm tiêu đề chữ — không dựa vào màu một mình. */
+.mb-co    { border-inline-start: 3px solid #34D399; }
+.mb-khong { border-inline-start: 3px solid #F59E0B; }
+
+.mb-tieu {
+  margin: 0 0 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #F8FAFC;
+}
+
+.mb-cot ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+
+.mb-cot li {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #D8DEEA;
+}
+
+.mb-cot strong { color: #F8FAFC; }
+
+.mb-co    li::marker { color: #34D399; }
+.mb-khong li::marker { color: #F59E0B; }

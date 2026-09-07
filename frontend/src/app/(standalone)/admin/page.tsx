@@ -51,7 +51,7 @@ export default async function SoanGiaoTrinhPage() {
       <main className="mx-auto max-w-3xl px-4 py-16">
         <h1 className="text-title text-ink">Chưa mở được khu soạn giáo trình</h1>
         <p className="mt-2 text-body text-ink-2">{me.message}</p>
-        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+        <Link href="/dashboard" className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline">
           ← Về trang của tôi
         </Link>
       </main>
@@ -68,7 +68,7 @@ export default async function SoanGiaoTrinhPage() {
           <b>Biên tập nội dung</b> hoặc <b>quản trị viên</b> để vào đây — nhờ quản trị viên
           đổi giúp nếu bạn phụ trách nội dung.
         </p>
-        <Link href="/dashboard" className="mt-6 inline-block text-body text-brand-ink underline">
+        <Link href="/dashboard" className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline">
           ← Về trang của tôi
         </Link>
       </main>
