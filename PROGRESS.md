@@ -64,6 +64,14 @@ khoá C5. `huong-dan.test.mjs` xác nhận mọi đường dẫn trong bài tr�
 thật (`/giang-day` nay là tuyến tĩnh). Mở trang ở 390px xem bài mới: đúng khuôn
 các bài cũ, không tràn.
 
+**Hiệu năng sau hai ngày thêm tính năng (bản production, CPU chậm 4×):** Trang
+của tôi LCP 2784ms · JS 432 kB · DOM 1160. Nghi có phình so với số ghi 07/09
+(329 kB) → dựng lại ĐÚNG bản 07/09 (`ad86dd9`) và đo cùng máy cùng cách: 431 kB,
+LCP 2660ms, DOM 1156. Tức hai ngày qua thêm đúng **1 kB JS và 4 nút DOM**; con
+số 329 kB ghi hôm 07/09 không tái tạo được trên chính commit ấy — không dùng
+nó làm mốc nữa. Mốc mới: 431 kB / ~2,7 s. LCP vẫn vượt 2,5 s như trước, chưa
+đụng (việc riêng, cần quyết định cắt gì ở tầng JS cũ).
+
 **Rà "hai đồng hồ" trong test:** sau lỗi thứ Hai 0h–7h ở `stats/tests.py`, quét
 mọi `now()` trong INSERT của tệp test: còn 5 chỗ (`surveys.created_at`,
 `lesson_progress.completed_at` ×2, `mock_attempts` ×2, `study_plans.generated_at`
