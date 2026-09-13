@@ -98,11 +98,16 @@ vào production) · B1 một lớp thật.
 view~~ · ~~nhập liên hệ phụ huynh~~ · ~~sinh lịch cả kỳ + ngày nghỉ~~ · ~~bảng
 "Việc hôm nay"~~ · ~~khoá liên hệ phụ huynh (C5)~~.
 
-Anh đã chọn, còn chưa làm: **rà luồng trợ giảng đầu-cuối** trên trình duyệt thật
-(tạo buổi → điểm danh → chấm bài; cần một tài khoản trợ giảng — production chưa
-có ai vai ấy, tạo trong giao dịch cuộn lại hoặc hỏi anh). Sau đó, HỎI trước: bộ
-nhập kết quả thi từ PDF (chờ B4) → T18 mức 2 (`zod` cho payload màn quản trị).
+~~Rà luồng trợ giảng đầu-cuối~~ (xong 14/09, vòng 6 — ba lỗi vá). Tiếp theo,
+HỎI trước: bộ nhập kết quả thi từ PDF (chờ B4) → T18 mức 2 (`zod` cho payload
+màn quản trị) → rà luồng HỌC VIÊN đầu-cuối cùng cách (tài khoản thử, chặn ghi).
 T40 (bộ đếm tần suất) nay chỉ còn là đặt `REDIS_URL` — mã đã sẵn.
+
+**Cách rà một vai trên trình duyệt thật mà không ghi production** (dùng lại):
+tạo tài khoản thử qua API quản trị (có nhật ký) → bỏ cờ mật khẩu tạm trên đúng
+id → mint token bằng `AccessToken.for_user` ghi ra tệp → Playwright với
+`context.route` chặn mọi lời gọi không-GET và ghi lại thân yêu cầu → xoá tài
+khoản bằng kịch bản tự liệt kê khoá ngoại còn trỏ tới id, đếm trước/sau.
 
 ## Bài học đắt nhất ba tuần qua
 
