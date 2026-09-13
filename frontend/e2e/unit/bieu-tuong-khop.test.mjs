@@ -21,7 +21,7 @@
  * Muốn đổi biểu tượng: sửa `icons.js` rồi chạy
  *     python scripts/sinh_bieu_tuong.py
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -89,6 +89,29 @@ for (const [ten, duongTsx] of tsx) {
 const nguon = readFileSync(TSX, 'utf8');
 check('tên sai thì trả null, không vẽ ô trống', /if \(!d\) return null;/.test(nguon));
 check('dùng currentColor, không màu ghi cứng', /stroke="currentColor"/.test(nguon));
+
+/* MỌI `<BieuTuong ten="…">` trong `src/` phải trỏ vào một tên CÓ trong bản
+   React. `null` khi tên sai đúng là không vẽ ô trống — nhưng vẫn là IM LẶNG:
+   14/09/2026 tôi thêm 7 hình vào `icons.js`, quên danh sách `CAN` của bộ sinh,
+   và 8 ô của trợ lý AI trống trơn trên bản dựng mà không một dòng lỗi. Kịch
+   bản đếm `svg` từng ô mới thấy; phép kiểm này thấy ở CI, trước khi dựng. */
+const tenDung = new Set();
+const quet = (d) => {
+  for (const t of readdirSync(d)) {
+    const q = join(d, t);
+    if (statSync(q).isDirectory()) quet(q);
+    else if (/\.tsx$/.test(t) && q !== TSX) {
+      const src = readFileSync(q, 'utf8');
+      for (const m of src.matchAll(/<BieuTuong\s[^>]*ten="([^"]+)"/g)) tenDung.add(m[1]);
+    }
+  }
+};
+quet(join(GOC, 'src'));
+check('có quét được chỗ dùng BieuTuong (bộ quét còn sống)', tenDung.size >= 10, `chỉ ${tenDung.size} tên`);
+for (const ten of [...tenDung].sort()) {
+  check(`<BieuTuong ten="${ten}"> có hình`, tsx.has(ten),
+    'thiếu trong bieuTuong.tsx — thêm vào CAN của scripts/sinh_bieu_tuong.py rồi sinh lại');
+}
 
 console.log(loi === 0
   ? `\nOK — ${tsx.size} biểu tượng khớp nguồn icons.js`

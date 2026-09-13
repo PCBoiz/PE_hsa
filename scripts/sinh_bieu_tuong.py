@@ -44,6 +44,11 @@ CAN = [
     'sparkles',
     # Tab 'Hướng dẫn' của khu Vận hành (07/09/2026).
     'book-open',
+    # Trợ lý AI bỏ hẳn Font Awesome (14/09/2026): 11 biểu tượng đều là SVG
+    # riêng. Bài học lúc làm: thêm hình vào `icons.js` mà quên danh sách này
+    # thì `BieuTuong` trả `null` — ô trống, không lỗi — đúng lỗi 07/09 ở dạng
+    # khác. Kịch bản rà trình duyệt đếm `svg` từng ô mới thấy.
+    'x', 'bot', 'trash-2', 'lightbulb', 'triangle-alert', 'square-pen', 'paperclip', 'arrow-up',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════

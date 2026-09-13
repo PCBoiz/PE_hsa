@@ -88,12 +88,38 @@ await ctx.addCookies([{name:'pe_at',value:the.access,domain:'localhost',path:'/'
 console.log('màn hình'.padEnd(20), 'LCP'.padStart(8), 'CLS'.padStart(7),
             'chặn'.padStart(7), 'JS(kB)'.padStart(8), 'req'.padStart(5), 'DOM'.padStart(6));
 console.log('─'.repeat(66));
+/* LÀM NÓNG trước khi đo (14/09/2026). `chromium.launch()` là một trình duyệt
+   LẠNH HOÀN TOÀN — tiến trình GPU, bộ đệm phông, JIT đều chưa có gì — và màn
+   ĐẦU TIÊN trong danh sách gánh trọn cái giá ấy: đo 5 lượt liền, "Trang của
+   tôi" cho FCP 1,8 s ở lượt đầu và 0,4 s ở các lượt sau, CÙNG một bản dựng.
+   Người dùng thật không mở trang trong trình duyệt vừa khởi động — Chrome của
+   họ đã chạy sẵn. Nên mở một trang không cần thẻ trước để trình duyệt ấm lên,
+   rồi mới đo. Không có bước này thì màn xếp đầu bảng LUÔN xấu nhất, và tôi đã
+   đi tối ưu theo con số ấy suốt hai vòng. */
+{
+  const nong = await ctx.newPage();
+  await nong.goto('http://localhost:3100/login', { waitUntil: 'networkidle' });
+  await nong.close();
+}
+
+/* MỖI MÀN ĐO 3 LƯỢT, LẤY TRUNG VỊ. Một lượt là một mẫu; bảng 07/09 phải ghi
+   tay "2740 / 2824 / 2972" vì tệp này chỉ chạy một lượt. Trung vị chứ không
+   trung bình: một lượt trượt vì rác thu gom hay ổ đĩa thì không kéo cả số. */
+const SO_LUOT = 3;
 const ra = [];
 for (const [ten, url] of MAN) {
+  const cacLuot = [];
+  for (let luot = 0; luot < SO_LUOT; luot += 1) {
   const p = await ctx.newPage();
   const cdp = await p.context().newCDPSession(p);
   await cdp.send('Network.enable');
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });   // máy yếu
+  /* TẮT BỘ ĐỆM cho từng lượt đo. Ba lượt dùng CHUNG một `context`, nên lượt 2
+     và 3 sẽ đọc JS/CSS/phông từ bộ đệm — cột `JS(kB)` tụt từ 432 xuống 222 và
+     LCP đẹp lên, nhưng đó là số của LẦN GHÉ THỨ HAI, không phải của người mở
+     lần đầu. Ấm trình duyệt thì được (người dùng thật có Chrome đang chạy);
+     ấm bộ đệm của chính trang thì không. */
+  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
 
   let byteJs = 0, soReq = 0;
   p.on('response', async (r) => {
@@ -114,7 +140,7 @@ for (const [ten, url] of MAN) {
   if (p.url().includes('/login')) {
     console.log(ten.padEnd(20), 'BỎ QUA — rơi về /login (thẻ hết hạn?):', p.url());
     await p.close();
-    continue;
+    break;
   }
 
   const d = await p.evaluate(() => new Promise((res) => {
@@ -132,11 +158,18 @@ for (const [ten, url] of MAN) {
     }), 400);
   }));
 
-  ra.push({ ten, url, ...d, js: Math.round(byteJs / 1024), req: soReq });
-  console.log(ten.padEnd(20), (d.lcp + 'ms').padStart(8), String(d.cls).padStart(7),
-              (d.chan + 'ms').padStart(7), String(Math.round(byteJs/1024)).padStart(8),
-              String(soReq).padStart(5), String(d.dom).padStart(6));
+  cacLuot.push({ ...d, js: Math.round(byteJs / 1024), req: soReq });
   await p.close();
+  }
+  if (!cacLuot.length) continue;
+  // Trung vị theo LCP; các cột khác lấy của đúng lượt ấy để bảng là MỘT lượt thật.
+  cacLuot.sort((a, b) => a.lcp - b.lcp);
+  const d = cacLuot[Math.floor(cacLuot.length / 2)];
+  ra.push({ ten, url, ...d, cacLcp: cacLuot.map((x) => x.lcp) });
+  console.log(ten.padEnd(20), (d.lcp + 'ms').padStart(8), String(d.cls).padStart(7),
+              (d.chan + 'ms').padStart(7), String(d.js).padStart(8),
+              String(d.req).padStart(5), String(d.dom).padStart(6),
+              '  (' + cacLuot.map((x) => x.lcp).join(' / ') + ')');
 }
 await b.close();
 

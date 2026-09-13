@@ -10,37 +10,37 @@ const W = () => window as any;
 export default function Chatbot() {
   return (
     <>
-      {/* Font Awesome — component này TỰ nạp, không trông chờ trang cha.
+      {/* KHÔNG còn Font Awesome ở đây (14/09/2026).
         *
-        * ── VÌ SAO (hồi quy do chính tôi gây ra, 07/09/2026) ──────────────────
+        * ── LỊCH SỬ NGẮN ─────────────────────────────────────────────────────
         *
-        * Sáng nay tôi gỡ Font Awesome khỏi `(base)/layout.tsx` để tiết kiệm
-        * 100kB, sau khi grep và kết luận "0 lần dùng class `fa-`". Kết luận ấy
-        * SAI: chính tệp này dùng 10 biểu tượng `fa-`, và `chatbot.js` dùng thêm
-        * 4. Đo sau đó trên `/dashboard`: 12 thẻ `<i class="fa-*">` hiện ở
-        * **0×0px**, `::before` rỗng — trợ lý AI mất sạch biểu tượng, và bản ấy
-        * đã lên production.
+        * 07/09 tôi gỡ Font Awesome khỏi `(base)/layout.tsx` (100 kB CSS, "0 lần
+        * dùng `fa-`") — kết luận sai, 12 biểu tượng của trợ lý AI hiện 0×0px
+        * trên production. Vá cùng ngày bằng cách cho component này TỰ nạp, và
+        * ghi rõ cái giá: `/dashboard` nhận lại 100 kB, cách đúng là chuyển 11
+        * biểu tượng sang bộ SVG riêng.
         *
-        * Vì sao tự nạp chứ không trả Font Awesome về layout: chatbot được gắn ở
-        * BỐN nơi (`/dashboard`, `courses/[courseId]`, `LessonHsa`, `MockExam`).
-        * Ba nơi kia đã tự nạp sẵn, nên chỉ `/dashboard` hỏng. Nếu vá bằng cách
-        * sửa layout thì nơi gắn thứ NĂM sẽ lại hỏng y hệt, và lại không ai
-        * biết. Đặt lời nạp cạnh chỗ dùng thì hai thứ không thể rời nhau.
+        * 14/09 mổ xẻ LCP Trang của tôi: ở lượt lạnh, tệp CSS ấy tải từ cdnjs
+        * mất 2,9 s và LCP là 4,7 s; long task = 0 ms — tức không phải mã chạy
+        * chậm, mà là một tài nguyên ngoài miền chen vào đường vẽ. Đây là lúc
+        * làm "việc riêng" hôm ấy.
         *
-        * Cái giá: `/dashboard` nhận lại 100kB CSS, tức mất phần lớn phần tối ưu
-        * sáng nay. Nói thẳng ra đây thay vì giấu. Cách đúng để lấy lại là
-        * chuyển 11 biểu tượng này sang bộ SVG riêng của dự án (`icons.js` có 45
-        * biểu tượng; 4 trong 11 đã có sẵn: sparkles, pencil, map, user) — việc
-        * riêng, không làm chen vào lúc đang vá hồi quy.
+        * ── NAY ──────────────────────────────────────────────────────────────
         *
-        * `e2e/unit/font-awesome-tu-nap.test.mjs` canh: tệp .tsx nào dùng `fa-`
-        * thì phải tự nạp Font Awesome. Đó là phép kiểm mà sáng nay tôi không
-        * có, nên không có gì chặn tôi lại. */}
-      <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      />
+        * Mọi biểu tượng là `BieuTuong` (SVG inline, sinh từ `icons.js`, nhận
+        * `currentColor` nên đổi màu theo nút khi rê chuột — Font Awesome cũng
+        * thế, nhưng phải tải 100 kB rồi thêm một phông woff2 mới vẽ được).
+        * `chatbot.js` (tầng cũ) vẽ tin nhắn lúc chạy và cũng cần hai hình
+        * bot/user: nó KHÔNG nạp `icons.js` ở mọi trang có gắn chatbot, nên thay
+        * vì trông vào global `Icon`, nó nhân bản SVG từ ô `#chatbot-bieu-tuong`
+        * ẩn dưới đây — một nguồn hình, hai tầng cùng đọc.
+        *
+        * `e2e/unit/font-awesome-tu-nap.test.mjs` vẫn canh: tệp .tsx nào dùng
+        * `fa-` thì phải tự nạp; tệp này nay không dùng nên không nạp. */}
+      <div id="chatbot-bieu-tuong" hidden aria-hidden="true">
+        <span data-ten="bot"><BieuTuong ten="bot" co={16} /></span>
+        <span data-ten="user"><BieuTuong ten="user" co={16} /></span>
+      </div>
 
       {/* Floating Chat Button */}
       <button id="chatbot-toggle" className="chatbot-floating-btn" aria-label="Mở trợ lý AI">
@@ -59,7 +59,7 @@ export default function Chatbot() {
         <div className="chatbot-header">
           <div className="chatbot-header-left">
             <div className="chatbot-avatar">
-              <i className="fas fa-robot"></i>
+              <BieuTuong ten="bot" co={22} />
             </div>
             <div className="chatbot-header-text">
               <h3>Trợ lý HSA</h3>
@@ -67,7 +67,7 @@ export default function Chatbot() {
             </div>
           </div>
           <button id="chatbot-close" className="chatbot-close-btn" aria-label="Đóng chat">
-            <i className="fas fa-times"></i>
+            <BieuTuong ten="x" co={18} />
           </button>
         </div>
 
@@ -99,7 +99,7 @@ export default function Chatbot() {
                 không có URL nào để tối ưu, và cũng không đi qua mạng. */}
             <img id="chatbot-preview-img" alt="Preview" />
             <button className="chatbot-preview-remove" onClick={() => W().removeChatbotImage()} aria-label="Xóa hình ảnh">
-              <i className="fas fa-trash"></i>
+              <BieuTuong ten="trash-2" co={14} />
             </button>
           </div>
         </div>
@@ -111,26 +111,26 @@ export default function Chatbot() {
               vào câu hỏi khi người dùng đứng ở trang bài học. */}
           <div className="chatbot-quick-actions">
             <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Giải thích giúp mình phần lý thuyết của bài này, cho ví dụ dễ hiểu.')}>
-              <i className="fas fa-lightbulb"></i>
+              <BieuTuong ten="lightbulb" co={13} />
               <span>Giảng lại</span>
             </button>
             <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Bài này hay có bẫy gì trong đề HSA? Mẹo làm nhanh là gì?')}>
-              <i className="fas fa-triangle-exclamation"></i>
+              <BieuTuong ten="triangle-alert" co={13} />
               <span>Bẫy &amp; mẹo</span>
             </button>
             <button className="chatbot-quick-btn" onClick={() => W().quickChatbotAsk('Cho mình 3 câu luyện thêm dạng này, kèm đáp án và lời giải.')}>
-              <i className="fas fa-pen-to-square"></i>
+              <BieuTuong ten="square-pen" co={13} />
               <span>Luyện thêm</span>
             </button>
             <button className="chatbot-quick-btn" onClick={() => W().generateChatbotRoadmap()}>
-              <i className="fas fa-map"></i>
+              <BieuTuong ten="map" co={13} />
               <span>Lộ trình</span>
             </button>
           </div>
 
           <div className="chatbot-input-box">
             <label htmlFor="chatbot-image-upload" className="chatbot-attach-btn" title="Đính kèm hình ảnh">
-              <i className="fas fa-paperclip"></i>
+              <BieuTuong ten="paperclip" co={16} />
               <input type="file" id="chatbot-image-upload" className="chatbot-hidden" accept="image/*" title="Chọn hình ảnh" />
             </label>
             <input
@@ -141,7 +141,7 @@ export default function Chatbot() {
               autoComplete="off"
             />
             <button id="chatbot-send-btn" className="chatbot-send-btn" aria-label="Gửi">
-              <i className="fas fa-arrow-up"></i>
+              <BieuTuong ten="arrow-up" co={16} />
             </button>
           </div>
         </div>

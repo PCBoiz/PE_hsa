@@ -283,9 +283,13 @@ export default async function NhatKyPage({
       )}
 
       {pages > 1 && (
+        /* `min-h-11` (44px) cho hai lối chuyển trang: chữ chỉ cao 20px, mà đây
+           là đích duy nhất để đi tiếp trong một bảng dài. Bộ đo giao diện bắt
+           được nó ngày 14/09 — trước đó nhật ký chưa bao giờ quá MỘT trang nên
+           khối này không hiện, và không thước nào chạm tới. */
         <div className="mt-4 flex flex-wrap items-center gap-3 text-small">
           {page > 1 && (
-            <Link href={pageHref(page - 1)} className="text-brand-ink underline">
+            <Link href={pageHref(page - 1)} className="inline-flex min-h-11 items-center text-brand-ink underline">
               ← Trang trước
             </Link>
           )}
@@ -293,7 +297,7 @@ export default async function NhatKyPage({
             Trang {page} / {pages}
           </span>
           {page < pages && (
-            <Link href={pageHref(page + 1)} className="text-brand-ink underline">
+            <Link href={pageHref(page + 1)} className="inline-flex min-h-11 items-center text-brand-ink underline">
               Trang sau →
             </Link>
           )}

@@ -28,8 +28,16 @@ import './tailwind.css';
  * phải sở thích. Bộ này vốn đã có mặt ở 104 chỗ trong CSS cũ.
  * ══════════════════════════════════════════════════════════════════════════ */
 
+/* `latin-ext` KHÔNG thừa (đo 14/09/2026). Bộ `vietnamese` của Google KHÔNG
+ * phải bộ duy nhất chứa đ/ă/ơ/ư/ĩ/ũ: dải `latin-ext` (U+0100–02BA) cũng chứa
+ * chúng, và trình duyệt thử các @font-face theo thứ tự NGƯỢC khai báo — nên
+ * với "đ" nó gặp `latin-ext` trước `vietnamese`, tải tệp ấy và dùng luôn.
+ * Không khai ở đây thì `next/font` không tải trước: 5 tệp (mỗi trọng lượng
+ * một) chỉ được phát hiện lúc dựng chữ, về ở giây 0,8–1,9, và MỖI tệp về là
+ * một lượt dàn trang lại toàn bộ — trace Trang của tôi: Layout 1.352 ms sau
+ * FCP, phần lớn nhất của cả lượt mở. Khai vào thì cả 5 về cùng lô tải trước. */
 const body = Be_Vietnam_Pro({
-  subsets: ['vietnamese', 'latin'],
+  subsets: ['vietnamese', 'latin', 'latin-ext'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-body',
   display: 'swap',

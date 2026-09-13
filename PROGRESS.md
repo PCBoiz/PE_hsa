@@ -57,6 +57,64 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 11 · LCP Trang của tôi 2,7 s → dưới ngưỡng, và thước đo tự nó đang nói dối
+
+**Việc anh chọn:** "Giảm LCP Trang của tôi (2,7 s → <2,5 s)". Đo trước khi sửa
+gì (bản production, CPU chậm 4×, 5 lượt): **444 / 504 / 1.740 / 1.824 / 4.696 ms**.
+Chênh 10 lần giữa các lượt — con số 2,7 s của bảng 07/09 là MỘT mẫu, và nó rơi
+đúng vào lượt đầu tiên của một trình duyệt vừa khởi động.
+
+**Lỗi 1 — Font Awesome vẫn nằm trên đường vẽ.** Lượt 4.696 ms: `all.min.css`
+của cdnjs bắt đầu ở 90 ms, xong ở **2.978 ms**; long task = 0 ms — không phải
+mã chạy chậm, mà một tài nguyên ngoài miền chen vào. 07/09 tôi đã gỡ tệp này
+rồi phải trả lại (12 biểu tượng trợ lý AI hiện 0×0px), và ghi trong mã: "cách
+đúng là chuyển 11 biểu tượng sang bộ SVG riêng — việc riêng". Nay làm việc ấy:
+7 hình mới vào `icons.js` (bot, trash-2, lightbulb, triangle-alert, square-pen,
+paperclip, arrow-up), `Chatbot.tsx` dùng `BieuTuong`, `chatbot.js` (vẽ tin nhắn
+lúc chạy) nhân bản SVG từ ô ẩn `#chatbot-bieu-tuong` thay vì trông vào global
+`Icon` — vì `icons.js` KHÔNG được nạp ở cả bốn trang có gắn chatbot. Trần tầng
+cũ 7343 → 7354 (+11), ghi lý do theo đúng luật ngoại lệ "vá lỗi trong tệp đã có".
+Rà trình duyệt sáng+tối: 11 ô SVG đều có kích thước thật, 0 thẻ `<i>` sót, 0 lỗi
+console, 0 link cdnjs. LCP 5 lượt sau khi gỡ: 1.168 / 1.212 / 1.748 / 2.452 / 2.548.
+
+**Lỗi 2 — `latin-ext` bị bỏ ra khỏi `next/font` nên 5 tệp phông về muộn.**
+Bộ `vietnamese` KHÔNG phải bộ duy nhất chứa đ/ă/ơ/ư: dải `latin-ext`
+(U+0100–02BA) cũng chứa chúng, và trình duyệt thử `@font-face` theo thứ tự
+NGƯỢC khai báo — gặp `latin-ext` trước, tải tệp ấy. Không khai trong
+`layout.tsx` thì `next/font` không tải trước: 5 tệp (mỗi trọng lượng một) chỉ
+lộ ra lúc dựng chữ, về ở giây 0,8–1,9, và mỗi tệp về là một lượt dàn trang
+lại. Trace: **Layout 1.352 ms** sau FCP, phần lớn nhất của cả lượt mở; trong
+đó `InlineNode::ShapeTextIncludingFirstLine` 166+163+81+64+37+29 ms. Thêm
+`'latin-ext'` vào `subsets` → 16 tệp phông về trong 45 ms đầu cùng một lô;
+Layout trước FCP 102 → 17 ms. (Kiểm giả thuyết: chặn hết woff2 thì Layout
+906 ms — tức đúng là dựng chữ, không phải DOM to; đổi `font-family` sang Arial
+lúc chạy cũng tốn 1.203 ms, xác nhận cùng một cơ chế.)
+
+**Lỗi 3 — chính `scripts/do_hieu_nang.mjs` đo sai, và đây mới là phát hiện
+đáng giá nhất.** Nó mở `chromium.launch()` rồi đo NGAY màn đầu danh sách, nên
+"Trang của tôi" (xếp đầu) gánh trọn cái giá khởi động: FCP 1,8 s ở lượt đầu,
+0,4 s ở các lượt sau trên CÙNG một bản dựng. Và nó chỉ chạy MỘT lượt mỗi màn —
+bảng 07/09 phải ghi tay ba con số. Sửa: mở `/login` một lượt cho trình duyệt
+ấm, đo **3 lượt lấy TRUNG VỊ** và in cả ba số vào bảng, `Network.setCacheDisabled`
+mỗi lượt (không có nó thì lượt 2–3 đọc bộ đệm, cột JS tụt 432 → 222 kB và số
+đẹp lên — đó là số của lần ghé thứ hai). Thẻ hết hạn giữa chừng nay `break`
+chứ không `continue`, để không trộn lượt hỏng vào trung vị.
+
+**Sau tất cả (3 lượt liên tiếp, mỗi lượt trung vị của 3):** Trang của tôi
+**2.024 / 2.412 / 648 ms** — dưới 2.500 ms cả ba lần; năm màn còn lại đều đạt;
+"không màn nào vượt ngưỡng". JS vẫn 432 kB, DOM 1.075.
+
+**Còn lại, chưa làm:** mốc nặng nhất giờ là chuỗi khởi động tầng cũ —
+React hydrate xong ≈ 1,8–2,2 s → `LegacyScripts` mới chèn 7 tệp JS →
+lời gọi API đầu tiên ở 1,8–2,1 s → thẻ "Học tiếp" (phần tử LCP ở các lượt
+chậm) hiện ở 2,1–2,5 s. Gỡ được thì LCP về hẳn dưới 1 s, nhưng nó là đổi
+đường nạp của cả tầng cũ — hỏi anh trước.
+
+**Kèm:** bộ đo giao diện bắt một vùng chạm 76×20 px ("Trang sau →" ở Nhật ký) —
+nó chỉ hiện khi nhật ký quá một trang, mà tới hôm nay mới đủ dòng. Đã cho
+`min-h-11`. Cổng chất lượng: 22 trang × 2 khổ = 0/0/0/0, eslint · tsc · 24/24
+unit xanh.
+
 ## 14/09/2026 — VÒNG 10b · Link báo cáo phụ huynh vào Nhật ký (lỗ hổng thấy khi rà vòng 10)
 
 **Lỗ hổng:** phát hành / thu hồi chìa công khai tới tờ báo cáo của một em và

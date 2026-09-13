@@ -76,7 +76,12 @@ const TRAN_TEP = 13;
 // 13/09/2026: 7337 → 7343 (+6). VÁ LỖI trong tệp đã có (ngoại lệ ở trên):
 // `main.js::saveSettings` không hỏi `r.ok`, nên máy chủ từ chối (số Zalo phụ
 // huynh sai dạng) mà màn hình vẫn báo "Đã lưu thay đổi!".
-const TRAN_DONG_MA = 7343;
+// 14/09/2026: 7343 → 7354 (+11). VÁ LỖI hiệu năng trong tệp đã có: trợ lý AI
+// bỏ Font Awesome (100 kB CSS từ cdnjs — ở lượt lạnh tải 2,9 s và kéo LCP
+// Trang của tôi lên 4,7 s). `icons.js` +7 hình (bot, trash-2, lightbulb,
+// triangle-alert, square-pen, paperclip, arrow-up); `chatbot.js` +4 dòng nhân
+// bản SVG từ ô ẩn của `Chatbot.tsx` thay cho `<i class="fa-…">`.
+const TRAN_DONG_MA = 7354;
 
 let failures = 0;
 function check(name, cond, them) {

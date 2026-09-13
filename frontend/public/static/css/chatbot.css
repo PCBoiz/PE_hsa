@@ -419,8 +419,10 @@
     border-color: #2563eb;
 }
 
-.chatbot-quick-btn i {
-    font-size: 11px;
+.chatbot-quick-btn svg,
+.chatbot-message-avatar svg,
+.chatbot-avatar svg {
+    flex-shrink: 0;
 }
 
 /* Input Box */

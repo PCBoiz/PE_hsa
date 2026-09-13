@@ -137,6 +137,16 @@ function generateChatbotRoadmap() {
     }
 }
 
+/* Hình bot/user cho tin nhắn vẽ lúc chạy. Lấy từ ô ẩn `#chatbot-bieu-tuong`
+ * mà `Chatbot.tsx` dựng bằng `BieuTuong` — KHÔNG trông vào global `Icon` của
+ * `icons.js`, vì tệp ấy không được nạp ở mọi trang có gắn chatbot (14/09/2026,
+ * thay Font Awesome). Không có ô thì trả rỗng chứ không ném lỗi: tin nhắn vẫn
+ * hiện, chỉ thiếu hình. */
+function bieuTuongChat(ten) {
+    var o = document.querySelector('#chatbot-bieu-tuong [data-ten="' + ten + '"]');
+    return o ? o.innerHTML : '';
+}
+
 /**
  * Add Message to Chat
  */
@@ -147,7 +157,7 @@ function addChatbotMessage(text, isUser = false, imageData = null) {
     if (!isUser) {
         messageEl.innerHTML = `
             <div class="chatbot-message-avatar">
-                <i class="fas fa-robot"></i>
+                ${bieuTuongChat('bot')}
             </div>
             <div class="chatbot-message-content">
                 <div class="chatbot-message-bubble">${escapeHtml(text)}</div>
@@ -165,7 +175,7 @@ function addChatbotMessage(text, isUser = false, imageData = null) {
                 ${contentHtml}
             </div>
             <div class="chatbot-message-avatar">
-                <i class="fas fa-user"></i>
+                ${bieuTuongChat('user')}
             </div>
         `;
     }
@@ -202,7 +212,7 @@ function addChatbotTyping() {
     messageEl.id = 'chatbot-typing-indicator';
     messageEl.innerHTML = `
         <div class="chatbot-message-avatar">
-            <i class="fas fa-robot"></i>
+            ${bieuTuongChat('bot')}
         </div>
         <div class="chatbot-message-content">
             <div class="chatbot-message-bubble">
@@ -406,7 +416,7 @@ async function sendChatbotMessage() {
         messageEl.className = 'chatbot-message chatbot-message-ai';
         messageEl.innerHTML = `
             <div class="chatbot-message-avatar">
-                <i class="fas fa-robot"></i>
+                ${bieuTuongChat('bot')}
             </div>
             <div class="chatbot-message-content">
                 <div class="chatbot-message-bubble">${formatted}</div>
