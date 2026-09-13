@@ -451,8 +451,11 @@ def test_gui_ca_lop_ghi_nhat_ky_MOT_dong_cho_ca_luot(lop, oa_gia):
     không phải mỗi em một dòng (lớp 30 em là 30 dòng che mọi việc khác)."""
     kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
     assert kq.status_code == 200, kq.data
+    # `actor_id` chứ không chỉ `action`: `admin_audit` dùng chung với production,
+    # dòng thật KHÔNG cuộn lại — lọc theo action thôi là phép kiểm xanh hôm nay
+    # và đỏ ngay lần đầu có người bấm "gửi cả lớp" thật (xem tests_parent_link).
     ds = q('SELECT actor_id, target_id, target_label, summary, detail FROM admin_audit '
-           "WHERE action='parent_report.send_all'")
+           "WHERE action='parent_report.send_all' AND actor_id=%s", (lop['gv'].id,))
     assert len(ds) == 1, ds
     d = ds[0]
     assert d['actor_id'] == lop['gv'].id and d['target_id'] == str(lop['id'])

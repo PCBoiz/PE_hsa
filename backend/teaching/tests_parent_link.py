@@ -313,15 +313,21 @@ def test_danh_sach_khong_hien_chia_het_han(canh):
 # Trước 14/09 không dòng nào vào `admin_audit`: ai phát hành, thu hồi lúc nào
 # chỉ mở SQL mới biết. Ba phép kiểm dưới đây đỏ trên mã cũ.
 
-def _nhat_ky(action):
+def _nhat_ky(action, ai):
+    # LỌC THEO NGƯỜI THỰC HIỆN. `admin_audit` là bảng THẬT, dùng chung với
+    # production — nó đã có sẵn dòng `parent_link.create` do lượt rà 14/09 để
+    # lại, và những dòng ấy không cuộn lại theo giao dịch của phép kiểm. Bản
+    # đầu của ba phép kiểm này chỉ lọc theo `action` nên xanh khi chạy riêng
+    # tệp và ĐỎ trong cả bộ (2 lỗi/537). Người thực hiện là tài khoản do
+    # `canh` dựng trong chính giao dịch này, nên id ấy không đụng ai.
     return q('SELECT actor_id, target_type, target_id, target_label, summary, detail '
-             'FROM admin_audit WHERE action=%s ORDER BY id', (action,))
+             'FROM admin_audit WHERE action=%s AND actor_id=%s ORDER BY id', (action, ai.id))
 
 
 @pytest.mark.django_db
 def test_phat_hanh_chia_ghi_nhat_ky_nhung_KHONG_ghi_token(canh):
     token = _cap(canh)
-    ds = _nhat_ky('parent_link.create')
+    ds = _nhat_ky('parent_link.create', canh['gv'])
     assert len(ds) == 1, ds
     d = ds[0]
     assert d['actor_id'] == canh['gv'].id
@@ -338,7 +344,7 @@ def test_thu_hoi_ghi_nhat_ky_MOT_lan_du_bam_hai_lan(canh):
     for _ in range(2):
         assert _goi(ParentReportLinkRevokeView, 'post', {}, ai=canh['gv'],
                     link_id=link['id']).status_code == 200
-    ds = _nhat_ky('parent_link.revoke')
+    ds = _nhat_ky('parent_link.revoke', canh['gv'])
     assert len(ds) == 1, ds
     assert ds[0]['target_id'] == str(canh['em'].id)
     assert json.loads(ds[0]['detail'])['link_id'] == link['id'] if isinstance(ds[0]['detail'], str) \

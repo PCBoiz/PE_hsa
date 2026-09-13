@@ -57,6 +57,24 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 11b · Hai phép kiểm mới xanh khi chạy riêng, ĐỎ trong cả bộ
+
+Chạy trọn `pytest`: **535 đạt, 2 đỏ** — đúng hai phép kiểm nhật ký link phụ
+huynh vừa viết ở vòng 10b, mà chạy riêng tệp thì 43/43 xanh. Nguyên nhân:
+chúng đếm `SELECT … FROM admin_audit WHERE action='parent_link.create'` rồi
+đòi đúng MỘT dòng — nhưng `admin_audit` là bảng THẬT dùng chung với
+production, và lượt rà bằng trình duyệt cùng ngày đã để lại hai dòng thật ở
+đó; dòng thật không cuộn lại theo giao dịch của phép kiểm. Lúc tôi chạy hai
+tệp ấy (05:0x) chưa có dòng nào nên nó xanh — tức phép kiểm phụ thuộc vào
+việc hôm ấy tôi chưa bấm gì, không phải vào mã.
+
+Sửa: lọc thêm `actor_id` = tài khoản do chính phép kiểm dựng trong giao dịch
+của nó. Ba chỗ ở `tests_parent_link.py`, một chỗ ở `tests_parent_send.py` —
+chỗ cuối chưa từng đỏ, và sẽ đỏ đúng lần đầu có người bấm "gửi cả lớp" thật,
+nên vá luôn thay vì đợi. Bài học ghi vào chính chú thích của hai tệp: phép
+kiểm đọc bảng dùng chung phải LỌC VỀ dữ liệu của chính nó, không được đếm
+tổng.
+
 ## 14/09/2026 — VÒNG 11 · LCP Trang của tôi 2,7 s → dưới ngưỡng, và thước đo tự nó đang nói dối
 
 **Việc anh chọn:** "Giảm LCP Trang của tôi (2,7 s → <2,5 s)". Đo trước khi sửa
