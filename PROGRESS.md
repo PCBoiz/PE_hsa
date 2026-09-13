@@ -1,4 +1,52 @@
-# PROGRESS — nhật ký vòng lặp pe_hsa
+# Nhật ký — pe_hsa
+
+**Đọc tệp này trước khi bắt tay vào việc**, đừng suy lại từ đầu từ mã nguồn.
+Sổ này KHÔNG chép lại `git log` — git đã ghi từng thay đổi và lý do rồi. Sổ giữ
+đúng phần git không giữ được: trạng thái bắc qua nhiều phiên, việc nằm ngoài
+kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
+
+Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
+hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
+lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
+
+Ba tệp anh em: `docs/VIEC_CUA_ANH.md` (việc chỉ anh Sơn làm được — một bảng ở
+đầu) · `TODO.md` (việc của tôi) · `BAO-CAO-TRANG-THAI.md` (số đo tự sinh, chỉ đo
+không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc tệp ấy đầu tiên).
+
+## Lệnh đang hiệu lực của anh Sơn
+
+- Chỉ làm trên `D:\pe_hsa` (`PCBoiz/PE_hsa`). Đọc dự án khác để học cách làm
+  thì được (13/09: `D:\Dự án cô Giang`), **không đụng gì bên ấy**.
+- `.env` không bao giờ commit — kiểm `git diff --cached --name-only | grep -i "\.env$"` trước mỗi commit.
+- Neon là production có học viên thật: `SELECT` thoải mái; **không
+  INSERT/UPDATE/DELETE nếu anh không gật từng lần**; DDL chỉ dạng cộng thêm.
+  Không bao giờ `SET` gì (pgbouncer, phiên rò sang khách khác).
+- `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
+- Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
+- Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
+- **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
+- Kênh gửi phụ huynh: **email** (chốt 07/09); chưa gửi phụ huynh thật cho tới
+  khi có địa chỉ @tophsa.vn. Zalo OA hoãn (cần giấy phép kinh doanh).
+- Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
+  — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
+
+## Trạng thái ngay lúc này — 13/09/2026
+
+- **Production Render**: sống nhưng ngủ đông; thức dậy mất **84,5 s** (đo 21:30).
+  Workflow giữ ấm trên GitHub **không có tác dụng** — GitHub chạy nó 3–5 giờ/lần
+  và 8/8 lượt thất bại. Đã sửa cho đúng vai "đồng hồ sức khoẻ". Giữ ấm thật cần
+  anh Sơn làm A1 trong `VIEC_CUA_ANH.md`.
+- **CSDL**: 5 tài khoản (đã xoá e2e), 1 lớp, 1 đợt, 4 buổi, 6 lượt điểm danh —
+  dữ liệu ERP đầu tiên, tạo 07/09 có duyệt. 0 em có liên lạc phụ huynh.
+- **Cổng chất lượng lần cuối (07/09)**: 453/453 pytest · giao diện 21 trang × 2
+  khổ × 2 bộ màu = 0/0/0/0 · build/eslint/tsc/ruff sạch.
+- **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
+  `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
+- **Nhánh**: `master` = `erp` = `ad86dd9`. Không commit mới từ 07/09 tới 13/09.
+
+<!-- MỚI NHẤT -->
+
+# Lịch sử 24/08 → 07/09/2026 — thứ tự thời gian — nhật ký vòng lặp pe_hsa
 
 Đọc tệp này để biết đang ở đâu. Backlog: `TODO.md`. Tiêu chuẩn: `RULES.md`.
 Ghi lại sau **mỗi** task, không phải sau mỗi chặng.

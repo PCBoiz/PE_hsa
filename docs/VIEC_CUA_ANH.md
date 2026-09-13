@@ -1,61 +1,42 @@
 # Việc của anh — pe_hsa
 
-Những việc **chỉ anh làm được**: cần khoá bí mật, cần bảng điều khiển Render /
-Vercel, cần quyết định sản phẩm, hoặc cần hỏi TopHSA. Mọi thứ khác nằm ở
-`TODO.md` và tôi tự làm.
+*Cập nhật 13/09/2026. Đây là **chỗ duy nhất** ghi việc cần anh làm — tôi không
+rải câu hỏi ra các câu trả lời nữa. Xếp theo **mức chặn**, không theo thời gian.
+Mỗi dòng ghi: mất bao lâu · vì sao cần anh · làm xong thì mở khoá gì. Lịch sử
+từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 
-*Gộp lại thành MỘT tệp ngày 05/09/2026. Trước đó việc của anh nằm rải ở sáu mục
-A/B/C/D/D+/D++ mọc dần theo thời gian, cộng một tệp `GOP_MASTER.md` riêng — đọc
-xong không biết cái nào còn, cái nào đã xong.*
+## Anh cần làm gì — nhìn một bảng là đủ
 
-**Mọi con số trong tệp này là ĐO trên chính CSDL và mã đang chạy.** Chỗ nào chưa
-đo được thì có một dòng nói rõ là chưa đo — đó là thông tin, không phải chỗ trống.
-
-Đánh dấu `[x]` khi xong để lần sau khỏi đọc lại từ đầu.
-
----
-
-## Đọc 3 phút — nếu chỉ có ngần ấy thời gian
-
-*Cập nhật 07/09/2026.*
-
-| | việc | mất bao lâu | không làm thì sao | ở đâu |
+| # | Việc | Mất | Vì sao cần anh — và hậu quả nếu chưa làm | Mở khoá |
 |---|---|---|---|---|
-| 1 | Xoay `SECRET_KEY` trên Render | 2 phút | Deploy trượt (không sập) | 1.1 |
-| 2 | Đặt bí mật proxy ở Render + Vercel | 5 phút | **Lớp 30 em vào cùng giờ, 10 em ăn lỗi 429** | 1.2 |
-| 3 | **Nhắc học viên điền số Zalo phụ huynh** | nói một câu | **0/4 em đã điền — không gửi được báo cáo cho ai** | 11.1 |
-| 4 | **Đăng ký Zalo OA + duyệt mẫu ZNS** | vài ngày chờ duyệt | Hệ thống không tự nhắn được; vẫn cấp link gửi tay | 10 |
-| 5 | **Tạo đợt học đầu tiên** | 5 phút | **0 đợt · 0 buổi · 0 điểm danh** — mọi số vận hành là dấu `—` | 4.1 |
-| 6 | Gộp `erp` → `master` | 1 phút | Chín commit của đợt 07/09 chưa lên production | 2 |
+| **A1** | **Giữ ấm production** — mở tài khoản [cron-job.org](https://cron-job.org) (miễn phí), tạo một job gõ `https://pe-hsa-backend.onrender.com/health` mỗi **10 phút**, khung 06:00–23:00. Hoặc nâng Render lên gói ~7 USD/tháng. | 5 phút | **Đo 13/09:** workflow GitHub tôi dựng chạy **3–5 giờ/lần** thay vì 10 phút (GitHub tự thưa lịch), và **8/8 lượt thất bại** vì bỏ cuộc trước khi Render kịp dậy. Tối 13/09 production mất **84,5 giây** để thức. Người đăng nhập đầu tiên mỗi lúc sẽ tưởng hệ thống hỏng — đúng chuyện anh gặp hôm 07/09. Tôi không mở được tài khoản thay anh. | Mọi lần đăng nhập đầu ngày |
+| **A2** | Render → Environment: thêm **`PROXY_SHARED_SECRET`**; Vercel → Environment: thêm **`PE_PROXY_SECRET`** — *cùng một giá trị*. Sinh bằng: `python -c "import secrets;print(secrets.token_urlsafe(32))"` | 5 phút | Đo 07/09: khoá giới hạn đăng nhập trên production là IP nội bộ của Render → **mọi người dùng chung một xô `100 lần/phút`**. Một em gõ sai mật khẩu nhiều lần (hoặc một bot) là khoá cả lớp. Lời giải đã nằm sẵn trong mã, chỉ chờ hai biến này. | Giới hạn theo từng người thật |
+| **A3** | Neon → tạo một **nhánh** (branch) từ CSDL chính → lấy chuỗi kết nối → GitHub repo → Settings → Secrets → thêm **`DATABASE_URL_CI`** | 5 phút | Mỗi lần đẩy mã, CI chạy **29 phút pytest thẳng vào CSDL đang dùng thật**. Nó dọn sạch sau mỗi lượt, nhưng một phép kiểm lỡ commit là hỏng dữ liệu học viên thật. Mã đã đọc `DATABASE_URL_CI` trước, rơi về `DATABASE_URL` khi chưa có. | CI không chạm production |
+| **A4** | Kiểm sau khi làm A2: mở `https://pe-hsa-backend.onrender.com/api/admin/do-proxy` **bằng trình duyệt** (đã đăng nhập quản trị). `ipHienTai` phải bằng IP thật của anh (tra ở whatismyip.com). | 1 phút | Đây là cách duy nhất biết A2 đã đúng — tôi chỉ gọi được đường `curl` thẳng, không đi qua Vercel như người dùng thật. | Xác nhận A2 |
+| **B1** | **Một lớp thật** chạy thử: một giảng viên, một đợt, học viên thật, lịch học thật | 1 buổi | Hệ thống mới chạy với **một lớp mẫu tôi tạo 07/09**. Mọi thứ sau đây (báo cáo, học phí, tuyển sinh) đều dễ hơn khi đã có một lớp thật đi qua một lần. Chỗ vướng khi dùng hàng ngày chỉ lộ ra ở đây. | Cả tầng ERP |
+| **B2** | **Địa chỉ email @tophsa.vn** (Google Workspace ~6 USD/người/tháng, hoặc một dịch vụ gửi thư) — anh đã chốt 07/09 là *chờ*, ghi để không quên | — | Kênh email đã dựng xong, gửi thử thành công từ `sonthaiha07@gmail.com`. Chưa bật cho phụ huynh thật vì đó là hộp thư cá nhân của anh. | Gửi báo cáo phụ huynh thật |
+| **B3** | Thu thập **email/số Zalo phụ huynh** của học viên (học viên tự điền ở Cài đặt → Liên hệ phụ huynh, hoặc học vụ điền hộ) | theo lớp | **0/3** em đang học có liên lạc phụ huynh. Không có thì bấm "Gửi cả lớp" ra toàn "thiếu liên lạc". | Báo cáo phụ huynh |
+| **B4** | Hỏi bên khảo thí (uranustech) **một trong ba**: có API không · xuất Excel được không · tải PDF báo cáo từng em được không | 1 tin nhắn | Ô "điểm thi thử" trong báo cáo phụ huynh đang trống. Tôi đã đọc thử tệp PDF anh gửi và bóc được đủ số — nếu tải được cho từng em thì đường nhập PDF là khả thi nhất. | Điểm thi thật vào báo cáo |
+| **C1** | Quyết **xoá hay giữ tài khoản `id 9`** (`reg_test_hsa@example.com`) | 1 câu | Anh đã duyệt xoá, nhưng lúc hỏi tôi nói nó giữ "5 bài + 1 lượt thi"; đo lại là **12/38 sự kiện học, 5/10 bài, 1/1 nhật ký + quiz** — hơn nửa lịch sử học tập của cả CSDL. Đã sao lưu ra JSON. Một tiếng là xoá. | Dọn tài khoản kiểm thử |
+| **C2** | Quyết **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở khoá cả ZNS lẫn SMS brandname), hay bỏ hẳn | — | ZNS đòi OA xác thực, xác thực đòi giấy phép kinh doanh — **hộ kinh doanh cũng được**, không bắt buộc công ty. Phụ huynh Việt đọc Zalo nhiều hơn email. | Kênh Zalo |
+| **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
+| **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
 
-Hai quyết định đang chờ anh, tôi **chưa làm gì cả**: bộ đệm API (11.2) và tài
-khoản e2e (11.3).
+**Đã xong, không cần làm nữa:** ~~xoay `SECRET_KEY`~~ (nay 64 byte, đo 07/09) ·
+~~gộp `master`~~ (06/09) · ~~tạo đợt học đầu tiên~~ (07/09, tôi tạo, anh duyệt) ·
+~~App Password Gmail~~ (07/09, thuộc `sonthaiha07@gmail.com`) · ~~xoá tài khoản
+e2e~~ (07/09).
 
-Nhánh `erp` đi trước `master` **9 commit** (lần gộp trước đã xong 06/09). Cổng
-kiểm đợt 07/09: `pytest teaching/ 86/86` · `mockexam/ 48/48` · e2e **30/30** ·
-unit **21/21** · `next build` thành công · bộ đo giao diện **21 trang × 2 khổ ×
-2 chủ đề: 0 vi phạm** (tự kiểm 40/40 đỏ được) · 231 nút bấm thử, 0 lỗi JS ·
-**hiệu năng đo lần đầu**: LCP 1036–2168ms trên máy CPU chậm 4×.
-
-Bảng đầy đủ ở **Phần 8**.
-
----
-
-## Mục lục
-
-- **Phần 1 — Ba việc phải làm trước khi gộp** (SECRET_KEY · bí mật proxy · Redis)
-- **Phần 2 — Gộp `master`: từng bước, và cách biết nó chạy đúng**
-- **Phần 3 — Sau khi gộp: đo `NUM_PROXIES` thật**
-- **Phần 4 — Quyết định của riêng anh** (đợt học · vai biên tập · phút ngồi lớp)
-- **Phần 5 — Năm câu hỏi cho TopHSA**
-- **Phần 6 — Nên làm, không gấp** (nhánh Neon cho CI · bốn câu DDL · `/thiet-ke`)
-- **Phần 7 — Công cụ: chạy thế nào**
-- **Phần 8 — Trạng thái hiện tại, đo ngày 07/09**
-- **Phần 9 — Dữ liệu tôi đã tạo và đã xoá trên CSDL thật**
-- **Phần 10 — Zalo OA** — việc duy nhất chặn phần gửi báo cáo tự động
-- **Phần 11 — Việc mới sau đợt 07/09** (số phụ huynh · bộ đệm API · tài khoản e2e)
+**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): sao lưu CSDL
+tự động lên GitHub Artifacts · khai cổng phân quyền tường minh cho 60 view ·
+màn nhập liệu nhanh cho học vụ · bảng nhắc việc giảng viên.
 
 ---
+
+## Lịch sử — 18 Phần cũ, giữ nguyên để tra lại
+
+*Từ đây trở xuống là nguyên văn các vòng trước, theo thứ tự thời gian. Mục nào
+đã xong thì bảng trên đã ghi; đừng làm lại theo phần này.*
 
 # Phần 1 — Ba việc phải làm trước khi gộp
 

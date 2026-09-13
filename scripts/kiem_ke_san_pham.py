@@ -18,12 +18,10 @@ số thì máy đếm.
 CHỈ ĐỌC. Không ghi một dòng nào vào CSDL.
 """
 import argparse
-import io
 import json
 import os
 import re
 import sys
-from datetime import date
 from pathlib import Path
 
 GOC = Path(__file__).resolve().parent.parent
@@ -32,12 +30,14 @@ sys.path.insert(0, str(GOC / 'backend'))
 os.chdir(GOC / 'backend')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-import django  # noqa: E402
+import django
+
 django.setup()
 
-from django.urls import get_resolver  # noqa: E402
+from django.urls import get_resolver
 
-from common.db import q, q1  # noqa: E402
+from common.clock import local_today
+from common.db import q, q1
 
 
 def _duong_dan_api():
@@ -76,8 +76,9 @@ def _bang_csdl():
     ra = []
     for t in ten:
         try:
-            ra.append({'bang': t, 'dong': q1('SELECT count(*) AS n FROM "%s"' % t)['n']})
-        except Exception:
+            ra.append({'bang': t, 'dong': q1(f'SELECT count(*) AS n FROM "{t}"')['n']})
+        except Exception:  # noqa: BLE001 — một bảng không đếm được (thiếu quyền,
+            # bảng hệ thống) không được làm hỏng cả bản kiểm kê; ghi None và đi tiếp.
             ra.append({'bang': t, 'dong': None})
     return ra
 
@@ -116,7 +117,8 @@ def _so_lieu_hoc():
     def d(sql, *a):
         try:
             return q1(sql, a)['n']
-        except Exception:
+        except Exception:  # noqa: BLE001 — cùng lý do ở `_bang_csdl`: thiếu một
+            # con số thì ghi None, không được ném để mất cả bản kiểm kê.
             return None
     return {
         'khoaHoc': d('SELECT count(*) AS n FROM courses'),
@@ -134,14 +136,87 @@ def _so_lieu_hoc():
     }
 
 
+def _viet_md(h, ten_lenh):
+    """Bản markdown đọc được của cùng số đo — `BAO-CAO-TRANG-THAI.md`.
+
+    Học từ dự án cô Giang (chỉ đọc bên ấy để học cách làm): bản này CHỈ ĐO,
+    không nhận định. Muốn biết vì sao một con số ra như vậy thì đọc PROGRESS.md.
+    Và ĐỪNG chép số từ đây sang tài liệu khác — chép ra là bắt đầu cũ đi; chạy
+    lại lệnh thì có số mới.
+    """
+    S = h['soLieu']
+    api = h['api']
+    khong_khai = [r for r in api['chiDangNhap'] if not r['khaiTay']]
+    co_dong = [b for b in h['bang'] if (b['dong'] or 0) > 0]
+    ngay = h['ngayDo'][8:10] + '/' + h['ngayDo'][5:7] + '/' + h['ngayDo'][:4]
+
+    def hang(cac):
+        return '\n'.join('| %s |' % ' | '.join(str(c) for c in r) for r in cac)
+
+    return f'''# Báo cáo trạng thái — số đo thật
+
+*Sinh tự động ngày {ngay} bằng `{ten_lenh}`. Mọi con số dưới đây được đếm lại từ mã
+nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
+
+*Bản này CHỈ ĐO, không nhận định. Muốn biết vì sao một con số ra như vậy thì đọc
+`PROGRESS.md`. Đừng chép số từ đây sang tài liệu khác — chép ra là bắt đầu cũ đi.*
+
+---
+
+## Mã nguồn
+
+| Hạng mục | Số đo | Nguồn |
+|---|---|---|
+{hang([
+    ('Vai trò người dùng', len(h['vaiTro']['danhSach']), '`permissions.py` → `ASSIGNABLE_ROLES`'),
+    ('Lớp cổng phân quyền', len(h['vaiTro']['lopQuyen']), '`permissions.py` → `Is*`'),
+    ('Đường API', api['tong'], '`get_resolver()` — đường bắt đầu bằng `api/`'),
+    ('· không cần đăng nhập', len(api['congKhai']), 'AllowAny hoặc `authentication_classes = []`'),
+    ('· chỉ cần đăng nhập', len(api['chiDangNhap']), '`permission_classes == [IsAuthenticated]`'),
+    ('· · trong đó KHÔNG tự khai cổng', len(khong_khai), 'dựa vào mặc định của khung'),
+    ('· có cổng vai trò', len(api['coCong']), 'lớp `Is*` khác'),
+    ('Trang giao diện', len(h['trang']), '`frontend/src/app/**/page.tsx`'),
+    ('Bảng CSDL', len(h['bang']), '`information_schema.tables`'),
+    ('· có dữ liệu', len(co_dong), 'count(*) > 0'),
+    ('Tệp kiểm thử backend', h['kiemThu']['tepBackend'], '`backend/**/tests*.py`'),
+    ('Tệp kiểm thử frontend', h['kiemThu']['tepFrontend'], '`frontend/e2e/**`'),
+])}
+
+## Dữ liệu nghiệp vụ trên CSDL
+
+| Hạng mục | Số đo |
+|---|---|
+{hang([
+    ('Hợp phần (khoá học)', S['khoaHoc']), ('Bài học', S['baiHoc']),
+    ('Tài khoản', S['taiKhoan']), ('· học viên', S['hocVien']),
+    ('Lớp', S['lop']), ('Đợt học', S['dotHoc']), ('Buổi học', S['buoiHoc']),
+    ('Lượt điểm danh', S['diemDanh']), ('Đề thi thử', S['deThiThu']),
+    ('Học viên có email phụ huynh', S['coEmailPhuHuynh']),
+    ('Học viên có số phụ huynh', S['coSoPhuHuynh']),
+])}
+
+## Đường API chỉ cần đăng nhập mà KHÔNG tự khai cổng
+
+*Mặc định của khung là "phải đăng nhập" — đúng, nhưng một đường mới quên khai sẽ
+mở cho mọi người đã đăng nhập, im lặng. Liệt kê để đối chiếu từng dòng.*
+
+{hang([(r['duong'], r['view']) for r in khong_khai]) or '(không có)'}
+
+---
+
+*Sinh bởi `scripts/kiem_ke_san_pham.py --md`. Chạy lại bất cứ lúc nào để có số mới.*
+'''
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ra', default='ho_so.json')
+    ap.add_argument('--md', default='', help='đường dẫn BAO-CAO-TRANG-THAI.md (tuỳ chọn)')
     o = ap.parse_args()
 
     api = _duong_dan_api()
     ho_so = {
-        'ngayDo': date.today().isoformat(),
+        'ngayDo': local_today().isoformat(),  # giờ VN, cùng đồng hồ với sản phẩm
         'vaiTro': _vai_tro(),
         'api': {
             'tong': len(api),
@@ -165,8 +240,16 @@ def main():
     p = Path(o.ra)
     if not p.is_absolute():
         p = CWD_GOI / p
-    with io.open(p, 'w', encoding='utf-8') as fh:
+    with open(p, 'w', encoding='utf-8') as fh:
         json.dump(ho_so, fh, ensure_ascii=False, indent=2)
+
+    if o.md:
+        pm = Path(o.md)
+        if not pm.is_absolute():
+            pm = CWD_GOI / pm
+        with open(pm, 'w', encoding='utf-8') as fh:
+            fh.write(_viet_md(ho_so, 'python scripts/kiem_ke_san_pham.py --md'))
+        print('Đã viết → %s' % pm)
 
     print('Đã kiểm kê → %s' % p)
     print('  vai trò          : %d' % len(ho_so['vaiTro']['danhSach']))
