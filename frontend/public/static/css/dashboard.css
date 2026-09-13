@@ -3889,6 +3889,7 @@ body.dark .prof-post-stats {
 .lct-go { margin-left: 0; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
 .lct-nolink { font-size: 12.5px; color: var(--t2); }
 .lct-more, .lct-cc { font-size: 12.5px; color: var(--t2); margin: 10px 0 0; }
+.lct-huy { color: var(--danger-ink); }
 .lct-cc b { color: var(--t1); }
 .lct-lech {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;

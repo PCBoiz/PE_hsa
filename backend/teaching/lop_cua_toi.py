@@ -33,6 +33,9 @@ from teaching.sessions import DEFAULT_SESSION_MINUTES
 
 #: Số buổi sắp tới hiện ra — tuần này và đầu tuần sau là đủ.
 SO_SAP_TOI = 3
+#: Buổi ĐÃ HUỶ trong ngần này ngày tới thì nêu tên. Huỷ mà chỉ lặng lẽ biến
+#: khỏi "buổi tới" thì em vẫn tưởng tối đó có học — hoặc tưởng lớp quên xếp lịch.
+NGAY_NEU_BUOI_HUY = 7
 
 
 def _iso(v):
@@ -67,8 +70,16 @@ class LopCuaToiView(NguoiDungView):
                           ORDER BY c.name''', (uid,))
         ids = [r['class_id'] for r in thanh_vien]
         sap_toi = {}
+        da_huy = {}
         cac_dot = {}
         if ids:
+            for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
+                          FROM class_sessions
+                          WHERE class_id = ANY(%s) AND status = 'cancelled'
+                            AND starts_at >= %s AND starts_at < %s
+                          ORDER BY starts_at''',
+                       (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY))):
+                da_huy.setdefault(r['class_id'], []).append(r)
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
                           FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY class_id
                                                              ORDER BY starts_at) AS tt
@@ -101,6 +112,7 @@ class LopCuaToiView(NguoiDungView):
                 'joinedAt': _iso(r['joined_at']),
                 'buoiToi': ds[0] if ds else None,
                 'sapToi': ds,
+                'daHuy': [_buoi_dict(b, r['meeting_url'], nay) for b in da_huy.get(cid, [])],
                 'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid]),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),

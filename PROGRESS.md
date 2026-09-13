@@ -93,6 +93,13 @@ bộ màu: 22 trang × 2 khổ = 0/0/0/0. Thẻ đo hết hạn giữa chừng m
 tự nhận ra "bị đẩy về đăng nhập" và dừng, không đo nhầm màn đăng nhập (bẫy đã
 ghi 07/09).
 
+**Thêm cùng vòng:** buổi ĐÃ HUỶ trong 7 ngày tới được nêu tên ("Nghỉ: T5 17/09 —
+buổi đã huỷ") thay vì lặng lẽ biến khỏi "buổi tới" (đỏ trước → xanh, 7/7); dòng
+"Top 0 học viên" ở Trang của tôi thành "chưa ai có điểm" (một dòng ở tầng cũ,
+chốt hãm không đổi). Ghi vào việc của anh: lớp mẫu đang có link phòng GIẢ
+`meet.example.com` — nay học viên bấm được nút "Vào phòng học" nên phải sửa
+trước khi dùng lớp ấy thật.
+
 ## 14/09/2026 — VÒNG 6 · Rà luồng trợ giảng đầu-cuối trên trình duyệt thật
 
 **Cách làm (anh duyệt):** tạo MỘT tài khoản Trợ giảng thử trên production qua

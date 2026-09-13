@@ -39,6 +39,8 @@ type Lop = {
   examDate: string | null;
   buoiToi: Buoi | null;
   sapToi: Buoi[];
+  /** Buổi ĐÃ HUỶ trong tuần tới — nêu tên để em biết tối đó nghỉ. */
+  daHuy: Buoi[];
   chuyenCan: {
     sessionsCounted: number;
     present: number;
@@ -151,6 +153,11 @@ export default function LopCuaToi() {
             {l.sapToi.length > 1 && (
               <p className="lct-more">
                 Sau đó: {l.sapToi.slice(1).map((b) => gio(b.startsAt)).join(' · ')}
+              </p>
+            )}
+            {l.daHuy.length > 0 && (
+              <p className="lct-more lct-huy">
+                Nghỉ: {l.daHuy.map((b) => gio(b.startsAt)).join(' · ')} — buổi đã huỷ.
               </p>
             )}
 

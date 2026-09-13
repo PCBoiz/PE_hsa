@@ -2323,7 +2323,8 @@ var _forumTextQ = '';
       }
     }
 
-    meta.textContent = label + ' · Top ' + data.entries.length + ' học viên';
+    // "Top 0 học viên" là câu vô nghĩa — đo trên tài khoản thật 14/09/2026.
+    meta.textContent = label + (data.entries.length ? ' · Top ' + data.entries.length + ' học viên' : ' · chưa ai có điểm');
 
     list.innerHTML = data.entries.map(function (e) {
       var rankCls = '';

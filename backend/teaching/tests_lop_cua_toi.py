@@ -108,9 +108,20 @@ def test_buoi_dang_dien_ra_van_la_buoi_toi(canh):
     assert l['buoiToi']['sessionId'] == dang and l['buoiToi']['dangDienRa'] is True
 
 
+def test_buoi_bi_huy_trong_tuan_toi_duoc_neu_ten(canh):
+    """Buổi huỷ mà chỉ lặng lẽ biến khỏi "buổi tới" thì em vẫn tưởng tối đó có
+    học — hoặc ngược lại, tưởng lớp quên xếp lịch. Phải nói ra."""
+    huy = _buoi(canh['lop'], 30, status='cancelled')
+    _buoi(canh['lop'], 24 * 9, status='cancelled')     # ngoài 7 ngày → không nêu
+    _buoi(canh['lop'], -5, status='cancelled')         # đã qua → không nêu
+    l = _goi(canh['em']).json()['lop'][0]
+    assert [b['sessionId'] for b in l['daHuy']] == [huy]
+    assert l['buoiToi'] is None
+
+
 def test_khong_co_buoi_nao_thi_buoi_toi_null(canh):
     l = _goi(canh['em']).json()['lop'][0]
-    assert l['buoiToi'] is None and l['sapToi'] == []
+    assert l['buoiToi'] is None and l['sapToi'] == [] and l['daHuy'] == []
 
 
 # ── 3. Chuyên cần của chính em, cùng hàm với tờ báo cáo phụ huynh ──────────
