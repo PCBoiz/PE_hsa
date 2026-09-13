@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q, q1, x
+from common.views import NguoiDungView
 from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
 from lessons.views import quen_ghi_danh
 
@@ -24,7 +25,7 @@ CHU_DIEM_SAO = '''-- ĐIỂM SAO LẤY TỪ `course_ratings`, KHÔNG lấy `c.ra
             -- chứ một con số bịa thì không ai đọc ra được là bịa.'''
 
 
-class CoursesView(APIView):
+class CoursesView(NguoiDungView):
     def get(self, request):
         uid = request.user.id
         qs = request.query_params.get('q', '').strip()
@@ -108,7 +109,7 @@ class CoursesView(APIView):
         return Response(result)
 
 
-class CourseDetailView(APIView):
+class CourseDetailView(NguoiDungView):
     """Một khoá theo id — trả CÙNG shape với /api/courses.
 
     Trang chi tiết trước đây tải TOÀN BỘ danh sách khoá rồi lọc ở client
@@ -140,7 +141,7 @@ class CourseDetailView(APIView):
         return Response(row)
 
 
-class EnrolledView(APIView):
+class EnrolledView(NguoiDungView):
     def get(self, request):
         rows = q('''
             SELECT c.id, c.title, c.subtitle, c.color, c.accent_color,
@@ -164,7 +165,7 @@ class EnrolledView(APIView):
         return Response(result)
 
 
-class CoursesEnrolledView(APIView):
+class CoursesEnrolledView(NguoiDungView):
     def get(self, request):
         """Trả về courses + enrolled detail trong 1 query, 1 request."""
         rows = q('''
@@ -217,7 +218,7 @@ class CoursesEnrolledView(APIView):
         return Response({'courses': courses_list, 'enrolled': enrolled_list})
 
 
-class EnrollView(APIView):
+class EnrollView(NguoiDungView):
     def post(self, request, course_id):
         uid = request.user.id
         course = q1('SELECT id, title FROM courses WHERE id=%s', (course_id,))
@@ -263,7 +264,7 @@ class EnrollView(APIView):
         return Response({'ok': True})
 
 
-class RateCourseView(APIView):
+class RateCourseView(NguoiDungView):
     def post(self, request):
         uid = request.user.id
         data = request.data if isinstance(request.data, dict) else {}
@@ -293,7 +294,7 @@ class RateCourseView(APIView):
         return Response({'ok': True})
 
 
-class CourseRatingView(APIView):
+class CourseRatingView(NguoiDungView):
     def get(self, request, course_id):
         course = q1('SELECT id FROM courses WHERE id=%s', (course_id,))
         if not course:
@@ -321,7 +322,7 @@ _SKILLS_STRUCTURE_KEY = 'skills:structure'
 _SKILLS_STRUCTURE_TTL = 300  # giây — bài học mới xuất hiện trên /api/skills trong ≤5 phút
 
 
-class SkillsView(APIView):
+class SkillsView(NguoiDungView):
     def get(self, request):
         """Kỹ năng THẬT gắn với user: skill set = khóa · skill = module · sub = bài.
 

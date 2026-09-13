@@ -2,11 +2,11 @@
 import json
 
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from accounts.views import _pick_roadmap_template
 from common.clock import local_now
 from common.db import q, q1, x
+from common.views import NguoiDungView
 
 _TEMPLATE_ORDER = """
     ORDER BY CASE id
@@ -30,7 +30,7 @@ def _jsonb(v, default):
     return v
 
 
-class RoadmapsView(APIView):
+class RoadmapsView(NguoiDungView):
     def get(self, request):
         """Lộ trình THỰC TẾ cho user theo khảo sát gần nhất; chưa khảo sát → tất cả template."""
         uid = request.user.id
@@ -61,7 +61,7 @@ class RoadmapsView(APIView):
         return Response(result)
 
 
-class RoadmapProgressView(APIView):
+class RoadmapProgressView(NguoiDungView):
     """GET /api/roadmap — những mục học viên đã đánh dấu xong.
 
     ── VÌ SAO TRẢ THÊM `done` (vá 04/09/2026) ─────────────────────────────
@@ -98,7 +98,7 @@ class RoadmapProgressView(APIView):
         })
 
 
-class MyRoadmapView(APIView):
+class MyRoadmapView(NguoiDungView):
     def get(self, request):
         row = q1("SELECT mermaid_def, title, icon, color, "
                  "COALESCE(nodes_json, '{}'::jsonb) AS nodes_json, "
@@ -133,13 +133,13 @@ class MyRoadmapView(APIView):
         return Response({'ok': True})
 
 
-class AiRoadmapView(APIView):
+class AiRoadmapView(NguoiDungView):
     def post(self, request):
         return Response({'error': 'Premium',
                          'message': 'Tính năng này chỉ dành cho tài khoản Premium'}, status=402)
 
 
-class UpdateRoadmapItemView(APIView):
+class UpdateRoadmapItemView(NguoiDungView):
     def put(self, request, item_id):
         uid = request.user.id
         body = request.data if isinstance(request.data, dict) else {}

@@ -31,6 +31,7 @@ from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, record_events
 from common.permissions import IsTeachingStaff, can_see_class
+from common.views import NguoiDungView
 from teaching.vocab import chi_hoc_vien
 
 #: Vòng đời một bài tập. Khớp `assignments_status_check` ở §38.
@@ -621,7 +622,7 @@ class AssignmentGradingView(APIView):
 
 # ── 4. Phía học viên ────────────────────────────────────────────────────────
 
-class MyAssignmentsView(APIView):
+class MyAssignmentsView(NguoiDungView):
     """GET/POST /api/assignments — bài tập của chính mình.
 
     Không nhận `user_id` từ bên ngoài, ở CẢ HAI phương thức: nó luôn là

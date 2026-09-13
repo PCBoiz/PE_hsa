@@ -46,6 +46,34 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 13/09/2026 — VÒNG 2 · 60 view thôi dựa vào mặc định của khung
+
+**Việc:** mọi view `api/` phải TỰ KHAI cổng phân quyền. Trước đó 60/107 view
+không khai gì, chỉ nhờ `DEFAULT_PERMISSION_CLASSES = [IsAuthenticated]` trong
+settings — đúng, nhưng một view mới quên khai sẽ mở im lặng, và ai "dọn"
+settings là 60 view cùng lúc thành công khai.
+
+**Đo trước khi làm — và bộ kiểm kê của tôi SAI:** nó đếm 71, `quet_quyen.py`
+đếm 60. Nguyên nhân: `vars(cls)` không thấy cổng khai ở lớp cha của dự án
+(`AdminBase`, `_Base` — 11 view). Logic đúng là duyệt MRO tới `APIView` và
+DỪNG ở đó (chính `APIView` cũng có `permission_classes` trong `__dict__`, đi
+tiếp là mọi view đều "đã khai"). Nay một hàm `common.views.da_khai_cong` dùng
+chung cho cả phép kiểm lẫn bộ kiểm kê — hai bộ đếm một thứ ra hai số là thứ làm
+mất tin vào hồ sơ gửi TopHSA.
+
+**Dựng:** `common.views.NguoiDungView` (khai rõ "phải đăng nhập, dữ liệu của
+chính mình", và ghi rõ nó KHÔNG hứa chặn A đọc của B — việc ấy vẫn là của
+từng view + `tests_do_cua_nguoi_khac`). 60 view / 13 module chuyển sang nó
+bằng script khớp đúng `class X(APIView):` từng tên, không đụng lớp khác.
+`common/tests_khai_cong.py` là cổng: đỏ 60 trước khi sửa, xanh sau; lùi đúng
+một view về `APIView` → đỏ đúng 1. Kèm phép kiểm chống hằng đúng (`APIView`
+trần phải ra "chưa khai").
+
+**Hành vi không đổi:** ba con số phân loại giữ nguyên 107 · 2 · 60 · 45; bộ
+kiểm ma trận quyền + IDOR chạy lại xanh (xem dòng dưới). BAO-CAO-TRANG-THAI
+nay ghi "KHÔNG tự khai cổng: 0".
+
+
 ## 13/09/2026 — VÒNG 1 sau khi đổi cách ghi sổ · sao lưu CSDL, và cái ping không chạy
 
 **Việc:** áp cách ghi sổ học từ dự án cô Giang (chỉ đọc bên ấy); đo lại workflow

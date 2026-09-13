@@ -4,12 +4,12 @@ import random
 
 from django.db import transaction
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_REVIEW_QUIZ, record_event
 from common.streak import award_xp, touch_streak
+from common.views import NguoiDungView
 
 MIN_QUESTIONS = 5
 MAX_QUESTIONS = 10
@@ -211,7 +211,7 @@ def pool_cau_hoi(uid, course_id):
     return pool
 
 
-class GenerateQuizView(APIView):
+class GenerateQuizView(NguoiDungView):
     def post(self, request, course_id):
         data = request.data if isinstance(request.data, dict) else {}
         num_questions = data.get('num_questions')
@@ -276,7 +276,7 @@ class GenerateQuizView(APIView):
         })
 
 
-class SubmitQuizView(APIView):
+class SubmitQuizView(NguoiDungView):
     def post(self, request, quiz_id):
         data = request.data if isinstance(request.data, dict) else {}
         answers = data.get('answers')
@@ -408,7 +408,7 @@ class SubmitQuizView(APIView):
         })
 
 
-class QuizView(APIView):
+class QuizView(NguoiDungView):
     def get(self, request, quiz_id):
         """Đọc lại 1 quiz của chính user — kèm kết quả nếu đã nộp."""
         uid = request.user.id
@@ -456,7 +456,7 @@ class QuizView(APIView):
         return Response(out)
 
 
-class QuizHistoryView(APIView):
+class QuizHistoryView(NguoiDungView):
     def get(self, request, course_id):
         """Lịch sử các lượt quiz ôn tập đã nộp của user trong 1 khóa."""
         rows = q('''SELECT r.quiz_id, r.score, r.total, r.submitted_at

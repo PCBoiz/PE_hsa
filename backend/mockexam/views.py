@@ -39,13 +39,13 @@ import logging
 
 from django.db import IntegrityError, transaction
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
 from common.db import q, q1, xn
 from common.events import KIND_MOCK, KIND_MOCK_SECTION, record_event
 from common.streak import award_xp, touch_streak
+from common.views import NguoiDungView
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +232,7 @@ def _record_mock_events(uid, attempt_id, exam_id, score, total,
         )
 
 
-class MockExamsView(APIView):
+class MockExamsView(NguoiDungView):
     """GET /api/mock-exams — danh sách đề đã xuất bản."""
     def get(self, request):
         rows = q("SELECT id, title, description, duration_minutes, total_questions "
@@ -240,7 +240,7 @@ class MockExamsView(APIView):
         return Response({'exams': rows})
 
 
-class MockStartView(APIView):
+class MockStartView(NguoiDungView):
     """POST /api/mock-exams/<id>/start — mở đồng hồ Ở MÁY CHỦ rồi trả đề.
 
     Tải lại trang giữa chừng thì NỐI TIẾP lượt đang mở: đúng số giây còn lại VÀ
@@ -320,7 +320,7 @@ class MockStartView(APIView):
         return None, None
 
 
-class MockSaveView(APIView):
+class MockSaveView(NguoiDungView):
     """POST /api/mock-exams/<id>/save — lưu tạm câu trả lời của lượt đang mở.
 
     Có đường này thì tải lại trang, rớt mạng hay trình duyệt di động thu hồi tab
@@ -359,7 +359,7 @@ class MockSaveView(APIView):
         return Response({'ok': bool(n), 'saved': n or 0, 'secondsLeft': con})
 
 
-class MockSubmitView(APIView):
+class MockSubmitView(NguoiDungView):
     """POST /api/mock-exams/<id>/submit — body {answers:{qid:val}}.
 
     Chấm điểm, đóng lượt, trả điểm + phân tích hợp phần + hợp phần yếu nhất.
@@ -474,7 +474,7 @@ class MockSubmitView(APIView):
         })
 
 
-class MockAttemptsView(APIView):
+class MockAttemptsView(NguoiDungView):
     """GET /api/mock-attempts — lịch sử làm bài của user."""
     def get(self, request):
         # section_scores_json: Trang của tôi dựng "độ chính xác theo hợp phần"

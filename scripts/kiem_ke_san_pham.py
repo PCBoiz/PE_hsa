@@ -38,6 +38,7 @@ from django.urls import get_resolver
 
 from common.clock import local_today
 from common.db import q, q1
+from common.views import da_khai_cong
 
 
 def _duong_dan_api():
@@ -51,12 +52,11 @@ def _duong_dan_api():
                 continue
             quyen = [c.__name__ for c in getattr(cls, 'permission_classes', [])]
             xac_thuc = getattr(cls, 'authentication_classes', None)
-            # `khaiTay`: view có TỰ viết `permission_classes` hay không. DRF trả
-            # về danh sách MẶC ĐỊNH (`[IsAuthenticated]`) cho cả view không khai
-            # gì, nên nhìn `permission_classes` không phân biệt được hai trường
-            # hợp — mà đó đúng là chỗ nguy hiểm: quên khai thì cửa mở cho MỌI
-            # người đã đăng nhập, im lặng, trông y hệt một quyết định có chủ ý.
-            khai_tay = 'permission_classes' in vars(cls)
+            # `khaiTay`: view có TỰ khai cổng không — ở chính nó hoặc ở lớp cha
+            # của dự án. Dùng CHUNG hàm với `tests_khai_cong.py`; bản đầu tự
+            # đếm bằng `vars(cls)` và báo 71 thay vì 60 (đếm cả view khai qua
+            # `AdminBase`). Hai bộ đếm một thứ ra hai số là thứ làm mất tin.
+            khai_tay = da_khai_cong(cls)
             ra.append({
                 'duong': duong, 'view': cls.__name__,
                 'quyen': quyen or ['(không có lớp nào)'],

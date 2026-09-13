@@ -2,10 +2,10 @@
 from datetime import timedelta
 
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from common.clock import local_today
 from common.db import q, q1
+from common.views import NguoiDungView
 
 MEDALS = {1: '🥇', 2: '🥈', 3: '🥉'}
 
@@ -255,7 +255,7 @@ def _build_friends(uid: int, user_name: str, user_xp: int):
     return entries, me_block
 
 
-class LeaderboardView(APIView):
+class LeaderboardView(NguoiDungView):
     def get(self, request):
         lb_type = (request.query_params.get('type') or 'weekly').lower()
         uid = request.user.id

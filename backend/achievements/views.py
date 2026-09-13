@@ -1,11 +1,11 @@
 """Port routes/achievements.py."""
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from common.db import q
+from common.views import NguoiDungView
 
 
-class AchievementsView(APIView):
+class AchievementsView(NguoiDungView):
     def get(self, request):
         rows = q('''SELECT a.id, a.code, a.name, a.description, a.icon,
                            a.condition_type, a.condition_value, ua.awarded_at

@@ -1,11 +1,11 @@
 """Port routes/forum.py — bài viết, bình luận (lồng 1 cấp), 6 loại reaction, @mention."""
 from django.db import transaction
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from common.db import q, q1, x
 from common.params import doc_trang
 from common.permissions import is_admin
+from common.views import NguoiDungView
 from notifications.service import notify
 
 _CATEGORIES = ('question', 'share', 'discuss')
@@ -157,7 +157,7 @@ def _can_modify(table, row_id, user):
 
 # ───────────────────────── Bài viết ─────────────────────────
 
-class PostsView(APIView):
+class PostsView(NguoiDungView):
     def get(self, request):
         page, per_page, offset = _paging(request)
         category = (request.query_params.get('category') or '').strip()
@@ -283,7 +283,7 @@ class PostsView(APIView):
         return Response({'ok': True, 'id': row['id']})
 
 
-class PostDetailView(APIView):
+class PostDetailView(NguoiDungView):
     def get(self, request, post_id):
         post = q1('''SELECT p.id, p.user_id, p.category, p.title, p.content,
                             p.like_count, p.created_at, p.updated_at,
@@ -336,7 +336,7 @@ class PostDetailView(APIView):
         return Response({'ok': True})
 
 
-class ReactPostView(APIView):
+class ReactPostView(NguoiDungView):
     def post(self, request, post_id):
         data = request.data if isinstance(request.data, dict) else {}
         reaction = (data.get('reaction') or '').strip()
@@ -347,7 +347,7 @@ class ReactPostView(APIView):
 
 # ───────────────────────── Bình luận ─────────────────────────
 
-class CommentsView(APIView):
+class CommentsView(NguoiDungView):
     def get(self, request, post_id):
         page, per_page, offset = _paging(request)
         post = q1('SELECT id FROM posts WHERE id=%s', (post_id,))
@@ -419,7 +419,7 @@ class CommentsView(APIView):
         return Response({'ok': True, 'id': row['id']})
 
 
-class ReactCommentView(APIView):
+class ReactCommentView(NguoiDungView):
     def post(self, request, comment_id):
         data = request.data if isinstance(request.data, dict) else {}
         reaction = (data.get('reaction') or '').strip()
@@ -428,7 +428,7 @@ class ReactCommentView(APIView):
         return Response(payload, status=status)
 
 
-class CommentDetailView(APIView):
+class CommentDetailView(NguoiDungView):
     def put(self, request, comment_id):
         data = request.data if isinstance(request.data, dict) else {}
         content = (data.get('content') or '').strip()

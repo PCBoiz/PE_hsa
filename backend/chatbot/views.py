@@ -8,11 +8,11 @@ thuẫn với con số Trang của tôi đang hiện cho cùng học viên đó.
 """
 from django.conf import settings
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from chatbot.graph import chat
 from chatbot.profile import learner_profile
 from common.db import q1
+from common.views import NguoiDungView
 
 
 def _user_context(user):
@@ -75,7 +75,7 @@ def _lesson_context(page_context):
     )
 
 
-class ChatView(APIView):
+class ChatView(NguoiDungView):
     """POST /api/chat — body {messages:[{role,content}]} → {reply}."""
     def post(self, request):
         if not getattr(settings, "DEEPSEEK_API_KEY", None):

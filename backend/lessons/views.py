@@ -4,7 +4,6 @@ import logging
 from django.core.cache import cache
 from django.db import transaction
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from common.clock import local_now, local_today
@@ -17,6 +16,7 @@ from common.throttling import (
     HourlyIPThrottle,
     HourlyUserThrottle,
 )
+from common.views import NguoiDungView
 from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
 from lessons.content import course_content, one_lesson
 from lessons.grading import (
@@ -275,7 +275,7 @@ def quen_ghi_danh(uid, course_id):
     cache.delete('ghidanh:%s:%s' % (uid, course_id))
 
 
-class CompleteLessonView(APIView):
+class CompleteLessonView(NguoiDungView):
     def post(self, request, lesson_no):
         data = request.data if isinstance(request.data, dict) else {}
         course_id = data.get('courseId') or data.get('course_id')
@@ -519,7 +519,7 @@ class CompleteLessonView(APIView):
         })
 
 
-class CheckAnswersView(APIView):
+class CheckAnswersView(NguoiDungView):
     """POST /api/courses/<course_id>/lessons/<lesson_no>/check — chấm ở máy chủ.
 
     Thân: ``{"phan": "test"|"drill", "answers": {"t1": "300.000đ", ...}}``
@@ -598,7 +598,7 @@ class CheckAnswersView(APIView):
                          'scorePct': phan_tram(dung, tong)})
 
 
-class CourseContentView(APIView):
+class CourseContentView(NguoiDungView):
     """GET /api/courses/<course_id>/content — nội dung bài đã soạn trong DB.
 
     Engine bài học gọi endpoint này trước, rồi mới rơi về file JS cho những bài

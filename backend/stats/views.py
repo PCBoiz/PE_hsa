@@ -3,13 +3,13 @@ import json
 
 from django.db import transaction
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from achievements.services import check_and_award_achievements
 from chatbot import profile as chat_profile
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
+from common.views import NguoiDungView
 from stats import competency, gradebook, journal, plan
 from stats.goals import as_date as _as_date
 from stats.goals import read_goals
@@ -47,7 +47,7 @@ def parse_time_spent(value) -> float:
     return result
 
 
-class StatsView(APIView):
+class StatsView(NguoiDungView):
     def get(self, request):
         # PERF 2026-07-19: gộp 2 query thành 1 round trip (RTT tới Neon ~240ms/câu)
         uid = request.user.id
@@ -75,7 +75,7 @@ class StatsView(APIView):
         })
 
 
-class XpByCourseView(APIView):
+class XpByCourseView(NguoiDungView):
     def get(self, request):
         """XP tích lũy theo từng khóa — nguồn thật lesson_progress."""
         rows = q('''
@@ -148,7 +148,7 @@ def _missions_for(uid, today):
     return out
 
 
-class TodayMissionsView(APIView):
+class TodayMissionsView(NguoiDungView):
     """GET /api/missions/today — 3 nhiệm vụ trong ngày + tiến độ thật."""
 
     def get(self, request):
@@ -161,7 +161,7 @@ class TodayMissionsView(APIView):
         })
 
 
-class ClaimMissionView(APIView):
+class ClaimMissionView(NguoiDungView):
     """POST /api/missions/claim {code} — nhận XP thưởng, mỗi ngày một lần.
 
     Khoá chính (user, mission, ngày) của user_missions lo phần chống nhận trùng:
@@ -215,7 +215,7 @@ class ClaimMissionView(APIView):
         })
 
 
-class ReviewQuizStatusView(APIView):
+class ReviewQuizStatusView(NguoiDungView):
     """GET /api/streak/review-quiz-status — quiz ôn tập đã mở chưa.
 
     Bản cũ gác bằng CHUỖI NGÀY (`streak >= 5`) — một thứ không liên quan gì tới
@@ -248,7 +248,7 @@ class ReviewQuizStatusView(APIView):
         })
 
 
-class HsaSummaryView(APIView):
+class HsaSummaryView(NguoiDungView):
     """GET /api/hsa/summary — 4 chỉ số cho hàng thẻ đầu Dashboard.
 
     Gộp trong MỘT lượt gọi thay vì bắt client ghép từ 4 endpoint rời
@@ -302,7 +302,7 @@ class HsaSummaryView(APIView):
         })
 
 
-class HsaGoalsView(APIView):
+class HsaGoalsView(NguoiDungView):
     """GET/PATCH /api/hsa/goals — mục tiêu HSA của học viên.
 
     Điểm mục tiêu, mốc dự thi và 3 môn Khoa học tự chọn trước đây chỉ đặt được
@@ -363,7 +363,7 @@ class HsaGoalsView(APIView):
         return Response({k: data.get(k) for k in self.FIELDS})
 
 
-class CompetencyView(APIView):
+class CompetencyView(NguoiDungView):
     """GET /api/hsa/competency — bản đồ năng lực 20 ô (khoá × chủ đề).
 
     Xem stats/competency.py để biết cách chấm và vì sao ô chưa đủ dữ liệu phải
@@ -374,7 +374,7 @@ class CompetencyView(APIView):
         return Response(competency.compute(request.user.id))
 
 
-class TopicSelfMarkView(APIView):
+class TopicSelfMarkView(NguoiDungView):
     """PUT /api/hsa/competency/self — học viên tự đánh dấu đã nắm một chủ đề.
 
     Body ``{courseId, topic, known}``. Đặc tả ban đầu viết chủ đề vào đường dẫn
@@ -409,7 +409,7 @@ class TopicSelfMarkView(APIView):
         return Response({'ok': True, 'courseId': course_id, 'topic': topic, 'known': known})
 
 
-class GradebookView(APIView):
+class GradebookView(NguoiDungView):
     """GET /api/hsa/gradebook?limit=40 — mọi hoạt động có chấm điểm + tổng hợp."""
 
     def get(self, request):
@@ -417,7 +417,7 @@ class GradebookView(APIView):
                                             request.query_params.get('limit')))
 
 
-class ProgressCurveView(APIView):
+class ProgressCurveView(NguoiDungView):
     """GET /api/hsa/progress-curve?weeks=12 — điểm thi thử theo thời gian.
 
     Xem stats/gradebook.py để biết vì sao thời lượng học và điểm số không dùng
@@ -429,7 +429,7 @@ class ProgressCurveView(APIView):
                                                  request.query_params.get('weeks')))
 
 
-class JournalView(APIView):
+class JournalView(NguoiDungView):
     """GET/PUT/DELETE /api/hsa/journal — nhật ký học hằng ngày.
 
     GET gộp cả khối (hôm nay + 30 ngày gần đây + mục tiêu tuần + tiến độ tuần)
@@ -460,7 +460,7 @@ class JournalView(APIView):
         return Response({'ok': True})
 
 
-class WeeklyTargetView(APIView):
+class WeeklyTargetView(NguoiDungView):
     """PUT /api/hsa/weekly-target {lessons, mocks, minutes} — mục tiêu tuần.
 
     Không có giá trị mặc định được LƯU sẵn: chưa đặt thì màn hình nói là chưa
@@ -477,7 +477,7 @@ class WeeklyTargetView(APIView):
                          'week': journal.week_progress(request.user.id, target)})
 
 
-class StudyPlanView(APIView):
+class StudyPlanView(NguoiDungView):
     """GET/POST /api/hsa/study-plan — kế hoạch học có lịch.
 
     GET trả tuần này + 3 tuần tới (``?all=1`` cho cả lịch), đã DỒN việc chưa
@@ -499,7 +499,7 @@ class StudyPlanView(APIView):
                          'plan': plan.read(request.user.id)})
 
 
-class StudyPlanItemView(APIView):
+class StudyPlanItemView(NguoiDungView):
     """PUT /api/hsa/study-plan/items/<id> {status} — bỏ qua hoặc bỏ đánh dấu.
 
     Chỉ nhận ``todo``/``skipped``. KHÔNG có ``done``: xong hay chưa suy ra từ

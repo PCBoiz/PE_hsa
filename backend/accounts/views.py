@@ -25,6 +25,7 @@ from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
 from common.permissions import IsAdminRole
 from common.throttling import LoginThrottle, RegisterThrottle
+from common.views import NguoiDungView
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +268,7 @@ class LogoutView(APIView):
 
 # ─────────────────────────── /api/user ───────────────────────────
 
-class UserView(APIView):
+class UserView(NguoiDungView):
     def get(self, request):
         # Liệt kê cột TRẮNG, không `SELECT *`.
         #
@@ -341,7 +342,7 @@ class UserView(APIView):
         return Response({'ok': True})
 
 
-class PasswordView(APIView):
+class PasswordView(NguoiDungView):
     def put(self, request):
         data = request.data if isinstance(request.data, dict) else {}
         current = data.get('current', '')
@@ -400,7 +401,7 @@ class PasswordView(APIView):
 
 # ─────────────── Follow (nguồn thật cho leaderboard "friends") ───────────────
 
-class FollowView(APIView):
+class FollowView(NguoiDungView):
     def post(self, request, user_id):
         uid = request.user.id
         if user_id == uid:
@@ -418,7 +419,7 @@ class FollowView(APIView):
         return Response({'ok': True, 'following': False})
 
 
-class FollowingView(APIView):
+class FollowingView(NguoiDungView):
     """Danh sách người mà MÌNH đang theo dõi.
 
     `user_id` trên đường dẫn phải là chính mình. Trước 30/08/2026 endpoint này
@@ -542,7 +543,7 @@ def _generate_user_roadmap(uid, survey_id, data):
        mermaid_def))
 
 
-class SurveyView(APIView):
+class SurveyView(NguoiDungView):
     def post(self, request):
         data = request.data
         if not isinstance(data, dict):

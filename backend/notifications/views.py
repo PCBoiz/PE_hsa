@@ -3,13 +3,13 @@
 Bổ sung: /api/notifications/badge cho client poll badge chuông (thay SSE).
 """
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from common.db import q, q1, x
+from common.views import NguoiDungView
 from notifications.service import unread_state
 
 
-class NotificationSettingsView(APIView):
+class NotificationSettingsView(NguoiDungView):
     def get(self, request):
         row = q1('SELECT * FROM notification_settings WHERE user_id=%s', (request.user.id,))
         if not row:
@@ -40,7 +40,7 @@ class NotificationSettingsView(APIView):
         return Response({'ok': True})
 
 
-class FeedView(APIView):
+class FeedView(NguoiDungView):
     def get(self, request):
         # PERF 2026-07-19: unread đếm bằng subquery cùng câu lệnh — 1 round trip
         uid = request.user.id
@@ -56,7 +56,7 @@ class FeedView(APIView):
         return Response({'items': rows, 'unread': unread})
 
 
-class BadgeView(APIView):
+class BadgeView(NguoiDungView):
     """GET /api/notifications/badge → {unread, latest} — client poll ~45s.
 
     PERF 2026-07-19: thay SSE /api/notifications/stream. SSE giữ 1 thread/user
@@ -76,14 +76,14 @@ class BadgeView(APIView):
         return Response({'unread': unread, 'latest': latest})
 
 
-class FeedReadView(APIView):
+class FeedReadView(NguoiDungView):
     def post(self, request, notif_id):
         x('UPDATE notifications SET is_read=TRUE WHERE id=%s AND user_id=%s',
           (notif_id, request.user.id))
         return Response({'ok': True})
 
 
-class FeedReadAllView(APIView):
+class FeedReadAllView(NguoiDungView):
     def post(self, request):
         x('UPDATE notifications SET is_read=TRUE WHERE user_id=%s AND is_read=FALSE',
           (request.user.id,))
