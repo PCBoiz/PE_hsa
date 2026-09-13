@@ -456,9 +456,14 @@ body.light .hsa-viz-cap strong { color: #0B6355; }
 }
 .hsa-empty b { display: block; font-size: 15px; color: var(--t1, #E8EBF2); }
 .hsa-empty p { margin: 8px 0 16px; font-size: 13px; line-height: 1.6; color: var(--t3, #8B95A8); }
-.hsa-empty button {
+.hsa-empty button,
+/* Lối đi khi máy chủ từ chối vì CHƯA GHI DANH (14/09/2026): cùng hình dáng với
+   nút "Tải lại" để khối trống chỉ có MỘT kiểu lối ra, dù lý do khác nhau. */
+.hsa-empty .hsa-empty-go {
+  display: inline-flex; align-items: center; justify-content: center;
   padding: 10px 20px; min-height: 44px; border: none; border-radius: 10px; cursor: pointer;
-  background: var(--brand-fill, #6D5AE6); color: #fff; font-size: 13px; font-weight: 700; font-family: inherit;
+  background: var(--brand-fill, #6D5AE6); color: #fff; font-size: 13px; font-weight: 700;
+  font-family: inherit; text-decoration: none;
 }
 
 /* Huy hiệu minh hoạ đặt absolute ở góc phải trên khối .hsa-viz. Với bảng số

@@ -870,13 +870,47 @@
     exit: function () { window.location.href = '/dashboard'; }
   };
 
-  function start(lesson) {
+  function start(lesson, loi) {
     if (!lesson) {
+      /* NÓI LẠI ĐÚNG CÂU CỦA MÁY CHỦ (vá 14/09/2026).
+
+         Bản cũ hiện MỘT câu cho mọi lý do: "Máy chủ nội dung đang không phản
+         hồi. Thử tải lại trang sau giây lát." + nút Tải lại. Rà luồng học viên
+         hôm nay: một em vừa được xếp lớp nhưng CHƯA ghi danh khoá mở bài học
+         → máy chủ trả 403 kèm đúng cách chữa ("Vào trang khoá học và bấm
+         'Đăng ký học'"), còn màn hình thì đổ lỗi cho máy chủ và mời bấm Tải
+         lại — tải bao nhiêu lần cũng thế.
+
+         Đây là lỗi ĐÃ TỪNG vá ở đường `/complete` ngày 04/09 (xem `cauLoiMayChu`
+         dưới chỗ nộp bài), nhưng đường NẠP bài thì bỏ sót. Cùng một bài học,
+         hai đường, một đường nói thật. */
       var stage = document.querySelector('.lesson-stage');
-      if (stage) stage.innerHTML = '<div class="hsa-empty">' +
-        '<b>Chưa tải được nội dung bài học.</b>' +
-        '<p>Máy chủ nội dung đang không phản hồi. Thử tải lại trang sau giây lát.</p>' +
-        '<button onclick="location.reload()">Tải lại</button></div>';
+      if (!stage) return;
+      stage.innerHTML = '';
+      var hop = document.createElement('div');
+      hop.className = 'hsa-empty';
+      var b = document.createElement('b');
+      b.textContent = loi ? 'Chưa mở được bài này.' : 'Chưa tải được nội dung bài học.';
+      var pp = document.createElement('p');
+      // `textContent`: câu này của máy chủ, nhưng vẫn không nhét vào HTML.
+      pp.textContent = loi || 'Máy chủ nội dung đang không phản hồi. Thử tải lại trang sau giây lát.';
+      hop.appendChild(b);
+      hop.appendChild(pp);
+      if (loi) {
+        // Có câu của máy chủ nghĩa là máy chủ ĐANG sống — nút "Tải lại" là lời
+        // khuyên sai. Dẫn về trang khoá, nơi có nút "Đăng ký học".
+        var a = document.createElement('a');
+        a.className = 'hsa-empty-go';
+        a.href = '/courses/' + encodeURIComponent(state.courseId || '');
+        a.textContent = 'Mở trang khoá học →';
+        hop.appendChild(a);
+      } else {
+        var nut = document.createElement('button');
+        nut.textContent = 'Tải lại';
+        nut.addEventListener('click', function () { location.reload(); });
+        hop.appendChild(nut);
+      }
+      stage.appendChild(hop);
       return;
     }
     state.lesson = lesson;
@@ -918,19 +952,32 @@
     // tại như một biến cục bộ của `init()` — tức không ai ngoài hàm này đọc được.
     state.lessonNo = want;
 
+    /* Giữ lại LÝ DO máy chủ từ chối, không chỉ "có hay không có bài". 403
+       (chưa ghi danh) và 404 (chưa có bài) cần hai câu khác nhau, và chỉ máy
+       chủ biết câu nào. */
+    function doc(r) {
+      if (r.ok) return r.json();
+      return r.json().catch(function () { return null; }).then(function (d) {
+        return { _loi: cauLoiMayChu(r.status, d), _tuChoi: r.status === 403 };
+      });
+    }
+
     fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=' + want)
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(doc)
       .then(function (d) {
         if (d && d.lesson) { state.total = d.total; start(d.lesson); return; }
+        // Bị TỪ CHỐI (chưa ghi danh) thì rơi về bài 1 cũng bị từ chối y hệt —
+        // nói ra ngay thay vì gọi thêm một lượt rồi vẫn im.
+        if (d && d._tuChoi) { start(null, d._loi); return; }
         // Bài yêu cầu chưa có trong CSDL → thử bài 1 trước khi báo lỗi.
-        if (want === 1) { start(null); return; }
+        if (want === 1) { start(null, d && d._loi); return; }
         return fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=1')
-          .then(function (r2) { return r2.ok ? r2.json() : null; })
+          .then(doc)
           .then(function (d2) {
             // Đã RƠI VỀ bài 1 — cập nhật số bài, nếu không trợ lý sẽ nói tên
             // bài 1 kèm số bài mà học viên vừa yêu cầu và không có.
             state.lessonNo = 1;
-            start(d2 && d2.lesson);
+            start(d2 && d2.lesson, d2 && d2._loi);
           });
       })
       .catch(function () { start(null); });

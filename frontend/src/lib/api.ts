@@ -15,9 +15,34 @@
  * thêm một vòng gọi mạng sau khi trang đã hiện.
  */
 
+/**
+ * Thân là CHUỖI mà không khai kiểu nội dung → trình duyệt tự gắn
+ * `text/plain;charset=UTF-8`, và DRF trả **415 Unsupported Media Type**.
+ *
+ * ── VÌ SAO ĐẶT Ở ĐÂY, KHÔNG PHẢI Ở TỪNG NƠI GỌI (14/09/2026) ──────────────
+ *
+ * Rà luồng học viên đầu-cuối hôm nay: em bấm "Nộp bài" → màn hình hiện "Yêu
+ * cầu không hợp lệ", máy chủ không ghi nhận gì. Quét cả `src/`: **bốn** lời
+ * gọi cùng lỗi ấy — em nộp bài, giảng viên giao bài, sửa bài đã giao, và CHẤM
+ * bài. Tức cả tính năng bài tập không dùng được qua giao diện, trong khi mọi
+ * phép kiểm backend đều xanh (chúng gọi thẳng view với `format='json'`).
+ *
+ * Mười chín nơi gọi khác có khai header, nên lỗi không nhìn thấy được bằng
+ * cách đọc một tệp: phải đọc cả hai mươi ba. Đặt mặc định ở đây thì nơi gọi
+ * thứ hai mươi tư không thể quên. `FormData` (tải tệp) vẫn phải để trình duyệt
+ * tự đặt `multipart/form-data; boundary=…` — nên chỉ chạm khi thân là chuỗi.
+ */
+function themKieuNoiDung(opts: RequestInit): RequestInit {
+  if (typeof opts.body !== 'string') return opts;
+  const h = new Headers(opts.headers);
+  if (h.has('Content-Type')) return opts;
+  h.set('Content-Type', 'application/json');
+  return { ...opts, headers: h };
+}
+
 export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
   const r = await fetch(path, {
-    ...opts,
+    ...themKieuNoiDung(opts),
     credentials: 'same-origin', // cookie httpOnly phải đi cùng request
   });
 

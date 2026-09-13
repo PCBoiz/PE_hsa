@@ -57,6 +57,55 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 13 · Rà luồng HỌC VIÊN đầu-cuối: cả tính năng bài tập đang chết ở giao diện
+
+**Cách làm:** tạo tài khoản học viên THỬ trên CSDL thật (mock production), rồi
+đi đúng đường một em mới — quản trị cấp tài khoản + xếp lớp → em **đăng nhập
+thật** (không mượn thẻ) → bị bắt đổi mật khẩu tạm → đăng nhập lại → bảng điều
+khiển → năm màn của em → năm màn phải chặn → bài tập (giao · nộp · chấm · xem
+điểm) → tờ báo cáo phụ huynh. Mọi lời gọi GHI và mọi phản hồi ≥400 đều được ghi
+lại. Dọn xong đếm 9 bảng: **khớp mốc đầu** (users 5, classes 1, members 4,
+assignments 0, submissions 0, sessions 16).
+
+**Lỗi 1 — học viên KHÔNG nộp được bài, và giảng viên KHÔNG chấm được (415).**
+Em bấm "Nộp bài" → "Yêu cầu không hợp lệ"; máy chủ trả **415 Unsupported Media
+Type**. `apiFetch(path, {method:'POST', body: JSON.stringify(...)})` không khai
+kiểu nội dung → trình duyệt gắn `text/plain;charset=UTF-8` → DRF từ chối. Quét
+cả `src/`: **bốn** nơi cùng lỗi — em nộp bài, giảng viên giao bài, sửa bài đã
+giao, và CHẤM bài. Tức cả tính năng bài tập không dùng được qua giao diện, mà
+453 phép kiểm backend vẫn xanh vì chúng gọi thẳng view với `format='json'`.
+Mười chín nơi gọi khác có khai header, nên đọc một tệp không thấy gì — phải đọc
+cả hai mươi ba. Sửa Ở MỘT CHỖ: `apiFetch` tự khai `application/json` khi thân
+là CHUỖI (giữ nguyên nếu nơi gọi tự khai; **không** đụng `FormData` — trình
+duyệt phải tự đặt `boundary` cho đường nhập đề thi thử).
+`e2e/unit/kieu-noi-dung.test.mjs` gọi `apiFetch` thật với `fetch` giả và đọc
+header nó gửi (đỏ trước khi vá), kèm quét tĩnh mọi nơi gọi có thân.
+Rà lại sau khi vá: em nộp được, máy chủ ghi nhận, giảng viên chấm 8/10, em thấy
+điểm và nhận xét.
+
+**Lỗi 2 — màn bài học đổ lỗi cho máy chủ khi lỗi là ở chỗ khác.** Em vừa được
+xếp lớp nhưng CHƯA ghi danh khoá, mở bài học → máy chủ trả 403 kèm đúng cách
+chữa ("Vào trang khoá học và bấm Đăng ký học"), còn màn hình hiện "Máy chủ nội
+dung đang không phản hồi. Thử tải lại trang sau giây lát." + nút **Tải lại** —
+tải bao nhiêu lần cũng thế. Đường `/complete` của CÙNG tệp này đã vá đúng
+chuyện ấy hôm 04/09 (`cauLoiMayChu`), nhưng đường NẠP bài thì bỏ sót: một bài
+học, hai đường, chỉ một đường nói thật. Nay đường nạp đọc câu của máy chủ, và
+khi máy chủ còn sống thì thay nút "Tải lại" bằng lối đi thật — "Mở trang khoá
+học →". Dựng bằng `textContent`, không nhét chuỗi vào HTML.
+
+**Đạt như thiết kế:** cấp tài khoản sinh mật khẩu tạm và ép đổi ngay; đổi xong
+**cắt mọi phiên** (§39) rồi đá về `/login?vua-doi-mat-khau=1` với câu giải
+thích — đăng nhập lại bằng mật khẩu mới chạy đúng; bảng điều khiển hiện tên em
+và khối "Lớp của bạn"; năm màn quản trị/giảng dạy đều chặn; tờ báo cáo phụ
+huynh dựng được và nêu đúng tên em.
+
+**Thước tự bắt được một chỗ:** `global-mo-coi.test.mjs` báo `main.js` đọc
+`window.__napTruoc` mà không script cũ nào ghi — đúng: nay REACT ghi nó
+(`NapTruocDuLieu`, vòng 12). Ghi vào `CHAP_NHAN` kèm lý do và ghi rõ trang
+không dựng component ấy thì bên đọc rơi về `fetch` như cũ.
+
+**Cổng chất lượng:** eslint · tsc · 25/25 unit · 22 trang × 2 khổ = 0/0/0/0.
+
 ## 14/09/2026 — VÒNG 12 · Nạp trước dữ liệu Trang của tôi, và con số LCP cũ hoá ra là ảo
 
 **Việc anh duyệt:** "cho tầng JS cũ chạy sớm". Đo trước: chuỗi khởi động là

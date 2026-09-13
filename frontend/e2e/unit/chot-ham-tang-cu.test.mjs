@@ -84,7 +84,11 @@ const TRAN_TEP = 13;
 // 14/09/2026: 7354 → 7359 (+5). VÁ LỖI hiệu năng trong tệp đã có: `__apiGet`
 // nhận lời hứa do HTML máy chủ bắn sẵn (`NapTruocDuLieu`), vì tầng này chỉ
 // chạy sau khi React hydrate — đo được 2,2 s mạng ngồi không mỗi lượt mở.
-const TRAN_DONG_MA = 7359;
+// 14/09/2026: 7359 → 7385 (+26). VÁ LỖI trong tệp đã có: màn bài học nói lại
+// ĐÚNG câu của máy chủ. Một em chưa ghi danh mở bài → 403 kèm cách chữa, mà
+// màn hình lại đổ cho "máy chủ không phản hồi" và mời bấm Tải lại. Cùng lỗi
+// đã vá ở đường `/complete` hôm 04/09; đường NẠP bài thì bỏ sót.
+const TRAN_DONG_MA = 7385;
 
 let failures = 0;
 function check(name, cond, them) {

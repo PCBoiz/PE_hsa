@@ -139,6 +139,11 @@ const CHAP_NHAN = new Map([
   ['bayTieuDiem',
    'thoái lui CÓ CHỦ Ý, ghi rõ tại main.js:1152 — thiếu bẫy thì hộp vẫn dùng '
    + 'được, chỉ kém tiếp cận'],
+  ['__napTruoc',
+   'do REACT ghi, không phải script cũ: `NapTruocDuLieu` (14/09/2026) bắn sẵn '
+   + 'vài lượt GET ngay trong HTML máy chủ trả về, `main.js::__apiGet` dùng lại '
+   + 'lời hứa ấy. Trang nào không dựng component đó thì `__napTruoc` vắng mặt '
+   + 'và bên đọc rơi về `fetch` như cũ — đã kiểm tra `window.__napTruoc &&`'],
   ['__saveHsaGoals',
    'cùng lối: mục "Mục tiêu HSA" chỉ có ở dashboard; nơi khác rơi về '
    + 'Promise.resolve()'],
