@@ -21,7 +21,7 @@ nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 | · có cổng vai trò | 49 | lớp `Is*` khác |
 | Trang giao diện | 26 | `frontend/src/app/**/page.tsx` |
 | Bảng CSDL | 56 | `information_schema.tables` |
-| · có dữ liệu | 36 | count(*) > 0 |
+| · có dữ liệu | 35 | count(*) > 0 |
 | Tệp kiểm thử backend | 36 | `backend/**/tests*.py` |
 | Tệp kiểm thử frontend | 33 | `frontend/e2e/**` |
 
@@ -35,8 +35,8 @@ nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 | · học viên | 3 |
 | Lớp | 1 |
 | Đợt học | 1 |
-| Buổi học | 4 |
-| Lượt điểm danh | 6 |
+| Buổi học | 16 |
+| Lượt điểm danh | 0 |
 | Đề thi thử | 1 |
 | Học viên có email phụ huynh | 0 |
 | Học viên có số phụ huynh | 0 |

@@ -36,8 +36,9 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   Workflow giữ ấm trên GitHub **không có tác dụng** — GitHub chạy nó 3–5 giờ/lần
   và 8/8 lượt thất bại. Đã sửa cho đúng vai "đồng hồ sức khoẻ". Giữ ấm thật cần
   anh Sơn làm A1 trong `VIEC_CUA_ANH.md`.
-- **CSDL**: 5 tài khoản (đã xoá e2e), 1 lớp, 1 đợt, 4 buổi, 6 lượt điểm danh —
-  dữ liệu ERP đầu tiên, tạo 07/09 có duyệt. 0 em có liên lạc phụ huynh.
+- **CSDL**: 5 tài khoản, 1 lớp, 1 đợt, **16 buổi đều ở tương lai** (15/09–05/11,
+  sinh bằng công cụ 13/09), 0 lượt điểm danh — 4 buổi mẫu sai thứ và 6 lượt điểm
+  danh mẫu đã xoá có duyệt, sao lưu ở `.sao_luu/`. 0 em có liên lạc phụ huynh.
 - **Cổng chất lượng lần cuối (07/09)**: 453/453 pytest · giao diện 21 trang × 2
   khổ × 2 bộ màu = 0/0/0/0 · build/eslint/tsc/ruff sạch.
 - **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
@@ -46,6 +47,44 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
+
+## 13/09/2026 — VÒNG 4b · Xoá 4 buổi mẫu sai thứ, sinh lại lịch lớp 1 (việc C — GHI PRODUCTION có duyệt)
+
+**Anh Sơn duyệt:** "Xoá 4 buổi mẫu, sinh lại bằng công cụ mới". Chạy SAU khi bản B
+lên production (tuyến sinh lịch 404 → 401 lúc 23:52:37). Làm trước thì giao diện
+cũ hiện 16 chip vàng "chưa mở sổ" và cơ sở học phí cũ đếm cả buổi tương lai.
+
+**Sao lưu trước:** `.sao_luu/buoi-mau-lop1-2026-09-13.json` — 4 buổi, 6 dòng
+điểm danh, 0 sự kiện học (thư mục chặn trong `.gitignore`).
+
+**Làm qua API thật** (có nhật ký, dọn sự kiện như thao tác tay), kịch bản tự dừng
+khi lệch: xem trước TRƯỚC khi xoá (16 tạo / 0 nghỉ / 0 trùng — hỏng ở bước này thì
+lớp vẫn còn buổi) → xoá 1350, 1352, 1354, 1355 (mất 2+2+2+0 dòng điểm danh của
+hai tài khoản kiểm thử) → sinh 16 buổi id 1542–1557, T3/T5 19:30 90' từ 15/09
+tới 05/11.
+
+**Đếm:** trước 4 buổi · 6 điểm danh → sau 16 buổi · 0 điểm danh; nhật ký thêm
+đúng 4 `session.delete` + 1 `session.generate`.
+
+**Giao diện sau khi sinh (trình duyệt thật, 1366/390px, chặn mọi lời ghi):**
+trang buổi học lớp 1 hiện "Sắp tới (16)", 3 buổi gần nhất trước (15/09, 17/09,
+22/09) mang chip "Sắp tới", **0** chip "Chưa mở sổ điểm danh", mở rộng ra đủ 16,
+không tràn ngang. Báo cáo trạng thái và hồ sơ PDF sinh lại (buổi 4 → 16, điểm
+danh 6 → 0).
+
+**Lỗi lộ ra NGAY SAU khi sinh, và đã vá:** màn Cơ sở học phí dựa vào
+`buoiDaMo > 0` để chọn nhánh, nên với 16 buổi đều ở tương lai nó rơi vào "Chưa có
+buổi học nào được mở… Tạo buổi học — đây là thứ đang thiếu hoàn toàn (đo hôm
+nay: 0 buổi)" — một con số đo 07/09 in cứng trong chữ giao diện, bảo người dùng
+đi tạo thứ đã có. Thêm nhánh "Lịch đã có — buổi đầu tiên chưa tới" nêu tổng
+`buoiSapToi` và vì sao bảng chỉ đếm buổi đã diễn ra; bỏ con số cũ. Đo lại trên
+trang thật: hiện đúng "1 lớp đã có tổng 16 buổi lên lịch, nhưng chưa buổi nào tới
+giờ". eslint/tsc sạch. Bài học: đổi NGHĨA của một con số (`buoiDaMo` thôi gồm buổi
+tương lai) thì phải rà cả chỗ dùng nó để RẼ NHÁNH, không chỉ chỗ hiển thị nó.
+
+**Để ý khi đọc nhật ký:** id `admin_audit` nhảy 60 → 3375. Không phải 3.300 dòng
+mất — mỗi lượt pytest chèn rồi cuộn lại vẫn tiêu số của sequence. Đối chiếu bằng
+danh sách hành động mới, không bằng hiệu số id.
 
 ## 13/09/2026 — VÒNG 4 · Sinh lịch cả kỳ + ngày nghỉ theo đợt (việc B) · sửa hồ sơ PDF (việc D)
 

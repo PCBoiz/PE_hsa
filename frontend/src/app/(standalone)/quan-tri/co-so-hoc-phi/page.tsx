@@ -42,6 +42,7 @@ export default async function CoSoHocPhiPage() {
   const kq = await serverJson<Payload>('/api/admin/co-so-hoc-phi', { requireAuth: true });
   const lop = kq.ok ? kq.data.lop : [];
   const coBuoi = lop.some((l) => l.buoiDaMo > 0);
+  const sapToi = lop.reduce((n, l) => n + (l.buoiSapToi ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -78,6 +79,24 @@ export default async function CoSoHocPhiPage() {
             hint="Tạo lớp ở mục Lớp học, rồi xếp học viên vào."
           />
         </Card>
+      ) : !coBuoi && sapToi > 0 ? (
+        <Card>
+          <CardHead title="Lịch đã có — buổi đầu tiên chưa tới" />
+          {/* Tách khỏi nhánh "chưa có buổi" ngay dưới (13/09/2026). Từ khi sinh
+              được lịch cả kỳ, một lớp có thể có 16 buổi lên lịch mà 0 buổi đã
+              tới giờ. Đo trên trang thật cùng ngày: nhánh cũ nói với đúng lớp ấy
+              "Tạo buổi học — đang thiếu hoàn toàn (đo hôm nay: 0 buổi)", tức bảo
+              người ta đi tạo thứ đã có. */}
+          <p className="text-body text-ink-2">
+            {lop.length} lớp đã có tổng {sapToi} buổi lên lịch, nhưng chưa buổi nào tới
+            giờ. Bảng chỉ đếm buổi <strong>đã diễn ra</strong> — đếm cả buổi chưa dạy
+            thì ai thu theo thời gian sẽ thu trước tiền cả khoá.
+          </p>
+          <p className="mt-3 text-small text-ink-3">
+            Số sẽ hiện từ sau buổi đầu tiên. Nhớ điểm danh từng buổi — cột &ldquo;có
+            mặt&rdquo; lấy thẳng từ đó.
+          </p>
+        </Card>
       ) : !coBuoi ? (
         <Card>
           <CardHead title="Chưa có buổi học nào được mở" />
@@ -93,8 +112,8 @@ export default async function CoSoHocPhiPage() {
               theo kỳ thu thay vì gộp toàn bộ lịch sử.
             </li>
             <li>
-              <strong>Tạo buổi học</strong> trong lớp — đây là thứ đang thiếu
-              hoàn toàn (đo hôm nay: 0 buổi).
+              <strong>Tạo buổi học</strong> trong lớp — từng buổi, hoặc sinh lịch
+              cả kỳ một lần ở trang buổi học của lớp.
             </li>
             <li>
               <strong>Điểm danh</strong>{' '}từng buổi — cột &ldquo;có mặt&rdquo; lấy
