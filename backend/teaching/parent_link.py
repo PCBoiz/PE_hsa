@@ -45,6 +45,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common import audit
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.permissions import IsSeniorTeachingStaff, can_see_class
@@ -132,12 +133,24 @@ class ParentReportLinkView(APIView):
             return Response({'error': loi}, status=404)
 
         token = secrets.token_urlsafe(SO_BYTE)
-        x('''INSERT INTO parent_report_links
-                 (token, class_id, user_id, period_from, period_to,
-                  created_by, expires_at)
-             VALUES (%s, %s, %s, %s, %s, %s, now() + %s * INTERVAL '1 day')''',
-          (token, class_id, user_id, tu, den, request.user.id, HAN_NGAY))
+        link = q1('''INSERT INTO parent_report_links
+                         (token, class_id, user_id, period_from, period_to,
+                          created_by, expires_at)
+                     VALUES (%s, %s, %s, %s, %s, %s, now() + %s * INTERVAL '1 day')
+                     RETURNING id''',
+                  (token, class_id, user_id, tu, den, request.user.id, HAN_NGAY))
+        # Ghi VIỆC, không ghi CHÌA: `detail` không mang token — nhật ký đọc được
+        # bởi mọi quản trị viên, mà chìa thì chỉ phụ huynh của em ấy được cầm.
+        audit.record(request, audit.PARENT_LINK_CREATE, target_type='user',
+                     target_id=user_id, target_label=data['student']['name'],
+                     summary='Phát hành đường công khai tới báo cáo của em %s (lớp %s), '
+                             'kỳ %s – %s, hạn %d ngày.'
+                             % (data['student']['name'] or '?', data['class']['name'],
+                                tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y'), HAN_NGAY),
+                     detail={'link_id': link['id'], 'class_id': class_id,
+                             'from': tu.isoformat(), 'to': den.isoformat()})
         return Response({
+            'id': link['id'],
             'token': token,
             'from': tu.isoformat(),
             'to': den.isoformat(),
@@ -157,11 +170,20 @@ class ParentReportLinkRevokeView(APIView):
     permission_classes = [IsSeniorTeachingStaff]
 
     def post(self, request, link_id):
-        d = q1('SELECT class_id FROM parent_report_links WHERE id = %s', (link_id,))
+        d = q1('''SELECT l.class_id, l.user_id, l.revoked_at, u.name AS ten
+                  FROM parent_report_links l LEFT JOIN users u ON u.id = l.user_id
+                  WHERE l.id = %s''', (link_id,))
         if not d or not can_see_class(request.user, d['class_id']):
             return Response({'error': 'Không tìm thấy đường dẫn này.'}, status=404)
         x('''UPDATE parent_report_links SET revoked_at = now()
              WHERE id = %s AND revoked_at IS NULL''', (link_id,))
+        # Chìa đã chết từ trước thì không có việc gì xảy ra — không ghi thêm
+        # một dòng "thu hồi" thứ hai cho cùng một chìa.
+        if d['revoked_at'] is None:
+            audit.record(request, audit.PARENT_LINK_REVOKE, target_type='user',
+                         target_id=d['user_id'], target_label=d['ten'],
+                         summary='Thu hồi đường công khai tới báo cáo của em %s.' % (d['ten'] or '?'),
+                         detail={'link_id': link_id, 'class_id': d['class_id']})
         return Response({'ok': True})
 
 

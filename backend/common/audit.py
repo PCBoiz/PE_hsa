@@ -56,6 +56,17 @@ SESSION_DELETE = 'session.delete'
 SESSION_GENERATE = 'session.generate'
 ATTENDANCE_MARK = 'attendance.mark'
 
+#: Báo cáo phụ huynh (14/09/2026). Một chìa là một ĐƯỜNG CÔNG KHAI tới tờ báo
+#: cáo của một em trong 45 ngày, không cần đăng nhập — tức là hành động đưa dữ
+#: liệu của một đứa trẻ ra ngoài cửa. Trước 14/09 bảng `parent_report_links`
+#: có `created_by` nhưng màn Nhật ký không thấy: ai phát hành, thu hồi, gửi cả
+#: lớp lúc nào đều phải mở SQL mới biết. Gửi cả lớp ghi MỘT dòng cho cả lượt
+#: (`detail` mang số gửi được / lỗi / bỏ qua), không phải mỗi em một dòng —
+#: lớp 30 em là 30 dòng che mất mọi việc khác trong ngày.
+PARENT_LINK_CREATE = 'parent_link.create'
+PARENT_LINK_REVOKE = 'parent_link.revoke'
+PARENT_REPORT_SEND_ALL = 'parent_report.send_all'
+
 #: Đợt học (§36, 31/08/2026). Vòng đời một đợt là thông tin tổ chức của trung
 #: tâm, không phải dữ liệu học của em nào — nhưng xoá một đợt gỡ nhãn khỏi hàng
 #: chục lớp, nên vẫn thuộc nhóm việc SỬA phải ghi lại.

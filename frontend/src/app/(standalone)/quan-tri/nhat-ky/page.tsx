@@ -68,6 +68,11 @@ const VIEC: Record<string, string> = {
   'session.delete': 'Xoá buổi học',
   'session.generate': 'Sinh buổi học hàng loạt',
   'attendance.mark': 'Điểm danh',
+  // Báo cáo phụ huynh (14/09/2026): đường công khai tới tờ báo cáo một em là
+  // dữ liệu của một đứa trẻ đi ra ngoài cửa — phải thấy ở đây, không phải ở SQL.
+  'parent_link.create': 'Phát hành link báo cáo phụ huynh',
+  'parent_link.revoke': 'Thu hồi link báo cáo phụ huynh',
+  'parent_report.send_all': 'Gửi báo cáo cả lớp',
   // Nhóm `term.*` thêm 31/08/2026 cùng tính năng đợt học. Đây đúng là cách
   // bảng nhãn này trôi khỏi backend: thêm hành động mới ở `common/audit.py` mà
   // quên chỗ này, và mã máy lại lọt ra màn hình — đúng thứ chú thích trên vừa

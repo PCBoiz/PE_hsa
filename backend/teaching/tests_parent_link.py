@@ -15,6 +15,7 @@ có thể mắc mà không kêu:
 Cả ba đều trả về HTTP 200 khi hỏng, nên không có lỗi nào nổi lên. Chỉ có phép
 kiểm mới thấy.
 """
+import json
 from datetime import timedelta
 
 import pytest
@@ -22,7 +23,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from accounts.models import User
 from common.clock import local_now
-from common.db import q1
+from common.db import q, q1
 from common.permissions import ROLE_ADMIN, ROLE_STUDENT, ROLE_TEACHER
 from teaching.parent_link import (
     ParentReportLinkRevokeView,
@@ -305,3 +306,49 @@ def test_danh_sach_khong_hien_chia_het_han(canh):
     kq = _goi(ParentReportLinkView, 'get', ai=canh['gv'],
               class_id=canh['lop'], user_id=canh['em'].id)
     assert kq.data['links'] == [], kq.data
+
+
+# ── Nhật ký (14/09/2026) ──────────────────────────────────────────────────────
+# Một chìa là dữ liệu của một đứa trẻ đi ra ngoài cửa, không cần đăng nhập.
+# Trước 14/09 không dòng nào vào `admin_audit`: ai phát hành, thu hồi lúc nào
+# chỉ mở SQL mới biết. Ba phép kiểm dưới đây đỏ trên mã cũ.
+
+def _nhat_ky(action):
+    return q('SELECT actor_id, target_type, target_id, target_label, summary, detail '
+             'FROM admin_audit WHERE action=%s ORDER BY id', (action,))
+
+
+@pytest.mark.django_db
+def test_phat_hanh_chia_ghi_nhat_ky_nhung_KHONG_ghi_token(canh):
+    token = _cap(canh)
+    ds = _nhat_ky('parent_link.create')
+    assert len(ds) == 1, ds
+    d = ds[0]
+    assert d['actor_id'] == canh['gv'].id
+    assert d['target_type'] == 'user' and d['target_id'] == str(canh['em'].id)
+    assert 'HV Link' in d['summary'] and 'Lop link' in d['summary']
+    # Nhật ký mọi quản trị viên đọc được; chìa thì chỉ phụ huynh em ấy được cầm.
+    assert token not in (d['summary'] or '') and token not in json.dumps(d['detail'], ensure_ascii=False)
+
+
+@pytest.mark.django_db
+def test_thu_hoi_ghi_nhat_ky_MOT_lan_du_bam_hai_lan(canh):
+    token = _cap(canh)
+    link = q1('SELECT id FROM parent_report_links WHERE token=%s', (token,))
+    for _ in range(2):
+        assert _goi(ParentReportLinkRevokeView, 'post', {}, ai=canh['gv'],
+                    link_id=link['id']).status_code == 200
+    ds = _nhat_ky('parent_link.revoke')
+    assert len(ds) == 1, ds
+    assert ds[0]['target_id'] == str(canh['em'].id)
+    assert json.loads(ds[0]['detail'])['link_id'] == link['id'] if isinstance(ds[0]['detail'], str) \
+        else ds[0]['detail']['link_id'] == link['id']
+
+
+@pytest.mark.django_db
+def test_phan_hoi_cap_chia_mang_id_de_thu_hoi_duoc_ngay(canh):
+    """Kịch bản rà 14/09 phải đi đường danh sách để tìm id thu hồi — thừa một lượt."""
+    kq = _goi(ParentReportLinkView, 'post', {}, ai=canh['gv'],
+              class_id=canh['lop'], user_id=canh['em'].id)
+    assert kq.status_code == 201
+    assert q1('SELECT id FROM parent_report_links WHERE token=%s', (kq.data['token'],))['id'] == kq.data['id']

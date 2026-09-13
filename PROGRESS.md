@@ -57,6 +57,27 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 10b · Link báo cáo phụ huynh vào Nhật ký (lỗ hổng thấy khi rà vòng 10)
+
+**Lỗ hổng:** phát hành / thu hồi chìa công khai tới tờ báo cáo của một em và
+gửi báo cáo cả lớp **không ghi `admin_audit`** — `created_by` chỉ nằm trong
+bảng link, `requested_by` trong bảng gửi; màn Nhật ký (thứ quản trị viên mở)
+không thấy gì. Đó là hành động đưa dữ liệu của một đứa trẻ ra ngoài cửa trong
+45 ngày, không cần đăng nhập. Sửa: ba mã `parent_link.create`,
+`parent_link.revoke`, `parent_report.send_all` (một dòng cho cả lượt, `detail`
+mang đếm + `ids`; không mỗi em một dòng — lớp 30 em là 30 dòng che mọi việc
+khác). `detail` KHÔNG mang token: nhật ký mọi quản trị viên đọc được, chìa thì
+chỉ phụ huynh em ấy được cầm. Thu hồi chìa đã chết không ghi dòng thứ hai.
+POST cấp chìa nay trả thêm `id` (kịch bản thu hồi khỏi đi đường danh sách).
+
+**Phép kiểm (đỏ trước 4/4 trên mã cũ, xanh sau; 43/43 hai tệp):**
+`tests_parent_link.py` +3 (ghi nhật ký đúng em/đúng người, token không lộ; thu
+hồi hai lần một dòng; phản hồi mang `id`), `tests_parent_send.py` +1 (một dòng
+cho cả lượt: "1 gửi được, 1 không gửi", `ids` đúng hai em đang học).
+`nhan-nhat-ky.test.mjs` bắt ba nhãn mới ở màn hình. Rà dev: cấp → thu hồi ×2
+→ Nhật ký hiện "Phát hành link báo cáo phụ huynh" / "Thu hồi link báo cáo phụ
+huynh", không mã máy, không token; link thử xoá bằng SQL (links 0).
+
 ## 14/09/2026 — VÒNG 10 · T18 mức 2: màn hình KIỂM hình dạng dữ liệu máy chủ (zod)
 
 **Vì sao:** `serverJson<T>` chỉ ép kiểu — `T` là lời hứa của người viết trang,

@@ -16,6 +16,7 @@ thật trong bộ kiểm là gửi tin thật, mất phí thật, tới số th�
      đã thử và trượt, còn phụ huynh chỉ biết là chưa nhận được gì.
   6. Gửi hai lần KHÔNG đẻ ra hai chìa cho cùng một kỳ.
 """
+import json
 from datetime import timedelta
 
 import pytest
@@ -24,7 +25,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from accounts.models import User
 from common import mail, zalo
 from common.clock import local_now
-from common.db import q1
+from common.db import q, q1
 from common.permissions import ROLE_STUDENT, ROLE_TEACHER
 from teaching.parent_send import ParentReportSendAllView
 
@@ -442,3 +443,21 @@ def test_GET_noi_ro_kenh_nao_dung_duoc_cho_tung_em(em_co_email, chua_oa, mail_gi
     # phải nói ra hai chuyện ấy riêng rẽ.
     assert theo_ten['HV Co So']['coLienLac'] is True
     assert theo_ten['HV Co So']['kenh'] is None
+
+
+@pytest.mark.django_db
+def test_gui_ca_lop_ghi_nhat_ky_MOT_dong_cho_ca_luot(lop, oa_gia):
+    """Nhật ký trả lời "ai bấm gửi cả lớp, lúc nào, được bao nhiêu" — một dòng,
+    không phải mỗi em một dòng (lớp 30 em là 30 dòng che mọi việc khác)."""
+    kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
+    assert kq.status_code == 200, kq.data
+    ds = q('SELECT actor_id, target_id, target_label, summary, detail FROM admin_audit '
+           "WHERE action='parent_report.send_all'")
+    assert len(ds) == 1, ds
+    d = ds[0]
+    assert d['actor_id'] == lop['gv'].id and d['target_id'] == str(lop['id'])
+    assert d['target_label'] == 'Lop gui'
+    # 1 gửi được (em có số), 1 không gửi (em thiếu số); em đã rời lớp không tính.
+    assert '1 gửi được' in d['summary'] and '1 không gửi' in d['summary'], d['summary']
+    ct = d['detail'] if isinstance(d['detail'], dict) else json.loads(d['detail'])
+    assert sorted(ct['ids']) == sorted([lop['co'].id, lop['khong'].id])

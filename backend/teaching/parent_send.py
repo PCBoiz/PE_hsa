@@ -37,7 +37,7 @@ from datetime import timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common import mail, zalo
+from common import audit, mail, zalo
 from common.clock import local_today
 from common.db import q, q1, x
 from common.permissions import IsSeniorTeachingStaff, can_see_class
@@ -278,6 +278,16 @@ class ParentReportSendAllView(APIView):
         dem = {}
         for r in ket:
             dem[r['trangThai']] = dem.get(r['trangThai'], 0) + 1
+        # Một dòng cho cả lượt. Chìa của từng em nằm trong `parent_report_links`
+        # (có `created_by`), lượt gửi từng em nằm trong `parent_report_sends` —
+        # nhật ký chỉ cần trả lời "ai bấm gửi cả lớp, lúc nào, được bao nhiêu".
+        audit.record(request, audit.PARENT_REPORT_SEND_ALL, target_type='class',
+                     target_id=class_id, target_label=ten_lop,
+                     summary='Gửi báo cáo cả lớp %s (kỳ %s): %d gửi được, %d lỗi, %d không gửi.'
+                             % (ten_lop, ky_chu, dem.get('da_gui', 0), dem.get('loi', 0),
+                                len(ket) - dem.get('da_gui', 0) - dem.get('loi', 0)),
+                     detail={'from': tu.isoformat(), 'to': den.isoformat(), 'dem': dem,
+                             'ids': [r['id'] for r in ket]})
         return Response({
             'period': {'from': tu.isoformat(), 'to': den.isoformat()},
             'znsSanSang': zalo.da_cau_hinh() or zalo.che_do_thu(),
