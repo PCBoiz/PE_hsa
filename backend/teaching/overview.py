@@ -42,7 +42,7 @@ from rest_framework.views import APIView
 
 from common.clock import local_now
 from common.db import q
-from common.permissions import IsAdminRole
+from common.permissions import IsAdminOrAcademic
 from teaching.attendance import KHONG_TINH, ti_le
 from teaching.vocab import chi_hoc_vien
 
@@ -315,8 +315,17 @@ def tong_quan(term_id=None):
 
 
 class AdminOverviewView(APIView):
-    """GET /api/admin/overview?term_id= — bảng điều khiển toàn trung tâm."""
-    permission_classes = [IsAdminRole]
+    """GET /api/admin/overview?term_id= — bảng điều khiển toàn trung tâm.
+
+    `IsAdminOrAcademic` từ 14/09/2026. Quyết định 01/09 (TODO, bảng vai trò)
+    ghi học vụ "xem MỌI lớp, báo cáo trung tâm"; hồ sơ gửi TopHSA và bài hướng
+    dẫn "Mở đầu ngày làm việc" (viết cho học vụ) đều trỏ vào trang này — mà mã
+    thì khoá `IsAdminRole`, và một phép kiểm đơn vị còn ghim cả điều ngược lại.
+    Rà luồng học vụ trên trình duyệt thật mới lộ: tài liệu nói ba lần một đằng,
+    cửa mở một nẻo. Dữ liệu ở đây là số gộp theo lớp/đợt, không có liên lạc
+    của em nào — không có lý do riêng tư nào để giữ cửa hẹp hơn quyết định.
+    """
+    permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
         raw = (request.query_params.get('term_id') or '').strip()

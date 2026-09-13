@@ -10,6 +10,8 @@ phép kiểm ấy thành thứ chạy lại được.
 Bộ này chạy trên CSDL THẬT rồi cuộn lại (xem conftest.py), nên mọi thứ tạo ra ở
 đây phải tạo bằng SQL trong test — không có bản ghi cố định nào để dựa vào.
 """
+import re
+
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -1159,6 +1161,11 @@ def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop, vai_
     assert can_see_class(hv, lop['id']) is True
     assert _goi(AdminClassesView, 'get', ai=hv).status_code == 200
     assert _goi(AdminTermsView, 'get', ai=hv).status_code == 200
+    # LÀM ĐƯỢC: bảng điều khiển toàn trung tâm ("báo cáo trung tâm" trong quyết
+    # định 01/09). Tới 14/09/2026 mã khoá `IsAdminRole` — hẹp hơn quyết định,
+    # trong khi hồ sơ và bài hướng dẫn đều nói học vụ vào được.
+    from teaching.overview import AdminOverviewView
+    assert _goi(AdminOverviewView, 'get', ai=hv).status_code == 200
     tao = _goi(AdminClassesView, 'post', {'name': 'Lop do hoc vu tao'}, ai=hv)
     assert tao.status_code in (200, 201), tao.data
 
@@ -1255,3 +1262,30 @@ def test_bao_cao_lop_KHONG_lap_lai_cau_SQL_nao(lop):
     assert not lap, (
         'có câu SQL chạy nhiều lần trong MỘT báo cáo lớp — gần như chắc chắn nó '
         'nằm trong vòng lặp học viên: %s' % lap)
+
+
+# ── Trạng thái lớp: mã, CSDL và màn hình phải là MỘT danh sách (14/09/2026) ──
+
+@pytest.mark.django_db
+def test_trang_thai_lop_khop_rang_buoc_CSDL_va_tao_duoc_voi_moi_gia_tri(db):
+    """Rà luồng học vụ trên trình duyệt thật 14/09/2026: bấm "Tạo lớp" với
+    trạng thái mặc định của biểu mẫu → **500**. Biểu mẫu gửi `draft`, mã nhận
+    `draft`, còn ràng buộc `classes_status_check` (T42, 31/08) chỉ cho
+    `active · finished · cancelled`. Ba nơi ba danh sách, và nơi thật sự
+    quyết định là CSDL — nên phép kiểm này đọc thẳng ràng buộc rồi đòi mã
+    khớp, và tạo thử một lớp với TỪNG giá trị để không bao giờ trả 500 nữa.
+    """
+    from teaching.views import CLASS_STATUS, AdminClassesView
+    rb = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint "
+            "WHERE conname = 'classes_status_check'")
+    assert rb, 'CSDL không có classes_status_check'
+    trong_csdl = set(re.findall(r"'([a-z]+)'", rb['d']))
+    assert set(CLASS_STATUS) == trong_csdl, (CLASS_STATUS, rb['d'])
+
+    ad = _nguoi('AD Trang Thai', 'admin')
+    for tt in CLASS_STATUS:
+        ra = _goi(AdminClassesView, 'post', {'name': 'Lop tt %s' % tt, 'status': tt}, ai=ad)
+        assert ra.status_code in (200, 201), (tt, ra.status_code, ra.data)
+    # Bỏ trống trạng thái (biểu mẫu mặc định) cũng phải tạo được.
+    ra = _goi(AdminClassesView, 'post', {'name': 'Lop khong tt'}, ai=ad)
+    assert ra.status_code in (200, 201), ra.data

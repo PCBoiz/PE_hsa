@@ -62,7 +62,7 @@ export default async function LopHocPage() {
     <LopHocClient
       initial={lop.ok ? lop.data.classes : []}
       giangVien={lop.ok ? lop.data.teachers : []}
-      trangThai={lop.ok ? lop.data.statuses : ['draft', 'active', 'finished']}
+      trangThai={lop.ok ? lop.data.statuses : ['active', 'finished', 'cancelled']}
       // Đợt và khoá chỉ là ô CHỌN. Không đọc được thì trang vẫn phải dùng được
       // để tạo lớp — nên không cho hỏng cả trang vì một danh sách phụ.
       dotHoc={dot.ok ? dot.data.terms : []}

@@ -45,8 +45,10 @@ export type Tab = {
 };
 
 export const TABS: readonly Tab[] = [
-  // `IsAdminRole` — bảng điều khiển toàn trung tâm (teaching/overview.py).
-  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI] },
+  // `IsAdminOrAcademic` — bảng điều khiển toàn trung tâm (teaching/overview.py).
+  // Học vụ vào được từ 14/09/2026, theo đúng quyết định 01/09 ("báo cáo trung
+  // tâm"); trước đó mã khoá hẹp hơn quyết định. Xem docstring `AdminOverviewView`.
+  { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — đổi vai trò và đặt lại mật khẩu KHÔNG mở cho học vụ
   // (anh Sơn chốt 01/09/2026).
   { href: '/quan-tri/tai-khoan', label: 'Tài khoản', icon: 'users', vai: [VAI_QUAN_TRI] },

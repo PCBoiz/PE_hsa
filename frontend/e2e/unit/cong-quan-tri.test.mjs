@@ -68,7 +68,10 @@ const doc = (...p) => {
  * sang đây. Cột `tep` nói tra ở đâu.
  */
 const TRANG = [
-  { href: '/quan-tri/tong-quan', lop: 'IsAdminRole', tep: 'teaching/overview.py',
+  // `IsAdminOrAcademic` từ 14/09/2026: quyết định 01/09 cho học vụ xem "báo cáo
+  // trung tâm", nhưng mã và CHÍNH PHÉP KIỂM NÀY từng ghim học vụ ở ngoài —
+  // một phép kiểm canh sai luật thì giữ cái sai bền hơn cả mã.
+  { href: '/quan-tri/tong-quan', lop: 'IsAdminOrAcademic', tep: 'teaching/overview.py',
     view: 'AdminOverviewView' },
   { href: '/quan-tri/tai-khoan', lop: 'IsAdminRole', tep: 'teaching/admin_users.py',
     view: 'AdminUsersView' },
@@ -144,12 +147,12 @@ const cuaQT = tabsCho(VAI_QUAN_TRI).map((t) => t.href);
 const cuaHV = tabsCho(VAI_HOC_VU).map((t) => t.href);
 check('quản trị viên thấy mọi trang của khu', TRANG.every((t) => cuaQT.includes(t.href)),
   JSON.stringify(cuaQT));
-check('học vụ thấy Lớp học và Đợt học',
-  cuaHV.includes('/quan-tri/lop-hoc') && cuaHV.includes('/quan-tri/dot-hoc'),
+check('học vụ thấy Toàn trung tâm, Lớp học và Đợt học',
+  cuaHV.includes('/quan-tri/tong-quan') && cuaHV.includes('/quan-tri/lop-hoc')
+    && cuaHV.includes('/quan-tri/dot-hoc'),
   JSON.stringify(cuaHV));
-check('học vụ KHÔNG thấy Tài khoản / Nhật ký / Toàn trung tâm',
-  !cuaHV.includes('/quan-tri/tai-khoan') && !cuaHV.includes('/quan-tri/nhat-ky')
-    && !cuaHV.includes('/quan-tri/tong-quan'),
+check('học vụ KHÔNG thấy Tài khoản / Nhật ký',
+  !cuaHV.includes('/quan-tri/tai-khoan') && !cuaHV.includes('/quan-tri/nhat-ky'),
   JSON.stringify(cuaHV));
 
 console.log('');

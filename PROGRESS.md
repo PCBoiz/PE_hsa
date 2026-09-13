@@ -32,6 +32,10 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Vòng 14/09, theo thứ tự anh chọn:** bảng nhắc việc giảng viên → chạy lại cổng
   chất lượng toàn bộ → khoá liên hệ phụ huynh → rà luồng trợ giảng đầu-cuối. Kèm:
   sửa ngày thi lớp 1 thành 06/12/2026 theo đợt 28 (anh duyệt ghi production).
+- **14/09 (khuya) anh nói: "Đây mới là thử nghiệm… mới chỉ là mock production,
+  cứ thử nghiệm tất cả tình huống."** → được tạo dữ liệu thử để rà, vẫn dọn
+  sạch và đếm trước/sau sau mỗi lượt. Chọn tiếp: rà học vụ → zod cho payload màn
+  quản trị (T18 mức 2) → giảm LCP Trang của tôi.
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
 
@@ -52,6 +56,44 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
+
+## 14/09/2026 — VÒNG 9 · Rà luồng Học vụ đầu-cuối, GHI THẬT trên đối tượng vứt đi
+
+**Cách làm:** tài khoản học vụ thử qua API quản trị; Playwright cho GHI thật
+nhưng ghi lại từng lời gọi (method · URL · mã trả về); kịch bản đi trọn: tạo đợt
+THỬ (2031) → ngày nghỉ (gợi ý lễ → thêm cả → khai tay Tết → khai ngoài đợt →
+xoá) → tạo lớp THỬ trong đợt → sinh lịch cả kỳ → Việc hôm nay → báo cáo cả
+lớp → năm trang phải chặn. Dọn bằng kịch bản tự liệt kê, đếm 6 bảng trước/sau:
+**lệch so với mốc bắt đầu: không** (users 5, classes 1, terms 1, sessions 16,
+holidays 0, members 4).
+
+**Lỗi 1 — nút "Tạo lớp" hỏng suốt hai tuần (500):** biểu mẫu mặc định
+`status = 'draft'`, mã nhận `draft`, nhưng ràng buộc `classes_status_check`
+(T42, 31/08) chỉ cho `active · finished · cancelled`. Ba nơi ba danh sách; nơi
+quyết định là CSDL. Không ai thấy vì lớp duy nhất tạo bằng API với `active`.
+Sửa: `CLASS_STATUS` theo CSDL, biểu mẫu mặc định `active`, nhãn thêm "Đã huỷ";
+phép kiểm mới đọc thẳng `pg_get_constraintdef` rồi đòi mã khớp và tạo thử với
+TỪNG giá trị (đỏ trước: `('draft','active','finished')` ≠ ràng buộc).
+
+**Lỗi 2 — học vụ bị khoá khỏi Toàn trung tâm, ngược quyết định 01/09:** bảng
+vai trò trong TODO ghi học vụ "xem MỌI lớp, báo cáo trung tâm"; hồ sơ PDF và bài
+hướng dẫn "Mở đầu ngày làm việc" (viết cho học vụ) đều trỏ vào trang ấy — mã
+thì `IsAdminRole`, cổng trang chỉ quản trị, tab chỉ quản trị, và MỘT PHÉP KIỂM
+đơn vị còn ghim "học vụ KHÔNG thấy Toàn trung tâm". Sửa cả bốn (API →
+`IsAdminOrAcademic`, cổng trang, tab, bảng "Ai làm được gì") + phép kiểm; hai
+bộ kiểm khớp tab↔API và bảng↔permissions.py xanh lại. Bài học: sửa một cổng thì
+ba cổng còn lại (tab, trang, API, bảng quyền) nói dối — rà bằng trình duyệt
+thật mới thấy tab hiện mà trang vẫn chặn.
+
+**Đạt như thiết kế:** nút Vận hành hiện, Quản trị (soạn bài) ẩn; tạo đợt 201;
+gợi ý lễ đúng (đợt 06/01–30/04/2031 → chỉ 30/04); khai ngoài đợt bị chặn với
+câu nêu đúng khoảng; sinh lịch điền sẵn T2/T4 18:00 từ 06/01 tới 30/04, xem
+trước 33 tạo · 1 nghỉ, tạo 201; Việc hôm nay thấy 2 lớp, 5 ô; Tài khoản, Nhật
+ký, Cơ sở học phí, Soạn giáo trình đều chặn.
+
+**Đo thêm:** một lượt đọc DOM 2–3 s sau khi bấm cho số "0 buổi" — đọc lại sau
+khi mạng yên thì 33; tức thước đọc sớm, không phải mã. Ghi để lần sau chờ
+`networkidle` thay vì đếm giây.
 
 ## 14/09/2026 — VÒNG 8 · Hướng dẫn trong ứng dụng theo kịp bốn tính năng mới + rà "hai đồng hồ" trong test
 

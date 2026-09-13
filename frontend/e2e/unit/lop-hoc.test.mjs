@@ -104,7 +104,10 @@ for (const t of TRUONG) {
 const { body: thanRong } = thanForm(formRong());
 check(
   'biểu mẫu rỗng gửi null cho mọi trường trừ status',
-  Object.entries(thanRong).every(([k, v]) => (k === 'status' ? v === 'draft' : v === null)),
+  // `active`, không `draft` (14/09/2026): `draft` không có trong ràng buộc CSDL
+  // `classes_status_check`, và phép kiểm này từng GHIM đúng giá trị làm nút
+  // "Tạo lớp" trả 500 — thước canh sai luật thì giữ cái sai bền hơn cả mã.
+  Object.entries(thanRong).every(([k, v]) => (k === 'status' ? v === 'active' : v === null)),
   JSON.stringify(thanRong),
 );
 

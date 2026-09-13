@@ -36,8 +36,15 @@ from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
 
 logger = logging.getLogger(__name__)
 
-#: Trạng thái lớp hợp lệ.
-CLASS_STATUS = ('draft', 'active', 'finished')
+#: Trạng thái lớp hợp lệ — PHẢI khớp `classes_status_check` (schema §35, T42).
+#:
+#: Tới 14/09/2026 dòng này ghi ('draft', 'active', 'finished') trong khi ràng
+#: buộc CSDL (31/08) là ('active', 'finished', 'cancelled'): biểu mẫu "Thêm lớp"
+#: mặc định `draft` nên bấm "Tạo lớp" là 500 — suốt hai tuần, không ai bấm nút
+#: ấy vì lớp duy nhất tạo bằng API. Rà luồng học vụ trên trình duyệt mới lộ.
+#: `teaching/tests.py::test_trang_thai_lop_khop_rang_buoc_CSDL…` đọc thẳng ràng
+#: buộc rồi đòi khớp; `terms.py` giữ `TERM_STATUS` cùng một cách.
+CLASS_STATUS = ('active', 'finished', 'cancelled')
 #: Trường được sửa qua API quản trị lớp, kèm độ dài tối đa cho trường chữ.
 CLASS_TEXT_FIELDS = {
     'code': 40, 'name': 160, 'schedule': 160, 'meeting_url': 400, 'note': 1000,

@@ -177,8 +177,8 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Lớp & đợt học',
     nhan: 'Xem bảng điều khiển toàn trung tâm',
-    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Chỉ quản trị viên — nó gộp dữ liệu của cả trung tâm.',
-    lopQuyen: 'IsAdminRole',
+    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Số gộp theo lớp và đợt, không có liên lạc của em nào — học vụ xem được (quyết định 01/09, mở cửa 14/09/2026).',
+    lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/overview.py::AdminOverviewView',
   },
 

@@ -33,10 +33,12 @@ type HocVien = {
   left?: boolean;
 };
 
+/* Ba giá trị = ràng buộc `classes_status_check` (T42). `draft` từng có ở đây
+   dù CSDL không nhận — xem `lop.ts::formRong`. Mã lạ vẫn hiện nguyên mã. */
 const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral' | 'bad' }> = {
-  draft: { nhan: 'Bản nháp', tone: 'neutral' },
   active: { nhan: 'Đang học', tone: 'good' },
   finished: { nhan: 'Đã kết thúc', tone: 'neutral' },
+  cancelled: { nhan: 'Đã huỷ', tone: 'bad' },
 };
 
 /**

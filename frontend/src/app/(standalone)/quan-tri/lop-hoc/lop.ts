@@ -66,11 +66,18 @@ export const TRUONG = [
   { form: 'capacity', row: 'capacity', than: 'capacity', kieu: 'so' },
 ] as const;
 
-/** Biểu mẫu rỗng — dùng cho "Thêm lớp". `status` mặc định là bản nháp. */
+/**
+ * Biểu mẫu rỗng — dùng cho "Thêm lớp". `status` mặc định là ĐANG CHẠY.
+ *
+ * Bản trước mặc định `draft` — giá trị KHÔNG có trong ràng buộc CSDL
+ * (`active · finished · cancelled`, T42 31/08), nên bấm "Tạo lớp" với biểu mẫu
+ * mặc định là 500 suốt hai tuần. Lộ ra khi rà luồng học vụ 14/09/2026.
+ * Danh sách hợp lệ đến từ máy chủ (`statuses`), không gõ lại ở đây.
+ */
 export function formRong(): Form {
   const f: Form = {};
   for (const t of TRUONG) f[t.form] = '';
-  f.status = 'draft';
+  f.status = 'active';
   return f;
 }
 
