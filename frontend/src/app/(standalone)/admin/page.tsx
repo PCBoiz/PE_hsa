@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
+import { HD_TOI, type Toi } from '@/lib/hinhDang';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 import { VAI_BIEN_TAP, VAI_QUAN_TRI } from '@/lib/vaiTro';
 
 import { type DeRow } from './DeThi';
@@ -40,8 +42,22 @@ export const metadata = { title: 'Soạn giáo trình | TopHSA' };
 // đúng vì thế (xem `quan-tri/vai.ts`). Một hàng rào quyền trôi thì không kêu.
 const DUOC_VAO = new Set([VAI_QUAN_TRI, VAI_BIEN_TAP]);
 
+/* Hình dạng hai danh sách khu này đọc (T18 mức 2). */
+const HD_KHOA = z.looseObject({
+  courses: z.array(z.looseObject({
+    id: z.string(), title: z.string(),
+    subtitle: z.string().nullable().optional(), lessons: z.number().nullable().optional(),
+  })),
+}) satisfies HinhDang<{ courses: KhoaRow[] }>;
+const HD_DE = z.looseObject({
+  exams: z.array(z.looseObject({
+    id: z.number(), title: z.string(), durationMinutes: z.number().nullable(),
+    totalQuestions: z.number().nullable(), isPublished: z.boolean(), attempts: z.number(),
+  })),
+}) satisfies HinhDang<{ exams: DeRow[] }>;
+
 export default async function SoanGiaoTrinhPage() {
-  const me = await serverJson<{ role?: string }>('/api/user', { requireAuth: true });
+  const me = await serverJson<Toi>('/api/user', { requireAuth: true }, HD_TOI);
 
   // "Không đọc được tài khoản" KHÁC "không đủ quyền": backend ngủ dậy hay mạng
   // hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy người dùng
@@ -76,8 +92,8 @@ export default async function SoanGiaoTrinhPage() {
   }
 
   const [kq, de] = await Promise.all([
-    serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true }),
-    serverJson<{ exams: DeRow[] }>('/api/admin/mock-exams', { requireAuth: true }),
+    serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true }, HD_KHOA),
+    serverJson<{ exams: DeRow[] }>('/api/admin/mock-exams', { requireAuth: true }, HD_DE),
   ]);
 
   return (

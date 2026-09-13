@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import DanLienHe from './DanLienHe';
 import GuiCaLop from './GuiCaLop';
@@ -42,6 +43,20 @@ type SoanSan = {
   students: Em[];
 };
 
+/* Hình dạng GET `…/parent-report/send-all` (T18 mức 2). */
+const HINH_DANG = z.looseObject({
+  period: z.looseObject({ from: z.string(), to: z.string() }),
+  znsSanSang: z.boolean(),
+  znsThieu: z.array(z.string()),
+  emailSanSang: z.boolean(),
+  emailThieu: z.array(z.string()),
+  students: z.array(z.looseObject({
+    id: z.number(), name: z.string().nullable(), parentName: z.string(),
+    parentPhone: z.string(), parentEmail: z.string(), coLienLac: z.boolean(),
+    kenh: z.enum(['email', 'zns']).nullable(), guiDuoc: z.boolean(),
+  })),
+}) satisfies HinhDang<SoanSan>;
+
 function ngay(iso: string) {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
@@ -56,6 +71,7 @@ export default async function BaoCaoCaLopPage({
   const kq = await serverJson<SoanSan>(
     `/api/teach/classes/${classId}/parent-report/send-all`,
     { requireAuth: true },
+    HINH_DANG,
   );
 
   if (!kq.ok) {

@@ -1,5 +1,6 @@
 import { cache } from 'react';
 
+import { HD_TOI, type Toi } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
 
 /**
@@ -26,7 +27,7 @@ export type KetVai =
  * trang, và cái giá ấy tăng đúng theo số cổng mình dựng thêm.
  */
 export const layVai = cache(async (): Promise<KetVai> => {
-  const me = await serverJson<{ role?: string; name?: string }>('/api/user', { requireAuth: true });
+  const me = await serverJson<Toi>('/api/user', { requireAuth: true }, HD_TOI);
   // Không đọc được tài khoản KHÔNG đồng nghĩa với "không đủ quyền": backend sập
   // hay mạng hỏng cũng rơi vào đây, và nói "bạn không có quyền" lúc đó là đẩy
   // người dùng đi hỏi nhầm chỗ. Tách hai câu ra.
@@ -34,5 +35,5 @@ export const layVai = cache(async (): Promise<KetVai> => {
   /* `ten` lấy luôn từ CÙNG lượt gọi này. Khu Vận hành không nạp `dashboard.js`
      nên không có ai điền `#chip-name` hộ — không lấy ở đây thì chip người dùng
      trên thanh sẽ mang chữ "?" giữa một khu mà việc chính là quản lý CON NGƯỜI. */
-  return { ok: true, vai: me.data.role, ten: me.data.name };
+  return { ok: true, vai: me.data.role ?? undefined, ten: me.data.name ?? undefined };
 });

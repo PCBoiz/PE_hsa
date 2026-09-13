@@ -1,5 +1,6 @@
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
+import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
 
 /**
@@ -43,6 +44,8 @@ export default async function BaoCaoTheoChiaPage({
      máy chủ khai `authentication_classes = []` nên nó bị bỏ qua hoàn toàn. */
   const kq = await serverJson<BaoCao>(
     `/api/public/parent-report/${encodeURIComponent(token)}`,
+    {},
+    HD_BAO_CAO,
   );
 
   if (!kq.ok) {

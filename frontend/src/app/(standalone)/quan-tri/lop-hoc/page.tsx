@@ -1,4 +1,5 @@
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import { KhongDocDuoc, KhongDuQuyen } from '../ChanVai';
 import { layVai } from '../layVai';
@@ -12,6 +13,28 @@ export const metadata = { title: 'Lớp học | TopHSA' };
 type DsLop = { classes: LopRow[]; teachers: ChonNguoi[]; statuses: string[] };
 type DsDot = { terms: { id: number; name: string; code: string | null }[] };
 type DsKhoa = { courses: ChonKhoa[] };
+
+/* Hình dạng ba phản hồi (T18 mức 2). `LopRow` là thứ biểu mẫu SỬA đổ vào —
+   thiếu một khoá ở đây là sửa tên lớp xoá trắng link họp (lỗi 04/09), nên khai
+   ĐỦ mọi khoá của `LopRow`; tsc bắt qua `satisfies`. */
+const chu = z.string().nullable();
+const HD_LOP = z.looseObject({
+  classes: z.array(z.looseObject({
+    id: z.number(), code: chu, name: z.string(), course: chu, courseTitle: chu,
+    teacherId: z.number().nullable(), teacherName: chu, schedule: chu, status: z.string(),
+    capacity: z.number().nullable(), members: z.number(), startsOn: chu, endsOn: chu,
+    examDate: chu, meetingUrl: chu, note: chu, termId: z.number().nullable(),
+    termName: chu, termCode: chu,
+  })),
+  teachers: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
+  statuses: z.array(z.string()),
+}) satisfies HinhDang<DsLop>;
+const HD_DOT = z.looseObject({
+  terms: z.array(z.looseObject({ id: z.number(), name: z.string(), code: chu })),
+}) satisfies HinhDang<DsDot>;
+const HD_KHOA = z.looseObject({
+  courses: z.array(z.looseObject({ id: z.string(), title: z.string() })),
+}) satisfies HinhDang<DsKhoa>;
 
 /**
  * Quản lý LỚP HỌC — tạo, sửa, xếp học viên vào lớp.
@@ -53,9 +76,9 @@ export default async function LopHocPage() {
   }
 
   const [lop, dot, khoa] = await Promise.all([
-    serverJson<DsLop>('/api/admin/classes', { requireAuth: true }),
-    serverJson<DsDot>('/api/admin/terms', { requireAuth: true }),
-    serverJson<DsKhoa>('/api/public/courses'),
+    serverJson<DsLop>('/api/admin/classes', { requireAuth: true }, HD_LOP),
+    serverJson<DsDot>('/api/admin/terms', { requireAuth: true }, HD_DOT),
+    serverJson<DsKhoa>('/api/public/courses', {}, HD_KHOA),
   ]);
 
   return (

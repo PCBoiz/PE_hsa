@@ -112,6 +112,32 @@ export type Ket<T> =
   | { ok: false; status: number | null; message: string };
 
 /**
+ * HÌNH DẠNG dữ liệu mà một màn hình mong đợi — bất cứ thứ gì có `safeParse`
+ * (zod là bản dùng thật; kiểu viết tối thiểu để tệp này không nhập zod).
+ *
+ * ── VÌ SAO (T18 mức 2, 14/09/2026) ────────────────────────────────────────
+ *
+ * `serverJson<T>` chỉ ÉP KIỂU: `T` là lời tự khai của người viết về thứ họ
+ * TƯỞNG máy chủ trả. Đã trả giá hai lần — màn buổi học đọc `starts_at` trong
+ * khi máy chủ trả `startsAt` (mọi ô ngày trống, chip điểm danh không bao giờ
+ * hiện), và trang lớp đoán `klass` thay vì `class` (LUÔN "không mở được lớp").
+ * Cả hai: `tsc` xanh, pytest xanh, màn hình chết im lặng.
+ *
+ * Có hình dạng thì lệch tên khoá thành một câu lỗi ĐỌC ĐƯỢC ngay lượt mở đầu,
+ * nêu đúng ô lệch, thay vì một trang trông như "chưa có dữ liệu".
+ */
+export type HinhDang<T> = {
+  safeParse: (v: unknown) =>
+    | { success: true; data: T }
+    | { success: false; error: { issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }> } };
+};
+
+/** `sessions[0].startsAt` — đường tới ô lệch, viết cho người đọc lỗi. */
+function duongLech(path: ReadonlyArray<PropertyKey>): string {
+  return path.map((p) => (typeof p === 'number' ? `[${p}]` : `.${String(p)}`)).join('').replace(/^\./, '') || '(gốc)';
+}
+
+/**
  * Gọi và đọc JSON.
  *
  * ── Vì sao KHÔNG còn trả `null` ────────────────────────────────────────────
@@ -132,7 +158,11 @@ export type Ket<T> =
  * Câu lỗi dựng bằng `errorText` — CÙNG hàm mà các màn hình phía trình duyệt
  * dùng, để một sự cố không ra hai lời khác nhau tuỳ chỗ nó xảy ra.
  */
-export async function serverJson<T>(path: string, opts: Options = {}): Promise<Ket<T>> {
+export async function serverJson<T>(
+  path: string,
+  opts: Options = {},
+  hinhDang?: HinhDang<T>,
+): Promise<Ket<T>> {
   const res = await serverFetch(path, opts);
   if (!res) {
     return {
@@ -174,7 +204,33 @@ export async function serverJson<T>(path: string, opts: Options = {}): Promise<K
       message: 'Máy chủ trả về dữ liệu không đọc được. Báo kỹ thuật giúp nhé.',
     };
   }
+  if (hinhDang) return kiemHinhDang(path, body, res.status, hinhDang);
   return { ok: true, data: body as T };
+}
+
+/**
+ * Đối chiếu thân phản hồi 2xx với hình dạng màn hình mong đợi. Tách riêng để
+ * `e2e/unit/hinh-dang.test.mjs` gọi được mà không cần dựng request của Next.
+ */
+export function kiemHinhDang<T>(
+  path: string,
+  body: unknown,
+  status: number,
+  hinhDang: HinhDang<T>,
+): Ket<T> {
+  const kq = hinhDang.safeParse(body);
+  if (kq.success) return { ok: true, data: kq.data };
+  // Ba ô đầu là đủ để tìm ra chỗ lệch; in hết là một bức tường chữ.
+  const o = kq.error.issues.slice(0, 3).map((i) => `${duongLech(i.path)}: ${i.message}`);
+  // Log ĐẦY ĐỦ ở máy chủ (Vercel/Render giữ stdout) — câu trên màn chỉ cần đủ
+  // để người dùng biết đây là lỗi lệch mã, không phải lỗi của họ.
+  console.error('[hinh-dang] %s trả dữ liệu khác mong đợi: %s', path, o.join(' · '));
+  return {
+    ok: false,
+    status,
+    message: `Máy chủ trả dữ liệu khác hình dạng màn hình này mong đợi (${o[0]}). `
+      + 'Mã màn hình và máy chủ đang lệch nhau — báo kỹ thuật giúp nhé.',
+  };
 }
 
 /** Đã đăng nhập hay chưa — dùng để chọn nhánh hiển thị ngay trên máy chủ. */

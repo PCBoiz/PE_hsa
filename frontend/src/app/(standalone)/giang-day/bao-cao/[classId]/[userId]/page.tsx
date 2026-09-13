@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
+import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
 
 import KhoiDuongDan from './KhoiDuongDan';
@@ -32,6 +33,7 @@ export default async function BaoCaoPhuHuynhPage({
   const kq = await serverJson<BaoCao>(
     `/api/teach/classes/${classId}/students/${userId}/parent-report${qs.size ? `?${qs}` : ''}`,
     { requireAuth: true },
+    HD_BAO_CAO,
   );
 
   if (!kq.ok) {

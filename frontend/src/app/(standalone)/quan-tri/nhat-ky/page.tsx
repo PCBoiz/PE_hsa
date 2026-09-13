@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 export const metadata = { title: 'Nhật ký kiểm toán | TopHSA' };
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,24 @@ type Entry = {
 };
 
 type Payload = { entries: Entry[]; total: number; page: number; per_page: number; actions: string[] };
+/* Hình dạng `/api/admin/audit` (`teaching/admin_users.py::AdminAuditView`) — T18 mức 2. */
+const HINH_DANG = z.looseObject({
+  entries: z.array(z.looseObject({
+    id: z.number(),
+    actor_name: z.string().nullable(),
+    actor_role: z.string().nullable(),
+    action: z.string(),
+    target_type: z.string().nullable(),
+    target_label: z.string().nullable(),
+    summary: z.string().nullable(),
+    ip: z.string().nullable(),
+    occurred_at: z.string(),
+  })),
+  total: z.number(),
+  page: z.number(),
+  per_page: z.number(),
+  actions: z.array(z.string()),
+}) satisfies HinhDang<Payload>;
 
 /** Nhóm hành động → tông màu. Việc chạm tới mật khẩu hay quyền phải nổi lên. */
 /**
@@ -124,7 +143,7 @@ export default async function NhatKyPage({
   const qs = new URLSearchParams({ page: one('page') || '1', per_page: '50' });
   for (const k of ['action', 'from', 'to']) if (one(k)) qs.set(k, one(k));
 
-  const kq = await serverJson<Payload>(`/api/admin/audit?${qs}`, { requireAuth: true });
+  const kq = await serverJson<Payload>(`/api/admin/audit?${qs}`, { requireAuth: true }, HINH_DANG);
   const data = kq.ok ? kq.data : null;
   const entries = data?.entries ?? [];
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / (data?.per_page || 50)));

@@ -1,5 +1,6 @@
 import { Card, CardHead, EmptyState } from '@/components/ui';
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import BangCoSo, { type Lop } from './BangCoSo';
 
@@ -37,9 +38,26 @@ type Payload = {
   dot: { id: number; code: string; name: string } | null;
   lop: Lop[];
 };
+/* Hình dạng `/api/admin/co-so-hoc-phi` — T18 mức 2. Bảng này người ta THU TIỀN
+   theo nó, nên một khoá lệch phải hiện thành lỗi chứ không thành con số 0. */
+const HINH_DANG = z.looseObject({
+  ky: z.looseObject({ tu: z.string().nullable(), den: z.string().nullable() }),
+  dot: z.looseObject({ id: z.number(), code: z.string(), name: z.string() }).nullable(),
+  lop: z.array(z.looseObject({
+    id: z.number(), ma: z.string().nullable(), ten: z.string(), trangThai: z.string().nullable(),
+    dot: z.string().nullable(), giangVien: z.string().nullable(),
+    buoiDaMo: z.number(), buoiDaHuy: z.number(), buoiSapToi: z.number().optional(),
+    hocVien: z.array(z.looseObject({
+      userId: z.number(), ten: z.string(), email: z.string(),
+      vaoLop: z.string().nullable(), roiLop: z.string().nullable(), lyDoRoi: z.string().nullable(),
+      buoiTrongKy: z.number(), coMat: z.number(), muon: z.number(), vang: z.number(),
+      lechGhiDanh: z.number(),
+    })),
+  })),
+}) satisfies HinhDang<Payload>;
 
 export default async function CoSoHocPhiPage() {
-  const kq = await serverJson<Payload>('/api/admin/co-so-hoc-phi', { requireAuth: true });
+  const kq = await serverJson<Payload>('/api/admin/co-so-hoc-phi', { requireAuth: true }, HINH_DANG);
   const lop = kq.ok ? kq.data.lop : [];
   const coBuoi = lop.some((l) => l.buoiDaMo > 0);
   const sapToi = lop.reduce((n, l) => n + (l.buoiSapToi ?? 0), 0);

@@ -1,7 +1,9 @@
 import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
+import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import SessionsClient, { type SessionRow } from './SessionsClient';
 import type { GoiYSinh } from './SinhBuoi';
@@ -20,9 +22,45 @@ export const metadata = { title: 'Buổi học & điểm danh | TopHSA' };
  *
  * Đừng sửa tên khoá ở đây mà không mở trang thật trong trình duyệt xem lại.
  */
-type ClassDetail = {
-  class?: { id: number; name: string; schedule?: string | null; courseTitle?: string | null };
-};
+type ClassDetail = ChiTietLop;
+
+/* Hình dạng hai phản hồi còn lại của trang (T18 mức 2). `SessionRow` là kiểu
+   `SessionsClient` đọc — khai đủ khoá bắt buộc; `satisfies` để tsc bắt thiếu. */
+type DsBuoi = { sessions: SessionRow[]; quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean } };
+const HD_BUOI = z.looseObject({
+  sessions: z.array(z.looseObject({
+    id: z.number(),
+    startsAt: z.string().nullable(),
+    durationMinutes: z.number().nullable(),
+    topic: z.string().nullable(),
+    status: z.string(),
+    note: z.string().nullable(),
+    meetingUrl: z.string().nullable().optional(),
+    recordingUrl: z.string().nullable().optional(),
+    attendanceTakenAt: z.string().nullable().optional(),
+    started: z.boolean().optional(),
+    attendance: z.looseObject({
+      present: z.number(), late: z.number(), absent: z.number(), excused: z.number(),
+      unmarked: z.number(),
+    }).optional(),
+  })),
+  quyen: z.looseObject({ xoaBuoi: z.boolean(), baoCaoPhuHuynh: z.boolean() }).optional(),
+}) satisfies HinhDang<DsBuoi>;
+const HD_GOI_Y = z.looseObject({
+  lop: z.looseObject({ id: z.number(), name: z.string(), schedule: z.string().nullable() }),
+  dot: z.looseObject({
+    id: z.number(), name: z.string(),
+    ngayNghi: z.array(z.looseObject({ id: z.number(), ngay: z.string(), ten: z.string() })),
+  }).nullable(),
+  goiY: z.looseObject({
+    weekdays: z.array(z.number()),
+    startTime: z.string().nullable(),
+    durationMinutes: z.number().nullable(),
+    from: z.string(),
+    to: z.string().nullable(),
+  }),
+  coTheSinh: z.boolean(),
+}) satisfies HinhDang<GoiYSinh>;
 
 export default async function BuoiHocPage({
   params,
@@ -37,15 +75,12 @@ export default async function BuoiHocPage({
   const { 'diem-danh': dd } = await searchParams;
   const moBuoi = dd && /^\d+$/.test(dd) ? Number(dd) : null;
   const [detail, list, sinh] = await Promise.all([
-    serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
-    serverJson<{ sessions: SessionRow[]; quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean } }>(
-      `/api/teach/classes/${classId}/sessions`,
-      { requireAuth: true },
-    ),
+    serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }, HD_CHI_TIET_LOP),
+    serverJson<DsBuoi>(`/api/teach/classes/${classId}/sessions`, { requireAuth: true }, HD_BUOI),
     // Gợi ý sinh lịch cả kỳ lấy Ở ĐÂY, cùng lượt dựng trang: nó mang cờ
     // `coTheSinh`, và biết cờ ấy trước khi vẽ thì trợ giảng không bao giờ thấy
     // một nút bấm vào mới báo không được phép.
-    serverJson<GoiYSinh>(`/api/teach/classes/${classId}/sessions/generate`, { requireAuth: true }),
+    serverJson<GoiYSinh>(`/api/teach/classes/${classId}/sessions/generate`, { requireAuth: true }, HD_GOI_Y),
   ]);
 
   // 404 = lớp không tồn tại HOẶC không phụ trách lớp đó — backend cố ý trả cùng

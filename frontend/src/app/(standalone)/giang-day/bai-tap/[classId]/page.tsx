@@ -1,7 +1,9 @@
 import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
+import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import AssignmentsClient, { type Assignment } from './AssignmentsClient';
 
@@ -9,9 +11,21 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Bài tập & chấm bài | TopHSA' };
 
 /** Xem chú thích ở `buoi-hoc/[classId]/page.tsx`: khoá là `class`, KHÔNG phải `klass`. */
-type ClassDetail = {
-  class?: { id: number; name: string; schedule?: string | null };
-};
+type ClassDetail = ChiTietLop;
+type DsBai = { assignments: Assignment[]; topics: string[] };
+/* Hình dạng `/api/teach/classes/<id>/assignments` (T18 mức 2). */
+const HD_BAI = z.looseObject({
+  assignments: z.array(z.looseObject({
+    id: z.number(), classId: z.number(), title: z.string(),
+    description: z.string().nullable(), topic: z.string().nullable(),
+    courseId: z.string().nullable(), status: z.string(), dueAt: z.string().nullable(),
+    maxScore: z.number().nullable(), attachmentUrl: z.string().nullable(),
+    createdAt: z.string().nullable(),
+    submitted: z.number().optional(), graded: z.number().optional(),
+    ungraded: z.number().optional(), members: z.number().optional(),
+  })),
+  topics: z.array(z.string()),
+}) satisfies HinhDang<DsBai>;
 
 /**
  * Giao bài & chấm tay — đặc tả ERP §5.
@@ -27,11 +41,8 @@ export default async function BaiTapPage({
 }) {
   const { classId } = await params;
   const [detail, list] = await Promise.all([
-    serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
-    serverJson<{ assignments: Assignment[]; topics: string[] }>(
-      `/api/teach/classes/${classId}/assignments`,
-      { requireAuth: true },
-    ),
+    serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }, HD_CHI_TIET_LOP),
+    serverJson<DsBai>(`/api/teach/classes/${classId}/assignments`, { requireAuth: true }, HD_BAI),
   ]);
 
   // 404 = lớp không tồn tại HOẶC không phụ trách — backend cố ý trả cùng một mã

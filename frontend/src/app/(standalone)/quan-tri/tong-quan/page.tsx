@@ -2,70 +2,77 @@ import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { serverJson } from '@/lib/server-api';
+import { z } from 'zod';
 
 import { ViecCanLam, type Viec } from './ViecCanLam';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Toàn trung tâm | TopHSA' };
 
-type LopRow = {
-  id: number;
-  code: string | null;
-  name: string;
-  status: string;
-  termName: string | null;
-  teacherName: string | null;
-  capacity: number | null;
-  active: number;
-  enrolledEver: number;
-  completed: number;
-  dropped: number;
-  leftUnknown: number;
-  dropRate: number | null;
-  sessionsHeld: number;
-  sessionsMarked: number;
-  sessionsUnmarked: number;
-  attendedPct: number | null;
-  lessonsDone: number;
-  progressPct: number | null;
-  mockCount: number;
-  mockAvg: number | null;
-};
-
-type DotRow = {
-  termId: number | null;
-  termName: string;
-  classes: number;
-  active: number;
-  enrolledEver: number;
-  completed: number;
-  dropped: number;
-  leftUnknown: number;
-  attendedPct: number | null;
-  dropRate: number | null;
-  retentionPct: number | null;
-  mockAvg: number | null;
-};
-
-type Payload = {
-  classes: LopRow[];
-  terms: DotRow[];
-  summary: {
-    classCount: number;
-    activeClasses: number;
-    active: number;
-    enrolledEver: number;
-    completed: number;
-    dropped: number;
-    leftUnknown: number;
-    dropRate: number | null;
-    retentionPct: number | null;
-    attendedPct: number | null;
-    sessionsUnmarked: number;
-    incomplete: string[];
-  };
-  thresholds: { good: number; alarm: number };
-};
+/* HÌNH DẠNG phản hồi `/api/admin/overview` (`teaching/overview.py::tong_quan`).
+   Kiểu TS suy ra từ đây — một nguồn, không phải một kiểu tay cạnh một hình dạng.
+   `looseObject`: máy chủ thêm khoá thì màn hình không hỏng; thiếu khoá màn hình
+   ĐỌC mới là lỗi (T18 mức 2, 14/09/2026). */
+const so = z.number();
+const soHoacTrong = z.number().nullable();
+const LOP_ROW = z.looseObject({
+  id: so,
+  code: z.string().nullable(),
+  name: z.string(),
+  status: z.string(),
+  termName: z.string().nullable(),
+  teacherName: z.string().nullable(),
+  capacity: soHoacTrong,
+  active: so,
+  enrolledEver: so,
+  completed: so,
+  dropped: so,
+  leftUnknown: so,
+  dropRate: soHoacTrong,
+  sessionsHeld: so,
+  sessionsMarked: so,
+  sessionsUnmarked: so,
+  attendedPct: soHoacTrong,
+  lessonsDone: so,
+  progressPct: soHoacTrong,
+  mockCount: so,
+  mockAvg: soHoacTrong,
+});
+const DOT_ROW = z.looseObject({
+  termId: soHoacTrong,
+  termName: z.string(),
+  classes: so,
+  active: so,
+  enrolledEver: so,
+  completed: so,
+  dropped: so,
+  leftUnknown: so,
+  attendedPct: soHoacTrong,
+  dropRate: soHoacTrong,
+  retentionPct: soHoacTrong,
+  mockAvg: soHoacTrong,
+});
+const HINH_DANG = z.looseObject({
+  classes: z.array(LOP_ROW),
+  terms: z.array(DOT_ROW),
+  summary: z.looseObject({
+    classCount: so,
+    activeClasses: so,
+    active: so,
+    enrolledEver: so,
+    completed: so,
+    dropped: so,
+    leftUnknown: so,
+    dropRate: soHoacTrong,
+    retentionPct: soHoacTrong,
+    attendedPct: soHoacTrong,
+    sessionsUnmarked: so,
+    incomplete: z.array(z.string()),
+  }),
+  thresholds: z.looseObject({ good: so, alarm: so }),
+});
+type LopRow = z.infer<typeof LOP_ROW>;
+type Payload = z.infer<typeof HINH_DANG>;
 
 const THIEU_NHAN: Record<string, string> = {
   attendance: 'chuyên cần',
@@ -206,6 +213,7 @@ export default async function TongQuanPage({
   const kq = await serverJson<Payload>(
     `/api/admin/overview${term_id ? `?term_id=${encodeURIComponent(term_id)}` : ''}`,
     { requireAuth: true },
+    HINH_DANG,
   );
 
   if (!kq.ok) {

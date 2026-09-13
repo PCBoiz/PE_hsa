@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import GradingClient, { type HocVien } from './GradingClient';
 
@@ -20,6 +21,22 @@ type Payload = {
   className: string;
   students: HocVien[];
 };
+/* Hình dạng `/api/teach/assignments/<id>/submissions` (T18 mức 2). */
+const HINH_DANG = z.looseObject({
+  assignment: z.looseObject({
+    id: z.number(), title: z.string(), topic: z.string().nullable(),
+    maxScore: z.number().nullable(), status: z.string(), dueAt: z.string().nullable(),
+  }),
+  className: z.string(),
+  students: z.array(z.looseObject({
+    userId: z.number(), name: z.string().nullable(), email: z.string().nullable(),
+    submittedAt: z.string().nullable(), content: z.string().nullable(),
+    contentLen: z.number().nullable(), fileUrl: z.string().nullable(),
+    score: z.number().nullable(), scorePct: z.number().nullable(),
+    feedback: z.string().nullable(), gradedAt: z.string().nullable(),
+    gradedByName: z.string().nullable(),
+  })),
+}) satisfies HinhDang<Payload>;
 
 export default async function ChamBaiPage({
   params,
@@ -30,6 +47,7 @@ export default async function ChamBaiPage({
   const kq = await serverJson<Payload>(
     `/api/teach/assignments/${assignmentId}/submissions`,
     { requireAuth: true },
+    HINH_DANG,
   );
 
   if (!kq.ok) {

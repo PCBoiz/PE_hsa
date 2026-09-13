@@ -57,6 +57,50 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 10 · T18 mức 2: màn hình KIỂM hình dạng dữ liệu máy chủ (zod)
+
+**Vì sao:** `serverJson<T>` chỉ ép kiểu — `T` là lời hứa của người viết trang,
+không phải điều máy chủ làm. Hai lần nó đã im lặng (`klass`→`class` 30/08 làm
+trang buổi học luôn "không mở được"; `class_list` thiếu 5 cột 04/09 làm sửa tên
+lớp xoá trắng link họp), cả hai KHÔNG có một dòng lỗi nào. Tra: zod 4 có
+`z.looseObject` — máy chủ THÊM khoá thì qua, thiếu/sai kiểu khoá màn hình đọc
+mới là lỗi; và `z.infer` cho phép hình dạng làm luôn kiểu, khỏi hai bản trôi.
+
+**Làm:** `serverJson(path, opts, hinhDang?)` — sau khi 2xx và parse JSON, nếu có
+hình dạng thì `kiemHinhDang`: lệch → `ok:false` với câu "Máy chủ trả dữ liệu
+khác hình dạng màn hình này mong đợi (`sessions[1].startsAt`)…" + một dòng
+`console.error [hinh-dang]` cho nhật ký Render; mã trạng thái giữ nguyên. Hình
+dạng khai NGAY cạnh lời gọi ở **16 trang** (7 quản trị + 7 giảng dạy + học viên
+`/bai-tap` + link công khai `/bc`), `satisfies HinhDang<T>` để tsc bắt hình dạng
+thiếu khoá kiểu đang dùng. Ba hình dạng dùng chung ở `lib/hinhDang.ts`
+(tờ báo cáo phụ huynh — hai đường; chi tiết lớp — hai trang; tài khoản đang
+đăng nhập — hai cổng vai). `/api/user` ở `layVai` cũng kiểm: `role` đổi tên
+thì trước đây MỌI người bị "không đủ quyền" — sai chỗ để đi hỏi.
+
+**Phép kiểm `e2e/unit/hinh-dang.test.mjs`** (gọi `kiemHinhDang` THẬT qua hook
+nạp nguồn): khớp → qua; máy chủ thêm khoá → qua; lệch phần tử [1] → đỏ, câu lỗi
+nêu đúng `sessions[1].startsAt`; sai kiểu → đỏ; thiếu khoá gốc → đỏ; mỗi lần lệch
+đúng một dòng `[hinh-dang]`. Kèm quét tĩnh: MỌI `serverJson<…>(` trong `src/app`
+phải có tham số thứ ba — bỏ hình dạng ở `dot-hoc` thì đỏ ngay dòng 28 (đỏ trước
+đã chứng minh), bỏ qua ba chỗ nhắc `serverJson<T>` trong chú thích. Ghi nhận
+rõ: khoá `optional` đổi tên KHÔNG phải lỗi hình dạng (đúng lỗi 30/08 cũ), nên
+`HD_CHI_TIET_LOP` để trang tự xử "không có class" như trước.
+
+**Rà trình duyệt với dữ liệu thật (dev, mock production):** tạo bài tập THỬ
+(id 1847) + link báo cáo THỬ cho lớp 1/em 9, mở **15 trang** với thẻ quản trị,
+học viên và không thẻ (`/bc/<token>`): 15/15 200, không trang nào nói "khác
+hình dạng"/"Không mở được", mỗi trang có đúng chữ mong đợi. Tức không hình
+dạng nào chặt hơn dữ liệu máy chủ đang trả. Dọn: xoá bài tập qua API (200), xoá
+3 link thử bằng SQL; đếm sau = trước (assignments 0, links 0); nhật ký +2 dòng
+thật (giao/xoá bài). eslint · tsc · 23/23 unit xanh. `zod` vào `package.json`
+qua `corepack pnpm add`.
+
+**Thấy khi rà, chưa sửa:** tạo/thu hồi link báo cáo phụ huynh **không ghi nhật
+ký** (`parent_link.py` không gọi `common.audit`) — một giảng viên phát hành
+đường công khai tới tờ báo cáo một em trong 45 ngày mà màn Nhật ký không thấy;
+`created_by` chỉ nằm trong bảng link. Và phản hồi POST link không trả `id`, nên
+kịch bản thu hồi phải đi đường danh sách. Làm ở vòng kế.
+
 ## 14/09/2026 — VÒNG 9 · Rà luồng Học vụ đầu-cuối, GHI THẬT trên đối tượng vứt đi
 
 **Cách làm:** tài khoản học vụ thử qua API quản trị; Playwright cho GHI thật

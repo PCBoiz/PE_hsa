@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 /**
  * VIỆC HÔM NAY — trang đầu của khu Giảng dạy, gom mọi lớp của người đang đăng nhập.
@@ -50,6 +51,30 @@ type ViecHomNay = {
   canChuY?: { userId: number; name: string | null; classId: number; className: string; lyDo: string }[];
 };
 
+/* Hình dạng `/api/teach/viec-hom-nay` (T18 mức 2). Hai khoá về từng em là
+   `optional` đúng nghĩa: trợ giảng KHÔNG có chúng — không phải rỗng. */
+const BUOI = {
+  sessionId: z.number(), classId: z.number(), className: z.string(),
+  startsAt: z.string().nullable(), topic: z.string().nullable(),
+};
+const EM = { userId: z.number(), name: z.string().nullable(), classId: z.number(), className: z.string() };
+const HINH_DANG = z.looseObject({
+  troGiang: z.boolean(),
+  lop: z.array(z.looseObject({ id: z.number(), name: z.string() })),
+  nguong: z.looseObject({ chamQuaNgay: z.number(), vangLien: z.number() }),
+  sapToi: z.array(z.looseObject({ ...BUOI, durationMinutes: z.number().nullable(), thieuLink: z.boolean() })),
+  chuaDiemDanh: z.looseObject({
+    tong: z.number(),
+    ds: z.array(z.looseObject({ ...BUOI, dangDienRa: z.boolean() })),
+  }),
+  chuaCham: z.array(z.looseObject({
+    assignmentId: z.number(), classId: z.number(), className: z.string(), title: z.string(),
+    soBai: z.number(), choNgay: z.number(), quaHan: z.boolean(),
+  })),
+  vangLien: z.array(z.looseObject({ ...EM, soBuoi: z.number() })).optional(),
+  canChuY: z.array(z.looseObject({ ...EM, lyDo: z.string() })).optional(),
+}) satisfies HinhDang<ViecHomNay>;
+
 function gio(iso: string | null) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -75,7 +100,7 @@ function Dong({ children, den, nhan }: { children: React.ReactNode; den: string;
 }
 
 export default async function ViecHomNayPage() {
-  const kq = await serverJson<ViecHomNay>('/api/teach/viec-hom-nay', { requireAuth: true });
+  const kq = await serverJson<ViecHomNay>('/api/teach/viec-hom-nay', { requireAuth: true }, HINH_DANG);
 
   if (!kq.ok) {
     return (

@@ -1,17 +1,30 @@
 import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
+import { z } from 'zod';
 
 import MyAssignmentsClient, { type BaiCuaToi } from './MyAssignmentsClient';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Bài tập của bạn | TopHSA' };
 
+/* Hình dạng `/api/assignments` (T18 mức 2). */
+const HINH_DANG = z.looseObject({
+  assignments: z.array(z.looseObject({
+    id: z.number(), title: z.string(), description: z.string().nullable(),
+    topic: z.string().nullable(), className: z.string(), status: z.string(),
+    dueAt: z.string().nullable(), maxScore: z.number().nullable(),
+    submittedAt: z.string().nullable(), content: z.string().nullable(),
+    score: z.number().nullable(), scorePct: z.number().nullable(),
+    feedback: z.string().nullable(), gradedAt: z.string().nullable(),
+  })),
+}) satisfies HinhDang<{ assignments: BaiCuaToi[] }>;
+
 export default async function BaiTapCuaToiPage() {
   const kq = await serverJson<{ assignments: BaiCuaToi[] }>('/api/assignments', {
     requireAuth: true,
-  });
+  }, HINH_DANG);
 
   return (
     <div className="min-h-dvh bg-ground">
