@@ -73,7 +73,10 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
 const TRAN_TEP = 13;
 // 07/09/2026: 7346 → 7337. Khối "ba hợp phần" viết nhầm vào tầng này rồi
 // chuyển sang `src/components/BaHopPhan.tsx` — chốt hãm bắt đúng lúc.
-const TRAN_DONG_MA = 7337;
+// 13/09/2026: 7337 → 7343 (+6). VÁ LỖI trong tệp đã có (ngoại lệ ở trên):
+// `main.js::saveSettings` không hỏi `r.ok`, nên máy chủ từ chối (số Zalo phụ
+// huynh sai dạng) mà màn hình vẫn báo "Đã lưu thay đổi!".
+const TRAN_DONG_MA = 7343;
 
 let failures = 0;
 function check(name, cond, them) {

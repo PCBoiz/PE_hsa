@@ -6,6 +6,7 @@ from teaching import (
                       assignments,
                       co_so_hoc_phi,
                       exports,
+                      lien_he_phu_huynh,
                       overview,
                       parent_link,
                       parent_report,
@@ -37,6 +38,10 @@ urlpatterns = [
     # tin ZNS đều mất phí.
     path('api/teach/classes/<int:class_id>/parent-report/send-all',
          parent_send.ParentReportSendAllView.as_view()),
+    # Dán liên hệ phụ huynh cho cả lớp. Cùng cổng với gửi báo cáo ở trên — cùng
+    # một thứ cần canh: liên lạc của gia đình em.
+    path('api/teach/classes/<int:class_id>/parent-contacts',
+         lien_he_phu_huynh.ParentContactsImportView.as_view()),
 
     # ── ĐƯỜNG CÔNG KHAI ──
     # KHÔNG nằm dưới `api/teach/`: tiền tố ấy mang nghĩa "sau cổng giảng dạy",

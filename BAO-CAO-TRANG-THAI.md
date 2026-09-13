@@ -14,16 +14,16 @@ nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 |---|---|---|
 | Vai trò người dùng | 6 | `permissions.py` → `ASSIGNABLE_ROLES` |
 | Lớp cổng phân quyền | 6 | `permissions.py` → `Is*` |
-| Đường API | 107 | `get_resolver()` — đường bắt đầu bằng `api/` |
+| Đường API | 108 | `get_resolver()` — đường bắt đầu bằng `api/` |
 | · không cần đăng nhập | 2 | AllowAny hoặc `authentication_classes = []` |
 | · chỉ cần đăng nhập | 60 | `permission_classes == [IsAuthenticated]` |
 | · · trong đó KHÔNG tự khai cổng | 0 | dựa vào mặc định của khung |
-| · có cổng vai trò | 45 | lớp `Is*` khác |
+| · có cổng vai trò | 46 | lớp `Is*` khác |
 | Trang giao diện | 26 | `frontend/src/app/**/page.tsx` |
 | Bảng CSDL | 55 | `information_schema.tables` |
 | · có dữ liệu | 36 | count(*) > 0 |
-| Tệp kiểm thử backend | 33 | `backend/**/tests*.py` |
-| Tệp kiểm thử frontend | 32 | `frontend/e2e/**` |
+| Tệp kiểm thử backend | 35 | `backend/**/tests*.py` |
+| Tệp kiểm thử frontend | 33 | `frontend/e2e/**` |
 
 ## Dữ liệu nghiệp vụ trên CSDL
 

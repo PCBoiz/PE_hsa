@@ -1546,17 +1546,28 @@ function saveSettings() {
       .getElementById("toggle-content")
       .classList.contains("on"),
   };
+  // `fetch` CHỈ từ chối khi đứt mạng — máy chủ trả 400 thì nó vẫn "thành công".
+  // Trước 13/09/2026 hai lời gọi dưới đây không hỏi `r.ok`, nên gõ sai số Zalo
+  // của phụ huynh, bấm Lưu, màn hình báo "Đã lưu thay đổi!" trong khi máy chủ đã
+  // từ chối và KHÔNG lưu gì. Em đi về tin là trung tâm có số của bố mẹ.
+  // (`handleFetch` không dùng được ở đây: nó nuốt mất thông điệp lỗi của máy chủ.)
+  function doiOk(r) {
+    if (r.ok) return r;
+    return r.json().catch(function () { return {}; }).then(function (b) {
+      throw new Error(b.errors ? Object.values(b.errors).join(" · ") : b.error || "HTTP " + r.status);
+    });
+  }
   Promise.all([
     fetch(API + "/user", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
-    }),
+    }).then(doiOk),
     fetch(API + "/notifications", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(notifData),
-    }),
+    }).then(doiOk),
     // Mục "Mục tiêu HSA" tự lo phần lưu của nó (dashboard.js) — gộp vào đây để
     // một nút "Lưu thay đổi" lưu trọn trang.
     window.__saveHsaGoals ? window.__saveHsaGoals() : Promise.resolve(),

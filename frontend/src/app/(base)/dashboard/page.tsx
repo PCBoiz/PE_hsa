@@ -507,10 +507,13 @@ export default function DashboardPage() {
             </div>
 
             {/* ── LIÊN HỆ PHỤ HUYNH ────────────────────────────────────────
-                Trung tâm gửi báo cáo tiến độ về Zalo của phụ huynh. Số ở mục
-                trên là số của CHÍNH EM — với học sinh lớp 12 thì Zalo ở số ấy
-                là của các em, nên gửi vào đó là "báo cáo cho phụ huynh" mà phụ
-                huynh không bao giờ đọc.
+                Trung tâm gửi báo cáo tiến độ tới email (kênh chính từ 07/09)
+                hoặc Zalo của phụ huynh. Số ở mục trên là số của CHÍNH EM — với
+                học sinh lớp 12 thì Zalo ở số ấy là của các em, nên gửi vào đó
+                là "báo cáo cho phụ huynh" mà phụ huynh không bao giờ đọc.
+
+                Ô email thêm 13/09/2026. Trước đó kênh gửi CHÍNH không có chỗ
+                nào để nhập địa chỉ — đo production: 0 em có email phụ huynh.
 
                 Để học viên tự điền chứ không bắt học vụ nhập hộ từng em: chính
                 các em biết số của bố mẹ, và một ô phải chờ người khác điền hộ
@@ -521,8 +524,9 @@ export default function DashboardPage() {
                 <span>Liên hệ phụ huynh</span>
               </div>
               <p className="goal-hint">
-                Trung tâm gửi báo cáo tiến độ học của bạn về số Zalo này. Bỏ trống
-                thì không gửi cho ai cả — không có gì tự động xảy ra.
+                Trung tâm gửi báo cáo tiến độ học của bạn tới email hoặc số Zalo
+                của phụ huynh. Bỏ trống thì không gửi cho ai cả — không có gì tự
+                động xảy ra.
               </p>
               <div className="fields-grid">
                 <div>
@@ -532,6 +536,13 @@ export default function DashboardPage() {
                 <div>
                   <label className="field-label" htmlFor="field-parent-phone">Số Zalo của phụ huynh</label>
                   <input id="field-parent-phone" data-ho-so="parent_phone" className="field-input" inputMode="tel" placeholder="VD: 0912345678" />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="field-parent-email">Email của phụ huynh</label>
+                  {/* `type="email"` cho bàn phím có sẵn @ trên điện thoại. KHÔNG
+                      trông vào kiểm tra của trình duyệt: ô này không nằm trong
+                      <form>, nên đúng/sai dạng là việc của `PUT /api/user`. */}
+                  <input id="field-parent-email" data-ho-so="parent_email" className="field-input" type="email" autoComplete="off" placeholder="VD: me.an@gmail.com" />
                 </div>
               </div>
             </div>

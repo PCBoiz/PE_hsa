@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { serverJson } from '@/lib/server-api';
 
+import DanLienHe from './DanLienHe';
 import GuiCaLop from './GuiCaLop';
 
 /**
@@ -104,8 +105,9 @@ export default async function BaoCaoCaLopPage({
         {thieu.length > 0 && (
           <p className="mb-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-small text-warning-ink">
             {thieu.length} em chưa có email hoặc số Zalo của phụ huynh nên sẽ không
-            nhận được báo cáo: {thieu.map((e) => e.name || `#${e.id}`).join(' · ')}. Các
-            em tự điền được ở Cài đặt → Liên hệ phụ huynh.
+            nhận được báo cáo: {thieu.map((e) => e.name || `#${e.id}`).join(' · ')}. Dán
+            liên hệ cả lớp ở mục “Nhập liên hệ phụ huynh” bên dưới, hoặc để các em tự
+            điền ở Cài đặt → Liên hệ phụ huynh.
           </p>
         )}
 
@@ -121,13 +123,23 @@ export default async function BaoCaoCaLopPage({
 
         <GuiCaLop
           classId={classId}
-          soEm={d.students.filter((e) => e.guiDuoc).length}
+          /* Chưa nối kênh nào thì nút CẤP ĐƯỜNG DẪN cho mọi em đang học (xem
+             `parent_send.post`) — đếm theo `guiDuoc` ở đó là 0, và nút bị khoá
+             đúng ở trạng thái mà cách gửi tay là cách DUY NHẤT còn dùng được.
+             Sửa 13/09/2026. */
+          soEm={
+            d.emailSanSang || d.znsSanSang
+              ? d.students.filter((e) => e.guiDuoc).length
+              : d.students.length
+          }
           znsSanSang={d.znsSanSang}
           znsThieu={d.znsThieu}
           emailSanSang={d.emailSanSang}
           emailThieu={d.emailThieu}
         />
       </Card>
+
+      {d.students.length > 0 && <DanLienHe classId={classId} soThieu={thieu.length} />}
 
       <Card>
         <CardHead title={`Học viên đang học (${d.students.length})`} />
@@ -143,23 +155,39 @@ export default async function BaoCaoCaLopPage({
                 <Th>Học viên</Th>
                 <Th>Người nhận</Th>
                 <Th>Số Zalo</Th>
+                <Th>Email</Th>
                 <Th>Báo cáo</Th>
               </tr>
             </Thead>
             <Tbody>
+              {/* Hiện số/email theo việc CÓ hay không, không theo `guiDuoc`.
+                  Bản trước hiện "chưa có" ở cột Số Zalo cho mọi em khi hệ thống
+                  chưa nối kênh gửi — kể cả em đã có số — nên người đọc đi hỏi
+                  lại phụ huynh một số trung tâm đang giữ. Cột email chưa từng có. */}
               {d.students.map((e) => (
                 <Tr key={e.id}>
                   <Td label="Học viên">
                     <span className="font-semibold text-ink">{e.name || `#${e.id}`}</span>
                   </Td>
                   <Td label="Người nhận" muted>
-                    {e.parentName || (e.guiDuoc ? 'chưa khai tên' : '—')}
+                    {e.coLienLac ? (
+                      e.parentName || 'chưa khai tên'
+                    ) : (
+                      <Chip tone="warn">chưa có liên lạc</Chip>
+                    )}
                   </Td>
                   <Td label="Số Zalo">
-                    {e.guiDuoc ? (
+                    {e.parentPhone ? (
                       <span className="font-mono tabular-nums">{e.parentPhone}</span>
                     ) : (
-                      <Chip tone="warn">chưa có</Chip>
+                      <span className="text-ink-3">—</span>
+                    )}
+                  </Td>
+                  <Td label="Email">
+                    {e.parentEmail ? (
+                      <span className="break-words">{e.parentEmail}</span>
+                    ) : (
+                      <span className="text-ink-3">—</span>
                     )}
                   </Td>
                   <Td label="Báo cáo">

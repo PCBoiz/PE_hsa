@@ -157,7 +157,9 @@ export default function GuiCaLop({
           </Button>
           {soEm === 0 && (
             <span className="text-small text-ink-3">
-              Chưa em nào có số Zalo của phụ huynh.
+              {coKenh
+                ? 'Chưa em nào có email hoặc số Zalo của phụ huynh.'
+                : 'Lớp chưa có học viên nào đang học.'}
             </span>
           )}
         </div>

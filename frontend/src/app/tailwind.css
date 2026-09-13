@@ -51,6 +51,22 @@
     letter-spacing: inherit;
   }
 
+  /* `border-box` cho ô nhập — phần preflight thứ hai phải lấy lại.
+     Mặc định của trình duyệt cho `input`/`textarea` là `content-box`, nên
+     `w-full px-3 border` rộng 100% CỘNG 24px padding CỘNG 2px viền. Đo
+     13/09/2026 trên trình duyệt thật: ô dán liên hệ phụ huynh, ô cấp tài khoản
+     hàng loạt và hai ô ngày lọc ở Nhật ký đều thò ra khỏi thẻ đúng 26px, ở cả
+     1440 lẫn 390px. Không ai thấy vì trang không trượt ngang — ô chỉ đè lên lề
+     của thẻ.
+     Chỉ ô nhập, không `*`: trang CSS cũ đã tự đặt `border-box` (đo cùng ngày: 0
+     ô `content-box` trên 5 trang cũ), còn đổi mọi phần tử là đụng tới chỗ chưa
+     đo. */
+  input,
+  select,
+  textarea {
+    box-sizing: border-box;
+  }
+
   button {
     border: 0;
     background: none;

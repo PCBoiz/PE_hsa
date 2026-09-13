@@ -75,8 +75,11 @@ def _hoc_vien_dang_hoc(class_id):
     chủ sản phẩm chốt giữ), nên thiếu bộ lọc này là gửi "báo cáo phụ huynh" cho
     chính tài khoản quản trị.
     """
+    # `email`, `phone` của CHÍNH em: màn hình gửi không dùng (nó dựng từng
+    # khoá trả về bằng tay), nhưng ô dán liên hệ cả lớp cần chúng để nhận ra
+    # em nào là em nào — và phải dùng CÙNG danh sách "đang học" với chỗ gửi.
     return q('''SELECT DISTINCT ON (u.id)
-                       u.id, u.name, u.parent_name, u.parent_phone,
+                       u.id, u.name, u.email, u.phone, u.parent_name, u.parent_phone,
                        u.parent_email
                 FROM class_members m
                 JOIN users u ON u.id = m.user_id

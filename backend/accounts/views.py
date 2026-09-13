@@ -278,7 +278,7 @@ class UserView(NguoiDungView):
         # Và mọi cột thêm vào bảng `users` sau này sẽ tự động rò ra API mà không
         # ai phải làm gì cả — đó mới là phần nguy hiểm lâu dài.
         user = q1('''SELECT id, name, email, phone, birthday, role, avatar,
-                            parent_name, parent_phone,
+                            parent_name, parent_phone, parent_email,
                             streak, streak_freezes, certificates, gems, xp,
                             questionnaire_completed, last_study_date,
                             is_verified, created_at, status,
@@ -299,8 +299,16 @@ class UserView(NguoiDungView):
         # Liên hệ phụ huynh — người NHẬN báo cáo tiến độ. Học viên tự điền được
         # vì chính các em biết số của bố mẹ; bắt học vụ nhập hộ cho từng em là
         # cách chắc chắn để ô này mãi mãi trống.
-        parent_name = (data.get('parent_name') or '').strip()
-        parent_phone = (data.get('parent_phone') or '').strip()
+        #
+        # VẮNG KHOÁ THÌ GIỮ (13/09/2026). Từ hôm nay ba cột này có HAI người
+        # ghi: chính em, và học vụ dán cho cả lớp (`teaching/lien_he_phu_huynh`).
+        # `None` nghĩa là "không đụng" (xem COALESCE ở câu UPDATE), chuỗi rỗng
+        # nghĩa là em CHỦ ĐỘNG xoá. Bản cũ ghi đè bằng rỗng cả khi khoá vắng mặt,
+        # nên một thẻ trình duyệt mở từ trước khi có ô email bấm Lưu là xoá trắng
+        # email học vụ vừa nhập — im lặng. (`accounts/tests_ho_so_phu_huynh.py`)
+        parent_name = (data.get('parent_name') or '').strip() if 'parent_name' in data else None
+        parent_phone = (data.get('parent_phone') or '').strip() if 'parent_phone' in data else None
+        parent_email = (data.get('parent_email') or '').strip() if 'parent_email' in data else None
 
         errors = {}
         if err := validate_name_field(name):
@@ -312,8 +320,16 @@ class UserView(NguoiDungView):
         # Cùng bộ luật với số của học viên: rỗng thì bỏ qua, có thì phải đúng
         # dạng. Sai dạng mà vẫn lưu là một tin ZNS gửi vào hư không, mất phí,
         # và không ai biết cho tới khi phụ huynh hỏi vì sao chưa nhận được gì.
+        #
+        # Lời báo có nêu "phụ huynh": Cài đặt nay ghép mọi lỗi vào một câu, và
+        # "Số điện thoại phải có 10 số" trơn thì em không biết là ô nào sai.
         if err := validate_phone_field(parent_phone):
-            errors['parent_phone'] = err
+            errors['parent_phone'] = 'Số Zalo của phụ huynh: ' + err
+        # Chỉ kiểm khi CÓ giá trị: `validate_email_field` coi rỗng là lỗi vì nó
+        # viết cho email ĐĂNG NHẬP. Gọi thẳng ở đây là chặn mọi em chưa có email
+        # của bố mẹ lưu bất cứ thứ gì ở Cài đặt.
+        if parent_email and validate_email_field(parent_email):
+            errors['parent_email'] = 'Email của phụ huynh không hợp lệ'
         if errors:
             return Response({'errors': errors}, status=400)
 
@@ -334,11 +350,19 @@ class UserView(NguoiDungView):
         # trung tâm thì dùng chung số của mẹ — đó là chuyện bình thường, không
         # phải xung đột danh tính. `users.phone` phải duy nhất vì nó là một
         # cách ĐĂNG NHẬP; số phụ huynh chỉ là một địa chỉ để gửi tới.
+        #
+        # `parent_email` cũng KHÔNG kiểm trùng, cùng lý do với số: hai anh em
+        # dùng chung email của mẹ.
         x('''UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s,
-                              parent_name=%s, parent_phone=%s
+                              parent_name=COALESCE(%s, parent_name),
+                              parent_phone=COALESCE(%s, parent_phone),
+                              parent_email=COALESCE(%s, parent_email)
              WHERE id=%s''',
           (name, norm_email(email), norm_phone(phone), birthday,
-           parent_name, norm_phone(parent_phone) or '', uid))
+           parent_name,
+           None if parent_phone is None else (norm_phone(parent_phone) or ''),
+           None if parent_email is None else (norm_email(parent_email) or ''),
+           uid))
         return Response({'ok': True})
 
 

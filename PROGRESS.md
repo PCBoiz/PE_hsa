@@ -42,9 +42,71 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   khổ × 2 bộ màu = 0/0/0/0 · build/eslint/tsc/ruff sạch.
 - **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
   `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
-- **Nhánh**: `master` = `erp` = `ad86dd9`. Không commit mới từ 07/09 tới 13/09.
+- **Nhánh**: `master` = `erp`, đẩy sau mỗi vòng (13/09: vòng 1 sao lưu, vòng 2
+  khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
+
+## 13/09/2026 — VÒNG 3 · Mở đường nhập email phụ huynh (việc A)
+
+**Hỏi trước, anh Sơn chốt:** làm A (email phụ huynh) trước, rồi B (sinh buổi
+hàng loạt + ngày nghỉ theo đợt), C (xoá 4 buổi mẫu sai thứ, sinh lại bằng công
+cụ mới — đã gật cho ghi production), D (sửa ô sai trong hồ sơ PDF).
+
+**Vì sao:** kênh gửi CHÍNH là email (chốt 07/09) nhưng không có đường nào ghi
+`users.parent_email`. Đo production: **0 em có**. Màn gửi cả lớp còn khuyên "tự
+điền ở Cài đặt" — nơi không có ô. Tra ngoài: hệ SIS nhập liên hệ theo tệp, khớp
+theo mã học sinh, có bảng "đã khớp" để duyệt; Google Classroom chỉ cho giáo
+viên/quản trị mời phụ huynh.
+
+**Dựng:**
+- Cài đặt → Liên hệ phụ huynh: ô email. `PUT /api/user` kiểm dạng CHỈ khi có
+  giá trị, chuẩn hoá, không kiểm trùng. **Vắng khoá thì giữ** (COALESCE cả ba
+  cột phụ huynh): nay có hai người ghi, bản cũ ghi đè bằng rỗng khi khoá vắng.
+- `POST /api/teach/classes/<id>/parent-contacts {text, dry_run}`
+  (`teaching/lien_he_phu_huynh.py`): giảng viên lớp / học vụ / quản trị, KHÔNG
+  trợ giảng. Chỉ khớp em đang học của CHÍNH lớp đó. Có dòng tiêu đề → đọc theo
+  tên cột (cách duy nhất tách số của em khỏi số bố mẹ); không có → đọc theo nội
+  dung, hai ô cùng loại không phân định được thì trượt cả dòng; tên trùng không
+  đoán; ô trống giữ. Một UPDATE cả lớp, một dòng nhật ký `class.parent_contacts`
+  giữ giá trị cũ.
+- Trang báo cáo cả lớp: khối "Nhập liên hệ phụ huynh" — Kiểm tra trước → bảng
+  sẽ đổi gì (giá trị cũ gạch ngang, đếm ô ghi đè) → Lưu; sửa chữ là khoá Lưu.
+
+**Lỗi cũ tìm ra trong lúc làm (đều đã vá):**
+1. `main.js::saveSettings` không hỏi `r.ok` → máy chủ từ chối mà vẫn "Đã lưu
+   thay đổi!". Chốt hãm tầng cũ 7337 → 7343 theo ngoại lệ vá lỗi.
+2. Trang báo cáo cả lớp: chưa nối kênh gửi thì nút "Cấp đường dẫn" bị khoá (đếm
+   theo `guiDuoc` = 0) — đúng lúc gửi tay là cách duy nhất; cột Số Zalo hiện
+   "chưa có" cho cả em đã có số; không có cột email.
+3. Nhật ký hiện **mã máy cho 15 hành động** (assignment/course/lesson/mock_exam)
+   dù chú thích dặn đừng. Nay `e2e/unit/nhan-nhat-ky.test.mjs` đọc cả hai tệp.
+4. **Chỉ thấy khi tự xem ảnh chụp:** ô nhập `w-full` thò ra khỏi thẻ 26px ở 3
+   trang React (ô dán mới, ô cấp tài khoản hàng loạt, 2 ô ngày ở Nhật ký). Gốc:
+   `tailwind.css` bỏ preflight, thiếu `box-sizing: border-box` cho ô nhập. Đo
+   trước/sau 14 trang × 2 khổ: tràn 6 → 0; ô trên trang CSS cũ đổi kích thước
+   = 0; ô `min-h-11` về đúng 44px (trước 46–48px).
+
+**Đo:** đỏ trước — 14/15 pytest mới trượt (phép còn lại canh bản vá sắp
+viết), `ho-so-truong` trên `views.py` cũ 7 ✗, `nhan-nhat-ky` 15 mã. Sau: 61/61
+pytest (mới + accounts + gửi cả lớp + khai cổng + đọc-của-người-khác), 4 unit
+test, eslint, tsc, ruff sạch. Trình duyệt thật 1366/390px với hàng rào chặn mọi
+lời ghi (trừ `dry_run` và một PUT chắc chắn bị từ chối): xem trước đọc đúng tiêu
+đề, không tràn ngang; Cài đặt báo "Email của phụ huynh không hợp lệ",
+`parent_email` trước/sau đều rỗng. Hàng rào chặn đúng 2 lời ghi ngoài ý muốn
+(lưu thông báo, lưu mục tiêu HSA) — nếu không chặn thì "chỉ kiểm lỗi" đã ghi
+production.
+
+**Câu hỏi để lại cho anh (chưa làm, là chính sách):** học viên VẪN sửa được
+liên hệ phụ huynh học vụ đã nhập — một em có thể đổi email bố mẹ thành email
+của mình để chặn báo cáo. Khoá lại (chỉ học vụ sửa, em chỉ điền khi còn trống)
+hay giữ? Thuộc C3 trong `VIEC_CUA_ANH.md`. Thêm: ngày thi lớp 1 (15/03/2027)
+lệch ngày thi đợt 28 (06/12/2026).
+
+**Mẹo đo ghi lại:** con trỏ thô trả cột `jsonb` dạng CHUỖI; `manage.py shell <
+tệp` hỏng ở vòng `for` nhiều dòng → dùng `shell -c "exec(open(...).read())"`;
+Playwright nằm ở `frontend/node_modules/@playwright/test`, cookie phiên là
+`pe_at` (không phải localStorage như ghi nhớ cũ).
 
 ## 13/09/2026 — VÒNG 2 · 60 view thôi dựa vào mặc định của khung
 

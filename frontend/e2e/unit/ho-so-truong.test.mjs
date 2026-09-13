@@ -92,7 +92,9 @@ check('đọc được danh sách cột của SELECT (không thì mọi kiểm d
 
 for (const n of NHAN) {
   check(`PUT /api/user đọc \`${n}\``, new RegExp(`data\\.get\\('${n}'\\)`).test(PUT));
-  check(`PUT /api/user ghi cột \`${n}\``, new RegExp(`${n}\\s*=%s`).test(PUT));
+  // `=COALESCE(%s, …)` cũng là GHI — dạng các ô liên hệ phụ huynh dùng từ
+  // 13/09/2026 (xem phép kiểm "vắng khoá thì giữ" bên dưới).
+  check(`PUT /api/user ghi cột \`${n}\``, new RegExp(`${n}\\s*=(?:COALESCE\\(\\s*)?%s`).test(PUT));
   // Không trả về thì mở lại trang là ô trống, dù đã lưu đúng.
   check(`GET /api/user trả \`${n}\``, COT.includes(n), COT.join(','));
 }
@@ -120,6 +122,19 @@ check('vẫn kiểm trùng `phone` của chính học viên',
 // hư không, mất phí, và không ai biết cho tới khi phụ huynh hỏi vì sao chưa
 // nhận được gì.
 check('`parent_phone` có qua validator', /validate_phone_field\(parent_phone\)/.test(PUT));
+check('`parent_email` có qua validator', /validate_email_field\(parent_email\)/.test(PUT));
+check('không kiểm trùng `parent_email` (hai anh em dùng chung email của mẹ)',
+  !/WHERE (?:lower\()?parent_email\)?=%s AND id<>%s/.test(PUT));
+
+// ── Liên hệ phụ huynh: VẮNG KHOÁ THÌ GIỮ ──────────────────────────────────
+// Từ 13/09/2026 ba cột này có hai người ghi — chính em ở Cài đặt, và học vụ
+// dán cho cả lớp. Ghi đè bằng rỗng khi khoá vắng mặt thì một thẻ trình duyệt mở
+// từ trước bản có ô email bấm Lưu là xoá trắng email học vụ vừa nhập.
+for (const n of NHAN.filter((k) => k.startsWith('parent_'))) {
+  check(`\`${n}\` vắng khoá thì giữ nguyên (COALESCE)`,
+    new RegExp(`${n}=COALESCE\\(%s, ${n}\\)`).test(PUT));
+}
+check('có ô email phụ huynh ở Cài đặt', NHAN.includes('parent_email'), NHAN.join(','));
 
 console.log(loi === 0 ? '\nOK — ô hồ sơ thông cả ba tầng' : `\n${loi} lỗi`);
 process.exitCode = loi === 0 ? 0 : 1;

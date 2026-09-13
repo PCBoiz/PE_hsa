@@ -43,6 +43,7 @@ const VIEC: Record<string, string> = {
   'class.delete': 'Xoá lớp',
   'class.member.add': 'Thêm vào lớp',
   'class.member.remove': 'Cho rời lớp',
+  'class.parent_contacts': 'Nhập liên hệ phụ huynh',
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',
   'session.delete': 'Xoá buổi học',
@@ -54,6 +55,27 @@ const VIEC: Record<string, string> = {
   'term.create': 'Tạo đợt học',
   'term.update': 'Sửa đợt học',
   'term.delete': 'Xoá đợt học',
+  // Bốn nhóm dưới đây thêm ở backend từ 31/08 tới 04/09 và lọt ra màn hình
+  // dưới dạng mã máy suốt hai tuần — dù chú thích ngay trên đã dặn. Lời dặn
+  // nằm ở tệp mà người thêm hằng số không mở; nay `e2e/unit/nhan-nhat-ky`
+  // đọc cả hai tệp và đỏ ở CI của chính người ấy.
+  'assignment.create': 'Giao bài',
+  'assignment.update': 'Sửa bài đã giao',
+  'assignment.delete': 'Xoá bài đã giao',
+  'assignment.grade': 'Chấm bài',
+  'course.create': 'Tạo khoá học',
+  'course.update': 'Sửa khoá học',
+  'course.delete': 'Xoá khoá học',
+  'course.import': 'Nhập giáo trình',
+  'lesson.create': 'Thêm bài học',
+  'lesson.update': 'Sửa thông tin bài',
+  'lesson.delete': 'Xoá bài học',
+  'lesson.content': 'Sửa nội dung bài',
+  'mock_exam.create': 'Tạo đề thi thử',
+  'mock_exam.update': 'Sửa đề thi thử',
+  // Một mã cho cả hai chiều (xem `mockexam/quan_tri.py`) — cột "Nội dung" nói
+  // rõ là xuất bản hay ẩn.
+  'mock_exam.publish': 'Xuất bản / ẩn đề thi thử',
 };
 
 /**

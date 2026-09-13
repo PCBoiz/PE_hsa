@@ -43,6 +43,10 @@ CLASS_UPDATE = 'class.update'
 CLASS_DELETE = 'class.delete'
 CLASS_MEMBER_ADD = 'class.member.add'
 CLASS_MEMBER_REMOVE = 'class.member.remove'
+#: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
+#: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
+#: dán nhầm cột.
+CLASS_PARENT_CONTACTS = 'class.parent_contacts'
 
 SESSION_CREATE = 'session.create'
 SESSION_UPDATE = 'session.update'
