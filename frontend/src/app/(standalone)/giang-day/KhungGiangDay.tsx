@@ -24,9 +24,9 @@ import AppShell from '@/components/AppShell';
  * nhận `params` của trang con. Đọc từ `usePathname()` là cách duy nhất để
  * khung biết đang ở lớp nào mà không phải truyền tay qua năm trang.
  *
- * Không có `classId` trong đường dẫn (không xảy ra hôm nay, nhưng sẽ xảy ra
- * khi thêm một trang cấp khu) thì thanh chỉ còn thương hiệu và danh tính —
- * không dựng ba tab trỏ vào `/giang-day/buoi-hoc/undefined`.
+ * Không có `classId` trong đường dẫn (trang cấp khu `/giang-day` — "Việc hôm
+ * nay", thêm 14/09/2026) thì thanh chỉ có tab ấy — không dựng ba tab lớp trỏ
+ * vào `/giang-day/buoi-hoc/undefined`.
  */
 const TAB = [
   { doan: 'buoi-hoc', nhan: 'Buổi học', icon: 'calendar' },
@@ -46,15 +46,20 @@ export default function KhungGiangDay() {
       khu="Giảng dạy"
       dieuKhien="react"
       spa={false}
-      muc={lop
-        ? TAB.map((t) => ({
-          trang: null,
-          nhan: t.nhan,
-          icon: t.icon,
-          emoji: '',
-          url: `/giang-day/${t.doan}/${lop}`,
-        }))
-        : []}
+      muc={[
+        // "Việc hôm nay" đứng đầu và có mặt ở MỌI trang của khu: đó là chỗ
+        // giảng viên quay về sau khi làm xong một việc trong lớp.
+        { trang: null, nhan: 'Việc hôm nay', icon: 'check-circle-2', emoji: '', url: '/giang-day' },
+        ...(lop
+          ? TAB.map((t) => ({
+            trang: null,
+            nhan: t.nhan,
+            icon: t.icon,
+            emoji: '',
+            url: `/giang-day/${t.doan}/${lop}`,
+          }))
+          : []),
+      ]}
     />
   );
 }

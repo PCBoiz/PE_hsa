@@ -220,12 +220,18 @@ def test_stats_avg_progress_handles_null_progress(auth_api, temp_user):
 # ── L9 · đếm hoạt động theo CẶP (ref_type, ref_id) ─────────────────────────
 
 def _su_kien(uid, kind, ref_type, ref_id, course_id, topic, diem=50):
-    from common.clock import local_today
+    # `occurred_at` bằng `local_now()` — đúng như `common/events.record_event`
+    # ghi ở đường chạy thật. Bản trước dùng `now()` của Postgres (UTC), tức HAI
+    # đồng hồ lệch 7 tiếng ngay trong một dòng: `event_date` là thứ Hai giờ Việt
+    # Nam mà `occurred_at` còn là Chủ nhật. `test_quiz_on_tap_VAN_tick_duoc_muc_
+    # on_lai` vì thế ĐỎ mỗi sáng thứ Hai từ 0h tới 7h (đo 14/09/2026 lúc 01:07):
+    # quiz nằm trước mốc sàn tuần nên không tick. Thước sai chứ mã không sai.
+    from common.clock import local_now, local_today
     x('''INSERT INTO learning_events
              (user_id, kind, dedup_key, occurred_at, event_date, course_id, topic,
               ref_type, ref_id, score, max_score)
-         VALUES (%s,%s,%s, now(), %s, %s, %s, %s, %s, %s, 100)''',
-      (uid, kind, '%s:%s:%s' % (kind, ref_type, ref_id), local_today(),
+         VALUES (%s,%s,%s, %s, %s, %s, %s, %s, %s, %s, 100)''',
+      (uid, kind, '%s:%s:%s' % (kind, ref_type, ref_id), local_now(), local_today(),
        course_id, topic, ref_type, ref_id, diem))
 
 

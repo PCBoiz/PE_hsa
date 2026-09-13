@@ -8,6 +8,7 @@
 import PageStyles from '@/components/PageStyles';
 import BaHopPhan from '@/components/BaHopPhan';
 import Chatbot from '@/components/Chatbot';
+import KhoaLienHePhuHuynh from '@/components/KhoaLienHePhuHuynh';
 import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
 import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
@@ -249,6 +250,10 @@ export default function DashboardPage() {
                 Lớp bạn phụ trách, ai đang cần chú ý, và hồ sơ học tập của từng học viên.
               </p>
             </div>
+            {/* Lối vào trang "Việc hôm nay" (14/09/2026) — gom mọi lớp: buổi
+                chưa điểm danh, bài chưa chấm, em vắng liền. Đặt ở đầu khu vì
+                đó là câu hỏi đầu tiên mỗi tối; thẻ neo thường, không qua SPA. */}
+            <a className="tc-link" href="/giang-day">Việc hôm nay →</a>
           </div>
           <div className="tc-wrap">
             <div className="section-card tc-side fx-fade-up">
@@ -545,6 +550,9 @@ export default function DashboardPage() {
                   <input id="field-parent-email" data-ho-so="parent_email" className="field-input" type="email" autoComplete="off" placeholder="VD: me.an@gmail.com" />
                 </div>
               </div>
+              {/* §47: trung tâm đã nhập thì ô đã có thông tin thành chỉ-đọc,
+                  kèm câu giải thích. Máy chủ vẫn là hàng rào thật. */}
+              <KhoaLienHePhuHuynh />
             </div>
 
             {/* Mục tiêu HSA — trước đây chỉ đặt được MỘT LẦN lúc làm khảo sát,

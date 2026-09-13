@@ -1,6 +1,6 @@
 # Báo cáo trạng thái — số đo thật
 
-*Sinh tự động ngày 13/09/2026 bằng `python scripts/kiem_ke_san_pham.py --md`. Mọi con số dưới đây được đếm lại từ mã
+*Sinh tự động ngày 14/09/2026 bằng `python scripts/kiem_ke_san_pham.py --md`. Mọi con số dưới đây được đếm lại từ mã
 nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 
 *Bản này CHỈ ĐO, không nhận định. Muốn biết vì sao một con số ra như vậy thì đọc
@@ -14,15 +14,15 @@ nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 |---|---|---|
 | Vai trò người dùng | 6 | `permissions.py` → `ASSIGNABLE_ROLES` |
 | Lớp cổng phân quyền | 6 | `permissions.py` → `Is*` |
-| Đường API | 111 | `get_resolver()` — đường bắt đầu bằng `api/` |
+| Đường API | 112 | `get_resolver()` — đường bắt đầu bằng `api/` |
 | · không cần đăng nhập | 2 | AllowAny hoặc `authentication_classes = []` |
 | · chỉ cần đăng nhập | 60 | `permission_classes == [IsAuthenticated]` |
 | · · trong đó KHÔNG tự khai cổng | 0 | dựa vào mặc định của khung |
-| · có cổng vai trò | 49 | lớp `Is*` khác |
-| Trang giao diện | 26 | `frontend/src/app/**/page.tsx` |
+| · có cổng vai trò | 50 | lớp `Is*` khác |
+| Trang giao diện | 27 | `frontend/src/app/**/page.tsx` |
 | Bảng CSDL | 56 | `information_schema.tables` |
 | · có dữ liệu | 35 | count(*) > 0 |
-| Tệp kiểm thử backend | 36 | `backend/**/tests*.py` |
+| Tệp kiểm thử backend | 37 | `backend/**/tests*.py` |
 | Tệp kiểm thử frontend | 33 | `frontend/e2e/**` |
 
 ## Dữ liệu nghiệp vụ trên CSDL

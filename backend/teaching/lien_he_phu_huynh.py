@@ -44,6 +44,7 @@ from rest_framework.views import APIView
 
 from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
+from common.clock import local_now
 from common.db import q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
 from common.permissions import IsSeniorTeachingStaff, can_see_class
@@ -346,11 +347,18 @@ class ParentContactsImportView(APIView):
                 # COALESCE: chỉ ghi ô CÓ đổi. Ô không đổi để nguyên cột trong
                 # CSDL chứ không ghi lại giá trị đọc lúc nãy — nếu em vừa tự sửa
                 # ở Cài đặt giữa lúc xem trước và lúc lưu thì không bị đè mất.
+                #
+                # §47: ghi xong là KHOÁ — từ đây em chỉ điền được ô còn trống,
+                # sửa phải qua học vụ (anh Sơn chốt C5, 14/09/2026). `locked_by`
+                # là người nhập LẦN NÀY: khi phụ huynh bảo số sai thì câu hỏi
+                # đầu tiên là "ai nhập số này gần nhất".
                 x('UPDATE users AS u SET parent_name = COALESCE(v.ten, u.parent_name), '
                   'parent_phone = COALESCE(v.so, u.parent_phone), '
-                  'parent_email = COALESCE(v.email, u.parent_email) '
+                  'parent_email = COALESCE(v.email, u.parent_email), '
+                  'parent_contact_locked_at = %s, parent_contact_locked_by = %s '
                   'FROM (VALUES ' + ', '.join(['(%s::int, %s::text, %s::text, %s::text)'] * len(ghi))
-                  + ') AS v(id, ten, so, email) WHERE u.id = v.id', tuple(vals))
+                  + ') AS v(id, ten, so, email) WHERE u.id = v.id',
+                  (local_now(), request.user.id, *vals))
                 audit.record(
                     request, audit.CLASS_PARENT_CONTACTS, target_type='class',
                     target_id=class_id, target_label=lop.get('name') or str(class_id),

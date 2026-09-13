@@ -1497,3 +1497,20 @@ CREATE TABLE IF NOT EXISTS term_holidays (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_term_holidays_term_day ON term_holidays (term_id, on_date);
 -- Mọi khoá ngoại có chỉ mục (§43).
 CREATE INDEX IF NOT EXISTS idx_term_holidays_created_by ON term_holidays (created_by);
+
+-- ============================================================================
+-- §47 · Liên hệ phụ huynh do TRUNG TÂM nhập thì học viên không sửa (14/09/2026)
+-- ============================================================================
+-- Anh Sơn chốt (C5): học vụ/giảng viên đã nhập liên hệ phụ huynh thì chỉ họ sửa;
+-- học viên chỉ tự điền được ô còn trống. Không có khoá này thì một em đổi email
+-- bố mẹ thành email của mình là chặn được báo cáo tiến độ trước khi nó tới nhà.
+-- Cùng cách Google Classroom làm: chỉ giáo viên/quản trị quản lý phụ huynh.
+--
+-- Hai cột chứ không một cờ: `locked_at` trả lời "có khoá không, từ bao giờ",
+-- `locked_by` trả lời "ai" — câu hỏi đầu tiên khi một phụ huynh bảo số này sai.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact_locked_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact_locked_by INTEGER
+    REFERENCES users(id) ON DELETE SET NULL;
+-- Mọi khoá ngoại có chỉ mục (§43).
+CREATE INDEX IF NOT EXISTS idx_users_parent_contact_locked_by
+    ON users (parent_contact_locked_by) WHERE parent_contact_locked_by IS NOT NULL;

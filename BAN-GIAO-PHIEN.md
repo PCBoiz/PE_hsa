@@ -75,15 +75,16 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
 - CSDL: 5 tài khoản, 1 lớp, 1 đợt, 16 buổi đều ở tương lai (sinh 13/09), 0 lượt
   điểm danh — buổi mẫu cũ đã xoá có duyệt, sao lưu ở `.sao_luu/`. 0 em có liên
   lạc phụ huynh. Tài khoản `id 9` (kiểm thử) giữ >½ lịch sử học — chờ anh quyết.
-- Cổng chất lượng lần cuối 13/09: `teaching` + `common` **267/267** pytest, bộ
-  `accounts` + gửi báo cáo + đọc-của-người-khác 61/61, eslint/tsc/ruff sạch, ô
-  nhập tràn khung 0 trên 14 trang × 2 khổ. **Chưa chạy lại** trọn bộ pytest mọi
-  app (lần cuối 07/09: 453/453) và bộ đo giao diện `do_giao_dien.mjs` — làm
-  trước khi báo một mốc lớn.
+- Cổng chất lượng lần cuối **14/09**: pytest MỌI app **525/525** (35 phút; một
+  thước hỏng theo giờ ở `stats/tests.py` đã sửa) · bộ đo giao diện **22 trang ×
+  2 khổ × 2 bộ màu = 0/0/0/0** (`--tu-kiem` ĐẠT trước) · eslint/tsc/ruff sạch ·
+  23/23 unit test Node.
 - Hồ sơ gửi TopHSA: `docs/Ho so san pham PE_HSA.pdf`, 26 trang, sinh bằng mã;
   ma trận quyền B.8 sửa 13/09 (ba ô sai).
-- `master` = `erp`, đẩy sau mỗi vòng. 13/09 có bốn vòng: sao lưu CSDL · khai cổng
-  60 view · email phụ huynh (ô Cài đặt + dán cả lớp) · sinh lịch cả kỳ + ngày nghỉ.
+- `master` = `erp`, đẩy sau mỗi vòng. 13/09 bốn vòng: sao lưu CSDL · khai cổng
+  60 view · email phụ huynh (ô Cài đặt + dán cả lớp) · sinh lịch cả kỳ + ngày
+  nghỉ. 14/09: "Việc hôm nay" + khoá liên hệ phụ huynh + ngày thi lớp 1.
+- Lớp 1: 16 buổi T3/T5 19:30 từ 15/09, ngày thi 06/12/2026 (khớp đợt 28).
 
 ## Việc đang chờ, không ai làm được thay
 
@@ -93,13 +94,15 @@ vào production) · B1 một lớp thật.
 
 ## Việc tôi làm tiếp được ngay (không cần anh)
 
-*Xong 13/09:* ~~sao lưu CSDL tự động~~ (chờ A5) · ~~khai cổng tường minh 60
-view~~ · ~~nhập liên hệ phụ huynh~~ · ~~sinh lịch cả kỳ + ngày nghỉ~~.
+*Xong 13–14/09:* ~~sao lưu CSDL tự động~~ (chờ A5) · ~~khai cổng tường minh 60
+view~~ · ~~nhập liên hệ phụ huynh~~ · ~~sinh lịch cả kỳ + ngày nghỉ~~ · ~~bảng
+"Việc hôm nay"~~ · ~~khoá liên hệ phụ huynh (C5)~~.
 
-Còn lại, HỎI anh Sơn trước khi làm: bảng nhắc việc giảng viên (buổi chưa điểm
-danh, bài chưa chấm, em vắng liền) → khoá liên hệ phụ huynh theo C5 nếu anh
-chọn (b) → bộ nhập kết quả thi từ PDF (chờ B4) → T18 mức 2 (`zod` cho payload
-màn quản trị). T40 (bộ đếm tần suất) nay chỉ còn là đặt `REDIS_URL` — mã đã sẵn.
+Anh đã chọn, còn chưa làm: **rà luồng trợ giảng đầu-cuối** trên trình duyệt thật
+(tạo buổi → điểm danh → chấm bài; cần một tài khoản trợ giảng — production chưa
+có ai vai ấy, tạo trong giao dịch cuộn lại hoặc hỏi anh). Sau đó, HỎI trước: bộ
+nhập kết quả thi từ PDF (chờ B4) → T18 mức 2 (`zod` cho payload màn quản trị).
+T40 (bộ đếm tần suất) nay chỉ còn là đặt `REDIS_URL` — mã đã sẵn.
 
 ## Bài học đắt nhất ba tuần qua
 

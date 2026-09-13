@@ -1004,6 +1004,17 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
 @media (max-width: 36rem) {
   .field-input { font-size: 1rem; }
 }
+/* Ô CHỈ ĐỌC (§47, 14/09/2026): liên hệ phụ huynh do trung tâm nhập. Phải khác
+   ô bị TẮT — nó vẫn đọc được, chọn-chép được, chỉ không gõ được — và phải khác
+   ô thường, nếu không em gõ vào rồi mới thấy chữ không đổi. */
+.field-input:read-only {
+  border-style: dashed;
+  color: var(--t2);
+  cursor: default;
+}
+/* Không sáng lên khi focus như ô thường — sáng lên là mời gõ. */
+.field-input:read-only:focus { background: inherit; border-color: inherit; }
+#khoa-lien-he-ph { margin-top: 0.75rem; }
 
 .settings-section-title {
   font-size: 15px;

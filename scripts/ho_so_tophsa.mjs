@@ -163,7 +163,7 @@ ${bang(['Vai trò', 'Thấy gì', 'Làm được gì', 'KHÔNG làm được'], 
   ['<b>Học viên</b>', 'Dữ liệu của chính mình', 'Học, thi thử, xem lộ trình và bản đồ năng lực', 'Dữ liệu của bạn học'],
   ['<b>Biên tập nội dung</b>', 'Giáo trình', 'Soạn bài, nhập đề thi thử', 'Lớp học · học viên · báo cáo'],
 ])}
-${canh('<b>Ranh giới về dữ liệu liên lạc:</b> trợ giảng <i>nhìn được</i> email học viên trên màn điểm danh và chấm bài (vì có em chưa điền tên, email là thứ duy nhất để biết đang tick cho ai), nhưng <i>không mang ra ngoài được</i> — báo cáo phụ huynh bị chặn, và hai tệp CSV của lớp bị bỏ cột email và số điện thoại.')}
+${canh('<b>Ranh giới về dữ liệu liên lạc:</b> trợ giảng <i>nhìn được</i> email học viên trên màn điểm danh và chấm bài (vì có em chưa điền tên, email là thứ duy nhất để biết đang tick cho ai), nhưng <i>không mang ra ngoài được</i> — báo cáo phụ huynh bị chặn, và hai tệp CSV của lớp bị bỏ cột email và số điện thoại. <b>Liên hệ phụ huynh do trung tâm nhập thì học viên không sửa được</b> — chỉ tự điền được ô còn trống (chốt 14/09/2026), để không em nào đổi được địa chỉ nhận báo cáo về chính mình.')}
 
 ${muc('B.2', 'Ai làm được việc gì — sơ đồ')}
 ${mer(`flowchart TB
@@ -270,6 +270,7 @@ ${bang(['Màn hình', 'Ai vào được', 'Làm gì ở đó'], [
   ['Bài tập của tôi', 'Học viên', 'Bài giảng viên giao, nộp bài'],
   ['Khảo sát', 'Học viên', 'Khảo sát đầu vào để dựng lộ trình'],
   ['Đổi mật khẩu', 'Mọi người đã đăng nhập', 'Đổi mật khẩu của chính mình'],
+  ['Việc hôm nay', 'Giảng viên · trợ giảng · học vụ', 'Gom mọi lớp: buổi sắp tới, buổi chưa điểm danh, bài chưa chấm, em vắng liền, em cần chú ý (hai mục cuối không cho trợ giảng)'],
   ['Buổi học &amp; điểm danh', 'Giảng viên · trợ giảng', 'Tạo buổi, sinh lịch cả kỳ (trừ trợ giảng), điểm danh, ghi sổ đầu bài, xuất tệp'],
   ['Bài tập của lớp', 'Giảng viên · trợ giảng', 'Giao bài, xem ai đã nộp'],
   ['Chấm bài', 'Giảng viên · trợ giảng', 'Đọc bài làm, chấm điểm, nhận xét'],

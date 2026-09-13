@@ -120,15 +120,24 @@ export default function SessionsClient({
   className,
   initial,
   goiYSinh,
+  moBuoi = null,
 }: {
   classId: number;
   className: string;
   initial: SessionRow[];
   goiYSinh: GoiYSinh | null;
+  /** Buổi cần mở sẵn sổ điểm danh (từ `?diem-danh=`), nếu có trong danh sách. */
+  moBuoi?: number | null;
 }) {
   const [sessions, setSessions] = useState<SessionRow[]>(initial);
-  const [xemHetSapToi, setXemHetSapToi] = useState(false);
-  const [openId, setOpenId] = useState<number | null>(null);
+  // Mở sẵn một buổi thì hiện đủ nhóm "Sắp tới": buổi được trỏ tới mà nằm
+  // ngoài ba buổi đầu thì ô điểm danh đang mở lại không có trên màn.
+  const [xemHetSapToi, setXemHetSapToi] = useState(moBuoi !== null);
+  // Chỉ mở khi buổi ấy CÓ trong lớp này: một id của lớp khác dán vào URL không
+  // được thành một ô điểm danh đang mở cho thứ không hiện trên màn.
+  const [openId, setOpenId] = useState<number | null>(
+    moBuoi !== null && initial.some((s) => s.id === moBuoi) ? moBuoi : null,
+  );
   const [suaId, setSuaId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
 

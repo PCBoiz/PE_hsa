@@ -26,10 +26,16 @@ type ClassDetail = {
 
 export default async function BuoiHocPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ classId: string }>;
+  searchParams: Promise<{ 'diem-danh'?: string }>;
 }) {
   const { classId } = await params;
+  // `?diem-danh=<id>` từ trang "Việc hôm nay": mở sẵn sổ điểm danh của đúng
+  // buổi đó. Chỉ nhận số — một giá trị lạ không được thành `openId`.
+  const { 'diem-danh': dd } = await searchParams;
+  const moBuoi = dd && /^\d+$/.test(dd) ? Number(dd) : null;
   const [detail, list, sinh] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
     serverJson<{ sessions: SessionRow[] }>(`/api/teach/classes/${classId}/sessions`, {
@@ -91,6 +97,7 @@ export default async function BuoiHocPage({
           className={klass.name}
           initial={list.ok ? list.data.sessions : []}
           goiYSinh={sinh.ok ? sinh.data : null}
+          moBuoi={moBuoi}
         />
       </main>
     </div>

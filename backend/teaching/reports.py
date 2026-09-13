@@ -321,14 +321,27 @@ def _lag_by_user(uids):
     return do_cham_theo_hoc_vien(uids)
 
 
+def canh_bao_muc_cao(idle_days):
+    """Cảnh báo mức CAO — thứ đưa một em vào "cần chú ý ngay". Trả câu, hoặc None.
+
+    Tách ra (14/09/2026) vì có HAI nơi hỏi: báo cáo lớp (`_alerts`) và bảng
+    "Việc hôm nay" của giảng viên (`viec_hom_nay.py`). Anh Sơn chốt bảng ấy dùng
+    lại đúng cảnh báo của báo cáo lớp — không viết luật thứ hai. Một luật ở một
+    chỗ thì hai màn không thể gọi hai em khác nhau là "cần chú ý".
+    """
+    if idle_days is None:
+        return 'Chưa hoạt động lần nào kể từ khi vào lớp.'
+    if idle_days >= IDLE_DAYS:
+        return '%d ngày không mở bài nào.' % idle_days
+    return None
+
+
 def _alerts(student):
     """Cảnh báo sớm — mỗi cái là một câu NÓI ĐƯỢC LÀM GÌ TIẾP."""
     out = []
-    if student['idleDays'] is None:
-        out.append({'level': 'high', 'text': 'Chưa hoạt động lần nào kể từ khi vào lớp.'})
-    elif student['idleDays'] >= IDLE_DAYS:
-        out.append({'level': 'high',
-                    'text': '%d ngày không mở bài nào.' % student['idleDays']})
+    cao = canh_bao_muc_cao(student['idleDays'])
+    if cao:
+        out.append({'level': 'high', 'text': cao})
     if not student['mockCount']:
         out.append({'level': 'mid', 'text': 'Chưa làm đề thi thử nào.'})
     elif student['mockTrend'] is not None and student['mockTrend'] <= -8:

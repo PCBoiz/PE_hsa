@@ -21,7 +21,7 @@ từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 | **C1** | Quyết **xoá hay giữ tài khoản `id 9`** (`reg_test_hsa@example.com`) | 1 câu | Anh đã duyệt xoá, nhưng lúc hỏi tôi nói nó giữ "5 bài + 1 lượt thi"; đo lại là **12/38 sự kiện học, 5/10 bài, 1/1 nhật ký + quiz** — hơn nửa lịch sử học tập của cả CSDL. Đã sao lưu ra JSON. Một tiếng là xoá. | Dọn tài khoản kiểm thử |
 | **C2** | Quyết **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở khoá cả ZNS lẫn SMS brandname), hay bỏ hẳn | — | ZNS đòi OA xác thực, xác thực đòi giấy phép kinh doanh — **hộ kinh doanh cũng được**, không bắt buộc công ty. Phụ huynh Việt đọc Zalo nhiều hơn email. | Kênh Zalo |
 | **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
-| **C5** | Chốt: **học viên có được SỬA liên hệ phụ huynh mà học vụ đã nhập không?** Hai cách: (a) giữ như nay — em sửa được; (b) học vụ nhập rồi thì chỉ học vụ sửa, em chỉ điền được ô còn trống | 1 câu | Hiện em sửa được. Tức một em có thể đổi email bố mẹ thành email của mình để **chặn báo cáo tiến độ** trước khi nó tới nhà. Google Classroom chọn (b): chỉ giáo viên/quản trị mời phụ huynh, và phụ huynh phải bấm xác nhận. Chưa đổi vì đây là chính sách, không phải lỗi. | Tin cậy được địa chỉ nhận báo cáo |
+| ~~**C5**~~ | **ĐÃ CHỐT 14/09: khoá (b) — ĐÃ LÀM** (§47). Nguyên văn câu hỏi: **học viên có được SỬA liên hệ phụ huynh mà học vụ đã nhập không?** Hai cách: (a) giữ như nay — em sửa được; (b) học vụ nhập rồi thì chỉ học vụ sửa, em chỉ điền được ô còn trống | 1 câu | Hiện em sửa được. Tức một em có thể đổi email bố mẹ thành email của mình để **chặn báo cáo tiến độ** trước khi nó tới nhà. Google Classroom chọn (b): chỉ giáo viên/quản trị mời phụ huynh, và phụ huynh phải bấm xác nhận. Chưa đổi vì đây là chính sách, không phải lỗi. | Tin cậy được địa chỉ nhận báo cáo |
 | **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
 
 **Cách khôi phục từ bản sao lưu (khi cần, hy vọng không bao giờ):** Actions →
@@ -40,8 +40,9 @@ dòng thứ hai lên production**; chạy thử lên một nhánh Neon trước.
 ~~App Password Gmail~~ (07/09, thuộc `sonthaiha07@gmail.com`) · ~~xoá tài khoản
 e2e~~ (07/09).
 
-**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): bảng nhắc việc
-giảng viên. *Xong 13/09:* sao lưu CSDL tự động (chờ A5) · khai cổng phân quyền
+**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): rà luồng trợ
+giảng đầu-cuối. *Xong 14/09:* bảng "Việc hôm nay" cho giảng viên · khoá liên hệ
+phụ huynh (C5) · sửa ngày thi lớp 1 theo đợt. *Xong 13/09:* sao lưu CSDL tự động (chờ A5) · khai cổng phân quyền
 cho 60 view · ô email phụ huynh + dán liên hệ cả lớp · sinh lịch cả kỳ + ngày
 nghỉ theo đợt (học vụ khai Tết/nghỉ bù ở Vận hành → Đợt học khi có thông báo).
 

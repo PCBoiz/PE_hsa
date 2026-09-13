@@ -111,6 +111,10 @@ MUC = [
      if _cot('term_holidays', 'on_date')[0] else (False, 'chưa có bảng')),
     ('§46c', 'chỉ mục duy nhất term_holidays(term_id, on_date)',
      lambda: _chi_muc('idx_term_holidays_term_day')),
+    ('§47a', 'users.parent_contact_locked_at',
+     lambda: _cot('users', 'parent_contact_locked_at')),
+    ('§47b', 'chỉ mục users(parent_contact_locked_by)',
+     lambda: _chi_muc('idx_users_parent_contact_locked_by')),
 ]
 
 

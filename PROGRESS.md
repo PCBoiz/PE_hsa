@@ -27,6 +27,11 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
 - Kênh gửi phụ huynh: **email** (chốt 07/09); chưa gửi phụ huynh thật cho tới
   khi có địa chỉ @tophsa.vn. Zalo OA hoãn (cần giấy phép kinh doanh).
+- **Liên hệ phụ huynh (chốt 14/09, C5):** học vụ/giảng viên đã nhập thì CHỈ
+  người có quyền ấy sửa; học viên chỉ tự điền được ô còn trống.
+- **Vòng 14/09, theo thứ tự anh chọn:** bảng nhắc việc giảng viên → chạy lại cổng
+  chất lượng toàn bộ → khoá liên hệ phụ huynh → rà luồng trợ giảng đầu-cuối. Kèm:
+  sửa ngày thi lớp 1 thành 06/12/2026 theo đợt 28 (anh duyệt ghi production).
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
 
@@ -47,6 +52,68 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
+
+## 14/09/2026 — VÒNG 5 · Bảng "Việc hôm nay" cho giảng viên + khoá liên hệ phụ huynh (C5)
+
+**Việc hôm nay** (`/giang-day`, API `GET /api/teach/viec-hom-nay`,
+`teaching/viec_hom_nay.py`): gom mọi lớp của người đang đăng nhập — buổi trong
+24 giờ tới (cờ thiếu link phòng) · buổi đã bắt đầu chưa mở sổ điểm danh (cờ
+"đang diễn ra", lối vào mở sẵn sổ qua `?diem-danh=<id>`) · bài đã nộp chưa chấm
+(chờ lâu nhất trước, đỏ khi quá 5 ngày) · em vắng liền ≥ 2 buổi đã điểm danh
+(`excused` và buổi thiếu dòng làm đứt chuỗi — thiếu dữ liệu thì không kết tội) ·
+em cần chú ý ngay. Trợ giảng: chỉ hai khối buổi/bài, hai khối về từng em KHÔNG
+CÓ KHOÁ trong phản hồi (rỗng trông như "không em nào vắng"). Đúng 7 câu SQL dù
+bao nhiêu lớp — có phép kiểm đếm. Cảnh báo mức cao tách thành
+`reports.canh_bao_muc_cao` để báo cáo lớp và bảng này dùng chung một luật; phép
+kiểm so câu chữ hai bên. Khu Giảng dạy có tab "Việc hôm nay" ở mọi trang; khu
+cũ thêm một liên kết.
+
+**Khoá C5** (§47 `users.parent_contact_locked_at/_by`, áp Neon, `kiem_luoc_do`
+14/14): dán liên hệ cả lớp → khoá + ghi ai khoá; `PUT /api/user` của em bị khoá
+thì ô đã có giá trị không đổi được (400 nêu đúng ô, câu "cần sửa thì báo học
+vụ"), ô trống vẫn điền được, gửi lại y giá trị cũ không tính là sửa. Cài đặt: khối
+React `KhoaLienHePhuHuynh` (không đụng tầng JS cũ) đặt ô đã có thành chỉ-đọc
+(viền đứt, không sáng lên khi focus) kèm câu giải thích.
+
+**Lỗi cũ lộ ra nhờ phép kiểm khoá:** `PUT /api/user` kiểm số điện thoại THÔ
+trước khi chuẩn hoá, nên "0900 555 901" bị Cài đặt từ chối trong khi màn cấp
+tài khoản hàng loạt nhận (ở đó chuẩn hoá trước — chú thích ghi rõ lý do). Nay
+cả `phone` lẫn `parent_phone` chuẩn hoá rồi mới kiểm, có phép kiểm riêng.
+
+**Đo:** đỏ trước — 8/8 việc-hôm-nay (mã cũ), 5/5 khoá. Sau: 30/30 accounts +
+hợp đồng, 8/8 việc hôm nay, 19/19 liên hệ phụ huynh; eslint(src)/tsc/ruff sạch,
+23/23 unit test Node; bộ đo giao diện `--tu-kiem` ĐẠT rồi đo thật **22 trang × 2
+khổ × 2 bộ màu = 0/0/0/0**, 0 lời gọi ghi lọt ra. Trình duyệt thật: quản trị và
+giảng viên lớp 1 mở "Việc hôm nay" thấy 2 em cần chú ý (21 và 30 ngày không mở
+bài — luật cũ của báo cáo lớp, nay lộ ra ở màn giảng viên); `?diem-danh=1542` mở
+sẵn ô điểm danh; Cài đặt với hồ sơ bị khoá (giả phản hồi GET, chặn mọi lời ghi):
+hai ô đã có thành chỉ-đọc, ô email trống gõ được, gõ vào ô khoá không đổi, Lưu
+báo đúng câu của máy chủ.
+
+**Sửa ngày thi lớp 1** (anh duyệt): 15/03/2027 → 06/12/2026 khớp đợt 28, qua
+view quản trị, 1 dòng nhật ký `class.update`.
+
+**Cổng chất lượng toàn bộ (việc thứ hai anh chọn):** pytest MỌI app 525 phép,
+35 phút 24 giây — **524 xanh, 1 đỏ**: `stats/tests.py::test_quiz_on_tap_VAN_
+tick_duoc_muc_on_lai`. Không phải mã hôm nay. Nguyên nhân: hàm giả lập sự kiện
+trong test ghi `occurred_at = now()` của Postgres (UTC) nhưng `event_date =
+local_today()` (VN) — hai đồng hồ trong một dòng, đúng lỗi `common/clock.py` mô
+tả. Từ 0h tới 7h sáng thứ Hai giờ VN, quiz nằm ở Chủ nhật UTC → trước mốc sàn
+tuần → không tick. Mã sản phẩm ghi bằng `local_now()` nên không sai; sửa thước
+cho giống đường chạy thật, `stats` 33/33. Phép này sẽ đỏ trên CI mỗi sáng thứ
+Hai nếu không sửa. Bộ đo giao diện: 22 trang × 2 khổ × 2 bộ màu = 0/0/0/0.
+
+**Chưa xong trong vòng này:** rà luồng trợ giảng đầu-cuối (việc thứ tư) — vòng kế.
+
+## 14/09/2026 — Mở vòng 5 · quyết định
+
+**Bảng nhắc việc giảng viên — anh chốt:** trang mới "Việc hôm nay" ở `/giang-day`
+(React, gom mọi lớp; khu cũ chỉ thêm lối vào) · nhắc 4 thứ: buổi đã qua chưa mở
+sổ điểm danh, bài đã nộp chưa chấm (đỏ khi chờ quá 5 ngày), em vắng liền từ 2
+buổi, em có cảnh báo "cần chú ý ngay" (dùng lại luật của báo cáo lớp) · trợ giảng
+chỉ thấy buổi chưa điểm danh + bài chưa chấm của lớp được gán · có buổi sắp tới
+trong 24 giờ kèm cờ thiếu link phòng. Tra ngoài: LMS đặt bài chưa chấm (tô đỏ khi
+quá 5 ngày) và lối tắt vào buổi thiếu điểm danh ngay trang đầu của giáo viên.
 
 ## 13/09/2026 — VÒNG 4b · Xoá 4 buổi mẫu sai thứ, sinh lại lịch lớp 1 (việc C — GHI PRODUCTION có duyệt)
 

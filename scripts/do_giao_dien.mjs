@@ -116,6 +116,8 @@ const TRANG = [
   ['/quan-tri/co-so-hoc-phi', 'Quản trị · cơ sở học phí'],
   ['/giang-day/bao-cao/1', 'Giảng dạy · báo cáo cả lớp'],
   ['/giang-day/bao-cao/1/9', 'Giảng dạy · tờ báo cáo một em'],
+  // Thêm 14/09/2026 cùng ngày dựng — trang mở mỗi tối của giảng viên.
+  ['/giang-day', 'Giảng dạy · việc hôm nay'],
 ];
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét

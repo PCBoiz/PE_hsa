@@ -1,0 +1,210 @@
+"""VIỆC HÔM NAY của giảng viên — một màn mở mỗi tối, gom mọi lớp mình phụ trách.
+
+── VÌ SAO CÓ (14/09/2026) ─────────────────────────────────────────────────
+
+Tới hôm nay mọi màn giảng dạy đều gắn với MỘT lớp: muốn biết "tối qua tôi đã
+điểm danh chưa, còn bài nào chưa chấm" thì phải mở từng lớp rồi tự cộng. Lớp 1
+bắt đầu học từ 15/09 nên từ tối mai đây là việc hằng ngày. LMS thường đặt đúng
+hai thứ ở trang đầu của giáo viên: bài chưa chấm (tô đỏ khi chờ quá 5 ngày) và
+lối tắt vào buổi thiếu điểm danh.
+
+Anh Sơn chốt bốn khối + buổi sắp tới:
+  · buổi ĐÃ BẮT ĐẦU mà chưa mở sổ điểm danh (kèm cờ "đang diễn ra");
+  · bài ĐÃ NỘP mà chưa chấm, chờ lâu nhất trước, đỏ khi quá `CHAM_QUA_NGAY`;
+  · em vắng LIỀN từ `VANG_LIEN` buổi đã điểm danh — chưa có ở đâu khác;
+  · em có cảnh báo mức cao — CÙNG luật với báo cáo lớp (`reports.canh_bao_muc_cao`);
+  · buổi trong 24 giờ tới, kèm cờ thiếu link phòng.
+
+── TRỢ GIẢNG ──────────────────────────────────────────────────────────────
+
+Chỉ lớp được gán, và CHỈ hai khối về buổi/bài. Hai khối về từng em không có
+KHOÁ trong phản hồi (không phải danh sách rỗng — rỗng trông như "không em nào
+vắng"). Cùng ranh giới với báo cáo phụ huynh (01/09/2026): tín hiệu "gọi phụ
+huynh" là của giảng viên. Buổi sắp tới thì trợ giảng thấy — lịch lớp vốn hiện ở
+trang buổi học mà trợ giảng đã vào được.
+
+── SỐ CÂU SQL KHÔNG THEO SỐ LỚP ───────────────────────────────────────────
+
+Đúng 7 câu dù 1 hay 30 lớp (`tests_viec_hom_nay` canh). Gọi `class_report` cho
+từng lớp là 6 câu × N — đúng cái bẫy `overview.py` đã tránh.
+"""
+from datetime import timedelta
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from common.clock import local_now, local_today
+from common.db import q
+from common.permissions import IsTeachingStaff, is_assistant, visible_class_ids
+from teaching.reports import _last_activity, canh_bao_muc_cao
+from teaching.sessions import DEFAULT_SESSION_MINUTES
+from teaching.vocab import chi_hoc_vien
+
+#: Bài nộp chờ chấm quá ngần này ngày thì tô đỏ (mốc các LMS hay dùng).
+CHAM_QUA_NGAY = 5
+#: Vắng liền từ ngần này buổi đã điểm danh thì nêu tên.
+VANG_LIEN = 2
+#: Chỉ nhìn lại ngần này buổi đã điểm danh gần nhất mỗi lớp khi đếm vắng liền —
+#: chuỗi dài hơn thế thì đã phải gọi phụ huynh từ lâu, và không cần đọc cả kỳ.
+VANG_LIEN_NHIN_LAI = 10
+#: Trần dòng mỗi khối — màn này là danh sách việc, không phải sổ.
+TRAN = 50
+
+
+def _lop_cua(user):
+    ids = visible_class_ids(user)
+    if not ids:
+        return [], {}
+    lop = q('SELECT id, name, meeting_url FROM classes WHERE id = ANY(%s) ORDER BY name', (ids,))
+    return ids, {r['id']: r for r in lop}
+
+
+def _iso(dt):
+    return dt.isoformat() if dt else None
+
+
+def _sap_toi(ids, lop, nay):
+    rows = q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
+                FROM class_sessions
+                WHERE class_id = ANY(%s) AND status <> 'cancelled'
+                  AND starts_at > %s AND starts_at <= %s
+                ORDER BY starts_at LIMIT %s''', (ids, nay, nay + timedelta(hours=24), TRAN))
+    return [{
+        'sessionId': r['id'], 'classId': r['class_id'], 'className': lop[r['class_id']]['name'],
+        'startsAt': _iso(r['starts_at']), 'durationMinutes': r['duration_minutes'],
+        'topic': r['topic'],
+        # Link của buổi kế thừa link của lớp lúc tạo; lớp nhận link SAU đó thì
+        # buổi vẫn trống — nên hỏi cả hai trước khi báo thiếu.
+        'thieuLink': not (r['meeting_url'] or lop[r['class_id']]['meeting_url']),
+    } for r in rows]
+
+
+def _chua_diem_danh(ids, lop, nay):
+    rows = q('''SELECT id, class_id, starts_at, duration_minutes, topic,
+                       COUNT(*) OVER () AS tong
+                FROM class_sessions
+                WHERE class_id = ANY(%s) AND status <> 'cancelled'
+                  AND attendance_taken_at IS NULL AND starts_at <= %s
+                ORDER BY starts_at DESC LIMIT %s''', (ids, nay, TRAN))
+    ds = []
+    for r in rows:
+        ket = r['starts_at'] + timedelta(minutes=r['duration_minutes'] or DEFAULT_SESSION_MINUTES)
+        ds.append({'sessionId': r['id'], 'classId': r['class_id'],
+                   'className': lop[r['class_id']]['name'], 'startsAt': _iso(r['starts_at']),
+                   'topic': r['topic'], 'dangDienRa': ket > nay})
+    return {'tong': int(rows[0]['tong']) if rows else 0, 'ds': ds}
+
+
+def _chua_cham(ids, lop, nay):
+    # Chỉ bài của HỌC VIÊN: tài khoản quản trị đang là thành viên lớp 1 và có
+    # thể nộp thử — một "bài chưa chấm" của quản trị viên là việc giả.
+    rows = q('''SELECT a.id, a.class_id, a.title, a.due_at,
+                       COUNT(*) AS so_bai, MIN(s.submitted_at) AS cho_tu
+                FROM submissions s
+                JOIN assignments a ON a.id = s.assignment_id
+                JOIN users u ON u.id = s.user_id
+                WHERE a.class_id = ANY(%s) AND s.submitted_at IS NOT NULL
+                  AND s.graded_at IS NULL AND ''' + chi_hoc_vien('u') + '''
+                GROUP BY a.id
+                ORDER BY MIN(s.submitted_at) LIMIT %s''', (ids, TRAN))
+    ra = []
+    for r in rows:
+        cho_ngay = (nay - r['cho_tu']).days
+        ra.append({'assignmentId': r['id'], 'classId': r['class_id'],
+                   'className': lop[r['class_id']]['name'], 'title': r['title'],
+                   'dueAt': _iso(r['due_at']), 'soBai': int(r['so_bai']),
+                   'choTu': _iso(r['cho_tu']), 'choNgay': cho_ngay,
+                   'quaHan': cho_ngay > CHAM_QUA_NGAY})
+    return ra
+
+
+def _hoc_vien_dang_hoc(ids):
+    """``[(class_id, user_id, name)]`` — học viên đang học của các lớp, một câu."""
+    return q('''SELECT m.class_id, m.user_id, u.name
+                FROM class_members m JOIN users u ON u.id = m.user_id
+                WHERE m.class_id = ANY(%s) AND m.left_at IS NULL
+                  AND ''' + chi_hoc_vien('u') + '''
+                ORDER BY m.class_id, u.name''', (ids,))
+
+
+def _vang_lien(ids, lop, hoc_vien):
+    """Em vắng (`absent`) ở MỌI buổi trong chuỗi buổi đã điểm danh gần nhất.
+
+    Chuỗi đứt ở buổi đầu tiên em không `absent` — kể cả buổi KHÔNG có dòng điểm
+    danh (giảng viên tick sót): thiếu dữ liệu thì không kết tội. `excused` cũng
+    làm đứt: nghỉ có phép là chuyện nhà đã báo, không phải tín hiệu để gọi.
+    """
+    rows = q('''SELECT s.class_id, s.id AS session_id, s.starts_at, a.user_id, a.status
+                FROM (SELECT id, class_id, starts_at,
+                             ROW_NUMBER() OVER (PARTITION BY class_id ORDER BY starts_at DESC) AS tt
+                      FROM class_sessions
+                      WHERE class_id = ANY(%s) AND status <> 'cancelled'
+                        AND attendance_taken_at IS NOT NULL) s
+                LEFT JOIN attendance a ON a.session_id = s.id
+                WHERE s.tt <= %s
+                ORDER BY s.class_id, s.starts_at DESC''', (ids, VANG_LIEN_NHIN_LAI))
+    # buổi theo lớp, mới nhất trước; dòng điểm danh theo (buổi, em)
+    buoi_cua_lop, tick = {}, {}
+    for r in rows:
+        ds = buoi_cua_lop.setdefault(r['class_id'], [])
+        if not ds or ds[-1][0] != r['session_id']:
+            ds.append((r['session_id'], r['starts_at']))
+        if r['user_id'] is not None:
+            tick[(r['session_id'], r['user_id'])] = r['status']
+
+    ra = []
+    for hv in hoc_vien:
+        chuoi, cuoi = 0, None
+        for sid, bd in buoi_cua_lop.get(hv['class_id'], []):
+            if tick.get((sid, hv['user_id'])) != 'absent':
+                break
+            chuoi += 1
+            cuoi = cuoi or bd
+        if chuoi >= VANG_LIEN:
+            ra.append({'userId': hv['user_id'], 'name': hv['name'], 'classId': hv['class_id'],
+                       'className': lop[hv['class_id']]['name'], 'soBuoi': chuoi,
+                       'buoiCuoi': _iso(cuoi)})
+    ra.sort(key=lambda e: (-e['soBuoi'], e['name'] or ''))
+    return ra[:TRAN]
+
+
+def _can_chu_y(lop, hoc_vien, nay):
+    uids = sorted({hv['user_id'] for hv in hoc_vien})
+    hoat_dong = _last_activity(uids)
+    hom_nay = local_today()
+    ra, da_neu = [], set()
+    for hv in hoc_vien:
+        # Một em học hai lớp của cùng giảng viên thì nêu một lần — cảnh báo này
+        # về EM, không về lớp.
+        if hv['user_id'] in da_neu:
+            continue
+        last = (hoat_dong.get(hv['user_id']) or {}).get('last_day')
+        ly_do = canh_bao_muc_cao((hom_nay - last).days if last else None)
+        if ly_do:
+            da_neu.add(hv['user_id'])
+            ra.append({'userId': hv['user_id'], 'name': hv['name'], 'classId': hv['class_id'],
+                       'className': lop[hv['class_id']]['name'], 'lyDo': ly_do})
+    return ra[:TRAN]
+
+
+class ViecHomNayView(APIView):
+    """GET /api/teach/viec-hom-nay — không ghi gì."""
+    permission_classes = [IsTeachingStaff]
+
+    def get(self, request):
+        nay = local_now()
+        ids, lop = _lop_cua(request.user)
+        tro_giang = is_assistant(request.user)
+        ra = {
+            'troGiang': tro_giang,
+            'lop': [{'id': r['id'], 'name': r['name']} for r in lop.values()],
+            'nguong': {'chamQuaNgay': CHAM_QUA_NGAY, 'vangLien': VANG_LIEN},
+            'sapToi': _sap_toi(ids, lop, nay) if ids else [],
+            'chuaDiemDanh': _chua_diem_danh(ids, lop, nay) if ids else {'tong': 0, 'ds': []},
+            'chuaCham': _chua_cham(ids, lop, nay) if ids else [],
+        }
+        if not tro_giang:
+            hoc_vien = _hoc_vien_dang_hoc(ids) if ids else []
+            ra['vangLien'] = _vang_lien(ids, lop, hoc_vien) if ids else []
+            ra['canChuY'] = _can_chu_y(lop, hoc_vien, nay) if ids else []
+        return Response(ra)

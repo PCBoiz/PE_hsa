@@ -279,6 +279,7 @@ class UserView(NguoiDungView):
         # ai phải làm gì cả — đó mới là phần nguy hiểm lâu dài.
         user = q1('''SELECT id, name, email, phone, birthday, role, avatar,
                             parent_name, parent_phone, parent_email,
+                            parent_contact_locked_at,
                             streak, streak_freezes, certificates, gems, xp,
                             questionnaire_completed, last_study_date,
                             is_verified, created_at, status,
@@ -286,6 +287,9 @@ class UserView(NguoiDungView):
                      FROM users WHERE id=%s''', (request.user.id,))
         if not user:
             return Response({}, status=404)
+        # Một cờ, không phải mốc giờ: màn Cài đặt chỉ cần biết ô nào khoá. AI
+        # khoá là chuyện của học vụ, đọc ở nhật ký — không trả cho em.
+        user['parent_contact_locked'] = user.pop('parent_contact_locked_at') is not None
         user['is_new_user'] = not bool(user.get('questionnaire_completed'))
         user['first_login'] = user['is_new_user']
         return Response(user)
@@ -309,6 +313,16 @@ class UserView(NguoiDungView):
         parent_name = (data.get('parent_name') or '').strip() if 'parent_name' in data else None
         parent_phone = (data.get('parent_phone') or '').strip() if 'parent_phone' in data else None
         parent_email = (data.get('parent_email') or '').strip() if 'parent_email' in data else None
+
+        # CHUẨN HOÁ TRƯỚC KHI KIỂM (14/09/2026) — cùng luật với ô cấp tài khoản
+        # hàng loạt (`admin_users._check_row`): "0900 555 901" hay "+84 912 345
+        # 678" không lọt khuôn nào của `validate_phone_field`, nhưng sau
+        # `norm_phone` là số hợp lệ — và đó mới là số sẽ nằm trong CSDL. Bản
+        # trước kiểm số THÔ, nên cùng một số được nhận ở màn cấp tài khoản mà bị
+        # từ chối ở Cài đặt. Phép kiểm khoá liên hệ phụ huynh bắt được.
+        phone = norm_phone(phone) or ''
+        if parent_phone is not None:
+            parent_phone = norm_phone(parent_phone) or ''
 
         errors = {}
         if err := validate_name_field(name):
@@ -339,8 +353,7 @@ class UserView(NguoiDungView):
         if email and q1('SELECT id FROM users WHERE lower(email)=%s AND id<>%s',
                         (norm_email(email), uid)):
             return Response({'errors': {'email': 'Email đã được sử dụng'}}, status=400)
-        if phone and q1('SELECT id FROM users WHERE phone=%s AND id<>%s',
-                        (norm_phone(phone), uid)):
+        if phone and q1('SELECT id FROM users WHERE phone=%s AND id<>%s', (phone, uid)):
             return Response({'errors': {'phone': 'Số điện thoại đã được sử dụng'}}, status=400)
 
         # Ghi bản ĐÃ chuẩn hoá. Chỉ chuẩn hoá lúc TRA mà không chuẩn hoá lúc
@@ -353,16 +366,36 @@ class UserView(NguoiDungView):
         #
         # `parent_email` cũng KHÔNG kiểm trùng, cùng lý do với số: hai anh em
         # dùng chung email của mẹ.
+        ph_moi = {
+            'parent_name': parent_name,
+            'parent_phone': parent_phone,          # đã chuẩn hoá ở trên
+            'parent_email': None if parent_email is None else (norm_email(parent_email) or ''),
+        }
+
+        # §47 — TRUNG TÂM ĐÃ NHẬP THÌ EM KHÔNG SỬA (anh Sơn chốt C5, 14/09/2026).
+        # Ô đã có giá trị thì chỉ học vụ đổi; ô còn trống thì em điền được.
+        # So sau khi CHUẨN HOÁ: Cài đặt gửi lại cả ba ô mỗi lần Lưu, và "0900
+        # 555 901" gửi lại cho "0900555901" không phải là một lần sửa.
+        # Kiểm TRƯỚC câu UPDATE, trả 400 nêu đúng ô: một PUT im lặng bỏ qua ô ấy
+        # sẽ báo "Đã lưu" cho một thay đổi không xảy ra — đúng lỗi vừa vá 13/09.
+        hien = q1('''SELECT parent_name, parent_phone, parent_email, parent_contact_locked_at
+                     FROM users WHERE id=%s''', (uid,)) or {}
+        if hien.get('parent_contact_locked_at') is not None:
+            for cot, moi in ph_moi.items():
+                cu = hien.get(cot) or ''
+                if moi is not None and cu and moi != cu:
+                    errors[cot] = ('Liên hệ phụ huynh do trung tâm nhập — cần sửa thì báo '
+                                   'học vụ. Bạn vẫn điền được ô còn trống.')
+            if errors:
+                return Response({'errors': errors}, status=400)
+
         x('''UPDATE users SET name=%s, email=%s, phone=%s, birthday=%s,
                               parent_name=COALESCE(%s, parent_name),
                               parent_phone=COALESCE(%s, parent_phone),
                               parent_email=COALESCE(%s, parent_email)
              WHERE id=%s''',
-          (name, norm_email(email), norm_phone(phone), birthday,
-           parent_name,
-           None if parent_phone is None else (norm_phone(parent_phone) or ''),
-           None if parent_email is None else (norm_email(parent_email) or ''),
-           uid))
+          (name, norm_email(email), phone, birthday,
+           ph_moi['parent_name'], ph_moi['parent_phone'], ph_moi['parent_email'], uid))
         return Response({'ok': True})
 
 

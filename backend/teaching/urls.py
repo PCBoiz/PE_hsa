@@ -14,12 +14,15 @@ from teaching import (
                       sessions,
                       sinh_buoi,
                       terms,
+                      viec_hom_nay,
                       views,
 )
 
 urlpatterns = [
     # ── Khu vực giảng dạy — quyền theo NGỮ CẢNH (lớp mình phụ trách) ──
     path('api/teach/classes', views.TeachClassesView.as_view()),
+    # Việc hôm nay — gom mọi lớp của người gọi. Chỉ đọc.
+    path('api/teach/viec-hom-nay', viec_hom_nay.ViecHomNayView.as_view()),
     path('api/teach/classes/<int:class_id>', views.TeachClassDetailView.as_view()),
     path('api/teach/classes/<int:class_id>/students/<int:user_id>',
          views.TeachStudentView.as_view()),

@@ -125,6 +125,8 @@ def test_xem_truoc_khong_ghi_gi_ca_nhat_ky(lop):
     assert _ph(lop['an']) == {'parent_name': 'Mẹ An cũ', 'parent_phone': '0900555901',
                               'parent_email': ''}
     assert q1('SELECT COUNT(*) AS n FROM admin_audit')['n'] == truoc_nk
+    assert q1('SELECT parent_contact_locked_at AS k FROM users WHERE id=%s',
+              (lop['an'].id,))['k'] is None, 'xem trước mà đã khoá'
 
 
 # ── 3 + 4 + 6. Lưu thật: đúng em, giữ ô trống, nhật ký giữ giá trị cũ ───────
@@ -137,6 +139,12 @@ def test_luu_ghi_dung_giu_o_trong_va_nhat_ky_giu_gia_tri_cu(lop):
     assert r.json()['dryRun'] is False
     assert _ph(lop['an']) == {'parent_name': 'Mẹ An Mới', 'parent_phone': '0900555901',
                               'parent_email': 'me.an@example.com'}
+
+    # §47: trung tâm đã nhập thì KHOÁ — em không sửa được nữa, và sổ ghi ai khoá.
+    khoa = q1('SELECT parent_contact_locked_at, parent_contact_locked_by FROM users WHERE id=%s',
+              (lop['an'].id,))
+    assert khoa['parent_contact_locked_at'] is not None
+    assert khoa['parent_contact_locked_by'] == lop['gv'].id
 
     nk = q1("SELECT target_type, target_id, detail FROM admin_audit "
             "WHERE action='class.parent_contacts' ORDER BY id DESC LIMIT 1")

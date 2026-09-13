@@ -54,6 +54,65 @@ def test_email_phu_huynh_bo_trong_thi_hop_le(auth_api, temp_user):
     assert r.status_code == 200, r.json()
 
 
+# ── §47 · Trung tâm đã nhập thì em không sửa (anh Sơn chốt C5, 14/09/2026) ──
+
+def _khoa(uid, boi):
+    x("UPDATE users SET parent_name='Mẹ', parent_phone='0900555901', parent_email='', "
+      "parent_contact_locked_at=now(), parent_contact_locked_by=%s WHERE id=%s", (boi, uid))
+
+
+def test_da_khoa_thi_khong_doi_duoc_o_da_co(auth_api, temp_user, temp_admin):
+    _khoa(temp_user, temp_admin)
+    r = auth_api.put('/api/user', dict(HO_SO, parent_name='Mẹ', parent_phone='0900555999',
+                                       parent_email=''), format='json')
+    assert r.status_code == 400, r.json()
+    assert 'parent_phone' in r.json()['errors']
+    assert 'học vụ' in r.json()['errors']['parent_phone']
+    assert _ph(temp_user)['parent_phone'] == '0900555901'
+
+
+def test_da_khoa_van_dien_duoc_o_con_trong_va_gui_lai_y_cu_thi_ok(auth_api, temp_user, temp_admin):
+    _khoa(temp_user, temp_admin)
+    # Gửi lại y giá trị đang có (Cài đặt gửi cả ba ô mỗi lần Lưu) → không phải "sửa".
+    r = auth_api.put('/api/user', dict(HO_SO, parent_name='Mẹ', parent_phone='0900 555 901',
+                                       parent_email=''), format='json')
+    assert r.status_code == 200, r.json()
+    # Ô email còn trống thì em điền được.
+    r = auth_api.put('/api/user', dict(HO_SO, parent_name='Mẹ', parent_phone='0900555901',
+                                       parent_email='me@example.com'), format='json')
+    assert r.status_code == 200, r.json()
+    assert _ph(temp_user)['parent_email'] == 'me@example.com'
+    # Điền xong thì ô ấy cũng thành ô của trung tâm — sửa lại phải qua học vụ.
+    r = auth_api.put('/api/user', dict(HO_SO, parent_email='khac@example.com'), format='json')
+    assert r.status_code == 400, r.json()
+
+
+def test_da_khoa_thi_khong_xoa_trang_duoc(auth_api, temp_user, temp_admin):
+    _khoa(temp_user, temp_admin)
+    r = auth_api.put('/api/user', dict(HO_SO, parent_phone=''), format='json')
+    assert r.status_code == 400, r.json()
+    assert _ph(temp_user)['parent_phone'] == '0900555901'
+
+
+def test_chua_khoa_thi_em_sua_thoai_mai_va_get_bao_co_khoa_hay_khong(auth_api, temp_user, temp_admin):
+    x("UPDATE users SET parent_phone='0900555901' WHERE id=%s", (temp_user,))
+    assert auth_api.get('/api/user').json()['parent_contact_locked'] is False
+    r = auth_api.put('/api/user', dict(HO_SO, parent_phone='0900555999'), format='json')
+    assert r.status_code == 200, r.json()
+    _khoa(temp_user, temp_admin)
+    assert auth_api.get('/api/user').json()['parent_contact_locked'] is True
+
+
+def test_so_co_khoang_trang_duoc_chuan_hoa_truoc_khi_kiem(auth_api, temp_user):
+    """Cùng luật với ô cấp tài khoản hàng loạt. Bản trước kiểm số thô nên
+    "0900 555 901" bị Cài đặt từ chối trong khi màn cấp tài khoản nhận."""
+    r = auth_api.put('/api/user', dict(HO_SO, phone='+84 900 555 100',
+                                       parent_phone='0900 555 901'), format='json')
+    assert r.status_code == 200, r.json()
+    row = q1('SELECT phone, parent_phone FROM users WHERE id=%s', (temp_user,))
+    assert (row['phone'], row['parent_phone']) == ('0900555100', '0900555901')
+
+
 def test_vang_khoa_thi_giu_gui_rong_thi_xoa(auth_api, temp_user):
     x("UPDATE users SET parent_name='Mẹ', parent_phone='0900555901', "
       "parent_email='me@example.com' WHERE id=%s", (temp_user,))
