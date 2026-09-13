@@ -1,0 +1,184 @@
+# Sao lưu CSDL production mỗi ngày — và DIỄN TẬP KHÔI PHỤC ngay trong lượt ấy.
+#
+# ── VÌ SAO CÓ (13/09/2026) ──────────────────────────────────────────────────
+#
+# Đo 07/09: không có quy trình sao lưu nào trong repo, CI hay cấu hình máy chủ.
+# CSDL là Neon gói free, và nó giữ dữ liệu học tập của trẻ em. Mất là mất hẳn.
+# Đây là việc rủi ro lớn nhất trong danh sách "làm được ngay không cần TopHSA".
+#
+# ── VÌ SAO KHÔNG PHẢI "CHỈ pg_dump RỒI CẤT" ────────────────────────────────
+#
+# Một bản sao lưu chưa khôi phục thử thì chưa phải bản sao lưu — nó là một tệp
+# mà người ta HY VỌNG dùng được, và ngày cần tới là ngày duy nhất kiểm được.
+# Nên mỗi lượt chạy đều: dump → khôi phục vào một Postgres tạm ngay trong lượt
+# → đếm dòng ba bảng quan trọng ở CẢ HAI bên → lệch là THẤT BẠI, không tải lên.
+#
+# ── VÌ SAO PHẢI MÃ HOÁ, VÀ THIẾU KHOÁ THÌ TỪ CHỐI ──────────────────────────
+#
+# Repo này CÔNG KHAI. Artifact của repo công khai thì bất kỳ ai đăng nhập GitHub
+# cũng tải được. Tải một bản dump thô lên đó là công bố tên, email, số điện
+# thoại phụ huynh của học viên cho cả thế giới. Nên:
+#   · mã hoá AES-256 bằng khoá trong secret `BACKUP_PASSPHRASE`;
+#   · CHƯA có secret ấy thì bước đầu tiên DỪNG HẲN — không có nhánh "tạm tải bản
+#     thô lên cho xong". Mặc định đóng.
+# Khoá ấy chỉ anh Sơn đặt được (GitHub → Settings → Secrets). Ghi ở
+# docs/VIEC_CUA_ANH.md. Mất khoá là mất mọi bản sao lưu — cất nó ở nơi anh sẽ
+# còn tìm lại được sau hai năm, không phải trong hội thoại.
+#
+# ── VÌ SAO ARTIFACT GITHUB, KHÔNG PHẢI DRIVE/S3 ────────────────────────────
+#
+# Vì nó là chỗ DUY NHẤT có sẵn mà không cần mở thêm tài khoản nào. Giữ 90 ngày
+# (giới hạn của GitHub). Đây là NỀN, không phải nơi ở cuối cùng: khi có Drive
+# hoặc S3 của trung tâm thì thêm một bước tải sang — mọi thứ trước đó giữ nguyên.
+#
+# ── LỊCH ───────────────────────────────────────────────────────────────────
+#
+# 20:00 UTC = 03:00 giờ Việt Nam, lúc không ai học. GitHub thưa lịch cron 3–5
+# giờ là chuyện đã đo (xem giu-am.yml) — với sao lưu MỖI NGÀY thì trễ vài giờ
+# không sao, khác hẳn với giữ ấm mỗi 10 phút.
+#
+# ── CHƯA KIỂM ĐƯỢC GÌ Ở MÁY DEV ───────────────────────────────────────────
+#
+# Máy dev không có pg_dump. Đã kiểm ở máy: YAML hợp lệ, cú pháp shell (bash -n),
+# và vòng mã hoá → giải mã bằng chính câu lệnh openssl bên dưới. CHƯA kiểm:
+# pg_dump và pg_restore thật — chúng chỉ chạy được khi workflow này chạy trên
+# GitHub, tức sau khi anh Sơn đặt secret. Lượt chạy đầu tiên là lượt kiểm thật;
+# mở Actions xem nó xanh hay đỏ trước khi tin.
+
+name: Sao lưu CSDL
+
+on:
+  schedule:
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sao-luu
+  cancel-in-progress: false
+
+jobs:
+  sao-luu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Postgres TẠM để diễn tập khôi phục. Sống đúng trong lượt này rồi biến mất.
+    services:
+      pg_tam:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: tam
+          POSTGRES_DB: khoi_phuc
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      NGUON: ${{ secrets.DATABASE_URL }}
+      KHOA: ${{ secrets.BACKUP_PASSPHRASE }}
+      TAM: postgresql://postgres:tam@localhost:5432/khoi_phuc
+
+    steps:
+      - name: Từ chối nếu thiếu khoá mã hoá — mặc định ĐÓNG
+        run: |
+          if [ -z "$KHOA" ] || [ ${#KHOA} -lt 24 ]; then
+            echo "::error::Chưa có secret BACKUP_PASSPHRASE (hoặc ngắn hơn 24 ký tự). KHÔNG tải bản thô lên repo công khai. Xem docs/VIEC_CUA_ANH.md mục A5."
+            exit 1
+          fi
+          if [ -z "$NGUON" ]; then
+            echo "::error::Thiếu secret DATABASE_URL."
+            exit 1
+          fi
+          echo "khoá: có (${#KHOA} ký tự) · nguồn: có"
+
+      - name: Cài pg_dump/pg_restore cùng phiên bản với Neon
+        run: |
+          # ubuntu-latest kèm sẵn postgresql-client, nhưng bản mới hơn máy chủ
+          # thì pg_dump vẫn chạy; ghi phiên bản ra để lần sau đối chiếu.
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
+          pg_dump --version
+
+      - name: Dump từ production (chỉ ĐỌC) — qua kết nối TRỰC TIẾP, không qua pooler
+        run: |
+          NGAY=$(date -u +%Y%m%d-%H%M)
+          echo "NGAY=$NGAY" >> "$GITHUB_ENV"
+          # DATABASE_URL của dự án trỏ vào host `…-pooler…` (PgBouncer, chế độ
+          # transaction). pg_dump KHÔNG chạy được qua đó: nó cần một phiên
+          # thật (snapshot, cursor phía máy chủ) mà pooler không giữ giữa các
+          # câu lệnh. Neon quy ước host trực tiếp = host pooler bỏ đuôi
+          # "-pooler". Đo 13/09: host thật của dự án đúng dạng ấy.
+          NGUON_TRUC=$(printf '%s' "$NGUON" | sed 's/-pooler\./\./')
+          echo "NGUON_TRUC=$NGUON_TRUC" >> "$GITHUB_ENV"
+          # --format=custom: nén sẵn, khôi phục chọn bảng được, và pg_restore
+          # tự xếp thứ tự khoá ngoại. --no-owner/--no-acl: máy đích không có
+          # cùng vai trò Neon.
+          pg_dump "$NGUON_TRUC" --format=custom --no-owner --no-acl \
+                  --file "pe_hsa-$NGAY.dump"
+          ls -la "pe_hsa-$NGAY.dump"
+
+      - name: Đếm dòng ở NGUỒN — ba bảng quan trọng
+        run: |
+          for b in users classes lessons learning_events attendance; do
+            n=$(psql "$NGUON_TRUC" -tAc "SELECT count(*) FROM $b")
+            echo "$b=$n" >> nguon.txt
+          done
+          cat nguon.txt
+
+      - name: DIỄN TẬP KHÔI PHỤC vào Postgres tạm
+        run: |
+          # Khôi phục vào CSDL trống. --exit-on-error: một bảng hỏng là dừng,
+          # không "khôi phục được 90%" rồi báo thành công.
+          pg_restore --dbname "$TAM" --no-owner --no-acl --exit-on-error \
+                     "pe_hsa-$NGAY.dump"
+          echo "khôi phục xong"
+
+      - name: Đối chiếu số dòng — lệch là THẤT BẠI
+        run: |
+          loi=0
+          while IFS='=' read -r b n_nguon; do
+            n_tam=$(psql "$TAM" -tAc "SELECT count(*) FROM $b")
+            if [ "$n_nguon" = "$n_tam" ]; then
+              echo "  ✓ $b: $n_nguon"
+            else
+              echo "  ✗ $b: nguồn $n_nguon ≠ khôi phục $n_tam"; loi=1
+            fi
+          done < nguon.txt
+          if [ "$loi" = "1" ]; then
+            echo "::error::Bản sao lưu khôi phục ra KHÁC nguồn. Không tải lên."
+            exit 1
+          fi
+
+      - name: Mã hoá AES-256 rồi xoá bản thô
+        run: |
+          # -pbkdf2 + 600000 vòng: khoá dẫn xuất chậm để dò mật khẩu tốn kém.
+          # Cùng câu lệnh này (đổi -e thành -d) là cách GIẢI MÃ — ghi ở
+          # docs/VIEC_CUA_ANH.md để lúc cần không phải đọc lại tệp này.
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+                  -in "pe_hsa-$NGAY.dump" -out "pe_hsa-$NGAY.dump.enc" \
+                  -pass env:KHOA
+          shred -u "pe_hsa-$NGAY.dump" nguon.txt
+          # Giải mã thử NGAY để chắc khoá dùng được — một khoá gõ sai lúc đặt
+          # secret sẽ mã hoá được mà không bao giờ giải được.
+          #
+          # KHÔNG nối ống `| head`: GitHub chạy bước bằng `bash -eo pipefail`,
+          # `head` đóng ống sớm làm openssl nhận SIGPIPE → mã thoát khác 0 →
+          # bước THẤT BẠI dù giải mã đúng. RULES §14 ghi đúng cái bẫy này.
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+                  -in "pe_hsa-$NGAY.dump.enc" -out kiem.dump -pass env:KHOA
+          od -c -N 5 kiem.dump          # phải in "P G D M P" — chữ ký của pg_dump
+          shred -u kiem.dump
+          ls -la "pe_hsa-$NGAY.dump.enc"
+
+      - name: Tải lên artifact (giữ 90 ngày)
+        uses: actions/upload-artifact@v4
+        with:
+          # `run_id` thay vì ngày đặt lúc chạy: không dựa vào biến động
+          # (`env.NGAY`) trong khối `with`, và tên vẫn duy nhất — ngày thật nằm
+          # ngay trong tên tệp bên trong artifact.
+          name: sao-luu-${{ github.run_id }}
+          path: pe_hsa-*.dump.enc
+          retention-days: 90
+          if-no-files-found: error

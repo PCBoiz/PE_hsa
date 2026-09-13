@@ -46,6 +46,40 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 13/09/2026 — VÒNG 1 sau khi đổi cách ghi sổ · sao lưu CSDL, và cái ping không chạy
+
+**Việc:** áp cách ghi sổ học từ dự án cô Giang (chỉ đọc bên ấy); đo lại workflow
+giữ ấm; dựng sao lưu CSDL tự động — việc rủi ro lớn nhất không cần TopHSA.
+
+**Đo được:**
+- Workflow giữ ấm: API GitHub cho thấy 8 lượt gần nhất cách nhau 3h07–5h40 (lịch
+  ghi 10 phút) và **8/8 thất bại**. Cold start lúc 21:30 = **84,5 s**; script chỉ
+  chờ 60 s. Kết luận: nó là đồng hồ sức khoẻ, không phải cái giữ ấm. Đã sửa cho
+  chờ 3 phút; giữ ấm thật = A1 của anh.
+- Host Neon trong `DATABASE_URL` có `-pooler` → `pg_dump` qua đó sẽ hỏng (cần
+  phiên thật). Workflow tự bỏ `-pooler`; đã kiểm phép đổi trên host thật.
+- Repo **công khai** → artifact ai đăng nhập GitHub cũng tải được → bắt buộc mã
+  hoá, thiếu khoá thì từ chối chạy.
+
+**Dựng:** `.github/workflows/sao-luu.yml` — dump 03:00 VN → khôi phục thử vào
+Postgres tạm ngay trong lượt → đối chiếu 5 bảng → mã hoá AES-256 → artifact 90
+ngày. Kiểm ở máy: YAML, cú pháp 7 bước, vòng mã hoá/giải mã, khoá sai không giải
+được, cổng thiếu khoá dừng đúng. **Chưa kiểm được** pg_dump/pg_restore (máy dev
+không có) — lượt chạy đầu trên GitHub sau khi có secret là lượt kiểm thật.
+
+**Hai lỗi bắt được trước khi commit:** `openssl … | head -c 5` dưới `pipefail`
+của GitHub sẽ SIGPIPE → bước thất bại dù giải mã đúng (RULES §14) — đổi sang
+`od -N 5` không ống. Và `env.NGAY` trong khối `with` là biến động — đổi sang
+`github.run_id` + glob.
+
+**Ba lần mắc lại lỗi heredoc/inline trong đúng vòng này** (byte NUL vào tệp bộ
+nhớ, `\b` thành backspace trong đường dẫn). Quy tắc nay ghi ở BAN-GIAO-PHIEN:
+tệp thì Write/Edit, kịch bản thì ra tệp rồi `python -P`.
+
+**Còn treo:** A1–A5 trong `docs/VIEC_CUA_ANH.md`. Việc tiếp của tôi: khai cổng
+tường minh cho 60 view (+ phép kiểm chặn view mới quên khai).
+
+
 # Lịch sử 24/08 → 07/09/2026 — thứ tự thời gian — nhật ký vòng lặp pe_hsa
 
 Đọc tệp này để biết đang ở đâu. Backlog: `TODO.md`. Tiêu chuẩn: `RULES.md`.

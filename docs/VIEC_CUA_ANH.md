@@ -13,6 +13,7 @@ từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 | **A2** | Render → Environment: thêm **`PROXY_SHARED_SECRET`**; Vercel → Environment: thêm **`PE_PROXY_SECRET`** — *cùng một giá trị*. Sinh bằng: `python -c "import secrets;print(secrets.token_urlsafe(32))"` | 5 phút | Đo 07/09: khoá giới hạn đăng nhập trên production là IP nội bộ của Render → **mọi người dùng chung một xô `100 lần/phút`**. Một em gõ sai mật khẩu nhiều lần (hoặc một bot) là khoá cả lớp. Lời giải đã nằm sẵn trong mã, chỉ chờ hai biến này. | Giới hạn theo từng người thật |
 | **A3** | Neon → tạo một **nhánh** (branch) từ CSDL chính → lấy chuỗi kết nối → GitHub repo → Settings → Secrets → thêm **`DATABASE_URL_CI`** | 5 phút | Mỗi lần đẩy mã, CI chạy **29 phút pytest thẳng vào CSDL đang dùng thật**. Nó dọn sạch sau mỗi lượt, nhưng một phép kiểm lỡ commit là hỏng dữ liệu học viên thật. Mã đã đọc `DATABASE_URL_CI` trước, rơi về `DATABASE_URL` khi chưa có. | CI không chạm production |
 | **A4** | Kiểm sau khi làm A2: mở `https://pe-hsa-backend.onrender.com/api/admin/do-proxy` **bằng trình duyệt** (đã đăng nhập quản trị). `ipHienTai` phải bằng IP thật của anh (tra ở whatismyip.com). | 1 phút | Đây là cách duy nhất biết A2 đã đúng — tôi chỉ gọi được đường `curl` thẳng, không đi qua Vercel như người dùng thật. | Xác nhận A2 |
+| **A5** | **Bật sao lưu CSDL hằng ngày**: GitHub repo → Settings → Secrets → New secret tên **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy ở nơi hai năm nữa anh còn tìm được** (app mật khẩu) — mất khoá là mất mọi bản sao lưu. Rồi mở Actions → "Sao lưu CSDL" → Run workflow để xem lượt đầu xanh hay đỏ. | 5 phút | Đo 07/09: **không có quy trình sao lưu nào**. CSDL giữ dữ liệu học tập của trẻ em, mất là mất hẳn. Workflow đã dựng (13/09): dump mỗi 03:00 → **khôi phục thử ngay trong lượt** → đối chiếu số dòng → mã hoá AES-256 → cất 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô. Tôi không đặt secret thay anh được. | Có bản sao lưu khôi phục được |
 | **B1** | **Một lớp thật** chạy thử: một giảng viên, một đợt, học viên thật, lịch học thật | 1 buổi | Hệ thống mới chạy với **một lớp mẫu tôi tạo 07/09**. Mọi thứ sau đây (báo cáo, học phí, tuyển sinh) đều dễ hơn khi đã có một lớp thật đi qua một lần. Chỗ vướng khi dùng hàng ngày chỉ lộ ra ở đây. | Cả tầng ERP |
 | **B2** | **Địa chỉ email @tophsa.vn** (Google Workspace ~6 USD/người/tháng, hoặc một dịch vụ gửi thư) — anh đã chốt 07/09 là *chờ*, ghi để không quên | — | Kênh email đã dựng xong, gửi thử thành công từ `sonthaiha07@gmail.com`. Chưa bật cho phụ huynh thật vì đó là hộp thư cá nhân của anh. | Gửi báo cáo phụ huynh thật |
 | **B3** | Thu thập **email/số Zalo phụ huynh** của học viên (học viên tự điền ở Cài đặt → Liên hệ phụ huynh, hoặc học vụ điền hộ) | theo lớp | **0/3** em đang học có liên lạc phụ huynh. Không có thì bấm "Gửi cả lớp" ra toàn "thiếu liên lạc". | Báo cáo phụ huynh |
@@ -21,6 +22,17 @@ từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 | **C2** | Quyết **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở khoá cả ZNS lẫn SMS brandname), hay bỏ hẳn | — | ZNS đòi OA xác thực, xác thực đòi giấy phép kinh doanh — **hộ kinh doanh cũng được**, không bắt buộc công ty. Phụ huynh Việt đọc Zalo nhiều hơn email. | Kênh Zalo |
 | **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
 | **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
+
+**Cách khôi phục từ bản sao lưu (khi cần, hy vọng không bao giờ):** Actions →
+lượt "Sao lưu CSDL" gần nhất → tải artifact → giải mã rồi khôi phục:
+
+```
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in pe_hsa-<ngày>.dump.enc -out pe_hsa.dump -pass pass:<BACKUP_PASSPHRASE>
+pg_restore --dbname "<chuỗi kết nối Neon TRỰC TIẾP, bỏ -pooler>" --no-owner --no-acl --clean --if-exists pe_hsa.dump
+```
+
+`--clean --if-exists` xoá bảng cũ trước khi dựng lại — **hỏi tôi trước khi chạy
+dòng thứ hai lên production**; chạy thử lên một nhánh Neon trước.
 
 **Đã xong, không cần làm nữa:** ~~xoay `SECRET_KEY`~~ (nay 64 byte, đo 07/09) ·
 ~~gộp `master`~~ (06/09) · ~~tạo đợt học đầu tiên~~ (07/09, tôi tạo, anh duyệt) ·
