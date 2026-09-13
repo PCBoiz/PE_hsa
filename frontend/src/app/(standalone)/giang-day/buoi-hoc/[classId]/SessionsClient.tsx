@@ -15,7 +15,8 @@ import {
   ToastProvider,
   useToast,
 } from '@/components/ui';
-import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import { z } from 'zod';
 
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
 
@@ -92,6 +93,18 @@ const MARKS: { key: Mark; label: string; tone: 'good' | 'warn' | 'bad' | 'brand'
  * Nhãn lấy từ chính `MARKS` — mảng đang vẽ ra bốn nút bấm — nên câu thông báo
  * không thể gọi tên trạng thái khác với cái nút mà giảng viên vừa bấm.
  */
+/* Hình dạng phản hồi LƯU ĐIỂM DANH (T18 mức 2, chiều GHI — 14/09/2026).
+   Màn hình ĐỌC ba khoá này để nói ra: `counts`/`marked` thành câu "đã lưu …",
+   `skipped` thành cảnh báo "em không còn học lớp này nên chưa lưu". Máy chủ
+   đổi tên một khoá thì câu đầu tụt về "đã lưu 0 học viên" và cảnh báo thứ hai
+   im hẳn — cả hai đều KHÔNG kêu. */
+const HD_LUU_DIEM_DANH = z.looseObject({
+  ok: z.boolean(),
+  marked: z.number(),
+  counts: z.record(z.string(), z.number()),
+  skipped: z.array(z.number()),
+});
+
 function cauDaLuu(counts: Partial<Record<Mark, number>> | undefined, marked: number) {
   const phan = MARKS.filter((m) => counts?.[m.key]).map(
     (m) => `${counts?.[m.key]} ${m.label.toLowerCase()}`,
@@ -798,13 +811,11 @@ function Attendance({
       const marks = rows
         .filter((s) => s.status)
         .map((s) => ({ user_id: s.userId, status: s.status }));
-      const r = await apiFetch(`/api/teach/sessions/${sessionId}/attendance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marks }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(errorText(r.status, d));
+      const d = await ghiJson(
+        `/api/teach/sessions/${sessionId}/attendance`,
+        { method: 'POST', body: JSON.stringify({ marks }) },
+        HD_LUU_DIEM_DANH,
+      );
       setDirty(false);
       toast(cauDaLuu(d.counts, d.marked ?? 0), 'ok');
 

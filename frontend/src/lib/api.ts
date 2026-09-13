@@ -40,6 +40,8 @@ function themKieuNoiDung(opts: RequestInit): RequestInit {
   return { ...opts, headers: h };
 }
 
+import { kiemHinhDang, type HinhDang } from '@/lib/kiemDang';
+
 export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
   const r = await fetch(path, {
     ...themKieuNoiDung(opts),
@@ -61,6 +63,36 @@ export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Re
     }
   }
   return r;
+}
+
+/**
+ * GỌI GHI (POST/PATCH/PUT/DELETE) rồi đối chiếu phản hồi với hình dạng màn hình
+ * mong đợi — T18 mức 2 cho chiều GHI (14/09/2026).
+ *
+ * ── VÌ SAO CHIỀU GHI CŨNG CẦN ─────────────────────────────────────────────
+ *
+ * Các màn ĐỌC đã có hình dạng từ sáng nay. Nhưng nhiều nút GHI cũng ĐỌC lại
+ * phản hồi và hiện nó ra: "đặt lại mật khẩu" đọc `tempPassword` rồi bảo học vụ
+ * đọc chuỗi ấy cho học viên; lưu điểm danh đọc `counts`/`marked` để nói "đã lưu
+ * bao nhiêu"; nộp đề thi thử đọc cả tờ kết quả. Máy chủ đổi tên một khoá thì
+ * học vụ đọc chữ "undefined" cho học viên chép, còn màn điểm danh báo "đã lưu 0
+ * lượt" trong khi đã lưu đủ — hỏng theo kiểu KHÔNG kêu, đúng họ với hai lỗi
+ * `klass`/`starts_at`.
+ *
+ * Ném `Error` chứ không trả union: mọi nơi gọi GHI ở đây đều đã nằm trong
+ * `try/catch` + `loiBatDuoc`, nên ném là vào đúng đường hiển thị lỗi có sẵn.
+ */
+export async function ghiJson<T>(
+  path: string,
+  opts: RequestInit,
+  hinhDang: HinhDang<T>,
+): Promise<T> {
+  const r = await apiFetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(errorText(r.status, body));
+  const kq = kiemHinhDang(path, body, r.status, hinhDang);
+  if (!kq.ok) throw new Error(kq.message);
+  return kq.data;
 }
 
 /** Gọi và tự đọc JSON. Trả null khi lỗi — nơi gọi quyết định hiển thị gì. */

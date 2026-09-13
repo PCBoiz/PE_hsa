@@ -57,6 +57,42 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 14 · T18 mức 2 cho chiều GHI: nút bấm cũng đọc phản hồi
+
+**Vì sao chiều GHI cũng cần hình dạng.** Sáng nay mới phủ các màn ĐỌC. Nhưng
+nhiều nút GHI cũng ĐỌC LẠI phản hồi rồi hiện nó ra: "đặt lại mật khẩu" đọc
+`tempPassword` rồi bảo học vụ **đọc chuỗi ấy cho học viên chép**; lưu điểm danh
+đọc `counts`/`marked` để nói "đã lưu 2 có mặt"; nhập tài khoản hàng loạt đọc
+`rows` — nơi DUY NHẤT hiện mật khẩu tạm của cả mẻ; nộp đề thi thử đọc CẢ TỜ KẾT
+QUẢ. Máy chủ đổi tên một khoá thì học vụ đọc chữ "undefined" cho học viên chép,
+màn điểm danh báo "đã lưu 0 học viên" trong khi đã lưu đủ, và em nộp đề thấy
+"0/0" — hỏng theo kiểu KHÔNG kêu, đúng họ với `klass`/`starts_at`.
+
+**Làm:** tách phần đối chiếu ra `lib/kiemDang.ts` (không nhập `next/*`) để phía
+trình duyệt dùng chung ĐÚNG một bộ luật và một câu lỗi; `server-api.ts` xuất
+lại `HinhDang`/`kiemHinhDang` nên mọi nơi đang nhập không phải đổi. Thêm
+`ghiJson(path, opts, hinhDang)` ở `lib/api.ts`: gọi, đọc JSON, ném `Error` nếu
+!ok (câu của máy chủ) hoặc nếu lệch hình dạng — ném chứ không trả union, vì mọi
+nơi gọi GHI đã nằm sẵn trong `try/catch` + `loiBatDuoc`. Bốn nơi đầu tiên
+chuyển sang: lưu điểm danh, đặt lại mật khẩu tạm, nhập hàng loạt, nộp đề thi
+thử. `hinh-dang.test.mjs` đếm số nơi gọi để biết nó còn được dùng thật.
+
+**Rà bằng trình duyệt, có cả trường hợp lệch CỐ Ý:** bấm lưu điểm danh thật →
+toast "Đã lưu điểm danh — 2 có mặt"; rồi chặn đúng lời gọi ấy và trả về một
+phản hồi **đổi `marked` thành `so_luot`** → màn hình hiện ngay "Máy chủ trả dữ
+liệu khác hình dạng màn hình này mong đợi (marked: …)" thay vì im lặng báo lưu
+0 lượt. Đặt lại mật khẩu tạm trên tài khoản thử: hiện chuỗi thật, không
+"undefined". Dọn sạch: điểm danh 0, sự kiện học tập về 38 như trước, tài khoản
+thử đã xoá (users 5, members 4).
+
+**Hai lần thước đọc sớm trong cùng một ngày.** `textContent({timeout})` của
+Playwright trả về ngay khi PHẦN TỬ có mặt — mà vùng toast `[aria-live="polite"]`
+nằm sẵn trong DOM và rỗng, nên nó trả `''` và tôi kết luận "màn hình không báo
+gì" trong khi CSDL đã có hai dòng điểm danh và toast hiện ở giây 3,2. Phải đợi
+CHỮ, không đợi phần tử. Ghi vào kịch bản để lần sau khỏi mắc lại.
+
+**Cổng chất lượng:** eslint · tsc · 25/25 unit · 22 trang × 2 khổ = 0/0/0/0.
+
 ## 14/09/2026 — VÒNG 13 · Rà luồng HỌC VIÊN đầu-cuối: cả tính năng bài tập đang chết ở giao diện
 
 **Cách làm:** tạo tài khoản học viên THỬ trên CSDL thật (mock production), rồi

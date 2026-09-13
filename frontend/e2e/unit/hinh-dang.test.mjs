@@ -83,6 +83,12 @@ try {
 // ── 2. Quét tĩnh: mọi lời gọi serverJson trong src/app phải có hình dạng ───
 console.log('mọi serverJson< trong src/app có tham số hình dạng:');
 
+/* Chiều GHI (14/09/2026) — `ghiJson` ĐÒI hình dạng ở chữ ký nên `tsc` đã canh
+   hộ; ở đây chỉ đếm để biết nó thật sự đang được dùng. Bốn nơi đầu tiên: lưu
+   điểm danh, đặt lại mật khẩu tạm, nhập tài khoản hàng loạt, nộp đề thi thử —
+   đều là phản hồi mà màn hình ĐỌC LÊN chứ không chỉ xem `ok`. */
+
+
 function* tep(d) {
   for (const t of readdirSync(d)) {
     const p = join(d, t);
@@ -138,6 +144,14 @@ for (const p of tep(join(GOC, 'src', 'app'))) {
   }
 }
 check('có ít nhất 20 lời gọi được quét (bộ quét còn sống)', tong >= 20, `quét ${tong}`);
+
+let soGhi = 0;
+for (const p of tep(join(GOC, 'src'))) {
+  for (const _ of readFileSync(p, 'utf8').matchAll(/\bghiJson\(/g)) soGhi += 1;
+}
+// Định nghĩa hàm ở `lib/api.ts` viết là `ghiJson<T>(` nên không lọt vào đây;
+// mọi thứ đếm được đều là NƠI GỌI.
+check('chiều GHI có dùng hình dạng (≥ 4 nơi gọi ghiJson)', soGhi >= 4, `thấy ${soGhi}`);
 
 console.log(loi ? `\n${loi} lỗi` : '\nTất cả đạt');
 process.exit(loi ? 1 : 0);

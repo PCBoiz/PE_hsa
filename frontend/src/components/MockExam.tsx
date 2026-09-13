@@ -9,7 +9,8 @@ import AppShell from '@/components/AppShell';
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
-import { apiFetch, errorText } from '@/lib/api';
+import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import { z } from 'zod';
 
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.max(0, s % 60)).padStart(2, '0')}`;
@@ -17,6 +18,20 @@ const fmt = (s: number) =>
 const SECTION_COLOR: Record<string, string> = {
   'Định lượng': '#8B7CF6', 'Định tính': '#F472B6', 'Khoa học': '#2DD4BF',
 };
+
+/* Hình dạng TỜ KẾT QUẢ đề thi thử — `mockexam/views.py`. `looseObject` nên máy
+   chủ thêm khoá thì không sao; thiếu khoá màn hình đang vẽ mới là lỗi. */
+const HD_KET_QUA = z.looseObject({
+  score: z.number(),
+  total: z.number(),
+  section_scores: z.record(z.string(), z.looseObject({ correct: z.number(), total: z.number() })),
+  weakest: z.string().nullable(),
+  results: z.array(z.looseObject({})),
+  durationSeconds: z.number(),
+  counted: z.boolean(),
+  notCountedReason: z.string().nullable(),
+  xpGained: z.number(),
+});
 
 export default function MockExam() {
   const [view, setView] = useState<'loading' | 'list' | 'take' | 'result'>('loading');
@@ -68,13 +83,20 @@ export default function MockExam() {
     const dur = Math.round((Date.now() - startRef.current) / 1000);
     setView('loading');
     try {
-      const r = await apiFetch(`/api/mock-exams/${exam.id}/submit`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      /* Hình dạng (T18 mức 2, chiều GHI — 14/09/2026): CẢ TỜ KẾT QUẢ của em
+         đọc từ phản hồi này. Máy chủ đổi tên `section_scores` hay `results` thì
+         màn hình hiện "0/0", bảng theo hợp phần trống và danh sách câu biến
+         mất — mà em không có cách nào biết đó là lỗi mã chứ không phải điểm
+         của mình. Nay lệch là một câu lỗi nói thẳng. */
+      const d = await ghiJson(`/api/mock-exams/${exam.id}/submit`, {
+        method: 'POST',
         body: JSON.stringify({ answers: answersRef.current, duration_seconds: dur }),
-      });
-      const d = await r.json();
+      }, HD_KET_QUA);
       setResult(d); setView('result');
-    } catch { setView('take'); }
+    } catch (e) {
+      setView('take');
+      setLoi(loiBatDuoc(e, 'Không nộp được bài — thử nộp lại sau giây lát.'));
+    }
   }, [exam]);
 
   /* Đồng hồ tính từ MỐC HẾT GIỜ, không trừ dần từng giây.

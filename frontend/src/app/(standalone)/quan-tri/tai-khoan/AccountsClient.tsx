@@ -16,7 +16,9 @@ import {
   Thead,
   Tr,
 } from '@/components/ui';
-import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import type { HinhDang } from '@/lib/kiemDang';
+import { z } from 'zod';
 
 export type ClassLite = { id: number; name: string; code?: string | null };
 
@@ -108,6 +110,34 @@ const ROLE_LABEL: Record<string, string> = {
  * cấp tài khoản cho cả một danh sách vừa đăng ký, tìm đúng một em trong vài
  * trăm em, và khoá tài khoản em đã nghỉ.
  */
+/* Hình dạng phản hồi CẤP / ĐẶT LẠI mật khẩu tạm (T18 mức 2, chiều GHI).
+   Chuỗi này học vụ đọc lên cho học viên chép — khoá lệch tên là đọc chữ
+   "undefined", và không ai biết cho tới khi em ấy không đăng nhập được. */
+const HD_MAT_KHAU_TAM = z.looseObject({ tempPassword: z.string() });
+
+/* Hình dạng phản hồi NHẬP HÀNG LOẠT. Bảng kết quả là nơi DUY NHẤT hiện mật
+   khẩu tạm của cả mẻ — mất `rows` là học vụ vừa tạo 30 tài khoản mà không có
+   mật khẩu nào để đưa cho các em. `maxPerBatch` cũng đọc từ đây (trần thật của
+   máy chủ), nên lệch tên là màn hình quay về con số phòng hờ. */
+const HD_NHAP_HANG_LOAT = z.looseObject({
+  created: z.number(),
+  skipped: z.number(),
+  rows: z.array(z.looseObject({
+    line: z.number(),
+    name: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    status: z.enum(['created', 'skipped']),
+    reason: z.string().nullable().optional(),
+    tempPassword: z.string().nullable().optional(),
+  })),
+  warnings: z.array(z.string()).optional(),
+  tooMany: z.boolean().optional(),
+  parsedLines: z.number().optional(),
+  headerSkipped: z.boolean().optional(),
+  maxPerBatch: z.number().optional(),
+}) satisfies HinhDang<BulkResultData>;
+
 export default function AccountsClient({
   initial,
   classes,
@@ -208,14 +238,24 @@ export default function AccountsClient({
       )
     )
       return;
-    void act(`/api/admin/users/${u.id}/reset-password`, undefined, (d: { tempPassword: string }) => {
-      setTemp({
-        title: `Mật khẩu tạm của ${who}`,
-        password: d.tempPassword,
-        note: 'Đọc chuỗi này cho học viên. Hệ thống sẽ bắt em đổi ngay lần đăng nhập đầu tiên.',
-      });
-      void load();
-    });
+    // `ghiJson` + hình dạng thay cho `act`: chuỗi này được ĐỌC LÊN cho học
+    // viên chép. Máy chủ đổi tên khoá thì học vụ đọc chữ "undefined" — và
+    // không ai biết cho tới khi em ấy không đăng nhập được.
+    void (async () => {
+      setErr(null);
+      try {
+        const d = await ghiJson(`/api/admin/users/${u.id}/reset-password`,
+          { method: 'POST' }, HD_MAT_KHAU_TAM);
+        setTemp({
+          title: `Mật khẩu tạm của ${who}`,
+          password: d.tempPassword,
+          note: 'Đọc chuỗi này cho học viên. Hệ thống sẽ bắt em đổi ngay lần đăng nhập đầu tiên.',
+        });
+        void load();   // cột "đổi mật khẩu lúc nào" phải cập nhật theo
+      } catch (e) {
+        setErr(loiBatDuoc(e, 'Không đặt lại được mật khẩu'));
+      }
+    })();
   }
 
   function toggleStatus(u: UserRow) {
@@ -601,13 +641,10 @@ function BulkImport({
     setBusy(true);
     setErr(null);
     try {
-      const r = await apiFetch('/api/admin/users/bulk', {
+      const d = await ghiJson('/api/admin/users/bulk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, role, class_id: classId || null, dry_run: dryRun }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(errorText(r.status, d));
+      }, HD_NHAP_HANG_LOAT);
       if (dryRun) setPreview(d);
       else {
         setDone(d);
