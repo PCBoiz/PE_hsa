@@ -147,13 +147,13 @@ export const HUONG_DAN: readonly Bai[] = [
     khi_nao: 'Ngay sau mỗi buổi dạy. Để sang hôm sau là quên ai vắng.',
     buoc: [
       {
-        lam: 'Từ Trang của tôi, mở mục "Giảng dạy" rồi chọn lớp.',
-        o: '/dashboard',
-        luu_y: 'Giảng viên chỉ thấy lớp mình phụ trách; trợ giảng chỉ thấy lớp được gán.',
+        lam: 'Mở "Việc hôm nay" trong khu Giảng dạy. Buổi vừa dạy mà chưa mở sổ nằm ngay đó, kèm nút "Điểm danh" dẫn thẳng vào buổi ấy.',
+        o: '/giang-day',
+        luu_y: 'Giảng viên chỉ thấy lớp mình phụ trách; trợ giảng chỉ thấy lớp được gán. Trang này gom MỌI lớp — không phải mở từng lớp.',
       },
-      { lam: 'Chọn buổi trong danh sách, tick từng em, bấm lưu.' },
+      { lam: 'Tick từng em (hoặc "Đánh dấu cả lớp có mặt" rồi sửa em vắng), bấm lưu.' },
       {
-        lam: 'Buổi chưa có trong danh sách thì tạo buổi trước.',
+        lam: 'Buổi chưa có trong danh sách thì tạo buổi trước — hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
         luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG được tính vào mẫu số chuyên cần — nó bị báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
       },
     ],
@@ -170,6 +170,37 @@ export const HUONG_DAN: readonly Bai[] = [
   },
 
   {
+    ma: 'sinh-lich',
+    tieu_de: 'Sinh lịch cả kỳ và khai ngày nghỉ',
+    vai: [VAI_HOC_VU, VAI_GIANG_VIEN, VAI_QUAN_TRI],
+    khi_nao: 'Đầu mỗi đợt, sau khi lớp đã có lịch học (thứ trong tuần và giờ).',
+    buoc: [
+      {
+        lam: 'Học vụ khai ngày nghỉ của ĐỢT trước: mở Đợt học, bấm "Ngày nghỉ". Hệ thống gợi ý lễ dương lịch cố định; Tết, Giỗ Tổ và ngày nghỉ bù thì nhập theo thông báo chính thức của năm đó.',
+        o: '/quan-tri/dot-hoc',
+        luu_y: 'Hệ thống KHÔNG tự tính Tết — đoán sai một ngày là cả lớp vào phòng học trống. Ngày nghỉ lưu theo đợt, nên khai một lần là mọi lớp của đợt cùng bỏ.',
+      },
+      {
+        lam: 'Vào lớp → trang Buổi học → "Sinh lịch cả kỳ". Thứ, giờ, khoảng ngày đã điền sẵn theo lịch lớp — kiểm tra rồi bấm "Xem trước".',
+        luu_y: 'Bảng xem trước nói rõ ngày nào tạo, ngày nào nghỉ, ngày nào đã có buổi. Chỉ bấm "Tạo" sau khi đọc bảng ấy.',
+      },
+      {
+        lam: 'Bấm lại lần nữa không tạo buổi trùng — ngày đã có buổi được giữ nguyên. Sửa ngày kết thúc rồi sinh thêm là cách nối dài lịch.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Trong bảng xem trước có dòng cảnh báo "là Quốc khánh nhưng đợt chưa khai nghỉ".',
+        xu_ly: 'Lớp vẫn học ngày lễ thì cứ tạo. Nghỉ thì học vụ khai ngày ấy ở Đợt học rồi bấm "Xem trước" lại.',
+      },
+      {
+        trieu_chung: 'Trợ giảng không thấy nút "Sinh lịch cả kỳ".',
+        xu_ly: 'Đúng thiết kế: trợ giảng tạo từng buổi được, sinh cả kỳ thì không. Nhờ giảng viên phụ trách hoặc học vụ.',
+      },
+    ],
+  },
+
+  {
     ma: 'bao-cao-phu-huynh',
     tieu_de: 'Gửi báo cáo cho phụ huynh',
     vai: [VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI],
@@ -180,8 +211,8 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Mở trang này KHÔNG gửi gì cả. Chưa có gì rời khỏi hệ thống cho tới khi bấm nút.',
       },
       {
-        lam: 'Xem qua danh sách. Em nào thiếu số Zalo của phụ huynh thì nhắc em tự điền ở Cài đặt → Liên hệ phụ huynh.',
-        o: '/dashboard',
+        lam: 'Em nào thiếu email hoặc số Zalo của phụ huynh: dán cả bảng đăng ký (kèm dòng tiêu đề) vào "Nhập liên hệ phụ huynh" ngay trên trang này → "Kiểm tra trước" → "Lưu". Hoặc để em tự điền ở Cài đặt → Liên hệ phụ huynh.',
+        luu_y: 'Trung tâm đã nhập thì học viên KHÔNG sửa được ô ấy nữa (chỉ điền được ô còn trống) — để không em nào đổi được địa chỉ nhận báo cáo về chính mình. Cần sửa thì học vụ dán lại.',
       },
       {
         lam: 'Bấm nút và xác nhận. Cửa xác nhận nêu ĐÚNG SỐ người sẽ nhận — đọc con số đó trước khi gật.',

@@ -53,6 +53,24 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 8 · Hướng dẫn trong ứng dụng theo kịp bốn tính năng mới + rà "hai đồng hồ" trong test
+
+**Hướng dẫn (`lib/huongDan.ts`, đọc ở Vận hành → Hướng dẫn):** bài "Điểm danh"
+nay bắt đầu từ "Việc hôm nay" thay vì mở từng lớp; bài mới "Sinh lịch cả kỳ và
+khai ngày nghỉ" (học vụ khai ngày nghỉ theo đợt trước → giảng viên sinh → xem
+trước rồi mới tạo; hai mục "hỏng thì sao": cảnh báo lễ chưa khai, trợ giảng
+không thấy nút); bài "Báo cáo phụ huynh" thêm bước dán liên hệ cả lớp và lưu ý
+khoá C5. `huong-dan.test.mjs` xác nhận mọi đường dẫn trong bài trỏ vào tuyến
+thật (`/giang-day` nay là tuyến tĩnh). Mở trang ở 390px xem bài mới: đúng khuôn
+các bài cũ, không tràn.
+
+**Rà "hai đồng hồ" trong test:** sau lỗi thứ Hai 0h–7h ở `stats/tests.py`, quét
+mọi `now()` trong INSERT của tệp test: còn 5 chỗ (`surveys.created_at`,
+`lesson_progress.completed_at` ×2, `mock_attempts` ×2, `study_plans.generated_at`
+trong phép IDOR). Đọc từng phép kiểm: không phép nào so mốc ấy với ngày giờ VN
+→ không đổi. Ghi lại để lần sau ai thêm phép kiểm theo ngày thì biết dùng
+`local_now()`.
+
 ## 14/09/2026 — VÒNG 7 · Rà luồng học viên → khối "Lớp của bạn" trên bảng điều khiển
 
 **Rà:** tài khoản học viên thật id 9 (lớp 1), 16 màn/tab × 2 khổ, chặn mọi lời
