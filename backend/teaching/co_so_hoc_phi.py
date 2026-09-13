@@ -67,6 +67,7 @@ from datetime import date
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.clock import local_now
 from common.db import q, q1
 from common.permissions import IsAdminRole
 from teaching.vocab import chi_hoc_vien
@@ -145,15 +146,25 @@ class AdminBillingBasisView(APIView):
         # `status <> 'cancelled'`: buổi đã huỷ thì không ai dạy và không ai học,
         # nên nó không phải cơ sở tính gì cả. Đếm riêng để người đọc thấy nó có
         # tồn tại chứ không biến mất không dấu vết.
+        #
+        # `starts_at <= nay` (13/09/2026): từ khi sinh được lịch cả kỳ, lớp có sẵn
+        # hàng chục buổi `planned` ở tương lai. "Đã mở" mà gồm cả chúng thì ngay
+        # hôm sinh lịch, số buổi của mỗi em nhảy lên gấp mấy lần buổi thật — và ai
+        # thu theo thời gian sẽ thu trước tiền cả khoá. Đếm riêng `sap_toi`, cùng
+        # lý do với `da_huy`: có tồn tại thì phải thấy.
+        nay = local_now()
         buoi = {d['class_id']: d for d in q('''
             SELECT class_id,
-                   COUNT(*) FILTER (WHERE status IS DISTINCT FROM 'cancelled') AS da_mo,
-                   COUNT(*) FILTER (WHERE status = 'cancelled')                AS da_huy
+                   COUNT(*) FILTER (WHERE status IS DISTINCT FROM 'cancelled'
+                                      AND starts_at <= %s)                     AS da_mo,
+                   COUNT(*) FILTER (WHERE status = 'cancelled')                AS da_huy,
+                   COUNT(*) FILTER (WHERE status IS DISTINCT FROM 'cancelled'
+                                      AND starts_at > %s)                      AS sap_toi
             FROM class_sessions
             WHERE class_id = ANY(%s)
               AND (%s::date IS NULL OR starts_at::date >= %s)
               AND (%s::date IS NULL OR starts_at::date <= %s)
-            GROUP BY class_id''', (ids, tu, tu, den, den))}
+            GROUP BY class_id''', (nay, nay, ids, tu, tu, den, den))}
 
         # ── Từng em: quãng là thành viên, buổi trong quãng, có mặt ──────────
         #
@@ -170,6 +181,7 @@ class AdminBillingBasisView(APIView):
                        AND s.status IS DISTINCT FROM 'cancelled'
                        AND s.starts_at >= m.joined_at
                        AND (m.left_at IS NULL OR s.starts_at <= m.left_at)
+                       AND s.starts_at <= %s
                        AND (%s::date IS NULL OR s.starts_at::date >= %s)
                        AND (%s::date IS NULL OR s.starts_at::date <= %s)
                    ) AS buoi_trong_ky,
@@ -211,7 +223,7 @@ class AdminBillingBasisView(APIView):
             WHERE m.class_id = ANY(%s)
               AND ''' + chi_hoc_vien('u') + '''
             ORDER BY m.class_id, u.name''',
-               (tu, tu, den, den,
+               (nay, tu, tu, den, den,
                 list(CO_MAT), tu, tu, den, den,
                 tu, tu, den, den,
                 tu, tu, den, den,
@@ -247,6 +259,7 @@ class AdminBillingBasisView(APIView):
                 'giangVien': d['teacher_name'],
                 'buoiDaMo': (buoi.get(d['id']) or {}).get('da_mo', 0),
                 'buoiDaHuy': (buoi.get(d['id']) or {}).get('da_huy', 0),
+                'buoiSapToi': (buoi.get(d['id']) or {}).get('sap_toi', 0),
                 'hocVien': theo_lop.get(d['id'], []),
             } for d in lop],
         })

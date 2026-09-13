@@ -16,11 +16,12 @@ từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 | **A5** | **Bật sao lưu CSDL hằng ngày**: GitHub repo → Settings → Secrets → New secret tên **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy ở nơi hai năm nữa anh còn tìm được** (app mật khẩu) — mất khoá là mất mọi bản sao lưu. Rồi mở Actions → "Sao lưu CSDL" → Run workflow để xem lượt đầu xanh hay đỏ. | 5 phút | Đo 07/09: **không có quy trình sao lưu nào**. CSDL giữ dữ liệu học tập của trẻ em, mất là mất hẳn. Workflow đã dựng (13/09): dump mỗi 03:00 → **khôi phục thử ngay trong lượt** → đối chiếu số dòng → mã hoá AES-256 → cất 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô. Tôi không đặt secret thay anh được. | Có bản sao lưu khôi phục được |
 | **B1** | **Một lớp thật** chạy thử: một giảng viên, một đợt, học viên thật, lịch học thật | 1 buổi | Hệ thống mới chạy với **một lớp mẫu tôi tạo 07/09**. Mọi thứ sau đây (báo cáo, học phí, tuyển sinh) đều dễ hơn khi đã có một lớp thật đi qua một lần. Chỗ vướng khi dùng hàng ngày chỉ lộ ra ở đây. | Cả tầng ERP |
 | **B2** | **Địa chỉ email @tophsa.vn** (Google Workspace ~6 USD/người/tháng, hoặc một dịch vụ gửi thư) — anh đã chốt 07/09 là *chờ*, ghi để không quên | — | Kênh email đã dựng xong, gửi thử thành công từ `sonthaiha07@gmail.com`. Chưa bật cho phụ huynh thật vì đó là hộp thư cá nhân của anh. | Gửi báo cáo phụ huynh thật |
-| **B3** | Thu thập **email/số Zalo phụ huynh** của học viên (học viên tự điền ở Cài đặt → Liên hệ phụ huynh, hoặc học vụ điền hộ) | theo lớp | **0/3** em đang học có liên lạc phụ huynh. Không có thì bấm "Gửi cả lớp" ra toàn "thiếu liên lạc". | Báo cáo phụ huynh |
+| **B3** | Gom **tệp đăng ký có email/số Zalo phụ huynh** của lớp thật, rồi dán cả bảng (kèm dòng tiêu đề) vào **Giảng dạy → Báo cáo phụ huynh → Nhập liên hệ phụ huynh** → Kiểm tra trước → Lưu. Học viên cũng tự điền được ở Cài đặt (nay đã có ô email). | 10 phút/lớp | **0/3** em có liên lạc phụ huynh. Công cụ dán cả lớp đã dựng 13/09 (chỉ khớp em đang học của đúng lớp đó, ô trống giữ giá trị cũ, nhật ký giữ giá trị cũ). Thiếu dữ liệu thì bấm "Gửi cả lớp" ra toàn "thiếu liên lạc". | Báo cáo phụ huynh |
 | **B4** | Hỏi bên khảo thí (uranustech) **một trong ba**: có API không · xuất Excel được không · tải PDF báo cáo từng em được không | 1 tin nhắn | Ô "điểm thi thử" trong báo cáo phụ huynh đang trống. Tôi đã đọc thử tệp PDF anh gửi và bóc được đủ số — nếu tải được cho từng em thì đường nhập PDF là khả thi nhất. | Điểm thi thật vào báo cáo |
 | **C1** | Quyết **xoá hay giữ tài khoản `id 9`** (`reg_test_hsa@example.com`) | 1 câu | Anh đã duyệt xoá, nhưng lúc hỏi tôi nói nó giữ "5 bài + 1 lượt thi"; đo lại là **12/38 sự kiện học, 5/10 bài, 1/1 nhật ký + quiz** — hơn nửa lịch sử học tập của cả CSDL. Đã sao lưu ra JSON. Một tiếng là xoá. | Dọn tài khoản kiểm thử |
 | **C2** | Quyết **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở khoá cả ZNS lẫn SMS brandname), hay bỏ hẳn | — | ZNS đòi OA xác thực, xác thực đòi giấy phép kinh doanh — **hộ kinh doanh cũng được**, không bắt buộc công ty. Phụ huynh Việt đọc Zalo nhiều hơn email. | Kênh Zalo |
 | **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
+| **C5** | Chốt: **học viên có được SỬA liên hệ phụ huynh mà học vụ đã nhập không?** Hai cách: (a) giữ như nay — em sửa được; (b) học vụ nhập rồi thì chỉ học vụ sửa, em chỉ điền được ô còn trống | 1 câu | Hiện em sửa được. Tức một em có thể đổi email bố mẹ thành email của mình để **chặn báo cáo tiến độ** trước khi nó tới nhà. Google Classroom chọn (b): chỉ giáo viên/quản trị mời phụ huynh, và phụ huynh phải bấm xác nhận. Chưa đổi vì đây là chính sách, không phải lỗi. | Tin cậy được địa chỉ nhận báo cáo |
 | **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
 
 **Cách khôi phục từ bản sao lưu (khi cần, hy vọng không bao giờ):** Actions →
@@ -39,9 +40,10 @@ dòng thứ hai lên production**; chạy thử lên một nhánh Neon trước.
 ~~App Password Gmail~~ (07/09, thuộc `sonthaiha07@gmail.com`) · ~~xoá tài khoản
 e2e~~ (07/09).
 
-**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): sao lưu CSDL
-tự động lên GitHub Artifacts · khai cổng phân quyền tường minh cho 60 view ·
-màn nhập liệu nhanh cho học vụ · bảng nhắc việc giảng viên.
+**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): bảng nhắc việc
+giảng viên. *Xong 13/09:* sao lưu CSDL tự động (chờ A5) · khai cổng phân quyền
+cho 60 view · ô email phụ huynh + dán liên hệ cả lớp · sinh lịch cả kỳ + ngày
+nghỉ theo đợt (học vụ khai Tết/nghỉ bù ở Vận hành → Đợt học khi có thông báo).
 
 ---
 

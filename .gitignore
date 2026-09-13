@@ -77,3 +77,7 @@ backend/staticfiles/
 
 # Thư của EMAIL_CHE_DO_THU — chứa dữ liệu học viên thật, KHÔNG commit
 .thu_email/
+
+# Bản sao lưu dữ liệu production chụp NGAY TRƯỚC một lần xoá có duyệt — chứa dữ
+# liệu học viên thật (điểm danh, id tài khoản), KHÔNG commit.
+.sao_luu/

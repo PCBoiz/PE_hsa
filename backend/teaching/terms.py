@@ -18,13 +18,20 @@ chỉ gỡ nhãn khỏi các lớp thuộc đợt đó — lớp, học viên, b
 nguyên. Nhưng vẫn phải hỏi trước, vì gán lại nhãn cho hai chục lớp bằng tay là
 việc không ai muốn làm hai lần.
 """
+from django.db import IntegrityError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common import audit
+from common.clock import local_today
 from common.db import q, q1, x
 from common.permissions import IsAdminOrAcademic, IsTeachingStaff
 from stats.goals import as_date
+from teaching.ngay_le import le_co_dinh_trong
+
+#: Trần ngày nghỉ khai MỘT lần. Một đợt ba tháng có vài ngày lễ; 50 là rộng tay
+#: cho cả Tết lẫn nghỉ bù mà vẫn chặn một danh sách dán nhầm cả năm.
+MAX_NGAY_NGHI_MOI_LAN = 50
 
 #: Vòng đời một đợt. Khớp `terms_status_check` ở §36 — hai nơi lệch nhau thì một
 #: giá trị hợp lệ trên giao diện sẽ bị CSDL từ chối, và câu lỗi hiện ra là câu
@@ -213,6 +220,125 @@ class AdminTermDetailView(APIView):
                              % (before['name'], n),
                      detail={'classes': n, 'confirmed': confirm})
         return Response({'ok': True, 'unlinkedClasses': n})
+
+
+def _ngay_vn(d):
+    return d.strftime('%d/%m/%Y')
+
+
+def _ngay_nghi_payload(dot):
+    rows = q('SELECT id, on_date, name FROM term_holidays WHERE term_id=%s ORDER BY on_date',
+             (dot['id'],))
+    da_co = {r['on_date'] for r in rows}
+    goi_y = le_co_dinh_trong(dot['starts_on'], dot['ends_on'])
+    return {
+        'dot': {'id': dot['id'], 'name': dot['name'],
+                'startsOn': dot['starts_on'].isoformat() if dot['starts_on'] else None,
+                'endsOn': dot['ends_on'].isoformat() if dot['ends_on'] else None},
+        'ngayNghi': [{'id': r['id'], 'ngay': r['on_date'].isoformat(), 'ten': r['name']}
+                     for r in rows],
+        # Chỉ gợi ý ngày CHƯA khai (gợi ý lại thứ đã có là một nút bấm ra 409)
+        # và CHƯA QUA: đo 13/09/2026 trên đợt thật, màn hình gợi ý "02/09/2026
+        # Quốc khánh" — mười một ngày sau khi nó đã qua. Ngày đã qua không bỏ
+        # được buổi nào nữa, nên gợi ý nó chỉ là một nút bấm vô ích.
+        'goiY': [{'ngay': d.isoformat(), 'ten': ten}
+                 for d, ten in sorted(goi_y.items())
+                 if d not in da_co and d >= local_today()],
+    }
+
+
+class TermHolidaysView(APIView):
+    """GET/POST /api/admin/terms/<id>/holidays — ngày nghỉ của một đợt (§46).
+
+    Việc của HỌC VỤ, cùng cổng với đợt học. Giảng viên đọc ngày nghỉ qua bản
+    gợi ý của `sinh_buoi.GenerateSessionsView`, không vào đây.
+
+    POST nhận ``{ngay, ten}`` hoặc ``{items: [{ngay, ten}, …]}``. Nhiều ngày thì
+    kiểm HẾT trước khi ghi ngày nào: một ngày hỏng giữa danh sách mà nửa đầu đã
+    ghi là bắt người ta dò lại xem ngày nào đã vào.
+    """
+    permission_classes = [IsAdminOrAcademic]
+
+    def get(self, request, term_id):
+        dot = q1('SELECT id, name, starts_on, ends_on FROM terms WHERE id=%s', (term_id,))
+        if not dot:
+            return Response({'error': 'Không tìm thấy đợt học này.'}, status=404)
+        return Response(_ngay_nghi_payload(dot))
+
+    def post(self, request, term_id):
+        dot = q1('SELECT id, name, starts_on, ends_on FROM terms WHERE id=%s', (term_id,))
+        if not dot:
+            return Response({'error': 'Không tìm thấy đợt học này.'}, status=404)
+        body = request.data if isinstance(request.data, dict) else {}
+        items = body['items'] if isinstance(body.get('items'), list) else [body]
+        if not items:
+            return Response({'error': 'Chưa có ngày nghỉ nào để thêm.'}, status=400)
+        if len(items) > MAX_NGAY_NGHI_MOI_LAN:
+            return Response({'error': 'Một lần khai tối đa %d ngày.' % MAX_NGAY_NGHI_MOI_LAN},
+                            status=400)
+
+        da_co = {r['on_date'] for r in q('SELECT on_date FROM term_holidays WHERE term_id=%s',
+                                         (term_id,))}
+        sach = []
+        for it in items:
+            it = it if isinstance(it, dict) else {}
+            d = as_date(it.get('ngay'))
+            ten = str(it.get('ten') or '').strip()[:120]
+            if not d:
+                return Response({'error': 'Ngày "%s" không hợp lệ (định dạng YYYY-MM-DD).'
+                                          % (it.get('ngay') or '')}, status=400)
+            if not ten:
+                return Response({'error': 'Ngày nghỉ %s cần có tên, ví dụ "Tết Nguyên đán".'
+                                          % _ngay_vn(d)}, status=400)
+            # Ngày nằm ngoài đợt không bao giờ bỏ được buổi nào của đợt ấy — khai
+            # vào là một dòng trông có tác dụng mà không có.
+            if (dot['starts_on'] and d < dot['starts_on']) or (dot['ends_on'] and d > dot['ends_on']):
+                return Response({'error': 'Ngày %s nằm ngoài đợt "%s" (%s – %s).'
+                                          % (_ngay_vn(d), dot['name'],
+                                             _ngay_vn(dot['starts_on']) if dot['starts_on'] else '…',
+                                             _ngay_vn(dot['ends_on']) if dot['ends_on'] else '…')},
+                                status=400)
+            if d in da_co or any(d == s[0] for s in sach):
+                return Response({'error': 'Ngày %s đã khai trong đợt này rồi.' % _ngay_vn(d)},
+                                status=409)
+            sach.append((d, ten))
+
+        try:
+            with transaction.atomic():
+                ids = [q1('INSERT INTO term_holidays (term_id, on_date, name, created_by) '
+                          'VALUES (%s, %s, %s, %s) RETURNING id',
+                          (term_id, d, ten, request.user.id))['id'] for d, ten in sach]
+                audit.record(request, audit.TERM_HOLIDAY_ADD, target_type='term',
+                             target_id=term_id, target_label=dot['name'],
+                             summary='Khai %d ngày nghỉ cho đợt "%s": %s.'
+                                     % (len(sach), dot['name'],
+                                        ', '.join('%s %s' % (_ngay_vn(d), t) for d, t in sach)),
+                             detail={'ngay': [{'ngay': d.isoformat(), 'ten': t} for d, t in sach]})
+        except IntegrityError:
+            # Hai người khai cùng một ngày cùng lúc: chỉ mục duy nhất §46 chặn
+            # người thứ hai. Trả đúng câu như khi kiểm thấy trước.
+            return Response({'error': 'Có ngày vừa được người khác khai trong đợt này. Tải lại '
+                                      'danh sách rồi thử lại.'}, status=409)
+        return Response({'ok': True, 'ids': ids}, status=201)
+
+
+class TermHolidayDetailView(APIView):
+    """DELETE /api/admin/terms/<id>/holidays/<holiday_id>."""
+    permission_classes = [IsAdminOrAcademic]
+
+    def delete(self, request, term_id, holiday_id):
+        r = q1('''SELECT h.id, h.on_date, h.name, t.name AS term_name
+                  FROM term_holidays h JOIN terms t ON t.id = h.term_id
+                  WHERE h.id = %s AND h.term_id = %s''', (holiday_id, term_id))
+        if not r:
+            return Response({'error': 'Không tìm thấy ngày nghỉ này.'}, status=404)
+        x('DELETE FROM term_holidays WHERE id=%s', (holiday_id,))
+        audit.record(request, audit.TERM_HOLIDAY_DELETE, target_type='term', target_id=term_id,
+                     target_label=r['term_name'],
+                     summary='Xoá ngày nghỉ %s (%s) của đợt "%s". Buổi đã sinh trước đó giữ '
+                             'nguyên.' % (_ngay_vn(r['on_date']), r['name'], r['term_name']),
+                     detail={'ngay': r['on_date'].isoformat(), 'ten': r['name']})
+        return Response({'ok': True})
 
 
 class TermsLiteView(APIView):

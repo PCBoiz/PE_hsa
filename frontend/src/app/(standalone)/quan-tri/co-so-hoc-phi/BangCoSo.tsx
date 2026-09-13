@@ -51,6 +51,8 @@ export type Lop = {
   giangVien: string | null;
   buoiDaMo: number;
   buoiDaHuy: number;
+  /** Buổi đã lên lịch nhưng CHƯA TỚI — không nằm trong `buoiDaMo` (13/09/2026). */
+  buoiSapToi?: number;
   hocVien: HocVien[];
 };
 
@@ -90,6 +92,9 @@ export default function BangCoSo({ lop }: { lop: Lop[] }) {
               l.giangVien ? `GV ${l.giangVien}` : null,
               `${l.buoiDaMo} buổi đã mở`,
               l.buoiDaHuy > 0 ? `${l.buoiDaHuy} buổi đã huỷ (không tính)` : null,
+              // Sinh lịch cả kỳ để sẵn buổi tương lai. Không hiện thì người tính
+              // tiền thấy "3 buổi đã mở" ở một lớp có lịch 26 buổi và tưởng thiếu.
+              l.buoiSapToi ? `${l.buoiSapToi} buổi sắp tới (chưa tính)` : null,
               `${l.hocVien.length} học viên`,
             ].filter(Boolean).join(' · ')}
           />

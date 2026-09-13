@@ -102,6 +102,15 @@ MUC = [
      lambda: _cot('class_members', 'leave_reason')),
     ('§40', 'lesson_progress.answers_json',
      lambda: _cot('lesson_progress', 'answers_json')),
+    # Kiểm CỘT trước khoá ngoại: bảng chưa có thì `::regclass` ném lỗi, và dòng
+    # đầu nói "chưa có cột" dễ hiểu hơn một câu lỗi của Postgres.
+    ('§46a', 'bảng term_holidays (ngày nghỉ theo đợt)',
+     lambda: _cot('term_holidays', 'on_date')),
+    ('§46b', 'term_holidays.term_id ON DELETE CASCADE',
+     lambda: _fk('term_holidays', 'term_holidays_term_id_fkey', 'CASCADE')
+     if _cot('term_holidays', 'on_date')[0] else (False, 'chưa có bảng')),
+    ('§46c', 'chỉ mục duy nhất term_holidays(term_id, on_date)',
+     lambda: _chi_muc('idx_term_holidays_term_day')),
 ]
 
 

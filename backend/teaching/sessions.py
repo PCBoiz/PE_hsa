@@ -285,6 +285,11 @@ def _session_dict(r, counts=None, member_count=None):
         'recordingUrl': r['recording_url'],
         'status': r['status'],
         'note': r['note'],
+        # Buổi đã tới giờ chưa — tính Ở MÁY CHỦ. Từ khi sinh được lịch cả kỳ
+        # (13/09/2026), một lớp có sẵn hàng chục buổi tương lai, và màn hình phải
+        # tách chúng khỏi buổi đã dạy. Tính ở trình duyệt thì bản dựng sẵn và bản
+        # sống dậy lệch nhau ở đúng những buổi sát giờ.
+        'started': bool(r['starts_at'] and r['starts_at'] <= local_now()),
         'createdAt': r['created_at'].isoformat() if r.get('created_at') else None,
         'updatedAt': r['updated_at'].isoformat() if r.get('updated_at') else None,
         # Có con dấu này thì "0 dòng điểm danh" mới đọc được: chưa có dấu là

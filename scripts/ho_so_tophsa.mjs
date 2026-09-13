@@ -157,9 +157,9 @@ ${muc('B.1', 'Sáu vai trò')}
 nghĩa là "tôi có phụ trách lớp này", chứ không phải "tôi là giảng viên nên xem được mọi lớp".</p>
 ${bang(['Vai trò', 'Thấy gì', 'Làm được gì', 'KHÔNG làm được'], [
   ['<b>Quản trị viên</b>', 'Toàn bộ', 'Mọi việc: tài khoản, vai trò, lớp, đợt, giáo trình, báo cáo', '—'],
-  ['<b>Quản lý học vụ</b>', 'Mọi lớp', 'Quản lý lớp và đợt học, xem báo cáo lớp', 'Đổi vai trò · đặt lại mật khẩu · mở báo cáo phụ huynh'],
-  ['<b>Giảng viên</b>', 'Lớp mình phụ trách', 'Buổi học, điểm danh, giao bài, chấm, <b>gửi báo cáo phụ huynh</b>', 'Lớp của người khác'],
-  ['<b>Trợ giảng</b>', 'Lớp được gán', 'Điểm danh, chấm bài', 'Xoá buổi · mở báo cáo phụ huynh · tải file có cột liên lạc'],
+  ['<b>Quản lý học vụ</b>', 'Mọi lớp', 'Quản lý lớp, đợt học và ngày nghỉ; sinh lịch cả kỳ; báo cáo lớp và <b>báo cáo phụ huynh</b>', 'Đổi vai trò · đặt lại mật khẩu'],
+  ['<b>Giảng viên</b>', 'Lớp mình phụ trách', 'Buổi học (kể cả sinh lịch cả kỳ), điểm danh, giao bài, chấm, <b>gửi báo cáo phụ huynh</b>', 'Lớp của người khác · khai ngày nghỉ của đợt'],
+  ['<b>Trợ giảng</b>', 'Lớp được gán', 'Tạo từng buổi, điểm danh, chấm bài', 'Xoá buổi · sinh lịch cả kỳ · mở báo cáo phụ huynh · tải file có cột liên lạc'],
   ['<b>Học viên</b>', 'Dữ liệu của chính mình', 'Học, thi thử, xem lộ trình và bản đồ năng lực', 'Dữ liệu của bạn học'],
   ['<b>Biên tập nội dung</b>', 'Giáo trình', 'Soạn bài, nhập đề thi thử', 'Lớp học · học viên · báo cáo'],
 ])}
@@ -270,15 +270,15 @@ ${bang(['Màn hình', 'Ai vào được', 'Làm gì ở đó'], [
   ['Bài tập của tôi', 'Học viên', 'Bài giảng viên giao, nộp bài'],
   ['Khảo sát', 'Học viên', 'Khảo sát đầu vào để dựng lộ trình'],
   ['Đổi mật khẩu', 'Mọi người đã đăng nhập', 'Đổi mật khẩu của chính mình'],
-  ['Buổi học &amp; điểm danh', 'Giảng viên · trợ giảng', 'Mở buổi, điểm danh, ghi sổ đầu bài, xuất tệp'],
+  ['Buổi học &amp; điểm danh', 'Giảng viên · trợ giảng', 'Tạo buổi, sinh lịch cả kỳ (trừ trợ giảng), điểm danh, ghi sổ đầu bài, xuất tệp'],
   ['Bài tập của lớp', 'Giảng viên · trợ giảng', 'Giao bài, xem ai đã nộp'],
   ['Chấm bài', 'Giảng viên · trợ giảng', 'Đọc bài làm, chấm điểm, nhận xét'],
-  ['Báo cáo cả lớp', 'Giảng viên · học vụ', 'Bảng điều khiển lớp, gửi báo cáo phụ huynh, xuất Excel và PDF'],
-  ['Tờ báo cáo một em', 'Giảng viên', 'Xem đúng tờ phụ huynh sẽ nhận, cấp và thu hồi đường dẫn'],
+  ['Báo cáo cả lớp', 'Giảng viên · học vụ', 'Bảng điều khiển lớp, nhập liên hệ phụ huynh cả lớp, gửi báo cáo phụ huynh, xuất Excel và PDF'],
+  ['Tờ báo cáo một em', 'Giảng viên · học vụ', 'Xem đúng tờ phụ huynh sẽ nhận, cấp và thu hồi đường dẫn'],
   ['Tổng quan trung tâm', 'Quản trị · học vụ', 'Số liệu toàn trung tâm: lớp, học viên, tiến độ, cảnh báo'],
   ['Tài khoản', 'Quản trị viên', 'Tạo tài khoản, đổi vai trò, khoá, đặt lại mật khẩu'],
   ['Lớp học', 'Quản trị · học vụ', 'Tạo lớp, gán giảng viên, xếp học viên'],
-  ['Đợt học', 'Quản trị · học vụ', 'Tạo đợt, gắn lớp vào đợt'],
+  ['Đợt học', 'Quản trị · học vụ', 'Tạo đợt, gắn lớp vào đợt, khai ngày nghỉ (Tết, lễ, nghỉ bù)'],
   ['Nhật ký kiểm toán', 'Quản trị viên', 'Ai đã sửa gì, lúc nào, từ đâu'],
   ['Ai làm được gì', 'Quản trị viên', 'Sơ đồ phân quyền sinh từ chính mã nguồn'],
   ['Cơ sở học phí', 'Quản trị viên', 'Số buổi từng em trong kỳ — cơ sở để tính tiền'],
@@ -295,12 +295,14 @@ ${bang(['Việc', 'Quản trị', 'Học vụ', 'Giảng viên', 'Trợ giảng'
   ['Xem dữ liệu của chính mình', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '&#10003;'],
   ['Điểm danh buổi học', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '', ''],
   ['Chấm bài', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '', ''],
-  ['Mở · huỷ buổi học', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
+  ['Tạo · sửa · huỷ từng buổi học', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '', ''],
+  ['Sinh lịch cả kỳ', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
+  ['Xoá buổi học', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
   ['Giao bài cho lớp', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
   ['Xem báo cáo lớp', '&#10003;', '&#10003;', '&#10003;', '&#10003;', '', ''],
-  ['<b>Mở báo cáo phụ huynh</b>', '&#10003;', '', '&#10003;', '', '', ''],
+  ['<b>Mở báo cáo phụ huynh · nhập liên hệ phụ huynh</b>', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
   ['<b>Tải tệp có cột liên lạc</b>', '&#10003;', '&#10003;', '&#10003;', '', '', ''],
-  ['Tạo lớp · tạo đợt học', '&#10003;', '&#10003;', '', '', '', ''],
+  ['Tạo lớp · tạo đợt học · khai ngày nghỉ', '&#10003;', '&#10003;', '', '', '', ''],
   ['Xếp học viên vào lớp', '&#10003;', '&#10003;', '', '', '', ''],
   ['Soạn giáo trình · nhập đề', '&#10003;', '', '', '', '', '&#10003;'],
   ['<b>Đổi vai trò tài khoản</b>', '&#10003;', '', '', '', '', ''],
@@ -308,7 +310,7 @@ ${bang(['Việc', 'Quản trị', 'Học vụ', 'Giảng viên', 'Trợ giảng'
   ['Xem nhật ký kiểm toán', '&#10003;', '', '', '', '', ''],
   ['Xem cơ sở tính học phí', '&#10003;', '', '', '', '', ''],
 ])}
-${ghi('Ba dòng in đậm là ba ranh giới được cân nhắc kỹ nhất, vì chúng chạm dữ liệu liên lạc của trẻ em hoặc chạm chính hệ thống phân quyền.')}
+${ghi('Bốn dòng in đậm là bốn ranh giới được cân nhắc kỹ nhất, vì chúng chạm dữ liệu liên lạc của trẻ em hoặc chạm chính hệ thống phân quyền.')}
 ${canh('Với giảng viên và trợ giảng, dấu &#10003; luôn kèm điều kiện <b>"của lớp mình phụ trách"</b>. Không có ô nào nghĩa là "mọi lớp".')}
 ${trang()}`;
 
@@ -523,7 +525,7 @@ ${bang(['Cần', 'Vì sao', 'Đang chặn'], [
   ['<b>Email (và/hoặc số Zalo) của phụ huynh</b>', 'Không có thì không gửi báo cáo cho ai được', `Toàn bộ luồng báo cáo phụ huynh. Hiện <b>${so(S.coEmailPhuHuynh)}/${so(S.hocVien)}</b> em đã khai.`],
   ['<b>Kết quả thi thử của học viên</b>', 'Ô "điểm thi thử" trong báo cáo phụ huynh đang trống', 'Phần giá trị nhất của tờ báo cáo. Xem C.6 để chọn cách trao đổi.'],
   ['<b>Danh sách lớp và học viên thật</b> của một đợt', 'Hệ thống mới chạy với một lớp mẫu', 'Không biết luồng nào vướng khi dùng thật.'],
-  ['<b>Lịch học thật</b> của lớp ấy', 'Để sinh buổi học tự động thay vì tạo tay từng buổi', 'Học vụ phải nhập tay nhiều hơn cần thiết.'],
+  ['<b>Lịch học thật</b> của lớp ấy, và <b>ngày nghỉ</b> của đợt (Tết, nghỉ bù)', 'Công cụ sinh lịch cả kỳ đã có — nó cần lịch thật và ngày nghỉ theo thông báo chính thức', 'Không chặn; thiếu thì lịch sinh ra có buổi vào đúng ngày trung tâm nghỉ.'],
 ])}
 
 ${muc('D.2', 'Thông tin và quy trình')}

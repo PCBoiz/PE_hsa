@@ -51,6 +51,9 @@ CLASS_PARENT_CONTACTS = 'class.parent_contacts'
 SESSION_CREATE = 'session.create'
 SESSION_UPDATE = 'session.update'
 SESSION_DELETE = 'session.delete'
+#: Sinh buổi hàng loạt theo lịch tuần (13/09/2026). MỘT dòng cho cả lượt, kèm
+#: `ids` của mọi buổi đã tạo — đủ để gỡ đúng một lượt sinh nhầm.
+SESSION_GENERATE = 'session.generate'
 ATTENDANCE_MARK = 'attendance.mark'
 
 #: Đợt học (§36, 31/08/2026). Vòng đời một đợt là thông tin tổ chức của trung
@@ -59,6 +62,10 @@ ATTENDANCE_MARK = 'attendance.mark'
 TERM_CREATE = 'term.create'
 TERM_UPDATE = 'term.update'
 TERM_DELETE = 'term.delete'
+#: Ngày nghỉ của đợt (§46). Một ngày nghỉ khai sai là bỏ mất một buổi của MỌI lớp
+#: sinh lịch sau đó — "ai khai ngày này" phải trả lời được.
+TERM_HOLIDAY_ADD = 'term.holiday.add'
+TERM_HOLIDAY_DELETE = 'term.holiday.delete'
 
 #: Giao bài & chấm tay (§38, 31/08/2026). Chấm điểm PHẢI vào nhật ký: nó là con
 #: số theo em suốt khoá, đi thẳng vào bản đồ năng lực và báo cáo gửi phụ huynh —

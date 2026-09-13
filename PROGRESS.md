@@ -47,6 +47,51 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 13/09/2026 — VÒNG 4 · Sinh lịch cả kỳ + ngày nghỉ theo đợt (việc B) · sửa hồ sơ PDF (việc D)
+
+**Anh Sơn chốt:** giảng viên + học vụ + quản trị sinh được, KHÔNG trợ giảng
+(vẫn tạo từng buổi); ngày nghỉ = gợi ý lễ cố định + học vụ khai Tết, lưu theo đợt.
+Tra ngoài: Moodle Attendance / SchoolTracs cùng một kiểu — thứ trong tuần + giờ +
+khoảng ngày, bỏ ngày nghỉ, xem trước. Lễ: BLLĐ 2019 Đ.112 — 4 ngày dương lịch cố
+định; Tết, Giỗ Tổ, nghỉ bù công bố từng năm → không tự tính.
+
+**Dựng:** §46 `term_holidays` (áp Neon bằng `bootstrap_schema`, 55 → 56 bảng,
+`kiem_luoc_do` 12/12 kèm 3 mục §46) · `teaching/ngay_le.py` ·
+`teaching/sinh_buoi.py` (GET gợi ý đoán từ mô tả lịch lớp; POST `dry_run`, bỏ
+ngày nghỉ, bỏ ngày đã có buổi chồng giờ, cảnh báo lễ cố định chưa khai, trần 200
+tính trước nhánh xem trước, một INSERT, nhật ký `session.generate` kèm ids) ·
+API ngày nghỉ `/api/admin/terms/<id>/holidays` (học vụ + quản trị) · khối "Sinh
+lịch cả kỳ" ở trang buổi học, khối "Ngày nghỉ" ở Đợt học.
+
+**Rà trước khi dựng — buổi chưa tới làm sai số ở hai chỗ (đã vá):**
+- `co_so_hoc_phi`: `buoiDaMo`/`buoiTrongKy` đếm cả buổi `planned` tương lai →
+  sinh lịch là số buổi của mỗi em nhảy gấp mấy lần ngay hôm đó. Nay chỉ đếm buổi
+  đã tới giờ, thêm `buoiSapToi`. Đỏ trước: `buoiDaMo` ra 4 thay vì 3.
+- Trang buổi học: mọi buổi tương lai mang chip vàng "Chưa mở sổ điểm danh", xếp
+  DESC nên buổi tối nay nằm sau 20 buổi chưa tới. Nay máy chủ trả `started`
+  (tính ở trình duyệt thì bản dựng sẵn lệch bản sống dậy), màn hình tách "Sắp
+  tới" (hiện 3) / "Đã diễn ra", thêm chip "Đã huỷ".
+- `parent_report`, `overview` đã lọc đúng; `attendance` đếm theo dòng điểm danh;
+  CSV chuyên cần thêm cột trống cho buổi tương lai (không sai số, để nguyên).
+
+**Hồ sơ PDF (việc D) sai ba chỗ, không phải một:** trợ giảng "không mở được
+buổi" (sai — chỉ không xoá); học vụ "không mở được báo cáo phụ huynh" (sai —
+`IsSeniorTeachingStaff` gồm học vụ, sai cả ở B.1); "Ba dòng in đậm" khi có bốn.
+Đã sửa, thêm 4 dòng ma trận, sinh lại PDF và đọc lại chữ trong PDF bằng `pypdf`
+(máy không có `pdftoppm` để xem ảnh trang).
+
+**Đo:** đỏ trước 29/29 khi chưa có mã. Sau: 42/42 (việc B + bộ học phí + khai
+cổng + `kiem_luoc_do`), rồi **toàn bộ `teaching` + `common` 267/267** (19 phút 36
+giây), và `tests_sinh_buoi` 29/29 chạy lại sau sửa cuối; ruff/eslint/tsc sạch, `cong-quan-tri`, `quyen-vai`,
+`nhan-nhat-ky`, `chot-ham` OK. Trình duyệt thật 1366/390px, hàng rào chỉ cho
+`dry_run` qua: lớp 1 điền sẵn T3,T5 19:30 90' từ 13/09 tới 06/11, xem trước 16
+buổi 15/09 → 05/11, nút Tạo khoá trước/sau khi đổi, không tràn; Đợt học gợi ý
+02/09 Quốc khánh — **ngày đã qua**, nên sửa thêm: chỉ gợi ý ngày chưa qua.
+
+**Bẫy gặp:** máy chủ Django dev chạy `--noreload` nên tuyến mới 404 tới khi bật
+lại; token cục bộ sống 30 phút nên kịch bản thứ hai mở trang không thấy nút —
+thêm nhánh chụp ảnh + in URL khi thiếu phần tử thay vì chỉ báo quá giờ.
+
 ## 13/09/2026 — VÒNG 3 · Mở đường nhập email phụ huynh (việc A)
 
 **Hỏi trước, anh Sơn chốt:** làm A (email phụ huynh) trước, rồi B (sinh buổi

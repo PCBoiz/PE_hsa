@@ -12,6 +12,7 @@ from teaching import (
                       parent_report,
                       parent_send,
                       sessions,
+                      sinh_buoi,
                       terms,
                       views,
 )
@@ -52,6 +53,10 @@ urlpatterns = [
 
     # ── Buổi học & điểm danh (đặc tả ERP §4) ──
     path('api/teach/classes/<int:class_id>/sessions', sessions.ClassSessionsView.as_view()),
+    # Sinh lịch cả kỳ theo thứ trong tuần. GET = gợi ý (không ghi), POST có
+    # `dry_run`. Trợ giảng bị chặn TRONG view — xem docstring `sinh_buoi.py`.
+    path('api/teach/classes/<int:class_id>/sessions/generate',
+         sinh_buoi.GenerateSessionsView.as_view()),
     path('api/teach/sessions/<int:session_id>', sessions.ClassSessionDetailView.as_view()),
     path('api/teach/sessions/<int:session_id>/attendance',
          sessions.SessionAttendanceView.as_view()),
@@ -88,6 +93,10 @@ urlpatterns = [
     path('api/teach/terms', terms.TermsLiteView.as_view()),
     path('api/admin/terms', terms.AdminTermsView.as_view()),
     path('api/admin/terms/<int:term_id>', terms.AdminTermDetailView.as_view()),
+    # Ngày nghỉ của đợt (§46) — sinh lịch cả kỳ bỏ các ngày này.
+    path('api/admin/terms/<int:term_id>/holidays', terms.TermHolidaysView.as_view()),
+    path('api/admin/terms/<int:term_id>/holidays/<int:holiday_id>',
+         terms.TermHolidayDetailView.as_view()),
 
     path('api/admin/classes', views.AdminClassesView.as_view()),
     path('api/admin/classes/<int:class_id>', views.AdminClassDetailView.as_view()),

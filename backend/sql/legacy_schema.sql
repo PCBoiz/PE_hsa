@@ -1469,3 +1469,31 @@ ALTER TABLE parent_report_sends
     ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'zns';
 ALTER TABLE parent_report_sends
     ADD COLUMN IF NOT EXISTS email   TEXT NOT NULL DEFAULT '';
+
+-- ============================================================================
+-- §46 · Ngày nghỉ theo đợt học (13/09/2026)
+-- ============================================================================
+-- Sinh buổi học hàng loạt theo lịch tuần phải BỎ ngày nghỉ lễ. Anh Sơn chốt:
+-- hệ thống GỢI Ý bốn lễ dương lịch cố định (01/01, 30/04, 01/05, 02/09), học vụ
+-- tự khai phần còn lại, và danh sách lưu THEO ĐỢT.
+--
+-- Vì sao không tự tính cả năm: Tết Nguyên đán và Giỗ Tổ theo âm lịch, và ngày
+-- nghỉ liền kề / nghỉ bù do Nhà nước công bố TỪNG NĂM (BLLĐ 2019 Điều 112). Đoán
+-- sai một ngày là cả lớp vào phòng học trống, nên ngày ấy phải do người đọc
+-- thông báo chính thức nhập vào.
+--
+-- `on_date` chứ không `day`: `day` là từ khoá của Postgres, dùng được làm tên
+-- cột nhưng mỗi câu truy vấn viết tay sau này đều phải nhớ nó.
+CREATE TABLE IF NOT EXISTS term_holidays (
+    id         SERIAL    PRIMARY KEY,
+    term_id    INTEGER   NOT NULL REFERENCES terms(id) ON DELETE CASCADE,
+    on_date    DATE      NOT NULL,
+    name       TEXT      NOT NULL,
+    created_by INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+-- Một ngày chỉ khai một lần trong một đợt: khai hai lần là hai dòng trong màn
+-- hình và một câu hỏi "cái nào đúng" không ai trả lời được.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_term_holidays_term_day ON term_holidays (term_id, on_date);
+-- Mọi khoá ngoại có chỉ mục (§43).
+CREATE INDEX IF NOT EXISTS idx_term_holidays_created_by ON term_holidays (created_by);

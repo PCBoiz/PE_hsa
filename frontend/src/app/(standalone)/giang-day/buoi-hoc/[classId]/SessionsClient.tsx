@@ -17,6 +17,8 @@ import {
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
+import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
+
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
  *   · thân REQUEST đọc snake_case (`starts_at`, `duration_minutes`, `user_id`)
@@ -46,6 +48,11 @@ export type SessionRow = {
    * cả lớp đi đủ, hay giảng viên chưa tick. Trên màn hình chúng trông y hệt.
    */
   attendanceTakenAt?: string | null;
+  /**
+   * Buổi đã tới giờ chưa — máy chủ tính (`_session_dict`). Vắng (API cũ) thì coi
+   * như đã diễn ra, tức đúng cách màn hình này hiện trước 13/09/2026.
+   */
+  started?: boolean;
   attendance?: {
     present: number;
     late: number;
@@ -112,12 +119,15 @@ export default function SessionsClient({
   classId,
   className,
   initial,
+  goiYSinh,
 }: {
   classId: number;
   className: string;
   initial: SessionRow[];
+  goiYSinh: GoiYSinh | null;
 }) {
   const [sessions, setSessions] = useState<SessionRow[]>(initial);
+  const [xemHetSapToi, setXemHetSapToi] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
   const [suaId, setSuaId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -171,6 +181,26 @@ export default function SessionsClient({
     }
   }
 
+  /* HAI nhóm, không một danh sách `starts_at DESC` như trước 13/09/2026.
+     Sinh lịch cả kỳ để sẵn hàng chục buổi tương lai; xếp chung một cột mới-nhất-
+     trên-cùng thì buổi tối nay nằm SAU 20 buổi chưa tới, và mỗi buổi chưa tới
+     mang chip vàng "Chưa mở sổ điểm danh" — một bảng toàn cảnh báo giả.
+     Sắp tới: gần nhất trước, chỉ hiện 3 — việc của tối nay và tuần này. */
+  const SO_SAP_TOI_HIEN = 3;
+  const sapToi = sessions
+    .filter((s) => s.started === false)
+    .sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''));
+  const daQua = sessions.filter((s) => s.started !== false);
+  const nhom = [
+    {
+      ten: 'Sắp tới',
+      sapToi: true,
+      ds: sapToi,
+      hien: xemHetSapToi ? sapToi : sapToi.slice(0, SO_SAP_TOI_HIEN),
+    },
+    { ten: 'Đã diễn ra', sapToi: false, ds: daQua, hien: daQua },
+  ].filter((n) => n.ds.length > 0);
+
   return (
     // ToastProvider bọc cả màn hình vì lời xác nhận PHẢI nằm trong khung nhìn.
     // Đo ở 390×844: nút "Lưu điểm danh" ở top=764px còn chữ "Chưa lưu" — thứ
@@ -181,6 +211,7 @@ export default function SessionsClient({
     <ToastProvider>
     <div className="flex flex-col gap-5">
       <NewSession classId={classId} onDone={() => void reload()} onError={setErr} />
+      {goiYSinh && <SinhBuoi classId={classId} data={goiYSinh} onDone={() => void reload()} />}
 
       {err && (
         <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-small text-danger-ink">
@@ -246,8 +277,14 @@ export default function SessionsClient({
             hint="Tạo buổi đầu tiên ở ô phía trên. Có buổi thì mới điểm danh được, và số buổi đi học mới vào được đường cong tiến bộ của từng em."
           />
         ) : (
+          <div className="flex flex-col gap-5">
+            {nhom.map((n) => (
+            <section key={n.ten} aria-label={n.ten} className="flex flex-col gap-2">
+            <h3 className="text-label text-ink-3">
+              {n.ten} ({n.ds.length})
+            </h3>
           <ul className="flex flex-col gap-2">
-            {sessions.map((s) => {
+            {n.hien.map((s) => {
               const c = s.attendance;
               return (
                 <li key={s.id}>
@@ -269,7 +306,11 @@ export default function SessionsClient({
                           liệt kê con số: "0 vắng, 0 muộn" của một buổi chưa mở
                           sổ trông y hệt một buổi cả lớp đi đủ, mà đó là hai
                           chuyện khác hẳn nhau — một cái là việc chưa làm. */}
-                      {!s.attendanceTakenAt ? (
+                      {s.status === 'cancelled' ? (
+                        <Chip tone="bad">Đã huỷ</Chip>
+                      ) : n.sapToi ? (
+                        <Chip>Sắp tới</Chip>
+                      ) : !s.attendanceTakenAt ? (
                         <Chip tone="warn">Chưa mở sổ điểm danh</Chip>
                       ) : (
                         c && (
@@ -335,6 +376,16 @@ export default function SessionsClient({
               );
             })}
           </ul>
+            {n.sapToi && n.ds.length > SO_SAP_TOI_HIEN && (
+              <div>
+                <Button size="sm" variant="ghost" onClick={() => setXemHetSapToi((v) => !v)}>
+                  {xemHetSapToi ? 'Thu gọn buổi sắp tới' : `Xem cả ${n.ds.length} buổi sắp tới`}
+                </Button>
+              </div>
+            )}
+            </section>
+            ))}
+          </div>
         )}
       </Card>
     </div>

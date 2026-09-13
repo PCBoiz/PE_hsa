@@ -47,6 +47,7 @@ const VIEC: Record<string, string> = {
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',
   'session.delete': 'Xoá buổi học',
+  'session.generate': 'Sinh buổi học hàng loạt',
   'attendance.mark': 'Điểm danh',
   // Nhóm `term.*` thêm 31/08/2026 cùng tính năng đợt học. Đây đúng là cách
   // bảng nhãn này trôi khỏi backend: thêm hành động mới ở `common/audit.py` mà
@@ -55,6 +56,8 @@ const VIEC: Record<string, string> = {
   'term.create': 'Tạo đợt học',
   'term.update': 'Sửa đợt học',
   'term.delete': 'Xoá đợt học',
+  'term.holiday.add': 'Khai ngày nghỉ của đợt',
+  'term.holiday.delete': 'Xoá ngày nghỉ của đợt',
   // Bốn nhóm dưới đây thêm ở backend từ 31/08 tới 04/09 và lọt ra màn hình
   // dưới dạng mã máy suốt hai tuần — dù chú thích ngay trên đã dặn. Lời dặn
   // nằm ở tệp mà người thêm hằng số không mở; nay `e2e/unit/nhan-nhat-ky`

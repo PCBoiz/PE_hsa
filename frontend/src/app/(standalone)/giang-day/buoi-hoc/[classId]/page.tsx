@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { serverJson } from '@/lib/server-api';
 
 import SessionsClient, { type SessionRow } from './SessionsClient';
+import type { GoiYSinh } from './SinhBuoi';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Buổi học & điểm danh | TopHSA' };
@@ -29,11 +30,15 @@ export default async function BuoiHocPage({
   params: Promise<{ classId: string }>;
 }) {
   const { classId } = await params;
-  const [detail, list] = await Promise.all([
+  const [detail, list, sinh] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
     serverJson<{ sessions: SessionRow[] }>(`/api/teach/classes/${classId}/sessions`, {
       requireAuth: true,
     }),
+    // Gợi ý sinh lịch cả kỳ lấy Ở ĐÂY, cùng lượt dựng trang: nó mang cờ
+    // `coTheSinh`, và biết cờ ấy trước khi vẽ thì trợ giảng không bao giờ thấy
+    // một nút bấm vào mới báo không được phép.
+    serverJson<GoiYSinh>(`/api/teach/classes/${classId}/sessions/generate`, { requireAuth: true }),
   ]);
 
   // 404 = lớp không tồn tại HOẶC không phụ trách lớp đó — backend cố ý trả cùng
@@ -85,6 +90,7 @@ export default async function BuoiHocPage({
           classId={Number(classId)}
           className={klass.name}
           initial={list.ok ? list.data.sessions : []}
+          goiYSinh={sinh.ok ? sinh.data : null}
         />
       </main>
     </div>

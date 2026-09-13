@@ -85,6 +85,20 @@ def _em(l, uid):
 
 
 @pytest.mark.django_db
+def test_buoi_chua_toi_khong_tinh_la_buoi_da_mo(canh):
+    """Từ 13/09/2026 giảng viên sinh lịch cả kỳ một lần — hàng chục buổi
+    `planned` nằm sẵn ở tương lai. Đếm chúng là "đã mở" thì ngay hôm sinh lịch,
+    `buoiTrongKy` của mỗi em nhảy lên gấp mấy lần số buổi thật, và ai thu theo
+    thời gian sẽ thu trước tiền cả khoá. Đếm riêng để người đọc vẫn thấy lịch."""
+    q1("INSERT INTO class_sessions (class_id, starts_at, duration_minutes, status) "
+       "VALUES (%s, %s, 90, 'planned') RETURNING id", (canh['lop'], local_now() + timedelta(days=7)))
+    l = _lop(_goi(canh['qt']), canh['lop'])
+    assert l['buoiDaMo'] == 3, l
+    assert l['buoiSapToi'] == 1, l
+    assert _em(l, canh['som'].id)['buoiTrongKy'] == 3, _em(l, canh['som'].id)
+
+
+@pytest.mark.django_db
 def test_em_vao_giua_chung_khong_bi_tinh_du_ca_khoa(canh):
     """Lỗi thu thừa dễ mắc nhất: gán số buổi của LỚP cho mọi em."""
     l = _lop(_goi(canh['qt']), canh['lop'])

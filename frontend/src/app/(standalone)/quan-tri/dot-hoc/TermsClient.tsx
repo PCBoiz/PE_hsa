@@ -17,6 +17,8 @@ import {
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
+import NgayNghiDot from './NgayNghiDot';
+
 export type TermRow = {
   id: number;
   code: string | null;
@@ -66,6 +68,9 @@ export default function TermsClient({
   const [err, setErr] = useState<string | null>(loi);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Đợt đang mở khối "Ngày nghỉ" (§46). Một đợt một lúc — hai khối cạnh nhau
+   *  là hai danh sách ngày dễ nhìn nhầm của đợt này sang đợt kia. */
+  const [nghiId, setNghiId] = useState<number | null>(null);
 
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -191,6 +196,7 @@ export default function TermsClient({
   );
 
   return (
+    <div className="flex flex-col gap-5">
     <Card>
       <CardHead
         title="Đợt học"
@@ -296,6 +302,14 @@ export default function TermsClient({
                     <Chip tone={TRANG_THAI[t.status]?.tone ?? 'neutral'}>
                       {TRANG_THAI[t.status]?.nhan ?? t.status}
                     </Chip>
+                    <Button
+                      size="sm"
+                      variant={nghiId === t.id ? 'primary' : 'ghost'}
+                      aria-expanded={nghiId === t.id}
+                      onClick={() => setNghiId(nghiId === t.id ? null : t.id)}
+                    >
+                      Ngày nghỉ
+                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => void xoa(t)}>
                       Xoá
                     </Button>
@@ -307,5 +321,9 @@ export default function TermsClient({
         </TableWrap>
       )}
     </Card>
+    {/* `key` theo đợt: đổi sang đợt khác là dựng lại khối từ đầu, không mang
+        theo ô ngày đang gõ dở của đợt trước. */}
+    {nghiId !== null && <NgayNghiDot key={nghiId} termId={nghiId} onClose={() => setNghiId(null)} />}
+    </div>
   );
 }
