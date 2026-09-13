@@ -57,6 +57,53 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 12 · Nạp trước dữ liệu Trang của tôi, và con số LCP cũ hoá ra là ảo
+
+**Việc anh duyệt:** "cho tầng JS cũ chạy sớm". Đo trước: chuỗi khởi động là
+chunk React xong 0,26 s → FCP 0,5 s → **dàn trang 0,69 s + 0,23 s** (dựng chữ
+1.900 nút) → React hydrate 1,6 s → `LegacyScripts` chèn 7 tệp JS cũ 2,2 s →
+**lời gọi API đầu tiên 2,2 s** → thẻ "Học tiếp" 2,7 s. Hai giây đầu **mạng ngồi
+không** trong khi luồng chính bận.
+
+**Làm nửa AN TOÀN, và chỉ nửa ấy.** `NapTruocDuLieu` là một script nội tuyến
+trong HTML máy chủ trả về: bắn sẵn ba lượt GET (`hsa/summary`,
+`courses-enrolled`, `lop-cua-toi`), cất lời hứa vào `window.__napTruoc`;
+`main.js::__apiGet` lấy lời hứa ấy trước khi fetch (nên mọi nơi gọi qua nó đều
+hưởng), `LopCuaToi` (React) đọc thẳng. **API đầu tiên: 2,2 s → 0,3 s.** Thẻ
+"Học tiếp" nay hiện NGAY khi tầng cũ chạy xong (2,19 s / 2,31 s), tức đã hết
+phần chờ mạng — phần còn lại là chờ hydrate.
+
+**Nửa còn lại thì KHÔNG làm, và đây là lý do.** Cho bảy tệp JS cũ chạy trước
+lúc hydrate là đưa cho React một cái cây khác cái nó dựng: `mountIcons` đổ SVG
+vào mọi `[data-icon]`, `main.js` điền tên người dùng — React sẽ dựng lại nhánh
+lệch và xoá sạch. Tệ hơn là nó KHÔNG xoá đều: `main.js` ghi sau một lượt fetch,
+nên có lượt kịp trước hydrate, có lượt không. Một lỗi ngẫu nhiên tệ hơn một
+trang chậm. Ghi rõ trong `NapTruocDuLieu` để người sau khỏi thử lại.
+Hai chỗ giữ nguyên có chủ đích: `loadUser` vẫn `fetch` + `handleFetch` (đường
+DUY NHẤT biết 401 để đá về `/login`; `__apiGet` nuốt lỗi thành `null`), nên
+`/api/user` không nằm trong danh sách nạp trước; `__refreshHsaTiles` cũng fetch
+thẳng vì nó chạy SAU khi em vừa sửa mục tiêu.
+
+**Phát hiện đáng giá hơn cả phần tối ưu: những lượt "nhanh" trước đây là ảo.**
+Sau khi nạp trước, LCP Trang của tôi **ổn định 2.408–2.608 ms** (trung vị
+2.464 / 2.484) thay vì nhảy 648–4.696 ms. Vì sao "ổn định" lại CAO hơn: phần tử
+LCP thật là thẻ "Học tiếp"; trước đây ở những lượt máy chủ trả chậm, thẻ ấy
+chưa kịp vẽ trước lúc thước đọc, nên LCP ghi nhận… dòng chữ thương hiệu 3.895
+px² và in ra 648 ms. Tức bảng cũ khen nhầm đúng những lượt xấu nhất. Cột `DOM`
+cũng vậy: 1.074 → **2.114** (ghi chú 07/09 trong `do_hieu_nang.mjs` đã ngờ đúng
+điều này và để lại "CHƯA vá"; nay tự đúng lại, và ngưỡng 1.500 nổ lần đầu).
+
+**Còn lại, chưa làm:** LCP 2,46 s nay sát ngưỡng 2,5 s và bị chặn bởi mốc
+hydrate (1,6 s) — mà hydrate lâu vì trang dựng sẵn CẢ CHÍN "trang" của SPA cũ
+(2.114 nút, tám trang `display:none`). Đường ra là dựng lười từng trang, hoặc
+đưa thẻ "Học tiếp" sang React dựng ở máy chủ. Cả hai thuộc việc "dọn tầng cũ"
+anh đã duyệt — làm ở vòng sau, không chen ngang.
+
+**Cổng chất lượng:** eslint · tsc · 24/24 unit · 22 trang × 2 khổ = 0/0/0/0 ·
+15 trang rà bằng trình duyệt đều sạch; pytest trọn bộ 537/537 sau khi vá hai
+phép kiểm ở vòng 11b. Dữ liệu thử đã dọn: links 0, assignments 0, users 5,
+classes 1, sessions 16 — đúng mốc đầu phiên.
+
 ## 14/09/2026 — VÒNG 11b · Hai phép kiểm mới xanh khi chạy riêng, ĐỎ trong cả bộ
 
 Chạy trọn `pytest`: **535 đạt, 2 đỏ** — đúng hai phép kiểm nhật ký link phụ

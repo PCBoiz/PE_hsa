@@ -11,6 +11,7 @@ import Chatbot from '@/components/Chatbot';
 import KhoaLienHePhuHuynh from '@/components/KhoaLienHePhuHuynh';
 import LopCuaToi from '@/components/LopCuaToi';
 import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
+import NapTruocDuLieu from '@/components/NapTruocDuLieu';
 import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
 import AppShell from '@/components/AppShell';
@@ -41,6 +42,10 @@ export default function DashboardPage() {
           759ms, FCP 2184ms). Xem `NapTruocScript.tsx`.
           CÙNG một mảng `SCRIPTS` cho cả hai; hai mảng chép tay sẽ trôi. */}
       <NapTruocScript srcs={[CAU_NOI, ...SCRIPTS]} />
+      {/* Bắn sẵn ba lượt GET dựng nội dung trên màn hình đầu. Tầng cũ chỉ chạy
+          sau khi React hydrate (2,2 s trên máy CPU chậm 4×) — không có dòng
+          này thì hai giây ấy mạng ngồi không. Xem `NapTruocDuLieu`. */}
+      <NapTruocDuLieu />
       <title>ProgrammingEdu × TopHSA</title>
       {/* Khung chung — CÙNG component với màn khoá học và màn thi thử.
           `spa`: trang này có main.js nên điều hướng bằng `navigate()`.

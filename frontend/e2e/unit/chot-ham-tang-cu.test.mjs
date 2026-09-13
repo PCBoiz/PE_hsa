@@ -81,7 +81,10 @@ const TRAN_TEP = 13;
 // Trang của tôi lên 4,7 s). `icons.js` +7 hình (bot, trash-2, lightbulb,
 // triangle-alert, square-pen, paperclip, arrow-up); `chatbot.js` +4 dòng nhân
 // bản SVG từ ô ẩn của `Chatbot.tsx` thay cho `<i class="fa-…">`.
-const TRAN_DONG_MA = 7354;
+// 14/09/2026: 7354 → 7359 (+5). VÁ LỖI hiệu năng trong tệp đã có: `__apiGet`
+// nhận lời hứa do HTML máy chủ bắn sẵn (`NapTruocDuLieu`), vì tầng này chỉ
+// chạy sau khi React hydrate — đo được 2,2 s mạng ngồi không mỗi lượt mở.
+const TRAN_DONG_MA = 7359;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -2811,6 +2811,9 @@ var _forumTextQ = '';
   /* Nạp lại riêng hàng thẻ — gọi sau khi học viên sửa mục tiêu ở Cài đặt. */
   window.__refreshHsaTiles = function () {
     if (!el('tile-streak')) return;
+    // `fetch` thẳng, KHÔNG qua `__apiGet`: đây là lượt gọi SAU KHI em vừa sửa
+    // mục tiêu ở Cài đặt — lấy lại bản nạp trước lúc mở trang là hiện đúng
+    // con số vừa bị thay.
     fetch('/api/hsa/summary')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
@@ -2819,8 +2822,9 @@ var _forumTextQ = '';
 
   function initHsaDashboard() {
     if (!el('tile-streak')) return;   // không phải trang dashboard
-    fetch('/api/hsa/summary')
-      .then(function (r) { return r.ok ? r.json() : null; })
+    // `__apiGet` chứ không `fetch`: lượt này đã được bắn sẵn từ HTML
+    // (`NapTruocDuLieu`), và tầng này chỉ chạy sau khi React hydrate.
+    window.__apiGet('/api/hsa/summary')
       .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
       .catch(function () { /* thẻ giữ giá trị mặc định */ });
     // Dùng chung lượt gọi với main.js — trước đây mỗi bên tự fetch nên

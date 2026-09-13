@@ -77,8 +77,14 @@ export default function LopCuaToi() {
 
   useEffect(() => {
     let huy = false;
-    fetch('/api/lop-cua-toi', { credentials: 'same-origin' })
-      .then(async (r) => (r.ok ? ((await r.json()) as DuLieu) : null))
+    // Lượt GET này đã được bắn sẵn từ HTML máy chủ trả về (`NapTruocDuLieu`),
+    // trước cả khi React hydrate — lấy lại lời hứa ấy chứ không gọi lần hai.
+    // Lấy MỘT lần rồi xoá, để lượt điều hướng sau đọc dữ liệu mới.
+    const san = (window as unknown as { __napTruoc?: Record<string, Promise<DuLieu | null>> }).__napTruoc;
+    const nguon = san?.['/api/lop-cua-toi'];
+    if (nguon) delete san['/api/lop-cua-toi'];
+    (nguon ?? fetch('/api/lop-cua-toi', { credentials: 'same-origin' })
+      .then(async (r) => (r.ok ? ((await r.json()) as DuLieu) : null)))
       .then((kq) => { if (!huy && kq) setD(kq); })
       .catch(() => { /* khối phụ: thiếu nó thì bảng điều khiển vẫn dùng được */ });
     return () => { huy = true; };

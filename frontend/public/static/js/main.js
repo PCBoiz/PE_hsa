@@ -1611,6 +1611,10 @@ function changePassword() {
 
 /* ── API loaders ── */
 function loadUser() {
+  // `fetch` + `handleFetch` chứ KHÔNG `__apiGet`: chỉ đường này biết đá người
+  // dùng về `/login` khi máy chủ trả 401. `__apiGet` nuốt mọi mã lỗi thành
+  // `null`, nên đổi sang nó là phiên hết hạn mà trang cứ đứng im — vì thế
+  // `/api/user` cũng KHÔNG nằm trong danh sách nạp trước.
   fetch(API + "/user")
     .then(handleFetch)
     .then(function (u) {
@@ -1895,6 +1899,17 @@ window.__apiGet = function (url, ttlMs) {
   var hit = _getCache[url];
   var now = Date.now();
   if (hit && (hit.inflight || now - hit.at < ttl)) return hit.p;
+  /* Lượt GET đã được bắn sẵn từ HTML máy chủ trả về (`NapTruocDuLieu`) —
+     dùng lại lời hứa ấy thay vì gọi lần hai. Tầng cũ chỉ chạy sau khi React
+     hydrate (đo 14/09: 2,2 s), nên đây là hai giây mạng ngồi không mà mình
+     lấy lại được. Lấy MỘT LẦN rồi xoá: lượt sau là dữ liệu mới, không phải
+     ảnh chụp lúc mở trang. */
+  var san = window.__napTruoc && window.__napTruoc[url];
+  if (san) {
+    delete window.__napTruoc[url];
+    _getCache[url] = { at: now, inflight: false, p: san };
+    return san;
+  }
   var entry = { at: now, inflight: true };
   entry.p = fetch(url)
     .then(function (r) { return r.ok ? r.json() : null; })

@@ -26,6 +26,19 @@
  *
  *     màn hình               LCP      CLS    JS(kB)   DOM
  *     Trang của tôi        2740ms        0      329   1030    ← VƯỢT ngưỡng
+ *
+ * ── SỐ ĐO 14/09/2026 (sau khi tệp này biết làm nóng + lấy trung vị) ───────
+ *
+ *     Trang của tôi        2464ms    0.007      432   2114   (2408/2464/2596)
+ *     Thi thử              1580ms    0.002      271    280
+ *     Vận hành             1880ms    0.006      222    260
+ *     Báo cáo phụ huynh     992ms        0      222    213
+ *     Ai làm được gì        992ms        0      222    976
+ *     Hướng dẫn            1056ms        0      222    390
+ *
+ * "Trang của tôi" nay ỔN ĐỊNH quanh 2,4–2,6 s thay vì nhảy 0,6–4,7 s, và con
+ * số ấy TRUNG THỰC hơn mọi số cũ: trước 14/09, những lượt "nhanh" chỉ nhanh vì
+ * thẻ "Học tiếp" (phần tử LCP thật) chưa kịp vẽ trước lúc đọc.
  *     Thi thử              1612ms    0.002      237    244
  *     Vận hành             1956ms    0.005      222    248
  *     Báo cáo phụ huynh    1168ms        0      222    187
@@ -42,12 +55,16 @@
  * và in ra một bảng đẹp hơn sự thật. Giữ lại dòng này để số cũ nếu còn nằm
  * trong ghi chép nào đó thì tra ra được ngay là nó hỏng ở đâu.
  *
- * CẢNH BÁO VỀ CỘT `DOM` (đo 07/09): cột này đọc `querySelectorAll('*')` sau
- * `networkidle` + 1200ms. Trên "Trang của tôi" trang lúc ấy CHƯA dựng xong —
- * cột báo 1030 nút, còn trang thật đứng lại ở 1922 (DOM tăng gấp đôi trong
- * quãng 2,5s → 4s, tức sau cả mốc LCP). Nên ngưỡng `> 1500` bên dưới chưa bao
- * giờ nổ dù trang thật vượt. Cùng họ với bẫy `/login`: im lặng cho số đẹp hơn
- * sự thật. CHƯA vá — vá là đổi ngữ nghĩa cột, phải đo lại cả sáu màn.
+ * CỘT `DOM` — ĐÃ TỰ ĐÚNG LẠI (14/09/2026). Cột này đọc `querySelectorAll('*')`
+ * sau `networkidle` + 1200ms, và ghi chú 07/09 ở đây nói đúng rằng nó báo 1030
+ * nút trong khi trang thật đứng lại ở 1922: lúc chụp, trang CHƯA dựng xong.
+ * Từ khi `NapTruocDuLieu` bắn sẵn ba lượt GET (14/09), nội dung kịp về trước
+ * mốc chụp và cột báo 2114 — con số thật, và nó VƯỢT ngưỡng 1500. Tức cảnh báo
+ * "2114 nút DOM" hiện ra bây giờ KHÔNG phải hồi quy: nó là thứ ngưỡng ấy lẽ ra
+ * phải nói từ 07/09. Nguồn: trang này dựng sẵn CẢ CHÍN "trang" của SPA cũ
+ * (dashboard, khoá học, lộ trình, kỹ năng, diễn đàn, cài đặt, hồ sơ…) trong
+ * một lượt, tám trong số đó `display:none`. Dựng lười từng trang là việc lớn
+ * của tầng cũ — ghi ở TODO, không vá chen ngang.
  *
  * Vì sao riêng màn ấy: DOM lớn nhất trong sáu màn và
  * nó là màn DUY NHẤT còn nạp cả tầng JS cũ (main.js + dashboard.js +
