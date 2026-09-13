@@ -35,6 +35,11 @@ from common.permissions import (
 pytestmark = pytest.mark.django_db
 
 
+def _dem_nk(ai):
+    """Số dòng nhật ký do CHÍNH tài khoản này ghi — xem chú thích ở nơi gọi."""
+    return q1('SELECT COUNT(*) AS n FROM admin_audit WHERE actor_id=%s', (ai.id,))['n']
+
+
 def _nguoi(ten, vai, email=None, phone=None, **cot):
     khoa = ''.join(', ' + k for k in cot)
     cho = ''.join(', %s' for _ in cot)
@@ -115,7 +120,12 @@ def test_chi_giang_vien_hoc_vu_quan_tri_cua_lop_duoc_dan(lop):
 # ── 2. Xem trước không ghi gì ───────────────────────────────────────────────
 
 def test_xem_truoc_khong_ghi_gi_ca_nhat_ky(lop):
-    truoc_nk = q1('SELECT COUNT(*) AS n FROM admin_audit')['n']
+    # ĐẾM RIÊNG DÒNG CỦA GIẢNG VIÊN NÀY. `admin_audit` là bảng THẬT dùng chung
+    # với production: đếm tổng thì bất kỳ ai thao tác trên hệ thống trong lúc bộ
+    # kiểm chạy cũng làm nó đỏ — đã xảy ra 14/09/2026 (bộ đầy đủ chạy 38 phút,
+    # tôi rà giao diện song song, một dòng thật chen vào giữa hai lượt đếm).
+    # Tài khoản `lop['gv']` do chính phép kiểm dựng trong giao dịch của nó.
+    truoc_nk = _dem_nk(lop['gv'])
     r = _dan(lop['gv'], lop['id'],
              'an_lhph@example.com, Mẹ An Mới, 0900555801, me.an@example.com', dry_run=True)
     assert r.status_code == 200, r.json()
@@ -124,7 +134,7 @@ def test_xem_truoc_khong_ghi_gi_ca_nhat_ky(lop):
     assert d['dem']['doi'] == 1, d
     assert _ph(lop['an']) == {'parent_name': 'Mẹ An cũ', 'parent_phone': '0900555901',
                               'parent_email': ''}
-    assert q1('SELECT COUNT(*) AS n FROM admin_audit')['n'] == truoc_nk
+    assert _dem_nk(lop['gv']) == truoc_nk
     assert q1('SELECT parent_contact_locked_at AS k FROM users WHERE id=%s',
               (lop['an'].id,))['k'] is None, 'xem trước mà đã khoá'
 
@@ -147,7 +157,8 @@ def test_luu_ghi_dung_giu_o_trong_va_nhat_ky_giu_gia_tri_cu(lop):
     assert khoa['parent_contact_locked_by'] == lop['gv'].id
 
     nk = q1("SELECT target_type, target_id, detail FROM admin_audit "
-            "WHERE action='class.parent_contacts' ORDER BY id DESC LIMIT 1")
+            "WHERE action='class.parent_contacts' AND actor_id=%s "
+            "ORDER BY id DESC LIMIT 1", (lop['gv'].id,))
     assert nk is not None, 'lưu liên hệ phụ huynh mà nhật ký kiểm toán không có dòng nào'
     assert (nk['target_type'], nk['target_id']) == ('class', str(lop['id']))
     # Con trỏ thô của Django trả cột jsonb dưới dạng CHUỖI, không phải dict.
@@ -233,9 +244,9 @@ def test_hai_o_chu_khong_ro_o_nao_la_ten_phu_huynh(lop):
 
 
 def test_trung_voi_gia_tri_dang_luu_thi_khong_ghi_khong_nhat_ky(lop):
-    truoc_nk = q1('SELECT COUNT(*) AS n FROM admin_audit')['n']
+    truoc_nk = _dem_nk(lop['gv'])   # đếm riêng dòng của giảng viên này — xem trên
     r = _dan(lop['gv'], lop['id'], 'an_lhph@example.com, Mẹ An cũ, 0900555901')
     assert r.status_code == 200, r.json()
     assert _theo_dong(r)[1]['trangThai'] == 'giu'
     assert r.json()['dem']['doi'] == 0
-    assert q1('SELECT COUNT(*) AS n FROM admin_audit')['n'] == truoc_nk
+    assert _dem_nk(lop['gv']) == truoc_nk

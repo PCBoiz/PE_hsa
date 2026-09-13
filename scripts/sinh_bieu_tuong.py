@@ -49,6 +49,12 @@ CAN = [
     # thì `BieuTuong` trả `null` — ô trống, không lỗi — đúng lỗi 07/09 ở dạng
     # khác. Kịch bản rà trình duyệt đếm `svg` từng ô mới thấy.
     'x', 'bot', 'trash-2', 'lightbulb', 'triangle-alert', 'square-pen', 'paperclip', 'arrow-up',
+    # Khối "Lớp của bạn" và thẻ "Học tiếp" (14/09/2026) nay dựng Ở MÁY CHỦ và
+    # chảy tới sau, nên `icons.js::mountIcons` (chạy lúc DOMContentLoaded) kịp
+    # nhét SVG vào ô `[data-icon]` TRƯỚC khi React hydrate nhánh ấy — React báo
+    # "hydration failed" và dựng lại cả nhánh. Vẽ bằng `BieuTuong` thì không có
+    # ô trống nào cho tầng cũ điền, nên hai tầng không giẫm lên nhau.
+    'compass',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════

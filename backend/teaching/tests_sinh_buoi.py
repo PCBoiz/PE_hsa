@@ -89,8 +89,11 @@ def _so_buoi(class_id):
     return q1('SELECT COUNT(*) AS n FROM class_sessions WHERE class_id=%s', (class_id,))['n']
 
 
-def _so_nhat_ky():
-    return q1('SELECT COUNT(*) AS n FROM admin_audit')['n']
+def _so_nhat_ky(ai):
+    # Đếm RIÊNG dòng của tài khoản do phép kiểm dựng. `admin_audit` dùng chung
+    # với production; đếm tổng thì ai thao tác trên hệ thống trong lúc bộ kiểm
+    # chạy cũng làm phép so bằng đỏ (xảy ra 14/09/2026 ở tests_lien_he_phu_huynh).
+    return q1('SELECT COUNT(*) AS n FROM admin_audit WHERE actor_id=%s', (ai.id,))['n']
 
 
 def _ngay(*cach_thu_hai):
@@ -127,7 +130,7 @@ def test_tro_giang_mo_duoc_goi_y_va_duoc_bao_truoc_la_khong_sinh_duoc(lop):
 # ── 2. Xem trước không ghi gì ───────────────────────────────────────────────
 
 def test_xem_truoc_khong_ghi_gi(lop):
-    truoc, truoc_nk = _so_buoi(lop['id']), _so_nhat_ky()
+    truoc, truoc_nk = _so_buoi(lop['id']), _so_nhat_ky(lop['gv'])
     r = _sinh(lop['gv'], lop['id'], dry_run=True)
     assert r.status_code == 200, r.json()
     d = r.json()
@@ -135,7 +138,7 @@ def test_xem_truoc_khong_ghi_gi(lop):
     assert d['dem']['tao'] == 4, d['dem']
     assert [b['ngay'] for b in d['buoi'] if b['trangThai'] == 'tao'] == _ngay(1, 3, 8, 10)
     assert _so_buoi(lop['id']) == truoc
-    assert _so_nhat_ky() == truoc_nk
+    assert _so_nhat_ky(lop['gv']) == truoc_nk
 
 
 # ── Sinh thật ───────────────────────────────────────────────────────────────

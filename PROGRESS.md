@@ -57,6 +57,55 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 15 · Dọn tầng cũ: hai khối đầu Trang của tôi dựng ở máy chủ
+
+**Việc:** "Dọn tiếp tầng JS cũ" — bắt đầu từ chỗ đau nhất: thẻ **"Học tiếp"**
+(phần tử LCP, do `dashboard.js::renderContinue` vẽ sau hydrate ở 2,2–2,5 s) và
+khối **"Lớp của bạn"** (React nhưng tự gọi API ở trình duyệt, cao 333 px, nằm
+trên thẻ kia nên khi hiện ra thì đẩy cả cột xuống).
+
+**Cách đi:** `dashboard/page.tsx` thành vỏ MÁY CHỦ mỏng; thân client cũ đổi
+tên `DashboardClient.tsx` và nhận hai khối như hai prop `ReactNode`. `HocTiep`
+(server) gọi song song `hsa/summary` + `courses-enrolled` có hình dạng, chọn
+bài theo ĐÚNG luật cũ (đếm thật từ `byCourse`, khoá dở dang nhiều nhất); khối
+rỗng "Bắt đầu hành trình HSA" tách thành `HocTiepRong` (client, vì nút chuyển
+tab bằng `navigate('courses')` của SPA cũ). `LopCuaToiNguon` (server) lấy dữ
+liệu có hình dạng rồi đưa xuống `LopCuaToi` qua prop — khối này thôi tự fetch.
+`renderContinue` xoá khỏi `dashboard.js`; trần tầng cũ **hạ 7385 → 7355** (−30)
+theo đúng luật "dời được thì hạ". `/api/lop-cua-toi` rời danh sách nạp trước.
+
+**Ba lần đo, ba lần sửa hướng — ghi cả ba vì mỗi lần đều là một bài học:**
+1. Không `Suspense` → trang chờ hai lượt API mới gửi byte đầu: LCP **4,28 s**
+   (từ 2,46). Tối ưu thành phản tác dụng; chỉ thấy vì đo lại.
+2. `Suspense` cho cả hai → LCP 1,90 s nhưng **CLS 0,184** (ngưỡng 0,1): khối
+   "Lớp của bạn" chảy tới muộn đẩy cột. Bản TRƯỚC vòng này đo lại: CLS 0,058 —
+   tức khối ấy vốn đã nhảy, chỉ là chưa ai đo đúng lúc.
+3. Chờ hẳn "Lớp của bạn" ở máy chủ → CLS 0,011 nhưng LCP **4,59 s** (endpoint
+   1,45 s). Kết: `Suspense` + khung chờ `LopCuaToiKhung` dựng bằng CÙNG class,
+   cùng số dòng — chiều cao tự khớp ở mọi khổ (333/333 máy tính, 465/465 điện
+   thoại, đo từng px) mà không đóng cứng một con số.
+
+**Lỗi hydrate do chính việc chảy sinh ra:** React #418 trên `/dashboard`. Nhánh
+Suspense tới SAU khi tầng cũ chạy, nên `icons.js::mountIcons` kịp nhét SVG vào
+ô `[data-icon]` trước khi React hydrate nhánh ấy → DOM lệch, React dựng lại cả
+nhánh. Đúng cơ chế tôi đã đoán ở vòng 12 ("cho tầng cũ chạy sớm là React xoá
+lại"), nay thấy bằng mắt qua `next dev`. Sửa: hai khối ấy vẽ biểu tượng bằng
+`BieuTuong` (React) — không còn ô trống cho tầng cũ điền; `compass` vào danh
+sách sinh. Sau đó: 0 lỗi JS ở cả 22 trang × 2 khổ.
+
+**Kết quả (3 lượt trung vị, CPU 4×):** Trang của tôi LCP **2.424 ms**
+(1.740/2.424/2.428), CLS **0,007**, hai khối có mặt ngay trong HTML đầu; phần
+tử LCP nay là dòng thương hiệu (thẻ "Học tiếp" không còn "tới muộn"). Năm màn
+kia đều đạt. Còn 2.111 nút DOM (chín "trang" SPA dựng sẵn) — mốc tiếp theo.
+
+**Kèm, từ bộ kiểm đầy đủ chạy song song với lượt rà:** 1 đỏ
+`tests_lien_he_phu_huynh::test_xem_truoc_khong_ghi_gi_ca_nhat_ky` — đếm TỔNG
+`admin_audit` trước/sau, mà tôi đang bấm nút thật trên cùng CSDL nên một dòng
+thật chen vào giữa. Cùng lỗi 11b, lần thứ ba trong ngày → vá luôn cả
+`tests_sinh_buoi` (cùng kiểu đếm tổng): mọi phép đếm nhật ký nay lọc theo
+`actor_id` của tài khoản do phép kiểm dựng. `ho-so-truong.test.mjs` đổi đường
+đọc sang `DashboardClient.tsx`.
+
 ## 14/09/2026 — VÒNG 14 · T18 mức 2 cho chiều GHI: nút bấm cũng đọc phản hồi
 
 **Vì sao chiều GHI cũng cần hình dạng.** Sáng nay mới phủ các màn ĐỌC. Nhưng

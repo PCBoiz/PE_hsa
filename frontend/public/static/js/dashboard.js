@@ -2695,38 +2695,13 @@ var _forumTextQ = '';
     }).join('');
   }
 
-  function renderContinue(enrolled) {
-    var box = el('hsa-continue');
-    if (!box) return;
-    var counted = (lastSummary && lastSummary.byCourse) || {};
-    // Số bài đã xong của từng khoá, ưu tiên số đếm thật.
-    function doneOf(c) {
-      var sec = SECTIONS.filter(function (s) { return s.id === c.id; })[0];
-      if (counted[c.id] != null) return counted[c.id];
-      return Math.round((c.progress || 0) / 100 * ((sec && sec.total) || 27));
-    }
-    // Khoá đang học dở dang nhất; chưa động vào khoá nào thì lấy khoá đầu tiên.
-    var list = (enrolled || []).slice().sort(function (a, b) { return doneOf(b) - doneOf(a); });
-    var c = list.filter(function (x) {
-      var sec = SECTIONS.filter(function (s) { return s.id === x.id; })[0];
-      return doneOf(x) < ((sec && sec.total) || 27);
-    })[0] || list[0];
-    if (!c) return;   // chưa có khoá nào → giữ nguyên khối rỗng có sẵn
-    var sec = SECTIONS.filter(function (s) { return s.id === c.id; })[0] || { total: 27 };
-    var doneN = doneOf(c);
-    var nextNum = Math.min(sec.total, doneN + 1);
-    var pct = Math.round(doneN / sec.total * 100);
-    box.innerHTML =
-      '<a class="hsa-cont-link" href="/lesson/' + c.id + '?lesson=' + nextNum + '">' +
-        '<span class="hsa-cont-badge">' + nextNum + '</span>' +
-        '<span class="hsa-cont-txt">' +
-          '<span class="hsa-cont-eyebrow">Học tiếp</span>' +
-          '<div class="hsa-cont-title">' + (c.title || 'Khoá học') + ' — Bài ' + nextNum + '</div>' +
-          '<span class="hsa-cont-meta">' + pct + '% hoàn thành · ' + sec.total + ' bài</span>' +
-        '</span>' +
-        '<span class="hsa-cont-go">Vào học →</span>' +
-      '</a>';
-  }
+  /* `renderContinue` ĐÃ CHUYỂN sang React dựng ở máy chủ (14/09/2026):
+     `src/components/HocTiep.tsx`. Thẻ này là phần tử LCP của trang, mà tầng
+     này chỉ chạy sau khi React hydrate — đo được 2,2–2,5 s trên máy CPU chậm
+     4×, trong khi trang đã vẽ xong từ giây 0,5.
+
+     Luật chọn bài (đếm thật từ `byCourse`, khoá dở dang nhiều nhất, `progress`
+     chỉ là đường lùi) được chép NGUYÊN sang đó — đọc ở một chỗ, không hai. */
 
   /* ── Nhiệm vụ hôm nay ──────────────────────────────────────────────────
      Tiến độ tính từ số liệu THẬT trong ngày; nút "Nhận" chỉ sáng khi đã đạt,
@@ -2805,7 +2780,8 @@ var _forumTextQ = '';
 
   /* Vẽ lại phần phụ thuộc CẢ HAI lượt gọi, gọi được nhiều lần vô hại. */
   function renderProgressBlocks() {
-    if (lastEnrolled) { renderSections(lastEnrolled); renderContinue(lastEnrolled); }
+    // Chỉ còn dải tiến độ ba hợp phần; thẻ "Học tiếp" nay do máy chủ dựng.
+    if (lastEnrolled) { renderSections(lastEnrolled); }
   }
 
   /* Nạp lại riêng hàng thẻ — gọi sau khi học viên sửa mục tiêu ở Cài đặt. */

@@ -88,7 +88,10 @@ const TRAN_TEP = 13;
 // ĐÚNG câu của máy chủ. Một em chưa ghi danh mở bài → 403 kèm cách chữa, mà
 // màn hình lại đổ cho "máy chủ không phản hồi" và mời bấm Tải lại. Cùng lỗi
 // đã vá ở đường `/complete` hôm 04/09; đường NẠP bài thì bỏ sót.
-const TRAN_DONG_MA = 7385;
+// 14/09/2026: 7385 → 7355 (-30). HẠ theo đúng luật "dời được thì hạ":
+// `renderContinue` (thẻ "Học tiếp" — phần tử LCP của Trang của tôi) chuyển
+// sang React dựng ở MÁY CHỦ, `src/components/HocTiep.tsx`.
+const TRAN_DONG_MA = 7355;
 
 let failures = 0;
 function check(name, cond, them) {

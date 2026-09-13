@@ -41,9 +41,11 @@ export const NAP_TRUOC = [
   // `/api/user` KHÔNG có ở đây: chỉ `loadUser` đọc nó, mà đường ấy phải giữ
   // `handleFetch` để 401 đá về `/login` — nạp trước là mất chỗ duy nhất biết
   // phiên đã hết hạn.
-  '/api/hsa/summary',     // bốn thẻ số + dải 7 ngày + thẻ "Học tiếp"
-  '/api/courses-enrolled', // thẻ "Học tiếp" + tiến độ ba hợp phần
-  '/api/lop-cua-toi',     // khối "Lớp của bạn" (React)
+  '/api/hsa/summary',      // bốn thẻ số + dải 7 ngày
+  '/api/courses-enrolled', // tiến độ ba hợp phần
+  // `/api/lop-cua-toi` ĐÃ RỜI khỏi đây (14/09/2026): khối "Lớp của bạn" nay
+  // lấy dữ liệu Ở MÁY CHỦ (`LopCuaToiNguon`), nên nạp trước ở trình duyệt là
+  // gọi thừa một lượt — và lượt thừa ấy xếp hàng trước những lượt còn thật.
 ] as const;
 
 export default function NapTruocDuLieu({ urls = NAP_TRUOC }: { urls?: readonly string[] }) {

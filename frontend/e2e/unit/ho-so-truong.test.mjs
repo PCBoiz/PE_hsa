@@ -39,7 +39,11 @@ const GOC = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BE = join(GOC, '..', 'backend');
 
 const doc = (p) => readFileSync(p, 'utf8');
-const TRANG = doc(join(GOC, 'src', 'app', '(base)', 'dashboard', 'page.tsx'));
+/* `DashboardClient.tsx` chứ không `page.tsx` (14/09/2026): trang tách làm hai —
+   `page.tsx` nay là vỏ MÁY CHỦ dựng hai khối cần dữ liệu sớm, còn toàn bộ biểu
+   mẫu (trong đó có ô hồ sơ) nằm ở phần client. Đọc nhầm tệp thì phép kiểm thấy
+   0 ô và đỏ — đúng như nó vừa làm. */
+const TRANG = doc(join(GOC, 'src', 'app', '(base)', 'dashboard', 'DashboardClient.tsx'));
 const MAIN = doc(join(GOC, 'public', 'static', 'js', 'main.js'));
 const VIEWS = doc(join(BE, 'accounts', 'views.py'));
 

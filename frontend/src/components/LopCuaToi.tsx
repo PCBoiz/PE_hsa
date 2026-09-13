@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+
+import { BieuTuong } from '@/components/bieuTuong';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
@@ -52,7 +54,7 @@ type Lop = {
   ngayThiLech: boolean;
 };
 
-type DuLieu = { lop: Lop[]; mucTieu: { examDate: string | null } };
+export type DuLieu = { lop: Lop[]; mucTieu: { examDate: string | null } };
 
 const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
@@ -70,25 +72,19 @@ function ngay(iso: string | null) {
   return `${d}/${m}/${y}`;
 }
 
-export default function LopCuaToi() {
-  const [d, setD] = useState<DuLieu | null>(null);
+/**
+ * DỮ LIỆU NAY DO MÁY CHỦ ĐƯA XUỐNG (14/09/2026), không tự gọi trong `useEffect`.
+ *
+ * Trước đó khối này chỉ hiện sau khi React hydrate rồi chờ thêm một lượt mạng —
+ * đo được **2,4 s**, và vì nó cao 333 px (390 px: 465) nằm TRÊN thẻ "Học tiếp"
+ * nên lúc hiện ra nó đẩy cả cột xuống: CLS **0,177**, quá ngưỡng 0,1. Nhận dữ
+ * liệu qua prop thì khối nằm sẵn trong HTML đầu tiên — không còn cú nhảy nào,
+ * và em thấy buổi tới ngay lượt sơn đầu.
+ */
+export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
   const [loi, setLoi] = useState<string | null>(null);
   const [dangDoi, setDangDoi] = useState(false);
-
-  useEffect(() => {
-    let huy = false;
-    // Lượt GET này đã được bắn sẵn từ HTML máy chủ trả về (`NapTruocDuLieu`),
-    // trước cả khi React hydrate — lấy lại lời hứa ấy chứ không gọi lần hai.
-    // Lấy MỘT lần rồi xoá, để lượt điều hướng sau đọc dữ liệu mới.
-    const san = (window as unknown as { __napTruoc?: Record<string, Promise<DuLieu | null>> }).__napTruoc;
-    const nguon = san?.['/api/lop-cua-toi'];
-    if (nguon) delete san['/api/lop-cua-toi'];
-    (nguon ?? fetch('/api/lop-cua-toi', { credentials: 'same-origin' })
-      .then(async (r) => (r.ok ? ((await r.json()) as DuLieu) : null)))
-      .then((kq) => { if (!huy && kq) setD(kq); })
-      .catch(() => { /* khối phụ: thiếu nó thì bảng điều khiển vẫn dùng được */ });
-    return () => { huy = true; };
-  }, []);
+  const d = dl;
 
   if (!d || d.lop.length === 0) return null;
 
@@ -125,7 +121,10 @@ export default function LopCuaToi() {
         return (
           <section key={l.id} className="section-card fx-fade-up lct" aria-label={`Lớp ${l.name}`}>
             <div className="section-title" style={{ marginBottom: 6 }}>
-              <span className="title-icon-blue" data-icon="users" data-size="16"></span>
+              {/* `BieuTuong` chứ KHÔNG `data-icon` — xem chú thích ở
+                  `HocTiepRong`: khối chảy tới sau thì tầng cũ kịp điền ô trống
+                  và React phải dựng lại cả nhánh. */}
+              <span className="title-icon-blue"><BieuTuong ten="users" co={16} /></span>
               <span>Lớp của bạn · {l.name}</span>
             </div>
             <p className="lct-meta">
