@@ -29,12 +29,14 @@ import AppShell from '@/components/AppShell';
  * vào `/giang-day/buoi-hoc/undefined`.
  */
 const TAB = [
-  { doan: 'buoi-hoc', nhan: 'Buổi học', icon: 'calendar' },
-  { doan: 'bai-tap', nhan: 'Bài tập', icon: 'pencil' },
-  { doan: 'bao-cao', nhan: 'Báo cáo phụ huynh', icon: 'file-text' },
+  { doan: 'buoi-hoc', nhan: 'Buổi học', icon: 'calendar', troGiang: true },
+  { doan: 'bai-tap', nhan: 'Bài tập', icon: 'pencil', troGiang: true },
+  // Trợ giảng không mở được báo cáo phụ huynh (`IsSeniorTeachingStaff`) — không
+  // dựng tab dẫn tới một trang 403. Hàng rào thật vẫn ở máy chủ.
+  { doan: 'bao-cao', nhan: 'Báo cáo phụ huynh', icon: 'file-text', troGiang: false },
 ] as const;
 
-export default function KhungGiangDay() {
+export default function KhungGiangDay({ troGiang = false }: { troGiang?: boolean }) {
   const duong = usePathname();
   // `/giang-day/<doan>/<classId>/…` → phần tử 3 sau khi tách. Chỉ nhận chuỗi
   // toàn chữ số: một đoạn đường dẫn lạ không được biến thành một `classId`.
@@ -51,7 +53,7 @@ export default function KhungGiangDay() {
         // giảng viên quay về sau khi làm xong một việc trong lớp.
         { trang: null, nhan: 'Việc hôm nay', icon: 'check-circle-2', emoji: '', url: '/giang-day' },
         ...(lop
-          ? TAB.map((t) => ({
+          ? TAB.filter((t) => !troGiang || t.troGiang).map((t) => ({
             trang: null,
             nhan: t.nhan,
             icon: t.icon,

@@ -39,7 +39,12 @@ from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events, record_events
 from common.params import kiem_lien_ket, so_nguyen
-from common.permissions import IsTeachingStaff, can_see_class, is_assistant
+from common.permissions import (
+    IsSeniorTeachingStaff,
+    IsTeachingStaff,
+    can_see_class,
+    is_assistant,
+)
 from stats.goals import as_date
 from teaching.vocab import chi_hoc_vien
 
@@ -379,12 +384,18 @@ class ClassSessionsView(APIView):
         counts = _attendance_counts(class_id, [r['id'] for r in rows])
         members = int(info['members'] or 0)
 
+        # Người gọi làm được gì Ở MÀN NÀY — để giao diện đừng dựng nút mà bấm
+        # vào mới biết là không được phép. Rà luồng trợ giảng 14/09/2026: thấy ba
+        # nút "Xoá" và hai lối "Báo cáo phụ huynh", cả năm đều dẫn tới 403. Tính
+        # bằng CHÍNH lớp quyền của các view ấy, không chép lại luật.
+        senior = IsSeniorTeachingStaff().has_permission(request, self)
         return Response({
             'class': {
                 'id': info['id'], 'code': info['code'], 'name': info['name'],
                 'course': info['course_id'], 'schedule': info['schedule'],
                 'meetingUrl': info['meeting_url'], 'members': members,
             },
+            'quyen': {'xoaBuoi': senior, 'baoCaoPhuHuynh': senior},
             'sessions': [_session_dict(r, counts.get(r['id']), members) for r in rows],
             'statuses': list(SESSION_STATUS),
             'attendanceStatuses': list(ATTENDANCE_STATUS),

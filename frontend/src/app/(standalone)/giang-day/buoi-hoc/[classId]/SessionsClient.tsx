@@ -121,6 +121,7 @@ export default function SessionsClient({
   initial,
   goiYSinh,
   moBuoi = null,
+  quyen,
 }: {
   classId: number;
   className: string;
@@ -128,6 +129,12 @@ export default function SessionsClient({
   goiYSinh: GoiYSinh | null;
   /** Buổi cần mở sẵn sổ điểm danh (từ `?diem-danh=`), nếu có trong danh sách. */
   moBuoi?: number | null;
+  /**
+   * Người đang xem làm được gì ở màn này — máy chủ tính bằng đúng lớp quyền của
+   * các view. Trợ giảng: cả hai false → không dựng nút "Xoá" và lối "Báo cáo phụ
+   * huynh" (rà 14/09/2026: năm nút hiện ra, cả năm bấm vào đều 403).
+   */
+  quyen: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean };
 }) {
   const [sessions, setSessions] = useState<SessionRow[]>(initial);
   // Mở sẵn một buổi thì hiện đủ nhóm "Sắp tới": buổi được trỏ tới mà nằm
@@ -246,12 +253,14 @@ export default function SessionsClient({
                kèm sẵn và trình duyệt lo phần tải xuống — cùng lối với nút xuất
                ở màn tài khoản. */
             <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/giang-day/bao-cao/${classId}`}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Báo cáo phụ huynh
-              </Link>
+              {quyen.baoCaoPhuHuynh && (
+                <Link
+                  href={`/giang-day/bao-cao/${classId}`}
+                  className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
+                >
+                  Báo cáo phụ huynh
+                </Link>
+              )}
               <a
                 href={`/api/teach/classes/${classId}/export/attendance.csv`}
                 className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
@@ -299,7 +308,12 @@ export default function SessionsClient({
                 <li key={s.id}>
                   <Card tone="sunken" padding="sm">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <div className="min-w-0 flex-1">
+                      {/* Khổ hẹp: tiêu đề + ngày chiếm TRỌN hàng đầu, chip và
+                          nút xuống hàng sau. Để chung hàng thì `flex-1` bị chip
+                          + ba nút ép còn ~60px: "Buổi học" gãy làm hai, ngày
+                          "15/09/2026 · 19:30 · 90 phút" thành năm dòng (ảnh
+                          chụp 390px, rà luồng trợ giảng 14/09/2026). */}
+                      <div className="min-w-0 flex-1 max-sm:basis-full">
                         <p className="text-subhead text-ink">{s.topic || 'Buổi học'}</p>
                         <p className="mt-0.5 text-small text-ink-3">
                           {fmt(s.startsAt)}
@@ -363,9 +377,11 @@ export default function SessionsClient({
                         >
                           {suaId === s.id ? 'Đóng sửa' : 'Sửa'}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
-                          Xoá
-                        </Button>
+                        {quyen.xoaBuoi && (
+                          <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
+                            Xoá
+                          </Button>
+                        )}
                       </span>
                     </div>
 

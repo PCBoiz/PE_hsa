@@ -1137,6 +1137,16 @@ def test_tro_giang_diem_danh_duoc_nhung_KHONG_xoa_va_KHONG_xem_bao_cao_PH(lop, v
     assert bc.status_code == 403, ('trợ giảng không được xem báo cáo phụ huynh: %s'
                                    % bc.status_code)
 
+    # Và danh sách buổi phải NÓI TRƯỚC hai điều ấy, để màn hình đừng dựng nút
+    # "Xoá" / lối "Báo cáo phụ huynh" mà bấm vào mới biết là 403 (rà luồng trợ
+    # giảng trên trình duyệt thật 14/09/2026: thấy đủ năm nút, cả năm đều chết).
+    from teaching.sessions import ClassSessionsView
+    ds = _goi(ClassSessionsView, 'get', ai=tg, class_id=lop['id'])
+    assert ds.status_code == 200
+    assert ds.data['quyen'] == {'xoaBuoi': False, 'baoCaoPhuHuynh': False}, ds.data['quyen']
+    ds_gv = _goi(ClassSessionsView, 'get', ai=lop['gv'], class_id=lop['id'])
+    assert ds_gv.data['quyen'] == {'xoaBuoi': True, 'baoCaoPhuHuynh': True}, ds_gv.data['quyen']
+
 
 @pytest.mark.django_db
 def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop, vai_tro_moi):

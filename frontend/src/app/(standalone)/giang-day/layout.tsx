@@ -1,5 +1,7 @@
 import PageStyles from '@/components/PageStyles';
+import { VAI_TRO_GIANG } from '@/lib/vaiTro';
 
+import { layVai } from '../quan-tri/layVai';
 import KhungGiangDay from './KhungGiangDay';
 
 /**
@@ -12,14 +14,21 @@ import KhungGiangDay from './KhungGiangDay';
  * rào thật nằm ở `permission_classes` của từng API, và từng trang tự xử lý
  * phản hồi 404 của nó.
  *
+ * Đọc VAI ở đây thì có (14/09/2026) — KHÔNG để chặn, mà để khung đừng dựng tab
+ * "Báo cáo phụ huynh" cho trợ giảng: rà luồng trên trình duyệt thật thấy tab ấy
+ * hiện ra và dẫn tới "Không có quyền truy cập". `layVai` gói `cache()` nên cả
+ * khu tốn thêm đúng một lượt `/api/user` mỗi lần dựng trang.
+ *
  * `theme.css` phải đứng TRƯỚC `shell.css`: shell đọc `var(--t1)`, `var(--accent)`…
  * và theme là nơi khai chúng.
  */
-export default function GiangDayLayout({ children }: { children: React.ReactNode }) {
+export default async function GiangDayLayout({ children }: { children: React.ReactNode }) {
+  const vai = await layVai();
+  const troGiang = vai.ok && vai.vai === VAI_TRO_GIANG;
   return (
     <div className="min-h-dvh bg-ground">
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
-      <KhungGiangDay />
+      <KhungGiangDay troGiang={troGiang} />
       {/* Bù chiều cao thanh: `.topbar` là `position: fixed`. Dùng chính token
           của thanh chứ không một con số chép lại — chép lại là hai chỗ sẽ trôi
           khỏi nhau khi thanh đổi cỡ.

@@ -38,9 +38,10 @@ export default async function BuoiHocPage({
   const moBuoi = dd && /^\d+$/.test(dd) ? Number(dd) : null;
   const [detail, list, sinh] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }),
-    serverJson<{ sessions: SessionRow[] }>(`/api/teach/classes/${classId}/sessions`, {
-      requireAuth: true,
-    }),
+    serverJson<{ sessions: SessionRow[]; quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean } }>(
+      `/api/teach/classes/${classId}/sessions`,
+      { requireAuth: true },
+    ),
     // Gợi ý sinh lịch cả kỳ lấy Ở ĐÂY, cùng lượt dựng trang: nó mang cờ
     // `coTheSinh`, và biết cờ ấy trước khi vẽ thì trợ giảng không bao giờ thấy
     // một nút bấm vào mới báo không được phép.
@@ -98,6 +99,8 @@ export default async function BuoiHocPage({
           initial={list.ok ? list.data.sessions : []}
           goiYSinh={sinh.ok ? sinh.data : null}
           moBuoi={moBuoi}
+          /* Thiếu (API cũ) thì coi như được — máy chủ vẫn là hàng rào thật. */
+          quyen={list.ok ? (list.data.quyen ?? { xoaBuoi: true, baoCaoPhuHuynh: true }) : { xoaBuoi: true, baoCaoPhuHuynh: true }}
         />
       </main>
     </div>

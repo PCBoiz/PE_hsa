@@ -53,6 +53,44 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 6 · Rà luồng trợ giảng đầu-cuối trên trình duyệt thật
+
+**Cách làm (anh duyệt):** tạo MỘT tài khoản Trợ giảng thử trên production qua
+API quản trị (có nhật ký), xếp vào lớp 1; đi trọn "một buổi tối" bằng
+Playwright ở 1366 và 390px với **mọi lời ghi bị chặn** — chỉ ghi lại method +
+URL + body mà màn hình định gửi để đối chiếu; xong **xoá** (đếm 5→6→5 tài
+khoản, 4→5→4 thành viên lớp 1; kịch bản tự liệt kê mọi khoá ngoại còn trỏ tới
+id trước khi xoá). Nhật ký kiểm toán giữ 1 dòng lịch sử "cấp tài khoản".
+
+**Đạt như thiết kế:** mật khẩu tạm chặn mọi trang tới khi đổi (tài khoản mới
+bị đẩy về `/doi-mat-khau` — phải bỏ cờ trên đúng tài khoản thử để đi tiếp) ·
+"Việc hôm nay" chỉ 3 ô, không khối về em · nút Vận hành ẩn, nút Giảng dạy hiện,
+danh sách lớp đúng lớp được gán · không có "Sinh lịch cả kỳ" · tạo buổi gửi
+đúng thân `{starts_at, topic, duration_minutes, meeting_url}` · điểm danh gửi
+đúng `{marks:[{user_id,status}]}` · bài tập mở được, có "Giao bài mới" (đúng
+quyết định 01/09: trợ giảng giao bài & chấm được) · báo cáo phụ huynh cả lớp và
+từng em đều "Không có quyền truy cập" · khu Vận hành "Không đủ quyền".
+
+**Ba lỗi tìm ra, đã vá:**
+1. Trang buổi học dựng cho trợ giảng **3 nút "Xoá" và 2 lối "Báo cáo phụ
+   huynh"** — cả năm bấm vào đều 403. Nay `GET …/sessions` trả `quyen:
+   {xoaBuoi, baoCaoPhuHuynh}` tính bằng chính `IsSeniorTeachingStaff`; màn
+   hình không dựng nút khi false; khung khu Giảng dạy đọc vai (`layVai`, một
+   lượt `/api/user` mỗi lần dựng, có `cache()`) để không dựng tab "Báo cáo phụ
+   huynh" cho trợ giảng. Giảng viên vẫn thấy đủ (đo lại: 3 Xoá, 2 lối, 4 tab).
+   Phép kiểm cũ về trợ giảng nay kiểm luôn `quyen` cho cả hai vai.
+2. **Hồ sơ PDF B.8 lại sai một ô nữa:** "Giao bài cho lớp" bỏ trống cột trợ
+   giảng, trong khi quyết định 01/09 (TODO dòng 2632) và mã đều cho phép. Sửa
+   ma trận + B.1.
+3. Khổ 390px, thẻ mỗi buổi: tiêu đề "Buổi học" gãy làm hai, ngày "15/09/2026 ·
+   19:30 · 90 phút" thành năm dòng vì `flex-1` bị chip + ba nút ép. Bộ đo giao
+   diện KHÔNG bắt được (không tràn, không chạm nhỏ) — chỉ thấy khi mở ảnh.
+   `max-sm:basis-full` cho khối tiêu đề.
+
+**Ghi nhận, chưa đổi:** câu lỗi "Không có quyền truy cập" ở trang báo cáo phụ
+huynh đúng nhưng cụt — không nói ai mở được. Trợ giảng nay không còn lối vào
+nên ít gặp; để đó.
+
 ## 14/09/2026 — VÒNG 5 · Bảng "Việc hôm nay" cho giảng viên + khoá liên hệ phụ huynh (C5)
 
 **Việc hôm nay** (`/giang-day`, API `GET /api/teach/viec-hom-nay`,
