@@ -3870,6 +3870,36 @@ body.dark .prof-post-stats {
   background: var(--brand-fill); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
 }
 
+/* ── LỚP CỦA BẠN (14/09/2026) — src/components/LopCuaToi.tsx ──────────────
+   Cùng ngôn ngữ với thẻ "học tiếp" ngay dưới: nút đi phòng học dùng
+   `.hsa-cont-btn`. Không có kích thước ghim cứng — hàng "buổi tới" tự xuống
+   dòng khi hẹp. */
+.lct-meta { font-size: 12.5px; color: var(--t3); margin: 0 0 12px; }
+.lct-next {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  padding: 12px 14px; border-radius: 12px; background: var(--lift);
+}
+.lct-next-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 14rem; }
+/* `--brand-ink`, không `--accent`: trên nền `--lift` màu gốc chỉ đạt 4,36:1
+   (bộ đo bắt được ngay lượt đầu, 14/09/2026); bộ `-ink` là bản đậm hơn dành
+   cho CHỮ, xem theme.css. */
+.lct-next-lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--brand-ink); }
+.lct-next-time { font-size: 17px; color: var(--t1); font-variant-numeric: tabular-nums; }
+.lct-next-sub { font-size: 12.5px; color: var(--t2); }
+.lct-go { margin-left: 0; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+.lct-nolink { font-size: 12.5px; color: var(--t2); }
+.lct-more, .lct-cc { font-size: 12.5px; color: var(--t2); margin: 10px 0 0; }
+.lct-cc b { color: var(--t1); }
+.lct-lech {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  margin-top: 12px; padding: 10px 14px; border-radius: 12px;
+  background: rgba(245, 158, 11, 0.10); font-size: 12.5px; color: var(--t2);
+}
+.lct-lech > span { flex: 1 1 16rem; }
+.lct-lech b { color: var(--t1); }
+.lct-loi { margin: 8px 0 0; font-size: 12.5px; color: var(--danger-ink); }
+@media (max-width: 36rem) { .lct-go { width: 100%; justify-content: center; } }
+
 /* Tiến độ 3 hợp phần */
 .hsa-sections { display: flex; flex-direction: column; gap: 13px; }
 .hsa-sec-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }

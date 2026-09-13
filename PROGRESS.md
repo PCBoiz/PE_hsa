@@ -53,6 +53,46 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 7 · Rà luồng học viên → khối "Lớp của bạn" trên bảng điều khiển
+
+**Rà:** tài khoản học viên thật id 9 (lớp 1), 16 màn/tab × 2 khổ, chặn mọi lời
+ghi: 0 lỗi JS, 0 chữ máy (undefined/NaN/null) lọt ra, 0 liên kết nội bộ hỏng,
+0 tràn ngang, 0 lời ghi lọt; các khu giảng dạy/vận hành/soạn bài đều chặn đúng
+với câu chữ đọc được. Nhưng mở ảnh chụp thì thấy:
+
+1. **Học viên không có chỗ nào thấy lớp mình.** Lớp 1 học buổi đầu tối 15/09
+   với link phòng, 16 buổi đã xếp — bảng điều khiển của em không có một chữ nào
+   về lớp. Mọi API buổi học đều sau cổng giảng dạy; người phải vào phòng lúc
+   19:30 là người duy nhất không thấy link.
+2. **Ngày thi lệch:** thẻ đếm ngược "Còn 182 ngày" (mục tiêu cá nhân 15/03/2027)
+   và kế hoạch 29 tuần — trong khi lớp thi 06/12/2026. Kế hoạch đang xếp cho một
+   kỳ thi khác kỳ thi của lớp.
+3. Nhỏ: Trang của tôi ghi "Bảng xếp hạng · Tuần này · Top 0 học viên" — chưa sửa.
+
+**Anh Sơn chốt:** khối "Lớp của bạn" với buổi tới + link + 2 buổi kế, chuyên
+cần của chính em, giảng viên/lịch/ngày thi; ngày thi lệch thì **nhắc + một nút
+"Dùng ngày thi của lớp"**, không tự đổi mục tiêu.
+
+**Dựng:** `GET /api/lop-cua-toi` (`teaching/lop_cua_toi.py`, `NguoiDungView`)
+— chỉ lớp em đang học, buổi tới = buổi chưa huỷ gần nhất (đang diễn ra vẫn
+tính, kèm cờ), link buổi rồi tới link lớp, chuyên cần bằng CHÍNH
+`parent_report._chuyen_can` (em và bố mẹ nhìn cùng số), `ngayThiLech`. Khối
+React `LopCuaToi.tsx` đứng trên "học tiếp"; không ở lớp nào thì không dựng gì.
+Nút "Dùng ngày thi của lớp" = `PATCH /api/hsa/goals` + `POST /api/hsa/study-plan`
+(đúng hai việc nút "Xếp lại lịch" làm) rồi tải lại trang.
+
+**Đo:** đỏ trước 6/6 (mã cũ) → 6/6 xanh, kể cả phép so bằng đúng kết quả
+`_chuyen_can`. Trình duyệt thật (học viên 9, chặn ghi): khối hiện đúng "T3 15/09
+· 19:30 · Vào phòng học →", hai buổi kế, "Chưa có buổi nào được điểm danh", cảnh
+báo ngày thi lệch; nút cao 44px cả hai khổ, không tràn; bấm nút thì màn hình
+gửi đúng `PATCH {exam_date: 2026-12-06}` rồi `POST study-plan` (bị chặn, không
+ghi). eslint/tsc/ruff sạch. Bộ đo giao diện bắt ngay lượt đầu **1 vi phạm
+tương phản** ở chính khối mới: nhãn "BUỔI TỚI" màu `--accent` trên nền `--lift`
+= 4,36:1 → đổi sang `--brand-ink` (bộ dành cho chữ, theme.css). Đo lại cả hai
+bộ màu: 22 trang × 2 khổ = 0/0/0/0. Thẻ đo hết hạn giữa chừng một lượt — bộ đo
+tự nhận ra "bị đẩy về đăng nhập" và dừng, không đo nhầm màn đăng nhập (bẫy đã
+ghi 07/09).
+
 ## 14/09/2026 — VÒNG 6 · Rà luồng trợ giảng đầu-cuối trên trình duyệt thật
 
 **Cách làm (anh duyệt):** tạo MỘT tài khoản Trợ giảng thử trên production qua

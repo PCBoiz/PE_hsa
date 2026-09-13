@@ -7,6 +7,7 @@ from teaching import (
                       co_so_hoc_phi,
                       exports,
                       lien_he_phu_huynh,
+                      lop_cua_toi,
                       overview,
                       parent_link,
                       parent_report,
@@ -77,6 +78,8 @@ urlpatterns = [
          assignments.AssignmentSubmissionView.as_view()),
     # Phía học viên: KHÔNG nhận user_id, luôn là chính mình — xem docstring.
     path('api/assignments', assignments.MyAssignmentsView.as_view()),
+    # Lớp của chính em: buổi tới, link phòng, chuyên cần của mình. Chỉ đọc.
+    path('api/lop-cua-toi', lop_cua_toi.LopCuaToiView.as_view()),
 
     # ── Xuất dữ liệu (đặc tả ERP §6) ──
     path('api/teach/classes/<int:class_id>/export/progress.csv',

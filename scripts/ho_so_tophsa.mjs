@@ -262,7 +262,7 @@ ${bang(['Màn hình', 'Ai vào được', 'Làm gì ở đó'], [
   ['Trang giới thiệu', 'Bất kỳ ai', 'Giới thiệu trung tâm, thử ba câu hỏi mẫu, xem tờ báo cáo mẫu'],
   ['Đăng nhập', 'Bất kỳ ai', 'Đăng nhập bằng email hoặc số điện thoại'],
   ['Báo cáo phụ huynh', 'Người có đường dẫn', 'Xem báo cáo học tập của con — không cần tài khoản'],
-  ['Trang của tôi', 'Học viên', 'Hôm nay học gì, tiến độ, chuỗi ngày học, ba hợp phần'],
+  ['Trang của tôi', 'Học viên', 'Lớp của bạn (buổi tới, link phòng, chuyên cần của mình), hôm nay học gì, tiến độ, chuỗi ngày học, ba hợp phần'],
   ['Danh sách khoá', 'Học viên', 'Ba hợp phần HSA, chọn khoá để vào'],
   ['Chi tiết khoá', 'Học viên', 'Danh sách bài, tiến độ từng bài'],
   ['Bài học', 'Học viên', 'Học nội dung, làm quiz cuối bài'],

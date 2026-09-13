@@ -9,6 +9,7 @@ import PageStyles from '@/components/PageStyles';
 import BaHopPhan from '@/components/BaHopPhan';
 import Chatbot from '@/components/Chatbot';
 import KhoaLienHePhuHuynh from '@/components/KhoaLienHePhuHuynh';
+import LopCuaToi from '@/components/LopCuaToi';
 import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
 import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
@@ -117,6 +118,10 @@ export default function DashboardPage() {
           {/* Cột trái: học tiếp + tiến độ 3 hợp phần · Cột phải: lộ trình */}
           <div className="dash-row dash-row--cal">
             <div className="dash-col-left">
+              {/* Lớp của bạn — đứng TRÊN "học tiếp": buổi tối nay là việc có
+                  giờ, bài học thì lúc nào cũng làm được. Không ở lớp nào thì
+                  khối không dựng gì (14/09/2026). */}
+              <LopCuaToi />
               <div className="section-card hsa-continue fx-fade-up" id="hsa-continue" style={{ animationDelay: '.08s' }}>
                 <div className="hsa-cont-empty">
                   <div className="hsa-cont-ic" data-icon="compass" data-size="26"></div>
