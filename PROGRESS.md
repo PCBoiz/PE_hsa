@@ -39,6 +39,65 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
 
+## Trạng thái ngay lúc này — 14/09/2026 (cuối ngày)
+
+- **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
+  `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
+  khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
+  thức dậy 86,9 s** (đo 17:00). A1 trong `VIEC_CUA_ANH.md` vẫn là việc của anh.
+  Ghi nhận cho lần đo sau: 240 ms/truy vấn khi gọi Neon từ máy dev là độ trễ
+  mạng VN→Neon, KHÔNG phải truy vấn chậm — trên Render mỗi truy vấn chỉ vài ms,
+  nên đừng tối ưu số truy vấn theo số đo ở máy dev.
+- **CSDL**: 5 tài khoản, 1 lớp (3 học viên đang học), 1 đợt, 16 buổi (15/09–
+  05/11), 0 lượt điểm danh, 0 bài tập, 0 link báo cáo. Mọi dữ liệu thử của hôm
+  nay đã xoá, đếm 9 bảng khớp mốc đầu phiên. `admin_audit` 82 dòng (có các dòng
+  thật do lượt rà tạo/xoá bài tập, phát hành/thu hồi link — để nguyên vì đúng
+  là việc đã xảy ra).
+- **Cổng chất lượng (14/09)**: pytest **537/537** (một ERROR thoáng qua ở
+  `tests_sinh_buoi` một tham số, chạy lại riêng 8/8 xanh) · 25/25 unit Node ·
+  giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint/tsc/ruff/build sạch · hiệu năng
+  6/6 màn đạt Core Web Vitals (Trang của tôi LCP 2,42 s · CLS 0,007), còn cảnh
+  báo 2.111 nút DOM (chín "trang" SPA cũ dựng sẵn).
+- **Trần tầng cũ**: 7.355 dòng / 13 tệp (hạ từ 7.385 sau khi thẻ "Học tiếp"
+  sang React máy chủ).
+- **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
+  `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
+- **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
+
+<!-- MỚI NHẤT -->`). Phần cũ
+hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
+lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
+
+Ba tệp anh em: `docs/VIEC_CUA_ANH.md` (việc chỉ anh Sơn làm được — một bảng ở
+đầu) · `TODO.md` (việc của tôi) · `BAO-CAO-TRANG-THAI.md` (số đo tự sinh, chỉ đo
+không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc tệp ấy đầu tiên).
+
+## Lệnh đang hiệu lực của anh Sơn
+
+- Chỉ làm trên `D:\pe_hsa` (`PCBoiz/PE_hsa`). Đọc dự án khác để học cách làm
+  thì được (13/09: `D:\Dự án cô Giang`), **không đụng gì bên ấy**.
+- `.env` không bao giờ commit — kiểm `git diff --cached --name-only | grep -i "\.env$"` trước mỗi commit.
+- Neon là production có học viên thật: `SELECT` thoải mái; **không
+  INSERT/UPDATE/DELETE nếu anh không gật từng lần**; DDL chỉ dạng cộng thêm.
+  Không bao giờ `SET` gì (pgbouncer, phiên rò sang khách khác).
+- `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
+- Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
+- Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
+- **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
+- Kênh gửi phụ huynh: **email** (chốt 07/09); chưa gửi phụ huynh thật cho tới
+  khi có địa chỉ @tophsa.vn. Zalo OA hoãn (cần giấy phép kinh doanh).
+- **Liên hệ phụ huynh (chốt 14/09, C5):** học vụ/giảng viên đã nhập thì CHỈ
+  người có quyền ấy sửa; học viên chỉ tự điền được ô còn trống.
+- **Vòng 14/09, theo thứ tự anh chọn:** bảng nhắc việc giảng viên → chạy lại cổng
+  chất lượng toàn bộ → khoá liên hệ phụ huynh → rà luồng trợ giảng đầu-cuối. Kèm:
+  sửa ngày thi lớp 1 thành 06/12/2026 theo đợt 28 (anh duyệt ghi production).
+- **14/09 (khuya) anh nói: "Đây mới là thử nghiệm… mới chỉ là mock production,
+  cứ thử nghiệm tất cả tình huống."** → được tạo dữ liệu thử để rà, vẫn dọn
+  sạch và đếm trước/sau sau mỗi lượt. Chọn tiếp: rà học vụ → zod cho payload màn
+  quản trị (T18 mức 2) → giảm LCP Trang của tôi.
+- Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
+  — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
+
 ## Trạng thái ngay lúc này — 13/09/2026
 
 - **Production Render**: sống nhưng ngủ đông; thức dậy mất **84,5 s** (đo 21:30).
@@ -56,6 +115,37 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
+
+## 14/09/2026 — VÒNG 16 · Máy chủ đã gọi thì đưa luôn xuống, trình duyệt thôi gọi lại
+
+**Ba lượt API biến mất khỏi mỗi lần mở Trang của tôi (15 → 11).** `HocTiep`
+(máy chủ) đã gọi `hsa/summary` + `courses-enrolled`, mà `dashboard.js` vẫn
+gọi lại đúng hai lượt ấy cho bốn thẻ số và dải tiến độ. Nay `HocTiep` chảy
+kèm một `<script>` đặt lời hứa ĐÃ GIẢI vào `window.__napTruoc` — cùng ổ khoá
+`__apiGet` đang đọc — nên tầng cũ nhận dữ liệu tại chỗ, không chờ vòng mạng
+nào sau hydrate. Trình duyệt chạy script trong luồng HTML lúc phân tích, kể cả
+khi nó nằm trong khung ẩn của React; tới muộn hơn tầng cũ thì `__apiGet` tự
+`fetch` như cũ. JSON thoát `<` thành `\u003c` (tên khoá học do người khác
+soạn). `NAP_TRUOC` nay rỗng — giữ khung kèm luật để lượt kế có chỗ. Đo: thẻ
+số và ba dòng tiến độ vẫn đủ (`#tile-streak` 1, `#tile-done` 3, 3 dòng);
+`__napTruoc` tiêu thụ hết; LCP **1.924 ms** (1.784/1.924/2.388), CLS 0,007;
+22 trang × 2 khổ = 0/0/0/0.
+
+**Số đo ở máy dev đã suýt dẫn đi sai đường.** `/api/lop-cua-toi` 1,45 s và
+`hsa/summary` 0,97 s ở dev, đếm thì **mọi truy vấn đều đúng 240 ms** — là độ
+trễ mạng VN→Neon, không phải truy vấn chậm. Trên Render (cạnh Neon) cả lượt
+chỉ **0,34–0,37 s**. Suýt đi gộp truy vấn theo con số dev; ghi vào "Trạng thái"
+để lần sau không ai đo ở đây rồi tối ưu cho đó.
+
+**Cân nhắc rồi bỏ: gỡ Font Awesome khỏi màn bài học/thi thử.** Mã chỉ dùng
+20 tên, nhưng NỘI DUNG 76 bài trong CSDL gọi **190 tên** biểu tượng khác nhau
+cho thẻ lý thuyết (`fa-magnifying-glass` 16 lần, `fa-calculator` 8…). Đây là
+phụ thuộc ở tầng nội dung, không phải tầng mã — thay thì phải chuyển cả kho
+biểu tượng, không đáng cho 100 kB. Màn bài học giữ Font Awesome, có chủ ý.
+
+**Rà quyền:** `scripts/quet_quyen.py` — 113 đường, 2 công khai, 61 chỉ-đăng-
+nhập (đều `NguoiDungView`), 50 có cổng; ba đường mới trong ngày đúng lớp
+(`lop-cua-toi` tự-dữ-liệu, `viec-hom-nay` giảng dạy, thu hồi link cấp cao).
 
 ## 14/09/2026 — VÒNG 15 · Dọn tầng cũ: hai khối đầu Trang của tôi dựng ở máy chủ
 

@@ -59,15 +59,54 @@ function chonKhoa(ds: Khoa[], daXong: Record<string, number>) {
   return xep.find((c) => soXong(c) < (TONG_BAI[c.id] ?? MAC_DINH)) ?? xep[0] ?? null;
 }
 
+/**
+ * ĐƯA LUÔN HAI PHẢN HỒI XUỐNG CHO TẦNG CŨ, khỏi gọi lần hai.
+ *
+ * `dashboard.js` vẽ bốn thẻ số + dải 7 ngày từ `hsa/summary`, dải tiến độ ba
+ * hợp phần từ `courses-enrolled` — đúng hai lượt máy chủ vừa gọi ở đây. Trước
+ * 14/09 trình duyệt gọi lại cả hai (qua `NapTruocDuLieu`): hai lượt thừa mỗi
+ * lần mở trang, và bốn thẻ số phải chờ thêm một vòng mạng sau hydrate.
+ *
+ * Cách đưa: một `<script>` nhỏ chảy cùng khối, đặt lời hứa ĐÃ GIẢI vào
+ * `window.__napTruoc` — cùng ổ khoá mà `main.js::__apiGet` đọc. Trình duyệt
+ * chạy script trong luồng HTML lúc phân tích, kể cả khi nó nằm trong khung
+ * ẩn của React; tầng cũ chạy sau hydrate nên thường tới sau. Nếu tới TRƯỚC
+ * (máy chủ trả chậm), `__apiGet` không thấy khoá thì tự `fetch` như cũ — chỉ
+ * mất phần lợi, không mất dữ liệu.
+ *
+ * `<` thay cho `<`: JSON là dữ liệu của chính người dùng, nhưng tên khoá
+ * học là chữ người khác soạn; một chuỗi `</script>` trong đó là đóng thẻ sớm.
+ */
+function DuaXuong({ duLieu }: { duLieu: Record<string, unknown> }) {
+  const than = Object.entries(duLieu)
+    .map(([k, v]) => `w[${JSON.stringify(k)}]=Promise.resolve(${JSON.stringify(v).replace(/</g, '\\u003c')})`)
+    .join(';');
+  return (
+    <script
+      dangerouslySetInnerHTML={{ __html: `(function(){var w=window.__napTruoc=window.__napTruoc||{};${than}})();` }}
+    />
+  );
+}
+
 export default async function HocTiep() {
   const [sum, khoa] = await Promise.all([
     serverJson('/api/hsa/summary', { requireAuth: true }, HD_SUMMARY),
     serverJson('/api/courses-enrolled', { requireAuth: true }, HD_KHOA),
   ]);
+  const duaXuong: Record<string, unknown> = {};
+  if (sum.ok) duaXuong['/api/hsa/summary'] = sum.data;
+  if (khoa.ok) duaXuong['/api/courses-enrolled'] = khoa.data;
 
   const daXong = sum.ok ? sum.data.byCourse : {};
   const c = khoa.ok ? chonKhoa(khoa.data.enrolled, daXong) : null;
-  if (!c) return <HocTiepRong />;
+  if (!c) {
+    return (
+      <>
+        <DuaXuong duLieu={duaXuong} />
+        <HocTiepRong />
+      </>
+    );
+  }
 
   const tong = TONG_BAI[c.id] ?? MAC_DINH;
   const xong = daXong[c.id] ?? Math.round(((c.progress ?? 0) / 100) * tong);
@@ -75,6 +114,8 @@ export default async function HocTiep() {
   const pct = Math.round((xong / tong) * 100);
 
   return (
+    <>
+    <DuaXuong duLieu={duaXuong} />
     <Link className="hsa-cont-link" href={`/lesson/${c.id}?lesson=${baiKe}`}>
       <span className="hsa-cont-badge">{baiKe}</span>
       <span className="hsa-cont-txt">
@@ -88,5 +129,6 @@ export default async function HocTiep() {
       </span>
       <span className="hsa-cont-go">Vào học →</span>
     </Link>
+    </>
   );
 }

@@ -23,7 +23,7 @@ nguồn hoặc đo trực tiếp trên CSDL tại thời điểm chạy lệnh.*
 | Bảng CSDL | 56 | `information_schema.tables` |
 | · có dữ liệu | 35 | count(*) > 0 |
 | Tệp kiểm thử backend | 38 | `backend/**/tests*.py` |
-| Tệp kiểm thử frontend | 33 | `frontend/e2e/**` |
+| Tệp kiểm thử frontend | 35 | `frontend/e2e/**` |
 
 ## Dữ liệu nghiệp vụ trên CSDL
 

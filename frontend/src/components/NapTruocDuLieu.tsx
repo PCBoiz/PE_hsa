@@ -41,11 +41,13 @@ export const NAP_TRUOC = [
   // `/api/user` KHÔNG có ở đây: chỉ `loadUser` đọc nó, mà đường ấy phải giữ
   // `handleFetch` để 401 đá về `/login` — nạp trước là mất chỗ duy nhất biết
   // phiên đã hết hạn.
-  '/api/hsa/summary',      // bốn thẻ số + dải 7 ngày
-  '/api/courses-enrolled', // tiến độ ba hợp phần
-  // `/api/lop-cua-toi` ĐÃ RỜI khỏi đây (14/09/2026): khối "Lớp của bạn" nay
-  // lấy dữ liệu Ở MÁY CHỦ (`LopCuaToiNguon`), nên nạp trước ở trình duyệt là
-  // gọi thừa một lượt — và lượt thừa ấy xếp hàng trước những lượt còn thật.
+  // (14/09/2026, cuối ngày) DANH SÁCH NÀY RỖNG — và tệp vẫn ở lại có chủ ý.
+  // Ba lượt từng nằm đây đều đã chuyển sang MÁY CHỦ: `HocTiep` gọi
+  // `hsa/summary` + `courses-enrolled` rồi ĐƯA XUỐNG cùng ổ khoá
+  // `window.__napTruoc` bằng một script chảy cùng khối (xem `DuaXuong` ở đó);
+  // `LopCuaToiNguon` gọi `lop-cua-toi` và không tầng cũ nào cần nó. Nạp trước
+  // ở trình duyệt nữa là gọi thừa. Giữ khung ở đây để lượt GET tiếp theo mà
+  // trang luôn cần (nếu có) có chỗ đặt — kèm luật ở trên.
 ] as const;
 
 export default function NapTruocDuLieu({ urls = NAP_TRUOC }: { urls?: readonly string[] }) {
