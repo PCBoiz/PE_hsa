@@ -30,12 +30,15 @@ import { AT, RT, AT_MAX_AGE, RT_MAX_AGE, refreshTokens } from '@/lib/auth';
  * Kịch bản thật đã sửa: giảng viên đăng nhập trước giờ dạy, dạy 40 phút, mở sổ
  * điểm danh — trước đây phải gõ lại mật khẩu trước mặt cả lớp.
  *
- * ── VÌ SAO CHẠY Ở NODE, KHÔNG PHẢI EDGE ───────────────────────────────────
- * Mặc định middleware chạy trên Edge, nơi không dùng được mọi thứ `lib/auth.ts`
- * đụng tới. Ở đây chỉ cần `fetch` và đọc biến môi trường nên Node là đủ và
- * tránh được cả một lớp bất ngờ.
+ * ── TÊN TỆP `proxy.ts`, KHÔNG CÒN `middleware.ts` (14/09/2026) ─────────────
+ * Next 16 đổi quy ước tệp `middleware` thành `proxy`; bản 16.3 cảnh báo ở mỗi
+ * lần build. Proxy LUÔN chạy trên Node — đúng thứ tệp này cần (`lib/auth.ts`
+ * dùng `fetch` và biến môi trường) — và Next CẤM khai `export const runtime`
+ * trong tệp proxy (khai là lỗi build), nên dòng `runtime = 'nodejs'` cũ đã gỡ.
+ *
+ * Đừng nhầm với `src/lib/proxy.ts`: tệp ấy là route handler chuyển `/api/*` và
+ * `/auth/*` xuống Django. Tệp NÀY chạy trước khi dựng TRANG để làm mới phiên.
  */
-export const runtime = 'nodejs';
 
 /** Làm mới sớm 60 giây, để một request đúng lúc token vừa hết hạn không lọt. */
 const SOM_HON_GIAY = 60;
@@ -62,7 +65,7 @@ function conHan(token: string | undefined): boolean {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const access = req.cookies.get(AT)?.value;
   const refresh = req.cookies.get(RT)?.value;
 

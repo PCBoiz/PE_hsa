@@ -7,7 +7,7 @@
 # free TẮT HẲN dịch vụ sau ~15 phút không ai dùng, và lần gọi sau đó phải dựng
 # lại cả container.
 #
-# Người dùng không chờ 40 giây. Trình duyệt, `middleware.ts`, và bộ đếm giờ của
+# Người dùng không chờ 40 giây. Trình duyệt, `proxy.ts`, và bộ đếm giờ của
 # `fetch` đều bỏ cuộc trước đó — nên với người bấm Đăng nhập, nó hiện ra như
 # "hệ thống hỏng", không như "hệ thống đang thức dậy".
 #

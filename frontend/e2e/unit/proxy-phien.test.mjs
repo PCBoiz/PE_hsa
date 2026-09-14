@@ -2,7 +2,7 @@
  * Unit test (Node thuần, không cần runner) — middleware KHÔNG được giết phiên
  * khi backend chỉ đang không với tới được.
  *
- * BUG GỐC (đo 01/09/2026). `src/middleware.ts` tự viết lại lời gọi
+ * BUG GỐC (đo 01/09/2026). `src/middleware.ts` (nay `src/proxy.ts`) tự viết lại lời gọi
  * `/auth/refresh` thay vì gọi `refreshTokens` của `lib/auth.ts`, và bắt lỗi thế
  * này:
  *
@@ -19,10 +19,10 @@
  *
  * VÌ SAO KHÔNG KIỂM BẰNG `grep`. Phần 2 của `forum-xss.test.mjs` khẳng định một
  * DÒNG MÃ có chứa `escHtml` — kiểu kiểm ấy xanh cả khi hàm bị đổi nghĩa. Ở đây
- * ta nạp CHÍNH `src/middleware.ts` rồi GỌI nó với một `NextRequest` thật, và chỉ
+ * ta nạp CHÍNH `src/proxy.ts` rồi GỌI nó với một `NextRequest` thật, và chỉ
  * giả lập đúng một thứ: câu trả lời của mạng. Đường đi qua mã là đường thật.
  *
- * Chạy: node e2e/unit/middleware-phien.test.mjs   (exit 0 = pass, 1 = fail)
+ * Chạy: node e2e/unit/proxy-phien.test.mjs   (exit 0 = pass, 1 = fail)
  */
 import { register } from 'node:module';
 import { pathToFileURL } from 'node:url';
@@ -33,12 +33,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const GOC = join(__dirname, '..', '..'); // frontend/
 
 /* Hook phân giải `@/...` và `next/...` — xem `hooks-nap-nguon.mjs`. Phải đăng
-   ký TRƯỚC khi nạp `middleware.ts`, nên nạp bằng `await import()` ở dưới chứ
+   ký TRƯỚC khi nạp `proxy.ts`, nên nạp bằng `await import()` ở dưới chứ
    không bằng `import` tĩnh (lệnh `import` tĩnh chạy trước mọi mã trong tệp). */
 register('./hooks-nap-nguon.mjs', import.meta.url);
 
 const { NextRequest } = await import('next/server.js');
-const { middleware } = await import(pathToFileURL(join(GOC, 'src', 'middleware.ts')).href);
+// Hàm nay tên `proxy` (Next 16); giữ tên `middleware` trong phép kiểm cho khỏi đổi 20 chỗ gọi.
+const { proxy: middleware } = await import(pathToFileURL(join(GOC, 'src', 'proxy.ts')).href);
 const { AT, RT } = await import(pathToFileURL(join(GOC, 'src', 'lib', 'auth.ts')).href);
 
 let failures = 0;

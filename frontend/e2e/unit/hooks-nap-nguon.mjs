@@ -16,7 +16,7 @@
  *     thông báo lỗi).
  *
  * Hook này chỉ dịch TÊN module. Nó không đụng tới nội dung tệp: thứ chạy trong
- * bộ kiểm vẫn là `src/middleware.ts` nguyên bản, không phải một bản chép.
+ * bộ kiểm vẫn là `src/proxy.ts` nguyên bản, không phải một bản chép.
  */
 import { pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';

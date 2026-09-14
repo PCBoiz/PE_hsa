@@ -95,7 +95,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
            *
            * Nhánh `catch` bên dưới KHÔNG cứu được: `fetch` chỉ NÉM khi mất
            * mạng. Một phản hồi 503 là `fetch` THÀNH CÔNG với `res.ok === false`.
-           * Đây đúng cái bẫy `src/middleware.ts` đã ghi và đã vá cho đường làm
+           * Đây đúng cái bẫy `src/proxy.ts` đã ghi và đã vá cho đường làm
            * mới phiên — cùng lý lẽ, mà chỗ này thì sót.
            *
            * Trả giá thật: anh Sơn báo "không đăng nhập bằng tài khoản admin
