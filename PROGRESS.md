@@ -116,6 +116,27 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 — VÒNG 16b · Thí nghiệm Render ngủ đông trên production: luồng chảy có sống không?
+
+**Câu hỏi phải trả lời trước buổi học đầu (15/09):** hai khối của Trang của
+tôi nay dựng ở MÁY CHỦ Vercel và chờ Render trả lời. Nếu Vercel cắt hàm sau
+10 s (mặc định gói Hobby kiểu cũ) thì lúc Render ngủ, HTML bị cụt giữa chừng
+— khung chờ đứng mãi, còn tệ hơn trước.
+
+**Cách đo:** để Render yên 15 phút cho ngủ, rồi từ máy này gọi production kèm
+cookie thật: `/dashboard` (chảy) và `/quan-tri/tong-quan` (chặn) cùng lúc.
+
+**Kết quả:** cả hai trả **200 sau 71,4 s**, đủ nội dung — trang chặn có chữ
+"Toàn trung tâm", trang chảy có thẻ "Học tiếp" (`hsa-cont-link` ×2), "Lớp của
+bạn", và đuôi HTML là `$RC("B:1","S:1")</script></body></html>` — tức luồng đi
+trọn tới byte cuối. Ngay sau đó (Render ấm) trang chặn chỉ **0,82 s**. Vậy
+Vercel đang cho hàm sống ít nhất 71 s (Fluid compute, trần 300 s): dựng ở máy
+chủ **không làm cảnh Render ngủ tệ hơn** — vẫn 70–85 s trắng như trước, và
+vẫn chỉ hết hẳn khi anh làm A1.
+
+**Ghi cho lần sau:** đo cảnh này phải ĐỂ YÊN Render 15 phút và **không đẩy
+`master` trong lúc chờ** (Render tự dựng lại khi có push → thức dậy giả).
+
 ## 14/09/2026 — VÒNG 16 · Máy chủ đã gọi thì đưa luôn xuống, trình duyệt thôi gọi lại
 
 **Ba lượt API biến mất khỏi mỗi lần mở Trang của tôi (15 → 11).** `HocTiep`
