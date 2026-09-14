@@ -2315,7 +2315,9 @@ var _forumTextQ = '';
         if (data.entries[i].id && meInfo.id && data.entries[i].id === meInfo.id) {
           inTop = true; break;
         }
-        // mock friends không có id thật, fallback so sánh name + value
+        // (14/09/2026) Chú thích cũ nói tab Bạn bè là dữ liệu GIẢ không có id —
+        // không còn đúng: backend đọc `user_follows` thật và mọi dòng đều có id.
+        // Nhánh so tên + giá trị dưới đây nay chỉ là đường lùi vô hại.
         if (data.type === 'friends' && data.entries[i].name === meInfo.name
           && data.entries[i].value === meInfo.value) {
           inTop = true; break;

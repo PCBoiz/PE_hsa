@@ -6,6 +6,18 @@ from rest_framework.response import Response
 from common.clock import local_today
 from common.db import q, q1
 from common.views import NguoiDungView
+from teaching.vocab import chi_hoc_vien
+
+# ── CHỈ HỌC VIÊN LÊN BẢNG (14/09/2026) ────────────────────────────────────────
+#
+# Đo trên production: tab "Streak" mà học viên nhìn thấy có "Quản trị viên"
+# HẠNG 1 và một giảng viên hạng 5 — cả ba truy vấn xếp hạng lấy MỌI tài khoản.
+# Học viên đua với XP do nhân viên bấm thử, và tên nhân viên hiện trong một bảng
+# dành cho học viên. Lọc bằng `chi_hoc_vien` — CÙNG mệnh đề mà sĩ số lớp, báo
+# cáo phụ huynh, cơ sở học phí đang dùng, để "ai là học viên" chỉ có một định
+# nghĩa. Nhân viên mở bảng vẫn xem được, chỉ không có "Vị trí của bạn" (`me`
+# là None — giao diện đã ẩn khối ấy khi không có `me`).
+HOC_VIEN_U = chi_hoc_vien('u')
 
 MEDALS = {1: '🥇', 2: '🥈', 3: '🥉'}
 
@@ -103,10 +115,10 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
     hom_nay = local_today()
     dau_tuan = hom_nay - timedelta(days=hom_nay.weekday())  # weekday(): thứ Hai = 0
     row = q1('''WITH weekly AS (
-                    SELECT user_id, SUM(xp_earned) AS wxp
-                    FROM user_daily_xp_logs
-                    WHERE log_date >= %s
-                    GROUP BY user_id
+                    SELECT l.user_id, SUM(l.xp_earned) AS wxp
+                    FROM user_daily_xp_logs l JOIN users u ON u.id = l.user_id
+                    WHERE l.log_date >= %s AND ''' + HOC_VIEN_U + '''
+                    GROUP BY l.user_id
                 ),
                 top AS (
                     SELECT u.id, u.name, w.wxp
@@ -124,7 +136,7 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
                     (SELECT wxp FROM me) AS me_wxp,
                     (SELECT COUNT(*) + 1 FROM weekly, me WHERE weekly.wxp > me.wxp) AS me_rank,
                     (SELECT name FROM users WHERE id = %s) AS me_name,
-                    EXISTS(SELECT 1 FROM users WHERE id = %s) AS me_exists''',
+                    EXISTS(SELECT 1 FROM users u WHERE u.id = %s AND ''' + HOC_VIEN_U + ''') AS me_exists''',
              (dau_tuan, limit, uid, uid, uid))
     top_rows = _json_list(row['top_rows'])
     me_row = {'wxp': row['me_wxp']}
@@ -135,7 +147,7 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
         {
             'rank': idx + 1,
             'id': r['id'],
-            'name': r['name'] or f'User #{r["id"]}',
+            'name': _display_name_for(r['name'] or '', r['id']),
             'avatar': _avatar_for(r['name'] or ''),
             'value': r['wxp'] or 0,
         }
@@ -148,7 +160,7 @@ def _fetch_top_weekly(uid: int, limit: int = 10):
         me = {
             'rank': rank_row['r'] if me_row['wxp'] else (len(top_list) + 1),
             'id': me_name_row['id'],
-            'name': me_name_row['name'] or f'User #{me_name_row["id"]}',
+            'name': _display_name_for(me_name_row['name'] or '', me_name_row['id']),
             'avatar': _avatar_for(me_name_row['name'] or ''),
             'value': me_row['wxp'] or 0,
         }
@@ -161,7 +173,8 @@ def _fetch_top_by(uid: int, order_col: str, limit: int = 10):
 
     # PERF 2026-07-19: top N + hàng của tôi trong 1 câu lệnh (2 query → 1)
     row = q1(f'''WITH top AS (
-                     SELECT id, name, xp, streak FROM users
+                     SELECT id, name, xp, streak FROM users u
+                     WHERE {HOC_VIEN_U}
                      ORDER BY {order_col} DESC, name ASC LIMIT %s
                  )
                  SELECT
@@ -172,8 +185,9 @@ def _fetch_top_by(uid: int, order_col: str, limit: int = 10):
                      (SELECT row_to_json(m) FROM (
                           SELECT id, name, xp, streak,
                                  (SELECT COUNT(*) + 1 FROM users u2
-                                  WHERE u2.{order_col} > u.{order_col}) AS my_rank
-                          FROM users u WHERE id = %s) m) AS me_row''',
+                                  WHERE u2.{order_col} > u.{order_col}
+                                    AND {chi_hoc_vien('u2')}) AS my_rank
+                          FROM users u WHERE id = %s AND {HOC_VIEN_U}) m) AS me_row''',
               (limit, uid))
     top_rows = _json_list(row['top_rows'])
     me_row = _json_obj(row['me_row'])
@@ -202,28 +216,33 @@ def _fetch_top_by(uid: int, order_col: str, limit: int = 10):
     return top_list, me
 
 
-def _build_friends(uid: int, user_name: str, user_xp: int):
+def _build_friends(uid: int, user_name: str, user_xp: int, la_hoc_vien: bool = True):
+    # Theo dõi được mở ở diễn đàn, nên em có thể theo dõi cả giảng viên — người
+    # ấy không vào bảng xếp hạng (xem luật ở đầu tệp).
     rows = q('''SELECT u.id, u.name, u.xp, u.streak
                 FROM user_follows f
                 JOIN users u ON u.id = f.followee_id
-                WHERE f.follower_id = %s''', (uid,))
+                WHERE f.follower_id = %s AND ''' + HOC_VIEN_U, (uid,))
     friends = [
         {
             'id': r['id'],
-            'name': r['name'] or f'User #{r["id"]}',
+            'name': _display_name_for(r['name'] or '', r['id']),
             'avatar': _avatar_for(r['name'] or ''),
             'xp': r['xp'] or 0,
             'streak': r['streak'] or 0,
         }
         for r in rows
     ]
-    merged = friends + [{
+    # Dòng của CHÍNH em cũng che tên như mọi tab khác — trước đó tab streak
+    # hiện "Học viên #9" mà tab Bạn bè hiện "Test Reg" cho cùng một người.
+    ten_toi = _display_name_for(user_name or '', uid)
+    merged = friends + ([{
         'id': uid,
-        'name': user_name or 'Bạn',
+        'name': ten_toi,
         'avatar': _avatar_for(user_name or ''),
         'xp': user_xp,
         'streak': 0,
-    }]
+    }] if la_hoc_vien else [])
     merged.sort(key=lambda f: -f['xp'])
 
     me_rank = next((i + 1 for i, f in enumerate(merged) if f['id'] == uid), len(merged) + 1)
@@ -241,10 +260,12 @@ def _build_friends(uid: int, user_name: str, user_xp: int):
     ]
     _attach_medal(entries)
 
+    if not la_hoc_vien:
+        return entries, None
     me_block = {
         'rank': me_rank,
         'id': uid,
-        'name': user_name or 'Bạn',
+        'name': ten_toi,
         'avatar': _avatar_for(user_name or ''),
         'value': user_xp,
     }
@@ -269,10 +290,12 @@ class LeaderboardView(NguoiDungView):
         elif lb_type == 'friends':
             # PERF 2026-07-19: chỉ nhánh friends mới cần tên/XP của tôi — dời
             # query users vào đây (weekly/streak tự lo trong 1 câu CTE của chúng)
-            me_row = q1('SELECT id, name, xp, streak FROM users WHERE id=%s', (uid,))
+            me_row = q1('SELECT id, name, xp, streak, (' + HOC_VIEN_U + ') AS la_hoc_vien '
+                        'FROM users u WHERE id=%s', (uid,))
             me_name = (me_row['name'] if me_row else '') or 'Bạn'
             me_xp = (me_row['xp'] if me_row else 0) or 0
-            entries, me = _build_friends(uid, me_name, me_xp)
+            entries, me = _build_friends(uid, me_name, me_xp,
+                                         la_hoc_vien=bool(me_row and me_row['la_hoc_vien']))
             unit, label = 'XP', 'Bạn bè'
         else:
             return Response({'error': f'type không hợp lệ: {lb_type}'}, status=400)

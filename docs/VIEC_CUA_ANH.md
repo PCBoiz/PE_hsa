@@ -1,6 +1,6 @@
 # Việc của anh — pe_hsa
 
-*Cập nhật 13/09/2026. Đây là **chỗ duy nhất** ghi việc cần anh làm — tôi không
+*Cập nhật 14/09/2026. Đây là **chỗ duy nhất** ghi việc cần anh làm — tôi không
 rải câu hỏi ra các câu trả lời nữa. Xếp theo **mức chặn**, không theo thời gian.
 Mỗi dòng ghi: mất bao lâu · vì sao cần anh · làm xong thì mở khoá gì. Lịch sử
 từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
@@ -23,6 +23,7 @@ từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
 | **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
 | ~~**C5**~~ | **ĐÃ CHỐT 14/09: khoá (b) — ĐÃ LÀM** (§47). Nguyên văn câu hỏi: **học viên có được SỬA liên hệ phụ huynh mà học vụ đã nhập không?** Hai cách: (a) giữ như nay — em sửa được; (b) học vụ nhập rồi thì chỉ học vụ sửa, em chỉ điền được ô còn trống | 1 câu | Hiện em sửa được. Tức một em có thể đổi email bố mẹ thành email của mình để **chặn báo cáo tiến độ** trước khi nó tới nhà. Google Classroom chọn (b): chỉ giáo viên/quản trị mời phụ huynh, và phụ huynh phải bấm xác nhận. Chưa đổi vì đây là chính sách, không phải lỗi. | Tin cậy được địa chỉ nhận báo cáo |
 | **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
+| **C6** | Quyết **bảng xếp hạng hiện tên học viên thế nào**: tên thật đầy đủ (hiện nay) · chỉ tên, bỏ họ · hay để em tự chọn ẩn danh | 1 câu | Học viên TopHSA là học sinh cấp 3; bảng xếp hạng cho MỌI học viên thấy tên nhau (chỉ che tên trông như tài khoản thử). 14/09 đã vá lỗi nhân viên lọt lên đầu bảng, nhưng hiện tên thật là chính sách, không phải lỗi — tôi không tự đổi. | Bảng xếp hạng |
 
 **Cách khôi phục từ bản sao lưu (khi cần, hy vọng không bao giờ):** Actions →
 lượt "Sao lưu CSDL" gần nhất → tải artifact → giải mã rồi khôi phục:

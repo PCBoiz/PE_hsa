@@ -116,6 +116,44 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 (tối) — VÒNG 19 · Bảng xếp hạng xếp cả nhân viên lên đầu học viên
+
+**Thấy khi chuẩn bị chuyển khối "Bảng xếp hạng" sang React.** Đọc
+`leaderboard/views.py` trước khi dời: cả ba truy vấn (tuần · streak · bạn bè)
+lấy MỌI tài khoản trong `users`, không lọc vai. Xác nhận trên **production**
+bằng thẻ học viên id 9: tab Streak hiện **"Quản trị viên" hạng 1** (XP do bấm
+thử) và **"Ha Thai Son" — giảng viên — hạng 5**. Tab tuần cùng truy vấn không
+lọc, chỉ đang trống vì tuần này chưa ai có XP. Hai hệ quả: học viên đua với số
+liệu nhân viên tạo ra khi rà hệ thống, và tên nhân viên hiện trong một bảng
+dành cho học viên. Cùng lớp lỗi `chi_hoc_vien` sinh ra để chặn ở sĩ số lớp
+(31/08) — mà bảng xếp hạng nằm ngoài khu Giảng dạy nên không ai áp.
+
+**Sửa bằng CÙNG mệnh đề** `teaching.vocab.chi_hoc_vien` (đang dùng ở 10 tệp
+teaching), để "ai là học viên" chỉ có một định nghĩa: tuần — CTE chỉ gom XP của
+học viên; streak — lọc top, lọc cả phép đếm hạng (không thì em đứng hạng 2 sau
+một quản trị viên đã bị ẩn); bạn bè — theo dõi mở ở diễn đàn nên em có thể
+theo dõi giảng viên, người ấy không vào bảng. **Nhân viên mở bảng** vẫn xem
+được nhưng `me` là `None` (giao diện đã ẩn "Vị trí của bạn" khi không có `me`).
+Kèm: tab tuần hiện TÊN THÔ trong khi tab streak che tên kiểu tài khoản thử —
+nay cả ba tab che cùng một cách (`_display_name_for`), kể cả dòng của chính em
+ở tab Bạn bè (lần kiểm đầu trên dev còn thấy "Test Reg" ở đó, "Học viên #9" ở
+tab streak — đã sửa và phép kiểm nay đòi đủ ba tab, cả khối "Vị trí của bạn").
+
+**Phép kiểm (`leaderboard/tests.py` +9, đỏ 9/9 trên mã cũ, xanh sau):** nhân
+viên không lên bảng tuần/streak; hạng của em không tính nhân viên (quản trị
+viên điểm cao hơn em 5 → em vẫn hạng 1); nhân viên xem ba tab đều `me=None`;
+giảng viên em theo dõi không vào bảng Bạn bè; tên che giống nhau giữa tuần và
+streak. Dữ liệu dựng RẤT lớn (10⁸) để chắc nằm trong top 10 của CSDL thật dùng
+chung, và phép so chỉ hỏi về đúng các id tự dựng — bài học vòng 11b.
+
+**Còn một câu hỏi SẢN PHẨM, chưa tự quyết:** bảng xếp hạng hiện TÊN THẬT của
+học viên (chỉ che tên trông như tài khoản thử) cho mọi học viên khác xem — học
+viên TopHSA là học sinh cấp 3. Giữ tên thật, chỉ hiện tên (bỏ họ), hay cho em
+tự chọn ẩn danh là việc anh Sơn quyết; ghi vào `VIEC_CUA_ANH.md` (C6).
+
+Kèm: chú thích trong `dashboard.js` nói tab Bạn bè là "mock không có id thật" —
+đã sai từ khi backend đọc `user_follows`; sửa chú thích.
+
 ## 14/09/2026 (tối) — VÒNG 18 · "Nhiệm vụ hôm nay" sang React máy chủ, và `zod` đã lén làm gói JS phình 150 kB
 
 **Khối thứ ba theo khuôn `HocTiep`/`LopCuaToiNguon`.** `NhiemVu.tsx` (máy chủ)
