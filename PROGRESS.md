@@ -24,6 +24,9 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   không xin phép từng lần, không sao lưu, không bắt buộc dọn/đếm. Vẫn giữ vì
   lý do kỹ thuật: DDL chỉ cộng thêm qua `bootstrap_schema`; không bao giờ `SET`
   (pgbouncer); pytest cuộn lại và lọc về dữ liệu của chính nó. Xem `RULES.md §5`.
+  **Nhưng mock production là buổi TỔNG DUYỆT** (anh nói tiếp cùng tối): "vẫn phải
+  xây dựng, thiết kế hạ tầng cho ổn định" — chỉ dữ liệu là bỏ đi được; hạ tầng,
+  bảo mật, phân quyền, sao lưu, giám sát phải như với dữ liệu thật.
 - `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
 - Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
 - Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.

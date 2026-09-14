@@ -102,6 +102,13 @@ người sau tưởng bộ đo hỏng, rồi đi sửa thứ không sai.
 không phải thật hoặc đã quá cũ để dùng** — anh Sơn nói rõ hai lần (14/09):
 "đây chỉ là mock production, không cần lo dữ liệu bị thay đổi".
 
+**Và nửa còn lại, quan trọng hơn (anh nói ngay sau đó):** mock production là
+BUỔI TỔNG DUYỆT cho ngày đổ dữ liệu thật vào — "luồng sẽ ra sao, hoạt động như
+nào, bảo mật ổn không… kể cả chỉ là giả vẫn phải xây dựng, thiết kế hạ tầng cho
+ổn định". Tức là: CHỈ DỮ LIỆU là đồ bỏ đi được. Hạ tầng, bảo mật, phân quyền,
+sao lưu, giám sát, độ ổn định phải dựng và kiểm đúng như với dữ liệu thật — một
+lỗ hổng "chỉ trên dữ liệu giả" vẫn là lỗ hổng.
+
 - `SELECT`, `INSERT`, `UPDATE`, `DELETE`: **thoải mái** để thử mọi tình huống —
   tạo tài khoản thử, ghi điểm danh, nộp bài, nhận thưởng thật qua giao diện.
   Không cần xin phép từng lần, không cần sao lưu, không bắt buộc dọn hay đếm
