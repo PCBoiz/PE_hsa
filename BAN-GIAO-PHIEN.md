@@ -22,9 +22,12 @@ Giang — chỉ học cách, không đụng bên ấy.*
   kèm ngày. Bộ đo giao diện phải chạy `--tu-kiem` trước (nó đã nói dối 12 lần).
 - **Test phải đỏ được.** Viết xong test → lùi mã → phải đỏ *đúng cái test ấy* →
   phục hồi → xanh. Lùi một phần mà vẫn xanh = test giả (đã mắc 07/09).
-- **Neon là production thật.** SELECT thoải mái; ghi thì hỏi từng lần; DDL chỉ
-  cộng thêm. Thử khô cuộn lại KHÔNG chứng minh lệnh chạy được — ràng buộc hoãn
-  chỉ kiểm lúc COMMIT (đã mắc 07/09). Sao lưu ra tệp trước khi xoá.
+- **Neon là MOCK production** (anh Sơn chốt lại 14/09 tối): dữ liệu không thật
+  hoặc đã quá cũ — ghi thử thoải mái, không xin phép, không sao lưu, không bắt
+  buộc dọn/đếm. Vẫn giữ: DDL chỉ cộng thêm qua `bootstrap_schema`, không `SET`,
+  pytest cuộn lại + lọc về dữ liệu của chính nó, không gửi phụ huynh thật. Thử
+  khô cuộn lại KHÔNG chứng minh lệnh chạy được — ràng buộc hoãn chỉ kiểm lúc
+  COMMIT (đã mắc 07/09). Xem `RULES.md §5`.
 - **Một con số chỉ tính ở một nơi.** Màn hình, CSV, PDF phải nói cùng một chuyện.
 - **Đặt câu hỏi trước việc lớn.** Anh Sơn muốn được hỏi; nhưng câu hỏi phải kèm
   con số ĐÚNG — một lời gật xin bằng số sai không phải lời gật.

@@ -18,9 +18,12 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - Chỉ làm trên `D:\pe_hsa` (`PCBoiz/PE_hsa`). Đọc dự án khác để học cách làm
   thì được (13/09: `D:\Dự án cô Giang`), **không đụng gì bên ấy**.
 - `.env` không bao giờ commit — kiểm `git diff --cached --name-only | grep -i "\.env$"` trước mỗi commit.
-- Neon là production có học viên thật: `SELECT` thoải mái; **không
-  INSERT/UPDATE/DELETE nếu anh không gật từng lần**; DDL chỉ dạng cộng thêm.
-  Không bao giờ `SET` gì (pgbouncer, phiên rò sang khách khác).
+- **Neon là MOCK production** (anh nói lại 14/09 tối: "chỉ là mock production,
+  không cần lo dữ liệu bị thay đổi, chúng vốn không phải thật hoặc đã quá cũ").
+  Ghi thử thoải mái — tạo tài khoản, điểm danh, nộp bài, nhận thưởng thật;
+  không xin phép từng lần, không sao lưu, không bắt buộc dọn/đếm. Vẫn giữ vì
+  lý do kỹ thuật: DDL chỉ cộng thêm qua `bootstrap_schema`; không bao giờ `SET`
+  (pgbouncer); pytest cuộn lại và lọc về dữ liệu của chính nó. Xem `RULES.md §5`.
 - `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
 - Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
 - Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
@@ -33,8 +36,9 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   chất lượng toàn bộ → khoá liên hệ phụ huynh → rà luồng trợ giảng đầu-cuối. Kèm:
   sửa ngày thi lớp 1 thành 06/12/2026 theo đợt 28 (anh duyệt ghi production).
 - **14/09 (khuya) anh nói: "Đây mới là thử nghiệm… mới chỉ là mock production,
-  cứ thử nghiệm tất cả tình huống."** → được tạo dữ liệu thử để rà, vẫn dọn
-  sạch và đếm trước/sau sau mỗi lượt. Chọn tiếp: rà học vụ → zod cho payload màn
+  cứ thử nghiệm tất cả tình huống."** → được tạo dữ liệu thử để rà. (Bản đầu
+  dòng này thêm "vẫn dọn sạch và đếm trước/sau" — đó là tôi tự thêm, không
+  phải lời anh; anh nói lại 14/09 tối là không cần.) Chọn tiếp: rà học vụ → zod cho payload màn
   quản trị (T18 mức 2) → giảm LCP Trang của tôi.
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
@@ -63,56 +67,6 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
   `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
 - **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
-
-<!-- MỚI NHẤT -->`). Phần cũ
-hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
-lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
-
-Ba tệp anh em: `docs/VIEC_CUA_ANH.md` (việc chỉ anh Sơn làm được — một bảng ở
-đầu) · `TODO.md` (việc của tôi) · `BAO-CAO-TRANG-THAI.md` (số đo tự sinh, chỉ đo
-không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc tệp ấy đầu tiên).
-
-## Lệnh đang hiệu lực của anh Sơn
-
-- Chỉ làm trên `D:\pe_hsa` (`PCBoiz/PE_hsa`). Đọc dự án khác để học cách làm
-  thì được (13/09: `D:\Dự án cô Giang`), **không đụng gì bên ấy**.
-- `.env` không bao giờ commit — kiểm `git diff --cached --name-only | grep -i "\.env$"` trước mỗi commit.
-- Neon là production có học viên thật: `SELECT` thoải mái; **không
-  INSERT/UPDATE/DELETE nếu anh không gật từng lần**; DDL chỉ dạng cộng thêm.
-  Không bao giờ `SET` gì (pgbouncer, phiên rò sang khách khác).
-- `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
-- Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
-- Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
-- **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
-- Kênh gửi phụ huynh: **email** (chốt 07/09); chưa gửi phụ huynh thật cho tới
-  khi có địa chỉ @tophsa.vn. Zalo OA hoãn (cần giấy phép kinh doanh).
-- **Liên hệ phụ huynh (chốt 14/09, C5):** học vụ/giảng viên đã nhập thì CHỈ
-  người có quyền ấy sửa; học viên chỉ tự điền được ô còn trống.
-- **Vòng 14/09, theo thứ tự anh chọn:** bảng nhắc việc giảng viên → chạy lại cổng
-  chất lượng toàn bộ → khoá liên hệ phụ huynh → rà luồng trợ giảng đầu-cuối. Kèm:
-  sửa ngày thi lớp 1 thành 06/12/2026 theo đợt 28 (anh duyệt ghi production).
-- **14/09 (khuya) anh nói: "Đây mới là thử nghiệm… mới chỉ là mock production,
-  cứ thử nghiệm tất cả tình huống."** → được tạo dữ liệu thử để rà, vẫn dọn
-  sạch và đếm trước/sau sau mỗi lượt. Chọn tiếp: rà học vụ → zod cho payload màn
-  quản trị (T18 mức 2) → giảm LCP Trang của tôi.
-- Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
-  — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
-
-## Trạng thái ngay lúc này — 13/09/2026
-
-- **Production Render**: sống nhưng ngủ đông; thức dậy mất **84,5 s** (đo 21:30).
-  Workflow giữ ấm trên GitHub **không có tác dụng** — GitHub chạy nó 3–5 giờ/lần
-  và 8/8 lượt thất bại. Đã sửa cho đúng vai "đồng hồ sức khoẻ". Giữ ấm thật cần
-  anh Sơn làm A1 trong `VIEC_CUA_ANH.md`.
-- **CSDL**: 5 tài khoản, 1 lớp, 1 đợt, **16 buổi đều ở tương lai** (15/09–05/11,
-  sinh bằng công cụ 13/09), 0 lượt điểm danh — 4 buổi mẫu sai thứ và 6 lượt điểm
-  danh mẫu đã xoá có duyệt, sao lưu ở `.sao_luu/`. 0 em có liên lạc phụ huynh.
-- **Cổng chất lượng lần cuối (07/09)**: 453/453 pytest · giao diện 21 trang × 2
-  khổ × 2 bộ màu = 0/0/0/0 · build/eslint/tsc/ruff sạch.
-- **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
-  `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
-- **Nhánh**: `master` = `erp`, đẩy sau mỗi vòng (13/09: vòng 1 sao lưu, vòng 2
-  khai cổng, vòng 3 email phụ huynh).
 
 <!-- MỚI NHẤT -->
 

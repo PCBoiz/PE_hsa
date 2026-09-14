@@ -96,16 +96,26 @@ số phần tử của sản phẩm. Thứ phải đọc là chữ **ĐẠT**: "
 bị nhét quy tắc hỏng". Ghim một con số ở đây thì mỗi lần thêm trang là một lần
 người sau tưởng bộ đo hỏng, rồi đi sửa thứ không sai.
 
-## 5. CSDL production — chạm tối thiểu
+## 5. CSDL — mock production (đổi 14/09/2026 theo lời anh Sơn)
 
-`DATABASE_URL` trỏ vào Neon **đang dùng thật**, có tài khoản người thật.
+`DATABASE_URL` trỏ vào Neon mà Render đang dùng, nhưng **dữ liệu trong đó
+không phải thật hoặc đã quá cũ để dùng** — anh Sơn nói rõ hai lần (14/09):
+"đây chỉ là mock production, không cần lo dữ liệu bị thay đổi".
 
-- `SELECT`, `EXPLAIN`: thoải mái.
-- `INSERT` / `UPDATE` / `DELETE`: **không**, trừ khi người dùng cho phép từng lần.
-- DDL: chỉ dạng cộng thêm (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT
-  EXISTS`), qua `sql/legacy_schema.sql` + `manage.py bootstrap_schema`.
-- Cần phiên đăng nhập để kiểm giao diện → **tự cấp JWT cho tài khoản đã có**
-  (`accounts.views._tokens_for`), đừng tạo tài khoản kiểm thử.
+- `SELECT`, `INSERT`, `UPDATE`, `DELETE`: **thoải mái** để thử mọi tình huống —
+  tạo tài khoản thử, ghi điểm danh, nộp bài, nhận thưởng thật qua giao diện.
+  Không cần xin phép từng lần, không cần sao lưu, không bắt buộc dọn hay đếm
+  bảng trước/sau.
+- VẪN GIỮ (vì lý do kỹ thuật, không phải để bảo vệ dữ liệu):
+  - DDL chỉ dạng cộng thêm (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT
+    EXISTS`), qua `sql/legacy_schema.sql` + `manage.py bootstrap_schema` —
+    Render dựng lược đồ theo đúng đường ấy.
+  - Không bao giờ `SET` gì (pgbouncer: phiên rò sang kết nối khác).
+  - Phép kiểm backend vẫn chạy trong giao dịch cuộn lại, và lọc về dữ liệu
+    CỦA CHÍNH NÓ (không đếm tổng bảng) — để bộ kiểm chạy lặp được và không đỏ
+    khi có người thao tác song song (bài học 14/09).
+- Không bao giờ gửi thư/Zalo tới phụ huynh THẬT cho tới khi có địa chỉ
+  @tophsa.vn — việc ra khỏi hệ thống thì không cuộn lại được.
 
 **Bẫy:** `bootstrap_schema` tách câu theo dấu `;`, nên khối `DO $$ … $$` bị xé
 nát. Dùng `DROP CONSTRAINT IF EXISTS` rồi `ADD CONSTRAINT`.
