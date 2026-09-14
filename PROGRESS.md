@@ -116,6 +116,38 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 (tối) — VÒNG 17 · Rà cả bốn vai trên PRODUCTION trước buổi học đầu 15/09
+
+**Cách làm:** cùng kịch bản đã đi trên dev, chỉ đổi hai gốc sang
+`pe-hsa.vercel.app` + `pe-hsa-backend.onrender.com` (cookie `secure`, chờ dài
+hơn vì Render mới dậy). Thẻ mint ở máy dev dùng được với Render (SECRET_KEY
+dùng chung). Học viên **đăng nhập thật** qua biểu mẫu production; hai vai thử
+(học vụ, trợ giảng) tạo qua API rồi mint thẻ; giảng viên dùng tài khoản thật
+id 11. Dọn bằng SQL, đếm 9 bảng: **khớp mốc đầu** (users 5, members 4,
+attendance 0, `attendance_taken_at` 0).
+
+**Học viên — 33/33 như mong đợi trên production:** cấp tài khoản + xếp lớp →
+đăng nhập bằng mật khẩu tạm → bắt đổi → đá về `/login?vua-doi-mat-khau=1` →
+đăng nhập lại → bảng điều khiển có tên em + "Lớp của bạn" (khối dựng ở máy
+chủ) → 5 màn mở được, 5 màn quản trị/giảng dạy bị chặn → **giao bài → em nộp
+QUA GIAO DIỆN (bản vá 415 đã lên) → giảng viên chấm → em thấy 8/10 + nhận
+xét** → mở bài khi chưa ghi danh thấy đúng câu "chưa ghi danh… Mở trang khoá
+học →" (bản vá vòng 13 đã lên) → tờ báo cáo phụ huynh nêu đúng tên em.
+
+**Giảng viên (thật, id 11):** Việc hôm nay · buổi học · bài tập · báo cáo cả
+lớp · tờ một em đều mở, không "khác hình dạng", 0 lỗi JS; ba màn quản trị
+chặn; **lưu điểm danh thật qua giao diện** → toast "Đã lưu điểm danh — 2 có
+mặt", máy chủ ghi `attendanceTakenAt` (đã hoàn nguyên). **Học vụ:** Toàn trung
+tâm · Tài khoản-chặn (đúng thiết kế vòng 9 — tôi khai sai kỳ vọng trong kịch
+bản, không phải lỗi) · Lớp học · Đợt học · Việc hôm nay mở; Nhật ký, Cơ sở học
+phí, Soạn giáo trình chặn. **Trợ giảng (xếp lớp 1):** Việc hôm nay KHÔNG có ô
+"em cần chú ý", buổi học không có nút Xoá, báo cáo cả lớp và Toàn trung tâm
+chặn. Sổ điểm danh chỉ liệt kê học viên — trợ giảng trong lớp không bị tick.
+
+**Kết luận cho 15/09:** đường đi của bốn vai trên bản đang chạy đúng như trên
+dev; hai bản vá hôm nay đã có mặt trên production. Rủi ro còn lại duy nhất
+là Render ngủ (63–87 s cho người mở đầu tiên) — A1.
+
 ## 14/09/2026 — VÒNG 16b · Thí nghiệm Render ngủ đông trên production: luồng chảy có sống không?
 
 **Câu hỏi phải trả lời trước buổi học đầu (15/09):** hai khối của Trang của
