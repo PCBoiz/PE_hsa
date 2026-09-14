@@ -1,5 +1,6 @@
 'use client';
 
+import { taiTrang } from '@/lib/dieuHuong';
 import { useState } from 'react';
 import { oChu } from '@/lib/form';
 
@@ -76,7 +77,7 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
       // Cắt cả phiên hiện tại là CÓ CHỦ Ý: người ta đổi mật khẩu chính vì nghi
       // có ai khác đang dùng tài khoản mình, nên "đăng nhập lại ở mọi nơi" mới
       // là thứ họ mong đợi.
-      window.location.href = '/login?vua-doi-mat-khau=1';
+      taiTrang('/login?vua-doi-mat-khau=1');
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {

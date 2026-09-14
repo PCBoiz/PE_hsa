@@ -3,6 +3,7 @@
 // Trụ cột ④ — Thi thử CBT (ProgrammingEdu × TopHSA). React thuần + apiFetch.
 // list → làm bài (bấm giờ, palette câu, MCQ/điền) → kết quả + phân tích hợp phần.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { taiTrang } from '@/lib/dieuHuong';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppShell from '@/components/AppShell';
 
@@ -69,7 +70,7 @@ export default function MockExam() {
     void (async () => {
       try {
         const r = await apiFetch('/api/mock-exams');
-        if (r.status === 401) { window.location.href = '/login'; return; }
+        if (r.status === 401) { taiTrang('/login'); return; }
         const d = await r.json();
         setExams(d.exams || []); setView('list');
       } catch { setExams([]); setView('list'); }
@@ -367,7 +368,7 @@ export default function MockExam() {
 
             <div className="mk-result-actions">
               <button className="mk-btn ghost" onClick={() => { setResult(null); setExam(null); setView('list'); }}>← Đề khác</button>
-              <button className="mk-btn primary" onClick={() => (window.location.href = '/dashboard')}>Về lộ trình →</button>
+              <button className="mk-btn primary" onClick={() => taiTrang('/dashboard')}>Về lộ trình →</button>
             </div>
           </div>
         )}

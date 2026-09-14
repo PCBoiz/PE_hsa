@@ -1,5 +1,6 @@
 'use client';
 
+import { taiTrang } from '@/lib/dieuHuong';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -169,7 +170,7 @@ export default function AppShell({
   /* Ô tìm kiếm ở trang KHÔNG có main.js: Enter thì sang dashboard kèm `?q=`. */
   const timNgoaiSpa = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     const v = e.currentTarget.value.trim();
-    if (e.key === 'Enter' && v) window.location.href = '/dashboard?q=' + encodeURIComponent(v);
+    if (e.key === 'Enter' && v) taiTrang('/dashboard?q=' + encodeURIComponent(v));
   }, []);
 
   /* ĐẦU BÊN KIA của `?q=`. Trước 06/09/2026 màn chi tiết khoá học đã gửi tham
@@ -200,7 +201,7 @@ export default function AppShell({
       onClick={() => {
         if (cheDo === 'lam-bai') return;   // đang thi thì không rời trang
         if (spa) { goiLegacy('navigate', 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        else window.location.href = '/dashboard';
+        else taiTrang('/dashboard');
       }}
       style={{ cursor: cheDo === 'lam-bai' ? 'default' : 'pointer' }}
       title={cheDo === 'lam-bai' ? 'Đang làm bài' : 'Về trang chủ'}
@@ -387,12 +388,12 @@ export default function AppShell({
             </button>
             <button type="button" className="nav-btn" id="nav-vanhanh" style={{ display: 'none' }}
               aria-label="Vận hành" title="Vận hành"
-              onClick={() => { window.location.href = '/quan-tri/tong-quan'; }}>
+              onClick={() => { taiTrang('/quan-tri/tong-quan'); }}>
               <span className="nav-icon"><BieuTuong ten="shield" co={17} /></span><span>Vận hành</span>
             </button>
             <button type="button" className="nav-btn" id="nav-admin" style={{ display: 'none' }}
               aria-label="Quản trị" title="Quản trị"
-              onClick={() => { window.location.href = '/admin'; }}>
+              onClick={() => { taiTrang('/admin'); }}>
               <span className="nav-icon"><BieuTuong ten="wrench" co={17} /></span><span>Quản trị</span>
             </button>
           </>
@@ -519,20 +520,20 @@ export default function AppShell({
             <button type="button" className="user-dropdown-item" role="menuitem"
               onClick={() => {
                 if (spa) { goiLegacy('navigate', 'profile'); goiLegacy('closeUserMenu'); }
-                else window.location.href = '/dashboard#profile';
+                else taiTrang('/dashboard#profile');
               }}>
               <span className="udi-icon"><BieuTuong ten="user" co={14} /></span> Trang của tôi
             </button>
             <button type="button" className="user-dropdown-item" role="menuitem"
               onClick={() => {
                 if (spa) { goiLegacy('navigate', 'settings'); goiLegacy('closeUserMenu'); }
-                else window.location.href = '/dashboard#settings';
+                else taiTrang('/dashboard#settings');
               }}>
               <span className="udi-icon"><BieuTuong ten="settings" co={14} /></span> Cài đặt
             </button>
             <div className="user-dropdown-divider"></div>
             <button type="button" className="user-dropdown-item danger" role="menuitem"
-              onClick={() => { window.location.href = '/auth/logout'; }}>
+              onClick={() => { taiTrang('/auth/logout'); }}>
               <span className="udi-icon"><BieuTuong ten="log-out" co={14} /></span> Đăng xuất
             </button>
           </div>

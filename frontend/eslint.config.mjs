@@ -83,6 +83,11 @@ const eslintConfig = defineConfig([
     files: ["public/static/js/**/*.js"],
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
+      // Luật mới của eslint-config-next 16.3 (cấm `location.href = '/…'`) vô
+      // nghĩa ở đây: tệp nạp bằng `<script>` không có router của Next, và tải
+      // lại cả trang là cách DUY NHẤT các tệp này chuyển trang. Trong `src` luật
+      // vẫn bật — xem `src/lib/dieuHuong.ts`.
+      "@next/next/no-location-assign-relative-destination": "off",
 
       /* ── `no-undef` BẬT, và nó tìm ra một lỗi đang sống (05/09/2026) ──────
          Đo hai kiểu hỏng trên một tệp của tầng này:

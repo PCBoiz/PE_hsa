@@ -8,6 +8,7 @@
 // LƯU Ý: 3 khóa db_design* có route tĩnh riêng (courses/db_design*/page.tsx)
 // vì tổ hợp CSS khác (course_db_design.css đè 63 class trùng tên).
 
+import { taiTrang } from '@/lib/dieuHuong';
 import PageStyles from '@/components/PageStyles';
 import AppShell from '@/components/AppShell';
 import { use, useEffect, useState } from 'react';
@@ -184,7 +185,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                                 style={lesson.status !== 'locked' ? { cursor: 'pointer' } : undefined}
                                 onClick={
                                   lesson.status !== 'locked'
-                                    ? () => { window.location.href = `${lessonUrl}?lesson=${lesson.index}`; }
+                                    ? () => { taiTrang(`${lessonUrl}?lesson=${lesson.index}`); }
                                     : undefined
                                 }
                               >

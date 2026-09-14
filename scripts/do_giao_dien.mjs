@@ -564,6 +564,16 @@ for (const kho of KHO) {
     const loi = [];
     p.removeAllListeners('pageerror');
     p.on('pageerror', (e) => loi.push(String(e.message).slice(0, 80)));
+    /* VI PHẠM CSP (14/09/2026, cùng lúc Vercel bắt đầu gửi CSP). Trình duyệt
+       KHÔNG ném `pageerror` khi chặn một script/ảnh/phông — nó chỉ in một dòng
+       đỏ "Refused to … Content Security Policy" vào console, và trang trông
+       vẫn bình thường tới lúc người dùng bấm đúng nút cần thứ bị chặn. Không
+       đếm ở đây thì một CSP làm gãy tính năng vẫn ra "lỗiJS: 0". */
+    const csp = [];
+    p.removeAllListeners('console');
+    p.on('console', (m) => {
+      if (m.type() === 'error' && /Content Security Policy/i.test(m.text())) csp.push(m.text().slice(0, 160));
+    });
     try {
       await p.goto(GOC + url, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await p.waitForTimeout(2800);
@@ -771,11 +781,11 @@ for (const kho of KHO) {
       d.so_net_do = d.net_dau.length;
       d.so_tuong_tac = d.tuong_tac.length;
       delete d.dau; delete d.net_dau;
-      ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2) });
+      ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2), vi_pham_csp: csp.length, csp: csp.slice(0, 2) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
-        + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}`
+        + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}  CSP:${csp.length}`
         + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`
             + `  thiếu nét:${String(d.so_thieu_net).padStart(2)}/${String(d.so_net_do).padStart(2)}` : ''));
     } catch (e) {
@@ -793,11 +803,14 @@ const tong_tp = ket.reduce((a, r) => a + (r.so_vi_pham || 0), 0);
 const tong_cn = ket.reduce((a, r) => a + (r.so_cham_nho || 0), 0);
 const tong_tr = ket.filter((r) => (r.tran_ngang || 0) > 1).length;
 const tong_js = ket.reduce((a, r) => a + (r.loi_js || 0), 0);
+const tong_csp = ket.reduce((a, r) => a + (r.vi_pham_csp || 0), 0);
 console.log(`\nTỔNG (${KHO.length} khổ × ${TRANG.length} trang):`);
 console.log(`  vi phạm tương phản : ${tong_tp}`);
 console.log(`  vùng chạm < 44px   : ${tong_cn}`);
 console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  lỗi JS             : ${tong_js}`);
+console.log(`  vi phạm CSP        : ${tong_csp}`);
+for (const r of ket.filter((x) => x.vi_pham_csp)) console.log(`      ${r.kho} · ${r.ten}: ${r.csp[0]}`);
 if (do_tt) {
   console.log(`  tương phản khi rê  : ${ket.reduce((a, r) => a + (r.so_tuong_tac || 0), 0)}`);
   console.log(`  KHÔNG có vòng nét  : ${ket.reduce((a, r) => a + (r.so_thieu_net || 0), 0)}`

@@ -46,8 +46,11 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
 
-## Trạng thái ngay lúc này — 14/09/2026 (cuối ngày)
+## Trạng thái ngay lúc này — 14/09/2026 (khuya)
 
+- **Vòng 22 — tổng duyệt hạ tầng:** Next 16.3.5 (vá 2 lỗ CRITICAL), Vercel
+  gửi CSP + năm header bảo mật, CI kiểm lỗ hổng thư viện cả hai phía. Chi
+  tiết và kết quả trên production: mục VÒNG 22 ngay dưới vạch.
 - **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
   `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
   khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
@@ -72,6 +75,80 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
 
 <!-- MỚI NHẤT -->
+
+## 14/09/2026 (khuya) — VÒNG 22 · Tổng duyệt hạ tầng: Next dính hai lỗ CRITICAL, và cửa Vercel không có header bảo mật nào
+
+**Bối cảnh.** Anh Sơn chốt: mock production là buổi TỔNG DUYỆT — dữ liệu bỏ đi
+được, hạ tầng và bảo mật phải như thật. Rà một lượt: header trên production,
+cấu hình Next/Render/gunicorn, CI, lỗ hổng thư viện đã công bố.
+
+**1. `next` 16.2.11 dính hai lỗ CRITICAL** (`pnpm audit --prod`, lần đầu có người
+chạy): GHSA-2xp9-vwfh-vxw4 (chạy mã từ xa qua Image Optimization khi có tệp
+AVIF) và GHSA-p293-qw3h-jr36 (chạy mã từ xa không cần đăng nhập, máy chủ
+Windows); vá ở 16.3.3. Kèm `baseline-browser-mapping` mức moderate. Mức phơi
+nhiễm THẬT trên Vercel chưa đánh giá (Vercel tối ưu ảnh bằng hạ tầng riêng; lỗ
+kia chỉ trúng máy Windows) — nâng vì rẻ, không vì đã chứng minh khai thác được.
+- `next` + `eslint-config-next` → **16.3.5**; `pnpm audit --prod`: sạch. Backend
+  `pip-audit -r requirements.txt`: sạch.
+- Không cửa kiểm nào hỏi câu này → CI thêm `pip-audit -r requirements.txt` (job
+  backend, trước pytest) và `pnpm audit --prod --audit-level high` (job
+  frontend). Gói DEV có 6 lỗ high (brace-expansion/js-yaml dưới eslint, cả sáu
+  là DoS, công cụ chỉ đọc mã của mình) — cố ý không làm đỏ CI; lý do ghi ở
+  `ci.yml`.
+- `eslint-config-next` 16.3 thêm luật `no-location-assign-relative-destination`
+  → 15 cảnh báo, tức CI đỏ (`--max-warnings 0`). Cả 15 là tải lại cả trang CÓ
+  CHỦ Ý: trang đích chạy tầng cũ, `/auth/logout` là route handler, cố ý vứt
+  trạng thái sau đổi mật khẩu/401. 12 chỗ trong `src` → `lib/dieuHuong.ts::taiTrang`
+  (luật vẫn bật cho mã mới); 3 chỗ `public/static/js` → tắt luật riêng thư mục
+  ấy (không có router). Bấm thật 5 nút trên trang khoá học (`spa={false}`, đúng
+  nhánh gọi `taiTrang`): bài đang học, logo, tìm kiếm Enter, Hồ sơ, Đăng xuất —
+  URL đích đúng, đăng xuất xoá `pe_at`, 0 lỗi JS.
+- Build 16.3.5 cảnh báo "middleware → proxy" — CHƯA đổi (xem cuối mục).
+
+**2. Vercel không gửi header bảo mật nào** ngoài HSTS, còn lộ `X-Powered-By:
+Next.js`. Backend Render có đủ CSP/nosniff/X-Frame-Options — nhưng người dùng
+không bao giờ mở trang Render. Lớp bảo vệ dựng xong mà đặt nhầm cửa.
+- `next.config.ts`: CSP + `X-Content-Type-Options` + `X-Frame-Options: DENY` +
+  `Referrer-Policy` + `Permissions-Policy` (tắt camera/mic/vị trí/thanh toán;
+  clipboard GIỮ — nút sao chép link phụ huynh và mật khẩu tạm dùng nó) +
+  `Cross-Origin-Opener-Policy` + `poweredByHeader: false`, cho mọi đường dẫn.
+- Danh sách nguồn của CSP đo từ mã (script ngoài: chỉ confetti ở jsdelivr;
+  style/phông ngoài: chỉ Font Awesome ở cdnjs) và từ CSDL: quét mọi cột chữ của
+  mọi bảng tìm `http(s)://` — máy chủ ngoài duy nhất là link Meet (điều hướng,
+  CSP không chặn). Còn NỚI có chủ đích: `'unsafe-inline'` (4 script nội tuyến +
+  `onclick=` tầng cũ) và `'unsafe-eval'` (`lesson_hsa.js::compileFn`).
+- `scripts/do_dau_bao_mat.mjs` đo HAI chiều — "0 vi phạm CSP" không phân biệt
+  được CSP đang chạy với CSP không có: header trên trang/route handler/tệp tĩnh;
+  CHẶN (iframe từ miền lạ, fetch và ảnh ra máy chủ lạ, `<object>`); CHO PHÉP
+  (confetti, Font Awesome, `new Function`); có thẻ thì đi thêm 7 trang cần đăng
+  nhập. Trên máy: tất cả ĐẠT. **Đỏ trước:** chạy cùng bộ đo lên production khi
+  chưa có header → **9 mục HỎNG**, đúng ở phần header và CHẶN; phần CHO PHÉP vẫn đạt.
+- `do_giao_dien.mjs` nay đếm vi phạm CSP — trình duyệt KHÔNG ném `pageerror` khi
+  chặn, chỉ in một dòng console. Quét 22 trang × 2 khổ: tương phản 0, chạm nhỏ
+  0, tràn 0, lỗi JS 0, **CSP 0**, lời ghi lọt 0 — **nhưng trên 43/44 lượt**:
+  "Giảng dạy · bài tập" khổ điện thoại hết 45 s ở `page.goto` (lượt ấy chạy
+  chồng với hai lượt Playwright khác của tôi). Đo lại riêng trang ấy 3 lượt khổ
+  điện thoại + 1 máy tính: HTTP 200 sau 3,5–6,8 s, CSP 0, lỗi JS 0. Nguyên nhân
+  lượt hết giờ chưa chứng minh được — ghi rõ để không ai đọc 43 thành 44.
+
+**Kiểm:** build · tsc · eslint (0 cảnh báo) · 26/26 unit Node · `pnpm audit
+--prod` sạch · `pip-audit` sạch · hai bộ đo trên · 5 nút bấm thật.
+
+**Còn lại, ghi để làm (không cần anh):**
+- `middleware.ts` → `proxy.ts` theo cảnh báo của Next 16.3. Chạm luồng làm mới
+  phiên 8 tiếng — làm riêng một vòng, kiểm bằng cookie chỉ còn `pe_rt`.
+- CSP chặt hơn: bộ tính biểu thức nhỏ thay `new Function` (gỡ `'unsafe-eval'`);
+  nonce (gỡ `'unsafe-inline'`, nhưng buộc mọi trang dựng động).
+- `/giang-day/bai-tap/[classId]` dựng ở máy chủ gọi `assignments` RỒI mới
+  `classes/1` (log backend cách nhau 2–5 s từ máy dev) — gộp `Promise.all` được.
+- Cấu hình gunicorn nằm HAI chỗ lệch nhau: `render.yaml` truyền `--workers 2
+  --threads 2 --timeout 60`, `backend/gunicorn.conf.py` ghi threads 8 / timeout
+  30. Theo tài liệu gunicorn (≥ 20) tệp `./gunicorn.conf.py` được nạp MẶC ĐỊNH,
+  nên trên Render dòng lệnh đè ba giá trị ấy còn `graceful_timeout`/`keepalive`/
+  log lấy từ tệp — chưa kiểm được (gunicorn không chạy trên Windows). Gom về
+  một chỗ; đổi số thì đo bộ nhớ gói free trước.
+- Việc cần anh, không đổi: A1 giữ ấm · A2 khoá proxy · A3 nhánh Neon cho CI ·
+  A5 sao lưu · T40 `REDIS_URL` (giới hạn tần suất đang tính riêng từng worker).
 
 ## 14/09/2026 (tối) — VÒNG 21 · Bốn thẻ số + dải tiến độ sang React máy chủ, và "hôm nay" theo giờ Việt Nam
 

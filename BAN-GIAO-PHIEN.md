@@ -1,6 +1,6 @@
 # Bàn giao phiên — đọc tệp này đầu tiên khi mở phiên mới
 
-*Cập nhật 14/09/2026 (cuối ngày). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
+*Cập nhật 14/09/2026 (khuya, sau vòng 22). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
 đọc lại 5.800 dòng nhật ký. Cách làm học từ `BAN-GIAO-PHIEN.md` của dự án cô
 Giang — chỉ học cách, không đụng bên ấy.*
 
@@ -69,6 +69,9 @@ cd frontend && node ../scripts/ho_so_tophsa.mjs ../ho_so.json "../docs/Ho so san
 # lược đồ: mục nào của legacy_schema.sql đã tới Neon (thêm § mới thì thêm dòng MUC)
 cd backend  && ./.venv/Scripts/python.exe manage.py kiem_luoc_do
 
+# header bảo mật + CSP, đo HAI chiều (máy: next start -p 3100; production: PE_URL=https://pe-hsa.vercel.app)
+PE_TOKENS=.the/tokens_ad.json node scripts/do_dau_bao_mat.mjs
+
 # trước MỖI commit — phải rỗng
 git diff --cached --name-only | grep -i "\.env$"
 ```
@@ -99,7 +102,7 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   cuối (bàn giao này viết trước commit cuối của vòng 21). **26 unit Node**
   (thêm `gio-vn` ở vòng 21).
 
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–21)
+### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–22)
 
 - **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
   (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
@@ -133,6 +136,15 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   "222 kB" cho màn thật 529 kB) — nay chờ đọc xong, in số lượt hỏng, ghi rõ
   byte giải nén. Mọi số JS(kB) trong PROGRESS trước 14/09 tối: chỉ so tương đối. **Đừng đo
   hiệu năng khi bộ pytest đang chạy** — cùng máy, số nhiễu cả LCP lẫn JS.
+- **Khuya (vòng 22) — tổng duyệt hạ tầng.** `next` 16.2.11 dính **hai lỗ
+  CRITICAL** mà không cửa kiểm nào hỏi tới → 16.3.5, và CI nay chạy `pnpm audit
+  --prod` + `pip-audit`. Vercel **không gửi header bảo mật nào** (chỉ HSTS) →
+  `next.config.ts` gửi CSP + nosniff + X-Frame-Options + Referrer-Policy +
+  Permissions-Policy + COOP, tắt `X-Powered-By`. `scripts/do_dau_bao_mat.mjs`
+  đo hai chiều (cho phép thứ sản phẩm dùng / chặn thứ kẻ tấn công cần), đã đỏ
+  đúng 9 mục trên production cũ. `do_giao_dien` đếm thêm vi phạm CSP. Luật
+  eslint mới của Next 16.3 → `lib/dieuHuong.ts::taiTrang` cho 12 lần tải lại
+  cả trang có chủ ý.
 
 ## Việc đang chờ, không ai làm được thay
 
@@ -159,6 +171,12 @@ HỎI LẠI trước khi làm:**
 3. *Rà lại 4 vai trên PRODUCTION* (`pe-hsa.vercel.app`) trước/ngay sau buổi
    học đầu 15/09 — tài khoản thử, rà xong xoá.
 Ngoài ra: bộ nhập kết quả thi từ PDF (chờ B4); T40 chỉ còn đặt `REDIS_URL`.
+
+**Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
+`middleware.ts` → `proxy.ts` (kiểm luồng làm mới phiên) · gỡ `'unsafe-eval'`
+bằng bộ tính biểu thức thay `new Function` · gom cấu hình gunicorn về một chỗ
+(`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau) · `Promise.all` cho
+trang giao bài tập.
 
 **Cân nhắc rồi bỏ (đừng làm lại):** gỡ Font Awesome khỏi màn bài học — nội
 dung 76 bài trong CSDL gọi 190 tên biểu tượng; đó là phụ thuộc tầng nội dung.
