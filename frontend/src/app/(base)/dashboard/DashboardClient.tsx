@@ -41,7 +41,9 @@ const SCRIPTS = [
  * SPA cũ (`main.js::navigate`) đổi tab bằng class chứ không đổi route.
  */
 export default function DashboardClient(
-  { hocTiep, lopCuaBan, nhiemVu }: { hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode },
+  { hocTiep, lopCuaBan, nhiemVu, bangXepHang }: {
+    hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode; bangXepHang: React.ReactNode;
+  },
 ) {
   return (
     <>
@@ -229,22 +231,11 @@ export default function DashboardClient(
 
           {/* Row 2: Leaderboard + Learning progress */}
           <div className="dash-row dash-row--lb">
+            {/* Bảng xếp hạng dựng ở máy chủ (`components/BangXepHang.tsx`, 14/09/2026
+                tối); ba tab chạy ở `BangXepHangClient`. Trước đó `dashboard.js`
+                gọi API 200 ms sau DOMContentLoaded rồi đổ chuỗi HTML. */}
             <div className="section-card lb-card fx-fade-up" style={{ animationDelay: '.12s' }}>
-              <div className="lb-header">
-                <div className="section-title" style={{ marginBottom: 0 }}>
-                  <span className="title-icon-blue">🏆</span><span>Bảng xếp hạng</span>
-                </div>
-                <div className="lb-tabs" role="tablist" aria-label="Bảng xếp hạng">
-                  <button type="button" className="lb-tab active" data-type="weekly" role="tab" aria-selected="true">⏱ Tuần</button>
-                  <button type="button" className="lb-tab" data-type="streak" role="tab" aria-selected="false">🔥 Streak</button>
-                  <button type="button" className="lb-tab" data-type="friends" role="tab" aria-selected="false">👥 Bạn bè</button>
-                </div>
-              </div>
-              <div className="lb-meta" id="lb-meta">Đang tải…</div>
-              <ol className="lb-list" id="lb-list" aria-live="polite">
-                <li className="lb-skel">Đang tải bảng xếp hạng…</li>
-              </ol>
-              <div className="lb-me" id="lb-me" hidden></div>
+              {bangXepHang}
             </div>
 
             <div className="section-card dash-progress-card fx-fade-up" style={{ animationDelay: '.15s' }}>

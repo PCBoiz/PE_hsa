@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
-// Bản đầy đủ kéo ~150 kB vào gói của trang (Trang của tôi đo 431 → 587 kB khi
-// thêm khối nhiệm vụ; Thi thử 271 → 398 kB từ sáng) — nhiều hơn cả Font
-// Awesome vừa gỡ. Bản mini cùng luật `looseObject`/`safeParse`, viết dạng hàm
-// (`z.optional(z.string())` thay vì `.optional()`), rung cây được nên chỉ tốn
-// vài kB. Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
+// Bản đầy đủ không rung cây được — đo A/B trên Thi thử: 956 kB (zod) → 608 kB
+// (zod/mini), byte giải nén, ba lượt mỗi bên. Bản mini cùng luật
+// `looseObject`/`safeParse`, viết dạng hàm (`z.optional(z.string())` thay vì
+// `.optional()`). Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
 import * as z from 'zod/mini';
 
 import { ghiJson, loiBatDuoc } from '@/lib/api';

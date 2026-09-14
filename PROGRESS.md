@@ -116,6 +116,68 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 (tối) — VÒNG 20 · Bảng xếp hạng sang React (−123 dòng tầng cũ) + đính chính số unit test
+
+**Khối thứ tư theo khuôn máy chủ/client.** `BangXepHang.tsx` (máy chủ) dựng tab
+"Tuần" có hình dạng — `me` cho phép null đúng như backend vòng 19;
+`BangXepHangClient.tsx` (`zod/mini`) giữ ba tab, tải "Streak"/"Bạn bè" khi bấm
+lần đầu rồi nhớ lại, cùng class `lb-*` cũ để giao diện không đổi. Thêm
+`layJson` ở `lib/api.ts` — anh em GET của `ghiJson`, cùng luật hình dạng. Số có
+dấu chấm ngăn nghìn viết tay: `toLocaleString` phụ thuộc ICU của máy chạy,
+máy chủ và trình duyệt lệch một ký tự là React báo lỗi hydrate.
+
+Gỡ khỏi `dashboard.js`: `renderLeaderboard`, `formatValue`, `loadLeaderboard`,
+`setLbTab`, trình nghe bấm tab, ba biến trạng thái, hai lời gọi trong móc
+`navigate`. **Giữ** `escHtml` — đọc ranh giới IIFE trước khi xoá thì thấy
+`loadMiniRoadmap` cùng khối vẫn dùng nó (bài học "grep tham chiếu ≠ grep chức
+năng"). Trần tầng cũ **7302 → 7179**.
+
+**Kiểm bằng trình duyệt, hai vai, bấm đủ ba tab:** chỉ hai lượt API (streak,
+friends — tab Tuần có sẵn); quản trị viên không có "Vị trí của bạn"; học viên
+thấy "(Bạn)"; 0 lỗi JS. Lượt bấm thấy một câu sai nghĩa có từ tầng cũ: tab Tuần
+khi **chưa ai có điểm** vẫn hiện "Vị trí của bạn: #1 · 0 XP" — nay ẩn khi bảng
+trống. 22 trang × 2 khổ = 0/0/0/0.
+
+**Đính chính số unit test Node.** Đếm đích danh lúc này: **25** tệp. Hôm nay
+thêm ba (`hinh-dang`, `kieu-noi-dung`, `zod-phia-trinh-duyet`), tức trước hôm
+nay là 22. Vậy "25/25" ở vòng 13–15 và bàn giao lẽ ra là **24/24**, "26/26" ở
+vòng 18 (và commit `8ff8cad`) lẽ ra là **25/25**. Mọi tệp đều xanh ở mọi lượt —
+kết luận không đổi, chỉ con số sai một; bàn giao đã sửa. Nguyên nhân: tôi cộng
+dồn trong đầu thay vì chạy `ls | wc -l` trước khi ghi.
+
+**Thước hiệu năng nuốt lỗi thêm một lần.** Lượt đo đầu sau khi dời bảng xếp
+hạng báo Trang của tôi LCP 2.508 ms và — lạ hơn — Thi thử **67 kB** JS, Vận
+hành 170 kB, trong khi hai màn ấy không đổi mã. Hai nguyên nhân chồng nhau:
+(1) bộ pytest đầy đủ đang chạy nền cùng máy, tranh CPU và mạng; (2)
+`do_hieu_nang.mjs` cộng byte trong `try { await r.body() } catch {}` rồi đóng
+trang ngay — lượt đọc chưa xong ném lỗi và **bị bỏ qua im lặng**, nên máy càng
+nặng cột JS càng "đẹp". Sửa thước: giữ mọi lời hứa đọc thân, `allSettled` trước
+khi ghi số, đếm và in "N tệp JS không đọc được thân — đừng tin số này". Không
+ghi con số hiệu năng nào của lượt ấy; đo lại khi pytest xong.
+
+**Bộ pytest đầy đủ sau vòng 19–20: 546/546** (537 cũ + 9 phép kiểm bảng xếp
+hạng), 38 phút, không một lỗi thoáng qua.
+
+**Đo lại khi máy rảnh:** Trang của tôi LCP **2.096 ms** (2.016/2.096/2.420), CLS
+0,04; sáu màn đạt Core Web Vitals, còn cảnh báo 2.009 nút DOM.
+
+**Và thước JS hỏng nặng hơn tôi tưởng — đính chính vòng 18.** Sau khi sửa, cột
+JS nhảy lên 997 kB (Trang của tôi), 608 (Thi thử), 529 (các màn đơn giản) — gấp
+~2,3 lần số cũ vốn rất ổn định. Giả thuyết đầu của tôi là thước MỚI đếm thừa JS
+tải trước của tuyến khác. **Sai:** mổ từng tệp thì mọi JS đều về trước mốc chụp,
+không tệp nào về hai lần, không tải trước. Ngược lại — `/quan-tri/huong-dan`
+thật tải 9 tệp = 529 kB, riêng khối khung React 222 kB, **đúng bằng con số "222
+kB" thước cũ báo đều đặn nhiều ngày**. Thước cũ chỉ kịp đếm khoảng một tệp mỗi
+trang. Ổn định nên không ai ngờ.
+
+Hệ quả: các số "Thi thử 271 → 398 kB, Trang của tôi 431 → 587 → 429 kB" ở vòng
+18 (và commit `8ff8cad`, và chú thích trong bốn component + một phép kiểm) là
+số của thước hỏng. **Đo lại A/B bằng thước đã sửa**, ba lượt mỗi bên, hoàn
+nguyên xác nhận: Thi thử **`zod` đầy đủ 956 kB / 12 tệp → `zod/mini` 608 kB /
+11 tệp = −348 kB giải nén**. Kết luận vòng 18 đúng hướng, cái lợi thật lớn hơn
+số đã ghi. Trang của tôi không đo A/B nên không ghi số. Chú thích mã đã sửa
+theo số mới; cột JS nay ghi rõ là byte GIẢI NÉN.
+
 ## 14/09/2026 (tối) — VÒNG 19 · Bảng xếp hạng xếp cả nhân viên lên đầu học viên
 
 **Thấy khi chuẩn bị chuyển khối "Bảng xếp hạng" sang React.** Đọc
@@ -179,7 +241,10 @@ handler ở **1,97 s**, HTML hiện ở 1,55 s — một khoảng 0,4 s nút tr�
 mà không làm gì. Chấp nhận được (cùng khoảng mọi nút React trên trang đang có),
 nhưng ghi ra đây vì đó là hệ quả trực tiếp của việc dựng ở máy chủ.
 
-**Phát hiện đắt nhất vòng: `zod` đầy đủ trong mã phía trình duyệt.** Bảng hiệu
+**Phát hiện đắt nhất vòng: `zod` đầy đủ trong mã phía trình duyệt.** *(ĐÍNH
+CHÍNH ở vòng 20: mọi con số kB trong đoạn này đo bằng thước JS đang hỏng — chỉ
+đếm được khoảng một tệp mỗi trang. Kết luận đúng; độ lớn đo lại A/B: Thi thử
+956 → 608 kB giải nén.)* Bảng hiệu
 năng sau khi thêm khối: Trang của tôi **JS 431 → 587 kB**. Truy ngược: `zod`
 bản đầy đủ không rung cây được, và sáng nay T18 mức 2 (chiều GHI) đã nhập nó
 vào bốn component `'use client'` — **Thi thử cũng đã phình 271 → 398 kB từ

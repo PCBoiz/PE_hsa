@@ -102,8 +102,11 @@ const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
 await ctx.addCookies([{name:'pe_at',value:the.access,domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
 
+// "JS(kB)" = byte GIẢI NÉN của mọi tệp JS trong lượt dựng trang (xem chú thích
+// ở chỗ đếm) — lớn hơn số truyền qua mạng vì máy chủ nén gzip/brotli.
 console.log('màn hình'.padEnd(20), 'LCP'.padStart(8), 'CLS'.padStart(7),
-            'chặn'.padStart(7), 'JS(kB)'.padStart(8), 'req'.padStart(5), 'DOM'.padStart(6));
+            'chặn'.padStart(7), 'JS(kB)'.padStart(8), 'req'.padStart(5), 'DOM'.padStart(6),
+            '  JS = giải nén');
 console.log('─'.repeat(66));
 /* LÀM NÓNG trước khi đo (14/09/2026). `chromium.launch()` là một trình duyệt
    LẠNH HOÀN TOÀN — tiến trình GPU, bộ đệm phông, JIT đều chưa có gì — và màn
@@ -138,12 +141,26 @@ for (const [ten, url] of MAN) {
      ấm bộ đệm của chính trang thì không. */
   await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
 
-  let byteJs = 0, soReq = 0;
-  p.on('response', async (r) => {
+  /* ĐỌC THÂN PHẢN HỒI PHẢI ĐƯỢC CHỜ XONG (14/09/2026, tối).
+     Bản cũ `try { byteJs += (await r.body()).length } catch {}` (nuốt lỗi)
+     rồi đóng trang ngay sau khi đo — lượt đọc nào chưa xong lúc ấy ném lỗi và
+     bị BỎ QUA IM LẶNG — và KHÔNG chỉ khi máy nặng. Mổ xẻ từng tệp 14/09 tối:
+     `/quan-tri/huong-dan` thật tải 9 tệp = 529 kB giải nén, trong đó khối khung
+     React một mình 222 kB — đúng bằng con số "222 kB" thước cũ báo đều đặn nhiều
+     ngày. Tức thước cũ chỉ kịp đếm khoảng MỘT tệp mỗi trang; cột JS(kB) đã báo
+     thấp từ lâu, theo hướng đẹp hơn thật, mà ổn định nên không ai ngờ. Nay giữ
+     mọi lời hứa, chờ hết trước khi đóng trang, ĐẾM lượt đọc hỏng để in ra.
+
+     Đơn vị: byte GIẢI NÉN (`r.body()`), không phải byte truyền qua mạng. Mọi
+     số JS(kB) ghi trong PROGRESS trước 14/09 tối đo bằng thước cũ — chỉ dùng để
+     so tương đối trong cùng một lượt, không dùng làm độ lớn. */
+  let byteJs = 0, soReq = 0, docHong = 0;
+  const choDoc = [];
+  p.on('response', (r) => {
     soReq += 1;
     const ct = r.headers()['content-type'] || '';
     if (/javascript/.test(ct)) {
-      try { byteJs += (await r.body()).length; } catch { /* bị huỷ */ }
+      choDoc.push(r.body().then((b) => { byteJs += b.length; }, () => { docHong += 1; }));
     }
   });
 
@@ -175,7 +192,11 @@ for (const [ten, url] of MAN) {
     }), 400);
   }));
 
-  cacLuot.push({ ...d, js: Math.round(byteJs / 1024), req: soReq });
+  await Promise.allSettled(choDoc);
+  if (docHong > 0) {
+    console.log(`  ⚠ ${ten} lượt ${luot + 1}: ${docHong} tệp JS không đọc được thân — cột JS(kB) THIẾU, đừng tin số này`);
+  }
+  cacLuot.push({ ...d, js: Math.round(byteJs / 1024), req: soReq, docHong });
   await p.close();
   }
   if (!cacLuot.length) continue;

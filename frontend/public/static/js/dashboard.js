@@ -2280,9 +2280,10 @@ var _forumTextQ = '';
    (Thêm bởi patch ngày 2026-06-17, KHÔNG xoá các block phía trên)
    ═══════════════════════════════════════════════════════ */
 (function () {
-  var _currentLbType = 'weekly';
-  var _lbLoaded = { weekly: false, streak: false, friends: false };
-  var _lbData = { weekly: null, streak: null, friends: null };
+  /* Bảng xếp hạng ĐÃ CHUYỂN sang React (14/09/2026, tối):
+     `src/components/BangXepHang.tsx` (tab Tuần dựng ở máy chủ) +
+     `BangXepHangClient.tsx` (ba tab, nhớ dữ liệu từng tab). `escHtml` dưới
+     đây Ở LẠI — `loadMiniRoadmap` cùng khối này vẫn dùng nó. */
   var _miniRmLoaded = false;
 
   /* ─── Leaderboard ─── */
@@ -2291,144 +2292,6 @@ var _forumTextQ = '';
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-
-  function renderLeaderboard(data) {
-    var meta = document.getElementById('lb-meta');
-    var list = document.getElementById('lb-list');
-    var me = document.getElementById('lb-me');
-    if (!list) return;
-
-    if (!data || !data.entries) {
-      meta.textContent = 'Không tải được bảng xếp hạng.';
-      list.innerHTML = '<li class="lb-skel">Vui lòng thử lại sau.</li>';
-      if (me) me.hidden = true;
-      return;
-    }
-
-    var unit = data.unit || 'XP';
-    var label = data.label || '';
-    var meInfo = data.me;
-
-    var inTop = false;
-    if (meInfo) {
-      for (var i = 0; i < data.entries.length; i++) {
-        if (data.entries[i].id && meInfo.id && data.entries[i].id === meInfo.id) {
-          inTop = true; break;
-        }
-        // (14/09/2026) Chú thích cũ nói tab Bạn bè là dữ liệu GIẢ không có id —
-        // không còn đúng: backend đọc `user_follows` thật và mọi dòng đều có id.
-        // Nhánh so tên + giá trị dưới đây nay chỉ là đường lùi vô hại.
-        if (data.type === 'friends' && data.entries[i].name === meInfo.name
-          && data.entries[i].value === meInfo.value) {
-          inTop = true; break;
-        }
-      }
-    }
-
-    // "Top 0 học viên" là câu vô nghĩa — đo trên tài khoản thật 14/09/2026.
-    meta.textContent = label + (data.entries.length ? ' · Top ' + data.entries.length + ' học viên' : ' · chưa ai có điểm');
-
-    list.innerHTML = data.entries.map(function (e) {
-      var rankCls = '';
-      if (e.rank === 1) rankCls = 'lb-top1';
-      else if (e.rank === 2) rankCls = 'lb-top2';
-      else if (e.rank === 3) rankCls = 'lb-top3';
-      var isMe = false;
-      if (meInfo) {
-        if (e.id && meInfo.id && e.id === meInfo.id) isMe = true;
-        else if (e.name === meInfo.name && e.value === meInfo.value) isMe = true;
-      }
-      var medal = e.medal || '';
-      return (
-        '<li class="lb-row ' + rankCls + (isMe ? ' lb-row-me' : '') + '">' +
-        '<div class="lb-rank">' +
-        '<span class="lb-rank-text">' + escHtml(medal) + '</span>' +
-        '<span class="lb-rank-num">#' + e.rank + '</span>' +
-        '</div>' +
-        '<div class="lb-avatar">' + escHtml(e.avatar || '🧑') + '</div>' +
-        '<div class="lb-info">' +
-        '<div class="lb-name">' + escHtml(e.name) + (isMe ? ' (Bạn)' : '') + '</div>' +
-        '</div>' +
-        '<div class="lb-value">' + formatValue(e.value, unit) + '</div>' +
-        '</li>'
-      );
-    }).join('');
-
-    if (meInfo && !inTop) {
-      me.hidden = false;
-      me.innerHTML =
-        '<div class="lb-me-label">Vị trí của bạn</div>' +
-        '<li class="lb-row lb-row-me">' +
-        '<div class="lb-rank"><span class="lb-rank-num">#' + meInfo.rank + '</span></div>' +
-        '<div class="lb-avatar">' + escHtml(meInfo.avatar || '🧑') + '</div>' +
-        '<div class="lb-info">' +
-        '<div class="lb-name">' + escHtml(meInfo.name) + ' (Bạn)</div>' +
-        '</div>' +
-        '<div class="lb-value">' + formatValue(meInfo.value, unit) + '</div>' +
-        '</li>';
-    } else if (me) {
-      me.hidden = true;
-    }
-  }
-
-  function formatValue(v, unit) {
-    if (v == null) return '—';
-    if (unit === 'ngày') return v + ' ngày';
-    return Number(v).toLocaleString('vi-VN') + ' XP';
-  }
-
-  function loadLeaderboard(type) {
-    type = type || _currentLbType;
-    _currentLbType = type;
-    var list = document.getElementById('lb-list');
-    var meta = document.getElementById('lb-meta');
-    var me = document.getElementById('lb-me');
-    if (!list) return;
-    if (meta) meta.textContent = 'Đang tải…';
-    list.innerHTML = '<li class="lb-skel">Đang tải bảng xếp hạng…</li>';
-    if (me) me.hidden = true;
-
-    // Cache hit
-    if (_lbLoaded[type] && _lbData[type]) {
-      renderLeaderboard(_lbData[type]);
-      return;
-    }
-
-    fetch(API + '/leaderboard?type=' + encodeURIComponent(type))
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        _lbLoaded[type] = true;
-        _lbData[type] = data;
-        if (_currentLbType === type) renderLeaderboard(data);
-      })
-      .catch(function () {
-        if (meta) meta.textContent = 'Lỗi tải bảng xếp hạng.';
-        list.innerHTML = '<li class="lb-skel">Không tải được dữ liệu.</li>';
-      });
-  }
-
-  // Expose to window for inline onclick
-  window.setLbTab = function (type, btn) {
-    var tabs = document.querySelectorAll('.lb-tab');
-    tabs.forEach(function (t) {
-      var active = t === btn;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    loadLeaderboard(type);
-  };
-
-  // Khởi tạo listener cho các nút tab (dùng delegation để tránh phải gọi lại)
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest && e.target.closest('.lb-tab');
-    if (!btn) return;
-    var type = btn.getAttribute('data-type');
-    if (!type) return;
-    window.setLbTab(type, btn);
-  });
 
   /* ─── Lộ trình rút gọn ở Trang của tôi ──────────────────────────────────────
    *
@@ -2579,7 +2442,6 @@ var _forumTextQ = '';
     window.navigate = function (page) {
       _origNav(page);
       if (page === 'dashboard') {
-        loadLeaderboard('weekly');
         // Vẽ lại canvas với kích thước mới (nếu main.js đã load enrolledCourses)
         if (window.enrolledCourses && window.enrolledCourses.length) {
           // Defer để DOM ổn định
@@ -2591,7 +2453,6 @@ var _forumTextQ = '';
 
     // Lần đầu load
     setTimeout(function () {
-      loadLeaderboard('weekly');
       loadMiniRoadmap();
     }, 200);
   });

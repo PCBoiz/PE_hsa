@@ -95,6 +95,15 @@ export async function ghiJson<T>(
   return kq.data;
 }
 
+/**
+ * ĐỌC có hình dạng từ trình duyệt — anh em của `ghiJson` cho lượt GET (tab tải
+ * khi bấm, v.v.). Cùng luật: !ok → ném câu của máy chủ; lệch hình dạng → ném
+ * câu "khác hình dạng" nêu đúng ô. Tách tên riêng để nơi gọi đọc ra đúng việc.
+ */
+export async function layJson<T>(path: string, hinhDang: HinhDang<T>): Promise<T> {
+  return ghiJson(path, { method: 'GET' }, hinhDang);
+}
+
 /** Gọi và tự đọc JSON. Trả null khi lỗi — nơi gọi quyết định hiển thị gì. */
 export async function apiJson<T>(path: string, opts: RequestInit = {}): Promise<T | null> {
   try {

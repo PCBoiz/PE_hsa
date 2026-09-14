@@ -6,9 +6,11 @@
  * Sáng nay T18 mức 2 thêm hình dạng `zod` cho chiều GHI ở bốn component
  * `'use client'`. Bản `zod` đầy đủ không rung cây được (các phương thức móc vào
  * prototype), nên nhập nó ở phía trình duyệt là kéo cả thư viện vào gói của
- * trang: đo bằng `scripts/do_hieu_nang.mjs`, **Thi thử 271 → 398 kB**, **Trang
- * của tôi 431 → 587 kB** — nhiều hơn cả Font Awesome vừa gỡ cùng ngày. Không
- * bộ kiểm nào đỏ; chỉ thấy vì đọc cột JS(kB) của bảng hiệu năng.
+ * trang. Đo A/B trên Thi thử bằng thước đã sửa (byte giải nén, ba lượt mỗi
+ * bên): **956 kB với `zod` → 608 kB với `zod/mini`**. Không bộ kiểm nào đỏ khi
+ * nó lọt vào; chỉ thấy vì đọc cột JS(kB) của bảng hiệu năng. (Bản đầu chú thích
+ * này ghi "271 → 398 kB" — số của thước JS cũ vốn chỉ đếm khoảng một tệp mỗi
+ * trang; xem PROGRESS vòng 20.)
  *
  * Luật: tệp bắt đầu bằng `'use client'` nhập `zod/mini` (API dạng hàm, cùng
  * `looseObject`/`safeParse`). Mã máy chủ dùng `zod` đầy đủ thoải mái — gói máy

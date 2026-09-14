@@ -93,7 +93,10 @@ const TRAN_TEP = 13;
 // sang React dựng ở MÁY CHỦ, `src/components/HocTiep.tsx`.
 // 14/09/2026 (tối): 7355 → 7302 (-53). HẠ: "Nhiệm vụ hôm nay" sang React
 // máy chủ (`components/NhiemVu.tsx` + `NhiemVuClient.tsx`).
-const TRAN_DONG_MA = 7302;
+// 14/09/2026 (tối): 7302 → 7179 (-123). HẠ: bảng xếp hạng sang React
+// (`components/BangXepHang.tsx` + `BangXepHangClient.tsx`); `escHtml` ở lại
+// vì `loadMiniRoadmap` cùng khối còn dùng.
+const TRAN_DONG_MA = 7179;
 
 let failures = 0;
 function check(name, cond, them) {

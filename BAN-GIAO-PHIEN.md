@@ -45,7 +45,7 @@ cd frontend && npm run dev                              # cổng 3100
 cd backend  && ./.venv/Scripts/python.exe -m ruff check .
 cd backend  && ./.venv/Scripts/python.exe -m pytest -q  # ~29 phút, vào Neon thật
 cd frontend && ./node_modules/.bin/eslint src e2e --max-warnings 0 && ./node_modules/.bin/tsc --noEmit
-cd frontend && for f in e2e/unit/*.test.mjs; do node "$f" >/dev/null || echo "ĐỎ $f"; done   # 25 unit Node
+cd frontend && for f in e2e/unit/*.test.mjs; do node "$f" >/dev/null || echo "ĐỎ $f"; done   # 25 unit Node (đếm 14/09 tối, sau vòng 18)
 python scripts/cap_the.py                               # thẻ 30 phút, không ghi CSDL
 PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs --tu-kiem   # phải ĐẠT
 PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs             # rồi đo thật
@@ -75,7 +75,8 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
 
 ## Trạng thái ngay lúc bàn giao — 14/09/2026, cuối ngày
 
-- **Production**: Vercel `pe-hsa.vercel.app` phục vụ `bd92754`; Render
+- **Production**: Vercel `pe-hsa.vercel.app` + Render đều đã nhận bản vá
+  bảng xếp hạng (`e93c66c`, xác nhận 18:32 bằng thẻ học viên thật); Render
   `pe-hsa-backend` khoẻ (0,35 s/lượt khi thức) nhưng **vẫn ngủ đông, dậy mất
   71–87 s**. Đã thử nghiệm đúng cảnh ấy trên production (vòng 16b): Vercel giữ
   hàm ≥ 71 s, trang chảy (`/dashboard`) và trang chặn đều về đủ nội dung —
@@ -85,14 +86,16 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   trong ngày đã xoá, đếm 9 bảng khớp mốc đầu phiên. `admin_audit` có thêm các
   dòng THẬT do lượt rà tạo (giao/xoá bài, phát hành/thu hồi link) — để nguyên.
 - **Cổng chất lượng (14/09)**: pytest **537/537** (một ERROR thoáng qua, chạy
-  lại xanh) · **25/25 unit Node** · giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint
+  lại xanh) · **24/24 unit Node (đính chính: bản đầu ghi 25/25; 25 tệp là sau vòng 18)** · giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint
   / tsc / ruff / build sạch · hiệu năng **6/6 màn đạt** (Trang của tôi LCP 1,9–
   2,4 s, CLS 0,007; còn cảnh báo 2.111 nút DOM).
-- **Trần tầng cũ**: 7.355 dòng / 13 tệp.
+- **Trần tầng cũ**: 7.179 dòng / 13 tệp (sáng 7.385 → "Học tiếp" −30 →
+  "Nhiệm vụ hôm nay" −53 → "Bảng xếp hạng" −123).
 - Lớp 1: 16 buổi T3/T5 19:30 **từ 15/09** (ngày mai), ngày thi 06/12/2026.
-- **11 commit ngày 14/09** (vòng 10–16b), `master` = `erp` = `bd92754`.
+- Commit ngày 14/09: vòng 10–20; xem `git log --since=2026-09-14` cho hash
+  cuối (bàn giao này viết trước commit cuối của vòng 20).
 
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–16b)
+### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–20)
 
 - **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
   (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
@@ -105,10 +108,22 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
 - **Rà luồng HỌC VIÊN đầu-cuối** trên dev: tìm ra **học viên không nộp được
   bài / giảng viên không chấm được (415 — thiếu Content-Type ở `apiFetch`)**
   và màn bài học đổ lỗi cho máy chủ khi em chưa ghi danh. Cả hai đã vá.
+- **Tối (vòng 17–20):** rà cả **bốn vai trên PRODUCTION** trước buổi học
+  15/09 — đúng như dev, hai bản vá đã lên. "Nhiệm vụ hôm nay" và "Bảng xếp
+  hạng" sang React máy chủ/client. Phát hiện `zod` đầy đủ ở mã trình duyệt
+  làm gói JS phình — đo A/B bằng thước đã sửa: Thi thử **956 → 608 kB** giải
+  nén khi đổi sang `zod/mini` (nay có phép kiểm chặn). **Bảng xếp hạng
+  xếp cả nhân viên** — quản trị viên từng hạng 1 trên production; nay chỉ học
+  viên (`chi_hoc_vien`), nhân viên xem thì không có hạng. Câu hỏi sản phẩm
+  về tên thật học sinh cấp 3 trên bảng: **C6** trong `VIEC_CUA_ANH.md`.
 - **Thước đo tự sửa**: `do_hieu_nang` làm nóng + trung vị 3 lượt + tắt bộ đệm
   (số cũ 2,7 s và 0,6 s đều ảo); ba phép kiểm backend đếm tổng `admin_audit`
   nay lọc theo `actor_id` (bảng thật dùng chung, đỏ khi có người thao tác
-  song song); `bieu-tuong-khop` bắt tên `BieuTuong` không có hình.
+  song song); `bieu-tuong-khop` bắt tên `BieuTuong` không có hình; cột JS
+  của `do_hieu_nang` **chỉ đếm được khoảng MỘT tệp mỗi trang từ lâu** (báo
+  "222 kB" cho màn thật 529 kB) — nay chờ đọc xong, in số lượt hỏng, ghi rõ
+  byte giải nén. Mọi số JS(kB) trong PROGRESS trước 14/09 tối: chỉ so tương đối. **Đừng đo
+  hiệu năng khi bộ pytest đang chạy** — cùng máy, số nhiễu cả LCP lẫn JS.
 
 ## Việc đang chờ, không ai làm được thay
 

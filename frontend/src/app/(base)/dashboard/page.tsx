@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 
 import DashboardClient from './DashboardClient';
+import BangXepHang from '@/components/BangXepHang';
 import HocTiep from '@/components/HocTiep';
 import LopCuaToiKhung from '@/components/LopCuaToiKhung';
 import LopCuaToiNguon from '@/components/LopCuaToiNguon';
@@ -53,6 +54,24 @@ function KhungNhiemVu() {
   );
 }
 
+/** Khung chờ bảng xếp hạng — ĐÚNG trạng thái "Đang tải…" mà HTML cũ vẫn gửi
+ *  trước khi `dashboard.js` đổ dữ liệu, nên không có gì đổi so với trước. */
+function KhungBangXepHang() {
+  return (
+    <>
+      <div className="lb-header">
+        <div className="section-title" style={{ marginBottom: 0 }}>
+          <span className="title-icon-blue">🏆</span><span>Bảng xếp hạng</span>
+        </div>
+      </div>
+      <div className="lb-meta">Đang tải…</div>
+      <ol className="lb-list" aria-hidden="true">
+        <li className="lb-skel">Đang tải bảng xếp hạng…</li>
+      </ol>
+    </>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <DashboardClient
@@ -74,6 +93,11 @@ export default function DashboardPage() {
       nhiemVu={(
         <Suspense fallback={<KhungNhiemVu />}>
           <NhiemVu />
+        </Suspense>
+      )}
+      bangXepHang={(
+        <Suspense fallback={<KhungBangXepHang />}>
+          <BangXepHang />
         </Suspense>
       )}
     />
