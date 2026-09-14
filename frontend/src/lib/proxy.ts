@@ -103,13 +103,34 @@ function forwardHeaders(req: Request, access: string | null): Headers {
   return h;
 }
 
+/**
+ * Header an ninh của TRANG — `next.config.ts` gửi cho mọi phản hồi của miền Vercel.
+ *
+ * Bỏ bản của Django (14/09/2026). Đo trên production: `/api/user` mang CSP
+ * `frame-ancestors 'self'` và `X-Frame-Options: SAMEORIGIN` của backend thay vì
+ * giá trị trong `next.config.ts` — trên Vercel header do HÀM đặt thắng header cấu
+ * hình, còn `next start` ở máy thì ngược lại, nên bộ đo chạy trên máy không thấy.
+ * Chép nguyên là hai nguồn sự thật cho cùng một miền; bỏ đi thì cấu hình là nguồn
+ * duy nhất (header nào hàm không đặt, Vercel vẫn gắn từ cấu hình — đã thấy với
+ * `Permissions-Policy`, thứ Django không gửi).
+ */
+export const HEADER_AN_NINH_TRANG = new Set([
+  'content-security-policy',
+  'x-frame-options',
+  'x-content-type-options',
+  'referrer-policy',
+  'permissions-policy',
+  'cross-origin-opener-policy',
+]);
+
 /** Response giữ nguyên thân + kiểu nội dung, bỏ header hạ tầng của Django. */
-function passThrough(upstream: Response, body: ArrayBuffer): Response {
+export function passThrough(upstream: Response, body: ArrayBuffer): Response {
   const h = new Headers();
   upstream.headers.forEach((v, k) => {
     const lk = k.toLowerCase();
     if (lk === 'content-encoding' || lk === 'content-length' || lk === 'transfer-encoding') return;
     if (lk === 'set-cookie') return; // cookie của Django không dùng tới
+    if (HEADER_AN_NINH_TRANG.has(lk)) return;
     h.set(k, v);
   });
   return new Response(body, { status: upstream.status, headers: h });

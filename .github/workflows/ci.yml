@@ -1,5 +1,11 @@
 # CI cho bản migrate (Giai đoạn 6) — thứ project gốc chưa từng có.
 # pytest backend + build/lint/tsc frontend trên mỗi push/PR.
+#
+# 14/09/2026 — TỆP NÀY CHƯA TỪNG CHẠY TRÊN GITHUB. Đo qua API công khai: 207/207
+# lượt từ 10/08 dừng ở "The job was not started because your account is locked
+# due to a billing issue" (0 bước). Mọi chú thích bên dưới nói "CI chạy …" là
+# nói về lúc khoá đã gỡ (việc A0 của anh Sơn, `docs/VIEC_CUA_ANH.md`); tới lúc
+# ấy cổng chất lượng chỉ là những lệnh chạy TAY ở máy (`RULES.md §4`).
 name: CI
 
 on:

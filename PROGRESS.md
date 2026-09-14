@@ -50,7 +50,8 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 - **Vòng 22 — tổng duyệt hạ tầng:** Next 16.3.5 (vá 2 lỗ CRITICAL), Vercel
   gửi CSP + năm header bảo mật, CI kiểm lỗ hổng thư viện cả hai phía. Chi
-  tiết và kết quả trên production: mục VÒNG 22 ngay dưới vạch.
+  tiết và kết quả trên production: mục VÒNG 22 ngay dưới vạch. **GitHub Actions
+  chưa từng chạy lượt nào (khoá thanh toán) — không có CI, không có sao lưu; A0.**
 - **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
   `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
   khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
@@ -130,6 +131,38 @@ không bao giờ mở trang Render. Lớp bảo vệ dựng xong mà đặt nh�
   chồng với hai lượt Playwright khác của tôi). Đo lại riêng trang ấy 3 lượt khổ
   điện thoại + 1 máy tính: HTTP 200 sau 3,5–6,8 s, CSP 0, lỗi JS 0. Nguyên nhân
   lượt hết giờ chưa chứng minh được — ghi rõ để không ai đọc 43 thành 44.
+  (Bản đầu mục này đề nghị "gộp `Promise.all`" cho trang ấy vì log backend ghi
+  hai lời gọi cách nhau 2–5 s. Sai: `page.tsx` ĐÃ gọi song song — dòng log ghi
+  lúc TRẢ LỜI xong, không phải lúc bắt đầu. Đã gỡ.)
+
+**3. GitHub Actions CHƯA TỪNG CHẠY — cả CI, sao lưu lẫn giữ ấm.** Đẩy commit
+vòng này lên, lượt CI đỏ sau 3 giây. Hỏi API công khai của GitHub: cả **244 lượt**
+đọc được — CI 207 lượt từ 10/08, "Giữ ấm production" 35 từ 07/09, "Sao lưu CSDL"
+1 lượt 13/09 — đều `failure`/`cancelled` với **0 bước**. Chú thích của mọi lượt
+lấy mẫu (10/08, 31/08, 05/09, 13/09, lượt giữ ấm đầu, lượt sao lưu): *"The job
+was not started because your account is locked due to a billing issue."* Lượt
+thành công duy nhất là job đồ thị phụ thuộc của Dependabot (10/08).
+- Hệ quả: CI trên GitHub chưa từng tồn tại — mọi "cổng" là lệnh chạy tay ở máy;
+  **chưa có bản sao lưu CSDL nào**; workflow giữ ấm chưa gõ Render lần nào.
+  Chẩn đoán cũ ở A1 ("8/8 lượt thất bại vì bỏ cuộc trước khi Render kịp dậy")
+  là sai — chúng không chạy nổi bước đầu. A3 ("mỗi lần đẩy mã CI chạy 29 phút
+  pytest") cũng sai: 29 phút là số chạy tay.
+- Chỉ anh gỡ được → **A0** mới ở đầu `VIEC_CUA_ANH.md`; đính chính A1, A3, A5 và
+  đầu `ci.yml`. Đúng lớp lỗi `RULES.md §13` đã viết sẵn ("CI xanh chưa phải bằng
+  chứng — phải biết bộ kiểm CÓ CHẠY"); ở đây CI đỏ từ lượt đầu tiên và năm tuần
+  không ai hỏi vì sao.
+
+**4. `/api/*` trên production mang CSP của Django.** `do_dau_bao_mat` lên
+production ngay sau deploy: **17/18 ĐẠT** — header có trên trang và tệp tĩnh,
+iframe/fetch/ảnh/`<object>` bị chặn, confetti/Font Awesome/`new Function` chạy.
+Hỏng đúng `/api/user`: CSP `frame-ancestors 'self'` và `X-Frame-Options:
+SAMEORIGIN` của backend. `lib/proxy.ts::passThrough` chép nguyên header Django,
+và trên Vercel header do hàm đặt THẮNG header của `next.config.ts`; `next start`
+ở máy làm ngược lại, nên bộ đo trên máy không thấy. Rủi ro thấp (JSON + nosniff;
+giá trị của Django vẫn chặn nhúng khác miền), nhưng là hai nguồn sự thật cho một
+miền → `passThrough` bỏ sáu header an ninh trang của Django, `next.config.ts` là
+nguồn duy nhất. `e2e/unit/proxy-header-bao-mat.test.mjs` (27 tệp unit) — đỏ 4
+mục khi gỡ dòng lọc, xanh lại khi trả.
 
 **Kiểm:** build · tsc · eslint (0 cảnh báo) · 26/26 unit Node · `pnpm audit
 --prod` sạch · `pip-audit` sạch · hai bộ đo trên · 5 nút bấm thật.
@@ -139,15 +172,13 @@ không bao giờ mở trang Render. Lớp bảo vệ dựng xong mà đặt nh�
   phiên 8 tiếng — làm riêng một vòng, kiểm bằng cookie chỉ còn `pe_rt`.
 - CSP chặt hơn: bộ tính biểu thức nhỏ thay `new Function` (gỡ `'unsafe-eval'`);
   nonce (gỡ `'unsafe-inline'`, nhưng buộc mọi trang dựng động).
-- `/giang-day/bai-tap/[classId]` dựng ở máy chủ gọi `assignments` RỒI mới
-  `classes/1` (log backend cách nhau 2–5 s từ máy dev) — gộp `Promise.all` được.
 - Cấu hình gunicorn nằm HAI chỗ lệch nhau: `render.yaml` truyền `--workers 2
   --threads 2 --timeout 60`, `backend/gunicorn.conf.py` ghi threads 8 / timeout
   30. Theo tài liệu gunicorn (≥ 20) tệp `./gunicorn.conf.py` được nạp MẶC ĐỊNH,
   nên trên Render dòng lệnh đè ba giá trị ấy còn `graceful_timeout`/`keepalive`/
   log lấy từ tệp — chưa kiểm được (gunicorn không chạy trên Windows). Gom về
   một chỗ; đổi số thì đo bộ nhớ gói free trước.
-- Việc cần anh, không đổi: A1 giữ ấm · A2 khoá proxy · A3 nhánh Neon cho CI ·
+- Việc cần anh: **A0 gỡ khoá thanh toán GitHub (mới — chặn CI, sao lưu, A3, A5)** · A1 giữ ấm · A2 khoá proxy · A3 nhánh Neon cho CI ·
   A5 sao lưu · T40 `REDIS_URL` (giới hạn tần suất đang tính riêng từng worker).
 
 ## 14/09/2026 (tối) — VÒNG 21 · Bốn thẻ số + dải tiến độ sang React máy chủ, và "hôm nay" theo giờ Việt Nam

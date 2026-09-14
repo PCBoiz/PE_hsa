@@ -144,13 +144,16 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   đo hai chiều (cho phép thứ sản phẩm dùng / chặn thứ kẻ tấn công cần), đã đỏ
   đúng 9 mục trên production cũ. `do_giao_dien` đếm thêm vi phạm CSP. Luật
   eslint mới của Next 16.3 → `lib/dieuHuong.ts::taiTrang` cho 12 lần tải lại
-  cả trang có chủ ý.
+  cả trang có chủ ý. **Phát hiện đắt nhất vòng: GitHub Actions chưa từng chạy
+  một bước nào** (244/244 lượt, khoá thanh toán) → A0. Proxy `/api/*` thôi chép
+  CSP/X-Frame-Options của Django (production lộ ra, máy không thấy).
 
 ## Việc đang chờ, không ai làm được thay
 
-Xem bảng đầu `docs/VIEC_CUA_ANH.md`. Bốn việc chặn: A1 giữ ấm · A2 bí mật proxy
-(mọi người chung một xô đăng nhập) · A3 nhánh Neon cho CI (đang pytest thẳng
-vào production) · B1 một lớp thật.
+Xem bảng đầu `docs/VIEC_CUA_ANH.md`. Năm việc chặn: **A0 gỡ khoá thanh toán GitHub —
+CI, sao lưu, giữ ấm CHƯA TỪNG CHẠY lượt nào (đo 14/09)** · A1 giữ ấm · A2 bí mật proxy
+(mọi người chung một xô đăng nhập) · A3 nhánh Neon cho CI (chỉ có nghĩa sau A0)
+· B1 một lớp thật.
 
 ## Việc tôi làm tiếp được ngay (không cần anh)
 
@@ -175,8 +178,7 @@ Ngoài ra: bộ nhập kết quả thi từ PDF (chờ B4); T40 chỉ còn đặ
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
 `middleware.ts` → `proxy.ts` (kiểm luồng làm mới phiên) · gỡ `'unsafe-eval'`
 bằng bộ tính biểu thức thay `new Function` · gom cấu hình gunicorn về một chỗ
-(`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau) · `Promise.all` cho
-trang giao bài tập.
+(`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau).
 
 **Cân nhắc rồi bỏ (đừng làm lại):** gỡ Font Awesome khỏi màn bài học — nội
 dung 76 bài trong CSDL gọi 190 tên biểu tượng; đó là phụ thuộc tầng nội dung.
