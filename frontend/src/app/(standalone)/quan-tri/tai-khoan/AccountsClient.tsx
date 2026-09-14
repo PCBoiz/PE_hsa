@@ -18,7 +18,13 @@ import {
 } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 import type { HinhDang } from '@/lib/kiemDang';
-import { z } from 'zod';
+// `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
+// Bản đầy đủ kéo ~150 kB vào gói của trang (Trang của tôi đo 431 → 587 kB khi
+// thêm khối nhiệm vụ; Thi thử 271 → 398 kB từ sáng) — nhiều hơn cả Font
+// Awesome vừa gỡ. Bản mini cùng luật `looseObject`/`safeParse`, viết dạng hàm
+// (`z.optional(z.string())` thay vì `.optional()`), rung cây được nên chỉ tốn
+// vài kB. Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
+import * as z from 'zod/mini';
 
 export type ClassLite = { id: number; name: string; code?: string | null };
 
@@ -124,18 +130,18 @@ const HD_NHAP_HANG_LOAT = z.looseObject({
   skipped: z.number(),
   rows: z.array(z.looseObject({
     line: z.number(),
-    name: z.string().nullable().optional(),
-    email: z.string().nullable().optional(),
-    phone: z.string().nullable().optional(),
+    name: z.optional(z.nullable(z.string())),
+    email: z.optional(z.nullable(z.string())),
+    phone: z.optional(z.nullable(z.string())),
     status: z.enum(['created', 'skipped']),
-    reason: z.string().nullable().optional(),
-    tempPassword: z.string().nullable().optional(),
+    reason: z.optional(z.nullable(z.string())),
+    tempPassword: z.optional(z.nullable(z.string())),
   })),
-  warnings: z.array(z.string()).optional(),
-  tooMany: z.boolean().optional(),
-  parsedLines: z.number().optional(),
-  headerSkipped: z.boolean().optional(),
-  maxPerBatch: z.number().optional(),
+  warnings: z.optional(z.array(z.string())),
+  tooMany: z.optional(z.boolean()),
+  parsedLines: z.optional(z.number()),
+  headerSkipped: z.optional(z.boolean()),
+  maxPerBatch: z.optional(z.number()),
 }) satisfies HinhDang<BulkResultData>;
 
 export default function AccountsClient({

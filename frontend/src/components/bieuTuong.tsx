@@ -54,6 +54,7 @@ export const DUONG_VE: Record<string, string> = {
   paperclip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
   "arrow-up": '<path d="m5 12 7-7 7 7M12 19V5"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5.5-5.5 2 2-5.5z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
 };
 
 /**

@@ -14,6 +14,7 @@ import NapTruocDuLieu from '@/components/NapTruocDuLieu';
 import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
 import AppShell from '@/components/AppShell';
+import { BieuTuong } from '@/components/bieuTuong';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 const W = () => window as any;
@@ -40,7 +41,7 @@ const SCRIPTS = [
  * SPA cũ (`main.js::navigate`) đổi tab bằng class chứ không đổi route.
  */
 export default function DashboardClient(
-  { hocTiep, lopCuaBan }: { hocTiep: React.ReactNode; lopCuaBan: React.ReactNode },
+  { hocTiep, lopCuaBan, nhiemVu }: { hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode },
 ) {
   return (
     <>
@@ -149,10 +150,14 @@ export default function DashboardClient(
                   chỉ đếm số ngày (audit 2026-08-14). */}
               <div className="section-card fx-fade-up" style={{ animationDelay: '.1s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
-                  <span className="title-icon-blue" data-icon="check" data-size="16"></span>
+                  {/* `BieuTuong` chứ không `data-icon`: khối bên dưới chảy tới sau,
+                      ô trống sẽ bị `mountIcons` điền trước khi React hydrate. */}
+                  <span className="title-icon-blue"><BieuTuong ten="check" co={16} /></span>
                   <span>Nhiệm vụ hôm nay</span>
                 </div>
-                <div className="hsa-missions" id="hsa-missions"></div>
+                {/* Dựng ở máy chủ (`components/NhiemVu.tsx`, 14/09/2026); `id`
+                    giữ để CSS cũ và bộ đo giao diện còn bám. */}
+                <div className="hsa-missions" id="hsa-missions">{nhiemVu}</div>
               </div>
 
               {/* Tuần này + nhật ký học. Đặt ở đây chứ không phải Trang của tôi

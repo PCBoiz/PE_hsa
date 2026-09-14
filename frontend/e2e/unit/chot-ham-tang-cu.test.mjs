@@ -91,7 +91,9 @@ const TRAN_TEP = 13;
 // 14/09/2026: 7385 → 7355 (-30). HẠ theo đúng luật "dời được thì hạ":
 // `renderContinue` (thẻ "Học tiếp" — phần tử LCP của Trang của tôi) chuyển
 // sang React dựng ở MÁY CHỦ, `src/components/HocTiep.tsx`.
-const TRAN_DONG_MA = 7355;
+// 14/09/2026 (tối): 7355 → 7302 (-53). HẠ: "Nhiệm vụ hôm nay" sang React
+// máy chủ (`components/NhiemVu.tsx` + `NhiemVuClient.tsx`).
+const TRAN_DONG_MA = 7302;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -4,6 +4,7 @@ import DashboardClient from './DashboardClient';
 import HocTiep from '@/components/HocTiep';
 import LopCuaToiKhung from '@/components/LopCuaToiKhung';
 import LopCuaToiNguon from '@/components/LopCuaToiNguon';
+import NhiemVu from '@/components/NhiemVu';
 
 /**
  * TRANG CỦA TÔI — vỏ MÁY CHỦ mỏng bọc quanh phần client.
@@ -34,6 +35,24 @@ function KhungHocTiep() {
   return <div className="skel" style={{ height: '4.625rem', margin: '0.25rem' }} aria-hidden="true" />;
 }
 
+/** Ba nhiệm vụ mỗi ngày — khung chờ ba ô cùng class để chiều cao tự khớp. */
+function KhungNhiemVu() {
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="hsa-mis" aria-hidden="true">
+          <div className="hsa-mis-top">
+            <span className="hsa-mis-title skel" style={{ display: 'block', width: 'min(12rem, 60%)', height: '0.9em', borderRadius: '0.25rem' }} />
+            <span className="hsa-mis-xp skel" style={{ display: 'block', width: '3.5rem', height: '0.9em', borderRadius: '0.25rem' }} />
+          </div>
+          <div className="hsa-mis-track"><i style={{ width: 0 }}></i></div>
+          <div className="hsa-mis-meta skel" style={{ width: 'min(18rem, 80%)', height: '0.85em', borderRadius: '0.25rem' }} />
+        </div>
+      ))}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <DashboardClient
@@ -50,6 +69,11 @@ export default function DashboardPage() {
       lopCuaBan={(
         <Suspense fallback={<LopCuaToiKhung />}>
           <LopCuaToiNguon />
+        </Suspense>
+      )}
+      nhiemVu={(
+        <Suspense fallback={<KhungNhiemVu />}>
+          <NhiemVu />
         </Suspense>
       )}
     />

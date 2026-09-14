@@ -55,6 +55,8 @@ CAN = [
     # "hydration failed" và dựng lại cả nhánh. Vẽ bằng `BieuTuong` thì không có
     # ô trống nào cho tầng cũ điền, nên hai tầng không giẫm lên nhau.
     'compass',
+    # Tiêu đề khối "Nhiệm vụ hôm nay" (14/09/2026 tối) — khối chuyển sang máy chủ.
+    'check',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════

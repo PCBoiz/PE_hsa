@@ -116,6 +116,48 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 (tối) — VÒNG 18 · "Nhiệm vụ hôm nay" sang React máy chủ, và `zod` đã lén làm gói JS phình 150 kB
+
+**Khối thứ ba theo khuôn `HocTiep`/`LopCuaToiNguon`.** `NhiemVu.tsx` (máy chủ)
+gọi `/api/missions/today` có hình dạng, đưa xuống `NhiemVuClient.tsx` (danh
+sách + nút "Nhận" gọi `/api/missions/claim` qua `ghiJson`; phản hồi mang lại
+cả danh sách mới nên khối vẽ lại từ đó; thẻ thành tích và hàng thẻ số vẫn nhờ
+`__showAchievement`/`__refreshHsaTiles` của tầng cũ). Chảy qua `Suspense` với
+khung chờ ba ô cùng class. Biểu tượng tiêu đề đổi sang `BieuTuong` (bài học
+#418 vòng 15) — `bieu-tuong-khop` bắt ngay tên `check` chưa có trong bộ sinh.
+`renderMissions`/`loadMissions` rời `dashboard.js`: trần tầng cũ **7355 → 7302**.
+
+**Bấm "Nhận" THẬT trên dev** (dựng điều kiện "kiếm 100 XP hôm nay" bằng một
+dòng `user_daily_xp_logs`): POST 200, "Đã nhận" hiện, nút biến mất. Hoàn nguyên
+bằng kịch bản: xp/gems 383 → 353, xoá `user_missions`, sự kiện `mission`, dòng
+XP ngày — khớp số ghi trước khi thử. **Bẫy của thước, lần thứ tư trong ngày:**
+lượt bấm đầu rơi vào khoảng trước khi React gắn vào nút (HTML máy chủ đã có
+nút, nhưng chưa có handler) → không có POST nào, và lượt đo sau đó thấy
+"không có nút" vì lần bấm trước… đã được xử lý trễ và nhận thưởng thật. Kịch
+bản sau chờ khoá `__reactFiber` trên nút rồi mới bấm.
+
+Câu hỏi thật đằng sau bẫy ấy: em bấm trong ~0,4 s đầu thì sao? Đo lại: nút có
+handler ở **1,97 s**, HTML hiện ở 1,55 s — một khoảng 0,4 s nút trông bấm được
+mà không làm gì. Chấp nhận được (cùng khoảng mọi nút React trên trang đang có),
+nhưng ghi ra đây vì đó là hệ quả trực tiếp của việc dựng ở máy chủ.
+
+**Phát hiện đắt nhất vòng: `zod` đầy đủ trong mã phía trình duyệt.** Bảng hiệu
+năng sau khi thêm khối: Trang của tôi **JS 431 → 587 kB**. Truy ngược: `zod`
+bản đầy đủ không rung cây được, và sáng nay T18 mức 2 (chiều GHI) đã nhập nó
+vào bốn component `'use client'` — **Thi thử cũng đã phình 271 → 398 kB từ
+sáng** mà không bộ kiểm nào đỏ; chỉ thấy vì đọc cột JS(kB). Sửa: bốn tệp client
+nhập `zod/mini` (API hàm, cùng `looseObject`/`safeParse`); mã máy chủ giữ `zod`
+đầy đủ. Đo lại: **Trang của tôi 429 kB, Thi thử 239 kB** — thấp hơn cả trước
+khi có zod. Phép kiểm mới `zod-phia-trinh-duyet.test.mjs`: mọi tệp mở đầu
+`'use client'` không được `import … from 'zod'` (đỏ trước khi lùi một tệp về
+bản đầy đủ; có hàng rào cho chính biểu thức — không bắt chú thích, không nhầm
+`zod/mini`). Lần quét tay đầu đã báo oan `LopCuaToiNguon.tsx` (tệp máy chủ chỉ
+NHẮC `'use client'` trong chú thích) — nên luật đọc chỉ thị ĐẦU tệp.
+
+**Kết quả:** 6/6 màn đạt; Trang của tôi LCP 2.000 ms (1.952/2.000/2.416), CLS
+đo riêng 0,007 (một lượt trung vị báo 0,043 — nhiễu, đã đo lại); 22 trang × 2
+khổ = 0/0/0/0; 26/26 unit; eslint/tsc sạch.
+
 ## 14/09/2026 (tối) — VÒNG 17 · Rà cả bốn vai trên PRODUCTION trước buổi học đầu 15/09
 
 **Cách làm:** cùng kịch bản đã đi trên dev, chỉ đổi hai gốc sang

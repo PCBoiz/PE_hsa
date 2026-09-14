@@ -10,7 +10,13 @@ import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
-import { z } from 'zod';
+// `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
+// Bản đầy đủ kéo ~150 kB vào gói của trang (Trang của tôi đo 431 → 587 kB khi
+// thêm khối nhiệm vụ; Thi thử 271 → 398 kB từ sáng) — nhiều hơn cả Font
+// Awesome vừa gỡ. Bản mini cùng luật `looseObject`/`safeParse`, viết dạng hàm
+// (`z.optional(z.string())` thay vì `.optional()`), rung cây được nên chỉ tốn
+// vài kB. Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
+import * as z from 'zod/mini';
 
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.max(0, s % 60)).padStart(2, '0')}`;
@@ -25,11 +31,11 @@ const HD_KET_QUA = z.looseObject({
   score: z.number(),
   total: z.number(),
   section_scores: z.record(z.string(), z.looseObject({ correct: z.number(), total: z.number() })),
-  weakest: z.string().nullable(),
+  weakest: z.nullable(z.string()),
   results: z.array(z.looseObject({})),
   durationSeconds: z.number(),
   counted: z.boolean(),
-  notCountedReason: z.string().nullable(),
+  notCountedReason: z.nullable(z.string()),
   xpGained: z.number(),
 });
 
