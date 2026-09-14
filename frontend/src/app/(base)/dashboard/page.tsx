@@ -3,6 +3,9 @@ import { Suspense } from 'react';
 import DashboardClient from './DashboardClient';
 import BangXepHang from '@/components/BangXepHang';
 import HocTiep from '@/components/HocTiep';
+import TheSoHsa from '@/components/TheSoHsa';
+import TheSoHsaClient from '@/components/TheSoHsaClient';
+import TienDoHopPhan, { KhungTienDo } from '@/components/TienDoHopPhan';
 import LopCuaToiKhung from '@/components/LopCuaToiKhung';
 import LopCuaToiNguon from '@/components/LopCuaToiNguon';
 import NhiemVu from '@/components/NhiemVu';
@@ -98,6 +101,18 @@ export default function DashboardPage() {
       bangXepHang={(
         <Suspense fallback={<KhungBangXepHang />}>
           <BangXepHang />
+        </Suspense>
+      )}
+      /* Khung chờ thẻ số = chính phần client với `banDau={null}`: bốn ô "—",
+         đúng trạng thái HTML cũ gửi trước khi tầng cũ đổ số — không đổi gì. */
+      theSo={(
+        <Suspense fallback={<TheSoHsaClient banDau={null} />}>
+          <TheSoHsa />
+        </Suspense>
+      )}
+      tienDo={(
+        <Suspense fallback={<KhungTienDo />}>
+          <TienDoHopPhan />
         </Suspense>
       )}
     />

@@ -2465,98 +2465,10 @@ var _forumTextQ = '';
    Thiếu dữ liệu → hiện dấu gạch kèm nút hành động, KHÔNG bịa số.
    ══════════════════════════════════════════════════════════════════════════ */
 (function () {
-  var SECTIONS = [
-    { key: 'ql', id: 'hsa_quantitative', name: 'Tư duy Định lượng', total: 27 },
-    { key: 'vb', id: 'hsa_verbal', name: 'Tư duy Định tính', total: 23 },
-    { key: 'kh', id: 'hsa_science', name: 'Khoa học', total: 26 }
-  ];
-  var DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-  //: /api/hsa/summary và /api/courses-enrolled chạy song song — giữ kết quả
-  //  summary lại để bên nào về sau cũng vẽ được bằng dữ liệu đầy đủ.
-  var lastSummary = null, lastEnrolled = null;
-
-  function el(id) { return document.getElementById(id); }
-
-  function renderWeek(streak) {
-    var box = el('tile-week');
-    if (!box) return;
-    // Thứ trong tuần: JS trả CN=0 → quy về T2=0 cho khớp lịch Việt Nam.
-    var todayIdx = (new Date().getDay() + 6) % 7;
-    box.innerHTML = DAYS.map(function (d, i) {
-      // streak ĐÃ tính cả hôm nay → số ngày trước đó được tô là streak - 1.
-      var cls = i === todayIdx ? ' class="is-today"'
-        : (i < todayIdx && streak > (todayIdx - i) ? ' class="is-done"' : '');
-      return '<span' + cls + '>' + d + '</span>';
-    }).join('');
-  }
-
-  function renderTiles(s) {
-    if (el('tile-streak')) el('tile-streak').textContent = s.streakDays || 0;
-    renderWeek(s.streakDays || 0);
-
-    var done = s.lessonsDone || 0, total = s.lessonsTotal || 76;
-    if (el('tile-done')) el('tile-done').textContent = done;
-    if (el('tile-done-bar')) el('tile-done-bar').style.width = Math.round(done / total * 100) + '%';
-
-    // Đếm ngược: không suy ra được thì để dấu gạch + nút dẫn tới nơi sửa được.
-    // Đã khảo sát nhưng mốc đã trôi qua → dẫn thẳng vào Cài đặt, không bắt
-    // học viên làm lại toàn bộ khảo sát chỉ để đổi một dòng.
-    var days = s.daysToExam;
-    if (el('tile-days')) el('tile-days').textContent = (days == null ? '—' : days);
-    var dCta = el('tile-days-cta');
-    if (dCta) {
-      dCta.classList.toggle('hidden', days != null);
-      var surveyed = Boolean(s.examTiming || s.targetScore);
-      dCta.textContent = surveyed ? 'Cập nhật mốc thi' : 'Làm khảo sát để đặt mốc thi';
-      dCta.setAttribute('href', surveyed ? '#hsa-goals' : '/questionaire');
-      if (surveyed) {
-        dCta.onclick = function (e) {
-          e.preventDefault();
-          if (typeof window.navigate === 'function') window.navigate('settings');
-          var box = el('hsa-goals');
-          if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-      } else {
-        dCta.onclick = null;
-      }
-    }
-
-    // Điểm thi thử: có mục tiêu thì hiện "điểm / mục tiêu".
-    var sc = s.lastMockScore, tot = s.lastMockTotal;
-    if (el('tile-score')) {
-      el('tile-score').textContent = (sc == null || tot == null) ? '—' : (sc + '/' + tot);
-    }
-    if (el('tile-score-lbl')) {
-      el('tile-score-lbl').textContent = s.targetScore
-        ? ('điểm thi thử · mục tiêu ' + s.targetScore)
-        : 'điểm thi thử gần nhất';
-    }
-    var sCta = el('tile-score-cta');
-    if (sCta) sCta.classList.toggle('hidden', sc != null && tot != null);
-  }
-
-  function renderSections(enrolled) {
-    var box = el('hsa-sections');
-    if (!box) return;
-    var byId = {};
-    (enrolled || []).forEach(function (c) { byId[c.id] = c; });
-    var counted = (lastSummary && lastSummary.byCourse) || {};
-    box.innerHTML = SECTIONS.map(function (s) {
-      var c = byId[s.id] || {};
-      // Số bài đã xong đếm thẳng từ lesson_progress; enrollments.progress chỉ
-      // là bộ nhớ đệm và bằng 0 với người chưa ghi danh.
-      var doneN = counted[s.id];
-      var pct = (doneN != null)
-        ? Math.max(0, Math.min(100, Math.round(doneN / s.total * 100)))
-        : Math.max(0, Math.min(100, Math.round(c.progress || 0)));
-      if (doneN == null) doneN = Math.round(pct / 100 * s.total);
-      return '<div class="hsa-sec-row" data-sec="' + s.key + '">' +
-        '<span class="hsa-sec-name">' + s.name + '</span>' +
-        '<span class="hsa-sec-num">' + doneN + '/' + s.total + ' bài · ' + pct + '%</span>' +
-        '<span class="hsa-sec-track"><i style="width:' + pct + '%"></i></span>' +
-        '</div>';
-    }).join('');
-  }
+  /* Hàng bốn thẻ số, dải 7 ngày và dải tiến độ ba hợp phần ĐÃ CHUYỂN sang React
+     dựng ở máy chủ (14/09/2026 tối): `src/components/TheSoHsa.tsx` +
+     `TheSoHsaClient.tsx` (đăng ký lại `window.__refreshHsaTiles`) và
+     `TienDoHopPhan.tsx`. Khối này chỉ còn thẻ "Mở khoá thành tích". */
 
   /* `renderContinue` ĐÃ CHUYỂN sang React dựng ở máy chủ (14/09/2026):
      `src/components/HocTiep.tsx`. Thẻ này là phần tử LCP của trang, mà tầng
@@ -2571,7 +2483,8 @@ var _forumTextQ = '';
      và mỗi ngày nhận được đúng một lần (máy chủ chặn bằng khoá chính). */
   /* `renderMissions`/`loadMissions` ĐÃ CHUYỂN sang React dựng ở máy chủ
      (14/09/2026): `src/components/NhiemVu.tsx` + `NhiemVuClient.tsx`. Nút
-     "Nhận" bên ấy vẫn gọi `__showAchievement` và `__refreshHsaTiles` ở đây. */
+     "Nhận" bên ấy vẫn gọi `__showAchievement` ở đây; `__refreshHsaTiles` thì
+     KHÔNG còn ở tầng này — `TheSoHsaClient.tsx` đăng ký nó (14/09/2026 tối). */
 
   /* Thành tích vừa mở khoá — báo một lần, tự tắt. */
   function showAchievement(a) {
@@ -2589,47 +2502,6 @@ var _forumTextQ = '';
   }
   window.__showAchievement = showAchievement;
 
-  /* Vẽ lại phần phụ thuộc CẢ HAI lượt gọi, gọi được nhiều lần vô hại. */
-  function renderProgressBlocks() {
-    // Chỉ còn dải tiến độ ba hợp phần; thẻ "Học tiếp" nay do máy chủ dựng.
-    if (lastEnrolled) { renderSections(lastEnrolled); }
-  }
-
-  /* Nạp lại riêng hàng thẻ — gọi sau khi học viên sửa mục tiêu ở Cài đặt. */
-  window.__refreshHsaTiles = function () {
-    if (!el('tile-streak')) return;
-    // `fetch` thẳng, KHÔNG qua `__apiGet`: đây là lượt gọi SAU KHI em vừa sửa
-    // mục tiêu ở Cài đặt — lấy lại bản nạp trước lúc mở trang là hiện đúng
-    // con số vừa bị thay.
-    fetch('/api/hsa/summary')
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
-      .catch(function () { /* giữ nguyên giá trị đang hiện */ });
-  };
-
-  function initHsaDashboard() {
-    if (!el('tile-streak')) return;   // không phải trang dashboard
-    // `__apiGet` chứ không `fetch`: lượt này đã được bắn sẵn từ HTML
-    // (`NapTruocDuLieu`), và tầng này chỉ chạy sau khi React hydrate.
-    window.__apiGet('/api/hsa/summary')
-      .then(function (d) { if (d) { lastSummary = d; renderTiles(d); renderProgressBlocks(); } })
-      .catch(function () { /* thẻ giữ giá trị mặc định */ });
-    // Dùng chung lượt gọi với main.js — trước đây mỗi bên tự fetch nên
-    // /api/courses-enrolled bị gọi hai lần mỗi lần mở Bảng điều khiển.
-    window.__apiGet('/api/courses-enrolled')
-      .then(function (list) {
-        lastEnrolled = Array.isArray(list) ? list : (list && list.courses) || [];
-        renderProgressBlocks();
-      })
-      .catch(function () { lastEnrolled = []; renderProgressBlocks(); });
-    if (window.mountIcons) mountIcons(document.querySelector('.hsa-tiles'));
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHsaDashboard);
-  } else {
-    initHsaDashboard();
-  }
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════

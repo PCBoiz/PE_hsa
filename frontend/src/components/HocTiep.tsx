@@ -1,10 +1,7 @@
 import Link from 'next/link';
-import { z } from 'zod';
 
 import HocTiepRong from '@/components/HocTiepRong';
-
-import { serverJson } from '@/lib/server-api';
-import type { HinhDang } from '@/lib/kiemDang';
+import { layKhoaDangHoc, layTomTat, type KhoaDangHoc } from '@/lib/duLieuHsa';
 
 /**
  * THẺ "HỌC TIẾP" — dựng Ở MÁY CHỦ, không chờ tầng JS cũ.
@@ -38,19 +35,8 @@ const TONG_BAI: Record<string, number> = {
 };
 const MAC_DINH = 27;
 
-type Khoa = { id: string; title?: string | null; progress?: number | null };
-
-const HD_SUMMARY = z.looseObject({
-  byCourse: z.record(z.string(), z.number()),
-}) satisfies HinhDang<{ byCourse: Record<string, number> }>;
-
-const HD_KHOA = z.looseObject({
-  enrolled: z.array(z.looseObject({
-    id: z.string(),
-    title: z.string().nullable().optional(),
-    progress: z.number().nullable().optional(),
-  })),
-}) satisfies HinhDang<{ enrolled: Khoa[] }>;
+// Hình dạng hai phản hồi nay khai MỘT chỗ ở `lib/duLieuHsa.ts` — ba khối dùng chung.
+type Khoa = KhoaDangHoc;
 
 function chonKhoa(ds: Khoa[], daXong: Record<string, number>) {
   const soXong = (c: Khoa) =>
@@ -89,12 +75,13 @@ function DuaXuong({ duLieu }: { duLieu: Record<string, unknown> }) {
 }
 
 export default async function HocTiep() {
-  const [sum, khoa] = await Promise.all([
-    serverJson('/api/hsa/summary', { requireAuth: true }, HD_SUMMARY),
-    serverJson('/api/courses-enrolled', { requireAuth: true }, HD_KHOA),
-  ]);
+  // `cache()` ở `duLieuHsa`: hàng thẻ số và dải tiến độ gọi cùng hai hàm này
+  // trong cùng lượt dựng — ba khối, hai lượt API.
+  const [sum, khoa] = await Promise.all([layTomTat(), layKhoaDangHoc()]);
+  // Chỉ còn `courses-enrolled` cần đưa xuống: `main.js::loadCoursesAndEnrolled`
+  // (tab Khoá học) đọc nó qua `__apiGet`. `hsa/summary` từng đưa xuống cho
+  // `renderTiles` — hàm ấy đã sang React (`TheSoHsa`), không ai ở tầng cũ đọc nữa.
   const duaXuong: Record<string, unknown> = {};
-  if (sum.ok) duaXuong['/api/hsa/summary'] = sum.data;
   if (khoa.ok) duaXuong['/api/courses-enrolled'] = khoa.data;
 
   const daXong = sum.ok ? sum.data.byCourse : {};

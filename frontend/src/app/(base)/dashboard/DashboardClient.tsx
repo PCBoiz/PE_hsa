@@ -41,8 +41,9 @@ const SCRIPTS = [
  * SPA cũ (`main.js::navigate`) đổi tab bằng class chứ không đổi route.
  */
 export default function DashboardClient(
-  { hocTiep, lopCuaBan, nhiemVu, bangXepHang }: {
+  { hocTiep, lopCuaBan, nhiemVu, bangXepHang, theSo, tienDo }: {
     hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode; bangXepHang: React.ReactNode;
+    theSo: React.ReactNode; tienDo: React.ReactNode;
   },
 ) {
   return (
@@ -86,50 +87,11 @@ export default function DashboardClient(
               ngang còn lộ trình thì teo lại. Nay 4 chỉ số quan trọng nhất lên
               trên cùng, lịch học thu thành dải 7 chấm ngay trong thẻ streak.
               dashboard.js đổ số vào qua /api/hsa/summary. */}
+          {/* Bốn thẻ số dựng ở máy chủ (`components/TheSoHsa.tsx`, 14/09/2026 tối);
+              phần client đăng ký lại `window.__refreshHsaTiles` cho nút "Nhận"
+              nhiệm vụ và nút lưu mục tiêu ở Cài đặt. */}
           <div className="hsa-tiles fx-fade-up" style={{ animationDelay: '.04s' }}>
-            <div className="hsa-tile">
-              <div className="hsa-tile-ic" data-icon="flame" data-size="18"></div>
-              <div className="hsa-tile-body">
-                {/* `—` chứ không `0`. Hai ô bên phải ("ngày nữa tới kỳ thi",
-                    "điểm thi thử") đã làm đúng từ đầu; hai ô này thì viết cứng
-                    số 0 vào HTML. Trong khoảng thời gian chờ dữ liệu — và VĨNH
-                    VIỄN nếu lời gọi hỏng — người dùng đọc được "0 ngày học liên
-                    tiếp, 0/76 bài", tức một tài khoản trắng, thay vì "chưa biết".
-                    Đúng cùng một kiểu nói dối êm ái với vụ hàng rào mật khẩu
-                    tạm sáng nay: con số 0 trông y hệt con số thật.
-                    `dashboard.js:2504` ghi đè bằng số thật khi có dữ liệu. */}
-                <div className="hsa-tile-num" id="tile-streak">—</div>
-                <div className="hsa-tile-lbl">ngày học liên tiếp</div>
-                <div className="hsa-week" id="tile-week" aria-label="Lịch học tuần này"></div>
-              </div>
-            </div>
-
-            <div className="hsa-tile">
-              <div className="hsa-tile-ic" data-icon="book-open" data-size="18"></div>
-              <div className="hsa-tile-body">
-                <div className="hsa-tile-num"><span id="tile-done">—</span><span className="hsa-tile-of">/76</span></div>
-                <div className="hsa-tile-lbl">bài đã hoàn thành</div>
-                <div className="hsa-tile-bar"><i id="tile-done-bar" style={{ width: '0%' }}></i></div>
-              </div>
-            </div>
-
-            <div className="hsa-tile">
-              <div className="hsa-tile-ic" data-icon="clock" data-size="18"></div>
-              <div className="hsa-tile-body">
-                <div className="hsa-tile-num" id="tile-days">—</div>
-                <div className="hsa-tile-lbl">ngày nữa tới kỳ thi</div>
-                <a className="hsa-tile-cta" id="tile-days-cta" href="/questionaire">Làm khảo sát để đặt mốc thi</a>
-              </div>
-            </div>
-
-            <div className="hsa-tile">
-              <div className="hsa-tile-ic" data-icon="target" data-size="18"></div>
-              <div className="hsa-tile-body">
-                <div className="hsa-tile-num" id="tile-score">—</div>
-                <div className="hsa-tile-lbl" id="tile-score-lbl">điểm thi thử gần nhất</div>
-                <a className="hsa-tile-cta" id="tile-score-cta" href="/mock">Làm đề thi thử</a>
-              </div>
-            </div>
+            {theSo}
           </div>
 
           {/* Cột trái: học tiếp + tiến độ 3 hợp phần · Cột phải: lộ trình */}
@@ -203,10 +165,11 @@ export default function DashboardClient(
 
               <div className="section-card fx-fade-up" style={{ animationDelay: '.12s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
-                  <span className="title-icon-blue" data-icon="bar-chart" data-size="16"></span>
+                  <span className="title-icon-blue"><BieuTuong ten="bar-chart" co={16} /></span>
                   <span>Tiến độ theo hợp phần</span>
                 </div>
-                <div className="hsa-sections" id="hsa-sections"></div>
+                {/* Dựng ở máy chủ (`components/TienDoHopPhan.tsx`, 14/09/2026 tối). */}
+                <div className="hsa-sections" id="hsa-sections">{tienDo}</div>
               </div>
             </div>
 

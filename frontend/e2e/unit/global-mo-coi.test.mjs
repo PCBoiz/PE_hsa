@@ -139,6 +139,10 @@ const CHAP_NHAN = new Map([
   ['bayTieuDiem',
    'thoái lui CÓ CHỦ Ý, ghi rõ tại main.js:1152 — thiếu bẫy thì hộp vẫn dùng '
    + 'được, chỉ kém tiếp cận'],
+  ['__refreshHsaTiles',
+   'do REACT ghi (14/09/2026 tối): `TheSoHsaClient` đăng ký lúc gắn vào trang; '
+   + '`dashboard.js` (nút lưu mục tiêu ở Cài đặt) gọi nó sau `typeof … === function` '
+   + '— trang không có hàng thẻ số thì lời gọi tự bỏ qua'],
   ['__napTruoc',
    'do REACT ghi, không phải script cũ: `NapTruocDuLieu` (14/09/2026) bắn sẵn '
    + 'vài lượt GET ngay trong HTML máy chủ trả về, `main.js::__apiGet` dùng lại '

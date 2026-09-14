@@ -57,6 +57,8 @@ CAN = [
     'compass',
     # Tiêu đề khối "Nhiệm vụ hôm nay" (14/09/2026 tối) — khối chuyển sang máy chủ.
     'check',
+    # Ô "ngày học liên tiếp" (14/09/2026 tối) — hàng thẻ số sang máy chủ.
+    'flame',
 ]
 
 DAU = '''/* ══════════════════════════════════════════════════════════════════════════

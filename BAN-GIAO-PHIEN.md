@@ -89,13 +89,14 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   lại xanh) · **24/24 unit Node (đính chính: bản đầu ghi 25/25; 25 tệp là sau vòng 18)** · giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint
   / tsc / ruff / build sạch · hiệu năng **6/6 màn đạt** (Trang của tôi LCP 1,9–
   2,4 s, CLS 0,007; còn cảnh báo 2.111 nút DOM).
-- **Trần tầng cũ**: 7.179 dòng / 13 tệp (sáng 7.385 → "Học tiếp" −30 →
-  "Nhiệm vụ hôm nay" −53 → "Bảng xếp hạng" −123).
+- **Trần tầng cũ**: 7.076 dòng / 13 tệp (sáng 7.385 → "Học tiếp" −30 →
+  "Nhiệm vụ hôm nay" −53 → "Bảng xếp hạng" −123 → thẻ số + tiến độ −103).
 - Lớp 1: 16 buổi T3/T5 19:30 **từ 15/09** (ngày mai), ngày thi 06/12/2026.
-- Commit ngày 14/09: vòng 10–20; xem `git log --since=2026-09-14` cho hash
-  cuối (bàn giao này viết trước commit cuối của vòng 20).
+- Commit ngày 14/09: vòng 10–21; xem `git log --since=2026-09-14` cho hash
+  cuối (bàn giao này viết trước commit cuối của vòng 21). **26 unit Node**
+  (thêm `gio-vn` ở vòng 21).
 
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–20)
+### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–21)
 
 - **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
   (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
@@ -116,6 +117,11 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   xếp cả nhân viên** — quản trị viên từng hạng 1 trên production; nay chỉ học
   viên (`chi_hoc_vien`), nhân viên xem thì không có hạng. Câu hỏi sản phẩm
   về tên thật học sinh cấp 3 trên bảng: **C6** trong `VIEC_CUA_ANH.md`.
+  Vòng 21: hàng bốn thẻ số + dải tiến độ ba hợp phần sang React máy chủ, dùng
+  chung hai lượt API với "Học tiếp" qua `cache()` (`lib/duLieuHsa.ts`); "hôm
+  nay" của dải 7 ngày tính theo `Asia/Ho_Chi_Minh` (`lib/gioVN.ts`) — máy chủ
+  Vercel chạy UTC. **Trang của tôi nay chỉ còn tầng cũ cho: lộ trình rút gọn,
+  nhật ký/mục tiêu tuần, chuông thông báo, và tám "trang" SPA ẩn.**
 - **Thước đo tự sửa**: `do_hieu_nang` làm nóng + trung vị 3 lượt + tắt bộ đệm
   (số cũ 2,7 s và 0,6 s đều ảo); ba phép kiểm backend đếm tổng `admin_audit`
   nay lọc theo `actor_id` (bảng thật dùng chung, đỏ khi có người thao tác

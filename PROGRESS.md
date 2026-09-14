@@ -116,6 +116,57 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 14/09/2026 (tối) — VÒNG 21 · Bốn thẻ số + dải tiến độ sang React máy chủ, và "hôm nay" theo giờ Việt Nam
+
+**Khối thứ năm và sáu theo khuôn máy chủ/client.** Hàng bốn thẻ số (chuỗi ngày
++ dải 7 ngày, bài đã xong, đếm ngược tới kỳ thi, điểm thi thử) và dải tiến độ
+ba hợp phần vốn đứng "—" tới khi `dashboard.js::renderTiles/renderSections`
+chạy xong. Nay:
+- `lib/duLieuHsa.ts`: `layTomTat` / `layKhoaDangHoc` bọc `cache()` của React —
+  "Học tiếp", thẻ số và dải tiến độ cùng đọc, **ba khối, hai lượt API** trong
+  một lượt dựng; hình dạng khai một chỗ.
+- `TheSoHsa.tsx` (máy chủ) → `TheSoHsaClient.tsx` (`zod/mini`): đăng ký lại
+  `window.__refreshHsaTiles` lúc gắn vào trang, nên nút "Nhận" nhiệm vụ và nút
+  lưu mục tiêu ở Cài đặt (tầng cũ) không phải sửa gì. Biểu tượng vẽ bằng
+  `BieuTuong` (`flame` vào bộ sinh) — khối chảy qua Suspense, bài học #418.
+- `TienDoHopPhan.tsx`: dựng hẳn ở máy chủ, không phần client (nhận thưởng hay
+  sửa mục tiêu đều không đổi số bài đã xong). Khung chờ ba dòng cùng class.
+- `HocTiep` thôi đưa `hsa/summary` xuống tầng cũ (không còn ai đọc), chỉ còn
+  `courses-enrolled` cho tab Khoá học của `main.js`.
+- Gỡ khỏi `dashboard.js`: `SECTIONS`, `DAYS`, `lastSummary/lastEnrolled`,
+  `renderWeek`, `renderTiles`, `renderSections`, `renderProgressBlocks`,
+  `__refreshHsaTiles`, `initHsaDashboard`. GIỮ `showAchievement` (nhiệm vụ còn
+  gọi). Trần tầng cũ **7179 → 7076**. `global-mo-coi` khai `__refreshHsaTiles`
+  vào `CHAP_NHAN` (nay React ghi, tầng cũ gọi sau `typeof`).
+
+**Lỗi đồng hồ tránh được trước khi xảy ra.** Dải 7 ngày tô ô hôm nay bằng
+`new Date().getDay()` — đồng hồ của máy đang chạy. Ở trình duyệt thì đúng; dựng
+ở máy chủ Vercel (UTC) thì từ 0h–7h sáng giờ VN máy chủ vẫn là hôm qua → tô sai
+một ngày và React báo lỗi hydrate. `lib/gioVN.ts::thuTrongTuanVN` hỏi `Intl` theo
+`Asia/Ho_Chi_Minh`. Phép kiểm `gio-vn.test.mjs` chạy hai tiến trình con với
+`TZ=UTC` và `TZ=Asia/Ho_Chi_Minh` ở các mốc sát nửa đêm; lùi về `getDay()` thì
+đỏ đúng hai mốc 0h và 3h sáng VN dưới `TZ=UTC`; kèm hàng rào chứng minh cách
+ngây thơ thật sự lệch (phép kiểm có răng).
+
+**Kiểm bằng trình duyệt (hai khổ):** bốn thẻ khớp số API (1 ngày · 3/76 ·
+182 ngày · 0/9, "mục tiêu Trên 105"); dải 7 ngày tô đúng **T2** (thứ Hai 14/09
+theo giờ VN); ba dòng tiến độ đúng; nút "Cập nhật mốc thi" ẩn vì đã có đếm
+ngược; lúc mở trang trình duyệt **không còn tự gọi** `hsa/summary` hay
+`courses-enrolled`; gọi `__refreshHsaTiles` thì gửi đúng `GET /api/hsa/summary`;
+0 lỗi JS/hydrate. 22 trang × 2 khổ = 0/0/0/0; 26/26 unit Node; tsc; eslint.
+
+**Hiệu năng — và vì sao 3 lượt là quá ít cho trang này.** Bảng `do_hieu_nang`
+(3 lượt) cho Trang của tôi LCP **2.460 ms** (2.440/2.460/2.520) — cao hơn lượt
+trước (2.096). Nghi hai ranh giới Suspense mới làm hydrate trễ, nên chưa commit
+mà đo riêng **7 lượt**: 2.572 · 2.424 · 2.124 · 2.000 · 2.004 · 1.580 · 1.816 →
+**trung vị 2.004 ms**, dải 1.580–2.572 ms; phần tử LCP ở mọi lượt là thẻ "Học
+tiếp"; lượt đầu luôn chậm nhất (FCP 2.164 ms, các lượt sau 400–700 ms — tuyến ở
+máy chủ nóng dần). Hai con số 3 lượt 2.096 và 2.460 đều nằm gọn trong dải tự
+nhiên ấy: **không có bằng chứng hồi quy**, không cần A/B. Ghi lại để lần sau
+không ai đọc chênh ~360 ms giữa hai bảng 3 lượt thành hồi quy — trang này tản
+cỡ một giây. Năm màn còn lại đạt như cũ; JS giải nén Trang của tôi 993 kB
+(trước 997), DOM 2.011.
+
 ## 14/09/2026 (tối) — VÒNG 20 · Bảng xếp hạng sang React (−123 dòng tầng cũ) + đính chính số unit test
 
 **Khối thứ tư theo khuôn máy chủ/client.** `BangXepHang.tsx` (máy chủ) dựng tab
