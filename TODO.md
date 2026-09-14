@@ -602,7 +602,7 @@ chạm DB thật.
 > **Làm 01/09/2026.** Thêm bước `Lint backend (ruff)` TRƯỚC `Run pytest`. Đáng
 > giá: một vòng pytest ở đây mất **16 phút 41** và đi tới Neon thật.
 
-### [~] T18 (mức 1 XONG) · Hàng rào cho lớp lỗi đắt nhất: sai hình dạng JSON
+### [~] T18 (mức 1 + mức 2 XONG) · Hàng rào cho lớp lỗi đắt nhất: sai hình dạng JSON
 **Không bộ luật nào ở trên bắt được T1.** Ba mức, chọn theo giá:
 1. Test hợp đồng: gọi thật endpoint rồi `assert` tên khoá (~1 giờ).
 2. `zod` cho payload màn hình quản trị/giảng dạy; `serverJson` `parse` thay vì
@@ -627,8 +627,14 @@ thẳng ra API** (`AdminAuditView`, `UserView.get` — cột mới thêm vào b�
 > đứng canh.
 >
 > Ghi rõ giới hạn: tài khoản kiểm chưa có kế hoạch nên chỉ phủ nhánh
-> `hasPlan: False`. Mức 2 (`zod` cho payload) và mức 3 (sinh type từ OpenAPI)
-> chưa làm.
+> `hasPlan: False`.
+>
+> **Mức 2 làm 14/09/2026** (PROGRESS vòng 10 và 14) — `zod` 4 `looseObject`
+> cho MỌI `serverJson` trong `src/app` (16 trang; quét tĩnh bắt nơi thiếu) và
+> `ghiJson` cho chiều GHI ở bốn nút đọc phản hồi. Bộ luật chung ở
+> `lib/kiemDang.ts`; lệch khoá → câu lỗi nêu đúng ô + một dòng `[hinh-dang]`
+> ở nhật ký. Rà bằng trình duyệt với phản hồi lệch giả: nói ra, không im.
+> Mức 3 (sinh type từ OpenAPI) chưa làm — chưa thấy đáng giá khi mức 2 đã canh.
 
 ---
 
