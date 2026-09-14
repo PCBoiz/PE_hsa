@@ -52,6 +52,8 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   gửi CSP + năm header bảo mật, CI kiểm lỗ hổng thư viện cả hai phía. Chi
   tiết và kết quả trên production: mục VÒNG 22 ngay dưới vạch. **GitHub Actions
   chưa từng chạy lượt nào (khoá thanh toán) — không có CI, không có sao lưu; A0.**
+- **Vòng 23:** `middleware.ts` → `proxy.ts` (Next 16); luồng làm mới phiên kiểm chạy
+  thật trước/sau; production đã nhận (`f35d69e`).
 - **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
   `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
   khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
@@ -76,6 +78,36 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
 
 <!-- MỚI NHẤT -->
+
+## 14/09/2026 (khuya) — VÒNG 23 · `middleware.ts` → `proxy.ts` (Next 16), và một commit thiếu nửa đã lên master
+
+**Vì sao.** Build 16.3.5 cảnh báo mỗi lần: quy ước tệp `middleware` đã đổi thành
+`proxy`. Tài liệu đi kèm gói (`next/dist/docs/01-app/03-api-reference/
+03-file-conventions/proxy.md`): đổi tên tệp + tên hàm; proxy LUÔN chạy Node, và
+khai `runtime` trong tệp proxy là lỗi build — tệp cũ có đúng dòng
+`export const runtime = 'nodejs'`.
+
+**Làm.** `git mv src/middleware.ts src/proxy.ts`; hàm `proxy`; gỡ `runtime`; chú
+thích đầu tệp phân biệt với `src/lib/proxy.ts` (route handler chuyển `/api/*`,
+`/auth/*`). `middleware-phien.test.mjs` → `proxy-phien.test.mjs` (nạp `proxy`
+dưới tên cũ để khỏi đổi 20 chỗ gọi); sửa đường dẫn trong chú thích năm tệp.
+
+**Kiểm bằng hành vi, không bằng tên.** Phép kiểm đơn vị gọi thẳng hàm nên không
+thấy được Next có CHẠY tệp mới hay không. Trên `next start`: cookie chỉ có
+`pe_rt` hợp lệ → mở `/dashboard` → phản hồi phải ghi `pe_at` mới + `pe_rt` xoay
+vòng, HTTP 200, không về `/login`; đối chứng không cookie → không ghi cookie
+phiên. Bản TRƯỚC khi đổi 4/4, bản SAU 4/4 (hai thẻ refresh riêng — thẻ đã xoay
+bị thu hồi). Build sau đổi hết cảnh báo, danh sách tuyến vẫn có `ƒ Proxy`.
+27/27 unit · eslint · tsc.
+
+**Sự cố trên đường đẩy.** Lệnh `git add` gộp cả `src/middleware.ts` — đường dẫn
+đã không còn sau `git mv` — nên git huỷ CẢ lệnh, không tệp sửa nào vào vùng chờ.
+Commit `39dbe93` vì thế chỉ mang hai dòng đổi tên, không phần sửa, và đã lên
+master. Vercel build bản ấy **hỏng** (API deployments: `failure`), production
+giữ bản trước — kiểm ngay lúc ấy: cookie `pe_rt` rác vẫn bị xoá. `f35d69e` mang
+phần còn thiếu. Từ đây mọi lệnh commit đếm số tệp chờ trước khi chạy.
+
+**Production sau `f35d69e`:** Vercel đánh dấu deployment `f35d69e` **success** (kiểm lúc 22:09:04); cookie `pe_rt` rác ở `/dashboard` → 2 dòng `Set-Cookie` xoá `pe_at`/`pe_rt` — tệp `proxy.ts` đang chạy; `do_dau_bao_mat` lên production: tất cả ĐẠT.
 
 ## 14/09/2026 (khuya) — VÒNG 22 · Tổng duyệt hạ tầng: Next dính hai lỗ CRITICAL, và cửa Vercel không có header bảo mật nào
 
@@ -104,7 +136,7 @@ kia chỉ trúng máy Windows) — nâng vì rẻ, không vì đã chứng minh 
   ấy (không có router). Bấm thật 5 nút trên trang khoá học (`spa={false}`, đúng
   nhánh gọi `taiTrang`): bài đang học, logo, tìm kiếm Enter, Hồ sơ, Đăng xuất —
   URL đích đúng, đăng xuất xoá `pe_at`, 0 lỗi JS.
-- Build 16.3.5 cảnh báo "middleware → proxy" — CHƯA đổi (xem cuối mục).
+- Build 16.3.5 cảnh báo "middleware → proxy" — đổi ở vòng 23.
 
 **2. Vercel không gửi header bảo mật nào** ngoài HSTS, còn lộ `X-Powered-By:
 Next.js`. Backend Render có đủ CSP/nosniff/X-Frame-Options — nhưng người dùng
@@ -162,14 +194,14 @@ và trên Vercel header do hàm đặt THẮNG header của `next.config.ts`; `n
 giá trị của Django vẫn chặn nhúng khác miền), nhưng là hai nguồn sự thật cho một
 miền → `passThrough` bỏ sáu header an ninh trang của Django, `next.config.ts` là
 nguồn duy nhất. `e2e/unit/proxy-header-bao-mat.test.mjs` (27 tệp unit) — đỏ 4
-mục khi gỡ dòng lọc, xanh lại khi trả.
+mục khi gỡ dòng lọc, xanh lại khi trả. Sau deploy (21:59:54): `do_dau_bao_mat` lên
+production **18/18 ĐẠT**, kể cả `/api/user`.
 
 **Kiểm:** build · tsc · eslint (0 cảnh báo) · 26/26 unit Node · `pnpm audit
 --prod` sạch · `pip-audit` sạch · hai bộ đo trên · 5 nút bấm thật.
 
 **Còn lại, ghi để làm (không cần anh):**
-- `middleware.ts` → `proxy.ts` theo cảnh báo của Next 16.3. Chạm luồng làm mới
-  phiên 8 tiếng — làm riêng một vòng, kiểm bằng cookie chỉ còn `pe_rt`.
+- ~~`middleware.ts` → `proxy.ts`~~ — xong ở vòng 23.
 - CSP chặt hơn: bộ tính biểu thức nhỏ thay `new Function` (gỡ `'unsafe-eval'`);
   nonce (gỡ `'unsafe-inline'`, nhưng buộc mọi trang dựng động).
 - Cấu hình gunicorn nằm HAI chỗ lệch nhau: `render.yaml` truyền `--workers 2

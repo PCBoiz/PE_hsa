@@ -1,6 +1,6 @@
 # Bàn giao phiên — đọc tệp này đầu tiên khi mở phiên mới
 
-*Cập nhật 14/09/2026 (khuya, sau vòng 22). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
+*Cập nhật 14/09/2026 (khuya, sau vòng 23). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
 đọc lại 5.800 dòng nhật ký. Cách làm học từ `BAN-GIAO-PHIEN.md` của dự án cô
 Giang — chỉ học cách, không đụng bên ấy.*
 
@@ -102,7 +102,7 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   cuối (bàn giao này viết trước commit cuối của vòng 21). **26 unit Node**
   (thêm `gio-vn` ở vòng 21).
 
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–22)
+### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–23)
 
 - **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
   (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
@@ -147,6 +147,10 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   cả trang có chủ ý. **Phát hiện đắt nhất vòng: GitHub Actions chưa từng chạy
   một bước nào** (244/244 lượt, khoá thanh toán) → A0. Proxy `/api/*` thôi chép
   CSP/X-Frame-Options của Django (production lộ ra, máy không thấy).
+- **Vòng 23:** `src/middleware.ts` → `src/proxy.ts` theo Next 16 (hàm `proxy`, gỡ
+  `runtime`). Kiểm bằng luồng làm mới phiên CHẠY THẬT trước/sau, không bằng tên
+  tệp. Một commit thiếu nửa (`39dbe93`) lên master vì `git add` huỷ cả lệnh khi
+  gặp đường dẫn đã đổi tên — Vercel build hỏng, production không bị ảnh hưởng.
 
 ## Việc đang chờ, không ai làm được thay
 
@@ -176,7 +180,7 @@ HỎI LẠI trước khi làm:**
 Ngoài ra: bộ nhập kết quả thi từ PDF (chờ B4); T40 chỉ còn đặt `REDIS_URL`.
 
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
-`middleware.ts` → `proxy.ts` (kiểm luồng làm mới phiên) · gỡ `'unsafe-eval'`
+~~`middleware.ts` → `proxy.ts`~~ (vòng 23) · gỡ `'unsafe-eval'`
 bằng bộ tính biểu thức thay `new Function` · gom cấu hình gunicorn về một chỗ
 (`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau).
 
