@@ -151,7 +151,7 @@ vẫn là ~2 s việc của trình duyệt sau khi HTML về — tầng cũ + 8 
   CSP, 0 lỗi JS · quét 22 trang × 2 khổ: 44/44 lượt, 0 mọi cột kể cả CSP ·
   `do_dau_bao_mat` trên máy tất cả ĐẠT.
 - Thứ tự lên production: backend trước (`49a9a06`, tương thích ngược — engine cũ bỏ qua
-  `pts`); Render phục vụ `pts` lúc 19:13:25; rồi mới frontend.
+  `pts`); Render phục vụ `pts` lúc 19:13:25; rồi mới frontend (`45d6b2e`, Vercel `success` lúc 19:16:50). Production kiểm lại (chỉ đọc): `script-src` không còn 'unsafe-eval', `lesson_hsa.js` hết `compileFn`, Render vẫn trả `pts` cho 2 đồ thị, `do_dau_bao_mat` tất cả ĐẠT kể cả mục eval (EvalError).
 
 **Phát hiện bảo mật: production nhận JWT ký trên máy dev → A6**
 Thẻ `cap_the.py` cấp bằng `backend/.env`, gửi thẳng tới Render: `/api/user` → **200**
