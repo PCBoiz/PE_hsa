@@ -271,28 +271,18 @@
       (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
   }
 
-  /* ĐỒ THỊ HÀM — vẽ y=f(x) bằng SVG polyline, tự lấy mẫu.
-     v = {type:'curve', fn:'x*x-2*x', from, to, points?, marks?, caption?}
-     `fn` chỉ nhận biểu thức toán an toàn (số, x, + - * / ( ) . , ^ và Math.*). */
-  var FN_SAFE = /^[-+*/(). 0-9xeE^,<>=?:|&%\s]*(?:(?:Math\.[a-z0-9]+|abs|sqrt|sin|cos|tan|log|exp|pow|PI)[-+*/(). 0-9xeE^,\s]*)*$/i;
-  function compileFn(src) {
-    if (!FN_SAFE.test(String(src))) return null;
-    var body = String(src).replace(/\^/g, '**')
-      .replace(/\b(abs|sqrt|sin|cos|tan|log|exp|pow)\(/g, 'Math.$1(')
-      .replace(/\bPI\b/g, 'Math.PI');
-    try {   return new Function('x', 'return (' + body + ');'); }
-    catch (e) { return null; }
-  }
+  /* ĐỒ THỊ HÀM — vẽ y=f(x) bằng SVG polyline từ điểm MÁY CHỦ đã tính sẵn.
+     v = {type:'curve', fn, from, to, pts:[[x,y],…], marks?:[{at, y, label?}], caption?}
+     15/09/2026: bỏ `compileFn` (`new Function` canh bằng một regex trên chuỗi).
+     `backend/lessons/do_thi.py` phân tích `fn` bằng `ast` theo danh sách nút cho
+     phép và gắn `pts` + `marks[].y` trên đường đọc nội dung — trình duyệt không
+     biên dịch chuỗi nào, nên CSP của Vercel thôi phải mở 'unsafe-eval'. */
   function renderCurve(v) {
-    var f = compileFn(v.fn);
-    if (!f) return '';
-    var from = v.from, to = v.to, n = v.points || 60;
+    var from = v.from, to = v.to;
     var xs = [], ys = [];
-    for (var i = 0; i <= n; i++) {
-      var x = from + (to - from) * i / n, y;
-      try { y = f(x); } catch (e) { y = NaN; }
-      if (isFinite(y)) { xs.push(x); ys.push(y); }
-    }
+    (v.pts || []).forEach(function (p) {
+      if (p && typeof p[0] === 'number' && typeof p[1] === 'number' && isFinite(p[0]) && isFinite(p[1])) { xs.push(p[0]); ys.push(p[1]); }
+    });
     if (!ys.length) return '';
     var yMin = v.yMin != null ? v.yMin : Math.min.apply(null, ys);
     var yMax = v.yMax != null ? v.yMax : Math.max.apply(null, ys);
@@ -304,8 +294,8 @@
     var axisY = (yMin <= 0 && yMax >= 0) ? '<line class="hsa-cv-axis" x1="' + pad + '" y1="' + sy(0) + '" x2="' + (W - pad) + '" y2="' + sy(0) + '"/>' : '';
     var axisX = (from <= 0 && to >= 0) ? '<line class="hsa-cv-axis" x1="' + sx(0) + '" y1="' + pad + '" x2="' + sx(0) + '" y2="' + (H - pad) + '"/>' : '';
     var dots = (v.marks || []).map(function (m) {
-      var my; try { my = m.y != null ? m.y : f(m.at); } catch (e) { return ''; }
-      if (!isFinite(my)) return '';
+      var my = m.y;   // máy chủ tính sẵn; null khi hàm không xác định tại `at`
+      if (typeof my !== 'number' || !isFinite(my)) return '';
       return '<g class="hsa-cv-mark"><circle cx="' + sx(m.at) + '" cy="' + sy(my) + '" r="4.5"/>' +
         (m.label ? '<text x="' + (sx(m.at) + 7) + '" y="' + (sy(my) - 7) + '">' + esc(m.label) + '</text>' : '') + '</g>';
     }).join('');

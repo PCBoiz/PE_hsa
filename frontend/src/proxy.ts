@@ -31,7 +31,7 @@ import { AT, RT, AT_MAX_AGE, RT_MAX_AGE, refreshTokens } from '@/lib/auth';
  * điểm danh — trước đây phải gõ lại mật khẩu trước mặt cả lớp.
  *
  * ── TÊN TỆP `proxy.ts`, KHÔNG CÒN `middleware.ts` (14/09/2026) ─────────────
- * Next 16 đổi quy ước tệp `middleware` thành `proxy`; bản 16.3 cảnh báo ở mỗi
+ * Next 16 đổi quy ước tệp `middleware` thành `proxy`; mọi bản 16.x cảnh báo ở mỗi
  * lần build. Proxy LUÔN chạy trên Node — đúng thứ tệp này cần (`lib/auth.ts`
  * dùng `fetch` và biến môi trường) — và Next CẤM khai `export const runtime`
  * trong tệp proxy (khai là lỗi build), nên dòng `runtime = 'nodejs'` cũ đã gỡ.

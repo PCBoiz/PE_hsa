@@ -10,9 +10,10 @@
  * trước hôm nay Vercel không gửi CSP nào, và mọi lượt quét vẫn in 0. Nên bộ đo
  * này đòi cả hai:
  *   CHO PHÉP — thứ sản phẩm thật sự dùng vẫn chạy: script confetti từ jsdelivr,
- *              Font Awesome từ cdnjs, `new Function` của đồ thị bài học.
+ *              Font Awesome từ cdnjs.
  *   CHẶN     — thứ kẻ tấn công cần thì bị chặn: nhúng trang vào iframe miền lạ,
- *              fetch/ảnh gửi dữ liệu ra máy chủ lạ, `<base>` giả.
+ *              fetch/ảnh gửi dữ liệu ra máy chủ lạ, `<object>`, và (từ 15/09/2026,
+ *              khi đồ thị bài học thôi dùng `new Function`) biên dịch chuỗi thành mã.
  * Gỡ CSP khỏi `next.config.ts` thì phần CHẶN đỏ; siết quá tay thì phần CHO PHÉP đỏ.
  *
  * Chỉ ĐỌC: mọi lời gọi không phải GET tới `/api/` bị chặn tại trình duyệt.
@@ -70,8 +71,12 @@ console.log('\n[2] CHẶN');
   const f = p.frames().find((x) => x.url().startsWith(GOC));
   let coNoiDung = false;
   try { coNoiDung = !!f && (await f.evaluate(() => document.body?.innerText?.length || 0)) > 0; } catch { coNoiDung = false; }
-  dat(!coNoiDung, 'iframe từ miền lạ không hiển thị được trang (chống clickjacking)',
-    coNoiDung ? 'trang VẪN dựng trong iframe' : (ds[0] || '').slice(0, 90));
+  // Đòi CẢ HAI: không dựng được VÀ trình duyệt nói lý do là `frame-ancestors`.
+  // Chỉ đòi "không dựng được" thì mạng hỏng hay trang lỗi cũng ra ĐẠT (sửa 15/09/2026).
+  const dongKhung = ds.find((x) => x.includes('frame-ancestors'));
+  dat(!coNoiDung && !!dongKhung, 'iframe từ miền lạ không hiển thị được trang (chống clickjacking)',
+    coNoiDung ? 'trang VẪN dựng trong iframe'
+      : dongKhung ? dongKhung.slice(0, 90) : 'không dựng được nhưng KHÔNG có dòng frame-ancestors — lý do khác');
   await p.close();
 }
 {
@@ -81,15 +86,43 @@ console.log('\n[2] CHẶN');
   const fetchRa = await p.evaluate(async () => {
     try { await fetch('https://example.com/ro-ri?d=1', { mode: 'no-cors' }); return 'đi được'; } catch { return 'bị chặn'; }
   });
-  dat(fetchRa === 'bị chặn', 'fetch tới máy chủ lạ bị chặn (connect-src)', fetchRa);
-  const truoc = ds.length;
+  // Mỗi mục CHẶN đòi một dòng CSP nêu ĐÚNG chỉ thị. "fetch ném lỗi" hay "có một
+  // dòng CSP nào đó" thì mất mạng hoặc một vi phạm khác cũng ra ĐẠT (sửa 15/09/2026).
+  const coChiThi = (ct) => ds.some((x) => x.includes(ct));
+  await p.waitForTimeout(500);
+  dat(fetchRa === 'bị chặn' && coChiThi('connect-src'), 'fetch tới máy chủ lạ bị chặn (connect-src)',
+    fetchRa + (coChiThi('connect-src') ? '' : ' — không có dòng connect-src'));
   await p.evaluate(() => { const i = new Image(); i.src = 'https://example.com/ro-ri.png?d=1'; document.body.appendChild(i); });
   await p.waitForTimeout(1200);
-  dat(ds.length > truoc, 'ảnh gửi ra máy chủ lạ bị chặn (img-src)', (ds[ds.length - 1] || 'không có dòng CSP nào').slice(0, 90));
-  const truoc2 = ds.length;
+  dat(coChiThi('img-src'), 'ảnh gửi ra máy chủ lạ bị chặn (img-src)');
   await p.evaluate(() => { const o = document.createElement('object'); o.data = '/favicon.ico'; document.body.appendChild(o); });
   await p.waitForTimeout(800);
-  dat(ds.length > truoc2, '<object> bị chặn (object-src none)');
+  dat(coChiThi('object-src'), '<object> bị chặn (object-src none)');
+  // 15/09/2026: đồ thị bài học thôi dùng `new Function` (điểm do máy chủ tính), nên
+  // production bỏ 'unsafe-eval'. Chuỗi → mã là thứ một lỗ XSS cần để tải payload.
+  //
+  // ĐO TỪ SCRIPT CỦA CHÍNH TRANG, không từ `page.evaluate`. Bản đầu gọi `new Function`
+  // qua `evaluate` và `addScriptTag` — cả hai đi đường DevTools, và Chromium để mã ấy
+  // eval thoải mái dù CSP cấm: đo trên máy (CSP không 'unsafe-eval') vẫn ra "chạy". Thí
+  // nghiệm cô lập cùng ngày: trang có `<script>` NẰM SẴN trong HTML thì bị chặn
+  // (EvalError) — và KHÔNG in dòng console nào khi lỗi bị bắt, nên cũng không được đòi
+  // dòng console. Cách đo: chặn phản hồi `/login`, nhét một `<script>` vào đầu HTML (giữ
+  // nguyên header, kể cả CSP), để chính trang thử eval rồi ghi kết quả ra `data-*`.
+  const pe = await c.newPage();
+  await pe.route(GOC + '/login', async (route) => {
+    const r = await route.fetch();
+    const html = (await r.text()).replace(/<head[^>]*>/, (m) => m
+      + '<script>try{document.documentElement.dataset.evalRa=new Function("return 42")()===42?"chạy được":"lạ"}'
+      + 'catch(e){document.documentElement.dataset.evalRa="bị chặn: "+e.name}</script>');
+    await route.fulfill({ response: r, body: html });
+  });
+  await pe.goto(GOC + '/login', { waitUntil: 'domcontentloaded' });
+  const evalRa = await pe.evaluate(() => document.documentElement.dataset.evalRa || 'script không chạy');
+  const cspTrang = (await pe.evaluate(() => fetch(location.href, { method: 'HEAD' })
+    .then((x) => x.headers.get('content-security-policy') || '').catch(() => '')));
+  dat(evalRa.startsWith('bị chặn'), "new Function từ script của trang bị chặn (không còn 'unsafe-eval')",
+    evalRa + (/unsafe-eval/.test(cspTrang) ? " — CSP đang gửi CÓ 'unsafe-eval'" : ''));
+  await pe.close();
   await p.close();
 }
 
@@ -100,7 +133,6 @@ console.log('\n[3] CHO PHÉP');
   const ds = loiCsp(p);
   await p.goto(GOC + '/login', { waitUntil: 'domcontentloaded' });
   const kq = await p.evaluate(async () => {
-    const eval_ = (() => { try { return new Function('x', 'return x * 2')(21) === 42; } catch { return false; } })();
     const confetti = await new Promise((ok) => {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
@@ -117,13 +149,12 @@ console.log('\n[3] CHO PHÉP');
       l.onerror = () => ok(false);
       document.head.appendChild(l);
     });
-    return { eval_, confetti, fa };
+    return { confetti, fa };
   });
   await p.waitForTimeout(1500);
-  dat(kq.eval_, "new Function chạy được (đồ thị bài học cần 'unsafe-eval')");
   dat(kq.confetti, 'script confetti từ cdn.jsdelivr.net nạp được');
   dat(kq.fa, 'Font Awesome từ cdnjs.cloudflare.com nạp được');
-  dat(ds.length === 0, 'trang đăng nhập + ba thao tác trên: 0 dòng CSP', (ds[0] || '').slice(0, 120));
+  dat(ds.length === 0, 'trang đăng nhập + hai thao tác trên: 0 dòng CSP', (ds[0] || '').slice(0, 120));
   await p.close();
 }
 

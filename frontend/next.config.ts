@@ -20,14 +20,16 @@ import type { NextConfig } from "next";
  * - `'unsafe-inline'` ở script: bốn `<script>` nội tuyến (chống nháy theme, gốc
  *   API) + `onclick="…"` khắp tầng cũ + script khởi động của Next. Bỏ được khi
  *   chuyển sang nonce, mà nonce buộc mọi trang dựng động.
- * - `'unsafe-eval'`: `lesson_hsa.js::compileFn` vẽ đồ thị bằng `new Function`.
- *   Thay bằng bộ tính biểu thức nhỏ thì gỡ được.
+ * - `'unsafe-eval'`: CHỈ khi chạy dev. Production gỡ từ 15/09/2026 — đồ thị bài
+ *   học thôi dùng `new Function`, điểm do máy chủ tính (`backend/lessons/do_thi.py`).
+ *   Dev vẫn cần: React dùng `eval` để dựng lại ngăn xếp lỗi phía máy chủ trên trình
+ *   duyệt (tài liệu đi kèm gói: `next/dist/docs/01-app/02-guides/content-security-policy.md`).
  * Dù vậy CSP này vẫn chặn thật: nhúng trang vào iframe lạ (clickjacking), gửi
  * dữ liệu đi máy chủ lạ bằng fetch/ảnh, `<base>` giả, `<object>`, form trỏ ra ngoài.
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'production' ? '' : " 'unsafe-eval'"} https://cdn.jsdelivr.net`,
   "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
   "font-src 'self' data: https://cdnjs.cloudflare.com",
   "img-src 'self' data: blob:",

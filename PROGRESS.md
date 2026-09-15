@@ -54,6 +54,8 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   chưa từng chạy lượt nào (khoá thanh toán) — không có CI, không có sao lưu; A0.**
 - **Vòng 23:** `middleware.ts` → `proxy.ts` (Next 16); luồng làm mới phiên kiểm chạy
   thật trước/sau; production đã nhận (`f35d69e`).
+- **Vòng 24 (15/09):** kiểm kĩ lại — production gỡ `'unsafe-eval'` (đồ thị bài học tính ở
+  máy chủ); ba thước đo sai đã sửa; **production nhận JWT ký trên máy dev → A6**.
 - **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
   `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
   khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
@@ -78,6 +80,89 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
 
 <!-- MỚI NHẤT -->
+
+## 15/09/2026 — VÒNG 24 · Kiểm kĩ lại vòng 22–23: ba thước đo sai, khoá production nằm trên máy dev, và 'unsafe-eval' đã gỡ
+
+Anh Sơn: "kiểm tra kĩ lại đi, tiếp tục vòng lặp". Nghi chính các kết luận của vòng
+22–23 rồi đo lại từng cái.
+
+**Đính chính**
+- GitHub Actions: **243/244** lượt chưa chạy, không phải "244/244" — lượt thứ 244 là
+  job Dependabot thành công. Kiểm CẢ QUẦN THỂ bằng thời lượng từng lượt (dài nhất: CI
+  38 s, giữ ấm 13 s, sao lưu 4 s); hai lượt dài nhất soi tận job: 0 bước, không máy
+  chạy. Sửa ở A0, vòng 22, BAN-GIAO, bộ nhớ. Tiêu đề "30/08 — T3 xong: CI xanh lại"
+  nay có ghi chú: "CI" ấy là lệnh chạy ở máy.
+- Chú thích `src/proxy.ts` gán cảnh báo middleware→proxy cho "bản 16.3": bản 16.2.11
+  cũng cảnh báo — đã sửa.
+
+**Ba thước đo sai (sửa trước khi tin màu xanh)**
+1. `do_dau_bao_mat` mục CHẶN chấp nhận "không dựng được" / "fetch ném lỗi" / "có một
+   dòng CSP nào đó" — mất mạng cũng ĐẠT. Nay mỗi mục đòi dòng CSP nêu ĐÚNG chỉ thị
+   (frame-ancestors, connect-src, img-src, object-src). Đối chứng âm: máy chủ tĩnh
+   không header → 8 mục HỎNG đúng chỗ; trên máy tất cả ĐẠT.
+2. Mục eval (thêm vòng này) bản đầu gọi `new Function` qua `page.evaluate` và
+   `addScriptTag` — đường DevTools, và Chromium để mã ấy eval dù CSP cấm: trên máy
+   (CSP không 'unsafe-eval') vẫn ra "chạy". Thí nghiệm cô lập (máy chủ Node tí hon):
+   `<script>` NẰM SẴN trong HTML thì bị chặn (EvalError) — và KHÔNG in dòng console
+   nào khi lỗi bị bắt. Nay nhét script vào HTML thật bằng `page.route` (giữ nguyên
+   header) rồi đọc kết quả: máy ĐẠT (EvalError), production còn 'unsafe-eval' HỎNG.
+3. Phép kiểm đọc bài thật gọi `one_lesson(..., 9)` theo `lessons.id` — hàm nhận
+   `sort_order` (bài chứa đồ thị là số 7 "Hàm bậc hai & parabol", id 9); sửa xong lại
+   đỏ vì so y tính từ x ĐÃ làm tròn (lệch 2e-6). Cả hai là lỗi của phép kiểm.
+
+**Kiểm lại — đúng như đã nói**
+- CSP không làm gãy luồng nào ngoài lượt quét: không form ra ngoài, không popup, blob,
+  embed; trình duyệt không gọi thẳng backend (`__PE_API_ORIGIN=""`, `lib/auth` chỉ ở
+  máy chủ). Trang công khai `/bc/<chìa>` (chưa lượt quét nào mở): tạo chìa thật → khổ
+  điện thoại 200, CSP đúng, 0 dòng CSP, 0 lỗi JS, nút In chạy → thu hồi chìa.
+- Nghi `v.caption` (8 loại minh hoạ) đổ thô vào innerHTML là lỗ XSS cho vai Biên tập
+  nội dung: KHÔNG phải. `validate_lesson::_duyet_chuoi` soi HTML MỌI chuỗi; thử
+  `<img src=x onerror=…//` ở 4 vị trí đều bị chặn; cả hai đường ghi (sửa lẻ, nhập cả
+  khoá) đều gọi nó.
+- gunicorn: đọc mã nguồn bản 26.0.0 — `./gunicorn.conf.py` nạp mặc định, tham số dòng
+  lệnh áp SAU CÙNG. Câu ở vòng 22 đúng.
+- `taiTrang`: đọc lại 12 dòng đổi — thay thế một-một, không đổi hành vi.
+
+**Hiệu năng sau nâng Next — A/B cùng lúc, không so với số hôm trước**
+Bảng 15/09 so với 14/09 cho "Trang của tôi" +800 ms — nhưng cùng MỘT bản dựng đo cách
+nhau 10 phút đã ra 2.900 rồi 3.940 ms (mạng máy dev → Neon). Dựng bản trước nâng cấp
+(`42acdff`) trong git worktree, xen kẽ trên cùng cổng, tách máy chủ khỏi trình duyệt:
+- Cũ (16.2.11, không header) ↔ mới (16.3.5 + header), 15 mẫu mỗi bên, CPU chậm 4×:
+  HTML chảy xong 1.516 ↔ 1.523 ms (máy chủ như nhau) · LCP 3.828 ↔ 4.012 (+184) ·
+  LCP − HTML +318 · tổng tác vụ dài +607 ms.
+- Cùng 16.3.5, không header ↔ có header (11–12 mẫu): LCP +120, tác vụ dài +144 — dải
+  chồng lên nhau, trong mức nhiễu.
+Kết luận có chừng mực: phần chậm thêm nằm ở TRÌNH DUYỆT, cỡ +0,2 s LCP trên máy yếu;
+header chiếm nhiều nhất ~0,1 s; phần còn lại nhiều khả năng từ Next 16.3.5 nhưng hai
+A/B đo ở hai thời điểm nên chưa chứng minh. Không lùi bản vá (2 lỗ CRITICAL). Gốc rễ
+vẫn là ~2 s việc của trình duyệt sau khi HTML về — tầng cũ + 8 tab SPA ẩn, đang chờ anh.
+
+**Gỡ 'unsafe-eval' khỏi production**
+- Cả CSDL chỉ 2 khối `curve`. Không thêm bộ tính biểu thức vào tầng cũ (trần dòng chỉ
+  được hạ): máy chủ tính điểm. `lessons/do_thi.py` — `ast` + danh sách nút cho phép,
+  tự đi cây để tính, toán hạng float nên `9^9^9` tràn thành NaN chứ không treo;
+  `validate_lesson` chặn `fn` hỏng lúc GHI (trước đây không ai kiểm); hai đường ĐỌC
+  gắn `pts` + `marks[].y`. `renderCurve` vẽ từ `pts`, bỏ `compileFn`: tầng cũ 7.076 →
+  7.063 dòng mã. `next.config.ts`: 'unsafe-eval' chỉ khi dev (tài liệu Next đi kèm
+  gói: React dev cần eval để dựng lại ngăn xếp lỗi).
+- Kiểm: tests_do_thi 38/38 · pytest lessons + courseadmin 106/106 · 27/27 unit ·
+  eslint · tsc · build (routes-manifest không còn 'unsafe-eval') · đi đúng đường học
+  viên ở bài số 7: trả lời → nộp → "Cần ôn" → lý thuyết: 2 đồ thị × 61 điểm, 0 dòng
+  CSP, 0 lỗi JS · quét 22 trang × 2 khổ: 44/44 lượt, 0 mọi cột kể cả CSP ·
+  `do_dau_bao_mat` trên máy tất cả ĐẠT.
+- Thứ tự lên production: backend trước (`49a9a06`, tương thích ngược — engine cũ bỏ qua
+  `pts`); Render phục vụ `pts` lúc 19:13:25; rồi mới frontend.
+
+**Phát hiện bảo mật: production nhận JWT ký trên máy dev → A6**
+Thẻ `cap_the.py` cấp bằng `backend/.env`, gửi thẳng tới Render: `/api/user` → **200**
+(đối chứng không thẻ: 401). `SIMPLE_JWT` không khai `SIGNING_KEY` nên ký bằng
+`SECRET_KEY`, và hướng dẫn xoay khoá 07/09 (mục 1.1 của VIEC_CUA_ANH, tôi viết) bảo dán
+CÙNG một khoá vào `backend/.env` và Render. Ai có `.env` của máy dev — hoặc chỉ các tệp
+thẻ trong `.the/` — mạo danh được bất kỳ ai trên production. Cùng họ với việc dev và
+prod dùng chung CSDL (chốt 31/08); với buổi tổng duyệt thì phải tách trước ngày đổ dữ
+liệu thật. Tôi không tự sửa `backend/.env` (bí mật của anh, sửa là mất khoá cũ). Thẻ ấy
+chỉ dùng để ĐỌC: một GET `/api/user` để đo, và đọc nội dung bài số 7 để biết Render đã
+phục vụ `pts` chưa.
 
 ## 14/09/2026 (khuya) — VÒNG 23 · `middleware.ts` → `proxy.ts` (Next 16), và một commit thiếu nửa đã lên master
 
@@ -168,9 +253,10 @@ không bao giờ mở trang Render. Lớp bảo vệ dựng xong mà đặt nh�
   lúc TRẢ LỜI xong, không phải lúc bắt đầu. Đã gỡ.)
 
 **3. GitHub Actions CHƯA TỪNG CHẠY — cả CI, sao lưu lẫn giữ ấm.** Đẩy commit
-vòng này lên, lượt CI đỏ sau 3 giây. Hỏi API công khai của GitHub: cả **244 lượt**
-đọc được — CI 207 lượt từ 10/08, "Giữ ấm production" 35 từ 07/09, "Sao lưu CSDL"
-1 lượt 13/09 — đều `failure`/`cancelled` với **0 bước**. Chú thích của mọi lượt
+vòng này lên, lượt CI đỏ sau 3 giây. Hỏi API công khai của GitHub:
+đọc được 244 lượt; **243** lượt — CI 207 từ 10/08, "Giữ ấm production" 35 từ 07/09,
+"Sao lưu CSDL" 1 lượt 13/09 — đều `failure`/`cancelled` với **0 bước**. *(Bản đầu
+ghi "cả 244 lượt"; lượt thứ 244 là job Dependabot thành công — đính chính 15/09.)* Chú thích của mọi lượt
 lấy mẫu (10/08, 31/08, 05/09, 13/09, lượt giữ ấm đầu, lượt sao lưu): *"The job
 was not started because your account is locked due to a billing issue."* Lượt
 thành công duy nhất là job đồ thị phụ thuộc của Dependabot (10/08).
@@ -1365,6 +1451,8 @@ Ca thứ hai chính là ca agent đã chứng minh lệch: trước đây màn h
 tệp CSV 0 kết quả.
 
 ### 30/08/2026 — T3 xong: CI xanh lại
+*(Đính chính 15/09/2026: "CI" ở đây là các lệnh của CI chạy ở MÁY. CI trên GitHub chưa
+từng chạy lượt nào — tài khoản bị khoá thanh toán từ trước 10/08, xem vòng 22.)*
 3 lỗi eslint → **0 lỗi**. Cả ba đều là lỗi thật chứ không phải nhiễu:
 `LoginForm` đọc thanh địa chỉ trong effect rồi `setState` (câu lỗi OAuth chỉ
 hiện sau khi JavaScript chạy xong) · `MockExam` gán ref giữa lúc dựng · và

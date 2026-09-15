@@ -98,7 +98,9 @@ const TRAN_TEP = 13;
 // vì `loadMiniRoadmap` cùng khối còn dùng.
 // 14/09/2026 (tối): 7179 → 7076 (-103). HẠ: hàng bốn thẻ số + dải 7 ngày +
 // dải tiến độ ba hợp phần sang React máy chủ (`TheSoHsa`, `TienDoHopPhan`).
-const TRAN_DONG_MA = 7076;
+// 15/09/2026: 7076 → 7063 (−13). `lesson_hsa.js` bỏ `compileFn` (`new Function`): điểm đồ thị
+// hàm do máy chủ tính (`backend/lessons/do_thi.py`), để CSP thôi phải mở 'unsafe-eval'.
+const TRAN_DONG_MA = 7063;
 
 let failures = 0;
 function check(name, cond, them) {

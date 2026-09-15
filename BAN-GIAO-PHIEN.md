@@ -1,6 +1,6 @@
 # Bàn giao phiên — đọc tệp này đầu tiên khi mở phiên mới
 
-*Cập nhật 14/09/2026 (khuya, sau vòng 23). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
+*Cập nhật 15/09/2026 (sau vòng 24). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
 đọc lại 5.800 dòng nhật ký. Cách làm học từ `BAN-GIAO-PHIEN.md` của dự án cô
 Giang — chỉ học cách, không đụng bên ấy.*
 
@@ -102,7 +102,7 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   cuối (bàn giao này viết trước commit cuối của vòng 21). **26 unit Node**
   (thêm `gio-vn` ở vòng 21).
 
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–23)
+### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–24)
 
 - **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
   (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
@@ -145,17 +145,25 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   đúng 9 mục trên production cũ. `do_giao_dien` đếm thêm vi phạm CSP. Luật
   eslint mới của Next 16.3 → `lib/dieuHuong.ts::taiTrang` cho 12 lần tải lại
   cả trang có chủ ý. **Phát hiện đắt nhất vòng: GitHub Actions chưa từng chạy
-  một bước nào** (244/244 lượt, khoá thanh toán) → A0. Proxy `/api/*` thôi chép
+  một bước nào** (243/244 lượt, khoá thanh toán; lượt còn lại là Dependabot) → A0. Proxy `/api/*` thôi chép
   CSP/X-Frame-Options của Django (production lộ ra, máy không thấy).
 - **Vòng 23:** `src/middleware.ts` → `src/proxy.ts` theo Next 16 (hàm `proxy`, gỡ
   `runtime`). Kiểm bằng luồng làm mới phiên CHẠY THẬT trước/sau, không bằng tên
   tệp. Một commit thiếu nửa (`39dbe93`) lên master vì `git add` huỷ cả lệnh khi
   gặp đường dẫn đã đổi tên — Vercel build hỏng, production không bị ảnh hưởng.
+- **15/09 (vòng 24) — kiểm kĩ lại:** ba THƯỚC ĐO sai đã sửa (mục CHẶN của
+  `do_dau_bao_mat` chấp nhận mất mạng; eval đo qua DevTools thì Chromium không chặn —
+  phải đo từ `<script>` của chính trang; phép kiểm bài thật nhầm `lessons.id` với
+  `sort_order`). Production gỡ `'unsafe-eval'`: đồ thị bài học do máy chủ tính
+  (`lessons/do_thi.py`). A/B hiệu năng cùng lúc: sau nâng Next, "Trang của tôi" chậm
+  thêm ~0,2 s ở phía trình duyệt, máy chủ như nhau. **Phát hiện: production nhận JWT
+  ký bằng khoá trong `backend/.env` → A6.**
 
 ## Việc đang chờ, không ai làm được thay
 
-Xem bảng đầu `docs/VIEC_CUA_ANH.md`. Năm việc chặn: **A0 gỡ khoá thanh toán GitHub —
-CI, sao lưu, giữ ấm CHƯA TỪNG CHẠY lượt nào (đo 14/09)** · A1 giữ ấm · A2 bí mật proxy
+Xem bảng đầu `docs/VIEC_CUA_ANH.md`. Sáu việc chặn: **A0 gỡ khoá thanh toán GitHub —
+CI, sao lưu, giữ ấm CHƯA TỪNG CHẠY lượt nào (đo 14/09)** · **A6 tách khoá ký production
+khỏi máy dev (đo 15/09: thẻ cấp ở máy được production nhận)** · A1 giữ ấm · A2 bí mật proxy
 (mọi người chung một xô đăng nhập) · A3 nhánh Neon cho CI (chỉ có nghĩa sau A0)
 · B1 một lớp thật.
 
@@ -180,8 +188,8 @@ HỎI LẠI trước khi làm:**
 Ngoài ra: bộ nhập kết quả thi từ PDF (chờ B4); T40 chỉ còn đặt `REDIS_URL`.
 
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
-~~`middleware.ts` → `proxy.ts`~~ (vòng 23) · gỡ `'unsafe-eval'`
-bằng bộ tính biểu thức thay `new Function` · gom cấu hình gunicorn về một chỗ
+~~`middleware.ts` → `proxy.ts`~~ (vòng 23) · ~~gỡ `'unsafe-eval'`~~ (vòng 24,
+máy chủ tính điểm đồ thị) · gom cấu hình gunicorn về một chỗ
 (`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau).
 
 **Cân nhắc rồi bỏ (đừng làm lại):** gỡ Font Awesome khỏi màn bài học — nội
