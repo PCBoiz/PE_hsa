@@ -1514,3 +1514,54 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact_locked_by INTEGER
 -- Mọi khoá ngoại có chỉ mục (§43).
 CREATE INDEX IF NOT EXISTS idx_users_parent_contact_locked_by
     ON users (parent_contact_locked_by) WHERE parent_contact_locked_by IS NOT NULL;
+
+
+-- ============================================================================
+-- §48 · Kết quả thi thử từ hệ thống khảo thí NGOÀI (15/09/2026)
+-- ============================================================================
+-- TopHSA thi thử trên hệ thống khảo thí khác (uranustech), và hệ thống ấy "chỉ
+-- xem được trên web" — không có API. Nhưng tờ PDF nó xuất cho từng em thì đọc
+-- được: điểm ba phần, tổng /150, và tỉ lệ đúng theo TỪNG đơn vị kiến thức (24
+-- dòng ở tệp mẫu). Bảng này giữ những gì bóc ra được, để báo cáo phụ huynh nói
+-- bằng điểm của một kỳ thi THẬT thay vì chỉ điểm luyện tập trong hệ thống.
+--
+-- VÌ SAO `don_vi` VÀ `diem_phan` LÀ JSONB CHỨ KHÔNG PHẢI BẢNG CON.
+-- Danh mục đơn vị kiến thức là của BÊN KIA, không phải của mình: nó đổi theo
+-- từng bản đề, phần 3 đổi hẳn bộ tên khi thí sinh chọn Tiếng Anh thay vì Khoa
+-- học, và mình không kiểm soát được lúc nào nó đổi. Dựng bảng con với khoá
+-- ngoại nghĩa là phải có một bảng danh mục mình tự bịa ra rồi tự đồng bộ —
+-- đúng thứ sẽ lệch trong im lặng. Ở đây dữ liệu được ĐỌC nguyên văn, dùng để
+-- hiển thị và xếp hạng yếu/mạnh, không dùng để nối bảng.
+--
+-- `ten_tren_to` giữ tên IN TRÊN TỜ, không phải tên trong hệ thống: khi ai đó
+-- hỏi "sao điểm này gán cho em này", câu trả lời phải là chuỗi đã đọc được từ
+-- tệp, chứ không phải tên mình đã khớp ra.
+--
+-- KHÔNG có `class_id`: kết quả thi thuộc về CON NGƯỜI. Em chuyển lớp thì kết
+-- quả cũ vẫn là của em, và báo cáo phụ huynh đọc theo người chứ không theo lớp.
+CREATE TABLE IF NOT EXISTS ket_qua_thi_ngoai (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ngay_thi    DATE      NOT NULL,
+    dot         TEXT,
+    ma_hoc_sinh TEXT,
+    hinh_thuc   TEXT,
+    dia_diem    TEXT,
+    tong_diem   INTEGER   NOT NULL,
+    tong_toi_da INTEGER   NOT NULL DEFAULT 150,
+    diem_phan   JSONB     NOT NULL DEFAULT '[]'::jsonb,
+    don_vi      JSONB     NOT NULL DEFAULT '[]'::jsonb,
+    ten_tren_to TEXT      NOT NULL,
+    nhap_boi    INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT now()
+);
+-- Nhập lại đúng tệp ấy lần nữa thì GHI ĐÈ, không đẻ thêm một lượt thi ma. Khoá
+-- theo (người, ngày thi, đợt) vì một em có thể thi hai đợt trong cùng một ngày
+-- ở hai bài khác nhau, nhưng không thi cùng một đợt hai lần trong ngày.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_kqtn_mot_luot
+    ON ket_qua_thi_ngoai (user_id, ngay_thi, COALESCE(dot, ''));
+-- Đường đọc chính: kết quả gần nhất của một em.
+CREATE INDEX IF NOT EXISTS idx_kqtn_user_ngay ON ket_qua_thi_ngoai (user_id, ngay_thi DESC);
+-- Mọi khoá ngoại có chỉ mục (§43).
+CREATE INDEX IF NOT EXISTS idx_kqtn_nhap_boi ON ket_qua_thi_ngoai (nhap_boi)
+    WHERE nhap_boi IS NOT NULL;

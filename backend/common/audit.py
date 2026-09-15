@@ -67,6 +67,12 @@ PARENT_LINK_CREATE = 'parent_link.create'
 PARENT_LINK_REVOKE = 'parent_link.revoke'
 PARENT_REPORT_SEND_ALL = 'parent_report.send_all'
 
+#: Nhập kết quả thi thử từ tờ PDF của hệ thống khảo thí ngoài (15/09/2026). Ghi
+#: MỘT dòng cho cả lượt nhập, như `send_all` ở trên và vì cùng lý do: học vụ kéo
+#: cả xấp ba mươi tờ vào một lần. `detail` mang tên tệp, danh sách học viên được
+#: ghi và các tờ bỏ qua — đủ trả lời "điểm này vào hệ thống từ tờ nào, ai nhập".
+EXTERNAL_EXAM_IMPORT = 'exam.external_import'
+
 #: Đợt học (§36, 31/08/2026). Vòng đời một đợt là thông tin tổ chức của trung
 #: tâm, không phải dữ liệu học của em nào — nhưng xoá một đợt gỡ nhãn khỏi hàng
 #: chục lớp, nên vẫn thuộc nhóm việc SỬA phải ghi lại.

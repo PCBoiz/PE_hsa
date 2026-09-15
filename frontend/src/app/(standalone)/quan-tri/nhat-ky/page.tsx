@@ -73,6 +73,8 @@ const VIEC: Record<string, string> = {
   'parent_link.create': 'Phát hành link báo cáo phụ huynh',
   'parent_link.revoke': 'Thu hồi link báo cáo phụ huynh',
   'parent_report.send_all': 'Gửi báo cáo cả lớp',
+  // 16/09/2026: điểm kỳ thi thử đọc từ PDF đi thẳng vào tờ gửi về nhà.
+  'exam.external_import': 'Nhập kết quả thi thử từ PDF',
   // Nhóm `term.*` thêm 31/08/2026 cùng tính năng đợt học. Đây đúng là cách
   // bảng nhãn này trôi khỏi backend: thêm hành động mới ở `common/audit.py` mà
   // quên chỗ này, và mã máy lại lọt ra màn hình — đúng thứ chú thích trên vừa

@@ -46,6 +46,21 @@ export const HD_BAO_CAO = z.looseObject({
     lessonsDone: so, mockCount: so, mockAvg: soHoacTrong, mockBest: soHoacTrong,
     mockTrend: z.enum(['up', 'down', 'flat']).nullable(),
   }),
+  // Kỳ thi thử tại trung tâm — `null` khi chưa nhập tờ kết quả nào, và `optional`
+  // vì một bản dựng cũ của máy chủ chưa gửi khoá này. Thiếu nó KHÔNG được làm
+  // hỏng cả tờ báo cáo: phụ huynh đang mở link trên điện thoại.
+  centerExam: z.looseObject({
+    date: z.string(),
+    round: chu,
+    score: so,
+    max: so,
+    sections: z.array(z.looseObject({ phan: so, ten: z.string(), diem: so, toiDa: so })),
+    weakUnits: z.array(z.looseObject({ phan: so, ten: z.string(), pct: so })),
+    unitsMeasured: so,
+    previous: z.looseObject({
+      date: z.string(), round: chu, score: so, delta: so,
+    }).nullable(),
+  }).nullable().optional(),
   topics: z.looseObject({
     weak: z.array(CHU_DE),
     strong: z.array(CHU_DE),

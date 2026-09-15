@@ -1,6 +1,6 @@
 # Bàn giao phiên — đọc tệp này đầu tiên khi mở phiên mới
 
-*Cập nhật 15/09/2026 (sau vòng 24). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
+*Cập nhật 16/09/2026 (sau vòng 25). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
 đọc lại 5.800 dòng nhật ký. Cách làm học từ `BAN-GIAO-PHIEN.md` của dự án cô
 Giang — chỉ học cách, không đụng bên ấy.*
 
@@ -158,6 +158,13 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   (`lessons/do_thi.py`). A/B hiệu năng cùng lúc: sau nâng Next, "Trang của tôi" chậm
   thêm ~0,2 s ở phía trình duyệt, máy chủ như nhau. **Phát hiện: production nhận JWT
   ký bằng khoá trong `backend/.env` → A6.**
+- **16/09 (vòng 25) — nhập kết quả thi thử từ PDF**, việc (1) của hướng bán đứt. Màn
+  `/giang-day/ket-qua-thi/<lớp>` (lối vào: trang báo cáo phụ huynh cả lớp) → tờ báo
+  cáo có khối "Kỳ thi thử tại trung tâm". Hai tuyến `doc` (từng tệp, phát phiếu ký) /
+  `ghi` (phiếu + chọn tay) — vì 0,75 s/tờ × 35 em đụng trần 60 s gunicorn và 4,5 MB
+  của Vercel. Bảng §48 `ket_qua_thi_ngoai`. **Tệp PDF mẫu có tên học sinh thật: không
+  commit**; thử bằng PDF giả dựng bằng reportlab. Bài học: phép kiểm thay hàm đọc
+  bằng hàm giả đã giấu một `ImportError` làm 500 mọi lượt tải lên.
 
 ## Việc đang chờ, không ai làm được thay
 
@@ -185,7 +192,13 @@ HỎI LẠI trước khi làm:**
    xếp hạng, thông báo) theo khuôn `HocTiep`/`LopCuaToiNguon`.
 3. *Rà lại 4 vai trên PRODUCTION* (`pe-hsa.vercel.app`) trước/ngay sau buổi
    học đầu 15/09 — tài khoản thử, rà xong xoá.
-Ngoài ra: bộ nhập kết quả thi từ PDF (chờ B4); T40 chỉ còn đặt `REDIS_URL`.
+Ngoài ra: ~~bộ nhập kết quả thi từ PDF~~ (vòng 25); T40 chỉ còn đặt `REDIS_URL`.
+
+**Hướng đang làm (anh Sơn chọn 15/09, "khả năng cao là sẽ bán đứt") — theo thứ tự:**
+~~(1) nhập kết quả thi thử từ PDF~~ · (2) bộ dữ liệu trình diễn, đánh dấu và gỡ được ·
+(3) tốc độ + dựng lười 8 tab SPA ẩn (chính là hướng 1 ở trên) · (4) minh hoạ cho bài
+học (14 minh hoạ / 76 bài). Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
+đổi hướng lớn giữa chừng thì vẫn hỏi.
 
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
 ~~`middleware.ts` → `proxy.ts`~~ (vòng 23) · ~~gỡ `'unsafe-eval'`~~ (vòng 24,

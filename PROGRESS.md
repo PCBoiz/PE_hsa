@@ -45,6 +45,11 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   quản trị (T18 mức 2) → giảm LCP Trang của tôi.
 - Kịch bản Python tạm: **viết ra tệp rồi chạy `python -P tệp`**, không heredoc
   — heredoc đã phá ba lần (backtick, byte NUL, dấu nháy). Học từ dự án cô Giang.
+- **15–16/09 — hướng BÁN ĐỨT:** anh Sơn: "tiếp tục cải tiến sản phẩm để thuyết phục
+  họ dễ hơn … khả năng cao là sẽ bán đứt". Anh chọn CẢ BỐN việc, làm theo thứ tự:
+  (1) nhập kết quả thi thử từ PDF — **xong vòng 25** · (2) bộ dữ liệu trình diễn (đánh
+  dấu, gỡ được) · (3) tốc độ + 8 tab SPA ẩn · (4) minh hoạ cho bài học (mới 14 minh
+  hoạ / 76 bài). Tệp PDF mẫu anh gửi mang tên học sinh THẬT — không commit (repo công khai).
 
 ## Trạng thái ngay lúc này — 14/09/2026 (khuya)
 
@@ -80,6 +85,99 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
 
 <!-- MỚI NHẤT -->
+
+## 16/09/2026 — VÒNG 25 · Nhập kết quả thi thử từ PDF: điểm kỳ thi THẬT vào tờ báo cáo phụ huynh
+
+Việc (1) trong bốn việc anh chọn cho hướng bán đứt.
+
+**Vì sao việc này trước.** TopHSA thi thử trên một hệ thống khảo thí khác, anh Sơn nói
+"chỉ xem được trên web" — không API. Nhưng tờ PDF nó xuất cho từng em đọc được sạch và
+có đúng thứ tờ báo cáo phụ huynh đang thiếu: điểm ba phần + tổng /150 của một kỳ thi
+thật, và tỉ lệ đúng theo TỪNG đơn vị kiến thức (24 dòng ở tệp mẫu). Không cần bên kia
+mở gì: học vụ kéo cả xấp PDF vào, tờ báo cáo gửi về nhà có thêm khối "Kỳ thi thử tại
+trung tâm" — tổng điểm, so với kỳ trước, từng phần, ba đơn vị yếu nhất.
+
+**Đã làm**
+- `teaching/nhap_ket_qua_thi.py` đọc tờ: `pypdf` chế độ `layout` (cách mặc định chèn
+  dấu cách vào giữa chữ có dấu — khớp 1/4 chuỗi mong đợi, `layout` 4/4); đọc mục III
+  (mỗi đơn vị một dòng) chứ không đọc bảng ma trận (số dính nhau khi bóc). Lệch tổng
+  là CẢNH BÁO, không chặn.
+- §48 `ket_qua_thi_ngoai` — khoá duy nhất (người, ngày thi, đợt) nên nhập lại là GHI
+  ĐÈ. `kiem_luoc_do` thêm §48a–d; Neon 18/18 mục.
+- Hai tuyến `…/ket-qua-thi/doc` (từng tệp → PHIẾU ký bằng `django.core.signing`, gắn
+  lớp + người đọc, sống 6 giờ) và `…/ket-qua-thi/ghi` (phiếu + chọn tay; mặc định chỉ
+  trả bảng khớp, `ghi: true` mới ghi; một dòng nhật ký `exam.external_import`).
+- Khớp tên: đúng → nhận; bỏ dấu mà duy nhất → nhận nhưng BÁO; trùng tên hay không có →
+  không đoán. Chọn tay từng tờ hoặc bỏ qua. Học viên ngoài lớp → từ chối CẢ lượt. Hai
+  tờ rơi vào một em cùng kỳ → không ghi tờ nào.
+- Tờ báo cáo (màn hình + PDF) có khối kỳ thi thử; PDF đánh số mục động. Màn
+  `/giang-day/ket-qua-thi/<lớp>`: đọc song song 2 tệp, thanh tiến độ, cột "Ghi cho",
+  nút ghi. Lối vào từ trang báo cáo phụ huynh cả lớp. Nhãn nhật ký.
+
+**Đổi thiết kế giữa chừng: tách đọc và ghi.** Bản đầu một tuyến nhận cả xấp. Đo máy
+dev: **0,75 s/tờ** thật (7 trang, 481 kB) → lớp 35 em ~26 s trong MỘT request, và bấm
+"Ghi" đọc lại từ đầu. Hai trần production: gunicorn `--timeout 60` trên CPU Render yếu
+hơn máy dev; mọi `/api/*` đi qua route handler Next trên Vercel, thân tối đa 4,5 MB —
+chục tờ là vượt. Nay trình duyệt gửi từng tờ; lượt ghi chỉ gửi phiếu. Phiếu ký bằng
+`SECRET_KEY` nên dính cùng lỗ A6 (đã ghi vào A6).
+
+**Lỗi chỉ lộ ra khi đi đường thật**
+1. `from pypdf.errors import PdfError` — tên KHÔNG có → **500 cho mọi tệp tải lên**.
+   Mọi phép kiểm hoặc nhận chữ, hoặc thay `doc_tep` bằng hàm giả, nên không phép nào
+   chạm tới dòng nhập. Thêm hai phép đi qua `pypdf` thật; đỏ trước khi vá (ImportError).
+2. Trang trắng không có `/Contents` → `KeyError` trong chế độ `layout` → cả tờ thành
+   "không mở được". Nay bỏ qua trang ấy.
+3. Câu lỗi hiện "(PdfStreamError)" cho học vụ — bỏ tên lớp lỗi.
+4. Cột "Ghi cho" co tới mức tên bị cắt "Tự khớp: Te…" — tên đứng trước, `min-w-[18ch]`.
+5. Các câu "chọn tay giúp tôi" của bản đầu trỏ tới một nút KHÔNG tồn tại — nay có.
+6. Hai unit Node đỏ đúng chỗ: thiếu nhãn nhật ký; `zod` đầy đủ trong mã trình duyệt.
+7. Tự rà sau khi xong: danh sách khớp lấy CẢ em đã rời lớp — mọi đường ghi khác của
+   khu giảng dạy (điểm danh, chấm bài) lọc `left_at IS NULL`. Em cùng tên đã chuyển đi
+   làm tờ của em đang học thành "trùng tên", và ô "Ghi cho" mời ghi vào hồ sơ em ấy.
+
+**Kiểm**
+- Đột biến — gỡ từng dòng canh, chạy đúng phép kiểm canh nó: kiểm lớp/người của
+  phiếu, học viên ngoài lớp, soát trùng, `ghi` phải đúng là `true`, hạn phiếu → đều
+  ĐỎ. Dòng chặn `bool` thì phép kiểm qua URL vẫn XANH (`true` → #1 → "không thuộc
+  lớp" → vẫn 400) → thêm phép kiểm thẳng `_doc_chon`, đỏ. Một lượt báo "1 error" hoá ra
+  Neon rớt kết nối; chạy lại mới ra "failed" thật — đọc dòng ĐỎ trước khi tin.
+- Trình duyệt trên `next start` + Neon, bằng PDF GIẢ (reportlab, không người thật): lối
+  vào từ trang báo cáo lớp → đọc 3 tệp **1,9 s** → chọn tay gây trùng (2 tờ "Trùng
+  em", nút còn "Ghi 1") → bỏ qua → ghi 2 → API báo cáo em #9: **101/150** kỳ 13/09,
+  **+11** so với 90/150 kỳ 23/08, ba đơn vị yếu → trang báo cáo có khối ấy → khổ 390:
+  không tràn ngang, tệp `.py` lẫn vào báo "không mở được PDF". 0 lỗi JS, 0 dòng CSP.
+  Tuyến không thẻ: `doc`/`ghi` 401, tuyến cũ `nhap` 404.
+- Đường PHỤ HUYNH thật (không phải đường giảng viên): phát chìa cho em #9 → JSON công
+  khai có `centerExam` 101/150 Δ+11, không lọt mã học sinh / địa điểm / tên trên tờ,
+  vẫn không có email/số của em → `/bc/<chìa>` khổ 390 hiện khối kỳ thi, không tràn, 0
+  lỗi JS, 0 dòng CSP → THU HỒI chìa → mở lại 404. (`rut_gon_cho_link` bỏ theo danh sách
+  đen nên khoá mới tự đi qua — đã soi `_thi_tai_trung_tam` không trả trường định danh.)
+- Quét giao diện, trang mới đã vào danh sách: 2 khổ × 23 trang = 46/46 lượt, 0 ở mọi
+  cột (tương phản, chạm < 44px, tràn, lỗi JS, CSP, lời gọi ghi lọt ra). **Tự kiểm
+  KHÔNG đạt:** HỎNG 2/46 rồi 3/46 ở hai lượt — "Quản trị · tổng quan" khổ điện thoại
+  không đỏ nổi cả hai lượt (API chỉ 1,5 s, không phải chờ), "Chi tiết khoá" khổ điện
+  thoại chập chờn, và hai lượt tải quá 45 s. Không trang nào vòng này chạm; trang mới
+  đỏ đủ 9/9 và 15/15 ở cả hai lượt nên số 0 của NÓ tin được. Số 0 của hai trang kia
+  thì không — ghi thành mục mở trong `TODO.md` (16/09).
+- Tệp THẬT (không commit): 105/150 · 27/38/40 · 24 đơn vị · 0 cảnh báo; trên trình
+  duyệt hiện "Chưa khớp" — đúng, em ấy không ở lớp 1.
+- eslint · tsc · 27/27 unit Node · ruff · build.
+- **pytest toàn bộ lượt đầu TREO** (không đỏ, không hết giờ): `pg_stat_activity` cho thấy
+  một phiên *idle in transaction* giữ dòng `django_test_tmp@example.com` của fixture
+  `temp_user`, và câu INSERT cùng email ở kết nối khác chờ khoá ấy mãi. Không phải mã vòng
+  này — fixture chèn email CỐ ĐỊNH vào cột unique; nghi Neon rớt kết nối để lại một kết
+  nối pool giữa giao dịch (chưa chứng minh). Dừng lượt ấy, soi lại: 0 phiên treo; chạy lại
+  khi không có lượt nào khác đụng Neon. Ghi thành mục mở trong `TODO.md`. Lượt chạy song
+  song trước đó (bộ báo cáo phụ huynh, 84 phép): 4 đỏ + 1 lỗi trong 26 phút — chạy lại
+  riêng 5/5 xanh, tức cũng là nhiễu CSDL chứ không phải hồi quy.
+- **pytest toàn bộ (lượt chạy lại, 02:54–03:36, sau bản vá cuối cùng của mã):
+  628 passed + 1 ERROR** — `chatbot/tests.py::test_du_truong_thi_dung_du_dong`, Neon rớt
+  kết nối lúc 02:57 ("server closed the connection unexpectedly"); chạy lại riêng 1/1
+  xanh. Lượt này có bộ canh đọc `pg_stat_activity` mỗi phút — không treo lại. 42 phút
+  (14/09: ~29) — Neon chậm cả ngày hôm ấy.
+- Neon giữ 2 dòng `ket_qua_thi_ngoai` của em #9 (Test Reg) do lượt kiểm ghi — dùng tiếp
+  cho việc (2) bộ dữ liệu trình diễn.
+- **Chưa đo:** thời gian đọc một tờ trên CPU Render — đo sau khi deploy.
 
 ## 15/09/2026 — VÒNG 24 · Kiểm kĩ lại vòng 22–23: ba thước đo sai, khoá production nằm trên máy dev, và 'unsafe-eval' đã gỡ
 

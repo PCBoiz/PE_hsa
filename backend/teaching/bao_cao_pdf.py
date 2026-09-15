@@ -270,6 +270,14 @@ def dung_pdf(bc: dict) -> bytes:
     nho = kieu('nho', 7.8, NHAT, dan=1.45)
     kq = []
 
+    # Số mục ĐÁNH TỰ ĐỘNG, không viết cứng: mục "Thi thử tại trung tâm" chỉ hiện
+    # khi đã nhập được kết quả, và một tờ giấy nhảy từ II sang IV đọc như in thiếu
+    # mất một trang.
+    _so_muc = iter(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'])
+
+    def de_muc(ten):
+        return Paragraph('%s. %s' % (next(_so_muc), ten), h2)
+
     # ── ĐẦU TỜ ──────────────────────────────────────────────────────────
     kq.append(Paragraph('BÁO CÁO HỌC TẬP', h1))
     kq.append(Paragraph(
@@ -278,7 +286,7 @@ def dung_pdf(bc: dict) -> bytes:
         kieu('duoi_h1', 9, NHAT, sau=8)))
 
     # ── I. THÔNG TIN CHUNG ─────────────────────────────────────────────
-    kq.append(Paragraph('I. THÔNG TIN CHUNG', h2))
+    kq.append(de_muc('THÔNG TIN CHUNG'))
 
     o = kieu('o', 8.5, MUC, sau=0)
     trai = [
@@ -326,7 +334,7 @@ def dung_pdf(bc: dict) -> bytes:
     kq.append(ngoai)
 
     # ── II. CHUYÊN CẦN ─────────────────────────────────────────────────
-    kq.append(Paragraph('II. CHUYÊN CẦN', h2))
+    kq.append(de_muc('CHUYÊN CẦN'))
     hang = [['', 'Số buổi']]
     for nhan, khoa in (('Có mặt', 'present'), ('Đi muộn', 'late'),
                        ('Vắng', 'absent'), ('Vắng có phép', 'excused'),
@@ -358,9 +366,59 @@ def dung_pdf(bc: dict) -> bytes:
             'chưa tính vào bảng trên. Con số chuyên cần ở đây chỉ nói về những '
             'buổi đã được ghi nhận.' % chua_tick, nho))
 
-    # ── III. TIẾN ĐỘ THEO HỢP PHẦN ─────────────────────────────────────
+    # ── THI THỬ TẠI TRUNG TÂM (chỉ khi đã nhập được tờ kết quả) ─────────
+    # In "chưa có dữ liệu" cho một mục phụ huynh chưa từng nghe tới chỉ tạo thêm
+    # một câu hỏi không ai ở đó trả lời — nên không có thì giấu hẳn.
+    #
+    # THANG ĐIỂM KHÁC MỤC I, và tờ giấy phải nói ra: đây là kỳ thi THẬT do hệ
+    # thống khảo thí của trung tâm chấm (thang 150), còn "Điểm thi thử TB" ở mục
+    # I là điểm luyện tập trong ứng dụng (thang phần trăm). Hai con số cạnh nhau
+    # mà không chú thích thì đọc như mâu thuẫn.
+    ktt = bc.get('centerExam') or None
+    if ktt:
+        kq.append(de_muc('THI THỬ TẠI TRUNG TÂM'))
+        truoc = ktt.get('previous') or None
+        if truoc:
+            lech = truoc.get('delta') or 0
+            ss = ('tăng %d điểm' % lech if lech > 0
+                  else 'giảm %d điểm' % -lech if lech < 0 else 'không đổi')
+            ss += ' so với kỳ %s (%s/%s)' % (ngay(truoc.get('date')),
+                                             truoc.get('score'), ktt.get('max'))
+        else:
+            ss = 'lần thi đầu tiên được ghi nhận'
+        hang = [['Kỳ thi', 'Ngày thi', 'Tổng điểm', 'So với lần trước'],
+                [o_bang(ktt.get('round') or 'Thi thử', o), ngay(ktt.get('date')),
+                 '%s/%s' % (ktt.get('score'), ktt.get('max')), o_bang(ss, o)]]
+        t = Table(hang, colWidths=[36 * mm, 24 * mm, 24 * mm, 54 * mm], hAlign='LEFT')
+        t.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), FONT),
+            ('FONTNAME', (0, 0), (-1, 0), FONT_DAM),
+            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+            ('BACKGROUND', (0, 0), (-1, 0), NEN_NHAT),
+            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.25, VIEN),
+            ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+        ]))
+        kq.append(t)
+        phan = ktt.get('sections') or []
+        if phan:
+            kq.append(Spacer(1, 4))
+            kq.append(Paragraph('Điểm từng phần: ' + ' &nbsp;·&nbsp; '.join(
+                '%s %s/%s' % (an(s.get('ten')), s.get('diem'), s.get('toiDa'))
+                for s in phan), p))
+        yeu = ktt.get('weakUnits') or []
+        if yeu:
+            kq.append(Paragraph('Thấp nhất trong kỳ này: ' + ' &nbsp;·&nbsp; '.join(
+                '%s (%s%%)' % (an(v.get('ten')), v.get('pct')) for v in yeu), p))
+        kq.append(Paragraph(
+            'Điểm mục này do hệ thống khảo thí của trung tâm chấm, thang %s. Khác '
+            'với "Điểm thi thử TB" ở mục I — đó là điểm luyện tập trong ứng dụng, '
+            'tính theo phần trăm.' % ktt.get('max'), nho))
+
+    # ── TIẾN ĐỘ THEO HỢP PHẦN ───────────────────────────────────────────
     khoa = cd.get('courses') or []
-    kq.append(Paragraph('III. TIẾN ĐỘ THEO HỢP PHẦN', h2))
+    kq.append(de_muc('TIẾN ĐỘ THEO HỢP PHẦN'))
     if khoa:
         hang = [['Hợp phần', 'Bài đã xong', 'Tỉ lệ']]
         for k in khoa:
@@ -396,7 +454,7 @@ def dung_pdf(bc: dict) -> bytes:
     # `KeepTogether` thay vào đó: tiêu đề mục IV không bị mồ côi ở cuối trang,
     # nhưng khi còn chỗ thì mục IV nối tiếp ngay trong trang 1.
     kq.append(KeepTogether([
-        Paragraph('IV. CHỦ ĐỀ ĐÃ ĐO ĐƯỢC', h2),
+        de_muc('CHỦ ĐỀ ĐÃ ĐO ĐƯỢC'),
         Paragraph(
             'Đo trên %s chủ đề đã có bài làm, trên tổng %s chủ đề của chương trình. '
             'Chủ đề con chưa học tới thì không xuất hiện ở đây — chưa học không phải '
@@ -444,7 +502,7 @@ def dung_pdf(bc: dict) -> bytes:
             'nói con mạnh yếu ở đâu.', p))
 
     # ── V. NHẬN XÉT CỦA GIẢNG VIÊN ─────────────────────────────────────
-    kq.append(Paragraph('V. NHẬN XÉT CỦA GIẢNG VIÊN', h2))
+    kq.append(de_muc('NHẬN XÉT CỦA GIẢNG VIÊN'))
     kq.append(Paragraph(an(tv.get('teacherNote')) or
                         '<i>Giảng viên chưa ghi nhận xét cho kỳ này.</i>', p))
 

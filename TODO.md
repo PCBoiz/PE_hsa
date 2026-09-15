@@ -2895,3 +2895,31 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
     phải nằm trong đó. Lùi mã cũ → đỏ đúng dòng `không ai ghi: LESSON_CONTENT_HSA`.
   · Khu `chatbot/` trước nay KHÔNG có tệp test nào — nay có `chatbot/tests.py`
     (5 phép kiểm) giữ đầu máy chủ.
+
+## 16/09/2026 — mục mở từ vòng 25
+
+- [ ] **Bộ đo giao diện mù ở "Quản trị · tổng quan" khổ ĐIỆN THOẠI.** `do_giao_dien
+  --tu-kiem` nhét quy tắc hỏng mà lượt ấy vẫn ra `tương phản: 0/33` — **2/2 lượt**
+  (16/09, cách nhau ~1 giờ). Tức con số 0 của trang này ở khổ điện thoại trong mọi
+  bảng quét là vô nghĩa. KHÔNG phải do API chậm: `/api/admin/overview` trả 200 trong
+  1,45–1,48 s (3 lượt, máy dev). Khổ máy tính cùng trang thì đỏ được (45/45). Chưa
+  rõ vì sao — nghi bố cục khổ hẹp dựng khối khác mà quy tắc nhét vào không phủ tới.
+  Không phải trang vòng 25 chạm tới. Kèm: mỗi lượt có một trang quản trị tải quá
+  45 s (lượt 1: nhật ký · lượt 2: tổng quan máy tính) — thước báo "KHONG TAI DUOC",
+  không lẫn vào số 0, nhưng làm tự kiểm HỎNG giả; nên đo lại riêng khi Neon êm.
+  Lượt 2 còn thêm "Chi tiết khoá" khổ điện thoại KHÔNG đỏ nổi — lượt 1 cùng trang
+  ấy đỏ 56/64. Tức có ít nhất một chỗ tự kiểm CHẬP CHỜN, không chỉ một chỗ mù.
+  Kết luận hai lượt: HỎNG 2/46 rồi 3/46; trang mới vòng 25 đỏ đủ cả hai khổ cả hai lượt.
+
+- [ ] **pytest toàn bộ TREO VĨNH VIỄN — không đỏ, không hết giờ.** 16/09, sau 35 phút
+  CPU tiến trình gần như đứng yên. Soi `pg_stat_activity` (chỉ đọc): một phiên **idle in
+  transaction** 4 phút, lệnh cuối `SET CONSTRAINTS ALL IMMEDIATE` (Django dọn cuối phép
+  kiểm); một phiên khác `INSERT INTO users … 'django_test_tmp@example.com'` chờ khoá
+  `transactionid` của phiên kia 3 phút 45. Phiên giữ khoá chờ Python gửi lệnh tiếp, Python
+  chờ câu INSERT — Postgres không phát hiện được vì một bên KHÔNG chờ khoá. Gốc: fixture
+  `temp_user` (`backend/conftest.py`) chèn một email CỐ ĐỊNH vào cột unique (mục A2 phía
+  trên đã ghi hai lượt song song đập nhau ở đây). Nghi — CHƯA chứng minh — một lần Neon rớt
+  kết nối trong lượt chạy (hôm ấy gặp nhiều lần) để lại một kết nối của pool giữa giao
+  dịch. Hướng sửa: email theo `uuid` trong `temp_user` (hết va chạm unique, kể cả hai lượt
+  song song) và/hoặc `idle_in_transaction_session_timeout` ở cấu hình vai CSDL (KHÔNG
+  `SET` trong phiên — pgbouncer). Cần phép kiểm đỏ-trước dựng lại đúng cảnh hai kết nối.

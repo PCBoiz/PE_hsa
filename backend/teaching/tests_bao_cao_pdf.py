@@ -200,3 +200,80 @@ def test_payload_rong_hoac_thieu_khoa_khong_lam_no():
     không biết đã tới em nào.
     """
     assert dung_pdf({})[:5] == b'%PDF-'
+
+
+# ── 6. Thi thử tại trung tâm (nhập từ tờ PDF của hệ thống khảo thí) ────────
+
+KY_THI = {
+    'date': '2026-08-23', 'round': 'Online 2308', 'score': 105, 'max': 150,
+    'sections': [{'phan': 1, 'ten': 'Định lượng và Xử lí số liệu', 'diem': 27, 'toiDa': 50},
+                 {'phan': 2, 'ten': 'Định tính', 'diem': 38, 'toiDa': 50},
+                 {'phan': 3, 'ten': 'Tiếng Anh', 'diem': 40, 'toiDa': 50}],
+    'weakUnits': [{'phan': 1, 'ten': 'Nguyên hàm, tích phân và ứng dụng', 'pct': 0},
+                  {'phan': 3, 'ten': 'Reading comprehension 1', 'pct': 20}],
+    'unitsMeasured': 24,
+    'previous': None,
+}
+
+
+def _mot_dong(bc) -> str:
+    """Chữ trong PDF đã GỘP DÒNG.
+
+    reportlab ngắt dòng theo bề ngang ô, nên một câu đúng vẫn nằm trên hai dòng
+    ("tăng 13 điểm so với kỳ\\n19/07/2026"). Tìm nguyên câu trong chữ thô sẽ đỏ
+    oan — và cách sửa sai là đi sửa tờ giấy cho vừa một dòng.
+    """
+    return ' '.join(_chu(bc).split())
+
+
+def test_chua_nhap_ket_qua_thi_thi_KHONG_in_muc_ay():
+    """Mục này chỉ có khi đã nhập được tờ kết quả.
+
+    In "chưa có dữ liệu" cho một mục phụ huynh chưa từng nghe tới chỉ tạo thêm
+    một câu hỏi không ai ở đó trả lời."""
+    chu = _chu(CO_SO)
+    assert 'THI THỬ TẠI TRUNG TÂM' not in chu
+    assert 'III. TIẾN ĐỘ THEO HỢP PHẦN' in chu, 'không có mục ấy thì số mục KHÔNG được nhảy'
+    assert 'IV. CHỦ ĐỀ ĐÃ ĐO ĐƯỢC' in chu and 'V. NHẬN XÉT CỦA GIẢNG VIÊN' in chu
+
+
+def test_co_ket_qua_thi_thi_in_dung_diem_va_day_so_muc_xuong():
+    chu = _chu(_voi(centerExam=KY_THI))
+    assert 'III. THI THỬ TẠI TRUNG TÂM' in chu
+    assert '105/150' in chu and 'Online 2308' in chu and '23/08/2026' in chu
+    assert 'Định lượng và Xử lí số liệu 27/50' in chu, 'điểm từng phần in nguyên mẫu số'
+    # Các mục sau bị đẩy xuống một bậc — không trùng số, không nhảy số.
+    assert 'IV. TIẾN ĐỘ THEO HỢP PHẦN' in chu
+    assert 'V. CHỦ ĐỀ ĐÃ ĐO ĐƯỢC' in chu and 'VI. NHẬN XÉT CỦA GIẢNG VIÊN' in chu
+
+
+def test_lan_dau_thi_noi_ro_la_lan_dau_chu_khong_bia_tien_bo():
+    chu = _chu(_voi(centerExam=KY_THI))
+    assert 'lần thi đầu tiên được ghi nhận' in chu
+    assert 'tăng' not in chu.split('III. THI THỬ')[1].split('IV.')[0]
+
+
+def test_co_lan_truoc_thi_noi_tang_hay_giam_bao_nhieu():
+    tang = _mot_dong(_voi(centerExam={**KY_THI, 'previous': {
+        'date': '2026-07-19', 'round': 'Online 1907', 'score': 92, 'delta': 13}}))
+    assert 'tăng 13 điểm so với kỳ 19/07/2026' in tang and '92/150' in tang
+
+    giam = _mot_dong(_voi(centerExam={**KY_THI, 'previous': {
+        'date': '2026-07-19', 'round': 'Online 1907', 'score': 118, 'delta': -13}}))
+    assert 'giảm 13 điểm' in giam, 'dấu trừ phải đọc thành chữ, không in "-13"'
+
+
+def test_in_don_vi_kien_thuc_thap_nhat_ke_ca_0_phan_tram():
+    chu = _chu(_voi(centerExam=KY_THI))
+    assert 'Nguyên hàm, tích phân và ứng dụng (0%)' in chu, '0% là một con số, không phải chỗ trống'
+    assert 'Reading comprehension 1 (20%)' in chu
+
+
+def test_noi_ro_hai_thang_diem_khac_nhau():
+    """Mục I có "Điểm thi thử TB 82%" (luyện tập), mục này có "105/150" (thi thật).
+
+    Hai con số cạnh nhau trong một tờ giấy mà không chú thích thì đọc như mâu
+    thuẫn, và phụ huynh sẽ hỏi giảng viên câu mà tờ giấy đáng lẽ phải tự trả lời.
+    """
+    chu = _mot_dong(_voi(centerExam=KY_THI))
+    assert 'thang 150' in chu and 'điểm luyện tập trong ứng dụng' in chu

@@ -115,6 +115,16 @@ MUC = [
      lambda: _cot('users', 'parent_contact_locked_at')),
     ('§47b', 'chỉ mục users(parent_contact_locked_by)',
      lambda: _chi_muc('idx_users_parent_contact_locked_by')),
+    ('§48a', 'bảng ket_qua_thi_ngoai (kết quả thi thử nhập từ PDF)',
+     lambda: _cot('ket_qua_thi_ngoai', 'don_vi')),
+    # Chỉ mục duy nhất là thứ giữ "nhập lại thì GHI ĐÈ": thiếu nó thì
+    # `ON CONFLICT (user_id, ngay_thi, COALESCE(dot, ''))` ném lỗi ngay lượt ghi đầu.
+    ('§48b', 'chỉ mục duy nhất ket_qua_thi_ngoai(user_id, ngay_thi, đợt)',
+     lambda: _chi_muc('idx_kqtn_mot_luot')),
+    ('§48c', 'chỉ mục ket_qua_thi_ngoai(user_id, ngay_thi DESC)',
+     lambda: _chi_muc('idx_kqtn_user_ngay')),
+    ('§48d', 'chỉ mục ket_qua_thi_ngoai(nhap_boi)',
+     lambda: _chi_muc('idx_kqtn_nhap_boi')),
 ]
 
 

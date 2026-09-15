@@ -46,6 +46,24 @@ export type BaoCao = {
     mockBest: number | null;
     mockTrend: 'up' | 'down' | 'flat' | null;
   };
+  /**
+   * Kỳ thi thử THẬT tại trung tâm, nhập từ tờ PDF của hệ thống khảo thí.
+   * `null` khi chưa nhập tờ nào — giấu hẳn khối ấy đi, đừng hiện "chưa có dữ
+   * liệu" cho một thứ phụ huynh còn không biết là có tồn tại.
+   *
+   * Thang điểm KHÁC `study.mockAvg` (phần trăm, luyện tập trong ứng dụng), nên
+   * khối này tự nói ra thang của nó.
+   */
+  centerExam?: {
+    date: string;
+    round: string | null;
+    score: number;
+    max: number;
+    sections: { phan: number; ten: string; diem: number; toiDa: number }[];
+    weakUnits: { phan: number; ten: string; pct: number }[];
+    unitsMeasured: number;
+    previous: { date: string; round: string | null; score: number; delta: number } | null;
+  } | null;
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -145,6 +163,49 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
                 con số này đầy đủ.
               </p>
             )}
+          </>
+        )}
+
+        {/* ── Thi thử tại trung tâm ──────────────────────────────────────
+            Chỉ hiện khi đã nhập được tờ kết quả. Đây là kỳ thi THẬT do hệ thống
+            khảo thí của trung tâm chấm (thang 150) — khác thang phần trăm của
+            khối "Con có tiến bộ không" ngay dưới, nên khối này tự chú thích. */}
+        {bc.centerExam && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Kỳ thi thử tại trung tâm</h3>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <O
+                nhan={`Tổng điểm${bc.centerExam.round ? ` · ${bc.centerExam.round}` : ''}`}
+                so={`${bc.centerExam.score}/${bc.centerExam.max}`}
+                phu={`thi ngày ${ngay(bc.centerExam.date)}`}
+              />
+              <O
+                nhan="So với lần trước"
+                so={
+                  bc.centerExam.previous
+                    ? `${bc.centerExam.previous.delta > 0 ? '+' : ''}${bc.centerExam.previous.delta}`
+                    : '—'
+                }
+                phu={
+                  bc.centerExam.previous
+                    ? `lần trước ${bc.centerExam.previous.score}/${bc.centerExam.max} ngày ${ngay(bc.centerExam.previous.date)}`
+                    : 'lần thi đầu tiên được ghi nhận'
+                }
+              />
+              {bc.centerExam.sections.map((s) => (
+                <O key={s.phan} nhan={s.ten} so={`${s.diem}/${s.toiDa}`} phu="điểm phần" />
+              ))}
+            </div>
+            {bc.centerExam.weakUnits.length > 0 && (
+              <p className="mt-3 text-body text-ink-2">
+                Thấp nhất trong kỳ này:{' '}
+                {bc.centerExam.weakUnits.map((v) => `${v.ten} (${v.pct}%)`).join(' · ')}
+              </p>
+            )}
+            <p className="mt-2 text-caption text-ink-3">
+              Điểm khối này do hệ thống khảo thí của trung tâm chấm, thang {bc.centerExam.max}. Khối
+              dưới đây là điểm luyện tập trong ứng dụng, tính theo phần trăm — hai thang khác nhau.
+            </p>
           </>
         )}
 

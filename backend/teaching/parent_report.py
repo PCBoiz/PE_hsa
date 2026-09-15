@@ -25,6 +25,7 @@ BA RANH GIỚI CỐ Ý, đọc trước khi thêm trường:
    trung bình: 0" đọc như con làm bài sai hết, trong khi sự thật là con chưa thi
    lần nào. Cùng lý do `common/events.py:pct` trả None thay vì 0.
 """
+import json
 from datetime import timedelta
 
 from rest_framework.response import Response
@@ -218,6 +219,54 @@ def _hoc_tap(user_id, tu, den):
     }
 
 
+def _thi_tai_trung_tam(user_id):
+    """Kết quả thi thử TẠI TRUNG TÂM — nhập từ tờ PDF của hệ thống khảo thí (§48).
+
+    KHÁC HẲN `study.mockAvg`, và không được gộp: kia là điểm luyện tập trong hệ
+    thống (thang phần trăm, máy tự chấm theo ngân hàng câu hỏi của mình), còn đây
+    là một kỳ thi THẬT do bên khảo thí tổ chức và chấm, thang 150. Trộn hai thang
+    lại thành một con số là đẻ ra một điểm thứ ba mà không ai — kể cả giảng viên —
+    đối chiếu lại được.
+
+    Lấy HAI lượt gần nhất, vì câu đầu tiên phụ huynh hỏi khi cầm tờ báo cáo thứ
+    hai là "so với lần trước thì sao".
+    """
+    cac = q('''SELECT ngay_thi, dot, tong_diem, tong_toi_da, diem_phan, don_vi
+                 FROM ket_qua_thi_ngoai
+                WHERE user_id = %s
+                ORDER BY ngay_thi DESC, id DESC
+                LIMIT 2''', (user_id,))
+    if not cac:
+        return None
+
+    def _js(v):
+        # Con trỏ thô trả cột `jsonb` dạng CHUỖI — xem `lessons/content.py`.
+        return json.loads(v) if isinstance(v, str) else (v or [])
+
+    moi = cac[0]
+    truoc = cac[1] if len(cac) > 1 else None
+    don_vi = _js(moi['don_vi'])
+    # So sánh CHỈ khi cùng thang điểm. Hai kỳ khác thang (150 và 100) mà trừ nhau
+    # thì ra một con số "tiến bộ" hoàn toàn bịa.
+    so_sanh = None
+    if truoc and truoc['tong_toi_da'] == moi['tong_toi_da']:
+        so_sanh = {'date': truoc['ngay_thi'].isoformat(), 'round': truoc['dot'],
+                   'score': truoc['tong_diem'],
+                   'delta': moi['tong_diem'] - truoc['tong_diem']}
+    return {
+        'date': moi['ngay_thi'].isoformat(),
+        'round': moi['dot'],
+        'score': moi['tong_diem'],
+        'max': moi['tong_toi_da'],
+        'sections': _js(moi['diem_phan']),
+        # Đơn vị kiến thức yếu nhất của CHÍNH kỳ thi ấy — cụ thể hơn "chủ đề cần
+        # chú ý" tính từ dữ liệu luyện tập, vì nó là bài thi vừa làm xong.
+        'weakUnits': sorted(don_vi, key=lambda v: v.get('pct', 0))[:TOP_N],
+        'unitsMeasured': len(don_vi),
+        'previous': so_sanh,
+    }
+
+
 def _chu_de(user_id):
     """Chủ đề cần chú ý và chủ đề đang mạnh — chỉ lấy những ô ĐO ĐƯỢC.
 
@@ -328,6 +377,10 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
                                   cac_dot=[(d['joined_at'], d['left_at'])
                                            for d in cac_dot]),
         'study': _hoc_tap(user_id, tu, den),
+        # Kỳ thi THẬT tại trung tâm. `None` khi chưa nhập tờ nào — màn hình và tệp
+        # PDF phải giấu hẳn mục này, đừng in "chưa có dữ liệu" cho một thứ phụ
+        # huynh còn không biết là có tồn tại.
+        'centerExam': _thi_tai_trung_tam(user_id),
         'topics': _chu_de(user_id),
         'warnings': canh_bao,
     }, None
