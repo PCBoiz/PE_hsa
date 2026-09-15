@@ -31,6 +31,7 @@ import re
 
 from common.db import q, q1
 from lessons import luoc_do
+from lessons.do_thi import gan_diem, loi_do_thi
 from lessons.grading import bo_dap_an
 
 #: Trường bắt buộc — thiếu một trong số này thì engine sẽ hỏng giữa chừng.
@@ -196,6 +197,9 @@ def validate_lesson(obj, path='bài'):
     # HTML trước tiên: một thẻ <script> lọt qua thì mọi phép kiểm cấu trúc phía
     # dưới có đúng cũng không cứu được ai.
     _duyet_chuoi(obj, path, errors)
+    # Đồ thị hàm (15/09/2026): `fn` phải qua danh sách nút cho phép của `do_thi`.
+    # Trước đây không ai kiểm — `fn` hỏng vẫn lưu được và chỉ hiện ra ô trống.
+    errors.extend(loi_do_thi(obj, path))
 
     for key in REQUIRED:
         if key not in obj or obj[key] in (None, '', [], {}):
@@ -326,7 +330,8 @@ def course_content(course_id):
         # CẮT ĐÁP ÁN. Cắt ở đây chứ không ở view: hai đường đọc nội dung
         # (`course_content` và `one_lesson`) đều đi qua tệp này, và một endpoint
         # mới quên cắt là lộ lại toàn bộ. Xem `lessons/grading.py`.
-        out.append(bo_dap_an(data))
+        # `gan_diem`: tính sẵn điểm đồ thị hàm — trình duyệt không còn biên dịch `fn`.
+        out.append(gan_diem(bo_dap_an(data)))
     return out
 
 
@@ -352,4 +357,4 @@ def one_lesson(course_id, index):
     if not isinstance(data, dict):
         return None, total
     data.setdefault('index', index)
-    return bo_dap_an(data), total
+    return gan_diem(bo_dap_an(data)), total
