@@ -52,3 +52,13 @@ THE_TOM_TAT = {
     ('hsa_science', 22): 1,        # khai thác Atlat → "Đọc bản đồ"
     ('hsa_verbal', 18): 0,         # sáu phong cách → "Một số phong cách"
 }
+
+#: 9 bài đã có minh hoạ soạn tay TỪ TRƯỚC (không nằm trong bộ này) cũng chỉ gắn ở bản đầy
+#: đủ — cùng lỗ "không ai thấy". `nap_minh_hoa` sao hình có sẵn sang thẻ tóm tắt còn trống:
+#: (khoá, số bài) → thẻ tóm tắt nhận HÌNH ĐẦU TIÊN; hình sau rơi vào thẻ trống hợp nhất.
+#: Soát tay 17/09/2026 trên bảng in ra bởi `--thu`.
+THE_TOM_TAT_CO_SAN = {
+    ('hsa_quantitative', 4): 1,    # trục số bất phương trình → "Vi-ét & BPT", không phải "PT bậc nhất"
+    ('hsa_verbal', 1): 1,          # bốn bước làm bài → "Mẹo loại trừ"
+    ('hsa_verbal', 3): 0,          # cây thực từ / hư từ → "Ba từ loại chính"
+}

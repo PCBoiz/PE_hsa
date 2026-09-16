@@ -34,12 +34,25 @@ def api():
 
 @pytest.fixture
 def temp_user(db):
-    """User tạm (INSERT thẳng như fixture Flask cũ) — rollback tự dọn."""
+    """User tạm (INSERT thẳng như fixture Flask cũ) — rollback tự dọn.
+
+    EMAIL DUY NHẤT MỖI LẦN, không phải một chuỗi cố định (sửa 17/09/2026). Lượt
+    pytest toàn bộ ngày 16/09 TREO VĨNH VIỄN: `pg_stat_activity` cho thấy một
+    phiên "idle in transaction" của một phép kiểm trước còn giữ dòng
+    `django_test_tmp@example.com` (kết nối bị pool vứt sau khi Neon rớt, giao
+    dịch phía máy chủ không bao giờ được cuộn lại), và câu INSERT cùng email ở
+    kết nối mới đứng chờ khoá của chỉ mục duy nhất — mãi mãi, vì bên giữ khoá
+    không chờ ai nên Postgres không thấy bế tắc. Cùng một email cũng là lý do
+    hai lượt CI song song đập nhau (TODO §A2). Email khác nhau thì không có gì
+    để tranh.
+    """
+    import uuid
+
     from common.db import q1
     row = q1(
         "INSERT INTO users (name, email, password, streak, last_study_date) "
         "VALUES (%s, %s, %s, %s, %s) RETURNING id",
-        ('Django Tester', 'django_test_tmp@example.com', 'x', 0, None))
+        ('Django Tester', 'django_test_%s@example.com' % uuid.uuid4().hex[:12], 'x', 0, None))
     return row['id']
 
 

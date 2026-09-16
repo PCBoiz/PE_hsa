@@ -2911,7 +2911,7 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   ấy đỏ 56/64. Tức có ít nhất một chỗ tự kiểm CHẬP CHỜN, không chỉ một chỗ mù.
   Kết luận hai lượt: HỎNG 2/46 rồi 3/46; trang mới vòng 25 đỏ đủ cả hai khổ cả hai lượt.
 
-- [ ] **pytest toàn bộ TREO VĨNH VIỄN — không đỏ, không hết giờ.** 16/09, sau 35 phút
+- [x] **XONG 17/09 — pytest toàn bộ TREO VĨNH VIỄN — không đỏ, không hết giờ.** 16/09, sau 35 phút
   CPU tiến trình gần như đứng yên. Soi `pg_stat_activity` (chỉ đọc): một phiên **idle in
   transaction** 4 phút, lệnh cuối `SET CONSTRAINTS ALL IMMEDIATE` (Django dọn cuối phép
   kiểm); một phiên khác `INSERT INTO users … 'django_test_tmp@example.com'` chờ khoá
@@ -2923,3 +2923,11 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   dịch. Hướng sửa: email theo `uuid` trong `temp_user` (hết va chạm unique, kể cả hai lượt
   song song) và/hoặc `idle_in_transaction_session_timeout` ở cấu hình vai CSDL (KHÔNG
   `SET` trong phiên — pgbouncer). Cần phép kiểm đỏ-trước dựng lại đúng cảnh hai kết nối.
+  **17/09:** `temp_user` sinh email theo `uuid` mỗi lần (lý do ghi trong docstring fixture);
+  `tests_ho_so_phu_huynh` đọc email thật của em thay vì chuỗi cố định. Lượt chạy toàn bộ
+  17/09 (03:37–04:31): **705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL. KHÔNG viết phép kiểm dựng lại cảnh hai kết nối: trên mã cũ nó
+  TREO chứ không đỏ (muốn đỏ phải `SET lock_timeout` — pgbouncer), và trên mã mới không
+  còn gì để tranh nên phép kiểm không phân biệt được "đã vá" với "vô nghĩa". Vá là
+  cấu trúc (hết va chạm unique), không phải hành vi. Còn có thể làm thêm, tuỳ anh:
+  `ALTER ROLE … SET idle_in_transaction_session_timeout` ở cấp vai Neon để phiên mồ côi
+  tự chết — thay đổi cấu hình CSDL, không nằm trong mã.

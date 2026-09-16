@@ -22,7 +22,18 @@ from common.db import q1, x
 
 pytestmark = pytest.mark.django_db
 
-HO_SO = {'name': 'Django Tester', 'email': 'django_test_tmp@example.com', 'phone': ''}
+HO_SO = {'name': 'Django Tester', 'email': '', 'phone': ''}
+
+
+@pytest.fixture(autouse=True)
+def _email_cua_chinh_em(temp_user):
+    """`PUT /api/user` gửi lại cả email; phải là email THẬT của tài khoản tạm.
+
+    Từ 17/09/2026 `temp_user` sinh email duy nhất mỗi lần (xem conftest — vì sao
+    một email cố định làm treo cả lượt pytest). Giữ chuỗi cố định ở đây là mỗi
+    phép kiểm đổi email của em về đúng chuỗi ấy, tức đưa cuộc tranh khoá quay lại
+    bằng cửa sau."""
+    HO_SO['email'] = q1('SELECT email FROM users WHERE id=%s', (temp_user,))['email']
 
 
 def _ph(uid):

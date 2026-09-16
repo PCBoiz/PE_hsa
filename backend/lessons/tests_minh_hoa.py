@@ -66,6 +66,43 @@ def test_du_67_bai_va_khong_trung_bai_da_co_minh_hoa():
     assert not (tat_ca & da_co)
 
 
+def test_sao_hinh_co_san_sang_tom_tat_moi_hinh_mot_the_va_chay_lai_khong_sao_them():
+    """Lượt hai của `nap_minh_hoa` (bài ngoài bộ, có hình soạn tay): mỗi hình đầy đủ
+    sang một thẻ tóm tắt KHÁC nhau, và chạy lần hai không sao thêm.
+
+    Đỏ trên bản đầu (17/09/2026): lần hai thấy thẻ đã nhận hình là "hết trống" nên
+    sao cùng hình ấy sang thẻ trống còn lại — `--thu` ngay sau `--nap` báo 4 bài."""
+    from lessons.management.commands.nap_minh_hoa import ghep
+    v1 = {'type': 'bars', 'bars': [{'label': 'a', 'value': 1}]}
+    v2 = {'type': 'flow', 'steps': [{'label': 'b'}]}
+    bai = _bai_gia(v1, 0)
+    bai['theory']['full']['cards'][2]['visual'] = v2
+    bai['theory']['condensed']['cards'] = [{'title': 'X', 'body': ''}, {'title': 'Y', 'body': ''}]
+    rows = [{'id': 1, 'course_id': 'hsa_science', 'sort_order': 99, 'content_json': bai}]
+
+    doi, _, loi = ghep(rows, ghi=False, bo={})
+    cond = bai['theory']['condensed']['cards']
+    assert doi == 1 and not loi
+    assert [c.get('visual', {}).get('type') for c in cond] == ['bars', 'flow'], 'hai hình → hai thẻ khác nhau'
+
+    doi2, bao_cao, loi2 = ghep(rows, ghi=False, bo={})
+    assert doi2 == 0 and not loi2, bao_cao
+    assert [c.get('visual', {}).get('type') for c in cond] == ['bars', 'flow'], 'lần hai không được đổi gì'
+
+    # Cảnh gây lỗi THẬT: MỘT hình, HAI thẻ tóm tắt. Lần hai, thẻ đã nhận hình là
+    # "hết trống", thẻ kia còn trống — bản đầu sao cùng hình sang đó. Kịch bản hai
+    # hình ở trên KHÔNG bắt được (hết thẻ trống thì không có gì để sao nhầm): đột
+    # biến gỡ dòng canh mà nó vẫn xanh — thước giả cho tới khi thêm đoạn này.
+    bai2 = _bai_gia(v1, 0)
+    bai2['theory']['condensed']['cards'] = [{'title': 'X', 'body': ''}, {'title': 'Y', 'body': ''}]
+    rows2 = [{'id': 2, 'course_id': 'hsa_science', 'sort_order': 98, 'content_json': bai2}]
+    ghep(rows2, ghi=False, bo={})
+    doi3, _, _ = ghep(rows2, ghi=False, bo={})
+    cond2 = bai2['theory']['condensed']['cards']
+    assert doi3 == 0
+    assert sum(1 for c in cond2 if c.get('visual')) == 1, 'hình chỉ được sao MỘT lần, không lan sang thẻ trống còn lại'
+
+
 def test_chu_thich_chi_dung_the_cho_phep():
     """`caption` đổ thẳng vào innerHTML (như `body` của thẻ) — cùng luật thẻ."""
     from lessons.content import loi_html

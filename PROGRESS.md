@@ -48,43 +48,88 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **15–16/09 — hướng BÁN ĐỨT:** anh Sơn: "tiếp tục cải tiến sản phẩm để thuyết phục
   họ dễ hơn … khả năng cao là sẽ bán đứt". Anh chọn CẢ BỐN việc, làm theo thứ tự:
   (1) nhập kết quả thi thử từ PDF — **xong vòng 25** · (2) bộ dữ liệu trình diễn (đánh
-  dấu, gỡ được) · (3) tốc độ + 8 tab SPA ẩn · (4) minh hoạ cho bài học (mới 14 minh
-  hoạ / 76 bài). Tệp PDF mẫu anh gửi mang tên học sinh THẬT — không commit (repo công khai).
+  dấu, gỡ được) — **xong vòng 26** · (3) tốc độ + 8 tab SPA ẩn — **xong vòng 27** · (4)
+  minh hoạ cho bài học — **xong vòng 28–29** (14 → 158 hình). Tệp PDF mẫu anh gửi mang
+  tên học sinh THẬT — không commit (repo công khai). **17/09:** "tiếp tục, sau đó tóm tắt
+  lại những gì bạn đã làm vào file pdf kia, ghi chi tiết vào" → Mục 10 của báo cáo thị
+  trường (không commit PDF). Sau đó CHƯA có hướng mới — hỏi anh.
 
-## Trạng thái ngay lúc này — 14/09/2026 (khuya)
+## Trạng thái ngay lúc này — 17/09/2026
 
-- **Vòng 22 — tổng duyệt hạ tầng:** Next 16.3.5 (vá 2 lỗ CRITICAL), Vercel
-  gửi CSP + năm header bảo mật, CI kiểm lỗ hổng thư viện cả hai phía. Chi
-  tiết và kết quả trên production: mục VÒNG 22 ngay dưới vạch. **GitHub Actions
-  chưa từng chạy lượt nào (khoá thanh toán) — không có CI, không có sao lưu; A0.**
-- **Vòng 23:** `middleware.ts` → `proxy.ts` (Next 16); luồng làm mới phiên kiểm chạy
-  thật trước/sau; production đã nhận (`f35d69e`).
-- **Vòng 24 (15/09):** kiểm kĩ lại — production gỡ `'unsafe-eval'` (đồ thị bài học tính ở
-  máy chủ); ba thước đo sai đã sửa; **production nhận JWT ký trên máy dev → A6**.
-- **Production**: Vercel `pe-hsa.vercel.app` đang phục vụ bản `d4dabda` (có
-  `NapTruocDuLieu` + trợ lý AI không Font Awesome); Render `pe-hsa-backend`
-  khoẻ, các endpoint dashboard 0,34–0,37 s khi đã thức — nhưng **vẫn ngủ đông,
-  thức dậy 86,9 s** (đo 17:00). A1 trong `VIEC_CUA_ANH.md` vẫn là việc của anh.
-  Ghi nhận cho lần đo sau: 240 ms/truy vấn khi gọi Neon từ máy dev là độ trễ
-  mạng VN→Neon, KHÔNG phải truy vấn chậm — trên Render mỗi truy vấn chỉ vài ms,
-  nên đừng tối ưu số truy vấn theo số đo ở máy dev.
-- **CSDL**: 5 tài khoản, 1 lớp (3 học viên đang học), 1 đợt, 16 buổi (15/09–
-  05/11), 0 lượt điểm danh, 0 bài tập, 0 link báo cáo. Mọi dữ liệu thử của hôm
-  nay đã xoá, đếm 9 bảng khớp mốc đầu phiên. `admin_audit` 82 dòng (có các dòng
-  thật do lượt rà tạo/xoá bài tập, phát hành/thu hồi link — để nguyên vì đúng
-  là việc đã xảy ra).
-- **Cổng chất lượng (14/09)**: pytest **537/537** (một ERROR thoáng qua ở
-  `tests_sinh_buoi` một tham số, chạy lại riêng 8/8 xanh) · 25/25 unit Node ·
-  giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint/tsc/ruff/build sạch · hiệu năng
-  6/6 màn đạt Core Web Vitals (Trang của tôi LCP 2,42 s · CLS 0,007), còn cảnh
-  báo 2.111 nút DOM (chín "trang" SPA cũ dựng sẵn).
-- **Trần tầng cũ**: 7.355 dòng / 13 tệp (hạ từ 7.385 sau khi thẻ "Học tiếp"
-  sang React máy chủ).
-- **Hồ sơ gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` — 25 trang, sinh bằng
-  `scripts/kiem_ke_san_pham.py` + `scripts/ho_so_tophsa.mjs`.
-- **Nhánh**: `master` = `erp` = `d4dabda`; 8 commit trong ngày 14/09 (vòng 10–15).
+- **Hướng bán đứt (anh chọn 15/09): xong cả bốn việc**, đều đang chạy trên production:
+  (1) nhập PDF kết quả thi thử — vòng 25 (`a12d59a`, `4c08d63`); (2) bộ dữ liệu trình
+  diễn — vòng 26 (`669e785`, `f6e35e1`); (3) Trang của tôi dựng lười tám tab — vòng 27
+  (`6afd834`); (4) minh hoạ 76/76 bài — vòng 28 (`87993ea`) + vòng 29. **Chưa có hướng
+  tiếp theo — hỏi anh trước khi mở việc lớn.**
+- **Production**: Vercel + Render phục vụ `87993ea` (vòng 29 chỉ đổi dữ liệu Neon, lệnh
+  nạp và phép kiểm — không đổi mã chạy). Render vẫn ngủ đông (A1). Neon: 2 lớp mẫu + 48
+  tài khoản mẫu `is_demo` (gỡ: `manage.py du_lieu_mau --go`); 158 khối minh hoạ trong
+  `lessons.content_json` (nội dung ở CSDL nên không cần deploy).
+- **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`): A0 GitHub Actions khoá (không CI,
+  không sao lưu); A1 máy chủ ngủ — nay có bằng chứng A/B rằng đây là thứ quyết định LCP
+  Trang của tôi; A6 SECRET_KEY chung dev/prod — nay ký cả phiếu nhập PDF; email tên miền;
+  giới hạn đăng nhập theo người.
+- **Cổng chất lượng (17/09)**: pytest toàn bộ **705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL. · 27/27 unit Node · giao diện 23
+  trang × 2 khổ: 0 vi phạm (bộ tự kiểm còn 2 chỗ mù, TODO 16/09) · eslint/tsc/ruff/build.
+- **Trần tầng cũ**: 7.066 dòng (nới +3 ở vòng 27, lý do trong `chot-ham-tang-cu.test.mjs`).
+- **Tài liệu gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` (14/09) ·
+  `docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf` (15/09, bổ sung Mục 10
+  "Nhật ký cải tiến 15–17/09" ngày 17/09; KHÔNG commit — anh gửi tay).
+- **Nhánh**: `master` = `erp`; production tự deploy từ `master`.
+
 
 <!-- MỚI NHẤT -->
+
+## 17/09/2026 — VÒNG 29 · Làm nốt 9 bài có hình từ trước, một thước giả bị lật, và lượt pytest không treo nữa
+
+Ba việc dọn sau khi bốn việc của hướng bán đứt xong; không có việc mới nào của anh.
+
+**9 bài có minh hoạ soạn tay từ trước cũng chỉ gắn ở bản đầy đủ** — cùng lỗ "không ai
+thấy" vòng 28 tìm ra, nhưng vòng 28 cố ý không chạm 9 bài ấy (phép kiểm giữ điều đó). Nay
+`nap_minh_hoa` có lượt hai: bài ngoài bộ mà có hình ở thẻ đầy đủ thì SAO hình sang thẻ
+tóm tắt còn trống — thẻ nào chọn theo tiêu đề như lượt một, 3 chỗ heuristic chọn sai ghi
+tay ở `THE_TOM_TAT_CO_SAN` (trục số BPT rơi vào "PT bậc nhất"; bốn bước làm bài vào
+"Mẹo loại trừ"; cây thực từ / hư từ vào "Ba từ loại chính"). Bài #7 (parabol) có hai đồ
+thị → `chi_trong=True` để hình thứ hai rơi vào thẻ còn trống chứ không chồng. Đã ghi Neon:
+13 hình đầy đủ của 9 bài → 11 thẻ tóm tắt nhận hình (mỗi bài hai thẻ, bài #1 có 4 hình
+chỉ sao được 2). Kiểm kê lại toàn bộ: **76/76 bài, 158 khối** (đầy đủ 80 · tóm tắt 78;
+table 62 · flow 26 · bars 22 · tree 18 · curve 10 · pie 10 · timeline 8 · numline 2).
+Trình duyệt, đường học viên: 3/3 bài soi hiện hình ở bản tóm tắt.
+
+**Lệnh "chạy lại được" mà chạy lại thì ghi thêm — và phép kiểm đầu cho nó là thước giả.**
+`--thu` ngay sau `--nap` báo "Sẽ ghi 4 bài": lần hai thấy thẻ đã nhận hình là "hết trống"
+nên sao CÙNG hình ấy sang thẻ trống còn lại. Vá: hình đã có ở bản tóm tắt thì bỏ qua.
+Phép kiểm viết đầu tiên (hai hình → hai thẻ, chạy lại không đổi) XANH cả khi gỡ dòng vá —
+hai hình lấp hết hai thẻ nên lần hai không còn thẻ trống để sao nhầm; cảnh gây lỗi thật
+là MỘT hình, HAI thẻ. Thêm đúng cảnh ấy: gỡ dòng vá → đỏ `2 != 1`, trả lại → xanh. Ghi
+thành ghi nhớ (`feedback_thuoc-hong-giong-ma-hong`): một phép kiểm "đỏ trước" cũng phải
+đỏ ĐÚNG cảnh, không phải đỏ vì cớ khác. Sau vá: `--thu` → "Sẽ ghi 0 bài".
+
+**pytest toàn bộ không treo nữa.** Gốc treo 16/09 (TODO): `temp_user` chèn một email CỐ
+ĐỊNH vào cột unique; một phiên *idle in transaction* của phép kiểm trước (kết nối bị pool
+vứt sau khi Neon rớt, giao dịch phía máy chủ không bao giờ cuộn lại) giữ dòng ấy, câu
+INSERT cùng email ở kết nối mới chờ khoá mãi — Postgres không thấy bế tắc vì bên giữ khoá
+không chờ ai. Vá: email theo `uuid` mỗi lần (`django_test_<12 hex>@example.com`), lý do
+ghi trong docstring fixture. `tests_ho_so_phu_huynh` gửi lại cả email khi PUT nên có một
+chuỗi cố định riêng — nay fixture autouse đọc email thật của em từ CSDL, không thì mỗi
+phép kiểm lại đổi email về chuỗi cố định bằng cửa sau. Lượt chạy toàn bộ (03:37–04:31):
+**705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL.. Kèm bộ canh đọc `pg_stat_activity` mỗi phút — lượt này gặp một lần DNS Neon
+không phân giải được lúc 03:38 (bộ canh chết vì thế, pytest tự qua). Vẫn còn thấy phiên
+Django ORM `idle in transaction` ~1 phút giữa hai phép kiểm trong khi pool `common.db`
+làm việc — bình thường (hai kết nối, hai giao dịch), không phải zombie; zombie là phiên
+tồn tại sau khi lượt chạy đã chết.
+
+**Kiểm:** `tests_minh_hoa` 72/72 (không CSDL) · `tests_ho_so_phu_huynh` 9/9 · ruff.
+Không đổi gì ở giao diện.
+
+**Báo cáo thị trường** (`docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf`, không
+commit — anh gửi tay): thêm Mục 10 "Nhật ký cải tiến 15–17/09" (6 tiểu mục, 7 trang: từng
+việc vì sao – làm thế nào – đo được gì – lỗi tự bắt, viết cho người không kỹ thuật, không
+kể chi tiết khai thác bảo mật), cập nhật các số đã cũ có đánh dấu *(cập nhật)* (màn hình
+27 → 28, hình minh hoạ 14 → 158, commit 264 → 271, tệp kiểm 77 → 78, tốc độ trang chính
+theo kết quả A/B), gạch hai mục đã xong ở lộ trình 9.2 và quyết định 9.4, thêm 6 dòng
+nguồn B.1. 31 trang (trước 23). Kịch bản sinh vẫn ở scratchpad phiên
+(`bao_cao_thi_truong.mjs`), bản 15/09 giữ ở `bao_cao_thi_truong.v1509.mjs`.
 
 ## 16/09/2026 — VÒNG 28 · Minh hoạ cho 67 bài còn lại: 76/76 bài có hình, và hình hiện ở CẢ bản tóm tắt
 
