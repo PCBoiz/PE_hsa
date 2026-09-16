@@ -86,6 +86,53 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 16/09/2026 — VÒNG 26 · Bộ dữ liệu trình diễn: một trung tâm đang chạy, đánh dấu được, gỡ được
+
+Việc (2) của hướng bán đứt. CSDL có 1 giảng viên, 3 học viên thử, 1 lớp chưa điểm danh
+buổi nào — mọi màn hình trông như chưa ai dùng.
+
+**Thiết kế (theo tiền lệ `posts.is_sample`)**
+- §49: cờ `is_demo` ở HAI bảng gốc `users`, `classes` (+ chỉ mục một phần); `kiem_luoc_do`
+  §49a–d, Neon 22/22. Mọi dữ liệu khác treo vào hai gốc bằng ON DELETE CASCADE, nên gỡ =
+  xoá hai gốc (sau khi xoá hai loại dòng có khoá ngoại không ON DELETE).
+- `python manage.py du_lieu_mau` (chỉ đếm) · `--tao` · `--go` — logic ở
+  `teaching/du_lieu_mau.py`. Hai lớp "(lớp mẫu)" `HSA-MAU-01` (Định lượng, T2/T4, 26 em) và
+  `HSA-MAU-02` (cả ba hợp phần, cuối tuần, 22 em), gắn giảng viên và đợt học thật đang có.
+  Buổi học 6 tuần trước (đã dạy, đã điểm danh, có sổ đầu bài) + 6 tuần tới; 5 bài tự luận
+  mỗi lớp, đã chấm có nhận xét; bài học + phòng luyện theo năng lực từng em; một lượt thi
+  thử trong ứng dụng; HAI kỳ thi thử tại trung tâm (24 đơn vị kiến thức theo danh mục của
+  hệ thống khảo thí, kỳ 2 nhích lên); XP / chuỗi ngày / nhật ký XP cho bảng xếp hạng.
+- ĐI ĐÚNG ĐƯỜNG GHI: sự kiện học tập qua `record_events` (và ĐẾM đủ — hàm ấy nuốt dòng
+  hỏng, đúng cho người dùng nhưng sai cho bộ dựng: thiếu thì huỷ cả giao dịch), bộ đệm
+  tiến độ qua `courses/enrollment.tinh_lai`, XP thi thử qua `mockexam._mock_xp`. Mỗi loại
+  dòng là MỘT câu `INSERT … SELECT FROM unnest(mảng)` — Neon cách máy dev ~240 ms/câu.
+- Tất định: kế hoạch (tên, năng lực, chuyên cần) là hàm thuần theo hạt giống.
+- KHÔNG GỬI: `parent_send` — `_kenh_cho` trả None cho em mẫu, lượt gửi ghi trạng thái
+  `mau` (vẫn cấp chìa để MỞ tờ báo cáo, không gửi, không ghi sổ gửi); GET có `laMau`. Màn
+  báo cáo cả lớp tách em mẫu khỏi hai danh sách "thiếu liên lạc" / "chưa nối kênh", thêm
+  một dòng "N em là dữ liệu trình diễn", chip "mẫu" cạnh tên; nút gửi có nhãn "Dữ liệu mẫu
+  — không gửi".
+
+**Hai lỗi của chính bộ dựng, bắt được TRƯỚC khi chạy thật**
+1. Mật khẩu "khoá" là một chuỗi thô `!du-lieu-mau-…`. `LoginView` còn nhánh mật khẩu THÔ
+   cũ: không phải băm thì so nguyên văn rồi nâng cấp — chuỗi ấy CHÍNH LÀ mật khẩu của mọi
+   em mẫu, trong kho mã công khai. Phép kiểm đi qua `/auth/login` thật: **200, đăng nhập
+   được** bằng chuỗi ấy. Nay: băm scrypt thật của một chuỗi ngẫu nhiên sinh lúc chạy rồi
+   bỏ → 401.
+2. Email `@example.invalid` bị `LoginView` chặn ngay ở kiểm định dạng (400) — nghe như an
+   toàn hơn, nhưng thế là phép kiểm đăng nhập KHÔNG BAO GIỜ tới chỗ so mật khẩu, nên lỗ 1
+   nằm im. Lượt đỏ đầu tiên là 400 chứ không phải 401 — đọc dòng đỏ mới thấy phép kiểm
+   chưa kiểm gì. Nay `@example.com` (RFC 2606, MX rỗng RFC 7505), và phép kiểm đòi ĐÚNG 401.
+
+**Kiểm**
+- `tests_du_lieu_mau` 7/7: kế hoạch tất định; dựng đủ khối + đánh dấu; tờ báo cáo của em
+  mẫu có chuyên cần, bài học, chủ đề đo được, tiến độ khoá, kỳ thi trung tâm có so sánh;
+  dựng lần hai bị chặn; gỡ sạch mà dữ liệu thật + giảng viên thật còn nguyên; gửi cả lớp
+  không gửi lá nào, không ghi sổ gửi; tài khoản mẫu 401.
+- `tests_parent_send` + phép kiểm `kiem_luoc_do`: 26/26. ruff · eslint · tsc · 27/27 unit.
+- Đột biến hàng rào gửi: gỡ chặn ở `_kenh_cho` → phép kiểm gửi ĐỎ (GET trả kênh cho em
+  mẫu); gỡ nhánh `mau` ở lượt gửi → ĐỎ (`{'gui_tay'} != {'mau'}`). Tệp trả lại, băm khớp.
+
 ## 16/09/2026 — VÒNG 25 · Nhập kết quả thi thử từ PDF: điểm kỳ thi THẬT vào tờ báo cáo phụ huynh
 
 Việc (1) trong bốn việc anh chọn cho hướng bán đứt.

@@ -33,7 +33,7 @@ type KetQua = {
   ketQua: {
     id: number;
     name: string | null;
-    trangThai: 'da_gui' | 'gui_tay' | 'thieu_lienlac' | 'thu' | 'loi';
+    trangThai: 'da_gui' | 'gui_tay' | 'thieu_lienlac' | 'thu' | 'loi' | 'mau';
     kenh: 'email' | 'zns' | null;
     duongDan: string;
     loi: string | null;
@@ -48,6 +48,8 @@ const NHAN: Record<string, { chu: string; mau: string }> = {
   gui_tay: { chu: 'Cần gửi tay', mau: 'text-ink-2' },
   thieu_lienlac: { chu: 'Thiếu liên lạc phụ huynh', mau: 'text-warning-ink' },
   loi: { chu: 'Lỗi', mau: 'text-danger-ink' },
+  // Học viên dữ liệu trình diễn (§49): máy chủ cấp chìa để MỞ tờ báo cáo, không gửi gì.
+  mau: { chu: 'Dữ liệu mẫu — không gửi', mau: 'text-ink-2' },
 };
 
 const KENH: Record<string, string> = { email: 'email', zns: 'Zalo' };

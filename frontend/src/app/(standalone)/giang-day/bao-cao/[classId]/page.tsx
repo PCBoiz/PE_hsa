@@ -32,6 +32,8 @@ type Em = {
   /** Kênh gửi được NGAY BÂY GIỜ, hoặc null nếu chưa cấu hình kênh nào hợp. */
   kenh: 'email' | 'zns' | null;
   guiDuoc: boolean;
+  /** Học viên dữ liệu trình diễn (§49) — máy chủ không gửi gì cho em này. */
+  laMau?: boolean;
 };
 
 type SoanSan = {
@@ -54,6 +56,7 @@ const HINH_DANG = z.looseObject({
     id: z.number(), name: z.string().nullable(), parentName: z.string(),
     parentPhone: z.string(), parentEmail: z.string(), coLienLac: z.boolean(),
     kenh: z.enum(['email', 'zns']).nullable(), guiDuoc: z.boolean(),
+    laMau: z.boolean().optional(),
   })),
 }) satisfies HinhDang<SoanSan>;
 
@@ -95,8 +98,14 @@ export default async function BaoCaoCaLopPage({
   //   · có liên lạc mà chưa gửi được → người quản trị chưa nối kênh.
   // Gộp lại thành một câu "N em sẽ không nhận được tin" thì người đọc màn hình
   // không biết phải làm gì tiếp.
-  const thieu = d.students.filter((e) => !e.coLienLac);
-  const ketNoiThieu = d.students.filter((e) => e.coLienLac && !e.guiDuoc);
+  //
+  // Học viên dữ liệu trình diễn (§49) ra khỏi CẢ HAI danh sách: "thiếu liên lạc"
+  // hay "chưa nối kênh" đều là câu sai với một em không có thật — máy chủ cố ý
+  // không gửi gì cho các em ấy, dù có địa chỉ.
+  const that = d.students.filter((e) => !e.laMau);
+  const soMau = d.students.length - that.length;
+  const thieu = that.filter((e) => !e.coLienLac);
+  const ketNoiThieu = that.filter((e) => e.coLienLac && !e.guiDuoc);
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6">
@@ -137,16 +146,23 @@ export default async function BaoCaoCaLopPage({
           </p>
         )}
 
+        {soMau > 0 && (
+          <p className="mb-3 rounded-md border border-line bg-sunken px-3 py-2 text-small text-ink-2">
+            {soMau} em là dữ liệu trình diễn (lớp mẫu) — hệ thống chỉ cấp đường dẫn để mở
+            tờ báo cáo, không gửi tin nào cho các em này.
+          </p>
+        )}
+
         <GuiCaLop
           classId={classId}
           /* Chưa nối kênh nào thì nút CẤP ĐƯỜNG DẪN cho mọi em đang học (xem
              `parent_send.post`) — đếm theo `guiDuoc` ở đó là 0, và nút bị khoá
              đúng ở trạng thái mà cách gửi tay là cách DUY NHẤT còn dùng được.
-             Sửa 13/09/2026. */
+             Sửa 13/09/2026. Học viên mẫu (§49) không tính vào số người nhận. */
           soEm={
             d.emailSanSang || d.znsSanSang
               ? d.students.filter((e) => e.guiDuoc).length
-              : d.students.length
+              : that.length
           }
           znsSanSang={d.znsSanSang}
           znsThieu={d.znsThieu}
@@ -199,6 +215,11 @@ export default async function BaoCaoCaLopPage({
                 <Tr key={e.id}>
                   <Td label="Học viên">
                     <span className="font-semibold text-ink">{e.name || `#${e.id}`}</span>
+                    {e.laMau && (
+                      <span className="ml-2 inline-block align-middle">
+                        <Chip tone="neutral">mẫu</Chip>
+                      </span>
+                    )}
                   </Td>
                   <Td label="Người nhận" muted>
                     {e.coLienLac ? (

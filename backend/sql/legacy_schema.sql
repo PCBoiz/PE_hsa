@@ -1565,3 +1565,23 @@ CREATE INDEX IF NOT EXISTS idx_kqtn_user_ngay ON ket_qua_thi_ngoai (user_id, nga
 -- Mọi khoá ngoại có chỉ mục (§43).
 CREATE INDEX IF NOT EXISTS idx_kqtn_nhap_boi ON ket_qua_thi_ngoai (nhap_boi)
     WHERE nhap_boi IS NOT NULL;
+
+-- ============================================================================
+-- 49. Dữ liệu TRÌNH DIỄN — đánh dấu được, gỡ được (16/09/2026)
+-- ============================================================================
+-- Hướng bán đứt: buổi trình diễn cần một trung tâm ĐANG CHẠY — lớp có buổi học,
+-- điểm danh, bài chấm, kỳ thi thử — trong khi CSDL mới có ba học viên thử. Dựng
+-- bằng `manage.py du_lieu_mau --tao`, gỡ sạch bằng `--go`.
+--
+-- Cờ ở HAI bảng gốc chứ không dựng một sổ ghi từng dòng đã chèn: mọi dữ liệu học
+-- tập của một em treo vào `users` bằng ON DELETE CASCADE, mọi buổi học / bài tập /
+-- chìa báo cáo treo vào `classes` — xoá hai gốc là sạch. Và cờ đọc được ngay trong
+-- câu truy vấn, nên màn hình DÁN NHÃN được và kênh gửi phụ huynh CHẶN được (tiền
+-- lệ: `posts.is_sample`). Người xem không được phép nhầm một em bịa ra là em thật.
+--
+-- `ADD COLUMN … NOT NULL DEFAULT FALSE` trên Postgres 11+ chỉ sửa danh mục, không
+-- viết lại bảng — chạy được trên bảng đang phục vụ.
+ALTER TABLE users   ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_users_is_demo   ON users (id)   WHERE is_demo;
+CREATE INDEX IF NOT EXISTS idx_classes_is_demo ON classes (id) WHERE is_demo;

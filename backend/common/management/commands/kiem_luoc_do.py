@@ -125,6 +125,14 @@ MUC = [
      lambda: _chi_muc('idx_kqtn_user_ngay')),
     ('§48d', 'chỉ mục ket_qua_thi_ngoai(nhap_boi)',
      lambda: _chi_muc('idx_kqtn_nhap_boi')),
+    ('§49a', 'users.is_demo (dữ liệu trình diễn)',
+     lambda: _cot('users', 'is_demo')),
+    ('§49b', 'classes.is_demo (dữ liệu trình diễn)',
+     lambda: _cot('classes', 'is_demo')),
+    ('§49c', 'chỉ mục users(id) WHERE is_demo',
+     lambda: _chi_muc('idx_users_is_demo')),
+    ('§49d', 'chỉ mục classes(id) WHERE is_demo',
+     lambda: _chi_muc('idx_classes_is_demo')),
 ]
 
 

@@ -80,7 +80,7 @@ def _hoc_vien_dang_hoc(class_id):
     # em nào là em nào — và phải dùng CÙNG danh sách "đang học" với chỗ gửi.
     return q('''SELECT DISTINCT ON (u.id)
                        u.id, u.name, u.email, u.phone, u.parent_name, u.parent_phone,
-                       u.parent_email
+                       u.parent_email, u.is_demo
                 FROM class_members m
                 JOIN users u ON u.id = m.user_id
                 WHERE m.class_id = %s AND m.left_at IS NULL
@@ -131,6 +131,10 @@ def _kenh_cho(e):
     không dùng được CHO EM NÀY — trả `None` để nơi gọi nói thẳng ra, thay vì
     thử gửi rồi báo lỗi.
     """
+    # Học viên MẪU (§49) không bao giờ có kênh: địa chỉ phụ huynh của em ấy là bịa,
+    # và một cú bấm "Gửi cả lớp" trong buổi trình diễn không được phép rời máy chủ.
+    if e.get('is_demo'):
+        return None
     if (mail.da_cau_hinh() or mail.che_do_thu()) and (e.get('parent_email') or '').strip():
         return 'email'
     if (zalo.da_cau_hinh() or zalo.che_do_thu()) and (e.get('parent_phone') or '').strip():
@@ -179,6 +183,10 @@ class ParentReportSendAllView(APIView):
                                   or (e['parent_email'] or '').strip()),
                 'kenh': _kenh_cho(e),
                 'guiDuoc': _kenh_cho(e) is not None,
+                # Dữ liệu trình diễn (§49): màn hình phải tách các em này ra khỏi
+                # hai danh sách "thiếu liên lạc" / "chưa nối kênh" — cả hai câu ấy
+                # đều sai với một em không có thật.
+                'laMau': bool(e.get('is_demo')),
             } for e in ds],
         })
 
@@ -205,6 +213,14 @@ class ParentReportSendAllView(APIView):
             so = (e['parent_phone'] or '').strip()
             dia_chi = (e['parent_email'] or '').strip()
             kenh = _kenh_cho(e)
+
+            if e.get('is_demo'):
+                # Dữ liệu trình diễn (§49): cấp chìa để người trình diễn MỞ được tờ
+                # báo cáo của em ấy, nhưng không gửi gì và không ghi sổ gửi — địa
+                # chỉ phụ huynh là bịa, và sổ gửi là sổ của những tin đã đi thật.
+                ket.append({'id': e['id'], 'name': e['name'], 'trangThai': 'mau',
+                            'kenh': None, 'duongDan': duong_dan, 'loi': None})
+                continue
 
             if kenh is None:
                 # Tách HAI lý do khác nhau, vì cách chữa khác nhau: thiếu liên
