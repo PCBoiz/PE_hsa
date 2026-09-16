@@ -96,6 +96,42 @@ def _dot(chu):
     return None
 
 
+#: Tiêu đề mục III — phần đáng đọc sau trang 1 bắt đầu từ đây. Khớp CẢ tiền tố
+#: "III." chứ không chỉ mấy chữ: một dòng đầu trang lặp lại ở các trang sau mà chứa
+#: "phân tích kết quả" sẽ làm dò ngược dừng quá sớm và lặng lẽ mất trang đơn vị.
+_TIEU_DE_III = re.compile(r'III\s*\.\s*PHÂN\s*TÍCH\s*KẾT\s*QUẢ')
+
+
+def _boc(p):
+    # Trang không có `/Contents` là trang TRẮNG hợp lệ, nhưng chế độ `layout`
+    # của pypdf 6.17 ném `KeyError('/Contents')` với nó (đo 16/09). Không bỏ
+    # qua thì MỘT trang trắng cuối tệp làm cả tờ báo cáo thành "không mở được".
+    return (p.extract_text(extraction_mode='layout') or '') if '/Contents' in p else ''
+
+
+def _trang_can_doc(pages):
+    """Chữ trang 1 (mục I) + các trang từ tiêu đề mục III tới hết — BỎ bảng ma trận.
+
+    Đo tờ thật 7 trang (16/09): trang 2–5 chỉ là bảng ma trận, 43% thời gian bóc
+    chữ. Trên Render một tờ mất 6–7 s, hai tờ song song làm lời gọi của người khác
+    chờ 4,2 s — nên phần không đọc tới thì đừng bóc.
+
+    Dò NGƯỢC từ trang cuối tới khi gặp tiêu đề mục III. Không gặp thì vòng lặp đã
+    bóc hết mọi trang: tờ bản khác vẫn đọc như trước, chỉ chậm hơn, và câu lỗi
+    "không thấy mục III" vẫn đúng.
+    """
+    pages = list(pages)
+    if not pages:
+        return []
+    cuoi = []
+    for p in reversed(pages[1:]):
+        chu = _boc(p)
+        cuoi.append(chu)
+        if _TIEU_DE_III.search(chu):
+            break
+    return [_boc(pages[0])] + cuoi[::-1]
+
+
 def doc_chu(du_lieu):
     """Bóc chữ từ tệp PDF (dạng bytes). Ném `LoiDocBaoCao` nếu không đọc được."""
     if not du_lieu:
@@ -115,11 +151,7 @@ def doc_chu(du_lieu):
     # mọi tệp tải lên; `tests_nhap_ket_qua_thi.py::test_doc_chu_*` canh chỗ này.
     try:
         doc = PdfReader(io.BytesIO(du_lieu))
-        # Trang không có `/Contents` là trang TRẮNG hợp lệ, nhưng chế độ `layout`
-        # của pypdf 6.17 ném `KeyError('/Contents')` với nó (đo 16/09). Không bỏ
-        # qua thì MỘT trang trắng cuối tệp làm cả tờ báo cáo thành "không mở được".
-        trang = [(p.extract_text(extraction_mode='layout') or '')
-                 for p in doc.pages if '/Contents' in p]
+        trang = _trang_can_doc(doc.pages)
     except (PyPdfError, OSError, KeyError, IndexError, ValueError, TypeError):
         # Không kèm tên lớp lỗi ("PdfStreamError") vào câu: người đọc là học vụ,
         # và bản đầu hiện đúng chữ ấy lên màn hình (soi ảnh 16/09).

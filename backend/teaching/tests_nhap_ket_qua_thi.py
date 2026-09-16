@@ -167,3 +167,85 @@ def test_lech_tong_thi_CANH_BAO_chu_khong_chan():
     d = doc_bao_cao(CHU.replace('TỔNG ĐIỂM: 105/150', 'TỔNG ĐIỂM: 120/150'))
     assert d['tongDiem'] == 120, 'vẫn đọc được, không ném lỗi'
     assert any('cộng ba phần' in c for c in d['canhBao'])
+
+
+# ── Bỏ qua bảng ma trận khi bóc chữ (16/09/2026) ─────────────────────────────
+#
+# Đo trên tờ thật 7 trang: trang 1 có mục I, trang 2–5 CHỈ là bảng ma trận (43%
+# thời gian bóc chữ), mục III bắt đầu ở trang 6. Trên Render một tờ mất 6–7 s, hai
+# tờ song song 22 s và làm một lời gọi nhẹ của người khác chờ 4,2 s. Tờ dựng bằng
+# reportlab dưới đây giữ đúng bố cục ấy, không mang tên người thật nào.
+
+DAU_MA_TRAN = 'MATRIX-FILLER-MARK'
+
+
+def _pdf(*trang):
+    """PDF nhiều trang: mỗi trang là danh sách dòng, mỗi dòng là các ô (x, chữ)."""
+    import io
+    from pathlib import Path
+
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfgen import canvas
+
+    if 'DVT' not in pdfmetrics.getRegisteredFontNames():
+        font = Path(__file__).resolve().parent.parent / 'assets' / 'fonts' / 'DejaVuSans.ttf'
+        pdfmetrics.registerFont(TTFont('DVT', str(font)))
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    for dong_cua_trang in trang:
+        y = A4[1] - 60
+        for dong in dong_cua_trang:
+            for x, chu in dong:
+                c.setFont('DVT', 10)
+                c.drawString(x, y, chu)
+            y -= 18
+        c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+TRANG_I = [
+    [(200, 'BÁO CÁO KẾT QUẢ THI')],
+    [(205, 'Thi thử Online 1309')],
+    [(40, 'I. THÔNG TIN CHUNG')],
+    [(50, 'Họ và tên'), (140, 'Nguyễn Văn An'), (330, 'Định lượng và Xử lí số liệu: 30/50')],
+    [(50, 'Mã học sinh'), (140, 'ONL000000'), (330, 'Định tính: 33/50')],
+    [(50, 'Ngày thi'), (140, '13/09/2026'), (330, 'Tiếng Anh: 38/50')],
+    [(50, 'Hình thức thi'), (140, 'Offline'), (330, 'TỔNG ĐIỂM: 101/150')],
+    [(50, 'Địa điểm thi'), (140, 'Trung tâm thử nghiệm')],
+]
+TRANG_MA_TRAN = [[(40, 'II. BÁO CÁO KẾT QUẢ')]] + [
+    [(40, '%s hàng %d   2 0   1 0   2 1   1/5 (20%%)' % (DAU_MA_TRAN, i))] for i in range(20)]
+TRANG_III = [
+    [(40, 'III. PHÂN TÍCH KẾT QUẢ THI')],
+    [(40, 'Phần 1: Định lượng và Xử lí số liệu: Hình học Oxyz (40%)')],
+    [(40, 'Phần 2: Định tính: Văn bản nghị luận (60%)')],
+]
+TRANG_III_TIEP = [
+    [(40, 'Phần 3: Tổ hợp: Reading comprehension 1 (30%)')],
+    [(40, 'Phần 3: Tổ hợp: Antonyms (100%)')],
+]
+
+
+def test_doc_chu_BO_QUA_bang_ma_tran_giua_muc_I_va_muc_III():
+    from teaching.nhap_ket_qua_thi import doc_chu
+    chu = doc_chu(_pdf(TRANG_I, TRANG_MA_TRAN, TRANG_MA_TRAN, TRANG_MA_TRAN, TRANG_III, TRANG_III_TIEP))
+    assert DAU_MA_TRAN not in chu, 'ba trang ma trận vẫn bị bóc chữ — thứ tốn CPU Render nhất'
+    assert chu.index('THÔNG TIN CHUNG') < chu.index('PHÂN TÍCH KẾT QUẢ'), 'giữ đúng thứ tự trang'
+
+    d = doc_bao_cao(chu)
+    assert (d['tongDiem'], d['tongToiDa']) == (101, 150)
+    assert len(d['donVi']) == 4, 'mục III trải HAI trang: không được mất trang cuối'
+
+
+def test_doc_chu_KHONG_thay_muc_III_thi_doc_HET_de_bao_loi_dung():
+    """Tờ bản khác, không có tiêu đề mục III: đọc cả tệp như trước (chậm hơn chứ
+    không sai), để câu lỗi vẫn là "không thấy mục III" chứ không phải một tờ cụt."""
+    from teaching.nhap_ket_qua_thi import doc_chu
+    chu = doc_chu(_pdf(TRANG_I, TRANG_MA_TRAN, TRANG_MA_TRAN))
+    assert DAU_MA_TRAN in chu
+    with pytest.raises(LoiDocBaoCao) as e:
+        doc_bao_cao(chu)
+    assert 'đơn vị kiến thức' in str(e.value)

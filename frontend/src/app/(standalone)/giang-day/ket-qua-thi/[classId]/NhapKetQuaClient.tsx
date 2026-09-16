@@ -5,7 +5,8 @@ import { useRef, useState } from 'react';
 import * as z from 'zod/mini';
 
 import { Button, Chip, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
-import { ghiJson } from '@/lib/api';
+import { apiFetch, errorText, ghiJson } from '@/lib/api';
+import { kiemHinhDang } from '@/lib/kiemDang';
 import type { HinhDang } from '@/lib/server-api';
 
 /** Một dòng của bảng khớp — khớp `teaching/nhap_ket_qua_view.py::danh_gia`. */
@@ -71,9 +72,16 @@ const HD_DOC = z.looseObject({
   tep: z.array(z.looseObject({ tep: chu, phieu: z.optional(chu), loi: z.optional(chu) })),
 }) satisfies HinhDang<KetQuaDoc>;
 
-/** Số tệp gửi đi đọc CÙNG LÚC. Máy chủ production có 2 worker × 2 luồng; lấy
- *  cả bốn thì mọi người khác đang dùng hệ thống phải chờ lượt nhập này xong. */
-const DONG_THOI = 2;
+/** Số tệp gửi đi đọc CÙNG LÚC — MỘT. Đo trên Render 16/09 bằng tờ thật: một tờ
+ *  6–7 s; HAI tờ song song mỗi tờ 21,8 s (chậm hơn gửi lần lượt), và trong lúc ấy
+ *  một lời gọi nhẹ của người khác chờ 4,2 s thay vì 0,3 s. Bản đầu để 2 theo suy
+ *  luận "2 worker × 2 luồng" — CPU mới là trần, không phải số luồng. */
+const DONG_THOI = 1;
+
+/** Số lần THỬ LẠI một tệp khi lỗi mạng hoặc máy chủ 5xx. Cùng đợt đo: 2/7 lượt tải
+ *  lên chết ECONNRESET, một lượt trong đó máy chủ còn chưa đọc gì. Đọc không ghi gì
+ *  nên thử lại an toàn; 4xx (hết phiên, không đủ quyền, tệp hỏng) thì KHÔNG thử lại. */
+const SO_LAN_THU_LAI = 2;
 
 /** Mọi `/api/*` đi qua route handler Next trên Vercel, thân request tối đa 4,5 MB
  *  (gồm cả phần bao của multipart). Tờ báo cáo thật ~0,5 MB — tệp quá trần này gần
@@ -153,6 +161,37 @@ export default function NhapKetQuaClient({ classId }: { classId: number }) {
     }
   }
 
+  /** Đọc MỘT tệp, thử lại khi lỗi mạng hoặc 5xx. Không đi qua `ghiJson` vì hàm ấy
+   *  gộp mọi lỗi thành một câu chữ — tới đây đã không còn biết lỗi nào đáng thử lại. */
+  async function docMotTep(f: File): Promise<KetQuaDoc['tep'][number]> {
+    for (let lan = 0; ; lan += 1) {
+      const fd = new FormData();
+      fd.append('files', f);
+      let r: Response | null = null;
+      try {
+        r = await apiFetch(`${goc}/doc`, { method: 'POST', body: fd });
+      } catch {
+        r = null;
+      }
+      if (r && r.status < 500) {
+        const body: unknown = await r.json().catch(() => ({}));
+        if (!r.ok) return { tep: f.name, loi: errorText(r.status, body) };
+        const kq = kiemHinhDang(`${goc}/doc`, body, r.status, HD_DOC);
+        if (!kq.ok) return { tep: f.name, loi: kq.message };
+        return kq.data.tep[0] ?? { tep: f.name, loi: 'Máy chủ không trả kết quả cho tệp này.' };
+      }
+      if (lan >= SO_LAN_THU_LAI) {
+        return {
+          tep: f.name,
+          loi: r
+            ? errorText(r.status, {})
+            : `Không gọi được máy chủ sau ${SO_LAN_THU_LAI + 1} lần thử. Kiểm tra mạng rồi đọc lại tệp này.`,
+        };
+      }
+      await new Promise((xong) => setTimeout(xong, 1500 * (lan + 1)));
+    }
+  }
+
   async function docHet() {
     const ds = tep;
     if (!ds.length) return;
@@ -167,18 +206,9 @@ export default function NhapKetQuaClient({ classId }: { classId: number }) {
       while (tiep < ds.length && lan === luot.current) {
         const k = tiep++;
         const f = ds[k];
-        if (f.size > TRAN_TEP) {
-          kq[k] = { tep: f.name, loi: 'Tệp nặng hơn 4 MB — tờ báo cáo thật chỉ khoảng nửa MB. Kiểm lại có chọn đúng tệp không.' };
-        } else {
-          const fd = new FormData();
-          fd.append('files', f);
-          try {
-            const r = await ghiJson(`${goc}/doc`, { method: 'POST', body: fd }, HD_DOC);
-            kq[k] = r.tep[0] ?? { tep: f.name, loi: 'Máy chủ không trả kết quả cho tệp này.' };
-          } catch (e) {
-            kq[k] = { tep: f.name, loi: e instanceof Error ? e.message : 'Không gọi được máy chủ.' };
-          }
-        }
+        kq[k] = f.size > TRAN_TEP
+          ? { tep: f.name, loi: 'Tệp nặng hơn 4 MB — tờ báo cáo thật chỉ khoảng nửa MB. Kiểm lại có chọn đúng tệp không.' }
+          : await docMotTep(f);
         xong += 1;
         if (lan === luot.current) setTienDo({ xong, tong: ds.length });
       }

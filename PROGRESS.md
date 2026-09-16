@@ -177,7 +177,39 @@ chục tờ là vượt. Nay trình duyệt gửi từng tờ; lượt ghi chỉ
   (14/09: ~29) — Neon chậm cả ngày hôm ấy.
 - Neon giữ 2 dòng `ket_qua_thi_ngoai` của em #9 (Test Reg) do lượt kiểm ghi — dùng tiếp
   cho việc (2) bộ dữ liệu trình diễn.
-- **Chưa đo:** thời gian đọc một tờ trên CPU Render — đo sau khi deploy.
+- **Production (`a12d59a`, 16/09):** Vercel `success`, màn mới không thẻ → 307 về đăng
+  nhập; Render tuyến `doc` không thẻ 401, tuyến cũ `nhap` 404; báo cáo em #9 trên Render
+  có `centerExam` 101/150 Δ+11. Đo tuyến `doc` bằng tờ THẬT (chỉ đọc, gọi thẳng Render):
+  · chỉ TẢI LÊN, không đọc (không thẻ → 401): **4,1 s** — mạng VN→Render cho 481 kB;
+  · đọc tuần tự: **7,4 s và 6,1 s** → CPU Render cho một tờ chỉ ~2–3 s;
+  · HAI tờ song song (đúng như màn hình gửi): **21,8 s mỗi tờ**, và một `/health` của
+    "người khác" chen giữa chờ **4,2 s** (bình thường 0,25–0,5 s);
+  · **2/7 lượt tải lên chết ECONNRESET** — một trong hai là lượt không đọc gì, tức lỗi
+    mạng / cửa Render, không phải worker sập. Màn hình hiện tại sẽ báo tờ ấy "không đọc
+    được" dù chẳng có gì hỏng.
+  Lượt đo đầu chết ở `fetch` tới api.github.com (hết giờ kết nối) và không bắt lỗi — sửa
+  thước rồi mới đo được.
+
+**Vá sau khi đo production (cùng ngày)**
+- Màn hình đọc **MỘT tờ một lúc** (bản đầu 2, suy từ "2 worker × 2 luồng" — CPU mới là
+  trần) và **thử lại tối đa 2 lần** khi lỗi mạng hoặc 5xx, nghỉ 1,5 s rồi 3 s; 4xx không
+  thử lại. Đọc không ghi gì nên thử lại an toàn; lượt GHI thì không tự thử lại.
+- Bóc chữ **bỏ bảng ma trận**: trang 1 + dò ngược từ trang cuối tới tiêu đề
+  "III. PHÂN TÍCH KẾT QUẢ" (khớp cả tiền tố "III." — một dòng đầu trang lặp lại sẽ không
+  làm dò dừng sớm); không thấy tiêu đề thì bóc hết như cũ. Đo từng trang tờ thật: trang
+  1 mục I, trang 2–5 chỉ ma trận (43% thời gian), mục III từ trang 6. Máy dev: **0,75 →
+  0,38 s/tờ**; tờ thật vẫn 105/150 · 27/38/40 · 24 đơn vị · 0 cảnh báo.
+- Phép kiểm dựng PDF nhiều trang bằng reportlab: bỏ ma trận (đỏ trên mã cũ — dấu ma trận
+  còn trong chữ) và mục III trải hai trang không mất trang cuối; không có mục III thì
+  đọc hết và vẫn báo đúng lỗi. Parser 14/14.
+- Trình duyệt, CỐ Ý làm hỏng mạng bằng `page.route` (3 tờ PDF giả): tờ 1 lượt 1
+  ECONNRESET, lượt 2 → 503, lượt 3 đi thật → **đọc được sau 3 lượt**; tờ 2 lượt nào cũng
+  ECONNRESET → **bỏ cuộc sau 3 lượt** với câu "Không gọi được máy chủ sau 3 lần thử…"; tờ 3
+  một lượt. Lời gọi `doc` bay cùng lúc nhiều nhất: **1**. (Thước bản đầu báo "2": nó trừ
+  bộ đếm 300 ms sau khi bộ chặn trả về, nên hai lời gọi TUẦN TỰ sát nhau bị đếm là chồng —
+  nay đếm bằng sự kiện `request` / `requestfinished` / `requestfailed`.) 0 lỗi JS. Luồng
+  đầy đủ chạy lại: đọc 3 tệp, trùng, bỏ qua, ghi, báo cáo 101/150 Δ+11, khổ 390 không tràn,
+  0 lỗi JS, 0 dòng CSP.
 
 ## 15/09/2026 — VÒNG 24 · Kiểm kĩ lại vòng 22–23: ba thước đo sai, khoá production nằm trên máy dev, và 'unsafe-eval' đã gỡ
 
