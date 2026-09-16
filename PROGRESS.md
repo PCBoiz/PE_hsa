@@ -210,6 +210,14 @@ chục tờ là vượt. Nay trình duyệt gửi từng tờ; lượt ghi chỉ
   nay đếm bằng sự kiện `request` / `requestfinished` / `requestfailed`.) 0 lỗi JS. Luồng
   đầy đủ chạy lại: đọc 3 tệp, trùng, bỏ qua, ghi, báo cáo 101/150 Δ+11, khổ 390 không tràn,
   0 lỗi JS, 0 dòng CSP.
+- **Production sau vá (`4c08d63`):** `/health` không mang số phiên bản, và bản vá không đổi
+  tuyến nào — nên dò bằng một TỜ MỒI: trang "ma trận" có một dòng giống dòng đơn vị; bộ
+  đọc cũ đếm 3, bộ đọc mới đếm 2 (kiểm trên máy trước: lấy bản cũ từ `a12d59a`, ra đúng 3
+  và 2). Render trả 2 ngay lượt đầu. Tờ thật, 4 lượt tuần tự: **4,5 · 4,7 · 4,7 s** và một
+  lượt **11,0 s** — đúng lượt có một `/health` chen giữa, chính `/health` ấy chờ 3,5 s.
+  Trung vị **4,7 s** (trước vá 6,1–7,4 s), mà riêng tải lên đã ~4,1 s → phần còn lại chủ yếu
+  là mạng, không còn là CPU. 4/4 đọc được, lượt này không dính ECONNRESET. Lượt 11 s là MỘT
+  mẫu và `/health` có chạm Neon — chưa kết luận được là CPU hay CSDL.
 
 ## 15/09/2026 — VÒNG 24 · Kiểm kĩ lại vòng 22–23: ba thước đo sai, khoá production nằm trên máy dev, và 'unsafe-eval' đã gỡ
 
