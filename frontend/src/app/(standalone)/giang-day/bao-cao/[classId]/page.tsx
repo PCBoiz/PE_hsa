@@ -168,6 +168,7 @@ export default async function BaoCaoCaLopPage({
           znsThieu={d.znsThieu}
           emailSanSang={d.emailSanSang}
           emailThieu={d.emailThieu}
+          soMau={soMau}
         />
       </Card>
 

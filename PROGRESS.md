@@ -133,6 +133,31 @@ buổi nào — mọi màn hình trông như chưa ai dùng.
 - Đột biến hàng rào gửi: gỡ chặn ở `_kenh_cho` → phép kiểm gửi ĐỎ (GET trả kênh cho em
   mẫu); gỡ nhánh `mau` ở lượt gửi → ĐỎ (`{'gui_tay'} != {'mau'}`). Tệp trả lại, băm khớp.
 
+**Dựng thật trên Neon (`669e785`)**
+- Thứ tự có chủ ý: đẩy mã → CHỜ Render trả `laMau` trong bản soạn sẵn gửi lớp 1 (tức
+  hàng rào gửi đã chạy trên production; 17:33:37) → mới `du_lieu_mau --tao`. Dựng trước
+  thì một cú bấm "Gửi cả lớp" trên production bản cũ là thư đi tới địa chỉ bịa, từ hộp thư
+  của anh Sơn.
+- **56,3 s** từ máy dev: 48 tài khoản · 2 lớp (`HSA-MAU-01` #5583, `HSA-MAU-02` #5584) · 49
+  buổi · 602 điểm danh · 10 bài tập · 191 bài nộp · 1.098 tiến độ bài học · 92 ghi danh ·
+  2.703 sự kiện học tập · 39 lượt thi thử · 85 kết quả thi tại trung tâm · 980 nhật ký XP.
+- Soi giao diện (quản trị viên, chặn mọi lời gọi ghi): bản soạn sẵn gửi lớp 1 mẫu — 26/26
+  em `laMau`, 0 em có kênh; màn báo cáo cả lớp có dòng "26 em là dữ liệu trình diễn", chip
+  "mẫu" cạnh 26 tên, KHÔNG còn cảnh báo thiếu liên lạc; tờ báo cáo một em: chuyên cần 8/8,
+  kỳ thi tại trung tâm 103/150, 11 bài trong kỳ, 1 lượt thi thử 67%, ba chủ đề cần giúp
+  có mức thành thạo; màn buổi học: 14 buổi đã diễn ra đều có chip có mặt / muộn / vắng /
+  có phép và giờ điểm danh, buổi đang diễn ra (16/09 17:30) hiện đúng "Chưa mở sổ điểm
+  danh"; bài tập có đủ 5 bài; "Việc hôm nay" và tổng quan quản trị có hai lớp "(lớp mẫu)"
+  (chuyên cần 87% / 91%). 0 lỗi JS, 0 dòng CSP.
+- Ba con số của KỊCH BẢN soi sai, không phải màn hình: đếm chip bằng `\bmẫu\b` (JS `\b` không
+  hiểu chữ có dấu → ra 2 thay vì 26), tìm chữ "Đã dạy" (màn buổi học không dùng chữ ấy), tìm
+  mã lớp trên tổng quan (bảng hiện TÊN lớp). Soi ảnh chụp mới thấy.
+- Ảnh chụp lộ một câu SAI trên màn báo cáo lớp mẫu: nút "Gửi cho 0 phụ huynh" kèm "Chưa em
+  nào có email hoặc số Zalo của phụ huynh" — trong khi cả 26 em đều có địa chỉ, chỉ là bịa
+  và cố ý không gửi. Trình diễn trước người mua mà đọc câu ấy là tưởng tính năng gửi hỏng.
+  `GuiCaLop` nhận `soMau`; lớp toàn em mẫu nói "Cả lớp là dữ liệu trình diễn — hệ thống
+  không gửi tin cho học viên mẫu".
+
 ## 16/09/2026 — VÒNG 25 · Nhập kết quả thi thử từ PDF: điểm kỳ thi THẬT vào tờ báo cáo phụ huynh
 
 Việc (1) trong bốn việc anh chọn cho hướng bán đứt.

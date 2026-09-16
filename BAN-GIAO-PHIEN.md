@@ -165,6 +165,12 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
   của Vercel. Bảng §48 `ket_qua_thi_ngoai`. **Tệp PDF mẫu có tên học sinh thật: không
   commit**; thử bằng PDF giả dựng bằng reportlab. Bài học: phép kiểm thay hàm đọc
   bằng hàm giả đã giấu một `ImportError` làm 500 mọi lượt tải lên.
+- **16/09 (vòng 26) — bộ dữ liệu trình diễn**, việc (2). ĐANG NẰM TRÊN NEON: 48 học viên, hai
+  lớp "(lớp mẫu)" `HSA-MAU-01/02` với buổi học, điểm danh, bài chấm, bài học, thi thử, hai kỳ
+  thi tại trung tâm. `python manage.py du_lieu_mau` (đếm) · `--tao` · `--go` (gỡ sạch). Cờ
+  `is_demo` ở `users`/`classes` (§49). Học viên mẫu: không gửi tin (trạng thái `mau`), không
+  đăng nhập được (băm scrypt của chuỗi ngẫu nhiên bỏ đi — ĐỪNG đổi thành chuỗi thô:
+  `LoginView` còn nhánh mật khẩu thô cũ). Trước ngày đổ học viên THẬT vào: chạy `--go`.
 
 ## Việc đang chờ, không ai làm được thay
 
@@ -195,7 +201,7 @@ HỎI LẠI trước khi làm:**
 Ngoài ra: ~~bộ nhập kết quả thi từ PDF~~ (vòng 25); T40 chỉ còn đặt `REDIS_URL`.
 
 **Hướng đang làm (anh Sơn chọn 15/09, "khả năng cao là sẽ bán đứt") — theo thứ tự:**
-~~(1) nhập kết quả thi thử từ PDF~~ · (2) bộ dữ liệu trình diễn, đánh dấu và gỡ được ·
+~~(1) nhập kết quả thi thử từ PDF~~ · ~~(2) bộ dữ liệu trình diễn~~ (vòng 26) ·
 (3) tốc độ + dựng lười 8 tab SPA ẩn (chính là hướng 1 ở trên) · (4) minh hoạ cho bài
 học (14 minh hoạ / 76 bài). Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
 đổi hướng lớn giữa chừng thì vẫn hỏi.

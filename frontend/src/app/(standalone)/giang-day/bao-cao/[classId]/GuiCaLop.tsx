@@ -61,6 +61,7 @@ export default function GuiCaLop({
   znsThieu,
   emailSanSang,
   emailThieu,
+  soMau = 0,
 }: {
   classId: string;
   soEm: number;
@@ -68,6 +69,8 @@ export default function GuiCaLop({
   znsThieu: string[];
   emailSanSang: boolean;
   emailThieu: string[];
+  /** Số học viên dữ liệu trình diễn (§49) — không tính vào `soEm`, không bao giờ nhận tin. */
+  soMau?: number;
 }) {
   // Gửi được hay không là chuyện của CẢ HAI kênh. Bản đầu chỉ hỏi ZNS, nên
   // sau khi mở kênh email màn hình vẫn nói "chưa nối Zalo OA nên chưa tự nhắn
@@ -159,9 +162,15 @@ export default function GuiCaLop({
           </Button>
           {soEm === 0 && (
             <span className="text-small text-ink-3">
-              {coKenh
-                ? 'Chưa em nào có email hoặc số Zalo của phụ huynh.'
-                : 'Lớp chưa có học viên nào đang học.'}
+              {/* Lớp toàn học viên mẫu: nói ĐÚNG lý do. Câu "chưa em nào có email"
+                  là sai ở đây — các em đều có địa chỉ, chỉ là địa chỉ bịa, và máy chủ
+                  cố ý không gửi (§49). Trình diễn trước người mua mà đọc câu ấy thì
+                  tưởng tính năng gửi hỏng. */}
+              {soMau > 0
+                ? 'Cả lớp là dữ liệu trình diễn — hệ thống không gửi tin cho học viên mẫu.'
+                : coKenh
+                  ? 'Chưa em nào có email hoặc số Zalo của phụ huynh.'
+                  : 'Lớp chưa có học viên nào đang học.'}
             </span>
           )}
         </div>
