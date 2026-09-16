@@ -86,6 +86,51 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 16/09/2026 — VÒNG 28 · Minh hoạ cho 67 bài còn lại: 76/76 bài có hình, và hình hiện ở CẢ bản tóm tắt
+
+Việc (4), việc cuối của hướng bán đứt.
+
+**Đo trước:** engine vẽ được 8 loại minh hoạ từ JSON (bars, numline, curve, flow, table,
+pie, tree, timeline — `lesson_hsa.js::renderVisual`), nhưng chỉ **9/76 bài** có (14 khối);
+67 bài là bốn thẻ chữ. Mỗi bài: 4 thẻ đầy đủ + 2 thẻ tóm tắt.
+
+**Soạn:** `backend/lessons/minh_hoa/{hsa_quantitative,hsa_science,hsa_verbal}.py` — 67
+khối, mỗi bài một, gắn vào ĐÚNG thẻ nó minh hoạ, loại chọn theo nội dung thẻ (hàm →
+curve; so sánh → table/bars; quy trình → flow; phân loại → tree; mốc → timeline; cơ cấu
+→ pie). Mọi con số tính tay và ghi cách tính cạnh mục (y = x³ − 3x: y′ = 0 tại ±1, cực
+đại (−1; 2); 2,4 g Mg → 4 g MgO; hai điện trở 6 Ω và 3 Ω song song → 2 Ω…); số liệu không
+có trong thẻ thì dán "ví dụ" ngay trên khối. Kết quả: 81 khối — table 31 · bars 13 ·
+flow 13 · tree 9 · curve 5 · pie 5 · timeline 4 · numline 1.
+
+**Nạp:** `python manage.py nap_minh_hoa --thu` (kiểm) / `--nap` (ghi một giao dịch) — đi
+qua `validate_lesson` như cửa sửa bài của quản trị viên, `quen_dap_an` sau khi ghi, chạy
+lại được (giống giữ, khác cập nhật). Đã nạp lên Neon → **76/76 bài có minh hoạ**, tức
+production đang hiện luôn (nội dung nằm trong CSDL, không cần deploy).
+
+**Phát hiện lúc đi đường thật: bản đầy đủ gần như không ai thấy.** Đi đúng đường học
+viên (làm bài → nộp → đánh giá → lý thuyết) ở 9 bài: 5 hiện, 4 không — không lỗi gì, mà
+vì engine chọn bản lý thuyết theo điểm: `weak` → đầy đủ, `ok`/`strong` → tóm tắt, và
+`ok_min` mặc định là **1** — đúng một câu là thấy bản tóm tắt. Thử ba cách chọn đáp án ở
+bốn bài: 12/12 lượt rơi vào bản tóm tắt. Minh hoạ chỉ ở thẻ đầy đủ (kể cả 14 khối có
+sẵn) thì học viên bình thường — và người mua đang xem — không bao giờ thấy. Nay mỗi khối
+gắn CẢ vào một thẻ tóm tắt: chọn theo số từ trùng tiêu đề, soát tay bảng 67 dòng, 7 chỗ
+heuristic chọn sai (bảng sin/cos rơi vào "Định lý Pytago", chu kì 3 vào "Cấu tạo nguyên
+tử"…) ghi tay ở `THE_TOM_TAT`. Đi lại 7 bài: 7/7 hiện, ở cả hai bản.
+
+**Phép kiểm dữ liệu bắt được một lỗi trước khi ai mở bài:** ô bảng đi qua `esc()` của
+engine, nên `<i>`/`<b>` tôi đặt trong ba ô (Định tính #4, #6, #15) sẽ hiện THÔ. Sửa dữ
+liệu, chạy lại `--nap` (3 bài cập nhật), soi lại hai bảng ấy trên trình duyệt: sạch.
+
+**Kiểm:** `tests_minh_hoa` 71/71 không cần CSDL (mỗi khối qua `validate_lesson`, mọi
+`curve.fn` phân tích được và mốc nằm trong khoảng vẽ, chỉ số ghi tay hợp lệ, đúng 67 bài
+và không đè 9 bài có sẵn, không thẻ HTML trong ô bị esc); lessons + courseadmin 177/177;
+ruff. Trình duyệt: 9 bài đủ 8 loại hiện ở bước lý thuyết, 0 lỗi JS; soi ảnh timeline,
+tree, pie, table. Tài khoản quản trị ghi danh thêm hai khoá để mở được bài Khoa học và
+Định tính (trước đó 403 vì chưa ghi danh — đúng cổng đang có).
+
+**Bốn việc anh chọn cho hướng bán đứt (15/09): xong cả bốn** — (1) nhập PDF kết quả thi
+(vòng 25), (2) dữ liệu trình diễn (26), (3) dựng lười tám tab (27), (4) minh hoạ (28).
+
 ## 16/09/2026 — VÒNG 27 · Trang của tôi dựng lười tám tab: DOM giảm một nửa, CLS giảm 4 lần, LCP KHÔNG đổi
 
 Việc (3) của hướng bán đứt ("tốc độ và 8 tab ẩn").

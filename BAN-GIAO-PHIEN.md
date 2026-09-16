@@ -203,8 +203,10 @@ Ngoài ra: ~~bộ nhập kết quả thi từ PDF~~ (vòng 25); T40 chỉ còn �
 **Hướng đang làm (anh Sơn chọn 15/09, "khả năng cao là sẽ bán đứt") — theo thứ tự:**
 ~~(1) nhập kết quả thi thử từ PDF~~ · ~~(2) bộ dữ liệu trình diễn~~ (vòng 26) ·
 ~~(3) dựng lười 8 tab SPA ẩn~~ (vòng 27 — DOM −50%, CLS ÷4, **LCP không đổi**: LCP
-Trang của tôi do mạng/API, không do hydrate; đừng đi lại đường ấy) · (4) minh hoạ cho
-bài học (14 minh hoạ / 76 bài). Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
+Trang của tôi do mạng/API, không do hydrate; đừng đi lại đường ấy) · ~~(4) minh hoạ cho
+bài học~~ (vòng 28 — 76/76 bài, bộ soạn ở `backend/lessons/minh_hoa/`, nạp bằng
+`manage.py nap_minh_hoa --nap`; minh hoạ gắn CẢ thẻ tóm tắt vì engine cho bản tóm tắt
+ngay khi đúng một câu). **CẢ BỐN VIỆC XONG 16/09** — phiên sau hỏi anh hướng tiếp. Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
 đổi hướng lớn giữa chừng thì vẫn hỏi.
 
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
