@@ -66,6 +66,17 @@
  * một lượt, tám trong số đó `display:none`. Dựng lười từng trang là việc lớn
  * của tầng cũ — ghi ở TODO, không vá chen ngang.
  *
+ * ── 16/09/2026: DỰNG LƯỜI ĐÃ LÀM, VÀ LCP KHÔNG ĐỔI ──────────────────────
+ *
+ * Đoạn trên ngụ ý tám tab ẩn là thứ làm LCP xấu. Đo A/B XEN KẼ (bản cũ ở
+ * worktree cổng 3101 ↔ bản dựng lười cổng 3100, cùng lúc, CPU chậm 4×):
+ *     LCP   cũ 2520 / 2912   ↔   mới 2708 / 2936   (trong nhiễu)
+ *     DOM   cũ 1589 / 2094   ↔   mới  847 /  749
+ *     CLS   cũ 0,042 / 0,043 ↔   mới 0,011 / 0,007
+ * LCP của màn này do mạng và API quyết định, không do hydrate. Đừng đo lại LCP
+ * để chứng minh dựng lười — thứ nó đổi là DOM và CLS. Một lượt đo đơn "3396 →
+ * 2888" trước A/B trông như thắng lớn và là nhiễu hoàn toàn; luôn A/B xen kẽ.
+ *
  * Vì sao riêng màn ấy: DOM lớn nhất trong sáu màn và
  * nó là màn DUY NHẤT còn nạp cả tầng JS cũ (main.js + dashboard.js +
  * icons.js…). Đó cũng đúng là màn học viên mở nhiều nhất. Đã gỡ Font Awesome

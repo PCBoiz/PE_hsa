@@ -5,6 +5,9 @@
 // bằng main.js navigate() trong CÙNG route này (không tách route Next — giữ UX cũ).
 // CSS đúng tổ hợp gốc (dashboard.html block extra_head, thứ tự giữ nguyên).
 
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+
 import PageStyles from '@/components/PageStyles';
 import BaHopPhan from '@/components/BaHopPhan';
 import Chatbot from '@/components/Chatbot';
@@ -46,6 +49,71 @@ export default function DashboardClient(
     theSo: React.ReactNode; tienDo: React.ReactNode;
   },
 ) {
+  /* ── DỰNG LƯỜI BẢY TRANG CÒN LẠI + khối lộ trình (16/09/2026) ──────────
+     Trang này là hub SPA cũ: chín "trang" nằm cùng một route, tám trong số đó
+     `display:none`. Dựng sẵn cả chín nghĩa là React hydrate cả chín — chi phí
+     người dùng trả ngay lần mở đầu, cho bảy trang phần lớn họ không mở.
+
+     `main.js::navigate()` gọi `window.__moTrang(trang)` TRƯỚC khi đổi class.
+     `flushSync` là bắt buộc: các module trong `dashboard.js` bọc `navigate` theo
+     khuôn `orig(page); if (page === 'forum') renderPosts();` — chúng chạy NGAY
+     SAU `orig`, nên DOM của trang vừa mở phải có mặt trong cùng một nhịp, không
+     đợi được React vẽ ở nhịp sau.
+
+     HAI TRANG KHÔNG TỰ NẠP LẠI KHI MỞ. Bảy trang kia có module trong `dashboard.js`
+     bọc `navigate` để nạp khi mở. Lưới khoá học thì do `loadAll()` dựng MỘT lần lúc
+     vào trang, các ô ở Cài đặt do `loadUser()` điền MỘT lần — hai lần ghi ấy rơi vào
+     chỗ chưa có DOM. Nên sau khi dựng, gọi lại hai hàm của tầng cũ (`renderCourses`,
+     `setText` là hàm ở cột 0 của script cổ điển → thuộc tính `window`); cả hai tự
+     bỏ qua khi thiếu phần tử. Logic này nằm ở ĐÂY chứ không ở `main.js`: tầng cũ
+     chỉ được nhỏ đi (`e2e/unit/chot-ham-tang-cu`).
+
+     ĐƯỜNG VÀO SÂU (`/dashboard#forum`): `main.js` đọc hash và gọi `navigate` — có
+     thể TRƯỚC khi React hydrate xong (nó được nạp sớm có chủ ý), lúc chưa có
+     `__moTrang` để dựng. Hiệu ứng dưới đây đọc lại hash lúc hydrate xong, dựng,
+     rồi gọi `navigate` lại; thứ tự ngược (main.js nạp sau) cũng đúng, vì khi ấy
+     `navigate` của nó đã thấy `__moTrang`. CHỈ làm với trang chưa dựng: gọi lại
+     `navigate('dashboard')` là chạy lại MỌI module bọc `navigate` lần hai — đo được
+     +10 lượt gọi mạng và CLS 0,004 → 0,044 (16/09/2026). */
+  const [daMo, setDaMo] = useState<Set<string>>(() => new Set(['dashboard']));
+  const daMoRef = useRef(daMo);
+
+  useEffect(() => {
+    const w = W();
+    const sauKhiDung = (trang: string) => {
+      if (trang === 'courses' && typeof w.renderCourses === 'function') w.renderCourses();
+      if (trang === 'settings' && w.__currentUser && typeof w.setText === 'function') {
+        const u = w.__currentUser;
+        w.setText('settings-profile-name', u.name);
+        w.setText('settings-profile-email', u.email);
+        document.querySelectorAll<HTMLInputElement>('[data-ho-so]').forEach((o) => {
+          o.value = u[o.getAttribute('data-ho-so') || ''] || '';
+        });
+      }
+    };
+    w.__moTrang = (trang: string) => {
+      if (!trang || daMoRef.current.has(trang)) return;
+      const moi = new Set(daMoRef.current).add(trang);
+      daMoRef.current = moi;
+      flushSync(() => setDaMo(moi));
+      sauKhiDung(trang);
+    };
+    const hash = window.location.hash.replace('#', '');
+    if (hash && !daMoRef.current.has(hash) && /^[\w-]+$/.test(hash)) {
+      const moi = new Set(daMoRef.current).add(hash);
+      daMoRef.current = moi;
+      setDaMo(moi);
+      // Đổi class sau khi React đã vẽ xong trang vừa mở. `navigate` không tồn tại
+      // nếu main.js chưa nạp — khi ấy chính main.js sẽ gọi nó lúc nạp xong.
+      requestAnimationFrame(() => {
+        if (typeof w.navigate !== 'function') return;
+        w.navigate(hash);
+        sauKhiDung(hash);   // `__moTrang` sẽ thấy trang đã dựng và bỏ qua — gọi ở đây
+      });
+    }
+    return () => { delete w.__moTrang; };
+  }, []);
+
   return (
     <>
       <PageStyles hrefs={["/static/css/shell.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/ChangePassword.css","/static/css/skeleton.css","/static/css/dark-mode.css","/static/css/roadmap.css","/static/css/a11y.css"]} />
@@ -218,6 +286,7 @@ export default function DashboardClient(
         </div>
 
         {/* ── Khu giảng dạy (Giảng viên / Quản trị viên) ── */}
+        {daMo.has('teach') && (
         <div className="page" id="page-teach">
           <div className="courses-header fx-fade-up">
             <div>
@@ -251,8 +320,10 @@ export default function DashboardClient(
             </div>
           </div>
         </div>
+        )}
 
         {/* ── Kế hoạch học ── */}
+        {daMo.has('plan') && (
         <div className="page" id="page-plan">
           <div className="courses-header fx-fade-up">
             <div>
@@ -268,8 +339,10 @@ export default function DashboardClient(
             </div>
           </div>
         </div>
+        )}
 
         {/* ── Courses ── */}
+        {daMo.has('courses') && (
         <div className="page" id="page-courses">
           <div className="courses-header fx-fade-up">
             <div>
@@ -348,11 +421,13 @@ export default function DashboardClient(
             <p>Không tìm thấy khóa học phù hợp.</p>
           </div>
         </div>
+        )}
 
         {/* ── Roadmap (partial roadmap.html) ── */}
-        <RoadmapSection />
+        {daMo.has('roadmap') && <RoadmapSection />}
 
         {/* ── Skills ── */}
+        {daMo.has('skills') && (
         <div className="page" id="page-skills">
           <div className="courses-header fx-fade-up">
             <h2>🐙 Kỹ năng</h2>
@@ -380,8 +455,10 @@ export default function DashboardClient(
             <div style={{ color: '#9CA3AF', fontSize: 14, padding: 24 }}>Đang tải...</div>
           </div>
         </div>
+        )}
 
         {/* ── Forum ── */}
+        {daMo.has('forum') && (
         <div className="page" id="page-forum">
           <div className="courses-header fx-fade-up">
             <div>
@@ -458,8 +535,10 @@ export default function DashboardClient(
             <p>Chưa có bài viết nào. Hãy là người đầu tiên đăng bài!</p>
           </div>
         </div>
+        )}
 
         {/* ── Settings ── */}
+        {daMo.has('settings') && (
         <div className="page" id="page-settings">
           <div className="settings-wrap">
             <div className="settings-section">
@@ -634,8 +713,10 @@ export default function DashboardClient(
             </button>
           </div>
         </div>
+        )}
 
         {/* ══════════ TRANG CỦA TÔI ══════════ */}
+        {daMo.has('profile') && (
         <div className="page" id="page-profile">
           <div className="prof-wrap">
             {/* Hero card */}
@@ -770,6 +851,7 @@ export default function DashboardClient(
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* ★ MODAL HỦY ĐĂNG KÝ KHÓA HỌC */}

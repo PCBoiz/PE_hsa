@@ -191,9 +191,9 @@ view~~ · ~~nhập liên hệ phụ huynh~~ · ~~sinh lịch cả kỳ + ngày n
 
 **Ba hướng đã đưa anh Sơn chọn tối 14/09; anh bảo dừng tổng kết — phiên sau
 HỎI LẠI trước khi làm:**
-1. *Dựng lười 8 "trang" SPA cũ* — Trang của tôi dựng sẵn cả 9 tab (2.111 nút,
-   8 tab `display:none`) nên hydrate ~1,6 s; dựng tab khi bấm tới lần đầu qua
-   một cầu `window.__moTrang(page)` mà `main.js::navigate` chờ. Đo trước/sau.
+1. ~~*Dựng lười 8 "trang" SPA cũ*~~ — LÀM XONG vòng 27 (16/09) đúng theo cầu
+   `window.__moTrang(page)`. Nhưng tiền đề "hydrate ~1,6 s" SAI: A/B xen kẽ cho LCP
+   không đổi; được DOM −50% và CLS ÷4. Xem PROGRESS vòng 27.
 2. *Chuyển tiếp các khối còn lại sang React máy chủ* (nhiệm vụ hôm nay, bảng
    xếp hạng, thông báo) theo khuôn `HocTiep`/`LopCuaToiNguon`.
 3. *Rà lại 4 vai trên PRODUCTION* (`pe-hsa.vercel.app`) trước/ngay sau buổi
@@ -202,8 +202,9 @@ Ngoài ra: ~~bộ nhập kết quả thi từ PDF~~ (vòng 25); T40 chỉ còn �
 
 **Hướng đang làm (anh Sơn chọn 15/09, "khả năng cao là sẽ bán đứt") — theo thứ tự:**
 ~~(1) nhập kết quả thi thử từ PDF~~ · ~~(2) bộ dữ liệu trình diễn~~ (vòng 26) ·
-(3) tốc độ + dựng lười 8 tab SPA ẩn (chính là hướng 1 ở trên) · (4) minh hoạ cho bài
-học (14 minh hoạ / 76 bài). Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
+~~(3) dựng lười 8 tab SPA ẩn~~ (vòng 27 — DOM −50%, CLS ÷4, **LCP không đổi**: LCP
+Trang của tôi do mạng/API, không do hydrate; đừng đi lại đường ấy) · (4) minh hoạ cho
+bài học (14 minh hoạ / 76 bài). Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
 đổi hướng lớn giữa chừng thì vẫn hỏi.
 
 **Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):

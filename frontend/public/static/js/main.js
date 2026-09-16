@@ -668,6 +668,17 @@ window.addEventListener("resize", function () {
 });
 
 function navigate(page) {
+  /* DỰNG LƯỜI (16/09/2026). Tầng React (DashboardClient) chỉ dựng sẵn trang đang
+     mở; bảy trang còn lại + khối lộ trình dựng khi bấm tới. Gọi TRƯỚC mọi thứ
+     khác, và `__moTrang` dựng ĐỒNG BỘ (flushSync), nên từ dòng dưới trở đi DOM y
+     như hồi dựng sẵn cả chín — kể cả cho các module `dashboard.js` bọc hàm này
+     theo khuôn `orig(page); if (page === 'forum') renderPosts();`.
+
+     Chưa có `__moTrang` = React chưa hydrate xong (main.js được nạp sớm có chủ
+     ý), hoặc trang không có tab (questionaire). Phía React tự đọc `location.hash`
+     lúc hydrate xong rồi gọi lại `navigate` — không cần biến trung gian nào. */
+  if (window.__moTrang) window.__moTrang(page);
+
   /* Đóng panel chi tiết roadmap (nếu đang mở) để tránh kẹt body scroll + UI lỗi */
   try { closeSidebar(); } catch (_) {}
 

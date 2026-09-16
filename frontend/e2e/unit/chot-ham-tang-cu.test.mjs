@@ -100,7 +100,15 @@ const TRAN_TEP = 13;
 // dải tiến độ ba hợp phần sang React máy chủ (`TheSoHsa`, `TienDoHopPhan`).
 // 15/09/2026: 7076 → 7063 (−13). `lesson_hsa.js` bỏ `compileFn` (`new Function`): điểm đồ thị
 // hàm do máy chủ tính (`backend/lessons/do_thi.py`), để CSP thôi phải mở 'unsafe-eval'.
-const TRAN_DONG_MA = 7063;
+// 16/09/2026: 7063 → 7066 (+3) — lần ĐẦU tăng, ghi rõ vì sao. Dựng lười tám tab của
+// Trang của tôi (`DashboardClient`): logic dựng, nạp lại lưới khoá học và ô Cài đặt
+// đều nằm ở src/. Ba dòng ở lại tầng cũ là ba chỗ KHÔNG chuyển được: `navigate` gọi
+// `__moTrang` (main.js), tab Giảng dạy vẽ lại từ dữ liệu đã nạp (dashboard.js — bản
+// đầu dựng lười làm tab ấy đứng mãi ở "Đang tải…"), và chốt "chỉ buộc một lần" cho
+// nút khoảng tuần của đồ thị hồ sơ (dashboard.js — nếu không, mỗi lần mở tab buộc thêm
+// một trình xử lý). Bản đầu để +20 dòng ở main.js; phép kiểm này bắt được và số logic
+// ấy đã dời sang src/. Không phải tiền lệ cho lần sau: dời được thì vẫn phải hạ.
+const TRAN_DONG_MA = 7066;
 
 let failures = 0;
 function check(name, cond, them) {

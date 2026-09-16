@@ -3090,7 +3090,11 @@ var _forumTextQ = '';
 
   function bindRange() {
     var box = el('curve-range');
-    if (!box) return;
+    /* Gọi được nhiều lần: lúc nạp trang (khi tab hồ sơ chưa dựng — dựng lười
+       16/09/2026 — thì `box` chưa có) và mỗi lần mở tab hồ sơ. Không có chốt
+       này thì mỗi lần mở là thêm một trình xử lý, bấm một lần tải hai lần. */
+    if (!box || box._daBuoc) return;
+    box._daBuoc = true;
     box.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('button[data-weeks]');
       if (!b) return;
@@ -3116,7 +3120,9 @@ var _forumTextQ = '';
   window.navigate = function (page) {
     _origNavigateCurve(page);
     // Khung có bề rộng 0 khi trang còn ẩn → phải vẽ lại sau khi hiện ra.
-    if (page === 'profile') { load(false); if (lastCurve) setTimeout(function () { drawCurve(lastCurve); }, 60); }
+    // `bindRange` ở đây vì tab hồ sơ dựng lười: lượt gọi lúc nạp trang không có
+    // `#curve-range` để buộc — bốn nút 4/8/12/24 tuần sẽ chết nếu không gọi lại.
+    if (page === 'profile') { bindRange(); load(false); if (lastCurve) setTimeout(function () { drawCurve(lastCurve); }, 60); }
   };
 
   if (document.readyState === 'loading') {
@@ -4070,7 +4076,13 @@ var _forumTextQ = '';
   var _origNavigateTeach = window.navigate;
   window.navigate = function (page) {
     _origNavigateTeach(page);
-    if (page === 'teach' && !classes) loadClasses();
+    if (page !== 'teach') return;
+    /* Đã có dữ liệu nhưng có thể chưa từng VẼ: `gate()` nạp danh sách ngay lúc
+       vào trang, khi tab này chưa được dựng (dựng lười, 16/09/2026) — lượt
+       `renderClasses` ấy không có `#tc-classes` để ghi. Bản đầu chỉ nạp khi
+       `!classes`, nên tab mở ra đứng mãi ở "Đang tải…". Vẽ lại từ dữ liệu đã
+       có: không tốn lượt gọi mạng nào. */
+    if (!classes) loadClasses(); else { renderClasses(); if (report) renderReport(); }
   };
 
   // Nút điều hướng chỉ hiện với giảng viên/quản trị viên. main.js đã nạp

@@ -3134,7 +3134,9 @@ body.dark .lb-sub { color: #64748B; }
   font-size: 13px; font-weight: 700; color: #374151;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.lb-row.lb-top1 .lb-value { color: #D97706; }
+/* Hạng 1 "vàng": #D97706 trên nền trắng chỉ 3,19:1 (cần 4,5). Bộ đo giao diện
+   chỉ thấy khi bảng xếp hạng tuần CÓ dòng — trước 16/09/2026 nó luôn trống. */
+.lb-row.lb-top1 .lb-value { color: #B45309; }
 .lb-row.lb-top2 .lb-value { color: #475569; }
 .lb-row.lb-top3 .lb-value { color: #92400E; }
 .lb-row.lb-row-me .lb-value { color: var(--brand-ink); }

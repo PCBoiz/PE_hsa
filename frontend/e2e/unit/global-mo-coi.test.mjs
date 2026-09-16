@@ -139,6 +139,10 @@ const CHAP_NHAN = new Map([
   ['bayTieuDiem',
    'thoái lui CÓ CHỦ Ý, ghi rõ tại main.js:1152 — thiếu bẫy thì hộp vẫn dùng '
    + 'được, chỉ kém tiếp cận'],
+  ['__moTrang',
+   'do REACT ghi (16/09/2026): `DashboardClient` đăng ký lúc gắn vào trang để dựng '
+   + 'lười từng tab; `main.js::navigate` gọi sau `if (window.__moTrang)`. Trang không '
+   + 'có tab (questionaire cũng nạp main.js) thì không ai ghi, và lời gọi tự bỏ qua'],
   ['__refreshHsaTiles',
    'do REACT ghi (14/09/2026 tối): `TheSoHsaClient` đăng ký lúc gắn vào trang; '
    + '`dashboard.js` (nút lưu mục tiêu ở Cài đặt) gọi nó sau `typeof … === function` '

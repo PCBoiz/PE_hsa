@@ -86,6 +86,65 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 16/09/2026 — VÒNG 27 · Trang của tôi dựng lười tám tab: DOM giảm một nửa, CLS giảm 4 lần, LCP KHÔNG đổi
+
+Việc (3) của hướng bán đứt ("tốc độ và 8 tab ẩn").
+
+**Giả thuyết trước khi làm (BAN-GIAO 14/09):** Trang của tôi dựng sẵn cả chín "trang" SPA
+cũ (2.111 nút, tám tab `display:none`) nên hydrate ~1,6 s; dựng lười sẽ cắt LCP. Đo lại
+trước khi tin: bản hiện có (có dữ liệu mẫu) LCP **3.396 ms** (2.716/3.396/3.524), 1.326
+nút, 936 kB JS — màn duy nhất vượt 2.500 ms.
+
+**Cách làm.** `DashboardClient` chỉ dựng `page-dashboard`; bảy tab kia + khối lộ trình
+bọc trong `daMo.has('…')`. `main.js::navigate` gọi `window.__moTrang(page)` TRƯỚC khi đổi
+class; `__moTrang` dựng bằng `flushSync` — bắt buộc, vì các module `dashboard.js` bọc
+`navigate` theo khuôn `orig(page); if (page==='forum') renderPosts();` và chạy ngay sau
+`orig`, DOM phải có mặt trong cùng nhịp. Đường vào sâu (`/dashboard#forum`, main.js chạy
+trước khi hydrate xong): React đọc lại `location.hash` lúc gắn, dựng, rồi gọi lại
+`navigate`. Hai tab không tự nạp lại khi mở (lưới khoá học do `loadAll()` dựng một lần;
+ô Cài đặt do `loadUser()` điền một lần) → React gọi lại `renderCourses` / `setText` của
+tầng cũ sau khi dựng — logic ở src/, không ở main.js.
+
+**Ba lỗi dựng lười gây ra, bắt được trước khi đẩy**
+1. Tab Giảng dạy đứng mãi "Đang tải…": `gate()` nạp danh sách lớp lúc vào trang (chưa có
+   `#tc-classes`), rồi wrapper chỉ nạp lại khi `!classes`. Nay vẽ lại từ dữ liệu đã có.
+2. Nút khoảng tuần của đồ thị hồ sơ chết: `bindRange()` chạy lúc nạp trang, chưa có
+   `#curve-range`. Nay gọi lại khi mở tab, có chốt "chỉ buộc một lần" (đo: mở tab ba
+   lần, bấm một lần → đúng MỘT `progress-curve?weeks=12`).
+3. Gọi lại `navigate('dashboard')` cho trang đã dựng sẵn → mọi module bọc `navigate` chạy
+   lần hai: đo +10 lượt gọi mạng, CLS 0,004 → 0,044. Nay chỉ xử lý tab CHƯA dựng.
+Cách tìm: liệt kê 114 id trong các tab ẩn, grep tầng cũ chỗ nào `addEventListener` lên
+chúng lúc nạp — 17 chỗ, 1 thật (curve-range); modal đổi mật khẩu nằm NGOÀI các tab.
+
+**Đo A/B xen kẽ** (worktree bản cũ `f6e35e1` cổng 3101 ↔ bản mới cổng 3100, cùng lúc,
+CPU chậm 4×, trung vị 3 lượt; Turbopack từ chối junction `node_modules` ra ngoài gốc →
+`turbopack.root = 'D:/'` chỉ ở worktree):
+- LCP: cũ **2.520 / 2.912** ↔ mới **2.708 / 2.936** — KHÔNG khác trong nhiễu. Con số
+  "3.396 → 2.888" đo lúc đầu là nhiễu mạng (Neon từ máy dev), không phải hydrate.
+- DOM lúc mở: cũ 1.589 / 2.094 ↔ mới **847 / 749** (−50…−64%).
+- CLS: cũ 0,042 / 0,043 ↔ mới **0,011 / 0,007**.
+- JS 936 ↔ 939 kB, lời gọi 51–57 ↔ 53–56 (con số "+9 lượt" ban đầu cũng là nhiễu — soi
+  từng loại: 1 document · 16 phông · 12 CSS · 16 script · 11 fetch, không có lời gọi lặp).
+Kết luận thật thà: giả thuyết "tám tab ẩn tốn ~1,6 s" SAI với thước LCP — LCP của trang
+này do mạng và API quyết định. Được gì: nửa DOM, CLS giảm 4 lần, mở tab tốn vài ms
+`flushSync`. Ghi lại để không ai đi tối ưu hydrate lần nữa vì LCP.
+
+**Hai phép kiểm chốt hãm của chính tôi đỏ đúng chỗ**
+- `chot-ham-tang-cu`: tầng cũ +20 dòng mã (bản đầu để bridge + nạp lại ở main.js) → dời
+  sang src/, còn **+3** (một dòng gọi `__moTrang`, một dòng vẽ lại tab Giảng dạy, một dòng
+  chốt buộc-một-lần) — trần 7063 → 7066, lần đầu tăng, lý do ghi trong tệp kiểm.
+- `global-mo-coi`: `main.js` cũng nạp ở `/questionaire`, nơi không ai ghi `__moTrang` →
+  vào `CHAP_NHAN` kèm lý do (đọc sau `if (window.__moTrang)`, trang không có tab).
+
+**Kiểm:** mở đủ 8 tab qua `navigate` — mỗi tab có nội dung (lưới khoá học, `#sk-grid`,
+14 bài diễn đàn, kế hoạch, danh sách lớp gồm lớp mẫu, tên ở Cài đặt, hồ sơ, lộ trình);
+deep link `#forum` và `#courses`; 0 lỗi JS, 0 CSP. eslint · tsc · 27/27 unit. Quét giao
+diện 2 khổ × 23 trang: **2 vi phạm tương phản, cả hai ở Dashboard** — KHÔNG do dựng
+lười: ô "100 XP" hạng 1 của bảng xếp hạng tuần, `#D97706` trên trắng 3,19:1. Bảng ấy
+trước 16/09 luôn trống (chưa ai có XP tuần) nên thước chưa từng thấy; dữ liệu mẫu làm nó
+lộ ra. Đổi sang `#B45309` (≈4,9:1) → Dashboard 0/145 và 0/155; các trang còn lại 0.
+Bộ đo tự kiểm không chạy lại lượt này (hai lượt sáng nay đã ghi hai chỗ mù, xem TODO).
+
 ## 16/09/2026 — VÒNG 26 · Bộ dữ liệu trình diễn: một trung tâm đang chạy, đánh dấu được, gỡ được
 
 Việc (2) của hướng bán đứt. CSDL có 1 giảng viên, 3 học viên thử, 1 lớp chưa điểm danh
