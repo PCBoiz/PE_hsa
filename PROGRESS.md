@@ -69,7 +69,8 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`; 17/09 thêm **C7** — cách đếm "phụ huynh
   đã mở"): A0 GitHub Actions khoá (không CI,
   không sao lưu); A1 máy chủ ngủ — nay có bằng chứng A/B rằng đây là thứ quyết định LCP
-  Trang của tôi; A6 SECRET_KEY chung dev/prod — nay ký cả phiếu nhập PDF; email tên miền;
+  Trang của tôi; A6 SECRET_KEY chung dev/prod — **đo 17/09 07:47: production đã từ chối thẻ ký
+  bằng `.env`**, tức A6 nhiều khả năng đã xong (chờ anh xác nhận); email tên miền;
   giới hạn đăng nhập theo người.
 - **Cổng chất lượng (17/09)**: pytest toàn bộ **705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL. · 27/27 unit Node · giao diện 23
   trang × 2 khổ: 0 vi phạm (bộ tự kiểm còn 2 chỗ mù, TODO 16/09) · eslint/tsc/ruff/build.
@@ -136,6 +137,25 @@ tương thích (`lop_cua_toi` gọi nó). Màn hình (`ToBaoCao`, bảng thật,
   292 px không tràn, không lộ email phụ huynh, 0 lỗi JS, 0 CSP → thu hồi → mở lại 404.
 - Bộ lân cận (đường chìa, gửi cả lớp, lớp của tôi, dữ liệu mẫu, thư, PDF lớp, teaching/tests,
   common/tests): **271/271** (17 phút 23). tsc · eslint · ruff · build · 27/27 unit Node. Bộ đo giao diện 2 khổ × 23 trang: 0 ở mọi cột (bộ tự kiểm không chạy lại — hai chỗ mù TODO 16/09 vẫn mở).
+
+**Production (`3576f84`, 17/09)**
+- Vercel `success` ngay; Render chậm hơn nhiều. Trong khoảng lệch, giao diện MỚI ghép máy chủ CŨ
+  (soi trên production bằng thẻ đọc, chặn mọi lời ghi): tờ báo cáo vẫn mở, 0 lỗi JS, khối tuần
+  tự ẩn (zod `optional`) — nhưng dòng người nhận báo "Chưa có email hay số Zalo" vì máy chủ cũ
+  chưa gửi `parent.email`. Tức thay đổi giao diện ĐỌC một khoá mới thì phải chờ máy chủ lên
+  trước, như vòng 26 đã làm; lần này đẩy chung một commit nên có một khoảng câu sai ngắn.
+- **Lúc 07:47 production từ chối thẻ ký bằng `backend/.env` (401 "Chưa đăng nhập")**, trong khi
+  máy dev vẫn nhận đúng thẻ ấy, tài khoản #7 vẫn là quản trị viên, `.env` không sửa từ 07/09; lúc
+  07:35 cùng loại thẻ còn được nhận. Tức khoá ký trên Render đã khác máy dev — đúng phép kiểm
+  "đã xong chưa" của **A6**. Chưa hỏi được anh nên ghi là ĐO ĐƯỢC chứ chưa ghi "anh đã làm".
+  Hệ quả cho việc kiểm: tệp `.the/` KHÔNG còn mở được production — kiểm production từ nay đi
+  đường công khai hoặc nhờ anh.
+- Vì vậy kiểm bằng đường PHỤ HUYNH (không cần thẻ): cấp chìa cho em mẫu #28694 từ máy dev (chung
+  Neon, đi đúng `ParentReportLinkView`) → Render `/api/public/parent-report/<chìa>` có `weekly`
+  (4 tuần 2/2·4·3·1 · 2/2·2·0·1 · 2/2·4·2·0 · 1/1·1·1·0 — khớp máy dev), `courses` chỉ
+  `hsa_quantitative`, `parent` chỉ còn tên, `student` chỉ id + tên → Vercel `/bc/<chìa>` khổ 390:
+  có khối tuần, bảng 292 px không tràn, không lộ email, 0 lỗi JS, 0 CSP → thu hồi → Render 404,
+  Vercel "Không mở được báo cáo này".
 
 **Dọn tài liệu:** T57 (`/questionaire` bắn 4 lời gọi) thật ra đã vá 05/09 mà quên đánh dấu — đo lại
 bằng phiên học viên #9: `/questionaire` **0** lời gọi `/api/*`, `/dashboard` 7 (đủ). VIEC_CUA_ANH:
