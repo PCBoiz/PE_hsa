@@ -180,11 +180,19 @@ def tong_quan(term_id=None):
             #    Giữ bộ lọc vì mẫu số ĐÃ bó theo khoá — tử số không bó là sai ngay
             #    ngày TopHSA mở khoá thứ hai cho cùng một học viên.
             #
+            #    `c.course_id IS NULL` = lớp ôn CẢ BA hợp phần — cùng luật với
+            #    `reports.class_report` (tổng cả ba khoá). Bản trước chỉ có vế
+            #    `e.course_id = c.course_id`, mà NULL không bằng gì, nên lớp ôn trọn
+            #    HSA LUÔN hiện "Tiến độ —" ở đây trong khi báo cáo lớp có số — đúng
+            #    kiểu "hai bên lệch nhau" mà màn hình này hứa là không có. Đo 17/09/2026
+            #    trên lớp mẫu "Tăng tốc HSA cuối tuần".
+            #
             # KHÔNG áp bộ lọc khoá cho ĐỀ THI THỬ: một lượt thi thử là bài thi cả
             # ba hợp phần HSA, không thuộc riêng khoá nào.
             for r in q('''SELECT m.class_id,
                                  COUNT(*) FILTER (WHERE e.kind = 'lesson'
-                                              AND e.course_id = c.course_id) AS bai,
+                                              AND (c.course_id IS NULL
+                                                   OR e.course_id = c.course_id)) AS bai,
                                  COUNT(*) FILTER (WHERE e.kind = 'mock')    AS luot_de,
                                  AVG(e.score * 100.0 / NULLIF(e.max_score, 0))
                                      FILTER (WHERE e.kind = 'mock')         AS diem_tb
@@ -217,7 +225,11 @@ def tong_quan(term_id=None):
         cc = cham_can.get(r['id']) or {}
         b = buoi.get(r['id']) or {}
         h = hoc.get(r['id']) or {}
-        mau_bai = (tong_bai.get(r['course_id']) or 0) * (r['dang_hoc'] or 0)
+        # Mẫu số cùng phạm vi với tử số: khoá của lớp, hoặc cả ba khoá khi lớp không
+        # gắn khoá — y như `reports.class_report`.
+        so_bai_khoa = (tong_bai.get(r['course_id']) if r['course_id']
+                       else sum(tong_bai.values())) or 0
+        mau_bai = so_bai_khoa * (r['dang_hoc'] or 0)
         # "Rời lớp có lý do" mới là mẫu số của tỉ lệ giữ chân. Người rời lớp mà
         # chưa ai ghi lý do KHÔNG được tính vào cả tử lẫn mẫu — đoán họ bỏ học
         # là thổi phồng con số xấu, đoán họ học xong là giấu con số xấu. Số đó

@@ -62,8 +62,11 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   (`6afd834`); (4) minh hoạ 76/76 bài — vòng 28 (`87993ea`) + vòng 29. Sau đó anh bảo
   "tiếp tục cải tiến": vòng 30 soi tờ báo cáo phụ huynh (nhịp từng tuần + bốn chỗ nói sai).
   **Việc lớn tiếp theo vẫn hỏi anh trước.**
-- **Production**: tự deploy từ `master` (vòng 30 đổi mã chạy cả hai phía: tờ báo cáo phụ
-  huynh — máy chủ, màn hình, PDF). Render vẫn ngủ đông (A1). Neon: 2 lớp mẫu + 48
+- **Production**: tự deploy từ `master`. Vòng 30 đổi mã chạy cả hai phía (tờ báo cáo phụ
+  huynh — máy chủ, màn hình, PDF), đã xác minh trên production bằng đường chìa công khai;
+  vòng 31 chỉ đổi phía máy chủ (tổng quan + lệnh dữ liệu mẫu).
+- **Dữ liệu trình diễn**: làm mới 17/09 08:02 (`du_lieu_mau --lam-moi`, 60 s) — lớp mẫu nay
+  **#6020 / #6021**. Nó cũ đi theo ngày: chạy lại lệnh ấy trước mỗi buổi trình diễn (B5). Render vẫn ngủ đông (A1). Neon: 2 lớp mẫu + 48
   tài khoản mẫu `is_demo` (gỡ: `manage.py du_lieu_mau --go`); 158 khối minh hoạ trong
   `lessons.content_json` (nội dung ở CSDL nên không cần deploy).
 - **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`; 17/09 thêm **C7** — cách đếm "phụ huynh
@@ -82,6 +85,51 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 
 <!-- MỚI NHẤT -->
+
+## 17/09/2026 — VÒNG 31 · Dữ liệu trình diễn tự cũ đi theo ngày → `--lam-moi`; lớp ôn cả ba hợp phần mất cột tiến độ
+
+Anh bảo "tiếp tục". Áp đúng cách vòng 30 vừa hiệu quả — chụp màn trình diễn ở khổ 390 rồi ĐỌC
+như người mua — cho năm màn: tổng quan quản trị, Việc hôm nay, buổi học, báo cáo cả lớp, bài tập
+(lớp mẫu, quản trị viên, chặn mọi lời ghi; đọc `innerText` trước, xem ảnh chỗ nghi).
+
+**1. Bộ dữ liệu trình diễn neo vào NGÀY DỰNG, nên nó cũ đi mỗi ngày.** Dựng 16/09 17:3x; sáng
+17/09 tổng quan đã hiện "2 buổi đã dạy chưa ai điểm danh — Cần làm ngay" (một trong hai là buổi
+lớp mẫu đang diễn ra lúc dựng). Suy tiếp — không cần chờ để thấy: vài tuần sau khối "Con có học đều
+không" (vòng 30) ra các tuần gần nhất trống trơn, "em cần chú ý" đầy "N ngày không mở bài" — một
+trung tâm trông như đang chết đúng lúc người mua xem. Lệnh đếm không nói gì về tuổi dữ liệu.
+- `du_lieu_mau.lam_moi()` + `manage.py du_lieu_mau --lam-moi`: gỡ rồi dựng lại neo vào HÔM NAY
+  trong MỘT giao dịch — `go()`/`tao()` mỗi hàm tự có giao dịch, gọi nối tiếp thì một lần Neon rớt
+  giữa lúc dựng (gặp nhiều lần tuần này) để lại trung tâm KHÔNG có lớp mẫu nào ngay trước buổi
+  trình diễn; bọc ngoài thì hai giao dịch trong thành điểm lưu. Giữ giảng viên đang phụ trách
+  (không truyền thì `_chon_giang_vien` lặng lẽ chọn "Giảng viên đầu tiên").
+- `hoat_dong_gan_nhat()` (MAX `event_date` sự kiện của tài khoản mẫu); lệnh đếm và `--lam-moi` in
+  "Hoạt động mẫu gần nhất: … (N ngày trước)", từ `CU_SAU_NGAY = 2` ngày thì cảnh báo vàng kèm câu
+  nhắc chạy `--lam-moi`. Chạy lệnh đếm sáng nay: "15/09/2026 (2 ngày trước). Dữ liệu đã cũ…".
+- Kiểm: 2 phép mới (dựng neo 20 ngày trước → làm mới → hoạt động gần nhất ≥ hôm qua, giảng viên
+  giữ nguyên; `tao` giả lập hỏng giữa chừng → `dem()` y nguyên bộ cũ). Đột biến 3/3 ĐỎ đúng lý do
+  (bỏ giao dịch bọc ngoài → "dựng hỏng mà bộ cũ đã bị gỡ", tài khoản 52 → 0; không giữ giảng viên →
+  `{11} == {30278}`; đọc MIN thay MAX → 03/08). `tests_du_lieu_mau` 9/9.
+- **Chạy thật trên Neon: 59,9 s**, 48 tài khoản · 2 lớp (nay **#6020, #6021** — id đổi, không gì
+  ghim id cũ; bộ đo giao diện dùng lớp 1) · 49 buổi · 628 điểm danh · 187 bài nộp · 2.680 sự
+  kiện · giảng viên #11 giữ nguyên. Sau đó tổng quan: "1 buổi chưa điểm danh" (của lớp 1 thật),
+  lớp mẫu Ca chiều 14/14 buổi đã điểm danh.
+
+**2. Lớp ôn cả ba hợp phần: "Tiến độ —" trên tổng quan, có số trên báo cáo lớp.** `classes.course_id`
+NULL = lớp ôn cả ba hợp phần (luật ghi trong `reports.class_report`: mẫu số tổng cả ba khoá). Tổng
+quan lọc tử số `e.course_id = c.course_id` — NULL không bằng gì → tử 0, mẫu `tong_bai.get(None)` =
+0 → None → "—". Không riêng dữ liệu mẫu: lớp "Tăng tốc HSA" trọn ba hợp phần của TopHSA sẽ y như
+vậy, và màn ấy tự hứa "cùng cách tính với báo cáo từng lớp — lệch là lỗi". Nay tử số `(c.course_id
+IS NULL OR e.course_id = c.course_id)`, mẫu số tổng cả ba khoá khi lớp không gắn khoá. Lớp mẫu cuối
+tuần: **37%** trên tổng quan = báo cáo lớp (612 bài, mẫu 76 bài/em, trung bình 37%). Phép kiểm mới
+(lớp cả ba hợp phần + lớp một khoá cùng một em có bài ở hai khoá); đột biến 2/2 ĐỎ (`0 == 2`;
+`None == 3`).
+
+**Soi mà không sửa (ghi để anh biết khi trình diễn):** mục "Cần chú ý ngay" ở Việc hôm nay và
+dòng "1 học viên rời lớp chưa ghi lý do" đều đến từ **lớp 1 thật** với tài khoản thử "Test Reg" và
+"a" — hiện ngay màn đầu của giảng viên. Đó là dữ liệu, không phải mã; gắn với C1 (xoá tài khoản
+#9) đang chờ anh.
+
+**Kiểm chung:** teaching/tests.py + luồng ERP + dữ liệu mẫu + báo cáo tuần **150/150** (11 phút 07). ruff. Không đổi giao diện (không build lại).
 
 ## 17/09/2026 — VÒNG 30 · Tờ báo cáo phụ huynh: nhịp từng tuần, và bốn chỗ nói sai với phụ huynh / giảng viên
 

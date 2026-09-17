@@ -32,6 +32,13 @@ thử — mọi màn hình trông như chưa ai dùng.
 5. TẤT ĐỊNH. Cùng hạt giống + cùng ngày chạy → cùng tên, cùng điểm.
 6. GỠ SẠCH. `go()` xoá hai gốc (`classes`, `users` có `is_demo`); mọi thứ khác đi
    theo ON DELETE CASCADE.
+7. LÀM MỚI TRƯỚC BUỔI TRÌNH DIỄN (17/09/2026). Bộ dữ liệu neo vào NGÀY DỰNG, nên nó
+   cũ đi mỗi ngày: một ngày sau khi dựng, tổng quan quản trị đã hiện "2 buổi đã dạy
+   chưa ai điểm danh — Cần làm ngay"; vài tuần sau, khối "Con có học đều không" của
+   tờ báo cáo phụ huynh ra các tuần gần nhất trống trơn và danh sách "em cần chú ý"
+   đầy "N ngày không mở bài" — một trung tâm trông như đang chết, đúng lúc người mua
+   xem. `lam_moi()` gỡ rồi dựng lại neo vào hôm nay trong MỘT giao dịch; lệnh đếm
+   báo hoạt động mẫu gần nhất cách đây bao nhiêu ngày.
 
 ── SỐ CÂU TRUY VẤN ──────────────────────────────────────────────────────
 
@@ -64,6 +71,10 @@ from common.events import (
 from common.permissions import ROLE_STUDENT, ROLE_TEACHER
 
 HAT_GIONG = 20260916
+
+#: Hoạt động mẫu gần nhất cũ hơn chừng này ngày thì lệnh đếm nhắc chạy `--lam-moi`.
+#: Hai ngày chứ không một: dựng tối hôm trước để sáng trình diễn là chuyện bình thường.
+CU_SAU_NGAY = 2
 DUOI_EMAIL = '@example.com'
 #: XP một bài học — cùng mức `lessons/views.py` đang cộng cho bài không khai `xp_reward`.
 XP_BAI_HOC = 50
@@ -626,6 +637,39 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
             raise LoiDuLieuMau('Chỉ ghi được %d/%d sự kiện học tập — đã huỷ toàn bộ, xem log.'
                                % (da_ghi, can_ghi))
         return dem()
+
+
+def hoat_dong_gan_nhat():
+    """Ngày của sự kiện học tập mẫu gần nhất, hoặc None khi chưa có dữ liệu mẫu.
+
+    Đọc SỰ KIỆN chứ không đọc ngày tạo lớp: thứ làm màn hình trông cũ là hoạt động
+    của học viên dừng lại, không phải lớp được tạo từ bao giờ."""
+    r = q1('''SELECT MAX(e.event_date) AS d FROM learning_events e
+                JOIN users u ON u.id = e.user_id WHERE u.is_demo''')
+    return r['d'] if r else None
+
+
+def lam_moi(giang_vien_id=None, so_em_moi_lop=None):
+    """Gỡ rồi dựng lại bộ dữ liệu mẫu, neo vào HÔM NAY, trong MỘT giao dịch.
+
+    MỘT giao dịch là điểm chính: `go()` và `tao()` mỗi hàm tự có giao dịch, gọi nối
+    tiếp thì một lần dựng hỏng giữa chừng (Neon rớt kết nối, gặp nhiều lần tuần này)
+    để lại một trung tâm KHÔNG CÓ lớp mẫu nào — ngay trước buổi trình diễn. Bọc
+    ngoài thì hai giao dịch trong thành điểm lưu: dựng hỏng là bộ cũ còn nguyên.
+
+    Giữ giảng viên đang phụ trách lớp mẫu (nếu không truyền): làm mới không được
+    lặng lẽ chuyển lớp mẫu sang "Giảng viên đầu tiên" của CSDL.
+
+    Trả `(trước, sau)` như `go()`.
+    """
+    with transaction.atomic():
+        if giang_vien_id is None:
+            cu = q1('SELECT teacher_id FROM classes WHERE is_demo AND teacher_id IS NOT NULL '
+                    'ORDER BY id LIMIT 1')
+            giang_vien_id = cu['teacher_id'] if cu else None
+        truoc, _ = go()
+        sau = tao(giang_vien_id=giang_vien_id, so_em_moi_lop=so_em_moi_lop)
+    return truoc, sau
 
 
 def go():

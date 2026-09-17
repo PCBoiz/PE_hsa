@@ -462,6 +462,35 @@ def _de_thi(uid, diem):
        (uid, 'test:mock:%s' % uid, local_now(), local_now().date(), diem))
 
 
+@pytest.mark.django_db
+def test_lop_on_CA_BA_hop_phan_co_tien_do_cung_luat_bao_cao_lop(db):
+    """`classes.course_id` NULL = lớp ôn cả ba hợp phần (luật của `reports.class_report`).
+
+    Tổng quan từng lọc `e.course_id = c.course_id` — NULL không bằng gì — nên lớp ôn
+    trọn HSA luôn hiện "Tiến độ —" (đo 17/09/2026 trên lớp mẫu cuối tuần). Lớp một
+    khoá vẫn phải chỉ đếm bài của khoá ấy.
+    """
+    from teaching.overview import _mot_phan_tram, tong_quan
+    gv = _nguoi('GV Ca Ba HP', ROLE_TEACHER)
+    em = _nguoi('HV Ca Ba HP', ROLE_STUDENT)
+    ca_ba = _lop_trong('Lop ca ba hop phan', course=None, gv=gv.id)
+    mot = _lop_trong('Lop mot hop phan', gv=gv.id)
+    for cid in (ca_ba, mot):
+        _vao_lop(cid, em.id)
+    _bai_xong(em.id, 'hsa_quantitative', 'cabahp1')
+    _bai_xong(em.id, 'hsa_verbal', 'cabahp2')
+
+    dem = "SELECT COUNT(*) AS n FROM lessons WHERE module IS NOT NULL AND module <> ''"
+    tong = q1(dem)['n']
+    dinh_luong = q1(dem + " AND course_id = 'hsa_quantitative'")['n']
+    lop = {c['id']: c for c in tong_quan()['classes']}
+    assert lop[ca_ba]['lessonsDone'] == 2
+    assert lop[ca_ba]['progressPct'] == _mot_phan_tram(2, tong) is not None, \
+        'lớp ôn cả ba hợp phần phải có tiến độ trên tổng bài cả ba khoá'
+    assert lop[mot]['lessonsDone'] == 1, 'lớp một khoá chỉ đếm bài của khoá ấy'
+    assert lop[mot]['progressPct'] == _mot_phan_tram(1, dinh_luong)
+
+
 # ── Học viên quay lại lớp cũ — hồi quy cho `reports._members` (31/08/2026) ──
 
 @pytest.mark.django_db

@@ -13,6 +13,7 @@ Canh:
   5. Gỡ sạch mà không chạm dữ liệu thật.
   6. "Gửi cả lớp" KHÔNG gửi gì cho học viên mẫu.
   7. Tài khoản mẫu KHÔNG đăng nhập được — qua đúng `LoginView`.
+  8. Làm mới neo dữ liệu vào HÔM NAY, giữ giảng viên — và dựng hỏng thì bộ cũ còn nguyên.
 """
 from datetime import timedelta
 
@@ -160,3 +161,30 @@ def test_tai_khoan_mau_KHONG_dang_nhap_duoc(sach):
     for thu in ('!du-lieu-mau-khong-dang-nhap-duoc', em['password'], 'matkhau123'):
         r = c.post('/auth/login', {'email': em['email'], 'password': thu}, format='json')
         assert r.status_code == 401, (thu[:12], r.status_code, getattr(r, 'data', None))
+
+
+def test_lam_moi_neo_vao_HOM_NAY_va_giu_giang_vien(sach):
+    """Bộ dựng 20 ngày trước trông như trung tâm đã ngừng hoạt động; làm mới phải kéo
+    hoạt động về hôm nay mà không đổi người phụ trách lớp mẫu."""
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=2, hom_nay=local_today() - timedelta(days=20))
+    assert M.hoat_dong_gan_nhat() <= local_today() - timedelta(days=19)
+
+    truoc, sau = M.lam_moi(so_em_moi_lop=2)
+    assert truoc['tài khoản mẫu'] == sau['tài khoản mẫu'] == 4
+    assert M.hoat_dong_gan_nhat() >= local_today() - timedelta(days=1), 'vẫn neo vào ngày dựng cũ'
+    assert {r['teacher_id'] for r in q('SELECT teacher_id FROM classes WHERE is_demo')} == {sach.id}, \
+        'làm mới lặng lẽ đổi giảng viên phụ trách lớp mẫu'
+
+
+def test_lam_moi_dung_HONG_thi_bo_cu_con_nguyen(sach, monkeypatch):
+    """Neon rớt giữa lúc dựng: không được để lại một trung tâm không có lớp mẫu nào."""
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=2)
+    truoc = M.dem()
+
+    def hong(**_):
+        raise M.LoiDuLieuMau('giả lập dựng hỏng giữa chừng')
+
+    monkeypatch.setattr(M, 'tao', hong)
+    with pytest.raises(M.LoiDuLieuMau):
+        M.lam_moi(so_em_moi_lop=2)
+    assert M.dem() == truoc, 'dựng hỏng mà bộ cũ đã bị gỡ'
