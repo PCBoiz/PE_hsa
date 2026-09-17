@@ -22,8 +22,8 @@
  */
 export type BaoCao = {
   student: { id: number; name: string | null; email?: string | null; phone?: string | null };
-  /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. */
-  parent: { name: string; phone?: string };
+  /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. `phone`/`email` vắng ở tờ đi qua chìa. */
+  parent: { name: string; phone?: string; email?: string };
   class: { id: number; name: string; code: string | null; teacher: string | null };
   membership: { joinedAt: string | null; leftAt: string | null; status: string; teacherNote: string | null };
   period: { from: string; to: string; weeks: number };
@@ -64,6 +64,28 @@ export type BaoCao = {
     unitsMeasured: number;
     previous: { date: string; round: string | null; score: number; delta: number } | null;
   } | null;
+  /**
+   * Nhịp học TỪNG TUẦN trong kỳ (17/09/2026) — `teaching/parent_report.py::_nhip_tuan`.
+   * Mỗi hàng là một khối 7 ngày kết thúc ở ngày cuối kỳ (khối đầu có thể dài hơn,
+   * `days` nói ra). `optional` vì một bản dựng cũ của máy chủ chưa gửi khoá này —
+   * thiếu nó KHÔNG được làm hỏng tờ báo cáo phụ huynh đang mở trên điện thoại.
+   */
+  weekly?: {
+    weeks: {
+      from: string;
+      to: string;
+      days: number;
+      /** Có mặt (kể cả muộn) / buổi có dòng điểm danh của em — cùng mẫu số với `attendedPct`. */
+      attended: number;
+      attendanceCounted: number;
+      lessons: number;
+      drills: number;
+      /** Bài tập của lớp em NỘP trong tuần (theo ngày nộp, không theo ngày chấm). */
+      submissions: number;
+    }[];
+    /** Số tuần cũ không in vì kỳ quá dài. */
+    omitted: number;
+  } | null;
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -77,6 +99,12 @@ export type BaoCao = {
 function ngay(iso: string) {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
+}
+
+/** "11/09" — cột tuần hẹp, năm đã có ở dòng kỳ báo cáo phía trên. */
+function ngayNgan(iso: string) {
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
 
 const XU_HUONG = {
@@ -102,6 +130,12 @@ function O({ nhan, so, phu }: { nhan: string; so: string; phu?: string }) {
 export function ToBaoCao({ bc }: { bc: BaoCao }) {
   const { attendance: cc, study: ht, topics: cd } = bc;
   const coMat = cc.present + cc.late;
+  const tuan = bc.weekly?.weeks ?? [];
+  // Cả kỳ không một buổi được điểm danh, không một bài, một lượt luyện, một bài nộp:
+  // một bảng toàn "—" và "0" chỉ bắt phụ huynh đọc bốn hàng để ra một câu.
+  const tuanTrong = tuan.every(
+    (w) => !w.attendanceCounted && !w.lessons && !w.drills && !w.submissions,
+  );
 
   return (
       <article className="rounded-lg border border-line bg-surface p-6 print:border-0 print:p-0">
@@ -189,7 +223,7 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
                 phu={
                   bc.centerExam.previous
                     ? `lần trước ${bc.centerExam.previous.score}/${bc.centerExam.max} ngày ${ngay(bc.centerExam.previous.date)}`
-                    : 'lần thi đầu tiên được ghi nhận'
+                    : 'chưa có kết quả kỳ trước để so'
                 }
               />
               {bc.centerExam.sections.map((s) => (
@@ -250,6 +284,80 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* ── Nhịp từng tuần ─────────────────────────────────────────────
+            Tổng cả kỳ không phân biệt "mỗi tuần 3 bài" với "11 bài dồn vào tuần
+            cuối" — mà với phụ huynh đó là hai chuyện khác hẳn. Bảng thật chứ
+            không phải thẻ: bốn tuần × bốn cột đọc theo HÀNG để so tuần này với
+            tuần trước, và in ra giấy vẫn thẳng cột. */}
+        {tuan.length > 0 && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Con có học đều không</h3>
+            {tuanTrong ? (
+              <p className="mt-2 text-body text-ink-2">
+                Trong kỳ này chưa có buổi học nào được điểm danh, và con chưa học bài hay làm bài
+                tập nào trên hệ thống.
+              </p>
+            ) : (
+              <>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full border-collapse text-small tabular-nums">
+                    <caption className="sr-only">
+                      Hoạt động học tập của con theo từng tuần trong kỳ báo cáo
+                    </caption>
+                    <thead>
+                      {/* Tiêu đề hai chữ, căn ĐÁY: khổ điện thoại cột số hẹp nên chữ
+                          xuống dòng — hai chữ thì mọi cột cùng gãy đúng một chỗ, thay
+                          vì "Bài tập nộp" ba dòng cạnh "Tuần" một dòng (soi ảnh 17/09). */}
+                      <tr className="border-b border-line align-bottom text-ink-3">
+                        <th scope="col" className="py-2 pr-2 text-left font-semibold">Tuần</th>
+                        <th scope="col" className="px-1.5 py-2 text-right font-semibold">Đi học</th>
+                        <th scope="col" className="px-1.5 py-2 text-right font-semibold">Bài học</th>
+                        <th scope="col" className="px-1.5 py-2 text-right font-semibold">Luyện tập</th>
+                        <th scope="col" className="py-2 pl-1.5 text-right font-semibold">Bài tập</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tuan.map((w) => (
+                        <tr key={w.from} className="border-b border-line last:border-0">
+                          <th scope="row" className="py-2 pr-2 text-left font-normal text-ink-2">
+                            <span className="whitespace-nowrap">
+                              {ngayNgan(w.from)}–{ngayNgan(w.to)}
+                            </span>
+                            {w.days !== 7 && (
+                              <span className="block text-caption text-ink-3">{w.days} ngày</span>
+                            )}
+                          </th>
+                          <td className="px-1.5 py-2 text-right text-ink">
+                            {w.attendanceCounted ? `${w.attended}/${w.attendanceCounted}` : '—'}
+                          </td>
+                          {[w.lessons, w.drills].map((n, i) => (
+                            <td
+                              key={i}
+                              className={`px-1.5 py-2 text-right ${n ? 'text-ink' : 'text-ink-3'}`}
+                            >
+                              {n}
+                            </td>
+                          ))}
+                          <td className={`py-2 pl-1.5 text-right ${w.submissions ? 'text-ink' : 'text-ink-3'}`}>
+                            {w.submissions}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-caption text-ink-3">
+                  Mỗi hàng là 7 ngày liền, hàng cuối kết thúc ở ngày cuối kỳ. Đi học: số buổi có
+                  mặt trên số buổi đã điểm danh (“—” là tuần chưa có buổi nào được điểm danh).
+                  Luyện tập: số lượt vào phòng luyện bấm giờ. Bài tập: bài tập của lớp con đã nộp.
+                  {bc.weekly && bc.weekly.omitted > 0 &&
+                    ` Kỳ dài nên chỉ in ${tuan.length} tuần gần nhất, bỏ ${bc.weekly.omitted} tuần đầu.`}
+                </p>
+              </>
+            )}
+          </>
         )}
 
         {/* ── Chủ đề ─────────────────────────────────────────────────── */}

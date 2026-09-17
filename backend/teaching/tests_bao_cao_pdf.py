@@ -249,7 +249,7 @@ def test_co_ket_qua_thi_thi_in_dung_diem_va_day_so_muc_xuong():
 
 def test_lan_dau_thi_noi_ro_la_lan_dau_chu_khong_bia_tien_bo():
     chu = _chu(_voi(centerExam=KY_THI))
-    assert 'lần thi đầu tiên được ghi nhận' in chu
+    assert 'chưa có kết quả kỳ trước để so' in chu
     assert 'tăng' not in chu.split('III. THI THỬ')[1].split('IV.')[0]
 
 

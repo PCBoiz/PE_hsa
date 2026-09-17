@@ -31,17 +31,19 @@ type Cap = {
   expiresDays: number;
   parentName: string;
   parentPhone: string;
+  /** Vắng khi máy chủ là bản dựng trước 17/09/2026. */
+  parentEmail?: string;
 };
 
 export default function TaoDuongDan({
   classId,
   userId,
-  coSoPhuHuynh,
+  coLienLac,
   khiCapXong,
 }: {
   classId: string;
   userId: string;
-  coSoPhuHuynh: boolean;
+  coLienLac: boolean;
   /** Gọi sau khi cấp chìa mới, để danh sách chìa đang hiệu lực nạp lại. */
   khiCapXong?: () => void;
 }) {
@@ -100,10 +102,10 @@ export default function TaoDuongDan({
           <Button onClick={() => void cap()} disabled={dangChay}>
             {dangChay ? 'Đang cấp…' : 'Tạo đường dẫn gửi phụ huynh'}
           </Button>
-          {!coSoPhuHuynh && (
+          {!coLienLac && (
             <span className="text-small text-warning-ink">
-              Em này chưa khai số Zalo của phụ huynh — vẫn tạo được đường dẫn, nhưng
-              bạn sẽ phải tự chọn cách gửi.
+              Em này chưa có email hay số Zalo của phụ huynh — vẫn tạo được đường dẫn,
+              nhưng bạn sẽ phải tự chọn cách gửi.
             </span>
           )}
         </div>
@@ -132,9 +134,10 @@ export default function TaoDuongDan({
             <Button variant="ghost" onClick={() => void chep()}>
               {daChep ? 'Đã chép ✓' : 'Chép đường dẫn'}
             </Button>
-            {kq.parentPhone && (
+            {(kq.parentEmail || kq.parentPhone) && (
               <span className="text-small text-ink-2">
-                Gửi tới {kq.parentName || 'phụ huynh'} · {kq.parentPhone}
+                Gửi tới {kq.parentName || 'phụ huynh'} ·{' '}
+                {[kq.parentEmail, kq.parentPhone].filter(Boolean).join(' · ')}
               </span>
             )}
           </div>

@@ -777,7 +777,11 @@ giữa vòng lặp — validate nửa danh sách rồi bỏ, người gửi khô
       Đo 05/09: **0 sự kiện điểm danh** trong CSDL — chưa lớp nào chạy, nên chưa
       có gì để trộn nhầm. Câu hỏi còn lại thuần là của TopHSA: phút ngồi lớp có
       tính vào chỉ tiêu TỰ HỌC hằng tuần không.
-- [ ] T57 · **`/questionaire` bắn 4 lời gọi API không dùng** (đo 05/09/2026).
+- [x] T57 · **XONG — đo lại 17/09/2026, mục này quên đánh dấu từ 05/09.** `main.js` nay chỉ gọi
+      `loadAll()` khi trang có khung SPA (`.page[id^="page-"]`, chú thích ngay tại chỗ). Đo bằng
+      phiên học viên thật (#9) trên `next start` + Neon: `/questionaire` → **0** lời gọi `/api/*`;
+      `/dashboard` → 7, có `/api/user` · `/api/stats` · `/api/notifications` (vẫn nạp đủ).
+      *(ghi chú cũ, giữ để đối chiếu)* `/questionaire` bắn 4 lời gọi API không dùng (đo 05/09/2026).
       `main.js:2050` gọi `loadAll()` cho MỌI đường trừ `/login` và `/register`.
       Đo bằng trình duyệt thật, đếm request: `/questionaire` → **4** lời gọi
       (`/api/user`, `/api/stats`, `/api/courses-enrolled`, `/api/notifications`);

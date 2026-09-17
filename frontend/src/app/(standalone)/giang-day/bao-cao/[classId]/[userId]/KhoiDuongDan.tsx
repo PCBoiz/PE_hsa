@@ -28,11 +28,12 @@ import TaoDuongDan from './TaoDuongDan';
 export default function KhoiDuongDan({
   classId,
   userId,
-  coSoPhuHuynh,
+  coLienLac,
 }: {
   classId: string;
   userId: string;
-  coSoPhuHuynh: boolean;
+  /** Có email hoặc số Zalo phụ huynh chưa. */
+  coLienLac: boolean;
 }) {
   const [lan, setLan] = useState(0);
 
@@ -41,7 +42,7 @@ export default function KhoiDuongDan({
       <TaoDuongDan
         classId={classId}
         userId={userId}
-        coSoPhuHuynh={coSoPhuHuynh}
+        coLienLac={coLienLac}
         khiCapXong={() => setLan((v) => v + 1)}
       />
       <DuongDanDaCap classId={classId} userId={userId} lamMoiKhi={lan} />

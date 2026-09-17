@@ -53,6 +53,16 @@ STRONG_FROM = 75
 #: huynh không biết bắt đầu từ đâu, và tờ báo cáo thành bản kiểm điểm.
 TOP_N = 3
 
+#: Số tuần nhiều nhất in ở khối "nhịp từng tuần". Kỳ mặc định là 4 tuần, nhưng
+#: giảng viên chọn được kỳ dài cả đợt — một bảng 30 dòng thì tờ giấy thành sổ
+#: cái. Quá mức này thì chỉ in các tuần GẦN NHẤT và nói ra số tuần bị bỏ.
+TUAN_TOI_DA = 13
+
+#: Khối lẻ ở đầu kỳ ngắn hơn chừng này ngày thì GỘP vào tuần kế tiếp. Kỳ mặc
+#: định là `den - 4 tuần … den` (hai đầu tính cả) = 29 ngày, tức 4 tuần + 1 ngày;
+#: in riêng một "tuần" 1 ngày thì hàng ấy gần như toàn số 0 và đọc như con bỏ học.
+NGAY_LE_TOI_THIEU = 4
+
 
 def _khoang_ngay(request):
     """Đọc ?from & ?to, mặc định là 4 tuần gần nhất. Trả (từ, đến, có_hợp_lệ)."""
@@ -80,7 +90,7 @@ def _khoang_ngay(request):
     return tu, den, (ok1 and ok2), dao
 
 
-def _chuyen_can(class_id, user_id, tu, den, cac_dot=()):
+def _chuyen_can(class_id, user_id, tu, den, cac_dot=(), du_lieu=None):
     """Chuyên cần trong kỳ. Mẫu số là số buổi CHÍNH EM ẤY có thể dự.
 
     ── Ba bộ lọc, mỗi cái vá một cách buộc tội sai ──────────────────────────
@@ -106,6 +116,56 @@ def _chuyen_can(class_id, user_id, tu, den, cac_dot=()):
     vào, để `present + late + absent + excused + noRecord = sessionsCounted`.
     Một tờ giấy mà bốn ô không cộng lại bằng mẫu số là tờ giấy tự mâu thuẫn, và
     người đọc sẽ không tin ô nào nữa.
+
+    `du_lieu`: kết quả `_buoi_cua_em` đã lấy sẵn (tờ báo cáo dùng nó cho cả khối
+    từng tuần — hai lượt hỏi cùng một thứ là hai cơ hội để hai khối lệch nhau).
+    """
+    d = du_lieu if du_lieu is not None else _buoi_cua_em(class_id, user_id, tu, den, cac_dot)
+    buoi, da_dien_ra = d['buoi'], d['da_dien_ra']
+    da_tick = [b['id'] for b in da_dien_ra if b['attendance_taken_at']]
+    chua_tick = len(da_dien_ra) - len(da_tick)
+
+    dem = {'present': 0, 'late': 0, 'absent': 0, 'excused': 0}
+    for sid in da_tick:
+        st = d['trang_thai'].get(sid)
+        if st in dem:
+            dem[st] += 1
+
+    co_dong = sum(dem.values())
+    khong_co_dong = max(0, len(da_tick) - co_dong)
+    co_mat = dem['present'] + dem['late']
+    return {
+        # Tổng buổi của lớp trong kỳ, TRƯỚC khi lọc — để trung tâm đối chiếu.
+        'sessionsTotal': len(buoi),
+        'sessionsCounted': len(da_tick),
+        # Buổi ĐÃ diễn ra mà chưa ai tick. Báo riêng để trung tâm biết tờ giấy
+        # này thiếu bao nhiêu, thay vì im lặng chia cho một mẫu số nhỏ hơn.
+        'sessionsUnmarked': chua_tick,
+        'present': dem['present'],
+        'late': dem['late'],
+        'absent': dem['absent'],
+        'excused': dem['excused'],
+        # Buổi đã tick nhưng KHÔNG có dòng nào cho riêng em này.
+        'noRecord': khong_co_dong,
+        # MẪU SỐ là số buổi EM ẤY CÓ DÒNG, không phải số buổi cả lớp được
+        # tick — công thức ở `attendance.ti_le`, dùng chung với sổ điểm danh CSV.
+        #
+        # Bản đầu chia cho `len(da_tick)`: giảng viên tick cả lớp mà sót một em
+        # thì em đi đủ 2/2 buổi có dòng vẫn ra 50% trên tờ giấy gửi về nhà.
+        #
+        # BẤT BIẾN BỐN Ô VẪN GIỮ: present + late + absent + excused + noRecord
+        # = sessionsCounted. Đổi mẫu số của RIÊNG tỉ lệ chứ không bỏ `noRecord` —
+        # khoảng trống phải được nói ra, chỉ là không được tính vào mẫu số.
+        'attendedPct': ti_le(co_mat, co_dong),
+    }
+
+
+def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
+    """Buổi của lớp trong kỳ + dòng điểm danh của em — nguồn chung cho `_chuyen_can`
+    (tổng kỳ) và `_nhip_tuan` (từng tuần). Ba bộ lọc: xem docstring `_chuyen_can`.
+
+    Trả `{'buoi': mọi buổi trong kỳ và trong thời gian em ở lớp, 'da_dien_ra':
+    buổi không huỷ và đã bắt đầu, 'trang_thai': {session_id: status}}`.
     """
     gio = local_now()
     dieu_kien = ["s.class_id = %s", "s.starts_at::date BETWEEN %s AND %s"]
@@ -141,43 +201,98 @@ def _chuyen_can(class_id, user_id, tu, den, cac_dot=()):
     da_dien_ra = [b for b in buoi
                   if b['status'] != 'cancelled' and b['starts_at'] and b['starts_at'] <= gio]
     da_tick = [b['id'] for b in da_dien_ra if b['attendance_taken_at']]
-    chua_tick = len(da_dien_ra) - len(da_tick)
-
-    dem = {'present': 0, 'late': 0, 'absent': 0, 'excused': 0}
+    trang_thai = {}
     if da_tick:
-        for r in q("""SELECT status, COUNT(*) AS n FROM attendance
-                      WHERE user_id = %s AND session_id = ANY(%s)
-                      GROUP BY status""", (user_id, da_tick)):
-            if r['status'] in dem:
-                dem[r['status']] = r['n']
+        for r in q("""SELECT session_id, status FROM attendance
+                      WHERE user_id = %s AND session_id = ANY(%s)""", (user_id, da_tick)):
+            trang_thai[r['session_id']] = r['status']
+    return {'buoi': buoi, 'da_dien_ra': da_dien_ra, 'trang_thai': trang_thai}
 
-    co_dong = sum(dem.values())
-    khong_co_dong = max(0, len(da_tick) - co_dong)
-    co_mat = dem['present'] + dem['late']
-    return {
-        # Tổng buổi của lớp trong kỳ, TRƯỚC khi lọc — để trung tâm đối chiếu.
-        'sessionsTotal': len(buoi),
-        'sessionsCounted': len(da_tick),
-        # Buổi ĐÃ diễn ra mà chưa ai tick. Báo riêng để trung tâm biết tờ giấy
-        # này thiếu bao nhiêu, thay vì im lặng chia cho một mẫu số nhỏ hơn.
-        'sessionsUnmarked': chua_tick,
-        'present': dem['present'],
-        'late': dem['late'],
-        'absent': dem['absent'],
-        'excused': dem['excused'],
-        # Buổi đã tick nhưng KHÔNG có dòng nào cho riêng em này.
-        'noRecord': khong_co_dong,
-        # MẪU SỐ là số buổi EM ẤY CÓ DÒNG, không phải số buổi cả lớp được
-        # tick — công thức ở `attendance.ti_le`, dùng chung với sổ điểm danh CSV.
-        #
-        # Bản đầu chia cho `len(da_tick)`: giảng viên tick cả lớp mà sót một em
-        # thì em đi đủ 2/2 buổi có dòng vẫn ra 50% trên tờ giấy gửi về nhà.
-        #
-        # BẤT BIẾN BỐN Ô VẪN GIỮ: present + late + absent + excused + noRecord
-        # = sessionsCounted. Đổi mẫu số của RIÊNG tỉ lệ chứ không bỏ `noRecord` —
-        # khoảng trống phải được nói ra, chỉ là không được tính vào mẫu số.
-        'attendedPct': ti_le(co_mat, co_dong),
-    }
+
+def _cac_tuan(tu, den):
+    """Chia `[tu, den]` (hai đầu tính cả) thành các khối 7 ngày KẾT THÚC ở `den`.
+
+    Khối 7 ngày chứ không theo tuần lịch (thứ Hai–Chủ nhật): lớp học theo THỨ
+    trong tuần, nên mỗi khối 7 ngày chứa đúng một lượt mỗi thứ — lớp T2/T4 thì
+    khối nào cũng 2 buổi, và các hàng so được với nhau. Tuần lịch thì kỳ bắt đầu
+    thứ Năm sẽ có hàng đầu 4 ngày, 1 buổi, đọc như con đi học ít đi một nửa.
+
+    Phần lẻ đầu kỳ ngắn hơn `NGAY_LE_TOI_THIEU` ngày gộp vào khối kế tiếp (khối
+    ấy dài hơn 7 ngày, và `days` nói ra điều đó). Trả list `(từ, đến)` cũ → mới.
+    """
+    khoi = []
+    cuoi = den
+    while cuoi >= tu:
+        dau = max(tu, cuoi - timedelta(days=6))
+        khoi.append([dau, cuoi])
+        cuoi = dau - timedelta(days=1)
+    if len(khoi) > 1 and (khoi[-1][1] - khoi[-1][0]).days + 1 < NGAY_LE_TOI_THIEU:
+        le = khoi.pop()
+        khoi[-1][0] = le[0]
+    return [tuple(k) for k in reversed(khoi)]
+
+
+def _nhip_tuan(class_id, user_id, tu, den, du_lieu):
+    """Nhịp học TỪNG TUẦN trong kỳ — câu "con có học đều không".
+
+    Định vị trung tâm chọn là "phụ huynh thấy con tiến bộ từng tuần", nhưng tới
+    17/09/2026 tờ báo cáo chỉ có TỔNG của cả kỳ: 11 bài trong 4 tuần có thể là
+    đều mỗi tuần 3 bài, hoặc 11 bài dồn vào tuần cuối — hai chuyện khác hẳn nhau
+    với phụ huynh, và tổng không phân biệt được.
+
+    Bốn cột, mỗi cột là việc CỦA EM trong tuần ấy:
+      · đi học   — có mặt (kể cả muộn) / buổi có dòng điểm danh của em. CÙNG mẫu
+                   số với `attendedPct`, lấy từ CÙNG `_buoi_cua_em`;
+      · bài học  — sự kiện `lesson`, cùng nguồn với `study.lessonsDone` — nên cộng
+                   các tuần lại ra đúng tổng kỳ (trừ khi kỳ dài quá `TUAN_TOI_DA`);
+      · luyện tập — lượt phòng luyện bấm giờ (`drill`);
+      · bài tập  — bài của LỚP NÀY em đã NỘP, theo ngày nộp. KHÔNG lấy sự kiện
+                   `assignment`: sự kiện ấy ghi lúc giảng viên CHẤM, tức nó đo
+                   nhịp của giảng viên, không phải của em.
+    """
+    tuan = _cac_tuan(tu, den)
+    bo = max(0, len(tuan) - TUAN_TOI_DA)
+    tuan = tuan[bo:]
+
+    def o_cua(ngay_):
+        for i, (a, b) in enumerate(tuan):
+            if a <= ngay_ <= b:
+                return i
+        return None
+
+    dong = [{'from': a.isoformat(), 'to': b.isoformat(), 'days': (b - a).days + 1,
+             'attended': 0, 'attendanceCounted': 0, 'lessons': 0, 'drills': 0,
+             'submissions': 0} for a, b in tuan]
+
+    for b in du_lieu['da_dien_ra']:
+        i = o_cua(b['starts_at'].date())
+        st = du_lieu['trang_thai'].get(b['id'])
+        # Chỉ bốn trạng thái mà `_chuyen_can` đếm — cùng mẫu số, không thì hàng
+        # tuần và ô tổng kỳ chia cho hai thứ khác nhau.
+        if i is None or not b['attendance_taken_at'] or st not in ('present', 'late', 'absent', 'excused'):
+            continue
+        dong[i]['attendanceCounted'] += 1
+        if st in ('present', 'late'):
+            dong[i]['attended'] += 1
+
+    for r in q('''SELECT event_date, kind, COUNT(*) AS n FROM learning_events
+                  WHERE user_id = %s AND kind IN ('lesson', 'drill')
+                    AND event_date BETWEEN %s AND %s
+                  GROUP BY event_date, kind''', (user_id, tu, den)):
+        i = o_cua(r['event_date'])
+        if i is not None:
+            dong[i]['lessons' if r['kind'] == 'lesson' else 'drills'] += r['n']
+
+    for r in q('''SELECT s.submitted_at::date AS ngay, COUNT(*) AS n
+                  FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                  WHERE s.user_id = %s AND a.class_id = %s
+                    AND s.submitted_at::date BETWEEN %s AND %s
+                  GROUP BY 1''', (user_id, class_id, tu, den)):
+        i = o_cua(r['ngay'])
+        if i is not None:
+            dong[i]['submissions'] += r['n']
+
+    return {'weeks': dong, 'omitted': bo}
 
 
 def _hoc_tap(user_id, tu, den):
@@ -267,15 +382,41 @@ def _thi_tai_trung_tam(user_id):
     }
 
 
-def _chu_de(user_id):
+def _khoa_cua_em(user_id, khoa_lop, comp):
+    """Hợp phần em THẬT SỰ học: đã ghi danh, là khoá của lớp, hoặc đã có bài làm.
+
+    `competency.compute` trả MỌI hợp phần của giáo trình — đúng cho bản đồ năng
+    lực em tự xem, sai cho tờ giấy gửi về nhà. Đo 17/09/2026 trên lớp mẫu Định
+    lượng: em chỉ ghi danh MỘT khoá mà tờ báo cáo in "Tư duy Định tính: đã học
+    0/23 bài (0%)" và "Khoa học & Tiếng Anh: 0/26 (0%)" — phụ huynh đọc là con bỏ
+    trống hai phần, trong khi con không học hai phần ấy ở trung tâm.
+
+    Giữ cả khoá CÓ BÀI LÀM dù chưa ghi danh: em tự học thêm thì đó là việc thật,
+    giấu đi là bớt công của em trên tờ giấy.
+    """
+    giu = {r['course_id'] for r in q('SELECT course_id FROM enrollments WHERE user_id = %s',
+                                    (user_id,))}
+    if khoa_lop:
+        giu.add(khoa_lop)
+    for t in comp.get('topics') or []:
+        if t.get('lessonsDone') or t.get('confidence'):
+            giu.add(t['course'])
+    return giu
+
+
+def _chu_de(user_id, khoa_lop=None):
     """Chủ đề cần chú ý và chủ đề đang mạnh — chỉ lấy những ô ĐO ĐƯỢC.
 
     Bỏ qua ô `status != 'ok'` là bắt buộc: một chủ đề chưa làm bài nào có
     `mastery = None`, và xếp nó vào "cần chú ý" là nói với phụ huynh rằng con
     yếu phần đó, trong khi sự thật là con chưa học tới.
+
+    `courses` và `total` chỉ tính hợp phần em học (`_khoa_cua_em`).
     """
     comp = competency.compute(user_id)
-    do_duoc = [t for t in (comp.get('topics') or [])
+    giu = _khoa_cua_em(user_id, khoa_lop, comp)
+    cac_chu_de = [t for t in (comp.get('topics') or []) if t['course'] in giu]
+    do_duoc = [t for t in cac_chu_de
                if t.get('status') == 'ok' and t.get('mastery') is not None]
 
     yeu = sorted((t for t in do_duoc if t['mastery'] < WEAK_BELOW),
@@ -291,8 +432,8 @@ def _chu_de(user_id):
         'weak': [gon(t) for t in yeu],
         'strong': [gon(t) for t in manh],
         'measured': len(do_duoc),
-        'total': len(comp.get('topics') or []),
-        'courses': comp.get('courses') or [],
+        'total': len(cac_chu_de),
+        'courses': [k for k in (comp.get('courses') or []) if k['id'] in giu],
     }
 
 
@@ -343,10 +484,13 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
     if not lop:
         return None, 'Không tìm thấy lớp này.'
     gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],))         if lop['teacher_id'] else None
-    em = q1('''SELECT id, name, email, phone, parent_name, parent_phone
+    em = q1('''SELECT id, name, email, phone, parent_name, parent_phone, parent_email
                 FROM users WHERE id=%s''', (user_id,))
     if not em:
         return None, 'Không tìm thấy học viên.'
+
+    buoi_em = _buoi_cua_em(class_id, user_id, tu, den,
+                           cac_dot=[(d['joined_at'], d['left_at']) for d in cac_dot])
 
     return {
         'student': {'id': em['id'], 'name': em['name'],
@@ -354,8 +498,12 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         # Người NHẬN tờ báo cáo này. Trả về chuỗi rỗng chứ không None khi
         # chưa ai điền: màn hình cần phân biệt "chưa điền" với "đã điền
         # rồi xoá", và cả hai đều là '' — nên đừng bịa ra hai trạng thái.
+        # `email` từ 17/09/2026: email là kênh gửi CHÍNH từ 07/09, nhưng màn giảng
+        # viên chỉ nhận được số Zalo nên in "Chưa có số Zalo của phụ huynh" cho cả
+        # em đã có email. Đường công khai không mang khoá này (`rut_gon_cho_link`).
         'parent': {'name': em['parent_name'] or '',
-                   'phone': em['parent_phone'] or ''},
+                   'phone': em['parent_phone'] or '',
+                   'email': em['parent_email'] or ''},
         'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
                   'teacher': gv['name'] if gv else None},
         'membership': {
@@ -373,15 +521,14 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         },
         'period': {'from': tu.isoformat(), 'to': den.isoformat(),
                    'weeks': DEFAULT_WEEKS},
-        'attendance': _chuyen_can(class_id, user_id, tu, den,
-                                  cac_dot=[(d['joined_at'], d['left_at'])
-                                           for d in cac_dot]),
+        'attendance': _chuyen_can(class_id, user_id, tu, den, du_lieu=buoi_em),
+        'weekly': _nhip_tuan(class_id, user_id, tu, den, buoi_em),
         'study': _hoc_tap(user_id, tu, den),
         # Kỳ thi THẬT tại trung tâm. `None` khi chưa nhập tờ nào — màn hình và tệp
         # PDF phải giấu hẳn mục này, đừng in "chưa có dữ liệu" cho một thứ phụ
         # huynh còn không biết là có tồn tại.
         'centerExam': _thi_tai_trung_tam(user_id),
-        'topics': _chu_de(user_id),
+        'topics': _chu_de(user_id, lop['course_id']),
         'warnings': canh_bao,
     }, None
 
@@ -398,8 +545,9 @@ def rut_gon_cho_link(payload):
     "càng nhiều vai trò thì càng nhiều người nhìn thấy dữ liệu của một đứa
     trẻ" (§8 đặc tả). Một đường KHÔNG CÓ VAI NÀO thì càng phải bỏ.
 
-    Bỏ `parent.phone`: phụ huynh không cần đọc lại số của chính mình, và nó là
-    một số điện thoại thật nằm sau một chìa có thể bị chuyển tiếp.
+    Bỏ `parent.phone` và `parent.email`: phụ huynh không cần đọc lại liên lạc
+    của chính mình, và chúng là số/địa chỉ thật nằm sau một chìa có thể bị
+    chuyển tiếp.
 
     GIỮ `membership.teacherNote`: nó được viết ra ĐỂ phụ huynh đọc (khác nhật
     ký riêng của em — xem ranh giới 1 ở đầu tệp).

@@ -155,8 +155,9 @@ class ParentReportLinkView(APIView):
             'from': tu.isoformat(),
             'to': den.isoformat(),
             'expiresDays': HAN_NGAY,
-            # Số để gửi tới, trả kèm để màn hình không phải hỏi thêm một lượt.
+            # Nơi gửi tới, trả kèm để màn hình không phải hỏi thêm một lượt.
             'parentPhone': data['parent']['phone'],
+            'parentEmail': data['parent']['email'],
             'parentName': data['parent']['name'],
         }, status=201)
 

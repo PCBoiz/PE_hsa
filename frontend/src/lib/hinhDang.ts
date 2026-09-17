@@ -31,7 +31,9 @@ export const HD_BAO_CAO = z.looseObject({
   student: z.looseObject({
     id: so, name: chu, email: chu.optional(), phone: chu.optional(),
   }),
-  parent: z.looseObject({ name: z.string(), phone: z.string().optional() }),
+  parent: z.looseObject({
+    name: z.string(), phone: z.string().optional(), email: z.string().optional(),
+  }),
   class: z.looseObject({ id: so, name: z.string(), code: chu, teacher: chu }),
   membership: z.looseObject({
     joinedAt: chu, leftAt: chu, status: z.string(), teacherNote: chu,
@@ -60,6 +62,14 @@ export const HD_BAO_CAO = z.looseObject({
     previous: z.looseObject({
       date: z.string(), round: chu, score: so, delta: so,
     }).nullable(),
+  }).nullable().optional(),
+  // Nhịp từng tuần — `nullable().optional()` cùng lý do với `centerExam`.
+  weekly: z.looseObject({
+    weeks: z.array(z.looseObject({
+      from: z.string(), to: z.string(), days: so, attended: so, attendanceCounted: so,
+      lessons: so, drills: so, submissions: so,
+    })),
+    omitted: so,
   }).nullable().optional(),
   topics: z.looseObject({
     weak: z.array(CHU_DE),

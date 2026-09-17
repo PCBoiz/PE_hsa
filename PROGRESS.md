@@ -59,13 +59,15 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Hướng bán đứt (anh chọn 15/09): xong cả bốn việc**, đều đang chạy trên production:
   (1) nhập PDF kết quả thi thử — vòng 25 (`a12d59a`, `4c08d63`); (2) bộ dữ liệu trình
   diễn — vòng 26 (`669e785`, `f6e35e1`); (3) Trang của tôi dựng lười tám tab — vòng 27
-  (`6afd834`); (4) minh hoạ 76/76 bài — vòng 28 (`87993ea`) + vòng 29. **Chưa có hướng
-  tiếp theo — hỏi anh trước khi mở việc lớn.**
-- **Production**: Vercel + Render phục vụ `87993ea` (vòng 29 chỉ đổi dữ liệu Neon, lệnh
-  nạp và phép kiểm — không đổi mã chạy). Render vẫn ngủ đông (A1). Neon: 2 lớp mẫu + 48
+  (`6afd834`); (4) minh hoạ 76/76 bài — vòng 28 (`87993ea`) + vòng 29. Sau đó anh bảo
+  "tiếp tục cải tiến": vòng 30 soi tờ báo cáo phụ huynh (nhịp từng tuần + bốn chỗ nói sai).
+  **Việc lớn tiếp theo vẫn hỏi anh trước.**
+- **Production**: tự deploy từ `master` (vòng 30 đổi mã chạy cả hai phía: tờ báo cáo phụ
+  huynh — máy chủ, màn hình, PDF). Render vẫn ngủ đông (A1). Neon: 2 lớp mẫu + 48
   tài khoản mẫu `is_demo` (gỡ: `manage.py du_lieu_mau --go`); 158 khối minh hoạ trong
   `lessons.content_json` (nội dung ở CSDL nên không cần deploy).
-- **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`): A0 GitHub Actions khoá (không CI,
+- **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`; 17/09 thêm **C7** — cách đếm "phụ huynh
+  đã mở"): A0 GitHub Actions khoá (không CI,
   không sao lưu); A1 máy chủ ngủ — nay có bằng chứng A/B rằng đây là thứ quyết định LCP
   Trang của tôi; A6 SECRET_KEY chung dev/prod — nay ký cả phiếu nhập PDF; email tên miền;
   giới hạn đăng nhập theo người.
@@ -79,6 +81,65 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 
 <!-- MỚI NHẤT -->
+
+## 17/09/2026 — VÒNG 30 · Tờ báo cáo phụ huynh: nhịp từng tuần, và bốn chỗ nói sai với phụ huynh / giảng viên
+
+Anh bảo "tiếp tục cải tiến". Cách đếm "phụ huynh đã mở" là quyết định đang chờ anh (VIEC_CUA_ANH
+14.2, nay đưa lên bảng đầu tệp thành **C7**) nên không đụng. Chọn soi thứ người mua sẽ xem kỹ nhất:
+tờ báo cáo phụ huynh của một em mẫu, khổ 390, chụp ảnh rồi đọc.
+
+**Soi ảnh ra bốn chỗ**
+1. **"Tư duy Định tính: đã học 0/23 bài (0%)" và "Khoa học & Tiếng Anh: 0/26 (0%)"** trên tờ của em
+   lớp Định lượng, chỉ ghi danh MỘT khoá — phụ huynh đọc là con bỏ trống hai phần. Gốc:
+   `_chu_de` lấy nguyên `competency.compute(...)['courses']` (mọi hợp phần giáo trình — đúng cho
+   bản đồ em tự xem, sai cho tờ gửi về nhà); "6/20 chủ đề" cũng đếm mẫu số trên cả ba khoá. Nay
+   `_khoa_cua_em`: khoá đã ghi danh ∪ khoá của lớp ∪ khoá CÓ BÀI LÀM (em tự học thêm là công thật,
+   không giấu). Sửa ở tầng dữ liệu nên màn hình lẫn PDF cùng đúng. PDF: câu "hợp phần thấp nhất kéo
+   điểm xuống" chỉ in khi có ≥ 2 hợp phần.
+2. **Màn giảng viên "Chưa có số Zalo của phụ huynh"** cho em ĐÃ có email — email là kênh chính từ
+   07/09 nhưng payload `parent` chỉ mang `name`, `phone`. Nay có `email` (đường chìa công khai vẫn
+   bỏ — `rut_gon_cho_link` dựng lại `parent` chỉ còn tên, phép kiểm giữ); thanh đầu, câu cảnh báo
+   cạnh nút cấp đường dẫn và ô kết quả cấp đường dẫn (`parentEmail`) đọc cả hai.
+3. **Khối thi tại trung tâm: tên kỳ "lần 2" cạnh "lần thi đầu tiên được ghi nhận"** (em chỉ có tờ
+   kỳ gần nhất) → "chưa có kết quả kỳ trước để so", màn hình và PDF.
+4. **Tiêu đề trang từng em bị ép thành cột chữ năm dòng ở khổ 390** → `min-w-[14ch]` + dòng người
+   nhận `basis-full`.
+
+**Thêm: "Con có học đều không" — nhịp từng tuần.** Định vị báo cáo thị trường chọn là "phụ huynh
+thấy con tiến bộ từng tuần", nhưng tờ báo cáo chỉ có TỔNG kỳ: 11 bài có thể là mỗi tuần 3 bài hay
+dồn cả vào tuần cuối. `_nhip_tuan`: bốn cột mỗi tuần — đi học (có mặt/buổi có dòng điểm danh, cùng
+mẫu số `attendedPct`), bài học (`lesson`, cùng nguồn `lessonsDone`), luyện tập (`drill`), bài tập
+của LỚP NÀY em đã NỘP theo `submitted_at` (không dùng sự kiện `assignment` — nó ghi lúc giảng viên
+chấm, tức đo nhịp của giảng viên). Khối 7 ngày KẾT THÚC ở ngày cuối kỳ chứ không theo tuần lịch
+(lớp học theo thứ → khối nào cũng cùng số buổi, so được); phần lẻ < 4 ngày gộp vào khối đầu (kỳ
+mặc định 29 ngày → khối đầu 8 ngày, ghi rõ). Tối đa 13 tuần, bỏ tuần cũ thì nói ra. Cả kỳ trống
+thì một câu thay cho bảng toàn 0. Truy vấn buổi học tách thành `_buoi_cua_em` dùng chung cho
+`_chuyen_can` và `_nhip_tuan` (một lượt hỏi, hai khối không lệch được); chữ ký `_chuyen_can` giữ
+tương thích (`lop_cua_toi` gọi nó). Màn hình (`ToBaoCao`, bảng thật, tiêu đề hai chữ căn đáy — bản
+đầu "Bài tập nộp" gãy ba dòng cạnh "Tuần" một dòng) và PDF (mục "NHỊP HỌC TỪNG TUẦN", `KeepTogether`).
+
+**Kiểm**
+- Trên Neon, 3 em mẫu: tổng các tuần = tổng kỳ (có mặt 7/7, 4/7, 5/8; số bài 11, 8, 19); lớp Định
+  lượng còn 1 hợp phần, lớp ba hợp phần còn 3. Dựng tờ 3,4–5,7 s từ máy dev (+2 câu hỏi).
+- `tests_bao_cao_tuan.py` 75 phép: chia tuần (kỳ mặc định + 70 độ dài kỳ: phủ kín, không hở/chồng,
+  chỉ khối đầu lệch 7); cộng tuần = tổng kỳ với đủ ca khó (muộn, có phép, tick sót em, buổi chưa
+  tick, buổi ĐÚNG ngày đầu kỳ, bài ngoài kỳ); bài tập theo ngày nộp + chỉ lớp này; hợp phần chỉ khoá
+  em học rồi thêm khoá có bài làm; email tới màn giảng viên + lượt cấp đường dẫn, không tới đường
+  công khai.
+- **Đột biến 7 chỗ, 7 ĐỎ** — một lượt đầu XANH là lỗi của CHÍNH đột biến (đổi điều kiện lọc sang
+  `graded_at` mà cột xếp tuần vẫn `submitted_at`); đổi cả hai → đỏ. Đọc dòng xanh trước khi kết luận
+  phép kiểm yếu.
+- PDF: 19/19 (hai phép đỏ lượt đầu vì câu mới dài hơn làm cụm chữ được dò xuống dòng — rút câu, không
+  nới phép kiểm); rasterise tờ PDF em mẫu, soi mục V thẳng cột.
+- Trình duyệt `next start` + Neon: trang giảng viên khổ 390 (tiêu đề một dòng, "Gửi tới … · email");
+  đường PHỤ HUYNH thật — cấp chìa cho em mẫu → `/bc/<chìa>` không cookie khổ 390: có khối tuần, bảng
+  292 px không tràn, không lộ email phụ huynh, 0 lỗi JS, 0 CSP → thu hồi → mở lại 404.
+- Bộ lân cận (đường chìa, gửi cả lớp, lớp của tôi, dữ liệu mẫu, thư, PDF lớp, teaching/tests,
+  common/tests): **271/271** (17 phút 23). tsc · eslint · ruff · build · 27/27 unit Node. Bộ đo giao diện 2 khổ × 23 trang: 0 ở mọi cột (bộ tự kiểm không chạy lại — hai chỗ mù TODO 16/09 vẫn mở).
+
+**Dọn tài liệu:** T57 (`/questionaire` bắn 4 lời gọi) thật ra đã vá 05/09 mà quên đánh dấu — đo lại
+bằng phiên học viên #9: `/questionaire` **0** lời gọi `/api/*`, `/dashboard` 7 (đủ). VIEC_CUA_ANH:
+B4 (hỏi bên khảo thí tải PDF) → xong từ vòng 25; thêm **C7** cách đếm "đã mở".
 
 ## 17/09/2026 — VÒNG 29 · Làm nốt 9 bài có hình từ trước, một thước giả bị lật, và lượt pytest không treo nữa
 

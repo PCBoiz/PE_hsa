@@ -273,7 +273,7 @@ def dung_pdf(bc: dict) -> bytes:
     # Số mục ĐÁNH TỰ ĐỘNG, không viết cứng: mục "Thi thử tại trung tâm" chỉ hiện
     # khi đã nhập được kết quả, và một tờ giấy nhảy từ II sang IV đọc như in thiếu
     # mất một trang.
-    _so_muc = iter(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'])
+    _so_muc = iter(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'])
 
     def de_muc(ten):
         return Paragraph('%s. %s' % (next(_so_muc), ten), h2)
@@ -385,7 +385,9 @@ def dung_pdf(bc: dict) -> bytes:
             ss += ' so với kỳ %s (%s/%s)' % (ngay(truoc.get('date')),
                                              truoc.get('score'), ktt.get('max'))
         else:
-            ss = 'lần thi đầu tiên được ghi nhận'
+            # Không nói "lần thi ĐẦU TIÊN": tên kỳ ngay cột bên có thể là "lần 2"
+            # (trung tâm chỉ nhập tờ kỳ gần nhất), và hai ô cạnh nhau mâu thuẫn.
+            ss = 'chưa có kết quả kỳ trước để so'
         hang = [['Kỳ thi', 'Ngày thi', 'Tổng điểm', 'So với lần trước'],
                 [o_bang(ktt.get('round') or 'Thi thử', o), ngay(ktt.get('date')),
                  '%s/%s' % (ktt.get('score'), ktt.get('max')), o_bang(ss, o)]]
@@ -439,11 +441,63 @@ def dung_pdf(bc: dict) -> bytes:
         kq.append(t)
         kq.append(Spacer(1, 6))
         kq.append(_bieu_do_hop_phan(khoa))
-        kq.append(Paragraph(
-            'Điểm HSA cộng cả ba hợp phần, nên hợp phần thấp nhất là chỗ kéo '
-            'điểm xuống nhiều nhất — không phải hợp phần con thích học nhất.', nho))
+        # Chỉ khi có từ HAI hợp phần: từ 17/09 tờ giấy chỉ in hợp phần em học, và
+        # "hợp phần thấp nhất" cạnh một cột duy nhất là câu không nói gì.
+        if len(khoa) > 1:
+            kq.append(Paragraph(
+                'Điểm HSA cộng cả ba hợp phần, nên hợp phần thấp nhất là chỗ kéo '
+                'điểm xuống nhiều nhất — không phải hợp phần con thích học nhất.', nho))
     else:
         kq.append(Paragraph('Chưa có dữ liệu tiến độ trong kỳ này.', p))
+
+    # ── NHỊP HỌC TỪNG TUẦN (17/09/2026) ─────────────────────────────────
+    # Cùng dữ liệu, cùng thứ tự với khối "Con có học đều không" trên màn hình
+    # (`ToBaoCao`) — tờ giấy và trang web gửi cùng một phụ huynh phải nói cùng
+    # một chuyện. Không có khoá (máy chủ cũ) thì bỏ hẳn mục, không in "chưa có".
+    tuan = (bc.get('weekly') or {}).get('weeks') or []
+    if tuan:
+        khoi = [de_muc('NHỊP HỌC TỪNG TUẦN')]
+        if all(not (w.get('attendanceCounted') or w.get('lessons') or w.get('drills')
+                    or w.get('submissions')) for w in tuan):
+            khoi.append(Paragraph(
+                'Trong kỳ này chưa có buổi học nào được điểm danh, và con chưa học bài '
+                'hay làm bài tập nào trên hệ thống.', p))
+        else:
+            hang = [['Tuần', 'Đi học', 'Bài học', 'Luyện tập', 'Bài tập']]
+            for w in tuan:
+                nhan = '%s – %s' % (ngay(w.get('from'))[:5], ngay(w.get('to'))[:5])
+                if w.get('days') and w['days'] != 7:
+                    nhan += ' (%d ngày)' % w['days']
+                hang.append([
+                    nhan,
+                    ('%s/%s' % (w.get('attended', 0), w['attendanceCounted'])
+                     if w.get('attendanceCounted') else '—'),
+                    str(w.get('lessons', 0)), str(w.get('drills', 0)),
+                    str(w.get('submissions', 0)),
+                ])
+            t = Table(hang, colWidths=[42 * mm, 22 * mm, 22 * mm, 24 * mm, 28 * mm],
+                      hAlign='LEFT')
+            t.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), FONT),
+                ('FONTNAME', (0, 0), (-1, 0), FONT_DAM),
+                ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+                ('BACKGROUND', (0, 0), (-1, 0), NEN_NHAT),
+                ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+                ('GRID', (0, 0), (-1, -1), 0.25, VIEN),
+                ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+            ]))
+            khoi.append(t)
+            bo = (bc.get('weekly') or {}).get('omitted') or 0
+            khoi.append(Paragraph(
+                'Mỗi hàng là 7 ngày liền, hàng cuối kết thúc ở ngày cuối kỳ. Đi học: số '
+                'buổi có mặt trên số buổi đã điểm danh ("—" là tuần chưa có buổi nào được '
+                'điểm danh). Luyện tập: số lượt vào phòng luyện bấm giờ. Bài tập: bài tập '
+                'của lớp con đã nộp.'
+                + (' Kỳ dài nên chỉ in %d tuần gần nhất, bỏ %d tuần đầu.' % (len(tuan), bo)
+                   if bo else ''), nho))
+        # Tiêu đề không bị mồ côi ở cuối trang, bảng không bị cắt đôi.
+        kq.append(KeepTogether(khoi))
 
     # ── IV. CHỦ ĐỀ ─────────────────────────────────────────────────────
     # KHÔNG ngắt trang cứng ở đây. Bản đầu có `PageBreak()`, và với một em mới
@@ -456,7 +510,7 @@ def dung_pdf(bc: dict) -> bytes:
     kq.append(KeepTogether([
         de_muc('CHỦ ĐỀ ĐÃ ĐO ĐƯỢC'),
         Paragraph(
-            'Đo trên %s chủ đề đã có bài làm, trên tổng %s chủ đề của chương trình. '
+            'Đo trên %s chủ đề đã có bài làm, trên tổng %s chủ đề con đang học. '
             'Chủ đề con chưa học tới thì không xuất hiện ở đây — chưa học không phải '
             'là yếu.' % (cd.get('measured', 0), cd.get('total', 0)), nho),
     ]))

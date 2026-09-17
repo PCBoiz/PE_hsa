@@ -68,16 +68,21 @@ export default async function BaoCaoPhuHuynhPage({
           >
             ← Về lớp
           </Link>
-          <h1 className="flex-1 text-section text-ink">Báo cáo gửi phụ huynh</h1>
+          {/* `min-w-[14ch]`: khổ điện thoại, tiêu đề bị ép chung hàng với "Về lớp"
+              và dòng người nhận thành một cột chữ năm dòng (soi ảnh 17/09/2026).
+              Có bề rộng tối thiểu thì flex-wrap đẩy phần còn lại xuống hàng dưới. */}
+          <h1 className="min-w-[14ch] flex-1 text-section text-ink">Báo cáo gửi phụ huynh</h1>
+          <NutIn />
           {/* Nói ngay ở thanh: tờ này sẽ tới ai. Trước 07/09/2026 màn hình
               không có chỗ nào cho biết, nên giảng viên in ra rồi mới phát hiện
-              không có số nào để gửi. */}
-          <span className="text-small text-ink-3">
-            {bc.parent.phone
-              ? <>Gửi tới {bc.parent.name || 'phụ huynh'} · {bc.parent.phone}</>
-              : <span className="text-warning-ink">Chưa có số Zalo của phụ huynh</span>}
+              không có số nào để gửi. Email trước số Zalo: email là kênh CHÍNH từ
+              07/09 — bản trước chỉ đọc số Zalo nên báo "chưa có" cho cả em đã có
+              email (17/09). */}
+          <span className="basis-full text-small text-ink-3">
+            {bc.parent.email || bc.parent.phone
+              ? <>Gửi tới {bc.parent.name || 'phụ huynh'} · {[bc.parent.email, bc.parent.phone].filter(Boolean).join(' · ')}</>
+              : <span className="text-warning-ink">Chưa có email hay số Zalo của phụ huynh</span>}
           </span>
-          <NutIn />
         </div>
       </header>
 
@@ -85,7 +90,11 @@ export default async function BaoCaoPhuHuynhPage({
         {/* Cấp đường dẫn cho phụ huynh mở. Đặt TRÊN tờ báo cáo chứ không dưới:
             đây là việc giảng viên vào trang này để làm, còn tờ báo cáo là thứ
             họ liếc qua để kiểm trước khi gửi. */}
-        <KhoiDuongDan classId={classId} userId={userId} coSoPhuHuynh={!!bc.parent.phone} />
+        <KhoiDuongDan
+          classId={classId}
+          userId={userId}
+          coLienLac={!!(bc.parent.email || bc.parent.phone)}
+        />
 
         {bc.warnings.length > 0 && (
           <p
