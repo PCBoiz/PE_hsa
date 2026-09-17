@@ -75,9 +75,13 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   Trang của tôi; A6 SECRET_KEY chung dev/prod — **đo 17/09 07:47: production đã từ chối thẻ ký
   bằng `.env`**, tức A6 nhiều khả năng đã xong (chờ anh xác nhận); email tên miền;
   giới hạn đăng nhập theo người.
+- **Bộ đo giao diện**: nay đi tới BƯỚC LÝ THUYẾT của bài học trước khi đo, có luật "khối bị
+  cắt bên ngoài khung", và phép tự kiểm nhét màu theo TỪNG phần tử — 46/46 lượt đỏ được (chỗ mù
+  "Quản trị · tổng quan" khổ điện thoại đã đóng, vòng 32).
 - **Cổng chất lượng (17/09)**: pytest toàn bộ **705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL. · 27/27 unit Node · giao diện 23
   trang × 2 khổ: 0 vi phạm (bộ tự kiểm còn 2 chỗ mù, TODO 16/09) · eslint/tsc/ruff/build.
-- **Trần tầng cũ**: 7.066 dòng (nới +3 ở vòng 27, lý do trong `chot-ham-tang-cu.test.mjs`).
+- **Trần tầng cũ**: 7.072 dòng (vòng 27 +3, vòng 32 +6 — lý do từng lần ghi trong
+  `chot-ham-tang-cu.test.mjs`).
 - **Tài liệu gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` (14/09) ·
   `docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf` (15/09, bổ sung Mục 10
   "Nhật ký cải tiến 15–17/09" ngày 17/09; KHÔNG commit — anh gửi tay).
@@ -85,6 +89,65 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 
 <!-- MỚI NHẤT -->
+
+## 17/09/2026 — VÒNG 32 · Bài học trên điện thoại: bảng bị cắt mất cột, nhãn đồ thị 7px — và bộ đo giao diện chưa từng nhìn tới bước lý thuyết
+
+Tiếp cách soi của vòng 30–31, lần này cho thứ người mua sẽ mở đầu tiên sau câu "76/76 bài đều có
+hình": **bài học ở khổ 390**. Đi đúng đường học viên tới bước lý thuyết ở 8 bài (đủ 8 loại hình),
+đo bề rộng khối, cỡ chữ nhỏ nhất, rồi soi ảnh.
+
+**1. Thẻ lý thuyết bị bảng kéo rộng 459px trên màn 390 — mất cột cuối và cả chữ.** `.hsa-card` là
+flex và cũng là Ô LƯỚI của `.hsa-cards`; cả hai chỗ mặc định `min-width: auto` nên không co xuống
+dưới bề rộng nội dung. Bảng 5 cột kéo thẻ rộng ra, khung ngoài KHÔNG cuộn ngang → phần thừa bị
+CẮT: cột "CẢ NĂM" (đúng cột mà chú thích của hình bảo là cột hay bị hỏi) và một phần chữ của thẻ
+biến mất. Vá: `minmax(0, 1fr)` cho lưới + `min-width: 0` cho thẻ và thân thẻ; tiêu đề cột cho phép
+xuống dòng; đệm ô co theo `clamp(4px, 1.6vw, 10px)` (không ghim breakpoint). Đo lại: thẻ 358px,
+bảng 237px trong khung 240px — **đủ 5 cột trên màn 390**, bảng rộng hơn nữa vẫn cuộn ngang trong
+`.hsa-tb-wrap` đã có sẵn. (Bản vá đầu của tôi thêm `overflow-x` cho `.hsa-viz--tb` — thừa, vì
+`.hsa-tb-wrap` đã cuộn; đã bỏ.)
+
+**2. Nhãn mốc trên đồ thị hàm in ra ~7,4px.** `<text>` trong SVG mang cỡ 9 ĐƠN VỊ VIEWBOX, mà SVG
+co theo bề ngang (viewBox 320 → 264px ở khổ 390) — chú thích cũ trong CSS còn ghi "scale ~2x nên ra
+13–14px thật", đúng với máy tính và sai hẳn với điện thoại. Nay nhãn là HTML đặt chồng
+(`.hsa-cv-lab`, 12px thật, nền chip để không lẫn vào đường cong), toạ độ đổi sang phần trăm của
+chính khung SVG. Chốt hãm tầng cũ: 7.066 → **7.072** (+6), ghi lý do trong tệp kiểm — vá lỗi trong
+tệp đã có, và cả bộ dựng bài học còn ở tầng ấy.
+
+**3. Bộ đo giao diện chưa từng nhìn tới bước lý thuyết** — tức mọi con số của trang "Bài học" tới
+hôm nay chỉ nói về màn hỏi đáp, không nói gì về 158 khối minh hoạ. Nay nó tự làm bài, bấm Tiếp hai
+lần rồi mới đo. Ngay lượt đầu lộ **20 vi phạm tương phản có thật** ở chủ đề sáng: chip "Bản đầy đủ"
+1,46:1 · số trên cột biểu đồ 1,67–3,33:1 · nhãn bước "Kiểm tra/Đánh giá" 2,19:1 · nhãn "Ví dụ minh
+hoạ" 3,11:1 · dòng lời giải 1,74:1. Vá bằng bộ màu đậm cho nền sáng (đặt trong `body.light` của
+`lesson_hsa.css` — nơi tệp này quy ước giữ mọi ghi đè chủ đề sáng). Chủ đề TỐI lộ thêm: hạng 1–3
+của bảng xếp hạng giữ màu của nền sáng vì độ ưu tiên cao hơn dòng `body.dark .lb-value` (2,47–3,72:1)
+— vòng 27 chỉ sửa cho nền sáng. Sau vá: **sáng 0/46 lượt, tối 0/46**.
+
+**4. Hai lỗi của chính bộ đo, tìm ra trong lúc dùng nó**
+- *Báo oan thứ sáu:* gặp gradient toàn chặng TRONG SUỐT thì nó vẫn dừng, để nền đáy ở mặc định
+  TRẮNG — ở chủ đề tối, thẻ điểm bước Đánh giá (`rgba(251,191,36,.16)` trên nền tối) bị tính là
+  chữ sáng trên nền vàng đục: 1,13:1, trong khi đo tay ra ~11:1. Nay chặng trong suốt là LỚP PHỦ,
+  leo tiếp tìm nền đục ở tổ tiên.
+- *Lời gọi GHI:* lượt đi bài học phải nộp bài kiểm tra → 2 lời gọi POST. Chúng bị `p.route` chặn
+  và trả `{}` như mọi lời gọi ghi khác (không tới máy chủ), nhưng bộ đếm gộp chung làm lượt quét
+  ra mã thoát 1. Nay đếm riêng "ghi do lượt đi bài học" — bất biến "mở trang ra xem thì trang
+  không tự ghi gì" vẫn nguyên.
+
+**5. Chỗ mù ba lượt của phép TỰ KIỂM đã đóng (mục TODO 16/09).** Nó nhét MỘT màu cho cả trang,
+đoán từ nền đọc tại điểm giữa màn hình; ở "Quản trị · tổng quan" khổ điện thoại điểm ấy không đại
+diện, nên nhét xong chữ vẫn tương phản cao và trang "không đỏ nổi" — 3 lượt liền (16/09 hai, 17/09
+một). Nay tự kiểm dựng `__pe` bằng chính bộ đo rồi đặt màu chữ của TỪNG phần tử đúng bằng nền đã
+ghép của nó (1,0:1 ở mọi chỗ sẽ soi). Kết quả: **46/46 lượt đều đỏ, tổng 4.248 vi phạm** — trong
+đó "Quản trị · tổng quan" điện thoại 69/69, máy tính 65/65. Thước hỏng chứ không phải mã hỏng, lần
+thứ bảy trong tuần.
+
+**Thêm một luật cho bộ đo: "khối bị cắt bên ngoài khung".** `tran_ngang` chỉ thấy tràn ở cấp TRANG;
+khối rộng hơn màn hình nằm trong khung không cuộn thì trang KHÔNG tràn mà nội dung vẫn mất — đúng
+kiểu lỗi (1). Luật mới bỏ qua khối nằm trong tổ tiên cuộn ngang được, và bỏ qua khối TRANG TRÍ
+không chữ không ảnh (bản đầu báo oan 4 lượt vì quầng sáng trang chủ). Nói thẳng: luật này KHÔNG
+phải thứ tìm ra lỗi (1) — tìm bằng mắt; tự động hoá nó là để lần sau không phải nhìn.
+
+**Kiểm:** quét 2 chủ đề × 2 khổ × 23 trang: 0 ở mọi cột, 0 lỗi JS, 0 CSP, 0 lời gọi ghi lọt ra;
+tự kiểm 46/46; 27/27 unit Node (gồm chốt hãm mới 7.072); `node --check`; eslint.
 
 ## 17/09/2026 — VÒNG 31 · Dữ liệu trình diễn tự cũ đi theo ngày → `--lam-moi`; lớp ôn cả ba hợp phần mất cột tiến độ
 

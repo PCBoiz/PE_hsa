@@ -108,7 +108,14 @@ const TRAN_TEP = 13;
 // nút khoảng tuần của đồ thị hồ sơ (dashboard.js — nếu không, mỗi lần mở tab buộc thêm
 // một trình xử lý). Bản đầu để +20 dòng ở main.js; phép kiểm này bắt được và số logic
 // ấy đã dời sang src/. Không phải tiền lệ cho lần sau: dời được thì vẫn phải hạ.
-const TRAN_DONG_MA = 7066;
+// 17/09/2026: 7066 → 7072 (+6). VÁ LỖI trong tệp đã có (ngoại lệ ghi ở đầu tệp):
+// nhãn mốc của đồ thị hàm vẽ bằng `<text>` trong SVG, mà SVG co theo bề ngang —
+// viewBox 320 hiện ra 264px trên màn 390, nên chữ 9 đơn vị in ra ~7,4px thật, nhỏ
+// hơn mọi chữ khác của bài. Nay nhãn là HTML đặt chồng (`.hsa-cv-lab`, cỡ chữ thật
+// 12px) nên không co theo; toạ độ đổi sang phần trăm của chính khung SVG. Sáu dòng
+// là phần dựng nhãn + khung bọc, KHÔNG dời sang src/ được: cả bộ dựng bài học
+// (`renderCurve`) đang ở tầng này. Dời cả engine là việc T32, không phải việc này.
+const TRAN_DONG_MA = 7072;
 
 let failures = 0;
 function check(name, cond, them) {

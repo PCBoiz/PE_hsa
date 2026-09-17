@@ -206,6 +206,7 @@ function DO_TRONG_TRANG(do_trang_thai) {
     const lop = [];            // dưới → trên; `null` = chỗ dành cho chặng gradient
     let goc = [255, 255, 255]; // nền đục cuối cùng tìm được
     let chang = null;
+    let chang_duc = false;     // chặng gradient tìm được có ĐỤC không
     let n = el;
     while (n && n !== document.documentElement) {
       const cs = getComputedStyle(n);
@@ -239,6 +240,7 @@ function DO_TRONG_TRANG(do_trang_thai) {
           if (!g.length) continue;
           const duc = g.filter((v) => v[3] >= 0.999);
           if (duc.length) {
+            chang_duc = true;
             // Lớp đục = NỀN ĐÁY. Đặt chỗ dành ở ĐÁY chồng lớp để mỗi chặng đục
             // thành MỘT ứng viên riêng — không gộp chúng lại, vì một gradient
             // navy→đen cho hai nền rất khác nhau và chữ phải đạt trên cả hai.
@@ -253,7 +255,15 @@ function DO_TRONG_TRANG(do_trang_thai) {
             .filter((v) => v.length === 4);
           if (g.length) { chang = g; lop.unshift(null); }
         }
-        if (chang) break;   // đã có nền đáy thật, không leo tiếp
+        /* CHỈ dừng khi chặng tìm được là ĐỤC — tức đã chạm nền đáy thật.
+           Bản trước dừng ngay cả khi mọi chặng đều trong suốt, nên `goc` ở
+           nguyên mặc định TRẮNG: ở chủ đề TỐI, thẻ điểm bước Đánh giá có nền
+           `linear-gradient(rgba(251,191,36,.16) …)` bị ghép lên nền trắng
+           tưởng tượng và chữ #E2E8F0 ra 1,13:1 — trong khi nền thật là màu tối
+           và tương phản thật ~11:1. Dương tính giả thứ SÁU của bộ đo này
+           (đo 17/09/2026); chặng trong suốt phải là LỚP PHỦ, rồi leo tiếp tìm
+           nền đục ở tổ tiên. */
+        if (chang && chang_duc) break;
       }
       const bg = doc_mau(cs.backgroundColor);
       if (bg.length === 3) { goc = bg; break; }        // đục → hết đường xuống
@@ -498,7 +508,7 @@ function DO_TRONG_TRANG(do_trang_thai) {
   /* Bộ quy tắc dùng lại cho lượt đo trạng thái, chạy từ phía Node sau khi CDP
      đã bật `:hover`. Hai bộ quy tắc song song là hai bộ sẽ lệch nhau. */
   globalThis.__pe = {
-    do_el, hien, co_chu, duong,
+    do_el, hien, co_chu, duong, nen,
     dang: (i) => {
       const el = document.querySelector(`[data-pe-net="${i}"]`);
       if (!el) return null;
@@ -508,6 +518,34 @@ function DO_TRONG_TRANG(do_trang_thai) {
         c.backgroundImage, c.color, c.textDecorationLine].join('|');
     },
   };
+
+  const CUON = /^(auto|scroll)$/;
+  const ngoai_khung = [];
+  {
+    const rong = document.documentElement.clientWidth;
+    for (const el of document.querySelectorAll('body *')) {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 1 || r.height <= 1 || r.right <= rong + 1) continue;
+      if (!hien(el)) continue;
+      let n = el.parentElement, cuon_duoc = false;
+      while (n && n !== document.documentElement) {
+        if (CUON.test(getComputedStyle(n).overflowX)) { cuon_duoc = true; break; }
+        n = n.parentElement;
+      }
+      if (cuon_duoc) continue;
+      /* Chỉ tính khối CÓ NỘI DUNG. Nền trang trí (`.bg-blob`, quầng sáng của
+         hero) cố ý tràn ra ngoài khung — bản đầu của luật này báo chúng ở cả hai
+         khổ máy, tức 4 dòng báo oan trên 46 lượt. Mất nội dung mới là lỗi. */
+      if (!el.innerText || !el.innerText.trim()) {
+        if (!el.querySelector('img, video, canvas, table')) continue;
+      }
+      // Chỉ giữ phần tử NGOÀI CÙNG của một cụm: con của nó cũng thò ra, báo cả
+      // cụm thì một lỗi thành mười dòng.
+      if (ngoai_khung.some((v) => v.el.contains(el))) continue;
+      ngoai_khung.push({ el, duong: duong(el), thua: Math.round(r.right - rong) });
+    }
+    for (const v of ngoai_khung) delete v.el;
+  }
 
   return {
     dau, net_dau,
@@ -520,6 +558,15 @@ function DO_TRONG_TRANG(do_trang_thai) {
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     so_cham: document.querySelectorAll(CHAM).length,
     tran_ngang: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    /* TRÀN BỊ CẮT BÊN TRONG — chỗ mù của bộ đo này tới 17/09/2026.
+       `tran_ngang` chỉ thấy tràn ở cấp TRANG. Nhưng một thẻ rộng hơn màn hình
+       nằm trong khung KHÔNG cuộn ngang thì trang không tràn: phần thừa bị cắt,
+       và người dùng không có cách nào xem. Đo được trên bài "Đọc bảng số liệu"
+       khổ 390: thẻ lý thuyết 459px, mất cột cuối và một phần chữ — bộ đo báo
+       "tràn 0px" đúng lúc nội dung bị mất.
+       Bỏ qua phần tử nằm trong tổ tiên CUỘN NGANG được (overflow-x auto/scroll):
+       ở đó phần thừa vẫn xem được, đó là thiết kế chứ không phải lỗi. */
+    ngoai_khung: ngoai_khung.slice(0, 8), so_ngoai_khung: ngoai_khung.length,
   };
 }
 
@@ -536,6 +583,12 @@ const ra_json = i_json >= 0 ? process.argv[i_json + 1] : null;
 const b = await chromium.launch();
 const ket = [];
 let ghiLen = 0;
+/* Lời gọi ghi do CHÍNH bộ đo bấm ra khi đi bài học (nộp bài kiểm tra đầu bài).
+   Đếm riêng: bất biến "trang không tự ghi gì khi chỉ mở ra xem" vẫn phải đúng,
+   còn thao tác do bộ đo chủ động bấm thì không được tính vào đó. Cả hai loại đều
+   bị CHẶN ở `p.route` và trả `{}` — không lời gọi nào tới máy chủ. */
+let ghiDi = 0;
+let dangDiBaiHoc = false;
 
 for (const kho of KHO) {
   /* Mỗi khổ MỘT ngữ cảnh, vì `hasTouch` chỉ đặt được lúc mở ngữ cảnh.
@@ -559,7 +612,7 @@ for (const kho of KHO) {
   await p.route('**/api/**', (r, req) => {
     const m = req.method();
     if (m === 'GET' || m === 'HEAD') return r.fallback();
-    ghiLen++;
+    if (dangDiBaiHoc) ghiDi++; else ghiLen++;
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
@@ -589,43 +642,70 @@ for (const kho of KHO) {
         await b.close();
         process.exit(2);
       }
-      if (tu_kiem) {
-        /* TỰ KIỂM: nhét một quy tắc hỏng rồi đòi bộ đo phải bắt được.
+      /* BÀI HỌC: đi tới BƯỚC LÝ THUYẾT trước khi đo.
 
-           Màu nhét phải GẦN NỀN THẬT của trang. Bản trước suy nó từ TÊN chủ đề
-           (`light` → #F2F2F4), và tên ấy NÓI DỐI ở hai trang: `/questionaire`
-           và `/` đều mang `class="light"` trong khi nền `body` là
-           `rgb(13,17,23)` — gần đen. Nhét màu sáng vào đó là chữ sáng trên nền
-           tối, tương phản CAO, nên bộ đo bắt được **0** vi phạm ở cả hai và
-           phép tự kiểm không nói được gì về chúng. Đo 05/09/2026.
+         Trang bài học mở ra ở bước 1 (làm bài kiểm tra đầu bài). Mọi thứ đáng đo
+         của bài — thẻ lý thuyết, 158 khối minh hoạ của 76 bài — nằm ở bước 3, và
+         bước ấy đang ẩn. Tức mọi con số của trang "Bài học" tới 17/09/2026 chỉ
+         nói về màn hỏi đáp, không nói gì về phần người mua sẽ mở ra xem. Chính vì
+         thế bộ đo báo "0 tràn" trong khi thẻ lý thuyết có bảng bị CẮT mất cột
+         cuối ở khổ 390 (vòng 32 tìm ra bằng tay, không phải bằng bộ đo này).
 
-           Nay ĐỌC nền thật, theo thứ tự XẾP LỚP tại một điểm giữa màn hình,
-           và đọc cả `background-image`. Trang landing để `html` và `body` cùng
-           trong suốt; thứ vẽ nền tối là `div.bg-canvas` bằng một
-           `linear-gradient(135deg, rgb(26,5,5) …)`. Chỉ soi `background-color`
-           là mù hẳn với nó — bản vá đầu của tôi lùi về màu trắng và trang ấy
-           vẫn bắt được 0 vi phạm. */
-        const nen = await p.evaluate(() => {
-          const sang = (c) => {
-            const n = (c || '').match(/\d+(\.\d+)?/g);
-            if (!n || n.length < 3) return null;
-            if (n.length >= 4 && parseFloat(n[3]) === 0) return null;   // trong suốt
-            return 0.2126 * +n[0] + 0.7152 * +n[1] + 0.0722 * +n[2];
-          };
-          const diem = document.elementsFromPoint(innerWidth / 2, innerHeight / 2);
-          for (const el of [...diem, document.body, document.documentElement]) {
-            const cs = getComputedStyle(el);
-            const c = sang(cs.backgroundColor);
-            if (c !== null) return c;
-            // Gradient/ảnh nền: lấy màu ĐẦU TIÊN nêu trong khai báo.
-            const m = (cs.backgroundImage || '').match(/rgba?\([^)]*\)/);
-            if (m) { const g = sang(m[0]); if (g !== null) return g; }
+         Đi bằng đúng thao tác của học viên: chọn phương án đầu cho mọi câu → Tiếp
+         → Tiếp. Hỏng ở bước nào thì bỏ qua, đo như cũ — không để một thay đổi
+         giao diện làm CẢ lượt quét chết. */
+      if (/^\/lesson\//.test(url)) {
+        dangDiBaiHoc = true;
+        try {
+          await p.waitForSelector('.hsa-q', { timeout: 20000 });
+          for (const q of await p.locator('.hsa-q').all()) {
+            const o = q.locator('.hsa-opt');
+            if (await o.count()) await o.first().click();
+            else await q.locator('.hsa-fill').fill('1');
           }
-          return 255;   // không đọc được gì → coi như nền sáng
+          await p.click('#nav-next');
+          await p.waitForSelector('.step-pane[data-step="2"].active', { timeout: 20000 });
+          await p.click('#nav-next');
+          await p.waitForSelector('.step-pane[data-step="3"].active .hsa-cards', { timeout: 20000 });
+          await p.waitForTimeout(600);
+        } catch (e) {
+          console.log(`      (bài học: không tới được bước lý thuyết — ${String(e.message).slice(0, 60)})`);
+        } finally {
+          dangDiBaiHoc = false;
+        }
+      }
+
+      if (tu_kiem) {
+        /* TỰ KIỂM: làm hỏng màu rồi ĐÒI bộ đo phải bắt được.
+
+           ── Vì sao đổi cách làm (17/09/2026) ───────────────────────────────
+
+           Bản trước nhét MỘT màu cho cả trang, đoán từ nền đọc tại điểm giữa
+           màn hình: nền tối thì nhét chữ tối, nền sáng thì nhét chữ sáng. Nó
+           sai ở đúng những trang mà điểm giữa màn hình KHÔNG đại diện cho nền
+           của phần lớn chữ — và đó là lý do "Quản trị · tổng quan" khổ điện
+           thoại không đỏ nổi ở BA lượt tự kiểm (16/09 hai lượt, 17/09 một
+           lượt), tức mọi con số "0 vi phạm" của trang ấy ở khổ ấy là vô nghĩa.
+
+           Nay không đoán nữa: dựng `__pe` bằng chính bộ đo, rồi với TỪNG phần
+           tử có chữ, đặt `color` đúng bằng NỀN ĐÃ GHÉP của chính nó — tương
+           phản 1,0:1 tại mọi chỗ bộ đo sẽ soi. Trang nào vẫn ra 0 vi phạm sau
+           lượt này là trang bộ đo thật sự không nhìn thấy. */
+        await p.evaluate(DO_TRONG_TRANG, false);   // dựng `globalThis.__pe`; số liệu bỏ đi
+        const daHong = await p.evaluate(() => {
+          const { hien, co_chu, nen } = globalThis.__pe;
+          let n = 0;
+          for (const el of document.querySelectorAll('body *')) {
+            if (!hien(el) || !co_chu(el)) continue;
+            const bg = (nen(el) || [])[0];
+            if (!bg) continue;
+            el.style.setProperty('color', `rgb(${Math.round(bg[0])},${Math.round(bg[1])},${Math.round(bg[2])})`, 'important');
+            n++;
+          }
+          return n;
         });
-        await p.addStyleTag({ content: 'body, body * { color: '
-          + (nen < 128 ? '#14141C' : '#F2F2F4') + ' !important; }' });
         await p.waitForTimeout(150);
+        if (!daHong) console.log('      (tự kiểm: KHÔNG có phần tử chữ nào để làm hỏng)');
       }
       const that = await p.evaluate(() => document.body.classList.contains('dark') ? 'dark' : 'light');
       if (that !== chu_de) {
@@ -788,7 +868,8 @@ for (const kho of KHO) {
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
-        + `  tràn:${d.tran_ngang}px  lỗiJS:${loi.length}  CSP:${csp.length}`
+        + `  tràn:${d.tran_ngang}px  ngoài khung:${String(d.so_ngoai_khung).padStart(2)}`
+        + `  lỗiJS:${loi.length}  CSP:${csp.length}`
         + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`
             + `  thiếu nét:${String(d.so_thieu_net).padStart(2)}/${String(d.so_net_do).padStart(2)}` : ''));
     } catch (e) {
@@ -811,6 +892,10 @@ console.log(`\nTỔNG (${KHO.length} khổ × ${TRANG.length} trang):`);
 console.log(`  vi phạm tương phản : ${tong_tp}`);
 console.log(`  vùng chạm < 44px   : ${tong_cn}`);
 console.log(`  trang tràn ngang   : ${tong_tr}`);
+console.log(`  khối bị cắt bên ngoài khung: ${ket.reduce((a, r) => a + (r.so_ngoai_khung || 0), 0)}`);
+for (const r of ket.filter((x) => x.so_ngoai_khung)) {
+  console.log(`      ${r.kho} · ${r.ten}: ${r.ngoai_khung.map((v) => `${v.duong} (+${v.thua}px)`).join(' · ')}`);
+}
 console.log(`  lỗi JS             : ${tong_js}`);
 console.log(`  vi phạm CSP        : ${tong_csp}`);
 for (const r of ket.filter((x) => x.vi_pham_csp)) console.log(`      ${r.kho} · ${r.ten}: ${r.csp[0]}`);
@@ -820,6 +905,7 @@ if (do_tt) {
     + ` / ${ket.reduce((a, r) => a + (r.so_net_do || 0), 0)} phần tử đã thử`);
 }
 console.log(`  lời gọi GHI lọt ra : ${ghiLen}`);
+console.log(`  (ghi do lượt đi bài học, đã chặn: ${ghiDi})`);
 
 if (tu_kiem) {
   console.log(`\n── TỰ KIỂM ──`);

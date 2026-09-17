@@ -192,9 +192,16 @@
 .hsa-cv-line { fill: none; stroke: var(--hsa-violet); stroke-width: 2.5;
   stroke-linejoin: round; stroke-linecap: round; }
 .hsa-cv-mark circle { fill: var(--hsa-teal); stroke: var(--card, #0C1220); stroke-width: 1.6; }
-/* viewBox 320 rộng bị scale lên ~2x khi hiển thị → đặt cỡ chữ theo đơn vị
-   viewBox (9) để in ra khoảng 13–14px thật, không bị to quá so với đồ thị. */
-.hsa-cv-mark text { fill: var(--hsa-teal); font-size: 9px; font-weight: 700; }
+/* Nhãn mốc là HTML chồng lên SVG (xem `renderCurve`): cỡ chữ THẬT, không co
+   theo bề ngang đồ thị. Đặt phía trên-phải điểm mốc, nền mờ để không lẫn vào
+   đường cong khi hai thứ chồng nhau (đo 17/09/2026 ở khổ 390px). */
+.hsa-cv-wrap { position: relative; }
+.hsa-cv-lab {
+  position: absolute; transform: translate(-6px, -140%); white-space: nowrap;
+  font-size: 12px; font-weight: 700; color: var(--hsa-teal);
+  background: var(--card, #0C1220); padding: 1px 5px; border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(45,212,191,.22);
+}
 
 /* ── Sơ đồ khối ── */
 .hsa-fl { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
@@ -286,6 +293,24 @@ body.light .hsa-viz-cap code { background: rgba(20,16,35,.07); }
 body.light .hsa-q,
 body.light .hsa-opt { border-color: var(--border-default); }
 body.light .hsa-viz-val { color: #FFFFFF; }
+/* TƯƠNG PHẢN Ở BƯỚC LÝ THUYẾT (đo 17/09/2026, ngay khi bộ đo giao diện bắt đầu đi
+   tới bước ấy — trước đó nó chỉ đo màn hỏi đáp nên ba chỗ dưới đây chưa ai soi):
+     · chip "Bản đầy đủ — theo kết quả kiểm tra": 1,46:1
+     · số trên cột của biểu đồ thanh (chữ trắng trên nền cột): 1,67–3,33:1
+     · nhãn bước "Kiểm tra / Đánh giá" (`--text-500` của lesson_chrome.css): 2,19:1
+   Chuẩn tiếp cận đòi 4,5:1. Sửa ở ĐÂY chứ không ở lesson_chrome.css: mọi ghi đè của
+   chủ đề sáng nằm trong tệp này (xem chú thích ở khối `body.light` phía trên). */
+body.light .progress-step { color: #4A4458; }
+body.light .hsa-th-badge.full { color: #8A4D06; background: rgba(251,191,36,.18); }
+body.light .hsa-th-badge.cond { color: #0B6357; background: rgba(45,212,191,.18); }
+body.light .hsa-viz-bar--violet { background: linear-gradient(90deg, rgba(91,73,207,.6), #5B49CF); }
+body.light .hsa-viz-bar--teal   { background: linear-gradient(90deg, rgba(15,118,110,.55), #0F766E); }
+body.light .hsa-viz-bar--amber  { background: linear-gradient(90deg, rgba(180,83,9,.55), #B45309); }
+/* Cùng lượt đo: khối "Ví dụ minh hoạ" trong lý thuyết — nhãn tím 3,11:1 và dòng
+   lời giải xanh ngọc 1,74:1 trên nền sáng. Dùng đúng cặp màu đậm mà các màn React
+   đang dùng cho nền sáng (#4B3BBD, #0B6357). */
+body.light .hsa-ex-label { color: #4B3BBD; }
+body.light .hsa-ex-sol { color: #0B6357; }
 body.light .hsa-viz-bar--slate .hsa-viz-val { color: #2A2438; }
 body.light .hsa-drill-xp { text-shadow: none; }
 
@@ -325,7 +350,7 @@ body.light .hsa-rev { background: var(--surface-1); }
   /* Số liệu xếp cột phải thẳng hàng — chữ số cùng bề rộng. */
   font-variant-numeric: tabular-nums;
 }
-.hsa-tb th, .hsa-tb td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
+.hsa-tb th, .hsa-tb td { padding: 8px clamp(4px, 1.6vw, 10px); border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
 .hsa-tb thead th {
   font-size: 11.5px; font-weight: 700; letter-spacing: .2px; text-transform: uppercase;
   color: var(--t3, #8B95A8); border-bottom-width: 2px;
@@ -465,6 +490,24 @@ body.light .hsa-viz-cap strong { color: #0B6355; }
   background: var(--brand-fill, #6D5AE6); color: #fff; font-size: 13px; font-weight: 700;
   font-family: inherit; text-decoration: none;
 }
+
+/* THẺ LÝ THUYẾT PHẢI CO ĐƯỢC (đo 17/09/2026, khổ 390px).
+   `.hsa-card` là flex; phần tử con của flex mặc định `min-width:auto`, tức KHÔNG
+   co xuống dưới bề rộng nội dung. Một bảng số liệu 5 cột kéo cả thẻ rộng 459px
+   trên màn 390px: cột "CẢ NĂM", huy hiệu và cả chữ của thẻ bị CẮT bên phải, và
+   không cuộn tới được (khung ngoài không cuộn ngang). Đúng bài "Đọc bảng số liệu"
+   — bài có hình mới của vòng 28.
+   Ba chỗ: `.hsa-cards` là LƯỚI nên ô của nó cũng kẹt `min-width:auto` (đo: thẻ
+   459px trong lưới 358px) — cần cả `minmax(0, 1fr)` lẫn `min-width:0` ở thẻ và
+   thân thẻ; và riêng bảng tự cuộn ngang BÊN TRONG thẻ, giữ
+   `max-content` để cột không bị bóp thành chữ xuống dòng từng ký tự. */
+.hsa-cards { grid-template-columns: minmax(0, 1fr); }
+.hsa-card, .hsa-card-body { min-width: 0; }
+/* Tiêu đề cột được XUỐNG DÒNG (ô số vẫn `nowrap`): trên màn 390px, bảng 5 cột
+   "CỬA HÀNG · QUÝ I · QUÝ II · QUÝ III · CẢ NĂM" khi ấy vừa khít khung, không
+   phải cuộn mới thấy cột cuối — cột mà chính chú thích của hình bảo là cột hay
+   bị hỏi. Bảng rộng hơn nữa vẫn cuộn ngang được trong `.hsa-tb-wrap` (đã có). */
+.hsa-tb thead th { white-space: normal; }
 
 /* Huy hiệu minh hoạ đặt absolute ở góc phải trên khối .hsa-viz. Với bảng số
    liệu, nó ĐÈ LÊN tiêu đề cột cuối (thấy rõ ở ảnh chụp bài "Đọc bảng số liệu").

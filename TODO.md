@@ -2902,7 +2902,7 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 
 ## 16/09/2026 — mục mở từ vòng 25
 
-- [ ] **Bộ đo giao diện mù ở "Quản trị · tổng quan" khổ ĐIỆN THOẠI.** `do_giao_dien
+- [x] **XONG 17/09 (vòng 32) — bộ đo giao diện mù ở "Quản trị · tổng quan" khổ ĐIỆN THOẠI.** `do_giao_dien
   --tu-kiem` nhét quy tắc hỏng mà lượt ấy vẫn ra `tương phản: 0/33` — **2/2 lượt**
   (16/09, cách nhau ~1 giờ). Tức con số 0 của trang này ở khổ điện thoại trong mọi
   bảng quét là vô nghĩa. KHÔNG phải do API chậm: `/api/admin/overview` trả 200 trong
@@ -2914,6 +2914,13 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   Lượt 2 còn thêm "Chi tiết khoá" khổ điện thoại KHÔNG đỏ nổi — lượt 1 cùng trang
   ấy đỏ 56/64. Tức có ít nhất một chỗ tự kiểm CHẬP CHỜN, không chỉ một chỗ mù.
   Kết luận hai lượt: HỎNG 2/46 rồi 3/46; trang mới vòng 25 đỏ đủ cả hai khổ cả hai lượt.
+  **17/09 — hỏng ở chính PHÉP TỰ KIỂM, không ở bộ đo.** Nó nhét MỘT màu cho cả trang, đoán từ
+  nền đọc tại điểm giữa màn hình; ở trang này khổ điện thoại điểm ấy không đại diện cho nền của
+  phần lớn chữ, nên nhét xong chữ vẫn tương phản cao. Nay tự kiểm đặt màu chữ của TỪNG phần tử
+  đúng bằng nền đã ghép của chính nó (1,0:1 ở mọi chỗ bộ đo sẽ soi): **46/46 lượt đỏ, tổng 4.248
+  vi phạm**, trang này 69/69 (điện thoại) và 65/65 (máy tính). Mục "Chi tiết khoá chập chờn" cũng
+  hết theo: 56/64 và 64/64. Cùng lượt vá thêm một báo oan của bộ đo (gradient toàn chặng trong
+  suốt bị ghép lên nền trắng tưởng tượng — xem vòng 32).
 
 - [x] **XONG 17/09 — pytest toàn bộ TREO VĨNH VIỄN — không đỏ, không hết giờ.** 16/09, sau 35 phút
   CPU tiến trình gần như đứng yên. Soi `pg_stat_activity` (chỉ đọc): một phiên **idle in

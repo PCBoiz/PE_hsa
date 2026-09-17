@@ -3141,6 +3141,13 @@ body.dark .lb-sub { color: #64748B; }
 .lb-row.lb-top3 .lb-value { color: #92400E; }
 .lb-row.lb-row-me .lb-value { color: var(--brand-ink); }
 body.dark .lb-value { color: #CBD5E1; }
+/* Ba dòng trên (`.lb-row.lb-top1 .lb-value` …) có độ ưu tiên CAO HƠN dòng ngay
+   trên, nên màu chọn cho nền SÁNG đè cả ở nền TỐI: #B45309 trên nền tối ra
+   2,47:1 (đo 17/09/2026 — lượt quét chủ đề tối đầu tiên kể từ khi bảng xếp hạng
+   có dòng). Ghi đè lại với đúng độ ưu tiên ấy, dùng sắc vàng SÁNG cho nền tối. */
+body.dark .lb-row.lb-top1 .lb-value { color: #FBBF24; }
+body.dark .lb-row.lb-top2 .lb-value { color: #CBD5E1; }
+body.dark .lb-row.lb-top3 .lb-value { color: #FCD34D; }
 
 .lb-me {
   margin-top: 10px;

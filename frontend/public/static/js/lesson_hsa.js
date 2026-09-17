@@ -293,17 +293,27 @@
     var pts = xs.map(function (x, k) { return sx(x).toFixed(1) + ',' + sy(ys[k]).toFixed(1); }).join(' ');
     var axisY = (yMin <= 0 && yMax >= 0) ? '<line class="hsa-cv-axis" x1="' + pad + '" y1="' + sy(0) + '" x2="' + (W - pad) + '" y2="' + sy(0) + '"/>' : '';
     var axisX = (from <= 0 && to >= 0) ? '<line class="hsa-cv-axis" x1="' + sx(0) + '" y1="' + pad + '" x2="' + sx(0) + '" y2="' + (H - pad) + '"/>' : '';
+    /* Nhãn mốc vẽ bằng HTML ĐẶT CHỒNG, không bằng <text> trong SVG: SVG co theo bề
+       ngang (viewBox 320 → 264px trên màn 390), nên chữ 9 đơn vị viewBox in ra chỉ
+       ~7,4px thật trên điện thoại — nhỏ hơn mọi chữ khác của bài (đo 17/09/2026).
+       Toạ độ đổi sang phần trăm của chính khung SVG nên vẫn dính đúng điểm. */
     var dots = (v.marks || []).map(function (m) {
       var my = m.y;   // máy chủ tính sẵn; null khi hàm không xác định tại `at`
       if (typeof my !== 'number' || !isFinite(my)) return '';
-      return '<g class="hsa-cv-mark"><circle cx="' + sx(m.at) + '" cy="' + sy(my) + '" r="4.5"/>' +
-        (m.label ? '<text x="' + (sx(m.at) + 7) + '" y="' + (sy(my) - 7) + '">' + esc(m.label) + '</text>' : '') + '</g>';
+      return '<g class="hsa-cv-mark"><circle cx="' + sx(m.at) + '" cy="' + sy(my) + '" r="4.5"/></g>';
+    }).join('');
+    var labs = (v.marks || []).map(function (m) {
+      if (typeof m.y !== 'number' || !isFinite(m.y) || !m.label) return '';
+      return '<span class="hsa-cv-lab" style="left:' + (sx(m.at) / W * 100).toFixed(2) + '%;top:'
+        + (sy(m.y) / H * 100).toFixed(2) + '%">' + esc(m.label) + '</span>';
     }).join('');
     return '<div class="hsa-viz hsa-viz--cv">' +
       (v.badge ? '<span class="hsa-viz-badge">' + esc(v.badge) + '</span>' : '') +
-      '<svg class="hsa-cv" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Đồ thị hàm ' + esc(v.fn) + '">' +
-        axisY + axisX + '<polyline class="hsa-cv-line" points="' + pts + '"/>' + dots +
-      '</svg>' +
+      '<div class="hsa-cv-wrap">' +
+        '<svg class="hsa-cv" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Đồ thị hàm ' + esc(v.fn) + '">' +
+          axisY + axisX + '<polyline class="hsa-cv-line" points="' + pts + '"/>' + dots +
+        '</svg>' + labs +
+      '</div>' +
       (v.caption ? '<div class="hsa-viz-cap">' + v.caption + '</div>' : '') + '</div>';
   }
 
