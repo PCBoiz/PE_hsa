@@ -137,8 +137,11 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
     (w) => !w.attendanceCounted && !w.lessons && !w.drills && !w.submissions,
   );
 
+  /* `print:[&_h3]:break-after-avoid`: khi IN, tiêu đề mục không được ở lại cuối trang một
+     mình. Soi bản in 17/09/2026: "Con có học đều không" nằm cuối trang 1 còn bảng nhịp
+     từng tuần sang trang 2 — người đọc phải lật trang mới biết bảng ấy thuộc về đâu. */
   return (
-      <article className="rounded-lg border border-line bg-surface p-6 print:border-0 print:p-0">
+      <article className="rounded-lg border border-line bg-surface p-6 print:border-0 print:p-0 print:[&_h3]:break-after-avoid">
         <h2 className="text-title text-ink">{bc.student.name || `Học viên #${bc.student.id}`}</h2>
         <p className="mt-1 text-body text-ink-2">
           Lớp {bc.class.name}

@@ -113,6 +113,11 @@ vậy. Việc đáng làm — không làm hôm nay vì sát giờ demo: gom ba c
 
 **Kiểm:** 19/19 phép kiểm liên quan (PDF cấp lớp + chuyên cần + CSV + phép kiểm mới); ruff.
 
+**Cùng lượt soi bản IN của tờ báo cáo phụ huynh** (đúng nút "In / Lưu PDF" anh sẽ bấm): bố cục in
+sạch (ẩn thanh điều hướng, ẩn nút), nhưng tiêu đề "Con có học đều không" ở lại cuối trang 1 còn
+bảng nhịp từng tuần sang trang 2 — người đọc phải lật trang mới biết bảng thuộc về đâu. Thêm
+`print:[&_h3]:break-after-avoid` cho cả tờ; in lại: tiêu đề đi cùng bảng.
+
 ## 17/09/2026 — VÒNG 33 · Chiều nay anh demo: màn đăng nhập tự đánh thức máy chủ, và một kịch bản trình diễn
 
 Anh báo "chiều tôi show demo". Rủi ro lớn nhất của buổi ấy không phải mã — mà là **máy chủ ngủ**:
