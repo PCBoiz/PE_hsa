@@ -90,6 +90,26 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 17/09/2026 — TỔNG DUYỆT TRƯỚC BUỔI DEMO CHIỀU 17/09
+
+Anh báo "chiều tôi show demo" và dặn kiểm kĩ. Đây là bảng kết quả, để anh không phải tin lời:
+
+| Cổng kiểm | Kết quả |
+|---|---|
+| pytest TOÀN BỘ (09:49–10:34) | **787/787 xanh**, 0 lỗi, 0 ERROR — lượt sạch hoàn toàn đầu tiên (các lượt trước luôn dính 1–4 lỗi do Neon rớt kết nối) |
+| Bộ đo giao diện, chủ đề sáng | 2 khổ × 23 trang: 0 tương phản · 0 vùng chạm nhỏ · 0 tràn ngang · 0 khối bị cắt · 0 lỗi JS · 0 CSP · 0 lời gọi ghi lọt |
+| Bộ đo giao diện, chủ đề tối | y hệt: 0 ở mọi cột |
+| Tự kiểm bộ đo (nhét lỗi cố ý) | **46/46 lượt đều đỏ**, 4.248 vi phạm cố ý — nên con số 0 ở hai dòng trên có nghĩa |
+| Tổng duyệt 9 màn demo × 2 khổ | 18/18 đạt, 0 lỗi JS, 0 CSP, 0 tràn |
+| 20 bài học ở khổ 390 (8 + 12) | 20/20 đạt, không khối nào bị cắt, chữ nhỏ nhất 11px |
+| Đường phụ huynh trên PRODUCTION | `weekly` đủ 4 tuần, chỉ hợp phần em học, `parent` chỉ còn tên; thu hồi → 404 |
+| Nhập kết quả thi từ PDF (đầu-cuối, tờ giả) | đọc 2 tờ → xem trước "2 sẵn sàng" → ghi → tờ báo cáo hiện "lần 3: 98/150, +10 so với lần trước", ba đơn vị yếu |
+| Xuất tệp: PDF cấp lớp · chuyên cần.csv · tiến độ.csv | 200, đúng định dạng, chữ Việt không ô vuông |
+| Bản IN tờ báo cáo phụ huynh | 2 trang, đủ bốn khối, không mồ côi tiêu đề (vá cùng lượt) |
+| Máy chủ production | thức: 0,50–0,97 s; **ngủ dậy: 76,3 s** (việc A1 của anh — kịch bản demo có cách né) |
+
+Việc phát sinh trong lượt tổng duyệt được ghi thành hai vòng riêng ngay dưới (33, 34).
+
 ## 17/09/2026 — VÒNG 34 · Tờ PDF cấp lớp tố giảng viên bỏ điểm danh 11 buổi CHƯA TỚI
 
 Tổng duyệt trước buổi demo chiều nay: mở đúng những thứ anh sẽ bấm. Xuất **Báo cáo lớp (PDF)**
