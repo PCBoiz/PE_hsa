@@ -692,3 +692,21 @@ def test_duong_KHONG_phai_api_thi_khong_dat():
         path = '/static/css/shell.css'
     mw = SecurityHeadersMiddleware(lambda _req: _R())
     assert 'Cache-Control' not in mw(_Req()).headers
+
+
+# ── `/api/health`: cửa duy nhất trình duyệt gõ được để ĐÁNH THỨC máy chủ ──
+
+@pytest.mark.django_db
+def test_api_health_mo_duoc_khong_can_dang_nhap(api):
+    """Màn đăng nhập gọi `/api/health` lúc trang vừa mở để máy chủ (gói rẻ, ngủ
+    sau ~15 phút) thức dậy trong lúc người dùng còn gõ mật khẩu — đo 17/09/2026:
+    lượt gọi đầu 76,3 giây, hai lượt sau 0,97 s và 0,50 s.
+
+    Trình duyệt CHỈ với tới Django qua tiền tố `/api/`, nên `/health` (dùng cho
+    health check của Render) không thay được. Bỏ tuyến này thì lời gọi đánh thức
+    lặng lẽ thành 404: vẫn đánh thức máy chủ, nhưng không còn ai biết nó là gì và
+    lần dọn dẹp sau sẽ xoá nó ở màn đăng nhập.
+    """
+    r = api.get('/api/health')
+    assert r.status_code == 200, r.content[:200]
+    assert r.json() == {'status': 'ok'}

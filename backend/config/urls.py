@@ -18,6 +18,13 @@ def health(request):
 
 urlpatterns = [
     path('health', health),
+    # CÙNG view, thêm tiền tố `/api/` (17/09/2026): trình duyệt chỉ với tới Django
+    # qua `/api/*` (Vercel chuyển tiếp đúng tiền tố ấy — xem `frontend/src/app/api`),
+    # nên màn đăng nhập không gọi được `/health` để ĐÁNH THỨC máy chủ trước khi
+    # người dùng bấm Đăng nhập. Máy chủ gói rẻ ngủ sau ~15 phút và lượt gọi đầu mất
+    # 70–90 giây (đo 17/09: 76,3 s; hai lượt sau 0,97 s và 0,50 s) — đánh thức sớm
+    # là cắt phần lớn khoảng chờ ấy khỏi lượt đăng nhập.
+    path('api/health', health),
     path('', include('accounts.urls')),
     path('', include('courses.urls')),
     path('', include('lessons.urls')),

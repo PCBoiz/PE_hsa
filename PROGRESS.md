@@ -90,6 +90,38 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 17/09/2026 — VÒNG 33 · Chiều nay anh demo: màn đăng nhập tự đánh thức máy chủ, và một kịch bản trình diễn
+
+Anh báo "chiều tôi show demo". Rủi ro lớn nhất của buổi ấy không phải mã — mà là **máy chủ ngủ**:
+đo lúc 09:51 trên production, lượt gọi đầu **76,3 giây**, hai lượt ngay sau **0,97 s** và **0,50 s**.
+Người mua sẽ thấy màn đăng nhập đứng im hơn một phút, và chuyện ấy ĐÃ xảy ra một lần rồi (07/09
+anh báo "không đăng nhập được nữa" trong khi mật khẩu đúng, Render trả 503 suốt 169 giây).
+
+**Hai việc, đều nhỏ**
+1. **Gõ cửa lúc mở trang.** `LoginForm` gọi `/api/health` ngay khi gắn — phần lớn thời gian thức
+   dậy trôi qua trong lúc người dùng còn gõ mật khẩu. Trình duyệt chỉ với tới Django qua tiền tố
+   `/api/` (Vercel chuyển tiếp đúng tiền tố ấy), nên thêm `path('api/health', health)` — CÙNG view
+   với `/health` mà Render đang dùng, có `SELECT 1` nên đánh thức luôn cả pool Neon.
+2. **Chờ lâu thì NÓI ra đang chờ gì.** Quá 6 giây chưa có trả lời thì hiện: *"Máy chủ đang thức
+   dậy (gói miễn phí tạm dừng khi không ai dùng). Lần đầu trong ngày thường mất khoảng một phút —
+   cứ để trang này mở."* Ẩn ngay khi có trả lời. Im lặng 70 giây đọc như hệ thống hỏng; đây chính
+   là chỗ bản cũ từng đổ lỗi "sai mật khẩu" cho một máy chủ 503.
+
+**Kiểm** — trình duyệt thật: mở `/login` → đúng một lời gọi `GET /api/health`; ép máy chủ trả lời
+sau 9 giây → câu "đang thức dậy" hiện sau **6.504 ms**, và ẩn khi có trả lời. **Đỏ-trước lấy ngay
+từ production** (đang chạy bản cũ): cùng kịch bản ra "KHÔNG CÓ" và "KHÔNG HIỆN". Phía máy chủ:
+phép kiểm `/api/health` trả 200 — gỡ tuyến thì ĐỎ. ruff · tsc · eslint · build.
+
+**`docs/KICH_BAN_TRINH_DIEN.md`** (mới, viết cho anh cầm khi demo): 15 phút chuẩn bị (mở sớm cho
+máy chủ thức · **đăng nhập lại** vì A6 đã đổi khoá nên mọi phiên cũ đăng xuất · `du_lieu_mau
+--lam-moi`), 7 chặng theo thứ tự bấm-gì-nói-gì, chỗ ĐỪNG mở (lớp thử nghiệm cũ có tài khoản "a",
+"Test Reg"), và bảng câu hỏi khó kèm câu trả lời thẳng.
+
+**Tổng duyệt trước khi giao** (máy dev + Neon thật, chặn mọi lời ghi): 9 màn × 2 khổ = **18/18
+đạt**, 0 lỗi JS, 0 CSP, 0 tràn ngang, 0 lời gọi ghi lọt. 12 bài học nữa ở khổ 390 (ngoài 8 bài
+vòng 32): 12/12 đạt, không khối nào bị cắt, chữ nhỏ nhất 11px. Đường phụ huynh trên production:
+`weekly` đủ 4 tuần, chỉ hợp phần em học, `parent` chỉ còn tên, thu hồi → 404.
+
 ## 17/09/2026 — VÒNG 32 · Bài học trên điện thoại: bảng bị cắt mất cột, nhãn đồ thị 7px — và bộ đo giao diện chưa từng nhìn tới bước lý thuyết
 
 Tiếp cách soi của vòng 30–31, lần này cho thứ người mua sẽ mở đầu tiên sau câu "76/76 bài đều có

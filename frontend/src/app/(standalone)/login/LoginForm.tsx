@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { oChu } from '@/lib/form';
 
 import { Button, Field } from '@/components/ui';
@@ -43,9 +43,34 @@ type FieldErrors = { email?: string; password?: string };
  * về đây từ Google, trên mạng chậm, sẽ thấy một biểu mẫu trống không giải thích
  * gì trong suốt khoảng đó. Đọc trên máy chủ thì câu lỗi nằm sẵn trong HTML.
  */
+/** Chờ quá chừng này mà máy chủ chưa trả lời thì NÓI ra đang chờ gì. Sáu giây:
+ *  đủ dài để không nhấp nháy với mạng bình thường, đủ ngắn để người dùng chưa kịp
+ *  nghĩ là hỏng. */
+const GIAY_NOI_DANG_THUC = 6000;
+
 export default function LoginForm({ oauthError }: { oauthError?: string | null }) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** Lượt đăng nhập đang chờ lâu bất thường — gần như luôn là máy chủ đang thức dậy. */
+  const [dangThucDay, setDangThucDay] = useState(false);
+  const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ĐÁNH THỨC MÁY CHỦ NGAY KHI MỞ TRANG (17/09/2026).
+     Máy chủ chạy gói rẻ, ngủ sau ~15 phút không ai gọi; lượt gọi đầu mất 70–90
+     giây (đo: 76,3 s). Người dùng mất chừng ấy giây ngay ở nút Đăng nhập, và màn
+     hình đứng im trông như hỏng — đã xảy ra thật, anh Sơn báo "không đăng nhập
+     được nữa" trong khi mật khẩu đúng.
+     Một lời gọi rẻ lúc trang vừa mở thì phần lớn thời gian thức dậy trôi qua
+     trong lúc người dùng còn đang gõ. Không chặn gì, hỏng thì bỏ qua — nó chỉ là
+     một cú gõ cửa. */
+  useEffect(() => {
+    const bo = new AbortController();
+    void fetch('/api/health', { cache: 'no-store', signal: bo.signal }).catch(() => {});
+    return () => {
+      bo.abort();
+      if (hen.current) clearTimeout(hen.current);
+    };
+  }, []);
   const [formError, setFormError] = useState<string | null>(
     (oauthError && OAUTH_ERRORS[oauthError]) || null,
   );
@@ -69,6 +94,8 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
     }
 
     setLoading(true);
+    if (hen.current) clearTimeout(hen.current);
+    hen.current = setTimeout(() => setDangThucDay(true), GIAY_NOI_DANG_THUC);
     try {
       const res = await fetch('/auth/login', {
         method: 'POST',
@@ -121,6 +148,8 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {
+      if (hen.current) clearTimeout(hen.current);
+      setDangThucDay(false);
       setLoading(false);
     }
   }
@@ -189,6 +218,15 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
         }
       />
 
+      {/* Chờ lâu bất thường thì NÓI ra đang chờ gì. Im lặng 70 giây ở nút Đăng nhập
+          đọc như hệ thống hỏng — và một lần đã bị đọc đúng như thế (xem chú thích
+          "MÁY CHỦ HỎNG ≠ SAI MẬT KHẨU" ở trên). */}
+      {dangThucDay && (
+        <p role="status" className="rounded-md border border-line bg-sunken px-4 py-3 text-small text-ink-2">
+          Máy chủ đang thức dậy (gói miễn phí tạm dừng khi không ai dùng). Lần đầu trong
+          ngày thường mất khoảng một phút — cứ để trang này mở.
+        </p>
+      )}
       <Button type="submit" id="loginBtn" full loading={loading}>
         {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </Button>
