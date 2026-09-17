@@ -131,6 +131,12 @@ dòng "1 học viên rời lớp chưa ghi lý do" đều đến từ **lớp 1 
 
 **Kiểm chung:** teaching/tests.py + luồng ERP + dữ liệu mẫu + báo cáo tuần **150/150** (11 phút 07). ruff. Không đổi giao diện (không build lại).
 
+**Không tự kiểm được trên production lượt này — nói thẳng.** Hai thay đổi đều nằm sau cổng đăng
+nhập (tổng quan quản trị; lệnh chạy ở máy). Từ 07:47 thẻ ký bằng `.env` không còn mở được Render
+(A6), nên không có đường nào tôi tự đi để xác nhận Render đã chạy bản này. Đã kiểm đủ ở máy dev +
+Neon thật (cùng CSDL với production, nên dữ liệu mẫu đã làm mới là dữ liệu production thấy). Khi
+anh xác nhận A6, cho tôi một cách kiểm production hợp lệ (một thẻ đọc, hoặc anh mở giúp một màn).
+
 ## 17/09/2026 — VÒNG 30 · Tờ báo cáo phụ huynh: nhịp từng tuần, và bốn chỗ nói sai với phụ huynh / giảng viên
 
 Anh bảo "tiếp tục cải tiến". Cách đếm "phụ huynh đã mở" là quyết định đang chờ anh (VIEC_CUA_ANH
