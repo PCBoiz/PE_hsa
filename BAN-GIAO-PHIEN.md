@@ -46,7 +46,9 @@ cd frontend && npm run dev                              # cổng 3100
 
 # cổng trước khi báo xong (RULES §4)
 cd backend  && ./.venv/Scripts/python.exe -m ruff check .
-cd backend  && ./.venv/Scripts/python.exe -m pytest -q  # ~29 phút, vào Neon thật
+cd backend  && ./.venv/Scripts/python.exe -m pytest -q  # ~46 phút từ VN (đo 17/09), vào Neon thật
+# cần gói pytest-timeout (pytest.ini bắt buộc): pip install pytest-timeout==2.4.0
+# phép kiểm nào quá 600 s thì CẢ lượt dừng kèm ngăn xếp — xem chú thích pytest.ini
 cd frontend && ./node_modules/.bin/eslint src e2e --max-warnings 0 && ./node_modules/.bin/tsc --noEmit
 cd frontend && for f in e2e/unit/*.test.mjs; do node "$f" >/dev/null || echo "ĐỎ $f"; done   # 25 unit Node (đếm 14/09 tối, sau vòng 18)
 python scripts/cap_the.py                               # thẻ 30 phút, không ghi CSDL

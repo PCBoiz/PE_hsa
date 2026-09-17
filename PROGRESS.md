@@ -90,6 +90,89 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 18/09/2026 (sáng) — TRANG PHỤ HUYNH KHÔNG CÒN TRẮNG 80 GIÂY; CANH GIỜ CHO PYTEST
+
+Anh bảo "tiếp tục cải tiến theo vòng lặp". Ba việc, đều đo được, đều lên `master`.
+
+### 1. Trang phụ huynh `/bc/<chìa>` — khung chờ chảy TRƯỚC khi máy chủ trả lời
+
+**Vì sao đây là việc số một.** Đây là bề mặt duy nhất người NGOÀI hệ thống nhìn thấy: phụ
+huynh mở từ tin nhắn, trên điện thoại, không tài khoản. Trang là Server Component nên
+trước khi Django trả lời, điện thoại **không nhận được byte nào**. Máy chủ gói free ngủ
+sau 15 phút; đo 18/09 06:26 trên production, lượt mở đầu: **83,9 giây** tab trắng. Màn
+đăng nhập đã được vá hôm 17/09 (tự đánh thức + câu chờ) nhưng trang này không chạy được
+JavaScript nào trước khi HTML về, nên không vá cùng cách được.
+
+**Cách vá:** `loading.tsx` cạnh `page.tsx` — Next bọc trang trong Suspense, gửi khung ngay,
+chảy tờ thật tới sau. Khung giữ đúng cấu trúc thẻ của tờ thật (không đóng cứng px); câu
+"Máy chủ đang thức dậy… cứ để trang này mở" hiện sau 6 giây bằng CSS `animation-delay`;
+`motion-reduce` thì hiện ngay; chỗ của câu được giữ sẵn nên không nhảy bố cục.
+
+**Đỏ trước, xanh sau — bản dựng production ở máy này, backend giả NGỦ 20 s, khổ 390px:**
+
+| | byte HTML đầu | FCP | màn hình 8 giây đầu |
+|---|---:|---:|---|
+| CŨ (không loading.tsx) | 20.154 ms | 20.240 ms | trắng |
+| MỚI | 155–324 ms | 392–460 ms | khung + câu chờ |
+
+Khi backend trả lời (20.086 ms): khung và câu chờ biến mất, tờ thật thay vào. Đường vui
+vẻ (backend thật, chìa mẫu, 390 và 1280px): tờ ra đúng, không còn khung, **CLS 0**.
+Soi ảnh lần đầu thấy câu chờ rơi **dưới mép** màn 390px → đưa lên TRÊN khung. Giảm chuyển
+động: opacity 1 ở giây 1,2. Chủ đề tối: `body.dark`, tương phản câu chờ 6,87:1.
+**Production sau deploy (06:28):** HTML có khung ở byte 2.623, tờ thật ở byte 28.441 —
+khung đi trước, tờ chảy sau.
+
+### 2. Hai công cụ đo cho trang chưa từng được đo
+
+- `scripts/cap_chia_mau.py` — cấp chìa cho một em LỚP MẪU qua đúng `ParentReportLinkView`.
+  **Đếm được:** +1 `parent_report_links`, +1 `admin_audit`, 0 `parent_report_sends`. Và mỗi
+  lượt đo tăng `opened_count`: sau một buổi đo, chìa ghi **"đã mở 23 lần"** mà không phụ
+  huynh nào — bằng chứng cụ thể cho câu C7 (đếm lượt TẢI, không đếm NGƯỜI).
+- `scripts/do_trang_phu_huynh.mjs` — đo `/bc/<chìa>` trên PRODUCTION, điện thoại, CPU 4×,
+  tắt bộ đệm, 5 lượt trung vị; từ chối in số nếu không ra tờ (trang lỗi cũng nhanh).
+  Mạng thật: LCP **1.096 ms** · 4G giả lập: **2.332 ms** · 323 kB = phông 160 · JS 140.
+  A/B xen kẽ 6+6 chặn woff2: FCP 2.560 → 1.888 ms — phông tranh băng thông với CSS. Ghi
+  TODO, chưa sửa: hai đường ra đều là đánh đổi (bỏ trọng lượng 500/800 thì tầng CSS cũ
+  dùng 158 chỗ; tách phông theo tuyến thì `--font-body` thành hai bộ).
+- `scripts/do_giao_dien.mjs` nay quét cả trang phụ huynh khi có `.the/chia_mau.json`;
+  không có thì NÓI ra là bỏ qua. Tự kiểm 48/48 đỏ; quét thật 2 chủ đề: 0 mọi cột.
+
+### 3. Canh giờ từng phép kiểm — lượt pytest treo không còn treo vô hạn
+
+Lượt 16/09 treo vĩnh viễn (phiên mồ côi giữ khoá unique). Vá `temp_user` hôm 17/09 chỉ
+bịt MỘT email; còn **105 chuỗi email cố định trong 30 tệp kiểm**. Chặn ở tầng khung:
+`pytest-timeout`, `timeout = 600`, `timeout_method = thread` (Windows không có SIGALRM;
+và `signal` không cắt được lời gọi kẹt trong mã C của psycopg — đúng chỗ treo).
+
+**Dựng lại đúng cảnh treo** (`dung_canh_treo.py` ở scratchpad): kết nối A mở giao dịch,
+INSERT email X, không commit; pytest chạy một phép kiểm INSERT cùng email X.
+
+| | kết quả |
+|---|---|
+| Bản CŨ (không canh giờ) | không tự dừng sau 90 s, phải giết |
+| Bản MỚI (`-o timeout=20`) | **tự dừng ở 21,6 s**, mã thoát 1, in ngăn xếp chỉ đúng `q1(... INSERT INTO users ...)` → `psycopg waiting.wait_select` |
+
+**`required_plugins = pytest-django pytest-timeout`.** Đo: thiếu gói thì hai khoá trên
+chỉ sinh `PytestConfigWarning: Unknown config option` và canh giờ lặng lẽ KHÔNG chạy;
+với `required_plugins` thì lỗi ngay dòng đầu `Missing required plugins: pytest-timeout`.
+CI: `timeout-minutes: 90` cho cả job (mặc định GitHub 360) + cài gói.
+Lượt đo đầu của thí nghiệm ĐO NHẦM: bản "cũ" thoát sau 1,2 s mã 4 — chính là lỗi thiếu
+plugin, không phải treo. Phải `-o required_plugins=pytest-django` mới dựng đúng bản cũ.
+
+**Toàn bộ pytest với canh giờ (18/09 06:02–06:48): 792 passed, 0 lỗi, 46 phút 11.**
+Phép kiểm chậm nhất 60,85 s, fixture lâu nhất 57,54 s → trần 600 s rộng ~10 lần.
+
+### 4. Dữ liệu mẫu và kịch bản demo
+
+`du_lieu_mau` báo "2 ngày trước — đã cũ" → `--lam-moi` (65,7 s). Kịch bản demo còn chỉ
+tới em Đỗ Đức Tùng "ba kỳ, +10" — kỳ thứ ba là dữ liệu nhập tay 17/09, đã mất khi làm
+mới. Sửa: em **Võ Thị Trâm** (HSA-MAU-01), kỳ 2 = 122/150, **+23**; điểm danh 14/14 và
+12/12 (đo). Thêm đoạn về lưới đỡ máy chủ ngủ ở trang phụ huynh.
+
+### Việc anh: C8 (mới, xem `VIEC_CUA_ANH.md`)
+Học vụ CÓ mở được báo cáo phụ huynh (mã), bản ghi 01/09 nói không. Chọn (A) giữ hay (B)
+cắt — nếu (B) thì cắt cả cột Email/SĐT trong hai CSV của lớp cho học vụ, không chỉ trợ giảng.
+
 ## 17/09/2026 (chiều) — HỒ SƠ KỸ THUẬT DẠNG PDF, VÀ MỘT CHÚ THÍCH NÓI DỐI VỀ QUYỀN
 
 Anh dặn làm thêm **một bản kỹ thuật** cũng dạng PDF, nghiên cứu thêm hai kho mở về

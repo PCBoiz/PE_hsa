@@ -47,6 +47,11 @@ jobs:
   backend:
     name: Backend (Django) — pytest
     runs-on: ubuntu-latest
+    # Trần của CẢ job. Mặc định GitHub là 360 phút: một lượt treo (16/09, xem
+    # backend/pytest.ini) sẽ đốt đủ 6 giờ phút Actions rồi mới báo gì. Máy ở
+    # Mỹ, cùng vùng Neon, nên phải nhanh hơn nhiều so với 46 phút chạy từ Việt
+    # Nam — 90 phút là rộng tay, và vẫn chặn được chuyện treo cả đêm.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,7 +63,9 @@ jobs:
         working-directory: backend
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-django ruff
+          # pytest-timeout: pytest.ini khai `timeout` VÀ `required_plugins`, nên
+          # thiếu gói này thì pytest dừng ngay từ đầu chứ không chạy thiếu canh giờ.
+          pip install pytest pytest-django pytest-timeout ruff
       # Lint TRƯỚC pytest: chạy dưới 1 giây và không chạm CSDL, trong khi một
       # vòng pytest ở đây mất ~16 phút VÀ đi tới Neon thật. Bắt lỗi rẻ trước.
       #

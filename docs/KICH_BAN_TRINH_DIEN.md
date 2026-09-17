@@ -15,18 +15,30 @@ dấu rõ trong hệ thống và không bao giờ gửi tin cho ai.
 | 3 | Làm mới dữ liệu trình diễn: `python manage.py du_lieu_mau --lam-moi` (≈60 giây), hoặc nhắn tôi làm | Bộ dữ liệu neo vào ngày dựng. Để quá 2 ngày, màn hình bắt đầu hiện "buổi đã dạy chưa ai điểm danh" và "N ngày không mở bài" — trông như trung tâm ngừng hoạt động. Muốn biết có cần không: chạy `python manage.py du_lieu_mau`, nó tự báo *"Hoạt động mẫu gần nhất … (N ngày trước)"*. |
 | 4 | Mở sẵn hai thẻ trình duyệt: **Quản trị · tổng quan** và **một bài học** | Đỡ phải gõ đường dẫn giữa buổi. |
 
-**Tình trạng dữ liệu lúc 10:40 ngày 17/09** (nếu anh demo CHIỀU NAY thì không phải làm gì
-thêm): đã làm mới lúc 08:02, hoạt động gần nhất là hôm qua — mọi màn hình sạch, lớp mẫu Ca chiều
-đã điểm danh đủ 14/14 buổi. Em **Đỗ Đức Tùng** (lớp Ca chiều) nay có **ba** kỳ thi thử tại trung
-tâm, kỳ gần nhất 98/150 **tăng 10 điểm** so với kỳ trước — mở tờ báo cáo của em này khi tới phần
-"Thứ phụ huynh nhận được". Demo sang ngày khác thì chạy `--lam-moi` (lưu ý: lệnh ấy dựng lại từ
-đầu nên ba kỳ thi kia trở về hai kỳ).
+**Tình trạng dữ liệu lúc 06:30 ngày 18/09**: đã làm mới (`--lam-moi`, 66 giây), hoạt động gần
+nhất là hôm qua — mọi màn hình sạch. Mỗi em mẫu có **hai** kỳ thi thử tại trung tâm (25/08 và
+15/09). Tờ đáng mở ở phần "Thứ phụ huynh nhận được": em **Võ Thị Trâm** (lớp Ca chiều,
+`HSA-MAU-01`) — kỳ 2 đạt **122/150, tăng 23 điểm** so với kỳ trước. *(Bản trước của dòng này
+nói tới em Đỗ Đức Tùng với ba kỳ thi và +10 — kỳ thứ ba ấy là dữ liệu nhập tay hôm 17/09 và đã
+mất khi làm mới; đừng tìm nó.)* Demo sang ngày khác thì chạy `--lam-moi` lần nữa: tên em có mức
+tăng lớn nhất có thể đổi, nên xem lại dòng này sau khi chạy — hoặc mở bảng báo cáo cả lớp và
+chọn em có cột "so kỳ trước" cao nhất.
+
+**Máy chủ ngủ — nay có lưới đỡ ở trang phụ huynh (18/09):** nếu anh mở đường dẫn phụ huynh trên
+điện thoại mà máy chủ đang ngủ, trang hiện ngay khung tờ báo cáo và sau 6 giây một câu "Máy chủ
+đang thức dậy… cứ để trang này mở" — thay vì tab trắng suốt hơn một phút như trước (đo 18/09
+06:26: 83,9 s cho lượt mở đầu khi chưa đánh thức). Vẫn nên làm bước 1 ở bảng trên.
 
 **Đừng mở trong buổi demo:** lớp *"Luyện HSA đợt 1/2027 — Ca tối"* (lớp thử
 nghiệm cũ, có hai tài khoản tên "a" và "Test Reg"). Hai tài khoản ấy cũng là
 thứ đang hiện ở mục "Cần chú ý ngay" của màn Việc hôm nay — nếu người mua hỏi,
 nói thẳng: *"đó là tài khoản thử của giai đoạn phát triển, sẽ xoá trước khi
-chạy thật"*.
+chạy thật"*. **Cùng lớp ấy còn để lại một dòng ở màn Tổng quan** (đo 18/09
+06:36): "2 buổi đã dạy chưa ai điểm danh" — hai buổi 15/09 và 17/09 của
+`HSA-DEMO-01`, không phải của hai lớp mẫu (hai lớp mẫu điểm danh đủ 14/14 và
+12/12). Tôi không tự điểm danh hộ hay xoá lớp ấy vì đó là việc C1 anh chưa
+quyết. Nếu muốn màn Tổng quan sạch hẳn trước demo: vào lớp ấy tick hai buổi
+(30 giây), hoặc bảo tôi xoá lớp thử.
 
 ---
 
