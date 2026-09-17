@@ -41,9 +41,21 @@ ASSIGNABLE_ROLES = (ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT,
 #     KHÔNG mở báo cáo phụ huynh — trong đó có email và số điện thoại của em.
 #     §8 của đặc tả nói thẳng: càng nhiều vai trò thì càng nhiều người nhìn thấy
 #     dữ liệu của một đứa trẻ.
-#   · QUẢN LÝ HỌC VỤ — xem mọi lớp, quản lý lớp và đợt học. KHÔNG đổi vai trò,
-#     KHÔNG đặt lại mật khẩu, KHÔNG mở báo cáo phụ huynh. Ba việc ấy giữ cho
-#     quản trị viên.
+#   · QUẢN LÝ HỌC VỤ — xem mọi lớp, quản lý lớp và đợt học. KHÔNG đổi vai trò
+#     và KHÔNG đặt lại mật khẩu; hai việc ấy giữ cho quản trị viên.
+#
+#     SỬA CHÚ THÍCH 17/09/2026. Dòng này trước đây còn ghi "KHÔNG mở báo cáo phụ
+#     huynh" — SAI so với mã, và sai ngay từ lúc viết. Báo cáo phụ huynh, chìa
+#     gửi phụ huynh và danh bạ liên lạc đều gác bằng `IsSeniorTeachingStaff`, mà
+#     lớp ấy cho `is_academic` qua (xem thân nó bên dưới), rồi `can_see_class`
+#     cho quản lý học vụ xem MỌI lớp. `tests_lien_he_phu_huynh.py` khẳng định
+#     đúng điều đó: tài khoản vai `Quản lý học vụ` nhận 200 ở đường danh bạ.
+#
+#     Ranh giới THẬT về dữ liệu liên lạc chỉ có một: TRỢ GIẢNG bị cắt (403).
+#     Muốn cắt cả quản lý học vụ thì phải sửa MÃ — thêm một lớp quyền hẹp hơn
+#     `IsSeniorTeachingStaff` cho ba đường ấy — chứ sửa chú thích thì chỉ đổi
+#     lời kể, không đổi quyền. Một chú thích nói dối về quyền còn tệ hơn không
+#     có chú thích: người đọc tin nó rồi thôi không mở mã ra xem (RULES §20).
 #
 # RANH GIỚI VỀ DỮ LIỆU LIÊN LẠC, nói rõ để lần sau không ai phải đoán:
 # **nhìn được khi LÀM VIỆC, nhưng không MANG RA NGOÀI được.**

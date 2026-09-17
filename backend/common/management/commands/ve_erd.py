@@ -39,8 +39,14 @@ MIEN = {
                        'mock_attempts'],
     'Trò chơi hoá': ['achievements', 'user_achievements', 'missions',
                      'user_missions', 'user_daily_xp_logs'],
-    'Lớp học (ERP)': ['terms', 'classes', 'class_members', 'class_sessions',
-                      'attendance', 'assignments', 'submissions'],
+    'Lớp học (ERP)': ['terms', 'term_holidays', 'classes', 'class_members',
+                      'class_sessions', 'attendance', 'assignments', 'submissions'],
+    # Thêm 17/09/2026 — chính lệnh này cảnh báo bốn bảng chưa có miền. §48 là kết
+    # quả kỳ thi thử NHẬP TỪ TỜ PDF của hệ thống khảo thí bên ngoài; hai bảng còn
+    # lại là đường công khai gửi phụ huynh và sổ gửi. Xếp thành một miền riêng vì
+    # chúng là bề mặt DUY NHẤT dữ liệu học viên đi RA KHỎI hệ (xem KIEN_TRUC/C4).
+    'Báo cáo phụ huynh & khảo thí ngoài': ['ket_qua_thi_ngoai', 'parent_report_links',
+                                           'parent_report_sends'],
     'Diễn đàn': ['posts', 'comments', 'post_likes', 'comment_likes'],
 }
 

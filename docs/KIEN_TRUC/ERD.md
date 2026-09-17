@@ -3,10 +3,10 @@
          cd backend && python manage.py ve_erd
      Nguồn: information_schema của chính CSDL đang chạy. -->
 # ERD — sinh từ CSDL
-**53 bảng** trong lược đồ `public`: **38 bảng nghiệp vụ** + 15 bảng khung (Django/allauth/SimpleJWT). **57 khoá ngoại** trong khối nghiệp vụ.
+**57 bảng** trong lược đồ `public`: **42 bảng nghiệp vụ** + 15 bảng khung (Django/allauth/SimpleJWT). **67 khoá ngoại** trong khối nghiệp vụ.
 
 ## 1. Bản đồ MIỀN — đọc cái này trước
-Sơ đồ đầy đủ có 38 hộp; không ai đọc nổi một bức như thế. Đây là bản đồ miền, và mỗi mũi tên là "có ít nhất một khoá ngoại".
+Sơ đồ đầy đủ có 42 hộp; không ai đọc nổi một bức như thế. Đây là bản đồ miền, và mỗi mũi tên là "có ít nhất một khoá ngoại".
 
 ```mermaid
 flowchart LR
@@ -15,9 +15,12 @@ flowchart LR
   M3["Học & đo lường<br/><small>9 bảng</small>"]
   M4["Kiểm tra & thi<br/><small>4 bảng</small>"]
   M5["Trò chơi hoá<br/><small>5 bảng</small>"]
-  M6["Lớp học (ERP)<br/><small>7 bảng</small>"]
-  M7["Diễn đàn<br/><small>4 bảng</small>"]
+  M6["Lớp học (ERP)<br/><small>8 bảng</small>"]
+  M7["Báo cáo phụ huynh & khảo thí ngoài<br/><small>3 bảng</small>"]
+  M8["Diễn đàn<br/><small>4 bảng</small>"]
+  M7 --> M6
   M7 --> M1
+  M8 --> M1
   M3 --> M2
   M3 --> M1
   M4 --> M2
@@ -41,6 +44,11 @@ erDiagram
     integer streak_freezes 
     boolean must_change_password 
     text status 
+    text parent_name 
+    text parent_phone 
+    text parent_email 
+    integer parent_contact_locked_by FK
+    boolean is_demo 
   }
   user_follows {
     integer follower_id PK
@@ -65,15 +73,16 @@ erDiagram
   users ||--o{ notifications : "user_id (CASCADE)"
   users ||--o{ user_follows : "followee_id (CASCADE)"
   users ||--o{ user_follows : "follower_id (CASCADE)"
+  users ||--o{ users : "parent_contact_locked_by (SET NULL)"
 ```
 
 | bảng | dòng | khoá ngoại ra ngoài miền |
 |---|---:|---|
-| `users` | 5 | — |
+| `users` | 53 | — |
 | `user_follows` | 0 | — |
 | `notification_settings` | 2 | — |
 | `notifications` | 0 | — |
-| `admin_audit` | 32 | — |
+| `admin_audit` | 119 | — |
 
 ### Nội dung & khoá học
 
@@ -106,7 +115,7 @@ erDiagram
 |---|---:|---|
 | `courses` | 3 | `instructor_id` → `users` |
 | `lessons` | 76 | — |
-| `enrollments` | 6 | `user_id` → `users` |
+| `enrollments` | 100 | `user_id` → `users` |
 | `course_ratings` | 0 | `user_id` → `users` |
 
 ### Học & đo lường
@@ -167,18 +176,18 @@ erDiagram
     text roadmap_id PK
     text item_id PK
   }
-  surveys ||--o{ roadmaps : "generated_from_survey_id (NO ACTION)"
+  surveys ||--o{ roadmaps : "generated_from_survey_id (SET NULL)"
   study_plans ||--o{ study_plan_items : "plan_id (CASCADE)"
 ```
 
 | bảng | dòng | khoá ngoại ra ngoài miền |
 |---|---:|---|
-| `lesson_progress` | 10 | `lesson_id` → `lessons`, `user_id` → `users` |
-| `learning_events` | 37 | `user_id` → `users` |
+| `lesson_progress` | 1095 | `lesson_id` → `lessons`, `user_id` → `users` |
+| `learning_events` | 2719 | `user_id` → `users` |
 | `topic_self_marks` | 1 | `user_id` → `users` |
 | `study_logs` | 1 | `user_id` → `users` |
 | `study_plans` | 3 | `user_id` → `users` |
-| `study_plan_items` | 269 | — |
+| `study_plan_items` | 266 | — |
 | `surveys` | 5 | `user_id` → `users` |
 | `roadmaps` | 4 | `user_id` → `users` |
 | `roadmap_progress` | 0 | `user_id` → `users` |
@@ -221,7 +230,7 @@ erDiagram
 | `quizzes` | 1 | `course_id` → `courses`, `user_id` → `users` |
 | `review_quiz_results` | 1 | — |
 | `mock_exams` | 1 | — |
-| `mock_attempts` | 5 | `user_id` → `users` |
+| `mock_attempts` | 65 | `user_id` → `users` |
 
 ### Trò chơi hoá
 
@@ -262,8 +271,8 @@ erDiagram
 | `achievements` | 10 | — |
 | `user_achievements` | 4 | — |
 | `missions` | 3 | `course_id` → `courses` |
-| `user_missions` | 2 | `user_id` → `users` |
-| `user_daily_xp_logs` | 6 | `user_id` → `users` |
+| `user_missions` | 4 | `user_id` → `users` |
+| `user_daily_xp_logs` | 961 | `user_id` → `users` |
 
 ### Lớp học (ERP)
 
@@ -275,6 +284,14 @@ erDiagram
     text status 
     timestamp_without_time_zone created_at 
   }
+  term_holidays {
+    integer id PK
+    integer term_id FK
+    date on_date 
+    text name 
+    integer created_by FK
+    timestamp_without_time_zone created_at 
+  }
   classes {
     integer id PK
     text name 
@@ -283,6 +300,7 @@ erDiagram
     text status 
     timestamp_without_time_zone created_at 
     integer term_id FK
+    boolean is_demo 
   }
   class_members {
     integer class_id FK
@@ -327,17 +345,66 @@ erDiagram
   classes ||--o{ class_sessions : "class_id (CASCADE)"
   terms ||--o{ classes : "term_id (SET NULL)"
   assignments ||--o{ submissions : "assignment_id (CASCADE)"
+  terms ||--o{ term_holidays : "term_id (CASCADE)"
 ```
 
 | bảng | dòng | khoá ngoại ra ngoài miền |
 |---|---:|---|
-| `terms` | 0 | — |
-| `classes` | 1 | `course_id` → `courses`, `teacher_id` → `users` |
-| `class_members` | 4 | `user_id` → `users` |
-| `class_sessions` | 0 | `attendance_taken_by` → `users`, `created_by` → `users` |
-| `attendance` | 0 | `marked_by` → `users`, `user_id` → `users` |
-| `assignments` | 0 | `course_id` → `courses`, `created_by` → `users` |
-| `submissions` | 0 | `graded_by` → `users`, `user_id` → `users` |
+| `terms` | 1 | — |
+| `term_holidays` | 0 | `created_by` → `users` |
+| `classes` | 3 | `course_id` → `courses`, `teacher_id` → `users` |
+| `class_members` | 52 | `user_id` → `users` |
+| `class_sessions` | 65 | `attendance_taken_by` → `users`, `created_by` → `users` |
+| `attendance` | 628 | `marked_by` → `users`, `user_id` → `users` |
+| `assignments` | 10 | `course_id` → `courses`, `created_by` → `users` |
+| `submissions` | 187 | `graded_by` → `users`, `user_id` → `users` |
+
+### Báo cáo phụ huynh & khảo thí ngoài
+
+```mermaid
+erDiagram
+  ket_qua_thi_ngoai {
+    bigint id PK
+    integer user_id FK
+    date ngay_thi 
+    integer tong_diem 
+    integer tong_toi_da 
+    jsonb diem_phan 
+    jsonb don_vi 
+    text ten_tren_to 
+    integer nhap_boi FK
+    timestamp_without_time_zone created_at 
+  }
+  parent_report_links {
+    integer id PK
+    text token 
+    integer class_id FK
+    integer user_id FK
+    date period_from 
+    date period_to 
+    integer created_by FK
+    timestamp_without_time_zone created_at 
+    timestamp_without_time_zone expires_at 
+    integer opened_count 
+  }
+  parent_report_sends {
+    integer id PK
+    integer link_id FK
+    text phone 
+    text status 
+    integer requested_by FK
+    timestamp_without_time_zone created_at 
+    text channel 
+    text email 
+  }
+  parent_report_links ||--o{ parent_report_sends : "link_id (CASCADE)"
+```
+
+| bảng | dòng | khoá ngoại ra ngoài miền |
+|---|---:|---|
+| `ket_qua_thi_ngoai` | 89 | `nhap_boi` → `users`, `user_id` → `users` |
+| `parent_report_links` | 4 | `class_id` → `classes`, `created_by` → `users`, `user_id` → `users` |
+| `parent_report_sends` | 0 | `requested_by` → `users` |
 
 ### Diễn đàn
 
@@ -381,14 +448,14 @@ erDiagram
 
 ## 3. Đọc từ số liệu, không từ trí nhớ
 
-**12 bảng đang RỖNG** — tính năng đã dựng nhưng chưa ai dùng, hoặc dựng thừa. Đáng rà lại trước khi thêm tính năng mới:
+**9 bảng đang RỖNG** — tính năng đã dựng nhưng chưa ai dùng, hoặc dựng thừa. Đáng rà lại trước khi thêm tính năng mới:
 
-`assignments`, `attendance`, `class_sessions`, `comment_likes`, `comments`, `course_ratings`, `notifications`, `post_likes`, `roadmap_progress`, `submissions`, `terms`, `user_follows`
+`comment_likes`, `comments`, `course_ratings`, `notifications`, `parent_report_sends`, `post_likes`, `roadmap_progress`, `term_holidays`, `user_follows`
 
 **Bảng không dính khoá ngoại nào**: (không có — tốt)
 
 **Luật xoá của khoá ngoại** — trộn nhiều luật trong một hệ là cách dữ liệu mồ côi sinh ra:
 
-- `CASCADE`: 43 khoá
-- `SET NULL`: 10 khoá
-- `NO ACTION`: 4 khoá — `courses.instructor_id`, `missions.course_id`, `roadmaps.generated_from_survey_id`, `roadmaps.user_id`
+- `CASCADE`: 50 khoá
+- `SET NULL`: 15 khoá
+- `NO ACTION`: 2 khoá — `parent_report_links.created_by`, `parent_report_sends.requested_by`

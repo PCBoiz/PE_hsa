@@ -31,19 +31,38 @@ thì tài liệu tự in ra một cảnh báo, không im lặng bỏ qua.
 kèm ngày đo. Khi sửa kiến trúc, sửa luôn tài liệu trong CÙNG lượt — chú thích và
 mã trôi khỏi nhau đúng lúc người viết đang tập trung vào việc khác.
 
-## Số liệu nền (đo 01/09/2026)
+## Số liệu nền (đo lại 17/09/2026)
 
-| | |
-|---|---:|
-| Bảng trong CSDL | 53 (38 nghiệp vụ + 15 khung) |
-| Khoá ngoại trong khối nghiệp vụ | 57 |
-| Endpoint (`path(...)` trong `urls.py`) | 298 |
-| App Django | 16 |
-| Route Next.js | 20 |
-| Bài học có nội dung | 76 |
-| Phép kiểm tự động | 220 |
-| Tài khoản thật | 5 |
+Bảng này từng ghi số đo 01/09/2026 và đứng yên trong khi hệ đi tiếp — "53 bảng ·
+220 phép kiểm" đọc lúc 17/09 đã sai gần một nửa. Nên mỗi dòng nay kèm **lệnh đo
+ra nó**: số cũ không tự dán nhãn là cũ, nhưng lệnh thì chạy lại được.
 
-Con số cuối cùng là con số quan trọng nhất khi đọc mọi tài liệu ở đây: **hệ này
-đang phục vụ 5 người**. Mọi quyết định "làm cho đúng quy mô" phải nhìn nó trước.
-Xem `TODO.md` mục N1 để biết vì sao chưa nên xây mô hình năng lực kiểu Elo.
+| | | đo bằng |
+|---|---:|---|
+| Bảng trong CSDL | 57 (42 nghiệp vụ + 15 khung) | `python manage.py ve_erd` |
+| Khoá ngoại trong khối nghiệp vụ | 67 | `ve_erd` |
+| Tuyến API thật | 122 | 137 `path(...)` trừ 15 `include(...)` trong 15 tệp `urls.py` |
+| App Django của dự án | 15 (+ gói `config`) | `INSTALLED_APPS` |
+| Trang Next.js | 28 (+ 4 route handler) | đếm `page.tsx` / `route.ts` trong `src/app` |
+| Bài học có nội dung | 76 (158 hình) | `SELECT count(*) FROM lessons` |
+| Phép kiểm phía máy chủ | 792 (42 tệp) | `pytest --collect-only -q` |
+| Phép kiểm phía giao diện | 27 tệp đơn vị + 11 kịch bản Playwright | `node --test "e2e/unit/*.test.mjs"` |
+| Tài khoản | 53, trong đó 48 là dữ liệu trình diễn | `SELECT is_demo, count(*) FROM users GROUP BY 1` |
+
+Con số **298 endpoint** ở bản cũ không tái lập được bằng cách đếm nào ở trên; nhiều
+khả năng nó đếm cả `path()` của Django admin và allauth. Nếu cần so với bản cũ thì
+so bằng lệnh, đừng so bằng con số.
+
+Dòng cuối là dòng quan trọng nhất khi đọc mọi tài liệu ở đây. 53 tài khoản nghe
+như một hệ đang chạy, nhưng **48 trong đó là dữ liệu trình diễn**: hệ này đang
+phục vụ **5 người thật**. Mọi quyết định "làm cho đúng quy mô" phải nhìn con số 5,
+không nhìn con số 53. Xem `TODO.md` mục N1 để biết vì sao chưa nên xây mô hình
+năng lực kiểu Elo.
+
+## Bản đọc một lượt cho người tiếp nhận
+
+Bốn tài liệu trên viết cho người sửa mã hằng ngày. Người mới nhận bàn giao cần một
+bản đi hết một lượt — kiến trúc, hạ tầng, dữ liệu, phân quyền, luồng, quy trình,
+cổng kiểm, rủi ro — có sơ đồ vẽ sẵn. Bản ấy là **hồ sơ kỹ thuật dạng PDF**, dựng
+17/09/2026, 27 trang, 16 sơ đồ. Tệp không nằm trong kho (đi kèm khi bàn giao); kịch
+bản dựng ra nó không phải một phần của mã sản phẩm.

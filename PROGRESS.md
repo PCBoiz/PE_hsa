@@ -90,6 +90,76 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 17/09/2026 (chiều) — HỒ SƠ KỸ THUẬT DẠNG PDF, VÀ MỘT CHÚ THÍCH NÓI DỐI VỀ QUYỀN
+
+Anh dặn làm thêm **một bản kỹ thuật** cũng dạng PDF, nghiên cứu thêm hai kho mở về
+cách vẽ sơ đồ, và "làm chi tiết vào".
+
+**Ra được gì.** `docs/Ho_so_ky_thuat_pe_hsa_2026-09-17.pdf` — 27 trang, **16 sơ đồ
+vẽ riêng**, viết cho NGƯỜI LÀM KỸ THUẬT của bên mua (khác hẳn bản thị trường viết
+cho người không làm kỹ thuật). Mục: cách đọc · tóm tắt · C4 ba mức · hạ tầng và
+triển khai · mô hình dữ liệu (4 ERD theo miền) · vai trò và phân quyền · phân luồng
+(4 sơ đồ trình tự) · quy trình vận hành · cổng kiểm · rủi ro · ba phụ lục. Tệp KHÔNG
+commit, cùng luật với bản thị trường.
+
+**Thư viện vẽ sơ đồ** ở scratchpad (`so_do.mjs` + 5 mô-đun nội dung), luật lấy từ
+`cathrynlavery/diagram-design`: lưới 4px · nối vuông góc bo r=8 · nhãn có nền che ·
+trần 9 nút / 12 mũi tên / 2 ô nhấn mỗi hình · màu theo VAI · SVG có `role="img"` +
+`<title>` + `<desc>`. Hai chỗ cố ý làm khác, ghi rõ trong Phụ lục B: dùng phông hệ
+thống (dựng ngoại tuyến), và **phông đơn cách chỉ cho chuỗi ASCII** — Consolas trên
+Windows dựng "thi thử" ra "thi thứ".
+
+### Thứ đáng giá hơn cái PDF: một chú thích nói dối về QUYỀN
+
+Đang vẽ bảng vai trò thì mở `common/permissions.py` ra đối chiếu từng ô — và chú
+thích đầu tệp nói **sai**:
+
+> "QUẢN LÝ HỌC VỤ — … KHÔNG mở báo cáo phụ huynh."
+
+Mã thì cho qua: báo cáo phụ huynh, chìa gửi phụ huynh và danh bạ liên lạc đều gác
+bằng `IsSeniorTeachingStaff`, mà lớp ấy là `admin | academic | teacher`. Sai **từ
+lúc viết**, không phải trôi về sau. `tests_lien_he_phu_huynh.py` đã khẳng định điều
+ngược lại (học vụ nhận 200) mà không ai đọc lại câu chú thích.
+
+**Vá chú thích chỉ là nửa việc.** Nửa còn lại: ba đường mang dữ liệu liên lạc của
+một đứa trẻ ra ngoài — tờ báo cáo, chìa công khai, lệnh thu hồi — **không có phép
+kiểm nào đi theo VAI**. Ranh giới thật của chúng chỉ tồn tại trong một câu chú
+thích, và câu ấy vừa bị bắt là nói sai.
+
+Nên viết `teaching/tests_quyen_bao_cao_phu_huynh.py`: 3 phép kiểm × 7 vai × 3 đường.
+Ghim cả vai ĐƯỢC phép chứ không chỉ vai bị chặn — chỉ ghim vai bị chặn thì lần nới
+quyền sau vẫn im lặng.
+
+**Hai đột biến trước khi tin** (đỏ-trước, RULES §14):
+
+| Đột biến | Kết quả |
+|---|---|
+| Nới `IsSeniorTeachingStaff` cho trợ giảng | **3/3 đỏ** |
+| Bỏ vế `teacher_id` trong `can_see_class` (giảng viên lớp khác thành 200) | **3/3 đỏ** |
+| Khôi phục mã | 3/3 xanh lại |
+
+### Vá kèm
+
+- `docs/KIEN_TRUC/README.md` — bảng "số liệu nền" còn ghi số đo 01/09 (53 bảng · 220
+  phép kiểm · 298 endpoint) trong khi thực tế là 57 · 792 · 122. Nay mỗi dòng kèm
+  **lệnh đo ra nó**. Con số 298 không tái lập được bằng cách đếm nào — nhiều khả
+  năng bản cũ đếm cả `path()` của Django admin và allauth; ghi thẳng điều đó ra.
+- `docs/KIEN_TRUC/ERD.md` sinh lại (57 bảng, 8 miền — thêm miền "Báo cáo phụ huynh &
+  khảo thí ngoài", xếp `term_holidays` về miền ERP trong `ve_erd.py`).
+
+### Lỗi sơ đồ chỉ SOI ẢNH mới thấy
+
+Bộ kiểm hình học tự viết chỉ bắt được phần tử tràn ra ngoài khung — nó báo "không có
+phần tử nào ra ngoài khung" cho cả những bức hỏng nặng. Phải chụp từng hình rồi xem
+mới tìm ra: nối `class_members → attendance` **SAI khoá ngoại** (`attendance.user_id`
+trỏ `users`); `parent_report_sends.channel` là cột **không tồn tại**; bản số "1"/"N"
+đặt tay rơi vào khoảng trống và đè lên tiêu đề hộp; ba đoạn đầu của đường gấp khúc
+thành đường **chéo**; dòng ghi chú dưới mũi tên bị đường đời nét đứt **gạch ngang**;
+hai trang PDF gần như **trắng** vì ép ngắt trang trước hình.
+
+→ Sửa gốc chứ không sửa từng chỗ: bản số do CỔNG tự sinh (`canh`/`canhQua`/`buyt`),
+nhãn phụ có nền che, và bỏ hẳn cờ ép-ngắt-trang.
+
 ## 17/09/2026 — TỔNG DUYỆT TRƯỚC BUỔI DEMO CHIỀU 17/09
 
 Anh báo "chiều tôi show demo" và dặn kiểm kĩ. Đây là bảng kết quả, để anh không phải tin lời:
