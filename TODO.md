@@ -2942,3 +2942,20 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   cấu trúc (hết va chạm unique), không phải hành vi. Còn có thể làm thêm, tuỳ anh:
   `ALTER ROLE … SET idle_in_transaction_session_timeout` ở cấp vai Neon để phiên mồ côi
   tự chết — thay đổi cấu hình CSDL, không nằm trong mã.
+
+## 17/09/2026 (tối) — mục mở từ vòng hồ sơ kỹ thuật
+
+- [ ] **Phông chữ chiếm một nửa byte của trang phụ huynh, và tranh băng thông với CSS.**
+  Đo 17/09 bằng `scripts/do_trang_phu_huynh.mjs` (production, điện thoại, CPU 4×, tắt bộ
+  đệm): `/bc/<chìa>` tải **323 kB = phông 160 · JS 140 · CSS 14 · HTML 9**. Layout gốc
+  `preload` 16 tệp woff2 (5 trọng lượng × 3 dải ký tự + mono), trang chỉ DÙNG 9 (Be
+  Vietnam Pro 400/600/700). A/B xen kẽ 6+6 lượt ở chế độ 4g: chặn mọi woff2 → FCP trung
+  vị **2.560 → 1.888 ms**, CSS chặn-vẽ xong **1.621 → 857 ms**. Tức phông về trước CSS
+  và giữ CSS lại — trang chưa vẽ được vì đang tải chữ đậm 800 mà trang không có.
+  Hai đường ra, đều là đánh đổi chứ không phải vá: (a) bỏ trọng lượng 500 và 800 khỏi
+  `layout.tsx` — nhưng tầng CSS cũ dùng `font-weight: 800` ở 121 chỗ, `500` ở 37 chỗ,
+  trình duyệt sẽ tự làm đậm giả (faux bold) và chữ xấu đi ở đúng màn học viên; (b) tách
+  phông theo nhóm tuyến — `(standalone)/bc` chỉ khai 400/600/700, còn lại giữ nguyên —
+  nhưng `next/font` khai ở layout GỐC để `--font-body` có ở mọi trang, tách ra là hai
+  bộ biến. Chưa chọn; đo trước khi chọn: 1,1 s LCP trên mạng thật đã dưới ngưỡng, chỉ
+  4G giả lập mới chạm 2,3 s. Không phải việc chặn đường.
