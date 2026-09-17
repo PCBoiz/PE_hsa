@@ -434,8 +434,14 @@ def dem_chuyen_can(class_id):
     ``progress.csv`` ghi "vắng 0 buổi" ngay cạnh ``diem-danh.csv`` ghi "vắng 1,
     chuyên cần 75%" — buổi vắng ấy đã huỷ, và hai chỗ áp luật khác nhau.
 
-    HAI LUẬT NẰM TRONG ĐÂY, cả hai đều đã trả giá để học:
+    BA LUẬT NẰM TRONG ĐÂY, cả ba đều đã trả giá để học:
       · buổi ĐÃ HUỶ không cộng vào ô nào — nhãn vẫn in ra để đối chiếu;
+      · buổi CHƯA DIỄN RA không phải "chưa tick" (vá 17/09/2026). Bản trước lấy
+        mọi buổi không huỷ làm mẫu số của `chuaTick`, nên một lớp mẫu có 14 buổi
+        đã dạy (tick đủ) và 11 buổi tuần sau in ra "Chưa tick 11" cho MỌI học
+        viên — tờ PDF cấp lớp tự tố giảng viên bỏ điểm danh 11 buổi chưa tới.
+        Đúng lớp lỗi mà `parent_report._chuyen_can` và `teaching/overview` đã vá
+        trước đó; đây là chỗ thứ ba, tìm ra bằng cách MỞ tờ PDF ra nhìn;
       · không có dòng điểm danh KHÁC HẲN "vắng". Lấp trống bằng "vắng" là vu
         cho học viên một buổi nghỉ mà giảng viên chỉ chưa tick.
 
@@ -446,7 +452,9 @@ def dem_chuyen_can(class_id):
     if not doc_duoc:
         return None, False
 
-    held = [s for s in sessions if s['status'] != 'cancelled']
+    gio = local_now()
+    held = [s for s in sessions
+            if s['status'] != 'cancelled' and s['starts_at'] and s['starts_at'] <= gio]
     ra = {}
     for m in reports._members(class_id):
         uid = m['user_id']

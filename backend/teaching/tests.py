@@ -491,6 +491,41 @@ def test_lop_on_CA_BA_hop_phan_co_tien_do_cung_luat_bao_cao_lop(db):
     assert lop[mot]['progressPct'] == _mot_phan_tram(1, dinh_luong)
 
 
+@pytest.mark.django_db
+def test_buoi_chua_toi_khong_bi_tinh_la_CHUA_TICK_trong_so_diem_danh(db):
+    """`dem_chuyen_can` nuôi CẢ tờ PDF cấp lớp lẫn `diem-danh.csv`.
+
+    Bản trước lấy mọi buổi không huỷ làm mẫu số của `chuaTick`, nên lớp mẫu 14
+    buổi đã dạy (tick đủ) + 11 buổi tuần sau in ra "Chưa tick 11" cho MỌI học
+    viên — tờ giấy tự tố giảng viên bỏ điểm danh 11 buổi CHƯA TỚI. Tìm ra 17/09
+    bằng cách mở tờ PDF ra nhìn; cùng lớp lỗi đã vá ở `parent_report._chuyen_can`
+    và `teaching/overview`.
+    """
+    from datetime import timedelta
+
+    from teaching.exports import dem_chuyen_can
+    gv = _nguoi('GV Chua Tick', ROLE_TEACHER)
+    em = _nguoi('HV Chua Tick', ROLE_STUDENT)
+    cid = _lop_trong('Lop chua tick', gv=gv.id)
+    _vao_lop(cid, em.id)
+    nay = local_now()
+    da_day = q1("INSERT INTO class_sessions (class_id, starts_at, status, attendance_taken_at, "
+                "created_by) VALUES (%s,%s,'planned',%s,%s) RETURNING id",
+                (cid, nay - timedelta(days=2), nay, gv.id))
+    q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+       'VALUES (%s,%s,%s,%s,%s) RETURNING session_id',
+       (da_day['id'], em.id, 'present', nay, gv.id))
+    for i in (1, 5):     # hai buổi CHƯA TỚI
+        q1("INSERT INTO class_sessions (class_id, starts_at, status, created_by) "
+           "VALUES (%s,%s,'planned',%s) RETURNING id", (cid, nay + timedelta(days=i), gv.id))
+
+    theo_uid, doc_duoc = dem_chuyen_can(cid)
+    assert doc_duoc
+    d = theo_uid[em.id]
+    assert d['chuaTick'] == 0, 'buổi chưa tới bị tính là giảng viên quên tick: %s' % d['chuaTick']
+    assert d['present'] == 1 and d['tiLe'] == 100
+
+
 # ── Học viên quay lại lớp cũ — hồi quy cho `reports._members` (31/08/2026) ──
 
 @pytest.mark.django_db

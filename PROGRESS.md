@@ -90,6 +90,29 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 17/09/2026 — VÒNG 34 · Tờ PDF cấp lớp tố giảng viên bỏ điểm danh 11 buổi CHƯA TỚI
+
+Tổng duyệt trước buổi demo chiều nay: mở đúng những thứ anh sẽ bấm. Xuất **Báo cáo lớp (PDF)**
+của lớp mẫu rồi NHÌN ảnh trang 1 — cột "Chưa tick" ghi **11 với mọi học viên**, đúng bằng số buổi
+lớp ấy còn chưa tới. Lớp có 25 buổi: 14 đã dạy (tick đủ) + 11 tuần sau.
+
+**Gốc:** `exports.dem_chuyen_can` lấy mẫu số là MỌI buổi không huỷ — không lọc buổi chưa diễn ra.
+Nó nuôi cả tờ PDF cấp lớp lẫn `diem-danh.csv`. Đúng lớp lỗi `parent_report._chuyen_can` đã vá
+31/08 ("bỏ buổi đã huỷ và buổi CHƯA DIỄN RA") và `teaching/overview` đã vá cùng thời điểm
+(`test_buoi_chua_toi_khong_bi_tinh_la_chua_diem_danh`) — **đây là chỗ thứ ba**, và là chỗ duy nhất
+in ra GIẤY để mang đi họp.
+
+**Vá:** `held` chỉ còn buổi đã bắt đầu (`starts_at <= local_now()`) và không huỷ. Phép kiểm mới
+`test_buoi_chua_toi_khong_bi_tinh_la_CHUA_TICK_trong_so_diem_danh`: một buổi đã dạy có tick + hai
+buổi tuần sau → `chuaTick` phải là 0; lùi mã cũ thì ĐỎ ("chưa tới bị tính: 2"). Xuất lại tờ PDF
+của lớp mẫu: cột "Chưa tick" nay 0 ở cả 26 em, tỉ lệ không đổi (79–100%).
+
+**Bài học rút ra, ghi vào đây vì đã lặp ba lần:** luật "buổi chưa tới không phải buổi thiếu điểm
+danh" nằm rải ở ba nơi tính chuyên cần, mỗi nơi tự viết lại. Chỗ thứ tư (nếu có) sẽ lại sai như
+vậy. Việc đáng làm — không làm hôm nay vì sát giờ demo: gom ba chỗ về một hàm chung.
+
+**Kiểm:** 19/19 phép kiểm liên quan (PDF cấp lớp + chuyên cần + CSV + phép kiểm mới); ruff.
+
 ## 17/09/2026 — VÒNG 33 · Chiều nay anh demo: màn đăng nhập tự đánh thức máy chủ, và một kịch bản trình diễn
 
 Anh báo "chiều tôi show demo". Rủi ro lớn nhất của buổi ấy không phải mã — mà là **máy chủ ngủ**:
