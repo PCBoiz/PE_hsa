@@ -27,7 +27,7 @@
  * rồi đòi bộ đo phải BẮT ĐƯỢC. Một bộ đo không đỏ được là một bộ đo giả.
  */
 import { createRequire } from 'node:module';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -102,10 +102,11 @@ const TRANG = [
      phạm" trên một tập không đầy đủ, và con số 0 ấy là giấy chứng nhận sạch
      cấp cho phần chưa ai nhìn tới.
 
-     `/bc/<chìa>` (trang phụ huynh) KHÔNG có ở đây: nó cần một chìa THẬT, tức
-     một dòng ghi vào Neon production mỗi lượt quét. Đã đo tay trong phiên
-     07/09 ở ngữ cảnh không cookie; ghi ra đây để không ai tưởng nó cũng nằm
-     trong lượt quét tự động. */
+     `/bc/<chìa>` (trang phụ huynh) từng KHÔNG có ở đây vì cần một chìa thật.
+     Từ 17/09/2026 `scripts/cap_chia_mau.py` cấp chìa cho một em LỚP MẪU và cất
+     ở `.the/chia_mau.json`; có tệp ấy thì trang được thêm vào cuối danh sách
+     (xem sau mảng). Không có tệp thì bỏ qua VÀ NÓI RA — không im lặng quét
+     thiếu một trang rồi in "0 vi phạm". */
   ['/quan-tri/vai-tro', 'Quản trị · ai làm được gì'],
   ['/quan-tri/huong-dan', 'Quản trị · hướng dẫn'],
   /* Thêm 07/09/2026 cùng ngày trang được dựng. Lần audit chiều nay bộ đo
@@ -122,6 +123,19 @@ const TRANG = [
   // Thêm 14/09/2026 cùng ngày dựng — trang mở mỗi tối của giảng viên.
   ['/giang-day', 'Giảng dạy · việc hôm nay'],
 ];
+/* Trang phụ huynh — bề mặt DUY NHẤT người ngoài hệ thống nhìn thấy, mở trên điện
+   thoại từ tin nhắn. Mỗi lượt quét là một lượt "mở" (tăng opened_count của chìa
+   mẫu) — chấp nhận, vì chìa thuộc lớp mẫu. */
+{
+  const TEP_CHIA = join(DAY, '..', '.the', 'chia_mau.json');
+  if (existsSync(TEP_CHIA)) {
+    const { token } = JSON.parse(readFileSync(TEP_CHIA, 'utf8'));
+    TRANG.push([`/bc/${token}`, 'Phụ huynh · tờ báo cáo qua chìa']);
+  } else {
+    console.log('⚠ Không có .the/chia_mau.json → BỎ QUA trang phụ huynh /bc/<chìa>. '
+      + 'Cấp bằng: backend/.venv/Scripts/python.exe scripts/cap_chia_mau.py');
+  }
+}
 
 /* Hàm chạy TRONG trang. Viết bằng function thật rồi `.toString()` thay vì nhét
    vào template literal — chuỗi lồng chuỗi là chỗ dấu gạch chéo bị nuốt. */
