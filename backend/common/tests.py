@@ -256,6 +256,107 @@ def test_khong_cau_DDL_nao_dung_toi_bang_chua_duoc_tao():
     assert loi == [], loi
 
 
+def test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau():
+    """Một ràng buộc được `ADD CONSTRAINT` nhiều lần thì mọi lần phải cùng định nghĩa.
+
+    `bootstrap_schema` chạy lại TOÀN BỘ tệp mỗi lần deploy, và `ADD CONSTRAINT`
+    kiểm lại MỌI dòng đang có. Một bản cũ nằm phía trên bản mới là một lần áp luật
+    CŨ lên dữ liệu MỚI — ngủ yên cho tới ngày có dữ liệu mà chỉ luật mới cho phép.
+
+    Bắt được 18/09/2026: câu #103 thêm `users_role_check` với NĂM vai trò, câu
+    #184 nới lên sáu (thêm 'Biên tập nội dung', 04/09). Dựng lại trên Neon trong
+    một giao dịch cuộn lại: có MỘT tài khoản Biên tập nội dung là câu #103 ném
+    `CheckViolation` → `bootstrap_schema` `raise` → lệnh dựng Render thất bại,
+    trong khi câu `DROP` ngay trước đã COMMIT (chạy autocommit) — production kẹt ở
+    bản cũ, mọi lần deploy sau hỏng cùng chỗ, và CSDL mất hẳn ràng buộc vai trò.
+    Vai trò ấy đã dựng xong và nằm trong tài liệu bán hàng: ngày TopHSA tạo người
+    soạn giáo trình đầu tiên là ngày deploy kế tiếp chết.
+
+    So bằng CHUỖI định nghĩa đã chuẩn hoá khoảng trắng, không cố hiểu SQL: hai bản
+    khác chữ mà cùng nghĩa thì cứ sửa cho giống nhau — rẻ hơn là viết một bộ phân
+    tích `CHECK` rồi tin nó.
+    """
+    import io as _io
+    import pathlib
+    import re
+
+    from common.management.commands.bootstrap_schema import _split_statements
+
+    THEM = re.compile(r'ADD\s+CONSTRAINT\s+(\w+)\s+(.*)', re.I | re.S)
+    thu_muc = pathlib.Path(__file__).resolve().parent.parent / 'sql'
+    theo_ten = {}
+    for f in sorted(thu_muc.glob('*.sql')):
+        for i, st in enumerate(_split_statements(_io.open(f, encoding='utf-8').read()), 1):
+            m = THEM.search(st)
+            if m:
+                theo_ten.setdefault(m.group(1), []).append(
+                    ('%s #%d' % (f.name, i), ' '.join(m.group(2).split())))
+    lech = {ten: ds for ten, ds in theo_ten.items() if len({d for _, d in ds}) > 1}
+    assert lech == {}, lech
+
+
+def test_rang_buoc_vai_tro_trong_SQL_KHOP_ASSIGNABLE_ROLES():
+    """Danh sách vai trò ở `CHECK` phải đúng bằng `ASSIGNABLE_ROLES` — ở MỌI lần thêm.
+
+    Chú thích trong `legacy_schema.sql` đã đòi điều này từ 01/09 ("Danh sách này
+    PHẢI khớp ASSIGNABLE_ROLES"), vì lỗi ấy đã xảy ra thật: thêm hằng ở Python, quên
+    `CHECK`, và màn đổi vai trò báo lỗi bằng tên ràng buộc. Nhưng không có phép kiểm
+    nào ghim nó — nên 04/09 thêm 'Biên tập nội dung' thì một trong hai bản `CHECK`
+    tụt lại, và đứng im ở đó mười bốn ngày (xem phép kiểm ngay trên).
+
+    Kiểm cả hai chiều: thiếu một vai trò là màn hình đổ; THỪA một vai trò là CSDL
+    nhận một giá trị mà không lớp quyền nào hiểu.
+    """
+    import io as _io
+    import pathlib
+    import re
+
+    from common.management.commands.bootstrap_schema import _split_statements
+    from common.permissions import ASSIGNABLE_ROLES
+
+    thu_muc = pathlib.Path(__file__).resolve().parent.parent / 'sql'
+    ban = []
+    for f in sorted(thu_muc.glob('*.sql')):
+        for i, st in enumerate(_split_statements(_io.open(f, encoding='utf-8').read()), 1):
+            if re.search(r'ADD\s+CONSTRAINT\s+users_role_check\b', st, re.I):
+                ban.append(('%s #%d' % (f.name, i), set(re.findall(r"'([^']+)'", st))))
+    assert ban, 'không thấy câu ADD CONSTRAINT users_role_check nào — đổi tên thì sửa phép kiểm'
+    lech = [(noi, sorted(vt ^ set(ASSIGNABLE_ROLES))) for noi, vt in ban if vt != set(ASSIGNABLE_ROLES)]
+    assert lech == [], 'lệch với ASSIGNABLE_ROLES (thiếu hoặc thừa): %s' % lech
+
+
+def test_khong_phep_kiem_nao_chay_DDL_tren_CSDL_dung_chung():
+    """Không phép kiểm nào được chạy ALTER / CREATE / DROP / TRUNCATE / LOCK.
+
+    Bộ kiểm chạy trên CSDL DÙNG CHUNG với production (xem `conftest.py`), mỗi phép
+    kiểm trong một giao dịch cuộn lại. "Cuộn lại" lo được DỮ LIỆU, không lo được
+    KHOÁ: DDL giữ khoá ACCESS EXCLUSIVE trên bảng thật tới cuối giao dịch. Đo
+    18/09/2026 với fixture `vai_tro_moi` (đã bỏ — `ALTER TABLE users …`): một kết
+    nối khác đọc `users` bị chặn 4.239 ms thay vì 239 ms, và phần dựng fixture
+    mất 57,54 s vì câu ALTER phải xếp hàng sau mọi giao dịch đang đọc `users`.
+    Trên production đó là mọi request nạp người dùng đứng chờ trong lúc CI chạy.
+
+    Cần đổi lược đồ cho một phép kiểm thì đổi ở `sql/legacy_schema.sql` (chạy qua
+    `bootstrap_schema`), không đổi trong phép kiểm.
+    """
+    import io as _io
+    import pathlib
+    import re
+
+    goc = pathlib.Path(__file__).resolve().parent.parent
+    DDL = re.compile(r'\b(?:x|q|q1|execute)\(\s*[rbuf]*[\'"]\s*'
+                     r'(ALTER|CREATE|DROP|TRUNCATE|LOCK)\b', re.I)
+    loi = []
+    for f in sorted(goc.rglob('*.py')):
+        if '.venv' in f.parts or not (f.name in ('tests.py', 'conftest.py')
+                                      or f.name.startswith(('test_', 'tests_'))):
+            continue
+        for so, dong in enumerate(_io.open(f, encoding='utf-8').read().splitlines(), 1):
+            if DDL.search(dong):
+                loi.append('%s:%d  %s' % (f.relative_to(goc), so, dong.strip()[:80]))
+    assert loi == [], loi
+
+
 # ── IP máy khách: MỘT cửa cho cả hàng rào tần suất lẫn nhật ký kiểm toán ────
 #
 # LỖI GỐC (đo 04/09/2026). `audit._client_ip` lấy phần tử ĐẦU của

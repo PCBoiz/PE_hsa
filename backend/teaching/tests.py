@@ -1122,25 +1122,23 @@ def test_sua_mot_truong_thi_nhat_ky_chi_ghi_MOT_truong(lop):
     assert kq2.data['session']['recordingUrl'] == 'https://drive.google.com/file/d/x'
 
 
-@pytest.fixture
-def vai_tro_moi(db):
-    """Nới `users_role_check` để nhận hai vai trò mới — TRONG giao dịch của test.
-
-    Ràng buộc thật ở Neon vẫn chỉ có ba vai trò cũ: bản nới nằm ở
-    `sql/legacy_schema.sql` và sẽ được `bootstrap_schema` áp lúc deploy, đúng
-    lối đã làm với §42. Không áp tay vào CSDL production chỉ để test chạy.
-
-    DDL trong Postgres nằm trong giao dịch, nên câu dưới đây cuộn lại cùng mọi
-    thứ khác — chạy xong CSDL trở về đúng ba vai trò cũ.
-
-    Fixture này CHÍNH LÀ chỗ ghi lại một lỗi đã mắc hôm nay: thêm hằng vào
-    `ASSIGNABLE_ROLES` rồi tưởng xong, trong khi CSDL có `CHECK` riêng — và câu
-    báo lỗi là `users_role_check`, thứ không ai đọc ra được là "thiếu một dòng
-    trong legacy_schema.sql".
-    """
-    x("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check")
-    x("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN "
-      "('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng', 'Học viên'))")
+# ── Fixture `vai_tro_moi` ĐÃ BỎ (18/09/2026) ─────────────────────────────────
+#
+# Nó chạy `ALTER TABLE users DROP/ADD CONSTRAINT users_role_check` trong giao
+# dịch của từng phép kiểm, với lý do "ràng buộc thật ở Neon vẫn chỉ có ba vai trò
+# cũ". Lý do ấy hết đúng từ khi `bootstrap_schema` áp bản nới (đo 18/09 bằng
+# `pg_get_constraintdef`: đủ SÁU vai trò). Còn lại chỉ là tác hại, cả hai đều đo:
+#
+#   · `ALTER TABLE` giữ khoá ACCESS EXCLUSIVE trên bảng `users` THẬT (CSDL dùng
+#     chung với production) suốt phép kiểm. Đo: kết nối khác đọc `users` bị chặn
+#     4.239 ms thay vì 239 ms — tức mọi request nạp người dùng trên production
+#     đứng chờ. Và câu ALTER phải xếp hàng sau mọi giao dịch đang đọc `users`:
+#     lượt 18/09 có một phần DỰNG fixture mất 57,54 s.
+#   · Nó THU HẸP ràng buộc (bỏ 'Biên tập nội dung') — chỉ chạy được vì chưa có
+#     tài khoản nào mang vai ấy; có một cái là cả năm phép kiểm dưới ERROR.
+#
+# Việc nó định canh (hằng Python lệch `CHECK`) nay canh bằng phép kiểm TĨNH, không
+# chạm CSDL: `common/tests.py::test_rang_buoc_vai_tro_trong_SQL_KHOP_ASSIGNABLE_ROLES`.
 
 
 # ── Hai vai trò thêm 01/09/2026: trợ giảng và quản lý học vụ ────────────────
@@ -1151,7 +1149,7 @@ def vai_tro_moi(db):
 # thấy, mà nới tay ở đây nghĩa là thêm người đọc được dữ liệu của một đứa trẻ.
 
 @pytest.mark.django_db
-def test_tro_giang_chi_thay_lop_duoc_gan(lop, vai_tro_moi):
+def test_tro_giang_chi_thay_lop_duoc_gan(lop):
     from common.permissions import ROLE_ASSISTANT, can_see_class, visible_class_ids
     tg = _nguoi('TG Mot', ROLE_ASSISTANT)
     khac = q1("INSERT INTO classes (name, course_id, status) "
@@ -1171,7 +1169,7 @@ def test_tro_giang_chi_thay_lop_duoc_gan(lop, vai_tro_moi):
 
 
 @pytest.mark.django_db
-def test_tro_giang_diem_danh_duoc_nhung_KHONG_xoa_va_KHONG_xem_bao_cao_PH(lop, vai_tro_moi):
+def test_tro_giang_diem_danh_duoc_nhung_KHONG_xoa_va_KHONG_xem_bao_cao_PH(lop):
     from datetime import timedelta
 
     from common.permissions import ROLE_ASSISTANT
@@ -1215,7 +1213,7 @@ def test_tro_giang_diem_danh_duoc_nhung_KHONG_xoa_va_KHONG_xem_bao_cao_PH(lop, v
 
 
 @pytest.mark.django_db
-def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop, vai_tro_moi):
+def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop):
     from common.permissions import ROLE_ACADEMIC, can_see_class
     from teaching.terms import AdminTermsView
     from teaching.views import AdminClassesView, AdminResetPasswordView, AdminUserRoleView
@@ -1242,7 +1240,7 @@ def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop, vai_
 
 
 @pytest.mark.django_db
-def test_hai_vai_tro_moi_KHONG_bi_dem_la_hoc_vien(lop, vai_tro_moi):
+def test_hai_vai_tro_moi_KHONG_bi_dem_la_hoc_vien(lop):
     """`chi_hoc_vien` lọc đúng `role = 'Học viên'`, nên vai trò mới không lọt vào
     sĩ số, bảng điểm danh hay mẫu số tiến độ. Canh lại vì đó là thứ đã sai một
     lần với tài khoản quản trị viên (id 7 nằm trong lớp 1)."""
@@ -1258,7 +1256,7 @@ def test_hai_vai_tro_moi_KHONG_bi_dem_la_hoc_vien(lop, vai_tro_moi):
 
 
 @pytest.mark.django_db
-def test_tro_giang_tai_CSV_lop_nhung_KHONG_kem_email_va_so_dien_thoai(lop, vai_tro_moi):
+def test_tro_giang_tai_CSV_lop_nhung_KHONG_kem_email_va_so_dien_thoai(lop):
     """Chặn báo cáo phụ huynh mà bỏ ngỏ file CSV là hàng rào chỉ có trên giấy.
 
     Hai file CSV của lớp chứa ĐÚNG hai cột đã khiến báo cáo phụ huynh bị chặn:

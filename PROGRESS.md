@@ -90,6 +90,59 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 18/09/2026 (sáng, tiếp) — QUẢ BOM Ở LẦN DEPLOY KẾ TIẾP, VÀ MỘT FIXTURE KHOÁ BẢNG `users` CỦA PRODUCTION
+
+**Lần theo một con số lạ.** Báo cáo `--durations` của lượt pytest sáng nay có một phần DỰNG
+fixture mất **57,54 s** (`test_hoc_vu_quan_ly_duoc_lop…`). Dựng fixture lâu thế thì hoặc làm
+việc nặng, hoặc đang CHỜ KHOÁ — cùng họ với lượt treo 16/09. Mở ra: fixture `vai_tro_moi`
+chạy `ALTER TABLE users DROP/ADD CONSTRAINT users_role_check` trong giao dịch của phép kiểm.
+
+### Lỗi 1 — mỗi lượt pytest khoá bảng `users` của production
+
+Bộ kiểm chạy trên CSDL dùng chung với production. `ALTER TABLE` giữ khoá ACCESS EXCLUSIVE
+tới cuối giao dịch. **Đo** (`do_khoa_users.py`, giao dịch cuộn lại): trong lúc kết nối A giữ
+câu ALTER của fixture, kết nối B đọc `SELECT id FROM users` mất **4.239 ms thay vì 239 ms** —
+chờ đúng bằng thời gian A giữ. Tức mọi request nạp người dùng trên production đứng chờ khi
+lượt kiểm (tay, hoặc CI khi gỡ khoá A0) chạy tới năm phép kiểm ấy. Và chính câu ALTER phải
+xếp hàng sau mọi giao dịch đang đọc `users` → 57,54 s.
+
+Lý do tồn tại của fixture ("ràng buộc thật ở Neon vẫn chỉ có ba vai trò cũ") đã hết đúng từ
+lâu: **đo `pg_get_constraintdef` hôm nay: đủ SÁU vai trò.** Tệ hơn: fixture THU HẸP ràng buộc
+(bỏ 'Biên tập nội dung') — chạy được chỉ vì chưa có tài khoản nào mang vai ấy.
+
+**Vá:** bỏ fixture, gỡ khỏi 5 phép kiểm — 5/5 vẫn xanh, không phần dựng nào còn trên 4,4 s.
+
+### Lỗi 2 — lần deploy kế tiếp sau khi có người soạn giáo trình sẽ CHẾT
+
+Quét mọi `ADD CONSTRAINT` trong các tệp mà `bootstrap_schema` chạy lại mỗi lần deploy
+(`quet_rang_buoc.py`): 25 tên ràng buộc, **đúng MỘT tên được thêm hai lần với hai định nghĩa**
+— `users_role_check`: câu #103 NĂM vai trò, câu #184 SÁU. Tệp chạy từ đầu, nên #103 áp luật
+cũ lên dữ liệu mới. Chú thích ngay trên #103 còn viết "Danh sách này PHẢI khớp
+ASSIGNABLE_ROLES" — ASSIGNABLE_ROLES có sáu từ 04/09.
+
+**Dựng lại trên Neon thật** (`do_bom_deploy.py`, một giao dịch, cuộn lại): tạo MỘT tài khoản
+'Biên tập nội dung' rồi chạy đúng các câu `_split_statements` tách ra →
+`câu #103 HỎNG: CheckViolation: check constraint "users_role_check" … is violated by some row`.
+Với `bootstrap_schema` thật: các câu chạy autocommit, nên #102 `DROP` đã COMMIT rồi #103 mới
+hỏng → `raise` → lệnh dựng Render thất bại. Hậu quả: production kẹt ở bản cũ, MỌI lần deploy
+sau hỏng cùng chỗ, và CSDL **mất hẳn** ràng buộc vai trò. Vai trò ấy đã dựng xong, có trong
+bảng vai trò của hồ sơ kỹ thuật — ngày TopHSA tạo người soạn giáo trình đầu tiên là ngày
+deploy kế tiếp chết.
+
+**Vá:** câu #103 nay đủ sáu vai trò, giống hệt #184. Chạy lại trên Neon: 4/4 câu OK dù có tài
+khoản Biên tập nội dung.
+
+### Ba hàng rào mới — tĩnh, KHÔNG chạm CSDL (nên không khoá gì)
+
+| Phép kiểm (`common/tests.py`) | Canh | Đỏ-trước |
+|---|---|---|
+| `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau` | một ràng buộc thêm nhiều lần → mọi lần cùng định nghĩa | tệp cũ: đỏ, chỉ đúng #103 vs #184 |
+| `test_rang_buoc_vai_tro_trong_SQL_KHOP_ASSIGNABLE_ROLES` | mọi bản `CHECK` vai trò = `ASSIGNABLE_ROLES`, cả hai chiều | tệp cũ: đỏ ở #103 thiếu 'Biên tập nội dung'; đột biến thêm vai 'Kế toán' ở Python: đỏ ở cả #103 và #184 |
+| `test_khong_phep_kiem_nao_chay_DDL_tren_CSDL_dung_chung` | không tệp kiểm nào chạy ALTER/CREATE/DROP/TRUNCATE/LOCK | trả fixture cũ vào một bản sao: đỏ đúng dòng 1141–1142 |
+
+Hàng rào thứ hai ghim lỗi §35 (01/09: "thêm hằng ở Python, quên CHECK") — chú thích đòi điều
+ấy từ 01/09 mà chưa phép kiểm nào ghim, nên 04/09 lỗi quay lại đúng dạng cũ và nằm 14 ngày.
+
 ## 18/09/2026 (sáng) — TRANG PHỤ HUYNH KHÔNG CÒN TRẮNG 80 GIÂY; CANH GIỜ CHO PYTEST
 
 Anh bảo "tiếp tục cải tiến theo vòng lặp". Ba việc, đều đo được, đều lên `master`.

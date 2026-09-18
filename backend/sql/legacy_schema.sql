@@ -809,9 +809,20 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_time
 -- một vai trò mới đi qua tầng Python rồi đổ ở CSDL, và câu báo lỗi là
 -- `users_role_check` chứ không phải một câu người dùng hiểu được.
 -- (Đúng lỗi đã mắc hôm nay: thêm hằng ở Python, quên `CHECK` ở đây.)
+--
+-- SỬA 18/09/2026 — thêm 'Biên tập nội dung' vào CHÍNH câu này, cho giống hệt §44.
+-- Tệp này chạy lại TỪ ĐẦU mỗi lần deploy, và `ADD CONSTRAINT` kiểm lại mọi dòng
+-- đang có. Bản năm vai trò ở đây chạy TRƯỚC khi §44 nới lên sáu, tức một luật CŨ
+-- áp lên dữ liệu MỚI: đo 18/09 trên Neon (giao dịch cuộn lại), có một tài khoản
+-- Biên tập nội dung là câu này ném CheckViolation → bootstrap_schema `raise` →
+-- lệnh dựng Render thất bại, còn câu DROP ở trên đã COMMIT (autocommit) nên CSDL
+-- mất hẳn ràng buộc. Phép kiểm `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`
+-- (common/tests.py) đỏ nếu hai bản lệch nhau lần nữa. Thêm vai trò mới thì sửa CẢ
+-- HAI chỗ — hoặc để phép kiểm ấy nhắc.
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check
-    CHECK (role IN ('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng', 'Học viên'));
+    CHECK (role IN ('admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng',
+                    'Học viên', 'Biên tập nội dung'));
 
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check;
 ALTER TABLE users ADD CONSTRAINT users_status_check
