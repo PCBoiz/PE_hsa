@@ -1,56 +1,102 @@
 # Việc của anh — pe_hsa
 
-*Cập nhật 14/09/2026. Đây là **chỗ duy nhất** ghi việc cần anh làm — tôi không
-rải câu hỏi ra các câu trả lời nữa. Xếp theo **mức chặn**, không theo thời gian.
-Mỗi dòng ghi: mất bao lâu · vì sao cần anh · làm xong thì mở khoá gì. Lịch sử
-từng vòng (18 Phần cũ) giữ nguyên ở cuối tệp để tra lại.*
+*Cập nhật 18/09/2026, 18:45. Đây là **chỗ duy nhất** ghi việc cần anh làm và cần anh quyết.
+Mọi trạng thái trong Phần I được **đo lại hôm nay** trên hệ thống thật — không chép từ bản cũ.
+**Đọc hết Phần I là đủ.** Từ "Lịch sử" trở xuống là 18 phần cũ, giữ để tra lại; mục nào ở đó
+đã xong hoặc đã chuyển lên đây thì đừng làm theo nữa.*
 
-## Anh cần làm gì — nhìn một bảng là đủ
+**Tóm tắt:** 5 việc tay, tổng khoảng 30 phút (việc số 1 là **5 phút và quan trọng nhất**) ·
+10 câu cần anh quyết, mỗi câu trả lời một dòng là đủ · 4 việc chờ TopHSA hoặc cần thời gian ·
+1 thói quen trước mỗi buổi demo.
 
-| # | Việc | Mất | Vì sao cần anh — và hậu quả nếu chưa làm | Mở khoá |
+---
+
+## Phần I.1 — Việc tay, làm theo đúng thứ tự này
+
+| # | Việc | Mất | Vì sao — đã đo | Làm xong thì báo tôi, tôi kiểm |
 |---|---|---|---|---|
-| **A0** | **Gỡ khoá thanh toán GitHub** — đăng nhập tài khoản sở hữu repo `PCBoiz/PE_hsa` → Settings → **Billing and plans** → sửa phương thức thanh toán hoặc hạn mức chi tiêu cho tới khi hết thông báo khoá. Rồi mở tab **Actions → CI → Re-run** lượt mới nhất và xem nó có chạy từng bước không. | 10 phút | **Đo 14–15/09 qua API của GitHub:** **243/244 lượt Actions** từ 10/08 tới nay — CI 207, Giữ ấm 35, Sao lưu 1 — **không lượt nào chạy nổi một bước** (lượt dài nhất 38 giây: 0 bước, không có máy chạy; lượt thứ 244 là job đồ thị phụ thuộc của Dependabot). Lượt nào cũng dừng ở dòng *"The job was not started because your account is locked due to a billing issue."* Tức là **chưa từng có CI** (mọi cửa kiểm chỉ là lệnh tôi chạy tay ở máy), **chưa có bản sao lưu CSDL nào**, và workflow giữ ấm chưa gõ Render lần nào. A3, A5 và bước kiểm lỗ hổng thư viện vừa thêm vào CI đều vô dụng cho tới khi gỡ khoá. | CI · sao lưu · A3 · A5 |
-| **A6** | **ĐO 17/09 07:47: CÓ VẺ ĐÃ XONG — anh xác nhận giúp.** Production nay trả 401 cho thẻ ký bằng `backend/.env` trong khi máy dev vẫn nhận đúng thẻ ấy (07:35 production còn nhận) — đúng dấu hiệu ở dòng "Kiểm đã xong chưa". Nếu anh CHƯA đổi gì trên Render thì báo tôi: khi ấy là chuyện khác cần soi. — **Tách khoá ký của production khỏi máy dev** — Render → `pe-hsa-backend` → Environment → `SECRET_KEY` → dán một chuỗi MỚI sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(48))"`, **chỉ dán ở Render**, không chép vào `backend/.env`. | 5 phút | **Đo 15/09:** thẻ JWT tôi cấp trên máy dev bằng `backend/.env` được production nhận — `/api/user` trả **200** dưới tên quản trị viên (không thẻ: 401). Lý do: JWT ký bằng `SECRET_KEY`, và hướng dẫn xoay khoá 07/09 (mục 1.1 bên dưới, tôi viết) bảo dán CÙNG một khoá vào `.env` và Render. Ai có `.env` — hoặc chỉ các tệp thẻ trong `.the/` — mạo danh được bất kỳ ai trên production. Đổi xong: mọi người đăng xuất một lần; thẻ tôi cấp ở máy thôi dùng được trên production. *(16/09: "phiếu đọc" của màn Nhập kết quả thi thử cũng ký bằng `SECRET_KEY` — ai có `.env` thì ký được phiếu mang điểm bịa. Cùng một lỗ, đóng cùng việc này; phiếu đang dở lúc đổi khoá chỉ cần chọn lại tệp PDF.)* Tôi không tự sửa `.env` của máy anh. Nửa còn lại — dev dùng chung CSDL production (chốt 31/08) — nên tách trước ngày đổ dữ liệu thật. | Máy dev không còn là chìa vào production |
-| **A1** | **Giữ ấm production** — mở tài khoản [cron-job.org](https://cron-job.org) (miễn phí), tạo một job gõ `https://pe-hsa-backend.onrender.com/health` mỗi **10 phút**, khung 06:00–23:00. Hoặc nâng Render lên gói ~7 USD/tháng. | 5 phút | **Đo 13/09:** workflow GitHub tôi dựng chạy **3–5 giờ/lần** thay vì 10 phút (GitHub tự thưa lịch), và **8/8 lượt thất bại**. *(Đính chính 14/09: bản đầu ghi "vì bỏ cuộc trước khi Render kịp dậy" — sai. Cả 35 lượt không chạy nổi bước đầu vì tài khoản GitHub bị khoá thanh toán, xem A0. Gỡ khoá rồi thì lịch 3–5 giờ/lần vẫn không đủ, nên cron-job.org vẫn là cách đúng.)* Tối 13/09 production mất **84,5 giây** để thức. Người đăng nhập đầu tiên mỗi lúc sẽ tưởng hệ thống hỏng — đúng chuyện anh gặp hôm 07/09. Tôi không mở được tài khoản thay anh. | Mọi lần đăng nhập đầu ngày |
-| **A2** | Render → Environment: thêm **`PROXY_SHARED_SECRET`**; Vercel → Environment: thêm **`PE_PROXY_SECRET`** — *cùng một giá trị*. Sinh bằng: `python -c "import secrets;print(secrets.token_urlsafe(32))"` | 5 phút | Đo 07/09: khoá giới hạn đăng nhập trên production là IP nội bộ của Render → **mọi người dùng chung một xô `100 lần/phút`**. Một em gõ sai mật khẩu nhiều lần (hoặc một bot) là khoá cả lớp. Lời giải đã nằm sẵn trong mã, chỉ chờ hai biến này. | Giới hạn theo từng người thật |
-| **A3** | Neon → tạo một **nhánh** (branch) từ CSDL chính → lấy chuỗi kết nối → GitHub repo → Settings → Secrets → thêm **`DATABASE_URL_CI`** | 5 phút | **Chỉ có nghĩa sau A0** — đo 14/09: CI chưa từng chạy lượt nào (bản đầu dòng này viết "mỗi lần đẩy mã, CI chạy 29 phút pytest" — con số ấy là chạy tay ở máy). Khi đã gỡ khoá, mỗi lần đẩy mã CI sẽ chạy pytest thẳng vào CSDL đang dùng; nó cuộn lại sau mỗi test, nhưng một phép kiểm lỡ commit là hỏng dữ liệu. Mã đã đọc `DATABASE_URL_CI` trước, rơi về `DATABASE_URL` khi chưa có. | CI không chạm production |
-| **A4** | Kiểm sau khi làm A2: mở `https://pe-hsa-backend.onrender.com/api/admin/do-proxy` **bằng trình duyệt** (đã đăng nhập quản trị). `ipHienTai` phải bằng IP thật của anh (tra ở whatismyip.com). | 1 phút | Đây là cách duy nhất biết A2 đã đúng — tôi chỉ gọi được đường `curl` thẳng, không đi qua Vercel như người dùng thật. | Xác nhận A2 |
-| **A5** | **Bật sao lưu CSDL hằng ngày**: GitHub repo → Settings → Secrets → New secret tên **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy ở nơi hai năm nữa anh còn tìm được** (app mật khẩu) — mất khoá là mất mọi bản sao lưu. Rồi mở Actions → "Sao lưu CSDL" → Run workflow để xem lượt đầu xanh hay đỏ. **Làm sau A0** — lượt duy nhất (13/09) không chạy nổi một bước vì khoá thanh toán, nên hiện **chưa có bản sao lưu nào**. | 5 phút | Đo 07/09: **không có quy trình sao lưu nào**. CSDL giữ dữ liệu học tập của trẻ em, mất là mất hẳn. Workflow đã dựng (13/09): dump mỗi 03:00 → **khôi phục thử ngay trong lượt** → đối chiếu số dòng → mã hoá AES-256 → cất 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô. Tôi không đặt secret thay anh được. | Có bản sao lưu khôi phục được |
-| **B1** | **Một lớp thật** chạy thử: một giảng viên, một đợt, học viên thật, lịch học thật. *Lưu ý:* lớp mẫu `HSA-DEMO-01` đang có **16 buổi từ 15/09** và link phòng **giả** (`meet.example.com`) — nếu dùng chính lớp này thì sửa link ở Vận hành → Lớp học trước buổi đầu, học viên nay bấm "Vào phòng học" ngay trên bảng điều khiển. | 1 buổi | Hệ thống mới chạy với **một lớp mẫu tôi tạo 07/09**. Mọi thứ sau đây (báo cáo, học phí, tuyển sinh) đều dễ hơn khi đã có một lớp thật đi qua một lần. Chỗ vướng khi dùng hàng ngày chỉ lộ ra ở đây. | Cả tầng ERP |
-| **B2** | **Địa chỉ email @tophsa.vn** (Google Workspace ~6 USD/người/tháng, hoặc một dịch vụ gửi thư) — anh đã chốt 07/09 là *chờ*, ghi để không quên | — | Kênh email đã dựng xong, gửi thử thành công từ `sonthaiha07@gmail.com`. Chưa bật cho phụ huynh thật vì đó là hộp thư cá nhân của anh. | Gửi báo cáo phụ huynh thật |
-| **B3** | Gom **tệp đăng ký có email/số Zalo phụ huynh** của lớp thật, rồi dán cả bảng (kèm dòng tiêu đề) vào **Giảng dạy → Báo cáo phụ huynh → Nhập liên hệ phụ huynh** → Kiểm tra trước → Lưu. Học viên cũng tự điền được ở Cài đặt (nay đã có ô email). | 10 phút/lớp | **0/3** em có liên lạc phụ huynh. Công cụ dán cả lớp đã dựng 13/09 (chỉ khớp em đang học của đúng lớp đó, ô trống giữ giá trị cũ, nhật ký giữ giá trị cũ). Thiếu dữ liệu thì bấm "Gửi cả lớp" ra toàn "thiếu liên lạc". | Báo cáo phụ huynh |
-| ~~**B4**~~ | **XONG 16/09** — tải được PDF kết quả từng em, và hệ thống đã đọc được tờ ấy: **Giảng dạy → Báo cáo phụ huynh → Nhập kết quả thi thử từ PDF** (vòng 25). Còn lại là việc vận hành: ai tải xấp PDF sau mỗi đợt thi thử, và tải trong bao lâu. | 10 phút/đợt | Nhập xong thì tờ báo cáo phụ huynh có khối "Kỳ thi thử tại trung tâm" (tổng điểm, so kỳ trước, ba đơn vị yếu nhất). | Điểm thi thật vào báo cáo |
-| **B5** | **Trước mỗi buổi trình diễn: làm mới dữ liệu mẫu** — `python manage.py du_lieu_mau --lam-moi` (chạy ở máy có `backend/.env`; ~60 giây, gỡ rồi dựng lại trong MỘT giao dịch nên không có lúc nào trung tâm trống). Muốn biết có cần không thì chạy `python manage.py du_lieu_mau` — nó in "Hoạt động mẫu gần nhất: … (N ngày trước)" và cảnh báo khi đã cũ. Hoặc nhắn tôi làm. | 1 phút | Bộ dữ liệu trình diễn neo vào NGÀY DỰNG. Dựng 16/09 thì sang 17/09 tổng quan đã hiện "buổi đã dạy chưa ai điểm danh"; vài tuần nữa tờ báo cáo phụ huynh sẽ ra các tuần gần nhất trống và danh sách "em cần chú ý" đầy "N ngày không mở bài" — trung tâm trông như đang chết đúng lúc khách xem. Làm mới thì id lớp mẫu đổi (không ai ghim id ấy). | Buổi trình diễn |
-| **C1** | Quyết **xoá hay giữ tài khoản `id 9`** (`reg_test_hsa@example.com`) | 1 câu | Anh đã duyệt xoá, nhưng lúc hỏi tôi nói nó giữ "5 bài + 1 lượt thi"; đo lại là **12/38 sự kiện học, 5/10 bài, 1/1 nhật ký + quiz** — hơn nửa lịch sử học tập của cả CSDL. Đã sao lưu ra JSON. Một tiếng là xoá. | Dọn tài khoản kiểm thử |
-| **C2** | Quyết **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở khoá cả ZNS lẫn SMS brandname), hay bỏ hẳn | — | ZNS đòi OA xác thực, xác thực đòi giấy phép kinh doanh — **hộ kinh doanh cũng được**, không bắt buộc công ty. Phụ huynh Việt đọc Zalo nhiều hơn email. | Kênh Zalo |
-| **C3** | Chốt chính sách **phụ huynh xem được gì** — hiện: tiến độ và điểm *có*, nhật ký con tự ghi *không* | 1 câu | Nếu để ngầm thì một ngày ai đó "cho thêm cho đủ" và chỗ riêng của học viên thành chỗ bị theo dõi. Phải là quyết định, không phải mặc định. | — |
-| ~~**C5**~~ | **ĐÃ CHỐT 14/09: khoá (b) — ĐÃ LÀM** (§47). Nguyên văn câu hỏi: **học viên có được SỬA liên hệ phụ huynh mà học vụ đã nhập không?** Hai cách: (a) giữ như nay — em sửa được; (b) học vụ nhập rồi thì chỉ học vụ sửa, em chỉ điền được ô còn trống | 1 câu | Hiện em sửa được. Tức một em có thể đổi email bố mẹ thành email của mình để **chặn báo cáo tiến độ** trước khi nó tới nhà. Google Classroom chọn (b): chỉ giáo viên/quản trị mời phụ huynh, và phụ huynh phải bấm xác nhận. Chưa đổi vì đây là chính sách, không phải lỗi. | Tin cậy được địa chỉ nhận báo cáo |
-| **C4** | Bốn câu cho TopHSA: **nền tảng dạy** (có API điểm danh không) · **có chấm tự luận không** · **quy trình thu chi** · **quy trình tuyển sinh** | 1 buổi | Bốn mô-đun đã dựng phần khung (điểm danh, chấm bài, cơ sở học phí, landing) nhưng phần ruột chờ đúng bốn câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ. | ERP §4–§7 |
-| **C6** | Quyết **bảng xếp hạng hiện tên học viên thế nào**: tên thật đầy đủ (hiện nay) · chỉ tên, bỏ họ · hay để em tự chọn ẩn danh | 1 câu | Học viên TopHSA là học sinh cấp 3; bảng xếp hạng cho MỌI học viên thấy tên nhau (chỉ che tên trông như tài khoản thử). 14/09 đã vá lỗi nhân viên lọt lên đầu bảng, nhưng hiện tên thật là chính sách, không phải lỗi — tôi không tự đổi. | Bảng xếp hạng |
-| **C7** | Quyết **cách đếm "phụ huynh đã mở báo cáo"** — (A) giữ như nay, chỉ ghi chú · (B) đếm bằng một tín hiệu từ trình duyệt của người mở · (C) bỏ hẳn ô "đã mở". Chi tiết: mục 14.2 phía dưới. Tôi nghiêng về **B**. | 1 câu | Trang `/bc/<chìa>` dựng ở máy chủ nên **mọi lượt tải đều tăng số lần mở — kể cả bot xem trước liên kết** của Zalo/Messenger ngay khi giảng viên dán link vào khung chat. Tức "Đã mở 1 lần" có thể hiện trước khi phụ huynh nhìn (đã ghi rõ trên màn hình từ 07/09). Câu này nằm ở mục 14.2 từ 07/09 mà chưa lên bảng này — đưa lên 17/09. Nên chốt TRƯỚC khi gửi báo cáo thật: lúc chưa có chìa nào thì đổi cách đếm không phải xử lý số cũ. | Ô "đã mở" đáng tin |
-| **C8** | Quyết **vai "Quản lý học vụ" có được xem liên hệ phụ huynh không** — (A) giữ như mã hiện nay: ĐƯỢC mở tờ báo cáo phụ huynh, cấp/thu hồi chìa và danh bạ liên lạc của MỌI lớp · (B) cắt như trợ giảng: chỉ quản trị viên và giảng viên phụ trách lớp mở được | 1 câu | **Tìm ra 17/09 khi vẽ bảng vai trò cho hồ sơ kỹ thuật.** Chú thích trong `common/permissions.py` từ 01/09 ghi "Quản lý học vụ … KHÔNG mở báo cáo phụ huynh", nhưng **mã cho qua** (đo: học vụ nhận 200 ở cả ba đường). Tức ranh giới anh chốt 01/09 được GHI là (B) mà cái CHẠY là (A). Tôi đã sửa chú thích cho khớp mã và ghim bằng phép kiểm (`tests_quyen_bao_cao_phu_huynh.py`, đỏ được khi nới hoặc siết quyền) — KHÔNG tự đổi quyền, vì đây là chính sách. Chọn (B) thì tôi thêm một lớp quyền hẹp hơn cho ba đường ấy, **và** cho `bo_cot_lien_lac` bỏ cột Email/Số điện thoại với cả học vụ — hai tệp CSV của lớp hiện cũng đưa hai cột ấy cho học vụ (chỉ trợ giảng bị bỏ). Cắt một cửa mà để cửa kia là hàng rào chỉ trên giấy. | Ranh giới dữ liệu liên lạc đúng ý anh |
+| **1** | **A6 · Tách khoá ký của production khỏi máy dev.** Render → `pe-hsa-backend` → **Environment** → `SECRET_KEY` → dán chuỗi MỚI sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(48))"`. **Chỉ dán ở Render**, không chép vào `backend/.env`. Save → Render tự deploy lại. | 5 phút | **Đo 18/09 18:30: production NHẬN thẻ ký bằng khoá của máy dev** — 3/3 lượt vào được dưới quyền **quản trị viên** (id 7); đối chứng thẻ sửa chữ ký → 401, nên không phải cửa mở cho mọi người. Tức ai có `backend/.env` (hoặc tệp thẻ trong `.the/`) là mạo danh được bất kỳ ai trên bản chạy thật, kể cả ký "phiếu đọc" điểm thi thử giả. *Bản trước tôi ghi "có vẻ đã xong" dựa trên một lần đo ra 401 hôm 17/09 07:47 — lần ấy KHÔNG lặp lại được. Tôi đã sửa kịch bản demo: câu "khoá ký đã tách khỏi máy phát triển" KHÔNG được nói với người mua cho tới khi việc này xong.* Đổi xong: mọi người đăng xuất một lần. | Thẻ cấp ở máy dev phải bị production trả **401** |
+| **2** | **A0 · Gỡ khoá thanh toán GitHub.** Đăng nhập tài khoản sở hữu repo `PCBoiz/PE_hsa` → Settings → **Billing and plans** → sửa phương thức thanh toán hoặc hạn mức cho tới khi hết thông báo khoá → tab **Actions** → **CI** → *Re-run* lượt mới nhất. | 10 phút | **Đo 18/09 qua API của GitHub:** hai lượt CI hôm nay (commit `8296000`) **0 bước, không máy chạy** — y như 243/244 lượt từ 10/08. Tức **chưa từng có CI**, **chưa có bản sao lưu CSDL nào**, và workflow giữ ấm chưa gõ Render lần nào. Mọi cổng kiểm hiện là lệnh tôi chạy tay (bộ kiểm đầy đủ 46 phút). | Lượt CI kế tiếp có bước chạy thật |
+| **3** | **A1 · Giữ ấm máy chủ.** Tài khoản [cron-job.org](https://cron-job.org) (miễn phí) → job gõ `https://pe-hsa-backend.onrender.com/health` mỗi **10 phút**, 06:00–23:00. *Hoặc* nâng Render lên gói ~7 USD/tháng (hết hẳn). | 5 phút | **Đo 18/09 06:26: lượt mở đầu 83,9 giây** trắng. Đã có lưới đỡ ở hai chỗ người ngoài thấy (màn đăng nhập tự đánh thức và nói đang chờ; trang phụ huynh hiện khung ngay) — nhưng vẫn là một phút rưỡi chờ. | Lượt gọi đầu buổi sáng dưới 2 giây |
+| **4** | **A5 · Bật sao lưu CSDL** *(làm sau việc 2)*. GitHub repo → Settings → Secrets → New secret **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy vào app mật khẩu** — mất khoá là mất mọi bản sao lưu. Rồi Actions → "Sao lưu CSDL" → *Run workflow*. | 5 phút | Hiện **không có bản sao lưu nào**. Workflow đã dựng sẵn: dump 03:00 → khôi phục thử ngay trong lượt → đối chiếu số dòng → mã hoá AES-256 → giữ 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô lên. Cách khôi phục: cuối Phần I. | Lượt sao lưu đầu xanh |
+| **5** | **A3 · Nhánh Neon riêng cho CI** *(làm sau việc 2)*. Neon → Branches → tạo nhánh `ci` từ `main` → copy connection string → GitHub → Secrets → **`DATABASE_URL_CI`**. | 5 phút | Chưa có nó thì mỗi lần đẩy mã, CI chạy pytest thẳng vào CSDL đang dùng. Hôm nay tìm ra và bỏ một phép kiểm từng **khoá bảng `users`** của production suốt lúc chạy (đo: đọc bảng ấy chờ 4,2 s thay vì 0,24 s) — nay có hàng rào chặn loại lỗi ấy, nhưng tách nhánh là chặn tận gốc. Mã đã đọc `DATABASE_URL_CI` trước, không phải sửa gì. | Log CI in ra đang nối vào nhánh `ci` |
 
-**Cách khôi phục từ bản sao lưu (khi cần, hy vọng không bao giờ):** Actions →
-lượt "Sao lưu CSDL" gần nhất → tải artifact → giải mã rồi khôi phục:
+**Tuỳ chọn, không chặn gì:**
+
+- **Redis** *(mục 1.3 bên dưới)* — Render → New → **Key Value** cùng vùng `ohio` → thêm biến `REDIS_URL` cho `pe-hsa-backend`. Hai tiến trình gunicorn đang đếm giới hạn tần suất riêng, nên mọi trần thực tế **gấp đôi** (20 lượt đăng nhập/phút thành 40). Mã đã sẵn. *Tôi không kiểm được từ ngoài là anh đã đặt chưa — anh xem tab Environment có `REDIS_URL` chưa.*
+- **Cấp vai "Biên tập nội dung" cho một tài khoản** *(mục 4.2)* — Quản trị → Tài khoản → đổi vai. **Hôm nay mới an toàn để làm:** trước bản vá 18/09, tài khoản Biên tập nội dung ĐẦU TIÊN sẽ làm **lệnh deploy kế tiếp thất bại** (đã dựng lại trên CSDL thật, đã vá, đã kiểm deploy sau vá chạy sạch). Làm rồi báo tôi để chạy nốt lượt kiểm đầu-cuối của người soạn giáo trình.
+
+---
+
+## Phần I.2 — Mười câu cần anh quyết
+
+Mỗi câu có đề xuất của tôi và lý do. Anh chỉ cần trả lời bằng mã câu và lựa chọn, ví dụ *"C8: A, C7: B, C1: xoá"*.
+
+| # | Câu hỏi | Lựa chọn | Tôi đề xuất — vì sao | Chưa quyết thì sao |
+|---|---|---|---|---|
+| **C8** | Vai **Quản lý học vụ** có được xem liên hệ phụ huynh (tờ báo cáo, chìa gửi nhà, danh bạ, cột email/SĐT trong CSV lớp)? | **A** giữ như mã hiện nay: được · **B** cắt như trợ giảng | **A.** Việc nhập liên hệ phụ huynh cả lớp (B3) và gửi báo cáo hằng tháng thường là việc của học vụ; cắt đi thì chỉ còn quản trị viên và giảng viên làm được. *Nhưng* bản ghi ngày 01/09 nói anh đã chốt **B** — mã thì chạy **A** từ đầu (tìm ra 17/09). Nên đây là câu phải hỏi lại chứ tôi không tự chọn. | Mã giữ A, đã có phép kiểm ghim; chọn B thì tôi sửa cả ba đường lẫn CSV |
+| **C7** | Ô **"phụ huynh đã mở báo cáo"** đếm thế nào? *(mục 14.2)* | **A** giữ, chỉ ghi chú · **B** đếm bằng tín hiệu từ trình duyệt người mở · **C** bỏ ô ấy | **B.** Bằng chứng đo hôm nay: một chìa mẫu ghi **"đã mở 23 lần"** mà không phụ huynh nào — đúng 23 lượt tải của bộ đo. Bot xem trước liên kết của Zalo/Messenger cũng tăng số. B không đếm bot (bot không chạy JavaScript). | Nên chốt **trước** khi gửi báo cáo thật — lúc chưa có chìa thật thì đổi cách đếm không phải xử lý số cũ |
+| **C1** | **Xoá** lớp thử `HSA-DEMO-01` (có tài khoản "a", "Test Reg") và tài khoản thử **id 9**? | xoá · giữ | **Xoá, trước lớp thật đầu tiên.** Lớp ấy đang để lại "2 buổi đã dạy chưa ai điểm danh" trên màn Tổng quan và hai tên lạ ở "Cần chú ý ngay" — người mua nhìn thấy. Đo 18/09: hai tên ấy vẫn hiện ở màn Việc hôm nay. id 9 giữ **12/39** sự kiện học của các tài khoản thật (31%; bản cũ ghi "hơn nửa" — đúng lúc ấy, nay đã khác), đã sao lưu ra JSON. | Mỗi buổi demo phải tránh lớp ấy (đã ghi trong kịch bản) |
+| **11.4** | Màn xếp lớp có cho **nhập ngày vào lớp** không? (nay luôn ghi *hôm nay*) | cho nhập (mặc định hôm nay) · không cần | **Cho nhập.** TopHSA đang có lớp chạy; đưa em đang học dở vào hệ thống thì mọi em mang ngày vào lớp *hôm nay* → tờ báo cáo phụ huynh bỏ qua mọi buổi trước đó, chuyên cần và tỉ lệ giữ chân tính sai. | Phải quyết **trước** lớp thật đầu tiên; sau đó sửa dữ liệu cũ khó hơn nhiều |
+| **11.5** | Điểm danh cho buổi **trước** ngày em vào lớp: hai màn ra hai số | chặn ở nguồn · cho Tổng quan tính theo lượt học · để nguyên | **Chặn ở nguồn**, đi cùng 11.4 — khi ngày vào lớp nhập đúng thì không còn lý do tick cho em chưa vào lớp. | Rủi ro hẹp cho tới khi có lớp thật |
+| **C6** | Bảng xếp hạng hiện **tên học viên** thế nào? (học sinh cấp 3, mọi học viên thấy tên nhau) | tên đầy đủ (hiện nay) · chỉ tên, bỏ họ · em tự chọn ẩn danh | **Chỉ tên, bỏ họ**, làm mặc định — ít dữ liệu về trẻ vị thành niên nhất mà bảng vẫn có nghĩa. | Tên đầy đủ vẫn hiện |
+| **C3** | Phụ huynh **xem được gì**? Hiện: tiến độ, chuyên cần, điểm — **có**; nhật ký em tự ghi — **không** | giữ · mở thêm | **Giữ**, và ghi thành chính sách. Để ngầm thì một ngày ai đó "cho thêm cho đủ". | Giữ như nay |
+| **C2** | **Zalo OA**: đăng ký hộ kinh doanh để xác thực (mở ZNS và SMS), hay bỏ? *(Phần 10, 17)* | đăng ký · bỏ | **Email trước (B2), Zalo sau.** Email chỉ cần một hộp thư tên miền; ZNS cần giấy phép + mẫu tin được duyệt. Chế độ thử ZNS đã dựng, mã chờ hai biến. | Gửi báo cáo bằng đường dẫn thủ công như nay |
+| **6.3** | Trang `/thiet-ke` (trưng bày thành phần giao diện) đang **công khai** — đo 18/09: mở không cần đăng nhập, HTTP 200 | giữ · gác sau đăng nhập quản trị · xoá | **Gác sau đăng nhập.** Vô hại (không có dữ liệu), nhưng một sản phẩm đem bán không nên để trang nội bộ mở cho người ngoài. | Không ảnh hưởng gì |
+| **P1** | Phông chữ chiếm **một nửa byte** trang phụ huynh (160/323 kB); trên 4G giả lập làm chậm lần vẽ đầu ~0,67 s | làm ngay · để sau | **Để sau.** Trên mạng thật trang đã tải trong 1,1 s. Sửa cần đánh đổi: bỏ chữ đậm 500/800 (tầng giao diện cũ dùng 158 chỗ) hoặc tách phông theo nhóm trang. | Không ảnh hưởng gì |
+
+---
+
+## Phần I.3 — Chờ TopHSA hoặc cần thời gian
+
+| # | Việc | Trạng thái đo 18/09 | Mở khoá gì |
+|---|---|---|---|
+| **B1** | **Một lớp thật** chạy thử một đợt: giảng viên thật, học viên thật, lịch thật. *Nên làm sau C1 và 11.4.* | Chưa có: lớp duy nhất không phải mẫu là lớp thử `HSA-DEMO-01` với 2 tài khoản thử | Mọi thứ còn lại — chỗ vướng khi dùng hằng ngày chỉ lộ ra ở đây |
+| **B3** | Gom **liên hệ phụ huynh** của lớp thật, dán vào Giảng dạy → Báo cáo phụ huynh → *Nhập liên hệ phụ huynh* | **0/3** học viên thật có liên hệ phụ huynh | Gửi báo cáo tới nhà |
+| **B2** | **Hộp thư tên miền @tophsa.vn** (~6 USD/người/tháng) — anh chốt 07/09 là *chờ* | Kênh email đã dựng, gửi thử được từ hộp thư cá nhân của anh | Gửi báo cáo phụ huynh thật bằng email |
+| **C4** | Hỏi TopHSA: **(1)** dạy trên nền tảng nào, có API danh sách người tham dự không (điểm danh tự động) · **(2)** có chấm tự luận không, thang nào, ai chấm · **(3)** quy trình thu chi, phần mềm kế toán đang dùng · **(4)** quy trình tuyển sinh: ai nghe điện, ghi gì, khi nào thành học viên · **(5)** phút ngồi lớp có tính vào chỉ tiêu tự học tuần không · **(6)** có định **thay** hệ thống ngân hàng câu hỏi của uranustech không · **(7)** báo cáo phụ huynh gửi **bao lâu một lần**, và **ai duyệt** trước khi gửi | Khung các mô-đun đã dựng, phần ruột chờ đúng các câu này. Dựng theo phỏng đoán rồi đập lại đắt hơn chờ | ERP điểm danh tự động, chấm bài, học phí, tuyển sinh, ngân hàng đề |
+
+---
+
+## Phần I.4 — Trước mỗi buổi demo
+
+**B5.** Chạy `python manage.py du_lieu_mau --lam-moi` ở máy có `backend/.env` (~1 phút), hoặc nhắn tôi.
+Dữ liệu mẫu neo vào ngày dựng — để quá 2 ngày là màn hình hiện "buổi chưa điểm danh", "N ngày không
+mở bài". Muốn biết có cần không: chạy lệnh không kèm cờ, nó báo tuổi dữ liệu. Làm mới lần cuối:
+**18/09 06:30**. Toàn bộ các bước còn lại: `docs/KICH_BAN_TRINH_DIEN.md` (đã sửa 18/09 — xem dòng
+về A6 ở mục "Câu hỏi khó").
+
+---
+
+## Phần I.5 — Đã xong, KHÔNG cần làm nữa *(xác minh 18/09)*
+
+| Việc | Bằng chứng |
+|---|---|
+| **A2 + A4** · bí mật proxy Render ↔ Vercel | Đo 18/09 qua Vercel: máy chủ thấy **đúng IP thật** của máy đo. Kiểm được là nhờ bí mật: IP ấy KHÔNG có trong chuỗi `X-Forwarded-For`, và nhánh không-bí-mật sẽ ra một địa chỉ khác — nên chỉ nhánh bí mật khớp mới cho ra được IP ấy. |
+| **6.2** · bốn câu DDL còn chờ | `manage.py kiem_luoc_do`: **22/22 mục đã tới nơi** |
+| **4.1** · đợt học đầu tiên | Có đợt (07/09) |
+| **B4** · nhập kết quả thi thử từ PDF | Xong 16/09, dùng được ở Giảng dạy → Báo cáo phụ huynh |
+| **C5** · học viên không sửa liên hệ phụ huynh học vụ đã nhập | Anh chốt 14/09, đã làm |
+| Xoay `SECRET_KEY` (07/09) · gộp `master` (06/09) · App Password Gmail (07/09) · tài khoản e2e | Xong từ trước |
+| **6.4** · cho tôi tự push · **16.1** · xem log deploy Render | Không còn cần: tôi đẩy được mã, và đã tự xác minh deploy 18/09 bằng dấu vết trên CSDL |
+
+**Không nằm ở đây: A6.** Nó từng được ghi "có vẻ đã xong" — sai, xem việc số 1.
+
+---
+
+**Cách khôi phục từ bản sao lưu** (khi cần — sau khi A0 và A5 xong mới có bản để khôi phục):
+Actions → lượt "Sao lưu CSDL" gần nhất → tải artifact → giải mã rồi khôi phục:
 
 ```
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in pe_hsa-<ngày>.dump.enc -out pe_hsa.dump -pass pass:<BACKUP_PASSPHRASE>
 pg_restore --dbname "<chuỗi kết nối Neon TRỰC TIẾP, bỏ -pooler>" --no-owner --no-acl --clean --if-exists pe_hsa.dump
 ```
 
-`--clean --if-exists` xoá bảng cũ trước khi dựng lại — **hỏi tôi trước khi chạy
-dòng thứ hai lên production**; chạy thử lên một nhánh Neon trước.
+`--clean --if-exists` xoá bảng cũ trước khi dựng lại — **hỏi tôi trước khi chạy dòng thứ hai lên
+production**; chạy thử lên một nhánh Neon trước.
 
-**Đã xong, không cần làm nữa:** ~~xoay `SECRET_KEY`~~ (nay 64 byte, đo 07/09) ·
-~~gộp `master`~~ (06/09) · ~~tạo đợt học đầu tiên~~ (07/09, tôi tạo, anh duyệt) ·
-~~App Password Gmail~~ (07/09, thuộc `sonthaiha07@gmail.com`) · ~~xoá tài khoản
-e2e~~ (07/09).
-
-**Tôi làm được mà không cần anh** (đang làm, không cần anh gật): rà luồng trợ
-giảng đầu-cuối. *Xong 14/09:* bảng "Việc hôm nay" cho giảng viên · khoá liên hệ
-phụ huynh (C5) · sửa ngày thi lớp 1 theo đợt. *Xong 13/09:* sao lưu CSDL tự động (chờ A5) · khai cổng phân quyền
-cho 60 view · ô email phụ huynh + dán liên hệ cả lớp · sinh lịch cả kỳ + ngày
-nghỉ theo đợt (học vụ khai Tết/nghỉ bù ở Vận hành → Đợt học khi có thông báo).
+*Một lưu ý về cách đánh mã:* mã A/B/C/P ở Phần I là mã của **bảng này**. Phần 5 của lịch sử bên dưới
+cũng có "C1…C5" nhưng là năm câu hỏi cho TopHSA — nay đã gộp vào **C4** ở Phần I.3.
 
 ---
 
@@ -61,7 +107,7 @@ nghỉ theo đợt (học vụ khai Tết/nghỉ bù ở Vận hành → Đợt 
 
 # Phần 1 — Ba việc phải làm trước khi gộp
 
-## [ ] 1.1 · Xoay `SECRET_KEY` — 2 phút
+## [x] 1.1 · Xoay `SECRET_KEY` — 2 phút *(XONG 07/09 — nhưng xem A6 ở Phần I: khoá production vẫn trùng máy dev)*
 
 ### Vì sao
 
@@ -111,7 +157,7 @@ Sau khi deploy, mở `https://pe-hsa-backend.onrender.com/health` →
 
 ---
 
-## [ ] 1.2 · Bí mật proxy — 5 phút. **Đây là việc dễ bỏ sót nhất**
+## [x] 1.2 · Bí mật proxy — 5 phút *(XONG — xác minh 18/09, Phần I.5)*. **Đây là việc dễ bỏ sót nhất**
 
 ### Vì sao — thứ duy nhất có thể gây sự cố cho học viên ngay ngày đầu
 
@@ -343,7 +389,7 @@ thật của Render.
 lấy phần tử CUỐI, và trên production phần tử cuối là thứ *tầng biên của Render
 nối vào*. Không gì tới được Django mà không qua tầng ấy.
 
-## [ ] Cách đo — một lần bấm
+## [x] Cách đo — một lần bấm *(XONG — đo 18/09 qua Vercel: máy chủ thấy đúng IP thật; Phần I.5)*
 
 Đăng nhập bằng tài khoản quản trị rồi mở:
 
@@ -370,7 +416,7 @@ nguyên liệu thô.
 
 # Phần 4 — Quyết định của riêng anh
 
-## [ ] 4.1 · Tạo đợt học đầu tiên
+## [x] 4.1 · Tạo đợt học đầu tiên *(XONG 07/09)*
 
 Màn hình **đã xong**: vào `/quan-tri/dot-hoc` → **Tạo đợt**. Việc còn lại là
 quyết định của anh:
@@ -457,7 +503,7 @@ Xem 4.3 ở trên.
 
 # Phần 6 — Nên làm, không gấp
 
-## [ ] 6.1 · Nhánh Neon riêng cho CI
+## [ ] 6.1 · Nhánh Neon riêng cho CI *(= A3, Phần I.1 việc 5)*
 
 `pytest` đang chạy thẳng vào **CSDL học viên thật** mỗi lần push. Bộ test cuộn
 lại ở cuối mỗi test, nhưng "cuộn lại" không phải "không đụng": nó vẫn chiếm kết
@@ -475,7 +521,7 @@ Không phải sửa mã: job pytest đã đọc `DATABASE_URL_CI` trước, rơi
 *Vì sao không đổi thẳng `DATABASE_URL` sang nhánh: một tên secret cho hai nghĩa
 là cách chắc chắn để một hôm nào đó ai đó trỏ nhầm nó về production.*
 
-## [ ] 6.2 · Bốn câu DDL còn chờ — KHÔNG gấp
+## [x] 6.2 · Bốn câu DDL còn chờ *(XONG — `kiem_luoc_do` 18/09: 22/22)*
 
 ```bash
 cd D:\pe_hsa\backend && .venv\Scripts\python.exe manage.py kiem_luoc_do
@@ -503,7 +549,7 @@ không thuộc phần "DDL bổ sung" anh đã cho phép.
 không có dữ liệu nào — nhưng sau khi gộp thì ai cũng mở được. Không muốn thì báo
 tôi xoá tuyến ấy trước.
 
-## [ ] 6.4 · Tuỳ chọn — cho tôi tự push
+## [x] 6.4 · Tuỳ chọn — cho tôi tự push *(không còn cần)*
 
 Lệnh `git push` bị bộ lọc quyền của chế độ auto chặn. Ba cách:
 
@@ -759,7 +805,7 @@ không gửi được cho ai — nên việc này nên nhắc các em cùng lúc
 Ba việc. Việc 11.1 chặn thật; 11.2 và 11.3 là quyết định của anh, tôi chưa làm
 gì cả và sẽ không tự làm.
 
-## [ ] 11.1 · Nhắc học viên điền số Zalo của phụ huynh — **chặn thật**
+## [ ] 11.1 · Nhắc học viên điền số Zalo của phụ huynh *(= B3, Phần I.3)*
 
 **Đo 07/09: 0 / 4 học viên đã điền.** Có Zalo OA mà không có số thì vẫn không
 gửi được cho ai — nên việc này chặn ngang hàng với việc đăng ký OA (Phần 10).

@@ -11,7 +11,7 @@ dấu rõ trong hệ thống và không bao giờ gửi tin cho ai.
 | # | Việc | Vì sao |
 |---|---|---|
 | 1 | Mở `https://pe-hsa.vercel.app` và để đó **2–3 phút** trước giờ | Máy chủ ngủ sau một lúc không ai dùng. Đo 17/09 lúc 09:51: lượt gọi đầu **76,3 giây**, hai lượt ngay sau đó **0,97 s** và **0,50 s**. Mở sớm là nó thức sẵn. (Việc A1 — gắn cron-job.org thì hết hẳn.) |
-| 2 | **Đăng nhập lại** bằng tài khoản quản trị | Khoá ký phiên vừa được tách khỏi máy phát triển (A6), nên mọi phiên cũ đã bị đăng xuất. Đừng để tới lúc demo mới phát hiện. |
+| 2 | **Đăng nhập thử** bằng tài khoản quản trị | Phiên đăng nhập sống 8 giờ; mở máy ra mà còn phiên cũ thì cứ dùng, hết thì đăng nhập lại. Làm trước, đừng để tới lúc demo mới phát hiện. *(Bản trước dòng này nói "khoá ký phiên vừa được tách khỏi máy phát triển (A6)" — đo lại 18/09 18:30 thì production VẪN nhận thẻ ký bằng khoá của máy phát triển. A6 chưa xong; xem `docs/VIEC_CUA_ANH.md`.)* |
 | 3 | Làm mới dữ liệu trình diễn: `python manage.py du_lieu_mau --lam-moi` (≈60 giây), hoặc nhắn tôi làm | Bộ dữ liệu neo vào ngày dựng. Để quá 2 ngày, màn hình bắt đầu hiện "buổi đã dạy chưa ai điểm danh" và "N ngày không mở bài" — trông như trung tâm ngừng hoạt động. Muốn biết có cần không: chạy `python manage.py du_lieu_mau`, nó tự báo *"Hoạt động mẫu gần nhất … (N ngày trước)"*. |
 | 4 | Mở sẵn hai thẻ trình duyệt: **Quản trị · tổng quan** và **một bài học** | Đỡ phải gõ đường dẫn giữa buổi. |
 
@@ -138,7 +138,7 @@ giữa buổi.)*
 | "Phụ huynh xem được những gì?" | *"Tiến độ, chuyên cần, điểm. Nhật ký riêng của học viên thì không — đó là chính sách, đang chờ trung tâm chốt."* |
 | "Sao trang đầu tiên hơi lâu?" | *"Máy chủ gói rẻ ngủ khi không ai dùng; bật gói giữ ấm là hết, khoảng 7 đô một tháng."* |
 | "Đã có ai dùng thật chưa?" | *"Chưa. Đó là lý do đề xuất chạy một lớp thật trong tháng đầu — mọi thứ khác dễ hơn sau khi một lớp đi qua một lần."* |
-| "Bảo mật thế nào?" | *"Phân quyền theo vai, mọi thao tác sửa dữ liệu có nhật ký, đường dẫn phụ huynh có hạn và thu hồi được, khoá ký của hệ thống chạy thật vừa tách khỏi máy phát triển."* |
+| "Bảo mật thế nào?" | *"Phân quyền theo vai và theo từng lớp, mọi thao tác sửa dữ liệu có nhật ký, đường dẫn phụ huynh có hạn và thu hồi được, trang web có đủ bộ header bảo mật."* **ĐỪNG nói** "khoá ký đã tách khỏi máy phát triển" — đo 18/09 18:30 là CHƯA (A6). Làm A6 (5 phút) rồi mới nói được câu ấy. |
 
 ---
 

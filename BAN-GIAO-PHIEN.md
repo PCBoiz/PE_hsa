@@ -11,7 +11,7 @@ Giang — chỉ học cách, không đụng bên ấy.*
 | Tệp | Là gì | Khi nào đọc |
 |---|---|---|
 | `PROGRESS.md` | Nhật ký. Khối "Đọc trước" ở đầu có **lệnh đang hiệu lực** của anh Sơn và trạng thái mới nhất. Mục mới ở TRÊN vạch `<!-- MỚI NHẤT -->`. | Trước khi bắt tay |
-| `docs/VIEC_CUA_ANH.md` | Việc **chỉ anh Sơn** làm được — một bảng ở đầu, xếp theo mức chặn. | Khi cần hỏi anh hoặc báo cáo |
+| `docs/VIEC_CUA_ANH.md` | Việc **chỉ anh Sơn** làm được và câu **cần anh quyết** — **Phần I** ở đầu (việc tay theo thứ tự, mười câu quyết kèm đề xuất, việc chờ TopHSA, việc đã xong). Viết lại 18/09; **đo lại trạng thái trước khi trích**. | Khi cần hỏi anh hoặc báo cáo |
 | `TODO.md` | Việc của tôi (backlog T1–T66…). | Khi hết việc đang làm |
 | `BAO-CAO-TRANG-THAI.md` | Số đo tự sinh — chỉ đo, không nhận định. `python scripts/kiem_ke_san_pham.py --md BAO-CAO-TRANG-THAI.md` | Trước khi trích bất cứ con số nào |
 | `RULES.md` | Tiêu chuẩn bắt buộc. §4 là cổng trước khi báo xong; §5 là luật chạm CSDL. | Trước mỗi commit |
@@ -176,11 +176,12 @@ Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. 
 
 ## Việc đang chờ, không ai làm được thay
 
-Xem bảng đầu `docs/VIEC_CUA_ANH.md`. Sáu việc chặn: **A0 gỡ khoá thanh toán GitHub —
-CI, sao lưu, giữ ấm CHƯA TỪNG CHẠY lượt nào (đo 14/09)** · **A6 tách khoá ký production
-khỏi máy dev (đo 15/09: thẻ cấp ở máy được production nhận)** · A1 giữ ấm · A2 bí mật proxy
-(mọi người chung một xô đăng nhập) · A3 nhánh Neon cho CI (chỉ có nghĩa sau A0)
-· B1 một lớp thật.
+Xem **Phần I** của `docs/VIEC_CUA_ANH.md` (viết lại 18/09, mọi trạng thái đo lại hôm ấy).
+Năm việc tay: **A6 tách khoá ký production khỏi máy dev — đo 18/09 18:30 production VẪN nhận
+thẻ ký bằng `backend/.env`** (lần 401 hôm 17/09 không lặp lại được — đo lại mỗi phiên trước
+khi viết trạng thái A6) · **A0 gỡ khoá thanh toán GitHub** (lượt CI 18/09 vẫn 0 bước) · A1 giữ
+ấm · A5 sao lưu và A3 nhánh Neon (sau A0). **A2 đã xong** (18/09: máy chủ thấy đúng IP thật qua
+Vercel). Cộng mười câu quyết (C1, C2, C3, C6, C7, C8, 11.4, 11.5, 6.3, P1) và B1 một lớp thật.
 
 ## Việc tôi làm tiếp được ngay (không cần anh)
 

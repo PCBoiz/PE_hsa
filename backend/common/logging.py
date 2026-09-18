@@ -54,8 +54,8 @@ def log_5xx(logger: logging.Logger, exc: BaseException | None = None,
         # IP QUA CỬA DUY NHẤT, không đọc `REMOTE_ADDR` thô (A1, 05/09/2026).
         #
         # `common/net.py` tự nhận là "nơi duy nhất trả lời request này đến từ
-        # đâu", và `docs/VIEC_CUA_ANH.md` §A2 chép lại nguyên câu ấy cho anh
-        # đọc. Dòng này làm câu ấy thành SAI: nó là người đọc IP thứ ba, và nó
+        # đâu" (hồi ấy `docs/VIEC_CUA_ANH.md` còn chép lại nguyên câu ấy cho anh
+        # đọc). Dòng này làm câu ấy thành SAI: nó là người đọc IP thứ ba, và nó
         # đọc một nguồn khác.
         #
         # Đo trên production (NUM_PROXIES=1, một chặng biên Render):

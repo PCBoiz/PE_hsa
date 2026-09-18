@@ -595,8 +595,9 @@ def test_khong_ai_doc_IP_khach_ngoai_common_net():
 
     ── VÌ SAO CÓ PHÉP KIỂM NÀY ────────────────────────────────────────────────
 
-    Câu tự nhận ấy được chép nguyên văn vào `docs/VIEC_CUA_ANH.md` §A2 cho anh
-    Sơn đọc trước khi mở cổng production. Ngày 05/09 kiểm lại thì nó SAI: ngoài
+    Câu tự nhận ấy từng được chép nguyên văn vào `docs/VIEC_CUA_ANH.md` (mục A2,
+    commit 0fb8235) cho anh Sơn đọc trước khi mở cổng production; bảng ấy nay đã
+    viết lại, câu tự nhận chỉ còn trong `common/net.py`. Ngày 05/09 kiểm lại thì nó SAI: ngoài
     `throttling.py` và `audit.py` (cả hai đều gọi `client_ip`), còn một người
     đọc thứ ba — `logging.py::log_5xx` lấy thẳng `META['REMOTE_ADDR']`.
 
@@ -677,7 +678,7 @@ def test_khong_ai_doc_IP_khach_ngoai_common_net():
 
     assert not pham, (
         'Có người đọc IP khách ngoài `common/net.py` — câu "cửa duy nhất" trong '
-        'net.py VÀ trong docs/VIEC_CUA_ANH.md §A2 thành sai:\n  '
+        'net.py thành sai:\n  '
         + '\n  '.join(pham)
         + '\n\nSửa: gọi `common.net.client_ip(request)`. Nếu thật sự cần header '
           'thô (đường chẩn đoán), thêm tệp vào `MIEN` kèm lý do.')

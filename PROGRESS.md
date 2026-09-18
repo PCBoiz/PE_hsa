@@ -90,6 +90,69 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 18/09/2026 (tối) — A6 CHƯA XONG (tôi đã báo sai), VÀ MỘT TỆP DUY NHẤT CHO VIỆC CỦA ANH
+
+Anh bảo "cứ tiếp tục đi rồi tổng hợp những việc cần tôi làm và quyết lại vào 1 file". Làm tổng
+hợp thì phải biết mục nào CÒN mở — nên đo lại từng mục đo được, thay vì chép bảng cũ. Đo lại
+lòi ra một chỗ tôi đã báo sai.
+
+### A6 — production VẪN nhận thẻ ký bằng khoá của máy dev
+
+Đo 18/09 18:30: thẻ cấp bằng `scripts/cap_the.py` (ký bằng `backend/.env`) gọi
+`/api/user` trên Render → **200, 3/3 lượt, id 7 vai admin**. Đối chứng: cùng thẻ sửa bốn ký tự
+cuối chữ ký → **401** (nên 200 không phải do đường ấy mở cho mọi người).
+
+Hôm 17/09 07:47 cùng phép đo ra 401, và từ MỘT lần đo ấy tôi đã viết "A6 có vẻ đã xong" vào
+**ba** chỗ: `VIEC_CUA_ANH`, kịch bản demo (bước 2: "khoá ký phiên vừa được tách khỏi máy phát
+triển"; và câu trả lời cho người mua hỏi "Bảo mật thế nào?": "…khoá ký của hệ thống chạy thật
+vừa tách khỏi máy phát triển"), và báo cáo thị trường Mục 10.7 ("chìa kiểm thử đã hết hiệu lực
+sau khi tách khoá"). Nay sửa cả ba: kịch bản demo ghi rõ **ĐỪNG nói** câu ấy cho tới khi A6 xong;
+báo cáo thị trường thay câu ấy bằng kết quả kiểm thật (dưới đây). Lần 401 hôm 17/09 không lặp
+lại được — anh đổi rồi đổi lại, hoặc nguyên nhân khác; không đoán. Bài học ghi vào bộ nhớ:
+trạng thái A6 phải ĐO LẠI mỗi phiên trước khi viết ra.
+
+### Bài học trên điện thoại — nay kiểm được trên PRODUCTION
+
+Chính vì production nhận thẻ dev, việc "chưa tự kiểm lại được" ở Mục 10.7 báo cáo thị trường
+nay làm được. `quet_bai_hoc` chạy thẳng `pe-hsa.vercel.app`, khổ 390, mọi lời gọi GHI bị chặn:
+**19 bài trải đều ba hợp phần — 19/19 đạt**: không bị cắt, không tràn ngang, 0 lỗi JS, chữ nhỏ
+nhất 11px, bài nào cũng có hình.
+
+### A2 — đã xong (đo chứ không suy)
+
+Qua Vercel, `/api/admin/do-proxy`: máy chủ thấy **đúng IP thật** của máy đo. Kiểm được rằng đó
+là nhờ bí mật proxy chứ không tình cờ: IP ấy **không có** trong chuỗi `X-Forwarded-For` (3 phần
+tử), và nhánh không-bí-mật với `NUM_PROXIES=1` sẽ trả phần tử cuối — một địa chỉ khác. Chỉ nhánh
+"bí mật khớp" mới cho ra được IP ấy.
+
+### Các mục khác, đo lại
+
+| Mục | Đo 18/09 |
+|---|---|
+| A0 khoá thanh toán GitHub | hai lượt CI hôm nay 0 bước, không máy chạy — còn khoá |
+| A1 giữ ấm | 06:26 lượt đầu 83,9 s — chưa |
+| 6.2 bốn câu DDL | `kiem_luoc_do`: 22/22 đã tới — xong |
+| B1 lớp thật | lớp duy nhất không phải mẫu là lớp thử `HSA-DEMO-01` — chưa |
+| B3 liên hệ phụ huynh | 0/3 học viên thật — chưa |
+| C1 tài khoản thử id 9 | còn; nay giữ 12/39 sự kiện học của tài khoản thật (31%) — bản cũ ghi "hơn nửa", đã hết đúng |
+| 11.4 nhập ngày vào lớp | `AdminClassMembersView` vẫn luôn ghi `local_now()` — còn mở |
+| 6.3 `/thiet-ke` | mở không cần đăng nhập, HTTP 200 — còn mở |
+| "Test Reg", "a" ở Việc hôm nay | vẫn hiện |
+
+### `docs/VIEC_CUA_ANH.md` — Phần I viết lại
+
+Giữ **một tệp** (mã nguồn và PROGRESS trỏ vào §A2, A5, 11.5, 12.4, 14.2 — tách tệp là gãy các
+chỗ ấy). Bảng cũ ở đầu thay bằng **Phần I**: I.1 năm việc tay theo thứ tự (A6 · A0 · A1 · A5 ·
+A3) + hai tuỳ chọn · I.2 mười câu quyết (C8 · C7 · C1 · 11.4 · 11.5 · C6 · C3 · C2 · 6.3 · P1),
+mỗi câu có đề xuất và lý do · I.3 bốn việc chờ TopHSA/thời gian (B1 · B3 · B2 · C4 gộp bảy câu
+hỏi) · I.4 thói quen trước demo · I.5 đã xong kèm bằng chứng. Quét mọi mục `[ ]` còn lại trong
+18 phần lịch sử: mục nào xong thì đánh `[x]` kèm ngày xác minh, mục nào còn mở thì đã có chỗ ở
+Phần I (thiếu đúng một câu — "báo cáo gửi bao lâu một lần, ai duyệt" — đã thêm vào C4).
+
+Kèm: hai chú thích trong mã (`common/tests.py`, `common/logging.py`) nói `VIEC_CUA_ANH §A2`
+"chép lại nguyên câu" tự nhận của `net.py` — câu ấy đã không còn trong tệp từ lâu (trước hôm
+nay); sửa cho đúng. Phép kiểm liên quan chạy lại: xanh.
+
 ## 18/09/2026 (sáng, tiếp) — QUẢ BOM Ở LẦN DEPLOY KẾ TIẾP, VÀ MỘT FIXTURE KHOÁ BẢNG `users` CỦA PRODUCTION
 
 **Lần theo một con số lạ.** Báo cáo `--durations` của lượt pytest sáng nay có một phần DỰNG
