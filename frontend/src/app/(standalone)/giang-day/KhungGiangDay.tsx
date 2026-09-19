@@ -36,7 +36,9 @@ const TAB = [
   { doan: 'bao-cao', nhan: 'Báo cáo phụ huynh', icon: 'file-text', troGiang: false },
 ] as const;
 
-export default function KhungGiangDay({ troGiang = false }: { troGiang?: boolean }) {
+export default function KhungGiangDay({
+  troGiang = false, ten, vai,
+}: { troGiang?: boolean; ten?: string; vai?: string }) {
   const duong = usePathname();
   // `/giang-day/<doan>/<classId>/…` → phần tử 3 sau khi tách. Chỉ nhận chuỗi
   // toàn chữ số: một đoạn đường dẫn lạ không được biến thành một `classId`.
@@ -48,6 +50,11 @@ export default function KhungGiangDay({ troGiang = false }: { troGiang?: boolean
       khu="Giảng dạy"
       dieuKhien="react"
       spa={false}
+      /* Tên + vai lấy từ CÙNG lượt `layVai()` của layout — khu này không nạp
+         `dashboard.js` nên không ai điền `#chip-name`; thiếu là chip hiện "?"
+         và "—" ở mọi trang của khu (đo 20/09/2026, cả điện thoại lẫn máy tính). */
+      ten={ten}
+      vai={vai}
       muc={[
         // "Việc hôm nay" đứng đầu và có mặt ở MỌI trang của khu: đó là chỗ
         // giảng viên quay về sau khi làm xong một việc trong lớp.

@@ -28,7 +28,7 @@ export default async function GiangDayLayout({ children }: { children: React.Rea
   return (
     <div className="min-h-dvh bg-ground">
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
-      <KhungGiangDay troGiang={troGiang} />
+      <KhungGiangDay troGiang={troGiang} ten={vai.ok ? vai.ten : undefined} vai={vai.ok ? vai.vai : undefined} />
       {/* Bù chiều cao thanh: `.topbar` là `position: fixed`. Dùng chính token
           của thanh chứ không một con số chép lại — chép lại là hai chỗ sẽ trôi
           khỏi nhau khi thanh đổi cỡ.

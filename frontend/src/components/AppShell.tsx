@@ -114,6 +114,16 @@ export default function AppShell({
   const [moNhom, setMoNhom] = useState<string | null>(null);
   const oNav = useRef<HTMLElement>(null);
 
+  /* MỤC ĐANG MỞ PHẢI NHÌN THẤY ĐƯỢC (20/09/2026). Dãy mục cuộn ngang và có vệt
+     mờ ở mép — nhưng ở 390px, trang "Báo cáo phụ huynh" của khu Giảng dạy là
+     mục THỨ TƯ và nằm ngoài vùng nhìn: người dùng đang ở một trang mà thanh
+     không tô mục nào (đo: chỉ còn một vệt nền tím 6px ở mép). Cuộn mục đang mở
+     vào giữa mỗi khi đường dẫn đổi; `block: 'nearest'` để không kéo trang. */
+  useEffect(() => {
+    const dang = oNav.current?.querySelector<HTMLElement>('.nav-btn.active');
+    dang?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [duong, trang]);
+
   /* Bấm ra ngoài và phím Escape — CHỈ ở chế độ React. Trên trang legacy,
      `dashboard.js` đã gắn đúng hai hành vi này lên `document`; gắn thêm một bộ
      nữa là hai bộ cùng đóng một menu, và cú bấm đầu tiên sẽ nhấp nháy. */

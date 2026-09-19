@@ -206,6 +206,25 @@ nhập thật bằng tài khoản e2e → production cấp thẻ và nhận lạ
 anh đổi trên Render sau 18/09 18:30. Hệ quả: tôi hết mở được production bằng thẻ dev; xác minh
 deploy từ nay đi bằng đăng nhập thật của tài khoản e2e.
 
+### 7. Sau deploy — xác minh trên production bằng đăng nhập thật
+
+Render lên mã mới lúc 03:08 (dấu vết: `image` bậy → 400 "Chỉ nhận ảnh…", mã cũ bỏ qua trường
+ấy). Hai lượt thật bằng thẻ production ký: chữ **104 từ / 4,7 s**, không LaTeX; ảnh đề (JPEG
+dựng bằng PIL) **2,5 s**, đọc lại đúng đề, dừng ở "x = 12 : 2" cho em tự làm. Vercel: script
+nhóm vai có trong `<head>` của mọi trang, `shell.css` mang `#main { padding-top }`. Học viên
+e2e đăng nhập thật qua `/login` của Vercel: nhóm `hoc-vien`, đủ 9 mục thanh, dòng chào ở
+y=79 dưới đáy thanh 52 (trước: 27), không tràn ngang — cả 390 lẫn 1366. Ghi nhận thẳng: lượt
+chữ trên production vẫn nêu đỉnh (2; −1) — với câu "mình hay nhầm dấu", mô hình coi là hỏi
+cách làm; luật dừng-trước-đáp-án bám chắc ở ảnh chụp đề và ở bước Kiểm tra.
+
+### 8. Khu Giảng dạy trên điện thoại: mục đang mở nằm ngoài vùng nhìn, chip "?"
+
+Soi ảnh 390px: trang "Báo cáo phụ huynh" là mục THỨ TƯ của dãy và bị cắt còn một vệt 6px —
+người dùng đang ở một trang mà thanh không tô mục nào. `AppShell` nay cuộn mục đang mở vào
+giữa mỗi khi đường dẫn đổi (đo sau sửa: mục nằm trọn trong dãy, `right: 0`). Cùng ảnh: chip
+người dùng "?" và tên "—" ở MỌI trang của khu (cả máy tính) vì `KhungGiangDay` chưa từng nhận
+tên — nay layout truyền `ten`/`vai` từ cùng lượt `layVai()`. 20/20 e2e của bốn spec khung.
+
 ### Cổng chất lượng
 
 ruff sạch · tsc/eslint sạch · 27/27 unit Node · 36/36 Playwright · giao diện 24 trang × 2 khổ
