@@ -115,7 +115,13 @@ const TRAN_TEP = 13;
 // 12px) nên không co theo; toạ độ đổi sang phần trăm của chính khung SVG. Sáu dòng
 // là phần dựng nhãn + khung bọc, KHÔNG dời sang src/ được: cả bộ dựng bài học
 // (`renderCurve`) đang ở tầng này. Dời cả engine là việc T32, không phải việc này.
-const TRAN_DONG_MA = 7072;
+// 20/09/2026: 7072 → 7076 (+4). VÁ LỖI trong tệp đã có: nút đính kèm ảnh của trợ lý
+// là nút GIẢ — `chatbot.js` đọc ảnh, hiện xem trước, rồi xoá ảnh khỏi state TRƯỚC
+// khi gọi API, và API cũng không nhận ảnh. Nay ảnh được co về ≤1280px JPEG ngay
+// trong `handleChatbotImageUpload` (phải ở cạnh canvas/Image của chính hàm ấy) và
+// gửi trong trường `image`; bù lại gỡ `CHATBOT_CONFIG` chết (−4). Cả bộ trợ lý
+// (~460 dòng) vẫn ở tầng cũ — dời nó sang React là việc riêng, không phải việc này.
+const TRAN_DONG_MA = 7076;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -18,11 +18,12 @@
  * thật, và không có gì kêu lên.
  *
  * Một cấu hình chết mà mời người ta làm sai thì nguy hơn không có cấu hình.
+ *
+ * `CHATBOT_CONFIG` (tên model Gemini + một system prompt "giúp lập trình")
+ * gỡ nốt 20/09/2026: không dòng nào đọc nó, và prompt thật nằm ở
+ * `backend/chatbot/graph.py`. Hai prompt trong repo cho cùng một trợ lý, một
+ * cái nói dạy lập trình, là thứ người sau đọc rồi tin nhầm.
  */
-const CHATBOT_CONFIG = {
-    model: 'gemini-2.5-flash-preview-09-2025',
-    systemPrompt: 'Bạn là trợ lý AI thân thiện và chuyên nghiệp. Trả lời ngắn gọn, sử dụng Markdown cho code, luôn dùng tiếng Việt. Giúp người dùng với lập trình và học tập.'
-};
 
 // State
 let chatbotState = {
@@ -80,19 +81,34 @@ function toggleChatbot() {
 /**
  * Handle Image Upload
  */
+/* Ảnh chụp đề bằng điện thoại là 3–8 MB; gửi nguyên thì vượt trần thân
+ * request (Django 2,5 MB) và tốn 4G của học viên. Co về cạnh dài ≤1280px, JPEG
+ * 0,85 — đủ để mô hình đọc chữ trên đề (đo 20/09/2026: PNG 900×260 đọc đúng
+ * từng số) và thường chỉ còn 100–400 kB. `chatbotState.selectedImage` giữ CẢ
+ * data URL (máy chủ đọc đúng dạng ấy), không phải phần base64 cắt rời như bản cũ. */
+const CHATBOT_ANH_CANH_MAX = 1280;
+
 function handleChatbotImageUpload(e) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !file.type.startsWith('image/')) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const base64 = event.target?.result?.split(',')[1];
-        if (base64) {
-            chatbotState.selectedImage = base64;
-            displayChatbotImagePreview(event.target?.result);
-        }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+        URL.revokeObjectURL(url);
+        const ti_le = Math.min(1, CHATBOT_ANH_CANH_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * ti_le));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * ti_le));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';                                   // PNG trong suốt → nền trắng, chữ đen đọc được
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        chatbotState.selectedImage = canvas.toDataURL('image/jpeg', 0.85);
+        displayChatbotImagePreview(chatbotState.selectedImage);
     };
-    reader.readAsDataURL(file);
+    img.onerror = () => { URL.revokeObjectURL(url); removeChatbotImage(); };
+    img.src = url;
 }
 
 /**
@@ -342,19 +358,23 @@ function collectLessonContext() {
 /**
  * Call Gemini API
  */
-async function callChatbotGemini(prompt, imageBase64 = null) {
+async function callChatbotGemini(prompt, anhDataUrl = null) {
     // Gọi BACKEND /api/chat (LangGraph + DeepSeek, key server-side — không lộ ra
-    // client như bản Gemini cũ). pe-bridge.js rewrite /api sang origin backend +
-    // đính JWT. Giữ lịch sử hội thoại trong chatbotState.messages để có context.
-    // (DeepSeek chat là text-only nên ảnh tạm thời bỏ qua.)
-    chatbotState.messages.push({ role: 'user', content: prompt });
+    // client như bản Gemini cũ). Proxy /api của Next đính JWT từ cookie.
+    // Giữ lịch sử hội thoại trong chatbotState.messages để có context — CHỮ
+    // thôi: ảnh chỉ đi kèm lượt hiện tại (trường `image`), máy chủ gắn nó vào
+    // lượt cuối và chọn model đọc được ảnh. Trước 20/09/2026 dòng chú thích ở
+    // đây nói "DeepSeek chat là text-only nên ảnh tạm thời bỏ qua" — và ảnh
+    // đúng là bị bỏ qua suốt, dù nút đính kèm vẫn hiện xem trước cho người dùng.
+    chatbotState.messages.push({ role: 'user', content: prompt || 'Đây là ảnh đề bài của mình.' });
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 messages: chatbotState.messages,
-                page_context: collectLessonContext()   // bài & bước đang học
+                page_context: collectLessonContext(),  // bài & bước đang học
+                image: anhDataUrl || undefined
             })
         });
         if (!response.ok) {
@@ -384,13 +404,13 @@ async function sendChatbotMessage() {
     if (!text && !chatbotState.selectedImage) return;
     if (chatbotState.isSending) return;
 
-    // Get image preview for display
-    const imagePreview = chatbotState.selectedImage 
-        ? chatbotElements.previewImg?.src 
-        : null;
+    // Giữ ảnh lại TRƯỚC khi dọn ô xem trước: bản cũ gọi `removeChatbotImage()`
+    // (xoá `selectedImage`) rồi mới đọc `chatbotState.selectedImage` để gửi —
+    // nên dù API có nhận ảnh, thứ gửi đi luôn là null.
+    const anh = chatbotState.selectedImage;
 
     // Add user message
-    addChatbotMessage(text || '(Hình ảnh)', true, imagePreview);
+    addChatbotMessage(text || '(Hình ảnh)', true, anh);
 
     // Clear input
     if (chatbotElements.input) {
@@ -404,7 +424,7 @@ async function sendChatbotMessage() {
 
     try {
         // Call API
-        const response = await callChatbotGemini(text, chatbotState.selectedImage);
+        const response = await callChatbotGemini(text, anh);
         
         // Remove typing indicator
         removeChatbotTyping();

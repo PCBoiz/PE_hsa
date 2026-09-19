@@ -43,7 +43,9 @@ export default function Chatbot() {
       </div>
 
       {/* Floating Chat Button */}
-      <button id="chatbot-toggle" className="chatbot-floating-btn" aria-label="Mở trợ lý AI">
+      {/* Trợ lý là công cụ ÔN THI: prompt coi người dùng là học sinh và bơm hồ sơ
+          học tập vào. Nhân sự không thấy nút (20/09/2026, `lib/nhomVai.ts`). */}
+      <button id="chatbot-toggle" className="chatbot-floating-btn" aria-label="Mở trợ lý AI" data-chi-hoc-vien="">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="chatbot-btn-icon">
           <path d="M12 1L13.8 9.2L22 11L13.8 12.8L12 21L10.2 12.8L2 11L10.2 9.2L12 1Z" />
           <path d="M19.5 2L20.5 6L24 7L20.5 8L19.5 12L18.5 8L15 7L18.5 6L19.5 2Z" opacity="0.75" />
@@ -55,7 +57,7 @@ export default function Chatbot() {
       </button>
 
       {/* Chat Window */}
-      <div id="chatbot-window" className="chatbot-window chatbot-hidden">
+      <div id="chatbot-window" className="chatbot-window chatbot-hidden" data-chi-hoc-vien="">
         <div className="chatbot-header">
           <div className="chatbot-header-left">
             <div className="chatbot-avatar">
@@ -83,7 +85,8 @@ export default function Chatbot() {
             </div>
             <div className="chatbot-message-content">
               <div className="chatbot-message-bubble">
-                Chào bạn! 👋 Tôi là Ichatbot, trợ lý AI của bạn. Hãy hỏi tôi bất kỳ điều gì về lập trình hoặc học tập! 🚀
+                Chào bạn! 👋 Mình là Trợ lý HSA. Hỏi mình về bài đang học, cách làm một dạng bài,
+                hay chụp đề gửi lên để mình hướng dẫn nhé.
               </div>
             </div>
           </div>

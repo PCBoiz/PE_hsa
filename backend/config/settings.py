@@ -78,10 +78,14 @@ if _render_host and ('https://' + _render_host) not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append('https://' + _render_host)
 
 # Chatbot "Trợ lý HSA" — DeepSeek (API OpenAI-compatible), key SERVER-SIDE.
-# DeepSeek dùng tạm cho testing (rẻ); đổi provider = đổi 3 biến này.
+# Đổi provider = đổi base_url + hai tên model. Vì sao hai model và vì sao tắt
+# chế độ nghĩ: xem đầu `chatbot/graph.py` (đo 20/09/2026). Tên cũ `deepseek-chat`
+# vẫn được API nhận nhưng bị chuyển lặng sang bản flash — đừng đặt lại nó.
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
-DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
-DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+DEEPSEEK_MODEL = (os.environ.get('DEEPSEEK_MODEL') or 'deepseek-v4-pro')         # lượt chữ
+DEEPSEEK_MODEL_ANH = (os.environ.get('DEEPSEEK_MODEL_ANH') or 'deepseek-flash')  # lượt có ảnh (v4-pro bỏ qua ảnh)
+DEEPSEEK_THINKING = os.environ.get('DEEPSEEK_THINKING', '0') == '1'           # chậm gấp đôi, tốn token — mặc định tắt
+DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com'
 
 INSTALLED_APPS = [
     # KHÔNG dùng django.contrib.admin — trang quản trị là /admin của frontend

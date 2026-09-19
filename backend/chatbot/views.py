@@ -6,6 +6,8 @@ bài đang mở. Trước 24/08 chỗ này tự tính "hợp phần yếu nhất
 nhất — một phép tính thứ ba về điểm yếu, thô hơn bản đồ năng lực và có thể mâu
 thuẫn với con số Trang của tôi đang hiện cho cùng học viên đó.
 """
+import base64
+
 from django.conf import settings
 from rest_framework.response import Response
 
@@ -75,8 +77,47 @@ def _lesson_context(page_context):
     )
 
 
+# Ảnh đính kèm: data URL do trình duyệt gửi, đã thu nhỏ về ≤1280px JPEG
+# (`chatbot.js::handleChatbotImageUpload`) nên thường 100–400 kB. Trần 1,6 triệu
+# ký tự ≈ 1,2 MB nhị phân: dưới DATA_UPLOAD_MAX_MEMORY_SIZE mặc định của Django
+# (2,5 MB) và trần thân request của Vercel (4,5 MB), mà vẫn đủ cho một ảnh chụp
+# đề đã co. Ảnh 20/09/2026 dùng để đo (PNG 900×260 chữ đen nền trắng) là 22 kB.
+MAX_KY_TU_ANH = 1_600_000
+_DAU_ANH = {
+    'jpeg': b'\xff\xd8\xff',
+    'png': b'\x89PNG',
+    'webp': b'RIFF',
+}
+
+
+def _anh_hop_le(anh):
+    """Trả (data_url, lỗi). Chỉ nhận data URL JPEG/PNG/WebP, base64 hợp lệ, đúng
+    byte đầu của định dạng khai báo. Không có ảnh → ('', '')."""
+    if anh in (None, ''):
+        return '', ''
+    if not isinstance(anh, str):
+        return '', "Trường 'image' phải là chuỗi data URL."
+    if len(anh) > MAX_KY_TU_ANH:
+        return '', 'Ảnh quá lớn (tối đa khoảng 1 MB sau khi thu nhỏ). Bạn chụp lại gần hơn hoặc cắt bớt nhé.'
+    dau, _, phan = anh.partition(',')
+    loai = dau[len('data:image/'):-len(';base64')] if dau.startswith('data:image/') and dau.endswith(';base64') else ''
+    if loai not in _DAU_ANH:
+        return '', 'Chỉ nhận ảnh JPEG, PNG hoặc WebP.'
+    try:
+        raw = base64.b64decode(phan, validate=True)
+    except (ValueError, TypeError):
+        return '', 'Dữ liệu ảnh không đọc được (base64 hỏng).'
+    if not raw.startswith(_DAU_ANH[loai]):
+        return '', 'Nội dung tệp không phải ảnh ' + loai.upper() + '.'
+    return anh, ''
+
+
 class ChatView(NguoiDungView):
-    """POST /api/chat — body {messages:[{role,content}]} → {reply}."""
+    """POST /api/chat — body {messages:[{role,content}], page_context?, image?} → {reply}.
+
+    `image` là data URL của ảnh đề bài (tuỳ chọn); chỉ gắn vào lượt cuối và đi
+    model đọc được ảnh (xem `chatbot/graph.py`).
+    """
     def post(self, request):
         if not getattr(settings, "DEEPSEEK_API_KEY", None):
             return Response(
@@ -87,6 +128,9 @@ class ChatView(NguoiDungView):
         messages = data.get("messages")
         if not isinstance(messages, list):
             return Response({"error": "Trường 'messages' phải là mảng."}, status=400)
+        anh, loi = _anh_hop_le(data.get("image"))
+        if loi:
+            return Response({"error": loi}, status=400)
         # Ghép hồ sơ người học + bài đang mở (client gửi kèm) thành một khối
         # bối cảnh cho system prompt.
         ctx = " · ".join(p for p in [_user_context(request.user)] if p)
@@ -94,7 +138,7 @@ class ChatView(NguoiDungView):
         if lesson_ctx:
             ctx = (ctx + "\n\n" + lesson_ctx) if ctx else lesson_ctx
         try:
-            reply = chat(messages, ctx)
+            reply = chat(messages, ctx, image=anh)
         # noqa CÓ LÝ DO: đây là RANH GIỚI với dịch vụ ngoài. Bắt hẹp lại là
         # phải liệt kê hết loại lỗi của thư viện LLM, và mỗi lần nó nâng bản
         # là một loại mới lọt ra thành 500 trắng cho học viên.
