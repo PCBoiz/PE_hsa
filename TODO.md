@@ -2967,11 +2967,10 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   token khỏi thân ở `/auth/*`); chat thì phải đi thẳng luồng. Cần: view Django trả `StreamingHttpResponse`
   (LangGraph `.stream()`), proxy có nhánh không gom cho `/api/chat`, `chatbot.js` đọc `ReadableStream`
   và ghép dần vào bong bóng. Đo trước/sau bằng thời gian tới CHỮ ĐẦU, không phải tới hết câu.
-- [ ] **Bảng vai→khu của "Khu làm việc của bạn" (`src/lib/khuTheoVai.ts`) là bản chép tay.** Nó ghi
-  khu nào cho vai nào theo lượt ĐI THỬ 20/09, không suy từ `permission_classes`. Thêm một khu hay
-  nới một vai ở backend là bảng này im lặng lệch. Cách chặn: phép kiểm unit đọc `quyenVai.ts`
-  (đã ràng với `permissions.py`) và đòi mỗi thẻ trong `KHU_VIEC` có ít nhất một `nguon` cho phép đúng
-  các vai ấy — cùng kiểu với `e2e/unit/quyen-vai.test.mjs`.
+- [x] **XONG 20/09 — bảng vai→khu (`src/lib/khuTheoVai.ts`) ràng với cổng thật.** Mỗi thẻ khai `cong`
+  (IsTeachingStaff / van-hanh / soan-giao-trinh / moi-nhan-su); `e2e/unit/khu-theo-vai.test.mjs` đọc
+  thẳng `quyenVai.ts`, `quan-tri/vai.ts` (`TABS[href].vai`, `VAI_VAO_KHU`), `admin/page.tsx::DUOC_VAO`
+  và đòi khớp từng vai. Bốn đột biến đều đỏ, kể cả siết cổng ở NGUỒN (`TABS[/quan-tri/huong-dan]`).
 - [ ] **`/bai-tap` mở bằng đường dẫn thẳng vẫn dựng màn "Bài tập của bạn" cho nhân sự** (thanh đã ẩn
   mục, nhưng trợ giảng gắn với lớp qua `class_members` nên trang vẫn liệt kê và mời "Làm bài"). Đúng
   chỗ sửa là truy vấn `MyAssignmentsView` lọc `chi_hoc_vien` cho chính người gọi, hoặc trang trả
