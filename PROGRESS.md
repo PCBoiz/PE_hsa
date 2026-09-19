@@ -225,6 +225,54 @@ giữa mỗi khi đường dẫn đổi (đo sau sửa: mục nằm trọn trong
 người dùng "?" và tên "—" ở MỌI trang của khu (cả máy tính) vì `KhungGiangDay` chưa từng nhận
 tên — nay layout truyền `ten`/`vai` từ cùng lượt `layVai()`. 20/20 e2e của bốn spec khung.
 
+### 9. Nút trợ lý đè lên "Tiếp theo" của bài học — và bộ đo không thấy
+
+Soi ảnh 390px của trang bài học: nút trợ lý AI (fixed, góc dưới phải) nằm chồng lên mũi tên
+"Tiếp theo" của thanh bước. Đo hộp: **giao 340px² ở 390 và 461px² ở 1366** — bấm mép trên mũi
+tên là mở trợ lý. Luật cỡ chạm không bắt: từng nút vẫn đủ 44px; nó không hỏi hai nút có
+CHỒNG nhau không. Sửa ở đúng tầng: `chatbot.css` đọc biến `--chatbot-nang` (mặc định 0), trang
+bài học đặt `body { --chatbot-nang: 4.5rem }` = chiều cao thanh bước + chỗ thở; cửa sổ chat
+cũng nâng theo. Đo sau sửa: nút ở `bottom: 116`, 0 chồng, cửa sổ mở từ y=24 tới 676, thanh
+bước ở 780. Cùng lượt soi: "Chọn một khoá học ở bên trái" ở màn Soạn giáo trình — dưới 640px
+danh sách nằm PHÍA TRÊN; đổi thành "trong danh sách Khoá học".
+
+**Luật thứ sáu** cho bộ đo: nút fixed/sticky đè lên nút khác mà nút kia KHÔNG DỊCH khi cuộn
+(thử cả ±120px ở vùng cuộn gần nhất). "Neo" định nghĩa bằng đo chứ không bằng `position`: bản
+đầu hỏi `position: fixed|sticky` ở tổ tiên và báo 0 cho chính trang bài học — thanh bước ở đó
+`position: relative` trong một bố cục cao đúng 100vh. Hộp phải cắt theo tổ tiên `overflow`:
+không cắt thì mục điều hướng đã cuộn khuất trong `.topbar-nav` cho **51 cặp giả**. Chứng minh
+đỏ bằng bản `chatbot.css` cũ chép vào đĩa (`next start` phục vụ `public/` trực tiếp — đo: đổi
+tệp là phản hồi đổi ngay): **374/509px²** ở hai khổ; bản mới 0.
+
+### 10. Sau khi tách vai, bộ đo đang đo Trang của tôi bằng mắt QUẢN TRỊ — tức không đo gì
+
+Chuyện lộ ra vì luật mới lật lọng: chạy cả bộ thì bài học "chồng: 0", chạy riêng một trang thì
+"chồng: 1". Nguyên nhân là chính bản vá nhóm vai: nhóm nhớ trong `sessionStorage` theo TAB, bộ
+đo dùng MỘT tab cho cả lượt, thẻ là quản trị → trang đầu ghi "nhân sự", mọi trang sau nút trợ
+lý `display: none`, không có gì để chồng. Rộng hơn: từ 20/09 nhân sự không thấy hero, ô số,
+nhiệm vụ, nhật ký, xếp hạng — Dashboard đo bằng thẻ quản trị chỉ còn **18 ô chữ**, bằng thẻ
+học viên là **112**. Mọi con số "0 vi phạm" của màn học viên sau bản vá là số của một màn đã
+bị giấu gần hết.
+
+Sửa bộ đo: trang học viên đo bằng **thẻ học viên** (`cap_the.py --e2e` → `.the/tokens_hv.json`;
+thiếu thì nói to rồi đo bằng thẻ quản trị), xoá nhóm vai đã nhớ trước MỖI trang. Lượt đầu bằng
+thẻ học viên bắt ngay hai lối "Làm khảo sát để đặt mốc thi" / "Làm đề thi thử" cao **18px**
+(chuột cần 24, WCAG 2.5.8) — chưa ai đo vì trước đó ô số ẩn với quản trị; vá `.hsa-tile-cta`
+`min-height: 24px`. Và một báo oan của luật sáu: phương án trắc nghiệm cuối bài (2273px²) vì
+vùng cuộn đang ở đáy, +120 không đi đâu — nay thử cả hai chiều.
+
+Cùng gốc: trang bài học và thi thử không có `AppShell` nên không ai đặt nhóm vai — nhân sự mở
+thẳng một bài trong tab mới vẫn thấy nút trợ lý. `ghiNhomVai()` dùng chung, gọi ở chỗ hai trang
+ấy vốn đã hỏi `/api/user`.
+
+Kèm: DeepSeek trả **402** khi hết số dư — mã cũ ném nguyên JSON "Insufficient Balance" lên màn
+hình học viên và không ghi log; nay 402/401/429 → 503 kèm câu tiếng Việt + `log.warning` (test
+đỏ trên mã cũ: 502 ≠ 503). Tab mới mở thẳng bài học: giảng viên `nhan-su`/trợ lý ẩn, học viên
+`hoc-vien`/trợ lý hiện (đo).
+
+**Sau vòng này:** sáng + tối 48 lượt × 6 luật = 0, tự kiểm 48/48 (4.308 vi phạm cố ý);
+36/36 Playwright; 27/27 unit; ruff sạch. `RULES.md`/`BAN-GIAO-PHIEN.md` ghi lệnh cấp HAI thẻ.
+
 ### Cổng chất lượng
 
 ruff sạch · tsc/eslint sạch · 27/27 unit Node · 36/36 Playwright · giao diện 24 trang × 2 khổ

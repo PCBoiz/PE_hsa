@@ -41,6 +41,17 @@ export function nhomCuaVai(vai?: string | null): NhomVai | null {
   return vai === VAI_HOC_VIEN ? 'hoc-vien' : 'nhan-su';
 }
 
+/** Đặt nhóm lên `<html>` và nhớ cho lần mở sau trong CÙNG tab. Gọi ở MỌI chỗ
+ *  vừa biết vai (`useVaiHienTai`, và các trang không có `AppShell` như bài học
+ *  hay thi thử — chúng tự gọi `/api/user`). Đo 20/09/2026: trang bài học mở
+ *  thẳng trong tab mới thì nhân sự vẫn thấy nút trợ lý, vì không ai đặt nhóm. */
+export function ghiNhomVai(vai?: string | null): void {
+  const nhom = nhomCuaVai(vai);
+  if (!nhom || typeof document === 'undefined') return;
+  document.documentElement.setAttribute('data-vai-nhom', nhom);
+  try { sessionStorage.setItem(KHOA_NHOM_VAI, nhom); } catch { /* chế độ riêng tư */ }
+}
+
 /** Script chạy trước khi vẽ (đặt trong `<head>` của layout gốc). Chỉ nhận
  *  đúng hai giá trị — chuỗi lạ trong kho không được thành thuộc tính. */
 export const SCRIPT_NHOM_VAI =

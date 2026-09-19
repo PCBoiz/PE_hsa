@@ -90,6 +90,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--vai', default='admin', help='vai cần cấp thẻ (mặc định admin)')
     ap.add_argument('--id', type=int, help='chỉ định thẳng user_id, bỏ qua --vai')
+    ap.add_argument('--e2e', action='store_true',
+                    help='tài khoản kiểm thử học viên trong .the/e2e.json (scripts/tai_khoan_e2e.py --that)')
     ap.add_argument('--ra', default=str(GOC / '.the' / 'tokens_ad.json'),
                     help='tệp JSON để ghi thẻ')
     ap.add_argument('--co-refresh', action='store_true',
@@ -97,7 +99,15 @@ def main():
                          'token_blacklist_outstandingtoken của CSDL đang nối')
     a = ap.parse_args()
 
-    if a.id:
+    if a.e2e:
+        import json as _json
+        tep = GOC / '.the' / 'e2e.json'
+        if not tep.exists():
+            print('Chưa có %s — tạo bằng: python scripts/tai_khoan_e2e.py --that' % tep)
+            raise SystemExit(1)
+        email = _json.loads(tep.read_text(encoding='utf-8'))['email']
+        row = q1('SELECT id, name, role FROM users WHERE email = %s', (email,))
+    elif a.id:
         row = q1('SELECT id, name, role FROM users WHERE id = %s', (a.id,))
     else:
         row = q1('SELECT id, name, role FROM users WHERE role = %s ORDER BY id LIMIT 1',

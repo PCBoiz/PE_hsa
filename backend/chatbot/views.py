@@ -7,14 +7,28 @@ nhất — một phép tính thứ ba về điểm yếu, thô hơn bản đồ 
 thuẫn với con số Trang của tôi đang hiện cho cùng học viên đó.
 """
 import base64
+import logging
 
 from django.conf import settings
+from openai import APIStatusError
 from rest_framework.response import Response
 
 from chatbot.graph import chat
 from chatbot.profile import learner_profile
 from common.db import q1
 from common.views import NguoiDungView
+
+log = logging.getLogger(__name__)
+
+# Lỗi CÓ MÃ từ DeepSeek → câu người đọc hiểu, và một dòng log để trung tâm biết.
+# 402 là chuyện sẽ xảy ra: số dư khoá đo 20/09/2026 là 2,54 USD, một lớp dùng thật
+# thì vài ngày hết. Trước đó mọi lỗi ra "Trợ lý gặp sự cố khi trả lời: Error
+# code: 402 - {…'Insufficient Balance'…}" — học viên đọc JSON, không ai được báo.
+_LOI_CO_MA = {
+    402: 'Trợ lý tạm nghỉ vì dịch vụ AI hết hạn mức — trung tâm đã được báo. Bạn cứ học tiếp, mai hỏi lại nhé.',
+    401: 'Trợ lý chưa được cấu hình đúng (khoá dịch vụ AI không hợp lệ) — trung tâm đã được báo.',
+    429: 'Trợ lý đang quá tải, bạn thử lại sau một phút nhé.',
+}
 
 
 def _user_context(user):
@@ -142,6 +156,11 @@ class ChatView(NguoiDungView):
         # noqa CÓ LÝ DO: đây là RANH GIỚI với dịch vụ ngoài. Bắt hẹp lại là
         # phải liệt kê hết loại lỗi của thư viện LLM, và mỗi lần nó nâng bản
         # là một loại mới lọt ra thành 500 trắng cho học viên.
+        except APIStatusError as exc:
+            if exc.status_code in _LOI_CO_MA:
+                log.warning('DeepSeek trả %s cho user %s: %s', exc.status_code, request.user.id, str(exc)[:200])
+                return Response({"error": _LOI_CO_MA[exc.status_code]}, status=503)
+            return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
         except Exception as exc:  # noqa: BLE001 — lỗi mạng/key/model → báo gọn, không lộ trace
             return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
         return Response({"reply": reply})

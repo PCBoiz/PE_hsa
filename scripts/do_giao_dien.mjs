@@ -602,8 +602,88 @@ function DO_TRONG_TRANG(do_trang_thai) {
     window.scrollTo(0, cu);
   }
 
+  /* ── HAI NÚT NEO VÀO KHUNG NHÌN CHỒNG NHAU (20/09/2026) ─────────────────────
+     Chỗ mù thứ ba. Nút trợ lý AI (`position: fixed`, góc dưới phải) đè lên nút
+     "Tiếp theo" của thanh bước bài học 340–461px² ở CẢ HAI khổ — bấm mép trên
+     mũi tên là mở trợ lý. Luật cỡ chạm không thấy: từng nút vẫn đủ 44px; nó
+     không hỏi hai nút có CHỒNG nhau không.
+
+     "Neo" định nghĩa bằng ĐO, không bằng `position`: bản đầu của luật này hỏi
+     `position: fixed|sticky` ở tổ tiên, và báo 0 cho chính trang bài học — thanh
+     bước ở đó `position: relative` trong một bố cục cao đúng 100vh, nội dung
+     cuộn BÊN TRONG. Nên: cuộn thử (vùng cuộn gần nhất của B, hoặc cửa sổ) 120px;
+     B không dịch một pixel nào thì người dùng không có cách nào kéo B ra khỏi
+     A — đó mới là chồng thật. Nút nổi đè lên nội dung cuộn thì không tính. */
+  const chong_nut = [];
+  {
+    const co_dinh = (el) => {
+      for (let n = el; n && n !== document.body; n = n.parentElement) {
+        if (/^(fixed|sticky)$/.test(getComputedStyle(n).position)) return true;
+      }
+      return false;
+    };
+    const vung_cuon = (el) => {
+      for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if (/^(auto|scroll)$/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 1) return n;
+      }
+      return null;
+    };
+    const khong_dich = (el) => {
+      const truoc = el.getBoundingClientRect().top;
+      const vc = vung_cuon(el);
+      const doc = (v) => (vc ? vc.scrollTop = v : window.scrollTo(0, v));
+      const lay = () => (vc ? vc.scrollTop : window.scrollY);
+      const cu = lay();
+      /* Thử CẢ HAI chiều: vùng cuộn đang ở đáy thì +120 không đi đâu cả, và bản
+         đầu kết luận "không dịch" cho một phương án trắc nghiệm nằm cuối bài
+         (báo oan 2273px², 20/09/2026). Chỉ khi không chiều nào dịch được nó
+         mới là neo thật. */
+      let dich = false;
+      for (const d of [120, -120]) {
+        doc(cu + d);
+        if (Math.abs(el.getBoundingClientRect().top - truoc) >= 1) { dich = true; }
+        doc(cu);
+        if (dich) break;
+      }
+      return !dich;
+    };
+    /* Hộp NHÌN THẤY: cắt theo mọi tổ tiên có `overflow` khác `visible`. Không
+       cắt thì mục điều hướng đã cuộn khuất khỏi dãy (`.topbar-nav` cuộn ngang)
+       vẫn mang hộp đè lên nút chủ đề/chuông — bản đầu báo 51 cặp, toàn bộ là
+       nút không ai thấy (đo 20/09/2026). */
+    const hop_thay = (el) => {
+      let r = el.getBoundingClientRect();
+      let { left, top, right, bottom } = r;
+      for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+        const c = n.getBoundingClientRect();
+        left = Math.max(left, c.left); top = Math.max(top, c.top);
+        right = Math.min(right, c.right); bottom = Math.min(bottom, c.bottom);
+        if (right <= left || bottom <= top) return null;
+      }
+      return { left, top, right, bottom, width: right - left, height: bottom - top };
+    };
+    const tat_ca = [...document.querySelectorAll(CHAM)].filter(hien)
+      .map((el) => ({ el, r: hop_thay(el) })).filter((x) => x.r && x.r.width > 0 && x.r.height > 0);
+    const noi = tat_ca.filter((x) => co_dinh(x.el));
+    for (const a of noi) {
+      for (const b of tat_ca) {
+        if (a === b || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+        if (co_dinh(b.el) && noi.indexOf(b) < noi.indexOf(a)) continue;   // cặp đã xét
+        const g = Math.max(0, Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left))
+          * Math.max(0, Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top));
+        if (g < 16) continue;   // chạm mép 1–2px không phải chồng
+        if (!co_dinh(b.el) && !khong_dich(b.el)) continue;
+        chong_nut.push({ a: duong(a.el), b: duong(b.el), giao: Math.round(g) });
+      }
+    }
+  }
+
   return {
     bi_che: bi_che.slice(0, 6), so_bi_che: bi_che.length,
+    chong_nut: chong_nut.slice(0, 6), so_chong_nut: chong_nut.length,
     dau, net_dau,
     /* Cắt ở 300 chứ không 60: bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node chỉ soi được
        những mục có trong mảng này, nên cắt sớm là loại bỏ mục chưa ai nhìn rồi
@@ -630,6 +710,31 @@ const _pw = await import(PW);
 const chromium = _pw.chromium || (_pw.default && _pw.default.chromium);
 if (!chromium) { console.error('Nạp được Playwright nhưng không thấy `chromium`.'); process.exit(1); }
 const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
+
+/* ── THẺ HỌC VIÊN cho các trang học viên (20/09/2026) ─────────────────────────
+   Từ 20/09 nhân sự KHÔNG thấy phần luyện thi (`src/lib/nhomVai.ts`): hero,
+   ô số, nhiệm vụ, nhật ký, bảng xếp hạng, nút trợ lý… đều `display: none` khi
+   `<html data-vai-nhom="nhan-su">`. Bộ đo này đi bằng thẻ QUẢN TRỊ, nên nếu cứ
+   thế thì toàn bộ màn học viên biến khỏi lượt đo mà con số vẫn "0 vi phạm" —
+   đúng loại xanh giả tệp này sinh ra để tránh. Và nhóm vai nhớ trong
+   `sessionStorage` theo TAB, mà bộ đo dùng một tab cho cả lượt: trang đầu đặt
+   "nhân sự" là các trang sau đều thế (đo 20/09: nút trợ lý đè lên "Tiếp theo"
+   trên bài học không bị bắt khi chạy cả lượt, nhưng bị bắt khi chạy riêng).
+
+   Nên: trang học viên đo bằng thẻ học viên (`PE_TOKENS_HV`, mặc định
+   `.the/tokens_hv.json`, cấp bằng `python scripts/cap_the.py --e2e --ra
+   .the/tokens_hv.json`), và xoá nhóm vai đã nhớ trước MỖI trang. Không có thẻ
+   ấy thì nói to một lần rồi đo bằng thẻ quản trị — con số của các trang học
+   viên khi đó KHÔNG gồm phần chỉ-học-viên. */
+const TOKEN_HV = process.env.PE_TOKENS_HV || join(DAY, '..', '.the', 'tokens_hv.json');
+let tokHv = null;
+try { tokHv = JSON.parse(readFileSync(TOKEN_HV, 'utf8')); } catch (e) { /* chưa cấp */ }
+const TRANG_HOC_VIEN = new Set(['Dashboard', 'Chi tiết khoá', 'Bài học', 'Thi thử', 'Bài tập của tôi', 'Khảo sát', 'Đổi mật khẩu']);
+if (!tokHv) {
+  console.log('CHÚ Ý: không có thẻ học viên (' + TOKEN_HV + ') — các trang học viên đo bằng thẻ quản trị,'
+    + '\n       phần CHỈ HỌC VIÊN THẤY (hero, ô số, nhiệm vụ, nhật ký, xếp hạng, trợ lý) KHÔNG được đo.'
+    + '\n       Cấp: python scripts/cap_the.py --e2e --ra .the/tokens_hv.json');
+}
 const tu_kiem = process.argv.includes('--tu-kiem');
 const chu_de = process.argv.includes('--toi') ? 'dark' : 'light';
 const do_tt = process.argv.includes('--trang-thai');
@@ -673,6 +778,13 @@ for (const kho of KHO) {
   });
 
   for (const [url, ten] of TRANG) {
+    // `PE_CHI_TRANG=Bài học` (hoặc một phần tên) — chạy một trang khi đang sửa một luật.
+    if (process.env.PE_CHI_TRANG && !ten.includes(process.env.PE_CHI_TRANG)) continue;
+    // Thẻ theo trang (xem TOKEN_HV ở trên); cookie cùng tên ghi đè cookie cũ.
+    const the = TRANG_HOC_VIEN.has(ten) && tokHv ? tokHv : tok;
+    await c.addCookies([{ name: 'pe_at', value: the.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    // Nhóm vai nhớ theo TAB — xoá để trang này tự hỏi vai của thẻ vừa đặt.
+    await p.evaluate(() => { try { sessionStorage.removeItem('pe_nhom_vai'); } catch (e) { /* trang trống */ } }).catch(() => {});
     const loi = [];
     p.removeAllListeners('pageerror');
     p.on('pageerror', (e) => loi.push(String(e.message).slice(0, 80)));
@@ -926,6 +1038,7 @@ for (const kho of KHO) {
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  ngoài khung:${String(d.so_ngoai_khung).padStart(2)}`
         + `  bị che:${String(d.so_bi_che).padStart(2)}`
+        + `  chồng:${String(d.so_chong_nut).padStart(2)}`
         + `  lỗiJS:${loi.length}  CSP:${csp.length}`
         + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`
             + `  thiếu nét:${String(d.so_thieu_net).padStart(2)}/${String(d.so_net_do).padStart(2)}` : ''));
@@ -956,6 +1069,10 @@ for (const r of ket.filter((x) => x.so_ngoai_khung)) {
 console.log(`  chữ dưới thanh cố định: ${ket.reduce((a, r) => a + (r.so_bi_che || 0), 0)}`);
 for (const r of ket.filter((x) => x.so_bi_che)) {
   console.log(`      ${r.kho} · ${r.ten}: ${r.bi_che.map((v) => `"${v.chu}" (${v.duong})`).join(' · ')}`);
+}
+console.log(`  nút neo khung nhìn chồng nhau: ${ket.reduce((a, r) => a + (r.so_chong_nut || 0), 0)}`);
+for (const r of ket.filter((x) => x.so_chong_nut)) {
+  console.log(`      ${r.kho} · ${r.ten}: ${r.chong_nut.map((v) => `${v.a} × ${v.b} (${v.giao}px²)`).join(' · ')}`);
 }
 console.log(`  lỗi JS             : ${tong_js}`);
 console.log(`  vi phạm CSP        : ${tong_csp}`);

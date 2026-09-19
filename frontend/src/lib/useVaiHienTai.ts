@@ -2,17 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-import { KHOA_NHOM_VAI, nhomCuaVai } from './nhomVai';
+import { ghiNhomVai } from './nhomVai';
 
 type NguoiDung = { role?: string | null };
-
-/** Đặt nhóm lên `<html>` và nhớ cho lần mở sau trong CÙNG tab. */
-function apNhom(vai: string) {
-  const nhom = nhomCuaVai(vai);
-  if (!nhom) return;
-  document.documentElement.setAttribute('data-vai-nhom', nhom);
-  try { sessionStorage.setItem(KHOA_NHOM_VAI, nhom); } catch { /* chế độ riêng tư */ }
-}
 
 /**
  * Vai của người đang đăng nhập, cho KHUNG giao diện — xem `nhomVai.ts`.
@@ -29,12 +21,12 @@ export function useVaiHienTai(vaiBiet?: string, coLegacy = false): string | unde
   const [vaiHoi, setVaiHoi] = useState<string | undefined>();
 
   useEffect(() => {
-    if (vaiBiet) { apNhom(vaiBiet); return; }
+    if (vaiBiet) { ghiNhomVai(vaiBiet); return; }
     let xong = false;
     const nhan = (u: NguoiDung | null | undefined) => {
       if (xong || !u?.role) return;
       xong = true;
-      apNhom(u.role);
+      ghiNhomVai(u.role);
       setVaiHoi(u.role);
     };
     let lan = 0;

@@ -267,6 +267,10 @@ body.light .lesson-header {
   border-bottom: 1px solid var(--border-default);
 }
 body.light .lesson-nav-footer { background: rgba(255,255,255,0.92); }
+/* Nút trợ lý AI (`chatbot.css`) nâng lên trên thanh bước: thanh cao 44px nút +
+   2×12px đệm (≤900px: 2×10px) = 68/64px; 4,5rem (72px) phủ cả hai và chừa 4–8px
+   thở. Không có dòng này thì nút trợ lý đè lên "Tiếp theo" (đo 20/09/2026). */
+body { --chatbot-nang: 4.5rem; }
 
 /* `.player-pill` được thiết kế cho nền TỐI (lesson_chrome.css:237 — nền
    `rgba(11,17,33,.5)`, tên dùng `--text-100` vốn là #F1F5F9). Ở chủ đề sáng,

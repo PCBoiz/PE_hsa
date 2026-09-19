@@ -52,6 +52,7 @@ cd backend  && ./.venv/Scripts/python.exe -m pytest -q  # ~46 phút từ VN (đo
 cd frontend && ./node_modules/.bin/eslint src e2e --max-warnings 0 && ./node_modules/.bin/tsc --noEmit
 cd frontend && for f in e2e/unit/*.test.mjs; do node "$f" >/dev/null || echo "ĐỎ $f"; done   # 25 unit Node (đếm 14/09 tối, sau vòng 18)
 python scripts/cap_the.py                               # thẻ 30 phút, không ghi CSDL
+python scripts/cap_the.py --e2e --ra .the/tokens_hv.json  # thẻ HỌC VIÊN — màn học viên ẩn với nhân sự từ 20/09
 PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs --tu-kiem   # phải ĐẠT
 PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs             # rồi đo thật
 

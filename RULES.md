@@ -83,6 +83,12 @@ cd backend && ./.venv/Scripts/python.exe -m pytest common/tests_hop_dong.py -q
 
 # Giao diện. CHẠY --tu-kiem TRƯỚC, luôn luôn: bộ đo này đã nói dối 12 lần,
 # ba lần trong đó là báo 0 trong khi lỗi có thật.
+# HAI thẻ (20/09/2026): quản trị cho khu Vận hành/Giảng dạy, HỌC VIÊN cho màn học
+# viên — nhân sự không thấy hero/ô số/nhiệm vụ/trợ lý, đo bằng thẻ quản trị là đo
+# một màn đã giấu gần hết (Dashboard: 18 ô chữ thay vì 112). Thiếu thẻ học viên
+# thì bộ đo nói to rồi đo bằng thẻ quản trị — đừng lấy con số ấy.
+python scripts/cap_the.py                                      # → .the/tokens_ad.json
+python scripts/cap_the.py --e2e --ra .the/tokens_hv.json       # cần tài khoản e2e (tai_khoan_e2e.py --that)
 node scripts/do_giao_dien.mjs --tu-kiem            # phải in "ĐẠT"
 node scripts/do_giao_dien.mjs --toi --tu-kiem      # phải in "ĐẠT"
 node scripts/do_giao_dien.mjs --trang-thai

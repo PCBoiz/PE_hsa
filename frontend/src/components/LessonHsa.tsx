@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import Chatbot from '@/components/Chatbot';
 import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
+import { ghiNhomVai } from '@/lib/nhomVai';
 import { apiFetch } from '@/lib/api';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -35,6 +36,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
   useEffect(() => {
     apiFetch('/api/user').then((r) => (r.ok ? r.json() : null)).then((u) => {
       if (!u) return;
+      ghiNhomVai(u.role);   // trang này không có AppShell — tự đặt nhóm vai (lib/nhomVai.ts)
       const el = document.querySelector('.xp-text');
       if (el) el.textContent = `${u.xp || 0}/2000`;
     }).catch(() => {});

@@ -3,6 +3,7 @@
 // Trụ cột ④ — Thi thử CBT (ProgrammingEdu × TopHSA). React thuần + apiFetch.
 // list → làm bài (bấm giờ, palette câu, MCQ/điền) → kết quả + phân tích hợp phần.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ghiNhomVai } from '@/lib/nhomVai';
 import { taiTrang } from '@/lib/dieuHuong';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppShell from '@/components/AppShell';
@@ -79,7 +80,7 @@ export default function MockExam() {
          `Promise.all` là để một lỗi mạng ở chỗ phụ giữ chỗ chính lại. */
       try {
         const u = await apiFetch('/api/user');
-        if (u.ok) { const d = await u.json(); if (d?.name) setTen(d.name); }
+        if (u.ok) { const d = await u.json(); if (d?.name) setTen(d.name); ghiNhomVai(d?.role); }
       } catch { /* không có tên thì chip hiện dấu gạch — không chặn việc thi */ }
     })();
   }, []);

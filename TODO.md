@@ -2959,3 +2959,28 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   nhưng `next/font` khai ở layout GỐC để `--font-body` có ở mọi trang, tách ra là hai
   bộ biến. Chưa chọn; đo trước khi chọn: 1,1 s LCP trên mạng thật đã dưới ngưỡng, chỉ
   4G giả lập mới chạm 2,3 s. Không phải việc chặn đường.
+
+## 20/09/2026 — mục mở từ vòng "trợ lý AI · sáu vai · điện thoại"
+
+- [ ] **Trợ lý AI chưa STREAM.** Mỗi lượt 4–11 s người dùng nhìn ba chấm; v4-pro trả token đầu
+  sau ~1 s. Chặn ở lớp trung gian: `src/lib/proxy.ts` gom trọn thân phản hồi rồi mới trả (để bóc
+  token khỏi thân ở `/auth/*`); chat thì phải đi thẳng luồng. Cần: view Django trả `StreamingHttpResponse`
+  (LangGraph `.stream()`), proxy có nhánh không gom cho `/api/chat`, `chatbot.js` đọc `ReadableStream`
+  và ghép dần vào bong bóng. Đo trước/sau bằng thời gian tới CHỮ ĐẦU, không phải tới hết câu.
+- [ ] **Bảng vai→khu của "Khu làm việc của bạn" (`src/lib/khuTheoVai.ts`) là bản chép tay.** Nó ghi
+  khu nào cho vai nào theo lượt ĐI THỬ 20/09, không suy từ `permission_classes`. Thêm một khu hay
+  nới một vai ở backend là bảng này im lặng lệch. Cách chặn: phép kiểm unit đọc `quyenVai.ts`
+  (đã ràng với `permissions.py`) và đòi mỗi thẻ trong `KHU_VIEC` có ít nhất một `nguon` cho phép đúng
+  các vai ấy — cùng kiểu với `e2e/unit/quyen-vai.test.mjs`.
+- [ ] **`/bai-tap` mở bằng đường dẫn thẳng vẫn dựng màn "Bài tập của bạn" cho nhân sự** (thanh đã ẩn
+  mục, nhưng trợ giảng gắn với lớp qua `class_members` nên trang vẫn liệt kê và mời "Làm bài"). Đúng
+  chỗ sửa là truy vấn `MyAssignmentsView` lọc `chi_hoc_vien` cho chính người gọi, hoặc trang trả
+  màn "khu này dành cho học viên" theo vai. Chưa ai gặp vì không còn đường dẫn tới.
+- [x] **XONG 20/09 — hết tiền DeepSeek (402) nói câu người đọc hiểu + ghi log.** Trước: học viên đọc
+  nguyên JSON "Insufficient Balance", không ai được báo. Nay `views.py` bắt `APIStatusError` 402/401/429
+  → 503 kèm câu tiếng Việt, một dòng `log.warning`. Test đỏ trên mã cũ (502 ≠ 503). Nạp tiền vẫn là
+  việc của anh (A7 trong `docs/VIEC_CUA_ANH.md`; số dư 2,54 USD ngày 20/09).
+- [ ] **Ảnh đính kèm chưa đo trên điện thoại thật.** Đường co ảnh dùng canvas + `toDataURL('image/jpeg')`;
+  iOS Safari giới hạn canvas ~16,7 triệu điểm và ảnh HEIC từ camera có thể không nạp vào `<img>`
+  (Safari nạp được, Chrome Android thì tuỳ). Thử một ảnh chụp thật từ iPhone và một từ Android
+  trước khi thí điểm; nếu HEIC hỏng thì `accept="image/jpeg,image/png"` + câu nhắc chụp lại.

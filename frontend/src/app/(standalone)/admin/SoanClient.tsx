@@ -398,7 +398,9 @@ function KhoiBai({
       <Card as="section">
         <CardHead title="Bài học" />
         <EmptyState
-          title="Chọn một khoá học ở bên trái"
+          // Không nói "bên trái": dưới 640px hai cột xếp dọc và danh sách khoá
+          // nằm PHÍA TRÊN (ảnh chụp 390px, 20/09/2026).
+          title="Chọn một khoá học trong danh sách Khoá học"
           hint="Danh sách bài, đường soạn nội dung và đường nhập giáo trình đều nằm trong một khoá."
         />
       </Card>

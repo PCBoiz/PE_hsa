@@ -251,3 +251,39 @@ def test_system_prompt_giu_ba_dieu_khong_duoc_mat():
     assert '111' in P and 'bảo vệ trẻ em' in P
     assert 'TUYỆT ĐỐI không đọc thẳng đáp án' in P
     assert '150 câu, 195 phút' in P, 'cấu trúc đề phải khớp báo cáo thị trường (bảng 2.2)'
+
+
+
+@pytest.mark.django_db
+@override_settings(DEEPSEEK_API_KEY='sk-kiem-thu')
+def test_het_tien_deepseek_thi_noi_cau_nguoi_doc_hieu_va_ghi_log(monkeypatch, caplog):
+    """DeepSeek trả 402 "Insufficient Balance" khi hết số dư (đo 20/09/2026: còn
+    2,54 USD). Mã cũ ném nguyên chuỗi lỗi vào màn hình học viên — một JSON —
+    và không ghi log dòng nào, nên trung tâm chỉ biết khi có em phàn nàn."""
+    import httpx
+    from openai import APIStatusError
+
+    from accounts.models import User
+    from chatbot import views as v
+    from common.db import q1
+
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV 402 Tmp','hv_402_tmp@example.com','x',0) RETURNING id")
+    em = User.objects.get(id=r['id'])
+
+    def het_tien(*_a, **_k):
+        raise APIStatusError(
+            'Error code: 402 - {"error": {"message": "Insufficient Balance"}}',
+            response=httpx.Response(402, request=httpx.Request('POST', 'https://api.deepseek.com/chat/completions')),
+            body={'error': {'message': 'Insufficient Balance'}})
+    monkeypatch.setattr(v, 'chat', het_tien)
+    monkeypatch.setattr(v, 'learner_profile', lambda *_a, **_k: '')
+
+    req = APIRequestFactory().post('/api/chat', {'messages': [{'role': 'user', 'content': 'x'}]}, format='json')
+    force_authenticate(req, user=em)
+    with caplog.at_level('WARNING', logger='chatbot.views'):
+        res = v.ChatView.as_view()(req)
+    assert res.status_code == 503
+    assert 'hết hạn mức' in res.data['error']
+    assert 'Insufficient' not in res.data['error'], 'chuỗi lỗi thô của nhà cung cấp lọt ra màn hình học viên'
+    assert any('402' in m for m in caplog.messages), 'không có dòng log nào để trung tâm biết'
