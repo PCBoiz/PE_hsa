@@ -291,6 +291,15 @@ Development')` — nay hỏi trợ lý lộ trình 4 tuần theo hồ sơ máy c
 hai nút React, `.chatbot-message` có fade-in nên câu vừa hiện trọn lại mờ đi rồi hiện lại (ảnh
 chụp); nay câu trả lời là phần tử cuối của `tin` từ đầu, ghi đè tại chỗ.
 
+**Trên production (đo sau deploy, thẻ do production ký, xen kẽ hai đường):** Render thẳng
+`byte đầu 5,25 / 5,80 s · xong 6,63 / 7,06 s`; qua Vercel `4,70 / 5,18 s · 6,42 / 6,54 s` — proxy
+Vercel truyền luồng thật và không cộng gì đo được. Byte đầu ở production chậm hơn máy dev
+(1,4 s) không phải do mã: dựng hồ sơ trên Render đo **0,31 s** (`/api/chat` rỗng), phần còn lại là
+mẩu đầu của DeepSeek từ vùng Render (Mỹ) — từ Việt Nam là ~1 s. Trình duyệt thật qua Vercel:
+chữ đầu 7,4 và 9,6 s ở hai lượt (ba chấm → chữ chạy dần), xong 8,3 / 11,5 s; trước bản này người
+dùng nhìn ba chấm suốt cả quãng ấy. Đổi vùng Render sang Singapore có thể cắt vài giây nhưng
+kéo CSDL (Neon, cùng vùng Mỹ) đi xa — ghi TODO, chưa đổi.
+
 Phép kiểm: 4 test luồng (từng mẩu + done; 402 ở mẩu đầu → JSON 503; đứt giữa chừng → lỗi trong
 luồng; `chat_stream` ghép lại bằng `chat`, cùng model/ảnh/system) — mã cũ đỏ 4/4. Ba guard
 Node đổi theo: `ngu-canh-tro-ly` rút thân hàm TS (đột biến đổi tên global → đỏ 3 dòng),

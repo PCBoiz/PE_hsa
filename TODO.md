@@ -2982,3 +2982,8 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   iOS Safari giới hạn canvas ~16,7 triệu điểm và ảnh HEIC từ camera có thể không nạp vào `<img>`
   (Safari nạp được, Chrome Android thì tuỳ). Thử một ảnh chụp thật từ iPhone và một từ Android
   trước khi thí điểm; nếu HEIC hỏng thì `accept="image/jpeg,image/png"` + câu nhắc chụp lại.
+- [ ] **Mẩu đầu của trợ lý trên production 4,4–5,8 s (đo 20/09, 4 lượt), máy dev 1,4 s.** Không phải mã:
+  hồ sơ dựng 0,31 s trên Render; phần còn lại là DeepSeek trả token đầu cho một máy chủ ở vùng Mỹ.
+  Render có vùng Singapore; Neon đang ở Mỹ (cùng vùng Render — mọi truy vấn <5 ms). Đổi vùng Render
+  là đổi cả cặp hoặc chấp nhận CSDL xa. Đo trước khi quyết: `curl` DeepSeek từ một máy Singapore
+  (ví dụ một job Render tạm ở vùng ấy) xem TTFT còn bao nhiêu. Nếu vẫn 3–4 s thì không phải vùng.
