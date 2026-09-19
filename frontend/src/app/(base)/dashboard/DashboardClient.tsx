@@ -32,7 +32,6 @@ const SCRIPTS = [
   '/static/js/roadmapData.js',
   '/static/js/roadmap.js',
   '/static/js/main.js',
-  '/static/js/chatbot.js',
   '/static/js/dashboard.js',
 ];
 

@@ -47,7 +47,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
     // lesson_content_hsa.js ĐÃ BỎ (2026-08-19): 76 bài nay nằm trong CSDL,
     // engine tải đúng bài đang mở qua /api/courses/<id>/content?lesson=N.
     '/static/js/lesson_hsa.js',
-    '/static/js/chatbot.js',
+    // chatbot.js ĐÃ BỎ (20/09/2026): trợ lý nay là React (`components/Chatbot.tsx`).
   ];
 
   const eyebrow = (n: number, label: string) => (

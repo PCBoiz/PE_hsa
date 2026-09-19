@@ -4,8 +4,8 @@
 //
 // Nút kẹp giấy của trợ lý có từ bản Gemini đầu tiên. Người dùng chọn ảnh, thấy
 // ô xem trước, bấm gửi, thấy ảnh mình hiện trong khung chat — và mô hình chưa
-// từng nhận nó: `sendChatbotMessage` xoá ảnh khỏi state trước khi đọc nó để
-// gửi, còn `callChatbotGemini` không gửi trường ảnh nào. Hai lỗi chồng nhau,
+// từng nhận nó: `chatbot.js` (bản cũ) xoá ảnh khỏi state trước khi đọc nó để
+// gửi, và cũng không gửi trường ảnh nào. Hai lỗi chồng nhau,
 // không lỗi nào kêu, vì màn hình vẫn "đúng".
 //
 // Phép kiểm này đi đúng đường người dùng đi: chọn tệp qua `<input type=file>`,
@@ -52,7 +52,7 @@ test('ảnh đính kèm được co nhỏ và gửi trong trường `image` củ
   });
 
   await page.goto(`/lesson/${KHOA}?lesson=3`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => typeof (window as unknown as { sendChatbotMessage?: unknown }).sendChatbotMessage === 'function');
+  await page.waitForSelector('#chatbot-toggle', { timeout: 30_000 });
 
   await page.click('#chatbot-toggle');
   await page.setInputFiles('#chatbot-image-upload', {

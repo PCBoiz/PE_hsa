@@ -11,6 +11,7 @@ giữ đầu bên kia: máy chủ có DỰNG được dòng ngữ cảnh từ nh
 không, và tên khoá có phải do MÁY CHỦ tra không.
 """
 import base64
+import json
 
 import pytest
 from django.test import override_settings
@@ -287,3 +288,121 @@ def test_het_tien_deepseek_thi_noi_cau_nguoi_doc_hieu_va_ghi_log(monkeypatch, ca
     assert 'hết hạn mức' in res.data['error']
     assert 'Insufficient' not in res.data['error'], 'chuỗi lỗi thô của nhà cung cấp lọt ra màn hình học viên'
     assert any('402' in m for m in caplog.messages), 'không có dòng log nào để trung tâm biết'
+
+
+
+# ── Luồng (20/09/2026) ────────────────────────────────────────────────────────
+#
+# `stream: true` → text/event-stream, từng mẩu một sự kiện. Mã cũ không biết
+# trường ấy: trả JSON `{reply}` như thường → phép kiểm đầu đỏ ở content-type.
+
+def _doc_sse(resp):
+    """Ghép các sự kiện `data:` của một StreamingHttpResponse thành (chuỗi, [dict])."""
+    than = b''.join(resp.streaming_content).decode('utf-8')
+    su_kien = [json.loads(e[len('data: '):]) for e in
+               (kh.split('\n')[-1] for kh in than.strip().split('\n\n')) if e.startswith('data: ')]
+    return than, su_kien
+
+
+@pytest.mark.django_db
+@override_settings(DEEPSEEK_API_KEY='sk-kiem-thu')
+def test_stream_phat_tung_mau_roi_done(monkeypatch):
+    from accounts.models import User
+    from chatbot import views as v
+    from common.db import q1
+
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV Luong Tmp','hv_luong_tmp@example.com','x',0) RETURNING id")
+    em = User.objects.get(id=r['id'])
+
+    def gia(*_a, **_k):
+        yield 'Đỉnh '
+        yield 'là '
+        yield '(2; −1).'
+    monkeypatch.setattr(v, 'chat_stream', gia)
+    monkeypatch.setattr(v, 'learner_profile', lambda *_a, **_k: '')
+
+    req = APIRequestFactory().post('/api/chat', {'messages': [{'role': 'user', 'content': 'x'}], 'stream': True}, format='json')
+    force_authenticate(req, user=em)
+    res = v.ChatView.as_view()(req)
+    assert res.status_code == 200
+    assert res['Content-Type'].startswith('text/event-stream'), res['Content-Type']
+    than, sk = _doc_sse(res)
+    assert [e['chunk'] for e in sk if 'chunk' in e] == ['Đỉnh ', 'là ', '(2; −1).']
+    assert than.rstrip().endswith('event: done\ndata: {}')
+
+
+@pytest.mark.django_db
+@override_settings(DEEPSEEK_API_KEY='sk-kiem-thu')
+def test_stream_loi_o_mau_dau_thi_van_la_json_503(monkeypatch):
+    """402 nổ ở mẩu đầu → phải là JSON 503 như đường thường, KHÔNG phải một
+    luồng 200 mang lỗi bên trong: trình duyệt xử lý một kiểu lỗi, không hai."""
+    import httpx
+    from openai import APIStatusError
+
+    from accounts.models import User
+    from chatbot import views as v
+    from common.db import q1
+
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV Luong402 Tmp','hv_luong402_tmp@example.com','x',0) RETURNING id")
+    em = User.objects.get(id=r['id'])
+
+    def het_tien(*_a, **_k):
+        raise APIStatusError('402', response=httpx.Response(402, request=httpx.Request('POST', 'https://x')), body=None)
+        yield  # noqa: RET503 — để hàm là generator như chat_stream thật
+    monkeypatch.setattr(v, 'chat_stream', het_tien)
+    monkeypatch.setattr(v, 'learner_profile', lambda *_a, **_k: '')
+
+    req = APIRequestFactory().post('/api/chat', {'messages': [{'role': 'user', 'content': 'x'}], 'stream': True}, format='json')
+    force_authenticate(req, user=em)
+    res = v.ChatView.as_view()(req)
+    assert res.status_code == 503 and 'hết hạn mức' in res.data['error']
+
+
+@pytest.mark.django_db
+@override_settings(DEEPSEEK_API_KEY='sk-kiem-thu')
+def test_stream_dut_giua_chung_thi_noi_trong_luong(monkeypatch):
+    from accounts.models import User
+    from chatbot import views as v
+    from common.db import q1
+
+    r = q1("INSERT INTO users (name, email, password, streak) "
+           "VALUES ('HV LuongDut Tmp','hv_luongdut_tmp@example.com','x',0) RETURNING id")
+    em = User.objects.get(id=r['id'])
+
+    def dut(*_a, **_k):
+        yield 'Bắt đầu…'
+        raise ConnectionError('mạng rớt')
+    monkeypatch.setattr(v, 'chat_stream', dut)
+    monkeypatch.setattr(v, 'learner_profile', lambda *_a, **_k: '')
+
+    req = APIRequestFactory().post('/api/chat', {'messages': [{'role': 'user', 'content': 'x'}], 'stream': True}, format='json')
+    force_authenticate(req, user=em)
+    res = v.ChatView.as_view()(req)
+    assert res.status_code == 200
+    _, sk = _doc_sse(res)
+    assert sk[0] == {'chunk': 'Bắt đầu…'}
+    assert any('ngắt giữa chừng' in e.get('error', '') for e in sk)
+
+
+def test_chat_stream_ghep_lai_dung_bang_chat(monkeypatch):
+    """Cùng một `_llm` giả: `chat_stream` ghép lại phải ra đúng chuỗi, đi đúng
+    model, và tin nhắn hệ thống + ảnh dựng y như `chat()`."""
+    import chatbot.graph as g
+
+    class LlmLuong(_LlmGia):
+        def stream(self, msgs):
+            _LlmGia.goi.append((self.model, msgs))
+            for phan in ('a', 'b', 'c'):
+                yield AIMessage(content=phan)
+    monkeypatch.setattr(g, '_llm', LlmLuong)
+    _LlmGia.goi.clear()
+    with override_settings(DEEPSEEK_MODEL='model-chu', DEEPSEEK_MODEL_ANH='model-anh'):
+        ra = ''.join(g.chat_stream([{'role': 'user', 'content': 'hỏi'}], 'Tên: A', image=PNG_1PX))
+    assert ra == 'abc'
+    model, msgs = _LlmGia.goi[-1]
+    assert model == 'model-anh'
+    assert 'Bối cảnh người học' in msgs[0].content and 'Tên: A' in msgs[0].content
+    assert isinstance(msgs[-1].content, list)
+    assert list(g.chat_stream([], '')) == [g.LOI_CHAO]

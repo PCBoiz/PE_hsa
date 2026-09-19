@@ -135,7 +135,8 @@ const CHAP_NHAN = new Map([
   ['confetti',
    'nạp từ CDN (canvas-confetti) trong LessonHsa.tsx, không nằm ở /static/js/'],
   ['__PE_BAI_DANG_MO',
-   'ĐÚNG THIẾT KẾ: chỉ trang bài học công bố nó; nơi khác chatbot trả null'],
+   'ĐÚNG THIẾT KẾ: chỉ trang bài học công bố nó. Người đọc là REACT từ 20/09/2026 '
+   + '(`lib/nguCanhBaiHoc.ts`, qua tham số `w` nên thước này không thấy); nơi khác trả null'],
   ['bayTieuDiem',
    'thoái lui CÓ CHỦ Ý, ghi rõ tại main.js:1152 — thiếu bẫy thì hộp vẫn dùng '
    + 'được, chỉ kém tiếp cận'],
@@ -225,7 +226,9 @@ for (const p of moiNguon(join(SRC, 'app'))) {
   }
 }
 
-check('tìm được các trang có nạp script cũ', trang.size >= 5, `${trang.size} trang`);
+// 5 → 4 (20/09/2026): /mock chỉ nạp `chatbot.js`, mà trợ lý nay là React — trang
+// ấy KHÔNG còn script cũ nào. Đây là chiều đúng của con số.
+check('tìm được các trang có nạp script cũ', trang.size >= 4, `${trang.size} trang`);
 
 const moCoi = [];
 const thieuTep = [];

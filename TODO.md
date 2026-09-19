@@ -2962,11 +2962,11 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 
 ## 20/09/2026 — mục mở từ vòng "trợ lý AI · sáu vai · điện thoại"
 
-- [ ] **Trợ lý AI chưa STREAM.** Mỗi lượt 4–11 s người dùng nhìn ba chấm; v4-pro trả token đầu
-  sau ~1 s. Chặn ở lớp trung gian: `src/lib/proxy.ts` gom trọn thân phản hồi rồi mới trả (để bóc
-  token khỏi thân ở `/auth/*`); chat thì phải đi thẳng luồng. Cần: view Django trả `StreamingHttpResponse`
-  (LangGraph `.stream()`), proxy có nhánh không gom cho `/api/chat`, `chatbot.js` đọc `ReadableStream`
-  và ghép dần vào bong bóng. Đo trước/sau bằng thời gian tới CHỮ ĐẦU, không phải tới hết câu.
+- [x] **XONG 20/09 — trợ lý STREAM, và cả trợ lý dời sang React.** Django `stream: true` →
+  `text/event-stream` (mẩu đầu lấy trước khi cam kết 200, nên 402/mạng vẫn là JSON 503/502); proxy
+  truyền thẳng kiểu ấy, mọi kiểu khác vẫn gom. `chatbot.js` (457 dòng) xoá — `components/Chatbot.tsx`
+  + `lib/{dinhDangTinNhan,nguCanhBaiHoc,coAnh}.ts`. Đo trình duyệt thật → proxy → Django → DeepSeek:
+  chữ đầu **1,4 s**, xong 3,0 s (trước: ba chấm suốt 4,7 s). Trần tầng cũ 7076 → 6806.
 - [x] **XONG 20/09 — bảng vai→khu (`src/lib/khuTheoVai.ts`) ràng với cổng thật.** Mỗi thẻ khai `cong`
   (IsTeachingStaff / van-hanh / soan-giao-trinh / moi-nhan-su); `e2e/unit/khu-theo-vai.test.mjs` đọc
   thẳng `quyenVai.ts`, `quan-tri/vai.ts` (`TABS[href].vai`, `VAI_VAO_KHU`), `admin/page.tsx::DUOC_VAO`

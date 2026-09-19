@@ -273,6 +273,30 @@ hình học viên và không ghi log; nay 402/401/429 → 503 kèm câu tiếng 
 **Sau vòng này:** sáng + tối 48 lượt × 6 luật = 0, tự kiểm 48/48 (4.308 vi phạm cố ý);
 36/36 Playwright; 27/27 unit; ruff sạch. `RULES.md`/`BAN-GIAO-PHIEN.md` ghi lệnh cấp HAI thẻ.
 
+### 11. Trợ lý STREAM — và trợ lý dời hẳn sang React (−270 dòng tầng cũ)
+
+Mỗi lượt 4–11 s người dùng nhìn ba chấm dù mẩu đầu tới sau ~1 s. Ba tầng: Django `stream: true`
+→ `text/event-stream` từng mẩu (`chat_stream()` đi thẳng `_llm().stream()`; mẩu đầu lấy TRƯỚC
+khi dựng phản hồi nên 402/mạng vẫn là JSON 503/502 như đường thường; đứt giữa chừng → `data:
+{"error"}` trong luồng); proxy Next truyền thẳng riêng kiểu ấy (mọi kiểu khác vẫn gom, `/auth/*`
+cần đọc thân); trình duyệt đọc `ReadableStream`. Phía trình duyệt là lúc quyết định dời cả trợ lý
+sang React thay vì nới trần tầng cũ lần thứ ba cho cùng một tệp: `chatbot.js` (457 dòng) xoá,
+`components/Chatbot.tsx` giữ state + luồng, ba việc thuần ở `lib/` (định dạng chữ — thoát trước
+markdown sau; ngữ cảnh bài — thân hàm không kiểu để unit test rút ra chạy bằng Node; co ảnh).
+Nhân tiện hết tàn dư PE_test: nút "Lộ trình" từng mở `prompt('… React, Python …', 'Web
+Development')` — nay hỏi trợ lý lộ trình 4 tuần theo hồ sơ máy chủ đã bơm.
+
+Đo trình duyệt thật → proxy → Django → DeepSeek (bài toán đỉnh parabol): **chữ đầu 1,4 s, xong
+3,0 s, 87 từ**, không LaTeX. Bản đầu vẽ ô "đang gõ" riêng rồi thay bằng ô tin nhắn khi xong —
+hai nút React, `.chatbot-message` có fade-in nên câu vừa hiện trọn lại mờ đi rồi hiện lại (ảnh
+chụp); nay câu trả lời là phần tử cuối của `tin` từ đầu, ghi đè tại chỗ.
+
+Phép kiểm: 4 test luồng (từng mẩu + done; 402 ở mẩu đầu → JSON 503; đứt giữa chừng → lỗi trong
+luồng; `chat_stream` ghép lại bằng `chat`, cùng model/ảnh/system) — mã cũ đỏ 4/4. Ba guard
+Node đổi theo: `ngu-canh-tro-ly` rút thân hàm TS (đột biến đổi tên global → đỏ 3 dòng),
+`global-mo-coi` (4 trang script cũ thay vì 5 — /mock hết script cũ), `chot-ham-tang-cu` **7076
+→ 6806**. e2e đo qua THÂN REQUEST thay vì global `window.collectLessonContext`.
+
 ### Cổng chất lượng
 
 ruff sạch · tsc/eslint sạch · 27/27 unit Node · 36/36 Playwright · giao diện 24 trang × 2 khổ

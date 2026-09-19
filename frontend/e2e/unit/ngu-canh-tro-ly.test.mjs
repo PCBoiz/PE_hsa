@@ -51,9 +51,8 @@ function boChuThich(ma) {
   return ma.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 }
 
-/* `window.X` THẬT — không phải `chatbotElements.window.classList`.
-   Chặn ký tự đứng trước là chữ, số, `.` hay `$`. */
-const DOC = /(?<![\w.$])window\.([A-Za-z_$][\w$]*)/g;
+/* `window.X = …` THẬT trong script cũ. Chặn ký tự đứng trước là chữ, số, `.`
+   hay `$`. (Phía ĐỌC nay là mô-đun TS nhận `w` — xem `DOC_W` bên dưới.) */
 const GHI = /(?<![\w.$])window\.([A-Za-z_$][\w$]*)\s*=(?!=)/g;
 
 function ten(ma, re) {
@@ -76,20 +75,27 @@ const CUA_TRINH_DUYET = new Set([
 const TSX = readFileSync(join(GOC, 'src', 'components', 'LessonHsa.tsx'), 'utf8');
 const nap = [...boChuThich(TSX).matchAll(/'\/static\/js\/([\w./-]+\.js)'/g)].map((m) => m[1]);
 
-check('đọc được danh sách script từ LessonHsa.tsx', nap.length >= 2, nap.join(', '));
-check('chatbot.js nằm trong danh sách nạp', nap.includes('chatbot.js'), nap.join(', '));
+check('đọc được danh sách script từ LessonHsa.tsx', nap.length >= 1, nap.join(', '));
+
+/* Từ 20/09/2026 trợ lý là React (`components/Chatbot.tsx`); phần đọc ngữ cảnh
+   ở `lib/nguCanhBaiHoc.ts`, nhận `window` qua THAM SỐ `w` — nên global nó đọc
+   là `w.X`, không phải `window.X`. Người ghi vẫn là script cũ `lesson_hsa.js`
+   trong danh sách nạp của `LessonHsa.tsx`: mối nối là giữa hai tầng. */
+const NGU_CANH = readFileSync(join(GOC, 'src', 'lib', 'nguCanhBaiHoc.ts'), 'utf8');
+const DOC_W = /(?<![\w.$])w\.([A-Za-z_$][\w$]*)/g;
 
 const ghiBoi = new Map();
 for (const t of nap) {
   for (const g of ten(JS(t), GHI)) if (!ghiBoi.has(g)) ghiBoi.set(g, t);
 }
 
-const thieu = [...ten(JS('chatbot.js'), DOC)]
+const thieu = [...ten(NGU_CANH, DOC_W)]
   .filter((g) => !CUA_TRINH_DUYET.has(g) && !ghiBoi.has(g));
 
-check('mọi global chatbot.js đọc đều do một script ĐANG NẠP ghi ra',
+check('mọi global nguCanhBaiHoc.ts đọc đều do một script ĐANG NẠP ghi ra',
   thieu.length === 0,
   thieu.length ? `không ai ghi: ${thieu.join(', ')} (script đang nạp: ${nap.join(', ')})` : '');
+check('nguCanhBaiHoc.ts có đọc `__PE_BAI_DANG_MO`', ten(NGU_CANH, DOC_W).has('__PE_BAI_DANG_MO'));
 
 check('`__PE_BAI_DANG_MO` do lesson_hsa.js công bố',
   ghiBoi.get('__PE_BAI_DANG_MO') === 'lesson_hsa.js',
@@ -114,12 +120,14 @@ check('công bố nằm CÙNG CHỖ với `state.lesson = lesson`',
   'tách xa ra thì có đường vào bài mà không công bố');
 
 /* ── 3. Hàm chạy thật với đúng hình dạng engine công bố ───────────────────── */
-const than = /function collectLessonContext\(\)[\s\S]*?\n\}/.exec(JS('chatbot.js'));
-check('rút được `collectLessonContext`', !!than);
+/* Rút THÂN hàm TS ra và chạy bằng Node thuần: chữ ký có kiểu bị thay bằng
+   `(w, d)`, thân hàm cố ý không có chú thích kiểu (xem đầu tệp ấy). Dựng nửa
+   bộ dịch TS chỉ để đọc một hàm là cái giá làm phép kiểm này không ai chạy. */
+const than = /export function nguCanhBaiHoc\([\s\S]*?\)[^{]*\{([\s\S]*?)\n\}/.exec(NGU_CANH);
+check('rút được thân `nguCanhBaiHoc`', !!than);
 
 if (than) {
-  const goi = (w, d) => new Function('window', 'document',
-    `${than[0]}\nreturn collectLessonContext();`)(w, d);
+  const goi = (w, d) => new Function('w', 'd', than[1])(w, d);
 
   const BAI = {
     id: 'tq_07', title: 'Tỉ lệ phần trăm', topic_tag: 'Số học',

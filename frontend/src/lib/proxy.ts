@@ -124,7 +124,7 @@ export const HEADER_AN_NINH_TRANG = new Set([
 ]);
 
 /** Response giữ nguyên thân + kiểu nội dung, bỏ header hạ tầng của Django. */
-export function passThrough(upstream: Response, body: ArrayBuffer): Response {
+export function passThrough(upstream: Response, body: BodyInit | null): Response {
   const h = new Headers();
   upstream.headers.forEach((v, k) => {
     const lk = k.toLowerCase();
@@ -213,8 +213,15 @@ export async function proxyToBackend(
     }
   }
 
-  const buf = await upstream.arrayBuffer();
-  const res = passThrough(upstream, buf);
+  /* LUỒNG đi thẳng, không gom (20/09/2026). Trợ lý AI trả `text/event-stream`
+     từng mẩu; gom cả thân rồi mới trả là biến 1 s tới mẩu đầu thành 5–11 s
+     chờ trắng — đúng thứ luồng sinh ra để tránh. Chỉ kiểu này mới đi thẳng:
+     mọi phản hồi khác vẫn gom như cũ, vì `/auth/*` cần đọc thân để bóc token.
+     Thẻ mới (nếu vừa làm mới) vẫn ghi cookie: header đi trước thân. */
+  const kieu = upstream.headers.get('content-type') || '';
+  const res = kieu.startsWith('text/event-stream')
+    ? passThrough(upstream, upstream.body)
+    : passThrough(upstream, await upstream.arrayBuffer());
   if (fresh) setTokenCookies(res, fresh.access, fresh.refresh);
   return res;
 }

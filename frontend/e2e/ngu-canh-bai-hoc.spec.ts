@@ -2,7 +2,7 @@
 //
 // ── VÌ SAO CẦN CẢ BẢN TRÌNH DUYỆT (A13, 05/09/2026) ─────────────────────────
 //
-// `e2e/unit/ngu-canh-tro-ly.test.mjs` rút hàm ra khỏi tệp rồi gọi bằng `window`
+// `e2e/unit/ngu-canh-tro-ly.test.mjs` rút hàm ra khỏi tệp rồi gọi bằng `w`
 // giả. Nó bắt được mối nối, nhưng KHÔNG chứng minh được rằng trên trang thật
 // engine có chạy tới chỗ công bố, đúng thứ tự, trước khi trợ lý hỏi tới.
 //
@@ -14,7 +14,7 @@
 //
 // Chặn ĐÚNG MỘT lời gọi (`/api/courses/*/content`) để khỏi phụ thuộc nội dung
 // CSDL. Mọi thứ khác là thật: trang Next thật, `lesson_hsa.js` thật,
-// `chatbot.js` thật, DOM thật, thứ tự nạp script thật.
+// trợ lý React thật, DOM thật, thứ tự nạp script thật.
 //
 // KHÔNG cần đăng nhập: trang bài học render được cho khách (đã đo: HTTP 200),
 // chỉ các lời gọi API khác trả 401 — không cản phép kiểm này.
@@ -65,13 +65,9 @@ test('engine công bố bài đang mở và trợ lý đọc được', async ({
   expect(mo.index).toBe(SO_BAI);
   expect(mo.lesson.title).toBe(BAI.title);
 
-  await expectChatbotBietBai(page, SO_BAI);
+  const ctx = await expectChatbotBietBai(page, SO_BAI);
 
   // Tên khoá KHÔNG đi từ client nữa — máy chủ tra từ bảng `courses`.
-  const ctx = await page.evaluate(
-    () => (window as unknown as { collectLessonContext: () => Record<string, unknown> })
-      .collectLessonContext(),
-  );
   expect(Object.keys(ctx)).not.toContain('course_title');
   expect(ctx.lesson_title).toBe(BAI.title);
 

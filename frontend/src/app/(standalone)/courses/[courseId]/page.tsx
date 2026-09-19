@@ -372,7 +372,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           <script> trong JSX không bao giờ được React thực thi (client component),
           nên gán qua LegacyScripts trước khi nạp file legacy. */}
       <LegacyScripts
-        srcs={['/static/js/course_detail.js', '/static/js/review_quiz.js', '/static/js/chatbot.js']}
+        srcs={['/static/js/course_detail.js', '/static/js/review_quiz.js']}
         globals={{
           COURSE_ID: course.id,
           CURRENT_LESSON_IDX: completed,

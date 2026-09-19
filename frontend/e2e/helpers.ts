@@ -203,13 +203,26 @@ export async function openLesson(page: Page, lesson = 1, khoa = KHOA) {
   );
 }
 
-/** Trợ lý chat có BIẾT học viên đang mở bài nào không. */
-export async function expectChatbotBietBai(page: Page, soBai: number) {
-  const ctx = await page.evaluate(
-    () => (window as unknown as { collectLessonContext?: () => unknown })
-      .collectLessonContext?.() ?? null,
-  );
-  expect(ctx, 'collectLessonContext() trả null — trợ lý mất ngữ cảnh bài học')
-    .not.toBeNull();
+/**
+ * Trợ lý chat có BIẾT học viên đang mở bài nào không — đo ở THÂN REQUEST.
+ *
+ * Bản trước gọi `window.collectLessonContext()` của `chatbot.js`. Từ 20/09/2026
+ * trợ lý là React và không để lại global nào; cách đo đúng hơn cũng là cách
+ * duy nhất còn lại: bấm nút "Giảng lại" như học viên, chặn `/api/chat`, đọc
+ * `page_context` trong thân request. Trả ngữ cảnh ấy cho phép kiểm soi tiếp.
+ */
+export async function expectChatbotBietBai(page: Page, soBai: number): Promise<Record<string, unknown>> {
+  let than: { page_context?: Record<string, unknown> } | null = null;
+  await page.route('**/api/chat', (r) => {
+    than = r.request().postDataJSON();
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ reply: 'ok' }) });
+  });
+  await page.click('#chatbot-toggle');
+  await page.getByRole('button', { name: 'Giảng lại' }).click();
+  await expect.poll(() => than, { timeout: 15_000 }).not.toBeNull();
+  await page.unroute('**/api/chat');
+  const ctx = than!.page_context ?? null;
+  expect(ctx, 'page_context trống — trợ lý mất ngữ cảnh bài học').not.toBeNull();
   expect((ctx as { lesson_index?: number }).lesson_index).toBe(soBai);
+  return ctx as Record<string, unknown>;
 }

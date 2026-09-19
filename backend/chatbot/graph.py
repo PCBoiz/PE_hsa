@@ -144,10 +144,14 @@ def _llm(model: str):
     )
 
 
+def _he_thong(user_context: str) -> SystemMessage:
+    ctx = (user_context or "").strip()
+    return SystemMessage(content=SYSTEM_PROMPT + (("\n\nBối cảnh người học:\n" + ctx) if ctx else ""))
+
+
 def _assistant(state: ChatState):
-    ctx = (state.get("user_context") or "").strip()
-    sys = SystemMessage(content=SYSTEM_PROMPT + (("\n\nBối cảnh người học:\n" + ctx) if ctx else ""))
-    reply = _llm(_ten_model(bool(state.get("image")))).invoke([sys] + state["messages"])
+    reply = _llm(_ten_model(bool(state.get("image")))).invoke(
+        [_he_thong(state.get("user_context") or "")] + state["messages"])
     return {"messages": [reply]}
 
 
@@ -160,12 +164,13 @@ def _graph():
     return g.compile()
 
 
-def chat(messages: list, user_context: str = "", image: str = "") -> str:
-    """messages = [{'role': 'user'|'assistant', 'content': str}]. Trả reply (str).
+LOI_CHAO = "Chào bạn 👋 Mình là Trợ lý HSA. Bạn muốn hỏi gì về việc ôn thi Đánh giá năng lực?"
 
-    `image` (data URL, đã được view kiểm) chỉ gắn vào lượt NGƯỜI DÙNG CUỐI:
-    lịch sử phía client giữ chữ thôi, và mỗi ảnh gửi lại là tiền + thời gian.
-    """
+
+def _tin_nhan(messages: list, image: str) -> list:
+    """Lịch sử client → tin nhắn LangChain. `image` (data URL, đã được view kiểm)
+    chỉ gắn vào lượt NGƯỜI DÙNG CUỐI: lịch sử phía client giữ chữ thôi, và mỗi
+    ảnh gửi lại là tiền + thời gian. Rỗng → [] (người gọi trả lời chào)."""
     lc = []
     for m in (messages or [])[-12:]:      # giới hạn 12 lượt gần nhất — tiết kiệm token
         role = (m.get("role") or "").lower()
@@ -180,7 +185,38 @@ def chat(messages: list, user_context: str = "", image: str = "") -> str:
             {"type": "text", "text": lc[-1].content},
             {"type": "image_url", "image_url": {"url": image}},
         ])
+    return lc
+
+
+def chat(messages: list, user_context: str = "", image: str = "") -> str:
+    """messages = [{'role': 'user'|'assistant', 'content': str}]. Trả reply (str)."""
+    lc = _tin_nhan(messages, image)
     if not lc:
-        return "Chào bạn 👋 Mình là Trợ lý HSA. Bạn muốn hỏi gì về việc ôn thi Đánh giá năng lực?"
+        return LOI_CHAO
     result = _graph().invoke({"messages": lc, "user_context": user_context, "image": image})
     return result["messages"][-1].content
+
+
+def chat_stream(messages: list, user_context: str = "", image: str = ""):
+    """Như `chat()` nhưng SINH TỪNG MẨU chữ khi mô hình trả về (20/09/2026).
+
+    Vì sao: v4-pro trả trọn câu sau 4–11 s, mà mẩu đầu tới sau ~1 s; người
+    dùng nhìn ba chấm 10 giây thì tưởng treo. Đi thẳng `_llm().stream()` chứ
+    không qua graph: LangGraph 1 node không có gì để "đi", còn `.stream()` của
+    graph phát theo NODE (cả câu một lần), không theo token. Lỗi (402, mạng…)
+    ném ra như `chat()` — người gọi bắt; mẩu đầu tiên ném là chưa cam kết gì
+    với trình duyệt (xem `views.py`).
+    """
+    lc = _tin_nhan(messages, image)
+    if not lc:
+        yield LOI_CHAO
+        return
+    for chunk in _llm(_ten_model(bool(image))).stream([_he_thong(user_context)] + lc):
+        c = chunk.content
+        if isinstance(c, str):
+            if c:
+                yield c
+        elif isinstance(c, list):      # một số provider trả mảng khối
+            for phan in c:
+                if isinstance(phan, dict) and phan.get("type") == "text" and phan.get("text"):
+                    yield phan["text"]

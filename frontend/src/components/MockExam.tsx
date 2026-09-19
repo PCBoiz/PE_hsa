@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AppShell from '@/components/AppShell';
 
 import Chatbot from '@/components/Chatbot';
-import LegacyScripts from '@/components/LegacyScripts';
 import PageStyles from '@/components/PageStyles';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
@@ -378,7 +377,6 @@ export default function MockExam() {
       {/* Trợ lý HSA cũng có mặt ở phòng thi thử (audit 2026-08-14): sau khi
           nộp bài, học viên hay muốn hỏi ngay câu vừa sai. */}
       <Chatbot />
-      <LegacyScripts srcs={['/static/js/chatbot.js']} />
     </>
   );
 }

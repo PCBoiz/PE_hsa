@@ -70,7 +70,8 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    bằng `grep -vE '^\s*($|//|/\*|\*)'` cho ra 7.832 vì nó không hiểu khối
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
-const TRAN_TEP = 13;
+// 13 → 12 (20/09/2026): `chatbot.js` dời sang React (`components/Chatbot.tsx`).
+const TRAN_TEP = 12;
 // 07/09/2026: 7346 → 7337. Khối "ba hợp phần" viết nhầm vào tầng này rồi
 // chuyển sang `src/components/BaHopPhan.tsx` — chốt hãm bắt đúng lúc.
 // 13/09/2026: 7337 → 7343 (+6). VÁ LỖI trong tệp đã có (ngoại lệ ở trên):
@@ -121,7 +122,11 @@ const TRAN_TEP = 13;
 // trong `handleChatbotImageUpload` (phải ở cạnh canvas/Image của chính hàm ấy) và
 // gửi trong trường `image`; bù lại gỡ `CHATBOT_CONFIG` chết (−4). Cả bộ trợ lý
 // (~460 dòng) vẫn ở tầng cũ — dời nó sang React là việc riêng, không phải việc này.
-const TRAN_DONG_MA = 7076;
+// 20/09/2026 (tối): 7076 → 6806 (−270). HẠ: trợ lý AI sang React (`components/Chatbot.tsx`
+// + ba mô-đun thuần ở `src/lib/`: định dạng chữ, ngữ cảnh bài, co ảnh). Tệp cũ 457 dòng
+// (270 dòng mã) xoá hẳn; hai lần nới trần cho đúng tệp này (+4 hôm nay) trả lại. Kèm:
+// trợ lý nay STREAM từng mẩu, và nút "Lộ trình" thôi mở `prompt('… React, Python …')`.
+const TRAN_DONG_MA = 6806;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -7,13 +7,15 @@ nhất — một phép tính thứ ba về điểm yếu, thô hơn bản đồ 
 thuẫn với con số Trang của tôi đang hiện cho cùng học viên đó.
 """
 import base64
+import json
 import logging
 
 from django.conf import settings
+from django.http import StreamingHttpResponse
 from openai import APIStatusError
 from rest_framework.response import Response
 
-from chatbot.graph import chat
+from chatbot.graph import chat, chat_stream
 from chatbot.profile import learner_profile
 from common.db import q1
 from common.views import NguoiDungView
@@ -151,16 +153,55 @@ class ChatView(NguoiDungView):
         lesson_ctx = _lesson_context(data.get("page_context"))
         if lesson_ctx:
             ctx = (ctx + "\n\n" + lesson_ctx) if ctx else lesson_ctx
+        if data.get("stream"):
+            return self._luong(messages, ctx, anh, request)
         try:
             reply = chat(messages, ctx, image=anh)
         # noqa CÓ LÝ DO: đây là RANH GIỚI với dịch vụ ngoài. Bắt hẹp lại là
         # phải liệt kê hết loại lỗi của thư viện LLM, và mỗi lần nó nâng bản
         # là một loại mới lọt ra thành 500 trắng cho học viên.
-        except APIStatusError as exc:
-            if exc.status_code in _LOI_CO_MA:
-                log.warning('DeepSeek trả %s cho user %s: %s', exc.status_code, request.user.id, str(exc)[:200])
-                return Response({"error": _LOI_CO_MA[exc.status_code]}, status=503)
-            return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
         except Exception as exc:  # noqa: BLE001 — lỗi mạng/key/model → báo gọn, không lộ trace
-            return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
+            return self._loi(exc, request)
         return Response({"reply": reply})
+
+    def _loi(self, exc, request):
+        if isinstance(exc, APIStatusError) and exc.status_code in _LOI_CO_MA:
+            log.warning('DeepSeek trả %s cho user %s: %s', exc.status_code, request.user.id, str(exc)[:200])
+            return Response({"error": _LOI_CO_MA[exc.status_code]}, status=503)
+        return Response({"error": f"Trợ lý gặp sự cố khi trả lời: {exc}"}, status=502)
+
+    def _luong(self, messages, ctx, anh, request):
+        """`stream: true` → `text/event-stream`, mỗi mẩu một sự kiện `data:
+        {"chunk": …}`; kết thúc bằng `event: done`. Lỗi GIỮA chừng thành
+        `data: {"error": …}` — không đổi được mã HTTP khi đã phát 200.
+
+        MẨU ĐẦU lấy TRƯỚC khi dựng phản hồi: lỗi 402/401/mạng gần như luôn nổ
+        ở lượt gọi đầu, và lúc ấy còn trả được JSON 503/502 y như đường thường
+        — trình duyệt xử lý một kiểu lỗi, không phải hai. Vercel/Render không
+        gom `text/event-stream`; lớp trung gian (`src/lib/proxy.ts`) có nhánh
+        truyền thẳng cho kiểu này."""
+        sinh = chat_stream(messages, ctx, image=anh)
+        try:
+            dau = next(sinh)
+        except StopIteration:
+            dau = ""
+        except Exception as exc:  # noqa: BLE001 — cùng lý do với đường thường
+            return self._loi(exc, request)
+
+        def sse():
+            yield _sse({"chunk": dau}) if dau else ""
+            try:
+                for mau in sinh:
+                    yield _sse({"chunk": mau})
+            except Exception as exc:  # noqa: BLE001 — đã phát 200, chỉ còn cách nói trong luồng
+                log.warning('luồng trợ lý đứt giữa chừng (user %s): %s', request.user.id, str(exc)[:200])
+                yield _sse({"error": "Trợ lý bị ngắt giữa chừng — bạn hỏi lại giúp mình nhé."})
+            yield "event: done\ndata: {}\n\n"
+
+        resp = StreamingHttpResponse(sse(), content_type="text/event-stream; charset=utf-8")
+        resp["X-Accel-Buffering"] = "no"
+        return resp
+
+
+def _sse(d) -> str:
+    return "data: " + json.dumps(d, ensure_ascii=False) + "\n\n"
