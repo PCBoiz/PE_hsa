@@ -68,7 +68,13 @@ from common.events import (
     SOURCE_SYSTEM,
     record_events,
 )
-from common.permissions import ROLE_STUDENT, ROLE_TEACHER
+from common.permissions import (
+    ROLE_ACADEMIC,
+    ROLE_ASSISTANT,
+    ROLE_EDITOR,
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+)
 
 HAT_GIONG = 20260916
 
@@ -76,6 +82,22 @@ HAT_GIONG = 20260916
 #: Hai ngày chứ không một: dựng tối hôm trước để sáng trình diễn là chuyện bình thường.
 CU_SAU_NGAY = 2
 DUOI_EMAIL = '@example.com'
+
+#: Ba tài khoản NHÂN SỰ mẫu — để bộ trình diễn có đủ SÁU vai (thêm 20/09/2026).
+#:
+#: Vì sao: người mua (và cả người kiểm) muốn thấy mỗi vai nhìn thấy gì — trợ giảng
+#: có bị cắt khỏi báo cáo phụ huynh thật không, học vụ có thấy khu Vận hành không.
+#: Trước đây bộ mẫu chỉ có học viên; ba vai kia phải tạo tay, và tạo tay thì lần
+#: sau không còn (hoặc còn mà thành tài khoản rác — đúng chuyện "a"/"Test Reg").
+#: Giảng viên KHÔNG nằm ở đây: lớp mẫu vẫn gắn vào giảng viên THẬT (xem
+#: `_chon_giang_vien`) để anh Sơn mở đúng lớp mình khi trình diễn.
+#: Trợ giảng được xếp vào lớp mẫu thứ nhất (`class_members`) — không xếp thì vai
+#: ấy không thấy lớp nào, tức không có gì để trình diễn.
+NHAN_SU_MAU = (
+    ('Phạm Thị Học Vụ', 'hocvu.mau' + DUOI_EMAIL, ROLE_ACADEMIC),
+    ('Lê Văn Trợ Giảng', 'trogiang.mau' + DUOI_EMAIL, ROLE_ASSISTANT),
+    ('Trần Thị Biên Tập', 'bientap.mau' + DUOI_EMAIL, ROLE_EDITOR),
+)
 #: XP một bài học — cùng mức `lessons/views.py` đang cộng cho bài không khai `xp_reward`.
 XP_BAI_HOC = 50
 
@@ -299,6 +321,17 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [e['phu_huynh'] for e in tat_ca], [e['email_ph'] for e in tat_ca]))}
         for e in tat_ca:
             e['id'] = id_theo_email[e['email']]
+        # Ba vai nhân sự — cùng luật 1 và 3 với học viên mẫu (đánh dấu, không
+        # đăng nhập được). Không có liên hệ phụ huynh: họ không phải học viên.
+        nhan_su = {r['role']: r['id'] for r in q(
+            '''INSERT INTO users (name, email, password, role, status, parent_phone,
+                                  is_demo, questionnaire_completed, created_at)
+               SELECT t.n, t.e, %s, t.r, 'active', '', TRUE, 1, %s
+                 FROM unnest(%s::text[], %s::text[], %s::text[]) AS t(n, e, r)
+               RETURNING id, role''',
+            (make_werkzeug_password(secrets.token_urlsafe(32)), vao_lop,
+             [n for n, _, _ in NHAN_SU_MAU], [e for _, e, _ in NHAN_SU_MAU],
+             [r for _, _, r in NHAN_SU_MAU]))}
 
         # ── Lớp + thành viên ─────────────────────────────────────────────
         id_theo_ma = {r['code']: r['id'] for r in q(
@@ -318,6 +351,11 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              SELECT t.c, t.u, %s FROM unnest(%s::int[], %s::int[]) AS t(c, u)''',
           (vao_lop, [lop['id'] for lop in ke for _ in lop['hoc_vien']],
            [e['id'] for lop in ke for e in lop['hoc_vien']]))
+        # Trợ giảng mẫu vào lớp mẫu thứ nhất — đúng cách `can_see_class` nhận ra
+        # trợ giảng (một dòng `class_members`, `left_at IS NULL`), và `chi_hoc_vien`
+        # lọc theo vai nên dòng này không lọt vào sĩ số hay bảng điểm danh.
+        x('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s, %s, %s)',
+          (ke[0]['id'], nhan_su[ROLE_ASSISTANT], vao_lop))
 
         # ── Buổi học + điểm danh ─────────────────────────────────────────
         buoi = []

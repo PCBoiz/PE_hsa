@@ -15,6 +15,7 @@ Canh:
   7. Tài khoản mẫu KHÔNG đăng nhập được — qua đúng `LoginView`.
   8. Làm mới neo dữ liệu vào HÔM NAY, giữ giảng viên — và dựng hỏng thì bộ cũ còn nguyên.
 """
+from collections import Counter
 from datetime import timedelta
 
 import pytest
@@ -24,7 +25,13 @@ from accounts.models import User
 from common import mail, zalo
 from common.clock import local_today
 from common.db import q, q1, x
-from common.permissions import ROLE_STUDENT, ROLE_TEACHER
+from common.permissions import (
+    ROLE_ACADEMIC,
+    ROLE_ASSISTANT,
+    ROLE_EDITOR,
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+)
 from teaching import du_lieu_mau as M
 from teaching.parent_report import DEFAULT_WEEKS, dung_bao_cao
 
@@ -60,12 +67,22 @@ def test_ke_hoach_TAT_DINH_va_khong_trung_ten():
 
 def test_tao_du_moi_khoi_va_DANH_DAU_moi_thu(sach):
     so = M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
-    assert so['tài khoản mẫu'] == 6 and so['lớp mẫu'] == 2
+    # 6 học viên + 3 nhân sự (học vụ, trợ giảng, biên tập — thêm 20/09/2026 để
+    # bộ mẫu có đủ sáu vai). Giảng viên KHÔNG phải tài khoản mẫu.
+    assert so['tài khoản mẫu'] == 9 and so['lớp mẫu'] == 2
     for k in ('buổi học', 'điểm danh', 'bài tập', 'bài nộp', 'tiến độ bài học', 'ghi danh',
               'sự kiện học tập', 'kết quả thi tại trung tâm', 'nhật ký XP ngày'):
         assert so[k] > 0, 'thiếu khối: %s' % k
     em = q('SELECT email, role FROM users WHERE is_demo')
-    assert all(r['email'].endswith('@example.com') and r['role'] == ROLE_STUDENT for r in em)
+    assert all(r['email'].endswith('@example.com') for r in em)
+    assert Counter(r['role'] for r in em) == {ROLE_STUDENT: 6, ROLE_ACADEMIC: 1,
+                                              ROLE_ASSISTANT: 1, ROLE_EDITOR: 1}
+    # Trợ giảng mẫu phải Ở TRONG một lớp mẫu — không thì vai ấy không thấy gì.
+    tg = q1('''SELECT m.class_id FROM class_members m JOIN users u ON u.id = m.user_id
+               JOIN classes c ON c.id = m.class_id
+               WHERE u.is_demo AND u.role = %s AND c.is_demo AND m.left_at IS NULL''',
+            (ROLE_ASSISTANT,))
+    assert tg, 'trợ giảng mẫu chưa được xếp vào lớp mẫu nào'
     lop = q('SELECT name, teacher_id FROM classes WHERE is_demo')
     assert all('lớp mẫu' in r['name'] and r['teacher_id'] == sach.id for r in lop)
 
@@ -109,7 +126,7 @@ def test_go_GO_SACH_va_KHONG_cham_du_lieu_that(sach):
 
     M.tao(giang_vien_id=sach.id, so_em_moi_lop=2)
     truoc, sau = M.go()
-    assert truoc['tài khoản mẫu'] == 4 and truoc['sự kiện học tập'] > 0
+    assert truoc['tài khoản mẫu'] == 7 and truoc['sự kiện học tập'] > 0
     assert all(n == 0 for n in sau.values()), sau
     assert q1('SELECT id FROM users WHERE id=%s', (that,))
     assert q1('SELECT id FROM classes WHERE id=%s', (lop_that,))
@@ -170,7 +187,7 @@ def test_lam_moi_neo_vao_HOM_NAY_va_giu_giang_vien(sach):
     assert M.hoat_dong_gan_nhat() <= local_today() - timedelta(days=19)
 
     truoc, sau = M.lam_moi(so_em_moi_lop=2)
-    assert truoc['tài khoản mẫu'] == sau['tài khoản mẫu'] == 4
+    assert truoc['tài khoản mẫu'] == sau['tài khoản mẫu'] == 7
     assert M.hoat_dong_gan_nhat() >= local_today() - timedelta(days=1), 'vẫn neo vào ngày dựng cũ'
     assert {r['teacher_id'] for r in q('SELECT teacher_id FROM classes WHERE is_demo')} == {sach.id}, \
         'làm mới lặng lẽ đổi giảng viên phụ trách lớp mẫu'
