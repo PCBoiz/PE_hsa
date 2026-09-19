@@ -2971,10 +2971,9 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   (IsTeachingStaff / van-hanh / soan-giao-trinh / moi-nhan-su); `e2e/unit/khu-theo-vai.test.mjs` đọc
   thẳng `quyenVai.ts`, `quan-tri/vai.ts` (`TABS[href].vai`, `VAI_VAO_KHU`), `admin/page.tsx::DUOC_VAO`
   và đòi khớp từng vai. Bốn đột biến đều đỏ, kể cả siết cổng ở NGUỒN (`TABS[/quan-tri/huong-dan]`).
-- [ ] **`/bai-tap` mở bằng đường dẫn thẳng vẫn dựng màn "Bài tập của bạn" cho nhân sự** (thanh đã ẩn
-  mục, nhưng trợ giảng gắn với lớp qua `class_members` nên trang vẫn liệt kê và mời "Làm bài"). Đúng
-  chỗ sửa là truy vấn `MyAssignmentsView` lọc `chi_hoc_vien` cho chính người gọi, hoặc trang trả
-  màn "khu này dành cho học viên" theo vai. Chưa ai gặp vì không còn đường dẫn tới.
+- [x] **XONG 20/09 — `/bai-tap` với nhân sự trả màn "Trang này dành cho học viên" + lối tới Việc hôm nay.**
+  Trang máy chủ gọi `layVai()` SONG SONG với `/api/assignments` (không thêm vòng mạng). Đo: trợ giảng
+  mẫu thấy thông báo, 0 nút làm bài; học viên mẫu vẫn thấy danh sách. Truy vấn backend giữ nguyên.
 - [x] **XONG 20/09 — hết tiền DeepSeek (402) nói câu người đọc hiểu + ghi log.** Trước: học viên đọc
   nguyên JSON "Insufficient Balance", không ai được báo. Nay `views.py` bắt `APIStatusError` 402/401/429
   → 503 kèm câu tiếng Việt, một dòng `log.warning`. Test đỏ trên mã cũ (502 ≠ 503). Nạp tiền vẫn là
