@@ -163,6 +163,30 @@ export async function login(page: Page): Promise<boolean> {
 }
 
 /**
+ * Vào bằng một tài khoản HỌC VIÊN — cho phép kiểm đo MÀN HỌC VIÊN.
+ *
+ * Từ 20/09/2026 nhân sự không thấy phần luyện thi (`src/lib/nhomVai.ts`). Trước
+ * đó các phép kiểm dashboard gọi `vaoBangThe()` trước — thẻ QUẢN TRỊ — và vẫn
+ * xanh, vì quản trị viên thấy nguyên màn học viên. Đo 20/09: tài khoản e2e đã
+ * biến khỏi CSDL, nên CẢ đường mật khẩu cũng rơi về thẻ quản trị; bốn tệp kiểm
+ * "màn học viên" thật ra đang đo màn của admin. Hàm này hỏi `/api/user` sau khi
+ * vào và BỎ QUA kèm lý do nếu vai không phải học viên — không để một thước
+ * lệch vai báo xanh hay đỏ oan.
+ */
+export async function vaoLaHocVien(page: Page): Promise<string | null> {
+  if (!(await login(page))) return LY_DO_BO_QUA;
+  const vai = await page.evaluate(async () => {
+    const r = await fetch('/api/user', { credentials: 'same-origin' });
+    return r.ok ? ((await r.json()) as { role?: string }).role ?? null : null;
+  });
+  if (vai !== 'Học viên') {
+    return `phép kiểm này đo MÀN HỌC VIÊN nhưng đang vào bằng vai ${JSON.stringify(vai)}`
+      + ' — tạo tài khoản kiểm thử học viên: python scripts/tai_khoan_e2e.py --that';
+  }
+  return null;
+}
+
+/**
  * Mở một bài HSA và chờ engine công bố bài đang mở.
  *
  * Mốc chờ là `window.__PE_BAI_DANG_MO` — biến `lesson_hsa.js` đặt NGAY SAU khi

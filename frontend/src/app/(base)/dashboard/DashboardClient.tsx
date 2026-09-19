@@ -18,6 +18,7 @@ import NapTruocScript from '@/components/NapTruocScript';
 import RoadmapSection from '@/components/RoadmapSection';
 import AppShell from '@/components/AppShell';
 import { BieuTuong } from '@/components/bieuTuong';
+import KhuNhanSu from '@/components/KhuNhanSu';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 const W = () => window as any;
@@ -137,8 +138,12 @@ export default function DashboardClient(
       <div id="main">
         {/* ── Dashboard ── */}
         <div className="page active" id="page-dashboard">
+          {/* Nhân sự thấy khu làm việc của vai mình; mọi khối luyện thi bên dưới
+              mang `data-chi-hoc-vien` và ẩn với họ (20/09/2026, `lib/nhomVai.ts`). */}
+          <KhuNhanSu />
+
           {/* Hero banner */}
-          <div className="dash-hero fx-fade-up">
+          <div className="dash-hero fx-fade-up" data-chi-hoc-vien="">
             <div className="dash-hero-overlay"></div>
             <div className="dash-hero-text">
               <span className="dash-hero-greeting" id="banner-greeting">Chào mừng trở lại 👋</span>
@@ -158,12 +163,12 @@ export default function DashboardClient(
           {/* Bốn thẻ số dựng ở máy chủ (`components/TheSoHsa.tsx`, 14/09/2026 tối);
               phần client đăng ký lại `window.__refreshHsaTiles` cho nút "Nhận"
               nhiệm vụ và nút lưu mục tiêu ở Cài đặt. */}
-          <div className="hsa-tiles fx-fade-up" style={{ animationDelay: '.04s' }}>
+          <div className="hsa-tiles fx-fade-up" style={{ animationDelay: '.04s' }} data-chi-hoc-vien="">
             {theSo}
           </div>
 
           {/* Cột trái: học tiếp + tiến độ 3 hợp phần · Cột phải: lộ trình */}
-          <div className="dash-row dash-row--cal">
+          <div className="dash-row dash-row--cal" data-chi-hoc-vien="">
             <div className="dash-col-left">
               {/* Lớp của bạn — đứng TRÊN "học tiếp": buổi tối nay là việc có
                   giờ, bài học thì lúc nào cũng làm được. Không ở lớp nào thì
@@ -261,7 +266,7 @@ export default function DashboardClient(
           <div className="cal-tooltip" id="cal-tooltip"></div>
 
           {/* Row 2: Leaderboard + Learning progress */}
-          <div className="dash-row dash-row--lb">
+          <div className="dash-row dash-row--lb" data-chi-hoc-vien="">
             {/* Bảng xếp hạng dựng ở máy chủ (`components/BangXepHang.tsx`, 14/09/2026
                 tối); ba tab chạy ở `BangXepHangClient`. Trước đó `dashboard.js`
                 gọi API 200 ms sau DOMContentLoaded rồi đổ chuỗi HTML. */}
@@ -578,7 +583,7 @@ export default function DashboardClient(
                 Để học viên tự điền chứ không bắt học vụ nhập hộ từng em: chính
                 các em biết số của bố mẹ, và một ô phải chờ người khác điền hộ
                 là một ô sẽ trống mãi. */}
-            <div className="settings-section" id="lien-he-phu-huynh">
+            <div className="settings-section" id="lien-he-phu-huynh" data-chi-hoc-vien="">
               <div className="settings-section-title">
                 <span className="title-icon-blue" data-icon="users" data-size="16"></span>
                 <span>Liên hệ phụ huynh</span>
@@ -612,7 +617,7 @@ export default function DashboardClient(
 
             {/* Mục tiêu HSA — trước đây chỉ đặt được MỘT LẦN lúc làm khảo sát,
                 dù chúng nuôi thẻ đếm ngược ở Bảng điều khiển (audit 2026-08-15). */}
-            <div className="settings-section" id="hsa-goals">
+            <div className="settings-section" id="hsa-goals" data-chi-hoc-vien="">
               <div className="settings-section-title">
                 <span className="title-icon-blue" data-icon="target" data-size="16"></span>
                 <span>Mục tiêu HSA</span>

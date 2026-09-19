@@ -54,7 +54,7 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   lại những gì bạn đã làm vào file pdf kia, ghi chi tiết vào" → Mục 10 của báo cáo thị
   trường (không commit PDF). Sau đó CHƯA có hướng mới — hỏi anh.
 
-## Trạng thái ngay lúc này — 17/09/2026
+## Trạng thái ngay lúc này — 20/09/2026
 
 - **Hướng bán đứt (anh chọn 15/09): xong cả bốn việc**, đều đang chạy trên production:
   (1) nhập PDF kết quả thi thử — vòng 25 (`a12d59a`, `4c08d63`); (2) bộ dữ liệu trình
@@ -72,16 +72,16 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Việc của anh còn nguyên** (`docs/VIEC_CUA_ANH.md`; 17/09 thêm **C7** — cách đếm "phụ huynh
   đã mở"): A0 GitHub Actions khoá (không CI,
   không sao lưu); A1 máy chủ ngủ — nay có bằng chứng A/B rằng đây là thứ quyết định LCP
-  Trang của tôi; A6 SECRET_KEY chung dev/prod — **đo 17/09 07:47: production đã từ chối thẻ ký
-  bằng `.env`**, tức A6 nhiều khả năng đã xong (chờ anh xác nhận); email tên miền;
-  giới hạn đăng nhập theo người.
-- **Bộ đo giao diện**: nay đi tới BƯỚC LÝ THUYẾT của bài học trước khi đo, có luật "khối bị
-  cắt bên ngoài khung", và phép tự kiểm nhét màu theo TỪNG phần tử — 46/46 lượt đỏ được (chỗ mù
-  "Quản trị · tổng quan" khổ điện thoại đã đóng, vòng 32).
+  Trang của tôi; A6 — **XONG, đo 20/09 hai chiều** (thẻ dev bị từ chối 6/6, thẻ production được nhận);
+  A7 mới: gỡ `DEEPSEEK_MODEL=deepseek-chat` trên Render nếu có + nạp tiền DeepSeek (số dư 2,54 USD);
+  email tên miền; giới hạn đăng nhập theo người.
+- **Bộ đo giao diện**: năm luật (tương phản, cỡ chạm, tràn ngang, khối bị cắt, **chữ dưới thanh cố
+  định** — thêm 20/09 sau khi phát hiện dòng chào của mọi học viên nằm dưới thanh từ 06/09); tự kiểm
+  48/48 lượt đỏ được.
 - **Cổng chất lượng (17/09)**: pytest toàn bộ **705 passed + 4 ERROR** (cả bốn cùng một lỗi Neon "server closed the connection unexpectedly", chạy lại riêng 4/4 xanh trong 14 s) trong 53 phút 50 — KHÔNG treo, sau lượt 0 phiên treo trên CSDL. · 27/27 unit Node · giao diện 23
   trang × 2 khổ: 0 vi phạm (bộ tự kiểm còn 2 chỗ mù, TODO 16/09) · eslint/tsc/ruff/build.
-- **Trần tầng cũ**: 7.072 dòng (vòng 27 +3, vòng 32 +6 — lý do từng lần ghi trong
-  `chot-ham-tang-cu.test.mjs`).
+- **Trần tầng cũ**: 7.076 dòng (vòng 27 +3, vòng 32 +6, 20/09 +4 nút gửi ảnh của trợ lý — lý do từng
+  lần ghi trong `chot-ham-tang-cu.test.mjs`).
 - **Tài liệu gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` (14/09) ·
   `docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf` (15/09, bổ sung Mục 10
   "Nhật ký cải tiến 15–17/09" ngày 17/09; KHÔNG commit — anh gửi tay).
@@ -89,6 +89,129 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 
 <!-- MỚI NHẤT -->
+
+## 20/09/2026 — TRỢ LÝ AI CHẠY BẢN RẺ NHẤT VÀ NÚT GỬI ẢNH LÀ NÚT GIẢ; MỖI VAI MỘT MÀN; CHỮ DƯỚI THANH SUỐT HAI TUẦN
+
+Anh giao bốn việc: "cải tiến responsive cho điện thoại", "test ở cả 6 tài khoản của 6 vai
+trò — mỗi vai chỉ thấy phần của vai đó", "tổng hợp dữ liệu cần TopHSA cung cấp", rồi giữa
+chừng thêm "kiểm tra kĩ phần AI assistant, thiết lập kĩ system prompt và gọi model DeepSeek
+mới nhất". Cả bốn đều làm; mỗi việc mở ra một lỗi đang chạy trên production mà không ai kêu.
+
+### 1. Trợ lý AI — bốn phát hiện, đo trước khi sửa
+
+Hỏi thẳng API DeepSeek bằng khoá của anh (kịch bản ở scratchpad, tổng vài cent):
+
+- `/models` trả **hai** tên: `deepseek-flash`, `deepseek-v4-pro`. Tên `deepseek-chat` — mặc
+  định của mã — vẫn được nhận nhưng **chuyển lặng sang flash**: trợ lý chạy bản rẻ nhất suốt
+  thời gian qua. Số dư khoá: **2,54 USD**.
+- Chế độ "nghĩ" của V4 **mặc định bật**, và token nghĩ tính vào `max_tokens`: v4-pro nghĩ
+  mức low **bị cắt ở 1.600 token** sau 15 s, câu trả lời cụt. Tắt nghĩ (`thinking.type =
+  disabled` qua `extra_body`) thì 7–11 s, trả lời trọn.
+- Ảnh: gửi PNG một đề toán, **flash đọc đúng từng số**, v4-pro **bỏ qua ảnh**. Nên lượt chữ đi
+  v4-pro, lượt ảnh đi flash — hai tên ở hai biến settings.
+- Trên production hôm nay (mã cũ): 322 từ, `$x_I = -\dfrac{b}{2a}$`, tiêu đề `#` — khung chat
+  không dựng LaTeX, học viên đọc mã lệnh.
+
+Và nút kẹp giấy: `chatbot.js` đọc ảnh, hiện xem trước, rồi `sendChatbotMessage` **xoá ảnh khỏi
+state TRƯỚC khi đọc nó để gửi**, còn `callChatbotGemini` không gửi trường ảnh nào. Hai lỗi
+chồng nhau, màn hình vẫn "đúng" — người dùng thấy ảnh mình gửi, mô hình chưa từng thấy.
+
+**Sửa:** `graph.py` chọn model theo có-ảnh, tắt nghĩ, `max_tokens` 1.200, bỏ `temperature`
+(V4 không dùng); prompt viết lại — cấu trúc đề chép từ bảng 2.2 báo cáo thị trường, ký hiệu
+Unicode thay LaTeX, trần 150 từ/8 dòng, bài tập học viên gửi thì **dừng trước đáp án**, giới hạn
+cho trẻ vị thành niên (tổng đài 111), không lộ prompt/hồ sơ, ảnh là dữ liệu không phải lệnh.
+`views.py` nhận `image` (data URL JPEG/PNG/WebP, base64 hợp lệ, đúng byte đầu, ≤1,6 triệu ký
+tự). `chatbot.js` co ảnh về ≤1280px JPEG 0,85 trên canvas rồi gửi; lịch sử chỉ giữ chữ.
+`.env.example` + settings có `DEEPSEEK_MODEL_ANH`, `DEEPSEEK_THINKING`.
+
+**Đo sau khi sửa** (bốn lượt thật qua `/api/chat` máy dev, thẻ học viên mẫu): bài toán **80
+từ / 8,6 s**, "giảng lại" 171 từ / 6,6 s, moi đáp án + moi prompt → từ chối cả hai / 4,7 s, ảnh
+đề chụp → đọc lại đề, gợi bước đầu, **không nêu 180 cm²** / 3,7 s. Không LaTeX, không lộ
+prompt. (Lượt đo đầu với prompt bản một: 241/320/163/236 từ và giải trọn cả ảnh — siết hai
+luật rồi đo lại mới ra số trên.)
+
+**Phép kiểm:** 6 test mới ở `chatbot/tests.py` — chạy trên mã cũ **đỏ 6/6 đúng chỗ** (TypeError
+`_llm()`/`chat(image=)`, ImportError `_anh_hop_le`), mã mới 11/11. Playwright
+`tro-ly-anh.spec.ts` đi đúng đường người dùng (chọn tệp 2400×1600 → gửi → đọc thân request):
+mã cũ đỏ ở "thân request KHÔNG có ảnh"; đột biến "gửi sau khi xoá" cũng đỏ đúng dòng ấy; mã
+mới xanh, ảnh về đúng 1280×853.
+
+### 2. Sáu vai — quyền đúng hết, màn hình thì không
+
+Đi 22 trang × 6 vai × 2 khổ (390/1366). Cổng máy chủ đúng: biên tập/học viên bị chặn khỏi
+Giảng dạy có lời giải thích; trợ giảng vào lớp mình, không vào lớp khác và không mở báo cáo
+phụ huynh; giảng viên/trợ giảng/biên tập không vào Vận hành. Nhưng **nhân sự mở Trang của tôi
+là thấy nguyên màn học viên**: chuỗi ngày học, "còn 50 ngày tới kỳ thi", nhiệm vụ +XP, kế
+hoạch, nhật ký, bảng xếp hạng, trợ lý AI; thanh trên có Kế hoạch/Lộ trình/Kỹ năng/Thi thử/Bài
+tập. Tệ hơn: trợ giảng gắn với lớp qua cùng bảng `class_members` với học viên, nên trang **Bài
+tập mời trợ giảng "Làm bài"** bài tập của chính lớp mình phụ trách.
+
+**Cơ chế** (`lib/nhomVai.ts`): `<html data-vai-nhom="nhan-su|hoc-vien">` + hai luật CSS,
+`[data-chi-hoc-vien]` ẩn với nhân sự, `[data-chi-nhan-su]` ẩn với học viên. Vai chỉ biết sau
+`/api/user`; đợi nó ở máy chủ là cộng một vòng mạng vào byte đầu của MỌI học viên (LCP đã phải
+giành từng trăm mili-giây) — nên lần đầu trong tab dựng như học viên rồi đổi khi biết vai, từ
+lần sau script đầu trang đọc `sessionStorage` và đặt thuộc tính TRƯỚC khi vẽ (đo: trang thứ hai
+cùng tab có nhóm trước khi React chạy, 6/6 vai). `sessionStorage` chứ không `localStorage`: máy
+chung ở trung tâm. Đây là GIẤU, không phải hàng rào — hàng rào vẫn là `permission_classes`.
+
+Nhân sự thấy **"Khu làm việc của bạn"** (`KhuNhanSu.tsx`): thẻ dẫn tới đúng khu của vai, mỗi
+khu một câu nói nó để làm gì; bảng vai→khu (`khuTheoVai.ts`) chỉ ghi khu đã ĐI THỬ bằng tài
+khoản của vai đó. Menu người dùng ghi đúng vai (trước: mọi người ngoài khu Vận hành đều là
+"Học viên"). `du_lieu_mau` thêm ba tài khoản nhân sự mẫu để có đủ sáu vai trên một bộ dữ liệu.
+
+Đo lại 6 vai sau vá: nhân sự hero=false, ô số=false, trợ lý=false, khu=true, thanh đúng theo
+vai; học viên nguyên như cũ; 0 lỗi JS; không tràn ngang ở hai khổ.
+
+Bất ngờ khi viết: `style.css` mở đầu bằng `* { margin:0; padding:0 }` và `.section-card` không
+nằm trong lớp nào — chúng thắng mọi tiện ích Tailwind (`@layer utilities`), nên `p-4` viết ra
+là 0px (đo). Thẻ dùng `gap` + đệm nội tuyến, ghi lý do tại chỗ.
+
+### 3. Chữ nằm dưới thanh trên suốt hai tuần — bộ đo không thấy
+
+Ảnh chụp lượt đi vai cho thấy tiêu đề "Khu làm việc của bạn" chui dưới thanh trên. Đo: `#main`
+không có `padding-top` nào — `13bc3d3` (06/09) dời CSS thanh sang `shell.css` và **xoá
+`#main { padding-top: 50px }` mà không mang theo**. Hệ quả có từ hôm ấy: dòng "Chào mừng trở
+lại 👋" của MỌI học viên (y=27, đáy thanh 52) và "HSA · ĐỊNH LƯỢNG" ở màn khoá học nằm dưới
+thanh khi trang vừa mở, cả điện thoại lẫn máy tính. Bộ đo giao diện hỏi tương phản, cỡ chạm,
+tràn ngang, khối bị cắt — **không hỏi "có bị che không"**.
+
+Thêm luật thứ năm vào `do_giao_dien.mjs`: ở cuộn 0, phần tử cố định/dính ở mép trên rộng ≥80%
+màn là "thanh"; chữ nào giao với dải ấy mà `elementFromPoint` trả về thanh là bị che (hỏi điểm
+chứ không so toạ độ — thanh kính mờ). Chạy TRƯỚC khi sửa: đỏ đúng 4 lượt (Dashboard + Chi tiết
+khoá × 2 khổ), 44 lượt còn lại 0. Sửa: `#main { padding-top: var(--topbar-h) }` đặt cạnh biến
+chiều cao thanh. Chạy lại sáng + tối: **0** ở cả 48 lượt; `--tu-kiem` 48/48 vẫn đỏ được.
+
+### 4. Bộ e2e: 10/36 đỏ, và chín trong số đó đỏ từ trước
+
+Sau bản vá, `pnpm e2e` đỏ 10. Soi từng cái: tài khoản kiểm thử `e2e-kiem-thu@` **đã biến khỏi
+CSDL** (không rõ từ khi nào), nên mọi phép kiểm "màn học viên" rơi về thẻ QUẢN TRỊ và vẫn xanh
+— vì tới hôm nay quản trị viên thấy nguyên màn học viên. Bản vá làm chúng đỏ, tức chúng đo sai
+vai từ trước mà không có gì kêu. Thêm `vaoLaHocVien()` hỏi `/api/user` sau khi vào và BỎ QUA
+kèm lý do nếu vai không phải học viên; tạo lại tài khoản e2e. Còn lại hai lỗi thật, đều cũ:
+`khu-giang-day.spec.ts` đòi 3 tab nhưng khu có 4 từ 14/09 ("Việc hôm nay") và thanh tô HAI mục
+sáng cùng lúc vì `/giang-day` là tiền tố của mọi trang lớp — sửa `AppShell` chỉ tô mục khớp
+dài nhất; `mobile-responsive.spec.ts` đếm `.page` trong DOM ra 1 vì tám tab dựng lười từ 16/09
+— nay đếm theo nút `[data-page]` trên thanh. Kết: **36/36 xanh**, 27/27 unit Node.
+
+### 5. Dữ liệu cần TopHSA cung cấp — `docs/DU_LIEU_CAN_TOPHSA.md`
+
+Chín nhóm A–I, mỗi nhóm có trường bắt buộc và mẫu dán sẵn; mọi giới hạn lấy từ mã (`≤50` học
+viên một lượt, cột `[\t;,]`, 5 PDF một lần đọc, 60 phiếu một lần ghi, tên trong PDF phải khớp
+tên tài khoản vì khớp theo tên); kịch bản ngày đầu 9 bước dưới một giờ; bảy câu hỏi mở (C4).
+
+### 6. A6 XONG — đo hai chiều
+
+Thẻ ký ở máy dev (quản trị id 7 và học viên mẫu): production trả **401 cả 6/6**; đối chứng: đăng
+nhập thật bằng tài khoản e2e → production cấp thẻ và nhận lại (200, đúng id). Khoá đã khác —
+anh đổi trên Render sau 18/09 18:30. Hệ quả: tôi hết mở được production bằng thẻ dev; xác minh
+deploy từ nay đi bằng đăng nhập thật của tài khoản e2e.
+
+### Cổng chất lượng
+
+ruff sạch · tsc/eslint sạch · 27/27 unit Node · 36/36 Playwright · giao diện 24 trang × 2 khổ
+× sáng/tối: 0 vi phạm, 0 chữ bị che, tự kiểm 48/48 · trần tầng cũ 7.072 → 7.076 (+4, lý do
+trong `chot-ham-tang-cu.test.mjs`) · **pytest toàn bộ 801 passed, 0 lỗi, 45 phút 10** (chạy song song
+với việc khác; trước đó 705 + 4 ERROR Neon hôm 17/09 — nay không lỗi kết nối nào).
 
 ## 18/09/2026 (tối) — A6 CHƯA XONG (tôi đã báo sai), VÀ MỘT TỆP DUY NHẤT CHO VIỆC CỦA ANH
 

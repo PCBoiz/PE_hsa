@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { LY_DO_BO_QUA, login, vaoBangThe } from './helpers';
+import { LY_DO_BO_QUA, login, vaoBangThe, vaoLaHocVien } from './helpers';
 
 /**
  * KHUNG CHUNG phải GIỐNG NHAU ở mọi màn — và phải CHẠY.
@@ -98,8 +98,10 @@ test.describe('khung chung', () => {
      `main.js::navigate()` tô `.active` hay không — dựng lại panel bằng một
      danh sách khác là trạng thái "đang ở đâu" biến mất, im lặng. */
   test('nhóm "Học" gom bốn mục mà không cắt đứt hợp đồng với main.js', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
-    test.skip(!vao, LY_DO_BO_QUA);
+    // Ba trong bốn mục con là việc của RIÊNG học viên (ẩn với nhân sự từ
+    // 20/09/2026) — đo bằng thẻ quản trị là đo một thanh khác.
+    const boQua = await vaoLaHocVien(page);
+    test.skip(boQua !== null, boQua ?? '');
 
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');

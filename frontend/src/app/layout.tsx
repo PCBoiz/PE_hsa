@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Be_Vietnam_Pro, JetBrains_Mono } from 'next/font/google';
 
+import { SCRIPT_NHOM_VAI } from '@/lib/nhomVai';
+
 import './tailwind.css';
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -89,6 +91,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `window.__PE_API_ORIGIN="";`,
           }}
         />
+        {/* Nhóm vai đã biết trong tab này → đặt lên <html> TRƯỚC khi vẽ, để nhân
+            sự không thấy màn học viên nháy qua ở mỗi lần chuyển trang. Lần đầu
+            trong tab thì chưa có gì để đọc — `useVaiHienTai` đặt sau. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_NHOM_VAI }} />
       </head>
       <body suppressHydrationWarning>{children}</body>
     </html>

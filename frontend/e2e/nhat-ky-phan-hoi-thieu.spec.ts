@@ -17,7 +17,7 @@
 // "lỗi JS: 0" vì nó chỉ TẢI, không BẤM.
 import { expect, test } from '@playwright/test';
 
-import { LY_DO_BO_QUA, login } from './helpers';
+import { vaoLaHocVien } from './helpers';
 
 /** Chặn ĐÚNG lời gọi PUT nhật ký; mọi thứ khác đi thật. */
 async function gia(page: import('@playwright/test').Page, than: string) {
@@ -36,7 +36,9 @@ async function moDashboard(page: import('@playwright/test').Page) {
 }
 
 test('máy chủ trả 200 thiếu `log` → nói thật, không tạo bản ghi ma', async ({ page }) => {
-  test.skip(!(await login(page)), LY_DO_BO_QUA);
+  // Nhật ký học là việc của học viên — nhân sự không thấy ô này từ 20/09/2026.
+  const boQua = await vaoLaHocVien(page);
+  test.skip(boQua !== null, boQua ?? '');
   const loi: string[] = [];
   page.on('pageerror', (e) => loi.push(String(e.message)));
 
@@ -60,7 +62,9 @@ test('máy chủ trả 200 thiếu `log` → nói thật, không tạo bản ghi
 });
 
 test('phản hồi đúng hình dạng → vẫn lưu và hiện đúng một dòng', async ({ page }) => {
-  test.skip(!(await login(page)), LY_DO_BO_QUA);
+  // Nhật ký học là việc của học viên — nhân sự không thấy ô này từ 20/09/2026.
+  const boQua = await vaoLaHocVien(page);
+  test.skip(boQua !== null, boQua ?? '');
   const loi: string[] = [];
   page.on('pageerror', (e) => loi.push(String(e.message)));
 

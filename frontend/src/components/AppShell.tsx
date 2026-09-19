@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { doiChuDe, useDangToi } from '@/lib/chuDe';
 import { goiLegacy } from '@/lib/goiLegacy';
+import { useVaiHienTai } from '@/lib/useVaiHienTai';
+import { NHAN_VAI } from '@/lib/vaiTro';
 
 import { BieuTuong } from './bieuTuong';
 import { MUC_NAV, NHOM_NAV, type MucNav } from './navMuc';
@@ -57,7 +59,8 @@ export type AppShellProps = {
   dieuKhien?: 'legacy' | 'react';
   /** Tên hiển thị, nếu trang tự biết. Bỏ trống thì để JS cũ điền vào #chip-name. */
   ten?: string;
-  /** Vai hiển thị trong menu. */
+  /** Vai (giá trị `users.role`), nếu trang đã đọc ở máy chủ. Bỏ trống thì
+   *  khung tự hỏi — xem `lib/useVaiHienTai.ts`. */
   vai?: string;
   cheDo?: CheDo;
   /**
@@ -90,7 +93,7 @@ export default function AppShell({
   spa = false,
   dieuKhien = 'legacy',
   ten,
-  vai = 'Học viên',
+  vai: vaiBiet,
   cheDo = 'day-du',
   muc,
   khu,
@@ -98,6 +101,9 @@ export default function AppShell({
   phai,
 }: AppShellProps) {
   const toi = useDangToi();
+  // `spa` = có `main.js`, thứ đặt `window.__currentUser`; `course_detail.js`
+  // (`dieuKhien='legacy'` mà không `spa`) KHÔNG đặt nó — đừng đợi thứ không tới.
+  const vai = useVaiHienTai(vaiBiet, spa);
   const duong = usePathname();
   const router = useRouter();
   const [moMenu, setMoMenu] = useState(false);
@@ -233,8 +239,15 @@ export default function AppShell({
      con (`/quan-tri/tai-khoan/123`) vẫn phải sáng đúng tab cha. Đây là hành vi
      của `AdminNav` cũ, giữ nguyên — bỏ nó đi là mất dấu "đang ở đâu" ở mọi
      trang con, mà mất dấu thì người dùng bấm lại vì tưởng chưa tới nơi. */
+  const dsMuc = muc ?? MUC_NAV;
+  const khopDuong = (m: MucNav) => duong === m.url || duong.startsWith(m.url + '/');
   const dangMo = (m: MucNav) => {
-    if (khu) return duong === m.url || duong.startsWith(m.url + '/');
+    /* Trong khu, chỉ mục khớp DÀI NHẤT được tô. "Việc hôm nay" (`/giang-day`,
+       thêm 14/09/2026) là tiền tố của mọi trang lớp, nên so tiền tố trần làm
+       `/giang-day/buoi-hoc/1` sáng HAI mục một lúc — thanh nói người dùng đang
+       ở hai nơi. `khu-giang-day.spec.ts` đòi đúng một mục sáng và đã đỏ vì
+       chuyện này từ hôm ấy (đo 20/09). */
+    if (khu) return khopDuong(m) && !dsMuc.some((x) => x.url.length > m.url.length && khopDuong(x));
     return (m.trang != null && m.trang === trang) || m.url === trang;
   };
 
@@ -268,6 +281,9 @@ export default function AppShell({
          lý do bốn mục trong nhóm vẫn là NÚT THẬT nằm trong DOM chứ không phải
          một danh sách dựng lại — gỡ chúng ra là main.js không còn gì để tô. */
       ...(m.trang ? { 'data-page': m.trang } : {}),
+      /* Giấu với nhân sự bằng CSS (`tailwind.css`), không gỡ khỏi DOM: `main.js`
+         vẫn tìm nút theo `data-page`. Xem `lib/nhomVai.ts`. */
+      ...(m.chiHocVien ? { 'data-chi-hoc-vien': '' } : {}),
       ...(dangMo(m) ? { 'aria-current': 'page' as const } : {}),
       /* `aria-label` và `title` BẮT BUỘC: dưới 96rem `shell.css` đặt
          `display: none` cho nhãn chữ, mà phần tử `display:none` thì trình đọc
@@ -315,7 +331,6 @@ export default function AppShell({
   /* Dựng danh sách hiển thị: mục có `nhom` được thu vào panel của nhóm, và
      nhóm xuất hiện ĐÚNG chỗ mục đầu tiên của nó — thứ tự trong `navMuc.ts`
      vẫn là thứ tự người dùng thấy. */
-  const dsMuc = muc ?? MUC_NAV;
   const daVe = new Set<string>();
   const dayNav = dsMuc.flatMap((m) => {
     if (!m.nhom) return [nutMuc(m)];
@@ -513,11 +528,13 @@ export default function AppShell({
               <span className="chip-avatar udh-avatar" id="udh-avatar">{chuDau(ten)}</span>
               <div>
                 <div className="udh-name" id="udh-name">{ten ?? '—'}</div>
-                <div className="udh-role">{vai}</div>
+                <div className="udh-role">{vai ? (NHAN_VAI[vai] ?? vai) : ''}</div>
               </div>
             </div>
             <div className="user-dropdown-divider"></div>
-            <button type="button" className="user-dropdown-item" role="menuitem"
+            {/* "Trang của tôi" là HỒ SƠ HỌC TẬP (chuỗi ngày, bản đồ năng lực) —
+                việc của học viên. */}
+            <button type="button" className="user-dropdown-item" role="menuitem" data-chi-hoc-vien=""
               onClick={() => {
                 if (spa) { goiLegacy('navigate', 'profile'); goiLegacy('closeUserMenu'); }
                 else taiTrang('/dashboard#profile');

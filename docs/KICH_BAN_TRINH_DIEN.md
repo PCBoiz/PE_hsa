@@ -11,7 +11,7 @@ dấu rõ trong hệ thống và không bao giờ gửi tin cho ai.
 | # | Việc | Vì sao |
 |---|---|---|
 | 1 | Mở `https://pe-hsa.vercel.app` và để đó **2–3 phút** trước giờ | Máy chủ ngủ sau một lúc không ai dùng. Đo 17/09 lúc 09:51: lượt gọi đầu **76,3 giây**, hai lượt ngay sau đó **0,97 s** và **0,50 s**. Mở sớm là nó thức sẵn. (Việc A1 — gắn cron-job.org thì hết hẳn.) |
-| 2 | **Đăng nhập thử** bằng tài khoản quản trị | Phiên đăng nhập sống 8 giờ; mở máy ra mà còn phiên cũ thì cứ dùng, hết thì đăng nhập lại. Làm trước, đừng để tới lúc demo mới phát hiện. *(Bản trước dòng này nói "khoá ký phiên vừa được tách khỏi máy phát triển (A6)" — đo lại 18/09 18:30 thì production VẪN nhận thẻ ký bằng khoá của máy phát triển. A6 chưa xong; xem `docs/VIEC_CUA_ANH.md`.)* |
+| 2 | **Đăng nhập thử** bằng tài khoản quản trị | Phiên đăng nhập sống 8 giờ; mở máy ra mà còn phiên cũ thì cứ dùng, hết thì đăng nhập lại. Làm trước, đừng để tới lúc demo mới phát hiện. *(Khoá ký của production đã tách khỏi máy phát triển — đo 20/09: thẻ ký ở máy dev bị từ chối 6/6 lần, thẻ production tự cấp thì nhận. Bằng chứng ở `docs/VIEC_CUA_ANH.md` Phần I.5.)* |
 | 3 | Làm mới dữ liệu trình diễn: `python manage.py du_lieu_mau --lam-moi` (≈60 giây), hoặc nhắn tôi làm | Bộ dữ liệu neo vào ngày dựng. Để quá 2 ngày, màn hình bắt đầu hiện "buổi đã dạy chưa ai điểm danh" và "N ngày không mở bài" — trông như trung tâm ngừng hoạt động. Muốn biết có cần không: chạy `python manage.py du_lieu_mau`, nó tự báo *"Hoạt động mẫu gần nhất … (N ngày trước)"*. |
 | 4 | Mở sẵn hai thẻ trình duyệt: **Quản trị · tổng quan** và **một bài học** | Đỡ phải gõ đường dẫn giữa buổi. |
 
@@ -119,6 +119,21 @@ giữa buổi.)*
   bản rút gọn.
 - Nếu người mua cầm điện thoại: mở đúng bài ấy trên điện thoại — bảng vừa khít
   màn hình, đồ thị đọc được (sửa 17/09).
+- **Trợ lý AI** (nút góc dưới phải, chỉ học viên thấy): bấm **"Giảng lại"** — nó
+  bám đúng bài đang mở, trả lời gọn, công thức viết thường (x², √2) chứ không
+  ra mã. Rồi **chụp một câu trong đề giấy** bằng nút kẹp giấy: nó đọc lại đề để
+  xác nhận, gợi bước đầu và **dừng lại cho em tự làm** — không đọc đáp án. Nếu
+  hỏi *"cho đáp án câu 3 phần kiểm tra"* ở bước Kiểm tra, nó từ chối. Mỗi lượt
+  4–11 giây. *(Sửa 20/09 — trước đó trợ lý chạy bản rẻ nhất và viết LaTeX.)*
+
+## 6b. Mỗi vai một màn (1 phút, nếu người mua hỏi "giáo viên có bị rối không")
+
+Đăng nhập bằng tài khoản **học vụ mẫu** hoặc **trợ giảng mẫu** (đặt lại mật khẩu
+cho tài khoản mẫu trước — xem `VIEC_CUA_ANH.md` Phần I.4). Trang của tôi của họ
+là **"Khu làm việc của bạn"**: chỉ các khu của vai ấy, mỗi khu một câu nói nó để
+làm gì. Không chuỗi ngày học, không thi thử, không bảng xếp hạng, không trợ lý
+AI; thanh trên chỉ còn Dashboard · Học · Diễn đàn · Giảng dạy (± Vận hành,
+Quản trị theo vai). Câu chốt: *"Mỗi người mở máy ra chỉ thấy việc của mình."*
 
 ## 7. Kết: chốt bằng ba câu (1 phút)
 
@@ -138,7 +153,7 @@ giữa buổi.)*
 | "Phụ huynh xem được những gì?" | *"Tiến độ, chuyên cần, điểm. Nhật ký riêng của học viên thì không — đó là chính sách, đang chờ trung tâm chốt."* |
 | "Sao trang đầu tiên hơi lâu?" | *"Máy chủ gói rẻ ngủ khi không ai dùng; bật gói giữ ấm là hết, khoảng 7 đô một tháng."* |
 | "Đã có ai dùng thật chưa?" | *"Chưa. Đó là lý do đề xuất chạy một lớp thật trong tháng đầu — mọi thứ khác dễ hơn sau khi một lớp đi qua một lần."* |
-| "Bảo mật thế nào?" | *"Phân quyền theo vai và theo từng lớp, mọi thao tác sửa dữ liệu có nhật ký, đường dẫn phụ huynh có hạn và thu hồi được, trang web có đủ bộ header bảo mật."* **ĐỪNG nói** "khoá ký đã tách khỏi máy phát triển" — đo 18/09 18:30 là CHƯA (A6). Làm A6 (5 phút) rồi mới nói được câu ấy. |
+| "Bảo mật thế nào?" | *"Phân quyền theo vai và theo từng lớp, mọi thao tác sửa dữ liệu có nhật ký, đường dẫn phụ huynh có hạn và thu hồi được, trang web có đủ bộ header bảo mật."* Nói thêm được từ 20/09: *"khoá ký phiên của bản chạy thật tách riêng khỏi máy phát triển"* — đo 20/09, bằng chứng ở `docs/VIEC_CUA_ANH.md` Phần I.5. |
 
 ---
 

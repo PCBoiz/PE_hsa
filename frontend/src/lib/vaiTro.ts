@@ -28,3 +28,16 @@ export const VAI_BIEN_TAP = 'Biên tập nội dung';
 export const VAI_GIANG_VIEN = 'Giảng viên';
 export const VAI_TRO_GIANG = 'Trợ giảng';
 export const VAI_HOC_VIEN = 'Học viên';
+
+/** Tên HIỂN THỊ của vai, cho chỗ chỉ cần đúng một nhãn (menu người dùng).
+ *  Bảng mô tả đầy đủ là `quyenVai.ts::VAI_TRO` — không nạp nó vào khung chung
+ *  chỉ để lấy sáu chữ. Trước 20/09/2026 menu của MỌI người ngoài khu Vận hành
+ *  ghi cứng "Học viên", kể cả giảng viên và quản trị viên. */
+export const NHAN_VAI: Readonly<Record<string, string>> = {
+  [VAI_QUAN_TRI]: 'Quản trị viên',
+  [VAI_HOC_VU]: VAI_HOC_VU,
+  [VAI_BIEN_TAP]: VAI_BIEN_TAP,
+  [VAI_GIANG_VIEN]: VAI_GIANG_VIEN,
+  [VAI_TRO_GIANG]: VAI_TRO_GIANG,
+  [VAI_HOC_VIEN]: VAI_HOC_VIEN,
+};

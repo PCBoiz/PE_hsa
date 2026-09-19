@@ -55,7 +55,11 @@ test.describe('khu giảng dạy', () => {
       // Ô tìm kiếm nối thẳng `filterCourses` — nó tìm KHOÁ HỌC, ở đây vô nghĩa.
       await expect(page.locator('#search-input')).toHaveCount(0);
 
-      await expect(page.locator('.topbar-nav .nav-btn')).toHaveCount(3);
+      // Bốn: "Việc hôm nay" (thêm 14/09/2026, có mặt ở MỌI trang của khu) + ba tab
+      // lớp. Phép kiểm này đỏ từ hôm ấy tới 20/09 — không ai chạy nó bằng tài
+      // khoản phụ trách lớp 1 trong tuần đó.
+      await expect(page.locator('.topbar-nav .nav-btn')).toHaveCount(4);
+      await expect(page.locator('.topbar-nav .nav-btn').first()).toContainText('Việc hôm nay');
       await expect(page.locator('.topbar-nav .nav-btn.active')).toHaveCount(1);
       await expect(page.locator('.topbar-nav .nav-btn.active')).toContainText(t.tab);
 

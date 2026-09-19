@@ -66,6 +66,15 @@
   --shell-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--t1) 18%, transparent);
 }
 
+/* Chừa chỗ cho thanh cố định ở hai màn dựng quanh `#main` (Trang của tôi, chi
+   tiết khoá). Dòng này từng nằm ở `style.css` dưới dạng `padding-top: 50px`;
+   `13bc3d3` (06/09/2026) dời CSS thanh sang đây mà bỏ quên nó, nên suốt hai
+   tuần dòng chào "Chào mừng trở lại 👋" và nhãn "HSA · ĐỊNH LƯỢNG" nằm DƯỚI
+   thanh khi trang vừa mở (đo 20/09: chữ ở y=27–36, đáy thanh ở 52–60).
+   Đặt CẠNH `--topbar-h` để thanh đổi chiều cao thì chỗ chừa đổi theo; bộ đo
+   giao diện nay có luật "chữ dưới thanh cố định" canh lại. */
+#main { padding-top: var(--topbar-h); }
+
 /* ══ Thanh trên ══════════════════════════════════════════════════════════ */
 .topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;

@@ -561,7 +561,49 @@ function DO_TRONG_TRANG(do_trang_thai) {
     for (const v of ngoai_khung) delete v.el;
   }
 
+  /* ── CHỮ NẰM DƯỚI THANH CỐ ĐỊNH (20/09/2026) ──────────────────────────────
+     Chỗ mù thứ hai. `13bc3d3` (06/09) dời CSS thanh trên sang `shell.css` và
+     xoá `#main { padding-top: 50px }` mà không mang theo. Suốt hai tuần, dòng
+     chào "Chào mừng trở lại 👋" của MỌI học viên và nhãn "HSA · ĐỊNH LƯỢNG" ở
+     đầu màn khoá học nằm DƯỚI thanh trên khi trang vừa mở — bộ đo không thấy,
+     vì nó hỏi tương phản, cỡ chạm, tràn ngang; không hỏi "có bị che không".
+
+     Cách hỏi: ở vị trí cuộn 0, thanh nào cố định/dính ở mép trên và rộng gần
+     hết màn là "thanh". Chữ nào có hộp giao với dải của thanh mà điểm giữa mép
+     trên của nó lại trả về chính thanh (`elementFromPoint`) thì đang bị che.
+     Hỏi điểm chứ không so toạ độ: thanh kính mờ trong suốt một phần, nhưng
+     người dùng không đọc xuyên qua nó được. */
+  const bi_che = [];
+  {
+    const cu = window.scrollY;
+    window.scrollTo(0, 0);
+    const rong = document.documentElement.clientWidth;
+    const thanh = [...document.querySelectorAll('body *')].filter((e) => {
+      const c = getComputedStyle(e);
+      if (!/^(fixed|sticky)$/.test(c.position)) return false;
+      const r = e.getBoundingClientRect();
+      return r.top <= 1 && r.height > 20 && r.height < 200 && r.width >= rong * 0.8 && hien(e);
+    });
+    if (thanh.length) {
+      const day = Math.max(...thanh.map((e) => e.getBoundingClientRect().bottom));
+      for (const el of document.querySelectorAll('body *')) {
+        if (thanh.some((t) => t.contains(el))) continue;
+        if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 1 || r.height <= 1 || r.top >= day - 2 || r.bottom <= 0) continue;
+        if (!hien(el)) continue;
+        const o = document.elementFromPoint(Math.min(rong - 1, r.left + r.width / 2), Math.max(0, r.top) + 2);
+        if (!o || !thanh.some((t) => t.contains(o))) continue;
+        if (bi_che.some((v) => v.el.contains(el))) continue;
+        bi_che.push({ el, duong: duong(el), chu: el.textContent.trim().slice(0, 30) });
+      }
+      for (const v of bi_che) delete v.el;
+    }
+    window.scrollTo(0, cu);
+  }
+
   return {
+    bi_che: bi_che.slice(0, 6), so_bi_che: bi_che.length,
     dau, net_dau,
     /* Cắt ở 300 chứ không 60: bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node chỉ soi được
        những mục có trong mảng này, nên cắt sớm là loại bỏ mục chưa ai nhìn rồi
@@ -883,6 +925,7 @@ for (const kho of KHO) {
         + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  ngoài khung:${String(d.so_ngoai_khung).padStart(2)}`
+        + `  bị che:${String(d.so_bi_che).padStart(2)}`
         + `  lỗiJS:${loi.length}  CSP:${csp.length}`
         + (do_tt ? `  rê:${String(d.so_tuong_tac).padStart(2)}`
             + `  thiếu nét:${String(d.so_thieu_net).padStart(2)}/${String(d.so_net_do).padStart(2)}` : ''));
@@ -909,6 +952,10 @@ console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  khối bị cắt bên ngoài khung: ${ket.reduce((a, r) => a + (r.so_ngoai_khung || 0), 0)}`);
 for (const r of ket.filter((x) => x.so_ngoai_khung)) {
   console.log(`      ${r.kho} · ${r.ten}: ${r.ngoai_khung.map((v) => `${v.duong} (+${v.thua}px)`).join(' · ')}`);
+}
+console.log(`  chữ dưới thanh cố định: ${ket.reduce((a, r) => a + (r.so_bi_che || 0), 0)}`);
+for (const r of ket.filter((x) => x.so_bi_che)) {
+  console.log(`      ${r.kho} · ${r.ten}: ${r.bi_che.map((v) => `"${v.chu}" (${v.duong})`).join(' · ')}`);
 }
 console.log(`  lỗi JS             : ${tong_js}`);
 console.log(`  vi phạm CSP        : ${tong_csp}`);

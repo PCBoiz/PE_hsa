@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { LY_DO_BO_QUA, login, vaoBangThe } from './helpers';
+import { vaoLaHocVien } from './helpers';
 
 /**
  * Ô "Lộ trình của bạn" phải cao bằng NỘI DUNG của nó, và không được bóp méo.
@@ -40,8 +40,8 @@ import { LY_DO_BO_QUA, login, vaoBangThe } from './helpers';
 
 test.describe('lộ trình rút gọn', () => {
   test('khung cao bằng nội dung, và không có gì để bóp méo', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
-    test.skip(!vao, LY_DO_BO_QUA);
+    const boQua = await vaoLaHocVien(page);
+    test.skip(boQua !== null, boQua ?? '');
 
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     // Rơi về màn đăng nhập thì mọi khẳng định bên dưới đều vô nghĩa mà vẫn
@@ -87,8 +87,8 @@ test.describe('lộ trình rút gọn', () => {
   });
 
   test('chặng là liên kết thật — bàn phím đi tới được', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
-    test.skip(!vao, LY_DO_BO_QUA);
+    const boQua = await vaoLaHocVien(page);
+    test.skip(boQua !== null, boQua ?? '');
 
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');

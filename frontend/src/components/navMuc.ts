@@ -41,6 +41,11 @@ export type MucNav = {
    * chữ phải biến mất và người mới nhìn vào tám biểu tượng trần.
    */
   nhom?: string;
+  /**
+   * Việc của RIÊNG học viên — nhân sự không thấy mục này (20/09/2026, xem
+   * `lib/nhomVai.ts`). Chỉ là giấu: trang đích vẫn tự lo quyền của nó.
+   */
+  chiHocVien?: boolean;
 };
 
 /** Các nhóm trên thanh. `icon` dùng chung bộ với `MUC_NAV`. */
@@ -52,26 +57,29 @@ export const MUC_NAV: MucNav[] = [
   { trang: 'dashboard', nhan: 'Dashboard', icon: 'home', emoji: '🏠', url: '/dashboard' },
   { trang: 'courses', nhan: 'Khóa học', icon: 'library', emoji: '📖', url: '/dashboard#courses', nhom: 'hoc' },
   {
-    trang: 'plan', nhan: 'Kế hoạch', icon: 'calendar', emoji: '🗓️', url: '/dashboard#plan',
+    trang: 'plan', nhan: 'Kế hoạch', icon: 'calendar', emoji: '🗓️', url: '/dashboard#plan', chiHocVien: true,
     ghi_chu: 'Vế System-Guided. Khác "Lộ trình" (danh mục tĩnh 26 lộ trình của '
       + 'bản cũ): đây là lịch của riêng học viên, sinh từ ngày thi + sức học + '
       + 'chủ đề đang yếu.',
     nhom: 'hoc',
   },
-  { trang: 'roadmap', nhan: 'Lộ trình', icon: 'map', emoji: '🗺️', url: '/dashboard#roadmap', nhom: 'hoc' },
+  { trang: 'roadmap', nhan: 'Lộ trình', icon: 'map', emoji: '🗺️', url: '/dashboard#roadmap', nhom: 'hoc', chiHocVien: true },
   {
-    trang: 'skills', nhan: 'Kỹ năng', icon: 'medal', emoji: '🏅', url: '/dashboard#skills',
+    trang: 'skills', nhan: 'Kỹ năng', icon: 'medal', emoji: '🏅', url: '/dashboard#skills', chiHocVien: true,
     ghi_chu: 'Mục BỊ MẤT khỏi thanh chính cho tới 01/09/2026 — xem đầu tệp.',
     nhom: 'hoc',
   },
   { trang: 'forum', nhan: 'Diễn đàn', icon: 'chat', emoji: '💬', url: '/dashboard#forum' },
   {
-    trang: null, nhan: 'Thi thử', icon: 'target', emoji: '🎯', url: '/mock',
+    trang: null, nhan: 'Thi thử', icon: 'target', emoji: '🎯', url: '/mock', chiHocVien: true,
     ghi_chu: 'Tuyến Next thật, không phải trang trong SPA legacy.',
   },
   {
-    trang: null, nhan: 'Bài tập', icon: 'pencil', emoji: '✏️', url: '/bai-tap',
-    ghi_chu: 'Bài giảng viên giao (ERP §5). KHÔNG ẩn theo vai trò — giảng viên '
-      + 'cũng có thể đang học một khoá, và trang tự trả danh sách rỗng.',
+    trang: null, nhan: 'Bài tập', icon: 'pencil', emoji: '✏️', url: '/bai-tap', chiHocVien: true,
+    ghi_chu: 'Bài giảng viên giao (ERP §5), phía NGƯỜI LÀM bài. Trước 20/09/2026 '
+      + 'mục này cố ý không ẩn theo vai ("giảng viên cũng có thể đang học") — '
+      + 'đi thử bằng sáu vai cho thấy cái giá: trợ giảng gắn với lớp qua cùng '
+      + 'bảng `class_members` với học viên, nên trang này mời trợ giảng "Làm bài" '
+      + 'bài tập của chính lớp mình phụ trách. Nhân sự giao/chấm bài ở /giang-day.',
   },
 ];

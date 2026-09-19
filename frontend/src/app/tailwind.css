@@ -337,3 +337,16 @@ body.dark {
     --shadow-e3: none;
   }
 }
+
+/* ── NHÓM VAI (20/09/2026) — xem `src/lib/nhomVai.ts` ──────────────────────
+   Nhân sự không thấy phần của học viên, học viên không thấy phần của nhân sự.
+   `!important` có chủ đích: đích của hai luật này là phần tử của CSS cũ (nút
+   thanh điều hướng, khối dashboard) vốn tự đặt `display` với độ đặc hiệu cao
+   hơn. Chưa biết vai (chưa có thuộc tính) thì dựng như học viên — xem lý do
+   ở đầu `nhomVai.ts`. */
+html[data-vai-nhom='nhan-su'] [data-chi-hoc-vien] {
+  display: none !important;
+}
+html:not([data-vai-nhom='nhan-su']) [data-chi-nhan-su] {
+  display: none !important;
+}

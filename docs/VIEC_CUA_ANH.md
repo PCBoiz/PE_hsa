@@ -1,11 +1,11 @@
 # Việc của anh — pe_hsa
 
-*Cập nhật 18/09/2026, 18:45. Đây là **chỗ duy nhất** ghi việc cần anh làm và cần anh quyết.
+*Cập nhật 20/09/2026. Đây là **chỗ duy nhất** ghi việc cần anh làm và cần anh quyết.
 Mọi trạng thái trong Phần I được **đo lại hôm nay** trên hệ thống thật — không chép từ bản cũ.
 **Đọc hết Phần I là đủ.** Từ "Lịch sử" trở xuống là 18 phần cũ, giữ để tra lại; mục nào ở đó
 đã xong hoặc đã chuyển lên đây thì đừng làm theo nữa.*
 
-**Tóm tắt:** 5 việc tay, tổng khoảng 30 phút (việc số 1 là **5 phút và quan trọng nhất**) ·
+**Tóm tắt:** 5 việc tay, tổng khoảng 30 phút (A6 — việc số 1 của bản trước — **anh đã làm xong**, đo 20/09; việc số 1 nay là gỡ khoá GitHub) ·
 10 câu cần anh quyết, mỗi câu trả lời một dòng là đủ · 4 việc chờ TopHSA hoặc cần thời gian ·
 1 thói quen trước mỗi buổi demo.
 
@@ -15,11 +15,11 @@ Mọi trạng thái trong Phần I được **đo lại hôm nay** trên hệ th
 
 | # | Việc | Mất | Vì sao — đã đo | Làm xong thì báo tôi, tôi kiểm |
 |---|---|---|---|---|
-| **1** | **A6 · Tách khoá ký của production khỏi máy dev.** Render → `pe-hsa-backend` → **Environment** → `SECRET_KEY` → dán chuỗi MỚI sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(48))"`. **Chỉ dán ở Render**, không chép vào `backend/.env`. Save → Render tự deploy lại. | 5 phút | **Đo 18/09 18:30: production NHẬN thẻ ký bằng khoá của máy dev** — 3/3 lượt vào được dưới quyền **quản trị viên** (id 7); đối chứng thẻ sửa chữ ký → 401, nên không phải cửa mở cho mọi người. Tức ai có `backend/.env` (hoặc tệp thẻ trong `.the/`) là mạo danh được bất kỳ ai trên bản chạy thật, kể cả ký "phiếu đọc" điểm thi thử giả. *Bản trước tôi ghi "có vẻ đã xong" dựa trên một lần đo ra 401 hôm 17/09 07:47 — lần ấy KHÔNG lặp lại được. Tôi đã sửa kịch bản demo: câu "khoá ký đã tách khỏi máy phát triển" KHÔNG được nói với người mua cho tới khi việc này xong.* Đổi xong: mọi người đăng xuất một lần. | Thẻ cấp ở máy dev phải bị production trả **401** |
-| **2** | **A0 · Gỡ khoá thanh toán GitHub.** Đăng nhập tài khoản sở hữu repo `PCBoiz/PE_hsa` → Settings → **Billing and plans** → sửa phương thức thanh toán hoặc hạn mức cho tới khi hết thông báo khoá → tab **Actions** → **CI** → *Re-run* lượt mới nhất. | 10 phút | **Đo 18/09 qua API của GitHub:** hai lượt CI hôm nay (commit `8296000`) **0 bước, không máy chạy** — y như 243/244 lượt từ 10/08. Tức **chưa từng có CI**, **chưa có bản sao lưu CSDL nào**, và workflow giữ ấm chưa gõ Render lần nào. Mọi cổng kiểm hiện là lệnh tôi chạy tay (bộ kiểm đầy đủ 46 phút). | Lượt CI kế tiếp có bước chạy thật |
-| **3** | **A1 · Giữ ấm máy chủ.** Tài khoản [cron-job.org](https://cron-job.org) (miễn phí) → job gõ `https://pe-hsa-backend.onrender.com/health` mỗi **10 phút**, 06:00–23:00. *Hoặc* nâng Render lên gói ~7 USD/tháng (hết hẳn). | 5 phút | **Đo 18/09 06:26: lượt mở đầu 83,9 giây** trắng. Đã có lưới đỡ ở hai chỗ người ngoài thấy (màn đăng nhập tự đánh thức và nói đang chờ; trang phụ huynh hiện khung ngay) — nhưng vẫn là một phút rưỡi chờ. | Lượt gọi đầu buổi sáng dưới 2 giây |
-| **4** | **A5 · Bật sao lưu CSDL** *(làm sau việc 2)*. GitHub repo → Settings → Secrets → New secret **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy vào app mật khẩu** — mất khoá là mất mọi bản sao lưu. Rồi Actions → "Sao lưu CSDL" → *Run workflow*. | 5 phút | Hiện **không có bản sao lưu nào**. Workflow đã dựng sẵn: dump 03:00 → khôi phục thử ngay trong lượt → đối chiếu số dòng → mã hoá AES-256 → giữ 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô lên. Cách khôi phục: cuối Phần I. | Lượt sao lưu đầu xanh |
-| **5** | **A3 · Nhánh Neon riêng cho CI** *(làm sau việc 2)*. Neon → Branches → tạo nhánh `ci` từ `main` → copy connection string → GitHub → Secrets → **`DATABASE_URL_CI`**. | 5 phút | Chưa có nó thì mỗi lần đẩy mã, CI chạy pytest thẳng vào CSDL đang dùng. Hôm nay tìm ra và bỏ một phép kiểm từng **khoá bảng `users`** của production suốt lúc chạy (đo: đọc bảng ấy chờ 4,2 s thay vì 0,24 s) — nay có hàng rào chặn loại lỗi ấy, nhưng tách nhánh là chặn tận gốc. Mã đã đọc `DATABASE_URL_CI` trước, không phải sửa gì. | Log CI in ra đang nối vào nhánh `ci` |
+| **1** | **A0 · Gỡ khoá thanh toán GitHub.** Đăng nhập tài khoản sở hữu repo `PCBoiz/PE_hsa` → Settings → **Billing and plans** → sửa phương thức thanh toán hoặc hạn mức cho tới khi hết thông báo khoá → tab **Actions** → **CI** → *Re-run* lượt mới nhất. | 10 phút | **Đo 18/09 qua API của GitHub:** hai lượt CI hôm nay (commit `8296000`) **0 bước, không máy chạy** — y như 243/244 lượt từ 10/08. Tức **chưa từng có CI**, **chưa có bản sao lưu CSDL nào**, và workflow giữ ấm chưa gõ Render lần nào. Mọi cổng kiểm hiện là lệnh tôi chạy tay (bộ kiểm đầy đủ 46 phút). | Lượt CI kế tiếp có bước chạy thật |
+| **2** | **A1 · Giữ ấm máy chủ.** Tài khoản [cron-job.org](https://cron-job.org) (miễn phí) → job gõ `https://pe-hsa-backend.onrender.com/health` mỗi **10 phút**, 06:00–23:00. *Hoặc* nâng Render lên gói ~7 USD/tháng (hết hẳn). | 5 phút | **Đo 18/09 06:26: lượt mở đầu 83,9 giây** trắng. Đã có lưới đỡ ở hai chỗ người ngoài thấy (màn đăng nhập tự đánh thức và nói đang chờ; trang phụ huynh hiện khung ngay) — nhưng vẫn là một phút rưỡi chờ. | Lượt gọi đầu buổi sáng dưới 2 giây |
+| **3** | **A5 · Bật sao lưu CSDL** *(làm sau việc 1)*. GitHub repo → Settings → Secrets → New secret **`BACKUP_PASSPHRASE`**, giá trị sinh bằng `python -c "import secrets;print(secrets.token_urlsafe(32))"`. **Cất chuỗi ấy vào app mật khẩu** — mất khoá là mất mọi bản sao lưu. Rồi Actions → "Sao lưu CSDL" → *Run workflow*. | 5 phút | Hiện **không có bản sao lưu nào**. Workflow đã dựng sẵn: dump 03:00 → khôi phục thử ngay trong lượt → đối chiếu số dòng → mã hoá AES-256 → giữ 90 ngày. Repo công khai nên thiếu khoá thì nó **từ chối chạy** chứ không tải bản thô lên. Cách khôi phục: cuối Phần I. | Lượt sao lưu đầu xanh |
+| **4** | **A3 · Nhánh Neon riêng cho CI** *(làm sau việc 1)*. Neon → Branches → tạo nhánh `ci` từ `main` → copy connection string → GitHub → Secrets → **`DATABASE_URL_CI`**. | 5 phút | Chưa có nó thì mỗi lần đẩy mã, CI chạy pytest thẳng vào CSDL đang dùng. Hôm nay tìm ra và bỏ một phép kiểm từng **khoá bảng `users`** của production suốt lúc chạy (đo: đọc bảng ấy chờ 4,2 s thay vì 0,24 s) — nay có hàng rào chặn loại lỗi ấy, nhưng tách nhánh là chặn tận gốc. Mã đã đọc `DATABASE_URL_CI` trước, không phải sửa gì. | Log CI in ra đang nối vào nhánh `ci` |
+| **5** | **A7 · Trợ lý AI trên production dùng đúng model.** Render → `pe-hsa-backend` → **Environment**: nếu có biến `DEEPSEEK_MODEL` mang giá trị `deepseek-chat` thì **xoá nó** (hoặc đổi thành `deepseek-v4-pro`); không có thì không phải làm gì — mã mới tự lấy mặc định. Rồi nạp thêm tiền DeepSeek tại platform.deepseek.com → Top up. | 3 phút | **Đo 20/09:** khoá DeepSeek chỉ còn hai model `deepseek-flash` và `deepseek-v4-pro`; tên cũ `deepseek-chat` (mặc định của mã tới hôm nay) bị máy chủ DeepSeek chuyển lặng sang bản flash — tức trợ lý chạy bản rẻ nhất suốt thời gian qua. Cùng ngày đo trợ lý trên production: trả lời 322 từ, viết công thức bằng LaTeX (`$x_I = -\dfrac{b}{2a}$`) mà khung chat không hiển thị được — học viên thấy mã lệnh. Mã mới (deploy 20/09) sửa cả hai, nhưng nếu Render đặt cứng `DEEPSEEK_MODEL=deepseek-chat` thì mặc định mới không có tác dụng. **Số dư DeepSeek đo 20/09: 2,54 USD** — v4-pro tốn ~0,1–0,2 cent một lượt, đủ cho vài trăm lượt; một lớp 30 em dùng thật thì vài ngày hết. | Hỏi trợ lý một bài toán: không còn `$`/`\frac` trong câu trả lời, và Render log không báo 402 |
 
 **Tuỳ chọn, không chặn gì:**
 
@@ -66,12 +66,22 @@ mở bài". Muốn biết có cần không: chạy lệnh không kèm cờ, nó 
 **18/09 06:30**. Toàn bộ các bước còn lại: `docs/KICH_BAN_TRINH_DIEN.md` (đã sửa 18/09 — xem dòng
 về A6 ở mục "Câu hỏi khó").
 
+**Sáu vai trên một bộ dữ liệu mẫu (20/09).** `du_lieu_mau` nay tạo thêm ba tài khoản nhân sự mẫu —
+`hocvu.mau@…`, `trogiang.mau@…` (đã xếp vào lớp mẫu 1), `bientap.mau@…` — bên cạnh học viên mẫu; giảng
+viên của lớp mẫu vẫn là tài khoản THẬT của anh. Chúng có mật khẩu ngẫu nhiên (không ai đăng nhập được),
+nên muốn *trình diễn từng vai* thì vào Vận hành → Tài khoản → **đặt lại mật khẩu** cho tài khoản mẫu ấy
+rồi đăng nhập bằng mật khẩu tạm. Mỗi lần `--lam-moi` là bộ tài khoản mẫu được dựng lại (id mới, mật khẩu
+mới) — đặt lại lần nữa nếu cần. Từ 20/09 mỗi vai chỉ thấy phần của mình: nhân sự mở Trang của tôi thấy
+"Khu làm việc của bạn" (thẻ dẫn tới đúng khu của vai), không thấy chuỗi ngày học, nhiệm vụ, thi thử, bảng
+xếp hạng hay trợ lý AI; thanh trên bỏ Kế hoạch/Lộ trình/Kỹ năng/Thi thử/Bài tập.
+
 ---
 
 ## Phần I.5 — Đã xong, KHÔNG cần làm nữa *(xác minh 18/09)*
 
 | Việc | Bằng chứng |
 |---|---|
+| **A6** · tách khoá ký production khỏi máy dev | **Đo 20/09 (hai đợt, cách nhau 5 phút):** thẻ ký bằng `backend/.env` cho quản trị viên (id 7) và học viên mẫu → production trả **401 cả 6/6 lần**; đối chứng: đăng nhập thật bằng tài khoản kiểm thử → production cấp thẻ và nhận lại thẻ ấy (200, đúng id). Tức khoá đã KHÁC nhau — anh đã đổi trên Render sau 18/09 18:30. Hệ quả tốt kèm theo: tôi **không còn** mở được production bằng thẻ máy dev; mọi lần xác minh trên production từ nay đi bằng đăng nhập thật của tài khoản kiểm thử (`scripts/tai_khoan_e2e.py`). |
 | **A2 + A4** · bí mật proxy Render ↔ Vercel | Đo 18/09 qua Vercel: máy chủ thấy **đúng IP thật** của máy đo. Kiểm được là nhờ bí mật: IP ấy KHÔNG có trong chuỗi `X-Forwarded-For`, và nhánh không-bí-mật sẽ ra một địa chỉ khác — nên chỉ nhánh bí mật khớp mới cho ra được IP ấy. |
 | **6.2** · bốn câu DDL còn chờ | `manage.py kiem_luoc_do`: **22/22 mục đã tới nơi** |
 | **4.1** · đợt học đầu tiên | Có đợt (07/09) |
@@ -80,7 +90,7 @@ về A6 ở mục "Câu hỏi khó").
 | Xoay `SECRET_KEY` (07/09) · gộp `master` (06/09) · App Password Gmail (07/09) · tài khoản e2e | Xong từ trước |
 | **6.4** · cho tôi tự push · **16.1** · xem log deploy Render | Không còn cần: tôi đẩy được mã, và đã tự xác minh deploy 18/09 bằng dấu vết trên CSDL |
 
-**Không nằm ở đây: A6.** Nó từng được ghi "có vẻ đã xong" — sai, xem việc số 1.
+**A6 nay ở bảng trên** — lần này có bằng chứng hai chiều (thẻ dev bị từ chối, thẻ production được nhận), không phải một lần đo ra 401 như hôm 17/09.
 
 ---
 
@@ -107,7 +117,7 @@ cũng có "C1…C5" nhưng là năm câu hỏi cho TopHSA — nay đã gộp và
 
 # Phần 1 — Ba việc phải làm trước khi gộp
 
-## [x] 1.1 · Xoay `SECRET_KEY` — 2 phút *(XONG 07/09 — nhưng xem A6 ở Phần I: khoá production vẫn trùng máy dev)*
+## [x] 1.1 · Xoay `SECRET_KEY` — 2 phút *(XONG 07/09; khoá production tách khỏi máy dev — A6 — xác minh 20/09, Phần I.5)*
 
 ### Vì sao
 

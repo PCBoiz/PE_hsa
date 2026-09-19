@@ -6,7 +6,7 @@
 // (sk-grid repeat(4,1fr), dash-row minmax(0,1fr) 280px, bảng leaderboard);
 // login/register dự kiến pass (đã có breakpoint auth.css).
 import { test, expect, Page } from '@playwright/test';
-import { KHOA, LY_DO_BO_QUA, login } from './helpers';
+import { KHOA, LY_DO_BO_QUA, login, vaoLaHocVien } from './helpers';
 
 test.use({ viewport: { width: 375, height: 812 } });
 
@@ -71,7 +71,9 @@ for (const path of ['/', '/login', '/register']) {
 
 // ── App chính sau đăng nhập: từng tab SPA của dashboard ─────────────────────
 test('dashboard + các tab SPA hiển thị đủ, không tràn ngang', async ({ page }) => {
-  test.skip(!(await login(page)), LY_DO_BO_QUA);
+  // Bốn tab SPA là của học viên (Kế hoạch, Lộ trình, Kỹ năng ẩn với nhân sự từ 20/09/2026).
+  const boQua = await vaoLaHocVien(page);
+  test.skip(boQua !== null, boQua ?? '');
   await page.waitForSelector('.topbar', { timeout: 30_000 });
 
   // Topbar phải hiện và dùng được (nội dung "đầy đủ": nav/search/bell còn đó)
@@ -91,11 +93,14 @@ test('dashboard + các tab SPA hiển thị đủ, không tràn ngang', async ({
   // main.js (legacy) nạp async sau khi React mount — chờ navigate() sẵn sàng
   await page.waitForFunction(() => typeof (window as unknown as { navigate?: unknown }).navigate === 'function', undefined, { timeout: 30_000 });
 
-  // Liệt kê mọi tab .page[id^=page-] rồi đi từng tab
+  /* Danh sách tab lấy từ THANH (`[data-page]`), không từ `.page` trong DOM: từ
+     16/09/2026 các tab được dựng LƯỜI — lúc vào trang chỉ có `#page-dashboard`,
+     nên đếm `.page` ra 1 và phép kiểm đỏ oan suốt từ hôm ấy (đo 20/09). Thanh
+     là thứ người dùng bấm; tab nào có nút thì phải mở được. */
   const tabs: string[] = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('.page[id^="page-"]')).map((el) =>
-      el.id.replace(/^page-/, ''),
-    ),
+    [...new Set(Array.from(document.querySelectorAll<HTMLElement>('#topbar-nav [data-page]'))
+      .filter((el) => getComputedStyle(el).display !== 'none')
+      .map((el) => el.dataset.page as string))],
   );
   expect(tabs.length, 'phải có ít nhất 4 tab SPA').toBeGreaterThanOrEqual(4);
 
