@@ -1,6 +1,5 @@
 import Link from 'next/link';
 
-import { ThemeToggle } from '@/components/ui';
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
 
@@ -67,7 +66,6 @@ export default async function NhapKetQuaThiPage({
             >
               Báo cáo phụ huynh
             </Link>
-            <ThemeToggle className="ml-auto" />
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4 py-6">

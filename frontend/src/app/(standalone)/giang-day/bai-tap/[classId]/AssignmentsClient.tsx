@@ -231,8 +231,15 @@ function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={`/giang-day/bai-tap/${classId}/${a.id}`}>
-                      <Button size="sm">Chấm bài</Button>
+                    {/* Link MANG dáng nút, không lồng <button> trong <a>: hai phần
+                        tử tương tác lồng nhau là HTML sai chuẩn và trình đọc màn
+                        hình đọc thành hai điều khiển (rà 20/09/2026). Lớp lấy đúng
+                        công thức `Button` size sm / primary. */}
+                    <Link
+                      href={`/giang-day/bai-tap/${classId}/${a.id}`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-md bg-brand-fill px-3 text-small font-semibold text-white hover:brightness-110 [@media(pointer:fine)]:min-h-9"
+                    >
+                      Chấm bài
                     </Link>
                     {a.status !== 'open' && (
                       <Button size="sm" variant="ghost" onClick={() => void doiTrangThai(a, 'open')}>
@@ -248,7 +255,9 @@ function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
                         Đóng bài
                       </Button>
                     )}
-                    <Button size="sm" variant="danger" onClick={() => void xoa(a)}>
+                    {/* "Xoá" là ghost, đẩy về mép phải: nút phá huỷ đứng cùng cỡ,
+                        cùng màu đậm ngay cạnh "Chấm bài" là bấm nhầm chờ sẵn. */}
+                    <Button size="sm" variant="ghost" className="ml-auto text-danger-ink" onClick={() => void xoa(a)}>
                       Xoá
                     </Button>
                   </div>

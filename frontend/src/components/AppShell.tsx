@@ -250,7 +250,7 @@ export default function AppShell({
      của `AdminNav` cũ, giữ nguyên — bỏ nó đi là mất dấu "đang ở đâu" ở mọi
      trang con, mà mất dấu thì người dùng bấm lại vì tưởng chưa tới nơi. */
   const dsMuc = muc ?? MUC_NAV;
-  const khopDuong = (m: MucNav) => duong === m.url || duong.startsWith(m.url + '/');
+  const khopDuong = (m: MucNav) => duong === m.url || (!m.chinhXac && duong.startsWith(m.url + '/'));
   const dangMo = (m: MucNav) => {
     /* Trong khu, chỉ mục khớp DÀI NHẤT được tô. "Việc hôm nay" (`/giang-day`,
        thêm 14/09/2026) là tiền tố của mọi trang lớp, nên so tiền tố trần làm

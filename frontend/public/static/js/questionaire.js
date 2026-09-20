@@ -46,8 +46,8 @@ document.addEventListener("DOMContentLoaded", function () {
     steps.forEach((step, index) => {
       step.classList.toggle("active", index === currentStep);
     });
-    const progress = (currentStep / (steps.length - 1)) * 100;
-    progressBar.style.width = progress + "%";
+    // "Câu x/16" đi cùng thanh: thanh trống ở bước 1 không nói tổng là bao nhiêu (rà 20/09/2026).
+    progressBar.style.width = (currentStep / (steps.length - 1)) * 100 + "%"; progressBar.parentElement.setAttribute('data-buoc', 'Câu ' + (currentStep + 1) + '/' + steps.length);
     updateNextBtn();
   }
 

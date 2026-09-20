@@ -786,6 +786,30 @@ def test_em_nop_bai_thi_giang_vien_va_tro_giang_rung_chuong_gop(lop):
     assert chuong(em1.id) == [] and chuong(em2.id) == []
 
 
+# ── Hoạt động ở TƯƠNG LAI không phải hoạt động (20/09/2026) ─────────────────
+
+@pytest.mark.django_db
+def test_diem_danh_buoi_tuong_lai_khong_lam_hoat_dong_am(lop):
+    """Điểm danh ghi sự kiện tại giờ BUỔI; tick nhầm buổi ngày kia thì cột
+    "Hoạt động" của em in "-3 ngày trước" và cảnh báo nghỉ ≥ 7 ngày câm (rà
+    giao diện nhân sự 20/09). Sự kiện tương lai phải bị bỏ khi tìm lần cuối."""
+    from datetime import timedelta
+
+    from teaching.reports import _last_activity, class_report
+    em = lop['hv'][0]
+    nay = local_now()
+    q1("INSERT INTO learning_events (user_id, kind, topic, course_id, event_date, occurred_at, dedup_key, source) "
+       "VALUES (%s, 'attendance', 'x', 'hsa_quantitative', %s, %s, 'audit:tl', 'system') RETURNING id",
+       (em.id, (nay + timedelta(days=3)).date(), nay + timedelta(days=3)))
+    q1("INSERT INTO learning_events (user_id, kind, topic, course_id, event_date, occurred_at, dedup_key, source) "
+       "VALUES (%s, 'attendance', 'x', 'hsa_quantitative', %s, %s, 'audit:qk', 'system') RETURNING id",
+       (em.id, (nay - timedelta(days=9)).date(), nay - timedelta(days=9)))
+    act = _last_activity([em.id])[em.id]
+    assert act['last_day'] == (nay - timedelta(days=9)).date(), act
+    st = next(s for s in class_report(lop['id'])['students'] if s['userId'] == em.id)
+    assert st['idleDays'] == 9 and st['idleDays'] >= 0, st
+
+
 # ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
 
 @pytest.mark.django_db

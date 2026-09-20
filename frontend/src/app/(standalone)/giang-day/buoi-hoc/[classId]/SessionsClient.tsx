@@ -404,7 +404,20 @@ export default function SessionsClient({
                     </div>
 
                     {openId === s.id && (
-                      <Attendance sessionId={s.id} onSaved={() => void reload()} onError={setErr} />
+                      <>
+                        {/* Buổi CHƯA diễn ra mà mở sổ: nói ra, đừng im. Điểm danh
+                            ghi sự kiện tại giờ buổi, nên tick nhầm buổi ngày kia là
+                            em "hoạt động lần cuối" ở tương lai (rà 20/09/2026).
+                            Không chặn — có lớp điểm danh đầu giờ khi buổi sắp bắt
+                            đầu — nhưng phải thấy mình đang làm gì. */}
+                        {n.sapToi && (
+                          <p role="note" className="mt-3 rounded-md bg-warning/10 px-3 py-2 text-small text-warning-ink">
+                            Buổi này bắt đầu lúc {fmt(s.startsAt)} — bạn đang điểm danh <b>trước giờ</b>. Nếu định
+                            điểm danh buổi vừa dạy, xem mục "Đã diễn ra" bên dưới.
+                          </p>
+                        )}
+                        <Attendance sessionId={s.id} onSaved={() => void reload()} onError={setErr} />
+                      </>
                     )}
 
                     {suaId === s.id && (

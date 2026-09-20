@@ -48,7 +48,7 @@ import logging
 
 from django.db import DatabaseError
 
-from common.clock import local_today
+from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
 from common.permissions import ROLE_ASSISTANT
@@ -275,9 +275,17 @@ def _last_activity(uids):
     # "lần đầu em làm việc này là khi nào" chứ không phải "lần gần nhất". Giảng
     # viên nhìn cột này để biết em nào đang mất hút — hỏi sai câu thì một em ôn
     # lại bài cũ hôm nay vẫn hiện là bặt tin từ tháng trước.
+    #
+    # `occurred_at <= now()`: điểm danh ghi sự kiện tại GIỜ BUỔI (sessions.py),
+    # và sổ điểm danh mở được cho buổi chưa diễn ra — giảng viên tick nhầm buổi
+    # 23/09 khi hôm nay là 20/09 thì em "hoạt động lần cuối" ở tương lai, cột
+    # Hoạt động in "-3 ngày trước" và cảnh báo "nghỉ ≥ 7 ngày" không bao giờ
+    # nổ (đo 20/09/2026, rà giao diện nhân sự). Chuyện tương lai không phải
+    # hoạt động; kẹp thêm ở Python cho chắc.
     rows = q('''SELECT user_id, MAX(occurred_at)::date AS last_day, COUNT(*) AS events
-                FROM learning_events WHERE user_id = ANY(%s)
-                GROUP BY user_id''', (list(uids),)) if uids else []
+                FROM learning_events
+                WHERE user_id = ANY(%s) AND occurred_at <= %s
+                GROUP BY user_id''', (list(uids), local_now())) if uids else []
     return {r['user_id']: r for r in rows}
 
 
@@ -425,7 +433,7 @@ def class_report(class_id):
         done = done_by_course.get(scope, 0) if scope else sum(done_by_course.values())
         act = activity.get(uid) or {}
         last_day = act.get('last_day')
-        idle = (today - last_day).days if last_day else None
+        idle = max(0, (today - last_day).days) if last_day else None
 
         my_mocks = mocks.get(uid) or []
         trend = None

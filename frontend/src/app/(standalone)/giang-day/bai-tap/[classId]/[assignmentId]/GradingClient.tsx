@@ -377,10 +377,19 @@ function Bang({
                         id={`nx-${s.userId}`}
                         maxLength={4000}
                         value={v?.feedback ?? ''}
-                        placeholder={s.feedback ?? 'không bắt buộc'}
+                        placeholder={s.feedback ? 'gõ để thay nhận xét đã lưu' : 'không bắt buộc'}
                         onChange={(e) => sua(s.userId, { feedback: e.target.value })}
                         className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
                       />
+                      {/* Nhận xét ĐÃ LƯU là dữ liệu, không phải gợi ý: bản trước
+                          đặt nó làm placeholder xám nên đọc như một câu mẫu, và
+                          giảng viên không biết bỏ trống ô thì nó còn hay mất
+                          (rà 20/09/2026). Ô để trống = giữ nguyên câu này. */}
+                      {s.feedback && (
+                        <p className="mt-1 text-caption text-ink-2">
+                          <span className="text-ink-3">Đã lưu:</span> {s.feedback}
+                        </p>
+                      )}
                     </div>
                   </div>
 

@@ -817,8 +817,13 @@ class SessionAttendanceView(APIView):
             # dựng nổi báo cáo "tối nay ai chưa điểm danh", thứ trung tâm cần
             # mỗi ngày. Nằm trong cùng khối atomic với câu ghi ở trên là bắt
             # buộc: đóng dấu mà dòng điểm danh không vào được thì con dấu nói dối.
-            x('UPDATE class_sessions SET attendance_taken_at=%s, attendance_taken_by=%s, '
-              'updated_at=%s WHERE id=%s', (now, request.user.id, now, session_id))
+            # `planned` → `done` cùng lúc: buổi đã điểm danh là buổi đã dạy.
+            # Trước 20/09/2026 trạng thái đứng im ở "Đã lên lịch" sau khi tick,
+            # biểu mẫu Sửa hiện hai chuyện trái nhau (rà giao diện nhân sự).
+            # Chỉ đổi từ `planned`; buổi đã huỷ giữ nguyên.
+            x("UPDATE class_sessions SET attendance_taken_at=%s, attendance_taken_by=%s, "
+              "status = CASE WHEN status = 'planned' THEN 'done' ELSE status END, "
+              "updated_at=%s WHERE id=%s", (now, request.user.id, now, session_id))
 
         # Sự kiện học tập nằm NGOÀI khối atomic ở trên, có chủ đích. record_event
         # tự bọc savepoint và không bao giờ ném lỗi, nhưng common/db.py từ chối

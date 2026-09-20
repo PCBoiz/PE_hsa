@@ -156,7 +156,16 @@ h2 {
     height: 4px;
     border-radius: 2px;
     margin-bottom: 30px;
-    overflow: hidden;
+    /* `visible` (không `hidden`): con số "Câu x/16" nằm NGOÀI thanh 4px, ngay
+       dưới, do `questionaire.js::updateForm` ghi vào `data-buoc` (20/09/2026).
+       Thanh vẫn là thanh — `.progress-bar` tự có bo góc. */
+    position: relative;
+}
+.progress-container::after {
+    content: attr(data-buoc);
+    position: absolute; right: 0; top: 0.5rem;
+    font-size: 0.75rem; font-weight: 600; color: var(--t3);
+    letter-spacing: 0.02em;
 }
 
 .progress-bar {
@@ -329,6 +338,8 @@ input[type="radio"], input[type="checkbox"] {
 .prev-btn {
     background-color: transparent;
     color: var(--t3);
+    /* Không gãy "Quay / lại" khi nút nộp bên cạnh dài (bước 16, đo 20/09/2026). */
+    white-space: nowrap; flex-shrink: 0;
 }
 
 .prev-btn:hover {
@@ -359,9 +370,11 @@ input[type="radio"], input[type="checkbox"] {
 /* --- 8. Thông báo lỗi validation inline --- */
 .step-error {
     display: none;
-    color: #8B7CF6;
-    background-color: rgba(45, 212, 191, 0.1);
-    border: 1px solid rgba(45, 212, 191, 0.3);
+    /* Màu CẢNH BÁO, không phải màu thành công: bản cũ tô xanh mint như hộp
+       "Đã có lộ trình" nên câu "Vui lòng trả lời…" đọc như một lời khen. */
+    color: #8A4D06;
+    background-color: rgba(224, 161, 80, 0.14);
+    border: 1px solid rgba(224, 161, 80, 0.45);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 0.9em;

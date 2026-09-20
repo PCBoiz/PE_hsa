@@ -1,4 +1,3 @@
-import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
 
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
@@ -124,11 +123,6 @@ export default async function BuoiHocPage({
             >
               Bài tập &amp; chấm bài
             </Link>
-            {/* Khu này không nạp main.js nên nút đổi chủ đề của Topbar legacy
-                không có ở đây. Đặt CUỐI hàng: `ml-auto` ở giữa hàng chỉ đẩy được
-                nó ra khỏi tiêu đề, rồi lịch buổi và liên kết chéo lại nằm SAU nó —
-                nút trôi vào giữa thay vì về mép phải. */}
-            <ThemeToggle className="ml-auto" />
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4 py-6">

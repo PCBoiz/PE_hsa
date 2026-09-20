@@ -74,6 +74,13 @@
    Đặt CẠNH `--topbar-h` để thanh đổi chiều cao thì chỗ chừa đổi theo; bộ đo
    giao diện nay có luật "chữ dưới thanh cố định" canh lại. */
 #main { padding-top: var(--topbar-h); }
+/* Chừa chỗ cho nút trợ lý AI nổi ở góc phải dưới (48px + 44px cách đáy): ở
+   khổ một cột (≤ 64rem) thẻ chiếm trọn bề ngang nên nút đè lên "+20 XP" và mép
+   nút "Khám phá khoá học" của thẻ cuối (rà 20/09/2026 ở 768 và 1024). Ở khổ
+   rộng cột phải trống nên không đè. Chỉ là chỗ trống dưới cùng — không đổi bố cục. */
+@media (max-width: 64rem) {
+  #main { padding-bottom: 6.5rem; }
+}
 
 /* ══ Thanh trên ══════════════════════════════════════════════════════════ */
 .topbar {
@@ -370,7 +377,7 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
 .bell-dot.bell-dot-count {
   width: auto; height: auto; min-width: 1rem;
   top: 0.25rem; right: 0.25rem; padding: 1px 0.25rem;
-  font-size: 0.5938rem; font-weight: 800; line-height: 1.2;
+  font-size: 0.6875rem; font-weight: 800; line-height: 1.2;
   color: #fff; text-align: center; border-radius: 62.4375rem;
 }
 
@@ -607,6 +614,49 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
   .user-chip { min-width: 44px; }
   /* Bảng thông báo rộng theo màn hình, không theo một số cố định. */
   .bell-panel { width: min(20rem, calc(100vw - 1.5rem)); right: -2.5rem; }
+
+  /* ── HAI HÀNG Ở ĐIỆN THOẠI (20/09/2026) ──────────────────────────────────
+     Đo ở 390px với tài khoản học viên: dãy điều hướng chỉ còn 139px cho NĂM
+     mục 44px — hiện được ba, "Thi thử"/"Bài tập"/"Diễn đàn" nằm ngoài vùng
+     cuộn, không dấu hiệu gì; chạm vào chỗ đáng lẽ là chúng thì trúng nút mặt
+     trăng. Giảng viên mất mục "Giảng dạy" cùng cách. Vệt mờ ở mép không cứu
+     được khi thiếu tới 90px. Cuộn ngang một thanh điều hướng là thứ không ai
+     đoán ra trên điện thoại.
+
+     Đây là ĐỔI BỐ CỤC, đúng việc của @media: thanh thành HAI hàng — hàng trên
+     thương hiệu + chuông + chip, hàng dưới dãy điều hướng chiếm trọn bề ngang,
+     chia đều, NHÃN CHỮ HIỆN LẠI dưới biểu tượng (khổ 1024 phải giấu nhãn vì
+     thiếu chỗ; ở đây có cả một hàng). `--topbar-h` gấp đôi nên `#main` và
+     mọi thứ bám `top: var(--topbar-h)` tự lùi theo. Màn đang làm bài
+     (`.shell-lam-bai`) không có dãy điều hướng nên giữ một hàng. */
+  body:has(.topbar:not(.shell-lam-bai)) { --topbar-h: 6.5rem; }
+  .topbar:not(.shell-lam-bai) {
+    flex-wrap: wrap; align-content: flex-start;
+    column-gap: 0.5rem; row-gap: 0; padding: 0 0.5rem;
+  }
+  .topbar:not(.shell-lam-bai) .topbar-left,
+  .topbar:not(.shell-lam-bai) .topbar-right { height: 3.25rem; }
+  .topbar:not(.shell-lam-bai) .topbar-nav {
+    order: 3; flex: 1 0 100%; height: 3.25rem;
+    justify-content: safe center; gap: 0;
+    border-top: 1px solid var(--border);
+  }
+  /* Mỗi mục ÍT NHẤT 3,75rem và NỞ RA chia đều chỗ thừa: 4–6 mục (học viên,
+     giảng viên, quản trị viên) vừa khít một hàng; khu Vận hành 9 tab thì hàng
+     dài hơn màn và cuộn — vệt mờ ở mép (mask kế thừa) nói còn nữa. Ép 9 tab
+     vào 374px là chín nhãn cụt "Toàn…", "Tài k…" — đo 20/09, tệ hơn cuộn. */
+  .topbar:not(.shell-lam-bai) .nav-btn {
+    flex: 1 0 3.75rem; padding: 0 0.15rem; gap: 0.15rem;
+    flex-direction: column; justify-content: center;
+    font-size: 0.66rem; line-height: 1.1; border-radius: 0.5rem;
+  }
+  .topbar:not(.shell-lam-bai) .nav-btn span:not(.nav-icon):not(.nav-nhom-mui):not(.nav-chevron) {
+    display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar:not(.shell-lam-bai) .nav-nhom { flex: 1 0 3.75rem; min-width: 0; }
+  .topbar:not(.shell-lam-bai) .nav-nhom > .nav-nhom-nut { width: 100%; }
+  .topbar:not(.shell-lam-bai) .nav-nhom-mui { position: absolute; right: 0.15rem; top: 0.35rem; }
+  .topbar:not(.shell-lam-bai) .nav-nhom-panel { left: 0.25rem; }
 }
 
 /* Tôn trọng lựa chọn của hệ điều hành: ai bật "giảm chuyển động" thì thanh

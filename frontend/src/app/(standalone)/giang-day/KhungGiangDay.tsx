@@ -58,7 +58,7 @@ export default function KhungGiangDay({
       muc={[
         // "Việc hôm nay" đứng đầu và có mặt ở MỌI trang của khu: đó là chỗ
         // giảng viên quay về sau khi làm xong một việc trong lớp.
-        { trang: null, nhan: 'Việc hôm nay', icon: 'check-circle-2', emoji: '', url: '/giang-day' },
+        { trang: null, nhan: 'Việc hôm nay', icon: 'check-circle-2', emoji: '', url: '/giang-day', chinhXac: true },
         ...(lop
           ? TAB.filter((t) => !troGiang || t.troGiang).map((t) => ({
             trang: null,

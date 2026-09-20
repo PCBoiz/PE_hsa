@@ -226,6 +226,30 @@ export default function DashboardClient(
                 <div className="jr-history" id="jr-history" hidden></div>
               </div>
 
+            </div>
+
+            {/* CỘT PHẢI (20/09/2026). Trước đó cột phải chỉ có thẻ lộ trình
+                327px rồi TRỐNG ~1.400px suốt chiều cao cột trái (đo 1366).
+                "Nên ôn tiếp" và "Tiến độ theo hợp phần" là hai thẻ NHÌN LẠI —
+                hợp với lộ trình hơn là với việc hằng ngày ở cột trái. Ở khổ một
+                cột chúng đứng ngay sau lộ trình. */}
+            <div className="dash-col-right">
+            <div className="section-card mini-rm-card mini-rm-card--full fx-fade-up" style={{ animationDelay: '.09s' }}>
+              <div className="mini-rm-header">
+                <div className="section-title" style={{ marginBottom: 0 }}>
+                  <span className="title-icon-blue" data-icon="map" data-size="16"></span><span>Lộ trình của bạn</span>
+                </div>
+                <a className="mini-rm-more" href="#" onClick={(e) => { e.preventDefault(); W().navigate('roadmap'); }}>Xem tất cả ›</a>
+              </div>
+              <div className="mini-rm-canvas" id="mini-rm-canvas" tabIndex={0}>
+                <div className="mini-rm-loading">Đang tải lộ trình…</div>
+              </div>
+              <div className="mini-rm-legend">
+                <span className="lb-legend-item"><span className="lb-legend-dot lb-done">✓</span> Hoàn thành</span>
+                <span className="lb-legend-item"><span className="lb-legend-dot lb-progress">◐</span> Đang học</span>
+                <span className="lb-legend-item"><span className="lb-legend-dot lb-locked">○</span> Mở khoá</span>
+              </div>
+            </div>
               {/* Ba chủ đề yếu nhất, mỗi chủ đề đúng MỘT nút. Biết mình yếu ở
                   đâu mà không có đường đi tiếp thì thông tin đó chưa dùng được.
                   dashboard.js đổ vào từ /api/hsa/competency. */}
@@ -246,23 +270,6 @@ export default function DashboardClient(
                 </div>
                 {/* Dựng ở máy chủ (`components/TienDoHopPhan.tsx`, 14/09/2026 tối). */}
                 <div className="hsa-sections" id="hsa-sections">{tienDo}</div>
-              </div>
-            </div>
-
-            <div className="section-card mini-rm-card mini-rm-card--full fx-fade-up" style={{ animationDelay: '.09s' }}>
-              <div className="mini-rm-header">
-                <div className="section-title" style={{ marginBottom: 0 }}>
-                  <span className="title-icon-blue" data-icon="map" data-size="16"></span><span>Lộ trình của bạn</span>
-                </div>
-                <a className="mini-rm-more" href="#" onClick={(e) => { e.preventDefault(); W().navigate('roadmap'); }}>Xem tất cả ›</a>
-              </div>
-              <div className="mini-rm-canvas" id="mini-rm-canvas" tabIndex={0}>
-                <div className="mini-rm-loading">Đang tải lộ trình…</div>
-              </div>
-              <div className="mini-rm-legend">
-                <span className="lb-legend-item"><span className="lb-legend-dot lb-done">✓</span> Hoàn thành</span>
-                <span className="lb-legend-item"><span className="lb-legend-dot lb-progress">◐</span> Đang học</span>
-                <span className="lb-legend-item"><span className="lb-legend-dot lb-locked">○</span> Mở khoá</span>
               </div>
             </div>
           </div>

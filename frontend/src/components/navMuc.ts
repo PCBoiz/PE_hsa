@@ -29,6 +29,14 @@ export type MucNav = {
   emoji: string;
   /** Đường đi khi không có `navigate()` — luôn phải dùng được một mình. */
   url: string;
+  /**
+   * Chỉ sáng khi đường dẫn BẰNG ĐÚNG `url`, không sáng cho trang con.
+   * "Việc hôm nay" (`/giang-day`) là tiền tố của mọi trang lớp; trang con
+   * không có tab riêng (`/giang-day/ket-qua-thi/7586`) mà để nó sáng thì thanh
+   * nói người dùng đang ở Việc hôm nay trong khi họ đang nhập điểm thi (rà
+   * 20/09/2026). Không mục nào sáng còn hơn sáng nhầm.
+   */
+  chinhXac?: boolean;
   /** Câu giải thích, chỉ để đọc mã. */
   ghi_chu?: string;
   /**

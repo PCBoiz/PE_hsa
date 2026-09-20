@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
  * Thông báo ngắn.
@@ -49,10 +49,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastItem({ item, onDone }: { item: Item; onDone: () => void }) {
+  // Đồng hồ 4 giây tính từ lúc thông báo HIỆN, không tính lại mỗi khi trang
+  // cha dựng lại. Bản trước phụ thuộc `[onDone]` mà `onDone` là arrow mới ở
+  // mỗi lượt render của provider → giảng viên cứ thao tác (bấm Sửa/Đóng) là
+  // đồng hồ đặt lại, thông báo treo 12 giây và chồng nhiều tầng (đo 20/09/2026
+  // ở sổ buổi học). `onDone` đi qua ref để effect chạy đúng một lần.
+  const onDoneRef = useRef(onDone);
   useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
+    onDoneRef.current = onDone;
   }, [onDone]);
+  useEffect(() => {
+    const t = setTimeout(() => onDoneRef.current(), 4000);
+    return () => clearTimeout(t);
+  }, []);
 
   const TONE = {
     ok: 'border-success/40 text-success',
