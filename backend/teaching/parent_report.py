@@ -180,6 +180,14 @@ def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
     # và người đọc sẽ không tin nửa nào.
     #
     # Hợp của các đợt, không phải một đợt. `cac_dot` rỗng = không giới hạn.
+    #
+    # NGOẠI LỆ (20/09/2026): buổi giảng viên ĐÃ TICK em thì là buổi của em, dù
+    # nằm ngoài mọi đợt. `joined_at` là lúc học vụ BẤM NÚT, không phải lúc em
+    # bước vào lớp — rà trên mock production: lớp khai giảng 13/09, học vụ nhập
+    # em ngày 20/09, giảng viên đã điểm danh em hai buổi 14 và 16/09; màn giảng
+    # viên nói "1 có mặt, 1 muộn", thẻ lớp của em và tờ gửi phụ huynh nói "chưa
+    # có buổi nào được điểm danh". Luật chống đổ vắng nhầm vẫn nguyên: buổi
+    # trước ngày ghi danh mà KHÔNG có dòng của em thì vẫn bị gạt.
     khoang = []
     for vao, roi in cac_dot:
         ve = []
@@ -191,6 +199,9 @@ def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
             args.append(roi)
         khoang.append('(' + ' AND '.join(ve) + ')' if ve else 'TRUE')
     if khoang:
+        khoang.append('EXISTS (SELECT 1 FROM attendance a '
+                      'WHERE a.session_id = s.id AND a.user_id = %s)')
+        args.append(user_id)
         dieu_kien.append('(' + ' OR '.join(khoang) + ')')
 
     buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at '
@@ -437,6 +448,40 @@ def _chu_de(user_id, khoa_lop=None):
     }
 
 
+def _bai_tap_lop(class_id, user_id, tu, den):
+    """Bài giảng viên giao cho LỚP NÀY trong kỳ, kèm điểm và nhận xét của em.
+
+    Thêm 20/09/2026 sau khi rà luồng: giảng viên chấm 8/10 kèm nhận xét, nhưng
+    tờ gửi phụ huynh chỉ có cột "Bài tập: 1" trong bảng tuần và mục chủ đề nói
+    "chưa đủ bài làm" — thứ duy nhất một con người đã đọc và chấm lại không lên
+    tờ giấy. Nhận xét của giảng viên là viết cho em và gia đình, nên in nguyên.
+
+    Thuộc kỳ nếu bài được GIAO trong kỳ, hoặc HẠN NỘP rơi vào kỳ, hoặc em NỘP
+    trong kỳ — bài giao tháng trước mà em nộp muộn tháng này vẫn thuộc kỳ này,
+    và bài vừa giao hôm nay (hạn tuần sau) vẫn lên tờ như "chưa nộp, hạn …".
+    Bài nháp (`draft`) em chưa từng thấy nên không in.
+    """
+    rows = q('''SELECT a.id, a.title, a.topic, a.due_at, a.max_score, a.status,
+                       s.submitted_at, s.score, s.feedback, s.graded_at
+                  FROM assignments a
+                  LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
+                 WHERE a.class_id = %s AND a.status <> 'draft'
+                   AND (a.created_at::date BETWEEN %s AND %s
+                        OR a.due_at::date BETWEEN %s AND %s
+                        OR s.submitted_at::date BETWEEN %s AND %s)
+                 ORDER BY COALESCE(a.due_at, a.created_at), a.id''',
+             (user_id, class_id, tu, den, tu, den, tu, den))
+    return [{
+        'id': r['id'], 'title': r['title'], 'topic': r['topic'],
+        'dueAt': r['due_at'].isoformat() if r['due_at'] else None,
+        'maxScore': float(r['max_score']) if r['max_score'] is not None else None,
+        'submittedAt': r['submitted_at'].isoformat() if r['submitted_at'] else None,
+        'score': float(r['score']) if r['score'] is not None else None,
+        'feedback': r['feedback'],
+        'gradedAt': r['graded_at'].isoformat() if r['graded_at'] else None,
+    } for r in rows]
+
+
 def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
     """Dựng payload báo cáo. KHÔNG kiểm quyền — nơi gọi phải tự lo.
 
@@ -529,6 +574,7 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         # huynh còn không biết là có tồn tại.
         'centerExam': _thi_tai_trung_tam(user_id),
         'topics': _chu_de(user_id, lop['course_id']),
+        'assignments': _bai_tap_lop(class_id, user_id, tu, den),
         'warnings': canh_bao,
     }, None
 

@@ -145,6 +145,41 @@ def test_chuyen_can_dem_nhu_bao_cao_phu_huynh(canh):
     assert cc == goc
 
 
+def test_ghi_danh_muon_van_thay_buoi_da_duoc_tick(canh):
+    """Học vụ nhập em vào lớp SAU khi giảng viên đã điểm danh em vài buổi (lớp
+    khai giảng trước, giấy tờ nhập sau — rà mock production 20/09/2026). Thẻ
+    lớp của em phải nói "có mặt 2/2", không phải "chưa có buổi nào được điểm
+    danh" trong khi màn giảng viên nói em đi đủ."""
+    b1 = _buoi(canh['lop'], -24 * 20, da_tick=True)   # trước ngày ghi danh (−10 ngày)
+    b2 = _buoi(canh['lop'], -24 * 15, da_tick=True)
+    x("INSERT INTO attendance (session_id, user_id, status) VALUES (%s, %s, 'present'), "
+      "(%s, %s, 'late')", (b1, canh['em'].id, b2, canh['em'].id))
+    cc = _goi(canh['em']).json()['lop'][0]['chuyenCan']
+    assert cc['sessionsCounted'] == 2, cc
+    assert (cc['present'], cc['late'], cc['attendedPct']) == (1, 1, 100), cc
+
+
+def test_the_lop_bao_bai_tap_chua_nop(canh):
+    """Thẻ lớp phải nói "N bài chưa nộp · hạn sớm nhất" — em dùng điện thoại
+    không có mục Bài tập trên thanh, nên đây là đường duy nhất em biết có bài."""
+    from datetime import timedelta
+    nay = canh['nay']
+    han = [nay + timedelta(days=5), nay + timedelta(days=2)]
+    ids = [q1("INSERT INTO assignments (class_id, title, status, due_at, max_score, created_by) "
+              "VALUES (%s, %s, %s, %s, 10, %s) RETURNING id",
+              (canh['lop'], 'Bai %d' % i, tt, h, canh['gv'].id))['id']
+           for i, (tt, h) in enumerate(zip(('open', 'open', 'open', 'draft'),
+                                            (han[0], han[1], han[0], han[1])))]
+    # Bài thứ 3 em đã nộp; bài nháp (draft) em không thấy.
+    x("INSERT INTO submissions (assignment_id, user_id, content, submitted_at) "
+      "VALUES (%s, %s, 'x', %s)", (ids[2], canh['em'].id, nay))
+    bt = _goi(canh['em']).json()['lop'][0]['baiTap']
+    assert bt['chuaNop'] == 2, bt
+    assert bt['hanSom'][:10] == han[1].date().isoformat(), bt
+    # Em khác chưa nộp gì → 3 bài mở.
+    assert _goi(canh['khac']).json()['lop'][0]['baiTap']['chuaNop'] == 3
+
+
 # ── 4. Ngày thi lệch mục tiêu cá nhân ──────────────────────────────────────
 
 def test_ngay_thi_lech_muc_tieu(canh):

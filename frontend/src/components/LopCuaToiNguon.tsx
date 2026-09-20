@@ -44,6 +44,7 @@ const HINH_DANG = z.looseObject({
       absent: z.number(), excused: z.number(), attendedPct: z.number().nullable(),
     }),
     ngayThiLech: z.boolean(),
+    baiTap: z.looseObject({ chuaNop: z.number(), hanSom: chu }),
   })),
   mucTieu: z.looseObject({ examDate: chu }),
 }) satisfies HinhDang<DuLieu>;

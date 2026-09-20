@@ -52,6 +52,8 @@ type Lop = {
     attendedPct: number | null;
   };
   ngayThiLech: boolean;
+  /** Bài giảng viên giao mà em CHƯA nộp — xem `lop_cua_toi.py` vì sao nằm ở thẻ lớp. */
+  baiTap: { chuaNop: number; hanSom: string | null };
 };
 
 export type DuLieu = { lop: Lop[]; mucTieu: { examDate: string | null } };
@@ -181,6 +183,17 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 </>
               )}
             </p>
+
+            {/* Bài tập chưa nộp. Ở điện thoại thanh trên không có mục Bài tập,
+                nên không có dòng này thì em không biết thầy vừa giao bài. */}
+            {l.baiTap?.chuaNop > 0 && (
+              <p className="lct-cc lct-bt">
+                <b>{l.baiTap.chuaNop}</b> bài tập chưa nộp
+                {l.baiTap.hanSom && <> · hạn sớm nhất {gio(l.baiTap.hanSom)}</>}
+                {' '}
+                <a className="lct-link" href="/bai-tap">Làm bài →</a>
+              </p>
+            )}
 
             {l.ngayThiLech && l.examDate && (
               <div className="lct-lech" role="note">

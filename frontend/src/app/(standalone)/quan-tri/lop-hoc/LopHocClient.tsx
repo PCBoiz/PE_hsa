@@ -13,11 +13,13 @@ import {
   Td,
   Th,
   Thead,
+  ToastProvider,
   Tr,
+  useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
-import { type Form, type LopRow, formRong, formTuLop, thanForm } from './lop';
+import { type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
 
 export type { LopRow };
 export type ChonNguoi = { id: number; name: string | null; email: string };
@@ -31,6 +33,14 @@ type HocVien = {
   lessonsDone?: number;
   lessonsTotal?: number;
   left?: boolean;
+};
+/** Trợ giảng đang được gán vào lớp — `class_report.assistants`. */
+type TroGiang = { userId: number; name: string | null; email: string };
+/** Trả lời của `POST members {emails}` — từng email một, không gộp. */
+type KetQuaThem = {
+  added: { email: string; role: string | null }[];
+  already: { email: string }[];
+  missing: string[];
 };
 
 /* Ba giá trị = ràng buộc `classes_status_check` (T42). `draft` từng có ở đây
@@ -83,21 +93,27 @@ function ngay(iso: string | null) {
 const O_CHUNG =
   'min-h-11 w-full min-w-0 rounded-md border border-line bg-surface px-3 text-input text-ink placeholder:text-ink-3/70';
 
-export default function LopHocClient({
-  initial,
-  giangVien,
-  trangThai,
-  dotHoc,
-  khoaHoc,
-  loi,
-}: {
+type Props = {
   initial: LopRow[];
   giangVien: ChonNguoi[];
+  /** Mọi tài khoản Trợ giảng — để ô "Gán trợ giảng" có gì mà chọn. */
+  troGiang: ChonNguoi[];
   trangThai: string[];
   dotHoc: ChonDot[];
   khoaHoc: ChonKhoa[];
   loi: string | null;
-}) {
+};
+
+export default function LopHocClient(props: Props) {
+  return (
+    <ToastProvider>
+      <BangLop {...props} />
+    </ToastProvider>
+  );
+}
+
+function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi }: Props) {
+  const toast = useToast();
   const [lop, setLop] = useState<LopRow[]>(initial);
   const [err, setErr] = useState<string | null>(loi);
   const [busy, setBusy] = useState(false);
@@ -108,7 +124,13 @@ export default function LopHocClient({
 
   const [lopMoRong, setLopMoRong] = useState<LopRow | null>(null);
   const [hocVien, setHocVien] = useState<HocVien[] | null>(null);
+  const [troGiangLop, setTroGiangLop] = useState<TroGiang[]>([]);
   const [emailMoi, setEmailMoi] = useState('');
+  /** Đang gửi "Thêm vào lớp". Là STATE chứ không phải ref vì nút phải ĐỔI MẶT:
+      rà luồng 20/09/2026 đo được lượt bấm thứ hai bị nuốt lặng lẽ trong lúc
+      báo cáo lớp tải lại (nút vẫn sáng, không báo gì) — 1/3 em vào lớp. */
+  const [dangThem, setDangThem] = useState(false);
+  const [tgChon, setTgChon] = useState('');
 
   // `setBusy` của React không có tác dụng NGAY, nên hai cú bấm liền nhau đều
   // lọt qua `if (busy) return`. Với nút "Lưu" của một biểu mẫu tạo lớp thì đó
@@ -151,6 +173,9 @@ export default function LopHocClient({
       if (!r.ok) throw new Error(errorText(r.status, d));
       setDangSua(null);
       setForm(formRong());
+      // Bảng tải lại mất vài giây (Neon); không có câu này thì người dùng
+      // không biết lớp đã vào CSDL hay chưa và bấm "Tạo lớp" lần nữa.
+      toast(moi ? `Đã tạo lớp "${form.name}".` : `Đã lưu lớp "${form.name}".`, 'ok');
       await nap();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không lưu được lớp'));
@@ -227,6 +252,7 @@ export default function LopHocClient({
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
       setHocVien((d.students as HocVien[]) ?? []);
+      setTroGiangLop((d.assistants as TroGiang[]) ?? []);
     } catch (e) {
       setHocVien([]);
       setErr(loiBatDuoc(e, 'Không tải được danh sách học viên'));
@@ -235,24 +261,88 @@ export default function LopHocClient({
 
   async function themHocVien() {
     if (!lopMoRong || dangGui.current) return;
-    const email = emailMoi.trim();
-    if (!email) return;
+    const emails = tachEmail(emailMoi);
+    if (!emails.length) return;
     dangGui.current = true;
+    setDangThem(true);
     setErr(null);
     try {
       const r = await apiFetch(`/api/admin/classes/${lopMoRong.id}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ emails }),
       });
-      const d = await r.json().catch(() => ({}));
+      const d = (await r.json().catch(() => ({}))) as Partial<KetQuaThem> & { error?: string };
       if (!r.ok) throw new Error(errorText(r.status, d));
-      setEmailMoi('');
+      const kq = { added: d.added ?? [], already: d.already ?? [], missing: d.missing ?? [] };
+      // Email KHÔNG có tài khoản ở lại trong ô để người dùng sửa chính tả hoặc
+      // mang sang trang Tài khoản — không bắt gõ lại.
+      setEmailMoi(kq.missing.join('\n'));
+      const tg = kq.added.filter((a) => a.role === 'Trợ giảng').length;
+      const em = kq.added.length - tg;
+      const cau = [
+        em ? `Đã thêm ${em} học viên.` : '',
+        tg ? `Đã gán ${tg} trợ giảng.` : '',
+        kq.already.length ? `${kq.already.length} đã ở trong lớp.` : '',
+        kq.missing.length
+          ? `${kq.missing.length} email chưa có tài khoản (tạo ở trang Tài khoản rồi thêm lại).`
+          : '',
+      ].filter(Boolean);
+      toast(cau.join(' '), kq.added.length ? 'ok' : kq.missing.length ? 'error' : 'info');
       await Promise.all([moHocVien(lopMoRong), nap()]);
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không thêm được học viên'));
     } finally {
       dangGui.current = false;
+      setDangThem(false);
+    }
+  }
+
+  async function ganTroGiang() {
+    if (!lopMoRong || !tgChon || dangGui.current) return;
+    dangGui.current = true;
+    setDangThem(true);
+    setErr(null);
+    try {
+      const r = await apiFetch(`/api/admin/classes/${lopMoRong.id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: Number(tgChon) }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(errorText(r.status, d));
+      const nguoi = troGiang.find((t) => String(t.id) === tgChon);
+      toast(`Đã gán ${nguoi?.name ?? 'trợ giảng'} vào lớp.`, 'ok');
+      setTgChon('');
+      // Hiện thẻ NGAY: báo cáo lớp tải lại mất vài giây, và trong lúc đó khu
+      // này không có dòng "đang tải" nào — thẻ cũ đứng im trông như chưa gán.
+      if (nguoi) {
+        setTroGiangLop((ds) => [...ds, { userId: nguoi.id, name: nguoi.name, email: nguoi.email }]);
+      }
+      await moHocVien(lopMoRong);
+    } catch (e) {
+      setErr(loiBatDuoc(e, 'Không gán được trợ giảng'));
+    } finally {
+      dangGui.current = false;
+      setDangThem(false);
+    }
+  }
+
+  async function goTroGiang(t: TroGiang) {
+    if (!lopMoRong) return;
+    if (!confirm(`Gỡ trợ giảng "${t.name ?? t.email}" khỏi lớp này?`)) return;
+    setErr(null);
+    try {
+      const r = await apiFetch(`/api/admin/classes/${lopMoRong.id}/members?user_id=${t.userId}`, {
+        method: 'DELETE',
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(errorText(r.status, d));
+      toast(`Đã gỡ ${t.name ?? t.email} khỏi lớp.`, 'ok');
+      setTroGiangLop((ds) => ds.filter((g) => g.userId !== t.userId));
+      await moHocVien(lopMoRong);
+    } catch (e) {
+      setErr(loiBatDuoc(e, 'Không gỡ được trợ giảng'));
     }
   }
 
@@ -503,21 +593,81 @@ export default function LopHocClient({
           <div className="mb-4 flex flex-wrap items-end gap-2">
             <label className="flex min-w-60 flex-1 flex-col gap-1">
               <span className="text-label text-ink-3">Email học viên</span>
-              <input
+              {/* textarea chứ không phải input: dán một cột email từ bảng tính
+                  vào <input> là mất hết dấu xuống dòng — 30 email dính thành
+                  một chuỗi. Ctrl+Enter gửi; Enter xuống dòng như mọi ô dán. */}
+              <textarea
                 value={emailMoi}
-                type="email"
+                rows={emailMoi.includes('\n') ? 4 : 1}
                 autoComplete="off"
                 onChange={(e) => setEmailMoi(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void themHocVien();
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || !emailMoi.includes('\n'))) {
+                    e.preventDefault();
+                    void themHocVien();
+                  }
                 }}
-                placeholder="hocvien@example.com"
-                className={O_CHUNG}
+                placeholder="hocvien@example.com — dán nhiều email, mỗi dòng một em"
+                className={`${O_CHUNG} py-2.5 leading-snug`}
               />
             </label>
-            <Button disabled={!emailMoi.trim()} onClick={() => void themHocVien()}>
-              Thêm vào lớp
+            <Button disabled={!emailMoi.trim() || dangThem} onClick={() => void themHocVien()}>
+              {dangThem ? 'Đang thêm…' : 'Thêm vào lớp'}
             </Button>
+          </div>
+
+          {/* Trợ giảng của lớp. Trước 20/09/2026 màn này không có chữ "trợ
+              giảng" nào: gán được (qua ô email ở trên) nhưng gán xong thì họ
+              biến mất — không nằm trong sĩ số, không có chỗ gỡ. */}
+          <div className="mb-4 rounded-md border border-line bg-sunken p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-label text-ink-3">Trợ giảng của lớp:</span>
+              {troGiangLop.length === 0 && (
+                <span className="text-small text-ink-3">chưa gán</span>
+              )}
+              {troGiangLop.map((t) => (
+                <span
+                  key={t.userId}
+                  className="inline-flex items-center gap-1 rounded-full border border-line bg-surface pl-3 text-small text-ink"
+                >
+                  {t.name ?? t.email}
+                  {/* Vùng chạm ≥ 44px: dấu × trần đo được 16×22 ở 390px (rà 20/09). */}
+                  <button
+                    type="button"
+                    aria-label={`Gỡ trợ giảng ${t.name ?? t.email} khỏi lớp`}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-ink-3 hover:text-danger"
+                    onClick={() => void goTroGiang(t)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <label className="ml-auto flex items-center gap-2">
+                <span className="sr-only">Chọn trợ giảng để gán</span>
+                <select
+                  value={tgChon}
+                  onChange={(e) => setTgChon(e.target.value)}
+                  className={`${O_CHUNG} min-w-52`}
+                >
+                  <option value="">— gán thêm trợ giảng —</option>
+                  {troGiang
+                    .filter((t) => !troGiangLop.some((g) => g.userId === t.id))
+                    .map((t) => (
+                      <option key={t.id} value={String(t.id)}>
+                        {t.name ?? t.email}
+                      </option>
+                    ))}
+                </select>
+                <Button size="sm" disabled={!tgChon || dangThem} onClick={() => void ganTroGiang()}>
+                  Gán
+                </Button>
+              </label>
+            </div>
+            {troGiang.length === 0 && (
+              <p className="mt-2 text-small text-ink-3">
+                Chưa có tài khoản Trợ giảng nào — quản trị viên cấp ở trang Tài khoản.
+              </p>
+            )}
           </div>
 
           {hocVien === null ? (
@@ -525,7 +675,7 @@ export default function LopHocClient({
           ) : hocVien.length === 0 ? (
             <EmptyState
               title="Lớp chưa có học viên"
-              hint="Nhập email của em rồi bấm “Thêm vào lớp”. Tài khoản phải có sẵn — trang Tài khoản là nơi tạo."
+              hint="Dán danh sách email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản phải có sẵn — trang Tài khoản là nơi tạo."
             />
           ) : (
             <TableWrap caption={`Học viên của lớp ${lopMoRong.name}`}>

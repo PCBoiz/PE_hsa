@@ -162,6 +162,14 @@ export default function NgayNghiDot({ termId, onClose }: { termId: number; onClo
             )}
           </section>
 
+          {d.goiY.length === 0 && (
+            // Hướng dẫn hứa "hệ thống gợi ý lễ"; đợt không chứa lễ nào thì phải
+            // NÓI ra, không thì học vụ đi tìm cái nút không có (rà 20/09/2026).
+            <p className="text-small text-ink-3">
+              Không có lễ dương lịch cố định (01/01, 30/04, 01/05, 02/09) rơi vào đợt này — chỉ cần khai
+              Tết, Giỗ Tổ và ngày nghỉ bù nếu có.
+            </p>
+          )}
           {d.goiY.length > 0 && (
             <section className="flex flex-col gap-2">
               <h3 className="text-label text-ink-3">Gợi ý — lễ dương lịch cố định rơi vào đợt này</h3>

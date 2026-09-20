@@ -895,6 +895,10 @@ function Attendance({
                     key={m.key}
                     type="button"
                     aria-pressed={on}
+                    // Tên em trong tên nút: sổ 30 em là 120 nút cùng đọc
+                    // "Có mặt / Muộn / Vắng / Có phép" — trình đọc màn hình
+                    // không biết nút nào của ai (rà luồng giảng viên 20/09/2026).
+                    aria-label={`${m.label} — ${s.name || s.email || `#${s.userId}`}`}
                     onClick={() => set(s.userId, m.key)}
                     className={[
                       'min-h-11 rounded-md px-3 text-small font-semibold',

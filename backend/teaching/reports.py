@@ -51,6 +51,7 @@ from django.db import DatabaseError
 from common.clock import local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
+from common.permissions import ROLE_ASSISTANT
 from stats.competency import (
     COURSE_ORDER,
     HALF_LIFE_DAYS,
@@ -501,6 +502,10 @@ def class_report(class_id):
             'capacity': info['capacity'], 'status': info['status'], 'note': info['note'],
         },
         'students': students,
+        # Trợ giảng ĐANG được gán vào lớp (một dòng `class_members` như học
+        # viên, nhưng bị `chi_hoc_vien` lọc khỏi sĩ số). Màn Lớp học của học
+        # vụ và trang lớp của giảng viên đều cần nhìn thấy họ (20/09/2026).
+        'assistants': tro_giang_cua_lop(class_id),
         'topics': topics,
         'summary': {
             # `students` = sĩ số ĐANG học, cùng nghĩa với mọi chỉ số bên dưới.
@@ -539,6 +544,15 @@ def class_report(class_id):
             'lagItems': LAG_ITEMS,
         },
     }
+
+
+def tro_giang_cua_lop(class_id):
+    """Trợ giảng đang được gán vào lớp — cùng luật với `_la_tro_giang_cua_lop`."""
+    return [{'userId': t['id'], 'name': t['name'], 'email': t['email']} for t in q(
+        '''SELECT u.id, u.name, u.email FROM class_members m
+               JOIN users u ON u.id = m.user_id
+              WHERE m.class_id = %s AND m.left_at IS NULL AND u.role = %s
+              ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
 
 
 def class_list(class_ids):

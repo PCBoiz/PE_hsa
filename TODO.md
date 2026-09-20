@@ -2992,3 +2992,15 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   nạp trước dữ liệu không đổi được gì, đổi thứ tự script chỉ được ~0,3 s. Đường duy nhất còn lại là
   T32: dựng bước 1 (câu hỏi đầu vào — phần tử LCP) ở máy chủ/React thay vì để engine vẽ sau hydrate.
   Khi làm, đo bằng Lighthouse mobile A/B 2 lượt mỗi bên (kịch bản: `lh_*.json` ở scratchpad phiên 20/09).
+- [x] **XONG 20/09 (trưa) — rà luồng SÁU VAI bằng chuột trên mock production, 13 chỗ vấp đã vá.**
+  Bảy tài khoản `audit2009.*` cấp qua màn Tài khoản, đăng nhập thật từng vai, đi trọn: cấp tài khoản →
+  đợt/lớp → dán nhiều email → gán trợ giảng → sinh lịch 22 buổi → điểm danh → giao/nộp/chấm → liên hệ
+  + tờ phụ huynh (có mục bài tập đã chấm) → khoá/mở tài khoản; trợ giảng và biên tập bị chặn đúng chỗ.
+  Bảng 14 chỗ vấp ở `PROGRESS.md` 20/09 trưa. Còn 1 chờ anh: **bản nháp cho bài học** (Lưu = lên sóng).
+- [ ] **Bản nháp / xuất bản cho BÀI HỌC ở khu Soạn giáo trình** — chờ anh quyết (việc lớn: cột
+  `content_draft_json` hoặc bảng phiên bản, hai đường đọc, nút "Xuất bản" + "Xem như học viên").
+  Đề thi thử đã có "đang hiện / ẩn đi"; bài học chưa. Với dữ liệu thật, một biên tập viên lưu dở là
+  học viên thấy bài dở ngay.
+- [ ] **Ghi danh muộn: hỏi "em học từ đầu khoá hay từ hôm nay?"** khi xếp em vào lớp đã khai giảng.
+  Nay `joined_at` = lúc bấm nút; đã vá để buổi giảng viên ĐÃ tick vẫn là buổi của em, nhưng buổi em
+  vắng thật trước ngày nhập thì không ai đổ vắng — đúng hướng thận trọng, song học vụ nên được chọn.

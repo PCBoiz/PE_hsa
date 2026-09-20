@@ -10,7 +10,7 @@ import LopHocClient, { type ChonKhoa, type ChonNguoi, type LopRow } from './LopH
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Lớp học | TopHSA' };
 
-type DsLop = { classes: LopRow[]; teachers: ChonNguoi[]; statuses: string[] };
+type DsLop = { classes: LopRow[]; teachers: ChonNguoi[]; assistants: ChonNguoi[]; statuses: string[] };
 type DsDot = { terms: { id: number; name: string; code: string | null }[] };
 type DsKhoa = { courses: ChonKhoa[] };
 
@@ -27,6 +27,7 @@ const HD_LOP = z.looseObject({
     termName: chu, termCode: chu,
   })),
   teachers: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
+  assistants: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
   statuses: z.array(z.string()),
 }) satisfies HinhDang<DsLop>;
 const HD_DOT = z.looseObject({
@@ -85,6 +86,7 @@ export default async function LopHocPage() {
     <LopHocClient
       initial={lop.ok ? lop.data.classes : []}
       giangVien={lop.ok ? lop.data.teachers : []}
+      troGiang={lop.ok ? lop.data.assistants : []}
       trangThai={lop.ok ? lop.data.statuses : ['active', 'finished', 'cancelled']}
       // Đợt và khoá chỉ là ô CHỌN. Không đọc được thì trang vẫn phải dùng được
       // để tạo lớp — nên không cho hỏng cả trang vì một danh sách phụ.

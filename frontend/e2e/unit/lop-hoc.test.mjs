@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 const GOC = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const THU_MUC = join(GOC, 'src', 'app', '(standalone)', 'quan-tri', 'lop-hoc');
 
-const { TRUONG, formRong, formTuLop, thanForm } = await import(
+const { TRUONG, formRong, formTuLop, tachEmail, thanForm } = await import(
   'file://' + join(THU_MUC, 'lop.ts').replace(/\\/g, '/')
 );
 
@@ -159,6 +159,17 @@ for (const xau of ['25 em', 'hai lăm', '25.5.5', '--3', '1e5x']) {
     loi === null && Number.isInteger(body.capacity) && body.capacity === 30,
     `${loi} · ${JSON.stringify(body.capacity)}`);
 }
+
+/* ── Dán nhiều email một lượt (20/09/2026) ──────────────────────────────────
+   Rà luồng học vụ: xếp 3 em từng email một → 1/3 em vào lớp (lượt bấm bị nuốt).
+   Cột email từ Excel dán ra có xuống dòng, Sheets thêm tab, người gõ tay dùng
+   phẩy — tất cả phải ra cùng một danh sách, chữ thường, không trùng. */
+console.log('\ntachEmail:');
+const dan = tachEmail(' A@x.com\nb@x.com,\tc@x.com; a@x.com \n\n');
+check('ba dấu ngăn khác nhau ra cùng danh sách, chữ thường, không trùng',
+  JSON.stringify(dan) === JSON.stringify(['a@x.com', 'b@x.com', 'c@x.com']), dan);
+check('chuỗi trống ra danh sách rỗng', tachEmail('  \n ').length === 0);
+check('một email trần vẫn ra một phần tử', JSON.stringify(tachEmail('em@x.com')) === '["em@x.com"]');
 
 console.log(failures === 0 ? '\nOK — sửa lớp không xoá trắng trường nào' : `\n${failures} lỗi`);
 process.exitCode = failures === 0 ? 0 : 1;

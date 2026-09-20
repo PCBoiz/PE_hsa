@@ -3809,7 +3809,7 @@ var _forumTextQ = '';
       box.innerHTML = '<div class="tc-empty">Chọn một lớp để xem báo cáo.</div>';
       return;
     }
-    var s = report.summary, c = report.class;
+    var s = report.summary, c = report.class, tg = report.assistants || [];
 
     /* Chỉ giục gọi cho học viên ĐANG trong lớp.
        Trước 30/08/2026 câu này duyệt toàn bộ `report.students`, nên khu "Cần
@@ -3842,7 +3842,10 @@ var _forumTextQ = '';
         + '<p class="tc-sub">' + (c.code ? esc(c.code) + ' · ' : '')
           + (c.courseTitle ? esc(c.courseTitle) + ' · ' : '')
           + (c.schedule ? esc(c.schedule) : 'chưa đặt lịch')
-          + (c.examDate ? ' · kỳ thi ' + viDate(c.examDate) : '') + '</p></div>'
+          + (c.examDate ? ' · kỳ thi ' + viDate(c.examDate) : '')
+          /* Trợ giảng của lớp (20/09/2026): trước đó giảng viên chỉ thấy dòng
+             "1 tài khoản khác không mang vai Học viên" — không biết đó là ai. */
+          + (tg.length ? ' · trợ giảng: ' + tg.map(function (t) { return esc(t.name || t.email); }).join(', ') : '') + '</p></div>'
         + (c.meetingUrl ? '<a class="tc-link" href="' + esc(c.meetingUrl)
             + '" target="_blank" rel="noopener">Vào phòng học →</a>' : '')
         /* Lối vào sổ buổi học & điểm danh (30/08/2026). Trước dòng này màn hình
@@ -3897,9 +3900,10 @@ var _forumTextQ = '';
               + '. Những con số liên quan bên dưới đang KHÔNG đáng tin — tải lại trang, '
               + 'nếu vẫn vậy thì báo kỹ thuật.</p>'
             : '')
-        + (s.nonStudents
-            ? '<p class="tc-muted">' + s.nonStudents
-              + ' tài khoản khác đang ở trong lớp nhưng không mang vai Học viên '
+        /* Trợ giảng đã hiện tên ở đầu trang; chỉ những tài khoản KHÁC (quản
+           trị viên vào xem, giảng viên phụ) mới cần câu giải thích này. */
+        + (s.nonStudents - tg.length > 0
+            ? '<p class="tc-muted">' + (s.nonStudents - tg.length) + ' tài khoản khác đang ở trong lớp nhưng không mang vai Học viên '
               + '(quản trị viên, giảng viên phụ…) nên không tính vào các con số trên.</p>'
             : '')
         + tableHtml() + '</div>';
@@ -3950,9 +3954,11 @@ var _forumTextQ = '';
             /* Lối vào báo cáo gửi phụ huynh. Có lối vào ngay ở BẢNG HỌC VIÊN là
                cố ý: giảng viên đang nhìn đúng danh sách cần gửi báo cáo thì đó
                là chỗ tự nhiên để bấm. Một màn hình không có lối vào từ đâu cả
-               thì coi như không tồn tại — bài học từ màn điểm danh (T1). */
-            + '<a class="tc-view" href="/giang-day/bao-cao/' + report.class.id
-              + '/' + st.userId + '" target="_blank" rel="noopener">Báo cáo PH</a>'
+               thì coi như không tồn tại — bài học từ màn điểm danh (T1).
+               Trợ giảng KHÔNG có lối này: máy chủ chặn `IsSeniorTeachingStaff`
+               (tờ in email + số điện thoại), bấm vào chỉ gặp 403 (rà 20/09/2026). */
+            + ((window.__currentUser || {}).role === 'Trợ giảng' ? '' : '<a class="tc-view" href="/giang-day/bao-cao/' + report.class.id
+              + '/' + st.userId + '" target="_blank" rel="noopener">Báo cáo PH</a>')
           + '</td>'
           + '</tr>';
       }).join('') + '</tbody></table></div>';

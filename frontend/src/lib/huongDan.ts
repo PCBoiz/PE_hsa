@@ -95,7 +95,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Một người thì điền form; cả lớp thì dán danh sách vào ô nhập hàng loạt — hệ thống báo trước dòng nào trùng email hoặc trùng số điện thoại.',
-        luu_y: 'Xem trước (dry run) trước khi tạo thật. Danh sách trùng mà tạo luôn là hai tài khoản cho một người.',
+        luu_y: 'Bấm "Kiểm tra trước" rồi mới bấm tạo. Danh sách trùng mà tạo luôn là hai tài khoản cho một người.',
       },
       {
         lam: 'Chọn vai. Không chắc chọn vai nào thì mở bảng "Ai làm được gì".',

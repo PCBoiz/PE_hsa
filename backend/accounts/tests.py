@@ -305,3 +305,23 @@ def test_moc_thu_hoi_so_bang_EPOCH_chu_khong_lech_7_tieng(db):
     # Chưa từng thu hồi thì không đụng tới ai.
     u.tokens_valid_from = None
     assert CachedJWTAuthentication._da_thu_hoi(u, tok) is False
+
+
+def test_needs_questionnaire_chi_bat_cho_hoc_vien(db):
+    """`needs_questionnaire` trong phản hồi đăng nhập là cờ để trình duyệt đưa
+    HỌC VIÊN mới vào khảo sát đầu vào (mốc thi, điểm mục tiêu, hợp phần 3).
+    Tới 20/09/2026 nó chỉ nhìn `questionnaire_completed`, nên một giảng viên
+    mới cấp cũng "cần khảo sát" — và trình duyệt thì chưa đọc cờ này bao giờ.
+    Nay: học viên chưa khảo sát → True; nhân sự → luôn False."""
+    from rest_framework.test import APIClient
+
+    from common.db import q1
+    mk = make_werkzeug_password('SecretPass123')
+    for vai, mong in (('Học viên', True), ('Giảng viên', False), ('Quản lý học vụ', False)):
+        email = f"dj_ks_{vai.split()[0].lower()}@example.com"
+        q1("INSERT INTO users (name, email, password, role, status, questionnaire_completed) "
+           "VALUES ('KS Tmp', %s, %s, %s, 'active', 0) RETURNING id", (email, mk, vai))
+        res = APIClient().post('/auth/login', {'email': email, 'password': 'SecretPass123'}, format='json')
+        assert res.status_code == 200, res.content[:200]
+        assert res.json()['needs_questionnaire'] is mong, f'{vai}: needs_questionnaire phải là {mong}'
+        assert res.json()['role'] == vai, 'phản hồi đăng nhập phải nói vai để chọn trang đích'

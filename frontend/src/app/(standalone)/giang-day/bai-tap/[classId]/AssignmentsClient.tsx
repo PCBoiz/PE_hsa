@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
-import { Button, Card, CardHead, Chip, EmptyState } from '@/components/ui';
+import { Button, Card, CardHead, Chip, EmptyState, ToastProvider, useToast } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { oChu } from '@/lib/form';
 
@@ -54,13 +54,7 @@ function quaHan(iso: string | null) {
   return !Number.isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
-export default function AssignmentsClient({
-  classId,
-  className,
-  initial,
-  topics,
-  loiTai,
-}: {
+type Props = {
   classId: number;
   className: string;
   initial: Assignment[];
@@ -80,7 +74,18 @@ export default function AssignmentsClient({
    * y hệt nhau trên màn hình — và cái thứ hai thì giảng viên sẽ giao lại bài.
    */
   loiTai?: string | null;
-}) {
+};
+
+export default function AssignmentsClient(props: Props) {
+  return (
+    <ToastProvider>
+      <DanhSachBai {...props} />
+    </ToastProvider>
+  );
+}
+
+function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
+  const toast = useToast();
   const [ds, setDs] = useState<Assignment[]>(initial);
   const [err, setErr] = useState<string | null>(loiTai ?? null);
   const [moForm, setMoForm] = useState(false);
@@ -121,6 +126,7 @@ export default function AssignmentsClient({
       } else if (!r.ok) {
         throw new Error(errorText(r.status, d));
       }
+      toast(`Đã xoá bài "${a.title}".`, 'ok');
       await reload();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không xoá được bài tập'));
@@ -136,6 +142,7 @@ export default function AssignmentsClient({
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
+      toast(status === 'closed' ? `Đã đóng bài "${a.title}" — học viên không nộp thêm được.` : `Đã mở lại bài "${a.title}".`, 'ok');
       await reload();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không đổi được trạng thái'));
@@ -154,8 +161,11 @@ export default function AssignmentsClient({
         <FormBai
           classId={classId}
           topics={topics}
-          onXong={() => {
+          onXong={(tieuDe) => {
             setMoForm(false);
+            // Biểu mẫu đóng lại và danh sách tải lại sau vài giây — không có
+            // câu này thì khoảng trống ấy trông như bài chưa được giao.
+            toast(`Đã giao bài "${tieuDe}". Học viên thấy ngay ở mục Bài tập.`, 'ok');
             void reload();
           }}
           onHuy={() => setMoForm(false)}
@@ -268,7 +278,7 @@ function FormBai({
 }: {
   classId: number;
   topics: string[];
-  onXong: () => void;
+  onXong: (tieuDe: string) => void;
   onHuy: () => void;
   onLoi: (s: string | null) => void;
 }) {
@@ -297,7 +307,7 @@ function FormBai({
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
-      onXong();
+      onXong(lay('title') || 'bài');
     } catch (err) {
       onLoi(loiBatDuoc(err, 'Không giao được bài'));
     } finally {

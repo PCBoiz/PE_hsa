@@ -1,7 +1,7 @@
 'use client';
 
 import { taiTrang } from '@/lib/dieuHuong';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { oChu } from '@/lib/form';
 
 import { Button, Field } from '@/components/ui';
@@ -23,6 +23,16 @@ const MIN_LEN = 8;
 
 export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
   const [loading, setLoading] = useState(false);
+  /* Email để đăng nhập hộ sau lần đổi ĐẦU TIÊN — hỏi lúc còn phiên (đổi xong là
+     phiên bị cắt). Không có thì rơi về màn đăng nhập như trước. */
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lanDau) return;
+    fetch('/api/user', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u: { email?: string } | null) => { if (u?.email) setEmail(u.email); })
+      .catch(() => { /* để null */ });
+  }, [lanDau]);
   const [formError, setFormError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ current?: string; next?: string; confirm?: string }>({});
 
@@ -66,17 +76,34 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
           );
         return;
       }
-      // ĐI THẲNG VỀ ĐĂNG NHẬP, không về /dashboard.
-      //
       // Từ §39 (T67), đổi mật khẩu đặt mốc `tokens_valid_from` và mốc đó cắt
       // MỌI phiên — kể cả phiên đang gõ. Về `/dashboard` thì lời gọi đầu tiên
       // của trang đó nhận 401, lớp làm mới token thử refresh, refresh cũng đã
       // bị thu hồi, rồi mới đá về `/login` — người dùng đi qua hai lần nhảy
       // trang và một khoảnh khắc màn hình hỏng, ngay sau khi vừa làm đúng.
       //
-      // Cắt cả phiên hiện tại là CÓ CHỦ Ý: người ta đổi mật khẩu chính vì nghi
+      // Đổi TỰ NGUYỆN: về đăng nhập, có chủ ý — người ta đổi mật khẩu vì nghi
       // có ai khác đang dùng tài khoản mình, nên "đăng nhập lại ở mọi nơi" mới
       // là thứ họ mong đợi.
+      //
+      // LẦN ĐẦU (mật khẩu tạm) thì KHÁC (đi thử bảy tài khoản, 20/09/2026): em
+      // vừa nhận tài khoản, không có phiên nào của ai để cắt, mà phút đầu tiên
+      // dùng sản phẩm đã là "đặt mật khẩu xong → đăng nhập lại, gõ lại mật khẩu
+      // vừa đặt". Đăng nhập hộ ngay bằng mật khẩu mới (phiên mới được cấp SAU
+      // mốc nên hợp lệ) rồi đưa về Trang của tôi; hỏng thì mới rơi về đường cũ.
+      if (lanDau && email) {
+        const dn = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ email, password: next }),
+        }).catch(() => null);
+        if (dn && dn.ok) {
+          const d = await dn.json().catch(() => ({}));
+          taiTrang(d.needs_questionnaire ? '/questionaire' : '/dashboard');
+          return;
+        }
+      }
       taiTrang('/login?vua-doi-mat-khau=1');
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');

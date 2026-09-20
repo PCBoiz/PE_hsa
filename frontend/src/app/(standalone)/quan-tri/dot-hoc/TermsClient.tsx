@@ -13,7 +13,9 @@ import {
   Td,
   Th,
   Thead,
+  ToastProvider,
   Tr,
+  useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 
@@ -55,15 +57,18 @@ function ngay(iso: string | null) {
  * Hai con số "lớp" và "học viên" nằm ngay trong bảng, vì đó là hai câu hỏi đầu
  * tiên ai mở màn hình này cũng hỏi — "đợt vừa rồi có bao nhiêu em".
  */
-export default function TermsClient({
-  initial,
-  statuses,
-  loi,
-}: {
-  initial: TermRow[];
-  statuses: string[];
-  loi: string | null;
-}) {
+type Props = { initial: TermRow[]; statuses: string[]; loi: string | null };
+
+export default function TermsClient(props: Props) {
+  return (
+    <ToastProvider>
+      <BangDot {...props} />
+    </ToastProvider>
+  );
+}
+
+function BangDot({ initial, statuses, loi }: Props) {
+  const toast = useToast();
   const [terms, setTerms] = useState<TermRow[]>(initial);
   const [err, setErr] = useState<string | null>(loi);
   const [open, setOpen] = useState(false);
@@ -116,6 +121,9 @@ export default function TermsClient({
       setEndsOn('');
       setExamDate('');
       setOpen(false);
+      // Bảng tải lại mất vài giây (Neon) — không có câu này thì người tạo
+      // không biết đợt đã vào CSDL chưa (rà luồng học vụ 20/09/2026).
+      toast(`Đã tạo đợt "${name.trim()}".`, 'ok');
       await nap();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không tạo được đợt học'));
@@ -135,6 +143,7 @@ export default function TermsClient({
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
+      toast(`Đã chuyển "${t.name}" sang ${TRANG_THAI[next]?.nhan ?? next}.`, 'ok');
       await nap();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không đổi được trạng thái'));
@@ -177,6 +186,7 @@ export default function TermsClient({
       } else if (!r.ok) {
         throw new Error(errorText(r.status, d));
       }
+      toast(`Đã xoá đợt "${t.name}".`, 'ok');
       await nap();
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không xoá được đợt học'));

@@ -153,3 +153,17 @@ const NHAN_SO: Record<string, string> = {
   teacher_id: 'Giảng viên',
   term_id: 'Đợt học',
 };
+
+/**
+ * Tách chuỗi dán từ bảng tính thành danh sách email (20/09/2026).
+ *
+ * Xuống dòng, phẩy, chấm phẩy, khoảng trắng đều là dấu ngăn — cột email của
+ * Excel dán ra có xuống dòng, Google Sheets đôi khi thêm tab, người gõ tay thì
+ * dùng phẩy. Chữ hoa hạ xuống và bỏ trùng ở đây để backend không phải trả lời
+ * "đã ở trong lớp" cho chính email vừa thêm ở dòng trên.
+ */
+export function tachEmail(chu: string): string[] {
+  return Array.from(
+    new Set(chu.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean)),
+  );
+}

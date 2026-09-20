@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { oChu } from '@/lib/form';
+import { VAI_HOC_VIEN } from '@/lib/vaiTro';
 
 import { Button, Field } from '@/components/ui';
 
@@ -142,9 +143,19 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
       }
 
       // Tài khoản do trung tâm cấp, mật khẩu tạm → bắt đổi trước khi vào học.
+      // Học viên chưa làm khảo sát đầu vào → khảo sát trước (máy chủ chỉ bật cờ
+      // này cho vai Học viên): mốc thi, điểm mục tiêu, hợp phần 3 là thứ Trang
+      // của tôi, kế hoạch và trợ lý đều cần. Tới 20/09/2026 cờ này được trả về
+      // mà không ai đọc — em mới rơi vào một trang toàn dấu "—".
+      // `?streak=1` bật thẻ "Giữ chuỗi hôm nay" — của học viên; nhân sự vào
+      // Trang của tôi không kèm lời mời "học một bài".
       window.location.href = data.must_change_password
         ? '/doi-mat-khau?lan-dau=1'
-        : '/dashboard?streak=1';
+        : data.needs_questionnaire
+          ? '/questionaire'
+          : data.role === VAI_HOC_VIEN
+            ? '/dashboard?streak=1'
+            : '/dashboard';
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {

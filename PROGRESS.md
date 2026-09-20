@@ -90,6 +90,87 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 20/09/2026 (trưa) — RÀ LUỒNG SÁU VAI NHƯ MỘT TRUNG TÂM THẬT: 7 tài khoản, 1 lớp, 22 buổi, 1 bài, 1 tờ phụ huynh
+
+Anh bảo: *"audit kĩ lại luồng sử dụng của 6 quyền hạn, tôi muốn bản mock production này phải thực sự
+chạy được như 1 ERP hoàn chỉnh với các luồng dễ hiểu và dễ làm cho từng vai trò trước khi cho dữ liệu
+thật vào."* Cách làm: KHÔNG gọi API tay. Bảy tài khoản `audit2009.*@example.com` được **quản trị viên
+cấp qua màn Tài khoản**, rồi từng vai **đăng nhập thật** (mật khẩu tạm → bắt đổi → vào), đi đúng thứ tự
+một trung tâm làm, bằng chuột và bàn phím (Playwright, học viên ở 390px). Mỗi bước chụp ảnh và
+đối chiếu với hướng dẫn tại chỗ. Kịch bản ở scratchpad (`audit/*.mjs`), không commit.
+
+### Luồng đã đi được trọn vẹn (sau khi vá)
+
+```
+Quản trị viên   cấp 4 nhân sự + 3 học viên (dán hàng loạt) → đặt lại mật khẩu → nhật ký → khoá/mở tài khoản
+Học vụ          mở đợt → khai ngày nghỉ → mở lớp (gán GV, đợt) → DÁN 3 email một lượt → gán TRỢ GIẢNG
+Giảng viên      Việc hôm nay → lớp → sinh lịch cả kỳ (22 buổi, xem trước) → điểm danh 2 buổi → giao bài
+                → chấm 8/10 + nhận xét → nhập liên hệ phụ huynh (dán bảng) → tờ báo cáo (không bấm Gửi)
+Học viên (390)  đăng nhập → khảo sát 16 câu → Trang của tôi (thẻ lớp: chuyên cần 2/2, 1 bài chưa nộp)
+                → làm bài → nộp → thấy 8/10 + nhận xét
+Trợ giảng       thấy lớp được gán → điểm danh được → chấm được → KHÔNG sinh lịch/xoá buổi/báo cáo PH (403 sạch)
+Biên tập        chỉ thấy Soạn giáo trình → mở khoá → soạn bài → gõ tay /quan-tri, /giang-day đều bị chặn
+```
+
+### 14 chỗ vấp — đã vá 13, còn 1 để anh quyết
+
+| # | Vai | Vấp (đo được) | Vá |
+|---|-----|---------------|----|
+| 1 | QTV | Hướng dẫn nói "Xem trước (dry run)", nút tên "Kiểm tra trước" | sửa hướng dẫn (`huongDan.ts`) |
+| 2 | QTV | Ghi chú mật khẩu tạm luôn nói "đọc cho em" — kể cả khi cấp cho giảng viên | ghi chú theo vai (`AccountsClient`) |
+| 3 | Mọi vai | Đổi mật khẩu lần đầu xong → bị đá về màn đăng nhập gõ lại | tự đăng nhập bằng mật khẩu mới rồi đi tiếp (`ChangePasswordForm`) |
+| 4 | Nhân sự | `needs_questionnaire` bật cả cho giảng viên; trình duyệt chưa từng đọc cờ | chỉ bật cho Học viên; đăng nhập/đổi mật khẩu đưa em mới vào khảo sát (`accounts/views.py`, `LoginForm`) |
+| 5 | Nhân sự | Giảng viên đăng nhập xong được mời "Học một bài để giữ chuỗi" | đăng nhập trả `role`; `?streak=1` chỉ cho học viên |
+| 6 | Học vụ | Xếp 3 em từng email một → **1/3 em vào lớp**: lượt bấm thứ hai rơi vào lúc báo cáo lớp tải lại, nút vẫn sáng, bị nuốt lặng lẽ | ô dán NHIỀU email (`POST members {emails}` trả `added/already/missing` từng email); nút "Đang thêm…"; email sai ở lại ô để sửa; toast đếm |
+| 7 | Học vụ | Màn Lớp học **không có chữ "trợ giảng"** — gán được (qua ô email học viên) nhưng gán xong biến mất, không gỡ được | khu "Trợ giảng của lớp": thẻ + ô chọn + Gán/Gỡ; `class_report.assistants`; nhật ký "Gán/Gỡ trợ giảng" |
+| 8 | Học vụ | Tạo đợt/lớp xong bảng chỉ tải lại, không câu xác nhận | toast "Đã tạo đợt/lớp …" (cả đổi trạng thái, xoá) |
+| 9 | Học vụ | Hướng dẫn hứa "hệ thống gợi ý lễ", đợt không chứa lễ nào thì trống trơn | câu "Không có lễ dương lịch cố định (…) rơi vào đợt này" |
+| 10 | GV | Trang lớp chỉ nói "1 tài khoản khác không mang vai Học viên" — không biết đó là trợ giảng nào | đầu trang: "trợ giảng: …" (`dashboard.js`, giữ trần 6.807 dòng bằng cách gộp một dòng nối chuỗi) |
+| 11 | GV/HV | **Em ghi danh muộn** (lớp khai giảng 13/09, học vụ nhập 20/09) đã được tick 2 buổi: màn GV nói "1 có mặt 1 muộn", thẻ lớp của em và tờ phụ huynh nói "chưa có buổi nào được điểm danh" | buổi giảng viên ĐÃ tick em là buổi của em dù trước `joined_at` (`_buoi_cua_em`); cửa sổ thẻ lớp lùi về buổi tick sớm nhất (`lop_cua_toi`) |
+| 12 | HV (390) | Trang của tôi **không có chữ "bài tập"**, thanh trên khổ điện thoại không có mục ấy — em không biết thầy vừa giao | thẻ lớp: "1 bài tập chưa nộp · hạn sớm nhất … → Làm bài" (`lop_cua_toi.baiTap`, `LopCuaToi`) |
+| 13 | GV | Tờ phụ huynh không in điểm bài tập đã chấm + nhận xét — thứ duy nhất một con người đã đọc và chấm | mục "Bài tập giảng viên giao" trên tờ React + PDF đính kèm (`_bai_tap_lop`) |
+| 14 | TG | Bảng học viên vẫn có nút "Báo cáo PH" → 403 | ẩn với trợ giảng (`dashboard.js`) |
+| + | GV | 120 nút "Có mặt/Muộn/Vắng/Có phép" của sổ 30 em không mang tên em (trình đọc màn hình) | `aria-label="Có mặt — <tên em>"` |
+| + | GV | Hướng dẫn dán liên hệ nói "xem trước", nút là "Kiểm tra trước" | sửa câu |
+| + | QTV | Khoá tài khoản: bấm OK với ô lý do trống vẫn khoá | bắt buộc có lý do, hỏi lại |
+| + | QTV | Gõ sai URL ra "404 This page could not be found." tiếng Anh | `app/not-found.tsx` tiếng Việt, có lối về |
+| + | GV | Giao bài xong biểu mẫu đóng, danh sách tải lại, không câu nào | toast "Đã giao bài …" (cả đóng/mở/xoá bài) |
+
+**Còn 1 để anh quyết:** soạn bài ở khu Biên tập là **"Lưu nội dung" = lên sóng ngay** — không có
+bản nháp/xuất bản cho BÀI HỌC (đề thi thử thì có "đang hiện / ẩn đi"). Với dữ liệu thật, một biên tập
+viên lưu dở là học viên thấy bài dở ngay. Làm bản nháp là việc lớn (thêm cột, hai đường đọc) — hỏi
+anh trước.
+
+### Phép kiểm mới (đều ĐỎ trên mã cũ trước khi vá — stash rồi chạy)
+
+- `teaching/tests_xep_lop_hang_loat.py` (3): dán nhiều email — từng email một câu trả lời, không dòng
+  thứ tư cho email lặp; trợ giảng hiện trong `assistants`, không vào sĩ số, có trong ô chọn, nhật ký
+  "Gán/Gỡ trợ giảng". Cũ: `{emails}` → 400; `role` không trả.
+- `tests.py::test_buoi_da_tick_truoc_ngay_ghi_danh_van_la_buoi_cua_em` — cũ đếm 1/2.
+- `tests_lop_cua_toi.py::test_ghi_danh_muon_van_thay_buoi_da_duoc_tick` — cũ 0/2; `::test_the_lop_bao_bai_tap_chua_nop`.
+- `tests.py::test_to_phu_huynh_co_bai_tap_da_cham`; `tests_bao_cao_pdf.py` +2 (in 8/10 + nhận xét; không giao bài thì không có mục).
+- `accounts/tests.py::test_needs_questionnaire_chi_bat_cho_hoc_vien` (+ `role` trong phản hồi).
+- `e2e/unit/lop-hoc.test.mjs` +3 cho `tachEmail` (ba dấu ngăn, chữ thường, bỏ trùng).
+
+### Điều học được
+
+- **Nút vẫn sáng nhưng lượt bấm bị nuốt** là lỗi tệ hơn nút hỏng: người dùng tưởng mình làm rồi.
+  `dangGui` bằng `useRef` chặn đúng cú đúp nhưng KHÔNG đổi mặt nút — mọi nút gửi phải có state
+  "đang gửi" nhìn thấy được.
+- **`joined_at` là lúc bấm nút, không phải lúc em bước vào lớp.** Mọi bộ lọc "trong thời gian em ở
+  lớp" phải nhường cho bằng chứng mạnh hơn: dòng điểm danh do chính giảng viên ghi.
+- Rà bằng kịch bản thì thước hỏng nhiều hơn mã hỏng (đúng như 16/09): 6 lần lỗi là locator của tôi
+  (nút "Giảng dạy" là `<button>` SPA, không phải link; `text=` trúng cả option trong select; regex
+  `^Tạo \d+ buổi|^Tạo buổi` trúng hai nút). Đọc dòng đỏ trước khi kết luận mã sai.
+
+### Danh sách "trước khi cho dữ liệu thật vào" (bổ sung `docs/DU_LIEU_CAN_TOPHSA.md`)
+
+1. `python manage.py du_lieu_mau --go` — gỡ lớp mẫu + tài khoản mẫu (tổng quan học vụ đang đầy
+   "3 buổi chưa điểm danh" của lớp mẫu).
+2. Xoá 7 tài khoản `audit2009.*` + đợt `AUDIT-2009` + lớp `AUDIT-01` (hoặc giữ làm lớp thử của TopHSA).
+3. Quyết định bản nháp cho bài học (mục trên).
+4. A0/A1/A5/A7 của anh vẫn nguyên (Actions, DNS, DeepSeek).
+
 ## 20/09/2026 (khuya) — AUDIT THEO KHUNG NGOÀI: OWASP LLM, axe-core, pip-audit/pnpm audit, đo đồng thời
 
 Anh bảo "soi và audit kĩ, áp dụng thêm các kĩ năng trên mạng cần thiết". Bốn khung áp vào, mỗi

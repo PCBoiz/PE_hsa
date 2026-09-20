@@ -23,7 +23,7 @@ from accounts.validators import (
 from common.clock import local_now
 from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
-from common.permissions import IsAdminRole
+from common.permissions import ROLE_STUDENT, IsAdminRole
 from common.throttling import LoginThrottle, RegisterThrottle
 from common.views import NguoiDungView
 
@@ -43,6 +43,15 @@ def _tokens_for(user_id):
 
 
 # ─────────────────────────── /auth/* ───────────────────────────
+
+
+def _can_khao_sat(user) -> bool:
+    """Khảo sát đầu vào chỉ dành cho HỌC VIÊN — nó hỏi mốc thi, điểm mục tiêu,
+    hợp phần 3. Tới 20/09/2026 cờ này chỉ nhìn `questionnaire_completed`, nên
+    một giảng viên mới cấp cũng bị coi là "cần khảo sát"; và phía trình duyệt
+    thì chưa ai đọc cờ này cả — học viên mới rơi thẳng vào Trang của tôi toàn
+    dấu "—" với khảo sát là một dòng link nhỏ (đi thử bảy tài khoản 20/09)."""
+    return (user.get('role') or ROLE_STUDENT) == ROLE_STUDENT and not bool(user.get('questionnaire_completed'))
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -125,7 +134,7 @@ class LoginView(APIView):
             return Response({'error': 'Tài khoản này đã được trung tâm khoá. '
                                       'Liên hệ TopHSA nếu bạn cần mở lại.'}, status=403)
 
-        needs_questionnaire = not bool(user['questionnaire_completed'])
+        needs_questionnaire = _can_khao_sat(user)
         return Response({
             'ok': True,
             'name': user['name'],
@@ -137,6 +146,10 @@ class LoginView(APIView):
             # mã mới vẫn chạy trên CSDL chưa kịp thêm cột, thay vì làm hỏng đăng
             # nhập của tất cả mọi người.
             'must_change_password': bool(user.get('must_change_password')),
+            # Vai trò để trình duyệt chọn trang đích: thẻ "Giữ chuỗi hôm nay"
+            # (`?streak=1`) là của học viên; giảng viên đăng nhập xong mà được
+            # mời "học một bài để giữ chuỗi" thì sai người (rà 20/09/2026).
+            'role': user.get('role') or ROLE_STUDENT,
             **_tokens_for(user['id']),
         })
 
@@ -219,8 +232,9 @@ class RegisterView(APIView):
         # kèm request_id rồi trả một câu tiếng Việt trung tính — bắt ở đây chỉ
         # vô hiệu hoá nó.
 
-        needs_questionnaire = not bool(user['questionnaire_completed'])
+        needs_questionnaire = _can_khao_sat(user)
         return Response({'ok': True, 'needs_questionnaire': needs_questionnaire,
+                         'role': user.get('role') or ROLE_STUDENT,
                          **_tokens_for(user['id'])})
 
 

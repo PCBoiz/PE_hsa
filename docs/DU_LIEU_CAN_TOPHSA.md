@@ -182,7 +182,19 @@ uranustech không · tần suất và người duyệt báo cáo (trùng H.4). C
 | 8. Sau đợt thi thử: kéo xấp PDF vào | học vụ | lớp → Nhập kết quả thi thử | 10 phút / 30 tờ |
 | 9. Mở tờ báo cáo một em, tạo đường dẫn, gửi thử cho **một** phụ huynh đồng ý trước | giảng viên | lớp → Báo cáo phụ huynh | 5 phút |
 
-Tổng ngày đầu: **dưới một giờ** nếu dữ liệu A–D đã có trong tay.
+Tổng ngày đầu: **dưới một giờ** nếu dữ liệu A–D đã có trong tay. Bước 3 nay có ô **"Trợ giảng của
+lớp"** (gán/gỡ tại chỗ) và bước 5 có thể **dán cả cột email** vào lớp một lượt (rà luồng 20/09/2026,
+đi trọn bằng chuột với 7 tài khoản thử — xem `PROGRESS.md` 20/09 trưa).
+
+### Trước khi cho dữ liệu THẬT vào — làm một lần
+
+1. `python manage.py du_lieu_mau --go` — gỡ hai lớp mẫu và tài khoản mẫu; không gỡ thì tổng quan
+   học vụ mở ra là "3 buổi chưa điểm danh" của lớp mẫu.
+2. Xoá 7 tài khoản `audit2009.*@example.com`, đợt `AUDIT-2009`, lớp `AUDIT-01` (dữ liệu của lượt rà
+   20/09) — hoặc giữ làm lớp thử của trung tâm.
+3. Quyết định về **bản nháp cho bài học**: khu Soạn giáo trình hiện "Lưu nội dung" = học viên thấy
+   ngay. Đề thi thử thì có "đang hiện / ẩn đi", bài học thì chưa.
+4. Việc chỉ anh Sơn làm được: A0 (GitHub Actions), A1, A5, A7 — `docs/VIEC_CUA_ANH.md`.
 
 ---
 

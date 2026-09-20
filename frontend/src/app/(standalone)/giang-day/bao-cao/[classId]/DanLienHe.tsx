@@ -110,7 +110,7 @@ export default function DanLienHe({ classId, soThieu }: { classId: string; soThi
             <h2 className="text-section text-ink">Nhập liên hệ phụ huynh</h2>
             <p className="mt-1 text-small text-ink-3">
               {soThieu > 0 && `${soThieu} em chưa có liên lạc phụ huynh. `}
-              Dán thẳng từ bảng đăng ký (Excel, Google Sheets) — xem trước rồi mới lưu.
+              Dán thẳng từ bảng đăng ký (Excel, Google Sheets) — bấm “Kiểm tra trước” rồi mới lưu.
             </p>
           </div>
           <Button variant="ghost" onClick={() => setMo(true)}>

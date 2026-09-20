@@ -20,6 +20,7 @@ from common.params import kiem_lien_ket
 from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
+    ROLE_ASSISTANT,
     ROLE_STUDENT,
     IsAdminOrAcademic,
     IsAdminRole,
@@ -251,6 +252,9 @@ class AdminClassesView(APIView):
         return Response({
             'classes': reports.class_list(visible_class_ids(request.user)),
             'teachers': [dict(r) for r in _teachers()],
+            # Ô "Trợ giảng" của bảng lớp (20/09/2026): trước đây màn Lớp học
+            # không có chữ "trợ giảng" nào, học vụ không biết gán ở đâu.
+            'assistants': [dict(r) for r in _assistants()],
             'statuses': list(CLASS_STATUS),
         })
 
@@ -278,6 +282,11 @@ def _teachers():
     from common.db import q
     return q("SELECT id, name, email FROM users WHERE role IN ('Giảng viên','admin') "
              "ORDER BY name")
+
+
+def _assistants():
+    return q('SELECT id, name, email FROM users WHERE role = %s ORDER BY name',
+             (ROLE_ASSISTANT,))
 
 
 class AdminClassDetailView(APIView):
@@ -418,11 +427,40 @@ class AdminClassMembersView(APIView):
         if not klass:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
+
+        # NHIỀU EM MỘT LƯỢT (20/09/2026). Rà luồng học vụ trên mock production:
+        # xếp 30 em vào lớp bằng cách gõ từng email rồi bấm "Thêm vào lớp" 30
+        # lần, mà mỗi lần bấm phải đợi báo cáo lớp tải lại — người dùng bấm
+        # nhanh hơn thì lượt bấm bị nuốt lặng lẽ (đo được: 1/3 em vào lớp).
+        # `emails` là danh sách dán từ bảng tính; TỪNG email được trả lời riêng
+        # (`added` / `already` / `missing`) chứ không gộp thành một câu "lỗi",
+        # vì một email sai chính tả không được chặn 29 em còn lại.
+        danh_sach = body.get('emails')
+        if isinstance(danh_sach, list):
+            danh_sach = [norm_email(e) for e in danh_sach if isinstance(e, str)]
+            danh_sach = [e for e in danh_sach if e]
+            if not danh_sach:
+                return Response({'error': 'Danh sách email trống.'}, status=400)
+            if len(danh_sach) > 200:
+                return Response({'error': 'Mỗi lượt tối đa 200 email.'}, status=400)
+            ket_qua = {'ok': True, 'added': [], 'already': [], 'missing': []}
+            for email in dict.fromkeys(danh_sach):   # bỏ trùng, giữ thứ tự
+                row = q1('SELECT id, name, email, role FROM users WHERE lower(email)=%s',
+                         (email,))
+                if not row:
+                    ket_qua['missing'].append(email)
+                    continue
+                da_them = self._ghi_thanh_vien(request, klass, row)
+                ket_qua['added' if da_them else 'already'].append(
+                    {'userId': row['id'], 'name': row['name'], 'email': row['email'],
+                     'role': row['role']})
+            return Response(ket_qua)
+
         email = norm_email(body.get('email')) or ''
         uid = body.get('user_id')
         row = None
         if email:
-            row = q1('SELECT id, name, email FROM users WHERE lower(email)=%s', (email,))
+            row = q1('SELECT id, name, email, role FROM users WHERE lower(email)=%s', (email,))
             if not row:
                 return Response({'error': 'Không có tài khoản với email này.'}, status=404)
             uid = row['id']
@@ -431,7 +469,22 @@ class AdminClassMembersView(APIView):
         if row is None:
             # Tra tên CHỈ để chép vào nhật ký, cố ý KHÔNG chặn khi không thấy:
             # thêm một cửa 404 ở đây là đổi hành vi của endpoint đang chạy.
-            row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
+            row = q1('SELECT id, name, email, role FROM users WHERE id=%s', (uid,))
+        self._ghi_thanh_vien(request, klass, row, uid)
+        return Response({'ok': True, 'userId': uid,
+                         'role': row['role'] if row else None})
+
+    @staticmethod
+    def _ghi_thanh_vien(request, klass, row, uid=None):
+        """Ghi một người vào lớp; trả True nếu SINH dòng mới, False nếu đã ở trong lớp.
+
+        Trợ giảng cũng đi qua đúng cửa này — `class_members` là cách duy nhất
+        hệ thống biết "trợ giảng X phụ trách lớp Y" (`_la_tro_giang_cua_lop`).
+        Chỉ câu nhật ký là khác: "gán trợ giảng" chứ không phải "thêm vào lớp",
+        vì người đọc nhật ký sẽ đi tìm em đó trong sĩ số và không thấy.
+        """
+        uid = uid if uid is not None else row['id']
+        class_id = klass['id']
         # `WHERE left_at IS NULL` trong mệnh đề ON CONFLICT là để trỏ đúng chỉ
         # mục duy nhất MỘT PHẦN của §36 — và nó cũng chính là thay đổi hành vi:
         # em ĐANG học lớp này thì không có gì để làm (DO NOTHING), còn em ĐÃ RỜI
@@ -440,16 +493,22 @@ class AdminClassMembersView(APIView):
         #
         # Bản cũ `DO UPDATE SET left_at = NULL` hồi sinh chính dòng cũ, tức XOÁ
         # TRẮNG mốc rời lớp lần trước — lượt học cũ biến mất không dấu vết.
-        x('''INSERT INTO class_members (class_id, user_id, joined_at)
-             VALUES (%s, %s, %s)
-             ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
-          (class_id, uid, local_now()))
+        moi = q1('''INSERT INTO class_members (class_id, user_id, joined_at)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING
+                    RETURNING id''',
+                 (class_id, uid, local_now()))
+        if not moi:
+            return False
         ten = _user_label(row, uid)
+        tro_giang = bool(row) and row.get('role') == ROLE_ASSISTANT
         audit.record(request, audit.CLASS_MEMBER_ADD, target_type='class',
                      target_id=class_id, target_label=klass['name'],
-                     summary='Thêm "%s" vào lớp "%s".' % (ten, klass['name']),
-                     detail={'userId': uid, 'userName': ten, 'classId': class_id})
-        return Response({'ok': True, 'userId': uid})
+                     summary=('Gán trợ giảng "%s" vào lớp "%s".' if tro_giang
+                              else 'Thêm "%s" vào lớp "%s".') % (ten, klass['name']),
+                     detail={'userId': uid, 'userName': ten, 'classId': class_id,
+                             'role': row.get('role') if row else None})
+        return True
 
     def delete(self, request, class_id):
         uid = request.query_params.get('user_id') or (request.data or {}).get('user_id')
@@ -483,14 +542,17 @@ class AdminClassMembersView(APIView):
             return Response({'error': 'Học viên này không đang học lớp đó.'}, status=404)
 
         klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
-        row = q1('SELECT id, name, email FROM users WHERE id=%s', (uid,))
+        row = q1('SELECT id, name, email, role FROM users WHERE id=%s', (uid,))
         ten = _user_label(row, uid)
+        ten_lop = klass['name'] if klass else '#%s' % class_id
+        if row and row.get('role') == ROLE_ASSISTANT:
+            tom_tat = 'Gỡ trợ giảng "%s" khỏi lớp "%s".' % (ten, ten_lop)
+        else:
+            tom_tat = ('Cho "%s" rời lớp "%s"%s. Dữ liệu học của em giữ nguyên.'
+                       % (ten, ten_lop, ' (%s)' % LEAVE_LABEL[ly_do] if ly_do else ''))
         audit.record(request, audit.CLASS_MEMBER_REMOVE, target_type='class',
-                     target_id=class_id,
-                     target_label=klass['name'] if klass else '#%s' % class_id,
-                     summary='Cho "%s" rời lớp "%s"%s. Dữ liệu học của em giữ nguyên.'
-                             % (ten, klass['name'] if klass else '#%s' % class_id,
-                                ' (%s)' % LEAVE_LABEL[ly_do] if ly_do else ''),
+                     target_id=class_id, target_label=ten_lop,
+                     summary=tom_tat,
                      detail={'userId': uid, 'userName': ten, 'classId': class_id,
                              'leaveReason': ly_do})
         return Response({'ok': True, 'leaveReason': ly_do})

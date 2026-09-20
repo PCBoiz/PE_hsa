@@ -254,7 +254,11 @@ export default function AccountsClient({
         setTemp({
           title: `Mật khẩu tạm của ${who}`,
           password: d.tempPassword,
-          note: 'Đọc chuỗi này cho học viên. Hệ thống sẽ bắt em đổi ngay lần đăng nhập đầu tiên.',
+          // Không viết "học viên"/"em": nút này đặt lại cho cả giảng viên, học vụ
+          // (đi thử 20/09/2026 — hộp bảo "đọc cho học viên" khi đang cấp cho học vụ).
+          note: u.role === 'Học viên'
+            ? 'Đọc chuỗi này cho em. Lần đăng nhập đầu, hệ thống bắt em đặt mật khẩu mới rồi mới vào học.'
+            : `Gửi chuỗi này cho ${who}. Lần đăng nhập đầu, hệ thống bắt đặt mật khẩu mới rồi mới vào.`,
         });
         void load();   // cột "đổi mật khẩu lúc nào" phải cập nhật theo
       } catch (e) {
@@ -266,10 +270,22 @@ export default function AccountsClient({
   function toggleStatus(u: UserRow) {
     const locking = u.status === 'active';
     const who = u.name || u.email || `#${u.id}`;
-    const note = locking
-      ? prompt(`Khoá tài khoản "${who}" vì lý do gì?\n(Ghi lại để sau này còn biết vì sao)`, '')
-      : '';
-    if (locking && note === null) return; // bấm Huỷ
+    // Khoá thì PHẢI có lý do — cùng luật với "cho rời lớp phải chọn lý do".
+    // Rà 20/09/2026: bấm OK với ô trống vẫn khoá được, và nhật ký ghi một
+    // dòng khoá không lý do — đúng thứ câu nhắc bảo "để sau này còn biết".
+    let note = '';
+    if (locking) {
+      let hoi = `Khoá tài khoản "${who}" vì lý do gì?\n(Ghi lại để sau này còn biết vì sao)`;
+      for (;;) {
+        const tra = prompt(hoi, '');
+        if (tra === null) return; // bấm Huỷ
+        if (tra.trim()) {
+          note = tra.trim();
+          break;
+        }
+        hoi = `Cần ghi lý do thì mới khoá được "${who}".\n(Ví dụ: nghỉ học, nợ học phí, tài khoản trùng)`;
+      }
+    }
     void act(
       `/api/admin/users/${u.id}/status`,
       { status: locking ? 'suspended' : 'active', note },

@@ -654,6 +654,76 @@ def test_ba_mat_cung_noi_MOT_con_so_chuyen_can(db):
     assert ti_le(0, 0) is None, 'chưa có dòng nào thì None, KHÔNG phải 0'
 
 
+# ── Em được GHI DANH MUỘN nhưng giảng viên đã tick — buổi ấy là của em (20/09/2026) ──
+
+@pytest.mark.django_db
+def test_buoi_da_tick_truoc_ngay_ghi_danh_van_la_buoi_cua_em(db):
+    """Rà luồng trên mock production: lớp khai giảng 13/09, học vụ nhập em vào
+    lớp ngày 20/09 (`joined_at` = lúc bấm nút), giảng viên đã điểm danh em ở hai
+    buổi 14/09 và 16/09. Màn giảng viên nói "1 có mặt, 1 muộn"; thẻ lớp của em
+    và tờ gửi phụ huynh nói "Chưa có buổi nào được điểm danh" — vì bộ lọc "buổi
+    trong thời gian em ở lớp" gạt cả hai buổi ra.
+
+    Luật vẫn giữ: buổi TRƯỚC ngày ghi danh mà KHÔNG có dòng điểm danh của em thì
+    không phải buổi của em (không đổ vắng cho em). Nhưng buổi giảng viên ĐÃ tick
+    em thì là buổi của em — chính người đứng lớp đã xác nhận em ở đó.
+    """
+    from datetime import timedelta
+
+    from teaching.parent_report import _chuyen_can
+    gv = _nguoi('GV Ghi Danh Muon', ROLE_TEACHER)
+    em = _nguoi('HV Ghi Danh Muon', ROLE_STUDENT)
+    c = q1("INSERT INTO classes (name, course_id, teacher_id, status) "
+           "VALUES ('Lop ghi danh muon','hsa_quantitative',%s,'active') RETURNING id", (gv.id,))
+    nay = local_now()
+    # Ba buổi đã tick: 6 ngày trước (em có dòng), 4 ngày trước (em KHÔNG có
+    # dòng — chưa vào lớp thật), hôm qua (em có dòng). Em ghi danh 2 ngày trước.
+    buoi = [q1('INSERT INTO class_sessions (class_id, starts_at, status, attendance_taken_at, '
+               'created_by) VALUES (%s,%s,%s,%s,%s) RETURNING id',
+               (c['id'], nay - timedelta(days=d), 'planned', nay, gv.id))['id']
+            for d in (6, 4, 1)]
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) RETURNING id',
+       (c['id'], em.id, nay - timedelta(days=2)))
+    for sid, tt in ((buoi[0], 'late'), (buoi[2], 'present')):
+        q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+           'VALUES (%s,%s,%s,%s,%s) RETURNING session_id', (sid, em.id, tt, nay, gv.id))
+
+    cac_dot = [(nay - timedelta(days=2), None)]
+    cc = _chuyen_can(c['id'], em.id, (nay - timedelta(days=30)).date(), nay.date(), cac_dot)
+    assert cc['sessionsCounted'] == 2, ('buổi đã tick em phải được tính dù trước ngày '
+                                        'ghi danh: %s' % cc)
+    assert cc['late'] == 1 and cc['present'] == 1 and cc['noRecord'] == 0, cc
+    assert cc['attendedPct'] == 100, cc
+
+
+# ── Tờ phụ huynh in bài giảng viên giao, kèm điểm + nhận xét (20/09/2026) ──
+
+@pytest.mark.django_db
+def test_to_phu_huynh_co_bai_tap_da_cham(lop):
+    """Giảng viên chấm 8/10 kèm nhận xét → tờ gửi phụ huynh phải mang đúng con số
+    và câu nhận xét ấy; bài nháp không lên tờ; bài lớp KHÁC không lẫn vào."""
+    from datetime import timedelta
+
+    from teaching.parent_report import _bai_tap_lop
+    gv, em = lop['gv'], lop['hv'][0]
+    nay = local_now()
+    aid = q1("INSERT INTO assignments (class_id, title, topic, status, due_at, max_score, created_by) "
+             "VALUES (%s, 'Bài luận hàm số', 'Hàm số', 'open', %s, 10, %s) RETURNING id",
+             (lop['id'], nay + timedelta(days=3), gv.id))['id']
+    q1("INSERT INTO assignments (class_id, title, status, due_at, max_score, created_by) "
+       "VALUES (%s, 'Bài nháp', 'draft', %s, 10, %s) RETURNING id", (lop['id'], nay, gv.id))
+    q1("INSERT INTO submissions (assignment_id, user_id, content, submitted_at, score, feedback, graded_at, graded_by) "
+       "VALUES (%s, %s, 'x', %s, 8, 'Thiếu giới hạn hai đầu.', %s, %s) RETURNING assignment_id",
+       (aid, em.id, nay, nay, gv.id))
+    bt = _bai_tap_lop(lop['id'], em.id, (nay - timedelta(days=28)).date(), nay.date())
+    assert [b['title'] for b in bt] == ['Bài luận hàm số'], bt
+    assert bt[0]['score'] == 8.0 and bt[0]['maxScore'] == 10.0, bt[0]
+    assert bt[0]['feedback'] == 'Thiếu giới hạn hai đầu.'
+    # Bạn cùng lớp chưa nộp: bài vẫn liệt kê, điểm None, không lẫn điểm của em.
+    ban = _bai_tap_lop(lop['id'], lop['hv'][1].id, (nay - timedelta(days=28)).date(), nay.date())
+    assert len(ban) == 1 and ban[0]['submittedAt'] is None and ban[0]['score'] is None, ban
+
+
 # ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
 
 @pytest.mark.django_db

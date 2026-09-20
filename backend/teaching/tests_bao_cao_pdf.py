@@ -277,3 +277,30 @@ def test_noi_ro_hai_thang_diem_khac_nhau():
     """
     chu = _mot_dong(_voi(centerExam=KY_THI))
     assert 'thang 150' in chu and 'điểm luyện tập trong ứng dụng' in chu
+
+
+# ── 6. Bài tập giảng viên giao (20/09/2026) ────────────────────────────────
+
+def test_bai_tap_da_cham_len_to_giay_kem_nhan_xet():
+    """Rà luồng 20/09: giảng viên chấm 8/10 kèm nhận xét mà tờ giấy không in —
+    thứ duy nhất một con người đã đọc và chấm lại vắng mặt."""
+    chu = _chu(_voi(assignments=[{
+        'id': 1, 'title': 'Bài luận: Khảo sát hàm bậc ba', 'topic': 'Hàm số',
+        'dueAt': '2026-09-25T23:59:00', 'maxScore': 10.0,
+        'submittedAt': '2026-09-20T11:34:00', 'score': 8.0,
+        'feedback': 'Đủ bước, đúng cực trị. Thiếu giới hạn ở hai đầu.', 'gradedAt': '2026-09-20T12:00:00',
+    }, {
+        'id': 2, 'title': 'Bài 2 chưa nộp', 'topic': None, 'dueAt': '2026-09-28T23:59:00',
+        'maxScore': 10.0, 'submittedAt': None, 'score': None, 'feedback': None, 'gradedAt': None,
+    }]))
+    assert 'BÀI TẬP GIẢNG VIÊN GIAO' in chu
+    assert '8/10' in chu and 'Thiếu giới hạn' in chu, chu[:600]
+    assert 'chưa nộp' in chu, 'bài chưa nộp phải nói "chưa nộp", không in 0'
+    assert '25/09/2026' in chu
+
+
+def test_khong_giao_bai_thi_khong_co_muc_bai_tap():
+    chu = _chu(_voi(assignments=[]))
+    assert 'BÀI TẬP GIẢNG VIÊN GIAO' not in chu
+    chu = _chu(CO_SO)   # bản dựng cũ không có khoá → vẫn dựng được
+    assert 'BÀI TẬP GIẢNG VIÊN GIAO' not in chu

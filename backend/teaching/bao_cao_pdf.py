@@ -499,6 +499,38 @@ def dung_pdf(bc: dict) -> bytes:
         # Tiêu đề không bị mồ côi ở cuối trang, bảng không bị cắt đôi.
         kq.append(KeepTogether(khoi))
 
+    # ── BÀI TẬP GIẢNG VIÊN GIAO (chỉ khi lớp có giao bài trong kỳ) ─────
+    # Thứ duy nhất trên tờ này do một con người đọc và chấm — xem
+    # `parent_report._bai_tap_lop`. Không có bài thì giấu hẳn, cùng lý do với
+    # mục thi thử tại trung tâm.
+    bt = bc.get('assignments') or []
+    if bt:
+        hang = [['Bài', 'Hạn nộp', 'Nộp', 'Điểm', 'Nhận xét của giảng viên']]
+        for b in bt:
+            if b.get('score') is not None:
+                diem = '%s/%s' % (('%g' % b['score']), ('%g' % (b.get('maxScore') or 10)))
+            elif b.get('submittedAt'):
+                diem = 'chờ chấm'
+            else:
+                diem = '—'
+            hang.append([o_bang(an(b.get('title')), o), ngay(b.get('dueAt')),
+                         ngay(b.get('submittedAt')) if b.get('submittedAt') else 'chưa nộp',
+                         diem, o_bang(an(b.get('feedback')) or '—', o)])
+        t = Table(hang, colWidths=[46 * mm, 20 * mm, 20 * mm, 16 * mm, 46 * mm], hAlign='LEFT')
+        t.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), FONT),
+            ('FONTNAME', (0, 0), (-1, 0), FONT_DAM),
+            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+            ('BACKGROUND', (0, 0), (-1, 0), NEN_NHAT),
+            ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.25, VIEN),
+            ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+        ]))
+        kq.append(KeepTogether([de_muc('BÀI TẬP GIẢNG VIÊN GIAO'), t]))
+        kq.append(Spacer(1, 4))
+
     # ── IV. CHỦ ĐỀ ─────────────────────────────────────────────────────
     # KHÔNG ngắt trang cứng ở đây. Bản đầu có `PageBreak()`, và với một em mới
     # học — hai hợp phần, hai chủ đề đo được — nó bỏ trống nửa dưới trang 1 rồi

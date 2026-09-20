@@ -62,7 +62,11 @@ class LopCuaToiView(NguoiDungView):
         # Một em có thể ở hai lớp (ôn hai hợp phần); trả cả hai.
         thanh_vien = q('''SELECT m.class_id, m.joined_at,
                                  c.name, c.code, c.schedule, c.meeting_url, c.exam_date,
-                                 c.starts_on, c.ends_on, u.name AS teacher_name
+                                 c.starts_on, c.ends_on, u.name AS teacher_name,
+                                 (SELECT MIN(s.starts_at) FROM attendance a
+                                    JOIN class_sessions s ON s.id = a.session_id
+                                   WHERE a.user_id = m.user_id
+                                     AND s.class_id = m.class_id) AS tick_som
                           FROM class_members m
                           JOIN classes c ON c.id = m.class_id
                           LEFT JOIN users u ON u.id = c.teacher_id
@@ -72,6 +76,7 @@ class LopCuaToiView(NguoiDungView):
         sap_toi = {}
         da_huy = {}
         cac_dot = {}
+        bai_tap = {}
         if ids:
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
                           FROM class_sessions
@@ -95,6 +100,19 @@ class LopCuaToiView(NguoiDungView):
             for r in q('SELECT class_id, joined_at, left_at FROM class_members '
                        'WHERE user_id = %s AND class_id = ANY(%s)', (uid, ids)):
                 cac_dot.setdefault(r['class_id'], []).append((r['joined_at'], r['left_at']))
+            # Bài giảng viên giao mà em CHƯA NỘP, kèm hạn sớm nhất (20/09/2026).
+            # Rà trên điện thoại 390px: Trang của tôi không có chữ "bài tập" nào
+            # trong khi mục Bài tập nói "còn 1 bài chưa nộp" — thanh trên ở khổ
+            # điện thoại không có mục ấy, nên em không có đường biết. Thẻ lớp là
+            # chỗ đúng: bài tập là quan hệ giữa em và LỚP.
+            for r in q('''SELECT a.class_id, COUNT(*) AS chua_nop, MIN(a.due_at) AS han_som
+                            FROM assignments a
+                            LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
+                           WHERE a.class_id = ANY(%s) AND a.status = 'open'
+                             AND s.submitted_at IS NULL
+                           GROUP BY a.class_id''', (uid, ids)):
+                bai_tap[r['class_id']] = {'chuaNop': r['chua_nop'],
+                                          'hanSom': _iso(r['han_som'])}
 
         muc_tieu = read_goals(uid)
         ngay_thi_em = as_date(muc_tieu.get('examDate'))
@@ -103,7 +121,11 @@ class LopCuaToiView(NguoiDungView):
         for r in thanh_vien:
             cid = r['class_id']
             ds = [_buoi_dict(b, r['meeting_url'], nay) for b in sap_toi.get(cid, [])]
+            # Đầu kỳ = ngày vào lớp, HOẶC sớm hơn nếu giảng viên đã tick em ở
+            # buổi trước đó (`joined_at` là lúc học vụ bấm nút — xem ngoại lệ
+            # trong `parent_report._buoi_cua_em`, 20/09/2026).
             vao = min(d[0] for d in cac_dot[cid]).date()
+            vao = min(vao, r['tick_som'].date()) if r.get('tick_som') else vao
             lop.append({
                 'id': cid, 'name': r['name'], 'code': r['code'], 'schedule': r['schedule'],
                 'teacherName': r['teacher_name'], 'meetingUrl': r['meeting_url'],
@@ -114,6 +136,7 @@ class LopCuaToiView(NguoiDungView):
                 'sapToi': ds,
                 'daHuy': [_buoi_dict(b, r['meeting_url'], nay) for b in da_huy.get(cid, [])],
                 'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid]),
+                'baiTap': bai_tap.get(cid, {'chuaNop': 0, 'hanSom': None}),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),
             })

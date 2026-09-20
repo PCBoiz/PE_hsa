@@ -86,6 +86,21 @@ export type BaoCao = {
     /** Số tuần cũ không in vì kỳ quá dài. */
     omitted: number;
   } | null;
+  /**
+   * Bài giảng viên giao cho lớp trong kỳ, kèm điểm + nhận xét (20/09/2026) —
+   * `parent_report._bai_tap_lop`. `optional`: bản dựng cũ của máy chủ chưa gửi.
+   */
+  assignments?: {
+    id: number;
+    title: string;
+    topic: string | null;
+    dueAt: string | null;
+    maxScore: number | null;
+    submittedAt: string | null;
+    score: number | null;
+    feedback: string | null;
+    gradedAt: string | null;
+  }[];
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -103,7 +118,9 @@ function ngay(iso: string) {
 
 /** "11/09" — cột tuần hẹp, năm đã có ở dòng kỳ báo cáo phía trên. */
 function ngayNgan(iso: string) {
-  const [, m, d] = iso.split('-');
+  // `slice(0, 10)`: hạn nộp và ngày nộp là DATETIME ("2026-09-25T23:59:00"),
+  // tách thẳng bằng '-' thì ra "25T23:59:00/09".
+  const [, m, d] = iso.slice(0, 10).split('-');
   return `${d}/${m}`;
 }
 
@@ -360,6 +377,55 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
                 </p>
               </>
             )}
+          </>
+        )}
+
+        {/* ── Bài tập giảng viên giao ────────────────────────────────── */}
+        {/* Thứ duy nhất trên tờ này do một con người đọc và chấm. Không có
+            bài trong kỳ thì giấu hẳn — không in "chưa có" cho một mục phụ
+            huynh chưa biết là có. */}
+        {bc.assignments && bc.assignments.length > 0 && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Bài tập giảng viên giao</h3>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-small">
+                <thead>
+                  <tr className="text-left text-label text-ink-3">
+                    <th className="py-1 pr-3 font-medium">Bài</th>
+                    <th className="py-1 pr-3 font-medium">Hạn nộp</th>
+                    <th className="py-1 pr-3 font-medium">Nộp</th>
+                    <th className="py-1 pr-3 text-right font-medium">Điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bc.assignments.map((b) => (
+                    <tr key={b.id} className="border-t border-line align-top">
+                      <td className="py-1.5 pr-3 text-ink">
+                        {b.title}
+                        {b.feedback && (
+                          <span className="block text-ink-2">
+                            Nhận xét: {b.feedback}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-3 text-ink-2 whitespace-nowrap">
+                        {b.dueAt ? ngayNgan(b.dueAt) : '—'}
+                      </td>
+                      <td className="py-1.5 pr-3 text-ink-2 whitespace-nowrap">
+                        {b.submittedAt ? ngayNgan(b.submittedAt) : 'chưa nộp'}
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums text-ink whitespace-nowrap">
+                        {b.score !== null
+                          ? `${b.score}/${b.maxScore ?? 10}`
+                          : b.submittedAt
+                            ? 'chờ chấm'
+                            : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 
