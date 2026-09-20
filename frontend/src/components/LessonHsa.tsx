@@ -64,6 +64,24 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
           và thẻ câu hỏi vẫn đen dù đang ở theme sáng (audit 2026-08-13). */}
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_chrome.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
       <title>Bài học HSA — ProgrammingEdu × TopHSA</title>
+      {/* NẠP TRƯỚC NỘI DUNG BÀI ngay lúc HTML được phân tích (20/09/2026).
+          Lighthouse (mobile, production): phần tử LCP của trang là câu dẫn bước 1
+          do `lesson_hsa.js` vẽ, và 88% thời gian LCP (4,5 s) là "render delay" —
+          chuỗi nối tiếp: tải JS → chạy → mới gọi `/api/courses/…/content` → về →
+          vẽ. Script này bắn lượt gọi ấy từ dòng đầu của HTML, cùng ổ khoá
+          `window.__napTruoc` mà Trang của tôi dùng (`NapTruocDuLieu`); engine tìm
+          ở đó trước khi tự fetch. Số bài đọc từ `location.search` vì trang là
+          client component, không có `searchParams` ở máy chủ. Chỉ nạp trước khi
+          THÀNH CÔNG (`r.ok`); lỗi 403/404 để engine tự gọi lại và đọc đúng lý do. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            `(function(){var n=parseInt(new URLSearchParams(location.search).get('lesson'),10);if(isNaN(n)||n<1)n=1;`
+            + `var x='/api/courses/'+encodeURIComponent(${JSON.stringify(courseId)})+'/content?lesson='+n;`
+            + `window.__napTruoc=window.__napTruoc||{};window.__napTruoc[x]=fetch(x,{credentials:'same-origin'})`
+            + `.then(function(r){return r.ok?r.json():null}).catch(function(){return null})})();`,
+        }}
+      />
       <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
       <link
         rel="stylesheet"

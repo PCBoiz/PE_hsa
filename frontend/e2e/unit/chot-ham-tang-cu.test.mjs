@@ -126,7 +126,11 @@ const TRAN_TEP = 12;
 // + ba mô-đun thuần ở `src/lib/`: định dạng chữ, ngữ cảnh bài, co ảnh). Tệp cũ 457 dòng
 // (270 dòng mã) xoá hẳn; hai lần nới trần cho đúng tệp này (+4 hôm nay) trả lại. Kèm:
 // trợ lý nay STREAM từng mẩu, và nút "Lộ trình" thôi mở `prompt('… React, Python …')`.
-const TRAN_DONG_MA = 6806;
+// 20/09/2026 (khuya): 6806 → 6807 (+1). VÁ LỖI hiệu năng trong tệp đã có (cùng loại với
+// `__apiGet` 14/09): engine bài học đọc nội dung bài từ `window.__napTruoc` (HTML bắn lượt
+// gọi từ dòng đầu, `LessonHsa.tsx`) trước khi tự fetch. Lighthouse production: LCP bài học
+// 5,2 s với 88% là chờ chuỗi tải JS → chạy → gọi API → vẽ. Một dòng là phần đọc lời hứa.
+const TRAN_DONG_MA = 6807;
 
 let failures = 0;
 function check(name, cond, them) {

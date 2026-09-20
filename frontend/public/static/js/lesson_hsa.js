@@ -964,8 +964,13 @@
       });
     }
 
-    fetch('/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=' + want)
-      .then(doc)
+    /* Nạp trước: `LessonHsa.tsx` bắn lượt gọi này từ dòng đầu HTML và cất lời
+       hứa ở `window.__napTruoc[url]` (chỉ khi thành công). Có thì dùng — đỡ
+       cả quãng tải + chạy JS trước khi bắt đầu gọi. Rỗng (lỗi/chưa có) thì
+       fetch thật để đọc đúng lý do máy chủ từ chối. */
+    var url = '/api/courses/' + encodeURIComponent(courseId) + '/content?lesson=' + want;
+    var truoc = window.__napTruoc && window.__napTruoc[url];
+    (truoc ? truoc.then(function (d) { return d && d.lesson ? d : fetch(url).then(doc); }) : fetch(url).then(doc))
       .then(function (d) {
         if (d && d.lesson) { state.total = d.total; start(d.lesson); return; }
         // Bị TỪ CHỐI (chưa ghi danh) thì rơi về bài 1 cũng bị từ chối y hệt —
