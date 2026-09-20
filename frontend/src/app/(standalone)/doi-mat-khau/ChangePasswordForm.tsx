@@ -2,6 +2,7 @@
 
 import { taiTrang } from '@/lib/dieuHuong';
 import { useState, useEffect } from 'react';
+import { useDaGan } from '@/lib/daGan';
 import { oChu } from '@/lib/form';
 
 import { Button, Field } from '@/components/ui';
@@ -23,6 +24,9 @@ const MIN_LEN = 8;
 
 export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
   const [loading, setLoading] = useState(false);
+  // Nút gửi khoá cho tới khi React gắn xong — cùng lý do với `LoginForm`:
+  // Enter trước khi hydrate là trình duyệt gửi GET mang cả ba ô mật khẩu.
+  const daGan = useDaGan();
   /* Email để đăng nhập hộ sau lần đổi ĐẦU TIÊN — hỏi lúc còn phiên (đổi xong là
      phiên bị cắt). Không có thì rơi về màn đăng nhập như trước. */
   const [email, setEmail] = useState<string | null>(null);
@@ -151,7 +155,7 @@ export default function ChangePasswordForm({ lanDau }: { lanDau: boolean }) {
         error={errors.confirm}
       />
 
-      <Button type="submit" full loading={loading}>
+      <Button type="submit" full loading={loading} disabled={!daGan}>
         {loading ? 'Đang lưu…' : 'Đổi mật khẩu'}
       </Button>
     </form>

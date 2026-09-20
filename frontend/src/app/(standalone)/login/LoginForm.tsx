@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useDaGan } from '@/lib/daGan';
 import { oChu } from '@/lib/form';
 import { VAI_HOC_VIEN } from '@/lib/vaiTro';
 
@@ -52,6 +53,15 @@ const GIAY_NOI_DANG_THUC = 6000;
 export default function LoginForm({ oauthError }: { oauthError?: string | null }) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  /**
+   * `false` ở HTML máy chủ dựng, `true` ngay sau khi React gắn xong. Nút gửi
+   * mang `disabled` trong khoảng ấy, và theo đặc tả HTML một biểu mẫu có nút
+   * mặc định bị khoá thì Enter KHÔNG gửi ngầm. Không có hàng rào này, Enter
+   * trước khi hydrate là trình duyệt gửi GET kiểu mặc định — đo trên production
+   * 20/09/2026 (điện thoại, Render lạnh): `/login?email=…&password=…`, mật khẩu
+   * nằm trong lịch sử trình duyệt và log máy chủ. `e2e/dang-nhap-truoc-khi-hydrate`.
+   */
+  const daGan = useDaGan();
   /** Lượt đăng nhập đang chờ lâu bất thường — gần như luôn là máy chủ đang thức dậy. */
   const [dangThucDay, setDangThucDay] = useState(false);
   const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -238,7 +248,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
           ngày thường mất khoảng một phút — cứ để trang này mở.
         </p>
       )}
-      <Button type="submit" id="loginBtn" full loading={loading}>
+      <Button type="submit" id="loginBtn" full loading={loading} disabled={!daGan}>
         {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </Button>
     </form>
