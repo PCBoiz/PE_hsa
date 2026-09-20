@@ -181,8 +181,9 @@ class IsSeniorTeachingStaff(BasePermission):
 
 
 class IsAdminOrAcademic(BasePermission):
-    """Quản lý LỚP và ĐỢT HỌC. Không gồm đổi vai trò / đặt lại mật khẩu — hai
-    việc đó vẫn ``IsAdminRole``."""
+    """Quản lý LỚP và ĐỢT HỌC. Không gồm đổi vai trò (vẫn ``IsAdminRole``).
+    Đặt lại mật khẩu: từ 20/09/2026 học vụ làm được với Học viên và Trợ giảng
+    — hàng rào theo VAI ĐÍCH nằm trong ``AdminResetPasswordView``."""
 
     def has_permission(self, request, view):
         return is_admin(request.user) or is_academic(request.user)

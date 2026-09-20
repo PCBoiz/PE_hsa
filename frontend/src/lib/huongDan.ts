@@ -111,6 +111,10 @@ export const HUONG_DAN: readonly Bai[] = [
         trieu_chung: 'Báo "Email đã được sử dụng" nhưng tìm không thấy ai.',
         xu_ly: 'Tài khoản có thể đang bị KHOÁ nên không hiện ở danh sách mặc định. Bỏ bộ lọc trạng thái rồi tìm lại.',
       },
+      {
+        trieu_chung: 'Em quên mật khẩu.',
+        xu_ly: 'Quản trị viên: Tài khoản → "Đặt lại mật khẩu". Học vụ: Lớp học → Học viên → "Đặt lại" ngay trên dòng của em (được với học viên và trợ giảng; giảng viên, học vụ khác thì cần quản trị viên). Đọc chuỗi tạm cho em — hiện đúng một lần.',
+      },
     ],
   },
 

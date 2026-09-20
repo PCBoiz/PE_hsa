@@ -8,6 +8,7 @@ import {
   CardHead,
   Chip,
   EmptyState,
+  Modal,
   TableWrap,
   Tbody,
   Td,
@@ -17,7 +18,8 @@ import {
   Tr,
   useToast,
 } from '@/components/ui';
-import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import * as z from 'zod/mini';
 
 import { type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
 
@@ -133,6 +135,8 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
   const [tgChon, setTgChon] = useState('');
   /** Ngày vào lớp thật cho em ghi danh muộn — rỗng = hôm nay (máy chủ ghi lúc bấm). */
   const [ngayVao, setNgayVao] = useState('');
+  /** Mật khẩu tạm vừa cấp — hiện đúng một lần trong hộp, không lưu ở đâu khác. */
+  const [mkTam, setMkTam] = useState<{ ten: string; matKhau: string } | null>(null);
 
   // `setBusy` của React không có tác dụng NGAY, nên hai cú bấm liền nhau đều
   // lọt qua `if (busy) return`. Với nút "Lưu" của một biểu mẫu tạo lớp thì đó
@@ -327,6 +331,24 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
     } finally {
       dangGui.current = false;
       setDangThem(false);
+    }
+  }
+
+  /**
+   * Đặt lại mật khẩu cho một em ngay trong danh sách lớp (20/09/2026, anh Sơn
+   * chốt mở cho học vụ). Cùng endpoint và cùng hộp hiện mật khẩu tạm với trang
+   * Tài khoản; đặt ở đây vì học vụ không có tab Tài khoản, và "em quên mật
+   * khẩu" là chuyện xảy ra khi đang nhìn danh sách lớp.
+   */
+  async function datLaiMatKhau(s: HocVien) {
+    if (!confirm(`Đặt lại mật khẩu cho "${s.name}"?\n\nMật khẩu cũ của em ngừng hoạt động ngay lập tức.`)) return;
+    setErr(null);
+    try {
+      const d = await ghiJson(`/api/admin/users/${s.userId}/reset-password`, { method: 'POST' },
+        z.looseObject({ tempPassword: z.string() }));
+      setMkTam({ ten: s.name, matKhau: d.tempPassword });
+    } catch (e) {
+      setErr(loiBatDuoc(e, 'Không đặt lại được mật khẩu'));
     }
   }
 
@@ -574,6 +596,31 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
         )}
       </Card>
 
+      <Modal
+        open={mkTam !== null}
+        onClose={() => setMkTam(null)}
+        title={mkTam ? `Mật khẩu tạm của ${mkTam.ten}` : ''}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { if (mkTam) void navigator.clipboard?.writeText(mkTam.matKhau); }}>
+              Chép
+            </Button>
+            <Button onClick={() => setMkTam(null)}>Đã đọc xong</Button>
+          </>
+        }
+      >
+        <p className="mb-3 text-body text-ink-2">
+          Đọc chuỗi này cho em. Lần đăng nhập đầu, hệ thống bắt em đặt mật khẩu mới rồi mới vào học.
+        </p>
+        <p className="rounded-md bg-sunken px-4 py-3 text-center font-mono text-title tracking-wide text-ink select-all">
+          {mkTam?.matKhau}
+        </p>
+        <p className="mt-3 text-small text-ink-3">
+          Chuỗi này chỉ hiện đúng một lần — hệ thống không lưu lại dạng đọc được. Cần xem lại thì
+          phải đặt lại lần nữa.
+        </p>
+      </Modal>
+
       {lopMoRong && (
         <Card>
           <CardHead
@@ -707,6 +754,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                   <Th>Email</Th>
                   <Th align="right">Bài đã học</Th>
                   <Th>Tình trạng</Th>
+                  <Th align="right">Mật khẩu</Th>
                   <Th align="right">Cho rời lớp</Th>
                 </tr>
               </Thead>
@@ -724,6 +772,11 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                       <Chip tone={s.left ? 'neutral' : 'good'}>
                         {s.left ? 'đã rời lớp' : 'đang học'}
                       </Chip>
+                    </Td>
+                    <Td label="Mật khẩu">
+                      <Button size="sm" variant="ghost" disabled={s.left} onClick={() => void datLaiMatKhau(s)}>
+                        Đặt lại
+                      </Button>
                     </Td>
                     <Td label="Cho rời lớp">
                       {/* Bắt CHỌN LÝ DO chứ không có nút "rời lớp" trần: xem

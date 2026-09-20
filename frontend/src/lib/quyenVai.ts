@@ -133,8 +133,9 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Đặt lại mật khẩu cho người khác',
-    giaiThich: 'Cùng lý do trên: đặt lại mật khẩu là chiếm được tài khoản đó.',
-    lopQuyen: 'IsAdminRole',
+    giaiThich:
+      'Đặt lại mật khẩu là chiếm được tài khoản đó. Từ 20/09/2026 học vụ làm được với HỌC VIÊN và TRỢ GIẢNG (nút ở màn Lớp học → Học viên); giảng viên, học vụ, biên tập, quản trị viên vẫn cần quản trị viên — hàng rào theo vai đích nằm trong view.',
+    lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/views.py::AdminResetPasswordView',
   },
   {

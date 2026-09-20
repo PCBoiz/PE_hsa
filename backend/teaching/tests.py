@@ -1363,12 +1363,24 @@ def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop):
     tao = _goi(AdminClassesView, 'post', {'name': 'Lop do hoc vu tao'}, ai=hv)
     assert tao.status_code in (200, 201), tao.data
 
-    # KHÔNG LÀM ĐƯỢC: đổi vai trò, đặt lại mật khẩu.
+    # KHÔNG LÀM ĐƯỢC: đổi vai trò.
     vai = _goi(AdminUserRoleView, 'post', {'role': 'admin'}, ai=hv,
                user_id=lop['hv'][0].id)
     assert vai.status_code == 403, ('học vụ không được đổi vai trò: %s' % vai.status_code)
+    # Đặt lại mật khẩu: TỪ 20/09/2026 học vụ làm được với HỌC VIÊN và TRỢ GIẢNG
+    # (anh Sơn chốt — trong thử nghiệm quản trị viên là bên cung cấp, mọi em quên
+    # mật khẩu đều phải đi vòng); KHÔNG với giảng viên, học vụ, biên tập, admin.
+    from common.permissions import ROLE_ASSISTANT, ROLE_EDITOR
+    tg = _nguoi('TG Hoc Vu Reset', ROLE_ASSISTANT)
+    bt = _nguoi('BT Hoc Vu Reset', ROLE_EDITOR)
+    hv2 = _nguoi('HV Hoc Vu Reset 2', ROLE_ACADEMIC)
     mk = _goi(AdminResetPasswordView, 'post', {}, ai=hv, user_id=lop['hv'][0].id)
-    assert mk.status_code == 403, ('học vụ không được đặt lại mật khẩu: %s' % mk.status_code)
+    assert mk.status_code == 200 and mk.data.get('tempPassword'), ('học vụ đặt lại được cho học viên: %s' % mk.status_code)
+    assert _goi(AdminResetPasswordView, 'post', {}, ai=hv, user_id=tg.id).status_code == 200
+    for nguoi in (lop['gv'], bt, hv2):
+        r = _goi(AdminResetPasswordView, 'post', {}, ai=hv, user_id=nguoi.id)
+        assert r.status_code == 403, ('học vụ KHÔNG được đặt lại cho %s: %s' % (nguoi.role, r.status_code))
+        assert 'chỉ đặt lại được' in r.data['error']
 
 
 @pytest.mark.django_db

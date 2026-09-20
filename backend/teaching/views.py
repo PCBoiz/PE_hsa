@@ -683,8 +683,20 @@ class AdminResetPasswordView(APIView):
 
     Mật khẩu tạm được trả về ĐÚNG MỘT LẦN trong phản hồi này và không lưu ở
     dạng đọc được — muốn xem lại thì phải cấp lại cái mới.
+
+    AI ĐƯỢC BẤM (anh Sơn chốt 20/09/2026, mở rộng quyết định 01/09): quản trị
+    viên với mọi tài khoản; **quản lý học vụ với Học viên và Trợ giảng** — hai
+    vai dưới họ trong luồng lớp. Học vụ KHÔNG đặt lại được mật khẩu của giảng
+    viên, học vụ khác, biên tập hay quản trị viên: đặt lại mật khẩu là chiếm
+    được tài khoản đó, và với vai ngang hoặc trên mình thì đó là leo quyền.
+    Lý do mở: trong 12 tuần thử nghiệm quản trị viên là bên cung cấp, tức mọi
+    em quên mật khẩu đều phải đi vòng qua bên ngoài trung tâm.
     """
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrAcademic]
+
+    #: Vai mà học vụ được đặt lại mật khẩu. Nhúng thẳng hằng số, không đọc từ
+    #: request — phạm vi là chính sách, không phải tham số.
+    HOC_VU_DUOC = (ROLE_STUDENT, ROLE_ASSISTANT)
 
     def post(self, request, user_id):
         from accounts.hashers import make_werkzeug_password
@@ -692,6 +704,12 @@ class AdminResetPasswordView(APIView):
         target = q1('SELECT id, name, email, role FROM users WHERE id=%s', (user_id,))
         if not target:
             return Response({'error': 'Không tìm thấy tài khoản này'}, status=404)
+        if not is_admin(request.user) and target['role'] not in self.HOC_VU_DUOC:
+            # 403 chứ không 404: tài khoản này học vụ vốn nhìn thấy trong danh
+            # sách lớp — giấu nó đi không bảo vệ gì, chỉ gây khó hiểu.
+            return Response({'error': 'Quản lý học vụ chỉ đặt lại được mật khẩu của học viên '
+                                      'và trợ giảng. Tài khoản %s cần quản trị viên.'
+                                      % target['role']}, status=403)
 
         temp = _temp_password()
         # `tokens_valid_from` = mốc thu hồi (§39). Không có nó thì nút "Đặt lại

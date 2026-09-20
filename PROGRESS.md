@@ -90,6 +90,18 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 20/09/2026 (tối) — HỌC VỤ ĐẶT LẠI ĐƯỢC MẬT KHẨU HỌC VIÊN/TRỢ GIẢNG; AUDIT GIAO DIỆN CẢ HAI KHỔ BẰNG 3 AGENT
+
+Anh chốt: **mở đặt lại mật khẩu cho học vụ** (bản nháp bài học đợi dữ liệu thật; giá niêm yết đã tra 20/09
+— Render/Neon/Vercel/Workspace/Mắt Bão, ghi ở tờ và §4b).
+
+- `AdminResetPasswordView` → `IsAdminOrAcademic` + hàng rào theo VAI ĐÍCH: học vụ chỉ với Học viên và Trợ
+  giảng; giảng viên/học vụ/biên tập/admin → 403 kèm câu nói rõ. Nút "Đặt lại" nằm ở **Lớp học → Học viên**
+  (học vụ không có tab Tài khoản), hộp mật khẩu tạm hiện một lần như trang Tài khoản. Bảng "Ai làm được gì"
+  + `quyen-vai.test.mjs` + hướng dẫn "Em quên mật khẩu" cập nhật. Test cũ "học vụ KHÔNG đặt lại được" sửa
+  thành 200 cho HV/TG và 403 cho ba vai kia. Đi thử: học vụ đặt lại cho hv3 → hộp → hv3 đăng nhập tạm → bắt
+  đổi → vào khảo sát.
+
 ## 20/09/2026 (chiều) — TỜ ĐỀ XUẤT THỬ NGHIỆM CHO TOPHSA (dữ liệu cần + giá 40 triệu) và một lỗ hổng đăng nhập bắt được khi xác minh production
 
 Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì ở bên họ và thêm giá thành thử nghiệm
