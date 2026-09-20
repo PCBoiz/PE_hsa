@@ -2987,3 +2987,8 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   Render có vùng Singapore; Neon đang ở Mỹ (cùng vùng Render — mọi truy vấn <5 ms). Đổi vùng Render
   là đổi cả cặp hoặc chấp nhận CSDL xa. Đo trước khi quyết: `curl` DeepSeek từ một máy Singapore
   (ví dụ một job Render tạm ở vùng ấy) xem TTFT còn bao nhiêu. Nếu vẫn 3–4 s thì không phải vùng.
+- [ ] **LCP bài học trên điện thoại (Lighthouse mobile production 5,2–5,5 s, 71 điểm).** Đo 20/09: nội
+  dung về lúc 1,2 s, nhưng engine `lesson_hsa.js` chỉ chạy sau hydrate (~4 s dưới CPU chậm 4×) —
+  nạp trước dữ liệu không đổi được gì, đổi thứ tự script chỉ được ~0,3 s. Đường duy nhất còn lại là
+  T32: dựng bước 1 (câu hỏi đầu vào — phần tử LCP) ở máy chủ/React thay vì để engine vẽ sau hydrate.
+  Khi làm, đo bằng Lighthouse mobile A/B 2 lượt mỗi bên (kịch bản: `lh_*.json` ở scratchpad phiên 20/09).

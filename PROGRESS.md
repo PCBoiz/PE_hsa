@@ -129,6 +129,21 @@ hai, là `div` ngoài `main` thì rơi ngoài mọi mốc. Kết: **0 / 46 lư�
 `scripts/do_axe.mjs` (RULES.md). Kèm một báo oan của bộ đo nhà do chính bản vá này: `tabindex="0"`
 làm vùng cuộn thành "nút" dưới nút trợ lý → luật chồng nút chỉ xét nút thật, vẫn đỏ với CSS cũ.
 
+### Lighthouse (mobile, production, đăng nhập thật) + đầu bảo mật + quét bí mật
+
+Trang chủ **96/100/100/100** (hiệu năng/tiếp cận/thực hành/SEO), đăng nhập 95/100/100/100, Trang
+của tôi 75 (LCP 4,0 s), bài học 71 (LCP 5,2 s) — tiếp cận 100 ở cả bốn sau axe. Đầu bảo mật
+production: HSTS preload, CSP, COOP, nosniff, X-Frame DENY, Referrer, Permissions; cookie
+`pe_at/pe_rt` HttpOnly + Secure + SameSite=Lax, thân đăng nhập không mang thẻ. Quét kiểu gitleaks
+toàn bộ lịch sử git (293.852 dòng diff, mọi nhánh): 0 bí mật (hai lượt khớp là `os.environ.get`
+và một chỗ trống `<user>:<mk>` trong tài liệu).
+
+LCP bài học: giả thuyết đầu ("chuỗi gọi API") SAI — nạp trước nội dung từ HTML (47e2a50) làm dữ
+liệu về lúc 1,2 s nhưng LCP không đổi (5,5 s), vì engine chỉ chạy ở ~5 s: `LegacyScripts` chèn
+script sau hydrate theo thứ tự cầu nối → confetti (jsdelivr) → engine. Đổi thứ tự + tải trước
+engine: A/B cục bộ 2 lượt mỗi bên 5,1/4,9 → 4,7/4,8 s — gần nhiễu, ghi đúng như thế. Phần còn
+lại là hydrate + engine dưới CPU chậm 4×: việc T32, không phải chỉnh nhỏ.
+
 ### Thư viện
 
 `pnpm audit --prod`: 0. `pnpm audit` (cả dev): 6 high, đều DoS trong `js-yaml`/`brace-expansion`
