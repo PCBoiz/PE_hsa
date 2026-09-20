@@ -207,25 +207,30 @@ không cần tài khoản**, chỉ mở đường dẫn.
 
 ---
 
-## 4b. Chi phí thử nghiệm 12 tuần — 40.000.000 đ (lập 20/09/2026)
+## 4b. Chi phí thử nghiệm 12 tuần — 50.000.000 đ (bản 2, lập 20/09/2026 chiều)
 
-Tờ gửi TopHSA: `docs/De_xuat_thu_nghiem_pe_hsa_TopHSA_2026-09-20.pdf` (không commit — anh gửi tay;
-cùng nội dung là Mục 11 của báo cáo thị trường). Kịch bản sinh: `de_xuat_noi_dung.mjs` +
-`de_xuat_thu_nghiem.mjs` ở scratchpad phiên 5192ee2d; **mã tự kiểm phép cộng = 40.000.000**.
+Tờ gửi TopHSA: `docs/De_xuat_thu_nghiem_pe_hsa_TopHSA_2026-09-20.pdf` (15 trang, **không commit** — anh gửi
+tay): Mục 1 tóm tắt · Mục 2 lịch 12 tuần + 6 tiêu chí thành công · Mục 3 yêu cầu với TopHSA (8 nhóm dữ liệu
+từng trường, thời gian từng vai, điều kiện kỹ thuật–pháp lý, nhịp làm việc) · Mục 4 cam kết bên cung cấp ·
+Mục 5 chi phí · Mục 6 bảo mật · Phụ lục 3 mẫu dán. Cùng nội dung rút gọn = Mục 11 báo cáo thị trường.
+Kịch bản sinh `de_xuat_noi_dung.mjs` + `de_xuat_thu_nghiem.mjs` (scratchpad phiên 5192ee2d); **mã tự kiểm
+tổng = 50.000.000 và chặn dự phòng > 5%**.
 
-Giá hạ tầng là giá niêm yết tra ngày 20/09/2026 (Render `$25` Standard 2 GB; Neon tính theo mức dùng
-`$0,106/CU-giờ` + `$0,35/GB-tháng` ≈ `$19`; Vercel Pro `$20`; Google Workspace Business Starter `$7`;
-Mắt Bão `.vn` 100.000 + 350.000), quy đổi 25.500 đ/USD, làm tròn chục nghìn. **Tra lại trước khi ký.**
+Giá hạ tầng = giá niêm yết tra ngày 20/09/2026 (Render Standard 25 USD; Neon theo mức dùng 0,106 USD/CU-giờ
++ 0,35 USD/GB-tháng ≈ 19 USD; Vercel Pro 20 USD; Google Workspace Business Starter 7 USD; Mắt Bão `.vn`
+100.000 + 350.000), quy đổi 25.500 đ/USD, làm tròn chục nghìn. Gia công = **ngày công 8 giờ × 1.200.000 đ**.
+**Tra lại giá trước khi ký** (hiệu lực báo giá 30 ngày).
 
 | | Khoản | Thành tiền |
 |---|---|---|
 | A | Hạ tầng thuê ngoài 3 tháng: tên miền .vn 450.000 · Render Standard 1.910.000 · Neon 1.450.000 · Vercel Pro 1.530.000 · hộp thư tên miền 540.000 · DeepSeek 510.000 · sao lưu ngoài 50.000 · Cloudflare 0 | **6.440.000** |
-| B | Gia công: dựng hạ tầng riêng 5.500.000 · tuỳ chỉnh theo TopHSA 7.000.000 · nhập & kiểm dữ liệu 3.500.000 · đào tạo & tài liệu 3.000.000 · vận hành + hỗ trợ + sửa lỗi 12 tuần 12.400.000 · tổng kết 2.160.000 | **33.560.000** |
-| | **Tổng** | **40.000.000** |
+| B | Gia công 35 ngày công: B1 dựng hạ tầng riêng 5 ngày · B2 tuỳ chỉnh theo TopHSA 7 · B3 nhập & kiểm dữ liệu 3 · B4 đào tạo & tài liệu 3 · B5 vận hành + hỗ trợ + sửa lỗi 12 tuần 15 · B6 tổng kết 2 (mỗi gói ghi rõ bàn giao gì) | **42.000.000** |
+| C | Dự phòng tỷ giá & phát sinh nhỏ — **hoàn lại phần không dùng** ở đợt thanh toán cuối | **1.560.000** |
+| | **Tổng** | **50.000.000** |
 
-Điều khoản đề nghị: 50/50 (khi bắt đầu / sau tổng kết); chưa gồm VAT, hạ tầng sau tuần 12
-(≈ 1.810.000/tháng giữ gói, ≈ 660.000/tháng gói nhỏ), xác thực Zalo OA, tính năng mới; CSDL riêng, dữ
-liệu là của TopHSA, xuất ra được bất kỳ lúc nào.
+Thanh toán 40 / 30 / 30 theo ba mốc nghiệm thu (cuối tuần 0 · cuối tuần 4 · cuối tuần 12). Chưa gồm VAT, hạ
+tầng sau tuần 12 (≈ 1.810.000/tháng giữ gói; ≈ 660.000 gói nhỏ), Zalo OA, tính năng mới (báo giá theo cùng
+đơn giá ngày công). Sau 12 tuần nếu tiếp tục: hạ tầng thật + hỗ trợ 4 ngày công/tháng ≈ 6,6 triệu/tháng.
 
 ---
 

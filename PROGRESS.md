@@ -95,7 +95,15 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì ở bên họ và thêm giá thành thử nghiệm
 (bao gồm mua tên miền dựng máy chủ DNS,...) sao cho nó trị giá 40 triệu, có thể tính thêm phí gia công vào."*
 
-- **Tờ riêng 5 trang** `docs/De_xuat_thu_nghiem_pe_hsa_TopHSA_2026-09-20.pdf` (không commit, anh gửi tay):
+- **BẢN 2 (anh: "viết chi tiết hơn nữa yêu cầu của bên mình, rõ hơn nữa phần mức giá, làm nó thành 50 triệu"):**
+  tờ nay **15 trang** — Mục 1 tóm tắt một trang · Mục 2 lịch 12 tuần theo tuần + 6 tiêu chí thành công đo được ·
+  Mục 3 yêu cầu với TopHSA (8 nhóm dữ liệu TỪNG TRƯỜNG có ví dụ, thời gian từng vai phải bỏ ra, điều kiện kỹ
+  thuật–pháp lý, nhịp làm việc + 3 mốc nghiệm thu) · Mục 4 cam kết đo được của bên cung cấp · Mục 5 giá
+  **50.000.000** = A hạ tầng 6.440.000 + B gia công **35 ngày công × 1.200.000** (6 gói, mỗi gói ghi bàn giao gì)
+  + C dự phòng 1.560.000 hoàn lại phần không dùng; thanh toán 40/30/30; sau 12 tuần ≈ 6,6 triệu/tháng · Mục 6
+  bảo mật hai bên · Phụ lục 3 mẫu dán. Mã chặn dự phòng > 5%. Báo cáo thị trường Mục 11 sinh lại theo bản 2
+  (41 trang). Bản 1 giữ ở scratchpad `de_xuat.v1.pdf`.
+- **Bản 1 (trưa) — 5 trang** `docs/De_xuat_thu_nghiem_pe_hsa_TopHSA_2026-09-20.pdf` (không commit, anh gửi tay):
   Mục 1 tám nhóm dữ liệu + ngày đầu tiên; Mục 2 giá 12 tuần **40.000.000 đ** = hạ tầng 3 tháng 6.440.000
   (giá niêm yết TRA HÔM NAY: Render 25 USD, Neon theo mức dùng ≈ 19 USD, Vercel Pro 20 USD, Workspace 7 USD,
   Mắt Bão .vn 450.000; 25.500 đ/USD) + gia công 33.560.000 (dựng riêng, tuỳ chỉnh, nhập dữ liệu, đào tạo,
