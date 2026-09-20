@@ -134,7 +134,11 @@ export default function DashboardClient(
           chuông (kể cả bấm-ra-ngoài và phím Escape) — đừng dựng lại. */}
       <AppShell trang="dashboard" spa dieuKhien="legacy" />
 
-      <div id="main">
+      {/* `<main>` chứ không `<div>`: mốc trang cho trình đọc màn hình (axe
+          `landmark-one-main`, 20/09/2026). CSS/JS bám `#main` nên không đổi gì.
+          h1 `sr-only`: trang không có tiêu đề nhìn thấy nào ngoài lời chào. */}
+      <main id="main">
+        <h1 className="sr-only">Trang của tôi</h1>
         {/* ── Dashboard ── */}
         <div className="page active" id="page-dashboard">
           {/* Nhân sự thấy khu làm việc của vai mình; mọi khối luyện thi bên dưới
@@ -856,7 +860,7 @@ export default function DashboardClient(
           </div>
         </div>
         )}
-      </div>
+      </main>
 
       {/* ★ MODAL HỦY ĐĂNG KÝ KHÓA HỌC */}
       <div className="un-overlay" id="unenrollModal" onClick={(e) => W().handleUnenrollOverlayClick(e)}>

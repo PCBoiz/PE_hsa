@@ -40,7 +40,7 @@
 .hsa-score-num span { font-size: 22px; color: var(--t3, #64748B); }
 .hsa-score-level { font-size: 16px; color: var(--t1, #E2E8F0); margin-bottom: 6px; }
 .hsa-score-msg { color: var(--t2, #94A3B8); font-size: 14px; line-height: 1.6; margin: 0; }
-.hsa-rev-label, .hsa-th-head h3 { font-size: 15px; font-weight: 700; color: var(--t1, #E2E8F0); margin: 0 0 10px; }
+.hsa-rev-label, .hsa-th-head h2 { font-size: 15px; font-weight: 700; color: var(--t1, #E2E8F0); margin: 0 0 10px; }
 .hsa-rev-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .hsa-rev { display: grid; grid-template-columns: 24px 60px 1fr; gap: 8px; align-items: start;
   padding: 10px 12px; border-radius: 10px; background: var(--card, #0C1220); font-size: 13px; }
@@ -62,7 +62,7 @@
   border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 16px 18px; }
 .hsa-card-ic { flex-shrink: 0; width: 40px; height: 40px; display: grid; place-items: center;
   border-radius: 10px; background: rgba(139,124,246,.14); color: var(--hsa-violet); font-size: 17px; }
-.hsa-card-body h4 { margin: 0 0 5px; font-size: 15px; color: var(--t1, #E2E8F0); }
+.hsa-card-body h3 { margin: 0 0 5px; font-size: 15px; color: var(--t1, #E2E8F0); }
 .hsa-card-body p { margin: 0; font-size: 14px; line-height: 1.65; color: var(--t2, #94A3B8); }
 .hsa-card-body code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 5px;
   color: var(--hsa-teal); font-size: 13px; }

@@ -471,7 +471,7 @@
       : '<span class="hsa-th-badge cond">Bản tóm tắt — bạn đã khá vững</span>';
     var cards = (pick.cards || []).map(function (c) {
       return '<div class="hsa-card"><div class="hsa-card-ic"><i class="fa-solid ' + esc(c.icon || 'fa-book') + '"></i></div>' +
-        '<div class="hsa-card-body"><h4>' + esc(c.title) + '</h4><p>' + c.body + '</p>' +
+        '<div class="hsa-card-body"><h3>' + esc(c.title) + '</h3><p>' + c.body + '</p>' +
         (c.visual ? renderVisual(c.visual) : '') + '</div></div>';
     }).join('');
     var ex = (pick.examples || []).length
@@ -482,7 +482,9 @@
         }).join('') + '</div>'
       : '';
     $('hsa-theory').innerHTML =
-      '<div class="hsa-th-head">' + badge + '<h3>' + esc(pick.title || 'Lý thuyết') + '</h3></div>' +
+      // h2 rồi h3 (không h3 rồi h4): bài có h1 là tên bài; axe-core `heading-order`
+      // đỏ ở bước lý thuyết vì h1 → h3 bỏ cấp (20/09/2026). CSS đổi theo.
+      '<div class="hsa-th-head">' + badge + '<h2>' + esc(pick.title || 'Lý thuyết') + '</h2></div>' +
       '<div class="hsa-cards">' + cards + '</div>' + ex;
   }
 
@@ -511,7 +513,7 @@
     $('hsa-drill').innerHTML =
       '<div class="hsa-drill-intro">' +
         '<div class="hsa-drill-badge">⚡ Phòng luyện tốc độ</div>' +
-        '<h3 class="hsa-drill-h">' + d.questions.length + ' câu · ' + d.time_seconds + ' giây — nhanh &amp; chính xác!</h3>' +
+        '<h2 class="hsa-drill-h">' + d.questions.length + ' câu · ' + d.time_seconds + ' giây — nhanh &amp; chính xác!</h2>' +
         '<p class="hsa-intro">HSA ăn nhau ở <b>TỐC ĐỘ</b>. Trả lời đúng liên tiếp để nhân <b>COMBO 🔥</b>. Hết giờ là dừng — thử phá kỷ lục của chính mình!</p>' +
         '<button class="next-btn primary" id="hsa-drill-start"><i class="fa-solid fa-bolt"></i> Bắt đầu</button>' +
       '</div>';

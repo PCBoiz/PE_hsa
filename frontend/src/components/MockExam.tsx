@@ -232,6 +232,9 @@ export default function MockExam() {
           <AppShell trang="/mock" spa={false} dieuKhien="react" ten={ten} />
         )}
 
+        {/* `<main>` bọc ba màn (danh sách / làm bài / kết quả) — mốc trang cho
+            trình đọc màn hình (axe `landmark-one-main`, 20/09/2026). */}
+        <main>
         {view === 'loading' && <div className="mk-loading"><div className="mk-spinner" /> Đang tải…</div>}
 
         {view === 'list' && (
@@ -244,7 +247,7 @@ export default function MockExam() {
               {exams.map((e) => (
                 <div className="mk-exam-card" key={e.id}>
                   <div className="mk-exam-ic"><i className="fa-solid fa-file-pen"></i></div>
-                  <h3>{e.title}</h3>
+                  <h2>{e.title}</h2>
                   <p>{e.description}</p>
                   <div className="mk-exam-meta">
                     <span><i className="fa-solid fa-list-ol"></i> {e.total_questions} câu</span>
@@ -372,6 +375,7 @@ export default function MockExam() {
             </div>
           </div>
         )}
+        </main>
       </div>
 
       {/* Trợ lý HSA cũng có mặt ở phòng thi thử (audit 2026-08-14): sau khi

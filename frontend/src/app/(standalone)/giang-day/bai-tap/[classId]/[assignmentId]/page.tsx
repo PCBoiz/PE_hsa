@@ -73,18 +73,22 @@ export default async function ChamBaiPage({
 
   return (
     <div className="min-h-dvh bg-ground">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link
-            href={`/giang-day/bai-tap/${classId}`}
-            className="text-small text-ink-3 hover:text-brand-ink"
-          >
-            ← Bài tập
-          </Link>
-          <h1 className="text-section text-ink">{className}</h1>
+      <main>
+          {/* Dải tiêu đề nằm TRONG `<main>`: là `<header>` ngoài `main` thì thành
+              banner thứ hai (axe `landmark-no-duplicate-banner`), là `div` ngoài
+              `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
+            <Link
+              href={`/giang-day/bai-tap/${classId}`}
+              className="text-small text-ink-3 hover:text-brand-ink"
+            >
+              ← Bài tập
+            </Link>
+            <h1 className="text-section text-ink">{className}</h1>
+          </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="mx-auto max-w-5xl px-4 py-6">
         <GradingClient
           assignmentId={Number(assignmentId)}
           title={bai.title}
@@ -95,6 +99,7 @@ export default async function ChamBaiPage({
           topic={bai.topic}
           students={students}
         />
+        </div>
       </main>
     </div>
   );

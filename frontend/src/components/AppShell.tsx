@@ -372,8 +372,10 @@ export default function AppShell({
     )];
   });
 
+  // `<header>` (mốc banner) chứ không `<div>` — axe `region` báo thanh này
+  // ngoài mọi mốc ở 16 trang (20/09/2026). CSS bám `.topbar`, không đổi gì.
   return (
-    <div className="topbar">
+    <header className="topbar">
       <div className="topbar-left">
         {thuongHieu}
         {/* Tên khu, và đường VỀ. Người trong khu Vận hành cần biết hai điều mà
@@ -566,6 +568,6 @@ export default function AppShell({
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

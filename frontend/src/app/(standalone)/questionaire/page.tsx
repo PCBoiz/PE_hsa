@@ -15,7 +15,8 @@ export default function QuestionairePage() {
       <PageStyles hrefs={["/static/css/questionaire.css","/static/css/a11y.css"]} />
       <title>Khảo sát đầu vào — ProgrammingEdu × TopHSA</title>
 
-      <div className="survey-container">
+      <main className="survey-container">
+        <h1 className="sr-only">Khảo sát đầu vào</h1>
         <div className="tech-logo">
           <span className="logo-text">ProgrammingEdu × TopHSA</span>
         </div>
@@ -282,7 +283,7 @@ export default function QuestionairePage() {
             </div>
           </div>
         </form>
-      </div>
+      </main>
 
       <div className="thanks-overlay" id="thanksOverlay" aria-hidden="true">
         <div className="thanks-modal" role="dialog" aria-modal="true" aria-labelledby="thanksTitle">

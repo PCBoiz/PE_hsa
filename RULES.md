@@ -90,6 +90,7 @@ cd backend && ./.venv/Scripts/python.exe -m pytest common/tests_hop_dong.py -q
 python scripts/cap_the.py                                      # → .the/tokens_ad.json
 python scripts/cap_the.py --e2e --ra .the/tokens_hv.json       # cần tài khoản e2e (tai_khoan_e2e.py --that)
 node scripts/do_giao_dien.mjs --tu-kiem            # phải in "ĐẠT"
+node scripts/do_axe.mjs                             # axe-core (WCAG 2.x + best-practice), phải 0 vi phạm (thêm 20/09)
 node scripts/do_giao_dien.mjs --toi --tu-kiem      # phải in "ĐẠT"
 node scripts/do_giao_dien.mjs --trang-thai
 node scripts/do_giao_dien.mjs --toi --trang-thai

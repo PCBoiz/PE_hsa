@@ -68,26 +68,30 @@ export default async function BaiTapPage({
 
   return (
     <div className="min-h-dvh bg-ground">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
-            ← Khu Giảng dạy
-          </Link>
-          <h1 className="text-section text-ink">{klass.name}</h1>
-          <Link
-            href={`/giang-day/buoi-hoc/${klass.id}`}
-            className="-my-3 py-3 text-small text-brand-ink underline"
-          >
-            Buổi học &amp; điểm danh
-          </Link>
-          {/* Khu này không nạp main.js nên nút đổi chủ đề của Topbar legacy
-              không có ở đây. Đặt CUỐI hàng: `ml-auto` ở giữa hàng chỉ đẩy được
-              nó ra khỏi tiêu đề, rồi lịch buổi và liên kết chéo lại nằm SAU nó —
-              nút trôi vào giữa thay vì về mép phải. */}
-          <ThemeToggle className="ml-auto" />
+      <main>
+          {/* Dải tiêu đề nằm TRONG `<main>`: là `<header>` ngoài `main` thì thành
+              banner thứ hai (axe `landmark-no-duplicate-banner`), là `div` ngoài
+              `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
+            <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
+              ← Khu Giảng dạy
+            </Link>
+            <h1 className="text-section text-ink">{klass.name}</h1>
+            <Link
+              href={`/giang-day/buoi-hoc/${klass.id}`}
+              className="-my-3 py-3 text-small text-brand-ink underline"
+            >
+              Buổi học &amp; điểm danh
+            </Link>
+            {/* Khu này không nạp main.js nên nút đổi chủ đề của Topbar legacy
+                không có ở đây. Đặt CUỐI hàng: `ml-auto` ở giữa hàng chỉ đẩy được
+                nó ra khỏi tiêu đề, rồi lịch buổi và liên kết chéo lại nằm SAU nó —
+                nút trôi vào giữa thay vì về mép phải. */}
+            <ThemeToggle className="ml-auto" />
+          </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="mx-auto max-w-5xl px-4 py-6">
         <AssignmentsClient
           classId={Number(classId)}
           className={klass.name}
@@ -98,6 +102,7 @@ export default async function BaiTapPage({
           // ở trường hợp thứ hai giảng viên sẽ giao lại một bài đã có.
           loiTai={list.ok ? null : list.message}
         />
+        </div>
       </main>
     </div>
   );

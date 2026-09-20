@@ -102,7 +102,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
       <title>{`${course.title} – ProgrammingEdu × TopHSA`}</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-      <div id="main">
+      <main id="main">
         {/* Khung chung — CÙNG component với dashboard và màn thi thử.
             Trước 06/09/2026 chỗ này là BẢN DỰNG RIÊNG, và nó dùng EMOJI thay
             biểu tượng (🔍 🌙 🔔 ▾ 🙋 ⚙️ 🚪) vì trang này cố ý không nạp
@@ -143,7 +143,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               <div className="cd-block">
                 <div className="cd-block-hd">
                   <div className="cd-block-icon">📋</div>
-                  <h3>Tổng quan khóa học</h3>
+                  <h2>Tổng quan khóa học</h2>
                 </div>
                 <div className="cd-block-body">
                   <p className="cd-desc">{course.description}</p>
@@ -154,7 +154,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               <div className="cd-block">
                 <div className="cd-block-hd">
                   <div className="cd-block-icon">📚</div>
-                  <h3>Giáo trình</h3>
+                  <h2>Giáo trình</h2>
                   {/* `var(--t3)` chứ không `#9CA3AF` viết cứng trong kiểu nội tuyến: mã đó
                       được 2,54:1 trên nền trắng, và kiểu nội tuyến còn thắng mọi
                       luật `body.dark` nên bộ tối cũng không cứu được. */}
@@ -212,7 +212,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               <div className="cd-block">
                 <div className="cd-block-hd">
                   <div className="cd-block-icon">📌</div>
-                  <h3>Yêu cầu</h3>
+                  <h2>Yêu cầu</h2>
                 </div>
                 <div className="cd-block-body">
                   <ul className="cd-req-list">
@@ -365,7 +365,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       <Chatbot />
       {/* Globals cho course_detail.js — thay inline script Jinja của template gốc.

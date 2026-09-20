@@ -2,6 +2,7 @@ import AppShell from '@/components/AppShell';
 import PageStyles from '@/components/PageStyles';
 
 import { KhongDocDuoc, KhongDuQuyen } from './ChanVai';
+import TieuDeTrang from './TieuDeTrang';
 import { layVai } from './layVai';
 import { VAI_VAO_KHU, duocVao, mucCho } from './vai';
 
@@ -66,6 +67,7 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
           token chiều cao của thanh chứ không phải một con số chép lại — chép
           lại là hai chỗ sẽ trôi khỏi nhau khi thanh đổi cỡ. */}
       <main className="mx-auto max-w-6xl px-4 pb-6 pt-[calc(var(--topbar-h)+1.5rem)]">
+        <TieuDeTrang />
         {children}
       </main>
     </div>

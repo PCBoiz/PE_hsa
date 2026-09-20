@@ -60,34 +60,38 @@ export default async function BaoCaoPhuHuynhPage({
     <div className="min-h-dvh bg-ground print:bg-white">
       {/* Thanh điều hướng KHÔNG in ra giấy: tờ gửi phụ huynh không nên có nút
           bấm và đường dẫn quay lại — nó chỉ làm rối và tốn mực. */}
-      <header className="border-b border-line bg-surface print:hidden">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
-          <Link
-            href={`/giang-day/buoi-hoc/${classId}`}
-            className="-my-3 inline-block py-3 text-small text-ink-3 hover:text-brand-ink"
-          >
-            ← Về lớp
-          </Link>
-          {/* `min-w-[14ch]`: khổ điện thoại, tiêu đề bị ép chung hàng với "Về lớp"
-              và dòng người nhận thành một cột chữ năm dòng (soi ảnh 17/09/2026).
-              Có bề rộng tối thiểu thì flex-wrap đẩy phần còn lại xuống hàng dưới. */}
-          <h1 className="min-w-[14ch] flex-1 text-section text-ink">Báo cáo gửi phụ huynh</h1>
-          <NutIn />
-          {/* Nói ngay ở thanh: tờ này sẽ tới ai. Trước 07/09/2026 màn hình
-              không có chỗ nào cho biết, nên giảng viên in ra rồi mới phát hiện
-              không có số nào để gửi. Email trước số Zalo: email là kênh CHÍNH từ
-              07/09 — bản trước chỉ đọc số Zalo nên báo "chưa có" cho cả em đã có
-              email (17/09). */}
-          <span className="basis-full text-small text-ink-3">
-            {bc.parent.email || bc.parent.phone
-              ? <>Gửi tới {bc.parent.name || 'phụ huynh'} · {[bc.parent.email, bc.parent.phone].filter(Boolean).join(' · ')}</>
-              : <span className="text-warning-ink">Chưa có email hay số Zalo của phụ huynh</span>}
-          </span>
-        </div>
-      </header>
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 print:max-w-none print:gap-0 print:px-0 print:py-0">
-        {/* Cấp đường dẫn cho phụ huynh mở. Đặt TRÊN tờ báo cáo chứ không dưới:
+      <main>
+          {/* Dải tiêu đề nằm TRONG `<main>`: là `<header>` ngoài `main` thì thành
+              banner thứ hai (axe `landmark-no-duplicate-banner`), là `div` ngoài
+              `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
+        <div className="border-b border-line bg-surface print:hidden">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
+            <Link
+              href={`/giang-day/buoi-hoc/${classId}`}
+              className="-my-3 inline-block py-3 text-small text-ink-3 hover:text-brand-ink"
+            >
+              ← Về lớp
+            </Link>
+            {/* `min-w-[14ch]`: khổ điện thoại, tiêu đề bị ép chung hàng với "Về lớp"
+                và dòng người nhận thành một cột chữ năm dòng (soi ảnh 17/09/2026).
+                Có bề rộng tối thiểu thì flex-wrap đẩy phần còn lại xuống hàng dưới. */}
+            <h1 className="min-w-[14ch] flex-1 text-section text-ink">Báo cáo gửi phụ huynh</h1>
+            <NutIn />
+            {/* Nói ngay ở thanh: tờ này sẽ tới ai. Trước 07/09/2026 màn hình
+                không có chỗ nào cho biết, nên giảng viên in ra rồi mới phát hiện
+                không có số nào để gửi. Email trước số Zalo: email là kênh CHÍNH từ
+                07/09 — bản trước chỉ đọc số Zalo nên báo "chưa có" cho cả em đã có
+                email (17/09). */}
+            <span className="basis-full text-small text-ink-3">
+              {bc.parent.email || bc.parent.phone
+                ? <>Gửi tới {bc.parent.name || 'phụ huynh'} · {[bc.parent.email, bc.parent.phone].filter(Boolean).join(' · ')}</>
+                : <span className="text-warning-ink">Chưa có email hay số Zalo của phụ huynh</span>}
+            </span>
+          </div>
+        </div>
+        <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 print:max-w-none print:gap-0 print:px-0 print:py-0">
+       {/* Cấp đường dẫn cho phụ huynh mở. Đặt TRÊN tờ báo cáo chứ không dưới:
             đây là việc giảng viên vào trang này để làm, còn tờ báo cáo là thứ
             họ liếc qua để kiểm trước khi gửi. */}
         <KhoiDuongDan
@@ -106,6 +110,7 @@ export default async function BaoCaoPhuHuynhPage({
         )}
 
         <ToBaoCao bc={bc} />
+        </div>
       </main>
     </div>
   );

@@ -50,6 +50,10 @@ export default function LandingPage() {
       </nav>
 
       {/* block content */}
+      {/* `<main>` bọc hero → CTA: mốc trang cho trình đọc màn hình. axe-core
+          `region` 20/09/2026: 49 nút của trang này nằm ngoài mọi mốc. Nền động
+          (`bg-canvas`, `particles`) và thanh điều hướng ở ngoài là đúng. */}
+      <main>
       <section className="hero-section reveal-on-scroll">
         {/* NỀN CỰC QUANG, THUẦN CSS — xem `.hero-cuc-quang` trong `auth.css`.
             Ở đây từng có một nền WebGL viết tay (07/09/2026). Đã GỠ, và lý do
@@ -426,6 +430,7 @@ export default function LandingPage() {
       </section>
 
       {/* block footer */}
+      </main>
       <footer className="landing-footer">© 2026 ProgrammingEdu × TopHSA · Luyện thi Đánh giá năng lực HSA.</footer>
 
       {/* icons.js của base + inline script landing (block extra_scripts) */}

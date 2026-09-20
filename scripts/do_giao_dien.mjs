@@ -665,7 +665,12 @@ function DO_TRONG_TRANG(do_trang_thai) {
       }
       return { left, top, right, bottom, width: right - left, height: bottom - top };
     };
-    const tat_ca = [...document.querySelectorAll(CHAM)].filter(hien)
+    /* Chỉ NÚT thật. `CHAM` gồm cả `[tabindex]` — đúng cho cỡ chạm, sai cho luật
+       này: vùng lý thuyết bài học mang `tabindex="0"` (để bàn phím cuộn được,
+       WCAG 2.1.1) và bị coi là "nút" nằm dưới nút trợ lý — 2304px² báo oan
+       (20/09/2026). Một vùng cuộn có tiêu điểm không phải thứ người ta bấm. */
+    const CHAM_NUT = 'a[href], button, input, select, textarea, [role="button"]';
+    const tat_ca = [...document.querySelectorAll(CHAM_NUT)].filter(hien)
       .map((el) => ({ el, r: hop_thay(el) })).filter((x) => x.r && x.r.width > 0 && x.r.height > 0);
     const noi = tat_ca.filter((x) => co_dinh(x.el));
     for (const a of noi) {

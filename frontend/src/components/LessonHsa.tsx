@@ -107,7 +107,10 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
 
       <main className="lesson-stage">
         {/* Bước 1: KIỂM TRA */}
-        <section className="step-pane active" data-step="1">
+        {/* `tabIndex={0}` trên MỌI bước: bước đang mở là vùng cuộn, và vùng cuộn
+            không nhận tiêu điểm thì bàn phím không cuộn được (axe-core
+            `scrollable-region-focusable`, WCAG 2.1.1 — mức SERIOUS, 20/09/2026). */}
+        <section className="step-pane active" data-step="1" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(1, 'Kiểm tra đầu vào — định vị năng lực')}
             <h1 className="lesson-title" id="lesson-title">Bài học</h1>
@@ -117,7 +120,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 2: ĐÁNH GIÁ */}
-        <section className="step-pane" data-step="2">
+        <section className="step-pane" data-step="2" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(2, 'Đánh giá năng lực — bạn đang ở đâu')}
             <div id="hsa-assess"></div>
@@ -125,7 +128,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 3: LÝ THUYẾT */}
-        <section className="step-pane" data-step="3">
+        <section className="step-pane" data-step="3" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(3, 'Lý thuyết — thích ứng theo kết quả của bạn')}
             <div id="hsa-theory"></div>
@@ -133,7 +136,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 4: GHI CHÚ */}
-        <section className="step-pane" data-step="4">
+        <section className="step-pane" data-step="4" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(4, 'Ghi chú — chốt lại để nhớ lâu')}
             <div id="hsa-notes"></div>
@@ -141,7 +144,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 5: LUYỆN TỐC ĐỘ (gamified) */}
-        <section className="step-pane" data-step="5">
+        <section className="step-pane" data-step="5" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(5, 'Phòng luyện bấm giờ — nhanh & chính xác')}
             <div id="hsa-drill"></div>

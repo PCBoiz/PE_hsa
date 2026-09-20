@@ -107,27 +107,31 @@ export default async function BuoiHocPage({
 
   return (
     <div className="min-h-dvh bg-ground">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
-            ← Khu Giảng dạy
-          </Link>
-          <h1 className="text-section text-ink">{klass.name}</h1>
-          {klass.schedule && <span className="text-small text-ink-3">{klass.schedule}</span>}
-          <Link
-            href={`/giang-day/bai-tap/${klass.id}`}
-            className="-my-3 py-3 text-small text-brand-ink underline"
-          >
-            Bài tập &amp; chấm bài
-          </Link>
-          {/* Khu này không nạp main.js nên nút đổi chủ đề của Topbar legacy
-              không có ở đây. Đặt CUỐI hàng: `ml-auto` ở giữa hàng chỉ đẩy được
-              nó ra khỏi tiêu đề, rồi lịch buổi và liên kết chéo lại nằm SAU nó —
-              nút trôi vào giữa thay vì về mép phải. */}
-          <ThemeToggle className="ml-auto" />
+      <main>
+          {/* Dải tiêu đề nằm TRONG `<main>`: là `<header>` ngoài `main` thì thành
+              banner thứ hai (axe `landmark-no-duplicate-banner`), là `div` ngoài
+              `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
+            <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
+              ← Khu Giảng dạy
+            </Link>
+            <h1 className="text-section text-ink">{klass.name}</h1>
+            {klass.schedule && <span className="text-small text-ink-3">{klass.schedule}</span>}
+            <Link
+              href={`/giang-day/bai-tap/${klass.id}`}
+              className="-my-3 py-3 text-small text-brand-ink underline"
+            >
+              Bài tập &amp; chấm bài
+            </Link>
+            {/* Khu này không nạp main.js nên nút đổi chủ đề của Topbar legacy
+                không có ở đây. Đặt CUỐI hàng: `ml-auto` ở giữa hàng chỉ đẩy được
+                nó ra khỏi tiêu đề, rồi lịch buổi và liên kết chéo lại nằm SAU nó —
+                nút trôi vào giữa thay vì về mép phải. */}
+            <ThemeToggle className="ml-auto" />
+          </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="mx-auto max-w-5xl px-4 py-6">
         <SessionsClient
           classId={Number(classId)}
           className={klass.name}
@@ -137,6 +141,7 @@ export default async function BuoiHocPage({
           /* Thiếu (API cũ) thì coi như được — máy chủ vẫn là hàng rào thật. */
           quyen={list.ok ? (list.data.quyen ?? { xoaBuoi: true, baoCaoPhuHuynh: true }) : { xoaBuoi: true, baoCaoPhuHuynh: true }}
         />
+        </div>
       </main>
     </div>
   );

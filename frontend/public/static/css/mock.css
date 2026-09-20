@@ -53,7 +53,7 @@ body { background: var(--mk-bg); }
 .mk-exam-card { background: var(--mk-card); border: 1px solid var(--mk-bd); border-radius: 18px; padding: 24px; }
 .mk-exam-ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
   background: rgba(139,124,246,.14); color: var(--mk-violet); font-size: 20px; margin-bottom: 14px; }
-.mk-exam-card h3 { margin: 0 0 8px; font-size: 18px; }
+.mk-exam-card h2 { margin: 0 0 8px; font-size: 18px; }
 .mk-exam-card p { margin: 0 0 16px; color: var(--mk-t2); font-size: 14px; line-height: 1.6; }
 .mk-exam-meta { display: flex; gap: 18px; margin-bottom: 18px; color: var(--mk-t3); font-size: 13px; }
 

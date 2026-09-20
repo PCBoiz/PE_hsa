@@ -47,7 +47,9 @@ export function CardHead({
   return (
     <div className="mb-3 flex flex-wrap items-start gap-3">
       <div className="min-w-0 flex-1">
-        <h3 className="text-section text-ink">{title}</h3>
+        {/* h2, không h3: thẻ là mục cấp một dưới h1 của trang. axe-core
+            `heading-order` đỏ ở 9 trang (20/09/2026) vì h1 → h3 bỏ cấp. */}
+        <h2 className="text-section text-ink">{title}</h2>
         {hint && <p className="mt-1 text-small text-ink-3">{hint}</p>}
       </div>
       {action}

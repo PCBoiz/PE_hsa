@@ -51,23 +51,26 @@ export default async function NhapKetQuaThiPage({
 
   return (
     <div className="min-h-dvh bg-ground">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
-            ← Khu Giảng dạy
-          </Link>
-          <h1 className="text-section text-ink">{klass.name}</h1>
-          <Link
-            href={`/giang-day/bao-cao/${klass.id}`}
-            className="-my-3 py-3 text-small text-brand-ink underline"
-          >
-            Báo cáo phụ huynh
-          </Link>
-          <ThemeToggle className="ml-auto" />
+      <main>
+        {/* Dải tiêu đề nằm TRONG `<main>`: là `<header>` ngoài `main` thì thành
+            banner thứ hai (axe `landmark-no-duplicate-banner`), là `div` ngoài
+            `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
+            <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
+              ← Khu Giảng dạy
+            </Link>
+            <h1 className="text-section text-ink">{klass.name}</h1>
+            <Link
+              href={`/giang-day/bao-cao/${klass.id}`}
+              className="-my-3 py-3 text-small text-brand-ink underline"
+            >
+              Báo cáo phụ huynh
+            </Link>
+            <ThemeToggle className="ml-auto" />
+          </div>
         </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="mx-auto max-w-5xl px-4 py-6">
         <h2 className="text-title text-ink">Nhập kết quả thi thử của trung tâm</h2>
         <p className="mt-2 max-w-3xl text-body text-ink-2">
           Tải tờ PDF kết quả mà hệ thống khảo thí xuất cho từng em. Hệ thống đọc điểm ba phần, tổng
@@ -75,6 +78,7 @@ export default async function NhapKetQuaThiPage({
           việc chép tay từng con số.
         </p>
         <NhapKetQuaClient classId={klass.id} />
+        </div>
       </main>
     </div>
   );
