@@ -106,3 +106,22 @@ def test_tro_giang_hien_trong_bao_cao_va_o_chon(canh):
     nk = q1("SELECT summary FROM admin_audit WHERE action='class.member.remove' "
             'AND target_id=%s ORDER BY id DESC LIMIT 1', (str(canh['lop']),))
     assert nk and nk['summary'].startswith('Gỡ trợ giảng'), nk
+
+
+@pytest.mark.django_db
+def test_ngay_vao_lop_that_cho_em_ghi_danh_muon(canh):
+    """Em đang học dở từ trước ngày nhập liệu: học vụ ghi `joined_at` = ngày
+    vào lớp thật (quy ước H.6 trong tờ đề xuất gửi TopHSA). Tương lai → 400."""
+    a, b, _ = canh['em']
+    kq = _goi(AdminClassMembersView, 'post', {'emails': [a.email], 'joined_at': '2026-09-01'},
+              ai=canh['hocvu'], class_id=canh['lop'])
+    assert kq.status_code == 200 and len(kq.data['added']) == 1, kq.data
+    r = q1('SELECT joined_at FROM class_members WHERE class_id=%s AND user_id=%s',
+           (canh['lop'], a.id))
+    assert r['joined_at'].date().isoformat() == '2026-09-01', r
+    kq = _goi(AdminClassMembersView, 'post', {'email': b.email, 'joined_at': '2999-01-01'},
+              ai=canh['hocvu'], class_id=canh['lop'])
+    assert kq.status_code == 400 and 'tương lai' in kq.data['error'], kq.data
+    kq = _goi(AdminClassMembersView, 'post', {'email': b.email, 'joined_at': 'hôm qua'},
+              ai=canh['hocvu'], class_id=canh['lop'])
+    assert kq.status_code == 400, kq.data

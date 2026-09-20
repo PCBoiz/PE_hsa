@@ -3001,9 +3001,11 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   `content_draft_json` hoặc bảng phiên bản, hai đường đọc, nút "Xuất bản" + "Xem như học viên").
   Đề thi thử đã có "đang hiện / ẩn đi"; bài học chưa. Với dữ liệu thật, một biên tập viên lưu dở là
   học viên thấy bài dở ngay.
-- [ ] **Ghi danh muộn: hỏi "em học từ đầu khoá hay từ hôm nay?"** khi xếp em vào lớp đã khai giảng.
-  Nay `joined_at` = lúc bấm nút; đã vá để buổi giảng viên ĐÃ tick vẫn là buổi của em, nhưng buổi em
-  vắng thật trước ngày nhập thì không ai đổ vắng — đúng hướng thận trọng, song học vụ nên được chọn.
+- [x] **XONG 20/09 (chiều) — ghi danh muộn: ô "Em vào lớp từ ngày" khi lớp đã khai giảng.** `POST members`
+  nhận `joined_at` (YYYY-MM-DD, không nhận tương lai; đi cùng `emails`); màn Lớp học hiện ô ngày với min =
+  khai giảng, max = hôm nay, để trống = hôm nay. Nhật ký ghi `joinedAt`. Test đỏ trên mã cũ (ghi hôm nay).
+  Đây là cửa cho quy ước H.6 trong tờ đề xuất TopHSA ("học viên đang học dở"). Chưa có ở đường Cấp hàng loạt
+  kèm xếp lớp (accounts) — dùng Lớp học → Học viên cho em cũ.
 - [x] **XONG 20/09 (chiều) — chuông cho học viên: bài mới, bài đã chấm.** Tới hôm nay `notifications` chỉ có
   bình luận diễn đàn; giao bài xong em chỉ biết nếu tự mở mục Bài tập (thanh trên điện thoại không có mục ấy).
   Nay bài MỞ nhận bài → mỗi em một chuông (nháp thì chưa; nháp→mở mới rung); chấm xong → em nhận điểm + câu

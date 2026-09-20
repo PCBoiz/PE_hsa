@@ -131,6 +131,8 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
       báo cáo lớp tải lại (nút vẫn sáng, không báo gì) — 1/3 em vào lớp. */
   const [dangThem, setDangThem] = useState(false);
   const [tgChon, setTgChon] = useState('');
+  /** Ngày vào lớp thật cho em ghi danh muộn — rỗng = hôm nay (máy chủ ghi lúc bấm). */
+  const [ngayVao, setNgayVao] = useState('');
 
   // `setBusy` của React không có tác dụng NGAY, nên hai cú bấm liền nhau đều
   // lọt qua `if (busy) return`. Với nút "Lưu" của một biểu mẫu tạo lớp thì đó
@@ -270,7 +272,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
       const r = await apiFetch(`/api/admin/classes/${lopMoRong.id}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emails }),
+        body: JSON.stringify({ emails, ...(ngayVao ? { joined_at: ngayVao } : {}) }),
       });
       const d = (await r.json().catch(() => ({}))) as Partial<KetQuaThem> & { error?: string };
       if (!r.ok) throw new Error(errorText(r.status, d));
@@ -615,6 +617,26 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
               {dangThem ? 'Đang thêm…' : 'Thêm vào lớp'}
             </Button>
           </div>
+          {/* Lớp đã khai giảng: em nhập hôm nay có thể đã học từ trước. Ngày vào
+              lớp là mẫu số chuyên cần của em — để mặc định "hôm nay" thì mọi
+              buổi trước đó biến mất khỏi tờ phụ huynh của em (rà 20/09/2026). */}
+          {lopMoRong.startsOn && lopMoRong.startsOn < new Date().toISOString().slice(0, 10) && (
+            <label className="mb-4 flex flex-wrap items-center gap-2 text-small text-ink-2">
+              <span>
+                Lớp đã khai giảng {ngay(lopMoRong.startsOn)}. Em vào lớp từ ngày
+              </span>
+              <input
+                type="date"
+                value={ngayVao}
+                min={lopMoRong.startsOn}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setNgayVao(e.target.value)}
+                aria-label="Ngày vào lớp"
+                className={`${O_CHUNG} w-auto min-w-40`}
+              />
+              <span className="text-ink-3">(để trống = hôm nay; chọn ngày khai giảng nếu em học từ đầu)</span>
+            </label>
+          )}
 
           {/* Trợ giảng của lớp. Trước 20/09/2026 màn này không có chữ "trợ
               giảng" nào: gán được (qua ô email ở trên) nhưng gán xong thì họ

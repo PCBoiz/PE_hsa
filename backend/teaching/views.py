@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from accounts.authentication import invalidate_user_cache
 from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
-from common.clock import local_now
+from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import forget_events
 from common.identity import norm_email, norm_phone
@@ -415,6 +415,20 @@ class AdminClassDetailView(APIView):
         return Response({'ok': True, 'deleted': dict(counts), 'forgottenEvents': quen})
 
 
+def _doc_ngay_vao_lop(raw):
+    """`joined_at` từ thân request → (datetime đầu ngày, lỗi). Trống → (None, None)."""
+    if raw in (None, ''):
+        return None, None
+    from datetime import date, datetime, time
+    try:
+        d = date.fromisoformat(str(raw)[:10])
+    except ValueError:
+        return None, 'Ngày vào lớp phải ở dạng YYYY-MM-DD.'
+    if d > local_today():
+        return None, 'Ngày vào lớp không được ở tương lai.'
+    return datetime.combine(d, time.min), None
+
+
 class AdminClassMembersView(APIView):
     """POST/DELETE /api/admin/classes/<id>/members — thêm/bớt học viên."""
     # `IsAdminOrAcademic`: quản lý học vụ xếp lớp và đợt học là việc HÀNG NGÀY
@@ -427,6 +441,15 @@ class AdminClassMembersView(APIView):
         if not klass:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
+
+        # NGÀY VÀO LỚP THẬT (20/09/2026). `joined_at` mặc định là lúc học vụ
+        # bấm nút — với em đang học dở từ trước ngày nhập liệu, đó là ngày sai:
+        # mọi buổi trước đó rơi khỏi mẫu số chuyên cần của em. Tờ đề xuất gửi
+        # TopHSA (quy ước H.6) hứa "ghi thêm cột ngày vào lớp" — đây là cửa nhận
+        # nó. Chỉ nhận NGÀY (YYYY-MM-DD), không nhận tương lai.
+        vao, loi = _doc_ngay_vao_lop(body.get('joined_at'))
+        if loi:
+            return Response({'error': loi}, status=400)
 
         # NHIỀU EM MỘT LƯỢT (20/09/2026). Rà luồng học vụ trên mock production:
         # xếp 30 em vào lớp bằng cách gõ từng email rồi bấm "Thêm vào lớp" 30
@@ -450,7 +473,7 @@ class AdminClassMembersView(APIView):
                 if not row:
                     ket_qua['missing'].append(email)
                     continue
-                da_them = self._ghi_thanh_vien(request, klass, row)
+                da_them = self._ghi_thanh_vien(request, klass, row, vao=vao)
                 ket_qua['added' if da_them else 'already'].append(
                     {'userId': row['id'], 'name': row['name'], 'email': row['email'],
                      'role': row['role']})
@@ -470,12 +493,12 @@ class AdminClassMembersView(APIView):
             # Tra tên CHỈ để chép vào nhật ký, cố ý KHÔNG chặn khi không thấy:
             # thêm một cửa 404 ở đây là đổi hành vi của endpoint đang chạy.
             row = q1('SELECT id, name, email, role FROM users WHERE id=%s', (uid,))
-        self._ghi_thanh_vien(request, klass, row, uid)
+        self._ghi_thanh_vien(request, klass, row, uid, vao=vao)
         return Response({'ok': True, 'userId': uid,
                          'role': row['role'] if row else None})
 
     @staticmethod
-    def _ghi_thanh_vien(request, klass, row, uid=None):
+    def _ghi_thanh_vien(request, klass, row, uid=None, vao=None):
         """Ghi một người vào lớp; trả True nếu SINH dòng mới, False nếu đã ở trong lớp.
 
         Trợ giảng cũng đi qua đúng cửa này — `class_members` là cách duy nhất
@@ -497,7 +520,7 @@ class AdminClassMembersView(APIView):
                     VALUES (%s, %s, %s)
                     ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING
                     RETURNING id''',
-                 (class_id, uid, local_now()))
+                 (class_id, uid, vao or local_now()))
         if not moi:
             return False
         ten = _user_label(row, uid)
@@ -507,7 +530,8 @@ class AdminClassMembersView(APIView):
                      summary=('Gán trợ giảng "%s" vào lớp "%s".' if tro_giang
                               else 'Thêm "%s" vào lớp "%s".') % (ten, klass['name']),
                      detail={'userId': uid, 'userName': ten, 'classId': class_id,
-                             'role': row.get('role') if row else None})
+                             'role': row.get('role') if row else None,
+                             'joinedAt': vao.date().isoformat() if vao else None})
         return True
 
     def delete(self, request, class_id):
