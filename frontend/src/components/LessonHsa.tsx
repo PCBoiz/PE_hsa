@@ -7,7 +7,8 @@
 import { useEffect } from 'react';
 
 import Chatbot from '@/components/Chatbot';
-import LegacyScripts from '@/components/LegacyScripts';
+import LegacyScripts, { CAU_NOI } from '@/components/LegacyScripts';
+import NapTruocScript from '@/components/NapTruocScript';
 import PageStyles from '@/components/PageStyles';
 import { ghiNhomVai } from '@/lib/nhomVai';
 import { apiFetch } from '@/lib/api';
@@ -42,12 +43,17 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
     }).catch(() => {});
   }, []);
 
+  /* ENGINE TRƯỚC, confetti SAU (20/09/2026). `LegacyScripts` nạp theo thứ tự,
+     sau hydrate. Bản trước để confetti (jsdelivr, miền khác) đứng đầu, nên
+     engine — thứ VẼ nội dung bài, phần tử LCP — phải chờ một lượt tải + chạy
+     146 ms của thứ chỉ dùng khi HOÀN THÀNH bài (Lighthouse production: long
+     task confetti ở 5,3 s, engine sau đó). `window.confetti` được engine hỏi
+     `if (window.confetti)` lúc dùng, nên tới muộn không sao.
+     lesson_content_hsa.js ĐÃ BỎ (2026-08-19): 76 bài nay nằm trong CSDL.
+     chatbot.js ĐÃ BỎ (20/09/2026): trợ lý nay là React. */
   const scripts = [
-    'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
-    // lesson_content_hsa.js ĐÃ BỎ (2026-08-19): 76 bài nay nằm trong CSDL,
-    // engine tải đúng bài đang mở qua /api/courses/<id>/content?lesson=N.
     '/static/js/lesson_hsa.js',
-    // chatbot.js ĐÃ BỎ (20/09/2026): trợ lý nay là React (`components/Chatbot.tsx`).
+    'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
   ];
 
   const eyebrow = (n: number, label: string) => (
@@ -64,6 +70,10 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
           và thẻ câu hỏi vẫn đen dù đang ở theme sáng (audit 2026-08-13). */}
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_chrome.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
       <title>Bài học HSA — ProgrammingEdu × TopHSA</title>
+      {/* Tải trước cầu nối + engine ngay từ HTML: `LegacyScripts` chỉ chèn thẻ
+          script sau hydrate — lúc ấy tệp đã nằm sẵn trong bộ đệm (cùng lối với
+          Trang của tôi). */}
+      <NapTruocScript srcs={[CAU_NOI, ...scripts]} />
       {/* NẠP TRƯỚC NỘI DUNG BÀI ngay lúc HTML được phân tích (20/09/2026).
           Lighthouse (mobile, production): phần tử LCP của trang là câu dẫn bước 1
           do `lesson_hsa.js` vẽ, và 88% thời gian LCP (4,5 s) là "render delay" —
