@@ -64,7 +64,7 @@ toggleUserMenu = function () {
 /* ── Bell notification panel — nối với /api/notifications/feed (DB thật) ── */
 var _bellNotifs = [];
 var _bellServerUnread = 0; // badge count từ server (COUNT(*) WHERE is_read=false)
-var _BELL_ICON = { mention: '💬', comment_reply: '↩️', post_comment: '📝', system: '🔔' };
+var _BELL_ICON = { mention: '💬', comment_reply: '↩️', post_comment: '📝', system: '🔔', assignment_new: '📚', assignment_graded: '✅' };
 
 function _bellTimeAgo(iso) {
   if (!iso) return '';
@@ -201,8 +201,8 @@ function readBellItem(idx) {
     _updateBellDot();
     if (n.id) fetch('/api/notifications/feed/' + n.id + '/read', { method: 'POST' }).catch(function () {});
   }
-  // Di chuyển tới bài viết có @mention
-  if (n.refType === 'post' && n.refId) _focusForumPost(n.refId);
+  // Di chuyển tới bài viết có @mention; chuông bài tập (20/09/2026) đưa thẳng tới mục Bài tập.
+  if (n.refType === 'post' && n.refId) _focusForumPost(n.refId); else if (n.refType === 'assignment') window.location.href = '/bai-tap';
 }
 
 function markAllBellRead() {

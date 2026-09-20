@@ -117,6 +117,11 @@ Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì �
   (hv2 đăng nhập → `/questionaire`, không còn tham số trong URL).
 - **Production xác minh xong 12/12** bằng đăng nhập thật năm vai audit2009 (khu trợ giảng, ô dán, tờ PH có
   bài tập + chuyên cần 2/2, thẻ lớp học viên, tên trợ giảng, ẩn "Báo cáo PH", 404 tiếng Việt, không thẻ giữ chuỗi).
+- **Chuông học viên (chiều, sau tờ đề xuất):** `assignment_new` khi bài mở nhận bài (kể cả nháp → mở),
+  `assignment_graded` kèm điểm/thang + câu nhận xét đầu; bọc try để chuông không chặn giao bài/chấm bài;
+  chuông bấm vào → `/bai-tap` (dashboard.js, giữ trần dòng). Test `test_giao_bai_va_cham_bai_deu_rung_chuong_hoc_vien`
+  đỏ trên mã cũ (KeyError `notified`); 71 test teaching+notifications xanh; đi thử ở 390px: chấm đỏ → panel →
+  bấm → Bài tập. Giảng viên chưa có chuông (khu Giảng dạy là React, không có chuông; "Việc hôm nay" đã đếm bài chưa chấm).
 - Ghi nhận: `next build` OOM hai lần khi máy còn 2,9 GB trống (Chrome của anh 4,7 GB) → dựng bằng
   `node --max-old-space-size=4096 node_modules/next/dist/bin/next build`; Vercel dựng bình thường.
 

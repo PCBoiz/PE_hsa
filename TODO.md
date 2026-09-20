@@ -3004,3 +3004,13 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
 - [ ] **Ghi danh muộn: hỏi "em học từ đầu khoá hay từ hôm nay?"** khi xếp em vào lớp đã khai giảng.
   Nay `joined_at` = lúc bấm nút; đã vá để buổi giảng viên ĐÃ tick vẫn là buổi của em, nhưng buổi em
   vắng thật trước ngày nhập thì không ai đổ vắng — đúng hướng thận trọng, song học vụ nên được chọn.
+- [x] **XONG 20/09 (chiều) — chuông cho học viên: bài mới, bài đã chấm.** Tới hôm nay `notifications` chỉ có
+  bình luận diễn đàn; giao bài xong em chỉ biết nếu tự mở mục Bài tập (thanh trên điện thoại không có mục ấy).
+  Nay bài MỞ nhận bài → mỗi em một chuông (nháp thì chưa; nháp→mở mới rung); chấm xong → em nhận điểm + câu
+  nhận xét đầu; bấm chuông → `/bai-tap`. Chuông không được chặn việc chính (bọc try, log). Test đỏ trên mã cũ.
+  Đã đi thử ở 390px: chấm đỏ → panel → bấm → Bài tập. Chưa làm chuông cho GIẢNG VIÊN (em nộp bài) — "Việc hôm
+  nay" đã đếm "bài chưa chấm", và khu Giảng dạy (React) chưa có chuông.
+- [ ] **Bấm nút trước khi hydrate trên trang React thì lượt bấm rơi** (đo trên production: bấm "Học viên" ở màn
+  Lớp học ngay khi DOM có → không mở). Đăng nhập/đổi mật khẩu đã khoá nút tới khi gắn xong (`useDaGan`); các
+  nút khác chỉ "không phản ứng" chứ không rò rỉ gì. Cân nhắc: khung chờ mờ toàn trang cho tới khi hydrate ở
+  các trang quản trị, hoặc chấp nhận (mạng chậm bấm lại là được).

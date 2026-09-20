@@ -32,6 +32,7 @@ from common.db import q, q1, x
 from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, record_events
 from common.permissions import IsTeachingStaff, can_see_class
 from common.views import NguoiDungView
+from notifications.service import notify
 from teaching.vocab import chi_hoc_vien
 
 #: Vòng đời một bài tập. Khớp `assignments_status_check` ở §38.
@@ -52,6 +53,51 @@ MAX_GRADE_PER_BATCH = 200
 XEM_TRUOC = 400
 
 logger = logging.getLogger(__name__)
+
+
+def _han(v):
+    """'25/09 23:59' từ một datetime, hoặc '' khi bài không có hạn."""
+    return v.strftime('%d/%m %H:%M') if v else ''
+
+
+def _bao_bai_moi(assignment_id, class_id, title, due_at):
+    """Chuông cho MỌI học viên đang học lớp: "Bài tập mới".
+
+    Thêm 20/09/2026 sau lượt rà sáu vai: tới hôm đó `notifications` chỉ có
+    bình luận diễn đàn; giảng viên giao bài xong, em chỉ biết nếu tự mở mục
+    Bài tập (điện thoại không có mục ấy trên thanh). Thất bại ở đây KHÔNG được
+    làm hỏng việc giao bài — chuông là tiện ích, bài đã vào CSDL rồi.
+    """
+    try:
+        ds = q('SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
+               'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
+               (class_id,))
+        han = _han(due_at)
+        for r in ds:
+            notify(r['user_id'], 'assignment_new', 'Bài tập mới: %s' % title,
+                   ('Hạn nộp %s' % han) if han else 'Không có hạn nộp',
+                   'assignment', assignment_id, coalesce_minutes=0)
+        return len(ds)
+    except Exception:            # noqa: BLE001 — chuông không được chặn việc chính
+        logger.exception('[assignments] không gửi được chuông "bài mới" cho bài %s', assignment_id)
+        return 0
+
+
+def _bao_da_cham(assignment_id, title, thang, rows):
+    """Chuông cho từng em vừa được chấm: điểm + câu nhận xét đầu."""
+    try:
+        for g in rows:
+            diem = g['score']
+            diem_chu = ('%g' % float(diem)) if diem is not None else '—'
+            nx = (g.get('feedback') or '').strip()
+            notify(g['user_id'], 'assignment_graded',
+                   'Bài "%s" đã chấm: %s/%g' % (title, diem_chu, float(thang)),
+                   nx[:120] if nx else 'Giảng viên chưa ghi nhận xét',
+                   'assignment', assignment_id, coalesce_minutes=0)
+        return len(rows)
+    except Exception:            # noqa: BLE001
+        logger.exception('[assignments] không gửi được chuông "đã chấm" cho bài %s', assignment_id)
+        return 0
 
 _NOT_FOUND = {'error': 'Không tìm thấy bài tập này.'}
 
@@ -315,7 +361,10 @@ class ClassAssignmentsView(APIView):
                      summary='Giao bài "%s" cho lớp.' % data['title'],
                      detail={'classId': class_id, 'topic': data.get('topic'),
                              'maxScore': str(data.get('max_score') or '')})
-        return Response({'ok': True, 'id': row['id']}, status=201)
+        # Bản nháp thì em chưa thấy — chuông đi cùng lúc bài ĐƯỢC MỞ (xem `patch`).
+        da_bao = (_bao_bai_moi(row['id'], class_id, data['title'], data.get('due_at'))
+                  if (data.get('status') or 'open') == 'open' else 0)
+        return Response({'ok': True, 'id': row['id'], 'notified': da_bao}, status=201)
 
 
 # ── 2. Sửa & xoá ────────────────────────────────────────────────────────────
@@ -358,6 +407,11 @@ class AssignmentDetailView(APIView):
                      summary='Sửa bài tập "%s".' % (data.get('title') or before['title']),
                      detail={k: (v.isoformat() if hasattr(v, 'isoformat') else str(v))
                              for k, v in data.items()})
+        # Nháp → mở nhận bài = lúc em mới nhìn thấy bài: chuông đi ở đây.
+        if data.get('status') == 'open' and before['status'] != 'open':
+            _bao_bai_moi(assignment_id, before['class_id'],
+                         data.get('title') or before['title'],
+                         data.get('due_at', before.get('due_at')))
         after = _load(request, assignment_id)
         out = {'ok': True, 'assignment': _dict(after)}
         if canh_bao:
@@ -585,6 +639,7 @@ class AssignmentGradingView(APIView):
                      target_id=assignment_id, target_label=label, summary=summary,
                      detail={'classId': row['class_id'], 'graded': len(rows),
                              'skipped': bo_qua, 'maxScore': str(thang)})
+        _bao_da_cham(assignment_id, label, thang, rows)
         ra = {'ok': True, 'graded': len(rows), 'events': so_su_kien,
               'skipped': bo_qua, 'summary': summary}
         if thieu > 0:

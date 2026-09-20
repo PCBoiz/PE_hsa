@@ -724,6 +724,44 @@ def test_to_phu_huynh_co_bai_tap_da_cham(lop):
     assert len(ban) == 1 and ban[0]['submittedAt'] is None and ban[0]['score'] is None, ban
 
 
+# ── Chuông cho học viên: bài mới, bài đã chấm (20/09/2026) ─────────────────
+
+@pytest.mark.django_db
+def test_giao_bai_va_cham_bai_deu_rung_chuong_hoc_vien(lop):
+    """Tới 20/09/2026 `notifications` chỉ có bình luận diễn đàn. Giao bài xong
+    em chỉ biết nếu tự mở mục Bài tập — mà thanh trên ở điện thoại không có mục
+    ấy. Nay: bài MỞ nhận bài → mỗi em một chuông; bản nháp thì chưa; nháp → mở
+    mới rung; chấm xong → em được chấm nhận điểm + câu nhận xét đầu."""
+    gv, (em1, em2) = lop['gv'], lop['hv'][:2]
+    chuong = lambda uid: q('SELECT type, title, body, ref_type, ref_id FROM notifications '  # noqa: E731
+                           'WHERE user_id=%s ORDER BY id', (uid,))
+    # 1. Nháp: không ai được rung.
+    kq = _goi(ClassAssignmentsView, 'post', {'title': 'Bài nháp', 'status': 'draft'},
+              ai=gv, class_id=lop['id'])
+    assert kq.status_code == 201 and kq.data['notified'] == 0, kq.data
+    assert chuong(em1.id) == []
+    # 2. Nháp → mở: rung một lần cho mỗi em.
+    _goi(AssignmentDetailView, 'patch', {'status': 'open'}, ai=gv, assignment_id=kq.data['id'])
+    c1 = chuong(em1.id)
+    assert [c['type'] for c in c1] == ['assignment_new'] and c1[0]['ref_id'] == kq.data['id'], c1
+    assert len(chuong(em2.id)) == 1
+    # 3. Giao thẳng bài mở có hạn: tiêu đề + hạn trong thân.
+    kq2 = _goi(ClassAssignmentsView, 'post',
+               {'title': 'Bài luận hàm số', 'due_at': '2026-09-25T23:59:00'},
+               ai=gv, class_id=lop['id'])
+    assert kq2.data['notified'] == len(lop['hv']), kq2.data
+    c1 = chuong(em1.id)
+    assert c1[-1]['title'] == 'Bài tập mới: Bài luận hàm số' and '25/09 23:59' in c1[-1]['body'], c1[-1]
+    # 4. Chấm em1 (8, có nhận xét) — chỉ em1 nhận chuông "đã chấm".
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em1.id, 'score': 8, 'feedback': 'Thiếu giới hạn hai đầu.'}]},
+         ai=gv, assignment_id=kq2.data['id'])
+    cuoi = chuong(em1.id)[-1]
+    assert cuoi['type'] == 'assignment_graded', cuoi
+    assert cuoi['title'] == 'Bài "Bài luận hàm số" đã chấm: 8/10' and cuoi['body'] == 'Thiếu giới hạn hai đầu.', cuoi
+    assert all(c['type'] != 'assignment_graded' for c in chuong(em2.id))
+
+
 # ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
 
 @pytest.mark.django_db
