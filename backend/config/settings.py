@@ -295,6 +295,9 @@ REST_FRAMEWORK = {
         # Một em học tối đa vài chục bài mỗi ngày, mỗi bài ~10 lượt chấm.
         'user_day': '2000/day',
         'user_hour': '600/hour',
+        # Trợ lý AI — tiền thật mỗi lượt; xem common/throttling.py.
+        'chat_hour': '60/hour',
+        'chat_day': '200/day',
         'login': '20/min',
         'register': '10/min',
     },

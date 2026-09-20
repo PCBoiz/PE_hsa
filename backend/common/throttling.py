@@ -76,6 +76,21 @@ class DailyUserThrottle(_PerViewUserThrottle):
     scope = 'user_day'
 
 
+# Trợ lý AI: mỗi lượt là TIỀN THẬT (đo 20/09/2026: v4-pro ~0,1–0,2 cent một câu,
+# số dư khoá 2,54 USD). Tới hôm ấy `/api/chat` chỉ có quota theo IP (1000/giờ)
+# — một em viết vòng lặp là rút được vài đô một giờ, và cả lớp sau NAT đứng
+# chung một xô. Quota theo người: 60/giờ đủ cho một em hỏi mỗi phút, 200/ngày
+# là trần chi phí ~0,4 USD/em/ngày ở mức tệ nhất (OWASP LLM10 — Unbounded
+# Consumption). Không có Redis thì bộ đếm sống theo TỪNG tiến trình gunicorn
+# (2 worker → trần thực tế gấp đôi) — vẫn là trần.
+class ChatHourlyUserThrottle(_PerViewUserThrottle):
+    scope = 'chat_hour'
+
+
+class ChatDailyUserThrottle(_PerViewUserThrottle):
+    scope = 'chat_day'
+
+
 class LoginThrottle(_IPKhach, SimpleRateThrottle):
     """Chống dò mật khẩu ở /auth/login. Mức THẬT nằm ở `DEFAULT_THROTTLE_RATES`.
 

@@ -23,21 +23,23 @@
  * không chú thích kiểu bên trong để phép kiểm unit rút ra và chạy được bằng
  * Node mà không cần bộ dịch TS.
  */
+/**
+ * CHỈ BA THAM SỐ (20/09/2026, OWASP LLM01). Bản trước gửi cả tên bài, chủ đề,
+ * ý chính, công thức — và máy chủ nối thẳng chúng vào system prompt, tức ai
+ * đăng nhập cũng viết được vài dòng vào lời hệ thống của mô hình. Nay máy chủ
+ * tra bốn thứ ấy từ `lessons.content_json` bằng `course_id` + `lesson_index`;
+ * `step` là một trong năm giá trị cố định của engine.
+ */
 export type NguCanhBaiHoc = {
   course_id: string;
-  lesson_id: string;
   lesson_index: number | null;
-  lesson_title: string;
-  lesson_topic: string;
   step: string;
-  key_points: string[];
-  formula: string;
 };
 
 type BaiDangMo = {
   courseId?: string;
   index?: number;
-  lesson?: { id?: string; title?: string; topic_tag?: string; notes?: { key_points?: string[]; formula?: string } };
+  lesson?: { id?: string; title?: string };
 };
 
 export function nguCanhBaiHoc(
@@ -47,19 +49,13 @@ export function nguCanhBaiHoc(
   try {
     const mo = w.__PE_BAI_DANG_MO;
     if (!mo || !mo.lesson) return null;
-    const lesson = mo.lesson;
     const stepEl = d.querySelector('.progress-step.active');
     const stepNames = ['Kiểm tra', 'Đánh giá', 'Lý thuyết', 'Ghi chú', 'Luyện tốc độ'];
     const stepNum = stepEl ? parseInt(stepEl.getAttribute('data-step') || '1', 10) : 1;
     return {
       course_id: mo.courseId || d.body.getAttribute('data-course') || '',
-      lesson_id: lesson.id || '',
       lesson_index: mo.index || null,
-      lesson_title: lesson.title || '',
-      lesson_topic: lesson.topic_tag || '',
       step: stepNames[(stepNum || 1) - 1] || '',
-      key_points: (lesson.notes && lesson.notes.key_points) || [],
-      formula: (lesson.notes && lesson.notes.formula) || '',
     };
   } catch {
     return null; // ngữ cảnh chỉ là phần bổ trợ — hỏng thì vẫn chat bình thường

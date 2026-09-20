@@ -18,6 +18,12 @@ from rest_framework.response import Response
 from chatbot.graph import chat, chat_stream
 from chatbot.profile import learner_profile
 from common.db import q1
+from common.throttling import (
+    ChatDailyUserThrottle,
+    ChatHourlyUserThrottle,
+    DailyIPThrottle,
+    HourlyIPThrottle,
+)
 from common.views import NguoiDungView
 
 log = logging.getLogger(__name__)
@@ -37,15 +43,9 @@ def _user_context(user):
     return learner_profile(user.id, getattr(user, "name", None))
 
 
-# Ngữ cảnh trang do client gửi: chỉ nhận đúng các khoá này, cắt độ dài, để nội
-# dung người dùng bơm vào không làm phình/điều khiển system prompt.
-_CTX_FIELDS = {
-    "lesson_index": ("Bài số", 8),
-    "lesson_title": ("Tên bài", 120),
-    "lesson_topic": ("Chủ đề", 80),
-    "step": ("Đang ở bước", 40),
-    "formula": ("Công thức của bài", 200),
-}
+# Bước học viên đang đứng — chuỗi CỐ ĐỊNH của engine (`lesson_hsa.js`), chỉ
+# nhận đúng năm giá trị này. Mọi thứ khác về bài thì tra CSDL (bên dưới).
+_BUOC = ('Kiểm tra', 'Đánh giá', 'Lý thuyết', 'Ghi chú', 'Luyện tốc độ')
 
 
 def _ten_khoa(course_id):
@@ -67,29 +67,86 @@ def _ten_khoa(course_id):
     return (r or {}).get("title") or ""
 
 
+def _mot_dong(chu, limit):
+    """Một dòng, không ký tự điều khiển: một giá trị nhiều dòng là cách rẻ nhất
+    để "viết thêm" gạch đầu dòng vào system prompt."""
+    return " ".join(str(chu or "").split())[:limit]
+
+
+def _bai_theo_so(course_id, index):
+    """Tên bài, chủ đề, ý chính, công thức — ĐỌC TỪ `lessons.content_json`.
+
+    Tới 20/09/2026 bốn thứ này do TRÌNH DUYỆT gửi và được nối thẳng vào system
+    prompt (`lesson_title`, `lesson_topic`, `formula`, `key_points`), chỉ cắt
+    độ dài, không cắt xuống dòng. Tức bất kỳ ai đăng nhập cũng viết được vài
+    dòng vào lời hệ thống của mô hình, ngay trên đường đi đúng thiết kế —
+    OWASP LLM01 (Prompt Injection). Bài nằm trong CSDL từ 19/08/2026, nên máy
+    chủ tra được; client chỉ còn gửi `course_id` + `lesson_index` (tham số
+    truy vấn) và `step` (năm giá trị cố định). Cùng lối với `_ten_khoa`.
+    """
+    cid = str(course_id or "").strip()[:64]
+    try:
+        so = int(index)
+    except (TypeError, ValueError):
+        return None
+    if not cid or not 1 <= so <= 999:
+        return None
+    r = q1("SELECT content_json FROM lessons WHERE course_id = %s AND sort_order = %s "
+           "AND content_json IS NOT NULL", (cid, so))
+    if not r:
+        return None
+    d = r["content_json"]
+    if isinstance(d, str):
+        try:
+            d = json.loads(d)
+        except ValueError:
+            return None
+    if not isinstance(d, dict):
+        return None
+    ghi_chu = d.get("notes") if isinstance(d.get("notes"), dict) else {}
+    y = ghi_chu.get("key_points") if isinstance(ghi_chu.get("key_points"), list) else []
+    return {
+        "so": so,
+        "ten": _mot_dong(d.get("title"), 120),
+        "chu_de": _mot_dong(d.get("topic_tag"), 80),
+        "cong_thuc": _mot_dong(ghi_chu.get("formula"), 200),
+        "y_chinh": [_mot_dong(p, 160) for p in y[:6] if _mot_dong(p, 160)],
+    }
+
+
 def _lesson_context(page_context):
-    """Mô tả gọn bài học viên đang mở, để trợ lý bám đúng nội dung đang học."""
+    """Mô tả gọn bài học viên đang mở, để trợ lý bám đúng nội dung đang học.
+
+    Mọi dòng về bài là của MÁY CHỦ (tra CSDL); từ client chỉ có ba tham số:
+    `course_id`, `lesson_index`, `step`. Trường nào khác client gửi (kể cả
+    `lesson_title`, `key_points` như bản cũ) đều bị bỏ qua.
+    """
     if not isinstance(page_context, dict):
         return ""
     lines = []
     ten = _ten_khoa(page_context.get("course_id"))
     if ten:
         lines.append(f"- Khoá đang học: {ten[:80]}")
-    for key, (label, limit) in _CTX_FIELDS.items():
-        val = page_context.get(key)
-        if val in (None, "", []):
-            continue
-        lines.append(f"- {label}: {str(val)[:limit]}")
-    pts = page_context.get("key_points")
-    if isinstance(pts, list) and pts:
-        joined = "; ".join(str(p)[:160] for p in pts[:6])
-        lines.append(f"- Ý chính của bài: {joined}")
+    bai = _bai_theo_so(page_context.get("course_id"), page_context.get("lesson_index"))
+    if bai:
+        lines.append(f"- Bài số: {bai['so']}")
+        if bai["ten"]:
+            lines.append(f"- Tên bài: {bai['ten']}")
+        if bai["chu_de"]:
+            lines.append(f"- Chủ đề: {bai['chu_de']}")
+        if bai["cong_thuc"]:
+            lines.append(f"- Công thức của bài: {bai['cong_thuc']}")
+        if bai["y_chinh"]:
+            lines.append("- Ý chính của bài: " + "; ".join(bai["y_chinh"]))
+    buoc = page_context.get("step")
+    if buoc in _BUOC:
+        lines.append(f"- Đang ở bước: {buoc}")
     if not lines:
         return ""
     return (
-        "Học viên ĐANG mở bài học dưới đây. Hãy bám sát bài này khi trả lời "
-        "(giảng lại đúng phần lý thuyết, lấy ví dụ cùng dạng, nhắc bẫy hay gặp):\n"
-        + "\n".join(lines)
+        "Học viên ĐANG mở bài học dưới đây (dữ liệu do máy chủ tra từ giáo trình). "
+        "Hãy bám sát bài này khi trả lời (giảng lại đúng phần lý thuyết, lấy ví dụ "
+        "cùng dạng, nhắc bẫy hay gặp):\n" + "\n".join(lines)
     )
 
 
@@ -134,6 +191,9 @@ class ChatView(NguoiDungView):
     `image` là data URL của ảnh đề bài (tuỳ chọn); chỉ gắn vào lượt cuối và đi
     model đọc được ảnh (xem `chatbot/graph.py`).
     """
+    # Quota theo IP (mặc định) + theo NGƯỜI (riêng cho đường tốn tiền này) —
+    # xem `ChatHourlyUserThrottle`.
+    throttle_classes = [DailyIPThrottle, HourlyIPThrottle, ChatHourlyUserThrottle, ChatDailyUserThrottle]
     def post(self, request):
         if not getattr(settings, "DEEPSEEK_API_KEY", None):
             return Response(

@@ -67,9 +67,9 @@ test('engine công bố bài đang mở và trợ lý đọc được', async ({
 
   const ctx = await expectChatbotBietBai(page, SO_BAI);
 
-  // Tên khoá KHÔNG đi từ client nữa — máy chủ tra từ bảng `courses`.
-  expect(Object.keys(ctx)).not.toContain('course_title');
-  expect(ctx.lesson_title).toBe(BAI.title);
+  // Tên khoá/tên bài KHÔNG đi từ client — máy chủ tra `courses` và `lessons`.
+  expect(Object.keys(ctx).sort()).toEqual(['course_id', 'lesson_index', 'step']);
+  expect(ctx.course_id).toBe(KHOA);
 
   expect(loiJs, 'trang không được ném lỗi JS').toEqual([]);
 });

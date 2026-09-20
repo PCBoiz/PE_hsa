@@ -139,6 +139,8 @@ export default function Chatbot() {
         try {
           const e = await res.json();
           traLoi = (typeof e.error === 'string' ? e.error : e.error?.message) || traLoi;
+          // 429 = hạn mức theo người (60/giờ) — nói vì sao, kèm bao lâu nữa.
+          if (res.status === 429) traLoi = 'Bạn hỏi nhanh quá — trợ lý có hạn mức mỗi giờ để giữ chi phí. ' + (e.error?.detail || 'Thử lại sau ít phút nhé.');
         } catch { /* thân không phải JSON */ }
       } else if ((res.headers.get('content-type') || '').startsWith('text/event-stream')) {
         traLoi = await docLuong(res, ghiCuoi);

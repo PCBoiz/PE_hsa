@@ -139,14 +139,14 @@ if (than) {
   const ok = goi({ __PE_BAI_DANG_MO: { courseId: 'hsa_tq', index: 7, lesson: BAI } }, docGia);
   check('có bài đang mở → trả ngữ cảnh, KHÔNG null', ok !== null, String(ok));
   check('nói đúng số bài', ok && ok.lesson_index === 7, JSON.stringify(ok));
-  check('nói đúng tên bài', ok && ok.lesson_title === 'Tỉ lệ phần trăm', JSON.stringify(ok));
+  check('nói đúng khoá', ok && ok.course_id === 'hsa_tq', JSON.stringify(ok));
   check('nói đúng bước đang xem', ok && ok.step === 'Lý thuyết', JSON.stringify(ok));
-  check('gửi kèm ý chính + công thức',
-    ok && ok.key_points.length === 2 && ok.formula === 'p = x/y', JSON.stringify(ok));
 
-  // Không gửi `course_title` nữa: tên khoá không có ở client, máy chủ tự tra.
-  check('KHÔNG gửi course_title từ client',
-    ok && !('course_title' in ok), JSON.stringify(ok));
+  // Tên khoá, tên bài, ý chính, công thức KHÔNG đi từ client (20/09/2026): máy
+  // chủ tra `lessons.content_json`. Client gửi được là client tiêm được.
+  for (const k of ['course_title', 'lesson_title', 'lesson_topic', 'key_points', 'formula']) {
+    check(`KHÔNG gửi ${k} từ client`, ok && !(k in ok), JSON.stringify(ok));
+  }
 
   check('trang không phải bài học → null', goi({}, docGia) === null);
   check('bài chưa tải xong → null',

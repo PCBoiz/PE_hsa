@@ -22,9 +22,16 @@ services:
       python manage.py collectstatic --noinput &&
       python manage.py bootstrap_schema &&
       python manage.py migrate --noinput
+    # `--threads 12` (20/09/2026, trước đó 2). Đo trên production với 6 lượt trợ
+    # lý AI ĐỒNG THỜI: 2 worker × 2 thread = 4 chỗ, lượt 5–6 chờ thêm 2,3 s, và
+    # một GET /api/user chen giữa mất 5,07 s thay vì 0,3 s — bốn em hỏi trợ lý
+    # cùng lúc là CẢ LỚP đứng. Mỗi lượt trợ lý giữ một thread 5–7 s chỉ để CHỜ
+    # DeepSeek (I/O); thread gthread rất rẻ, còn CPU vẫn là GIL từng worker.
+    # Pool CSDL là per-process (settings.DATABASES), 12 thread/worker vẫn dưới
+    # max_size. Không tăng worker: 512 MB của gói free.
     startCommand: >-
       gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
-      --workers 2 --threads 2 --timeout 60
+      --workers 2 --threads 12 --timeout 60
     envVars:
       # ── Không bí mật (commit được) ──
       - key: DJANGO_ENV
