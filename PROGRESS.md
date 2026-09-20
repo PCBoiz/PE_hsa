@@ -90,6 +90,28 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 20/09/2026 (chiều) — TỜ ĐỀ XUẤT THỬ NGHIỆM CHO TOPHSA (dữ liệu cần + giá 40 triệu) và một lỗ hổng đăng nhập bắt được khi xác minh production
+
+Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì ở bên họ và thêm giá thành thử nghiệm
+(bao gồm mua tên miền dựng máy chủ DNS,...) sao cho nó trị giá 40 triệu, có thể tính thêm phí gia công vào."*
+
+- **Tờ riêng 5 trang** `docs/De_xuat_thu_nghiem_pe_hsa_TopHSA_2026-09-20.pdf` (không commit, anh gửi tay):
+  Mục 1 tám nhóm dữ liệu + ngày đầu tiên; Mục 2 giá 12 tuần **40.000.000 đ** = hạ tầng 3 tháng 6.440.000
+  (giá niêm yết TRA HÔM NAY: Render 25 USD, Neon theo mức dùng ≈ 19 USD, Vercel Pro 20 USD, Workspace 7 USD,
+  Mắt Bão .vn 450.000; 25.500 đ/USD) + gia công 33.560.000 (dựng riêng, tuỳ chỉnh, nhập dữ liệu, đào tạo,
+  vận hành 12 tuần, tổng kết). Mã sinh tự kiểm phép cộng. Bảng rút gọn đã vào `docs/DU_LIEU_CAN_TOPHSA.md` §4b.
+- **Báo cáo thị trường** thêm **Mục 11** (cùng nội dung), 40 trang, "cập nhật 20/09"; bản sinh cũ giữ ở
+  `bao_cao_thi_truong.v1809.mjs`. Soi từng trang bằng ảnh trước khi giao.
+- **Lỗ hổng bắt được khi xác minh production bằng đăng nhập thật (`0de0898`):** bấm Đăng nhập trước khi React
+  hydrate → trình duyệt gửi GET kiểu mặc định → `/login?email=…&password=…` — mật khẩu vào lịch sử trình
+  duyệt và log Vercel. Vá: nút gửi `disabled` tới khi gắn xong (`useDaGan`, `useSyncExternalStore`); cùng
+  hàng rào cho màn đổi mật khẩu. Spec `dang-nhap-truoc-khi-hydrate` đỏ trước, xanh sau; production đã nhận
+  (hv2 đăng nhập → `/questionaire`, không còn tham số trong URL).
+- **Production xác minh xong 12/12** bằng đăng nhập thật năm vai audit2009 (khu trợ giảng, ô dán, tờ PH có
+  bài tập + chuyên cần 2/2, thẻ lớp học viên, tên trợ giảng, ẩn "Báo cáo PH", 404 tiếng Việt, không thẻ giữ chuỗi).
+- Ghi nhận: `next build` OOM hai lần khi máy còn 2,9 GB trống (Chrome của anh 4,7 GB) → dựng bằng
+  `node --max-old-space-size=4096 node_modules/next/dist/bin/next build`; Vercel dựng bình thường.
+
 ## 20/09/2026 (trưa) — RÀ LUỒNG SÁU VAI NHƯ MỘT TRUNG TÂM THẬT: 7 tài khoản, 1 lớp, 22 buổi, 1 bài, 1 tờ phụ huynh
 
 Anh bảo: *"audit kĩ lại luồng sử dụng của 6 quyền hạn, tôi muốn bản mock production này phải thực sự
