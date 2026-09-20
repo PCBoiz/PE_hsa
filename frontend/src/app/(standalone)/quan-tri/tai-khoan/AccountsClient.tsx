@@ -25,7 +25,7 @@ import type { HinhDang } from '@/lib/kiemDang';
 // `.optional()`). Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
 import * as z from 'zod/mini';
 
-export type ClassLite = { id: number; name: string; code?: string | null };
+export type ClassLite = { id: number; name: string; code?: string | null; startsOn?: string | null };
 
 export type UserRow = {
   id: number;
@@ -561,6 +561,8 @@ function BulkImport({
   const [text, setText] = useState('');
   const [role, setRole] = useState('Học viên');
   const [classId, setClassId] = useState('');
+  /** Ngày vào lớp cho cả mẻ khi lớp đã khai giảng — rỗng = hôm nay. */
+  const [ngayVao, setNgayVao] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<BulkResultData | null>(null);
   // Trần THẬT: của máy chủ nếu đã hỏi được, còn không thì đường lùi.
@@ -664,7 +666,7 @@ function BulkImport({
     try {
       const d = await ghiJson('/api/admin/users/bulk', {
         method: 'POST',
-        body: JSON.stringify({ text, role, class_id: classId || null, dry_run: dryRun }),
+        body: JSON.stringify({ text, role, class_id: classId || null, dry_run: dryRun, ...(ngayVao ? { joined_at: ngayVao } : {}) }),
       }, HD_NHAP_HANG_LOAT);
       if (dryRun) setPreview(d);
       else {
@@ -760,6 +762,28 @@ function BulkImport({
           ))}
         </Select>
       </div>
+      {/* Lớp đã khai giảng: các em dán hôm nay có thể đã học từ trước. Ngày vào
+          lớp là mẫu số chuyên cần — xem cùng ô ở màn Lớp học (20/09/2026). */}
+      {(() => {
+        const lop = classes.find((c) => String(c.id) === String(classId));
+        const homNay = new Date().toISOString().slice(0, 10);
+        if (!lop?.startsOn || lop.startsOn >= homNay) return null;
+        return (
+          <label className="mt-3 flex flex-wrap items-center gap-2 text-small text-ink-2">
+            <span>Lớp đã khai giảng {lop.startsOn.split('-').reverse().join('/')}. Các em vào lớp từ ngày</span>
+            <input
+              type="date"
+              value={ngayVao}
+              min={lop.startsOn}
+              max={homNay}
+              onChange={(e) => setNgayVao(e.target.value)}
+              aria-label="Ngày vào lớp"
+              className="min-h-11 rounded-md border border-line bg-surface px-3 text-input text-ink"
+            />
+            <span className="text-ink-3">(để trống = hôm nay)</span>
+          </label>
+        );
+      })()}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {/* Xem trước KHÔNG bao giờ bị chặn: kể cả khi danh sách vượt trần, đó

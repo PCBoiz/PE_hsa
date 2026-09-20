@@ -53,7 +53,7 @@ from stats.goals import as_date
 # kiểu khác nhau thì trợ giảng đọc cho học viên hai dạng chuỗi khác nhau, còn
 # nhãn nhật ký dựng hai kiểu thì cùng một người hiện ra hai tên trong cùng một
 # trang nhật ký. Chiều nhập một hướng: views.py KHÔNG được import ngược lại đây.
-from teaching.views import _temp_password, _user_label
+from teaching.views import _doc_ngay_vao_lop, _temp_password, _user_label
 
 #: Vòng đời tài khoản (schema §31). 'suspended' = khoá đăng nhập, GIỮ dữ liệu học.
 USER_STATUSES = ('active', 'suspended')
@@ -551,6 +551,13 @@ class AdminBulkCreateUsersView(APIView):
                 return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         else:
             class_id = None
+        # Ngày vào lớp THẬT cho cả mẻ (20/09/2026): lớp đã khai giảng mà các em
+        # đang học dở thì `joined_at = hôm nay` là ngày sai — xem
+        # `AdminClassMembersView` cùng lý do. Một ngày cho cả mẻ: người dán một
+        # bảng là dán một đợt cùng vào lớp; em vào lẻ thì đi đường Lớp học.
+        vao, loi_ngay = _doc_ngay_vao_lop(body.get('joined_at'))
+        if loi_ngay:
+            return Response({'error': loi_ngay}, status=400)
 
         cands, truncated, header_skipped = _parse_text(text)
         if not cands:
@@ -648,7 +655,7 @@ class AdminBulkCreateUsersView(APIView):
             x('''INSERT INTO class_members (class_id, user_id, joined_at)
                  SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
                  ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
-              (class_id, now, created_ids))
+              (class_id, vao or now, created_ids))
             added_to_class = True
 
         return Response({

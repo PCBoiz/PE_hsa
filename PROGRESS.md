@@ -123,7 +123,9 @@ Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì �
   đỏ trên mã cũ (KeyError `notified`); 71 test teaching+notifications xanh; đi thử ở 390px: chấm đỏ → panel →
   bấm → Bài tập. Giảng viên chưa có chuông (khu Giảng dạy là React, không có chuông; "Việc hôm nay" đã đếm bài chưa chấm).
 - **Ngày vào lớp thật (chiều):** `POST members {joined_at}` + ô ngày ở màn Lớp học khi lớp đã khai giảng
-  (min khai giảng, max hôm nay). Test đỏ trên mã cũ. Đóng mục TODO "ghi danh muộn" và là cửa cho H.6 của tờ đề xuất.
+  (min khai giảng, max hôm nay). Test đỏ trên mã cũ. Đóng mục TODO "ghi danh muộn" và là cửa cho H.6 của tờ đề xuất. Cấp hàng loạt kèm
+  xếp lớp cũng nhận một ngày cho cả mẻ (đường này chưa từng có test — nay có). Khu Soạn giáo trình: câu nhắc
+  "Lưu là học viên thấy NGAY (chưa có bản nháp)" ngay dưới tiêu đề bài.
 - Ghi nhận: `next build` OOM hai lần khi máy còn 2,9 GB trống (Chrome của anh 4,7 GB) → dựng bằng
   `node --max-old-space-size=4096 node_modules/next/dist/bin/next build`; Vercel dựng bình thường.
 

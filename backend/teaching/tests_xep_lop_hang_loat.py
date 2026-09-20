@@ -125,3 +125,25 @@ def test_ngay_vao_lop_that_cho_em_ghi_danh_muon(canh):
     kq = _goi(AdminClassMembersView, 'post', {'email': b.email, 'joined_at': 'hôm qua'},
               ai=canh['hocvu'], class_id=canh['lop'])
     assert kq.status_code == 400, kq.data
+
+
+@pytest.mark.django_db
+def test_cap_hang_loat_kem_xep_lop_nhan_ngay_vao_lop(canh):
+    """Cấp hàng loạt + xếp lớp: `joined_at` một ngày cho cả mẻ (các em đang học
+    dở được nhập sau khai giảng). Không có test nào cho đường này tới 20/09."""
+    from common.permissions import ROLE_ADMIN
+    from teaching.admin_users import AdminBulkCreateUsersView
+    qt = _nguoi('QT Xep Lop', ROLE_ADMIN)
+    text = 'Em Bon Xl, embon_xl@example.com, 0911000004\nEm Nam Xl, emnam_xl@example.com, 0911000005'
+    kq = _goi(AdminBulkCreateUsersView, 'post',
+              {'text': text, 'role': ROLE_STUDENT, 'class_id': canh['lop'], 'joined_at': '2999-01-01'},
+              ai=qt)
+    assert kq.status_code == 400 and 'tương lai' in kq.data['error'], kq.data
+    kq = _goi(AdminBulkCreateUsersView, 'post',
+              {'text': text, 'role': ROLE_STUDENT, 'class_id': canh['lop'], 'joined_at': '2026-09-13'},
+              ai=qt)
+    assert kq.status_code in (200, 201) and kq.data['created'] == 2 and kq.data['addedToClass'], kq.data
+    ds = q1('SELECT COUNT(*) AS n FROM class_members m JOIN users u ON u.id = m.user_id '
+            "WHERE m.class_id=%s AND u.email LIKE 'em%%_xl@example.com' "
+            "AND m.joined_at::date = DATE '2026-09-13'", (canh['lop'],))
+    assert ds['n'] == 2, ds

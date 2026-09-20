@@ -172,7 +172,7 @@ export default function NoiDungBai({
     <Card as="section">
       <CardHead
         title={`Nội dung — ${ban.title}`}
-        hint={`Bài số ${ban.sort_order} của khoá ${ban.course_id}`}
+        hint={`Bài số ${ban.sort_order} của khoá ${ban.course_id} · Lưu là học viên thấy NGAY (chưa có bản nháp) — bấm “Xem thử” trước khi lưu.`}
         action={
           <div className="flex flex-wrap gap-2">
             <a

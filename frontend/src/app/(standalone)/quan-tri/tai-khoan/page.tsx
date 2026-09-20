@@ -35,7 +35,7 @@ const HD_USERS = z.looseObject({
   roles: z.array(z.string()),
 }) satisfies HinhDang<UsersPayload>;
 const HD_CLASSES = z.looseObject({
-  classes: z.array(z.looseObject({ id: z.number(), name: z.string(), code: z.string().nullable().optional() })),
+  classes: z.array(z.looseObject({ id: z.number(), name: z.string(), code: z.string().nullable().optional(), startsOn: z.string().nullable().optional() })),
 }) satisfies HinhDang<{ classes: ClassLite[] }>;
 
 /**
