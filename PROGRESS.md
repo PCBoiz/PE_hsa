@@ -90,6 +90,33 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 20/09/2026 (đêm) — AUDIT GIAO DIỆN HAI KHỔ BẰNG 3 AGENT: ĐỢT 1 VÁ 13 CHỖ, THANH TRÊN Ở ĐIỆN THOẠI THÀNH HAI HÀNG
+
+Anh bảo "tập trung audit kĩ cả desktop lẫn mobile về giao diện, luồng học, thiết kế, bố cục… chia các
+agents để kiểm tra, tương trợ lẫn nhau". Ba agent (học viên điện thoại · học viên máy tính/tablet · nhân
+sự hai khổ) chạy song song với thư viện đo chung (`audit/agents/README_AGENT.md`): chụp viewport, NHÌN ảnh,
+đo tràn ngang/chữ nhỏ nhất/vùng chạm/lỗi JS, ghi báo cáo dần, cuối cùng đối chiếu chéo. **Cả ba bị 429
+(hạn mức phiên) sau ~20 phút** — phần đã ghi vẫn dùng được; gọi lại lúc 22:00 theo lệnh anh.
+
+**Đã vá từ ba báo cáo dở (`3f6e3ce`):**
+- **Thanh trên ở điện thoại** — phát hiện nặng nhất, cả hai agent gặp: ở 390 dãy điều hướng chỉ còn
+  139px, "Thi thử / Bài tập / Diễn đàn" (học viên) và "Giảng dạy" (giảng viên) nằm ngoài vùng cuộn không
+  dấu hiệu, chạm vào trúng nút mặt trăng. Nay ≤ 36rem thanh thành hai hàng, hàng dưới đủ nhãn chữ, 4–6
+  mục chia đều, ≥ 7 mục cuộn có vệt mờ; `--topbar-h` 6,5rem. Bộ đo 2 khổ × 24 trang: 0 vi phạm.
+- Nhân sự: "-3 ngày trước" (sự kiện điểm danh ở tương lai — test đỏ trước), dòng vàng khi điểm danh
+  trước giờ, buổi `planned → done` sau điểm danh, toast không treo (ref thay dependency), Giảng dạy SPA ở
+  390 hết tràn ngang, bỏ nút mặt trăng đôi, tab sáng đúng, Link "Chấm bài" không lồng button, "Xoá" ghost,
+  "Đã lưu: …" ở bảng chấm.
+- Học viên: cột phải Trang của tôi 1366 hết trống (dời 2 thẻ), sàn 12px, chừa đáy cho nút trợ lý ở
+  ≤ 64rem, khảo sát có "Câu x/16" + nút Quay lại không gãy + câu lỗi màu cảnh báo.
+- 109 test teaching liên quan xanh; 28 unit guard xanh.
+- **Gotcha thước:** `cap_the.py --e2e` ghi đè `tokens_ad.json` → sweep báo "bị đẩy về đăng nhập" oan;
+  phải `--ra .the/tokens_hv.json`.
+
+Còn treo (chờ agent đợt 2 đo tiếp): nhãn thanh ẩn ở 1024 dù còn chỗ (F4), mất tiến độ khảo sát khi thoát
+(F8), nhãn "quay lại" khác nhau giữa ba trang lớp (F9), toàn bộ phần bài học 5 bước / thi thử / bài tập /
+kỹ năng / diễn đàn / chế độ tối / học vụ / quản trị / biên tập.
+
 ## 20/09/2026 (tối) — HỌC VỤ ĐẶT LẠI ĐƯỢC MẬT KHẨU HỌC VIÊN/TRỢ GIẢNG; AUDIT GIAO DIỆN CẢ HAI KHỔ BẰNG 3 AGENT
 
 Anh chốt: **mở đặt lại mật khẩu cho học vụ** (bản nháp bài học đợi dữ liệu thật; giá niêm yết đã tra 20/09
