@@ -124,8 +124,8 @@ Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì �
   bấm → Bài tập. Giảng viên + trợ giảng: chuông "X đã nộp" gộp 10 phút ("n em đã nộp"), bấm → `/giang-day/cham/<id>` chuyển
   hướng tới bảng chấm; test gộp đỏ-xanh; đi thử: hv3 nộp → chuông GV → bảng chấm đúng bài. Khu Giảng dạy (React) vẫn
   không có chuông — giảng viên thấy ở Trang của tôi.
-- **Render chưa nhận ba commit chiều** (fce628e, fdb0386, 33bbc0f) sau ~40 phút: `joined_at` tương lai vẫn 200
-  trên production lúc 13:35. Vercel đã nhận. Cần xem dashboard Render (anh) — đo lại đầu phiên sau.
+- **Render chậm ~45 phút** với các commit chiều: 13:35 `joined_at` tương lai vẫn 200 trên production, 13:39 đã
+  400 (fdb0386 lên). Vercel lên trong ~3 phút. Không phải lỗi — nhưng xác minh production phải đợi đủ lâu.
 - **Ngày vào lớp thật (chiều):** `POST members {joined_at}` + ô ngày ở màn Lớp học khi lớp đã khai giảng
   (min khai giảng, max hôm nay). Test đỏ trên mã cũ. Đóng mục TODO "ghi danh muộn" và là cửa cho H.6 của tờ đề xuất. Cấp hàng loạt kèm
   xếp lớp cũng nhận một ngày cho cả mẻ (đường này chưa từng có test — nay có). Khu Soạn giáo trình: câu nhắc
