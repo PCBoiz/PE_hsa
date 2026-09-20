@@ -83,6 +83,31 @@ def _bao_bai_moi(assignment_id, class_id, title, due_at):
         return 0
 
 
+def _bao_da_nop(bai, em):
+    """Chuông cho giảng viên phụ trách + trợ giảng của lớp: "em X đã nộp".
+
+    Gộp trong 10 phút thành "{n} em đã nộp" (cả lớp nộp tối hạn thì một chuông,
+    không phải ba mươi). `ref_type = 'grading'` → chuông đưa thẳng tới bảng chấm
+    qua `/giang-day/cham/<id>` (trang chuyển hướng, vì chuông không biết lớp).
+    """
+    try:
+        nguoi = [r['user_id'] for r in q(
+            'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
+            'WHERE m.class_id = %s AND m.left_at IS NULL AND u.role = %s',
+            (bai['class_id'], 'Trợ giảng'))]
+        if bai.get('teacher_id'):
+            nguoi.insert(0, bai['teacher_id'])
+        ten = getattr(em, 'name', None) or getattr(em, 'email', None) or 'Một học viên'
+        for uid in dict.fromkeys(nguoi):
+            notify(uid, 'submission_new', '%s đã nộp "%s"' % (ten, bai['title']),
+                   'Mở bảng chấm để xem bài làm', 'grading', bai['id'],
+                   title_multi='{n} em đã nộp "%s"' % bai['title'])
+        return len(nguoi)
+    except Exception:            # noqa: BLE001
+        logger.exception('[assignments] không gửi được chuông "đã nộp" cho bài %s', bai.get('id'))
+        return 0
+
+
 def _bao_da_cham(assignment_id, title, thang, rows):
     """Chuông cho từng em vừa được chấm: điểm + câu nhận xét đầu."""
     try:
@@ -721,7 +746,9 @@ class MyAssignmentsView(NguoiDungView):
         except (TypeError, ValueError):
             return Response({'error': 'Thiếu assignment_id.'}, status=400)
 
-        bai = q1('''SELECT a.id, a.status, a.title FROM assignments a
+        bai = q1('''SELECT a.id, a.status, a.title, a.class_id, c.teacher_id
+                    FROM assignments a
+                    JOIN classes c ON c.id = a.class_id
                     JOIN class_members m ON m.class_id = a.class_id
                                         AND m.user_id = %s AND m.left_at IS NULL
                     WHERE a.id = %s''', (uid, aid))
@@ -760,6 +787,7 @@ class MyAssignmentsView(NguoiDungView):
         # hai dạng khoá: một dạng cho "đối tượng biến mất", một dạng cho "một
         # người, một bản ghi".
         forget_events(user_id=uid, dedup_key='assignment:%s' % aid)
+        _bao_da_nop(bai, request.user)
         return Response({'ok': True, 'note': 'Đã nộp. Nộp lại sẽ xoá điểm cũ và '
                                              'giảng viên phải chấm lại từ đầu.'})
 

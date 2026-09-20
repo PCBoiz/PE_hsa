@@ -762,6 +762,30 @@ def test_giao_bai_va_cham_bai_deu_rung_chuong_hoc_vien(lop):
     assert all(c['type'] != 'assignment_graded' for c in chuong(em2.id))
 
 
+@pytest.mark.django_db
+def test_em_nop_bai_thi_giang_vien_va_tro_giang_rung_chuong_gop(lop):
+    """Em nộp → giảng viên phụ trách + trợ giảng của lớp nhận "X đã nộp"; em thứ
+    hai nộp trong 10 phút → GỘP thành "2 em đã nộp" (một chuông, không hai);
+    học viên khác trong lớp không nhận gì; `ref_type = 'grading'`."""
+    from common.permissions import ROLE_ASSISTANT
+    gv, (em1, em2) = lop['gv'], lop['hv'][:2]
+    tg = _nguoi('TG Chuong', ROLE_ASSISTANT)
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) RETURNING id',
+       (lop['id'], tg.id, local_now()))
+    kq = _goi(ClassAssignmentsView, 'post', {'title': 'Bài luận'}, ai=gv, class_id=lop['id'])
+    aid = kq.data['id']
+    for em in (em1, em2):
+        r = _goi(MyAssignmentsView, 'post', {'assignment_id': aid, 'content': 'bài làm'}, ai=em)
+        assert r.status_code == 200, r.data
+    chuong = lambda uid: q("SELECT title, ref_type, ref_id, coalesce_count FROM notifications "  # noqa: E731
+                           "WHERE user_id=%s AND type='submission_new'", (uid,))
+    c_gv = chuong(gv.id)
+    assert len(c_gv) == 1 and c_gv[0]['title'] == '2 em đã nộp "Bài luận"', c_gv
+    assert c_gv[0]['ref_type'] == 'grading' and c_gv[0]['ref_id'] == aid, c_gv
+    assert len(chuong(tg.id)) == 1, chuong(tg.id)
+    assert chuong(em1.id) == [] and chuong(em2.id) == []
+
+
 # ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
 
 @pytest.mark.django_db

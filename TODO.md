@@ -3011,8 +3011,9 @@ dưới đây là phần chưa xong, xếp theo thứ tự nên làm.
   bình luận diễn đàn; giao bài xong em chỉ biết nếu tự mở mục Bài tập (thanh trên điện thoại không có mục ấy).
   Nay bài MỞ nhận bài → mỗi em một chuông (nháp thì chưa; nháp→mở mới rung); chấm xong → em nhận điểm + câu
   nhận xét đầu; bấm chuông → `/bai-tap`. Chuông không được chặn việc chính (bọc try, log). Test đỏ trên mã cũ.
-  Đã đi thử ở 390px: chấm đỏ → panel → bấm → Bài tập. Chưa làm chuông cho GIẢNG VIÊN (em nộp bài) — "Việc hôm
-  nay" đã đếm "bài chưa chấm", và khu Giảng dạy (React) chưa có chuông.
+  Đã đi thử ở 390px: chấm đỏ → panel → bấm → Bài tập. Chuông GIẢNG VIÊN + trợ giảng "X đã nộp" (gộp 10 phút thành "n em đã nộp") — bấm
+  → `/giang-day/cham/<bài>` chuyển hướng tới bảng chấm (chuông không biết lớp). Khu Giảng dạy (React) vẫn chưa có
+  chuông — giảng viên thấy ở Trang của tôi.
 - [ ] **Bấm nút trước khi hydrate trên trang React thì lượt bấm rơi** (đo trên production: bấm "Học viên" ở màn
   Lớp học ngay khi DOM có → không mở). Đăng nhập/đổi mật khẩu đã khoá nút tới khi gắn xong (`useDaGan`); các
   nút khác chỉ "không phản ứng" chứ không rò rỉ gì. Cân nhắc: khung chờ mờ toàn trang cho tới khi hydrate ở

@@ -64,7 +64,7 @@ toggleUserMenu = function () {
 /* ── Bell notification panel — nối với /api/notifications/feed (DB thật) ── */
 var _bellNotifs = [];
 var _bellServerUnread = 0; // badge count từ server (COUNT(*) WHERE is_read=false)
-var _BELL_ICON = { mention: '💬', comment_reply: '↩️', post_comment: '📝', system: '🔔', assignment_new: '📚', assignment_graded: '✅' };
+var _BELL_ICON = { mention: '💬', comment_reply: '↩️', post_comment: '📝', system: '🔔', assignment_new: '📚', assignment_graded: '✅', submission_new: '📥' };
 
 function _bellTimeAgo(iso) {
   if (!iso) return '';
@@ -202,7 +202,7 @@ function readBellItem(idx) {
     if (n.id) fetch('/api/notifications/feed/' + n.id + '/read', { method: 'POST' }).catch(function () {});
   }
   // Di chuyển tới bài viết có @mention; chuông bài tập (20/09/2026) đưa thẳng tới mục Bài tập.
-  if (n.refType === 'post' && n.refId) _focusForumPost(n.refId); else if (n.refType === 'assignment') window.location.href = '/bai-tap';
+  if (n.refType === 'post' && n.refId) _focusForumPost(n.refId); else if (n.refType === 'assignment') window.location.href = '/bai-tap'; else if (n.refType === 'grading' && n.refId) window.location.href = '/giang-day/cham/' + n.refId;
 }
 
 function markAllBellRead() {

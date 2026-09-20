@@ -121,7 +121,11 @@ Anh (giữa lượt rà): *"cập nhật file pdf mình cần dữ liệu gì �
   `assignment_graded` kèm điểm/thang + câu nhận xét đầu; bọc try để chuông không chặn giao bài/chấm bài;
   chuông bấm vào → `/bai-tap` (dashboard.js, giữ trần dòng). Test `test_giao_bai_va_cham_bai_deu_rung_chuong_hoc_vien`
   đỏ trên mã cũ (KeyError `notified`); 71 test teaching+notifications xanh; đi thử ở 390px: chấm đỏ → panel →
-  bấm → Bài tập. Giảng viên chưa có chuông (khu Giảng dạy là React, không có chuông; "Việc hôm nay" đã đếm bài chưa chấm).
+  bấm → Bài tập. Giảng viên + trợ giảng: chuông "X đã nộp" gộp 10 phút ("n em đã nộp"), bấm → `/giang-day/cham/<id>` chuyển
+  hướng tới bảng chấm; test gộp đỏ-xanh; đi thử: hv3 nộp → chuông GV → bảng chấm đúng bài. Khu Giảng dạy (React) vẫn
+  không có chuông — giảng viên thấy ở Trang của tôi.
+- **Render chưa nhận ba commit chiều** (fce628e, fdb0386, 33bbc0f) sau ~40 phút: `joined_at` tương lai vẫn 200
+  trên production lúc 13:35. Vercel đã nhận. Cần xem dashboard Render (anh) — đo lại đầu phiên sau.
 - **Ngày vào lớp thật (chiều):** `POST members {joined_at}` + ô ngày ở màn Lớp học khi lớp đã khai giảng
   (min khai giảng, max hôm nay). Test đỏ trên mã cũ. Đóng mục TODO "ghi danh muộn" và là cửa cho H.6 của tờ đề xuất. Cấp hàng loạt kèm
   xếp lớp cũng nhận một ngày cho cả mẻ (đường này chưa từng có test — nay có). Khu Soạn giáo trình: câu nhắc
