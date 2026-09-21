@@ -90,6 +90,63 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 21/09/2026 — AUDIT GIAO DIỆN ĐỢT 2 (`6f38ca7`): TRỢ GIẢNG GIAO ĐƯỢC BÀI, KHẢO SÁT GHI HAI LẦN, 18 CHỖ VÁ
+
+Đi tiếp báo cáo của ba agent (`audit/agents/hoc-vien-mobile.md` 35 mục, `nhan-su.md` 26 mục,
+`hoc-vien-desktop.md` dở). **Mỗi mục tôi tái hiện lại trên bản dựng thật trước khi sửa**, và lùi mã
+cũ để thấy phép đo đỏ ở mọi chỗ lùi được.
+
+**Hai lỗi máy chủ:**
+- **Trợ giảng POST được bài tập (201) và xoá được bài** — lộ ra vì agent vai trợ giảng tạo nhầm bài
+  "x" (đã xoá dòng + 3 thông báo). Nay 403; trang nhập kết quả thi chặn trợ giảng ngay ở trang. Test đỏ trước.
+- **Khảo sát: 3 lần chạm "Hoàn thành" → 3 POST → nhiều dòng `surveys`**. Máy chủ khoá dòng người
+  dùng + coi bài GIỐNG HỆT trong 60 s là một lần gửi (3 POST đồng thời thật → 1 dòng); trình duyệt khoá
+  nút "Đang lưu…". Hai tầng đỏ trên mã cũ (test pytest + đếm POST bằng Playwright).
+
+**Giao diện** (chi tiết trong commit): lệch số bài giáo trình (bài 2 mở bài 1); Lộ trình 390 tab ngoài
+màn; Kỹ năng 390 ba cột 90px; Thi thử 390 tràn 92px; thanh 5 bước bài học tràn ở 360/320 (container
+query); số "100.000" bị cắt "000"; nút đáy bài chỉ là mũi tên; "→" ném lỗi JS ở màn chưa ghi danh; hộp
+hoàn thành thêm "Bài tiếp theo"; khảo sát câu 16 nút gãy dòng; đầu bài diễn đàn gãy "26 ngày / trước";
+`/bai-tap` và `/admin` dùng thanh chung; Vận hành ≥ 7 mục thành hai hàng ở 1024–1600; ô nhập chữ ≥ 44px
+và ≥ 16px trên máy cảm ứng (iOS tự phóng to ô 13px); **hồi quy do chính thanh hai hàng đợt 1**: chọn
+mục trong menu "Học" làm dãy điều hướng cuộn dọc mất hẳn (`overflow-y: clip` + `auto` tính ra `hidden`)
+→ giữ `scrollTop = 0`.
+
+**Bác bỏ sau khi đo lại** (thước của agent hỏng, không phải mã): bình luận diễn đàn "không mở ở 390"
+(agent đo `textarea`, ô là `input` — mở bình thường); thẻ "Giữ chuỗi" trắng ở chế độ tối (đo:
+rgb(12,18,32)); nút "Xoá" đỏ ở /admin (đo: ghost). Thước của CHÍNH tôi cũng hỏng hai lần: định vị nút
+theo tên rồi đổi tên nút thành "Đang lưu…"; đo gãy dòng bằng `innerText` (gãy dòng hiển thị không sinh `\n`)
+— đổi sang đo chiều cao.
+
+**Kiểm:** accounts + teaching 85 test, teaching phụ 118 test xanh; 29 unit guard (trần tầng cũ giữ
+nguyên — mọi sửa JS cũ đều không thêm dòng); bộ đo 2 khổ × 24 trang 0 vi phạm; eslint/ruff/tsc sạch.
+Tài khoản hv2 đã đặt lại về "chưa khảo sát" sau các lượt đo.
+
+**Production đã xác minh** (Render nhận bản chỉ sau vài phút lần này): trợ giảng POST bài tập → 403
+kèm câu chỉ đường; 3 POST khảo sát đồng thời bằng hv2 → đúng 1 dòng (đã đặt lại hv2); Vercel ở 360
+với tài khoản e2e: /bai-tap 9 mục điều hướng, thanh 5 bước phải = 329px, nút đáy có nhãn, ô tìm 44px/16px.
+
+**Vá tiếp (commit sau `6f38ca7`) — lộ trình rỗng với MỌI em đã khảo sát (F27) + nút "Xem lộ trình →"
+đưa về Trang của tôi (F2).** Hai lỗi chồng nhau, đều trong `roadmap.js`:
+1. `initRoadmapPage` gọi `syncXuong(() => renderFlow(getActive()))`: tiến độ từ máy chủ về SAU
+   `/api/me/roadmap`, rồi vẽ lại tab "Lộ trình của tôi" bằng `renderFlow` — hàm chỉ biết lộ trình tĩnh —
+   nên xoá lộ trình vừa vẽ, còn "Chưa có dữ liệu cho lộ trình này". API trả đúng dữ liệu suốt; lỗi
+   thuần ở thứ tự hai lời hứa. `roadmapSetStatus` mắc cùng lỗi.
+2. Vẽ được rồi thì thứ tự chặng sai: Postgres JSONB xếp khoá theo ĐỘ DÀI rồi mới theo chữ (`hsa_kh` →
+   `hsa_start` cuối), `sortNodeIds` chỉ xếp theo chữ số trong id (id `hsa_*` không có số). Nay xếp theo
+   số đầu tiêu đề và bỏ số lặp "1. 4. Khoa học…". Đỏ trên đột biến ("Chẩn đoán" rơi xuống cuối).
+Nút "Xem lộ trình →" nay đi `/dashboard#roadmap`. Đường thật đo ở 390: khảo sát → nút → view Lộ trình,
+6 chặng đúng thứ tự. **Gotcha thước:** `goto('/dashboard#roadmap')` khi đang ở `/dashboard` chỉ đổi
+mảnh `#`, không tải lại → phải đi qua trang khác trước.
+
+**Còn mở từ báo cáo agent** (chưa vá, xếp theo nặng nhẹ): chặng "Chẩn đoán năng lực" vẫn 0% dù em vừa
+làm xong khảo sát (nên tính là xong); bước 2
+không hiện "Bạn trả lời: …" ở câu sai (F18); "Đăng ký" khoá học không có xác nhận (F11); badge đè chữ
+nền thẻ khoá (F12); thẻ "Giữ chuỗi" chiếm 20% màn 9 s (F14); chip gợi ý trợ lý cuộn ngang không dấu
+hiệu (F20); kết quả lượt luyện hiện "0/9" to trước khi nói là luyện (F24); Trang của tôi 390 dài 4,7 màn
+với em mới (F5); desktop F3/F4/F8; nhân sự F9/F15/F17–F20/F25/F26. Phần agent máy tính chưa đi tới
+(bài học/thi thử/thiết kế) vẫn chưa ai rà.
+
 ## 20/09/2026 (đêm) — AUDIT GIAO DIỆN HAI KHỔ BẰNG 3 AGENT: ĐỢT 1 VÁ 13 CHỖ, THANH TRÊN Ở ĐIỆN THOẠI THÀNH HAI HÀNG
 
 Anh bảo "tập trung audit kĩ cả desktop lẫn mobile về giao diện, luồng học, thiết kế, bố cục… chia các

@@ -339,7 +339,7 @@
     var wrap = document.getElementById('rm-flow-wrap');
     if (!wrap) return;
     var nodesObj = apiData.nodes || {};
-    var nodeIds = sortNodeIds(Object.keys(nodesObj));
+    var nodeIds = sortNodeIds(Object.keys(nodesObj)).sort(function (a, b) { return (parseInt((nodesObj[a] || {}).title, 10) || 0) - (parseInt((nodesObj[b] || {}).title, 10) || 0); }); // JSONB xếp khoá theo ĐỘ DÀI (hsa_kh trước hsa_start): thứ tự thật là số đầu tiêu đề (21/09)
     if (!nodeIds.length) {
       hideMyHeader();
       wrap.innerHTML = '<div class="rm-flow-empty">Bạn chưa có node nào. Sử dụng phần "Cá nhân" để tạo lộ trình của riêng bạn.</div>';
@@ -349,7 +349,7 @@
     var sections = nodeIds.map(function (nid) {
       var nodeData = nodesObj[nid] || {};
       var status = getStatus(MY_ROADMAP_TAB, nid, 'locked');
-      return { main: { id: nid, label: nodeData.title || nid, status: status }, left: [], right: [] };
+      return { main: { id: nid, label: String(nodeData.title || nid).replace(/^\d+\.\s*/, ''), status: status }, left: [], right: [] }; // ô số đã đánh thứ tự — bỏ "4. " trong tiêu đề
     });
     renderMyHeader(apiData, sections);
     wrap.innerHTML = '<div class="rm-spine"></div>' + buildSectionsHtml(MY_ROADMAP_TAB, sections) + legendHtml();
@@ -524,7 +524,7 @@
     var name = drawer.dataset.roadmap, nodeId = drawer.dataset.nodeId;
     setOverride(name + ':' + nodeId, status);
     renderDrawerStatusToggle(status);
-    renderFlow(name);
+    if (name === MY_ROADMAP_TAB && window._generatedRoadmapData) renderGeneratedRoadmap(window._generatedRoadmapData); else renderFlow(name);
   };
 
   window.roadmapCloseDrawer = function () {
@@ -599,7 +599,7 @@
   window.initRoadmapPage = function () {
     // Kéo tiến độ đã lưu trên máy chủ về TRƯỚC khi vẽ, để máy mới hiển thị
     // đúng những gì học viên đã đánh dấu ở máy cũ.
-    syncXuong(function () { renderFlow(getActive()); });
+    syncXuong(function () { var t = getActive(); if (t === MY_ROADMAP_TAB) { if (window._generatedRoadmapData) renderGeneratedRoadmap(window._generatedRoadmapData); } else if (t !== 'personal') renderFlow(t); }); // renderFlow() thẳng từng XOÁ lộ trình đã sinh — "Chưa có dữ liệu" với mọi em đã khảo sát (đo 21/09)
     // Render ngay tab hiện có — không chờ fetch, tránh màn hình trống khi
     // Neon DB cold-start (có thể mất vài giây để phản hồi).
     renderTabs();

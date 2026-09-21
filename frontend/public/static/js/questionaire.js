@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
     okBtn.onclick = function () {
-      window.location.href = "/dashboard";
+      window.location.href = "/dashboard#roadmap"; // nút ghi "Xem lộ trình →" mà từng đưa về Trang của tôi (21/09)
     };
   }
 });
