@@ -1725,7 +1725,12 @@ body.dark .rmv-zoom-label    { color: #64748B; }
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   z-index: 9999;
-  white-space: nowrap;
+  /* Rộng 435px trên màn 390 (đo 21/09/2026): `nowrap` cho câu dài tràn cả hai
+     mép, cụt dấu "✓" đầu và chữ cuối. Cho xuống dòng và chặn bề ngang. */
+  max-width: min(92vw, 34rem);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.5;
 }
 .rm-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
 

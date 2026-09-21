@@ -29,7 +29,9 @@ const OAUTH_ERRORS: Record<string, string> = {
   google_failed: 'Đăng nhập Google không thành công. Thử lại giúp tôi.',
   facebook_failed: 'Đăng nhập Facebook không thành công. Thử lại giúp tôi.',
   oauth_failed: 'Đăng nhập không thành công. Thử lại giúp tôi.',
-  het_han: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.',
+  /* Không khẳng định "hết hạn": cùng một mã này còn tới từ người vừa TỰ đăng
+     xuất rồi mở lại trang cũ (đo 21/09/2026) — nói họ hết hạn là đổ lỗi sai. */
+  het_han: 'Bạn chưa đăng nhập, hoặc phiên làm việc đã kết thúc. Đăng nhập lại để tiếp tục.',
   chua_co_tai_khoan:
     'Email này chưa có tài khoản trên hệ thống. Liên hệ trung tâm để được cấp tài khoản.',
 };

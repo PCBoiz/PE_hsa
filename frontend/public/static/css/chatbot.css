@@ -384,8 +384,10 @@
 /* Input Area */
 .chatbot-input-area {
     padding: 12px 16px;
-    background: rgba(238, 238, 243, 0.849);
-    border-top: 1px solid #e2e8f0;
+    /* Token, không phải màu sáng ghi cứng: ở chế độ tối vùng nhập là một mảng
+       sáng 358×143 giữa cửa sổ trợ lý tối (đo 21/09/2026). */
+    background: color-mix(in srgb, var(--card, #fff) 92%, transparent);
+    border-top: 1px solid var(--border, #e2e8f0);
 }
 
 /* Quick Actions */

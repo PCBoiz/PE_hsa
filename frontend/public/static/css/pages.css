@@ -82,7 +82,12 @@ body.dark .roadmap-check        { border-color: var(--card-border); }
 .profile-name  { font-size: 15px; font-weight: 600; color: #1F2937; }
 .profile-email { font-size: 13px; color: #6B7280; margin-top: 2px; }
 .profile-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; background: #EEF6FD; color: var(--accent); font-size: 11px; font-weight: 600; margin-top: 6px; }
-.fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* TỰ chia cột theo chỗ thật, không theo mốc khổ máy (21/09/2026). `style.css`
+   có luật một-cột ở ≤768px nhưng tệp này nạp SAU nên luật 2 cột thắng: ở 390px
+   mỗi ô chỉ 156px, tên bị cắt 36px và email cắt 106px (đo bằng bề rộng chữ so
+   với lòng ô). `minmax(min(100%, 14rem), 1fr)`: chỗ đủ cho hai ô 14rem thì hai
+   cột, không thì một — không cần mốc nào. */
+.fields-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 12px; }
 .field-label { display: block; font-size: 12px; font-weight: 500; color: #6B7280; margin-bottom: 4px; }
 .field-input {
   width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #E5E7EB;
