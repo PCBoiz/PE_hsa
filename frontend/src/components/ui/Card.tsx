@@ -46,7 +46,12 @@ export function CardHead({
 }) {
   return (
     <div className="mb-3 flex flex-wrap items-start gap-3">
-      <div className="min-w-0 flex-1">
+      {/* `basis-56` (14rem) chứ không để co tự do (21/09/2026): `flex-1 min-w-0`
+          cho khối tiêu đề co tới 0 nên hàng nút KHÔNG bao giờ xuống dòng — ở
+          390px đầu khung soạn bài đo được tiêu đề rộng 17px, cao 205px (8 dòng)
+          và câu nhắc 24 dòng, ô nhập đầu tiên rơi xuống y=1.156. Có mốc tối
+          thiểu thì thiếu chỗ là hàng nút xuống dòng, tiêu đề giữ bề ngang. */}
+      <div className="min-w-0 flex-1 basis-56">
         {/* h2, không h3: thẻ là mục cấp một dưới h1 của trang. axe-core
             `heading-order` đỏ ở 9 trang (20/09/2026) vì h1 → h3 bỏ cấp. */}
         <h2 className="text-section text-ink">{title}</h2>

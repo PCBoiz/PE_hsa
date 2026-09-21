@@ -7,7 +7,7 @@
 .cd-hero-content { flex: 1; min-width: 0; }
 .cd-tag {
   display: inline-block; padding: 4px 12px; border-radius: 20px;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
   background: rgba(255,255,255,0.12); color: #93C5FD;
   border: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px;
 }
@@ -108,7 +108,7 @@
    HỌC — thứ học viên mở mỗi ngày. */
 .cd-lesson-num { font-size: 11px; color: var(--t3); }
 .cd-lesson-badge {
-  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+  font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-2)); color: #fff; white-space: nowrap;
 }
 /* #293548 sáng hơn mặt thẻ đủ nhiều để kéo `--t3` (#8B95A8) xuống 4,1:1 khi rê
@@ -242,7 +242,7 @@ body.dark .coming-soon-note { color: var(--t3); }
    nền tối. */
 .cd-cs { background: var(--lift); border-radius: 10px; padding: 10px; text-align: center; }
 .cd-cs .v { font-size: 16px; font-weight: 700; color: var(--t1); }
-.cd-cs .l { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.cd-cs .l { font-size: 0.75rem; color: var(--t3); margin-top: 2px; }
 
 .cd-includes { border-top: 1px solid #F3F4F6; padding-top: 14px; }
 .cd-includes-title { font-size: 12px; font-weight: 700; color: var(--t3); margin-bottom: 10px; letter-spacing: 0.04em; }

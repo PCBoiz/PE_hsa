@@ -16,7 +16,7 @@
 /* `--hsa-teal` (#2DD4BF) là teal SÁNG — dành cho nền tối. Làm chữ 11px trên
    thẻ sáng nó chỉ được 1,86:1 (đo 01/09/2026). `--success-ink` là bản teal dành
    cho chữ, và nó tự đổi theo theme. */
-.hsa-q-type { font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+.hsa-q-type { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .6px;
   color: var(--success-ink, #0B6357); border: 1px solid rgba(45,212,191,.35);
   border-radius: 999px; padding: 2px 8px; }
 .hsa-q-text { color: var(--t1, #E2E8F0); font-size: 16px; line-height: 1.6; margin: 0 0 14px; }
@@ -73,7 +73,7 @@ body.light .hsa-rev-mine { color: #B91C1C; }
 
 /* ── Lý thuyết ── */
 .hsa-th-head { margin-bottom: 16px; }
-.hsa-th-badge { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+.hsa-th-badge { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .5px;
   padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; font-weight: 700; }
 .hsa-th-badge.full { color: #FBBF24; background: rgba(251,191,36,.14); }
 .hsa-th-badge.cond { color: var(--hsa-teal); background: rgba(45,212,191,.14); }
@@ -95,13 +95,19 @@ body.light .hsa-rev-mine { color: #B91C1C; }
 
 /* ── Minh hoạ trực quan trong lý thuyết (đồ thị thanh so sánh) ── */
 .hsa-viz {
+  /* Cột dòng chảy, KHÔNG neo tuyệt đối cái nhãn (21/09/2026): nhãn dài — ví dụ
+     "VÍ DỤ: x + y = 5 và 2x − y = 1" ở bước 3 bài 5 — phủ trọn chữ "Thế ngược"
+     của ô đầu sơ đồ, đo được 118×14px ở 1366, 121×14 ở 1024, 96×14 ở 768 và
+     cả ở chế độ tối. Nay nhãn vẫn nằm góc phải nhưng CHIẾM CHỖ, nên không đè
+     lên gì. */
   position: relative; margin-top: 14px; padding: 14px 16px 12px;
+  display: flex; flex-direction: column;
   background: rgba(139,124,246,.06); border: 1px solid rgba(139,124,246,.16);
   border-radius: 12px;
 }
 .hsa-viz-badge {
-  position: absolute; top: 12px; right: 14px;
-  font-size: 11px; font-weight: 800; letter-spacing: .3px;
+  align-self: flex-end; max-width: 100%; margin-bottom: 8px;
+  font-size: 12px; font-weight: 800; letter-spacing: .3px;
   color: #FBBF24; background: rgba(251,191,36,.14);
   border: 1px solid rgba(251,191,36,.3); padding: 3px 9px; border-radius: 999px;
 }

@@ -6,8 +6,19 @@
  * khớp với class/id thực sự có trong DOM bài học HSA (thu qua 3 hợp phần × đủ
  * 5 bước + modal chúc mừng), cộng biến CSS, @keyframes và luật cấp phần tử.
  *
- * SINH TỰ ĐỘNG — đừng sửa tay. Muốn đổi thì sửa lesson_db_design.css rồi chạy
- * lại scripts trong scratchpad (thu_class.js → trich_css.js).
+ * ── TỆP NÀY NAY SỬA TAY (cập nhật 21/09/2026) ─────────────────────────────
+ *
+ * Dòng cũ ghi "SINH TỰ ĐỘNG — đừng sửa tay, hãy sửa lesson_db_design.css rồi
+ * chạy lại scripts trong scratchpad". Câu ấy KHÔNG còn đúng và để nguyên thì
+ * nguy hiểm: `thu_class.js`/`trich_css.js` nằm ở scratchpad của một phiên cũ
+ * (đã mất), còn `lesson_db_design.css` thì KHÔNG trang nào nạp nữa — grep
+ * `PageStyles` toàn `src/`: 0 chỗ. Sửa tệp nguồn ấy nay là sửa vào chỗ không
+ * ai đọc, mà người sửa lại tưởng mình vừa đổi được giao diện bài học.
+ *
+ * Nên: sửa THẲNG tệp này, giữ chú thích cạnh mỗi luật đã đổi (bốn luật vá
+ * 21/09: `.header-center` + truy vấn khung, nhãn nút đáy ở ≤600px, khối thưởng
+ * theo chủ đề, hàng nút hộp hoàn thành). Nếu sau này dựng lại bộ trích, phải
+ * đối chiếu ngược những luật ấy trước khi ghi đè.
  * ========================================================================== */
 :root {
   --ide-glass: rgba(21, 30, 50, 0.65);
@@ -291,7 +302,7 @@ body.lesson-focus-mode::before { animation: none; }
   line-height: 1.1;
 }
 .player-pill .player-name {
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-100);
   white-space: nowrap;
@@ -307,7 +318,7 @@ body.lesson-focus-mode::before { animation: none; }
   font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
   /* 9px là dưới mọi ngưỡng đọc được; 11px vẫn vừa trong viên thuốc cao 40px
      (11×1,1 + 1 + 11×1,1 = 25px < 32px lòng trong). */
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 .lesson-stage {
   flex: 1;
@@ -363,7 +374,7 @@ body.lesson-focus-mode::before { animation: none; }
   border-radius: 8px;
   background: var(--module-accent-soft);
   color: var(--module-accent-ink, var(--module-accent));
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;

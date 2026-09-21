@@ -142,7 +142,11 @@ body { background: var(--mk-bg); }
 .mk-sec-row { display: grid; grid-template-columns: 180px 1fr 50px; gap: 14px; align-items: center; }
 .mk-sec-name { font-size: 14px; }
 .mk-sec-weak { color: #FBBF24; font-size: 12px; }
-.mk-sec-bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+/* Máng thanh phải THẤY được ở cả hai chủ đề (21/09/2026): `rgba(255,255,255,.08)`
+   là màu cho nền TỐI — trên nền sáng rgb(247,247,251) nó gần như vô hình, nên
+   hàng "Định lượng 0/3" chỉ còn chữ, không ai biết có thanh tiến độ (đo 602×10
+   và 500×10 ở chế độ sáng). `color-mix` trên màu chữ tự đảo theo chủ đề. */
+.mk-sec-bar { height: 10px; background: color-mix(in srgb, var(--mk-t1, #e2e8f0) 14%, transparent); border-radius: 999px; overflow: hidden; }
 .mk-sec-fill { height: 100%; border-radius: 999px; transition: width .5s; }
 .mk-sec-val { font-size: 13px; color: var(--mk-t2); text-align: right; font-variant-numeric: tabular-nums; }
 .mk-review { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
