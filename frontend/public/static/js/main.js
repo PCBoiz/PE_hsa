@@ -623,7 +623,7 @@ function handlePersonalRoadmapAI() {
 
 function _rmShowToast(msg) {
     var t = document.createElement('div');
-    t.className = 'rm-toast';
+    t.className = 'rm-toast'; t.setAttribute('role', 'status'); // trình đọc màn hình nghe được
     t.textContent = msg;
     document.body.appendChild(t);
     requestAnimationFrame(function() { t.classList.add('rm-toast-show'); });
@@ -857,7 +857,7 @@ function renderCourses() {
         // .rating` từng là con số seed trong khi bảng đánh giá rỗng.
         '<span class="card-stat"><span data-icon="star" data-size="11" data-color="#F59E0B" style="display:inline-flex"></span> <span class="rating">' + (c.rating == null ? "—" : c.rating) + "</span></span>",
         '<span class="card-stat"><span data-icon="users" data-size="11" style="display:inline-flex"></span> ' + c.students + "</span>",
-        '<span class="card-stat"><span data-icon="clock" data-size="11" style="display:inline-flex"></span> ' + c.duration + "</span>",
+        '<span class="card-stat"><span data-icon="clock" data-size="11" style="display:inline-flex"></span> ' + _rmVEsc(String(c.duration == null ? '' : c.duration).replace(/^~\s*/, 'khoảng ')) + "</span>", // "~75" từng đọc như "-75" (21/09)
         '<span class="card-stat"><span data-icon="book-open" data-size="11" style="display:inline-flex"></span> ' + c.lessons + "</span>",
         "</div>",
         '<div class="card-footer">',
@@ -867,7 +867,7 @@ function renderCourses() {
         (function () {
           if (c.enrolled) {
             var goUrl = COURSE_URLS[c.id] || "#";
-            return '<button class="card-btn-enrolled" onclick="window.location=\'' + goUrl + '\'"><span data-icon="check" data-size="12"></span> Đã đăng ký</button>';
+            return '<button class="card-btn-enrolled" onclick="window.location=\'' + goUrl + '\'">Vào học →</button>'; // nhãn = VIỆC (bìa thẻ đã ghi "Đã đăng ký"), 21/09
           }
           return '<button class="card-btn-enroll" onclick="toggleEnroll(\'' + c.id + '\',false)">Đăng ký</button>';
         })(),
@@ -1141,10 +1141,10 @@ function toggleEnroll(courseId, isEnrolled) {
   fetch(API + "/courses/" + courseId + "/enroll", { method: method })
     .then(handleFetch)
     .then(function (d) {
-      if (d) _applyEnrollState(courseId, !isEnrolled);
+      if (d) { _applyEnrollState(courseId, !isEnrolled); if (!isEnrolled) _rmShowToast('✓ Đã ghi danh — bấm "Vào học →" trên thẻ để bắt đầu Bài 1.'); } // từng không báo gì (agent F11)
     })
     .catch(function (err) {
-      console.error("Lỗi đăng ký:", err);
+      console.error("Lỗi đăng ký:", err); _rmShowToast('Chưa ghi danh được — kiểm tra mạng rồi bấm lại.');
     });
 }
 

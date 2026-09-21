@@ -828,7 +828,7 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   padding: 3px 9px;
   border-radius: 4px;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.75rem; /* sàn 12px (từng 10,4px, đo 20/09/2026) */
   font-weight: 700;
 }
 
@@ -843,7 +843,7 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   border-radius: 99px;
   background: rgba(16,185,129,0.9);
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -864,7 +864,7 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
 
 .card-tag {
   color: rgba(255,255,255,0.9);
-  font-size: 10px;
+  font-size: 0.75rem; /* sàn 12px (từng 10px) */
   font-weight: 600;
   opacity: 0.85;
 }
@@ -916,8 +916,14 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   font-weight: 600;
 }
 
+/* `row` + `wrap` nói RÕ (21/09/2026): style.css (nạp trước) có luật di động cũ
+   `.card-footer { flex-direction: column }` làm chân thẻ khoá ở 390px vỡ thành
+   ba hàng — nhãn, "Học thử" chữ trơn giữa thẻ, nút chính lạc xuống cuối. Nhãn
+   + hai nút chỉ cần ~280px nên vừa một hàng; hẹp hơn nữa thì tự xuống dòng. */
 .card-footer {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
   margin-top: auto; /* đẩy footer xuống đáy để hàng nút thẳng hàng giữa các card */
@@ -930,7 +936,7 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   border-radius: 4px;
   padding: 2px 9px;
   color: var(--t3);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .card-lessons {
@@ -949,7 +955,7 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
   transition: all 0.2s;
@@ -957,8 +963,10 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   align-items: center;
   gap: 4px;
 }
-.card-btn-ghost { background: rgba(255,255,255,0.04); color: var(--t2); }
-.card-btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--t1); }
+/* Viền (21/09/2026): nền trắng 4% vô hình ở giao diện sáng nên "Học thử" trông
+   như chữ trơn, không ai biết bấm được. */
+.card-btn-ghost { background: transparent; color: var(--t2); border: 1px solid var(--border); }
+.card-btn-ghost:hover { background: var(--lift); color: var(--t1); }
 .card-btn-enroll { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; }
 .card-btn-enroll:hover { opacity: 0.82; }
 .card-btn-enrolled { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #10B981; }
@@ -3136,7 +3144,13 @@ body.dark .lb-avatar { background: var(--card); }
 .lb-info { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .lb-name {
   font-size: 13px; font-weight: 600; color: #1F2937;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+.lb-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-me-chip {
+  flex-shrink: 0; font-size: 12px; font-weight: 700; line-height: 1;
+  padding: 3px 7px; border-radius: 999px;
+  background: var(--accent-soft, rgba(109,90,230,0.12)); color: var(--brand-ink);
 }
 /* `--brand-ink` chứ không `#2D7FC1`: hex viết cứng không có bản cho bộ tối,
    và luật này đặc thù hơn `body.dark .lb-name` nên nó THẮNG — dòng "vị trí

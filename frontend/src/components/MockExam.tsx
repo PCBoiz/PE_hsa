@@ -322,6 +322,15 @@ export default function MockExam() {
               <div className="mk-score-num">{result.score}<span>/{result.total}</span></div>
               <div className="mk-score-body">
                 <div className="mk-score-pct">{Math.round((result.score / (result.total || 1)) * 100)}% chính xác</div>
+                {/* "Đã làm bao nhiêu câu" (21/09/2026): điểm tính trên TỔNG số câu
+                    của đề, nên nộp sớm mà bỏ trống 6/9 câu vẫn ra "0/9 · 0%" —
+                    nhìn như làm sai hết. Câu bỏ trống khác câu làm sai. */}
+                {(() => {
+                  const daLam = (result.results || []).filter((r: { answered?: boolean }) => r.answered).length;
+                  return daLam < (result.total || 0)
+                    ? <div className="mk-score-answered">Đã làm {daLam}/{result.total} câu — {(result.total || 0) - daLam} câu bỏ trống tính là chưa có điểm.</div>
+                    : null;
+                })()}
                 {result.weakest && <div className="mk-weak">Cần ôn nhất: <b>{result.weakest}</b></div>}
                 {/* Một lượt vào sổ (quyết định 31/08/2026). Nói ra ngay ở đây,
                     vì im lặng rồi không cộng XP thì học viên tưởng hệ lỗi. */}
@@ -355,10 +364,12 @@ export default function MockExam() {
             <ul className="mk-review">
               {/* Máy chủ chỉ trả đáp án cho câu ĐÃ trả lời (mockexam/views.py
                   luật 2). Câu bỏ trống về `answer: null` — nói thẳng là chưa
-                  trả lời, đừng in "Đáp án: null". */}
+                  trả lời, đừng in "Đáp án: null".
+                  Và bỏ trống KHÁC làm sai (21/09/2026): dấu ✕ đỏ cho câu chưa
+                  làm khiến màn kết quả đọc như "sai hết" — dùng ○ trung tính. */}
               {(result.results || []).map((r: any, i: number) => (
-                <li className={'mk-rev ' + (r.correct ? 'ok' : 'no')} key={r.id}>
-                  <span className="mk-rev-ic">{r.correct ? '✓' : '✕'}</span>
+                <li className={'mk-rev ' + (r.correct ? 'ok' : r.answered ? 'no' : 'trong')} key={r.id}>
+                  <span className="mk-rev-ic">{r.correct ? '✓' : r.answered ? '✕' : '○'}</span>
                   <span className="mk-rev-q">Câu {i + 1}</span>
                   <span className="mk-rev-a">
                     {r.answered

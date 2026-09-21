@@ -59,7 +59,13 @@ function Hang({ e, laToi, unit }: { e: Dong; laToi: boolean; unit: string }) {
       </div>
       <div className="lb-avatar">{e.avatar || '🧑'}</div>
       <div className="lb-info">
-        <div className="lb-name">{e.name}{laToi ? ' (Bạn)' : ''}</div>
+        {/* "Bạn" là CHIP riêng, không nối vào tên (21/09/2026): hàng "vị trí của
+            bạn" từng hiện "AUDIT2009 Lê Chi (B" — chính cái nhãn cho biết đây là
+            mình lại là phần bị cắt. Tên dài thì cắt tên, chip luôn còn. */}
+        <div className="lb-name">
+          <span className="lb-name-text">{e.name}</span>
+          {laToi && <span className="lb-me-chip">Bạn</span>}
+        </div>
       </div>
       <div className="lb-value">{giaTri(e.value, unit)}</div>
     </li>

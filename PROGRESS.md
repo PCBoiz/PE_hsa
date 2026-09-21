@@ -139,9 +139,13 @@ Nút "Xem lộ trình →" nay đi `/dashboard#roadmap`. Đường thật đo �
 6 chặng đúng thứ tự. **Gotcha thước:** `goto('/dashboard#roadmap')` khi đang ở `/dashboard` chỉ đổi
 mảnh `#`, không tải lại → phải đi qua trang khác trước.
 
-**Còn mở từ báo cáo agent** (chưa vá, xếp theo nặng nhẹ): chặng "Chẩn đoán năng lực" vẫn 0% dù em vừa
-làm xong khảo sát (nên tính là xong); bước 2
-không hiện "Bạn trả lời: …" ở câu sai (F18); "Đăng ký" khoá học không có xác nhận (F11); badge đè chữ
+**`136e8a5` — luồng học:** bước 2 có "Bạn trả lời: …" ở câu sai (F18); lộ trình mặc định chẩn đoán =
+đã học, chặng kế = đang học; ngăn chi tiết chọn đúng trạng thái của thẻ, đọc được ở giao diện sáng
+(nền `--card` thay #0C1220), hết vệt bóng ~88px ở mép phải khi đóng (và hết nhận Tab), có nút "Xem khóa
+học" — `course_id` gắn khi sinh lộ trình + **đã bù 5/5 lộ trình cũ trên Neon** (`jsonb_set`, chỉ thêm
+khoá thiếu; kịch bản `audit/bu_course_id.py`).
+
+**Còn mở từ báo cáo agent** (chưa vá, xếp theo nặng nhẹ): "Đăng ký" khoá học không có xác nhận (F11); badge đè chữ
 nền thẻ khoá (F12); thẻ "Giữ chuỗi" chiếm 20% màn 9 s (F14); chip gợi ý trợ lý cuộn ngang không dấu
 hiệu (F20); kết quả lượt luyện hiện "0/9" to trước khi nói là luyện (F24); Trang của tôi 390 dài 4,7 màn
 với em mới (F5); desktop F3/F4/F8; nhân sự F9/F15/F17–F20/F25/F26. Phần agent máy tính chưa đi tới

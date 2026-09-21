@@ -66,6 +66,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: DAU_BAO_MAT }];
   },
+  /* Sáu view của Trang của tôi là view trong CÙNG trang /dashboard, không phải
+     tuyến riêng — nên gõ thẳng /courses (theo trí nhớ, hay dán lại từ tin nhắn)
+     ra "Không có trang này" (agent rà điện thoại, 20/09/2026). Chuyển về đúng
+     view; `DashboardClient` đọc `location.hash` lúc hydrate. Tạm thời (307),
+     để sau này view nào thành tuyến thật thì gỡ dòng của nó là xong. */
+  async redirects() {
+    return ['courses', 'roadmap', 'skills', 'forum', 'settings', 'profile'].map((v) => ({
+      source: `/${v}`,
+      destination: `/dashboard#${v}`,
+      permanent: false,
+    }));
+  },
 };
 
 export default nextConfig;

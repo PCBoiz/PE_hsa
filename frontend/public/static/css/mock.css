@@ -117,6 +117,9 @@ body { background: var(--mk-bg); }
 .mk-score-num span { font-size: 24px; color: var(--mk-t3); }
 .mk-score-pct { font-size: 18px; margin-bottom: 6px; }
 .mk-weak { color: #FBBF24; font-size: 14px; }
+/* Số câu đã làm: điểm tính trên TỔNG câu của đề nên nộp sớm ra "0/9" trông
+   như sai hết (21/09/2026). Tông trung tính — đây là thông tin, không phải lỗi. */
+.mk-score-answered { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--mk-t2); }
 /* Lượt có vào sổ điểm không (L4, 31/08/2026). Lượt luyện dùng tông trung
    tính chứ không phải đỏ: nó không phải lỗi, chỉ là không tính điểm. */
 /* Nền lấy TỪ màu chữ chứ không phải trắng-mờ: trắng-mờ phủ lên nền sáng thì
@@ -147,6 +150,7 @@ body { background: var(--mk-bg); }
   background: var(--mk-card); font-size: 13px; align-items: center; }
 .mk-rev-ic { font-weight: 800; text-align: center; }
 .mk-rev.ok .mk-rev-ic { color: var(--mk-teal); } .mk-rev.no .mk-rev-ic { color: #F87171; }
+.mk-rev.trong .mk-rev-ic { color: var(--mk-t3, #94A3B8); } /* bỏ trống ≠ làm sai */
 .mk-rev-q { color: var(--mk-t2); font-weight: 600; }
 .mk-rev-a { color: var(--mk-t2); } .mk-rev-a b { color: var(--mk-t1); }
 .mk-result-actions { display: flex; justify-content: space-between; margin-top: 30px; }

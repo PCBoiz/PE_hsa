@@ -18,12 +18,14 @@
 .cd-meta-item span.val { font-weight: 600; color: #fff; }
 .cd-instructor { font-size: 13px; color: #94A3B8; }
 .cd-instructor strong { color: #CBD5E1; }
+/* Khung theo ĐÚNG tỉ lệ ảnh bìa (800×480 = 5:3, 21/09/2026): khung vuông +
+   `contain` để ảnh co nhỏ giữa một ô tối, trông như hình dán. */
 .cd-hero-visual {
-  width: 140px; height: 140px; flex-shrink: 0; border-radius: 20px; overflow: hidden;
+  width: 200px; height: 120px; flex-shrink: 0; border-radius: 20px; overflow: hidden;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
   display: flex; align-items: center; justify-content: center;
 }
-.cd-hero-visual img { width: 90px; height: 90px; object-fit: contain; }
+.cd-hero-visual img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Body layout ── */
 .cd-body { display: flex; gap: 24px; padding: 24px; align-items: flex-start; }
@@ -190,7 +192,7 @@ body.dark .coming-soon-note { color: var(--t3); }
   height: 120px; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #0f172a, #1e2a45);
 }
-.cd-card-image img { height: 80px; object-fit: contain; }
+.cd-card-image img { width: 100%; height: 100%; object-fit: cover; }
 .cd-card-body { padding: 20px; }
 .cd-card-price { font-size: 22px; font-weight: 800; color: #1F2937; margin-bottom: 4px; }
 /* `--success-ink` chứ không `#10B981`: mã đó là xanh dành cho NỀN/viền, làm
@@ -254,7 +256,7 @@ body.dark .coming-soon-note { color: var(--t3); }
   .cd-side-col { width: 100%; position: static; }
   .cd-skills { grid-template-columns: 1fr; }
   .cd-hero { flex-direction: column; }
-  .cd-hero-visual { width: 100px; height: 100px; }
+  .cd-hero-visual { width: 160px; height: 96px; }
 }
 
 /* ── Dark mode: course detail elements ── */

@@ -92,6 +92,12 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const totalLessons = course.lessons || 0;
   const ratingFill = Math.round(((course.rating || 0) / 5) * 1000) / 10;
   const image = `/${(course.image || '').replace(/^static\//, 'static/')}`;
+  /* "~60 phút/đề": ở cỡ chữ này dấu ngã trông y như dấu trừ — đọc thành "âm 60
+     phút" (ảnh 21/09/2026). Viết bằng chữ. Cùng cách ở thẻ khoá (`main.js`). */
+  const thoiLuong = String(course.duration ?? '').replace(/^~\s*/, 'khoảng ');
+  /* Chip ở bài hiện tại và nút chính: "Tiếp tục" chỉ đúng khi ĐÃ học ít nhất một
+     bài. Chưa ghi danh thì bài 1 không mở được (máy chủ 403) — không mời bấm. */
+  const nhanBaiHienTai = completed > 0 ? 'Tiếp tục' : enrollment ? 'Bắt đầu' : null;
 
   return (
     <>
@@ -125,7 +131,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               <h1 className="cd-hero-title">{course.title}</h1>
               <p className="cd-hero-subtitle">{course.subtitle}</p>
               <div className="cd-meta">
-                <div className="cd-meta-item">🕐 <span className="val">{course.duration}</span></div>
+                <div className="cd-meta-item">🕐 <span className="val">{thoiLuong}</span></div>
                 <div className="cd-meta-item">📖 <span className="val">{course.lessons}</span> bài học</div>
                 <div className="cd-meta-item">🎯 <span className="val">{course.level}</span></div>
               </div>
@@ -199,8 +205,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                                   {lesson.status === 'done' ? '✓' : lesson.status === 'current' ? '▶' : '○'}
                                 </div>
                                 <div className="cd-lesson-title">{lesson.title}</div>
-                                {lesson.status === 'current' ? (
-                                  <span className="cd-lesson-badge">Tiếp tục</span>
+                                {lesson.status === 'current' && nhanBaiHienTai ? (
+                                  <span className="cd-lesson-badge">{nhanBaiHienTai}</span>
                                 ) : (
                                   <div className="cd-lesson-num">{lesson.index + 1}</div>
                                 )}
@@ -349,7 +355,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                         </div>
                       </div>
 
-                      <button type="button" className="cd-enroll-btn continue" onClick={() => W().goLesson()}>▶ Tiếp tục học</button>
+                      <button type="button" className="cd-enroll-btn continue" onClick={() => W().goLesson()}>▶ {completed > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}</button>
                       <button type="button" className="cd-enroll-btn unenroll" id="unenroll-btn" onClick={() => W().unenroll()}>Hủy đăng ký</button>
                     </>
                   ) : (
@@ -361,7 +367,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                   <div className="cd-includes">
                     <div className="cd-includes-title">KHÓA HỌC BAO GỒM</div>
                     <div className="cd-inc-item"><i className="fas fa-book-open"></i> {course.lessons} bài học</div>
-                    <div className="cd-inc-item"><i className="fas fa-clock"></i> {course.duration}</div>
+                    <div className="cd-inc-item"><i className="fas fa-clock"></i> {thoiLuong}</div>
                     <div className="cd-inc-item"><i className="fas fa-infinity"></i> Truy cập vĩnh viễn</div>
                     <div className="cd-inc-item"><i className="fas fa-certificate"></i> Chứng chỉ hoàn thành</div>
                     <div className="cd-inc-item"><i className="fas fa-mobile-alt"></i> Học trên mọi thiết bị</div>

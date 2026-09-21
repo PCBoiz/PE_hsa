@@ -2258,7 +2258,7 @@ var _forumTextQ = '';
       if (link) { window.location.href = link.getAttribute('href'); return; }
       if (typeof navigate === 'function') navigate('courses');
     };
-    setTimeout(function () { dismiss(el); }, 9000);
+    setTimeout(function () { dismiss(el); }, 9000); var goc = window.navigate; if (typeof goc === 'function') window.navigate = function () { dismiss(el); return goc.apply(this, arguments); }; // đổi view thì thôi che nút "Đăng ký" (agent F14, 21/09)
   }
 
   function init() {
@@ -3302,14 +3302,14 @@ var _forumTextQ = '';
     box.innerHTML = '<div class="jr-form">'
       + '<div class="jr-row">'
         + '<label class="jr-f jr-f--sm"><span>Số phút</span>'
-          + '<input type="number" id="jr-minutes" min="0" max="960" placeholder="45" value="'
+          + '<input type="number" id="jr-minutes" min="0" max="960" placeholder="VD: 45" value="'
           + (t.minutes != null ? t.minutes : '') + '"></label>'
         + '<label class="jr-f"><span>Chủ đề</span>'
-          + '<input type="text" id="jr-topic" list="jr-topics" placeholder="Hình học" value="'
+          + '<input type="text" id="jr-topic" list="jr-topics" placeholder="VD: Hình học" value="'
           + esc(t.topic || '') + '"></label>'
       + '</div>'
       + '<label class="jr-f"><span>Hôm nay học gì</span>'
-        + '<input type="text" id="jr-what" maxlength="200" placeholder="Ôn hệ thức lượng trong tam giác" value="'
+        + '<input type="text" id="jr-what" maxlength="200" placeholder="VD: Ôn hệ thức lượng trong tam giác" value="'
         + esc(t.what || '') + '"></label>'
       + '<div class="jr-f"><span>Thấy thế nào</span><div class="jr-diffs" id="jr-diffs">'
         + diffs.map(function (d) {
@@ -3318,7 +3318,7 @@ var _forumTextQ = '';
             + esc(d.label) + '</button>';
         }).join('') + '</div></div>'
       + '<label class="jr-f"><span>Vướng ở đâu (trợ lý AI đọc phần này để tư vấn sát hơn)</span>'
-        + '<textarea id="jr-note" rows="2" maxlength="500" placeholder="Vẫn nhầm khi nào dùng sin, khi nào dùng cos">'
+        + '<textarea id="jr-note" rows="2" maxlength="500" placeholder="VD: Vẫn nhầm khi nào dùng sin, khi nào dùng cos">'
         + esc(t.note || '') + '</textarea></label>'
       + '<div class="jr-actions">'
         + '<button type="button" class="jr-btn" id="jr-save">'
