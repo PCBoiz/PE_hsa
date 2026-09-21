@@ -128,6 +128,35 @@ def test_ngay_vao_lop_that_cho_em_ghi_danh_muon(canh):
 
 
 @pytest.mark.django_db
+def test_sua_duoc_ngay_vao_lop_cua_em_da_trong_lop(canh):
+    """Gửi `joined_at` cho em ĐÃ ở trong lớp phải SỬA ngày ấy, không im lặng.
+
+    Rà vai học vụ 21/09/2026: gửi 13/09 cho một em đang học → máy chủ trả
+    "already" và ngày vẫn nguyên, trong khi đây là màn DUY NHẤT đặt được ngày
+    vào lớp và chuyên cần thì tính theo nó. Không gửi ngày thì không đụng tới.
+    """
+    a = canh['em'][0]
+    _goi(AdminClassMembersView, 'post', {'emails': [a.email], 'joined_at': '2026-09-01'},
+         ai=canh['hocvu'], class_id=canh['lop'])
+    # Lần hai: em đã ở trong lớp, ngày khác → phải đổi.
+    kq = _goi(AdminClassMembersView, 'post', {'emails': [a.email], 'joined_at': '2026-08-15'},
+              ai=canh['hocvu'], class_id=canh['lop'])
+    assert kq.status_code == 200 and len(kq.data['already']) == 1, kq.data
+    r = q1('SELECT joined_at FROM class_members WHERE class_id=%s AND user_id=%s '
+           'AND left_at IS NULL', (canh['lop'], a.id))
+    assert r['joined_at'].date().isoformat() == '2026-08-15', r
+    nk = q1("SELECT summary FROM admin_audit WHERE action='class.member.add' "
+            'AND target_id=%s ORDER BY id DESC LIMIT 1', (str(canh['lop']),))
+    assert nk and 'Sửa ngày vào lớp' in nk['summary'], nk
+    # KHÔNG gửi ngày → giữ nguyên, không ghi thêm nhật ký sửa.
+    _goi(AdminClassMembersView, 'post', {'emails': [a.email]},
+         ai=canh['hocvu'], class_id=canh['lop'])
+    r2 = q1('SELECT joined_at FROM class_members WHERE class_id=%s AND user_id=%s '
+            'AND left_at IS NULL', (canh['lop'], a.id))
+    assert r2['joined_at'].date().isoformat() == '2026-08-15', r2
+
+
+@pytest.mark.django_db
 def test_cap_hang_loat_kem_xep_lop_nhan_ngay_vao_lop(canh):
     """Cấp hàng loạt + xếp lớp: `joined_at` một ngày cho cả mẻ (các em đang học
     dở được nhập sau khai giảng). Không có test nào cho đường này tới 20/09."""

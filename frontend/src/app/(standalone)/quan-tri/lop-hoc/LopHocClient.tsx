@@ -34,6 +34,8 @@ type HocVien = {
   email: string;
   lessonsDone?: number;
   lessonsTotal?: number;
+  /** Ngày vào lớp — chuyên cần tính theo nó, nên phải NHÌN THẤY (21/09/2026). */
+  joinedAt?: string | null;
   left?: boolean;
 };
 /** Trợ giảng đang được gán vào lớp — `class_report.assistants`. */
@@ -771,6 +773,11 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                 <tr>
                   <Th>Học viên</Th>
                   <Th>Email</Th>
+                  {/* Trước 21/09/2026 không màn nào hiện ngày này, trong khi ô
+                      "Ngày vào lớp" ở khối thêm học viên lại ghi nó và mẫu số
+                      chuyên cần đếm từ nó — người dùng không có cách nào biết
+                      mình vừa đặt đúng hay chưa. */}
+                  <Th>Vào lớp</Th>
                   <Th align="right">Bài đã học</Th>
                   <Th>Tình trạng</Th>
                   <Th align="right">Mật khẩu</Th>
@@ -783,6 +790,10 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                     <Td label="Học viên">{s.name}</Td>
                     <Td label="Email" muted>
                       {s.email}
+                    </Td>
+                    <Td label="Vào lớp" muted>
+                      {/* `joinedAt` là ISO đầy đủ; `ngay()` nhận YYYY-MM-DD. */}
+                      {s.joinedAt ? ngay(s.joinedAt.slice(0, 10)) : '—'}
                     </Td>
                     <Td label="Bài đã học" num>
                       {s.lessonsDone ?? 0}/{s.lessonsTotal ?? 0}

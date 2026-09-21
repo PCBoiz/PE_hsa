@@ -88,6 +88,10 @@ export default function NoiDungBai({
   const [err, setErr] = useState<string | null>(null);
   const [chiTiet, setChiTiet] = useState<string[]>([]);
   const [xong, setXong] = useState<string | null>(null);
+  /* Ảnh chụp biểu mẫu LÚC VỪA MỞ, dạng chuỗi để so bằng một phép so sánh.
+     Có nó mới biết "còn thay đổi chưa lưu" — trước 21/09/2026 bấm "Đóng" sau
+     khi sửa là mất trắng, không hỏi, không nháp (rà vai biên tập). */
+  const [goc, setGoc] = useState<string | null>(null);
   const dangGui = useRef(false);
 
   useEffect(() => {
@@ -103,7 +107,9 @@ export default function NoiDungBai({
         if (huy) return;
         const row = d as Ban;
         setBan(row);
-        setM(docRaBieuMau(row.content_json, row.sort_order));
+        const bm = docRaBieuMau(row.content_json, row.sort_order);
+        setM(bm);
+        setGoc(JSON.stringify(bm));
       } catch (e) {
         if (!huy) setErr(loiBatDuoc(e, 'Không mở được nội dung bài.'));
       }
@@ -116,6 +122,27 @@ export default function NoiDungBai({
   const dat = useCallback(<K extends keyof BieuMau>(k: K, v: BieuMau[K]) => {
     setM((cu) => (cu ? { ...cu, [k]: v } : cu));
   }, []);
+
+  /** Còn thay đổi chưa lưu? So với ảnh chụp lúc mở (hoặc lúc lưu lần cuối). */
+  const conSua = !!m && goc !== null && JSON.stringify(m) !== goc;
+
+  /* Rời TRANG (đóng tab, F5, bấm một liên kết ra ngoài) khi còn sửa: trình
+     duyệt tự hỏi. Câu chữ do trình duyệt quyết, mình chỉ được quyền bật. */
+  useEffect(() => {
+    if (!conSua) return;
+    const hoi = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', hoi);
+    return () => window.removeEventListener('beforeunload', hoi);
+  }, [conSua]);
+
+  /** Đóng khung soạn: còn sửa thì hỏi trước. */
+  function dong() {
+    if (conSua && !confirm('Bạn còn thay đổi CHƯA LƯU trong bài này.\n\nĐóng lại là mất các thay đổi đó. Vẫn đóng?')) return;
+    onDong();
+  }
 
   async function luu() {
     if (!ban || !m || dangGui.current) return;
@@ -138,6 +165,7 @@ export default function NoiDungBai({
       // Nạp lại BẢN VỪA GHI làm gốc mới. Không làm thì lần lưu thứ hai vẫn gộp
       // vào bản cũ, và một trường vừa xoá sẽ sống lại.
       setBan({ ...ban, content_json: moi });
+      setGoc(JSON.stringify(m));   // gốc mới = bản vừa ghi
       setXong('Đã lưu.');
       onLuuXong();
     } catch (e) {
@@ -183,8 +211,8 @@ export default function NoiDungBai({
             >
               Xem thử ↗
             </a>
-            <Button size="sm" variant="ghost" onClick={onDong}>
-              Đóng
+            <Button size="sm" variant="ghost" onClick={dong}>
+              {conSua ? 'Đóng (chưa lưu)' : 'Đóng'}
             </Button>
             <Button
               size="sm"

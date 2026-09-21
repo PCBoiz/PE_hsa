@@ -522,6 +522,28 @@ class AdminClassMembersView(APIView):
                     RETURNING id''',
                  (class_id, uid, vao or local_now()))
         if not moi:
+            # ĐÃ ở trong lớp. Trước 21/09/2026 hàm dừng ở đây, nên `joined_at`
+            # người dùng vừa gõ rơi vào im lặng: rà vai học vụ gửi 13/09 cho một
+            # em đang học, máy chủ trả "already" và ngày vẫn là 20/09 — mà đây
+            # đúng là màn DUY NHẤT đặt được ngày ấy, còn chuyên cần thì tính
+            # theo nó. Chỉ đụng tới khi người dùng CÓ gửi ngày (vao is not None);
+            # thêm em mới không kèm ngày vẫn giữ nguyên hành vi cũ.
+            if vao is not None:
+                cu = q1('SELECT id, joined_at FROM class_members '
+                        'WHERE class_id=%s AND user_id=%s AND left_at IS NULL',
+                        (class_id, uid))
+                if cu and (cu['joined_at'] is None
+                           or cu['joined_at'].date() != vao.date()):
+                    x('UPDATE class_members SET joined_at=%s WHERE id=%s', (vao, cu['id']))
+                    ten_cu = _user_label(row, uid)
+                    audit.record(request, audit.CLASS_MEMBER_ADD, target_type='class',
+                                 target_id=class_id, target_label=klass['name'],
+                                 summary='Sửa ngày vào lớp của "%s" ở lớp "%s" thành %s.'
+                                         % (ten_cu, klass['name'], vao.date().isoformat()),
+                                 detail={'userId': uid, 'userName': ten_cu, 'classId': class_id,
+                                         'joinedAt': vao.date().isoformat(),
+                                         'joinedAtCu': (cu['joined_at'].date().isoformat()
+                                                        if cu['joined_at'] else None)})
             return False
         ten = _user_label(row, uid)
         tro_giang = bool(row) and row.get('role') == ROLE_ASSISTANT
