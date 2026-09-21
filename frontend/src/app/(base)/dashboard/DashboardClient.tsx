@@ -111,7 +111,23 @@ export default function DashboardClient(
         sauKhiDung(hash);   // `__moTrang` sẽ thấy trang đã dựng và bỏ qua — gọi ở đây
       });
     }
-    return () => { delete w.__moTrang; };
+    /* CỜ "chưa ghi danh khoá nào" trong PHIÊN (21/09/2026). Máy chủ đặt cờ lần
+       đầu (`HocTiep::CoChuaGhiDanh`); nhưng em có thể ghi danh ngay ở view Khoá
+       học rồi quay lại đây mà không tải lại trang. Tín hiệu có sẵn:
+       `main.js::renderDashProgress` bật/tắt thuộc tính `hidden` của
+       `#dash-progress-empty` theo đúng `enrolledCourses`. Theo dõi thuộc tính ấy
+       thay vì thêm lượt gọi API hay thêm dòng vào tầng cũ (tầng cũ chỉ được
+       nhỏ đi — `e2e/unit/chot-ham-tang-cu`). */
+    const trang = document.getElementById('page-dashboard');
+    const oRong = document.getElementById('dash-progress-empty');
+    let theoDoi: MutationObserver | undefined;
+    if (trang && oRong) {
+      theoDoi = new MutationObserver(() => {
+        trang.classList.toggle('chua-ghi-danh', !(oRong as HTMLElement).hidden);
+      });
+      theoDoi.observe(oRong, { attributes: true, attributeFilter: ['hidden'] });
+    }
+    return () => { theoDoi?.disconnect(); delete w.__moTrang; };
   }, []);
 
   return (
@@ -154,6 +170,31 @@ export default function DashboardClient(
               <p>Hôm nay luyện phần nào? Tiếp tục hành trình chinh phục kỳ thi Đánh giá năng lực HSA.</p>
             </div>
             <button className="dash-hero-btn" onClick={() => W().navigate('courses')}>
+              Khám phá khóa học <span data-icon="arrow-right" data-size="13"></span>
+            </button>
+          </div>
+
+          {/* Khối GỘP cho học viên chưa ghi danh khoá nào (21/09/2026, anh Sơn
+              chốt). Trước đó trang dài 4,3 màn ở 390px với bốn khối rỗng
+              ("Lộ trình", "Nên ôn tiếp", "Tiến độ theo hợp phần", "Tiến độ học
+              tập") và bốn lời mời "Khám phá khoá học" ở bốn chỗ khác nhau.
+              `main.js::renderDashProgress` gắn `chua-ghi-danh` lên #page-dashboard
+              khi `enrolledCourses` rỗng; CSS ẩn bốn khối kia và hiện khối này,
+              đồng thời thu bảng xếp hạng còn Top 3. Ghi danh xong: y như cũ. */}
+          <div className="section-card dash-bat-dau fx-fade-up" id="dash-bat-dau" data-chi-hoc-vien="">
+            <div className="section-title" style={{ marginBottom: 10 }}>
+              <span className="title-icon-blue"><BieuTuong ten="compass" co={16} /></span>
+              <span>Bắt đầu hành trình HSA</span>
+            </div>
+            <p className="dash-bat-dau-sub">
+              Chọn một hợp phần để mở bài học, lộ trình và tiến độ của riêng bạn. Cả ba hợp phần đều miễn phí.
+            </p>
+            <ol className="dash-bat-dau-buoc">
+              <li>Chọn hợp phần bạn muốn chắc trước — Định lượng, Định tính hoặc Khoa học &amp; Tiếng Anh.</li>
+              <li>Làm bài kiểm tra đầu vào ba câu; hệ thống chấm rồi chọn bản lý thuyết vừa sức bạn.</li>
+              <li>Lộ trình, tiến độ và phần &ldquo;nên ôn tiếp&rdquo; sẽ hiện ngay tại trang này.</li>
+            </ol>
+            <button type="button" className="dash-bat-dau-btn" onClick={() => W().navigate('courses')}>
               Khám phá khóa học <span data-icon="arrow-right" data-size="13"></span>
             </button>
           </div>
@@ -253,7 +294,7 @@ export default function DashboardClient(
               {/* Ba chủ đề yếu nhất, mỗi chủ đề đúng MỘT nút. Biết mình yếu ở
                   đâu mà không có đường đi tiếp thì thông tin đó chưa dùng được.
                   dashboard.js đổ vào từ /api/hsa/competency. */}
-              <div className="section-card fx-fade-up" style={{ animationDelay: '.11s' }}>
+              <div className="section-card fx-fade-up" id="the-nen-on-tiep" style={{ animationDelay: '.11s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
                   <span className="title-icon-blue" data-icon="target" data-size="16"></span>
                   <span>Nên ôn tiếp</span>
@@ -263,7 +304,7 @@ export default function DashboardClient(
                 </div>
               </div>
 
-              <div className="section-card fx-fade-up" style={{ animationDelay: '.12s' }}>
+              <div className="section-card fx-fade-up" id="the-tien-do-hop-phan" style={{ animationDelay: '.12s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
                   <span className="title-icon-blue"><BieuTuong ten="bar-chart" co={16} /></span>
                   <span>Tiến độ theo hợp phần</span>

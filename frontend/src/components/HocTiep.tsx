@@ -74,6 +74,30 @@ function DuaXuong({ duLieu }: { duLieu: Record<string, unknown> }) {
   );
 }
 
+/**
+ * CỜ "CHƯA GHI DANH KHOÁ NÀO" cho Trang của tôi (21/09/2026).
+ *
+ * Máy chủ ở đây ĐÃ biết danh sách khoá đang học, nên nó nói luôn — không cần
+ * chờ tầng cũ gọi lại API rồi mới đổi bố cục (sẽ thấy khối rỗng nháy một cái).
+ * CSS đọc cờ này để gộp bốn khối rỗng thành một khối "Bắt đầu" (dashboard.css).
+ *
+ * Vì sao KHÔNG đặt trong `main.js`: tầng cũ chỉ được nhỏ đi
+ * (`e2e/unit/chot-ham-tang-cu`) — logic mới viết ở `src/`. Đổi trong phiên
+ * (em vừa ghi danh) do `DashboardClient` theo dõi, xem chú thích ở đó.
+ *
+ * `khoa.ok` sai (máy chủ lỗi) thì KHÔNG đụng gì: giữ bố cục đầy đủ còn hơn
+ * hiện màn "bắt đầu" cho một em đang học dở.
+ */
+function CoChuaGhiDanh({ bat }: { bat: boolean }) {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `(function(){var t=document.getElementById('page-dashboard');if(t)t.classList.toggle('chua-ghi-danh',${bat});})();`,
+      }}
+    />
+  );
+}
+
 export default async function HocTiep() {
   // `cache()` ở `duLieuHsa`: hàng thẻ số và dải tiến độ gọi cùng hai hàm này
   // trong cùng lượt dựng — ba khối, hai lượt API.
@@ -86,10 +110,12 @@ export default async function HocTiep() {
 
   const daXong = sum.ok ? sum.data.byCourse : {};
   const c = khoa.ok ? chonKhoa(khoa.data.enrolled, daXong) : null;
+  const chuaGhiDanh = khoa.ok && khoa.data.enrolled.length === 0;
   if (!c) {
     return (
       <>
         <DuaXuong duLieu={duaXuong} />
+        {khoa.ok && <CoChuaGhiDanh bat={chuaGhiDanh} />}
         <HocTiepRong />
       </>
     );
@@ -103,6 +129,7 @@ export default async function HocTiep() {
   return (
     <>
     <DuaXuong duLieu={duaXuong} />
+    <CoChuaGhiDanh bat={false} />
     <Link className="hsa-cont-link" href={`/lesson/${c.id}?lesson=${baiKe}`}>
       <span className="hsa-cont-badge">{baiKe}</span>
       <span className="hsa-cont-txt">

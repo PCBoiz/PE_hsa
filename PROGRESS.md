@@ -145,11 +145,28 @@ mảnh `#`, không tải lại → phải đi qua trang khác trước.
 học" — `course_id` gắn khi sinh lộ trình + **đã bù 5/5 lộ trình cũ trên Neon** (`jsonb_set`, chỉ thêm
 khoá thiếu; kịch bản `audit/bu_course_id.py`).
 
-**Còn mở từ báo cáo agent** (chưa vá, xếp theo nặng nhẹ): "Đăng ký" khoá học không có xác nhận (F11); badge đè chữ
-nền thẻ khoá (F12); thẻ "Giữ chuỗi" chiếm 20% màn 9 s (F14); chip gợi ý trợ lý cuộn ngang không dấu
-hiệu (F20); kết quả lượt luyện hiện "0/9" to trước khi nói là luyện (F24); Trang của tôi 390 dài 4,7 màn
-với em mới (F5); desktop F3/F4/F8; nhân sự F9/F15/F17–F20/F25/F26. Phần agent máy tính chưa đi tới
-(bài học/thi thử/thiết kế) vẫn chưa ai rà.
+**`e286d3d` — khoá học + thi thử:** ghi danh có thông báo và nút mang nhãn việc ("Vào học →"); "Học thử"
+có viền; **ảnh bìa ba khoá bỏ chữ nướng** (badge từng che "PH", tên khoá bị cắt nửa) + khung ảnh ở trang
+chi tiết đặt đúng tỉ lệ 5:3; chữ trên thẻ ≥ 12px; chân thẻ 390 hết vỡ ba hàng; gõ thẳng /courses,
+/roadmap, /skills, /forum, /settings, /profile → về đúng view; chip "Tiếp tục" chỉ hiện khi ĐÃ học bài
+nào; "~60 phút/đề" → "khoảng 60 phút/đề"; kết quả thi thử nói "Đã làm 1/9 câu" và câu bỏ trống mang dấu
+○ (không phải ✕ đỏ); bảng xếp hạng tách chip "Bạn"; gợi ý ô Nhật ký thêm "VD:"; thẻ "Giữ chuỗi" tắt khi
+đổi view.
+
+**`25064e7` — lỗi JS bắt được nhờ chính bộ quét sàn cỡ chữ:** `navigate()` đọc `target.classList` mà
+không kiểm null → trang KHÔNG có tab (đặt mật khẩu lần đầu, khảo sát) vẫn nạp main.js nên nhánh `#hash`
+ném TypeError (đo: mã cũ 2 lỗi, mã mới 0); và vì Trang của tôi dựng LƯỜI, navigate chạy trước lúc React
+hydrate thì view im lặng không mở — nay đợi rồi gọi lại tối đa ~3 s. Đường chuyển hướng /courses thêm
+hôm nay đi qua đúng chỗ này.
+
+**Còn mở từ báo cáo agent** (chưa vá): chip gợi ý trợ lý cuộn ngang không dấu hiệu (F20); Trang của tôi
+390 dài 4,7 màn với em mới, 4 lối "Khám phá khoá học" lặp (F5 — cần quyết định bố cục, hỏi anh trước);
+"Khám phá khoá học" không đổi URL (nửa còn lại của F10); desktop F3/F4; nhân sự F9/F15/F17–F20/F25/F26.
+
+**Đợt agent thứ hai (21/09, đang chạy)**: ba agent — học viên máy tính (bài học 5 bước, thi thử, bài
+tập, kỹ năng, diễn đàn ở 1366/1024/768 + nhất quán thiết kế), nhân sự (học vụ · quản trị · biên tập,
+hai khổ), học viên điện thoại (kiểm lại toàn bộ bản vá hôm nay ở `pointer: coarse` + chi tiết khoá, trợ
+lý AI, cài đặt, chuông, đăng nhập/đăng xuất). Danh sách để họ kiểm lại: `audit/agents/DA_SUA_21.md`.
 
 ## 20/09/2026 (đêm) — AUDIT GIAO DIỆN HAI KHỔ BẰNG 3 AGENT: ĐỢT 1 VÁ 13 CHỖ, THANH TRÊN Ở ĐIỆN THOẠI THÀNH HAI HÀNG
 

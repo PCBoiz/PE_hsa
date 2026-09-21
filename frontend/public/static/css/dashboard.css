@@ -4042,6 +4042,41 @@ body.dark .prof-post-stats {
 body.dark .fpc-lesson-tag { color: var(--brand, #8B7CF6); }
 body.dark .fpc-lesson-tag:hover { color: #fff; }
 
+/* ══ Trang của tôi khi CHƯA ghi danh khoá nào (21/09/2026) ══════════════
+   Đo trước khi sửa (390px, tài khoản chưa ghi danh): trang cao 3.622px = 4,3
+   màn, bốn khối rỗng ("Lộ trình của bạn", "Nên ôn tiếp", "Tiến độ theo hợp
+   phần", "Tiến độ học tập") và bốn nút "Khám phá khoá học" ở y=224, 1181,
+   2696, 3614. Anh Sơn chốt: gộp thành MỘT khối "Bắt đầu", giữ bảng xếp hạng
+   thu gọn Top 3. `main.js::renderDashProgress` gắn cờ `chua-ghi-danh` khi
+   `enrolledCourses` rỗng — ghi danh xong là bố cục trở lại y như cũ. */
+.dash-bat-dau { display: none; }
+#page-dashboard.chua-ghi-danh .dash-bat-dau { display: block; }
+#page-dashboard.chua-ghi-danh .mini-rm-card,
+/* Thẻ "Học tiếp" ở trạng thái rỗng nói ĐÚNG câu của khối "Bắt đầu" (đo 21/09:
+   hai khối cùng tiêu đề "Bắt đầu hành trình HSA", cách nhau 830px). Giữ bản
+   nằm ngay dưới hero, bản kia ẩn — ghi danh xong nó lại là "Học tiếp". */
+#page-dashboard.chua-ghi-danh #hsa-continue,
+#page-dashboard.chua-ghi-danh #the-nen-on-tiep,
+#page-dashboard.chua-ghi-danh #the-tien-do-hop-phan,
+#page-dashboard.chua-ghi-danh .dash-progress-card,
+/* Hero vẫn còn, nhưng lời mời nằm ở khối "Bắt đầu" ngay dưới — một việc,
+   một nút. */
+#page-dashboard.chua-ghi-danh .dash-hero-btn { display: none; }
+/* Bảng xếp hạng: Top 3 là đủ để thấy "ở đây có người đang học"; hàng "vị trí
+   của bạn" (lb-row-me) luôn giữ. */
+#page-dashboard.chua-ghi-danh .lb-list > li:nth-child(n+4):not(.lb-row-me) { display: none; }
+
+.dash-bat-dau-sub { margin: 0 0 12px; color: var(--t2); font-size: 0.9rem; line-height: 1.6; }
+.dash-bat-dau-buoc { margin: 0 0 16px; padding-left: 1.25rem; color: var(--t2); font-size: 0.86rem; line-height: 1.7; }
+.dash-bat-dau-buoc li { margin-bottom: 4px; }
+.dash-bat-dau-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 2.75rem;
+  padding: 0 18px; border: none; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+}
+.dash-bat-dau-btn:hover { filter: brightness(1.06); }
+
 /* ── Nhắc giữ chuỗi: thẻ nhỏ ở góc, KHÔNG phải lớp phủ (audit 2026-08-19) ──
    Bản cũ phủ kín màn hình với nền đen 55% và khoá cuộn trang, bật sau MỖI lần
    đăng nhập — thứ đầu tiên học viên gặp là một bức tường phải bấm bỏ. */
