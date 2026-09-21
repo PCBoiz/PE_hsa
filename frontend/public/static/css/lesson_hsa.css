@@ -50,6 +50,12 @@
 .hsa-rev-q { color: var(--t2, #94A3B8); font-weight: 600; }
 .hsa-rev-ans { color: var(--t2, #94A3B8); line-height: 1.5; }
 .hsa-rev-ans b { color: var(--t1, #E2E8F0); }
+/* "Bạn trả lời: …" ở câu sai (21/09/2026): bước Đánh giá từng chỉ hiện đáp án
+   đúng, em không thấy mình đã điền "999" hay chọn "5%" — mất đúng chỗ rút kinh
+   nghiệm. Dòng riêng, màu lỗi; bản sáng tối màu hơn cho đủ tương phản. */
+.hsa-rev-mine { display: block; color: #FCA5A5; }
+.hsa-rev-mine b { color: inherit; }
+body.light .hsa-rev-mine { color: #B91C1C; }
 
 /* ── Lý thuyết ── */
 .hsa-th-head { margin-bottom: 16px; }

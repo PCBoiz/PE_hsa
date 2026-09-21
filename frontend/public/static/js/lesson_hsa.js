@@ -200,7 +200,7 @@
       return '<li class="hsa-rev ' + (ok ? 'ok' : 'no') + '">' +
         '<span class="hsa-rev-ic">' + (ok ? '✓' : '✕') + '</span>' +
         '<span class="hsa-rev-q">Câu ' + (i + 1) + '</span>' +
-        '<span class="hsa-rev-ans">Đáp án: <b>' + esc(kq.answer == null ? '—' : kq.answer) + '</b>' +
+        '<span class="hsa-rev-ans">' + (ok ? '' : '<span class="hsa-rev-mine">Bạn trả lời: <b>' + esc(state.answers[q.id] || 'bỏ trống') + '</b></span>') + 'Đáp án: <b>' + esc(kq.answer == null ? '—' : kq.answer) + '</b>' +
         (kq.explain ? ' — ' + esc(kq.explain) : '') + '</span></li>';
     }).join('');
     $('hsa-assess').innerHTML =

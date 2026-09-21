@@ -532,6 +532,10 @@ _HSA_SECTIONS = {
     'qt': ('Tư duy Định tính', 'Đọc hiểu, từ vựng – ngữ pháp, suy luận ngôn ngữ.'),
     'kh': ('Khoa học & Tiếng Anh', 'Lý – Hoá – Sinh – Sử – Địa hoặc lựa chọn Tiếng Anh.'),
 }
+# Khoá học của từng hợp phần. `roadmap.js` hiện nút "Xem khóa học" trong ngăn
+# chi tiết khi nút lộ trình mang `course_id`; trước 21/09/2026 lộ trình sinh từ
+# khảo sát không mang, nên chặng "ƯU TIÊN" chỉ có mô tả mà không có lối vào học.
+_HSA_COURSE = {'ql': 'hsa_quantitative', 'qt': 'hsa_verbal', 'kh': 'hsa_science'}
 
 
 def _pick_roadmap_template(data):
@@ -579,7 +583,7 @@ def _generate_user_roadmap(uid, survey_id, data):
         label = f'{i}. {title}{prio}'
         note = (f' (mini-test {scores[sec]}/2 — tập trung phần này)'
                 if sec == weakest else f' (mini-test {scores[sec]}/2)')
-        nodes[nid] = {'title': label, 'desc': desc + note}
+        nodes[nid] = {'title': label, 'desc': desc + note, 'course_id': _HSA_COURSE[sec]}
         lines.append(f'    {nid}["{label}"]')
         ids.append(nid)
     n_mock, n_goal = len(order) + 2, len(order) + 3

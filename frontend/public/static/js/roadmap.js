@@ -210,9 +210,9 @@
     // hàm `esc` đã bị xoá. `node.label` mang dữ liệu học viên tự khai.
     var duLieu = ' data-rm-name="' + escHtmlR(name) + '"' +
       ' data-rm-node="' + escHtmlR(node.id) + '"' +
-      ' data-rm-label="' + escHtmlR(node.label) + '"';
+      ' data-rm-label="' + escHtmlR(node.label) + '" data-rm-status="' + escHtmlR(status) + '"'; // trạng thái ĐÃ TÍNH: ngăn kéo từng luôn chọn sẵn "Chưa học" (21/09)
     var onclick = 'window.roadmapOpenDrawer(this.dataset.rmName, this.dataset.rmNode, ' +
-      'this.dataset.rmLabel)';
+      'this.dataset.rmLabel, this.dataset.rmStatus)';
     var aria = ' aria-label="' + escHtmlR(node.label) + ' — ' + STATUS_TEXT[status] + '"';
     if (kind === 'main') {
       // Milestone: badge số chặng, đổi thành ✓ khi hoàn thành (ngôn ngữ roadmap.sh).
@@ -346,9 +346,9 @@
       renderStatsPill(MY_ROADMAP_TAB, []);
       return;
     }
-    var sections = nodeIds.map(function (nid) {
+    var sections = nodeIds.map(function (nid, i) {
       var nodeData = nodesObj[nid] || {};
-      var status = getStatus(MY_ROADMAP_TAB, nid, 'locked');
+      var status = getStatus(MY_ROADMAP_TAB, nid, nodeIds[0] !== 'hsa_start' ? 'locked' : (i === 0 ? 'done' : (i === 1 ? 'active' : 'locked'))); // khảo sát XONG là đã chẩn đoán; chặng kế = chỗ bắt đầu (21/09)
       return { main: { id: nid, label: String(nodeData.title || nid).replace(/^\d+\.\s*/, ''), status: status }, left: [], right: [] }; // ô số đã đánh thứ tự — bỏ "4. " trong tiêu đề
     });
     renderMyHeader(apiData, sections);
@@ -444,7 +444,7 @@
   }
 
   /* ── Detail Drawer ── */
-  window.roadmapOpenDrawer = function (name, nodeId, label) {
+  window.roadmapOpenDrawer = function (name, nodeId, label, macDinh) {
     var drawer = document.getElementById('rm-drawer');
     var backdrop = document.getElementById('rm-drawer-backdrop');
     if (!drawer) return;
@@ -452,7 +452,7 @@
     drawer.dataset.nodeId = nodeId;
     drawer.dataset.label = label;
     document.getElementById('rm-drawer-title').textContent = label;
-    var status = getStatus(name, nodeId, 'locked');
+    var status = getStatus(name, nodeId, macDinh || 'locked');
     renderDrawerStatusToggle(status);
 
     var key = String(label).toLowerCase().trim();

@@ -262,7 +262,9 @@
 .rm-browse {
   position: absolute; top: 0; right: 0; bottom: 0;
   width: min(680px, 95vw); z-index: 26;
-  background: #07090F; border-left: 1px solid var(--border);
+  /* Token chứ không hex tối cứng: ở giao diện sáng tấm này từng là một khối đen
+     mang chữ/nút của bản sáng (21/09/2026). Ở bản tối `--bg` đúng bằng #07090F. */
+  background: var(--bg, #07090F); border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
 }
@@ -304,12 +306,24 @@
 .rm-drawer {
   position: fixed; top: var(--topbar-h); right: 0; bottom: 0;
   width: min(440px, 92vw); z-index: 41;
-  background: #0C1220; border-left: 1px solid var(--border);
-  box-shadow: -24px 0 64px rgba(0,0,0,0.5);
+  /* `--card` (bản tối = #0C1220 như cũ): nền đen cứng ở giao diện sáng làm tiêu
+     đề chặng (màu `--t1` tối) gần như vô hình (ảnh 21/09/2026). */
+  background: var(--card, #0C1220); border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
-  transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  /* ĐÓNG = giấu hẳn (21/09/2026). Trước đây ngăn kéo đóng chỉ trượt ra ngoài mép
+     phải mà vẫn mang bóng đổ -24px/64px: một vệt xám ~88px phủ dọc mép phải
+     trang Lộ trình ở MỌI khổ, lúc nào cũng thấy. Và các nút trong ngăn vẫn
+     nhận phím Tab dù nằm ngoài màn. `visibility` trễ đúng 0,3 s để lúc đóng
+     vẫn thấy nó trượt đi. */
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), visibility 0s linear 0.3s;
 }
-.rm-drawer.open { transform: translateX(0); }
+.rm-drawer.open {
+  visibility: visible; transform: translateX(0);
+  box-shadow: -24px 0 64px rgba(0,0,0,0.5);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
 .rm-drawer-hd { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .rm-drawer-hd h2 { font-size: 1rem; font-weight: 700; color: var(--t1); margin: 0; }
 .rm-drawer-close { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); color: var(--t2); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -321,7 +335,7 @@
   background: var(--card); color: var(--t3); font-size: 0.74rem; font-weight: 600;
   cursor: pointer; transition: all 0.15s;
 }
-.rm-status-btn:hover { border-color: rgba(255,255,255,0.2); }
+.rm-status-btn:hover { border-color: var(--t3); }
 .rm-drawer-desc { font-size: 0.82rem; color: var(--t2); line-height: 1.6; margin: 0 0 18px; }
 .rm-drawer-resources { display: flex; flex-direction: column; gap: 8px; }
 .rm-res-item {

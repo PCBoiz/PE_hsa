@@ -1,4 +1,6 @@
 """Test cơ bản app accounts (auth/user/follow — domain chưa từng có test ở bản Flask)."""
+import json
+
 import pytest
 
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
@@ -102,8 +104,13 @@ def test_survey_generates_roadmap(auth_api, temp_user):
     assert res.status_code == 200
     user = q1('SELECT questionnaire_completed FROM users WHERE id=%s', (temp_user,))
     assert user['questionnaire_completed'] == 1
-    rm = q1('SELECT id, source FROM roadmaps WHERE id=%s', (f'u{temp_user}_generated',))
+    rm = q1('SELECT id, source, nodes_json FROM roadmaps WHERE id=%s', (f'u{temp_user}_generated',))
     assert rm is not None and rm['source'] == 'generated'
+    # Mỗi chặng hợp phần dẫn tới đúng khoá của nó (nút "Xem khóa học", 21/09/2026).
+    nodes = rm['nodes_json'] if isinstance(rm['nodes_json'], dict) else json.loads(rm['nodes_json'])
+    assert nodes['hsa_ql'].get('course_id') == 'hsa_quantitative'
+    assert nodes['hsa_qt'].get('course_id') == 'hsa_verbal'
+    assert nodes['hsa_kh'].get('course_id') == 'hsa_science'
 
 
 def test_survey_gui_hai_lan_chi_ghi_mot_dong(auth_api, temp_user):
