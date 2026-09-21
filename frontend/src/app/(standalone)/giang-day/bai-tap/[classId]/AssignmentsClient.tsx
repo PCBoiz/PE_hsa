@@ -55,6 +55,8 @@ function quaHan(iso: string | null) {
 }
 
 type Props = {
+  /** Trợ giảng: điểm danh và chấm bài, KHÔNG giao và KHÔNG xoá bài. */
+  laTroGiang?: boolean;
   classId: number;
   className: string;
   initial: Assignment[];
@@ -84,7 +86,7 @@ export default function AssignmentsClient(props: Props) {
   );
 }
 
-function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
+function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang }: Props) {
   const toast = useToast();
   const [ds, setDs] = useState<Assignment[]>(initial);
   const [err, setErr] = useState<string | null>(loiTai ?? null);
@@ -171,6 +173,11 @@ function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
           onHuy={() => setMoForm(false)}
           onLoi={setErr}
         />
+      ) : laTroGiang ? (
+        <p className="text-small text-ink-3">
+          Trợ giảng điểm danh và chấm bài. Giao bài mới do giảng viên phụ trách lớp
+          hoặc quản lý học vụ làm.
+        </p>
       ) : (
         <div>
           <Button onClick={() => setMoForm(true)}>+ Giao bài mới</Button>
@@ -255,11 +262,14 @@ function DanhSachBai({ classId, className, initial, topics, loiTai }: Props) {
                         Đóng bài
                       </Button>
                     )}
-                    {/* "Xoá" là ghost, đẩy về mép phải: nút phá huỷ đứng cùng cỡ,
-                        cùng màu đậm ngay cạnh "Chấm bài" là bấm nhầm chờ sẵn. */}
-                    <Button size="sm" variant="ghost" className="ml-auto text-danger-ink" onClick={() => void xoa(a)}>
-                      Xoá
-                    </Button>
+                    {/* "Xoá" là ghost chữ đỏ, đẩy về mép phải: nút phá huỷ đứng
+                        cùng cỡ, cùng màu đậm ngay cạnh "Chấm bài" là bấm nhầm chờ
+                        sẵn. Trợ giảng không thấy nút này (máy chủ cũng trả 403). */}
+                    {!laTroGiang && (
+                      <Button size="sm" variant="ghost-danger" className="ml-auto" onClick={() => void xoa(a)}>
+                        Xoá
+                      </Button>
+                    )}
                   </div>
                 </li>
               );

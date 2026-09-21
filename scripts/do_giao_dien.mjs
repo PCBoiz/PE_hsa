@@ -372,9 +372,21 @@ function DO_TRONG_TRANG(do_trang_thai) {
      Khảo sát hiện MỘT câu mỗi lần và có 32 câu: 136 phần tử có chữ, chỉ 7 phần
      tử NHÌN THẤY. In mẫu số ra để không ai đọc số 0 ấy thành "đã soi cả bài". */
   let so_soi = 0;
+  /* SÀN CỠ CHỮ 12px — luật thứ sáu, thêm 21/09/2026.
+     Vì sao cần: bộ đo hỏi "chữ có đủ tương phản không" nhưng chưa bao giờ hỏi
+     "chữ có đọc nổi không". Quét tay hôm nay tìm ra 10px ở nhãn hợp phần thẻ
+     khoá, 10,4px ở badge, 11,2px ở nhãn chân thẻ, 11,84px ở hai nút, 10px ở
+     nhãn "XP" của hộp hoàn thành bài — toàn những chỗ đã qua bốn đợt audit.
+     Ngưỡng 12px là sàn dự án tự đặt từ 20/09 (nhỏ hơn cỡ thân 16px một bậc);
+     chữ trang trí có `aria-hidden` thì bỏ qua vì nó không để đọc. */
+  const chu_nho = [];
   for (const el of document.querySelectorAll('body *')) {
     if (!hien(el) || !co_chu(el)) continue;
     so_soi += 1;
+    const co_chu_px = parseFloat(getComputedStyle(el).fontSize);
+    if (co_chu_px < 12 && !el.closest('[aria-hidden="true"]')) {
+      chu_nho.push({ duong: duong(el), co: Math.round(co_chu_px * 10) / 10, chu: el.textContent.trim().slice(0, 30) });
+    }
     const d = do_el(el);
     if (d && d.tp < d.nguong) {
       /* Đánh dấu để bước XÁC MINH BẰNG ĐIỂM ẢNH ở Node tìm lại được phần tử.
@@ -697,6 +709,7 @@ function DO_TRONG_TRANG(do_trang_thai) {
     vi_pham: vi_pham.slice(0, 300),
     so_vi_pham: vi_pham.length, so_vi_pham_tho: vi_pham.length, so_soi,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
+    chu_nho: chu_nho.slice(0, 20), so_chu_nho: chu_nho.length,
     so_cham: document.querySelectorAll(CHAM).length,
     tran_ngang: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     /* TRÀN BỊ CẮT BÊN TRONG — chỗ mù của bộ đo này tới 17/09/2026.
@@ -1041,6 +1054,7 @@ for (const kho of KHO) {
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`
+        + `  chữ<12px:${String(d.so_chu_nho).padStart(3)}`
         + `  tràn:${d.tran_ngang}px  ngoài khung:${String(d.so_ngoai_khung).padStart(2)}`
         + `  bị che:${String(d.so_bi_che).padStart(2)}`
         + `  chồng:${String(d.so_chong_nut).padStart(2)}`
@@ -1066,6 +1080,10 @@ const tong_csp = ket.reduce((a, r) => a + (r.vi_pham_csp || 0), 0);
 console.log(`\nTỔNG (${KHO.length} khổ × ${TRANG.length} trang):`);
 console.log(`  vi phạm tương phản : ${tong_tp}`);
 console.log(`  vùng chạm < 44px   : ${tong_cn}`);
+console.log(`  chữ nhỏ hơn 12px   : ${ket.reduce((a, r) => a + (r.so_chu_nho || 0), 0)}`);
+for (const r of ket.filter((x) => x.so_chu_nho)) {
+  console.log(`      ${r.kho} · ${r.ten}: ${r.chu_nho.map((v) => `${v.co}px "${v.chu}" (${v.duong})`).join(' · ')}`);
+}
 console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  khối bị cắt bên ngoài khung: ${ket.reduce((a, r) => a + (r.so_ngoai_khung || 0), 0)}`);
 for (const r of ket.filter((x) => x.so_ngoai_khung)) {

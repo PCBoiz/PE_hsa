@@ -137,6 +137,8 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
   const [ngayVao, setNgayVao] = useState('');
   /** Mật khẩu tạm vừa cấp — hiện đúng một lần trong hộp, không lưu ở đâu khác. */
   const [mkTam, setMkTam] = useState<{ ten: string; matKhau: string } | null>(null);
+  /** userId đang chạy lượt đặt lại mật khẩu — khoá nút để không bấm hai lần. */
+  const [dangDatLai, setDangDatLai] = useState<number | null>(null);
 
   // `setBusy` của React không có tác dụng NGAY, nên hai cú bấm liền nhau đều
   // lọt qua `if (busy) return`. Với nút "Lưu" của một biểu mẫu tạo lớp thì đó
@@ -343,12 +345,19 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
   async function datLaiMatKhau(s: HocVien) {
     if (!confirm(`Đặt lại mật khẩu cho "${s.name}"?\n\nMật khẩu cũ của em ngừng hoạt động ngay lập tức.`)) return;
     setErr(null);
+    /* KHOÁ NÚT trong lúc chạy (21/09/2026). Rà vai học vụ đo: lượt đặt lại mất
+       20–29 s mà nút không đổi mặt → bấm lần hai là hai mật khẩu tạm, và cái
+       vừa đọc cho em chết ngay. Máy chủ nay nhanh hơn nhiều (`_thu_hoi_refresh`
+       gộp một lượt), nhưng mạng vẫn có độ trễ nên nút vẫn phải nói nó đang bận. */
+    setDangDatLai(s.userId);
     try {
       const d = await ghiJson(`/api/admin/users/${s.userId}/reset-password`, { method: 'POST' },
         z.looseObject({ tempPassword: z.string() }));
       setMkTam({ ten: s.name, matKhau: d.tempPassword });
     } catch (e) {
       setErr(loiBatDuoc(e, 'Không đặt lại được mật khẩu'));
+    } finally {
+      setDangDatLai(null);
     }
   }
 
@@ -784,8 +793,14 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                       </Chip>
                     </Td>
                     <Td label="Mật khẩu">
-                      <Button size="sm" variant="ghost" disabled={s.left} onClick={() => void datLaiMatKhau(s)}>
-                        Đặt lại
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={dangDatLai === s.userId}
+                        disabled={s.left || dangDatLai !== null}
+                        onClick={() => void datLaiMatKhau(s)}
+                      >
+                        {dangDatLai === s.userId ? 'Đang đặt lại…' : 'Đặt lại'}
                       </Button>
                     </Td>
                     <Td label="Cho rời lớp">

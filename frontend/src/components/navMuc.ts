@@ -62,7 +62,9 @@ export const NHOM_NAV: Record<string, { nhan: string; icon: string }> = {
 };
 
 export const MUC_NAV: MucNav[] = [
-  { trang: 'dashboard', nhan: 'Dashboard', icon: 'home', emoji: '🏠', url: '/dashboard' },
+  // "Trang của tôi" chứ không "Dashboard" (21/09/2026): đó là tên trang tự gọi
+  // mình ở tiêu đề h1, và là chữ tiếng Anh DUY NHẤT còn lại trên thanh.
+  { trang: 'dashboard', nhan: 'Trang của tôi', icon: 'home', emoji: '🏠', url: '/dashboard' },
   { trang: 'courses', nhan: 'Khóa học', icon: 'library', emoji: '📖', url: '/dashboard#courses', nhom: 'hoc' },
   {
     trang: 'plan', nhan: 'Kế hoạch', icon: 'calendar', emoji: '🗓️', url: '/dashboard#plan', chiHocVien: true,

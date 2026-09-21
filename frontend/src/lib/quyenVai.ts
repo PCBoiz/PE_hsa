@@ -44,12 +44,15 @@ export const VAI_TRO: readonly { ma: string; nhan: string; mo_ta: string }[] = [
   {
     ma: VAI_QUAN_TRI,
     nhan: 'Quản trị viên',
-    mo_ta: 'Làm được mọi việc. Vai duy nhất đổi được vai của người khác và đặt lại mật khẩu.',
+    mo_ta: 'Làm được mọi việc. Vai duy nhất đổi được vai của người khác, và là vai đặt lại được mật khẩu cho MỌI tài khoản.',
   },
   {
     ma: VAI_HOC_VU,
     nhan: 'Quản lý học vụ',
-    mo_ta: 'Xếp lớp, mở đợt học, theo dõi cả trung tâm. KHÔNG đổi được vai trò và KHÔNG đặt lại được mật khẩu.',
+    // Câu cũ ('KHÔNG đặt lại được mật khẩu') đã sai từ 20/09/2026 khi anh Sơn mở
+    // quyền ấy cho học vụ với học viên và trợ giảng — rà vai nhân sự 21/09 bắt
+    // được: chính họ đặt lại thành công trong khi trang này bảo không.
+    mo_ta: 'Xếp lớp, mở đợt học, theo dõi cả trung tâm. Đặt lại được mật khẩu cho học viên và trợ giảng, KHÔNG đổi được vai trò.',
   },
   {
     ma: VAI_GIANG_VIEN,

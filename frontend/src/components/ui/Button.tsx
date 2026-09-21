@@ -12,7 +12,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
  * `--brand` được làm sáng lên để chữ tím đọc được trên nền tối, nhưng lấy
  * chính nó làm NỀN thì chữ trắng chỉ còn tương phản 3.3:1.
  */
-type Variant = 'primary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'ghost' | 'ghost-danger' | 'danger';
 type Size = 'md' | 'sm';
 
 const VARIANT: Record<Variant, string> = {
@@ -23,6 +23,13 @@ const VARIANT: Record<Variant, string> = {
   // một sắc đỏ dành cho CHỮ/VIỀN trên nền tối. Lấy nó làm NỀN đỡ chữ trắng ra
   // 2,77:1 — đo trên nút "Khoá" ở /quan-tri/tai-khoan, dưới ngưỡng 4,5:1.
   danger: 'bg-danger-fill text-white hover:brightness-110 active:brightness-95',
+  /* Viền nhạt + CHỮ ĐỎ: dành cho việc cắt hiệu lực (khoá tài khoản) — nặng hơn
+     một nút ghost thường nhưng không rủ bấm như nút đỏ đặc. Có biến thể riêng
+     vì `variant="ghost" className="text-danger-ink"` KHÔNG thắng: hai lớp
+     tiện ích cùng độ đặc hiệu, `text-ink-2` của ghost đứng sau trong tệp CSS
+     nên nó thắng — đo 21/09/2026: nút "Khoá" ra rgb(75,68,89), không phải đỏ. */
+  'ghost-danger':
+    'bg-transparent text-danger-ink border border-line hover:border-danger hover:text-danger-ink',
 };
 
 const SIZE: Record<Size, string> = {

@@ -25,7 +25,21 @@
   border: 1.5px solid rgba(255,255,255,.10); border-radius: 10px; padding: 12px 16px; font-size: 15px;
   cursor: pointer; transition: border-color .15s, background .15s, transform .1s; }
 .hsa-opt:hover { border-color: rgba(139,124,246,.5); }
-.hsa-opt.selected { border-color: var(--hsa-violet); background: rgba(139,124,246,.14); font-weight: 600; }
+/* Ô ĐÃ CHỌN phải nhìn thấy được (21/09/2026). Đo pixel ở giao diện sáng: chưa
+   chọn rgb(241,240,248) → đã chọn rgb(239,237,254), lệch 2/3/6 — gần như không
+   đổi gì, không viền, không dấu. Nguyên nhân là ĐỘ ĐẶC HIỆU: `body.light
+   .hsa-opt` (0,2,1) đặt `border-color` sau và thắng `.hsa-opt.selected`
+   (0,2,0), nên viền tím của ô đã chọn chưa bao giờ hiện ở bản sáng.
+   Thêm vòng ngoài và dấu ✓ — trạng thái không được chỉ dựa vào MÀU. */
+.hsa-opt.selected {
+  border-color: var(--hsa-violet); background: rgba(139,124,246,.14); font-weight: 600;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--hsa-violet) 32%, transparent);
+}
+.hsa-opt.selected::before { content: '✓ '; color: var(--hsa-violet); font-weight: 800; }
+body.light .hsa-opt.selected {
+  border-color: var(--hsa-violet);
+  background: color-mix(in srgb, var(--hsa-violet) 13%, #fff);
+}
 .hsa-fill { width: 100%; background: var(--lift, #101928); color: var(--t1, #E2E8F0);
   border: 1.5px solid rgba(255,255,255,.12); border-radius: 10px; padding: 12px 16px; font-size: 16px; }
 .hsa-fill:focus { outline: none; border-color: var(--hsa-violet); }

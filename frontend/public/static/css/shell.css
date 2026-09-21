@@ -698,10 +698,18 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
   .topbar:not(.shell-lam-bai) .nav-btn {
     flex: 1 0 3.75rem; padding: 0 0.15rem; gap: 0.15rem;
     flex-direction: column; justify-content: center;
-    font-size: 0.66rem; line-height: 1.1; border-radius: 0.5rem;
+    /* 0,75rem = 12px, sàn cỡ chữ của dự án (21/09/2026 — luật thứ sáu của bộ
+       đo, `scripts/do_giao_dien.mjs`). Bản trước 0,66rem = 10,6px: nhỏ nhất
+       trang và chiếm 115/187 chỗ dưới sàn. Mục vẫn ≥ 3,75rem nên nhãn dài thì
+       cắt bằng "…" chứ không đẩy hàng. */
+    font-size: 0.75rem; line-height: 1.1; border-radius: 0.5rem;
   }
+  /* HAI DÒNG thay vì cắt cụt (21/09/2026): ở 360px mỗi mục chỉ 69px, nhãn
+     "Trang của tôi" ở 12px cần ~75px nên bản cắt cho ra "Trang của tô…".
+     Hàng cao 3,25rem chứa vừa biểu tượng + hai dòng 12px (46px < 52px). */
   .topbar:not(.shell-lam-bai) .nav-btn span:not(.nav-icon):not(.nav-nhom-mui):not(.nav-chevron) {
-    display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    max-width: 100%; overflow: hidden; white-space: normal; text-align: center;
   }
   .topbar:not(.shell-lam-bai) .nav-nhom { flex: 1 0 3.75rem; min-width: 0; }
   .topbar:not(.shell-lam-bai) .nav-nhom > .nav-nhom-nut { width: 100%; }

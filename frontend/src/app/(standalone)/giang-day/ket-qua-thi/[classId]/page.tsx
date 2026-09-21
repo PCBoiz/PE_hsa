@@ -85,7 +85,10 @@ export default async function NhapKetQuaThiPage({
             `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
         <div className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-            <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
+            {/* `/giang-day` chứ KHÔNG `/dashboard` (21/09/2026): nhãn nói "Khu
+                Giảng dạy" mà bấm vào lại về Trang của tôi — rà vai nhân sự bắt
+                được ở cả ba trang lớp. */}
+            <Link href="/giang-day" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
               ← Khu Giảng dạy
             </Link>
             <h1 className="text-section text-ink">{klass.name}</h1>

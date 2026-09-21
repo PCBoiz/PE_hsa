@@ -33,14 +33,23 @@
 
 /* ── Tab bar ── */
 .rm-tabbar {
-  position: absolute; top: 14px; left: 20px; z-index: 20;
+  /* Dãy tab và viên thống kê cùng nằm hàng trên cùng, một neo trái một neo phải,
+     CÙNG `z-index: 20` (21/09/2026). Từ 820px tới 1024px dãy tab dài ra và chui
+     xuống dưới viên — viên đứng sau trong DOM nên nó ăn cú bấm: bấm đúng tâm tab
+     "Cá nhân" không đổi tab. Chặn mép phải trước viên (19rem ≈ bề ngang viên +
+     khoảng thở) và cho dãy tab cuộn ngang khi thiếu chỗ. */
+  position: absolute; top: 14px; left: 20px; right: 19rem; z-index: 20;
   display: flex; align-items: center; gap: 3px;
+  overflow-x: auto; scrollbar-width: none;
+  width: max-content;
   background: var(--rm-chrome-bg);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 4px;
-  max-width: calc(100vw - 60px);
-  overflow-x: auto;
+  /* MỘT mốc bề ngang duy nhất. Trước 21/09 luật này có hai dòng `max-width`,
+     dòng sau (`100vw - 60px`) đè dòng trước — nên mọi cố gắng chừa chỗ cho viên
+     thống kê đều vô hiệu mà không ai thấy. */
+  max-width: calc(100% - 20px - 19rem);
 }
 .rm-tab {
   border: none; background: transparent; cursor: pointer;
@@ -58,6 +67,17 @@
   transition: all 0.15s; flex-shrink: 0;
 }
 .rm-tab-plus:hover { background: rgba(255,255,255,0.06); color: var(--t1); }
+
+/* Vệt mờ mép phải = "còn tab nữa, vuốt tiếp". Ở ≤ 64rem dãy 6 tab (~785px)
+   dài hơn chỗ được cấp nên nó cuộn; không có dấu hiệu thì người dùng tưởng
+   danh sách chỉ có bấy nhiêu — đo 21/09/2026 ở 820 và 900px, hai tab cuối nằm
+   ngoài cửa sổ cuộn. */
+@media (max-width: 64rem) {
+  .rm-tabbar {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%);
+  }
+}
 
 /* ── Stats pill ── */
 .rm-stats-pill {
@@ -419,10 +439,8 @@
    Điện thoại: xếp 1 cột (node chính → node con ngay dưới), bỏ đường nối
    ngang và trục giữa vì không còn hai nhánh trái/phải để nối. */
 @media (max-width: 768px) {
-  .rm-tabbar { max-width: calc(100vw - 20px); left: 10px;
-    /* Dãy 6 tab rộng ~785px trong 370px: vệt mờ mép phải nói "vuốt để xem tiếp". */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%);
-    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%); }
+  /* Ở điện thoại viên thống kê đã ẩn, nên dãy tab lấy trọn bề ngang. */
+  .rm-tabbar { max-width: calc(100vw - 20px); right: auto; left: 10px; }
   .rm-tab { min-height: 44px; }
   .rm-stats-pill { display: none; }
   .rm-flow-scroll { padding: 64px 12px 40px; }

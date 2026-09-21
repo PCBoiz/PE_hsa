@@ -1437,6 +1437,45 @@ def test_hoc_vu_quan_ly_duoc_lop_va_dot_nhung_KHONG_dung_toi_tai_khoan(lop):
 
 
 @pytest.mark.django_db
+def test_thu_hoi_refresh_khong_tang_theo_so_token(lop):
+    """Đặt lại mật khẩu: số lượt hỏi CSDL không được tăng theo số refresh token.
+
+    Rà vai học vụ 21/09/2026 đo được nút "Đặt lại mật khẩu" đứng 20–29 giây với
+    một tài khoản đã đăng nhập nhiều lần: `_thu_hoi_refresh` gọi `get_or_create`
+    cho TỪNG token (88 token = 22.439 ms, 255 ms mỗi vòng tới Neon), và trong
+    lúc chờ người dùng bấm lần hai — hai mật khẩu tạm, cái vừa đọc cho học viên
+    chết ngay. Phép kiểm này đếm LƯỢT HỎI chứ không đếm mili giây: thời gian phụ
+    thuộc mạng, số lượt thì không.
+    """
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+    from rest_framework_simplejwt.tokens import RefreshToken
+    from common.permissions import ROLE_ACADEMIC
+    from teaching.views import AdminResetPasswordView
+
+    ai = _nguoi('HV Hoc Vu Thu Hoi', ROLE_ACADEMIC)   # quyền đặt lại: admin hoặc học vụ
+    em = lop['hv'][0]
+    for _ in range(12):
+        RefreshToken.for_user(em)          # mỗi lần đăng nhập là một token còn sống
+    con = OutstandingToken.objects.filter(user_id=em.id).count()
+    assert con >= 12, con
+
+    with CaptureQueriesContext(connection) as bat:
+        kq = _goi(AdminResetPasswordView, 'post', {}, ai=ai, user_id=em.id)
+    assert kq.status_code == 200, kq.data
+    # Còn sót token nào chưa vào danh sách đen là hàng rào thủng — kiểm trước.
+    sot = OutstandingToken.objects.filter(user_id=em.id, blacklistedtoken__isnull=True).count()
+    assert sot == 0, 'còn %s refresh token chưa thu hồi' % sot
+    # Ngưỡng 25: cả lượt đặt lại (đọc người, ghi mật khẩu, nhật ký, quyền…) chứ
+    # không riêng phần thu hồi. Bản cũ tốn ~2 lượt MỖI token nên 12 token là đã
+    # vượt; bản mới là 2 lượt cố định dù bao nhiêu token.
+    assert len(bat.captured_queries) < 25, (
+        '%s lượt hỏi CSDL cho %s token — đang tăng theo số token'
+        % (len(bat.captured_queries), con))
+
+
+@pytest.mark.django_db
 def test_hai_vai_tro_moi_KHONG_bi_dem_la_hoc_vien(lop):
     """`chi_hoc_vien` lọc đúng `role = 'Học viên'`, nên vai trò mới không lọt vào
     sĩ số, bảng điểm danh hay mẫu số tiến độ. Canh lại vì đó là thứ đã sai một

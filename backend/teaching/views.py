@@ -663,11 +663,21 @@ def _thu_hoi_refresh(user_id):
             BlacklistedToken,
             OutstandingToken,
         )
-        n = 0
-        for t in OutstandingToken.objects.filter(user_id=user_id):
-            _, moi = BlacklistedToken.objects.get_or_create(token=t)
-            n += 1 if moi else 0
-        return n
+        # MỘT lượt đọc + MỘT lượt ghi, không phải một vòng mỗi token (vá
+        # 21/09/2026). Bản cũ gọi `get_or_create` cho từng token: rà vai học vụ
+        # đo được **88 vòng tuần tự = 22.439 ms** (255 ms/vòng tới Neon) cho một
+        # tài khoản đã đăng nhập nhiều lần — nút "Đặt lại mật khẩu" đứng hình
+        # 20–29 giây, đủ lâu để người dùng bấm lần hai và sinh mật khẩu tạm thứ
+        # hai, làm chết cái vừa đọc cho học viên.
+        # `ignore_conflicts`: token đã nằm trong danh sách đen thì bỏ qua, không
+        # cần lượt SELECT riêng để biết.
+        con = list(OutstandingToken.objects.filter(user_id=user_id)
+                   .exclude(blacklistedtoken__isnull=False))
+        if not con:
+            return 0
+        BlacklistedToken.objects.bulk_create(
+            [BlacklistedToken(token=t) for t in con], ignore_conflicts=True)
+        return len(con)
     except Exception as exc:                                  # noqa: BLE001
         logger.error('[reset] KHÔNG thu hồi được refresh token của user %s: %s',
                      user_id, exc)

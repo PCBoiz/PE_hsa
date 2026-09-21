@@ -2,8 +2,10 @@ import Link from 'next/link';
 
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
 import { serverJson, type HinhDang } from '@/lib/server-api';
+import { VAI_TRO_GIANG } from '@/lib/vaiTro';
 import { z } from 'zod';
 
+import { layVai } from '../../../quan-tri/layVai';
 import AssignmentsClient, { type Assignment } from './AssignmentsClient';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +50,8 @@ export default async function BaiTapPage({
   // để không lộ ra lớp có tồn tại hay không. Mọi mã khác phải nói đúng câu của
   // nó, không mượn câu này.
   const klass = detail.ok ? detail.data.class : undefined;
+  const vai = await layVai();
+  const laTroGiang = vai.ok && vai.vai === VAI_TRO_GIANG;
 
   if (!klass) {
     return (
@@ -73,7 +77,10 @@ export default async function BaiTapPage({
               `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
         <div className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-            <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
+            {/* `/giang-day` chứ KHÔNG `/dashboard` (21/09/2026): nhãn nói "Khu
+                Giảng dạy" mà bấm vào lại về Trang của tôi — rà vai nhân sự bắt
+                được ở cả ba trang lớp. */}
+            <Link href="/giang-day" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
               ← Khu Giảng dạy
             </Link>
             <h1 className="text-section text-ink">{klass.name}</h1>
@@ -87,6 +94,11 @@ export default async function BaiTapPage({
         </div>
         <div className="mx-auto max-w-5xl px-4 py-6">
         <AssignmentsClient
+          /* Trợ giảng KHÔNG giao và KHÔNG xoá bài (quyết định 01/09; máy chủ trả
+             403 từ 6f38ca7). Ẩn hai nút ở MÀN luôn: bày ra rồi chặn sau khi họ
+             điền xong biểu mẫu là mời người ta làm việc họ không được làm.
+             `layVai` có `cache()` nên không thêm vòng gọi mạng nào. */
+          laTroGiang={laTroGiang}
           classId={Number(classId)}
           className={klass.name}
           initial={list.ok ? list.data.assignments : []}

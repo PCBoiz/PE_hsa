@@ -168,6 +168,8 @@ export default function AccountsClient({
   // Hộp thoại hiện mật khẩu tạm. KHÔNG dùng toast: toast tự biến mất sau vài
   // giây, mà trợ giảng cần thời gian đọc chuỗi này qua điện thoại cho học viên.
   const [temp, setTemp] = useState<{ title: string; password: string; note?: string } | null>(null);
+  /** id tài khoản đang chạy lượt đặt lại — khoá nút để không bấm hai lần. */
+  const [dangDatLai, setDangDatLai] = useState<number | null>(null);
 
   const query = useCallback(
     (p = page) => {
@@ -248,6 +250,8 @@ export default function AccountsClient({
     // không ai biết cho tới khi em ấy không đăng nhập được.
     void (async () => {
       setErr(null);
+      /* Khoá nút trong lúc chạy — xem chú thích cùng việc ở `LopHocClient`. */
+      setDangDatLai(u.id);
       try {
         const d = await ghiJson(`/api/admin/users/${u.id}/reset-password`,
           { method: 'POST' }, HD_MAT_KHAU_TAM);
@@ -263,6 +267,8 @@ export default function AccountsClient({
         void load();   // cột "đổi mật khẩu lúc nào" phải cập nhật theo
       } catch (e) {
         setErr(loiBatDuoc(e, 'Không đặt lại được mật khẩu'));
+      } finally {
+        setDangDatLai(null);
       }
     })();
   }
@@ -452,13 +458,20 @@ export default function AccountsClient({
                         cắt hiệu lực một tài khoản ngay lập tức mà trông như một
                         lựa chọn ngang hàng là bấm nhầm chờ sẵn. */}
                     <span className="flex flex-wrap justify-end gap-2">
-                      <Button size="sm" variant="ghost" className="whitespace-nowrap" onClick={() => resetPassword(u)}>
-                        Đặt lại mật khẩu
-                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={u.status === 'active' ? 'whitespace-nowrap text-danger-ink' : 'whitespace-nowrap'}
+                        className="whitespace-nowrap"
+                        loading={dangDatLai === u.id}
+                        disabled={dangDatLai !== null}
+                        onClick={() => resetPassword(u)}
+                      >
+                        {dangDatLai === u.id ? 'Đang đặt lại…' : 'Đặt lại mật khẩu'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={u.status === 'active' ? 'ghost-danger' : 'ghost'}
+                        className="whitespace-nowrap"
                         onClick={() => toggleStatus(u)}
                       >
                         {u.status === 'active' ? 'Khoá' : 'Mở lại'}
