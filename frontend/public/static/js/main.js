@@ -685,9 +685,14 @@ function navigate(page) {
   document.querySelectorAll(".page").forEach(function (p) {
     p.classList.remove("active");
   });
-  var target =
-    document.getElementById("page-" + page) ||
-    document.getElementById("page-dashboard");
+  /* CHƯA có khối nào để mở = React chưa dựng xong (main.js nạp sớm có chủ ý).
+     Bản cũ đọc thẳng `target.classList` nên ném TypeError, và vì lời gọi này
+     đến từ nhánh `#hash` lúc tải trang, VIEW KHÔNG BAO GIỜ MỞ: vào thẳng
+     /dashboard#courses chỉ thấy Trang của tôi (đo 21/09/2026). Đợi rồi gọi
+     lại, tối đa ~3 s — hết chừng ấy mà vẫn trống thì trang này không có tab. */
+  var target = document.getElementById("page-" + page) || document.getElementById("page-dashboard");
+  if (!target) { if ((navigate._doi = (navigate._doi || 0) + 1) < 25) setTimeout(function () { navigate(page); }, 120); return; }
+  navigate._doi = 0;
   target.classList.add("active");
 
   document.querySelectorAll(".nav-btn").forEach(function (b) {
