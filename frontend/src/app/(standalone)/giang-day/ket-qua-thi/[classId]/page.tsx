@@ -2,6 +2,9 @@ import Link from 'next/link';
 
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
+import { VAI_TRO_GIANG } from '@/lib/vaiTro';
+
+import { layVai } from '../../../quan-tri/layVai';
 
 import NhapKetQuaClient from './NhapKetQuaClient';
 
@@ -23,8 +26,34 @@ export default async function NhapKetQuaThiPage({
   params: Promise<{ classId: string }>;
 }) {
   const { classId } = await params;
-  const detail = await serverJson<ChiTietLop>(
-    `/api/teach/classes/${classId}`, { requireAuth: true }, HD_CHI_TIET_LOP);
+  // Trang này lấy lớp bằng cửa CHUNG (`/api/teach/classes/<id>`) mà trợ giảng
+  // mở được, trong khi hai đường NHẬP kết quả lại là `IsSeniorTeachingStaff`:
+  // trợ giảng vào được màn, kéo tệp vào rồi mới ăn 403 (đo 20/09/2026). Chặn ở
+  // TRANG, cùng cách tab đã ẩn với họ. `layVai` có `cache()` nên không thêm
+  // vòng mạng — layout vừa gọi nó.
+  const vai = await layVai();
+  const detail = vai.ok && vai.vai === VAI_TRO_GIANG
+    ? null
+    : await serverJson<ChiTietLop>(
+      `/api/teach/classes/${classId}`, { requireAuth: true }, HD_CHI_TIET_LOP);
+
+  if (detail === null) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="text-title text-ink">Không mở được trang này</h1>
+        <p className="mt-2 text-body text-ink-2">
+          Nhập kết quả thi thử dành cho giảng viên phụ trách lớp và quản lý học vụ — tờ kết quả
+          mang tên và điểm của từng em. Trợ giảng vẫn điểm danh và chấm bài như thường.
+        </p>
+        <Link
+          href={`/giang-day/buoi-hoc/${classId}`}
+          className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline"
+        >
+          ← Về lớp
+        </Link>
+      </main>
+    );
+  }
 
   // 404 = lớp không tồn tại HOẶC không phụ trách — backend cố ý trả cùng một mã.
   const klass = detail.ok ? detail.data.class : undefined;

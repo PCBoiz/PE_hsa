@@ -106,6 +106,19 @@ def test_survey_generates_roadmap(auth_api, temp_user):
     assert rm is not None and rm['source'] == 'generated'
 
 
+def test_survey_gui_hai_lan_chi_ghi_mot_dong(auth_api, temp_user):
+    """Bấm "Hoàn thành" hai lần (20/09/2026) từng ghi hai dòng surveys. Cùng một
+    bài trong 60 s là cùng một lần gửi; bài có câu trả lời KHÁC vẫn được ghi."""
+    bai = {'career_target': 'Backend Developer', 'self_weak': 'Toán'}
+    assert auth_api.post('/api/survey', bai, format='json').status_code == 200
+    assert auth_api.post('/api/survey', bai, format='json').status_code == 200
+    dem = q1('SELECT count(*) AS n FROM surveys WHERE user_id=%s', (temp_user,))
+    assert dem['n'] == 1
+    assert auth_api.post('/api/survey', {**bai, 'self_weak': 'Văn'}, format='json').status_code == 200
+    dem = q1('SELECT count(*) AS n FROM surveys WHERE user_id=%s', (temp_user,))
+    assert dem['n'] == 2
+
+
 # ── memory-plan T4.2: đổi email trùng phải trả 400 (không phải 500 IntegrityError) ──
 def test_update_profile_duplicate_email_returns_400(auth_api, temp_user):
     """users.email có UNIQUE constraint. Đổi email sang email người khác phải báo

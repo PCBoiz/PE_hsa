@@ -44,6 +44,22 @@
     min-height: 44px !important;
   }
 
+  /* Ô nhập chữ (21/09/2026). Đo ở 390px: ô tìm ở Khoá học/Kỹ năng/Diễn đàn
+     cao 38px, ở Lộ trình 26px, ô bình luận 21px — dưới ngưỡng. Cỡ chữ ≥ 16px:
+     iOS Safari tự PHÓNG TO cả trang khi chạm vào ô chữ nhỏ hơn 16px và không
+     thu lại khi rời ô, nên các ô 13px cũ làm lệch bố cục mỗi lần em gõ tìm.
+     Không gồm textarea: ô nhiều dòng tự có chiều cao riêng. */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  input:not([type]) {
+    min-height: 44px !important;
+    font-size: max(1rem, 1em) !important;
+  }
+
   /* Ô chọn tròn/vuông của khảo sát: bản thân ô 15×15px, nhưng cả NHÃN mới là
      vùng chạm thật — nới nhãn thay vì phóng to ô cho méo. */
   label.option,

@@ -446,13 +446,19 @@ export default function AccountsClient({
                     </Chip>
                   </Td>
                   <Td label="Thao tác">
+                    {/* `whitespace-nowrap`: cột hẹp làm "Đặt lại mật khẩu" gãy hai
+                        dòng và hàng cao gấp đôi (đo 1366 ngày 20/09/2026). "Khoá"
+                        là ghost chữ đỏ, không phải nút đỏ đặc cùng cỡ nút thường:
+                        cắt hiệu lực một tài khoản ngay lập tức mà trông như một
+                        lựa chọn ngang hàng là bấm nhầm chờ sẵn. */}
                     <span className="flex flex-wrap justify-end gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => resetPassword(u)}>
+                      <Button size="sm" variant="ghost" className="whitespace-nowrap" onClick={() => resetPassword(u)}>
                         Đặt lại mật khẩu
                       </Button>
                       <Button
                         size="sm"
-                        variant={u.status === 'active' ? 'danger' : 'ghost'}
+                        variant="ghost"
+                        className={u.status === 'active' ? 'whitespace-nowrap text-danger-ink' : 'whitespace-nowrap'}
                         onClick={() => toggleStatus(u)}
                       >
                         {u.status === 'active' ? 'Khoá' : 'Mở lại'}

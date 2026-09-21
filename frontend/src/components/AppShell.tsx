@@ -394,6 +394,18 @@ export default function AppShell({
         aria-label={khu ? `Điều hướng ${khu}` : 'Điều hướng chính'}
         id="topbar-nav"
         ref={oNav}
+        /* Dãy này CUỘN NGANG được (dãy dài hơn chỗ trống) nhưng KHÔNG BAO GIỜ
+           cuộn dọc. Trình duyệt vẫn cuộn dọc được bằng mã: panel của nhóm "Học"
+           nằm trong khung này, nên khi người dùng chạm một mục trong panel,
+           trình duyệt cuộn khung để lộ phần tử vừa nhận tiêu điểm — panel đóng,
+           `scrollTop` ở lại 245px và CẢ HÀNG ĐIỀU HƯỚNG biến mất tới khi tải
+           lại trang (đo 20/09/2026 ở 390px). CSS không chặn được: `overflow-y:
+           clip` bị chuẩn hoá thành `hidden` khi `overflow-x: auto`, mà `hidden`
+           vẫn cho cuộn bằng mã. Trả nó về 0 ngay khi xảy ra là hàng rào duy
+           nhất đúng cho MỌI nguyên nhân (tiêu điểm, bàn phím, trình đọc màn hình). */
+        onScroll={(e) => {
+          if (e.currentTarget.scrollTop !== 0) e.currentTarget.scrollTop = 0;
+        }}
       >
         {dayNav}
 

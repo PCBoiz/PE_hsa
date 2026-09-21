@@ -405,7 +405,11 @@
    Điện thoại: xếp 1 cột (node chính → node con ngay dưới), bỏ đường nối
    ngang và trục giữa vì không còn hai nhánh trái/phải để nối. */
 @media (max-width: 768px) {
-  .rm-tabbar { max-width: calc(100vw - 20px); left: 10px; }
+  .rm-tabbar { max-width: calc(100vw - 20px); left: 10px;
+    /* Dãy 6 tab rộng ~785px trong 370px: vệt mờ mép phải nói "vuốt để xem tiếp". */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent 100%); }
+  .rm-tab { min-height: 44px; }
   .rm-stats-pill { display: none; }
   .rm-flow-scroll { padding: 64px 12px 40px; }
   .rm-section {

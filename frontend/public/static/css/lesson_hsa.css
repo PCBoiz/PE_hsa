@@ -90,7 +90,10 @@
 .hsa-viz-blabel { font-size: 12px; color: var(--t2, #94A3B8); text-align: right; line-height: 1.25; }
 .hsa-viz-track { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .hsa-viz-bar {
-  height: 28px; border-radius: 8px; min-width: 40px; box-sizing: border-box;
+  /* `max-content` chứ không phải 40px cố định (21/09/2026): thanh 25% ở 390px
+     chỉ rộng 40px mà số "100.000" cần 56px — chữ tràn sang trái đè lên nhãn và
+     học viên đọc thành "25% của …000". Thanh ngắn thì dài ra vừa đủ chứa số. */
+  height: 28px; border-radius: 8px; min-width: max-content; box-sizing: border-box;
   display: flex; align-items: center; justify-content: flex-end; padding: 0 10px;
   animation: hsaVizIn .45s ease both;
 }
@@ -101,7 +104,7 @@
 .hsa-viz-bar--slate  { background: linear-gradient(90deg, rgba(100,116,139,.32), rgba(148,163,184,.5)); }
 .hsa-viz-val { font-size: 12.5px; font-weight: 800; color: #0B1020; white-space: nowrap; }
 .hsa-viz-bar--slate .hsa-viz-val { color: #E2E8F0; }
-.hsa-viz-note { font-size: 11.5px; color: var(--t3, #64748B); white-space: nowrap; flex-shrink: 0; }
+.hsa-viz-note { font-size: 12px; color: var(--t3, #64748B); white-space: nowrap; flex-shrink: 0; }
 .hsa-viz-cap {
   margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06);
   font-size: 12.5px; color: var(--t2, #94A3B8); line-height: 1.5;

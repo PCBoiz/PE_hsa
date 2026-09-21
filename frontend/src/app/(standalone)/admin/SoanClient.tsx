@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 
 import {
@@ -15,7 +14,6 @@ import {
   Td,
   Th,
   Thead,
-  ThemeToggle,
   Tr,
 } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
@@ -125,36 +123,15 @@ export default function SoanClient({
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-title text-ink">Soạn giáo trình</h1>
-          <p className="mt-1 text-body text-ink-2">
-            Khoá học, bài học, và nội dung 5 bước của từng bài.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Đường VỀ phải có cho MỌI vai, không chỉ quản trị viên: người biên
-              tập vào thẳng đây từ thanh điều hướng và nếu không có lối ra thì
-              họ phải gõ tay địa chỉ. */}
-          {/* `-my-3 py-3` nới VÙNG CHẠM lên 48px mà không đẩy bố cục — đo
-              04/09/2026: hai liên kết này cao 24px trên khổ điện thoại, dưới
-              ngưỡng 44px. Cùng cách khu Vận hành đã dùng
-              (`quan-tri/layout.tsx`); thêm `py` mà không kèm `-my` thì hàng
-              tiêu đề cao thêm 24px trên MỌI khổ, kể cả máy tính. */}
-          <Link href="/dashboard" className="-my-3 py-3 text-body text-brand-ink underline">
-            ← Trang của tôi
-          </Link>
-          {laQuanTri && (
-            <Link
-              href="/quan-tri/tong-quan"
-              className="-my-3 py-3 text-body text-brand-ink underline"
-            >
-              Khu vận hành →
-            </Link>
-          )}
-          <ThemeToggle />
-        </div>
+    <main className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(var(--topbar-h)+1.5rem)]">
+      {/* Lối về, "Khu vận hành" và nút sáng/tối nay nằm trên THANH CHUNG
+          (`admin/page.tsx`, 20/09/2026): logo về trang của tôi cho mọi vai.
+          Giữ bản riêng ở đây là hai nút mặt trăng và hai lối ra cùng một chỗ. */}
+      <div>
+        <h1 className="text-title text-ink">Soạn giáo trình</h1>
+        <p className="mt-1 text-body text-ink-2">
+          Khoá học, bài học, và nội dung 5 bước của từng bài.
+        </p>
       </div>
 
       {err && (
@@ -193,7 +170,17 @@ export default function SoanClient({
       </div>
 
       {soanBaiId !== null && (
-        <div className="mt-6">
+        <div
+          className="mt-6 scroll-mt-[calc(var(--topbar-h)+1rem)]"
+          /* Cuộn tới khối soạn khi nó MỞ (20/09/2026): khối nằm dưới bảng 27 bài,
+             ở y ≈ 3.200px — bấm "Soạn nội dung" xong màn hình không đổi gì, dễ
+             tưởng nút hỏng mà bấm lại. `key` đổi theo bài nên ref gọi lại mỗi
+             lần mở một bài khác. */
+          ref={(el) => {
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          key={`khung-${soanBaiId}`}
+        >
           {/* `key` BẮT BUỘC: không có nó, bấm "Soạn nội dung" ở một bài khác
               chỉ đổi prop `baiId` — React giữ nguyên cây, `NoiDungBai` không
               unmount, và mọi ô có state riêng (rõ nhất là ô JSON minh hoạ) vẫn

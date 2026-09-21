@@ -185,7 +185,13 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                                 style={lesson.status !== 'locked' ? { cursor: 'pointer' } : undefined}
                                 onClick={
                                   lesson.status !== 'locked'
-                                    ? () => { taiTrang(`${lessonUrl}?lesson=${lesson.index}`); }
+                                    /* `?lesson=` là 1-based (bài 1 = `?lesson=1`), cùng
+                                       quy ước với "Học tiếp" và nút "Xem thử" của khu soạn;
+                                       `lesson.index` thì 0-based — số in trên hàng là
+                                       `index + 1`. Bản trước gửi `index` trần: chạm bài 2
+                                       mở bài 1, và bài cuối chương không mở được (rà
+                                       20/09/2026 bằng chuột ở 390). */
+                                    ? () => { taiTrang(`${lessonUrl}?lesson=${lesson.index + 1}`); }
                                     : undefined
                                 }
                               >

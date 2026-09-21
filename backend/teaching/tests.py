@@ -810,6 +810,35 @@ def test_diem_danh_buoi_tuong_lai_khong_lam_hoat_dong_am(lop):
     assert st['idleDays'] == 9 and st['idleDays'] >= 0, st
 
 
+# ── Trợ giảng: điểm danh và chấm THÌ ĐƯỢC, giao/xoá bài thì KHÔNG (20/09/2026) ──
+
+@pytest.mark.django_db
+def test_tro_giang_khong_giao_va_khong_xoa_bai_tap(lop):
+    """Quyết định 01/09: trợ giảng điểm danh và chấm giúp, việc ĐẶT RA hoặc XOÁ
+    thì không. `sessions.py` đã chốt đúng cho buổi học; bài tập thì chưa — rà
+    quyền 20/09 gửi POST bằng vai trợ giảng và máy chủ trả 201, tạo bài thật."""
+    from common.permissions import ROLE_ASSISTANT
+    gv = lop['gv']
+    tg = _nguoi('TG Quyen Bai Tap', ROLE_ASSISTANT)
+    q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) RETURNING id',
+       (lop['id'], tg.id, local_now()))
+    # Giao bài: 403 kèm câu chỉ đường.
+    r = _goi(ClassAssignmentsView, 'post', {'title': 'Bài của trợ giảng'}, ai=tg, class_id=lop['id'])
+    assert r.status_code == 403 and 'không giao được' in r.data['error'], r.data
+    assert q1('SELECT COUNT(*) AS n FROM assignments WHERE class_id=%s', (lop['id'],))['n'] == 0
+    # Xoá bài của giảng viên: 403.
+    aid = _goi(ClassAssignmentsView, 'post', {'title': 'Bài của giảng viên'},
+               ai=gv, class_id=lop['id']).data['id']
+    r = _goi(AssignmentDetailView, 'delete', ai=tg, assignment_id=aid)
+    assert r.status_code == 403 and 'không xoá được' in r.data['error'], r.data
+    assert q1('SELECT COUNT(*) AS n FROM assignments WHERE id=%s', (aid,))['n'] == 1
+    # VẪN LÀM ĐƯỢC: xem danh sách bài và chấm.
+    assert _goi(ClassAssignmentsView, 'get', ai=tg, class_id=lop['id']).status_code == 200
+    cham = _goi(AssignmentGradingView, 'post',
+                {'grades': [{'user_id': lop['hv'][0].id, 'score': 7}]}, ai=tg, assignment_id=aid)
+    assert cham.status_code == 200, cham.data
+
+
 # ── Điểm bài tập PHẢI vào bản đồ năng lực của học viên (31/08/2026) ──────────
 
 @pytest.mark.django_db

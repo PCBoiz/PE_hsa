@@ -30,7 +30,7 @@ from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, record_events
-from common.permissions import IsTeachingStaff, can_see_class
+from common.permissions import IsTeachingStaff, can_see_class, is_assistant
 from common.views import NguoiDungView
 from notifications.service import notify
 from teaching.vocab import chi_hoc_vien
@@ -366,6 +366,14 @@ class ClassAssignmentsView(APIView):
     def post(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
+        # Trợ giảng KHÔNG giao bài. Quyết định 01/09/2026: họ điểm danh và chấm
+        # giúp, còn thứ ĐẶT RA việc cho cả lớp thì thuộc người phụ trách lớp.
+        # Kiểm ở đây chứ không đổi `permission_classes`: cùng view này trợ giảng
+        # vẫn phải GET được danh sách bài để vào bảng chấm. Lỗ này đo được
+        # 20/09/2026 khi rà quyền: vai trợ giảng POST một bài và máy chủ trả 201.
+        if is_assistant(request.user):
+            return Response({'error': 'Trợ giảng không giao được bài tập. Nhờ giảng viên '
+                                      'phụ trách lớp hoặc quản lý học vụ giao giúp.'}, status=403)
         body = request.data if isinstance(request.data, dict) else {}
         data, err = _clean(body, class_id)
         if err:
@@ -444,6 +452,11 @@ class AssignmentDetailView(APIView):
         return Response(out)
 
     def delete(self, request, assignment_id):
+        # Trợ giảng KHÔNG xoá bài — cùng luật với xoá buổi học (`sessions.py`):
+        # xoá một bài kéo theo mọi bài nộp và điểm đã chấm của cả lớp.
+        if is_assistant(request.user):
+            return Response({'error': 'Trợ giảng không xoá được bài tập. Nhờ giảng viên '
+                                      'phụ trách lớp hoặc quản lý học vụ xoá giúp.'}, status=403)
         before = _load(request, assignment_id)
         if not before:
             return Response(_NOT_FOUND, status=404)

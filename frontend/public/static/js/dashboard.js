@@ -1084,7 +1084,7 @@ function skSkillToggle(row) {
     var isF = !!_followingIds[p.userId];
     return '<button class="fpc-follow-btn' + (isF ? ' following' : '') + '"'
       + ' data-user-id="' + p.userId + '"'
-      + ' style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid var(--border,#d1d5db);background:transparent;cursor:pointer;color:inherit"'
+      + ' style="margin-left:8px;font-size:12px;padding:2px 8px;white-space:nowrap;border-radius:12px;border:1px solid var(--border,#d1d5db);background:transparent;cursor:pointer;color:inherit"'
       + ' onclick="event.stopPropagation();toggleFollow(' + p.userId + ', this)">'
       + (isF ? 'Đang theo dõi' : '+ Theo dõi') + '</button>';
   }

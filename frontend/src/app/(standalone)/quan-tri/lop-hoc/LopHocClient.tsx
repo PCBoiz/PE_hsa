@@ -622,6 +622,16 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
       </Modal>
 
       {lopMoRong && (
+        /* Cuộn tới khu vừa mở (20/09/2026): ở 390px bảng lớp xếp thành thẻ nên
+           khu Học viên nằm ở y ≈ 1.590px — bấm "Học viên" xong màn không đổi gì.
+           `key` theo lớp để mở lớp khác thì cuộn lại. */
+        <div
+          key={`hv-${lopMoRong.id}`}
+          className="scroll-mt-[calc(var(--topbar-h)+1rem)]"
+          ref={(el) => {
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
         <Card>
           <CardHead
             title={`Học viên lớp: ${lopMoRong.name}`}
@@ -816,6 +826,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
             </TableWrap>
           )}
         </Card>
+        </div>
       )}
     </div>
   );

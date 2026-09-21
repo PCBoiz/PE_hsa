@@ -5,6 +5,7 @@ cặp JWT access/refresh thay vì set session cookie (frontend ở domain khác)
 """
 import json
 import logging
+from datetime import timedelta
 
 from django.db import DatabaseError, IntegrityError, transaction
 from rest_framework.permissions import AllowAny
@@ -620,11 +621,25 @@ class SurveyView(NguoiDungView):
         if not isinstance(data, dict):
             return Response({'error': 'Dữ liệu khảo sát không hợp lệ'}, status=400)
         uid = request.user.id
+        now = local_now()
         with transaction.atomic():
+            # Bấm "Hoàn thành" hai lần (đo 20/09/2026 ở 390px: hai dòng surveys
+            # cách nhau 0,4 s) từng ghi HAI khảo sát và dựng lộ trình hai lần.
+            # Khoá dòng người dùng để hai yêu cầu chạy nối nhau, rồi coi một bài
+            # GIỐNG HỆT bài vừa lưu trong 60 s là cùng một lần gửi. Làm lại khảo
+            # sát với câu trả lời khác vẫn ghi như thường.
+            q1('SELECT id FROM users WHERE id=%s FOR UPDATE', (uid,))
+            trung = q1(
+                'SELECT id FROM surveys WHERE user_id=%s AND data_json = %s::jsonb '
+                'AND created_at >= %s ORDER BY id DESC LIMIT 1',
+                (uid, json.dumps(data, ensure_ascii=False),
+                 (now - timedelta(seconds=60)).isoformat()))
+            if trung:
+                return Response({'ok': True})
             survey = q1(
                 'INSERT INTO surveys (user_id, data_json, created_at) '
                 'VALUES (%s,%s,%s) RETURNING id',
-                (uid, json.dumps(data, ensure_ascii=False), local_now().isoformat()))
+                (uid, json.dumps(data, ensure_ascii=False), now.isoformat()))
             x('UPDATE users SET questionnaire_completed=1 WHERE id=%s', (uid,))
             _generate_user_roadmap(uid, survey['id'], data)
         return Response({'ok': True})

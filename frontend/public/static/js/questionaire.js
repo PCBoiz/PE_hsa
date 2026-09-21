@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("surveyForm")
     .addEventListener("submit", async function (event) {
-      event.preventDefault();
+      event.preventDefault(); if (this.dataset.dangGui) return; // bấm hai lần từng ghi HAI dòng khảo sát (đo 20/09)
 
       const failingStep = validateAll();
       if (failingStep !== -1) {
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const formData = new FormData(this);
+      const formData = new FormData(this); this.dataset.dangGui = '1'; const nutGui = this.querySelector('.submit-btn'); if (nutGui) { nutGui.disabled = true; nutGui.textContent = 'Đang lưu…'; }
       const finalSurveyData = { self_weak: [] };
       for (const [key, value] of formData.entries()) {
         if (key === 'self_weak') {
@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         showThanksModal();
       } catch (err) {
-        alert(err.message || "Không thể lưu khảo sát, vui lòng thử lại.");
+        alert(err.message || "Không thể lưu khảo sát, vui lòng thử lại."); delete this.dataset.dangGui; if (nutGui) { nutGui.disabled = false; nutGui.textContent = 'Hoàn thành & nhận lộ trình'; }
       }
     });
 

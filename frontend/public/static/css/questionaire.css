@@ -276,11 +276,17 @@ input[type="radio"], input[type="checkbox"] {
 
 
 /* --- 7. HỆ THỐNG NÚT BẤM ĐIỀU HƯỚNG --- */
+/* `wrap` (21/09/2026): ở 390px nút nộp câu 16 bị ép còn 175px nên gãy
+   "Hoàn thành & nhận / lộ trình" (cao 76px). Thiếu chỗ thì nút nộp sang hàng
+   riêng, trọn bề ngang, chữ một dòng; đủ chỗ thì vẫn chung hàng như cũ. */
 .btn-group {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     justify-content: space-between;
     margin-top: 25px;
 }
+.btn-group .submit-btn { width: auto; flex: 1 1 auto; }
 
 .next-btn, .prev-btn {
     padding: 12px 24px;

@@ -145,7 +145,15 @@
   display: flex; flex-direction: row; align-items: center;
   gap: 1px; flex: 1; padding: 0;
   justify-content: safe center;
-  overflow-x: auto; scrollbar-width: none;
+  /* `overflow-y: clip` chứ KHÔNG để nó thành `auto` theo `overflow-x`: panel
+     của nhóm "Học" nằm BÊN TRONG khung này, nên khi người dùng chạm một mục
+     trong panel, trình duyệt cuộn khung theo chiều DỌC để lộ phần tử vừa nhận
+     tiêu điểm — panel đóng lại, `scrollTop` ở lại 245px và CẢ HÀNG ĐIỀU HƯỚNG
+     biến mất, chỉ còn một dải trắng cho tới khi tải lại trang (đo 20/09/2026 ở
+     390px, sau khi thanh thành hai hàng). `clip` không cho cuộn dọc kể cả bằng
+     mã, nên không còn chỗ cho lỗi ấy; khi panel MỞ thì luật `:has(.nav-nhom.mo)`
+     bên dưới đã trả `overflow: visible` nên panel vẫn hiện đủ. */
+  overflow-x: auto; overflow-y: clip; scrollbar-width: none;
   /* VỆT MỜ Ở MÉP. Dãy này cuộn ngang được, nhưng khi bị cắt thì mục cuối đứt
      giữa chữ ("Thi th…") và trông y như giao diện vỡ — đo 06/09/2026 ở 1440px:
      dãy cần 860px, chỉ có 744px. Thắt lại (bên dưới) gỡ được phần lớn, nhưng
@@ -508,6 +516,12 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
   text-transform: uppercase; color: var(--brand-ink);
   padding: 0.3125rem 0.6875rem; border-radius: 62.4375rem; background: var(--accent-soft);
   white-space: nowrap;
+  /* Ở 390 nhãn "LƯỢT LUYỆN · KHÔNG TÍNH ĐIỂM" bị cắt còn "…KHÔNG TÍNH ĐI" —
+     đúng chữ quan trọng nhất (đo 20/09/2026). Cho xuống dòng thay vì cắt. */
+  min-width: 0;
+}
+@media (max-width: 36rem) {
+  .shell-lam-bai-nhan { white-space: normal; text-align: center; line-height: 1.25; letter-spacing: 0.02em; }
 }
 .shell-lam-bai-phai { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
 
@@ -567,6 +581,42 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
      biểu tượng, mũi bị ẩn theo và nút "Học" trông y hệt một mục thường; không
      dấu hiệu nào nói nó MỞ RA thêm bốn mục. 11px đổi lấy điều đó là rẻ. */
   .nav-btn span:not(.nav-icon):not(.nav-nhom-mui) { display: none; }
+}
+
+/* ── KHU CÓ NHIỀU TAB: XUỐNG HAI HÀNG THAY VÌ CẮT ──────────────────────────
+   Khu Vận hành có CHÍN tab. Đo 20/09/2026 ở 1366 (khổ laptop phổ biến nhất):
+   dãy cần 1.088px, khung có 711px — ba tab cuối ("Ai làm được gì", "Hướng dẫn",
+   "Soạn giáo trình") nằm ở x 1089–1490, ngoài mép 1114. Cuộn ngang được, có vệt
+   mờ, nhưng "Soạn giáo trình" là lối DUY NHẤT vào /admin từ khu này — một lối
+   đi mà phải biết vuốt một dải cao 44px mới thấy thì coi như không có.
+
+   Ngưỡng suy từ NỘI DUNG: chín tab có nhãn cần ~1.110px, và bên cạnh chúng còn
+   thương hiệu + tên khu + ô tìm + chuông + chip (~490px ở 1600) — nên một hàng
+   chỉ đủ từ khoảng 110rem (1760px) trở lên. Đo 20/09/2026: ở 1600 dãy cần
+   1.111px mà khung có 945 → "Soạn giáo trình" vẫn bị che. Khu ≥ 7 tab dưới
+   110rem thì hai hàng.
+   `:has()` đếm thẳng số mục nên thêm/bớt tab là luật tự đúng theo — không có
+   con số nào phải đo lại. Khu Giảng dạy (4 tab) và thanh học viên (5–6 mục)
+   không chạm tới luật này. */
+@media (max-width: 110rem) {
+  /* Đổi chính `--topbar-h` chứ không vá từng chỗ chừa: `#main` (Trang của tôi),
+     `pt-[calc(var(--topbar-h)+1.5rem)]` của khu Vận hành, `mock.css`,
+     `roadmap.css` đều bám token này — sửa một chỗ thì tất cả theo. */
+  body:has(.topbar:not(.shell-lam-bai) .topbar-nav > .nav-btn:nth-child(7)) {
+    --topbar-h: calc(clamp(3.25rem, 3rem + 1.1vw, 3.75rem) + 2.75rem);
+  }
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) {
+    flex-wrap: wrap; row-gap: 0; align-content: flex-start;
+  }
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-left,
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-right {
+    height: clamp(3.25rem, 3rem + 1.1vw, 3.75rem);
+  }
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-nav {
+    order: 3; flex: 1 0 100%; height: 2.75rem;
+    justify-content: safe center;
+    border-top: 1px solid var(--border);
+  }
 }
 
 /* Mốc thứ hai, cũng là bố cục thật, không phải chỉnh dần kích thước.

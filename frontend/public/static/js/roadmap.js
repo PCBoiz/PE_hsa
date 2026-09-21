@@ -400,7 +400,7 @@
       // container bình thường (header + flow-wrap xếp DỌC) — không phải flex.
       if (flowScroll) flowScroll.style.display = '';
       if (personalView) personalView.style.display = 'none';
-      if (statsPill) statsPill.style.display = 'flex';
+      if (statsPill) statsPill.style.display = ''; // '' chứ không 'flex': để CSS giấu ở ≤768px (pill đè các tab, đo 20/09/2026)
       // GUARD: capture tab được yêu cầu — nếu user chuyển sang tab khác trước
       // khi fetch xong, callback phải bỏ qua, KHÔNG được ghi đè nội dung tab hiện tại.
       var requestedTab = name;

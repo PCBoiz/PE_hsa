@@ -1,5 +1,7 @@
-import { ThemeToggle } from '@/components/ui';
 import Link from 'next/link';
+
+import AppShell from '@/components/AppShell';
+import PageStyles from '@/components/PageStyles';
 
 import { nhomCuaVai } from '@/lib/nhomVai';
 import { serverJson, type HinhDang } from '@/lib/server-api';
@@ -38,16 +40,22 @@ export default async function BaiTapCuaToiPage() {
 
   return (
     <div className="min-h-dvh bg-ground">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-4">
-          <Link href="/dashboard" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
-            ← Về trang chính
-          </Link>
-          <h1 className="text-section text-ink">Bài tập</h1>
-          <ThemeToggle className="ml-auto" />
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">
+      {/* THANH CHUNG (21/09/2026). Trang này từng tự dựng một dải đầu riêng:
+          "← Về trang chính", tiêu đề, nút mặt trăng — không có dãy điều hướng,
+          không chuông, không Đăng xuất. Muốn sang Thi thử phải quay về Trang
+          của tôi trước (agent rà điện thoại, F30). Cùng lỗ đã vá ở Thi thử,
+          Vận hành, Giảng dạy và Soạn giáo trình. `dieuKhien="react"` vì trang
+          không nạp `main.js`. */}
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
+      <AppShell
+        trang="/bai-tap"
+        spa={false}
+        dieuKhien="react"
+        vai={vai.ok ? vai.vai : undefined}
+        ten={vai.ok ? vai.ten : undefined}
+      />
+      <main className="mx-auto max-w-3xl px-4 pb-6 pt-[calc(var(--topbar-h)+1.5rem)]">
+        <h1 className="mb-4 text-section text-ink">Bài tập</h1>
         {nhanSu ? (
           <section className="rounded-lg border border-line bg-surface p-5 text-ink" aria-labelledby="bt-nhan-su">
             <h2 id="bt-nhan-su" className="m-0 text-lg font-semibold">Trang này dành cho học viên</h2>

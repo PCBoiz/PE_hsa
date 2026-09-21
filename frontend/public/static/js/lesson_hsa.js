@@ -690,7 +690,7 @@
 
   var dangCham = false;
   async function navNext() {
-    if (state.step === 1) {
+    if (!state.lesson) return; if (state.step === 1) { // không có bài (403/404): "→" từng ném lỗi JS mỗi lần chạm (20/09)
       /* `gradeTest` nay BẤT ĐỒNG BỘ (chấm ở máy chủ). Không `await` thì nó trả
          về một Promise — thứ luôn truthy — nên `&& goToStep(2)` sẽ nhảy sang
          bước ĐÁNH GIÁ trước khi có kết quả, và màn hình vẽ 0/3 cho một bài làm
@@ -810,7 +810,7 @@
     if ($('success-lesson-title')) $('success-lesson-title').textContent = state.lesson.title || '';
     if ($('success-message')) $('success-message').textContent =
       'Bạn đã hoàn thành bài "' + (state.lesson.title || '') + '" với ' + state.score + '/' + state.total + ' câu kiểm tra đúng.';
-    if ($('reward-xp')) $('reward-xp').textContent = '+' + xp;
+    if ($('reward-xp')) $('reward-xp').textContent = '+' + xp; var nb = $('success-next'); if (nb && state.soBai > state.lessonNo) { nb.href = '/lesson/' + encodeURIComponent(state.courseId) + '?lesson=' + (state.lessonNo + 1); nb.classList.remove('hidden'); }
     if (m) { m.classList.remove('hidden'); if (window.confetti) try { window.confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (e) {} }
   }
 
@@ -912,7 +912,7 @@
         nut.addEventListener('click', function () { location.reload(); });
         hop.appendChild(nut);
       }
-      stage.appendChild(hop);
+      stage.appendChild(hop); var nx = $('nav-next'); if (nx) nx.disabled = true; // không còn gì để "tiếp"
       return;
     }
     state.lesson = lesson;
@@ -972,7 +972,7 @@
     var truoc = window.__napTruoc && window.__napTruoc[url];
     (truoc ? truoc.then(function (d) { return d && d.lesson ? d : fetch(url).then(doc); }) : fetch(url).then(doc))
       .then(function (d) {
-        if (d && d.lesson) { state.total = d.total; start(d.lesson); return; }
+        if (d && d.lesson) { state.total = state.soBai = d.total; start(d.lesson); return; }
         // Bị TỪ CHỐI (chưa ghi danh) thì rơi về bài 1 cũng bị từ chối y hệt —
         // nói ra ngay thay vì gọi thêm một lượt rồi vẫn im.
         if (d && d._tuChoi) { start(null, d._loi); return; }

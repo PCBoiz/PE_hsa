@@ -86,7 +86,7 @@ body { background: var(--mk-bg); }
   animation: mkpulse 1s infinite; }
 @keyframes mkpulse { 50% { opacity: .55; } }
 
-.mk-take-body { display: grid; grid-template-columns: 1fr 240px; gap: 22px; align-items: start; }
+.mk-take-body { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; align-items: start; }
 .mk-qcard { background: var(--mk-card); border: 1px solid var(--mk-bd); border-radius: 18px; padding: 28px; }
 .mk-q-sec { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700; margin-bottom: 12px; }
 .mk-q-text { font-size: 19px; line-height: 1.5; margin: 0 0 22px; }
@@ -151,7 +151,7 @@ body { background: var(--mk-bg); }
 .mk-rev-a { color: var(--mk-t2); } .mk-rev-a b { color: var(--mk-t1); }
 .mk-result-actions { display: flex; justify-content: space-between; margin-top: 30px; }
 
-@media (max-width: 820px) { .mk-take-body { grid-template-columns: 1fr; } .mk-palette { position: static; }
+@media (max-width: 820px) { .mk-take-body { grid-template-columns: minmax(0, 1fr); } .mk-palette { position: static; }
   .mk-palette-grid { grid-template-columns: repeat(8, 1fr); } .mk-sec-row { grid-template-columns: 130px 1fr 46px; } }
 
 /* Điều hướng trên trang Thi thử (audit 2026-08-14: trang này trước đây không
@@ -161,4 +161,16 @@ body { background: var(--mk-bg); }
 @media (max-width: 720px) {
 }
 
-
+/* ── ĐANG THI TRÊN ĐIỆN THOẠI (20/09/2026) ─────────────────────────────────
+   Đo ở 390px: cả trang tràn ngang 92px — `.mk-qcard` 450px, bốn đáp án và nút
+   "Câu sau →" cụt mép phải, em phải vuốt ngang trong lúc đồng hồ chạy. Gốc là
+   `1fr` (ô lưới giữ min-width = nội dung) + đệm 24/28px cố định. Ở khổ này đệm
+   co theo bề ngang và mọi khối con không được rộng hơn khung. */
+@media (max-width: 36rem) {
+  .mk-take { padding: 16px clamp(0.75rem, 3vw, 1.5rem) 48px; }
+  .mk-qcard, .mk-palette { padding: clamp(0.875rem, 4vw, 1.75rem); min-width: 0; }
+  .mk-take-body > *, .mk-qcard *, .mk-palette * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .mk-qcard img, .mk-qcard table { max-width: 100%; }
+  .mk-qcard table { display: block; overflow-x: auto; }
+  .mk-palette-grid { grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); }
+}

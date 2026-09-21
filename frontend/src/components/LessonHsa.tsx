@@ -186,7 +186,10 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
           <i className="fa-solid fa-arrow-left"></i>
           <span className="nav-btn-label">Quay lại</span>
         </button>
-        <button className="nav-btn nav-next" id="nav-next" onClick={() => W().HSALesson?.next()} aria-label="Tiếp theo">
+        {/* Không `aria-label`: tên nút lấy từ nhãn đang hiện, vốn đổi theo bước
+            ("Nộp & xem đánh giá" / "Tiếp tục" / "Hoàn thành bài học"). Nhãn cố
+            định "Tiếp theo" từng đọc cùng một chữ cho cả ba việc khác nhau. */}
+        <button className="nav-btn nav-next" id="nav-next" onClick={() => W().HSALesson?.next()}>
           <span className="nav-btn-label">Nộp &amp; xem đánh giá</span>
           <i className="fa-solid fa-arrow-right"></i>
         </button>
@@ -210,6 +213,15 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
             </div>
           </div>
           <div className="success-actions">
+            {/* Lối sang BÀI KẾ (21/09/2026): hộp này từng chỉ có "Về trang chủ",
+                nên mỗi bài học viên phải vòng qua Trang của tôi rồi tìm khối
+                Học tiếp — thêm hai chạm và một lần tải trang. `lesson_hsa.js`
+                (`complete`) điền địa chỉ và bỏ `hidden` khi khoá còn bài sau;
+                bài cuối khoá thì nút này ở ẩn. Khi nó hiện, "Về trang chủ" lùi
+                thành nút phụ (lesson_chrome.css, `.success-actions`). */}
+            <a id="success-next" className="next-btn primary hidden" href="#">
+              Bài tiếp theo <i className="fa-solid fa-arrow-right"></i>
+            </a>
             <button className="next-btn primary" onClick={() => W().HSALesson?.exit()}>
               Về trang chủ <i className="fa-solid fa-arrow-right"></i>
             </button>

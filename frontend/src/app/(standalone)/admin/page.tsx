@@ -1,5 +1,8 @@
 import Link from 'next/link';
 
+import AppShell from '@/components/AppShell';
+import PageStyles from '@/components/PageStyles';
+
 import { HD_TOI, type Toi } from '@/lib/hinhDang';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
@@ -96,15 +99,38 @@ export default async function SoanGiaoTrinhPage() {
     serverJson<{ exams: DeRow[] }>('/api/admin/mock-exams', { requireAuth: true }, HD_DE),
   ]);
 
+  /* THANH CHUNG cho khu này (20/09/2026). Đây là chỗ THỨ TƯ của cùng một lỗ —
+     Thi thử (06/09), Vận hành (07/09), Giảng dạy (07/09) đều đã vá: một khu
+     dựng vỏ riêng thì mất tên người đăng nhập, mất chuông, và mất ĐƯỜNG ĐĂNG
+     XUẤT. Nặng nhất với vai Biên tập nội dung: /admin là màn duy nhất của họ,
+     nên trước hôm nay họ không có cách nào thoát tài khoản.
+     `dieuKhien="react"` vì khu này không nạp `main.js`; `spa={false}` vì không
+     có trang nào của SPA cũ ở đây. */
   return (
-    <SoanClient
-      initial={kq.ok ? kq.data.courses : []}
-      // Danh sách đề hỏng thì khối giáo trình vẫn phải dùng được: hai thứ độc
-      // lập nhau, và cho một lỗi phụ đánh sập cả trang là đổi một khối hỏng
-      // thành một trang hỏng.
-      deThi={de.ok ? de.data.exams : []}
-      laQuanTri={vai === 'admin'}
-      loi={kq.ok ? null : kq.message}
-    />
+    <div className="min-h-dvh bg-ground">
+      <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
+      <AppShell
+        khu="Soạn giáo trình"
+        dieuKhien="react"
+        spa={false}
+        vai={vai}
+        ten={me.data.name ?? undefined}
+        muc={[
+          { trang: null, nhan: 'Giáo trình', icon: 'book-open', emoji: '', url: '/admin' },
+          ...(vai === VAI_QUAN_TRI
+            ? [{ trang: null, nhan: 'Khu vận hành', icon: 'shield', emoji: '', url: '/quan-tri/tong-quan' }]
+            : []),
+        ]}
+      />
+      <SoanClient
+        initial={kq.ok ? kq.data.courses : []}
+        // Danh sách đề hỏng thì khối giáo trình vẫn phải dùng được: hai thứ độc
+        // lập nhau, và cho một lỗi phụ đánh sập cả trang là đổi một khối hỏng
+        // thành một trang hỏng.
+        deThi={de.ok ? de.data.exams : []}
+        laQuanTri={vai === 'admin'}
+        loi={kq.ok ? null : kq.message}
+      />
+    </div>
   );
 }

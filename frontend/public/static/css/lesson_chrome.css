@@ -155,15 +155,28 @@ body.lesson-focus-mode::before { animation: none; }
   width: 20px;
   height: 20px;
 }
+/* Thanh 5 bước co theo chỗ nó THẬT được cấp (21/09/2026). Đo ở 360px: lề
+   cố định 24px hai bên + bề ngang tối thiểu bằng nội dung (5 × 44 + 8 khe ×
+   8 = 284px) trong khi chỗ còn lại chỉ ~228px → trang tràn ngang 12px (320px:
+   52px) và vòng "5" rơi ra ngoài màn. `container-type` cho khối này rộng đúng
+   phần flex cấp (không nở theo nội dung), rồi truy vấn chính bề ngang ấy thay
+   vì đoán khổ máy: thiếu chỗ thì bỏ vạch nối (vốn đã 0px) và thu đệm của vòng
+   số. Lề dùng 3vw nên từ ~800px trở lên vẫn đúng 24px như cũ. */
 .header-center {
   flex: 1;
   max-width: 720px;
-  margin: 0 24px;
+  margin: 0 clamp(0.5rem, 3vw, 1.5rem);
+  container-type: inline-size;
 }
 .progress-track {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+@container (max-width: 17.75rem) {
+  .progress-track { gap: 0.25rem; justify-content: space-between; }
+  .progress-connector { display: none; }
+  .progress-step { padding: 6px; }
 }
 .progress-step {
   display: flex;
@@ -672,7 +685,10 @@ body.lesson-focus-mode::before { animation: none; }
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(11, 17, 33, 0.5);
+  /* Token theo chủ đề, không phải nền tối cố định: ở giao diện sáng khối
+     rgba(11,17,33,.5) thành một mảng xám đậm giữa thẻ trắng, chữ "XP" xám
+     trên xám (ảnh 21/09/2026). */
+  background: var(--surface-3);
   border-radius: var(--radius);
 }
 .reward-icon {
@@ -693,7 +709,7 @@ body.lesson-focus-mode::before { animation: none; }
   font-family: var(--font-num), ui-monospace, "Cascadia Code", monospace;
 }
 .reward-label {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-500);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -705,6 +721,14 @@ body.lesson-focus-mode::before { animation: none; }
 .success-actions .next-btn {
   flex: 1;
   margin-top: 0;
+}
+/* Có "Bài tiếp theo" (LessonHsa.tsx) thì xếp dọc, nó là nút chính và
+   "Về trang chủ" lùi thành nút phụ — một màn chỉ một nút chính. */
+.success-actions:has(#success-next:not(.hidden)) { flex-direction: column; }
+.success-actions #success-next:not(.hidden) ~ .next-btn {
+  background: var(--surface-3);
+  color: var(--text-100);
+  box-shadow: none;
 }
 ::-webkit-scrollbar {
   width: 8px;
@@ -1071,6 +1095,12 @@ list-style: none;
 @media (max-width: 600px) {
 .nav-btn-label {
     display: none;
+  }
+  /* Nút CHÍNH giữ nhãn (21/09/2026): chỉ còn mũi tên thì ở bước 1 học viên
+     không biết chạm vào là NỘP BÀI, ở bước 5 là KẾT THÚC bài. Hàng đáy ở
+     390px còn thừa ~280px, đủ cho nhãn dài nhất "Nộp & xem đánh giá". */
+  .nav-next .nav-btn-label {
+    display: inline;
   }
 .nav-btn {
     min-width: 44px;

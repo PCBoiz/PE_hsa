@@ -235,6 +235,10 @@ body.dark .page-subtitle { color: #475569; }
 .sk-tab.active { background: var(--lift); }
 
 .sk-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; align-items:start; }
+/* Tự xếp theo bề ngang thay vì ghim 4 cột: ở 390px bốn (hoặc ba) thẻ hợp phần
+   bị ép thành cột ~90px, tên kỹ năng cắt còn "Ch", hàng kỹ năng 35px (đo
+   20/09/2026). Mỗi thẻ ít nhất ~16rem — hẹp hơn thì xuống hàng, điện thoại một cột. */
+.sk-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
 
 /* PC: accordion — mỗi thẻ cao theo nội dung, không bị kéo giãn khi thẻ khác mở */
 @media (min-width: 769px) {
@@ -1161,6 +1165,9 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
   width: 160px;
 }
 .rm-search-input::placeholder { color: #9CA3AF; }
+/* Ô bên trong đã cao 44px ở máy cảm ứng (a11y.css) — bỏ đệm dọc của hộp để
+   hộp không phình thành 58px. */
+@media (pointer: coarse) { .rm-search-box { padding-block: 0; } }
 .rm-search-clear {
   border: none; background: none; cursor: pointer;
   color: #9CA3AF; font-size: 13px; padding: 0;
@@ -1839,6 +1846,7 @@ body.dark .rmv-del:hover { background: #EF4444; }
 .fpc-time {
   font-size: 0.72rem;
   color: var(--t3);
+  white-space: nowrap;
 }
 
 .fpc-cat-tag {
@@ -1847,6 +1855,14 @@ body.dark .rmv-del:hover { background: #EF4444; }
   font-size: 0.7rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+/* Đầu bài ở khổ điện thoại (đo 21/09/2026 ở 390/360): tên, nút "Theo dõi"
+   và thời gian chen một hàng ~200px nên gãy thành "26 ngày / trước" và
+   "+ Theo / dõi". Xếp tên (kèm nút) lên trên, thời gian xuống dưới. */
+@media (max-width: 36rem) {
+  .fpc-meta { flex-direction: column; align-items: flex-start; gap: 0.125rem; }
+  .fpc-author { display: flex; flex-wrap: wrap; align-items: center; row-gap: 0.25rem; }
 }
 
 .fpc-title {
