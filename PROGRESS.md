@@ -163,10 +163,38 @@ hôm nay đi qua đúng chỗ này.
 390 dài 4,7 màn với em mới, 4 lối "Khám phá khoá học" lặp (F5 — cần quyết định bố cục, hỏi anh trước);
 "Khám phá khoá học" không đổi URL (nửa còn lại của F10); desktop F3/F4; nhân sự F9/F15/F17–F20/F25/F26.
 
-**Đợt agent thứ hai (21/09, đang chạy)**: ba agent — học viên máy tính (bài học 5 bước, thi thử, bài
-tập, kỹ năng, diễn đàn ở 1366/1024/768 + nhất quán thiết kế), nhân sự (học vụ · quản trị · biên tập,
-hai khổ), học viên điện thoại (kiểm lại toàn bộ bản vá hôm nay ở `pointer: coarse` + chi tiết khoá, trợ
-lý AI, cài đặt, chuông, đăng nhập/đăng xuất). Danh sách để họ kiểm lại: `audit/agents/DA_SUA_21.md`.
+**Đợt agent thứ hai (21/09) — XONG cả ba, 58 phát hiện.** Báo cáo:
+`audit/agents/hoc-vien-desktop-2.md` (20: 3 NẶNG), `nhan-su-2.md` (19: 2 NẶNG), `hoc-vien-mobile-2.md`
+(6 mới + **kiểm lại 9/9 mục vá hôm nay đều ✓ ở 390 và 360**, 6 mục NẶNG cũ đã đóng). Danh sách giao cho
+họ kiểm: `audit/agents/DA_SUA_21.md`.
+
+**`33935a2` — hai mục NẶNG + luật đo mới:**
+- **Đặt lại mật khẩu 25,4 s → 3,0 s** (đo bằng chuột trên màn Lớp học). `_thu_hoi_refresh` gọi
+  `get_or_create` cho TỪNG refresh token (agent đo 88 vòng = 22.439 ms) → nút đứng hình 20–29 s, bấm
+  lần hai sinh mật khẩu tạm thứ hai và giết cái vừa đọc cho học viên. Nay hai lượt hỏi cố định; test
+  đếm LƯỢT HỎI (đỏ: 54 lượt cho 12 token) chứ không đếm mili giây. Nút khoá + "Đang đặt lại…".
+- **Chọn đáp án bài học gần như không đổi mặt** (ΔRGB 2/3/6): `body.light .hsa-opt` (0,2,1) thắng
+  `.hsa-opt.selected` (0,2,0) nên viền tím chưa bao giờ hiện ở bản sáng. Nay viền + vòng + dấu ✓.
+- **Tab "Cá nhân" của Lộ trình không bấm được từ 820–1024px**: dãy tab chui dưới viên thống kê, và
+  trong chính luật `.rm-tabbar` có HAI dòng `max-width` — dòng sau đè dòng trước.
+- **Bộ đo thêm luật thứ sáu: sàn cỡ chữ 12px.** Lượt đầu ra 187 chỗ.
+
+**`fffc1cb` + `a3af4c6`:** toast tràn màn 390; Cài đặt hai cột ở điện thoại (`pages.css` nạp sau nên
+luật một-cột của `style.css` vô hiệu → lưới tự chia); câu "phiên hết hạn" đổ lỗi sai sau khi tự đăng
+xuất; ô nhập trợ lý sáng ở chế độ tối; **sàn chữ 187 → 68 → 0** (bộ đo 2 khổ × 24 trang nay 0 cho cả
+sáu luật); đầu khung soạn bài ở 390 hết vỡ (`CardHead` cho tiêu đề mốc 14rem); nhãn "VÍ DỤ…" hết đè
+sơ đồ bước 3; máng thanh "Phân tích theo hợp phần" hiện được ở nền sáng; **thêm `error.tsx` +
+`global-error.tsx` tiếng Việt** (kiểm bằng cách tạm cho một trang ném lỗi rồi hoàn nguyên).
+
+**Gotcha hạ tầng (cả hai agent mất ~10 phút vì nó)**: `next build` trong lúc `next start` đang chạy làm
+chunk cũ biến mất → `_next/static/chunks/*.js` trả 500, React KHÔNG hydrate, trang vẫn hiện nhưng chip
+tài khoản thành "?" và không một dòng báo lỗi. Dừng máy chủ → build → chạy lại. `pkill -f "next start"`
+không khớp tiến trình thật; dừng theo cổng 3100.
+
+**Dữ liệu agent đã ghi, cần dọn/đã dọn**: hv2 đã đặt lại "chưa khảo sát" ✔; hv3 bị đặt lại mật khẩu 9
+lần (mật khẩu tạm mới nhất đã ghi vào `.the/audit_tk.json`, tài khoản đang ở trạng thái "phải đổi mật
+khẩu lần đầu"); đợt học thử **id=532** "AUDIT2009 ns2 — Đợt thử" + ngày nghỉ 16/02/2027 còn trong CSDL;
+lớp 7586 có một dòng `class_members` cũ của trợ giảng mang `left_at`; hv2 còn ghi danh `hsa_science`.
 
 ## 20/09/2026 (đêm) — AUDIT GIAO DIỆN HAI KHỔ BẰNG 3 AGENT: ĐỢT 1 VÁ 13 CHỖ, THANH TRÊN Ở ĐIỆN THOẠI THÀNH HAI HÀNG
 
