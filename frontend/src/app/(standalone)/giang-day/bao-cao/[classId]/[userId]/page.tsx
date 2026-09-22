@@ -67,11 +67,14 @@ export default async function BaoCaoPhuHuynhPage({
               `main` thì rơi ngoài mọi mốc (axe `region`) — đo 20/09/2026. */}
         <div className="border-b border-line bg-surface print:hidden">
           <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
+            {/* Về DANH SÁCH báo cáo của lớp, không về trang buổi học (22/09/2026,
+                agent GV→PH F12): làm tờ cho em thứ hai từng phải Về lớp → tab
+                Báo cáo phụ huynh → Xem tờ. */}
             <Link
-              href={`/giang-day/buoi-hoc/${classId}`}
+              href={`/giang-day/bao-cao/${classId}`}
               className="-my-3 inline-block py-3 text-small text-ink-3 hover:text-brand-ink"
             >
-              ← Về lớp
+              ← Báo cáo cả lớp
             </Link>
             {/* `min-w-[14ch]`: khổ điện thoại, tiêu đề bị ép chung hàng với "Về lớp"
                 và dòng người nhận thành một cột chữ năm dòng (soi ảnh 17/09/2026).

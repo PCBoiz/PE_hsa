@@ -89,11 +89,19 @@ body.dark .roadmap-check        { border-color: var(--card-border); }
    cột, không thì một — không cần mốc nào. */
 .fields-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 12px; }
 .field-label { display: block; font-size: 12px; font-weight: 500; color: #6B7280; margin-bottom: 4px; }
+/* Viền `--border-input` (22/09/2026, agent tiếp cận F11): #E5E7EB cũ chỉ 1,24:1
+   với thẻ trắng — ô nhập Cài đặt tan vào nền (WCAG 1.4.11 đòi 3:1).
+   Tiêu điểm (F13): `outline: none` + viền đổi sang #93C5FD cũ chỉ còn 1,63:1,
+   người dùng Tab không thấy mình đang ở ô nào → cùng vòng `2px solid --brand`
+   với `.topbar :focus-visible` (shell.css). Ô nhập chữ luôn khớp :focus-visible,
+   kể cả khi bấm chuột, nên vòng hiện ở mọi cách vào ô. */
 .field-input {
-  width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #E5E7EB;
+  width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border-input);
   background: #F9FAFB; font-size: 13px; color: #374151; outline: none; transition: all 0.2s;
 }
-.field-input:focus { border-color: #93C5FD; background: #fff; }
+.field-input:focus { border-color: var(--brand); background: #fff; }
+.field-input:focus-visible,
+.lang-select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .notif-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F9FAFB; }
 .notif-row:last-child { border-bottom: none; }
 .notif-lbl  { font-size: 13px; font-weight: 500; color: #374151; }
@@ -117,7 +125,7 @@ body.dark .roadmap-check        { border-color: var(--card-border); }
   background: #F3F4F6; font-size: 12px; font-weight: 500; color: #374151; transition: opacity 0.2s;
 }
 .change-pw-btn:hover { opacity: 0.7; }
-.lang-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #E5E7EB; background: #F9FAFB; font-size: 12px; color: #374151; outline: none; }
+.lang-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border-input); background: #F9FAFB; font-size: 12px; color: #374151; outline: none; }  /* viền ô chọn: như .field-input (F11) */
 .save-btn {
   display: flex; align-items: center; gap: 8px; padding: 12px 24px;
   border-radius: 12px; border: none; cursor: pointer; color: #fff;
@@ -154,8 +162,8 @@ body.dark .roadmap-check        { border-color: var(--card-border); }
 .goal-chip input:focus-visible + span { outline: 2px solid var(--brand, #6D5AE6); outline-offset: 2px; }
 .goal-date { max-width: 220px; }
 .goal-status { font-size: 12.5px; margin-top: 14px; min-height: 18px; }
-.goal-status.is-ok  { color: #10B981; }
-.goal-status.is-err { color: #EF4444; }
+.goal-status.is-ok  { color: var(--success-ink); }
+.goal-status.is-err { color: var(--danger); }
 
 body.dark .goal-hint { color: var(--text-3); }
 body.dark .goal-optional, body.dark .goal-help { color: var(--text-3); }
@@ -171,24 +179,24 @@ body.dark .goal-chip input:checked + span {
   border-color: var(--brand-fill); background: var(--brand-fill); color: #fff;
 }
 
-/* ── Settings — dark mode ── */
+/* ── Settings — dark mode ──
+   dark-mode.css nạp SAU tệp này và có khối Cài đặt trùng bộ chọn — nó thắng.
+   22/09/2026 đã bỏ ở đây năm luật chết (.profile-email, .field-input,
+   .field-input:focus, .notif-desc, .lang-select): mọi thuộc tính của chúng đều
+   bị dark-mode.css ghi đè, nên chúng chỉ khiến người sửa màu sửa nhầm chỗ
+   (agent tiếp cận F3/F11). Các dòng còn lại cũng trùng; sửa màu tối ở dark-mode.css. */
 body.dark .settings-section { background: var(--card); border-color: var(--card-border); }
 body.dark .settings-section-title span { color: var(--text-1); }
 body.dark .profile-name  { color: var(--text-1); }
-body.dark .profile-email { color: var(--text-3); }
 body.dark .profile-badge { background: var(--accent-soft); }
 body.dark .field-label { color: var(--text-2); }
-body.dark .field-input { background: var(--bg); border-color: var(--card-border); color: var(--text-1); }
-body.dark .field-input:focus { border-color: var(--accent); background: var(--card); }
 body.dark .notif-row { border-bottom-color: var(--card-border); }
 body.dark .notif-lbl  { color: var(--text-1); }
-body.dark .notif-desc { color: var(--text-3); }
 body.dark .toggle { background: var(--card-border); }
 body.dark .toggle.on { background: var(--brand-grad); }
 body.dark .sec-lang-card { background: var(--card); border-color: var(--card-border); }
 body.dark .sec-lang-title span { color: var(--text-1); }
 body.dark .change-pw-btn { background: var(--bg); color: var(--text-2); }
-body.dark .lang-select { background: var(--bg); border-color: var(--card-border); color: var(--text-1); }
 
 /* ══════════════════════════════════════════════
    TRANG CỦA TÔI  (page-profile)
@@ -439,7 +447,7 @@ body.dark .prof-avatar         { border-color: var(--card); }
   margin-left: auto; font-size: 11px; font-weight: 700; color: var(--brand);
   white-space: nowrap;
 }
-.cmp-group-acc.is-muted { font-weight: 500; color: #7A7289; }
+.cmp-group-acc.is-muted { font-weight: 500; color: var(--t3); }
 .cmp-grid {
   display: grid; gap: 10px;
   /* minmax(0,…) chứ không phải 1fr: 1fr = minmax(auto,1fr) nên tên chủ đề dài
@@ -477,7 +485,7 @@ body.dark .prof-avatar         { border-color: var(--card); }
 /* Ô chưa đo LÙI về sau: người mới học có gần 20 ô như vậy, để chúng cùng cỡ
    với ô đã đo thì màn hình trông như đang hỏng. Chữ nhỏ và nhạt hơn khiến vài ô
    ĐÃ ĐO nổi bật lên — đó mới là thứ cần nhìn thấy. */
-.cmp-tile.is-none .cmp-num { font-size: 19px; font-weight: 700; color: #8B839B; }
+.cmp-tile.is-none .cmp-num { font-size: 19px; font-weight: 700; color: var(--t3); }
 
 .cmp-bar { height: 5px; border-radius: 99px; background: rgba(20, 16, 35, .10); overflow: hidden; }
 .cmp-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--lv); }
@@ -496,14 +504,16 @@ body.dark .prof-avatar         { border-color: var(--card); }
    câu văn". */
 .cmp-go {
   display: inline-flex; align-items: center; min-height: 24px;
-  font-weight: 700; color: var(--brand); text-decoration: none; white-space: nowrap;
+  /* `--brand-ink`: 20 liên kết "Bài N →" nằm trên mặt ô `.cmp-tile` #F4F3F8, ở đó
+     `--brand` chỉ 4,47:1 — thiếu 0,03 (axe 22/09/2026, view Hồ sơ, khổ 390). */
+  font-weight: 700; color: var(--brand-ink); text-decoration: none; white-space: nowrap;
 }
 .cmp-go:hover { text-decoration: underline; }
 .cmp-go.is-done { font-weight: 600; color: #0E7C6B; }
-.cmp-sub { margin-top: 2px; font-size: 10.5px; color: #7A7289; }
+.cmp-sub { margin-top: 2px; font-size: 10.5px; color: var(--t3); }
 /* Con số CHỦ ĐỀ, hiện khi nó khác con số lớn (đã gộp điểm đề thi thử).
    Dẫn xuất từ currentColor để không phải khai lại cho nền tối. */
-.cmp-split { margin-top: 4px; font-size: 10.5px; line-height: 1.45; color: #7A7289;
+.cmp-split { margin-top: 4px; font-size: 10.5px; line-height: 1.45; color: var(--t3);
   padding-top: 4px; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
 .cmp-split b { color: inherit; font-weight: 700; }
 
@@ -511,7 +521,7 @@ body.dark .prof-avatar         { border-color: var(--card); }
   flex-shrink: 0; width: 26px; height: 26px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 8px; cursor: pointer; font-size: 12px; line-height: 1;
-  border: 1px solid rgba(20, 16, 35, .16); background: #FFF; color: #A9A2B8;
+  border: 1px solid rgba(20, 16, 35, .16); background: #FFF; color: var(--t3);
   transition: background .15s, color .15s, border-color .15s;
 }
 .cmp-self:hover { border-color: var(--brand); color: var(--brand); }
@@ -579,12 +589,14 @@ body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
   cursor: pointer; font-family: inherit;
 }
 .cv-range button:hover { background: rgba(20, 16, 35, .05); }
-.cv-range button.active { background: var(--accent-soft); color: var(--brand); }
+/* Chữ trên nền tím PHA NHẠT → `--brand-ink`: `--brand` ở đó chỉ 4,2:1 (axe 22/09/2026,
+   view Hồ sơ — view mà bộ đo cũ và v37 đều chưa từng đi qua). */
+.cv-range button.active { background: var(--accent-soft); color: var(--brand-ink); }
 
 .cv-chart { margin-top: 10px; min-height: 200px; }
 .cv-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .cv-grid   { stroke: rgba(20, 16, 35, .09); stroke-width: 1; }
-.cv-ylbl, .cv-xlbl { fill: #7A7289; font-size: 10px; font-family: inherit; }
+.cv-ylbl, .cv-xlbl { fill: var(--t3); font-size: 10px; font-family: inherit; }
 .cv-target { fill: rgba(14, 124, 107, .12); }
 .cv-bar    { fill: rgba(109, 90, 230, .20); }
 /* Phút TỰ KHAI phải nhìn ra được là tự khai — khác hẳn màu, không chỉ nhạt hơn. */
@@ -637,7 +649,7 @@ body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
               font-variant-numeric: tabular-nums; line-height: 1.15; }
 .bk-sum-pct i { font-size: 11px; font-weight: 700; font-style: normal; }
 .bk-sum-lbl { display: block; font-size: 11.5px; font-weight: 600; color: #16121F; }
-.bk-sum-n   { display: block; font-size: 10.5px; color: #7A7289; }
+.bk-sum-n   { display: block; font-size: 10.5px; color: var(--t3); }
 
 .bk-rows { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
 .bk-row {
@@ -659,11 +671,11 @@ body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
 .bk-body  { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .bk-label { font-size: 12.5px; font-weight: 600; color: #16121F;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bk-meta  { font-size: 10.5px; color: #7A7289; }
+.bk-meta  { font-size: 10.5px; color: var(--t3); }
 .bk-score { flex-shrink: 0; min-width: 58px; text-align: right;
             font-size: 12.5px; font-weight: 700; color: #4B4459;
             font-variant-numeric: tabular-nums; }
-.bk-score i { font-weight: 500; font-style: normal; color: #7A7289; }
+.bk-score i { font-weight: 500; font-style: normal; color: var(--t3); }
 .bk-pct   { flex-shrink: 0; min-width: 38px; text-align: right;
             font-size: 13px; font-weight: 800; color: var(--brand);
             font-variant-numeric: tabular-nums; }

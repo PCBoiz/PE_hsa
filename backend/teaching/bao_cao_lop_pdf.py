@@ -236,8 +236,13 @@ def dung_pdf_lop(bc: dict, cc: dict | None = None) -> bytes:
     if not sv:
         kq.append(Paragraph('Chưa có học viên nào đang học.', p))
     else:
+        # "Ngày chưa học" chứ không phải "Vắng mặt (ngày)" (22/09/2026, agent
+        # GV→PH F18): cột này là `idleDays` — số ngày từ lần HOẠT ĐỘNG cuối trên
+        # ứng dụng. Ngay trên nó bảng chuyên cần có cột "Vắng" (buổi học vắng);
+        # hai chữ "vắng" chỉ hai thứ khác nhau trên cùng tờ, và em "Vắng 1" ở
+        # mục II lại "Vắng mặt 0" ở mục III.
         hang = [['Học viên', 'Bài đã xong', 'Tiến độ', 'Thi thử', 'Điểm gần nhất',
-                 'Vắng mặt (ngày)']]
+                 'Ngày chưa học']]
         for e in sv:
             lan = e.get('mockCount') or 0
             hang.append([

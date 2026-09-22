@@ -161,9 +161,12 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
 
   /* `print:[&_h3]:break-after-avoid`: khi IN, tiêu đề mục không được ở lại cuối trang một
      mình. Soi bản in 17/09/2026: "Con có học đều không" nằm cuối trang 1 còn bảng nhịp
-     từng tuần sang trang 2 — người đọc phải lật trang mới biết bảng ấy thuộc về đâu. */
+     từng tuần sang trang 2 — người đọc phải lật trang mới biết bảng ấy thuộc về đâu.
+     `print:[&_h3]:mt-3` (22/09/2026, agent GV→PH F15): in A4, tờ tràn sang trang 2 chỉ
+     để chứa mục "Con cần giúp chỗ nào" (3 dòng) + chân trang. Khoảng cách trước mỗi
+     mục ở màn hình (1,5rem) là thứ rẻ nhất để bớt khi in. */
   return (
-      <article className="rounded-lg border border-line bg-surface p-6 print:border-0 print:p-0 print:[&_h3]:break-after-avoid">
+      <article className="rounded-lg border border-line bg-surface p-6 print:border-0 print:p-0 print:[&_h3]:break-after-avoid print:[&_h3]:mt-3">
         <h2 className="text-title text-ink">{bc.student.name || `Học viên #${bc.student.id}`}</h2>
         <p className="mt-1 text-body text-ink-2">
           Lớp {bc.class.name}

@@ -253,8 +253,12 @@ body.lesson-focus-mode::before { animation: none; }
   background: var(--success-soft);
   color: var(--success);
 }
+/* NỀN đỡ chữ trắng → `--success-fill` (22/09/2026, agent tiếp cận F16):
+   `--success` là xanh cho CHỮ/VIỀN; ở bản tối nó lật thành #34D399 nên số
+   bước đã xong chỉ 1,92:1 (bản sáng #10B981: 2,54:1). --success-fill #047857
+   KHÔNG lật theo chủ đề — chữ trắng 5,48:1 ở cả hai. */
 .progress-step.done .step-num {
-  background: var(--success);
+  background: var(--success-fill, #047857);
   color: #fff;
 }
 .progress-step.done+.progress-connector::after {
@@ -961,7 +965,7 @@ list-style: none;
   transform: translateY(-50%) scale(0);
   width: 16px;
   height: 16px;
-  background: var(--success);
+  background: var(--success-fill, #047857);  /* dấu ✓ trắng: cùng lý do với .step-num đã xong ở trên */
   color: #fff;
   border-radius: 50%;
   display: flex;

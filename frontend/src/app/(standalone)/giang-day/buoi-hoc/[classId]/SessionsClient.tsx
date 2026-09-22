@@ -413,7 +413,7 @@ export default function SessionsClient({
                         {n.sapToi && (
                           <p role="note" className="mt-3 rounded-md bg-warning/10 px-3 py-2 text-small text-warning-ink">
                             Buổi này bắt đầu lúc {fmt(s.startsAt)} — bạn đang điểm danh <b>trước giờ</b>. Nếu định
-                            điểm danh buổi vừa dạy, xem mục "Đã diễn ra" bên dưới.
+                            điểm danh buổi vừa dạy, xem mục “Đã diễn ra” bên dưới.
                           </p>
                         )}
                         <Attendance sessionId={s.id} onSaved={() => void reload()} onError={setErr} />

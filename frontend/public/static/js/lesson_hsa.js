@@ -113,7 +113,7 @@
                'placeholder="Nhập đáp án…" autocomplete="off" />';
       } else {
         body = '<div class="hsa-opts">' + (q.options || []).map(function (op) {
-          return '<button type="button" class="hsa-opt" data-qid="' + esc(q.id) + '" data-val="' + esc(op) + '">' +
+          return '<button type="button" class="hsa-opt" aria-pressed="false" data-qid="' + esc(q.id) + '" data-val="' + esc(op) + '">' +
                  esc(op) + '</button>';
         }).join('') + '</div>';
       }
@@ -124,12 +124,13 @@
     }).join('');
     $('hsa-test-questions').innerHTML = html;
 
-    // chọn đáp án MCQ
+    // chọn đáp án MCQ. `aria-pressed` đi cùng `.selected` (22/09/2026, agent
+    // tiếp cận F15): trước đó "đã chọn" chỉ nằm ở lớp CSS và dấu ✓ vẽ bằng CSS —
+    // trình đọc màn hình không biết phương án nào đang được chọn.
     $('hsa-test-questions').querySelectorAll('.hsa-opt').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var qid = btn.getAttribute('data-qid');
-        btn.parentNode.querySelectorAll('.hsa-opt').forEach(function (b) { b.classList.remove('selected'); });
-        btn.classList.add('selected');
+        btn.parentNode.querySelectorAll('.hsa-opt').forEach(function (b) { b.classList.toggle('selected', b === btn); b.setAttribute('aria-pressed', b === btn); });
         state.answers[qid] = btn.getAttribute('data-val');
       });
     });

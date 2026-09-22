@@ -17,21 +17,19 @@
   };
 })();
 
-/* ── User avatar dropdown ── */
+/* ── User avatar dropdown ──
+   Gộp 22/09/2026 (agent ban-phim-4): bản cũ là hai nhánh if/else chép nhau cộng
+   một lớp bọc `_origToggleUserMenu` để đồng bộ tên — gộp lại lấy chỗ cho bản vá
+   trả tiêu điểm (F9), vì tầng này chỉ được nhỏ đi. Hành vi y như cũ. */
 function toggleUserMenu() {
-  var wrap = document.getElementById('user-chip-wrap');
-  var btn = document.getElementById('user-chip-btn');
+  var n = document.getElementById('chip-name'), d = document.getElementById('udh-name');
+  if (n && d) d.textContent = n.textContent;   // tên đầu menu theo tên trên chip
   var menu = document.getElementById('user-dropdown');
-  var open = menu.classList.contains('open');
-  if (open) {
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-  } else {
-    menu.classList.add('open');
-    btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-  }
+  if (menu.classList.contains('open')) return closeUserMenu();
+  closeBellPanel();
+  menu.classList.add('open');
+  document.getElementById('user-chip-btn').classList.add('open');
+  document.getElementById('user-chip-btn').setAttribute('aria-expanded', 'true');
 }
 
 function closeUserMenu() {
@@ -40,26 +38,22 @@ function closeUserMenu() {
   menu.classList.remove('open');
   btn.classList.remove('open');
   btn.setAttribute('aria-expanded', 'false');
+  /* Tiêu điểm đang ở TRONG menu (vừa bị giấu) thì trả về nút đã mở nó. Không
+     trả thì trình duyệt thả tiêu điểm về <body>: mất vòng tiêu điểm, trình đọc
+     màn hình mất ngữ cảnh (agent tiếp cận F9, 22/09/2026). */
+  if (menu.contains(document.activeElement)) btn.focus();
 }
 
+// Bấm ra ngoài / Escape đóng menu người dùng VÀ chuông (trước ở hai chỗ).
 document.addEventListener('click', function (e) {
-  var wrap = document.getElementById('user-chip-wrap');
+  var wrap = document.getElementById('user-chip-wrap'), chuong = document.getElementById('bell-wrap');
   if (wrap && !wrap.contains(e.target)) closeUserMenu();
+  if (chuong && !chuong.contains(e.target)) closeBellPanel();
 });
 
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') closeUserMenu();
+  if (e.key === 'Escape') { closeUserMenu(); closeBellPanel(); }
 });
-
-/* Sync tên hiển thị trong dropdown header khi mở */
-var _origToggleUserMenu = toggleUserMenu;
-toggleUserMenu = function () {
-  var n = document.getElementById('chip-name');
-  var d = document.getElementById('udh-name');
-  if (n && d) d.textContent = n.textContent;
-  closeBellPanel();
-  _origToggleUserMenu();
-};
 
 /* ── Bell notification panel — nối với /api/notifications/feed (DB thật) ── */
 var _bellNotifs = [];
@@ -114,16 +108,25 @@ function _renderBellItems() {
     body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div>';
     return;
   }
+  /* Mục là <button> THẬT (22/09/2026, agent tiếp cận F8). Bản cũ là
+     `div role="menuitem" tabindex="0" onclick` — Tab tới được nhưng Enter/Space
+     không làm gì (chuột bấm thì mở /bai-tap), và `menuitem` nằm trong
+     `role="dialog"` là lỗi axe mức critical. Con bên trong là <span> vì nội dung
+     của <button> chỉ được là phrasing; `a11y.css` trả lại `display:block`.
+     Dựng lại danh sách (đánh dấu đã đọc, lượt nạp mới) thì giữ tiêu điểm ở ĐÚNG
+     mục đang đứng — nếu không nó rơi về <body> cùng nút cũ vừa bị thay. */
+  var dangO = Array.prototype.indexOf.call(body.children, document.activeElement);
   body.innerHTML = _bellNotifs.map(function (n, i) {
-    return '<div class="bell-item' + (n.unread ? ' unread' : '') + '" onclick="readBellItem(' + i + ')" role="menuitem" tabindex="0">'
-      + '<div class="bell-item-icon">' + n.icon + '</div>'
-      + '<div class="bell-item-body">'
-      + '<div class="bell-item-text">' + _escBell(n.title) + (n.body ? ': ' + _escBell(n.body) : '') + '</div>'
-      + '<div class="bell-item-time">' + _escBell(n.time) + '</div>'
-      + '</div>'
-      + (n.unread ? '<div class="bell-unread-dot"></div>' : '')
-      + '</div>';
+    return '<button type="button" class="bell-item' + (n.unread ? ' unread' : '') + '" onclick="readBellItem(' + i + ')">'
+      + '<span class="bell-item-icon" aria-hidden="true">' + n.icon + '</span>'
+      + '<span class="bell-item-body">'
+      + '<span class="bell-item-text">' + _escBell(n.title) + (n.body ? ': ' + _escBell(n.body) : '') + '</span>'
+      + '<span class="bell-item-time">' + _escBell(n.time) + '</span>'
+      + '</span>'
+      + (n.unread ? '<span class="bell-unread-dot"><span class="sr-only">(chưa đọc)</span></span>' : '')
+      + '</button>';
   }).join('');
+  if (body.children[dangO]) body.children[dangO].focus();
 }
 
 function _updateBellDot() {
@@ -143,18 +146,12 @@ function _updateBellDot() {
 
 function toggleBellPanel() {
   var panel = document.getElementById('bell-panel');
-  var btn = document.getElementById('bell-btn');
-  var open = panel.classList.contains('open');
-  if (open) {
-    panel.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-  } else {
-    closeUserMenu();
-    loadBellNotifs();   // tải mới mỗi lần mở
-    _renderBellItems();
-    panel.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-  }
+  if (panel.classList.contains('open')) return closeBellPanel();
+  closeUserMenu();
+  loadBellNotifs();   // tải mới mỗi lần mở
+  _renderBellItems();
+  panel.classList.add('open');
+  document.getElementById('bell-btn').setAttribute('aria-expanded', 'true');
 }
 
 function closeBellPanel() {
@@ -162,6 +159,8 @@ function closeBellPanel() {
   var btn = document.getElementById('bell-btn');
   if (panel) panel.classList.remove('open');
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  // Cùng lý do với `closeUserMenu`: tiêu điểm trong bảng vừa giấu thì về nút chuông (F9).
+  if (panel && btn && panel.contains(document.activeElement)) btn.focus();
 }
 
 // Điều hướng tới bài viết của thông báo và mở khung bình luận chứa @mention.
@@ -260,13 +259,8 @@ function _initBell() { loadBellNotifs(); _startBadgePolling(); }
 if (document.readyState !== 'loading') _initBell();
 else document.addEventListener('DOMContentLoaded', _initBell);
 
-document.addEventListener('click', function (e) {
-  var wrap = document.getElementById('bell-wrap');
-  if (wrap && !wrap.contains(e.target)) closeBellPanel();
-});
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') closeBellPanel();
-});
+// Bấm-ra-ngoài và Escape của chuông: gộp chung một trình nghe với menu người
+// dùng ở đầu tệp (22/09/2026) — cùng một luật, không cần hai bản.
 
 /* ═══════════════════════════════════════════════════════
    Modal đổi mật khẩu
@@ -278,12 +272,16 @@ document.addEventListener('keydown', function (e) {
    người dùng trình đọc màn hình thấy hai thực tại khác nhau.
    Viết thành hàm dùng chung chứ không nhét vào riêng hộp mật khẩu: hộp huỷ ghi
    danh (main.js) cũng hở đúng vậy, và một luật đặt ở hai nơi là một luật sẽ
-   lệch. */
-window.bayTieuDiem = function bayTieuDiem(modal) {
+   lệch.
+   22/09/2026 (agent tiếp cận F6): ngăn chi tiết Lộ trình (roadmap.js) cũng dùng
+   bẫy này. Nó mở bằng lớp `.open` chứ không `.active`, và cần Esc để đóng — nên
+   nhận thêm `dong` (tuỳ chọn): có thì Esc gọi nó. Hai hộp cũ không truyền, y cũ. */
+window.bayTieuDiem = function bayTieuDiem(modal, dong) {
   var CHON = 'a[href], button:not([disabled]), input:not([disabled]), ' +
              'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   function nhin(e) {
-    if (e.key !== 'Tab' || !modal.classList.contains('active')) return;
+    if (e.key === 'Escape' && dong && modal.matches('.active, .open')) return dong();
+    if (e.key !== 'Tab' || !modal.matches('.active, .open')) return;
     var ds = Array.prototype.filter.call(modal.querySelectorAll(CHON), function (el) {
       // Phần tử ẩn không nằm trong vòng: nếu không, Tab sẽ dừng ở một chỗ
       // không nhìn thấy và người dùng tưởng tiêu điểm biến mất.
@@ -496,17 +494,13 @@ function checkMatch() {
 /* ═══════════════════════════════════════════════════════
    Kỹ năng — toggle helpers
    ═══════════════════════════════════════════════════════ */
-function skSetToggle(hd) {
-  var body = hd.nextElementSibling;
-  var open = body.style.display === 'block';
-  body.style.display = open ? 'none' : 'block';
-  var arrow = hd.querySelector('.sk-arrow');
-  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
-}
-function skSkillToggle(row) {
-  var sub = row.nextElementSibling;
-  sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
-}
+/* Một hàm cho cả hàng nhóm (`.sk-set-hd`) lẫn hàng kỹ năng (`.sk-skill-row`).
+   Hai hàng nay là <button aria-expanded> (22/09/2026, agent tiếp cận F7: bản
+   cũ là `div onclick` — Tab 40 lần qua view không dừng ở hàng nào, danh sách
+   kỹ năng con chỉ mở được bằng chuột). Trạng thái nằm DUY NHẤT ở
+   `aria-expanded`: trình đọc màn hình đọc "đã mở/đã thu gọn", còn ẩn/hiện khối
+   con và xoay mũi tên do `a11y.css` suy ra từ chính thuộc tính ấy. */
+function skToggle(nut) { nut.setAttribute('aria-expanded', nut.getAttribute('aria-expanded') !== 'true'); }
 
 /* ═══════════════════════════════════════════════════════
    Kỹ năng — load & render
@@ -537,9 +531,10 @@ function skSkillToggle(row) {
   function donutChart(pct) {
     var color = pct >= 70 ? '#10B981' : (pct > 0 ? '#F59E0B' : '#D1D5DB');
     var bg = 'conic-gradient(' + color + ' ' + pct + '%, #E5E7EB ' + pct + '% 100%)';
-    return '<div class="sk-donut" style="background:' + bg + '">' +
-      '<div class="sk-donut-inner"><span class="sk-donut-pct">' + pct + '%</span></div>' +
-      '</div>';
+    // <span>: vòng này nằm TRONG nút `.sk-set-hd` (nội dung nút chỉ được là phrasing).
+    return '<span class="sk-donut" style="background:' + bg + '">' +
+      '<span class="sk-donut-inner"><span class="sk-donut-pct">' + pct + '%</span></span>' +
+      '</span>';
   }
 
   /* MỌI trường chữ ở đây PHẢI đi qua `esc()`.
@@ -603,35 +598,37 @@ function skSkillToggle(row) {
             '<span class="sk-sub-title ' + cls + '">' + esc(sub.title) + '</span>' +
             '</div>';
         }).join('');
+        // Hàng kỹ năng là NÚT mở danh sách con (F7 — xem `skToggle`); con bên
+        // trong là <span>, `a11y.css` trả `display:block` cho những span cần khối.
         return '<div class="sk-skill">' +
-          '<div class="sk-skill-row" onclick="skSkillToggle(this)">' +
-          '<div class="sk-skill-top">' +
+          '<button type="button" class="sk-skill-row" aria-expanded="false" onclick="skToggle(this)">' +
+          '<span class="sk-skill-top">' +
           '<span class="sk-skill-name">' + esc(sk.title) + '</span>' +
           '<span class="sk-skill-pct">' + sk.progress + '%</span>' +
           badge(sk.progress) +
-          '</div>' +
-          '<div class="sk-skill-bar-wrap">' +
-          '<div class="sk-skill-bar"><div class="sk-skill-fill" style="width:' + sk.progress + '%;background:' + fillColor(sk.progress) + '"></div></div>' +
-          '</div>' +
-          '</div>' +
-          '<div class="sk-sub-list" style="display:none">' + subItems + '</div>' +
+          '</span>' +
+          '<span class="sk-skill-bar-wrap">' +
+          '<span class="sk-skill-bar"><span class="sk-skill-fill" style="width:' + sk.progress + '%;background:' + fillColor(sk.progress) + '"></span></span>' +
+          '</span>' +
+          '</button>' +
+          '<div class="sk-sub-list">' + subItems + '</div>' +
           '</div>';
       }).join('');
 
       var setAchieved = bs.skills.filter(function (sk) { return sk.progress >= 70; }).length;
       var setTotal = bs.skills.length;
       return '<div class="sk-set">' +
-        '<div class="sk-set-hd" onclick="skSetToggle(this)">' +
+        '<button type="button" class="sk-set-hd" aria-expanded="' + defaultOpen + '" onclick="skToggle(this)">' +
         '<span class="sk-set-icon">' + esc(bs.icon) + '</span>' +
-        '<div class="sk-set-info">' +
-        '<div class="sk-set-title">' + esc(bs.title) + '</div>' +
-        '<div class="sk-set-meta">' + setAchieved + '/' + setTotal + ' kỹ năng đạt</div>' +
-        '</div>' +
+        '<span class="sk-set-info">' +
+        '<span class="sk-set-title">' + esc(bs.title) + '</span>' +
+        '<span class="sk-set-meta">' + setAchieved + '/' + setTotal + ' kỹ năng đạt</span>' +
+        '</span>' +
         badge(bs.progress) +
         donutChart(bs.progress) +
-        '<span class="sk-arrow"' + (defaultOpen ? ' style="transform:rotate(90deg)"' : '') + '>▶</span>' +
-        '</div>' +
-        '<div class="sk-body" style="display:' + (defaultOpen ? 'block' : 'none') + '">' + skillRows + '</div>' +
+        '<span class="sk-arrow" aria-hidden="true">▶</span>' +
+        '</button>' +
+        '<div class="sk-body">' + skillRows + '</div>' +
         '</div>';
     }).join('');
   }
@@ -951,7 +948,11 @@ function skSkillToggle(row) {
   var _hoverPrefetchSetup = false;
 
   var CAT_LABELS = { question: '❓ Câu hỏi', share: '💡 Chia sẻ', discuss: '💬 Thảo luận' };
-  var CAT_COLORS = { question: '#F87171', share: '#FCD34D', discuss: '#A78BFA' };
+  // Chữ nhãn loại bài nằm trên nền PHA NHẠT của chính màu đó (CAT_BG) → token
+  // `*-ink` (22/09/2026, agent tiếp cận F2). Ba mã cũ là bản cho nền TỐI: ở bản
+  // sáng "💡 Chia sẻ" chỉ 1,39:1, "❓ Câu hỏi" 2,51:1. Ở bản tối ba token này
+  // trỏ về đúng #F87171 / #FCD34D / #A78BFA cũ nên bản tối không đổi.
+  var CAT_COLORS = { question: 'var(--danger-ink)', share: 'var(--warning-ink)', discuss: 'var(--brand-ink)' };
   var CAT_BG = { question: 'rgba(248,113,113,0.1)', share: 'rgba(252,211,77,0.1)', discuss: 'rgba(167,139,250,0.1)' };
 
   var REACT_EMOJIS = { like: '👍', love: '❤️', haha: '😂', wow: '😮', sad: '😢', angry: '😡' };
@@ -1154,8 +1155,8 @@ function skSkillToggle(row) {
     if (empty) empty.classList.add('hidden');
 
     list.innerHTML = posts.map(function (p, idx) {
-      var catColor = CAT_COLORS[p.cat] || '#6B7280';
-      var catBg = CAT_BG[p.cat] || '#F3F4F6';
+      var catColor = CAT_COLORS[p.cat] || 'var(--t2)';  // loại lạ: token, không #6B7280/#F3F4F6 (4,39:1, sáng rực ở bản tối)
+      var catBg = CAT_BG[p.cat] || 'var(--lift)';
       var catLabel = CAT_LABELS[p.cat] || p.cat;
       var excerpt = p.body.length > 160 ? p.body.slice(0, 157) + '...' : p.body;
 
@@ -2104,8 +2105,8 @@ function skSkillToggle(row) {
         return;
       }
       list.innerHTML = myPosts.map(function (p) {
-        var catColor = fs.CAT_COLORS[p.cat] || '#6B7280';
-        var catBg = fs.CAT_BG[p.cat] || '#F3F4F6';
+        var catColor = fs.CAT_COLORS[p.cat] || 'var(--t2)';  // như bảng bài diễn đàn ở trên
+        var catBg = fs.CAT_BG[p.cat] || 'var(--lift)';
         var catLabel = fs.CAT_LABELS[p.cat] || p.cat;
         var excerpt = p.body.length > 120 ? p.body.slice(0, 117) + '...' : p.body;
         var totalR = Object.values(p.reactions || {}).reduce(function (a, b) { return a + b; }, 0);

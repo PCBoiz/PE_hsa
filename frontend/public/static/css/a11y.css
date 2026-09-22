@@ -80,12 +80,47 @@
 
   /* Liên kết "xem thêm" tuy là chữ nhưng đứng riêng một dòng như một nút —
      WCAG chỉ miễn trừ liên kết NẰM TRONG câu văn, nên vẫn phải nới. */
+  /* `!important`: sàn 24px "cho mọi con trỏ" ở dưới tệp này cũng nhắm
+     `.prof-rank-link`, và nó đứng SAU nên thắng thế — không có !important thì
+     trên điện thoại liên kết tụt từ 44 xuống 24px. */
   .mini-rm-more,
   .prof-rank-link,
   .bell-mark-all {
     display: inline-flex;
     align-items: center;
+    min-height: 44px !important;
+  }
+
+  /* ── Đo lại 22/09/2026 sau khi bộ đo đi thêm 7 view SPA ────────────────
+     Ba thứ dưới đây trước nay KHÔNG ai đo vì thước chưa bước vào các view ấy.
+
+     · `a.brand` (logo ở thanh trên) chỉ 31×20px và có mặt trên HẦU HẾT trang:
+       26 trong 42 vi phạm vùng chạm của cả lượt đo là nó. Nó là liên kết về
+       trang chủ, tức đích bấm thật, không phải hình trang trí. Nới bằng
+       min-height + căn giữa chứ không phóng chữ, để thanh trên giữ nguyên nét.
+     · `.cmp-go` ("Bài 24 →" trong ô năng lực) cao đủ 44 nhưng chỉ rộng 41–43px.
+     · `.fpc-lesson-tag` (thẻ bài học dưới bài đăng Diễn đàn) cao 24px — nó là
+       <a> đứng riêng trong hàng thẻ, KHÔNG nằm trong câu văn, nên không được
+       hưởng miễn trừ WCAG 2.5.8 dành cho liên kết trong đoạn văn. */
+  /* `!important` vì `shell.css` đặt `.brand { min-width: 0; overflow: hidden }`
+     cho khổ hẹp và nạp SAU tệp sàn này — thiếu !important thì logo tụt lại
+     31px. Chỉ ép đúng hai chiều kích thước, không đụng bố cục. */
+  .brand {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cmp-go {
+    min-width: 44px;
+    justify-content: flex-end;
+  }
+
+  .fpc-lesson-tag {
     min-height: 44px;
+    display: inline-flex;
+    align-items: center;
   }
 }
 
@@ -96,12 +131,28 @@
      · ô chọn của khảo sát:   13×13 (nhãn tuy bấm được, nhưng chính cái ô cũng
        là đích bấm hợp lệ và người dùng hay nhắm vào nó) */
 .toggle-eye,
-.cp-toggle-eye {
+.cp-toggle-eye,
+/* Đo 22/09/2026 ở khổ máy tính, nơi sàn 44px (chỉ cho con trỏ THÔ) không với
+   tới: nút sửa ảnh đại diện 22×22 và ô tìm trong ngăn Lộ trình cao 21px —
+   cả hai thủng luôn ngưỡng 24 của WCAG 2.5.8. */
+.avatar-edit-btn {
   min-width: 24px;
   min-height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Liên kết "xem thêm" đứng riêng một dòng (`.prof-rank-link` cao 19px ở khổ
+   máy tính) và ô nhập chữ trong ngăn trượt: cao 24px là sàn cho MỌI con trỏ. */
+.prof-rank-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.rm-browse-search-wrap input {
+  min-height: 24px;
 }
 
 .step input[type="radio"],
@@ -114,47 +165,110 @@ label.option input[type="checkbox"] {
   accent-color: var(--brand-fill, #6D5AE6);
 }
 
-/* ── Sàn cỡ chữ trên màn hình nhỏ ─────────────────────────────────────────
-   Danh sách dưới đây là các lớp ĐO ĐƯỢC là dưới 12px ở 390px, không phải quét
-   bừa: chữ 9–11.5px trên điện thoại là ngưỡng bắt đầu phải nheo mắt. Nhãn hoàn
-   toàn trang trí (chữ cái trong avatar) cố tình để nguyên. */
-@media (max-width: 768px) {
-  .trust-note,
-  .project-tag,
-  .terms,
-  .dash-hero-greeting,
-  .udh-role,
-  .step-num,
-  .step-pill,
-  .hsa-q-type,
-  .player-name,
-  .xp-text,
-  .notif-desc,
-  .goal-help,
-  .prof-cap-num,
-  .prof-caps-note,
-  .prof-mock-meta,
-  .prof-rank-val,
-  .hsa-mis-meta,
-  .fpc-time,
-  .fpc-cat-tag,
-  .fpc-react-count,
-  .forum-post-time,
-  .fc-time,
-  .dash-hero-text p,
-  .hsa-week span,
-  .profile-badge,
-  .prof-stat-lbl,
-  .prof-goal-chip,
-  .mini-rm-more,
-  .prof-rank-link,
-  .hsa-cont-eyebrow,
-  .lb-legend-item,
-  .lb-legend-dot {
-    font-size: 12px !important;
-    line-height: 1.5;
-  }
+/* ── Sàn cỡ chữ — MỌI khổ màn hình ────────────────────────────────────────
+   22/09/2026: khối này trước nằm trong `@media (max-width: 768px)`, với lý lẽ
+   "chỉ đo ở 390px". Lý lẽ ấy nay sai ở CẢ HAI vế.
 
+   Vế đo: bộ đo trước đây không bước vào 7 view SPA (Khoá học, Lộ trình, Kỹ
+   năng, Diễn đàn, Cài đặt, Hồ sơ, Kế hoạch) nên báo "0 chữ nhỏ" — một con số
+   không có thật. Thước đi đủ 7 view (22/09) đếm được 446 chỗ dưới 12px, và
+   CHIA GẦN ĐỀU hai khổ: Hồ sơ 86 điện thoại / 98 máy tính, Diễn đàn 51/73,
+   Kỹ năng 53/53, Lộ trình 12/16.
+
+   Vế lý: chữ 9px không đọc được trên màn 27 inch cũng y như trên điện thoại —
+   ngưỡng 12px là ngưỡng của MẮT, không phải của khổ máy. Không có mục nào
+   trong WCAG hay Material nói sàn cỡ chữ chỉ áp cho màn nhỏ.
+
+   Danh sách vẫn là các lớp ĐO ĐƯỢC dưới 12px, không quét bừa. Nhãn hoàn toàn
+   trang trí (chữ cái trong avatar) cố tình để nguyên. */
+.trust-note,
+.project-tag,
+.terms,
+.dash-hero-greeting,
+.udh-role,
+.step-num,
+.step-pill,
+.hsa-q-type,
+.player-name,
+.xp-text,
+.notif-desc,
+.goal-help,
+.prof-cap-num,
+.prof-caps-note,
+.prof-mock-meta,
+.prof-rank-val,
+.hsa-mis-meta,
+.fpc-time,
+.fpc-cat-tag,
+.fpc-react-count,
+.forum-post-time,
+.fc-time,
+.dash-hero-text p,
+.hsa-week span,
+.profile-badge,
+.prof-stat-lbl,
+.prof-goal-chip,
+.mini-rm-more,
+.prof-rank-link,
+.hsa-cont-eyebrow,
+.lb-legend-item,
+.lb-legend-dot,
+
+/* Kỹ năng (53 chỗ ở mỗi khổ) */
+.sk-skill-pct,
+.sk-badge,
+.sk-tab .l,
+.sk-set-meta,
+.sk-donut-pct,
+
+/* Hồ sơ (86 điện thoại / 98 máy tính) */
+.cmp-meta span,
+.cmp-go,
+.cmp-sub,
+.cmp-group-name,
+.cmp-group-num,
+.cmp-group-acc,
+.cv-legend,
+.cv-range button,
+.bk-sum-lbl,
+.bk-sum-n,
+.bk-kind,
+.bk-meta,
+
+/* Diễn đàn (51 / 73) */
+.fpc-react-btn,
+.fpc-comment-btn,
+.fpc-share-btn,
+.fpc-sample-tag,
+.fpc-lesson-tag,
+.fcb-type-btn,
+
+/* Lộ trình (12 / 16) */
+.rm-prog-num,
+.rm-group,
+.rm-legend-item,
+.rm-stat-item,
+
+/* Khoá học (1 / 1) */
+.pill-label {
+  font-size: 12px !important;
+  line-height: 1.5;
+}
+
+/* Vòng tròn phần trăm ở Kỹ năng: lòng trong chỉ 28px, chữ "100%" ở 12px không
+   lọt. Nới vòng theo chữ (40→48, 28→34) chứ không giữ chữ 9px cho vừa vòng. */
+.sk-donut { width: 48px; height: 48px; }
+.sk-donut-inner { width: 34px; height: 34px; }
+
+/* `line-height: 1` cũ khiến chữ 12px trong vòng bị cắt ngọn. */
+.sk-donut-pct { line-height: 1.1 !important; }
+
+/* Nhãn trục của biểu đồ đường cong ở Hồ sơ là chữ SVG 10px — `font-size` trong
+   CSS áp được cho <text>, và 20 nhãn "0%/25%/…" này là chữ phải ĐỌC (mốc để
+   hiểu biểu đồ), không phải nét trang trí. */
+.cv-chart svg text { font-size: 12px; }
+
+@media (max-width: 768px) {
   /* Ô nhập dưới 16px khiến Safari iOS TỰ PHÓNG TO trang khi focus, đẩy bố cục
      lệch hẳn — đây là lý do kỹ thuật, không phải sở thích. */
   input[type="text"],
@@ -169,3 +283,59 @@ label.option input[type="checkbox"] {
     font-size: 16px !important;
   }
 }
+
+/* ── Bàn phím (agent ban-phim-4, 22/09/2026) ── */
+
+/* NÚT THẬT thay cho `div onclick` (agent tiếp cận F7, F8): hàng nhóm + hàng kỹ
+   năng ở view Kỹ năng (`dashboard.js::skToggle`) và mục thông báo trong chuông
+   (`_renderBellItems` ở dashboard.js + course_detail.js). Trang này KHÔNG nạp
+   preflight của Tailwind (xem `src/app/tailwind.css`), nên <button> mang nguyên
+   kiểu của trình duyệt: co theo nội dung thay vì tràn bề ngang, chữ căn giữa,
+   nền/viền/phông hệ điều hành. Gỡ đúng những thứ ấy để bố cục y như hồi còn là
+   <div>; nền khi rê chuột / chưa đọc vẫn do luật gốc (độ ưu tiên cao hơn) lo. */
+.sk-set-hd,
+.sk-skill-row,
+.bell-item {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  background-color: transparent;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+}
+.sk-skill-row { border: 0; }
+
+/* Con bên trong nút là <span> (nội dung của <button> chỉ được là phrasing) —
+   trả `display:block` cho những span cần là khối: dòng chữ tách dòng, thanh
+   tiến độ cần chiều cao. Những span khác đã có `display:flex` riêng. */
+.sk-set-title,
+.sk-set-meta,
+.sk-skill-bar-wrap,
+.sk-skill-bar,
+.sk-skill-fill,
+.bell-item-text,
+.bell-item-time { display: block; }
+
+/* Mở/đóng ĐỌC TỪ `aria-expanded` — một nguồn sự thật cho trình đọc màn hình và
+   cho mắt. Bản cũ ghi `style.display` + `style.transform` bằng JS, trạng thái
+   không nằm trong cây trợ năng. */
+.sk-set-hd[aria-expanded="false"] + .sk-body,
+.sk-skill-row[aria-expanded="false"] + .sk-sub-list { display: none; }
+.sk-set-hd[aria-expanded="true"] .sk-arrow { transform: rotate(90deg); }
+
+/* Vòng tiêu điểm VÀO TRONG (offset âm): `.sk-set` và `.bell-panel-body` cắt
+   phần tràn (`overflow`), vòng vẽ ra ngoài sẽ bị xén mất hai cạnh. Cùng màu
+   `--brand` 2px với vòng của thanh trên (`shell.css`, 4,6:1 sáng / 6:1 tối). */
+.sk-set-hd:focus-visible,
+.sk-skill-row:focus-visible,
+.bell-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+/* Logo thanh trên nay là liên kết thật tới /dashboard (AppShell, F17): bỏ màu
+   và gạch chân mặc định của <a> để nhìn y như cũ. */
+a.brand { color: inherit; text-decoration: none; }

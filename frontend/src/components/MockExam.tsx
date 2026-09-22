@@ -315,8 +315,12 @@ export default function MockExam() {
                       onChange={(e) => setAns(q.id, e.target.value)} autoComplete="off" />
                   ) : (
                     <div className="mk-opts">
+                      {/* `aria-pressed` (22/09/2026, agent tiếp cận F15): "đã chọn"
+                          trước chỉ nằm ở lớp `.sel` — trình đọc màn hình nghe các
+                          phương án y hệt nhau, không biết mình đã chọn cái nào. */}
                       {(q.options || []).map((op: string) => (
-                        <button key={op} className={'mk-opt' + (answers[q.id] === op ? ' sel' : '')}
+                        <button key={op} type="button" className={'mk-opt' + (answers[q.id] === op ? ' sel' : '')}
+                          aria-pressed={answers[q.id] === op}
                           onClick={() => setAns(q.id, op)}>{op}</button>
                       ))}
                     </div>
@@ -331,10 +335,16 @@ export default function MockExam() {
 
                 <aside className="mk-palette">
                   <div className="mk-palette-label">Bảng câu hỏi</div>
-                  <div className="mk-palette-grid">
+                  {/* Tên nút nói đủ điều mà màu đang nói (F15): "Câu 3, đã trả lời";
+                      câu đang xem mang `aria-current`. Trước đó tên chỉ là "3" —
+                      đã làm / đang xem nằm hết ở lớp `done` / `cur`. Tên vẫn CHỨA
+                      con số nhìn thấy (WCAG 2.5.3 — điều khiển bằng giọng nói). */}
+                  <div className="mk-palette-grid" role="group" aria-label="Bảng câu hỏi">
                     {exam.questions.map((qq: any, i: number) => (
-                      <button key={qq.id}
+                      <button key={qq.id} type="button"
                         className={'mk-pal' + (i === cur ? ' cur' : '') + (answers[qq.id] ? ' done' : '')}
+                        aria-label={`Câu ${i + 1}, ${answers[qq.id] ? 'đã trả lời' : 'chưa trả lời'}`}
+                        aria-current={i === cur ? 'step' : undefined}
                         onClick={() => setCur(i)}>{i + 1}</button>
                     ))}
                   </div>

@@ -1,6 +1,12 @@
 /* ══════════════════════════════════════════════════
    DARK MODE — Programming EDU Dashboard
    Áp dụng khi body có class .dark
+
+   Tệp này nạp SAU dashboard.css / pages.css nên luật `body.dark …` trùng bộ
+   chọn ở đây THẮNG bản bên kia — sửa màu tối thì sửa ở đây. 22/09/2026 (agent
+   tiếp cận F3): 21 chữ phụ viết cứng #64748B / #475569 (2,47–3,93:1 trên --card
+   tối) đổi sang `var(--t3)` = 6,2:1, đúng token theme.css đã nâng cho việc này;
+   viền ô nhập đổi sang `--border-input` (F11). Màu mới thì dùng token, đừng viết hex.
    ══════════════════════════════════════════════════ */
 
 /* ── Transition mượt cho mọi thứ ── */
@@ -26,7 +32,7 @@ body.dark #sidebar {
 body.dark .sidebar-top    { border-bottom-color: var(--card-border); }
 body.dark .sidebar-footer { border-top-color: var(--card-border); }
 body.dark .user-info .name { color: #F1F5F9; }
-body.dark .user-info .role { color: #64748B; }
+body.dark .user-info .role { color: var(--t3); }
 
 body.dark .nav-btn        { color: #94A3B8; }
 body.dark .nav-btn:hover  { background: rgba(59,130,246,0.1); color: var(--accent-light); }
@@ -38,12 +44,13 @@ body.dark .nav-btn.active {
 body.dark .nav-icon        { background: rgba(255,255,255,0.06); }
 body.dark .nav-btn.active .nav-icon { background: rgba(59,130,246,0.15); }
 
-body.dark .logout-btn      { color: #64748B; }
+body.dark .logout-btn      { color: var(--t3); }
 body.dark .logout-btn:hover { background: rgba(232,69,69,0.12); color: #F87171; }
 
 /* ── Topbar/search/bell: định nghĩa duy nhất trong style.css (Navbar.tsx), không override theo .dark nữa ── */
 
-body.dark .search-wrap input { background: var(--card); border-color: var(--card-border); color: var(--text-1); }
+/* Viền ô nhập `--border-input` (5,1:1 trên --card), không `--card-border` trang trí (1,15:1) — WCAG 1.4.11, F11 22/09/2026. */
+body.dark .search-wrap input { background: var(--card); border-color: var(--border-input); color: var(--text-1); }
 body.dark .search-wrap input:focus { border-color: var(--accent); background: var(--card); box-shadow: 0 0 0 3px var(--accent-soft); }
 body.dark .search-icon { color: var(--text-3); }
 body.dark .search-suggestions {
@@ -59,8 +66,8 @@ body.dark .bell-item.unread:hover { background: rgba(59,130,246,0.2); }
 body.dark .bell-item-icon     { background: var(--card-border); }
 body.dark .bell-item.unread .bell-item-icon { background: rgba(59,130,246,0.18); }
 body.dark .bell-item-text     { color: #E2E8F0; }
-body.dark .bell-item-time     { color: #64748B; }
-body.dark .bell-empty         { color: #475569; }
+body.dark .bell-item-time     { color: var(--t3); }
+body.dark .bell-empty         { color: var(--t3); }
 
 body.dark .user-chip {
   background: var(--bg);
@@ -79,7 +86,7 @@ body.dark .stat-card {
 }
 body.dark .stat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
 body.dark .stat-val  { color: #F1F5F9; }
-body.dark .stat-lbl  { color: #64748B; }
+body.dark .stat-lbl  { color: var(--t3); }
 
 /* ── Section card ── */
 body.dark .section-card {
@@ -101,7 +108,7 @@ body.dark .banner-inner .greeting { color: rgba(255,255,255,0.75); }
 body.dark .courses-header h2 { color: #F1F5F9; }
 body.dark .filter-btn {
   background: var(--card);
-  color: #64748B;
+  color: var(--t3);
   border: 1px solid var(--card-border);
 }
 body.dark .filter-btn:hover { background: #293548; color: #94A3B8; }
@@ -122,12 +129,12 @@ body.dark .course-card:hover {
   border-color: var(--accent)40;
 }
 body.dark .card-desc     { color: #94A3B8; }
-body.dark .card-stat     { color: #475569; }
-body.dark .card-lessons  { color: #475569; }
+body.dark .card-stat     { color: var(--t3); }
+body.dark .card-lessons  { color: var(--t3); }
 body.dark .card-footer   { border-top-color: var(--card-border); }
 body.dark .cta-btn {
   background: var(--bg);
-  color: #64748B;
+  color: var(--t3);
   border: 1px solid var(--card-border);
 }
 
@@ -138,12 +145,12 @@ body.dark .enrolled-card {
   box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 body.dark .enrolled-info h3       { color: #F1F5F9; }
-body.dark .enrolled-info .subtitle { color: #64748B; }
+body.dark .enrolled-info .subtitle { color: var(--t3); }
 body.dark .enrolled-meta span      { color: #94A3B8; }
-body.dark .prog-label span:first-child { color: #64748B; }
+body.dark .prog-label span:first-child { color: var(--t3); }
 
 body.dark .lesson-box { background: var(--bg) !important; border-color: var(--card-border) !important; }
-body.dark .lesson-box .lbl { color: #475569; }
+body.dark .lesson-box .lbl { color: var(--t3); }
 body.dark .lesson-box .val { color: #CBD5E1; }
 
 /* ── Roadmap ── */
@@ -153,10 +160,10 @@ body.dark .roadmap-phase {
   box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 body.dark .roadmap-phase-title { color: #F1F5F9; }
-body.dark .roadmap-phase-sub   { color: #475569; }
+body.dark .roadmap-phase-sub   { color: var(--t3); }
 body.dark .roadmap-item        { color: #CBD5E1; }
 body.dark .roadmap-item:hover  { background: #293548; }
-body.dark .roadmap-item.done   { color: #475569; }
+body.dark .roadmap-item.done   { color: var(--t3); }
 body.dark .roadmap-check       { border-color: #475569; }
 
 /* ── Settings ── */
@@ -167,17 +174,18 @@ body.dark .settings-section {
 }
 body.dark .settings-section-title span { color: #F1F5F9; }
 body.dark .profile-name   { color: #F1F5F9; }
-body.dark .profile-email  { color: #64748B; }
+body.dark .profile-email  { color: var(--t3); }
 body.dark .field-label    { color: #94A3B8; }
+/* Ô nhập + ô chọn: `--border-input` (F11, 22/09/2026) — `--card-border` chỉ 1,18:1. */
 body.dark .field-input {
   background: var(--bg);
-  border-color: var(--card-border);
+  border-color: var(--border-input);
   color: #E2E8F0;
 }
 body.dark .field-input:focus { border-color: var(--accent); background: var(--bg); }
 
 body.dark .notif-lbl   { color: #CBD5E1; }
-body.dark .notif-desc  { color: #475569; }
+body.dark .notif-desc  { color: var(--t3); }
 body.dark .notif-row   { border-bottom-color: var(--card); }
 
 body.dark .sec-lang-card {
@@ -194,12 +202,12 @@ body.dark .change-pw-btn {
 body.dark .change-pw-btn:hover { opacity: 0.8; }
 body.dark .lang-select {
   background: var(--bg);
-  border-color: var(--card-border);
+  border-color: var(--border-input);
   color: #E2E8F0;
 }
 
 /* ── Empty state ── */
-body.dark .empty p    { color: #475569; }
+body.dark .empty p    { color: var(--t3); }
 body.dark .empty-icon { color: var(--card-border); }
 
 /* ── Unenroll modal ── */
@@ -224,12 +232,12 @@ body.dark .un-btn-cancel:hover { background: #293548; border-color: #475569; }
 body.dark .courses-header h2 { color: #F1F5F9; }
 body.dark .sk-stat            { background:var(--card); border-color:var(--card-border); }
 body.dark .sk-stat .v         { color:#F1F5F9; }
-body.dark .sk-stat .l         { color:#64748B; }
+body.dark .sk-stat .l         { color:var(--t3); }
 body.dark .sk-set             { background:var(--card); border-color:var(--card-border); }
 body.dark .sk-set-hd:hover    { background:#293548; }
 body.dark .sk-set-title       { color:#F1F5F9; }
 body.dark .sk-set-bar         { background:var(--card-border); }
-body.dark .sk-set-meta        { color:#64748B; }
+body.dark .sk-set-meta        { color:var(--t3); }
 body.dark .sk-donut-inner     { background:var(--card); }
 body.dark .sk-donut-pct       { color:#F1F5F9; }
 body.dark .sk-skill-row:hover { background:#293548; }
@@ -238,7 +246,7 @@ body.dark .sk-skill-bar       { background:var(--card-border); }
 body.dark .sk-skill-pct       { color:#94A3B8; }
 body.dark .sk-sub:hover       { background:#293548; }
 body.dark .sk-sub-title.todo  { color:#CBD5E1; }
-body.dark .sk-badge.new       { background:var(--card); color:#64748B; border:1px solid var(--card-border); }
+body.dark .sk-badge.new       { background:var(--card); color:var(--t3); border:1px solid var(--card-border); }
 
 /* ── Shared: page-subtitle ── */
-body.dark .page-subtitle { color: #475569; }
+body.dark .page-subtitle { color: var(--t3); }

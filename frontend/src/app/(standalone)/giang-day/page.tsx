@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
+import { ngayDayDuVN } from '@/lib/gioVN';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
@@ -125,6 +126,9 @@ export default async function ViecHomNayPage() {
       <div>
         <h1 className="text-section text-ink">Việc hôm nay</h1>
         <p className="mt-1 text-small text-ink-3">
+          {/* Ngày HÔM NAY theo giờ VN, dựng ở máy chủ (22/09/2026, agent GV→PH F14). */}
+          <span className="text-ink-2">{ngayDayDuVN()}</span>
+          {' · '}
           {d.lop.length === 0
             ? 'Bạn chưa phụ trách lớp nào.'
             : `${d.lop.length} lớp: ${d.lop.map((l) => l.name).join(' · ')}`}

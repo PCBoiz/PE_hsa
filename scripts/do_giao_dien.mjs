@@ -9,9 +9,17 @@
  *
  * ĐO GÌ, theo thứ tự ưu tiên của ui-ux-pro-max:
  *   ① Tương phản chữ/nền — WCAG AA: 4,5:1 chữ thường, 3:1 chữ lớn
- *   ② Vùng chạm — tối thiểu 44×44 CSS px
- *   ③ Tràn ngang ở khổ điện thoại
- *   ④ Lỗi JS
+ *   ② Vùng chạm — tối thiểu 44×44 CSS px (chuột: 24×24, WCAG 2.5.8)
+ *   ③ Tràn ngang ở khổ điện thoại, và khối bị CẮT trong khung không cuộn được
+ *   ④ Lỗi JS + vi phạm CSP
+ *   ⑤ Chữ bị thanh cố định che · hai nút neo khung nhìn chồng nhau
+ *   ⑥ Sàn cỡ chữ 12px (0,75rem)
+ *   ⑦ Lời gọi GHI lọt ra ngoài (trang chỉ xem thì không được ghi gì)
+ *
+ * CỜ: `--json <tệp>` · `--toi` (chủ đề tối) · `--trang-thai` (rê chuột + vòng
+ * nét) · `--tu-kiem` (đòi bộ đo phải ĐỎ được ở TỪNG trang, cho cả luật ① và ⑥)
+ * · `--cong` (thoát 1 nếu còn bất kỳ điểm xấu nào — mặc định chỉ thoát 1 khi có
+ * lời gọi ghi lọt ra hoặc có trang không đo được).
  *
  * BỐN LỖI ĐÃ MẮC TRONG CHÍNH BỘ ĐO NÀY (01/09/2026) — đọc trước khi sửa nó:
  *   · bỏ qua nền gradient (`background-image`) → chữ trắng trên hero tím bị
@@ -70,6 +78,25 @@ const KHO = [
 ];
 const TRANG = [
   ['/dashboard', 'Dashboard'],
+  /* BẢY VIEW SPA của Trang của tôi (22/09/2026, agent thuoc-4). Tới hôm nay bộ
+     đo chỉ mở view MẶC ĐỊNH của /dashboard, trong khi Khoá học, Lộ trình, Kỹ
+     năng, Diễn đàn, Cài đặt, Hồ sơ là sáu màn học viên mở hằng ngày — cùng một
+     tài liệu HTML, chỉ khác khối `#page-<view>.active`. Agent hồi quy (21/09)
+     áp NGUYÊN VĂN luật sàn 12px lên sáu view ấy và đếm được 196 phần tử < 12px
+     ở 390, 234 ở 1366 (vd `.sk-badge` 9px) — lúc bộ đo in "chữ < 12px: 0".
+     Đi bằng đường người dùng gõ thật: `/courses` → 307 → `/dashboard#courses`
+     (next.config.ts) — mỗi mục là một ĐƯỜNG KHÁC NHAU nên `goto` luôn tải lại
+     cả trang, không rơi vào bẫy "cùng trang chỉ đổi mảnh #". Mở xong phải
+     KIỂM view đã active thật (xem `VIEW_SPA` dưới vòng lặp), không thì dừng
+     trang ấy và báo "không đo được" — chứ không đo nhầm view mặc định. */
+  ['/courses', 'View · Khoá học'],
+  // `plan` (Kế hoạch) là view thứ bảy — nằm trong nhóm "Học" của thanh, cùng tài liệu.
+  ['/plan', 'View · Kế hoạch'],
+  ['/roadmap', 'View · Lộ trình'],
+  ['/skills', 'View · Kỹ năng'],
+  ['/forum', 'View · Diễn đàn'],
+  ['/settings', 'View · Cài đặt'],
+  ['/profile', 'View · Hồ sơ'],
   ['/courses/hsa_quantitative', 'Chi tiết khoá'],
   ['/lesson/hsa_quantitative?lesson=1', 'Bài học'],
   ['/mock', 'Thi thử'],
@@ -565,6 +592,26 @@ function DO_TRONG_TRANG(do_trang_thai) {
       if (!el.innerText || !el.innerText.trim()) {
         if (!el.querySelector('img, video, canvas, table')) continue;
       }
+      /* NGĂN TRƯỢT ĐANG ĐÓNG không phải là nội dung bị cắt (22/09/2026).
+         Luật này báo `.rm-browse` ở CẢ HAI khổ (+390px và +680px) — đó là ngăn
+         "Duyệt bài" của Lộ trình, đỗ ngoài khung bằng `transform:translateX(100%)`
+         đúng như thiết kế và trượt vào khi bấm. `hien()` vẫn coi nó là hiện vì
+         nó không `display:none` cũng không `visibility:hidden`.
+
+         Phân biệt bằng HAI dấu hiệu cùng lúc, chứ không bỏ qua mọi thứ đỗ ngoài:
+           · nằm TRỌN ngoài khung (`left >= rộng`). Nội dung BỊ CẮT thì còn một
+             phần lọt trong khung, nên luật vẫn bắt được nó;
+           · bản thân hoặc tổ tiên có `transform`, tức bị ĐẨY ra bằng biến hình.
+             Nội dung bị bố cục đẩy tràn — lỗi thật — không có transform nào. */
+      if (r.left >= rong - 1) {
+        let m = el, do_bien_hinh = false;
+        while (m && m !== document.documentElement) {
+          const t = getComputedStyle(m).transform;
+          if (t && t !== 'none') { do_bien_hinh = true; break; }
+          m = m.parentElement;
+        }
+        if (do_bien_hinh) continue;
+      }
       // Chỉ giữ phần tử NGOÀI CÙNG của một cụm: con của nó cũng thò ra, báo cả
       // cụm thì một lỗi thành mười dòng.
       if (ngoai_khung.some((v) => v.el.contains(el))) continue;
@@ -710,6 +757,13 @@ function DO_TRONG_TRANG(do_trang_thai) {
     so_vi_pham: vi_pham.length, so_vi_pham_tho: vi_pham.length, so_soi,
     cham_nho: nho.slice(0, 60), so_cham_nho: nho.length, nguong_cham: NGUONG,
     chu_nho: chu_nho.slice(0, 20), so_chu_nho: chu_nho.length,
+    /* GOM theo đường + cỡ (22/09/2026): 20 mẫu đầu không đủ để sửa khi một view
+       có 60 chữ nhỏ — người sửa cần biết BỘ CHỌN nào, bao nhiêu chỗ. */
+    chu_nho_nhom: [...chu_nho.reduce((m, v) => {
+      const k = `${v.co}px ${v.duong}`;
+      const g = m.get(k) || { k, n: 0, mau: v.chu };
+      g.n += 1; m.set(k, g); return m;
+    }, new Map()).values()].sort((a, c) => c.n - a.n).slice(0, 30),
     so_cham: document.querySelectorAll(CHAM).length,
     tran_ngang: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     /* TRÀN BỊ CẮT BÊN TRONG — chỗ mù của bộ đo này tới 17/09/2026.
@@ -747,7 +801,11 @@ const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
 const TOKEN_HV = process.env.PE_TOKENS_HV || join(DAY, '..', '.the', 'tokens_hv.json');
 let tokHv = null;
 try { tokHv = JSON.parse(readFileSync(TOKEN_HV, 'utf8')); } catch (e) { /* chưa cấp */ }
-const TRANG_HOC_VIEN = new Set(['Dashboard', 'Chi tiết khoá', 'Bài học', 'Thi thử', 'Bài tập của tôi', 'Khảo sát', 'Đổi mật khẩu']);
+const TRANG_HOC_VIEN = new Set(['Dashboard', 'Chi tiết khoá', 'Bài học', 'Thi thử', 'Bài tập của tôi', 'Khảo sát', 'Đổi mật khẩu',
+  'View · Khoá học', 'View · Kế hoạch', 'View · Lộ trình', 'View · Kỹ năng', 'View · Diễn đàn', 'View · Cài đặt', 'View · Hồ sơ']);
+/* Đường gõ → id view SPA (khối `#page-<id>`). Dùng để KIỂM view đã mở thật. */
+const VIEW_SPA = { '/courses': 'courses', '/plan': 'plan', '/roadmap': 'roadmap', '/skills': 'skills',
+  '/forum': 'forum', '/settings': 'settings', '/profile': 'profile' };
 if (!tokHv) {
   console.log('CHÚ Ý: không có thẻ học viên (' + TOKEN_HV + ') — các trang học viên đo bằng thẻ quản trị,'
     + '\n       phần CHỈ HỌC VIÊN THẤY (hero, ô số, nhiệm vụ, nhật ký, xếp hạng, trợ lý) KHÔNG được đo.'
@@ -799,7 +857,7 @@ for (const kho of KHO) {
     // `PE_CHI_TRANG=Bài học` (hoặc một phần tên) — chạy một trang khi đang sửa một luật.
     if (process.env.PE_CHI_TRANG && !ten.includes(process.env.PE_CHI_TRANG)) continue;
     // Thẻ theo trang (xem TOKEN_HV ở trên); cookie cùng tên ghi đè cookie cũ.
-    const the = TRANG_HOC_VIEN.has(ten) && tokHv ? tokHv : tok;
+    const the = (TRANG_HOC_VIEN.has(ten) || VIEW_SPA[url]) && tokHv ? tokHv : tok;
     await c.addCookies([{ name: 'pe_at', value: the.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
     // Nhóm vai nhớ theo TAB — xoá để trang này tự hỏi vai của thẻ vừa đặt.
     await p.evaluate(() => { try { sessionStorage.removeItem('pe_nhom_vai'); } catch (e) { /* trang trống */ } }).catch(() => {});
@@ -827,6 +885,30 @@ for (const kho of KHO) {
         console.log('Roi do lai :  cd scripts && node do_giao_dien.mjs');
         await b.close();
         process.exit(2);
+      }
+      /* VIEW SPA: KIỂM đã mở đúng view rồi mới đo (22/09/2026, agent thuoc-4).
+         `DashboardClient` đọc `location.hash` sau khi hydrate rồi gọi
+         `navigate` trong rAF; dữ liệu của view (kỹ năng, bài diễn đàn) về sau
+         đó. Chưa active thì gọi `window.navigate` một lần; vẫn chưa thì NÉM —
+         rơi xuống nhánh "không đo được" chứ không đo view mặc định rồi gắn nhãn
+         view kia. Cuộn hết view một lượt để phần dựng khi cuộn tới hiện ra. */
+      const view = VIEW_SPA[url];
+      if (view) {
+        const daMo = () => p.evaluate((v) => !!document.querySelector(`#page-${v}.active`), view);
+        if (!(await daMo())) {
+          await p.evaluate((v) => { if (typeof window.navigate === 'function') window.navigate(v); }, view);
+          await p.waitForTimeout(1500);
+        }
+        if (!(await daMo())) throw new Error(`view "${view}" KHÔNG mở (không có #page-${view}.active)`);
+        await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+        await p.evaluate(async () => {
+          for (let y = 0; y < document.documentElement.scrollHeight; y += 600) {
+            window.scrollTo(0, y);
+            await new Promise((r) => setTimeout(r, 50));
+          }
+          window.scrollTo(0, 0);
+        });
+        await p.waitForTimeout(400);
       }
       /* BÀI HỌC: đi tới BƯỚC LÝ THUYẾT trước khi đo.
 
@@ -890,8 +972,39 @@ for (const kho of KHO) {
           }
           return n;
         });
+        /* LUẬT SÀN CỠ CHỮ cũng phải đỏ được (22/09/2026, agent thuoc-4).
+           Tự kiểm tới hôm nay chỉ làm hỏng MÀU, nên nó chứng minh đúng một luật
+           trong sáu. Luật thứ sáu (chữ < 12px) báo 0 trên mọi trang suốt hai
+           ngày trong khi sáu view SPA có 196–234 phần tử dưới sàn — số 0 ấy là
+           số 0 của một luật chưa ai chứng minh là đỏ được. Nhét 9px vào đúng
+           những phần tử luật ấy soi rồi đòi nó đếm ra. */
+        const daNho = await p.evaluate(() => {
+          const { hien, co_chu } = globalThis.__pe;
+          let n = 0;
+          for (const el of document.querySelectorAll('body *')) {
+            if (!hien(el) || !co_chu(el) || el.closest('[aria-hidden="true"]')) continue;
+            el.style.setProperty('font-size', '9px', 'important');
+            n++;
+          }
+          return n;
+        });
+        /* LUẬT KHỐI BỊ CẮT NGOÀI KHUNG cũng phải đỏ được (22/09/2026).
+           Hôm nay tôi vừa thêm một cửa vào luật ấy: bỏ qua thứ nằm TRỌN ngoài
+           khung và bị đẩy ra bằng `transform` (ngăn trượt đang đóng). Một cửa
+           như thế rất dễ bịt mắt luôn cả luật, nên phải có phép chứng minh nó
+           VẪN bắt được cái thật. Nhét một khối chữ thò nửa ra khỏi khung bằng
+           BỐ CỤC (position/left, không transform) rồi đòi luật đếm ra nó. */
+        await p.evaluate(() => {
+          const d = document.createElement('div');
+          d.id = '__pe_cat';
+          d.textContent = 'KHỐI TỰ KIỂM BỊ CẮT NGOÀI KHUNG';
+          d.style.cssText = 'position:absolute;top:0;width:240px;height:40px;'
+            + `left:${document.documentElement.clientWidth - 60}px;z-index:2147483647;`;
+          document.body.appendChild(d);
+        });
         await p.waitForTimeout(150);
         if (!daHong) console.log('      (tự kiểm: KHÔNG có phần tử chữ nào để làm hỏng)');
+        if (!daNho) console.log('      (tự kiểm: KHÔNG có phần tử chữ nào để thu nhỏ)');
       }
       const that = await p.evaluate(() => document.body.classList.contains('dark') ? 'dark' : 'light');
       if (that !== chu_de) {
@@ -1078,11 +1191,19 @@ const tong_tr = ket.filter((r) => (r.tran_ngang || 0) > 1).length;
 const tong_js = ket.reduce((a, r) => a + (r.loi_js || 0), 0);
 const tong_csp = ket.reduce((a, r) => a + (r.vi_pham_csp || 0), 0);
 console.log(`\nTỔNG (${KHO.length} khổ × ${TRANG.length} trang):`);
+/* TRANG KHÔNG ĐO ĐƯỢC (22/09/2026, agent thuoc-4). Trước hôm nay một trang ném
+   lỗi lúc tải chỉ in một dòng "KHONG TAI DUOC" giữa bảng rồi biến mất khỏi
+   phần TỔNG — mọi tổng cộng coi nó như 0 và mã thoát vẫn 0. Một trang không
+   đo được không phải một trang sạch: in số ấy lên đầu và thoát khác 0. */
+const khong_do = ket.filter((r) => r.loi_tai);
+console.log(`  trang KHÔNG đo được: ${khong_do.length}`);
+for (const r of khong_do) console.log(`      ${r.kho} · ${r.ten}: ${r.loi_tai}`);
 console.log(`  vi phạm tương phản : ${tong_tp}`);
 console.log(`  vùng chạm < 44px   : ${tong_cn}`);
 console.log(`  chữ nhỏ hơn 12px   : ${ket.reduce((a, r) => a + (r.so_chu_nho || 0), 0)}`);
 for (const r of ket.filter((x) => x.so_chu_nho)) {
-  console.log(`      ${r.kho} · ${r.ten}: ${r.chu_nho.map((v) => `${v.co}px "${v.chu}" (${v.duong})`).join(' · ')}`);
+  console.log(`      ${r.kho} · ${r.ten} (${r.so_chu_nho}): `
+    + (r.chu_nho_nhom || []).map((g) => `${g.n}× ${g.k} "${g.mau}"`).join(' · '));
 }
 console.log(`  trang tràn ngang   : ${tong_tr}`);
 console.log(`  khối bị cắt bên ngoài khung: ${ket.reduce((a, r) => a + (r.so_ngoai_khung || 0), 0)}`);
@@ -1117,15 +1238,34 @@ if (tu_kiem) {
      hai khổ màn hình — tức con số "0 vi phạm" của trang ấy trong lần đo thật
      không chứng minh điều gì. Một màu xanh GỘP che một số 0 của TỪNG MỤC là
      đúng cái bẫy bộ kiểm này sinh ra để tránh. */
+  /* XÉT TỪNG LUẬT, không chỉ luật tương phản (22/09/2026): "đỏ được" phải đúng
+     cho CẢ luật sàn cỡ chữ, vì nó cũng là luật đang in ra số 0. */
   const cam = ket.filter((r) => !(r.so_vi_pham > 0));
-  if (cam.length) {
-    console.log(`  HỎNG: ${cam.length}/${ket.length} lượt đo KHÔNG đỏ nổi dù đã bị nhét`
-      + ' quy tắc hỏng —\n        con số của chúng trong lần đo thật là vô nghĩa:');
-    for (const r of cam) console.log(`          ${r.kho} · ${r.ten}`);
+  const cam_chu = ket.filter((r) => !(r.so_chu_nho > 0));
+  if (cam.length || cam_chu.length) {
+    if (cam.length) {
+      console.log(`  HỎNG (tương phản): ${cam.length}/${ket.length} lượt đo KHÔNG đỏ nổi dù đã bị nhét`
+        + ' quy tắc hỏng —\n        con số của chúng trong lần đo thật là vô nghĩa:');
+      for (const r of cam) console.log(`          ${r.kho} · ${r.ten}`);
+    }
+    if (cam_chu.length) {
+      console.log(`  HỎNG (sàn cỡ chữ): ${cam_chu.length}/${ket.length} lượt đo KHÔNG đếm được chữ 9px:`);
+      for (const r of cam_chu) console.log(`          ${r.kho} · ${r.ten}`);
+    }
     process.exit(1);
   }
   console.log(`  ĐẠT: cả ${ket.length} lượt đo đều đỏ khi bị nhét quy tắc hỏng`
-    + ` — tổng ${tong_tp} vi phạm.`);
+    + ` — tổng ${tong_tp} vi phạm tương phản, ${ket.reduce((a, r) => a + (r.so_chu_nho || 0), 0)} chữ dưới sàn.`);
   process.exit(0);
 }
-process.exit(ghiLen ? 1 : 0);
+/* CỔNG (22/09/2026, agent thuoc-4). Mã thoát tới hôm nay chỉ nói về lời gọi GHI
+   lọt ra: một lượt quét đầy vi phạm tương phản vẫn "thành công". `--cong` cho
+   người gọi đòi SẠCH mọi luật mà không đổi hành vi mặc định của các kịch bản
+   đang chạy. */
+if (process.argv.includes('--cong')) {
+  const xau = tong_tp + tong_cn + tong_tr + tong_js + tong_csp + khong_do.length + ghiLen
+    + ket.reduce((a, r) => a + (r.so_chu_nho || 0) + (r.so_ngoai_khung || 0) + (r.so_bi_che || 0) + (r.so_chong_nut || 0), 0);
+  console.log(`\nCỔNG: ${xau === 0 ? 'SẠCH' : xau + ' điểm xấu'} (mọi luật gộp lại).`);
+  process.exit(xau ? 1 : 0);
+}
+process.exit(ghiLen || khong_do.length ? 1 : 0);

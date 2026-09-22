@@ -81,6 +81,15 @@ export default function DashboardClient(
   useEffect(() => {
     const w = W();
     const sauKhiDung = (trang: string) => {
+      /* VẼ BIỂU TƯỢNG của trang vừa dựng (22/09/2026, agent tiếp cận F12).
+         `icons.js` quét `[data-icon]` MỘT lần lúc DOMContentLoaded. Vào thẳng
+         `/dashboard#courses` thì trang được dựng TRƯỚC lượt quét ấy nên đủ biểu
+         tượng; đi bằng MENU thì trang dựng lười ở đây, SAU lượt quét — và không
+         ai quét lại: đo được Khoá học thiếu 7, Cài đặt 7, Lộ trình 3 (nút Đóng
+         của ngăn chi tiết thành ô vuông trống). Gọi lại bộ vẽ cho đúng trang
+         vừa dựng, ở cả hai đường (menu và hash) — vẽ lại ô đã có SVG là vô hại. */
+      const khoi = document.getElementById('page-' + trang);
+      if (khoi && typeof w.mountIcons === 'function') w.mountIcons(khoi);
       if (trang === 'courses' && typeof w.renderCourses === 'function') w.renderCourses();
       if (trang === 'settings' && w.__currentUser && typeof w.setText === 'function') {
         const u = w.__currentUser;
@@ -406,14 +415,16 @@ export default function DashboardClient(
               <p className="courses-subtitle" id="courses-count-sub">Đang tải…</p>
             </div>
             <div className="courses-controls">
-              <div className="filter-group" role="group" aria-label="Enrollment filter">
+              <div className="filter-group" role="group" aria-label="Lọc theo trạng thái ghi danh">
                 <button className="filter-btn active" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'all')} role="radio" aria-checked="true">Tất cả</button>
                 <button className="filter-btn" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'enrolled')} role="radio" aria-checked="false">Đang học</button>
                 <button className="filter-btn" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'not-enrolled')} role="radio" aria-checked="false">Chưa đăng ký</button>
               </div>
               <div className="sort-dropdown-wrap">
                 <label htmlFor="course-sort-select" className="sort-label">Sắp xếp:</label>
-                <select id="course-sort-select" className="sort-select" onChange={(e) => W().setSortOrder(e.currentTarget.value)} aria-label="Sort courses by">
+                {/* Tên tiếng Việt, chứa nguyên nhãn nhìn thấy "Sắp xếp" (WCAG 2.5.3) —
+                    bản cũ "Sort courses by" là tiếng Anh (22/09/2026, F4). */}
+                <select id="course-sort-select" className="sort-select" onChange={(e) => W().setSortOrder(e.currentTarget.value)} aria-label="Sắp xếp khoá học">
                   <option value="newest">Mới nhất</option>
                   <option value="popular">Phổ biến nhất</option>
                   <option value="duration">Ngắn nhất</option>
@@ -544,8 +555,10 @@ export default function DashboardClient(
               <button className="filter-btn" data-cat="discuss" onClick={(e) => W().forumSetCat(e.currentTarget, 'discuss')}>💬 Thảo luận</button>
             </div>
             <div className="sort-dropdown-wrap">
-              <label className="sort-label">Sắp xếp:</label>
-              <select className="sort-select" onChange={(e) => W().forumSetSort(e.currentTarget.value)}>
+              {/* Nhãn nối với ô chọn (22/09/2026, agent tiếp cận F4): bản cũ `<label>`
+                  không `htmlFor`, ô không tên → axe `select-name` ở cả bốn lượt đo. */}
+              <label htmlFor="forum-sort-select" className="sort-label">Sắp xếp:</label>
+              <select id="forum-sort-select" className="sort-select" aria-label="Sắp xếp bài viết" onChange={(e) => W().forumSetSort(e.currentTarget.value)}>
                 <option value="newest">Mới nhất</option>
                 <option value="oldest">Cũ nhất</option>
                 <option value="likes">Nhiều like nhất</option>
@@ -728,25 +741,25 @@ export default function DashboardClient(
                 <div>
                   <div className="notif-lbl">Thông báo qua Email</div>
                   <div className="notif-desc">Nhận cập nhật khóa học qua email</div>
-                </div><button id="toggle-email" className="toggle on" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-label="Toggle email notifications"><span className="toggle-knob"></span></button>
+                </div><button id="toggle-email" className="toggle on" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-pressed="true" aria-label="Thông báo qua Email"><span className="toggle-knob"></span></button>
               </div>
               <div className="notif-row">
                 <div>
                   <div className="notif-lbl">Thông báo đẩy</div>
                   <div className="notif-desc">Nhận thông báo trực tiếp trên trình duyệt</div>
-                </div><button id="toggle-push" className="toggle" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-label="Toggle push notifications"><span className="toggle-knob"></span></button>
+                </div><button id="toggle-push" className="toggle" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-pressed="false" aria-label="Thông báo đẩy"><span className="toggle-knob"></span></button>
               </div>
               <div className="notif-row">
                 <div>
                   <div className="notif-lbl">Nhắc nhở học tập</div>
                   <div className="notif-desc">Nhắc nhở lịch học hàng ngày</div>
-                </div><button id="toggle-remind" className="toggle on" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-label="Toggle study reminders"><span className="toggle-knob"></span></button>
+                </div><button id="toggle-remind" className="toggle on" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-pressed="true" aria-label="Nhắc nhở học tập"><span className="toggle-knob"></span></button>
               </div>
               <div className="notif-row">
                 <div>
                   <div className="notif-lbl">Cập nhật nội dung</div>
                   <div className="notif-desc">Thông báo khi có bài học mới</div>
-                </div><button id="toggle-content" className="toggle" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-label="Toggle content updates"><span className="toggle-knob"></span></button>
+                </div><button id="toggle-content" className="toggle" onClick={(e) => W().toggleSwitch(e.currentTarget)} aria-pressed="false" aria-label="Cập nhật nội dung"><span className="toggle-knob"></span></button>
               </div>
             </div>
 
@@ -757,7 +770,7 @@ export default function DashboardClient(
               </div>
               <div className="sec-lang-card">
                 <div className="sec-lang-title"><span className="title-icon-red" data-icon="globe" data-size="16"></span><span>Ngôn ngữ</span></div>
-                <select className="lang-select" aria-label="Select language">
+                <select className="lang-select" aria-label="Ngôn ngữ hiển thị">
                   <option>Tiếng Việt</option>
                   <option>English</option>
                 </select>

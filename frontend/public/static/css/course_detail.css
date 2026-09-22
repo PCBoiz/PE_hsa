@@ -180,7 +180,7 @@ body.dark .cd-lesson-list::before { background: #334155; }
 body.dark .avg-label { color: #94A3B8; }
 body.dark .user-rate-section { border-top-color: #334155; }
 /* bỏ: `--t3` đã tự đổi theo bộ màu — body.dark .user-rate-label */
-body.dark .si-star::before { color: #475569; }
+body.dark .si-star::before { color: var(--t3); }
 body.dark .coming-soon-note { color: var(--t3); }
 
 /* ── Enrollment sidebar card ── */
@@ -276,7 +276,7 @@ body.dark .cd-lesson.current .cd-lesson-title { color: #A78BFA; }
 /* bỏ: `--t3` đã tự đổi theo bộ màu — body.dark .cd-lesson-num */
 body.dark .cd-req-list li { color: #94A3B8; }
 body.dark .cd-skill-item { color: #94A3B8; }
-body.dark .cd-reviews-stub { color: #475569; }
+body.dark .cd-reviews-stub { color: var(--t3); }
 body.dark .cd-card { background: #1E293B; border-color: #334155; }
 body.dark .cd-card-body { background: #1E293B; }
 body.dark .cd-card-price { color: #F1F5F9; }

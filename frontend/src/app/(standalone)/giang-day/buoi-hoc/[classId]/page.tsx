@@ -116,7 +116,7 @@ export default async function BuoiHocPage({
                 Giảng dạy" mà bấm vào lại về Trang của tôi — rà vai nhân sự bắt
                 được ở cả ba trang lớp. */}
             <Link href="/giang-day" className="-my-3 py-3 text-small text-ink-3 hover:text-brand-ink">
-              ← Khu Giảng dạy
+              ← Việc hôm nay
             </Link>
             <h1 className="text-section text-ink">{klass.name}</h1>
             {klass.schedule && <span className="text-small text-ink-3">{klass.schedule}</span>}

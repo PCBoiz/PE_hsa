@@ -88,6 +88,19 @@ export type AppShellProps = {
 /** Chữ cái đầu cho ảnh đại diện chữ. */
 const chuDau = (s?: string) => (s?.trim()?.[0] ?? '?').toUpperCase();
 
+/**
+ * Sắp đóng một bảng bật lên mà tiêu điểm đang nằm TRONG khối của nó → đưa tiêu
+ * điểm về nút đã mở bảng. Không làm thì bảng bị giấu (`visibility: hidden`)
+ * kéo tiêu điểm theo và trình duyệt thả nó về <body>: màn hình mất vòng tiêu
+ * điểm, trình đọc màn hình mất ngữ cảnh (agent tiếp cận F9, 22/09/2026 — đo:
+ * Esc ở menu Học / avatar / chuông → `activeElement = BODY` cả ba).
+ * `vung` = khối chứa cả nút lẫn bảng; `chonNut` = bộ chọn nút mở, trong khối ấy.
+ */
+function traTieuDiem(vung: Element | null, chonNut: string) {
+  if (!vung || !vung.contains(document.activeElement)) return;
+  vung.querySelector<HTMLElement>(chonNut)?.focus();
+}
+
 export default function AppShell({
   trang,
   spa = false,
@@ -132,7 +145,11 @@ export default function AppShell({
     const ngoai = (e: MouseEvent) => {
       if (oMenu.current && !oMenu.current.contains(e.target as Node)) setMoMenu(false);
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoMenu(false); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      traTieuDiem(oMenu.current, '#user-chip-btn');
+      setMoMenu(false);
+    };
     document.addEventListener('click', ngoai);
     document.addEventListener('keydown', esc);
     return () => {
@@ -150,7 +167,11 @@ export default function AppShell({
     const ngoai = (e: MouseEvent) => {
       if (oNav.current && !oNav.current.contains(e.target as Node)) setMoNhom(null);
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoNhom(null); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      traTieuDiem(oNav.current?.querySelector('.nav-nhom.mo') ?? null, '.nav-nhom-nut');
+      setMoNhom(null);
+    };
     document.addEventListener('click', ngoai);
     document.addEventListener('keydown', esc);
     return () => {
@@ -211,24 +232,38 @@ export default function AppShell({
     goiLegacy('filterCourses');
   }, [spa]);
 
-  const thuongHieu = (
-    <div
-      className="brand brand-always"
-      onClick={() => {
-        if (cheDo === 'lam-bai') return;   // đang thi thì không rời trang
-        if (spa) { goiLegacy('navigate', 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        else taiTrang('/dashboard');
-      }}
-      style={{ cursor: cheDo === 'lam-bai' ? 'default' : 'pointer' }}
-      title={cheDo === 'lam-bai' ? 'Đang làm bài' : 'Về trang chủ'}
-    >
+  const chuThuongHieu = (
+    <>
       <span className="brand-title brand-full">
         <span className="brand-c1">ProgrammingEdu</span>{' '}
         <span className="brand-x">×</span>{' '}
         <span className="brand-c2">TopHSA</span>
       </span>
       <span className="brand-title brand-short">PE×T</span>
-    </div>
+    </>
+  );
+  /* LIÊN KẾT THẬT tới /dashboard (22/09/2026, agent tiếp cận F17). Bản cũ là
+     `div onClick` + `cursor:pointer`: chuột bấm được, bàn phím không tới, trình
+     đọc màn hình không biết đây là lối về. `<a href>` cho cả Tab, Ctrl-bấm, mở
+     tab mới. Trang SPA vẫn đổi view tại chỗ như cũ (chặn điều hướng mặc định),
+     trừ khi người dùng bấm kèm phím bổ trợ — đó là lý do dùng `<a>`.
+     Đang làm bài thì KHÔNG là liên kết: một cú bấm nhầm giữa giờ thi là mất bài. */
+  const thuongHieu = cheDo === 'lam-bai' ? (
+    <div className="brand brand-always" title="Đang làm bài">{chuThuongHieu}</div>
+  ) : (
+    <a
+      className="brand brand-always"
+      href="/dashboard"
+      title="Về trang chủ"
+      onClick={(e) => {
+        if (!spa || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        goiLegacy('navigate', 'dashboard');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+    >
+      {chuThuongHieu}
+    </a>
   );
 
   /* ── CHẾ ĐỘ LÀM BÀI ────────────────────────────────────────────────────
@@ -321,6 +356,7 @@ export default function AppShell({
                thẻ `<a>` chỉ còn là trang trí. */
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             e.preventDefault();
+            traTieuDiem(e.currentTarget.closest('.nav-nhom'), '.nav-nhom-nut');
             setMoNhom(null);
             di(m);
           }}
@@ -333,7 +369,13 @@ export default function AppShell({
         key={m.nhan}
         type="button"
         {...chung}
-        onClick={() => { setMoNhom(null); di(m); }}
+        onClick={(e) => {
+          /* Mục nằm trong nhóm: bảng đóng lại kéo tiêu điểm theo → về nút nhóm
+             (F9 — đo: chọn "Lộ trình" bằng Enter thì tiêu điểm rơi về <body>). */
+          traTieuDiem(e.currentTarget.closest('.nav-nhom'), '.nav-nhom-nut');
+          setMoNhom(null);
+          di(m);
+        }}
       />
     );
   };
@@ -352,10 +394,15 @@ export default function AppShell({
     const dangXem = con.some(dangMo);
     return [(
       <div className={'nav-nhom' + (moNhom === khoa ? ' mo' : '')} key={'nhom-' + khoa}>
+        {/* MẪU "DISCLOSURE", KHÔNG PHẢI MENU (22/09/2026, agent tiếp cận F4).
+            Bản cũ gắn `role="menu"` cho bảng mà con là nút thường → axe
+            `aria-required-children` mức critical; và `menu` hứa phím mũi tên mà
+            bảng chỉ đi bằng Tab. Đây là điều hướng trang — WAI-ARIA APG khuyên
+            đúng mẫu nút `aria-expanded` + nhóm nút có tên, không dùng `menu`
+            cho điều hướng. Nên bỏ `aria-haspopup` (nó đọc là "menu bật lên"). */}
         <button
           type="button"
           className={'nav-btn nav-nhom-nut' + (dangXem ? ' active' : '')}
-          aria-haspopup="true"
           aria-expanded={moNhom === khoa}
           aria-label={nhomTin.nhan}
           title={nhomTin.nhan}
@@ -365,7 +412,7 @@ export default function AppShell({
           <span>{nhomTin.nhan}</span>
           <span className="nav-nhom-mui"><BieuTuong ten="chevron-down" co={11} /></span>
         </button>
-        <div className="nav-nhom-panel" role="menu" aria-label={nhomTin.nhan}>
+        <div className="nav-nhom-panel" role="group" aria-label={nhomTin.nhan}>
           {con.map(nutMuc)}
         </div>
       </div>
@@ -521,9 +568,11 @@ export default function AppShell({
             một nút chết còn tệ hơn một nút vắng mặt. */}
         {dieuKhien === 'legacy' && (
           <div className="bell-wrap" id="bell-wrap">
+            {/* `aria-haspopup="dialog"`: bảng là `role="dialog"`; giá trị "true"
+                nghĩa là MENU và trình đọc màn hình sẽ báo sai loại (22/09/2026). */}
             <button type="button" className="bell-btn" id="bell-btn"
               onClick={() => goiLegacy('toggleBellPanel')}
-              aria-haspopup="true" aria-expanded="false" aria-label="Thông báo">
+              aria-haspopup="dialog" aria-expanded="false" aria-label="Thông báo">
               <BieuTuong ten="bell" co={16} />
               <span className="bell-dot" id="bell-dot"></span>
             </button>
@@ -549,7 +598,6 @@ export default function AppShell({
             className={'user-chip' + (dieuKhien === 'react' && moMenu ? ' open' : '')}
             id="user-chip-btn"
             onClick={bamMenu}
-            aria-haspopup="true"
             aria-expanded={dieuKhien === 'react' ? moMenu : false}
           >
             <span className="chip-avatar" id="chip-avatar">{chuDau(ten)}</span>
@@ -557,10 +605,14 @@ export default function AppShell({
             <span className="dropdown-icon" id="chip-arrow"><BieuTuong ten="chevron-down" co={12} /></span>
           </button>
 
+          {/* Cùng mẫu DISCLOSURE với nhóm "Học" (22/09/2026, F4): bỏ `role="menu"`
+              / `menuitem` / `aria-haspopup`. `menu` hứa phím mũi tên và đặt
+              trình đọc màn hình vào chế độ ứng dụng, mà khối này chỉ đi bằng
+              Tab — và dòng tên + vai ở đầu khối không phải `menuitem` nên bị
+              một số trình đọc bỏ qua. Nay là một khối nút thường, đọc đủ. */}
           <div
             className={'user-dropdown' + (dieuKhien === 'react' && moMenu ? ' open' : '')}
             id="user-dropdown"
-            role="menu"
           >
             <div className="user-dropdown-header">
               <span className="chip-avatar udh-avatar" id="udh-avatar">{chuDau(ten)}</span>
@@ -572,14 +624,14 @@ export default function AppShell({
             <div className="user-dropdown-divider"></div>
             {/* "Trang của tôi" là HỒ SƠ HỌC TẬP (chuỗi ngày, bản đồ năng lực) —
                 việc của học viên. */}
-            <button type="button" className="user-dropdown-item" role="menuitem" data-chi-hoc-vien=""
+            <button type="button" className="user-dropdown-item" data-chi-hoc-vien=""
               onClick={() => {
                 if (spa) { goiLegacy('navigate', 'profile'); goiLegacy('closeUserMenu'); }
                 else taiTrang('/dashboard#profile');
               }}>
               <span className="udi-icon"><BieuTuong ten="user" co={14} /></span> Trang của tôi
             </button>
-            <button type="button" className="user-dropdown-item" role="menuitem"
+            <button type="button" className="user-dropdown-item"
               onClick={() => {
                 if (spa) { goiLegacy('navigate', 'settings'); goiLegacy('closeUserMenu'); }
                 else taiTrang('/dashboard#settings');
@@ -587,7 +639,7 @@ export default function AppShell({
               <span className="udi-icon"><BieuTuong ten="settings" co={14} /></span> Cài đặt
             </button>
             <div className="user-dropdown-divider"></div>
-            <button type="button" className="user-dropdown-item danger" role="menuitem"
+            <button type="button" className="user-dropdown-item danger"
               onClick={() => { taiTrang('/auth/logout'); }}>
               <span className="udi-icon"><BieuTuong ten="log-out" co={14} /></span> Đăng xuất
             </button>

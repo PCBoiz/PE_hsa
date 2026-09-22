@@ -382,10 +382,14 @@
         if (st === 'done') done++; else if (st === 'active') active++; else locked++;
       });
     });
+    // Màu qua TOKEN theme.css, không viết cứng (22/09/2026, agent tiếp cận F3):
+    // #64748B "Chưa học" chỉ 4,18:1 trên nền tối, và bộ màu cũ vốn là bản TỐI
+    // nên ở bản sáng #2DD4BF trên trắng chỉ 1,86:1, #8B7CF6 3,33:1. --brand-2/--brand/--t3
+    // tự đổi theo chủ đề và giữ đúng bản tối cũ cho hai màu đầu.
     pill.innerHTML =
-      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#2DD4BF"></span><b style="color:#2DD4BF">' + done + '</b> Đã học</span>' +
-      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#8B7CF6"></span><b style="color:#8B7CF6">' + active + '</b> Đang học</span>' +
-      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:#64748B"></span><b style="color:#64748B">' + locked + '</b> Chưa học</span>';
+      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:var(--brand-2)"></span><b style="color:var(--brand-2)">' + done + '</b> Đã học</span>' +
+      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:var(--brand)"></span><b style="color:var(--brand)">' + active + '</b> Đang học</span>' +
+      '<span class="rm-stat-item"><span class="rm-stat-dot" style="background:var(--t3)"></span><b style="color:var(--t3)">' + locked + '</b> Chưa học</span>';
   }
 
   /* ── Chuyển tab ── */
@@ -480,14 +484,20 @@
     } else if (detail) {
       descEl.textContent = detail.desc;
       resWrap.innerHTML = detail.resources.map(function (r, i) {
-        var rc = RES_CFG[r.type] || RES_CFG.article;
+        /* MÀU NHÃN nay do CSS quyết (lớp `.rm-res-kind--*`), không gán qua
+           `style=""` nữa: bốn hex trong RES_CFG vẽ cho nền TỐI, gán thẳng vào
+           thuộc tính thì bản sáng không ghi đè nổi — nhãn "Bài viết" đo được
+           2,54:1 (axe 22/09/2026). Hex còn lại chỉ dùng cho BIỂU TƯỢNG, vốn
+           nằm trên nền chính màu nó pha loãng 10%. */
+        var loai = RES_CFG[r.type] ? r.type : 'article';
+        var rc = RES_CFG[loai];
         var onclick = r.type === 'course' && (courseId || r.course_id)
           ? 'window.location.href="/courses/' + (courseId || r.course_id) + '"'
           : 'event.preventDefault()';
         return '<a class="rm-res-item" href="#" onclick="' + onclick + '" style="animation-delay:' + (i * 0.05) + 's">' +
-          '<span class="rm-res-icon" style="background:' + rc.color + '1A"><span data-icon="' + rc.icon + '" data-size="15" data-color="' + rc.color + '"></span></span>' +
+          '<span class="rm-res-icon rm-res-kind--' + loai + '"><span data-icon="' + rc.icon + '" data-size="15"></span></span>' +
           '<span class="rm-res-body"><span class="rm-res-title">' + escHtmlR(r.title) + '</span>' +
-          '<span class="rm-res-meta"><span style="color:' + rc.color + ';font-weight:600">' + rc.label + '</span> · ' + escHtmlR(r.source) + '</span></span>' +
+          '<span class="rm-res-meta"><span class="rm-res-kind rm-res-kind--' + loai + '">' + rc.label + '</span> · ' + escHtmlR(r.source) + '</span></span>' +
           '<span data-icon="external-link" data-size="14" data-color="#64748B"></span>' +
           '</a>';
       }).join('');
@@ -500,20 +510,34 @@
     if (window.mountIcons) mountIcons(resWrap);
     drawer.classList.add('open');
     if (backdrop) backdrop.classList.add('open');
+    /* BÀN PHÍM (22/09/2026, agent tiếp cận F6 — NẶNG). Trước: Enter mở ngăn mà
+       tiêu điểm ở lại nút chặng PHÍA SAU lớp phủ, 31 lần Tab mới vào tới ngăn,
+       Esc không đóng. Nay: nhớ nút đã mở, đặt bẫy tiêu điểm dùng chung
+       (`bayTieuDiem`, dashboard.js — Esc gọi `roadmapCloseDrawer`), rồi đưa
+       tiêu điểm vào nút Đóng — điều khiển đầu tiên của ngăn. */
+    if (!rmThaoBay && window.bayTieuDiem) { rmTruocDo = document.activeElement; rmThaoBay = window.bayTieuDiem(drawer, window.roadmapCloseDrawer); }
+    var nutDong = drawer.querySelector('.rm-drawer-close');   // thiếu nút thì thôi, đừng ném lỗi chặn cả ngăn
+    if (nutDong) nutDong.focus();
   };
+  // Nút đã mở ngăn + hàm tháo bẫy tiêu điểm (F6, xem ngay trên).
+  var rmTruocDo = null, rmThaoBay = null;
 
   function renderDrawerStatusToggle(status) {
     var wrap = document.getElementById('rm-drawer-status');
     if (!wrap) return;
+    // Nút ĐANG CHỌN đặt chữ lên bản pha 13% của chính màu đó → phải là token
+    // `*-ink` (22/09/2026, agent tiếp cận F2): axe đo "Đã học" #10B981 trên nền
+    // pha của nó chỉ 2,24:1 ở bản sáng. Dùng `color-mix` thay cho nối chuỗi
+    // '…22' vì token không phải mã hex nên không nối thêm alpha được.
     var items = [
-      { key: 'locked', label: 'Chưa học', color: '#64748B' },
-      { key: 'active', label: 'Đang học', color: '#3B82F6' },
-      { key: 'done', label: 'Đã học', color: '#10B981' }
+      { key: 'locked', label: 'Chưa học', color: 'var(--t3)' },
+      { key: 'active', label: 'Đang học', color: 'var(--brand-ink)' },
+      { key: 'done', label: 'Đã học', color: 'var(--success-ink)' }
     ];
     wrap.innerHTML = items.map(function (it) {
       var isActive = status === it.key;
-      return '<button type="button" class="rm-status-btn' + (isActive ? ' active' : '') + '" style="' +
-        (isActive ? 'background:' + it.color + '22;border-color:' + it.color + ';color:' + it.color + ';' : '') +
+      return '<button type="button" class="rm-status-btn' + (isActive ? ' active' : '') + '" aria-pressed="' + isActive + '" style="' +
+        (isActive ? 'background:color-mix(in srgb, ' + it.color + ' 13%, transparent);border-color:' + it.color + ';color:' + it.color + ';' : '') +
         '" onclick="window.roadmapSetStatus(\'' + it.key + '\')">' + it.label + '</button>';
     }).join('');
   }
@@ -524,6 +548,9 @@
     var name = drawer.dataset.roadmap, nodeId = drawer.dataset.nodeId;
     setOverride(name + ':' + nodeId, status);
     renderDrawerStatusToggle(status);
+    // Ba nút vừa dựng lại, nút đang giữ tiêu điểm bị thay → đưa tiêu điểm sang nút MỚI được chọn (F6).
+    var nutTt = drawer.querySelector('.rm-status-btn.active');
+    if (nutTt) nutTt.focus();
     if (name === MY_ROADMAP_TAB && window._generatedRoadmapData) renderGeneratedRoadmap(window._generatedRoadmapData); else renderFlow(name);
   };
 
@@ -532,6 +559,12 @@
     var backdrop = document.getElementById('rm-drawer-backdrop');
     if (drawer) drawer.classList.remove('open');
     if (backdrop) backdrop.classList.remove('open');
+    if (!rmThaoBay) return;
+    rmThaoBay(); rmThaoBay = null;
+    /* Trả tiêu điểm về nút chặng đã mở ngăn (F6). Đổi trạng thái chặng thì bản
+       đồ vẽ lại và nút cũ bị thay — khi ấy tìm nút MỚI của đúng chặng ấy. */
+    var nut = rmTruocDo && rmTruocDo.isConnected ? rmTruocDo : document.querySelector('.rm-node[data-rm-node="' + CSS.escape(drawer.dataset.nodeId) + '"]');
+    if (nut) nut.focus();
   };
 
   /* ── Browse grid ── */

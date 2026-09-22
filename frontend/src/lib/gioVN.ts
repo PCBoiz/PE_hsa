@@ -23,3 +23,12 @@ export function thuTrongTuanVN(luc: Date = new Date()): number {
   // Không bao giờ nên xảy ra; rơi về 0 thay vì -1 để mảng không vỡ.
   return i < 0 ? 0 : i;
 }
+
+/** "Thứ Hai, 22/09/2026" theo giờ VN — cho dòng ngày dưới tiêu đề "Việc hôm nay"
+ *  (22/09/2026, agent GV→PH F14: màn không nói "hôm nay" là ngày nào). */
+export function ngayDayDuVN(luc: Date = new Date()): string {
+  const s = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: MUI, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+  }).format(luc);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}

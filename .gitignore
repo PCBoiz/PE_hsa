@@ -81,3 +81,8 @@ backend/staticfiles/
 # Bản sao lưu dữ liệu production chụp NGAY TRƯỚC một lần xoá có duyệt — chứa dữ
 # liệu học viên thật (điểm danh, id tài khoản), KHÔNG commit.
 .sao_luu/
+
+# Nhật ký máy chủ Next lúc chạy đo trên máy dev (bật bằng Start-Process, tách
+# khỏi shell công cụ). Chỉ là vết chạy của một phiên, không phải mã.
+.next-start.err
+.next-start.out

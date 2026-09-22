@@ -56,10 +56,16 @@ export default async function BaoCaoTheoChiaPage({
             hồi — nói rõ "đã bị thu hồi" là xác nhận với người cầm link rằng nó
             từng đúng. Ở đây chỉ in lại câu ấy, không đoán thêm. */}
         <p className="mt-2 text-body text-ink-2">{kq.message}</p>
-        <p className="mt-6 text-small text-ink-3">
-          Nếu bạn nhận đường dẫn này từ trung tâm, hãy nhắn lại cho giảng viên
-          phụ trách lớp để nhận đường dẫn mới.
-        </p>
+        {/* Chìa sai/hết hạn (404): câu của máy chủ ĐÃ nói "liên hệ trung tâm để
+            nhận đường dẫn mới" — in thêm câu dưới là nói một ý hai lần (22/09/2026,
+            agent GV→PH F16). Chỉ giữ nó cho lỗi khác (máy chủ không trả lời…),
+            nơi câu của máy chủ không chỉ đường. */}
+        {kq.status !== 404 && (
+          <p className="mt-6 text-small text-ink-3">
+            Nếu bạn nhận đường dẫn này từ trung tâm, hãy nhắn lại cho giảng viên
+            phụ trách lớp để nhận đường dẫn mới.
+          </p>
+        )}
       </main>
     );
   }

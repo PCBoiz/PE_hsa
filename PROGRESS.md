@@ -90,6 +90,138 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 22/09/2026 (14:00) — LÀM NỐT VIỆC CÒN SÓT: sáu luật của bộ đo về 0, axe 92 lượt về 0
+
+Anh bảo "chỉ làm nốt những việc còn sót rồi kiểm lại kĩ". Không mở việc mới, không chia agent.
+
+### Dựng lại rồi mới đo — và số đầu tiên là số thật
+Toàn bộ thay đổi React của tôi + của ba agent CHƯA từng chạy trên trình duyệt. Dựng lại
+(`next build` sạch), bật lại bằng `Start-Process` (tách khỏi shell công cụ), rồi đo 31 trang × 2 khổ:
+
+| luật | trước | sau |
+|---|---|---|
+| tương phản | 2 | **0** |
+| vùng chạm < ngưỡng | 42 | **0** |
+| chữ < 12px | 446 | **0** |
+| khối bị cắt ngoài khung | 2 | **0** |
+| tràn ngang · lỗi JS · CSP | 0 | 0 |
+
+axe-core 4.10.3, **92 lượt** (2 khổ × {23 trang + 7 view + 4 trạng thái mở} × {sáng, tối}):
+**0 nút vi phạm, 0 lượt không đo được.** Đây là lượt 390 mà agent tương phản chưa bao giờ chạy nổi.
+
+### Bốn chỗ hỏng thật, và hai chỗ hỏng ở CÁI THƯỚC
+
+**Mã hỏng:**
+1. `.badge-enrolled` — nền `rgba(16,185,129,0.9)` nằm TRÊN ảnh bìa nên màu thật do ảnh quyết; đo ra
+   #18AC87, chữ trắng 2,88:1. Đục hẳn bằng `--success-fill` → 5,55:1.
+2. Sàn cỡ chữ nằm trong `@media (max-width: 768px)` với lý lẽ "chỉ đo ở 390px". Lý lẽ sai cả hai vế:
+   thước không đi 7 view SPA nên số 0 cũ là số 0 giả, và 446 chỗ chia GẦN ĐỀU hai khổ (Hồ sơ 86/98,
+   Diễn đàn 51/73, Kỹ năng 53/53). 12px là ngưỡng của MẮT, không phải của khổ máy → đưa ra ngoài
+   media query, thêm 27 lớp đo được. Vòng `.sk-donut` nới 40→48 để chữ 12px lọt, chứ không giữ chữ 9px
+   cho vừa vòng.
+3. **Vết nứt đúng ranh giới hai tầng frontend**: `a.brand` cao 20px trên ĐÚNG 16 trang — và cả 16 đều
+   thuộc nhóm `(standalone)` React, nhóm KHÔNG nạp `a11y.css`. Mười trang tầng SPA cũ có nạp thì đo ra
+   44px. Đầu `a11y.css` tự nhận "nạp trên MỌI trang" — câu ấy sai cho tới hôm nay. Nạp ở layout nhóm.
+4. Ngăn chi tiết Lộ trình: `RES_CFG` trong `roadmap.js` giữ 4 hex vẽ cho nền TỐI rồi gán qua `style=""`,
+   nên bản sáng không ghi đè nổi — nhãn "Bài viết" 2,54:1, tiêu đề 1,23:1. Đúng lỗi mà chú thích ngay
+   TRÊN bảng ấy bảo đã sửa cho màu node hồi 13/08, chỉ là ở bảng bên cạnh. Nay 4 token `--rm-res-*`
+   lật theo bản giao diện; biểu tượng dùng `currentColor` nên nền pha 10% tự theo (nét cũ 2,5:1 < 3:1
+   của WCAG 1.4.11).
+
+**Thước hỏng (nguy hơn, vì nó tắt phản xạ kiểm tra của người sau):**
+5. Luật "khối bị cắt ngoài khung" báo `.rm-browse` ở cả hai khổ — đó là ngăn trượt ĐANG ĐÓNG, đỗ ngoài
+   khung bằng `transform` đúng như thiết kế. Nay bỏ qua khi CÙNG LÚC nằm trọn ngoài khung VÀ bị đẩy
+   bằng transform. Một cửa như thế rất dễ bịt mắt luôn cả luật, nên `--tu-kiem` nay nhét một khối chữ
+   thò nửa ra bằng BỐ CỤC và ĐÒI luật đếm ra nó — chạy thử: bắt được (+180px, cả hai khổ).
+6. `do_axe.mjs` chờ `#sidebar-detail.open`, một id CHƯA BAO GIỜ tồn tại trong `roadmap.js` (thật ra là
+   `#rm-drawer`), nên 4 lượt luôn hết giờ. Cổng báo "KHÔNG ĐO ĐƯỢC" và thoát 1 thay vì in 0 — đúng
+   thiết kế. Sửa bộ chọn xong, 4 lượt ấy lộ ra ngay 6 vi phạm thật (mục 4 ở trên). Tức con số "0" của
+   ngăn Lộ trình suốt hai ngày là con số của một trạng thái chưa ai tới được.
+
+### F12 (biểu tượng rỗng) — KHÔNG phải tôi sửa
+Báo cũ: Khoá học thiếu 7, Lộ trình 3, Cài đặt 7. Đo lại sau khi dựng, đi bằng ĐÚNG đường người dùng đi
+(bấm nút trên thanh điều hướng, không phải `window.navigate`): **0 rỗng** ở 6/6 view × 2 khổ, mọi nút
+mở đúng view. Lý do gần như chắc chắn: lượt đo cũ chạy trên cây NỬA VỜI — `icons.js` mới đã nằm trên
+đĩa (phục vụ trực tiếp) nhưng máy chủ vẫn chạy bundle React CŨ. Không ghi công cho một bản vá không có.
+
+### Cũng xong
+· Thu hồi chìa phụ huynh lớp 7586 em 36884 — nó CÒN SỐNG, đã bị mở 15 lượt, hạn tới 05/11. Nay
+  `revoked_at` đã đặt, kiểm lại còn 0 chìa sống; 18 test liên quan xanh.
+· Một lỗi eslint CÓ SẴN TRONG HEAD (`react/no-unescaped-entities`, SessionsClient.tsx:416) — tệp tôi
+  không đụng tới; sửa bằng dấu nháy cong.
+
+### Đã kiểm
+29/29 unit guard · trần tầng cũ 6806/6807 · tsc, eslint, ruff sạch · 18 test chìa phụ huynh ·
+bộ đo giao diện 31×2 = 0 · axe 92 lượt = 0 · khói 7 view × 2 khổ = 0 lỗi JS.
+KHÔNG chạy lại toàn bộ 435+122+97 test backend: phiên này không sửa một dòng backend nào.
+
+### Còn lại
+1. **Đẩy lên master = deploy production — CHỜ ANH.** Chưa push gì.
+2. GV→PH: F6 liên hệ trên tờ phụ huynh (CHỜ ANH QUYẾT), F17 thứ tự buổi ở khổ hẹp.
+3. A để lại (không nằm trong luật nào của hai bộ đo nên chúng báo xanh): công tắc thông báo 1,26:1,
+   nền rê chuột `#293548`, bảng màu riêng của trợ lý.
+4. Đếm trang bản in A4 tờ phụ huynh — cần một chìa còn sống, mà tôi vừa thu hồi chìa duy nhất.
+
+
+## 22/09/2026 (09:00) — DỪNG ĐỢT AGENT THỨ TƯ: tổng hợp đã làm / đã kiểm / còn lại
+
+Anh bảo "chia agents để làm" rồi "dừng lại, báo cáo". Ba agent chạy song song, tôi đã DỪNG cả ba.
+Báo cáo của chúng: `AUDIT/agents/tuong-phan-4.md`, `thuoc-4.md` (agent bàn phím bị dừng giữa chừng,
+KHÔNG có báo cáo — chỉ có mã trong cây làm việc).
+
+### Đã commit (`0810550`, CHƯA push — chờ anh)
+Đợt agent thứ ba: thanh trên đếm mục ẩn, thi thử, bàn phím bài học (`inert`), tờ phụ huynh (kỳ mặc
+định, nhãn, chép lại đường dẫn, khung chờ), chuông chấm bài, `text-caption`, hàng rào lớp chữ.
+
+### Đang trong cây làm việc, CHƯA commit
+**Của tôi — đã kiểm:** trạng thái buổi "Đã dạy" suy từ dữ liệu (test đỏ trước; đo lớp 7586: 14/09 và
+21/09 nay "done", buổi 23/09 tick sớm vẫn "planned"); cột PDF "Vắng mặt (ngày)" → "Ngày chưa học";
+nhãn quay lại (`← Việc hôm nay`, tờ của em → `← Báo cáo cả lớp`); ngày dưới "Việc hôm nay"; màn chìa
+sai bớt câu lặp; in A4 bớt khoảng cách. **97 test backend xanh** (PDF lớp, buổi học, luồng ERP, việc
+hôm nay). Bốn mục cuối cần DỰNG LẠI mới đo được trên trình duyệt.
+
+**Agent tương phản (tuong-phan-4) — có báo cáo, đã đo:** ~30 bộ chọn về token (`--t3`, `--brand-ink`,
+`--success-ink`…), `--rm-group` đổi cả hai chế độ, `CAT_COLORS` (dashboard.js) và màu inline
+(roadmap.js) về token, viền ô nhập (`Field.tsx` + `dark-mode.css` → `--border-input`), vòng tiêu điểm
+`.hsa-fill`/`.field-input`, ba chi tiết bản tối. **axe 1366 (6 view): 50 sáng / 57 tối → 0 / 0**; còn
+1 nút `select-name` (việc của agent bàn phím). Khổ 390 CHƯA đo (Next chết giữa chừng). Nó cũng sửa
+chú thích sai trong `theme.css` (`--border-input` ghi 3,0:1 — tính lại là 4,49:1).
+
+**Agent thước (thuoc-4) — có báo cáo:** `do_giao_dien.mjs` nay đi 7 view SPA + báo "trang KHÔNG đo
+được"; `do_axe.mjs` đi 7 view × {sáng, tối} + 4 trạng thái mở; cả hai đã CHỨNG MINH đỏ được bằng máy
+chủ giả. Số thật đầu tiên ở 390: **203 chữ < 12px** (Kỹ năng 53, Diễn đàn 51, Hồ sơ 86), 45 tương
+phản (Hồ sơ 44), 13 vùng chạm < 44px (Diễn đàn 7, Hồ sơ 6), 1 khối bị cắt ở Lộ trình — tức bộ đo cũ
+báo "0" vì KHÔNG ĐI QUA những view ấy. Vá toast ghi danh (`width: max-content`: 50vw/3 dòng →
+92vw/2 dòng). Kết luận F3 (đầu thẻ "Đề thi thử" 144px) KHÔNG phải lỗi bố cục.
+
+**Agent bàn phím (ban-phim-4) — KHÔNG có báo cáo, mã chưa kiểm:** trong cây có 19 chỗ `div` → `button`,
+13 `aria-expanded`, 12 `aria-pressed`, 11 `focus()`, 7 nhánh Escape, 5 lần gọi `bayTieuDiem`,
+`role="dialog"` + `aria-modal`, có đụng `icons.js`. Khói (7 view × 2 khổ): 0 lỗi JS, mọi view mở, Kỹ
+năng nay 23 nút `aria-expanded` (F7 chạy thật). NHƯNG F12 vẫn nguyên: vào view bằng menu thì Khoá học
+thiếu 7 biểu tượng, Lộ trình 3, Cài đặt 7 — chưa sửa xong hoặc nằm ở phần React chưa dựng.
+
+### Đã kiểm trong phiên
+435 + 122 + 97 test backend; 29 unit guard (có hàng rào lớp chữ mới, đỏ 29 chỗ trên mã cũ); trần tầng
+cũ xanh (6806/6807); tsc/eslint/ruff sạch; bộ đo giao diện 24 trang × 2 khổ = 0 (TRƯỚC khi agent sửa);
+khói 7 view × 2 khổ = 0 lỗi JS.
+
+### Còn lại để audit (thứ tự đề nghị)
+1. **Dựng lại rồi kiểm cả cây**: mọi thay đổi React của tôi + `Field.tsx` (A) + AppShell/MockExam/
+   DashboardClient/RoadmapSection (B) chưa từng chạy trên trình duyệt. Kèm: đo lại `do_giao_dien`,
+   axe 390, đi bàn phím lại từng mục của B, đếm trang bản in A4.
+2. **Việc B bỏ dở** (phải tự dò lại từ diff vì không có báo cáo): F12 biểu tượng, F4 tên ô sắp xếp,
+   F6 ngăn Lộ trình, F8 chuông, F9 Esc trả tiêu điểm, F14 Esc ô tìm, F15 bảng câu /mock, F17 logo.
+3. **Việc C bỏ dở**: sàn 12px cho 7 view (cần số ở 1440 trước — khối sàn `a11y.css` nằm trong
+   `@media (max-width: 768px)`), 5 mục hồi quy (7, 10-F5, 11, 12, 15), thu hồi chìa lớp 7586 em 36884,
+   chạy `do_axe.mjs` bản mở rộng lấy số cuối.
+4. **Bề mặt MỚI lộ ra**: Hồ sơ 44 tương phản + 6 chạm nhỏ, Diễn đàn 7 chạm nhỏ, Lộ trình 1 khối bị cắt.
+5. **A để lại**: công tắc thông báo 1,26:1 (điều khiển, WCAG 1.4.11), khối `.rm-res-*` trong ngăn Lộ
+   trình, nền rê chuột `#293548`, bảng màu riêng của trợ lý.
+6. **GV→PH còn**: F6 liên hệ trên tờ (CHỜ ANH QUYẾT), F17 thứ tự buổi ở khổ hẹp.
+7. **Hạ tầng đo**: Next chết lặng hai lần vì bật bằng `nohup npx … &` trong shell công cụ; nay bật bằng
+   `Start-Process node node_modules/next/dist/bin/next start -p 3100` (tách khỏi shell) — dùng cách này.
+
+
 ## 22/09/2026 — ĐÃ COMMIT ĐỢT AGENT THỨ BA (anh: "tiếp tục cải tiến" → "làm nhanh rồi commit rồi đợi")
 
 Ba mẻ A1–A3 bên dưới + vá thêm: thanh trên đếm cả nút nhân sự ẩn (học viên hai hàng tới 1760px, nhãn xén ở điện thoại) → `:nth-child(7 of …)` + chỉ trên 64rem; mục 3,5rem; kỳ báo cáo mặc định kẹp theo ngày khai giảng/vào lớp (`dau_ky_mac_dinh`); "Điểm thi thử trung bình"; chép lại đường dẫn đã cấp; khung chờ màn "Xem tờ"; `text-caption` khai trong thang + hàng rào `lop-chu-ton-tai`; Đóng ở thanh đáy khung soạn hỏi trước; `.cd-module-prog` 12px. Chi tiết trong commit. Tờ phụ huynh chậm 4,5 s là ĐỘ TRỄ MÁY DEV → Neon (15 truy vấn × ~240 ms); production đo 0,4–1,1 s sau khi thức — không cần tối ưu truy vấn.

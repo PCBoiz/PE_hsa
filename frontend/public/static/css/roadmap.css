@@ -58,7 +58,10 @@
   white-space: nowrap; transition: all 0.15s;
 }
 .rm-tab:hover { background: var(--accent-soft); color: var(--t2); }
-.rm-tab.active { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); }
+/* Chữ tab đang chọn nằm trên nền PHA NHẠT của chính màu tím → `--brand-ink`,
+   không `--accent`: #6D5AE6 trên #EDEBFC chỉ 4,2:1 (axe 22/09/2026, agent tiếp
+   cận F2). Viền vẫn giữ `--accent`. */
+.rm-tab.active { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--brand-ink); }
 .rm-tab-divider { width: 1px; height: 18px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 .rm-tab-plus {
   width: 28px; height: 28px; border-radius: 7px; border: none;
@@ -125,7 +128,7 @@
   flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
   min-width: 74px;
 }
-.rm-my-header-pct { font-size: 1.05rem; font-weight: 700; color: #10B981; }
+.rm-my-header-pct { font-size: 1.05rem; font-weight: 700; color: var(--success-ink); }
 .rm-my-header-bar {
   width: 74px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden;
 }
@@ -314,7 +317,7 @@
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s;
 }
 .rm-browse-pin:hover { border-color: var(--blue); color: var(--blue-light); }
-.rm-browse-pin.active { background: rgba(16,185,129,0.15); border-color: #10B981; color: #10B981; }
+.rm-browse-pin.active { background: rgba(16,185,129,0.15); border-color: #10B981; color: var(--success-ink); }
 .rm-browse-desc { font-size: 0.74rem; color: var(--t3); line-height: 1.5; margin: 8px 0 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 /* ── Detail Drawer ── */
@@ -365,10 +368,30 @@
   animation: fadeUp 0.22s ease both; transition: background 0.15s, border-color 0.15s;
 }
 .rm-res-item:hover { background: var(--accent-soft); border-color: rgba(255,255,255,0.14); }
-.rm-res-icon { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+/* Nền là chính màu loại pha loãng 10% (`currentColor`), nên chỉ cần lớp
+   `.rm-res-kind--*` đặt `color` là cả nền lẫn nét biểu tượng cùng lật theo
+   bản giao diện. `icons.js` tự rơi về `currentColor` khi không có
+   `data-color`. Trước đây nét #60A5FA trên nền sáng chỉ 2,5:1, dưới ngưỡng
+   3:1 của WCAG 1.4.11 cho hình đồ hoạ mang nghĩa. */
+.rm-res-icon {
+  width: 32px; height: 32px; border-radius: 7px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
 .rm-res-body { flex: 1; min-width: 0; }
-.rm-res-title { display: block; color: #E2E8F0; font-size: 0.81rem; font-weight: 500; }
-.rm-res-meta { display: block; color: #64748B; font-size: 0.7rem; margin-top: 2px; }
+/* `--t1`/`--t3` chứ không hex tối cứng: ở giao diện SÁNG, #E2E8F0 trên mặt
+   ngăn kéo (`--card`) chỉ 1,23:1 — chữ gần như không có (axe 22/09/2026). */
+.rm-res-title { display: block; color: var(--t1); font-size: 0.81rem; font-weight: 500; }
+.rm-res-meta { display: block; color: var(--t3); font-size: 0.7rem; margin-top: 2px; }
+
+/* Nhãn loại tài nguyên: màu theo token nên tự lật giữa hai bản giao diện.
+   Loại còn phân biệt bằng BIỂU TƯỢNG và bằng chính chữ nhãn, nên không rơi vào
+   lỗi "chỉ dùng màu để truyền nghĩa". */
+.rm-res-kind { font-weight: 600; }
+.rm-res-kind--article { color: var(--rm-res-article); }
+.rm-res-kind--video   { color: var(--rm-res-video); }
+.rm-res-kind--course  { color: var(--rm-res-course); }
+.rm-res-kind--docs    { color: var(--rm-res-docs); }
 
 .rm-course-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;

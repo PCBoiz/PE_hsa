@@ -70,7 +70,13 @@
     'triangle-alert': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
     'square-pen': '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 1 1 3 3L12.4 14.6l-4 1 1-4z"/>',
     paperclip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
-    'arrow-up': '<path d="m5 12 7-7 7 7M12 19V5"/>'
+    'arrow-up': '<path d="m5 12 7-7 7 7M12 19V5"/>',
+
+    /* 22/09/2026 (agent ban-phim-4, cùng họ với F12 — biểu tượng không được vẽ):
+       `data-icon="trending-up"` đứng ở tiêu đề mục "Đường tiến bộ" (Trang của
+       tôi) nhưng bảng này KHÔNG có hình ấy, nên `Icon()` trả về một <svg> RỖNG:
+       một ô trống im lặng, trông y như đang tải. Vẽ cùng chuẩn lucide. */
+    'trending-up': '<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>'
   };
 
   function Icon(name, size, color, extraAttrs) {

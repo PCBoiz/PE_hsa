@@ -1,5 +1,6 @@
 /**
  * axe-core (Deque) trên 23 trang × 2 khổ — bộ luật NGOÀI, bổ cho `do_giao_dien.mjs`.
+ * + (22/09/2026) 7 view SPA × {sáng, tối} và 4 trạng thái MỞ × {sáng, tối} — xem `LUOT_THEM`.
  *
  * Bộ đo nhà hỏi tương phản, cỡ chạm, tràn, che, chồng. axe hỏi thứ KHÁC: ARIA,
  * nhãn, MỐC TRANG (main/banner/nav), thứ tự tiêu đề, vùng cuộn có nhận bàn phím
@@ -15,7 +16,8 @@
  *
  * Chạy (cần Next 3100 + Django 9000 + hai thẻ):
  *   python scripts/cap_the.py && python scripts/cap_the.py --e2e --ra .the/tokens_hv.json
- *   node scripts/do_axe.mjs            # thoát 1 nếu còn vi phạm
+ *   node scripts/do_axe.mjs            # thoát 1 nếu còn vi phạm HOẶC có lượt không đo được
+ *   node scripts/do_axe.mjs --chi-them # chỉ các lượt view/tối/trạng thái mở (nhanh hơn)
  */
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -40,15 +42,56 @@ const TRANG = [
   ['/admin', 'Soạn giáo trình', AD], ['/giang-day', 'GD việc hôm nay', AD],
   ['/giang-day/buoi-hoc/7322', 'GD buổi học', AD], ['/giang-day/bai-tap/7322', 'GD bài tập', AD],
   ['/giang-day/bao-cao/7322', 'GD báo cáo', AD], ['/giang-day/ket-qua-thi/7322', 'GD nhập PDF', AD],
+].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
+
+/* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──
+   Tới hôm nay cổng này chỉ đi view MẶC ĐỊNH của /dashboard, bản SÁNG, mọi menu
+   ĐÓNG — và báo 0. Nhưng sáu view SPA (Khoá học, Lộ trình, Kỹ năng, Diễn đàn,
+   Cài đặt, Hồ sơ) là sáu màn học viên mở hằng ngày; chế độ tối là một bảng màu
+   khác hẳn; và menu "Học", chuông, menu tài khoản, ngăn chi tiết Lộ trình chỉ
+   có trong cây DOM đọc được khi MỞ (lúc đóng chúng `visibility: hidden`, axe bỏ
+   qua). Agent tiếp cận chạy tay `v37_axe_views.mjs` (5 view × sáng/tối) và
+   thấy lỗi thật mà cổng này không bao giờ thấy.
+
+   Mỗi lượt đều KIỂM đã tới đúng trạng thái trước khi chạy axe: view phải
+   `#page-<v>.active`, chủ đề phải khớp `body.dark`, trạng thái mở phải thấy bộ
+   chọn của nó. Không khớp → lượt ấy "không đo được" và cổng thoát 1 — không
+   bao giờ chạy axe trên trạng thái sai rồi in 0 dưới tên trạng thái kia. */
+const VIEW = ['courses', 'plan', 'roadmap', 'skills', 'forum', 'settings', 'profile'];
+const MO = [
+  // [tên, view chứa nó, bộ chọn để bấm, bộ chọn chứng minh đã mở]
+  ['menu "Học" mở', 'dashboard', '.nav-nhom-nut', '.nav-nhom.mo'],
+  ['chuông mở', 'dashboard', '#bell-btn', '#bell-panel.open'],
+  ['menu tài khoản mở', 'dashboard', '#user-chip-btn', '#user-dropdown.open'],
+  /* `#rm-drawer`, KHÔNG phải `#sidebar-detail`: bộ chọn cũ chưa bao giờ có mặt
+     trong `roadmap.js`, nên 4 lượt (2 khổ × 2 chế độ) luôn hết giờ. Cổng báo
+     "KHÔNG ĐO ĐƯỢC" và thoát 1 thay vì in 0 dưới tên một trạng thái nó không
+     hề tới được — đúng như thiết kế; chỗ hỏng là cái thước. (22/09/2026) */
+  ['ngăn chi tiết Lộ trình', 'roadmap', '[data-rm-node]', '#rm-drawer.open'],
 ];
+const LUOT_THEM = [];
+for (const cheDo of ['light', 'dark']) {
+  if (cheDo === 'dark') LUOT_THEM.push({ url: '/dashboard', ten: 'Dashboard', the: HV, cheDo, view: 'dashboard' });
+  for (const v of VIEW) LUOT_THEM.push({ url: '/' + v, ten: 'View ' + v, the: HV, cheDo, view: v });
+  for (const [ten, v, bam, cho] of MO) {
+    LUOT_THEM.push({ url: v === 'dashboard' ? '/dashboard' : '/' + v, ten, the: HV, cheDo, view: v, bam, cho });
+  }
+}
+const chiThem = process.argv.includes('--chi-them');
+const LUOT = chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM];
+
 const AXE = 'https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js';
 const b = await chromium.launch();
 const tong = new Map(); // rule → { impact, help, trang: Set, mau }
 const theoTrang = [];
 for (const w of [390, 1366]) {
-  for (const [url, ten, the] of TRANG) {
+  for (const l of LUOT) {
+    const { url, the, cheDo } = l;
+    const ten = l.cheDo === 'dark' ? `${l.ten} (tối)` : l.ten;
     const ctx = await b.newContext({ viewport: { width: w, height: w === 390 ? 844 : 900 }, hasTouch: w === 390 });
     if (the) await ctx.addCookies([{ name: 'pe_at', value: the, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    // Chủ đề đọc từ `localStorage.theme` lúc nạp — đặt TRƯỚC khi trang chạy.
+    await ctx.addInitScript((m) => { try { localStorage.setItem('theme', m); } catch { /* riêng tư */ } }, cheDo);
     await ctx.route('**/api/**', (r) => (['GET', 'HEAD'].includes(r.request().method()) ? r.continue() : r.fulfill({ status: 200, contentType: 'application/json', body: '{}' })));
     const p = await ctx.newPage();
     try {
@@ -61,7 +104,36 @@ for (const w of [390, 1366]) {
           await p.click('#nav-next'); await p.waitForSelector('.step-pane[data-step="3"].active .hsa-cards', { timeout: 15000 });
         } catch { /* đo ở bước đang có */ }
       }
-      await p.waitForTimeout(600);
+      if (l.view) {
+        const daMo = () => p.evaluate((v) => !!document.querySelector(`#page-${v}.active`), l.view);
+        if (!(await daMo())) {
+          await p.evaluate((v) => { if (typeof window.navigate === 'function') window.navigate(v); }, l.view);
+          await p.waitForTimeout(1500);
+        }
+        if (!(await daMo())) throw new Error(`view "${l.view}" KHÔNG mở`);
+        await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+      }
+      const toi = await p.evaluate(() => document.body.classList.contains('dark'));
+      if (toi !== (cheDo === 'dark')) throw new Error(`chủ đề: xin ${cheDo} nhưng body.dark=${toi}`);
+      if (l.bam) {
+        /* KHÔNG CÓ nút để mở ở khổ này (ví dụ một điều khiển chỉ có ở máy tính)
+           thì đó không phải lỗi — ghi "bỏ qua" và nói rõ, chứ không nhuộm đỏ cổng
+           bằng một trạng thái vốn không tồn tại ở đây. Có nút mà không mở được
+           mới là lỗi. */
+        if (!(await p.locator(l.bam).count())) {
+          theoTrang.push({ kho: w, ten, bo_qua: `không có ${l.bam} ở khổ này` });
+          console.log(`[${w}] ${ten.padEnd(30)} BỎ QUA: không có ${l.bam} ở khổ này`);
+          await ctx.close();
+          continue;
+        }
+        const nut = p.locator(l.bam).filter({ visible: true }).first();
+        await nut.waitFor({ state: 'visible', timeout: 10000 });
+        await nut.click();
+        await p.waitForSelector(l.cho, { timeout: 8000 });
+      }
+      /* Chờ hết chuyển tiếp (panel mở trượt/mờ dần ~.2s): đọc giữa chừng là
+         đọc màu pha dở — bẫy agent hồi quy mắc ngày 21/09. */
+      await p.waitForTimeout(700);
       await p.addScriptTag({ url: AXE });
       const kq = await p.evaluate(async () => {
         // eslint-disable-next-line no-undef
@@ -69,7 +141,7 @@ for (const w of [390, 1366]) {
         return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, tags: v.tags.filter((t) => /wcag|best/.test(t)),
           nodes: v.nodes.slice(0, 3).map((n) => ({ target: n.target.join(' '), html: n.html.slice(0, 120), msg: (n.failureSummary || '').split('\n')[1] || '' })), so: v.nodes.length }));
       });
-      theoTrang.push({ kho: w, ten, so: kq.reduce((a, v) => a + v.so, 0), luat: kq.map((v) => `${v.id}×${v.so}`) });
+      theoTrang.push({ kho: w, ten, so: kq.reduce((a, v) => a + v.so, 0), luat: kq.map((v) => `${v.id}×${v.so}`), mau: kq.map((v) => ({ id: v.id, nodes: v.nodes })) });
       for (const v of kq) {
         const t = tong.get(v.id) || { impact: v.impact, help: v.help, tags: v.tags, trang: new Set(), mau: v.nodes, soNut: 0 };
         t.trang.add(`${ten}@${w}`); t.soNut += v.so; tong.set(v.id, t);
@@ -81,10 +153,16 @@ for (const w of [390, 1366]) {
   }
 }
 await b.close();
-for (const r of theoTrang) console.log(`[${r.kho}] ${r.ten.padEnd(18)} ${r.loi ? 'LỖI ' + r.loi : String(r.so).padStart(3) + '  ' + r.luat.join(' ')}`);
+for (const r of theoTrang) {
+  console.log(`[${r.kho}] ${r.ten.padEnd(30)} `
+    + (r.loi ? 'KHÔNG ĐO ĐƯỢC: ' + r.loi
+      : r.bo_qua ? 'BỎ QUA: ' + r.bo_qua
+        : String(r.so).padStart(3) + '  ' + r.luat.join(' ')));
+}
 console.log('\n══ THEO LUẬT (mọi trang, mọi khổ) ══');
 for (const [id, t] of [...tong].sort((a, b) => ({ critical: 0, serious: 1, moderate: 2, minor: 3 }[a[1].impact] ?? 9) - ({ critical: 0, serious: 1, moderate: 2, minor: 3 }[b[1].impact] ?? 9))) {
   console.log(`\n${t.impact.toUpperCase().padEnd(9)} ${id} — ${t.help} [${t.tags.join(',')}]  · ${t.trang.size} lượt trang · ${t.soNut} nút`);
+  console.log(`   ở: ${[...t.trang].join(', ').slice(0, 300)}`);
   for (const n of t.mau) console.log(`   ${n.target.slice(0, 70)} | ${n.html.slice(0, 90)} | ${n.msg.slice(0, 90)}`);
 }
 const i = process.argv.indexOf('--json');
@@ -92,5 +170,5 @@ if (i >= 0) fs.writeFileSync(process.argv[i + 1], JSON.stringify({ theoTrang, to
 const tongNut = theoTrang.reduce((a, r) => a + (r.so || 0), 0);
 const loiTai = theoTrang.filter((r) => r.loi).length;
 console.log(`
-TỔNG: ${tongNut} nút vi phạm / ${theoTrang.length} lượt · ${loiTai} lượt không tải được`);
+TỔNG: ${tongNut} nút vi phạm / ${theoTrang.length} lượt · ${loiTai} lượt không đo được`);
 process.exit(tongNut || loiTai ? 1 : 0);

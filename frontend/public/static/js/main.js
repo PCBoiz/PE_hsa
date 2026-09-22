@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' || e.keyCode === 27) {
-            closeSearchSuggestions();
+            closeSearchSuggestions(true);
             closeSidebar();
             var editor = document.getElementById('rm-personal-editor');
             if (editor) editor.blur();
@@ -1227,14 +1227,23 @@ function showSearchSuggestions() {
   renderSearchSuggestions();
 }
 
-function closeSearchSuggestions() {
+/* `ngay` (22/09/2026, agent tiếp cận F14): Esc phải đóng bảng NGAY cả khi tiêu
+   điểm còn trong ô tìm — WCAG 1.4.13, nội dung bật lên khi nhận tiêu điểm phải
+   tắt được mà không phải rời tiêu điểm. Bản cũ gọi đúng hàm này từ Esc nhưng
+   nó tự bỏ qua khi tiêu điểm còn trong ô (luật dành cho blur), nên bảng 173px
+   vẫn đè lên nội dung sau 1 s. Lời gọi từ blur giữ nguyên độ trễ 200 ms (để cú
+   bấm vào gợi ý kịp ăn). Tiêu điểm đang ở một gợi ý thì về lại ô tìm. */
+function closeSearchSuggestions(ngay) {
   setTimeout(function () {
     var panel = document.getElementById('search-suggestions');
     var searchWrap = document.getElementById('search-wrap');
     var active = document.activeElement;
-    if (searchWrap && searchWrap.contains(active)) return;
+    if (!ngay && searchWrap && searchWrap.contains(active)) return;
+    // Trả tiêu điểm TRƯỚC khi giấu: ô tìm nhận tiêu điểm là tự mở lại bảng
+    // (`onFocus` → `showSearchSuggestions`), nên giấu sau mới ăn. Đo 22/09.
+    if (ngay && panel && panel.contains(active)) document.getElementById('search-input').focus();
     if (panel) panel.classList.add('hidden');
-  }, 200);
+  }, ngay ? 0 : 200);
 }
 
 function renderSearchSuggestions() {
@@ -1501,7 +1510,10 @@ function removeCourseFilter(type, value) {
 
 /* ── Toggle switches ── */
 function toggleSwitch(btn) {
-  btn.classList.toggle("on");
+  // `aria-pressed` đi kèm lớp `on` (22/09/2026, cùng họ với agent tiếp cận F15):
+  // bốn công tắc ở Cài đặt chỉ đổi MÀU, nên trình đọc màn hình không biết cái nào
+  // đang bật. Bật/tắt là trạng thái, và trạng thái phải nằm trong cây trợ năng.
+  btn.setAttribute("aria-pressed", btn.classList.toggle("on"));
 }
 
 /* ── Hover helpers ── */

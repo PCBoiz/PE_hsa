@@ -480,8 +480,11 @@
     color: #1e293b;
 }
 
+/* Bản SÁNG: #94a3b8 trên khung nhập #f1f5f9 chỉ 2,34:1 (đo 22/09/2026 trên
+   trang cố định dựng đúng bộ CSS) — chữ gợi ý là chữ, phải ≥4,5:1. `--t3` cho
+   5,5:1 và tự đổi theo chủ đề; bản tối có luật riêng ở cuối tệp. */
 .chatbot-input::placeholder {
-    color: #94a3b8;
+    color: var(--t3);
 }
 
 .chatbot-send-btn {
@@ -574,8 +577,18 @@ body.dark .chatbot-input {
     color: #f1f5f9;
 }
 
+/* Khung nhập tối là #334155 — SÁNG hơn `--card`, nên token chữ phụ không đủ ở
+   đây: #64748b cũ 2,18:1, `--t3` 3,43:1, `--t2` 4,04:1 (đo 22/09/2026, agent
+   tiếp cận F16). Chữ gợi ý vẫn là CHỮ nên cần 4,5:1: pha `--t2` với `--t1`
+   (không đặt mã màu mới) → #ABB8C9 = 5,14:1, vẫn nhạt hơn chữ đã gõ (--t1).
+   Gốc rễ là bảng màu riêng của trợ lý không theo token; khi nào nền khung nhập
+   về `--lift` thì dòng này rút lại thành `--t3`. */
 body.dark .chatbot-input::placeholder {
-    color: #64748b;
+    color: color-mix(in srgb, var(--t2) 70%, var(--t1));
+}
+
+body.dark .chatbot-attach-btn {
+    color: var(--t2);
 }
 
 body.dark .chatbot-quick-btn {

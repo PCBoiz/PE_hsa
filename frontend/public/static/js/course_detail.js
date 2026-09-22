@@ -69,44 +69,35 @@ function prefersDarkTheme() {
   applyTheme(prefersDarkTheme());
 })();
 
-/* ── User dropdown ── */
+/* ── User dropdown ──
+   22/09/2026 (agent ban-phim-4): gộp ba bản chép tay của cùng phép "đóng menu"
+   (nút, bấm-ra-ngoài, Esc) vào MỘT hàm `closeUserMenu`, cùng khuôn dashboard.js —
+   để thêm được luật trả tiêu điểm (F9) ở một chỗ mà tầng này vẫn nhỏ đi. */
 function toggleUserMenu() {
-  var wrap = document.getElementById('user-chip-wrap');
-  var btn  = document.getElementById('user-chip-btn');
   var menu = document.getElementById('user-dropdown');
-  var open = menu.classList.contains('open');
   closeBellPanel();
-  if (open) {
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-  } else {
-    menu.classList.add('open');
-    btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-  }
+  if (menu.classList.contains('open')) return closeUserMenu();
+  menu.classList.add('open');
+  document.getElementById('user-chip-btn').classList.add('open');
+  document.getElementById('user-chip-btn').setAttribute('aria-expanded', 'true');
+}
+
+function closeUserMenu() {
+  var btn = document.getElementById('user-chip-btn'), menu = document.getElementById('user-dropdown');
+  if (!menu || !btn) return;
+  menu.classList.remove('open'); btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false');
+  // Tiêu điểm trong menu vừa giấu → về nút đã mở nó; không thì rơi về <body> (agent tiếp cận F9).
+  if (menu.contains(document.activeElement)) btn.focus();
 }
 
 document.addEventListener('click', function(e) {
-  var userWrap = document.getElementById('user-chip-wrap');
-  if (userWrap && !userWrap.contains(e.target)) {
-    var btn  = document.getElementById('user-chip-btn');
-    var menu = document.getElementById('user-dropdown');
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-  }
-  var bellWrap = document.getElementById('bell-wrap');
+  var userWrap = document.getElementById('user-chip-wrap'), bellWrap = document.getElementById('bell-wrap');
+  if (userWrap && !userWrap.contains(e.target)) closeUserMenu();
   if (bellWrap && !bellWrap.contains(e.target)) closeBellPanel();
 });
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var btn  = document.getElementById('user-chip-btn');
-    var menu = document.getElementById('user-dropdown');
-    if (menu) { menu.classList.remove('open'); btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
-    closeBellPanel();
-  }
+  if (e.key === 'Escape') { closeUserMenu(); closeBellPanel(); }
 });
 
 /* ── Bell notification panel ── */
@@ -124,16 +115,20 @@ function _renderBellItems() {
     body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div>';
     return;
   }
+  // Mục là <button> thật, giữ tiêu điểm qua lượt dựng lại — lý do đầy đủ ở
+  // `dashboard.js::_renderBellItems` (agent tiếp cận F8, 22/09/2026).
+  var dangO = Array.prototype.indexOf.call(body.children, document.activeElement);
   body.innerHTML = _bellNotifs.map(function(n, i) {
-    return '<div class="bell-item' + (n.unread ? ' unread' : '') + '" onclick="readBellItem(' + i + ')" role="menuitem" tabindex="0">'
-      + '<div class="bell-item-icon">' + n.icon + '</div>'
-      + '<div class="bell-item-body">'
-      + '<div class="bell-item-text">' + n.text + '</div>'
-      + '<div class="bell-item-time">' + n.time + '</div>'
-      + '</div>'
-      + (n.unread ? '<div class="bell-unread-dot"></div>' : '')
-      + '</div>';
+    return '<button type="button" class="bell-item' + (n.unread ? ' unread' : '') + '" onclick="readBellItem(' + i + ')">'
+      + '<span class="bell-item-icon" aria-hidden="true">' + n.icon + '</span>'
+      + '<span class="bell-item-body">'
+      + '<span class="bell-item-text">' + n.text + '</span>'
+      + '<span class="bell-item-time">' + n.time + '</span>'
+      + '</span>'
+      + (n.unread ? '<span class="bell-unread-dot"><span class="sr-only">(chưa đọc)</span></span>' : '')
+      + '</button>';
   }).join('');
+  if (body.children[dangO]) body.children[dangO].focus();
 }
 
 function _updateBellDot() {
@@ -145,16 +140,11 @@ function _updateBellDot() {
 
 function toggleBellPanel() {
   var panel = document.getElementById('bell-panel');
-  var btn   = document.getElementById('bell-btn');
-  var open  = panel.classList.contains('open');
-  if (open) {
-    panel.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-  } else {
-    _renderBellItems();
-    panel.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-  }
+  if (panel.classList.contains('open')) return closeBellPanel();
+  closeUserMenu();
+  _renderBellItems();
+  panel.classList.add('open');
+  document.getElementById('bell-btn').setAttribute('aria-expanded', 'true');
 }
 
 function closeBellPanel() {
@@ -162,6 +152,7 @@ function closeBellPanel() {
   var btn   = document.getElementById('bell-btn');
   if (panel) panel.classList.remove('open');
   if (btn)   btn.setAttribute('aria-expanded', 'false');
+  if (panel && btn && panel.contains(document.activeElement)) btn.focus();   // F9, như closeUserMenu
 }
 
 function readBellItem(idx) {

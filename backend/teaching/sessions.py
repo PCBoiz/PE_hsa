@@ -279,6 +279,7 @@ def _overlap_warning(class_id, starts_at, minutes, exclude_id=None):
 
 def _session_dict(r, counts=None, member_count=None):
     """Một buổi học ở dạng JSON. Khoá camelCase cho khớp teaching/reports.py."""
+    bat_dau = bool(r['starts_at'] and r['starts_at'] <= local_now())
     out = {
         'id': r['id'],
         'classId': r['class_id'],
@@ -288,13 +289,17 @@ def _session_dict(r, counts=None, member_count=None):
         'lessonRefs': r['lesson_refs'],
         'meetingUrl': r['meeting_url'],
         'recordingUrl': r['recording_url'],
-        'status': r['status'],
+        # "Đã dạy" SUY từ dữ liệu: đã bắt đầu + đã điểm danh (22/09/2026, agent
+        # GV→PH F13). Cờ lưu `done` chỉ đúng với buổi tick SAU bản vá 20/09;
+        # buổi tick trước đó đứng im "Đã lên lịch" dù đã dạy. Buổi huỷ giữ nguyên.
+        'status': ('done' if r['status'] == 'planned' and bat_dau and r.get('attendance_taken_at')
+                   else r['status']),
         'note': r['note'],
         # Buổi đã tới giờ chưa — tính Ở MÁY CHỦ. Từ khi sinh được lịch cả kỳ
         # (13/09/2026), một lớp có sẵn hàng chục buổi tương lai, và màn hình phải
         # tách chúng khỏi buổi đã dạy. Tính ở trình duyệt thì bản dựng sẵn và bản
         # sống dậy lệch nhau ở đúng những buổi sát giờ.
-        'started': bool(r['starts_at'] and r['starts_at'] <= local_now()),
+        'started': bat_dau,
         'createdAt': r['created_at'].isoformat() if r.get('created_at') else None,
         'updatedAt': r['updated_at'].isoformat() if r.get('updated_at') else None,
         # Có con dấu này thì "0 dòng điểm danh" mới đọc được: chưa có dấu là
@@ -820,10 +825,13 @@ class SessionAttendanceView(APIView):
             # `planned` → `done` cùng lúc: buổi đã điểm danh là buổi đã dạy.
             # Trước 20/09/2026 trạng thái đứng im ở "Đã lên lịch" sau khi tick,
             # biểu mẫu Sửa hiện hai chuyện trái nhau (rà giao diện nhân sự).
-            # Chỉ đổi từ `planned`; buổi đã huỷ giữ nguyên.
+            # Chỉ đổi từ `planned`; buổi đã huỷ giữ nguyên. Và chỉ khi buổi ĐÃ
+            # BẮT ĐẦU (22/09/2026): tick trước giờ (được phép, có dòng vàng cảnh
+            # báo) từng biến buổi ngày mai thành "Đã dạy". Buổi ấy sẽ hiện "Đã
+            # dạy" khi tới giờ — `_session_dict` suy ra từ dấu điểm danh.
             x("UPDATE class_sessions SET attendance_taken_at=%s, attendance_taken_by=%s, "
-              "status = CASE WHEN status = 'planned' THEN 'done' ELSE status END, "
-              "updated_at=%s WHERE id=%s", (now, request.user.id, now, session_id))
+              "status = CASE WHEN status = 'planned' AND starts_at <= %s THEN 'done' ELSE status END, "
+              "updated_at=%s WHERE id=%s", (now, request.user.id, now, now, session_id))
 
         # Sự kiện học tập nằm NGOÀI khối atomic ở trên, có chủ đích. record_event
         # tự bọc savepoint và không bao giờ ném lỗi, nhưng common/db.py từ chối

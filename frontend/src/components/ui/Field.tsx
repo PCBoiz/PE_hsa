@@ -50,7 +50,12 @@ export default function Field({
             'focus:outline-2 focus:outline-offset-0 focus:outline-brand',
             icon ? 'pl-10' : 'pl-3',
             suffix ? 'pr-12' : 'pr-3',
-            error ? 'border-danger' : 'border-line',
+            // `border-line-input`, KHÔNG `border-line` (22/09/2026, agent tiếp cận
+            // F11): `line` là viền TRANG TRÍ, đo trên /login và /doi-mat-khau chỉ
+            // 1,23:1 (sáng) / 1,18:1 (tối) — ô nhập tan vào thẻ. WCAG 1.4.11 đòi
+            // 3:1 cho ranh giới của một điều khiển; `--border-input` đã đạt ở cả
+            // hai chế độ (theme.css). Các ô React của nhân sự dùng đúng token này.
+            error ? 'border-danger' : 'border-line-input',
             className,
           ]
             .filter(Boolean)

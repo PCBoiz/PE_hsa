@@ -3,6 +3,8 @@
 // Port roadmap.html (partial include trong dashboard.html) — markup 1:1.
 // Logic render/kéo-thả nằm nguyên trong roadmap.js + main.js (legacy).
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { BieuTuong } from './bieuTuong';
+
 const W = () => window as any;
 
 export default function RoadmapSection() {
@@ -73,11 +75,11 @@ export default function RoadmapSection() {
           <div className="rm-browse-hd">
             <span className="rm-browse-title">Khám phá lộ trình</span>
             <button className="rm-browse-close" onClick={() => W().roadmapCloseBrowse()} aria-label="Đóng">
-              <span data-icon="x" data-size="16"></span>
+              <BieuTuong ten="x" co={16} />
             </button>
           </div>
           <div className="rm-browse-search-wrap">
-            <span data-icon="search" data-size="14" style={{ color: 'var(--t3)' }}></span>
+            <span style={{ color: 'var(--t3)' }}><BieuTuong ten="search" co={14} /></span>
             <input
               type="text"
               id="rm-browse-search"
@@ -89,13 +91,21 @@ export default function RoadmapSection() {
           <div className="rm-browse-list" id="rm-browse-list"></div>
         </div>
 
-        {/* Detail Drawer */}
+        {/* Detail Drawer.
+            `aria-modal` + tên lấy từ tiêu đề chặng (22/09/2026, agent tiếp cận
+            F6): ngăn có lớp phủ che bản đồ và `roadmap.js` bẫy tiêu điểm trong
+            nó, nên với trình đọc màn hình nó PHẢI là hộp thoại modal — nếu không,
+            trình đọc vẫn cho đi vào bản đồ phía sau lớp phủ. An toàn khi đóng:
+            ngăn đóng là `visibility: hidden` (roadmap.css) nên rời cây trợ năng.
+            Tên cũ "Chi tiết node" vừa lai tiếng Anh vừa không nói chặng nào. */}
         <div className="rm-drawer-backdrop" id="rm-drawer-backdrop" onClick={() => W().roadmapCloseDrawer()}></div>
-        <div className="rm-drawer" id="rm-drawer" role="dialog" aria-label="Chi tiết node">
+        <div className="rm-drawer" id="rm-drawer" role="dialog" aria-modal="true" aria-labelledby="rm-drawer-title">
           <div className="rm-drawer-hd">
             <h2 id="rm-drawer-title">—</h2>
+            {/* Biểu tượng vẽ thẳng bằng React (F12): ô `data-icon` chờ `icons.js`
+                điền thì RỖNG khi vào Lộ trình qua menu — nút Đóng thành ô trống. */}
             <button className="rm-drawer-close" onClick={() => W().roadmapCloseDrawer()} aria-label="Đóng">
-              <span data-icon="x" data-size="16"></span>
+              <BieuTuong ten="x" co={16} />
             </button>
           </div>
           <div className="rm-drawer-body">

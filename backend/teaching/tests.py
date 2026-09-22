@@ -527,6 +527,42 @@ def test_buoi_chua_toi_khong_bi_tinh_la_CHUA_TICK_trong_so_diem_danh(db):
 
 
 @pytest.mark.django_db
+def test_trang_thai_da_day_tinh_tu_du_lieu_khong_tu_co_luu(db):
+    """"Đã dạy" = buổi ĐÃ BẮT ĐẦU và ĐÃ điểm danh (22/09/2026, agent GV→PH F13).
+
+    Bản trước lưu cờ `done` lúc bấm lưu điểm danh — nên (1) buổi tick TRƯỚC giờ
+    học thành "Đã dạy" dù chưa diễn ra, và (2) buổi tick trước ngày có bản vá
+    20/09 đứng im "Đã lên lịch" mãi (14/09 và 21/09 của lớp audit).
+    """
+    from datetime import timedelta
+
+    from teaching.sessions import SessionAttendanceView, _session_dict
+    gv = _nguoi('GV Da Day', ROLE_TEACHER)
+    em = _nguoi('HV Da Day', ROLE_STUDENT)
+    cid = _lop_trong('Lop da day', gv=gv.id)
+    _vao_lop(cid, em.id)
+    nay = local_now()
+    # (2) dữ liệu cũ: buổi đã qua, đã tick, cờ vẫn `planned`.
+    cu = q1("INSERT INTO class_sessions (class_id, starts_at, status, attendance_taken_at, created_by) "
+            "VALUES (%s,%s,'planned',%s,%s) RETURNING *", (cid, nay - timedelta(days=3), nay, gv.id))
+    assert _session_dict(cu)['status'] == 'done', 'buổi đã qua + đã tick vẫn hiện "Đã lên lịch"'
+    # (1) tick TRƯỚC giờ: buổi ngày mai.
+    mai = q1("INSERT INTO class_sessions (class_id, starts_at, status, created_by) "
+             "VALUES (%s,%s,'planned',%s) RETURNING id", (cid, nay + timedelta(days=1), gv.id))
+    kq = _goi(SessionAttendanceView, 'post', {'marks': [{'user_id': em.id, 'status': 'present'}]},
+              ai=gv, session_id=mai['id'])
+    assert kq.status_code == 200, kq.data
+    dong = q1('SELECT * FROM class_sessions WHERE id=%s', (mai['id'],))
+    assert dong['attendance_taken_at'] is not None
+    assert dong['status'] == 'planned', 'tick trước giờ đã biến buổi CHƯA dạy thành "done"'
+    assert _session_dict(dong)['status'] == 'planned'
+    # Buổi huỷ giữ nguyên dù có dấu điểm danh.
+    huy = q1("INSERT INTO class_sessions (class_id, starts_at, status, attendance_taken_at, created_by) "
+             "VALUES (%s,%s,'cancelled',%s,%s) RETURNING *", (cid, nay - timedelta(days=1), nay, gv.id))
+    assert _session_dict(huy)['status'] == 'cancelled'
+
+
+@pytest.mark.django_db
 def test_dau_tick_cua_buoi_CHUA_TOI_khong_cong_vao_so_diem_danh(db):
     """Sổ điểm danh MỞ được cho buổi sắp tới (chỉ cảnh báo) — nên có dấu tick
     trước giờ. Agent rà giảng viên 21/09/2026: CSV và PDF lớp ghi "Có mặt 4" khi
