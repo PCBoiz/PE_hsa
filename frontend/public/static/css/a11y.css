@@ -258,7 +258,9 @@ label.option input[type="checkbox"] {
 /* Vòng tròn phần trăm ở Kỹ năng: lòng trong chỉ 28px, chữ "100%" ở 12px không
    lọt. Nới vòng theo chữ (40→48, 28→34) chứ không giữ chữ 9px cho vừa vòng. */
 .sk-donut { width: 48px; height: 48px; }
-.sk-donut-inner { width: 34px; height: 34px; }
+/* Lòng 36 chứ không 34: đo mốc xấu nhất ("100%") ở 12px ra ĐÚNG 34px — vừa khít
+   lòng vòng, không dư một pixel nào. Một bộ chữ khác đi là tràn. */
+.sk-donut-inner { width: 36px; height: 36px; }
 
 /* `line-height: 1` cũ khiến chữ 12px trong vòng bị cắt ngọn. */
 .sk-donut-pct { line-height: 1.1 !important; }
