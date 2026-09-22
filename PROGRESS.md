@@ -150,7 +150,8 @@ Kiểm trước khi định đẩy: cây sạch, quét bí mật cả 5 commit k
 Anh tự chạy `git push origin master`, hoặc thêm luật cho phép trong cấu hình Claude Code.
 
 ### Còn lại
-1. **Kết quả 833 test backend** — báo lại khi xong (phiên này không sửa một dòng backend nào).
+1. ~~Kết quả 833 test backend~~ → **833/833 XANH** (51 phút 31 giây, exit 0). Không treo, chỉ chậm
+   vì độ trễ Neon. Chẩn đoán lúc nghi treo đã đúng.
 2. F6: anh chọn **tên GV + hotline trung tâm**. Tên GV có sẵn (`parent_report.py:579` đã trả `teacher`).
    CHỜ ANH cho số điện thoại + email hỗ trợ THẬT (cả repo chỉ có số mẫu `0912345678`).
 3. DNS `tophsa.vn`; cặp khoá proxy trên Render + Vercel; `EMAIL_CHE_DO_THU` cho máy dev.
