@@ -72,6 +72,25 @@ export default function DuongDanDaCap({
   const [loi, setLoi] = useState<string | null>(null);
   const [hoiThuHoi, setHoiThuHoi] = useState<number | null>(null);
   const [dangThuHoi, setDangThuHoi] = useState<number | null>(null);
+  const [daChep, setDaChep] = useState<number | null>(null);
+  const [moO, setMoO] = useState<number | null>(null);
+
+  /* CHÉP LẠI đường dẫn đã cấp (22/09/2026). Trước đây chỉ ô ngay sau khi bấm
+     "Tạo đường dẫn" có địa chỉ; tải lại trang là mất, và muốn gửi lại cho phụ
+     huynh thì chỉ còn cách cấp THÊM một chìa sống 45 ngày — đúng thứ câu dặn
+     "đừng dán vào nhóm lớp" muốn hạn chế (agent GV→PH F9). Máy chủ vốn trả
+     `token` trong danh sách; địa chỉ dựng ở trình duyệt như `TaoDuongDan`. */
+  const diaChi = (c: ChiaKhoa) => `${window.location.origin}/bc/${c.token}`;
+  async function chep(c: ChiaKhoa) {
+    try {
+      await navigator.clipboard.writeText(diaChi(c));
+      setDaChep(c.id);
+    } catch {
+      // Trình duyệt chặn clipboard (trang http): mở ô chữ để chọn tay.
+      setDaChep(null);
+      setMoO(c.id);
+    }
+  }
 
   const nap = useCallback(async () => {
     try {
@@ -193,6 +212,16 @@ export default function DuongDanDaCap({
                 {c.openedCount > 0
                   && ' — đếm cả lượt bot chat xem trước liên kết, nên chưa chắc phụ huynh đã mở.'}
               </p>
+              {moO === c.id && (
+                <input
+                  readOnly
+                  autoFocus
+                  value={diaChi(c)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-label="Đường dẫn báo cáo gửi phụ huynh"
+                  className="mt-2 min-h-11 w-full rounded-md border border-line-input bg-surface px-3 font-mono text-small text-ink"
+                />
+              )}
             </div>
 
             {hoiThuHoi === c.id ? (
@@ -212,9 +241,14 @@ export default function DuongDanDaCap({
                 </Button>
               </div>
             ) : (
-              <Button variant="ghost" onClick={() => setHoiThuHoi(c.id)}>
-                Thu hồi
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" onClick={() => void chep(c)}>
+                  {daChep === c.id ? 'Đã chép ✓' : 'Chép đường dẫn'}
+                </Button>
+                <Button variant="ghost-danger" onClick={() => setHoiThuHoi(c.id)}>
+                  Thu hồi
+                </Button>
+              </div>
             )}
           </li>
         ))}

@@ -72,7 +72,7 @@ const nextConfig: NextConfig = {
      view; `DashboardClient` đọc `location.hash` lúc hydrate. Tạm thời (307),
      để sau này view nào thành tuyến thật thì gỡ dòng của nó là xong. */
   async redirects() {
-    return ['courses', 'roadmap', 'skills', 'forum', 'settings', 'profile'].map((v) => ({
+    return ['courses', 'roadmap', 'skills', 'forum', 'settings', 'profile', 'plan'].map((v) => ({
       source: `/${v}`,
       destination: `/dashboard#${v}`,
       permanent: false,

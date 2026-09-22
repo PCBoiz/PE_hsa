@@ -243,7 +243,7 @@ export default function NoiDungBai({
           )}
         </div>
       )}
-      {xong && <p className="mb-4 text-body text-ok-ink">{xong}</p>}
+      {xong && <p className="mb-4 text-body text-success-ink">{xong}</p>}
 
       <div className="flex flex-col gap-8">
         {/* ── Thông tin bài ── */}
@@ -431,9 +431,13 @@ export default function NoiDungBai({
         {/* Thanh dính đáy: nút Lưu phải với tới được từ MỌI chỗ trong biểu mẫu
             dài 9.600px, không chỉ từ đỉnh. */}
         <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur">
-          {xong && <span className="mr-auto text-body text-ok-ink">{xong}</span>}
-          <Button variant="ghost" onClick={onDong}>
-            Đóng
+          {xong && <span className="mr-auto text-body text-success-ink">{xong}</span>}
+          {/* `dong`, KHÔNG `onDong` (22/09/2026): bản trước gọi thẳng `onDong`, nên
+              nút Đóng ở thanh đáy bỏ qua câu hỏi "còn thay đổi chưa lưu" mà nút
+              trên đã có từ 21/09 — sửa xong cuộn xuống bấm Đóng là mất sạch, không
+              hỏi (agent hồi quy đo ở 390, nơi thanh đáy là nút gần tay nhất). */}
+          <Button variant="ghost" onClick={dong}>
+            {conSua ? 'Đóng (chưa lưu)' : 'Đóng'}
           </Button>
           <Button
             onClick={() => {

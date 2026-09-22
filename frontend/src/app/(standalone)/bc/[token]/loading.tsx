@@ -30,25 +30,7 @@
  * JavaScript): mạng bình thường thì tờ về trước khi câu ấy kịp hiện, không
  * nhấp nháy; máy chủ ngủ thì câu ấy hiện đúng lúc người ta bắt đầu sốt ruột.
  */
-function O({ rong, cao = '0.9em' }: { rong: string; cao?: string }) {
-  return (
-    <span
-      className="block animate-pulse rounded bg-sunken"
-      style={{ width: rong, height: cao }}
-    />
-  );
-}
-
-/** Một ô số như `Ô` trong ToBaoCao: nhãn nhỏ, số to, dòng phụ. */
-function OSo() {
-  return (
-    <div className="rounded-md border border-line bg-surface px-4 py-3">
-      <O rong="60%" cao="0.8em" />
-      <p className="mt-1 text-title"><O rong="2.5em" cao="1em" /></p>
-      <p className="mt-0.5 text-small"><O rong="80%" cao="0.8em" /></p>
-    </div>
-  );
-}
+import { KhungToBaoCao } from '@/components/KhungToBaoCao';
 
 export default function DangTaiBaoCao() {
   return (
@@ -74,27 +56,7 @@ export default function DangTaiBaoCao() {
           trong ngày có thể mất khoảng một phút — cứ để trang này mở, tờ báo cáo sẽ
           tự hiện.
         </p>
-        <article className="rounded-lg border border-line bg-surface p-6" aria-hidden="true">
-          <h2 className="text-title"><O rong="min(14rem, 70%)" cao="1em" /></h2>
-          <p className="mt-1 text-body"><O rong="min(20rem, 90%)" /></p>
-          <p className="mt-2 text-body"><O rong="min(12rem, 55%)" /></p>
-          <p className="mt-0.5 text-small"><O rong="min(16rem, 75%)" cao="0.8em" /></p>
-
-          <h3 className="mt-6 text-subhead"><O rong="9rem" cao="1em" /></h3>
-          <p className="mt-2 text-body"><O rong="min(22rem, 95%)" /></p>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <OSo /><OSo /><OSo /><OSo />
-          </div>
-
-          <h3 className="mt-6 text-subhead"><O rong="11rem" cao="1em" /></h3>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <OSo /><OSo /><OSo />
-          </div>
-
-          <h3 className="mt-6 text-subhead"><O rong="10rem" cao="1em" /></h3>
-          <p className="mt-2 text-body"><O rong="min(24rem, 100%)" /></p>
-          <p className="mt-1 text-body"><O rong="min(18rem, 80%)" /></p>
-        </article>
+        <KhungToBaoCao />
 
       </main>
 

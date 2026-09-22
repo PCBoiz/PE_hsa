@@ -597,22 +597,36 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
    110rem thì hai hàng.
    `:has()` đếm thẳng số mục nên thêm/bớt tab là luật tự đúng theo — không có
    con số nào phải đo lại. Khu Giảng dạy (4 tab) và thanh học viên (5–6 mục)
-   không chạm tới luật này. */
-@media (max-width: 110rem) {
+   không chạm tới luật này.
+
+   CHỈ ĐẾM MỤC ĐANG HIỆN (22/09/2026). Bản đầu đếm `.nav-btn:nth-child(7)` —
+   tức cả ba nút nhân sự Giảng dạy / Vận hành / Quản trị mà thanh học viên vẫn
+   dựng sẵn với `display:none`. Học viên 6 mục hiện thành "8 mục", nên thanh
+   của học viên hai hàng ở MỌI khổ tới 110rem (đo: cao 104px ở 1366 và 1600,
+   hàng dưới trống một nửa). `of S` bỏ qua nút có `display: none` trong
+   `style` — cả hai cách viết: React ghi `display:none`, tầng cũ
+   (`el.style.display = 'none'`) ra `display: none`.
+
+   VÀ CHỈ TỪ 64rem TRỞ LÊN. Dưới đó là bố cục điện thoại/tablet (khối ≤64rem
+   bên dưới) — hàng điều hướng cao 3,25rem để chứa biểu tượng + nhãn HAI dòng.
+   Luật này có `:has(...)` nên nặng hơn và từng đè xuống 2,75rem: nhãn hai
+   dòng bị xén đáy 1–2px ("Trang của tôi", "Toàn trung tâm", "Cơ sở học
+   phí"…, agent hoi-quy-3 đo ở 360/390). */
+@media (64rem < width <= 110rem) {
   /* Đổi chính `--topbar-h` chứ không vá từng chỗ chừa: `#main` (Trang của tôi),
      `pt-[calc(var(--topbar-h)+1.5rem)]` của khu Vận hành, `mock.css`,
      `roadmap.css` đều bám token này — sửa một chỗ thì tất cả theo. */
-  body:has(.topbar:not(.shell-lam-bai) .topbar-nav > .nav-btn:nth-child(7)) {
+  body:has(.topbar:not(.shell-lam-bai) .topbar-nav > :nth-child(7 of .nav-btn:not([style*="display: none"]):not([style*="display:none"]))) {
     --topbar-h: calc(clamp(3.25rem, 3rem + 1.1vw, 3.75rem) + 2.75rem);
   }
-  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) {
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > :nth-child(7 of .nav-btn:not([style*="display: none"]):not([style*="display:none"]))) {
     flex-wrap: wrap; row-gap: 0; align-content: flex-start;
   }
-  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-left,
-  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-right {
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > :nth-child(7 of .nav-btn:not([style*="display: none"]):not([style*="display:none"]))) .topbar-left,
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > :nth-child(7 of .nav-btn:not([style*="display: none"]):not([style*="display:none"]))) .topbar-right {
     height: clamp(3.25rem, 3rem + 1.1vw, 3.75rem);
   }
-  .topbar:not(.shell-lam-bai):has(.topbar-nav > .nav-btn:nth-child(7)) .topbar-nav {
+  .topbar:not(.shell-lam-bai):has(.topbar-nav > :nth-child(7 of .nav-btn:not([style*="display: none"]):not([style*="display:none"]))) .topbar-nav {
     order: 3; flex: 1 0 100%; height: 2.75rem;
     justify-content: safe center;
     border-top: 1px solid var(--border);
@@ -664,8 +678,16 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
   .user-chip { min-width: 44px; }
   /* Bảng thông báo rộng theo màn hình, không theo một số cố định. */
   .bell-panel { width: min(20rem, calc(100vw - 1.5rem)); right: -2.5rem; }
+}
 
-  /* ── HAI HÀNG Ở ĐIỆN THOẠI (20/09/2026) ──────────────────────────────────
+@media (max-width: 64rem) {
+  /* ── HAI HÀNG Ở ĐIỆN THOẠI VÀ TABLET (20/09 → 21/09/2026) ──
+     21/09: NÂNG TỪ 36rem LÊN 64rem. Agent rà máy tính đo ở 768 và 1024: thanh
+     một hàng giấu nhãn (luật 70rem), nút còn 31–33px — dưới sàn chạm 44px trên
+     tablet cảm ứng, và người dùng phải đoán biểu tượng — trong khi hàng thứ
+     hai có cả một bề ngang trống. Từ 64rem tới 70rem (laptop 1120px, có chuột)
+     vẫn một hàng chỉ biểu tượng như cũ.
+     ── Ghi chú gốc 20/09 ──────────────────────────────────
      Đo ở 390px với tài khoản học viên: dãy điều hướng chỉ còn 139px cho NĂM
      mục 44px — hiện được ba, "Thi thử"/"Bài tập"/"Diễn đàn" nằm ngoài vùng
      cuộn, không dấu hiệu gì; chạm vào chỗ đáng lẽ là chúng thì trúng nút mặt
@@ -691,12 +713,14 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
     justify-content: safe center; gap: 0;
     border-top: 1px solid var(--border);
   }
-  /* Mỗi mục ÍT NHẤT 3,75rem và NỞ RA chia đều chỗ thừa: 4–6 mục (học viên,
-     giảng viên, quản trị viên) vừa khít một hàng; khu Vận hành 9 tab thì hàng
+  /* Mỗi mục ÍT NHẤT 3,5rem và NỞ RA chia đều chỗ thừa: 4–6 mục (học viên,
+     giảng viên, quản trị viên) vừa khít một hàng (22/09/2026: hạ từ 3,75rem —
+     quản trị viên 6 mục × 60px = 360 > 344px lòng dãy ở khổ 360, "Quản trị"
+     lẹm 16px ra ngoài; 3,5rem = 57px vẫn đủ hai dòng nhãn 12px, đo 0 nhãn cụt); khu Vận hành 9 tab thì hàng
      dài hơn màn và cuộn — vệt mờ ở mép (mask kế thừa) nói còn nữa. Ép 9 tab
      vào 374px là chín nhãn cụt "Toàn…", "Tài k…" — đo 20/09, tệ hơn cuộn. */
   .topbar:not(.shell-lam-bai) .nav-btn {
-    flex: 1 0 3.75rem; padding: 0 0.15rem; gap: 0.15rem;
+    flex: 1 0 3.5rem; padding: 0 0.15rem; gap: 0.15rem;
     flex-direction: column; justify-content: center;
     /* 0,75rem = 12px, sàn cỡ chữ của dự án (21/09/2026 — luật thứ sáu của bộ
        đo, `scripts/do_giao_dien.mjs`). Bản trước 0,66rem = 10,6px: nhỏ nhất
@@ -711,7 +735,7 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
     max-width: 100%; overflow: hidden; white-space: normal; text-align: center;
   }
-  .topbar:not(.shell-lam-bai) .nav-nhom { flex: 1 0 3.75rem; min-width: 0; }
+  .topbar:not(.shell-lam-bai) .nav-nhom { flex: 1 0 3.5rem; min-width: 0; }
   .topbar:not(.shell-lam-bai) .nav-nhom > .nav-nhom-nut { width: 100%; }
   .topbar:not(.shell-lam-bai) .nav-nhom-mui { position: absolute; right: 0.15rem; top: 0.35rem; }
   .topbar:not(.shell-lam-bai) .nav-nhom-panel { left: 0.25rem; }

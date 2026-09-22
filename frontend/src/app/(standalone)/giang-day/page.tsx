@@ -36,7 +36,7 @@ type ViecHomNay = {
   lop: { id: number; name: string }[];
   nguong: { chamQuaNgay: number; vangLien: number };
   sapToi: (Buoi & { durationMinutes: number | null; thieuLink: boolean })[];
-  chuaDiemDanh: { tong: number; ds: (Buoi & { dangDienRa: boolean })[] };
+  chuaDiemDanh: { tong: number; ds: (Buoi & { dangDienRa: boolean; conThieu?: number | null })[] };
   chuaCham: {
     assignmentId: number;
     classId: number;
@@ -65,7 +65,7 @@ const HINH_DANG = z.looseObject({
   sapToi: z.array(z.looseObject({ ...BUOI, durationMinutes: z.number().nullable(), thieuLink: z.boolean() })),
   chuaDiemDanh: z.looseObject({
     tong: z.number(),
-    ds: z.array(z.looseObject({ ...BUOI, dangDienRa: z.boolean() })),
+    ds: z.array(z.looseObject({ ...BUOI, dangDienRa: z.boolean(), conThieu: z.number().nullable().optional() })),
   }),
   chuaCham: z.array(z.looseObject({
     assignmentId: z.number(), classId: z.number(), className: z.string(), title: z.string(),
@@ -183,8 +183,8 @@ export default async function ViecHomNayPage() {
       {d.chuaDiemDanh.tong > 0 && (
         <Card>
           <CardHead
-            title={`Chưa mở sổ điểm danh (${d.chuaDiemDanh.tong})`}
-            hint="Buổi đã bắt đầu mà chưa bấm Lưu điểm danh lần nào. Chưa điểm danh thì chuyên cần của em nào cũng trống."
+            title={`Chưa điểm danh xong (${d.chuaDiemDanh.tong})`}
+            hint="Buổi đã bắt đầu mà chưa lưu điểm danh, hoặc đã lưu nhưng còn em chưa được tick. Em chưa tick thì buổi đó không vào chuyên cần của em — và tờ gửi phụ huynh sẽ báo thiếu."
           />
           <ul className="flex flex-col">
             {d.chuaDiemDanh.ds.map((b) => (
@@ -203,6 +203,14 @@ export default async function ViecHomNayPage() {
                     <Chip tone="brand">đang diễn ra</Chip>
                   </>
                 )}
+                {/* Đã lưu một phần (21/09/2026) — trước đây buổi này không hiện ở
+                    đây, trong khi màn Buổi học báo "còn 2 chưa tick". */}
+                {b.conThieu ? (
+                  <>
+                    {' '}
+                    <Chip tone="warn">còn {b.conThieu} em chưa tick</Chip>
+                  </>
+                ) : null}
               </Dong>
             ))}
           </ul>

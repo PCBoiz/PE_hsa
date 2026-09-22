@@ -393,10 +393,12 @@
 /* Quick Actions */
 .chatbot-quick-actions {
     display: flex;
+    /* XUỐNG DÒNG thay vì cuộn ngang (21/09/2026): hàng chip cuộn không có dấu
+       hiệu nào, chip thứ tư "Lộ trình" nằm ngoài cửa sổ (x=376..467 trên cửa
+       sổ 374px) — đo ở 390 và 768. Bốn chip ngắn xếp hai hàng vẫn gọn. */
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 12px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
 }
 
 .chatbot-quick-actions::-webkit-scrollbar {

@@ -526,6 +526,38 @@ def test_buoi_chua_toi_khong_bi_tinh_la_CHUA_TICK_trong_so_diem_danh(db):
     assert d['present'] == 1 and d['tiLe'] == 100
 
 
+@pytest.mark.django_db
+def test_dau_tick_cua_buoi_CHUA_TOI_khong_cong_vao_so_diem_danh(db):
+    """Sổ điểm danh MỞ được cho buổi sắp tới (chỉ cảnh báo) — nên có dấu tick
+    trước giờ. Agent rà giảng viên 21/09/2026: CSV và PDF lớp ghi "Có mặt 4" khi
+    lớp mới dạy 3 buổi, và dấu tick tương lai còn BÙ cột "Chưa tick" về 0 —
+    giấu đúng buổi đã qua mà giảng viên chưa tick. `held` chỉ lấy buổi đã bắt
+    đầu, nhưng vòng đếm chạy trên MỌI buổi.
+    """
+    from datetime import timedelta
+
+    from teaching.exports import dem_chuyen_can
+    gv = _nguoi('GV Tick Truoc', ROLE_TEACHER)
+    em = _nguoi('HV Tick Truoc', ROLE_STUDENT)
+    cid = _lop_trong('Lop tick truoc', gv=gv.id)
+    _vao_lop(cid, em.id)
+    nay = local_now()
+    # Một buổi ĐÃ QUA mà CHƯA tick …
+    q1("INSERT INTO class_sessions (class_id, starts_at, status, created_by) "
+       "VALUES (%s,%s,'planned',%s) RETURNING id", (cid, nay - timedelta(days=2), gv.id))
+    # … và một buổi SẮP TỚI đã bị tick trước.
+    sap_toi = q1("INSERT INTO class_sessions (class_id, starts_at, status, attendance_taken_at, "
+                 "created_by) VALUES (%s,%s,'planned',%s,%s) RETURNING id",
+                 (cid, nay + timedelta(days=2), nay, gv.id))
+    q1('INSERT INTO attendance (session_id, user_id, status, marked_at, marked_by) '
+       'VALUES (%s,%s,%s,%s,%s) RETURNING session_id',
+       (sap_toi['id'], em.id, 'present', nay, gv.id))
+
+    d = dem_chuyen_can(cid)[0][em.id]
+    assert d['present'] == 0, 'dấu tick của buổi chưa tới bị cộng vào "Có mặt": %s' % d['present']
+    assert d['chuaTick'] == 1, 'buổi đã qua chưa tick bị dấu tick tương lai che mất: %s' % d['chuaTick']
+
+
 # ── Học viên quay lại lớp cũ — hồi quy cho `reports._members` (31/08/2026) ──
 
 @pytest.mark.django_db
@@ -753,13 +785,25 @@ def test_giao_bai_va_cham_bai_deu_rung_chuong_hoc_vien(lop):
     c1 = chuong(em1.id)
     assert c1[-1]['title'] == 'Bài tập mới: Bài luận hàm số' and '25/09 23:59' in c1[-1]['body'], c1[-1]
     # 4. Chấm em1 (8, có nhận xét) — chỉ em1 nhận chuông "đã chấm".
-    _goi(AssignmentGradingView, 'post',
-         {'grades': [{'user_id': em1.id, 'score': 8, 'feedback': 'Thiếu giới hạn hai đầu.'}]},
-         ai=gv, assignment_id=kq2.data['id'])
+    kq4 = _goi(AssignmentGradingView, 'post',
+               {'grades': [{'user_id': em1.id, 'score': 8, 'feedback': 'Thiếu giới hạn hai đầu.'}]},
+               ai=gv, assignment_id=kq2.data['id'])
+    assert kq4.status_code == 200, kq4.data
     cuoi = chuong(em1.id)[-1]
     assert cuoi['type'] == 'assignment_graded', cuoi
     assert cuoi['title'] == 'Bài "Bài luận hàm số" đã chấm: 8/10' and cuoi['body'] == 'Thiếu giới hạn hai đầu.', cuoi
     assert all(c['type'] != 'assignment_graded' for c in chuong(em2.id))
+    # 5. Lưu LẠI y nguyên → KHÔNG thêm chuông (21/09/2026: agent lưu 8/10 hai lần
+    #    và em nhận hai chuông giống hệt). Đổi điểm thật → có chuông mới.
+    so_truoc = len([c for c in chuong(em1.id) if c['type'] == 'assignment_graded'])
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em1.id, 'score': 8, 'feedback': 'Thiếu giới hạn hai đầu.'}]},
+         ai=gv, assignment_id=kq2.data['id'])
+    assert len([c for c in chuong(em1.id) if c['type'] == 'assignment_graded']) == so_truoc,         'lưu lại y nguyên vẫn rung chuông'
+    _goi(AssignmentGradingView, 'post',
+         {'grades': [{'user_id': em1.id, 'score': 9, 'feedback': 'Thiếu giới hạn hai đầu.'}]},
+         ai=gv, assignment_id=kq2.data['id'])
+    assert len([c for c in chuong(em1.id) if c['type'] == 'assignment_graded']) == so_truoc + 1
 
 
 @pytest.mark.django_db
@@ -1449,8 +1493,11 @@ def test_thu_hoi_refresh_khong_tang_theo_so_token(lop):
     """
     from django.db import connection
     from django.test.utils import CaptureQueriesContext
-    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+    from rest_framework_simplejwt.token_blacklist.models import (
+        OutstandingToken,
+    )
     from rest_framework_simplejwt.tokens import RefreshToken
+
     from common.permissions import ROLE_ACADEMIC
     from teaching.views import AdminResetPasswordView
 

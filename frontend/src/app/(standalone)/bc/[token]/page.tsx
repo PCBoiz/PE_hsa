@@ -78,7 +78,7 @@ export default async function BaoCaoTheoChiaPage({
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
-        <ToBaoCao bc={bc} />
+        <ToBaoCao bc={bc} choPhuHuynh />
       </main>
     </div>
   );

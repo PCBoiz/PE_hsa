@@ -2119,7 +2119,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Xử lý hash navigation từ các trang khác (vd: /dashboard#roadmap)
   var hash = window.location.hash.replace('#', '');
-  var validPages = ['dashboard', 'courses', 'roadmap', 'skills', 'forum', 'settings', 'profile', 'my-courses'];
+  var validPages = ['dashboard', 'courses', 'roadmap', 'skills', 'forum', 'settings', 'profile', 'plan']; // 'plan' từng thiếu (agent 21/09: #plan im lặng), 'my-courses' không còn trang
   if (hash && validPages.includes(hash)) {
     navigate(hash);
   } else {

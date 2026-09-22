@@ -64,10 +64,36 @@ TUAN_TOI_DA = 13
 NGAY_LE_TOI_THIEU = 4
 
 
-def _khoang_ngay(request):
-    """Đọc ?from & ?to, mặc định là 4 tuần gần nhất. Trả (từ, đến, có_hợp_lệ)."""
+def dau_ky_mac_dinh(class_id, user_id, den):
+    """Đầu kỳ báo cáo MẶC ĐỊNH (khi người dùng không tự chọn ngày).
+
+    `DEFAULT_WEEKS` tuần trước `den` — nhưng KHÔNG sớm hơn ngày lớp khai giảng
+    (`classes.starts_on`) hay ngày em vào lớp (đợt đầu tiên). `user_id` None thì
+    chỉ kẹp theo ngày khai giảng (màn gửi cả lớp).
+
+    Vá 22/09/2026 (agent GV→PH F7): lớp khai giảng 13/09, tờ ngày 21/09 in kỳ
+    "24/08 – 21/09", nên bảng "Con có học đều không" mở đầu bằng hai tuần toàn
+    số 0 — phụ huynh đọc thành "hai tuần đầu con không học gì". Mọi nơi dựng kỳ
+    mặc định (xem báo cáo, cấp chìa, gửi cả lớp, lệnh thử thư) đi qua hàm này;
+    kỳ người dùng CHỌN thì giữ nguyên — đó là quyết định của họ.
+    """
+    tu = den - timedelta(weeks=DEFAULT_WEEKS)
+    r = q1('''SELECT c.starts_on,
+                     (SELECT MIN(m.joined_at)::date FROM class_members m
+                      WHERE m.class_id = c.id AND m.user_id = %s) AS vao
+              FROM classes c WHERE c.id = %s''', (user_id, class_id)) or {}
+    for moc in (r.get('starts_on'), r.get('vao')):
+        if moc and tu < moc <= den:
+            tu = moc
+    return tu
+
+
+def _khoang_ngay(request, class_id=None, user_id=None):
+    """Đọc ?from & ?to; không có ?from thì dùng `dau_ky_mac_dinh`. Trả (từ, đến, có_hợp_lệ)."""
     hom_nay = local_today()
     mac_dinh_tu = hom_nay - timedelta(weeks=DEFAULT_WEEKS)
+    if class_id is not None and not (request.query_params.get('from') or '').strip():
+        mac_dinh_tu = dau_ky_mac_dinh(class_id, user_id, hom_nay)
 
     def doc(ten, mac_dinh):
         raw = (request.query_params.get(ten) or '').strip()
@@ -623,7 +649,7 @@ class ParentReportView(APIView):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
 
-        tu, den, ngay_hop_le, dao_ngay = _khoang_ngay(request)
+        tu, den, ngay_hop_le, dao_ngay = _khoang_ngay(request, class_id, user_id)
         canh_bao = []
         if not ngay_hop_le:
             canh_bao.append('Ngày lọc không đọc được (cần dạng YYYY-MM-DD) — '

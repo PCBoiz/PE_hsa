@@ -100,12 +100,10 @@ class Command(BaseCommand):
         if o.get('lop') and o.get('em'):
             # Đường dữ liệu thật: đi qua đúng hàm mà API dùng, không viết lại
             # truy vấn ở đây. Hai bản dựng payload sẽ trôi khỏi nhau.
-            from datetime import timedelta
-
             from common.clock import local_today
-            from teaching.parent_report import DEFAULT_WEEKS, dung_bao_cao
+            from teaching.parent_report import dau_ky_mac_dinh, dung_bao_cao
             den = local_today()
-            tu = den - timedelta(weeks=DEFAULT_WEEKS)
+            tu = dau_ky_mac_dinh(o['lop'], o['em'], den)
             bc, loi = dung_bao_cao(o['lop'], o['em'], tu, den)
             if loi:
                 self.stderr.write('DỪNG: %s' % loi)

@@ -135,7 +135,9 @@ def test_ai_thay_gi(canh):
 def test_buoi_da_bat_dau_ma_chua_mo_so(canh):
     qua = _buoi(canh['lop'], -48)
     dang = _buoi(canh['lop'], -0.5)
-    _buoi(canh['lop'], -24, da_tick=True)
+    xong = _buoi(canh['lop'], -24, da_tick=True)
+    for u in (canh['an'], canh['binh'], canh['chau']):   # tick ĐỦ thật, không chỉ đặt dấu
+        _tick(xong, u, 'present')
     _buoi(canh['lop'], -12, status='cancelled')
     _buoi(canh['lop'], 3)
     d = _goi(canh['gv']).json()['chuaDiemDanh']
@@ -145,6 +147,26 @@ def test_buoi_da_bat_dau_ma_chua_mo_so(canh):
     assert theo_id[dang]['dangDienRa'] is True and theo_id[qua]['dangDienRa'] is False
     # Buổi GẦN NHẤT trước: "tối qua tôi tick xong chưa" là câu hỏi đầu tiên.
     assert [b['sessionId'] for b in d['ds']] == [dang, qua]
+
+
+def test_buoi_tick_do_van_la_chua_diem_danh_xong(canh):
+    """Buổi đã LƯU nhưng mới tick 1/3 em phải hiện, kèm số em còn thiếu (21/09/2026).
+
+    Bản cũ chỉ hỏi "đã lưu lần nào chưa": agent rà giảng viên thấy màn này báo
+    "0 buổi chưa điểm danh" trong khi màn Buổi học báo "2 chưa tick". Em vào lớp
+    SAU buổi đó không tính.
+    """
+    do = _buoi(canh['lop'], -30, da_tick=True)
+    _tick(do, canh['an'], 'present')                  # 1/3 em
+    muon = _nguoi('Muon VHN', ROLE_STUDENT)
+    x('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s, %s, %s)',
+      (canh['lop'], muon.id, local_now()))             # vào lớp HÔM NAY, sau buổi
+    d = _goi(canh['gv']).json()['chuaDiemDanh']
+    theo_id = {b['sessionId']: b for b in d['ds']}
+    assert do in theo_id, 'buổi tick dở bị coi là đã điểm danh xong'
+    assert theo_id[do]['conThieu'] == 2, theo_id[do]
+    # Trợ giảng cũng là thành viên lớp nhưng KHÔNG phải người được điểm danh.
+    assert d['tong'] == 1
 
 
 def test_bai_da_nop_chua_cham_va_cho_qua_5_ngay(canh):

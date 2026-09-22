@@ -460,9 +460,13 @@ def dem_chuyen_can(class_id):
         uid = m['user_id']
         counts = dict.fromkeys(ATTENDANCE_ORDER, 0)
         da_tick = 0
-        for s in sessions:
+        # Đếm trên `held` (buổi ĐÃ bắt đầu), không trên mọi buổi (vá 21/09/2026):
+        # sổ mở được cho buổi sắp tới, nên có dấu tick TRƯỚC giờ. Đếm cả chúng
+        # thì CSV/PDF ghi "Có mặt 4" khi lớp mới dạy 3 buổi, và dấu tick tương
+        # lai còn bù `chuaTick` về 0 — che đúng buổi đã qua mà chưa ai tick.
+        for s in held:
             st = marks.get((s['id'], uid))
-            if st in counts and s['status'] != 'cancelled':
+            if st in counts:
                 counts[st] += 1
                 da_tick += 1
         r = ti_le(counts['present'] + counts['late'], sum(counts.values()))

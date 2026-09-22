@@ -200,7 +200,7 @@
       return '<li class="hsa-rev ' + (ok ? 'ok' : 'no') + '">' +
         '<span class="hsa-rev-ic">' + (ok ? '✓' : '✕') + '</span>' +
         '<span class="hsa-rev-q">Câu ' + (i + 1) + '</span>' +
-        '<span class="hsa-rev-ans">' + (ok ? '' : '<span class="hsa-rev-mine">Bạn trả lời: <b>' + esc(state.answers[q.id] || 'bỏ trống') + '</b></span>') + 'Đáp án: <b>' + esc(kq.answer == null ? '—' : kq.answer) + '</b>' +
+        '<span class="hsa-rev-ans">' + '<span class="hsa-rev-de">' + esc(q.question || '') + '</span>' + (ok ? '' : '<span class="hsa-rev-mine">Bạn trả lời: <b>' + esc(state.answers[q.id] || 'bỏ trống') + '</b></span>') + 'Đáp án: <b>' + esc(kq.answer == null ? '—' : kq.answer) + '</b>' + // đề bài đi trước (21/09)
         (kq.explain ? ' — ' + esc(kq.explain) : '') + '</span></li>';
     }).join('');
     $('hsa-assess').innerHTML =
@@ -541,7 +541,7 @@
           '<div class="hsa-drill-prog" id="hsa-drill-prog"></div>' +
           '<div class="hsa-drill-combo" id="hsa-drill-combo"></div>' +
         '</div>' +
-        '<div class="hsa-drill-timer"><div class="hsa-drill-timer-bar" id="hsa-timer-bar"></div></div>' +
+        '<div class="hsa-drill-timer"><div class="hsa-drill-timer-bar" id="hsa-timer-bar"></div></div><div class="hsa-drill-sec" id="hsa-timer-sec" aria-live="off"></div>' + // số giây (thanh trần "không có số giây", agent 21/09)
         '<div class="hsa-drill-q" id="hsa-drill-q"></div>' +
       '</div>';
     showDrillQuestion();
@@ -627,7 +627,7 @@
     var bar = $('hsa-timer-bar');
     if (bar) {
       bar.style.width = Math.max(0, drill.remaining / drill.timeTotal * 100) + '%';
-      bar.className = 'hsa-drill-timer-bar' + (drill.remaining <= drill.timeTotal * 0.25 ? ' low' : '');
+      bar.className = 'hsa-drill-timer-bar' + (drill.remaining <= drill.timeTotal * 0.25 ? ' low' : ''); var sec = $('hsa-timer-sec'); if (sec) sec.textContent = Math.max(0, Math.ceil(drill.remaining)) + ' s';
     }
     if (drill.remaining <= 0) endDrill();
   }
@@ -671,7 +671,7 @@
     state.step = n;
     if (STEP_RENDER[n]) STEP_RENDER[n]();
     document.querySelectorAll('.step-pane').forEach(function (p) {
-      p.classList.toggle('active', p.getAttribute('data-step') === String(n));
+      var on = p.getAttribute('data-step') === String(n); p.classList.toggle('active', on); p.inert = !on; // bước ẩn không nhận Tab (tc3 F5)
     });
     document.querySelectorAll('.progress-step').forEach(function (p) {
       var s = parseInt(p.getAttribute('data-step'), 10);
@@ -685,7 +685,7 @@
       var txt = n === 1 ? 'Nộp & xem đánh giá' : (n === LAST_STEP ? 'Hoàn thành bài học' : 'Tiếp tục');
       if (lbl) lbl.textContent = txt; else next.textContent = txt;
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' }); var ae = document.activeElement; if (ae && ae.closest && ae.closest('.lesson-nav-footer')) { var pa = document.querySelector('.step-pane.active'); if (pa) pa.focus({ preventScroll: true }); } // bấm Tiếp tục/Quay lại → tiêu điểm vào bước mới
   }
 
   var dangCham = false;
@@ -700,7 +700,7 @@
       dangCham = true;
       try { if (await gradeTest()) goToStep(2); }
       finally { dangCham = false; }
-    } else if (state.step === LAST_STEP) { complete(); }
+    } else if (state.step === LAST_STEP) { if (drill.timerId && !confirm('Đồng hồ luyện tốc độ đang chạy. Kết thúc bài ngay? Lượt luyện này sẽ không tính.')) return; complete(); } // hỏi trước khi bỏ ngang lượt luyện (21/09)
     else { goToStep(state.step + 1); }
   }
   function navBack() { if (state.step > 1) goToStep(state.step - 1); }

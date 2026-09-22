@@ -90,6 +90,131 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 22/09/2026 — ĐÃ COMMIT ĐỢT AGENT THỨ BA (anh: "tiếp tục cải tiến" → "làm nhanh rồi commit rồi đợi")
+
+Ba mẻ A1–A3 bên dưới + vá thêm: thanh trên đếm cả nút nhân sự ẩn (học viên hai hàng tới 1760px, nhãn xén ở điện thoại) → `:nth-child(7 of …)` + chỉ trên 64rem; mục 3,5rem; kỳ báo cáo mặc định kẹp theo ngày khai giảng/vào lớp (`dau_ky_mac_dinh`); "Điểm thi thử trung bình"; chép lại đường dẫn đã cấp; khung chờ màn "Xem tờ"; `text-caption` khai trong thang + hàng rào `lop-chu-ton-tai`; Đóng ở thanh đáy khung soạn hỏi trước; `.cd-module-prog` 12px. Chi tiết trong commit. Tờ phụ huynh chậm 4,5 s là ĐỘ TRỄ MÁY DEV → Neon (15 truy vấn × ~240 ms); production đo 0,4–1,1 s sau khi thức — không cần tối ưu truy vấn.
+
+**Còn trong hàng đợi (mục C bên dưới):** tc3 F2/F3 tương phản (kịch bản `va_tc3_chu_toi.py` sẵn, chưa chạy), F11 viền ô nhập, F4, F6–F9, F12–F17, F1 mở rộng `do_axe.mjs`; hồi quy F2 (sàn chữ 12px chưa đo 6 view SPA — ~200 phần tử), F5 toast 50vw; GV→PH F6 (liên hệ — chờ anh). Agent `hoi-quy-3` chết giữa chừng vì hết hạn mức (mục 7, 10, 11, 12, 15 chưa kiểm). Dọn: chìa 1467 chưa thu hồi.
+
+## 21/09/2026 (22:30) — TẠM DỪNG THEO LỆNH ANH SƠN ("tạm dừng, ghi chú lại tất cả rồi đợi lệnh")
+
+**Chưa commit, chưa deploy — mọi thứ dưới đây nằm trong cây làm việc** (`git status`: 23 tệp sửa, HEAD
+`3a4e649`). Thư mục làm việc của đợt audit (kịch bản đo, báo cáo agent, ảnh):
+`C:/Users/sonkh/AppData/Local/Temp/claude/d--PE-test/5192ee2d-32a6-400e-b0de-d9b2020fb7a3/scratchpad/audit/`
+(gọi tắt `audit/` bên dưới; nằm trong %TEMP% — có thể bị dọn, nên phần cần thiết đã chép vào đây).
+
+### A · Ba mẻ sửa đang nằm trong cây làm việc
+
+**A1 — mẻ "còn mở của đợt hai"** (bản nháp thông điệp commit: `audit/commit19.txt`; đã đo bằng Playwright
+ở 390/768/1024/1120/1366 trên bản dựng CŨ hơn — phải đo lại sau khi dựng):
+- `shell.css`: khối "hai hàng" của thanh trên áp tới ≤64rem (tablet có nhãn, nút ≥44px); phần ẩn riêng
+  điện thoại vẫn ở ≤36rem.
+- `AppShell.tsx`: ba mục Giảng dạy / Vận hành / Quản trị có cả ở trang React (/mock, /courses/x, /bai-tap),
+  luật hiện chép từ main.js + dashboard.js::gate.
+- `main.js` validPages thêm `plan` (bỏ `my-courses`); `next.config.ts` chuyển hướng `/plan`.
+- Thi thử (`MockExam.tsx`, `mock.css`): lớp phủ "Đang chấm bài…" thay vì thay cả màn bằng "Đang tải…"
+  (useRef chặn nộp hai lần); nút trong bảng câu hỏi thành nút phụ "Nộp bài sớm ✓"; nút "Thoát" có hỏi;
+  xem lại có đề bài — máy chủ gửi `question` (`mockexam/views.py::_cham_de`, test mở rộng, 48 test xanh).
+- Bài học (`lesson_hsa.js/.css`, không thêm dòng tầng cũ): bước 2 in đề trước đáp án; hỏi trước khi
+  "Hoàn thành" lúc đồng hồ luyện còn chạy; số giây cạnh thanh thời gian.
+- Trợ lý: chip gợi ý xuống dòng (`chatbot.css`), nút đính kèm 44px (`a11y.css`).
+- Dữ liệu Neon (ĐÃ có hiệu lực, dùng chung với production): 6 icon tên bản Pro trong bài 8, 9, 14, 15, 35
+  → icon Free; xoá đợt học thử id 532 do agent tạo.
+
+**A2 — vá theo agent giảng viên → phụ huynh** (`audit/agents/giang-vien-phu-huynh-3.md`):
+- F1 `ToBaoCao.tsx` nhận `choPhuHuynh`: tờ phụ huynh nói "Có N buổi trung tâm đang cập nhật điểm danh cho
+  em; những buổi này chưa tính vào tỉ lệ trên" thay vì lời nhắc dành cho nhân sự. Truyền ở
+  `/bc/[token]/page.tsx` và `(base)/PhuHuynhNhanGi.tsx`.
+- F2 `viec_hom_nay.py::_chua_diem_danh`: buổi tick DỞ cũng là "chưa điểm danh xong" (cùng tiêu chí màn Buổi
+  học; em vào lớp sau buổi không tính); `conThieu`; `giang-day/page.tsx` đổi tiêu đề thẻ + chip "còn N em
+  chưa tick". Test mới đỏ trên mã cũ → xanh.
+- F3 `exports.py::dem_chuyen_can`: chỉ đếm buổi đã bắt đầu, không huỷ (tick của buổi chưa tới không vào CSV/PDF).
+  Test mới đỏ → xanh.
+- F10 `assignments.py`: lưu lại bảng chấm y nguyên không rung chuông "đã chấm" lần nữa — chỉ em có điểm/nhận
+  xét thật sự đổi (hoặc lần chấm đầu). Test bước 5 đỏ trên mã cũ. **Lỗi của chính tôi đã bắt:** hàm cục bộ
+  `_so` che hàm `_so` cấp module → lần chấm đầu ném lỗi trước khi lưu; đổi tên `_f`, thêm assert status 200
+  ở bước 4. Hai test chuông xanh.
+
+**A3 — bắt đầu vá theo agent tiếp cận** (`audit/agents/tiep-can-3.md`) — tsc/eslint sạch, trần tầng cũ giữ,
+**CHƯA đo trên trình duyệt** (cần dựng lại):
+- F5 `LessonHsa.tsx`: bước 2–5 mang `inert` từ đầu; `lesson_hsa.js::goToStep` bật/tắt `inert` cùng lớp
+  `active`, và khi bấm Tiếp tục/Quay lại thì tiêu điểm vào bước mới (sửa trên đúng hai dòng cũ).
+- F10 hộp "Hoàn thành bài học": `role="dialog" aria-modal aria-labelledby`; `useEffect` theo dõi lớp
+  `hidden` → phần còn lại `inert` + tiêu điểm vào nút đầu của hộp.
+
+### B · Việc còn lại để chốt mẻ này (theo thứ tự)
+1. Kết quả `pytest teaching mockexam` chạy nền lúc dừng chưa xem — chạy lại. `ruff` báo 3 lỗi KHÔNG nằm trong
+   phần tôi sửa (`teaching/tests.py:1494` I001, `:1496` F401, `teaching/tests_lop_cua_toi.py:171` B905) —
+   xem có phải lỗi cũ không rồi mới sửa.
+2. Chờ agent `hoi-quy-3` (a9654e62524aacbc8, còn chạy lúc dừng; kiểm 16 mục vá + tác dụng phụ; báo cáo sẽ ở
+   `audit/agents/hoi-quy-3.md`) — **đừng khởi động lại máy chủ khi nó còn chạy**.
+3. Khởi động lại Django (đổi mã backend); dừng Next → build → start (không build lúc đang chạy).
+4. Đo lại: `audit/v36_dot4.mjs` (lớp phủ chấm / Thoát / đề trong xem lại), mục nhân sự trên trang React,
+   chip "còn N em chưa tick", câu chữ tờ phụ huynh trên /bc, CSV/PDF chuyên cần, Tab trong bài học (bước ẩn
+   không nhận Tab; hộp hoàn thành giữ tiêu điểm), `do_giao_dien` cả hai bộ thẻ, 29 unit guard, pytest
+   teaching + mockexam + accounts.
+5. Nối `commit19.txt` thêm A2 + A3 → commit (`git commit -F`), kiểm `.env` không vào, push master, đồng bộ
+   `erp`, xác minh production.
+6. Dọn: thu hồi liên kết phụ huynh id 1467 do agent GV→PH tạo (chìa ở `audit/agents/chia_ph.txt` — KHÔNG in
+   ra); cân nhắc xoá 3 chuông thừa của hv1. hv2 bị agent tc3 dùng nhiều (hoàn thành bài 2 ba lần, 3 lượt thi thử)
+   — dữ liệu thử, không cần dọn.
+
+### C · Hàng đợi phát hiện chưa vá
+**Agent tiếp cận (tc3):** tôi chạy lại axe đủ nút (`audit/v37_axe_views.mjs` → `v37_axe_1366.json`) — khớp số
+agent: 1366 sáng 51, tối 57 (Khoá học 2/9, Lộ trình 2/2, Kỹ năng 26/26, Diễn đàn 21/15, Cài đặt 0/5).
+- F3 (tối): chữ phụ viết cứng #64748B/#475569 trong luật `body.dark` → `var(--t3)`. Kịch bản sẵn:
+  `audit/va_tc3_chu_toi.py` (chạy không đối số = đếm thử: 46 chỗ ở dashboard.css 21, dark-mode.css 21,
+  course_detail.css 2, chatbot.css 2; **loại `.chatbot-quick-btn:hover` — dương tính giả, nền hover sáng**;
+  `--ghi` mới ghi). Lưu ý luật trùng: dashboard.css có bản `var(--text-3)` nhưng dark-mode.css (#64748B) thắng.
+- F2 (sáng), bộ chọn cụ thể: `.filter-btn.active` và `.fcb-type-btn.active` (`--blue-light` trên nền pha →
+  `--brand-ink`); `.card-btn-enrolled` (#10B981 → `--success-ink`); `.rm-tab.active` (`--accent` → `--brand-ink`);
+  `--rm-group` (sáng #8A7C46 4,04:1; tối #6F6790 3,77:1 → đậm/nhạt thêm một bậc); `.sk-set-meta` (#9CA3AF →
+  `--t3`); `.sk-badge.new` (#6B7280 trên #F3F4F6 4,39); `.page-subtitle` (#9CA3AF); `CAT_COLORS` trong
+  `dashboard.js:954` (#F87171/#FCD34D 1,39:1/#A78BFA trên nền pha của chính nó → token `*-ink`);
+  `.fpc-lesson-tag` (4,2); `.pill-label` #6B7280 (tối 3,86); `roadmap.js:386-388` màu viết cứng trong số đếm
+  Lộ trình (#64748B tối 4,18).
+- F11 viền ô nhập 1,2:1: `ui/Field.tsx` `border-line` → `border-line-input`; `dark-mode.css` `.field-input`,
+  `.search-wrap input` → `var(--border-input)`.
+- F4 menu "Học" `role="menu"` chứa nút thường (bỏ role hoặc làm đủ menuitem + phím mũi tên); `select.sort-select`
+  Diễn đàn thiếu `aria-label`.
+- F6 ngăn chi tiết Lộ trình: tiêu điểm vào ngăn + `bayTieuDiem`, Esc đóng, trả tiêu điểm về chặng.
+- F7 Kỹ năng: `.sk-set-hd`/`.sk-skill-row` là `div onclick` → `button aria-expanded`.
+- F8 mục chuông: Enter/Space không làm gì + role menuitem trong dialog.
+- F9 Esc đóng menu → tiêu điểm về nút mở. F12 biểu tượng `[data-icon]` không vẽ khi vào view qua menu (vẽ khi
+  gõ #hash). F13 vòng tiêu điểm `.hsa-fill`/`.field-input`. F14 Esc đóng bảng gợi ý tìm. F15 trạng thái chọn của
+  phương án (aria-pressed/radio), bảng câu /mock cần aria-label. F16 chi tiết tối nhỏ. F17 logo/ảnh bìa chỉ chuột.
+- F1: mở rộng `scripts/do_axe.mjs` đi 5 view × sáng/tối + 3 trạng thái mở (để cổng bắt được những lỗi trên).
+
+**Agent GV→PH còn:** F4/F5 tờ phụ huynh 4,6–5,0 s ở máy chủ + màn "Xem tờ" của giảng viên không có trạng
+thái tải (`loading.tsx`); F7 kỳ báo cáo bắt đầu trước ngày lớp khai giảng; F8 chữ "Điểm trung bình"; F9 không
+chép lại được liên kết phụ huynh; F11 lớp `text-caption` không có CSS (25 chỗ dùng).
+**Khác:** bốn kiểu nút chính không thống nhất; cửa sổ trợ lý che nội dung ở 768/1024.
+
+### D · Cần anh quyết (không đổi)
+- Đính kèm ảnh/tệp khi nộp bài tập (cần chỗ lưu ngoài) — xem mục chiều nay.
+- F6 GV→PH: tờ phụ huynh không có thông tin liên hệ — cần anh chọn công khai số/địa chỉ nào.
+
+
+## 21/09/2026 (chiều) — ĐỢT AGENT THỨ BA + VÁ "CÒN MỞ" CỦA ĐỢT HAI
+
+**Đã vá (đo trước khi ghi, xem commit):** `3a4e649` khung soạn nội dung hỏi trước khi đóng lúc còn sửa
++ chặn F5; ngày vào lớp sửa được cho em đã ở trong lớp (trước im lặng bỏ qua) + cột "Vào lớp" trong
+bảng học viên. Đợt kế (commit sau): thanh hai hàng áp tới ≤64rem (tablet có nhãn, nút ≥44px); ba mục
+nhân sự có ở cả trang React; `#plan` mở được; thi thử giữ khung đề khi chấm, nút nộp trong bảng là nút
+phụ, có "Thoát", xem lại có ĐỀ BÀI (cả bước 2 bài học); hỏi trước khi kết thúc bài giữa lúc luyện tốc
+độ + số giây; 6 icon tên bản Pro trong nội dung 5 bài → icon Free (dữ liệu ở Neon); chip trợ lý xuống
+dòng; nút đính kèm 44px. Dọn đợt học thử id 532.
+
+**Đợt agent thứ ba (đang chạy khi ghi dòng này):** `hoi-quy-3.md` (kiểm 16 mục vá + tác dụng phụ của
+thành phần dùng chung: CardHead, Button, thanh điều hướng, sàn chữ, `.hsa-viz`, `.fields-grid`),
+`tiep-can-3.md` (axe-core + bàn phím + chế độ tối), `giang-vien-phu-huynh-3.md` (giảng viên đi trọn
+điểm danh → chấm → tờ báo cáo phụ huynh mở trên điện thoại). Danh sách giao: `DA_SUA_21b.md`.
+
+**Cần anh quyết:** nộp bài tập hiện chỉ có ô chữ, không đính kèm được ảnh/tệp — trong khi đề bài giảng
+viên giao lại yêu cầu "vẽ bảng biến thiên" và nhận xét ghi "làm trên giấy". Thêm đính kèm ảnh là việc
+lớn (lưu tệp: Render không có đĩa bền, cần chỗ lưu ngoài — S3/R2/Cloudinary — kèm giới hạn cỡ, quét
+loại tệp, quyền xem). Chưa làm, chờ anh chọn hướng.
+
 ## 21/09/2026 — AUDIT GIAO DIỆN ĐỢT 2 (`6f38ca7`): TRỢ GIẢNG GIAO ĐƯỢC BÀI, KHẢO SÁT GHI HAI LẦN, 18 CHỖ VÁ
 
 Đi tiếp báo cáo của ba agent (`audit/agents/hoc-vien-mobile.md` 35 mục, `nhan-su.md` 26 mục,

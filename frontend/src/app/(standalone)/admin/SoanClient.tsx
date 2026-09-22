@@ -471,7 +471,7 @@ function KhoiBai({
                   </Td>
                   <Td label="Nội dung">
                     {b.content_json ? (
-                      <span className="text-caption text-ok-ink">đã soạn</span>
+                      <span className="text-caption text-success-ink">đã soạn</span>
                     ) : (
                       <span className="text-caption text-ink-3">chưa có</span>
                     )}
@@ -646,7 +646,7 @@ function NhapKhoa({
           </p>
         )}
 
-        {ketQua && <p className="text-body text-ok-ink">{ketQua}</p>}
+        {ketQua && <p className="text-body text-success-ink">{ketQua}</p>}
 
         {chiTiet.length > 0 && (
           <div className="rounded-md border border-danger bg-danger-soft p-3">

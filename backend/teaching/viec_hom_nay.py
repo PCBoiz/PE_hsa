@@ -80,19 +80,38 @@ def _sap_toi(ids, lop, nay):
 
 
 def _chua_diem_danh(ids, lop, nay):
-    rows = q('''SELECT id, class_id, starts_at, duration_minutes, topic,
-                       COUNT(*) OVER () AS tong
-                FROM class_sessions
-                WHERE class_id = ANY(%s) AND status <> 'cancelled'
-                  AND attendance_taken_at IS NULL AND starts_at <= %s
-                ORDER BY starts_at DESC LIMIT %s''', (ids, nay, TRAN))
+    """Buổi ĐÃ bắt đầu mà điểm danh CHƯA XONG.
+
+    "Chưa xong" gồm cả buổi TICK DỞ (vá 21/09/2026): bản cũ chỉ hỏi
+    `attendance_taken_at IS NULL`, tức "đã bấm lưu lần nào chưa" — buổi 21/09
+    tick 1/3 em thì màn này báo "0 buổi chưa điểm danh", màn Buổi học báo "2
+    chưa tick", tờ phụ huynh nói "giảng viên ghi sót", còn giảng viên không được
+    nhắc ở đâu. Nay cùng tiêu chí với màn Buổi học (`sessions._session_dict`):
+    còn HỌC VIÊN đang ở lớp chưa có dòng điểm danh. Em vào lớp SAU buổi đó
+    không tính — không thì mỗi lần xếp thêm một em, cả lịch sử bật đỏ.
+    """
+    thieu = '''(SELECT COUNT(*) FROM class_members m JOIN users u ON u.id = m.user_id
+                 WHERE m.class_id = s.class_id AND m.left_at IS NULL
+                   AND m.joined_at::date <= s.starts_at::date AND ''' + chi_hoc_vien('u') + '''
+                   AND NOT EXISTS (SELECT 1 FROM attendance a
+                                   WHERE a.session_id = s.id AND a.user_id = m.user_id))'''
+    rows = q('''SELECT * FROM (
+                  SELECT s.id, s.class_id, s.starts_at, s.duration_minutes, s.topic,
+                         s.attendance_taken_at, ''' + thieu + ''' AS con_thieu
+                  FROM class_sessions s
+                  WHERE s.class_id = ANY(%s) AND s.status <> 'cancelled' AND s.starts_at <= %s
+                ) x
+                WHERE x.attendance_taken_at IS NULL OR x.con_thieu > 0
+                ORDER BY x.starts_at DESC''', (ids, nay))
     ds = []
-    for r in rows:
+    for r in rows[:TRAN]:
         ket = r['starts_at'] + timedelta(minutes=r['duration_minutes'] or DEFAULT_SESSION_MINUTES)
         ds.append({'sessionId': r['id'], 'classId': r['class_id'],
                    'className': lop[r['class_id']]['name'], 'startsAt': _iso(r['starts_at']),
-                   'topic': r['topic'], 'dangDienRa': ket > nay})
-    return {'tong': int(rows[0]['tong']) if rows else 0, 'ds': ds}
+                   'topic': r['topic'], 'dangDienRa': ket > nay,
+                   # Đã lưu một phần: còn bao nhiêu em. Chưa lưu lần nào thì None.
+                   'conThieu': int(r['con_thieu']) if r['attendance_taken_at'] else None})
+    return {'tong': len(rows), 'ds': ds}
 
 
 def _chua_cham(ids, lop, nay):

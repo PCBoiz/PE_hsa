@@ -39,7 +39,6 @@ trước khi nó hết hạn. Một dòng trong bảng thì `revoked_at = now()`
 Thu hồi được là thứ đáng giá hơn một bảng.
 """
 import secrets
-from datetime import timedelta
 
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -50,7 +49,7 @@ from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.permissions import IsSeniorTeachingStaff, can_see_class
 from teaching.parent_report import (
-    DEFAULT_WEEKS,
+    dau_ky_mac_dinh,
     dung_bao_cao,
     rut_gon_cho_link,
 )
@@ -127,7 +126,7 @@ class ParentReportLinkView(APIView):
         # hiện nó dẫn tới lỗi 404 là gửi cho phụ huynh một link hỏng — và
         # người phát hiện ra sẽ là họ, không phải mình.
         den = local_today()
-        tu = den - timedelta(weeks=DEFAULT_WEEKS)
+        tu = dau_ky_mac_dinh(class_id, user_id, den)
         data, loi = dung_bao_cao(class_id, user_id, tu, den)
         if loi:
             return Response({'error': loi}, status=404)

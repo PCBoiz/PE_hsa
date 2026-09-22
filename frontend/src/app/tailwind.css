@@ -198,6 +198,14 @@
   --text-small: 13px;
   --text-small--line-height: 1.5;
 
+  /* Chú thích dưới số liệu/bảng: cỡ sàn nhưng KHÔNG in hoa, không đậm (khác
+     `label`). Thêm 22/09/2026 — 25 chỗ đã dùng `text-caption` từ trước mà thang
+     chưa từng khai, nên Tailwind không sinh gì và chú thích ra cỡ của khối cha
+     (15px trên tờ phụ huynh, to hơn bảng 13px nó chú thích). Hàng rào:
+     `e2e/unit/lop-chu-ton-tai.test.mjs`. */
+  --text-caption: 12px;
+  --text-caption--line-height: 1.5;
+
   --text-label: 12px; /* ← SÀN. Không có gì nhỏ hơn cỡ này */
   --text-label--line-height: 1.4;
   --text-label--letter-spacing: 0.05em;

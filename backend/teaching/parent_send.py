@@ -32,7 +32,6 @@ mới — kỳ ghim cứng vào chìa, nên gửi lại chìa tháng trước l�
 trước.
 """
 import secrets
-from datetime import timedelta
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -42,7 +41,7 @@ from common.clock import local_today
 from common.db import q, q1, x
 from common.permissions import IsSeniorTeachingStaff, can_see_class
 from teaching.parent_link import HAN_NGAY, SO_BYTE
-from teaching.parent_report import DEFAULT_WEEKS, dung_bao_cao
+from teaching.parent_report import dau_ky_mac_dinh, dung_bao_cao
 from teaching.thu_bao_cao import soan_thu
 from teaching.vocab import chi_hoc_vien
 
@@ -55,14 +54,15 @@ from teaching.vocab import chi_hoc_vien
 THAM_SO_MAU = ('ten_hoc_vien', 'ten_lop', 'ky', 'duong_dan')
 
 
-def _ky():
-    """Kỳ báo cáo mặc định — CÙNG công thức với `ParentReportView`.
+def _ky(class_id, user_id=None):
+    """Kỳ báo cáo mặc định — CÙNG công thức với `ParentReportView`
+    (`dau_ky_mac_dinh`: 4 tuần, kẹp theo ngày khai giảng và ngày em vào lớp).
 
-    Không viết lại con số 4 tuần ở đây: `DEFAULT_WEEKS` là bản gốc, và hai bản
-    chép sẽ trôi khỏi nhau đúng vào ngày ai đó đổi kỳ báo cáo của trung tâm.
+    Không viết lại công thức ở đây: hai bản chép sẽ trôi khỏi nhau đúng vào
+    ngày ai đó đổi kỳ báo cáo của trung tâm.
     """
     den = local_today()
-    return den - timedelta(weeks=DEFAULT_WEEKS), den
+    return dau_ky_mac_dinh(class_id, user_id, den), den
 
 
 def _hoc_vien_dang_hoc(class_id):
@@ -153,7 +153,7 @@ class ParentReportSendAllView(APIView):
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
-        tu, den = _ky()
+        tu, den = _ky(class_id)
         ds = _hoc_vien_dang_hoc(class_id)
         return Response({
             'period': {'from': tu.isoformat(), 'to': den.isoformat()},
@@ -194,7 +194,9 @@ class ParentReportSendAllView(APIView):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
 
-        tu, den = _ky()
+        # Kỳ CẢ LỚP (theo ngày khai giảng) cho nhật ký và câu trả lời; kỳ của
+        # TỪNG EM tính trong vòng lặp — em vào lớp muộn thì tờ bắt đầu từ ngày em vào.
+        tu_lop, den = _ky(class_id)
         ds = _hoc_vien_dang_hoc(class_id)
         if not ds:
             return Response({'error': 'Lớp này chưa có học viên nào đang học.'}, status=400)
@@ -202,12 +204,14 @@ class ParentReportSendAllView(APIView):
         # Kênh nào dùng được là chuyện của TỪNG EM (xem `_kenh_cho`), nên
         # không còn một biến "sẵn sàng" chung cho cả lượt nữa.
         goc = _goc(request)
-        ky_chu = '%s – %s' % (tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y'))
+        ky_lop = '%s – %s' % (tu_lop.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y'))
         lop = q1('SELECT name FROM classes WHERE id=%s', (class_id,))
         ten_lop = (lop or {}).get('name') or ''
 
         ket = []
         for e in ds:
+            tu, _ = _ky(class_id, e['id'])
+            ky_chu = '%s – %s' % (tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y'))
             token = _link_cho(class_id, e['id'], tu, den, request.user.id)
             duong_dan = '%s/bc/%s' % (goc, token)
             so = (e['parent_phone'] or '').strip()
@@ -300,12 +304,12 @@ class ParentReportSendAllView(APIView):
         audit.record(request, audit.PARENT_REPORT_SEND_ALL, target_type='class',
                      target_id=class_id, target_label=ten_lop,
                      summary='Gửi báo cáo cả lớp %s (kỳ %s): %d gửi được, %d lỗi, %d không gửi.'
-                             % (ten_lop, ky_chu, dem.get('da_gui', 0), dem.get('loi', 0),
+                             % (ten_lop, ky_lop, dem.get('da_gui', 0), dem.get('loi', 0),
                                 len(ket) - dem.get('da_gui', 0) - dem.get('loi', 0)),
-                     detail={'from': tu.isoformat(), 'to': den.isoformat(), 'dem': dem,
+                     detail={'from': tu_lop.isoformat(), 'to': den.isoformat(), 'dem': dem,
                              'ids': [r['id'] for r in ket]})
         return Response({
-            'period': {'from': tu.isoformat(), 'to': den.isoformat()},
+            'period': {'from': tu_lop.isoformat(), 'to': den.isoformat()},
             'znsSanSang': zalo.da_cau_hinh() or zalo.che_do_thu(),
             'znsCheDoThu': zalo.che_do_thu(),
             'znsThieu': zalo.thieu_gi(),

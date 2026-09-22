@@ -82,7 +82,7 @@
 /* #10B981 trên nền trắng = 2,54:1 — cùng cặp màu mà chú thích `--success-fill`
    trong theme.css đã ghi (tỉ số tương phản đối xứng, đổi vai chữ/nền không đổi
    số). `--success-ink` là bản dành cho CHỮ và tự lật đúng theo hai chủ đề. */
-.cd-module-prog { font-size: 11px; color: var(--success-ink, #0B6357); font-weight: 600; white-space: nowrap; }
+.cd-module-prog { font-size: 0.75rem; /* sàn 12px — 11px lọt bộ đo tới 22/09 vì chỉ hiện khi em ĐÃ học bài nào */ color: var(--success-ink, #0B6357); font-weight: 600; white-space: nowrap; }
 .cd-module-body { display: none; padding: 0 20px 12px; }
 .cd-module-body.open { display: block; }
 

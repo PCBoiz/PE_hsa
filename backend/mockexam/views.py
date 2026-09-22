@@ -146,6 +146,11 @@ def _cham_de(exam, answers):
         # cách khai thác đã đo được trên bản chạy thật.
         results.append({
             'id': qid, 'correct': ok,
+            # ĐỀ BÀI kèm theo (21/09/2026): "Xem lại từng câu" từng chỉ có
+            # "Đáp án: 17 · bạn chọn: 15" — muốn biết sai ở đâu phải nhớ lại đề.
+            # Không phải rò rỉ: câu hỏi đã hiện cho em suốt lúc làm bài; thứ giữ
+            # theo luật 2 là ĐÁP ÁN của câu bỏ trống, vẫn giữ nguyên.
+            'question': it.get('question'),
             'your': ua if da_tra_loi else None,
             'answer': correct if da_tra_loi else None,
             'answered': da_tra_loi,

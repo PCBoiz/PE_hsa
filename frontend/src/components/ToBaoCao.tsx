@@ -144,7 +144,12 @@ function O({ nhan, so, phu }: { nhan: string; so: string; phu?: string }) {
   );
 }
 
-export function ToBaoCao({ bc }: { bc: BaoCao }) {
+/**
+ * `choPhuHuynh`: tờ đang mở ở đường dẫn CÔNG KHAI gửi phụ huynh (`/bc/<chìa>`).
+ * Cùng một tờ phục vụ ba nơi (màn giảng viên, tờ phụ huynh, bản mẫu trang chủ),
+ * nhưng có câu chỉ dành cho người trong trung tâm — xem khối "chưa có dòng".
+ */
+export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?: boolean }) {
   const { attendance: cc, study: ht, topics: cd } = bc;
   const coMat = cc.present + cc.late;
   const tuan = bc.weekly?.weeks ?? [];
@@ -210,13 +215,24 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
                 chỉ riêng em này bị sót. Không nói ra thì bốn ô cộng lại không
                 bằng số buổi, và người đọc tưởng tờ giấy tính sai — trong khi
                 cái sai nằm ở sổ điểm danh. */}
-            {cc.noRecord > 0 && (
+            {/* HAI CÂU CHO HAI NGƯỜI ĐỌC (21/09/2026). Câu "giảng viên ghi sót…
+                đề nghị bổ sung" là lời nhắc việc NỘI BỘ — agent rà giảng viên thấy
+                nó nằm ngay màn đầu tờ công khai gửi phụ huynh ở 390, thành chữ vàng
+                sáng ở chế độ tối, và cả trên bản in: trung tâm tự tố mình với
+                người trả tiền. Phụ huynh vẫn cần biết con số chưa đủ (im lặng là
+                nói dối), nhưng bằng câu trung tính, không đổ lỗi, không giao việc. */}
+            {cc.noRecord > 0 && (choPhuHuynh ? (
+              <p className="mt-1 text-small text-ink-3">
+                Có {cc.noRecord} buổi trung tâm đang cập nhật điểm danh cho em; những buổi này
+                chưa tính vào tỉ lệ trên.
+              </p>
+            ) : (
               <p className="mt-1 text-small text-warning-ink">
                 {cc.noRecord} buổi đã điểm danh nhưng không có dòng nào cho em — giảng viên
                 ghi sót. Những buổi đó không được tính vào tỉ lệ trên; đề nghị bổ sung để
                 con số này đầy đủ.
               </p>
-            )}
+            ))}
           </>
         )}
 
@@ -272,12 +288,16 @@ export function ToBaoCao({ bc }: { bc: BaoCao }) {
             so={String(ht.mockCount)}
             phu={ht.mockCount === 0 ? 'chưa làm đề nào' : 'lượt'}
           />
+          {/* "Điểm THI THỬ trung bình" (22/09/2026): nhãn cũ "Điểm trung bình"
+              đứng ngay trên khối bài tập đã chấm 8/10 mà lại ghi "chưa có dữ
+              liệu" — phụ huynh đọc thành hai con số mâu thuẫn (agent GV→PH F8).
+              Ô này chỉ tính thi thử; bản PDF và thư đã ghi đúng như vậy. */}
           <O
-            nhan="Điểm trung bình"
+            nhan="Điểm thi thử trung bình"
             so={ht.mockAvg !== null ? `${ht.mockAvg}%` : '—'}
             phu={
               ht.mockCount === 0
-                ? 'chưa có dữ liệu'
+                ? 'chưa làm đề nào'
                 : ht.mockCount === 1
                   ? 'của một lượt duy nhất'
                   : `cao nhất ${ht.mockBest}%`

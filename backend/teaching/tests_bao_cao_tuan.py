@@ -162,3 +162,46 @@ def test_email_phu_huynh_toi_man_giang_vien_nhung_KHONG_toi_duong_cong_khai(lop)
     assert cong_khai.status_code == 200
     assert cong_khai.data['parent'] == {'name': 'Me Tuan'}, cong_khai.data['parent']
     assert 'weekly' in cong_khai.data, 'phụ huynh mở link phải thấy khối từng tuần'
+
+
+# ── 5. Đầu kỳ MẶC ĐỊNH không sớm hơn ngày khai giảng / ngày em vào lớp ──────
+# Vá 22/09/2026 (agent GV→PH F7): lớp khai giảng 13/09, tờ ngày 21/09 in kỳ
+# "24/08 – 21/09" → bảng từng tuần mở đầu bằng hai tuần toàn số 0, phụ huynh đọc
+# thành "hai tuần đầu con không học gì".
+
+def _to_goc(lop, url='/x'):
+    from teaching.parent_report import ParentReportView
+    kq = _goi(ParentReportView, 'get', ai=lop['gv'], url=url, class_id=lop['lop'], user_id=lop['em'].id)
+    assert kq.status_code == 200, kq.data
+    return kq.data
+
+
+def test_ky_mac_dinh_bat_dau_tu_ngay_khai_giang(lop):
+    khai_giang = local_today() - timedelta(days=8)
+    x('UPDATE classes SET starts_on=%s WHERE id=%s', (khai_giang, lop['lop']))
+    assert _to_goc(lop)['period']['from'] == khai_giang.isoformat(), \
+        'kỳ mặc định vẫn bắt đầu TRƯỚC ngày khai giảng'
+    # Link cấp cho phụ huynh dùng cùng kỳ.
+    kq = _goi(ParentReportLinkView, 'post', {}, ai=lop['gv'], class_id=lop['lop'], user_id=lop['em'].id)
+    assert kq.status_code == 201, kq.data
+    ky = q1('SELECT period_from FROM parent_report_links WHERE id=%s', (kq.data['id'],))
+    assert ky['period_from'] == khai_giang
+
+
+def test_ky_mac_dinh_bat_dau_tu_ngay_em_vao_lop(lop):
+    vao = local_today() - timedelta(days=5)
+    x('UPDATE class_members SET joined_at=%s WHERE class_id=%s AND user_id=%s',
+      (vao, lop['lop'], lop['em'].id))
+    assert _to_goc(lop)['period']['from'] == vao.isoformat()
+
+
+def test_ky_nguoi_dung_CHON_thi_giu_nguyen(lop):
+    x('UPDATE classes SET starts_on=%s WHERE id=%s', (local_today() - timedelta(days=8), lop['lop']))
+    tu = local_today() - timedelta(days=40)
+    assert _to_goc(lop, url='/x?from=%s' % tu.isoformat())['period']['from'] == tu.isoformat()
+
+
+def test_ky_mac_dinh_khong_doi_khi_lop_khai_giang_tu_lau(lop):
+    x('UPDATE classes SET starts_on=%s WHERE id=%s', (local_today() - timedelta(days=90), lop['lop']))
+    mac_dinh = local_today() - timedelta(weeks=DEFAULT_WEEKS)
+    assert _to_goc(lop)['period']['from'] == mac_dinh.isoformat()

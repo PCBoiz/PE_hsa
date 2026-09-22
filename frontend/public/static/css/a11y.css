@@ -39,6 +39,7 @@
   .avatar-edit-btn,
   .chatbot-close,
   .chatbot-send-btn,
+  .chatbot-attach-btn,
   button[aria-label]:not([class*="chip"]) {
     min-width: 44px !important;
     min-height: 44px !important;

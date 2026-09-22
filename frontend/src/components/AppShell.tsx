@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { doiChuDe, useDangToi } from '@/lib/chuDe';
 import { goiLegacy } from '@/lib/goiLegacy';
 import { useVaiHienTai } from '@/lib/useVaiHienTai';
-import { NHAN_VAI } from '@/lib/vaiTro';
+import { NHAN_VAI, VAI_BIEN_TAP, VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI, VAI_TRO_GIANG } from '@/lib/vaiTro';
 
 import { BieuTuong } from './bieuTuong';
 import { MUC_NAV, NHOM_NAV, type MucNav } from './navMuc';
@@ -418,25 +418,39 @@ export default function AppShell({
             bắt được ngay ở lượt chạy đầu ("Expected: 0, Received: 3") — vì với
             tài khoản quản trị thì `dashboard.js` mở chúng ra, và dưới 96rem
             nhãn chữ bị `display:none`, tức ba nút thành KHÔNG CÓ TÊN. */}
-        {spa && (
-          <>
-            <button type="button" className="nav-btn" id="nav-teach" data-page="teach"
-              aria-label="Giảng dạy" title="Giảng dạy"
-              style={{ display: 'none' }} onClick={() => goiLegacy('navigate', 'teach')}>
-              <span className="nav-icon"><BieuTuong ten="users" co={17} /></span><span>Giảng dạy</span>
-            </button>
-            <button type="button" className="nav-btn" id="nav-vanhanh" style={{ display: 'none' }}
-              aria-label="Vận hành" title="Vận hành"
-              onClick={() => { taiTrang('/quan-tri/tong-quan'); }}>
-              <span className="nav-icon"><BieuTuong ten="shield" co={17} /></span><span>Vận hành</span>
-            </button>
-            <button type="button" className="nav-btn" id="nav-admin" style={{ display: 'none' }}
-              aria-label="Quản trị" title="Quản trị"
-              onClick={() => { taiTrang('/admin'); }}>
-              <span className="nav-icon"><BieuTuong ten="wrench" co={17} /></span><span>Quản trị</span>
-            </button>
-          </>
-        )}
+        {/* TRANG REACT CŨNG CÓ (21/09/2026). Bản cũ chỉ dựng ba nút khi `spa`, nên
+            giảng viên mở /mock, /courses/x hay /bai-tap không có lối nào về khu
+            của mình ngoài đi vòng qua Trang của tôi (rà 21/09). Ở trang không
+            có main.js thì `vai` do `useVaiHienTai` đọc; luật hiện/ẩn chép ĐÚNG
+            từ `main.js` (Quản trị, Vận hành) và `dashboard.js::gate` (Giảng
+            dạy = IsTeachingStaff). Trong khu riêng (`khu`) thanh đã là hàng mục
+            của khu, không thêm. Ở trang SPA vẫn để tầng cũ bật/tắt như cũ. */}
+        {(spa || !khu) && (() => {
+          const giangDay = [VAI_GIANG_VIEN, VAI_QUAN_TRI, VAI_TRO_GIANG, VAI_HOC_VU].includes(vai ?? '');
+          const vanHanh = [VAI_QUAN_TRI, VAI_HOC_VU].includes(vai ?? '');
+          const quanTri = [VAI_QUAN_TRI, VAI_BIEN_TAP].includes(vai ?? '');
+          const hien = (co: boolean) => ({ display: !spa && co ? '' : 'none' });
+          return (
+            <>
+              <button type="button" className="nav-btn" id="nav-teach" data-page="teach"
+                aria-label="Giảng dạy" title="Giảng dạy"
+                style={hien(giangDay)}
+                onClick={() => { if (spa) goiLegacy('navigate', 'teach'); else taiTrang('/giang-day'); }}>
+                <span className="nav-icon"><BieuTuong ten="users" co={17} /></span><span>Giảng dạy</span>
+              </button>
+              <button type="button" className="nav-btn" id="nav-vanhanh" style={hien(vanHanh)}
+                aria-label="Vận hành" title="Vận hành"
+                onClick={() => { taiTrang('/quan-tri/tong-quan'); }}>
+                <span className="nav-icon"><BieuTuong ten="shield" co={17} /></span><span>Vận hành</span>
+              </button>
+              <button type="button" className="nav-btn" id="nav-admin" style={hien(quanTri)}
+                aria-label="Quản trị" title="Quản trị"
+                onClick={() => { taiTrang('/admin'); }}>
+                <span className="nav-icon"><BieuTuong ten="wrench" co={17} /></span><span>Quản trị</span>
+              </button>
+            </>
+          );
+        })()}
         {/* `main.js::_updateNavUnderline` đo vị trí `.nav-btn.active` rồi đặt
             `left`/`width` cho phần tử này. Không có main.js thì nó nằm im ở
             width 0 — vô hại, và mục đang mở vẫn nhận ra được nhờ viên thuốc màu. */}

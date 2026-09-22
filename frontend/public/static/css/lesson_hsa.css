@@ -67,6 +67,9 @@ body.light .hsa-opt.selected {
 /* "Bạn trả lời: …" ở câu sai (21/09/2026): bước Đánh giá từng chỉ hiện đáp án
    đúng, em không thấy mình đã điền "999" hay chọn "5%" — mất đúng chỗ rút kinh
    nghiệm. Dòng riêng, màu lỗi; bản sáng tối màu hơn cho đủ tương phản. */
+/* Đề bài đứng đầu mỗi dòng xem lại (21/09/2026) — không có nó, "Đáp án: 96"
+   chẳng nói sai ở đâu. */
+.hsa-rev-de { display: block; color: var(--t1, #E2E8F0); margin-bottom: 3px; line-height: 1.45; }
 .hsa-rev-mine { display: block; color: #FCA5A5; }
 .hsa-rev-mine b { color: inherit; }
 body.light .hsa-rev-mine { color: #B91C1C; }
@@ -170,7 +173,10 @@ body.light .hsa-rev-mine { color: #B91C1C; }
 .hsa-drill-prog { font-weight: 700; color: var(--t2, #94A3B8); font-size: 15px; }
 .hsa-drill-combo { font-weight: 800; font-size: 16px; color: transparent; transition: .2s; }
 .hsa-drill-combo.on { color: #FBBF24; transform: scale(1.06); text-shadow: 0 0 12px rgba(251,191,36,.5); }
-.hsa-drill-timer { height: 10px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; margin-bottom: 22px; }
+.hsa-drill-timer { height: 10px; background: color-mix(in srgb, var(--t1, #E2E8F0) 12%, transparent); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
+/* Số giây còn lại (21/09/2026): thanh trần không nói còn bao lâu; số là thứ
+   em liếc được. Bảng số cho chữ số không nhảy bề ngang. */
+.hsa-drill-sec { text-align: right; font-size: 0.75rem; color: var(--t2, #94A3B8); font-variant-numeric: tabular-nums; margin-bottom: 16px; }
 .hsa-drill-timer-bar { height: 100%; width: 100%; border-radius: 999px;
   background: linear-gradient(90deg, var(--hsa-violet), var(--hsa-teal)); transition: width .1s linear; }
 .hsa-drill-timer-bar.low { background: linear-gradient(90deg, #F87171, #FBBF24); }

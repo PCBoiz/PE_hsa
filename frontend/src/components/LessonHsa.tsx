@@ -43,6 +43,24 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
     }).catch(() => {});
   }, []);
 
+  /* Hộp "Hoàn thành bài học" mở (engine bỏ lớp `hidden`) → phần còn lại của
+     trang `inert` và tiêu điểm vào nút đầu tiên của hộp ("Bài tiếp theo" khi
+     còn bài, không thì "Về trang chủ"). Theo dõi lớp thay vì sửa engine: tầng
+     cũ chỉ được co lại (chot-ham-tang-cu). */
+  useEffect(() => {
+    const hop = document.getElementById('success-modal');
+    if (!hop) return;
+    const sau = () => ['.lesson-header', '.lesson-stage', '.lesson-nav-footer']
+      .map((c) => document.querySelector<HTMLElement>(c)).filter((e): e is HTMLElement => !!e);
+    const theo = new MutationObserver(() => {
+      const mo = !hop.classList.contains('hidden');
+      sau().forEach((e) => { e.inert = mo; });
+      if (mo) hop.querySelector<HTMLElement>('.success-actions .next-btn:not(.hidden)')?.focus();
+    });
+    theo.observe(hop, { attributes: true, attributeFilter: ['class'] });
+    return () => theo.disconnect();
+  }, []);
+
   /* ENGINE TRƯỚC, confetti SAU (20/09/2026). `LegacyScripts` nạp theo thứ tự,
      sau hydrate. Bản trước để confetti (jsdelivr, miền khác) đứng đầu, nên
      engine — thứ VẼ nội dung bài, phần tử LCP — phải chờ một lượt tải + chạy
@@ -137,7 +155,14 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         {/* Bước 1: KIỂM TRA */}
         {/* `tabIndex={0}` trên MỌI bước: bước đang mở là vùng cuộn, và vùng cuộn
             không nhận tiêu điểm thì bàn phím không cuộn được (axe-core
-            `scrollable-region-focusable`, WCAG 2.1.1 — mức SERIOUS, 20/09/2026). */}
+            `scrollable-region-focusable`, WCAG 2.1.1 — mức SERIOUS, 20/09/2026).
+
+            Bước ĐANG ẨN thì `inert` (21/09/2026). Bước ẩn chỉ là `opacity:0;
+            pointer-events:none` — chặn CHUỘT, không chặn BÀN PHÍM: từ nút "Tiếp
+            tục" phải Tab 14 lần mới tới bước 2, 10 lần trong đó tiêu điểm nằm ở
+            phần tử vô hình; đang ở bước 3 mà Space trên phương án bước 1 (ẩn)
+            thì đáp án đã chấm đổi luôn (agent tc3 F5). `lesson_hsa.js::goToStep`
+            bật/tắt `inert` cùng lúc với lớp `active`. */}
         <section className="step-pane active" data-step="1" tabIndex={0}>
           <article className="step-1-content">
             {eyebrow(1, 'Kiểm tra đầu vào — định vị năng lực')}
@@ -148,7 +173,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 2: ĐÁNH GIÁ */}
-        <section className="step-pane" data-step="2" tabIndex={0}>
+        <section className="step-pane" data-step="2" tabIndex={0} inert>
           <article className="step-1-content">
             {eyebrow(2, 'Đánh giá năng lực — bạn đang ở đâu')}
             <div id="hsa-assess"></div>
@@ -156,7 +181,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 3: LÝ THUYẾT */}
-        <section className="step-pane" data-step="3" tabIndex={0}>
+        <section className="step-pane" data-step="3" tabIndex={0} inert>
           <article className="step-1-content">
             {eyebrow(3, 'Lý thuyết — thích ứng theo kết quả của bạn')}
             <div id="hsa-theory"></div>
@@ -164,7 +189,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 4: GHI CHÚ */}
-        <section className="step-pane" data-step="4" tabIndex={0}>
+        <section className="step-pane" data-step="4" tabIndex={0} inert>
           <article className="step-1-content">
             {eyebrow(4, 'Ghi chú — chốt lại để nhớ lâu')}
             <div id="hsa-notes"></div>
@@ -172,7 +197,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </section>
 
         {/* Bước 5: LUYỆN TỐC ĐỘ (gamified) */}
-        <section className="step-pane" data-step="5" tabIndex={0}>
+        <section className="step-pane" data-step="5" tabIndex={0} inert>
           <article className="step-1-content">
             {eyebrow(5, 'Phòng luyện bấm giờ — nhanh & chính xác')}
             <div id="hsa-drill"></div>
@@ -195,10 +220,14 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
         </button>
       </nav>
 
+      {/* HỘP THOẠI THẬT (21/09/2026): bản cũ không `role`, tiêu điểm ở lại nút
+          "Hoàn thành" phía sau, Tab đi ra sau lớp phủ và trình đọc màn hình
+          không được báo gì (agent tc3 F10). Mở/đóng do `lesson_hsa.js` bật lớp
+          `hidden`; phần giữ tiêu điểm ở `useEffect` phía trên. */}
       <div id="success-modal" className="modal-overlay hidden">
-        <div className="success-card">
+        <div className="success-card" role="dialog" aria-modal="true" aria-labelledby="success-title">
           <div className="success-icon"><i className="fa-solid fa-trophy"></i></div>
-          <h2 className="success-title">Hoàn thành bài học!</h2>
+          <h2 className="success-title" id="success-title">Hoàn thành bài học!</h2>
           <div className="success-lesson-tag">
             <span className="success-lesson-title" id="success-lesson-title">—</span>
           </div>

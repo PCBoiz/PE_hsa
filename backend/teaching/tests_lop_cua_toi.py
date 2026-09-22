@@ -169,7 +169,7 @@ def test_the_lop_bao_bai_tap_chua_nop(canh):
               "VALUES (%s, %s, %s, %s, 10, %s) RETURNING id",
               (canh['lop'], 'Bai %d' % i, tt, h, canh['gv'].id))['id']
            for i, (tt, h) in enumerate(zip(('open', 'open', 'open', 'draft'),
-                                            (han[0], han[1], han[0], han[1])))]
+                                            (han[0], han[1], han[0], han[1]), strict=True))]
     # Bài thứ 3 em đã nộp; bài nháp (draft) em không thấy.
     x("INSERT INTO submissions (assignment_id, user_id, content, submitted_at) "
       "VALUES (%s, %s, 'x', %s)", (ids[2], canh['em'].id, nay))

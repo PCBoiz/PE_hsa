@@ -135,7 +135,7 @@ export default function PhuHuynhNhanGi() {
         <div className="ph-khung-giay">
           {/* Chính component tờ báo cáo thật — cùng dòng mã với thứ phụ huynh
               mở từ Zalo và giảng viên in ra giấy. Không phải ảnh chụp. */}
-          <ToBaoCao bc={MAU} />
+          <ToBaoCao bc={MAU} choPhuHuynh />
         </div>
 
         <p className="stat-note">

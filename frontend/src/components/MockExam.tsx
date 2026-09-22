@@ -54,6 +54,13 @@ export default function MockExam() {
      tài khoản nào. */
   const [ten, setTen] = useState<string | undefined>(undefined);
   const startRef = useRef(0);
+  /* ĐANG CHẤM (21/09/2026). Bản cũ `setView('loading')` lúc nộp: cả trang chỉ
+     còn vòng xoay + "Đang tải…" ~2,5 s (đo 2.590 ms ở 1024, 2.605 ở 768) — mất
+     cả đề lẫn bảng câu hỏi, đúng lúc em vừa bấm một nút không hoàn tác được.
+     Nay giữ nguyên khung đề, phủ một lớp mờ nói rõ "đang chấm". `useRef` để
+     đồng hồ hết giờ trong lúc chấm không gọi `submit` lần hai. */
+  const [dangNop, setDangNop] = useState(false);
+  const dangNopRef = useRef(false);
   // Mốc hết giờ (ms từ epoch). Đặt cùng lúc với `startRef` khi mở đề.
   const hanRef = useRef(0);
   const answersRef = useRef<Record<string, string>>({});
@@ -85,9 +92,9 @@ export default function MockExam() {
   }, []);
 
   const submit = useCallback(async () => {
-    if (!exam) return;
+    if (!exam || dangNopRef.current) return;
     const dur = Math.round((Date.now() - startRef.current) / 1000);
-    setView('loading');
+    dangNopRef.current = true; setDangNop(true);
     try {
       /* Hình dạng (T18 mức 2, chiều GHI — 14/09/2026): CẢ TỜ KẾT QUẢ của em
          đọc từ phản hồi này. Máy chủ đổi tên `section_scores` hay `results` thì
@@ -100,8 +107,9 @@ export default function MockExam() {
       }, HD_KET_QUA);
       setResult(d); setView('result');
     } catch (e) {
-      setView('take');
       setLoi(loiBatDuoc(e, 'Không nộp được bài — thử nộp lại sau giây lát.'));
+    } finally {
+      dangNopRef.current = false; setDangNop(false);
     }
   }, [exam]);
 
@@ -223,9 +231,27 @@ export default function MockExam() {
             cheDo="lam-bai"
             nhan={exam.counts === false ? 'Lượt luyện · không tính điểm' : 'Đang làm bài'}
             phai={
-              <div className={'mk-timer' + (timeLeft <= 60 ? ' low' : '')}>
-                <i className="fa-regular fa-clock"></i> {fmt(timeLeft)}
-              </div>
+              <>
+                <div className={'mk-timer' + (timeLeft <= 60 ? ' low' : '')}>
+                  <i className="fa-regular fa-clock"></i> {fmt(timeLeft)}
+                </div>
+                {/* LỐI THOÁT (21/09/2026). Chế độ làm bài tước hết điều hướng để
+                    không ai bấm nhầm mà mất bài — nhưng tước cả lối ra thì em
+                    mở nhầm đề chỉ còn cách đóng tab. Hỏi trước, vì thoát là bỏ
+                    lượt đang làm. */}
+                <button
+                  type="button"
+                  className="mk-btn ghost mk-thoat"
+                  onClick={() => {
+                    if (dangNop) return;
+                    if (window.confirm('Thoát khỏi bài thi? Bài đang làm sẽ KHÔNG được nộp.')) {
+                      setExam(null); setResult(null); setView('list');
+                    }
+                  }}
+                >
+                  Thoát
+                </button>
+              </>
             }
           />
         ) : (
@@ -264,6 +290,11 @@ export default function MockExam() {
           const q = exam.questions[cur];
           return (
             <div className="mk-take">
+              {dangNop && (
+                <div className="mk-cham-phu" role="status" aria-live="polite">
+                  <div className="mk-spinner" /> Đang chấm bài…
+                </div>
+              )}
               <div className="mk-take-head">
                 <div className="mk-progress-txt">
                   Câu {cur + 1}/{exam.questions.length} · đã trả lời {answeredCount()}
@@ -307,7 +338,12 @@ export default function MockExam() {
                         onClick={() => setCur(i)}>{i + 1}</button>
                     ))}
                   </div>
-                  <button className="mk-btn primary full" onClick={confirmSubmit}>Nộp bài ✓</button>
+                  {/* Nút PHỤ, không phải tím đặc (21/09/2026): ở 768 bảng câu hỏi
+                      rơi xuống dưới thẻ câu hỏi, nên nút tím 704×50 này nằm ngay
+                      dưới câu 1 — nút to nhất màn hình là nút nộp, mà nộp thì
+                      chấm ngay, không hoàn tác. Nút chính "Nộp bài ✓" vẫn ở hàng
+                      điều hướng khi tới câu cuối; đây là lối tắt, trông như lối tắt. */}
+                  <button className="mk-btn full" onClick={confirmSubmit}>Nộp bài sớm ✓</button>
                   <div className="mk-palette-note">Hết giờ sẽ tự nộp.</div>
                 </aside>
               </div>
@@ -372,6 +408,10 @@ export default function MockExam() {
                   <span className="mk-rev-ic">{r.correct ? '✓' : r.answered ? '✕' : '○'}</span>
                   <span className="mk-rev-q">Câu {i + 1}</span>
                   <span className="mk-rev-a">
+                    {/* ĐỀ BÀI trước, rồi mới tới đáp án (21/09/2026): "Đáp án: 17 ·
+                        bạn chọn: 15" mà không có câu hỏi thì muốn biết sai ở đâu
+                        phải nhớ lại đề. */}
+                    {r.question && <span className="mk-rev-de">{r.question}</span>}
                     {r.answered
                       ? <>Đáp án: <b>{r.answer}</b>{!r.correct && r.your ? ` · bạn chọn: ${r.your}` : ''}</>
                       : <em>Bỏ trống — làm lại đề để xem đáp án câu này.</em>}

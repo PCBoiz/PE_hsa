@@ -118,6 +118,9 @@ def test_cau_da_tra_loi_thi_MOI_hien_dap_an(em, de):
     assert theo_id['q1']['answer'] == '4' and theo_id['q1']['correct'] is True
     assert theo_id['q2']['answer'] is None and theo_id['q2']['answered'] is False
     assert theo_id['q3']['answer'] is None
+    # Đề bài đi kèm MỌI câu (21/09/2026) — kể cả câu bỏ trống: đề em đã thấy lúc
+    # làm, chỉ ĐÁP ÁN của câu bỏ trống mới giữ (luật 2 ở trên).
+    assert theo_id['q1']['question'] and theo_id['q2']['question'], theo_id
 
 
 # ── Luật 3 + 4: lượt nào vào sổ ─────────────────────────────────────────────

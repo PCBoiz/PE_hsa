@@ -624,12 +624,24 @@ class AssignmentGradingView(APIView):
         # Một câu INSERT chạy cho cả mẻ nên không thể mỗi dòng một luật; muốn
         # dòng này giữ nhận xét cũ còn dòng kia xoá nó thì phải quyết trong
         # Python rồi mới gửi xuống.
-        cu = {r['user_id']: r['feedback'] for r in q(
-            'SELECT user_id, feedback FROM submissions WHERE assignment_id=%s '
+        cu_dong = {r['user_id']: r for r in q(
+            'SELECT user_id, feedback, score, graded_at FROM submissions WHERE assignment_id=%s '
             'AND user_id = ANY(%s)', (assignment_id, [g['user_id'] for g in rows]))}
+        cu = {uid: r['feedback'] for uid, r in cu_dong.items()}
         for g in rows:
             if not g['doi_nx']:
                 g['feedback'] = cu.get(g['user_id'])
+
+        # Ai THẬT SỰ đổi (21/09/2026): agent rà giảng viên lưu 8/10 hai lần y
+        # nguyên và em nhận HAI chuông "đã chấm" giống hệt — mỗi lần bấm Lưu cả
+        # bảng là một loạt chuông cho mọi em, kể cả em không ai đụng tới.
+        def _f(v):
+            return None if v is None else float(v)
+        doi_that = [g for g in rows
+                    if g['user_id'] not in cu_dong
+                    or cu_dong[g['user_id']]['graded_at'] is None
+                    or _f(cu_dong[g['user_id']]['score']) != _f(g['score'])
+                    or (cu_dong[g['user_id']]['feedback'] or '') != (g['feedback'] or '')]
 
         params = []
         for g in rows:
@@ -677,7 +689,7 @@ class AssignmentGradingView(APIView):
                      target_id=assignment_id, target_label=label, summary=summary,
                      detail={'classId': row['class_id'], 'graded': len(rows),
                              'skipped': bo_qua, 'maxScore': str(thang)})
-        _bao_da_cham(assignment_id, label, thang, rows)
+        _bao_da_cham(assignment_id, label, thang, doi_that)
         ra = {'ok': True, 'graded': len(rows), 'events': so_su_kien,
               'skipped': bo_qua, 'summary': summary}
         if thieu > 0:
