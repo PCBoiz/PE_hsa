@@ -226,3 +226,84 @@ export async function expectChatbotBietBai(page: Page, soBai: number): Promise<R
   expect((ctx as { lesson_index?: number }).lesson_index).toBe(soBai);
   return ctx as Record<string, unknown>;
 }
+
+/* ── ĐĂNG NHẬP THEO VAI (22/09/2026) ────────────────────────────────────────
+
+   Bộ helper cho tới nay chỉ biết MỘT tài khoản. Nhưng phần lớn thứ đáng kiểm
+   trong một ERP là "vai nào thấy gì" — và câu ấy không kiểm được bằng một tài
+   khoản duy nhất.
+
+   Hôm nay tôi đã trả giá cho đúng chỗ này: viết cẩm nang cho bốn vai bằng cách
+   đọc `permissions.py` rồi suy, và sai ba việc liền về vai Quản lý học vụ. Thứ
+   sửa được tôi là mở trình duyệt bằng chính tài khoản vai ấy. Phép kiểm dưới
+   đây biến việc đó thành việc của máy.
+
+   Tài khoản đọc từ `.the/audit_tk.json` — tệp do phiên rà soát sinh ra, nằm
+   trong `.gitignore` như mọi thứ khác dưới `.the/`. Không có tệp thì BỎ QUA kèm
+   lý do, không đỏ oan. */
+
+export type TaiKhoanVai = { email: string; matKhau: string; vai: string };
+
+function docBangVai(): Record<string, TaiKhoanVai> {
+  for (const p of [join(process.cwd(), '..', '.the', 'audit_tk.json'),
+                   join(process.cwd(), '.the', 'audit_tk.json')]) {
+    try {
+      if (!existsSync(p)) continue;
+      return JSON.parse(readFileSync(p, 'utf8')) as Record<string, TaiKhoanVai>;
+    } catch { /* thử đường sau */ }
+  }
+  return {};
+}
+
+const BANG_VAI = docBangVai();
+
+/** Tài khoản đầu tiên mang đúng vai này, hoặc `null`. */
+export function taiKhoanCuaVai(vai: string): (TaiKhoanVai & { email: string }) | null {
+  for (const [email, t] of Object.entries(BANG_VAI)) {
+    if (t && t.vai === vai && t.matKhau) return { ...t, email };
+  }
+  return null;
+}
+
+export const LY_DO_THIEU_VAI =
+  'chưa có `.the/audit_tk.json` (bảng tài khoản bốn vai). Sinh bằng kịch bản rà '
+  + 'soát, hoặc bỏ qua nhóm phép kiểm theo vai.';
+
+/**
+ * Đăng nhập bằng tài khoản mang ĐÚNG vai này.
+ *
+ * Trả `true` khi vào được VÀ `/api/user` xác nhận đúng vai — hai vế, vì vế sau
+ * mới là thứ phép kiểm dựa vào. Một tài khoản bị đổi vai mà bảng chưa cập nhật
+ * sẽ làm mọi khẳng định phía sau nói về một vai khác hẳn.
+ */
+export async function vaoTheoVai(page: Page, vai: string): Promise<boolean> {
+  const tk = taiKhoanCuaVai(vai);
+  if (!tk) return false;
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#login-email', { timeout: 30_000 });
+  await page.fill('#login-email', tk.email);
+  await page.fill('#login-password', tk.matKhau);
+  await page.click('#loginBtn');
+  try {
+    await page.waitForURL('**/dashboard**', { timeout: 25_000 });
+  } catch {
+    return false;
+  }
+  const that = await page.evaluate(async () => {
+    const r = await fetch('/api/user', { credentials: 'include' });
+    return r.ok ? ((await r.json()) as { role?: string }).role ?? null : null;
+  });
+  if (that !== vai) {
+    console.warn(`[e2e] tài khoản ${tk.email} mang vai "${that}", không phải "${vai}"`);
+    return false;
+  }
+  return true;
+}
+
+/** Chặn MỌI lời gọi ghi — dùng cho phép kiểm chỉ đọc. */
+export async function chiDoc(page: Page) {
+  await page.route('**/api/**', (r) => (
+    ['GET', 'HEAD', 'OPTIONS'].includes(r.request().method())
+      ? r.continue()
+      : r.fulfill({ status: 200, contentType: 'application/json', body: '{}' })));
+}

@@ -10,9 +10,14 @@ import Link from 'next/link';
  * mỗi lần máy chủ ngủ đông (Render gói free ngủ sau ~15 phút).
  */
 
-function Khung({ tieu_de, children }: { tieu_de: string; children: React.ReactNode }) {
+function Khung({ tieu_de, chan, children }: {
+  tieu_de: string;
+  /** Móc cho e2e — xem `e2e/vai-tro-cong.spec.ts`. Đọc TRẠNG THÁI, không dò chữ. */
+  chan: 'vai' | 'loi';
+  children: React.ReactNode;
+}) {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-16">
+    <main className="mx-auto max-w-3xl px-4 py-16" data-chan={chan}>
       <h1 className="text-title text-ink">{tieu_de}</h1>
       <p className="mt-2 text-body text-ink-2">{children}</p>
       <Link href="/dashboard" className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline">
@@ -23,12 +28,12 @@ function Khung({ tieu_de, children }: { tieu_de: string; children: React.ReactNo
 }
 
 export function KhongDocDuoc({ loi }: { loi: string }) {
-  return <Khung tieu_de="Chưa mở được khu quản trị">{loi}</Khung>;
+  return <Khung tieu_de="Chưa mở được khu quản trị" chan="loi">{loi}</Khung>;
 }
 
 export function KhongDuQuyen({ can }: { can?: string }) {
   return (
-    <Khung tieu_de="Không đủ quyền vào trang này">
+    <Khung tieu_de="Không đủ quyền vào trang này" chan="vai">
       {can
         ? `Trang này dành cho ${can}. Nếu bạn cần quyền ấy, liên hệ người quản lý hệ thống.`
         : 'Tài khoản của bạn không có quyền vào đây. Nếu bạn là nhân sự của TopHSA và cần quyền này, liên hệ người quản lý hệ thống.'}

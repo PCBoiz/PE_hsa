@@ -39,7 +39,7 @@ export default async function NhapKetQuaThiPage({
 
   if (detail === null) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
+      <main className="mx-auto max-w-3xl px-4 py-16" data-chan="vai">
         <h1 className="text-title text-ink">Không mở được trang này</h1>
         <p className="mt-2 text-body text-ink-2">
           Nhập kết quả thi thử dành cho giảng viên phụ trách lớp và quản lý học vụ — tờ kết quả

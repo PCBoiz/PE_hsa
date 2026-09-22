@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { LY_DO_BO_QUA, login, vaoBangThe } from './helpers';
+import { LY_DO_BO_QUA, login, vaoBangThe, vaoTheoVai } from './helpers';
 
 /**
  * Khu VẬN HÀNH dùng chung khung với mọi màn khác.
@@ -55,9 +55,12 @@ test.describe('khu vận hành', () => {
       expect(page.url(), 'không được rơi về màn đăng nhập').not.toContain('/login');
       // Tài khoản kiểm thử không đủ quyền thì trang trả về màn "không có
       // quyền" — bỏ qua có tiếng, chứ không đỏ khó hiểu.
+      /* Đọc móc `data-chan`, KHÔNG dò chữ: bản trước tìm /không có quyền/, mà
+         màn chặn có cờ `can` lại nói "Trang này dành cho …" — bỏ qua được hay
+         không tuỳ vào câu chữ, tức tuỳ vào ai sửa câu chữ lần cuối. */
       test.skip(
-        await page.getByText(/không có quyền/i).count() > 0,
-        'tài khoản kiểm thử không vào được khu Vận hành',
+        await page.locator('[data-chan]').count() > 0,
+        'tài khoản kiểm thử không vào được trang này (cần quản trị viên — thẻ JWT có thể đã hết hạn)',
       );
 
       await expect(page.locator('.topbar')).toHaveCount(1);
@@ -103,11 +106,13 @@ test.describe('khu vận hành', () => {
   }
 
   test('bảng một dòng KHÔNG mọc thanh cuộn dọc', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
+    // Học vụ trước — cùng lý do với phép kiểm khổ điện thoại bên dưới.
+    const vao = (await vaoTheoVai(page, 'Quản lý học vụ')) || (await vaoBangThe(page));
     test.skip(!vao, LY_DO_BO_QUA);
 
     await page.goto('/quan-tri/tong-quan', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');
+    expect(await page.locator('[data-chan]').count(), 'tài khoản vào được Toàn trung tâm').toBe(0);
     test.skip(await page.locator('table').count() === 0, 'chưa có bảng nào để đo');
 
     /* `overflow-x: auto` làm `overflow-y` TÍNH THÀNH `auto` theo đặc tả. Bảng
@@ -126,12 +131,18 @@ test.describe('khu vận hành', () => {
   });
 
   test('khổ điện thoại: không tràn ngang, tab vẫn tới được', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
+    /* HỌC VỤ trước, thẻ quản trị sau. Đo 23/09/2026: lượt chạy đầy đủ dài 17
+       phút, thẻ JWT 30 phút hết hạn giữa chừng, phép kiểm rơi về tài khoản e2e
+       (vai Học viên), mở `/quan-tri/tong-quan`, gặp màn chặn không có
+       `#topbar-nav`, rồi chờ 120 s. Đỏ oan. Học vụ mở được trang này và đăng
+       nhập bằng mật khẩu — không có hạn 30 phút. */
+    const vao = (await vaoTheoVai(page, 'Quản lý học vụ')) || (await vaoBangThe(page));
     test.skip(!vao, LY_DO_BO_QUA);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/quan-tri/tong-quan', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');
+    expect(await page.locator('[data-chan]').count(), 'tài khoản vào được Toàn trung tâm').toBe(0);
 
     const tran = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

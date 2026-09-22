@@ -90,6 +90,76 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 23/09/2026 — BỘ E2E CHẠY HAI KHỔ, CANH QUYỀN THEO VAI VÀ LUỒNG GIẢNG DẠY
+
+Anh bảo "làm e2e để test mọi khả năng, cả mobile lẫn desktop".
+
+### Trước hôm nay
+27 phép kiểm, gần như toàn về CẤU TRÚC (khung chung, tràn ngang, điều hướng). Chạy đúng MỘT khổ
+1600×1000; điện thoại chỉ có trong `mobile-responsive.spec.ts`, tệp tự ghim viewport riêng — tức 26/27
+phép kiểm chưa từng chạy ở khổ điện thoại. Không phép kiểm nào canh QUYỀN THEO VAI lúc chạy, không phép
+kiểm nào bấm "Điểm danh" rồi đọc lại xem nó có lưu thật không.
+
+### Bây giờ
+`playwright.config.ts` có hai `project`: `may-tinh` 1440×900 và `dien-thoai` 390×844 (`isMobile` +
+`hasTouch`, để `@media (pointer: coarse)` trong `a11y.css` thật sự áp). Lượt cuối cả bộ:
+
+| khổ | xanh | đỏ | bỏ qua |
+|---|---|---|---|
+| máy tính | 58 | 0 | 5 |
+| điện thoại | 51 | 0 | 6 |
+
+11 lượt bỏ qua đều có lý do in ra: 8 là luồng có GHI (mặc định tắt, xem dưới — chạy riêng `E2E_GHI=1`:
+**8/8 xanh**), 2 vì CSDL chưa có đề thi thử để làm bài, 1 vì ô tìm trên thanh cố ý ẩn ở ≤36rem.
+
+### Ba spec mới
+- **`vai-tro-cong.spec.ts`** — bốn vai × 12 trang × 6 API, ở HAI tầng: API (an ninh thật, mã 200/403/404
+  không mơ hồ) và trang (người dùng có được BÁO đúng không). Cộng cách ly lớp (giảng viên mở lớp của
+  người khác phải nhận 404, không phải 403 — 403 lộ ra rằng lớp tồn tại) và trợ giảng trong lớp của
+  chính mình vẫn bị cắt báo cáo phụ huynh. Kỳ vọng lấy từ phép ĐO bằng tài khoản thật, không từ chú thích.
+- **`huong-dan-moi-vai.spec.ts`** — khu Hướng dẫn: mỗi vai mở được, thấy đúng số bài, không thấy bài
+  của vai khác, có lối "xem tất cả", và tìm thấy từ menu tài khoản (kể cả vùng chạm ≥44px trên điện thoại).
+- **`luong-giang-day.spec.ts`** — đi bằng GIAO DIỆN: điểm danh (bấm "Có mặt — tên em", "Lưu điểm danh",
+  đọc lại từ máy chủ), buổi đã điểm danh biến khỏi "Việc hôm nay", tờ phụ huynh đọc đúng số, và vòng đời
+  đường dẫn phụ huynh (tạo → mở KHÔNG đăng nhập → thu hồi → chết ngay). Tự dựng lớp "E2E tự dọn …" rồi
+  xoá ở `afterAll`. Đo sau 3 lượt: 6 lớp tạo, 6 lớp xoá, 0 lớp và 0 chìa sót. KHÔNG gửi gì cho phụ huynh.
+
+Cả ba đã CHỨNG MINH ĐỎ được: lật hai ô ma trận → đỏ đúng hai câu; bỏ cú bấm "Lưu" → đỏ ở "Chưa lưu";
+bỏ bước thu hồi → đỏ ở "đường dẫn ĐÃ THU HỒI mà phụ huynh vẫn đọc được tờ".
+
+### Móc `data-chan` trên mọi màn chặn
+Bản đo đầu tiên dò chữ để biết "bị chặn" và BỎ SÓT ba màn chặn thật: `/admin` nói "Khu này dành cho
+người soạn giáo trình", `/bai-tap` nói "Trang này dành cho học viên", Buổi học nói "Không mở được LỚP
+này" (khác đúng một chữ với "…TRANG này"). Tôi suýt ghi `/admin` là HỞ QUYỀN với cả bốn vai. Nay 7 trang
+mang `data-chan="vai" | "khong-thay" | "loi"` (`lib/chanTu.ts` ánh xạ mã HTTP) — e2e đọc trạng thái,
+không dò câu chữ, vì câu chữ là thứ người ta sửa thường xuyên nhất.
+
+### ⚠ Lớp 7586 giờ là lớp của NGƯỜI DÙNG THỬ
+Phép đo lộ ra giảng viên rà soát không còn thấy lớp 7586. Tôi đã nghi pytest rò ghi (chiều qua nó chèn
+`teacher_id = 42321`) — KIỂM thì không phải: quản trị viên đổi giảng viên lúc 10:54 và 10:59 hôm nay sang
+id 42845 "Nhi GV", một trong 8 tài khoản dùng thử anh tạo lúc 02:08–02:44 (42409, 42843–42850). Nên luồng
+ghi mặc định TẮT: trong vài chục giây lớp tạm tồn tại, học vụ thử đang mở "Lớp học" sẽ thấy nó.
+
+### Hai lượt đỏ trong lần chạy đầu — cả hai là THƯỚC, không phải sản phẩm
+- `khu-van-hanh` "khổ điện thoại": vào bằng thẻ quản trị 30 phút, thẻ hết giữa lượt chạy 17 phút, rơi về
+  tài khoản e2e vai Học viên, chờ `#topbar-nav` trên màn chặn 120 s. Nay vào bằng học vụ (mật khẩu, không
+  hạn 30 phút), và lá chắn bỏ qua đọc `data-chan` thay vì dò /không có quyền/.
+- `topbar-truoc-khi-script-toi` ở điện thoại: ô tìm trên thanh `display: none` ở ≤36rem (`shell.css`, có
+  chủ ý — điện thoại tìm trong view Khoá học). Chỉ cho bỏ qua DƯỚI đúng mốc ấy, không "bỏ qua khi không
+  thấy ô" — viết kiểu sau thì ngày ô tìm biến mất nhầm trên máy tính, phép kiểm im lặng thay vì đỏ.
+- Lượt đỏ thứ ba ở spec mới: mục menu tài khoản đo 43,4px (< 44). Là 44 × 0,987 — đo giữa hoạt ảnh
+  `scale(0.97 → 1)` 0,15 s. Nay chờ hoạt ảnh xong mới đo.
+
+### Đã kiểm
+29/29 unit guard · tsc, eslint (cả `e2e/`) sạch · bộ e2e hai khổ 109/0/11 · luồng ghi 8/8 với `E2E_GHI=1`.
+
+### Còn lại
+- Luồng giao bài → học viên nộp → chấm; sinh buổi theo tuần + ngày nghỉ; nhập kết quả thi — chưa có e2e.
+- 2 lượt bỏ qua "chưa có đề thi thử" — CSDL có 1 dòng `mock_exams` nhưng phép kiểm không dùng được; chưa soi.
+- Đổi quyền, cấp tài khoản, nhật ký chỉ kiểm được bằng thẻ quản trị 30 phút (không có tài khoản admin
+  mật khẩu trong `.the/`).
+
+
 ## 22/09/2026 (16:00) — RÀ .env HAI TẦNG + ĐẨY LÊN PRODUCTION
 
 Anh hỏi "chỉ thấy .env của backend, không thấy của frontend". Trả lời: **frontend KHÔNG cần tệp

@@ -86,3 +86,7 @@ backend/staticfiles/
 # khỏi shell công cụ). Chỉ là vết chạy của một phiên, không phải mã.
 .next-start.err
 .next-start.out
+.django.err
+.django.out
+# Ảnh chụp màn hình cho cẩm nang — dựng lại được bất cứ lúc nào, không phải mã.
+.anh_cam_nang/

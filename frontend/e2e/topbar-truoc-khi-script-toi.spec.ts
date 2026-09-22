@@ -26,6 +26,16 @@ import { expect, test } from '@playwright/test';
 import { LY_DO_BO_QUA, login } from './helpers';
 
 test('chạm topbar trước khi main.js tới: không ném, và không mất thao tác', async ({ page, context }) => {
+  /* Ô tìm trên thanh CỐ Ý ẩn ở ≤ 36rem (576px) — `shell.css`: "Tên khu nhường
+     chỗ cho hàng mục… .search-wrap { display: none }". Điện thoại tìm khoá học
+     trong view Khoá học (`#course-search-input`), không qua thanh này.
+
+     Chỉ bỏ qua DƯỚI đúng mốc ấy, chứ không "bỏ qua khi không thấy ô". Viết kiểu
+     sau thì ngày ô tìm biến mất nhầm trên MÁY TÍNH, phép kiểm này im lặng bỏ
+     qua thay vì đỏ — một cái thước tự bịt mắt đúng lúc cần nhìn nhất.
+     Đo 23/09/2026: lượt `dien-thoai` chờ 120 s trên một ô `display: none`. */
+  test.skip((page.viewportSize()?.width ?? 1440) <= 576,
+    'ô tìm trên thanh cố ý ẩn ở ≤36rem — điện thoại tìm trong view Khoá học');
   test.skip(!(await login(page)), LY_DO_BO_QUA);
 
   const loi: string[] = [];
@@ -46,6 +56,7 @@ test('chạm topbar trước khi main.js tới: không ném, và không mất th
     .not.toBe('function');
 
   const o = page.locator('.topbar input').first();
+  await expect(o, 'ở khổ > 36rem ô tìm trên thanh PHẢI hiện').toBeVisible();
   await o.click();
   await o.type('lượng', { delay: 40 });
   await page.waitForTimeout(600);

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
+import { chanTu } from '@/lib/chanTu';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { VAI_TRO_GIANG } from '@/lib/vaiTro';
 import { z } from 'zod';
@@ -55,7 +56,7 @@ export default async function BaiTapPage({
 
   if (!klass) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
+      <main className="mx-auto max-w-3xl px-4 py-16" data-chan={chanTu(detail.ok ? 404 : detail.status)}>
         <h1 className="text-title text-ink">Không mở được lớp này</h1>
         <p className="mt-2 text-body text-ink-2">
           {!detail.ok && detail.status !== 404

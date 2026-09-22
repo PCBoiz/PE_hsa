@@ -80,7 +80,7 @@ export default async function SoanGiaoTrinhPage() {
   const vai = me.data.role || '';
   if (!DUOC_VAO.has(vai)) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
+      <main className="mx-auto max-w-3xl px-4 py-16" data-chan="vai">
         <h1 className="text-title text-ink">Khu này dành cho người soạn giáo trình</h1>
         <p className="mt-2 text-body text-ink-2">
           Tài khoản của bạn đang ở vai <b>{vai || 'chưa đặt'}</b>. Cần vai{' '}

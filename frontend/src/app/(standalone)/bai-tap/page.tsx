@@ -57,7 +57,7 @@ export default async function BaiTapCuaToiPage() {
       <main className="mx-auto max-w-3xl px-4 pb-6 pt-[calc(var(--topbar-h)+1.5rem)]">
         <h1 className="mb-4 text-section text-ink">Bài tập</h1>
         {nhanSu ? (
-          <section className="rounded-lg border border-line bg-surface p-5 text-ink" aria-labelledby="bt-nhan-su">
+          <section className="rounded-lg border border-line bg-surface p-5 text-ink" aria-labelledby="bt-nhan-su" data-chan="vai">
             <h2 id="bt-nhan-su" className="m-0 text-lg font-semibold">Trang này dành cho học viên</h2>
             <p className="mt-2 mb-0 text-ink-2">
               Bạn đang đăng nhập với vai nhân sự. Giao bài, xem bài nộp và chấm ở khu Giảng dạy —

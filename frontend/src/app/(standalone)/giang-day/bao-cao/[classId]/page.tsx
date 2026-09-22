@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import { chanTu } from '@/lib/chanTu';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
@@ -79,7 +80,7 @@ export default async function BaoCaoCaLopPage({
 
   if (!kq.ok) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-16">
+      <main className="mx-auto max-w-4xl px-4 py-16" data-chan={chanTu(kq.status)}>
         <h1 className="text-title text-ink">Không mở được trang này</h1>
         <p className="mt-2 text-body text-ink-2">{kq.message}</p>
         <Link
