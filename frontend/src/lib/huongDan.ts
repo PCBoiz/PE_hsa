@@ -83,6 +83,37 @@ export const HUONG_DAN: readonly Bai[] = [
   },
 
   {
+    ma: 'viec-hom-nay',
+    tieu_de: 'Mở đầu ngày dạy',
+    vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Mỗi ngày có buổi dạy, trước khi lên lớp.',
+    buoc: [
+      {
+        lam: 'Mở "Việc hôm nay". Năm ô đếm ở trên trả lời năm câu: sắp có buổi nào, buổi nào chưa điểm danh, bài nào chưa chấm, em nào vắng liền từ 2 buổi, em nào cần chú ý ngay.',
+        o: '/giang-day',
+        luu_y: 'Ô nào khác 0 là có việc. Đây là danh sách việc còn tồn, không phải bảng thống kê.',
+      },
+      {
+        lam: 'Bấm thẳng vào dòng việc bên dưới — nó dẫn tới đúng lớp và đúng buổi, không phải tự đi tìm.',
+      },
+      {
+        lam: 'Làm hết phần "Chưa điểm danh xong" trước khi về.',
+        luu_y: 'Buổi chưa tick thì KHÔNG tính vào chuyên cần của em, và tờ gửi phụ huynh sẽ báo thiếu. Đây là lỗi hay gặp nhất và khó thấy nhất.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Không thấy lớp nào của mình.',
+        xu_ly: 'Giảng viên: lớp phải được PHÂN CÔNG cho bạn. Trợ giảng: bạn phải được XẾP VÀO lớp. Cả hai đều là việc của quản lý học vụ — nhắn họ kiểm tra.',
+      },
+      {
+        trieu_chung: 'Danh sách việc trống trơn.',
+        xu_ly: 'Hết việc tồn, không phải trang chưa tải xong. Ngày không có buổi dạy thì trang này trống là đúng.',
+      },
+    ],
+  },
+
+  {
     ma: 'tai-khoan-moi',
     tieu_de: 'Cấp tài khoản cho người mới',
     vai: [VAI_QUAN_TRI],

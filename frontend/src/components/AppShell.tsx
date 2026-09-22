@@ -638,6 +638,19 @@ export default function AppShell({
               }}>
               <span className="udi-icon"><BieuTuong ten="settings" co={14} /></span> Cài đặt
             </button>
+            {/* HƯỚNG DẪN — thêm 22/09/2026. Trước đó tài liệu chỉ nằm ở
+                `/quan-tri/huong-dan`, mà cổng khu ấy chỉ cho quản trị viên và
+                quản lý học vụ: giảng viên, trợ giảng và biên tập nội dung
+                không có ĐƯỜNG NÀO tới các bài viết cho chính họ. Một cuốn cẩm
+                nang không ai mở được thì bằng không có.
+
+                Đặt trong menu tài khoản chứ không trên thanh: đây là thứ người
+                ta tìm lúc bí, không phải thứ dùng mỗi ngày — và thanh đã chật
+                (bộ đo từng bắt thanh học viên vỡ thành hai hàng khi đủ 7 mục). */}
+            <button type="button" className="user-dropdown-item"
+              onClick={() => { taiTrang('/huong-dan'); }}>
+              <span className="udi-icon"><BieuTuong ten="book-open" co={14} /></span> Hướng dẫn
+            </button>
             <div className="user-dropdown-divider"></div>
             <button type="button" className="user-dropdown-item danger"
               onClick={() => { taiTrang('/auth/logout'); }}>

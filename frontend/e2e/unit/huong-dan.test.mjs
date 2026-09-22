@@ -124,10 +124,25 @@ for (const v of VAI_DUNG) {
 // ── Trang hiển thị phải THẬT SỰ đọc dữ liệu này ──────────────────────────
 // Không có câu này thì ai đó chép nội dung vào JSX cho tiện, và bộ kiểm vẫn
 // xanh trong khi trang hiện một bản khác hẳn.
-const TRANG = readFileSync(
-  join(GOC, 'src', 'app', '(standalone)', 'quan-tri', 'huong-dan', 'page.tsx'), 'utf8');
-check('trang Hướng dẫn dựng từ `lib/huongDan.ts`',
-  /from '@\/lib\/huongDan'/.test(TRANG) && /HUONG_DAN\.map/.test(TRANG));
+//
+// 22/09/2026: phần dựng chuyển sang `components/BangHuongDan.tsx` để HAI khu
+// dùng chung — `/huong-dan` (mọi vai) và `/quan-tri/huong-dan` (khu Vận hành).
+// Nên câu canh cũng tách làm hai vế: thành phần phải đọc dữ liệu thật, và cả
+// hai trang phải dựng qua thành phần ấy. Thiếu vế sau thì một trang lặng lẽ
+// quay về chép tay, đúng thứ câu kiểm này sinh ra để chặn.
+const BANG = readFileSync(
+  join(GOC, 'src', 'components', 'BangHuongDan.tsx'), 'utf8');
+check('BangHuongDan dựng từ `lib/huongDan.ts`',
+  /from '@\/lib\/huongDan'/.test(BANG) && /HUONG_DAN\b/.test(BANG));
+
+for (const [ten, ...duong] of [
+  ['khu Vận hành', 'src', 'app', '(standalone)', 'quan-tri', 'huong-dan', 'page.tsx'],
+  ['khu Hướng dẫn (mọi vai)', 'src', 'app', '(standalone)', 'huong-dan', 'page.tsx'],
+]) {
+  const t = readFileSync(join(GOC, ...duong), 'utf8');
+  check(`trang Hướng dẫn ở ${ten} dựng qua BangHuongDan`,
+    /BangHuongDan/.test(t));
+}
 
 console.log(loi === 0 ? '\nOK — hướng dẫn trỏ vào tuyến thật' : `\n${loi} lỗi`);
 process.exitCode = loi === 0 ? 0 : 1;

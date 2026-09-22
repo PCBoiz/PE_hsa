@@ -1596,3 +1596,33 @@ ALTER TABLE users   ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FA
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_users_is_demo   ON users (id)   WHERE is_demo;
 CREATE INDEX IF NOT EXISTS idx_classes_is_demo ON classes (id) WHERE is_demo;
+
+-- ============================================================================
+-- 50. Phụ huynh TỪ CHỐI nhận báo cáo (22/09/2026)
+-- ============================================================================
+-- Anh Sơn chốt 22/09: phụ huynh trao đổi chủ yếu qua Zalo, nên báo cáo tuần đi
+-- bằng ZNS là đủ. Tự động gửi thì phải có đường DỪNG — và phải ghi được LÝ DO.
+--
+-- Vì sao một bảng riêng chứ không một cột trên `users`:
+--
+--   · Cột `BOOLEAN` chỉ trả lời "có tắt không". Ba câu còn lại — ai tắt, lúc
+--     nào, vì sao — mới là thứ người trực máy cần khi phụ huynh gọi lại hỏi
+--     "sao tôi không nhận được gì nữa". Nhét cả bốn vào `users` là thêm bốn cột
+--     vào bảng nóng nhất hệ thống để phục vụ một tính năng ngoài rìa.
+--   · Bật lại = XOÁ dòng. Với một cột thì "chưa bao giờ tắt" và "tắt rồi bật
+--     lại" trông giống hệt nhau, trong khi hai chuyện ấy khác nhau thật.
+--
+-- Khoá theo `user_id` (HỌC VIÊN) chứ không theo (lớp, học viên): người từ chối
+-- là PHỤ HUYNH, và phụ huynh ấy vẫn là một người dù con học hai lớp. Tắt theo
+-- lớp thì em học hai lớp vẫn nhận tin từ lớp kia — đúng thứ phụ huynh vừa bảo
+-- đừng gửi nữa.
+--
+-- KHÔNG có `ON DELETE CASCADE` ngược lên `by_user_id`: xoá tài khoản người đã
+-- tắt không được phép làm phụ huynh nhận tin trở lại.
+CREATE TABLE IF NOT EXISTS parent_report_optout (
+    user_id    INTEGER   PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    reason     TEXT      NOT NULL DEFAULT '',
+    by_user_id INTEGER   NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pro_nguoi_tat ON parent_report_optout (by_user_id);
