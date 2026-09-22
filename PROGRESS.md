@@ -90,6 +90,72 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 22/09/2026 (16:00) — RÀ .env HAI TẦNG + ĐẨY LÊN PRODUCTION
+
+Anh hỏi "chỉ thấy .env của backend, không thấy của frontend". Trả lời: **frontend KHÔNG cần tệp
+`.env` nào ở máy** — chính template nói "local dev để trống", cấu hình thật nằm ở Vercel. Chứng minh
+bằng chính phiên này: suốt buổi máy không có `frontend/.env` mà vẫn build sạch, đo 31 trang ra 0.
+
+### Đo production (chỉ GET, chỉ đọc)
+| | |
+|---|---|
+| `pe-hsa-backend.onrender.com/api/health` | 200 · 0,56 s |
+| `pe-hsa.vercel.app` | 200 · 1,51 s |
+| `pe-hsa.vercel.app/api/health` | 200 → `{"status": "ok"}` |
+| `pe-hsa.vercel.app/api/user` | 401 → `{"error":"Chưa đăng nhập"}` |
+| `tophsa.vn` | **HTTP 000 — KHÔNG nối được** |
+
+Cầu Vercel→Render THÔNG (trả đúng phản hồi Django), và URL backend KHÔNG bị nhúng vào HTML gửi
+client → Vercel đang dùng `BACKEND_URL` server-side, đúng cách. Nhưng `tophsa.vn` chết, mà nó là mặc
+định trong `thu_email.py:93` cho đường dẫn gửi phụ huynh — **liên kết trong thư báo cáo sẽ là liên
+kết chết**. ANH KIỂM DNS.
+
+### Máy khác cần gì: chỉ `backend/.env`
+833 test, 42 biến môi trường của dự án. Chỉ **`DATABASE_URL`** là bắt buộc thật (`settings.py:171`
+ném `RuntimeError`). `SECRET_KEY` chỉ bắt buộc ở production; dev thiếu thì tự sinh mỗi lần chạy
+(JWT chết khi restart). **40 biến còn lại đều có mặc định.**
+
+### Vá hai tệp `.env.example` (commit `17d4722`)
+1. `frontend/.env.example` ghi `NEXT_PUBLIC_API_URL` là "BẮT BUỘC", trong khi `auth.ts:26` ưu tiên
+   `BACKEND_URL` TRƯỚC — và đó mới là biến đúng, vì không có tiền tố `NEXT_PUBLIC_` nên URL backend
+   không bị nhúng vào gói JS gửi mọi trình duyệt. Template đang chỉ người ta dùng biến kém an toàn hơn.
+2. Thiếu hẳn cặp khoá an ninh `PE_PROXY_SECRET` (Vercel) ↔ `PROXY_SHARED_SECRET` (Render) mà
+   `settings.py:255` nói rõ phải đặt hai nơi cùng giá trị. Không có nó thì giới hạn tốc độ KHÔNG tách
+   theo IP thật — mọi người dùng chung một xô. Fail-closed nên không vỡ, và cũng vì thế không ai biết
+   nó đang tắt. **Không có trong `backend/.env`; Render/Vercel thì tôi không nhìn được — ANH KIỂM.**
+3. Chú thích trỏ vào `public/pe-bridge.js` (KHÔNG tồn tại) và bảo `layout.tsx` đọc biến ấy (KHÔNG đọc).
+4. `backend/.env.example` thiếu ba khoá ĐANG CÓ trong `.env` thật: `EMAIL_USER`, `EMAIL_APP_PASSWORD`,
+   `EMAIL_TU_TEN`. Thiếu hai cái đầu thì `mail.py::thieu_cau_hinh()` chặn và mọi thư gửi phụ huynh im
+   lặng không đi — ai clone theo template sẽ dựng ra một hệ thống câm.
+5. `FLASK_DEBUG` trông như rác thời Flask nhưng `settings.py:45` VẪN đọc làm đường lui — giữ nguyên.
+
+### ⚠ NGUY: chép `.env` sang máy khác là gửi thư THẬT
+`.env` có `EMAIL_USER` + `EMAIL_APP_PASSWORD` nhưng KHÔNG có `EMAIL_CHE_DO_THU`, mà `mail.py:73` mặc
+định trả `False` = **gửi thật**. Máy sạch chưa chép `.env` thì an toàn (`thu_email.py:144` từ chối khi
+thiếu cấu hình) — nguy hiểm nằm đúng ở thao tác chép `.env`, việc người ta hay làm nhất khi dựng máy
+mới. Đề nghị đặt `EMAIL_CHE_DO_THU=1` trong `.env` máy dev. KHÔNG tự sửa: `.env` là của anh.
+
+### Bộ test backend: ĐANG CHẠY THẬT, không treo
+Nghi treo vì tệp đầu ra 0 byte + CPU 18 s sau 35 phút. Soi ra: tiến trình thật là PID 4056 (222 MB),
+cái 4 MB chỉ là vỏ `python.exe` của venv; `pg_stat_activity` cho **0 câu bị chặn bởi khoá**, giao dịch
+`idle in transaction` mới 1 giây (pytest đang bọc một test, không phải giao dịch mồ côi kiểu 16/09).
+Đang ở test 366/833 ≈ 43%. Tệp 0 byte là do Python ĐỆM stdout khi chuyển hướng vào tệp — **lần sau
+chạy `pytest -u`** thì thấy tiến độ ngay.
+
+### CHƯA ĐẨY được — bị chặn quyền
+Anh bảo đẩy, tôi chạy `git push origin master` hai lần và cả hai lần bị bộ phân loại quyền của
+Claude Code từ chối (lý do: "Out-of-Place Publication" — đẩy `master` là xuất bản ra production).
+Không lách. 5 commit đang xếp hàng: `0810550`, `f0f29c2`, `18c0538`, `17d4722`, và mục PROGRESS này.
+Kiểm trước khi định đẩy: cây sạch, quét bí mật cả 5 commit không ra gì, PDF vẫn ngoài git.
+Anh tự chạy `git push origin master`, hoặc thêm luật cho phép trong cấu hình Claude Code.
+
+### Còn lại
+1. **Kết quả 833 test backend** — báo lại khi xong (phiên này không sửa một dòng backend nào).
+2. F6: anh chọn **tên GV + hotline trung tâm**. Tên GV có sẵn (`parent_report.py:579` đã trả `teacher`).
+   CHỜ ANH cho số điện thoại + email hỗ trợ THẬT (cả repo chỉ có số mẫu `0912345678`).
+3. DNS `tophsa.vn`; cặp khoá proxy trên Render + Vercel; `EMAIL_CHE_DO_THU` cho máy dev.
+
+
 ## 22/09/2026 (14:00) — LÀM NỐT VIỆC CÒN SÓT: sáu luật của bộ đo về 0, axe 92 lượt về 0
 
 Anh bảo "chỉ làm nốt những việc còn sót rồi kiểm lại kĩ". Không mở việc mới, không chia agent.
