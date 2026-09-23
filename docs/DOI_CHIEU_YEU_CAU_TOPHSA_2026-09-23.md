@@ -67,7 +67,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
 | Tạo / sửa / xoá lớp | CÓ | `api/admin/classes`, xoá có xác nhận kèm số dòng sẽ mất |
-| Loại lớp: lớp nhóm / **gia sư 1–3 em** (họp 24/09: ~400 lớp gia sư) | CÓ (24/09) | `classes.class_type` (§54); lớp gia sư nhận tối đa 3 học viên (trợ giảng không tính) — thêm em thứ 4, dán hàng loạt, cấp tài khoản hàng loạt, đổi loại lớp đều bị chặn kèm lý do |
+| Loại lớp: lớp nhóm / **gia sư 1–3 em** (họp 24/09: ~400 lớp gia sư) | CÓ (24/09) | `classes.class_type` (§54); lớp gia sư nhận tối đa 3 học viên (trợ giảng không tính) — thêm em thứ 4, dán hàng loạt, cấp tài khoản hàng loạt, đổi loại lớp đều bị chặn kèm lý do. **Tạo nhanh** (24/09): một biểu mẫu — em + giảng viên + thứ/giờ → lớp, em vào lớp, buổi sinh sẵn trong một lượt; xem trước báo trùng giờ giảng viên / em / phòng |
 | Tìm / lọc / phân trang danh sách lớp | CÓ (24/09) | tìm theo tên lớp, giáo viên, tên hoặc mã HSA của em; chip đếm theo loại; lọc giáo viên (kể cả lớp người ấy trợ giảng), trạng thái, đợt; 25 lớp/trang; bộ lọc nằm trên đường dẫn |
 | Phân công giảng viên | CÓ | `classes.teacher_id` |
 | Phân công trợ giảng | CÓ | trợ giảng là thành viên lớp |

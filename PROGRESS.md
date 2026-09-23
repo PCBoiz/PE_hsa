@@ -90,6 +90,42 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 3) — 1.2b TẠO NHANH LỚP GIA SƯ · 3 agent hỗ trợ (1.4a, 1.5A, U2+U4)
+
+- **`POST /api/admin/classes/gia-su`** (`teaching/lop_gia_su.py`): một em (phải là Học viên) + một giảng viên (bắt buộc) +
+  lịch tuần (tuỳ chọn) → lớp `gia_su` sĩ số 3 + em vào lớp + buổi, trong MỘT giao dịch; tên trống thì tự đặt "Gia sư · {em}
+  · {giảng viên}", cột "Lịch học" tự viết đúng dạng `doan_lich` đọc ngược lại được ("T3, T5 · 19:30–21:00").
+  `dry_run` chạy ĐÚNG đường ghi rồi cuộn lại → cảnh báo trùng giờ giảng viên / EM / phòng là thật (em đã ở trong lớp lúc
+  chấm buổi). Vòng sinh buổi tách thành `sinh_buoi.tao_buoi()` dùng chung với màn Buổi học (một nguồn luật).
+- **Màn Lớp học**: nút "Tạo lớp gia sư" (phụ, cạnh "Thêm lớp") mở khung: tìm em → chọn giảng viên / môn / đợt / tên → chip
+  thứ T2…CN, giờ, số phút, từ–đến (mặc định 12 tuần từ hôm nay giờ VN) → "Xem trước" (tên, lịch, số buổi, cảnh báo) →
+  "Tạo lớp gia sư". Sửa bất kỳ ô nào là bản xem trước hết hiệu lực (không tạo theo bản cũ). Kiểm biểu mẫu thuần ở `giaSu.ts`.
+- **Nút ghost dùng chung**: rê chuột đổi chữ sang `brand-ink` thay `brand` — `--brand` trên nền `bg-sunken` chỉ 4,36:1 (axe
+  bắt ở nút "Tìm" khi chuột còn đặt trên nút sau khi bấm); cùng sửa một nút ở màn Tài khoản.
+
+### Thước hỏng / bẫy gặp trong lượt
+- Test "lỗi giữa chừng" chờ `RuntimeError` ném ra ngoài view — `common.errors` biến nó thành 500 có câu chữ; đổi sang khẳng
+  định 500 + không còn lớp/thành viên.
+- Commit 1.2a tách khỏi 1.2b khi hai mục chung tệp (`LopHocClient.tsx`, spec e2e): dựng bản 1.2a của tệp rồi đưa thẳng vào
+  chỉ mục (`git hash-object -w` + `update-index --cacheinfo`) — không có `git add -p` ở môi trường này.
+- Ảnh chụp một PHẦN TỬ cao ở khổ 390 bị thanh đầu dính (sticky) đè giữa ảnh — là cách Playwright ghép ảnh, không phải lỗi
+  giao diện; chụp lại với khung nhìn cao hơn.
+
+### Đã đo
+- pytest `tests_lop_gia_su.py` 9/9 (tạo thật, xem trước không ghi CẢ nhật ký, chỉ học viên + phải có giảng viên, lỗi giữa
+  chừng không để lớp mồ côi, vượt trần buổi, giảng viên trùng giờ vẫn tạo + cảnh báo, em trùng giờ hiện ở xem trước, lịch
+  chữ đọc ngược, giảng viên không tạo được); `tests_sinh_buoi.py` 29/29 sau khi tách `tao_buoi`. **Đột biến 9/9 đỏ thật.**
+- Guard `lop-gia-su.test.mjs` 22 ✓ — đột biến (đổi khoá `weekdays`, bỏ kiểm giảng viên, bỏ nhánh không sinh buổi) → đỏ 3/3.
+  Đủ bộ guard xanh; tsc; eslint 0 cảnh báo; ruff; `manage.py check`; `ban_do --kiem` 0 gãy.
+- E2E `danh-sach-lop.spec.ts` 10/10 hai khổ có ghi — thêm luồng tạo nhanh bằng GIAO DIỆN (bấm Xem trước khi chưa chọn em →
+  câu lỗi; tìm em, chọn giảng viên, T3/T5; đổi một thứ → nút về "Xem trước"; tạo → lớp gia sư 1 em, đúng giảng viên, có
+  buổi); lớp tạm đã dọn.
+- axe trên khung ĐANG MỞ (đang tìm + có xem trước) × 2 khổ × sáng/tối: 2 vi phạm hover → vá → 0. Soi ảnh 1440 + 390.
+
+### Agent hỗ trợ (anh Sơn yêu cầu 24/09) — đang chạy, mỗi agent một worktree riêng `D:\pe_hsa_wt\<tên>`, nhánh `agent/<tên>`
+- `tong-quan` — 1.4a §56 `last_seen_at` + Tổng quan v2; `bo-thi` — 1.5A bỏ thi pha A (§57); `chu-nguoi-dung` — U2 guard
+  câu chữ + U4 `CardHead` gập. Lead gộp và soi lại từng nhánh trước khi tick.
+
 ## 24/09/2026 (tiếp 2) — 1.2a LOẠI LỚP + DANH SÁCH LỚP LỌC/PHÂN TRANG (§54) — "quản lý lớp là priority số 1"
 
 Theo `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` mục 1.2a. Ghi chú họp: ~400 lớp gia sư cá nhân hoá bên cạnh lớp nhóm.

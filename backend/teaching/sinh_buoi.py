@@ -205,6 +205,82 @@ def _cham(class_id, lop, ts):
     return buoi, can_tao
 
 
+def tao_buoi(request, class_id, lop, ts, dry_run):
+    """Chấm từng ngày rồi (khi không `dry_run`) GHI buổi cho một lớp → ``(kết_quả, lỗi)``.
+
+    Tách khỏi `GenerateSessionsView.post` ngày 24/09/2026 (mục 1.2b) để lượt tạo
+    NHANH lớp gia sư sinh lịch trong CÙNG giao dịch với lớp và em — một nguồn luật
+    (trần buổi, ngày nghỉ, trùng lớp khác, buổi quá khứ) cho cả hai cửa. `lop` là
+    dòng của `_lop()`; `ts` là kết quả `_doc_than()` đã kiểm.
+    """
+    buoi, can_tao = _cham(class_id, lop, ts)
+    # Trần tính TRƯỚC nhánh xem trước — bài học của ô cấp tài khoản hàng loạt:
+    # xem trước nói "sẽ tạo 365" rồi bấm Tạo mới bị từ chối là bất ngờ rơi
+    # đúng vào bước sinh ra để tránh bất ngờ.
+    if len(can_tao) > MAX_BUOI_MOI_LAN:
+        return None, ('Khoảng này sinh ra %d buổi, vượt trần %d buổi mỗi lần. '
+                      'Kiểm tra lại khoảng ngày, hoặc chia làm nhiều lần.'
+                      % (len(can_tao), MAX_BUOI_MOI_LAN))
+
+    dem = {'tao': 0, 'nghi_le': 0, 'trung': 0}
+    for b in buoi:
+        dem[b['trangThai']] += 1
+
+    nay = local_now()
+    canh_bao = []
+    # Trùng với LỚP KHÁC (giảng viên / học viên / phòng — `trung_lich`): cảnh
+    # báo trên từng dòng, VẪN tạo. Khác `trung` ở trên (lớp này đã có buổi) —
+    # đó là chạy lại, còn đây có thể là ca cố ý (dạy ghép, học bù).
+    trung_lop = tim_trung_nhieu(class_id, can_tao, ts['phut'])
+    so_trung_lop = 0
+    for b in buoi:
+        ds = trung_lop.get(datetime.fromisoformat(b['startsAt'])) if b['trangThai'] == 'tao' else None
+        if ds:
+            so_trung_lop += 1
+            b['trungLop'] = ds
+            b['canhBao'] = ' '.join(filter(None, (b['canhBao'], _cau_trung_lop(ds))))
+    if so_trung_lop:
+        canh_bao.append('%d buổi trùng giờ với lớp khác (xem cột ghi chú). Vẫn tạo được — kiểm '
+                        'lại nếu không cố ý.' % so_trung_lop)
+    if not lop['term_id']:
+        canh_bao.append('Lớp chưa thuộc đợt học nào nên không có ngày nghỉ nào được bỏ.')
+    qua_khu = sum(1 for bd in can_tao if bd < nay)
+    if qua_khu:
+        canh_bao.append('%d buổi nằm trong quá khứ — chúng sẽ hiện ở mục "Đã diễn ra" và cần '
+                        'điểm danh bù.' % qua_khu)
+
+    ids = []
+    if not dry_run and can_tao:
+        vals = []
+        for bd in can_tao:
+            vals.extend((class_id, bd, ts['phut'], lop['meeting_url'], 'planned',
+                         request.user.id, nay))
+        with transaction.atomic():
+            # MỘT câu cho cả lượt. Kế thừa link phòng của lớp — cùng luật với
+            # tạo từng buổi (`ClassSessionsView.post`).
+            ids = [r['id'] for r in q(
+                'INSERT INTO class_sessions (class_id, starts_at, duration_minutes, meeting_url, '
+                'status, created_by, created_at) VALUES '
+                + ', '.join(['(%s, %s, %s, %s, %s, %s, %s)'] * len(can_tao))
+                + ' RETURNING id', tuple(vals))]
+            thu_chu = ', '.join(_TEN_THU[t] for t in ts['thu'])
+            record(request, SESSION_GENERATE, target_type='class', target_id=class_id,
+                   target_label=lop['name'],
+                   summary=('Sinh %d buổi lớp %s (%s · %s · %d phút) từ %s tới %s; bỏ %d ngày '
+                            'nghỉ, %d ngày đã có buổi.'
+                            % (len(ids), lop['name'], thu_chu, ts['gio'].strftime('%H:%M'),
+                               ts['phut'], _ngay_vn(ts['tu']), _ngay_vn(ts['den']),
+                               dem['nghi_le'], dem['trung'])),
+                   detail={'weekdays': ts['thu'], 'start_time': ts['gio'].strftime('%H:%M'),
+                           'duration_minutes': ts['phut'], 'from': ts['tu'].isoformat(),
+                           'to': ts['den'].isoformat(), 'ids': ids,
+                           'nghi_le': [b['ngay'] for b in buoi if b['trangThai'] == 'nghi_le'],
+                           'trung': [b['ngay'] for b in buoi if b['trangThai'] == 'trung']})
+
+    return {'ok': True, 'dryRun': dry_run, 'dem': dem, 'buoi': buoi,
+            'canhBao': canh_bao, 'ids': ids}, None
+
+
 class GenerateSessionsView(APIView):
     """GET/POST /api/teach/classes/<id>/sessions/generate.
 
@@ -257,70 +333,7 @@ class GenerateSessionsView(APIView):
             return Response({'error': loi}, status=400)
         dry_run = bool(body.get('dry_run'))
 
-        buoi, can_tao = _cham(class_id, lop, ts)
-        # Trần tính TRƯỚC nhánh xem trước — bài học của ô cấp tài khoản hàng loạt:
-        # xem trước nói "sẽ tạo 365" rồi bấm Tạo mới bị từ chối là bất ngờ rơi
-        # đúng vào bước sinh ra để tránh bất ngờ.
-        if len(can_tao) > MAX_BUOI_MOI_LAN:
-            return Response({'error': ('Khoảng này sinh ra %d buổi, vượt trần %d buổi mỗi lần. '
-                                       'Kiểm tra lại khoảng ngày, hoặc chia làm nhiều lần.'
-                                       % (len(can_tao), MAX_BUOI_MOI_LAN))}, status=400)
-
-        dem = {'tao': 0, 'nghi_le': 0, 'trung': 0}
-        for b in buoi:
-            dem[b['trangThai']] += 1
-
-        nay = local_now()
-        canh_bao = []
-        # Trùng với LỚP KHÁC (giảng viên / học viên / phòng — `trung_lich`): cảnh
-        # báo trên từng dòng, VẪN tạo. Khác `trung` ở trên (lớp này đã có buổi) —
-        # đó là chạy lại, còn đây có thể là ca cố ý (dạy ghép, học bù).
-        trung_lop = tim_trung_nhieu(class_id, can_tao, ts['phut'])
-        so_trung_lop = 0
-        for b in buoi:
-            ds = trung_lop.get(datetime.fromisoformat(b['startsAt'])) if b['trangThai'] == 'tao' else None
-            if ds:
-                so_trung_lop += 1
-                b['trungLop'] = ds
-                b['canhBao'] = ' '.join(filter(None, (b['canhBao'], _cau_trung_lop(ds))))
-        if so_trung_lop:
-            canh_bao.append('%d buổi trùng giờ với lớp khác (xem cột ghi chú). Vẫn tạo được — kiểm '
-                            'lại nếu không cố ý.' % so_trung_lop)
-        if not lop['term_id']:
-            canh_bao.append('Lớp chưa thuộc đợt học nào nên không có ngày nghỉ nào được bỏ.')
-        qua_khu = sum(1 for bd in can_tao if bd < nay)
-        if qua_khu:
-            canh_bao.append('%d buổi nằm trong quá khứ — chúng sẽ hiện ở mục "Đã diễn ra" và cần '
-                            'điểm danh bù.' % qua_khu)
-
-        ids = []
-        if not dry_run and can_tao:
-            vals = []
-            for bd in can_tao:
-                vals.extend((class_id, bd, ts['phut'], lop['meeting_url'], 'planned',
-                             request.user.id, nay))
-            with transaction.atomic():
-                # MỘT câu cho cả lượt. Kế thừa link phòng của lớp — cùng luật với
-                # tạo từng buổi (`ClassSessionsView.post`).
-                ids = [r['id'] for r in q(
-                    'INSERT INTO class_sessions (class_id, starts_at, duration_minutes, meeting_url, '
-                    'status, created_by, created_at) VALUES '
-                    + ', '.join(['(%s, %s, %s, %s, %s, %s, %s)'] * len(can_tao))
-                    + ' RETURNING id', tuple(vals))]
-                thu_chu = ', '.join(_TEN_THU[t] for t in ts['thu'])
-                record(request, SESSION_GENERATE, target_type='class', target_id=class_id,
-                       target_label=lop['name'],
-                       summary=('Sinh %d buổi lớp %s (%s · %s · %d phút) từ %s tới %s; bỏ %d ngày '
-                                'nghỉ, %d ngày đã có buổi.'
-                                % (len(ids), lop['name'], thu_chu, ts['gio'].strftime('%H:%M'),
-                                   ts['phut'], _ngay_vn(ts['tu']), _ngay_vn(ts['den']),
-                                   dem['nghi_le'], dem['trung'])),
-                       detail={'weekdays': ts['thu'], 'start_time': ts['gio'].strftime('%H:%M'),
-                               'duration_minutes': ts['phut'], 'from': ts['tu'].isoformat(),
-                               'to': ts['den'].isoformat(), 'ids': ids,
-                               'nghi_le': [b['ngay'] for b in buoi if b['trangThai'] == 'nghi_le'],
-                               'trung': [b['ngay'] for b in buoi if b['trangThai'] == 'trung']})
-
-        return Response({'ok': True, 'dryRun': dry_run, 'dem': dem, 'buoi': buoi,
-                         'canhBao': canh_bao, 'ids': ids},
-                        status=201 if ids else 200)
+        kq, loi = tao_buoi(request, class_id, lop, ts, dry_run)
+        if loi:
+            return Response({'error': loi}, status=400)
+        return Response(kq, status=201 if kq['ids'] else 200)

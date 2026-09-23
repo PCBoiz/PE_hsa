@@ -221,6 +221,11 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Lớp gia sư nhận tối đa 3 em (trợ giảng không tính). Lớp nhóm vượt sức chứa vẫn xếp được, nhưng hệ thống sẽ nhắc.',
       },
       {
+        lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Một lượt tạo cả lớp, xếp em vào lớp và sinh buổi. Xem trước báo trùng giờ với lớp khác của giảng viên hoặc của em.',
+      },
+      {
         lam: 'Tìm lớp: gõ tên lớp, giáo viên hoặc tên em; bấm chip "Gia sư" / "Lớp nhóm" để lọc theo loại.',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Bộ lọc nằm trên đường dẫn — gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
