@@ -182,3 +182,69 @@ test('tạo lớp GIA SƯ bằng biểu mẫu → xếp 3 em + trợ giảng →
   expect(new URL(page.url()).searchParams.get('q'), 'lọc người làm rơi ô tìm').toBe(ten);
   await expect(main.getByRole('row').filter({ hasText: ten })).toHaveCount(1);
 });
+
+test('TẠO NHANH lớp gia sư (1.2b): tìm em → chọn giảng viên + T3/T5 → xem trước → tạo → lớp có em và buổi', async ({ page, browser }) => {
+  test.skip(!BAT, LY_DO_TAT);
+  test.skip(!taiKhoanCuaVai(HOC_VU), LY_DO_THIEU_VAI);
+  lopGiaSu = null;
+  const ten = `E2E tự dọn gia sư nhanh ${test.info().project.name} ${new Date().toISOString().slice(0, 16)}`;
+
+  const hv = await trangTheoVai(browser, HOC_VU);
+  expect(hv, 'không đăng nhập được học vụ').toBeTruthy();
+  const ds = await goiApi(hv!, 'GET', '/api/admin/classes?per_page=1');
+  const gv = (ds.du as { teachers: { id: number; email: string }[] }).teachers.find((t) => t.email === 'audit2009.gv@example.com');
+  expect(gv, 'danh sách giảng viên thiếu giảng viên rà soát').toBeTruthy();
+
+  expect(await vaoTheoVai(page, HOC_VU)).toBe(true);
+  await page.goto(DUONG, { waitUntil: 'domcontentloaded' });
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Tạo lớp gia sư' }).click();
+    await expect(page.getByRole('group', { name: 'Tạo lớp gia sư' })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+  const khung = page.getByRole('group', { name: 'Tạo lớp gia sư' });
+
+  // Bấm "Xem trước" khi chưa chọn em → câu lỗi nói đúng ô, KHÔNG gọi máy chủ.
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  await expect(khung.getByRole('alert')).toHaveText('Chọn học viên cho lớp gia sư.');
+
+  await khung.getByRole('textbox', { name: 'Tìm học viên' }).fill(EM[0]);
+  await khung.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await khung.getByRole('list', { name: 'Kết quả tìm học viên' }).getByRole('button').first().click();
+  await expect(khung.getByText(EM[0])).toBeVisible();
+
+  await khung.getByRole('combobox', { name: 'Giảng viên', exact: true }).selectOption(String(gv!.id));
+  await khung.getByRole('textbox', { name: 'Tên lớp (không bắt buộc)' }).fill(ten);
+  await khung.getByText('T3', { exact: true }).click();
+  await khung.getByText('T5', { exact: true }).click();
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  const xem = khung.getByRole('status');
+  await expect(xem).toContainText(ten, { timeout: 20_000 });
+  await expect(xem).toContainText('T3, T5 · 19:30–21:00');
+  const so = Number((await xem.getByText(/\d+ buổi sẽ tạo/).innerText()).match(/\d+/)![0]);
+  expect(so, 'lịch 12 tuần T3/T5 phải ra ~24 buổi').toBeGreaterThanOrEqual(20);
+
+  // Sửa một ô → bản xem trước hết hiệu lực, nút lại là "Xem trước" (không tạo theo bản cũ).
+  await khung.getByText('T3', { exact: true }).click();
+  await expect(khung.getByRole('button', { name: 'Xem trước' })).toBeVisible();
+  await khung.getByText('T3', { exact: true }).click();
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  await expect(khung.getByRole('status')).toContainText(`${so} buổi sẽ tạo`, { timeout: 20_000 });
+
+  await khung.getByRole('button', { name: 'Tạo lớp gia sư' }).click();
+  await expect(page.getByText(`Đã tạo lớp "${ten}" · ${so} buổi.`)).toBeVisible({ timeout: 20_000 });
+
+  const tim = await goiApi(hv!, 'GET', `/api/admin/classes?q=${encodeURIComponent(ten)}`);
+  const lop = (tim.du as { classes: { id: number; classType: string; members: number; teacherId: number }[] }).classes;
+  expect(lop.length, JSON.stringify(tim.du)).toBe(1);
+  lopGiaSu = lop[0].id;
+  expect([lop[0].classType, lop[0].members, lop[0].teacherId]).toEqual(['gia_su', 1, gv!.id]);
+  const buoi = await goiApi(hv!, 'GET', `/api/teach/classes/${lopGiaSu}/sessions`);
+  expect(buoi.ma, JSON.stringify(buoi.du)).toBe(200);
+  await hv!.close();
+
+  // Hàng mới trong danh sách: chip Gia sư + tên em.
+  await page.goto(`${DUONG}?q=${encodeURIComponent(ten)}`, { waitUntil: 'domcontentloaded' });
+  const hang = page.getByRole('main').getByRole('row').filter({ hasText: ten });
+  await expect(hang).toContainText('Gia sư');
+  await expect(hang).toContainText('Em: ');
+});

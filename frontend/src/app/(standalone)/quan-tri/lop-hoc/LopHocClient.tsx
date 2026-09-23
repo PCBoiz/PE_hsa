@@ -24,6 +24,7 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
 import { LOAI_LOP, TRANG_THAI, type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
+import TaoLopGiaSu from './TaoLopGiaSu';
 
 export type { LopRow };
 export type ChonNguoi = { id: number; name: string | null; email: string };
@@ -129,6 +130,8 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
 
   /** `null` = biểu mẫu đóng; `0` = thêm mới; `>0` = đang sửa lớp id ấy. */
   const [dangSua, setDangSua] = useState<number | null>(null);
+  /** Khung "Tạo lớp gia sư" (1.2b) — một em + một giảng viên + lịch, một lượt. */
+  const [moGiaSu, setMoGiaSu] = useState(false);
   const [form, setForm] = useState<Form>(formRong);
 
   const [lopMoRong, setLopMoRong] = useState<LopRow | null>(null);
@@ -464,15 +467,20 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
           title="Lớp học"
           hint="Học viên phải được xếp lớp thì mới được điểm danh, giao bài."
           action={
-            dangSua === null && (
-              <Button
-                onClick={() => {
-                  setForm(formRong());
-                  setDangSua(0);
-                }}
-              >
-                Thêm lớp
-              </Button>
+            dangSua === null && !moGiaSu && (
+              <span className="flex flex-wrap gap-2">
+                <Button variant="ghost" onClick={() => setMoGiaSu(true)}>
+                  Tạo lớp gia sư
+                </Button>
+                <Button
+                  onClick={() => {
+                    setForm(formRong());
+                    setDangSua(0);
+                  }}
+                >
+                  Thêm lớp
+                </Button>
+              </span>
             )
           }
         />
@@ -484,6 +492,20 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
           >
             {err}
           </p>
+        )}
+
+        {moGiaSu && (
+          <TaoLopGiaSu
+            giangVien={giangVien}
+            khoaHoc={khoaHoc}
+            dotHoc={dotHoc}
+            onDong={() => setMoGiaSu(false)}
+            onXong={(cau) => {
+              setMoGiaSu(false);
+              toast(cau, 'ok');
+              void nap();
+            }}
+          />
         )}
 
         {dangSua !== null && (
