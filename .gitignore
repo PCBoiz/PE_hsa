@@ -88,6 +88,7 @@ backend/staticfiles/
 .next-start.out
 .django.err
 .django.out
+.next.out
 # Ảnh chụp màn hình cho cẩm nang — dựng lại được bất cứ lúc nào, không phải mã.
 .anh_cam_nang/
 

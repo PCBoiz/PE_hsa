@@ -261,10 +261,73 @@ function mauFE(url) {
   return { mau: u, duoiDinh };
 }
 
-const goiFE = [];                // {mau, tep, dong, tho}
-for (const tep of FE_TEP) {
-  const t = doc(tep);
-  const dongs = t.split('\n');
+/* ── VÙNG CHÚ THÍCH, đọc bằng máy quét hiểu chuỗi ─────────────────────────
+   Bản trước chỉ bỏ dòng MỞ ĐẦU bằng `//`, `*`, `/*`. Dòng tiếp nối của một khối
+   `/* … *\/` không mở đầu bằng `*` thì lọt — và 23/09/2026 một câu ví dụ tấn
+   công XSS trong chú thích `dashboard.js` ("`fetch('/api/admin/users/create')`
+   cùng origin…") được đếm là NGƯỜI GỌI của tuyến ấy, trong khi thực tế không
+   màn hình nào gọi nó. Quét từng ký tự, nhớ đang ở trong chuỗi nào (', ", `
+   kèm `${…}` lồng nhau) và regex literal, thì `//` trong 'https://…' không bị
+   tưởng là chú thích. */
+function vungChuThich(t) {
+  const vung = [];
+  const ngoac = [];               // độ sâu `{` của từng tầng `${` đang mở
+  let i = 0, trongMau = false;    // đang ở phần CHỮ của một template
+  let truoc = '';                 // ký tự có nghĩa gần nhất — để đoán regex
+  while (i < t.length) {
+    const c = t[i];
+    if (trongMau) {
+      if (c === '\\') { i += 2; continue; }
+      if (c === '`') { trongMau = false; i++; truoc = '`'; continue; }
+      if (c === '$' && t[i + 1] === '{') { ngoac.push(0); trongMau = false; i += 2; truoc = '{'; continue; }
+      i++; continue;
+    }
+    if (c === '/' && t[i + 1] === '/') {
+      const het = t.indexOf('\n', i); const cuoi = het < 0 ? t.length : het;
+      vung.push([i, cuoi]); i = cuoi; continue;
+    }
+    if (c === '/' && t[i + 1] === '*') {
+      const het = t.indexOf('*/', i + 2); const cuoi = het < 0 ? t.length : het + 2;
+      vung.push([i, cuoi]); i = cuoi; continue;
+    }
+    if (c === "'" || c === '"') {
+      // Chuỗi thường không qua được dòng mới — dấu nháy lẻ trong chữ JSX
+      // ("Em's") không được nuốt cả phần còn lại của tệp.
+      let j = i + 1;
+      while (j < t.length && t[j] !== c && t[j] !== '\n') j += t[j] === '\\' ? 2 : 1;
+      i = j + 1; truoc = c; continue;
+    }
+    if (c === '`') { trongMau = true; i++; continue; }
+    if (c === '/' && (!truoc || '(,=:[!&|?{};+-*%<>~^'.includes(truoc))) {
+      // Regex literal: `/\/\//` không được mở một chú thích dòng.
+      let j = i + 1, lop = false;
+      while (j < t.length && t[j] !== '\n') {
+        if (t[j] === '\\') { j += 2; continue; }
+        if (t[j] === '[') lop = true; else if (t[j] === ']') lop = false;
+        else if (t[j] === '/' && !lop) break;
+        j++;
+      }
+      i = j + 1; truoc = '/'; continue;
+    }
+    if (ngoac.length) {
+      if (c === '{') ngoac[ngoac.length - 1]++;
+      else if (c === '}') {
+        if (ngoac[ngoac.length - 1] === 0) { ngoac.pop(); trongMau = true; i++; continue; }
+        ngoac[ngoac.length - 1]--;
+      }
+    }
+    if (!/\s/.test(c)) truoc = /[\w$)\]]/.test(c) ? 'x' : c;
+    i++;
+  }
+  return vung;
+}
+
+/** Mọi lời gọi `/api…` `/auth…` trong MỘT tệp nguồn. Tách thành hàm để
+    `--tu-kiem` chạy đúng máy quét này trên một đoạn mã cài sẵn. */
+function quetTep(t, tenTep) {
+  const ra = [];
+  const chuThich = vungChuThich(t);
+  const trongChuThich = (vi) => chuThich.some(([a, b]) => vi >= a && vi < b);
   // Hằng URL trong tệp: `var|const|let TEN = <chuỗi ghép bắt đầu /api|/auth>`.
   const hangTep = [];
   for (const m of t.matchAll(/\b(?:var|const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?=['"`]\/(?:api|auth))/g)) {
@@ -288,10 +351,9 @@ for (const tep of FE_TEP) {
     ? `|\\b(?:${hoac})\\b(?=\\s*(?:\\+|\\)))|\`\\$\\{(?:${hoac})\\}` : ''}`, 'g');
   let m;
   while ((m = re.exec(t))) {
-    const dong = t.slice(0, m.index).split('\n').length;
-    const dongChu = (dongs[dong - 1] || '').trim();
     // Bỏ chuỗi nằm trong CHÚ THÍCH và ví dụ minh hoạ — nguồn báo oan lớn nhất.
-    if (/^(\/\/|\*|\/\*)/.test(dongChu)) continue;
+    if (trongChuThich(m.index)) continue;
+    const dong = t.slice(0, m.index).split('\n').length;
     /* KHÔNG bỏ dòng khai hằng (`const goc = \`/api/…/ket-qua-thi\``). Bản trước bỏ
        để khỏi đếm trùng — và làm 3 tuyến thành "không ai gọi" oan: một hằng URL
        dùng làm `href` hay ghép tiếp ở chỗ khác CŨNG là tham chiếu tới tuyến ấy. */
@@ -300,9 +362,13 @@ for (const tep of FE_TEP) {
     if (/\.\.\.|…|%2f/i.test(url) || /path\.join/.test(url)) continue;
     const { mau, duoiDinh } = mauFE(url);
     if (['/api', '/api/*', '/auth', '/auth/*'].includes(mau)) continue;
-    goiFE.push({ mau, duoiDinh, tep: rel(tep), dong, tho: url.replace(new RegExp(TRONG, 'g'), '…') });
+    ra.push({ mau, duoiDinh, tep: tenTep, dong, tho: url.replace(new RegExp(TRONG, 'g'), '…') });
   }
+  return ra;
 }
+
+const goiFE = [];                // {mau, tep, dong, tho}
+for (const tep of FE_TEP) goiFE.push(...quetTep(doc(tep), rel(tep)));
 
 const seg = (u) => u.split('/').filter(Boolean);
 /** Mẫu FE khớp mẫu BE: từng đoạn bằng nhau, hoặc một bên là `*`. */
@@ -410,6 +476,11 @@ const UNG_VIEN_GO = {
   '/api/roadmaps': 'không nơi nào gọi',
   '/api/streak/review-quiz-status': 'chỉ phép kiểm backend gọi',
   '/api/teach/terms': 'frontend dùng /api/admin/terms',
+  // Lộ ra 23/09/2026 khi máy quét thôi đếm chuỗi trong chú thích: "người gọi"
+  // duy nhất là câu ví dụ tấn công XSS ở dashboard.js:757. Cấp lẻ một em đi qua
+  // ô nhập hàng loạt (một dòng). View vẫn giữ đúng luật mới (học vụ chỉ tạo Học
+  // viên, cấp mã HSA ngay) — `teaching/tests_ho_so_hoc_vien.py` canh.
+  '/api/admin/users/create': 'không màn hình nào gọi — cấp lẻ đi qua ô nhập hàng loạt',
 };
 const khongAiGoi = tuyen
   .filter((r) => !coNguoiGoi.has(`tuyen:${r.mau}`))
@@ -424,9 +495,25 @@ const bangKhongAiCham = [...BANG].filter((b) => !bangCham.has(b)).sort();
 if (TU_KIEM) {
   const batGoi = khongKhop.some((g) => g.mau === GIA_GOI);
   const batTuyen = khongAiGoi.some((r) => r.mau === GIA_TUYEN && !r.lyDo);
+  /* Lỗi giả thứ ba — đúng ca đã báo oan 23/09/2026: lời gọi nằm ở dòng TIẾP NỐI
+     của một khối chú thích (không mở đầu bằng `*`). Cùng đoạn cài thêm hai bẫy
+     cho chiều ngược lại: `//` trong một URL và trong regex literal không được
+     nuốt lời gọi THẬT đứng sau trên cùng dòng. */
+  const mauGia = [
+    '/* ví dụ tấn công, KHÔNG phải lời gọi:',
+    "   DÙNG nó: `fetch('/api/__tu_kiem__/trong-chu-thich')` cùng origin",
+    '*/',
+    "const re = /^(\\/\\/|x)/; const u = 'https://a.vn//b'; fetch('/api/__tu_kiem__/sau-url');",
+    "const tpl = `${a}//${b}`; fetch(`/api/__tu_kiem__/sau-mau/${id}`);",
+  ].join('\n');
+  const thay = quetTep(mauGia, '(tự kiểm)').map((g) => g.mau);
+  const boChuThich = !thay.includes('/api/__tu_kiem__/trong-chu-thich');
+  const giuGoiThat = thay.includes('/api/__tu_kiem__/sau-url') && thay.includes('/api/__tu_kiem__/sau-mau/*');
   console.log(`tự kiểm: lời gọi tới tuyến không tồn tại → ${batGoi ? 'BẮT ĐƯỢC' : 'BỎ SÓT'}`);
   console.log(`tự kiểm: tuyến không ai gọi               → ${batTuyen ? 'BẮT ĐƯỢC' : 'BỎ SÓT'}`);
-  process.exit(batGoi && batTuyen ? 0 : 1);
+  console.log(`tự kiểm: chuỗi trong dòng tiếp nối chú thích → ${boChuThich ? 'BỎ ĐÚNG' : 'ĐẾM OAN'}`);
+  console.log(`tự kiểm: lời gọi sau '//' trong URL/regex  → ${giuGoiThat ? 'GIỮ ĐÚNG' : 'NUỐT MẤT'} ${JSON.stringify(thay)}`);
+  process.exit(batGoi && batTuyen && boChuThich && giuGoiThat ? 0 : 1);
 }
 
 /* ── 6 · GHI ─────────────────────────────────────────────────────────────── */

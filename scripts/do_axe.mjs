@@ -42,6 +42,9 @@ const TRANG = [
   ['/admin', 'Soạn giáo trình', AD], ['/giang-day', 'GD việc hôm nay', AD],
   ['/giang-day/buoi-hoc/7322', 'GD buổi học', AD], ['/giang-day/bai-tap/7322', 'GD bài tập', AD],
   ['/giang-day/bao-cao/7322', 'GD báo cáo', AD], ['/giang-day/ket-qua-thi/7322', 'GD nhập PDF', AD],
+  // Hai màn thêm 23/09/2026 (hồ sơ học viên §51): form hồ sơ đầy đủ, và tờ báo cáo
+  // một em — nay có ô mục tiêu/nguyện vọng của giảng viên. 35695 là em mẫu của lớp 7322.
+  ['/quan-tri/tai-khoan/35695', 'QT hồ sơ học viên', AD], ['/giang-day/bao-cao/7322/35695', 'GD tờ một em', AD],
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
 
 /* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──

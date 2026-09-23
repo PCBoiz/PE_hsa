@@ -39,7 +39,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeStep) return;
     const nextBtn = activeStep.querySelector('.next-btn');
     if (!nextBtn) return;
-    nextBtn.classList.toggle('locked', !isStepAnswered(currentStep));
+    const khoa = !isStepAnswered(currentStep);
+    nextBtn.classList.toggle('locked', khoa);
+    // Trông như TẮT thì trình đọc màn hình cũng phải nghe là tắt (23/09/2026: nút
+    // mờ `opacity .35` mà không mang trạng thái nào — đo tương phản 1,8:1 cho một
+    // nút "đang bấm được"). `aria-disabled`, KHÔNG `disabled`: nút vẫn nhận bấm để
+    // nói "Vui lòng trả lời câu hỏi này…" — nút tắt thật thì bấm không ra lời nhắc.
+    nextBtn.setAttribute('aria-disabled', String(khoa));
   }
 
   function updateForm() {

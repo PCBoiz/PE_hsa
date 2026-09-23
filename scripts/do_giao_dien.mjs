@@ -104,6 +104,9 @@ const TRANG = [
   ['/questionaire', 'Khảo sát'],
   ['/quan-tri/tong-quan', 'Quản trị · tổng quan'],
   ['/quan-tri/tai-khoan', 'Quản trị · tài khoản'],
+  // Thêm 23/09/2026: form hồ sơ học viên (§51) — dài, có thanh Lưu dính đáy.
+  // Tờ báo cáo từng em (nay có ô mục tiêu của giảng viên) đã có ở dưới: /bao-cao/1/9.
+  ['/quan-tri/tai-khoan/35695', 'Quản trị · hồ sơ học viên'],
   ['/quan-tri/dot-hoc', 'Quản trị · đợt học'],
   ['/quan-tri/nhat-ky', 'Quản trị · nhật ký'],
   ['/doi-mat-khau', 'Đổi mật khẩu'],
@@ -364,6 +367,11 @@ function DO_TRONG_TRANG(do_trang_thai) {
      Tách ra hàm riêng để lượt đo trạng thái tương tác dùng lại y hệt bộ quy
      tắc — hai bộ quy tắc song song là hai bộ sẽ lệch nhau. */
   const do_el = (el) => {
+    /* Điều khiển ĐANG TẮT không có yêu cầu tương phản (WCAG 1.4.3: "part of an
+       inactive user interface component"); axe cũng bỏ qua. Trước 23/09/2026
+       chuyện này tự đúng vì bộ đo mù với `opacity` — thấy được độ đục rồi thì
+       nút `disabled:opacity-50` thành báo oan (đo: "Lưu hồ sơ" khi chưa đổi gì). */
+    if (el.closest(':disabled, [aria-disabled="true"]')) return null;
     const cs = getComputedStyle(el);
     const clip = cs.webkitBackgroundClip || cs.backgroundClip;
     const fill = String(cs.webkitTextFillColor || '');
@@ -372,24 +380,50 @@ function DO_TRONG_TRANG(do_trang_thai) {
       && (fill.split(' ').join('') === 'rgba(0,0,0,0)' || fill === 'transparent');
 
     let truoc, sau;
+    /* ĐỘ ĐỤC THẬT của chữ = alpha của chính màu chữ × `opacity` của nó và MỌI tổ
+       tiên. Bản trước bỏ cả hai: đo 23/09/2026 hàng `opacity-50` (thành phần
+       dùng chung `Tr dim`) ở Soạn giáo trình ra 0 vi phạm, trong khi axe đo đúng
+       hàng ấy 2,14:1 — chữ `text-ink-3` bị làm mờ một nửa lên nền trắng. Pha chữ
+       vào nền theo độ đục ấy rồi mới tính tương phản (cách axe làm). */
+    let duc = 1;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const o = parseFloat(getComputedStyle(n).opacity);
+      if (!Number.isNaN(o)) duc *= o;
+    }
     if (chu_gradient) {
       const mau = (cs.backgroundImage.match(/rgba?\([^)]*\)|color\([^)]*\)/g) || [])
         .map((x) => doc_mau(x).slice(0, 3));
       truoc = mau.length ? mau : [doc_mau(cs.color).slice(0, 3)];
       sau = el.parentElement ? nen(el.parentElement) : [[255, 255, 255]];
     } else {
-      truoc = [doc_mau(cs.color).slice(0, 3)];
+      const m = doc_mau(cs.color);
+      truoc = [m.slice(0, 3)];
+      if (m.length > 3 && !Number.isNaN(m[3])) duc *= m[3];
       sau = nen(el);
     }
+    /* Độ đục TÍCH LUỸ gần 0 = không hiện pixel nào — cùng ngưỡng 0,05 mà `hien()`
+       dùng cho độ đục của CHÍNH phần tử. Thiếu dòng này, lượt đo toàn bộ đầu tiên
+       sau khi thước thấy được độ đục báo 47 "vi phạm" ở Bài học: toàn chữ trong
+       khung bước đang ẩn bằng `opacity: 0` ở tổ tiên (axe coi là ẩn, đo ra 0). */
+    if (duc <= 0.05) return null;
+    const pha = (fg, bg) => (duc < 1 ? fg.map((c, i) => c * duc + bg[i] * (1 - duc)) : fg);
 
     let xau_nhat = Infinity;
-    for (const fg of truoc) for (const bg of sau) xau_nhat = Math.min(xau_nhat, tp(fg, bg));
+    let xau_tho = Infinity;     // KHÔNG pha — để biết vi phạm nào sinh ra DO độ đục
+    for (const fg of truoc) for (const bg of sau) {
+      xau_nhat = Math.min(xau_nhat, tp(pha(fg, bg), bg));
+      xau_tho = Math.min(xau_tho, tp(fg, bg));
+    }
     if (!isFinite(xau_nhat)) return null;
 
     const co = parseFloat(cs.fontSize);
     const dam = (parseInt(cs.fontWeight, 10) || 400) >= 700;
     const lon = co >= 24 || (co >= 18.66 && dam);
-    return { tp: Math.round(xau_nhat * 100) / 100, nguong: lon ? 3 : 4.5, co: Math.round(co) };
+    const nguong = lon ? 3 : 4.5;
+    // `duc` đi theo vi phạm xuống bước soi điểm ảnh — xem chú thích ở đó.
+    // `do_mo`: màu gốc ĐẠT, pha theo độ đục mới trượt — `--tu-kiem` đếm riêng loại này.
+    return { tp: Math.round(xau_nhat * 100) / 100, nguong, co: Math.round(co),
+             duc: Math.round(duc * 1000) / 1000, do_mo: xau_tho >= nguong && xau_nhat < nguong };
   };
 
   const vi_pham = [];
@@ -960,6 +994,12 @@ for (const kho of KHO) {
            phản 1,0:1 tại mọi chỗ bộ đo sẽ soi. Trang nào vẫn ra 0 vi phạm sau
            lượt này là trang bộ đo thật sự không nhìn thấy. */
         await p.evaluate(DO_TRONG_TRANG, false);   // dựng `globalThis.__pe`; số liệu bỏ đi
+        /* HAI kiểu làm hỏng, xen kẽ từng phần tử (23/09/2026). Kiểu cũ — chữ =
+           nền — không bao giờ đi qua nhánh ĐỘ ĐỤC, nên hai chỗ mù (phía trang
+           và bước soi điểm ảnh đều bỏ `opacity`) sống sót qua mọi lượt tự kiểm
+           cho tới khi axe bắt được một hàng `opacity-50` mà bộ này báo 0. Nay
+           nửa số phần tử giữ NGUYÊN màu nhưng bị nhét `opacity: .12`; vi phạm
+           của chúng được đếm riêng (`do_mo`) và phải > 0 ở mọi lượt. */
         const daHong = await p.evaluate(() => {
           const { hien, co_chu, nen } = globalThis.__pe;
           let n = 0;
@@ -967,7 +1007,16 @@ for (const kho of KHO) {
             if (!hien(el) || !co_chu(el)) continue;
             const bg = (nen(el) || [])[0];
             if (!bg) continue;
-            el.style.setProperty('color', `rgb(${Math.round(bg[0])},${Math.round(bg[1])},${Math.round(bg[2])})`, 'important');
+            /* Độ đục chỉ nhét vào phần tử NỀN TRONG SUỐT — đúng hình dạng lỗi thật
+               (chữ trong một hàng bảng mờ). Phần tử có nền riêng thì nền cũng mờ
+               theo trong ảnh chụp, và bước soi dùng màu gốc VẪN thấy tương phản
+               thấp: ca ấy không phân biệt được bước soi đúng hay sai (lùi thử
+               23/09/2026 — khổ điện thoại vẫn xanh vì đúng lý do này). */
+            const csEl = getComputedStyle(el);
+            const nenTrong = /rgba\(0, 0, 0, 0\)|transparent/.test(csEl.backgroundColor)
+              && csEl.backgroundImage === 'none';
+            if (n % 2 && nenTrong) el.style.setProperty('opacity', '0.12', 'important');
+            else el.style.setProperty('color', `rgb(${Math.round(bg[0])},${Math.round(bg[1])},${Math.round(bg[2])})`, 'important');
             n++;
           }
           return n;
@@ -1146,7 +1195,14 @@ for (const kho of KHO) {
             continue;
           }
           const chu = (String(v.mau_chu).match(/[\d.]+/g) || []).slice(0, 3).map(Number);
-          const that = tpN(chu, nen.split(',').map(Number));
+          const nenThat = nen.split(',').map(Number);
+          /* Pha chữ vào nền THẬT theo độ đục đã đo phía trang. Bước này từng tính
+             bằng màu CSS gốc và gạt đúng các vi phạm do `opacity` thành "báo oan"
+             (23/09/2026: chữ gần đen trong hàng `opacity-50` → 16:1 thay vì 3,45:1)
+             — tức chỗ mù thứ hai, sau khi phía trang đã sửa. */
+          const duc = typeof v.duc === 'number' ? v.duc : 1;
+          const chuThat = chu.map((c, k) => c * duc + nenThat[k] * (1 - duc));
+          const that = tpN(chuThat, nenThat);
           if (that < v.nguong) con.push({ ...v, tp_that: Math.round(that * 100) / 100, nen_that: nen });
         }
         const bo = d.vi_pham.length - con.length;
@@ -1158,6 +1214,11 @@ for (const kho of KHO) {
         d.bo_qua_gia = bo;
         d.chua_soi = chua_soi;
       }
+      // Vi phạm SAU khi soi điểm ảnh mà chỉ độ đục gây ra — `--tu-kiem` đòi > 0.
+      // Chỉ đếm vi phạm ĐÃ soi: mục không soi được vẫn được giữ lại (`chua_soi`),
+      // và đếm chúng thì lượt điện thoại xanh ngay cả khi bước soi bỏ độ đục
+      // (lùi thử 23/09/2026: máy tính đỏ, điện thoại vẫn xanh).
+      d.so_vi_pham_mo = (d.vi_pham || []).filter((v) => v.do_mo && !v.chua_soi).length;
 
       d.so_thieu_net = d.thieu_net.length;
       d.so_net_do = d.net_dau.length;
@@ -1242,11 +1303,17 @@ if (tu_kiem) {
      cho CẢ luật sàn cỡ chữ, vì nó cũng là luật đang in ra số 0. */
   const cam = ket.filter((r) => !(r.so_vi_pham > 0));
   const cam_chu = ket.filter((r) => !(r.so_chu_nho > 0));
-  if (cam.length || cam_chu.length) {
+  const cam_mo = ket.filter((r) => !(r.so_vi_pham_mo > 0));
+  if (cam.length || cam_chu.length || cam_mo.length) {
     if (cam.length) {
       console.log(`  HỎNG (tương phản): ${cam.length}/${ket.length} lượt đo KHÔNG đỏ nổi dù đã bị nhét`
         + ' quy tắc hỏng —\n        con số của chúng trong lần đo thật là vô nghĩa:');
       for (const r of cam) console.log(`          ${r.kho} · ${r.ten}`);
+    }
+    if (cam_mo.length) {
+      console.log(`  HỎNG (độ đục): ${cam_mo.length}/${ket.length} lượt đo KHÔNG bắt được chữ bị làm mờ`
+        + ' bằng `opacity` (màu gốc đạt):');
+      for (const r of cam_mo) console.log(`          ${r.kho} · ${r.ten}`);
     }
     if (cam_chu.length) {
       console.log(`  HỎNG (sàn cỡ chữ): ${cam_chu.length}/${ket.length} lượt đo KHÔNG đếm được chữ 9px:`);
@@ -1255,7 +1322,8 @@ if (tu_kiem) {
     process.exit(1);
   }
   console.log(`  ĐẠT: cả ${ket.length} lượt đo đều đỏ khi bị nhét quy tắc hỏng`
-    + ` — tổng ${tong_tp} vi phạm tương phản, ${ket.reduce((a, r) => a + (r.so_chu_nho || 0), 0)} chữ dưới sàn.`);
+    + ` — tổng ${tong_tp} vi phạm tương phản (${ket.reduce((a, r) => a + (r.so_vi_pham_mo || 0), 0)} do độ đục),`
+    + ` ${ket.reduce((a, r) => a + (r.so_chu_nho || 0), 0)} chữ dưới sàn.`);
   process.exit(0);
 }
 /* CỔNG (22/09/2026, agent thuoc-4). Mã thoát tới hôm nay chỉ nói về lời gọi GHI

@@ -139,7 +139,15 @@ export function Td({
   );
 }
 
-/** Dòng đã rời lớp / đã huỷ: mờ đi nhưng KHÔNG xoá khỏi bảng. */
+/**
+ * Dòng đã rời lớp / đã huỷ / đang ẩn: lùi xuống nhưng KHÔNG xoá khỏi bảng.
+ *
+ * Lùi bằng NỀN, không bằng `opacity` (23/09/2026). `opacity-50` làm mờ cả chữ:
+ * axe đo hàng đề thi đang ẩn ở Soạn giáo trình 2,14:1 (`text-ink-3`) và 3,45:1
+ * (tên đề) — dưới ngưỡng 4,5:1, ở đúng màn người dùng thử biên tập đang dùng.
+ * Mọi nơi gọi `dim` đều đã nói trạng thái bằng CHỮ (chip "đang ẩn", "Đã khoá",
+ * "Bỏ qua"…), nên nền lùi là đủ để mắt tách dòng mà không ai phải đọc chữ mờ.
+ */
 export function Tr({ children, dim = false }: { children: ReactNode; dim?: boolean }) {
   return (
     <tr
@@ -149,7 +157,7 @@ export function Tr({ children, dim = false }: { children: ReactNode; dim?: boole
         // hết một người và bắt đầu người tiếp theo.
         'max-sm:block max-sm:border-b max-sm:border-line max-sm:px-3 max-sm:py-3',
         'max-sm:last:border-b-0',
-        dim ? 'opacity-50' : '',
+        dim ? 'bg-ground' : '',
       ]
         .filter(Boolean)
         .join(' ')}

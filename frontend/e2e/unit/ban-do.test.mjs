@@ -43,6 +43,13 @@ check('hiện trạng: mọi chỗ nối frontend ↔ backend ↔ JS cũ còn ng
 const tuKiem = chay('--tu-kiem');
 check('thước đỏ được: bắt lời gọi tới tuyến không tồn tại', /không tồn tại → BẮT ĐƯỢC/.test(tuKiem.ra), tuKiem.ra);
 check('thước đỏ được: bắt tuyến không ai gọi', /không ai gọi\s+→ BẮT ĐƯỢC/.test(tuKiem.ra), tuKiem.ra);
+// Hai ca thêm 23/09/2026, khi câu ví dụ tấn công trong một khối chú thích của
+// dashboard.js được đếm là "người gọi" của /api/admin/users/create.
+check('thước không đếm chuỗi trong dòng tiếp nối của chú thích',
+  /tiếp nối chú thích → BỎ ĐÚNG/.test(tuKiem.ra), tuKiem.ra);
+check("thước không nuốt lời gọi đứng sau '//' của URL hay regex",
+  /URL\/regex\s+→ GIỮ ĐÚNG/.test(tuKiem.ra), tuKiem.ra);
+check('lượt tự kiểm thoát 0', tuKiem.ma === 0, tuKiem.ra);
 
 console.log(loi === 0 ? '\nOK — bản đồ còn nối và thước còn nhạy' : `\n${loi} lỗi`);
 process.exitCode = loi === 0 ? 0 : 1;

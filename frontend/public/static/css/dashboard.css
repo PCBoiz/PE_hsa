@@ -2905,7 +2905,11 @@ body.dark .fpc-cmt-react-summary { color: var(--t3); }
 .dash-hero-text { position: relative; min-width: 0; }
 .dash-hero-greeting { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.62); }
 .dash-hero-text h2 { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; color: #fff; margin: 2px 0; }
-.dash-hero-text p { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin: 0; }
+/* 0.72, không 0.45 (23/09/2026): trắng 45% trên nền hero đo được 3,61:1 (máy
+   tính) / 4,07:1 (điện thoại) — dưới 4,5:1 cho chữ 12px. Axe bỏ lọt vì nền là
+   gradient; bộ đo nội bộ bỏ lọt vì từng bỏ qua kênh alpha của màu chữ. 0.72 cho
+   ~6,7:1 trên đúng điểm ảnh nền sáng nhất đo được (30,51,124). */
+.dash-hero-text p { font-size: 0.75rem; color: rgba(255,255,255,0.72); margin: 0; }
 .dash-hero-btn {
   position: relative;
   display: flex; align-items: center; gap: 6px;

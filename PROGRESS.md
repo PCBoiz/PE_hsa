@@ -90,6 +90,92 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 23/09/2026 (tối) — GRAPHIFY → BẢN ĐỒ HỆ THỐNG · ĐỐI CHIẾU BẢNG YÊU CẦU TOPHSA · HỒ SƠ HỌC VIÊN
+
+Anh bảo: nghiên cứu graphify rồi áp về đây; xem Google Sheet yêu cầu của khách (bỏ kế toán, bỏ việc quá
+khó) — nghiên cứu, hỏi trước rồi mới làm. Anh chốt: chạy graphify một lần để đo rồi dựng bản riêng; kiểm
+MỌI dòng (ô tick chưa chắc đúng); làm cả bốn nhóm (hồ sơ học viên, lịch, dòng thời gian, tài khoản); học vụ
+được tạo + sửa hồ sơ học viên; mã HSA tự sinh; người tư vấn + nguồn chọn từ danh sách; username tuỳ chọn
+do học vụ đặt; đổi lịch báo chuông + email cho học viên.
+
+### Đã commit trước đó trong ngày
+- `e21c879` `docs/DOI_CHIEU_YEU_CAU_TOPHSA_2026-09-23.md` — mọi dòng của bảng (trừ kế toán) kèm bằng chứng.
+  Cả 8 dòng tick TRUE thật ra chỉ MỘT PHẦN.
+- `a519141` `scripts/ban_do.mjs` + `e2e/unit/ban-do.test.mjs` — bản đồ các chỗ nối giữa tầng (tuyến → view →
+  quyền, khoá ngoại, React → JS cũ = EXTRACTED; frontend → tuyến, view → bảng = INFERRED; khớp tiền tố =
+  AMBIGUOUS — mượn ba mức tin cậy của graphify). Graphify đo được 5145 nút / 12058 cạnh nhưng **0 cạnh
+  frontend ↔ backend, 0 cạnh JS cũ ↔ React, 0 cạnh mã ↔ bảng SQL** — đúng ba chỗ nối dự án này hay gãy.
+- `3840a8b` chú thích quyền cũ nói sai (học vụ ĐẶT LẠI được mật khẩu học viên + trợ giảng từ 20/09).
+
+### Hồ sơ học viên (commit này)
+- **§51** (`legacy_schema.sql`, đã áp): `student_code` (HSA-00001…, dãy riêng, chỉ mục duy nhất), `username`
+  (chỉ mục duy nhất trên `lower()`, CHECK phải có chữ cái → không bao giờ trùng dạng số điện thoại),
+  `school`, `school_grade`, `region`, `consultant_id` (FK → users), `enroll_source` (CHECK 8 nguồn),
+  `study_goal`, `aspiration`. 55/55 học viên có sẵn được cấp mã.
+- `teaching/ho_so.py`: `HoSoHocVienView` (quản trị + học vụ; học vụ chỉ tài khoản Học viên — 403 với nhân sự)
+  và `MucTieuHocVienView` (GET/PATCH, `IsSeniorTeachingStaff` — cùng cổng với tờ báo cáo phụ huynh, nơi đặt
+  ô sửa; trợ giảng không sửa). Chỉ ghi ô thật sự đổi; liên hệ phụ huynh sửa ở đây thì KHOÁ (§47); nhật ký
+  `user.profile` ghi giá trị cũ.
+- Học vụ nay vào **Tài khoản**: máy chủ lọc về vai Học viên (`AdminUsersView`), cấp hàng loạt chỉ vai Học
+  viên (403 nếu khác), ẩn đổi vai / khoá / xuất CSV (ba thứ vẫn `IsAdminRole`). Mã HSA cấp ngay ở MỌI đường
+  sinh học viên (tạo lẻ, hàng loạt, đổi vai thành Học viên). Ô tìm khớp cả mã và username.
+- Đăng nhập nhận **email / SĐT / tên đăng nhập** (không phân biệt hoa thường).
+- Giao diện: trang `/quan-tri/tai-khoan/[id]` (năm mục, thanh Lưu dính đáy, lỗi dưới từng ô + đưa con trỏ tới
+  ô sai đầu tiên, cảnh báo rời trang khi chưa lưu); khối "Mục tiêu và nguyện vọng" trên tờ báo cáo từng em
+  (`print:hidden` — ghi chú nội bộ).
+
+### Lỗi thật bắt được trong lúc làm
+- **`birthday` là cột TEXT** (`DEFAULT ''`), không phải DATE: `_dict` bản đầu gọi `.isoformat()` → 500 với em
+  đầu tiên tự điền ngày sinh. Phép kiểm bắt được trước khi có dữ liệu nào chạm tới.
+- **Ba cột phụ huynh `NOT NULL DEFAULT ''`**: PATCH ghi `None` khi xoá trống → 500. E2E bắt được ở bước TRẢ
+  LẠI hồ sơ (`afterAll`); backend test thêm ca xoá trống, lùi mã thấy đỏ.
+- **`afterAll` của spec mới** `expect` ngay sau bước trả hồ sơ → bước ấy hỏng thì lớp tạm không bao giờ bị
+  xoá (lớp 9494 nằm lại; đã xoá tay). Nay dọn CẢ HAI rồi mới kêu.
+- **Hàng mờ `Tr dim` (`opacity-50`)** làm mờ cả chữ: axe đo 2,14:1 ở hàng đề thi đang ẩn — người dùng thử
+  "Nhi BTND" (42849) đã ẩn đề lúc 08:58 sáng nay nên màn Soạn giáo trình lộ lỗi. Nay lùi bằng nền (`bg-ground`);
+  mọi nơi gọi `dim` đều đã có chữ nói trạng thái. KHÔNG đụng dữ liệu của người dùng thử.
+- Hướng dẫn trong app ghi "một người thì điền form" — **không có form cấp lẻ nào**; bản đồ lộ ra
+  `/api/admin/users/create` không màn hình nào gọi (xem dưới). Đã sửa chữ.
+- Cẩm nang HTML/PDF còn nói mục Hướng dẫn "chỉ quản trị viên và học vụ mở được" (sai từ 22/09; DOCX đúng).
+
+### Thước hỏng (ba cái, đều đã chứng minh đỏ được sau khi sửa)
+- `ban_do.mjs` lọc chú thích theo ĐẦU DÒNG → câu ví dụ tấn công XSS ở dòng TIẾP NỐI của một khối `/* */` trong
+  `dashboard.js:757` được đếm là người gọi `/api/admin/users/create`. Nay quét từng ký tự, hiểu chuỗi/template/
+  regex; `--tu-kiem` cài ca chú thích + ca `//` trong URL và regex. Lộ thêm 3 "lời gọi" React nằm trong chú
+  thích (tuyến vẫn có người gọi thật) và 1 tuyến thật sự không ai gọi → vào danh sách ứng viên gỡ (nay 10).
+- `do_giao_dien.mjs` mù với `opacity` ở HAI chỗ: phía trang không nhân độ đục tổ tiên / alpha của màu chữ, và
+  bước soi điểm ảnh tính lại bằng màu CSS gốc nên GẠT vi phạm thật thành "báo oan". Sau khi sửa: đếm đúng 16
+  nút như axe. Miễn trừ điều khiển đang tắt (WCAG 1.4.3) và chữ có độ đục tích luỹ ≤ 0,05 (khung bước ẩn
+  bằng `opacity: 0` ở tổ tiên — lượt đầu báo oan 47 chỗ ở Bài học). `--tu-kiem` nay nhét `opacity` vào nửa
+  số phần tử nền trong suốt và đếm riêng vi phạm do độ đục — lùi bước soi thì đỏ ở cả hai khổ.
+- Thước đã sửa lộ hai lỗi THẬT có từ trước (axe cũng bỏ lọt): phụ đề hero của Dashboard trắng 45% trên nền
+  gradient = 3,61:1 (axe xếp nền gradient vào "chưa xác định") → 72% (~6,7:1); nút "Tiếp tục" của Khảo sát
+  mờ `.35` khi khoá mà không mang trạng thái nào (1,8:1) → thêm `aria-disabled` (vẫn bấm được để nghe lời
+  nhắc). Tầng JS cũ +2 dòng cho việc này; trần hạ 6807 → 6774 (đo được 6772: đã co mà chưa ai hạ).
+
+### Đã đo
+- Backend: `tests_ho_so_hoc_vien.py` 30/30 (mỗi ca mới đều đỏ trước). **Toàn bộ 859 xanh + 4 đỏ** (54 phút).
+  Cả 4 đỏ do DỮ LIỆU, không do mã: "Nhi BTND" (42849, tài khoản dùng thử) thêm bài "Chương 1: Xác suất
+  thống kê" 08:30 và sửa bài #1 09:11; quản trị viên (id 7) thêm "Nguyên hàm" 14:25 → 78 bài. Ba ca ở
+  `lessons/tests.py` ghim nội dung bài 1 mẫu ("Tỉ lệ & phần trăm", có module, có trần đồng hồ) — cần viết
+  lại để tự dựng bài riêng thay vì đọc giáo trình người khác đang sửa. Ca thứ tư là LỖI HIỂN THỊ THẬT:
+  trang chủ dựng sẵn "76 bài học", CSDL có 78 (`id="stat-hours"` trong `(base)/page.tsx`) — chờ anh quyết
+  (bài của người dùng thử có giữ không) rồi mới sửa số.
+- E2E `ho-so-hoc-vien.spec.ts` 16/16 (hai khổ, `E2E_GHI=1`; chỉ đọc 6/6 khi tắt). `vai-tro-cong` +
+  `huong-dan-moi-vai` 44/44 — đo đỏ đúng các ô đổi quyền TRƯỚC khi sửa bảng.
+- Unit guard 30/30 · tsc · eslint · ruff sạch.
+- Axe 96 lượt: hai màn mới 0; 16 nút ở Soạn giáo trình (hàng mờ) → sửa → **chạy lại cả 96 lượt: 0**.
+- Thước sáu luật (bản đã sửa), 32 trang × 2 khổ = 64 lượt: cả sáu luật 0, 0 lỗi JS, 0 CSP, 0 lời gọi ghi
+  lọt. `--tu-kiem` 64/64 lượt đỏ được — 5882 vi phạm tương phản (2379 do độ đục), 5994 chữ dưới sàn.
+- Cẩm nang: 3 ảnh mới (tự xem từng ảnh), HTML + PDF 29 trang + DOCX; bản web mới
+  https://claude.ai/artifact/WU91Zz5E7aw6KioyQawbcQ (bản cũ không cập nhật được — tài khoản này không có quyền sửa).
+
+### Còn lại (theo thứ tự anh chốt)
+- Quên mật khẩu qua email · dòng thời gian học viên (trên trang hồ sơ) · nâng cấp lịch (xung đột giảng viên/
+  học viên, lịch theo trung tâm/giảng viên/lớp/học viên, online/offline + phòng, báo đổi lịch) · ZNS hằng tuần.
+- Anh quyết: 10 tuyến ứng viên gỡ trong `scripts/ban_do.mjs` (mới thêm `/api/admin/users/create`).
+- Trợ giảng có nên sửa mục tiêu/nguyện vọng không — hiện KHÔNG (cùng cổng tờ báo cáo); đổi là một dòng.
+
 ## 23/09/2026 — BỘ E2E CHẠY HAI KHỔ, CANH QUYỀN THEO VAI VÀ LUỒNG GIẢNG DẠY
 
 Anh bảo "làm e2e để test mọi khả năng, cả mobile lẫn desktop".

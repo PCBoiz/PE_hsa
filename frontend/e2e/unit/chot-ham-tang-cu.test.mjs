@@ -130,7 +130,11 @@ const TRAN_TEP = 12;
 // `__apiGet` 14/09): engine bài học đọc nội dung bài từ `window.__napTruoc` (HTML bắn lượt
 // gọi từ dòng đầu, `LessonHsa.tsx`) trước khi tự fetch. Lighthouse production: LCP bài học
 // 5,2 s với 88% là chờ chuỗi tải JS → chạy → gọi API → vẽ. Một dòng là phần đọc lời hứa.
-const TRAN_DONG_MA = 6807;
+// 23/09/2026: 6807 → 6774. Đo trước khi sửa: 6772 — tầng cũ đã co 35 dòng qua các đợt
+// trước mà chưa ai hạ trần. +2 là VÁ LỖI a11y trong tệp đã có (`questionaire.js`): nút
+// "Tiếp tục" đang khoá mờ `opacity .35` mà không mang `aria-disabled` — trông tắt, đọc
+// lên là bấm được, tương phản 1,8:1. Hạ trần luôn về số đo mới để khoá phần đã co.
+const TRAN_DONG_MA = 6774;
 
 let failures = 0;
 function check(name, cond, them) {
