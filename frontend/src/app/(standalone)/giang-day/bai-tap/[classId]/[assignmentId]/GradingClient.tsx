@@ -259,7 +259,7 @@ function Bang({
           hint={
             topic
               ? `Chủ đề "${topic}" — điểm chấm ở đây vào thẳng ô đó trên bản đồ năng lực của từng em.`
-              : 'Bài này CHƯA gắn chủ đề: điểm vẫn vào sổ nhưng không vào được ô nào trên bản đồ năng lực. Sửa bài để gắn chủ đề.'
+              : 'Bài này CHƯA gắn chủ đề nên điểm không vào bản đồ năng lực. Sửa bài để gắn chủ đề.'
           }
         />
         <TileRow>

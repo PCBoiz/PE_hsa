@@ -632,7 +632,7 @@ function NhapKhoa({
           <Field
             id="tong-so-bai"
             label="Tổng số bài của khoá"
-            hint="Bỏ trống nếu chưa bàn giao trọn giáo trình. Đây là đường DUY NHẤT hạ được con số này, và nó là mẫu số của mọi phần trăm tiến độ."
+            hint="Bỏ trống nếu chưa bàn giao trọn giáo trình. Số này là mẫu số của phần trăm tiến độ."
             type="number"
             min={1}
             value={tong}

@@ -156,7 +156,7 @@ export default async function ViecHomNayPage() {
             hint={
               d.lop.length === 0
                 ? 'Học vụ gán bạn vào lớp thì việc của lớp ấy sẽ hiện ở đây.'
-                : 'Không có buổi nào trong 24 giờ tới, mọi buổi đã qua đều đã điểm danh, không còn bài chờ chấm.'
+                : 'Không có buổi trong 24 giờ tới, không buổi nào chưa điểm danh, không bài chờ chấm.'
             }
           />
         </Card>
@@ -189,7 +189,8 @@ export default async function ViecHomNayPage() {
         <Card>
           <CardHead
             title={`Chưa điểm danh xong (${d.chuaDiemDanh.tong})`}
-            hint="Buổi đã bắt đầu mà chưa lưu điểm danh, hoặc đã lưu nhưng còn em chưa được tick. Em chưa tick thì buổi đó không vào chuyên cần của em — và tờ gửi phụ huynh sẽ báo thiếu."
+            hint="Buổi đã bắt đầu mà chưa lưu điểm danh, hoặc còn em chưa được tick."
+            chiTiet="Em chưa được tick thì buổi đó không vào chuyên cần của em, và tờ gửi phụ huynh sẽ báo thiếu."
           />
           <ul className="flex flex-col">
             {d.chuaDiemDanh.ds.map((b) => (
@@ -252,7 +253,7 @@ export default async function ViecHomNayPage() {
         <Card>
           <CardHead
             title={`Vắng liền từ ${d.nguong.vangLien} buổi (${d.vangLien.length})`}
-            hint="Vắng không phép ở mọi buổi đã điểm danh gần đây. Đây là lúc gọi phụ huynh, trước khi em rơi hẳn."
+            hint="Vắng không phép ở mọi buổi đã điểm danh gần đây. Nên gọi phụ huynh ngay."
           />
           <ul className="flex flex-col">
             {d.vangLien.map((e) => (

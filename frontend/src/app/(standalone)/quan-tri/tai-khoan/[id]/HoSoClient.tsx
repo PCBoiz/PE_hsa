@@ -209,7 +209,7 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
       <Card>
         <CardHead
           title="Tên đăng nhập"
-          hint="Không bắt buộc. Có tên này thì đăng nhập được bằng nó thay cho email hay số điện thoại — tiện cho em không nhớ email nào."
+          hint="Không bắt buộc. Có tên này thì em đăng nhập bằng nó thay cho email hay số điện thoại."
         />
         <Field
           id="hs-username"
@@ -217,7 +217,7 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
           value={form.username}
           onChange={(e) => dat('username', e.target.value.toLowerCase())}
           error={loi.username}
-          hint="3–30 ký tự: chữ thường không dấu, số và dấu chấm; có ít nhất một chữ cái. Ví dụ: an.nguyen08. Để trống là không dùng."
+          hint="3–30 ký tự: chữ thường không dấu, số, dấu chấm; có ít nhất một chữ. Ví dụ: an.nguyen08"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
@@ -279,7 +279,7 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
           <Card>
             <CardHead
               title="Phụ huynh"
-              hint="Nơi nhận báo cáo tiến độ. Trung tâm đã nhập thì em chỉ còn điền được ô trống trong Cài đặt — muốn sửa phải qua học vụ."
+              hint="Nơi nhận báo cáo tiến độ. Ô trung tâm đã nhập thì em không tự sửa được, chỉ điền ô trống."
             />
             <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr))]">
               <Field id="hs-parentName" label="Họ tên phụ huynh" value={form.parentName} error={loi.parentName}

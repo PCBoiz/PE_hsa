@@ -762,7 +762,8 @@ function BulkImport({
     <Card>
       <CardHead
         title="Cấp tài khoản hàng loạt"
-        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Cần ít nhất email hoặc số điện thoại. Tối đa ${tranMe} tài khoản mỗi mẻ.`}
+        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Tối đa ${tranMe} tài khoản mỗi mẻ.`}
+        chiTiet="Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Mỗi dòng cần ít nhất email hoặc số điện thoại."
         action={
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Thu gọn

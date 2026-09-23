@@ -31,7 +31,8 @@ export default function VaiTroPage() {
       <Card>
         <CardHead
           title="Ai làm được gì"
-          hint="Bảng này KHÔNG phải hàng rào — hàng rào là `permission_classes` ở máy chủ. Đây là chỗ đọc và bàn lại ranh giới, và một phép kiểm buộc nó khớp máy chủ từng vai."
+          hint="Vai nào làm được việc nào. Máy chủ mới là nơi chặn; bảng này để đọc và bàn."
+          chiTiet="Bảng không tự cấp hay chặn quyền gì — việc ấy do máy chủ làm với từng yêu cầu. Một phép kiểm tự động so bảng với máy chủ từng vai, nên thứ đọc ở đây là thứ đang chạy thật."
         />
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]">
           {VAI_TRO.map((v) => (
@@ -52,7 +53,8 @@ export default function VaiTroPage() {
       <Card>
         <CardHead
           title="Hình dạng của hệ thống quyền"
-          hint="Bốn lớp quyền lồng khít vào nhau; biên tập nội dung đứng ở trục khác. Hình này SUY RA từ cùng dữ liệu với bảng dưới — không vẽ tay, nên không lệch được."
+          hint="Bốn lớp quyền lồng vào nhau; biên tập nội dung đứng ở trục riêng."
+          chiTiet="Hình vẽ từ cùng dữ liệu với bảng bên dưới chứ không vẽ tay, nên hai bên không lệch nhau được."
         />
         <SoDoVaiTro />
       </Card>
@@ -87,16 +89,11 @@ export default function VaiTroPage() {
                   <p className="text-small text-ink">
                     {VAI_TRO.filter((r) => duoc.includes(r.ma)).map((r) => r.nhan).join(' · ')}
                   </p>
-                  {/* `[overflow-wrap:anywhere]` — `teaching/admin_users.py::
-                      AdminBulkCreateUsersView` là một chuỗi ĐƠN CÁCH không có
-                      khoảng trắng nào để ngắt. Đo 07/09/2026: nó đẩy thẻ rộng
-                      372px trong khung 274px, và bề rộng ấy làm phình khung
-                      chứa gốc → thanh `position: fixed` giãn theo → cả trang
-                      trượt ngang 56px. Một dòng chữ không ngắt được là một lỗi
-                      bố cục, không phải chuyện thẩm mỹ. */}
-                  <p className="mt-1 font-mono text-label text-ink-3 [overflow-wrap:anywhere]">
-                    {v.nguon} · {v.lopQuyen}
-                  </p>
+                  {/* Dòng `tệp.py::View · lớp quyền` từng in ở đây đã gỡ
+                      (24/09/2026): đó là đường dẫn mã, người vận hành không
+                      đọc được (RULES §10). Bảng vẫn không phải lời khẳng
+                      định suông — `quyen-vai.test.mjs` đối chiếu `nguon`
+                      với máy chủ từng vai. */}
                 </li>
               );
             })}
@@ -142,12 +139,8 @@ export default function VaiTroPage() {
                             Thêm điều kiện: {v.chan_them}
                           </span>
                         )}
-                        {/* Chỗ cưỡng chế THẬT. In ra để người đọc lần được tới
-                            mã, và để bảng này không thể là một lời khẳng định
-                            suông. */}
-                        <span className="mt-1 block font-mono text-label text-ink-3">
-                          {v.nguon} · {v.lopQuyen}
-                        </span>
+                        {/* Đường dẫn mã từng in ở đây — gỡ 24/09/2026, cùng lý
+                            do với dòng ở khổ hẹp phía trên. */}
                       </td>
                       {VAI_TRO.map((r) => {
                         const co = duoc.includes(r.ma);
@@ -180,19 +173,13 @@ export default function VaiTroPage() {
       <Card>
         <CardHead title="Còn thiếu gì" />
         <ul className="flex list-disc flex-col gap-2 pl-5 text-body text-ink-2">
+          {/* Hai ý cũ ở đây là ghi chú lập trình viên (tên người, ngày chốt,
+              đường dẫn tệp mã) — gỡ 24/09/2026 theo góp ý "nhiều chữ" của
+              TopHSA. Ý "ba vai chưa có ai (đo 07/09)" bỏ hẳn: nó đã hết đúng
+              từ lượt rà sáu vai bằng tài khoản thật 20/09. */}
           <li>
-            Chưa có vai <strong>Quản lý</strong>. Anh Sơn chốt 07/09/2026: dựng cơ
-            chế trước, điền nội dung khi bảng của cô Hương về — thêm một vai là
-            thêm một dòng ở <code className="font-mono">lib/quyenVai.ts</code> và
-            một hàm <code className="font-mono">is_*</code> ở{' '}
-            <code className="font-mono">common/permissions.py</code>, không phải
-            sửa từng màn hình.
-          </li>
-          <li>
-            Ba vai <strong>Quản lý học vụ</strong>, <strong>Trợ giảng</strong>,{' '}
-            <strong>Biên tập nội dung</strong> hiện <strong>chưa có ai</strong> (đo
-            07/09/2026: 1 quản trị viên, 1 giảng viên, 4 học viên). Nghĩa là ba cột
-            trong bảng trên chưa từng được ai dùng thử trên tài khoản thật.
+            Chưa có vai <strong>Quản lý</strong>. Khi trung tâm cần, thêm được vai
+            này mà không phải sửa từng màn hình.
           </li>
           <li>
             Bảng này chỉ liệt kê việc có <em>hàng rào riêng</em>. Việc mà mọi người

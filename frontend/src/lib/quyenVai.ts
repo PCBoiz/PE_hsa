@@ -102,7 +102,11 @@ export type Viec = {
   giaiThich: string;
   /** Lớp quyền cưỡng chế ở backend. Vai suy ra từ đây, KHÔNG gõ tay. */
   lopQuyen: keyof typeof VAI_CUA_LOP_QUYEN;
-  /** `tệp.py::TênView` — để phép kiểm đối chiếu, và để người đọc lần ra được. */
+  /**
+   * `tệp.py::TênView` — để phép kiểm đối chiếu, và để người sửa mã lần ra được.
+   * KHÔNG in ra màn: trang "Ai làm được gì" từng in nó, gỡ 24/09/2026 (RULES §10:
+   * người vận hành không đọc đường dẫn mã; TopHSA chê trang nhiều chữ).
+   */
   nguon: string;
   /**
    * Còn một hàng rào NỮA ngoài vai trò. Ví dụ giảng viên có vai đúng nhưng chỉ
@@ -117,14 +121,16 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Cấp tài khoản mới',
-    giaiThich: 'Từ 27/08/2026 không còn tự đăng ký; tài khoản do trung tâm cấp.',
+    // Không còn tự đăng ký từ 27/08/2026. Ngày tháng, người chốt ghi ở chú
+    // thích như dòng này, KHÔNG ở giaiThich — câu ấy in ra màn (24/09/2026).
+    giaiThich: 'Không có tự đăng ký: mọi tài khoản do trung tâm cấp.',
     lopQuyen: 'IsAdminRole',
     nguon: 'accounts/views.py::RegisterView',
   },
   {
     nhom: 'Tài khoản',
     nhan: 'Cấp hàng loạt từ danh sách',
-    giaiThich: 'Dán danh sách lớp mới vào một ô, hệ thống tạo tài khoản và báo dòng nào trùng. Mỗi học viên được cấp mã HSA-xxxxx ngay lúc tạo. Học vụ làm được từ 23/09/2026 — nhưng chỉ cấp vai Học viên.',
+    giaiThich: 'Dán danh sách lớp mới vào một ô, hệ thống tạo tài khoản và báo dòng nào trùng. Mỗi học viên được cấp mã HSA-xxxxx ngay lúc tạo. Học vụ cũng làm được, nhưng chỉ cấp vai Học viên.', // học vụ: từ 23/09/2026
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/admin_users.py::AdminBulkCreateUsersView',
     chan_them: 'học vụ chỉ cấp được vai Học viên (hàng rào trong view)',
@@ -148,15 +154,17 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Đổi vai trò của người khác',
-    giaiThich: 'Việc nặng nhất trong hệ thống: nó cấp quyền. Học vụ KHÔNG làm được (anh Sơn chốt 01/09/2026).',
+    // Học vụ không làm được: anh Sơn chốt 01/09/2026.
+    giaiThich: 'Việc nặng nhất trong hệ thống: nó cấp quyền. Học vụ KHÔNG làm được.',
     lopQuyen: 'IsAdminRole',
     nguon: 'teaching/views.py::AdminUserRoleView',
   },
   {
     nhom: 'Tài khoản',
     nhan: 'Đặt lại mật khẩu cho người khác',
+    // Học vụ làm được với học viên và trợ giảng từ 20/09/2026.
     giaiThich:
-      'Đặt lại mật khẩu là chiếm được tài khoản đó. Từ 20/09/2026 học vụ làm được với HỌC VIÊN và TRỢ GIẢNG (nút ở màn Lớp học → Học viên); giảng viên, học vụ, biên tập, quản trị viên vẫn cần quản trị viên — hàng rào theo vai đích nằm trong view.',
+      'Đặt lại mật khẩu là chiếm được tài khoản đó. Học vụ làm được với HỌC VIÊN và TRỢ GIẢNG (nút ở màn Lớp học → Học viên); giảng viên, học vụ, biên tập, quản trị viên vẫn cần quản trị viên — hàng rào theo vai đích nằm trong view.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/views.py::AdminResetPasswordView',
   },
@@ -200,7 +208,8 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Lớp & đợt học',
     nhan: 'Xem bảng điều khiển toàn trung tâm',
-    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Số gộp theo lớp và đợt, không có liên lạc của em nào — học vụ xem được (quyết định 01/09, mở cửa 14/09/2026).',
+    // Học vụ xem được: quyết định 01/09, mở cửa 14/09/2026.
+    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Số gộp theo lớp và đợt, không có liên lạc của em nào — học vụ cũng xem được.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/overview.py::AdminOverviewView',
   },
@@ -212,7 +221,7 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Trợ giảng LÀM ĐƯỢC: điểm danh là việc chính của vai này.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/sessions.py::SessionAttendanceView',
-    chan_them: 'chỉ lớp mình phụ trách hoặc được gán (can_see_class)',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán', // hàng rào: can_see_class
   },
   {
     nhom: 'Dạy học',
@@ -244,7 +253,7 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc — sửa buổi vẫn ở sổ buổi học của từng lớp.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/lich.py::LichView',
-    chan_them: 'chỉ lớp mình phụ trách hoặc được gán (visible_class_ids)',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán', // hàng rào: visible_class_ids
   },
   {
     nhom: 'Dạy học',

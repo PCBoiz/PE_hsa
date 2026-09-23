@@ -173,10 +173,15 @@ export default async function NhatKyPage({
         title="Nhật ký kiểm toán"
         hint={
           data
-            ? `${data.total} hành động đã ghi. Chỉ ghi việc SỬA — tạo và khoá tài khoản, đổi vai trò, đặt lại mật khẩu, thêm bớt học viên khỏi lớp, điểm danh.`
+            ? `${data.total} hành động sửa dữ liệu đã ghi.`
             : kq.ok
               ? 'Không đọc được nhật ký. Thử tải lại trang.'
               : kq.message
+        }
+        chiTiet={
+          data
+            ? 'Chỉ ghi việc SỬA: tạo và khoá tài khoản, đổi vai trò, đặt lại mật khẩu, thêm bớt học viên khỏi lớp, điểm danh. Việc chỉ xem không được ghi.'
+            : undefined
         }
       />
 
@@ -251,7 +256,9 @@ export default async function NhatKyPage({
       ) : entries.length === 0 ? (
         <EmptyState
           title="Chưa có hành động nào được ghi"
-          hint="Nhật ký bắt đầu ghi từ 30/08/2026. Mọi việc trước mốc đó không có ở đây — đó chính là lý do đặc tả khuyên làm phần này sớm."
+          // Nhật ký ghi từ 30/08/2026 — ngày ấy từng in ở đây; gỡ 24/09/2026
+          // (ngày gõ cứng + "đặc tả khuyên" là ghi chú lập trình viên).
+          hint="Việc sửa dữ liệu (tạo tài khoản, xếp lớp, điểm danh…) sẽ hiện ở đây."
         />
       ) : (
         <TableWrap caption="Nhật ký các hành động sửa dữ liệu, mới nhất trước">
