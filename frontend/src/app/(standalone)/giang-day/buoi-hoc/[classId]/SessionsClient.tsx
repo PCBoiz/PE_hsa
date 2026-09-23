@@ -413,7 +413,7 @@ export default function SessionsClient({
         {sessions.length === 0 ? (
           <EmptyState
             title="Lớp chưa có buổi học nào"
-            hint="Tạo buổi đầu tiên ở ô phía trên. Có buổi thì mới điểm danh được, và số buổi đi học mới vào được đường cong tiến bộ của từng em."
+            hint="Tạo buổi đầu tiên ở ô phía trên. Có buổi thì mới điểm danh và theo dõi chuyên cần được."
           />
         ) : (
           <div className="flex flex-col gap-5">

@@ -178,7 +178,8 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
     <Card as="section">
       <CardHead
         title="Đề thi thử"
-        hint="Tải mẫu .xlsx về, điền, rồi tải lên. Sai ở đâu hệ thống báo đúng số dòng như trong Excel — và một dòng sai thì không dòng nào được ghi."
+        hint="Tải mẫu .xlsx về, điền, rồi tải lên. Có dòng sai thì cả tệp chưa được ghi."
+        chiTiet="Sai ở đâu, hệ thống báo đúng số dòng như trong Excel. Một dòng sai thì không dòng nào được ghi — sửa xong tải lên lại cả tệp."
         action={
           <span className="flex flex-wrap gap-2">
             {/* Liên kết thường chứ không `fetch`: đây là một lượt TẢI VỀ, và
@@ -299,7 +300,7 @@ export default function DeThi({ initial, loi }: { initial: DeRow[]; loi: string 
       {de.length === 0 ? (
         <EmptyState
           title="Chưa có đề thi thử nào"
-          hint="Tải mẫu .xlsx về, điền một dòng một câu hỏi, rồi tải lên. Trang “Hướng dẫn” trong tệp mẫu nói rõ từng cột."
+          hint="Tải mẫu .xlsx về, điền mỗi dòng một câu hỏi, rồi tải lên. Tệp mẫu có trang hướng dẫn."
         />
       ) : (
         <TableWrap caption="Các đề thi thử, kèm số câu và số lượt đã làm">

@@ -268,7 +268,8 @@ export default async function TongQuanPage({
       <Card>
         <CardHead
           title="Toàn trung tâm"
-          hint="Cuộn số liệu của mọi lớp lên một chỗ. Cùng cách tính với báo cáo từng lớp — nếu hai bên lệch nhau thì đó là lỗi, không phải hai cách đo."
+          hint="Số liệu mọi lớp gộp một chỗ, cùng cách tính với báo cáo từng lớp."
+          chiTiet="Số ở đây lệch với báo cáo của một lớp là lỗi, không phải hai cách đo — báo kỹ thuật."
         />
 
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))]">
@@ -305,7 +306,8 @@ export default async function TongQuanPage({
         <Card>
           <CardHead
             title="So sánh theo đợt"
-            hint={`Giữ chân từ ${nguong.good}% trở lên là khoẻ; dưới ${nguong.alarm}% là dấu hiệu hỏng ở khâu đón học viên, chất lượng dạy hoặc học phí.`}
+            hint={`Giữ chân từ ${nguong.good}% trở lên là khoẻ; dưới ${nguong.alarm}% là cần xem lại.`}
+            chiTiet="Giữ chân thấp thường do khâu đón học viên, chất lượng dạy hoặc học phí."
           />
           <TableWrap caption="So sánh các đợt học: giữ chân, chuyên cần và điểm thi thử">
             <Thead>
@@ -353,7 +355,7 @@ export default async function TongQuanPage({
         {lop.length === 0 ? (
           <EmptyState
             title="Chưa có lớp nào"
-            hint="Tạo lớp ở khu Nội dung & lớp, rồi xếp học viên vào. Số liệu ở đây tự có khi lớp bắt đầu học."
+            hint="Tạo lớp ở mục Lớp học rồi xếp học viên vào. Số liệu tự có khi lớp bắt đầu học."
           />
         ) : (
           <TableWrap caption="Từng lớp của trung tâm: sĩ số, buổi đã dạy, chuyên cần, tiến độ, điểm thi thử">

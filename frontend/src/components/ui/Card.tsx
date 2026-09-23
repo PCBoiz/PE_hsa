@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BieuTuong } from '@/components/bieuTuong';
 
 /**
  * Thẻ — khối nội dung nổi trên nền trang.
@@ -34,14 +35,26 @@ export default function Card({
   );
 }
 
-/** Đầu thẻ: tiêu đề bên trái, hành động phụ bên phải. */
+/**
+ * Đầu thẻ: tiêu đề bên trái, hành động phụ bên phải.
+ *
+ * `hint` là MỘT dòng nói điều người dùng cần để dùng thẻ này — không quá 90 ký
+ * tự (`e2e/unit/chu-nguoi-dung.test.mjs` đo). Lời giải thích dài hơn mà vẫn
+ * đáng giữ thì đưa vào `chiTiet`: nó nằm gập sau nút "Chi tiết", ai cần mới mở.
+ *
+ * Vì sao có `chiTiet` (24/09/2026): TopHSA dùng thử và chê "nhiều chữ, màn đầu
+ * rối". Đo khi ấy: 32 câu `hint` quá 90 ký tự, câu dài nhất 197 — nhiều thẻ mở
+ * đầu bằng một đoạn văn xám mà người vận hành phải lướt qua mỗi ngày.
+ */
 export function CardHead({
   title,
   hint,
+  chiTiet,
   action,
 }: {
   title: string;
   hint?: string;
+  chiTiet?: ReactNode;
   action?: ReactNode;
 }) {
   return (
@@ -56,6 +69,23 @@ export function CardHead({
             `heading-order` đỏ ở 9 trang (20/09/2026) vì h1 → h3 bỏ cấp. */}
         <h2 className="text-section text-ink">{title}</h2>
         {hint && <p className="mt-1 text-small text-ink-3">{hint}</p>}
+        {/* `<details>` chứ không state: gập/mở bằng bàn phím sẵn, trình đọc
+            màn hình báo đúng "đã mở/đã đóng", không cần JS phía trình duyệt
+            (thẻ này dựng cả ở máy chủ). Cùng lối khối gập của bộ soạn bài.
+            `list-none` + ẩn `::-webkit-details-marker`: bỏ tam giác mặc định
+            (mỗi trình duyệt vẽ một kiểu) để dùng mũi tên của bộ biểu tượng.
+            `min-h-11` — sàn vùng chạm 44px như `Button`. */}
+        {chiTiet && (
+          <details className="group mt-1">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-sm text-small font-medium text-ink-2 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
+              <span className="-rotate-90 transition-transform group-open:rotate-0 motion-reduce:transition-none">
+                <BieuTuong ten="chevron-down" co={14} />
+              </span>
+              Chi tiết
+            </summary>
+            <div className="max-w-[70ch] pb-1 text-small text-ink-2">{chiTiet}</div>
+          </details>
+        )}
       </div>
       {action}
     </div>
