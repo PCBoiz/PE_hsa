@@ -151,6 +151,7 @@ MUC = [
     ('§54a', 'classes.class_type (nhóm / gia sư)', lambda: _cot('classes', 'class_type')),
     ('§54b', 'CHECK classes_class_type_check nhận gia_su',
      lambda: _check_co_gia_tri('classes_class_type_check', 'gia_su')),
+    ('§56', 'users.last_seen_at (lần cuối thấy tài khoản)', lambda: _cot('users', 'last_seen_at')),
 ]
 
 

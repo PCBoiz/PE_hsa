@@ -1725,3 +1725,16 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS class_type TEXT NOT NULL DEFAULT 'n
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_class_type_check;
 ALTER TABLE classes ADD CONSTRAINT classes_class_type_check
     CHECK (class_type IN ('nhom', 'gia_su'));
+
+-- ── §56 · LẦN CUỐI THẤY TÀI KHOẢN (24/09/2026) ─────────────────────────────
+-- Ghi chú họp TopHSA: học vụ cần biết "bao nhiêu tài khoản lâu không hoạt động".
+-- Tới hôm nay chỉ có `learning_events` để đoán — mà nhân sự gần như không sinh sự
+-- kiện học nào, và một em đăng nhập xem lịch rồi thoát cũng không để lại dấu gì.
+--
+-- Đóng dấu lúc ĐĂNG NHẬP (mật khẩu + OAuth) và lúc LÀM MỚI token, KHÔNG ở mỗi
+-- request (`accounts/hoat_dong.py`): access token sống 30 phút nên người đang dùng
+-- được đóng dấu lại ít nhất nửa giờ một lần — đủ mịn cho mốc 7/14/30 ngày, và
+-- không biến mọi lượt đọc thành một lượt GHI vào bảng `users`.
+-- NULL = chưa thấy lần nào KỂ TỪ khi cột này có (không phải "chưa từng vào").
+-- Giờ Việt Nam, naive — cùng quy ước `common/clock.py::local_now`.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
