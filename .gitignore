@@ -90,3 +90,6 @@ backend/staticfiles/
 .django.out
 # Ảnh chụp màn hình cho cẩm nang — dựng lại được bất cứ lúc nào, không phải mã.
 .anh_cam_nang/
+
+# Bản đồ hệ thống — sinh lại bằng `node scripts/ban_do.mjs` trong 1 giây.
+ban_do/
