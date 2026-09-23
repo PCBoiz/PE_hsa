@@ -170,6 +170,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Bấm "Hồ sơ" trên dòng của em. Trang hồ sơ có năm mục: thông tin cá nhân, tên đăng nhập, học tập, tuyển sinh, phụ huynh.',
+        luu_y: 'Cuối trang là DÒNG THỜI GIAN của em: vào lớp, chuyển lớp kèm lý do, các kỳ thi, báo cáo đã gửi phụ huynh, ai sửa hồ sơ lúc nào — mới nhất ở trên. Phụ huynh hỏi "con học ở trung tâm từ bao giờ, đã chuyển lớp mấy lần" thì tra ở đây.',
       },
       {
         lam: 'Sửa ô cần sửa rồi bấm "Lưu hồ sơ" ở thanh dưới cùng. Thanh ấy đếm số ô chưa lưu; ô nào sai thì báo ngay dưới ô đó.',

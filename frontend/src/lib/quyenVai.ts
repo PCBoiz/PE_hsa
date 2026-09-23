@@ -139,6 +139,14 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Tài khoản',
+    nhan: 'Xem dòng thời gian của một em',
+    giaiThich: 'Vào lớp, chuyển lớp (kèm lý do), thi, báo cáo gửi phụ huynh, các lần sửa hồ sơ — gom từ nơi ghi gốc, chỉ đọc. Không hiện địa chỉ liên lạc của phụ huynh.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/dong_thoi_gian.py::DongThoiGianView',
+    chan_them: 'học vụ: chỉ tài khoản vai Học viên',
+  },
+  {
+    nhom: 'Tài khoản',
     nhan: 'Đổi vai trò của người khác',
     giaiThich: 'Việc nặng nhất trong hệ thống: nó cấp quyền. Học vụ KHÔNG làm được (anh Sơn chốt 01/09/2026).',
     lopQuyen: 'IsAdminRole',

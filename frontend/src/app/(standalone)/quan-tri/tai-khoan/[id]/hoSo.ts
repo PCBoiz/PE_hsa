@@ -78,3 +78,30 @@ export const HD_TRANG_HO_SO = z.looseObject({
 
 /** `PATCH` cùng đường — máy chủ trả lại hồ sơ SAU khi ghi (đã chuẩn hoá). */
 export const HD_DA_LUU = z.looseObject({ profile: HD_HO_SO }) satisfies HinhDang<{ profile: HoSo }>;
+
+/** Một mốc của dòng thời gian (`teaching/dong_thoi_gian.py`). */
+export type MocThoiGian = {
+  loai: string;
+  /** ISO. `caNgay` thì chỉ có ngày ('2026-09-20') — KHÔNG có giờ để hiện. */
+  luc: string;
+  caNgay: boolean;
+  tieuDe: string;
+  chiTiet: string | null;
+  boi: string | null;
+};
+
+export type DongThoiGian = { events: MocThoiGian[]; tong: number; catBot: boolean };
+
+/** `GET /api/admin/users/<id>/timeline`. */
+export const HD_DONG_THOI_GIAN = z.looseObject({
+  events: z.array(z.looseObject({
+    loai: z.string(),
+    luc: z.string(),
+    caNgay: z.boolean(),
+    tieuDe: z.string(),
+    chiTiet: chu,
+    boi: chu,
+  })),
+  tong: z.number(),
+  catBot: z.boolean(),
+}) satisfies HinhDang<DongThoiGian>;

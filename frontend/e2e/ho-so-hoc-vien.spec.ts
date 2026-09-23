@@ -135,6 +135,13 @@ test('học vụ tìm một em theo email rồi mở Hồ sơ: đủ năm mục,
   await expect(page.locator('#hs-enrollSource option')).toHaveCount(9);
   // Email/SĐT chỉ đọc: không có ô nhập nào cho chúng.
   await expect(page.locator('#hs-email, #hs-phone')).toHaveCount(0);
+
+  // Dòng thời gian (23/09/2026): cuối trang, mới nhất ở trên — mốc CŨ NHẤT của mọi
+  // em là "Được cấp tài khoản", nên nó phải nằm ở dòng cuối.
+  await expect(page.getByRole('heading', { name: 'Dòng thời gian', exact: true })).toBeVisible();
+  const moc = page.locator('ol li');
+  await expect(moc.last()).toContainText('Được cấp tài khoản');
+  expect(await moc.count()).toBeGreaterThan(0);
 });
 
 test('học vụ mở hồ sơ NHÂN SỰ → bị chặn, nói rõ vì sao', async ({ page, browser }) => {

@@ -90,6 +90,33 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 23/09/2026 (khuya, tiếp) — DÒNG THỜI GIAN HỌC VIÊN · nhóm việc thứ ba anh chốt
+
+Bảng yêu cầu mục 4 (tab "Nhi" #2): "dòng thời gian đăng ký → xếp lớp → … → hoàn thành" + "lịch sử chuyển lớp".
+
+- `teaching/dong_thoi_gian.py` — `GET /api/admin/users/<id>/timeline`, CHỈ ĐỌC, không bảng mới: gom từ bảy nơi ghi
+  gốc (tạo tài khoản + người cấp, khảo sát đầu vào, ghi danh / hoàn thành khoá, vào / rời lớp kèm lý do đã dịch
+  qua `teaching.vocab.LEAVE_LABEL`, lớp kết thúc khi em còn học, thi thử, thi ngoài, lượt gửi báo cáo phụ huynh,
+  và nhật ký: cấp lại / tự đặt lại mật khẩu, sửa hồ sơ (liệt kê ô đã đổi), khoá, đổi vai, cấp / thu hồi đường
+  dẫn). Mới nhất ở trên; cột DATE trả `caNgay: true`, màn hình không bịa giờ 00:00. KHÔNG trả địa chỉ phụ huynh.
+- Quyền: tách hàng rào của trang hồ sơ thành `ho_so.chan_pham_vi` — hai view một luật (học vụ chỉ học viên).
+- Giao diện: khối "Dòng thời gian" cuối trang hồ sơ, gọi SONG SONG với hồ sơ; hỏng thì chỉ khối ấy báo lỗi, form
+  vẫn dùng được. Ngày giờ đọc thẳng từ chuỗi (không qua `Date` — tránh múi giờ máy dựng trang chen vào).
+
+### Lỗi bắt được trước khi lên
+- `parent_report_sends.status` là `'cho' | 'da_gui' | 'loi'` — bản nháp so với `'sent'` sẽ báo mọi lượt gửi được là hỏng.
+- `leave_reason` lưu MÃ (`transferred`…) — bản nháp in mã trần.
+- Soi ảnh: "Thi Thi thử tại trung tâm lần 2" (tên đợt đã mở đầu bằng "Thi"); ở 390px cột ngày cố định ép chữ
+  thành cột hẹp → `flex-wrap`, ngày tự xuống dòng riêng khi hẹp (không mốc px).
+
+### Đã đo
+- `tests_dong_thoi_gian.py` 6/6; lùi 7 chốt (trạng thái `'sent'`, mã lý do trần, thứ tự, bịa giờ cho cột DATE, bỏ
+  hàng rào phạm vi, lộ địa chỉ phụ huynh, ghép "Thi" hai lần) → cả 7 đều ĐỎ.
+- E2E hồ sơ 16/16 (hai khổ, có ghi) — thêm kiểm khối dòng thời gian (mốc cũ nhất "Được cấp tài khoản" ở cuối).
+- Thước sáu luật trang hồ sơ (nay có dòng thời gian): 0 ở cả hai khổ. Axe 100 lượt: 0.
+- Cẩm nang thêm ảnh + đoạn dòng thời gian (PDF 30 trang, DOCX). **Bản web không cập nhật được**: phiên đổi tài
+  khoản đăng nhập giữa chừng, artifact tạo lúc trước thuộc tài khoản cũ — chờ anh bảo đăng dưới tài khoản nào.
+
 ## 23/09/2026 (khuya) — QUÊN MẬT KHẨU QUA EMAIL (§52) · nhóm việc thứ hai anh chốt
 
 Anh chốt: đường dẫn một lần, hạn 30 phút, tới email CỦA CHÍNH tài khoản; dev thử bằng `EMAIL_CHE_DO_THU=1`.

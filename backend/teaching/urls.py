@@ -5,6 +5,7 @@ from teaching import (
                       admin_users,
                       assignments,
                       co_so_hoc_phi,
+                      dong_thoi_gian,
                       exports,
                       ho_so,
                       lien_he_phu_huynh,
@@ -131,6 +132,8 @@ urlpatterns = [
          views.AdminResetPasswordView.as_view()),
     # Hồ sơ học viên mở rộng (§51, 23/09/2026) — quản trị viên + học vụ.
     path('api/admin/users/<int:user_id>/profile', ho_so.HoSoHocVienView.as_view()),
+    # Dòng thời gian học viên (23/09/2026) — CHỈ ĐỌC, gom từ bảy nguồn sẵn có.
+    path('api/admin/users/<int:user_id>/timeline', dong_thoi_gian.DongThoiGianView.as_view()),
 
     # ── Nhật ký kiểm toán (đặc tả ERP §9, khối 5) ──
     path('api/admin/audit', admin_users.AdminAuditView.as_view()),

@@ -151,6 +151,20 @@ def _nhan(r):
     return r['name'] or r['email'] or r['phone'] or ('#%s' % r['id'])
 
 
+def chan_pham_vi(request, r):
+    """Hàng rào CHUNG cho mọi đường xem/sửa MỘT tài khoản ở khu quản trị: không
+    có → 404; học vụ mở tài khoản nhân sự → 403. Trả Response để trả ngay, hoặc
+    None nếu được đi tiếp. Dùng ở hồ sơ và dòng thời gian — một luật, một chỗ."""
+    if not r:
+        return Response({'error': 'Không tìm thấy tài khoản này.'}, status=404)
+    if not is_admin(request.user) and r['role'] != ROLE_STUDENT:
+        # 403 chứ không 404: học vụ vốn thấy giảng viên/trợ giảng trong danh
+        # sách lớp — giấu không bảo vệ gì, chỉ gây khó hiểu.
+        return Response({'error': 'Quản lý học vụ chỉ xem và sửa hồ sơ HỌC VIÊN. '
+                                  'Hồ sơ nhân sự cần quản trị viên.'}, status=403)
+    return None
+
+
 class HoSoHocVienView(APIView):
     """GET/PATCH /api/admin/users/<id>/profile — hồ sơ đầy đủ của một học viên.
 
@@ -159,19 +173,9 @@ class HoSoHocVienView(APIView):
     """
     permission_classes = [IsAdminOrAcademic]
 
-    def _chan(self, request, r):
-        if not r:
-            return Response({'error': 'Không tìm thấy tài khoản này.'}, status=404)
-        if not is_admin(request.user) and r['role'] != ROLE_STUDENT:
-            # 403 chứ không 404: học vụ vốn thấy giảng viên/trợ giảng trong danh
-            # sách lớp — giấu không bảo vệ gì, chỉ gây khó hiểu.
-            return Response({'error': 'Quản lý học vụ chỉ xem và sửa hồ sơ HỌC VIÊN. '
-                                      'Hồ sơ nhân sự cần quản trị viên.'}, status=403)
-        return None
-
     def get(self, request, user_id):
         r = _doc(user_id)
-        chan = self._chan(request, r)
+        chan = chan_pham_vi(request, r)
         if chan:
             return chan
         tu_van = q('SELECT id, name, email, role FROM users WHERE role = ANY(%s) '
@@ -186,7 +190,7 @@ class HoSoHocVienView(APIView):
 
     def patch(self, request, user_id):
         r = _doc(user_id)
-        chan = self._chan(request, r)
+        chan = chan_pham_vi(request, r)
         if chan:
             return chan
         body = request.data if isinstance(request.data, dict) else {}

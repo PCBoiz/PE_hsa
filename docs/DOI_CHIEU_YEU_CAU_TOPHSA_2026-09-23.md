@@ -78,11 +78,11 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | có trong Nhật ký — nhưng chỉ quản trị viên xem được |
 | Theo dõi tham gia, thống kê tỷ lệ, cảnh báo nghỉ nhiều | CÓ | báo cáo lớp; "Việc hôm nay": em vắng liền ≥ 2 buổi |
 | Tiến độ lớp so với khung chương trình, cảnh báo chậm tiến độ | CHƯA | chưa có "khung chương trình" theo buổi để so |
-| **Dòng thời gian học viên** (đăng ký → xếp lớp → … → hoàn thành) | CHƯA (dữ liệu có gần đủ) | chưa có màn gom lại |
+| **Dòng thời gian học viên** (đăng ký → xếp lớp → … → hoàn thành) | CÓ (23/09) | cuối trang Hồ sơ: cấp tài khoản → khảo sát → vào lớp → chuyển/rời lớp kèm lý do → thi thử / thi ngoài → báo cáo phụ huynh → sửa hồ sơ; chỉ đọc, gom từ nơi ghi gốc (`teaching/dong_thoi_gian.py`) |
 | Số buổi đã học / đã nghỉ, có phép / không phép | CÓ | tờ báo cáo: `present/late/absent/excused` |
 | Bài đã / chưa hoàn thành, điểm kiểm tra, điểm thi thử | CÓ | bài tập + `mock_attempts` + kết quả thi ngoài |
 | Điểm mạnh / yếu | CÓ | bản đồ kỹ năng, bản đồ năng lực |
-| Lịch sử chuyển lớp | MỘT PHẦN | dữ liệu có (`left_at` + `leave_reason`), chưa có màn xem |
+| Lịch sử chuyển lớp | CÓ (23/09) | trên dòng thời gian: "Rời lớp A — lý do: chuyển lớp" rồi "Vào lớp B". Thao tác chuyển vẫn là hai bước (xem dòng "Chuyển học sinh giữa lớp") |
 
 ## 5 · Khoá học + chương trình — dòng 5 + tab *Nhi* #3
 
