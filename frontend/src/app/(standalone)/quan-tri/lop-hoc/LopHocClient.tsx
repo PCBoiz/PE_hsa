@@ -24,6 +24,7 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
 import { LOAI_LOP, TRANG_THAI, type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
+import ChuyenLop from './ChuyenLop';
 import TaoLopGiaSu from './TaoLopGiaSu';
 
 export type { LopRow };
@@ -65,8 +66,12 @@ type KetQuaThem = {
 const LY_DO: { ma: string; nhan: string }[] = [
   { ma: 'completed', nhan: 'Học xong' },
   { ma: 'dropped', nhan: 'Bỏ giữa chừng' },
-  { ma: 'transferred', nhan: 'Chuyển lớp' },
 ];
+
+/* "Chuyển lớp" KHÔNG còn là một lý do rời lớp trần (§55, 24/09/2026): chọn nó mở hộp
+   `ChuyenLop` — rời lớp này + vào lớp kia + nối hai lượt trong một giao dịch. Rời trần
+   với lý do 'transferred' từng để em rơi khỏi mọi lớp khi người dùng quên bước hai. */
+const CHUYEN_LOP = '__chuyen';
 
 /**
  * Nhãn cho `willDelete` của backend (`teaching/views.py`, năm khoá đúng tên các
@@ -135,6 +140,8 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
   const [form, setForm] = useState<Form>(formRong);
 
   const [lopMoRong, setLopMoRong] = useState<LopRow | null>(null);
+  /** Em đang mở hộp "Chuyển sang lớp khác" (§55). */
+  const [chuyenEm, setChuyenEm] = useState<HocVien | null>(null);
   const [hocVien, setHocVien] = useState<HocVien[] | null>(null);
   const [troGiangLop, setTroGiangLop] = useState<TroGiang[]>([]);
   const [emailMoi, setEmailMoi] = useState('');
@@ -681,6 +688,19 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
         </p>
       </Modal>
 
+      {chuyenEm && lopMoRong && (
+        <ChuyenLop
+          em={{ userId: chuyenEm.userId, name: chuyenEm.name }}
+          tuLop={{ id: lopMoRong.id, name: lopMoRong.name }}
+          onDong={() => setChuyenEm(null)}
+          onXong={(cau) => {
+            setChuyenEm(null);
+            toast(cau, 'ok');
+            void Promise.all([moHocVien(lopMoRong), nap()]);
+          }}
+        />
+      )}
+
       {lopMoRong && (
         /* Cuộn tới khu vừa mở (20/09/2026): ở 390px bảng lớp xếp thành thẻ nên
            khu Học viên nằm ở y ≈ 1.590px — bấm "Học viên" xong màn không đổi gì.
@@ -814,7 +834,7 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
           ) : hocVien.length === 0 ? (
             <EmptyState
               title="Lớp chưa có học viên"
-              hint="Dán danh sách email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản phải có sẵn — trang Tài khoản là nơi tạo."
+              hint="Dán email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản tạo ở trang Tài khoản."
             />
           ) : (
             <TableWrap caption={`Học viên của lớp ${lopMoRong.name}`}>
@@ -875,6 +895,10 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
                           const ly = e.target.value;
                           e.currentTarget.value = '';
                           if (!ly) return;
+                          if (ly === CHUYEN_LOP) {
+                            setChuyenEm(s);
+                            return;
+                          }
                           const nhan = LY_DO.find((l) => l.ma === ly)?.nhan ?? ly;
                           if (
                             !confirm(
@@ -893,6 +917,7 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
                             {l.nhan}
                           </option>
                         ))}
+                        <option value={CHUYEN_LOP}>Chuyển sang lớp khác…</option>
                       </select>
                     </Td>
                   </Tr>

@@ -4,6 +4,7 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      chuyen_lop,
                       co_so_hoc_phi,
                       dong_thoi_gian,
                       exports,
@@ -123,6 +124,9 @@ urlpatterns = [
     path('api/admin/classes/gia-su', lop_gia_su.TaoLopGiaSuView.as_view()),
     path('api/admin/classes/<int:class_id>', views.AdminClassDetailView.as_view()),
     path('api/admin/classes/<int:class_id>/members', views.AdminClassMembersView.as_view()),
+    # Chuyển lớp MỘT bước (§55): rời lớp này + vào lớp kia + nối hai lượt, một giao dịch.
+    path('api/admin/classes/<int:class_id>/members/<int:user_id>/transfer',
+         chuyen_lop.ChuyenLopView.as_view()),
 
     # ── Tài khoản ──
     path('api/admin/users', admin_users.AdminUsersView.as_view()),

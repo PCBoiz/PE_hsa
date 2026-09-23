@@ -210,7 +210,7 @@ function BangDot({ initial, statuses, loi }: Props) {
     <Card>
       <CardHead
         title="Đợt học"
-        hint="Mỗi mùa thi là một đợt. Gán lớp vào đợt thì báo cáo so được đợt này với đợt trước, thay vì phải đọc tên lớp mà đoán."
+        hint="Mỗi mùa thi là một đợt. Gán lớp vào đợt để báo cáo so được các mùa với nhau."
         action={!open && <Button onClick={() => setOpen(true)}>Tạo đợt</Button>}
       />
 
@@ -259,7 +259,7 @@ function BangDot({ initial, statuses, loi }: Props) {
       {terms.length === 0 ? (
         <EmptyState
           title="Chưa có đợt học nào"
-          hint="Tạo đợt đầu tiên rồi gán lớp vào đó. Lớp chưa thuộc đợt nào vẫn chạy bình thường — nhãn đợt chỉ để báo cáo so sánh được giữa các mùa thi."
+          hint="Tạo đợt đầu tiên rồi gán lớp vào. Lớp chưa thuộc đợt nào vẫn chạy bình thường."
         />
       ) : (
         <TableWrap caption="Các đợt học của trung tâm, kèm số lớp và số học viên mỗi đợt">
