@@ -112,12 +112,14 @@ test.describe('khung chung', () => {
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');
 
-    // Năm mục cấp một thay vì tám. TRỪ ba nút theo VAI: `dashboard.js` mở chúng
-    // cho tài khoản quản trị, đếm cả vào là đỏ oan — thước sai, không phải mã sai.
+    // Bốn mục cấp một (Trang của tôi · Học · Diễn đàn · Bài tập) thay vì tám — năm
+    // tới 24/09/2026, khi "Thi thử" gỡ (bỏ thi, pha A). TRỪ ba nút theo VAI:
+    // `dashboard.js` mở chúng cho tài khoản quản trị, đếm cả vào là đỏ oan — thước
+    // sai, không phải mã sai.
     const capMot = await page.locator(
       '.topbar-nav > .nav-btn:visible:not(#nav-teach):not(#nav-vanhanh):not(#nav-admin), .topbar-nav > .nav-nhom',
     ).count();
-    expect(capMot, 'thanh còn 5 mục cấp một').toBe(5);
+    expect(capMot, 'thanh còn 4 mục cấp một').toBe(4);
 
     // Bốn nút con vẫn là NÚT THẬT, giữ nguyên `data-page`.
     for (const dp of ['courses', 'plan', 'roadmap', 'skills']) {
