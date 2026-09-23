@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import DatLaiForm from './DatLaiForm';
 
 export const metadata: Metadata = {
-  title: 'Đặt mật khẩu mới — ProgrammingEdu × TopHSA',
+  title: 'Đặt mật khẩu mới — TopHSA',
   // Trang mở từ một đường dẫn mang chìa: không để công cụ tìm kiếm lập chỉ mục,
   // và không để trình duyệt gửi Referer khi em bấm sang trang khác.
   robots: { index: false, follow: false },

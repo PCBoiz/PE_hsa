@@ -29,7 +29,9 @@ import AppShell from '@/components/AppShell';
  * vào `/giang-day/buoi-hoc/undefined`.
  */
 const TAB = [
-  { doan: 'buoi-hoc', nhan: 'Buổi học', icon: 'calendar', troGiang: true },
+  // `clock` chứ không `calendar` (24/09/2026): biểu tượng lịch nay thuộc tab
+  // "Lịch học" gộp mọi lớp — hai tab cạnh nhau không được cùng một hình.
+  { doan: 'buoi-hoc', nhan: 'Buổi học', icon: 'clock', troGiang: true },
   { doan: 'bai-tap', nhan: 'Bài tập', icon: 'pencil', troGiang: true },
   // Trợ giảng không mở được báo cáo phụ huynh (`IsSeniorTeachingStaff`) — không
   // dựng tab dẫn tới một trang 403. Hàng rào thật vẫn ở máy chủ.
@@ -59,6 +61,10 @@ export default function KhungGiangDay({
         // "Việc hôm nay" đứng đầu và có mặt ở MỌI trang của khu: đó là chỗ
         // giảng viên quay về sau khi làm xong một việc trong lớp.
         { trang: null, nhan: 'Việc hôm nay', icon: 'check-circle-2', emoji: '', url: '/giang-day', chinhXac: true },
+        // Lịch gộp mọi lớp (§53) — cấp KHU như "Việc hôm nay", không gắn một lớp,
+        // nên có mặt cả khi đang ở trong một lớp. Trợ giảng cũng xem được
+        // (`LichView` là `IsTeachingStaff`), phạm vi là lớp được gán.
+        { trang: null, nhan: 'Lịch học', icon: 'calendar', emoji: '', url: '/giang-day/lich' },
         ...(lop
           ? TAB.filter((t) => !troGiang || t.troGiang).map((t) => ({
             trang: null,

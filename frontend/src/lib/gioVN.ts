@@ -24,6 +24,15 @@ export function thuTrongTuanVN(luc: Date = new Date()): number {
   return i < 0 ? 0 : i;
 }
 
+/** "2026-09-24" — ngày hôm nay theo giờ VN, cùng dạng ngày máy chủ trả. So CHUỖI
+ *  với ngày của buổi học (máy chủ đã tính theo giờ VN), không dựng `Date`: máy
+ *  chủ Vercel chạy UTC nên `new Date('2026-09-24T19:00')` đọc theo UTC. */
+export function ngayVN(luc: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: MUI, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(luc);
+}
+
 /** "Thứ Hai, 22/09/2026" theo giờ VN — cho dòng ngày dưới tiêu đề "Việc hôm nay"
  *  (22/09/2026, agent GV→PH F14: màn không nói "hôm nay" là ngày nào). */
 export function ngayDayDuVN(luc: Date = new Date()): string {

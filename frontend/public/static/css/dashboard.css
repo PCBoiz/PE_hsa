@@ -2866,7 +2866,7 @@ body.dark .fpc-cmt-react-summary { color: var(--t3); }
 .un-btn-confirm:active { transform: translateY(1px); }
 
 /* Khối CSS của POPUP NHẮC GIỮ CHUỖI (lớp phủ kín màn hình) đã bỏ ở audit
-   2026-08-19 — thay bằng .streak-toast ở cuối tệp. */
+   2026-08-19; thẻ .streak-toast thay nó cũng đã bỏ 24/09/2026 (anh Sơn chốt bỏ popup). */
 
 /* ════════════════════════════════════════════════════════════
    ★ DASHBOARD REDESIGN — 2-COL LAYOUT, ROADMAP Ở CỘT PHẢI
@@ -3929,6 +3929,8 @@ body.dark .prof-post-stats {
 /* Hàng bảng xếp hạng: thẻ tiến độ KHÔNG kéo cao bằng bảng — trạng thái rỗng bị
    kéo lên 681px chỉ để chứa một câu "Chưa đăng ký khoá học nào" (đo 20/09/2026). */
 .dash-row--lb { align-items: start; }
+/* Hàng chỉ còn MỘT thẻ (24/09/2026: thẻ Bảng xếp hạng đã ẩn) — chiếm đủ bề ngang. */
+.dash-row--mot { grid-template-columns: minmax(0, 1fr); }
 
 /* Khối "Học tiếp" */
 .hsa-continue { padding: 0; overflow: hidden; }
@@ -4121,43 +4123,6 @@ body.dark .fpc-lesson-tag:hover { color: #fff; }
   background: linear-gradient(135deg, var(--blue), var(--purple));
 }
 .dash-bat-dau-btn:hover { filter: brightness(1.06); }
-
-/* ── Nhắc giữ chuỗi: thẻ nhỏ ở góc, KHÔNG phải lớp phủ (audit 2026-08-19) ──
-   Bản cũ phủ kín màn hình với nền đen 55% và khoá cuộn trang, bật sau MỖI lần
-   đăng nhập — thứ đầu tiên học viên gặp là một bức tường phải bấm bỏ. */
-.streak-toast {
-  position: fixed; right: 20px; bottom: 20px; z-index: 1200;
-  display: flex; align-items: flex-start; gap: 12px;
-  width: min(340px, calc(100vw - 40px)); padding: 14px 16px;
-  border-radius: 14px; background: var(--card, #fff);
-  border: 1px solid var(--card-border, #E7E9EF);
-  box-shadow: 0 12px 32px rgba(0,0,0,.16);
-  transform: translateY(16px); opacity: 0;
-  transition: transform .32s cubic-bezier(.2,.8,.3,1), opacity .32s;
-}
-.streak-toast.show { transform: translateY(0); opacity: 1; }
-.streak-toast-ic { font-size: 24px; line-height: 1.2; flex-shrink: 0; }
-.streak-toast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.streak-toast-body b { font-size: 13.5px; color: var(--text-1, #1F2937); }
-.streak-toast-body > span { font-size: 12.5px; line-height: 1.55; color: var(--t3, #6B7280); }
-.streak-toast-body b + span b { color: var(--brand, #6D5AE6); }
-.streak-toast-go {
-  align-self: flex-start; margin-top: 8px; min-height: 32px; padding: 6px 14px;
-  border: none; border-radius: 999px; cursor: pointer; font-family: inherit;
-  background: var(--brand-fill, #6D5AE6); color: #fff; font-size: 12px; font-weight: 700;
-}
-.streak-toast-go:hover { filter: brightness(1.08); }
-.streak-toast-x {
-  flex-shrink: 0; width: 26px; height: 26px; padding: 0; border: none; cursor: pointer;
-  border-radius: 8px; background: transparent; color: var(--t3, #6B7280);
-  font-size: 18px; line-height: 1; font-family: inherit;
-}
-.streak-toast-x:hover { background: var(--rm-track, #EDEFF3); }
-@media (pointer: coarse) { .streak-toast-x { width: 44px; height: 44px; } }
-@media (prefers-reduced-motion: reduce) {
-  .streak-toast { transition: opacity .01ms; transform: none; }
-}
-
 
 /* ── "Nên ôn tiếp": ba chủ đề yếu nhất trên Bảng điều khiển ────────────────
    Cùng bảng màu bốn bậc với bản đồ năng lực ở Trang của tôi, để một chủ đề

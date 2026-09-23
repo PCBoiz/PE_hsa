@@ -39,10 +39,6 @@ def test_my_roadmap_save_and_get(auth_api):
     assert 'a --> b' in data['mermaid_def']
 
 
-def test_ai_roadmap_is_premium_402(auth_api):
-    assert auth_api.post('/api/me/roadmap/ai').status_code == 402
-
-
 def test_tien_do_tra_ve_CAP_lo_trinh_va_muc(auth_api):
     """`doneItems` là id mục TRẦN — không đủ để client khớp đúng.
 

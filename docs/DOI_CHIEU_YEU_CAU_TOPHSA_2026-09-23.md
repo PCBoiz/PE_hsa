@@ -119,13 +119,13 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Tạo buổi học bù | MỘT PHẦN | thêm được buổi lẻ; chưa đánh dấu "buổi bù cho buổi nào" |
 | Link Zoom theo lớp / theo buổi | CÓ | `meeting_url` ở cả hai |
 | Đổi giảng viên / trợ giảng cho MỘT buổi | CHƯA | giảng viên gắn theo lớp, không theo buổi |
-| Đổi phòng, hình thức online / offline | CHƯA | không có cột phòng, không có cờ hình thức |
+| Đổi phòng, hình thức online / offline | CÓ (24/09) | đặt ở lớp làm mặc định, buổi để trống là theo lớp; buổi lệch (học bù online, mượn phòng) đặt riêng. Học viên thấy phòng trên thẻ "Lớp của bạn" |
 | Lịch theo lớp | CÓ | màn Buổi học |
-| Lịch theo giảng viên / học viên / toàn trung tâm | CHƯA | chưa có màn lịch gộp |
-| Thông báo khi lịch đổi | CHƯA | sửa buổi không bắn thông báo |
+| Lịch theo giảng viên / học viên / toàn trung tâm | CÓ (24/09) | màn "Lịch học" (khu Giảng dạy) theo tuần; học vụ lọc theo giảng viên, lớp, một em (mở từ hồ sơ em). Phạm vi = lớp người xem thấy |
+| Thông báo khi lịch đổi | CÓ (24/09) | dời giờ / huỷ / xoá / đổi phòng, hình thức, link của buổi SẮP TỚI → chuông + email cho học viên đang học lớp (anh chốt: không gửi phụ huynh). Em tắt email thì chỉ có chuông |
 | Lưu lịch sử thay đổi | MỘT PHẦN | có trong Nhật ký (ghi cả giá trị cũ) — chỉ quản trị viên xem |
-| Cảnh báo trùng: lớp | MỘT PHẦN | có, nhưng CHỈ trong cùng một lớp |
-| Cảnh báo trùng: giảng viên / học viên / phòng | CHƯA | chưa so giữa các lớp |
+| Cảnh báo trùng: lớp | CÓ | trong cùng một lớp (đã có) + giữa các lớp (dòng dưới) |
+| Cảnh báo trùng: giảng viên / học viên / phòng | CÓ (24/09) | khi tạo, sửa buổi và khi sinh lịch cả kỳ (từng dòng xem trước). CẢNH BÁO chứ không chặn — có ca trùng cố ý. Phòng chỉ so buổi tại trung tâm, không phân biệt hoa thường |
 
 ## 8 · Giáo viên — dòng 14 (tick TRUE), 15, 16, 17, 18 (tick TRUE)
 
@@ -176,6 +176,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 hồ sơ học viên mở rộng · tìm kiếm theo username · lịch gộp theo giảng viên / học viên / toàn trung tâm ·
 cảnh báo trùng lịch giữa các lớp · online / offline + phòng · thông báo khi lịch đổi · dòng thời gian
 học viên + lịch sử chuyển lớp · quên mật khẩu qua email · đăng nhập bằng username.
+*(24/09/2026: cả bốn nhóm đã xong — các dòng tương ứng ở trên đã chuyển sang CÓ kèm ngày.)*
 
 **Làm được, cỡ vừa, nên làm sau bốn nhóm:** trạng thái lớp "tạm dừng" · chuyển lớp một thao tác ·
 báo cáo hoạt động giảng viên / trợ giảng · xuất Excel · giao bài cho một nhóm · giảng viên tự đánh dấu

@@ -128,8 +128,9 @@ const TRANG = [
 
      `/admin` và `/quan-tri/lop-hoc` dựng trong ngày 04/09 — khu soạn giáo trình
      (kèm khối nhập đề thi) và khu xếp lớp. */
-  ['/', 'Trang chủ (công khai)'],
-  ['/admin', 'Soạn giáo trình'],
+  // `/` bỏ khỏi danh sách 24/09/2026: trang quảng cáo đã gỡ, `/` chỉ còn chuyển hướng
+  // (tới khu của vai / màn đăng nhập) — đo nó là đo trùng trang đích dưới tên sai.
+  ['/giao-trinh', 'Giáo trình'],
   ['/quan-tri/lop-hoc', 'Quản trị · lớp học'],
   /* Bốn màn dựng 07/09/2026. Thêm vào đây NGAY trong cùng phiên, vì chú thích
      ba dòng phía trên đã nói rõ chuyện gì xảy ra khi quên: bộ đo báo "0 vi
@@ -156,6 +157,8 @@ const TRANG = [
   ['/giang-day/ket-qua-thi/1', 'Giảng dạy · nhập kết quả thi thử'],
   // Thêm 14/09/2026 cùng ngày dựng — trang mở mỗi tối của giảng viên.
   ['/giang-day', 'Giảng dạy · việc hôm nay'],
+  // Thêm 24/09/2026 cùng ngày dựng (§53) — lịch gộp theo tuần, bảy dòng ngày.
+  ['/giang-day/lich', 'Giảng dạy · lịch học'],
 ];
 /* Trang phụ huynh — bề mặt DUY NHẤT người ngoài hệ thống nhìn thấy, mở trên điện
    thoại từ tin nhắn. Mỗi lượt quét là một lượt "mở" (tăng opened_count của chìa

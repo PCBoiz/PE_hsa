@@ -4,7 +4,7 @@ import Link from 'next/link';
 import QuenMatKhauForm from './QuenMatKhauForm';
 
 export const metadata: Metadata = {
-  title: 'Quên mật khẩu — ProgrammingEdu × TopHSA',
+  title: 'Quên mật khẩu — TopHSA',
 };
 
 /**

@@ -31,7 +31,8 @@ const AD = doc('PE_TOKENS');
 const HV = doc('PE_TOKENS_HV');
 const GOC = process.env.PE_GOC || 'http://localhost:3100';
 const TRANG = [
-  ['/', 'Trang chủ', HV], ['/login', 'Đăng nhập', null],
+  // `/` bỏ 24/09/2026: chỉ còn chuyển hướng (trang quảng cáo đã gỡ).
+  ['/login', 'Đăng nhập', null],
   // Quên mật khẩu (§52, 23/09/2026): hai trang KHÔNG cần đăng nhập. Trang đặt lại mở
   // không kèm chìa → đúng trạng thái 'đường dẫn hỏng' mà người bấm thư cũ sẽ thấy.
   ['/quen-mat-khau', 'Quên mật khẩu', null], ['/dat-lai-mat-khau', 'Đặt lại (đường dẫn hỏng)', null],
@@ -42,12 +43,14 @@ const TRANG = [
   ['/quan-tri/lop-hoc', 'QT lớp học', AD], ['/quan-tri/dot-hoc', 'QT đợt học', AD],
   ['/quan-tri/nhat-ky', 'QT nhật ký', AD], ['/quan-tri/co-so-hoc-phi', 'QT học phí', AD],
   ['/quan-tri/vai-tro', 'QT vai trò', AD], ['/quan-tri/huong-dan', 'QT hướng dẫn', AD],
-  ['/admin', 'Soạn giáo trình', AD], ['/giang-day', 'GD việc hôm nay', AD],
+  ['/giao-trinh', 'Giáo trình', AD], ['/giang-day', 'GD việc hôm nay', AD],
   ['/giang-day/buoi-hoc/7322', 'GD buổi học', AD], ['/giang-day/bai-tap/7322', 'GD bài tập', AD],
   ['/giang-day/bao-cao/7322', 'GD báo cáo', AD], ['/giang-day/ket-qua-thi/7322', 'GD nhập PDF', AD],
   // Hai màn thêm 23/09/2026 (hồ sơ học viên §51): form hồ sơ đầy đủ, và tờ báo cáo
   // một em — nay có ô mục tiêu/nguyện vọng của giảng viên. 35695 là em mẫu của lớp 7322.
   ['/quan-tri/tai-khoan/35695', 'QT hồ sơ học viên', AD], ['/giang-day/bao-cao/7322/35695', 'GD tờ một em', AD],
+  // Thêm 24/09/2026 (§53): lịch gộp theo tuần.
+  ['/giang-day/lich', 'GD lịch học', AD],
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
 
 /* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──

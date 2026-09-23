@@ -24,6 +24,7 @@ const HD_LOP = z.looseObject({
     teacherId: z.number().nullable(), teacherName: chu, schedule: chu, status: z.string(),
     capacity: z.number().nullable(), members: z.number(), startsOn: chu, endsOn: chu,
     examDate: chu, meetingUrl: chu, note: chu, termId: z.number().nullable(),
+    mode: chu.optional(), room: chu.optional(),
     termName: chu, termCode: chu,
   })),
   teachers: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),

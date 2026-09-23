@@ -49,6 +49,8 @@ CLASS_STATUS = ('active', 'finished', 'cancelled')
 #: Trường được sửa qua API quản trị lớp, kèm độ dài tối đa cho trường chữ.
 CLASS_TEXT_FIELDS = {
     'code': 40, 'name': 160, 'schedule': 160, 'meeting_url': 400, 'note': 1000,
+    # §53: phòng mặc định của lớp — chữ tự do; buổi để trống phòng thì theo lớp.
+    'room': 100,
 }
 CLASS_DATE_FIELDS = ('starts_on', 'ends_on', 'exam_date')
 
@@ -229,6 +231,13 @@ def _clean_class_payload(body):
             data['capacity'] = max(0, min(500, int(body['capacity'] or 0))) or None
         except (TypeError, ValueError):
             return None, 'Sĩ số phải là một số nguyên.'
+    if 'mode' in body:
+        # §53: hình thức MẶC ĐỊNH của lớp; từng buổi đổi được riêng. Cùng tập giá
+        # trị với CHECK `classes_mode_check` — lệch nhau thì CSDL từ chối.
+        md = str(body['mode'] or '').strip() or None
+        if md is not None and md not in ('online', 'offline'):
+            return None, 'Hình thức lớp phải là online hoặc offline.'
+        data['mode'] = md
     if 'status' in body:
         # `str(...)` trước khi `.strip()`: gửi `{"status": 5}` thì
         # `(5 or '').strip()` ném AttributeError, và DRF biến nó thành 500

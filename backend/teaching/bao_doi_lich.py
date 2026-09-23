@@ -1,0 +1,122 @@
+"""BÁO ĐỔI LỊCH — chuông + email cho HỌC VIÊN khi một buổi SẮP TỚI bị dời giờ,
+huỷ, đổi phòng, đổi hình thức hay đổi link phòng học (bảng yêu cầu TopHSA, tab
+"Nhi" #4). Anh Sơn chốt 23/09/2026: chuông + email cho HỌC VIÊN, KHÔNG gửi phụ
+huynh.
+
+── KHI NÀO BÁO, KHI NÀO IM ────────────────────────────────────────────────
+
+  · Buổi ĐÃ DIỄN RA (theo giờ cũ) thì sửa là sửa sổ sách — không báo ai.
+  · Sinh lịch cả kỳ hay tạo buổi mới thì KHÔNG báo: đó là lịch mới, em xem ở
+    "Lớp của tôi"; báo từng buổi của cả kỳ là ba mươi chuông một lúc.
+  · Chỉ báo khi đổi thứ em cần để đi học ĐÚNG: giờ, độ dài, hình thức, phòng,
+    link phòng học, hoặc huỷ. Sửa chủ đề hay ghi chú thì không.
+
+── VÌ SAO CHUÔNG VÀ THƯ KHÔNG ĐƯỢC LÀM HỎNG VIỆC CHÍNH ────────────────────
+
+Buổi đã lưu vào CSDL rồi mới báo. Chuông lỗi, SMTP chậm hay sập — giảng viên
+vẫn phải thấy "đã lưu". Thư gửi trên luồng riêng (Gmail mất 1–3 giây mỗi lá,
+một lớp ba mươi em là cả phút) và mọi lỗi chỉ vào nhật ký ứng dụng.
+
+Em tắt "Nhận thông báo qua email" ở Cài đặt (`notification_settings.email_notif`)
+thì chỉ có chuông, không có thư.
+"""
+import logging
+import threading
+
+from common import mail
+from common.clock import local_now
+from common.db import q
+from notifications.service import notify
+from teaching.vocab import chi_hoc_vien
+
+log = logging.getLogger(__name__)
+
+#: Cùng số với `sessions.DEFAULT_SESSION_MINUTES`.
+PHUT_MAC_DINH = 90
+
+#: Phép kiểm đặt True để gửi thư ĐỒNG BỘ và đọc được `.eml` ngay sau lời gọi.
+GUI_NGAY = False
+
+
+def _gio(dt):
+    return dt.strftime('%d/%m %H:%M')
+
+
+def _noi(buoi, lop):
+    """"trực tuyến" / "phòng 201" / "" — theo §53, buổi để trống thì theo lớp."""
+    mode = buoi.get('mode') or lop.get('mode')
+    room = (buoi.get('room') or lop.get('room') or '').strip()
+    if mode == 'online':
+        return 'học trực tuyến'
+    if mode == 'offline':
+        return ('phòng %s' % room) if room else 'học tại trung tâm'
+    return ''
+
+
+def _kieu(truoc, sau, lop):
+    """'huy' | 'doi-gio' | 'doi-noi' | None — thay đổi nào ĐÁNG BÁO."""
+    if sau is None or (sau['status'] == 'cancelled' and truoc['status'] != 'cancelled'):
+        return 'huy'
+    if sau['status'] == 'cancelled':
+        return None                       # huỷ rồi, sửa tiếp cũng không báo lại
+    if (sau['starts_at'] != truoc['starts_at']
+            or (sau['duration_minutes'] or PHUT_MAC_DINH) != (truoc['duration_minutes'] or PHUT_MAC_DINH)):
+        return 'doi-gio'
+    if _noi(sau, lop) != _noi(truoc, lop) or (sau.get('meeting_url') or '') != (truoc.get('meeting_url') or ''):
+        return 'doi-noi'
+    return None
+
+
+def _gui_thu(ds, tieu_de, chu):
+    for den in ds:
+        ok, _, loi = mail.gui(den, tieu_de, chu)
+        if not ok:
+            log.warning('[bao_doi_lich] không gửi được thư đổi lịch: %s', loi)
+
+
+def bao_doi_lich(truoc, sau, lop):
+    """Báo cho mọi em ĐANG HỌC lớp. `truoc`/`sau`: dòng `class_sessions` trước và
+    sau khi sửa (`sau=None` là xoá buổi). `lop`: dict có `id`, `name`, `mode`,
+    `room`. Trả số em được báo (0 nếu không đáng báo). Không bao giờ ném lỗi."""
+    try:
+        if truoc['starts_at'] <= local_now():
+            return 0
+        kieu = _kieu(truoc, sau, lop)
+        if not kieu:
+            return 0
+        ten_lop = lop.get('name') or 'của bạn'
+        if kieu == 'huy':
+            tieu_de = 'Lớp %s: buổi %s đã huỷ' % (ten_lop, _gio(truoc['starts_at']))
+            chu = 'Buổi học ngày %s của lớp %s không diễn ra nữa.' % (_gio(truoc['starts_at']), ten_lop)
+        elif kieu == 'doi-gio':
+            noi = _noi(sau, lop)
+            tieu_de = 'Lớp %s dời buổi %s sang %s' % (ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']))
+            chu = 'Buổi học lớp %s chuyển từ %s sang %s (%d phút)%s.' % (
+                ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']),
+                sau['duration_minutes'] or PHUT_MAC_DINH, (' · ' + noi) if noi else '')
+        else:
+            noi = _noi(sau, lop) or 'nơi học mới'
+            tieu_de = 'Lớp %s, buổi %s: %s' % (ten_lop, _gio(sau['starts_at']), noi)
+            chu = 'Buổi học lớp %s lúc %s đổi nơi học: %s.%s' % (
+                ten_lop, _gio(sau['starts_at']), noi,
+                (' Link phòng học mới: %s' % sau['meeting_url']) if sau.get('meeting_url') else '')
+
+        ds = q('''SELECT u.id, u.email, coalesce(ns.email_notif, 1) AS nhan_thu
+                    FROM class_members m JOIN users u ON u.id = m.user_id
+                    LEFT JOIN notification_settings ns ON ns.user_id = u.id
+                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u'),
+               (lop['id'],))
+        for r in ds:
+            notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
+
+        thu = [r['email'] for r in ds if r['email'] and r['nhan_thu']]
+        if thu:
+            chu_thu = '%s\n\nXem lịch đầy đủ ở mục "Lớp của tôi" trên TopHSA.\n\n— TopHSA\n' % chu
+            if GUI_NGAY:
+                _gui_thu(thu, tieu_de, chu_thu)
+            else:
+                threading.Thread(target=_gui_thu, args=(thu, tieu_de, chu_thu), daemon=True).start()
+        return len(ds)
+    except Exception:            # noqa: BLE001 — báo không được chặn việc chính
+        log.exception('[bao_doi_lich] không báo được đổi lịch buổi %s', truoc.get('id'))
+        return 0

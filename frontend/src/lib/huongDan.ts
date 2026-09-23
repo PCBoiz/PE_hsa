@@ -110,6 +110,10 @@ export const HUONG_DAN: readonly Bai[] = [
         trieu_chung: 'Danh sách việc trống trơn.',
         xu_ly: 'Hết việc tồn, không phải trang chưa tải xong. Ngày không có buổi dạy thì trang này trống là đúng.',
       },
+      {
+        trieu_chung: 'Mở lại trình duyệt là phải đăng nhập lại.',
+        xu_ly: 'Đúng thiết kế khi không tick "Ghi nhớ đăng nhập trên máy này" — an toàn cho máy dùng chung ở trung tâm. Máy riêng thì tick ô ấy lúc đăng nhập: giữ đăng nhập 30 ngày.',
+      },
     ],
   },
 
@@ -280,6 +284,51 @@ export const HUONG_DAN: readonly Bai[] = [
         trieu_chung: 'Trợ giảng không thấy nút "Sinh lịch cả kỳ".',
         xu_ly: 'Đúng thiết kế: trợ giảng tạo từng buổi được, sinh cả kỳ thì không. Nhờ giảng viên phụ trách hoặc học vụ.',
       },
+      {
+        trieu_chung: 'Dòng xem trước ghi "Trùng: giảng viên dạy lớp X…" hoặc "2 em học lớp Y".',
+        xu_ly: 'Ngày ấy đụng lịch một LỚP KHÁC. Máy vẫn tạo buổi — có ca trùng là cố ý (dạy ghép, học bù). Không cố ý thì đổi giờ trong form rồi "Xem trước" lại, hoặc tạo xong sửa riêng buổi đó.',
+      },
+    ],
+  },
+
+  {
+    ma: 'lich-hoc',
+    tieu_de: 'Xem lịch học và tránh trùng lịch',
+    // Bảng yêu cầu TopHSA tab "Nhi" #4 (23/09/2026): lịch theo trung tâm / giảng
+    // viên / lớp / học viên, cảnh báo trùng, hình thức + phòng, báo đổi lịch.
+    vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Khi xếp lịch tuần, khi dời hay huỷ một buổi, hoặc khi phụ huynh hỏi "tối nay em học ở đâu".',
+    buoc: [
+      {
+        lam: 'Mở "Lịch học" trong khu Giảng dạy. Mỗi dòng là một ngày trong tuần, mỗi thẻ là một buổi: giờ, lớp, giảng viên, nơi học.',
+        o: '/giang-day/lich',
+        luu_y: 'Học vụ lọc thêm theo giảng viên. Lịch của MỘT em mở từ hồ sơ của em ("Lịch học của em") — tính theo lớp em đang học tại giờ từng buổi.',
+      },
+      {
+        lam: 'Thẻ viền vàng "Trùng giờ giảng viên" là cùng giảng viên có hai buổi chồng giờ ở hai lớp. Bấm tên lớp để sang sổ buổi học của lớp đó mà sửa.',
+      },
+      {
+        lam: 'Đặt hình thức (trực tuyến / tại trung tâm) và phòng cho LỚP một lần ở Quản trị → Lớp học. Buổi để trống là theo lớp; chỉ buổi lệch (học bù online, mượn phòng khác) mới cần đặt riêng.',
+        o: '/quan-tri/lop-hoc',
+      },
+      {
+        lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác — cùng giảng viên, cùng học viên, hay cùng phòng — máy báo bằng dải vàng. Buổi VẪN được lưu.',
+        luu_y: 'Cảnh báo chứ không chặn: trung tâm có ca trùng cố ý. Phòng so không phân biệt hoa thường ("P201" = "p201") và chỉ so buổi tại trung tâm.',
+      },
+      {
+        lam: 'Dời giờ, đổi phòng, đổi hình thức, đổi link hay huỷ một buổi SẮP TỚI: mọi em đang học lớp nhận chuông trên trang và email ngay khi bấm Lưu.',
+        luu_y: 'Không gửi phụ huynh. Sửa chủ đề, sổ đầu bài hay buổi đã diễn ra thì không báo ai.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Em nói không nhận được email đổi lịch.',
+        xu_ly: 'Em đã tắt "Nhận thông báo qua email" ở Cài đặt, hoặc tài khoản chưa có email. Chuông trên trang vẫn có — nhắc em mở chuông.',
+      },
+      {
+        trieu_chung: 'Hai lớp cùng phòng mà không thấy cảnh báo trùng phòng.',
+        xu_ly: 'Một trong hai buổi chưa đặt "Tại trung tâm" (ở buổi hoặc ở lớp), hoặc chưa có phòng. Máy chỉ so phòng khi cả hai đều là buổi tại trung tâm.',
+      },
     ],
   },
 
@@ -364,7 +413,7 @@ export const HUONG_DAN: readonly Bai[] = [
     vai: [VAI_BIEN_TAP, VAI_QUAN_TRI],
     khi_nao: 'Khi thêm bài mới hoặc mở một đề thi thử.',
     buoc: [
-      { lam: 'Mở khu Soạn giáo trình.', o: '/admin' },
+      { lam: 'Mở khu Giáo trình.', o: '/giao-trinh' },
       {
         lam: 'Đề thi thử nhập từ bảng tính .xlsx theo mẫu có sẵn.',
         luu_y: 'Dùng .xlsx chứ không .csv: Excel bản tiếng Việt lưu CSV theo bảng mã hệ thống, nên "Định lượng" quay về thành ký tự hỏng.',

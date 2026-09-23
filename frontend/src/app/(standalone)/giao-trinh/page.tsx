@@ -110,17 +110,15 @@ export default async function SoanGiaoTrinhPage() {
     <div className="min-h-dvh bg-ground">
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
       <AppShell
-        khu="Soạn giáo trình"
+        khu="Giáo trình"
         dieuKhien="react"
         spa={false}
         vai={vai}
         ten={me.data.name ?? undefined}
-        muc={[
-          { trang: null, nhan: 'Giáo trình', icon: 'book-open', emoji: '', url: '/admin' },
-          ...(vai === VAI_QUAN_TRI
-            ? [{ trang: null, nhan: 'Khu vận hành', icon: 'shield', emoji: '', url: '/quan-tri/tong-quan' }]
-            : []),
-        ]}
+        /* KHÔNG còn nút "Khu vận hành" ở đây (24/09/2026, góp ý TopHSA #4): khách đọc
+           hai khu nối nhau thành "soạn giáo trình nằm trong vận hành". Quản trị viên
+           sang Vận hành bằng nút trên thanh chính như mọi khu khác. */
+        muc={[{ trang: null, nhan: 'Giáo trình', icon: 'book-open', emoji: '', url: '/giao-trinh' }]}
       />
       <SoanClient
         initial={kq.ok ? kq.data.courses : []}

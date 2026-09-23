@@ -19,6 +19,8 @@ import RoadmapSection from '@/components/RoadmapSection';
 import AppShell from '@/components/AppShell';
 import { BieuTuong } from '@/components/bieuTuong';
 import KhuNhanSu from '@/components/KhuNhanSu';
+import { useVaiHienTai } from '@/lib/useVaiHienTai';
+import { NHAN_VAI } from '@/lib/vaiTro';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 const W = () => window as any;
@@ -44,11 +46,15 @@ const SCRIPTS = [
  * SPA cũ (`main.js::navigate`) đổi tab bằng class chứ không đổi route.
  */
 export default function DashboardClient(
-  { hocTiep, lopCuaBan, nhiemVu, bangXepHang, theSo, tienDo }: {
-    hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode; bangXepHang: React.ReactNode;
+  { hocTiep, lopCuaBan, nhiemVu, theSo, tienDo }: {
+    hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode;
     theSo: React.ReactNode; tienDo: React.ReactNode;
   },
 ) {
+  /* Vai thật cho nhãn ở Cài đặt (24/09/2026): nhãn từng gõ cứng "Học viên" nên
+     quản trị viên, giảng viên mở Cài đặt cũng thấy mình là "Học viên" (khách thử
+     tài khoản giáo viên thấy). Đọc từ `window.__currentUser` mà `main.js` đã nạp. */
+  const vai = useVaiHienTai(undefined, true);
   /* ── DỰNG LƯỜI BẢY TRANG CÒN LẠI + khối lộ trình (16/09/2026) ──────────
      Trang này là hub SPA cũ: chín "trang" nằm cùng một route, tám trong số đó
      `display:none`. Dựng sẵn cả chín nghĩa là React hydrate cả chín — chi phí
@@ -152,7 +158,7 @@ export default function DashboardClient(
           sau khi React hydrate (2,2 s trên máy CPU chậm 4×) — không có dòng
           này thì hai giây ấy mạng ngồi không. Xem `NapTruocDuLieu`. */}
       <NapTruocDuLieu />
-      <title>ProgrammingEdu × TopHSA</title>
+      <title>TopHSA</title>
       {/* Khung chung — CÙNG component với màn khoá học và màn thi thử.
           `spa`: trang này có main.js nên điều hướng bằng `navigate()`.
           `dieuKhien="legacy"`: dashboard.js sở hữu menu người dùng và
@@ -325,14 +331,11 @@ export default function DashboardClient(
           </div>
           <div className="cal-tooltip" id="cal-tooltip"></div>
 
-          {/* Row 2: Leaderboard + Learning progress */}
-          <div className="dash-row dash-row--lb" data-chi-hoc-vien="">
-            {/* Bảng xếp hạng dựng ở máy chủ (`components/BangXepHang.tsx`, 14/09/2026
-                tối); ba tab chạy ở `BangXepHangClient`. Trước đó `dashboard.js`
-                gọi API 200 ms sau DOMContentLoaded rồi đổ chuỗi HTML. */}
-            <div className="section-card lb-card fx-fade-up" style={{ animationDelay: '.12s' }}>
-              {bangXepHang}
-            </div>
+          {/* Row 2: Tiến độ học tập — MỘT cột. Thẻ Bảng xếp hạng từng đứng bên trái
+              đã ẩn (24/09/2026, anh Sơn chốt theo góp ý TopHSA: màn đầu nhiều thông
+              tin, và xếp hạng XP giữa các em không phải việc chính của trung tâm).
+              Hạng của RIÊNG em vẫn ở Hồ sơ. */}
+          <div className="dash-row dash-row--lb dash-row--mot" data-chi-hoc-vien="">
 
             <div className="section-card dash-progress-card fx-fade-up" style={{ animationDelay: '.15s' }}>
               <div className="section-title" style={{ marginBottom: 0 }}>
@@ -620,7 +623,7 @@ export default function DashboardClient(
                 <div>
                   <div className="profile-name" id="settings-profile-name">—</div>
                   <div className="profile-email" id="settings-profile-email">—</div>
-                  <span className="profile-badge">Học viên</span>
+                  {vai && <span className="profile-badge">{NHAN_VAI[vai] ?? vai}</span>}
                 </div>
               </div>
               {/* `data-ho-so` là hợp đồng với `main.js::saveSettings` và

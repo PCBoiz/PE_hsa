@@ -61,6 +61,8 @@ const LOP = {
   examDate: '2027-03-15',
   meetingUrl: 'https://meet.google.com/abc-defg-hij',
   note: 'Lớp có 3 em thi lại',
+  mode: 'offline',
+  room: 'P201',
   termId: 3,
   termName: 'Đợt 1/2027',
   termCode: 'D1-2027',

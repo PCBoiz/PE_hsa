@@ -1695,3 +1695,23 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     requested_ip TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens (user_id, created_at);
+
+-- ── §53 · HÌNH THỨC + PHÒNG HỌC (23/09/2026) ─────────────────────────────────
+-- Bảng yêu cầu TopHSA (tab "Nhi" #4): buổi học online hay offline, học ở phòng
+-- nào. Anh Sơn chốt: phòng là CHỮ TỰ DO (trung tâm chưa có danh mục phòng),
+-- hình thức đặt THEO TỪNG BUỔI và mặc định lấy của LỚP.
+--
+-- Hai cột ở cả `classes` lẫn `class_sessions`. Buổi để NULL = theo lớp — đọc
+-- bằng coalesce(buổi, lớp). Không chép giá trị của lớp xuống từng buổi lúc tạo:
+-- chép là đông cứng, sau này lớp chuyển phòng thì mọi buổi tương lai vẫn mang
+-- phòng cũ, và không ai biết buổi nào là "cố ý khác" buổi nào là "chép theo".
+ALTER TABLE classes        ADD COLUMN IF NOT EXISTS mode TEXT;
+ALTER TABLE classes        ADD COLUMN IF NOT EXISTS room TEXT;
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS mode TEXT;
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS room TEXT;
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_mode_check;
+ALTER TABLE classes ADD CONSTRAINT classes_mode_check
+    CHECK (mode IS NULL OR mode IN ('online', 'offline'));
+ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_mode_check;
+ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_mode_check
+    CHECK (mode IS NULL OR mode IN ('online', 'offline'));

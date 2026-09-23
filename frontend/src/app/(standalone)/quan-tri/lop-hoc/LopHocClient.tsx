@@ -19,6 +19,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
 import { type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
@@ -518,6 +519,12 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
               {oNgay('startsOn', 'Khai giảng')}
               {oNgay('endsOn', 'Kết thúc')}
               {oNgay('examDate', 'Ngày thi')}
+              {oChon('mode', 'Hình thức', [
+                { gt: '', nhan: '(chưa đặt)' },
+                { gt: 'online', nhan: NHAN_HINH_THUC.online },
+                { gt: 'offline', nhan: NHAN_HINH_THUC.offline },
+              ])}
+              {oChu('room', 'Phòng (lớp tại trung tâm)', 'P201')}
               {oChu('meetingUrl', 'Link họp', 'https://meet.google.com/...')}
               {oChu('note', 'Ghi chú')}
             </div>
@@ -567,6 +574,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                   </Td>
                   <Td label="Lịch" muted>
                     {c.schedule || '—'}
+                    {noiHoc(c.mode, c.room) && <span className="block text-ink-3">{noiHoc(c.mode, c.room)}</span>}
                     {c.startsOn && <span className="block text-ink-3">từ {ngay(c.startsOn)}</span>}
                   </Td>
                   <Td label="Sĩ số" num>

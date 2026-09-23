@@ -15,7 +15,7 @@
  *                      `common/permissions.py` bởi `quyen-vai.test.mjs`)
  *   van-hanh         → `quan-tri/vai.ts`: `TABS[href].vai` nếu thẻ trỏ vào một
  *                      trang cụ thể, không thì `VAI_VAO_KHU`
- *   soan-giao-trinh  → `admin/page.tsx::DUOC_VAO`
+ *   soan-giao-trinh  → `giao-trinh/page.tsx::DUOC_VAO`
  *   moi-nhan-su      → đủ năm vai nhân sự
  *
  * Đọc bằng regex trên mã nguồn TS, cùng lối với `quyen-vai.test.mjs`: nạp TS
@@ -82,11 +82,11 @@ const VAO_KHU = mang(/VAI_VAO_KHU: readonly string\[\] = (\[[^\]]*\])/.exec(VAN_
 const TAB_VH = Object.fromEntries(
   [...VAN_HANH.matchAll(/href: '([^']+)'[^}]*?vai: (\[[^\]]*\])/g)].map((m) => [m[1], mang(m[2])]),
 );
-const ADMIN = boChuThich(doc('app/(standalone)/admin/page.tsx'));
+const ADMIN = boChuThich(doc('app/(standalone)/giao-trinh/page.tsx'));
 const SOAN = mang(/DUOC_VAO = new Set\((\[[^\]]*\])\)/.exec(ADMIN)?.[1] ?? '');
 
 check('đọc được VAI_VAO_KHU', VAO_KHU.length >= 1, JSON.stringify(VAO_KHU));
-check('đọc được DUOC_VAO của /admin', SOAN.length >= 1, JSON.stringify(SOAN));
+check('đọc được DUOC_VAO của /giao-trinh', SOAN.length >= 1, JSON.stringify(SOAN));
 check('đọc được IsTeachingStaff', lopQuyen('IsTeachingStaff').length >= 1);
 
 /* ── Đối chiếu từng thẻ ───────────────────────────────────────────────────── */
@@ -99,13 +99,34 @@ for (const t of the) {
     mong = (t.url && TAB_VH[t.url]) || VAO_KHU;
     nguon = t.url && TAB_VH[t.url] ? `quan-tri/vai.ts::TABS[${t.url}]` : 'quan-tri/vai.ts::VAI_VAO_KHU';
   }
-  else if (t.cong === 'soan-giao-trinh') { mong = SOAN; nguon = 'admin/page.tsx::DUOC_VAO'; }
+  else if (t.cong === 'soan-giao-trinh') { mong = SOAN; nguon = 'giao-trinh/page.tsx::DUOC_VAO'; }
   else if (t.cong === 'moi-nhan-su') { mong = NHAN_SU; nguon = 'năm vai nhân sự'; }
   else { check(`${t.nhan}: cổng hợp lệ`, false, `cổng lạ ${t.cong}`); continue; }
   check(`${t.nhan}: vai khớp ${nguon}`, bang(t.vai, mong),
     `thẻ ghi ${JSON.stringify(t.vai)} — cổng cho ${JSON.stringify(mong)}`);
   check(`${t.nhan}: không có vai học viên`, !t.vai.includes(VAI.VAI_HOC_VIEN));
 }
+
+/* ── Trang ĐẦU sau đăng nhập theo vai (24/09/2026, góp ý TopHSA #3/#4) ─────
+   Mỗi vai nhân sự vào thẳng khu làm việc của mình. Trang đích mà cổng thật từ
+   chối vai ấy = đăng nhập xong rơi vào màn "không có quyền". */
+const TRANG_DAU = Object.fromEntries(
+  [...KHU.matchAll(/\[(VAI_[A-Z_]+)\]: '([^']+)'/g)].map((m) => [VAI[m[1]], m[2]]),
+);
+check('đọc được TRANG_DAU', Object.keys(TRANG_DAU).length >= 1, JSON.stringify(TRANG_DAU));
+const CONG_TRANG = {
+  '/giang-day': [lopQuyen('IsTeachingStaff'), 'quyenVai.ts::IsTeachingStaff'],
+  '/quan-tri/tong-quan': [VAO_KHU, 'quan-tri/vai.ts::VAI_VAO_KHU'],
+  '/giao-trinh': [SOAN, 'giao-trinh/page.tsx::DUOC_VAO'],
+};
+for (const vai of NHAN_SU) {
+  const dich = TRANG_DAU[vai];
+  if (!dich) { check(`trang đầu của ${vai}`, false, 'thiếu — vai này đăng nhập xong rơi về trang thẻ'); continue; }
+  const [cho, nguon] = CONG_TRANG[dich] ?? [null, null];
+  check(`trang đầu của ${vai} (${dich}) mở cho vai ấy theo ${nguon}`, !!cho && cho.includes(vai),
+    cho ? `cổng chỉ cho ${JSON.stringify(cho)}` : 'trang đích lạ — thêm cổng của nó vào CONG_TRANG');
+}
+check('học viên KHÔNG có trang đầu riêng (vẫn /dashboard)', !(VAI.VAI_HOC_VIEN in TRANG_DAU));
 
 console.log(loi ? `\n${loi} lỗi` : '\nOK — bảng khu làm việc khớp cổng thật');
 process.exit(loi ? 1 : 0);

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { BieuTuong } from '@/components/bieuTuong';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { noiHoc } from '@/lib/noiHoc';
 
 /**
  * LỚP CỦA BẠN — khối đầu tiên trên bảng điều khiển của học viên đang ở trong lớp.
@@ -30,6 +31,9 @@ type Buoi = {
   durationMinutes: number | null;
   topic: string | null;
   meetingUrl: string | null;
+  /** Hình thức / phòng HIỆU LỰC của buổi (đã kế thừa lớp) — §53. */
+  hinhThuc?: string | null;
+  phong?: string | null;
   dangDienRa: boolean;
 };
 
@@ -39,6 +43,8 @@ type Lop = {
   schedule: string | null;
   teacherName: string | null;
   examDate: string | null;
+  mode?: string | null;
+  room?: string | null;
   buoiToi: Buoi | null;
   sapToi: Buoi[];
   /** Buổi ĐÃ HUỶ trong tuần tới — nêu tên để em biết tối đó nghỉ. */
@@ -120,6 +126,14 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
       {d.lop.map((l) => {
         const cc = l.chuyenCan;
         const coMat = cc.present + cc.late;
+        const noiLop = noiHoc(l.mode, l.room);
+        /* Nơi của MỘT buổi chỉ nói ra khi KHÁC nơi của lớp — "buổi thứ Năm học
+           online", "buổi này mượn phòng 305". Lặp lại "Phòng P201" ở mọi dòng là
+           chữ thừa làm chìm đúng cái dòng khác thường. */
+        const noiKhac = (b: Buoi) => {
+          const n = noiHoc(b.hinhThuc, b.phong);
+          return n && n !== noiLop ? n : null;
+        };
         return (
           <section key={l.id} className="section-card fx-fade-up lct" aria-label={`Lớp ${l.name}`}>
             <div className="section-title" style={{ marginBottom: 6 }}>
@@ -132,6 +146,7 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
             <p className="lct-meta">
               {l.teacherName && <>GV {l.teacherName} · </>}
               {l.schedule && <>{l.schedule} · </>}
+              {noiLop && <>{noiLop} · </>}
               {l.examDate ? <>thi {ngay(l.examDate)}</> : 'chưa có ngày thi'}
             </p>
 
@@ -143,9 +158,16 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                   <span className="lct-next-sub">
                     {l.buoiToi.topic || 'Buổi học'}
                     {l.buoiToi.durationMinutes ? ` · ${l.buoiToi.durationMinutes} phút` : ''}
+                    {noiKhac(l.buoiToi) && <b>{` · ${noiKhac(l.buoiToi)}`}</b>}
                   </span>
                 </div>
-                {l.buoiToi.meetingUrl ? (
+                {/* Buổi TẠI TRUNG TÂM: em cần số phòng, không cần nút vào phòng
+                    trực tuyến — link chung của lớp vẫn có thể nằm đó từ trước. */}
+                {l.buoiToi.hinhThuc === 'offline' ? (
+                  <span className="lct-nolink">
+                    Học tại trung tâm{l.buoiToi.phong ? <> — phòng <b>{l.buoiToi.phong}</b></> : ''}.
+                  </span>
+                ) : l.buoiToi.meetingUrl ? (
                   <a className="hsa-cont-btn lct-go" href={l.buoiToi.meetingUrl} target="_blank" rel="noopener noreferrer">
                     Vào phòng học →
                   </a>
@@ -159,7 +181,11 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
 
             {l.sapToi.length > 1 && (
               <p className="lct-more">
-                Sau đó: {l.sapToi.slice(1).map((b) => gio(b.startsAt)).join(' · ')}
+                Sau đó:{' '}
+                {l.sapToi
+                  .slice(1)
+                  .map((b) => (noiKhac(b) ? `${gio(b.startsAt)} (${noiKhac(b)})` : gio(b.startsAt)))
+                  .join(' · ')}
               </p>
             )}
             {l.daHuy.length > 0 && (

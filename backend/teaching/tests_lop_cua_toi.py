@@ -102,6 +102,22 @@ def test_buoi_toi_va_link_phong(canh):
     assert l['sapToi'][1]['meetingUrl'] == 'https://meet.google.com/rieng'
 
 
+def test_hinh_thuc_va_phong_buoi_de_trong_thi_theo_lop(canh):
+    """§53: em học tại trung tâm cần biết PHÒNG. Buổi để trống thì theo lớp; buổi
+    đặt riêng (học bù online) thì theo buổi — kể cả buổi đã huỷ trong `daHuy`."""
+    x("UPDATE classes SET mode = 'offline', room = 'P201' WHERE id = %s", (canh['lop'],))
+    toi = _buoi(canh['lop'], 5)
+    ke = _buoi(canh['lop'], 50)
+    x("UPDATE class_sessions SET mode = 'online' WHERE id = %s", (ke,))
+    huy = _buoi(canh['lop'], 30, status='cancelled')
+    x("UPDATE class_sessions SET room = 'P305' WHERE id = %s", (huy,))
+    l = _goi(canh['em']).json()['lop'][0]
+    assert (l['mode'], l['room']) == ('offline', 'P201')
+    assert (l['buoiToi']['hinhThuc'], l['buoiToi']['phong']) == ('offline', 'P201')
+    assert [(b['sessionId'], b['hinhThuc']) for b in l['sapToi']] == [(toi, 'offline'), (ke, 'online')]
+    assert l['daHuy'][0]['phong'] == 'P305'
+
+
 def test_buoi_dang_dien_ra_van_la_buoi_toi(canh):
     dang = _buoi(canh['lop'], -0.5)
     l = _goi(canh['em']).json()['lop'][0]

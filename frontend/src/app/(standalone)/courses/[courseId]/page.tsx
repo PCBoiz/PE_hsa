@@ -105,7 +105,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           var(--bg)/var(--card) vô định: ở theme tối body thành TRONG SUỐT
           (audit 2026-08-13). */}
       <PageStyles hrefs={["/static/css/theme.css","/static/css/shell.css","/static/css/style.css","/static/css/dashboard.css","/static/css/pages.css","/static/css/dark-mode.css","/static/css/chatbot.css","/static/css/course_detail.css","/static/css/a11y.css"]} />
-      <title>{`${course.title} – ProgrammingEdu × TopHSA`}</title>
+      <title>{`${course.title} – TopHSA`}</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
       <main id="main">

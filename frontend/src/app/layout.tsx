@@ -53,9 +53,9 @@ const num = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ProgrammingEdu × TopHSA — Luyện thi Đánh giá năng lực HSA',
+  title: 'TopHSA — Luyện thi Đánh giá năng lực HSA',
   description:
-    'Nền tảng luyện thi Đánh giá năng lực (HSA) ĐHQG Hà Nội — ProgrammingEdu hợp tác TopHSA. Chẩn đoán năng lực, lộ trình cá nhân hoá, luyện bấm giờ và thi thử CBT đầy đủ.',
+    'Học tập và quản lý lớp của TopHSA — luyện thi Đánh giá năng lực (HSA) ĐHQG Hà Nội.',
   icons: {
     icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E",
   },

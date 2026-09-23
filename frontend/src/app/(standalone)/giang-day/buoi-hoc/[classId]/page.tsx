@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
 import { chanTu } from '@/lib/chanTu';
+import { noiHoc } from '@/lib/noiHoc';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
@@ -26,7 +27,11 @@ type ClassDetail = ChiTietLop;
 
 /* Hình dạng hai phản hồi còn lại của trang (T18 mức 2). `SessionRow` là kiểu
    `SessionsClient` đọc — khai đủ khoá bắt buộc; `satisfies` để tsc bắt thiếu. */
-type DsBuoi = { sessions: SessionRow[]; quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean } };
+type DsBuoi = {
+  sessions: SessionRow[];
+  quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean };
+  class?: { mode?: string | null; room?: string | null };
+};
 const HD_BUOI = z.looseObject({
   sessions: z.array(z.looseObject({
     id: z.number(),
@@ -37,6 +42,10 @@ const HD_BUOI = z.looseObject({
     note: z.string().nullable(),
     meetingUrl: z.string().nullable().optional(),
     recordingUrl: z.string().nullable().optional(),
+    mode: z.string().nullable().optional(),
+    room: z.string().nullable().optional(),
+    modeHieuLuc: z.string().nullable().optional(),
+    roomHieuLuc: z.string().nullable().optional(),
     attendanceTakenAt: z.string().nullable().optional(),
     started: z.boolean().optional(),
     attendance: z.looseObject({
@@ -45,6 +54,10 @@ const HD_BUOI = z.looseObject({
     }).optional(),
   })),
   quyen: z.looseObject({ xoaBuoi: z.boolean(), baoCaoPhuHuynh: z.boolean() }).optional(),
+  class: z.looseObject({
+    mode: z.string().nullable().optional(),
+    room: z.string().nullable().optional(),
+  }).optional(),
 }) satisfies HinhDang<DsBuoi>;
 const HD_GOI_Y = z.looseObject({
   lop: z.looseObject({ id: z.number(), name: z.string(), schedule: z.string().nullable() }),
@@ -88,6 +101,10 @@ export default async function BuoiHocPage({
   // nhất được nói câu "không phải giảng viên phụ trách". Mọi mã khác (500, mất
   // kết nối) phải nói đúng câu của nó, không mượn câu này.
   const klass = detail.ok ? detail.data.class : undefined;
+  const noiLop = {
+    mode: (list.ok && list.data.class?.mode) || null,
+    room: (list.ok && list.data.class?.room) || null,
+  };
 
   if (!klass) {
     return (
@@ -121,6 +138,9 @@ export default async function BuoiHocPage({
             </Link>
             <h1 className="text-section text-ink">{klass.name}</h1>
             {klass.schedule && <span className="text-small text-ink-3">{klass.schedule}</span>}
+            {noiHoc(noiLop.mode, noiLop.room) && (
+              <span className="text-small text-ink-3">{noiHoc(noiLop.mode, noiLop.room)}</span>
+            )}
             <Link
               href={`/giang-day/bai-tap/${klass.id}`}
               className="-my-3 py-3 text-small text-brand-ink underline"
@@ -136,6 +156,7 @@ export default async function BuoiHocPage({
           initial={list.ok ? list.data.sessions : []}
           goiYSinh={sinh.ok ? sinh.data : null}
           moBuoi={moBuoi}
+          lop={noiLop}
           /* Thiếu (API cũ) thì coi như được — máy chủ vẫn là hàng rào thật. */
           quyen={list.ok ? (list.data.quyen ?? { xoaBuoi: true, baoCaoPhuHuynh: true }) : { xoaBuoi: true, baoCaoPhuHuynh: true }}
         />

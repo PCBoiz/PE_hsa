@@ -403,9 +403,9 @@ function _rmVSetHint(msg) {
     var el = document.getElementById('rm-vhint');
     if (!el) return;
     if (msg) { el.textContent = msg; return; }
-    if (_rmV.nodes.length === 0) { el.textContent = 'Click "Thêm node" để bắt đầu'; return; }
+    if (_rmV.nodes.length === 0) { el.textContent = 'Bấm "Thêm bước" để bắt đầu'; return; }
     if (_rmV.mode === 'connect') {
-        el.textContent = _rmV.connectSrc ? 'Chọn node đích →' : 'Chọn node nguồn →';
+        el.textContent = _rmV.connectSrc ? 'Chọn bước đích →' : 'Chọn bước nguồn →';
     } else {
         el.textContent = 'Kéo để di chuyển · Nhấn đúp để đổi tên · Click mũi tên để xóa';
     }
@@ -609,16 +609,6 @@ function savePersonalRoadmap() {
         if (btn) { btn.disabled=false; btn.textContent='✅ Đã lưu'; setTimeout(function(){ btn.textContent='💾 Lưu lộ trình'; },2000); }
     })
     .catch(function() { if (btn) { btn.disabled=false; btn.textContent='💾 Lưu lộ trình'; } });
-}
-
-function handlePersonalRoadmapAI() {
-    fetch(API + '/me/roadmap/ai', { method: 'POST' })
-        .then(function(r) {
-            if (r.status === 402) {
-                _rmShowToast('🔒 Tính năng Tạo bằng AI chỉ dành cho tài khoản Premium');
-            }
-        })
-        .catch(function() {});
 }
 
 function _rmShowToast(msg) {

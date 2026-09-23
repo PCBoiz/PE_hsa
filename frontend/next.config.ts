@@ -72,11 +72,17 @@ const nextConfig: NextConfig = {
      view; `DashboardClient` đọc `location.hash` lúc hydrate. Tạm thời (307),
      để sau này view nào thành tuyến thật thì gỡ dòng của nó là xong. */
   async redirects() {
-    return ['courses', 'roadmap', 'skills', 'forum', 'settings', 'profile', 'plan'].map((v) => ({
-      source: `/${v}`,
-      destination: `/dashboard#${v}`,
-      permanent: false,
-    }));
+    return [
+      ...['courses', 'roadmap', 'skills', 'forum', 'settings', 'profile', 'plan'].map((v) => ({
+        source: `/${v}`,
+        destination: `/dashboard#${v}`,
+        permanent: false,
+      })),
+      /* Khu soạn bài đổi tên `/admin` → `/giao-trinh` (24/09/2026, góp ý TopHSA #4:
+         "sao soạn giáo trình lại nằm trong khu vận hành"). Link cũ trong thư, dấu
+         trang, cẩm nang in ra vẫn mở được. */
+      { source: '/admin', destination: '/giao-trinh', permanent: false },
+    ];
   },
 };
 

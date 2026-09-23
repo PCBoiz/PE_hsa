@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import ChangePasswordForm from './ChangePasswordForm';
 
 export const metadata: Metadata = {
-  title: 'Đổi mật khẩu — ProgrammingEdu × TopHSA',
+  title: 'Đổi mật khẩu — TopHSA',
 };
 
 /**

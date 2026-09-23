@@ -46,6 +46,8 @@ from common.permissions import (
     is_assistant,
 )
 from stats.goals import as_date
+from teaching.bao_doi_lich import bao_doi_lich
+from teaching.trung_lich import cau_canh_bao, tim_trung
 from teaching.vocab import chi_hoc_vien
 
 #: Trạng thái một buổi học. Khớp chú thích cột ở legacy_schema.sql §33.
@@ -79,7 +81,12 @@ MAX_LIMIT = 500
 #: CLASS_TEXT_FIELDS ở teaching/views.py.
 SESSION_TEXT_FIELDS = {
     'topic': 200, 'meeting_url': 400, 'recording_url': 400, 'note': 2000,
+    # §53: phòng là CHỮ TỰ DO (anh Sơn chốt 23/09/2026 — chưa có danh mục phòng).
+    'room': 100,
 }
+
+#: §53 — hình thức buổi học. Để trống = theo lớp.
+SESSION_MODES = ('online', 'offline')
 
 _NOT_FOUND_CLASS = {'error': 'Không tìm thấy lớp này.'}
 _NOT_FOUND_SESSION = {'error': 'Không tìm thấy buổi học này.'}
@@ -167,6 +174,12 @@ def _clean_session_payload(body):
             return None, ('lesson_refs phải là danh sách id bài học, '
                           'ví dụ ["hsa_q_01", "hsa_q_02"].')
 
+    if 'mode' in body:
+        md = str(body['mode'] or '').strip() or None
+        if md is not None and md not in SESSION_MODES:
+            return None, 'Hình thức buổi học phải là online hoặc offline (để trống = theo lớp).'
+        data['mode'] = md
+
     if 'status' in body:
         st = str(body['status'] or '').strip()
         if st not in SESSION_STATUS:
@@ -193,6 +206,7 @@ def _sql_values(cols):
 def _lop_kem_si_so(class_id):
     """Lớp + sĩ số đang học trong MỘT câu (subselect thay cho một lượt Neon nữa)."""
     return q1('''SELECT c.id, c.code, c.name, c.course_id, c.meeting_url, c.schedule,
+                        c.mode, c.room,
                         (SELECT COUNT(*) FROM class_members m
                            JOIN users mu ON mu.id = m.user_id
                           WHERE m.class_id = c.id AND m.left_at IS NULL
@@ -207,7 +221,8 @@ def _session_row(session_id):
     có nó thì không kiểm quyền được, nên hai thứ phải về cùng một lượt.
     """
     return q1('''SELECT s.*, c.name AS class_name, c.code AS class_code,
-                        c.course_id AS class_course_id
+                        c.course_id AS class_course_id,
+                        c.mode AS class_mode, c.room AS class_room
                  FROM class_sessions s
                  JOIN classes c ON c.id = s.class_id
                  WHERE s.id = %s''', (session_id,))
@@ -277,10 +292,22 @@ def _overlap_warning(class_id, starts_at, minutes, exclude_id=None):
             'kiểm tra lại nếu không cố ý.' % which)
 
 
-def _session_dict(r, counts=None, member_count=None):
-    """Một buổi học ở dạng JSON. Khoá camelCase cho khớp teaching/reports.py."""
+def _session_dict(r, counts=None, member_count=None, lop=None):
+    """Một buổi học ở dạng JSON. Khoá camelCase cho khớp teaching/reports.py.
+
+    `lop` (dict có `mode`, `room`) để tính hình thức / phòng HIỆU LỰC khi dòng
+    buổi không mang sẵn cột của lớp (§53: buổi để trống = theo lớp).
+    """
     bat_dau = bool(r['starts_at'] and r['starts_at'] <= local_now())
+    lop_mode = r.get('class_mode') if 'class_mode' in r else (lop or {}).get('mode')
+    lop_room = r.get('class_room') if 'class_room' in r else (lop or {}).get('room')
     out = {
+        # Riêng của buổi (None = theo lớp) và HIỆU LỰC — màn hình hiện cái sau,
+        # form sửa buổi điền cái trước để không vô tình đông cứng giá trị lớp.
+        'mode': r.get('mode'),
+        'room': r.get('room'),
+        'modeHieuLuc': r.get('mode') or lop_mode,
+        'roomHieuLuc': r.get('room') or lop_room,
         'id': r['id'],
         'classId': r['class_id'],
         'startsAt': r['starts_at'].isoformat() if r['starts_at'] else None,
@@ -399,9 +426,10 @@ class ClassSessionsView(APIView):
                 'id': info['id'], 'code': info['code'], 'name': info['name'],
                 'course': info['course_id'], 'schedule': info['schedule'],
                 'meetingUrl': info['meeting_url'], 'members': members,
+                'mode': info['mode'], 'room': info['room'],
             },
             'quyen': {'xoaBuoi': senior, 'baoCaoPhuHuynh': senior},
-            'sessions': [_session_dict(r, counts.get(r['id']), members) for r in rows],
+            'sessions': [_session_dict(r, counts.get(r['id']), members, lop=info) for r in rows],
             'statuses': list(SESSION_STATUS),
             'attendanceStatuses': list(ATTENDANCE_STATUS),
         })
@@ -430,6 +458,10 @@ class ClassSessionsView(APIView):
 
         warning = _overlap_warning(class_id, data['starts_at'],
                                    data.get('duration_minutes'))
+        # Trùng với LỚP KHÁC: cùng giảng viên, cùng em, cùng phòng (§53).
+        trung = tim_trung(class_id, data['starts_at'], data.get('duration_minutes'),
+                          mode=data.get('mode'), room=data.get('room'))
+        warning = ' '.join(w for w in (warning, cau_canh_bao(trung)) if w) or None
 
         data['class_id'] = class_id
         data['created_by'] = request.user.id
@@ -448,7 +480,7 @@ class ClassSessionsView(APIView):
                        'duration_minutes': row['duration_minutes'],
                        'status': row['status'], 'warning': warning})
 
-        out = {'ok': True, 'id': row['id'], 'session': _session_dict(row)}
+        out = {'ok': True, 'id': row['id'], 'session': _session_dict(row, lop=info), 'conflicts': trung}
         if warning:
             out['warning'] = warning
         return Response(out, status=201)
@@ -496,11 +528,20 @@ class ClassSessionDetailView(APIView):
         # Dời giờ cũng phải cảnh báo trùng như lúc tạo: dời vào đúng khung giờ
         # một buổi khác là cách phổ biến nhất để tạo ra trùng lịch.
         warning = None
+        trung = []
         if 'starts_at' in data:
             warning = _overlap_warning(
                 row['class_id'], data['starts_at'],
                 data.get('duration_minutes', row['duration_minutes']),
                 exclude_id=session_id)
+        # Trùng với LỚP KHÁC — cả khi chỉ đổi phòng hay hình thức (§53): chuyển
+        # sang một phòng đang có lớp là cách thứ hai tạo ra trùng lịch.
+        if {'starts_at', 'duration_minutes', 'mode', 'room'} & set(data):
+            trung = tim_trung(row['class_id'], data.get('starts_at', row['starts_at']),
+                              data.get('duration_minutes', row['duration_minutes']),
+                              bo_qua_id=session_id, mode=data.get('mode', row.get('mode')),
+                              room=data.get('room', row.get('room')))
+            warning = ' '.join(w for w in (warning, cau_canh_bao(trung)) if w) or None
 
         # `strict=True`: lệch một phần tử là ghép nhầm tên cột với placeholder
         # của cột khác — câu UPDATE vẫn chạy, và ghi giá trị sang sai cột.
@@ -525,7 +566,13 @@ class ClassSessionDetailView(APIView):
                                   for k in data},
                        'warning': warning})
 
-        out = {'ok': True, 'session': _session_dict(after)}
+        lop = {'id': row['class_id'], 'name': row['class_name'],
+               'mode': row.get('class_mode'), 'room': row.get('class_room')}
+        # Buổi SẮP TỚI bị dời / huỷ / đổi nơi học → chuông + email cho em (anh Sơn
+        # chốt 23/09/2026). Sau khi đã lưu; hỏng thì chỉ vào nhật ký ứng dụng.
+        da_bao = bao_doi_lich(row, after, lop)
+        out = {'ok': True, 'session': _session_dict(after, lop=lop), 'conflicts': trung,
+               'daBao': da_bao}
         if warning:
             out['warning'] = warning
         return Response(out)
@@ -567,6 +614,10 @@ class ClassSessionDetailView(APIView):
             }, status=409)
 
         x('DELETE FROM class_sessions WHERE id = %s', (session_id,))
+        # Xoá một buổi CHƯA diễn ra = huỷ với em: báo như huỷ.
+        da_bao = bao_doi_lich(row, None, {'id': row['class_id'], 'name': row['class_name'],
+                                          'mode': row.get('class_mode'),
+                                          'room': row.get('class_room')})
 
         record(request, SESSION_DELETE,
                target_type='class_session', target_id=session_id,
@@ -584,7 +635,8 @@ class ClassSessionDetailView(APIView):
         # Đi qua common/events.py chứ không tự viết DELETE: đó là cửa duy nhất
         # được đụng vào learning_events, cả ghi lẫn xoá.
         forgotten = forget_events('class_session', session_id)
-        return Response({'ok': True, 'deletedAttendance': n, 'deletedEvents': forgotten})
+        return Response({'ok': True, 'deletedAttendance': n, 'deletedEvents': forgotten,
+                         'daBao': da_bao})
 
 
 # ── 3. Điểm danh ───────────────────────────────────────────────────────────

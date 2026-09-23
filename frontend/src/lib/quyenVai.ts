@@ -240,6 +240,14 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Xem lịch học gộp theo tuần',
+    giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc — sửa buổi vẫn ở sổ buổi học của từng lớp.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/lich.py::LichView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán (visible_class_ids)',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Xuất CSV chuyên cần / tiến độ',
     giaiThich: 'Để đối chiếu ngoài hệ thống hoặc gửi cho kế toán.',
     lopQuyen: 'IsTeachingStaff',

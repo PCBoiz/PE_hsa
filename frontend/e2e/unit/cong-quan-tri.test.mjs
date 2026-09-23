@@ -195,10 +195,10 @@ for (const t of TRANG) {
 
 // `admin/page.tsx` từng là bảng THỨ TƯ trả lời cùng câu hỏi, với hai chuỗi vai
 // gõ tay. Hôm nay hai bên trùng nhau nên chưa hỏng — cơ chế trôi thì y hệt.
-const TRANG_ADMIN = doc(GOC, 'src', 'app', '(standalone)', 'admin', 'page.tsx');
-check('admin/page.tsx lấy vai từ bảng chung, không gõ lại chuỗi',
+const TRANG_ADMIN = doc(GOC, 'src', 'app', '(standalone)', 'giao-trinh', 'page.tsx');
+check('giao-trinh/page.tsx lấy vai từ bảng chung, không gõ lại chuỗi',
   /from '@\/lib\/vaiTro'/.test(TRANG_ADMIN) && !/'Biên tập nội dung'/.test(TRANG_ADMIN),
-  'còn chuỗi vai gõ tay trong admin/page.tsx');
+  'còn chuỗi vai gõ tay trong giao-trinh/page.tsx');
 
 console.log(failures === 0 ? '\nOK — cổng frontend khớp permission_classes' : `\n${failures} lỗi`);
 process.exitCode = failures === 0 ? 0 : 1;

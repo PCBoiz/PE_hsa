@@ -16,6 +16,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
 // Bản đầy đủ không rung cây được — đo A/B trên Thi thử: 956 kB (zod) → 608 kB
 // (zod/mini), byte giải nén, ba lượt mỗi bên. Bản mini cùng luật
@@ -47,6 +48,12 @@ export type SessionRow = {
   note: string | null;
   meetingUrl?: string | null;
   recordingUrl?: string | null;
+  /** Hình thức / phòng ĐẶT RIÊNG cho buổi (null = theo lớp) — §53. */
+  mode?: string | null;
+  room?: string | null;
+  /** Sau khi kế thừa lớp — thứ em thực sự cần biết để đi học đúng chỗ. */
+  modeHieuLuc?: string | null;
+  roomHieuLuc?: string | null;
   /**
    * Mốc giờ giảng viên bấm Lưu điểm danh cho buổi này (null = chưa bấm lần nào).
    *
@@ -127,6 +134,71 @@ function fmt(iso: string | null) {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** Hình thức / phòng của LỚP — để ô chọn nói "Theo lớp (Phòng P201)" thay vì một chữ trống. */
+export type NoiLop = { mode: string | null; room: string | null };
+
+/** Tin sau một lần lưu: cảnh báo trùng lịch (vàng) hay tin đã báo học viên (trung tính). */
+type ThongBao = { tone: 'warn' | 'info'; text: string };
+
+/** Câu tin sau khi dời / huỷ / xoá một buổi sắp tới — máy chủ trả `daBao`. */
+function cauDaBao(daBao: unknown): string | null {
+  return typeof daBao === 'number' && daBao > 0
+    ? `Đã báo đổi lịch cho ${daBao} học viên (chuông trên trang và email).`
+    : null;
+}
+
+/**
+ * Hai ô Hình thức + Phòng — dùng chung cho form tạo và form sửa buổi.
+ *
+ * Để trống = theo lớp (§53): đa số buổi học đúng chỗ của lớp, chỉ buổi lệch
+ * (học bù online, mượn phòng khác) mới cần đặt. Ô phòng tắt khi đã chọn trực
+ * tuyến — phòng chỉ có nghĩa với buổi tại trung tâm, và máy chủ cũng chỉ so
+ * trùng phòng cho buổi tại trung tâm.
+ */
+function OHinhThucPhong({
+  lop,
+  mode,
+  room,
+  onMode,
+  onRoom,
+  o,
+}: {
+  lop: NoiLop;
+  mode: string;
+  room: string;
+  onMode: (v: string) => void;
+  onRoom: (v: string) => void;
+  o: string;
+}) {
+  const theoLop = noiHoc(lop.mode, lop.room);
+  const hieuLuc = mode || lop.mode;
+  return (
+    <>
+      <label className="flex flex-col gap-1">
+        <span className="text-label text-ink-3">Hình thức</span>
+        <select value={mode} onChange={(e) => onMode(e.target.value)} className={o}>
+          <option value="">{theoLop ? `Theo lớp (${theoLop})` : 'Theo lớp (chưa đặt)'}</option>
+          <option value="online">{NHAN_HINH_THUC.online}</option>
+          <option value="offline">{NHAN_HINH_THUC.offline}</option>
+        </select>
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-label text-ink-3">Phòng</span>
+        <input
+          value={room}
+          onChange={(e) => onRoom(e.target.value)}
+          disabled={hieuLuc === 'online'}
+          maxLength={100}
+          placeholder={
+            hieuLuc === 'online' ? 'Học trực tuyến — không cần phòng' : lop.room ? `Theo lớp: ${lop.room}` : 'VD: P201'
+          }
+          className={`${o} disabled:opacity-60`}
+        />
+      </label>
+    </>
+  );
+}
+
 /** `datetime-local` cần đúng dạng YYYY-MM-DDTHH:mm theo giờ MÁY, không phải UTC. */
 function localInputValue(d: Date) {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -140,10 +212,13 @@ export default function SessionsClient({
   goiYSinh,
   moBuoi = null,
   quyen,
+  lop = { mode: null, room: null },
 }: {
   classId: number;
   className: string;
   initial: SessionRow[];
+  /** Hình thức / phòng của lớp — buổi để trống thì theo lớp (§53). */
+  lop?: NoiLop;
   goiYSinh: GoiYSinh | null;
   /** Buổi cần mở sẵn sổ điểm danh (từ `?diem-danh=`), nếu có trong danh sách. */
   moBuoi?: number | null;
@@ -165,6 +240,15 @@ export default function SessionsClient({
   );
   const [suaId, setSuaId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [thongBao, setThongBao] = useState<ThongBao | null>(null);
+  /* Sau một lần lưu: cảnh báo trùng lịch là VÀNG, không phải đỏ — buổi đã lưu.
+     Trước 24/09/2026 nó đi qua `setErr` và hiện như một lỗi, nên người sắp lịch
+     đọc thành "không lưu được" rồi tạo lại lần hai. */
+  const baoSauLuu = useCallback((warning: unknown, daBao: unknown) => {
+    const canh = typeof warning === 'string' && warning ? warning : null;
+    const phan = [canh, cauDaBao(daBao)].filter(Boolean);
+    setThongBao(phan.length ? { tone: canh ? 'warn' : 'info', text: phan.join(' ') } : null);
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -189,6 +273,7 @@ export default function SessionsClient({
   async function xoaBuoi(s: SessionRow) {
     const ten = s.topic || fmt(s.startsAt);
     setErr(null);
+    setThongBao(null);
     try {
       const r = await apiFetch(`/api/teach/sessions/${s.id}`, { method: 'DELETE' });
       const d = await r.json().catch(() => ({}));
@@ -204,8 +289,11 @@ export default function SessionsClient({
         const r2 = await apiFetch(`/api/teach/sessions/${s.id}?confirm=1`, { method: 'DELETE' });
         const d2 = await r2.json().catch(() => ({}));
         if (!r2.ok) throw new Error(errorText(r2.status, d2));
+        baoSauLuu(null, d2.daBao);
       } else if (!r.ok) {
         throw new Error(errorText(r.status, d));
+      } else {
+        baoSauLuu(null, d.daBao);
       }
 
       if (openId === s.id) setOpenId(null);
@@ -244,12 +332,27 @@ export default function SessionsClient({
     // hiện, bất kể trang đang cuộn tới đâu.
     <ToastProvider>
     <div className="flex flex-col gap-5">
-      <NewSession classId={classId} onDone={() => void reload()} onError={setErr} />
+      <NewSession
+        classId={classId}
+        lop={lop}
+        onDone={(d) => { baoSauLuu(d.warning, null); void reload(); }}
+        onError={(m) => { setErr(m); if (m === null) setThongBao(null); }}
+      />
       {goiYSinh && <SinhBuoi classId={classId} data={goiYSinh} onDone={() => void reload()} />}
 
       {err && (
         <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-small text-danger-ink">
           {err}
+        </p>
+      )}
+      {thongBao && (
+        <p
+          role="status"
+          className={`rounded-md px-3 py-2 text-small ${
+            thongBao.tone === 'warn' ? 'bg-warning/10 text-warning-ink' : 'bg-brand/5 text-ink-2'
+          }`}
+        >
+          {thongBao.text}
         </p>
       )}
 
@@ -336,6 +439,7 @@ export default function SessionsClient({
                         <p className="mt-0.5 text-small text-ink-3">
                           {fmt(s.startsAt)}
                           {s.durationMinutes ? ` · ${s.durationMinutes} phút` : ''}
+                          {noiHoc(s.modeHieuLuc, s.roomHieuLuc) ? ` · ${noiHoc(s.modeHieuLuc, s.roomHieuLuc)}` : ''}
                         </p>
                       </div>
 
@@ -423,8 +527,9 @@ export default function SessionsClient({
                     {suaId === s.id && (
                       <SuaBuoi
                         buoi={s}
-                        onXong={() => { setSuaId(null); void reload(); }}
-                        onError={setErr}
+                        lop={lop}
+                        onXong={(d) => { setSuaId(null); baoSauLuu(d.warning, d.daBao); void reload(); }}
+                        onError={(m) => { setErr(m); if (m === null) setThongBao(null); }}
                       />
                     )}
                   </Card>
@@ -467,11 +572,13 @@ export default function SessionsClient({
  */
 function SuaBuoi({
   buoi,
+  lop,
   onXong,
   onError,
 }: {
   buoi: SessionRow;
-  onXong: () => void;
+  lop: NoiLop;
+  onXong: (d: { warning?: string; daBao?: number }) => void;
   onError: (m: string | null) => void;
 }) {
   const [topic, setTopic] = useState(buoi.topic ?? '');
@@ -483,6 +590,8 @@ function SuaBuoi({
   const [recordingUrl, setRecordingUrl] = useState(buoi.recordingUrl ?? '');
   const [note, setNote] = useState(buoi.note ?? '');
   const [status, setStatus] = useState(buoi.status || 'planned');
+  const [mode, setMode] = useState(buoi.mode ?? '');
+  const [room, setRoom] = useState(buoi.room ?? '');
   const [busy, setBusy] = useState(false);
 
   /* CHỈ GỬI TRƯỜNG ĐÃ ĐỔI.
@@ -507,6 +616,8 @@ function SuaBuoi({
   }
   if (note !== (buoi.note ?? '')) doi.note = note.trim() || null;
   if (status !== (buoi.status || 'planned')) doi.status = status;
+  if (mode !== (buoi.mode ?? '')) doi.mode = mode || null;
+  if (room !== (buoi.room ?? '')) doi.room = room.trim() || null;
   const soDoi = Object.keys(doi).length;
 
   async function luu() {
@@ -518,11 +629,10 @@ function SuaBuoi({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doi),
       });
-      const d: { warning?: string } = await r.json().catch(() => ({}));
+      const d: { warning?: string; daBao?: number } = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
       // Cảnh báo trùng giờ KHÔNG phải lỗi: buổi đã lưu. Nói ra rồi vẫn đóng.
-      if (d.warning) onError(d.warning);
-      onXong();
+      onXong(d);
     } catch (e) {
       onError(loiBatDuoc(e, 'Không lưu được buổi học'));
     } finally {
@@ -567,6 +677,7 @@ function SuaBuoi({
             <option value="cancelled">Đã huỷ</option>
           </select>
         </label>
+        <OHinhThucPhong lop={lop} mode={mode} room={room} onMode={setMode} onRoom={setRoom} o={o} />
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Link phòng học</span>
           <input
@@ -634,11 +745,13 @@ function SuaBuoi({
 /** Tạo buổi mới. Gấp lại khi chưa dùng để không che mất danh sách buổi. */
 function NewSession({
   classId,
+  lop,
   onDone,
   onError,
 }: {
   classId: number;
-  onDone: () => void;
+  lop: NoiLop;
+  onDone: (d: { warning?: string }) => void;
   onError: (m: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -646,6 +759,8 @@ function NewSession({
   const [topic, setTopic] = useState('');
   const [minutes, setMinutes] = useState('90');
   const [meetingUrl, setMeetingUrl] = useState('');
+  const [mode, setMode] = useState('');
+  const [room, setRoom] = useState('');
   const [busy, setBusy] = useState(false);
 
   /* Gợi ý sẵn 19:30 hôm nay: lớp online của trung tâm học buổi tối, và ô giờ
@@ -688,15 +803,18 @@ function NewSession({
           topic: topic.trim() || null,
           duration_minutes: Number(minutes) || null,
           meeting_url: meetingUrl.trim() || null,
+          mode: mode || null,
+          room: room.trim() || null,
         }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(errorText(r.status, d));
-      if (d.warning) onError(d.warning);
       setTopic('');
       setMeetingUrl('');
+      setMode('');
+      setRoom('');
       setOpen(false);
-      onDone();
+      onDone(d);
     } catch (e) {
       onError(loiBatDuoc(e, 'Không tạo được buổi học'));
     } finally {
@@ -757,6 +875,14 @@ function NewSession({
             className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
           />
         </label>
+        <OHinhThucPhong
+          lop={lop}
+          mode={mode}
+          room={room}
+          onMode={setMode}
+          onRoom={setRoom}
+          o="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70"
+        />
       </div>
       <div className="mt-3">
         <Button loading={busy} disabled={!startsAt} onClick={() => void save()}>

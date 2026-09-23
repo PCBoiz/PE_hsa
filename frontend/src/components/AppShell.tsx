@@ -234,12 +234,12 @@ export default function AppShell({
 
   const chuThuongHieu = (
     <>
+      {/* Chỉ "TopHSA" (24/09/2026): hệ thống bán cho trung tâm, người dùng thấy
+          tên trung tâm — "ProgrammingEdu ×" là tên dự án, không phải của họ. */}
       <span className="brand-title brand-full">
-        <span className="brand-c1">ProgrammingEdu</span>{' '}
-        <span className="brand-x">×</span>{' '}
         <span className="brand-c2">TopHSA</span>
       </span>
-      <span className="brand-title brand-short">PE×T</span>
+      <span className="brand-title brand-short">TopHSA</span>
     </>
   );
   /* LIÊN KẾT THẬT tới /dashboard (22/09/2026, agent tiếp cận F17). Bản cũ là
@@ -482,7 +482,10 @@ export default function AppShell({
               <button type="button" className="nav-btn" id="nav-teach" data-page="teach"
                 aria-label="Giảng dạy" title="Giảng dạy"
                 style={hien(giangDay)}
-                onClick={() => { if (spa) goiLegacy('navigate', 'teach'); else taiTrang('/giang-day'); }}>
+                /* Luôn sang khu Giảng dạy (24/09/2026): trước đây ở Trang của tôi nút
+                   này mở tab "teach" CŨ trong SPA, ở trang khác lại mở /giang-day —
+                   một nút, hai đích, hai giao diện dạy học khác nhau. */
+                onClick={() => { taiTrang('/giang-day'); }}>
                 <span className="nav-icon"><BieuTuong ten="users" co={17} /></span><span>Giảng dạy</span>
               </button>
               <button type="button" className="nav-btn" id="nav-vanhanh" style={hien(vanHanh)}
@@ -490,10 +493,13 @@ export default function AppShell({
                 onClick={() => { taiTrang('/quan-tri/tong-quan'); }}>
                 <span className="nav-icon"><BieuTuong ten="shield" co={17} /></span><span>Vận hành</span>
               </button>
+              {/* "Giáo trình", không "Quản trị" (24/09/2026, góp ý TopHSA #4): nút này
+                  chỉ dẫn tới khu soạn bài — chữ "Quản trị" đứng cạnh "Vận hành" làm
+                  khách tưởng soạn bài là một phần của vận hành. */}
               <button type="button" className="nav-btn" id="nav-admin" style={hien(quanTri)}
-                aria-label="Quản trị" title="Quản trị"
-                onClick={() => { taiTrang('/admin'); }}>
-                <span className="nav-icon"><BieuTuong ten="wrench" co={17} /></span><span>Quản trị</span>
+                aria-label="Giáo trình" title="Giáo trình"
+                onClick={() => { taiTrang('/giao-trinh'); }}>
+                <span className="nav-icon"><BieuTuong ten="book-open" co={17} /></span><span>Giáo trình</span>
               </button>
             </>
           );

@@ -71,7 +71,9 @@ const TANG_CU = join(GOC, 'public', 'static', 'js');
    `/* … *⁄` nhiều dòng — chênh 479. Trần phải là con số do chính bộ đếm này
    sinh ra, nếu không lần đo sau sẽ so hai thước khác nhau. */
 // 13 → 12 (20/09/2026): `chatbot.js` dời sang React (`components/Chatbot.tsx`).
-const TRAN_TEP = 12;
+// 12 → 11 (24/09/2026): `pages/landing.inline.js` xoá cùng trang quảng cáo cũ — `/`
+// nay chỉ chuyển hướng về khu của vai / màn đăng nhập (góp ý TopHSA).
+const TRAN_TEP = 11;
 // 07/09/2026: 7346 → 7337. Khối "ba hợp phần" viết nhầm vào tầng này rồi
 // chuyển sang `src/components/BaHopPhan.tsx` — chốt hãm bắt đúng lúc.
 // 13/09/2026: 7337 → 7343 (+6). VÁ LỖI trong tệp đã có (ngoại lệ ở trên):
@@ -134,7 +136,10 @@ const TRAN_TEP = 12;
 // trước mà chưa ai hạ trần. +2 là VÁ LỖI a11y trong tệp đã có (`questionaire.js`): nút
 // "Tiếp tục" đang khoá mờ `opacity .35` mà không mang `aria-disabled` — trông tắt, đọc
 // lên là bấm được, tương phản 1,8:1. Hạ trần luôn về số đo mới để khoá phần đã co.
-const TRAN_DONG_MA = 6774;
+// 24/09/2026: 6774 → 6696 (−78). HẠ: xoá `pages/landing.inline.js` cùng trang quảng cáo.
+// 24/09/2026: 6696 → 6567 (−129). HẠ: bỏ popup "Giữ chuỗi hôm nay" (dashboard.js), năm
+// bài diễn đàn mẫu C++/Git (`MOCK_POSTS` rỗng), `handlePersonalRoadmapAI` ("Premium").
+const TRAN_DONG_MA = 6567;
 
 let failures = 0;
 function check(name, cond, them) {

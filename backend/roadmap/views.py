@@ -133,12 +133,6 @@ class MyRoadmapView(NguoiDungView):
         return Response({'ok': True})
 
 
-class AiRoadmapView(NguoiDungView):
-    def post(self, request):
-        return Response({'error': 'Premium',
-                         'message': 'Tính năng này chỉ dành cho tài khoản Premium'}, status=402)
-
-
 class UpdateRoadmapItemView(NguoiDungView):
     def put(self, request, item_id):
         uid = request.user.id

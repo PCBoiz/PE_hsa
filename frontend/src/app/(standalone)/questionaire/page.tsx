@@ -13,12 +13,12 @@ export default function QuestionairePage() {
   return (
     <>
       <PageStyles hrefs={["/static/css/questionaire.css","/static/css/a11y.css"]} />
-      <title>Khảo sát đầu vào — ProgrammingEdu × TopHSA</title>
+      <title>Khảo sát đầu vào — TopHSA</title>
 
       <main className="survey-container">
         <h1 className="sr-only">Khảo sát đầu vào</h1>
         <div className="tech-logo">
-          <span className="logo-text">ProgrammingEdu × TopHSA</span>
+          <span className="logo-text">TopHSA</span>
         </div>
 
         <div className="progress-container">

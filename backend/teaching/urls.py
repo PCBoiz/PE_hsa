@@ -8,6 +8,7 @@ from teaching import (
                       dong_thoi_gian,
                       exports,
                       ho_so,
+                      lich,
                       lien_he_phu_huynh,
                       lop_cua_toi,
                       nhap_ket_qua_view,
@@ -27,6 +28,8 @@ urlpatterns = [
     path('api/teach/classes', views.TeachClassesView.as_view()),
     # Việc hôm nay — gom mọi lớp của người gọi. Chỉ đọc.
     path('api/teach/viec-hom-nay', viec_hom_nay.ViecHomNayView.as_view()),
+    # Lịch gộp theo trung tâm / giảng viên / lớp / học viên (§53, 23/09/2026). Chỉ đọc.
+    path('api/teach/lich', lich.LichView.as_view()),
     path('api/teach/classes/<int:class_id>', views.TeachClassDetailView.as_view()),
     path('api/teach/classes/<int:class_id>/students/<int:user_id>',
          views.TeachStudentView.as_view()),

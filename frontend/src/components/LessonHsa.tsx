@@ -87,7 +87,7 @@ export default function LessonHsa({ courseId }: { courseId: string }) {
           --t1…) cho cả 2 theme. Thiếu nó thì var(--card) rơi về fallback tối
           và thẻ câu hỏi vẫn đen dù đang ở theme sáng (audit 2026-08-13). */}
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/lesson_chrome.css', '/static/css/lesson_hsa.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
-      <title>Bài học HSA — ProgrammingEdu × TopHSA</title>
+      <title>Bài học HSA — TopHSA</title>
       {/* Tải trước cầu nối + engine ngay từ HTML: `LegacyScripts` chỉ chèn thẻ
           script sau hydrate — lúc ấy tệp đã nằm sẵn trong bộ đệm (cùng lối với
           Trang của tôi). */}

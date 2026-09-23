@@ -13,7 +13,7 @@
  *                          `common/permissions.py` bởi `quyen-vai.test.mjs`)
  *   · `van-hanh`         → `app/(standalone)/quan-tri/vai.ts` (`VAI_VAO_KHU`, hoặc
  *                          `TABS[href].vai` khi thẻ trỏ vào một trang cụ thể)
- *   · `soan-giao-trinh`  → `app/(standalone)/admin/page.tsx::DUOC_VAO`
+ *   · `soan-giao-trinh`  → `app/(standalone)/giao-trinh/page.tsx::DUOC_VAO`
  *   · `moi-nhan-su`      → cả năm vai nhân sự, không cổng
  * Thêm thẻ mới mà không có `cong` là phép kiểm đỏ. Thêm khu mới thì vẫn phải ĐI
  * THỬ bằng tài khoản của vai đó (lượt đi sáu vai 20/09) — phép kiểm giữ cho
@@ -59,7 +59,7 @@ export const KHU_VIEC: readonly KhuViec[] = [
     moTa: 'Tài khoản, lớp, đợt học, liên hệ phụ huynh, nhật ký thao tác.',
   },
   {
-    nhan: 'Soạn giáo trình', icon: 'wrench', url: '/admin', cong: 'soan-giao-trinh',
+    nhan: 'Giáo trình', icon: 'book-open', url: '/giao-trinh', cong: 'soan-giao-trinh',
     vai: [VAI_BIEN_TAP, VAI_QUAN_TRI],
     moTa: 'Khoá, bài, câu hỏi; nhập đề từ bảng tính.',
   },
@@ -79,3 +79,23 @@ export const KHU_VIEC: readonly KhuViec[] = [
 ];
 
 export const khuCua = (vai?: string) => (vai ? KHU_VIEC.filter((k) => k.vai.includes(vai)) : []);
+
+/**
+ * Trang ĐẦU sau đăng nhập, theo vai (24/09/2026, góp ý TopHSA #3/#4).
+ *
+ * Trước hôm nay mọi nhân sự đăng nhập xong đều rơi vào `/dashboard` — một trang
+ * thẻ trung gian nằm cạnh menu "Học" của học viên — rồi mới chọn khu. Khách thử
+ * tài khoản giáo viên thấy ngay nút "Đăng ký khoá học" và hỏi mục ấy để làm gì.
+ * Nay vào thẳng khu làm việc. `e2e/unit/khu-theo-vai.test.mjs` đối chiếu mỗi
+ * trang đích với CỔNG THẬT của trang ấy — trang không mở cho vai ấy là đỏ.
+ * Học viên không có mục ở đây: vẫn `/dashboard`.
+ */
+export const TRANG_DAU: Readonly<Record<string, string>> = {
+  [VAI_GIANG_VIEN]: '/giang-day',
+  [VAI_TRO_GIANG]: '/giang-day',
+  [VAI_HOC_VU]: '/quan-tri/tong-quan',
+  [VAI_QUAN_TRI]: '/quan-tri/tong-quan',
+  [VAI_BIEN_TAP]: '/giao-trinh',
+};
+
+export const trangDau = (vai?: string | null) => (vai && TRANG_DAU[vai]) || '/dashboard';

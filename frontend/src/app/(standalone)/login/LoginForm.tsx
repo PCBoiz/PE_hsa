@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDaGan } from '@/lib/daGan';
 import { oChu } from '@/lib/form';
-import { VAI_HOC_VIEN } from '@/lib/vaiTro';
+import { trangDau } from '@/lib/khuTheoVai';
 
 import { Button, Field } from '@/components/ui';
 
@@ -52,6 +52,29 @@ type FieldErrors = { email?: string; password?: string };
  *  nghĩ là hỏng. */
 const GIAY_NOI_DANG_THUC = 6000;
 
+/**
+ * Nhờ trình duyệt LƯU MẬT KHẨU sau khi đăng nhập được — chỉ khi người dùng tick
+ * "Ghi nhớ đăng nhập" (máy riêng). Chrome/Edge có `PasswordCredential`: gọi
+ * `store()` là hiện ngay hộp "Lưu mật khẩu?", không phải chờ trình duyệt tự đoán
+ * (form này gửi bằng `fetch`, đoán có khi trượt). Safari/Firefox không có API ấy
+ * thì dựa vào `autoComplete` của hai ô như cũ. Không chờ quá 1,5 s: lưu hay không
+ * cũng không được giữ người dùng ở màn đăng nhập.
+ */
+async function nhoMatKhau(id: string, password: string) {
+  const W = window as unknown as {
+    PasswordCredential?: new (d: { id: string; password: string }) => Credential;
+  };
+  if (!W.PasswordCredential || !navigator.credentials?.store) return;
+  try {
+    await Promise.race([
+      navigator.credentials.store(new W.PasswordCredential({ id, password })),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]);
+  } catch {
+    /* người dùng từ chối / trình duyệt chặn — không sao */
+  }
+}
+
 export default function LoginForm({ oauthError }: { oauthError?: string | null }) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -97,6 +120,9 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
     const form = new FormData(e.currentTarget);
     const email = oChu(form, 'email').trim();
     const password = oChu(form, 'password');
+    // Ô ghi nhớ (góp ý TopHSA #1, 24/09/2026): máy chủ cấp phiên 30 ngày khi `nho`
+    // là `true`; không tick → phiên hết khi đóng trình duyệt (máy dùng chung).
+    const nho = form.get('nho') === 'on';
 
     if (!email || !password) {
       setFieldErrors({
@@ -114,7 +140,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, nho }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -154,20 +180,22 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
         return;
       }
 
+      if (nho) await nhoMatKhau(email, password);
+
       // Tài khoản do trung tâm cấp, mật khẩu tạm → bắt đổi trước khi vào học.
       // Học viên chưa làm khảo sát đầu vào → khảo sát trước (máy chủ chỉ bật cờ
       // này cho vai Học viên): mốc thi, điểm mục tiêu, hợp phần 3 là thứ Trang
       // của tôi, kế hoạch và trợ lý đều cần. Tới 20/09/2026 cờ này được trả về
       // mà không ai đọc — em mới rơi vào một trang toàn dấu "—".
-      // `?streak=1` bật thẻ "Giữ chuỗi hôm nay" — của học viên; nhân sự vào
-      // Trang của tôi không kèm lời mời "học một bài".
+      // Nhân sự vào THẲNG khu làm việc của vai mình (24/09/2026, góp ý TopHSA
+      // #3/#4) thay vì trang thẻ trung gian ở /dashboard — `TRANG_DAU` ở
+      // `lib/khuTheoVai.ts`; học viên về /dashboard. `?streak=1` (thẻ "Giữ chuỗi
+      // hôm nay") đã bỏ cùng ngày — anh Sơn chốt bỏ popup, giữ ô chuỗi ngày.
       window.location.href = data.must_change_password
         ? '/doi-mat-khau?lan-dau=1'
         : data.needs_questionnaire
           ? '/questionaire'
-          : data.role === VAI_HOC_VIEN
-            ? '/dashboard?streak=1'
-            : '/dashboard';
+          : trangDau(data.role);
     } catch {
       setFormError('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {
@@ -250,6 +278,13 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
           ngày thường mất khoảng một phút — cứ để trang này mở.
         </p>
       )}
+      {/* Không tick sẵn: máy ở trung tâm là máy dùng chung — mặc định an toàn hơn. */}
+      <label className="-my-1 flex min-h-11 cursor-pointer items-center gap-3 text-body text-ink-2">
+        <input type="checkbox" name="nho" className="size-5 shrink-0 accent-brand-fill" />
+        {/* Một dòng: khách chê nhiều chữ (24/09). "trên máy này" đủ nói ý máy dùng
+            chung; thời hạn 30 ngày nằm trong bài Hướng dẫn. */}
+        Ghi nhớ đăng nhập trên máy này
+      </label>
       <Button type="submit" id="loginBtn" full loading={loading} disabled={!daGan}>
         {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </Button>

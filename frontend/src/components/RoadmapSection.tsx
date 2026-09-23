@@ -34,9 +34,6 @@ export default function RoadmapSection() {
               </div>
             </div>
             <div className="rm-personal-hd-right">
-              <button className="rm-ai-btn" onClick={() => W().handlePersonalRoadmapAI()} title="Chỉ dành cho tài khoản Premium">
-                🤖 Tạo bằng AI <span className="rm-premium-badge">Premium</span>
-              </button>
               <button className="rm-save-btn" onClick={() => W().savePersonalRoadmap()}>💾 Lưu lộ trình</button>
             </div>
           </div>
@@ -44,15 +41,15 @@ export default function RoadmapSection() {
           {/* Visual toolbar */}
           <div className="rmv-toolbar">
             <button className="rmv-btn rmv-btn-add" onClick={() => W().rmVAddNode()}>
-              <span>➕</span> Thêm node
+              <span>➕</span> Thêm bước
             </button>
             <button className="rmv-btn rmv-btn-connect" id="rm-vbtn-connect" onClick={() => W().rmVToggleConnect()}>
-              <span>🔗</span> Nối node
+              <span>🔗</span> Nối bước
             </button>
             <button className="rmv-btn rmv-btn-clear" onClick={() => W().rmVClearAll()}>
               <span>🗑️</span> Xóa hết
             </button>
-            <div className="rmv-hint" id="rm-vhint">Click &quot;Thêm node&quot; để bắt đầu</div>
+            <div className="rmv-hint" id="rm-vhint">Bấm &quot;Thêm bước&quot; để bắt đầu</div>
             <div className="rmv-zoom-wrap">
               <button className="rmv-zoom-btn" onClick={() => W().rmVZoomOut()} title="Thu nhỏ (Ctrl+Scroll)">−</button>
               <span className="rmv-zoom-label" id="rm-vzoom-label">100%</span>

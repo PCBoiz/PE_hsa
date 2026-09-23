@@ -63,7 +63,7 @@ const TRANG: Record<string, Bang> = {
   // Hai trang CHỈ quản trị viên — hai trong ba thứ cẩm nang bản đầu viết sai.
   '/quan-tri/nhat-ky': tatCa(false),
   '/quan-tri/co-so-hoc-phi': tatCa(false),
-  '/admin': { 'Giảng viên': false, 'Trợ giảng': false, 'Quản lý học vụ': false, 'Biên tập nội dung': true },
+  '/giao-trinh': { 'Giảng viên': false, 'Trợ giảng': false, 'Quản lý học vụ': false, 'Biên tập nội dung': true },
   // Khu tài liệu mở cho MỌI vai (22/09/2026) — lọc chứ không chặn.
   '/huong-dan': tatCa(true),
   // Trang học viên: nhân sự được chỉ đường sang khu Giảng dạy.

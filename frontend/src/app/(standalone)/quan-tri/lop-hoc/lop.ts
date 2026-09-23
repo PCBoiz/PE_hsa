@@ -38,6 +38,10 @@ export type LopRow = {
   examDate: string | null;
   meetingUrl: string | null;
   note: string | null;
+  /** `online` / `offline` / null — §53. Tuỳ chọn: máy chủ cũ (trước 24/09/2026) không trả. */
+  mode?: string | null;
+  /** Phòng học của lớp tại trung tâm — buổi để trống phòng thì theo đây. */
+  room?: string | null;
   termId: number | null;
   termName: string | null;
   termCode: string | null;
@@ -56,6 +60,8 @@ export const TRUONG = [
   { form: 'schedule', row: 'schedule', than: 'schedule', kieu: 'chu' },
   { form: 'meetingUrl', row: 'meetingUrl', than: 'meeting_url', kieu: 'chu' },
   { form: 'note', row: 'note', than: 'note', kieu: 'chu' },
+  { form: 'mode', row: 'mode', than: 'mode', kieu: 'chu' },
+  { form: 'room', row: 'room', than: 'room', kieu: 'chu' },
   { form: 'startsOn', row: 'startsOn', than: 'starts_on', kieu: 'chu' },
   { form: 'endsOn', row: 'endsOn', than: 'ends_on', kieu: 'chu' },
   { form: 'examDate', row: 'examDate', than: 'exam_date', kieu: 'chu' },

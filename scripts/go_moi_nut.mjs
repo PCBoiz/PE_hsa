@@ -65,7 +65,7 @@ const TRANG = [
   ['/quan-tri/tong-quan', 'Quản trị · tổng quan', false],
   ['/quan-tri/tai-khoan', 'Quản trị · tài khoản', false],
   ['/quan-tri/lop-hoc', 'Quản trị · lớp học', false],
-  ['/admin', 'Soạn giáo trình', false],
+  ['/giao-trinh', 'Giáo trình', false],
   ['/giang-day/buoi-hoc/1', 'Giảng dạy · buổi học', false],
   /* Bốn màn dựng 07/09/2026, thêm cùng lượt với `do_giao_dien.mjs`. Bộ này bấm
      MỌI nút và bắt lỗi JS; không thêm thì "0 lỗi" là con số tính trên tập

@@ -155,6 +155,17 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
           )}
           {!laHocVien && <Chip tone="neutral">{goc.role === 'admin' ? 'Quản trị viên' : goc.role}</Chip>}
           {goc.status === 'suspended' && <Chip tone="bad">Đã khoá</Chip>}
+          {/* Lịch tuần này của RIÊNG em — gộp mọi lớp em đang học (`/giang-day/lich`
+              lọc theo tư cách thành viên tại giờ từng buổi). Học vụ hay được hỏi
+              "tối nay em học lớp nào, phòng nào" khi phụ huynh gọi tới. */}
+          {laHocVien && (
+            <Link
+              href={`/giang-day/lich?hoc_vien=${goc.id}`}
+              className="ml-auto inline-flex min-h-11 items-center text-small text-brand-ink underline"
+            >
+              Lịch học của em
+            </Link>
+          )}
         </div>
         {goc.studentCode && (
           <p className="text-small text-ink-3">

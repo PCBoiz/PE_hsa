@@ -16,6 +16,8 @@ bố mẹ nhìn cùng một con số; hai hàm đếm hai kiểu là cãi nhau �
 
 Buổi tới: chưa huỷ, gần nhất từ bây giờ (buổi đang diễn ra vẫn là buổi tới —
 kèm cờ). Link của buổi, thiếu thì của lớp — cùng luật với "Việc hôm nay".
+Hình thức / phòng cũng vậy (§53, 24/09/2026): buổi để trống thì theo lớp — em
+học tại trung tâm cần biết PHÒNG, không cần nút "Vào phòng học".
 
 Ngày thi của lớp khác mục tiêu cá nhân thì NÓI (`ngayThiLech`), không tự đổi:
 anh Sơn chốt "nhắc + một nút", em bấm mới đổi (qua `PATCH /api/hsa/goals`).
@@ -42,12 +44,15 @@ def _iso(v):
     return v.isoformat() if v else None
 
 
-def _buoi_dict(r, link_lop, nay):
+def _buoi_dict(r, lop, nay):
+    """`lop`: dòng lớp (`meeting_url`, `mode`, `room`) — thứ buổi để trống thì kế thừa."""
     ket = r['starts_at'] + timedelta(minutes=r['duration_minutes'] or DEFAULT_SESSION_MINUTES)
     return {
         'sessionId': r['id'], 'startsAt': _iso(r['starts_at']),
         'durationMinutes': r['duration_minutes'], 'topic': r['topic'],
-        'meetingUrl': r['meeting_url'] or link_lop or None,
+        'meetingUrl': r['meeting_url'] or lop['meeting_url'] or None,
+        'hinhThuc': r['mode'] or lop['mode'],
+        'phong': r['room'] or lop['room'],
         'dangDienRa': r['starts_at'] <= nay < ket,
     }
 
@@ -62,6 +67,7 @@ class LopCuaToiView(NguoiDungView):
         # Một em có thể ở hai lớp (ôn hai hợp phần); trả cả hai.
         thanh_vien = q('''SELECT m.class_id, m.joined_at,
                                  c.name, c.code, c.schedule, c.meeting_url, c.exam_date,
+                                 c.mode, c.room,
                                  c.starts_on, c.ends_on, u.name AS teacher_name,
                                  (SELECT MIN(s.starts_at) FROM attendance a
                                     JOIN class_sessions s ON s.id = a.session_id
@@ -78,14 +84,16 @@ class LopCuaToiView(NguoiDungView):
         cac_dot = {}
         bai_tap = {}
         if ids:
-            for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
+            for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
+                                 mode, room
                           FROM class_sessions
                           WHERE class_id = ANY(%s) AND status = 'cancelled'
                             AND starts_at >= %s AND starts_at < %s
                           ORDER BY starts_at''',
                        (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY))):
                 da_huy.setdefault(r['class_id'], []).append(r)
-            for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url
+            for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
+                                 mode, room
                           FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY class_id
                                                              ORDER BY starts_at) AS tt
                                 FROM class_sessions
@@ -120,7 +128,7 @@ class LopCuaToiView(NguoiDungView):
         lop = []
         for r in thanh_vien:
             cid = r['class_id']
-            ds = [_buoi_dict(b, r['meeting_url'], nay) for b in sap_toi.get(cid, [])]
+            ds = [_buoi_dict(b, r, nay) for b in sap_toi.get(cid, [])]
             # Đầu kỳ = ngày vào lớp, HOẶC sớm hơn nếu giảng viên đã tick em ở
             # buổi trước đó (`joined_at` là lúc học vụ bấm nút — xem ngoại lệ
             # trong `parent_report._buoi_cua_em`, 20/09/2026).
@@ -129,12 +137,13 @@ class LopCuaToiView(NguoiDungView):
             lop.append({
                 'id': cid, 'name': r['name'], 'code': r['code'], 'schedule': r['schedule'],
                 'teacherName': r['teacher_name'], 'meetingUrl': r['meeting_url'],
+                'mode': r['mode'], 'room': r['room'],
                 'examDate': _iso(r['exam_date']),
                 'startsOn': _iso(r['starts_on']), 'endsOn': _iso(r['ends_on']),
                 'joinedAt': _iso(r['joined_at']),
                 'buoiToi': ds[0] if ds else None,
                 'sapToi': ds,
-                'daHuy': [_buoi_dict(b, r['meeting_url'], nay) for b in da_huy.get(cid, [])],
+                'daHuy': [_buoi_dict(b, r, nay) for b in da_huy.get(cid, [])],
                 'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid]),
                 'baiTap': bai_tap.get(cid, {'chuaNop': 0, 'hanSom': None}),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em

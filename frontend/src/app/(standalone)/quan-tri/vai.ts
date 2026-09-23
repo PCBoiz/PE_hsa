@@ -75,13 +75,9 @@ export const TABS: readonly Tab[] = [
   // Tài liệu vận hành, viết theo VIỆC. Cùng vai với bảng quyền: người phải trả
   // lời câu "làm thế nào" cho giảng viên mới chính là học vụ.
   { href: '/quan-tri/huong-dan', label: 'Hướng dẫn', icon: 'book-open', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
-  // Liên kết SANG khu khác, không phải trang của khu này — nên vai ở đây là
-  // "ai ĐANG Ở TRONG khu này thì thấy đường sang", không phải "ai vào được
-  // /admin". `Biên tập nội dung` vào được /admin nhưng KHÔNG vào được khu này
-  // (họ không có trang nào ở đây), nên họ bị chặn ở `VAI_VAO_KHU` trước khi
-  // `AdminNav` kịp dựng: để `VAI_BIEN_TAP` ở đây là một nhánh chết trông như
-  // một quyền. Cổng thật của /admin nằm ở `admin/page.tsx`.
-  { href: '/admin', label: 'Soạn giáo trình', icon: 'pencil', vai: [VAI_QUAN_TRI] },
+  // KHÔNG còn tab "Soạn giáo trình" (24/09/2026, góp ý TopHSA #4): tab ấy làm
+  // khách đọc thành "soạn giáo trình nằm trong khu vận hành". Giáo trình là khu
+  // riêng `/giao-trinh`, vào bằng nút "Giáo trình" trên thanh chính.
 ] as const;
 
 /** Đổi bảng tab thành danh sách mục của `AppShell`. Một nguồn, hai hình dạng. */

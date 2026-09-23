@@ -164,7 +164,7 @@ if (TOKEN && existsSync(TOKEN)) {
   const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
   const host = new URL(GOC).hostname;
   await c.addCookies([{ name: 'pe_at', value: tok.access, domain: host, path: '/', httpOnly: true, sameSite: 'Lax', secure: GOC.startsWith('https') }]);
-  for (const duong of ['/dashboard', '/courses/hsa_quantitative', '/lesson/hsa_quantitative?lesson=1', '/mock', '/quan-tri/tong-quan', '/admin', '/giang-day/buoi-hoc/1']) {
+  for (const duong of ['/dashboard', '/courses/hsa_quantitative', '/lesson/hsa_quantitative?lesson=1', '/mock', '/quan-tri/tong-quan', '/giao-trinh', '/giang-day/buoi-hoc/1']) {
     const p = await c.newPage();
     const ds = loiCsp(p);
     await p.goto(GOC + duong, { waitUntil: 'domcontentloaded', timeout: 45000 });

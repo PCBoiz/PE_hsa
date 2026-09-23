@@ -228,7 +228,9 @@ for (const p of moiNguon(join(SRC, 'app'))) {
 
 // 5 → 4 (20/09/2026): /mock chỉ nạp `chatbot.js`, mà trợ lý nay là React — trang
 // ấy KHÔNG còn script cũ nào. Đây là chiều đúng của con số.
-check('tìm được các trang có nạp script cũ', trang.size >= 4, `${trang.size} trang`);
+// 4 → 3 (24/09/2026): trang gốc `/` thôi là trang quảng cáo (nạp `icons.js` +
+// `landing.inline.js`) — nay chỉ chuyển hướng. Cùng chiều đúng.
+check('tìm được các trang có nạp script cũ', trang.size >= 3, `${trang.size} trang`);
 
 const moCoi = [];
 const thieuTep = [];

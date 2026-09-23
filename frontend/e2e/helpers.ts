@@ -285,7 +285,9 @@ export async function vaoTheoVai(page: Page, vai: string): Promise<boolean> {
   await page.fill('#login-password', tk.matKhau);
   await page.click('#loginBtn');
   try {
-    await page.waitForURL('**/dashboard**', { timeout: 25_000 });
+    // Rời /login là đủ: từ 24/09/2026 nhân sự vào THẲNG khu của vai mình
+    // (`TRANG_DAU` ở `lib/khuTheoVai.ts`), không còn qua /dashboard.
+    await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 25_000 });
   } catch {
     return false;
   }

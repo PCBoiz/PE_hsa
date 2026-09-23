@@ -965,75 +965,11 @@ function skToggle(nut) { nut.setAttribute('aria-expanded', nut.getAttribute('ari
   var _selectedCat = 'question';
   var _cmtSortMap = {};
 
-  var MOCK_POSTS = [
-    {
-      id: 'm1', cat: 'question',
-      title: 'Làm thế nào để hiểu rõ về con trỏ trong C/C++?',
-      body: 'Mình đang học C++ nhưng phần con trỏ khá khó hiểu, đặc biệt là con trỏ đôi (double pointer). Mọi người có thể giải thích hoặc gợi ý tài liệu dễ hiểu không?',
-      author: 'Trần Minh Tuấn', avatar: '🧑‍💻',
-      time: Date.now() - 2 * 3600 * 1000,
-      reactions: { like: 10, love: 2, haha: 0, wow: 2, sad: 0, angry: 0 }, myReaction: null,
-      comments: 3,
-      commentList: [
-        { id: 'c1a', author: 'Nguyễn Văn An', avatar: '👨‍💻', time: Date.now() - 100 * 60 * 1000, text: 'Con trỏ đôi về bản chất là một con trỏ trỏ tới một con trỏ khác. Bạn thử hình dung bộ nhớ như một dãy ô, mỗi ô có địa chỉ riêng — con trỏ chỉ là biến lưu địa chỉ đó thôi!', reactions: { like: 4, love: 1, haha: 0, wow: 0, sad: 0, angry: 0 }, myReaction: null, replies: [{ id: 'r1a', author: 'Trần Minh Tuấn', avatar: '🧑‍💻', time: Date.now() - 85 * 60 * 1000, text: 'Cảm ơn bạn! Cách so sánh với dãy ô bộ nhớ dễ hình dung lắm, mình hiểu ngay rồi!', replyTo: 'Nguyễn Văn An' }] },
-        { id: 'c1b', author: 'Lê Thị Hoa', avatar: '👩‍🏫', time: Date.now() - 60 * 60 * 1000, text: 'Mình học từ sách "C Programming Language" của Kernighan & Ritchie, phần con trỏ giải thích rất trực quan. Bạn nên thử debug từng bước để thấy giá trị thay đổi.', reactions: { like: 2, love: 0, haha: 0, wow: 1, sad: 0, angry: 0 }, myReaction: null, replies: [] },
-        { id: 'c1c', author: 'Phạm Đức Huy', avatar: '🧑‍🎓', time: Date.now() - 20 * 60 * 1000, text: 'Series C++ của The Cherno trên YouTube giải thích con trỏ bằng hình ảnh rất dễ hiểu. Mình đã học từ đó và hiểu ngay sau 2 video!', reactions: { like: 6, love: 2, haha: 0, wow: 0, sad: 0, angry: 0 }, myReaction: null, replies: [] },
-      ],
-    },
-    {
-      id: 'm2', cat: 'share',
-      title: 'Tổng hợp 10 extension VSCode hữu ích nhất cho lập trình viên Python',
-      body: 'Sau một thời gian dùng VSCode để code Python, mình tổng hợp lại các extension mình thấy thực sự hữu ích. Hi vọng giúp ích cho mọi người: Pylance, Black Formatter, Python Debugger...',
-      author: 'Nguyễn Hà Linh', avatar: '👩‍💻',
-      time: Date.now() - 5 * 3600 * 1000,
-      reactions: { like: 25, love: 7, haha: 0, wow: 0, sad: 0, angry: 0 }, myReaction: null,
-      comments: 2,
-      commentList: [
-        { id: 'c2a', author: 'Trần Bình', avatar: '🧑‍💻', time: Date.now() - 3 * 3600 * 1000, text: 'Mình thêm GitLens vào danh sách nhé, siêu hữu ích khi làm việc nhóm, xem ai commit gì ngay trong editor.' },
-        { id: 'c2b', author: 'Mai Anh', avatar: '👩‍🎓', time: Date.now() - 1 * 3600 * 1000, text: 'Docker extension cũng rất tiện nếu bạn hay dùng container. Quản lý image và container ngay trong VSCode luôn.' },
-      ],
-    },
-    {
-      id: 'm3', cat: 'discuss',
-      title: 'Nên học Java hay Python trước khi học Machine Learning?',
-      body: 'Mình đang phân vân giữa Java và Python để bắt đầu. Mình nghe nói Python phổ biến hơn trong ML, nhưng Java lại mạnh hơn về OOP. Mọi người nghĩ sao?',
-      author: 'Lê Văn Đức', avatar: '🧑‍🎓',
-      time: Date.now() - 24 * 3600 * 1000,
-      reactions: { like: 14, love: 3, haha: 1, wow: 3, sad: 0, angry: 0 }, myReaction: null,
-      comments: 3,
-      commentList: [
-        { id: 'c3a', author: 'Hoàng Nam', avatar: '👨‍💻', time: Date.now() - 20 * 3600 * 1000, text: 'Python chắc chắn rồi! Hầu hết thư viện ML như TensorFlow, PyTorch, scikit-learn đều Python-first. Java không có hệ sinh thái ML mạnh như vậy.' },
-        { id: 'c3b', author: 'Thu Hương', avatar: '👩‍💻', time: Date.now() - 15 * 3600 * 1000, text: 'Mình cũng từng phân vân như bạn, cuối cùng chọn Python và không hối hận. NumPy + Pandas là bộ đôi không thể thiếu, học Python để dùng được 2 thư viện này.' },
-        { id: 'c3c', author: 'Việt Anh', avatar: '🧑', time: Date.now() - 5 * 3600 * 1000, text: 'Java mạnh về enterprise và Android, nhưng cho ML thì Python win tuyệt đối. Bắt đầu Python đi bạn, 2-3 tháng là dùng được thư viện cơ bản rồi.' },
-      ],
-    },
-    {
-      id: 'm4', cat: 'share',
-      title: 'Mình đã hoàn thành khóa học HTML/CSS sau 3 tuần — Chia sẻ kinh nghiệm',
-      body: 'Sau 3 tuần học chăm chỉ, mình đã hoàn thành khóa HTML/CSS. Bí quyết của mình là học mỗi ngày ít nhất 1 tiếng và làm project nhỏ ngay sau khi học xong mỗi phần.',
-      author: 'Phạm Thị Mai', avatar: '👩‍🎓',
-      time: Date.now() - 2 * 24 * 3600 * 1000,
-      reactions: { like: 30, love: 12, haha: 0, wow: 5, sad: 0, angry: 0 }, myReaction: null,
-      comments: 2,
-      commentList: [
-        { id: 'c4a', author: 'Minh Khoa', avatar: '🧑‍💻', time: Date.now() - 40 * 3600 * 1000, text: 'Chúc mừng bạn! 3 tuần là rất nhanh đó. Bước tiếp theo bạn định học JavaScript hay framework nào không?' },
-        { id: 'c4b', author: 'Ngọc Linh', avatar: '👩‍🎓', time: Date.now() - 30 * 3600 * 1000, text: 'Làm project nhỏ sau mỗi bài là cách hay nhất để nhớ kiến thức lâu dài. Mình cũng áp dụng phương pháp này và tiến bộ rất nhanh!' },
-      ],
-    },
-    {
-      id: 'm5', cat: 'question',
-      title: 'Git merge vs Git rebase — khi nào nên dùng cái nào?',
-      body: 'Mình hay bị nhầm lẫn giữa merge và rebase. Anh/chị nào có thể giải thích sự khác biệt và khi nào thì nên dùng từng loại không ạ?',
-      author: 'Hoàng Quốc Bảo', avatar: '🧑',
-      time: Date.now() - 3 * 24 * 3600 * 1000,
-      reactions: { like: 7, love: 1, haha: 0, wow: 1, sad: 0, angry: 0 }, myReaction: null,
-      comments: 2,
-      commentList: [
-        { id: 'c5a', author: 'Đức Thịnh', avatar: '👨‍💻', time: Date.now() - 60 * 3600 * 1000, text: 'Merge giữ lại lịch sử đầy đủ, thích hợp cho feature branch lớn. Rebase tạo lịch sử linear sạch hơn, hay dùng trước khi merge vào main để commit gọn gàng.' },
-        { id: 'c5b', author: 'Khánh An', avatar: '👩‍💻', time: Date.now() - 48 * 3600 * 1000, text: 'Rule of thumb: không rebase nhánh public đã push lên remote vì sẽ thay đổi lịch sử ảnh hưởng người khác. Chỉ rebase nhánh local của mình thôi nhé!' },
-      ],
-    },
-  ];
+  /* Năm bài diễn đàn MẪU (C++, Git, Python… của sản phẩm lập trình cũ) đã bỏ
+     24/09/2026 — TopHSA thấy chúng trên tài khoản quản trị. Mảng để rỗng chứ không
+     gỡ các nhánh đọc nó: diễn đàn sẽ viết lại bằng React (Đợt 3, diễn đàn công
+     khai) và cả khối này đi theo. */
+  var MOCK_POSTS = [];
 
   // Lấy post thật từ API, đã map sang model UI. Trả Promise<Array>.
   function loadPosts() {
@@ -2207,74 +2143,6 @@ var _forumTextQ = '';
 /* `forumSearch` / `forumClearSearch` ĐÃ CHUYỂN vào khối diễn đàn ở trên
    (tìm `window.forumSearch`). Xem lý do ngay tại đó — chúng gọi `renderPosts`,
    thứ chỉ tồn tại BÊN TRONG khối ấy. */
-
-/* ═══════════════════════════════════════════════════════
-   Popup nhắc giữ chuỗi học
-   ═══════════════════════════════════════════════════════ */
-(function () {
-  /* Nhắc giữ chuỗi ngày học.
-     Bản cũ là POPUP PHỦ KÍN màn hình (nền đen 55%, z-index 9999, khoá cuộn
-     trang) bật ngay sau mỗi lần đăng nhập — thứ đầu tiên học viên gặp là một
-     bức tường phải bấm bỏ. Nay là thẻ nhỏ trượt vào góc, tự tắt, không chặn
-     thao tác nào (audit 2026-08-19). */
-  function shouldShow() {
-    return new URLSearchParams(window.location.search).get('streak') === '1';
-  }
-
-  function cleanUrl() {
-    var url = new URL(window.location.href);
-    url.searchParams.delete('streak');
-    history.replaceState(null, '', url.toString());
-  }
-
-  function dismiss(el) {
-    if (!el || el.__di) return;
-    el.__di = true;
-    el.classList.remove('show');
-    setTimeout(function () { el.remove(); }, 400);
-  }
-
-  function show(streak) {
-    var el = document.createElement('div');
-    el.className = 'streak-toast';
-    el.setAttribute('role', 'status');
-    var dong = streak > 0
-      ? 'Bạn đang có <b>' + streak + ' ngày</b> liên tiếp — học một chút hôm nay để giữ chuỗi nhé.'
-      : 'Học một bài hôm nay để bắt đầu chuỗi ngày học của bạn.';
-    el.innerHTML =
-      '<span class="streak-toast-ic">🔥</span>' +
-      '<span class="streak-toast-body">' +
-        '<b>Giữ chuỗi hôm nay</b>' +
-        '<span>' + dong + '</span>' +
-        '<button type="button" class="streak-toast-go">Học tiếp →</button>' +
-      '</span>' +
-      '<button type="button" class="streak-toast-x" aria-label="Đóng">×</button>';
-    document.body.appendChild(el);
-    requestAnimationFrame(function () { el.classList.add('show'); });
-
-    el.querySelector('.streak-toast-x').onclick = function () { dismiss(el); };
-    el.querySelector('.streak-toast-go').onclick = function () {
-      dismiss(el);
-      var link = document.querySelector('#hsa-continue .hsa-cont-link');
-      if (link) { window.location.href = link.getAttribute('href'); return; }
-      if (typeof navigate === 'function') navigate('courses');
-    };
-    setTimeout(function () { dismiss(el); }, 9000); var goc = window.navigate; if (typeof goc === 'function') window.navigate = function () { dismiss(el); return goc.apply(this, arguments); }; // đổi view thì thôi che nút "Đăng ký" (agent F14, 21/09)
-  }
-
-  function init() {
-    if (!shouldShow()) return;
-    cleanUrl();
-    // Đợi hàng thẻ đổ số xong để nói ĐÚNG số ngày, thay vì câu chung chung.
-    setTimeout(function () {
-      var n = parseInt((document.getElementById('tile-streak') || {}).textContent, 10);
-      show(isNaN(n) ? 0 : n);
-    }, 1400);
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-})();
 
 /* ═══════════════════════════════════════════════════════
    Dashboard redesign — Leaderboard + Mini Roadmap Canvas

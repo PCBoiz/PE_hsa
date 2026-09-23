@@ -6,7 +6,7 @@
  * Ba khoảng số của nội dung bài được viết ở HAI NƠI, bằng HAI NGÔN NGỮ:
  *
  *     backend/lessons/content.py   `not 0 <= xp <= 500`
- *     admin/NoiDungBai.tsx         `min={0} max={500}`
+ *     giao-trinh/NoiDungBai.tsx         `min={0} max={500}`
  *
  * Hôm nay chúng khớp. Không có gì giữ cho chúng khớp: đổi trần XP ở Python là
  * biểu mẫu vẫn cho gõ 500, người soạn bấm Lưu và nhận một lỗi máy chủ cho con
@@ -32,7 +32,7 @@ const GOC = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BE = join(GOC, '..', 'backend');
 const PY = readFileSync(join(BE, 'lessons', 'luoc_do.py'), 'utf8');
 const FORM = readFileSync(
-  join(GOC, 'src', 'app', '(standalone)', 'admin', 'NoiDungBai.tsx'), 'utf8');
+  join(GOC, 'src', 'app', '(standalone)', 'giao-trinh', 'NoiDungBai.tsx'), 'utf8');
 
 let failures = 0;
 function check(name, cond, them) {

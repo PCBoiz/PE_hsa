@@ -574,6 +574,7 @@ def class_list(class_ids):
                        -- trường đang có giá trị, và bấm Lưu là xoá trắng —
                        -- đúng lớp lỗi vừa vá ở bộ soạn bài học sáng nay.
                        c.teacher_id, c.starts_on, c.ends_on, c.meeting_url, c.note,
+                       c.mode, c.room,
                        c.term_id, t.name AS term_name, t.code AS term_code,
                        u.name AS teacher_name, co.title AS course_title,
                        (SELECT COUNT(*) FROM class_members m
@@ -596,6 +597,8 @@ def class_list(class_ids):
         'startsOn': r['starts_on'].isoformat() if r['starts_on'] else None,
         'endsOn': r['ends_on'].isoformat() if r['ends_on'] else None,
         'meetingUrl': r['meeting_url'], 'note': r['note'],
+        # §53: hình thức + phòng MẶC ĐỊNH của lớp (buổi để trống thì theo đây).
+        'mode': r['mode'], 'room': r['room'],
         # Đợt học (§36). Có tên đợt ở đây thì danh sách lớp không phải đọc tên
         # lớp để đoán "lớp này thuộc mùa thi nào" nữa.
         'termId': r['term_id'], 'termName': r['term_name'], 'termCode': r['term_code'],

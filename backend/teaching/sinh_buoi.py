@@ -43,6 +43,7 @@ from common.permissions import IsTeachingStaff, can_see_class, is_assistant
 from stats.goals import as_date
 from teaching.ngay_le import le_co_dinh_trong
 from teaching.sessions import DEFAULT_SESSION_MINUTES, MAX_SESSION_MINUTES
+from teaching.trung_lich import tim_trung_nhieu
 
 #: Trần buổi tạo MỘT lần. Một đợt ba tháng hai buổi/tuần là ~26; năm buổi/tuần
 #: cả năm học là ~200. Quá số đó gần như chắc chắn là chọn nhầm khoảng ngày, và
@@ -146,6 +147,19 @@ def _doc_than(body):
 
 def _ngay_vn(d):
     return d.strftime('%d/%m/%Y')
+
+
+def _cau_trung_lop(ds):
+    """Ca trùng của MỘT ngày → "Trùng: giảng viên dạy lớp X; 2 em học lớp Y; phòng P201 (lớp Z)."."""
+    phan = []
+    for t in ds:
+        if t['loai'] == 'giang-vien':
+            phan.append('giảng viên dạy lớp %s' % t['lop'])
+        elif t['loai'] == 'hoc-vien':
+            phan.append('%d em học lớp %s' % (t['soEm'], t['lop']))
+        else:
+            phan.append('phòng %s (lớp %s)' % (t['phong'], t['lop']))
+    return 'Trùng: %s.' % '; '.join(phan)
 
 
 def _cham(class_id, lop, ts):
@@ -258,6 +272,20 @@ class GenerateSessionsView(APIView):
 
         nay = local_now()
         canh_bao = []
+        # Trùng với LỚP KHÁC (giảng viên / học viên / phòng — `trung_lich`): cảnh
+        # báo trên từng dòng, VẪN tạo. Khác `trung` ở trên (lớp này đã có buổi) —
+        # đó là chạy lại, còn đây có thể là ca cố ý (dạy ghép, học bù).
+        trung_lop = tim_trung_nhieu(class_id, can_tao, ts['phut'])
+        so_trung_lop = 0
+        for b in buoi:
+            ds = trung_lop.get(datetime.fromisoformat(b['startsAt'])) if b['trangThai'] == 'tao' else None
+            if ds:
+                so_trung_lop += 1
+                b['trungLop'] = ds
+                b['canhBao'] = ' '.join(filter(None, (b['canhBao'], _cau_trung_lop(ds))))
+        if so_trung_lop:
+            canh_bao.append('%d buổi trùng giờ với lớp khác (xem cột ghi chú). Vẫn tạo được — kiểm '
+                            'lại nếu không cố ý.' % so_trung_lop)
         if not lop['term_id']:
             canh_bao.append('Lớp chưa thuộc đợt học nào nên không có ngày nghỉ nào được bỏ.')
         qua_khu = sum(1 for bd in can_tao if bd < nay)

@@ -23,6 +23,9 @@ const BUOI = {
   durationMinutes: z.number().nullable(),
   topic: chu,
   meetingUrl: chu,
+  // Tuỳ chọn: máy chủ trước 24/09/2026 (§53) không trả — khối vẫn phải dựng được.
+  hinhThuc: chu.optional(),
+  phong: chu.optional(),
   dangDienRa: z.boolean(),
 };
 const HINH_DANG = z.looseObject({
@@ -32,6 +35,8 @@ const HINH_DANG = z.looseObject({
     schedule: chu,
     teacherName: chu,
     examDate: chu,
+    mode: chu.optional(),
+    room: chu.optional(),
     buoiToi: z.looseObject(BUOI).nullable(),
     sapToi: z.array(z.looseObject(BUOI)),
     // `daHuy` cũng đi qua `_buoi_dict` nên có ĐỦ khoá như một buổi thường —

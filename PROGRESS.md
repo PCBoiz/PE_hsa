@@ -90,6 +90,80 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp) — H1 hàng rào CSDL · 1.1 bốn góp ý TopHSA (ghi nhớ đăng nhập, đường đi theo vai, cổng vào, dọn màn học viên)
+
+Theo `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` (mục H1, 1.1a–d). Việc của anh: `docs/VIEC_CUA_ANH.md` Phần 0.
+
+- **H1** (`b1ed6bc`): pytest + runserver từ chối chạy khi CSDL trùng `PE_DB_HOST_PRODUCTION` (biến chỉ trên máy dev —
+  **anh cần thêm dòng này vào `backend/.env`**, N2); `ci.yml` thôi rơi về `DATABASE_URL` production.
+- **1.1a Ghi nhớ đăng nhập** (`6502a1a` lõi + ô tick ở mẻ sau): tick → phiên 30 ngày, xoay token vẫn giữ 30 ngày;
+  không tick → cookie PHIÊN (đóng trình duyệt là hết). Tick còn nhờ Chrome/Edge lưu mật khẩu (`PasswordCredential`).
+  Ô KHÔNG tick sẵn (máy dùng chung ở trung tâm), nhãn một dòng "Ghi nhớ đăng nhập trên máy này".
+- **1.1b Đường đi theo vai**: đăng nhập xong GV/TG → `/giang-day`, học vụ/admin → `/quan-tri/tong-quan`, Biên tập →
+  `/giao-trinh` (`TRANG_DAU`, guard `khu-theo-vai` đối chiếu trang đích với CỔNG THẬT — đột biến đưa Biên tập vào Vận
+  hành → đỏ). `/admin` → `/giao-trinh` (307 giữ link cũ); nút "Quản trị" → "Giáo trình"; bỏ tab "Soạn giáo trình" ở
+  Vận hành và link "Khu vận hành" trong khu soạn; nút "Giảng dạy" luôn tới `/giang-day` (hết hai đích).
+- **1.1c Cổng vào**: `/` chỉ còn chuyển hướng (về khu của vai / `/login`); gỡ trang quảng cáo ~7.000 ký tự +
+  `ThuMotCau`, `PhuHuynhNhanGi`, `landing.inline.js`, test số liệu trang giới thiệu (một trong 4 test đỏ vì "76 vs 78
+  bài" — hết theo). Mọi chỗ "ProgrammingEdu × TopHSA" hiển thị → "TopHSA"; màn đăng nhập bỏ "3 hợp phần · 76 bài".
+- **1.1d Màn học viên**: ẩn thẻ Bảng xếp hạng (hàng còn một cột; hạng riêng của em vẫn ở Hồ sơ); bỏ popup "Giữ chuỗi
+  hôm nay" (và `?streak=1`); bỏ 5 bài diễn đàn MẪU C++/Git (quản trị viên thấy); bỏ nút "Tạo bằng AI · Premium" + view
+  giả `api/me/roadmap/ai` (luôn 402); "node" → "bước"; nhãn Cài đặt hiện ĐÚNG vai (từng gõ cứng "Học viên").
+  Còn lại cho 1.3: chữ "Miễn phí / Chứng chỉ hoàn thành" ở trang chi tiết khoá (trang ấy làm lại phần đăng ký).
+- Tầng JS cũ: 12 tệp / 6.774 → **11 tệp / 6.567** dòng mã; trần hạ theo.
+
+### Thước hỏng / bẫy gặp trong lượt
+- `git mv` thư mục tuyến rồi build: `.next/dev/types` (của lần `next dev` cũ) còn trỏ `admin/page.js` → build đỏ ở bước
+  kiểm kiểu. Xoá `.next/dev` là đủ (tệp sinh tự động).
+- Helper e2e `vaoTheoVai` chờ `**/dashboard**` sau đăng nhập — nhân sự nay vào thẳng khu → đổi sang "đã rời /login".
+- Guard `global-mo-coi` có sàn "≥ 4 trang nạp script cũ" — trang gốc thôi nạp → sàn 3 (cùng chiều đúng như 20/09).
+
+### Đã đo
+- pytest `teaching/ + common/` 504/504 (41 phút, nhánh Neon dev); accounts 39/39; roadmap + courses 23/23; ruff, check.
+- Guard unit 31/31 (mới: `ghi-nho-phien`, mở rộng `khu-theo-vai`); `ban_do --kiem` 0 gãy (bắt được tuyến Premium mồ côi).
+- E2E hai khổ: `ghi-nho-dang-nhap` 4/4 (cookie thật: không tick = phiên, tick ≈ 30 ngày), `dang-nhap-truoc-khi-hydrate`
+  2/2, khung chung + cổng theo vai + hướng dẫn + điều hướng + khu giảng dạy/vận hành + sơ đồ vai: 64 qua, 0 hỏng.
+
+## 24/09/2026 — LỊCH HỌC NÂNG CẤP §53 (nhóm việc thứ tư) · kế hoạch đợt thử nghiệm · máy dev sang nhánh Neon `dev`
+
+**Kế hoạch mới đang chạy**: `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` (bảng tick + cách tiếp tục khi bị ngắt
++ thiết kế chi tiết Đợt 1/2). Mở tệp ấy TRƯỚC — mục này chỉ ghi phần lịch học (mục B0 của bảng).
+
+**Máy dev nay dùng nhánh Neon `dev`** (anh đổi `DATABASE_URL` 24/09): host `ep-little-water…`, khác production
+`ep-billowing-fog…`; nhánh có đủ 59 bảng, cột §53, dữ liệu sao từ production. Django phải bật lại sau khi đổi .env.
+
+Bảng yêu cầu tab "Nhi" #4 — anh chốt 23/09: báo đổi lịch bằng chuông + email cho HỌC VIÊN (không phụ huynh), phòng
+là chữ tự do, hình thức đặt theo buổi và mặc định theo lớp.
+- §53: `mode`/`room` ở cả `classes` và `class_sessions` (buổi để trống = theo lớp).
+- `teaching/trung_lich.py`: trùng giờ giữa các LỚP — cùng giảng viên, cùng học viên, cùng phòng (chỉ buổi tại trung
+  tâm, so không phân biệt hoa thường/khoảng trắng); buổi huỷ không chiếm giờ; CẢNH BÁO chứ không chặn. Bản cho cả kỳ
+  (`tim_trung_nhieu`) ba câu cho mọi ngày — sinh lịch cả kỳ gắn "Trùng: …" lên từng dòng xem trước, vẫn tạo.
+- `teaching/bao_doi_lich.py`: dời giờ / huỷ / xoá / đổi phòng, hình thức, link của buổi SẮP TỚI → chuông + thư cho
+  em đang học lớp (em tắt email thì chỉ chuông); buổi đã qua, sửa chủ đề / sổ đầu bài thì im.
+- `GET /api/teach/lich` + trang `/giang-day/lich` (tab "Lịch học"): tuần, lọc lớp (học vụ thêm giảng viên, một em —
+  lối vào "Lịch học của em" ở hồ sơ), cờ trùng giờ giảng viên, dựng ở máy chủ, form GET (URL chia sẻ được).
+- Sổ buổi học: ô Hình thức + Phòng ở form tạo/sửa ("Theo lớp (Phòng P201)"; phòng tắt khi trực tuyến); cảnh báo trùng
+  hiện VÀNG (`role=status`) thay vì dải đỏ lỗi — bản cũ khiến người sắp lịch đọc thành "không lưu được" rồi tạo lại;
+  câu "Đã báo đổi lịch cho N học viên". Lớp học: ô Hình thức + Phòng (guard vòng đi–về `lop-hoc.test.mjs` tự đòi).
+  Thẻ "Lớp của bạn" của học viên: buổi tại trung tâm ghi phòng thay cho nút "Vào phòng học"; nơi học chỉ nói ra khi
+  KHÁC lớp.
+
+### Thước hỏng bắt được trong lượt (không phải mã)
+- Kịch bản đột biến đếm "đỏ" theo mã thoát ≠ 0: test chưa tồn tại (Edit hỏng vì chưa Read) cũng ra "ĐỎ". Nay đòi nền
+  XANH trước và chỉ mã thoát 1 mới là đỏ — chạy lại cả 18 đột biến theo luật mới.
+- E2E: `getByLabel(…, exact)` không khớp `<select>` nằm trong `<label>` (chữ nhãn gồm cả các lựa chọn) → tìm theo vai
+  `combobox` + tên; `getByRole('alert')` đếm cả bộ đọc chuyển trang rỗng của Next ngoài `main`; cảnh báo trùng HỌC
+  VIÊN sau khi đổi sang trực tuyến là ĐÚNG (em rà soát học lớp AUDIT thứ 2/4 19:30, ngày thử rơi vào thứ 4) — phép
+  kiểm nay đòi hết trùng PHÒNG, không phụ thuộc thứ; cú bấm "Sửa" trước khi React gắn xong ở khổ máy tính → `toPass`.
+- Máy chủ Next chạy qua `cmd /c` tự tắt giữa lượt e2e (log không lỗi) → nay bật thẳng bằng `node …/next start`.
+
+### Đã đo
+- pytest: `tests_lich.py` 16/16 + `tests_sinh_buoi.py` (45/45 chung), `tests_lop_cua_toi.py` 9/9; đột biến ĐỎ THẬT
+  (nền xanh, mã thoát 1): lịch 10/10, sinh lịch 5/5, lớp của tôi 3/3. ruff sạch, tsc + eslint sạch.
+- E2E `lich-hoc.spec.ts` 8/8 hai khổ có ghi (thư `.eml` ra `.thu_email/`; không còn lớp tạm).
+- Thước giao diện 35 trang × 2 khổ: 0 ở mọi luật (lượt đầu bắt 10 vùng chạm <44px ở thẻ buổi của trang lịch → vá);
+  axe 102 lượt: 0. Soi ảnh trang lịch hai khổ: ổn; đã đổi "Mọi lớp/Mọi giảng viên" → "Tất cả" theo góp ý khách.
+
 ## 23/09/2026 (khuya, tiếp) — DÒNG THỜI GIAN HỌC VIÊN · nhóm việc thứ ba anh chốt
 
 Bảng yêu cầu mục 4 (tab "Nhi" #2): "dòng thời gian đăng ký → xếp lớp → … → hoàn thành" + "lịch sử chuyển lớp".

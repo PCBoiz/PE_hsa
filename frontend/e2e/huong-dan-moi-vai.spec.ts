@@ -29,9 +29,9 @@ import { LY_DO_THIEU_VAI, chiDoc, taiKhoanCuaVai, vaoTheoVai } from './helpers';
    Thêm bài vào `lib/huongDan.ts` thì đổi số ở đây; con số lệch là tín hiệu có
    người thêm/bớt bài mà quên gắn vai. */
 const MONG: Record<string, { bai: number; phaiCo: string; khongCo?: string }> = {
-  'Giảng viên': { bai: 6, phaiCo: 'Mở đầu ngày dạy', khongCo: 'Cấp tài khoản cho người mới' },
-  'Trợ giảng': { bai: 3, phaiCo: 'Điểm danh một buổi', khongCo: 'Gửi báo cáo cho phụ huynh' },
-  'Quản lý học vụ': { bai: 8, phaiCo: 'Mở lớp và xếp học viên', khongCo: 'Khi cần biết ai đã làm gì' },
+  'Giảng viên': { bai: 7, phaiCo: 'Mở đầu ngày dạy', khongCo: 'Cấp tài khoản cho người mới' },
+  'Trợ giảng': { bai: 4, phaiCo: 'Điểm danh một buổi', khongCo: 'Gửi báo cáo cho phụ huynh' },
+  'Quản lý học vụ': { bai: 9, phaiCo: 'Mở lớp và xếp học viên', khongCo: 'Khi cần biết ai đã làm gì' },
   'Biên tập nội dung': { bai: 1, phaiCo: 'Soạn khoá học và đề thi thử', khongCo: 'Điểm danh một buổi' },
 };
 

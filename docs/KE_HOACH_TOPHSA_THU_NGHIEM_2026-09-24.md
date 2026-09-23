@@ -23,7 +23,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 
 | ID | Việc | Trạng thái |
 |---|---|---|
-| K0 | Chép kế hoạch vào repo (tệp này) | [~] |
+| K0 | Chép kế hoạch vào repo (tệp này) | [x] `63554b0` |
 | B0 | Chốt lịch học §53: e2e `lich-hoc` 2 khổ, đo giao diện + axe, soi ảnh, commit | [ ] |
 | H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [ ] |
 | 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [ ] |

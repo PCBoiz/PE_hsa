@@ -22,7 +22,7 @@ import LoginForm from './LoginForm';
  * Đây là Server Component; chỉ riêng biểu mẫu là client.
  */
 export const metadata: Metadata = {
-  title: 'Đăng nhập — ProgrammingEdu × TopHSA',
+  title: 'Đăng nhập — TopHSA',
 };
 
 function Mark() {
@@ -61,16 +61,14 @@ export default async function LoginPage({
       <div className="w-full max-w-[420px]">
         <div className="mb-6 flex items-center gap-3">
           <Mark />
-          <span className="text-section text-ink">
-            ProgrammingEdu <span className="text-ink-3">×</span> TopHSA
-          </span>
+          <span className="text-section text-ink">TopHSA</span>
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-6 shadow-e2">
           <h1 className="text-title text-ink">Đăng nhập</h1>
-          <p className="mt-1 mb-6 text-body text-ink-3">
-            Tiếp tục hành trình luyện thi Đánh giá năng lực của bạn.
-          </p>
+          {/* Trung tính cho MỌI vai: màn này là cổng vào của cả học viên lẫn nhân sự
+              (trang gốc `/` nay dẫn thẳng tới đây). */}
+          <p className="mt-1 mb-6 text-body text-ink-3">Học tập và quản lý lớp của trung tâm.</p>
 
           {vuaDoi && (
             <p
@@ -102,9 +100,7 @@ export default async function LoginPage({
           </div>
         </div>
 
-        <p className="mt-5 text-center text-small text-ink-3">
-          Luyện thi Đánh giá năng lực ĐHQG Hà Nội · 3 hợp phần · 76 bài
-        </p>
+        <p className="mt-5 text-center text-small text-ink-3">Luyện thi Đánh giá năng lực ĐHQG Hà Nội</p>
       </div>
     </main>
   );
