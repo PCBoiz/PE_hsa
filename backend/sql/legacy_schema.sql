@@ -985,7 +985,12 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS id SERIAL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_class_members_dang_hoc
     ON class_members(class_id, user_id) WHERE left_at IS NULL;
-ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey;
+-- CASCADE (24/09/2026): câu này chạy lại MỖI deploy, mà khoá ngoại tự tham chiếu
+-- `class_members_transferred_to_fk` (§55) phụ thuộc khoá chính — không CASCADE thì lần
+-- bootstrap THỨ HAI sau §55 dừng ở đây (agent bỏ-thi bắt trên nhánh dev). Khoá ngoại ấy
+-- được §55 gắn lại ở CUỐI tệp trong cùng lượt; khoá ngoại MỚI nào trỏ vào
+-- `class_members(id)` cũng phải khai SAU dòng này, nếu không nó mất sau mỗi deploy.
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey CASCADE;
 ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
 
 -- "Học xong" và "bỏ giữa chừng" hiện là CÙNG một trạng thái: `left_at` có giá

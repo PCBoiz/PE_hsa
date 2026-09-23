@@ -90,6 +90,22 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 6) — VÁ CHẶN DEPLOY: §55 làm `bootstrap_schema` hỏng từ lần chạy THỨ HAI
+
+- Agent bỏ-thi bắt trên nhánh dev: §36 (`legacy_schema.sql` ~dòng 988) chạy lại MỖI deploy câu `DROP CONSTRAINT
+  class_members_pkey` rồi dựng lại khoá chính; §55 thêm khoá ngoại tự tham chiếu `transferred_to` → PHỤ THUỘC khoá chính
+  ấy → lần bootstrap thứ hai: "cannot drop constraint class_members_pkey … transferred_to_fk depends on index". Tức
+  deploy ĐẦU có §55 qua, deploy SAU hỏng build Render.
+- Vá: `DROP … CASCADE` — §55 ở cuối tệp gắn lại khoá ngoại trong CÙNG lượt. Không dùng khối `DO $$` được: bộ tách câu
+  của `bootstrap_schema` cắt ở MỌI dấu `;`. Luật ghi ngay tại dòng ấy: khoá ngoại mới trỏ `class_members(id)` phải khai SAU.
+- Đo: tái hiện lỗi trên nhánh dev (bootstrap đỏ đúng câu ấy) → vá → bootstrap chạy HAI lần liền đều 259 câu OK →
+  `kiem_luoc_do` 38/38 (khoá ngoại §55 có mặt lại).
+
+### Thước hỏng
+- Lúc làm 1.2c tôi chỉ chạy `bootstrap_schema` MỘT lần và báo "kiem_luoc_do đỏ → xanh". Production chạy nó MỖI deploy —
+  phép kiểm đúng đường thật là chạy HAI lần. Từ nay mục DDL nào cũng chạy bootstrap hai lần trước khi báo xong (H3 — sổ ghi
+  mục đã chạy — sẽ bỏ hẳn việc chạy lại).
+
 ## 24/09/2026 (tiếp 5) — GỘP agent U2 + U4 (chữ người dùng thấy + "Chi tiết" gập)
 
 - Nhánh `agent/chu-nguoi-dung` (agent, worktree riêng) gộp vào master (`50739b2`, không xung đột). Guard MỚI
