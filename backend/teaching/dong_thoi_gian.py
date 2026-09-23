@@ -80,12 +80,22 @@ def dong_thoi_gian(uid, tao_luc):
         _su_kien(ds, r['enrolled_at'], 'khoa-hoc', 'Bắt đầu khoá %s' % r['ten'])
         _su_kien(ds, r['completed_at'], 'khoa-hoc', 'Hoàn thành khoá %s' % r['ten'])
 
-    for r in q('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note,
-                         c.name, c.status, c.ends_on
-                    FROM class_members m JOIN classes c ON c.id = m.class_id
-                   WHERE m.user_id=%s''', (uid,)):
-        _su_kien(ds, r['joined_at'], 'lop-hoc', 'Vào lớp %s' % r['name'])
-        if r['left_at'] is not None:
+    luot = q('''SELECT m.id, m.joined_at, m.left_at, m.leave_reason, m.note, m.transferred_to,
+                       c.name, c.status, c.ends_on, cb.name AS sang_lop
+                  FROM class_members m JOIN classes c ON c.id = m.class_id
+                  LEFT JOIN class_members mb ON mb.id = m.transferred_to
+                  LEFT JOIN classes cb ON cb.id = mb.class_id
+                 WHERE m.user_id=%s''', (uid,))
+    # Chuyển lớp MỘT bước (§55): lượt ở lớp cũ trỏ tới lượt ở lớp mới. Hiện MỘT sự kiện
+    # "Chuyển từ A sang B" thay cho cặp "Rời lớp A" + "Vào lớp B" cùng một thời điểm.
+    dich_chuyen = {r['transferred_to'] for r in luot if r['transferred_to']}
+    for r in luot:
+        if r['id'] not in dich_chuyen:
+            _su_kien(ds, r['joined_at'], 'lop-hoc', 'Vào lớp %s' % r['name'])
+        if r['left_at'] is not None and r['sang_lop']:
+            _su_kien(ds, r['left_at'], 'lop-hoc', 'Chuyển từ lớp %s sang lớp %s' % (r['name'], r['sang_lop']),
+                     chi_tiet=('Ghi chú: %s' % r['note']) if r['note'] else None)
+        elif r['left_at'] is not None:
             # `leave_reason` lưu MÃ (completed | dropped | transferred) — dịch bằng
             # đúng bảng nhãn mà màn Lớp học dùng, không in mã trần ra màn hình.
             ly_do = ' · '.join(x for x in (LEAVE_LABEL.get(r['leave_reason'], r['leave_reason']), r['note']) if x)

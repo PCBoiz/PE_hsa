@@ -30,9 +30,9 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
 | 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
 | 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; còn chữ "Miễn phí/Chứng chỉ" ở chi tiết khoá (làm trong 1.3) + CSS chết `.rm-ai-btn` (mục U) |
-| 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] (commit này) — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
-| 1.2b | Tạo nhanh lớp gia sư | [ ] |
-| 1.2c | §55 chuyển lớp một thao tác | [ ] |
+| 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] `de4b39d` — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
+| 1.2b | Tạo nhanh lớp gia sư | [x] `b841152` — pytest 9/9 + sinh buổi 29/29 sau khi tách `tao_buoi`, đột biến 9/9 đỏ, guard 22 ✓ (3 đột biến đỏ), e2e 10/10 hai khổ có ghi, axe khung mở 0 (sau vá hover nút ghost) |
+| 1.2c | §55 chuyển lớp một thao tác | [x] `0f45c73` — pytest 8/8, đột biến 11/11 đỏ, kiem_luoc_do đỏ→xanh, e2e 12/12 hai khổ có ghi; `quen_truy_cap` để 1.3 |
 | 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [ ] |
 | 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [ ] |
 | 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [ ] |
@@ -40,7 +40,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.5B | Bỏ thi pha B: thay bằng tiến trình học tập | [ ] |
 | 1.5C | Bỏ thi pha C: xoá mã (GIỮ bảng) | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |
-| U1–U6 | DESIGN.md, guard câu chữ, luật 7 đo chữ, CardHead gập, emoji → SVG, soi ảnh | [ ] |
+| U1–U6 | DESIGN.md, guard câu chữ, luật 7 đo chữ, CardHead gập, emoji → SVG, soi ảnh | [~] U2 + U4 xong (agent, gộp `50739b2` + dọn ngoại lệ ở commit sau): 91 → 0 vi phạm, hint 8.237 → ~6.780 ký tự; còn U1, U3, U5, U6 + mở rộng guard (mã vai `admin`, `IsTeachingStaff` ở "Ai làm được gì") |
 | H2–H8 | Cấu hình 1 nguồn, lược đồ ghi mục đã chạy, outbox, Sentry/health, pre-push, sao lưu, sổ tay vận hành | [ ] |
 | G1–G3 | `ban_do`: tác động thay đổi, tầng vai, god nodes | [ ] |
 | Đ2 | Quyền TG, §58 đổi GV một buổi, §59 chấm công, §60 tài liệu R2, §61 gửi hàng loạt | [ ] |

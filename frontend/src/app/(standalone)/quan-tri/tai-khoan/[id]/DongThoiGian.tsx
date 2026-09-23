@@ -36,7 +36,7 @@ export default function DongThoiGian({ duLieu }: { duLieu: DuLieu }) {
       <Card>
         <CardHead
           title="Dòng thời gian"
-          hint="Mọi mốc của em, mới nhất ở trên: vào lớp, chuyển lớp, thi, báo cáo gửi phụ huynh, các lần sửa hồ sơ."
+          hint="Mọi mốc của em, mới nhất ở trên: vào lớp, chuyển lớp, thi, báo cáo phụ huynh, sửa hồ sơ."
         />
         {duLieu.events.length === 0 ? (
           <EmptyState title="Chưa có mốc nào" hint="Em vừa được cấp tài khoản và chưa vào lớp nào." />

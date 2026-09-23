@@ -207,7 +207,7 @@ export default function MockExam() {
   return (
     <>
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css', '/static/css/mock.css', '/static/css/chatbot.css', '/static/css/a11y.css']} />
-      <title>Thi thử CBT — ProgrammingEdu × TopHSA</title>
+      <title>Thi thử CBT | TopHSA</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
       <div className="mk-wrap">

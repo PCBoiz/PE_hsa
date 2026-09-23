@@ -252,6 +252,14 @@ export default function DesignSystemPage() {
           <CardHead title="Ô phụ" hint="Nằm bên trong một thẻ khác" />
           <p className="text-body">Mặt chìm dùng cho khối phụ, để thứ bậc luôn rõ.</p>
         </Card>
+        <Card>
+          <CardHead
+            title="Có phần gập"
+            hint="Gợi ý giữ một dòng, nói điều người dùng cần làm."
+            chiTiet="Lời giải thích dài hơn nằm gập ở đây. Ai cần mới mở, nên màn đầu không thành một đoạn văn xám."
+          />
+          <p className="text-body">Gợi ý tối đa 90 ký tự; phần còn lại đưa vào chi tiết.</p>
+        </Card>
       </div>
     </main>
   );

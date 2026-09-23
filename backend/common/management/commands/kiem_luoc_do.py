@@ -151,6 +151,14 @@ MUC = [
     ('§54a', 'classes.class_type (nhóm / gia sư)', lambda: _cot('classes', 'class_type')),
     ('§54b', 'CHECK classes_class_type_check nhận gia_su',
      lambda: _check_co_gia_tri('classes_class_type_check', 'gia_su')),
+    ('§55a', 'class_members.transferred_to (chuyển lớp một bước)',
+     lambda: _cot('class_members', 'transferred_to')),
+    ('§55b', 'FK class_members.transferred_to ON DELETE SET NULL',
+     lambda: _fk('class_members', 'class_members_transferred_to_fk', 'SET NULL')),
+    ('§55c', 'chỉ mục class_members(transferred_to)',
+     lambda: _chi_muc('idx_class_members_transferred_to')),
+    ('§55d', 'CHECK chỉ lượt "transferred" mới được trỏ',
+     lambda: _check_co_gia_tri('class_members_transfer_reason_check', 'transferred')),
     ('§56', 'users.last_seen_at (lần cuối thấy tài khoản)', lambda: _cot('users', 'last_seen_at')),
 ]
 

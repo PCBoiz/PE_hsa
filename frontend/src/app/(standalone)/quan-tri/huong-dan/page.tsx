@@ -35,17 +35,16 @@ export default async function HuongDanPage() {
 
       <Card>
         <CardHead title="Bàn giao công nghệ" />
+        {/* Bản trước liệt kê tên tệp trong kho mã (`docs/KIEN_TRUC/`,
+            `docs/VIEC_CUA_ANH.md`, `RULES.md`, `PROGRESS.md`) — người vận hành
+            không mở được kho mã, và tên tệp là ghi chú lập trình viên (RULES
+            §10). Gỡ 24/09/2026. Người tiếp nhận công nghệ bắt đầu từ
+            `BAN-GIAO-PHIEN.md` ở gốc kho; kiến trúc ở `docs/KIEN_TRUC/`. */}
         <p className="text-body text-ink-2">
-          Trang này dành cho người <strong>vận hành</strong>. Người tiếp nhận
-          <strong> công nghệ</strong> (kiến trúc, triển khai, cách sửa) cần thứ
-          khác hẳn — nằm trong repo:
+          Trang này dành cho người <strong>vận hành</strong>. Tài liệu cho người
+          tiếp nhận <strong>công nghệ</strong> (kiến trúc, triển khai, cách sửa)
+          nằm trong kho mã và được bàn giao riêng.
         </p>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-body text-ink-2">
-          <li><code className="font-mono">docs/KIEN_TRUC/</code> — kiến trúc từng khối</li>
-          <li><code className="font-mono">docs/VIEC_CUA_ANH.md</code> — việc cần tài khoản bên ngoài (Zalo OA, Render, Neon)</li>
-          <li><code className="font-mono">RULES.md</code> — luật đã trả giá mới rút ra được</li>
-          <li><code className="font-mono">PROGRESS.md</code> — nhật ký từng thay đổi và lý do</li>
-        </ul>
       </Card>
     </div>
   );

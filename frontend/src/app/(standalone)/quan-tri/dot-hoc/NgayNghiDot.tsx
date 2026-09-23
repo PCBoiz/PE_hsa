@@ -111,7 +111,8 @@ export default function NgayNghiDot({ termId, onClose }: { termId: number; onClo
     <Card>
       <CardHead
         title={d ? `Ngày nghỉ · ${d.dot.name}` : 'Ngày nghỉ của đợt'}
-        hint="Sinh lịch cả kỳ sẽ BỎ các ngày này ở mọi lớp của đợt. Tết Nguyên đán, Giỗ Tổ Hùng Vương và ngày nghỉ bù do Nhà nước công bố từng năm — nhập theo thông báo chính thức, hệ thống không tự tính."
+        hint="Sinh lịch cả kỳ sẽ BỎ các ngày này ở mọi lớp của đợt."
+        chiTiet="Tết Nguyên đán, Giỗ Tổ Hùng Vương và ngày nghỉ bù do Nhà nước công bố từng năm — nhập theo thông báo chính thức, hệ thống không tự tính."
         action={
           <Button variant="ghost" onClick={onClose}>
             Đóng

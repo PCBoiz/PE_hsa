@@ -127,7 +127,8 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Mở "Tài khoản".',
         o: '/quan-tri/tai-khoan',
-        luu_y: 'Từ 27/08/2026 người dùng KHÔNG tự đăng ký được. Mọi tài khoản do trung tâm cấp. Học vụ chỉ thấy và cấp được tài khoản học viên; giảng viên, trợ giảng do quản trị viên cấp.',
+        // Không còn tự đăng ký từ 27/08/2026 — ngày ghi ở chú thích, không in ra màn.
+        luu_y: 'Người dùng KHÔNG tự đăng ký được. Mọi tài khoản do trung tâm cấp. Học vụ chỉ thấy và cấp được tài khoản học viên; giảng viên, trợ giảng do quản trị viên cấp.',
       },
       {
         // KHÔNG có form cấp lẻ (đo 23/09/2026: không màn hình nào gọi đường
@@ -166,7 +167,7 @@ export const HUONG_DAN: readonly Bai[] = [
     ma: 'ho-so-hoc-vien',
     tieu_de: 'Cập nhật hồ sơ học viên',
     vai: [VAI_QUAN_TRI, VAI_HOC_VU],
-    khi_nao: 'Khi tư vấn xong một em, khi em đổi trường hay đổi mục tiêu, hoặc khi phụ huynh báo số liên lạc mới.',
+    khi_nao: 'Sau khi tư vấn một em, khi em đổi trường, mục tiêu, hoặc phụ huynh đổi số liên lạc.',
     buoc: [
       {
         lam: 'Mở "Tài khoản" và tìm em — gõ tên, email, số điện thoại, mã học viên (HSA-…) hoặc tên đăng nhập đều được.',
@@ -221,9 +222,19 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Lớp gia sư nhận tối đa 3 em (trợ giảng không tính). Lớp nhóm vượt sức chứa vẫn xếp được, nhưng hệ thống sẽ nhắc.',
       },
       {
+        lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Một lượt tạo cả lớp, xếp em vào lớp và sinh buổi. Xem trước báo trùng giờ với lớp khác của giảng viên hoặc của em.',
+      },
+      {
         lam: 'Tìm lớp: gõ tên lớp, giáo viên hoặc tên em; bấm chip "Gia sư" / "Lớp nhóm" để lọc theo loại.',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Bộ lọc nằm trên đường dẫn — gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
+      },
+      {
+        lam: 'Chuyển lớp: mở "Học viên" của lớp cũ, ở dòng của em chọn "Chuyển sang lớp khác…", tìm lớp mới rồi bấm "Chuyển lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Một thao tác: em rời lớp cũ và vào lớp mới cùng lúc, hồ sơ em ghi "Chuyển từ lớp A sang lớp B".',
       },
       {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',
@@ -302,7 +313,7 @@ export const HUONG_DAN: readonly Bai[] = [
     // Bảng yêu cầu TopHSA tab "Nhi" #4 (23/09/2026): lịch theo trung tâm / giảng
     // viên / lớp / học viên, cảnh báo trùng, hình thức + phòng, báo đổi lịch.
     vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG, VAI_HOC_VU, VAI_QUAN_TRI],
-    khi_nao: 'Khi xếp lịch tuần, khi dời hay huỷ một buổi, hoặc khi phụ huynh hỏi "tối nay em học ở đâu".',
+    khi_nao: 'Khi xếp lịch tuần, dời hay huỷ một buổi, hoặc phụ huynh hỏi "tối nay em học ở đâu".',
     buoc: [
       {
         lam: 'Mở "Lịch học" trong khu Giảng dạy. Mỗi dòng là một ngày trong tuần, mỗi thẻ là một buổi: giờ, lớp, giảng viên, nơi học.',
@@ -343,7 +354,7 @@ export const HUONG_DAN: readonly Bai[] = [
     // Dòng 14 của bảng yêu cầu TopHSA. Học vụ, quản trị viên sửa ở trang Hồ sơ
     // (bài "Cập nhật hồ sơ học viên"); trợ giảng không sửa.
     vai: [VAI_GIANG_VIEN],
-    khi_nao: 'Sau buổi tư vấn hay buổi nói chuyện riêng với em, hoặc khi em đổi mục tiêu điểm hay đổi trường muốn vào.',
+    khi_nao: 'Sau buổi tư vấn riêng với em, hoặc khi em đổi mục tiêu điểm hay trường muốn vào.',
     buoc: [
       {
         lam: 'Vào lớp của em, bấm "Báo cáo phụ huynh", rồi "Xem tờ" trên dòng của em.',

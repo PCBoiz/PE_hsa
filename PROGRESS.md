@@ -90,6 +90,98 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 6) — VÁ CHẶN DEPLOY: §55 làm `bootstrap_schema` hỏng từ lần chạy THỨ HAI
+
+- Agent bỏ-thi bắt trên nhánh dev: §36 (`legacy_schema.sql` ~dòng 988) chạy lại MỖI deploy câu `DROP CONSTRAINT
+  class_members_pkey` rồi dựng lại khoá chính; §55 thêm khoá ngoại tự tham chiếu `transferred_to` → PHỤ THUỘC khoá chính
+  ấy → lần bootstrap thứ hai: "cannot drop constraint class_members_pkey … transferred_to_fk depends on index". Tức
+  deploy ĐẦU có §55 qua, deploy SAU hỏng build Render.
+- Vá: `DROP … CASCADE` — §55 ở cuối tệp gắn lại khoá ngoại trong CÙNG lượt. Không dùng khối `DO $$` được: bộ tách câu
+  của `bootstrap_schema` cắt ở MỌI dấu `;`. Luật ghi ngay tại dòng ấy: khoá ngoại mới trỏ `class_members(id)` phải khai SAU.
+- Đo: tái hiện lỗi trên nhánh dev (bootstrap đỏ đúng câu ấy) → vá → bootstrap chạy HAI lần liền đều 259 câu OK →
+  `kiem_luoc_do` 38/38 (khoá ngoại §55 có mặt lại).
+
+### Thước hỏng
+- Lúc làm 1.2c tôi chỉ chạy `bootstrap_schema` MỘT lần và báo "kiem_luoc_do đỏ → xanh". Production chạy nó MỖI deploy —
+  phép kiểm đúng đường thật là chạy HAI lần. Từ nay mục DDL nào cũng chạy bootstrap hai lần trước khi báo xong (H3 — sổ ghi
+  mục đã chạy — sẽ bỏ hẳn việc chạy lại).
+
+## 24/09/2026 (tiếp 5) — GỘP agent U2 + U4 (chữ người dùng thấy + "Chi tiết" gập)
+
+- Nhánh `agent/chu-nguoi-dung` (agent, worktree riêng) gộp vào master (`50739b2`, không xung đột). Guard MỚI
+  `e2e/unit/chu-nguoi-dung.test.mjs`: bộ phân tích TypeScript lần NGƯỢC từ chỗ hiện ra màn (chữ JSX, `hint`/`title`/
+  `aria-label`…, prop mà component in, toast, `new Error`) — không regex cả tệp nên chú thích mã vẫn được mang ngày, §,
+  tên tệp. Cấm: ngày gõ cứng, §, `.py`/`.ts`, `::`, "anh Sơn", `permission_classes`, RULES/PROGRESS, ProgrammingEdu,
+  Premium; `hint` ≤ 90 ký tự. Mỗi lượt tự dựng tệp ẢO gài 11 vi phạm phải bắt + 6 chỗ không được bắt.
+- Số (agent đo, lead chạy lại guard trên master sau gộp: xanh): 91 vi phạm → 0; tổng ký tự `hint` 8.237 → ~6.780.
+  "Ai làm được gì" thôi in `tệp.py::View`; Hướng dẫn thôi liệt kê RULES/PROGRESS; 22 hint rút một dòng, 8 thẻ có `chiTiet`.
+- **U4** `CardHead` nhận `chiTiet` → `<details>` "Chi tiết" (không JS, vùng chạm 44 px, mũi tên xoay). Soi ảnh lead trên
+  trang THẬT (Ai làm được gì) 1440 + 390, đóng + mở.
+- Lead dọn 5 vi phạm ở hai tệp để lại (màn Lớp học, `huongDan.ts`) và GỠ hai ngoại lệ tạm của guard.
+- Còn (U): "Ai làm được gì" vẫn in mã vai (`admin`) và tên lớp quyền (`IsTeachingStaff`) bằng chữ đơn cách — guard chưa có
+  luật; làm cùng lượt viết lại trang ấy.
+- Đo lại trên master sau gộp: 34/34 guard; tsc; eslint 0; `do_giao_dien` 34 trang × 2 khổ CỔNG SẠCH; axe 0 nút / 100 lượt.
+
+## 24/09/2026 (tiếp 4) — 1.2c CHUYỂN LỚP MỘT THAO TÁC (§55)
+
+- **§55** `class_members.transferred_to` (FK tự tham chiếu ON DELETE SET NULL + chỉ mục riêng phần + CHECK chỉ lượt
+  `transferred` mới được trỏ) — chỉ cộng; `kiem_luoc_do` ĐỎ 4/38 trước khi áp → 38/38 sau `bootstrap_schema` (nhánh dev).
+- **`POST /api/admin/classes/<A>/members/<em>/transfer`** (`teaching/chuyen_lop.py`, học vụ/admin): `{to_class_id,
+  effective_date?, note?}` → đóng lượt ở A (`transferred`, ghi chú), mở lượt ở B cùng thời điểm, nối `transferred_to` —
+  MỘT giao dịch; khoá dòng lớp B như lượt thêm em (lớp gia sư không vượt 3). Chặn: lớp B huỷ (400), em đã ở B (409), B gia
+  sư đủ 3 em (409), ngày tương lai / trước lúc em vào A (400), không phải học viên (400). Cảnh báo: B đã kết thúc, môn khác.
+  Ngày trong quá khứ = đầu ngày ấy là ngày ĐẦU ở B; hôm nay = giờ hiện tại (buổi sáng nay ở A vẫn tính cho A).
+- Nhật ký: hành động mới `class.member.transfer` "Chuyển lớp" (guard `nhan-nhat-ky` ĐỎ tới khi có nhãn). Dòng thời gian
+  hồ sơ em: MỘT sự kiện "Chuyển từ lớp A sang lớp B" (kèm ghi chú) thay cặp "Rời A" + "Vào B".
+- Màn Lớp học: lý do rời lớp "Chuyển lớp" (rời trần, dễ quên bước hai) thay bằng "Chuyển sang lớp khác…" mở hộp
+  `ChuyenLop.tsx`: tìm lớp (danh sách gọn `/options`, bỏ lớp huỷ + lớp đang ở), ngày chuyển (≤ hôm nay giờ VN), ghi chú.
+- Việc còn cho 1.3: `quen_truy_cap(uid)` khi chuyển lớp (cổng mở môn theo lớp chưa có).
+
+### Đã đo
+- pytest `tests_chuyen_lop.py` 8/8 (hai lượt + liên kết + ghi chú + nhật ký; em đã ở B → 409 lớp cũ nguyên; chèn B hỏng giữa
+  chừng → lớp cũ KHÔNG đóng; gia sư đủ / huỷ / đã kết thúc; ngày; chỉ học viên đang học, chỉ học vụ; CHECK; dòng thời gian).
+  **Đột biến 11/11 đỏ thật** (bỏ giao dịch, không nối, sai lý do, trần 3→4, nhận lớp huỷ, ngày tương lai, ngày trước lúc
+  vào, người không phải học viên, bỏ hai cảnh báo, dòng thời gian lặp "Vào lớp B").
+- Đủ bộ guard xanh; tsc; eslint 0; ruff; `manage.py check`.
+- E2E `danh-sach-lop.spec.ts` 12/12 hai khổ có ghi — thêm luồng chuyển lớp bằng GIAO DIỆN (chọn "Chuyển sang lớp khác…" →
+  tìm lớp → ghi chú → Chuyển lớp → máy chủ: B 1 em, A 0 em); hai lớp tạm đã dọn.
+
+## 24/09/2026 (tiếp 3) — 1.2b TẠO NHANH LỚP GIA SƯ · 3 agent hỗ trợ (1.4a, 1.5A, U2+U4)
+
+- **`POST /api/admin/classes/gia-su`** (`teaching/lop_gia_su.py`): một em (phải là Học viên) + một giảng viên (bắt buộc) +
+  lịch tuần (tuỳ chọn) → lớp `gia_su` sĩ số 3 + em vào lớp + buổi, trong MỘT giao dịch; tên trống thì tự đặt "Gia sư · {em}
+  · {giảng viên}", cột "Lịch học" tự viết đúng dạng `doan_lich` đọc ngược lại được ("T3, T5 · 19:30–21:00").
+  `dry_run` chạy ĐÚNG đường ghi rồi cuộn lại → cảnh báo trùng giờ giảng viên / EM / phòng là thật (em đã ở trong lớp lúc
+  chấm buổi). Vòng sinh buổi tách thành `sinh_buoi.tao_buoi()` dùng chung với màn Buổi học (một nguồn luật).
+- **Màn Lớp học**: nút "Tạo lớp gia sư" (phụ, cạnh "Thêm lớp") mở khung: tìm em → chọn giảng viên / môn / đợt / tên → chip
+  thứ T2…CN, giờ, số phút, từ–đến (mặc định 12 tuần từ hôm nay giờ VN) → "Xem trước" (tên, lịch, số buổi, cảnh báo) →
+  "Tạo lớp gia sư". Sửa bất kỳ ô nào là bản xem trước hết hiệu lực (không tạo theo bản cũ). Kiểm biểu mẫu thuần ở `giaSu.ts`.
+- **Nút ghost dùng chung**: rê chuột đổi chữ sang `brand-ink` thay `brand` — `--brand` trên nền `bg-sunken` chỉ 4,36:1 (axe
+  bắt ở nút "Tìm" khi chuột còn đặt trên nút sau khi bấm); cùng sửa một nút ở màn Tài khoản.
+
+### Thước hỏng / bẫy gặp trong lượt
+- Test "lỗi giữa chừng" chờ `RuntimeError` ném ra ngoài view — `common.errors` biến nó thành 500 có câu chữ; đổi sang khẳng
+  định 500 + không còn lớp/thành viên.
+- Commit 1.2a tách khỏi 1.2b khi hai mục chung tệp (`LopHocClient.tsx`, spec e2e): dựng bản 1.2a của tệp rồi đưa thẳng vào
+  chỉ mục (`git hash-object -w` + `update-index --cacheinfo`) — không có `git add -p` ở môi trường này.
+- Ảnh chụp một PHẦN TỬ cao ở khổ 390 bị thanh đầu dính (sticky) đè giữa ảnh — là cách Playwright ghép ảnh, không phải lỗi
+  giao diện; chụp lại với khung nhìn cao hơn.
+
+### Đã đo
+- pytest `tests_lop_gia_su.py` 9/9 (tạo thật, xem trước không ghi CẢ nhật ký, chỉ học viên + phải có giảng viên, lỗi giữa
+  chừng không để lớp mồ côi, vượt trần buổi, giảng viên trùng giờ vẫn tạo + cảnh báo, em trùng giờ hiện ở xem trước, lịch
+  chữ đọc ngược, giảng viên không tạo được); `tests_sinh_buoi.py` 29/29 sau khi tách `tao_buoi`. **Đột biến 9/9 đỏ thật.**
+- Guard `lop-gia-su.test.mjs` 22 ✓ — đột biến (đổi khoá `weekdays`, bỏ kiểm giảng viên, bỏ nhánh không sinh buổi) → đỏ 3/3.
+  Đủ bộ guard xanh; tsc; eslint 0 cảnh báo; ruff; `manage.py check`; `ban_do --kiem` 0 gãy.
+- E2E `danh-sach-lop.spec.ts` 10/10 hai khổ có ghi — thêm luồng tạo nhanh bằng GIAO DIỆN (bấm Xem trước khi chưa chọn em →
+  câu lỗi; tìm em, chọn giảng viên, T3/T5; đổi một thứ → nút về "Xem trước"; tạo → lớp gia sư 1 em, đúng giảng viên, có
+  buổi); lớp tạm đã dọn.
+- axe trên khung ĐANG MỞ (đang tìm + có xem trước) × 2 khổ × sáng/tối: 2 vi phạm hover → vá → 0. Soi ảnh 1440 + 390.
+
+### Agent hỗ trợ (anh Sơn yêu cầu 24/09) — đang chạy, mỗi agent một worktree riêng `D:\pe_hsa_wt\<tên>`, nhánh `agent/<tên>`
+- `tong-quan` — 1.4a §56 `last_seen_at` + Tổng quan v2; `bo-thi` — 1.5A bỏ thi pha A (§57); `chu-nguoi-dung` — U2 guard
+  câu chữ + U4 `CardHead` gập. Lead gộp và soi lại từng nhánh trước khi tick.
+
 ## 24/09/2026 (tiếp 2) — 1.2a LOẠI LỚP + DANH SÁCH LỚP LỌC/PHÂN TRANG (§54) — "quản lý lớp là priority số 1"
 
 Theo `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` mục 1.2a. Ghi chú họp: ~400 lớp gia sư cá nhân hoá bên cạnh lớp nhóm.

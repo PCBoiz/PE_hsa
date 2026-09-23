@@ -491,7 +491,7 @@ export default function AccountsClient({
                       <Link
                         href={`/quan-tri/tai-khoan/${u.id}`}
                         aria-label={`Hồ sơ của ${u.name || u.email || u.phone || `#${u.id}`}`}
-                        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [@media(pointer:fine)]:min-h-9"
+                        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [@media(pointer:fine)]:min-h-9"
                       >
                         Hồ sơ
                       </Link>
@@ -762,7 +762,8 @@ function BulkImport({
     <Card>
       <CardHead
         title="Cấp tài khoản hàng loạt"
-        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Cần ít nhất email hoặc số điện thoại. Tối đa ${tranMe} tài khoản mỗi mẻ.`}
+        hint={`Mỗi dòng một học viên: họ tên, email, số điện thoại. Tối đa ${tranMe} tài khoản mỗi mẻ.`}
+        chiTiet="Ngăn cách bằng dấu phẩy hoặc tab (dán từ Excel là ra tab). Mỗi dòng cần ít nhất email hoặc số điện thoại."
         action={
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Thu gọn

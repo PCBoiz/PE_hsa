@@ -67,7 +67,8 @@ export default async function CoSoHocPhiPage() {
       <Card>
         <CardHead
           title="Cơ sở tính học phí"
-          hint="Bảng này KHÔNG có giá và KHÔNG tính tiền. Nó gộp những gì đã xảy ra thật — ai học lớp nào, từ ngày nào, lớp đã mở mấy buổi, em dự mấy buổi — để người tính học phí có một chỗ lấy số thay vì đếm tay."
+          hint="Số buổi từng em đã học, để tính học phí. Bảng không có giá và không tính tiền."
+          chiTiet="Bảng gộp những gì đã xảy ra thật — ai học lớp nào, từ ngày nào, lớp đã mở mấy buổi, em dự mấy buổi — để người tính học phí có một chỗ lấy số thay vì đếm tay."
         />
 
         {!kq.ok && (
@@ -80,10 +81,12 @@ export default async function CoSoHocPhiPage() {
         <div className="rounded-md border border-line bg-sunken px-4 py-3">
           <p className="text-body font-semibold text-ink">Vì sao chưa có phần tính tiền</p>
           <p className="mt-1 text-small text-ink-2">
-            Đặc tả ERP §7 ghi rõ: nhóm kinh doanh <strong>sai một chi tiết là sai
-            sổ sách</strong>, và khuyên nên nối với phần mềm kế toán trung tâm đang
-            dùng thay vì viết lại. Giá một buổi, thu theo tháng hay theo khoá, nghỉ
-            có phép có trừ tiền không — đều là chính sách của TopHSA, không phải
+            {/* Ý này lấy từ đặc tả ERP §7 — số mục của tài liệu nội bộ, không
+                in ra màn (gỡ 24/09/2026). */}
+            Học phí <strong>sai một chi tiết là sai sổ sách</strong>, vì vậy phần
+            tính tiền nên nối với phần mềm kế toán trung tâm đang dùng thay vì viết
+            lại. Giá một buổi, thu theo tháng hay theo khoá, nghỉ có phép có trừ
+            tiền không — đều là chính sách của TopHSA, không phải
             thứ đoán được. Cột bên dưới là phần <em>không</em> phụ thuộc vào những
             câu trả lời ấy.
           </p>

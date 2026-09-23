@@ -985,7 +985,12 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS id SERIAL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_class_members_dang_hoc
     ON class_members(class_id, user_id) WHERE left_at IS NULL;
-ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey;
+-- CASCADE (24/09/2026): câu này chạy lại MỖI deploy, mà khoá ngoại tự tham chiếu
+-- `class_members_transferred_to_fk` (§55) phụ thuộc khoá chính — không CASCADE thì lần
+-- bootstrap THỨ HAI sau §55 dừng ở đây (agent bỏ-thi bắt trên nhánh dev). Khoá ngoại ấy
+-- được §55 gắn lại ở CUỐI tệp trong cùng lượt; khoá ngoại MỚI nào trỏ vào
+-- `class_members(id)` cũng phải khai SAU dòng này, nếu không nó mất sau mỗi deploy.
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey CASCADE;
 ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
 
 -- "Học xong" và "bỏ giữa chừng" hiện là CÙNG một trạng thái: `left_at` có giá
@@ -1725,6 +1730,22 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS class_type TEXT NOT NULL DEFAULT 'n
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_class_type_check;
 ALTER TABLE classes ADD CONSTRAINT classes_class_type_check
     CHECK (class_type IN ('nhom', 'gia_su'));
+
+-- ── §55 · CHUYỂN LỚP MỘT BƯỚC (24/09/2026) ─────────────────────────────────
+-- Trước hôm nay chuyển lớp là HAI thao tác rời tay (cho rời lớp A lý do "chuyển lớp",
+-- rồi xếp vào B) — không gì nối hai lượt, báo cáo không trả lời được "em sang lớp
+-- nào". Lượt ở A giờ TRỎ tới lượt mới ở B. SET NULL: xoá lớp B (xoá cứng, có xác
+-- nhận) không được kéo mất lịch sử ở A. CHECK: chỉ lượt đóng với lý do
+-- 'transferred' mới được trỏ — một lượt "học xong" không thể "chuyển sang" đâu.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS transferred_to INTEGER;
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_transferred_to_fk;
+ALTER TABLE class_members ADD CONSTRAINT class_members_transferred_to_fk
+    FOREIGN KEY (transferred_to) REFERENCES class_members(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_class_members_transferred_to
+    ON class_members (transferred_to) WHERE transferred_to IS NOT NULL;
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_transfer_reason_check;
+ALTER TABLE class_members ADD CONSTRAINT class_members_transfer_reason_check
+    CHECK (transferred_to IS NULL OR leave_reason = 'transferred');
 
 -- ── §56 · LẦN CUỐI THẤY TÀI KHOẢN (24/09/2026) ─────────────────────────────
 -- Ghi chú họp TopHSA: học vụ cần biết "bao nhiêu tài khoản lâu không hoạt động".

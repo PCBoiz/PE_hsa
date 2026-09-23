@@ -180,7 +180,7 @@ export default async function BaoCaoCaLopPage({
       <Card>
         <CardHead
           title="Điểm thi thử tại trung tâm"
-          hint="Nhập tờ PDF kết quả từ hệ thống khảo thí. Tờ báo cáo của từng em sẽ có thêm điểm kỳ thi và các phần còn yếu."
+          hint="Nhập tờ PDF kết quả thi. Tờ báo cáo của từng em sẽ thêm điểm thi và phần còn yếu."
         />
         <Link
           href={`/giang-day/ket-qua-thi/${classId}`}

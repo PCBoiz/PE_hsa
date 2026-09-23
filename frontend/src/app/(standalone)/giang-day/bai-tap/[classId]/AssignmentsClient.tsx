@@ -193,7 +193,7 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang }
         {ds.length === 0 ? (
           <EmptyState
             title="Lớp chưa có bài tập nào"
-            hint="Giao bài đầu tiên ở nút phía trên. Điểm bài tự luận đi thẳng vào bản đồ năng lực của từng em — đó là chỗ duy nhất đo được phần một con người phải đọc mới chấm nổi."
+            hint="Giao bài đầu tiên ở nút phía trên. Điểm tự luận sẽ vào bản đồ năng lực của từng em."
           />
         ) : (
           <ul className="flex flex-col gap-2">

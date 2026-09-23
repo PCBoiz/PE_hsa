@@ -27,13 +27,14 @@ const TG = 'audit2009.tg@example.com';
 
 let lopTam: number | null = null;
 let lopGiaSu: number | null = null;
+let lopChuyen: number[] = [];
 
 test.afterAll(async ({ browser }) => {
-  if (!BAT || (lopTam === null && lopGiaSu === null)) return;
+  if (!BAT || (lopTam === null && lopGiaSu === null && lopChuyen.length === 0)) return;
   const hv = await trangTheoVai(browser, HOC_VU);
   if (!hv) return;
   const hong: string[] = [];
-  for (const id of [lopTam, lopGiaSu]) {
+  for (const id of [lopTam, lopGiaSu, ...lopChuyen]) {
     if (id === null) continue;
     // Buổi học + ghi danh đi theo lớp (xoá có xác nhận).
     const r = await goiApi(hv, 'DELETE', `/api/admin/classes/${id}?confirm=1`);
@@ -181,4 +182,116 @@ test('tạo lớp GIA SƯ bằng biểu mẫu → xếp 3 em + trợ giảng →
   await page.waitForURL((u) => u.searchParams.get('gv') === String(tgId));
   expect(new URL(page.url()).searchParams.get('q'), 'lọc người làm rơi ô tìm').toBe(ten);
   await expect(main.getByRole('row').filter({ hasText: ten })).toHaveCount(1);
+});
+
+test('TẠO NHANH lớp gia sư (1.2b): tìm em → chọn giảng viên + T3/T5 → xem trước → tạo → lớp có em và buổi', async ({ page, browser }) => {
+  test.skip(!BAT, LY_DO_TAT);
+  test.skip(!taiKhoanCuaVai(HOC_VU), LY_DO_THIEU_VAI);
+  lopGiaSu = null;
+  const ten = `E2E tự dọn gia sư nhanh ${test.info().project.name} ${new Date().toISOString().slice(0, 16)}`;
+
+  const hv = await trangTheoVai(browser, HOC_VU);
+  expect(hv, 'không đăng nhập được học vụ').toBeTruthy();
+  const ds = await goiApi(hv!, 'GET', '/api/admin/classes?per_page=1');
+  const gv = (ds.du as { teachers: { id: number; email: string }[] }).teachers.find((t) => t.email === 'audit2009.gv@example.com');
+  expect(gv, 'danh sách giảng viên thiếu giảng viên rà soát').toBeTruthy();
+
+  expect(await vaoTheoVai(page, HOC_VU)).toBe(true);
+  await page.goto(DUONG, { waitUntil: 'domcontentloaded' });
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Tạo lớp gia sư' }).click();
+    await expect(page.getByRole('group', { name: 'Tạo lớp gia sư' })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+  const khung = page.getByRole('group', { name: 'Tạo lớp gia sư' });
+
+  // Bấm "Xem trước" khi chưa chọn em → câu lỗi nói đúng ô, KHÔNG gọi máy chủ.
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  await expect(khung.getByRole('alert')).toHaveText('Chọn học viên cho lớp gia sư.');
+
+  await khung.getByRole('textbox', { name: 'Tìm học viên' }).fill(EM[0]);
+  await khung.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await khung.getByRole('list', { name: 'Kết quả tìm học viên' }).getByRole('button').first().click();
+  await expect(khung.getByText(EM[0])).toBeVisible();
+
+  await khung.getByRole('combobox', { name: 'Giảng viên', exact: true }).selectOption(String(gv!.id));
+  await khung.getByRole('textbox', { name: 'Tên lớp (không bắt buộc)' }).fill(ten);
+  await khung.getByText('T3', { exact: true }).click();
+  await khung.getByText('T5', { exact: true }).click();
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  const xem = khung.getByRole('status');
+  await expect(xem).toContainText(ten, { timeout: 20_000 });
+  await expect(xem).toContainText('T3, T5 · 19:30–21:00');
+  const so = Number((await xem.getByText(/\d+ buổi sẽ tạo/).innerText()).match(/\d+/)![0]);
+  expect(so, 'lịch 12 tuần T3/T5 phải ra ~24 buổi').toBeGreaterThanOrEqual(20);
+
+  // Sửa một ô → bản xem trước hết hiệu lực, nút lại là "Xem trước" (không tạo theo bản cũ).
+  await khung.getByText('T3', { exact: true }).click();
+  await expect(khung.getByRole('button', { name: 'Xem trước' })).toBeVisible();
+  await khung.getByText('T3', { exact: true }).click();
+  await khung.getByRole('button', { name: 'Xem trước' }).click();
+  await expect(khung.getByRole('status')).toContainText(`${so} buổi sẽ tạo`, { timeout: 20_000 });
+
+  await khung.getByRole('button', { name: 'Tạo lớp gia sư' }).click();
+  await expect(page.getByText(`Đã tạo lớp "${ten}" · ${so} buổi.`)).toBeVisible({ timeout: 20_000 });
+
+  const tim = await goiApi(hv!, 'GET', `/api/admin/classes?q=${encodeURIComponent(ten)}`);
+  const lop = (tim.du as { classes: { id: number; classType: string; members: number; teacherId: number }[] }).classes;
+  expect(lop.length, JSON.stringify(tim.du)).toBe(1);
+  lopGiaSu = lop[0].id;
+  expect([lop[0].classType, lop[0].members, lop[0].teacherId]).toEqual(['gia_su', 1, gv!.id]);
+  const buoi = await goiApi(hv!, 'GET', `/api/teach/classes/${lopGiaSu}/sessions`);
+  expect(buoi.ma, JSON.stringify(buoi.du)).toBe(200);
+  await hv!.close();
+
+  // Hàng mới trong danh sách: chip Gia sư + tên em.
+  await page.goto(`${DUONG}?q=${encodeURIComponent(ten)}`, { waitUntil: 'domcontentloaded' });
+  const hang = page.getByRole('main').getByRole('row').filter({ hasText: ten });
+  await expect(hang).toContainText('Gia sư');
+  await expect(hang).toContainText('Em: ');
+});
+
+test('CHUYỂN LỚP một thao tác (1.2c): chọn "Chuyển sang lớp khác…" → tìm lớp → chuyển → em ở lớp mới, lớp cũ ghi lý do chuyển', async ({ page, browser }) => {
+  test.skip(!BAT, LY_DO_TAT);
+  test.skip(!taiKhoanCuaVai(HOC_VU), LY_DO_THIEU_VAI);
+  lopChuyen = [];
+  const tem = `${test.info().project.name} ${new Date().toISOString().slice(0, 16)}`;
+  const tenA = `E2E tự dọn chuyển A ${tem}`;
+  const tenB = `E2E tự dọn chuyển B ${tem}`;
+  const EM2 = EM[1];
+
+  const hv = await trangTheoVai(browser, HOC_VU);
+  expect(hv, 'không đăng nhập được học vụ').toBeTruthy();
+  for (const ten of [tenA, tenB]) {
+    const r = await goiApi(hv!, 'POST', '/api/admin/classes', { name: ten, course_id: 'hsa_quantitative', status: 'active' });
+    expect(r.ma, JSON.stringify(r.du)).toBe(201);
+    lopChuyen.push((r.du as { id: number }).id);
+  }
+  const [a] = lopChuyen;
+  const xep = await goiApi(hv!, 'POST', `/api/admin/classes/${a}/members`, { emails: [EM2] });
+  expect(xep.ma, JSON.stringify(xep.du)).toBeLessThan(300);
+
+  expect(await vaoTheoVai(page, HOC_VU)).toBe(true);
+  await page.goto(`${DUONG}?q=${encodeURIComponent(tenA)}`, { waitUntil: 'domcontentloaded' });
+  const hang = page.getByRole('main').getByRole('row').filter({ hasText: tenA });
+  await expect(async () => {
+    await hang.getByRole('button', { name: 'Học viên' }).click();
+    await expect(page.getByRole('combobox', { name: /kèm lý do$/ }).first()).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 25_000 });
+  await page.getByRole('combobox', { name: /kèm lý do$/ }).first().selectOption('__chuyen');
+
+  const hop = page.getByRole('dialog');
+  await expect(hop).toContainText(tenA);
+  await hop.getByRole('textbox', { name: 'Tìm lớp chuyển tới' }).fill(tenB);
+  await hop.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await hop.getByRole('list', { name: 'Lớp tìm được' }).getByRole('button', { name: new RegExp(tenB) }).click();
+  await hop.getByRole('textbox', { name: 'Ghi chú (không bắt buộc)' }).fill('Xin đổi ca (e2e)');
+  await hop.getByRole('button', { name: 'Chuyển lớp' }).click();
+  await expect(page.getByText(new RegExp(`sang lớp "${tenB}"`))).toBeVisible({ timeout: 20_000 });
+
+  // Máy chủ: em ĐANG học B, lượt ở A đóng với lý do "chuyển lớp".
+  const dsB = await goiApi(hv!, 'GET', `/api/admin/classes?q=${encodeURIComponent(tenB)}`);
+  expect((dsB.du as { classes: { members: number }[] }).classes[0].members).toBe(1);
+  const dsA = await goiApi(hv!, 'GET', `/api/admin/classes?q=${encodeURIComponent(tenA)}`);
+  expect((dsA.du as { classes: { members: number }[] }).classes[0].members).toBe(0);
+  await hv!.close();
 });
