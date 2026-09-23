@@ -90,6 +90,22 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 5) — GỘP agent U2 + U4 (chữ người dùng thấy + "Chi tiết" gập)
+
+- Nhánh `agent/chu-nguoi-dung` (agent, worktree riêng) gộp vào master (`50739b2`, không xung đột). Guard MỚI
+  `e2e/unit/chu-nguoi-dung.test.mjs`: bộ phân tích TypeScript lần NGƯỢC từ chỗ hiện ra màn (chữ JSX, `hint`/`title`/
+  `aria-label`…, prop mà component in, toast, `new Error`) — không regex cả tệp nên chú thích mã vẫn được mang ngày, §,
+  tên tệp. Cấm: ngày gõ cứng, §, `.py`/`.ts`, `::`, "anh Sơn", `permission_classes`, RULES/PROGRESS, ProgrammingEdu,
+  Premium; `hint` ≤ 90 ký tự. Mỗi lượt tự dựng tệp ẢO gài 11 vi phạm phải bắt + 6 chỗ không được bắt.
+- Số (agent đo, lead chạy lại guard trên master sau gộp: xanh): 91 vi phạm → 0; tổng ký tự `hint` 8.237 → ~6.780.
+  "Ai làm được gì" thôi in `tệp.py::View`; Hướng dẫn thôi liệt kê RULES/PROGRESS; 22 hint rút một dòng, 8 thẻ có `chiTiet`.
+- **U4** `CardHead` nhận `chiTiet` → `<details>` "Chi tiết" (không JS, vùng chạm 44 px, mũi tên xoay). Soi ảnh lead trên
+  trang THẬT (Ai làm được gì) 1440 + 390, đóng + mở.
+- Lead dọn 5 vi phạm ở hai tệp để lại (màn Lớp học, `huongDan.ts`) và GỠ hai ngoại lệ tạm của guard.
+- Còn (U): "Ai làm được gì" vẫn in mã vai (`admin`) và tên lớp quyền (`IsTeachingStaff`) bằng chữ đơn cách — guard chưa có
+  luật; làm cùng lượt viết lại trang ấy.
+- Đo lại trên master sau gộp: 34/34 guard; tsc; eslint 0; `do_giao_dien` 34 trang × 2 khổ CỔNG SẠCH; axe 0 nút / 100 lượt.
+
 ## 24/09/2026 (tiếp 4) — 1.2c CHUYỂN LỚP MỘT THAO TÁC (§55)
 
 - **§55** `class_members.transferred_to` (FK tự tham chiếu ON DELETE SET NULL + chỉ mục riêng phần + CHECK chỉ lượt

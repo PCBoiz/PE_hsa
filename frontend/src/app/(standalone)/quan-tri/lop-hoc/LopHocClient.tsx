@@ -834,7 +834,7 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
           ) : hocVien.length === 0 ? (
             <EmptyState
               title="Lớp chưa có học viên"
-              hint="Dán danh sách email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản phải có sẵn — trang Tài khoản là nơi tạo."
+              hint="Dán email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản tạo ở trang Tài khoản."
             />
           ) : (
             <TableWrap caption={`Học viên của lớp ${lopMoRong.name}`}>

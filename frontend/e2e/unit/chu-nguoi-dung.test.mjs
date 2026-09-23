@@ -82,16 +82,9 @@ const TRAN_HINT = 90;
 
 /* Ngoại lệ TẠM, theo tệp chứa chuỗi. Mỗi dòng phải có lý do và phải HẾT HẠN:
    ngoại lệ nào không còn vi phạm nào để che thì tệp này đỏ, bắt gỡ nó đi. */
-const NGOAI_LE_TAM = [
-  {
-    tienTo: 'src/app/(standalone)/quan-tri/lop-hoc/',
-    lyDo: 'lead đang sửa màn Lớp học (1.2a–c, 24/09) — lead xử lý chữ ở đó',
-  },
-  {
-    tienTo: 'src/lib/huongDan.ts',
-    lyDo: 'lead đang sửa nội dung Hướng dẫn (24/09) — lead xử lý',
-  },
-];
+// Hai ngoại lệ tạm (màn Lớp học, huongDan.ts) đã gỡ 24/09/2026 sau khi lead sửa
+// hết 5 vi phạm ở đó. Thêm ngoại lệ mới thì ghi lý do + người xử lý như cũ.
+const NGOAI_LE_TAM = [];
 
 /** Thuộc tính JSX mà chữ trong đó tới tay người dùng (mắt hoặc trình đọc màn hình). */
 const THUOC_TINH_HIEN = new Set([
