@@ -24,12 +24,12 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | ID | Việc | Trạng thái |
 |---|---|---|
 | K0 | Chép kế hoạch vào repo (tệp này) | [x] `63554b0` |
-| B0 | Chốt lịch học §53: e2e `lich-hoc` 2 khổ, đo giao diện + axe, soi ảnh, commit | [ ] |
-| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [ ] |
-| 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [ ] |
-| 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [ ] |
-| 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [ ] |
-| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [ ] |
+| B0 | Chốt lịch học §53: e2e `lich-hoc` 2 khổ, đo giao diện + axe, soi ảnh, commit | [x] `ad3b299` — e2e 8/8 có ghi, đột biến 18/18 đỏ thật, do_giao_dien 70 lượt = 0, axe 102 = 0 |
+| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [~] `b1ed6bc` — mã xong (6/6, pytest thoát 3 khi giả lập production); CHỜ anh thêm `PE_DB_HOST_PRODUCTION` vào .env (VIEC_CUA_ANH N2) |
+| 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [x] `6502a1a` + `ad3b299` — backend 9/9, 5 đột biến đỏ, guard cookie 9/9, e2e cookie thật 4/4 |
+| 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
+| 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
+| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; còn chữ "Miễn phí/Chứng chỉ" ở chi tiết khoá (làm trong 1.3) + CSS chết `.rm-ai-btn` (mục U) |
 | 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [ ] |
 | 1.2b | Tạo nhanh lớp gia sư | [ ] |
 | 1.2c | §55 chuyển lớp một thao tác | [ ] |
