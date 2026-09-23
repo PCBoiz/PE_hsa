@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { AT, RT, AT_MAX_AGE, RT_MAX_AGE, refreshTokens } from '@/lib/auth';
+import { AT, RT, refreshTokens } from '@/lib/auth';
+import { hanCookie } from '@/lib/phienGhiNho';
 
 /**
  * Làm mới phiên đăng nhập TRƯỚC khi trang được dựng.
  *
  * ── VÌ SAO PHẢI Ở ĐÂY, KHÔNG PHẢI Ở `server-api.ts` ────────────────────────
  *
- * Phiên đáng lẽ sống 8 tiếng (`RT_MAX_AGE`) nhưng thực tế chết sau 30 phút.
+ * Phiên đáng lẽ sống 8 tiếng (tuổi refresh token khi ấy) nhưng thực tế chết sau 30 phút.
  * Đo được ngày 30/08/2026: cookie chỉ còn `pe_rt` hợp lệ, mở
  * `/quan-tri/tai-khoan` → chuyển thẳng về `/login`, y hệt như không có cookie
  * nào. Hai tầng nguyên nhân chồng lên nhau:
@@ -121,8 +122,14 @@ export async function proxy(req: NextRequest) {
     path: '/',
     secure: process.env.NODE_ENV === 'production',
   };
-  res.cookies.set(AT, moi.access, { ...chung, maxAge: AT_MAX_AGE });
-  if (moi.refresh) res.cookies.set(RT, moi.refresh, { ...chung, maxAge: RT_MAX_AGE });
+  // Thời hạn theo ô "Ghi nhớ đăng nhập" — CÙNG luật với `setTokenCookies`
+  // (`lib/phienGhiNho.ts`). Không có claim `nho` → cookie phiên (không maxAge).
+  const tuoiAt = hanCookie(moi.access, 'access');
+  res.cookies.set(AT, moi.access, tuoiAt ? { ...chung, maxAge: tuoiAt } : chung);
+  if (moi.refresh) {
+    const tuoiRt = hanCookie(moi.refresh, 'refresh');
+    res.cookies.set(RT, moi.refresh, tuoiRt ? { ...chung, maxAge: tuoiRt } : chung);
+  }
   return res;
 }
 

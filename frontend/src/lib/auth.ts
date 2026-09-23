@@ -17,6 +17,8 @@
  */
 import { cookies } from 'next/headers';
 
+import { hanCookie } from '@/lib/phienGhiNho';
+
 export const AT = 'pe_at'; // access token
 export const RT = 'pe_rt'; // refresh token
 
@@ -38,12 +40,10 @@ export const COOKIE_BASE = {
   secure: PROD,
   path: '/',
 };
-/* Khớp ĐÚNG vòng đời token trong config/settings.py (SIMPLE_JWT):
-   access 30 phút, refresh 8 giờ. Cho cookie sống lâu hơn token là để lại trong
-   máy người dùng một mẩu dữ liệu đã chết — access hết hạn thì lớp trung gian
-   tự đổi refresh lấy cái mới, còn refresh hết hạn thì phải đăng nhập lại. */
-export const AT_MAX_AGE = 30 * 60;
-export const RT_MAX_AGE = 8 * 60 * 60;
+/* Thời hạn cookie token (24/09/2026): KHÔNG còn hằng số cố định. Có tick "Ghi
+   nhớ đăng nhập" → access 30 phút + refresh tới `exp` (≤ 30 ngày); không tick →
+   cookie PHIÊN, đóng trình duyệt là hết. Quyết theo claim `nho` trong token —
+   xem `lib/phienGhiNho.ts`. Cookie vẫn không bao giờ sống lâu hơn token. */
 
 /** Đọc access token phía máy chủ (Server Component, route handler). */
 /**
@@ -78,12 +78,14 @@ export async function readRefresh(): Promise<string | null> {
   return jar.get(RT)?.value ?? null;
 }
 
-/** Gắn cặp token vào response. Bỏ trống refresh thì giữ nguyên cái đang có. */
+/** Gắn cặp token vào response. Bỏ trống refresh thì giữ nguyên cái đang có.
+ *  Thời hạn theo ô "Ghi nhớ đăng nhập" (`hanCookie`) — không có thì cookie phiên. */
 export function setTokenCookies(res: Response, access?: string, refresh?: string): void {
   const parts: string[] = [];
   const flags = `Path=/; HttpOnly; SameSite=Lax${PROD ? '; Secure' : ''}`;
-  if (access) parts.push(`${AT}=${access}; ${flags}; Max-Age=${AT_MAX_AGE}`);
-  if (refresh) parts.push(`${RT}=${refresh}; ${flags}; Max-Age=${RT_MAX_AGE}`);
+  const tuoi = (n: number | undefined) => (n ? `; Max-Age=${n}` : '');
+  if (access) parts.push(`${AT}=${access}; ${flags}${tuoi(hanCookie(access, 'access'))}`);
+  if (refresh) parts.push(`${RT}=${refresh}; ${flags}${tuoi(hanCookie(refresh, 'refresh'))}`);
   for (const p of parts) res.headers.append('Set-Cookie', p);
 }
 

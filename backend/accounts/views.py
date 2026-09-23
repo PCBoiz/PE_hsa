@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts.ghi_nho import cap_refresh, muon_ghi_nho
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
 from accounts.validators import (
     validate_email_field,
@@ -37,10 +38,9 @@ logger = logging.getLogger(__name__)
 _DUMMY_HASH = make_werkzeug_password('khong-phai-mat-khau-cua-ai')
 
 
-def _tokens_for(user_id):
-    """Cấp cặp JWT cho user id (SimpleJWT)."""
-    from accounts.models import User
-    refresh = RefreshToken.for_user(User(id=user_id))
+def _tokens_for(user_id, nho=False):
+    """Cấp cặp JWT cho user id. `nho` = ô "Ghi nhớ đăng nhập" (`accounts/ghi_nho.py`)."""
+    refresh = cap_refresh(user_id, nho=nho)
     return {'access': str(refresh.access_token), 'refresh': str(refresh)}
 
 
@@ -164,7 +164,7 @@ class LoginView(APIView):
             # (`?streak=1`) là của học viên; giảng viên đăng nhập xong mà được
             # mời "học một bài để giữ chuỗi" thì sai người (rà 20/09/2026).
             'role': user.get('role') or ROLE_STUDENT,
-            **_tokens_for(user['id']),
+            **_tokens_for(user['id'], nho=muon_ghi_nho(data.get('nho'))),
         })
 
 
