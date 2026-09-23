@@ -1,11 +1,20 @@
 import Link from 'next/link';
+import { z } from 'zod';
 
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
 import { HD_BAO_CAO } from '@/lib/hinhDang';
-import { serverJson } from '@/lib/server-api';
+import { serverJson, type HinhDang } from '@/lib/server-api';
 
 import KhoiDuongDan from './KhoiDuongDan';
+import MucTieuEm, { type MucTieu } from './MucTieuEm';
+
+/* `GET .../students/<uid>/profile` — mục tiêu + nguyện vọng (teaching/ho_so.py). */
+const HD_MUC_TIEU = z.looseObject({
+  studentCode: z.string().nullable(),
+  studyGoal: z.string().nullable(),
+  aspiration: z.string().nullable(),
+}) satisfies HinhDang<MucTieu>;
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Báo cáo gửi phụ huynh | TopHSA' };
@@ -30,11 +39,19 @@ export default async function BaoCaoPhuHuynhPage({
   if (from) qs.set('from', from);
   if (to) qs.set('to', to);
 
-  const kq = await serverJson<BaoCao>(
-    `/api/teach/classes/${classId}/students/${userId}/parent-report${qs.size ? `?${qs}` : ''}`,
-    { requireAuth: true },
-    HD_BAO_CAO,
-  );
+  // Song song: hai lượt tới Neon nối đuôi nhau là cộng dồn ~245 ms mỗi lượt.
+  const [kq, mucTieu] = await Promise.all([
+    serverJson<BaoCao>(
+      `/api/teach/classes/${classId}/students/${userId}/parent-report${qs.size ? `?${qs}` : ''}`,
+      { requireAuth: true },
+      HD_BAO_CAO,
+    ),
+    serverJson<MucTieu>(
+      `/api/teach/classes/${classId}/students/${userId}/profile`,
+      { requireAuth: true },
+      HD_MUC_TIEU,
+    ),
+  ]);
 
   if (!kq.ok) {
     return (
@@ -102,6 +119,10 @@ export default async function BaoCaoPhuHuynhPage({
           userId={userId}
           coLienLac={!!(bc.parent.email || bc.parent.phone)}
         />
+
+        {/* Không đọc được (em đã rời lớp, máy chủ lỗi) thì KHÔNG hiện ô trống:
+            ô trống bấm Lưu được là xoá trắng điều học vụ đã ghi. */}
+        {mucTieu.ok && <MucTieuEm classId={classId} userId={userId} initial={mucTieu.data} />}
 
         {bc.warnings.length > 0 && (
           <p

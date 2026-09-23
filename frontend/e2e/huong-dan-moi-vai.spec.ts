@@ -23,12 +23,15 @@ import { LY_DO_THIEU_VAI, chiDoc, taiKhoanCuaVai, vaoTheoVai } from './helpers';
  */
 
 /* Số bài mong đợi cho từng vai — đo 22/09/2026 trên trình duyệt, rồi mới ghi.
+   23/09/2026 (đo lại sau khi thêm): giảng viên 5 → 6 ("Ghi mục tiêu và nguyện vọng
+   của em"), học vụ 6 → 8 ("Cấp tài khoản cho người mới" mở cho học vụ + "Cập nhật
+   hồ sơ học viên").
    Thêm bài vào `lib/huongDan.ts` thì đổi số ở đây; con số lệch là tín hiệu có
    người thêm/bớt bài mà quên gắn vai. */
 const MONG: Record<string, { bai: number; phaiCo: string; khongCo?: string }> = {
-  'Giảng viên': { bai: 5, phaiCo: 'Mở đầu ngày dạy', khongCo: 'Cấp tài khoản cho người mới' },
+  'Giảng viên': { bai: 6, phaiCo: 'Mở đầu ngày dạy', khongCo: 'Cấp tài khoản cho người mới' },
   'Trợ giảng': { bai: 3, phaiCo: 'Điểm danh một buổi', khongCo: 'Gửi báo cáo cho phụ huynh' },
-  'Quản lý học vụ': { bai: 6, phaiCo: 'Mở lớp và xếp học viên', khongCo: 'Khi cần biết ai đã làm gì' },
+  'Quản lý học vụ': { bai: 8, phaiCo: 'Mở lớp và xếp học viên', khongCo: 'Khi cần biết ai đã làm gì' },
   'Biên tập nội dung': { bai: 1, phaiCo: 'Soạn khoá học và đề thi thử', khongCo: 'Điểm danh một buổi' },
 };
 

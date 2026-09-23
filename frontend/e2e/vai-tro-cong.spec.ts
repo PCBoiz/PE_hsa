@@ -9,7 +9,8 @@ import { LY_DO_THIEU_VAI, chiDoc, taiKhoanCuaVai, vaoTheoVai } from './helpers';
  *
  * Hôm qua tôi viết cẩm nang cho bốn vai bằng cách ĐỌC `permissions.py` rồi suy,
  * và sai ba việc liền về Quản lý học vụ (tưởng họ cấp được tài khoản, xem được
- * nhật ký và cơ sở học phí — cả ba đều chỉ quản trị viên). Thứ bắt được lỗi ấy
+ * nhật ký và cơ sở học phí — cả ba đều chỉ quản trị viên; từ 23/09 học vụ cấp
+ * được tài khoản HỌC VIÊN, xem bảng TRANG bên dưới). Thứ bắt được lỗi ấy
  * là mở trình duyệt bằng CHÍNH tài khoản vai đó. Tệp này là việc ấy, giao cho máy.
  *
  * `tests_ma_tran_quyen.py` ở backend đã canh 6 vai × mọi view — nhưng nó canh
@@ -55,8 +56,11 @@ const TRANG: Record<string, Bang> = {
   '/quan-tri/dot-hoc': chiHocVu,
   '/quan-tri/vai-tro': chiHocVu,
   '/quan-tri/huong-dan': chiHocVu,
-  // Ba trang CHỈ quản trị viên — đúng ba thứ cẩm nang bản đầu viết sai.
-  '/quan-tri/tai-khoan': tatCa(false),
+  // Học vụ vào được từ 23/09/2026 (tạo tài khoản + sửa hồ sơ HỌC VIÊN — máy chủ
+  // chỉ trả tài khoản vai Học viên cho họ, xem `ho-so-hoc-vien.spec.ts`). Đo lại
+  // bằng tài khoản học vụ thật trước khi đổi ô này.
+  '/quan-tri/tai-khoan': chiHocVu,
+  // Hai trang CHỈ quản trị viên — hai trong ba thứ cẩm nang bản đầu viết sai.
   '/quan-tri/nhat-ky': tatCa(false),
   '/quan-tri/co-so-hoc-phi': tatCa(false),
   '/admin': { 'Giảng viên': false, 'Trợ giảng': false, 'Quản lý học vụ': false, 'Biên tập nội dung': true },
@@ -71,7 +75,7 @@ const API: Record<string, Record<Vai, number>> = {
   '/api/teach/classes': { 'Giảng viên': 200, 'Trợ giảng': 200, 'Quản lý học vụ': 200, 'Biên tập nội dung': 403 },
   '/api/admin/classes': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 200, 'Biên tập nội dung': 403 },
   '/api/admin/terms': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 200, 'Biên tập nội dung': 403 },
-  '/api/admin/users': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 403, 'Biên tập nội dung': 403 },
+  '/api/admin/users': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 200, 'Biên tập nội dung': 403 },
   '/api/admin/audit': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 403, 'Biên tập nội dung': 403 },
   '/api/admin/co-so-hoc-phi': { 'Giảng viên': 403, 'Trợ giảng': 403, 'Quản lý học vụ': 403, 'Biên tập nội dung': 403 },
 };

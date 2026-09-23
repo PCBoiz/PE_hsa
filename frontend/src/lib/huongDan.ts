@@ -116,25 +116,29 @@ export const HUONG_DAN: readonly Bai[] = [
   {
     ma: 'tai-khoan-moi',
     tieu_de: 'Cấp tài khoản cho người mới',
-    vai: [VAI_QUAN_TRI],
+    // Học vụ từ 23/09/2026 — nhưng chỉ cấp được tài khoản HỌC VIÊN.
+    vai: [VAI_QUAN_TRI, VAI_HOC_VU],
     khi_nao: 'Có học viên mới nhập học, hoặc trung tâm tuyển thêm giảng viên.',
     buoc: [
       {
         lam: 'Mở "Tài khoản".',
         o: '/quan-tri/tai-khoan',
-        luu_y: 'Từ 27/08/2026 người dùng KHÔNG tự đăng ký được. Mọi tài khoản do trung tâm cấp.',
+        luu_y: 'Từ 27/08/2026 người dùng KHÔNG tự đăng ký được. Mọi tài khoản do trung tâm cấp. Học vụ chỉ thấy và cấp được tài khoản học viên; giảng viên, trợ giảng do quản trị viên cấp.',
       },
       {
-        lam: 'Một người thì điền form; cả lớp thì dán danh sách vào ô nhập hàng loạt — hệ thống báo trước dòng nào trùng email hoặc trùng số điện thoại.',
+        // KHÔNG có form cấp lẻ (đo 23/09/2026: không màn hình nào gọi đường
+        // cấp lẻ) — bản trước viết "một người thì điền form".
+        lam: 'Bấm "Mở ô nhập" ở khối "Cấp tài khoản hàng loạt", dán danh sách: mỗi dòng một người — họ tên, email, số điện thoại. Một người thì dán một dòng.',
         luu_y: 'Bấm "Kiểm tra trước" rồi mới bấm tạo. Danh sách trùng mà tạo luôn là hai tài khoản cho một người.',
       },
       {
-        lam: 'Chọn vai. Không chắc chọn vai nào thì mở bảng "Ai làm được gì".',
+        lam: 'Quản trị viên: chọn vai cho cả danh sách. Không chắc chọn vai nào thì mở bảng "Ai làm được gì". Học vụ: ô này chỉ có Học viên.',
         o: '/quan-tri/vai-tro',
         luu_y: 'Cấp vai rộng hơn mức cần là mở dữ liệu của học viên cho thêm một người. Vai mặc định là Học viên — cứ để vậy nếu chưa chắc.',
       },
       {
-        lam: 'Báo cho người đó mật khẩu tạm. Lần đăng nhập đầu hệ thống bắt đổi mật khẩu trước khi vào được bất cứ đâu.',
+        lam: 'Chép bảng mật khẩu tạm ngay, rồi báo cho từng người. Lần đăng nhập đầu hệ thống bắt đổi mật khẩu trước khi vào được bất cứ đâu.',
+        luu_y: 'Mỗi học viên có mã HSA-xxxxx ngay khi tạo — hiện dưới tên em trong danh sách. Mã này không đổi được.',
       },
     ],
     hong_thi_sao: [
@@ -144,7 +148,49 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         trieu_chung: 'Em quên mật khẩu.',
-        xu_ly: 'Quản trị viên: Tài khoản → "Đặt lại mật khẩu". Học vụ: Lớp học → Học viên → "Đặt lại" ngay trên dòng của em (được với học viên và trợ giảng; giảng viên, học vụ khác thì cần quản trị viên). Đọc chuỗi tạm cho em — hiện đúng một lần.',
+        xu_ly: 'Tài khoản → tìm em → "Đặt lại mật khẩu" (học vụ: được với học viên; ở Lớp học → Học viên cũng có nút "Đặt lại", được cả với trợ giảng). Giảng viên, học vụ khác thì cần quản trị viên. Đọc chuỗi tạm cho em — hiện đúng một lần.',
+      },
+      {
+        trieu_chung: 'Em không nhớ đã đăng ký bằng email nào.',
+        xu_ly: 'Mở Hồ sơ của em, đặt "Tên đăng nhập" (ví dụ an.nguyen08) rồi đặt lại mật khẩu. Em đăng nhập bằng tên ấy, gõ hoa hay thường đều được.',
+      },
+    ],
+  },
+
+  {
+    ma: 'ho-so-hoc-vien',
+    tieu_de: 'Cập nhật hồ sơ học viên',
+    vai: [VAI_QUAN_TRI, VAI_HOC_VU],
+    khi_nao: 'Khi tư vấn xong một em, khi em đổi trường hay đổi mục tiêu, hoặc khi phụ huynh báo số liên lạc mới.',
+    buoc: [
+      {
+        lam: 'Mở "Tài khoản" và tìm em — gõ tên, email, số điện thoại, mã học viên (HSA-…) hoặc tên đăng nhập đều được.',
+        o: '/quan-tri/tai-khoan',
+      },
+      {
+        lam: 'Bấm "Hồ sơ" trên dòng của em. Trang hồ sơ có năm mục: thông tin cá nhân, tên đăng nhập, học tập, tuyển sinh, phụ huynh.',
+      },
+      {
+        lam: 'Sửa ô cần sửa rồi bấm "Lưu hồ sơ" ở thanh dưới cùng. Thanh ấy đếm số ô chưa lưu; ô nào sai thì báo ngay dưới ô đó.',
+        luu_y: 'Người tư vấn và nguồn tuyển sinh chọn từ danh sách, không gõ tay — để còn thống kê được.',
+      },
+      {
+        lam: 'Liên hệ phụ huynh lưu ở đây là "trung tâm đã nhập": từ đó em chỉ còn điền được ô trống trong Cài đặt, muốn sửa phải qua học vụ.',
+        luu_y: 'Mã học viên không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi trong Cài đặt.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Báo "Tên đăng nhập này đã có người dùng."',
+        xu_ly: 'Chọn tên khác — thêm năm sinh hoặc một con số, ví dụ an.nguyen08.',
+      },
+      {
+        trieu_chung: 'Không thấy người tư vấn trong danh sách chọn.',
+        xu_ly: 'Danh sách chỉ có tài khoản nhân sự đang hoạt động. Người đã bị khoá vẫn hiện trên hồ sơ cũ, kèm chữ "(đã nghỉ)".',
+      },
+      {
+        trieu_chung: 'Học vụ bấm Hồ sơ của một giảng viên thì bị chặn.',
+        xu_ly: 'Đúng thiết kế: học vụ chỉ xem và sửa hồ sơ HỌC VIÊN. Hồ sơ nhân sự do quản trị viên sửa.',
       },
     ],
   },
@@ -231,6 +277,31 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         trieu_chung: 'Trợ giảng không thấy nút "Sinh lịch cả kỳ".',
         xu_ly: 'Đúng thiết kế: trợ giảng tạo từng buổi được, sinh cả kỳ thì không. Nhờ giảng viên phụ trách hoặc học vụ.',
+      },
+    ],
+  },
+
+  {
+    ma: 'muc-tieu-hoc-vien',
+    tieu_de: 'Ghi mục tiêu và nguyện vọng của em',
+    // Dòng 14 của bảng yêu cầu TopHSA. Học vụ, quản trị viên sửa ở trang Hồ sơ
+    // (bài "Cập nhật hồ sơ học viên"); trợ giảng không sửa.
+    vai: [VAI_GIANG_VIEN],
+    khi_nao: 'Sau buổi tư vấn hay buổi nói chuyện riêng với em, hoặc khi em đổi mục tiêu điểm hay đổi trường muốn vào.',
+    buoc: [
+      {
+        lam: 'Vào lớp của em, bấm "Báo cáo phụ huynh", rồi "Xem tờ" trên dòng của em.',
+        o: '/giang-day',
+      },
+      {
+        lam: 'Khối "Mục tiêu và nguyện vọng" nằm ngay trên tờ báo cáo. Sửa hai ô rồi bấm "Lưu".',
+        luu_y: 'Đây là ghi chú NỘI BỘ: không in ra, không gửi phụ huynh. Học vụ thấy ngay trên hồ sơ của em.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Không thấy khối "Mục tiêu và nguyện vọng".',
+        xu_ly: 'Khối chỉ hiện với em ĐANG học lớp ấy. Em đã rời lớp thì nhờ học vụ sửa trên hồ sơ.',
       },
     ],
   },

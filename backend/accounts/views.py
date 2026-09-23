@@ -5,6 +5,7 @@ cặp JWT access/refresh thay vì set session cookie (frontend ở domain khác)
 """
 import json
 import logging
+import re
 from datetime import timedelta
 
 from django.db import DatabaseError, IntegrityError, transaction
@@ -60,14 +61,23 @@ class LoginView(APIView):
 
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
-        identifier = (data.get('email') or data.get('phone') or '').strip()
+        identifier = (data.get('email') or data.get('phone') or data.get('username') or '').strip()
         password = data.get('password', '')
         errors = {}
+        # BA loại định danh (23/09/2026, bảng yêu cầu TopHSA mục 1.2): email, số
+        # điện thoại, USERNAME. Tách bằng HÌNH DẠNG, theo đúng thứ tự: có '@' là
+        # email; có chữ cái (mà không '@') là username; còn lại là số điện thoại.
+        # Username bắt buộc có chữ cái (CHECK §51) nên không bao giờ trùng dạng
+        # với một số điện thoại — "0912345678" chỉ có thể là số điện thoại.
+        la_username = (not looks_like_email(identifier)
+                       and re.search(r'[A-Za-z]', identifier or '') is not None)
         if not identifier:
-            errors['email'] = 'Email hoặc số điện thoại không được để trống'
+            errors['email'] = 'Email, số điện thoại hoặc tên đăng nhập không được để trống'
         elif looks_like_email(identifier):
             if err := validate_email_field(identifier):
                 errors['email'] = err
+        elif la_username:
+            pass        # sai dạng thì tra không ra, rơi xuống 401 như mọi trường hợp khác
         # Kiểm SỐ ĐÃ CHUẨN HOÁ, không kiểm chuỗi người dùng gõ.
         #
         # `validate_phone_field` chỉ nhận '0' + 9 số hoặc '+' + mã nước + 9 số,
@@ -92,6 +102,9 @@ class LoginView(APIView):
         # câu này vẫn tra theo chỉ mục, không quét bảng.
         if looks_like_email(identifier):
             user = q1('SELECT * FROM users WHERE lower(email)=%s', (norm_email(identifier),))
+        elif la_username:
+            # `idx_users_username` là chỉ mục duy nhất trên lower(username) (§51).
+            user = q1('SELECT * FROM users WHERE lower(username)=%s', (identifier.lower(),))
         else:
             user = q1('SELECT * FROM users WHERE phone=%s', (norm_phone(identifier),))
         if not user:
@@ -106,11 +119,11 @@ class LoginView(APIView):
             # đáng bảo vệ. Chênh lệch này còn nguyên ở production vì nó đến từ
             # chi phí bằm, không phải từ độ trễ CSDL.
             check_werkzeug_password(_DUMMY_HASH, password)
-            return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
+            return Response({'error': 'Email/số điện thoại/tên đăng nhập hoặc mật khẩu không đúng'}, status=401)
 
         stored = user['password']
         if not stored:
-            return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
+            return Response({'error': 'Email/số điện thoại/tên đăng nhập hoặc mật khẩu không đúng'}, status=401)
         is_hashed = stored.startswith(('pbkdf2:', 'scrypt:'))
         if is_hashed:
             ok = check_werkzeug_password(stored, password)
@@ -122,7 +135,7 @@ class LoginView(APIView):
                   (make_werkzeug_password(password), user['id']))
 
         if not ok:
-            return Response({'error': 'Email/số điện thoại hoặc mật khẩu không đúng'}, status=401)
+            return Response({'error': 'Email/số điện thoại/tên đăng nhập hoặc mật khẩu không đúng'}, status=401)
 
         # Tài khoản trung tâm đã khoá (học xong hoặc nghỉ giữa chừng, schema §31).
         # Đặt SAU khi kiểm mật khẩu là cố ý: trả lời "tài khoản đã khoá" trước

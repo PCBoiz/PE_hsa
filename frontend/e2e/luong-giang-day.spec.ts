@@ -1,6 +1,6 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-import { LY_DO_THIEU_VAI, taiKhoanCuaVai, vaoTheoVai } from './helpers';
+import { LY_DO_THIEU_VAI, goiApi as goi, taiKhoanCuaVai, trangTheoVai, vaoTheoVai } from './helpers';
 
 /**
  * LUỒNG GIẢNG DẠY — điểm danh và đường dẫn phụ huynh, đi trọn bằng GIAO DIỆN,
@@ -39,27 +39,6 @@ type NguoiHoc = { id: number; ten: string };
 let lopId: number | null = null;
 let buoiId: number | null = null;
 let hocVien: NguoiHoc[] = [];
-
-/** Gọi API bằng phiên của trang, trả `{ma, du}`. */
-async function goi(page: Page, method: string, url: string, body?: unknown) {
-  return page.evaluate(async ({ method, url, body }) => {
-    const r = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    let du: unknown = null;
-    try { du = await r.json(); } catch { /* không phải JSON */ }
-    return { ma: r.status, du };
-  }, { method, url, body });
-}
-
-async function trangTheoVai(browser: Browser, vai: string): Promise<Page | null> {
-  const p = await browser.newPage();
-  if (!(await vaoTheoVai(p, vai))) { await p.close(); return null; }
-  return p;
-}
 
 test.beforeAll(async ({ browser }) => {
   if (!BAT) return;

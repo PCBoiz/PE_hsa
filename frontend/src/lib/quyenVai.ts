@@ -52,7 +52,9 @@ export const VAI_TRO: readonly { ma: string; nhan: string; mo_ta: string }[] = [
     // Câu cũ ('KHÔNG đặt lại được mật khẩu') đã sai từ 20/09/2026 khi anh Sơn mở
     // quyền ấy cho học vụ với học viên và trợ giảng — rà vai nhân sự 21/09 bắt
     // được: chính họ đặt lại thành công trong khi trang này bảo không.
-    mo_ta: 'Xếp lớp, mở đợt học, theo dõi cả trung tâm. Đặt lại được mật khẩu cho học viên và trợ giảng, KHÔNG đổi được vai trò.',
+    // Cấp tài khoản + sửa hồ sơ HỌC VIÊN: anh Sơn mở ngày 23/09/2026 (bảng yêu
+    // cầu TopHSA, dòng 3). Nhân sự vẫn chỉ quản trị viên cấp.
+    mo_ta: 'Xếp lớp, mở đợt học, theo dõi cả trung tâm. Cấp tài khoản và sửa hồ sơ cho HỌC VIÊN. Đặt lại được mật khẩu cho học viên và trợ giảng, KHÔNG đổi được vai trò.',
   },
   {
     ma: VAI_GIANG_VIEN,
@@ -122,9 +124,18 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Cấp hàng loạt từ danh sách',
-    giaiThich: 'Dán danh sách lớp mới vào một ô, hệ thống tạo tài khoản và báo dòng nào trùng.',
-    lopQuyen: 'IsAdminRole',
+    giaiThich: 'Dán danh sách lớp mới vào một ô, hệ thống tạo tài khoản và báo dòng nào trùng. Mỗi học viên được cấp mã HSA-xxxxx ngay lúc tạo. Học vụ làm được từ 23/09/2026 — nhưng chỉ cấp vai Học viên.',
+    lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/admin_users.py::AdminBulkCreateUsersView',
+    chan_them: 'học vụ chỉ cấp được vai Học viên (hàng rào trong view)',
+  },
+  {
+    nhom: 'Tài khoản',
+    nhan: 'Xem và sửa hồ sơ học viên',
+    giaiThich: 'Trường, lớp, khu vực, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/ho_so.py::HoSoHocVienView',
+    chan_them: 'học vụ: chỉ tài khoản vai Học viên',
   },
   {
     nhom: 'Tài khoản',
@@ -210,6 +221,14 @@ export const VIEC: readonly Viec[] = [
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/views.py::TeachStudentView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
+    nhan: 'Cập nhật mục tiêu và nguyện vọng của một em',
+    giaiThich: 'Ngay trên tờ báo cáo phụ huynh của em. Ghi chú nội bộ: không in, không gửi phụ huynh. Trợ giảng không sửa — cùng cổng với tờ báo cáo.',
+    lopQuyen: 'IsSeniorTeachingStaff',
+    nguon: 'teaching/ho_so.py::MucTieuHocVienView',
+    chan_them: 'chỉ lớp mình phụ trách, chỉ em đang học lớp ấy',
   },
   {
     nhom: 'Dạy học',

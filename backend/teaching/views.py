@@ -632,6 +632,10 @@ class AdminUserRoleView(APIView):
                                       'Phong quyền cho một người khác trước đã.'},
                             status=400)
         x('UPDATE users SET role=%s WHERE id=%s', (role, user_id))
+        # Đổi THÀNH học viên là đường thứ ba sinh ra một học viên (sau tạo lẻ và
+        # nhập hàng loạt) — thiếu dòng này là có em không mã học viên (§51).
+        from teaching.ho_so import cap_ma_hoc_vien
+        cap_ma_hoc_vien(user_id)
         ten = _user_label(before, user_id)
         audit.record(request, audit.USER_ROLE, target_type='user', target_id=user_id,
                      target_label=ten,
@@ -803,10 +807,24 @@ class AdminCreateUserView(APIView):
     Nhận luôn `class_id` để xếp vào lớp trong cùng một thao tác: trợ giảng cấp
     tài khoản là để cho vào một lớp cụ thể, tách làm hai bước chỉ tạo thêm chỗ
     quên.
+
+    HỌC VỤ TẠO ĐƯỢC — CHỈ HỌC VIÊN (anh Sơn chốt 23/09/2026, bảng yêu cầu dòng 9:
+    Giáo vụ "quản lý thông tin học sinh, xếp học sinh vào lớp"). Trước đó mỗi em
+    mới đăng ký là học vụ phải đi nhờ quản trị viên. Tài khoản NHÂN SỰ vẫn chỉ
+    quản trị viên cấp được: tạo một tài khoản giảng viên là trao quyền xem lớp.
+
+    CHƯA MÀN HÌNH NÀO GỌI tuyến này (đo 23/09/2026 bằng `scripts/ban_do.mjs`: "người
+    gọi" duy nhất từng thấy là một câu ví dụ trong chú thích). Cấp lẻ đi qua ô nhập
+    hàng loạt (một dòng). Nằm trong danh sách ứng viên gỡ — chờ anh Sơn quyết.
     """
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrAcademic]
 
     def post(self, request):
+        from teaching.ho_so import cap_ma_hoc_vien
+        vai_xin = ((request.data or {}).get('role') if isinstance(request.data, dict) else None) or ROLE_STUDENT
+        if not is_admin(request.user) and str(vai_xin).strip() != ROLE_STUDENT:
+            return Response({'error': 'Quản lý học vụ chỉ cấp được tài khoản HỌC VIÊN. '
+                                      'Tài khoản nhân sự cần quản trị viên.'}, status=403)
         from accounts.hashers import make_werkzeug_password
 
         data = request.data if isinstance(request.data, dict) else {}
@@ -887,6 +905,9 @@ class AdminCreateUserView(APIView):
                  (name, email, phone, role, make_werkzeug_password(temp),
                   local_now()))
         uid = row['id']
+        # Mã học viên cấp NGAY trong lượt tạo — không để một em nào tồn tại mà
+        # thiếu mã (§51). Nhân sự: hàm không làm gì.
+        cap_ma_hoc_vien(uid)
 
         added_to_class = False
         if class_id:

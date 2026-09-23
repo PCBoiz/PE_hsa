@@ -49,9 +49,11 @@ export const TABS: readonly Tab[] = [
   // Học vụ vào được từ 14/09/2026, theo đúng quyết định 01/09 ("báo cáo trung
   // tâm"); trước đó mã khoá hẹp hơn quyết định. Xem docstring `AdminOverviewView`.
   { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
-  // `IsAdminRole` — đổi vai trò và đặt lại mật khẩu KHÔNG mở cho học vụ
-  // (anh Sơn chốt 01/09/2026).
-  { href: '/quan-tri/tai-khoan', label: 'Tài khoản', icon: 'users', vai: [VAI_QUAN_TRI] },
+  // `IsAdminOrAcademic` — teaching/admin_users.py::AdminUsersView. Học vụ vào
+  // được từ 23/09/2026 (anh Sơn chốt: học vụ TẠO tài khoản và SỬA hồ sơ học
+  // viên), nhưng máy chủ chỉ trả tài khoản vai Học viên cho họ. Đổi vai trò và
+  // khoá tài khoản vẫn `IsAdminRole` (quyết định 01/09 giữ nguyên).
+  { href: '/quan-tri/tai-khoan', label: 'Tài khoản', icon: 'users', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/views.py::AdminClassesView.
   { href: '/quan-tri/lop-hoc', label: 'Lớp học', icon: 'graduation-cap', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/terms.py.

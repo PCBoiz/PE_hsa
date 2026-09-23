@@ -24,7 +24,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
 | 1.1 Đăng nhập bằng email | CÓ | `auth/login` |
-| 1.2 Đăng nhập bằng username | CHƯA | bảng `users` không có cột username |
+| 1.2 Đăng nhập bằng username | CÓ (23/09) | ô đăng nhập nhận email / SĐT / tên đăng nhập; tên do học vụ đặt ở trang Hồ sơ, không phân biệt hoa thường (`users.username`, §51) |
 | 1.3 Hiện/ẩn mật khẩu | CÓ | `.toggle-eye` ở màn đăng nhập |
 | 1.4 Ghi nhớ đăng nhập | MỘT PHẦN | phiên tự giữ 8 giờ (`REFRESH_TOKEN_LIFETIME`), không có ô "ghi nhớ" để kéo dài |
 | 1.5 Quên mật khẩu | CHƯA | màn đăng nhập chỉ ghi "nhắn giảng viên / trung tâm"; không có đường tự đặt lại |
@@ -34,14 +34,14 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
-| Tạo tài khoản | CÓ | `api/admin/users/create`, hàng loạt `api/admin/users/bulk` |
+| Tạo tài khoản | CÓ | ô cấp hàng loạt `api/admin/users/bulk` (một người = một dòng). Từ 23/09 học vụ cấp được — chỉ vai Học viên. `api/admin/users/create` không màn hình nào gọi (ứng viên gỡ trong `scripts/ban_do.mjs`) |
 | Khoá / mở khoá | CÓ | `api/admin/users/<id>/status`, có ghi lý do |
 | Phân quyền theo vai | CÓ | 6 vai, `common/permissions.py`, bảng "Ai làm được gì" |
 | Xoá tài khoản | CHƯA | có chủ ý: chỉ khoá, không xoá (giữ lịch sử học tập) — cần anh xác nhận với khách |
 | Xem trạng thái tài khoản | CÓ | cột `status`, `status_note` |
 | Quan hệ phụ huynh – học sinh | MỘT PHẦN | tên/SĐT/email phụ huynh nằm trên hồ sơ em; phụ huynh không có tài khoản riêng |
 | Thông tin chi tiết theo loại user | MỘT PHẦN | xem mục 3 |
-| Đặt lại mật khẩu | CÓ | quản trị viên; lần đăng nhập sau bắt đổi |
+| Đặt lại mật khẩu | CÓ | quản trị viên mọi tài khoản; học vụ với học viên và trợ giảng; lần đăng nhập sau bắt đổi |
 | Nhập danh sách hàng loạt | CÓ | dán danh sách, xem trước bắt buộc, trần 50/lượt |
 | Xuất danh sách | CÓ | `api/admin/export/users.csv` |
 
@@ -50,15 +50,15 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
 | Tìm theo họ tên, email, SĐT | CÓ | tham số `q` của `api/admin/users` |
-| Tìm theo username | CHƯA | không có cột username |
-| Mã học viên | CHƯA | chỉ có id nội bộ |
+| Tìm theo username | CÓ (23/09) | ô tìm ở Tài khoản khớp cả tên đăng nhập và mã học viên |
+| Mã học viên | CÓ (23/09) | HSA-00001… tự sinh lúc tạo, không sửa được; 55 em có sẵn đã được cấp mã |
 | Họ tên · SĐT · email · ngày sinh | CÓ | `users.name/phone/email/birthday` |
-| Trường · lớp · khu vực | CHƯA | không có cột |
+| Trường · lớp · khu vực | CÓ (23/09) | trang Hồ sơ (`/quan-tri/tai-khoan/<id>`) |
 | Thông tin / SĐT / email phụ huynh | CÓ | `parent_name/phone/email` |
-| Người tư vấn · nguồn tuyển sinh | CHƯA | không có cột |
+| Người tư vấn · nguồn tuyển sinh | CÓ (23/09) | chọn từ danh sách: người tư vấn = tài khoản nhân sự đang hoạt động; tám nguồn cố định |
 | Khoá học đã đăng ký | CÓ | bảng `enrollments` |
-| Mục tiêu học tập | MỘT PHẦN | điểm mục tiêu có ở `stats/goals.py` (`target_score`); chưa hiện trên hồ sơ quản trị |
-| Nguyện vọng trường / ngành | CHƯA | không có cột |
+| Mục tiêu học tập | CÓ (23/09) | ô chữ trên hồ sơ (học vụ) và trên tờ báo cáo của em (giảng viên). Điểm mục tiêu em tự đặt (`target_score`) vẫn là chuyện riêng |
+| Nguyện vọng trường / ngành | CÓ (23/09) | như trên |
 | Tình trạng học tập | MỘT PHẦN | trạng thái tài khoản + trong lớp nào; chưa có một ô tổng hợp |
 | Tình trạng học phí | BỎ | thuộc phần kế toán |
 
@@ -132,7 +132,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
 | Danh sách lớp được phân công | CÓ | "Việc hôm nay", khu Giảng dạy |
-| Cập nhật hồ sơ học sinh trong lớp (mục tiêu, nguyện vọng) | CHƯA | chưa có các trường ấy (mục 3) |
+| Cập nhật hồ sơ học sinh trong lớp (mục tiêu, nguyện vọng) | CÓ (23/09) | khối "Mục tiêu và nguyện vọng" trên tờ báo cáo từng em; chỉ em đang học lớp mình; không in, không gửi phụ huynh; trợ giảng không sửa |
 | Điểm danh có mặt / vắng / muộn / xin phép, cập nhật | CÓ | 4 trạng thái; e2e `luong-giang-day.spec.ts` |
 | Ai được sửa điểm danh | CÓ | giảng viên, trợ giảng, học vụ, quản trị viên |
 | Lịch sử chỉnh sửa điểm danh | MỘT PHẦN | lưu người sửa CUỐI + Nhật ký; chưa có màn lịch sử theo buổi |

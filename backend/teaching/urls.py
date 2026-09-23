@@ -6,6 +6,7 @@ from teaching import (
                       assignments,
                       co_so_hoc_phi,
                       exports,
+                      ho_so,
                       lien_he_phu_huynh,
                       lop_cua_toi,
                       nhap_ket_qua_view,
@@ -28,6 +29,9 @@ urlpatterns = [
     path('api/teach/classes/<int:class_id>', views.TeachClassDetailView.as_view()),
     path('api/teach/classes/<int:class_id>/students/<int:user_id>',
          views.TeachStudentView.as_view()),
+    # Giảng viên cập nhật MỤC TIÊU + NGUYỆN VỌNG của em trong lớp (23/09/2026).
+    path('api/teach/classes/<int:class_id>/students/<int:user_id>/profile',
+         ho_so.MucTieuHocVienView.as_view()),
     # Báo cáo gửi phụ huynh (đặc tả ERP §6) — khác hồ sơ ở trên: ít số hơn, có
     # ranh giới riêng tư, và in ra giấy được.
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report',
@@ -125,6 +129,8 @@ urlpatterns = [
     path('api/admin/users/<int:user_id>/status', admin_users.AdminUserStatusView.as_view()),
     path('api/admin/users/<int:user_id>/reset-password',
          views.AdminResetPasswordView.as_view()),
+    # Hồ sơ học viên mở rộng (§51, 23/09/2026) — quản trị viên + học vụ.
+    path('api/admin/users/<int:user_id>/profile', ho_so.HoSoHocVienView.as_view()),
 
     # ── Nhật ký kiểm toán (đặc tả ERP §9, khối 5) ──
     path('api/admin/audit', admin_users.AdminAuditView.as_view()),

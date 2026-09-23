@@ -37,6 +37,10 @@ USER_CREATE = 'user.create'
 USER_ROLE = 'user.role'
 USER_STATUS = 'user.status'
 USER_PASSWORD_RESET = 'user.password_reset'
+#: Sửa hồ sơ học viên (23/09/2026, `teaching/ho_so.py`). `detail` giữ cả giá trị
+#: CŨ lẫn MỚI — đổi nhầm người tư vấn hay nguồn tuyển sinh là sai số thống kê
+#: tuyển sinh, và đây là đường hoàn tác duy nhất.
+USER_PROFILE = 'user.profile'
 
 CLASS_CREATE = 'class.create'
 CLASS_UPDATE = 'class.update'

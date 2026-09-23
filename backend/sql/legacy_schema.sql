@@ -1626,3 +1626,50 @@ CREATE TABLE IF NOT EXISTS parent_report_optout (
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_pro_nguoi_tat ON parent_report_optout (by_user_id);
+
+-- ============================================================================
+-- 51. Hồ sơ học viên mở rộng + đăng nhập bằng username (23/09/2026)
+-- ============================================================================
+-- Bảng yêu cầu của TopHSA (dòng 3 + tab "Nhi" #1) đòi hồ sơ học viên có: mã học
+-- viên, trường, lớp, khu vực, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện
+-- vọng trường/ngành. `users` chưa có cột nào trong số đó. Anh Sơn chốt 23/09:
+--
+--   · MÃ HỌC VIÊN tự sinh theo mẫu HSA-00001, tăng dần, KHÔNG sửa được. Cấp ở
+--     phía ứng dụng (`teaching/ho_so.py::cap_ma_hoc_vien`) chứ không bằng
+--     trigger: `bootstrap_schema` tách câu theo dấu chấm phẩy nên không nạp
+--     được thân hàm PL/pgSQL. Câu UPDATE cuối mục này cấp mã cho mọi học viên
+--     còn thiếu — chạy lại bao nhiêu lần cũng chỉ chạm dòng còn NULL.
+--   · NGƯỜI TƯ VẤN chọn từ tài khoản nhân sự → khoá ngoại. ON DELETE SET NULL:
+--     xoá tài khoản người tư vấn không được xoá mất hồ sơ học viên.
+--   · NGUỒN TUYỂN SINH chọn từ danh sách cố định → CHECK, để thống kê được
+--     ("Facebook", "facebook" và "FB" không thành ba nguồn).
+--   · USERNAME tuỳ chọn, học vụ đặt; duy nhất KHÔNG phân biệt hoa thường (chỉ
+--     mục trên lower()), chữ thường + số + dấu chấm, 3–30 ký tự.
+--
+-- `school_grade` chứ không `grade`: "lớp" ở đây là lớp ở TRƯỜNG (10, 11, 12),
+-- dễ nhầm với lớp học ở trung tâm (`classes`) nếu chỉ gọi là `class`/`grade`.
+CREATE SEQUENCE IF NOT EXISTS student_code_seq START 1;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS student_code  TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username      TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS school        TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS school_grade  TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS region        TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS consultant_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS enroll_source TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS study_goal    TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS aspiration    TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_student_code ON users (student_code) WHERE student_code IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username     ON users (lower(username)) WHERE username IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_consultant ON users (consultant_id);
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_enroll_source_check;
+ALTER TABLE users ADD CONSTRAINT users_enroll_source_check CHECK (enroll_source IS NULL OR enroll_source IN
+    ('facebook', 'tiktok', 'zalo', 'website', 'gioi_thieu', 'truong_hoc', 'su_kien', 'khac'));
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_format_check;
+-- PHẢI có ít nhất một chữ cái: username toàn số (0912345678) sẽ lẫn với số
+-- điện thoại ở ô đăng nhập — cùng một chuỗi trỏ tới hai người.
+ALTER TABLE users ADD CONSTRAINT users_username_format_check CHECK (username IS NULL OR
+    (username ~ '^[a-z0-9][a-z0-9.]{2,29}$' AND username ~ '[a-z]'));
+UPDATE users u SET student_code = 'HSA-' || lpad(s.n::text, 5, '0')
+  FROM (SELECT id, nextval('student_code_seq') AS n
+          FROM (SELECT id FROM users WHERE role = 'Học viên' AND student_code IS NULL ORDER BY id) t) s
+ WHERE u.id = s.id;

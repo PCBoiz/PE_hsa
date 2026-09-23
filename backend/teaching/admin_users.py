@@ -44,7 +44,9 @@ from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
     ROLE_STUDENT,
+    IsAdminOrAcademic,
     IsAdminRole,
+    is_admin,
     last_active_admin,
 )
 from stats.goals import as_date
@@ -155,8 +157,12 @@ def build_user_filters(params):
         # ghi '+84 964 245 623' còn CSDL lưu '0964245623'. Chép nguyên văn từ
         # phiếu vào ô tìm kiếm mà không chuẩn hoá là tìm không ra chính em vừa
         # được nhập vào hệ thống năm phút trước.
-        where.append('(lower(u.name) LIKE %s OR lower(u.email) LIKE %s OR u.phone LIKE %s)')
-        args += [_like(term), _like(term), _like(norm_phone(term) or term)]
+        # Mã học viên và username (§51, 23/09/2026): bảng yêu cầu của TopHSA đòi
+        # tìm theo "họ tên, Email, Username, số điện thoại" — và học vụ tra một
+        # em theo mã HSA-xxxxx in trên phiếu thu nhanh hơn theo tên.
+        where.append('(lower(u.name) LIKE %s OR lower(u.email) LIKE %s OR u.phone LIKE %s '
+                     'OR lower(u.student_code) LIKE %s OR lower(u.username) LIKE %s)')
+        args += [_like(term), _like(term), _like(norm_phone(term) or term), _like(term), _like(term)]
 
     role = (params.get('role') or '').strip()
     if role:
@@ -228,15 +234,23 @@ class AdminUsersView(APIView):
     đầu module: một câu đếm-và-lấy-trang, một câu lấy lớp cho toàn bộ id của
     trang đó.
     """
-    permission_classes = [IsAdminRole]
+    # Học vụ vào được từ 23/09/2026 — nhưng CHỈ thấy tài khoản HỌC VIÊN, lọc ở
+    # MÁY CHỦ chứ không ở giao diện. Họ tạo và sửa hồ sơ học viên; danh sách nhân
+    # sự không thuộc việc của họ, và một ô lọc vai ở trình duyệt thì ai cũng gỡ được.
+    permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
         where, args = build_user_filters(request.query_params)
+        chi_hoc_vien = not is_admin(request.user)
+        if chi_hoc_vien:
+            where += ' AND u.role = %s'
+            args = list(args) + [ROLE_STUDENT]
         page, per_page, offset = _paging(request.query_params, 25, 100)
 
         total, rows = _page_with_total(
             '''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
-                      u.must_change_password, u.password_changed_at, u.created_at
+                      u.must_change_password, u.password_changed_at, u.created_at,
+                      u.student_code, u.username
                  FROM users u
                 WHERE ''' + where,
             # Xếp theo tên chứ không theo id giảm dần: đây là danh sách để TRA
@@ -258,6 +272,8 @@ class AdminUsersView(APIView):
                 'must_change_password': r['must_change_password'],
                 'password_changed_at': r['password_changed_at'],
                 'created_at': r['created_at'],
+                'studentCode': r['student_code'],
+                'username': r['username'],
                 'classes': by_user.get(r['id'], []),
             } for r in rows],
             'total': total,
@@ -265,8 +281,9 @@ class AdminUsersView(APIView):
             'per_page': per_page,
             # Màn hình quản trị dựng ô chọn vai trò từ đây chứ không chép cứng
             # chuỗi 'Học viên' ở frontend — sai một dấu là tài khoản mất quyền
-            # mà không báo lỗi gì.
-            'roles': list(ASSIGNABLE_ROLES),
+            # mà không báo lỗi gì. Học vụ chỉ nhận đúng một vai để chọn.
+            'roles': [ROLE_STUDENT] if chi_hoc_vien else list(ASSIGNABLE_ROLES),
+            'chiHocVien': chi_hoc_vien,
         })
 
 
@@ -522,10 +539,15 @@ class AdminBulkCreateUsersView(APIView):
     mất trắng và KHÔNG em nào trong số đó đăng nhập được, trong khi email của
     các em thì đã bị chiếm chỗ nên dán lại cũng không tạo lại được.
     """
-    permission_classes = [IsAdminRole]
+    # Học vụ nhập được — CHỈ vai Học viên (anh Sơn chốt 23/09/2026). Chính
+    # docstring trên mô tả luồng "trợ giảng có sẵn tệp danh sách, cần cấp tài
+    # khoản cho cả lớp trước buổi đầu" — mà cho tới hôm ấy cả trợ giảng lẫn học vụ
+    # đều không chạm được vào tuyến này.
+    permission_classes = [IsAdminOrAcademic]
 
     def post(self, request):
         from accounts.hashers import make_werkzeug_password
+        from teaching.ho_so import cap_ma_hoc_vien
 
         body = request.data if isinstance(request.data, dict) else {}
         text = body.get('text') or ''
@@ -533,6 +555,9 @@ class AdminBulkCreateUsersView(APIView):
         dry_run = bool(body.get('dry_run'))
         class_id = body.get('class_id')
 
+        if not is_admin(request.user) and role != ROLE_STUDENT:
+            return Response({'error': 'Quản lý học vụ chỉ cấp được tài khoản HỌC VIÊN. '
+                                      'Tài khoản nhân sự cần quản trị viên.'}, status=403)
         if role not in ASSIGNABLE_ROLES:
             return Response({'error': 'Vai trò phải là một trong: %s.'
                                       % ', '.join(ASSIGNABLE_ROLES)}, status=400)
@@ -628,6 +653,7 @@ class AdminBulkCreateUsersView(APIView):
             uid = row['id']
             created_ids.append(uid)
             entry['userId'] = uid
+            entry['studentCode'] = cap_ma_hoc_vien(uid)
             entry['tempPassword'] = temp
 
             audit.record(

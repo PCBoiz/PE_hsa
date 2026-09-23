@@ -100,7 +100,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
 
     if (!email || !password) {
       setFieldErrors({
-        email: email ? undefined : 'Nhập email hoặc số điện thoại của bạn.',
+        email: email ? undefined : 'Nhập email, số điện thoại hoặc tên đăng nhập.',
         password: password ? undefined : 'Nhập mật khẩu.',
       });
       return;
@@ -148,7 +148,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
             res.status >= 500
               ? `Máy chủ đang không phản hồi (lỗi ${res.status}). Đây KHÔNG phải lỗi mật khẩu — `
                 + 'thử lại sau vài phút, nếu vẫn vậy thì báo người quản trị hệ thống.'
-              : 'Sai email/số điện thoại hoặc mật khẩu.',
+              : 'Sai email/số điện thoại/tên đăng nhập hoặc mật khẩu.',
           );
         }
         return;
@@ -191,7 +191,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
       <Field
         id="login-email"
         name="email"
-        label="Email hoặc số điện thoại"
+        label="Email, số điện thoại hoặc tên đăng nhập"
         type="text"
         autoComplete="username"
         placeholder="ban@email.com"

@@ -11,6 +11,7 @@ type UsersPayload = {
   page: number;
   per_page: number;
   roles: string[];
+  chiHocVien?: boolean;
 };
 
 /* HÌNH DẠNG hai phản hồi trang này đọc. `satisfies HinhDang<…>`: kiểu đang
@@ -28,11 +29,14 @@ const HD_USERS = z.looseObject({
     password_changed_at: z.string().nullable().optional(),
     created_at: z.string().nullable().optional(),
     classes: z.array(z.string()).optional(),
+    studentCode: z.string().nullable().optional(),
+    username: z.string().nullable().optional(),
   })),
   total: z.number(),
   page: z.number(),
   per_page: z.number(),
   roles: z.array(z.string()),
+  chiHocVien: z.boolean().optional(),
 }) satisfies HinhDang<UsersPayload>;
 const HD_CLASSES = z.looseObject({
   classes: z.array(z.looseObject({ id: z.number(), name: z.string(), code: z.string().nullable().optional(), startsOn: z.string().nullable().optional() })),

@@ -57,6 +57,9 @@ const VIEC: Record<string, string> = {
   'user.role': 'Đổi vai trò',
   'user.status': 'Khoá / mở tài khoản',
   'user.password_reset': 'Đặt lại mật khẩu',
+  // 23/09/2026 (§51): học vụ sửa hồ sơ, giảng viên sửa mục tiêu/nguyện vọng.
+  // Cột "Nội dung" nêu các ô đã đổi; giá trị cũ nằm trong `detail.cu`.
+  'user.profile': 'Sửa hồ sơ học viên',
   'class.create': 'Tạo lớp',
   'class.update': 'Sửa lớp',
   'class.delete': 'Xoá lớp',

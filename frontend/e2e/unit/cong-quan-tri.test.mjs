@@ -73,7 +73,10 @@ const TRANG = [
   // một phép kiểm canh sai luật thì giữ cái sai bền hơn cả mã.
   { href: '/quan-tri/tong-quan', lop: 'IsAdminOrAcademic', tep: 'teaching/overview.py',
     view: 'AdminOverviewView' },
-  { href: '/quan-tri/tai-khoan', lop: 'IsAdminRole', tep: 'teaching/admin_users.py',
+  // `IsAdminOrAcademic` từ 23/09/2026: anh Sơn chốt học vụ tạo tài khoản và sửa
+  // hồ sơ HỌC VIÊN. Máy chủ lọc về vai Học viên cho học vụ — phép kiểm vai
+  // (`teaching/tests_ho_so_hoc_vien.py`) canh phần lọc ấy, không phải bảng này.
+  { href: '/quan-tri/tai-khoan', lop: 'IsAdminOrAcademic', tep: 'teaching/admin_users.py',
     view: 'AdminUsersView' },
   { href: '/quan-tri/lop-hoc', lop: 'IsAdminOrAcademic', tep: 'teaching/views.py',
     view: 'AdminClassesView' },
@@ -147,12 +150,14 @@ const cuaQT = tabsCho(VAI_QUAN_TRI).map((t) => t.href);
 const cuaHV = tabsCho(VAI_HOC_VU).map((t) => t.href);
 check('quản trị viên thấy mọi trang của khu', TRANG.every((t) => cuaQT.includes(t.href)),
   JSON.stringify(cuaQT));
-check('học vụ thấy Toàn trung tâm, Lớp học và Đợt học',
-  cuaHV.includes('/quan-tri/tong-quan') && cuaHV.includes('/quan-tri/lop-hoc')
-    && cuaHV.includes('/quan-tri/dot-hoc'),
+check('học vụ thấy Toàn trung tâm, Tài khoản, Lớp học và Đợt học',
+  cuaHV.includes('/quan-tri/tong-quan') && cuaHV.includes('/quan-tri/tai-khoan')
+    && cuaHV.includes('/quan-tri/lop-hoc') && cuaHV.includes('/quan-tri/dot-hoc'),
   JSON.stringify(cuaHV));
-check('học vụ KHÔNG thấy Tài khoản / Nhật ký',
-  !cuaHV.includes('/quan-tri/tai-khoan') && !cuaHV.includes('/quan-tri/nhat-ky'),
+// Tài khoản mở cho học vụ từ 23/09/2026 (xem bảng TRANG). Nhật ký vẫn không:
+// nó chép cả thao tác của quản trị viên, không chỉ việc của học viên.
+check('học vụ KHÔNG thấy Nhật ký, Cơ sở học phí',
+  !cuaHV.includes('/quan-tri/nhat-ky') && !cuaHV.includes('/quan-tri/co-so-hoc-phi'),
   JSON.stringify(cuaHV));
 
 console.log('');

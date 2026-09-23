@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -38,6 +39,9 @@ export type UserRow = {
   password_changed_at?: string | null;
   created_at?: string | null;
   classes?: string[];
+  /** Mã HSA-xxxxx — chỉ tài khoản Học viên có (§51). */
+  studentCode?: string | null;
+  username?: string | null;
 };
 
 type Payload = {
@@ -46,6 +50,8 @@ type Payload = {
   page: number;
   per_page: number;
   roles: string[];
+  /** Máy chủ đã lọc về vai Học viên — người xem là học vụ (23/09/2026). */
+  chiHocVien?: boolean;
 };
 
 /** Một dòng trong kết quả nhập hàng loạt. */
@@ -319,6 +325,11 @@ export default function AccountsClient({
 
   const pages = Math.max(1, Math.ceil(data.total / (data.per_page || 25)));
   const exportHref = `/api/admin/export/users.csv?${query(1)}`;
+  /* Học vụ (23/09/2026): máy chủ chỉ trả tài khoản Học viên và tự báo bằng cờ
+     này. Ẩn đúng ba thứ còn `IsAdminRole` — đổi vai trò, khoá/mở lại, xuất
+     CSV — thay vì để họ bấm vào một nút rồi nhận 403. Đọc CỜ CỦA MÁY CHỦ chứ
+     không tự đoán theo vai: chỗ quyết định ai thấy gì chỉ nên có một. */
+  const chiHocVien = !!data.chiHocVien;
 
   return (
     <div className="flex flex-col gap-5">
@@ -330,18 +341,20 @@ export default function AccountsClient({
           hint={
             loading
               ? 'Đang tải…'
-              : `${data.total} tài khoản khớp bộ lọc hiện tại · trang ${data.page}/${pages}`
+              : `${data.total} ${chiHocVien ? 'học viên' : 'tài khoản'} khớp bộ lọc hiện tại · trang ${data.page}/${pages}`
           }
           action={
             /* Thẻ neo thường, KHÔNG phải fetch rồi tự dựng file: cookie đăng
                nhập đi kèm sẵn, và trình duyệt lo phần tải xuống — tự dựng thì
                phải giữ cả tệp trong bộ nhớ trước khi lưu. */
-            <a
-              href={exportHref}
-              className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-            >
-              Tải Excel (CSV)
-            </a>
+            chiHocVien ? undefined : (
+              <a
+                href={exportHref}
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
+              >
+                Tải Excel (CSV)
+              </a>
+            )
           }
         />
 
@@ -349,18 +362,22 @@ export default function AccountsClient({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm theo tên, email, số điện thoại"
+            /* Ngắn: ô chỉ rộng ~1/3 hàng lọc, câu dài hơn bị cắt giữa chữ ở 1440px
+               (soi ảnh 23/09/2026: "…tên đ"). Nhãn đầy đủ nằm ở aria-label. */
+            placeholder="Tìm tên, email, SĐT, mã HSA, tên đăng nhập"
             aria-label="Tìm tài khoản"
             className="min-h-11 min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
           />
-          <Select value={role} onChange={setRole} label="Vai trò">
-            <option value="">Mọi vai trò</option>
-            {data.roles.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABEL[r] || r}
-              </option>
-            ))}
-          </Select>
+          {!chiHocVien && (
+            <Select value={role} onChange={setRole} label="Vai trò">
+              <option value="">Mọi vai trò</option>
+              {data.roles.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r] || r}
+                </option>
+              ))}
+            </Select>
+          )}
           <Select value={status} onChange={setStatus} label="Trạng thái">
             <option value="">Mọi trạng thái</option>
             <option value="active">Đang hoạt động</option>
@@ -393,7 +410,7 @@ export default function AccountsClient({
               <tr>
                 <Th>Học viên</Th>
                 <Th>Liên hệ</Th>
-                <Th>Vai trò</Th>
+                {!chiHocVien && <Th>Vai trò</Th>}
                 <Th>Lớp</Th>
                 <Th>Mật khẩu</Th>
                 <Th>Trạng thái</Th>
@@ -404,26 +421,36 @@ export default function AccountsClient({
               {data.users.map((u) => (
                 <Tr key={u.id} dim={u.status !== 'active'}>
                   <Td label="Học viên">
-                    <span className="font-semibold text-ink">{u.name || '(chưa có tên)'}</span>
+                    <span className="block font-semibold text-ink">{u.name || '(chưa có tên)'}</span>
+                    {/* Mã + tên đăng nhập: hai thứ học vụ đọc qua điện thoại cho
+                        em hoặc phụ huynh — phải thấy ngay trên hàng, không phải
+                        mở hồ sơ mới thấy. */}
+                    {(u.studentCode || u.username) && (
+                      <span className="block text-small text-ink-3">
+                        {[u.studentCode, u.username].filter(Boolean).join(' · ')}
+                      </span>
+                    )}
                   </Td>
                   <Td label="Liên hệ" muted>
                     <span className="block break-all">{u.email || '—'}</span>
                     <span className="block">{u.phone || ''}</span>
                   </Td>
-                  <Td label="Vai trò">
-                    <select
-                      value={u.role}
-                      onChange={(e) => changeRole(u, e.target.value)}
-                      aria-label={`Vai trò của ${u.name || u.id}`}
-                      className="min-h-11 max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-2 text-small text-ink"
-                    >
-                      {(data.roles.length ? data.roles : [u.role]).map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABEL[r] || r}
-                        </option>
-                      ))}
-                    </select>
-                  </Td>
+                  {!chiHocVien && (
+                    <Td label="Vai trò">
+                      <select
+                        value={u.role}
+                        onChange={(e) => changeRole(u, e.target.value)}
+                        aria-label={`Vai trò của ${u.name || u.id}`}
+                        className="min-h-11 max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-2 text-small text-ink"
+                      >
+                        {(data.roles.length ? data.roles : [u.role]).map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_LABEL[r] || r}
+                          </option>
+                        ))}
+                      </select>
+                    </Td>
+                  )}
                   <Td label="Lớp" muted>
                     {u.classes?.length ? u.classes.join(', ') : '—'}
                   </Td>
@@ -458,6 +485,16 @@ export default function AccountsClient({
                         cắt hiệu lực một tài khoản ngay lập tức mà trông như một
                         lựa chọn ngang hàng là bấm nhầm chờ sẵn. */}
                     <span className="flex flex-wrap justify-end gap-2">
+                      {/* Thẻ neo thật (Link), không phải nút + router.push: mở
+                          được sang thẻ mới, và trình đọc màn hình gọi đúng là
+                          "liên kết". Cùng hình với nút ghost bên cạnh. */}
+                      <Link
+                        href={`/quan-tri/tai-khoan/${u.id}`}
+                        aria-label={`Hồ sơ của ${u.name || u.email || u.phone || `#${u.id}`}`}
+                        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [@media(pointer:fine)]:min-h-9"
+                      >
+                        Hồ sơ
+                      </Link>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -468,14 +505,16 @@ export default function AccountsClient({
                       >
                         {dangDatLai === u.id ? 'Đang đặt lại…' : 'Đặt lại mật khẩu'}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant={u.status === 'active' ? 'ghost-danger' : 'ghost'}
-                        className="whitespace-nowrap"
-                        onClick={() => toggleStatus(u)}
-                      >
-                        {u.status === 'active' ? 'Khoá' : 'Mở lại'}
-                      </Button>
+                      {!chiHocVien && (
+                        <Button
+                          size="sm"
+                          variant={u.status === 'active' ? 'ghost-danger' : 'ghost'}
+                          className="whitespace-nowrap"
+                          onClick={() => toggleStatus(u)}
+                        >
+                          {u.status === 'active' ? 'Khoá' : 'Mở lại'}
+                        </Button>
+                      )}
                     </span>
                   </Td>
                 </Tr>

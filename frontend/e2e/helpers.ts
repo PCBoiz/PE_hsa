@@ -19,7 +19,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { Page, expect } from '@playwright/test';
+import { Browser, Page, expect } from '@playwright/test';
 
 /* Tài khoản kiểm thử. Thứ tự lấy: biến môi trường → `.the/e2e.json` (do
    `python scripts/tai_khoan_e2e.py --that` sinh ra) → không có.
@@ -298,6 +298,33 @@ export async function vaoTheoVai(page: Page, vai: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+/**
+ * Gọi API TỪ TRONG trang — mang cookie đăng nhập của đúng phiên ấy, đi qua lớp
+ * trung gian Next như một cú bấm thật. Trả mã HTTP + thân JSON (null nếu không
+ * phải JSON). Dời từ `luong-giang-day.spec.ts` ngày 23/09/2026 để spec hồ sơ
+ * học viên dùng chung.
+ */
+export async function goiApi(page: Page, method: string, url: string, body?: unknown) {
+  return page.evaluate(async ({ method, url, body }) => {
+    const r = await fetch(url, {
+      method,
+      credentials: 'include',
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    let du: unknown = null;
+    try { du = await r.json(); } catch { /* không phải JSON */ }
+    return { ma: r.status, du };
+  }, { method, url, body });
+}
+
+/** Một trang mới đã đăng nhập đúng vai, hoặc null (thiếu tài khoản / sai vai). */
+export async function trangTheoVai(browser: Browser, vai: string): Promise<Page | null> {
+  const p = await browser.newPage();
+  if (!(await vaoTheoVai(p, vai))) { await p.close(); return null; }
+  return p;
 }
 
 /** Chặn MỌI lời gọi ghi — dùng cho phép kiểm chỉ đọc. */
