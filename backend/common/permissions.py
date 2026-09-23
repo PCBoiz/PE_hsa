@@ -41,8 +41,15 @@ ASSIGNABLE_ROLES = (ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT,
 #     KHÔNG mở báo cáo phụ huynh — trong đó có email và số điện thoại của em.
 #     §8 của đặc tả nói thẳng: càng nhiều vai trò thì càng nhiều người nhìn thấy
 #     dữ liệu của một đứa trẻ.
-#   · QUẢN LÝ HỌC VỤ — xem mọi lớp, quản lý lớp và đợt học. KHÔNG đổi vai trò
-#     và KHÔNG đặt lại mật khẩu; hai việc ấy giữ cho quản trị viên.
+#   · QUẢN LÝ HỌC VỤ — xem mọi lớp, quản lý lớp và đợt học. KHÔNG đổi vai trò.
+#     Đặt lại mật khẩu: ĐƯỢC với Học viên và Trợ giảng (từ 20/09/2026,
+#     `AdminResetPasswordView.HOC_VU_DUOC`), KHÔNG với vai ngang hoặc trên mình.
+#
+#     SỬA CHÚ THÍCH 23/09/2026. Dòng này trước đây ghi "KHÔNG đặt lại mật khẩu"
+#     — đúng hôm 01/09, sai từ 20/09 khi anh Sơn mở quyền, và không ai sửa ở đây.
+#     Cẩm nang cho người dùng thử (22/09) chép theo đúng câu cũ ấy nên nói sai với
+#     người thật ở ba chỗ. Nguồn sự thật cho giao diện là `frontend/src/lib/
+#     quyenVai.ts` (đã đúng từ 20/09); nguồn sự thật cho QUYỀN là thân view.
 #
 #     SỬA CHÚ THÍCH 17/09/2026. Dòng này trước đây còn ghi "KHÔNG mở báo cáo phụ
 #     huynh" — SAI so với mã, và sai ngay từ lúc viết. Báo cáo phụ huynh, chìa
