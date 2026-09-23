@@ -6,6 +6,7 @@ cụ thể đều phải đi qua ``can_see_class`` — xem common/permissions.py
 """
 import logging
 
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -33,7 +34,15 @@ from common.permissions import (
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
-from teaching.vocab import LEAVE_LABEL, LEAVE_REASONS, chi_hoc_vien
+from teaching.vocab import (
+    LEAVE_LABEL,
+    LEAVE_REASONS,
+    LOAI_LOP,
+    NHAN_LOAI_LOP,
+    TRAN_GIA_SU,
+    TRANG_THAI_LOP,
+    chi_hoc_vien,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +54,7 @@ logger = logging.getLogger(__name__)
 #: ấy vì lớp duy nhất tạo bằng API. Rà luồng học vụ trên trình duyệt mới lộ.
 #: `teaching/tests.py::test_trang_thai_lop_khop_rang_buoc_CSDL…` đọc thẳng ràng
 #: buộc rồi đòi khớp; `terms.py` giữ `TERM_STATUS` cùng một cách.
-CLASS_STATUS = ('active', 'finished', 'cancelled')
+CLASS_STATUS = TRANG_THAI_LOP   # một nguồn: `teaching/vocab.py` (24/09/2026)
 #: Trường được sửa qua API quản trị lớp, kèm độ dài tối đa cho trường chữ.
 CLASS_TEXT_FIELDS = {
     'code': 40, 'name': 160, 'schedule': 160, 'meeting_url': 400, 'note': 1000,
@@ -238,6 +247,13 @@ def _clean_class_payload(body):
         if md is not None and md not in ('online', 'offline'):
             return None, 'Hình thức lớp phải là online hoặc offline.'
         data['mode'] = md
+    if 'class_type' in body and body['class_type'] is not None:
+        # §54 (24/09/2026). `null` = KHÔNG gửi (cột NOT NULL — ghi NULL là 500):
+        # biểu mẫu cũ chưa biết ô này vẫn sửa lớp được mà không đụng loại lớp.
+        loai = str(body['class_type']).strip()
+        if loai not in LOAI_LOP:
+            return None, 'Loại lớp phải là một trong: %s.' % ', '.join(NHAN_LOAI_LOP.values())
+        data['class_type'] = loai
     if 'status' in body:
         # `str(...)` trước khi `.strip()`: gửi `{"status": 5}` thì
         # `(5 or '').strip()` ném AttributeError, và DRF biến nó thành 500
@@ -258,13 +274,16 @@ class AdminClassesView(APIView):
     permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
+        # Lọc + phân trang ở MÁY CHỦ (§54, 24/09/2026): TopHSA có ~400 lớp gia sư —
+        # trả mọi lớp một lượt là trang nặng dần theo số lớp. Xem `reports.class_page`.
         return Response({
-            'classes': reports.class_list(visible_class_ids(request.user)),
+            **reports.class_page(visible_class_ids(request.user), request.query_params),
             'teachers': [dict(r) for r in _teachers()],
             # Ô "Trợ giảng" của bảng lớp (20/09/2026): trước đây màn Lớp học
             # không có chữ "trợ giảng" nào, học vụ không biết gán ở đâu.
             'assistants': [dict(r) for r in _assistants()],
             'statuses': list(CLASS_STATUS),
+            'classTypes': [{'value': k, 'label': NHAN_LOAI_LOP[k]} for k in LOAI_LOP],
         })
 
     def post(self, request):
@@ -285,6 +304,18 @@ class AdminClassesView(APIView):
                                                   if data.get('code') else ''),
                      detail=_audit_detail(data))
         return Response({'ok': True, 'id': row['id']}, status=201)
+
+
+class AdminClassOptionsView(APIView):
+    """GET /api/admin/classes/options — danh sách lớp GỌN cho ô chọn lớp (§54).
+
+    Không sĩ số, không phân trang. Ra CÙNG LÚC với phân trang danh sách chính: ô
+    lọc lớp ở màn Tài khoản từng đọc `GET /api/admin/classes` đầy đủ."""
+    permission_classes = [IsAdminOrAcademic]
+
+    def get(self, request):
+        return Response({'classes': reports.class_options(visible_class_ids(request.user),
+                                                            request.query_params)})
 
 
 def _teachers():
@@ -318,6 +349,13 @@ class AdminClassDetailView(APIView):
             return Response({'error': err}, status=400)
         if not data:
             return Response({'error': 'Không có trường hợp lệ để cập nhật.'}, status=400)
+        if data.get('class_type') == 'gia_su':
+            dang_hoc = q1('SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
+                          'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('mu'),
+                          (class_id,))['n']
+            if dang_hoc > TRAN_GIA_SU:
+                return Response({'error': 'Lớp gia sư tối đa %d em — lớp này đang có %d em. Chuyển bớt em '
+                                          'sang lớp khác trước.' % (TRAN_GIA_SU, dang_hoc)}, status=400)
         sets = ', '.join('%s = %%s' % k for k in data)
         x('UPDATE classes SET %s, updated_at = %%s WHERE id = %%s' % sets,
           tuple(data.values()) + (local_now(), class_id))
@@ -446,7 +484,7 @@ class AdminClassMembersView(APIView):
     permission_classes = [IsAdminOrAcademic]
 
     def post(self, request, class_id):
-        klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
+        klass = q1('SELECT id, name, class_type FROM classes WHERE id=%s', (class_id,))
         if not klass:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
@@ -475,15 +513,16 @@ class AdminClassMembersView(APIView):
                 return Response({'error': 'Danh sách email trống.'}, status=400)
             if len(danh_sach) > 200:
                 return Response({'error': 'Mỗi lượt tối đa 200 email.'}, status=400)
-            ket_qua = {'ok': True, 'added': [], 'already': [], 'missing': []}
+            # `full` (§54): lớp GIA SƯ đã đủ 3 em — em ấy không vào, các em khác vẫn vào.
+            ket_qua = {'ok': True, 'added': [], 'already': [], 'missing': [], 'full': []}
             for email in dict.fromkeys(danh_sach):   # bỏ trùng, giữ thứ tự
                 row = q1('SELECT id, name, email, role FROM users WHERE lower(email)=%s',
                          (email,))
                 if not row:
                     ket_qua['missing'].append(email)
                     continue
-                da_them = self._ghi_thanh_vien(request, klass, row, vao=vao)
-                ket_qua['added' if da_them else 'already'].append(
+                kq = self._ghi_thanh_vien(request, klass, row, vao=vao)
+                ket_qua[{'them': 'added', 'da_co': 'already', 'day': 'full'}[kq]].append(
                     {'userId': row['id'], 'name': row['name'], 'email': row['email'],
                      'role': row['role']})
             return Response(ket_qua)
@@ -502,13 +541,16 @@ class AdminClassMembersView(APIView):
             # Tra tên CHỈ để chép vào nhật ký, cố ý KHÔNG chặn khi không thấy:
             # thêm một cửa 404 ở đây là đổi hành vi của endpoint đang chạy.
             row = q1('SELECT id, name, email, role FROM users WHERE id=%s', (uid,))
-        self._ghi_thanh_vien(request, klass, row, uid, vao=vao)
+        if self._ghi_thanh_vien(request, klass, row, uid, vao=vao) == 'day':
+            return Response({'error': 'Lớp gia sư đã đủ %d em. Chuyển lớp này thành lớp nhóm, hoặc '
+                                      'xếp em vào lớp khác.' % TRAN_GIA_SU}, status=409)
         return Response({'ok': True, 'userId': uid,
                          'role': row['role'] if row else None})
 
     @staticmethod
     def _ghi_thanh_vien(request, klass, row, uid=None, vao=None):
-        """Ghi một người vào lớp; trả True nếu SINH dòng mới, False nếu đã ở trong lớp.
+        """Ghi một người vào lớp → `'them'` (sinh dòng mới), `'da_co'` (đã ở trong lớp)
+        hoặc `'day'` (lớp GIA SƯ đã đủ `TRAN_GIA_SU` học viên — §54, 24/09/2026).
 
         Trợ giảng cũng đi qua đúng cửa này — `class_members` là cách duy nhất
         hệ thống biết "trợ giảng X phụ trách lớp Y" (`_la_tro_giang_cua_lop`).
@@ -517,19 +559,35 @@ class AdminClassMembersView(APIView):
         """
         uid = uid if uid is not None else row['id']
         class_id = klass['id']
-        # `WHERE left_at IS NULL` trong mệnh đề ON CONFLICT là để trỏ đúng chỉ
-        # mục duy nhất MỘT PHẦN của §36 — và nó cũng chính là thay đổi hành vi:
-        # em ĐANG học lớp này thì không có gì để làm (DO NOTHING), còn em ĐÃ RỜI
-        # lớp và nay quay lại thì không xung đột nữa nên sinh MỘT DÒNG MỚI, tức
-        # một lượt học mới nối tiếp.
-        #
-        # Bản cũ `DO UPDATE SET left_at = NULL` hồi sinh chính dòng cũ, tức XOÁ
-        # TRẮNG mốc rời lớp lần trước — lượt học cũ biến mất không dấu vết.
-        moi = q1('''INSERT INTO class_members (class_id, user_id, joined_at)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING
-                    RETURNING id''',
-                 (class_id, uid, vao or local_now()))
+        # Lớp gia sư: tối đa 3 HỌC VIÊN (trợ giảng không tính). Khoá dòng lớp, đếm và
+        # INSERT trong CÙNG một giao dịch — khoá nhả trước câu INSERT thì hai lượt thêm
+        # cùng lúc vẫn cùng đếm được "còn 1 chỗ" (bản đầu 24/09/2026 mắc đúng lỗi ấy;
+        # `tests_danh_sach_lop.py::..._cung_giao_dich_voi_khoa` canh).
+        gioi_han = (klass.get('class_type') == 'gia_su' and row
+                    and (row.get('role') or ROLE_STUDENT) == ROLE_STUDENT)
+        with transaction.atomic():
+            if gioi_han:
+                q1('SELECT id FROM classes WHERE id=%s FOR UPDATE', (class_id,))
+                da_co = q1('SELECT 1 AS c FROM class_members WHERE class_id=%s AND user_id=%s '
+                           'AND left_at IS NULL', (class_id, uid))
+                dang_hoc = q1('SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
+                              'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('mu'),
+                              (class_id,))['n']
+                if not da_co and dang_hoc >= TRAN_GIA_SU:
+                    return 'day'
+            # `WHERE left_at IS NULL` trong mệnh đề ON CONFLICT là để trỏ đúng chỉ
+            # mục duy nhất MỘT PHẦN của §36 — và nó cũng chính là thay đổi hành vi:
+            # em ĐANG học lớp này thì không có gì để làm (DO NOTHING), còn em ĐÃ RỜI
+            # lớp và nay quay lại thì không xung đột nữa nên sinh MỘT DÒNG MỚI, tức
+            # một lượt học mới nối tiếp.
+            #
+            # Bản cũ `DO UPDATE SET left_at = NULL` hồi sinh chính dòng cũ, tức XOÁ
+            # TRẮNG mốc rời lớp lần trước — lượt học cũ biến mất không dấu vết.
+            moi = q1('''INSERT INTO class_members (class_id, user_id, joined_at)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING
+                        RETURNING id''',
+                     (class_id, uid, vao or local_now()))
         if not moi:
             # ĐÃ ở trong lớp. Trước 21/09/2026 hàm dừng ở đây, nên `joined_at`
             # người dùng vừa gõ rơi vào im lặng: rà vai học vụ gửi 13/09 cho một
@@ -553,7 +611,7 @@ class AdminClassMembersView(APIView):
                                          'joinedAt': vao.date().isoformat(),
                                          'joinedAtCu': (cu['joined_at'].date().isoformat()
                                                         if cu['joined_at'] else None)})
-            return False
+            return 'da_co'
         ten = _user_label(row, uid)
         tro_giang = bool(row) and row.get('role') == ROLE_ASSISTANT
         audit.record(request, audit.CLASS_MEMBER_ADD, target_type='class',
@@ -563,7 +621,7 @@ class AdminClassMembersView(APIView):
                      detail={'userId': uid, 'userName': ten, 'classId': class_id,
                              'role': row.get('role') if row else None,
                              'joinedAt': vao.date().isoformat() if vao else None})
-        return True
+        return 'them'
 
     def delete(self, request, class_id):
         uid = request.query_params.get('user_id') or (request.data or {}).get('user_id')

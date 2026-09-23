@@ -26,7 +26,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | 1.1 Đăng nhập bằng email | CÓ | `auth/login` |
 | 1.2 Đăng nhập bằng username | CÓ (23/09) | ô đăng nhập nhận email / SĐT / tên đăng nhập; tên do học vụ đặt ở trang Hồ sơ, không phân biệt hoa thường (`users.username`, §51) |
 | 1.3 Hiện/ẩn mật khẩu | CÓ | `.toggle-eye` ở màn đăng nhập |
-| 1.4 Ghi nhớ đăng nhập | MỘT PHẦN | phiên tự giữ 8 giờ (`REFRESH_TOKEN_LIFETIME`), không có ô "ghi nhớ" để kéo dài |
+| 1.4 Ghi nhớ đăng nhập | CÓ (24/09) | ô "Ghi nhớ đăng nhập trên máy này": tick → phiên 30 ngày (giữ qua mỗi lần xoay thẻ), không tick → cookie phiên; trình duyệt được nhờ lưu mật khẩu (`accounts/ghi_nho.py`) |
 | 1.5 Quên mật khẩu | CÓ (23/09) | màn đăng nhập → "Đặt lại qua email": đường dẫn một lần, 30 phút, tới chính email của tài khoản; chỉ lưu băm của chìa; mọi phiên cũ bị cắt khi đặt xong (§52). Tài khoản không có email vẫn nhờ học vụ |
 | 1.6 Đăng xuất | CÓ | menu tài khoản, mọi khu |
 
@@ -67,6 +67,8 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Yêu cầu | Trạng thái | Bằng chứng / ghi chú |
 |---|---|---|
 | Tạo / sửa / xoá lớp | CÓ | `api/admin/classes`, xoá có xác nhận kèm số dòng sẽ mất |
+| Loại lớp: lớp nhóm / **gia sư 1–3 em** (họp 24/09: ~400 lớp gia sư) | CÓ (24/09) | `classes.class_type` (§54); lớp gia sư nhận tối đa 3 học viên (trợ giảng không tính) — thêm em thứ 4, dán hàng loạt, cấp tài khoản hàng loạt, đổi loại lớp đều bị chặn kèm lý do |
+| Tìm / lọc / phân trang danh sách lớp | CÓ (24/09) | tìm theo tên lớp, giáo viên, tên hoặc mã HSA của em; chip đếm theo loại; lọc giáo viên (kể cả lớp người ấy trợ giảng), trạng thái, đợt; 25 lớp/trang; bộ lọc nằm trên đường dẫn |
 | Phân công giảng viên | CÓ | `classes.teacher_id` |
 | Phân công trợ giảng | CÓ | trợ giảng là thành viên lớp |
 | Phân công giáo vụ cho lớp | MỘT PHẦN | học vụ thấy MỌI lớp nên không cần gán; không gán được một học vụ phụ trách riêng |

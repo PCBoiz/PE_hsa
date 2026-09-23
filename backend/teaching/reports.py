@@ -51,7 +51,8 @@ from django.db import DatabaseError
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
-from common.permissions import ROLE_ASSISTANT
+from common.params import doc_trang, mau_like, so_nguyen, trang_kem_tong
+from common.permissions import ROLE_ASSISTANT, ROLE_STUDENT
 from stats.competency import (
     COURSE_ORDER,
     HALF_LIFE_DAYS,
@@ -61,7 +62,7 @@ from stats.competency import (
     TOPIC_SOURCES,
     chu_de_trong_giao_trinh,
 )
-from teaching.vocab import chi_hoc_vien
+from teaching.vocab import LOAI_LOP, TRANG_THAI_LOP, chi_hoc_vien
 
 logger = logging.getLogger(__name__)
 
@@ -563,31 +564,144 @@ def tro_giang_cua_lop(class_id):
               ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
 
 
-def class_list(class_ids):
-    """Danh sách lớp kèm vài con số đủ để chọn lớp, KHÔNG tính toàn bộ báo cáo."""
-    if not class_ids:
-        return []
-    rows = q('''SELECT c.id, c.code, c.name, c.course_id, c.schedule, c.status,
+#: Cột của một dòng lớp — DÙNG CHUNG cho `class_list` và `class_page`, để biểu mẫu
+#: sửa lớp đọc được cùng một bộ trường dù dòng tới từ đường nào.
+_COT_LOP = '''c.id, c.code, c.name, c.course_id, c.schedule, c.status,
                        c.exam_date, c.capacity,
                        -- Năm cột dưới THÊM 04/09/2026 cho màn hình sửa lớp.
                        -- Thiếu chúng thì biểu mẫu sửa hiện ô TRỐNG cho những
                        -- trường đang có giá trị, và bấm Lưu là xoá trắng —
                        -- đúng lớp lỗi vừa vá ở bộ soạn bài học sáng nay.
                        c.teacher_id, c.starts_on, c.ends_on, c.meeting_url, c.note,
-                       c.mode, c.room,
+                       c.mode, c.room, c.class_type,
                        c.term_id, t.name AS term_name, t.code AS term_code,
                        u.name AS teacher_name, co.title AS course_title,
                        (SELECT COUNT(*) FROM class_members m
                           JOIN users mu ON mu.id = m.user_id
                          WHERE m.class_id = c.id AND m.left_at IS NULL
-                           AND ''' + chi_hoc_vien('mu') + ''') AS members
-                FROM classes c
+                           AND ''' + chi_hoc_vien('mu') + ''') AS members'''
+_TU_LOP = '''FROM classes c
                 LEFT JOIN users u ON u.id = c.teacher_id
                 LEFT JOIN courses co ON co.id = c.course_id
-                LEFT JOIN terms t ON t.id = c.term_id
+                LEFT JOIN terms t ON t.id = c.term_id'''
+
+#: Trang mặc định / trần của danh sách lớp (TopHSA: ~400 lớp gia sư + lớp nhóm).
+LOP_MOI_TRANG, TRAN_LOP_MOI_TRANG = 25, 100
+
+
+def class_list(class_ids):
+    """Danh sách lớp kèm vài con số đủ để chọn lớp, KHÔNG tính toàn bộ báo cáo."""
+    if not class_ids:
+        return []
+    rows = q('SELECT ' + _COT_LOP + ' ' + _TU_LOP + '''
                 WHERE c.id = ANY(%s)
                 ORDER BY c.status, c.name''', (list(class_ids),))
-    return [{
+    return [_lop_dict(r) for r in rows]
+
+
+def class_page(class_ids, params):
+    """Danh sách lớp CÓ LỌC + PHÂN TRANG ở máy chủ (§54, 24/09/2026) — cố định 3 câu.
+
+    Lọc: `q` (tên / mã lớp, tên giảng viên, tên hoặc mã HSA của em ĐANG học),
+    `type` (nhom / gia_su), `status`, `term_id`, `teacher_id` (giảng viên chính
+    HOẶC trợ giảng đang gán — "lớp của cô Lan" gồm cả lớp cô trợ giảng),
+    `course_id`. Tham số lạ bị bỏ qua chứ không 400: đây là bộ lọc trên URL.
+
+    Ba câu: (1) một trang + tổng (`trang_kem_tong` — trang rỗng không mất tổng),
+    (2) tên học viên / trợ giảng cho các lớp TRÊN TRANG (`= ANY`), (3) đếm theo
+    loại + trạng thái cho hàng chip — trên toàn bộ lớp người xem thấy, không theo
+    bộ lọc, để chip nói "có bao nhiêu" chứ không lặp lại tổng của trang.
+    """
+    page, per_page, offset = doc_trang(params, LOP_MOI_TRANG, TRAN_LOP_MOI_TRANG)
+    ids = list(class_ids or [])
+    where, args = ['c.id = ANY(%s)'], [ids]
+    tu_khoa = (params.get('q') or '').strip()
+    if tu_khoa:
+        mau = mau_like(tu_khoa)
+        where.append('''(lower(c.name) LIKE %s OR lower(coalesce(c.code, '')) LIKE %s
+                         OR lower(coalesce(u.name, '')) LIKE %s
+                         OR EXISTS (SELECT 1 FROM class_members mq JOIN users uq ON uq.id = mq.user_id
+                                     WHERE mq.class_id = c.id AND mq.left_at IS NULL
+                                       AND (lower(coalesce(uq.name, '')) LIKE %s
+                                            OR lower(coalesce(uq.student_code, '')) LIKE %s)))''')
+        args += [mau] * 5
+    if params.get('type') in LOAI_LOP:
+        where.append('c.class_type = %s')
+        args.append(params['type'])
+    if params.get('status') in TRANG_THAI_LOP:
+        where.append('c.status = %s')
+        args.append(params['status'])
+    dot = so_nguyen(params.get('term_id'), None, 1)
+    if dot:
+        where.append('c.term_id = %s')
+        args.append(dot)
+    nguoi = so_nguyen(params.get('teacher_id'), None, 1)
+    if nguoi:
+        where.append('''(c.teacher_id = %s OR EXISTS (SELECT 1 FROM class_members mt
+                          WHERE mt.class_id = c.id AND mt.user_id = %s AND mt.left_at IS NULL))''')
+        args += [nguoi, nguoi]
+    mon = (params.get('course_id') or '').strip()
+    if mon:
+        where.append('c.course_id = %s')
+        args.append(mon)
+
+    tong, rows = trang_kem_tong('SELECT ' + _COT_LOP + ' ' + _TU_LOP + ' WHERE ' + ' AND '.join(where),
+                                "ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, name, id",
+                                args, per_page, offset)
+    tren_trang = [r['id'] for r in rows]
+    ten = {}
+    if tren_trang:
+        for r in q('''SELECT m.class_id, u.name, u.email, u.role FROM class_members m
+                        JOIN users u ON u.id = m.user_id
+                       WHERE m.class_id = ANY(%s) AND m.left_at IS NULL AND u.role IN (%s, %s)
+                       ORDER BY u.name''', (tren_trang, ROLE_STUDENT, ROLE_ASSISTANT)):
+            nhom = 'tro_giang' if r['role'] == ROLE_ASSISTANT else 'hoc_vien'
+            ten.setdefault(r['class_id'], {}).setdefault(nhom, []).append(r['name'] or r['email'])
+    dem = {'byType': {k: 0 for k in LOAI_LOP}, 'byStatus': {k: 0 for k in TRANG_THAI_LOP}}
+    for r in q('SELECT class_type, status, count(*) AS n FROM classes WHERE id = ANY(%s) GROUP BY 1, 2',
+               (ids,)):
+        dem['byType'][r['class_type']] = dem['byType'].get(r['class_type'], 0) + r['n']
+        dem['byStatus'][r['status']] = dem['byStatus'].get(r['status'], 0) + r['n']
+    lop = []
+    for r in rows:
+        d = _lop_dict(r)
+        tl = ten.get(r['id'], {})
+        d['assistantNames'] = tl.get('tro_giang', [])
+        # Tên em hiện ngay dưới tên lớp GIA SƯ — với lớp 1–3 em, tên em mới là
+        # thứ người ta tìm ("lớp của em An"), không phải tên lớp.
+        d['studentNames'] = tl.get('hoc_vien', []) if r['class_type'] == 'gia_su' else []
+        lop.append(d)
+    return {'classes': lop, 'total': tong, 'page': page, 'per_page': per_page, 'counts': dem}
+
+
+def class_options(class_ids, params):
+    """Danh sách GỌN cho ô chọn lớp ở màn khác — không sĩ số, không phân trang (tối
+    đa 1000 dòng). Có trước khi danh sách chính phân trang: ô lọc lớp ở màn Tài
+    khoản từng đọc danh sách đầy đủ, phân trang trước là nó lặng lẽ còn 25 lớp."""
+    where, args = ['c.id = ANY(%s)'], [list(class_ids or [])]
+    tu_khoa = (params.get('q') or '').strip()
+    if tu_khoa:
+        mau = mau_like(tu_khoa)
+        where.append("(lower(c.name) LIKE %s OR lower(coalesce(c.code, '')) LIKE %s)")
+        args += [mau, mau]
+    if params.get('status') in TRANG_THAI_LOP:
+        where.append('c.status = %s')
+        args.append(params['status'])
+    # `startsOn`: màn Tài khoản hỏi "ngày vào lớp" khi lớp đã khai giảng — thiếu
+    # trường này là câu hỏi ấy lặng lẽ biến mất.
+    return [{'id': r['id'], 'name': r['name'], 'code': r['code'], 'classType': r['class_type'],
+             'status': r['status'], 'termName': r['term_name'],
+             'startsOn': r['starts_on'].isoformat() if r['starts_on'] else None}
+            for r in q('''SELECT c.id, c.name, c.code, c.class_type, c.status, c.starts_on,
+                                 t.name AS term_name
+                            FROM classes c LEFT JOIN terms t ON t.id = c.term_id
+                           WHERE ''' + ' AND '.join(where) + '''
+                           ORDER BY CASE c.status WHEN 'active' THEN 0 ELSE 1 END, c.name
+                           LIMIT 1000''', tuple(args))]
+
+
+def _lop_dict(r):
+    return {
         'id': r['id'], 'code': r['code'], 'name': r['name'],
         'course': r['course_id'], 'courseTitle': r['course_title'],
         'teacherName': r['teacher_name'], 'schedule': r['schedule'],
@@ -599,7 +713,9 @@ def class_list(class_ids):
         'meetingUrl': r['meeting_url'], 'note': r['note'],
         # §53: hình thức + phòng MẶC ĐỊNH của lớp (buổi để trống thì theo đây).
         'mode': r['mode'], 'room': r['room'],
+        # §54: nhóm / gia sư.
+        'classType': r['class_type'],
         # Đợt học (§36). Có tên đợt ở đây thì danh sách lớp không phải đọc tên
         # lớp để đoán "lớp này thuộc mùa thi nào" nữa.
         'termId': r['term_id'], 'termName': r['term_name'], 'termCode': r['term_code'],
-    } for r in rows]
+    }

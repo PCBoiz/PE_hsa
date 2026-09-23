@@ -1715,3 +1715,13 @@ ALTER TABLE classes ADD CONSTRAINT classes_mode_check
 ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_mode_check;
 ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_mode_check
     CHECK (mode IS NULL OR mode IN ('online', 'offline'));
+
+-- ── §54 · LOẠI LỚP: NHÓM HAY GIA SƯ (24/09/2026) ───────────────────────────
+-- TopHSA có khoảng 400 lớp gia sư cá nhân hoá (1 tới 3 em) bên cạnh lớp nhóm.
+-- Lớp đã có nhận 'nhom' qua DEFAULT (Postgres 11 trở lên chỉ sửa danh mục, không
+-- viết lại bảng). Trần 3 em của lớp gia sư kiểm ở tầng ghi (`teaching/views.py`)
+-- chứ không bằng CHECK: đếm thành viên đang học là một câu truy vấn, CHECK không làm được.
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS class_type TEXT NOT NULL DEFAULT 'nhom';
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_class_type_check;
+ALTER TABLE classes ADD CONSTRAINT classes_class_type_check
+    CHECK (class_type IN ('nhom', 'gia_su'));

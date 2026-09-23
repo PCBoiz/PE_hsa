@@ -52,7 +52,9 @@ const HD_CLASSES = z.looseObject({
 export default async function TaiKhoanPage() {
   const [data, classes] = await Promise.all([
     serverJson<UsersPayload>('/api/admin/users?page=1&per_page=25', { requireAuth: true }, HD_USERS),
-    serverJson<{ classes: ClassLite[] }>('/api/admin/classes', { requireAuth: true }, HD_CLASSES),
+    // Danh sách GỌN (§54): `/api/admin/classes` nay phân trang 25 lớp — đọc nó ở
+    // đây thì ô lọc lặng lẽ chỉ còn 25 lớp đầu trong khi trung tâm có ~400.
+    serverJson<{ classes: ClassLite[] }>('/api/admin/classes/options', { requireAuth: true }, HD_CLASSES),
   ]);
 
   return (

@@ -212,13 +212,18 @@ export const HUONG_DAN: readonly Bai[] = [
         o: '/quan-tri/dot-hoc',
       },
       {
-        lam: 'Tạo lớp, chọn khoá và phân công giảng viên.',
+        lam: 'Tạo lớp, chọn loại lớp (nhóm hay gia sư), môn học và giảng viên.',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Lớp chưa phân công giảng viên thì KHÔNG ai điểm danh và KHÔNG ai giao bài được cho lớp đó. "Hôm nay cần làm gì" sẽ nhắc.',
       },
       {
         lam: 'Xếp học viên vào lớp.',
-        luu_y: 'Sĩ số vượt sức chứa vẫn xếp được, nhưng hệ thống sẽ nhắc — lớp quá tải là lý do bỏ giữa chừng hay gặp nhất.',
+        luu_y: 'Lớp gia sư nhận tối đa 3 em (trợ giảng không tính). Lớp nhóm vượt sức chứa vẫn xếp được, nhưng hệ thống sẽ nhắc.',
+      },
+      {
+        lam: 'Tìm lớp: gõ tên lớp, giáo viên hoặc tên em; bấm chip "Gia sư" / "Lớp nhóm" để lọc theo loại.',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Bộ lọc nằm trên đường dẫn — gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
       },
       {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',

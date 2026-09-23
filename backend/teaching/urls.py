@@ -122,6 +122,8 @@ urlpatterns = [
          terms.TermHolidayDetailView.as_view()),
 
     path('api/admin/classes', views.AdminClassesView.as_view()),
+    # TRƯỚC `<int:class_id>` cho dễ đọc (int không khớp chữ, nhưng thứ tự nói rõ ý).
+    path('api/admin/classes/options', views.AdminClassOptionsView.as_view()),
     path('api/admin/classes/<int:class_id>', views.AdminClassDetailView.as_view()),
     path('api/admin/classes/<int:class_id>/members', views.AdminClassMembersView.as_view()),
 

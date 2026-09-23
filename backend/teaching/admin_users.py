@@ -39,7 +39,7 @@ from common import audit
 from common.clock import local_now
 from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
-from common.params import doc_trang
+from common.params import doc_trang, mau_like, trang_kem_tong
 from common.permissions import (
     ASSIGNABLE_ROLES,
     ROLE_ADMIN,
@@ -50,6 +50,7 @@ from common.permissions import (
     last_active_admin,
 )
 from stats.goals import as_date
+from teaching import vocab
 
 # Dùng lại của teaching/views.py, không viết bản thứ hai: mật khẩu tạm sinh hai
 # kiểu khác nhau thì trợ giảng đọc cho học viên hai dạng chuỗi khác nhau, còn
@@ -78,52 +79,10 @@ def _paging(params, default_per_page, max_per_page):
     return doc_trang(params, default_per_page, max_per_page)
 
 
-def _like(term):
-    """Bọc chuỗi tìm kiếm thành mẫu LIKE, VÔ HIỆU HOÁ ký tự đại diện.
-
-    Không thoát ``%`` và ``_`` thì trợ giảng gõ một dấu ``%`` vào ô tìm kiếm sẽ
-    nhận về TOÀN BỘ bảng users và tưởng là mình vừa tìm ra đúng người.
-    """
-    safe = term.replace('\\', '\\\\').replace('%', r'\%').replace('_', r'\_')
-    return '%' + safe.lower() + '%'
-
-
-def _page_with_total(body_sql, order_sql, args, per_page, offset):
-    """MỘT câu SQL trả về CẢ tổng số dòng khớp LẪN đúng một trang.
-
-    ``body_sql`` là câu SELECT đầy đủ (đã có WHERE) cho toàn bộ tập khớp; nó
-    BẮT BUỘC phải chọn cột ``id`` — xem lý do ở cuối docstring. Trả (total, rows).
-
-    Vì sao một câu chứ không hai: xem "NGÂN SÁCH VÒNG GỌI" ở đầu module. Đếm
-    riêng rồi lấy trang riêng là nhân đôi một lần đi-về mạng ở MỌI lần bấm sang
-    trang — 246ms khi phát triển, và vẫn là một chuyến đi thừa khi chạy thật.
-
-    Vì sao không dùng ``COUNT(*) OVER ()`` gắn thẳng vào câu lấy trang — cách
-    ngắn hơn và ai cũng nghĩ tới đầu tiên: nó không trả dòng NÀO khi trang rỗng,
-    mà "trang rỗng" không đồng nghĩa với "không có kết quả". Bấm sang trang 9
-    của danh sách 8 trang (hoặc lọc lại khi đang đứng ở trang cuối) là trang
-    rỗng, tổng khi đó tụt về 0, thanh phân trang tự sập và người dùng kẹt lại
-    không còn nút nào quay về trang 1. ``LEFT JOIN LATERAL`` luôn trả ít nhất
-    một dòng — dòng tổng, mọi cột dữ liệu NULL — nên tổng không bao giờ mất.
-    Dòng mồi đó nhận ra bằng ``id IS NULL``: id là khoá chính, dòng thật không
-    bao giờ NULL.
-    """
-    sql = ('WITH khop AS (%s), tong AS (SELECT count(*) AS __total FROM khop) '
-           'SELECT tong.__total, trang.* FROM tong '
-           'LEFT JOIN LATERAL (SELECT * FROM khop %s LIMIT %%s OFFSET %%s) trang ON TRUE'
-           % (body_sql, order_sql))
-    rows = q(sql, tuple(args) + (per_page, offset))
-    if not rows:
-        return 0, []
-    total = rows[0]['__total'] or 0
-    out = []
-    for row in rows:
-        if row.get('id') is None:
-            continue                      # dòng mồi của trang rỗng
-        row = dict(row)
-        row.pop('__total', None)
-        out.append(row)
-    return total, out
+# Dời sang `common/params.py` (24/09/2026) để danh sách lớp dùng chung mà không
+# import vòng (`admin_users` → `teaching.views` → `reports`). Giữ tên cũ.
+_like = mau_like
+_page_with_total = trang_kem_tong
 
 
 #: Các tham số lọc của màn hình tài khoản. Khai một chỗ để bộ lọc và câu hỏi
@@ -571,7 +530,7 @@ class AdminBulkCreateUsersView(APIView):
                 class_id = int(class_id)
             except (TypeError, ValueError):
                 return Response({'error': 'Mã lớp không hợp lệ.'}, status=400)
-            klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
+            klass = q1('SELECT id, name, class_type FROM classes WHERE id=%s', (class_id,))
             if not klass:
                 return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
         else:
@@ -595,6 +554,21 @@ class AdminBulkCreateUsersView(APIView):
 
         rows, to_create, skipped, warnings, too_many = _cham_tung_dong(
             cands, by_email, by_phone, dry_run, truncated)
+
+        # Lớp GIA SƯ tối đa 3 học viên (§54, 24/09/2026) — lượt cấp hàng loạt xếp
+        # cả mẻ bằng MỘT câu ở dưới, nên phải kiểm chỗ trống TRƯỚC: xem trước thì
+        # cảnh báo, tạo thật thì từ chối trước khi cấp tài khoản nào.
+        if klass and klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT and to_create:
+            con_cho = vocab.TRAN_GIA_SU - q1(
+                'SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
+                'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + vocab.chi_hoc_vien('mu'), (class_id,))['n']
+            if len(to_create) > con_cho:
+                cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em) — danh sách có %d em mới. '
+                       'Chọn lớp khác hoặc bỏ ô lớp.' % (klass['name'], max(con_cho, 0), vocab.TRAN_GIA_SU,
+                                                         len(to_create)))
+                if not dry_run:
+                    return Response({'ok': False, 'error': cau}, status=400)
+                warnings.append(cau)
 
         if dry_run:
             # Không một lệnh ghi nào chạy tới đây. Tổng cộng đúng 1–2 câu SQL cho
@@ -673,16 +647,34 @@ class AdminBulkCreateUsersView(APIView):
         # không có gì để xếp.
         added_to_class = False
         if class_id and created_ids:
-            # `WHERE left_at IS NULL` trỏ đúng chỉ mục duy nhất một phần của
-            # §36 (thiếu nó Postgres từ chối cả câu). Kèm theo là đổi hành vi có
-            # chủ đích: người ĐÃ RỜI lớp mà được nhập lại sẽ sinh một dòng MỚI —
-            # một lượt học mới — thay vì hồi sinh dòng cũ và xoá trắng mốc rời
-            # lớp lần trước.
-            x('''INSERT INTO class_members (class_id, user_id, joined_at)
-                 SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
-                 ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
-              (class_id, vao or now, created_ids))
-            added_to_class = True
+            xep = created_ids
+            with transaction.atomic():
+                if klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT:
+                    # Đếm lại DƯỚI KHOÁ (§54): phép kiểm chỗ ở trên chạy TRƯỚC vòng cấp
+                    # tài khoản — một em được thêm vào lớp trong lúc ấy (tab khác) thì
+                    # giờ còn ít chỗ hơn. Tài khoản đã cấp vẫn giữ; em thừa được nêu tên.
+                    q1('SELECT id FROM classes WHERE id=%s FOR UPDATE', (class_id,))
+                    con_cho = max(vocab.TRAN_GIA_SU - q1(
+                        'SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
+                        'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + vocab.chi_hoc_vien('mu'),
+                        (class_id,))['n'], 0)
+                    if len(xep) > con_cho:
+                        thua = [r['email'] for r in rows if r.get('userId') in set(xep[con_cho:])]
+                        warnings.append('Lớp gia sư "%s" vừa hết chỗ trong lúc cấp tài khoản — %d em đã có '
+                                        'tài khoản nhưng chưa vào lớp: %s. Xếp các em vào lớp khác.'
+                                        % (klass['name'], len(thua), ', '.join(thua)))
+                        xep = xep[:con_cho]
+                # `WHERE left_at IS NULL` trỏ đúng chỉ mục duy nhất một phần của
+                # §36 (thiếu nó Postgres từ chối cả câu). Kèm theo là đổi hành vi có
+                # chủ đích: người ĐÃ RỜI lớp mà được nhập lại sẽ sinh một dòng MỚI —
+                # một lượt học mới — thay vì hồi sinh dòng cũ và xoá trắng mốc rời
+                # lớp lần trước.
+                if xep:
+                    x('''INSERT INTO class_members (class_id, user_id, joined_at)
+                         SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
+                         ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
+                      (class_id, vao or now, xep))
+                    added_to_class = True
 
         return Response({
             'ok': True,

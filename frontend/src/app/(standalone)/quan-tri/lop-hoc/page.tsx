@@ -5,12 +5,18 @@ import { KhongDocDuoc, KhongDuQuyen } from '../ChanVai';
 import { layVai } from '../layVai';
 import { VAI_HOC_VU, VAI_QUAN_TRI, duocVao } from '../vai';
 
+import { BoLocLop, PhanTrangLop, type LocLop } from './BoLocLop';
 import LopHocClient, { type ChonKhoa, type ChonNguoi, type LopRow } from './LopHocClient';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Lớp học | TopHSA' };
 
-type DsLop = { classes: LopRow[]; teachers: ChonNguoi[]; assistants: ChonNguoi[]; statuses: string[] };
+type DsLop = {
+  classes: LopRow[]; teachers: ChonNguoi[]; assistants: ChonNguoi[]; statuses: string[];
+  /* §54 (24/09/2026): lọc + phân trang ở máy chủ. Tuỳ chọn — backend cũ không trả. */
+  total?: number; page?: number; per_page?: number;
+  counts?: { byType: Record<string, number>; byStatus: Record<string, number> };
+};
 type DsDot = { terms: { id: number; name: string; code: string | null }[] };
 type DsKhoa = { courses: ChonKhoa[] };
 
@@ -25,8 +31,15 @@ const HD_LOP = z.looseObject({
     capacity: z.number().nullable(), members: z.number(), startsOn: chu, endsOn: chu,
     examDate: chu, meetingUrl: chu, note: chu, termId: z.number().nullable(),
     mode: chu.optional(), room: chu.optional(),
+    classType: chu.optional(),
+    studentNames: z.array(z.string()).optional(),
+    assistantNames: z.array(z.string()).optional(),
     termName: chu, termCode: chu,
   })),
+  total: z.number().optional(), page: z.number().optional(), per_page: z.number().optional(),
+  counts: z.looseObject({
+    byType: z.record(z.string(), z.number()), byStatus: z.record(z.string(), z.number()),
+  }).optional(),
   teachers: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
   assistants: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
   statuses: z.array(z.string()),
@@ -70,7 +83,23 @@ const HD_KHOA = z.looseObject({
  * sẽ nhận 403 và ô chọn khoá hiện rỗng, không báo gì. Chọn nguồn theo QUYỀN của
  * người dùng trang, không theo tên nghe cho oai.
  */
-export default async function LopHocPage() {
+export default async function LopHocPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const mot = (k: string) => {
+    const v = sp[k];
+    return ((Array.isArray(v) ? v[0] : v) ?? '').trim();
+  };
+  const loc: LocLop = { q: mot('q'), loai: mot('loai'), tt: mot('tt'), dot: mot('dot'), gv: mot('gv'), trang: mot('trang') };
+  // Tên tham số URL (tiếng Việt, ngắn) → tên tham số API.
+  const qs = new URLSearchParams({ page: loc.trang || '1', per_page: '25' });
+  for (const [ta, api] of [['q', 'q'], ['loai', 'type'], ['tt', 'status'], ['dot', 'term_id'], ['gv', 'teacher_id']] as const) {
+    if (loc[ta]) qs.set(api, loc[ta]);
+  }
+
   const kq = await layVai();
   if (!kq.ok) return <KhongDocDuoc loi={kq.loi} />;
   if (!duocVao(kq.vai, [VAI_QUAN_TRI, VAI_HOC_VU])) {
@@ -78,14 +107,30 @@ export default async function LopHocPage() {
   }
 
   const [lop, dot, khoa] = await Promise.all([
-    serverJson<DsLop>('/api/admin/classes', { requireAuth: true }, HD_LOP),
+    serverJson<DsLop>(`/api/admin/classes?${qs}`, { requireAuth: true }, HD_LOP),
     serverJson<DsDot>('/api/admin/terms', { requireAuth: true }, HD_DOT),
     serverJson<DsKhoa>('/api/public/courses', {}, HD_KHOA),
   ]);
 
+  const d = lop.ok ? lop.data : null;
+  const dotHoc = dot.ok ? dot.data.terms.map((t) => ({ id: t.id, ten: t.code ? `${t.name} (${t.code})` : t.name })) : [];
+  const nguoi = [
+    ...(d?.teachers ?? []).map((g) => ({ id: g.id, ten: g.name || g.email })),
+    ...(d?.assistants ?? []).map((g) => ({ id: g.id, ten: `${g.name || g.email} (trợ giảng)` })),
+  ];
   return (
     <LopHocClient
-      initial={lop.ok ? lop.data.classes : []}
+      initial={d ? d.classes : []}
+      dangLoc={Boolean(loc.q || loc.loai || loc.tt || loc.dot || loc.gv)}
+      boLoc={
+        <BoLocLop loc={loc} dem={d?.counts ?? null} dotHoc={dotHoc} nguoi={nguoi}
+          trangThai={d?.statuses ?? ['active', 'finished', 'cancelled']} />
+      }
+      phanTrang={
+        d && typeof d.total === 'number'
+          ? <PhanTrangLop loc={loc} tong={d.total} trang={d.page ?? 1} moiTrang={d.per_page ?? 25} />
+          : null
+      }
       giangVien={lop.ok ? lop.data.teachers : []}
       troGiang={lop.ok ? lop.data.assistants : []}
       trangThai={lop.ok ? lop.data.statuses : ['active', 'finished', 'cancelled']}

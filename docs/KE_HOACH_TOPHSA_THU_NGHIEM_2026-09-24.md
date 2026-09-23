@@ -30,7 +30,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
 | 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
 | 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; còn chữ "Miễn phí/Chứng chỉ" ở chi tiết khoá (làm trong 1.3) + CSS chết `.rm-ai-btn` (mục U) |
-| 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [ ] |
+| 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] (commit này) — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
 | 1.2b | Tạo nhanh lớp gia sư | [ ] |
 | 1.2c | §55 chuyển lớp một thao tác | [ ] |
 | 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [ ] |
