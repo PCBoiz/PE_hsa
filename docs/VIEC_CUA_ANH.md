@@ -11,6 +11,57 @@ Mọi trạng thái trong Phần I được **đo lại hôm nay** trên hệ th
 
 ---
 
+## Phần 0 — Việc của anh cho đợt thử nghiệm TopHSA (cập nhật 24/09/2026)
+
+Kế hoạch đợt này: `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`. Bảng dưới THAY cho các mục A0, A1, A3, A5
+của Phần I.1 (anh chốt 24/09: chưa mở lại GitHub Actions; hạ tầng trả phí nối mã sẵn, bật khi bắt đầu thử nghiệm
+dữ liệu thật). Mục nào xong anh báo một dòng, tôi kiểm và gạch.
+
+### 0.1 Làm ngay — không tốn tiền
+
+| # | Việc | Mất | Vì sao | Tôi kiểm bằng |
+|---|---|---|---|---|
+| **N1** | ~~Đổi `DATABASE_URL` máy dev sang nhánh Neon `dev`~~ — **anh đã làm 24/09** (đo: host `ep-little-water…`, 59 bảng, có dữ liệu) | — | Test và máy dev không còn ghi vào production | Đã kiểm |
+| **N2** | Thêm vào `backend/.env` máy dev đúng một dòng: `PE_DB_HOST_PRODUCTION=` + phần HOST của chuỗi production (đoạn bắt đầu `ep-billowing-fog-…`, có hay không có `-pooler` đều được). Tôi không sửa `.env`. | 2 phút | Hàng rào H1: lỡ trỏ lại production thì pytest và máy dev TỪ CHỐI chạy thay vì ghi vào dữ liệu thật | pytest báo "đang trỏ production" khi thử cố ý |
+| **N3** | Render → `pe-hsa-backend` → Environment: `FRONTEND_URL` = đúng URL Vercel đang chạy (không phải localhost). | 2 phút | Link "quên mật khẩu" (§52) và link trong thư đổi lịch dựng từ biến này — sai là thư chứa link chết | Gửi thử quên mật khẩu trên production |
+| **N4** | Đẩy `master` khi tôi báo "đẩy được" (hiện 9 commit + các mẻ mới). **Đẩy `master` = deploy production** (Render ~45 phút, Vercel ~3 phút). | 1 phút | Tôi không tự đẩy được (bị chặn) | Đo lại production sau khi Render xong |
+| **N5** | Trả lời hai mặc định tôi đã tự chọn (hoặc im = đồng ý): (a) lớp "Đã kết thúc" vẫn mở bài cho em chưa bị cho rời lớp; (b) nhật ký kiểm toán giữ nhãn tiếng Việt cho các dòng thi thử CŨ sau khi gỡ tính năng thi. | 1 phút | Cả hai ảnh hưởng mục 1.3 và 1.5C | — |
+
+### 0.2 Trước khi tôi deploy mục 1.3 "Mở môn qua lớp" (tôi sẽ nhắc đúng lúc)
+
+| # | Việc | Vì sao |
+|---|---|---|
+| **N6** | Xếp lớp cho MỌI học viên đang dùng thử (Quản trị → Lớp học → Học viên). Lớp để trống ô "Môn học" = mở cả ba môn. | Sau 1.3 học viên KHÔNG tự đăng ký môn nữa — em chưa thuộc lớp nào sẽ không mở được bài |
+
+### 0.3 Khi bắt đầu thử nghiệm với dữ liệu thật (mã đã nối sẵn, chỉ cần tài khoản + biến môi trường)
+
+| # | Việc | Chi phí | Mở khoá gì |
+|---|---|---|---|
+| **T1** | Render → nâng `pe-hsa-backend` lên **Starter** | ~7 USD/tháng | Hết chờ ~84 s lúc máy chủ ngủ; hàng thư gửi lại (outbox) chạy liên tục |
+| **T2** | Neon → gói **Launch** | ~19 USD/tháng | Khôi phục CSDL về mốc bất kỳ trong 7 ngày (PITR); không ngủ CSDL |
+| **T3** | **Sentry** (miễn phí): tạo 2 project (Django, Next.js) → đặt `SENTRY_DSN` trên Render và Vercel (tên biến chính xác tôi ghi ở `docs/VAN_HANH.md` khi xong mục H5) | 0 | Lỗi 500 báo về email anh kèm ngữ cảnh, không kèm dữ liệu cá nhân học sinh |
+| **T4** | **UptimeRobot** (miễn phí): theo dõi `https://pe-hsa-backend.onrender.com/health/ready` mỗi 5 phút → email anh | 0 | Biết web sập trước khi TopHSA gọi |
+| **T5** | Chạy `manage.py du_lieu_mau --go` (gỡ dữ liệu trình diễn) + quyết giữ/xoá bộ tài khoản `audit2009.*` — xem `docs/DU_LIEU_CAN_TOPHSA.md` §3 | 0 | Dữ liệu thật không lẫn dữ liệu mẫu |
+
+### 0.4 Theo từng đợt (tôi nhắc khi tới)
+
+| # | Việc | Đợt |
+|---|---|---|
+| **D1** | **Cloudflare R2**: tạo bucket + API token (quyền Object Read & Write cho đúng bucket ấy) → 4 biến `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` trên Render; tôi gửi đoạn CORS để dán. Miễn phí tới 10 GB. | Đợt 2 — tài liệu lớp |
+| **D2** | **Zalo OA** xác minh + đăng ký mẫu tin ZNS (Zalo chỉ cho gửi theo MẪU đã duyệt, 200đ/tin) → biến `ZALO_*` đã có sẵn tên. Chưa có thì kênh Zalo hiện "chưa bật" kèm lý do. | Đợt 2 — gửi hàng loạt |
+| **D3** | Hộp thư tên miền @tophsa.vn (mục B2 cũ) — để thư gửi phụ huynh/học viên không đi từ hộp thư cá nhân | Đợt 2 |
+| **D4** | Google Cloud → OAuth client cho "Đăng nhập bằng Google" của diễn đàn (thêm URL chuyển hướng tôi đưa) | Đợt 3 — diễn đàn |
+
+### 0.5 Tuỳ chọn — chỉ khi anh mở lại GitHub Actions
+
+Actions bị khoá thanh toán từ 10/08 nên các secret dưới KHÔNG có tác dụng cho tới khi mở lại (trang Secrets trống
+là bình thường). Nếu mở lại: `DATABASE_URL_CI` = chuỗi nhánh Neon **`ci`** riêng (không bao giờ production) ·
+`DATABASE_URL` = chuỗi production bản host trực tiếp (bỏ `-pooler`, chỉ `sao-luu.yml` dùng) · `BACKUP_PASSPHRASE` =
+chuỗi ngẫu nhiên dài, cất trong app mật khẩu · (tab Variables) `URL_BACKEND` tuỳ chọn. Tôi đang bỏ đường lùi
+`DATABASE_URL_CI || DATABASE_URL` trong `ci.yml` để thiếu nhánh `ci` thì CI dừng chứ không chạy vào production.
+
+---
+
 ## Phần I.1 — Việc tay, làm theo đúng thứ tự này
 
 | # | Việc | Mất | Vì sao — đã đo | Làm xong thì báo tôi, tôi kiểm |

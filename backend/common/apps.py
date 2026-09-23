@@ -15,6 +15,16 @@ class CommonConfig(AppConfig):
         argv = sys.argv
         prog = os.path.basename(argv[0]) if argv else ''
         is_runserver = 'runserver' in argv
+        if is_runserver:
+            # Máy dev không được phục vụ trên CSDL production (H1, 24/09/2026) —
+            # chặn TRƯỚC mọi thứ khác, kể cả luồng giữ ấm.
+            from common.hang_rao_csdl import loi_neu_production
+
+            loi = loi_neu_production('runserver')
+            if loi:
+                from django.core.exceptions import ImproperlyConfigured
+
+                raise ImproperlyConfigured(loi)
         # LƯU Ý: gunicorn/uwsgi KHÔNG set os.environ['SERVER_SOFTWARE'] (chỉ set
         # trong WSGI environ per-request) → phải nhận diện qua tên tiến trình
         # argv[0] hoặc cờ env tường minh ENABLE_KEEPALIVE (đặt trong render.yaml).

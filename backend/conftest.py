@@ -12,6 +12,18 @@ import pytest
 from django.core.cache import cache
 
 
+def pytest_configure(config):
+    """Dừng cả lượt nếu CSDL đang dùng là PRODUCTION (H1, 24/09/2026).
+
+    "Cuộn lại cuối mỗi test" không phải "không đụng": vẫn chiếm kết nối, vẫn giữ
+    khoá, và một test viết ngoài giao dịch thì cuộn lại không cứu. Xem
+    `common/hang_rao_csdl.py`."""
+    from common.hang_rao_csdl import loi_neu_production
+    loi = loi_neu_production('pytest')
+    if loi:
+        pytest.exit(loi, returncode=3)
+
+
 @pytest.fixture(scope='session')
 def django_db_setup():
     """No-op: dùng DB thật từ DATABASE_URL (như bộ test Flask cũ)."""
