@@ -19,6 +19,7 @@ from common import audit
 from common.clock import local_now, local_today
 from common.db import q1, x
 from common.permissions import ROLE_STUDENT, IsAdminOrAcademic
+from courses.truy_cap import quen_truy_cap
 from teaching.vocab import TRAN_GIA_SU, chi_hoc_vien
 
 #: Cùng trần với ghi chú khác của `class_members` ở màn Lớp học.
@@ -87,6 +88,8 @@ class ChuyenLopView(APIView):
                 ket_qua = self._chuyen(request, int(class_id), den_id, em, ten_em, luc, ghi_chu)
         except _Huy as h:
             return h.phan_hoi
+        # SAU khi giao dịch chốt: môn của lớp mới mở ngay, môn lớp cũ đóng (1.3).
+        quen_truy_cap(em['id'])
         return Response(ket_qua)
 
     @staticmethod

@@ -31,6 +31,7 @@ from common.permissions import (
     last_active_admin,
     visible_class_ids,
 )
+from courses.truy_cap import quen_truy_cap, quen_truy_cap_lop
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
@@ -359,6 +360,9 @@ class AdminClassDetailView(APIView):
         sets = ', '.join('%s = %%s' % k for k in data)
         x('UPDATE classes SET %s, updated_at = %%s WHERE id = %%s' % sets,
           tuple(data.values()) + (local_now(), class_id))
+        if 'course_id' in data or 'status' in data:
+            # Môn / trạng thái của lớp là thứ MỞ MÔN cho em (1.3) — quên đệm cả lớp.
+            quen_truy_cap_lop(class_id)
         audit.record(request, audit.CLASS_UPDATE, target_type='class',
                      target_id=class_id, target_label=before['name'],
                      summary='Sửa lớp "%s" — đổi: %s.' % (before['name'],
@@ -430,6 +434,7 @@ class AdminClassDetailView(APIView):
         bai_ids = [r['id'] for r in q('SELECT id FROM assignments WHERE class_id=%s',
                                       (class_id,))]
 
+        quen_truy_cap_lop(class_id)   # trước câu xoá: sau nó không còn ai để quên
         x('DELETE FROM classes WHERE id=%s', (class_id,))
 
         # Dọn sự kiện học tập của các buổi vừa mất. Đường xoá MỘT buổi
@@ -588,6 +593,8 @@ class AdminClassMembersView(APIView):
                         ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING
                         RETURNING id''',
                      (class_id, uid, vao or local_now()))
+        if moi:
+            quen_truy_cap(uid)   # môn của lớp mở ngay, không chờ đệm 60 giây (1.3)
         if not moi:
             # ĐÃ ở trong lớp. Trước 21/09/2026 hàm dừng ở đây, nên `joined_at`
             # người dùng vừa gõ rơi vào im lặng: rà vai học vụ gửi 13/09 cho một
@@ -649,6 +656,7 @@ class AdminClassMembersView(APIView):
                     WHERE class_id=%s AND user_id=%s AND left_at IS NULL
                     RETURNING id''',
                  (local_now(), ly_do, class_id, uid))
+        quen_truy_cap(uid)   # rời lớp là mất môn của lớp (1.3)
         if not rows:
             # Trước đây câu UPDATE không khớp dòng nào vẫn trả `{'ok': True}` —
             # giao diện báo "đã cho rời lớp" cho một em không hề ở trong lớp.

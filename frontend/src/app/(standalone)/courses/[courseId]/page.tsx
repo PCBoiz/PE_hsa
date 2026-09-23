@@ -66,6 +66,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   if (!data) return null;
 
   const { course, enrollment, streak, userName } = data;
+  /* Môn mở QUA LỚP (1.3, 24/09/2026): 'hoc' học viên của lớp có môn · 'xem' nhân sự
+     đọc bài, không ghi tiến độ · null chưa mở. Máy chủ cũ (chưa có `access`) thì suy
+     từ ghi danh như trước. */
+  const access: 'hoc' | 'xem' | null =
+    course.access !== undefined ? course.access : enrollment ? 'hoc' : null;
   const curriculum = CURRICULA[courseId] || {};
   const completed = enrollment ? enrollment.completedLessons || 0 : 0;
   const lessonUrl = LESSON_URLS[courseId] || `/lesson/${courseId}`;
@@ -97,7 +102,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const thoiLuong = String(course.duration ?? '').replace(/^~\s*/, 'khoảng ');
   /* Chip ở bài hiện tại và nút chính: "Tiếp tục" chỉ đúng khi ĐÃ học ít nhất một
      bài. Chưa ghi danh thì bài 1 không mở được (máy chủ 403) — không mời bấm. */
-  const nhanBaiHienTai = completed > 0 ? 'Tiếp tục' : enrollment ? 'Bắt đầu' : null;
+  const nhanBaiHienTai = access === 'xem' ? 'Xem' : !access ? null : completed > 0 ? 'Tiếp tục' : 'Bắt đầu';
 
   return (
     <>
@@ -321,10 +326,15 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                   <img src={image} alt={course.title} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 </div>
                 <div className="cd-card-body">
-                  <div className="cd-card-price">Miễn phí</div>
-                  <div className="cd-card-free">🎉 Hoàn toàn không mất phí</div>
-
-                  {enrollment ? (
+                  {/* "Miễn phí", "Truy cập vĩnh viễn", "Chứng chỉ hoàn thành" và nút Đăng ký
+                      /Hủy đăng ký là đồ của sản phẩm tự học cũ — trung tâm mở môn QUA LỚP
+                      (1.3, góp ý TopHSA: giáo viên cũng thấy nút Đăng ký). */}
+                  {access === 'xem' ? (
+                    <>
+                      <p className="cd-locked-note">Chế độ xem — tài khoản nhân sự đọc bài, không ghi tiến độ.</p>
+                      <button type="button" className="cd-enroll-btn continue" onClick={() => W().goLesson()}>Xem bài</button>
+                    </>
+                  ) : access === 'hoc' ? (
                     <>
                       <div className="cd-progress-row">
                         <div className="cd-progress-label">
@@ -346,7 +356,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                           <div className="l">Còn lại</div>
                         </div>
                         <div className="cd-cs">
-                          <div className="v">{enrollment.timeSpent || '0h'}</div>
+                          <div className="v">{enrollment?.timeSpent || '0h'}</div>
                           <div className="l">Đã học</div>
                         </div>
                         <div className="cd-cs">
@@ -356,20 +366,17 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                       </div>
 
                       <button type="button" className="cd-enroll-btn continue" onClick={() => W().goLesson()}>▶ {completed > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}</button>
-                      <button type="button" className="cd-enroll-btn unenroll" id="unenroll-btn" onClick={() => W().unenroll()}>Hủy đăng ký</button>
                     </>
                   ) : (
-                    <button type="button" className="cd-enroll-btn primary" id="enroll-btn" onClick={() => W().enroll()}>
-                      Đăng ký ngay – Miễn phí
-                    </button>
+                    <p className="cd-locked-note">
+                      Môn này chưa mở cho lớp của em. Học vụ xếp em vào lớp có môn này thì bài mở ngay.
+                    </p>
                   )}
 
                   <div className="cd-includes">
                     <div className="cd-includes-title">KHÓA HỌC BAO GỒM</div>
                     <div className="cd-inc-item"><i className="fas fa-book-open"></i> {course.lessons} bài học</div>
                     <div className="cd-inc-item"><i className="fas fa-clock"></i> {thoiLuong}</div>
-                    <div className="cd-inc-item"><i className="fas fa-infinity"></i> Truy cập vĩnh viễn</div>
-                    <div className="cd-inc-item"><i className="fas fa-certificate"></i> Chứng chỉ hoàn thành</div>
                     <div className="cd-inc-item"><i className="fas fa-mobile-alt"></i> Học trên mọi thiết bị</div>
                   </div>
                 </div>

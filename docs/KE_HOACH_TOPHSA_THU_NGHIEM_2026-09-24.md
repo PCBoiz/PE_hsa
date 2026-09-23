@@ -33,7 +33,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] `de4b39d` — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
 | 1.2b | Tạo nhanh lớp gia sư | [x] `b841152` — pytest 9/9 + sinh buổi 29/29 sau khi tách `tao_buoi`, đột biến 9/9 đỏ, guard 22 ✓ (3 đột biến đỏ), e2e 10/10 hai khổ có ghi, axe khung mở 0 (sau vá hover nút ghost) |
 | 1.2c | §55 chuyển lớp một thao tác | [x] `0f45c73` — pytest 8/8, đột biến 11/11 đỏ, kiem_luoc_do đỏ→xanh, e2e 12/12 hai khổ có ghi; `quen_truy_cap` để 1.3 |
-| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [ ] |
+| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [~] (commit này) backend + trang khoá: pytest 11/11, đột biến 15/15, e2e 4/4 hai khổ; CÒN nút Đăng ký ở `main.js`/`DashboardClient` (sau khi gộp nhánh bỏ-thi) |
 | 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [ ] |
 | 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [ ] |
 | 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [ ] |

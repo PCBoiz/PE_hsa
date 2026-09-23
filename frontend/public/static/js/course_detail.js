@@ -15,34 +15,6 @@ function goLesson() {
   if (el) setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);
 })();
 
-function enroll() {
-  const btn = document.getElementById('enroll-btn');
-  btn.disabled = true; btn.textContent = 'Đang xử lý...';
-  fetch('/api/courses/' + COURSE_ID + '/enroll', {
-    method: 'POST',
-    headers: { 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content }
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.ok) window.location.reload();
-    else { btn.disabled = false; btn.textContent = 'Đăng ký ngay – Miễn phí'; alert((window.__PE_errMsg ? window.__PE_errMsg(d.error) : d.error) || 'Lỗi, thử lại.'); }
-  })
-  .catch(() => { btn.disabled = false; btn.textContent = 'Đăng ký ngay – Miễn phí'; });
-}
-
-function unenroll() {
-  if (!confirm('Bạn có chắc muốn hủy đăng ký khóa học này?')) return;
-  const btn = document.getElementById('unenroll-btn');
-  btn.disabled = true;
-  fetch('/api/courses/' + COURSE_ID + '/enroll', {
-    method: 'DELETE',
-    headers: { 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content }
-  })
-  .then(r => r.json())
-  .then(d => { if (d.ok) window.location.reload(); else btn.disabled = false; })
-  .catch(() => { btn.disabled = false; });
-}
-
 /* Theme nào là mặc định: lựa chọn đã lưu > cài đặt hệ điều hành. */
 function prefersDarkTheme() {
   var saved = null;

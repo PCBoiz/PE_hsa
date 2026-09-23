@@ -90,6 +90,41 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 7) — 1.3 MÔN MỞ QUA LỚP (góp ý TopHSA #3) — phần backend + trang khoá
+
+- **Cổng DUY NHẤT `courses/truy_cap.py`**: nhân sự (mọi vai không phải Học viên) → mọi môn chế độ `xem`; học viên → `hoc`
+  cho môn của lớp em ĐANG học mà lớp chưa huỷ (lớp để trống môn = cả ba; lớp đã kết thúc mà em chưa bị cho rời vẫn mở).
+  Đệm 60 s theo người; `quen_truy_cap(uid)` khi thêm / rời / chuyển lớp, `quen_truy_cap_lop` khi đổi môn / trạng thái hay
+  xoá lớp. Giới hạn đã biết: không Redis thì tiến trình kia trễ ≤ 60 s.
+- `lessons/views.py`: nội dung bài theo cổng (trả `cheDo`); `CompleteLessonView` — nhân sự 403 "chỉ xem, không ghi tiến
+  độ", học viên chưa mở môn 403 (trước đây cửa này TỰ GHI DANH bất kỳ ai gọi — ai cũng học được mọi môn); chấm câu của
+  nhân sự KHÔNG ghi nhận bài làm. Bỏ `_da_ghi_danh` / `quen_ghi_danh` (cổng cũ theo `enrollments`).
+- `courses/views.py`: `EnrollView` POST/DELETE → **410** "Trung tâm mở môn học theo lớp…"; bốn đường đọc khoá trả
+  `access` ('hoc' | 'xem' | null), `enrolled` suy ra từ đó; "khoá đang học" theo quyền (LEFT JOIN tiến độ); đánh giá sao
+  chỉ người đang HỌC môn. `enrollments` nay chỉ là bộ nhớ tiến độ.
+- Trang chi tiết khoá: bỏ "Miễn phí", "Truy cập vĩnh viễn", "Chứng chỉ hoàn thành" và nút Đăng ký / Hủy đăng ký; học viên
+  thấy tiến độ + "Bắt đầu / Tiếp tục học", nhân sự "Chế độ xem" + "Xem bài", chưa mở thì một câu "Môn này chưa mở cho lớp
+  của em…". `course_detail.js` bỏ `enroll()`/`unenroll()` — trần tầng cũ 6567 → 6541.
+- Hướng dẫn: "Xếp học viên vào lớp — việc này MỞ MÔN"; mục sự cố "Em báo môn chưa mở". Đối chiếu yêu cầu thêm dòng.
+- **CÒN (chờ gộp nhánh bỏ-thi vì cùng tệp)**: nút Đăng ký ở view Khoá học của `main.js` + `DashboardClient` (modal, nhãn).
+- **N6** (việc của anh): đo trên nhánh dev (bản sao production 24/09, bỏ tài khoản demo/rà soát) — 1 trong 2 học viên thật
+  đang học mà CHƯA thuộc lớp nào → mất bài khi 1.3 lên. Ghi thêm cửa sổ ~40 phút Vercel xong trước Render.
+
+### Thước hỏng / bẫy
+- Bộ test cũ (lessons 22, courses 11, stats 7) cấp quyền bằng dòng `enrollments` / gọi tuyến đăng ký → đỏ đúng như luật
+  mới đòi. Thêm fixture `mo_mon(uid, course)` ở `conftest.py` (xếp vào lớp như học vụ thật) và sửa ba fixture + ba test.
+  Bỏ `test_ghi_danh_lai_giu_nguyen_ngay_hoc_xong` — đường huỷ/ghi danh lại không còn (ghi lý do tại chỗ).
+- **3 test còn ĐỎ — lỗi DỮ LIỆU THẬT, không do 1.3** (mục sau): khoá `hsa_quantitative` có HAI bài `sort_order 1`.
+
+### Đã đo
+- pytest `courses/tests_truy_cap.py` MỚI 11/11 — 10 đỏ trước trên mã cũ (5 vì chưa có mô-đun, 5 vì khẳng định);
+  **đột biến 15/15 đỏ thật** (lớp huỷ / đã rời / cả ba môn, nhân sự thành học, nhân sự ghi tiến độ, không quyền vẫn hoàn
+  thành, chấm của nhân sự bị ghi, đọc nội dung không cần quyền, đăng ký mở lại, danh sách mất `access`, năm cửa quên đệm).
+- Bộ liên quan (lessons, courses, stats, chuyển lớp, danh sách lớp): 117 qua, 3 đỏ (dữ liệu trùng — mục sau).
+- E2E MỚI `mo-mon-theo-lop.spec.ts` 4/4 hai khổ (học viên: môn lớp mở, môn khác "chưa mở", không chữ Đăng ký/Miễn phí/
+  Chứng chỉ; giảng viên: mọi môn "Chế độ xem", mở bài đọc được); khung-chung + bài học + trợ lý + điện thoại: 20 qua, 2 bỏ.
+- Đủ bộ guard; tsc; eslint 0; ruff; `manage.py check`; `ban_do --kiem` 0 gãy.
+
 ## 24/09/2026 (tiếp 6) — VÁ CHẶN DEPLOY: §55 làm `bootstrap_schema` hỏng từ lần chạy THỨ HAI
 
 - Agent bỏ-thi bắt trên nhánh dev: §36 (`legacy_schema.sql` ~dòng 988) chạy lại MỖI deploy câu `DROP CONSTRAINT

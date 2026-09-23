@@ -43,7 +43,7 @@
      Bản cũ chỉ phân biệt 404 với "mọi thứ khác", và "mọi thứ khác" hiện ra là
      *"kiểm tra mạng rồi mở lại bài"*. Nhưng máy chủ trả về những câu RẤT cụ thể:
 
-         403  "Bạn chưa ghi danh khoá này."
+         403  "Môn này chưa mở cho lớp của em — học vụ xếp em vào lớp…" (từ 24/09, 1.3)
          400  "Bài này có phần luyện tập — làm ít nhất một câu rồi mới…"
 
      Nói "kiểm tra mạng" ở đó là NÓI DỐI: mạng vẫn tốt, máy chủ đã trả lời tử tế,
@@ -901,7 +901,8 @@
       hop.appendChild(pp);
       if (loi) {
         // Có câu của máy chủ nghĩa là máy chủ ĐANG sống — nút "Tải lại" là lời
-        // khuyên sai. Dẫn về trang khoá, nơi có nút "Đăng ký học".
+        // khuyên sai. Dẫn về trang khoá: nó nói môn đã mở cho lớp em chưa (1.3,
+        // 24/09/2026 — môn mở QUA LỚP, nút "Đăng ký học" không còn).
         var a = document.createElement('a');
         a.className = 'hsa-empty-go';
         a.href = '/courses/' + encodeURIComponent(state.courseId || '');
