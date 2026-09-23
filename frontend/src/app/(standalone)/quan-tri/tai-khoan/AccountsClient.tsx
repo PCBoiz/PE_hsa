@@ -491,7 +491,7 @@ export default function AccountsClient({
                       <Link
                         href={`/quan-tri/tai-khoan/${u.id}`}
                         aria-label={`Hồ sơ của ${u.name || u.email || u.phone || `#${u.id}`}`}
-                        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [@media(pointer:fine)]:min-h-9"
+                        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand [@media(pointer:fine)]:min-h-9"
                       >
                         Hồ sơ
                       </Link>

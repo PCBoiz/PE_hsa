@@ -56,3 +56,15 @@ def trang_thai(left_at, leave_reason=None):
     if leave_reason in LEAVE_LABEL:
         return 'Đã rời lớp — %s' % LEAVE_LABEL[leave_reason]
     return 'Đã rời lớp — chưa ghi lý do'
+
+
+#: Trạng thái lớp = `classes_status_check` (T42). Dời từ `views.py` 24/09/2026 để
+#: `reports.py` lọc được mà không import vòng; `views.CLASS_STATUS` là bí danh.
+TRANG_THAI_LOP = ('active', 'finished', 'cancelled')
+
+#: Loại lớp (§54, 24/09/2026) — `classes_class_type_check` phải liệt kê đúng hai giá trị này.
+#: TopHSA có ~400 lớp GIA SƯ cá nhân hoá (1 tới 3 em) bên cạnh lớp NHÓM.
+LOAI_LOP = ('nhom', 'gia_su')
+NHAN_LOAI_LOP = {'nhom': 'Lớp nhóm', 'gia_su': 'Gia sư'}
+#: Trần học viên của một lớp gia sư — kiểm ở tầng ghi (trợ giảng không tính).
+TRAN_GIA_SU = 3

@@ -42,12 +42,30 @@ export type LopRow = {
   mode?: string | null;
   /** Phòng học của lớp tại trung tâm — buổi để trống phòng thì theo đây. */
   room?: string | null;
+  /** `nhom` / `gia_su` — §54. Tuỳ chọn: máy chủ trước 24/09/2026 không trả. */
+  classType?: string | null;
+  /** Tên em đang học — chỉ lớp GIA SƯ (1–3 em, tên em mới là thứ người ta tìm). */
+  studentNames?: string[];
+  /** Trợ giảng đang gán. */
+  assistantNames?: string[];
   termId: number | null;
   termName: string | null;
   termCode: string | null;
 };
 
 export type Form = Record<string, string>;
+
+/* Ba giá trị = ràng buộc `classes_status_check` (T42). `draft` từng có ở đây
+   dù CSDL không nhận — xem `formRong`. Mã lạ vẫn hiện nguyên mã. Ở đây (tệp
+   thuần) để bảng lớp phía trình duyệt và bộ lọc dựng ở máy chủ gọi CÙNG tên. */
+export const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral' | 'bad' }> = {
+  active: { nhan: 'Đang học', tone: 'good' },
+  finished: { nhan: 'Đã kết thúc', tone: 'neutral' },
+  cancelled: { nhan: 'Đã huỷ', tone: 'bad' },
+};
+
+/** Loại lớp — `teaching/vocab.py::NHAN_LOAI_LOP` (§54). */
+export const LOAI_LOP: Record<string, string> = { nhom: 'Lớp nhóm', gia_su: 'Gia sư' };
 
 /**
  * Bảng trường DUY NHẤT: khoá trong biểu mẫu ↔ khoá trong `LopRow` ↔ khoá trong
@@ -62,6 +80,7 @@ export const TRUONG = [
   { form: 'note', row: 'note', than: 'note', kieu: 'chu' },
   { form: 'mode', row: 'mode', than: 'mode', kieu: 'chu' },
   { form: 'room', row: 'room', than: 'room', kieu: 'chu' },
+  { form: 'classType', row: 'classType', than: 'class_type', kieu: 'chu' },
   { form: 'startsOn', row: 'startsOn', than: 'starts_on', kieu: 'chu' },
   { form: 'endsOn', row: 'endsOn', than: 'ends_on', kieu: 'chu' },
   { form: 'examDate', row: 'examDate', than: 'exam_date', kieu: 'chu' },
@@ -84,6 +103,7 @@ export function formRong(): Form {
   const f: Form = {};
   for (const t of TRUONG) f[t.form] = '';
   f.status = 'active';
+  f.classType = 'nhom';
   return f;
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useRef, useState, type ReactNode } from 'react';
 
 import {
   Button,
@@ -22,7 +23,8 @@ import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
-import { type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
+import { LOAI_LOP, TRANG_THAI, type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
+import TaoLopGiaSu from './TaoLopGiaSu';
 
 export type { LopRow };
 export type ChonNguoi = { id: number; name: string | null; email: string };
@@ -46,14 +48,8 @@ type KetQuaThem = {
   added: { email: string; role: string | null }[];
   already: { email: string }[];
   missing: string[];
-};
-
-/* Ba giá trị = ràng buộc `classes_status_check` (T42). `draft` từng có ở đây
-   dù CSDL không nhận — xem `lop.ts::formRong`. Mã lạ vẫn hiện nguyên mã. */
-const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral' | 'bad' }> = {
-  active: { nhan: 'Đang học', tone: 'good' },
-  finished: { nhan: 'Đã kết thúc', tone: 'neutral' },
-  cancelled: { nhan: 'Đã huỷ', tone: 'bad' },
+  /** Lớp GIA SƯ đã đủ 3 em (§54) — em ấy không vào, các em khác vẫn vào. */
+  full?: { email: string }[];
 };
 
 /**
@@ -99,7 +95,13 @@ const O_CHUNG =
   'min-h-11 w-full min-w-0 rounded-md border border-line bg-surface px-3 text-input text-ink placeholder:text-ink-3/70';
 
 type Props = {
+  /** MỘT TRANG lớp theo bộ lọc trên URL (§54) — máy chủ lọc + phân trang. */
   initial: LopRow[];
+  /** Bộ lọc + chip đếm + phân trang — dựng ở MÁY CHỦ (`BoLocLop.tsx`), form GET thuần. */
+  boLoc?: ReactNode;
+  phanTrang?: ReactNode;
+  /** Có đang lọc không — để câu "chưa có lớp nào" không nói sai khi chỉ là lọc ra rỗng. */
+  dangLoc?: boolean;
   giangVien: ChonNguoi[];
   /** Mọi tài khoản Trợ giảng — để ô "Gán trợ giảng" có gì mà chọn. */
   troGiang: ChonNguoi[];
@@ -117,14 +119,19 @@ export default function LopHocClient(props: Props) {
   );
 }
 
-function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi }: Props) {
+function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi }: Props) {
   const toast = useToast();
-  const [lop, setLop] = useState<LopRow[]>(initial);
+  const router = useRouter();
+  // Danh sách là MỘT TRANG do máy chủ lọc (§54): không giữ bản sao trong state —
+  // sau mỗi lần ghi thì `router.refresh()` dựng lại trang với ĐÚNG bộ lọc đang xem.
+  const lop = initial;
   const [err, setErr] = useState<string | null>(loi);
   const [busy, setBusy] = useState(false);
 
   /** `null` = biểu mẫu đóng; `0` = thêm mới; `>0` = đang sửa lớp id ấy. */
   const [dangSua, setDangSua] = useState<number | null>(null);
+  /** Khung "Tạo lớp gia sư" (1.2b) — một em + một giảng viên + lịch, một lượt. */
+  const [moGiaSu, setMoGiaSu] = useState(false);
   const [form, setForm] = useState<Form>(formRong);
 
   const [lopMoRong, setLopMoRong] = useState<LopRow | null>(null);
@@ -151,12 +158,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
   const dat = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function nap() {
-    try {
-      const r = await apiFetch('/api/admin/classes');
-      if (r.ok) setLop(((await r.json()).classes as LopRow[]) ?? []);
-    } catch {
-      /* giữ nguyên danh sách đang hiện */
-    }
+    router.refresh();
   }
 
   async function luu() {
@@ -298,6 +300,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
         kq.missing.length
           ? `${kq.missing.length} email chưa có tài khoản (tạo ở trang Tài khoản rồi thêm lại).`
           : '',
+        (d.full ?? []).length ? `${(d.full ?? []).length} em chưa vào được: lớp gia sư đã đủ 3 em.` : '',
       ].filter(Boolean);
       toast(cau.join(' '), kq.added.length ? 'ok' : kq.missing.length ? 'error' : 'info');
       await Promise.all([moHocVien(lopMoRong), nap()]);
@@ -462,17 +465,22 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
       <Card>
         <CardHead
           title="Lớp học"
-          hint="Xếp học viên vào lớp. Không có bước này thì khu Giảng dạy — điểm danh, giao bài, báo cáo phụ huynh — không có gì để hiện."
+          hint="Học viên phải được xếp lớp thì mới được điểm danh, giao bài."
           action={
-            dangSua === null && (
-              <Button
-                onClick={() => {
-                  setForm(formRong());
-                  setDangSua(0);
-                }}
-              >
-                Thêm lớp
-              </Button>
+            dangSua === null && !moGiaSu && (
+              <span className="flex flex-wrap gap-2">
+                <Button variant="ghost" onClick={() => setMoGiaSu(true)}>
+                  Tạo lớp gia sư
+                </Button>
+                <Button
+                  onClick={() => {
+                    setForm(formRong());
+                    setDangSua(0);
+                  }}
+                >
+                  Thêm lớp
+                </Button>
+              </span>
             )
           }
         />
@@ -486,16 +494,34 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
           </p>
         )}
 
+        {moGiaSu && (
+          <TaoLopGiaSu
+            giangVien={giangVien}
+            khoaHoc={khoaHoc}
+            dotHoc={dotHoc}
+            onDong={() => setMoGiaSu(false)}
+            onXong={(cau) => {
+              setMoGiaSu(false);
+              toast(cau, 'ok');
+              void nap();
+            }}
+          />
+        )}
+
         {dangSua !== null && (
-          <div className="mb-4 rounded-md border border-line bg-sunken p-4">
-            <h3 className="mb-3 text-label text-ink">
+          <div role="group" aria-labelledby="lop-form-tieu-de" className="mb-4 rounded-md border border-line bg-sunken p-4">
+            <h3 id="lop-form-tieu-de" className="mb-3 text-label text-ink">
               {dangSua === 0 ? 'Thêm lớp' : `Sửa lớp: ${form.name || '(chưa đặt tên)'}`}
             </h3>
             <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))]">
               {oChu('name', 'Tên lớp', 'Luyện HSA đợt 1/2027 — Ca tối')}
+              {oChon('classType', 'Loại lớp', [
+                { gt: 'nhom', nhan: LOAI_LOP.nhom },
+                { gt: 'gia_su', nhan: `${LOAI_LOP.gia_su} (1–3 em)` },
+              ])}
               {oChu('code', 'Mã lớp (không bắt buộc)', 'HSA-01')}
-              {oChon('course', 'Hợp phần', [
-                { gt: '', nhan: '(cả ba hợp phần)' },
+              {oChon('course', 'Môn học', [
+                { gt: '', nhan: '(cả ba môn)' },
                 ...khoaHoc.map((k) => ({ gt: k.id, nhan: k.title })),
               ])}
               {oChon('teacherId', 'Giảng viên', [
@@ -539,17 +565,23 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
           </div>
         )}
 
+        {boLoc}
+
         {lop.length === 0 ? (
-          <EmptyState
-            title="Chưa có lớp nào"
-            hint="Tạo lớp đầu tiên, rồi bấm “Học viên” để xếp các em vào."
-          />
+          dangLoc ? (
+            <EmptyState title="Không có lớp khớp bộ lọc" hint="Bỏ bớt điều kiện lọc, hoặc tìm bằng tên khác." />
+          ) : (
+            <EmptyState
+              title="Chưa có lớp nào"
+              hint="Tạo lớp đầu tiên, rồi bấm “Học viên” để xếp các em vào."
+            />
+          )
         ) : (
           <TableWrap caption="Các lớp của trung tâm, kèm giảng viên phụ trách và sĩ số hiện tại">
             <Thead>
               <tr>
                 <Th>Lớp</Th>
-                <Th>Hợp phần</Th>
+                <Th>Môn học</Th>
                 <Th>Giảng viên</Th>
                 <Th>Lịch</Th>
                 <Th align="right">Sĩ số</Th>
@@ -562,15 +594,23 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
                 <Tr key={c.id} dim={c.status === 'finished'}>
                   <Td label="Lớp">
                     <span className="font-semibold text-ink">{c.name}</span>
+                    {c.classType === 'gia_su' && <> <Chip tone="brand">{LOAI_LOP.gia_su}</Chip></>}
                     <span className="block text-ink-3">
                       {[c.code, c.termName].filter(Boolean).join(' · ') || '—'}
                     </span>
+                    {/* Lớp gia sư: tên EM là thứ người ta tìm ("lớp của em An"). */}
+                    {(c.studentNames ?? []).length > 0 && (
+                      <span className="block text-ink-2">Em: {(c.studentNames ?? []).join(', ')}</span>
+                    )}
                   </Td>
-                  <Td label="Hợp phần" muted>
-                    {c.courseTitle ?? 'Cả ba'}
+                  <Td label="Môn học" muted>
+                    {c.courseTitle ?? 'Cả ba môn'}
                   </Td>
                   <Td label="Giảng viên" muted>
                     {c.teacherName ?? '(chưa gán)'}
+                    {(c.assistantNames ?? []).length > 0 && (
+                      <span className="block">TG: {(c.assistantNames ?? []).join(', ')}</span>
+                    )}
                   </Td>
                   <Td label="Lịch" muted>
                     {c.schedule || '—'}
@@ -613,6 +653,7 @@ function BangLop({ initial, giangVien, troGiang, trangThai, dotHoc, khoaHoc, loi
             </Tbody>
           </TableWrap>
         )}
+        {phanTrang}
       </Card>
 
       <Modal

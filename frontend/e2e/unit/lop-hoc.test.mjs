@@ -63,6 +63,7 @@ const LOP = {
   note: 'Lớp có 3 em thi lại',
   mode: 'offline',
   room: 'P201',
+  classType: 'gia_su',
   termId: 3,
   termName: 'Đợt 1/2027',
   termCode: 'D1-2027',
@@ -105,11 +106,14 @@ for (const t of TRUONG) {
 // ── ④ Biểu mẫu rỗng không được gửi rác lên ──────────────────────────────────
 const { body: thanRong } = thanForm(formRong());
 check(
-  'biểu mẫu rỗng gửi null cho mọi trường trừ status',
+  'biểu mẫu rỗng gửi null cho mọi trường trừ status và loại lớp',
   // `active`, không `draft` (14/09/2026): `draft` không có trong ràng buộc CSDL
   // `classes_status_check`, và phép kiểm này từng GHIM đúng giá trị làm nút
   // "Tạo lớp" trả 500 — thước canh sai luật thì giữ cái sai bền hơn cả mã.
-  Object.entries(thanRong).every(([k, v]) => (k === 'status' ? v === 'active' : v === null)),
+  // `class_type` mặc định `nhom` (§54, 24/09/2026): cột NOT NULL, gửi null thì máy
+  // chủ coi như KHÔNG gửi — nhưng lớp mới phải là lớp nhóm rõ ràng, không đoán.
+  Object.entries(thanRong).every(([k, v]) => (
+    k === 'status' ? v === 'active' : k === 'class_type' ? v === 'nhom' : v === null)),
   JSON.stringify(thanRong),
 );
 

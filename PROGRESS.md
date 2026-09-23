@@ -90,6 +90,90 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 3) — 1.2b TẠO NHANH LỚP GIA SƯ · 3 agent hỗ trợ (1.4a, 1.5A, U2+U4)
+
+- **`POST /api/admin/classes/gia-su`** (`teaching/lop_gia_su.py`): một em (phải là Học viên) + một giảng viên (bắt buộc) +
+  lịch tuần (tuỳ chọn) → lớp `gia_su` sĩ số 3 + em vào lớp + buổi, trong MỘT giao dịch; tên trống thì tự đặt "Gia sư · {em}
+  · {giảng viên}", cột "Lịch học" tự viết đúng dạng `doan_lich` đọc ngược lại được ("T3, T5 · 19:30–21:00").
+  `dry_run` chạy ĐÚNG đường ghi rồi cuộn lại → cảnh báo trùng giờ giảng viên / EM / phòng là thật (em đã ở trong lớp lúc
+  chấm buổi). Vòng sinh buổi tách thành `sinh_buoi.tao_buoi()` dùng chung với màn Buổi học (một nguồn luật).
+- **Màn Lớp học**: nút "Tạo lớp gia sư" (phụ, cạnh "Thêm lớp") mở khung: tìm em → chọn giảng viên / môn / đợt / tên → chip
+  thứ T2…CN, giờ, số phút, từ–đến (mặc định 12 tuần từ hôm nay giờ VN) → "Xem trước" (tên, lịch, số buổi, cảnh báo) →
+  "Tạo lớp gia sư". Sửa bất kỳ ô nào là bản xem trước hết hiệu lực (không tạo theo bản cũ). Kiểm biểu mẫu thuần ở `giaSu.ts`.
+- **Nút ghost dùng chung**: rê chuột đổi chữ sang `brand-ink` thay `brand` — `--brand` trên nền `bg-sunken` chỉ 4,36:1 (axe
+  bắt ở nút "Tìm" khi chuột còn đặt trên nút sau khi bấm); cùng sửa một nút ở màn Tài khoản.
+
+### Thước hỏng / bẫy gặp trong lượt
+- Test "lỗi giữa chừng" chờ `RuntimeError` ném ra ngoài view — `common.errors` biến nó thành 500 có câu chữ; đổi sang khẳng
+  định 500 + không còn lớp/thành viên.
+- Commit 1.2a tách khỏi 1.2b khi hai mục chung tệp (`LopHocClient.tsx`, spec e2e): dựng bản 1.2a của tệp rồi đưa thẳng vào
+  chỉ mục (`git hash-object -w` + `update-index --cacheinfo`) — không có `git add -p` ở môi trường này.
+- Ảnh chụp một PHẦN TỬ cao ở khổ 390 bị thanh đầu dính (sticky) đè giữa ảnh — là cách Playwright ghép ảnh, không phải lỗi
+  giao diện; chụp lại với khung nhìn cao hơn.
+
+### Đã đo
+- pytest `tests_lop_gia_su.py` 9/9 (tạo thật, xem trước không ghi CẢ nhật ký, chỉ học viên + phải có giảng viên, lỗi giữa
+  chừng không để lớp mồ côi, vượt trần buổi, giảng viên trùng giờ vẫn tạo + cảnh báo, em trùng giờ hiện ở xem trước, lịch
+  chữ đọc ngược, giảng viên không tạo được); `tests_sinh_buoi.py` 29/29 sau khi tách `tao_buoi`. **Đột biến 9/9 đỏ thật.**
+- Guard `lop-gia-su.test.mjs` 22 ✓ — đột biến (đổi khoá `weekdays`, bỏ kiểm giảng viên, bỏ nhánh không sinh buổi) → đỏ 3/3.
+  Đủ bộ guard xanh; tsc; eslint 0 cảnh báo; ruff; `manage.py check`; `ban_do --kiem` 0 gãy.
+- E2E `danh-sach-lop.spec.ts` 10/10 hai khổ có ghi — thêm luồng tạo nhanh bằng GIAO DIỆN (bấm Xem trước khi chưa chọn em →
+  câu lỗi; tìm em, chọn giảng viên, T3/T5; đổi một thứ → nút về "Xem trước"; tạo → lớp gia sư 1 em, đúng giảng viên, có
+  buổi); lớp tạm đã dọn.
+- axe trên khung ĐANG MỞ (đang tìm + có xem trước) × 2 khổ × sáng/tối: 2 vi phạm hover → vá → 0. Soi ảnh 1440 + 390.
+
+### Agent hỗ trợ (anh Sơn yêu cầu 24/09) — đang chạy, mỗi agent một worktree riêng `D:\pe_hsa_wt\<tên>`, nhánh `agent/<tên>`
+- `tong-quan` — 1.4a §56 `last_seen_at` + Tổng quan v2; `bo-thi` — 1.5A bỏ thi pha A (§57); `chu-nguoi-dung` — U2 guard
+  câu chữ + U4 `CardHead` gập. Lead gộp và soi lại từng nhánh trước khi tick.
+
+## 24/09/2026 (tiếp 2) — 1.2a LOẠI LỚP + DANH SÁCH LỚP LỌC/PHÂN TRANG (§54) — "quản lý lớp là priority số 1"
+
+Theo `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` mục 1.2a. Ghi chú họp: ~400 lớp gia sư cá nhân hoá bên cạnh lớp nhóm.
+
+- **§54** `classes.class_type TEXT NOT NULL DEFAULT 'nhom'` + CHECK (`nhom`, `gia_su`) — chỉ cộng; `kiem_luoc_do` 34/34 trên
+  nhánh dev (thêm luôn các mục §50–§53 còn thiếu trong `MUC`).
+- **Lớp gia sư tối đa 3 HỌC VIÊN** (trợ giảng không tính), `teaching/vocab.py::TRAN_GIA_SU`: thêm em thứ 4 → 409; dán
+  nhiều email → em không vào được nằm riêng ở `full`, các em khác vẫn vào; đổi lớp > 3 em sang gia sư → 400 nói rõ số em;
+  cấp tài khoản hàng loạt vào lớp gia sư đầy → xem trước cảnh báo, tạo thật từ chối TRƯỚC khi cấp tài khoản nào. Khoá
+  `FOR UPDATE` dòng lớp, đếm và INSERT trong CÙNG một giao dịch; lượt cấp hàng loạt đếm LẠI dưới khoá lúc xếp lớp (em chen
+  vào giữa lúc cấp → tài khoản vẫn giữ, em thừa được nêu tên trong cảnh báo).
+- **`GET /api/admin/classes`** nay lọc + phân trang ở máy chủ (`reports.class_page`, cố định 3 câu): `q` (tên/mã lớp, tên
+  giáo viên, tên hoặc mã HSA của em đang học), `type`, `status`, `term_id`, `teacher_id` (kể cả lớp người ấy TRỢ GIẢNG),
+  `course_id`, `page`/`per_page` (25, trần 100) → `{classes, total, page, per_page, counts}`. Tổng giữ nguyên khi trang
+  rỗng (`trang_kem_tong`, LEFT JOIN LATERAL — cùng `mau_like` chuyển sang `common/params.py`).
+- **`GET /api/admin/classes/options`** — danh sách GỌN (không sĩ số, không phân trang, ≤ 1000) cho ô chọn lớp ở màn Tài
+  khoản: phải ra CÙNG LÚC phân trang, nếu không ô lọc lớp ở đó lặng lẽ chỉ còn 25 lớp đầu.
+- **Màn Lớp học**: chip "Lớp nhóm N / Gia sư N" bấm là lọc; ô Tìm luôn hiện, "Lọc thêm" (giáo viên/trợ giảng, trạng thái,
+  đợt) GẬP lại và tự mở khi đang dùng — ảnh 390 px trước đó: năm ô lọc chiếm trọn màn đầu, lớp đầu tiên nằm dưới nếp gấp.
+  Form GET thuần dựng ở máy chủ (bộ lọc nằm trên URL, gửi link được). Hàng lớp gia sư: chip "Gia sư" + "Em: …" (tên em là
+  thứ người ta tìm); cột giảng viên thêm "TG: …". "Hợp phần" → "Môn học", "(cả ba hợp phần)" → "(cả ba môn)". Rỗng do lọc
+  nói "Không có lớp khớp bộ lọc" (không "Chưa có lớp nào"); 0 lớp không in thêm "0 lớp". Chú thích thẻ gọn một dòng.
+- Hai vùng có TÊN (`role="search"` "Lọc danh sách lớp", `role="group"` "Thêm lớp") — hai biểu mẫu trùng nhãn ô.
+
+### Thước hỏng / bẫy gặp trong lượt
+- **Chú thích hứa một khoá không có**: bản đầu đếm dưới `FOR UPDATE` rồi THOÁT `atomic()` mới INSERT — khoá nhả trước khi
+  ghi, hai lượt cùng lúc vào lớp 2 em đều ghi được → 4 em; chú thích ngay trên nói điều ngược lại. Bắt khi soát câu chữ
+  PROGRESS ("đã đo chưa?"). Lượt cấp hàng loạt cùng lỗ (kiểm chỗ trước vòng cấp, xếp lớp sau không đếm lại). Hai test mới,
+  ĐỎ trên mã cũ đúng lý do ("savepoint giữ khoá đã đóng lúc INSERT"; "lớp gia sư có 4 em"), xanh sau khi vá.
+- Phép kiểm PUT `class_type` đầu tiên xanh vì LÝ DO SAI (400 do thân rỗng) → thêm khẳng định câu lỗi + chiều thuận ghi thật.
+- `do_giao_dien` báo "bị đẩy về đăng nhập tại /dashboard" dù `curl` cùng thẻ ra 200: `/dashboard` là trang HỌC VIÊN, bộ đo
+  dùng `.the/tokens_hv.json` (đã hết hạn) — cấp lại bằng `cap_the.py --e2e --ra .the/tokens_hv.json` (đúng như bộ nhớ ghi).
+- E2E ghi: học vụ gọi `/api/admin/users` CHỈ ra học viên (đúng luật) → id trợ giảng lấy từ `assistants` của danh sách lớp.
+
+### Đã đo
+- pytest `teaching/tests_danh_sach_lop.py` 9/9; bộ liên quan chạy lại SAU bản vá khoá (`teaching/tests.py`, hồ sơ HV, luồng
+  ERP, xếp lớp hàng loạt, ma trận quyền + tệp mới) 123/123 (trước vá: + hợp đồng, khai công = 122/122). Hợp đồng hình dạng
+  thêm `/api/admin/classes` + `/options` — đột biến đổi tên khoá `counts` / `classes` → đỏ (2/2). **Đột biến 10/10 đỏ thật** (nền xanh, mã thoát 1): bỏ nhánh trợ giảng khi
+  lọc GV, bỏ lọc loại, bỏ lọc trạng thái, chip không đếm, JOIN thay LEFT JOIN (mất tổng), trần 3→4, TG bị tính vào trần,
+  đổi sang gia sư không kiểm sĩ số, `class_type: null` → "None", cấp hàng loạt không chặn lớp đầy.
+- Guard unit đủ bộ xanh (`lop-hoc.test.mjs` tự đòi `classType` có ô trên màn — đột biến đổi tên ô → đỏ, đo 24/09); tsc, eslint 0 cảnh báo;
+  `ban_do --kiem` 0 gãy.
+- E2E `danh-sach-lop.spec.ts` MỚI 8/8 hai khổ, có ghi (`E2E_GHI=1`): tạo lớp gia sư bằng biểu mẫu thật → xếp 3 em + trợ
+  giảng (4/4 vào, `full` rỗng) → hàng hiện chip/tên em/TG → lọc theo trợ giảng ra đúng lớp, ô Tìm giữ; lớp tạm đã dọn.
+- `do_giao_dien` sáng: 34 trang × 2 khổ = CỔNG SẠCH; tối: trang Lớp học 0/0 cả hai khổ, TOÀN BỘ còn 4 điểm = nút
+  "Đăng ký" trên thẻ khoá (view Khoá học, trắng trên #8b7cf6 = 3,33:1) × 2 khổ — nút ấy bị GỠ ở mục 1.3, không vá màu cho
+  thứ sắp xoá; axe 0 nút / 100 lượt.
+
 ## 24/09/2026 (tiếp) — H1 hàng rào CSDL · 1.1 bốn góp ý TopHSA (ghi nhớ đăng nhập, đường đi theo vai, cổng vào, dọn màn học viên)
 
 Theo `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` (mục H1, 1.1a–d). Việc của anh: `docs/VIEC_CUA_ANH.md` Phần 0.

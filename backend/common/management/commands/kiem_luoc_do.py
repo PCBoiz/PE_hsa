@@ -133,6 +133,24 @@ MUC = [
      lambda: _chi_muc('idx_users_is_demo')),
     ('§49d', 'chỉ mục classes(id) WHERE is_demo',
      lambda: _chi_muc('idx_classes_is_demo')),
+    # §50–§53 THÊM 24/09/2026: bốn mục ấy lên CSDL mà chưa ai thêm dòng ở đây — lệnh
+    # này đã báo "sạch" cho chúng suốt bốn ngày mà không hề nhìn tới.
+    ('§50', 'bảng parent_report_optout (phụ huynh từ chối nhận báo cáo)',
+     lambda: _cot('parent_report_optout', 'by_user_id')),
+    ('§51a', 'users.student_code (mã HSA-xxxxx)', lambda: _cot('users', 'student_code')),
+    ('§51b', 'users.username (tên đăng nhập)', lambda: _cot('users', 'username')),
+    ('§51c', 'chỉ mục duy nhất users(student_code)', lambda: _chi_muc('idx_users_student_code')),
+    ('§51d', 'chỉ mục duy nhất users(lower(username))', lambda: _chi_muc('idx_users_username')),
+    ('§52a', 'bảng password_reset_tokens (quên mật khẩu)',
+     lambda: _cot('password_reset_tokens', 'user_id')),
+    ('§52b', 'chỉ mục password_reset_tokens(user_id, created_at)', lambda: _chi_muc('idx_prt_user')),
+    ('§53a', 'classes.mode + room', lambda: _cot('classes', 'room')),
+    ('§53b', 'class_sessions.mode + room', lambda: _cot('class_sessions', 'room')),
+    ('§53c', 'CHECK classes_mode_check nhận offline',
+     lambda: _check_co_gia_tri('classes_mode_check', 'offline')),
+    ('§54a', 'classes.class_type (nhóm / gia sư)', lambda: _cot('classes', 'class_type')),
+    ('§54b', 'CHECK classes_class_type_check nhận gia_su',
+     lambda: _check_co_gia_tri('classes_class_type_check', 'gia_su')),
 ]
 
 

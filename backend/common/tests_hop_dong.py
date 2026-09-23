@@ -97,3 +97,22 @@ def test_do_proxy_chi_quan_tri_va_khong_ro_bien_moi_truong(auth_api, temp_admin,
     tho = ' '.join(str(v) for v in r.data.values())
     for cam in ('DATABASE_URL', 'SECRET_KEY', 'postgres://', 'postgresql://'):
         assert cam not in tho, 'RÒ %s ra phản hồi' % cam
+
+
+@pytest.mark.django_db
+def test_hop_dong_danh_sach_lop(admin_api):
+    """`/api/admin/classes` (§54, 24/09/2026) — màn Lớp học đọc MỘT TRANG lớp + tổng +
+    chip đếm + danh sách giảng viên/trợ giảng cho ô lọc. Mất `total` thì màn mất phân
+    trang, mất `counts` thì mất hàng chip — cả hai im lặng (khoá tuỳ chọn ở zod)."""
+    r = admin_api.get('/api/admin/classes?per_page=1')
+    co = _khoa(r)
+    thieu = {'classes', 'total', 'page', 'per_page', 'counts', 'teachers', 'assistants', 'statuses'} - co
+    assert not thieu, 'thiếu khoá màn hình đang đọc: %s (nhận: %s)' % (thieu, sorted(co))
+    assert {'byType', 'byStatus'} <= set(r.data['counts']), r.data['counts']
+
+
+@pytest.mark.django_db
+def test_hop_dong_danh_sach_lop_gon(admin_api):
+    """`/api/admin/classes/options` — ô chọn lớp ở màn Tài khoản lặp qua `classes`."""
+    co = _khoa(admin_api.get('/api/admin/classes/options'))
+    assert 'classes' in co, 'thiếu `classes`: %s' % sorted(co)
