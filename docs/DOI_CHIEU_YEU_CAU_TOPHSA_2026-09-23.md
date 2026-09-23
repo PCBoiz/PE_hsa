@@ -27,7 +27,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | 1.2 Đăng nhập bằng username | CÓ (23/09) | ô đăng nhập nhận email / SĐT / tên đăng nhập; tên do học vụ đặt ở trang Hồ sơ, không phân biệt hoa thường (`users.username`, §51) |
 | 1.3 Hiện/ẩn mật khẩu | CÓ | `.toggle-eye` ở màn đăng nhập |
 | 1.4 Ghi nhớ đăng nhập | MỘT PHẦN | phiên tự giữ 8 giờ (`REFRESH_TOKEN_LIFETIME`), không có ô "ghi nhớ" để kéo dài |
-| 1.5 Quên mật khẩu | CHƯA | màn đăng nhập chỉ ghi "nhắn giảng viên / trung tâm"; không có đường tự đặt lại |
+| 1.5 Quên mật khẩu | CÓ (23/09) | màn đăng nhập → "Đặt lại qua email": đường dẫn một lần, 30 phút, tới chính email của tài khoản; chỉ lưu băm của chìa; mọi phiên cũ bị cắt khi đặt xong (§52). Tài khoản không có email vẫn nhờ học vụ |
 | 1.6 Đăng xuất | CÓ | menu tài khoản, mọi khu |
 
 ## 2 · Quản lý người dùng — dòng 2 · bảng tick TRUE

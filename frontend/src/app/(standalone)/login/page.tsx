@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import LoginForm from './LoginForm';
 
@@ -84,9 +85,15 @@ export default async function LoginPage({
           <LoginForm oauthError={raw ?? null} />
 
           <div className="mt-6 border-t border-line pt-5">
+            {/* Từ 23/09/2026 (§52) tài khoản có email tự đặt lại được. Tài khoản
+                chỉ có số điện thoại / tên đăng nhập vẫn phải nhờ người — trang
+                quên mật khẩu nói rõ điều đó. */}
             <p className="text-small text-ink-3">
-              <b className="text-ink-2">Quên mật khẩu?</b> Nhắn cho giảng viên phụ trách lớp
-              hoặc trung tâm — tài khoản sẽ được đặt lại ngay trong buổi.
+              <b className="text-ink-2">Quên mật khẩu?</b>{' '}
+              <Link href="/quen-mat-khau" className="-my-3 inline-block py-3 text-brand-ink underline">
+                Đặt lại qua email
+              </Link>{' '}
+              — hoặc nhắn giảng viên phụ trách lớp, học vụ.
             </p>
             <p className="mt-3 text-small text-ink-3">
               <b className="text-ink-2">Chưa có tài khoản?</b> Tài khoản do TopHSA cấp khi bạn

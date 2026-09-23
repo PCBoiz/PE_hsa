@@ -110,6 +110,10 @@ const TRANG = [
   ['/quan-tri/dot-hoc', 'Quản trị · đợt học'],
   ['/quan-tri/nhat-ky', 'Quản trị · nhật ký'],
   ['/doi-mat-khau', 'Đổi mật khẩu'],
+  // Quên mật khẩu (§52, 23/09/2026) — hai trang không cần đăng nhập; trang đặt lại
+  // mở không kèm chìa là trạng thái 'đường dẫn hỏng'.
+  ['/quen-mat-khau', 'Quên mật khẩu'],
+  ['/dat-lai-mat-khau', 'Đặt lại mật khẩu (đường dẫn hỏng)'],
   /* Khu GIẢNG DẠY. Cần một lớp có thật; `1` là lớp duy nhất đang có. Ba màn này
      giảng viên mở mỗi buổi, và trước 01/09/2026 chưa lượt quét nào chạm tới. */
   ['/giang-day/buoi-hoc/1', 'Giảng dạy · buổi học'],

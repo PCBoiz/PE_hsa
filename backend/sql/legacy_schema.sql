@@ -1673,3 +1673,25 @@ UPDATE users u SET student_code = 'HSA-' || lpad(s.n::text, 5, '0')
   FROM (SELECT id, nextval('student_code_seq') AS n
           FROM (SELECT id FROM users WHERE role = 'Học viên' AND student_code IS NULL ORDER BY id) t) s
  WHERE u.id = s.id;
+
+-- ── §52 · QUÊN MẬT KHẨU QUA EMAIL (23/09/2026) ──────────────────────────────
+-- Bảng yêu cầu TopHSA mục 1.5. Anh Sơn chốt: đường dẫn DÙNG MỘT LẦN, hạn 30
+-- phút, gửi tới email CỦA CHÍNH tài khoản.
+--
+-- CHỈ LƯU BĂM (sha256) của chìa, KHÔNG lưu chìa — khác hẳn `parent_report_links`
+-- (nơi giảng viên cần chép lại đường dẫn nên phải giữ nguyên văn). Ở đây chìa
+-- chỉ có một nơi được phép nằm: hộp thư của người dùng. Ai đọc được bảng này
+-- (bản sao lưu, một câu SQL lỡ in ra) cũng không dựng lại được đường dẫn nào.
+--
+-- `used_at` đánh dấu đã dùng (hoặc bị thay bởi chìa mới hơn) — giữ dòng chứ
+-- không xoá, để còn đếm "một tài khoản xin bao nhiêu lần trong một giờ".
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id           SERIAL PRIMARY KEY,
+    user_id      INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash   TEXT      NOT NULL UNIQUE,
+    created_at   TIMESTAMP NOT NULL DEFAULT now(),
+    expires_at   TIMESTAMP NOT NULL,
+    used_at      TIMESTAMP,
+    requested_ip TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens (user_id, created_at);

@@ -90,6 +90,40 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 23/09/2026 (khuya) — QUÊN MẬT KHẨU QUA EMAIL (§52) · nhóm việc thứ hai anh chốt
+
+Anh chốt: đường dẫn một lần, hạn 30 phút, tới email CỦA CHÍNH tài khoản; dev thử bằng `EMAIL_CHE_DO_THU=1`.
+
+- **§52** `password_reset_tokens` (đã áp): CHỈ lưu sha256 của chìa — khác `parent_report_links` (giảng viên
+  cần chép lại nên giữ nguyên văn); `used_at` giữ dòng để đếm trần.
+- `accounts/quen_mat_khau.py`, ba cửa KHÔNG cần đăng nhập: `POST /auth/quen-mat-khau` (luôn cùng MỘT câu trả
+  lời; thư gửi trên luồng riêng để thời gian trả lời cũng không lộ ai có tài khoản; trần 3 chìa/tài khoản/giờ
+  + giới hạn IP `quen_mk`), `POST /auth/dat-lai-mat-khau/kiem`, `POST /auth/dat-lai-mat-khau` (tiêu chìa bằng
+  MỘT câu UPDATE có điều kiện — hai lần bấm cùng lúc thì đúng một lần qua; đặt xong `tokens_valid_from` cắt
+  mọi phiên cũ; nhật ký `user.password_self_reset`).
+- Chìa đi sau dấu `#` (không vào nhật ký máy chủ, không theo Referer); gốc đường dẫn từ `FRONTEND_URL`, KHÔNG
+  từ Host của yêu cầu; `authentication_classes = []` (thẻ hết hạn trong cookie không được chặn cửa công khai).
+- Giao diện: `/quen-mat-khau`, `/dat-lai-mat-khau` (hỏi máy chủ trước khi hiện ô mật khẩu; đọc chìa xong là
+  xoá khỏi thanh địa chỉ); màn đăng nhập có lối "Đặt lại qua email"; hướng dẫn trong app, cẩm nang (HTML/PDF/
+  DOCX + bản web v2), bảng đối chiếu (mục 1.5 → CÓ).
+
+### Đã đo
+- `accounts/tests_quen_mat_khau.py` 13/13, đi đúng đường thật (thư ở chế độ thử, chìa đọc RA TỪ LÁ THƯ). Lùi
+  từng chốt một (9 chốt: băm, dùng một lần, gốc từ Host, cắt phiên, kiểm mật khẩu trước khi tiêu chìa, câu trả
+  lời giống nhau, cửa công khai không kiểm thẻ, trần mỗi giờ, tài khoản khoá) → cả 9 đều ĐỎ.
+- E2E `quen-mat-khau.spec.ts`: trọn luồng ở khổ máy tính (xin → đọc `.eml` → đặt → đăng nhập bằng mật khẩu mới
+  → đường dẫn cũ chết), hai khổ cho phần không ghi. Lùi dòng xoá chìa khỏi thanh địa chỉ → đỏ đúng câu ấy.
+- Máy chủ dev khởi động lại với `EMAIL_CHE_DO_THU=1`, `EMAIL_THU_MUC_THU`, `FRONTEND_URL=http://localhost:3100`
+  (KHÔNG sửa `backend/.env`). Xác minh trước khi chạy e2e: lá thư nằm trong `.thu_email/`, không rời máy.
+- Thước sáu luật: hai trang mới 0 ở cả hai khổ. Axe 100 lượt (thêm hai trang mới): 0 — kể cả màn đăng nhập
+  có lối mới. Unit guard 30/30 · ruff · tsc · eslint sạch.
+
+### ⚠ Việc của anh trước khi bật trên production
+- **`FRONTEND_URL` trên Render phải là địa chỉ Vercel thật.** Mặc định trong mã là `http://localhost:3000`;
+  sai biến này thì thư đặt lại mật khẩu trỏ vào hư không (cùng biến mà đăng nhập Google đang dùng).
+- Thư đi từ hộp Gmail hiện có (`EMAIL_USER`) — tới khi có địa chỉ @tophsa.vn thì người nhận thấy tên
+  "TopHSA" nhưng địa chỉ Gmail.
+
 ## 23/09/2026 (tối) — GRAPHIFY → BẢN ĐỒ HỆ THỐNG · ĐỐI CHIẾU BẢNG YÊU CẦU TOPHSA · HỒ SƠ HỌC VIÊN
 
 Anh bảo: nghiên cứu graphify rồi áp về đây; xem Google Sheet yêu cầu của khách (bỏ kế toán, bỏ việc quá

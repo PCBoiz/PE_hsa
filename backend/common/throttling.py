@@ -132,3 +132,18 @@ class RegisterThrottle(_IPKhach, SimpleRateThrottle):
 
     def get_cache_key(self, request, view):
         return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
+
+
+class QuenMatKhauThrottle(_IPKhach, SimpleRateThrottle):
+    """Giới hạn theo IP cho ba cửa quên / đặt lại mật khẩu (§52, 23/09/2026).
+
+    Dùng CHUNG một bộ đếm cho cả ba (khoá không mang tên view): kẻ dò không
+    được lợi thêm lượt bằng cách xen kẽ giữa "xin chìa" và "thử chìa". Mức ở
+    `DEFAULT_THROTTLE_RATES['quen_mk']`. Đây là lớp THỨ HAI: lớp thứ nhất là trần
+    số chìa cho MỘT tài khoản mỗi giờ, đếm trong CSDL (`accounts/quen_mat_khau`)
+    — vì cả một lớp học sau cùng một NAT thì giới hạn theo IP không thể chặt.
+    """
+    scope = 'quen_mk'
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}

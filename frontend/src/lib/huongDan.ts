@@ -148,7 +148,8 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         trieu_chung: 'Em quên mật khẩu.',
-        xu_ly: 'Tài khoản → tìm em → "Đặt lại mật khẩu" (học vụ: được với học viên; ở Lớp học → Học viên cũng có nút "Đặt lại", được cả với trợ giảng). Giảng viên, học vụ khác thì cần quản trị viên. Đọc chuỗi tạm cho em — hiện đúng một lần.',
+        // Từ 23/09/2026 (§52): tài khoản có email tự đặt lại được — chỉ đường ấy trước.
+        xu_ly: 'Tài khoản có email: em tự làm được — màn đăng nhập → "Đặt lại qua email", đường dẫn dùng một lần trong 30 phút. Không có email (hoặc em không mở được hộp thư): Tài khoản → tìm em → "Đặt lại mật khẩu" (học vụ: được với học viên; ở Lớp học → Học viên cũng có nút "Đặt lại", được cả với trợ giảng). Giảng viên, học vụ khác thì cần quản trị viên. Đọc chuỗi tạm cho em — hiện đúng một lần.',
       },
       {
         trieu_chung: 'Em không nhớ đã đăng ký bằng email nào.',

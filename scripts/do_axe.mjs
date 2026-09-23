@@ -32,6 +32,9 @@ const HV = doc('PE_TOKENS_HV');
 const GOC = process.env.PE_GOC || 'http://localhost:3100';
 const TRANG = [
   ['/', 'Trang chủ', HV], ['/login', 'Đăng nhập', null],
+  // Quên mật khẩu (§52, 23/09/2026): hai trang KHÔNG cần đăng nhập. Trang đặt lại mở
+  // không kèm chìa → đúng trạng thái 'đường dẫn hỏng' mà người bấm thư cũ sẽ thấy.
+  ['/quen-mat-khau', 'Quên mật khẩu', null], ['/dat-lai-mat-khau', 'Đặt lại (đường dẫn hỏng)', null],
   ['/dashboard', 'Dashboard', HV], ['/courses/hsa_quantitative', 'Chi tiết khoá', HV],
   ['/lesson/hsa_quantitative?lesson=1', 'Bài học', HV], ['/mock', 'Thi thử', HV],
   ['/bai-tap', 'Bài tập của tôi', HV], ['/questionaire', 'Khảo sát', HV], ['/doi-mat-khau', 'Đổi mật khẩu', HV],

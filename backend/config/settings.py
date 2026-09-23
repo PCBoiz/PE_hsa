@@ -300,6 +300,9 @@ REST_FRAMEWORK = {
         'chat_day': '200/day',
         'login': '20/min',
         'register': '10/min',
+        # Quên / đặt lại mật khẩu (§52): chung một bộ đếm theo IP cho ba cửa.
+        # 30/giờ đủ cho cả một lớp sau một NAT; trần theo TÀI KHOẢN nằm ở CSDL.
+        'quen_mk': '30/hour',
     },
     'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
 }
@@ -311,6 +314,7 @@ if not IS_PRODUCTION:
         'ip_hour': '5000/hour',
         'login': '100/min',
         'register': '100/min',
+        'quen_mk': '600/hour',
     })
 
 # ── Bộ đệm ───────────────────────────────────────────────────────────────────

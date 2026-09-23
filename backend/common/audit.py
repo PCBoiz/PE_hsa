@@ -41,6 +41,10 @@ USER_PASSWORD_RESET = 'user.password_reset'
 #: CŨ lẫn MỚI — đổi nhầm người tư vấn hay nguồn tuyển sinh là sai số thống kê
 #: tuyển sinh, và đây là đường hoàn tác duy nhất.
 USER_PROFILE = 'user.profile'
+#: Người dùng TỰ đặt lại mật khẩu qua đường dẫn trong email (§52). Khác
+#: `USER_PASSWORD_RESET` (nhân sự cấp mật khẩu tạm cho người khác): ở đây
+#: người thực hiện chính là chủ tài khoản, nên `actor` = `target`.
+USER_PASSWORD_SELF_RESET = 'user.password_self_reset'
 
 CLASS_CREATE = 'class.create'
 CLASS_UPDATE = 'class.update'
