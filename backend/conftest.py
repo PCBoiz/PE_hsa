@@ -69,6 +69,26 @@ def temp_user(db):
 
 
 @pytest.fixture
+def mo_mon(db):
+    """Mở một môn cho một người QUA LỚP — trả hàm ``mo(uid, course_id)``.
+
+    Từ 24/09/2026 (mục 1.3) môn mở theo lớp em đang học (`courses/truy_cap.py`);
+    dòng `enrollments` chỉ còn là bộ nhớ tiến độ, KHÔNG còn mở được bài. Phép kiểm cần
+    một học viên "đang học môn X" thì xếp em vào một lớp môn X như học vụ làm thật.
+    Quên đệm quyền ngay để lượt gọi kế tiếp thấy môn đã mở.
+    """
+    def mo(uid, course_id):
+        from common.db import q1, x
+        from courses.truy_cap import quen_truy_cap
+        lop = q1("INSERT INTO classes (name, course_id, status) VALUES (%s, %s, 'active') RETURNING id",
+                 ('Lớp kiểm thử %s' % course_id, course_id))['id']
+        x('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s, %s, now())', (lop, uid))
+        quen_truy_cap(uid)
+        return lop
+    return mo
+
+
+@pytest.fixture
 def auth_api(api, temp_user):
     """APIClient đã đăng nhập với temp_user (tương đương _login_as session cũ)."""
     from accounts.models import User

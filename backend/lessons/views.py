@@ -1,7 +1,6 @@
 """Port routes/lessons.py — API tiến độ bài học (nguồn thật: lesson_progress)."""
 import logging
 
-from django.core.cache import cache
 from django.db import transaction
 from rest_framework.response import Response
 
@@ -18,6 +17,7 @@ from common.throttling import (
 )
 from common.views import NguoiDungView
 from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
+from courses.truy_cap import CHUA_MO, NHAN_SU_CHI_XEM, XEM, che_do
 from lessons.content import course_content, one_lesson
 from lessons.grading import (
     PHAN_CO_CAU_HOI,
@@ -28,6 +28,7 @@ from lessons.grading import (
     ghi_nhan,
     gioi_han_giay_drill,
     id_bai,
+    kep_tra_loi,
     phan_tram,
     xoa_ghi_nhan,
     xoa_ghi_nhan_phan,
@@ -248,33 +249,6 @@ def _record_drill(uid, ket, lesson_id, lesson_no, course_id, topic, now):
     )
 
 
-def _da_ghi_danh(uid, course_id):
-    """Học viên đã ghi danh khoá này chưa?
-
-    Một câu tra, dùng chung cho đường ĐỌC nội dung và đường CHẤM. Hai hàng rào
-    tự viết là hai hàng rào sẽ trôi khỏi nhau.
-
-    CÓ ĐỆM 60 GIÂY vì phòng luyện gọi đường chấm MỖI CÂU: đo 31/08/2026, không
-    đệm thì mỗi lần chấm mất 257ms mà gần hết là một lượt tới Neon chỉ để hỏi
-    lại đúng câu này. Trong một trò chơi bấm giờ thì đó là độ trễ người dùng cảm
-    thấy được. Cùng con số và cùng lý lẽ với đệm user ở
-    `accounts/authentication.py`; huỷ ghi danh có hiệu lực chậm tối đa một phút,
-    và đây không phải cửa thu hồi quyền.
-    """
-    key = 'ghidanh:%s:%s' % (uid, course_id)
-    co = cache.get(key)
-    if co is None:
-        co = bool(q1('SELECT 1 FROM enrollments WHERE user_id=%s AND course_id=%s',
-                     (uid, course_id)))
-        cache.set(key, co, 60)
-    return co
-
-
-def quen_ghi_danh(uid, course_id):
-    """Xoá đệm ghi danh. Gọi ngay sau khi ghi danh hoặc huỷ ghi danh."""
-    cache.delete('ghidanh:%s:%s' % (uid, course_id))
-
-
 class CompleteLessonView(NguoiDungView):
     def post(self, request, lesson_no):
         data = request.data if isinstance(request.data, dict) else {}
@@ -316,6 +290,14 @@ class CompleteLessonView(NguoiDungView):
             course = q1('SELECT id, lessons FROM courses WHERE id=%s', (course_id,))
             if not course:
                 return Response({'error': 'Không tìm thấy khóa học'}, status=404)
+            # CỔNG MỞ MÔN (1.3, 24/09/2026): môn mở QUA LỚP. Trước hôm nay cửa này TỰ
+            # GHI DANH bất kỳ ai gọi nó — tức ai cũng học được mọi môn. Nhân sự xem
+            # bài được nhưng không ghi tiến độ (không làm bẩn sổ điểm, xếp hạng).
+            cd = che_do(request.user, course_id)
+            if cd == XEM:
+                return Response({'error': NHAN_SU_CHI_XEM}, status=403)
+            if cd is None:
+                return Response({'error': CHUA_MO}, status=403)
 
             lesson_id, topic, lesson_title, xp_bai = _tim_bai(course_id, lesson_no)
             if lesson_id is None:
@@ -443,7 +425,6 @@ class CompleteLessonView(NguoiDungView):
                  VALUES (%s, %s, 0, 0, '0h', '', '', %s)
                  ON CONFLICT (user_id, course_id) DO NOTHING''',
               (uid, course_id, local_now()))
-            quen_ghi_danh(uid, course_id)
 
             # Tính lại cache enrollments từ nguồn thật lesson_progress.
             # MỘT bản duy nhất, dùng chung với đường ghi danh lại — xem
@@ -568,8 +549,9 @@ class CheckAnswersView(NguoiDungView):
             if not data.get('reset'):
                 return Response({'error': 'Thiếu answers.'}, status=400)
             answers = {}
-        if not _da_ghi_danh(request.user.id, course_id):
-            return Response({'error': 'Bạn chưa ghi danh khoá này.'}, status=403)
+        cd = che_do(request.user, course_id)
+        if cd is None:
+            return Response({'error': CHUA_MO}, status=403)
 
         # `id_bai` chứ không `_tim_bai`: đường này bị gọi MỖI CÂU trong phòng
         # luyện, và nó chỉ cần đúng một con số. Có đệm 60 giây.
@@ -580,11 +562,17 @@ class CheckAnswersView(NguoiDungView):
         # `reset` chỉ dành cho phòng luyện — nút "Bắt đầu" của nó là nút LÀM
         # LẠI. Bài kiểm tra đầu vào KHÔNG được reset: `/check` của nó trả đáp án,
         # nên cho reset là mở lại đúng cửa vừa bịt.
-        if data.get('reset') and phan == 'drill':
+        if data.get('reset') and phan == 'drill' and cd != XEM:
             _chot_luot_drill(request.user.id, lesson_id, course_id, lesson_no)
             xoa_ghi_nhan_phan(request.user.id, lesson_id, phan)
 
-        da_chot = ghi_nhan(request.user.id, lesson_id, phan, answers)
+        # Nhân sự (chế độ xem) chấm THỬ trên đúng câu vừa gửi, KHÔNG ghi nhận: bài
+        # làm ghi lại là của học viên — một lượt thử của giảng viên mà thành "bài làm"
+        # thì chui vào sổ điểm, bản đồ năng lực của một tài khoản không phải học viên.
+        if cd == XEM:
+            da_chot = kep_tra_loi(answers)[0]
+        else:
+            da_chot = ghi_nhan(request.user.id, lesson_id, phan, answers)
         ket_qua, dung, tong = cham(course_id, lesson_no, phan, da_chot)
         if ket_qua is None:
             return Response({'error': 'Chưa có nội dung cho bài này.'}, status=404)
@@ -608,13 +596,12 @@ class CourseContentView(NguoiDungView):
     def get(self, request, course_id):
         if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Không tìm thấy khoá học'}, status=404)
-        # CÓ GHI DANH MỚI ĐỌC ĐƯỢC. Đo 31/08/2026: một giảng viên chưa ghi danh
-        # và một học viên chỉ ghi danh khoá KHÁC đều tải được nguyên nội dung
-        # khoá này. Nay `CompleteLessonView` tự ghi danh khi bắt đầu học, nên
-        # hàng rào này không chặn ai đang học thật.
-        if not _da_ghi_danh(request.user.id, course_id):
-            return Response({'error': 'Bạn chưa ghi danh khoá này. Vào trang khoá học '
-                                      'và bấm "Đăng ký học" để bắt đầu.'}, status=403)
+        # MÔN MỞ QUA LỚP (1.3, 24/09/2026) — cổng `courses/truy_cap.py`. Học viên đọc
+        # được môn của lớp em đang học; nhân sự đọc mọi môn ở chế độ xem. `cheDo` đi
+        # kèm để trang bài học biết có ghi tiến độ hay không.
+        cd = che_do(request.user, course_id)
+        if cd is None:
+            return Response({'error': CHUA_MO}, status=403)
 
         # ?lesson=N → chỉ bài đó. Trang bài học dùng đường này; trả cả khoá chỉ
         # tốn băng thông cho 75 bài học viên không mở.
@@ -624,7 +611,7 @@ class CourseContentView(NguoiDungView):
             if lesson is None:
                 return Response({'error': 'Chưa có nội dung cho bài này',
                                  'courseId': course_id, 'total': total}, status=404)
-            return Response({'courseId': course_id, 'total': total, 'lesson': lesson})
+            return Response({'courseId': course_id, 'total': total, 'lesson': lesson, 'cheDo': cd})
 
         lessons = course_content(course_id)
-        return Response({'courseId': course_id, 'count': len(lessons), 'lessons': lessons})
+        return Response({'courseId': course_id, 'count': len(lessons), 'lessons': lessons, 'cheDo': cd})

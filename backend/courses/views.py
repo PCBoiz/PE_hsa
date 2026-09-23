@@ -1,7 +1,6 @@
 """Port routes/courses.py — giữ nguyên SQL, tên field camelCase và message."""
 
 from django.core.cache import cache
-from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,8 +8,7 @@ from rest_framework.views import APIView
 from common.clock import local_now
 from common.db import q, q1, x
 from common.views import NguoiDungView
-from courses.enrollment import tinh_lai as tinh_lai_ghi_danh
-from lessons.views import quen_ghi_danh
+from courses.truy_cap import HOC, quyen_khoa
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
 
@@ -101,9 +99,13 @@ class CoursesView(NguoiDungView):
             query += ' WHERE ' + ' AND '.join(where_clauses)
 
         rows = q(query, tuple(params))
+        # `access` (1.3): 'hoc' | 'xem' | null theo cổng mở môn qua lớp. `enrolled`
+        # giữ tên cũ cho màn hình cũ, nay SUY RA từ quyền chứ không từ nút Đăng ký.
+        quyen = quyen_khoa(request.user)
         result = []
         for d in rows:
-            d['enrolled'] = bool(d['enrolled'])
+            d['access'] = quyen.get(d['id'])
+            d['enrolled'] = d['access'] is not None
             d['accentColor'] = d.pop('accent_color')
             result.append(d)
         return Response(result)
@@ -136,22 +138,28 @@ class CourseDetailView(NguoiDungView):
         ''', (request.user.id, course_id))
         if not row:
             return Response({'error': {'status': 404, 'message': 'Không tìm thấy khoá học'}}, status=404)
-        row['enrolled'] = bool(row['enrolled'])
+        row['access'] = quyen_khoa(request.user).get(row['id'])
+        row['enrolled'] = row['access'] is not None
         row['accentColor'] = row.pop('accent_color')
         return Response(row)
 
 
 class EnrolledView(NguoiDungView):
     def get(self, request):
+        # Môn đang mở theo LỚP (1.3) — `enrollments` chỉ còn là bộ nhớ tiến độ, nên
+        # LEFT JOIN: em mới vào lớp, chưa học bài nào vẫn thấy môn với 0%.
+        mo = list(quyen_khoa(request.user))
         rows = q('''
             SELECT c.id, c.title, c.subtitle, c.color, c.accent_color,
-                   e.progress, e.completed_lessons,
+                   COALESCE(e.progress, 0) AS progress, COALESCE(e.completed_lessons, 0) AS completed_lessons,
                    c.lessons AS total_lessons, c.duration,
-                   e.time_spent, e.last_lesson, e.next_lesson
-            FROM enrollments e
-            JOIN courses c ON e.course_id = c.id
-            WHERE e.user_id = %s
-        ''', (request.user.id,))
+                   COALESCE(e.time_spent, '0h') AS time_spent,
+                   COALESCE(e.last_lesson, '') AS last_lesson, COALESCE(e.next_lesson, '') AS next_lesson
+            FROM courses c
+            LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = %s
+            WHERE c.id = ANY(%s)
+            ORDER BY c.id
+        ''', (request.user.id, mo))
         result = []
         for d in rows:
             d['accentColor'] = d.pop('accent_color')
@@ -190,10 +198,12 @@ class CoursesEnrolledView(NguoiDungView):
                        FROM course_ratings GROUP BY course_id) dg ON dg.course_id = c.id
         ''', (request.user.id,))
 
+        quyen = quyen_khoa(request.user)
         courses_list = []
         enrolled_list = []
         for d in rows:
-            enrolled = bool(d['enrolled'])
+            d['access'] = quyen.get(d['id'])
+            enrolled = d['access'] is not None
             accent_color = d.pop('accent_color')
             d['enrolled'] = enrolled
             d['accentColor'] = accent_color
@@ -219,49 +229,20 @@ class CoursesEnrolledView(NguoiDungView):
 
 
 class EnrollView(NguoiDungView):
+    """POST/DELETE /api/courses/<id>/enroll — ĐÃ ĐÓNG (410), mục 1.3 ngày 24/09/2026.
+
+    Trung tâm mở môn QUA LỚP (`courses/truy_cap.py`): học vụ xếp em vào lớp thì môn
+    mở. Tự đăng ký / huỷ đăng ký không còn nghĩa gì — và từng để giảng viên, trợ
+    giảng bấm "Đăng ký" như học viên (góp ý TopHSA số 3). 410 chứ không 404: tuyến có
+    thật, nó đã ngừng — giao diện cũ còn nằm trong bộ nhớ đệm trình duyệt đọc được câu.
+    """
+    DA_DONG = {'error': 'Trung tâm mở môn học theo lớp — học vụ xếp em vào lớp thì môn mở, không cần đăng ký.'}
+
     def post(self, request, course_id):
-        uid = request.user.id
-        course = q1('SELECT id, title FROM courses WHERE id=%s', (course_id,))
-        if not course:
-            return Response({'error': 'Không tìm thấy khóa học'}, status=404)
-        first_lesson = 'Bài 1: ' + course['title']
-        with transaction.atomic():
-            # `local_now()` chứ không `now()` của SQL. Kết nối Neon chạy ở UTC,
-            # lệch 7 tiếng so với giờ Việt Nam — đo 31/08/2026: `local_now()`
-            # trả 13:57 trong khi `SELECT now()` trả 06:57. Cửa sổ hỏng là
-            # 00:00–07:00 giờ VN: một thao tác lúc 00:30 ngày 1/9 được lưu
-            # thành 17:30 ngày 31/8, và mọi báo cáo nhóm theo ngày đếm lệch
-            # một ngày. Đây là bẫy mà `common/clock.py` được viết ra để dập;
-            # `lessons/`, `mockexam/`, `quizzes/` đã đi qua nó, ba chỗ này thì
-            # còn sót.
-            x('''INSERT INTO enrollments (user_id, course_id, progress, completed_lessons,
-                                          time_spent, last_lesson, next_lesson, enrolled_at)
-                 VALUES (%s, %s, 0, 0, '0h', '', %s, %s)
-                 ON CONFLICT (user_id, course_id) DO NOTHING''',
-              (uid, course_id, first_lesson, local_now()))
-            quen_ghi_danh(uid, course_id)
-            # Re-enroll sau unenroll: lesson_progress (nguồn thật) vẫn giữ tiến độ
-            # cũ — tính lại cache để dashboard không hiển thị 0% sai.
-            #
-            # Bản trước ở đây là một BẢN CHÉP của đoạn trong `lessons/views.py`,
-            # giống tới từng ký tự ở câu SELECT và thiếu đúng một cột ở câu
-            # UPDATE (`completed_at`). Nay cả hai đường đi qua một hàm — và
-            # đường này được sửa lên cho bằng, chứ không phải đường kia bị hạ
-            # xuống. Chi tiết: `courses/enrollment.py`.
-            #
-            # Chạy vô điều kiện, không còn `if done_row['n']`: chưa học bài nào
-            # thì nó ghi lại đúng 0/0%/'0h' — bằng giá trị mà câu INSERT ngay
-            # trên vừa đặt, nên không đổi gì.
-            tinh_lai_ghi_danh(uid, course_id)
-        return Response({'ok': True})
+        return Response(self.DA_DONG, status=410)
 
     def delete(self, request, course_id):
-        uid = request.user.id
-        x('DELETE FROM enrollments WHERE user_id=%s AND course_id=%s', (uid, course_id))
-        # Xoá đệm NGAY: đệm ghi danh sống 60 giây, không xoá thì em vừa huỷ vẫn
-        # đọc được nội dung khoá thêm một phút.
-        quen_ghi_danh(uid, course_id)
-        return Response({'ok': True})
+        return Response(self.DA_DONG, status=410)
 
 
 class RateCourseView(NguoiDungView):
@@ -278,10 +259,10 @@ class RateCourseView(NguoiDungView):
         if not course:
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
 
-        enrolled = q1('SELECT 1 FROM enrollments WHERE user_id=%s AND course_id=%s',
-                      (uid, course_id))
-        if not enrolled:
-            return Response({'error': 'Bạn chưa đăng ký khóa học này'}, status=403)
+        # Chỉ người HỌC môn này (lớp đang mở môn) mới chấm sao — nhân sự xem bài thì
+        # không đánh giá thay học viên.
+        if quyen_khoa(request.user).get(course_id) != HOC:
+            return Response({'error': 'Chỉ học viên đang học môn này mới đánh giá được.'}, status=403)
 
         if not isinstance(rating, int) or isinstance(rating, bool) or rating < 1 or rating > 5:
             return Response({'error': 'Đánh giá phải là số nguyên từ 1 đến 5'}, status=400)

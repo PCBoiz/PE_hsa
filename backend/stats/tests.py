@@ -52,8 +52,9 @@ def _set_streak(uid, streak, last_study_date):
 
 
 @pytest.fixture
-def da_ghi_danh(temp_user):
-    """Ghi danh học viên tạm vào khoá HSA — điều kiện để hoàn thành một bài."""
+def da_ghi_danh(temp_user, mo_mon):
+    """Học viên tạm đang học môn HSA (qua lớp — 1.3) — điều kiện để hoàn thành một bài."""
+    mo_mon(temp_user, 'hsa_quantitative')
     x("INSERT INTO enrollments (user_id, course_id, progress, completed_lessons, "
       "time_spent, last_lesson, next_lesson) VALUES (%s, %s, 0, 0, '0h', '', '') "
       "ON CONFLICT (user_id, course_id) DO NOTHING", (temp_user, 'hsa_quantitative'))

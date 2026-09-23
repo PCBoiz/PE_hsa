@@ -218,8 +218,8 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Lớp chưa phân công giảng viên thì KHÔNG ai điểm danh và KHÔNG ai giao bài được cho lớp đó. "Hôm nay cần làm gì" sẽ nhắc.',
       },
       {
-        lam: 'Xếp học viên vào lớp.',
-        luu_y: 'Lớp gia sư nhận tối đa 3 em (trợ giảng không tính). Lớp nhóm vượt sức chứa vẫn xếp được, nhưng hệ thống sẽ nhắc.',
+        lam: 'Xếp học viên vào lớp — việc này MỞ MÔN của lớp cho em.',
+        luu_y: 'Em chỉ học được môn của lớp đang học (lớp để trống môn = cả ba môn). Lớp gia sư nhận tối đa 3 em; trợ giảng không tính.',
       },
       {
         lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
@@ -239,6 +239,12 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',
         luu_y: 'Không ghi lý do thì em đó không nằm trong tỉ lệ giữ chân, và con số ấy sẽ nói dối theo hướng đẹp hơn sự thật.',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Em báo "Môn này chưa mở cho lớp của em".',
+        xu_ly: 'Em chưa ở lớp nào có môn ấy. Xếp em vào lớp có môn đó (hoặc lớp để trống môn) — bài mở ngay, không cần em đăng ký gì.',
       },
     ],
   },

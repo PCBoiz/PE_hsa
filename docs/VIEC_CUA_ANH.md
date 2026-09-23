@@ -31,7 +31,7 @@ dữ liệu thật). Mục nào xong anh báo một dòng, tôi kiểm và gạc
 
 | # | Việc | Vì sao |
 |---|---|---|
-| **N6** | Xếp lớp cho MỌI học viên đang dùng thử (Quản trị → Lớp học → Học viên). Lớp để trống ô "Môn học" = mở cả ba môn. | Sau 1.3 học viên KHÔNG tự đăng ký môn nữa — em chưa thuộc lớp nào sẽ không mở được bài |
+| **N6** | Xếp lớp cho MỌI học viên đang dùng thử (Quản trị → Lớp học → Học viên). Lớp để trống ô "Môn học" = mở cả ba môn. Đo trên nhánh `dev` (bản sao production 24/09, bỏ tài khoản demo/rà soát): **1 trong 2** học viên thật đang học mà CHƯA thuộc lớp nào. | Sau 1.3 học viên KHÔNG tự đăng ký môn nữa — em chưa thuộc lớp nào sẽ không mở được bài. Lần đẩy có 1.3: Vercel xong sớm hơn Render ~40 phút — trong khoảng ấy nút Đăng ký đã gỡ mà máy chủ cũ vẫn đòi ghi danh, nên em CHƯA ghi danh không mở được bài. Đẩy lúc không ai học (tối muộn) là đủ |
 
 ### 0.3 Khi bắt đầu thử nghiệm với dữ liệu thật (mã đã nối sẵn, chỉ cần tài khoản + biến môi trường)
 

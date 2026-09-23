@@ -28,10 +28,11 @@ def _goi(view, method, body=None, ai=None, **kw):
 
 
 @pytest.fixture
-def em(db):
-    """Học viên ĐÃ ghi danh khoá — rollback tự dọn."""
+def em(db, mo_mon):
+    """Học viên ĐANG HỌC khoá (ở trong lớp có môn — 1.3) — rollback tự dọn."""
     r = q1("INSERT INTO users (name, email, password, streak) "
            "VALUES ('HV Cham','hv_cham_tmp@example.com','x',0) RETURNING id")
+    mo_mon(r['id'], KHOA)
     q1("INSERT INTO enrollments (user_id, course_id, progress, completed_lessons, "
        "time_spent, last_lesson, next_lesson) VALUES (%s,%s,0,0,'0h','','') "
        'RETURNING user_id', (r['id'], KHOA))
@@ -863,7 +864,8 @@ def test_luot_phong_luyen_bo_do_van_co_CHU_DE(temp_user, db):
 _COMPLETE = '/api/lessons/%d/complete'
 
 
-def test_hoan_thanh_bai_CO_cau_hoi_ma_chua_lam_gi_bi_chan(auth_api, temp_user, db):
+def test_hoan_thanh_bai_CO_cau_hoi_ma_chua_lam_gi_bi_chan(auth_api, temp_user, db, mo_mon):
+    mo_mon(temp_user, 'hsa_quantitative')   # môn mở QUA LỚP (1.3)
     from common.db import q1
 
     r = auth_api.post(_COMPLETE % 1, {'courseId': 'hsa_quantitative'}, format='json')
@@ -876,8 +878,9 @@ def test_hoan_thanh_bai_CO_cau_hoi_ma_chua_lam_gi_bi_chan(auth_api, temp_user, d
                   "AND l.sort_order=1 AND p.status='completed'", (temp_user,))
 
 
-def test_lam_mot_cau_roi_thi_hoan_thanh_duoc_va_ghi_la_MAY_DO(auth_api, temp_user, db):
+def test_lam_mot_cau_roi_thi_hoan_thanh_duoc_va_ghi_la_MAY_DO(auth_api, temp_user, db, mo_mon):
     """Hàng rào không được chặn việc thật — làm một câu là đủ."""
+    mo_mon(temp_user, 'hsa_quantitative')   # môn mở QUA LỚP (1.3)
     from common.db import q1
     from lessons.grading import ghi_nhan, id_bai
 
@@ -892,12 +895,13 @@ def test_lam_mot_cau_roi_thi_hoan_thanh_duoc_va_ghi_la_MAY_DO(auth_api, temp_use
     assert sk and sk['source'] == 'system', sk
 
 
-def test_bai_da_xong_TU_TRUOC_duoc_mien_cua_chan(auth_api, temp_user, db):
+def test_bai_da_xong_TU_TRUOC_duoc_mien_cua_chan(auth_api, temp_user, db, mo_mon):
     """Bài đã hoàn thành từ trước — kể cả trước bản vá này — gọi lại KHÔNG bị chặn.
 
     Đường này vốn nhận cú bấm lặp (F5 trên hộp chúc mừng), và chặn ở đó là phạt
     người dùng vì một lỗ hổng cũ của hệ thống. Cửa miễn là `existed`.
     """
+    mo_mon(temp_user, 'hsa_quantitative')   # môn mở QUA LỚP (1.3)
     from common.db import q1, x
     from lessons.grading import id_bai
 

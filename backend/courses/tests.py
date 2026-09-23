@@ -9,7 +9,9 @@ TEST_COURSE_ID = 'hsa_quantitative'   # CSDL HSA khong con khoa 'python' cua Pro
 
 
 @pytest.fixture
-def test_enrollment(temp_user):
+def test_enrollment(temp_user, mo_mon):
+    # Đang học môn = ở trong lớp có môn ấy (1.3); dòng enrollments = bộ nhớ tiến độ.
+    mo_mon(temp_user, TEST_COURSE_ID)
     x('''INSERT INTO enrollments (user_id, course_id, progress, completed_lessons,
                                   time_spent, last_lesson, next_lesson)
          VALUES (%s, %s, 0, 0, '0h', '', '')
@@ -27,6 +29,7 @@ def other_api(db):
              ('Rate Other', 'rate_other_dj@example.com', 'x'))
     client = APIClient()
     client.force_authenticate(user=User.objects.get(id=row['id']))
+    client.uid = row['id']
     return client
 
 
@@ -125,13 +128,14 @@ def test_chua_ai_danh_gia_thi_KHONG_hien_5_sao(auth_api):
     assert kh['rating_count'] == 0
 
 
-def test_co_nguoi_danh_gia_thi_hien_dung_trung_binh(auth_api, other_api):
+def test_co_nguoi_danh_gia_thi_hien_dung_trung_binh(auth_api, other_api, temp_user, mo_mon):
     """Hai người chấm 4 và 2 → trung bình 3.0, không phải 5.0 của seed."""
     from common.db import x as _x
     _x('DELETE FROM course_ratings WHERE course_id=%s', (TEST_COURSE_ID,))
-    # Phải ghi danh mới được đánh giá — luật của `RateCourseView`, giữ nguyên.
-    for cl in (auth_api, other_api):
-        cl.post(f'/api/courses/{TEST_COURSE_ID}/enroll', {}, format='json')
+    # Phải đang HỌC môn mới được đánh giá — luật của `RateCourseView`. Từ 1.3 môn
+    # mở qua lớp, không qua nút đăng ký.
+    for uid in (temp_user, other_api.uid):
+        mo_mon(uid, TEST_COURSE_ID)
     assert _rate(auth_api, {'course_id': TEST_COURSE_ID, 'rating': 4}).status_code in (200, 201)
     assert _rate(other_api, {'course_id': TEST_COURSE_ID, 'rating': 2}).status_code in (200, 201)
 
@@ -165,47 +169,9 @@ def test_MOI_duong_doc_khoa_deu_lay_diem_sao_that(auth_api):
         assert kh['rating_count'] == 0, url
 
 
-# ── Ghi danh lại KHÔNG được đánh mất ngày học xong (01/09/2026) ─────────────
-
-def test_ghi_danh_lai_giu_nguyen_ngay_hoc_xong(auth_api, temp_user):
-    """Học xong khoá → huỷ ghi danh → ghi danh lại: ``completed_at`` phải dựng lại.
-
-    LỖI GỐC. Có HAI bản của phép "tính lại bộ đệm tiến độ từ lesson_progress":
-    một ở ``lessons/views.py`` (học xong một bài) và một ở ``courses/views.py``
-    (ghi danh lại). Câu SELECT của hai bản giống nhau tới từng ký tự; câu UPDATE
-    lệch đúng một cột — bản ghi danh lại quên ``completed_at``. Huỷ ghi danh xoá
-    cả dòng, nên ghi danh lại dựng được tiến độ 100% mà KHÔNG có ngày xong.
-
-    VÌ SAO ĐI QUA HTTP chứ không gọi thẳng hàm gộp: gọi hàm gộp là kiểm rằng hàm
-    ấy đúng, thứ vốn hiển nhiên. Điều cần biết là ĐƯỜNG GHI DANH LẠI có đi qua
-    nó hay không — đúng chỗ mà bản cũ đi vòng.
-
-    ``lesson_progress`` gieo thẳng bằng SQL: nó là NGUỒN THẬT, không phải thứ
-    đang được kiểm. Đi qua đường học-xong-bài để dựng cảnh sẽ làm phép kiểm đỏ ở
-    bước dựng cảnh thay vì ở khẳng định — đã mắc đúng lỗi ấy một lần khi viết
-    bài này.
-    """
-    bai = [r['id'] for r in q('SELECT id FROM lessons WHERE course_id=%s', (TEST_COURSE_ID,))]
-    assert bai, 'khoá kiểm thử phải có bài, nếu không phép kiểm này vô nghĩa'
-
-    r = auth_api.post('/api/courses/%s/enroll' % TEST_COURSE_ID, {}, format='json')
-    assert r.status_code == 200, r.status_code
-    for lid in bai:
-        x("""INSERT INTO lesson_progress (user_id, course_id, lesson_id, status, completed_at)
-             VALUES (%s, %s, %s, 'completed', now())
-             ON CONFLICT (user_id, lesson_id) DO UPDATE SET status='completed' """,
-          (temp_user, TEST_COURSE_ID, lid))
-
-    # Huỷ — xoá sạch cả dòng, kể cả mốc học xong.
-    r = auth_api.delete('/api/courses/%s/enroll' % TEST_COURSE_ID)
-    assert r.status_code == 200, r.status_code
-    assert q1('SELECT 1 AS x FROM enrollments WHERE user_id=%s AND course_id=%s',
-              (temp_user, TEST_COURSE_ID)) is None, 'huỷ phải xoá dòng'
-
-    # ĐƯỜNG ĐANG KIỂM: ghi danh lại phải dựng lại ĐỦ, không thiếu cột nào.
-    r = auth_api.post('/api/courses/%s/enroll' % TEST_COURSE_ID, {}, format='json')
-    assert r.status_code == 200, r.status_code
-    sau = q1('SELECT progress, completed_at FROM enrollments '
-             'WHERE user_id=%s AND course_id=%s', (temp_user, TEST_COURSE_ID))
-    assert sau['progress'] == 100, 'tiến độ phải dựng lại được từ lesson_progress: %s' % sau
-    assert sau['completed_at'] is not None,         'ghi danh lại đánh mất ngày học xong — bản ghi nói "100%" mà không có ngày'
+# ── Ghi danh lại KHÔNG được đánh mất ngày học xong — ĐÃ BỎ 24/09/2026 ────────
+# Phép kiểm cũ đi đường huỷ ghi danh → ghi danh lại. Từ mục 1.3 môn mở QUA LỚP và
+# tuyến đăng ký trả 410 (`courses/tests_truy_cap.py::test_dang_ky_tu_do_da_dong`),
+# nên đường ấy không còn tồn tại. Hàm dựng tiến độ dùng chung
+# (`courses/enrollment.tinh_lai`, đủ cả `completed_at`) vẫn chạy qua
+# `CompleteLessonView` — đường duy nhất còn ghi `enrollments`.

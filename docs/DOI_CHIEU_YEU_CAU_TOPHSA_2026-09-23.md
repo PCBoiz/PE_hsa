@@ -92,6 +92,7 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 |---|---|---|
 | Tạo / quản lý khoá học, chuyên đề / bài học | CÓ | vai Biên tập nội dung, `/admin` |
 | Thứ tự nội dung, gán khoá cho lớp | CÓ | thứ tự bài trong khoá; `classes.course_id` |
+| Môn mở theo lớp (góp ý TopHSA #3) | CÓ (24/09) | học viên học được môn của lớp đang học (lớp để trống môn = cả ba); không tự đăng ký (tuyến đăng ký trả 410); nhân sự mọi vai xem bài chế độ chỉ-đọc, không ghi tiến độ; một cổng `courses/truy_cap.py`, quyền đổi ngay khi thêm / rời / chuyển lớp, đổi môn hay xoá lớp |
 | Số buổi, thời lượng buổi | MỘT PHẦN | có ở LỚP (sinh lịch), không ở khoá |
 | Trạng thái khoá, phiên bản chương trình | MỘT PHẦN | có xuất bản / nháp; không có lịch sử phiên bản |
 | Chia chương trình theo **buổi**, gắn bài giảng / tài liệu / bài tập / bài kiểm tra vào buổi | MỘT PHẦN | buổi học có `lesson_refs`, `recording_url`; chưa có "khung chương trình" dựng sẵn theo buổi |

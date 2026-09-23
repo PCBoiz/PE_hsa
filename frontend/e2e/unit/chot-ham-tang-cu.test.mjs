@@ -139,7 +139,9 @@ const TRAN_TEP = 11;
 // 24/09/2026: 6774 → 6696 (−78). HẠ: xoá `pages/landing.inline.js` cùng trang quảng cáo.
 // 24/09/2026: 6696 → 6567 (−129). HẠ: bỏ popup "Giữ chuỗi hôm nay" (dashboard.js), năm
 // bài diễn đàn mẫu C++/Git (`MOCK_POSTS` rỗng), `handlePersonalRoadmapAI` ("Premium").
-const TRAN_DONG_MA = 6567;
+// 24/09/2026: 6567 → 6541 (−26). HẠ: `enroll()`/`unenroll()` ở `course_detail.js` — môn mở
+// QUA LỚP (1.3), trang chi tiết khoá thôi có nút Đăng ký / Hủy đăng ký.
+const TRAN_DONG_MA = 6541;
 
 let failures = 0;
 function check(name, cond, them) {
