@@ -90,6 +90,30 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 4) — 1.2c CHUYỂN LỚP MỘT THAO TÁC (§55)
+
+- **§55** `class_members.transferred_to` (FK tự tham chiếu ON DELETE SET NULL + chỉ mục riêng phần + CHECK chỉ lượt
+  `transferred` mới được trỏ) — chỉ cộng; `kiem_luoc_do` ĐỎ 4/38 trước khi áp → 38/38 sau `bootstrap_schema` (nhánh dev).
+- **`POST /api/admin/classes/<A>/members/<em>/transfer`** (`teaching/chuyen_lop.py`, học vụ/admin): `{to_class_id,
+  effective_date?, note?}` → đóng lượt ở A (`transferred`, ghi chú), mở lượt ở B cùng thời điểm, nối `transferred_to` —
+  MỘT giao dịch; khoá dòng lớp B như lượt thêm em (lớp gia sư không vượt 3). Chặn: lớp B huỷ (400), em đã ở B (409), B gia
+  sư đủ 3 em (409), ngày tương lai / trước lúc em vào A (400), không phải học viên (400). Cảnh báo: B đã kết thúc, môn khác.
+  Ngày trong quá khứ = đầu ngày ấy là ngày ĐẦU ở B; hôm nay = giờ hiện tại (buổi sáng nay ở A vẫn tính cho A).
+- Nhật ký: hành động mới `class.member.transfer` "Chuyển lớp" (guard `nhan-nhat-ky` ĐỎ tới khi có nhãn). Dòng thời gian
+  hồ sơ em: MỘT sự kiện "Chuyển từ lớp A sang lớp B" (kèm ghi chú) thay cặp "Rời A" + "Vào B".
+- Màn Lớp học: lý do rời lớp "Chuyển lớp" (rời trần, dễ quên bước hai) thay bằng "Chuyển sang lớp khác…" mở hộp
+  `ChuyenLop.tsx`: tìm lớp (danh sách gọn `/options`, bỏ lớp huỷ + lớp đang ở), ngày chuyển (≤ hôm nay giờ VN), ghi chú.
+- Việc còn cho 1.3: `quen_truy_cap(uid)` khi chuyển lớp (cổng mở môn theo lớp chưa có).
+
+### Đã đo
+- pytest `tests_chuyen_lop.py` 8/8 (hai lượt + liên kết + ghi chú + nhật ký; em đã ở B → 409 lớp cũ nguyên; chèn B hỏng giữa
+  chừng → lớp cũ KHÔNG đóng; gia sư đủ / huỷ / đã kết thúc; ngày; chỉ học viên đang học, chỉ học vụ; CHECK; dòng thời gian).
+  **Đột biến 11/11 đỏ thật** (bỏ giao dịch, không nối, sai lý do, trần 3→4, nhận lớp huỷ, ngày tương lai, ngày trước lúc
+  vào, người không phải học viên, bỏ hai cảnh báo, dòng thời gian lặp "Vào lớp B").
+- Đủ bộ guard xanh; tsc; eslint 0; ruff; `manage.py check`.
+- E2E `danh-sach-lop.spec.ts` 12/12 hai khổ có ghi — thêm luồng chuyển lớp bằng GIAO DIỆN (chọn "Chuyển sang lớp khác…" →
+  tìm lớp → ghi chú → Chuyển lớp → máy chủ: B 1 em, A 0 em); hai lớp tạm đã dọn.
+
 ## 24/09/2026 (tiếp 3) — 1.2b TẠO NHANH LỚP GIA SƯ · 3 agent hỗ trợ (1.4a, 1.5A, U2+U4)
 
 - **`POST /api/admin/classes/gia-su`** (`teaching/lop_gia_su.py`): một em (phải là Học viên) + một giảng viên (bắt buộc) +

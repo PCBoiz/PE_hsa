@@ -67,6 +67,7 @@ const VIEC: Record<string, string> = {
   'class.delete': 'Xoá lớp',
   'class.member.add': 'Thêm vào lớp',
   'class.member.remove': 'Cho rời lớp',
+  'class.member.transfer': 'Chuyển lớp',
   'class.parent_contacts': 'Nhập liên hệ phụ huynh',
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',

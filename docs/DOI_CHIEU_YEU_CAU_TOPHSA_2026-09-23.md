@@ -73,18 +73,18 @@ thích hay trí nhớ. Cột "Bằng chứng" chỉ nơi kiểm lại được.
 | Phân công trợ giảng | CÓ | trợ giảng là thành viên lớp |
 | Phân công giáo vụ cho lớp | MỘT PHẦN | học vụ thấy MỌI lớp nên không cần gán; không gán được một học vụ phụ trách riêng |
 | Thêm / xoá học sinh, danh sách theo lớp | CÓ | `api/admin/classes/<id>/members` |
-| Chuyển học sinh giữa lớp | MỘT PHẦN | rời lớp với lý do "Chuyển lớp" rồi xếp vào lớp mới — hai bước, chưa một thao tác |
+| Chuyển học sinh giữa lớp | CÓ (24/09) | MỘT thao tác: danh sách học viên của lớp → "Chuyển sang lớp khác…" → tìm lớp, ngày chuyển, ghi chú. Rời lớp cũ + vào lớp mới + nối hai lượt trong một giao dịch (§55 `transferred_to`); chặn lớp đã huỷ, lớp gia sư đủ 3 em, em đã ở lớp mới; báo khi môn khác |
 | Thiết lập môn / khoá của lớp | CÓ | `classes.course_id` |
 | Thời gian bắt đầu / kết thúc | CÓ | `starts_on`, `ends_on`, ngày thi `exam_date` |
 | Trạng thái đang học / kết thúc / **tạm dừng** | MỘT PHẦN | có `active`, `finished`, `cancelled`; chưa có "tạm dừng" |
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | có trong Nhật ký — nhưng chỉ quản trị viên xem được |
 | Theo dõi tham gia, thống kê tỷ lệ, cảnh báo nghỉ nhiều | CÓ | báo cáo lớp; "Việc hôm nay": em vắng liền ≥ 2 buổi |
 | Tiến độ lớp so với khung chương trình, cảnh báo chậm tiến độ | CHƯA | chưa có "khung chương trình" theo buổi để so |
-| **Dòng thời gian học viên** (đăng ký → xếp lớp → … → hoàn thành) | CÓ (23/09) | cuối trang Hồ sơ: cấp tài khoản → khảo sát → vào lớp → chuyển/rời lớp kèm lý do → thi thử / thi ngoài → báo cáo phụ huynh → sửa hồ sơ; chỉ đọc, gom từ nơi ghi gốc (`teaching/dong_thoi_gian.py`) |
+| **Dòng thời gian học viên** (đăng ký → xếp lớp → … → hoàn thành) | CÓ (23/09) | cuối trang Hồ sơ: cấp tài khoản → khảo sát → vào lớp → chuyển lớp ("Chuyển từ lớp A sang lớp B") / rời lớp kèm lý do → thi thử / thi ngoài → báo cáo phụ huynh → sửa hồ sơ; chỉ đọc, gom từ nơi ghi gốc (`teaching/dong_thoi_gian.py`) |
 | Số buổi đã học / đã nghỉ, có phép / không phép | CÓ | tờ báo cáo: `present/late/absent/excused` |
 | Bài đã / chưa hoàn thành, điểm kiểm tra, điểm thi thử | CÓ | bài tập + `mock_attempts` + kết quả thi ngoài |
 | Điểm mạnh / yếu | CÓ | bản đồ kỹ năng, bản đồ năng lực |
-| Lịch sử chuyển lớp | CÓ (23/09) | trên dòng thời gian: "Rời lớp A — lý do: chuyển lớp" rồi "Vào lớp B". Thao tác chuyển vẫn là hai bước (xem dòng "Chuyển học sinh giữa lớp") |
+| Lịch sử chuyển lớp | CÓ (24/09) | trên dòng thời gian: MỘT sự kiện "Chuyển từ lớp A sang lớp B" (kèm ghi chú); nhật ký có dòng "Chuyển lớp" giữ cả hai lớp và hai lượt |
 
 ## 5 · Khoá học + chương trình — dòng 5 + tab *Nhi* #3
 

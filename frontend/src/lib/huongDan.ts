@@ -231,6 +231,11 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Bộ lọc nằm trên đường dẫn — gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
       },
       {
+        lam: 'Chuyển lớp: mở "Học viên" của lớp cũ, ở dòng của em chọn "Chuyển sang lớp khác…", tìm lớp mới rồi bấm "Chuyển lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Một thao tác: em rời lớp cũ và vào lớp mới cùng lúc, hồ sơ em ghi "Chuyển từ lớp A sang lớp B".',
+      },
+      {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',
         luu_y: 'Không ghi lý do thì em đó không nằm trong tỉ lệ giữ chân, và con số ấy sẽ nói dối theo hướng đẹp hơn sự thật.',
       },
