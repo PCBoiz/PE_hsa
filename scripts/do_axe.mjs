@@ -37,7 +37,9 @@ const TRANG = [
   // không kèm chìa → đúng trạng thái 'đường dẫn hỏng' mà người bấm thư cũ sẽ thấy.
   ['/quen-mat-khau', 'Quên mật khẩu', null], ['/dat-lai-mat-khau', 'Đặt lại (đường dẫn hỏng)', null],
   ['/dashboard', 'Dashboard', HV], ['/courses/hsa_quantitative', 'Chi tiết khoá', HV],
-  ['/lesson/hsa_quantitative?lesson=1', 'Bài học', HV], ['/mock', 'Thi thử', HV],
+  // `/mock` (Thi thử) và `/giang-day/ket-qua-thi/…` (nhập PDF) ra khỏi danh sách
+  // 24/09/2026 — bỏ thi, pha A: hai đường nay chỉ chuyển hướng (next.config.ts).
+  ['/lesson/hsa_quantitative?lesson=1', 'Bài học', HV],
   ['/bai-tap', 'Bài tập của tôi', HV], ['/questionaire', 'Khảo sát', HV], ['/doi-mat-khau', 'Đổi mật khẩu', HV],
   ['/quan-tri/tong-quan', 'QT tổng quan', AD], ['/quan-tri/tai-khoan', 'QT tài khoản', AD],
   ['/quan-tri/lop-hoc', 'QT lớp học', AD], ['/quan-tri/dot-hoc', 'QT đợt học', AD],
@@ -45,7 +47,7 @@ const TRANG = [
   ['/quan-tri/vai-tro', 'QT vai trò', AD], ['/quan-tri/huong-dan', 'QT hướng dẫn', AD],
   ['/giao-trinh', 'Giáo trình', AD], ['/giang-day', 'GD việc hôm nay', AD],
   ['/giang-day/buoi-hoc/7322', 'GD buổi học', AD], ['/giang-day/bai-tap/7322', 'GD bài tập', AD],
-  ['/giang-day/bao-cao/7322', 'GD báo cáo', AD], ['/giang-day/ket-qua-thi/7322', 'GD nhập PDF', AD],
+  ['/giang-day/bao-cao/7322', 'GD báo cáo', AD],
   // Hai màn thêm 23/09/2026 (hồ sơ học viên §51): form hồ sơ đầy đủ, và tờ báo cáo
   // một em — nay có ô mục tiêu/nguyện vọng của giảng viên. 35695 là em mẫu của lớp 7322.
   ['/quan-tri/tai-khoan/35695', 'QT hồ sơ học viên', AD], ['/giang-day/bao-cao/7322/35695', 'GD tờ một em', AD],

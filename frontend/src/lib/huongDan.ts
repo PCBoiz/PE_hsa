@@ -390,10 +390,8 @@ export const HUONG_DAN: readonly Bai[] = [
         trieu_chung: 'Phụ huynh báo mở link không được.',
         xu_ly: 'Đường dẫn sống 45 ngày và thu hồi được. Hết hạn hoặc đã thu hồi thì cấp lại đường dẫn mới — một câu báo lỗi duy nhất cho cả ba trường hợp, nên không đoán được là vì sao.',
       },
-      {
-        trieu_chung: 'Trên tờ báo cáo, "Điểm trung bình 0%".',
-        xu_ly: 'Nếu em mới làm MỘT đề, tờ báo cáo tự thêm câu giải thích rằng một lượt chưa đủ để kết luận. Nếu chưa làm đề nào thì ô ấy hiện "—", không hiện 0.',
-      },
+      // "Điểm trung bình 0%" (ô điểm thi thử trên tờ báo cáo) bỏ 24/09/2026 cùng ô ấy
+      // — bỏ thi, pha A.
     ],
   },
 
@@ -414,17 +412,17 @@ export const HUONG_DAN: readonly Bai[] = [
 
   {
     ma: 'noi-dung',
-    tieu_de: 'Soạn khoá học và đề thi thử',
+    // Phần "đề thi thử" (nhập .xlsx, xuất bản đề) bỏ 24/09/2026 — bỏ thi, pha A.
+    tieu_de: 'Soạn khoá học và bài học',
     vai: [VAI_BIEN_TAP, VAI_QUAN_TRI],
-    khi_nao: 'Khi thêm bài mới hoặc mở một đề thi thử.',
+    khi_nao: 'Khi thêm bài mới hoặc sửa nội dung một bài.',
     buoc: [
       { lam: 'Mở khu Giáo trình.', o: '/giao-trinh' },
+      { lam: 'Chọn khoá, bấm "Mở bài" để xem danh sách bài của khoá ấy.' },
+      { lam: 'Bấm "Soạn nội dung" ở bài cần sửa. Bài mới thêm bằng ô "Thêm bài mới" phía trên danh sách.' },
       {
-        lam: 'Đề thi thử nhập từ bảng tính .xlsx theo mẫu có sẵn.',
-        luu_y: 'Dùng .xlsx chứ không .csv: Excel bản tiếng Việt lưu CSV theo bảng mã hệ thống, nên "Định lượng" quay về thành ký tự hỏng.',
-      },
-      {
-        lam: 'Xem trước rồi mới xuất bản. Chưa xuất bản thì học viên không thấy.',
+        lam: 'Cần nhập cả khoá một lần thì bấm "Nhập từ file JSON".',
+        luu_y: 'Hệ thống kiểm toàn bộ trước khi ghi: sai một bài thì không bài nào được ghi. Nhập lại cùng một file là cập nhật, không nhân đôi.',
       },
     ],
   },

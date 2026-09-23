@@ -243,7 +243,7 @@ export default function DesignSystemPage() {
       <h2 className="mb-3 text-title text-ink">Thẻ</h2>
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
         <Card>
-          <CardHead title="Tuần này" hint="4 bài, 2 đề thi thử" />
+          <CardHead title="Tuần này" hint="4 bài, 2 bài tập" />
           <p className="text-body">
             Thẻ nổi dùng cho khối nội dung chính. Bên trong không lồng thêm thẻ nổi nữa.
           </p>

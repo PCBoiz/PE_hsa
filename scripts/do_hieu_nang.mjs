@@ -102,7 +102,7 @@ const the = JSON.parse(readFileSync('D:/pe_hsa/.the/tokens_ad.json','utf8'));
 
 const MAN = [
   ['Trang của tôi',      '/dashboard'],
-  ['Thi thử',            '/mock'],
+  // 'Thi thử' (/mock) bỏ 24/09/2026 — bỏ thi, pha A; đường ấy chỉ còn chuyển hướng.
   ['Vận hành',           '/quan-tri/tong-quan'],
   ['Báo cáo phụ huynh',  '/giang-day/bao-cao/1'],
   ['Ai làm được gì',     '/quan-tri/vai-tro'],

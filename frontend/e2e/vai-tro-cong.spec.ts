@@ -163,9 +163,10 @@ test('giảng viên không mở được lớp của giảng viên khác (404, k
 });
 
 /* ── TRỢ GIẢNG TRONG CHÍNH LỚP CỦA MÌNH ──────────────────────────────────────
-   Được gán vào lớp thì điểm danh và chấm bài được — nhưng báo cáo phụ huynh và
-   nhập kết quả thi vẫn bị cắt, vì cả hai mang dữ liệu liên lạc / điểm của em ra
-   ngoài. Đây là ranh giới "nhìn được khi làm việc, không mang ra ngoài được". */
+   Được gán vào lớp thì điểm danh và chấm bài được — nhưng báo cáo phụ huynh vẫn
+   bị cắt, vì nó mang dữ liệu liên lạc của em ra ngoài. Đây là ranh giới "nhìn được
+   khi làm việc, không mang ra ngoài được". (Màn nhập kết quả thi từng nằm trong
+   vòng này — gỡ 24/09/2026, bỏ thi pha A; đường cũ nay chuyển về sổ buổi học.) */
 test('trợ giảng: trong lớp được gán vẫn bị cắt báo cáo phụ huynh', async ({ page }) => {
   test.skip(!taiKhoanCuaVai('Trợ giảng'), LY_DO_THIEU_VAI);
   test.skip(!(await vaoTheoVai(page, 'Trợ giảng')), 'không vào được bằng vai Trợ giảng');
@@ -182,7 +183,7 @@ test('trợ giảng: trong lớp được gán vẫn bị cắt báo cáo phụ 
 
   await page.goto(`/giang-day/buoi-hoc/${id}`, { waitUntil: 'domcontentloaded' });
   expect.soft(await docChan(page), 'buổi học: phải vào được').toBeNull();
-  for (const trang of [`/giang-day/bao-cao/${id}`, `/giang-day/ket-qua-thi/${id}`]) {
+  for (const trang of [`/giang-day/bao-cao/${id}`]) {
     await page.goto(trang, { waitUntil: 'domcontentloaded' });
     expect.soft(await docChan(page), `${trang}: phải chặn theo vai`).toBe('vai');
   }

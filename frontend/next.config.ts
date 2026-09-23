@@ -82,6 +82,17 @@ const nextConfig: NextConfig = {
          "sao soạn giáo trình lại nằm trong khu vận hành"). Link cũ trong thư, dấu
          trang, cẩm nang in ra vẫn mở được. */
       { source: '/admin', destination: '/giao-trinh', permanent: false },
+      /* Bỏ thi, pha A (24/09/2026 — anh Sơn chốt "bỏ mọi thứ về thi, giữ ngày thi
+         HSA"): màn thi thử và màn nhập kết quả thi đã gỡ, tuyến API của chúng tháo.
+         Link cũ (dấu trang, thư, cẩm nang in) đưa về chỗ gần nhất thay vì "Không
+         có trang này". TẠM (307) như trên: pha A đảo ngược được, còn 308 thì trình
+         duyệt nhớ luôn. Guard: `e2e/unit/bo-thi.test.mjs`. */
+      { source: '/mock', destination: '/dashboard', permanent: false },
+      {
+        source: '/giang-day/ket-qua-thi/:classId',
+        destination: '/giang-day/buoi-hoc/:classId',
+        permanent: false,
+      },
     ];
   },
 };

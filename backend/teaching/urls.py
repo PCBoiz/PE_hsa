@@ -11,7 +11,6 @@ from teaching import (
                       lich,
                       lien_he_phu_huynh,
                       lop_cua_toi,
-                      nhap_ket_qua_view,
                       overview,
                       parent_link,
                       parent_report,
@@ -56,14 +55,9 @@ urlpatterns = [
     # một thứ cần canh: liên lạc của gia đình em.
     path('api/teach/classes/<int:class_id>/parent-contacts',
          lien_he_phu_huynh.ParentContactsImportView.as_view()),
-    # Nhập kết quả thi thử từ tờ PDF của hệ thống khảo thí ngoài (15–16/09/2026).
-    # `doc` chỉ đọc từng tờ và phát phiếu đã ký; `ghi` nhận lại phiếu, mặc định
-    # chỉ trả bảng khớp, `ghi: true` mới ghi. Cùng cổng với báo cáo phụ huynh —
-    # số điểm này đi thẳng vào tờ gửi về nhà. Vì sao tách hai: docstring của view.
-    path('api/teach/classes/<int:class_id>/ket-qua-thi/doc',
-         nhap_ket_qua_view.DocKetQuaThiView.as_view()),
-    path('api/teach/classes/<int:class_id>/ket-qua-thi/ghi',
-         nhap_ket_qua_view.GhiKetQuaThiView.as_view()),
+    # Nhập kết quả thi thử từ PDF (`…/ket-qua-thi/doc` + `…/ghi`) THÁO 24/09/2026
+    # — bỏ thi, pha A. View `nhap_ket_qua_view` và bảng `ket_qua_thi_ngoai` giữ tới
+    # pha C; phép kiểm của view chạy trên `config/urls_thi_da_thao.py`.
 
     # ── ĐƯỜNG CÔNG KHAI ──
     # KHÔNG nằm dưới `api/teach/`: tiền tố ấy mang nghĩa "sau cổng giảng dạy",

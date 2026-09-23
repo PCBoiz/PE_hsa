@@ -139,7 +139,10 @@ const TRAN_TEP = 11;
 // 24/09/2026: 6774 → 6696 (−78). HẠ: xoá `pages/landing.inline.js` cùng trang quảng cáo.
 // 24/09/2026: 6696 → 6567 (−129). HẠ: bỏ popup "Giữ chuỗi hôm nay" (dashboard.js), năm
 // bài diễn đàn mẫu C++/Git (`MOCK_POSTS` rỗng), `handlePersonalRoadmapAI` ("Premium").
-const TRAN_DONG_MA = 6567;
+// 24/09/2026: 6567 → 6559 (−8). HẠ: bỏ thi pha A — gỡ bốn link `/mock` ở dashboard.js
+// (nút "Luyện đề", "Làm đề thi thử", "Thi thử ngay", mục kế hoạch loại mock) + chặng
+// "Luyện đề tổng (CBT)" ở roadmapData.js.
+const TRAN_DONG_MA = 6559;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -35,8 +35,9 @@ export default async function QuanTriLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-dvh bg-ground">
       {/* `theme.css` phải đứng TRƯỚC `shell.css`: shell đọc `var(--t1)`,
-          `var(--accent)`… và theme là nơi khai chúng. Cùng tổ hợp mà
-          `MockExam.tsx` dùng — khu nào nạp thanh thì nạp đúng hai tệp này. */}
+          `var(--accent)`… và theme là nơi khai chúng. Cùng tổ hợp mà khu
+          Giáo trình (`giao-trinh/page.tsx`) dùng — khu nào nạp thanh thì nạp
+          đúng hai tệp này. */}
       <PageStyles hrefs={['/static/css/theme.css', '/static/css/shell.css']} />
       {/* CÙNG một thanh với mọi màn khác, chỉ đổi hàng mục.
           Trước 07/09/2026 khu này tự dựng header Tailwind riêng — bản dựng

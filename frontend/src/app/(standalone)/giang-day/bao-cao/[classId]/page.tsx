@@ -175,20 +175,8 @@ export default async function BaoCaoCaLopPage({
 
       {d.students.length > 0 && <DanLienHe classId={classId} soThieu={thieu.length} />}
 
-      {/* Điểm kỳ thi thử TẠI TRUNG TÂM đi vào chính tờ báo cáo này, nên đường
-          nhập đặt ngay đây — nơi người ta đang chuẩn bị gửi. */}
-      <Card>
-        <CardHead
-          title="Điểm thi thử tại trung tâm"
-          hint="Nhập tờ PDF kết quả từ hệ thống khảo thí. Tờ báo cáo của từng em sẽ có thêm điểm kỳ thi và các phần còn yếu."
-        />
-        <Link
-          href={`/giang-day/ket-qua-thi/${classId}`}
-          className="-my-3 inline-block py-3 font-semibold text-brand-ink underline"
-        >
-          Nhập kết quả thi thử từ PDF
-        </Link>
-      </Card>
+      {/* Thẻ "Điểm thi thử tại trung tâm" (dẫn tới màn nhập PDF kết quả thi) GỠ
+          24/09/2026 — bỏ thi, pha A. Link cũ tới màn ấy chuyển về sổ buổi học. */}
 
       <Card>
         <CardHead title={`Học viên đang học (${d.students.length})`} />

@@ -69,12 +69,12 @@ export const VAI_TRO: readonly { ma: string; nhan: string; mo_ta: string }[] = [
   {
     ma: VAI_BIEN_TAP,
     nhan: 'Biên tập nội dung',
-    mo_ta: 'Soạn khoá học, bài học và đề thi thử. Đứng ở TRỤC KHÁC với bốn vai trên — không đụng tới con người.',
+    mo_ta: 'Soạn khoá học và bài học. Đứng ở TRỤC KHÁC với bốn vai trên — không đụng tới con người.',
   },
   {
     ma: VAI_HOC_VIEN,
     nhan: 'Học viên',
-    mo_ta: 'Học, làm bài, thi thử. Vai mặc định của mọi tài khoản mới.',
+    mo_ta: 'Học bài, làm bài tập. Vai mặc định của mọi tài khoản mới.',
   },
 ] as const;
 
@@ -296,13 +296,8 @@ export const VIEC: readonly Viec[] = [
     lopQuyen: 'IsContentEditor',
     nguon: 'courseadmin/views.py::AdminBase',
   },
-  {
-    nhom: 'Nội dung',
-    nhan: 'Nhập và xuất bản đề thi thử',
-    giaiThich: 'Đề nhập từ bảng tính .xlsx; xuất bản rồi thì học viên thi được.',
-    lopQuyen: 'IsContentEditor',
-    nguon: 'mockexam/quan_tri.py',
-  },
+  // "Nhập và xuất bản đề thi thử" (`mockexam/quan_tri.py`) GỠ 24/09/2026 — bỏ thi,
+  // pha A: tuyến của khu soạn đề đã tháo, không vai nào còn làm được việc ấy.
 ] as const;
 
 /** Vai nào làm được việc này. Suy ra, không gõ tay — xem chú thích đầu tệp. */

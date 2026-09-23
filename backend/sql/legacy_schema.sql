@@ -1725,3 +1725,33 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS class_type TEXT NOT NULL DEFAULT 'n
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_class_type_check;
 ALTER TABLE classes ADD CONSTRAINT classes_class_type_check
     CHECK (class_type IN ('nhom', 'gia_su'));
+
+-- ── §57 · BỎ THI THỬ, PHA A: DỮ LIỆU HIỂN THỊ (24/09/2026) ──────────────────
+-- Anh Sơn chốt 24/09: "Bỏ mọi thứ về thi, giữ ngày thi HSA". Pha A tháo tuyến thi
+-- (`config/urls.py`) và GIỮ mọi bảng. Mục này chỉ UPDATE những dòng mang chữ thi
+-- thử mà học viên còn nhìn thấy (nhiệm vụ ngày, chặng lộ trình). Không DDL nào.
+--
+-- IDEMPOTENT theo WHERE: mỗi câu chỉ khớp dòng CÒN chữ cũ, nên lần deploy sau
+-- (Render chạy lại cả tệp) khớp 0 dòng. Đo trên nhánh dev 24/09 trước khi viết:
+-- `daily_mock` đang bật, 2 dòng `user_missions` trỏ tới nó (nên TẮT, không xoá),
+-- 6/6 lộ trình mang "Luyện đề tổng (CBT)" với đúng hai bản mô tả cũ dưới đây
+-- (bản mẫu `seed_data` ghi "+", bản dựng từ khảo sát ghi "và").
+--
+-- Mã nút `hsa_mock` GIỮ: `roadmap_progress.item_id` khoá theo nó. Bộ sinh trong
+-- mã đổi cùng mẻ (`seed_data.py`, `accounts/views.py`, `roadmapData.js`).
+-- Phép kiểm: `common/tests_bo_thi.py` (chạy hai lần, lần hai phải ghi 0 dòng).
+UPDATE missions SET is_active = FALSE WHERE code = 'daily_mock' AND is_active;
+UPDATE missions SET description = 'Cộng dồn từ bài học và bài ôn tập.'
+ WHERE code = 'daily_xp' AND description = 'Cộng dồn từ bài học và đề thi thử.';
+UPDATE roadmaps
+   SET mermaid_def = replace(mermaid_def, 'Luyện đề tổng (CBT)', 'Ôn tổng hợp'),
+       nodes_json  = replace(replace(replace(nodes_json::text,
+                         'Luyện đề tổng (CBT)', 'Ôn tổng hợp'),
+                         'Thi thử đầy đủ 150 câu trên máy, chấm điểm + phân tích.',
+                         'Ôn lại cả ba phần thi, tập trung vào các dạng bài còn hay sai.'),
+                         'Thi thử đầy đủ 150 câu trên máy, chấm điểm và phân tích.',
+                         'Ôn lại cả ba phần thi, tập trung vào các dạng bài còn hay sai.')::jsonb
+ WHERE strpos(mermaid_def, 'Luyện đề tổng (CBT)') > 0
+    OR strpos(nodes_json::text, 'Luyện đề tổng (CBT)') > 0
+    OR strpos(nodes_json::text, 'Thi thử đầy đủ 150 câu trên máy, chấm điểm + phân tích.') > 0
+    OR strpos(nodes_json::text, 'Thi thử đầy đủ 150 câu trên máy, chấm điểm và phân tích.') > 0;
