@@ -243,6 +243,15 @@ def test_moi_muc_dat_lock_timeout_ngan(db, monkeypatch):
     assert thay and set(thay) == {luoc_do_sql.CHO_KHOA}, thay
 
 
+def test_do_khoa_bat_duoc_cau_tro_nham_bang_that(db):
+    """Thước `khoa_ngoai()` phải ĐỎ được: một câu nhắc tới bảng mà lược đồ chưa dựng sẽ âm
+    thầm rơi xuống `public` (còn trong `search_path` vì pg_trgm) — trên CSDL mới toanh câu
+    ấy hỏng. Chỉ một SELECT (AccessShareLock, như mọi phép kiểm khác đọc `users`)."""
+    with schema_tam() as st:
+        luot(cac_muc=chia_muc('t.sql', '-- ── §1 · A ──\nSELECT 1 FROM users LIMIT 0;\n'))
+        assert ('public', 'users', 'AccessShareLock') in st.khoa_ngoai()
+
+
 def test_kiem_chi_doc_khong_tao_so(db):
     with schema_tam():
         ra = StringIO()
