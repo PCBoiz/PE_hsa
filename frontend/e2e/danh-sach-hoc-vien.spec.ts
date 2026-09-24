@@ -127,9 +127,8 @@ test('học vụ: nút Chuyển lớp mở hộp chuyển lớp đúng lớp đi
   const nut = page.getByRole('button', { name: `Chuyển lớp cho ${motLop!.name}` }).first();
   await expect(nut).toBeVisible({ timeout: 30_000 });
   await nut.click();
-  // Tìm hộp theo TIÊU ĐỀ: `<dialog>` của `components/ui/Modal.tsx` chưa có tên truy cập
-  // (thiếu `aria-labelledby`) nên `getByRole('dialog', { name })` không khớp.
-  const hop = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: `Chuyển ${motLop!.name} sang lớp khác` }) });
+  // Tìm hộp theo TÊN TRUY CẬP (= tiêu đề, `aria-labelledby` của `components/ui/Modal.tsx`).
+  const hop = page.getByRole('dialog', { name: `Chuyển ${motLop!.name} sang lớp khác` });
   await expect(hop).toBeVisible();
   await expect(hop.getByText(`Đang học: ${motLop!.lopDangHoc![0].name}`)).toBeVisible();
   await hop.getByRole('button', { name: 'Huỷ' }).click();
@@ -165,11 +164,11 @@ test('học vụ: em học HAI lớp → hỏi "từ lớp nào" trước, rồi
   // Hai lớp hiện trong ô Lớp (chip "Gia sư" cho lớp gia sư) rồi mới bấm.
   await expect(page.getByRole('table').getByText(LOP_2.name)).toBeVisible({ timeout: 30_000 });
   await nut.click();
-  const hoi = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: `Chuyển ${em!.name} từ lớp nào?` }) });
+  const hoi = page.getByRole('dialog', { name: `Chuyển ${em!.name} từ lớp nào?` });
   const lua = hoi.getByRole('list', { name: 'Lớp em đang học' }).getByRole('button');
   await expect(lua).toHaveCount(2);
   await lua.filter({ hasText: LOP_2.name }).click();
-  const hop = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: `Chuyển ${em!.name} sang lớp khác` }) });
+  const hop = page.getByRole('dialog', { name: `Chuyển ${em!.name} sang lớp khác` });
   await expect(hop.getByText(`Đang học: ${LOP_2.name}`)).toBeVisible();
   await hop.getByRole('button', { name: 'Huỷ' }).click();
   await expect(hop).toBeHidden();

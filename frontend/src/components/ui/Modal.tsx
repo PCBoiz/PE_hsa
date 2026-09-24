@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 /**
  * Hộp thoại.
@@ -26,6 +26,10 @@ export default function Modal({
   footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Tên truy cập của hộp = tiêu đề: trình đọc màn hình đọc "Chuyển … sang lớp khác, hộp
+  // thoại" thay vì "hộp thoại" trơn (thiếu từ đầu tới 25/09/2026 — axe không bắt vì
+  // `<dialog>` không tên chưa bị coi là vi phạm).
+  const idTieuDe = useId();
 
   useEffect(() => {
     const el = ref.current;
@@ -37,6 +41,7 @@ export default function Modal({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={idTieuDe}
       onClose={onClose}
       onClick={(e) => {
         // Bấm ra ngoài để đóng: `<dialog>` coi cả vùng nền là chính nó, nên so
@@ -50,7 +55,7 @@ export default function Modal({
       ].join(' ')}
     >
       <div className="flex items-start gap-3 border-b border-line px-6 py-4">
-        <h2 className="flex-1 text-section text-ink">{title}</h2>
+        <h2 id={idTieuDe} className="flex-1 text-section text-ink">{title}</h2>
         <button
           type="button"
           onClick={onClose}
