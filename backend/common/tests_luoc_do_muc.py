@@ -149,6 +149,99 @@ def test_ke_hoach_tu_mot_muc_chay_no_va_moi_muc_sau():
         ('§3', 'chạy lại theo yêu cầu (--tu)'), ('§4', 'đứng sau t.sql §3')]
 
 
+# ── Mục dữ liệu chạy MỖI LƯỢT (`-- chạy: mỗi lượt` ngay dưới tiêu đề) ─────────
+
+N = chr(10)
+MAU_ML = N.join([
+    '-- ── §1 · BẢNG ──',
+    'CREATE TABLE IF NOT EXISTS t (x TEXT);',
+    '-- ── §2 · DỮ LIỆU ──',
+    '-- chạy: mỗi lượt',
+    '-- lời giải thích bình thường',
+    "UPDATE t SET x = 'mới (bản 2)' WHERE x = 'cũ (bản 1)';",
+    "INSERT INTO t (x) SELECT 'hạt' WHERE NOT EXISTS (SELECT 1 FROM t WHERE x = 'hạt');",
+    '-- ── §3 · CỘT ──',
+    'ALTER TABLE t ADD COLUMN IF NOT EXISTS y INT;',
+    '-- ── §4 · CỘT 2 ──',
+    'ALTER TABLE t ADD COLUMN IF NOT EXISTS z INT;',
+    ''])
+
+
+def test_the_moi_luot_doc_duoc():
+    ds = chia_muc('t.sql', MAU_ML)
+    assert [(m.ma, m.moi_luot) for m in ds] == [
+        ('§1', False), ('§2', True), ('§3', False), ('§4', False)]
+
+
+def test_the_moi_luot_khong_doi_checksum():
+    """Thẻ là chú thích: gắn/gỡ thẻ không làm mục (và mọi mục sau) chạy lại vì 'đổi nội dung'."""
+    co = {m.ma: m.checksum for m in chia_muc('t.sql', MAU_ML)}
+    khong = {m.ma: m.checksum for m in chia_muc('t.sql', MAU_ML.replace('-- chạy: mỗi lượt' + N, ''))}
+    assert co == khong
+
+
+@pytest.mark.parametrize('cau', [
+    'ALTER TABLE t ADD COLUMN IF NOT EXISTS w INT;',                 # DDL
+    'CREATE INDEX IF NOT EXISTS i ON t (x);',                        # DDL
+    "DELETE FROM t WHERE x = 'a';",                                  # không phải UPDATE/INSERT
+    "UPDATE t SET x = 'a';",                                         # không WHERE: ghi MỌI dòng mỗi deploy
+    "UPDATE t SET x = (SELECT 'a' WHERE true);",                     # WHERE chỉ trong câu con
+    "UPDATE t SET x = 'a WHERE b';",                                 # WHERE chỉ trong chuỗi
+    "INSERT INTO t (x) VALUES ('a');",                               # INSERT không chặn: đẻ dòng mỗi deploy
+    "WITH c AS (SELECT 1) UPDATE t SET x = 'a' WHERE x = 'b';",     # không nhận CTE — viết thẳng
+])
+def test_the_moi_luot_tu_choi_cau_khong_phai_du_lieu_co_chan(cau):
+    """Mục chạy mỗi lượt chỉ được UPDATE / INSERT có WHERE ở TẦNG NGOÀI — từ chối lúc ĐỌC tệp,
+    trước khi chạy bất cứ gì."""
+    hong = MAU_ML.replace("INSERT INTO t (x) SELECT 'hạt'", cau + N + "INSERT INTO t (x) SELECT 'hạt'")
+    with pytest.raises(LoiLuocDo, match='mỗi lượt'):
+        chia_muc('t.sql', hong)
+
+
+@pytest.mark.parametrize('sai', [
+    ('-- chạy: mỗi lượt' + N + '-- lời giải thích bình thường',
+     '-- lời giải thích bình thường' + N + '-- chạy: mỗi lượt'),     # không ngay dưới tiêu đề
+    ('-- chạy: mỗi lượt', '-- chạy: mỗi lần'),                       # giá trị lạ
+    ('-- ── §1 · BẢNG ──', '-- ── §1 · BẢNG ──' + N + '-- chạy: mỗi lượt'),  # gắn cho mục DDL
+])
+def test_the_moi_luot_sai_cho_sai_gia_tri_thi_DUNG(sai):
+    with pytest.raises(LoiLuocDo):
+        chia_muc('t.sql', MAU_ML.replace(*sai))
+
+
+def test_ke_hoach_muc_moi_luot_chay_moi_lan_KHONG_keo_hau_to():
+    """Sổ đủ, không gì đổi: chỉ mục dữ liệu chạy lại — mục sau nó KHÔNG (DML không gỡ được đồ
+    của mục sau, nên luật hậu tố không cần)."""
+    ds = chia_muc('t.sql', MAU_ML)
+    viec = lap_ke_hoach(ds, _so(ds))
+    assert [(v.muc.ma, v.ly_do, v.hau_to) for v in viec] == [('§2', 'chạy mỗi lượt', False)]
+
+
+def test_ke_hoach_muc_moi_luot_dung_truoc_muc_moi():
+    ds = chia_muc('t.sql', MAU_ML)
+    viec = lap_ke_hoach(ds, _so(ds, tru=('§4',)))
+    assert [(v.muc.ma, v.ly_do, v.hau_to) for v in viec] == [
+        ('§2', 'chạy mỗi lượt', False), ('§4', 'mới', True)]
+
+
+def test_ke_hoach_muc_moi_luot_DOI_noi_dung_thi_van_keo_hau_to():
+    ds = chia_muc('t.sql', MAU_ML)
+    so = _so(ds)
+    so['t.sql §2'] = 'checksum-cu'
+    viec = lap_ke_hoach(ds, so)
+    assert [(v.muc.ma, v.ly_do) for v in viec] == [
+        ('§2', 'đổi nội dung'), ('§3', 'đứng sau t.sql §2'), ('§4', 'đứng sau t.sql §2')]
+    assert all(v.hau_to for v in viec)
+
+
+def test_tep_that_57_la_muc_moi_luot():
+    """§57 (bỏ thi, pha A) là mục DỮ LIỆU: mã cũ còn chạy lúc deploy sinh lại dòng mang chữ cũ
+    (đo 25/09 trên nhánh dev: `u55219_generated`), nên nó tự chữa mỗi lượt như trước H3."""
+    ds = {m.khoa: m for m in doc_tat_ca()}
+    assert ds['legacy_schema.sql §57'].moi_luot
+    assert [k for k, m in ds.items() if m.moi_luot] == ['legacy_schema.sql §57']
+
+
 def test_tim_muc_nhan_ma_hoac_khoa_va_tu_choi_mo_ho():
     from common.luoc_do_sql import tim_muc
     ds = chia_muc('t.sql', MAU) + chia_muc('u.sql', '-- ── §3 · X ──' + chr(10) + 'SELECT 1;')
@@ -227,7 +320,8 @@ def test_sua_TAI_CHO_check_o_35_va_36_chay_lai_tu_35_toi_het():
 def test_sua_chu_thich_muc_cu_khong_chay_lai_gi():
     cu = '-- 35. Bất biến ở tầng CSDL'
     _, viec = _ke_hoach_sau_khi_sua(lambda raw: raw.replace(cu, cu + ' (viết lại lời)'))
-    assert viec == []
+    assert [v for v in viec if v.hau_to] == []
+    assert [v.muc.khoa for v in viec] == ['legacy_schema.sql §57'], 'chỉ còn mục dữ liệu mỗi lượt'
 
 
 def _so_chua_dung():
@@ -250,6 +344,7 @@ def test_them_muc_moi_o_cuoi_chi_chay_no_va_tep_sau():
     them = _muc(lon, 'MỤC THỬ', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT;')
     _, viec = _ke_hoach_sau_khi_sua(lambda raw: raw + them)
     assert [(v.muc.khoa, v.ly_do) for v in viec] == [
+        ('legacy_schema.sql §57', 'chạy mỗi lượt'),
         ('legacy_schema.sql §%d' % lon, 'mới'),
         ('mockexam_schema.sql nền', 'đứng sau legacy_schema.sql §%d' % lon)]
 
@@ -264,7 +359,8 @@ def test_muc_giu_cho_viet_SAU_mot_muc_so_lon_hon_van_hop_le():
           for m in chia_muc('legacy_schema.sql', _tep_that() + them_lon) + khac}
     sau = chia_muc('legacy_schema.sql', _tep_that() + them_lon + them_nho)
     viec = lap_ke_hoach(sau + khac, so)
-    assert [v.muc.khoa for v in viec] == ['legacy_schema.sql §%d' % nho, 'mockexam_schema.sql nền']
+    assert [v.muc.khoa for v in viec if v.hau_to] == [
+        'legacy_schema.sql §%d' % nho, 'mockexam_schema.sql nền']
 
 
 def test_moi_muc_trong_kiem_luoc_do_tro_toi_mot_muc_co_that():

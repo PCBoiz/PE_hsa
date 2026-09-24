@@ -43,7 +43,28 @@ mỗi lượt chỉ chạy mục mới / đổi câu lệnh **cùng mọi mục 
    dịch). Không nhắc tới bảng do `migrate` tạo (bootstrap chạy TRƯỚC migrate; `--dien-tap` bắt).
    Khoá ngoại mới trỏ `class_members(id)` phải nằm SAU §36 (§36 gỡ khoá chính CASCADE khi chạy lại).
 5. **`kiem_luoc_do.py`**: thêm một dòng `('§62', 'mô tả', lambda: …)` nói "tới nơi" nghĩa là gì.
-6. **Chạy thử** trên nhánh Neon `dev` theo khung dưới, rồi mới commit.
+6. **Mục DỮ LIỆU** (chỉ sửa dòng, không đổi lược đồ) mà mã CŨ có thể ghi lại dòng cũ trong lúc
+   deploy → thêm thẻ `-- chạy: mỗi lượt` ở dòng NGAY dưới tiêu đề (xem mục dưới).
+7. **Chạy thử** trên nhánh Neon `dev` theo khung dưới, rồi mới commit.
+
+### Mục dữ liệu chạy MỖI LƯỢT — thẻ `-- chạy: mỗi lượt` (từ 25/09/2026)
+
+```sql
+-- ── §57 · BỎ THI THỬ, PHA A: DỮ LIỆU HIỂN THỊ (24/09/2026) ──
+-- chạy: mỗi lượt
+UPDATE missions SET is_active = FALSE WHERE code = 'daily_mock' AND is_active;
+```
+
+- Mục mang thẻ chạy ở MỌI lượt `bootstrap_schema` (mọi deploy), kể cả khi sổ đã ghi và nội dung
+  không đổi — tự chữa như trước H3. Nó KHÔNG kéo mục sau chạy lại (DML không gỡ được đồ của mục sau);
+  sửa CÂU trong mục thì vẫn như mọi mục: nó và mọi mục sau chạy lại.
+- Chỉ nhận `UPDATE … WHERE …` và `INSERT … SELECT … WHERE …`, với WHERE ở TẦNG NGOÀI của câu (WHERE
+  trong câu con hay trong chuỗi không tính). DDL, DELETE, `WITH …`, `INSERT … VALUES`, UPDATE không
+  WHERE → lệnh DỪNG lúc ĐỌC tệp, trước khi chạy bất cứ gì. WHERE phải chỉ khớp dòng CÒN cũ, để lượt
+  thứ hai ghi 0 dòng (`common/tests_bo_thi.py` là mẫu phép kiểm "chạy lại ghi 0 dòng").
+- Thẻ đúng nguyên văn, đúng chỗ (dòng thứ hai của mục). Sai chỗ / sai chữ (`-- chạy: mỗi lần`) → DỪNG.
+- Gắn/gỡ thẻ không đổi checksum (thẻ là chú thích) → không kéo mục nào chạy lại.
+- Hiện có: §57.
 
 ### Sửa TẠI CHỖ một mục đã có (ví dụ: thêm `'paused'` vào CHECK §35)
 
@@ -60,15 +81,15 @@ khoảng trắng cuối dòng, CRLF).
 ```bash
 python manage.py bootstrap_schema --dien-tap   # CSDL mới toanh trong schema tạm: dựng, chạy lần 2, đối chiếu, cuộn lại
 python manage.py bootstrap_schema              # lượt 1: chạy mục mới, ghi sổ
-python manage.py bootstrap_schema              # lượt 2: phải in "0/N mục chạy"
+python manage.py bootstrap_schema              # lượt 2: phải in "0/N mục chạy" (mục mỗi lượt đếm riêng)
 python manage.py kiem_luoc_do                  # mọi dòng ✓
 ```
 
 | Lệnh | Làm gì |
 |---|---|
-| `bootstrap_schema` | chạy mục chờ, ghi sổ (đúng lệnh Render chạy) |
+| `bootstrap_schema` | chạy mục chờ + mục `-- chạy: mỗi lượt`, ghi sổ (đúng lệnh Render chạy) |
 | `bootstrap_schema --kiem` | liệt kê mục sẽ chạy ở lượt tới, không chạy, không ghi |
-| `bootstrap_schema --kiem --ma-loi` | như trên, thoát 1 nếu có mục chờ (cổng pre-push dùng) |
+| `bootstrap_schema --kiem --ma-loi` | như trên, thoát 1 nếu có mục chờ — mục mỗi lượt không tính (cổng pre-push dùng, chỉ cảnh báo) |
 | `bootstrap_schema --tu §57` | chạy lại TỪ một mục tới hết (giữ luật hậu tố); đi cùng `--kiem` để xem trước |
 | `bootstrap_schema --tat-ca` | chạy lại MỌI mục như trước H3 rồi ghi sổ |
 | `bootstrap_schema --dien-tap` | diễn tập CSDL mới toanh (schema tạm, hai lượt, cuộn lại) |
@@ -78,13 +99,12 @@ python manage.py kiem_luoc_do                  # mọi dòng ✓
 khôi phục một phần, hoặc mã CŨ ghi lại dữ liệu sau khi mục dữ liệu đã chạy): `bootstrap_schema --tu §NN`
 (nặng hơn: `--tat-ca`).
 
-**Mục DỮ LIỆU chỉ chạy MỘT lần.** Trước H3, mỗi deploy chạy lại cả `UPDATE … WHERE <còn chữ cũ>`
-(như §57) nên dòng nào mã cũ ghi lại sau đó cũng được sửa ở deploy kế. Nay không (đúng ý kế hoạch:
-thôi điền ngược mỗi deploy). Đo 25/09 trên nhánh `dev`: §57 chạy 23:47, `kiem_luoc_do` 41/41; tới
-00:18 lộ trình `u55219_generated` lại mang nhãn "Luyện đề tổng (CBT)" — một tiến trình chạy mã TRƯỚC
-§57 (máy chủ / phép kiểm của nhánh khác dùng chung `dev`) đã sinh lại nó; `--tu §57` sửa xong, 42/42.
-Trên production cửa sổ ấy là lúc bản cũ còn phục vụ trong khi Render dựng bản mới: sau deploy có
-mục dữ liệu, chạy `kiem_luoc_do`; ✗ thì `--tu §NN`. Mã sinh dữ liệu phải đổi CÙNG mẻ với mục dữ liệu.
+**Vì sao có thẻ mỗi lượt.** Có sổ thì mục thường chỉ chạy MỘT lần. Đo 25/09 trên nhánh `dev`: §57
+chạy 23:47, `kiem_luoc_do` 41/41; tới 00:18 lộ trình `u55219_generated` lại mang nhãn "Luyện đề tổng
+(CBT)" — một tiến trình chạy mã TRƯỚC §57 (máy chủ / phép kiểm của nhánh khác dùng chung `dev`) đã
+sinh lại nó. Trên production cửa sổ ấy là lúc bản cũ còn phục vụ trong khi Render dựng bản mới. Nay
+§57 mang thẻ nên deploy sau tự chữa; mục dữ liệu KHÔNG mang thẻ thì sau deploy chạy `kiem_luoc_do`,
+✗ thì `--tu §NN`. Mã sinh dữ liệu vẫn phải đổi CÙNG mẻ với mục dữ liệu.
 
 **Build Render đỏ ở `bootstrap_schema`**: log có dòng `[legacy_schema.sql §NN · câu i/n …] LỖI ở: …`.
 Mục ấy đã cuộn lại trọn, không ghi sổ; các mục trước nó đã chạy và ghi sổ; bản cũ vẫn phục vụ. Sửa,
@@ -100,11 +120,14 @@ GitHub Actions đang khoá (A0), nên cổng chạy trên máy người đẩy. 
 git config core.hooksPath .githooks
 ```
 
-Chạy: ruff · `manage.py check` · compileall · pytest guard không CSDL (`tests_cau_hinh`,
-`tests_luoc_do_muc`) · `bootstrap_schema --kiem --ma-loi` (khi có `backend/.env`; không nối được
-CSDL thì bỏ qua) · tsc · eslint `--max-warnings 0` · `node --check` các tệp JS thuần trong `public/static` (11 tệp, đếm 24/09) · mọi
-`e2e/unit/*.test.mjs` · `ban_do --kiem`. Hai nhóm backend | frontend chạy song song; đo 24/09 trên
-máy dev: **51 s** khi đạt. Hỏng thì in bảng ✓/✗ và 25 dòng cuối của bước hỏng, chặn đẩy.
+Chặn đẩy khi hỏng: ruff · `manage.py check` · compileall · pytest guard không CSDL (`tests_cau_hinh`,
+`tests_luoc_do_muc` — gồm cả đọc tệp lược đồ thật: trùng số, tiêu đề/thẻ sai mẫu, câu DDL trong mục
+mỗi lượt) · tsc · eslint `--max-warnings 0` · `node --check` các tệp JS thuần trong `public/static`
+(11 tệp, đếm 24/09) · mọi `e2e/unit/*.test.mjs` · `ban_do --kiem`.
+CHỈ CẢNH BÁO (`!`, lead chốt 25/09): `bootstrap_schema --kiem --ma-loi` trên CSDL mà máy nối (khi có
+`backend/.env`; không nối được thì bỏ qua) — dev đi sau không nói gì về thứ production sẽ chạy.
+Hai nhóm backend | frontend chạy song song; đo trên máy dev: **49–51 s**. Hỏng thì in bảng ✓/!/✗ và
+25 dòng cuối của bước hỏng, chặn đẩy.
 
 - Bỏ qua một lần có chủ ý: `git push --no-verify`.
 - Chạy tay: `bash .githooks/pre-push < /dev/null`.

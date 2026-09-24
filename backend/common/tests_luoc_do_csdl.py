@@ -181,6 +181,64 @@ def test_luot_dut_giua_chung_thi_luot_sau_chay_not_phan_sau(db):
         assert [v.muc.ma for v in viec] == ['§2', '§3']
 
 
+N = chr(10)
+MAU_ML = N.join([
+    '-- ── §1 · BẢNG ──',
+    'CREATE TABLE IF NOT EXISTS t_ml (x TEXT);',
+    '-- ── §2 · DỮ LIỆU ──',
+    '-- chạy: mỗi lượt',
+    "UPDATE t_ml SET x = 'mới' WHERE x = 'cũ';",
+    '-- ── §3 · DỮ LIỆU 2 ──',
+    '-- chạy: mỗi lượt',
+    "UPDATE t_ml SET x = 'mới 2' WHERE x = 'cũ 2';",
+    '-- ── §4 · CỘT ──',
+    'ALTER TABLE t_ml ADD COLUMN IF NOT EXISTS y INT;',
+    ''])
+
+
+def _gia_tri():
+    with connection.cursor() as cur:
+        cur.execute('SELECT x FROM t_ml ORDER BY x')
+        return [r[0] for r in cur.fetchall()]
+
+
+def test_muc_moi_luot_tu_chua_dong_ma_cu_ghi_lai(db):
+    """Đúng cảnh nhánh dev 25/09: mục dữ liệu đã chạy, rồi mã CŨ sinh lại dòng mang chữ cũ.
+    Lượt bootstrap kế (không đổi gì trong tệp) phải sửa lại dòng ấy — như trước H3."""
+    ds = chia_muc('t.sql', MAU_ML)
+    with schema_tam():
+        luot(cac_muc=ds)
+        with connection.cursor() as cur:
+            cur.execute("INSERT INTO t_ml (x) VALUES ('cũ'), ('khác')")     # mã cũ ghi lại
+        viec = luot(cac_muc=ds)
+        assert [(v.muc.ma, v.ly_do) for v in viec] == [
+            ('§2', 'chạy mỗi lượt'), ('§3', 'chạy mỗi lượt')]
+        assert _gia_tri() == ['khác', 'mới']
+
+
+def test_muc_moi_luot_hong_khong_xoa_so_cua_muc_sau(db, monkeypatch):
+    """Mục chạy mỗi lượt hỏng giữa lượt: chỉ nó dừng lại. Lượt sau KHÔNG được coi mục sau nó là
+    'mới' (sổ của chúng không bị xoá) — xoá sổ chỉ thuộc về mục mở đầu HẬU TỐ."""
+    from common import luoc_do_sql
+    ds = chia_muc('t.sql', MAU_ML)
+    that = luoc_do_sql._thuc_thi
+
+    def hong(cur, cau):
+        if 'mới 2' in cau:
+            raise RuntimeError('mạng đứt (giả)')
+        return that(cur, cau)
+
+    with schema_tam():
+        luot(cac_muc=ds)
+        monkeypatch.setattr(luoc_do_sql, '_thuc_thi', hong)
+        with pytest.raises(LoiLuocDo, match='§3'):
+            luot(cac_muc=ds)
+        monkeypatch.setattr(luoc_do_sql, '_thuc_thi', that)
+        assert set(_so()) == {'t.sql §1', 't.sql §2', 't.sql §3', 't.sql §4'}
+        viec = luot(cac_muc=ds)
+        assert [v.muc.ma for v in viec] == ['§2', '§3'], 'không được kéo §4 chạy lại'
+
+
 class _BeTac(Exception):
     """Giả lỗi Postgres bế tắc (SQLSTATE 40P01) — gặp thật trên nhánh dev 24/09 ở §43."""
     sqlstate = '40P01'

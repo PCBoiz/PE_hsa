@@ -61,8 +61,10 @@ unit_node() {
 }
 
 luoc_do_cho() {
-  # Mục SQL chưa chạy trên CSDL mà máy này nối (nhánh Neon dev). Có mục chờ = đẩy lược đồ
-  # chưa từng chạy thử — đúng đường §55 hỏng ngày 24/09. Không nối được CSDL = bỏ qua.
+  # Mục SQL chưa chạy trên CSDL mà máy này nối (nhánh Neon dev) — CHỈ CẢNH BÁO, không chặn
+  # (lead chốt 25/09): dev đi sau không nói gì về thứ production sẽ chạy, và người đẩy tay
+  # không được bị trạng thái dev chặn. Lỗi CÚ PHÁP của tệp lược đồ vẫn chặn (bước pytest guard
+  # `tests_luoc_do_muc` đọc tệp thật). Không nối được CSDL = bỏ qua.
   local ra ma
   ra=$("$PY" manage.py bootstrap_schema --kiem --ma-loi 2>&1); ma=$?
   echo "$ra"
@@ -70,8 +72,11 @@ luoc_do_cho() {
     echo "(không nối được CSDL — bỏ qua bước này, không chặn đẩy)"
     return 0
   fi
-  [ $ma -eq 0 ] || echo "→ chạy: cd backend && python manage.py bootstrap_schema (HAI lần) rồi đẩy lại"
-  return $ma
+  if [ $ma -ne 0 ]; then
+    echo "→ nên chạy thử trên dev trước: cd backend && python manage.py bootstrap_schema (HAI lần)"
+    : > "$TAM/canh_bao.$1"
+  fi
+  return 0
 }
 
 pytest_tac_dong() {
@@ -98,7 +103,7 @@ nhom_backend() {
   buoc b4 "pytest guard (không CSDL)" "$GOC/backend" "$PY" -m pytest -q -p no:cacheprovider \
     common/tests_cau_hinh.py common/tests_luoc_do_muc.py
   if [ -f "$GOC/backend/.env" ] || [ -n "${DATABASE_URL:-}" ]; then
-    buoc b5 "bootstrap_schema --kiem" "$GOC/backend" luoc_do_cho
+    buoc b5 "bootstrap_schema --kiem" "$GOC/backend" luoc_do_cho b5
   else
     bo_qua b5 "bootstrap_schema --kiem" "không có backend/.env hay DATABASE_URL"
   fi
@@ -129,12 +134,16 @@ nhom_frontend & p2=$!
 wait $p1 $p2
 
 hong=()
+canh=()
 for kq in $(ls "$TAM"/*.kq | sort); do
   ma=$(basename "$kq" .kq)
   read -r thoat giay < "$kq"
   nhan=$(cat "$TAM/$ma.nhan")
   if [ "$thoat" = "bỏ" ]; then
     printf '  – %-30s bỏ qua: %s\n' "$nhan" "$(head -1 "$TAM/$ma.log")"
+  elif [ "$thoat" = "0" ] && [ -e "$TAM/canh_bao.$ma" ]; then
+    printf '  ! %-30s %4ss  (cảnh báo, không chặn)\n' "$nhan" "$giay"
+    canh+=("$ma")
   elif [ "$thoat" = "0" ]; then
     printf '  ✓ %-30s %4ss\n' "$nhan" "$giay"
   else
@@ -143,6 +152,12 @@ for kq in $(ls "$TAM"/*.kq | sort); do
   fi
 done
 echo "   tổng $(( $(date +%s) - bd ))s"
+
+for ma in "${canh[@]}"; do
+  echo
+  echo "── CẢNH BÁO: $(cat "$TAM/$ma.nhan") ──"
+  tail -15 "$TAM/$ma.log"
+done
 
 if [ ${#hong[@]} -gt 0 ]; then
   for ma in "${hong[@]}"; do

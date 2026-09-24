@@ -1773,6 +1773,9 @@ ALTER TABLE class_members ADD CONSTRAINT class_members_transfer_reason_check
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
 
 -- ── §57 · BỎ THI THỬ, PHA A: DỮ LIỆU HIỂN THỊ (24/09/2026) ──────────────────
+-- chạy: mỗi lượt
+-- (Thẻ trên, 25/09: mã CŨ còn chạy trong lúc deploy sinh lại dòng mang chữ thi — đo trên
+-- nhánh dev: `u55219_generated` — nên mục này tự chữa ở MỌI lượt như trước H3.)
 -- Anh Sơn chốt 24/09: "Bỏ mọi thứ về thi, giữ ngày thi HSA". Pha A tháo tuyến thi
 -- (`config/urls.py`) và GIỮ mọi bảng. Mục này chỉ UPDATE những dòng mang chữ thi
 -- thử mà học viên còn nhìn thấy (nhiệm vụ ngày, chặng lộ trình). Không DDL nào.

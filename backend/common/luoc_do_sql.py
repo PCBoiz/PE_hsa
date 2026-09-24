@@ -50,9 +50,18 @@ thêm ở CUỐI tệp (trường hợp thường gặp) thì chỉ mình nó ch
 
 Câu hỏng → cuộn lại CẢ mục (kể cả câu DROP đứng trước nó: hết cảnh DROP đã commit mà ADD
 hỏng, CSDL mất ràng buộc), không ghi sổ, dừng lệnh — trên Render là build đỏ, bản cũ vẫn
-phục vụ. Mục ĐẦU TIÊN của lượt còn xoá dòng sổ của mọi mục sau nó trong cùng giao dịch:
+phục vụ. Mục MỞ ĐẦU hậu tố còn xoá dòng sổ của mọi mục hậu tố sau nó trong cùng giao dịch:
 lượt đứt giữa chừng thì lượt sau chạy lại đúng phần chưa xong, không bỏ sót mục nào đứng
 sau một mục đã chạy lại.
+
+── MỤC DỮ LIỆU CHẠY MỖI LƯỢT (`-- chạy: mỗi lượt`, 25/09/2026) ─────────────
+
+Có sổ thì mục chỉ chạy một lần — nhưng mã CŨ còn phục vụ trong lúc deploy có thể sinh lại dòng
+mà một mục DỮ LIỆU vừa sửa (đo trên nhánh dev: §57 xong 23:47, 00:18 lộ trình
+`u55219_generated` lại mang nhãn thi cũ). Mục mang thẻ ngay dưới tiêu đề chạy ở MỌI lượt, tự
+chữa như trước H3, mà không kéo mục sau (DML không gỡ được đồ của mục sau — luật hậu tố sinh ra
+vì DDL). Đổi CÂU của nó thì vẫn kéo hậu tố như mọi mục. Chỉ nhận UPDATE / INSERT có WHERE ở tầng
+ngoài (`la_cau_du_lieu_co_chan`) — kiểm lúc ĐỌC tệp, trước khi chạy bất cứ gì.
 
 Postgres làm được DDL trong giao dịch; hai thứ KHÔNG làm được là `CREATE INDEX
 CONCURRENTLY` và `ALTER TYPE … ADD VALUE` (bản cũ) — tệp chưa dùng, và đừng dùng.
@@ -86,6 +95,10 @@ _TIEU_DE_SO = re.compile(r'^--\s+(\d+)\.\s+(\S.*)$')
 #: không phải tiêu đề: sau số là chữ, không phải dấu ngắt.
 _GIONG_TIEU_DE = re.compile(r'^--\s+(?:[─=]+\s+§\d+|§\d+[a-z]?\s*[—–:.\-])')
 _DUOI = re.compile(r'[\s─=\-]+$')
+#: Thẻ mục DỮ LIỆU chạy MỖI LƯỢT — dòng NGAY dưới tiêu đề, đúng nguyên văn này.
+_THE_MOI_LUOT = re.compile(r'^--\s*chạy:\s*mỗi lượt\s*$')
+#: Mọi dòng trông như thẻ `-- chạy: …` — thẻ sai chỗ / sai giá trị thì DỪNG, không bỏ qua.
+_GIONG_THE = re.compile(r'^--\s*chạy\s*:')
 
 
 class LoiLuocDo(Exception):
@@ -108,6 +121,42 @@ def _split_statements(raw):
     return [s.strip() for s in cleaned.split(';') if s.strip()]
 
 
+def _tang_ngoai(cau):
+    """Câu lệnh với mọi chuỗi '…' và mọi thứ trong ngoặc bị bỏ — còn lại TẦNG NGOÀI của câu.
+    Để "có WHERE" nghĩa là WHERE của chính câu, không phải của câu con hay chữ trong chuỗi."""
+    ra, sau, trong_chuoi, i = [], 0, False, 0
+    while i < len(cau):
+        ch = cau[i]
+        if trong_chuoi:
+            if ch == "'" and cau[i + 1:i + 2] == "'":
+                i += 2
+                continue
+            if ch == "'":
+                trong_chuoi = False
+        elif ch == "'":
+            trong_chuoi = True
+        elif ch == '(':
+            sau += 1
+        elif ch == ')':
+            sau -= 1
+        elif sau == 0:
+            ra.append(ch)
+        i += 1
+    return ''.join(ra)
+
+
+def la_cau_du_lieu_co_chan(cau):
+    """UPDATE / INSERT có WHERE ở tầng ngoài — thứ DUY NHẤT mục chạy mỗi lượt được chứa.
+
+    Vì sao hẹp vậy: mục ấy chạy MỖI deploy trên bảng đang phục vụ. DDL mỗi lượt là đúng cảnh
+    H3 dẹp đi (dỡ-dựng ràng buộc, khoá bảng); UPDATE không WHERE ghi lại MỌI dòng mỗi deploy;
+    INSERT … VALUES đẻ thêm dòng mỗi deploy. `INSERT … SELECT … WHERE NOT EXISTS (…)` và
+    `UPDATE … WHERE <chỉ dòng còn cũ>` chạy lại bao nhiêu lần cũng chỉ chạm dòng cần chạm."""
+    ngoai = _tang_ngoai(cau)
+    dau = ngoai.split(None, 1)[0].upper() if ngoai.strip() else ''
+    return dau in ('UPDATE', 'INSERT') and re.search(r'\bWHERE\b', ngoai, re.I) is not None
+
+
 def _bam(cau):
     chuan = '\n;\n'.join(
         '\n'.join(d.rstrip() for d in c.splitlines() if d.strip()) for c in cau)
@@ -122,6 +171,7 @@ class Muc:
     dong: int          # dòng tiêu đề (đếm từ 1)
     cau: tuple         # các câu lệnh, đúng thứ tự
     checksum: str
+    moi_luot: bool = False   # `-- chạy: mỗi lượt` ngay dưới tiêu đề (mục DỮ LIỆU)
 
     @property
     def khoa(self):
@@ -168,7 +218,20 @@ def chia_muc(tep, raw):
             raise LoiLuocDo('%s: hai tiêu đề cùng mã %s (dòng %d và %d) — đổi số một bên'
                             % (tep, ma, da_thay[ma], so))
         da_thay[ma] = so
-        ra.append(Muc(tep, ma, td, so, cau, _bam(cau)))
+        moi_luot = ma != 'nền' and len(dong) > 1 and bool(_THE_MOI_LUOT.match(dong[1]))
+        for k, d in enumerate(dong):
+            if _GIONG_THE.match(d) and not (moi_luot and k == 1):
+                raise LoiLuocDo('%s dòng %d: thẻ `%s` sai chỗ hoặc sai giá trị — chỉ nhận đúng '
+                                '`-- chạy: mỗi lượt`, NGAY dưới dòng tiêu đề mục'
+                                % (tep, so + k, d.strip()[:60]))
+        if moi_luot:
+            for k, c in enumerate(cau, 1):
+                if not la_cau_du_lieu_co_chan(c):
+                    raise LoiLuocDo('%s %s: mục chạy mỗi lượt chỉ nhận UPDATE / INSERT có WHERE ở '
+                                    'tầng ngoài (DDL, DELETE, WITH, INSERT … VALUES, UPDATE không '
+                                    'WHERE đều bị từ chối) — câu %d: %s'
+                                    % (tep, ma, k, ' '.join(c.split())[:90]))
+        ra.append(Muc(tep, ma, td, so, cau, _bam(cau), moi_luot))
 
     ghep = [c for m in ra for c in m.cau]
     ca_tep = _split_statements(raw)
@@ -210,6 +273,7 @@ def doc_tat_ca(thu_muc=None):
 class Viec:
     muc: Muc
     ly_do: str
+    hau_to: bool = True      # False = chỉ chạy vì thẻ mỗi lượt, không phải phần hậu tố
 
 
 def tim_muc(cac_muc, ma):
@@ -224,7 +288,8 @@ def tim_muc(cac_muc, ma):
 
 
 def lap_ke_hoach(cac_muc, so, tat_ca=False, tu=None):
-    """Mục phải chạy ở lượt này — luôn là một ĐUÔI của `cac_muc` (xem đầu tệp).
+    """Mục phải chạy ở lượt này: một ĐUÔI của `cac_muc` (từ mục mới/đổi đầu tiên tới hết, xem
+    đầu tệp), cộng các mục `moi_luot` đứng TRƯỚC đuôi ấy.
 
     `so`: {khoá: checksum} đọc từ sổ; `None` hay {} = CSDL chưa có sổ → chạy hết.
     `tu`: khoá một mục (`tim_muc`) — coi như nó đổi: chạy nó và mọi mục sau (`--tu`)."""
@@ -241,15 +306,16 @@ def lap_ke_hoach(cac_muc, so, tat_ca=False, tu=None):
             return 'đổi nội dung'
         return None
 
+    dau = next((i for i, m in enumerate(cac_muc) if vi_sao(m)), None)
+    ra = []
     for i, m in enumerate(cac_muc):
-        dau = vi_sao(m)
-        if dau is None:
-            continue
-        ra = [Viec(m, dau)]
-        for sau in cac_muc[i + 1:]:
-            ra.append(Viec(sau, vi_sao(sau) or 'đứng sau %s' % m.khoa))
-        return ra
-    return []
+        if dau is not None and i >= dau:
+            ra.append(Viec(m, vi_sao(m) or 'đứng sau %s' % cac_muc[dau].khoa))
+        elif m.moi_luot:
+            # Mục DỮ LIỆU chạy lại mỗi lượt mà KHÔNG kéo mục sau: DML không gỡ được đồ của mục
+            # sau (luật hậu tố sinh ra vì DDL — §36 CASCADE). Đổi nội dung thì vẫn kéo (ở trên).
+            ra.append(Viec(m, 'chạy mỗi lượt', hau_to=False))
+    return ra
 
 
 def mo_coi(cac_muc, so):
@@ -318,15 +384,14 @@ def _thuc_thi(cur, cau):
     cur.execute(cau)
 
 
-def _chay_muc(m, j, viec, local_now):
-    """Một lần thử cho một mục: MỘT giao dịch gồm (xoá sổ các mục sau) + câu + ghi sổ."""
+def _chay_muc(m, xoa, local_now):
+    """Một lần thử cho một mục: MỘT giao dịch gồm (xoá sổ `xoa`) + câu + ghi sổ."""
     from django.db import connection, transaction
 
     with transaction.atomic(), connection.cursor() as cur:
         cur.execute("SELECT set_config('lock_timeout', %s, true)", [CHO_KHOA])
-        if j == 0 and len(viec) > 1:
-            cur.execute('DELETE FROM %s WHERE muc = ANY(%%s)' % SO,
-                        [[x.muc.khoa for x in viec[1:]]])
+        if xoa:
+            cur.execute('DELETE FROM %s WHERE muc = ANY(%%s)' % SO, [xoa])
         for i, cau in enumerate(m.cau, 1):
             try:
                 _thuc_thi(cur, cau)
@@ -348,11 +413,15 @@ def chay_ke_hoach(viec, ghi=lambda s: None):
 
     from common.clock import local_now
 
+    # Mục MỞ ĐẦU hậu tố xoá sổ của mọi mục hậu tố sau nó (cùng giao dịch). Mục chỉ chạy vì thẻ
+    # mỗi lượt không xoá gì: nó hỏng thì lượt sau chỉ chạy lại nó, không kéo cả đuôi tệp.
+    dau = next((j for j, v in enumerate(viec) if v.hau_to), None)
     for j, v in enumerate(viec):
         m = v.muc
+        xoa = [x.muc.khoa for x in viec[j + 1:] if x.hau_to] if j == dau else []
         for lan in range(len(CHO_THU_LAI) + 1):
             try:
-                _chay_muc(m, j, viec, local_now)
+                _chay_muc(m, xoa, local_now)
                 break
             except Exception as exc:
                 i, cau = getattr(exc, 'vi_tri', (0, ''))
@@ -486,7 +555,14 @@ def dien_tap():
         ket['so_dong_so'] = len(so1)
         ket['doi_luot2'] = sorted(k for k in anh1.keys() | anh2.keys()
                                   if anh1.get(k) != anh2.get(k))
-        ket['chay_lai_luot2'] = sorted(k for k in so2 if so1.get(k) != so2[k])
+        # Mục `moi_luot` chạy lại mỗi lượt là ĐÚNG thiết kế — tách riêng, không tính là lỗi.
+        moi_luot = {m.khoa for m in cac_muc if m.moi_luot}
+        chay_lai = [k for k in so2 if so1.get(k) != so2[k]]
+        ket['chay_lai_luot2'] = sorted(k for k in chay_lai if k not in moi_luot)
+        ket['moi_luot_luot2'] = sorted(k for k in chay_lai if k in moi_luot)
+        if sorted(moi_luot) != ket['moi_luot_luot2']:
+            ket['chay_lai_luot2'].append('(mục mỗi lượt KHÔNG chạy ở lượt 2: %s)'
+                                         % sorted(moi_luot - set(chay_lai)))
         thieu = []
         for ma, mo_ta, kiem in MUC:
             try:

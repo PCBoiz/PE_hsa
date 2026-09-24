@@ -9,7 +9,7 @@ Từ 24/09/2026 (H3) lệnh chia tệp thành MỤC (`-- ── §NN · …`) v�
 mỗi lượt chỉ chạy mục mới / đã đổi cùng mọi mục đứng sau nó, mỗi mục một giao dịch.
 Luật và lý do: `common/luoc_do_sql.py`.
 
-    python manage.py bootstrap_schema                  # chạy mục chờ, ghi sổ
+    python manage.py bootstrap_schema                  # chạy mục chờ + mục `-- chạy: mỗi lượt`, ghi sổ
     python manage.py bootstrap_schema --kiem           # liệt kê mục chờ, KHÔNG chạy gì
     python manage.py bootstrap_schema --kiem --ma-loi  # … và thoát 1 nếu có mục chờ (pre-push)
     python manage.py bootstrap_schema --tat-ca         # chạy lại MỌI mục như trước H3 (bỏ qua sổ)
@@ -84,9 +84,11 @@ class Command(BaseCommand):
             raise CommandError(str(e)) from e
         with connection.cursor() as cur:
             sau = dem_bang(cur)
+        hau_to = [v for v in viec if v.hau_to]
         self.stdout.write(self.style.SUCCESS(
-            '[bootstrap_schema] %d/%d mục chạy (%d câu) · bảng: %d -> %d'
-            % (len(viec), len(cac_muc), sum(len(v.muc.cau) for v in viec), truoc, sau)))
+            '[bootstrap_schema] %d/%d mục chạy (%d câu) · mỗi lượt: %d mục dữ liệu · bảng: %d -> %d'
+            % (len(hau_to), len(cac_muc), sum(len(v.muc.cau) for v in viec),
+               len(viec) - len(hau_to), truoc, sau)))
 
     def _kiem(self, cac_muc, ma_loi, tat_ca, tu):
         with connection.cursor() as cur:
@@ -97,27 +99,33 @@ class Command(BaseCommand):
                               '(%d mục) một lần rồi ghi sổ.' % (SO, len(cac_muc)))
         else:
             self.stdout.write('Sổ %s: %d mục đã ghi; tệp có %d mục.' % (SO, len(so), len(cac_muc)))
-        if viec:
+        cho = [v for v in viec if v.hau_to]
+        if cho:
             self.stdout.write(self.style.WARNING(
-                'Mục sẽ chạy ở lượt bootstrap tới (%d):' % len(viec)))
-            for v in viec:
+                'Mục sẽ chạy ở lượt bootstrap tới (%d):' % len(cho)))
+            for v in cho:
                 self.stdout.write('  · %-26s %3d câu — %s' % (v.muc.khoa, len(v.muc.cau), v.ly_do))
         else:
             self.stdout.write(self.style.SUCCESS('Không mục nào chờ.'))
+        moi_luot = [v for v in viec if not v.hau_to]
+        if moi_luot:
+            self.stdout.write('Mục dữ liệu chạy MỖI lượt (không tính là chờ): '
+                              + ', '.join(v.muc.khoa for v in moi_luot))
         coi = mo_coi(cac_muc, so)
         if coi:
             self.stdout.write('Có trong sổ mà không còn trong tệp (đổi số / nhánh khác — vô hại): '
                               + ', '.join(coi))
-        if ma_loi and viec:
+        if ma_loi and cho:
             raise SystemExit(1)
 
     def _dien_tap(self):
         self.stdout.write('Diễn tập CSDL mới toanh (schema tạm, cuộn lại khi xong)…')
         ket = dien_tap()
         self.stdout.write(
-            '  lượt 1: sổ ghi %d/%d mục · %d bảng · lượt 2: %d mục chạy lại, %d ràng buộc/chỉ mục '
-            'bị dỡ-dựng' % (ket['so_dong_so'], ket['so_muc'], ket['so_bang'],
-                            len(ket['chay_lai_luot2']), len(ket['doi_luot2'])))
+            '  lượt 1: sổ ghi %d/%d mục · %d bảng · lượt 2: %d mục chạy lại (+ %d mục dữ liệu mỗi '
+            'lượt), %d ràng buộc/chỉ mục bị dỡ-dựng'
+            % (ket['so_dong_so'], ket['so_muc'], ket['so_bang'], len(ket['chay_lai_luot2']),
+               len(ket['moi_luot_luot2']), len(ket['doi_luot2'])))
         self.stdout.write('  kiem_luoc_do: %d/%d mục tới nơi'
                           % (ket['kiem_tong'] - len(ket['kiem_thieu']), ket['kiem_tong']))
         for t in ket['loi']:
