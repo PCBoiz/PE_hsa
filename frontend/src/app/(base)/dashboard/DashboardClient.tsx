@@ -343,9 +343,9 @@ export default function DashboardClient(
               </div>
               <div className="dash-progress-empty" id="dash-progress-empty">
                 <span className="dash-progress-icon" data-icon="book-open" data-size="20" data-color="#60A5FA"></span>
-                <p>Chưa đăng ký khóa học nào</p>
-                <span className="dash-progress-sub">Bắt đầu học ngay hôm nay!</span>
-                <button className="dash-progress-btn" onClick={() => W().navigate('courses')}>Xem khóa học →</button>
+                <p>Chưa có môn nào mở cho lớp của em</p>
+                <span className="dash-progress-sub">Trung tâm mở môn khi xếp em vào lớp.</span>
+                <button className="dash-progress-btn" onClick={() => W().navigate('courses')}>Xem các môn →</button>
               </div>
               {/* Danh sách tiến độ thật (bảng enrollments) — main.js renderDashProgress() đổ vào */}
               <div className="dash-progress-list" id="dash-progress-list" hidden></div>
@@ -421,7 +421,7 @@ export default function DashboardClient(
               <div className="filter-group" role="group" aria-label="Lọc theo trạng thái ghi danh">
                 <button className="filter-btn active" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'all')} role="radio" aria-checked="true">Tất cả</button>
                 <button className="filter-btn" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'enrolled')} role="radio" aria-checked="false">Đang học</button>
-                <button className="filter-btn" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'not-enrolled')} role="radio" aria-checked="false">Chưa đăng ký</button>
+                <button className="filter-btn" onClick={(e) => W().setEnrollmentFilter(e.currentTarget, 'not-enrolled')} role="radio" aria-checked="false">Chưa mở</button>
               </div>
               <div className="sort-dropdown-wrap">
                 <label htmlFor="course-sort-select" className="sort-label">Sắp xếp:</label>
@@ -925,24 +925,6 @@ export default function DashboardClient(
         </div>
         )}
       </main>
-
-      {/* ★ MODAL HỦY ĐĂNG KÝ KHÓA HỌC */}
-      <div className="un-overlay" id="unenrollModal" onClick={(e) => W().handleUnenrollOverlayClick(e)}>
-        <div className="un-card">
-          <div className="un-icon-wrap">🗑️</div>
-          <h3 className="un-title">Hủy đăng ký?</h3>
-          <p className="un-sub">Bạn sắp hủy đăng ký khóa học</p>
-          <p className="un-course-name" id="unenroll-course-name"></p>
-          <div className="un-warning">
-            <span>⚠️</span>
-            <p>Toàn bộ tiến độ học tập của bạn trong khóa này sẽ bị <strong>xóa vĩnh viễn</strong> và không thể khôi phục lại.</p>
-          </div>
-          <div className="un-actions">
-            <button className="un-btn-cancel" onClick={() => W().closeUnenrollModal()}>Không, giữ lại</button>
-            <button className="un-btn-confirm" onClick={() => W().confirmUnenroll()}>Đồng ý hủy</button>
-          </div>
-        </div>
-      </div>
 
       {/* ★ MODAL ĐỔI MẬT KHẨU */}
       <div className="cp-overlay" id="changePasswordModal" role="dialog" aria-modal="true" aria-labelledby="cpTitle">
