@@ -28,7 +28,10 @@ MAU = (
     '-- ============================================================\n'
     '-- 1. dòng đánh số TRONG lời giải thích, không phải tiêu đề\n'
     '-- §31 đã nhận ra điều này — câu văn, không phải tiêu đề\n'
-    'CREATE TABLE IF NOT EXISTS classes (id SERIAL PRIMARY KEY);\n'
+    'CREATE TABLE IF NOT EXISTS classes (\n'
+    '    id   SERIAL PRIMARY KEY,\n'
+    '    name TEXT\n'
+    ');\n'
     '-- §3 · Kiểu giữa (31/08)\n'
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS a INT;\n'
     '-- ── §4 · KIỂU MỚI (24/09) ──────────\n'
@@ -83,7 +86,11 @@ def test_checksum_bo_qua_chu_thich_CRLF_khoang_trang_cuoi_dong():
     goc = {m.ma: m.checksum for m in chia_muc('t.sql', MAU)}
     doi_chu_thich = MAU.replace('-- 2. Lớp học (2026-08-24)', '-- 2. Lớp học — viết lại lời')
     doi_chu_thich = doi_chu_thich.replace('INT;\n-- ── §4', 'INT;   -- thêm lời cuối dòng\n-- ── §4')
-    for bien in (doi_chu_thich, MAU.replace('\n', '\r\n'), MAU.replace(';\n', ';   \n')):
+    # Lời cuối dòng GIỮA một câu nhiều dòng (việc hay làm nhất: chú thích một cột) để lại
+    # khoảng trắng cuối dòng sau khi bỏ `--` — checksum phải bỏ qua nó (đột biến A3 bắt được
+    # bản đầu của phép kiểm này thiếu đúng trường hợp ấy).
+    loi_cot = MAU.replace('    name TEXT\n', '    name TEXT   -- tên lớp, người nhập tự đặt\n')
+    for bien in (doi_chu_thich, loi_cot, MAU.replace('\n', '\r\n'), MAU.replace(';\n', ';   \n')):
         assert {m.ma: m.checksum for m in chia_muc('t.sql', bien)} == goc
 
 
