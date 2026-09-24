@@ -69,12 +69,22 @@ python manage.py kiem_luoc_do                  # mọi dòng ✓
 | `bootstrap_schema` | chạy mục chờ, ghi sổ (đúng lệnh Render chạy) |
 | `bootstrap_schema --kiem` | liệt kê mục sẽ chạy ở lượt tới, không chạy, không ghi |
 | `bootstrap_schema --kiem --ma-loi` | như trên, thoát 1 nếu có mục chờ (cổng pre-push dùng) |
+| `bootstrap_schema --tu §57` | chạy lại TỪ một mục tới hết (giữ luật hậu tố); đi cùng `--kiem` để xem trước |
 | `bootstrap_schema --tat-ca` | chạy lại MỌI mục như trước H3 rồi ghi sổ |
 | `bootstrap_schema --dien-tap` | diễn tập CSDL mới toanh (schema tạm, hai lượt, cuộn lại) |
 | `kiem_luoc_do [--ma-loi]` | hỏi thẳng `pg_catalog`: mục nào thật sự có trên CSDL này |
 
-**Sổ và thực tế lệch nhau** (sổ ghi đã chạy mà `kiem_luoc_do` báo ✗ — có người ALTER tay, khôi
-phục một phần): `bootstrap_schema --tat-ca`.
+**Sổ và thực tế lệch nhau** (sổ ghi đã chạy mà `kiem_luoc_do` báo ✗ ở §NN — có người ALTER tay,
+khôi phục một phần, hoặc mã CŨ ghi lại dữ liệu sau khi mục dữ liệu đã chạy): `bootstrap_schema --tu §NN`
+(nặng hơn: `--tat-ca`).
+
+**Mục DỮ LIỆU chỉ chạy MỘT lần.** Trước H3, mỗi deploy chạy lại cả `UPDATE … WHERE <còn chữ cũ>`
+(như §57) nên dòng nào mã cũ ghi lại sau đó cũng được sửa ở deploy kế. Nay không (đúng ý kế hoạch:
+thôi điền ngược mỗi deploy). Đo 25/09 trên nhánh `dev`: §57 chạy 23:47, `kiem_luoc_do` 41/41; tới
+00:18 lộ trình `u55219_generated` lại mang nhãn "Luyện đề tổng (CBT)" — một tiến trình chạy mã TRƯỚC
+§57 (máy chủ / phép kiểm của nhánh khác dùng chung `dev`) đã sinh lại nó; `--tu §57` sửa xong, 42/42.
+Trên production cửa sổ ấy là lúc bản cũ còn phục vụ trong khi Render dựng bản mới: sau deploy có
+mục dữ liệu, chạy `kiem_luoc_do`; ✗ thì `--tu §NN`. Mã sinh dữ liệu phải đổi CÙNG mẻ với mục dữ liệu.
 
 **Build Render đỏ ở `bootstrap_schema`**: log có dòng `[legacy_schema.sql §NN · câu i/n …] LỖI ở: …`.
 Mục ấy đã cuộn lại trọn, không ghi sổ; các mục trước nó đã chạy và ghi sổ; bản cũ vẫn phục vụ. Sửa,

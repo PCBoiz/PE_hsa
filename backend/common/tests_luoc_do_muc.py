@@ -138,6 +138,28 @@ def test_ke_hoach_tat_ca_bo_qua_so():
     assert [v.muc.ma for v in viec] == _ma(ds)
 
 
+def test_ke_hoach_tu_mot_muc_chay_no_va_moi_muc_sau():
+    """`--tu §NN`: sổ nói đã chạy mà thực tế lệch (mục dữ liệu bị mã cũ ghi đè lại sau khi chạy
+    — đo 25/09 trên nhánh dev: §57b ✗ dù sổ ghi §57) → chạy lại TỪ mục ấy, giữ luật hậu tố,
+    không phải cả tệp như `--tat-ca`."""
+    from common.luoc_do_sql import tim_muc
+    ds = chia_muc('t.sql', MAU)
+    viec = lap_ke_hoach(ds, _so(ds), tu=tim_muc(ds, '§3'))
+    assert [(v.muc.ma, v.ly_do) for v in viec] == [
+        ('§3', 'chạy lại theo yêu cầu (--tu)'), ('§4', 'đứng sau t.sql §3')]
+
+
+def test_tim_muc_nhan_ma_hoac_khoa_va_tu_choi_mo_ho():
+    from common.luoc_do_sql import tim_muc
+    ds = chia_muc('t.sql', MAU) + chia_muc('u.sql', '-- ── §3 · X ──' + chr(10) + 'SELECT 1;')
+    assert tim_muc(ds, 't.sql §4') == 't.sql §4'
+    assert tim_muc(ds, '§4') == 't.sql §4'
+    with pytest.raises(LoiLuocDo, match='hai tệp'):
+        tim_muc(ds, '§3')
+    with pytest.raises(LoiLuocDo, match='không có mục'):
+        tim_muc(ds, '§99')
+
+
 def test_mo_coi_chi_bao_khoa_khong_con_trong_tep():
     ds = chia_muc('t.sql', MAU)
     so = _so(ds)

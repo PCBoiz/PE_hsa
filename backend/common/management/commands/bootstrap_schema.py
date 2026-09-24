@@ -13,6 +13,7 @@ Luật và lý do: `common/luoc_do_sql.py`.
     python manage.py bootstrap_schema --kiem           # liệt kê mục chờ, KHÔNG chạy gì
     python manage.py bootstrap_schema --kiem --ma-loi  # … và thoát 1 nếu có mục chờ (pre-push)
     python manage.py bootstrap_schema --tat-ca         # chạy lại MỌI mục như trước H3 (bỏ qua sổ)
+    python manage.py bootstrap_schema --tu §57         # chạy lại TỪ một mục tới hết (sổ lệch thực tế)
     python manage.py bootstrap_schema --dien-tap       # dựng từ SỐ KHÔNG vào schema tạm, hai
                                                        # lượt, đối chiếu kiem_luoc_do, cuộn lại
 """
@@ -31,6 +32,7 @@ from common.luoc_do_sql import (
     lap_ke_hoach,
     mo_coi,
     tao_so,
+    tim_muc,
 )
 
 
@@ -46,6 +48,9 @@ class Command(BaseCommand):
         parser.add_argument('--tat-ca', action='store_true',
                             help='Chạy lại MỌI mục (bỏ qua sổ), rồi ghi sổ. Dùng khi kiem_luoc_do '
                                  'thấy thiếu mà sổ nói đã chạy.')
+        parser.add_argument('--tu', metavar='MUC',
+                            help='Chạy lại TỪ mục này (vd §57 hoặc "legacy_schema.sql §57") tới hết, '
+                                 'giữ luật hậu tố. Dùng khi kiem_luoc_do báo một mục thiếu.')
         parser.add_argument('--dien-tap', action='store_true',
                             help='Diễn tập CSDL mới toanh trong một schema tạm: hai lượt, đối '
                                  'chiếu kiem_luoc_do, rồi cuộn lại.')
@@ -56,16 +61,21 @@ class Command(BaseCommand):
         except LoiLuocDo as e:
             raise CommandError(str(e)) from e
 
+        try:
+            tu = tim_muc(cac_muc, opt['tu']) if opt['tu'] else None
+        except LoiLuocDo as e:
+            raise CommandError(str(e)) from e
+
         if opt['dien_tap']:
             return self._dien_tap()
         if opt['kiem']:
-            return self._kiem(cac_muc, opt['ma_loi'], opt['tat_ca'])
+            return self._kiem(cac_muc, opt['ma_loi'], opt['tat_ca'], tu)
 
         with connection.cursor() as cur:
             truoc = dem_bang(cur)
             tao_so(cur)
             so = doc_so(cur)
-        viec = lap_ke_hoach(cac_muc, so, tat_ca=opt['tat_ca'])
+        viec = lap_ke_hoach(cac_muc, so, tat_ca=opt['tat_ca'], tu=tu)
         if not so and not opt['tat_ca']:
             self.stdout.write('  Sổ %s còn trống — lượt đầu chạy MỌI mục một lần rồi ghi sổ.' % SO)
         try:
@@ -78,10 +88,10 @@ class Command(BaseCommand):
             '[bootstrap_schema] %d/%d mục chạy (%d câu) · bảng: %d -> %d'
             % (len(viec), len(cac_muc), sum(len(v.muc.cau) for v in viec), truoc, sau)))
 
-    def _kiem(self, cac_muc, ma_loi, tat_ca):
+    def _kiem(self, cac_muc, ma_loi, tat_ca, tu):
         with connection.cursor() as cur:
             so = doc_so(cur)
-        viec = lap_ke_hoach(cac_muc, so, tat_ca=tat_ca)
+        viec = lap_ke_hoach(cac_muc, so, tat_ca=tat_ca, tu=tu)
         if so is None:
             self.stdout.write('Sổ %s CHƯA có trên CSDL này — lượt bootstrap tới chạy MỌI mục '
                               '(%d mục) một lần rồi ghi sổ.' % (SO, len(cac_muc)))

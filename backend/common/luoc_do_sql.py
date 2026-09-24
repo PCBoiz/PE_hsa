@@ -212,15 +212,29 @@ class Viec:
     ly_do: str
 
 
-def lap_ke_hoach(cac_muc, so, tat_ca=False):
+def tim_muc(cac_muc, ma):
+    """Khoá sổ của mục mà người gõ `ma` muốn: nhận khoá đủ (`legacy_schema.sql §57`) hoặc chỉ
+    mã (`§57`) khi mã ấy chỉ có ở MỘT tệp."""
+    khop = [m.khoa for m in cac_muc if m.khoa == ma] or [m.khoa for m in cac_muc if m.ma == ma]
+    if not khop:
+        raise LoiLuocDo('không có mục %s trong sql/*.sql' % ma)
+    if len(khop) > 1:
+        raise LoiLuocDo('mã %s có ở hai tệp trở lên (%s) — gõ khoá đủ' % (ma, ', '.join(khop)))
+    return khop[0]
+
+
+def lap_ke_hoach(cac_muc, so, tat_ca=False, tu=None):
     """Mục phải chạy ở lượt này — luôn là một ĐUÔI của `cac_muc` (xem đầu tệp).
 
-    `so`: {khoá: checksum} đọc từ sổ; `None` hay {} = CSDL chưa có sổ → chạy hết."""
+    `so`: {khoá: checksum} đọc từ sổ; `None` hay {} = CSDL chưa có sổ → chạy hết.
+    `tu`: khoá một mục (`tim_muc`) — coi như nó đổi: chạy nó và mọi mục sau (`--tu`)."""
     so = so or {}
 
     def vi_sao(m):
         if tat_ca:
             return 'chạy lại hết (--tat-ca)'
+        if tu is not None and m.khoa == tu:
+            return 'chạy lại theo yêu cầu (--tu)'
         if m.khoa not in so:
             return 'mới'
         if so[m.khoa] != m.checksum:
