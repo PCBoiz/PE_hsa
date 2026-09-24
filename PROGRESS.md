@@ -90,6 +90,18 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## ⏸ 24/09/2026 — TẠM DỪNG theo lệnh anh Sơn (đọc mục "TẠM DỪNG" đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`)
+
+- **Tiến độ**: mốc trước buổi TopHSA xem lại ~80% (10/16 xong, 4 gần xong, 2 chưa: 1.4b, 1.6); toàn kế hoạch ~30%.
+- **Đã xong trong ngày** (master, chưa đẩy — 27 commit): ghi nhớ đăng nhập, đường đi theo vai, cổng vào, dọn màn học viên,
+  lịch học §53, loại lớp + danh sách lớp lọc/phân trang §54, tạo nhanh lớp gia sư, chuyển lớp một thao tác §55, môn mở qua
+  lớp (1.3 phần backend + trang khoá), Tổng quan v2 + `last_seen_at` §56 (agent), guard chữ người dùng + "Chi tiết" gập
+  (agent), vá chặn deploy §55, vá bài trùng vị trí (lỗi dữ liệu thật của khách).
+- **Dở**: nhánh `agent/bo-thi` (1.5A xong, CHƯA gộp — lượt gộp thử bị huỷ để master chỉ chứa phần đã đo; cách giải xung
+  đột đã ghi); 1.3 còn nút Đăng ký ở `main.js` / `DashboardClient`; 1.4a còn `sangLop`.
+- **ĐỪNG đẩy master trước N6.** Việc của anh cập nhật: N4, N6, N7 (`docs/VIEC_CUA_ANH.md`).
+- Đo lúc dừng: master sạch, `kiem_luoc_do` 39/39 trên nhánh dev.
+
 ## 24/09/2026 (tiếp 8) — LỖI DỮ LIỆU THẬT: hai bài cùng vị trí 1 ở "Tư duy Định lượng" → vá mã + việc N7 cho anh
 
 - **Tìm ra** khi 3 test bài học đỏ không phải vì 1.3: nhánh dev (bản sao production 24/09) có `lessons` id 1 "Tỉ lệ &

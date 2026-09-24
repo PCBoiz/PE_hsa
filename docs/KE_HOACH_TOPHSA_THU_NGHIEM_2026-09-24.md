@@ -4,6 +4,50 @@ Bản SỐNG: mọi tiến độ ghi vào tệp này (tick + commit + số đo),
 Nguồn: góp ý của TopHSA sau khi dùng thử + ghi chú họp + 4 lượt dò mã (24/09) + các quyết định
 anh Sơn chốt cùng ngày. Repo công khai — tệp này KHÔNG ghi giá, hợp đồng hay dữ liệu khách.
 
+## ⏸ TẠM DỪNG 24/09/2026 (anh Sơn yêu cầu) — ĐỌC MỤC NÀY TRƯỚC KHI LÀM TIẾP
+
+**Tiến độ** (ước lượng theo khối lượng, không phải đếm dòng):
+- Mốc "trước buổi TopHSA xem lại" (K0, B0, H1, 1.1a–d, 1.2a–c, 1.3, 1.4a–b, 1.5A, 1.6, U2/U4 — 16 mục): **10 xong, 4 gần
+  xong, 2 chưa → ~80%**. Gần xong: H1 (chỉ chờ anh N2), 1.1d (một ít CSS chết), 1.3 (nút Đăng ký ở `main.js` /
+  `DashboardClient`), 1.5A (xong trên nhánh, chưa gộp). Chưa: 1.4b, 1.6.
+- Toàn kế hoạch (Đợt 1 + hạ tầng H + G + Đợt 2 + Đợt 3): **~30%** — Đợt 1 ~70%, còn lại chưa bắt đầu.
+
+**Trạng thái repo lúc dừng** (`D:\pe_hsa`, nhánh `master`, sạch):
+- HEAD `7d8eb9c`; **27 commit CHƯA đẩy**. ĐỪNG đẩy trước khi anh làm **N6** (xếp lớp cho mọi học viên thật) — 1.3 đã
+  trong master: em chưa thuộc lớp nào sẽ mất bài khi deploy. Làm **N7** (bài trùng vị trí) ngay sau khi đẩy.
+- Nhánh `agent/bo-thi` (1.5A) CHƯA gộp. Nhánh `agent/chu-nguoi-dung`, `agent/tong-quan` ĐÃ gộp.
+- CSDL nhánh `dev` đã áp tới §57 (lượt gộp thử chạy bootstrap với §57) — vô hại: §57 chỉ UPDATE dữ liệu hiển thị, chạy lại
+  không đổi gì; `kiem_luoc_do` trên master (chưa có mục §57) vẫn 39/39.
+- Worktree agent còn trên đĩa: `D:\pe_hsa_wt\{chu-nguoi-dung, tong-quan, bo-thi}` — mỗi cái có bản chép `backend/.env`
+  và `frontend/node_modules` là JUNCTION trỏ về `D:\pe_hsa\frontend\node_modules`. **Dỡ worktree: gỡ junction TRƯỚC**
+  (`cmd //c rmdir "D:\pe_hsa_wt\<tên>\frontend\node_modules"` — `rmdir` trên junction chỉ gỡ liên kết), xoá `.env`
+  chép, rồi mới `git worktree remove` — xoá đệ quy qua junction là xoá luôn node_modules thật.
+- Máy chủ dev: Django 9000 + Next 3100 có thể vẫn chạy (bản `7d8eb9c` trừ Next build trước lúc gộp 1.4a) — bật lại theo
+  mục dưới trước khi đo.
+
+**Làm tiếp, theo thứ tự** (khi anh bảo):
+1. **Gộp `agent/bo-thi`** vào master. Ba xung đột đã biết, cả ba là "hai bên cùng nối thêm":
+   `legacy_schema.sql` + `kiem_luoc_do.py` → giữ CẢ HAI (§56 trước, §57 sau); `chot-ham-tang-cu.test.mjs` → giữ cả hai
+   dòng lịch sử, đo lại trần sau gộp (đo 24/09: **6533**). Rồi: bootstrap HAI lần, `kiem_luoc_do` (41/41), pytest các mô-đun
+   hai nhánh chạm (accounts, teaching, lessons, courses, stats, mockexam với `urls_thi_da_thao`, common), guard, tsc,
+   eslint, `ban_do --kiem`, e2e `bo-thi` + `khung-chung` + `vai-tro-cong` + `huong-dan-moi-vai` + `mo-mon-theo-lop` +
+   `danh-sach-lop` hai khổ, `do_giao_dien` + `do_axe` (cấp thẻ admin + học viên trước), soi ảnh Tổng quan v2 + Trang của
+   tôi + Giáo trình. Quyết hai câu agent hỏi: đồng ý xoá sớm 4 tệp frontend thi (không màn nào tới được); thẻ số thứ tư →
+   "Tiến độ chương trình" ở pha B.
+2. **1.3 phần còn lại**: gỡ nút Đăng ký / huỷ ở view Khoá học (`main.js` `toggleEnroll`, `_applyEnrollState`), modal và
+   nhãn ở `DashboardClient.tsx` → "Chưa mở cho lớp của em"; hạ trần tầng cũ; e2e học viên không thấy "Đăng ký" ở đâu.
+3. **1.4a phần còn lại**: `sangLop` trong `roiLop.ds` (nối `transferred_to`); soi lại Tổng quan trên master.
+4. **1.4b** danh sách học viên (lớp hiện tại + loại, lần cuối hoạt động, tiến độ; lọc "chưa xếp lớp", "không hoạt động
+   ≥ N ngày"; nút chuyển lớp dùng lại `ChuyenLop.tsx`).
+5. **1.6** "Hợp phần" → "Môn học" khắp nơi + "phân môn", "Mọi …" → "Tất cả", guard `thuat-ngu.test.mjs`.
+6. Rồi: 1.5B → 1.5C, U1/U3/U5/U6 (+ luật guard cho mã vai `admin` / `IsTeachingStaff` ở "Ai làm được gì"), H2–H8, G1–G3,
+   Đợt 2, Đợt 3 — theo bảng dưới. Agent hỗ trợ: tối đa 3 cùng lúc, mỗi agent một worktree + cổng riêng (9100/3200 từng
+   đụng nhau giữa hai agent — cấp cổng cụ thể cho từng agent).
+
+**Bài học của lượt này** (đã ghi PROGRESS + bộ nhớ): mục DDL phải chạy bootstrap HAI lần (§55 hỏng từ lần thứ hai);
+chú thích về khoá/giao dịch phải đối chiếu câu ghi có nằm trong khối khoá; test đỏ vì "dữ liệu lạ" có thể là lỗi thật
+của khách (hai bài cùng vị trí 1).
+
 ## Cách tiếp tục nếu bị ngắt
 
 1. Tìm mục `[~]` đầu tiên trong bảng dưới (không có thì `[ ]` đầu tiên).
@@ -29,14 +73,14 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [x] `6502a1a` + `ad3b299` — backend 9/9, 5 đột biến đỏ, guard cookie 9/9, e2e cookie thật 4/4 |
 | 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
 | 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
-| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; còn chữ "Miễn phí/Chứng chỉ" ở chi tiết khoá (làm trong 1.3) + CSS chết `.rm-ai-btn` (mục U) |
+| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; "Miễn phí/Chứng chỉ" ở chi tiết khoá đã gỡ trong 1.3 (`f5252f4`); còn CSS chết `.rm-ai-btn` (mục U) |
 | 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] `de4b39d` — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
 | 1.2b | Tạo nhanh lớp gia sư | [x] `b841152` — pytest 9/9 + sinh buổi 29/29 sau khi tách `tao_buoi`, đột biến 9/9 đỏ, guard 22 ✓ (3 đột biến đỏ), e2e 10/10 hai khổ có ghi, axe khung mở 0 (sau vá hover nút ghost) |
 | 1.2c | §55 chuyển lớp một thao tác | [x] `0f45c73` — pytest 8/8, đột biến 11/11 đỏ, kiem_luoc_do đỏ→xanh, e2e 12/12 hai khổ có ghi; `quen_truy_cap` để 1.3 |
-| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [~] (commit này) backend + trang khoá: pytest 11/11, đột biến 15/15, e2e 4/4 hai khổ; CÒN nút Đăng ký ở `main.js`/`DashboardClient` (sau khi gộp nhánh bỏ-thi) |
-| 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [ ] |
+| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [~] `f5252f4` backend + trang khoá: pytest 11/11, đột biến 15/15, e2e 4/4 hai khổ; CÒN nút Đăng ký ở `main.js`/`DashboardClient` (sau khi gộp nhánh bỏ-thi) |
+| 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [x] agent `d89cdfb`, gộp `7d8eb9c` — agent: đỏ trước 13 test, đột biến 18/19 (1 xanh = chốt thừa, đã gỡ) + hợp đồng 5/5, axe 0, soi ảnh 1280/390; lead sau gộp: pytest accounts + tổng quan + hợp đồng 74/74, bootstrap 2 lần, 39/39, guard/tsc/eslint. CHƯA: soi lại trên master; thêm `sangLop` vào `roiLop.ds` (§55 đã có) |
 | 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [ ] |
-| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [ ] |
+| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [~] XONG trên nhánh `agent/bo-thi` (`193ef5c`, agent: bo-thi.test 19 đỏ trước, đột biến 11/11, e2e 6/6 + 56 spec, soi ảnh) — CHƯA GỘP: lead gộp thử 24/09 → 3 xung đột (cách giải ở mục TẠM DỪNG), rồi huỷ gộp vì chưa kịp đo lại |
 | 1.5B | Bỏ thi pha B: thay bằng tiến trình học tập | [ ] |
 | 1.5C | Bỏ thi pha C: xoá mã (GIỮ bảng) | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |
