@@ -29,9 +29,28 @@ def test_cung_diem_cuoi_du_khac_pooler_la_production():
     assert not hr.dang_tro_production(host=DEV, host_production=PROD)
 
 
-def test_chua_dat_bien_thi_khong_chan():
-    assert not hr.dang_tro_production(host=PROD, host_production='')
-    assert not hr.dang_tro_production(host='', host_production=PROD)
+def test_chua_dat_bien_van_nhan_ra_production_theo_ten_diem_cuoi():
+    """25/09/2026: bỏ việc tay N2. Chưa ai đặt `PE_DB_HOST_PRODUCTION` (máy mới, `.env`
+    chép từ bản cũ) thì hàng rào vẫn nhận ra production qua tên điểm cuối — trước đây
+    nó im lặng cho chạy, tức hàng rào chỉ có tác dụng khi chủ máy nhớ sửa `.env`."""
+    assert hr.dang_tro_production(host=PROD, host_production='')
+    assert hr.dang_tro_production(host=PROD.replace('-pooler', ''), host_production='')
+    assert not hr.dang_tro_production(host=DEV, host_production='')
+    assert not hr.dang_tro_production(host='', host_production='')
+    # Đã đặt biến thì biến thắng (so khớp đúng điểm cuối như cũ).
+    assert not hr.dang_tro_production(host=PROD, host_production=DEV)
+
+
+def test_runserver_chan_ca_khi_chua_dat_bien(monkeypatch):
+    """Đi đúng đường thật: máy dev chưa sửa `.env`, `DATABASE_URL` lỡ trỏ production."""
+    from django.apps import apps
+    monkeypatch.setattr(hr, 'host_dang_dung', lambda: PROD)
+    monkeypatch.delenv(hr.BIEN_PRODUCTION, raising=False)
+    monkeypatch.delenv(hr.BIEN_CHO_PHEP, raising=False)
+    monkeypatch.setattr(sys, 'argv', ['manage.py', 'runserver', '--noreload'])
+    monkeypatch.setattr('common.keepalive.start_keepalive', lambda: pytest.fail('giữ ấm chạy trước hàng rào'))
+    with pytest.raises(ImproperlyConfigured):
+        apps.get_app_config('common').ready()
 
 
 def test_cau_loi_khong_lo_mat_khau_va_co_loi_thoat(monkeypatch):

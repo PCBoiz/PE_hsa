@@ -4,6 +4,281 @@ Bản SỐNG: mọi tiến độ ghi vào tệp này (tick + commit + số đo),
 Nguồn: góp ý của TopHSA sau khi dùng thử + ghi chú họp + 4 lượt dò mã (24/09) + các quyết định
 anh Sơn chốt cùng ngày. Repo công khai — tệp này KHÔNG ghi giá, hợp đồng hay dữ liệu khách.
 
+## ▶▶ KẾ HOẠCH v2 — 25/09/2026 (bảng yêu cầu 24/09 = danh mục nghiệm thu). ĐỌC MỤC NÀY TRƯỚC.
+
+Bảng theo dõi v2 bên dưới là nơi tick từ nay; bảng cũ ở mục "Bảng theo dõi" giữ để tra các mục đã xong.
+
+**Nhánh (anh nhắc 25/09):** mọi commit lên `erp` (nhánh thử nghiệm, đẩy thoải mái); agent rẽ nhánh và gộp từ `erp`;
+`master` = production, CHỈ anh gộp `erp` → `master` sau khi tôi báo "erp đã thử xong" (bộ test đủ xanh ở đầu `erp` trên
+máy dev + Preview Vercel của `erp` xanh). Mọi chỗ dưới đây ghi "gộp vào master" nay đọc là "gộp vào `erp`".
+
+### Context
+
+TopHSA gửi "Bảng phân rã tính năng — Updated 24.9.2026" (32 dòng + ghi chú "phân hệ thông báo chung").
+Anh Sơn xác nhận cột TRUE = **khách đã nghiệm thu dòng đó** (hiện chỉ dòng 1–2) → bảng này là DANH MỤC
+NGHIỆM THU: kế hoạch phải xếp theo dòng, mỗi dòng có bằng chứng + kịch bản demo. So với bảng cũ (nền của
+`docs/DOI_CHIEU_YEU_CAU_TOPHSA_2026-09-23.md`) bảng mới thêm cả khối **Phụ huynh (23–25)**, **Học sinh (26–32)**,
+ghi chú thông báo chung, và chi tiết mới ở dòng 2–6, 10, 22.
+
+Hai lượt dò mã 25/09 (đọc MÃ + SQL, không đọc chú thích) cho thấy DOI_CHIEU **báo quá tay** ở 5 chỗ — và một
+LỖI THẬT do chính 1.2c gây ra (commit chưa đẩy): ghi chú chuyển lớp ghi vào `class_members.note`
+(`teaching/chuyen_lop.py:129`), mà tờ phụ huynh in đúng cột ấy thành "nhận xét của giảng viên"
+(`teaching/parent_report.py:588`) → phụ huynh lớp cũ đọc ghi chú nội bộ. Phải vá TRƯỚC lần đẩy tới.
+
+Kế hoạch cũ (24/09) vẫn là nền; bản này (1) chốt 8 quyết định mới, (2) gom ~60 ô thiếu vào **5 bộ máy + 1 mẻ
+vá rẻ**, (3) xếp lại thứ tự theo "vận hành lớp trước", (4) chia 3 luồng agent không đụng nhau.
+
+### Quyết định anh chốt 25/09 (bổ sung bảng 24/09)
+
+| Việc | Chốt |
+|---|---|
+| Thi thử | Thi thử online VẪN bỏ. "Điểm thi thử" = **bài kiểm tra ngoại tuyến, GV nhập điểm tay** (một loại bài giao). **Hoãn 1.5C** (xoá mã thi) tới khi điểm kiểm tra chạy |
+| Phụ huynh | **KHÔNG tài khoản** — giữ link riêng, nâng thành "link theo dõi" sống (lịch sắp tới, thay đổi gần đây, tờ báo cáo, gửi yêu cầu). Dòng 23 phải được khách đồng ý thay bằng link |
+| Tự đăng ký | Đăng ký + email xác nhận → tài khoản học viên **chưa có lớp** (chưa mở môn); nguồn tuyển sinh tự ghi "Tự đăng ký"; hàng chờ "Đăng ký mới" cho giáo vụ xếp lớp; dùng chung với diễn đàn Đ3 |
+| Ưu tiên trước buổi xem lại | **Vận hành lớp trước** (giáo vụ/GV/TG), cổng HS/PH sau |
+| Record | Ở **Zoom cloud** (tài khoản trả phí) → nối Zoom tự gắn record vào buổi; "% đã xem" chỉ sau khi thử trên tài khoản thật |
+| Yêu cầu / trao đổi | **Một hộp "Yêu cầu" chung** (hỗ trợ, xin–duyệt thay đổi học tập, câu hỏi HS, TG báo lên, PH gửi qua link, báo lỗi record); không chat thời gian thực — Zalo vẫn để chat |
+| Học phí | Chỉ một ô **"Tình trạng học phí"** chọn tay trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu); không sổ tiền, không doanh thu |
+| Cột TRUE | = khách đã nghiệm thu dòng ấy → dòng 1–2 KHÔNG đụng thêm (xoá tài khoản, GV reset/nhập: để nguyên) |
+
+Mặc định tôi tự chọn (anh sửa nếu khác): không mở GitHub Actions → "nhịp" cho hộp thư đi/nhắc hạn = luồng trong
+tiến trình + máy gọi ngoài miễn phí (cron-job.org, cũng giữ Render không ngủ); Zoom pha 1 KHÔNG tạo phòng tự động,
+chỉ nhận record qua webhook và khớp theo mã phòng trong link đã dán; "Tỉnh/Thành phố" dùng danh sách 34 đơn vị
+sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho dữ liệu cũ).
+
+---
+
+### Ma trận nghiệm thu (bản rút gọn — bản đủ thay DOI_CHIEU, xem mục N)
+
+| Dòng | Yêu cầu | Hiện nay (đo 25/09) | Việc đóng |
+|---|---|---|---|
+| 1, 8, 13, 19 | Tài khoản các vai | CÓ (dòng 1 đã nghiệm thu) | — |
+| 2 | Quản lý người dùng | CÓ, đã nghiệm thu | — |
+| 3 | Tìm kiếm + hồ sơ HS | gần đủ; thiếu Tỉnh/Thành (danh sách), tình trạng học tập, tình trạng học phí | V-m |
+| 4 | Quản lý lớp (admin) | phần lớn CÓ; thiếu nhập HS từ tệp mẫu, "tạm dừng", lịch sử lớp cho giáo vụ, điểm kiểm tra trên dòng thời gian, tiến độ chương trình | V-j, V-c, V-n, V-h, E1 |
+| 5 + "chương trình" | Khoá học + khung chương trình | MỘT PHẦN: không có khung theo buổi, phiên bản, điều kiện hoàn thành; `is_published` không sửa được | E1, V-i |
+| 6 | Báo cáo | MỘT PHẦN: chỉ CSV, lọc theo đợt/ngày; chấm công chỉ đếm theo GV chủ lớp, không có TG | V-k, V-o, E1 |
+| 7 | Kế toán | thay bằng ô tình trạng học phí | V-m |
+| 9 | Lớp (giáo vụ) | thiếu lịch sử điểm danh, tiến độ vs khung, cảnh báo chậm | V-d, E1 |
+| 10 | Lịch học | gần đủ; thiếu buổi bù gắn buổi gốc, đổi GV/TG một buổi, Zoom | V-g, Đ2 §58, E4 |
+| 11, 12 | Hỗ trợ lớp + thay đổi học tập có duyệt | CHƯA | E3 |
+| 14 | GV điểm danh | thiếu lịch sử sửa từng buổi | V-d |
+| 15, 16 | GV chương trình, sổ đầu bài buổi học | CHƯA phần lớn | E1 (+ tài liệu: Đ2 §60) |
+| 17 | Giao bài | thiếu "đối tượng nhận bài" | V-e |
+| 18 | Theo dõi HS | **nhận xét GV: không có chỗ ghi + đang lỗi rò ghi chú chuyển lớp**; thiếu cờ "cần hỗ trợ", đề xuất hướng học | V-a (P0), V-f |
+| 20 | TG nhắn / nhắc | CHƯA | E3 (trao đổi) + E2 (nhắc) |
+| 21 | TG theo dõi | TG KHÔNG nhận `vangLien`/`canChuY` (`viec_hom_nay.py:225`) | V-b, E4 |
+| 22 | TG record | dán link CÓ; đã/chưa có, HS đã xem, báo lỗi: CHƯA | E4, V-l, E3 |
+| 23 | PH tài khoản | thay bằng link (chờ khách đồng ý) | K2 (việc anh) |
+| 24, 25 | PH xem + gửi yêu cầu | tờ báo cáo kỳ cố định; không lịch, không gửi | E3 §66 link sống |
+| 26 | HS tự đăng ký | CHƯA (`RegisterView` chỉ admin; `users.is_verified` chưa ai ghi) | E5 |
+| 27 + ghi chú | Thông báo chung | MỘT PHẦN: chuông + 4 loại; không thông báo trung tâm, không theo nhóm, không đánh dấu chưa đọc, không lịch sử đủ | E2 |
+| 28 | HS tiến độ | chỉ bài tự học; không điểm danh từng buổi, không so kế hoạch | E1, V-d |
+| 29 | HS record | CHƯA (API học viên không trả `recording_url`) | V-l, E4 |
+| 30 | HS học liệu | CHƯA | Đ2 §60 (R2) |
+| 31 | HS bài tập | CÓ (chỉ nộp chữ) | nộp tệp: Đ2 §60 |
+| 32 | HS trao đổi | chỉ diễn đàn + trợ lý AI | E3 |
+
+---
+
+### Theo dõi (bản sống → chép vào `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` mục "v2", luật ghi như cũ)
+
+| ID | Việc | Trạng thái |
+|---|---|---|
+| — | K0, B0, H1, 1.1a–c, 1.2a–c, 1.4a, U2/U4 | [x] (xem bảng cũ) |
+| P0.1 | Commit bản gộp `agent/bo-thi` (1.5A) đã đo đủ; PROGRESS từ bản nháp | [x] `c1c620b` |
+| P0.2 | **Vá rò ghi chú chuyển lớp** (V-a phần lỗi) — TRƯỚC lần đẩy | [x] `e328ade` — §62a `teacher_comment`; test đỏ trước, đột biến 2/2 (+1 đột biến tương đương bị loại), bootstrap 2 lần, 42/42 |
+| P0.3 | Điền ngược `last_seen_at` (migration `accounts/0002` + 3 test) | [x] `e2c06a6` — đột biến 4/4 đỏ; đã `migrate` trên nhánh dev |
+| P0.4 | Chạy tiếp agent 1.4b + agent H2/H3/H6 tới xong, gộp | [x] 1.4b gộp `23a96bb`; H2/H3/H6 gộp `9c484f6` (agent: đột biến 70/70, diễn tập CSDL mới 60/60, cổng pre-push 56 s; lead sau gộp: bootstrap 2 lần = 0/60 + §57 mỗi lượt, ruff, guard 35/35, tsc). Sự cố ngay sau gộp: §55b khoá ngoại MẤT trên dev (một bootstrap KIỂU CŨ của nhánh agent đứt giữa §36 và §55) → `bootstrap_schema --tu §55` → 42/42; báo A1/A2 gộp `erp` để dùng bootstrap mới. Bật `core.hooksPath .githooks` ở `D:\pe_hsa` |
+| P0.5 | 1.3 phần còn (nút Đăng ký ở `main.js`/`DashboardClient`), 1.4a `sangLop`, 1.1d CSS chết | [x] `ad92e17` (e2e đỏ trên JS cũ → xanh, 14/14 hai khổ; trần tầng cũ 6533 → 6449) + `cf2ace3` (sangLop: đỏ trước, đột biến 2/2, soi ảnh hai khổ) |
+| P0.6 | Mở màn: khung dùng chung cho 3 luồng | [x] `60d33a9` mặt tiền `notifications/gui.py` (4 test, đột biến 4/4). BỎ bước "neo §" + "sửa CHECK hộ": sổ mục lược đồ (H3) coi số § là TÊN, không phải thứ tự; mỗi luồng tự sửa CHECK của mình ở DÒNG KHÁC nhau (A: §35 `paused` + `TRANG_THAI_LOP`; C: §36 `reserved` + `LEAVE_REASONS`) → git gộp không đụng; xung đột "cùng nối cuối tệp" lead giải lúc gộp như §56/§57 |
+| N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
+| V | Mẻ vá rẻ a–o (luồng A) | [~] tách hai: **A1** = V a–h (agent, nhánh `agent/luong-a1`, cổng 9100/3200 — dừng vì hết hạn mức 25/09 01:00, đã gửi tiếp); **A2** = V i, j, k, m, n, o (§69, cổng 9141/3241 — chạy sau khi gộp 1.4b vì cùng sửa `teaching/exports.py`); **V-l** (học viên xem record) dời sang E4 vì đụng `lop_cua_toi.py`/`LopCuaToi.tsx` mà A1 đang sửa |
+| E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [~] agent chạy từ 25/09 ~03:30, nhánh `agent/e1`, cổng 9151/3251, miền riêng `backend/chuong_trinh/` (luật S4) |
+| E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [ ] |
+| E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [ ] |
+| E4 | Zoom: record tự gắn + HS xem record + thử "% đã xem" | [ ] |
+| E5 | Tự đăng ký + hàng chờ xếp lớp | [ ] |
+| 1.5B | Thay khối thi bằng tiến trình (thẻ 4 "Tiến độ chương trình" từ E1 + điểm kiểm tra từ V-h) | [ ] |
+| 1.5C | Xoá mã thi — HOÃN tới khi V-h chạy thật | [ ] |
+| 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |
+| Đ2 | §58 đổi GV/TG một buổi, §59 chấm công khoá tháng, §60 tài liệu R2 (+ nộp tệp) | [ ] |
+| Đ3, U, H4–H8, G | như bảng cũ (H4 outbox nay nằm trong E2); H2/H3/H6 XONG `9c484f6` (sổ mục lược đồ, cấu hình một nguồn, cổng pre-push) | [~] |
+| S1–S7 | Kiến trúc theo `docs/THIET_KE_HE_THONG.md` (25/09): S1 sổ quyền một nguồn + `CoNangLuc` cho view mới · S2 một hàm màn chặn dùng chung + cổng khu thô (bản dò đầu báo 19 lệch — soi tay: 16 thước sai, 2 trang thiếu móc chặn đã vá, 1 chặn mức nút; thước sửa → 0) · S3 G2 thành guard (XONG 25/09 — `scripts/tang_vai.py --kiem` = bước f6 của cổng pre-push: 0 lệch chưa giải thích, tự kiểm tắt cổng API ra 18; gỡ móc chặn một trang → đỏ) · S4 miền mới là thư mục riêng (E1 `chuong_trinh`, E2 `thong_bao`, E3 `yeu_cau`) · S5 phá vòng `stats ↔ chatbot` (XONG 25/09 — tín hiệu `nhat_ky_doi`, đột biến 3/3, graphify đo lại 0 vòng) · S6 danh mục trang một nguồn sinh menu · S7 graphify chạy lại mỗi mốc gộp | [~] bản đồ + tầng vai bản dò đầu xong (`scripts/tang_vai.py`, `scripts/tong_hop_graphify.py`, `docs/BAN_DO_MA.md`, `docs/BAN_DO_VAI.md`) |
+
+**Mốc trước buổi khách xem lại**: P0.*, N, V, E1 (tối thiểu: khung + sổ đầu bài + tiến độ lớp), 1.6. Nếu kịp: E2 lõi,
+E3 lõi (hỗ trợ + chuyển lớp có duyệt). Sau buổi xem: E4, E5, link phụ huynh sống, Đ2, Đ3.
+
+---
+
+### Ngày 0 — lead một mình (trước khi mở 3 luồng)
+
+1. **P0.1** gộp bo-thi: `git add` ba tệp đã giải, commit, PROGRESS (bản nháp `scratchpad/progress_gop_bothi.md`), tick 1.5A.
+2. **P0.2** vá rò: thêm `class_members.teacher_comment` (+ `_by`, `_at`); `parent_report.py:588` đọc cột mới; ghi chú
+   chuyển lớp ở lại `note` (nội bộ). KHÔNG chép `note` cũ sang. Test đỏ-trước: chuyển lớp kèm ghi chú → `teacherNote`
+   của tờ lớp cũ phải rỗng (đỏ trên mã hiện tại). Endpoint ghi nhận xét đi cùng V-a.
+3. **P0.3** migration điền ngược (bỏ dòng assert `timedelta` vô nghĩa trong test nháp).
+4. **P0.4** gửi tiếp hai agent đang dở (1.4b; H2/H3/H6 — còn phép kiểm C "sự cố tệp thật" và D "dựng CSDL mới") → gộp
+   `ha-tang` TRƯỚC khi mở luồng, vì H3 đổi cách chạy lược đồ (sổ mục đã chạy + luật hậu tố).
+5. **P0.6 mở màn chung** (một commit trên master, rồi mới rẽ nhánh):
+   - Sửa TẠI CHỖ CHECK §35 thêm `'paused'` và CHECK §36 thêm `'reserved'` (test `common/tests.py:259` cấm thêm
+     ràng buộc trùng tên khác nội dung) + `vocab.py`; hằng audit mới trong `common/audit.py`.
+   - Mặt tiền `gui(user_ids, loai, tieu_de, noi_dung, ref, link=None, email=False, dedup=None)` trong
+     `notifications/` — bản đầu gọi `notify()` + thư luồng rời như hiện nay; luồng B thay ruột bằng outbox. A và C
+     chỉ gọi mặt tiền.
+   - Neo trống trong `legacy_schema.sql` + danh sách `MUC` của `kiem_luoc_do.py`: §61 (B), §62–64 (A), §65–67 (C),
+     §68 Zoom, §69–70 dự phòng; §58–60 vẫn giữ cho Đ2. Mỗi luồng chỉ chèn trong khối của mình → git gộp không xung đột.
+   - `urls_*.py` rỗng cho từng luồng, gắn sẵn từ `config/urls.py`.
+   - ~~Ba nhánh Neon `dev-a/b/c`~~ **ĐỔI 25/09**: máy dev không có khoá API Neon (tạo nhánh phải bấm tay trong Neon — không
+     giao thêm việc cho anh). Ba luồng DÙNG CHUNG nhánh `dev`; luật: agent chỉ chạy test theo tác động (từng mô-đun một),
+     lead chạy bộ đủ ở cửa gộp. Cổng A 9100/3200, B 9200/3300, C 9300/3400.
+
+### Luồng A — vận hành lớp (ưu tiên số 1)
+
+#### V — mẻ vá rẻ (ngày 1–3), §62
+| # | Việc | Cách làm (dùng lại) |
+|---|---|---|
+| a | Nhận xét GV (dòng 18) | `PUT /api/teach/classes/<c>/students/<u>/danh-gia` — nhận xét: `IsSeniorTeachingStaff`; TG chỉ đặt cờ cần hỗ trợ. Ô trên tờ báo cáo từng em (`giang-day/bao-cao`) |
+| b | TG thấy em vắng liền / cần chú ý | bỏ nhánh `if not tro_giang` ở `teaching/viec_hom_nay.py:225` (`_lop_cua` đã giới hạn lớp) |
+| c | Lớp "tạm dừng" | CHECK sửa ở Ngày 0; học viên giữ quyền môn; lớp tạm dừng không vào "chưa điểm danh", không sinh buổi |
+| d | Lịch sử điểm danh | bảng `attendance_history` ghi bằng MỘT INSERT nhiều dòng từ diff `truoc` trong giao dịch sẵn có (`sessions.py:848`); điền ngược từ `admin_audit` có NOT EXISTS; `GET …/attendance/history` cho GV/TG/giáo vụ; HS xem điểm danh từng buổi (dòng 28) |
+| e | Đối tượng nhận bài | `assignments.target_mode` + `assignment_targets`; MỘT hàm SQL lọc dùng ở cả 7 chỗ đọc (`assignments.py`, `lop_cua_toi.py`, báo cáo, sổ điểm) |
+| f | Cờ "cần hỗ trợ" + đề xuất hướng học | cột trên `class_members` (+ `_by`, `_at`); vào dòng thời gian + "Việc hôm nay" |
+| g | Buổi bù | `class_sessions.makeup_for` (tự tham chiếu) + `session_participants`; danh sách điểm danh = người tham gia nếu có, không thì cả lớp |
+| h | Điểm kiểm tra / thi thử ngoại tuyến | `assignments.kind` (`bai_tap`/`kiem_tra`) + `held_on`; `submissions.absent`; HS không nộp được bài kiểm tra (409); điểm vào dòng thời gian, tờ PH, sổ điểm; KHÔNG đụng bảng §48 |
+| i | Trạng thái khoá | thêm `is_published` vào trường sửa được (`courseadmin/views.py:31`) + audit; `truy_cap.quyen_khoa` ẩn khoá nháp với HS, xoá cache |
+| j | Nhập HS vào lớp từ tệp mẫu | `POST /api/admin/classes/<id>/nhap-hoc-vien` (tải tệp, xem trước) + tải tệp mẫu; đọc bằng `common/bangtinh.py` `doc()`/`thanh_ban_ghi()`; tách `cap_tai_khoan()` từ `AdminBulkCreateUsersView` để dán chữ và tệp dùng chung (trần 50/lượt) |
+| k | Xuất Excel + bộ lọc | chuyển bộ ghi xlsx từ `mockexam/quan_tri.py:98` sang `bangtinh.ghi_xlsx()` (trước 1.5C); `?dinh_dang=xlsx` + lọc thời gian/lớp/môn trên các xuất sẵn có; giữ `_cell` chống công thức + `bo_cot_lien_lac` cho TG |
+| l | HS xem record từng buổi | `GET /api/lop-cua-toi/<lop>/buoi` + `GET /api/buoi/<id>/ban-ghi` (kiểm là thành viên lúc ấy → ghi `recording_views` → 302; proxy không theo chuyển hướng, `route.ts:193`) |
+| m | Hồ sơ: Tỉnh/Thành, tình trạng học tập, học phí | danh sách 34 tỉnh/thành; "tình trạng học tập" TÍNH từ lớp đang học/tạm dừng/bảo lưu/đã xong; ô học phí chọn tay (giáo vụ) |
+| n | Lịch sử lớp cho giáo vụ | đọc `admin_audit` lọc theo lớp, mở cho `IsAdminOrAcademic` (không mở cả nhật ký) |
+| o | Báo cáo chấm công (xem, chưa khoá) | theo tháng, từng GV **và TG**, từ buổi `done`/đã điểm danh + `attendance_taken_by`; xuất xlsx. Khoá tháng + chỉnh tay để Đ2 §59 |
+
+#### E1 — khung chương trình theo buổi (ngày 4–8), §63–64
+- Bảng: `syllabi` → `syllabus_versions` (nháp/xuất bản/ngừng; chỉ sửa được bản nháp; tạo bản mới = chép bản mới
+  nhất trong một giao dịch) → `syllabus_sessions` (buổi số, tên, thời lượng, bài về nhà, bài kiểm tra) →
+  `syllabus_items` (bài học/chủ đề/bài tập/kiểm tra, `lesson_id` tuỳ chọn, trọng số). `classes.syllabus_version_id`,
+  `class_sessions.syllabus_session_id`.
+- Lớp **nhận khung**: `PUT /api/admin/classes/<id>/chuong-trinh {version_id, dry_run}` — gắn buổi chưa huỷ, không
+  phải buổi bù, theo thứ tự ngày; không đè gắn tay; `topic` chỉ điền khi trống; báo buổi thừa/thiếu.
+- **Sổ đầu bài** (`session_logs` + `session_log_items` + `session_support`): mỗi mục đã dạy / dạy một phần / chưa;
+  mức tiếp thu 1–5; tình hình lớp = cột `note` sẵn có; em cần hỗ trợ; "đề xuất học bù/điều chỉnh" = tạo Yêu cầu (E3).
+- Cột cũ: `topic` giữ làm tên buổi (giao diện hiện tại không đổi); `lesson_refs` đóng băng (không ghi thêm).
+- **Tiến độ** (`teaching/tien_do_chuong_trinh.py`, số câu cố định): phải xong = trọng số các buổi khung đã tới; đã
+  xong = done 1 + partial 0,5; chậm khi trễ ≥ 2 buổi hoặc đạt < 80 %; "đã dạy chưa ghi sổ". % của từng em = trọng
+  số buổi em có mặt/muộn (buổi bù tính cho buổi gốc). Vào: danh sách lớp, Tổng quan (thẻ 4), "Lớp của tôi",
+  tờ phụ huynh.
+- Quyền: soạn khung `IsCurriculumPlanner` mới (admin, giáo vụ, biên tập) — thêm vào `MONG_DOI` của test ma trận quyền.
+- **Cần dữ liệu thật**: một khung chương trình thật của TopHSA (việc K1 của anh) — không có thì demo bằng khung mẫu tự soạn.
+
+### Luồng B — trung tâm thông báo (E2), §61
+
+- **Hộp thư đi** (H4 cũ): bảng `outbox` (kênh, người nhận, `dedup_key` UNIQUE, trạng thái, lần thử, `next_try_at`);
+  nhận việc bằng MỘT câu `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED LIMIT 20)` (đi được qua pooler Neon);
+  việc treo > 10 phút nhận lại; lùi 1'/5'/30'/2h/6h; lỗi vĩnh viễn → `dropped`. Chạy bằng luồng trong tiến trình (mẫu
+  `keepalive.py`, bật `ENABLE_OUTBOX`) + `manage.py gui_hop_thu` + `POST /api/noi-bo/tick` (khoá bí mật) cho máy gọi
+  ngoài. Chuyển `bao_doi_lich`, `quen_mat_khau`, `parent_send`, thư báo cáo sang outbox.
+- **Thông báo trung tâm**: `announcements` (đối tượng: lớp / môn / nhóm chọn tay / cá nhân; kèm email; nháp/đã gửi);
+  gửi = một INSERT…SELECT vào `notifications` + dòng outbox trong cùng giao dịch. `notifications` thêm
+  `announcement_id`, `link`, `read_at`.
+- **Loại tự động mới**: lịch mới (gộp một thư/em khi sinh buổi), học bù, nhắc hạn nộp (20–28 h trước, chưa nộp), vắng
+  học (chỉ HS), cảnh báo tiến độ (GV + giáo vụ, tuần một lần — cần hàm tiến độ của E1, làm cuối), yêu cầu (E3).
+  Tôn trọng `notification_settings` (`email_notif`, `study_remind`).
+- API: danh sách phân trang theo khoá (`truoc=<id>`), lọc loại/chưa đọc, **đánh dấu chưa đọc**; soạn gửi cho giáo vụ
+  (mọi đối tượng) và GV (lớp mình). Giao diện React `/thong-bao` + chuông trong `AppShell`; `dashboard.js` chỉ thêm link
+  "Xem tất cả" (ghi lý do nếu nâng trần).
+- `notify()` giữ nguyên chữ ký — mọi test cũ phải xanh.
+
+### Luồng C — hộp "Yêu cầu" (E3) + link phụ huynh sống + tự đăng ký, §65–67
+
+- **Bảng**: `yeu_cau` (loại, trạng thái, nguồn, người tạo / học viên / lớp / buổi / người xử lý, dữ liệu jsonb, người
+  duyệt + lúc duyệt, kết quả thực thi) + `yeu_cau_su_kien` (MỘT bảng cho cả trả lời lẫn lịch sử; `noi_bo` ẩn ghi chú
+  nội bộ với HS/PH).
+- **Danh mục loại** (`teaching/yeu_cau_loai.py`, test khớp CHECK): hỗ trợ học tập / lịch học / kỹ thuật / tài khoản;
+  hỏi đáp (tới GV/TG lớp); TG báo lên; báo lỗi record; thay đổi cần duyệt: chuyển lớp, chuyển môn, chuyển lịch, bảo
+  lưu, học bù, học lại, nghỉ học, huỷ khoá.
+- **Máy trạng thái** một hàm `chuyen_trang_thai()`: mới → đang xử lý → xong / từ chối; loại thay đổi → đã duyệt
+  (thực thi) → xong; người tạo rút khi còn "mới".
+- **Duyệt = thực thi trong MỘT giao dịch** (khoá dòng `FOR UPDATE`, kiểm trạng thái, chạy việc, ghi người duyệt; xoá
+  cache quyền + thông báo sau commit): chuyển lớp/môn gọi thẳng `ChuyenLopView._chuyen` (`teaching/chuyen_lop.py:96`,
+  giữ trần gia sư); bảo lưu → đóng lượt với lý do `reserved` + `reserve_until`; học bù → thêm vào buổi sẵn có hoặc tạo
+  buổi `makeup_for`; học lại → `_ghi_thanh_vien`; nghỉ học → đánh `excused` các buổi tới; huỷ khoá → `dropped`;
+  chuyển lịch → chỉ ghi quyết định. Duyệt hai lần chỉ thực thi một lần.
+- **Ai thấy gì**: HS — của mình; PH (qua link) — của em mình, nguồn PH; GV/TG — lớp mình + việc giao cho mình, không
+  thấy hỗ trợ tài khoản; chỉ `IsAdminOrAcademic` duyệt; SĐT phụ huynh ẩn với TG.
+- **§66 link phụ huynh sống**: `parent_report_links` thêm `scope` (`report`/`live`) + `token_hash`; link sống chỉ lưu
+  băm, hạn 180 ngày, cấp lại = thu hồi cũ; điền ngược băm cho link cũ; `/api/public/phu-huynh/<token>`: lịch 14 ngày
+  tới (kể cả huỷ), thay đổi gần đây, tờ báo cáo, yêu cầu của PH (tối đa 5 yêu cầu mở / link, có giới hạn tốc độ).
+- **§67 tự đăng ký (E5)**: `users.self_registered` + `password_reset_tokens.purpose` (`reset`/`verify`) — BẪY: mọi câu
+  ở `accounts/quen_mat_khau.py:133,198,211` phải lọc `purpose='reset'`, không thì xin đặt lại mật khẩu sẽ huỷ mã xác
+  nhận. Chỉ chặn đăng nhập khi `self_registered AND NOT is_verified` (tài khoản cũ không ảnh hưởng). Trang `/dang-ky`,
+  proxy `auth/[...path]` thêm tuyến; hàng chờ "Đăng ký mới" = HS tự đăng ký chưa có lớp.
+
+### E4 — Zoom (sau buổi xem lại, cần việc Z1 của anh), §68
+
+- Pha 1 (chắc chắn): app Server-to-Server OAuth + webhook `recording.completed` — kiểm `x-zm-signature` (HMAC trên
+  `v0:{timestamp}:{thân thô}`), trả lời `endpoint.url_validation` (Zoom gửi lại mỗi 72 h); khớp buổi theo mã phòng
+  tách từ `meeting_url` + giờ bắt đầu → tự điền `recording_url` → "đã có / chưa có record" tự động, danh sách buổi
+  thiếu record cho TG; HS mở record qua V-l (đã mở / chưa mở) → TG nhắc em chưa xem (qua E2).
+- Pha 2 (thử trước): `recordings/analytics_details?type=by_view` cho thời lượng xem từng người — tên/email thường RỖNG
+  với người xem không đăng nhập Zoom → thử trên tài khoản thật; được thì % đã xem = thời lượng xem / độ dài record,
+  khớp theo email; không được thì báo anh phương án đưa video lên kho riêng (tốn tiền lưu trữ).
+- Để sau: tạo phòng Zoom tự động cho từng buổi (vướng số giấy phép chủ phòng), điểm danh gợi ý từ danh sách người vào phòng.
+
+### N — ma trận nghiệm thu (thay DOI_CHIEU)
+
+`docs/NGHIEM_THU_TOPHSA.md`: 32 dòng theo ĐÚNG số dòng của bảng khách; mỗi ô yêu cầu: trạng thái, bằng chứng
+(tệp:dòng / bảng.cột), **một kịch bản demo** (vai, màn, bấm gì). Sửa 5 chỗ DOI_CHIEU báo quá tay (nhận xét GV, TG thấy
+em bỏ học, record phía HS, `lesson_refs`, trạng thái khoá). Bộ e2e `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng
+kịch bản demo; một ô chỉ được ghi "CÓ" khi spec của dòng ấy xanh. Chỉ khách tick TRUE — mình không tick hộ.
+
+### Việc của anh (thêm vào bảng tổng hợp đầu `docs/VIEC_CUA_ANH.md`, lời thường)
+
+- **K1** xin TopHSA MỘT khung chương trình thật theo buổi (ví dụ Tư duy định lượng: buổi 1 … buổi N, mỗi buổi học gì,
+  bài về nhà, bài kiểm tra) — cần cho demo E1.
+- **K2** hỏi TopHSA bốn điểm: phụ huynh dùng link thay tài khoản (dòng 23); học phí chỉ một ô tình trạng (dòng 7);
+  "thi thử" = bài kiểm tra GV nhập điểm; NGÀY buổi xem lại.
+- **Z1** (khi làm E4) nhờ người quản trị Zoom của TopHSA tạo app "Server-to-Server OAuth" + bật webhook record, gửi anh
+  bốn giá trị; anh dán vào Render → Environment. Tôi viết hướng dẫn từng bấm.
+- **T6** (5 phút, miễn phí) tạo tài khoản cron-job.org gọi địa chỉ "nhịp" 10 phút/lần — vừa chạy hộp thư đi/nhắc hạn,
+  vừa giữ máy chủ không ngủ (750 giờ miễn phí/tháng đủ chạy liên tục một dịch vụ).
+- Giữ nguyên: N6 (xếp lớp trước khi đẩy), N4 (đẩy khi tôi báo — nay đẩy HAI lượt: backend + lược đồ trước, đợi
+  Render xong, rồi frontend), N7.
+
+### Rủi ro và cách chặn
+
+1. **Lược đồ chạy lại mỗi deploy**: CHECK sửa tại chỗ; khoá ngoại tới `class_members(id)` khai SAU §36 (§36 xoá khoá
+   chính CASCADE mỗi lần) hoặc bằng `ADD COLUMN IF NOT EXISTS … REFERENCES` (mẫu §51); mọi điền ngược có
+   `WHERE … IS NULL`/`NOT EXISTS`; không `--` hay `;` trong chuỗi SQL; bootstrap HAI lần trên nhánh Neon mới trước mỗi lần gộp.
+2. **Vercel lên trước Render ~40 phút**: đẩy hai lượt; khoá mới trong phản hồi cũ đều `.optional()`; trang mới gặp 404
+   thì hiện "đang cập nhật".
+3. **Duyệt yêu cầu**: khoá dòng + kiểm trạng thái; mọi hiệu ứng ngoài (cache, thông báo) sau commit.
+4. **Render ngủ**: T6 + luồng trong tiến trình; thư gửi bằng luồng rời hôm nay mất khi worker khởi động lại — outbox hết mất.
+5. **Mạng Neon đứt khi chồng tải** (bài học 24/09): không chạy quá một lượt nặng vào cùng một nhánh CSDL — mỗi luồng
+   một nhánh `dev-x`.
+6. **Quyền**: lớp quyền mới vào `MONG_DOI`; tuyến công khai `authentication_classes=[]` + giới hạn tốc độ; `quyenVai.ts`,
+   "Ai làm được gì", Hướng dẫn cập nhật cùng mẻ.
+
+### Kiểm chứng
+
+- Mỗi luật: pytest ĐỎ TRƯỚC + đột biến (nền xanh, mã thoát 1). Ca then chốt: chuyển lớp kèm ghi chú → `teacherNote`
+  rỗng (đỏ trên mã hiện tại); TG thấy `vangLien` chỉ lớp mình; lưu lại điểm danh y hệt → 0 dòng lịch sử; HS ngoài danh
+  sách nhận bài không thấy/không bị nhắc/không bị đếm; xuất xlsx của TG không có cột liên lạc; ô công thức trong tệp
+  nhập bị vô hiệu; sửa khung đã xuất bản → 409; lớp ở bản 1 không đổi khi bản 2 xuất bản; ngưỡng "chậm" ở biên
+  (đột biến ≥ → >); hai máy nhận việc không trùng dòng outbox; hai nhịp chỉ ra một lời nhắc; đánh dấu chưa đọc đổi số
+  chuông; TG duyệt → 403; duyệt chuyển lớp hai lần chỉ chuyển một; link thu hồi và link lạ cùng 404; xin đặt lại mật
+  khẩu không huỷ mã xác nhận đăng ký.
+- Lược đồ: bootstrap hai lần (lần hai không đổi dòng nào đã điền ngược), `kiem_luoc_do` đỏ → xanh, vocab = CHECK.
+- Guard unit + `ban_do --kiem`, tsc, eslint `--max-warnings 0`, ruff, `next build`; e2e hai khổ (`E2E_GHI=1`) gồm bộ
+  `nghiem-thu/`; `do_giao_dien` + `do_axe` 0 vi phạm (cấp thẻ admin + học viên trước); soi ảnh 1440/390 từng vai.
+- Sau mỗi cửa gộp: bootstrap hai lần, `kiem_luoc_do`, pytest các mô-đun nhánh chạm, guard; cập nhật ma trận N, PROGRESS,
+  bảng theo dõi.
+
+---
+
+## ▶ LÀM TIẾP 25/09/2026 — anh chốt: đồng ý xoá sớm phần thi, thẻ số 4 → "Tiến độ chương trình", CÓ điền ngược
+`last_seen_at`; việc của anh gom một bảng ở đầu `docs/VIEC_CUA_ANH.md`; gọi agent hỗ trợ. Mục tạm dừng dưới giữ để tra.
+
 ## ⏸ TẠM DỪNG 24/09/2026 (anh Sơn yêu cầu) — ĐỌC MỤC NÀY TRƯỚC KHI LÀM TIẾP
 
 **Tiến độ** (ước lượng theo khối lượng, không phải đếm dòng):
@@ -69,18 +344,18 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 |---|---|---|
 | K0 | Chép kế hoạch vào repo (tệp này) | [x] `63554b0` |
 | B0 | Chốt lịch học §53: e2e `lich-hoc` 2 khổ, đo giao diện + axe, soi ảnh, commit | [x] `ad3b299` — e2e 8/8 có ghi, đột biến 18/18 đỏ thật, do_giao_dien 70 lượt = 0, axe 102 = 0 |
-| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [~] `b1ed6bc` — mã xong (6/6, pytest thoát 3 khi giả lập production); CHỜ anh thêm `PE_DB_HOST_PRODUCTION` vào .env (VIEC_CUA_ANH N2) |
+| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [x] `b1ed6bc` + 25/09 (commit này): hàng rào tự nhận production qua tên điểm cuối khi chưa đặt biến → BỎ việc tay N2; 7/7, đột biến đỏ |
 | 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [x] `6502a1a` + `ad3b299` — backend 9/9, 5 đột biến đỏ, guard cookie 9/9, e2e cookie thật 4/4 |
 | 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
 | 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
-| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [~] `ad3b299` — xong phần chính; "Miễn phí/Chứng chỉ" ở chi tiết khoá đã gỡ trong 1.3 (`f5252f4`); còn CSS chết `.rm-ai-btn` (mục U) |
+| 1.1d | Màn học viên: ẩn bảng xếp hạng, bỏ popup giữ chuỗi, bỏ đồ thừa sản phẩm cũ | [x] `ad3b299` + `f5252f4` + `cf2ace3` (CSS chết nút Premium) |
 | 1.2a | §54 loại lớp + `/classes/options` + danh sách lớp lọc/phân trang | [x] `de4b39d` — pytest 9/9 + liên quan, đột biến 10/10 đỏ + 2 test khoá đỏ-trước, e2e mới 8/8 hai khổ có ghi, đo giao diện sáng sạch, axe 100 = 0 |
 | 1.2b | Tạo nhanh lớp gia sư | [x] `b841152` — pytest 9/9 + sinh buổi 29/29 sau khi tách `tao_buoi`, đột biến 9/9 đỏ, guard 22 ✓ (3 đột biến đỏ), e2e 10/10 hai khổ có ghi, axe khung mở 0 (sau vá hover nút ghost) |
 | 1.2c | §55 chuyển lớp một thao tác | [x] `0f45c73` — pytest 8/8, đột biến 11/11 đỏ, kiem_luoc_do đỏ→xanh, e2e 12/12 hai khổ có ghi; `quen_truy_cap` để 1.3 |
-| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [~] `f5252f4` backend + trang khoá: pytest 11/11, đột biến 15/15, e2e 4/4 hai khổ; CÒN nút Đăng ký ở `main.js`/`DashboardClient` (sau khi gộp nhánh bỏ-thi) |
+| 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [x] `f5252f4` + `ad92e17` (nút cuối ở tầng JS cũ) |
 | 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [x] agent `d89cdfb`, gộp `7d8eb9c` — agent: đỏ trước 13 test, đột biến 18/19 (1 xanh = chốt thừa, đã gỡ) + hợp đồng 5/5, axe 0, soi ảnh 1280/390; lead sau gộp: pytest accounts + tổng quan + hợp đồng 74/74, bootstrap 2 lần, 39/39, guard/tsc/eslint. CHƯA: soi lại trên master; thêm `sangLop` vào `roiLop.ds` (§55 đã có) |
-| 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [ ] |
-| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [~] XONG trên nhánh `agent/bo-thi` (`193ef5c`, agent: bo-thi.test 19 đỏ trước, đột biến 11/11, e2e 6/6 + 56 spec, soi ảnh) — CHƯA GỘP: lead gộp thử 24/09 → 3 xung đột (cách giải ở mục TẠM DỪNG), rồi huỷ gộp vì chưa kịp đo lại |
+| 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [x] `3f87aea` (+ gộp `23a96bb` vào `erp`) — một định nghĩa "hoạt động" dùng chung với thẻ Tổng quan (test khớp số 7/14/30 ngày); ≤ 4 câu SQL/trang; lọc nằm trên URL; Chuyển lớp dùng lại `ChuyenLop.tsx`; cột "Mật khẩu" gộp vào "Trạng thái" |
+| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [x] agent `193ef5c`, gộp 25/09 (commit gộp này) — sau gộp: bootstrap 2 lần (263 câu), 41/41, pytest 421 xanh, e2e 74/74 hai khổ (bo-thi, khung-chung, vai-tro-cong, huong-dan-moi-vai, mo-mon-theo-lop, danh-sach-lop), guard + tsc + eslint, `ban_do` 0; trần tầng cũ đo lại 6533 |
 | 1.5B | Bỏ thi pha B: thay bằng tiến trình học tập | [ ] |
 | 1.5C | Bỏ thi pha C: xoá mã (GIỮ bảng) | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |

@@ -66,3 +66,22 @@ test('giảng viên: mọi môn ở "Chế độ xem", mở bài đọc được
   await openLesson(page, 1, xem[0]);
   await expect(page.getByText('Chưa mở được bài này.')).toHaveCount(0);
 });
+
+test('học viên: lưới "Môn học" ở Trang của tôi — môn của lớp "Vào học →", môn khác "Chưa mở", không nút Đăng ký', async ({ page }) => {
+  // Tầng JS cũ (`main.js::renderCourses`) từng còn nút "Đăng ký" gọi tuyến đã trả 410 và
+  // nút "Hủy đăng ký" ở "Khoá của tôi" — gỡ 25/09 (1.3 phần còn lại).
+  test.skip(!taiKhoanCuaVai(HOC_VIEN), LY_DO_THIEU_VAI);
+  test.skip(!(await vaoTheoVai(page, HOC_VIEN)), 'tài khoản học viên rà soát không đăng nhập được');
+  await chiDoc(page);
+  const { mo, dong } = await monTheoQuyen(page);
+
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  await page.locator('.nav-nhom-nut').click();
+  await page.locator('.nav-nhom-panel .nav-btn[data-page="courses"]').click();
+  const luoi = page.locator('#courses-grid');
+  await expect(luoi.locator('.course-card').first()).toBeVisible({ timeout: 20_000 });
+  await expect(luoi.getByRole('button', { name: /^Đăng ký$|Hủy đăng ký|Học thử/ })).toHaveCount(0);
+  await expect(page.locator('#unenrollModal')).toHaveCount(0);
+  if (mo.length) await expect(luoi.getByRole('button', { name: 'Vào học →' }).first()).toBeVisible();
+  if (dong.length) await expect(luoi.getByText('Chưa mở cho lớp của em').first()).toBeVisible();
+});

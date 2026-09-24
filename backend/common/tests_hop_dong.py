@@ -69,10 +69,12 @@ def test_hop_dong_ban_do_nang_luc(auth_api):
 
 
 @pytest.mark.django_db
-def test_hop_dong_de_thi_thu(auth_api):
-    """`/api/mock-exams` — màn thi thử lặp qua `exams`."""
-    co = _khoa(auth_api.get('/api/mock-exams'))
-    assert 'exams' in co, 'thiếu `exams`: %s' % sorted(co)
+def test_hop_dong_de_thi_thu_da_thao(auth_api):
+    """`/api/mock-exams` — hợp đồng ĐỔI 24/09/2026 (bỏ thi, pha A): màn thi thử đã
+    gỡ, không màn nào còn đọc `exams`, và máy chủ không còn phục vụ đường này.
+    Viết lại chứ không xoá (RULES §13): bật lại tuyến mà quên màn hình thì đỏ ở
+    đây. Đủ mọi tuyến thi: `common/tests_bo_thi.py`."""
+    assert auth_api.get('/api/mock-exams').status_code == 404
 
 
 @pytest.mark.django_db
@@ -109,6 +111,23 @@ def test_hop_dong_danh_sach_lop(admin_api):
     thieu = {'classes', 'total', 'page', 'per_page', 'counts', 'teachers', 'assistants', 'statuses'} - co
     assert not thieu, 'thiếu khoá màn hình đang đọc: %s (nhận: %s)' % (thieu, sorted(co))
     assert {'byType', 'byStatus'} <= set(r.data['counts']), r.data['counts']
+
+
+@pytest.mark.django_db
+def test_hop_dong_danh_sach_tai_khoan(admin_api):
+    """`/api/admin/users` — màn Tài khoản. Bốn khoá dòng của 1.4b (lớp đang học, hoạt động
+    cuối, tiến độ) màn hình khai TUỲ CHỌN (Vercel và Render deploy lệch nhau): mất khoá thì
+    cột lặng lẽ thành "—" cho mọi em — chỉ phép kiểm này thấy."""
+    r = admin_api.get('/api/admin/users?per_page=1&q=django_admin_tmp')
+    co = _khoa(r)
+    thieu = {'users', 'total', 'page', 'per_page', 'roles', 'chiHocVien', 'nguongNgu'} - co
+    assert not thieu, 'thiếu khoá màn hình đang đọc: %s (nhận: %s)' % (thieu, sorted(co))
+    assert r.data['users'], 'phải có ít nhất tài khoản quản trị tạm của phép kiểm'
+    dong = set(r.data['users'][0])
+    thieu = {'id', 'name', 'role', 'status', 'classes', 'lopDangHoc', 'hoatDongCuoi',
+             'ngayKhongHoatDong', 'tienDo'} - dong
+    assert not thieu, 'thiếu khoá dòng: %s (nhận: %s)' % (thieu, sorted(dong))
+    assert 'password' not in dong, 'RÒ trường bí mật ra API'
 
 
 @pytest.mark.django_db

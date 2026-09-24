@@ -60,7 +60,7 @@ const TRANH = /đăng xuất|thoát|xoá|xóa|huỷ|hủy|gỡ|rời|khôi phụ
 const TRANG = [
   ['/dashboard', 'Dashboard (mọi tab SPA)', true],
   ['/courses/hsa_quantitative', 'Chi tiết khoá', false],
-  ['/mock', 'Thi thử', false],
+  // '/mock' (Thi thử) bỏ 24/09/2026 — bỏ thi, pha A; đường ấy chỉ còn chuyển hướng.
   ['/bai-tap', 'Bài tập của tôi', false],
   ['/quan-tri/tong-quan', 'Quản trị · tổng quan', false],
   ['/quan-tri/tai-khoan', 'Quản trị · tài khoản', false],

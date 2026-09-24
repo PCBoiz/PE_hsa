@@ -67,7 +67,7 @@ HSA_ROADMAP_MERMAID = (
     '    hsa_ql["2. Tư duy Định lượng"]\n'
     '    hsa_qt["3. Tư duy Định tính"]\n'
     '    hsa_kh["4. Khoa học & Tiếng Anh"]\n'
-    '    hsa_mock["5. Luyện đề tổng (CBT)"]\n'
+    '    hsa_mock["5. Ôn tổng hợp"]\n'
     '    hsa_goal["6. Về đích"]\n'
     "    hsa_start --> hsa_ql\n"
     "    hsa_start --> hsa_qt\n"
@@ -85,8 +85,11 @@ HSA_ROADMAP_NODES = {
                "desc": "Đọc hiểu, từ vựng–ngữ pháp, suy luận ngôn ngữ."},
     "hsa_kh": {"title": "4. Khoa học & Tiếng Anh",
                "desc": "Lý–Hóa–Sinh–Sử–Địa hoặc lựa chọn Tiếng Anh."},
-    "hsa_mock": {"title": "5. Luyện đề tổng (CBT)",
-                 "desc": "Thi thử đầy đủ 150 câu trên máy, chấm điểm + phân tích."},
+    # Chặng này từng là "Luyện đề tổng (CBT)" — thi thử trên máy. Bỏ thi (24/09/2026,
+    # pha A) đổi thành ôn tổng hợp; mã nút `hsa_mock` GIỮ vì tiến độ lộ trình đã lưu
+    # (`roadmap_progress.item_id`) khoá theo nó. Dòng đã nằm trong CSDL: §57.
+    "hsa_mock": {"title": "5. Ôn tổng hợp",
+                 "desc": "Ôn lại cả ba phần thi, tập trung vào các dạng bài còn hay sai."},
     "hsa_goal": {"title": "6. Về đích",
                  "desc": "Rà soát điểm yếu còn lại, chốt chiến lược làm bài."},
 }
@@ -167,9 +170,11 @@ HSA_MISSIONS = [
     ("daily_lesson", "Học xong 1 bài hôm nay",
      "Bất kỳ bài nào trong 3 hợp phần đều tính.", 20, "lessons_today", 1, 1),
     ("daily_xp", "Kiếm 100 XP hôm nay",
-     "Cộng dồn từ bài học và đề thi thử.", 30, "xp_today", 100, 2),
-    ("daily_mock", "Làm 1 đề thi thử",
-     "Quen áp lực thời gian là nửa phần thắng.", 50, "mocks_today", 1, 3),
+     "Cộng dồn từ bài học và bài ôn tập.", 30, "xp_today", 100, 2),
+    # `daily_mock` ("Làm 1 đề thi thử") BỎ 24/09/2026 — bỏ thi, pha A. Không chỉ
+    # là gỡ dòng: nhánh ON CONFLICT bên dưới đặt `is_active = TRUE` cho MỌI nhiệm
+    # vụ có tên ở đây, nên còn tên nó thì lần seed sau bật lại. Dòng đã nằm trong
+    # CSDL được §57 tắt (không xoá: `user_missions` cũ còn trỏ tới nó).
 ]
 
 

@@ -141,7 +141,13 @@ const TRAN_TEP = 11;
 // bài diễn đàn mẫu C++/Git (`MOCK_POSTS` rỗng), `handlePersonalRoadmapAI` ("Premium").
 // 24/09/2026: 6567 → 6541 (−26). HẠ: `enroll()`/`unenroll()` ở `course_detail.js` — môn mở
 // QUA LỚP (1.3), trang chi tiết khoá thôi có nút Đăng ký / Hủy đăng ký.
-const TRAN_DONG_MA = 6541;
+// 24/09/2026: 6567 → 6559 (−8). HẠ: bỏ thi pha A — gỡ bốn link `/mock` ở dashboard.js
+// (nút "Luyện đề", "Làm đề thi thử", "Thi thử ngay", mục kế hoạch loại mock) + chặng
+// "Luyện đề tổng (CBT)" ở roadmapData.js.
+// 25/09/2026: gộp hai lần hạ trên (1.3 −26, bỏ thi pha A −8) → đo lại sau khi gộp: 6533.
+// 25/09/2026: 6533 → 6449 (−84). HẠ: 1.3 phần còn — gỡ nút Đăng ký trên thẻ môn, nút "Hủy
+// đăng ký" + hộp xác nhận + `toggleEnroll`/`unenroll`/`confirmUnenroll` ở main.js (môn mở QUA LỚP).
+const TRAN_DONG_MA = 6449;
 
 let failures = 0;
 function check(name, cond, them) {

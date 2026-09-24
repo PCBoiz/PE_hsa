@@ -965,7 +965,6 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
 }
 
 .card-btn-ghost,
-.card-btn-enroll,
 .card-btn-enrolled {
   height: 30px;
   padding: 0 12px;
@@ -984,8 +983,8 @@ body.dark .course-filter-panel { background: var(--card); border-color: var(--ca
    như chữ trơn, không ai biết bấm được. */
 .card-btn-ghost { background: transparent; color: var(--t2); border: 1px solid var(--border); }
 .card-btn-ghost:hover { background: var(--lift); color: var(--t1); }
-.card-btn-enroll { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; }
-.card-btn-enroll:hover { opacity: 0.82; }
+/* Môn chưa mở cho lớp của em (1.3, 25/09): chữ, không phải nút — em không tự mở được. */
+.card-chua-mo { color: var(--t3); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 /* "Vào học →": chữ xanh trên nền xanh pha nhạt → `--success-ink`. #10B981 chỉ
    2,27:1 ở bản sáng (axe 22/09/2026, agent tiếp cận F2); bản tối token trỏ #34D399. */
 .card-btn-enrolled { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: var(--success-ink); }
@@ -1535,35 +1534,7 @@ body.dark .rm-search-input::placeholder { color: var(--t3); }
   flex-shrink: 0;
 }
 
-.rm-ai-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #E5E7EB;
-  background: #F9FAFB;
-  color: #6B7280;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.rm-ai-btn:hover {
-  border-color: #8B5CF6;
-  color: #7C3AED;
-  background: #F5F3FF;
-}
-
-.rm-premium-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #8B5CF6, #6D28D9);
-  color: #fff;
-  letter-spacing: 0.3px;
-}
+/* .rm-ai-btn + .rm-premium-badge (nút "Lộ trình AI · Premium") bỏ 25/09/2026 — nút đã gỡ ở 1.1d. */
 
 .rm-save-btn {
   padding: 8px 16px;
@@ -1768,8 +1739,6 @@ body.dark .rm-personal-hd     { background: linear-gradient(135deg, var(--bg), v
 body.dark .rm-personal-icon   { background: var(--card); border-color: var(--card-border); }
 body.dark .rm-personal-label  { color: #F1F5F9; }
 body.dark .rm-personal-sub    { color: var(--t3); }
-body.dark .rm-ai-btn          { background: var(--card); border-color: var(--card-border); color: #94A3B8; }
-body.dark .rm-ai-btn:hover    { border-color: #8B5CF6; color: #A78BFA; background: #2D1B69; }
 body.dark .rmv-toolbar         { background: var(--bg); border-color: var(--card); }
 body.dark .rmv-btn             { background: var(--card); border-color: var(--card-border); color: #94A3B8; }
 body.dark .rmv-btn:hover       { background: var(--bg); border-color: var(--accent); color: #38BDF8; }
@@ -2805,65 +2774,8 @@ body.dark .fpc-reply-avatar { background: #1E3A5F; }
 body.dark .fpc-reply-to    { color: #60A5FA; }
 body.dark .fpc-cmt-react-summary { color: var(--t3); }
 
-/* ════════════════════════════════════════════════════════════
-   ★ MODAL HỦY ĐĂNG KÝ KHÓA HỌC
-   ════════════════════════════════════════════════════════════ */
-.un-overlay {
-  position: fixed; inset: 0; z-index: 150;
-  background: rgba(0,0,0,0.45);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-.un-overlay.active { opacity: 1; visibility: visible; }
-.un-card {
-  background: #fff; border-radius: 28px;
-  padding: 40px 36px; max-width: 420px; width: 90%;
-  text-align: center;
-  box-shadow: 0 30px 70px rgba(0,0,0,0.18);
-  transform: scale(0.88) translateY(24px);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.un-overlay.active .un-card { transform: scale(1) translateY(0); }
-.un-icon-wrap {
-  width: 76px; height: 76px; border-radius: 50%;
-  background: #FEF2F2; border: 4px solid #FECACA;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 22px; font-size: 34px;
-}
-.un-title { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 8px; }
-.un-sub   { font-size: 14px; color: #6B7280; margin: 0 0 6px; }
-.un-course-name {
-  font-size: 18px; font-weight: 800; color: #EF4444;
-  margin: 0 0 20px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.un-warning {
-  background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 14px;
-  padding: 14px 16px; margin-bottom: 28px;
-  display: flex; align-items: flex-start; gap: 10px; text-align: left;
-}
-.un-warning span { font-size: 20px; flex-shrink: 0; }
-.un-warning p  { font-size: 13px; color: #df1818ce; font-weight: 500; margin: 0; line-height: 1.5; }
-.un-actions { display: flex; gap: 12px; }
-.un-btn-cancel {
-  flex: 1; padding: 15px; border-radius: 14px;
-  border: 2px solid #E5E7EB; background: white;
-  color: #374151; font-weight: 700; font-size: 14px; cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-}
-.un-btn-cancel:hover { background: #F9FAFB; border-color: #D1D5DB; }
-.un-btn-confirm {
-  flex: 1; padding: 15px; border-radius: 14px;
-  border: none; background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: white; font-weight: 700; font-size: 14px; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(239,68,68,0.35);
-  transition: box-shadow 0.2s, transform 0.15s;
-}
-.un-btn-confirm:hover  { box-shadow: 0 6px 20px rgba(239,68,68,0.5); transform: translateY(-1px); }
-.un-btn-confirm:active { transform: translateY(1px); }
+/* Hộp "Hủy đăng ký khóa học" (.un-*) đã bỏ 25/09/2026: môn mở QUA LỚP (1.3), học
+   viên không tự huỷ — rời lớp là việc của học vụ. */
 
 /* Khối CSS của POPUP NHẮC GIỮ CHUỖI (lớp phủ kín màn hình) đã bỏ ở audit
    2026-08-19; thẻ .streak-toast thay nó cũng đã bỏ 24/09/2026 (anh Sơn chốt bỏ popup). */
@@ -3871,12 +3783,16 @@ body.dark .prof-post-stats {
 
 /* ══════════════════════════════════════════════════════════════════════════
    DASHBOARD KIỂU DỮ LIỆU (audit 2026-08-14)
-   Hàng 4 thẻ chỉ số lên đầu; lịch học thu thành dải 7 chấm trong thẻ streak;
+   Hàng thẻ chỉ số lên đầu (4 thẻ, còn 3 từ 24/09/2026); lịch học thu thành dải 7 chấm trong thẻ streak;
    dưới là lưới 2 cột (học tiếp + tiến độ | lộ trình). Toàn bộ dùng token nên
    đúng cả hai theme.
    ══════════════════════════════════════════════════════════════════════════ */
+/* `auto-fit` thay `repeat(4, …)` + hai mốc 1024/560px (24/09/2026): hàng còn BA
+   thẻ sau khi gỡ thẻ điểm thi thử (bỏ thi, pha A) — lưới 4 cột cứng để lại một ô
+   trống bên phải. Tự chia theo số thẻ và bề ngang; 15rem ≈ bề thẻ hẹp nhất cũ
+   (4 cột ở màn 1440), dưới đó dải 7 ngày của thẻ chuỗi bị chật. */
 .hsa-tiles {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 12px; margin-bottom: 14px;
 }
 .hsa-tile {
@@ -4008,8 +3924,7 @@ body.dark .prof-post-stats {
 .hsa-sec-row[data-sec="vb"] .hsa-sec-track > i { background: #F472B6; }
 .hsa-sec-row[data-sec="kh"] .hsa-sec-track > i { background: var(--brand-2); }
 
-@media (max-width: 1024px) { .hsa-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px)  { .hsa-tiles { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px)  {
   .hsa-cont-empty, .hsa-cont-link { flex-wrap: wrap; }
   .hsa-cont-btn, .hsa-cont-go { margin-left: 0; width: 100%; } }
 

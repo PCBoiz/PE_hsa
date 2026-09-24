@@ -32,7 +32,7 @@ import { LY_DO_BO_QUA, login, vaoBangThe } from './helpers';
  *
  * ── NGOÀI KHU THÌ NGƯỢC LẠI ──────────────────────────────────────────────
  *
- * Trên `/dashboard` và `/mock`, bấm mục chỉ đổi TAB trong cùng một trang qua
+ * Trên `/dashboard` (và `/mock` tới 24/09/2026, khi màn thi thử gỡ), bấm mục chỉ đổi TAB trong cùng một trang qua
  * `goiLegacy('navigate')` — URL đứng yên. Gắn `href` ở đó còn tệ hơn: Ctrl-bấm
  * sẽ mở một tab mới nạp lại cả trang rồi rơi về tab mặc định, tức lời hứa của
  * `href` là lời hứa hão. Phép kiểm cuối canh đúng điều đó.

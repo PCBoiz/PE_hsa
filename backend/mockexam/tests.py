@@ -19,6 +19,11 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from accounts.models import User
 from common.db import q1, x
 
+# Tuyến của app này THÁO khỏi sản phẩm 24/09/2026 (bỏ thi, pha A) nhưng mã giữ
+# tới pha C — nên phép kiểm chạy trên cây tuyến riêng còn gắn chúng. Lý do đủ ở
+# đầu `config/urls_thi_da_thao.py`.
+pytestmark = pytest.mark.urls('config.urls_thi_da_thao')
+
 f = APIRequestFactory()
 
 #: Đề tối giản: 2 câu định lượng, 1 câu định tính. Tự dựng chứ không mượn đề

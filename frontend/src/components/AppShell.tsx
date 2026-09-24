@@ -51,7 +51,7 @@ import { MUC_NAV, NHOM_NAV, type MucNav } from './navMuc';
 type CheDo = 'day-du' | 'lam-bai';
 
 export type AppShellProps = {
-  /** Mục đang mở: `data-page` ('dashboard') hoặc đường dẫn ('/mock'). */
+  /** Mục đang mở: `data-page` ('dashboard') hoặc đường dẫn ('/bai-tap'). */
   trang?: string;
   /** Trang có `main.js` → dùng `navigate()` thay cho `location.href`. */
   spa?: boolean;
@@ -570,8 +570,9 @@ export default function AppShell({
         </button>
 
         {/* Chuông chỉ có nghĩa ở nơi JS cũ cung cấp dữ liệu và bộ xử lý. Ở
-            /mock thì không có — dựng ra là một cái nút bấm không ai nghe, và
-            một nút chết còn tệ hơn một nút vắng mặt. */}
+            trang React (`dieuKhien="react"`, ví dụ /bai-tap) thì không có — dựng ra
+            là một cái nút bấm không ai nghe, và một nút chết còn tệ hơn một nút
+            vắng mặt. */}
         {dieuKhien === 'legacy' && (
           <div className="bell-wrap" id="bell-wrap">
             {/* `aria-haspopup="dialog"`: bảng là `role="dialog"`; giá trị "true"

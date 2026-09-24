@@ -33,6 +33,23 @@ TTL = 60
 #: `stats.competency.COURSE_ORDER` (không nhập chéo: `stats` nhập `courses`).
 BA_MON = ('hsa_quantitative', 'hsa_verbal', 'hsa_science')
 
+#: Mệnh đề SQL "lượt học ĐANG MỞ MÔN": em chưa rời lớp, lớp chưa huỷ (lớp đã kết thúc
+#: vẫn mở — xem đầu tệp). Bí danh bắt buộc: ``m`` = class_members, ``c`` = classes.
+#: Màn Tài khoản (1.4b) đọc CÙNG mệnh đề cho cột "Lớp" và ô lọc "chưa xếp lớp" — em hiện
+#: "chưa xếp lớp" ở đó đúng là em không mở được môn nào ở đây.
+LOP_DANG_HOC = "m.left_at IS NULL AND c.status <> 'cancelled'"
+
+
+def mon_mo(course_ids):
+    """Tập môn mở từ các ``classes.course_id`` của lớp em đang học — NULL = cả ba môn."""
+    mon = set()
+    for course_id in course_ids:
+        if course_id is None:
+            mon.update(BA_MON)
+        else:
+            mon.add(course_id)
+    return mon
+
 
 def _khoa(uid):
     return 'truycap:%s' % uid
@@ -49,16 +66,9 @@ def quyen_khoa(user):
     khoa = _khoa(user.id)
     ds = cache.get(khoa)
     if ds is None:
-        mon = set()
-        for r in q('''SELECT DISTINCT c.course_id
-                        FROM class_members m JOIN classes c ON c.id = m.class_id
-                       WHERE m.user_id = %s AND m.left_at IS NULL AND c.status <> 'cancelled' ''',
-                   (user.id,)):
-            if r['course_id'] is None:
-                mon.update(BA_MON)
-            else:
-                mon.add(r['course_id'])
-        ds = sorted(mon)
+        ds = sorted(mon_mo(r['course_id'] for r in q(
+            'SELECT DISTINCT c.course_id FROM class_members m JOIN classes c ON c.id = m.class_id '
+            'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user.id,))))
         cache.set(khoa, ds, TTL)
     return {m: HOC for m in ds}
 
@@ -66,19 +76,12 @@ def quyen_khoa(user):
 def cac_mon_da_mo(user_id):
     """Course id đã mở cho MỘT học viên qua lớp — cho màn HIỂN THỊ (hồ sơ học
     viên, yêu cầu TopHSA 3.2 "khóa học đã đăng ký"), không phải cổng chặn nên
-    KHÔNG cache, KHÔNG rẽ nhánh nhân sự. Cùng câu SQL với nhánh học viên của
-    `quyen_khoa()` ở trên — sửa một bên thì mở bên kia kiểm lại, đừng để hai
-    nơi cùng trả lời "em học được môn nào" rồi lệch nhau."""
-    mon = set()
-    for r in q('''SELECT DISTINCT c.course_id
-                    FROM class_members m JOIN classes c ON c.id = m.class_id
-                   WHERE m.user_id = %s AND m.left_at IS NULL AND c.status <> 'cancelled' ''',
-               (user_id,)):
-        if r['course_id'] is None:
-            mon.update(BA_MON)
-        else:
-            mon.add(r['course_id'])
-    return sorted(mon)
+    KHÔNG cache, KHÔNG rẽ nhánh nhân sự. Dùng lại `mon_mo()` + `LOP_DANG_HOC`
+    — cùng cặp mà nhánh học viên của `quyen_khoa()` và màn Tài khoản (1.4b)
+    dùng, đừng để ba nơi cùng trả lời "em học được môn nào" rồi lệch nhau."""
+    return sorted(mon_mo(r['course_id'] for r in q(
+        'SELECT DISTINCT c.course_id FROM class_members m JOIN classes c ON c.id = m.class_id '
+        'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user_id,))))
 
 
 def che_do(user, course_id):

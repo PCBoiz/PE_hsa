@@ -28,6 +28,9 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   xây dựng, thiết kế hạ tầng cho ổn định" — chỉ dữ liệu là bỏ đi được; hạ tầng,
   bảo mật, phân quyền, sao lưu, giám sát phải như với dữ liệu thật.
 - `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
+  **25/09 anh nhắc lại: mọi tính năng THỬ trên `erp` TRƯỚC.** Commit lên `erp` (không lên `master`), agent rẽ
+  nhánh + gộp từ `erp`; `master` địa phương luôn = `origin/master` (production). Hôm 24–25/09 tôi commit thẳng
+  `master` địa phương (19 commit) — đã dời sang `erp` và đẩy (`3a4e649..a33d212`).
 - Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
 - Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
 - **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
@@ -85,10 +88,56 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Tài liệu gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` (14/09) ·
   `docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf` (15/09, bổ sung Mục 10
   "Nhật ký cải tiến 15–17/09" ngày 17/09; KHÔNG commit — anh gửi tay).
-- **Nhánh**: `master` = `erp`; production tự deploy từ `master`.
+- **Nhánh** (sửa 25/09): `erp` = nhánh thử nghiệm, đi trước `master`; production tự deploy từ `master` khi anh gộp.
 
 
 <!-- MỚI NHẤT -->
+
+## 25/09/2026 — KẾ HOẠCH v2 theo bảng yêu cầu 24/09 + Ngày 0 (P0.1–P0.3, P0.5)
+
+- **Kế hoạch v2** (mục đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`): bảng "Phân rã tính năng — Updated 24.9"
+  là DANH MỤC NGHIỆM THU (anh xác nhận cột TRUE = khách đã duyệt dòng, nay dòng 1–2). Tám quyết định anh chốt 25/09:
+  điểm thi thử = bài kiểm tra GV nhập tay (hoãn 1.5C) · phụ huynh KHÔNG tài khoản, nâng link thành "link theo dõi" ·
+  tự đăng ký = tài khoản chờ xếp lớp · vận hành lớp trước · record ở Zoom cloud · một hộp "Yêu cầu" chung · học phí
+  chỉ một ô tình trạng · dòng 1–2 không đụng. ~60 ô thiếu gom vào 5 bộ máy (E1 khung chương trình theo buổi, E2 thông
+  báo + outbox, E3 hộp Yêu cầu, E4 Zoom, E5 tự đăng ký) + mẻ vá rẻ V a–o; 3 luồng agent với neo § riêng (A §62–64,
+  B §61, C §65–67, Zoom §68).
+- **Dò mã hai lượt (đọc MÃ + SQL)**: DOI_CHIEU 23/09 báo quá tay 5 chỗ — nhận xét GV (không có chỗ ghi), TG không
+  nhận `vangLien`/`canChuY`, record không tới học viên, `lesson_refs` không ai dùng, `is_published` không sửa được.
+- **LỖI THẬT do chính 1.2c** (chưa đẩy): ghi chú chuyển lớp vào `class_members.note` → tờ phụ huynh in thành "nhận
+  xét của giảng viên". Vá `e328ade` (§62a `teacher_comment`). Bài học: một cột mang hai nghĩa (nội bộ / gửi phụ
+  huynh) là lỗi chờ nổ — khi thêm người GHI mới vào một cột, grep mọi người ĐỌC nó và hỏi họ in ra cho ai.
+- `c1c620b` gộp bỏ thi pha A · `e2c06a6` điền ngược last_seen (đã migrate dev) · `ad92e17` gỡ nút Đăng ký cuối cùng
+  (tầng cũ 6533 → 6449) · `cf2ace3` Tổng quan ghi lớp mới của dòng chuyển lớp.
+- **Thước hỏng lần này**: một đột biến tương đương (`.get('note')` khi cột không còn SELECT) báo "VẪN XANH" — không
+  phải mã lọt, thay bằng đột biến thật. Và tôi ghi "guard 37/37" vào commit khi chưa đếm lại — đếm thật 34/34, đã sửa
+  thông điệp commit trước khi đẩy.
+- Việc mới cho anh (bảng đầu `docs/VIEC_CUA_ANH.md`): K2 (hỏi TopHSA 4 điểm + ngày buổi xem), K1 (một khung chương
+  trình thật), T6 (cron-job.org gọi /health — hết ngủ máy chủ, miễn phí), Z1 Zoom (khi tới E4).
+- Agent: 1.4b (`hoc-vien`) và H2/H3/H6 (`ha-tang`) đã gửi tiếp, đang chạy.
+
+## 25/09/2026 — LÀM TIẾP: gộp 1.5A (bỏ thi pha A), bỏ việc tay N2, bảng việc của anh, 3 agent
+
+Anh chốt 25/09: đồng ý xoá sớm 4 tệp giao diện thi · thẻ số 4 → "Tiến độ chương trình" (pha B) · CÓ điền ngược
+`last_seen_at` · gom việc cần anh vào MỘT bảng (đầu `docs/VIEC_CUA_ANH.md`) · gọi agent hỗ trợ.
+
+- **Gộp `agent/bo-thi`** (1.5A, agent): ba xung đột "hai bên cùng nối thêm" giải như đã ghi (§56 rồi §57; trần tầng cũ đo
+  lại = 6533). Nav bỏ "Thi thử"; `/mock`, `/giang-day/ket-qua-thi/*` chuyển hướng 307; gỡ tuyến `mockexam.urls` + kết quả
+  thi; §57 tắt `daily_mock` + đổi nhãn lộ trình "Luyện đề tổng (CBT)" → "Ôn tổng hợp"; xoá sớm `MockExam.tsx`, `mock/`,
+  `ket-qua-thi/`, `DeThi.tsx`; `ban_do` chỉ đếm `urls.py` gắn từ `ROOT_URLCONF`. GIỮ ngày thi HSA + mọi bảng.
+- **N2 bỏ**: hàng rào CSDL tự nhận production qua tiền tố điểm cuối khi chưa đặt biến (`e77583d`).
+- **Bảng việc của anh** viết lại bằng lời thường (N6, N4, N7 — bấm ở đâu, vì sao, mất bao lâu).
+- **Agent** (mỗi agent một worktree + CỔNG RIÊNG — lần trước hai agent giẫm cổng 9100/3200): `hoc-vien` (1.4b, 9121/3221),
+  `ha-tang` (H2/H3/H6, 9131/3231), 1.5B sau khi gộp (9141/3241).
+
+### Thước hỏng / bẫy
+- `.next/types/validator.ts` của lần build cũ còn trỏ hai trang thi đã xoá → tsc đỏ; xoá `.next/types` (tệp sinh) rồi build.
+- MẠNG tới Neon đứt lúc nhiều lượt chạy nặng cùng lúc (3 agent + pytest + e2e): "Permission denied 10013", "Software caused
+  connection abort 10053" → pytest không ra tổng kết, `do_giao_dien` báo 500 ở Dashboard điện thoại (nhật ký Django: năm
+  tuyến 500 cùng 13:44:42, đều `OperationalError`). Tái hiện lúc yên: sạch. Luật: không chồng quá một lượt nặng vào CSDL.
+- **§55b MẤT trên nhánh dev**: một lượt bootstrap đứt sau §36 (`DROP … CASCADE` gỡ khoá ngoại §55) và trước §55 (gắn lại) —
+  rủi ro có thật của cách vá CASCADE khi deploy đứt giữa chừng. Khôi phục bằng bootstrap đầy đủ (41/41); đã giao agent H3
+  "luật hậu tố" cho sổ ghi mục (mục nào chạy lại thì mọi mục sau nó chạy lại) + test ép lỗi giữa chừng.
 
 ## ⏸ 24/09/2026 — TẠM DỪNG theo lệnh anh Sơn (đọc mục "TẠM DỪNG" đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`)
 

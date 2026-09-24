@@ -104,6 +104,26 @@ def test_roi_lop_chi_dem_trong_khoang_ca_hai_bien_va_tach_ly_do_loai():
     assert sum(t['tong'] for t in thang) == 6, thang
 
 
+def test_roi_lop_chuyen_lop_ghi_lop_moi():
+    """Dòng "Chuyển lớp" trong danh sách rời lớp nói em SANG lớp nào (§55 `transferred_to`)."""
+    from teaching.overview import tong_quan
+    dot = _dot()
+    a, b = _lop(dot, ten='Lop TQ A'), _lop(dot, ten='Lop TQ B')
+    em, em2 = _nguoi(), _nguoi()
+    hom_nay = local_today()
+    luc = _luc(hom_nay - timedelta(days=2), 9)
+    moi = q1('INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s,%s,%s) RETURNING id',
+             (b, em, luc))['id']
+    q1("INSERT INTO class_members (class_id, user_id, joined_at, left_at, leave_reason, transferred_to) "
+       "VALUES (%s,%s,%s,%s,'transferred',%s) RETURNING id", (a, em, luc - timedelta(days=30), luc, moi))
+    _roi(a, em2, luc, 'dropped')
+
+    ds = tong_quan(term_id=dot, tu=hom_nay - timedelta(days=7), den=hom_nay)['roiLop']['ds']
+    theo_em = {d['userId']: d for d in ds}
+    assert theo_em[em]['sangLop'] == 'Lop TQ B', theo_em[em]
+    assert theo_em[em2]['sangLop'] is None, theo_em[em2]
+
+
 # ── Điểm danh của giảng viên ───────────────────────────────────────────────
 
 def test_diem_danh_muon_tinh_tu_KET_THUC_buoi_cong_24_gio():

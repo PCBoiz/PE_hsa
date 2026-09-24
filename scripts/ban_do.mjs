@@ -102,8 +102,32 @@ for (const tep of duyet(path.join(GOC, 'backend', 'sql'), (p) => p.endsWith('.sq
 /* ── 2 · BACKEND: tuyến → view (EXTRACTED), view → quyền (EXTRACTED),
          mô-đun → bảng (INFERRED, từ chuỗi SQL) ──────────────────────────── */
 const BE = path.join(GOC, 'backend');
+
+/* CHỈ tính `urls.py` được GẮN vào cây tuyến thật: đi từ `ROOT_URLCONF` theo
+   `include('x.urls')` (24/09/2026). Bản trước đọc MỌI tệp `urls.py` trên đĩa —
+   ngày bỏ thi (pha A) tháo `include('mockexam.urls')` mà thước vẫn thấy đủ 9
+   tuyến thi, tức một lời gọi frontend tới tuyến đã tháo sẽ được báo là "khớp":
+   đúng loại mù mà tệp này sinh ra để chữa. Include nằm trong chú thích `#` hay
+   docstring không được tính. Gói ngoài (`allauth.urls`) không có tệp trong
+   `backend/` nên tự rơi ra. */
+function cacInclude(t) {
+  const sach = t.replace(/("""|''')[\s\S]*?\1/g, ' ').replace(/#[^\n]*/g, ' ');
+  return [...sach.matchAll(/include\(\s*(['"])([\w.]+)\1/g)].map((m) => m[2]);
+}
+const ROOT_URLCONF = /^ROOT_URLCONF\s*=\s*['"]([\w.]+)['"]/m
+  .exec(doc(path.join(BE, 'config', 'settings.py')))?.[1] ?? 'config.urls';
+const DA_GAN = new Set([ROOT_URLCONF]);
+for (const hang = [ROOT_URLCONF]; hang.length;) {
+  const tepMod = path.join(BE, ...hang.shift().split('.')) + '.py';
+  if (!fs.existsSync(tepMod)) continue;
+  for (const con of cacInclude(doc(tepMod))) if (!DA_GAN.has(con)) { DA_GAN.add(con); hang.push(con); }
+}
+const urlsKhongGan = [];        // tệp urls.py có trên đĩa mà không ai gắn — ghi vào báo cáo
+
 const tuyen = [];               // {mau, view, app, tep, dong}
 for (const tep of duyet(BE, (p) => p.endsWith(`${path.sep}urls.py`))) {
+  const mod = path.relative(BE, tep).replace(/\.py$/, '').split(path.sep).join('.');
+  if (!DA_GAN.has(mod)) { urlsKhongGan.push(rel(tep)); continue; }
   const app = path.basename(path.dirname(tep));
   const t = doc(tep);
   // Nháy ĐƠN hoặc KÉP — bản đầu chỉ bắt nháy đơn và bỏ sót `path("api/chat", …)`.
@@ -470,8 +494,10 @@ const UNG_VIEN_GO = {
   '/api/course/rating': 'đánh giá khoá: sao trên trang là số seed 5.0, bảng course_ratings rỗng',
   '/api/course/*/rating': 'như trên',
   '/api/comments/*': 'sửa/xoá bình luận: frontend chỉ gọi …/react',
-  '/api/mock-attempts': 'chỉ còn trong một dòng chú thích của dashboard.js',
+  // `/api/mock-attempts` ra khỏi danh sách 24/09/2026: tuyến đã THÁO (bỏ thi, pha A).
   '/api/courses/*/quiz/history': 'không nơi nào gọi',
+  // 25/09/2026: nút Đăng ký/Hủy cuối cùng (main.js) đã gỡ — môn mở QUA LỚP (1.3).
+  '/api/courses/*/enroll': 'GIỮ trả 410 cho JS cũ còn trong bộ đệm trình duyệt lúc Vercel lên trước Render; gỡ ở 1.5C',
   '/api/quizzes/*': 'frontend chỉ gọi …/submit, không lấy đề qua tuyến này',
   '/api/roadmaps': 'không nơi nào gọi',
   '/api/streak/review-quiz-status': 'chỉ phép kiểm backend gọi',
@@ -488,6 +514,15 @@ const khongAiGoi = tuyen
     ...r,
     lyDo: KHONG_CAN_NGUOI_GOI[r.mau] || (UNG_VIEN_GO[r.mau] ? `ỨNG VIÊN GỠ — ${UNG_VIEN_GO[r.mau]}` : null),
   }));
+
+/* Lý do trỏ vào tuyến KHÔNG còn gắn (24/09/2026): tháo tuyến mà quên dòng lý do
+   thì dòng ấy nằm chờ — ngày ai đó gắn lại một tuyến cùng khuôn, nó được miễn
+   kiểm sẵn bằng một câu viết cho tuyến cũ. Đỏ ở `--kiem` để dọn cùng lượt tháo. */
+const coTuyen = new Set(tuyen.map((r) => r.mau));
+const GIA_LY_DO = '/api/__tu_kiem__/da-thao';
+if (TU_KIEM) UNG_VIEN_GO[GIA_LY_DO] = 'lý do giả của tự kiểm';
+const lyDoMoCoi = [...Object.keys(KHONG_CAN_NGUOI_GOI), ...Object.keys(UNG_VIEN_GO)]
+  .filter((mau) => !coTuyen.has(mau));
 
 const bangCham = new Set(canh.filter((c) => c.quanHe === 'cham_bang').map((c) => c.toi.slice(5)));
 const bangKhongAiCham = [...BANG].filter((b) => !bangCham.has(b)).sort();
@@ -509,11 +544,22 @@ if (TU_KIEM) {
   const thay = quetTep(mauGia, '(tự kiểm)').map((g) => g.mau);
   const boChuThich = !thay.includes('/api/__tu_kiem__/trong-chu-thich');
   const giuGoiThat = thay.includes('/api/__tu_kiem__/sau-url') && thay.includes('/api/__tu_kiem__/sau-mau/*');
+  /* Hai ca thêm 24/09/2026 (bỏ thi, pha A): include bị chú thích / nằm trong
+     docstring KHÔNG được gắn tuyến; lý do trỏ vào tuyến đã tháo phải bị bắt. */
+  const gan = cacInclude([
+    "    path('', include('a.urls')),",
+    "    # path('', include('b.urls')),",
+    '"""Ví dụ: path(\'\', include(\'c.urls\'))"""',
+  ].join('\n'));
+  const chiGanThat = JSON.stringify(gan) === JSON.stringify(['a.urls']);
+  const batLyDo = lyDoMoCoi.includes(GIA_LY_DO);
   console.log(`tự kiểm: lời gọi tới tuyến không tồn tại → ${batGoi ? 'BẮT ĐƯỢC' : 'BỎ SÓT'}`);
   console.log(`tự kiểm: tuyến không ai gọi               → ${batTuyen ? 'BẮT ĐƯỢC' : 'BỎ SÓT'}`);
   console.log(`tự kiểm: chuỗi trong dòng tiếp nối chú thích → ${boChuThich ? 'BỎ ĐÚNG' : 'ĐẾM OAN'}`);
   console.log(`tự kiểm: lời gọi sau '//' trong URL/regex  → ${giuGoiThat ? 'GIỮ ĐÚNG' : 'NUỐT MẤT'} ${JSON.stringify(thay)}`);
-  process.exit(batGoi && batTuyen && boChuThich && giuGoiThat ? 0 : 1);
+  console.log(`tự kiểm: include trong chú thích/docstring → ${chiGanThat ? 'BỎ ĐÚNG' : 'GẮN OAN'} ${JSON.stringify(gan)}`);
+  console.log(`tự kiểm: lý do cho tuyến đã tháo           → ${batLyDo ? 'BẮT ĐƯỢC' : 'BỎ SÓT'}`);
+  process.exit(batGoi && batTuyen && boChuThich && giuGoiThat && chiGanThat && batLyDo ? 0 : 1);
 }
 
 /* ── 6 · GHI ─────────────────────────────────────────────────────────────── */
@@ -549,6 +595,16 @@ L.push(`## Tuyến không thấy lời gọi nào phía frontend (${khongAiGoi.l
 L.push('');
 for (const r of khongAiGoi) L.push(`- \`${r.mau}\` → ${r.app}.${r.view}${r.lyDo ? ` — *${r.lyDo}*` : ' — **chưa có lý do**'}`);
 L.push('');
+L.push(`## Lý do trỏ vào tuyến không còn gắn (${lyDoMoCoi.length})`);
+L.push('');
+for (const m of lyDoMoCoi) L.push(`- \`${m}\` — xoá dòng ấy khỏi \`KHONG_CAN_NGUOI_GOI\`/\`UNG_VIEN_GO\``);
+L.push('');
+L.push(`## Tệp urls.py có trên đĩa mà không được gắn từ ${ROOT_URLCONF} (${urlsKhongGan.length})`);
+L.push('');
+L.push('Tuyến trong các tệp này KHÔNG phục vụ gì — không tính vào bản đồ.');
+L.push('');
+for (const t of urlsKhongGan) L.push(`- \`${t}\``);
+L.push('');
 L.push(`## Cầu React → JS cũ gãy (${cauGay.length})`);
 L.push('');
 for (const c of cauGay) L.push(`- \`${c.ten}\` — ${c.tep}:${c.dong} (không thấy \`function ${c.ten}\` hay \`window.${c.ten} =\` trong static/js)`);
@@ -563,9 +619,10 @@ fs.writeFileSync(path.join(RA, 'BAO_CAO.md'), L.join('\n'));
 
 console.log(`bản đồ: ${nut.size} nút, ${canh.length} cạnh → ${rel(RA)}/graph.json, BAO_CAO.md`);
 console.log(`  frontend→API ${dem('goi_api')} · tuyến→view ${dem('goi_view')} · view→quyền ${dem('can_quyen')} · view→bảng ${dem('cham_bang')} · khoá ngoại ${dem('khoa_ngoai')} · React→JS cũ ${dem('goi_js_cu')}`);
-console.log(`  gãy: ${khongKhop.length} lời gọi không khớp · ${chuaGiaiThich.length} tuyến không ai gọi chưa có lý do · ${cauGay.length} cầu JS cũ gãy`);
+console.log(`  gãy: ${khongKhop.length} lời gọi không khớp · ${chuaGiaiThich.length} tuyến không ai gọi chưa có lý do · ${cauGay.length} cầu JS cũ gãy · ${lyDoMoCoi.length} lý do cho tuyến đã tháo`);
+if (urlsKhongGan.length) console.log(`  bỏ qua ${urlsKhongGan.length} urls.py không được gắn: ${urlsKhongGan.join(', ')}`);
 
 if (process.argv.includes('--kiem')) {
-  const loi = khongKhop.length + chuaGiaiThich.length + cauGay.length;
+  const loi = khongKhop.length + chuaGiaiThich.length + cauGay.length + lyDoMoCoi.length;
   process.exitCode = loi ? 1 : 0;
 }
