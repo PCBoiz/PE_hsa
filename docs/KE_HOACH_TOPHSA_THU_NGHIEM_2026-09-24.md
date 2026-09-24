@@ -88,7 +88,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | P0.4 | Chạy tiếp agent 1.4b (worktree `hoc-vien`) + agent H2/H3/H6 (`ha-tang`) tới xong, gộp | [~] 25/09: đã gửi tiếp cả hai agent (kèm lệnh gộp master `c1c620b` trước khi đo) |
 | P0.5 | 1.3 phần còn (nút Đăng ký ở `main.js`/`DashboardClient`), 1.4a `sangLop`, 1.1d CSS chết | [x] `ad92e17` (e2e đỏ trên JS cũ → xanh, 14/14 hai khổ; trần tầng cũ 6533 → 6449) + `cf2ace3` (sangLop: đỏ trước, đột biến 2/2, soi ảnh hai khổ) |
 | P0.6 | Mở màn: neo § + khung dùng chung cho 3 luồng (mục "Ngày 0") | [ ] |
-| N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [ ] |
+| N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
 | V | Mẻ vá rẻ a–o (luồng A) | [ ] |
 | E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [ ] |
 | E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [ ] |
