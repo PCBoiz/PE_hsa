@@ -208,27 +208,41 @@ def test_sua_chu_thich_muc_cu_khong_chay_lai_gi():
     assert viec == []
 
 
+def _so_chua_dung():
+    """(số lớn chưa dùng, số NHỎ HƠN mục cuối mà chưa dùng) — lấy từ tệp thật để phép kiểm
+    không va vào mục có thật (bản đầu dùng §62 cứng; master viết §62 thật cùng ngày)."""
+    da = {int(m.ma[1:]) for m in doc_tat_ca() if m.tep == 'legacy_schema.sql' and m.ma != 'nền'}
+    lon = max(da) + 40
+    nho = min(n for n in range(1, max(da)) if n not in da)
+    return lon, nho
+
+
+def _muc(so, ten, cau):
+    return XUONG.join(['', '-- ── §%d · %s (25/09/2026) ──' % (so, ten), cau, ''])
+
+
 def test_them_muc_moi_o_cuoi_chi_chay_no_va_tep_sau():
-    """Thêm §62 ở cuối `legacy_schema.sql`: chạy §62, rồi `mockexam_schema.sql` (tệp đứng sau
+    """Thêm một mục ở cuối `legacy_schema.sql`: chạy nó, rồi `mockexam_schema.sql` (tệp đứng sau
     theo tên — 8 câu CREATE … IF NOT EXISTS, vô hại). Không mục cũ nào chạy lại."""
-    them = XUONG.join(['', '-- ── §62 · MỤC THỬ (25/09/2026) ──',
-                       'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT;', ''])
+    lon, _ = _so_chua_dung()
+    them = _muc(lon, 'MỤC THỬ', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT;')
     _, viec = _ke_hoach_sau_khi_sua(lambda raw: raw + them)
     assert [(v.muc.khoa, v.ly_do) for v in viec] == [
-        ('legacy_schema.sql §62', 'mới'),
-        ('mockexam_schema.sql nền', 'đứng sau legacy_schema.sql §62')]
+        ('legacy_schema.sql §%d' % lon, 'mới'),
+        ('mockexam_schema.sql nền', 'đứng sau legacy_schema.sql §%d' % lon)]
 
 
-def test_muc_giu_cho_viet_SAU_62_van_hop_le():
-    """§58 viết khi §62 đã có: thêm ở CUỐI tệp; chỉ §58 (và tệp sau) chạy."""
-    them62 = XUONG.join(['', '-- ── §62 · A (25/09/2026) ──', 'SELECT 62;', ''])
-    them58 = XUONG.join(['', '-- ── §58 · B (26/09/2026) ──', 'SELECT 58;', ''])
+def test_muc_giu_cho_viet_SAU_mot_muc_so_lon_hon_van_hop_le():
+    """Số giữ chỗ (§58–§61) viết khi mục số lớn hơn đã nằm trong tệp: thêm ở CUỐI tệp; chỉ nó
+    (và tệp sau) chạy."""
+    lon, nho = _so_chua_dung()
+    them_lon, them_nho = _muc(lon, 'A', 'SELECT 1;'), _muc(nho, 'B', 'SELECT 2;')
     khac = [m for m in doc_tat_ca() if m.tep != 'legacy_schema.sql']
     so = {m.khoa: m.checksum
-          for m in chia_muc('legacy_schema.sql', _tep_that() + them62) + khac}
-    sau = chia_muc('legacy_schema.sql', _tep_that() + them62 + them58)
+          for m in chia_muc('legacy_schema.sql', _tep_that() + them_lon) + khac}
+    sau = chia_muc('legacy_schema.sql', _tep_that() + them_lon + them_nho)
     viec = lap_ke_hoach(sau + khac, so)
-    assert [v.muc.khoa for v in viec] == ['legacy_schema.sql §58', 'mockexam_schema.sql nền']
+    assert [v.muc.khoa for v in viec] == ['legacy_schema.sql §%d' % nho, 'mockexam_schema.sql nền']
 
 
 def test_moi_muc_trong_kiem_luoc_do_tro_toi_mot_muc_co_that():

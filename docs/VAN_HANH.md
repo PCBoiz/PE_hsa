@@ -34,7 +34,8 @@ mỗi lượt chỉ chạy mục mới / đổi câu lệnh **cùng mọi mục 
    → mục ấy và mọi mục sau chạy lại.
 3. **Tiêu đề** đúng một dòng: `-- ── §62 · TÊN MỤC (25/09/2026) ──`. Dòng trông như tiêu đề mà lệch
    mẫu (`-- §62 — …`, `-- §62: …`, thiếu `·`) → DỪNG. Câu văn trong chú thích mở đầu bằng "§31 đã…"
-   thì không sao.
+   thì không sao. Tiểu mục bên trong viết có CHỮ: `-- §62a · …` là chú thích (như §62 thật đang
+   làm); `-- §62 · …` lần thứ hai là tiêu đề TRÙNG → DỪNG.
 4. **Câu lệnh**: mọi câu chạy lại được (`CREATE … IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, cặp
    `DROP CONSTRAINT IF EXISTS` + `ADD CONSTRAINT`, `UPDATE … WHERE <chỉ dòng còn cũ>`) — mục chạy lại
    khi nó hoặc một mục TRƯỚC nó đổi, khi `--tat-ca`, và trên CSDL mới. Câu cuối có `;`. Không
