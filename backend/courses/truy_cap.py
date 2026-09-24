@@ -63,6 +63,24 @@ def quyen_khoa(user):
     return {m: HOC for m in ds}
 
 
+def cac_mon_da_mo(user_id):
+    """Course id đã mở cho MỘT học viên qua lớp — cho màn HIỂN THỊ (hồ sơ học
+    viên, yêu cầu TopHSA 3.2 "khóa học đã đăng ký"), không phải cổng chặn nên
+    KHÔNG cache, KHÔNG rẽ nhánh nhân sự. Cùng câu SQL với nhánh học viên của
+    `quyen_khoa()` ở trên — sửa một bên thì mở bên kia kiểm lại, đừng để hai
+    nơi cùng trả lời "em học được môn nào" rồi lệch nhau."""
+    mon = set()
+    for r in q('''SELECT DISTINCT c.course_id
+                    FROM class_members m JOIN classes c ON c.id = m.class_id
+                   WHERE m.user_id = %s AND m.left_at IS NULL AND c.status <> 'cancelled' ''',
+               (user_id,)):
+        if r['course_id'] is None:
+            mon.update(BA_MON)
+        else:
+            mon.add(r['course_id'])
+    return sorted(mon)
+
+
 def che_do(user, course_id):
     """`'hoc'`, `'xem'` hoặc `None` (chưa mở) cho MỘT môn."""
     return quyen_khoa(user).get(course_id)

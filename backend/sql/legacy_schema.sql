@@ -1759,3 +1759,31 @@ ALTER TABLE class_members ADD CONSTRAINT class_members_transfer_reason_check
 -- NULL = chưa thấy lần nào KỂ TỪ khi cột này có (không phải "chưa từng vào").
 -- Giờ Việt Nam, naive — cùng quy ước `common/clock.py::local_now`.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
+
+-- ── §63 · TÌNH TRẠNG HỌC TẬP + HỌC PHÍ TRÊN HỒ SƠ HỌC VIÊN (25/09/2026) ────
+-- Bảng yêu cầu TopHSA dòng 3 (hồ sơ học viên) còn thiếu hai ô: "Tình trạng học
+-- tập" và "Tình trạng học phí". Số §63 theo đúng dải luồng A (§62–64) đã neo
+-- trong kế hoạch v2 — §62 để trống làm neo, mục này là nội dung thật đầu tiên.
+--
+-- HỌC PHÍ — một ô CHỌN TAY của giáo vụ, KHÔNG suy ra từ đâu: hệ này không có
+-- sổ tiền (chốt 25/09: "không sổ tiền, không doanh thu"). NULL = chưa ai đặt;
+-- KHÔNG mặc định 'Đã đóng' vì sẽ nói sai cho mọi tài khoản có trước cột này.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tuition_status TEXT;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_tuition_status_check;
+ALTER TABLE users ADD CONSTRAINT users_tuition_status_check CHECK (tuition_status IS NULL OR
+    tuition_status IN ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu'));
+
+-- HỌC TẬP — KHÔNG thêm cột: trạng thái này TÍNH lúc đọc, từ `class_members` +
+-- `classes` (`teaching/ho_so.py::_tinh_trang_hoc_tap`) — giữ luật "một con số
+-- chỉ tính ở một nơi". Hai dòng CHECK dưới mở khoá dữ liệu THÔ cần để tính:
+-- lớp "tạm dừng" và lý do rời lớp "bảo lưu". Đây là NĂM trạng thái thô cho một
+-- ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ; bộ đó (khung chương trình,
+-- % hoàn thành) vẫn để dành cho E1 (`teaching/tien_do_chuong_trinh.py`, chưa
+-- viết), tránh hai nơi cùng tính "đang học tới đâu" rồi lệch nhau.
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
+ALTER TABLE classes ADD CONSTRAINT classes_status_check
+    CHECK (status IN ('active', 'finished', 'cancelled', 'paused'));
+
+ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
+ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
+    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));

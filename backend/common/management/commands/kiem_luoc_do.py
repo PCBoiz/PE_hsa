@@ -160,6 +160,14 @@ MUC = [
     ('§55d', 'CHECK chỉ lượt "transferred" mới được trỏ',
      lambda: _check_co_gia_tri('class_members_transfer_reason_check', 'transferred')),
     ('§56', 'users.last_seen_at (lần cuối thấy tài khoản)', lambda: _cot('users', 'last_seen_at')),
+    ('§63a', 'users.tuition_status (tình trạng học phí)',
+     lambda: _cot('users', 'tuition_status')),
+    ('§63b', 'CHECK users_tuition_status_check nhận "Bảo lưu"',
+     lambda: _check_co_gia_tri('users_tuition_status_check', 'Bảo lưu')),
+    ('§63c', 'CHECK classes_status_check nhận "paused" (lớp tạm dừng)',
+     lambda: _check_co_gia_tri('classes_status_check', 'paused')),
+    ('§63d', 'CHECK class_members_leave_reason_check nhận "reserved" (bảo lưu)',
+     lambda: _check_co_gia_tri('class_members_leave_reason_check', 'reserved')),
 ]
 
 
