@@ -530,7 +530,8 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
     # phụ huynh" cho chính tài khoản quản trị — kèm email và số điện thoại
     # của nó. Đo 31/08/2026: HTTP 200, trả về admin@pe-hsa.vn.
     # TẤT CẢ các đợt, không phải một. Xem chú thích trong `_chuyen_can`.
-    cac_dot = q('''SELECT m.joined_at, m.left_at, m.leave_reason, m.note
+    cac_dot = q('''SELECT m.joined_at, m.left_at, m.leave_reason,
+                          m.teacher_comment, m.teacher_comment_at
                    FROM class_members m
                    JOIN users u ON u.id = m.user_id
                    WHERE m.class_id = %s AND m.user_id = %s
@@ -547,7 +548,12 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         'left_at': None if any(d['left_at'] is None for d in cac_dot)
                    else max(d['left_at'] for d in cac_dot),
         'leave_reason': moi_nhat['leave_reason'],
-        'note': moi_nhat['note'],
+        # Nhận xét giảng viên viết CHO phụ huynh (§62a) — lấy bản ghi muộn nhất qua
+        # mọi đợt. KHÔNG đọc `note`: đó là ghi chú nội bộ (lý do rời, chuyển lớp).
+        'teacher_comment': max(
+            (d for d in cac_dot if d['teacher_comment']),
+            key=lambda d: d['teacher_comment_at'] or d['joined_at'],
+            default={'teacher_comment': None})['teacher_comment'],
     }
 
     lop = q1('SELECT id, name, code, course_id, teacher_id FROM classes WHERE id=%s',
@@ -583,9 +589,10 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
             'leftAt': thanh_vien['left_at'].isoformat()
                       if thanh_vien['left_at'] else None,
             'status': trang_thai(thanh_vien['left_at'], thanh_vien['leave_reason']),
-            # Ghi chú của giảng viên VỀ lớp/em này — khác hẳn nhật ký em tự
-            # ghi (xem ranh giới 1). Cái này viết ra để người khác đọc.
-            'teacherNote': thanh_vien['note'],
+            # Nhận xét của giảng viên VỀ lớp/em này, viết để phụ huynh đọc —
+            # khác nhật ký em tự ghi (ranh giới 1) và khác ghi chú NỘI BỘ
+            # `class_members.note` (lý do rời/chuyển lớp — không bao giờ in ra).
+            'teacherNote': thanh_vien['teacher_comment'],
             # Số ĐỢT em ở lớp. In ra khi > 1 để người đọc hiểu vì sao ngày
             # vào và ngày rời không liền một mạch.
             'stints': len(cac_dot),
@@ -622,7 +629,8 @@ def rut_gon_cho_link(payload):
     chuyển tiếp.
 
     GIỮ `membership.teacherNote`: nó được viết ra ĐỂ phụ huynh đọc (khác nhật
-    ký riêng của em — xem ranh giới 1 ở đầu tệp).
+    ký riêng của em — xem ranh giới 1 ở đầu tệp). Từ 25/09 nó lấy từ cột
+    `teacher_comment` (§62a), không còn từ ghi chú nội bộ `note`.
     """
     ra = dict(payload)
     ra['student'] = {k: v for k, v in payload['student'].items()

@@ -210,24 +210,6 @@ body.dark .lang-select {
 body.dark .empty p    { color: var(--t3); }
 body.dark .empty-icon { color: var(--card-border); }
 
-/* ── Unenroll modal ── */
-body.dark .un-card {
-  background: var(--card);
-  box-shadow: 0 30px 70px rgba(0,0,0,0.5);
-}
-body.dark .un-title  { color: #F1F5F9; }
-body.dark .un-sub    { color: #94A3B8; }
-body.dark .un-warning {
-  background: rgba(220,38,38,0.1);
-  border-color: rgba(220,38,38,0.25);
-}
-body.dark .un-btn-cancel {
-  background: var(--bg);
-  border-color: var(--card-border);
-  color: #CBD5E1;
-}
-body.dark .un-btn-cancel:hover { background: #293548; border-color: #475569; }
-
 /* ── Skills ── */
 body.dark .courses-header h2 { color: #F1F5F9; }
 body.dark .sk-stat            { background:var(--card); border-color:var(--card-border); }

@@ -496,6 +496,8 @@ const UNG_VIEN_GO = {
   '/api/comments/*': 'sửa/xoá bình luận: frontend chỉ gọi …/react',
   // `/api/mock-attempts` ra khỏi danh sách 24/09/2026: tuyến đã THÁO (bỏ thi, pha A).
   '/api/courses/*/quiz/history': 'không nơi nào gọi',
+  // 25/09/2026: nút Đăng ký/Hủy cuối cùng (main.js) đã gỡ — môn mở QUA LỚP (1.3).
+  '/api/courses/*/enroll': 'GIỮ trả 410 cho JS cũ còn trong bộ đệm trình duyệt lúc Vercel lên trước Render; gỡ ở 1.5C',
   '/api/quizzes/*': 'frontend chỉ gọi …/submit, không lấy đề qua tuyến này',
   '/api/roadmaps': 'không nơi nào gọi',
   '/api/streak/review-quiz-status': 'chỉ phép kiểm backend gọi',

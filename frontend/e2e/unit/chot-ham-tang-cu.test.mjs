@@ -145,7 +145,9 @@ const TRAN_TEP = 11;
 // (nút "Luyện đề", "Làm đề thi thử", "Thi thử ngay", mục kế hoạch loại mock) + chặng
 // "Luyện đề tổng (CBT)" ở roadmapData.js.
 // 25/09/2026: gộp hai lần hạ trên (1.3 −26, bỏ thi pha A −8) → đo lại sau khi gộp: 6533.
-const TRAN_DONG_MA = 6533;
+// 25/09/2026: 6533 → 6449 (−84). HẠ: 1.3 phần còn — gỡ nút Đăng ký trên thẻ môn, nút "Hủy
+// đăng ký" + hộp xác nhận + `toggleEnroll`/`unenroll`/`confirmUnenroll` ở main.js (môn mở QUA LỚP).
+const TRAN_DONG_MA = 6449;
 
 let failures = 0;
 function check(name, cond, them) {

@@ -840,7 +840,7 @@ function renderCourses() {
           ')">' +
           _rmVEsc(c.level) +
           "</div>",
-        c.enrolled ? '<div class="badge-enrolled"><span data-icon="check" data-size="11"></span> Đã đăng ký</div>' : "",
+        c.access === "hoc" ? '<div class="badge-enrolled"><span data-icon="check" data-size="11"></span> Đang học</div>' : "",
         '<div class="card-title-overlay">',
         '<div class="card-tag">' + _rmVEsc(c.tag) + "</div>",
         "<h3>" + _rmVEsc(c.title) + "</h3>",
@@ -859,13 +859,16 @@ function renderCourses() {
         '<div class="card-footer">',
         '<span class="card-level-pill">' + _rmVEsc(c.level) + "</span>",
         '<div class="card-footer-spacer"></div>',
-        '<button class="card-btn-ghost" onclick="window.location=\'/courses/' + c.id + '\'">Học thử</button>',
+        // Môn mở QUA LỚP (1.3, 25/09): không còn nút Đăng ký (tuyến ghi danh trả 410).
+        // `access`: 'hoc' = lớp em học môn này · 'xem' = nhân sự, chỉ đọc · null = chưa mở.
         (function () {
-          if (c.enrolled) {
+          if (c.access) {
             var goUrl = COURSE_URLS[c.id] || "#";
-            return '<button class="card-btn-enrolled" onclick="window.location=\'' + goUrl + '\'">Vào học →</button>'; // nhãn = VIỆC (bìa thẻ đã ghi "Đã đăng ký"), 21/09
+            return '<button class="card-btn-enrolled" onclick="window.location=\'' + goUrl + '\'">' +
+              (c.access === "xem" ? "Xem bài →" : "Vào học →") + "</button>";
           }
-          return '<button class="card-btn-enroll" onclick="toggleEnroll(\'' + c.id + '\',false)">Đăng ký</button>';
+          return '<span class="card-chua-mo">Chưa mở cho lớp của em</span>' +
+            '<button class="card-btn-ghost" onclick="window.location=\'/courses/' + c.id + '\'">Giới thiệu</button>';
         })(),
         "</div>",
         "</div>",
@@ -930,26 +933,6 @@ function renderMyCourses() {
             ? " onclick=\"window.location='" + COURSE_URLS[c.id] + "'\""
             : "") +
           ">▶ Tiếp tục học</button>",
-        // Tên khoá đi qua THUỘC TÍNH, không qua đối số JS (vá 04/09/2026).
-        //
-        // Bản cũ thoát MỘT MÌNH bằng `c.title.replace(/'/g, "\\'")` — thoát cho
-        // ngữ cảnh JS, mà chỗ nó đứng là `onclick="…"`, một thuộc tính bọc dấu
-        // nháy KÉP. Nó khoá dấu nháy đơn và bất lực với dấu nháy kép: một tên
-        // khoá chứa `"` đóng luôn thuộc tính rồi mở thuộc tính mới.
-        //
-        // Hàng rào ở đường ghi KHÔNG đóng chỗ này, và cố ý thế:
-        // `_clean_course_payload` chỉ chặn thẻ HTML, còn dấu nháy trong tên là
-        // bình thường. Nên phải bỏ hẳn ngữ cảnh JS — cùng cách chữa với
-        // `forumToggleReply` (dashboard.js) và `roadmap.js` cùng ngày.
-        "<button data-unen-id=\"" + encodeURIComponent(c.id) + "\"" +
-          " data-unen-title=\"" + _rmVEsc(c.title) + "\"" +
-          " onclick=\"unenroll(decodeURIComponent(this.dataset.unenId)," +
-          " this.dataset.unenTitle)\"" +
-          ' style="background:none;border:1px solid #E5E7EB;color:#9CA3AF;font-size:12px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;transition:all 0.2s;white-space:nowrap"' +
-          " onmouseenter=\"this.style.borderColor='#FCA5A5';this.style.color='#EF4444';this.style.background='#FEF2F2'\"" +
-          " onmouseleave=\"this.style.borderColor='#E5E7EB';this.style.color='#9CA3AF';this.style.background='none'\">",
-        "✕ Hủy đăng ký",
-        "</button>",
         "</div>",
         "</div>",
         '<div class="prog-section">',
@@ -1075,7 +1058,7 @@ function renderProgress() {
   if (!grid) return;
   if (!enrolledCourses.length) {
     grid.innerHTML =
-      '<p style="color:#9CA3AF;font-size:14px">Chưa đăng ký khóa học nào.</p>';
+      '<p style="color:#9CA3AF;font-size:14px">Chưa có môn nào mở cho lớp của em.</p>';
     return;
   }
   grid.innerHTML = enrolledCourses
@@ -1108,93 +1091,6 @@ function renderProgress() {
       ].join("");
     })
     .join("");
-}
-
-/* ── Enroll / Unenroll ── */
-function _applyEnrollState(courseId, enrolled) {
-  try { sessionStorage.removeItem(_COURSES_CACHE_KEY); } catch (e) {}
-  courses.forEach(function(c) {
-    if (c.id === courseId) c.enrolled = enrolled;
-  });
-  if (enrolled) {
-    var c = courses.find(function(c) { return c.id === courseId; });
-    if (c && !enrolledCourses.some(function(e) { return e.id === courseId; })) {
-      enrolledCourses.push(c);
-    }
-  } else {
-    enrolledCourses = enrolledCourses.filter(function(c) { return c.id !== courseId; });
-  }
-  renderCourses();
-  renderMyCourses();
-  renderProgress();
-  renderDashProgress();
-  var countEl = document.getElementById('stat-enrolled');
-  if (countEl) countEl.textContent = enrolledCourses.length;
-}
-
-function toggleEnroll(courseId, isEnrolled) {
-  var method = isEnrolled ? "DELETE" : "POST";
-  fetch(API + "/courses/" + courseId + "/enroll", { method: method })
-    .then(handleFetch)
-    .then(function (d) {
-      if (d) { _applyEnrollState(courseId, !isEnrolled); if (!isEnrolled) _rmShowToast('✓ Đã ghi danh — bấm "Vào học →" trên thẻ để bắt đầu Bài 1.'); } // từng không báo gì (agent F11)
-    })
-    .catch(function (err) {
-      console.error("Lỗi đăng ký:", err); _rmShowToast('Chưa ghi danh được — kiểm tra mạng rồi bấm lại.');
-    });
-}
-
-var pendingUnenrollId = null;
-/* Nơi tiêu điểm đứng trước khi mở hộp, và hàm tháo bẫy tiêu điểm.
-   Bẫy dùng chung `window.bayTieuDiem` định nghĩa ở dashboard.js — cùng luật thì
-   phải cùng một bản, không viết lại lần thứ hai ở đây. */
-var _unTruocDo = null;
-var _unThaoBay = null;
-
-function unenroll(courseId, courseTitle) {
-  pendingUnenrollId = courseId;
-  document.getElementById("unenroll-course-name").textContent =
-    '"' + courseTitle + '"';
-  var modal = document.getElementById("unenrollModal");
-  _unTruocDo = document.activeElement;
-  modal.classList.add("active");
-  document.body.style.overflow = "hidden";
-  if (_unThaoBay) _unThaoBay();
-  /* Kiểm sự tồn tại: main.js còn được nạp ở trang không có dashboard.js. Thiếu
-     bẫy thì hộp vẫn dùng được, chỉ là kém tiếp cận — đó là thoái lui đúng
-     hướng, khác hẳn với ném lỗi và chặn luôn việc huỷ ghi danh. */
-  if (typeof window.bayTieuDiem === "function")
-    _unThaoBay = window.bayTieuDiem(modal);
-  var dau = modal.querySelector("button, a[href], [tabindex]:not([tabindex='-1'])");
-  if (dau) setTimeout(function () { dau.focus(); }, 50);
-}
-
-function closeUnenrollModal() {
-  document.getElementById("unenrollModal").classList.remove("active");
-  document.body.style.overflow = "";
-  pendingUnenrollId = null;
-  if (_unThaoBay) { _unThaoBay(); _unThaoBay = null; }
-  if (_unTruocDo && typeof _unTruocDo.focus === "function") _unTruocDo.focus();
-  _unTruocDo = null;
-}
-
-function handleUnenrollOverlayClick(e) {
-  if (e.target === document.getElementById("unenrollModal"))
-    closeUnenrollModal();
-}
-
-function confirmUnenroll() {
-  if (!pendingUnenrollId) return;
-  var courseId = pendingUnenrollId;
-  closeUnenrollModal();
-  fetch(API + "/courses/" + courseId + "/enroll", { method: "DELETE" })
-    .then(handleFetch)
-    .then(function (d) {
-      if (d) _applyEnrollState(courseId, false);
-    })
-    .catch(function (err) {
-      console.error("Lỗi hủy đăng ký:", err);
-    });
 }
 
 /* ── Filters & search ── */
