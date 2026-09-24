@@ -1,7 +1,8 @@
 """Nhập kết quả thi thử từ PDF — hai tuyến `…/ket-qua-thi/doc` và `…/ket-qua-thi/ghi`.
 
 Chạy trên DB thật trong giao dịch được CUỘN LẠI (xem `conftest.py`), gọi qua URL
-thật để đi đúng bộ định tuyến và cổng phân quyền.
+để đi đúng bộ định tuyến và cổng phân quyền. Từ 24/09/2026 (bỏ thi, pha A) hai
+tuyến không còn trong sản phẩm — URL đi qua cây tuyến `config/urls_thi_da_thao.py`.
 
 KHÔNG có tệp PDF trong phép kiểm: phần đọc PDF có bộ kiểm riêng
 (`tests_nhap_ket_qua_thi.py`), và tờ báo cáo thật mang tên một học sinh có thật.
@@ -32,9 +33,11 @@ from common.permissions import ROLE_ADMIN, ROLE_ASSISTANT, ROLE_STUDENT, ROLE_TE
 from teaching import nhap_ket_qua_view as V
 from teaching.nhap_ket_qua_thi import LoiDocBaoCao
 
-pytestmark = pytest.mark.django_db
+# `urls`: hai tuyến này THÁO khỏi sản phẩm 24/09/2026 (bỏ thi, pha A), view giữ
+# tới pha C — xem đầu `config/urls_thi_da_thao.py`.
+pytestmark = [pytest.mark.django_db, pytest.mark.urls('config.urls_thi_da_thao')]
 
-DOC = '/api/teach/classes/%s/ket-qua-thi/doc'
+DOC ='/api/teach/classes/%s/ket-qua-thi/doc'
 GHI = '/api/teach/classes/%s/ket-qua-thi/ghi'
 
 

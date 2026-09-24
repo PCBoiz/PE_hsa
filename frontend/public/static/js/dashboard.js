@@ -2648,7 +2648,8 @@ var _forumTextQ = '';
       var go = t.suggestion
         ? '<a class="hsa-weak-btn" href="' + lessonHref(t.course, t.suggestion.lessonIndex)
           + '">Ôn Bài ' + t.suggestion.lessonIndex + ' →</a>'
-        : '<a class="hsa-weak-btn is-ghost" href="/mock">Luyện đề →</a>';
+        // Không có bài gợi ý thì về khoá của chủ đề ấy — "Luyện đề" (/mock) bỏ 24/09/2026.
+        : '<a class="hsa-weak-btn is-ghost" href="/courses/' + encodeURIComponent(t.course) + '">Xem khoá học →</a>';
       return '<div class="hsa-weak-row is-' + level(t.mastery) + '">'
         + '<span class="hsa-weak-pct">' + t.mastery + '<i>%</i></span>'
         + '<span class="hsa-weak-body">'
@@ -2886,10 +2887,9 @@ var _forumTextQ = '';
     if (empty) {
       var has = (d.mocks || []).length > 0;
       empty.hidden = has;
-      if (!has) {
-        empty.innerHTML = '<p>Chưa có lượt thi thử nào — đường tiến bộ cần ít nhất '
-          + 'một lượt để bắt đầu.</p><a class="cv-cta" href="/mock">Làm đề thi thử →</a>';
-      }
+      // Nút "Làm đề thi thử" (/mock) bỏ 24/09/2026 — bỏ thi, pha A. Đường này vẽ
+      // điểm thi thử; pha B dựng lại theo tiến trình học tập.
+      if (!has) empty.innerHTML = '<p>Chưa có dữ liệu để vẽ đường tiến bộ.</p>';
     }
     drawCurve(d);
     renderCurveMeta(d);
@@ -2915,8 +2915,8 @@ var _forumTextQ = '';
     if (!box) return;
     var rows = d.rows || [];
     if (!rows.length) {
-      box.innerHTML = '<div class="prof-empty">' + esc(d.hint || 'Chưa có hoạt động nào.')
-        + ' <a href="/mock">Thi thử ngay →</a></div>';
+      // Link "Thi thử ngay" (/mock) bỏ 24/09/2026 — bỏ thi, pha A.
+      box.innerHTML = '<div class="prof-empty">' + esc(d.hint || 'Chưa có hoạt động nào.') + '</div>';
       return;
     }
     box.innerHTML = rows.map(function (r) {
@@ -3382,10 +3382,10 @@ var _forumTextQ = '';
 
   function itemHtml(it) {
     var href = null;
+    // Mục "mock" của kế hoạch cũ thôi dẫn tới /mock (bỏ thi, pha A, 24/09/2026) —
+    // không link; pha B thôi sinh mục ấy.
     if (it.kind === 'lesson' && it.course && it.lessonNo) {
       href = '/lesson/' + encodeURIComponent(it.course) + '?lesson=' + it.lessonNo;
-    } else if (it.kind === 'mock') {
-      href = '/mock';
     }
     var body = '<span class="pl-ic" aria-hidden="true" data-icon="'
       + (KIND_ICON[it.kind] || 'check') + '" data-size="15"></span>'

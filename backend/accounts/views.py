@@ -606,11 +606,13 @@ def _generate_user_roadmap(uid, survey_id, data):
         lines.append(f'    {nid}["{label}"]')
         ids.append(nid)
     n_mock, n_goal = len(order) + 2, len(order) + 3
-    nodes['hsa_mock'] = {'title': f'{n_mock}. Luyện đề tổng (CBT)',
-                         'desc': 'Thi thử đầy đủ 150 câu trên máy, chấm điểm và phân tích.'}
+    # "Ôn tổng hợp" thay "Luyện đề tổng (CBT)" từ 24/09/2026 (bỏ thi, pha A); mã nút
+    # `hsa_mock` giữ vì tiến độ đã lưu khoá theo nó. Cùng chữ với `seed_data`.
+    nodes['hsa_mock'] = {'title': f'{n_mock}. Ôn tổng hợp',
+                         'desc': 'Ôn lại cả ba phần thi, tập trung vào các dạng bài còn hay sai.'}
     nodes['hsa_goal'] = {'title': f'{n_goal}. Về đích ({target})',
                          'desc': 'Rà soát điểm yếu còn lại, chốt chiến lược làm bài.'}
-    lines.append(f'    hsa_mock["{n_mock}. Luyện đề tổng (CBT)"]')
+    lines.append(f'    hsa_mock["{n_mock}. Ôn tổng hợp"]')
     lines.append(f'    hsa_goal["{n_goal}. Về đích ({target})"]')
     ids += ['hsa_mock', 'hsa_goal']
     # `strict=False`: hai vế CỐ Ý lệch một phần tử — đây là cách ghép từng cặp

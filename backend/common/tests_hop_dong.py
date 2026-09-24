@@ -69,10 +69,12 @@ def test_hop_dong_ban_do_nang_luc(auth_api):
 
 
 @pytest.mark.django_db
-def test_hop_dong_de_thi_thu(auth_api):
-    """`/api/mock-exams` — màn thi thử lặp qua `exams`."""
-    co = _khoa(auth_api.get('/api/mock-exams'))
-    assert 'exams' in co, 'thiếu `exams`: %s' % sorted(co)
+def test_hop_dong_de_thi_thu_da_thao(auth_api):
+    """`/api/mock-exams` — hợp đồng ĐỔI 24/09/2026 (bỏ thi, pha A): màn thi thử đã
+    gỡ, không màn nào còn đọc `exams`, và máy chủ không còn phục vụ đường này.
+    Viết lại chứ không xoá (RULES §13): bật lại tuyến mà quên màn hình thì đỏ ở
+    đây. Đủ mọi tuyến thi: `common/tests_bo_thi.py`."""
+    assert auth_api.get('/api/mock-exams').status_code == 404
 
 
 @pytest.mark.django_db

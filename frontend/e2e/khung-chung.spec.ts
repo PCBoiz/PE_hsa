@@ -26,11 +26,16 @@ import { LY_DO_BO_QUA, login, vaoBangThe, vaoLaHocVien } from './helpers';
  *
  * `go_moi_nut.mjs` KHÔNG thay được tệp này: bộ ấy chỉ bấm trong thân trang
  * (nó báo "Thi thử: 1 nút"), tức chưa từng chạm vào thanh.
+ *
+ * 24/09/2026 (bỏ thi, pha A): màn Thi thử gỡ, `/mock` chỉ còn chuyển hướng. Cấu hình
+ * "React giữ menu" nay đo ở `/bai-tap` — cùng `dieuKhien="react"`, cùng đủ mục
+ * `navMuc.ts` (không truyền `muc` riêng). Phép kiểm "đang làm bài thì thanh bị
+ * tước" ở cuối tệp bỏ theo: nó chỉ chạy được trong phòng thi.
  */
 
 /** Ba cấu hình khác nhau của CÙNG một component — phải ra cùng một thanh. */
 const MAN = [
-  { ten: 'Thi thử (React giữ menu)', url: '/mock' },
+  { ten: 'Bài tập (React giữ menu)', url: '/bai-tap' },
   { ten: 'Dashboard (JS cũ giữ menu)', url: '/dashboard' },
   { ten: 'Chi tiết khoá (JS cũ, không SPA)', url: '/courses/hsa_quantitative' },
 ];
@@ -47,12 +52,13 @@ test.describe('khung chung', () => {
       expect(page.url(), 'không được rơi về màn đăng nhập').not.toContain('/login');
 
       await expect(page.locator('.topbar')).toHaveCount(1);
+      // 8 → 7 (24/09/2026): mục "Thi thử" gỡ khỏi `navMuc.ts`.
       expect(await page.locator('.topbar-nav .nav-btn').count(),
-        'đủ 8 mục điều hướng của navMuc.ts').toBeGreaterThanOrEqual(8);
+        'đủ 7 mục điều hướng của navMuc.ts').toBeGreaterThanOrEqual(7);
 
       // Biểu tượng phải là SVG. Emoji do phông màu của HỆ ĐIỀU HÀNH vẽ nên
       // không nhận `currentColor` và mỗi máy một kiểu.
-      expect(await page.locator('.topbar .nav-btn svg').count()).toBeGreaterThanOrEqual(8);
+      expect(await page.locator('.topbar .nav-btn svg').count()).toBeGreaterThanOrEqual(7);
       const emoji = await page.evaluate(() => {
         const t = (document.querySelector('.topbar') as HTMLElement | null)?.innerText || '';
         return [...t].filter((c) => (c.codePointAt(0) as number) > 0x2190).join('');
@@ -106,12 +112,14 @@ test.describe('khung chung', () => {
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     expect(page.url()).not.toContain('/login');
 
-    // Năm mục cấp một thay vì tám. TRỪ ba nút theo VAI: `dashboard.js` mở chúng
-    // cho tài khoản quản trị, đếm cả vào là đỏ oan — thước sai, không phải mã sai.
+    // Bốn mục cấp một (Trang của tôi · Học · Diễn đàn · Bài tập) thay vì tám — năm
+    // tới 24/09/2026, khi "Thi thử" gỡ (bỏ thi, pha A). TRỪ ba nút theo VAI:
+    // `dashboard.js` mở chúng cho tài khoản quản trị, đếm cả vào là đỏ oan — thước
+    // sai, không phải mã sai.
     const capMot = await page.locator(
       '.topbar-nav > .nav-btn:visible:not(#nav-teach):not(#nav-vanhanh):not(#nav-admin), .topbar-nav > .nav-nhom',
     ).count();
-    expect(capMot, 'thanh còn 5 mục cấp một').toBe(5);
+    expect(capMot, 'thanh còn 4 mục cấp một').toBe(4);
 
     // Bốn nút con vẫn là NÚT THẬT, giữ nguyên `data-page`.
     for (const dp of ['courses', 'plan', 'roadmap', 'skills']) {
@@ -147,25 +155,8 @@ test.describe('khung chung', () => {
     await expect(page.locator('.nav-nhom-panel')).toBeHidden();
   });
 
-  test('đang làm bài thì thanh bị tước, và đồng hồ không cuộn mất', async ({ page }) => {
-    const vao = (await vaoBangThe(page)) || (await login(page));
-    test.skip(!vao, LY_DO_BO_QUA);
-
-    await page.goto('/mock', { waitUntil: 'networkidle' });
-    const batDau = page.locator('.mk-exam-card button').first();
-    test.skip(!(await batDau.count()), 'CSDL chưa có đề thi thử nào');
-    await batDau.click();
-    await expect(page.locator('.mk-take')).toBeVisible({ timeout: 15_000 });
-
-    // Điều hướng bị GỠ HẲN: một cú bấm nhầm giữa lúc thi là mất bài đang làm.
-    await expect(page.locator('.topbar.shell-lam-bai')).toHaveCount(1);
-    await expect(page.locator('.topbar .nav-btn')).toHaveCount(0);
-    await expect(page.locator('.topbar #search-input')).toHaveCount(0);
-
-    // Đồng hồ lên thanh cố định — trước đây nó nằm trong thân trang, nên cuộn
-    // xuống câu 5 là mất, đúng lúc thí sinh cần nhìn nó nhất.
-    await expect(page.locator('.topbar .mk-timer')).toBeVisible();
-    await page.evaluate(() => window.scrollTo(0, 600));
-    await expect(page.locator('.topbar .mk-timer')).toBeVisible();
-  });
+  // "đang làm bài thì thanh bị tước, và đồng hồ không cuộn mất" BỎ 24/09/2026: phép
+  // kiểm chỉ chạy được trong phòng thi thử, mà phòng ấy đã gỡ (bỏ thi, pha A). Chế
+  // độ `lamBai` của AppShell nay không màn nào dùng — xoá ở pha C cùng mã thi.
+  // Lối cũ `/mock` và thanh không còn mục thi: `e2e/bo-thi.spec.ts`.
 });

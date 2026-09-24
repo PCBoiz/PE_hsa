@@ -32,9 +32,10 @@ export type MucNav = {
   /**
    * Chỉ sáng khi đường dẫn BẰNG ĐÚNG `url`, không sáng cho trang con.
    * "Việc hôm nay" (`/giang-day`) là tiền tố của mọi trang lớp; trang con
-   * không có tab riêng (`/giang-day/ket-qua-thi/7586`) mà để nó sáng thì thanh
-   * nói người dùng đang ở Việc hôm nay trong khi họ đang nhập điểm thi (rà
-   * 20/09/2026). Không mục nào sáng còn hơn sáng nhầm.
+   * không có tab riêng (hồi rà 20/09/2026 là trang nhập điểm thi
+   * `/giang-day/ket-qua-thi/7586`, gỡ 24/09) mà để nó sáng thì thanh nói người
+   * dùng đang ở Việc hôm nay trong khi họ đang ở trang khác. Không mục nào sáng
+   * còn hơn sáng nhầm.
    */
   chinhXac?: boolean;
   /** Câu giải thích, chỉ để đọc mã. */
@@ -80,10 +81,9 @@ export const MUC_NAV: MucNav[] = [
     nhom: 'hoc',
   },
   { trang: 'forum', nhan: 'Diễn đàn', icon: 'chat', emoji: '💬', url: '/dashboard#forum' },
-  {
-    trang: null, nhan: 'Thi thử', icon: 'target', emoji: '🎯', url: '/mock', chiHocVien: true,
-    ghi_chu: 'Tuyến Next thật, không phải trang trong SPA legacy.',
-  },
+  // "Thi thử" (`/mock`) GỠ 24/09/2026 — bỏ thi, pha A (anh Sơn chốt "bỏ mọi thứ về
+  // thi, giữ ngày thi HSA"). Link cũ chuyển về /dashboard ở `next.config.ts`.
+  // Guard: `e2e/unit/bo-thi.test.mjs`.
   {
     trang: null, nhan: 'Bài tập', icon: 'pencil', emoji: '✏️', url: '/bai-tap', chiHocVien: true,
     ghi_chu: 'Bài giảng viên giao (ERP §5), phía NGƯỜI LÀM bài. Trước 20/09/2026 '

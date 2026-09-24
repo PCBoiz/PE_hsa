@@ -35,7 +35,7 @@ export default function KhuNhanSu() {
         </h2>
         <p className="text-ink-2">
           {vai ? <>Bạn đang đăng nhập với vai <strong>{NHAN_VAI[vai] ?? vai}</strong>. </> : null}
-          Phần luyện thi — kế hoạch học, thi thử, nhiệm vụ, bảng xếp hạng — là của học viên
+          Phần luyện thi — kế hoạch học, nhiệm vụ, bảng xếp hạng — là của học viên
           nên không hiện ở đây.
         </p>
       </div>

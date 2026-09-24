@@ -36,7 +36,11 @@ urlpatterns = [
     path('', include('achievements.urls')),
     path('', include('forum.urls')),
     path('', include('courseadmin.urls')),
-    path('', include('mockexam.urls')),
+    # `mockexam.urls` THÁO 24/09/2026 (bỏ thi, pha A — anh Sơn chốt "bỏ mọi thứ
+    # về thi, giữ ngày thi HSA"). App vẫn trong INSTALLED_APPS, bảng giữ nguyên:
+    # pha A đảo ngược được bằng đúng một dòng này. Mã app xoá ở pha C. Tuyến đã
+    # vắng thật: `common/tests_bo_thi.py`; phép kiểm cũ của app chạy trên cây
+    # tuyến riêng `config/urls_thi_da_thao.py`.
     path('', include('chatbot.urls')),
     path('', include('teaching.urls')),
     path('accounts/', include('allauth.urls')),  # /accounts/google/login/ ...

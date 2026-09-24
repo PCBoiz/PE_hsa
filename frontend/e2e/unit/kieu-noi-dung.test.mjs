@@ -52,10 +52,13 @@ try {
     new Headers(daGoi[1].opts.headers).get('content-type') === 'application/merge-patch+json');
 
   // FormData: trình duyệt phải tự đặt `multipart/form-data; boundary=…`.
-  // Đặt tay `application/json` ở đây là phá đường tải tệp (nhập đề thi thử).
+  // Đặt tay `application/json` ở đây là phá mọi đường tải tệp. (Hai đường tải
+  // tệp đầu tiên — nhập đề thi thử, nhập PDF kết quả thi — gỡ 24/09/2026 cùng
+  // tính năng thi; nhánh này của `apiFetch` giữ cho lần tải tệp sau.) URL giả:
+  // `fetch` ở đây là bản chép, không gọi đi đâu.
   const fd = new FormData();
   fd.append('file', new Blob(['x']), 'de.json');
-  await apiFetch('/api/admin/mock-exams/import', { method: 'POST', body: fd });
+  await apiFetch('/api/tai-tep-gia', { method: 'POST', body: fd });
   const h3 = new Headers(daGoi[2].opts.headers);
   check('FormData → KHÔNG tự đặt kiểu nội dung', !h3.has('content-type'), String(h3.get('content-type')));
 
