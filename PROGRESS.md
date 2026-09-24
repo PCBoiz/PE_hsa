@@ -90,6 +90,29 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 25/09/2026 — KẾ HOẠCH v2 theo bảng yêu cầu 24/09 + Ngày 0 (P0.1–P0.3, P0.5)
+
+- **Kế hoạch v2** (mục đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`): bảng "Phân rã tính năng — Updated 24.9"
+  là DANH MỤC NGHIỆM THU (anh xác nhận cột TRUE = khách đã duyệt dòng, nay dòng 1–2). Tám quyết định anh chốt 25/09:
+  điểm thi thử = bài kiểm tra GV nhập tay (hoãn 1.5C) · phụ huynh KHÔNG tài khoản, nâng link thành "link theo dõi" ·
+  tự đăng ký = tài khoản chờ xếp lớp · vận hành lớp trước · record ở Zoom cloud · một hộp "Yêu cầu" chung · học phí
+  chỉ một ô tình trạng · dòng 1–2 không đụng. ~60 ô thiếu gom vào 5 bộ máy (E1 khung chương trình theo buổi, E2 thông
+  báo + outbox, E3 hộp Yêu cầu, E4 Zoom, E5 tự đăng ký) + mẻ vá rẻ V a–o; 3 luồng agent với neo § riêng (A §62–64,
+  B §61, C §65–67, Zoom §68).
+- **Dò mã hai lượt (đọc MÃ + SQL)**: DOI_CHIEU 23/09 báo quá tay 5 chỗ — nhận xét GV (không có chỗ ghi), TG không
+  nhận `vangLien`/`canChuY`, record không tới học viên, `lesson_refs` không ai dùng, `is_published` không sửa được.
+- **LỖI THẬT do chính 1.2c** (chưa đẩy): ghi chú chuyển lớp vào `class_members.note` → tờ phụ huynh in thành "nhận
+  xét của giảng viên". Vá `e328ade` (§62a `teacher_comment`). Bài học: một cột mang hai nghĩa (nội bộ / gửi phụ
+  huynh) là lỗi chờ nổ — khi thêm người GHI mới vào một cột, grep mọi người ĐỌC nó và hỏi họ in ra cho ai.
+- `c1c620b` gộp bỏ thi pha A · `e2c06a6` điền ngược last_seen (đã migrate dev) · `ad92e17` gỡ nút Đăng ký cuối cùng
+  (tầng cũ 6533 → 6449) · `cf2ace3` Tổng quan ghi lớp mới của dòng chuyển lớp.
+- **Thước hỏng lần này**: một đột biến tương đương (`.get('note')` khi cột không còn SELECT) báo "VẪN XANH" — không
+  phải mã lọt, thay bằng đột biến thật. Và tôi ghi "guard 37/37" vào commit khi chưa đếm lại — đếm thật 34/34, đã sửa
+  thông điệp commit trước khi đẩy.
+- Việc mới cho anh (bảng đầu `docs/VIEC_CUA_ANH.md`): K2 (hỏi TopHSA 4 điểm + ngày buổi xem), K1 (một khung chương
+  trình thật), T6 (cron-job.org gọi /health — hết ngủ máy chủ, miễn phí), Z1 Zoom (khi tới E4).
+- Agent: 1.4b (`hoc-vien`) và H2/H3/H6 (`ha-tang`) đã gửi tiếp, đang chạy.
+
 ## 25/09/2026 — LÀM TIẾP: gộp 1.5A (bỏ thi pha A), bỏ việc tay N2, bảng việc của anh, 3 agent
 
 Anh chốt 25/09: đồng ý xoá sớm 4 tệp giao diện thi · thẻ số 4 → "Tiến độ chương trình" (pha B) · CÓ điền ngược

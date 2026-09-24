@@ -6,13 +6,15 @@
 nào thì nhắn một dòng (ví dụ "xong N6"), tôi kiểm lại rồi gạch. Các phần bên dưới bảng là chi tiết và lịch sử,
 chỉ đọc khi cần tra.
 
-### A. Làm theo thứ tự này, trước lần đẩy code tới
+### A. Làm trước — N6 → N4 → N7 quanh lần đẩy code tới; K2, K1 trước buổi TopHSA xem lại
 
 | # | Việc — làm gì, bấm ở đâu | Vì sao | Mất |
 |---|---|---|---|
 | **N6** | **Xếp lớp cho mọi học viên thật.** Vào **Vận hành → Lớp học**, mở lớp em đang học (chưa có lớp thì bấm "Thêm lớp"; để trống ô **Môn học** = học cả ba môn) → bấm **Học viên** → dán email của các em → **Thêm vào lớp**. | Bản mới: em chỉ mở được môn của **lớp em đang học**, không còn nút "Đăng ký". Em chưa có lớp sẽ thấy "Môn này chưa mở cho lớp của em". Tôi đếm trên bản sao dữ liệu: **1 trong 2 học viên thật chưa có lớp**. | 5 phút |
 | **N4** | **Đẩy code lên** (`git push origin master`) — **chỉ khi tôi nhắn "đẩy được"**, và sau N6. Nên đẩy buổi tối, lúc không ai học. | Đẩy = cập nhật trang thật. Web (Vercel) lên trước máy chủ (Render) khoảng 40 phút; trong khoảng ấy em chưa từng đăng ký môn sẽ tạm không mở được bài. | 1 phút |
 | **N7** | **Sau khi đẩy — một bài học bị trùng.** Hỏi chị biên tập nội dung của TopHSA: bài **"Chương 1: Xác suất thống kê"** (chị thêm sáng 23/09 vào khoá **Tư duy Định lượng**, chưa có nội dung) là để làm gì. **Thêm nhầm** → vào **Giáo trình** → khoá Tư duy Định lượng → dòng bài ấy → **Xoá**. **Muốn giữ** → cũng Xoá, rồi gõ lại tên ở ô "Thêm bài mới" → **Thêm bài**: bản mới tự xếp nó xuống cuối khoá. | Bài ấy bị đặt trùng số thứ tự 1 với bài "Tỉ lệ & phần trăm" (lỗi của bộ soạn cũ, đã vá). Vì trùng số, em làm xong bài 1 thì có lúc tiến độ bị ghi sang bài trống. Bản mới đã tự chọn đúng bài có nội dung, nhưng dòng trùng vẫn nằm trong dữ liệu — đó là nội dung của khách nên tôi không tự xoá. | 3 phút |
+| **K2** | **Hỏi TopHSA bốn điểm, nhắn lại tôi câu trả lời.** (1) Phụ huynh xem qua **link riêng** (không tạo tài khoản) — dòng 23 của bảng có chấp nhận thay như vậy không? (2) Học phí chỉ cần **một ô "Tình trạng học phí"** trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu) — dòng 7 có đủ không? (3) "Thi thử / điểm thi thử" = **bài kiểm tra làm ở trung tâm, giáo viên nhập điểm** — đúng ý không? (4) **Ngày** buổi xem lại. | Bảng 24/09 là danh mục nghiệm thu (cột TRUE = đã duyệt). Ba dòng trên tôi làm KHÁC chữ trong bảng theo quyết định của anh — khách phải đồng ý trước buổi xem, không thì dòng ấy không được tick. Ngày buổi xem quyết định làm được bao nhiêu mục. | 10 phút |
+| **K1** | **Xin TopHSA MỘT khung chương trình thật theo buổi** của một môn (ví dụ Tư duy định lượng: buổi 1 … buổi N — mỗi buổi học bài/chủ đề gì, bài về nhà, bài kiểm tra nếu có). File Word/Excel/ảnh chụp đều được, gửi tôi. | Dòng 5, 9, 15, 16, 28 của bảng đều đòi "tiến độ so với khung chương trình". Có khung thật thì buổi demo cho khách thấy lớp của chính họ đang nhanh hay chậm; không có thì tôi demo bằng khung tự soạn — kém thuyết phục. | 5 phút nhắn |
 
 ### B. Nên làm, không gấp — không chặn gì
 
@@ -21,6 +23,7 @@ chỉ đọc khi cần tra.
 | **N3** | Render → dịch vụ `pe-hsa-backend` → **Environment** → biến `FRONTEND_URL` = đúng địa chỉ web đang chạy trên Vercel (không phải localhost). | Link "quên mật khẩu" và link trong thư báo đổi lịch dựng từ biến này; sai là thư chứa link chết. | 2 phút |
 | **A7** | Render → `pe-hsa-backend` → Environment: có biến `DEEPSEEK_MODEL=deepseek-chat` thì **xoá**. Rồi nạp thêm tiền DeepSeek (platform.deepseek.com → Top up). | Tên model cũ bị DeepSeek chuyển sang bản rẻ nhất. Số dư đo 20/09: 2,54 USD — một lớp 30 em dùng thật vài ngày là hết. | 3 phút |
 | **N5** | Trả lời 2 mặc định tôi tự chọn (im lặng = đồng ý): (a) lớp "Đã kết thúc" vẫn mở bài cho em chưa bị cho rời lớp; (b) nhật ký giữ nhãn tiếng Việt cho các dòng thi thử CŨ sau khi gỡ tính năng thi. | Ảnh hưởng cách mở môn và pha xoá mã thi. | 1 phút |
+| **T6** | Tạo tài khoản miễn phí ở **cron-job.org** → "Create cronjob" → địa chỉ `https://<máy chủ Render của mình>/health`, mỗi **10 phút**. (Tôi gửi đúng địa chỉ khi anh làm.) | Máy chủ gói miễn phí ngủ sau 15 phút không ai dùng → người vào đầu tiên chờ ~84 giây. Gọi đều thì máy không ngủ; gói miễn phí có 750 giờ/tháng, đủ chạy liên tục MỘT dịch vụ (tài khoản mình chỉ có một: `pe-hsa-backend`). Sau này cùng địa chỉ ấy còn chạy việc gửi thư/nhắc hạn nộp. | 5 phút |
 
 ### C. Câu còn chờ anh quyết (chi tiết + đề xuất của tôi ở Phần I.2 bên dưới)
 
@@ -37,7 +40,7 @@ T5 gỡ dữ liệu trình diễn. Chi tiết từng bước ở mục 0.3 bên 
 ### E. Theo từng đợt — tôi nhắc khi tới
 
 D1 Cloudflare R2 (tài liệu lớp: PDF, slide) · D2 Zalo OA + mẫu tin ZNS (gửi hàng loạt) · D3 hộp thư @tophsa.vn ·
-D4 Google OAuth (diễn đàn). Chi tiết ở mục 0.4.
+D4 Google OAuth (diễn đàn). **Z1 Zoom** (khi làm phần record, sau buổi xem lại): nhờ người quản trị tài khoản Zoom của TopHSA tạo một ứng dụng "Server-to-Server OAuth" và bật báo record — tôi viết hướng dẫn từng bấm; nhờ vậy link record tự vào đúng buổi, trợ giảng khỏi dán. Chi tiết ở mục 0.4.
 
 ### F. Chờ TopHSA
 
