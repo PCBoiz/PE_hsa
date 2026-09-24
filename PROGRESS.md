@@ -90,6 +90,28 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 24/09/2026 (tiếp 8) — LỖI DỮ LIỆU THẬT: hai bài cùng vị trí 1 ở "Tư duy Định lượng" → vá mã + việc N7 cho anh
+
+- **Tìm ra** khi 3 test bài học đỏ không phải vì 1.3: nhánh dev (bản sao production 24/09) có `lessons` id 1 "Tỉ lệ &
+  phần trăm" và id 4686 "Chương 1: Xác suất thống kê" CÙNG `sort_order 1`. Nhật ký: tài khoản Biên tập nội dung của TopHSA
+  thêm bài ấy sáng 23/09 (`lesson.create`), bài CHƯA có nội dung; một tài khoản giảng viên thử đã có tiến độ trên nó.
+- **Gốc**: bộ soạn (`SoanClient.tsx`) tự tính vị trí = lớn nhất + 1 TỪ DANH SÁCH ĐANG NẠP — rỗng thì gửi 1 — và
+  `AdminLessonsView` nhận mù (không kiểm trùng, không chỉ mục duy nhất).
+- **Tác hại đo được**: đường ĐỌC nội dung lọc bài có nội dung → em vẫn thấy đúng bài; nhưng `_tim_bai` / `id_bai` lấy
+  `LIMIT 1` KHÔNG thứ tự → hoàn thành "bài 1" ghi tiến độ / XP / năng lực sang bài RỖNG (test tái hiện: trả 4686). Lượt sửa
+  nội dung 09:11 cùng ngày đi theo id nên KHÔNG ghi nhầm bài; nội dung bài 1 vẫn là bộ gốc (`ql_01`).
+- **Vá**: máy chủ quyết vị trí — không gửi → xếp CUỐI (khoá dòng khoá học); gửi vị trí đã có bài → 409 "Vị trí N đã có bài
+  …"; dời bài sang vị trí đã có bài → 409 (giữ vị trí của chính nó thì không). Bộ soạn thôi gửi vị trí. MỌI đường tra "bài
+  số N" (`_tim_bai`, `id_bai`, nội dung, chấm, trợ lý, nhập cả khoá) cùng một luật: có nội dung trước, rồi id nhỏ nhất.
+- **Dữ liệu thật KHÔNG tự sửa** (nội dung của khách): **N7** trong `VIEC_CUA_ANH.md` — dời bài ấy sang vị trí 29 hoặc xoá,
+  hỏi chị biên tập ý định. Chỉ mục duy nhất (khoá, vị trí) để sau khi dữ liệu sạch.
+
+### Đã đo
+- `courseadmin/tests_thu_tu_bai.py` MỚI 4/4 — ĐỎ cả 4 trên mã cũ (bài mới vào vị trí 0; trùng → 200; dời trùng → 200;
+  `_tim_bai` trả bài rỗng 4686). **Đột biến 6/6 đỏ thật.**
+- Ba test bài học cũ tự tra "bài số 1" bằng câu không thứ tự (đúng lỗi của mã) → sửa theo cùng luật. lessons + courseadmin
+  + chatbot + tests mới: 84/84.
+
 ## 24/09/2026 (tiếp 7) — 1.3 MÔN MỞ QUA LỚP (góp ý TopHSA #3) — phần backend + trang khoá
 
 - **Cổng DUY NHẤT `courses/truy_cap.py`**: nhân sự (mọi vai không phải Học viên) → mọi môn chế độ `xem`; học viên → `hoc`

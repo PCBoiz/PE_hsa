@@ -420,16 +420,14 @@ function KhoiBai({
             chay(async () => {
               const t = tenMoi.trim();
               if (!t) throw new Error('Nhập tên bài trước đã.');
-              // `sort_order` = số bài lớn nhất + 1. Không để máy chủ tự đoán:
-              // thiếu nó thì bài mới rơi vào vị trí 0 và `index` của nội dung
-              // sẽ không bao giờ khớp `sort_order` — máy chủ từ chối lưu nội
-              // dung với một câu lỗi nói về "vị trí", thứ người soạn không hiểu
-              // vì sao lại sai.
-              const ke = bai.reduce((m, b) => Math.max(m, b.sort_order || 0), 0) + 1;
+              // KHÔNG gửi `sort_order` (24/09/2026): máy chủ xếp bài mới vào CUỐI khoá,
+              // dưới khoá dòng khoá học. Bản trước tự tính "lớn nhất + 1" từ `bai` —
+              // danh sách đang nạp; nạp chưa xong (hay hỏng) thì `bai` rỗng → gửi 1,
+              // và TopHSA thêm trùng vị trí 1 ngày 23/09 ("bài số 1" trỏ hai dòng).
               await doc('/api/admin/lessons', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ course_id: khoa.id, title: t, sort_order: ke }),
+                body: JSON.stringify({ course_id: khoa.id, title: t }),
               });
               setTenMoi('');
               onDoi();

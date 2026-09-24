@@ -400,7 +400,10 @@ def test_hoan_thanh_xong_thi_XOA_phan_da_ghi_nhan(em):
     ids = sorted(bang)
     _goi(CheckAnswersView, 'post', {'phan': 'test', 'answers': {ids[0]: 'x'}},
          ai=em, course_id=KHOA, lesson_no=1)
-    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1", (KHOA,))['id']
+    # "Bài số 1" theo CÙNG luật với mã (có nội dung trước, rồi id nhỏ nhất) — khoá thật
+    # có hai dòng vị trí 1 từ 23/09 (xem courseadmin/tests_thu_tu_bai.py).
+    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1 "
+             "ORDER BY (content_json IS NULL), id LIMIT 1", (KHOA,))['id']
     assert doc_ghi_nhan(em.id, lid, 'test') != {}
     _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'answers': {}},
          ai=em, lesson_no=1)
@@ -513,7 +516,10 @@ def test_hoan_thanh_LAN_HAI_khong_ghi_de_diem_lan_dau(em):
     _goi(CompleteLessonView, 'post', {'courseId': KHOA, 'answers': dung_het},
          ai=em, lesson_no=1)
 
-    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1", (KHOA,))['id']
+    # "Bài số 1" theo CÙNG luật với mã (có nội dung trước, rồi id nhỏ nhất) — khoá thật
+    # có hai dòng vị trí 1 từ 23/09 (xem courseadmin/tests_thu_tu_bai.py).
+    lid = q1("SELECT id FROM lessons WHERE course_id=%s AND sort_order=1 "
+             "ORDER BY (content_json IS NULL), id LIMIT 1", (KHOA,))['id']
     ghi = q1("SELECT quiz_score FROM lesson_progress WHERE user_id=%s AND lesson_id=%s",
              (em.id, lid))
     assert ghi['quiz_score'] == 0, (
@@ -755,7 +761,8 @@ def test_tran_dong_ho_doc_dung_tu_giao_trinh(db):
     from lessons.grading import gioi_han_giay_drill
 
     that = q1("SELECT (content_json->'drill'->>'time_seconds')::int AS ts "
-              "FROM lessons WHERE course_id='hsa_quantitative' AND sort_order=1")
+              "FROM lessons WHERE course_id='hsa_quantitative' AND sort_order=1 "
+              "AND content_json IS NOT NULL ORDER BY id LIMIT 1")
     assert gioi_han_giay_drill('hsa_quantitative', 1) == that['ts']
     # Bài không tồn tại → None, và gọi lại vẫn None (đi qua đệm `-1`).
     assert gioi_han_giay_drill('khong_co_khoa_nay', 999) is None

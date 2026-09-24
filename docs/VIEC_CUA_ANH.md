@@ -32,6 +32,7 @@ dữ liệu thật). Mục nào xong anh báo một dòng, tôi kiểm và gạc
 | # | Việc | Vì sao |
 |---|---|---|
 | **N6** | Xếp lớp cho MỌI học viên đang dùng thử (Quản trị → Lớp học → Học viên). Lớp để trống ô "Môn học" = mở cả ba môn. Đo trên nhánh `dev` (bản sao production 24/09, bỏ tài khoản demo/rà soát): **1 trong 2** học viên thật đang học mà CHƯA thuộc lớp nào. | Sau 1.3 học viên KHÔNG tự đăng ký môn nữa — em chưa thuộc lớp nào sẽ không mở được bài. Lần đẩy có 1.3: Vercel xong sớm hơn Render ~40 phút — trong khoảng ấy nút Đăng ký đã gỡ mà máy chủ cũ vẫn đòi ghi danh, nên em CHƯA ghi danh không mở được bài. Đẩy lúc không ai học (tối muộn) là đủ |
+| **N7** | Khoá **Tư duy Định lượng** có HAI bài ở vị trí 1: bài gốc "Tỉ lệ & phần trăm" và bài "Chương 1: Xác suất thống kê" (tài khoản Biên tập nội dung của TopHSA thêm sáng 23/09, CHƯA có nội dung). Sau khi đẩy bản vá: Giáo trình → khoá ấy → sửa bài "Chương 1: Xác suất thống kê" → đổi vị trí sang **29** (cuối khoá) — hoặc xoá nếu chị biên tập thêm nhầm. Hỏi chị ý định trước. | Bộ soạn cũ tính vị trí từ danh sách đang nạp; nạp chưa xong thì gửi 1 và máy chủ nhận mù. Mã đã vá (máy chủ tự xếp cuối, trùng → báo lỗi; mọi đường tra "bài số N" chọn bài CÓ nội dung), nhưng dòng trùng đã nằm trong dữ liệu thật — tôi không tự sửa nội dung của khách. Đo trên nhánh dev: hoàn thành "bài 1" đang ghi tiến độ sang bài RỖNG |
 
 ### 0.3 Khi bắt đầu thử nghiệm với dữ liệu thật (mã đã nối sẵn, chỉ cần tài khoản + biến môi trường)
 

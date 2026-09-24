@@ -89,7 +89,7 @@ def _chuan(s):
 def _noi_dung(course_id, lesson_no):
     """`content_json` của một bài, dạng dict. None nếu không có."""
     row = q1('SELECT content_json FROM lessons '
-             'WHERE course_id=%s AND sort_order=%s AND content_json IS NOT NULL',
+             'WHERE course_id=%s AND sort_order=%s AND content_json IS NOT NULL ORDER BY id LIMIT 1',
              (course_id, lesson_no))
     if not row:
         return None
@@ -142,7 +142,9 @@ def id_bai(course_id, lesson_no):
     ra = cache.get(key)
     if ra is not None:
         return ra or None
-    row = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1',
+    # Cùng luật với `lessons.views._tim_bai`: bài có nội dung trước, rồi id nhỏ nhất.
+    row = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s '
+             'ORDER BY (content_json IS NULL), id LIMIT 1',
              (course_id, lesson_no))
     ra = (row or {}).get('id') or 0
     cache.set(key, ra, _TTL)

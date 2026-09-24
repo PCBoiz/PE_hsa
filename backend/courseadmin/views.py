@@ -291,6 +291,18 @@ def _loi_van_ban_bai(updates):
     return None
 
 
+def _vi_tri_trung(course_id, so, tru_id=None):
+    """Bài đang giữ vị trí `so` trong khoá (trừ bài `tru_id`), hoặc None."""
+    return q1('SELECT id, title FROM lessons WHERE course_id=%s AND sort_order=%s '
+              'AND (%s::int IS NULL OR id <> %s::int) ORDER BY id LIMIT 1',
+              (course_id, so, tru_id, tru_id))
+
+
+def _cau_trung(so, bai):
+    return ('Vị trí %s đã có bài "%s". Để trống ô vị trí để thêm bài vào cuối khoá, '
+            'hoặc đổi vị trí của bài kia trước.' % (so, bai['title']))
+
+
 class AdminLessonsView(AdminBase):
     def post(self, request):
         data = request.data if isinstance(request.data, dict) else {}
@@ -309,10 +321,28 @@ class AdminLessonsView(AdminBase):
         if loi:
             return Response({'error': loi}, status=400)
 
-        x('INSERT INTO lessons (course_id, module, title, content, sort_order) '
-          'VALUES (%s, %s, %s, %s, %s)',
-          (course_id, data.get('module', ''), title,
-           data.get('content', ''), data.get('sort_order', 0)))
+        # VỊ TRÍ DO MÁY CHỦ QUYẾT (24/09/2026). Bộ soạn từng tự tính "lớn nhất + 1"
+        # từ danh sách ĐANG NẠP — danh sách rỗng thì gửi 1, và máy chủ nhận mù: TopHSA
+        # thêm "Chương 1: Xác suất thống kê" vào ĐÚNG vị trí 1 đã có bài (23/09), "bài
+        # số 1" trỏ hai dòng. Không gửi vị trí → xếp cuối; gửi vị trí đã có bài → 409.
+        # Khoá dòng khoá học: hai người thêm bài cùng lúc không cùng lấy một số.
+        try:
+            so = int(data.get('sort_order') or 0)
+        except (TypeError, ValueError):
+            return Response({'error': 'Vị trí bài phải là số nguyên.'}, status=400)
+        with transaction.atomic():
+            q1('SELECT id FROM courses WHERE id=%s FOR UPDATE', (course_id,))
+            if so <= 0:
+                so = q1('SELECT COALESCE(MAX(sort_order), 0) + 1 AS so FROM lessons WHERE course_id=%s',
+                        (course_id,))['so']
+            else:
+                trung = _vi_tri_trung(course_id, so)
+                if trung:
+                    return Response({'error': _cau_trung(so, trung)}, status=409)
+            x('INSERT INTO lessons (course_id, module, title, content, sort_order) '
+              'VALUES (%s, %s, %s, %s, %s)',
+              (course_id, data.get('module', ''), title, data.get('content', ''), so))
+        data = dict(data, sort_order=so)
         # Lấy sàn từ SỐ BÀI THẬT trong bảng, không chỉ từ `sort_order` gửi lên.
         # Thiếu `sort_order` thì nó mặc định 0, mà `_bump_lesson_count` bỏ qua
         # giá trị 0 — nên một khoá vừa được thêm bài vẫn hiện "0 bài" trên danh
@@ -343,8 +373,18 @@ class AdminLessonDetailView(AdminBase):
         if loi:
             return Response({'error': loi}, status=400)
 
-        if not q1('SELECT id FROM lessons WHERE id=%s', (lesson_id,)):
+        bai = q1('SELECT id, course_id FROM lessons WHERE id=%s', (lesson_id,))
+        if not bai:
             return Response({'error': 'Không tìm thấy bài giảng'}, status=404)
+        if 'sort_order' in updates:
+            # Cùng luật với lúc thêm bài: không dời bài vào vị trí đã có bài khác.
+            try:
+                updates['sort_order'] = int(updates['sort_order'])
+            except (TypeError, ValueError):
+                return Response({'error': 'Vị trí bài phải là số nguyên.'}, status=400)
+            trung = _vi_tri_trung(bai['course_id'], updates['sort_order'], tru_id=bai['id'])
+            if trung:
+                return Response({'error': _cau_trung(updates['sort_order'], trung)}, status=409)
 
         set_clause = ', '.join(f'{col}=%s' for col in updates)
         x(f'UPDATE lessons SET {set_clause} WHERE id=%s',
@@ -557,8 +597,10 @@ class AdminCourseImportView(AdminBase):
                 payload = json.dumps(obj, ensure_ascii=False)
                 title = (obj.get('title') or f'Bài {idx}').strip()
                 module = (obj.get('topic_tag') or '').split('·')[-1].strip()[:120] or None
-                existing = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s',
-                              (course_id, idx))
+                # Có nội dung trước, rồi dòng cũ nhất — CÙNG luật với mọi đường tra
+                # "bài số N" (`lessons.views._tim_bai`, `grading.id_bai`, …).
+                existing = q1('SELECT id FROM lessons WHERE course_id=%s AND sort_order=%s '
+                              'ORDER BY (content_json IS NULL), id LIMIT 1', (course_id, idx))
                 if existing:
                     x('UPDATE lessons SET title=%s, module=COALESCE(%s, module), '
                       'content_json=%s::jsonb WHERE id=%s',

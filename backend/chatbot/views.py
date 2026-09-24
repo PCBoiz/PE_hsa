@@ -92,7 +92,7 @@ def _bai_theo_so(course_id, index):
     if not cid or not 1 <= so <= 999:
         return None
     r = q1("SELECT content_json FROM lessons WHERE course_id = %s AND sort_order = %s "
-           "AND content_json IS NOT NULL", (cid, so))
+           "AND content_json IS NOT NULL ORDER BY id LIMIT 1", (cid, so))
     if not r:
         return None
     d = r["content_json"]

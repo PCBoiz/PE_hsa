@@ -57,8 +57,11 @@ def _tim_bai(course_id, lesson_no):
     còn dòng stub nào, và bản dự phòng phía client đã bỏ từ 19/08/2026. Bài học
     viên học được thì luôn có dòng sẵn; nhánh ấy chỉ còn là cái lỗ.
     """
+    # `ORDER BY` (24/09/2026): khoá có thể có hai dòng cùng vị trí (TopHSA thêm trùng
+    # vị trí 1 ngày 23/09) — chọn bài CÓ NỘI DUNG, là bài em đang thấy, không chọn mò.
     row = q1("SELECT id, module, title, (content_json->>'xp_reward') AS xp "
-             "FROM lessons WHERE course_id=%s AND sort_order=%s LIMIT 1",
+             "FROM lessons WHERE course_id=%s AND sort_order=%s "
+             "ORDER BY (content_json IS NULL), id LIMIT 1",
              (course_id, lesson_no))
     if not row:
         return None, None, None, None

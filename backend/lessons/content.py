@@ -341,8 +341,10 @@ def one_lesson(course_id, index):
     Trang bài học trước đây nạp cả 76 bài (87 kB nén / 440 kB gốc) chỉ để hiển
     thị một bài. Đọc lẻ từng bài cắt gần hết phần đó.
     """
+    # `ORDER BY id` — cùng luật "có nội dung trước, rồi id nhỏ nhất" với `_tim_bai`
+    # (24/09/2026): vị trí trùng thì đường đọc và đường ghi phải thấy CÙNG một bài.
     row = q1("SELECT content_json FROM lessons "
-             "WHERE course_id=%s AND sort_order=%s AND content_json IS NOT NULL",
+             "WHERE course_id=%s AND sort_order=%s AND content_json IS NOT NULL ORDER BY id LIMIT 1",
              (course_id, index))
     total = (q1("SELECT COUNT(*) AS n FROM lessons "
                 "WHERE course_id=%s AND content_json IS NOT NULL", (course_id,)) or {}).get('n', 0)
