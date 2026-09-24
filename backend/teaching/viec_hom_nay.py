@@ -40,7 +40,7 @@ from common.db import q
 from common.permissions import IsTeachingStaff, is_assistant, visible_class_ids
 from teaching.reports import _last_activity, canh_bao_muc_cao
 from teaching.sessions import DEFAULT_SESSION_MINUTES
-from teaching.vocab import chi_hoc_vien
+from teaching.vocab import LOP_TAM_DUNG, chi_hoc_vien
 
 #: Bài nộp chờ chấm quá ngần này ngày thì tô đỏ (mốc các LMS hay dùng).
 CHAM_QUA_NGAY = 5
@@ -57,7 +57,8 @@ def _lop_cua(user):
     ids = visible_class_ids(user)
     if not ids:
         return [], {}
-    lop = q('SELECT id, name, meeting_url FROM classes WHERE id = ANY(%s) ORDER BY name', (ids,))
+    lop = q('SELECT id, name, meeting_url, status FROM classes WHERE id = ANY(%s) ORDER BY name',
+            (ids,))
     return ids, {r['id']: r for r in lop}
 
 
@@ -91,7 +92,14 @@ def _chua_diem_danh(ids, lop, nay):
     nhắc ở đâu. Nay cùng tiêu chí với màn Buổi học (`sessions._session_dict`):
     còn HỌC VIÊN đang ở lớp chưa có dòng điểm danh. Em vào lớp SAU buổi đó
     không tính — không thì mỗi lần xếp thêm một em, cả lịch sử bật đỏ.
+
+    Lớp TẠM DỪNG (V-c, 25/09/2026) không vào khối này: buổi còn nằm trong lịch
+    mà lớp nghỉ thì không phải việc tồn của ai — nhắc mỗi tối là dạy người ta
+    bỏ qua dòng đỏ, kể cả dòng thật.
     """
+    ids = [i for i in ids if lop[i]['status'] != LOP_TAM_DUNG]
+    if not ids:
+        return {'tong': 0, 'ds': []}
     thieu = '''(SELECT COUNT(*) FROM class_members m JOIN users u ON u.id = m.user_id
                  WHERE m.class_id = s.class_id AND m.left_at IS NULL
                    AND m.joined_at::date <= s.starts_at::date AND ''' + chi_hoc_vien('u') + '''

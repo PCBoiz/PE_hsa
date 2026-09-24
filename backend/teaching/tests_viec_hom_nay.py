@@ -23,7 +23,7 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from common.clock import local_now
 from common.db import q1, x
-from common.permissions import ROLE_ASSISTANT, ROLE_STUDENT, ROLE_TEACHER
+from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT, ROLE_STUDENT, ROLE_TEACHER
 
 pytestmark = pytest.mark.django_db
 
@@ -168,6 +168,22 @@ def test_buoi_tick_do_van_la_chua_diem_danh_xong(canh):
     assert theo_id[do]['conThieu'] == 2, theo_id[do]
     # Trợ giảng cũng là thành viên lớp nhưng KHÔNG phải người được điểm danh.
     assert d['tong'] == 1
+
+
+def test_lop_tam_dung_khong_vao_chua_diem_danh(canh):
+    """V-c: học vụ chuyển lớp sang TẠM DỪNG (qua màn Lớp học thật) → buổi của lớp
+    ấy thôi nằm trong "chưa điểm danh"; mở lại lớp thì hiện lại."""
+    hoc_vu = _nguoi('HocVu VHN', ROLE_ACADEMIC)
+    b = _buoi(canh['lop'], -30)
+    a = APIClient()
+    a.force_authenticate(user=hoc_vu)
+    r = a.put('/api/admin/classes/%d' % canh['lop'], {'status': 'paused'}, format='json')
+    assert r.status_code == 200, r.json()
+    d = _goi(canh['gv']).json()['chuaDiemDanh']
+    assert d == {'tong': 0, 'ds': []}, d
+    assert a.put('/api/admin/classes/%d' % canh['lop'], {'status': 'active'},
+                 format='json').status_code == 200
+    assert [v['sessionId'] for v in _goi(canh['gv']).json()['chuaDiemDanh']['ds']] == [b]
 
 
 def test_bai_da_nop_chua_cham_va_cho_qua_5_ngay(canh):

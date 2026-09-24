@@ -219,8 +219,8 @@ def test_bang_lop_cat_dong_xep_theo_van_de_nhung_so_dem_tren_TOAN_BO():
     assert s['classCount'] == 5
     assert s['activeNoTeacher'] == 2, 'đếm trên MỌI lớp, không trên phần đã cắt'
     assert s['classesByType'] == {
-        'nhom': {'total': 3, 'active': 3, 'finished': 0, 'cancelled': 0},
-        'gia_su': {'total': 2, 'active': 1, 'finished': 1, 'cancelled': 0},
+        'nhom': {'total': 3, 'active': 3, 'paused': 0, 'finished': 0, 'cancelled': 0},
+        'gia_su': {'total': 2, 'active': 1, 'paused': 0, 'finished': 1, 'cancelled': 0},
     }, s['classesByType']
 
 

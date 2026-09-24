@@ -55,14 +55,21 @@ export type LopRow = {
 
 export type Form = Record<string, string>;
 
-/* Ba giá trị = ràng buộc `classes_status_check` (T42). `draft` từng có ở đây
-   dù CSDL không nhận — xem `formRong`. Mã lạ vẫn hiện nguyên mã. Ở đây (tệp
-   thuần) để bảng lớp phía trình duyệt và bộ lọc dựng ở máy chủ gọi CÙNG tên. */
-export const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral' | 'bad' }> = {
+/* Khoá = ràng buộc `classes_status_check` (T42) = `teaching/vocab.py::TRANG_THAI_LOP`
+   — `e2e/unit/lop-hoc.test.mjs` đọc tệp .py ấy và đòi mỗi giá trị có nhãn ở đây.
+   `draft` từng có ở đây dù CSDL không nhận — xem `formRong`. Mã lạ vẫn hiện nguyên
+   mã. Ở đây (tệp thuần) để bảng lớp phía trình duyệt và bộ lọc dựng ở máy chủ gọi
+   CÙNG tên. `paused` (25/09/2026, kế hoạch v2 V-c): em vẫn học bài trực tuyến
+   được, lớp không sinh lịch và không bị nhắc "chưa điểm danh". */
+export const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral' | 'warn' | 'bad' }> = {
   active: { nhan: 'Đang học', tone: 'good' },
+  paused: { nhan: 'Tạm dừng', tone: 'warn' },
   finished: { nhan: 'Đã kết thúc', tone: 'neutral' },
   cancelled: { nhan: 'Đã huỷ', tone: 'bad' },
 };
+
+/** Danh sách dự phòng khi máy chủ không trả `statuses` — CÙNG thứ tự với `TRANG_THAI`. */
+export const TRANG_THAI_DU_PHONG = Object.keys(TRANG_THAI);
 
 /** Loại lớp — `teaching/vocab.py::NHAN_LOAI_LOP` (§54). */
 export const LOAI_LOP: Record<string, string> = { nhom: 'Lớp nhóm', gia_su: 'Gia sư' };

@@ -831,9 +831,15 @@ ALTER TABLE users ADD CONSTRAINT users_status_check
 -- 'finished' và 'cancelled' chưa có dòng nào dùng, nhưng để sẵn vì lớp kết thúc
 -- và lớp huỷ là hai con số khác nhau khi trung tâm báo tỉ lệ — cùng lý do đã
 -- ghi cho `class_members.leave_reason` ở §36.
+--
+-- SỬA TẠI CHỖ 25/09/2026 — thêm 'paused' (lớp TẠM DỪNG, bảng TopHSA dòng 4; kế
+-- hoạch v2 V-c). Chỉ NỚI: không dòng nào đang có bị luật mới loại. Tạm dừng khác
+-- huỷ: em VẪN giữ quyền mở môn (`courses/truy_cap.py` chỉ chặn 'cancelled'), lớp
+-- không vào "chưa điểm danh" và không sinh lịch được. Danh sách PHẢI khớp
+-- `teaching/vocab.py::TRANG_THAI_LOP` (phép kiểm đọc thẳng ràng buộc trên CSDL).
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
 ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled'));
+    CHECK (status IN ('active', 'paused', 'finished', 'cancelled'));
 
 -- ── Khoá ngoại còn thiếu ────────────────────────────────────────────────────
 -- Năm bảng dưới đây trỏ tới `users`/`courses`/`lessons` mà KHÔNG có khoá ngoại,

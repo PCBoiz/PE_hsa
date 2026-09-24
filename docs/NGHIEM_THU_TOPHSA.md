@@ -115,7 +115,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Thêm / xoá HS khỏi lớp | CÓ | `api/admin/classes/<id>/members` |
 | Chuyển HS giữa các lớp | CÓ | một thao tác (1.2c, `teaching/chuyen_lop.py`) |
 | Thiết lập môn, thời gian bắt đầu / kết thúc | CÓ | `course_id`, `starts_on`, `ends_on` |
-| Trạng thái đang học / kết thúc / **tạm dừng** | MỘT PHẦN | CHECK chỉ `active/finished/cancelled` (`legacy_schema.sql` §35) → **V-c** |
+| Trạng thái đang học / kết thúc / **tạm dừng** | CÓ (V-c) | `classes_status_check` §35 thêm `paused`; `teaching/vocab.py::TRANG_THAI_LOP`; nhãn "Tạm dừng" `quan-tri/lop-hoc/lop.ts`. Em giữ quyền môn (`courses/truy_cap.py` chỉ chặn lớp huỷ — test `courses/tests_truy_cap.py::test_lop_tam_dung_van_giu_quyen_mon`); không vào "chưa điểm danh" (`teaching/viec_hom_nay.py::_chua_diem_danh`); không sinh lịch (`teaching/sinh_buoi.py` 409). Demo: học vụ → Lớp học → Sửa lớp → Trạng thái "Tạm dừng" → bộ lọc Trạng thái có "Tạm dừng"; giảng viên mở Buổi học của lớp ấy thấy "Lớp đang tạm dừng…" thay khối sinh lịch |
 | Phân công GV, giáo vụ, TG | MỘT PHẦN | GV + TG CÓ; học vụ thấy mọi lớp, không gán riêng |
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | Nhật ký chỉ quản trị viên đọc → **V-n** mở cho học vụ theo lớp |
 | Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | CÓ trừ "Kiểm tra / Thi thử / Kết quả" → **V-h** điểm kiểm tra GV nhập tay; "Đăng ký" tự đăng ký → **E5** |
