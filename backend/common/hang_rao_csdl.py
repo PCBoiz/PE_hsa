@@ -10,9 +10,11 @@ Cách nhận ra "đang trỏ production": so ĐIỂM CUỐI Neon (nhãn đầu c
 biến CHỈ đặt trên máy dev (`backend/.env`, không commit). Render không đặt biến
 ấy nên production không bao giờ tự chặn mình.
 
-Chưa đặt biến → không biết production là gì → KHÔNG chặn (chỉ nhắc một lần):
-chặn khi không biết sẽ làm hỏng CI và máy mới. `CHO_PHEP_PRODUCTION=1` là lối
-thoát có chủ ý (đo trên production, sao lưu).
+Chưa đặt biến → nhận ra production qua TÊN điểm cuối (`TIEN_TO_PRODUCTION`) — sửa
+25/09/2026: bản đầu im lặng cho chạy, tức hàng rào chỉ có tác dụng khi chủ máy nhớ
+sửa `.env` (việc tay N2, anh Sơn không rõ phải làm gì). Tên điểm cuối không phải
+bí mật và đã có sẵn trong repo; nhánh `dev`/`ci` của Neon mang tên khác hẳn.
+`CHO_PHEP_PRODUCTION=1` là lối thoát có chủ ý (đo trên production, sao lưu).
 
 Không bao giờ in chuỗi kết nối — chỉ in điểm cuối (không chứa mật khẩu).
 """
@@ -21,6 +23,9 @@ from urllib.parse import urlparse
 
 BIEN_PRODUCTION = 'PE_DB_HOST_PRODUCTION'
 BIEN_CHO_PHEP = 'CHO_PHEP_PRODUCTION'
+#: Điểm cuối Neon của CSDL production bắt đầu bằng chuỗi này (Neon đặt tên
+#: `ep-<tính từ>-<danh từ>-<mã>`; nhánh dev là `ep-little-water-…`).
+TIEN_TO_PRODUCTION = 'ep-billowing-fog-'
 
 
 def diem_cuoi(host):
@@ -43,8 +48,10 @@ def host_dang_dung():
 def dang_tro_production(host=None, host_production=None):
     host = host_dang_dung() if host is None else host
     prod = os.environ.get(BIEN_PRODUCTION, '') if host_production is None else host_production
-    if not diem_cuoi(prod) or not diem_cuoi(host):
+    if not diem_cuoi(host):
         return False
+    if not diem_cuoi(prod):
+        return diem_cuoi(host).startswith(TIEN_TO_PRODUCTION)
     return diem_cuoi(host) == diem_cuoi(prod)
 
 

@@ -4,6 +4,9 @@ Bản SỐNG: mọi tiến độ ghi vào tệp này (tick + commit + số đo),
 Nguồn: góp ý của TopHSA sau khi dùng thử + ghi chú họp + 4 lượt dò mã (24/09) + các quyết định
 anh Sơn chốt cùng ngày. Repo công khai — tệp này KHÔNG ghi giá, hợp đồng hay dữ liệu khách.
 
+## ▶ LÀM TIẾP 25/09/2026 — anh chốt: đồng ý xoá sớm phần thi, thẻ số 4 → "Tiến độ chương trình", CÓ điền ngược
+`last_seen_at`; việc của anh gom một bảng ở đầu `docs/VIEC_CUA_ANH.md`; gọi agent hỗ trợ. Mục tạm dừng dưới giữ để tra.
+
 ## ⏸ TẠM DỪNG 24/09/2026 (anh Sơn yêu cầu) — ĐỌC MỤC NÀY TRƯỚC KHI LÀM TIẾP
 
 **Tiến độ** (ước lượng theo khối lượng, không phải đếm dòng):
@@ -69,7 +72,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 |---|---|---|
 | K0 | Chép kế hoạch vào repo (tệp này) | [x] `63554b0` |
 | B0 | Chốt lịch học §53: e2e `lich-hoc` 2 khổ, đo giao diện + axe, soi ảnh, commit | [x] `ad3b299` — e2e 8/8 có ghi, đột biến 18/18 đỏ thật, do_giao_dien 70 lượt = 0, axe 102 = 0 |
-| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [~] `b1ed6bc` — mã xong (6/6, pytest thoát 3 khi giả lập production); CHỜ anh thêm `PE_DB_HOST_PRODUCTION` vào .env (VIEC_CUA_ANH N2) |
+| H1 | Tách CSDL: anh tạo nhánh Neon `dev`/`ci`; hàng rào chặn test/dev chạy vào production | [x] `b1ed6bc` + 25/09 (commit này): hàng rào tự nhận production qua tên điểm cuối khi chưa đặt biến → BỎ việc tay N2; 7/7, đột biến đỏ |
 | 1.1a | Ghi nhớ đăng nhập 30 ngày + trình duyệt lưu mật khẩu | [x] `6502a1a` + `ad3b299` — backend 9/9, 5 đột biến đỏ, guard cookie 9/9, e2e cookie thật 4/4 |
 | 1.1b | Đường đi theo vai + khu Giáo trình (`/admin` → `/giao-trinh`) + "Môn học" chỉ-xem cho nhân sự | [x] `ad3b299` — `TRANG_DAU` + guard đối chiếu cổng thật (đột biến đỏ); e2e vai/khung 64/64. "Môn học" chỉ-xem đi cùng 1.3 |
 | 1.1c | Trang gốc = cổng đăng nhập TopHSA, bỏ "ProgrammingEdu ×" | [x] `ad3b299` — `/` 307 → khu của vai / `/login`; trang quảng cáo + `landing.inline.js` gỡ |
