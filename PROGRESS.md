@@ -28,6 +28,9 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
   xây dựng, thiết kế hạ tầng cho ổn định" — chỉ dữ liệu là bỏ đi được; hạ tầng,
   bảo mật, phân quyền, sao lưu, giám sát phải như với dữ liệu thật.
 - `master` = deploy production ngay. Gộp vào `master` khi anh nói; đẩy `erp` thoải mái.
+  **25/09 anh nhắc lại: mọi tính năng THỬ trên `erp` TRƯỚC.** Commit lên `erp` (không lên `master`), agent rẽ
+  nhánh + gộp từ `erp`; `master` địa phương luôn = `origin/master` (production). Hôm 24–25/09 tôi commit thẳng
+  `master` địa phương (19 commit) — đã dời sang `erp` và đẩy (`3a4e649..a33d212`).
 - Dự án một mình anh Sơn — đừng xếp ưu tiên theo lý "để người sau".
 - Ghi `PROGRESS.md` sau **mỗi** task. Không hardcode px; dùng clamp/rem/vw/ch.
 - **Đặt câu hỏi trước khi thực hiện** việc lớn hoặc việc đổi hướng.
@@ -85,7 +88,7 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 - **Tài liệu gửi TopHSA**: `docs/Ho so san pham PE_HSA.pdf` (14/09) ·
   `docs/Bao_cao_pe_hsa_TopHSA_thi_truong_HSA_2026-09-15.pdf` (15/09, bổ sung Mục 10
   "Nhật ký cải tiến 15–17/09" ngày 17/09; KHÔNG commit — anh gửi tay).
-- **Nhánh**: `master` = `erp`; production tự deploy từ `master`.
+- **Nhánh** (sửa 25/09): `erp` = nhánh thử nghiệm, đi trước `master`; production tự deploy từ `master` khi anh gộp.
 
 
 <!-- MỚI NHẤT -->

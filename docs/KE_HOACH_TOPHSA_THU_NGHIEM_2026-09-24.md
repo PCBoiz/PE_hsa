@@ -8,6 +8,10 @@ anh Sơn chốt cùng ngày. Repo công khai — tệp này KHÔNG ghi giá, h�
 
 Bảng theo dõi v2 bên dưới là nơi tick từ nay; bảng cũ ở mục "Bảng theo dõi" giữ để tra các mục đã xong.
 
+**Nhánh (anh nhắc 25/09):** mọi commit lên `erp` (nhánh thử nghiệm, đẩy thoải mái); agent rẽ nhánh và gộp từ `erp`;
+`master` = production, CHỈ anh gộp `erp` → `master` sau khi tôi báo "erp đã thử xong" (bộ test đủ xanh ở đầu `erp` trên
+máy dev + Preview Vercel của `erp` xanh). Mọi chỗ dưới đây ghi "gộp vào master" nay đọc là "gộp vào `erp`".
+
 ### Context
 
 TopHSA gửi "Bảng phân rã tính năng — Updated 24.9.2026" (32 dòng + ghi chú "phân hệ thông báo chung").
