@@ -1,6 +1,6 @@
 # Tầng vai (G2, bản dò đầu) — trang × vai × API — sinh tự động, đừng sửa tay
 
-Sinh lại: `node scripts/ban_do.mjs` rồi `python scripts/tang_vai.py docs/BAN_DO_VAI.md <tệp json ra>`. "Lệch" ở mức NÚT (vd học vụ ở Tài khoản: nút chỉ-quản-trị bị ẩn theo `chiHocVien`) thước này chưa thấy.
+Sinh lại: `node scripts/ban_do.mjs` rồi `python scripts/tang_vai.py docs/BAN_DO_VAI.md <tệp json ra>`. Cổng pre-push: `python scripts/tang_vai.py --kiem`. Lệch ở mức NÚT phải ghi vào `DA_GIAI_THICH` kèm lý do.
 
 QT quản trị viên · HV học vụ · GV giảng viên · TG trợ giảng · BT biên tập · HS học viên.
 

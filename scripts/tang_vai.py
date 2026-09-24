@@ -124,39 +124,59 @@ DA_GIAI_THICH = {
         'nút xuất CSV / đổi vai / khoá chỉ vẽ khi máy chủ KHÔNG trả `chiHocVien` (AccountsClient.tsx `!chiHocVien`)',
 }
 
-dong = []
-lech = []
-giai_thich = []
-for tuyen, goc in sorted(trang):
-    vai_cong, tep_cong = cong(goc)
-    apis = sorted(api_cua_thu_muc(goc))
-    can = {}
-    for a in apis:
-        for view, qs in quyen_cua_tuyen(a):
-            cho = set(TAT_CA + ['(khách)'])
-            for q in qs:
-                cho &= set(LOP.get(q, TAT_CA))
-            can[(nut[a]['nhan'], view)] = (qs, cho)
-    hien = [(src, nh, v) for k, lst in menu.items() for (src, nh, v) in lst if k == tuyen]
-    # Trang tự dịch mã API thành màn chặn (`chanTu(status)` → `data-chan="vai"` khi 403): vai bị API
-    # từ chối gặp màn "không đủ quyền" đúng nghĩa — đó là CỔNG theo mã API, không phải chỗ lệch.
-    nd_trang = doc(os.path.join(goc, 'page.tsx'))
-    # Trang chỉ chuyển hướng: lỗi (kể cả 403) đưa về trang khu — trang khu tự báo chặn theo vai.
-    chan_theo_api = 'chanTu(' in nd_trang or re.search(r"redirect\([^)]*:\s*'/giang-day'\)", nd_trang) is not None
-    vao = set(vai_cong) if vai_cong is not None else set(TAT_CA)
-    for v in sorted(vao | {x for _, _, vs in hien for x in vs}):
-        bi_chan = [(a, view, qs) for (a, view), (qs, cho) in can.items() if v not in cho]
-        if bi_chan and v in vao and not chan_theo_api:
-            if (tuyen, v) in DA_GIAI_THICH:
-                giai_thich.append((tuyen, v, DA_GIAI_THICH[(tuyen, v)]))
-            else:
-                lech.append((tuyen, v, bi_chan))
-    dong.append({'tuyen': tuyen, 'cong': vai_cong, 'tepCong': tep_cong, 'chanTheoApi': chan_theo_api,
-                 'menu': [(src, nh, v) for src, nh, v in hien],
-                 'api': [{'tuyen': a, 'view': vw, 'quyen': qs, 'cho': sorted(cho)} for (a, vw), (qs, cho) in can.items()]})
+def tinh(nhan_cong_api=True):
+    """Trả (dòng, lệch, đã giải thích). `nhan_cong_api=False` = giả vờ không biết cổng `chanTu`/chuyển hướng
+    — dùng để tự kiểm thước còn đỏ được (phải ra lệch > 0)."""
+    dong, lech, giai_thich = [], [], []
+    for tuyen, goc in sorted(trang):
+        vai_cong, tep_cong = cong(goc)
+        apis = sorted(api_cua_thu_muc(goc))
+        can = {}
+        for a in apis:
+            for view, qs in quyen_cua_tuyen(a):
+                cho = set(TAT_CA + ['(khách)'])
+                for q in qs:
+                    cho &= set(LOP.get(q, TAT_CA))
+                can[(nut[a]['nhan'], view)] = (qs, cho)
+        hien = [(src, nh, v) for k, lst in menu.items() for (src, nh, v) in lst if k == tuyen]
+        # Trang tự dịch mã API thành màn chặn (`chanTu(status)` → `data-chan="vai"` khi 403): vai bị API
+        # từ chối gặp màn "không đủ quyền" đúng nghĩa — đó là CỔNG theo mã API, không phải chỗ lệch.
+        # Trang chỉ chuyển hướng: lỗi (kể cả 403) đưa về trang khu — trang khu tự báo chặn theo vai.
+        nd_trang = doc(os.path.join(goc, 'page.tsx'))
+        chan_theo_api = nhan_cong_api and (
+            'chanTu(' in nd_trang or re.search(r"redirect\([^)]*:\s*'/giang-day'\)", nd_trang) is not None)
+        vao = set(vai_cong) if vai_cong is not None else set(TAT_CA)
+        for v in sorted(vao | {x for _, _, vs in hien for x in vs}):
+            bi_chan = [(a, view, qs) for (a, view), (qs, cho) in can.items() if v not in cho]
+            if bi_chan and v in vao and not chan_theo_api:
+                if (tuyen, v) in DA_GIAI_THICH:
+                    giai_thich.append((tuyen, v, DA_GIAI_THICH[(tuyen, v)]))
+                else:
+                    lech.append((tuyen, v, bi_chan))
+        dong.append({'tuyen': tuyen, 'cong': vai_cong, 'tepCong': tep_cong, 'chanTheoApi': chan_theo_api,
+                     'menu': [(src, nh, v) for src, nh, v in hien],
+                     'api': [{'tuyen': a, 'view': vw, 'quyen': qs, 'cho': sorted(cho)}
+                             for (a, vw), (qs, cho) in can.items()]})
+    return dong, lech, giai_thich
+
+
+if sys.argv[1:2] == ['--kiem']:
+    # Cổng pre-push (việc S3): đỏ khi có chỗ lệch CHƯA giải thích, hoặc khi thước đã mù (tắt nhận cổng
+    # theo mã API mà vẫn ra 0 lệch — tức nó không còn nhìn thấy API của trang nữa).
+    _, lech, giai_thich = tinh()
+    _, lech_mu, _ = tinh(nhan_cong_api=False)
+    for tuyen, v, bc in lech:
+        print('  ✗ %s · vai %s · %d API từ chối (vd %s)' % (tuyen, v, len(bc), bc[0][0]))
+    print('tầng vai: %d trang, %d lệch chưa giải thích, %d đã giải thích; tự kiểm (tắt cổng API): %d lệch'
+          % (len(trang), len(lech), len(giai_thich), len(lech_mu)))
+    if not lech_mu:
+        print('  ✗ thước mù: tắt nhận cổng theo mã API mà không ra lệch nào')
+    sys.exit(1 if lech or not lech_mu else 0)
+
+dong, lech, giai_thich = tinh()
 
 L = ['# Tầng vai (G2, bản dò đầu) — trang × vai × API — sinh tự động, đừng sửa tay', '',
-     'Sinh lại: `node scripts/ban_do.mjs` rồi `python scripts/tang_vai.py docs/BAN_DO_VAI.md <tệp json ra>`. "Lệch" ở mức NÚT (vd học vụ ở Tài khoản: nút chỉ-quản-trị bị ẩn theo `chiHocVien`) thước này chưa thấy.', '',
+     'Sinh lại: `node scripts/ban_do.mjs` rồi `python scripts/tang_vai.py docs/BAN_DO_VAI.md <tệp json ra>`. Cổng pre-push: `python scripts/tang_vai.py --kiem`. Lệch ở mức NÚT phải ghi vào `DA_GIAI_THICH` kèm lý do.', '',
      'QT quản trị viên · HV học vụ · GV giảng viên · TG trợ giảng · BT biên tập · HS học viên.', '',
      '| Trang | Cổng trang (vai vào được) | Menu hiện cho | Số API | Lớp quyền API cần |', '|---|---|---|---|---|']
 for d in dong:
