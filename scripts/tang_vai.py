@@ -118,8 +118,15 @@ def quyen_cua_tuyen(tid):
     return out
 
 
+#: Lệch ở mức NÚT đã kiểm tay — kèm lý do. Thêm dòng ở đây = khẳng định đã soi mã; ghi tệp:dòng chứng minh.
+DA_GIAI_THICH = {
+    ('/quan-tri/tai-khoan', 'Quản lý học vụ'):
+        'nút xuất CSV / đổi vai / khoá chỉ vẽ khi máy chủ KHÔNG trả `chiHocVien` (AccountsClient.tsx `!chiHocVien`)',
+}
+
 dong = []
 lech = []
+giai_thich = []
 for tuyen, goc in sorted(trang):
     vai_cong, tep_cong = cong(goc)
     apis = sorted(api_cua_thu_muc(goc))
@@ -131,12 +138,20 @@ for tuyen, goc in sorted(trang):
                 cho &= set(LOP.get(q, TAT_CA))
             can[(nut[a]['nhan'], view)] = (qs, cho)
     hien = [(src, nh, v) for k, lst in menu.items() for (src, nh, v) in lst if k == tuyen]
+    # Trang tự dịch mã API thành màn chặn (`chanTu(status)` → `data-chan="vai"` khi 403): vai bị API
+    # từ chối gặp màn "không đủ quyền" đúng nghĩa — đó là CỔNG theo mã API, không phải chỗ lệch.
+    nd_trang = doc(os.path.join(goc, 'page.tsx'))
+    # Trang chỉ chuyển hướng: lỗi (kể cả 403) đưa về trang khu — trang khu tự báo chặn theo vai.
+    chan_theo_api = 'chanTu(' in nd_trang or re.search(r"redirect\([^)]*:\s*'/giang-day'\)", nd_trang) is not None
     vao = set(vai_cong) if vai_cong is not None else set(TAT_CA)
     for v in sorted(vao | {x for _, _, vs in hien for x in vs}):
         bi_chan = [(a, view, qs) for (a, view), (qs, cho) in can.items() if v not in cho]
-        if bi_chan and v in vao:
-            lech.append((tuyen, v, bi_chan))
-    dong.append({'tuyen': tuyen, 'cong': vai_cong, 'tepCong': tep_cong,
+        if bi_chan and v in vao and not chan_theo_api:
+            if (tuyen, v) in DA_GIAI_THICH:
+                giai_thich.append((tuyen, v, DA_GIAI_THICH[(tuyen, v)]))
+            else:
+                lech.append((tuyen, v, bi_chan))
+    dong.append({'tuyen': tuyen, 'cong': vai_cong, 'tepCong': tep_cong, 'chanTheoApi': chan_theo_api,
                  'menu': [(src, nh, v) for src, nh, v in hien],
                  'api': [{'tuyen': a, 'view': vw, 'quyen': qs, 'cho': sorted(cho)} for (a, vw), (qs, cho) in can.items()]})
 
@@ -145,10 +160,12 @@ L = ['# Tầng vai (G2, bản dò đầu) — trang × vai × API — sinh tự 
      'QT quản trị viên · HV học vụ · GV giảng viên · TG trợ giảng · BT biên tập · HS học viên.', '',
      '| Trang | Cổng trang (vai vào được) | Menu hiện cho | Số API | Lớp quyền API cần |', '|---|---|---|---|---|']
 for d in dong:
-    c = 'mọi người đăng nhập / công khai' if d['cong'] is None else ' '.join(NGAN.get(v, v) for v in d['cong'])
+    c = ('theo mã API (chanTu)' if d['chanTheoApi'] else 'mọi người đăng nhập / công khai') if d['cong'] is None         else ' '.join(NGAN.get(v, v) for v in d['cong'])
     mn = '; '.join('%s: %s' % (nh, ' '.join(NGAN.get(v, v) for v in vs)) for _, nh, vs in d['menu']) or '—'
     qs = sorted({q for a in d['api'] for q in a['quyen']})
     L.append('| `%s` | %s | %s | %d | %s |' % (d['tuyen'], c, mn, len(d['api']), ', '.join(qs) or '—'))
+L += ['', '## Đã giải thích (lệch ở mức nút, đã soi mã)', '']
+L += ['- `%s` · %s — %s' % g for g in giai_thich] or ['Không có.']
 L += ['', '## Chỗ lệch: trang cho vai vào nhưng API trang gọi từ chối vai ấy', '']
 if not lech:
     L.append('Không có.')

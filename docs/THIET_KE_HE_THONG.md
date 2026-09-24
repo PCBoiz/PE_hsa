@@ -17,7 +17,9 @@ ghi ở cuối. Đọc cùng: `docs/NGHIEM_THU_TOPHSA.md` (32 dòng khách nghi�
   này nếu không đặt ranh giới NGAY bây giờ.
 - **Điểm yếu cấu trúc số 2**: quyền và menu viết TAY ở 5 nơi (lớp quyền backend, `quyenVai.ts`, `khuTheoVai.ts`,
   tab `quan-tri/vai.ts`, `KhungGiangDay.tsx`) — lệch nhau là loại lỗi khách đã gặp (góp ý số 3: GV thấy nút Đăng
-  ký). Đo 25/09: 19 chỗ "trang cho vai vào nhưng API trang gọi từ chối vai ấy".
+  ký). Đo 25/09: bản dò đầu báo 19 chỗ "trang cho vai vào mà API từ chối"; soi từng chỗ thì 16 là trang ĐÃ
+  báo chặn đúng bằng mã API, 2 thiếu móc báo chặn (đã vá), 1 là chặn ở mức nút — thước chưa hiểu, không phải mã
+  sai (mục 1.3). Rủi ro thật nằm ở chỗ 5 nơi viết tay có thể trôi xa nhau, không phải ở lỗ hổng hôm nay.
 - **Hướng đi đề xuất** (mục 7): giữ monolith nhưng chia MIỀN (modular monolith); một SỔ QUYỀN duy nhất theo mô
   hình "năng lực × phạm vi" (học từ Moodle) sinh ra cả chặn API, menu, trang "Ai làm được gì" và phép kiểm; mỗi
   vai vào thẳng "Việc hôm nay" của mình; kênh tới phụ huynh là Zalo + link (đúng thói quen thị trường VN).
@@ -55,15 +57,21 @@ ngoại 75 · React → JS cũ 83. **0 lời gọi không khớp, 0 tuyến khô
 
 32 trang. Cổng vai hiện có ở trang: khu Vận hành (`quan-tri/*`: QT+HV; Nhật ký + Cơ sở học phí: QT), Giáo trình
 (QT+BT). Khu Giảng dạy (`giang-day/*`) **cố ý không chặn theo vai ở trang** (chú thích layout: chặn thật là
-"người này có phụ trách LỚP ấy không", nằm ở API). 19 chỗ lệch, hai loại:
+"người này có phụ trách LỚP ấy không", nằm ở API) — thay vào đó mỗi trang DỊCH mã API thành màn chặn
+(`lib/chanTu.ts`: 403 → `data-chan="vai"` "Khu … dành cho …", 404 → "không thấy"), và `e2e/vai-tro-cong.spec.ts` canh.
 
-1. HS/BT gõ thẳng đường `giang-day/*` → trang dựng khung giảng dạy rồi API trả 403 (không rò dữ liệu, nhưng
-   giao diện gãy); TG gõ thẳng `giang-day/bao-cao/*` (menu đã ẩn) → 403.
-2. HV ở Tài khoản: trang gọi 3 API chỉ-QT (xuất CSV, đổi vai, khoá) — nút đã ẩn theo cờ `chiHocVien` máy chủ trả;
-   lệch ở mức NÚT, thước bản đầu chưa thấy (cần chú thích nút ↔ API).
+Bản dò đầu (chưa hiểu `chanTu`) báo 19 chỗ lệch. Soi tay từng chỗ (25/09):
+- 16: trang đã báo chặn theo vai đúng nghĩa qua `chanTu` — thước sai, không phải mã sai;
+- 2: tờ từng em (`giang-day/bao-cao/[classId]/[userId]`) và bảng chấm (`giang-day/bai-tap/[classId]/[assignmentId]`)
+  hiện câu lỗi của máy chủ nhưng KHÔNG gắn móc chặn → đã vá cùng ngày (thêm `data-chan={chanTu(...)}` + câu theo vai),
+  e2e đỏ trên bản cũ, 22/22 sau vá;
+- 1: HV ở Tài khoản — trang gọi 3 API chỉ-QT nhưng nút đã ẩn theo cờ `chiHocVien` máy chủ trả (chặn mức NÚT).
 
-**Kết luận thiết kế**: lý lẽ "chặn theo vai ở trang sẽ cho GV A mở lớp GV B" là nhầm hai tầng — cần CẢ HAI:
-cổng thô theo vai ở trang (ai được vào KHU) + kiểm phạm vi ở API (được đụng ĐỐI TƯỢNG nào). Mục 2.3.
+Thước nay hiểu `chanTu` + trang chuyển hướng, có danh sách "đã giải thích" kèm lý do → **0 chỗ lệch**; tắt phần
+nhận `chanTu` thì nó báo lại 18 (thước còn đỏ được).
+
+**Kết luận thiết kế**: hệ thống hôm nay dùng cổng khu "theo mã API" — đúng và an toàn, nhưng mỗi trang phải tự nhớ
+gắn móc (2 trang đã quên). Luật ở mục 2.3 đưa việc ấy về MỘT chỗ.
 
 ## 2. Mô hình vai, năng lực, phạm vi
 
@@ -125,9 +133,11 @@ MỌI view MỚI (E1–E5, V); view cũ chuyển dần khi chạm tới. Sáu l�
 | Cổng ĐỐI TƯỢNG (mịn) | năng lực X ở phạm vi của đối tượng này? | API (`CoNangLuc` + hàm phạm vi) | 404 (không lộ đối tượng tồn tại) / 403 |
 | Nút | người này có làm được việc nút gọi không | máy chủ trả sẵn cờ năng lực theo đối tượng (vd `coTheSua`) | không vẽ nút |
 
-Việc cụ thể: thêm cổng khu cho `giang-day/*` (GV, TG, HV, QT) và `giang-day/bao-cao/*` (bỏ TG) — đóng 19 chỗ lệch
-loại 1; nút đọc cờ năng lực máy chủ trả (đã làm đúng ở Tài khoản với `chiHocVien`) — G2 thêm chú thích nút ↔ API
-để thước thấy.
+Việc cụ thể: giữ cổng "theo mã API" hiện có (`chanTu` — đúng vì câu hỏi thật là phạm vi lớp), nhưng đưa móc chặn
+về MỘT chỗ: một hàm dựng màn lỗi dùng chung cho mọi trang khu (thay vì mỗi trang tự viết `<main data-chan>` — hai
+trang đã quên, vá 25/09); thêm cổng khu thô ở `layout.tsx` từ sổ quyền để HS/BT không thấy khung giảng dạy bao quanh
+màn chặn. Nút đọc cờ năng lực máy chủ trả (đã đúng ở Tài khoản với `chiHocVien`); thước G2 có danh sách "đã giải
+thích" cho chặn mức nút.
 
 ## 3. Trang theo vai (kiến trúc thông tin)
 
@@ -209,14 +219,14 @@ thật, vì các phần mềm kia dừng ở vận hành.
 
 | Giai đoạn | Làm | Vì sao |
 |---|---|---|
-| Tới buổi khách xem | V (A1, A2), E1, 1.6, G2 cổng khu | vận hành lớp là ưu tiên số 1 của khách; E1 là thứ khách hỏi kỹ nhất |
+| Tới buổi khách xem | V (A1, A2), E1, 1.6 | vận hành lớp là ưu tiên số 1 của khách; E1 là thứ khách hỏi kỹ nhất |
 | Ngay sau | E2 (outbox + thông báo + Zalo ZNS khi có OA), E3 (yêu cầu), link PH sống | kênh phụ huynh là thứ thị trường cạnh tranh; E3 đóng 5 dòng bảng |
 | Tiếp | E4 Zoom, E5 tự đăng ký → **hàng chờ tuyển sinh** (CRM gọn: nguồn, người tư vấn, trạng thái), Đ2 (tài liệu R2, chấm công khoá tháng, dạy thay) | CRM gọn dựng trên E5 + hồ sơ (§51 đã có nguồn tuyển sinh, người tư vấn) |
 | Sau | diễn đàn công khai (Đ3), PWA cho HS/PH (thông báo đẩy) thay app gốc | rẻ hơn app, dùng lại toàn bộ React |
 | Không làm (đã chốt) | kế toán / học phí đầy đủ, tài khoản phụ huynh | chỉ một ô tình trạng học phí; phụ huynh qua link |
 
 **Việc kiến trúc cụ thể** (thêm vào bảng theo dõi): **S1** sổ quyền một nguồn + `CoNangLuc` cho view mới ·
-**S2** cổng khu `giang-day/*` từ sổ quyền (đóng 19 lệch loại 1) · **S3** G2 thành guard: `ban_do --kiem` đỏ khi
+**S2** một hàm màn chặn dùng chung cho mọi trang khu + cổng khu thô ở `layout.tsx` từ sổ quyền (hai trang đã quên móc chặn, vá 25/09) · **S3** G2 thành guard: `ban_do --kiem` đỏ khi
 trang/menu cho vai R mà API từ chối R, có chú thích nút ↔ API · **S4** miền mới là thư mục riêng (E1 `chuong_trinh`,
 E2 `thong_bao`, E3 `yeu_cau`) · **S5** phá vòng `stats ↔ chatbot` · **S6** danh mục trang một nguồn sinh menu mọi
 khung · **S7** graphify chạy lại mỗi mốc gộp, số god node / tệp lớn ghi PROGRESS (theo dõi `teaching` có co không).

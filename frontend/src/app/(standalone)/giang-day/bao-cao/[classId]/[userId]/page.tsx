@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
+import { chanTu } from '@/lib/chanTu';
 import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 
@@ -55,12 +56,14 @@ export default async function BaoCaoPhuHuynhPage({
 
   if (!kq.ok) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
+      <main className="mx-auto max-w-3xl px-4 py-16" data-chan={chanTu(kq.status)}>
         <h1 className="text-title text-ink">Không mở được báo cáo này</h1>
         {/* Nói ĐÚNG chuyện đã xảy ra. Bản trước in một câu cố định "học viên
             không thuộc lớp này", nên một sự cố máy chủ cũng hiện y hệt và người
             đọc đi tìm nhầm chỗ. */}
-        <p className="mt-2 text-body text-ink-2">{kq.message}</p>
+        <p className="mt-2 text-body text-ink-2">
+          {kq.status === 403 ? 'Báo cáo phụ huynh dành cho giảng viên và học vụ.' : kq.message}
+        </p>
         <Link
           href={`/giang-day/buoi-hoc/${classId}`}
           className="mt-6 -mx-2 inline-flex min-h-11 items-center px-2 text-body text-brand-ink underline"
