@@ -2,7 +2,7 @@
 
 Sinh lại: `graphify update backend`, `graphify update frontend/src`, `graphify update frontend/public/static/js` (PowerShell; Git Bash làm graphify sập) rồi `python scripts/tong_hop_graphify.py docs/BAN_DO_MA.md`. Tệp test/migration bị bỏ.
 
-## backend — 131 tệp mã (bỏ test/migration), 445 cạnh tệp→tệp
+## backend — 133 tệp mã (bỏ test/migration), 445 cạnh tệp→tệp
 
 | Tệp | fan-in (tệp dùng nó) | fan-out (tệp nó dùng) | betweenness | nút | dòng |
 |---|---|---|---|---|---|
@@ -34,8 +34,8 @@ Betweenness cao nhất (tệp "cầu nối" giữa các cụm):
 - `backend/common/audit.py` 0.002 (fan-in 16, fan-out 3, 178 dòng)
 - `backend/common/errors.py` 0.001 (fan-in 1, fan-out 2, 93 dòng)
 - `backend/teaching/bao_doi_lich.py` 0.001 (fan-in 1, fan-out 6, 122 dòng)
+- `backend/chatbot/profile.py` 0.001 (fan-in 2, fan-out 5, 173 dòng)
 - `backend/mockexam/views.py` 0.001 (fan-in 3, fan-out 6, 497 dòng)
-- `backend/teaching/overview.py` 0.001 (fan-in 2, fan-out 9, 729 dòng)
 
 Ma trận phụ thuộc giữa app backend (dòng = app gọi, cột = app bị gọi; số cạnh hàm):
 
@@ -56,11 +56,10 @@ Ma trận phụ thuộc giữa app backend (dòng = app gọi, cột = app bị 
 | **notifications** |  |  |  |  | 28 |  |  |  |  |  |  |  |  |  |  |  |  |
 | **quizzes** |  |  |  |  | 31 |  |  |  |  |  |  |  |  |  |  |  |  |
 | **roadmap** | 3 |  |  |  | 19 |  |  |  |  |  |  |  |  |  |  |  |  |
-| **stats** |  | 3 |  | 2 | 127 |  |  |  |  |  |  |  |  | 2 |  |  |  |
+| **stats** |  | 3 |  |  | 127 |  |  |  |  |  |  |  |  | 2 |  |  |  |
 | **teaching** | 46 |  |  |  | 645 |  |  | 16 |  |  |  | 2 | 8 |  |  | 42 |  |
 
-Vòng phụ thuộc giữa app (độ dài ≤ 3): 1
-- chatbot → stats → chatbot
+Vòng phụ thuộc giữa app (độ dài ≤ 3): 0
 
 ## react — 155 tệp mã (bỏ test/migration), 467 cạnh tệp→tệp
 

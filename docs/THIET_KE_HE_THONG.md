@@ -30,7 +30,7 @@ ghi ở cuối. Đọc cùng: `docs/NGHIEM_THU_TOPHSA.md` (32 dòng khách nghi�
 
 | Tầng | Nút / cạnh (mức hàm) | Mức tệp (bỏ test) | Nhận xét |
 |---|---|---|---|
-| Backend (Python) | 3.952 / 10.172, 195 cụm | 131 tệp, 445 cạnh tệp→tệp | không vòng import mức tệp; MỘT vòng giữa app: `stats ↔ chatbot` |
+| Backend (Python) | 3.952 / 10.172, 195 cụm | 131 tệp, 445 cạnh tệp→tệp | không vòng import mức tệp; MỘT vòng giữa app `stats ↔ chatbot` — **đã phá 25/09** (S5: tín hiệu `stats.tin_hieu.nhat_ky_doi`), đo lại: 0 vòng |
 | React (`frontend/src`) | 928 / 2.511, 48 cụm | 155 tệp, 467 cạnh | hub lành mạnh: `components/ui/*`, `lib/api.ts`, `lib/server-api.ts` |
 | JS cũ (`public/static/js`) | 320 / 680, 25 cụm | 0 cạnh tệp→tệp | nối nhau qua biến toàn cục `window.*` — graphify không thấy; `ban_do` bắc 83 cạnh React → JS cũ |
 
@@ -181,8 +181,7 @@ ghi thẳng bảng". Áp vào `teaching`:
 **Luật**: (1) miền MỚI (E1, E2, E3, E4) là thư mục riêng ngay từ đầu, không vào `teaching/views.py`; (2) miền
 khác chỉ gọi hàm dịch vụ, không `UPDATE` bảng của miền khác; (3) việc phụ (thông báo, cache quyền, nhật ký) đi
 SAU commit qua `gui_sau_commit` / `on_commit`; (4) tách tệp cũ chỉ khi đang sửa chính chỗ ấy ("chạm đâu dọn đó"),
-ưu tiên theo điểm nối cao (`views.py`, `sessions.py`, `admin_users.py`); (5) phá vòng `stats ↔ chatbot` (chatbot
-đọc hồ sơ học qua một hàm của `stats`, `stats` không gọi ngược).
+ưu tiên theo điểm nối cao (`views.py`, `sessions.py`, `admin_users.py`); (5) không vòng giữa miền — `stats ↔ chatbot` đã phá 25/09 bằng tín hiệu (`stats` báo, `chatbot` nghe).
 
 Khoá ngoại giữa miền: GIỮ (một CSDL, một nhóm người, một lần deploy — tách CSDL là giá của microservice mà
 trung tâm này không cần); chỉ cấm GHI chéo miền.
