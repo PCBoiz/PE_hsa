@@ -9,6 +9,7 @@ kiểm "tuyến thi không mở lại" thì phải sống qua pha C.
 
 Frontend canh phần của nó ở `frontend/e2e/unit/bo-thi.test.mjs`.
 """
+import re
 import uuid
 from pathlib import Path
 
@@ -120,9 +121,14 @@ def _cau_muc_57():
     tho = (Path(settings.BASE_DIR) / 'sql' / 'legacy_schema.sql').read_text(encoding='utf-8')
     dau = tho.find('§57 ·')
     assert dau >= 0, 'legacy_schema.sql chưa có mục §57'
-    cuoi = tho.find('§58 ·', dau)
-    cau = _split_statements(tho[tho.rfind('\n', 0, dau):cuoi if cuoi > 0 else None])
+    # Hết mục = tiêu đề mục KẾ TIẾP, số nào cũng được. Bản cũ tìm đúng '§58 ·' — §58 chỉ
+    # được giữ chỗ (kế hoạch v2), nên khi §62 nối vào cuối tệp (25/09) thước đọc tràn
+    # sang §62 và báo oan "chạy lại §57 vẫn ghi".
+    sau = re.compile(r'\n-- ── §\d+').search(tho, dau)
+    cau = _split_statements(tho[tho.rfind('\n', 0, dau):sau.start() if sau else None])
     assert cau, 'mục §57 không có câu nào'
+    # §57 là mục DỮ LIỆU: chỉ UPDATE. Câu khác lọt vào = thước lại đọc tràn mục.
+    assert all(c.lstrip().upper().startswith('UPDATE') for c in cau), cau
     return cau
 
 

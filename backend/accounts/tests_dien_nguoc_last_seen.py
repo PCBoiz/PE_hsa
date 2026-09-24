@@ -6,7 +6,7 @@ vài giây.
 """
 import importlib
 import uuid
-from datetime import datetime
+from datetime import date, datetime, time
 
 import pytest
 
@@ -15,6 +15,11 @@ from common.db import q1, x
 pytestmark = pytest.mark.django_db
 
 MIG = importlib.import_module('accounts.migrations.0002_dien_nguoc_last_seen_at')
+
+
+def _vn(nam, thang, ngay, gio, phut=0):
+    """Giờ Việt Nam KHÔNG múi — đúng quy ước `last_seen_at` / `common/clock.py::local_now`."""
+    return datetime.combine(date(nam, thang, ngay), time(gio, phut))
 
 
 def _nguoi(tao_luc, da_thay=None):
@@ -35,27 +40,27 @@ def _thay(uid):
 
 
 def test_dien_luot_muon_nhat_theo_gio_viet_nam():
-    a = _nguoi(datetime(2026, 9, 1, 8, 0))
+    a = _nguoi(_vn(2026, 9, 1, 8, 0))
     _the(a, '2026-09-10T01:00:00+00:00')
     _the(a, '2026-09-20T01:00:00+00:00')          # 08:00 giờ Việt Nam
     x(MIG.SQL_DIEN_NGUOC)
-    assert _thay(a) == datetime(2026, 9, 20, 8, 0), _thay(a)
+    assert _thay(a) == _vn(2026, 9, 20, 8, 0), _thay(a)
 
 
 def test_bo_phien_cap_luc_tao_tai_khoan_va_khong_ghi_de():
     # Chỉ có token cấp NGAY lúc tạo tài khoản (lượt đăng ký) → chủ tài khoản chưa từng vào.
-    b = _nguoi(datetime(2026, 9, 1, 8, 0))
+    b = _nguoi(_vn(2026, 9, 1, 8, 0))
     _the(b, '2026-09-01T01:01:00+00:00')          # 08:01 VN — một phút sau khi tạo
     # Đã có dấu thật → không đè bằng số cũ hơn.
-    c = _nguoi(datetime(2026, 9, 1, 8, 0), da_thay=datetime(2026, 9, 23, 20, 0))
+    c = _nguoi(_vn(2026, 9, 1, 8, 0), da_thay=_vn(2026, 9, 23, 20, 0))
     _the(c, '2026-09-15T01:00:00+00:00')
     x(MIG.SQL_DIEN_NGUOC)
     assert _thay(b) is None
-    assert _thay(c) == datetime(2026, 9, 23, 20, 0)
+    assert _thay(c) == _vn(2026, 9, 23, 20, 0)
 
 
 def test_chay_lai_khong_doi_gi():
-    a = _nguoi(datetime(2026, 9, 1, 8, 0))
+    a = _nguoi(_vn(2026, 9, 1, 8, 0))
     _the(a, '2026-09-20T01:00:00+00:00')
     x(MIG.SQL_DIEN_NGUOC)
     truoc = _thay(a)

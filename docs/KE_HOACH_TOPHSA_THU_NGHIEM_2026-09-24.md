@@ -87,9 +87,9 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | P0.3 | Điền ngược `last_seen_at` (migration `accounts/0002` + 3 test) | [x] `e2c06a6` — đột biến 4/4 đỏ; đã `migrate` trên nhánh dev |
 | P0.4 | Chạy tiếp agent 1.4b (worktree `hoc-vien`) + agent H2/H3/H6 (`ha-tang`) tới xong, gộp | [~] 25/09: đã gửi tiếp cả hai agent (kèm lệnh gộp master `c1c620b` trước khi đo) |
 | P0.5 | 1.3 phần còn (nút Đăng ký ở `main.js`/`DashboardClient`), 1.4a `sangLop`, 1.1d CSS chết | [x] `ad92e17` (e2e đỏ trên JS cũ → xanh, 14/14 hai khổ; trần tầng cũ 6533 → 6449) + `cf2ace3` (sangLop: đỏ trước, đột biến 2/2, soi ảnh hai khổ) |
-| P0.6 | Mở màn: neo § + khung dùng chung cho 3 luồng (mục "Ngày 0") | [ ] |
-| N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [ ] |
-| V | Mẻ vá rẻ a–o (luồng A) | [ ] |
+| P0.6 | Mở màn: khung dùng chung cho 3 luồng | [x] `60d33a9` mặt tiền `notifications/gui.py` (4 test, đột biến 4/4). BỎ bước "neo §" + "sửa CHECK hộ": sổ mục lược đồ (H3) coi số § là TÊN, không phải thứ tự; mỗi luồng tự sửa CHECK của mình ở DÒNG KHÁC nhau (A: §35 `paused` + `TRANG_THAI_LOP`; C: §36 `reserved` + `LEAVE_REASONS`) → git gộp không đụng; xung đột "cùng nối cuối tệp" lead giải lúc gộp như §56/§57 |
+| N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
+| V | Mẻ vá rẻ a–o (luồng A) | [~] tách hai: **A1** = V a–h (agent chạy từ 25/09, nhánh `agent/luong-a1`, cổng 9100/3200); **A2** = V i–o (chờ chỗ agent trống) |
 | E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [ ] |
 | E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [ ] |
 | E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [ ] |
@@ -124,7 +124,9 @@ E3 lõi (hỗ trợ + chuyển lớp có duyệt). Sau buổi xem: E4, E5, link 
    - Neo trống trong `legacy_schema.sql` + danh sách `MUC` của `kiem_luoc_do.py`: §61 (B), §62–64 (A), §65–67 (C),
      §68 Zoom, §69–70 dự phòng; §58–60 vẫn giữ cho Đ2. Mỗi luồng chỉ chèn trong khối của mình → git gộp không xung đột.
    - `urls_*.py` rỗng cho từng luồng, gắn sẵn từ `config/urls.py`.
-   - Ba nhánh Neon `dev-a/b/c` từ `dev` (bootstrap của agent không giẫm nhau); cổng A 9100/3200, B 9200/3300, C 9300/3400.
+   - ~~Ba nhánh Neon `dev-a/b/c`~~ **ĐỔI 25/09**: máy dev không có khoá API Neon (tạo nhánh phải bấm tay trong Neon — không
+     giao thêm việc cho anh). Ba luồng DÙNG CHUNG nhánh `dev`; luật: agent chỉ chạy test theo tác động (từng mô-đun một),
+     lead chạy bộ đủ ở cửa gộp. Cổng A 9100/3200, B 9200/3300, C 9300/3400.
 
 ### Luồng A — vận hành lớp (ưu tiên số 1)
 

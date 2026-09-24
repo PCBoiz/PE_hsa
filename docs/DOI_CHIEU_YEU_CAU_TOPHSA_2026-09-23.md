@@ -1,5 +1,8 @@
 # Đối chiếu bảng yêu cầu của TopHSA với hệ thống — 23/09/2026
 
+> **ĐÃ THAY bằng `docs/NGHIEM_THU_TOPHSA.md` (25/09/2026)** — theo bảng mới "Updated 24.9.2026" (32 dòng,
+> thêm Phụ huynh + Học sinh). Bản này giữ để tra lịch sử; năm chỗ nó báo quá tay đã sửa ở bản mới.
+
 Nguồn: bảng "Bản sao của Bảng phân rã tính năng" (tab *Trang tính1* + tab *Nhi*). Bỏ dòng 7
 (Kế toán — học phí) và phần doanh thu ở dòng 6, theo chỉ đạo của anh Sơn.
 
