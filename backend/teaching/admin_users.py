@@ -34,6 +34,7 @@ from django.db import IntegrityError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.hoat_dong import sql_hoat_dong
 from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
 from common.clock import local_now
@@ -49,8 +50,11 @@ from common.permissions import (
     is_admin,
     last_active_admin,
 )
+from courses.truy_cap import LOP_DANG_HOC, mon_mo
 from stats.goals import as_date
 from teaching import vocab
+from teaching.overview import NGUONG_NGU
+from teaching.reports import _progress_by_user, tong_bai_theo_khoa
 
 # Dùng lại của teaching/views.py, không viết bản thứ hai: mật khẩu tạm sinh hai
 # kiểu khác nhau thì trợ giảng đọc cho học viên hai dạng chuỗi khác nhau, còn
@@ -87,7 +91,24 @@ _page_with_total = trang_kem_tong
 
 #: Các tham số lọc của màn hình tài khoản. Khai một chỗ để bộ lọc và câu hỏi
 #: "người dùng có lọc gì không" không bao giờ lệch nhau.
-USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id')
+USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id', 'chua_xep_lop', 'khong_hoat_dong')
+#: Ô lọc dạng CÔNG TẮC: chỉ đang lọc khi giá trị là "có" — `chua_xep_lop=0` (bỏ tích) thì không.
+_CONG_TAC = ('chua_xep_lop',)
+#: Trần của ô "không hoạt động ≥ N ngày". Không kẹp thì `N = 10**9` tràn `timedelta` → 500.
+_TRAN_NGAY_NGU = 3650
+
+
+def _bat(gia_tri):
+    return (gia_tri or '').strip().lower() in ('1', 'true', 'on', 'yes')
+
+
+def _so_ngay_ngu(raw):
+    """``khong_hoat_dong`` → số ngày trong [1, `_TRAN_NGAY_NGU`], hoặc None khi không đọc được."""
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None
+    return n if 1 <= n <= _TRAN_NGAY_NGU else None
 
 
 def any_user_filter(params) -> bool:
@@ -97,7 +118,8 @@ def any_user_filter(params) -> bool:
     nhau trong thư mục Tải về mà không phân biệt được thì sớm muộn có người mang
     bản thiếu người đi họp.
     """
-    return any((params.get(k) or '').strip() for k in USER_FILTER_PARAMS)
+    return any(_bat(params.get(k)) if k in _CONG_TAC else (params.get(k) or '').strip()
+               for k in USER_FILTER_PARAMS)
 
 
 def build_user_filters(params):
@@ -150,30 +172,86 @@ def build_user_filters(params):
                          'AND cm.left_at IS NULL)')
             args.append(cid)
 
+    if _bat(params.get('chua_xep_lop')):
+        # "Chưa xếp lớp" (1.4b) = HỌC VIÊN không còn lượt học nào ĐANG MỞ MÔN — cùng mệnh
+        # đề với cột "Lớp" và với cổng mở môn (`truy_cap.LOP_DANG_HOC`): em hiện ở đây
+        # đúng là em không vào được bài nào. Em chỉ còn trong một lớp đã huỷ cũng thuộc
+        # nhóm này. Nhân sự không "chờ xếp lớp" nên loại ở MÁY CHỦ, cùng lý do như lọc vai
+        # của học vụ: bản CSV đi qua đúng hàm này.
+        where.append(vocab.chi_hoc_vien('u'))
+        where.append('NOT EXISTS (SELECT 1 FROM class_members m JOIN classes c ON c.id = m.class_id '
+                     'WHERE m.user_id = u.id AND ' + LOP_DANG_HOC + ')')
+
+    raw = (params.get('khong_hoat_dong') or '').strip()
+    if raw:
+        so_ngay = _so_ngay_ngu(raw)
+        if so_ngay is None:
+            where.append('FALSE')          # cùng luật mã lớp sai: không hiểu thì không ai khớp
+        else:
+            # ĐÚNG định nghĩa của thẻ "Tài khoản lâu không vào" ở Tổng quan
+            # (`overview.tai_khoan_ngu`): tài khoản ĐANG MỞ, mốc hoạt động (rơi về ngày cấp
+            # nếu chưa vào lần nào) cách bây giờ ≥ N ngày — cùng câu `sql_hoat_dong`, cùng
+            # phép `<=`. Có phép kiểm so hai con số: `tests_danh_sach_hoc_vien.py`.
+            nay = local_now()
+            where.append("u.status = 'active'")
+            where.append('(' + sql_hoat_dong('u', '%s', cot=('moc',)) + ') <= %s')
+            args += [nay, nay - timedelta(days=so_ngay)]
+
     return ' AND '.join(where), args
 
 
-def _classes_by_user(user_ids):
-    """Tên các lớp ĐANG theo học, cho một loạt học viên, bằng ĐÚNG MỘT câu.
+def _them_cua_trang(rows):
+    """Lớp đang học, hoạt động cuối và tiến độ cho MỘT TRANG → ``{uid: {...}}``.
 
     Đây là chỗ dễ hỏng nhất của cả màn hình: viết vòng lặp gọi từng em là 25
     lần đi-về mạng cho một lần mở trang (6 giây khi phát triển), và tệ hơn — số
     lần đó tăng theo per_page, nên khi chạy thật lỗi ẩn mình cho tới lúc trung
-    tâm đông lên rồi mới lộ. ``= ANY(%s)`` giữ đúng một câu bất kể trang có bao
-    nhiêu em.
+    tâm đông lên rồi mới lộ. Ở đây TỐI ĐA BA câu bất kể trang có bao nhiêu em
+    (``= ANY(%s)``): (1) lớp + hoạt động cho cả trang; (2) bài đã xong và (3) tổng
+    bài theo môn — hai câu sau chỉ chạy khi trang có học viên đang mở môn.
 
-    ``left_at IS NULL`` = đang trong lớp. Em đã chuyển lớp vẫn còn dòng trong
-    class_members (để báo cáo kỳ cũ đọc được) nhưng không được hiện ở đây nữa.
+    Lớp ĐANG HỌC = `truy_cap.LOP_DANG_HOC` (chưa rời, lớp chưa huỷ). Em đã chuyển lớp
+    vẫn còn dòng trong class_members (để báo cáo kỳ cũ đọc được) nhưng không hiện ở đây.
+    Tiến độ = bài đã xong / tổng bài của các môn em đang được mở QUA LỚP (`truy_cap.mon_mo`),
+    tử và mẫu số là hai hàm của báo cáo lớp — cùng một cách đếm với màn Giảng dạy.
     """
-    if not user_ids:
+    if not rows:
         return {}                          # trang rỗng: đừng tốn một vòng gọi
+    nay = local_now()
+    them = {r['id']: r for r in q(
+        '''SELECT u.id, to_char(h.thay, 'YYYY-MM-DD') AS lan_cuoi,
+                  %(hom_nay)s::date - h.thay::date AS so_ngay,
+                  (SELECT COALESCE(json_agg(json_build_object(
+                              'id', c.id, 'name', c.name, 'classType', c.class_type,
+                              'courseId', c.course_id) ORDER BY c.name, c.id), '[]'::json)
+                     FROM class_members m JOIN classes c ON c.id = m.class_id
+                    WHERE m.user_id = u.id AND ''' + LOP_DANG_HOC + ''') AS lop
+             FROM users u
+             LEFT JOIN LATERAL (''' + sql_hoat_dong('u', '%(nay)s', cot=('thay',)) + ''') h ON TRUE
+            WHERE u.id = ANY(%(ids)s)''',
+        {'ids': [r['id'] for r in rows], 'nay': nay, 'hom_nay': nay.date()})}
+
+    mon = {r['id']: mon_mo(l['courseId'] for l in them[r['id']]['lop'])
+           for r in rows if r['role'] == ROLE_STUDENT}
+    co_mon = [uid for uid, m in mon.items() if m]
+    xong = _progress_by_user(co_mon) if co_mon else {}
+    tong = tong_bai_theo_khoa() if co_mon else {}
+
     out = {}
-    for row in q('''SELECT cm.user_id, c.name
-                      FROM class_members cm
-                      JOIN classes c ON c.id = cm.class_id
-                     WHERE cm.user_id = ANY(%s) AND cm.left_at IS NULL
-                     ORDER BY c.name''', (list(user_ids),)):
-        out.setdefault(row['user_id'], []).append(row['name'])
+    for r in rows:
+        t = them[r['id']]
+        m = mon.get(r['id'])
+        out[r['id']] = {
+            'lop': [{'id': l['id'], 'name': l['name'], 'classType': l['classType']} for l in t['lop']],
+            'lan_cuoi': t['lan_cuoi'],
+            # Kẹp 0: dấu `last_seen_at` do tiến trình khác ghi có thể nhanh hơn đồng hồ này
+            # vài giây — "−0 ngày trước" không phải thứ để in.
+            'so_ngay': None if t['so_ngay'] is None else max(0, t['so_ngay']),
+            # Chưa mở môn nào (chưa xếp lớp, hay nhân sự) thì KHÔNG có tiến độ: "0/0"
+            # hay "3/0" đều nói sai. None → màn hình vẽ "—".
+            'tien_do': ({'xong': sum(xong.get(r['id'], {}).get(k, 0) for k in m),
+                         'tong': sum(tong.get(k, 0) for k in m)} if m else None),
+        }
     return out
 
 
@@ -186,12 +264,19 @@ class AdminUsersView(APIView):
     và email, không phân trang): với vài trăm học viên thì em thứ 51 trở đi
     KHÔNG có đường nào hiện ra, kể cả khi trợ giảng biết chắc em có tài khoản.
 
-    Tham số: ``q`` (tên/email/sđt), ``role``, ``status``, ``class_id``, ``page``,
-    ``per_page`` (mặc định 25, trần 100).
+    Tham số: ``q`` (tên/email/sđt), ``role``, ``status``, ``class_id``,
+    ``chua_xep_lop=1``, ``khong_hoat_dong=<N ngày>`` (1.4b), ``page``, ``per_page``
+    (mặc định 25, trần 100).
 
-    ĐÚNG HAI CÂU SQL bất kể trang có bao nhiêu em — xem "NGÂN SÁCH VÒNG GỌI" ở
-    đầu module: một câu đếm-và-lấy-trang, một câu lấy lớp cho toàn bộ id của
-    trang đó.
+    TỐI ĐA BỐN CÂU SQL bất kể trang có bao nhiêu em — xem "NGÂN SÁCH VÒNG GỌI" ở
+    đầu module: một câu đếm-và-lấy-trang, rồi `_them_cua_trang` (tối đa ba câu cho
+    toàn bộ id của trang đó). Có phép kiểm đếm câu với 2 và 12 em.
+
+    Mỗi dòng (1.4b, ghi chú họp TopHSA "quản lý học sinh"): ``lopDangHoc``
+    [{id, name, classType}], ``hoatDongCuoi`` ('YYYY-MM-DD' | None = chưa thấy vào),
+    ``ngayKhongHoatDong`` (số ngày tới hôm nay | None), ``tienDo`` ({xong, tong} | None
+    khi chưa mở môn nào — nhân sự luôn None). ``classes`` (tên lớp) giữ cho màn hình bản
+    trước, nay cùng tập lớp với ``lopDangHoc``.
     """
     # Học vụ vào được từ 23/09/2026 — nhưng CHỈ thấy tài khoản HỌC VIÊN, lọc ở
     # MÁY CHỦ chứ không ở giao diện. Họ tạo và sửa hồ sơ học viên; danh sách nhân
@@ -219,7 +304,7 @@ class AdminUsersView(APIView):
             "ORDER BY lower(coalesce(name, '')), id",
             args, per_page, offset)
 
-        by_user = _classes_by_user([r['id'] for r in rows])
+        them = _them_cua_trang(rows)
         return Response({
             'users': [{
                 'id': r['id'],
@@ -233,7 +318,11 @@ class AdminUsersView(APIView):
                 'created_at': r['created_at'],
                 'studentCode': r['student_code'],
                 'username': r['username'],
-                'classes': by_user.get(r['id'], []),
+                'classes': [l['name'] for l in them[r['id']]['lop']],
+                'lopDangHoc': them[r['id']]['lop'],
+                'hoatDongCuoi': them[r['id']]['lan_cuoi'],
+                'ngayKhongHoatDong': them[r['id']]['so_ngay'],
+                'tienDo': them[r['id']]['tien_do'],
             } for r in rows],
             'total': total,
             'page': page,
@@ -243,6 +332,9 @@ class AdminUsersView(APIView):
             # mà không báo lỗi gì. Học vụ chỉ nhận đúng một vai để chọn.
             'roles': [ROLE_STUDENT] if chi_hoc_vien else list(ASSIGNABLE_ROLES),
             'chiHocVien': chi_hoc_vien,
+            # Mốc của ô "Không hoạt động ≥ N ngày" — CÙNG mốc với thẻ Tổng quan; màn
+            # hình dựng ô chọn từ đây, không gõ lại 7/14/30.
+            'nguongNgu': list(NGUONG_NGU),
         })
 
 

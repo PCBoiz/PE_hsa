@@ -112,6 +112,23 @@ def test_hop_dong_danh_sach_lop(admin_api):
 
 
 @pytest.mark.django_db
+def test_hop_dong_danh_sach_tai_khoan(admin_api):
+    """`/api/admin/users` — màn Tài khoản. Bốn khoá dòng của 1.4b (lớp đang học, hoạt động
+    cuối, tiến độ) màn hình khai TUỲ CHỌN (Vercel và Render deploy lệch nhau): mất khoá thì
+    cột lặng lẽ thành "—" cho mọi em — chỉ phép kiểm này thấy."""
+    r = admin_api.get('/api/admin/users?per_page=1&q=django_admin_tmp')
+    co = _khoa(r)
+    thieu = {'users', 'total', 'page', 'per_page', 'roles', 'chiHocVien', 'nguongNgu'} - co
+    assert not thieu, 'thiếu khoá màn hình đang đọc: %s (nhận: %s)' % (thieu, sorted(co))
+    assert r.data['users'], 'phải có ít nhất tài khoản quản trị tạm của phép kiểm'
+    dong = set(r.data['users'][0])
+    thieu = {'id', 'name', 'role', 'status', 'classes', 'lopDangHoc', 'hoatDongCuoi',
+             'ngayKhongHoatDong', 'tienDo'} - dong
+    assert not thieu, 'thiếu khoá dòng: %s (nhận: %s)' % (thieu, sorted(dong))
+    assert 'password' not in dong, 'RÒ trường bí mật ra API'
+
+
+@pytest.mark.django_db
 def test_hop_dong_danh_sach_lop_gon(admin_api):
     """`/api/admin/classes/options` — ô chọn lớp ở màn Tài khoản lặp qua `classes`."""
     co = _khoa(admin_api.get('/api/admin/classes/options'))

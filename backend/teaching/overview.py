@@ -61,6 +61,7 @@ from django.db import DatabaseError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.hoat_dong import sql_hoat_dong
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_ATTENDANCE
@@ -598,7 +599,9 @@ def tai_khoan_ngu(chi_id=None):
     """Tài khoản ĐANG MỞ lâu không hoạt động — MỘT câu. ``chi_id`` giới hạn tập
     người (phép kiểm, và màn danh sách học viên 1.4b khi cần cùng định nghĩa).
 
-    HOẠT ĐỘNG = GREATEST(`last_seen_at` §56, sự kiện học gần nhất), với sự kiện học:
+    HOẠT ĐỘNG = GREATEST(`last_seen_at` §56, sự kiện học gần nhất) — định nghĩa nằm
+    ở MỘT chỗ, `accounts.hoat_dong.sql_hoat_dong` (1.4b: màn Tài khoản lọc "không hoạt
+    động ≥ N ngày" bằng đúng câu ấy, nên số trên thẻ này = số dòng danh sách lọc):
       · BỎ `kind = 'attendance'`: điểm danh là giảng viên ghi cho em, kể cả ghi
         "vắng" — tính nó thì em đã bỏ học mà giảng viên vẫn đều đặn tick vắng sẽ
         không bao giờ lọt vào danh sách, đúng em trung tâm cần gọi nhất. (Khác
@@ -618,7 +621,7 @@ def tai_khoan_ngu(chi_id=None):
     thấy vào kể từ `doTu`", không hẳn là chưa từng.
     """
     nay = local_now()
-    tham = {'nay': nay, 'hom_nay': nay.date(), 'dd': KIND_ATTENDANCE,
+    tham = {'nay': nay, 'hom_nay': nay.date(),
             'tran': TRAN_DANH_SACH, 'chi_id': list(chi_id or [])}
     for n in NGUONG_NGU:
         tham['m%d' % n] = nay - timedelta(days=n)
@@ -627,13 +630,9 @@ def tai_khoan_ngu(chi_id=None):
     r = q1('''WITH hd AS (
                   SELECT u.id, u.name, u.student_code, u.last_seen_at,
                          COALESCE(''' + chi_hoc_vien('u') + ''', FALSE) AS hv,
-                         GREATEST(u.last_seen_at, ev.cuoi) AS thay,
-                         COALESCE(GREATEST(u.last_seen_at, ev.cuoi), u.created_at) AS moc
+                         ev.thay, ev.moc
                   FROM users u
-                  LEFT JOIN LATERAL (
-                      SELECT MAX(e.occurred_at) AS cuoi FROM learning_events e
-                      WHERE e.user_id = u.id AND e.kind <> %(dd)s AND e.occurred_at <= %(nay)s
-                  ) ev ON TRUE
+                  LEFT JOIN LATERAL (''' + sql_hoat_dong('u', '%(nay)s') + ''') ev ON TRUE
                   WHERE u.status = 'active' AND ''' + loc + '''
               )
               SELECT
