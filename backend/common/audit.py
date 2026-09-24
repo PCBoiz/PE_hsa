@@ -54,6 +54,10 @@ CLASS_MEMBER_REMOVE = 'class.member.remove'
 #: Chuyển lớp MỘT bước (§55, 24/09/2026): đóng lượt ở lớp cũ + mở lượt ở lớp mới trong
 #: một giao dịch. `target` là lớp MỚI; `detail` giữ cả hai lớp và hai lượt.
 CLASS_MEMBER_TRANSFER = 'class.member.transfer'
+#: Đánh giá một em trong lớp (25/09/2026, `teaching/danh_gia.py`): nhận xét gửi phụ
+#: huynh, cờ "cần hỗ trợ" + lý do, đề xuất hướng học. `target` là EM (target_type
+#: 'user') để dòng thời gian của em đọc được cả lịch sử đánh dấu; `detail.classId`.
+CLASS_MEMBER_ASSESS = 'class.member.assess'
 #: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
 #: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
 #: dán nhầm cột.

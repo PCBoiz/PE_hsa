@@ -68,6 +68,8 @@ const VIEC: Record<string, string> = {
   'class.member.add': 'Thêm vào lớp',
   'class.member.remove': 'Cho rời lớp',
   'class.member.transfer': 'Chuyển lớp',
+  // 25/09/2026 (V-a, V-f): nhận xét gửi phụ huynh, cờ cần hỗ trợ, đề xuất hướng học.
+  'class.member.assess': 'Đánh giá học viên',
   'class.parent_contacts': 'Nhập liên hệ phụ huynh',
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',

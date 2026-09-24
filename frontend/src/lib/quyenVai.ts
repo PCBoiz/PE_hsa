@@ -258,6 +258,16 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Đánh giá một em: cần hỗ trợ, nhận xét, hướng học',
+    // Kế hoạch v2 V-a + V-f, 25/09/2026 (bảng TopHSA dòng 18, 21). Một cửa; vai được ghi
+    // ô nào là hàng rào TRONG view (`danh_gia.CHI_GIANG_VIEN`).
+    giaiThich: 'Trợ giảng đánh dấu được "cần hỗ trợ" kèm lý do (ở Việc hôm nay). Nhận xét gửi phụ huynh (in lên tờ báo cáo) và đề xuất hướng học (nội bộ) chỉ giảng viên, học vụ, quản trị viên ghi.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/danh_gia.py::DanhGiaHocVienView',
+    chan_them: 'trợ giảng chỉ đặt cờ cần hỗ trợ; chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Xem lịch học gộp theo tuần',
     giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc — sửa buổi vẫn ở sổ buổi học của từng lớp.',
     lopQuyen: 'IsTeachingStaff',

@@ -7,6 +7,7 @@ import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 
 import KhoiDuongDan from './KhoiDuongDan';
+import DanhGiaEm, { type DanhGia } from './DanhGiaEm';
 import MucTieuEm, { type MucTieu } from './MucTieuEm';
 
 /* `GET .../students/<uid>/profile` — mục tiêu + nguyện vọng (teaching/ho_so.py). */
@@ -15,6 +16,18 @@ const HD_MUC_TIEU = z.looseObject({
   studyGoal: z.string().nullable(),
   aspiration: z.string().nullable(),
 }) satisfies HinhDang<MucTieu>;
+
+/* `GET .../students/<uid>/danh-gia` — nhận xét gửi phụ huynh, cờ cần hỗ trợ, đề xuất
+   hướng học (teaching/danh_gia.py, V-a + V-f). Bản zod ĐẦY ĐỦ cho máy chủ; khối trên
+   trình duyệt có bản `zod/mini` của riêng nó (không nhập chéo qua ranh giới 'use client'). */
+const chuHoacTrong = z.string().nullable();
+const HD_DANH_GIA = z.looseObject({
+  canHoTro: z.boolean(), lyDo: chuHoacTrong, canHoTroAt: chuHoacTrong, canHoTroBy: chuHoacTrong,
+  quyen: z.looseObject({ nhanXet: z.boolean() }),
+  teacherComment: chuHoacTrong.optional(), teacherCommentAt: chuHoacTrong.optional(),
+  teacherCommentBy: chuHoacTrong.optional(), deXuatHuongHoc: chuHoacTrong.optional(),
+  deXuatHuongHocAt: chuHoacTrong.optional(), deXuatHuongHocBy: chuHoacTrong.optional(),
+}) satisfies HinhDang<DanhGia>;
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Báo cáo gửi phụ huynh | TopHSA' };
@@ -40,7 +53,7 @@ export default async function BaoCaoPhuHuynhPage({
   if (to) qs.set('to', to);
 
   // Song song: hai lượt tới Neon nối đuôi nhau là cộng dồn ~245 ms mỗi lượt.
-  const [kq, mucTieu] = await Promise.all([
+  const [kq, mucTieu, danhGia] = await Promise.all([
     serverJson<BaoCao>(
       `/api/teach/classes/${classId}/students/${userId}/parent-report${qs.size ? `?${qs}` : ''}`,
       { requireAuth: true },
@@ -50,6 +63,11 @@ export default async function BaoCaoPhuHuynhPage({
       `/api/teach/classes/${classId}/students/${userId}/profile`,
       { requireAuth: true },
       HD_MUC_TIEU,
+    ),
+    serverJson<DanhGia>(
+      `/api/teach/classes/${classId}/students/${userId}/danh-gia`,
+      { requireAuth: true },
+      HD_DANH_GIA,
     ),
   ]);
 
@@ -123,6 +141,10 @@ export default async function BaoCaoPhuHuynhPage({
         {/* Không đọc được (em đã rời lớp, máy chủ lỗi) thì KHÔNG hiện ô trống:
             ô trống bấm Lưu được là xoá trắng điều học vụ đã ghi. */}
         {mucTieu.ok && <MucTieuEm classId={classId} userId={userId} initial={mucTieu.data} />}
+
+        {/* Cùng luật: không đọc được thì không hiện ô trống (máy chủ cũ chưa có đường
+            này → 404 → khối ẩn, trang vẫn chạy). */}
+        {danhGia.ok && <DanhGiaEm classId={classId} userId={userId} initial={danhGia.data} />}
 
         {bc.warnings.length > 0 && (
           <p

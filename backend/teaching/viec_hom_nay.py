@@ -14,6 +14,8 @@ Anh Sơn chốt bốn khối + buổi sắp tới:
   · em vắng LIỀN từ `VANG_LIEN` buổi đã điểm danh — chưa có ở đâu khác;
   · em có cảnh báo mức cao — CÙNG luật với báo cáo lớp (`reports.canh_bao_muc_cao`);
   · buổi trong 24 giờ tới, kèm cờ thiếu link phòng.
+Thêm 25/09/2026 (V-f): em được giảng viên / trợ giảng ĐÁNH DẤU "cần hỗ trợ" (tay, kèm
+lý do — `teaching/danh_gia.py`), khác "cần chú ý" do máy tự tính.
 
 ── TRỢ GIẢNG ──────────────────────────────────────────────────────────────
 
@@ -27,8 +29,9 @@ nguyên: trợ giảng thấy "em nào", còn gọi ai vẫn là việc của gi
 
 ── SỐ CÂU SQL KHÔNG THEO SỐ LỚP ───────────────────────────────────────────
 
-Đúng 7 câu dù 1 hay 30 lớp (`tests_viec_hom_nay` canh). Gọi `class_report` cho
-từng lớp là 6 câu × N — đúng cái bẫy `overview.py` đã tránh.
+Số câu cố định dù 1 hay 30 lớp (`tests_viec_hom_nay` canh — so hai lượt, không ghim
+một con số). Gọi `class_report` cho từng lớp là 6 câu × N — đúng cái bẫy
+`overview.py` đã tránh.
 """
 from datetime import timedelta
 
@@ -216,6 +219,26 @@ def _can_chu_y(lop, hoc_vien, nay):
     return ra[:TRAN]
 
 
+def _can_ho_tro(ids, lop):
+    """Em được ĐÁNH DẤU cần hỗ trợ (§62b) ở lượt đang học — mới đánh dấu trước.
+
+    Chỉ lượt đang mở: em đã rời lớp thì cờ trên lượt cũ không còn là việc của lớp.
+    Cùng bộ lọc học viên với mọi khối khác (tài khoản quản trị trong lớp không lọt).
+    """
+    rows = q('''SELECT m.class_id, m.user_id, u.name, m.can_ho_tro_ly_do, m.can_ho_tro_at,
+                       b.name AS boi
+                FROM class_members m
+                JOIN users u ON u.id = m.user_id
+                LEFT JOIN users b ON b.id = m.can_ho_tro_by
+                WHERE m.class_id = ANY(%s) AND m.left_at IS NULL AND m.can_ho_tro
+                  AND ''' + chi_hoc_vien('u') + '''
+                ORDER BY m.can_ho_tro_at DESC NULLS LAST, u.name
+                LIMIT %s''', (ids, TRAN))
+    return [{'userId': r['user_id'], 'name': r['name'], 'classId': r['class_id'],
+             'className': lop[r['class_id']]['name'], 'lyDo': r['can_ho_tro_ly_do'],
+             'luc': _iso(r['can_ho_tro_at']), 'boi': r['boi']} for r in rows]
+
+
 class ViecHomNayView(APIView):
     """GET /api/teach/viec-hom-nay — không ghi gì."""
     permission_classes = [IsTeachingStaff]
@@ -235,4 +258,5 @@ class ViecHomNayView(APIView):
             'chuaCham': _chua_cham(ids, lop, nay) if ids else [],
             'vangLien': _vang_lien(ids, lop, hoc_vien) if ids else [],
             'canChuY': _can_chu_y(lop, hoc_vien, nay) if ids else [],
+            'canHoTro': _can_ho_tro(ids, lop) if ids else [],
         })

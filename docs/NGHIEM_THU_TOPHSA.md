@@ -236,10 +236,10 @@ Bài kiểm tra ngoại tuyến GV nhập điểm → **V-h**.
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Lịch sử học tập, điểm danh, bài tập, kết quả từng bài | CÓ | tờ báo cáo từng em |
-| **Ghi nhận nhận xét học sinh** | CHƯA | không màn nào ghi; cột cũ còn bị ghi chú chuyển lớp dùng chung — lỗi rò đã vá `e328ade` (§62a `teacher_comment`) → chỗ ghi ở **V-a** |
+| **Ghi nhận nhận xét học sinh** | CÓ (V-a) | `PUT …/students/<u>/danh-gia` (`teaching/danh_gia.py::DanhGiaHocVienView`) ghi `class_members.teacher_comment` (§62a) vào lượt đang mở, không đụng `note`; tờ phụ huynh in `membership.teacherNote`. Test `teaching/tests_danh_gia.py` (7). Demo: giảng viên → Báo cáo phụ huynh → Xem tờ của em → khối "Đánh giá của giảng viên" → ô "Nhận xét gửi phụ huynh" → Lưu đánh giá → tờ bên dưới in "Nhận xét của giảng viên" |
 | Đánh giá mức độ tiến bộ | CÓ | "Con có tiến bộ không" trên tờ |
-| Đánh dấu cần hỗ trợ | MỘT PHẦN | hệ thống tự báo "cần chú ý"; GV chưa tự đánh dấu → **V-f** |
-| Đề xuất hướng học tập | CHƯA | → **V-f** |
+| Đánh dấu cần hỗ trợ | CÓ (V-f) | `class_members.can_ho_tro` + lý do (§62b), cùng đường `danh-gia` (trợ giảng đặt được); hiện ở "Việc hôm nay" khối "Cần hỗ trợ" (`viec_hom_nay._can_ho_tro`) và dòng thời gian (`dong_thoi_gian._danh_gia`, nhật ký `class.member.assess`). Demo: giảng viên tick "Đánh dấu em cần hỗ trợ" trên tờ của em, hoặc trợ giảng bấm "Báo cần hỗ trợ" trên dòng em vắng liền ở Việc hôm nay |
+| Đề xuất hướng học tập | CÓ (V-f) | `class_members.de_xuat_huong_hoc` (§62b), chỉ giảng viên trở lên, nội bộ (không lên tờ phụ huynh). Demo: ô "Đề xuất hướng học" trong khối "Đánh giá của giảng viên"; học vụ thấy mốc "Đề xuất hướng học" trên dòng thời gian của em |
 
 ## Dòng 20 — Trợ giảng · nhắn tin / nhắc · CHƯA
 
@@ -254,7 +254,7 @@ Chat thời gian thực: không làm (anh chốt 25/09 — Zalo vẫn để chat
 | Điểm danh, theo dõi bài tập, tiến độ | CÓ | — |
 | Hỗ trợ giải đáp | CHƯA | **E3** |
 | Theo dõi việc xem record | CHƯA | **V-l** (mở / chưa mở), **E4** (% đã xem) |
-| Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | MỘT PHẦN — TG thấy (V-b); "báo lên" chờ **E3** | `teaching/viec_hom_nay.py` `ViecHomNayView.get` trả `vangLien` + `canChuY` cho mọi vai, phạm vi `_lop_cua`; test `tests_viec_hom_nay.py::test_tro_giang_thay_vang_lien_chi_lop_minh`. Demo: đăng nhập trợ giảng → "Việc hôm nay" → khối "Vắng liền" / "Cần chú ý ngay" của lớp mình, dòng dẫn về sổ buổi học |
+| Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | CÓ phần theo dõi (V-b) + báo "cần hỗ trợ" (V-f); trao đổi hai chiều chờ **E3** | `teaching/viec_hom_nay.py` `ViecHomNayView.get` trả `vangLien` + `canChuY` cho mọi vai, phạm vi `_lop_cua`; test `tests_viec_hom_nay.py::test_tro_giang_thay_vang_lien_chi_lop_minh`. Demo: đăng nhập trợ giảng → "Việc hôm nay" → khối "Vắng liền" / "Cần chú ý ngay" của lớp mình, dòng dẫn về sổ buổi học |
 
 ## Dòng 22 — Trợ giảng · record Zoom · MỘT PHẦN
 
@@ -279,7 +279,7 @@ Khách phải đồng ý (K2). Nâng link thành "link theo dõi" sống → **�
 | Thông báo khi lịch đổi | THAY | không gửi phụ huynh (anh chốt); link sống hiện "thay đổi gần đây" → **§66** |
 | Tình trạng tham gia | CÓ (tổng số theo kỳ) | `parent_report.py::_chuyen_can` |
 | Bài tập, hạn, đã / chưa nộp; điểm | CÓ | `_bai_tap_lop` |
-| Nhận xét của GV | MỘT PHẦN | nhận xét bài CÓ; nhận xét chung → **V-a** |
+| Nhận xét của GV | CÓ (V-a) | nhận xét bài CÓ; nhận xét chung = `membership.teacherNote` từ `teacher_comment` (giảng viên ghi ở khối "Đánh giá của giảng viên"), đi cả đường dẫn phụ huynh (`rut_gon_cho_link` giữ khoá này) |
 | Tiến độ học tập | CÓ (theo kỳ cố định của link) | → link sống **§66** |
 
 ## Dòng 25 — Phụ huynh · gửi yêu cầu · CHƯA → E3 qua link

@@ -98,6 +98,10 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Trợ giảng cũng thấy em vắng liền và em cần chú ý của lớp mình. Dòng ấy dẫn về sổ buổi học của lớp; việc gọi phụ huynh vẫn là của giảng viên — báo giảng viên phụ trách.',
       },
       {
+        lam: 'Thấy em cần giúp: bấm "Báo cần hỗ trợ" ngay trên dòng của em, ghi một câu lý do. Em hiện ở khối "Cần hỗ trợ" cho giảng viên và trợ giảng của lớp; giúp xong thì bấm "Bỏ đánh dấu".',
+        luu_y: 'Lý do là để giảng viên đọc — không in lên tờ gửi phụ huynh.',
+      },
+      {
         lam: 'Làm hết phần "Chưa điểm danh xong" trước khi về.',
         luu_y: 'Buổi chưa tick thì KHÔNG tính vào chuyên cần của em, và tờ gửi phụ huynh sẽ báo thiếu. Đây là lỗi hay gặp nhất và khó thấy nhất.',
       },
@@ -381,6 +385,29 @@ export const HUONG_DAN: readonly Bai[] = [
   },
 
   {
+    ma: 'danh-gia-em',
+    tieu_de: 'Nhận xét em, đánh dấu cần hỗ trợ, đề xuất hướng học',
+    // Kế hoạch v2 V-a + V-f (25/09/2026) — bảng TopHSA dòng 18. Trợ giảng chỉ đánh dấu,
+    // và làm ở "Việc hôm nay" (bài "Mở đầu ngày dạy").
+    vai: [VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Trước khi gửi báo cáo tháng, hoặc ngay khi thấy em cần giúp.',
+    buoc: [
+      {
+        lam: 'Vào lớp của em, bấm "Báo cáo phụ huynh", rồi "Xem tờ" trên dòng của em.',
+        o: '/giang-day',
+      },
+      {
+        lam: 'Khối "Đánh giá của giảng viên" nằm trên tờ báo cáo. Ghi nhận xét, tick "Đánh dấu em cần hỗ trợ" kèm lý do, ghi đề xuất hướng học, rồi bấm "Lưu đánh giá".',
+        luu_y: 'Chỉ NHẬN XÉT in lên tờ gửi phụ huynh. Cờ cần hỗ trợ và hướng học là nội bộ — cờ hiện ở "Việc hôm nay" của giảng viên và trợ giảng lớp.',
+      },
+      {
+        lam: 'Em được trợ giảng báo cần hỗ trợ hiện ở khối "Cần hỗ trợ" của "Việc hôm nay", kèm lý do và tên người báo. Giúp xong thì bấm "Bỏ đánh dấu".',
+        o: '/giang-day',
+      },
+    ],
+  },
+
+  {
     ma: 'bao-cao-phu-huynh',
     tieu_de: 'Gửi báo cáo cho phụ huynh',
     vai: [VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI],
@@ -423,7 +450,7 @@ export const HUONG_DAN: readonly Bai[] = [
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
       {
         lam: 'Chấm điểm và ghi nhận xét.',
-        luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc. Ghi chú riêng về em (dành cho giảng viên và cho tờ báo cáo phụ huynh) nằm ở hồ sơ học viên, chỗ khác.',
+        luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc về bài này. Nhận xét chung gửi phụ huynh nằm ở khối "Đánh giá của giảng viên" trên tờ báo cáo của em.',
       },
     ],
   },
