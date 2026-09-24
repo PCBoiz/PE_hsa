@@ -15,10 +15,19 @@ import {
   Td,
   Th,
   Thead,
+  ToastProvider,
   Tr,
+  useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 import type { HinhDang } from '@/lib/kiemDang';
+
+// Hộp chuyển lớp của màn Lớp học — dùng lại nguyên (1.4b), không dựng bản thứ hai:
+// chuyển lớp là MỘT giao dịch ở máy chủ (§55), hai hộp là hai chỗ sẽ trôi khỏi nhau.
+import ChuyenLop from '../lop-hoc/ChuyenLop';
+import { LOAI_LOP } from '../lop-hoc/lop';
+
+import { CHUA_XEP_LOP, LOC_RONG, NGUONG_NGU_DUONG_LUI, type LocTaiKhoan, nhanHoatDong, thamSoLoc } from './loc';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
 // Bản đầy đủ không rung cây được — đo A/B trên Thi thử: 956 kB (zod) → 608 kB
 // (zod/mini), byte giải nén, ba lượt mỗi bên. Bản mini cùng luật
@@ -42,7 +51,17 @@ export type UserRow = {
   /** Mã HSA-xxxxx — chỉ tài khoản Học viên có (§51). */
   studentCode?: string | null;
   username?: string | null;
+  /* 1.4b — TUỲ CHỌN: backend cũ không trả (Vercel/Render deploy lệch nhau). */
+  /** Lớp đang học: chưa rời, lớp chưa huỷ — cùng luật mở môn của máy chủ. */
+  lopDangHoc?: LopDangHoc[];
+  /** 'YYYY-MM-DD' lần cuối thấy vào / làm bài; null = chưa thấy vào. */
+  hoatDongCuoi?: string | null;
+  ngayKhongHoatDong?: number | null;
+  /** Bài đã xong / tổng bài các môn đang mở qua lớp; null = chưa mở môn nào (hay nhân sự). */
+  tienDo?: { xong: number; tong: number } | null;
 };
+
+export type LopDangHoc = { id: number; name: string; classType?: string | null };
 
 type Payload = {
   users: UserRow[];
@@ -52,6 +71,8 @@ type Payload = {
   roles: string[];
   /** Máy chủ đã lọc về vai Học viên — người xem là học vụ (23/09/2026). */
   chiHocVien?: boolean;
+  /** Mốc của ô "Lâu không vào" — cùng mốc thẻ Tổng quan (1.4b). */
+  nguongNgu?: number[];
 };
 
 /** Một dòng trong kết quả nhập hàng loạt. */
@@ -149,27 +170,42 @@ const HD_NHAP_HANG_LOAT = z.looseObject({
   maxPerBatch: z.optional(z.number()),
 }) satisfies HinhDang<BulkResultData>;
 
-export default function AccountsClient({
-  initial,
-  classes,
-  loi,
-}: {
+type Props = {
   initial: Payload;
+  /** Bộ lọc đọc từ URL ở máy chủ — `initial` là trang đầu CỦA bộ lọc này. */
+  initialLoc?: LocTaiKhoan;
   classes: ClassLite[];
   /** Câu lỗi từ máy chủ khi lượt tải đầu hỏng; null = tải được. */
   loi: string | null;
-}) {
+};
+
+/* Bọc `ToastProvider` như màn Lớp học: lời "Đã chuyển … sang lớp …" của hộp chuyển
+   lớp đi qua toast — cùng câu, cùng chỗ hiện ở cả hai màn. */
+export default function AccountsClient(props: Props) {
+  return (
+    <ToastProvider>
+      <BangTaiKhoan {...props} />
+    </ToastProvider>
+  );
+}
+
+function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
+  const toast = useToast();
   const [data, setData] = useState<Payload>(initial);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(
     loi,
   );
 
-  const [q, setQ] = useState('');
-  const [role, setRole] = useState('');
-  const [status, setStatus] = useState('');
-  const [classId, setClassId] = useState('');
+  const [q, setQ] = useState(initialLoc.q);
+  const [role, setRole] = useState(initialLoc.role);
+  const [status, setStatus] = useState(initialLoc.status);
+  /** '' · `CHUA_XEP_LOP` · id lớp — xem `loc.ts`. */
+  const [lop, setLop] = useState(initialLoc.lop);
+  const [khongHoatDong, setKhongHoatDong] = useState(initialLoc.khongHoatDong);
   const [page, setPage] = useState(1);
+  /** Học viên đang được chuyển lớp; `tu` null = còn phải hỏi chuyển từ lớp nào. */
+  const [chuyen, setChuyen] = useState<{ em: { userId: number; name: string }; lops: LopDangHoc[]; tu: LopDangHoc | null } | null>(null);
 
   // Hộp thoại hiện mật khẩu tạm. KHÔNG dùng toast: toast tự biến mất sau vài
   // giây, mà trợ giảng cần thời gian đọc chuỗi này qua điện thoại cho học viên.
@@ -177,16 +213,19 @@ export default function AccountsClient({
   /** id tài khoản đang chạy lượt đặt lại — khoá nút để không bấm hai lần. */
   const [dangDatLai, setDangDatLai] = useState<number | null>(null);
 
+  /* Tham số lọc dựng ở `loc.ts` — CÙNG hàm trang máy chủ dùng để đọc URL. */
+  const loc = useCallback(
+    () => thamSoLoc({ q, role, status, lop, khongHoatDong }),
+    [q, role, status, lop, khongHoatDong],
+  );
   const query = useCallback(
     (p = page) => {
-      const sp = new URLSearchParams({ page: String(p), per_page: String(data.per_page || 25) });
-      if (q.trim()) sp.set('q', q.trim());
-      if (role) sp.set('role', role);
-      if (status) sp.set('status', status);
-      if (classId) sp.set('class_id', classId);
+      const sp = loc();
+      sp.set('page', String(p));
+      sp.set('per_page', String(data.per_page || 25));
       return sp.toString();
     },
-    [q, role, status, classId, page, data.per_page],
+    [loc, page, data.per_page],
   );
 
   const load = useCallback(
@@ -198,13 +237,18 @@ export default function AccountsClient({
         if (!r.ok) throw new Error(errorText(r.status, await r.json().catch(() => null)));
         setData(await r.json());
         setPage(p);
+        /* Bộ lọc lên URL (không kèm trang): tải lại, hay gửi link "học viên chưa xếp
+           lớp" cho đồng nghiệp, là thấy đúng tập đang nhìn. `replaceState` chứ không
+           `router.replace`: đổi URL mà không bắt máy chủ dựng lại trang. */
+        const s = loc().toString();
+        window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname);
       } catch (e) {
         setErr(loiBatDuoc(e, 'Không tải được danh sách'));
       } finally {
         setLoading(false);
       }
     },
-    [page, query],
+    [page, query, loc],
   );
 
   // Gõ tới đâu tìm tới đó, nhưng chờ 350ms sau phím cuối. Gọi mỗi phím một lần
@@ -218,7 +262,7 @@ export default function AccountsClient({
     const t = setTimeout(() => void load(1), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, role, status, classId]);
+  }, [q, role, status, lop, khongHoatDong]);
 
   /* Tham số kiểu do NƠI GỌI đặt, không dùng `never`.
      Bản cũ khai `ok: (d: never) => void` rồi ép `ok(d as never)`. `never` nhận
@@ -330,6 +374,21 @@ export default function AccountsClient({
      CSV — thay vì để họ bấm vào một nút rồi nhận 403. Đọc CỜ CỦA MÁY CHỦ chứ
      không tự đoán theo vai: chỗ quyết định ai thấy gì chỉ nên có một. */
   const chiHocVien = !!data.chiHocVien;
+  const nguong = data.nguongNgu?.length ? data.nguongNgu : NGUONG_NGU_DUONG_LUI;
+  /* Cột 1.4b chỉ hiện khi máy chủ có gửi: backend cũ (deploy lệch) thì bảng giữ nguyên
+     như trước, không mọc ba cột toàn "—". */
+  const coCotMoi = data.users.some((u) => u.lopDangHoc !== undefined);
+
+  /** Chuyển lớp: đúng một lớp thì mở thẳng hộp; nhiều lớp thì hỏi từ lớp nào trước. */
+  function moChuyen(u: UserRow) {
+    const lops = u.lopDangHoc ?? [];
+    if (!lops.length) return;
+    setChuyen({
+      em: { userId: u.id, name: u.name || u.email || u.phone || `#${u.id}` },
+      lops,
+      tu: lops.length === 1 ? lops[0] : null,
+    });
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -358,19 +417,32 @@ export default function AccountsClient({
           }
         />
 
-        <div className="mb-4 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))]">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            /* Ngắn: ô chỉ rộng ~1/3 hàng lọc, câu dài hơn bị cắt giữa chữ ở 1440px
-               (soi ảnh 23/09/2026: "…tên đ"). Nhãn đầy đủ nằm ở aria-label. */
-            placeholder="Tìm tên, email, SĐT, mã HSA, tên đăng nhập"
-            aria-label="Tìm tài khoản"
-            className="min-h-11 min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
-          />
+        {/* `role="search"` + tên: phân biệt vùng LỌC với ô cấp hàng loạt phía trên (cũng
+            có ô "Vai trò", "Lớp"). Ô chọn có NHÃN HIỆN và lựa chọn "Tất cả" (góp ý TopHSA
+            24/09: bỏ "Mọi …" — ô không nhãn đọc "Mọi lớp" không biết đang lọc gì).
+            Ô Tìm chiếm HAI rãnh lưới: một rãnh thì gợi ý bị cắt giữa chữ (soi ảnh 23/09:
+            "…tên đ"); dưới `sm` chiếm cả hàng — `col-span-2` khi lưới chỉ còn một rãnh sẽ
+            đẻ rãnh ngầm và tràn ngang. Máy tính: một hàng; điện thoại: Tìm rồi 2 ô/hàng. */}
+        <div
+          role="search"
+          aria-label="Lọc danh sách tài khoản"
+          className="mb-4 grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))]"
+        >
+          <label className="col-span-full flex min-w-0 flex-col gap-1 sm:col-span-2">
+            <span className="text-label text-ink-3">Tìm</span>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              /* Tên truy cập giữ "Tìm tài khoản" (chứa chữ nhãn hiện "Tìm" — WCAG 2.5.3):
+                 `ho-so-hoc-vien.spec.ts` và trình đọc màn hình gọi ô bằng tên ấy. */
+              aria-label="Tìm tài khoản"
+              placeholder="Tên, email, SĐT, mã HSA, tên đăng nhập"
+              className="min-h-11 min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink placeholder:text-ink-3/70 focus:outline-2 focus:outline-brand"
+            />
+          </label>
           {!chiHocVien && (
             <Select value={role} onChange={setRole} label="Vai trò">
-              <option value="">Mọi vai trò</option>
+              <option value="">Tất cả</option>
               {data.roles.map((r) => (
                 <option key={r} value={r}>
                   {ROLE_LABEL[r] || r}
@@ -379,15 +451,24 @@ export default function AccountsClient({
             </Select>
           )}
           <Select value={status} onChange={setStatus} label="Trạng thái">
-            <option value="">Mọi trạng thái</option>
+            <option value="">Tất cả</option>
             <option value="active">Đang hoạt động</option>
             <option value="suspended">Đã khoá</option>
           </Select>
-          <Select value={classId} onChange={setClassId} label="Lớp">
-            <option value="">Mọi lớp</option>
+          <Select value={lop} onChange={setLop} label="Lớp">
+            <option value="">Tất cả</option>
+            <option value={CHUA_XEP_LOP}>Chưa xếp lớp</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+              </option>
+            ))}
+          </Select>
+          <Select value={khongHoatDong} onChange={setKhongHoatDong} label="Lâu không vào">
+            <option value="">Tất cả</option>
+            {nguong.map((n) => (
+              <option key={n} value={n}>
+                ≥ {n} ngày
               </option>
             ))}
           </Select>
@@ -412,7 +493,8 @@ export default function AccountsClient({
                 <Th>Liên hệ</Th>
                 {!chiHocVien && <Th>Vai trò</Th>}
                 <Th>Lớp</Th>
-                <Th>Mật khẩu</Th>
+                {coCotMoi && <Th>Hoạt động cuối</Th>}
+                {coCotMoi && <Th align="right">Tiến độ</Th>}
                 <Th>Trạng thái</Th>
                 <Th align="right">Thao tác</Th>
               </tr>
@@ -452,31 +534,42 @@ export default function AccountsClient({
                     </Td>
                   )}
                   <Td label="Lớp" muted>
-                    {u.classes?.length ? u.classes.join(', ') : '—'}
+                    <OLop u={u} onChuyen={() => moChuyen(u)} />
                   </Td>
-                  <Td label="Mật khẩu">
-                    {/* Đọc `must_change_password`, KHÔNG đọc `password_changed_at`.
-                        Cột thời gian kia chỉ được ghi ở đúng một chỗ — luồng học
-                        viên tự đổi mật khẩu, thêm về sau — nên mọi tài khoản có
-                        trước cột đó vĩnh viễn NULL. Đo ngày 30/08/2026: chip cam
-                        "Còn mật khẩu tạm" hiện cho CẢ 5/5 tài khoản thật, kể cả
-                        tài khoản quản trị đang đăng nhập, trong khi cả 5 đều có
-                        `must_change_password = FALSE`.
-                        Cột này sinh ra để trả lời "phải gọi nhắc em nào", và nó
-                        đang trả lời "gọi tất cả" — đúng loại báo cáo RULES §8 cấm.
-                        `must_change_password` mới là cờ thật sự bắt đổi mật khẩu. */}
-                    {u.must_change_password ? (
-                      <Chip tone="warn">Còn mật khẩu tạm</Chip>
-                    ) : u.password_changed_at ? (
-                      <Chip tone="good">Đã tự đổi</Chip>
-                    ) : (
-                      <Chip tone="neutral">—</Chip>
-                    )}
-                  </Td>
+                  {coCotMoi && (
+                    <Td label="Hoạt động cuối" muted={u.hoatDongCuoi === null}>
+                      <span className="whitespace-nowrap">{nhanHoatDong(u.ngayKhongHoatDong)}</span>
+                    </Td>
+                  )}
+                  {coCotMoi && (
+                    <Td label="Tiến độ" num>
+                      {u.tienDo ? `${u.tienDo.xong}/${u.tienDo.tong} bài` : '—'}
+                    </Td>
+                  )}
+                  {/* Trạng thái + mật khẩu GỘP một cột (1.4b): thêm "Hoạt động cuối" và "Tiến
+                      độ" thì chín cột không vừa 1440 — cột Thao tác bị đẩy ra ngoài khung
+                      (soi ảnh 24/09/2026). Hai chip xếp dọc, không mất tin nào. */}
                   <Td label="Trạng thái">
-                    <Chip tone={u.status === 'active' ? 'neutral' : 'bad'}>
-                      {STATUS_LABEL[u.status] || u.status}
-                    </Chip>
+                    <span className="flex flex-col items-start gap-1 max-sm:items-end">
+                      <Chip tone={u.status === 'active' ? 'neutral' : 'bad'}>
+                        {STATUS_LABEL[u.status] || u.status}
+                      </Chip>
+                      {/* Đọc `must_change_password`, KHÔNG đọc `password_changed_at`.
+                          Cột thời gian kia chỉ được ghi ở đúng một chỗ — luồng học
+                          viên tự đổi mật khẩu, thêm về sau — nên mọi tài khoản có
+                          trước cột đó vĩnh viễn NULL. Đo ngày 30/08/2026: chip cam
+                          "Còn mật khẩu tạm" hiện cho CẢ 5/5 tài khoản thật, kể cả
+                          tài khoản quản trị đang đăng nhập, trong khi cả 5 đều có
+                          `must_change_password = FALSE`.
+                          Chip mật khẩu sinh ra để trả lời "phải gọi nhắc em nào", và nó
+                          đang trả lời "gọi tất cả" — đúng loại báo cáo RULES §8 cấm.
+                          `must_change_password` mới là cờ thật sự bắt đổi mật khẩu. */}
+                      {u.must_change_password ? (
+                        <Chip tone="warn">Còn mật khẩu tạm</Chip>
+                      ) : u.password_changed_at ? (
+                        <Chip tone="good">Đã tự đổi mật khẩu</Chip>
+                      ) : null}
+                    </span>
                   </Td>
                   <Td label="Thao tác">
                     {/* `whitespace-nowrap`: cột hẹp làm "Đặt lại mật khẩu" gãy hai
@@ -565,7 +658,71 @@ export default function AccountsClient({
           phải đặt lại mật khẩu lần nữa.
         </p>
       </Modal>
+
+      {/* Em học nhiều lớp: hỏi chuyển TỪ lớp nào trước — hộp chuyển lớp cần đúng một lớp đi. */}
+      {chuyen && !chuyen.tu && (
+        <Modal open onClose={() => setChuyen(null)} title={`Chuyển ${chuyen.em.name} từ lớp nào?`}>
+          <ul aria-label="Lớp em đang học" className="flex flex-col gap-1">
+            {chuyen.lops.map((l) => (
+              <li key={l.id}>
+                <button
+                  type="button"
+                  onClick={() => setChuyen({ ...chuyen, tu: l })}
+                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 rounded-md border border-line bg-surface px-3 py-1 text-left text-body text-ink hover:border-brand"
+                >
+                  <span>{l.name}</span>
+                  {l.classType && <span className="text-small text-ink-3">{LOAI_LOP[l.classType] ?? l.classType}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Modal>
+      )}
+      {chuyen?.tu && (
+        <ChuyenLop
+          em={chuyen.em}
+          tuLop={{ id: chuyen.tu.id, name: chuyen.tu.name }}
+          onDong={() => setChuyen(null)}
+          onXong={(cau) => {
+            setChuyen(null);
+            toast(cau, 'ok');
+            void load();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Ô "Lớp" của một dòng: lớp ĐANG HỌC (chip "Gia sư" cho lớp gia sư) + nút Chuyển lớp.
+ * Học viên chưa có lớp nào hiện rõ "Chưa xếp lớp" — đúng em sẽ mất bài vì môn mở qua lớp.
+ * Backend cũ (chưa gửi `lopDangHoc`) thì rơi về tên lớp như trước.
+ */
+function OLop({ u, onChuyen }: { u: UserRow; onChuyen: () => void }) {
+  if (u.lopDangHoc === undefined) return <>{u.classes?.length ? u.classes.join(', ') : '—'}</>;
+  if (!u.lopDangHoc.length) {
+    return u.role === 'Học viên' ? <Chip tone="warn">Chưa xếp lớp</Chip> : <>—</>;
+  }
+  return (
+    <span className="flex flex-col items-start gap-1 max-sm:items-end">
+      {u.lopDangHoc.map((l) => (
+        <span key={l.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2 max-sm:justify-end">
+          <span>{l.name}</span>
+          {l.classType === 'gia_su' && <Chip tone="brand">{LOAI_LOP.gia_su}</Chip>}
+        </span>
+      ))}
+      {u.role === 'Học viên' && (
+        <button
+          type="button"
+          onClick={onChuyen}
+          aria-label={`Chuyển lớp cho ${u.name || u.email || u.phone || `#${u.id}`}`}
+          className="inline-flex min-h-11 items-center text-small text-brand-ink underline [@media(pointer:fine)]:min-h-9"
+        >
+          Chuyển lớp
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -580,18 +737,23 @@ function Select({
   label: string;
   children: React.ReactNode;
 }) {
+  /* NHÃN HIỆN (góp ý TopHSA 24/09/2026): bản trước chỉ có `aria-label`, nên mắt đọc
+     lựa chọn đầu "Mọi lớp" mà không biết ô đang lọc gì. `<label>` bọc ngoài vừa là
+     nhãn nhìn thấy vừa là tên cho trình đọc màn hình — một nguồn, không lệch. */
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label={label}
-      /* `min-w-0` bắt buộc: ô chọn tự co giãn theo lựa chọn DÀI NHẤT, và trong
-         lưới thì nó đẩy cả hàng rộng ra khiến trang trượt ngang trên điện
-         thoại — đúng lỗi đã phải vá ở trang /admin ngày 27/08/2026. */
-      className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink focus:outline-2 focus:outline-brand"
-    >
-      {children}
-    </select>
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-label text-ink-3">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        /* `min-w-0` bắt buộc: ô chọn tự co giãn theo lựa chọn DÀI NHẤT, và trong
+           lưới thì nó đẩy cả hàng rộng ra khiến trang trượt ngang trên điện
+           thoại — đúng lỗi đã phải vá ở trang /admin ngày 27/08/2026. */
+        className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink focus:outline-2 focus:outline-brand"
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 

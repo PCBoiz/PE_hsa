@@ -260,6 +260,10 @@ def _mastery_by_topic(events, today, hop_le):
 
 
 def _progress_by_user(uids):
+    """`{uid: {course_id: số bài đã hoàn thành}}` — TỬ SỐ tiến độ, MỘT câu cho cả loạt.
+
+    Màn Tài khoản (1.4b, `admin_users`) dùng lại hàm này cùng `tong_bai_theo_khoa`: tiến
+    độ của một em ở đó và ở báo cáo lớp phải đếm cùng một thứ."""
     rows = q('''SELECT user_id, course_id, COUNT(*) AS n
                 FROM lesson_progress
                 WHERE user_id = ANY(%s) AND status = 'completed'
@@ -268,6 +272,14 @@ def _progress_by_user(uids):
     for r in rows:
         out.setdefault(r['user_id'], {})[r['course_id']] = r['n']
     return out
+
+
+def tong_bai_theo_khoa():
+    """`{course_id: số bài}` — MẪU SỐ tiến độ: bài đã gắn chương (`module`); bài nháp chưa
+    gắn chương không tính. Một câu."""
+    return {r['course_id']: r['n'] for r in q(
+        "SELECT course_id, COUNT(*) AS n FROM lessons "
+        "WHERE module IS NOT NULL AND module <> '' GROUP BY course_id")}
 
 
 def _last_activity(uids):
@@ -402,9 +414,7 @@ def class_report(class_id):
     if not ok:
         thieu.append('lag')
 
-    totals = {r['course_id']: r['n'] for r in q(
-        "SELECT course_id, COUNT(*) AS n FROM lessons "
-        "WHERE module IS NOT NULL AND module <> '' GROUP BY course_id")}
+    totals = tong_bai_theo_khoa()
 
     # Mẫu số là số bài của KHOÁ LỚP NÀY HỌC, không phải tổng cả ba khoá.
     #

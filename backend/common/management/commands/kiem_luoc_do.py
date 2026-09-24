@@ -25,6 +25,17 @@ Cái giá: mỗi mục phải viết một câu kiểm. Đó là giá đúng —
 người thêm mục phải nói rõ "tới nơi" nghĩa là gì, và một mục không diễn đạt nổi
 điều đó thì cũng không kiểm được bằng tay.
 
+── TỪ 24/09/2026 CÓ CẢ SỔ, VÀ LỆNH NÀY VẪN LÀ THƯỚC ĐO SỰ THẬT (H3) ─────────
+
+`bootstrap_schema` nay ghi sổ `luoc_do_da_chay` để QUYẾT ĐỊNH chạy mục nào — hết
+cảnh dỡ-dựng lại ràng buộc mỗi deploy. Sổ ấy đúng là loại "ghi ý định" nói ở trên,
+nên nó không thay lệnh này: sổ nói "đã chạy" mà ở đây báo ✗ → có người đảo tay →
+`bootstrap_schema --tat-ca`. `bootstrap_schema --dien-tap` gọi lại MỌI dòng dưới
+đây trong một schema tạm, nên mỗi câu kiểm hỏi SCHEMA ĐANG DÙNG (`current_schema()`,
+`::regclass` theo `search_path`) chứ không hỏi cả CSDL — nếu không, `public` "chấm
+đỗ" hộ một mục chưa hề được dựng trong schema ấy. Trên production hai cách hỏi cho
+cùng kết quả (mọi bảng ở `public`).
+
     python manage.py kiem_luoc_do          # in bảng
     python manage.py kiem_luoc_do --ma-loi  # thoát khác 0 nếu có mục CHƯA tới
 
@@ -53,13 +64,15 @@ def _fk(bang, ten, mong):
 
 
 def _chi_muc(ten):
-    r = q1('SELECT 1 AS c FROM pg_indexes WHERE indexname = %s', (ten,))
+    r = q1('SELECT 1 AS c FROM pg_indexes WHERE indexname = %s AND schemaname = current_schema()',
+           (ten,))
     return bool(r), 'chưa có chỉ mục'
 
 
 def _check_co_gia_tri(ten, gia_tri):
     """Ràng buộc CHECK `ten` có liệt kê `gia_tri` không?"""
-    r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = %s",
+    r = q1("""SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint
+              WHERE conname = %s AND connamespace = current_schema()::regnamespace""",
            (ten,))
     if not r:
         return False, 'không có ràng buộc này'
@@ -68,7 +81,8 @@ def _check_co_gia_tri(ten, gia_tri):
 
 def _cot(bang, cot):
     r = q1("""SELECT 1 AS c FROM information_schema.columns
-              WHERE table_name = %s AND column_name = %s""", (bang, cot))
+              WHERE table_schema = current_schema() AND table_name = %s AND column_name = %s""",
+           (bang, cot))
     return bool(r), 'chưa có cột'
 
 

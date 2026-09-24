@@ -38,11 +38,11 @@ Repo đã có sẵn **`render.yaml`** (Blueprint) — không phải cấu hình 
 | `GOOGLE_CLIENT_ID/SECRET` | OAuth Google | bỏ trống nếu chưa dùng |
 | `FACEBOOK_CLIENT_ID/SECRET` | OAuth Facebook | bỏ trống nếu chưa dùng |
 
-3. **Apply** → Render tự: `pip install` → `collectstatic` → `migrate` → chạy `gunicorn`.
+3. **Apply** → Render tự: `pip install` → `collectstatic` → `bootstrap_schema` → `migrate` → chạy `gunicorn`.
    `ALLOWED_HOSTS` tự thêm domain `.onrender.com` (qua `RENDER_EXTERNAL_HOSTNAME`).
 4. Xong → kiểm `https://pe-hsa-backend.onrender.com/health` trả `{"status":"ok"}`.
 
-**Biến không bí mật đã set sẵn trong `render.yaml`:** `DJANGO_ENV=production`, `DJANGO_DEBUG=0`, `PYTHON_VERSION=3.12.7`, `WEB_CONCURRENCY=2`, `ENABLE_KEEPALIVE=1`, `DB_POOL_MIN=2`, `DB_POOL_MAX=14`.
+**Biến không bí mật đã set sẵn trong `render.yaml`:** `DJANGO_ENV=production`, `DJANGO_DEBUG=0`, `PYTHON_VERSION=3.12.7`, `ENABLE_KEEPALIVE=1`, `DB_POOL_MIN=2`, `DB_POOL_MAX=14`. `render.yaml` khai ĐỦ tên mọi biến backend đọc (guard `backend/common/tests_cau_hinh.py`); biến `sync: false` có mặc định trong mã thì để trống được. Vận hành hằng ngày (deploy, lược đồ, lùi bản): `docs/VAN_HANH.md`.
 
 ---
 

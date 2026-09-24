@@ -13,10 +13,10 @@ services:
     autoDeploy: true
     branch: master
     healthCheckPath: /health        # đã cho retry (không 500 khi Neon cold)
-    # bootstrap_schema là nguồn DDL DUY NHẤT cho 20+ bảng legacy (managed=False,
-    # `migrate` không đụng tới). Trước đây chạy tay, nên mỗi lần thêm bảng mới là
-    # một lần mã lên production trước schema. Lệnh idempotent (CREATE ... IF NOT
-    # EXISTS) nên chạy mọi lần deploy là an toàn và bỏ hẳn bước thủ công đó.
+    # bootstrap_schema là nguồn DDL DUY NHẤT cho các bảng SQL thô (managed=False,
+    # `migrate` không đụng tới), và phải chạy TRƯỚC migrate. Từ 24/09/2026 (H3) nó
+    # ghi sổ `luoc_do_da_chay` và chỉ chạy mục mới/đổi — mỗi mục một giao dịch, mục
+    # hỏng thì build đỏ và bản cũ vẫn phục vụ. Xem docs/VAN_HANH.md.
     buildCommand: >-
       pip install -r requirements.txt &&
       python manage.py collectstatic --noinput &&
@@ -29,9 +29,18 @@ services:
     # DeepSeek (I/O); thread gthread rất rẻ, còn CPU vẫn là GIL từng worker.
     # Pool CSDL là per-process (settings.DATABASES), 12 thread/worker vẫn dưới
     # max_size. Không tăng worker: 512 MB của gói free.
+    #
+    # MỌI thông số gunicorn nằm Ở ĐÂY (H2, 24/09/2026). Tới hôm ấy còn
+    # `backend/gunicorn.conf.py` — gunicorn tự nạp tệp ấy từ thư mục chạy (rootDir),
+    # nên nó là nguồn THỨ HAI, ghi số khác (threads 8, timeout 30) mà dòng lệnh đè
+    # mất, còn hai giá trị nó đặt thật (`keepalive 5`, `graceful_timeout 20`) thì
+    # không ai thấy. Hai giá trị ấy chuyển lên đây, tệp đã xoá; `WEB_CONCURRENCY`
+    # cũng thôi khai (gunicorn đọc nó làm mặc định, `--workers` đè) — nếu dashboard
+    # còn biến ấy thì vô hại. Guard: `backend/common/tests_cau_hinh.py`.
     startCommand: >-
       gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
       --workers 2 --threads 12 --timeout 60
+      --graceful-timeout 20 --keep-alive 5
     envVars:
       # ── Không bí mật (commit được) ──
       - key: DJANGO_ENV
@@ -40,8 +49,6 @@ services:
         value: "0"
       - key: PYTHON_VERSION
         value: "3.12.7"             # Render chưa hỗ trợ 3.14; 3.12 có sẵn wheel psycopg
-      - key: WEB_CONCURRENCY
-        value: "2"
       - key: ENABLE_KEEPALIVE
         value: "1"                  # bật luồng ping giữ Neon ấm dưới gunicorn
       - key: DB_POOL_MIN
@@ -69,3 +76,38 @@ services:
         sync: false
       - key: FACEBOOK_CLIENT_SECRET
         sync: false
+      - key: PROXY_SHARED_SECRET
+        sync: false                 # ≥ 16 ký tự, TRÙNG PE_PROXY_SECRET bên Vercel (common/net.py)
+      - key: EMAIL_USER
+        sync: false                 # gmail gửi thư (quên mật khẩu, báo cáo phụ huynh)
+      - key: EMAIL_APP_PASSWORD
+        sync: false                 # App Password 16 ký tự của gmail ấy
+      - key: ZALO_OA_ACCESS_TOKEN
+        sync: false                 # hoãn (cần giấy phép kinh doanh) — trống = không gửi ZNS
+      - key: ZALO_ZNS_TEMPLATE_ID
+        sync: false
+      - key: REDIS_URL
+        sync: false                 # trống = bộ đệm/giới hạn tần suất riêng từng worker (T40)
+      # ── CÓ MẶC ĐỊNH TRONG MÃ — chỉ đặt khi cần đổi ──
+      # `sync: false` cả ở đây, không `value:`: Blueprint GHI ĐÈ giá trị trên dashboard
+      # bằng `value:` mỗi lần đồng bộ, còn biến `sync: false` thêm vào Blueprint đang
+      # chạy thì Render BỎ QUA (render.com/docs/blueprint-spec). Khai tên để tệp này
+      # là danh sách ĐỦ mọi biến backend đọc, mà không đổi giá trị nào đang chạy.
+      - key: ALLOWED_HOSTS
+        sync: false                 # mặc định localhost; Render tự cộng RENDER_EXTERNAL_HOSTNAME
+      - key: NUM_PROXIES
+        sync: false                 # mặc định 1 ở production (docs/VIEC_CUA_ANH.md Phần 3)
+      - key: DEEPSEEK_MODEL
+        sync: false                 # mặc định deepseek-v4-pro — ĐỪNG đặt deepseek-chat (A7)
+      - key: DEEPSEEK_MODEL_ANH
+        sync: false                 # mặc định deepseek-flash (lượt có ảnh)
+      - key: DEEPSEEK_THINKING
+        sync: false                 # mặc định 0
+      - key: DEEPSEEK_BASE_URL
+        sync: false                 # mặc định https://api.deepseek.com
+      - key: EMAIL_HOST
+        sync: false                 # mặc định smtp.gmail.com
+      - key: EMAIL_PORT
+        sync: false                 # mặc định 587
+      - key: EMAIL_TU_TEN
+        sync: false                 # mặc định TopHSA (tên hiện trong hộp thư người nhận)

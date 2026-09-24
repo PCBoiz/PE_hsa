@@ -1,10 +1,20 @@
 -- ============================================================================
--- legacy_schema.sql — DDL đầy đủ 22 bảng nền của ProgrammingEdu (bản HSA)
+-- legacy_schema.sql — DDL các bảng SQL thô (managed=False) của pe_hsa: 22 bảng nền
+-- (§1–§22, chép từ bản gốc ProgrammingEdu) + mọi mục cộng thêm từ §23.
 -- Nguồn chuẩn: model pe_hsa (inspectdb_snapshot.py + app models.py) — phản chiếu
 -- 100% schema production. DEFAULT lấy từ db/schema.py (PE_test) cho đúng hành vi
 -- raw-SQL đã port. KHÔNG kèm bất kỳ seed nội dung nào (seed HSA nằm ở seed_data).
 -- Thứ tự bảng theo phụ thuộc FK (bảng được tham chiếu tạo trước).
 -- Idempotent: CREATE ... IF NOT EXISTS. Bỏ 'playing_with_neon' (bảng demo Neon).
+--
+-- CHẠY THEO MỤC (H3, 24/09/2026): `bootstrap_schema` chia tệp theo dòng tiêu đề và
+-- ghi sổ `luoc_do_da_chay` — mỗi deploy chỉ chạy mục MỚI hoặc ĐỔI câu lệnh (sửa chú
+-- thích không tính), cùng MỌI mục đứng sau nó; mỗi mục một giao dịch.
+-- MỤC MỚI: thêm ở CUỐI tệp, tiêu đề đúng mẫu `-- ── §NN · TIÊU ĐỀ (ngày) ──`, số
+-- CHƯA dùng (số là tên, không phải thứ tự — §58–§61 giữ chỗ được nằm sau §62; trùng
+-- số / tiêu đề sai mẫu thì lệnh DỪNG). Mọi câu vẫn phải chạy lại được: mục chạy lại
+-- khi nó hoặc một mục trước nó đổi, khi `--tat-ca`, và trên CSDL mới. Sửa tại chỗ một
+-- mục cũ → nó và mọi mục sau chạy lại. Đủ luật: docs/VAN_HANH.md §2; mã: common/luoc_do_sql.py.
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -811,7 +821,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_time
 -- (Đúng lỗi đã mắc hôm nay: thêm hằng ở Python, quên `CHECK` ở đây.)
 --
 -- SỬA 18/09/2026 — thêm 'Biên tập nội dung' vào CHÍNH câu này, cho giống hệt §44.
--- Tệp này chạy lại TỪ ĐẦU mỗi lần deploy, và `ADD CONSTRAINT` kiểm lại mọi dòng
+-- Tệp này chạy lại TỪ ĐẦU mỗi lần deploy (tới H3 24/09/2026; nay mục này chạy lại
+-- khi nó hoặc mục trước nó đổi, và khi `--tat-ca`), và `ADD CONSTRAINT` kiểm lại mọi dòng
 -- đang có. Bản năm vai trò ở đây chạy TRƯỚC khi §44 nới lên sáu, tức một luật CŨ
 -- áp lên dữ liệu MỚI: đo 18/09 trên Neon (giao dịch cuộn lại), có một tài khoản
 -- Biên tập nội dung là câu này ném CheckViolation → bootstrap_schema `raise` →
@@ -991,11 +1002,12 @@ ALTER TABLE surveys ADD CONSTRAINT surveys_user_fk
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS id SERIAL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_class_members_dang_hoc
     ON class_members(class_id, user_id) WHERE left_at IS NULL;
--- CASCADE (24/09/2026): câu này chạy lại MỖI deploy, mà khoá ngoại tự tham chiếu
+-- CASCADE (24/09/2026): câu này từng chạy lại MỖI deploy (nay: khi §36 hoặc mục trước nó
+-- đổi, `--tat-ca`, CSDL mới — H3), mà khoá ngoại tự tham chiếu
 -- `class_members_transferred_to_fk` (§55) phụ thuộc khoá chính — không CASCADE thì lần
 -- bootstrap THỨ HAI sau §55 dừng ở đây (agent bỏ-thi bắt trên nhánh dev). Khoá ngoại ấy
--- được §55 gắn lại ở CUỐI tệp trong cùng lượt; khoá ngoại MỚI nào trỏ vào
--- `class_members(id)` cũng phải khai SAU dòng này, nếu không nó mất sau mỗi deploy.
+-- được §55 gắn lại vì mọi mục SAU mục chạy lại đều chạy lại; khoá ngoại MỚI nào trỏ vào
+-- `class_members(id)` cũng phải khai SAU dòng này, nếu không nó mất mỗi lần §36 chạy lại.
 ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_pkey CASCADE;
 ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
 
@@ -1767,12 +1779,15 @@ ALTER TABLE class_members ADD CONSTRAINT class_members_transfer_reason_check
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
 
 -- ── §57 · BỎ THI THỬ, PHA A: DỮ LIỆU HIỂN THỊ (24/09/2026) ──────────────────
+-- chạy: mỗi lượt
+-- (Thẻ trên, 25/09: mã CŨ còn chạy trong lúc deploy sinh lại dòng mang chữ thi — đo trên
+-- nhánh dev: `u55219_generated` — nên mục này tự chữa ở MỌI lượt như trước H3.)
 -- Anh Sơn chốt 24/09: "Bỏ mọi thứ về thi, giữ ngày thi HSA". Pha A tháo tuyến thi
 -- (`config/urls.py`) và GIỮ mọi bảng. Mục này chỉ UPDATE những dòng mang chữ thi
 -- thử mà học viên còn nhìn thấy (nhiệm vụ ngày, chặng lộ trình). Không DDL nào.
 --
 -- IDEMPOTENT theo WHERE: mỗi câu chỉ khớp dòng CÒN chữ cũ, nên lần deploy sau
--- (Render chạy lại cả tệp) khớp 0 dòng. Đo trên nhánh dev 24/09 trước khi viết:
+-- (lượt chạy lại mục này: `--tat-ca`, sửa một mục trước nó — H3) khớp 0 dòng. Đo trên nhánh dev 24/09 trước khi viết:
 -- `daily_mock` đang bật, 2 dòng `user_missions` trỏ tới nó (nên TẮT, không xoá),
 -- 6/6 lộ trình mang "Luyện đề tổng (CBT)" với đúng hai bản mô tả cũ dưới đây
 -- (bản mẫu `seed_data` ghi "+", bản dựng từ khảo sát ghi "và").

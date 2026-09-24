@@ -65,6 +65,7 @@ from rest_framework.views import APIView
 from common.clock import local_now
 from common.db import q, q1
 from common.permissions import IsAdminRole, IsTeachingStaff, can_see_class, is_assistant
+from courses.truy_cap import LOP_DANG_HOC
 from teaching import reports
 from teaching.admin_users import any_user_filter, build_user_filters
 from teaching.attendance import dem_theo_hoc_vien, ti_le
@@ -647,6 +648,8 @@ class AdminUsersCsvView(APIView):
         # Thứ tự sắp xếp cũng phải giống màn hình (`lower(coalesce(name,''))`),
         # không phải `name NULLS LAST`. Cùng một tập người mà xếp hai kiểu thì
         # trợ giảng dò từng dòng để đối chiếu tệp với bảng sẽ nhảy loạn.
+        # Cột lớp: CÙNG mệnh đề "lớp đang học" với cột Lớp của màn hình (1.4b) —
+        # lớp đã huỷ không còn là lớp em đang theo học.
 
         rows = q('''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
                            u.created_at, u.password_changed_at, u.must_change_password,
@@ -654,10 +657,10 @@ class AdminUsersCsvView(APIView):
                                               ' · ' ORDER BY c.name)
                               FROM class_members m
                               JOIN classes c ON c.id = m.class_id
-                             WHERE m.user_id = u.id AND m.left_at IS NULL) AS classes
+                             WHERE m.user_id = u.id AND %s) AS classes
                     FROM users u
                     WHERE %s
-                    ORDER BY lower(coalesce(u.name, '')), u.id''' % where, params)
+                    ORDER BY lower(coalesce(u.name, '')), u.id''' % (LOP_DANG_HOC, where), params)
 
         header = ['Họ tên', 'Email', 'Số điện thoại', 'Vai trò', 'Trạng thái',
                   'Lớp đang theo học', 'Ngày tạo', 'Đã đổi mật khẩu chưa']
