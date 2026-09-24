@@ -102,6 +102,7 @@ const VIEC: Record<string, string> = {
   'course.update': 'Sửa khoá học',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
+  'course.publish': 'Mở / chuyển nháp khoá học',
   'lesson.create': 'Thêm bài học',
   'lesson.update': 'Sửa thông tin bài',
   'lesson.delete': 'Xoá bài học',

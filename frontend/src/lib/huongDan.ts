@@ -436,6 +436,10 @@ export const HUONG_DAN: readonly Bai[] = [
     buoc: [
       { lam: 'Mở khu Giáo trình.', o: '/giao-trinh' },
       { lam: 'Chọn khoá, bấm "Mở bài" để xem danh sách bài của khoá ấy.' },
+      {
+        lam: 'Khoá chưa sẵn sàng cho học viên thì bấm "Chuyển về nháp"; soạn xong bấm "Mở cho học viên". Cột "Trạng thái" cho biết khoá đang mở hay nháp.',
+        luu_y: 'Khoá nháp biến mất với MỌI học viên ngay lập tức, kể cả học viên của lớp đang học khoá ấy. Giảng viên và học vụ vẫn xem được.',
+      },
       { lam: 'Bấm "Soạn nội dung" ở bài cần sửa. Bài mới thêm bằng ô "Thêm bài mới" phía trên danh sách.' },
       {
         lam: 'Cần nhập cả khoá một lần thì bấm "Nhập từ file JSON".',

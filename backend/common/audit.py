@@ -114,6 +114,10 @@ COURSE_CREATE = 'course.create'
 COURSE_UPDATE = 'course.update'
 COURSE_DELETE = 'course.delete'
 COURSE_IMPORT = 'course.import'
+#: Trạng thái khoá "Đang mở / Nháp" (V-i, bảng TopHSA dòng 5, 25/09/2026). Tách khỏi
+#: `COURSE_UPDATE` vì hậu quả khác hẳn: chuyển về nháp là mọi học viên của khoá mất bài
+#: NGAY. `detail` giữ `cu` + `moi` để trả lời "ai đóng khoá này, lúc nào".
+COURSE_PUBLISH = 'course.publish'
 LESSON_CREATE = 'lesson.create'
 LESSON_UPDATE = 'lesson.update'
 LESSON_DELETE = 'lesson.delete'

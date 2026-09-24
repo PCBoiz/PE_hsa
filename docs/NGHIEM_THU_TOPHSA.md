@@ -132,7 +132,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | **Tiến trình theo số buổi kèm tên bài**, chia theo buổi | CHƯA | không có bảng khung chương trình → **E1** |
 | Thời lượng buổi | MỘT PHẦN | có ở LỚP (sinh lịch), không ở khoá → **E1** |
 | Gán khoá cho lớp | CÓ | `classes.course_id` |
-| Trạng thái khoá | MỘT PHẦN | `is_published` có nhưng không sửa được → **V-i** |
+| Trạng thái khoá | CÓ (V-i) | nút "Chuyển về nháp / Mở cho học viên" + cột Trạng thái ở khu Giáo trình (`courseadmin/views.py`, nhật ký `course.publish`); cổng `courses/truy_cap.py` giấu khoá nháp với học viên NGAY (quên đệm), nhân sự vẫn xem — `courses/tests_khoa_nhap.py` |
 | Phiên bản / lịch sử chỉnh sửa chương trình | CHƯA | → **E1** (bản nháp / xuất bản, lớp giữ bản đã nhận) |
 | Gắn bài giảng | CÓ | bài học trực tuyến |
 | Gắn video record | MỘT PHẦN | link theo buổi, học viên không thấy → **V-l**, **E4** |

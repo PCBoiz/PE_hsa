@@ -305,6 +305,13 @@ export const VIEC: readonly Viec[] = [
     lopQuyen: 'IsContentEditor',
     nguon: 'courseadmin/views.py::AdminBase',
   },
+  {
+    nhom: 'Nội dung',
+    nhan: 'Mở khoá học cho học viên / chuyển về nháp',
+    giaiThich: 'Khoá nháp: học viên không thấy, kể cả học viên của lớp đang học khoá ấy. Giảng viên và học vụ vẫn xem được.',
+    lopQuyen: 'IsContentEditor',
+    nguon: 'courseadmin/views.py::AdminBase',   // AdminCourseDetailView kế thừa cổng này
+  },
   // "Nhập và xuất bản đề thi thử" (`mockexam/quan_tri.py`) GỠ 24/09/2026 — bỏ thi,
   // pha A: tuyến của khu soạn đề đã tháo, không vai nào còn làm được việc ấy.
 ] as const;

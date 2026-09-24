@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from common.clock import local_now
 from common.db import q, q1, x
 from common.views import NguoiDungView
-from courses.truy_cap import HOC, quyen_khoa
+from courses.truy_cap import HOC, an_voi, quyen_khoa
 
 _ICONS = {'cpp': '📘', 'htmlcss': '📗', 'python': '📙', 'java': '📕'}
 
@@ -104,6 +104,8 @@ class CoursesView(NguoiDungView):
         quyen = quyen_khoa(request.user)
         result = []
         for d in rows:
+            if an_voi(request.user, d):
+                continue          # khoá NHÁP: học viên không thấy (V-i, 25/09/2026)
             d['access'] = quyen.get(d['id'])
             d['enrolled'] = d['access'] is not None
             d['accentColor'] = d.pop('accent_color')
@@ -136,7 +138,8 @@ class CourseDetailView(NguoiDungView):
                        FROM course_ratings GROUP BY course_id) dg ON dg.course_id = c.id
             WHERE c.id = %s
         ''', (request.user.id, course_id))
-        if not row:
+        if not row or an_voi(request.user, row):
+            # Khoá NHÁP với học viên: cùng câu 404 như khoá không tồn tại (V-i).
             return Response({'error': {'status': 404, 'message': 'Không tìm thấy khoá học'}}, status=404)
         row['access'] = quyen_khoa(request.user).get(row['id'])
         row['enrolled'] = row['access'] is not None
@@ -179,7 +182,7 @@ class CoursesEnrolledView(NguoiDungView):
         rows = q('''
             SELECT c.id, c.title, c.subtitle, c.description, c.image, c.level,
                    c.duration, c.students, c.lessons,
-                   c.color, c.accent_color, c.tag,
+                   c.color, c.accent_color, c.tag, c.is_published,
                    -- ĐIỂM SAO LẤY TỪ `course_ratings`, KHÔNG lấy `c.rating` (L15, 31/08/2026).
             -- `courses.rating` là con số SEED: cả ba khoá đang là 5.0 trong khi
             -- `course_ratings` RỖNG — tức mọi trang khoá khoe "5.0 ★" mà chưa một
@@ -202,6 +205,8 @@ class CoursesEnrolledView(NguoiDungView):
         courses_list = []
         enrolled_list = []
         for d in rows:
+            if an_voi(request.user, d):
+                continue          # khoá NHÁP: học viên không thấy (V-i)
             d['access'] = quyen.get(d['id'])
             enrolled = d['access'] is not None
             accent_color = d.pop('accent_color')
