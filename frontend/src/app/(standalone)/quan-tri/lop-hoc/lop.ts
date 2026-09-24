@@ -68,6 +68,18 @@ export const TRANG_THAI: Record<string, { nhan: string; tone: 'good' | 'neutral'
 export const LOAI_LOP: Record<string, string> = { nhom: 'Lớp nhóm', gia_su: 'Gia sư' };
 
 /**
+ * Lý do rời lớp — `teaching/vocab.py::LEAVE_REASONS` + `chuaGhi` (NULL: chưa ai ghi,
+ * `teaching/overview.py` báo riêng, không đoán). Trang Tổng quan đọc bảng này (1.4a).
+ * `LopHocClient.tsx::LY_DO` còn giữ bản chép ba nhãn đầu — gộp về đây khi sửa tệp ấy.
+ */
+export const NHAN_LY_DO_ROI: Record<string, string> = {
+  completed: 'Học xong',
+  dropped: 'Bỏ giữa chừng',
+  transferred: 'Chuyển lớp',
+  chuaGhi: 'Chưa ghi lý do',
+};
+
+/**
  * Bảng trường DUY NHẤT: khoá trong biểu mẫu ↔ khoá trong `LopRow` ↔ khoá trong
  * thân request. Ba tên khác nhau cho cùng một thứ là chuyện có thật ở đây
  * (`course` / `courseTitle` / `course_id`), nên chúng phải nằm cùng một dòng.

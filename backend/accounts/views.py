@@ -17,6 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.ghi_nho import cap_refresh, muon_ghi_nho
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
+from accounts.hoat_dong import danh_dau
 from accounts.validators import (
     validate_email_field,
     validate_name_field,
@@ -147,6 +148,11 @@ class LoginView(APIView):
         if (user.get('status') or 'active') != 'active':
             return Response({'error': 'Tài khoản này đã được trung tâm khoá. '
                                       'Liên hệ TopHSA nếu bạn cần mở lại.'}, status=403)
+
+        # §56 — SAU cả hai hàng rào trên: sai mật khẩu hay tài khoản đã khoá thì
+        # người ấy chưa vào, và không được rời danh sách "lâu không vào" chỉ vì
+        # đã thử đăng nhập. Xem `accounts/hoat_dong.py`.
+        danh_dau(user['id'])
 
         needs_questionnaire = _can_khao_sat(user)
         return Response({

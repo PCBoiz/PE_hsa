@@ -116,3 +116,27 @@ def test_hop_dong_danh_sach_lop_gon(admin_api):
     """`/api/admin/classes/options` — ô chọn lớp ở màn Tài khoản lặp qua `classes`."""
     co = _khoa(admin_api.get('/api/admin/classes/options'))
     assert 'classes' in co, 'thiếu `classes`: %s' % sorted(co)
+
+
+@pytest.mark.django_db
+def test_hop_dong_tong_quan_v2(admin_api):
+    """`/api/admin/overview` (1.4a, 24/09/2026) — bốn thẻ mới của Tổng quan. Màn hình
+    khai các khoá này là TUỲ CHỌN (Vercel và Render deploy lệch nhau), nên mất khoá
+    thì thẻ lặng lẽ biến mất thay vì báo lỗi — chỉ phép kiểm này thấy."""
+    r = admin_api.get('/api/admin/overview')
+    co = _khoa(r)
+    thieu = {'classes', 'classesTotal', 'terms', 'summary', 'thresholds',
+             'roiLop', 'giangVien', 'taiKhoanNgu', 'generatedAt'} - co
+    assert not thieu, 'thiếu khoá màn hình đang đọc: %s (nhận: %s)' % (thieu, sorted(co))
+    d = r.data
+    assert {'classesByType', 'activeNoTeacher', 'overCapacity', 'dropAlarm',
+            'incomplete'} <= set(d['summary']), sorted(d['summary'])
+    assert {'tu', 'den', 'tong', 'theoLyDo', 'theoLoai', 'theoThang', 'ds'} <= set(d['roiLop'])
+    assert {'nguong', 'hocVien', 'nhanSu', 'doTu', 'ds'} <= set(d['taiKhoanNgu'])
+    assert {'tong', 'chuaTungVao'} <= set(d['taiKhoanNgu']['hocVien'])
+    assert isinstance(d['giangVien'], list)
+    if d['giangVien']:
+        assert {'teacherId', 'name', 'buoiDaDay', 'daDiemDanh', 'chuaDiemDanh',
+                'diemDanhMuon', 'tiLe'} <= set(d['giangVien'][0]), d['giangVien'][0]
+    if d['classes']:
+        assert {'classType', 'activeLearners7d'} <= set(d['classes'][0])

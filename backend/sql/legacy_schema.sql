@@ -1746,3 +1746,16 @@ CREATE INDEX IF NOT EXISTS idx_class_members_transferred_to
 ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_transfer_reason_check;
 ALTER TABLE class_members ADD CONSTRAINT class_members_transfer_reason_check
     CHECK (transferred_to IS NULL OR leave_reason = 'transferred');
+
+-- ── §56 · LẦN CUỐI THẤY TÀI KHOẢN (24/09/2026) ─────────────────────────────
+-- Ghi chú họp TopHSA: học vụ cần biết "bao nhiêu tài khoản lâu không hoạt động".
+-- Tới hôm nay chỉ có `learning_events` để đoán — mà nhân sự gần như không sinh sự
+-- kiện học nào, và một em đăng nhập xem lịch rồi thoát cũng không để lại dấu gì.
+--
+-- Đóng dấu lúc ĐĂNG NHẬP (mật khẩu + OAuth) và lúc LÀM MỚI token, KHÔNG ở mỗi
+-- request (`accounts/hoat_dong.py`): access token sống 30 phút nên người đang dùng
+-- được đóng dấu lại ít nhất nửa giờ một lần — đủ mịn cho mốc 7/14/30 ngày, và
+-- không biến mọi lượt đọc thành một lượt GHI vào bảng `users`.
+-- NULL = chưa thấy lần nào KỂ TỪ khi cột này có (không phải "chưa từng vào").
+-- Giờ Việt Nam, naive — cùng quy ước `common/clock.py::local_now`.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;

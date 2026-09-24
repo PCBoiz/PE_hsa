@@ -4,6 +4,20 @@ import { Card, CardHead, Chip, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr }
 import { serverJson } from '@/lib/server-api';
 import { z } from 'zod';
 
+import {
+  GIANG_VIEN,
+  KyXem,
+  LOP_THEO_LOAI,
+  ROI_LOP,
+  TAI_KHOAN_NGU,
+  TheDiemDanh,
+  TheLop,
+  TheRoiLop,
+  TheTaiKhoanNgu,
+  gioCapNhat,
+  type GiangVien,
+  type TaiKhoanNgu,
+} from './TheTongQuan';
 import { ViecCanLam, type Viec } from './ViecCanLam';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +26,11 @@ export const metadata = { title: 'Toàn trung tâm | TopHSA' };
 /* HÌNH DẠNG phản hồi `/api/admin/overview` (`teaching/overview.py::tong_quan`).
    Kiểu TS suy ra từ đây — một nguồn, không phải một kiểu tay cạnh một hình dạng.
    `looseObject`: máy chủ thêm khoá thì màn hình không hỏng; thiếu khoá màn hình
-   ĐỌC mới là lỗi (T18 mức 2, 14/09/2026). */
+   ĐỌC mới là lỗi (T18 mức 2, 14/09/2026).
+   Khoá của 1.4a (24/09/2026) đều `.optional()`: Vercel và Render deploy riêng, trang
+   mới gặp máy chủ cũ thì thẻ mới không vẽ, phần cũ vẫn chạy. Cột thi thử nay cũng
+   tuỳ chọn và KHÔNG vẽ nữa (bỏ thi, kế hoạch 1.5) — máy chủ gỡ chúng thì trang này
+   không vỡ. */
 const so = z.number();
 const soHoacTrong = z.number().nullable();
 const LOP_ROW = z.looseObject({
@@ -33,10 +51,15 @@ const LOP_ROW = z.looseObject({
   sessionsMarked: so,
   sessionsUnmarked: so,
   attendedPct: soHoacTrong,
-  lessonsDone: so,
+  /* `null` khi máy chủ không đọc được học tập (`overview.py` trả None, không 0) —
+     khai `so` như trước thì CẢ TRANG báo lỗi hình dạng đúng lúc một câu tra hỏng. */
+  lessonsDone: soHoacTrong,
   progressPct: soHoacTrong,
-  mockCount: so,
-  mockAvg: soHoacTrong,
+  mockCount: soHoacTrong.optional(),
+  mockAvg: soHoacTrong.optional(),
+  classType: z.string().nullable().optional(),
+  teacherId: soHoacTrong.optional(),
+  activeLearners7d: soHoacTrong.optional(),
 });
 const DOT_ROW = z.looseObject({
   termId: soHoacTrong,
@@ -50,7 +73,7 @@ const DOT_ROW = z.looseObject({
   attendedPct: soHoacTrong,
   dropRate: soHoacTrong,
   retentionPct: soHoacTrong,
-  mockAvg: soHoacTrong,
+  mockAvg: soHoacTrong.optional(),
 });
 const HINH_DANG = z.looseObject({
   classes: z.array(LOP_ROW),
@@ -67,9 +90,19 @@ const HINH_DANG = z.looseObject({
     retentionPct: soHoacTrong,
     attendedPct: soHoacTrong,
     sessionsUnmarked: so,
+    classesByType: LOP_THEO_LOAI.optional(),
+    activeNoTeacher: so.optional(),
+    overCapacity: so.optional(),
+    dropAlarm: so.optional(),
     incomplete: z.array(z.string()),
   }),
-  thresholds: z.looseObject({ good: so, alarm: so }),
+  thresholds: z.looseObject({ good: so, alarm: so, lateHours: so.optional() }),
+  classesTotal: so.optional(),
+  /* `null` = máy chủ không đọc được khối ấy (tên nó nằm trong `incomplete`). */
+  roiLop: ROI_LOP.nullable().optional(),
+  giangVien: GIANG_VIEN.nullable().optional(),
+  taiKhoanNgu: TAI_KHOAN_NGU.nullable().optional(),
+  generatedAt: z.string().optional(),
 });
 type LopRow = z.infer<typeof LOP_ROW>;
 type Payload = z.infer<typeof HINH_DANG>;
@@ -77,8 +110,11 @@ type Payload = z.infer<typeof HINH_DANG>;
 const THIEU_NHAN: Record<string, string> = {
   attendance: 'chuyên cần',
   sessions: 'buổi học',
-  study: 'bài học và điểm thi thử',
+  study: 'bài học',
   lessons: 'tổng số bài của khoá',
+  leavers: 'rời lớp',
+  teachers: 'điểm danh của giảng viên',
+  accounts: 'tài khoản lâu không vào',
 };
 
 /** `null` = chưa tính được. Hiện dấu gạch chứ KHÔNG hiện 0 — xem `overview.py`. */
@@ -124,6 +160,8 @@ function suyViec(
   s: Payload['summary'],
   lop: LopRow[],
   nguong: Payload['thresholds'],
+  ngu: TaiKhoanNgu | null | undefined,
+  gv: GiangVien | null | undefined,
 ): Viec[] {
   const ra: Viec[] = [];
 
@@ -150,23 +188,27 @@ function suyViec(
     });
   }
 
-  const chuaGV = lop.filter((c) => c.status === 'active' && !c.teacherName);
-  if (chuaGV.length > 0) {
+  /* Ba số đếm lớp dưới đây lấy từ `summary` khi máy chủ có (1.4a): mảng `lop` nay
+     bị cắt còn 50 dòng, đếm trên nó là HỤT đúng lúc trung tâm đông lớp nhất. Máy
+     chủ cũ không trả thì đếm trên mảng như trước — lúc ấy mảng còn đủ. */
+  const soChuaGV =
+    s.activeNoTeacher ?? lop.filter((c) => c.status === 'active' && !c.teacherName).length;
+  if (soChuaGV > 0) {
     ra.push({
       nang: 'gap',
       icon: 'users',
-      chu: `${chuaGV.length} lớp đang chạy chưa phân công giảng viên`,
+      chu: `${soChuaGV} lớp đang chạy chưa phân công giảng viên`,
       phu: 'Không có giảng viên thì không ai điểm danh và không ai giao bài cho lớp đó.',
       href: '/quan-tri/lop-hoc',
     });
   }
 
-  const quaTai = lop.filter((c) => c.capacity != null && c.active > c.capacity);
-  if (quaTai.length > 0) {
+  const soQuaTai = s.overCapacity ?? lop.filter((c) => c.capacity != null && c.active > c.capacity).length;
+  if (soQuaTai > 0) {
     ra.push({
       nang: 'nhac',
       icon: 'graduation-cap',
-      chu: `${quaTai.length} lớp đã vượt sĩ số`,
+      chu: `${soQuaTai} lớp đã vượt sĩ số`,
       phu: 'Xếp thêm học viên vào lớp đầy là lý do bỏ giữa chừng hay gặp nhất.',
       href: '/quan-tri/lop-hoc',
     });
@@ -176,16 +218,48 @@ function suyViec(
      ngược nhau, nên phải lật: giữ chân dưới 70% tức bỏ từ 30% trở lên. Viết
      phép lật ra thay vì ghi thẳng 30: ngưỡng do máy chủ cấp, và một con số
      chép tay ở đây sẽ không đổi theo khi bên kia đổi. */
-  const dangRoi = lop.filter(
-    (c) => c.status === 'active' && c.dropRate !== null && c.dropRate >= 100 - nguong.alarm,
-  );
-  if (dangRoi.length > 0) {
+  const soDangRoi =
+    s.dropAlarm ??
+    lop.filter((c) => c.status === 'active' && c.dropRate !== null && c.dropRate >= 100 - nguong.alarm)
+      .length;
+  if (soDangRoi > 0) {
     ra.push({
       nang: 'nhac',
       icon: 'bar-chart',
-      chu: `${dangRoi.length} lớp có tỉ lệ bỏ giữa chừng đáng lo`,
+      chu: `${soDangRoi} lớp có tỉ lệ bỏ giữa chừng đáng lo`,
       phu: `Giữ chân dưới ${nguong.alarm}% thường là dấu hiệu hỏng ở khâu đón học viên hoặc chất lượng dạy.`,
       href: '/quan-tri/lop-hoc',
+    });
+  }
+
+  /* Học viên lâu không vào (1.4a). Mốc lấy từ mảng `nguong` máy chủ gửi (mốc
+     GIỮA — 14 ngày theo `NGUONG_NGU`), không gõ lại số: 7 ngày là quá sớm để gọi
+     điện (nghỉ một tuần thi học kỳ là thường), 30 ngày thì thường đã muộn. */
+  const mocNgu = ngu ? (ngu.nguong[1] ?? ngu.nguong[0]) : undefined;
+  const soNgu = ngu && mocNgu !== undefined ? (ngu.hocVien[`d${mocNgu}`] ?? 0) : 0;
+  if (soNgu > 0) {
+    ra.push({
+      nang: 'nhac',
+      icon: 'user',
+      chu: `${soNgu} học viên ≥${mocNgu} ngày không vào`,
+      phu: 'Nghỉ càng lâu càng khó quay lại — nên gọi hỏi thăm sớm.',
+      href: '#tai-khoan-ngu',
+    });
+  }
+
+  /* Điểm danh MUỘN trong kỳ xem (1.4a) — số đã xảy ra, không sửa lại được, nên chỉ
+     là "nên làm": nhắc giảng viên. Cộng trên mảng `giangVien` là cộng ĐỦ — máy
+     chủ không cắt mảng ấy. Chuyên cần trong báo cáo phụ huynh chỉ đếm buổi ĐÃ
+     điểm danh (`parent_report._chuyen_can`), nên báo cáo lập trước lúc tick là
+     thiếu đúng buổi ấy. */
+  const soMuon = (gv ?? []).reduce((a, g) => a + g.diemDanhMuon, 0);
+  if (soMuon > 0) {
+    ra.push({
+      nang: 'nhac',
+      icon: 'clock',
+      chu: `${soMuon} buổi điểm danh muộn trong kỳ`,
+      phu: 'Nhắc giảng viên điểm danh ngay sau buổi — báo cáo gửi phụ huynh lấy số từ đây.',
+      href: '#diem-danh-gv',
     });
   }
 
@@ -198,20 +272,30 @@ function suyViec(
  * Mọi báo cáo trước hôm nay dừng ở cấp lớp. Quản lý học vụ muốn biết lớp nào
  * đang rơi thì phải mở từng lớp rồi tự cộng trong đầu.
  *
- * Trang này KHÔNG phát minh chỉ số mới: nó cuộn đúng ba thứ mà báo cáo lớp đã
- * đo cho từng em — chuyên cần, tiến độ bài, điểm thi thử — lên cấp lớp rồi cấp
- * đợt. Nhờ vậy con số quản lý nhìn thấy và con số giảng viên nhìn thấy luôn
- * truy được về cùng một gốc; nếu hai bên lệch nhau thì đó là lỗi chứ không phải
- * "hai cách tính".
+ * Trang này KHÔNG phát minh chỉ số mới: nó cuộn những thứ mà báo cáo lớp đã
+ * đo cho từng em — chuyên cần, tiến độ bài — lên cấp lớp rồi cấp đợt (điểm thi
+ * thử thôi vẽ từ 24/09/2026: trung tâm bỏ thi thử). Nhờ vậy con số quản lý nhìn
+ * thấy và con số giảng viên nhìn thấy luôn truy được về cùng một gốc; nếu hai bên
+ * lệch nhau thì đó là lỗi chứ không phải "hai cách tính".
+ *
+ * 1.4a (24/09/2026) thêm bốn thẻ cho bốn câu của ghi chú họp TopHSA — xem
+ * `TheTongQuan.tsx`.
  */
 export default async function TongQuanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ term_id?: string }>;
+  searchParams: Promise<{ term_id?: string; tu?: string; den?: string }>;
 }) {
-  const { term_id } = await searchParams;
+  const { term_id, tu, den } = await searchParams;
+  /* `tu`/`den` = kỳ xem của "Rời lớp" và "Điểm danh" (form GET ở `KyXem`). Chuyển
+     nguyên cho máy chủ — nó kiểm dạng ngày và trả câu lỗi tiếng Việt khi sai. */
+  const qs = new URLSearchParams();
+  for (const [k, v] of [['term_id', term_id], ['tu', tu], ['den', den]] as const) {
+    if (v) qs.set(k, v);
+  }
+  const chuoi = qs.toString();
   const kq = await serverJson<Payload>(
-    `/api/admin/overview${term_id ? `?term_id=${encodeURIComponent(term_id)}` : ''}`,
+    `/api/admin/overview${chuoi ? `?${chuoi}` : ''}`,
     { requireAuth: true },
     HINH_DANG,
   );
@@ -229,7 +313,9 @@ export default async function TongQuanPage({
   }
 
   const { classes: lop, terms: dot, summary: s, thresholds: nguong } = kq.data;
-  const viec = suyViec(s, lop, nguong);
+  const { roiLop, giangVien, taiKhoanNgu, generatedAt } = kq.data;
+  const tongLop = kq.data.classesTotal ?? lop.length;
+  const viec = suyViec(s, lop, nguong, taiKhoanNgu, giangVien);
 
   return (
     <div className="flex flex-col gap-5">
@@ -246,6 +332,13 @@ export default async function TongQuanPage({
         <CardHead
           title="Hôm nay cần làm gì"
           hint="Việc còn tồn, xếp theo thứ tự việc nào đang làm sai con số bên dưới."
+          action={
+            /* "Báo cáo realtime" của khách: trang không bộ đệm (force-dynamic +
+               no-store), mốc này là giờ MÁY CHỦ tính số — tải lại là số mới. */
+            generatedAt ? (
+              <p className="text-small text-ink-3">Cập nhật lúc {gioCapNhat(generatedAt)}</p>
+            ) : undefined
+          }
         />
 
         {/* Mảng dữ liệu KHÔNG đọc được. Đứng trên cả danh sách việc: khi máy
@@ -302,6 +395,30 @@ export default async function TongQuanPage({
             hiện hai lần là người ta làm xong một lần rồi tưởng còn sót. */}
       </Card>
 
+      {/* ── BỐN CÂU CỦA GHI CHÚ HỌP (1.4a) ─────────────────────────────────────
+          Hàng trên là HIỆN TRẠNG (lớp, tài khoản); hàng dưới theo KỲ XEM (rời lớp,
+          điểm danh) nên form kỳ xem nằm ngay trên nó. Thẻ nào máy chủ không trả
+          (máy chủ cũ, hoặc khối ấy hỏng — tên đã nằm trong dòng "Chưa đọc được"
+          ở trên) thì không vẽ. */}
+      {(s.classesByType || taiKhoanNgu) && (
+        <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
+          {s.classesByType && <TheLop theoLoai={s.classesByType} termId={term_id} />}
+          {taiKhoanNgu && (
+            <TheTaiKhoanNgu t={taiKhoanNgu} homNay={(generatedAt ?? '').slice(0, 10)} />
+          )}
+        </div>
+      )}
+
+      {(roiLop || giangVien) && (
+        <div className="flex flex-col gap-3">
+          {roiLop && <KyXem tu={roiLop.tu} den={roiLop.den} termId={term_id} />}
+          <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
+            {roiLop && <TheRoiLop r={roiLop} />}
+            {giangVien && <TheDiemDanh gv={giangVien} gioMuon={nguong.lateHours} />}
+          </div>
+        </div>
+      )}
+
       {dot.length > 1 && (
         <Card>
           <CardHead
@@ -309,7 +426,7 @@ export default async function TongQuanPage({
             hint={`Giữ chân từ ${nguong.good}% trở lên là khoẻ; dưới ${nguong.alarm}% là cần xem lại.`}
             chiTiet="Giữ chân thấp thường do khâu đón học viên, chất lượng dạy hoặc học phí."
           />
-          <TableWrap caption="So sánh các đợt học: giữ chân, chuyên cần và điểm thi thử">
+          <TableWrap caption="So sánh các đợt học: giữ chân và chuyên cần">
             <Thead>
               <tr>
                 <Th>Đợt</Th>
@@ -317,7 +434,6 @@ export default async function TongQuanPage({
                 <Th align="right">Đang học</Th>
                 <Th align="right">Giữ chân</Th>
                 <Th align="right">Chuyên cần</Th>
-                <Th align="right">Điểm thi thử TB</Th>
               </tr>
             </Thead>
             <Tbody>
@@ -340,9 +456,6 @@ export default async function TongQuanPage({
                   <Td label="Chuyên cần" num>
                     {pct(d.attendedPct)}
                   </Td>
-                  <Td label="Điểm thi thử TB" num>
-                    {pct(d.mockAvg)}
-                  </Td>
                 </Tr>
               ))}
             </Tbody>
@@ -351,14 +464,18 @@ export default async function TongQuanPage({
       )}
 
       <Card>
-        <CardHead title={`Từng lớp (${lop.length})`} />
+        <CardHead
+          title={tongLop > lop.length ? `Từng lớp (${lop.length}/${tongLop})` : `Từng lớp (${lop.length})`}
+          /* Máy chủ cắt còn 50 lớp, xếp lớp CẦN NHÌN lên đầu (`overview._xep_van_de`). */
+          hint={tongLop > lop.length ? 'Lớp cần xem lên đầu. Đủ danh sách ở mục Lớp học.' : undefined}
+        />
         {lop.length === 0 ? (
           <EmptyState
             title="Chưa có lớp nào"
             hint="Tạo lớp ở mục Lớp học rồi xếp học viên vào. Số liệu tự có khi lớp bắt đầu học."
           />
         ) : (
-          <TableWrap caption="Từng lớp của trung tâm: sĩ số, buổi đã dạy, chuyên cần, tiến độ, điểm thi thử">
+          <TableWrap caption="Từng lớp của trung tâm: sĩ số, buổi đã dạy, chuyên cần, tiến độ, số em học trong 7 ngày">
             <Thead>
               <tr>
                 <Th>Lớp</Th>
@@ -367,7 +484,7 @@ export default async function TongQuanPage({
                 <Th align="right">Buổi đã dạy</Th>
                 <Th align="right">Chuyên cần</Th>
                 <Th align="right">Tiến độ</Th>
-                <Th align="right">Điểm thi thử</Th>
+                <Th align="right">Học 7 ngày</Th>
                 <Th align="right">Bỏ giữa chừng</Th>
               </tr>
             </Thead>
@@ -404,8 +521,10 @@ export default async function TongQuanPage({
                   <Td label="Tiến độ" num>
                     {pct(c.progressPct)}
                   </Td>
-                  <Td label="Điểm thi thử" num>
-                    {pct(c.mockAvg)}
+                  <Td label="Học 7 ngày" num>
+                    {/* Số em đang học có hoạt động học trong 7 ngày / sĩ số đang học.
+                        Máy chủ cũ không trả → dấu gạch, không đoán 0. */}
+                    {c.activeLearners7d == null ? '—' : `${c.activeLearners7d}/${c.active}`}
                   </Td>
                   <Td label="Bỏ giữa chừng" num>
                     {pct(c.dropRate)}

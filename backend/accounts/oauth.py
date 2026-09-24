@@ -16,6 +16,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts.hoat_dong import danh_dau
 from common.db import q1, x
 from common.identity import norm_email
 
@@ -85,6 +86,7 @@ def oauth_complete(request):
     if not request.user.is_authenticated:
         return HttpResponseRedirect(f'{settings.FRONTEND_URL}/login?error=oauth_failed')
     refresh = RefreshToken.for_user(request.user)
+    danh_dau(request.user.id)          # §56 — xem accounts/hoat_dong.py
     # Fragment (#) thay vì query (?): token không lọt vào access log/Referer
     return HttpResponseRedirect(
         f'{settings.FRONTEND_URL}/auth/callback'

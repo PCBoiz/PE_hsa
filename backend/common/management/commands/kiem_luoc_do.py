@@ -159,6 +159,7 @@ MUC = [
      lambda: _chi_muc('idx_class_members_transferred_to')),
     ('§55d', 'CHECK chỉ lượt "transferred" mới được trỏ',
      lambda: _check_co_gia_tri('class_members_transfer_reason_check', 'transferred')),
+    ('§56', 'users.last_seen_at (lần cuối thấy tài khoản)', lambda: _cot('users', 'last_seen_at')),
 ]
 
 

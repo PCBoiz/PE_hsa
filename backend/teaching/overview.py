@@ -24,27 +24,51 @@ tài liệu về hệ thống thông tin học sinh của ModernCampus):
    chúng lên cấp lớp rồi cấp đợt — KHÔNG phát minh chỉ số mới, để con số trung
    tâm nhìn thấy và con số giảng viên nhìn thấy luôn truy được về cùng một gốc.
 
+── V2 (1.4a, 24/09/2026): BỐN CÂU HỎI CỦA GHI CHÚ HỌP ────────────────────
+TopHSA hỏi: "hiện nay bao nhiêu lớp học, bao nhiêu rời lớp, giáo viên điểm danh,
+bao nhiêu tài khoản lâu không hoạt động". Mỗi câu một khối trong phản hồi:
+  · `summary.classesByType` — lớp NHÓM / GIA SƯ (§54) theo trạng thái;
+  · `roiLop` — rời lớp trong KỲ XEM (`tu`..`den`), theo lý do, theo loại lớp,
+    6 tháng gần nhất và 50 dòng mới nhất;
+  · `giangVien` — từng giảng viên: buổi đã dạy / đã điểm danh / chưa / muộn;
+  · `taiKhoanNgu` — tài khoản đang mở không hoạt động 7/14/30 ngày (§56).
+Bảng từng lớp nay xếp LỚP CẦN NGƯỜI NHÌN lên đầu và cắt còn 50 dòng ở cửa API
+(TopHSA có ~400 lớp gia sư); mọi con số đếm vẫn tính trên TOÀN BỘ lớp.
+
 ── SỐ CÂU TRUY VẤN LÀ THIẾT KẾ ──────────────────────────────────────────────
-Hàm này chạy ĐÚNG 5 câu, không phụ thuộc số lớp. Gọi `class_report` cho từng lớp
-sẽ là 6 câu × N lớp — hai chục lớp là 120 lượt tới Neon cho một màn hình. Đó
-chính là cái ngân sách vòng gọi ghi ở đầu `teaching/admin_users.py`.
+Hàm này chạy TỐI ĐA 8 câu, không phụ thuộc số lớp (có phép kiểm đếm câu với 2 và
+20 lớp: `tests_tong_quan.py`). Gọi `class_report` cho từng lớp sẽ là 6 câu × N
+lớp — hai chục lớp là 120 lượt tới Neon cho một màn hình. Đó chính là cái ngân
+sách vòng gọi ghi ở đầu `teaching/admin_users.py`. Hai khối v2 dùng một CTE rồi
+đọc nó HAI lần trong CÙNG một câu (`json_agg`) — tách hai câu là tính lại CTE
+(đắt nhất ở tài khoản ngủ: một MAX sự kiện cho từng người) và thêm một vòng gọi.
+
+── LUÔN TƯƠI ────────────────────────────────────────────────────────────────
+Không bộ đệm nào ở cả hai phía: trang `force-dynamic`, `serverFetch` gọi với
+`cache: 'no-store'`, và phản hồi mang `generatedAt` để màn hình ghi "Cập nhật
+lúc …" — "báo cáo realtime" của khách nghĩa là mở trang là số của lúc ấy.
 
 ── KHÔNG ĐỌC ĐƯỢC THÌ NÓI, KHÔNG VIẾT 0 ─────────────────────────────────────
 Cùng luật với `reports.py`: mảng nào hỏng thì tên nó vào `incomplete`, và tỉ lệ
 tính không được thì trả `None` chứ không phải 0. Một bảng điều khiển trung tâm
 hiện "tỉ lệ bỏ học 0%" vì câu tra hỏng là thứ nguy hiểm hơn hẳn một màn hình lỗi.
+Ba khối v2 cũng vậy: hỏng thì khối ấy là `None` và tên nó vào `incomplete`.
 """
 import logging
+from datetime import date, timedelta
 
 from django.db import DatabaseError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.clock import local_now
-from common.db import q
+from common.clock import local_now, local_today
+from common.db import q, q1
+from common.events import KIND_ATTENDANCE
 from common.permissions import IsAdminOrAcademic
+from stats.goals import as_date
 from teaching.attendance import KHONG_TINH, ti_le
-from teaching.vocab import chi_hoc_vien
+from teaching.sessions import DEFAULT_SESSION_MINUTES
+from teaching.vocab import LEAVE_REASONS, LOAI_LOP, TRANG_THAI_LOP, chi_hoc_vien
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +77,19 @@ logger = logging.getLogger(__name__)
 #: doanh, và giả định thì phải nhìn thấy được mới bàn lại được.
 GIU_CHAN_TOT = 80
 GIU_CHAN_BAO_DONG = 70
+
+#: Mốc "lâu không hoạt động" (ngày), tăng dần. Mốc ĐẦU cũng là ngưỡng vào danh
+#: sách từng em. Màn hình vẽ cột theo mảng này, không gõ lại con số.
+NGUONG_NGU = (7, 14, 30)
+#: Điểm danh MUỘN = ghi sau khi buổi KẾT THÚC quá bấy nhiêu giờ. Đo từ kết thúc
+#: chứ không từ bắt đầu: buổi 3 tiếng tick lúc tan lớp không phải là muộn.
+TRE_DIEM_DANH_GIO = 24
+#: Cửa API cắt bảng từng lớp còn bấy nhiêu dòng (xếp lớp cần nhìn lên đầu).
+TRAN_BANG_LOP = 50
+#: Độ dài hai danh sách từng dòng (rời lớp, tài khoản ngủ).
+TRAN_DANH_SACH = 50
+#: Số tháng của dải "rời lớp theo tháng", tháng cuối là tháng của `den`.
+SO_THANG = 6
 
 
 def _mot_phan_tram(tu, mau):
@@ -72,17 +109,58 @@ def _mot_phan_tram(tu, mau):
     return round(tu * 100 / mau) if mau else None
 
 
-def tong_quan(term_id=None):
+def _xep_van_de(c):
+    """Khoá xếp bảng từng lớp: lớp CẦN NGƯỜI NHÌN lên đầu.
+
+    Bảng bị cắt còn `TRAN_BANG_LOP` dòng ở cửa API, nên thứ tự quyết định lớp nào
+    còn nằm trên màn hình. Theo đúng thứ tự khối "Hôm nay cần làm gì" ở màn hình:
+    việc làm SAI CON SỐ trước (buổi chưa điểm danh, lớp chưa có giảng viên, rời
+    lớp chưa ghi lý do), rồi việc chỉ đáng lo (vượt sĩ số, tỉ lệ bỏ cao). Lớp đã
+    kết thúc/huỷ xuống cuối — ở đó không còn gì để làm hôm nay.
+    """
+    dang_chay = c['status'] == 'active'
+    return (
+        not dang_chay,
+        -c['sessionsUnmarked'],
+        not (dang_chay and c['teacherId'] is None),
+        -c['leftUnknown'],
+        not (c['capacity'] is not None and c['active'] > c['capacity']),
+        -(c['dropRate'] or 0),
+        (c['name'] or '').lower(),
+    )
+
+
+def _dau_thang_lui(ngay, so_thang):
+    """Ngày 1 của tháng cách tháng của `ngay` về trước `so_thang` tháng."""
+    nam, thang = ngay.year, ngay.month - so_thang
+    while thang < 1:
+        thang += 12
+        nam -= 1
+    return date(nam, thang, 1)
+
+
+def tong_quan(term_id=None, tu=None, den=None, tran_lop=None):
     """Số liệu toàn trung tâm, gộp theo lớp rồi theo đợt. Trả dict.
 
-    ``term_id`` lọc theo một đợt; None = mọi lớp.
+    ``term_id`` lọc theo một đợt; None = mọi lớp (tài khoản ngủ thì luôn là toàn
+    trung tâm — tài khoản không thuộc đợt nào).
+    ``tu``/``den`` (date) — KỲ XEM của "rời lớp" và "điểm danh"; mặc định từ đầu
+    tháng của ``den`` tới hôm nay, cả ngày ``den`` được tính.
+    ``tran_lop`` — cắt bảng từng lớp còn N dòng; None = đủ (các phép kiểm dò lớp
+    của chính mình theo id nên cần đủ). Số đếm luôn tính trên MỌI lớp.
     """
+    nay = local_now()
+    den = den or nay.date()
+    tu = tu or den.replace(day=1)
     thieu = []
     dieu_kien, args = ['TRUE'], []
     if term_id is not None:
         dieu_kien.append('c.term_id = %s')
         args.append(term_id)
     where = ' AND '.join(dieu_kien)
+    # Cùng bộ lọc, dạng THAM SỐ CÓ TÊN cho các câu v2 — ba câu ấy có nhiều tham
+    # số, và thứ tự `%s` lệch một ô là lọc sai lặng lẽ chứ không báo lỗi.
+    loc_lop = 'c.term_id = %(term_id)s' if term_id is not None else 'TRUE'
 
     # ── Câu 1: lớp + đợt + ghi danh, tách theo lý do rời lớp ────────────────
     #
@@ -95,7 +173,7 @@ def tong_quan(term_id=None):
     # một lớp mới mở mà quản trị viên vào xem trước khi xếp học viên là đúng cảnh đó.
     lop = q('''SELECT c.id, c.code, c.name, c.status, c.course_id, c.capacity,
                       c.term_id, t.name AS term_name, t.code AS term_code,
-                      u.name AS teacher_name,
+                      c.class_type, c.teacher_id, u.name AS teacher_name,
                       COUNT(m.id) FILTER (WHERE hv AND m.left_at IS NULL)    AS dang_hoc,
                       COUNT(m.id) FILTER (WHERE hv)                           AS tung_ghi_danh,
                       COUNT(m.id) FILTER (WHERE hv
@@ -151,13 +229,13 @@ def tong_quan(term_id=None):
                           FROM class_sessions
                           WHERE class_id = ANY(%s) AND status NOT IN (''' + khong + ''')
                             AND starts_at <= %s
-                          GROUP BY class_id''', (ids, local_now())):
+                          GROUP BY class_id''', (ids, nay)):
                 buoi[r['class_id']] = r
         except DatabaseError:
             logger.error('[overview] KHÔNG đọc được buổi học')
             thieu.append('sessions')
 
-    # ── Câu 4: học tập gộp theo lớp (bài xong + điểm thi thử) ───────────────
+    # ── Câu 4: học tập gộp theo lớp (bài xong + điểm thi thử + học 7 ngày) ──
     hoc = {}
     if ids:
         try:
@@ -188,22 +266,35 @@ def tong_quan(term_id=None):
             #    trên lớp mẫu "Tăng tốc HSA cuối tuần".
             #
             # KHÔNG áp bộ lọc khoá cho ĐỀ THI THỬ: một lượt thi thử là bài thi cả
-            # ba hợp phần HSA, không thuộc riêng khoá nào.
+            # ba hợp phần HSA, không thuộc riêng khoá nào. (Cột thi thử còn trả để
+            # màn hình CŨ không vỡ khi hai bên deploy lệch nhau; màn hình mới thôi
+            # vẽ nó — gỡ hẳn cùng việc bỏ thi, mục 1.5 của kế hoạch 24/09.)
+            #
+            # `hoc_7` (1.4a): số em đang học có sự kiện học trong 7 ngày qua —
+            # thay cột thi thử trên màn hình. Cùng định nghĩa "hoạt động" với
+            # `tai_khoan_ngu` (bỏ điểm danh, bỏ sự kiện ở tương lai); xem đó.
             for r in q('''SELECT m.class_id,
                                  COUNT(*) FILTER (WHERE e.kind = 'lesson'
                                               AND (c.course_id IS NULL
                                                    OR e.course_id = c.course_id)) AS bai,
                                  COUNT(*) FILTER (WHERE e.kind = 'mock')    AS luot_de,
                                  AVG(e.score * 100.0 / NULLIF(e.max_score, 0))
-                                     FILTER (WHERE e.kind = 'mock')         AS diem_tb
+                                     FILTER (WHERE e.kind = 'mock')         AS diem_tb,
+                                 COUNT(DISTINCT m.user_id) FILTER (
+                                     WHERE e.kind <> %(dd)s AND e.occurred_at > %(moc7)s
+                                       AND e.occurred_at <= %(nay)s)       AS hoc_7
                           FROM class_members m
                           JOIN users u ON u.id = m.user_id
                           JOIN classes c ON c.id = m.class_id
                           JOIN learning_events e ON e.user_id = m.user_id
-                          WHERE m.class_id = ANY(%s) AND m.left_at IS NULL
+                          WHERE m.class_id = ANY(%(ids)s) AND m.left_at IS NULL
                             AND ''' + chi_hoc_vien('u') + '''
-                            AND e.kind IN ('lesson','mock')
-                          GROUP BY m.class_id''', (ids,)):
+                            AND (e.kind IN ('lesson','mock')
+                                 OR (e.kind <> %(dd)s AND e.occurred_at > %(moc7)s
+                                     AND e.occurred_at <= %(nay)s))
+                          GROUP BY m.class_id''',
+                       {'ids': ids, 'dd': KIND_ATTENDANCE, 'nay': nay,
+                        'moc7': nay - timedelta(days=7)}):
                 hoc[r['class_id']] = r
         except DatabaseError:
             logger.error('[overview] KHÔNG đọc được dữ liệu học tập')
@@ -237,7 +328,9 @@ def tong_quan(term_id=None):
         roi_co_ly_do = (r['hoc_xong'] or 0) + (r['bo_giua'] or 0)
         ra_lop.append({
             'id': r['id'], 'code': r['code'], 'name': r['name'], 'status': r['status'],
+            'classType': r['class_type'],
             'termId': r['term_id'], 'termName': r['term_name'], 'termCode': r['term_code'],
+            'teacherId': r['teacher_id'],
             'teacherName': r['teacher_name'], 'capacity': r['capacity'],
             'active': r['dang_hoc'] or 0,
             'enrolledEver': r['tung_ghi_danh'] or 0,
@@ -260,6 +353,7 @@ def tong_quan(term_id=None):
             'lessonsDone': None if hong_hoc_tap else (h.get('bai') or 0),
             'progressPct': (None if hong_hoc_tap
                             else _mot_phan_tram(h.get('bai') or 0, mau_bai)),
+            'activeLearners7d': None if hong_hoc_tap else (h.get('hoc_7') or 0),
             'mockCount': None if hong_hoc_tap else (h.get('luot_de') or 0),
             'mockAvg': round(float(h['diem_tb'])) if h.get('diem_tb') is not None else None,
         })
@@ -300,34 +394,299 @@ def tong_quan(term_id=None):
         })
     dot.sort(key=lambda x: (x['termId'] is None, -(x['termId'] or 0)))
 
+    # ── Lớp theo loại × trạng thái (§54) ────────────────────────────────────
+    # Khoá lấy từ từ vựng (`vocab`), không từ dữ liệu: loại chưa có lớp nào vẫn
+    # hiện số 0 — "0 lớp gia sư" là một câu trả lời, thiếu dòng thì không phải.
+    theo_loai = {k: dict({'total': 0}, **{s: 0 for s in TRANG_THAI_LOP}) for k in LOAI_LOP}
+    for c in ra_lop:
+        o = theo_loai.setdefault(c['classType'] or 'nhom',
+                                 dict({'total': 0}, **{s: 0 for s in TRANG_THAI_LOP}))
+        o['total'] += 1
+        o[c['status']] = o.get(c['status'], 0) + 1
+
+    # ── Ba khối v2 — mỗi khối hỏng riêng, nói riêng ─────────────────────────
+    try:
+        roi_lop = _roi_lop(loc_lop, term_id, tu, den)
+    except DatabaseError:
+        logger.error('[overview] KHÔNG đọc được rời lớp', exc_info=True)
+        thieu.append('leavers')
+        roi_lop = None
+    try:
+        giang_vien = _diem_danh_giang_vien(loc_lop, term_id, tu, den, nay, ra_lop)
+    except DatabaseError:
+        logger.error('[overview] KHÔNG đọc được điểm danh của giảng viên', exc_info=True)
+        thieu.append('teachers')
+        giang_vien = None
+    try:
+        ngu = tai_khoan_ngu()
+    except DatabaseError:
+        logger.error('[overview] KHÔNG đọc được tài khoản không hoạt động', exc_info=True)
+        thieu.append('accounts')
+        ngu = None
+
     tong_ghi_danh = sum(c['enrolledEver'] for c in ra_lop)
     tong_xong = sum(c['completed'] for c in ra_lop)
     tong_bo = sum(c['dropped'] for c in ra_lop)
     tong_comat = sum((cham_can.get(c['id']) or {}).get('co_mat') or 0 for c in ra_lop)
     tong_tick = sum((cham_can.get(c['id']) or {}).get('tick') or 0 for c in ra_lop)
+    dang_chay = [c for c in ra_lop if c['status'] == 'active']
+    summary = {
+        'classCount': len(ra_lop),
+        'activeClasses': len(dang_chay),
+        'classesByType': theo_loai,
+        'active': sum(c['active'] for c in ra_lop),
+        'enrolledEver': tong_ghi_danh,
+        'completed': tong_xong,
+        'dropped': tong_bo,
+        'leftUnknown': sum(c['leftUnknown'] for c in ra_lop),
+        'dropRate': _mot_phan_tram(tong_bo, tong_xong + tong_bo),
+        'retentionPct': _mot_phan_tram(tong_xong, tong_xong + tong_bo),
+        'attendedPct': _mot_phan_tram(tong_comat, tong_tick),
+        'sessionsUnmarked': sum(c['sessionsUnmarked'] for c in ra_lop),
+        # Ba số dưới đây màn hình từng tự đếm trên mảng `classes`. Nay mảng ấy bị
+        # cắt còn `TRAN_BANG_LOP` dòng, nên đếm phía màn hình sẽ HỤT lặng lẽ đúng
+        # lúc trung tâm đông lớp nhất — đếm ở đây, trên mọi lớp.
+        'activeNoTeacher': sum(1 for c in dang_chay if c['teacherId'] is None),
+        'overCapacity': sum(1 for c in ra_lop
+                            if c['capacity'] is not None and c['active'] > c['capacity']),
+        # Giữ chân dưới ngưỡng báo động ⇔ bỏ giữa chừng từ (100 − ngưỡng)% trở lên.
+        'dropAlarm': sum(1 for c in dang_chay
+                         if c['dropRate'] is not None
+                         and c['dropRate'] >= 100 - GIU_CHAN_BAO_DONG),
+        'incomplete': thieu,
+    }
+
+    ra_lop.sort(key=_xep_van_de)
     return {
-        'classes': ra_lop,
+        'classes': ra_lop if tran_lop is None else ra_lop[:tran_lop],
+        'classesTotal': len(ra_lop),
         'terms': dot,
-        'summary': {
-            'classCount': len(ra_lop),
-            'activeClasses': sum(1 for c in ra_lop if c['status'] == 'active'),
-            'active': sum(c['active'] for c in ra_lop),
-            'enrolledEver': tong_ghi_danh,
-            'completed': tong_xong,
-            'dropped': tong_bo,
-            'leftUnknown': sum(c['leftUnknown'] for c in ra_lop),
-            'dropRate': _mot_phan_tram(tong_bo, tong_xong + tong_bo),
-            'retentionPct': _mot_phan_tram(tong_xong, tong_xong + tong_bo),
-            'attendedPct': _mot_phan_tram(tong_comat, tong_tick),
-            'sessionsUnmarked': sum(c['sessionsUnmarked'] for c in ra_lop),
-            'incomplete': thieu,
-        },
-        'thresholds': {'good': GIU_CHAN_TOT, 'alarm': GIU_CHAN_BAO_DONG},
+        'summary': summary,
+        # `lateHours`: màn hình in ngưỡng "muộn" từ đây, không gõ lại số 24.
+        'thresholds': {'good': GIU_CHAN_TOT, 'alarm': GIU_CHAN_BAO_DONG,
+                       'lateHours': TRE_DIEM_DANH_GIO},
+        'roiLop': roi_lop,
+        'giangVien': giang_vien,
+        'taiKhoanNgu': ngu,
+        # Giờ VN, naive — màn hình in nguyên giờ này, không quy đổi múi giờ.
+        'generatedAt': nay.isoformat(timespec='seconds'),
     }
 
 
+def _roi_lop(loc_lop, term_id, tu, den):
+    """Học viên rời lớp trong kỳ ``tu``..``den`` (cả ngày ``den``) — MỘT câu.
+
+    `left_at` là mốc; chỉ HỌC VIÊN (`chi_hoc_vien`) — cùng luật đếm với câu 1, nên
+    số ở đây và số `completed`/`dropped` của bảng lớp đếm cùng một tập người.
+    Lý do NULL = "chưa ghi" — báo riêng, không đoán (xem `vocab.trang_thai`).
+
+    CTE `roi` lấy khoảng RỘNG hơn kỳ xem (tới đầu dải 6 tháng) và đọc hai lần: một
+    lần gộp theo (tháng, loại lớp, lý do, trong-kỳ?) — ≤ vài chục dòng dù trung tâm
+    lớn cỡ nào — và một lần lấy 50 dòng mới nhất TRONG kỳ.
+    """
+    dau_dai = _dau_thang_lui(den, SO_THANG - 1)
+    r = q1('''WITH roi AS (
+                  SELECT m.id, m.user_id, m.class_id, m.left_at, m.leave_reason,
+                         c.name AS class_name, c.class_type, u.name AS user_name
+                  FROM class_members m
+                  JOIN classes c ON c.id = m.class_id
+                  JOIN users u ON u.id = m.user_id
+                  WHERE m.left_at >= %(tu_rong)s AND m.left_at < %(den_sau)s
+                    AND ''' + chi_hoc_vien('u') + ''' AND ''' + loc_lop + '''
+              )
+              SELECT
+                (SELECT COALESCE(json_agg(n), '[]'::json) FROM (
+                    SELECT to_char(left_at, 'YYYY-MM') AS thang, class_type AS loai,
+                           leave_reason AS ly_do, left_at >= %(tu)s AS trong_ky,
+                           COUNT(*) AS so
+                    FROM roi GROUP BY 1, 2, 3, 4) n) AS nhom,
+                (SELECT COALESCE(json_agg(d ORDER BY d.left_at DESC, d.id DESC), '[]'::json)
+                 FROM (SELECT id, user_id, user_name, class_id, class_name, class_type,
+                              left_at, to_char(left_at, 'YYYY-MM-DD') AS left_on, leave_reason
+                       FROM roi WHERE left_at >= %(tu)s
+                       ORDER BY left_at DESC, id DESC LIMIT %(tran)s) d) AS ds''',
+           {'tu_rong': min(tu, dau_dai), 'den_sau': den + timedelta(days=1), 'tu': tu,
+            'term_id': term_id, 'tran': TRAN_DANH_SACH})
+
+    rong = {**{k: 0 for k in LEAVE_REASONS}, 'chuaGhi': 0}
+    theo_ly_do, theo_loai = dict(rong), {k: 0 for k in LOAI_LOP}
+    thang = {}
+    for i in range(SO_THANG):
+        k = _dau_thang_lui(den, SO_THANG - 1 - i).strftime('%Y-%m')
+        thang[k] = {'thang': k, 'tong': 0, **rong}
+    for n in r['nhom']:
+        ly = n['ly_do'] if n['ly_do'] in LEAVE_REASONS else 'chuaGhi'
+        if n['trong_ky']:
+            theo_ly_do[ly] += n['so']
+            theo_loai[n['loai']] = theo_loai.get(n['loai'], 0) + n['so']
+        t = thang.get(n['thang'])
+        if t is not None:        # dòng trước dải 6 tháng (kỳ xem dài hơn) không vào dải
+            t[ly] += n['so']
+            t['tong'] += n['so']
+    return {
+        'tu': tu.isoformat(), 'den': den.isoformat(),
+        'tong': sum(theo_ly_do.values()),
+        'theoLyDo': theo_ly_do,
+        'theoLoai': theo_loai,
+        'theoThang': list(thang.values()),
+        'ds': [{'id': d['id'], 'userId': d['user_id'], 'name': d['user_name'],
+                'classId': d['class_id'], 'className': d['class_name'],
+                'classType': d['class_type'], 'leftOn': d['left_on'],
+                'reason': d['leave_reason']} for d in r['ds']],
+    }
+
+
+def _diem_danh_giang_vien(loc_lop, term_id, tu, den, nay, ra_lop):
+    """Từng giảng viên: buổi đã dạy trong kỳ, đã/chưa điểm danh, điểm danh MUỘN.
+
+    "Đã dạy" = cùng luật câu 3: không huỷ, đã bắt đầu (`starts_at <= now`), và ở
+    đây thêm: bắt đầu trong kỳ xem. Buổi thuộc về `classes.teacher_id` — giảng
+    viên PHỤ TRÁCH lớp, kể cả khi trợ giảng là người tick (trách nhiệm điểm danh
+    là của lớp). Đổi giảng viên từng buổi (§58, Đợt 2) thì đổi thành
+    COALESCE(buổi, lớp) ở đây.
+
+    MUỘN = `attendance_taken_at` quá `TRE_DIEM_DANH_GIO` giờ sau KẾT THÚC buổi;
+    buổi không ghi độ dài tính `sessions.DEFAULT_SESSION_MINUTES`.
+
+    Giảng viên có lớp đang chạy mà chưa có buổi nào trong kỳ vẫn có dòng (số 0, tỉ
+    lệ None) — "chưa dạy buổi nào" cũng là điều học vụ cần thấy. Buổi của lớp
+    chưa phân công gom vào dòng `teacherId = None`.
+    """
+    khong = ', '.join("'%s'" % t for t in KHONG_TINH)
+    rows = q('''SELECT c.teacher_id, COUNT(*) AS da_day,
+                       COUNT(*) FILTER (WHERE s.attendance_taken_at IS NOT NULL) AS da_tick,
+                       COUNT(*) FILTER (
+                           WHERE s.attendance_taken_at > s.starts_at
+                               + COALESCE(s.duration_minutes, %(phut)s::int) * INTERVAL '1 minute'
+                               + %(tre)s::int * INTERVAL '1 hour') AS muon
+                FROM class_sessions s
+                JOIN classes c ON c.id = s.class_id
+                WHERE s.status NOT IN (''' + khong + ''')
+                  AND s.starts_at >= %(tu)s AND s.starts_at < %(den_sau)s
+                  AND s.starts_at <= %(nay)s
+                  AND ''' + loc_lop + '''
+                GROUP BY c.teacher_id''',
+             {'phut': DEFAULT_SESSION_MINUTES, 'tre': TRE_DIEM_DANH_GIO, 'tu': tu,
+              'den_sau': den + timedelta(days=1), 'nay': nay, 'term_id': term_id})
+
+    # Tên và số lớp lấy từ câu 1 (đã có sẵn, cùng bộ lọc đợt) — không thêm câu.
+    ten, so_lop = {}, {}
+    for c in ra_lop:
+        if c['teacherId'] is not None:
+            ten[c['teacherId']] = c['teacherName']
+        if c['status'] == 'active':
+            so_lop[c['teacherId']] = so_lop.get(c['teacherId'], 0) + 1
+    theo = {r['teacher_id']: r for r in rows}
+    ra = []
+    for k in set(theo) | {k for k in so_lop if k is not None}:
+        r = theo.get(k) or {}
+        da_day, da_tick = r.get('da_day') or 0, r.get('da_tick') or 0
+        ra.append({
+            'teacherId': k, 'name': ten.get(k),
+            'soLop': so_lop.get(k, 0),
+            'buoiDaDay': da_day, 'daDiemDanh': da_tick,
+            'chuaDiemDanh': da_day - da_tick,
+            'diemDanhMuon': r.get('muon') or 0,
+            'tiLe': _mot_phan_tram(da_tick, da_day),
+        })
+    ra.sort(key=lambda g: (-g['chuaDiemDanh'], -g['diemDanhMuon'], g['teacherId'] is None,
+                           (g['name'] or '').lower()))
+    return ra
+
+
+def tai_khoan_ngu(chi_id=None):
+    """Tài khoản ĐANG MỞ lâu không hoạt động — MỘT câu. ``chi_id`` giới hạn tập
+    người (phép kiểm, và màn danh sách học viên 1.4b khi cần cùng định nghĩa).
+
+    HOẠT ĐỘNG = GREATEST(`last_seen_at` §56, sự kiện học gần nhất), với sự kiện học:
+      · BỎ `kind = 'attendance'`: điểm danh là giảng viên ghi cho em, kể cả ghi
+        "vắng" — tính nó thì em đã bỏ học mà giảng viên vẫn đều đặn tick vắng sẽ
+        không bao giờ lọt vào danh sách, đúng em trung tâm cần gọi nhất. (Khác
+        `reports._last_activity` — cột "hoạt động" của giảng viên, trả lời "em còn
+        dính tới lớp không" — nên nó giữ điểm danh; hai câu hỏi khác nhau.)
+      · `occurred_at <= now` — cùng lý do như `reports._last_activity`: sổ điểm
+        danh/tick nhầm buổi tương lai không phải hoạt động.
+    Chưa có cả hai → rơi về `created_at`: tài khoản cấp 60 ngày chưa ai vào là
+    ngủ 60 ngày; cấp hôm qua thì chưa. `created_at` do DEFAULT now() của CSDL ghi
+    (giờ UTC, lệch giờ VN 7 tiếng) — không đáng kể ở mốc tính bằng ngày.
+
+    `last_seen_at` chỉ có từ ngày §56 lên (`doTu` = lần đóng dấu sớm nhất): trước
+    đó, người vào xem mà không làm bài không để lại dấu, nên trong vài tuần đầu
+    số "ngủ" của NHÂN SỰ cao hơn thật. Màn hình ghi "đo từ ngày …" vì vậy.
+
+    `chuaTungVao` = chưa đóng dấu lần nào VÀ chưa có sự kiện học — nghĩa là "chưa
+    thấy vào kể từ `doTu`", không hẳn là chưa từng.
+    """
+    nay = local_now()
+    tham = {'nay': nay, 'hom_nay': nay.date(), 'dd': KIND_ATTENDANCE,
+            'tran': TRAN_DANH_SACH, 'chi_id': list(chi_id or [])}
+    for n in NGUONG_NGU:
+        tham['m%d' % n] = nay - timedelta(days=n)
+    dem = ', '.join('COUNT(*) FILTER (WHERE moc <= %%(m%d)s) AS d%d' % (n, n) for n in NGUONG_NGU)
+    loc = 'u.id = ANY(%(chi_id)s)' if chi_id is not None else 'TRUE'
+    r = q1('''WITH hd AS (
+                  SELECT u.id, u.name, u.student_code, u.last_seen_at,
+                         COALESCE(''' + chi_hoc_vien('u') + ''', FALSE) AS hv,
+                         GREATEST(u.last_seen_at, ev.cuoi) AS thay,
+                         COALESCE(GREATEST(u.last_seen_at, ev.cuoi), u.created_at) AS moc
+                  FROM users u
+                  LEFT JOIN LATERAL (
+                      SELECT MAX(e.occurred_at) AS cuoi FROM learning_events e
+                      WHERE e.user_id = u.id AND e.kind <> %(dd)s AND e.occurred_at <= %(nay)s
+                  ) ev ON TRUE
+                  WHERE u.status = 'active' AND ''' + loc + '''
+              )
+              SELECT
+                (SELECT COALESCE(json_agg(t), '[]'::json) FROM (
+                    SELECT hv, COUNT(*) AS tong, ''' + dem + ''',
+                           COUNT(*) FILTER (WHERE thay IS NULL) AS chua_tung
+                    FROM hd GROUP BY hv) t) AS dem,
+                (SELECT to_char(MIN(last_seen_at), 'YYYY-MM-DD') FROM hd) AS do_tu,
+                (SELECT COALESCE(json_agg(d ORDER BY d.moc, d.id), '[]'::json) FROM (
+                    SELECT h.id, h.name, h.student_code, h.moc,
+                           to_char(h.thay, 'YYYY-MM-DD') AS lan_cuoi,
+                           %(hom_nay)s::date - h.moc::date AS ngay,
+                           (SELECT string_agg(c.name, ', ' ORDER BY c.name)
+                              FROM class_members m JOIN classes c ON c.id = m.class_id
+                             WHERE m.user_id = h.id AND m.left_at IS NULL) AS lop
+                    FROM hd h
+                    WHERE h.hv AND h.moc <= %(m''' + str(NGUONG_NGU[0]) + ''')s
+                    ORDER BY h.moc, h.id LIMIT %(tran)s) d) AS ds''', tham)
+
+    nhom = {True: None, False: None}
+    for t in r['dem']:
+        nhom[bool(t['hv'])] = t
+
+    def _gon(t):
+        t = t or {}
+        return {'tong': t.get('tong') or 0,
+                **{'d%d' % n: t.get('d%d' % n) or 0 for n in NGUONG_NGU},
+                'chuaTungVao': t.get('chua_tung') or 0}
+
+    return {
+        'nguong': list(NGUONG_NGU),
+        'hocVien': _gon(nhom[True]),
+        'nhanSu': _gon(nhom[False]),
+        'doTu': r['do_tu'],
+        'ds': [{'id': d['id'], 'name': d['name'], 'studentCode': d['student_code'],
+                'lop': d['lop'], 'ngay': d['ngay'], 'lanCuoi': d['lan_cuoi']}
+               for d in r['ds']],
+    }
+
+
+def _doc_ngay(raw, ten):
+    """Chuỗi 'YYYY-MM-DD' → (date | None, câu lỗi | None). Rỗng = không lọc."""
+    raw = (raw or '').strip()
+    if not raw:
+        return None, None
+    ngay = as_date(raw)
+    if ngay is None:
+        return None, '%s phải có dạng năm-tháng-ngày, ví dụ 2026-09-01.' % ten
+    return ngay, None
+
+
 class AdminOverviewView(APIView):
-    """GET /api/admin/overview?term_id= — bảng điều khiển toàn trung tâm.
+    """GET /api/admin/overview?term_id=&tu=&den= — bảng điều khiển toàn trung tâm.
 
     `IsAdminOrAcademic` từ 14/09/2026. Quyết định 01/09 (TODO, bảng vai trò)
     ghi học vụ "xem MỌI lớp, báo cáo trung tâm"; hồ sơ gửi TopHSA và bài hướng
@@ -336,15 +695,29 @@ class AdminOverviewView(APIView):
     Rà luồng học vụ trên trình duyệt thật mới lộ: tài liệu nói ba lần một đằng,
     cửa mở một nẻo. Dữ liệu ở đây là số gộp theo lớp/đợt, không có liên lạc
     của em nào — không có lý do riêng tư nào để giữ cửa hẹp hơn quyết định.
+    (1.4a thêm danh sách tên em rời lớp / lâu không vào — vẫn không có liên lạc,
+    và học vụ vốn xem được hồ sơ học viên ở màn Tài khoản.)
+
+    `tu`/`den` = kỳ xem của "rời lớp" và "điểm danh"; mặc định đầu tháng → hôm nay.
     """
     permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
-        raw = (request.query_params.get('term_id') or '').strip()
+        p = request.query_params
+        raw = (p.get('term_id') or '').strip()
         term_id = None
         if raw:
             try:
                 term_id = int(raw)
             except ValueError:
                 return Response({'error': 'Mã đợt học phải là số.'}, status=400)
-        return Response(tong_quan(term_id))
+        tu, loi_tu = _doc_ngay(p.get('tu'), 'Ngày bắt đầu')
+        den, loi_den = _doc_ngay(p.get('den'), 'Ngày kết thúc')
+        if loi_tu or loi_den:
+            return Response({'error': loi_tu or loi_den}, status=400)
+        den = den or local_today()
+        tu = tu or den.replace(day=1)
+        if tu > den:
+            return Response({'error': 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.'},
+                            status=400)
+        return Response(tong_quan(term_id, tu=tu, den=den, tran_lop=TRAN_BANG_LOP))

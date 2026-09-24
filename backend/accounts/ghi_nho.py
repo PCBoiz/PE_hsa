@@ -23,8 +23,10 @@ from datetime import timedelta
 
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
+
+from accounts.hoat_dong import danh_dau
 
 CLAIM_NHO = 'nho'
 HAN_GHI_NHO = timedelta(days=30)
@@ -60,5 +62,20 @@ class LamMoiSerializer(TokenRefreshSerializer):
 
 
 class LamMoiView(TokenRefreshView):
-    """`POST /auth/refresh` — như SimpleJWT, chỉ khác là GIỮ chế độ ghi nhớ khi xoay."""
+    """`POST /auth/refresh` — như SimpleJWT, khác ở hai chỗ: GIỮ chế độ ghi nhớ khi
+    xoay, và đóng dấu §56 `last_seen_at` (`accounts/hoat_dong.py`)."""
     serializer_class = LamMoiSerializer
+
+    def post(self, request, *args, **kwargs):
+        # `TokenViewBase.post` NÉM `InvalidToken` khi refresh hết hạn / đã thu hồi
+        # (DRF dựng 401), chỉ TRẢ VỀ khi đã làm mới xong — nên tới dòng đóng dấu là
+        # thành công, không cần kiểm mã trạng thái (một phép `if status == 200` ở
+        # đây không bao giờ sai: đột biến bỏ nó vẫn xanh, đo 24/09/2026).
+        # `test_lam_moi_hong_khong_dong_dau` canh hành vi ấy qua URL thật.
+        res = super().post(request, *args, **kwargs)
+        # Mã người dùng đọc từ access token VỪA CẤP — `super().post` đã kiểm refresh,
+        # không đọc lại thân request thô. Đây là cửa đóng dấu thường xuyên nhất: phiên
+        # ghi nhớ 30 ngày không đăng nhập lại, thiếu dòng này thì người dùng đều đặn
+        # nhất trông như "ngủ".
+        danh_dau(int(AccessToken(res.data['access'])[api_settings.USER_ID_CLAIM]))
+        return res
