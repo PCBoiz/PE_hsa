@@ -223,8 +223,6 @@ body.dark .coming-soon-note { color: var(--t3); }
 /* #EF4444 trên #FEF2F2 = 3,44:1 (đo 01/09/2026) — đỏ 500 là màu NỀN/BIỂU
    TƯỢNG, không phải màu chữ trên chính nó. #B91C1C (đỏ 700) = 5,98:1 và vẫn
    đọc ra là hành động nguy hiểm. */
-.cd-enroll-btn.unenroll { background: #FEF2F2; color: #B91C1C; border: 1px solid #FEE2E2; }
-.cd-enroll-btn.unenroll:hover { background: #FEE2E2; }
 
 .cd-progress-row { margin-top: 14px; margin-bottom: 16px; }
 .cd-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #6B7280; margin-bottom: 6px; }
@@ -288,7 +286,6 @@ body.dark .cd-includes { border-top-color: #334155; }
 /* bỏ: `--t3` đã tự đổi theo bộ màu — body.dark .cd-includes-title */
 body.dark .cd-inc-item { color: #94A3B8; }
 body.dark .cd-inc-item i { color: #8B7CF6; }
-body.dark .cd-enroll-btn.unenroll { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #F87171; }
 body.dark .cd-progress-label { color: #8B95A8; }  /* #64748B = 3,07:1 */
 body.dark .cd-module-body { background: transparent; }
 

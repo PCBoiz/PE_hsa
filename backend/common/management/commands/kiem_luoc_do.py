@@ -174,6 +174,8 @@ MUC = [
                            WHERE strpos(mermaid_def, 'Luyện đề tổng (CBT)') > 0
                               OR strpos(nodes_json::text, 'Luyện đề tổng (CBT)') > 0
                            LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
+    ('§62a', 'class_members.teacher_comment (nhận xét GV gửi phụ huynh)',
+     lambda: _cot('class_members', 'teacher_comment')),
 ]
 
 

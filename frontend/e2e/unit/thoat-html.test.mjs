@@ -213,8 +213,6 @@ const CHO_PHEP = {
   'dashboard.js::forumSetCmtReaction': 'id số của CSDL + khoá cảm xúc hằng',
   'dashboard.js::forumAddReply': 'id số của CSDL',
   'dashboard.js::window.forumOpenPost && window.forumOpenPost': 'p.id — cột INTEGER',
-  // `courses.id` bị ép slug ở đường ghi (`courseadmin/views.py::_MA_KHOA`).
-  'main.js::toggleEnroll': 'c.id — ép slug ở đường ghi',
   // `searchSuggestions` là mảng hằng khai ở main.js:47.
   'main.js::chooseSearchSuggestion': 'mảng hằng `searchSuggestions` (main.js:47)',
   // `levelSuggestions` khai `[]` ở main.js:48 và KHÔNG dòng nào nạp vào.

@@ -1789,3 +1789,14 @@ UPDATE roadmaps
     OR strpos(nodes_json::text, 'Luyện đề tổng (CBT)') > 0
     OR strpos(nodes_json::text, 'Thi thử đầy đủ 150 câu trên máy, chấm điểm + phân tích.') > 0
     OR strpos(nodes_json::text, 'Thi thử đầy đủ 150 câu trên máy, chấm điểm và phân tích.') > 0;
+
+-- ── §62 · VẬN HÀNH LỚP, MẺ VÁ RẺ (luồng A, kế hoạch v2 25/09/2026) ───────────
+-- §62a · Nhận xét GIẢNG VIÊN gửi phụ huynh, tách khỏi ghi chú NỘI BỘ.
+-- `class_members.note` là ghi chú nội bộ của nhân sự (lý do rời lớp, ghi chú chuyển
+-- lớp ở `teaching/chuyen_lop.py`). Trước 25/09 tờ phụ huynh in thẳng cột ấy thành
+-- "nhận xét của giảng viên" (`parent_report.py`) nên phụ huynh lớp cũ đọc được ghi
+-- chú chuyển lớp. Tờ phụ huynh nay CHỈ đọc `teacher_comment`. KHÔNG chép `note` cũ
+-- sang: đo trên nhánh dev (bản sao production 24/09) có 0 dòng mang `note`.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment    TEXT;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;

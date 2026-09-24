@@ -41,6 +41,8 @@ export const ROI_LOP = z.looseObject({
       classType: chu,
       leftOn: z.string(),
       reason: chu,
+      // optional: web (Vercel) lên trước máy chủ (Render) ~40 phút.
+      sangLop: chu.optional(),
     }),
   ),
 });
@@ -330,7 +332,8 @@ export function TheRoiLop({ r }: { r: RoiLop }) {
                   <span className="min-w-0">
                     <span className="block text-body text-ink">{d.name || `Tài khoản #${d.userId}`}</span>
                     <span className="block text-small text-ink-3">
-                      {d.className} · {NHAN_LY_DO_ROI[d.reason ?? 'chuaGhi'] ?? d.reason}
+                      {d.className}
+                      {d.sangLop ? ` → ${d.sangLop}` : ''} · {NHAN_LY_DO_ROI[d.reason ?? 'chuaGhi'] ?? d.reason}
                     </span>
                   </span>
                   <span className="shrink-0 text-small text-ink-2 tabular-nums">{ngayNgan(d.leftOn)}</span>

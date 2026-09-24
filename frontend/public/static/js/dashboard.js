@@ -347,11 +347,8 @@ function resetCpUI() {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     var cpModal = document.getElementById('changePasswordModal');
-    var unModal = document.getElementById('unenrollModal');
     if (cpModal && cpModal.classList.contains('active'))
       closeChangePasswordModal();
-    if (unModal && unModal.classList.contains('active'))
-      closeUnenrollModal();
   }
 });
 

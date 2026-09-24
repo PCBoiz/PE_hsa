@@ -154,3 +154,17 @@ def test_dong_thoi_gian_hien_mot_su_kien_chuyen(canh):
     assert 'Chuyển từ lớp %s Lop A sang lớp %s Lop B' % (canh['tt'], canh['tt']) in tieu_de, tieu_de
     assert 'Vào lớp %s Lop B' % canh['tt'] not in tieu_de, 'sự kiện chuyển đã nói — không lặp "Vào lớp B"'
     assert 'Vào lớp %s Lop A' % canh['tt'] in tieu_de
+
+
+def test_ghi_chu_chuyen_lop_khong_thanh_nhan_xet_gui_phu_huynh(canh):
+    """Ghi chú chuyển lớp là ghi chú NỘI BỘ của học vụ (ở lại `class_members.note`).
+    Tờ phụ huynh chỉ in nhận xét GIẢNG VIÊN viết cho phụ huynh (`teacher_comment`, §62) —
+    trước 25/09 tờ in thẳng `note`, nên phụ huynh lớp cũ đọc được lý do chuyển lớp."""
+    from teaching.parent_report import dung_bao_cao
+    r = _chuyen(canh['a'], canh['em'], {'to_class_id': canh['b'], 'note': 'Ghi chú nội bộ XYZ'}, canh['hv'])
+    assert r.status_code == 200, r.data
+    hom_nay = local_today()
+    bc, loi = dung_bao_cao(canh['a'], canh['em'].id, hom_nay - timedelta(days=30), hom_nay)
+    assert loi is None, loi
+    assert bc['membership']['teacherNote'] is None, bc['membership']
+    assert _luot(canh['a'], canh['em'])[0]['note'] == 'Ghi chú nội bộ XYZ', 'ghi chú nội bộ vẫn giữ cho nhân sự'
