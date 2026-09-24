@@ -24,10 +24,35 @@ mỗi lượt chỉ chạy mục mới / đổi câu lệnh **cùng mọi mục 
 (`lock_timeout` 5 s, bế tắc / hết giờ chờ khoá thì cuộn lại mục và thử lại). Luật và lý do:
 `backend/common/luoc_do_sql.py`.
 
-**Thêm một mục** — ở CUỐI `legacy_schema.sql`, tiêu đề `-- ── §NN · TIÊU ĐỀ (ngày) ──`, số lớn
-hơn mục cuối. Mọi câu phải chạy lại được (`IF NOT EXISTS`, `DROP … IF EXISTS` rồi `ADD`); không
-`DO $$` (bộ tách câu cắt ở mọi `;`), không `CREATE INDEX CONCURRENTLY` (không chạy trong giao dịch).
-Thêm dòng kiểm cho mục ở `kiem_luoc_do.py`.
+### Viết một mục § MỚI (luật cho mọi nhánh, từ 25/09/2026)
+
+1. **Chỗ**: CUỐI `backend/sql/legacy_schema.sql`, không chen vào giữa. Thứ tự chạy = thứ tự trong
+   tệp; chen giữa là mọi mục sau chỗ chen chạy lại ở deploy kế (an toàn nhưng nặng, và khoá bảng).
+2. **Số**: một số CHƯA dùng. Số là TÊN, không phải thứ tự: §58–§61 đang giữ chỗ cho các nhánh khác
+   và được phép nằm SAU §62 trong tệp. Hai mục cùng số → `bootstrap_schema` DỪNG trước khi chạy gì
+   (gộp hai nhánh cùng lấy một số: đổi số một bên). Đã deploy thì ĐỪNG đổi số một mục: khoá sổ đổi
+   → mục ấy và mọi mục sau chạy lại.
+3. **Tiêu đề** đúng một dòng: `-- ── §62 · TÊN MỤC (25/09/2026) ──`. Dòng trông như tiêu đề mà lệch
+   mẫu (`-- §62 — …`, `-- §62: …`, thiếu `·`) → DỪNG. Câu văn trong chú thích mở đầu bằng "§31 đã…"
+   thì không sao.
+4. **Câu lệnh**: mọi câu chạy lại được (`CREATE … IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, cặp
+   `DROP CONSTRAINT IF EXISTS` + `ADD CONSTRAINT`, `UPDATE … WHERE <chỉ dòng còn cũ>`) — mục chạy lại
+   khi nó hoặc một mục TRƯỚC nó đổi, khi `--tat-ca`, và trên CSDL mới. Câu cuối có `;`. Không
+   `DO $$` (bộ tách câu cắt ở mọi `;`), không `CREATE INDEX CONCURRENTLY` (không chạy được trong giao
+   dịch). Không nhắc tới bảng do `migrate` tạo (bootstrap chạy TRƯỚC migrate; `--dien-tap` bắt).
+   Khoá ngoại mới trỏ `class_members(id)` phải nằm SAU §36 (§36 gỡ khoá chính CASCADE khi chạy lại).
+5. **`kiem_luoc_do.py`**: thêm một dòng `('§62', 'mô tả', lambda: …)` nói "tới nơi" nghĩa là gì.
+6. **Chạy thử** trên nhánh Neon `dev` theo khung dưới, rồi mới commit.
+
+### Sửa TẠI CHỖ một mục đã có (ví dụ: thêm `'paused'` vào CHECK §35)
+
+Được — sửa đúng câu trong mục ấy. Checksum mục đổi → deploy kế chạy lại **mục ấy và MỌI mục đứng sau
+nó** (tới hết `mockexam_schema.sql`), mỗi mục một giao dịch; đó là trình tự từng chạy mỗi deploy trước
+H3 nên an toàn. Cần nhớ: (a) chỉ NỚI ràng buộc — thu hẹp một CHECK mà dữ liệu đang có giá trị bị bỏ thì
+`ADD CONSTRAINT` hỏng, mục cuộn lại, build đỏ (dọn dữ liệu trước); (b) ràng buộc khai ở NHIỀU mục
+(`users_role_check` ở §35 và §44) phải sửa CẢ HAI — `common/tests.py::test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`
+đỏ nếu lệch; (c) chỉ sửa CHÚ THÍCH thì không mục nào chạy lại (checksum bỏ qua `--`, dòng trống,
+khoảng trắng cuối dòng, CRLF).
 
 **Trước khi đẩy** (trên nhánh Neon `dev`, `cd backend`):
 

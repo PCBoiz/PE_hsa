@@ -148,18 +148,87 @@ def test_mo_coi_chi_bao_khoa_khong_con_trong_tep():
 
 # ── Tệp THẬT ──────────────────────────────────────────────────────────────────
 
-def test_tep_that_chia_duoc_va_so_muc_tang_dan():
-    """Mọi mục của `legacy_schema.sql` đọc ra, số tăng NGHIÊM NGẶT (gộp hai nhánh mà thứ tự
-    đảo — §57 trước §56 — là đỏ ở đây, không đợi tới deploy)."""
+def _tep_that():
+    return (thu_muc_sql() / 'legacy_schema.sql').read_text(encoding='utf-8')
+
+
+def test_tep_that_chia_duoc_va_du_cac_muc_da_co():
+    """Mọi mục của tệp thật đọc ra được, không trùng số (chia_muc dừng khi trùng).
+
+    KHÔNG đòi số tăng dần: số mục là TÊN, thứ tự chạy là thứ tự trong tệp. §58–§61 đang giữ
+    chỗ cho nhánh khác và sẽ nằm SAU §62 trong tệp — thêm ở cuối là đúng luật."""
     ds = doc_tat_ca()
-    legacy = [m for m in ds if m.tep == 'legacy_schema.sql']
-    so = [int(m.ma[1:]) for m in legacy if m.ma != 'nền']
-    assert so == sorted(set(so)), 'số mục không tăng nghiêm ngặt: %s' % so
-    assert so[0] == 1 and so[-1] >= 56
+    so = {int(m.ma[1:]) for m in ds if m.tep == 'legacy_schema.sql' and m.ma != 'nền'}
+    assert set(range(1, 58)) <= so, 'thiếu mục: %s' % sorted(set(range(1, 58)) - so)
     # Ghép câu của mọi mục = câu của cả tệp (chia_muc tự kiểm; đây ghim thêm con số).
     for p in sorted(thu_muc_sql().glob('*.sql')):
         ca_tep = _split_statements(p.read_text(encoding='utf-8'))
         assert sum(len(m.cau) for m in ds if m.tep == p.name) == len(ca_tep)
+
+
+def _ke_hoach_sau_khi_sua(sua):
+    """(các mục hiện tại, kế hoạch lượt kế) nếu `legacy_schema.sql` bị `sua(raw)`, trên một
+    CSDL đã chạy đủ bản hiện tại (sổ = checksum của bản hiện tại)."""
+    goc = doc_tat_ca()
+    so = {m.khoa: m.checksum for m in goc}
+    sau = chia_muc('legacy_schema.sql', sua(_tep_that()))
+    return goc, lap_ke_hoach(sau + [m for m in goc if m.tep != 'legacy_schema.sql'], so)
+
+
+XUONG = chr(10)
+
+
+def test_sua_TAI_CHO_check_o_35_va_36_chay_lai_tu_35_toi_het():
+    """Kế hoạch đợt tới sửa TẠI CHỖ: §35 thêm 'paused' vào CHECK trạng thái lớp, §36 thêm
+    'reserved' vào CHECK lý do rời lớp. Hai mục ấy đổi checksum → lượt kế chạy §35, §36 VÀ
+    mọi mục sau (§36 gỡ khoá chính CASCADE, chỉ §55 gắn lại khoá ngoại)."""
+    a = ('ALTER TABLE classes ADD CONSTRAINT classes_status_check' + XUONG
+         + "    CHECK (status IN ('active', 'finished', 'cancelled'));")
+    b = "leave_reason IN ('completed', 'dropped', 'transferred'))"
+
+    def sua(raw):
+        raw = XUONG.join(raw.splitlines())
+        assert raw.count(a) == 1 and raw.count(b) == 1, 'CHECK trong tệp đã đổi — sửa phép kiểm'
+        raw = raw.replace(a, a.replace("'cancelled'", "'cancelled', 'paused'"))
+        return raw.replace(b, b.replace("'transferred'", "'transferred', 'reserved'"))
+
+    goc, viec = _ke_hoach_sau_khi_sua(sua)
+    khoa = [m.khoa for m in goc]
+    i35 = khoa.index('legacy_schema.sql §35')
+    assert [v.muc.khoa for v in viec] == khoa[i35:], 'phải chạy đúng §35 tới HẾT (kể cả mockexam)'
+    ly_do = {v.muc.ma: v.ly_do for v in viec if v.muc.tep == 'legacy_schema.sql'}
+    assert ly_do['§35'] == ly_do['§36'] == 'đổi nội dung'
+    assert ly_do['§55'] == 'đứng sau legacy_schema.sql §35'
+    assert "'paused'" in ' '.join(viec[0].muc.cau)
+
+
+def test_sua_chu_thich_muc_cu_khong_chay_lai_gi():
+    cu = '-- 35. Bất biến ở tầng CSDL'
+    _, viec = _ke_hoach_sau_khi_sua(lambda raw: raw.replace(cu, cu + ' (viết lại lời)'))
+    assert viec == []
+
+
+def test_them_muc_moi_o_cuoi_chi_chay_no_va_tep_sau():
+    """Thêm §62 ở cuối `legacy_schema.sql`: chạy §62, rồi `mockexam_schema.sql` (tệp đứng sau
+    theo tên — 8 câu CREATE … IF NOT EXISTS, vô hại). Không mục cũ nào chạy lại."""
+    them = XUONG.join(['', '-- ── §62 · MỤC THỬ (25/09/2026) ──',
+                       'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT;', ''])
+    _, viec = _ke_hoach_sau_khi_sua(lambda raw: raw + them)
+    assert [(v.muc.khoa, v.ly_do) for v in viec] == [
+        ('legacy_schema.sql §62', 'mới'),
+        ('mockexam_schema.sql nền', 'đứng sau legacy_schema.sql §62')]
+
+
+def test_muc_giu_cho_viet_SAU_62_van_hop_le():
+    """§58 viết khi §62 đã có: thêm ở CUỐI tệp; chỉ §58 (và tệp sau) chạy."""
+    them62 = XUONG.join(['', '-- ── §62 · A (25/09/2026) ──', 'SELECT 62;', ''])
+    them58 = XUONG.join(['', '-- ── §58 · B (26/09/2026) ──', 'SELECT 58;', ''])
+    khac = [m for m in doc_tat_ca() if m.tep != 'legacy_schema.sql']
+    so = {m.khoa: m.checksum
+          for m in chia_muc('legacy_schema.sql', _tep_that() + them62) + khac}
+    sau = chia_muc('legacy_schema.sql', _tep_that() + them62 + them58)
+    viec = lap_ke_hoach(sau + khac, so)
+    assert [v.muc.khoa for v in viec] == ['legacy_schema.sql §58', 'mockexam_schema.sql nền']
 
 
 def test_moi_muc_trong_kiem_luoc_do_tro_toi_mot_muc_co_that():

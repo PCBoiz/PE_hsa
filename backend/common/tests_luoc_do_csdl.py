@@ -64,26 +64,31 @@ def test_csdl_moi_dung_du_va_lan_HAI_khong_do_dung_gi(db):
     assert not _co_bang(ket['schema'] + '.users'), 'schema tạm phải bị cuộn lại'
 
 
-def _sua_36(cac_muc, them):
-    """Bản `cac_muc` với §36 "sửa" (thêm một câu vô hại → checksum đổi)."""
+def _sua_36(cac_muc, them=None, cu=None, moi=None):
+    """Bản `cac_muc` với §36 sửa: thêm câu `them`, hoặc sửa TẠI CHỖ chuỗi `cu` → `moi`."""
     from common.luoc_do_sql import Muc, _bam
     i = next(i for i, m in enumerate(cac_muc) if m.khoa == 'legacy_schema.sql §36')
     m = cac_muc[i]
-    cau = m.cau + (them,)
+    if them is not None:
+        cau = m.cau + (them,)
+    else:
+        assert sum(c.count(cu) for c in m.cau) == 1, '§36 đã đổi — sửa phép kiểm'
+        cau = tuple(c.replace(cu, moi) for c in m.cau)
     return i, cac_muc[:i] + [Muc(m.tep, m.ma, m.tieu_de, m.dong, cau, _bam(cau))] + cac_muc[i + 1:]
 
 
 def test_sua_muc_cu_chay_lai_ca_muc_sau(db, monkeypatch):
-    """Sửa §36 (bỏ khoá chính class_members CASCADE) → khoá ngoại §55b phải còn; và lượt
-    ĐỨT giữa §36 với §55 không được để sổ nói dối.
+    """Sửa TẠI CHỖ §36 (mục bỏ khoá chính class_members CASCADE) → CHECK mới có hiệu lực VÀ
+    khoá ngoại §55b còn; lượt ĐỨT giữa §36 với §55 không được để sổ nói dối.
 
-    Phần 1 — luật hậu tố: chỉ chạy lại riêng mục đổi thì CASCADE kéo mất
+    Phần 1 — đúng việc kế hoạch sắp làm: thêm 'reserved' vào CHECK lý do rời lớp của §36.
+    Luật hậu tố: chỉ chạy lại riêng mục đổi thì CASCADE kéo mất
     `class_members_transferred_to_fk` và không mục nào gắn lại — mất trong im lặng.
     Phần 2 — tái hiện sự cố nhánh dev 24/09 (khoá ngoại §55b mất): lượt chạy §36 rồi hỏng
     ở §43. CSDL lúc ấy THIẾU khoá ngoại (không tránh được khi mỗi mục một giao dịch), nhưng
     sổ không được ghi §55 là đã chạy — lượt kế tiếp phải chạy lại §43..hết và gắn lại nó."""
     from common import luoc_do_sql
-    from common.management.commands.kiem_luoc_do import _fk
+    from common.management.commands.kiem_luoc_do import _check_co_gia_tri, _fk
 
     def fk55():
         return _fk('class_members', 'class_members_transferred_to_fk', 'SET NULL')
@@ -92,17 +97,21 @@ def test_sua_muc_cu_chay_lai_ca_muc_sau(db, monkeypatch):
     with schema_tam() as st:
         luot(cac_muc=cac_muc)
         assert fk55()[0]
+        assert not _check_co_gia_tri('class_members_leave_reason_check', 'reserved')[0]
 
         # ── Phần 1
-        i, sua = _sua_36(cac_muc, 'SELECT 1')
+        i, sua = _sua_36(cac_muc, cu="'dropped', 'transferred')",
+                         moi="'dropped', 'transferred', 'reserved')")
         viec = luot(cac_muc=sua)
         assert viec[0].muc.khoa == 'legacy_schema.sql §36'
         assert [v.muc.khoa for v in viec] == [x.khoa for x in sua[i:]]
+        assert _check_co_gia_tri('class_members_leave_reason_check', 'reserved')[0], (
+            'sửa tại chỗ CHECK §36 mà CSDL chưa nhận giá trị mới')
         ok, vi_sao = fk55()
         assert ok, 'khoá ngoại §55 mất sau khi sửa §36: ' + vi_sao
 
         # ── Phần 2
-        _, sua2 = _sua_36(cac_muc, 'SELECT 2')
+        _, sua2 = _sua_36(cac_muc, them='SELECT 2')
         m43 = next(m for m in sua2 if m.khoa == 'legacy_schema.sql §43')
         that = luoc_do_sql._thuc_thi
 

@@ -11,9 +11,10 @@
 -- ghi sổ `luoc_do_da_chay` — mỗi deploy chỉ chạy mục MỚI hoặc ĐỔI câu lệnh (sửa chú
 -- thích không tính), cùng MỌI mục đứng sau nó; mỗi mục một giao dịch.
 -- MỤC MỚI: thêm ở CUỐI tệp, tiêu đề đúng mẫu `-- ── §NN · TIÊU ĐỀ (ngày) ──`, số
--- lớn hơn mục cuối (phép kiểm đỏ khi trùng số / sai mẫu). Mọi câu vẫn phải chạy lại
--- được: mục chạy lại khi nó hoặc một mục trước nó đổi, khi `--tat-ca`, và trên CSDL
--- mới. Chạy thử: `manage.py bootstrap_schema --dien-tap`. Luật: common/luoc_do_sql.py.
+-- CHƯA dùng (số là tên, không phải thứ tự — §58–§61 giữ chỗ được nằm sau §62; trùng
+-- số / tiêu đề sai mẫu thì lệnh DỪNG). Mọi câu vẫn phải chạy lại được: mục chạy lại
+-- khi nó hoặc một mục trước nó đổi, khi `--tat-ca`, và trên CSDL mới. Sửa tại chỗ một
+-- mục cũ → nó và mọi mục sau chạy lại. Đủ luật: docs/VAN_HANH.md §2; mã: common/luoc_do_sql.py.
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -1777,7 +1778,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP;
 -- thử mà học viên còn nhìn thấy (nhiệm vụ ngày, chặng lộ trình). Không DDL nào.
 --
 -- IDEMPOTENT theo WHERE: mỗi câu chỉ khớp dòng CÒN chữ cũ, nên lần deploy sau
--- (Render chạy lại cả tệp) khớp 0 dòng. Đo trên nhánh dev 24/09 trước khi viết:
+-- (lượt chạy lại mục này: `--tat-ca`, sửa một mục trước nó — H3) khớp 0 dòng. Đo trên nhánh dev 24/09 trước khi viết:
 -- `daily_mock` đang bật, 2 dòng `user_missions` trỏ tới nó (nên TẮT, không xoá),
 -- 6/6 lộ trình mang "Luyện đề tổng (CBT)" với đúng hai bản mô tả cũ dưới đây
 -- (bản mẫu `seed_data` ghi "+", bản dựng từ khảo sát ghi "và").
