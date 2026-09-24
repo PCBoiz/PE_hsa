@@ -183,8 +183,19 @@ test('trợ giảng: trong lớp được gán vẫn bị cắt báo cáo phụ 
 
   await page.goto(`/giang-day/buoi-hoc/${id}`, { waitUntil: 'domcontentloaded' });
   expect.soft(await docChan(page), 'buổi học: phải vào được').toBeNull();
-  for (const trang of [`/giang-day/bao-cao/${id}`]) {
+  // Tờ TỪNG EM (25/09/2026): lớp quyền chặn trước khi hỏi em nào, nên id em bất kỳ cũng 403.
+  for (const trang of [`/giang-day/bao-cao/${id}`, `/giang-day/bao-cao/${id}/1`]) {
     await page.goto(trang, { waitUntil: 'domcontentloaded' });
     expect.soft(await docChan(page), `${trang}: phải chặn theo vai`).toBe('vai');
   }
+});
+
+/* Biên tập nội dung gõ thẳng đường bảng chấm (25/09/2026): lớp quyền `IsTeachingStaff` chặn
+   trước khi tìm bài, nên id bất kỳ cũng 403 — trang phải BÁO chặn theo vai, không phải lỗi chung. */
+test('biên tập nội dung: bảng chấm báo chặn theo vai', async ({ page }) => {
+  test.skip(!taiKhoanCuaVai('Biên tập nội dung'), LY_DO_THIEU_VAI);
+  test.skip(!(await vaoTheoVai(page, 'Biên tập nội dung')), 'không vào được bằng vai Biên tập nội dung');
+  await chiDoc(page);
+  await page.goto('/giang-day/bai-tap/1/1', { waitUntil: 'domcontentloaded' });
+  expect(await docChan(page), 'bảng chấm: phải chặn theo vai').toBe('vai');
 });

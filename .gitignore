@@ -94,3 +94,6 @@ backend/staticfiles/
 
 # Bản đồ hệ thống — sinh lại bằng `node scripts/ban_do.mjs` trong 1 giây.
 ban_do/
+
+# graphify (bản đồ mã tạm, sinh lại được)
+graphify-out/

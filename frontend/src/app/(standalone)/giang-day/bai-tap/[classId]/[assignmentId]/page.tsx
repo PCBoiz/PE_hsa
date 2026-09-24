@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { chanTu } from '@/lib/chanTu';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
@@ -52,12 +53,14 @@ export default async function ChamBaiPage({
 
   if (!kq.ok) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
+      <main className="mx-auto max-w-3xl px-4 py-16" data-chan={chanTu(kq.status)}>
         <h1 className="text-title text-ink">Không mở được bảng chấm</h1>
         <p className="mt-2 text-body text-ink-2">
           {kq.status === 404
             ? 'Bài tập không tồn tại, hoặc bạn không phải giảng viên phụ trách lớp đó.'
-            : kq.message}
+            : kq.status === 403
+              ? 'Chấm bài dành cho giảng viên, trợ giảng và học vụ.'
+              : kq.message}
         </p>
         <Link
           href={`/giang-day/bai-tap/${classId}`}

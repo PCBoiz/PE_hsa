@@ -125,6 +125,9 @@ nhom_frontend() {
   buoc f3 "node --check public/static" "$GOC/frontend" kiem_cu_phap_js
   buoc f4 "unit Node (e2e/unit)" "$GOC/frontend" unit_node
   buoc f5 "ban_do --kiem" "$GOC" node scripts/ban_do.mjs --kiem
+  # f6 phải SAU f5: đọc ban_do/graph.json mà f5 vừa sinh. Tầng vai (S3, 25/09/2026): trang/menu cho vai R
+  # vào mà API trang cần lại từ chối R — xem scripts/tang_vai.py.
+  buoc f6 "tầng vai --kiem" "$GOC" "$PY" scripts/tang_vai.py --kiem
 }
 
 echo "── Cổng kiểm trước khi đẩy (.githooks/pre-push) ──"
