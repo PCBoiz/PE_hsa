@@ -461,7 +461,7 @@ export default function DashboardClient(
                     <button type="button" className="csh-pill" onClick={() => W().cshPick('Phần trăm')}>％ Phần trăm</button>
                     <button type="button" className="csh-pill" onClick={() => W().cshPick('Hàm số')}><span className="csh-ic" data-icon="bar-chart" data-size="14"></span> Hàm số</button>
                     <button type="button" className="csh-pill" onClick={() => W().cshPick('Đọc hiểu')}><span className="csh-ic" data-icon="book-open" data-size="14"></span> Đọc hiểu</button>
-                    <button type="button" className="csh-pill" onClick={() => W().cshPick('Đề thi thử')}><span className="csh-ic" data-icon="clock" data-size="14"></span> Đề thi thử</button>
+                    {/* Chip "Đề thi thử" gỡ 24/09/2026 — bỏ thi, pha A. */}
                   </div>
                 </div>
                 <ul id="csh-dynamic" style={{ display: 'none', listStyle: 'none', padding: 0, margin: '8px 0 0' }}></ul>

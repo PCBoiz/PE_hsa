@@ -83,7 +83,7 @@ và MÃ THOÁT 1 — test không tồn tại cũng trả mã ≠ 0, bài học 2
 | 1.3 | Mở môn qua lớp, gỡ mọi nút Đăng ký, nhân sự xem chỉ-đọc | [~] `f5252f4` backend + trang khoá: pytest 11/11, đột biến 15/15, e2e 4/4 hai khổ; CÒN nút Đăng ký ở `main.js`/`DashboardClient` (sau khi gộp nhánh bỏ-thi) |
 | 1.4a | §56 `last_seen_at` + tổng quan v2 (lớp, rời lớp, điểm danh GV, tài khoản ngủ) | [x] agent `d89cdfb`, gộp `7d8eb9c` — agent: đỏ trước 13 test, đột biến 18/19 (1 xanh = chốt thừa, đã gỡ) + hợp đồng 5/5, axe 0, soi ảnh 1280/390; lead sau gộp: pytest accounts + tổng quan + hợp đồng 74/74, bootstrap 2 lần, 39/39, guard/tsc/eslint. CHƯA: soi lại trên master; thêm `sangLop` vào `roiLop.ds` (§55 đã có) |
 | 1.4b | Danh sách học viên: lớp, lần cuối hoạt động, tiến độ, lọc | [ ] |
-| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [~] XONG trên nhánh `agent/bo-thi` (`193ef5c`, agent: bo-thi.test 19 đỏ trước, đột biến 11/11, e2e 6/6 + 56 spec, soi ảnh) — CHƯA GỘP: lead gộp thử 24/09 → 3 xung đột (cách giải ở mục TẠM DỪNG), rồi huỷ gộp vì chưa kịp đo lại |
+| 1.5A | Bỏ thi pha A: ẩn + tháo tuyến + §57 dữ liệu | [x] agent `193ef5c`, gộp 25/09 (commit gộp này) — sau gộp: bootstrap 2 lần (263 câu), 41/41, pytest 421 xanh, e2e 74/74 hai khổ (bo-thi, khung-chung, vai-tro-cong, huong-dan-moi-vai, mo-mon-theo-lop, danh-sach-lop), guard + tsc + eslint, `ban_do` 0; trần tầng cũ đo lại 6533 |
 | 1.5B | Bỏ thi pha B: thay bằng tiến trình học tập | [ ] |
 | 1.5C | Bỏ thi pha C: xoá mã (GIỮ bảng) | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |

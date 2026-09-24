@@ -32,7 +32,8 @@ const MONG: Record<string, { bai: number; phaiCo: string; khongCo?: string }> = 
   'Giảng viên': { bai: 7, phaiCo: 'Mở đầu ngày dạy', khongCo: 'Cấp tài khoản cho người mới' },
   'Trợ giảng': { bai: 4, phaiCo: 'Điểm danh một buổi', khongCo: 'Gửi báo cáo cho phụ huynh' },
   'Quản lý học vụ': { bai: 9, phaiCo: 'Mở lớp và xếp học viên', khongCo: 'Khi cần biết ai đã làm gì' },
-  'Biên tập nội dung': { bai: 1, phaiCo: 'Soạn khoá học và đề thi thử', khongCo: 'Điểm danh một buổi' },
+  // Tên bài đổi 24/09/2026 (bỏ thi, pha A): phần đề thi thử gỡ khỏi bài này.
+  'Biên tập nội dung': { bai: 1, phaiCo: 'Soạn khoá học và bài học', khongCo: 'Điểm danh một buổi' },
 };
 
 /** Tiêu đề các bài đang hiện — đọc từ mục lục neo trong trang. */

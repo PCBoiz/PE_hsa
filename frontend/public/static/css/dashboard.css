@@ -3871,12 +3871,16 @@ body.dark .prof-post-stats {
 
 /* ══════════════════════════════════════════════════════════════════════════
    DASHBOARD KIỂU DỮ LIỆU (audit 2026-08-14)
-   Hàng 4 thẻ chỉ số lên đầu; lịch học thu thành dải 7 chấm trong thẻ streak;
+   Hàng thẻ chỉ số lên đầu (4 thẻ, còn 3 từ 24/09/2026); lịch học thu thành dải 7 chấm trong thẻ streak;
    dưới là lưới 2 cột (học tiếp + tiến độ | lộ trình). Toàn bộ dùng token nên
    đúng cả hai theme.
    ══════════════════════════════════════════════════════════════════════════ */
+/* `auto-fit` thay `repeat(4, …)` + hai mốc 1024/560px (24/09/2026): hàng còn BA
+   thẻ sau khi gỡ thẻ điểm thi thử (bỏ thi, pha A) — lưới 4 cột cứng để lại một ô
+   trống bên phải. Tự chia theo số thẻ và bề ngang; 15rem ≈ bề thẻ hẹp nhất cũ
+   (4 cột ở màn 1440), dưới đó dải 7 ngày của thẻ chuỗi bị chật. */
 .hsa-tiles {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 12px; margin-bottom: 14px;
 }
 .hsa-tile {
@@ -4008,8 +4012,7 @@ body.dark .prof-post-stats {
 .hsa-sec-row[data-sec="vb"] .hsa-sec-track > i { background: #F472B6; }
 .hsa-sec-row[data-sec="kh"] .hsa-sec-track > i { background: var(--brand-2); }
 
-@media (max-width: 1024px) { .hsa-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px)  { .hsa-tiles { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px)  {
   .hsa-cont-empty, .hsa-cont-link { flex-wrap: wrap; }
   .hsa-cont-btn, .hsa-cont-go { margin-left: 0; width: 100%; } }
 

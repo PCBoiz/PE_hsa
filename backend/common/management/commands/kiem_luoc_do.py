@@ -86,6 +86,11 @@ def _cot(bang, cot):
     return bool(r), 'chưa có cột'
 
 
+def _khong_con(sql, vi_sao):
+    """Mục DỮ LIỆU (không DDL): tới nơi = câu `sql` không còn trả dòng nào."""
+    return (not q1(sql)), vi_sao
+
+
 #: MỘT DÒNG MỘT MỤC của `legacy_schema.sql`. Thêm mục mới thì thêm dòng ở đây —
 #: nếu không, lệnh này im lặng báo "sạch" cho một mục nó chưa hề nhìn tới, đúng
 #: cái bẫy mà bộ đo giao diện đã mắc (danh sách trang thiếu ba màn).
@@ -174,6 +179,15 @@ MUC = [
     ('§55d', 'CHECK chỉ lượt "transferred" mới được trỏ',
      lambda: _check_co_gia_tri('class_members_transfer_reason_check', 'transferred')),
     ('§56', 'users.last_seen_at (lần cuối thấy tài khoản)', lambda: _cot('users', 'last_seen_at')),
+    # §57 là mục DỮ LIỆU (bỏ thi, pha A): "tới nơi" = không còn dòng mang chữ cũ.
+    ('§57a', 'nhiệm vụ "Làm 1 đề thi thử" (daily_mock) đã tắt',
+     lambda: _khong_con("SELECT 1 AS c FROM missions WHERE code = 'daily_mock' AND is_active",
+                        'nhiệm vụ còn bật')),
+    ('§57b', 'không lộ trình nào còn chặng "Luyện đề tổng (CBT)"',
+     lambda: _khong_con("""SELECT 1 AS c FROM roadmaps
+                           WHERE strpos(mermaid_def, 'Luyện đề tổng (CBT)') > 0
+                              OR strpos(nodes_json::text, 'Luyện đề tổng (CBT)') > 0
+                           LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
 ]
 
 

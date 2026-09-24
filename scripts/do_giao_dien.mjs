@@ -99,7 +99,8 @@ const TRANG = [
   ['/profile', 'View · Hồ sơ'],
   ['/courses/hsa_quantitative', 'Chi tiết khoá'],
   ['/lesson/hsa_quantitative?lesson=1', 'Bài học'],
-  ['/mock', 'Thi thử'],
+  // `/mock` (Thi thử) bỏ 24/09/2026 — bỏ thi, pha A: đường ấy chỉ còn chuyển hướng
+  // về /dashboard, đo nó là đo trùng trang đích dưới tên sai.
   ['/bai-tap', 'Bài tập của tôi'],
   ['/questionaire', 'Khảo sát'],
   ['/quan-tri/tong-quan', 'Quản trị · tổng quan'],
@@ -152,9 +153,8 @@ const TRANG = [
   ['/quan-tri/co-so-hoc-phi', 'Quản trị · cơ sở học phí'],
   ['/giang-day/bao-cao/1', 'Giảng dạy · báo cáo cả lớp'],
   ['/giang-day/bao-cao/1/9', 'Giảng dạy · tờ báo cáo một em'],
-  // Thêm 16/09/2026 cùng ngày dựng (vòng 25). Lượt quét chỉ thấy bước 1 (chọn tệp):
-  // bảng khớp chỉ hiện sau khi tải PDF — phần ấy soi bằng kịch bản đi trọn đường.
-  ['/giang-day/ket-qua-thi/1', 'Giảng dạy · nhập kết quả thi thử'],
+  // `/giang-day/ket-qua-thi/1` (nhập kết quả thi thử, thêm 16/09) bỏ 24/09/2026 cùng
+  // màn ấy — bỏ thi, pha A; đường cũ chuyển hướng về sổ buổi học (đã đo ở trên).
   // Thêm 14/09/2026 cùng ngày dựng — trang mở mỗi tối của giảng viên.
   ['/giang-day', 'Giảng dạy · việc hôm nay'],
   // Thêm 24/09/2026 cùng ngày dựng (§53) — lịch gộp theo tuần, bảy dòng ngày.
