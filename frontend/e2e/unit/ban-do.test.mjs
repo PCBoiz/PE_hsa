@@ -49,6 +49,12 @@ check('thước không đếm chuỗi trong dòng tiếp nối của chú thích
   /tiếp nối chú thích → BỎ ĐÚNG/.test(tuKiem.ra), tuKiem.ra);
 check("thước không nuốt lời gọi đứng sau '//' của URL hay regex",
   /URL\/regex\s+→ GIỮ ĐÚNG/.test(tuKiem.ra), tuKiem.ra);
+// Hai ca thêm 24/09/2026 (bỏ thi, pha A): tháo `include('mockexam.urls')` mà thước
+// vẫn đếm đủ 9 tuyến thi, vì nó đọc mọi urls.py trên đĩa chứ không theo cây gắn.
+check('thước chỉ tính include thật (không tính include trong chú thích/docstring)',
+  /chú thích\/docstring → BỎ ĐÚNG/.test(tuKiem.ra), tuKiem.ra);
+check('thước bắt lý do còn trỏ vào tuyến đã tháo',
+  /tuyến đã tháo\s+→ BẮT ĐƯỢC/.test(tuKiem.ra), tuKiem.ra);
 check('lượt tự kiểm thoát 0', tuKiem.ma === 0, tuKiem.ra);
 
 console.log(loi === 0 ? '\nOK — bản đồ còn nối và thước còn nhạy' : `\n${loi} lỗi`);

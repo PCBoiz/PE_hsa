@@ -44,7 +44,8 @@ var levelFilter = "all";
 var languageFilters = [];
 var searchDebounceTimer = null;
 // HSA: gợi ý theo hợp phần + chủ đề đề thi (KHÔNG còn ngôn ngữ lập trình pe_test).
-var searchSuggestions = ["Định lượng", "Định tính", "Khoa học", "Phần trăm", "Hàm số", "Xác suất", "Đọc hiểu", "Đề thi thử"];
+// "Đề thi thử" bỏ khỏi gợi ý 24/09/2026 — bỏ thi, pha A.
+var searchSuggestions = ["Định lượng", "Định tính", "Khoa học", "Phần trăm", "Hàm số", "Xác suất", "Đọc hiểu"];
 var levelSuggestions = [];
 // Nhãn hợp phần (chip lọc) → course id để đối chiếu (thay cho lọc ngôn ngữ cũ).
 var SECTION_IDS = {

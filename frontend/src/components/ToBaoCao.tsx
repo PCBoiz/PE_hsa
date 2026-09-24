@@ -47,6 +47,9 @@ export type BaoCao = {
     mockTrend: 'up' | 'down' | 'flat' | null;
   };
   /**
+   * TỪ 24/09/2026 KHÔNG VẼ (bỏ thi, pha A) — `study.mock*` cũng vậy. Kiểu giữ vì
+   * máy chủ còn gửi; pha B bỏ khoá ở máy chủ SAU khi màn hình thôi đọc.
+   *
    * Kỳ thi thử THẬT tại trung tâm, nhập từ tờ PDF của hệ thống khảo thí.
    * `null` khi chưa nhập tờ nào — giấu hẳn khối ấy đi, đừng hiện "chưa có dữ
    * liệu" cho một thứ phụ huynh còn không biết là có tồn tại.
@@ -123,12 +126,6 @@ function ngayNgan(iso: string) {
   const [, m, d] = iso.slice(0, 10).split('-');
   return `${d}/${m}`;
 }
-
-const XU_HUONG = {
-  up: 'Điểm thi thử đang đi lên.',
-  down: 'Điểm thi thử đang đi xuống — nên xem lại cách ôn.',
-  flat: 'Điểm thi thử đang giữ nguyên.',
-} as const;
 
 /**
  * Một ô số liệu. Con số luôn đi kèm MẪU SỐ hoặc đơn vị, không đứng một mình:
@@ -239,85 +236,19 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
           </>
         )}
 
-        {/* ── Thi thử tại trung tâm ──────────────────────────────────────
-            Chỉ hiện khi đã nhập được tờ kết quả. Đây là kỳ thi THẬT do hệ thống
-            khảo thí của trung tâm chấm (thang 150) — khác thang phần trăm của
-            khối "Con có tiến bộ không" ngay dưới, nên khối này tự chú thích. */}
-        {bc.centerExam && (
-          <>
-            <h3 className="mt-6 text-subhead text-ink">Kỳ thi thử tại trung tâm</h3>
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <O
-                nhan={`Tổng điểm${bc.centerExam.round ? ` · ${bc.centerExam.round}` : ''}`}
-                so={`${bc.centerExam.score}/${bc.centerExam.max}`}
-                phu={`thi ngày ${ngay(bc.centerExam.date)}`}
-              />
-              <O
-                nhan="So với lần trước"
-                so={
-                  bc.centerExam.previous
-                    ? `${bc.centerExam.previous.delta > 0 ? '+' : ''}${bc.centerExam.previous.delta}`
-                    : '—'
-                }
-                phu={
-                  bc.centerExam.previous
-                    ? `lần trước ${bc.centerExam.previous.score}/${bc.centerExam.max} ngày ${ngay(bc.centerExam.previous.date)}`
-                    : 'chưa có kết quả kỳ trước để so'
-                }
-              />
-              {bc.centerExam.sections.map((s) => (
-                <O key={s.phan} nhan={s.ten} so={`${s.diem}/${s.toiDa}`} phu="điểm phần" />
-              ))}
-            </div>
-            {bc.centerExam.weakUnits.length > 0 && (
-              <p className="mt-3 text-body text-ink-2">
-                Thấp nhất trong kỳ này:{' '}
-                {bc.centerExam.weakUnits.map((v) => `${v.ten} (${v.pct}%)`).join(' · ')}
-              </p>
-            )}
-            <p className="mt-2 text-caption text-ink-3">
-              Điểm khối này do hệ thống khảo thí của trung tâm chấm, thang {bc.centerExam.max}. Khối
-              dưới đây là điểm luyện tập trong ứng dụng, tính theo phần trăm — hai thang khác nhau.
-            </p>
-          </>
-        )}
+        {/* ── Thi thử: GỠ 24/09/2026 (bỏ thi, pha A) ─────────────────────
+            Anh Sơn chốt "bỏ mọi thứ về thi, giữ ngày thi HSA". Tờ này thôi vẽ khối
+            "Kỳ thi thử tại trung tâm" (`centerExam`, điểm nhập từ PDF khảo thí) và
+            hai ô "Đề thi thử đã làm" / "Điểm thi thử trung bình" cùng câu xu hướng.
+            Khoá dữ liệu vẫn nằm trong `BaoCao` vì máy chủ còn gửi; pha B thay khối
+            này bằng tiến trình học tập (phút học, số ngày có hoạt động…) rồi mới
+            bỏ khoá ở máy chủ. */}
 
         {/* ── Học tập ────────────────────────────────────────────────── */}
         <h3 className="mt-6 text-subhead text-ink">Con có tiến bộ không</h3>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <O nhan="Bài đã học trong kỳ" so={String(ht.lessonsDone)} phu="bài" />
-          <O
-            nhan="Đề thi thử đã làm"
-            so={String(ht.mockCount)}
-            phu={ht.mockCount === 0 ? 'chưa làm đề nào' : 'lượt'}
-          />
-          {/* "Điểm THI THỬ trung bình" (22/09/2026): nhãn cũ "Điểm trung bình"
-              đứng ngay trên khối bài tập đã chấm 8/10 mà lại ghi "chưa có dữ
-              liệu" — phụ huynh đọc thành hai con số mâu thuẫn (agent GV→PH F8).
-              Ô này chỉ tính thi thử; bản PDF và thư đã ghi đúng như vậy. */}
-          <O
-            nhan="Điểm thi thử trung bình"
-            so={ht.mockAvg !== null ? `${ht.mockAvg}%` : '—'}
-            phu={
-              ht.mockCount === 0
-                ? 'chưa làm đề nào'
-                : ht.mockCount === 1
-                  ? 'của một lượt duy nhất'
-                  : `cao nhất ${ht.mockBest}%`
-            }
-          />
         </div>
-        {/* Một lượt thi KHÔNG phải một xu hướng. Nếu để con số đứng trần, một
-            em mới thi lần đầu và làm chưa tốt sẽ hiện lên tờ giấy gửi về nhà
-            thành "điểm trung bình 0%" in đậm — đúng về số học, nhưng đọc như
-            một kết luận về năng lực, mà nó chưa phải. */}
-        {ht.mockCount === 1 && (
-          <p className="mt-2 text-body text-ink-2">
-            Con mới làm một đề nên chưa đủ để nói đang lên hay xuống. Làm thêm vài đề nữa thì
-            phần này mới có ý nghĩa.
-          </p>
-        )}
-        {ht.mockTrend && <p className="mt-2 text-body text-ink-2">{XU_HUONG[ht.mockTrend]}</p>}
 
         {cd.courses.length > 0 && (
           <ul className="mt-3 flex flex-col gap-1">
@@ -456,8 +387,8 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
         <h3 className="mt-6 text-subhead text-ink">Con cần giúp chỗ nào</h3>
         {cd.measured === 0 ? (
           <p className="mt-2 text-body text-ink-2">
-            Chưa đủ bài làm để đánh giá từng chủ đề. Con cần làm thêm bài tập và đề thi thử thì
-            phần này mới có số liệu.
+            Chưa đủ bài làm để đánh giá từng chủ đề. Con cần học và luyện tập thêm trên hệ
+            thống thì phần này mới có số liệu.
           </p>
         ) : (
           <div className="mt-3 flex flex-col gap-4">

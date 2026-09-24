@@ -90,6 +90,29 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 25/09/2026 — LÀM TIẾP: gộp 1.5A (bỏ thi pha A), bỏ việc tay N2, bảng việc của anh, 3 agent
+
+Anh chốt 25/09: đồng ý xoá sớm 4 tệp giao diện thi · thẻ số 4 → "Tiến độ chương trình" (pha B) · CÓ điền ngược
+`last_seen_at` · gom việc cần anh vào MỘT bảng (đầu `docs/VIEC_CUA_ANH.md`) · gọi agent hỗ trợ.
+
+- **Gộp `agent/bo-thi`** (1.5A, agent): ba xung đột "hai bên cùng nối thêm" giải như đã ghi (§56 rồi §57; trần tầng cũ đo
+  lại = 6533). Nav bỏ "Thi thử"; `/mock`, `/giang-day/ket-qua-thi/*` chuyển hướng 307; gỡ tuyến `mockexam.urls` + kết quả
+  thi; §57 tắt `daily_mock` + đổi nhãn lộ trình "Luyện đề tổng (CBT)" → "Ôn tổng hợp"; xoá sớm `MockExam.tsx`, `mock/`,
+  `ket-qua-thi/`, `DeThi.tsx`; `ban_do` chỉ đếm `urls.py` gắn từ `ROOT_URLCONF`. GIỮ ngày thi HSA + mọi bảng.
+- **N2 bỏ**: hàng rào CSDL tự nhận production qua tiền tố điểm cuối khi chưa đặt biến (`e77583d`).
+- **Bảng việc của anh** viết lại bằng lời thường (N6, N4, N7 — bấm ở đâu, vì sao, mất bao lâu).
+- **Agent** (mỗi agent một worktree + CỔNG RIÊNG — lần trước hai agent giẫm cổng 9100/3200): `hoc-vien` (1.4b, 9121/3221),
+  `ha-tang` (H2/H3/H6, 9131/3231), 1.5B sau khi gộp (9141/3241).
+
+### Thước hỏng / bẫy
+- `.next/types/validator.ts` của lần build cũ còn trỏ hai trang thi đã xoá → tsc đỏ; xoá `.next/types` (tệp sinh) rồi build.
+- MẠNG tới Neon đứt lúc nhiều lượt chạy nặng cùng lúc (3 agent + pytest + e2e): "Permission denied 10013", "Software caused
+  connection abort 10053" → pytest không ra tổng kết, `do_giao_dien` báo 500 ở Dashboard điện thoại (nhật ký Django: năm
+  tuyến 500 cùng 13:44:42, đều `OperationalError`). Tái hiện lúc yên: sạch. Luật: không chồng quá một lượt nặng vào CSDL.
+- **§55b MẤT trên nhánh dev**: một lượt bootstrap đứt sau §36 (`DROP … CASCADE` gỡ khoá ngoại §55) và trước §55 (gắn lại) —
+  rủi ro có thật của cách vá CASCADE khi deploy đứt giữa chừng. Khôi phục bằng bootstrap đầy đủ (41/41); đã giao agent H3
+  "luật hậu tố" cho sổ ghi mục (mục nào chạy lại thì mọi mục sau nó chạy lại) + test ép lỗi giữa chừng.
+
 ## ⏸ 24/09/2026 — TẠM DỪNG theo lệnh anh Sơn (đọc mục "TẠM DỪNG" đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`)
 
 - **Tiến độ**: mốc trước buổi TopHSA xem lại ~80% (10/16 xong, 4 gần xong, 2 chưa: 1.4b, 1.6); toàn kế hoạch ~30%.

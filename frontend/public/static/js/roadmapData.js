@@ -25,8 +25,10 @@ var ROADMAP_DATA = {
       main: "2. Tư duy Định lượng (Phần 1)", left: ["Số & Đại số nền tảng", "Hàm số & Giải tích", "Hình học & Đo lường", "Thống kê & Xác suất", "Xử lý số liệu"] },
     { main: "3. Tư duy Định tính (Phần 2)", right: ["Từ vựng & Ngữ pháp", "Đọc hiểu", "Văn học", "Ngôn ngữ – Văn hóa – Xã hội"] },
     { main: "4. Khoa học (Phần 3 · chọn 3/5)", left: ["Vật lý", "Hóa học", "Sinh học", "Lịch sử", "Địa lý"] },
-    { group: "Giai đoạn 3 · Ráp đề & về đích",
-      main: "5. Luyện đề tổng (CBT)", right: ["Thi thử 150 câu bấm giờ", "Phân tích mạnh – yếu", "Điều chỉnh chiến thuật"] },
+    // Chặng 5 từng là "Luyện đề tổng (CBT)" — thi thử trên máy; đổi 24/09/2026 (bỏ thi,
+    // pha A). Tiến độ đã lưu theo nhãn cũ ở máy học viên mất dấu cho riêng chặng này.
+    { group: "Giai đoạn 3 · Ôn tổng hợp & về đích",
+      main: "5. Ôn tổng hợp", right: ["Ôn lại cả ba phần thi", "Phân tích mạnh – yếu", "Điều chỉnh chiến thuật"] },
     { main: "6. Về đích", left: ["Chiến thuật phòng thi", "Ổn định tâm lý", "Rà soát điểm yếu cuối"] },
   ],
 
@@ -91,10 +93,8 @@ var ROADMAP_DETAILS = {
       { type: "article", title: "Bài khảo sát năng lực đầu vào", source: "ProgrammingEdu × TopHSA" }
     ]
   },
-  "5. luyện đề tổng (cbt)": {
-    desc: "Thi thử toàn bộ 150 câu trên máy (CBT) bấm giờ như thi thật, sau đó phân tích điểm mạnh – yếu từng hợp phần để điều chỉnh chiến thuật.",
-    resources: [
-      { type: "course", title: "Thi thử HSA (CBT) trong ứng dụng", source: "ProgrammingEdu × TopHSA" }
-    ]
+  "5. ôn tổng hợp": {
+    desc: "Ôn lại cả ba phần thi, tập trung vào các dạng bài còn hay sai, rồi điều chỉnh chiến thuật làm bài.",
+    resources: []
   }
 };

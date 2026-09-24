@@ -8,7 +8,6 @@ import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 import { VAI_BIEN_TAP, VAI_QUAN_TRI } from '@/lib/vaiTro';
 
-import { type DeRow } from './DeThi';
 import SoanClient, { type KhoaRow } from './SoanClient';
 
 /**
@@ -45,19 +44,14 @@ export const metadata = { title: 'Soạn giáo trình | TopHSA' };
 // đúng vì thế (xem `quan-tri/vai.ts`). Một hàng rào quyền trôi thì không kêu.
 const DUOC_VAO = new Set([VAI_QUAN_TRI, VAI_BIEN_TAP]);
 
-/* Hình dạng hai danh sách khu này đọc (T18 mức 2). */
+/* Hình dạng danh sách khu này đọc (T18 mức 2). Danh sách thứ hai — đề thi thử —
+   GỠ 24/09/2026 (bỏ thi, pha A) cùng tuyến `api/admin/mock-exams`. */
 const HD_KHOA = z.looseObject({
   courses: z.array(z.looseObject({
     id: z.string(), title: z.string(),
     subtitle: z.string().nullable().optional(), lessons: z.number().nullable().optional(),
   })),
 }) satisfies HinhDang<{ courses: KhoaRow[] }>;
-const HD_DE = z.looseObject({
-  exams: z.array(z.looseObject({
-    id: z.number(), title: z.string(), durationMinutes: z.number().nullable(),
-    totalQuestions: z.number().nullable(), isPublished: z.boolean(), attempts: z.number(),
-  })),
-}) satisfies HinhDang<{ exams: DeRow[] }>;
 
 export default async function SoanGiaoTrinhPage() {
   const me = await serverJson<Toi>('/api/user', { requireAuth: true }, HD_TOI);
@@ -94,10 +88,7 @@ export default async function SoanGiaoTrinhPage() {
     );
   }
 
-  const [kq, de] = await Promise.all([
-    serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true }, HD_KHOA),
-    serverJson<{ exams: DeRow[] }>('/api/admin/mock-exams', { requireAuth: true }, HD_DE),
-  ]);
+  const kq = await serverJson<{ courses: KhoaRow[] }>('/api/admin/courses', { requireAuth: true }, HD_KHOA);
 
   /* THANH CHUNG cho khu này (20/09/2026). Đây là chỗ THỨ TƯ của cùng một lỗ —
      Thi thử (06/09), Vận hành (07/09), Giảng dạy (07/09) đều đã vá: một khu
@@ -122,10 +113,6 @@ export default async function SoanGiaoTrinhPage() {
       />
       <SoanClient
         initial={kq.ok ? kq.data.courses : []}
-        // Danh sách đề hỏng thì khối giáo trình vẫn phải dùng được: hai thứ độc
-        // lập nhau, và cho một lỗi phụ đánh sập cả trang là đổi một khối hỏng
-        // thành một trang hỏng.
-        deThi={de.ok ? de.data.exams : []}
         laQuanTri={vai === 'admin'}
         loi={kq.ok ? null : kq.message}
       />

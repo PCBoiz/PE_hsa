@@ -20,8 +20,9 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
           CỦA TÔI, hai màn có nhiều người mở nhất. Grep cả hai màn: **0 lần**
           dùng class `fa-`. Một trăm kilobyte cho không icon nào.
 
-          Font Awesome vẫn còn ở ba chỗ THẬT SỰ dùng nó (`LessonHsa.tsx`,
-          `lesson_hsa.js`, `MockExam.tsx`) và chúng tự nạp lấy.
+          Font Awesome vẫn còn ở những chỗ THẬT SỰ dùng nó (`LessonHsa.tsx`,
+          `lesson_hsa.js`; `MockExam.tsx` gỡ 24/09/2026 cùng màn thi thử) và
+          chúng tự nạp lấy.
 
           Ghi rõ để không ai "khôi phục cho chắc": nếu thêm một icon `fa-` vào
           nhóm này thì nó sẽ KHÔNG hiện, và cách đúng là dùng `BieuTuong`

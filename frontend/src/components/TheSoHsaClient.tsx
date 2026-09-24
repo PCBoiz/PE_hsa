@@ -9,7 +9,8 @@ import { layJson } from '@/lib/api';
 import { thuTrongTuanVN } from '@/lib/gioVN';
 
 /**
- * HÀNG BỐN THẺ SỐ của Trang của tôi — phần chạy ở trình duyệt.
+ * HÀNG THẺ SỐ của Trang của tôi — phần chạy ở trình duyệt. Ba thẻ từ 24/09/2026
+ * (thẻ điểm thi thử gỡ cùng tính năng thi — xem cuối tệp).
  *
  * Dữ liệu ban đầu do máy chủ đưa xuống (`TheSoHsa.tsx`). Trước 14/09/2026 tối,
  * `dashboard.js::renderTiles` đổ số vào sau khi tầng cũ chạy — bốn ô đứng "—"
@@ -66,7 +67,6 @@ export default function TheSoHsaClient({ banDau }: { banDau: TomTatTheSo | null 
   const xong = s?.lessonsDone ?? 0;
   const ngay = s?.daysToExam ?? null;
   const daKhaoSat = Boolean(s?.examTiming || s?.targetScore);
-  const coDiem = s?.lastMockScore != null && s?.lastMockTotal != null;
 
   return (
     <>
@@ -124,16 +124,11 @@ export default function TheSoHsaClient({ banDau }: { banDau: TomTatTheSo | null 
         </div>
       </div>
 
-      <div className="hsa-tile">
-        <div className="hsa-tile-ic"><BieuTuong ten="target" co={18} /></div>
-        <div className="hsa-tile-body">
-          <div className="hsa-tile-num" id="tile-score">{coDiem ? `${s?.lastMockScore}/${s?.lastMockTotal}` : '—'}</div>
-          <div className="hsa-tile-lbl" id="tile-score-lbl">
-            {s?.targetScore ? `điểm thi thử · mục tiêu ${s.targetScore}` : 'điểm thi thử gần nhất'}
-          </div>
-          <a className={`hsa-tile-cta${coDiem ? ' hidden' : ''}`} id="tile-score-cta" href="/mock">Làm đề thi thử</a>
-        </div>
-      </div>
+      {/* Thẻ thứ tư "điểm thi thử gần nhất" + nút "Làm đề thi thử" GỠ 24/09/2026 —
+          bỏ thi, pha A (anh Sơn chốt "bỏ mọi thứ về thi, giữ ngày thi HSA"). Thẻ
+          ĐẾM NGƯỢC ngày thi ngay trên GIỮ: đó là mốc của em, không phải tính năng
+          thi. Pha B thay chỗ trống bằng tiến trình học tập; `lastMockScore` vẫn
+          nằm trong kiểu tới khi máy chủ thôi gửi. */}
     </>
   );
 }
