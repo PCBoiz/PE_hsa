@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# ── Cổng kiểm trước khi đẩy (H6, 24/09/2026) ──────────────────────────────────
+#
+# GitHub Actions bị khoá thanh toán từ 10/08/2026 (việc A0): `ci.yml` chưa chạy một
+# bước nào, nên `master` lên production (Render + Vercel tự deploy) mà không cửa nào
+# kiểm. Tệp này là cửa ấy, chạy trên máy người đẩy, < 3 phút. KHÔNG chạy pytest toàn
+# bộ (~54 phút) — bộ đủ chạy tay trước mỗi mốc giao (RULES §4).
+#
+# Bật (mỗi bản sao repo, một lần):   git config core.hooksPath .githooks
+# Bỏ qua một lần, có chủ ý:          git push --no-verify
+# Chạy tay không cần đẩy:            bash .githooks/pre-push < /dev/null
+#
+# Biến tuỳ chọn:
+#   PE_PYTHON=<đường dẫn python>   python có Django (mặc định: backend/.venv của repo,
+#                                   hoặc của worktree chính khi đang ở worktree phụ)
+#   PE_PUSH_PYTEST=1               chạy thêm pytest cho mô-đun backend có tệp đổi so với
+#                                   origin/master (chạm CSDL dev, có thể vài chục phút)
+#
+# Hai nhóm chạy SONG SONG (backend | frontend); mỗi bước ghi nhật ký riêng, cuối cùng in
+# bảng ✓/✗ theo thứ tự và 25 dòng cuối của mọi bước hỏng.
+set -u
+
+GOC=$(git rev-parse --show-toplevel) || exit 1
+CHUNG=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+TAM=$(mktemp -d)
+trap 'rm -rf "$TAM"' EXIT
+cat > /dev/null   # git đưa danh sách ref qua stdin — cổng này kiểm cả cây, không cần
+
+PY=""
+for c in "${PE_PYTHON:-}" \
+         "$GOC/backend/.venv/Scripts/python.exe" "$GOC/backend/.venv/bin/python" \
+         "$CHUNG/backend/.venv/Scripts/python.exe" "$CHUNG/backend/.venv/bin/python"; do
+  if [ -n "$c" ] && [ -x "$c" ]; then PY="$c"; break; fi
+done
+
+# buoc <mã> <nhãn> <thư mục> <lệnh…> — chạy, ghi <mã>.log + <mã>.kq ("mã_thoát giây").
+buoc() {
+  local ma=$1 nhan=$2 thu_muc=$3; shift 3
+  echo "$nhan" > "$TAM/$ma.nhan"
+  local bd=$(date +%s)
+  ( cd "$thu_muc" && "$@" ) > "$TAM/$ma.log" 2>&1
+  echo "$? $(( $(date +%s) - bd ))" > "$TAM/$ma.kq"
+}
+bo_qua() {   # bo_qua <mã> <nhãn> <lý do>
+  echo "$2" > "$TAM/$1.nhan"; echo "$3" > "$TAM/$1.log"; echo "bỏ 0" > "$TAM/$1.kq"
+}
+
+kiem_cu_phap_js() {
+  local f
+  for f in public/static/js/*.js public/static/js/pages/*.js; do
+    node --check "$f" || return 1
+  done
+}
+
+unit_node() {
+  local f hong=0
+  for f in e2e/unit/*.test.mjs; do
+    node "$f" > /dev/null 2>&1 || { echo "── HỎNG: $f"; node "$f" 2>&1 | tail -15; hong=1; }
+  done
+  return $hong
+}
+
+luoc_do_cho() {
+  # Mục SQL chưa chạy trên CSDL mà máy này nối (nhánh Neon dev) — CHỈ CẢNH BÁO, không chặn
+  # (lead chốt 25/09): dev đi sau không nói gì về thứ production sẽ chạy, và người đẩy tay
+  # không được bị trạng thái dev chặn. Lỗi CÚ PHÁP của tệp lược đồ vẫn chặn (bước pytest guard
+  # `tests_luoc_do_muc` đọc tệp thật). Không nối được CSDL = bỏ qua.
+  local ra ma
+  ra=$("$PY" manage.py bootstrap_schema --kiem --ma-loi 2>&1); ma=$?
+  echo "$ra"
+  if [ $ma -ne 0 ] && ! grep -q "Mục sẽ chạy ở lượt bootstrap tới" <<< "$ra"; then
+    echo "(không nối được CSDL — bỏ qua bước này, không chặn đẩy)"
+    return 0
+  fi
+  if [ $ma -ne 0 ]; then
+    echo "→ nên chạy thử trên dev trước: cd backend && python manage.py bootstrap_schema (HAI lần)"
+    : > "$TAM/canh_bao.$1"
+  fi
+  return 0
+}
+
+pytest_tac_dong() {
+  local tep mo_dun
+  git rev-parse -q --verify origin/master > /dev/null || { echo "(không có origin/master)"; return 0; }
+  tep=$(git diff --name-only origin/master...HEAD -- backend | grep '\.py$' || true)
+  mo_dun=$(sed -n 's#^backend/\([^/]*\)/.*#\1#p' <<< "$tep" | sort -u | while read -r m; do
+    [ -d "backend/$m" ] && ls backend/"$m"/tests*.py backend/"$m"/test_*.py > /dev/null 2>&1 && echo "$m"
+  done)
+  [ -n "$mo_dun" ] || { echo "(không mô-đun backend nào có tệp .py đổi so với origin/master)"; return 0; }
+  echo "mô-đun đổi: $(echo $mo_dun)"
+  (cd backend && "$PY" -m pytest $mo_dun -q -p no:cacheprovider -x)
+}
+
+nhom_backend() {
+  if [ -z "$PY" ]; then
+    bo_qua b1 "backend (mọi bước)" "không thấy python có Django — đặt PE_PYTHON"
+    echo "1 0" > "$TAM/b1.kq"
+    return
+  fi
+  buoc b1 "ruff" "$GOC/backend" "$PY" -m ruff check .
+  buoc b2 "manage.py check" "$GOC/backend" "$PY" manage.py check
+  buoc b3 "compileall" "$GOC/backend" "$PY" -m compileall -q -x '[\\/]\.venv[\\/]' .
+  buoc b4 "pytest guard (không CSDL)" "$GOC/backend" "$PY" -m pytest -q -p no:cacheprovider \
+    common/tests_cau_hinh.py common/tests_luoc_do_muc.py
+  if [ -f "$GOC/backend/.env" ] || [ -n "${DATABASE_URL:-}" ]; then
+    buoc b5 "bootstrap_schema --kiem" "$GOC/backend" luoc_do_cho b5
+  else
+    bo_qua b5 "bootstrap_schema --kiem" "không có backend/.env hay DATABASE_URL"
+  fi
+  if [ "${PE_PUSH_PYTEST:-}" = "1" ]; then
+    buoc b6 "pytest theo tác động" "$GOC" pytest_tac_dong
+  else
+    bo_qua b6 "pytest theo tác động" "tắt — bật bằng PE_PUSH_PYTEST=1"
+  fi
+}
+
+nhom_frontend() {
+  if [ ! -d "$GOC/frontend/node_modules" ]; then
+    bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
+    echo "1 0" > "$TAM/f1.kq"
+    return
+  fi
+  buoc f1 "tsc --noEmit" "$GOC/frontend" node node_modules/typescript/bin/tsc --noEmit
+  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" node node_modules/eslint/bin/eslint.js --max-warnings 0
+  buoc f3 "node --check public/static" "$GOC/frontend" kiem_cu_phap_js
+  buoc f4 "unit Node (e2e/unit)" "$GOC/frontend" unit_node
+  buoc f5 "ban_do --kiem" "$GOC" node scripts/ban_do.mjs --kiem
+}
+
+echo "── Cổng kiểm trước khi đẩy (.githooks/pre-push) ──"
+bd=$(date +%s)
+nhom_backend & p1=$!
+nhom_frontend & p2=$!
+wait $p1 $p2
+
+hong=()
+canh=()
+for kq in $(ls "$TAM"/*.kq | sort); do
+  ma=$(basename "$kq" .kq)
+  read -r thoat giay < "$kq"
+  nhan=$(cat "$TAM/$ma.nhan")
+  if [ "$thoat" = "bỏ" ]; then
+    printf '  – %-30s bỏ qua: %s\n' "$nhan" "$(head -1 "$TAM/$ma.log")"
+  elif [ "$thoat" = "0" ] && [ -e "$TAM/canh_bao.$ma" ]; then
+    printf '  ! %-30s %4ss  (cảnh báo, không chặn)\n' "$nhan" "$giay"
+    canh+=("$ma")
+  elif [ "$thoat" = "0" ]; then
+    printf '  ✓ %-30s %4ss\n' "$nhan" "$giay"
+  else
+    printf '  ✗ %-30s %4ss  (mã %s)\n' "$nhan" "$giay" "$thoat"
+    hong+=("$ma")
+  fi
+done
+echo "   tổng $(( $(date +%s) - bd ))s"
+
+for ma in "${canh[@]}"; do
+  echo
+  echo "── CẢNH BÁO: $(cat "$TAM/$ma.nhan") ──"
+  tail -15 "$TAM/$ma.log"
+done
+
+if [ ${#hong[@]} -gt 0 ]; then
+  for ma in "${hong[@]}"; do
+    echo
+    echo "── HỎNG: $(cat "$TAM/$ma.nhan") — 25 dòng cuối ──"
+    tail -25 "$TAM/$ma.log"
+  done
+  echo
+  echo "Đẩy bị CHẶN (${#hong[@]} bước hỏng). Sửa rồi đẩy lại; cố ý bỏ qua: git push --no-verify"
+  exit 1
+fi
+echo "Cổng kiểm ĐẠT."

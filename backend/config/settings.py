@@ -191,7 +191,8 @@ DATABASES['default'].setdefault('OPTIONS', {}).update({
         # LOAD TEST 2026-07-19 (100 user đồng thời): mỗi kết nối chỉ phục vụ
         # ~4 query/s khi DB ở region xa (RTT 250ms) → max_size là trần
         # throughput DB; còn trần CPU là ~115 req/s MỖI TIẾN TRÌNH Python
-        # (GIL) — muốn hơn phải tăng số worker gunicorn (gunicorn.conf.py).
+        # (GIL) — muốn hơn phải tăng số worker gunicorn (`--workers`, startCommand
+        # của render.yaml — nguồn duy nhất từ 24/09/2026).
         # QUAN TRỌNG: pool là PER-PROCESS. Tổng kết nối = workers × max_size
         # phải ≤ ~56 (Neon -pooler cấp 64 backend/user+db, chia sẻ với bản
         # Flask). Mặc định dưới đây cho 1 process dev; production đặt
