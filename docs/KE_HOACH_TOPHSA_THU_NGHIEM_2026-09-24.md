@@ -94,7 +94,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | P0.6 | Mở màn: khung dùng chung cho 3 luồng | [x] `60d33a9` mặt tiền `notifications/gui.py` (4 test, đột biến 4/4). BỎ bước "neo §" + "sửa CHECK hộ": sổ mục lược đồ (H3) coi số § là TÊN, không phải thứ tự; mỗi luồng tự sửa CHECK của mình ở DÒNG KHÁC nhau (A: §35 `paused` + `TRANG_THAI_LOP`; C: §36 `reserved` + `LEAVE_REASONS`) → git gộp không đụng; xung đột "cùng nối cuối tệp" lead giải lúc gộp như §56/§57 |
 | N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
 | V | Mẻ vá rẻ a–o (luồng A) | [~] tách hai: **A1** = V a–h (agent, nhánh `agent/luong-a1`, cổng 9100/3200 — dừng vì hết hạn mức 25/09 01:00, đã gửi tiếp); **A2** = V i, j, k, m, n, o (§69, cổng 9141/3241 — chạy sau khi gộp 1.4b vì cùng sửa `teaching/exports.py`); **V-l** (học viên xem record) dời sang E4 vì đụng `lop_cua_toi.py`/`LopCuaToi.tsx` mà A1 đang sửa |
-| E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [ ] |
+| E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [~] agent chạy từ 25/09 ~03:30, nhánh `agent/e1`, cổng 9151/3251, miền riêng `backend/chuong_trinh/` (luật S4) |
 | E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [ ] |
 | E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [ ] |
 | E4 | Zoom: record tự gắn + HS xem record + thử "% đã xem" | [ ] |
