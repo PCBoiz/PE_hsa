@@ -487,10 +487,14 @@ def _roi_lop(loc_lop, term_id, tu, den):
     dau_dai = _dau_thang_lui(den, SO_THANG - 1)
     r = q1('''WITH roi AS (
                   SELECT m.id, m.user_id, m.class_id, m.left_at, m.leave_reason,
-                         c.name AS class_name, c.class_type, u.name AS user_name
+                         c.name AS class_name, c.class_type, u.name AS user_name,
+                         c2.name AS sang_lop
                   FROM class_members m
                   JOIN classes c ON c.id = m.class_id
                   JOIN users u ON u.id = m.user_id
+                  -- lượt "chuyển lớp" trỏ tới lượt ở lớp mới (§55 transferred_to)
+                  LEFT JOIN class_members m2 ON m2.id = m.transferred_to
+                  LEFT JOIN classes c2 ON c2.id = m2.class_id
                   WHERE m.left_at >= %(tu_rong)s AND m.left_at < %(den_sau)s
                     AND ''' + chi_hoc_vien('u') + ''' AND ''' + loc_lop + '''
               )
@@ -502,7 +506,8 @@ def _roi_lop(loc_lop, term_id, tu, den):
                     FROM roi GROUP BY 1, 2, 3, 4) n) AS nhom,
                 (SELECT COALESCE(json_agg(d ORDER BY d.left_at DESC, d.id DESC), '[]'::json)
                  FROM (SELECT id, user_id, user_name, class_id, class_name, class_type,
-                              left_at, to_char(left_at, 'YYYY-MM-DD') AS left_on, leave_reason
+                              left_at, to_char(left_at, 'YYYY-MM-DD') AS left_on, leave_reason,
+                              sang_lop
                        FROM roi WHERE left_at >= %(tu)s
                        ORDER BY left_at DESC, id DESC LIMIT %(tran)s) d) AS ds''',
            {'tu_rong': min(tu, dau_dai), 'den_sau': den + timedelta(days=1), 'tu': tu,
@@ -532,7 +537,9 @@ def _roi_lop(loc_lop, term_id, tu, den):
         'ds': [{'id': d['id'], 'userId': d['user_id'], 'name': d['user_name'],
                 'classId': d['class_id'], 'className': d['class_name'],
                 'classType': d['class_type'], 'leftOn': d['left_on'],
-                'reason': d['leave_reason']} for d in r['ds']],
+                'reason': d['leave_reason'],
+                # Tên lớp em chuyển SANG (lượt "chuyển lớp"), NULL với lý do khác.
+                'sangLop': d['sang_lop']} for d in r['ds']],
     }
 
 

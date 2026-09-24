@@ -1534,35 +1534,7 @@ body.dark .rm-search-input::placeholder { color: var(--t3); }
   flex-shrink: 0;
 }
 
-.rm-ai-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #E5E7EB;
-  background: #F9FAFB;
-  color: #6B7280;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.rm-ai-btn:hover {
-  border-color: #8B5CF6;
-  color: #7C3AED;
-  background: #F5F3FF;
-}
-
-.rm-premium-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #8B5CF6, #6D28D9);
-  color: #fff;
-  letter-spacing: 0.3px;
-}
+/* .rm-ai-btn + .rm-premium-badge (nút "Lộ trình AI · Premium") bỏ 25/09/2026 — nút đã gỡ ở 1.1d. */
 
 .rm-save-btn {
   padding: 8px 16px;
@@ -1767,8 +1739,6 @@ body.dark .rm-personal-hd     { background: linear-gradient(135deg, var(--bg), v
 body.dark .rm-personal-icon   { background: var(--card); border-color: var(--card-border); }
 body.dark .rm-personal-label  { color: #F1F5F9; }
 body.dark .rm-personal-sub    { color: var(--t3); }
-body.dark .rm-ai-btn          { background: var(--card); border-color: var(--card-border); color: #94A3B8; }
-body.dark .rm-ai-btn:hover    { border-color: #8B5CF6; color: #A78BFA; background: #2D1B69; }
 body.dark .rmv-toolbar         { background: var(--bg); border-color: var(--card); }
 body.dark .rmv-btn             { background: var(--card); border-color: var(--card-border); color: #94A3B8; }
 body.dark .rmv-btn:hover       { background: var(--bg); border-color: var(--accent); color: #38BDF8; }
