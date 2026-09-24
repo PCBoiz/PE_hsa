@@ -89,7 +89,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | P0.1 | Commit bản gộp `agent/bo-thi` (1.5A) đã đo đủ; PROGRESS từ bản nháp | [x] `c1c620b` |
 | P0.2 | **Vá rò ghi chú chuyển lớp** (V-a phần lỗi) — TRƯỚC lần đẩy | [x] `e328ade` — §62a `teacher_comment`; test đỏ trước, đột biến 2/2 (+1 đột biến tương đương bị loại), bootstrap 2 lần, 42/42 |
 | P0.3 | Điền ngược `last_seen_at` (migration `accounts/0002` + 3 test) | [x] `e2c06a6` — đột biến 4/4 đỏ; đã `migrate` trên nhánh dev |
-| P0.4 | Chạy tiếp agent 1.4b (worktree `hoc-vien`) + agent H2/H3/H6 (`ha-tang`) tới xong, gộp | [~] 1.4b GỘP vào `erp` 25/09 (`23a96bb`, tua nhanh) — agent: đỏ trước 12/13, đột biến 16/16 + 2 đột biến frontend, e2e 8/8 hai khổ, axe 16 trạng thái 0, do_giao_dien 0; lead sau gộp: guard 35/35, tsc, ruff. H2/H3/H6 đang làm nốt |
+| P0.4 | Chạy tiếp agent 1.4b + agent H2/H3/H6 tới xong, gộp | [x] 1.4b gộp `23a96bb`; H2/H3/H6 gộp `9c484f6` (agent: đột biến 70/70, diễn tập CSDL mới 60/60, cổng pre-push 56 s; lead sau gộp: bootstrap 2 lần = 0/60 + §57 mỗi lượt, ruff, guard 35/35, tsc). Sự cố ngay sau gộp: §55b khoá ngoại MẤT trên dev (một bootstrap KIỂU CŨ của nhánh agent đứt giữa §36 và §55) → `bootstrap_schema --tu §55` → 42/42; báo A1/A2 gộp `erp` để dùng bootstrap mới. Bật `core.hooksPath .githooks` ở `D:\pe_hsa` |
 | P0.5 | 1.3 phần còn (nút Đăng ký ở `main.js`/`DashboardClient`), 1.4a `sangLop`, 1.1d CSS chết | [x] `ad92e17` (e2e đỏ trên JS cũ → xanh, 14/14 hai khổ; trần tầng cũ 6533 → 6449) + `cf2ace3` (sangLop: đỏ trước, đột biến 2/2, soi ảnh hai khổ) |
 | P0.6 | Mở màn: khung dùng chung cho 3 luồng | [x] `60d33a9` mặt tiền `notifications/gui.py` (4 test, đột biến 4/4). BỎ bước "neo §" + "sửa CHECK hộ": sổ mục lược đồ (H3) coi số § là TÊN, không phải thứ tự; mỗi luồng tự sửa CHECK của mình ở DÒNG KHÁC nhau (A: §35 `paused` + `TRANG_THAI_LOP`; C: §36 `reserved` + `LEAVE_REASONS`) → git gộp không đụng; xung đột "cùng nối cuối tệp" lead giải lúc gộp như §56/§57 |
 | N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
@@ -103,7 +103,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | 1.5C | Xoá mã thi — HOÃN tới khi V-h chạy thật | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |
 | Đ2 | §58 đổi GV/TG một buổi, §59 chấm công khoá tháng, §60 tài liệu R2 (+ nộp tệp) | [ ] |
-| Đ3, U, H4–H8, G | như bảng cũ (H4 outbox nay nằm trong E2) | [ ] |
+| Đ3, U, H4–H8, G | như bảng cũ (H4 outbox nay nằm trong E2); H2/H3/H6 XONG `9c484f6` (sổ mục lược đồ, cấu hình một nguồn, cổng pre-push) | [~] |
 
 **Mốc trước buổi khách xem lại**: P0.*, N, V, E1 (tối thiểu: khung + sổ đầu bài + tiến độ lớp), 1.6. Nếu kịp: E2 lõi,
 E3 lõi (hỗ trợ + chuyển lớp có duyệt). Sau buổi xem: E4, E5, link phụ huynh sống, Đ2, Đ3.
