@@ -7,7 +7,6 @@ từ `seed_data`, và đường duy nhất để có đề thứ hai là sửa m
 QUYỀN: `IsContentEditor` — quản trị viên hoặc `Biên tập nội dung`. Cùng ranh
 giới với soạn giáo trình: đề thi là NỘI DUNG, không phải dữ liệu học viên.
 """
-import io
 import json
 
 from django.db import transaction
@@ -17,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common import audit
-from common.bangtinh import LoiBangTinh, doc, thanh_ban_ghi
+from common.bangtinh import KIEU_XLSX, LoiBangTinh, Trang, doc, ghi_xlsx, thanh_ban_ghi
 from common.db import q, q1, x
 from common.permissions import IsContentEditor
 from mockexam.nhap import COT_BAT_BUOC, TEN_KHAC, TIEU_DE_MAU, doc_cau_hoi
@@ -95,24 +94,15 @@ class AdminMockExamTemplateView(_Base):
     """
 
     def get(self, request):
-        import openpyxl
-
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = 'Câu hỏi'
-        ws.append(TIEU_DE_MAU)
+        # Bộ ghi .xlsx DÙNG CHUNG (`common/bangtinh.ghi_xlsx`, V-k 25/09/2026) — cùng luật
+        # "chữ không bao giờ thành công thức" với bản xuất báo cáo và mẫu nhập học viên.
         # `mau` chứ không phải `x`: `x` là hàm GHI CSDL nhập ở đầu tệp, và
         # một biến vòng lặp trùng tên nó là cái bẫy đọc — người sửa sau nhìn
         # `x` ở đây rồi tưởng chỗ này đang ghi CSDL. (Sinh biểu thức có phạm
         # vi riêng nên KHÔNG có lỗi chạy; thứ hỏng là người đọc.)
-        for d in (_hang_mau(mau) for mau in DONG_MAU):
-            ws.append(d)
-        for i, w in enumerate([14, 60, 18, 18, 18, 18, 16, 12, 16, 46], start=1):
-            ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
-        ws.freeze_panes = 'A2'
-
-        huong = wb.create_sheet('Hướng dẫn')
-        for dong in [
+        cau_hoi = Trang('Câu hỏi', [list(TIEU_DE_MAU)] + [_hang_mau(mau) for mau in DONG_MAU],
+                        rong=[14, 60, 18, 18, 18, 18, 16, 12, 16, 46])
+        huong = Trang('Hướng dẫn', [
             ['Mỗi DÒNG là một câu hỏi. Giữ nguyên dòng tiêu đề ở trang "Câu hỏi".'],
             [''],
             ['Phần thi', 'Định lượng · Định tính · Khoa học (bắt buộc)'],
@@ -125,16 +115,8 @@ class AdminMockExamTemplateView(_Base):
             [''],
             ['Sai ở đâu, hệ thống báo ĐÚNG SỐ DÒNG như trong Excel.'],
             ['Chỉ cần một dòng sai là KHÔNG dòng nào được ghi — không có trạng thái nửa vời.'],
-        ]:
-            huong.append(dong)
-        huong.column_dimensions['A'].width = 16
-        huong.column_dimensions['B'].width = 76
-
-        buf = io.BytesIO()
-        wb.save(buf)
-        res = HttpResponse(
-            buf.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        ], rong=[16, 76], tieu_de=False)
+        res = HttpResponse(ghi_xlsx([cau_hoi, huong]), content_type=KIEU_XLSX)
         res['Content-Disposition'] = 'attachment; filename="mau-de-thi-thu.xlsx"'
         return res
 

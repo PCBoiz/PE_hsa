@@ -257,8 +257,8 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
-    nhan: 'Xuất CSV chuyên cần / tiến độ',
-    giaiThich: 'Để đối chiếu ngoài hệ thống hoặc gửi cho kế toán.',
+    nhan: 'Tải bảng tính chuyên cần / tiến độ (Excel hoặc CSV)',
+    giaiThich: 'Để đối chiếu ngoài hệ thống hoặc gửi cho kế toán. Chuyên cần lọc được theo khoảng ngày. Trợ giảng tải được nhưng tệp không có email và số điện thoại.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/exports.py::ClassAttendanceCsvView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',

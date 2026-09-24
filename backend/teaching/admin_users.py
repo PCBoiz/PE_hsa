@@ -50,7 +50,7 @@ from common.permissions import (
     is_admin,
     last_active_admin,
 )
-from courses.truy_cap import LOP_DANG_HOC, mon_mo
+from courses.truy_cap import BA_MON, LOP_DANG_HOC, mon_mo
 from stats.goals import as_date
 from teaching import vocab
 from teaching.overview import NGUONG_NGU
@@ -91,7 +91,9 @@ _page_with_total = trang_kem_tong
 
 #: Các tham số lọc của màn hình tài khoản. Khai một chỗ để bộ lọc và câu hỏi
 #: "người dùng có lọc gì không" không bao giờ lệch nhau.
-USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id', 'chua_xep_lop', 'khong_hoat_dong')
+USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id', 'chua_xep_lop', 'khong_hoat_dong',
+                      # V-k (25/09/2026): đợt, môn, ngày cấp tài khoản.
+                      'term_id', 'course_id', 'tu', 'den')
 #: Ô lọc dạng CÔNG TẮC: chỉ đang lọc khi giá trị là "có" — `chua_xep_lop=0` (bỏ tích) thì không.
 _CONG_TAC = ('chua_xep_lop',)
 #: Trần của ô "không hoạt động ≥ N ngày". Không kẹp thì `N = 10**9` tràn `timedelta` → 500.
@@ -196,6 +198,38 @@ def build_user_filters(params):
             where.append("u.status = 'active'")
             where.append('(' + sql_hoat_dong('u', '%s', cot=('moc',)) + ') <= %s')
             args += [nay, nay - timedelta(days=so_ngay)]
+
+    # ĐỢT HỌC / MÔN (V-k, 25/09/2026 — bảng TopHSA dòng 6 "lọc theo lớp / môn / khoá"):
+    # em đang học (`LOP_DANG_HOC`) một lớp thuộc đợt ấy / mang môn ấy — cùng luật với cột
+    # "Lớp đang theo học" của tệp xuất. Lớp để trống môn học cả ba môn HSA (`BA_MON`).
+    term_id = (params.get('term_id') or '').strip()
+    if term_id:
+        try:
+            args.append(int(term_id))
+        except (TypeError, ValueError):
+            where.append('FALSE')
+        else:
+            where.append('EXISTS (SELECT 1 FROM class_members m JOIN classes c ON c.id = m.class_id '
+                         'WHERE m.user_id = u.id AND c.term_id = %s AND ' + LOP_DANG_HOC + ')')
+    course_id = (params.get('course_id') or '').strip()
+    if course_id:
+        where.append('EXISTS (SELECT 1 FROM class_members m JOIN classes c ON c.id = m.class_id '
+                     'WHERE m.user_id = u.id AND ' + LOP_DANG_HOC + ' '
+                     'AND (c.course_id = %s OR (c.course_id IS NULL AND %s)))')
+        args += [course_id, course_id in BA_MON]
+
+    # NGÀY CẤP TÀI KHOẢN (`created_at`), `den` tính CẢ ngày ấy. Ngày không đọc được → không
+    # ai khớp (cùng luật mã lớp sai); tệp xuất trả 400 trước khi tới đây.
+    for khoa, phep in (('tu', '>='), ('den', '<')):
+        raw = (params.get(khoa) or '').strip()
+        if not raw:
+            continue
+        ngay = as_date(raw)
+        if not ngay:
+            where.append('FALSE')
+            continue
+        where.append('u.created_at %s %%s' % phep)
+        args.append(ngay + timedelta(days=1) if khoa == 'den' else ngay)
 
     return ' AND '.join(where), args
 

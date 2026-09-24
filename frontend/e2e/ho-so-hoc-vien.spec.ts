@@ -104,7 +104,7 @@ test('học vụ vào Tài khoản: chỉ học viên, không đổi vai, không
   // Ba thứ còn `IsAdminRole` phải VẮNG MẶT — không phải hiện rồi bấm ra 403.
   await expect(page.locator('select[aria-label^="Vai trò của"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Khoá', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Tải Excel (CSV)' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Tải danh sách' })).toHaveCount(0);
   await expect(page.getByText(/HSA-\d{5}/).first()).toBeVisible();
 
   // Ô cấp hàng loạt chỉ cho chọn đúng một vai.

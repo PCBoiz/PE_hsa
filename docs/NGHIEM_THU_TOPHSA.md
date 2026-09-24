@@ -151,8 +151,8 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Kết quả theo môn, hoàn thành bài tập (tổng) | MỘT PHẦN | theo khoá / từng bài; chưa báo cáo chéo |
 | Hoạt động GV/TG | MỘT PHẦN | → **V-o** |
 | HS nghỉ nhiều / chậm tiến độ | MỘT PHẦN | nghỉ nhiều CÓ; chậm tiến độ → **E1** |
-| Bộ lọc thời gian / lớp / môn / khoá | MỘT PHẦN | tổng quan lọc đợt + ngày → **V-k** |
-| Xuất Excel / CSV | MỘT PHẦN | CSV CÓ; .xlsx CHƯA → **V-k** |
+| Bộ lọc thời gian / lớp / môn / khoá | CÓ (V-k) | tổng quan lọc đợt + ngày; tải chuyên cần lọc khoảng ngày; tải danh sách tài khoản lọc thêm đợt học, môn, ngày cấp (`teaching/exports.py`, `admin_users.build_user_filters`) — `teaching/tests_xuat_excel.py` |
+| Xuất Excel / CSV | CÓ (V-k) | hộp "Tải bảng tính" (sổ buổi học của lớp) và "Tải danh sách" (Tài khoản): chọn Excel (.xlsx) hoặc CSV; một bộ ghi `common/bangtinh.ghi_xlsx` (ô chữ không bao giờ thành công thức), trợ giảng không nhận cột liên lạc |
 
 ## Dòng 7 — Kế toán · học phí · THAY
 

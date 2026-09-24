@@ -176,7 +176,7 @@ test('học vụ: em học HAI lớp → hỏi "từ lớp nào" trước, rồi
   expect(ghiLen, 'mở/đóng hộp không được gửi lời ghi nào').toEqual([]);
 });
 
-test('quản trị viên: ô Vai trò có nhãn + "Tất cả"; Tải CSV mang theo bộ lọc mới', async ({ page }) => {
+test('quản trị viên: ô Vai trò có nhãn + "Tất cả"; Tải danh sách mang theo bộ lọc mới', async ({ page }) => {
   // Chặn TRƯỚC khi vào: vào bằng thẻ không cần lời ghi nào (khác đăng nhập mật khẩu).
   const ghiLen = await chanGhi(page);
   const vao = await vaoBangThe(page);
@@ -189,8 +189,15 @@ test('quản trị viên: ô Vai trò có nhãn + "Tất cả"; Tải CSV mang t
   await expect(vai).toBeVisible({ timeout: 30_000 });
   await expect(vai.locator('option').first()).toHaveText('Tất cả');
   await expect(loc.getByRole('combobox', { name: 'Lâu không vào', exact: true })).toHaveValue('30');
-  const csv = page.getByRole('link', { name: 'Tải Excel (CSV)' });
-  await expect(csv).toHaveAttribute('href', /khong_hoat_dong=30/);
+  // "Tải danh sách" (V-k): hộp chọn Excel/CSV — liên kết tải mang bộ lọc đang xem.
+  await page.getByRole('button', { name: 'Tải danh sách' }).click();
+  const hopTai = page.getByRole('dialog', { name: 'Tải danh sách tài khoản' });
+  const tai = hopTai.getByRole('link', { name: 'Tải về' });
+  await expect(tai).toHaveAttribute('href', /khong_hoat_dong=30/);
+  await expect(tai).toHaveAttribute('href', /dinh_dang=xlsx/);
+  await hopTai.getByRole('radio', { name: /^CSV/ }).check();
+  await expect(tai).toHaveAttribute('href', /dinh_dang=csv/);
+  await hopTai.getByRole('button', { name: 'Đóng' }).click();
   const du = (await goiApi(page, 'GET', '/api/admin/users?khong_hoat_dong=30&per_page=1')).du as DanhSach;
   expect(await tongTrenMan(page)).toBe(du.total);
 

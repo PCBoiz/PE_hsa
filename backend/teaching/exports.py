@@ -1,4 +1,11 @@
-"""Xuất dữ liệu ra CSV mở được bằng Excel — đặc tả ERP §6
+"""Xuất dữ liệu ra CSV hoặc Excel (.xlsx) — đặc tả ERP §6, V-k (bảng TopHSA dòng 6)
+
+TỪ 25/09/2026 (V-k): mọi bản xuất bảng tính ở đây nhận thêm ``?dinh_dang=xlsx`` —
+CÙNG hàng, CÙNG cột, CÙNG hàng rào (``bo_cot_lien_lac``), chỉ khác cách đóng gói
+(``common/bangtinh.ghi_xlsx``). Không gửi ``dinh_dang`` thì vẫn là CSV như cũ: nút cũ,
+đường dẫn cũ trong dấu trang của người dùng giữ nguyên. Bảng khách đòi "Xuất Excel/CSV"
+cạnh "bộ lọc thời gian / lớp / môn / khoá": bảng điểm danh lọc ``tu``/``den``, danh
+sách tài khoản lọc thêm ``term_id``, ``course_id``, ``tu``/``den`` (ngày cấp).
 
 Đặc tả nói thẳng: *"Xuất Excel/PDF — bắt buộc với trung tâm, họ luôn cần bản
 mang đi họp."* Người mở ba file dưới đây không phải lập trình viên: là trợ giảng
@@ -62,10 +69,12 @@ from rest_framework.renderers import BaseRenderer, JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.bangtinh import KIEU_XLSX, KY_TU_CONG_THUC, Trang, ghi_xlsx
 from common.clock import local_now
 from common.db import q, q1
 from common.permissions import IsAdminRole, IsTeachingStaff, can_see_class, is_assistant
 from courses.truy_cap import LOP_DANG_HOC
+from stats.goals import as_date
 from teaching import reports
 from teaching.admin_users import any_user_filter, build_user_filters
 from teaching.attendance import dem_theo_hoc_vien, ti_le
@@ -94,7 +103,7 @@ USER_STATUS_LABELS = {'active': 'Đang hoạt động', 'suspended': 'Đã khoá
 #: ``"\t=cmd"`` bị lột lớp tab và lộ ra dấu ``=`` để bị chặn ở đây. Liệt kê tab
 #: vào đây thì nhánh đó vĩnh viễn không chạy, và một hằng số nói dối về việc nó
 #: đang bảo vệ cái gì còn nguy hiểm hơn là không có nó.
-_FORMULA_STARTERS = ('=', '+', '-', '@')
+_FORMULA_STARTERS = KY_TU_CONG_THUC      # một danh sách cho CSV lẫn .xlsx (`common/bangtinh.py`)
 
 #: `đ`/`Đ` không tách được dấu bằng NFKD (chúng là chữ cái riêng, không phải
 #: d + dấu), nên phải thay tay trước khi bỏ dấu cho tên file dự phòng.
@@ -239,6 +248,59 @@ def _csv_response(filename, header, rows):
     return resp
 
 
+#: Định dạng nhận ở ``?dinh_dang=``. Thiếu = CSV (hành vi trước V-k).
+DINH_DANG = ('csv', 'xlsx')
+#: Cột số điện thoại: CSV phải chèn nháy để Excel giữ số 0 đầu (`_phone_cell`); .xlsx
+#: thì không — ô CHỮ đã giữ nguyên số 0, chèn nháy là hiện dấu nháy ra mắt người đọc.
+COT_SO_DIEN_THOAI = 'Số điện thoại'
+
+
+def doc_dinh_dang(params):
+    """``(định dạng, lỗi)`` từ ``?dinh_dang=`` — lạ thì 400, không lặng lẽ rơi về CSV."""
+    dd = (params.get('dinh_dang') or 'csv').strip().lower()
+    if dd not in DINH_DANG:
+        return None, 'Định dạng tải về phải là csv hoặc xlsx.'
+    return dd, None
+
+
+def doc_khoang_ngay(params):
+    """``(tu, den, lỗi)`` từ ``?tu=&den=`` (YYYY-MM-DD, cả hai tuỳ chọn, ``den`` tính CẢ ngày)."""
+    ra = {}
+    for k in ('tu', 'den'):
+        raw = (params.get(k) or '').strip()
+        if not raw:
+            ra[k] = None
+            continue
+        d = as_date(raw)
+        if not d:
+            return None, None, 'Ngày "%s" không hợp lệ — dùng dạng YYYY-MM-DD.' % raw[:20]
+        ra[k] = d
+    if ra['tu'] and ra['den'] and ra['tu'] > ra['den']:
+        return None, None, '"Từ ngày" phải trước hoặc bằng "đến ngày".'
+    return ra['tu'], ra['den'], None
+
+
+def _xlsx_response(filename, header, rows, ten_trang='Dữ liệu'):
+    resp = HttpResponse(ghi_xlsx([Trang(ten_trang, [header] + [list(r) for r in rows])]),
+                        content_type=KIEU_XLSX)
+    resp['Content-Disposition'] = _disposition(filename)
+    return resp
+
+
+def xuat_bang(dinh_dang, ten, header, rows, ten_trang='Dữ liệu'):
+    """CSV hay .xlsx cho CÙNG một bảng — ``ten`` là tên tệp KHÔNG đuôi.
+
+    ``rows`` mang giá trị THÔ (số là số, ngày là ngày, số điện thoại là chuỗi): CSV đi
+    qua ``_cell``/``_phone_cell``, .xlsx đi qua ``ghi_xlsx`` — mỗi định dạng một luật
+    chống công thức hợp với nó, cùng một danh sách ký tự mở đầu."""
+    if dinh_dang == 'xlsx':
+        return _xlsx_response(ten + '.xlsx', header, rows, ten_trang)
+    if COT_SO_DIEN_THOAI in header:
+        i = header.index(COT_SO_DIEN_THOAI)
+        rows = [list(r[:i]) + [_phone_cell(r[i])] + list(r[i + 1:]) for r in rows]
+    return _csv_response(ten + '.csv', header, rows)
+
+
 class _CsvRenderer(BaseRenderer):
     """Cho phép thương lượng nội dung với ``Accept: text/csv``.
 
@@ -354,6 +416,9 @@ class ClassProgressCsvView(APIView):
         # Vào được khu vực giảng dạy KHÔNG có nghĩa là xem được mọi lớp.
         if not can_see_class(request.user, class_id):
             return Response(_NOT_FOUND, status=404)
+        dinh_dang, loi = doc_dinh_dang(request.query_params)
+        if loi:
+            return Response({'error': loi}, status=400)
         data = reports.class_report(class_id)
         if data is None:
             return Response(_NOT_FOUND, status=404)
@@ -387,7 +452,7 @@ class ClassProgressCsvView(APIView):
             rows.append([
                 s['name'],
                 s['email'],
-                _phone_cell(phones.get(s['userId'])),
+                phones.get(s['userId']),     # `xuat_bang` lo số 0 đầu cho CSV
                 _vn_date(s['joinedAt']),
                 # Học viên đã rời lớp VẪN nằm trong file (báo cáo của kỳ đó phải
                 # đủ người), chỉ đánh dấu rõ ở cột này để người đọc tự lọc.
@@ -413,16 +478,19 @@ class ClassProgressCsvView(APIView):
         # Lấy mã lớp từ báo cáo đã nạp thay vì hỏi CSDL thêm một lượt: dòng
         # `classes` đã nằm sẵn trong kết quả, hỏi lại là một vòng gọi cho không.
         info = data['class']
-        name = 'Tiến độ lớp %s %s.csv' % (
+        name = 'Tiến độ lớp %s %s' % (
             _label_from(info['code'], info['name'], class_id), _stamp())
         header, rows = bo_cot_lien_lac(header, rows, request.user)
-        return _csv_response(name, header, rows)
+        return xuat_bang(dinh_dang, name, header, rows, 'Tiến độ')
 
 
 # ── 2. Điểm danh (bảng chéo) ────────────────────────────────────────────────
 
-def dem_chuyen_can(class_id):
+def dem_chuyen_can(class_id, tu=None, den=None):
     """Đếm chuyên cần từng học viên của lớp. Trả ``(theo_uid, đọc_được)``.
+
+    ``tu``/``den`` (V-k, 25/09/2026): chỉ đếm buổi BẮT ĐẦU trong khoảng ấy (``den`` tính
+    cả ngày) — cùng khoảng với các cột buổi của bảng chéo, để tổng khớp các ô bên trái.
 
     ── VÌ SAO TÁCH RA (07/09/2026) ──────────────────────────────────────────
 
@@ -449,7 +517,7 @@ def dem_chuyen_can(class_id):
     ``chuaTick`` là việc còn tồn của giảng viên, không phải lỗi của học viên —
     nên nó là một ô riêng, không nằm trong mẫu số của tỉ lệ.
     """
-    sessions, marks, doc_duoc = ClassAttendanceCsvView._attendance_data(class_id)
+    sessions, marks, doc_duoc = ClassAttendanceCsvView._attendance_data(class_id, tu, den)
     if not doc_duoc:
         return None, False
 
@@ -499,8 +567,12 @@ class ClassAttendanceCsvView(APIView):
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response(_NOT_FOUND, status=404)
+        dinh_dang, loi = doc_dinh_dang(request.query_params)
+        tu, den, loi_ngay = doc_khoang_ngay(request.query_params)
+        if loi or loi_ngay:
+            return Response({'error': loi or loi_ngay}, status=400)
 
-        sessions, marks, doc_duoc = self._attendance_data(class_id)
+        sessions, marks, doc_duoc = self._attendance_data(class_id, tu, den)
         if not doc_duoc:
             # KHÔNG trả một file trông bình thường. Cả tệp này chỉ có một nội
             # dung là chuyên cần; đọc không được mà vẫn xuất ra thì người dùng
@@ -519,7 +591,7 @@ class ClassAttendanceCsvView(APIView):
         # trong lớp" sẽ trôi khỏi nhau ngay lần đầu một trong hai được sửa, và
         # khi đó sổ điểm danh thiếu người mà không ai nhận ra.
         members = reports._members(class_id)
-        tong, _ = dem_chuyen_can(class_id)
+        tong, _ = dem_chuyen_can(class_id, tu, den)
 
         header = ['Họ tên', 'Email', 'Trạng thái']
         for s in sessions:
@@ -551,28 +623,38 @@ class ClassAttendanceCsvView(APIView):
             row.append('' if t.get('tiLe') is None else t['tiLe'])
             rows.append(row)
 
-        name = 'Điểm danh lớp %s %s.csv' % (_class_label(class_id), _stamp())
+        khoang = ''
+        if tu or den:
+            khoang = ' (%s – %s)' % (tu.strftime('%d-%m-%Y') if tu else '…',
+                                     den.strftime('%d-%m-%Y') if den else '…')
+        name = 'Điểm danh lớp %s%s %s' % (_class_label(class_id), khoang, _stamp())
         header, rows = bo_cot_lien_lac(header, rows, request.user)
-        return _csv_response(name, header, rows)
+        return xuat_bang(dinh_dang, name, header, rows, 'Điểm danh')
 
     @staticmethod
-    def _attendance_data(class_id):
+    def _attendance_data(class_id, tu=None, den=None):
         """Buổi học + toàn bộ điểm danh của lớp. Hai câu, cố định.
+
+        ``tu``/``den`` (V-k): chỉ buổi bắt đầu trong khoảng — lọc ở CẢ HAI câu, nên dấu
+        tick của buổi ngoài khoảng không lọt vào bảng.
 
         Bọc ``DatabaseError`` cùng lý do với ``_absence_counts``: hai bảng này
         mới dựng 30/08/2026 và HIỆN CHƯA CÓ DÒNG NÀO. Lớp chưa có buổi nào phải
         ra file chỉ có dòng tiêu đề + danh sách học viên, không được ném lỗi —
         đó là trạng thái của MỌI lớp trong tuần đầu dùng mô-đun điểm danh.
         """
+        khoang = ('AND (%(tu)s::date IS NULL OR s.starts_at >= %(tu)s::date) '
+                  "AND (%(den)s::date IS NULL OR s.starts_at < %(den)s::date + INTERVAL '1 day')")
+        ts = {'lop': class_id, 'tu': tu, 'den': den}
         try:
-            sessions = q('''SELECT id, starts_at, topic, status
-                            FROM class_sessions
-                            WHERE class_id = %s
-                            ORDER BY starts_at, id''', (class_id,))
+            sessions = q('''SELECT s.id, s.starts_at, s.topic, s.status
+                            FROM class_sessions s
+                            WHERE s.class_id = %(lop)s ''' + khoang + '''
+                            ORDER BY s.starts_at, s.id''', ts)
             rows = q('''SELECT a.session_id, a.user_id, a.status
                         FROM attendance a
                         JOIN class_sessions s ON s.id = a.session_id
-                        WHERE s.class_id = %s''', (class_id,))
+                        WHERE s.class_id = %(lop)s ''' + khoang, ts)
         except DatabaseError:
             # Trả rỗng LẶNG LẼ là sai: file ra chỉ có tên học viên, trông y hệt
             # một lớp chưa học buổi nào — và người mở file mang nó đi họp.
@@ -635,6 +717,10 @@ class AdminUsersCsvView(APIView):
     renderer_classes = CSV_RENDERERS
 
     def get(self, request):
+        dinh_dang, loi = doc_dinh_dang(request.query_params)
+        _, _, loi_ngay = doc_khoang_ngay(request.query_params)
+        if loi or loi_ngay:
+            return Response({'error': loi or loi_ngay}, status=400)
         # ĐÚNG bộ lọc của màn hình danh sách, không phải một bản chép lại.
         #
         # Trước 30/08/2026 tệp này tự dựng lấy một bộ điều kiện riêng, và hai bộ
@@ -667,7 +753,7 @@ class AdminUsersCsvView(APIView):
         data = [[
             r['name'],
             r['email'],
-            _phone_cell(r['phone']),
+            r['phone'],                  # `xuat_bang` lo số 0 đầu cho CSV
             ROLE_LABELS.get(r['role'], r['role']),
             USER_STATUS_LABELS.get(r['status'], r['status']),
             r['classes'] or '',
@@ -678,9 +764,8 @@ class AdminUsersCsvView(APIView):
         # Ghi rõ "(đã lọc)" trong tên file: hai file cùng tên nằm cạnh nhau
         # trong thư mục Tải về, một file đủ và một file đã lọc, mà không phân
         # biệt được thì sớm muộn có người mang bản thiếu người đi họp.
-        name = 'Danh sách tài khoản%s %s.csv' % (' (đã lọc)' if filtered else '',
-                                                 _stamp())
-        return _csv_response(name, header, data)
+        name = 'Danh sách tài khoản%s %s' % (' (đã lọc)' if filtered else '', _stamp())
+        return xuat_bang(dinh_dang, name, header, data, 'Tài khoản')
 
     @staticmethod
     def _password_state(row):

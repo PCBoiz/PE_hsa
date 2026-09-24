@@ -27,6 +27,7 @@ import type { HinhDang } from '@/lib/kiemDang';
 import ChuyenLop from '../lop-hoc/ChuyenLop';
 import { LOAI_LOP } from '../lop-hoc/lop';
 
+import XuatTaiKhoan from './XuatTaiKhoan';
 import { CHUA_XEP_LOP, LOC_RONG, NGUONG_NGU_DUONG_LUI, type LocTaiKhoan, nhanHoatDong, thamSoLoc } from './loc';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
 // Bản đầy đủ không rung cây được — đo A/B trên Thi thử: 956 kB (zod) → 608 kB
@@ -368,7 +369,6 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
   }
 
   const pages = Math.max(1, Math.ceil(data.total / (data.per_page || 25)));
-  const exportHref = `/api/admin/export/users.csv?${query(1)}`;
   /* Học vụ (23/09/2026): máy chủ chỉ trả tài khoản Học viên và tự báo bằng cờ
      này. Ẩn đúng ba thứ còn `IsAdminRole` — đổi vai trò, khoá/mở lại, xuất
      CSV — thay vì để họ bấm vào một nút rồi nhận 403. Đọc CỜ CỦA MÁY CHỦ chứ
@@ -403,17 +403,9 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
               : `${data.total} ${chiHocVien ? 'học viên' : 'tài khoản'} khớp bộ lọc hiện tại · trang ${data.page}/${pages}`
           }
           action={
-            /* Thẻ neo thường, KHÔNG phải fetch rồi tự dựng file: cookie đăng
-               nhập đi kèm sẵn, và trình duyệt lo phần tải xuống — tự dựng thì
-               phải giữ cả tệp trong bộ nhớ trước khi lưu. */
-            chiHocVien ? undefined : (
-              <a
-                href={exportHref}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Tải Excel (CSV)
-              </a>
-            )
+            /* Hộp "Tải danh sách" (V-k): Excel hoặc CSV, lọc thêm đợt / môn / ngày cấp.
+               Liên kết tải vẫn là thẻ neo thường — cookie đi kèm sẵn, trình duyệt lo lưu. */
+            chiHocVien ? undefined : <XuatTaiKhoan loc={loc().toString()} />
           }
         />
 

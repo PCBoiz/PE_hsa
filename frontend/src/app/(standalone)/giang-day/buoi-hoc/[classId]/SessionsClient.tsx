@@ -25,6 +25,7 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
+import XuatLop from './XuatLop';
 
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
@@ -382,18 +383,8 @@ export default function SessionsClient({
                   Báo cáo phụ huynh
                 </Link>
               )}
-              <a
-                href={`/api/teach/classes/${classId}/export/attendance.csv`}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Xuất chuyên cần
-              </a>
-              <a
-                href={`/api/teach/classes/${classId}/export/progress.csv`}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Xuất tiến độ
-              </a>
+              {/* Chuyên cần + tiến độ: Excel hoặc CSV, chuyên cần lọc theo ngày (V-k). */}
+              <XuatLop classId={classId} />
               {/* PDF đứng RIÊNG và được nhấn mạnh, không xếp lẫn hai nút CSV:
                   nó dùng cho việc khác hẳn. Hai tệp CSV là bảng để LÀM VIỆC
                   trên đó (lọc, sắp, gọi điện theo danh sách); PDF là bản để
