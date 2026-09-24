@@ -62,8 +62,10 @@ const HD_CLASSES = z.looseObject({
  * trợ giảng nhìn khung trống thêm ngần ấy thời gian, mỗi lần mở trang.
  *
  * Bộ lọc ĐỌC từ URL (1.4b): `?chua_xep_lop=1`, `?khong_hoat_dong=14`, `?q=`… mở thẳng
- * danh sách đã lọc — liên kết "học viên lâu không vào" từ nơi khác dẫn tới đúng tập
- * ấy. Tên tham số URL = tên tham số API, không dịch hai lần.
+ * danh sách đã lọc — tải lại trang hay mở link đồng nghiệp gửi là thấy đúng tập ấy
+ * (màn trình duyệt ghi bộ lọc lên URL). Chưa nơi nào khác trỏ tới các link này (thẻ
+ * "Tài khoản lâu không vào" ở Tổng quan có thể trỏ `?khong_hoat_dong=7`). Tên tham số
+ * URL = tên tham số API, không dịch hai lần.
  */
 export default async function TaiKhoanPage({
   searchParams,
