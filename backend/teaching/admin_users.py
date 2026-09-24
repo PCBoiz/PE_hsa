@@ -487,7 +487,10 @@ class AdminBulkCreateUsersView(APIView):
     khẩu**, và đó là thiết kế của scrypt chứ không phải chỗ tối ưu được — bằm
     chậm chính là cái làm mật khẩu khó dò. Cộng lại: 200 em là ~25 giây CPU
     thuần chỉ để bằm mật khẩu, trên máy phát triển; Render dùng CPU chia sẻ nên
-    còn chậm hơn, mà gunicorn cắt request ở 30 giây (``gunicorn.conf.py``). Phần
+    còn chậm hơn, mà gunicorn chạy với ``--timeout 60`` (startCommand của
+    ``render.yaml``; chú thích này từng ghi 30 giây theo ``gunicorn.conf.py`` — số
+    ấy bị dòng lệnh đè từ trước, tệp đã xoá 24/09/2026). Giữ mốc 30 giây dưới đây
+    làm ngân sách thiết kế, dư một nửa. Phần
     ghi CSDL ngược lại rẻ (2 câu mỗi em × <5ms khi chạy thật), nên đừng đi tối ưu
     số câu SQL ở đây mà tưởng giải quyết được vấn đề.
 
