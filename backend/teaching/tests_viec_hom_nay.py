@@ -4,9 +4,9 @@ Chạy trên DB thật, giao dịch CUỘN LẠI (xem `conftest.py`). Đi qua UR
 
 ── THỨ ĐANG ĐƯỢC CANH (anh Sơn chốt 14/09/2026) ─────────────────────────────
 
-  1. Giảng viên chỉ thấy lớp mình; trợ giảng chỉ thấy lớp được gán và KHÔNG thấy
-     hai khối về từng em (vắng liền, cần chú ý) — cùng ranh giới với báo cáo
-     phụ huynh. Học viên 403.
+  1. Giảng viên chỉ thấy lớp mình; trợ giảng chỉ thấy lớp được gán — và từ kế
+     hoạch v2 (V-b, 25/09/2026) THẤY cả hai khối về từng em (vắng liền, cần chú
+     ý) của lớp ấy. Học viên 403.
   2. Bốn khối việc đúng nghĩa của chúng: buổi ĐÃ BẮT ĐẦU mà chưa mở sổ; bài ĐÃ
      NỘP mà chưa chấm (đỏ khi chờ quá 5 ngày); em vắng LIỀN từ 2 buổi đã điểm
      danh; em có cảnh báo mức cao — dùng CHUNG luật với báo cáo lớp.
@@ -122,9 +122,10 @@ def test_ai_thay_gi(canh):
     assert tg.status_code == 200, tg.json()
     assert [b['sessionId'] for b in tg.json()['chuaDiemDanh']['ds']] == [b1]
     assert tg.json()['troGiang'] is True
-    # Không phải danh sách rỗng — KHÔNG CÓ khoá. Rỗng trông như "không em nào
-    # vắng", tức một câu trả lời sai cho người không được phép hỏi.
-    assert 'vangLien' not in tg.json() and 'canChuY' not in tg.json()
+    # Kế hoạch v2 (V-b, 25/09/2026): trợ giảng NHẬN hai khối về từng em — bảng yêu
+    # cầu TopHSA dòng 21 "dấu hiệu bỏ học, danh sách cần nhắc". Phạm vi vẫn là lớp
+    # được gán (`_lop_cua`); xem `test_tro_giang_thay_vang_lien_chi_lop_minh`.
+    assert 'vangLien' in tg.json() and 'canChuY' in tg.json()
 
     khac = _goi(canh['gv_khac']).json()
     assert [b['sessionId'] for b in khac['chuaDiemDanh']['ds']] == [b2]
@@ -204,6 +205,27 @@ def test_em_vang_lien_tu_hai_buoi(canh):
     d = _goi(canh['gv']).json()['vangLien']
     assert [(e['userId'], e['soBuoi']) for e in d] == [(canh['an'].id, 3)], d
     assert d[0]['classId'] == canh['lop']
+
+
+def test_tro_giang_thay_vang_lien_chi_lop_minh(canh):
+    """V-b: trợ giảng thấy em vắng liền / cần chú ý — CHỈ của lớp được gán.
+
+    An vắng liền ở CẢ HAI lớp; trợ giảng chỉ ở `lop` nên chỉ được thấy dòng của
+    `lop`. Dung chỉ học lớp kia (chưa hoạt động → cần chú ý) — không được lọt.
+    """
+    dung = _nguoi('Dung VHN', ROLE_STUDENT)
+    _vao(canh['lop_khac'], dung)
+    for lop in (canh['lop'], canh['lop_khac']):
+        for gio in (-48, -24):
+            _tick(_buoi(lop, gio, da_tick=True), canh['an'], 'absent')
+    d = _goi(canh['tg']).json()
+    assert [(e['userId'], e['classId']) for e in d['vangLien']] == [(canh['an'].id, canh['lop'])], d
+    thay = {e['userId'] for e in d['canChuY']}
+    assert canh['chau'].id in thay, d['canChuY']
+    assert dung.id not in thay and all(e['classId'] == canh['lop'] for e in d['canChuY']), d['canChuY']
+    # Giảng viên lớp kia vẫn thấy An ở lớp của mình — phạm vi theo người hỏi.
+    khac = _goi(canh['gv_khac']).json()
+    assert [(e['userId'], e['classId']) for e in khac['vangLien']] == [(canh['an'].id, canh['lop_khac'])]
 
 
 def test_vang_co_phep_khong_tinh_la_vang_lien(canh):

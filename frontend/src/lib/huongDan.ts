@@ -95,6 +95,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Bấm thẳng vào dòng việc bên dưới — nó dẫn tới đúng lớp và đúng buổi, không phải tự đi tìm.',
+        luu_y: 'Trợ giảng cũng thấy em vắng liền và em cần chú ý của lớp mình. Dòng ấy dẫn về sổ buổi học của lớp; việc gọi phụ huynh vẫn là của giảng viên — báo giảng viên phụ trách.',
       },
       {
         lam: 'Làm hết phần "Chưa điểm danh xong" trước khi về.',

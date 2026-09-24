@@ -48,13 +48,14 @@ type ViecHomNay = {
     choNgay: number;
     quaHan: boolean;
   }[];
-  /** Vắng mặt với trợ giảng — không phải rỗng, mà KHÔNG CÓ. */
+  /** Từ 25/09/2026 (V-b) trợ giảng cũng nhận hai khối này. Vẫn `?`: máy chủ cũ
+   *  (Vercel lên trước Render) không gửi chúng cho trợ giảng. */
   vangLien?: { userId: number; name: string | null; classId: number; className: string; soBuoi: number }[];
   canChuY?: { userId: number; name: string | null; classId: number; className: string; lyDo: string }[];
 };
 
 /* Hình dạng `/api/teach/viec-hom-nay` (T18 mức 2). Hai khoá về từng em là
-   `optional` đúng nghĩa: trợ giảng KHÔNG có chúng — không phải rỗng. */
+   `optional` vì máy chủ trước 25/09/2026 không gửi chúng cho trợ giảng. */
 const BUOI = {
   sessionId: z.number(), classId: z.number(), className: z.string(),
   startsAt: z.string().nullable(), topic: z.string().nullable(),
@@ -86,6 +87,18 @@ function gio(iso: string | null) {
 }
 
 const LINK = 'inline-flex min-h-11 items-center font-semibold text-brand-ink underline';
+
+/**
+ * Lối vào cho một dòng về MỘT em. Giảng viên / học vụ: tờ báo cáo của em. Trợ
+ * giảng KHÔNG mở được tờ ấy (in liên lạc của em — `IsSeniorTeachingStaff`), nên
+ * dẫn về sổ buổi học của lớp, nơi trợ giảng làm việc hằng ngày. Dựng lối dẫn tới
+ * một trang 403 là đúng lỗi rà luồng trợ giảng 14/09 đã gỡ ở màn Buổi học.
+ */
+function loiVaoEm(troGiang: boolean, e: { classId: number; userId: number }) {
+  return troGiang
+    ? { den: `/giang-day/buoi-hoc/${e.classId}`, nhan: 'Mở lớp' }
+    : { den: `/giang-day/bao-cao/${e.classId}/${e.userId}`, nhan: 'Xem tờ báo cáo' };
+}
 
 /** Một dòng việc: chữ bên trái, lối vào bên phải; xuống hàng ở khổ hẹp. */
 function Dong({ children, den, nhan }: { children: React.ReactNode; den: string; nhan: string }) {
@@ -253,11 +266,15 @@ export default async function ViecHomNayPage() {
         <Card>
           <CardHead
             title={`Vắng liền từ ${d.nguong.vangLien} buổi (${d.vangLien.length})`}
-            hint="Vắng không phép ở mọi buổi đã điểm danh gần đây. Nên gọi phụ huynh ngay."
+            hint={
+              d.troGiang
+                ? 'Vắng không phép ở mọi buổi đã điểm danh gần đây. Báo giảng viên phụ trách lớp.'
+                : 'Vắng không phép ở mọi buổi đã điểm danh gần đây. Nên gọi phụ huynh ngay.'
+            }
           />
           <ul className="flex flex-col">
             {d.vangLien.map((e) => (
-              <Dong key={`${e.classId}-${e.userId}`} den={`/giang-day/bao-cao/${e.classId}/${e.userId}`} nhan="Xem tờ báo cáo">
+              <Dong key={`${e.classId}-${e.userId}`} {...loiVaoEm(d.troGiang, e)}>
                 <span className="font-semibold text-ink">{e.name || `#${e.userId}`}</span>
                 {' · '}
                 {e.className} · <Chip tone="bad">vắng {e.soBuoi} buổi liền</Chip>
@@ -275,7 +292,7 @@ export default async function ViecHomNayPage() {
           />
           <ul className="flex flex-col">
             {d.canChuY.map((e) => (
-              <Dong key={`${e.classId}-${e.userId}`} den={`/giang-day/bao-cao/${e.classId}/${e.userId}`} nhan="Xem tờ báo cáo">
+              <Dong key={`${e.classId}-${e.userId}`} {...loiVaoEm(d.troGiang, e)}>
                 <span className="font-semibold text-ink">{e.name || `#${e.userId}`}</span>
                 {' · '}
                 {e.className} · {e.lyDo}

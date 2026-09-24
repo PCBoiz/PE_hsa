@@ -254,7 +254,7 @@ Chat thời gian thực: không làm (anh chốt 25/09 — Zalo vẫn để chat
 | Điểm danh, theo dõi bài tập, tiến độ | CÓ | — |
 | Hỗ trợ giải đáp | CHƯA | **E3** |
 | Theo dõi việc xem record | CHƯA | **V-l** (mở / chưa mở), **E4** (% đã xem) |
-| Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | CHƯA với TG | **V-b** (TG nhận tín hiệu vắng liền / cần chú ý) + **E3** |
+| Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | MỘT PHẦN — TG thấy (V-b); "báo lên" chờ **E3** | `teaching/viec_hom_nay.py` `ViecHomNayView.get` trả `vangLien` + `canChuY` cho mọi vai, phạm vi `_lop_cua`; test `tests_viec_hom_nay.py::test_tro_giang_thay_vang_lien_chi_lop_minh`. Demo: đăng nhập trợ giảng → "Việc hôm nay" → khối "Vắng liền" / "Cần chú ý ngay" của lớp mình, dòng dẫn về sổ buổi học |
 
 ## Dòng 22 — Trợ giảng · record Zoom · MỘT PHẦN
 

@@ -233,6 +233,15 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Xem em vắng liền và em cần chú ý',
+    // Trợ giảng thấy từ 25/09/2026 (kế hoạch v2, V-b — bảng TopHSA dòng 21).
+    giaiThich: 'Ở "Việc hôm nay". Trợ giảng cũng thấy, chỉ tên em và lớp — không có liên lạc phụ huynh; gọi phụ huynh vẫn là việc của giảng viên.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/viec_hom_nay.py::ViecHomNayView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Xem hồ sơ học tập của một em',
     giaiThich: 'Tiến độ, điểm, chuyên cần — không gồm nhật ký em tự ghi.',
     lopQuyen: 'IsTeachingStaff',

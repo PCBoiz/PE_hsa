@@ -17,11 +17,13 @@ Anh Sơn chốt bốn khối + buổi sắp tới:
 
 ── TRỢ GIẢNG ──────────────────────────────────────────────────────────────
 
-Chỉ lớp được gán, và CHỈ hai khối về buổi/bài. Hai khối về từng em không có
-KHOÁ trong phản hồi (không phải danh sách rỗng — rỗng trông như "không em nào
-vắng"). Cùng ranh giới với báo cáo phụ huynh (01/09/2026): tín hiệu "gọi phụ
-huynh" là của giảng viên. Buổi sắp tới thì trợ giảng thấy — lịch lớp vốn hiện ở
-trang buổi học mà trợ giảng đã vào được.
+Chỉ lớp được gán (`_lop_cua` → `visible_class_ids`), nhưng ĐỦ các khối. Tới
+25/09/2026 trợ giảng không nhận hai khối về từng em (vắng liền, cần chú ý) — ranh
+giới cũ "tín hiệu gọi phụ huynh là của giảng viên". Bảng yêu cầu TopHSA 24/09
+dòng 21 đòi ngược lại: trợ giảng theo dõi "dấu hiệu bỏ học, danh sách cần nhắc /
+cần báo" (kế hoạch v2, V-b). Hai khối này chỉ có TÊN em và lớp — không liên lạc
+phụ huynh, nên ranh giới riêng tư của tờ báo cáo (`IsSeniorTeachingStaff`) vẫn
+nguyên: trợ giảng thấy "em nào", còn gọi ai vẫn là việc của giảng viên.
 
 ── SỐ CÂU SQL KHÔNG THEO SỐ LỚP ───────────────────────────────────────────
 
@@ -213,17 +215,16 @@ class ViecHomNayView(APIView):
     def get(self, request):
         nay = local_now()
         ids, lop = _lop_cua(request.user)
-        tro_giang = is_assistant(request.user)
-        ra = {
-            'troGiang': tro_giang,
+        hoc_vien = _hoc_vien_dang_hoc(ids) if ids else []
+        return Response({
+            # Màn hình vẫn cần biết để dẫn trợ giảng tới đúng chỗ (họ không mở
+            # được tờ báo cáo phụ huynh) — không còn dùng để giấu khối nào.
+            'troGiang': is_assistant(request.user),
             'lop': [{'id': r['id'], 'name': r['name']} for r in lop.values()],
             'nguong': {'chamQuaNgay': CHAM_QUA_NGAY, 'vangLien': VANG_LIEN},
             'sapToi': _sap_toi(ids, lop, nay) if ids else [],
             'chuaDiemDanh': _chua_diem_danh(ids, lop, nay) if ids else {'tong': 0, 'ds': []},
             'chuaCham': _chua_cham(ids, lop, nay) if ids else [],
-        }
-        if not tro_giang:
-            hoc_vien = _hoc_vien_dang_hoc(ids) if ids else []
-            ra['vangLien'] = _vang_lien(ids, lop, hoc_vien) if ids else []
-            ra['canChuY'] = _can_chu_y(lop, hoc_vien, nay) if ids else []
-        return Response(ra)
+            'vangLien': _vang_lien(ids, lop, hoc_vien) if ids else [],
+            'canChuY': _can_chu_y(lop, hoc_vien, nay) if ids else [],
+        })
