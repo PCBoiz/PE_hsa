@@ -102,6 +102,12 @@ const VIEC: Record<string, string> = {
   'assignment.grade': 'Chấm bài',
   'course.create': 'Tạo khoá học',
   'course.update': 'Sửa khoá học',
+  // Khung chương trình theo buổi (§64, 25/09/2026).
+  'syllabus.create': 'Tạo khung chương trình',
+  'syllabus.update': 'Sửa khung chương trình',
+  'syllabus.delete': 'Xoá khung chương trình',
+  'syllabus.publish': 'Xuất bản khung chương trình',
+  'class.syllabus.assign': 'Gán khung chương trình cho lớp',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'lesson.create': 'Thêm bài học',

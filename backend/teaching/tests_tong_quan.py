@@ -92,7 +92,7 @@ def test_roi_lop_chi_dem_trong_khoang_ca_hai_bien_va_tach_ly_do_loai():
     r = tong_quan(term_id=dot, tu=tu, den=den)['roiLop']
     assert (r['tu'], r['den']) == (tu.isoformat(), den.isoformat())
     assert r['tong'] == 5, r
-    assert r['theoLyDo'] == {'completed': 1, 'dropped': 2, 'transferred': 1, 'chuaGhi': 1}, r
+    assert r['theoLyDo'] == {'completed': 1, 'dropped': 2, 'transferred': 1, 'reserved': 0, 'chuaGhi': 1}, r
     assert r['theoLoai'] == {'nhom': 3, 'gia_su': 2}, r
     assert [d['leftOn'] for d in r['ds']][0] == den.isoformat(), 'mới nhất lên đầu'
     assert len(r['ds']) == 5 and {d['reason'] for d in r['ds']} == {

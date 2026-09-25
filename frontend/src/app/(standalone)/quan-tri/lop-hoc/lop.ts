@@ -83,6 +83,7 @@ export const NHAN_LY_DO_ROI: Record<string, string> = {
   completed: 'Học xong',
   dropped: 'Bỏ giữa chừng',
   transferred: 'Chuyển lớp',
+  reserved: 'Bảo lưu',
   chuaGhi: 'Chưa ghi lý do',
 };
 

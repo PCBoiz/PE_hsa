@@ -97,15 +97,16 @@ def test_sua_muc_cu_chay_lai_ca_muc_sau(db, monkeypatch):
     with schema_tam() as st:
         luot(cac_muc=cac_muc)
         assert fk55()[0]
-        assert not _check_co_gia_tri('class_members_leave_reason_check', 'reserved')[0]
+        # 'reserved' ĐÃ vào §36 (25/09 tối) — giả lập thêm một giá trị mới nữa ('y_thu').
+        assert not _check_co_gia_tri('class_members_leave_reason_check', 'y_thu')[0]
 
         # ── Phần 1
-        i, sua = _sua_36(cac_muc, cu="'dropped', 'transferred')",
-                         moi="'dropped', 'transferred', 'reserved')")
+        i, sua = _sua_36(cac_muc, cu="'transferred', 'reserved')",
+                         moi="'transferred', 'reserved', 'y_thu')")
         viec = luot(cac_muc=sua)
         assert viec[0].muc.khoa == 'legacy_schema.sql §36'
         assert [v.muc.khoa for v in viec] == [x.khoa for x in sua[i:]]
-        assert _check_co_gia_tri('class_members_leave_reason_check', 'reserved')[0], (
+        assert _check_co_gia_tri('class_members_leave_reason_check', 'y_thu')[0], (
             'sửa tại chỗ CHECK §36 mà CSDL chưa nhận giá trị mới')
         ok, vi_sao = fk55()
         assert ok, 'khoá ngoại §55 mất sau khi sửa §36: ' + vi_sao

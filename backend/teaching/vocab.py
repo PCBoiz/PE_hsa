@@ -15,7 +15,7 @@ from common.permissions import ROLE_STUDENT
 
 #: Lý do rời lớp. NULL nghĩa là đang học; xem `sql/legacy_schema.sql` §36 —
 #: `class_members_leave_reason_check` phải liệt kê đúng ba giá trị này.
-LEAVE_REASONS = ('completed', 'dropped', 'transferred')
+LEAVE_REASONS = ('completed', 'dropped', 'transferred', 'reserved')
 
 
 def chi_hoc_vien(alias):
@@ -44,6 +44,8 @@ LEAVE_LABEL = {
     'completed': 'học xong',
     'dropped': 'bỏ giữa chừng',
     'transferred': 'chuyển lớp',
+    # Bảo lưu (25/09/2026, bảng TopHSA dòng 12): rời lớp TẠM, giữ chỗ quay lại — khác "bỏ giữa chừng".
+    'reserved': 'bảo lưu',
 }
 
 #: Dùng cho cột trạng thái trong báo cáo và CSV. Đã rời lớp mà KHÔNG ghi lý do

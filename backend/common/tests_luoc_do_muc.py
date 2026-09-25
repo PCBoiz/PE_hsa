@@ -298,17 +298,18 @@ def test_sua_TAI_CHO_check_o_35_va_36_chay_lai_tu_35_toi_het():
     'reserved' vào CHECK lý do rời lớp. Hai mục ấy đổi checksum → lượt kế chạy §35, §36 VÀ
     mọi mục sau (§36 gỡ khoá chính CASCADE, chỉ §55 gắn lại khoá ngoại).
 
-    'paused' ĐÃ vào §35 (luồng A1, V-c 25/09/2026): phép kiểm nay giả lập thêm một lần
-    nới nữa (`x_thu`) trên bản đang có, để vẫn đo đúng luật "sửa §35 → chạy từ §35"."""
+    'paused' ĐÃ vào §35 (luồng A1, V-c) và 'reserved' ĐÃ vào §36 (lead, 25/09/2026 tối): phép
+    kiểm nay giả lập thêm một lần nới nữa (`x_thu`, `y_thu`) trên bản đang có, để vẫn đo đúng luật
+    "sửa §35/§36 tại chỗ → chạy từ §35"."""
     a = ('ALTER TABLE classes ADD CONSTRAINT classes_status_check' + XUONG
          + "    CHECK (status IN ('active', 'paused', 'finished', 'cancelled'));")
-    b = "leave_reason IN ('completed', 'dropped', 'transferred'))"
+    b = "leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'))"
 
     def sua(raw):
         raw = XUONG.join(raw.splitlines())
         assert raw.count(a) == 1 and raw.count(b) == 1, 'CHECK trong tệp đã đổi — sửa phép kiểm'
         raw = raw.replace(a, a.replace("'cancelled'", "'cancelled', 'x_thu'"))
-        return raw.replace(b, b.replace("'transferred'", "'transferred', 'reserved'"))
+        return raw.replace(b, b.replace("'reserved'", "'reserved', 'y_thu'"))
 
     goc, viec = _ke_hoach_sau_khi_sua(sua)
     khoa = [m.khoa for m in goc]

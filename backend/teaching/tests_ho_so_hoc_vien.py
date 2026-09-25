@@ -286,6 +286,106 @@ def test_hoc_vu_xem_danh_sach_chi_thay_hoc_vien_va_tim_theo_ma(canh):
 
 # ── Đăng nhập bằng username ──────────────────────────────────────────────────
 
+# ── §63: lớp trung tâm, khóa đã mở, tình trạng học tập/học phí (25/09/2026) ──
+
+def test_ho_so_co_lop_khoa_da_mo_va_trang_thai_hoc_tap(canh):
+    """Yêu cầu TopHSA 3.2: "Lớp" = lớp TRUNG TÂM (không phải lớp ở trường),
+    "Khóa học đã đăng ký" lấy QUA LỚP (không phải `enrollments`, đã đổi nghĩa
+    từ 1.3), "Tình trạng học tập" tính từ `class_members`/`classes`."""
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
+    assert r.status_code == 200, r.data
+    hs = r.data['profile']
+    assert [c['id'] for c in hs['classes']] == [canh['lop']]
+    lop = hs['classes'][0]
+    assert lop['name'] == 'Lop HS'
+    assert lop['classType'] == 'nhom'
+    assert lop['siSo'] == 1
+    assert lop['teacherId'] == canh['gv'].id
+    assert {c['id'] for c in hs['enrolledCourses']} == {'hsa_quantitative'}
+    assert hs['studyStatus'] == 'Đang học'
+    assert hs['tuitionStatus'] is None
+    assert set(r.data['tuitionStatuses']) == {'Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu'}
+
+
+def test_ho_so_khong_co_lop_thi_chua_xep_lop(canh):
+    from teaching.ho_so import HoSoHocVienView
+    em2 = _nguoi('Em Chua Xep HS', ROLE_STUDENT)
+    r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=em2.id)
+    assert r.status_code == 200, r.data
+    hs = r.data['profile']
+    assert hs['classes'] == [] and hs['enrolledCourses'] == []
+    assert hs['studyStatus'] == 'Chưa xếp lớp'
+
+
+def test_lop_tam_dung_thi_hoc_vien_tam_dung(canh):
+    q1("UPDATE classes SET status='paused' WHERE id=%s RETURNING id", (canh['lop'],))
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
+    assert r.data['profile']['studyStatus'] == 'Tạm dừng'
+
+
+@pytest.mark.parametrize('leave_reason,ky_vong', [
+    ('completed', 'Đã xong'),
+    ('reserved', 'Bảo lưu'),
+    ('dropped', 'Đã nghỉ học'),
+])
+def test_trang_thai_hoc_tap_theo_ly_do_roi_lop(canh, leave_reason, ky_vong):
+    q1("UPDATE class_members SET left_at=now(), leave_reason=%s "
+       "WHERE class_id=%s AND user_id=%s RETURNING id",
+       (leave_reason, canh['lop'], canh['em'].id))
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
+    assert r.data['profile']['studyStatus'] == ky_vong
+    assert r.data['profile']['classes'] == [], 'đã rời lớp thì không còn trong danh sách lớp hiện tại'
+
+
+def test_khoa_hoc_da_dang_ky_khi_lop_khong_gan_mon_la_ca_ba_mon(canh):
+    """`classes.course_id IS NULL` = lớp học cả ba môn (`courses/truy_cap.py`
+    `BA_MON`) — hồ sơ phải liệt kê đủ ba, không chỉ một."""
+    q1("UPDATE classes SET course_id=NULL WHERE id=%s RETURNING id", (canh['lop'],))
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
+    assert {c['id'] for c in r.data['profile']['enrolledCourses']} == \
+        {'hsa_quantitative', 'hsa_verbal', 'hsa_science'}
+
+
+def test_hoc_vu_sua_tinh_trang_hoc_phi(canh):
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'patch', {'tuitionStatus': 'Sắp hết'},
+             ai=canh['hocvu'], user_id=canh['em'].id)
+    assert r.status_code == 200, r.data
+    assert q1('SELECT tuition_status FROM users WHERE id=%s',
+              (canh['em'].id,))['tuition_status'] == 'Sắp hết'
+    assert r.data['profile']['tuitionStatus'] == 'Sắp hết'
+
+
+def test_tinh_trang_hoc_phi_tu_choi_gia_tri_ngoai_danh_sach(canh):
+    from teaching.ho_so import HoSoHocVienView
+    r = _goi(HoSoHocVienView, 'patch', {'tuitionStatus': 'Nợ nần'},
+             ai=canh['hocvu'], user_id=canh['em'].id)
+    assert r.status_code == 400 and 'tuitionStatus' in r.data['errors']
+    assert q1('SELECT tuition_status FROM users WHERE id=%s', (canh['em'].id,))['tuition_status'] is None
+
+
+def test_hai_lop_gia_su_khac_si_so_khong_lam_lan_nhau(canh):
+    """Yêu cầu 25/09: lớp gia sư 1 dạy 1/1 dạy 3/1 dạy 6 và lớp nhóm ~20 em CÙNG
+    tồn tại — `si_so` phải đếm ĐÚNG cho từng lớp, không đọc nhầm `capacity`."""
+    gv2 = _nguoi('GV Gia Su HS', ROLE_TEACHER)
+    lop_1_1 = q1("INSERT INTO classes (name, course_id, teacher_id, status, class_type) "
+                 "VALUES ('1-1 HS', 'hsa_verbal', %s, 'active', 'gia_su') RETURNING id", (gv2.id,))['id']
+    em2 = _nguoi('Em Gia Su HS', ROLE_STUDENT)
+    q1('INSERT INTO class_members (class_id, user_id) VALUES (%s, %s) RETURNING id', (lop_1_1, em2.id))
+
+    from teaching.ho_so import HoSoHocVienView
+    r_nhom = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
+    r_gs = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=em2.id)
+    lop_nhom = r_nhom.data['profile']['classes'][0]
+    lop_gs = r_gs.data['profile']['classes'][0]
+    assert lop_nhom['classType'] == 'nhom' and lop_nhom['siSo'] == 1
+    assert lop_gs['classType'] == 'gia_su' and lop_gs['siSo'] == 1
+
+
 def test_dang_nhap_bang_username(canh):
     em = _nguoi('Em Dang Nhap HS', ROLE_STUDENT, mat_khau='MatKhau#2026')
     q1("UPDATE users SET username='em.dangnhap' WHERE id=%s RETURNING id", (em.id,))

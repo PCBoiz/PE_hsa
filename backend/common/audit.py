@@ -131,6 +131,14 @@ MOCK_EXAM_CREATE = 'mock_exam.create'
 MOCK_EXAM_UPDATE = 'mock_exam.update'
 MOCK_EXAM_PUBLISH = 'mock_exam.publish'
 
+#: Khung chương trình theo buổi (E1, §64, 25/09/2026) — cùng lý do với COURSE_*:
+#: sửa thứ dùng chung cho mọi lớp thì phải trả lời được "ai đổi, lúc nào".
+SYLLABUS_CREATE = 'syllabus.create'
+SYLLABUS_UPDATE = 'syllabus.update'
+SYLLABUS_DELETE = 'syllabus.delete'
+SYLLABUS_PUBLISH = 'syllabus.publish'
+CLASS_SYLLABUS_ASSIGN = 'class.syllabus.assign'
+
 
 def _client_ip(request):
     """IP thật sau proxy — nay đi qua `common.net.client_ip`.
