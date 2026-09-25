@@ -1946,15 +1946,22 @@ ALTER TABLE submissions ADD CONSTRAINT submissions_absent_score_check
 -- KHÔNG mặc định 'Đã đóng' vì sẽ nói sai cho mọi tài khoản có trước cột này.
 -- SỬA TẠI CHỖ 25/09/2026 (luồng A2, V-m, lead chốt): CHECK lưu MÃ (da_dong, sap_het, het,
 -- bao_luu), nhãn ở `teaching/tinh_trang.py::HOC_PHI` — đổi chữ hiển thị không phải chạy
--- lại dữ liệu. Chưa lên production, mọi dòng đang NULL. Đây là câu DUY NHẤT khai
+-- lại dữ liệu. Chưa lên production. Đây là câu DUY NHẤT khai
 -- `users_tuition_status_check` (§69 không khai lại).
+-- Bản §63 TRƯỚC (erp tới 0544692) lưu NHÃN — CSDL dev nơi đã có người chọn học phí qua bản
+-- ấy mang 'Đã đóng'… và ADD CONSTRAINT theo mã sẽ hỏng cả lượt bootstrap. Câu UPDATE giữa
+-- DROP và ADD đổi nhãn → mã, có chặn WHERE (chạy lại không ghi gì).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tuition_status TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_tuition_status_check;
+UPDATE users SET tuition_status = CASE tuition_status
+        WHEN 'Đã đóng' THEN 'da_dong' WHEN 'Sắp hết' THEN 'sap_het'
+        WHEN 'Hết' THEN 'het' WHEN 'Bảo lưu' THEN 'bao_luu' END
+ WHERE tuition_status IN ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu');
 ALTER TABLE users ADD CONSTRAINT users_tuition_status_check CHECK (tuition_status IS NULL OR
     tuition_status IN ('da_dong', 'sap_het', 'het', 'bao_luu'));
 
 -- HỌC TẬP — KHÔNG thêm cột: trạng thái này TÍNH lúc đọc, từ `class_members` +
--- `classes` (`teaching/ho_so.py::_tinh_trang_hoc_tap`) — giữ luật "một con số
+-- `classes` (`teaching/tinh_trang.py::sql_tinh_trang_hoc`) — giữ luật "một con số
 -- chỉ tính ở một nơi". Hai dòng CHECK dưới mở khoá dữ liệu THÔ cần để tính:
 -- lớp "tạm dừng" và lý do rời lớp "bảo lưu". Đây là NĂM trạng thái thô cho một
 -- ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ; bộ đó (khung chương trình,
