@@ -100,6 +100,14 @@ for (const t of the) {
     nguon = t.url && TAB_VH[t.url] ? `quan-tri/vai.ts::TABS[${t.url}]` : 'quan-tri/vai.ts::VAI_VAO_KHU';
   }
   else if (t.cong === 'soan-giao-trinh') { mong = SOAN; nguon = 'giao-trinh/page.tsx::DUOC_VAO'; }
+  else if (t.cong === 'IsCurriculumPlanner') {
+    mong = lopQuyen('IsCurriculumPlanner'); nguon = 'quyenVai.ts::IsCurriculumPlanner';
+    /* Trang đích gác bằng `DUOC_VAO` riêng — phải khớp cùng bộ vai (E1, 25/09/2026). */
+    const trang = boChuThich(doc('app/(standalone)/giao-trinh/khung-chuong-trinh/page.tsx'));
+    const cong = mang(/DUOC_VAO = new Set\((\[[^\]]*\])\)/.exec(trang)?.[1] ?? '');
+    check(`${t.nhan}: DUOC_VAO của trang khớp ${nguon}`, bang(cong, mong),
+      `trang cho ${JSON.stringify(cong)} — lớp quyền cho ${JSON.stringify(mong)}`);
+  }
   else if (t.cong === 'moi-nhan-su') { mong = NHAN_SU; nguon = 'năm vai nhân sự'; }
   else { check(`${t.nhan}: cổng hợp lệ`, false, `cổng lạ ${t.cong}`); continue; }
   check(`${t.nhan}: vai khớp ${nguon}`, bang(t.vai, mong),

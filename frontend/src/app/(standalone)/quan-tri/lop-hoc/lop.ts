@@ -20,6 +20,8 @@
  */
 
 /** Một lớp như `teaching/reports.py::class_list` trả về. */
+import type { TienDoGon } from '@/lib/chuongTrinh';
+
 export type LopRow = {
   id: number;
   code: string | null;
@@ -48,6 +50,8 @@ export type LopRow = {
   studentNames?: string[];
   /** Trợ giảng đang gán. */
   assistantNames?: string[];
+  /** Tiến độ theo khung chương trình (E1) — null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
+  chuongTrinh?: TienDoGon;
   termId: number | null;
   termName: string | null;
   termCode: string | null;

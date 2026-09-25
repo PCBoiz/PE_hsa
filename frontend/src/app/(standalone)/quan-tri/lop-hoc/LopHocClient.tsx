@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type ReactNode } from 'react';
 
@@ -20,6 +21,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
+import { chipTienDo } from '@/lib/tienDoChu';
 import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 import * as z from 'zod/mini';
 
@@ -632,12 +634,24 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
                     <Chip tone={TRANG_THAI[c.status]?.tone ?? 'neutral'}>
                       {TRANG_THAI[c.status]?.nhan ?? c.status}
                     </Chip>
+                    {/* Tiến độ theo khung (E1) — bấm vào là màn Chương trình lớp. */}
+                    {c.chuongTrinh && (
+                      <Link href={`/giang-day/chuong-trinh/${c.id}`} className="mt-1 block">
+                        <Chip tone={chipTienDo(c.chuongTrinh).tone}>{chipTienDo(c.chuongTrinh).chu}</Chip>
+                      </Link>
+                    )}
                   </Td>
                   <Td label="Thao tác">
                     <span className="flex flex-wrap justify-end gap-2">
                       <Button size="sm" variant="ghost" onClick={() => void moHocVien(c)}>
                         Học viên
                       </Button>
+                      <Link
+                        href={`/giang-day/chuong-trinh/${c.id}`}
+                        className="inline-flex min-h-11 items-center rounded-md border border-line px-3 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink [@media(pointer:fine)]:min-h-9"
+                      >
+                        Chương trình
+                      </Link>
                       <Button
                         size="sm"
                         variant="ghost"

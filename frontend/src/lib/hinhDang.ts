@@ -14,6 +14,7 @@ import { z } from 'zod';
 
 import type { HinhDang } from '@/lib/server-api';
 import type { BaoCao } from '@/components/ToBaoCao';
+import { HD_TIEN_DO_EM } from '@/lib/chuongTrinh';
 
 const so = z.number();
 const soHoacTrong = z.number().nullable();
@@ -75,6 +76,7 @@ export const HD_BAO_CAO = z.looseObject({
     id: so, title: z.string(), topic: chu, dueAt: chu, maxScore: z.number().nullable(),
     submittedAt: chu, score: z.number().nullable(), feedback: chu, gradedAt: chu,
   })).optional(),
+  chuongTrinh: HD_TIEN_DO_EM,
   topics: z.looseObject({
     weak: z.array(CHU_DE),
     strong: z.array(CHU_DE),

@@ -6,6 +6,7 @@ import { BieuTuong } from '@/components/bieuTuong';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { noiHoc } from '@/lib/noiHoc';
+import { cauTienDoEm } from '@/lib/tienDoChu';
 
 /**
  * LỚP CỦA BẠN — khối đầu tiên trên bảng điều khiển của học viên đang ở trong lớp.
@@ -60,6 +61,8 @@ type Lop = {
   ngayThiLech: boolean;
   /** Bài giảng viên giao mà em CHƯA nộp — xem `lop_cua_toi.py` vì sao nằm ở thẻ lớp. */
   baiTap: { chuaNop: number; hanSom: string | null };
+  /** % chương trình của em (E1). null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
+  chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
 };
 
 export type DuLieu = { lop: Lop[]; mucTieu: { examDate: string | null } };
@@ -209,6 +212,8 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 </>
               )}
             </p>
+
+            {l.chuongTrinh && <p className="lct-cc">{cauTienDoEm(l.chuongTrinh)}</p>}
 
             {/* Bài tập chưa nộp. Ở điện thoại thanh trên không có mục Bài tập,
                 nên không có dòng này thì em không biết thầy vừa giao bài. */}

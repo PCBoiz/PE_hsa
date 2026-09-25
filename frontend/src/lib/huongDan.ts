@@ -473,6 +473,51 @@ export const HUONG_DAN: readonly Bai[] = [
   },
 
   {
+    ma: 'khung-chuong-trinh',
+    // E1, 25/09/2026 — bảng TopHSA dòng 4–6, 9, 15, 16.
+    tieu_de: 'Soạn khung chương trình và cho lớp nhận khung',
+    vai: [VAI_HOC_VU, VAI_BIEN_TAP, VAI_QUAN_TRI],
+    khi_nao: 'Trước khi lớp vào học, hoặc khi đổi nội dung chương trình của một môn.',
+    buoc: [
+      { lam: 'Mở Khung chương trình, chọn môn, gõ tên rồi bấm "Tạo khung".', o: '/giao-trinh/khung-chuong-trinh' },
+      {
+        lam: 'Thêm từng buổi, rồi mở "Thêm nội dung hoặc học liệu" để thêm nội dung của buổi kèm trọng số.',
+        luu_y: 'Trọng số là độ nặng của nội dung khi tính tiến độ. Để 1 nếu các nội dung nặng như nhau.',
+      },
+      {
+        lam: 'Bấm "Xuất bản". Muốn sửa bản đã xuất bản thì bấm "Tạo bản mới", sửa, rồi xuất bản bản ấy.',
+        luu_y: 'Lớp đã nhận bản cũ vẫn theo bản cũ cho tới khi học vụ cho lớp đổi khung.',
+      },
+      { lam: 'Ở Lớp học, bấm "Chương trình" của lớp, chọn khung, bấm "Xem trước" rồi "Nhận khung".', o: '/quan-tri/lop-hoc' },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Xem trước báo có buổi khung chưa có buổi học để gắn.',
+        xu_ly: 'Lớp chưa đủ buổi. Tạo thêm buổi học (Buổi học → Sinh lịch cả kỳ) rồi bấm "Nhận khung" lại — buổi đã gắn giữ nguyên.',
+      },
+      {
+        trieu_chung: 'Một buổi gắn nhầm buổi khung.',
+        xu_ly: 'Ở màn Chương trình của lớp, chọn lại buổi khung ở cột "Buổi khung" của buổi ấy.',
+      },
+    ],
+  },
+
+  {
+    ma: 'so-dau-bai',
+    tieu_de: 'Ghi sổ đầu bài sau buổi dạy',
+    vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Ngay sau mỗi buổi dạy. Buổi chưa ghi sổ bị nhắc ở Tổng quan.',
+    buoc: [
+      { lam: 'Mở Việc hôm nay, vào lớp, bấm "Sổ đầu bài" ở buổi vừa dạy.', o: '/giang-day' },
+      { lam: 'Đánh dấu từng nội dung: đã dạy, dạy một phần hay chưa dạy. Dạy bù nội dung buổi trước thì chọn thêm ở ô "Thêm nội dung buổi khác".' },
+      {
+        lam: 'Chọn mức tiếp thu, ghi tình hình lớp, đề xuất và đánh dấu em cần hỗ trợ, rồi bấm "Lưu sổ đầu bài".',
+        luu_y: 'Tiến độ lớp và % của từng em tính từ sổ này. Nội dung chưa đánh dấu không được lưu.',
+      },
+    ],
+  },
+
+  {
     ma: 'kiem-toan',
     tieu_de: 'Khi cần biết ai đã làm gì',
     vai: [VAI_QUAN_TRI],

@@ -148,6 +148,12 @@ export default async function BuoiHocPage({
             >
               Bài tập &amp; chấm bài
             </Link>
+            <Link
+              href={`/giang-day/chuong-trinh/${klass.id}`}
+              className="-my-3 py-3 text-small text-brand-ink underline"
+            >
+              Chương trình &amp; tiến độ
+            </Link>
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4 py-6">

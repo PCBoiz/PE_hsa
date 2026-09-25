@@ -1,5 +1,6 @@
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
+import { HD_TIEN_DO_GON } from '@/lib/chuongTrinh';
 
 import { KhongDocDuoc, KhongDuQuyen } from '../ChanVai';
 import { layVai } from '../layVai';
@@ -35,6 +36,7 @@ const HD_LOP = z.looseObject({
     classType: chu.optional(),
     studentNames: z.array(z.string()).optional(),
     assistantNames: z.array(z.string()).optional(),
+    chuongTrinh: HD_TIEN_DO_GON,
     termName: chu, termCode: chu,
   })),
   total: z.number().optional(), page: z.number().optional(), per_page: z.number().optional(),

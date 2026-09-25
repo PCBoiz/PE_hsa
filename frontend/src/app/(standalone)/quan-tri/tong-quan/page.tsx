@@ -5,11 +5,13 @@ import { serverJson } from '@/lib/server-api';
 import { z } from 'zod';
 
 import {
+  CHUONG_TRINH,
   GIANG_VIEN,
   KyXem,
   LOP_THEO_LOAI,
   ROI_LOP,
   TAI_KHOAN_NGU,
+  TheChuongTrinh,
   TheDiemDanh,
   TheLop,
   TheRoiLop,
@@ -102,6 +104,8 @@ const HINH_DANG = z.looseObject({
   roiLop: ROI_LOP.nullable().optional(),
   giangVien: GIANG_VIEN.nullable().optional(),
   taiKhoanNgu: TAI_KHOAN_NGU.nullable().optional(),
+  /* Tiến độ chương trình (E1) — tuỳ chọn: máy chủ trước 25/09/2026 không trả. */
+  chuongTrinh: CHUONG_TRINH,
   generatedAt: z.string().optional(),
 });
 type LopRow = z.infer<typeof LOP_ROW>;
@@ -115,6 +119,7 @@ const THIEU_NHAN: Record<string, string> = {
   leavers: 'rời lớp',
   teachers: 'điểm danh của giảng viên',
   accounts: 'tài khoản lâu không vào',
+  chuongTrinh: 'tiến độ chương trình',
 };
 
 /** `null` = chưa tính được. Hiện dấu gạch chứ KHÔNG hiện 0 — xem `overview.py`. */
@@ -313,7 +318,7 @@ export default async function TongQuanPage({
   }
 
   const { classes: lop, terms: dot, summary: s, thresholds: nguong } = kq.data;
-  const { roiLop, giangVien, taiKhoanNgu, generatedAt } = kq.data;
+  const { roiLop, giangVien, taiKhoanNgu, chuongTrinh, generatedAt } = kq.data;
   const tongLop = kq.data.classesTotal ?? lop.length;
   const viec = suyViec(s, lop, nguong, taiKhoanNgu, giangVien);
 
@@ -400,9 +405,10 @@ export default async function TongQuanPage({
           điểm danh) nên form kỳ xem nằm ngay trên nó. Thẻ nào máy chủ không trả
           (máy chủ cũ, hoặc khối ấy hỏng — tên đã nằm trong dòng "Chưa đọc được"
           ở trên) thì không vẽ. */}
-      {(s.classesByType || taiKhoanNgu) && (
+      {(s.classesByType || taiKhoanNgu || chuongTrinh) && (
         <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
           {s.classesByType && <TheLop theoLoai={s.classesByType} termId={term_id} />}
+          {chuongTrinh && <TheChuongTrinh c={chuongTrinh} termId={term_id} />}
           {taiKhoanNgu && (
             <TheTaiKhoanNgu t={taiKhoanNgu} homNay={(generatedAt ?? '').slice(0, 10)} />
           )}

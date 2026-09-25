@@ -496,16 +496,6 @@ const UNG_VIEN_GO = {
   '/api/comments/*': 'sửa/xoá bình luận: frontend chỉ gọi …/react',
   // `/api/mock-attempts` ra khỏi danh sách 24/09/2026: tuyến đã THÁO (bỏ thi, pha A).
   '/api/courses/*/quiz/history': 'không nơi nào gọi',
-  // Khung chương trình: backend có trước (3f47421), màn hình do luồng E1 dựng — XOÁ các dòng này khi E1 gộp.
-  '/api/admin/courses/*/syllabus': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus/*': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus/*/sessions': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus-sessions/*': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus-sessions/*/items': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus-items/*': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus-sessions/*/materials': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/syllabus-materials/*': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
-  '/api/admin/classes/*/chuong-trinh': 'API khung chương trình (§64, 3f47421) — chưa có giao diện; luồng E1 đang dựng màn Giáo trình + Lớp học (25/09/2026)',
   // 25/09/2026: nút Đăng ký/Hủy cuối cùng (main.js) đã gỡ — môn mở QUA LỚP (1.3).
   '/api/courses/*/enroll': 'GIỮ trả 410 cho JS cũ còn trong bộ đệm trình duyệt lúc Vercel lên trước Render; gỡ ở 1.5C',
   '/api/quizzes/*': 'frontend chỉ gọi …/submit, không lấy đề qua tuyến này',
