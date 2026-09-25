@@ -99,7 +99,10 @@ def xep(channel, to_addr, subject='', body='', *, user_id=None, params=None,
 def nhan_viec(n=MOT_LUOT, ids=None):
     """Nhận tối đa `n` việc tới lượt (chỉ trong `ids` nếu truyền). Câu tự commit khi
     đứng ngoài giao dịch — máy khác thấy ngay trạng thái 'sending'."""
-    return q(CAU_NHAN, {'n': n, 'ids': list(ids) if ids is not None else None, 'treo': TREO_PHUT})
+    ds = q(CAU_NHAN, {'n': n, 'ids': list(ids) if ids is not None else None, 'treo': TREO_PHUT})
+    for d in ds:
+        d['params'] = _params(d)      # Django trả jsonb dạng chuỗi — đọc một lần ở đây
+    return ds
 
 
 def _params(d):

@@ -5,6 +5,7 @@ việc" cần HAI kết nối thật cùng thấy dòng đã commit: chúng mở
 CSDL trong `DATABASE_URL`, ghi dòng mang dấu riêng rồi tự xoá ở `finally`.
 Thư không gửi thật: `mail.gui` / `zalo.gui_zns` bị thay bằng bản giả.
 """
+import json
 import os
 import threading
 import uuid
@@ -150,7 +151,7 @@ def test_than_co_chia_bi_xoa_sau_khi_gui(thu):
               params={'html': '<a href="#chia=BI-MAT">x</a>', 'xoa_than': True})
     gui_ngay([oid])
     d = _dong(oid)
-    assert d['status'] == 'sent' and d['body'] == '' and 'html' not in d['params']
+    assert d['status'] == 'sent' and d['body'] == '' and 'html' not in json.loads(d['params'])
     assert thu['da_gui'][0]['html'] and 'BI-MAT' in thu['da_gui'][0]['chu']
     assert not q1("SELECT 1 AS c FROM outbox WHERE id=%s AND (body LIKE '%%BI-MAT%%' OR params::text LIKE '%%BI-MAT%%')",
                   (oid,))

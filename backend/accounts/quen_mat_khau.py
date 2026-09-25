@@ -13,10 +13,13 @@ cũ: nhờ học vụ cấp lại mật khẩu tạm.
 ── NHỮNG ĐIỀU CỐ Ý ─────────────────────────────────────────────────────────
 
   · KHÔNG LỘ AI CÓ TÀI KHOẢN. Email có hay không, bị khoá hay không, đã quá
-    trần hay chưa — phản hồi y hệt nhau. Thư gửi trên một LUỒNG RIÊNG, để thời
-    gian trả lời cũng không khác nhau (SMTP Gmail mất 1–3 giây; chênh chừng ấy
-    là đủ để dò danh sách học viên).
-  · CHỈ LƯU BĂM của chìa (§52). Chìa nguyên văn chỉ nằm trong lá thư.
+    trần hay chưa — phản hồi y hệt nhau. Thư đi qua HỘP THƯ ĐI (§61, E2): ghi
+    cùng giao dịch với chìa, gửi sau commit trên một LUỒNG RIÊNG, để thời gian
+    trả lời cũng không khác nhau (SMTP Gmail mất 1–3 giây; chênh chừng ấy là đủ
+    để dò danh sách học viên). SMTP sập thì thư được thử lại — nhưng chỉ trong
+    hạn của chìa (`het_han`): quá 30 phút thì bỏ, đường dẫn trong đó đã chết.
+  · CHỈ LƯU BĂM của chìa (§52). Chìa nguyên văn chỉ nằm trong lá thư — và trong
+    thân thư CHỜ GỬI ở hộp thư đi; gửi xong (hoặc bỏ) là thân bị xoá (`xoa_than`).
   · Chìa đi trong phần `#…` của đường dẫn, không trong `?…`: phần sau dấu `#`
     không bao giờ được trình duyệt gửi lên máy chủ nào, không vào nhật ký truy
     cập, không đi theo header Referer — cùng lý do `oauth.py` dùng fragment.
@@ -32,11 +35,11 @@ import hashlib
 import html
 import logging
 import secrets
-import threading
 from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,12 +47,13 @@ from rest_framework.views import APIView
 from accounts.hashers import make_werkzeug_password
 from accounts.models import User
 from accounts.validators import validate_email_field, validate_password_field
-from common import audit, mail
+from common import audit
 from common.clock import local_now
 from common.db import q1, x
 from common.identity import norm_email
 from common.net import client_ip
 from common.throttling import QuenMatKhauThrottle
+from notifications import hop_thu
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +88,8 @@ def _che(email):
     return '%s***@%s' % (ten[:1], mien) if mien else '***'
 
 
-def _gui_thu(den, ten, duong_dan):
+def _soan_thu(ten, duong_dan):
+    """(chữ thuần, html) của thư đặt lại mật khẩu."""
     goi = (ten or '').strip() or 'bạn'
     chu = ('Chào %s,\n\n'
            'Có người (có thể là chính bạn) vừa xin đặt lại mật khẩu cho tài khoản TopHSA '
@@ -99,11 +104,7 @@ def _gui_thu(den, ten, duong_dan):
              '<p><a href="%s">Đặt mật khẩu mới</a></p>'
              '<p>Nếu bạn không xin, cứ bỏ qua thư này: mật khẩu hiện tại vẫn giữ nguyên.</p>'
              '<p>— TopHSA</p>' % (html.escape(goi), HAN_PHUT, html.escape(duong_dan, quote=True)))
-    ok, _, loi = mail.gui(den, 'Đặt lại mật khẩu TopHSA', chu, trang)
-    if not ok:
-        # Ghi ĐỊA CHỈ ĐÃ CHE, không ghi đường dẫn: nhật ký ứng dụng đọc được
-        # nhiều người hơn hộp thư của em.
-        log.warning('[quen_mat_khau] không gửi được thư tới %s: %s', _che(den), loi)
+    return chu, trang
 
 
 class QuenMatKhauView(APIView):
@@ -127,6 +128,7 @@ class QuenMatKhauView(APIView):
                         (u['id'], bay_gio - timedelta(hours=1)))['n']
             if da_xin < TRAN_MOI_GIO:
                 chia = secrets.token_urlsafe(SO_BYTE)
+                chu, trang = _soan_thu(u['name'], '%s/dat-lai-mat-khau#chia=%s' % (_goc(), chia))
                 with transaction.atomic():
                     # Chìa MỚI thay chìa cũ: chỉ đường dẫn trong lá thư gần nhất
                     # còn dùng được — em bấm nhầm thư cũ thì nhận câu "hết hạn".
@@ -137,12 +139,15 @@ class QuenMatKhauView(APIView):
                       'VALUES (%s, %s, %s, %s, %s)',
                       (u['id'], _bam(chia), bay_gio, bay_gio + timedelta(minutes=HAN_PHUT),
                        client_ip(request)))
-                duong_dan = '%s/dat-lai-mat-khau#chia=%s' % (_goc(), chia)
-                if GUI_NGAY:
-                    _gui_thu(u['email'], u['name'], duong_dan)
-                else:
-                    threading.Thread(target=_gui_thu, args=(u['email'], u['name'], duong_dan),
-                                     daemon=True).start()
+                    # Thư chưa đi được trong hạn của chìa thì bỏ (`het_han`); đi hay bỏ
+                    # xong là thân có chìa bị xoá (`xoa_than`). Địa chỉ không tự ghi
+                    # nhật ký ở đây — lỗi gửi nằm ở `outbox.error`, không kèm đường dẫn.
+                    oid = hop_thu.xep('email', u['email'], 'Đặt lại mật khẩu TopHSA', chu,
+                                      user_id=u['id'], source=('password_reset', None),
+                                      params={'html': trang, 'xoa_than': True,
+                                              'het_han': (timezone.now()
+                                                          + timedelta(minutes=HAN_PHUT)).isoformat()})
+                hop_thu.day_di([oid], ngay=GUI_NGAY)
         return Response({'ok': True, 'message': CAU_CHUNG})
 
 
