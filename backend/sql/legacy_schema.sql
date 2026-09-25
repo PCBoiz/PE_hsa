@@ -1844,3 +1844,91 @@ ALTER TABLE classes ADD CONSTRAINT classes_status_check
 ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
 ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
     CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));
+
+-- ── §64 · KHUNG CHƯƠNG TRÌNH THEO BUỔI (E1, quản lý khóa học 5.2, 25/09/2026) ─
+-- Bảng yêu cầu TopHSA 5.2: "tiến trình học tập gồm số buổi kèm tên bài", "thời
+-- lượng buổi học", "quản lý phiên bản/chỉnh sửa chương trình", "học liệu".
+-- KHÔNG CÓ trước hôm nay — `courses`→`lessons` chỉ có nội dung bài, không có
+-- khái niệm "buổi dạy" tái dùng được cho nhiều lớp; `class_sessions` là buổi
+-- THẬT của MỘT lớp cụ thể, không phải kế hoạch mẫu.
+--
+-- BỐN TẦNG, một khóa (`courses`) có NHIỀU phiên bản chương trình:
+--   syllabus_versions  — 1 bản chương trình của 1 khóa. status: nháp (sửa được)
+--                        / xuất bản (khoá sửa, gán được cho lớp) / ngừng.
+--   syllabus_sessions  — buổi học THEO KẾ HOẠCH trong 1 phiên bản (buổi số, tên,
+--                        thời lượng dự kiến) — TÁI DÙNG cho mọi lớp nhận bản này.
+--   syllabus_items     — nội dung của MỘT buổi (bài học/chuyên đề/bài tập/kiểm
+--                        tra), có thứ tự riêng; lesson_id TUỲ CHỌN (chuyên đề
+--                        không phải lúc nào cũng gắn đúng 1 bài trong `lessons`).
+--   syllabus_materials — học liệu đính kèm buổi. `file_url` để TRỐNG — dữ liệu
+--                        thật (file/link) chưa có, chờ bàn giao; bảng dựng
+--                        TRƯỚC để không phải đổi schema khi có file thật.
+--
+-- SỬA CHỈ Ở BẢN NHÁP: kiểm ở tầng ứng dụng (`courseadmin/syllabus.py`), không
+-- bằng CHECK — Postgres không tự chặn "sửa dòng con của cha đã xuất bản" được
+-- mà không viết trigger, và tệp này không nạp được thân hàm PL/pgSQL (lý do ghi
+-- ở §51). Tạo bản MỚI = chép bản mới nhất, một giao dịch, ở tầng ứng dụng.
+--
+-- classes.syllabus_version_id: SET NULL — xoá bản chương trình không được kéo
+-- xoá mất lớp. class_sessions.syllabus_session_id: buổi THẬT khớp với buổi nào
+-- trong khung — TUỲ CHỌN, một lớp có thể chưa nhận khung.
+CREATE TABLE IF NOT EXISTS syllabus_versions (
+    id         SERIAL PRIMARY KEY,
+    course_id  TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    status     TEXT NOT NULL DEFAULT 'nhap',
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP
+);
+ALTER TABLE syllabus_versions DROP CONSTRAINT IF EXISTS syllabus_versions_status_check;
+ALTER TABLE syllabus_versions ADD CONSTRAINT syllabus_versions_status_check
+    CHECK (status IN ('nhap', 'xuat_ban', 'ngung'));
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_course ON syllabus_versions(course_id);
+
+CREATE TABLE IF NOT EXISTS syllabus_sessions (
+    id                SERIAL PRIMARY KEY,
+    version_id        INTEGER NOT NULL REFERENCES syllabus_versions(id) ON DELETE CASCADE,
+    sort_order        INTEGER NOT NULL,
+    name              TEXT NOT NULL,
+    duration_minutes  INTEGER,
+    homework          TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_sessions_thu_tu
+    ON syllabus_sessions(version_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS syllabus_items (
+    id         SERIAL PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES syllabus_sessions(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    kind       TEXT NOT NULL,
+    lesson_id  INTEGER REFERENCES lessons(id) ON DELETE SET NULL,
+    title      TEXT NOT NULL,
+    weight     NUMERIC
+);
+ALTER TABLE syllabus_items DROP CONSTRAINT IF EXISTS syllabus_items_kind_check;
+ALTER TABLE syllabus_items ADD CONSTRAINT syllabus_items_kind_check
+    CHECK (kind IN ('bai_hoc', 'chu_de', 'bai_tap', 'kiem_tra'));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_items_thu_tu
+    ON syllabus_items(session_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_syllabus_items_lesson ON syllabus_items(lesson_id);
+
+CREATE TABLE IF NOT EXISTS syllabus_materials (
+    id            SERIAL PRIMARY KEY,
+    session_id    INTEGER NOT NULL REFERENCES syllabus_sessions(id) ON DELETE CASCADE,
+    title         TEXT NOT NULL,
+    file_url      TEXT,
+    file_type     TEXT,
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    uploaded_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    uploaded_at   TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_syllabus_materials_session ON syllabus_materials(session_id);
+
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS syllabus_version_id INTEGER
+    REFERENCES syllabus_versions(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_classes_syllabus_version ON classes(syllabus_version_id);
+
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
+    REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabus_session_id);

@@ -59,6 +59,17 @@ def la_nhan_su(user):
     return (getattr(user, 'role', None) or ROLE_STUDENT) != ROLE_STUDENT
 
 
+def _da_xuat_ban():
+    """Course id nào ĐÃ xuất bản (`is_published IS NOT FALSE` — NULL tính là
+    xuất bản, cùng luật với `CoursesView` công khai). Đệm riêng, cùng TTL: cột
+    này đổi hiếm (giáo vụ bấm nút), không đáng một câu SQL mỗi lần hỏi quyền."""
+    ds = cache.get('coursesxb')
+    if ds is None:
+        ds = {r['id'] for r in q('SELECT id FROM courses WHERE is_published IS NOT FALSE')}
+        cache.set('coursesxb', ds, TTL)
+    return ds
+
+
 def quyen_khoa(user):
     """`{course_id: 'hoc' | 'xem'}` — môn KHÔNG có trong dict là môn chưa mở."""
     if la_nhan_su(user):
@@ -66,9 +77,12 @@ def quyen_khoa(user):
     khoa = _khoa(user.id)
     ds = cache.get(khoa)
     if ds is None:
-        ds = sorted(mon_mo(r['course_id'] for r in q(
+        # Khoá NHÁP không mở cho học viên (V-i, 25/09/2026) dù lớp em có gán
+        # course_id trỏ tới nó — is_published mới sửa được từ hôm nay, trước đó
+        # mọi khoá coi như đã xuất bản nên chưa ai cần lọc.
+        ds = sorted(c for c in mon_mo(r['course_id'] for r in q(
             'SELECT DISTINCT c.course_id FROM class_members m JOIN classes c ON c.id = m.class_id '
-            'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user.id,))))
+            'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user.id,))) if c in _da_xuat_ban())
         cache.set(khoa, ds, TTL)
     return {m: HOC for m in ds}
 
