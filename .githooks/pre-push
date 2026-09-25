@@ -115,6 +115,10 @@ nhom_backend() {
 }
 
 nhom_frontend() {
+  # f7 chỉ cần Python thư viện chuẩn (không Django, không node_modules) — chạy trước mọi điều kiện.
+  # Sổ miền + cấu trúc (25/09/2026): tệp không miền, bảng không chủ, GHI chéo miền mới, nợ đã hết mà
+  # chưa xoá, docs/CAU_TRUC_*.md cũ — xem scripts/cau_truc.py.
+  buoc f7 "cấu trúc --kiem" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/cau_truc.py --kiem
   if [ ! -d "$GOC/frontend/node_modules" ]; then
     bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
     echo "1 0" > "$TAM/f1.kq"
