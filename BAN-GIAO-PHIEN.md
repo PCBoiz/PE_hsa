@@ -1,252 +1,174 @@
 # Bàn giao phiên — đọc tệp này đầu tiên khi mở phiên mới
 
-*Cập nhật 16/09/2026 (sau vòng 25). Viết để một phiên mới bắt kịp trong 5 phút mà không phải
-đọc lại 5.800 dòng nhật ký. Cách làm học từ `BAN-GIAO-PHIEN.md` của dự án cô
-Giang — chỉ học cách, không đụng bên ấy.*
+*Cập nhật 26/09/2026 sáng. Thay bản 16/09 (lịch sử: `git log -- BAN-GIAO-PHIEN.md`). Viết cho một phiên Claude mới
+và cho anh Sơn: đọc xong tệp này là bắt tay làm được, không phải đọc lại nhật ký.*
 
 ---
 
-## Bốn tệp cần biết
+## 1. Đọc theo thứ tự (mỗi tệp một vai)
 
-| Tệp | Là gì | Khi nào đọc |
+| # | Tệp | Để làm gì |
 |---|---|---|
-| `PROGRESS.md` | Nhật ký. Khối "Đọc trước" ở đầu có **lệnh đang hiệu lực** của anh Sơn và trạng thái mới nhất. Mục mới ở TRÊN vạch `<!-- MỚI NHẤT -->`. | Trước khi bắt tay |
-| `docs/VIEC_CUA_ANH.md` | Việc **chỉ anh Sơn** làm được và câu **cần anh quyết** — **Phần I** ở đầu (việc tay theo thứ tự, mười câu quyết kèm đề xuất, việc chờ TopHSA, việc đã xong). Viết lại 18/09; **đo lại trạng thái trước khi trích**. | Khi cần hỏi anh hoặc báo cáo |
-| `TODO.md` | Việc của tôi (backlog T1–T66…). | Khi hết việc đang làm |
-| `BAO-CAO-TRANG-THAI.md` | Số đo tự sinh — chỉ đo, không nhận định. `python scripts/kiem_ke_san_pham.py --md BAO-CAO-TRANG-THAI.md` | Trước khi trích bất cứ con số nào |
-| `RULES.md` | Tiêu chuẩn bắt buộc. §4 là cổng trước khi báo xong; §5 là luật chạm CSDL. | Trước mỗi commit |
+| 1 | `CLAUDE.md` | nhánh, luật cứng, lệnh — ngắn |
+| 2 | `PROGRESS.md` (khối "Lệnh đang hiệu lực" + mục trên cùng dưới `<!-- MỚI NHẤT -->`) | lệnh của anh Sơn + trạng thái mới nhất |
+| 3 | `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` mục **"KẾ HOẠCH v2"** | bảng theo dõi việc (P0, N, V, E1–E5, 1.5B/C, 1.6, Đ2…) |
+| 4 | `docs/NGHIEM_THU_TOPHSA.md` | 32 dòng khách nghiệm thu (cột TRUE = khách đã ký dòng ấy — mình KHÔNG tick hộ) |
+| 5 | `docs/VIEC_CUA_ANH.md` — bảng đầu tệp | mọi việc chỉ anh Sơn làm được (lời thường) |
+| 6 | `docs/THIET_KE_HE_THONG.md` | vai × phạm vi, trang theo vai, 10 miền (§4), luật thiết kế (§8), việc kiến trúc S1–S7 |
+| 7 | `docs/CAU_TRUC_MA.md`, `docs/CAU_TRUC_DU_LIEU.md` (tự sinh) | tệp nào thuộc miền nào, bảng/cột/khoá theo miền, sổ nợ ghi chéo |
+| 8 | `REVIEW.md`, `RULES.md` | soát trước khi đẩy; luật kèm lý do |
+| 9 | `docs/cloud/BAO_CAO_*.md` | báo cáo các phiên cloud (A1, A2, E1, cấu trúc, pytest) |
 
-## Cách làm việc đã chốt
+## 2. Trạng thái lúc bàn giao (26/09/2026 sáng)
 
-- **Đo, không đoán.** Mọi con số báo ra phải do chính mình đo trên dữ liệu thật,
-  kèm ngày. Bộ đo giao diện phải chạy `--tu-kiem` trước (nó đã nói dối 12 lần).
-- **Test phải đỏ được.** Viết xong test → lùi mã → phải đỏ *đúng cái test ấy* →
-  phục hồi → xanh. Lùi một phần mà vẫn xanh = test giả (đã mắc 07/09).
-- **Neon là MOCK production** (anh Sơn chốt lại 14/09 tối): dữ liệu không thật
-  hoặc đã quá cũ — ghi thử thoải mái, không xin phép, không sao lưu, không bắt
-  buộc dọn/đếm. Vẫn giữ: DDL chỉ cộng thêm qua `bootstrap_schema`, không `SET`,
-  pytest cuộn lại + lọc về dữ liệu của chính nó, không gửi phụ huynh thật. Thử
-  khô cuộn lại KHÔNG chứng minh lệnh chạy được — ràng buộc hoãn chỉ kiểm lúc
-  COMMIT (đã mắc 07/09). Xem `RULES.md §5`.
-- **Một con số chỉ tính ở một nơi.** Màn hình, CSV, PDF phải nói cùng một chuyện.
-- **Đặt câu hỏi trước việc lớn.** Anh Sơn muốn được hỏi; nhưng câu hỏi phải kèm
-  con số ĐÚNG — một lời gật xin bằng số sai không phải lời gật.
-- **Kịch bản Python tạm: viết ra tệp, chạy `python -P tệp`. KHÔNG heredoc.**
-  Heredoc đã phá ba lần: backtick bị bash diễn giải, `\x00` thành byte NUL thật,
-  dấu nháy lẻ làm bash chờ vô tận. Cùng lý do: **không backtick trong thông
-  điệp commit** trừ khi dùng `-F tệp`.
+**Nhánh** (repo công khai `PCBoiz/PE_hsa`):
 
-## Lệnh hay dùng
+| Nhánh | Là gì | Trạng thái |
+|---|---|---|
+| `master` | **production** (Vercel + Render tự deploy) | `bd58824` (24/09) — **chậm erp 113 commit**. Có lỗi rò ghi chú chuyển lớp lên tờ phụ huynh; bản vá đã ở erp |
+| `erp` | nhánh thử nghiệm — MỌI việc commit ở đây | đã gộp A1 + A2 + E1 + cấu trúc; cổng pre-push ĐẠT |
+| `erp-DB` | nhánh CSDL riêng của Cao Văn Nhân | **không đụng** (anh chốt: Nhân làm CSDL ở nhánh riêng) |
+| `cloud/e2-b`, `cloud/e3-b` | phiên cloud E2 (thông báo) / E3 (hộp Yêu cầu) | đã đẩy BACKEND rồi dừng; chưa giao diện, chưa báo cáo — xem việc 1–2 |
+| `agent/luong-a1`, `agent/luong-a2`, `agent/e1`, `cloud/cau-truc-b` | đã gộp vào erp | xoá được |
+| `cloud/pytest-d255ca8` | báo cáo pytest cũ | xoá được |
 
+**CSDL**: máy dev nối Neon nhánh **dev** (máy chủ `ep-little-water`, trong `backend/.env` — đừng in, đừng sửa). Production
+là `ep-billowing-fog`. Lược đồ dev: `bootstrap_schema` ×2 → 0/64 mục, `kiem_luoc_do` 63/63. Mục § đang có: tới §70
+(§61 của E2, §65 của E3 nằm trên nhánh của chúng). Tài khoản e2e (id 36029) đã ở lớp mẫu 7322 (26/09).
+
+**Số đo 26/09 trên dev** (sau gộp): pytest 30 mô-đun chạm tới xanh trên Neon (có bài thật); e2e hai khổ các spec
+chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong xanh; `do_axe` 0 vi phạm / 104 lượt;
+`do_giao_dien` 36 trang × 2 khổ 0 mọi luật, `--tu-kiem` 72/72. **CHƯA chạy**: pytest ĐỦ BỘ trên Neon sau gộp, e2e ĐỦ BỘ.
+
+## 3. Việc làm tiếp — theo thứ tự
+
+0. **(anh Sơn) Đăng nhập lại tài khoản cloud** (việc C2-cloud) — 26/09 06:15 mọi lượt mở phiên cloud trả **401** dù
+   `auth status` báo đã đăng nhập (thẻ hết hạn; tiện ích VS Code vừa lên 2.1.282). Trong PowerShell:
+   ```powershell
+   $env:CLAUDE_CONFIG_DIR = "$HOME\.claude-son"
+   $bin = (Get-ChildItem "$HOME\.vscode\extensions\anthropic.claude-code-*\resources\native-binary\claude.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
+   & $bin auth logout; & $bin auth login
+   ```
+   (đăng nhập trên trình duyệt bằng tài khoản claude.ai dùng cho cloud). Cloud credits hết hạn 05/11/2026.
+1. **Mở lại phiên cloud nối tiếp E2 và E3** (sau việc 0). Cách làm ở mục 5 "Claude cloud". Nội dung việc: làm TIẾP trên
+   `cloud/e2-b` / `cloud/e3-b` (không làm lại backend): gộp `origin/erp` trước; thêm bảng mới vào `scripts/so_mien.json`
+   (E2 → miền `thong_bao`: outbox, announcements; E3 → miền `yeu_cau`: yeu_cau, yeu_cau_su_kien) vì cổng f7 sẽ đòi;
+   giao diện React + test đỏ-trước + đột biến + hướng dẫn/quyền + NGHIEM_THU; báo cáo `docs/cloud/BAO_CAO_E2.md` /
+   `BAO_CAO_E3.md`. Brief chi tiết = mục "Luồng B" / "Luồng C" của kế hoạch v2 + `docs/THIET_KE_HE_THONG.md`.
+2. **Gộp E2, E3 khi có báo cáo** — `git fetch` NGAY trước khi gộp (26/09 gộp thiếu 8 commit vì fetch sớm); giải xung đột
+   giữ cả hai phía; `bootstrap_schema` ×2 + `kiem_luoc_do` trên dev; pytest từng mô-đun đã chạm TRÊN NEON (máy cloud
+   không có bài học → ~70 test luôn đỏ ở đó vì môi trường); e2e hai khổ `E2E_GHI=1`; `do_axe` + `do_giao_dien`
+   (`--tu-kiem` trước); thêm màn mới vào danh sách trang của hai bộ đo.
+3. **Cổng cho N4** (gộp erp → master = deploy production): pytest đủ bộ trên Neon dev (~54 phút, từng mô-đun), e2e
+   đủ bộ hai khổ, `do_axe`, `do_giao_dien`. Xanh hết → báo anh **"erp đã thử xong"** kèm số đo. Trước đó anh phải làm
+   **N6** (xếp lớp cho mọi học viên thật — bản mới khoá môn theo lớp). Thứ tự deploy: backend + lược đồ (Render) trước,
+   đợi Render xong (~45 phút), rồi mới tới frontend; khoá mới trong phản hồi đều `.optional()` trong zod.
+4. **Còn lại của kế hoạch v2** (xem bảng theo dõi):
+   - **N**: bộ e2e `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng kịch bản demo từng dòng NGHIEM_THU.
+   - **E1 phần sót**: bài tập trỏ về mục khung; sửa tên/trọng số mục trên màn (API đã có); "buổi đã dạy chưa ghi sổ" ở
+     Việc hôm nay (`tien_do_lop(kem_buoi=True)` có sẵn); ô "Đề xuất" của sổ đầu bài → tạo Yêu cầu (sau E3).
+   - **1.5B** thay khối thi bằng tiến trình; **1.5C** xoá mã thi (HOÃN tới khi điểm kiểm tra V-h chạy thật).
+   - **1.6** thuật ngữ "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ.
+   - **Đ2** §58 đổi GV/TG một buổi · §59 khoá tháng chấm công · §60 tài liệu lớp trên R2 (+ nộp tệp) — cần D1 của anh.
+   - **E4** Zoom (record tự gắn, HS xem record, thử "% đã xem") — cần Z1 của anh. **E5** tự đăng ký + hàng chờ xếp lớp
+     (§67; BẪY: mọi câu ở `accounts/quen_mat_khau.py` phải lọc `purpose='reset'`). **§66** link phụ huynh sống (nếu E3 chưa làm).
+   - **S1** sổ quyền một nguồn · **S2** một hàm màn chặn cho mọi trang khu · **S6** danh mục trang sinh menu ·
+     **S7** graphify mỗi mốc gộp (chạy trong PowerShell) và ghi số vào PROGRESS.
+   - Co sổ nợ ghi chéo (11 mục, `so_mien.json`); `common/management/commands/ve_erd.py` còn bảng `MIEN` riêng → đọc
+     `so_mien.json`.
+   - Rà giao diện bằng Chrome DevTools MCP theo TỪNG VAI (GV, TG, học vụ, biên tập — hai bộ đo hiện chỉ đi thẻ quản trị
+     + học viên): mở từng màn hai khổ, soi ảnh, console, mạng.
+5. **Việc của anh đang chờ** (bảng đầu `docs/VIEC_CUA_ANH.md`): C2-cloud (việc 0), N6, N4 (khi tôi báo), N7, K2 (4 câu hỏi
+   TopHSA + NGÀY buổi xem lại), K1 (một khung chương trình thật), N3, A7, N5, T6, C1–C8…, Z1, D1.
+
+## 4. Luật đang hiệu lực (không được quên)
+
+- Chỉ làm trong `D:\pe_hsa`. Mọi commit lên **`erp`**; KHÔNG commit/đẩy `master` — anh gộp khi tôi báo.
+- `.env` không bao giờ commit/in/sửa: `git diff --cached --name-only | grep -i "\.env$"` trước MỖI commit.
+- Repo CÔNG KHAI: không bí mật, token, JWT, chìa link phụ huynh, mật khẩu tạm; không đưa PDF/DOCX của khách, giá, hợp
+  đồng, email/tên khách, link bảng tính của khách vào repo (tệp khách trong `docs/` để untracked).
+- Không gửi email/Zalo tới phụ huynh thật. Không ghi vào tài khoản/lớp thử nghiệm của TopHSA (42409, 42843–42850, lớp 7586).
+- Neon = mock production = buổi TỔNG DUYỆT: ghi thử thoải mái, nhưng hạ tầng/bảo mật/phân quyền phải như thật.
+- DDL chỉ cộng thêm; mục mới `-- ── §NN · TÊN ──` + dòng trong `kiem_luoc_do.py`; nới CHECK thì SỬA TẠI CHỖ (test cấm
+  thêm lại ràng buộc cùng tên khác nội dung); vocab = CHECK; `bootstrap_schema` hai lần.
+- Test ĐỎ trước trên mã cũ + đột biến (nền xanh, mỗi đột biến mã 1); đi đúng đường thật; thước báo oan cũng là lỗi.
+- Không hardcode px (clamp/rem/vw/ch); tầng JS cũ chỉ co; mã mới đặt đúng miền, không ghi bảng miền khác.
+- Tối đa 3 agent cục bộ (hạn mức tuần); việc nặng → phiên cloud.
+- Việc cần anh → MỘT bảng lời thường ở đầu `docs/VIEC_CUA_ANH.md`.
+- Mọi số báo ra phải tự đo (không mượn số của agent/phiên khác mà không ghi rõ); số hiệu năng chỉ sau A/B xen kẽ.
+- Commit tiếng Việt, dòng cuối `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
+- Việc lớn → hỏi dồn theo vòng (grilling) trước khi làm; câu hỏi phải kèm số đúng.
+
+## 5. Lệnh và công cụ
+
+```bash
+# máy chủ dev (Django --noreload: thêm tuyến mới thì tắt/bật lại)
+cd backend && .venv/Scripts/python.exe manage.py runserver 9000 --noreload
+cd frontend && npx next dev -p 3100            # pnpm có thể không có trong PATH của Git Bash
+
+# lược đồ + test
+cd backend && .venv/Scripts/python.exe manage.py bootstrap_schema     # hai lần; lượt 2 = 0/N
+cd backend && .venv/Scripts/python.exe manage.py kiem_luoc_do
+cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider <mô-đun>   # TỪNG mô-đun, Neon ~1–4 phút/mô-đun
+
+# e2e (tài khoản đọc từ .the/e2e.json)
+cd frontend && E2E_GHI=1 npx playwright test -c e2e/playwright.config.ts <spec…> --reporter=line
+
+# bộ đo giao diện — thẻ sống 30 phút, cấp lại ngay trước mỗi lượt
+backend/.venv/Scripts/python.exe scripts/cap_the.py
+backend/.venv/Scripts/python.exe scripts/cap_the.py --e2e --ra .the/tokens_hv.json   # KHÔNG quên --ra (đè thẻ admin)
+node scripts/do_axe.mjs
+cd scripts && node do_giao_dien.mjs --tu-kiem && node do_giao_dien.mjs [--json ra.json]
+
+# thước cấu trúc (cổng pre-push chạy đủ: bash .githooks/pre-push < /dev/null)
+python scripts/cau_truc.py --kiem ; node scripts/ban_do.mjs --kiem ; python scripts/tang_vai.py --kiem
 ```
-# máy chủ dev — --noreload là BẮT BUỘC, nên THÊM TUYẾN MỚI thì phải dừng rồi bật lại
-# (không thì tuyến vừa viết trả 404 và trông như lỗi định tuyến)
-cd backend  && ALLOWED_ORIGINS="http://localhost:3100" ./.venv/Scripts/python.exe manage.py runserver 9000 --noreload
-cd frontend && npm run dev                              # cổng 3100
 
-# cổng trước khi báo xong (RULES §4)
-cd backend  && ./.venv/Scripts/python.exe -m ruff check .
-cd backend  && ./.venv/Scripts/python.exe -m pytest -q  # ~46 phút từ VN (đo 17/09), vào Neon thật
-# cần gói pytest-timeout (pytest.ini bắt buộc): pip install pytest-timeout==2.4.0
-# phép kiểm nào quá 600 s thì CẢ lượt dừng kèm ngăn xếp — xem chú thích pytest.ini
-cd frontend && ./node_modules/.bin/eslint src e2e --max-warnings 0 && ./node_modules/.bin/tsc --noEmit
-cd frontend && for f in e2e/unit/*.test.mjs; do node "$f" >/dev/null || echo "ĐỎ $f"; done   # 25 unit Node (đếm 14/09 tối, sau vòng 18)
-python scripts/cap_the.py                               # thẻ 30 phút, không ghi CSDL
-python scripts/cap_the.py --e2e --ra .the/tokens_hv.json  # thẻ HỌC VIÊN — màn học viên ẩn với nhân sự từ 20/09
-PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs --tu-kiem   # phải ĐẠT
-PE_TOKENS="D:\pe_hsa\.the\tokens_ad.json" node scripts/do_giao_dien.mjs             # rồi đo thật
+**graphify** (hiểu cấu trúc mã): chạy trong **PowerShell** (Git Bash làm nó sập): `graphify update backend`,
+`graphify update frontend/src`, `graphify update frontend/public/static/js`; tổng hợp `python scripts/tong_hop_graphify.py`
+→ `docs/BAN_DO_MA.md`.
 
-# hiệu năng — cần BẢN DỰNG production (next build && next start -p 3100), không đo trên dev.
-# Từ 14/09 tệp này tự làm nóng trình duyệt, đo 3 lượt lấy trung vị, tắt bộ đệm mỗi lượt.
-cd frontend && node node_modules/next/dist/bin/next build && node node_modules/next/dist/bin/next start -p 3100
-MSYS_NO_PATHCONV=1 node scripts/do_hieu_nang.mjs        # Git Bash: thiếu MSYS_NO_PATHCONV là /dashboard bị đổi thành đường Windows
+**Claude cloud** — tài khoản cloud riêng của anh (Pro, 100 USD credits tới 05/11/2026), đăng nhập ở `%USERPROFILE%\.claude-son`;
+trình mở phiên `%USERPROFILE%\cloud-son.ps1` (ngoài repo, không commit). Quy trình:
+1. Bản clone SẠCH (không `.env`): `git clone https://github.com/PCBoiz/PE_hsa <thư mục nháp>`; mỗi nhánh một worktree
+   `git worktree add ../cloud_<nhánh> origin/<nhánh> -B <nhánh>` — phiên cloud clone đúng nhánh của thư mục.
+2. Viết brief ra tệp .txt. Đầu brief: nhánh làm tiếp, gộp `origin/erp`, CSDL Postgres 16 cục bộ của máy cloud
+   (`postgres://postgres:postgres@localhost:5432/pe_hsa`, bảng `lessons` trống), danh sách kiểm cuối, báo cáo
+   `docs/cloud/BAO_CAO_*.md`, đẩy sau MỖI commit, không đẩy erp/master. KHÔNG dán bí mật hay DATABASE_URL thật.
+3. Mở bằng cửa sổ riêng (`--cloud` đòi terminal thật):
+   `Start-Process powershell -ArgumentList '-ExecutionPolicy','Bypass','-File',"$HOME\cloud-son.ps1",'-ViecFile',<brief>,'-ThuMuc',<worktree>,'-GhiRa',<log>`
+   — log chứa `session_…`; tiêu đề phiên bị cắt = brief bị cắt ở dấu `"`; log báo 401 = việc 0.
+4. Phiên cloud không hiện ở phiên cục bộ (khác tài khoản) → nhận kết quả qua nhánh; canh bằng vòng `git ls-remote` tìm
+   tên tệp báo cáo CỤ THỂ (nhánh mới thừa hưởng báo cáo cũ từ erp → canh "có BAO_CAO bất kỳ" sẽ báo nhầm).
+   Phiên có thể dừng giữa chừng không báo (E2/E3 25/09): quá ~1 giờ không commit mới → mở phiên nối tiếp.
 
-# xem trước / gửi thư báo cáo (App Password ở backend/.env, thuộc sonthaiha07@gmail.com)
-EMAIL_CHE_DO_THU=1 python manage.py thu_email --toi ai@example.com
-python manage.py thu_email --toi ai@example.com --lop 1 --em 9    # dữ liệu thật, chỉ đọc
+## 6. Bẫy đã gặp (đừng mắc lại)
 
-# hồ sơ gửi TopHSA
-python scripts/kiem_ke_san_pham.py --ra ho_so.json --md BAO-CAO-TRANG-THAI.md
-cd frontend && node ../scripts/ho_so_tophsa.mjs ../ho_so.json "../docs/Ho so san pham PE_HSA.pdf"
+- Gộp nhánh cloud khi `D:\pe_hsa` chưa fetch lại → thiếu commit; `ban_do --kiem` bắt được qua "tuyến không ai gọi".
+- Test lõi ở máy cloud đỏ ~70 cái vì bảng `lessons` trống — so tên với erp trên cùng máy trước khi kết luận.
+- Neon dev có thể ĐI TRƯỚC mã erp (agent cục bộ đã bootstrap lược đồ của nhánh mình) → test đỏ "NOT NULL" giả.
+- Trên dev, một lượt ghi tới Neon mất ~5 s → e2e chờ xác nhận ghi bằng `timeout: 20_000`.
+- `getByLabel('Tháng')` khớp cả `aria-label` chứa "tháng" → dùng `{ exact: true }`.
+- `next dev` tự ghi lại khối trong `frontend/AGENTS.md` → commit nó cùng việc, đừng hoàn nguyên.
+- Tài khoản e2e phải có lớp thì trang Bài học mới đo được (quyền môn theo lớp).
+- Python tạm: viết ra tệp rồi chạy; heredoc làm hỏng dấu `\`; tệp CRLF làm `sed`/so chuỗi không khớp → dùng Edit.
+- Ruff trên cloud có thể dễ hơn máy dev (DTZ011 `date.today()` → `common.clock.local_today()`).
 
-# lược đồ: mục nào của legacy_schema.sql đã tới Neon (thêm § mới thì thêm dòng MUC)
-cd backend  && ./.venv/Scripts/python.exe manage.py kiem_luoc_do
+## 7. Nguồn tham khảo
 
-# header bảo mật + CSP, đo HAI chiều (máy: next start -p 3100; production: PE_URL=https://pe-hsa.vercel.app)
-PE_TOKENS=.the/tokens_ad.json node scripts/do_dau_bao_mat.mjs
+**Nội bộ**: các tệp ở mục 1; `docs/BAN_DO_MA.md`, `docs/BAN_DO_VAI.md` (graphify + tầng vai); `docs/VAN_HANH.md`;
+`ban_do/BAO_CAO.md`; sách/giáo trình của khách trong `docs/` (untracked — không commit).
 
-# trước MỖI commit — phải rỗng
-git diff --cached --name-only | grep -i "\.env$"
-```
+**Bảng yêu cầu của khách** ("Bảng phân rã tính năng — Updated 24.9.2026") là Google Sheets riêng của TopHSA — link KHÔNG
+để trong repo công khai; anh Sơn giữ, phiên mới hỏi anh nếu cần. `docs/NGHIEM_THU_TOPHSA.md` là bản đối chiếu theo từng dòng.
 
-`master` = deploy production ngay (Render autoDeploy). Gộp vào `master` khi anh
-Sơn nói; hiện anh đã cho phép merge trực tiếp cho các đợt sửa. Đẩy `erp` tự do.
-
-## Trạng thái ngay lúc bàn giao — 14/09/2026, cuối ngày
-
-- **Production**: Vercel `pe-hsa.vercel.app` + Render đều đã nhận bản vá
-  bảng xếp hạng (`e93c66c`, xác nhận 18:32 bằng thẻ học viên thật); Render
-  `pe-hsa-backend` khoẻ (0,35 s/lượt khi thức) nhưng **vẫn ngủ đông, dậy mất
-  71–87 s**. Đã thử nghiệm đúng cảnh ấy trên production (vòng 16b): Vercel giữ
-  hàm ≥ 71 s, trang chảy (`/dashboard`) và trang chặn đều về đủ nội dung —
-  dựng ở máy chủ không làm cảnh ngủ tệ hơn; hết hẳn vẫn cần **A1** của anh.
-- **CSDL**: 5 tài khoản, 1 lớp (3 học viên đang học), 1 đợt, 16 buổi (15/09–
-  05/11), 0 điểm danh, 0 bài tập, 0 link báo cáo. Dữ liệu thử của mọi lượt rà
-  trong ngày đã xoá, đếm 9 bảng khớp mốc đầu phiên. `admin_audit` có thêm các
-  dòng THẬT do lượt rà tạo (giao/xoá bài, phát hành/thu hồi link) — để nguyên.
-- **Cổng chất lượng (14/09)**: pytest **537/537** (một ERROR thoáng qua, chạy
-  lại xanh) · **24/24 unit Node (đính chính: bản đầu ghi 25/25; 25 tệp là sau vòng 18)** · giao diện 22 trang × 2 khổ = 0/0/0/0 · eslint
-  / tsc / ruff / build sạch · hiệu năng **6/6 màn đạt** (Trang của tôi LCP 1,9–
-  2,4 s, CLS 0,007; còn cảnh báo 2.111 nút DOM).
-- **Trần tầng cũ**: 7.076 dòng / 13 tệp (sáng 7.385 → "Học tiếp" −30 →
-  "Nhiệm vụ hôm nay" −53 → "Bảng xếp hạng" −123 → thẻ số + tiến độ −103).
-- Lớp 1: 16 buổi T3/T5 19:30 **từ 15/09** (ngày mai), ngày thi 06/12/2026.
-- Commit ngày 14/09: vòng 10–21; xem `git log --since=2026-09-14` cho hash
-  cuối (bàn giao này viết trước commit cuối của vòng 21). **26 unit Node**
-  (thêm `gio-vn` ở vòng 21).
-
-### Hôm nay đã làm gì (chi tiết: PROGRESS vòng 10–24)
-
-- **T18 mức 2 — zod cho MỌI màn đọc** (16 trang) và cho **chiều ghi**
-  (`ghiJson`, 4 nút đọc phản hồi). Máy chủ đổi tên khoá thì màn hình nói ra,
-  không im. `lib/kiemDang.ts` là bộ luật chung hai phía.
-- **Nhật ký** ghi phát hành/thu hồi link báo cáo phụ huynh và gửi cả lớp.
-- **Trang của tôi**: bỏ Font Awesome khỏi trợ lý AI (SVG riêng), `latin-ext`
-  vào phông, hai khối đầu ("Lớp của bạn", "Học tiếp") dựng ở MÁY CHỦ và chảy
-  qua Suspense với khung chờ đúng chiều cao, máy chủ đưa luôn hai phản hồi
-  xuống tầng cũ (15 → 11 lượt API). `renderContinue` rời `dashboard.js`.
-- **Rà luồng HỌC VIÊN đầu-cuối** trên dev: tìm ra **học viên không nộp được
-  bài / giảng viên không chấm được (415 — thiếu Content-Type ở `apiFetch`)**
-  và màn bài học đổ lỗi cho máy chủ khi em chưa ghi danh. Cả hai đã vá.
-- **Tối (vòng 17–20):** rà cả **bốn vai trên PRODUCTION** trước buổi học
-  15/09 — đúng như dev, hai bản vá đã lên. "Nhiệm vụ hôm nay" và "Bảng xếp
-  hạng" sang React máy chủ/client. Phát hiện `zod` đầy đủ ở mã trình duyệt
-  làm gói JS phình — đo A/B bằng thước đã sửa: Thi thử **956 → 608 kB** giải
-  nén khi đổi sang `zod/mini` (nay có phép kiểm chặn). **Bảng xếp hạng
-  xếp cả nhân viên** — quản trị viên từng hạng 1 trên production; nay chỉ học
-  viên (`chi_hoc_vien`), nhân viên xem thì không có hạng. Câu hỏi sản phẩm
-  về tên thật học sinh cấp 3 trên bảng: **C6** trong `VIEC_CUA_ANH.md`.
-  Vòng 21: hàng bốn thẻ số + dải tiến độ ba hợp phần sang React máy chủ, dùng
-  chung hai lượt API với "Học tiếp" qua `cache()` (`lib/duLieuHsa.ts`); "hôm
-  nay" của dải 7 ngày tính theo `Asia/Ho_Chi_Minh` (`lib/gioVN.ts`) — máy chủ
-  Vercel chạy UTC. **Trang của tôi nay chỉ còn tầng cũ cho: lộ trình rút gọn,
-  nhật ký/mục tiêu tuần, chuông thông báo, và tám "trang" SPA ẩn.**
-- **Thước đo tự sửa**: `do_hieu_nang` làm nóng + trung vị 3 lượt + tắt bộ đệm
-  (số cũ 2,7 s và 0,6 s đều ảo); ba phép kiểm backend đếm tổng `admin_audit`
-  nay lọc theo `actor_id` (bảng thật dùng chung, đỏ khi có người thao tác
-  song song); `bieu-tuong-khop` bắt tên `BieuTuong` không có hình; cột JS
-  của `do_hieu_nang` **chỉ đếm được khoảng MỘT tệp mỗi trang từ lâu** (báo
-  "222 kB" cho màn thật 529 kB) — nay chờ đọc xong, in số lượt hỏng, ghi rõ
-  byte giải nén. Mọi số JS(kB) trong PROGRESS trước 14/09 tối: chỉ so tương đối. **Đừng đo
-  hiệu năng khi bộ pytest đang chạy** — cùng máy, số nhiễu cả LCP lẫn JS.
-- **Khuya (vòng 22) — tổng duyệt hạ tầng.** `next` 16.2.11 dính **hai lỗ
-  CRITICAL** mà không cửa kiểm nào hỏi tới → 16.3.5, và CI nay chạy `pnpm audit
-  --prod` + `pip-audit`. Vercel **không gửi header bảo mật nào** (chỉ HSTS) →
-  `next.config.ts` gửi CSP + nosniff + X-Frame-Options + Referrer-Policy +
-  Permissions-Policy + COOP, tắt `X-Powered-By`. `scripts/do_dau_bao_mat.mjs`
-  đo hai chiều (cho phép thứ sản phẩm dùng / chặn thứ kẻ tấn công cần), đã đỏ
-  đúng 9 mục trên production cũ. `do_giao_dien` đếm thêm vi phạm CSP. Luật
-  eslint mới của Next 16.3 → `lib/dieuHuong.ts::taiTrang` cho 12 lần tải lại
-  cả trang có chủ ý. **Phát hiện đắt nhất vòng: GitHub Actions chưa từng chạy
-  một bước nào** (243/244 lượt, khoá thanh toán; lượt còn lại là Dependabot) → A0. Proxy `/api/*` thôi chép
-  CSP/X-Frame-Options của Django (production lộ ra, máy không thấy).
-- **Vòng 23:** `src/middleware.ts` → `src/proxy.ts` theo Next 16 (hàm `proxy`, gỡ
-  `runtime`). Kiểm bằng luồng làm mới phiên CHẠY THẬT trước/sau, không bằng tên
-  tệp. Một commit thiếu nửa (`39dbe93`) lên master vì `git add` huỷ cả lệnh khi
-  gặp đường dẫn đã đổi tên — Vercel build hỏng, production không bị ảnh hưởng.
-- **15/09 (vòng 24) — kiểm kĩ lại:** ba THƯỚC ĐO sai đã sửa (mục CHẶN của
-  `do_dau_bao_mat` chấp nhận mất mạng; eval đo qua DevTools thì Chromium không chặn —
-  phải đo từ `<script>` của chính trang; phép kiểm bài thật nhầm `lessons.id` với
-  `sort_order`). Production gỡ `'unsafe-eval'`: đồ thị bài học do máy chủ tính
-  (`lessons/do_thi.py`). A/B hiệu năng cùng lúc: sau nâng Next, "Trang của tôi" chậm
-  thêm ~0,2 s ở phía trình duyệt, máy chủ như nhau. **Phát hiện: production nhận JWT
-  ký bằng khoá trong `backend/.env` → A6.**
-- **16/09 (vòng 25) — nhập kết quả thi thử từ PDF**, việc (1) của hướng bán đứt. Màn
-  `/giang-day/ket-qua-thi/<lớp>` (lối vào: trang báo cáo phụ huynh cả lớp) → tờ báo
-  cáo có khối "Kỳ thi thử tại trung tâm". Hai tuyến `doc` (từng tệp, phát phiếu ký) /
-  `ghi` (phiếu + chọn tay) — vì 0,75 s/tờ × 35 em đụng trần 60 s gunicorn và 4,5 MB
-  của Vercel. Bảng §48 `ket_qua_thi_ngoai`. **Tệp PDF mẫu có tên học sinh thật: không
-  commit**; thử bằng PDF giả dựng bằng reportlab. Bài học: phép kiểm thay hàm đọc
-  bằng hàm giả đã giấu một `ImportError` làm 500 mọi lượt tải lên.
-- **16/09 (vòng 26) — bộ dữ liệu trình diễn**, việc (2). ĐANG NẰM TRÊN NEON: 48 học viên, hai
-  lớp "(lớp mẫu)" `HSA-MAU-01/02` với buổi học, điểm danh, bài chấm, bài học, thi thử, hai kỳ
-  thi tại trung tâm. `python manage.py du_lieu_mau` (đếm) · `--tao` · `--go` (gỡ sạch). Cờ
-  `is_demo` ở `users`/`classes` (§49). Học viên mẫu: không gửi tin (trạng thái `mau`), không
-  đăng nhập được (băm scrypt của chuỗi ngẫu nhiên bỏ đi — ĐỪNG đổi thành chuỗi thô:
-  `LoginView` còn nhánh mật khẩu thô cũ). Trước ngày đổ học viên THẬT vào: chạy `--go`.
-
-## Việc đang chờ, không ai làm được thay
-
-Xem **Phần I** của `docs/VIEC_CUA_ANH.md` (viết lại 18/09, mọi trạng thái đo lại hôm ấy).
-Năm việc tay: **A6 tách khoá ký production khỏi máy dev — đo 18/09 18:30 production VẪN nhận
-thẻ ký bằng `backend/.env`** (lần 401 hôm 17/09 không lặp lại được — đo lại mỗi phiên trước
-khi viết trạng thái A6) · **A0 gỡ khoá thanh toán GitHub** (lượt CI 18/09 vẫn 0 bước) · A1 giữ
-ấm · A5 sao lưu và A3 nhánh Neon (sau A0). **A2 đã xong** (18/09: máy chủ thấy đúng IP thật qua
-Vercel). Cộng mười câu quyết (C1, C2, C3, C6, C7, C8, 11.4, 11.5, 6.3, P1) và B1 một lớp thật.
-
-## Việc tôi làm tiếp được ngay (không cần anh)
-
-*Xong 13–14/09:* ~~sao lưu CSDL tự động~~ (chờ A5) · ~~khai cổng tường minh 60
-view~~ · ~~nhập liên hệ phụ huynh~~ · ~~sinh lịch cả kỳ + ngày nghỉ~~ · ~~bảng
-"Việc hôm nay"~~ · ~~khoá liên hệ phụ huynh (C5)~~.
-
-~~Rà luồng trợ giảng đầu-cuối~~ (14/09, vòng 6) · ~~T18 mức 2~~ (vòng 10, 14) ·
-~~rà luồng học viên đầu-cuối~~ (vòng 13) · ~~LCP Trang của tôi~~ (vòng 11–16).
-
-**Ba hướng đã đưa anh Sơn chọn tối 14/09; anh bảo dừng tổng kết — phiên sau
-HỎI LẠI trước khi làm:**
-1. ~~*Dựng lười 8 "trang" SPA cũ*~~ — LÀM XONG vòng 27 (16/09) đúng theo cầu
-   `window.__moTrang(page)`. Nhưng tiền đề "hydrate ~1,6 s" SAI: A/B xen kẽ cho LCP
-   không đổi; được DOM −50% và CLS ÷4. Xem PROGRESS vòng 27.
-2. *Chuyển tiếp các khối còn lại sang React máy chủ* (nhiệm vụ hôm nay, bảng
-   xếp hạng, thông báo) theo khuôn `HocTiep`/`LopCuaToiNguon`.
-3. *Rà lại 4 vai trên PRODUCTION* (`pe-hsa.vercel.app`) trước/ngay sau buổi
-   học đầu 15/09 — tài khoản thử, rà xong xoá.
-Ngoài ra: ~~bộ nhập kết quả thi từ PDF~~ (vòng 25); T40 chỉ còn đặt `REDIS_URL`.
-
-**Hướng đang làm (anh Sơn chọn 15/09, "khả năng cao là sẽ bán đứt") — theo thứ tự:**
-~~(1) nhập kết quả thi thử từ PDF~~ · ~~(2) bộ dữ liệu trình diễn~~ (vòng 26) ·
-~~(3) dựng lười 8 tab SPA ẩn~~ (vòng 27 — DOM −50%, CLS ÷4, **LCP không đổi**: LCP
-Trang của tôi do mạng/API, không do hydrate; đừng đi lại đường ấy) · ~~(4) minh hoạ cho
-bài học~~ (vòng 28 — 76/76 bài, bộ soạn ở `backend/lessons/minh_hoa/`, nạp bằng
-`manage.py nap_minh_hoa --nap`; minh hoạ gắn CẢ thẻ tóm tắt vì engine cho bản tóm tắt
-ngay khi đúng một câu). **CẢ BỐN VIỆC XONG 16/09** — phiên sau hỏi anh hướng tiếp. Anh đã chọn cả bốn — không cần hỏi lại, nhưng việc nào
-đổi hướng lớn giữa chừng thì vẫn hỏi.
-
-**Hạ tầng còn lại sau vòng 22** (chi tiết cuối mục vòng 22 trong PROGRESS):
-~~`middleware.ts` → `proxy.ts`~~ (vòng 23) · ~~gỡ `'unsafe-eval'`~~ (vòng 24,
-máy chủ tính điểm đồ thị) · gom cấu hình gunicorn về một chỗ
-(`render.yaml` và `gunicorn.conf.py` đang ghi số khác nhau).
-
-**Cân nhắc rồi bỏ (đừng làm lại):** gỡ Font Awesome khỏi màn bài học — nội
-dung 76 bài trong CSDL gọi 190 tên biểu tượng; đó là phụ thuộc tầng nội dung.
-Cho tầng JS cũ chạy trước hydrate — React dựng lại và xoá DOM tầng cũ vừa ghi,
-không đều (đã thấy bằng mắt qua lỗi #418 ở vòng 15).
-
-**Cách rà một vai trên trình duyệt thật** (dùng lại; từ 14/09 anh cho GHI thật
-trên đối tượng vứt đi vì đây là mock production): tạo tài khoản thử qua API
-quản trị → **đăng nhập THẬT bằng mật khẩu tạm máy chủ sinh** (đổi mật khẩu →
-bị đá về `/login?vua-doi-mat-khau=1` → đăng nhập lại là CÓ CHỦ Ý) → Playwright
-ghi lại mọi lời gọi không-GET và mọi phản hồi ≥ 400 → xoá bằng kịch bản tự liệt
-kê khoá ngoại (kể cả `token_blacklist_*`), đếm 9 bảng trước/sau. Hai bẫy của
-thước: `textContent({timeout})` trả rỗng ngay khi phần tử có mặt (đợi CHỮ bằng
-vòng lặp); màn `/login` cũng chứa "TopHSA" nên phải chắc URL không rơi về
-`/login` trước khi so chữ.
-
-## Bài học đắt nhất ba tuần qua
-
-1. **Chú thích sai nguy hiểm ngang mã sai.** `gui()` ghi "không ném ngoại lệ"
-   mà ném — một tên học viên có xuống dòng làm hỏng lượt gửi của 24 em còn lại.
-2. **Bộ đo tự viết phải đối chiếu với bộ đo đã có** trước khi tin. Bộ kiểm kê
-   đếm "0 đường chỉ cần đăng nhập" khi công cụ cũ đếm 60 — sai cách phân loại.
-3. **Chạy trên dữ liệu thật lộ ra thứ dữ liệu mẫu giấu.** "Điểm thi thử trung
-   bình: 0%" cho một em thi đúng một lần — số đúng, chữ sai.
-4. **Mở tệp ra nhìn.** Ba lỗi bố cục PDF không hiện trong chữ trích xuất.
-5. **(14/09) Phép kiểm backend xanh không nói gì về giao diện.** Cả tính năng
-   bài tập chết qua giao diện (415) trong khi 537 phép kiểm xanh — chúng gọi
-   thẳng view với `format='json'`. Chỉ đi thật bằng trình duyệt mới thấy.
-6. **(14/09) Thước tự viết nói dối ba lần một ngày** — đo màn đầu trong trình
-   duyệt lạnh, đọc DOM trước khi toast hiện, đếm tổng bảng dùng chung. Mỗi số
-   báo ra phải hỏi: thước có thể nói dối theo hướng nào?
-7. **(14/09) Tối ưu phải đo lại ngay** — dựng ở máy chủ không Suspense làm LCP
-   xấu đi từ 2,5 lên 4,3 s; không đo thì đã đẩy lên production như một "tối ưu".
+**Cách làm / thiết kế** (anh gửi 25/09 — dùng làm chuẩn tham khảo và luật chuyển động cho màn MỚI):
+- Hỏi dồn trước việc lớn: https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md
+- Quy trình phát triển với AI: https://claude.com/blog/the-ai-native-sdlc-playbook
+- Thiết kế hệ thống: https://github.com/donnemartin/system-design-primer
+- Sơ đồ kiến trúc: https://github.com/tt-a1i/archify · https://github.com/cathrynlavery/diagram-design
+- Hiểu cấu trúc mã: https://github.com/Graphify-Labs/graphify
+- Kiểm giao diện thật: https://github.com/ChromeDevTools/chrome-devtools-mcp
+- Giao diện / chuyển động: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill · https://github.com/emilkowalski/skills ·
+  https://uiverse.io/ · https://horizonx.so/ · https://shaders.com/ · https://contentcore.xyz/
+- Vai agent: https://github.com/msitarzewski/agency-agents
