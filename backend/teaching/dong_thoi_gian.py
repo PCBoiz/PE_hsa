@@ -111,6 +111,20 @@ def dong_thoi_gian(uid, tao_luc):
         diem = ('%s/%s điểm' % (r['score'], r['total'])) if r['score'] is not None else None
         _su_kien(ds, r['submitted_at'], 'thi', 'Nộp bài thi thử: %s' % r['ten'], chi_tiet=diem)
 
+    # "Làm bài" (4.3, 25/09/2026) — thiếu hẳn trong chuỗi vòng đời cho tới hôm
+    # nay: khảo sát → xếp lớp → …→ thi thử → báo cáo đã có, nộp bài tập/kiểm
+    # tra thì chưa, dù `submissions` có sẵn từ lâu. `kind` (§: assignments)
+    # tách "Nộp bài tập" khỏi "Nộp bài kiểm tra" — hai việc khác nhau trong mắt
+    # phụ huynh lẫn học vụ, dù cùng đi qua một bảng.
+    for r in q('''SELECT s.submitted_at, s.score, a.max_score, a.title, a.kind
+                    FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                   WHERE s.user_id=%s AND s.submitted_at IS NOT NULL''', (uid,)):
+        # `score`/`max_score` là NUMERIC (điểm lẻ được) — `%s` trần in "8.00",
+        # `%g` bỏ số 0 thừa mà vẫn giữ phần lẻ thật (8.5 vẫn là 8.5).
+        diem = ('%g/%g điểm' % (r['score'], r['max_score'])) if r['score'] is not None else None
+        tieu_de = 'Nộp bài kiểm tra' if r['kind'] == 'kiem_tra' else 'Nộp bài tập'
+        _su_kien(ds, r['submitted_at'], 'bai-tap', '%s: %s' % (tieu_de, r['title']), chi_tiet=diem)
+
     for r in q('''SELECT ngay_thi, dot, hinh_thuc, dia_diem, tong_diem, tong_toi_da
                     FROM ket_qua_thi_ngoai WHERE user_id=%s''', (uid,)):
         diem = ('%s/%s điểm' % (r['tong_diem'], r['tong_toi_da'])) if r['tong_diem'] is not None else None

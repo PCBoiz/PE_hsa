@@ -58,9 +58,17 @@ def trang_thai(left_at, leave_reason=None):
     return 'Đã rời lớp — chưa ghi lý do'
 
 
-#: Trạng thái lớp = `classes_status_check` (T42). Dời từ `views.py` 24/09/2026 để
-#: `reports.py` lọc được mà không import vòng; `views.CLASS_STATUS` là bí danh.
-TRANG_THAI_LOP = ('active', 'finished', 'cancelled')
+#: Trạng thái lớp = `classes_status_check` (T42, mở thêm 'paused' ở §63,
+#: 25/09/2026 — "đang học / kết thúc / tạm dừng", yêu cầu TopHSA 4.1). Dời từ
+#: `views.py` 24/09/2026 để `reports.py` lọc được mà không import vòng;
+#: `views.CLASS_STATUS` là bí danh.
+#:
+#: 'paused' THÊM VÀO ĐÂY 25/09/2026: CHECK của CSDL đã cho phép từ §63, nhưng
+#: quên sửa hằng số này cùng lượt — đúng lớp lỗi module này viết ra để chặn
+#: (nhãn tiếng Việt / hằng số lệch với CHECK), và bộ test tự dò lệch bắt được
+#: (`teaching/tests.py::test_trang_thai_lop_khop_rang_buoc_CSDL...`). Thiếu dòng
+#: này thì API từ chối mọi yêu cầu đặt lớp "tạm dừng" dù CSDL đã sẵn sàng nhận.
+TRANG_THAI_LOP = ('active', 'finished', 'cancelled', 'paused')
 
 #: Loại lớp (§54, 24/09/2026) — `classes_class_type_check` phải liệt kê đúng hai giá trị này.
 #: TopHSA có ~400 lớp GIA SƯ cá nhân hoá (1 tới 3 em) bên cạnh lớp NHÓM.

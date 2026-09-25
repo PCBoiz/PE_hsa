@@ -62,6 +62,7 @@ from stats.competency import (
     TOPIC_SOURCES,
     chu_de_trong_giao_trinh,
 )
+from teaching.tien_do_chuong_trinh import tien_do_lop
 from teaching.vocab import LOAI_LOP, TRANG_THAI_LOP, chi_hoc_vien
 
 logger = logging.getLogger(__name__)
@@ -525,6 +526,10 @@ def class_report(class_id):
         # viên, nhưng bị `chi_hoc_vien` lọc khỏi sĩ số). Màn Lớp học của học
         # vụ và trang lớp của giảng viên đều cần nhìn thấy họ (20/09/2026).
         'assistants': tro_giang_cua_lop(class_id),
+        # Tiến độ CỦA LỚP theo khung chương trình (4.3, 25/09/2026) — khác
+        # `avgProgress` ở dưới (đó là % bài học của TỪNG em). None = lớp chưa
+        # nhận phiên bản chương trình nào. Xem `teaching/tien_do_chuong_trinh.py`.
+        'syllabusProgress': tien_do_lop(class_id),
         'topics': topics,
         'summary': {
             # `students` = sĩ số ĐANG học, cùng nghĩa với mọi chỉ số bên dưới.

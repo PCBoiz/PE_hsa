@@ -120,6 +120,27 @@ def test_ten_dot_da_mo_dau_bang_thi_khong_bi_ghep_hai_lan(canh):
     assert 'Thi HSA đợt 501' in tieu_de, 'tên đợt KHÔNG mở đầu bằng "Thi" thì vẫn phải ghép'
 
 
+def test_nop_bai_tap_va_kiem_tra_len_dong_thoi_gian(canh):
+    """"Làm bài" (4.3, 25/09/2026) — trước hôm nay dòng thời gian nhảy thẳng từ
+    xếp lớp sang thi thử, không có bước nộp bài dù `submissions` có sẵn từ lâu."""
+    bt = q1("INSERT INTO assignments (class_id, title, max_score, status, kind, created_by) "
+           "VALUES (%s, 'Bài tập chương 1', 10, 'open', 'bai_tap', %s) RETURNING id",
+           (canh['a'], canh['gv'].id))['id']
+    kt = q1("INSERT INTO assignments (class_id, title, max_score, status, kind, created_by) "
+           "VALUES (%s, 'Kiểm tra giữa kỳ', 100, 'open', 'kiem_tra', %s) RETURNING id",
+           (canh['a'], canh['gv'].id))['id']
+    q1("INSERT INTO submissions (assignment_id, user_id, submitted_at, score) "
+       "VALUES (%s, %s, %s, 8) RETURNING assignment_id", (bt, canh['em'].id, _l('2026-08-05T20:00')))
+    q1("INSERT INTO submissions (assignment_id, user_id, submitted_at, score) "
+       "VALUES (%s, %s, %s, 85) RETURNING assignment_id", (kt, canh['em'].id, _l('2026-08-10T09:00')))
+
+    ev = _lay(canh).data['events']
+    bai = next(e for e in ev if e['tieuDe'] == 'Nộp bài tập: Bài tập chương 1')
+    assert bai['chiTiet'] == '8/10 điểm'
+    ktra = next(e for e in ev if e['tieuDe'] == 'Nộp bài kiểm tra: Kiểm tra giữa kỳ')
+    assert ktra['chiTiet'] == '85/100 điểm'
+
+
 def test_khong_lo_dia_chi_phu_huynh(canh):
     """Dòng thời gian nói "đã gửi qua email", KHÔNG nói gửi tới địa chỉ nào."""
     toan_bo = json.dumps(_lay(canh).data, ensure_ascii=False)
