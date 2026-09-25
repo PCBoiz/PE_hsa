@@ -82,6 +82,9 @@ urlpatterns = [
     path('api/teach/sessions/<int:session_id>', sessions.ClassSessionDetailView.as_view()),
     path('api/teach/sessions/<int:session_id>/attendance',
          sessions.SessionAttendanceView.as_view()),
+    # Lịch sử sửa điểm danh của một buổi (V-d, 25/09/2026). Chỉ đọc.
+    path('api/teach/sessions/<int:session_id>/attendance/history',
+         sessions.SessionAttendanceHistoryView.as_view()),
 
     # ── Giao bài & chấm tay (đặc tả ERP §5) ──
     path('api/teach/classes/<int:class_id>/assignments',

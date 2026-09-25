@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { BieuTuong } from '@/components/bieuTuong';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { lucVN } from '@/lib/gioVN';
 import { noiHoc } from '@/lib/noiHoc';
 
 /**
@@ -60,7 +61,32 @@ type Lop = {
   ngayThiLech: boolean;
   /** Bài giảng viên giao mà em CHƯA nộp — xem `lop_cua_toi.py` vì sao nằm ở thẻ lớp. */
   baiTap: { chuaNop: number; hanSom: string | null };
+  /** Điểm danh TỪNG buổi đã diễn ra, mới nhất trước (V-d, 25/09/2026). `?`: máy chủ cũ không trả. */
+  diemDanh?: DongDiemDanh[];
 };
+
+type DongDiemDanh = {
+  sessionId: number;
+  startsAt: string | null;
+  topic: string | null;
+  /** false = giảng viên chưa mở sổ buổi ấy — KHÔNG phải em vắng. */
+  daDiemDanh: boolean;
+  trangThai: string | null;
+};
+
+/** Nhãn + màu chữ của trạng thái — cùng bốn trạng thái với sổ điểm danh của giảng viên. */
+const TRANG_THAI_DD: Record<string, { nhan: string; mau: string }> = {
+  present: { nhan: 'Có mặt', mau: 'text-success-ink' },
+  late: { nhan: 'Muộn', mau: 'text-warning-ink' },
+  absent: { nhan: 'Vắng', mau: 'text-danger-ink' },
+  excused: { nhan: 'Có phép', mau: 'text-brand-ink' },
+};
+
+function nhanDiemDanh(b: DongDiemDanh) {
+  if (!b.daDiemDanh) return { nhan: 'Chưa điểm danh', mau: 'text-ink-3' };
+  return b.trangThai ? (TRANG_THAI_DD[b.trangThai] ?? { nhan: b.trangThai, mau: 'text-ink-2' })
+    : { nhan: 'Không có trong sổ', mau: 'text-ink-3' };
+}
 
 export type DuLieu = { lop: Lop[]; mucTieu: { examDate: string | null } };
 
@@ -209,6 +235,31 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 </>
               )}
             </p>
+
+            {/* Điểm danh TỪNG buổi (bảng TopHSA dòng 28): gấp sẵn — con số tổng ở
+                dòng trên là thứ em nhìn hằng ngày, danh sách là để đối chiếu. */}
+            {l.diemDanh && l.diemDanh.length > 0 && (
+              <details className="group mt-2">
+                <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1 text-small font-semibold text-brand-ink">
+                  <span aria-hidden="true" className="inline-block transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+                  Điểm danh từng buổi ({l.diemDanh.length})
+                </summary>
+                <ol className="flex flex-col">
+                  {l.diemDanh.map((b) => {
+                    const t = nhanDiemDanh(b);
+                    return (
+                      <li key={b.sessionId} className="flex flex-wrap items-baseline justify-between gap-x-3 border-t border-line/50 py-1.5 text-small first:border-t-0">
+                        <span className="min-w-0 text-ink-2">
+                          <span className="tabular-nums">{lucVN(b.startsAt)}</span>
+                          {b.topic && <> · {b.topic}</>}
+                        </span>
+                        <b className={t.mau}>{t.nhan}</b>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </details>
+            )}
 
             {/* Bài tập chưa nộp. Ở điện thoại thanh trên không có mục Bài tập,
                 nên không có dòng này thì em không biết thầy vừa giao bài. */}

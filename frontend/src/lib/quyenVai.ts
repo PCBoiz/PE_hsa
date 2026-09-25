@@ -225,6 +225,15 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Xem lịch sử sửa điểm danh của một buổi',
+    // Kế hoạch v2 V-d, 25/09/2026 (bảng TopHSA dòng 9, 14).
+    giaiThich: 'Ai đổi điểm danh của em nào, từ gì sang gì, lúc nào. Cùng cửa với điểm danh — ai điểm danh được thì xem được, kể cả trợ giảng.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/sessions.py::SessionAttendanceHistoryView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Giao bài và chấm tay',
     giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài.',
     lopQuyen: 'IsTeachingStaff',

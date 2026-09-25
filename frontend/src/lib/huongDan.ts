@@ -267,6 +267,10 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       { lam: 'Tick từng em (hoặc "Đánh dấu cả lớp có mặt" rồi sửa em vắng), bấm lưu.' },
       {
+        lam: 'Sửa lại điểm danh thì cứ tick lại rồi lưu. Mở "Lịch sử sửa điểm danh" ngay dưới sổ để xem ai đã đổi em nào, từ gì sang gì, lúc nào.',
+        luu_y: 'Lưu lại y hệt không ghi thêm dòng lịch sử nào — chỉ lần ĐỔI mới được ghi. Học viên xem được điểm danh từng buổi của chính mình ở "Lớp của bạn".',
+      },
+      {
         lam: 'Buổi chưa có trong danh sách thì tạo buổi trước — hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
         luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG được tính vào mẫu số chuyên cần — nó bị báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
       },

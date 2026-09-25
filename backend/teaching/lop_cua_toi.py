@@ -30,7 +30,7 @@ from common.clock import local_now
 from common.db import q
 from common.views import NguoiDungView
 from stats.goals import as_date, read_goals
-from teaching.parent_report import _chuyen_can
+from teaching.parent_report import _buoi_cua_em, _chuyen_can
 from teaching.sessions import DEFAULT_SESSION_MINUTES
 
 #: Số buổi sắp tới hiện ra — tuần này và đầu tuần sau là đủ.
@@ -38,6 +38,9 @@ SO_SAP_TOI = 3
 #: Buổi ĐÃ HUỶ trong ngần này ngày tới thì nêu tên. Huỷ mà chỉ lặng lẽ biến
 #: khỏi "buổi tới" thì em vẫn tưởng tối đó có học — hoặc tưởng lớp quên xếp lịch.
 NGAY_NEU_BUOI_HUY = 7
+#: Số buổi gần nhất trong danh sách điểm danh TỪNG buổi (V-d) — một đợt ba tháng hai
+#: buổi/tuần là ~26; trần để thẻ lớp không thành sổ cái khi em học cả năm.
+SO_BUOI_DIEM_DANH = 60
 
 
 def _iso(v):
@@ -134,6 +137,10 @@ class LopCuaToiView(NguoiDungView):
             # trong `parent_report._buoi_cua_em`, 20/09/2026).
             vao = min(d[0] for d in cac_dot[cid]).date()
             vao = min(vao, r['tick_som'].date()) if r.get('tick_som') else vao
+            # MỘT lượt đọc buổi cho cả chuyên cần lẫn danh sách từng buổi (V-d, bảng
+            # TopHSA dòng 28): cùng ba bộ lọc (buổi đã diễn ra, chưa huỷ, trong thời
+            # gian em ở lớp), nên đếm và liệt kê không thể lệch nhau.
+            du = _buoi_cua_em(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid])
             lop.append({
                 'id': cid, 'name': r['name'], 'code': r['code'], 'schedule': r['schedule'],
                 'teacherName': r['teacher_name'], 'meetingUrl': r['meeting_url'],
@@ -144,7 +151,17 @@ class LopCuaToiView(NguoiDungView):
                 'buoiToi': ds[0] if ds else None,
                 'sapToi': ds,
                 'daHuy': [_buoi_dict(b, r, nay) for b in da_huy.get(cid, [])],
-                'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid]),
+                'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), du_lieu=du),
+                # Điểm danh TỪNG buổi, mới nhất trước. `daDiemDanh` False = giảng viên
+                # chưa mở sổ buổi ấy (không phải em vắng); True mà `trangThai` null =
+                # sổ đã lưu nhưng không có dòng của em. Chỉ trạng thái của CHÍNH em.
+                'diemDanh': [{
+                    'sessionId': b['id'], 'startsAt': _iso(b['starts_at']), 'topic': b['topic'],
+                    'daDiemDanh': bool(b['attendance_taken_at']),
+                    'trangThai': (du['trang_thai'].get(b['id'])
+                                  if b['attendance_taken_at'] else None),
+                } for b in sorted(du['da_dien_ra'], key=lambda b: b['starts_at'],
+                                  reverse=True)[:SO_BUOI_DIEM_DANH]],
                 'baiTap': bai_tap.get(cid, {'chuaNop': 0, 'hanSom': None}),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),

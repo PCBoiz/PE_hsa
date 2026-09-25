@@ -230,7 +230,8 @@ def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
         args.append(user_id)
         dieu_kien.append('(' + ' OR '.join(khoang) + ')')
 
-    buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at '
+    # `topic`: "Lớp của tôi" liệt kê điểm danh TỪNG buổi từ chính kết quả này (V-d).
+    buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at, s.topic '
              'FROM class_sessions s WHERE ' + ' AND '.join(dieu_kien), tuple(args))
 
     # Buổi đã huỷ: lớp nghỉ vì giảng viên ốm, không phải việc của em.

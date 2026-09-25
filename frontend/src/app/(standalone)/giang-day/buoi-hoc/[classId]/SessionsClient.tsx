@@ -24,6 +24,7 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 // `.optional()`). Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
 import * as z from 'zod/mini';
 
+import LichSuDiemDanh from './LichSuDiemDanh';
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
 
 /**
@@ -916,6 +917,8 @@ function Attendance({
   const [rows, setRows] = useState<Student[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // Số lần Lưu trong phiên — làm `key` cho khối lịch sử để nó bỏ bản đã cũ (V-d).
+  const [soLanLuu, setSoLanLuu] = useState(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -961,6 +964,7 @@ function Attendance({
         HD_LUU_DIEM_DANH,
       );
       setDirty(false);
+      setSoLanLuu((n) => n + 1);
       toast(cauDaLuu(d.counts, d.marked ?? 0), 'ok');
 
       // Backend CỐ Ý báo lại những id nó bỏ qua (xem chú thích ở
@@ -1071,6 +1075,9 @@ function Attendance({
           Đánh dấu cả lớp có mặt
         </Button>
       </div>
+
+      {/* Ai sửa điểm danh của em nào, từ gì sang gì (V-d, bảng TopHSA dòng 9, 14). */}
+      <LichSuDiemDanh key={soLanLuu} sessionId={sessionId} />
     </div>
   );
 }

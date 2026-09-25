@@ -167,7 +167,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Tạo / cập nhật lớp, thông tin HS, xếp lớp, điều chuyển | CÓ | như dòng 4 |
 | Theo dõi tham gia, thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | báo cáo lớp; "Việc hôm nay" (vắng liền ≥ 2 buổi) |
 | Điểm danh có mặt / vắng / muộn, cập nhật | CÓ | 4 trạng thái (`teaching/sessions.py:57`) |
-| Xem lịch sử điểm danh | MỘT PHẦN | chỉ người sửa cuối + Nhật ký (quản trị viên) → **V-d** |
+| Xem lịch sử điểm danh | CÓ (V-d) | bảng `attendance_history` (§62c) ghi trong cùng giao dịch lưu điểm danh (`teaching/sessions.py::SessionAttendanceView.post`), điền ngược từ nhật ký; `GET /api/teach/sessions/<id>/attendance/history` (`SessionAttendanceHistoryView`). Test `teaching/tests_lich_su_diem_danh.py` (4). Demo: học vụ/giảng viên → Buổi học → Điểm danh một buổi → sửa một em, Lưu → mở "Lịch sử sửa điểm danh" dưới sổ |
 | Tiến độ lớp so với khung, cảnh báo chậm | CHƯA | → **E1** |
 
 ## Dòng 10 — Giáo vụ · lịch học · gần đủ
@@ -203,7 +203,7 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Cập nhật mục tiêu, nguyện vọng HS | CÓ | tờ báo cáo từng em (`teaching/ho_so.py`) |
 | Điểm danh có mặt / vắng / muộn / xin phép, cập nhật | CÓ | màn Buổi học |
 | Người được phép sửa | CÓ | GV lớp mình, TG lớp được gán, học vụ, quản trị viên |
-| Lưu lịch sử chỉnh sửa | MỘT PHẦN | → **V-d** |
+| Lưu lịch sử chỉnh sửa | CÓ (V-d) | như dòng 9: mỗi lần ĐỔI một dòng (ai, từ gì → gì, lúc nào); lưu lại y hệt ghi 0 dòng. Demo: giảng viên/trợ giảng → Buổi học → Điểm danh → "Lịch sử sửa điểm danh" |
 | Thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | |
 
 ## Dòng 15 — Giáo viên · chương trình + tiến độ · CHƯA phần lớn
@@ -304,7 +304,7 @@ lớp, nguồn "Tự đăng ký", hàng chờ "Đăng ký mới" cho giáo vụ.
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Buổi tham gia / vắng / muộn (số đếm) | CÓ ("Lớp của tôi") | — |
-| Lịch sử điểm danh từng buổi, tổng số buổi | MỘT PHẦN | **V-d** |
+| Lịch sử điểm danh từng buổi, tổng số buổi | CÓ (V-d) | `GET /api/lop-cua-toi` → `lop[].diemDanh` (`teaching/lop_cua_toi.py`, cùng `_buoi_cua_em` với chuyên cần); thẻ "Lớp của bạn" → "Điểm danh từng buổi" (`components/LopCuaToi.tsx`). Demo: học viên → Trang của tôi → thẻ lớp → mở "Điểm danh từng buổi" |
 | % hoàn thành chương trình, bài / chuyên đề đã / chưa, tiến độ theo môn | MỘT PHẦN (bài tự học trực tuyến) | **E1** (theo khung của lớp) |
 | So sánh thực tế với kế hoạch | MỘT PHẦN (kế hoạch tự học cá nhân) | **E1** |
 
