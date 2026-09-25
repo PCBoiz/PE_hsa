@@ -58,6 +58,45 @@ def test_hoc_phi_khop_rang_buoc_CSDL():
     assert set(re.findall(r"'([a-z_]+)'", r['d'])) == set(MA_HOC_PHI), r['d']
 
 
+def test_chay_lai_muc_63_doi_nhan_cu_sang_ma_va_lan_hai_khong_ghi_gi():
+    """CSDL dev đã chạy §63 BẢN NHÃN (erp tới 0544692) và có người chọn học phí: chạy §63 bản
+    MÃ phải đổi nhãn → mã rồi mới khai CHECK mới, không hỏng giữa chừng. Lần hai: không dòng
+    nào bị ghi.
+
+    Chạy trong một SCHEMA TẠM (`schema_tam`, cuộn lại hết) có bảng `users` thu nhỏ mang CHECK
+    bản nhãn — không đụng khoá bảng `users` thật (`common/tests.py` cấm DDL trên CSDL dùng
+    chung). Câu của §63 lấy bằng CHÍNH bộ chia mục `bootstrap_schema` dùng."""
+    from django.db import connection
+
+    from common.luoc_do_sql import chia_muc, doc_tat_ca, luot, schema_tam, tim_muc
+    cac_muc = doc_tat_ca()
+    khoa = tim_muc(cac_muc, '§63')
+    cau_63 = next(m for m in cac_muc if m.khoa == khoa).cau
+    nhan = ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu', None)
+    dung = ('-- ── §1 · BẢNG USERS BẢN NHÃN ──\n'
+            'CREATE TABLE users (id SERIAL PRIMARY KEY, tuition_status TEXT, '
+            'CONSTRAINT users_tuition_status_check CHECK (tuition_status IS NULL OR tuition_status IN '
+            "('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu')))" + chr(59) + '\n'
+            'INSERT INTO users (tuition_status) SELECT unnest(ARRAY[' +
+            ', '.join("'%s'" % n if n else 'NULL' for n in nhan) + '])' + chr(59) + '\n')
+    with schema_tam() as st:
+        luot(cac_muc=chia_muc('t.sql', dung))
+        ghi = []
+        with connection.cursor() as cur:
+            for _ in (1, 2):
+                n = 0
+                for c in cau_63:
+                    cur.execute(c)
+                    if c.lstrip().upper().startswith('UPDATE'):
+                        n += cur.rowcount
+                ghi.append(n)
+            cur.execute('SELECT tuition_status FROM users ORDER BY id')
+            sau = [r[0] for r in cur.fetchall()]
+        assert st.khoa_ngoai() == [], 'chạm bảng ngoài schema tạm: %r' % st.khoa_ngoai()
+    assert sau == ['da_dong', 'sap_het', 'het', 'bao_luu', None], sau
+    assert ghi == [4, 0], ghi
+
+
 def test_hoc_vu_dat_hoc_phi_co_nhat_ky_va_giang_vien_khong_dat_duoc():
     from teaching.ho_so import HoSoHocVienView, MucTieuHocVienView
     hv, em, gv = _nguoi(ROLE_ACADEMIC), _nguoi(ROLE_STUDENT), _nguoi(ROLE_TEACHER)

@@ -25,11 +25,11 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 |---|---|---|---|---|
 | 1 | Quản trị viên · tài khoản | CÓ — **khách đã nghiệm thu** | — | — |
 | 2 | Quản trị viên · người dùng | CÓ — **khách đã nghiệm thu** | — | — |
-| 3 | Quản trị viên · tìm kiếm + hồ sơ | MỘT PHẦN (3 ô) | V-m | — |
+| 3 | Quản trị viên · tìm kiếm + hồ sơ | CÓ (V-m xong, chờ e2e) | V-m | — |
 | 4 | Quản trị viên · lớp học | MỘT PHẦN | V-c, V-j, V-n, V-h, E1 | — |
 | 5 | Quản trị viên · khoá học + chương trình | MỘT PHẦN | E1, V-i | — |
 | 6 | Quản trị viên · báo cáo | MỘT PHẦN | V-k, V-o, E1 | — |
-| 7 | Kế toán · học phí | THAY | V-m (một ô tình trạng) | — |
+| 7 | Kế toán · học phí | THAY (V-m xong) | V-m (một ô tình trạng), K2 | — |
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
 | 9 | Giáo vụ · lớp học | MỘT PHẦN | V-d, E1 | — |
 | 10 | Giáo vụ · lịch học | gần đủ | V-g, V-n, E4, Đ2 §58 | — |
@@ -92,7 +92,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Admin + GV import | MỘT PHẦN — đã nghiệm thu | quản trị viên + học vụ (học vụ chỉ vai Học viên); giảng viên không |
 | Admin import + export | CÓ | dán danh sách có xem trước (trần 50/lượt); `api/admin/export/users.csv` |
 
-## Dòng 3 — Tìm kiếm + hồ sơ học viên · MỘT PHẦN
+## Dòng 3 — Tìm kiếm + hồ sơ học viên · CÓ (V-m, chờ e2e hai khổ)
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
@@ -157,7 +157,8 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 ## Dòng 7 — Kế toán · học phí · THAY
 
 Anh chốt 25/09: không sổ tiền, không doanh thu, không vai Kế toán. Thay bằng ô "Tình trạng học phí"
-trên hồ sơ (**V-m**). Khách phải đồng ý (K2). Dữ liệu "cơ sở tính học phí" (buổi đã học / có mặt / vắng
+trên hồ sơ (**V-m — đã làm**: ô chọn Đã đóng / Sắp hết / Hết / Bảo lưu ở khối "Tình trạng" của hồ sơ,
+học vụ / quản trị viên đặt, có nhật ký, lọc + cột ở Tài khoản, cột "Học phí" trong tệp xuất). Khách phải đồng ý (K2). Dữ liệu "cơ sở tính học phí" (buổi đã học / có mặt / vắng
 theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 
 ## Dòng 9 — Giáo vụ · lớp học · MỘT PHẦN
