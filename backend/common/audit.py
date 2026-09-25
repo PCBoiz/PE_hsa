@@ -151,6 +151,8 @@ SESSION_SYLLABUS = 'session.syllabus'
 #: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
 #: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
 SESSION_LOG = 'session.log'
+#: Thông báo trung tâm (§61, E2): học vụ / giảng viên gửi cho lớp, môn, nhóm, cá nhân.
+ANNOUNCEMENT_SEND = 'announcement.send'
 
 
 def _client_ip(request):

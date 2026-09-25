@@ -40,20 +40,69 @@ class NotificationSettingsView(NguoiDungView):
         return Response({'ok': True})
 
 
+#: Khoá mới của mỗi dòng chuông (E2) — cộng thêm, tuyến cũ vẫn đủ khoá cũ.
+_COT = '''id, type, title, body, ref_type, ref_id, is_read, created_at,
+          COALESCE(coalesce_count, 1) AS coalesce_count, link, announcement_id, read_at'''
+
+
+def _so(v, mac_dinh, thap, cao):
+    try:
+        return max(thap, min(cao, int(v)))
+    except (TypeError, ValueError):
+        return mac_dinh
+
+
+def _hinh(r):
+    r['link'] = r.get('link') or None
+    r['announcementId'] = r.pop('announcement_id', None)
+    r['readAt'] = r.pop('read_at', None)
+    return r
+
+
 class FeedView(NguoiDungView):
+    """GET /api/notifications/feed
+
+    Không tham số: như cũ — 30 dòng mới nhất theo `created_at` (thông báo gộp nhảy lên đầu).
+
+    Có `truoc` / `loai` / `chuaDoc` / `limit` (trang "Thông báo", E2): PHÂN TRANG THEO KHOÁ
+    `id` giảm dần — `truoc=<id>` lấy các dòng có id nhỏ hơn. Không trùng, không sót kể cả
+    khi có thông báo mới chen vào giữa hai lần "tải thêm" (phân trang theo số trang thì
+    lệch ngay). Trả thêm `tiep` (giá trị `truoc` cho trang kế, null = hết) và `cacLoai`
+    (các loại người này có, để dựng bộ lọc).
+    """
+
     def get(self, request):
         # PERF 2026-07-19: unread đếm bằng subquery cùng câu lệnh — 1 round trip
         uid = request.user.id
-        rows = q('''SELECT id, type, title, body, ref_type, ref_id, is_read, created_at,
-                           COALESCE(coalesce_count, 1) AS coalesce_count,
-                           (SELECT COUNT(*) FROM notifications
-                            WHERE user_id=%s AND is_read=FALSE) AS _unread
-                    FROM notifications WHERE user_id=%s
-                    ORDER BY created_at DESC LIMIT 30''', (uid, uid))
-        unread = rows[0].pop('_unread') if rows else 0
-        for r in rows:
-            r.pop('_unread', None)
-        return Response({'items': rows, 'unread': unread})
+        p = request.query_params
+        if not ({'truoc', 'loai', 'chuaDoc', 'limit'} & set(p)):
+            rows = q('''SELECT ''' + _COT + ''',
+                               (SELECT COUNT(*) FROM notifications
+                                WHERE user_id=%s AND is_read=FALSE) AS _unread
+                        FROM notifications WHERE user_id=%s
+                        ORDER BY created_at DESC LIMIT 30''', (uid, uid))
+            unread = rows[0].pop('_unread') if rows else 0
+            for r in rows:
+                r.pop('_unread', None)
+            return Response({'items': [_hinh(r) for r in rows], 'unread': unread})
+
+        n = _so(p.get('limit'), 30, 1, 100)
+        truoc = _so(p.get('truoc'), None, 1, 2 ** 31 - 1)
+        loai = (p.get('loai') or '').strip()[:50] or None
+        chua_doc = p.get('chuaDoc') in ('1', 'true')
+        rows = q('''SELECT ''' + _COT + ''' FROM notifications
+                    WHERE user_id = %s AND (%s::int IS NULL OR id < %s)
+                      AND (%s::text IS NULL OR type = %s) AND (NOT %s OR is_read = FALSE)
+                    ORDER BY id DESC LIMIT %s''', (uid, truoc, truoc, loai, loai, chua_doc, n + 1))
+        tiep = rows[n - 1]['id'] if len(rows) > n else None
+        cac_loai = q('''SELECT type AS loai, COUNT(*) AS so, COUNT(*) FILTER (WHERE NOT is_read) AS chua_doc
+                         FROM notifications WHERE user_id = %s AND type IS NOT NULL
+                        GROUP BY type ORDER BY type''', (uid,)) if not truoc else None
+        unread, _ = unread_state(uid)
+        ra = {'items': [_hinh(r) for r in rows[:n]], 'unread': unread, 'tiep': tiep}
+        if cac_loai is not None:
+            ra['cacLoai'] = [{'loai': r['loai'], 'so': r['so'], 'chuaDoc': r['chua_doc']} for r in cac_loai]
+        return Response(ra)
 
 
 class BadgeView(NguoiDungView):
@@ -78,13 +127,24 @@ class BadgeView(NguoiDungView):
 
 class FeedReadView(NguoiDungView):
     def post(self, request, notif_id):
-        x('UPDATE notifications SET is_read=TRUE WHERE id=%s AND user_id=%s',
-          (notif_id, request.user.id))
+        x('''UPDATE notifications SET is_read=TRUE, read_at=coalesce(read_at, now())
+             WHERE id=%s AND user_id=%s''', (notif_id, request.user.id))
         return Response({'ok': True})
+
+
+class FeedUnreadView(NguoiDungView):
+    """POST /api/notifications/feed/<id>/unread — đánh dấu CHƯA đọc (E2, bảng TopHSA dòng 27)."""
+
+    def post(self, request, notif_id):
+        if not q1('''UPDATE notifications SET is_read=FALSE, read_at=NULL
+                     WHERE id=%s AND user_id=%s RETURNING id''', (notif_id, request.user.id)):
+            return Response({'error': 'Không tìm thấy thông báo này.'}, status=404)
+        unread, latest = unread_state(request.user.id)
+        return Response({'ok': True, 'unread': unread, 'latest': latest})
 
 
 class FeedReadAllView(NguoiDungView):
     def post(self, request):
-        x('UPDATE notifications SET is_read=TRUE WHERE user_id=%s AND is_read=FALSE',
-          (request.user.id,))
+        x('''UPDATE notifications SET is_read=TRUE, read_at=now()
+             WHERE user_id=%s AND is_read=FALSE''', (request.user.id,))
         return Response({'ok': True})
