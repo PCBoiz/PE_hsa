@@ -286,7 +286,6 @@ class HoSoHocVienView(APIView):
             else:
                 doi['enroll_source'] = v
 
-
         if 'consultantId' in body:
             v = body['consultantId']
             if v in (None, ''):

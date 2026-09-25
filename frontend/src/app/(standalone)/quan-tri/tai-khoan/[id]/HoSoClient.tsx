@@ -23,11 +23,12 @@ type Form = Record<OSua, string>;
 /** Nhãn tình trạng học tập / học phí khi backend cũ chưa gửi danh sách (ĐƯỜNG LÙI — nguồn
     là `teaching/tinh_trang.py`, máy chủ gửi kèm `tinhTrangHocOptions` / `hocPhiOptions`). */
 const TINH_TRANG_DUONG_LUI: Record<string, string> = {
-  dang_hoc: 'Đang học', tam_dung: 'Tạm dừng', da_hoc_xong: 'Đã học xong', da_nghi: 'Đã nghỉ',
-  chua_xep_lop: 'Chưa xếp lớp',
+  dang_hoc: 'Đang học', tam_dung: 'Tạm dừng', da_hoc_xong: 'Đã học xong', bao_luu: 'Bảo lưu',
+  da_nghi: 'Đã nghỉ', chua_xep_lop: 'Chưa xếp lớp',
 };
 const TONE_HOC: Record<string, 'good' | 'warn' | 'neutral' | 'bad'> = {
-  dang_hoc: 'good', tam_dung: 'warn', da_hoc_xong: 'neutral', da_nghi: 'bad', chua_xep_lop: 'warn',
+  dang_hoc: 'good', tam_dung: 'warn', da_hoc_xong: 'neutral', bao_luu: 'warn', da_nghi: 'bad',
+  chua_xep_lop: 'warn',
 };
 
 /** Chỉ các ô này có nghĩa với tài khoản nhân sự (quản trị viên mở hồ sơ nhân sự). */

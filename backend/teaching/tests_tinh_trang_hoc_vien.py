@@ -158,12 +158,16 @@ def test_loc_hoc_phi_o_danh_sach():
     hv = _nguoi(ROLE_ACADEMIC)
     d = uuid.uuid4().hex[:6]
     a, b = _nguoi(ROLE_STUDENT, 'TT hp a %s' % d), _nguoi(ROLE_STUDENT, 'TT hp b %s' % d)
+    _nguoi(ROLE_TEACHER, 'TT hp gv %s' % d)   # nhân sự: học phí trống nhưng KHÔNG phải "chưa đặt"
     x("UPDATE users SET tuition_status = 'het' WHERE id=%s", (a.id,))
     r = _goi(AdminUsersView, 'get', ai=hv, qs='?hoc_phi=het&q=' + d).data
     assert [u['id'] for u in r['users']] == [a.id] and r['users'][0]['hocPhi'] == 'het'
     assert [o['ma'] for o in r['hocPhiOptions']] == ['da_dong', 'sap_het', 'het', 'bao_luu']
     r = _goi(AdminUsersView, 'get', ai=hv, qs='?hoc_phi=chua_dat&q=' + d).data
     assert [u['id'] for u in r['users']] == [b.id], 'ô "chưa đặt" = học phí trống'
+    # Quản trị viên thấy cả nhân sự — "chưa đặt" vẫn chỉ là học viên.
+    r = _goi(AdminUsersView, 'get', ai=_nguoi(ROLE_ADMIN), qs='?hoc_phi=chua_dat&q=' + d).data
+    assert [u['id'] for u in r['users']] == [b.id], r['users']
 
 
 # ── Lớp trung tâm + môn đã mở trên hồ sơ (giữ từ b3316cb) ────────────────────
