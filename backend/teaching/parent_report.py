@@ -500,7 +500,7 @@ def _bai_tap_lop(class_id, user_id, tu, den):
                        s.submitted_at, s.score, s.feedback, s.graded_at
                   FROM assignments a
                   LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
-                 WHERE a.class_id = %s AND a.status <> 'draft'
+                 WHERE a.class_id = %s AND a.status <> 'draft' AND a.kind <> 'kiem_tra'
                    AND ''' + giao_cho('a', '%s') + '''
                    AND (a.created_at::date BETWEEN %s AND %s
                         OR a.due_at::date BETWEEN %s AND %s
@@ -515,6 +515,35 @@ def _bai_tap_lop(class_id, user_id, tu, den):
         'score': float(r['score']) if r['score'] is not None else None,
         'feedback': r['feedback'],
         'gradedAt': r['graded_at'].isoformat() if r['graded_at'] else None,
+    } for r in rows]
+
+
+def _kiem_tra_lop(class_id, user_id, tu, den):
+    """Bài KIỂM TRA làm trên lớp (V-h, §62f) có NGÀY LÀM BÀI trong kỳ — khối riêng
+    "Bài kiểm tra" trên tờ, tách khỏi bài tập (em không nộp bài loại này nên
+    "chưa nộp, hạn …" vô nghĩa với nó).
+
+    Chỉ bài ĐÃ nhập điểm cho em (hoặc ghi vắng): bài kiểm tra chưa ai nhập điểm thì
+    phụ huynh không có gì để đọc. Không có ngày làm bài thì lấy ngày tạo bài.
+    """
+    rows = q('''SELECT a.id, a.title, a.topic, a.max_score,
+                       COALESCE(a.held_on, a.created_at::date) AS ngay,
+                       s.score, s.absent, s.feedback
+                  FROM assignments a
+                  JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
+                 WHERE a.class_id = %s AND a.kind = 'kiem_tra' AND a.status <> 'draft'
+                   AND s.graded_at IS NOT NULL
+                   AND ''' + giao_cho('a', '%s') + '''
+                   AND COALESCE(a.held_on, a.created_at::date) BETWEEN %s AND %s
+                 ORDER BY 5, a.id''',
+             (user_id, class_id, user_id, tu, den))
+    return [{
+        'id': r['id'], 'title': r['title'], 'topic': r['topic'],
+        'heldOn': r['ngay'].isoformat(),
+        'maxScore': float(r['max_score']) if r['max_score'] is not None else None,
+        'score': float(r['score']) if r['score'] is not None else None,
+        'absent': bool(r['absent']),
+        'feedback': r['feedback'],
     } for r in rows]
 
 
@@ -618,6 +647,7 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         'centerExam': _thi_tai_trung_tam(user_id),
         'topics': _chu_de(user_id, lop['course_id']),
         'assignments': _bai_tap_lop(class_id, user_id, tu, den),
+        'kiemTra': _kiem_tra_lop(class_id, user_id, tu, den),
         'warnings': canh_bao,
     }, None
 

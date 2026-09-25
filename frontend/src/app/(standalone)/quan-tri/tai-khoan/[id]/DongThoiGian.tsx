@@ -13,6 +13,8 @@ const LOAI: Record<string, { nhan: string; tong: 'neutral' | 'brand' | 'good' | 
   'ho-so': { nhan: 'Hồ sơ', tong: 'neutral' },
   // Giảng viên / trợ giảng đánh dấu cần hỗ trợ, đề xuất hướng học, ghi nhận xét (V-f).
   'theo-doi': { nhan: 'Theo dõi', tong: 'warn' },
+  // Điểm bài kiểm tra làm trên lớp, giảng viên nhập (V-h).
+  'kiem-tra': { nhan: 'Bài kiểm tra', tong: 'good' },
 };
 
 /**

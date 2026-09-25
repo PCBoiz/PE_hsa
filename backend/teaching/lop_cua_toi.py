@@ -119,12 +119,13 @@ class LopCuaToiView(NguoiDungView):
             # Rà trên điện thoại 390px: Trang của tôi không có chữ "bài tập" nào
             # trong khi mục Bài tập nói "còn 1 bài chưa nộp" — thanh trên ở khổ
             # điện thoại không có mục ấy, nên em không có đường biết. Thẻ lớp là
-            # chỗ đúng: bài tập là quan hệ giữa em và LỚP.
+            # chỗ đúng: bài tập là quan hệ giữa em và LỚP. Bài kiểm tra (V-h) làm
+            # trên lớp, em không nộp được — không bao giờ là "chưa nộp".
             for r in q('''SELECT a.class_id, COUNT(*) AS chua_nop, MIN(a.due_at) AS han_som
                             FROM assignments a
                             LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
                            WHERE a.class_id = ANY(%s) AND a.status = 'open'
-                             AND s.submitted_at IS NULL
+                             AND s.submitted_at IS NULL AND a.kind <> 'kiem_tra'
                              AND ''' + giao_cho('a', '%s') + '''
                            GROUP BY a.class_id''', (uid, ids, uid)):
                 bai_tap[r['class_id']] = {'chuaNop': r['chua_nop'],

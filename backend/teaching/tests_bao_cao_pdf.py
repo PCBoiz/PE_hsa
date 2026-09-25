@@ -304,3 +304,23 @@ def test_khong_giao_bai_thi_khong_co_muc_bai_tap():
     assert 'BÀI TẬP GIẢNG VIÊN GIAO' not in chu
     chu = _chu(CO_SO)   # bản dựng cũ không có khoá → vẫn dựng được
     assert 'BÀI TẬP GIẢNG VIÊN GIAO' not in chu
+
+
+# ── Bài kiểm tra trên lớp (V-h) ────────────────────────────────────────────
+
+def test_bai_kiem_tra_in_diem_va_vang():
+    """Khối "Bài kiểm tra" in điểm, ngày làm, và chữ "vắng" (không in 0 cho em vắng)."""
+    t = _chu(_voi(kiemTra=[
+        {'id': 1, 'title': 'Kiểm tra giữa kỳ', 'topic': None, 'heldOn': '2026-08-20',
+         'maxScore': 10, 'score': 7.5, 'absent': False, 'feedback': 'Làm chắc tay.'},
+        {'id': 2, 'title': 'Kiểm tra chương 3', 'topic': None, 'heldOn': '2026-09-03',
+         'maxScore': 10, 'score': None, 'absent': True, 'feedback': None},
+    ]))
+    assert 'BÀI KIỂM TRA' in t
+    assert 'Kiểm tra giữa kỳ' in t and '7.5/10' in t and '20/08/2026' in t
+    assert 'Làm chắc tay.' in t
+    assert 'Kiểm tra chương 3' in t and 'vắng' in t
+
+
+def test_khong_co_bai_kiem_tra_thi_giau_khoi():
+    assert 'BÀI KIỂM TRA' not in _chu(CO_SO)

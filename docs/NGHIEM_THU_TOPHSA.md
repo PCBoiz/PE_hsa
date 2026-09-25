@@ -39,7 +39,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
 | 15 | Giáo viên · chương trình + tiến độ | CHƯA phần lớn | E1, Đ2 §60 | — |
 | 16 | Giáo viên · quản lý buổi học | MỘT PHẦN | E1 | — |
-| 17 | Giáo viên · giao bài | gần đủ | V-e, V-h | — |
+| 17 | Giáo viên · giao bài | CÓ (V-e, V-h) | V-e, V-h | — |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
@@ -118,11 +118,11 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Trạng thái đang học / kết thúc / **tạm dừng** | CÓ (V-c) | `classes_status_check` §35 thêm `paused`; `teaching/vocab.py::TRANG_THAI_LOP`; nhãn "Tạm dừng" `quan-tri/lop-hoc/lop.ts`. Em giữ quyền môn (`courses/truy_cap.py` chỉ chặn lớp huỷ — test `courses/tests_truy_cap.py::test_lop_tam_dung_van_giu_quyen_mon`); không vào "chưa điểm danh" (`teaching/viec_hom_nay.py::_chua_diem_danh`); không sinh lịch (`teaching/sinh_buoi.py` 409). Demo: học vụ → Lớp học → Sửa lớp → Trạng thái "Tạm dừng" → bộ lọc Trạng thái có "Tạm dừng"; giảng viên mở Buổi học của lớp ấy thấy "Lớp đang tạm dừng…" thay khối sinh lịch |
 | Phân công GV, giáo vụ, TG | MỘT PHẦN | GV + TG CÓ; học vụ thấy mọi lớp, không gán riêng |
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | Nhật ký chỉ quản trị viên đọc → **V-n** mở cho học vụ theo lớp |
-| Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | CÓ trừ "Kiểm tra / Thi thử / Kết quả" → **V-h** điểm kiểm tra GV nhập tay; "Đăng ký" tự đăng ký → **E5** |
+| Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | "Kiểm tra / Thi thử / Kết quả" CÓ (V-h): mốc "Bài kiểm tra: …" theo NGÀY làm bài, điểm hoặc "Vắng" (`teaching/dong_thoi_gian.py`, loại `kiem-tra`); "Đăng ký" tự đăng ký → **E5** |
 | Đang học lớp nào, đã học / nghỉ bao nhiêu buổi, có phép / không | CÓ | tờ báo cáo từng em (`present/late/absent/excused`) |
 | Tiến độ chương trình | CHƯA | → **E1** |
 | Bài đã / chưa hoàn thành, điểm mạnh / yếu, lịch sử chuyển lớp | CÓ | bài tập + bản đồ kỹ năng + dòng thời gian |
-| Điểm kiểm tra, điểm thi thử | CHƯA (thi thử online đã bỏ) | → **V-h** |
+| Điểm kiểm tra, điểm thi thử | CÓ (V-h; thi thử online đã bỏ) | Bài kiểm tra trên lớp = một loại bài giao: `assignments.kind = 'kiem_tra'` + `held_on`, `submissions.absent` (§62f). Giảng viên / trợ giảng nhập điểm cả lớp trên một bảng, ghi "Vắng" (`teaching/assignments.py::AssignmentGradingView`); học viên không nộp được (409) và không bị tính "chưa nộp". Điểm lên sổ điểm (loại "Bài kiểm tra", `stats/gradebook.py`), dòng thời gian hồ sơ, tờ phụ huynh khối "Bài kiểm tra" (`teaching/parent_report.py::_kiem_tra_lop`, PDF `teaching/bao_cao_pdf.py`). Test `teaching/tests_kiem_tra.py` (6) + `tests_bao_cao_pdf.py` (2). Demo: giảng viên → Bài tập của lớp → "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)" + ngày → "Nhập điểm" → gõ điểm / tick "Vắng" → Lưu → mở tờ báo cáo của em |
 
 ## Dòng 5 + "Quản lý chương trình học" — Khoá học + chương trình · MỘT PHẦN
 
@@ -225,15 +225,16 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Đề xuất HS cần hỗ trợ | MỘT PHẦN (hệ thống tự báo) | **E1** / **V-f** |
 | Đề xuất học bù / điều chỉnh tiến độ | CHƯA | **E1** + **E3** |
 
-## Dòng 17 — Giáo viên · giao bài · gần đủ
+## Dòng 17 — Giáo viên · giao bài · CÓ
 
 Tạo, hạn, sửa, xoá / đóng, danh sách, xem bài nộp, chấm, nhập điểm, nhận xét, trả bài, ai chưa nộp:
 CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CÓ (V-e) —
 `assignments.target_mode` + `assignment_targets` (§62d); MỘT hàm lọc `teaching/nhan_bai.giao_cho` ở mọi chỗ
 đọc bài (danh sách + sĩ số từng bài, bảng chấm, bài của học viên, nộp bài, thẻ lớp, tờ phụ huynh, Việc hôm
-nay, chuông "bài mới"). Test `teaching/tests_nhan_bai.py` (9). Demo: giảng viên → Bài tập của lớp → "Giao bài
+nay, chuông "bài mới"). Test `teaching/tests_nhan_bai.py` (10). Demo: giảng viên → Bài tập của lớp → "Giao bài
 mới" → "Giao cho: Chọn học viên" → tick 2 em → Giao bài; em thứ ba không thấy bài ở mục Bài tập.
-Bài kiểm tra ngoại tuyến GV nhập điểm → **V-h**.
+Bài kiểm tra ngoại tuyến GV nhập điểm: CÓ (V-h) — Loại "Bài kiểm tra trên lớp (nhập điểm)" khi giao bài,
+nút "Nhập điểm" mở bảng cả lớp có ô "Vắng" (xem dòng 4, "Điểm kiểm tra"). Test `teaching/tests_kiem_tra.py` (6).
 
 ## Dòng 18 — Giáo viên · theo dõi học sinh · MỘT PHẦN
 

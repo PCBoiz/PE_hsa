@@ -245,7 +245,8 @@ export const VIEC: readonly Viec[] = [
     nhom: 'Dạy học',
     nhan: 'Giao bài và chấm tay',
     // "Giao cho: cả lớp / chọn học viên" từ 25/09/2026 (V-e, bảng TopHSA dòng 17).
-    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài. Giao bài (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
+    // Bài kiểm tra trên lớp, nhập điểm tay (V-h, bảng TopHSA dòng 4, 17).
+    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài và nhập điểm bài kiểm tra trên lớp (kể cả ghi "vắng"). Giao bài hoặc bài kiểm tra (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/assignments.py::AssignmentGradingView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',

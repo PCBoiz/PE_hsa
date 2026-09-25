@@ -499,6 +499,35 @@ def dung_pdf(bc: dict) -> bytes:
         # Tiêu đề không bị mồ côi ở cuối trang, bảng không bị cắt đôi.
         kq.append(KeepTogether(khoi))
 
+    # ── BÀI KIỂM TRA TRÊN LỚP (V-h, chỉ khi có bài đã nhập điểm trong kỳ) ─
+    # `parent_report._kiem_tra_lop`. Cùng khuôn bảng với bài tập bên dưới.
+    kt = bc.get('kiemTra') or []
+    if kt:
+        hang = [['Bài', 'Ngày làm', 'Điểm', 'Nhận xét của giảng viên']]
+        for k in kt:
+            if k.get('absent'):
+                diem = 'vắng'
+            elif k.get('score') is not None:
+                diem = '%s/%s' % (('%g' % k['score']), ('%g' % (k.get('maxScore') or 10)))
+            else:
+                diem = '—'
+            hang.append([o_bang(an(k.get('title')), o), ngay(k.get('heldOn')), diem,
+                         o_bang(an(k.get('feedback')) or '—', o)])
+        t = Table(hang, colWidths=[56 * mm, 22 * mm, 20 * mm, 50 * mm], hAlign='LEFT')
+        t.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), FONT),
+            ('FONTNAME', (0, 0), (-1, 0), FONT_DAM),
+            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+            ('BACKGROUND', (0, 0), (-1, 0), NEN_NHAT),
+            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.25, VIEN),
+            ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+        ]))
+        kq.append(KeepTogether([de_muc('BÀI KIỂM TRA'), t]))
+        kq.append(Spacer(1, 4))
+
     # ── BÀI TẬP GIẢNG VIÊN GIAO (chỉ khi lớp có giao bài trong kỳ) ─────
     # Thứ duy nhất trên tờ này do một con người đọc và chấm — xem
     # `parent_report._bai_tap_lop`. Không có bài thì giấu hẳn, cùng lý do với

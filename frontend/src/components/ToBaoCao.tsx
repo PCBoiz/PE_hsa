@@ -104,6 +104,20 @@ export type BaoCao = {
     feedback: string | null;
     gradedAt: string | null;
   }[];
+  /**
+   * Bài kiểm tra làm trên lớp, giảng viên nhập điểm — `parent_report._kiem_tra_lop`.
+   * `optional`: bản dựng cũ của máy chủ chưa gửi.
+   */
+  kiemTra?: {
+    id: number;
+    title: string;
+    topic: string | null;
+    heldOn: string;
+    maxScore: number | null;
+    score: number | null;
+    absent: boolean;
+    feedback: string | null;
+  }[];
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -331,6 +345,50 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
                 </p>
               </>
             )}
+          </>
+        )}
+
+        {/* ── Bài kiểm tra trên lớp ───────────────────────────────────── */}
+        {/* Điểm giảng viên nhập tay cho bài làm tại lớp. Không có bài nào
+            trong kỳ thì giấu hẳn, cùng lẽ với khối bài tập bên dưới. */}
+        {bc.kiemTra && bc.kiemTra.length > 0 && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Bài kiểm tra</h3>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-small">
+                <thead>
+                  <tr className="text-left text-label text-ink-3">
+                    <th className="py-1 pr-3 font-medium">Bài</th>
+                    <th className="py-1 pr-3 font-medium">Ngày làm</th>
+                    <th className="py-1 text-right font-medium">Điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bc.kiemTra.map((k) => (
+                    <tr key={k.id} className="border-t border-line align-top">
+                      <td className="py-1.5 pr-3 text-ink">
+                        {k.title}
+                        {k.feedback && (
+                          <span className="block text-ink-2">
+                            Nhận xét: {k.feedback}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-3 text-ink-2 whitespace-nowrap">
+                        {ngayNgan(k.heldOn)}
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums text-ink whitespace-nowrap">
+                        {k.absent
+                          ? 'vắng'
+                          : k.score !== null
+                            ? `${k.score}/${k.maxScore ?? 10}`
+                            : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 

@@ -460,6 +460,10 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
       {
+        lam: 'Bài kiểm tra làm trên lớp: "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)", chọn ngày kiểm tra. Sau buổi, bấm "Nhập điểm" trên dòng của bài, gõ điểm từng em (em vắng thì tick "Vắng") rồi Lưu.',
+        luu_y: 'Học viên không nộp bài kiểm tra qua hệ thống và không bị tính "chưa nộp". Điểm hiện ở mục Bài tập của em, sổ điểm (loại "Bài kiểm tra"), dòng thời gian trên hồ sơ và tờ báo cáo gửi phụ huynh.',
+      },
+      {
         lam: 'Chấm điểm và ghi nhận xét.',
         luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc về bài này. Nhận xét chung gửi phụ huynh nằm ở khối "Đánh giá của giảng viên" trên tờ báo cáo của em.',
       },
