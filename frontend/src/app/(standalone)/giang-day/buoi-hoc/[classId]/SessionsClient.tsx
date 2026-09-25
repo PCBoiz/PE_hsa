@@ -26,6 +26,7 @@ import * as z from 'zod/mini';
 
 import LichSuDiemDanh from './LichSuDiemDanh';
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
+import TaoBuoiBu from './TaoBuoiBu';
 
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
@@ -74,6 +75,9 @@ export type SessionRow = {
     excused: number;
     unmarked: number;
   };
+  /** Buổi bù (V-g): id buổi gốc; và số em nếu buổi có danh sách riêng. Máy chủ cũ không trả. */
+  makeupFor?: number | null;
+  soNguoiThamGia?: number | null;
 };
 
 type Mark = 'present' | 'late' | 'absent' | 'excused';
@@ -240,6 +244,8 @@ export default function SessionsClient({
     moBuoi !== null && initial.some((s) => s.id === moBuoi) ? moBuoi : null,
   );
   const [suaId, setSuaId] = useState<number | null>(null);
+  /** Buổi đang mở ô "Tạo buổi bù" (V-g). */
+  const [buId, setBuId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [thongBao, setThongBao] = useState<ThongBao | null>(null);
   /* Sau một lần lưu: cảnh báo trùng lịch là VÀNG, không phải đỏ — buổi đã lưu.
@@ -436,7 +442,11 @@ export default function SessionsClient({
                           "15/09/2026 · 19:30 · 90 phút" thành năm dòng (ảnh
                           chụp 390px, rà luồng trợ giảng 14/09/2026). */}
                       <div className="min-w-0 flex-1 max-sm:basis-full">
-                        <p className="text-subhead text-ink">{s.topic || 'Buổi học'}</p>
+                        <p className="text-subhead text-ink">
+                          {s.topic || 'Buổi học'}
+                          {/* Buổi bù chỉ của vài em — nói ra ngay trên dòng (V-g). */}
+                          {s.makeupFor ? <>{' '}<Chip tone="brand">học bù{s.soNguoiThamGia ? ` · ${s.soNguoiThamGia} em` : ''}</Chip></> : null}
+                        </p>
                         <p className="mt-0.5 text-small text-ink-3">
                           {fmt(s.startsAt)}
                           {s.durationMinutes ? ` · ${s.durationMinutes} phút` : ''}
@@ -500,6 +510,11 @@ export default function SessionsClient({
                         >
                           {suaId === s.id ? 'Đóng sửa' : 'Sửa'}
                         </Button>
+                        {s.status !== 'cancelled' && (
+                          <Button size="sm" variant="ghost" onClick={() => setBuId(buId === s.id ? null : s.id)}>
+                            {buId === s.id ? 'Đóng buổi bù' : 'Tạo buổi bù'}
+                          </Button>
+                        )}
                         {quyen.xoaBuoi && (
                           <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
                             Xoá
@@ -523,6 +538,21 @@ export default function SessionsClient({
                         )}
                         <Attendance sessionId={s.id} onSaved={() => void reload()} onError={setErr} />
                       </>
+                    )}
+
+                    {buId === s.id && (
+                      <TaoBuoiBu
+                        sessionId={s.id}
+                        tenBuoi={s.topic || fmt(s.startsAt)}
+                        phutMacDinh={s.durationMinutes}
+                        onHuy={() => setBuId(null)}
+                        onXong={(d) => {
+                          setBuId(null);
+                          const bao = `Đã tạo buổi bù và báo cho ${d.soEm} em (chuông trên trang và email).`;
+                          setThongBao({ tone: d.warning ? 'warn' : 'info', text: [d.warning, bao].filter(Boolean).join(' ') });
+                          void reload();
+                        }}
+                      />
                     )}
 
                     {suaId === s.id && (

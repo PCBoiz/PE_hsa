@@ -10,6 +10,7 @@ kiện đọc thẳng từ bảng gốc của nó, nên không có bản sao nà
   class_members + classes     vào lớp · rời lớp (kèm lý do) · lớp kết thúc khi em còn học
   mock_attempts + mock_exams  nộp bài thi thử (điểm)
   ket_qua_thi_ngoai           kết quả kỳ thi ở hệ thống khảo thí ngoài
+  submissions + assignments   điểm BÀI KIỂM TRA trên lớp giảng viên nhập (V-h, 25/09/2026)
   parent_report_sends         gửi báo cáo cho phụ huynh (kênh — KHÔNG kèm địa chỉ)
   admin_audit (target = em)   cấp lại mật khẩu, tự đặt lại, sửa hồ sơ, khoá/mở,
                               đổi vai, cấp/thu hồi đường dẫn báo cáo, và (25/09/2026)
@@ -149,6 +150,20 @@ def dong_thoi_gian(uid, tao_luc):
         dot = (r['dot'] or '').strip() or 'đánh giá năng lực'
         tieu_de = dot if dot.lower().startswith(('thi', 'kỳ thi')) else 'Thi %s' % dot
         _su_kien(ds, r['ngay_thi'], 'thi', tieu_de[:1].upper() + tieu_de[1:], chi_tiet=noi or None)
+
+    # Bài kiểm tra trên lớp (V-h) — "điểm kiểm tra, điểm thi thử" của bảng TopHSA dòng 4.
+    # Mốc = NGÀY làm bài (cả ngày); chưa ghi ngày thì lúc nhập điểm. Chỉ bài ĐÃ nhập
+    # (có điểm hoặc ghi vắng): bài chưa chấm chưa là một mốc của em.
+    for r in q('''SELECT a.title, a.held_on, a.max_score, s.score, s.absent, s.graded_at,
+                         c.name AS lop
+                    FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                    JOIN classes c ON c.id = a.class_id
+                   WHERE s.user_id = %s AND a.kind = 'kiem_tra' AND s.graded_at IS NOT NULL''',
+               (uid,)):
+        ket = 'Vắng' if r['absent'] else (
+            '%g/%g điểm' % (float(r['score']), float(r['max_score'])) if r['score'] is not None else None)
+        _su_kien(ds, r['held_on'] or r['graded_at'], 'kiem-tra', 'Bài kiểm tra: %s' % r['title'],
+                 chi_tiet=' · '.join(x for x in (ket, 'Lớp %s' % r['lop']) if x))
 
     for r in q('''SELECT s.sent_at, s.created_at, s.status, s.channel
                     FROM parent_report_sends s JOIN parent_report_links l ON l.id = s.link_id

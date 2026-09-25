@@ -47,6 +47,7 @@ from common.permissions import (
 )
 from stats.goals import as_date
 from teaching.bao_doi_lich import bao_doi_lich
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.trung_lich import cau_canh_bao, tim_trung
 from teaching.vocab import chi_hoc_vien
 
@@ -292,11 +293,12 @@ def _overlap_warning(class_id, starts_at, minutes, exclude_id=None):
             'kiểm tra lại nếu không cố ý.' % which)
 
 
-def _session_dict(r, counts=None, member_count=None, lop=None):
+def _session_dict(r, counts=None, member_count=None, lop=None, so_tham_gia=None):
     """Một buổi học ở dạng JSON. Khoá camelCase cho khớp teaching/reports.py.
 
     `lop` (dict có `mode`, `room`) để tính hình thức / phòng HIỆU LỰC khi dòng
     buổi không mang sẵn cột của lớp (§53: buổi để trống = theo lớp).
+    `so_tham_gia`: số em của buổi có danh sách riêng (buổi bù, V-g); None = cả lớp.
     """
     bat_dau = bool(r['starts_at'] and r['starts_at'] <= local_now())
     lop_mode = r.get('class_mode') if 'class_mode' in r else (lop or {}).get('mode')
@@ -335,6 +337,9 @@ def _session_dict(r, counts=None, member_count=None, lop=None):
         'attendanceTakenAt': (r['attendance_taken_at'].isoformat()
                               if r.get('attendance_taken_at') else None),
         'attendanceTakenBy': r.get('attendance_taken_by'),
+        # Buổi bù (V-g, §62e): trỏ buổi gốc; danh sách em riêng thì nói bao nhiêu em.
+        'makeupFor': r.get('makeup_for'),
+        'soNguoiThamGia': so_tham_gia,
     }
     if 'class_name' in r:
         out['className'] = r['class_name']
@@ -415,6 +420,17 @@ class ClassSessionsView(APIView):
         # MỘT câu đếm cho TOÀN BỘ buổi vừa lấy, không phải mỗi buổi một câu.
         counts = _attendance_counts(class_id, [r['id'] for r in rows])
         members = int(info['members'] or 0)
+        # Buổi có danh sách riêng (buổi bù, V-g): mẫu số "còn N chưa tick" là số em
+        # ĐANG học trong danh sách ấy, không phải sĩ số lớp. MỘT câu cho mọi buổi.
+        tham_gia = {r['session_id']: int(r['n']) for r in q(
+            '''SELECT sp.session_id,
+                      COUNT(m.user_id) FILTER (WHERE ''' + chi_hoc_vien('u') + ''') AS n
+               FROM session_participants sp
+               LEFT JOIN class_members m ON m.class_id = %s AND m.user_id = sp.user_id
+                                        AND m.left_at IS NULL
+               LEFT JOIN users u ON u.id = m.user_id
+               WHERE sp.session_id = ANY(%s)
+               GROUP BY sp.session_id''', (class_id, [r['id'] for r in rows]))} if rows else {}
 
         # Người gọi làm được gì Ở MÀN NÀY — để giao diện đừng dựng nút mà bấm
         # vào mới biết là không được phép. Rà luồng trợ giảng 14/09/2026: thấy ba
@@ -429,7 +445,8 @@ class ClassSessionsView(APIView):
                 'mode': info['mode'], 'room': info['room'],
             },
             'quyen': {'xoaBuoi': senior, 'baoCaoPhuHuynh': senior},
-            'sessions': [_session_dict(r, counts.get(r['id']), members, lop=info) for r in rows],
+            'sessions': [_session_dict(r, counts.get(r['id']), tham_gia.get(r['id'], members), lop=info,
+                                       so_tham_gia=tham_gia.get(r['id'])) for r in rows],
             'statuses': list(SESSION_STATUS),
             'attendanceStatuses': list(ATTENDANCE_STATUS),
         })
@@ -678,7 +695,8 @@ class SessionAttendanceView(APIView):
                       LEFT JOIN users mb ON mb.id = a.marked_by
                       WHERE m.class_id = %s AND m.left_at IS NULL
                         AND ''' + chi_hoc_vien('u') + '''
-                      ORDER BY u.name, m.user_id''', (session_id, class_id))
+                        AND ''' + thuoc_buoi('%s', 'm.user_id') + '''
+                      ORDER BY u.name, m.user_id''', (session_id, class_id, session_id))
 
         # Câu 2: chuyên cần luỹ kế trong CHÍNH lớp này, một câu cho cả lớp.
         # Bỏ buổi đã HUỶ: lớp nghỉ vì giảng viên ốm mà tính vào số buổi vắng của
@@ -746,10 +764,12 @@ class SessionAttendanceView(APIView):
         # chấp nhận được phải là MỘT. Lệch nhau thì có người hiện trên màn hình
         # mà gửi lên lại bị báo "không thuộc lớp này" — hoặc ngược lại, tick
         # được cho người không hề hiện ra.
+        # Buổi bù (V-g): chỉ em trong danh sách của buổi — `thuoc_buoi`.
         members = {r['user_id'] for r in q(
             'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
-            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
-            (row['class_id'],))}
+            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+            + ' AND ' + thuoc_buoi('%s', 'm.user_id'),
+            (row['class_id'], session_id))}
 
         # GOM HẾT lỗi rồi báo MỘT LẦN, kèm số thứ tự dòng (T24).
         #

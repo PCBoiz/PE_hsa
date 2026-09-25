@@ -52,6 +52,9 @@ const HD_BUOI = z.looseObject({
       present: z.number(), late: z.number(), absent: z.number(), excused: z.number(),
       unmarked: z.number(),
     }).optional(),
+    // V-g (25/09/2026) — tuỳ chọn: Vercel lên trước Render, máy chủ cũ không trả.
+    makeupFor: z.number().nullable().optional(),
+    soNguoiThamGia: z.number().nullable().optional(),
   })),
   quyen: z.looseObject({ xoaBuoi: z.boolean(), baoCaoPhuHuynh: z.boolean() }).optional(),
   class: z.looseObject({

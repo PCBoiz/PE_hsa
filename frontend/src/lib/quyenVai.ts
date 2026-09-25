@@ -234,8 +234,18 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Tạo buổi bù cho một buổi',
+    // Kế hoạch v2 V-g, 25/09/2026 (bảng TopHSA dòng 10). Cùng cổng với tạo một buổi thường.
+    giaiThich: 'Chọn giờ và các em học bù; chỉ các em ấy thấy buổi, được điểm danh ở buổi ấy và nhận thông báo. Trợ giảng cũng tạo được, như tạo một buổi thường.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/buoi_bu.py::BuoiBuView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Giao bài và chấm tay',
-    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài.',
+    // "Giao cho: cả lớp / chọn học viên" từ 25/09/2026 (V-e, bảng TopHSA dòng 17).
+    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài. Giao bài (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/assignments.py::AssignmentGradingView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',

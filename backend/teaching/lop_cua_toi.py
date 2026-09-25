@@ -30,6 +30,8 @@ from common.clock import local_now
 from common.db import q
 from common.views import NguoiDungView
 from stats.goals import as_date, read_goals
+from teaching.nguoi_buoi import thuoc_buoi
+from teaching.nhan_bai import giao_cho
 from teaching.parent_report import _buoi_cua_em, _chuyen_can
 from teaching.sessions import DEFAULT_SESSION_MINUTES
 
@@ -92,8 +94,9 @@ class LopCuaToiView(NguoiDungView):
                           FROM class_sessions
                           WHERE class_id = ANY(%s) AND status = 'cancelled'
                             AND starts_at >= %s AND starts_at < %s
+                            AND ''' + thuoc_buoi('class_sessions.id', '%s') + '''
                           ORDER BY starts_at''',
-                       (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY))):
+                       (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY), uid)):
                 da_huy.setdefault(r['class_id'], []).append(r)
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
                                  mode, room
@@ -102,9 +105,10 @@ class LopCuaToiView(NguoiDungView):
                                 FROM class_sessions
                                 WHERE class_id = ANY(%s) AND status <> 'cancelled'
                                   AND starts_at + (COALESCE(duration_minutes, %s)
-                                                   * INTERVAL '1 minute') > %s) s
+                                                   * INTERVAL '1 minute') > %s
+                                  AND ''' + thuoc_buoi('class_sessions.id', '%s') + ''') s
                           WHERE tt <= %s ORDER BY class_id, starts_at''',
-                       (ids, DEFAULT_SESSION_MINUTES, nay, SO_SAP_TOI)):
+                       (ids, DEFAULT_SESSION_MINUTES, nay, uid, SO_SAP_TOI)):
                 sap_toi.setdefault(r['class_id'], []).append(r)
             # MỌI lượt em ở lớp (kể cả lượt đã đóng) — mẫu số chuyên cần chỉ
             # gồm buổi trong thời gian em ở lớp, xem `_chuyen_can`.
@@ -121,7 +125,8 @@ class LopCuaToiView(NguoiDungView):
                             LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
                            WHERE a.class_id = ANY(%s) AND a.status = 'open'
                              AND s.submitted_at IS NULL
-                           GROUP BY a.class_id''', (uid, ids)):
+                             AND ''' + giao_cho('a', '%s') + '''
+                           GROUP BY a.class_id''', (uid, ids, uid)):
                 bai_tap[r['class_id']] = {'chuaNop': r['chua_nop'],
                                           'hanSom': _iso(r['han_som'])}
 

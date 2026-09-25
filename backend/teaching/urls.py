@@ -4,6 +4,7 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      buoi_bu,
                       chuyen_lop,
                       co_so_hoc_phi,
                       danh_gia,
@@ -85,6 +86,8 @@ urlpatterns = [
     # Lịch sử sửa điểm danh của một buổi (V-d, 25/09/2026). Chỉ đọc.
     path('api/teach/sessions/<int:session_id>/attendance/history',
          sessions.SessionAttendanceHistoryView.as_view()),
+    # Tạo buổi BÙ cho một buổi, chỉ cho các em được chọn (V-g, 25/09/2026).
+    path('api/teach/sessions/<int:session_id>/buoi-bu', buoi_bu.BuoiBuView.as_view()),
 
     # ── Giao bài & chấm tay (đặc tả ERP §5) ──
     path('api/teach/classes/<int:class_id>/assignments',

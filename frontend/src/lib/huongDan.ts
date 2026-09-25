@@ -343,6 +343,10 @@ export const HUONG_DAN: readonly Bai[] = [
         o: '/quan-tri/lop-hoc',
       },
       {
+        lam: 'Học bù: ở sổ buổi học của lớp, bấm "Tạo buổi bù" trên dòng của buổi cần bù, chọn giờ và các em học bù (em vắng / có phép được tick sẵn), rồi "Tạo buổi bù".',
+        luu_y: 'Chỉ các em được chọn thấy buổi bù, có tên trong sổ điểm danh của buổi ấy và nhận thông báo; em khác không bị tính buổi này vào chuyên cần hay học phí.',
+      },
+      {
         lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác — cùng giảng viên, cùng học viên, hay cùng phòng — máy báo bằng dải vàng. Buổi VẪN được lưu.',
         luu_y: 'Cảnh báo chứ không chặn: trung tâm có ca trùng cố ý. Phòng so không phân biệt hoa thường ("P201" = "p201") và chỉ so buổi tại trung tâm.',
       },
@@ -450,7 +454,10 @@ export const HUONG_DAN: readonly Bai[] = [
     vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG],
     khi_nao: 'Khi cần bài tự luận hoặc bài nộp ảnh — bài trắc nghiệm thì hệ thống tự chấm.',
     buoc: [
-      { lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp.' },
+      {
+        lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp. Ô "Giao cho": Cả lớp, hoặc "Chọn học viên" rồi tick từng em.',
+        luu_y: 'Em không được chọn không thấy bài, không nhận thông báo và không bị tính "chưa nộp". Đổi người nhận sau bằng nút "Đổi người nhận" trên dòng của bài — em mới thêm được báo ngay.',
+      },
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
       {
         lam: 'Chấm điểm và ghi nhận xét.',

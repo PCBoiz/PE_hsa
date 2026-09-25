@@ -36,6 +36,8 @@ from common.db import q, q1
 from common.permissions import IsSeniorTeachingStaff, can_see_class
 from stats import competency
 from teaching.attendance import ti_le
+from teaching.nguoi_buoi import thuoc_buoi
+from teaching.nhan_bai import giao_cho
 from teaching.vocab import chi_hoc_vien, trang_thai
 
 #: Kỳ báo cáo mặc định. Bốn tuần vì trung tâm gửi báo cáo theo tháng, và một
@@ -229,6 +231,12 @@ def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
                       'WHERE a.session_id = s.id AND a.user_id = %s)')
         args.append(user_id)
         dieu_kien.append('(' + ' OR '.join(khoang) + ')')
+
+    # Buổi có danh sách riêng (buổi bù, V-g) mà em không có tên thì KHÔNG phải buổi
+    # của em — không thì mỗi buổi bù của bạn là một buổi "không có dòng" trên tờ gửi
+    # về nhà em.
+    dieu_kien.append(thuoc_buoi('s.id', '%s'))
+    args.append(user_id)
 
     # `topic`: "Lớp của tôi" liệt kê điểm danh TỪNG buổi từ chính kết quả này (V-d).
     buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at, s.topic '
@@ -493,11 +501,12 @@ def _bai_tap_lop(class_id, user_id, tu, den):
                   FROM assignments a
                   LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
                  WHERE a.class_id = %s AND a.status <> 'draft'
+                   AND ''' + giao_cho('a', '%s') + '''
                    AND (a.created_at::date BETWEEN %s AND %s
                         OR a.due_at::date BETWEEN %s AND %s
                         OR s.submitted_at::date BETWEEN %s AND %s)
                  ORDER BY COALESCE(a.due_at, a.created_at), a.id''',
-             (user_id, class_id, tu, den, tu, den, tu, den))
+             (user_id, class_id, user_id, tu, den, tu, den, tu, den))
     return [{
         'id': r['id'], 'title': r['title'], 'topic': r['topic'],
         'dueAt': r['due_at'].isoformat() if r['due_at'] else None,

@@ -175,7 +175,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Tạo / sửa / huỷ / dời, định kỳ, tự sinh buổi, bỏ ngày nghỉ | CÓ | `sinh_buoi.py`, màn Buổi học |
-| Tạo lịch học bù | MỘT PHẦN | thêm buổi lẻ; chưa gắn "bù cho buổi nào" → **V-g** |
+| Tạo lịch học bù | CÓ (V-g) | `POST /api/teach/sessions/<id>/buoi-bu` (`teaching/buoi_bu.py::BuoiBuView`): `class_sessions.makeup_for` + `session_participants` (§62e); sổ điểm danh, chuyên cần, "chưa điểm danh", học phí, lịch em, báo đổi lịch chỉ tính các em của buổi (`teaching/nguoi_buoi.thuoc_buoi`); chuông + thư `hoc_bu` sau khi lưu. Test `teaching/tests_buoi_bu.py` (5). Demo: giáo vụ/giảng viên → Buổi học của lớp → "Tạo buổi bù" trên buổi gốc → chọn giờ + em (em vắng tick sẵn) → dòng mới mang chip "học bù · N em" |
 | Đổi GV / TG cho một buổi | CHƯA | GV gắn theo lớp → **Đ2 §58** |
 | Đổi phòng, online / offline | CÓ | ở lớp làm mặc định, buổi đặt riêng |
 | Tạo / quản lý Zoom | MỘT PHẦN | dán link (lớp + buổi) → **E4** |
@@ -228,7 +228,11 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 ## Dòng 17 — Giáo viên · giao bài · gần đủ
 
 Tạo, hạn, sửa, xoá / đóng, danh sách, xem bài nộp, chấm, nhập điểm, nhận xét, trả bài, ai chưa nộp:
-CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CHƯA → **V-e**.
+CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CÓ (V-e) —
+`assignments.target_mode` + `assignment_targets` (§62d); MỘT hàm lọc `teaching/nhan_bai.giao_cho` ở mọi chỗ
+đọc bài (danh sách + sĩ số từng bài, bảng chấm, bài của học viên, nộp bài, thẻ lớp, tờ phụ huynh, Việc hôm
+nay, chuông "bài mới"). Test `teaching/tests_nhan_bai.py` (9). Demo: giảng viên → Bài tập của lớp → "Giao bài
+mới" → "Giao cho: Chọn học viên" → tick 2 em → Giao bài; em thứ ba không thấy bài ở mục Bài tập.
 Bài kiểm tra ngoại tuyến GV nhập điểm → **V-h**.
 
 ## Dòng 18 — Giáo viên · theo dõi học sinh · MỘT PHẦN
