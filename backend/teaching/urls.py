@@ -123,10 +123,15 @@ urlpatterns = [
     # Tạo nhanh lớp gia sư (1.2b): lớp + em + lịch trong một giao dịch.
     path('api/admin/classes/gia-su', lop_gia_su.TaoLopGiaSuView.as_view()),
     path('api/admin/classes/<int:class_id>', views.AdminClassDetailView.as_view()),
+    # Lịch sử thay đổi/phân công MỘT lớp (4.1, V-n, 25/09/2026). Chỉ đọc.
+    path('api/admin/classes/<int:class_id>/history', views.AdminClassHistoryView.as_view()),
     path('api/admin/classes/<int:class_id>/members', views.AdminClassMembersView.as_view()),
     # Chuyển lớp MỘT bước (§55): rời lớp này + vào lớp kia + nối hai lượt, một giao dịch.
     path('api/admin/classes/<int:class_id>/members/<int:user_id>/transfer',
          chuyen_lop.ChuyenLopView.as_view()),
+    # Nhập DS học viên từ bảng tính (.xlsx/.csv) THẲNG vào lớp (4.1, V-j, 25/09/2026).
+    path('api/admin/classes/<int:class_id>/nhap-hoc-vien',
+         admin_users.AdminClassImportStudentsView.as_view()),
 
     # ── Tài khoản ──
     path('api/admin/users', admin_users.AdminUsersView.as_view()),

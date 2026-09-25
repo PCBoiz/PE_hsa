@@ -467,6 +467,36 @@ class AdminClassDetailView(APIView):
         return Response({'ok': True, 'deleted': dict(counts), 'forgottenEvents': quen})
 
 
+class AdminClassHistoryView(APIView):
+    """GET /api/admin/classes/<class_id>/history — lịch sử thay đổi/phân công
+    của MỘT lớp (4.1, V-n, 25/09/2026): tạo/sửa/xoá lớp, thêm/bớt/chuyển học
+    viên, gán khung chương trình.
+
+    Đọc THẲNG `admin_audit` — dữ liệu đã có sẵn từ lâu (mọi hành động `class.*`
+    đều ghi `target_type='class'`), chỉ chưa có đường xem RIÊNG cho một lớp.
+    KHÔNG dùng `AdminAuditView` (`/api/admin/audit`) — view đó `IsAdminRole`
+    (chỉ quản trị viên) và cho lọc TỰ DO theo mọi lớp/mọi người, tức mở cả
+    nhật ký cho ai gọi được nó. Ở đây khoá CỐ ĐỊNH vào đúng lớp trong URL và mở
+    cho `IsAdminOrAcademic` — giáo vụ xem được lịch sử lớp mình quản, không
+    xem được nhật ký của lớp khác hay của tài khoản người khác.
+    """
+    permission_classes = [IsAdminOrAcademic]
+
+    def get(self, request, class_id):
+        if not q1('SELECT 1 FROM classes WHERE id=%s', (class_id,)):
+            return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
+        rows = q('''SELECT id, actor_name, actor_role, action, summary, detail, occurred_at
+                      FROM admin_audit
+                     WHERE target_type = 'class' AND target_id = %s
+                     ORDER BY occurred_at DESC
+                     LIMIT 300''', (str(class_id),))
+        return Response({'history': [{
+            'id': r['id'], 'actorName': r['actor_name'], 'actorRole': r['actor_role'],
+            'action': r['action'], 'summary': r['summary'], 'detail': r['detail'],
+            'occurredAt': r['occurred_at'].isoformat() if r['occurred_at'] else None,
+        } for r in rows]})
+
+
 def _doc_ngay_vao_lop(raw):
     """`joined_at` từ thân request → (datetime đầu ngày, lỗi). Trống → (None, None)."""
     if raw in (None, ''):
