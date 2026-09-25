@@ -66,7 +66,7 @@ test('học vụ: Chấm công theo tháng — bảng khớp máy chủ, chọn 
   // Tháng trước: biểu mẫu GET thường → URL mang ?thang=, Excel theo đúng tháng ấy.
   const [y, m] = api.thang.split('-').map(Number);
   const truoc = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
-  await page.getByLabel('Tháng').fill(truoc);
+  await page.getByLabel('Tháng', { exact: true }).fill(truoc);
   await page.getByRole('button', { name: 'Xem' }).click();
   await page.waitForURL((u) => u.searchParams.get('thang') === truoc);
   await expect(page.getByRole('link', { name: 'Tải Excel' })).toHaveAttribute('href', new RegExp(`thang=${truoc}&dinh_dang=xlsx`));
