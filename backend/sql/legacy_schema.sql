@@ -842,9 +842,15 @@ ALTER TABLE users ADD CONSTRAINT users_status_check
 -- 'finished' và 'cancelled' chưa có dòng nào dùng, nhưng để sẵn vì lớp kết thúc
 -- và lớp huỷ là hai con số khác nhau khi trung tâm báo tỉ lệ — cùng lý do đã
 -- ghi cho `class_members.leave_reason` ở §36.
+--
+-- SỬA TẠI CHỖ 25/09/2026 — thêm 'paused' (lớp TẠM DỪNG, bảng TopHSA dòng 4; kế
+-- hoạch v2 V-c). Chỉ NỚI: không dòng nào đang có bị luật mới loại. Tạm dừng khác
+-- huỷ: em VẪN giữ quyền mở môn (`courses/truy_cap.py` chỉ chặn 'cancelled'), lớp
+-- không vào "chưa điểm danh" và không sinh lịch được. Danh sách PHẢI khớp
+-- `teaching/vocab.py::TRANG_THAI_LOP` (phép kiểm đọc thẳng ràng buộc trên CSDL).
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
 ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled'));
+    CHECK (status IN ('active', 'paused', 'finished', 'cancelled'));
 
 -- ── Khoá ngoại còn thiếu ────────────────────────────────────────────────────
 -- Năm bảng dưới đây trỏ tới `users`/`courses`/`lessons` mà KHÔNG có khoá ngoại,
@@ -1014,7 +1020,7 @@ ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS leave_reason TEXT;
 ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
 ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
-    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred'));
+    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));
 
 -- ── Đợt học ─────────────────────────────────────────────────────────────────
 -- Chưa có khái niệm ĐỢT, nên "đợt 1/2027 so với đợt 2/2027" phải suy từ
@@ -1816,6 +1822,119 @@ ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment    TEXT;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;
 
+-- §62b · Cờ "CẦN HỖ TRỢ" đánh tay + ĐỀ XUẤT HƯỚNG HỌC (V-f, bảng TopHSA dòng 18).
+-- Ghi qua `PUT /api/teach/classes/<c>/students/<u>/danh-gia` (`teaching/danh_gia.py`)
+-- vào lượt học ĐANG MỞ của em (không có thì lượt mới nhất) — cùng chỗ với nhận xét ở
+-- tiểu mục a. Cờ khác "cần chú ý" tự tính ở báo cáo lớp: đây là một NGƯỜI (giảng viên
+-- hoặc trợ giảng) nói em cần giúp, kèm lý do. NỘI BỘ: không in lên tờ phụ huynh.
+-- Khoá ngoại trỏ `users`, không trỏ `class_members(id)`, nên §36 không đụng tới.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro           BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_ly_do     TEXT;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_by        INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_at        TIMESTAMP;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc    TEXT;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc_at TIMESTAMP;
+-- "Việc hôm nay" hỏi "em nào đang được đánh dấu" theo lớp — chỉ mục riêng phần nhỏ.
+CREATE INDEX IF NOT EXISTS idx_class_members_can_ho_tro
+    ON class_members (class_id) WHERE can_ho_tro;
+
+-- §62c · LỊCH SỬ SỬA ĐIỂM DANH (V-d, bảng TopHSA dòng 9, 14, 28).
+-- Trước hôm nay `attendance` chỉ giữ người sửa CUỐI, và dấu vết đổi từ gì sang gì
+-- nằm trong nhật ký kiểm toán (chỉ quản trị viên đọc). Mỗi lần lưu điểm danh ghi MỘT
+-- câu INSERT nhiều dòng — chỉ những em THẬT SỰ đổi (kể cả lần tick đầu, `tu` NULL) —
+-- trong CÙNG giao dịch với dòng điểm danh (`teaching/sessions.py`). Lưu lại y hệt ghi 0
+-- dòng. `changed_at` = đúng mốc của dòng nhật ký cùng lượt, để phần điền ngược dưới
+-- đây nhận ra dòng đã có và chạy lại không đẻ bản sao.
+-- nguon: 'diem_danh' (ghi trực tiếp) hoặc 'nhat_ky' (điền ngược từ `admin_audit`).
+CREATE TABLE IF NOT EXISTS attendance_history (
+    id          BIGSERIAL PRIMARY KEY,
+    session_id  INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tu          TEXT,
+    den         TEXT NOT NULL,
+    changed_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    changed_at  TIMESTAMP NOT NULL,
+    nguon       TEXT NOT NULL DEFAULT 'diem_danh',
+    CONSTRAINT attendance_history_tu_check
+        CHECK (tu IS NULL OR tu IN ('present', 'late', 'absent', 'excused')),
+    CONSTRAINT attendance_history_den_check
+        CHECK (den IN ('present', 'late', 'absent', 'excused')),
+    CONSTRAINT attendance_history_nguon_check
+        CHECK (nguon IN ('diem_danh', 'nhat_ky'))
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_buoi
+    ON attendance_history (session_id, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_user ON attendance_history (user_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_changed_by ON attendance_history (changed_by);
+-- Điền ngược từ nhật ký `attendance.mark` (khoá `detail.changed` = danh sách em đổi
+-- trạng thái, kèm giá trị cũ). So bằng CHUỖI (`s.id::text = a.target_id`) thay vì ép
+-- kiểu: một `target_id` lạ không làm hỏng cả mục. NOT EXISTS theo (buổi, em, mốc) nên
+-- chạy lại chỉ thêm dòng nhật ký chưa có bản sao — kể cả dòng do mã CŨ ghi trong lúc
+-- deploy (chạy `bootstrap_schema --tu §62` sau deploy để vá khoảng ấy).
+INSERT INTO attendance_history (session_id, user_id, tu, den, changed_by, changed_at, nguon)
+SELECT s.id, u.id, c.value->>'from', c.value->>'to', a.actor_id, a.occurred_at, 'nhat_ky'
+  FROM admin_audit a
+  CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(a.detail->'changed') = 'array' THEN a.detail->'changed'
+           ELSE '[]'::jsonb END) c
+  JOIN class_sessions s ON s.id::text = a.target_id
+  JOIN users u ON u.id::text = c.value->>'userId'
+ WHERE a.action = 'attendance.mark' AND a.target_type = 'class_session'
+   AND c.value->>'to' IN ('present', 'late', 'absent', 'excused')
+   AND (c.value->>'from' IS NULL OR c.value->>'from' IN ('present', 'late', 'absent', 'excused'))
+   AND NOT EXISTS (SELECT 1 FROM attendance_history h
+                    WHERE h.session_id = s.id AND h.user_id = u.id
+                      AND h.changed_at = a.occurred_at);
+
+-- §62d · ĐỐI TƯỢNG NHẬN BÀI (V-e, bảng TopHSA dòng 17).
+-- 'lop' = cả lớp (mọi bài cũ), 'nhom' = chỉ những em trong `assignment_targets`. MỘT
+-- hàm SQL lọc (`teaching/nhan_bai.py`) cho mọi chỗ đọc bài: em ngoài nhóm không thấy
+-- bài, không nhận chuông, không bị đếm "chưa nộp".
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS target_mode TEXT NOT NULL DEFAULT 'lop';
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_target_mode_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_target_mode_check
+    CHECK (target_mode IN ('lop', 'nhom'));
+CREATE TABLE IF NOT EXISTS assignment_targets (
+    assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (assignment_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_assignment_targets_user ON assignment_targets (user_id);
+
+-- §62e · BUỔI BÙ (V-g, bảng TopHSA dòng 10).
+-- `makeup_for` trỏ buổi GỐC. SET NULL: xoá buổi gốc không được kéo mất buổi bù đã dạy.
+-- `session_participants`: danh sách em của MỘT buổi — có dòng thì bảng điểm danh của
+-- buổi ấy là đúng những em này, không có thì là cả lớp như mọi buổi khác.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS makeup_for INTEGER
+    REFERENCES class_sessions(id) ON DELETE SET NULL;
+ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_makeup_not_self_check;
+ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_makeup_not_self_check
+    CHECK (makeup_for IS NULL OR makeup_for <> id);
+CREATE INDEX IF NOT EXISTS idx_class_sessions_makeup_for
+    ON class_sessions (makeup_for) WHERE makeup_for IS NOT NULL;
+CREATE TABLE IF NOT EXISTS session_participants (
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_participants_user ON session_participants (user_id);
+
+-- §62f · BÀI KIỂM TRA NGOẠI TUYẾN, GIẢNG VIÊN NHẬP ĐIỂM (V-h, bảng TopHSA dòng 4, 17).
+-- Anh Sơn chốt 25/09: "điểm thi thử" = bài kiểm tra làm trên lớp, giảng viên nhập điểm
+-- tay — một LOẠI bài giao, không phải bảng mới. `held_on` = ngày làm bài. Học viên
+-- KHÔNG nộp được bài loại này (409). `submissions.absent` = em vắng buổi kiểm tra: có
+-- dòng đã chấm (để không bị đếm "chưa chấm") nhưng KHÔNG có điểm. KHÔNG đụng §48
+-- (kết quả thi ở hệ thống khảo thí ngoài).
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'bai_tap';
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_kind_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_kind_check
+    CHECK (kind IN ('bai_tap', 'kiem_tra'));
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS held_on DATE;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS absent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE submissions DROP CONSTRAINT IF EXISTS submissions_absent_score_check;
+ALTER TABLE submissions ADD CONSTRAINT submissions_absent_score_check
+    CHECK (NOT absent OR score IS NULL);
 -- ── §63 · TÌNH TRẠNG HỌC TẬP + HỌC PHÍ TRÊN HỒ SƠ HỌC VIÊN (25/09/2026) ────
 -- Bảng yêu cầu TopHSA dòng 3 (hồ sơ học viên) còn thiếu hai ô: "Tình trạng học
 -- tập" và "Tình trạng học phí". Số §63 theo đúng dải luồng A (§62–64) đã neo
@@ -1837,13 +1956,9 @@ ALTER TABLE users ADD CONSTRAINT users_tuition_status_check CHECK (tuition_statu
 -- ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ; bộ đó (khung chương trình,
 -- % hoàn thành) vẫn để dành cho E1 (`teaching/tien_do_chuong_trinh.py`, chưa
 -- viết), tránh hai nơi cùng tính "đang học tới đâu" rồi lệch nhau.
-ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
-ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled', 'paused'));
-
-ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
-ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
-    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));
+-- Hai giá trị thô 'paused' (lớp) và 'reserved' (lý do rời lớp) KHÔNG thêm lại ràng buộc ở đây (sửa 25/09 tối):
+-- thêm lại một ràng buộc CÙNG TÊN với nội dung khác làm đỏ `common/tests.py::test_rang_buoc_them_nhieu_lan_
+-- phai_GIONG_HET_nhau` và lệch `teaching/vocab.py`. Nay sửa TẠI CHỖ: 'paused' ở §35 (V-c), 'reserved' ở §36.
 
 -- ── §64 · KHUNG CHƯƠNG TRÌNH THEO BUỔI (E1, quản lý khóa học 5.2, 25/09/2026) ─
 -- Bảng yêu cầu TopHSA 5.2: "tiến trình học tập gồm số buổi kèm tên bài", "thời

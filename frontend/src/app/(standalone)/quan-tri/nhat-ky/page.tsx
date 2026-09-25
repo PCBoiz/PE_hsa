@@ -68,6 +68,8 @@ const VIEC: Record<string, string> = {
   'class.member.add': 'Thêm vào lớp',
   'class.member.remove': 'Cho rời lớp',
   'class.member.transfer': 'Chuyển lớp',
+  // 25/09/2026 (V-a, V-f): nhận xét gửi phụ huynh, cờ cần hỗ trợ, đề xuất hướng học.
+  'class.member.assess': 'Đánh giá học viên',
   'class.parent_contacts': 'Nhập liên hệ phụ huynh',
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',
@@ -100,6 +102,12 @@ const VIEC: Record<string, string> = {
   'assignment.grade': 'Chấm bài',
   'course.create': 'Tạo khoá học',
   'course.update': 'Sửa khoá học',
+  // Khung chương trình theo buổi (§64, 25/09/2026).
+  'syllabus.create': 'Tạo khung chương trình',
+  'syllabus.update': 'Sửa khung chương trình',
+  'syllabus.delete': 'Xoá khung chương trình',
+  'syllabus.publish': 'Xuất bản khung chương trình',
+  'class.syllabus.assign': 'Gán khung chương trình cho lớp',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'lesson.create': 'Thêm bài học',

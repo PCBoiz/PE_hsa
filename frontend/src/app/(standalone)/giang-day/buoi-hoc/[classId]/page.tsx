@@ -73,6 +73,7 @@ const HD_GOI_Y = z.looseObject({
     to: z.string().nullable(),
   }),
   coTheSinh: z.boolean(),
+  tamDung: z.boolean().optional(),
 }) satisfies HinhDang<GoiYSinh>;
 
 export default async function BuoiHocPage({

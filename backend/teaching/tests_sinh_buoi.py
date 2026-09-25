@@ -127,6 +127,25 @@ def test_tro_giang_mo_duoc_goi_y_va_duoc_bao_truoc_la_khong_sinh_duoc(lop):
     assert _goi_y(lop['gv_khac'], lop['id']).status_code == 404
 
 
+def test_lop_tam_dung_khong_sinh_lich(lop):
+    """V-c (25/09/2026): lớp TẠM DỪNG không sinh lịch, kể cả xem trước; gợi ý nói rõ
+    vì sao (`tamDung`) thay vì chỉ giấu khối. Mở lại lớp là sinh được ngay."""
+    hv = _api(lop['hoc_vu'])
+    r = hv.put(f"/api/admin/classes/{lop['id']}", {'status': 'paused'}, format='json')
+    assert r.status_code == 200, r.json()
+    truoc = _so_buoi(lop['id'])
+    for dry in (False, True):
+        r = _sinh(lop['gv'], lop['id'], dry_run=dry)
+        assert r.status_code == 409 and 'tạm dừng' in r.json()['error'], (dry, r.json())
+    assert _so_buoi(lop['id']) == truoc
+    g = _goi_y(lop['gv'], lop['id']).json()
+    assert g['coTheSinh'] is False and g['tamDung'] is True, g
+    assert hv.put(f"/api/admin/classes/{lop['id']}", {'status': 'active'},
+                  format='json').status_code == 200
+    assert _sinh(lop['gv'], lop['id'], dry_run=True).status_code == 200
+    assert _goi_y(lop['gv'], lop['id']).json()['tamDung'] is False
+
+
 # ── 2. Xem trước không ghi gì ───────────────────────────────────────────────
 
 def test_xem_truoc_khong_ghi_gi(lop):

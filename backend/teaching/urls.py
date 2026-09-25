@@ -6,6 +6,7 @@ from teaching import (
                       assignments,
                       chuyen_lop,
                       co_so_hoc_phi,
+                      danh_gia,
                       dong_thoi_gian,
                       exports,
                       ho_so,
@@ -37,6 +38,10 @@ urlpatterns = [
     # Giảng viên cập nhật MỤC TIÊU + NGUYỆN VỌNG của em trong lớp (23/09/2026).
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/profile',
          ho_so.MucTieuHocVienView.as_view()),
+    # Đánh giá em (kế hoạch v2 V-a + V-f, 25/09/2026): nhận xét gửi phụ huynh + đề xuất
+    # hướng học (giảng viên trở lên), cờ "cần hỗ trợ" (cả trợ giảng). Xem `danh_gia.py`.
+    path('api/teach/classes/<int:class_id>/students/<int:user_id>/danh-gia',
+         danh_gia.DanhGiaHocVienView.as_view()),
     # Báo cáo gửi phụ huynh (đặc tả ERP §6) — khác hồ sơ ở trên: ít số hơn, có
     # ranh giới riêng tư, và in ra giấy được.
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report',

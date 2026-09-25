@@ -33,6 +33,19 @@ export function ngayVN(luc: Date = new Date()): string {
   }).format(luc);
 }
 
+/**
+ * "25/09/2026 20:15" từ chuỗi giờ VN NGÂY THƠ máy chủ trả ('2026-09-25T20:15:03.12';
+ * chỉ có ngày thì "25/09/2026"). TÁCH CHUỖI, không qua `Date` — `new Date(...)` trên
+ * Vercel (UTC) đọc chuỗi ấy theo UTC rồi định dạng lại là lệch múi. Chuỗi lạ trả
+ * nguyên, không đoán; rỗng trả '—'.
+ */
+export function lucVN(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(iso);
+  if (!m) return iso;
+  return m[4] ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 /** "Thứ Hai, 22/09/2026" theo giờ VN — cho dòng ngày dưới tiêu đề "Việc hôm nay"
  *  (22/09/2026, agent GV→PH F14: màn không nói "hôm nay" là ngày nào). */
 export function ngayDayDuVN(luc: Date = new Date()): string {
