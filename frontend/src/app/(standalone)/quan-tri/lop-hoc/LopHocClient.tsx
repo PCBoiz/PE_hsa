@@ -25,6 +25,7 @@ import * as z from 'zod/mini';
 
 import { LOAI_LOP, TRANG_THAI, type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
 import ChuyenLop from './ChuyenLop';
+import NhapTuTep from './NhapTuTep';
 import TaoLopGiaSu from './TaoLopGiaSu';
 
 export type { LopRow };
@@ -775,6 +776,16 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
             </label>
           )}
 
+          {/* Nhập cả danh sách từ tệp mẫu (V-j) — cạnh ô dán email; dùng chung ô "Ngày vào lớp". */}
+          <NhapTuTep
+            classId={lopMoRong.id}
+            ngayVao={ngayVao}
+            onXong={(cau) => {
+              toast(cau, 'ok');
+              void Promise.all([moHocVien(lopMoRong), nap()]);
+            }}
+          />
+
           {/* Trợ giảng của lớp. Trước 20/09/2026 màn này không có chữ "trợ
               giảng" nào: gán được (qua ô email ở trên) nhưng gán xong thì họ
               biến mất — không nằm trong sĩ số, không có chỗ gỡ. */}
@@ -834,7 +845,7 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
           ) : hocVien.length === 0 ? (
             <EmptyState
               title="Lớp chưa có học viên"
-              hint="Dán email (mỗi dòng một em) rồi bấm “Thêm vào lớp”. Tài khoản tạo ở trang Tài khoản."
+              hint="Dán email (mỗi dòng một em) rồi bấm “Thêm vào lớp”, hoặc nhập từ tệp mẫu ở trên."
             />
           ) : (
             <TableWrap caption={`Học viên của lớp ${lopMoRong.name}`}>

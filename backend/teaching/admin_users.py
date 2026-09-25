@@ -37,6 +37,7 @@ from rest_framework.views import APIView
 from accounts.hoat_dong import sql_hoat_dong
 from accounts.validators import validate_email_field, validate_name_field, validate_phone_field
 from common import audit
+from common.bangtinh import KY_TU_CONG_THUC
 from common.clock import local_now
 from common.db import q, q1, x
 from common.identity import looks_like_email, norm_email, norm_phone
@@ -511,6 +512,12 @@ def _check_row(cand, by_email, by_phone, seen_email, seen_phone):
     err = validate_name_field(name)
     if err:
         return name, email, phone, err
+    if name[:1] in KY_TU_CONG_THUC:
+        # Họ tên thật không mở đầu bằng = + - @; một ô như thế là CÔNG THỨC dán từ bảng
+        # tính (`=HYPERLINK(...)`) — để lọt thì nó thành công thức trong mọi bản xuất Excel
+        # sau này của người khác (V-j, 25/09/2026: dùng chung cho ô dán và tệp mẫu).
+        return name, email, phone, ('Họ tên không được bắt đầu bằng dấu %s — ô này trông như '
+                                    'công thức bảng tính. Gõ lại họ tên.' % name[:1])
     if not email and not phone:
         return name, email, phone, 'Cần ít nhất email hoặc số điện thoại.'
     if email:
@@ -588,6 +595,107 @@ def _cham_tung_dong(cands, by_email, by_phone, dry_run, truncated):
     return rows, to_create, skipped, warnings, too_many
 
 
+def cho_trong_gia_su(class_id):
+    """Số chỗ HỌC VIÊN còn trống của một lớp gia sư (`TRAN_GIA_SU` trừ em đang học). Có thể âm."""
+    return vocab.TRAN_GIA_SU - q1(
+        'SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
+        'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + vocab.chi_hoc_vien('mu'), (class_id,))['n']
+
+
+def cap_tai_khoan(request, to_create, role, klass, vao, nguon='nhập hàng loạt'):
+    """CẤP tài khoản cho các dòng đã chấm hợp lệ, rồi (nếu có lớp) xếp cả mẻ vào lớp.
+
+    MỘT hàm cho HAI cửa (V-j, 25/09/2026): ô dán ở trang Tài khoản
+    (`AdminBulkCreateUsersView`) và nhập học viên từ tệp mẫu (`teaching/nhap_hoc_vien.py`).
+    Hai bản vòng ghi là hai chỗ sẽ trôi — mật khẩu tạm, mã HSA, nhật ký, trần gia sư dưới
+    khoá đều nằm ở đây.
+
+    ``to_create`` = ``[(entry, name, email, phone), …]`` từ bước chấm (CHƯA ghi gì); mỗi
+    ``entry`` được ghi thêm ``userId``, ``studentCode``, ``tempPassword`` — hoặc đổi thành
+    ``skipped`` khi vấp chỉ mục duy nhất. ``klass`` = dòng lớp (id, name, class_type) hoặc
+    None. Trần mỗi mẻ (`MAX_CREATE_PER_BATCH`) do NƠI GỌI kiểm trước.
+
+    Trả ``(created_ids, added_to_class, warnings)``.
+    """
+    from accounts.hashers import make_werkzeug_password
+    from teaching.ho_so import cap_ma_hoc_vien
+
+    class_id = klass['id'] if klass else None
+    warnings = []
+    created_ids = []
+    now = local_now()
+    for entry, name, email, phone in to_create:
+        temp = _temp_password()
+        try:
+            # Giao dịch riêng từng dòng: dòng thứ 30 vấp chỉ mục duy nhất
+            # (ai đó vừa tạo cùng email ở tab khác) chỉ cuộn lại đúng dòng
+            # đó — 29 tài khoản trước vẫn còn, và mật khẩu tạm của chúng vẫn
+            # nằm trong phản hồi. Bọc chung một giao dịch thì một va chạm
+            # xoá sạch công của cả mẻ.
+            with transaction.atomic():
+                row = q1('INSERT INTO users (name, email, phone, role, password, '
+                         'must_change_password, created_at) '
+                         'VALUES (%s, %s, %s, %s, %s, TRUE, %s) RETURNING id',
+                         (name, email, phone, role,
+                          make_werkzeug_password(temp), now))
+        except IntegrityError:
+            entry['status'] = 'skipped'
+            entry['reason'] = ('Email hoặc số điện thoại vừa bị tài khoản khác '
+                               'chiếm mất trong lúc đang tạo. Kiểm tra lại rồi '
+                               'dán riêng dòng này.')
+            continue
+
+        uid = row['id']
+        created_ids.append(uid)
+        entry['userId'] = uid
+        entry['studentCode'] = cap_ma_hoc_vien(uid)
+        entry['tempPassword'] = temp
+
+        audit.record(
+            request, audit.USER_CREATE, target_type='user', target_id=uid,
+            target_label=name,
+            summary=('Cấp tài khoản "%s" (%s) bằng %s%s.'
+                     % (name, role, nguon, ' — xếp vào lớp "%s"' % klass['name'] if klass else '')),
+            # KHÔNG có mật khẩu tạm ở đây và không bao giờ được có: nhật ký
+            # kiểm toán đọc được bởi mọi quản trị viên và giữ vĩnh viễn.
+            detail={'bulk': True, 'line': entry['line'], 'email': email,
+                    'phone': phone, 'role': role, 'classId': class_id})
+
+    # Xếp lớp bằng MỘT câu cho cả mẻ thay vì một câu mỗi em: 50 em là 50 vòng
+    # gọi = 12 giây, đủ để đẩy request qua mốc timeout. Đặt sau vòng ghi và
+    # ngoài các giao dịch riêng là có chủ ý — xếp lớp hỏng thì tài khoản vẫn
+    # còn (thêm vào lớp lại được bất cứ lúc nào), còn tài khoản hỏng thì
+    # không có gì để xếp.
+    added_to_class = False
+    if class_id and created_ids:
+        xep = created_ids
+        with transaction.atomic():
+            if klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT:
+                # Đếm lại DƯỚI KHOÁ (§54): phép kiểm chỗ ở trên chạy TRƯỚC vòng cấp
+                # tài khoản — một em được thêm vào lớp trong lúc ấy (tab khác) thì
+                # giờ còn ít chỗ hơn. Tài khoản đã cấp vẫn giữ; em thừa được nêu tên.
+                q1('SELECT id FROM classes WHERE id=%s FOR UPDATE', (class_id,))
+                con_cho = max(cho_trong_gia_su(class_id), 0)
+                if len(xep) > con_cho:
+                    thua = [e['email'] for e, *_ in to_create if e.get('userId') in set(xep[con_cho:])]
+                    warnings.append('Lớp gia sư "%s" vừa hết chỗ trong lúc cấp tài khoản — %d em đã có '
+                                    'tài khoản nhưng chưa vào lớp: %s. Xếp các em vào lớp khác.'
+                                    % (klass['name'], len(thua), ', '.join(thua)))
+                    xep = xep[:con_cho]
+            # `WHERE left_at IS NULL` trỏ đúng chỉ mục duy nhất một phần của
+            # §36 (thiếu nó Postgres từ chối cả câu). Kèm theo là đổi hành vi có
+            # chủ đích: người ĐÃ RỜI lớp mà được nhập lại sẽ sinh một dòng MỚI —
+            # một lượt học mới — thay vì hồi sinh dòng cũ và xoá trắng mốc rời
+            # lớp lần trước.
+            if xep:
+                x('''INSERT INTO class_members (class_id, user_id, joined_at)
+                     SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
+                     ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
+                  (class_id, vao or now, xep))
+                added_to_class = True
+    return created_ids, added_to_class, warnings
+
+
 class AdminBulkCreateUsersView(APIView):
     """POST /api/admin/users/bulk — cấp tài khoản cho cả một danh sách.
 
@@ -634,9 +742,6 @@ class AdminBulkCreateUsersView(APIView):
     permission_classes = [IsAdminOrAcademic]
 
     def post(self, request):
-        from accounts.hashers import make_werkzeug_password
-        from teaching.ho_so import cap_ma_hoc_vien
-
         body = request.data if isinstance(request.data, dict) else {}
         text = body.get('text') or ''
         role = (body.get('role') or ROLE_STUDENT).strip()
@@ -688,9 +793,7 @@ class AdminBulkCreateUsersView(APIView):
         # cả mẻ bằng MỘT câu ở dưới, nên phải kiểm chỗ trống TRƯỚC: xem trước thì
         # cảnh báo, tạo thật thì từ chối trước khi cấp tài khoản nào.
         if klass and klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT and to_create:
-            con_cho = vocab.TRAN_GIA_SU - q1(
-                'SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
-                'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + vocab.chi_hoc_vien('mu'), (class_id,))['n']
+            con_cho = cho_trong_gia_su(class_id)
             if len(to_create) > con_cho:
                 cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em) — danh sách có %d em mới. '
                        'Chọn lớp khác hoặc bỏ ô lớp.' % (klass['name'], max(con_cho, 0), vocab.TRAN_GIA_SU,
@@ -729,81 +832,9 @@ class AdminBulkCreateUsersView(APIView):
                 'warnings': warnings, 'rows': rows,
             }, status=400)
 
-        # ── Vòng 2: ghi. Mỗi tài khoản một giao dịch RIÊNG ──
-        created_ids = []
-        now = local_now()
-        for entry, name, email, phone in to_create:
-            temp = _temp_password()
-            try:
-                # Giao dịch riêng từng dòng: dòng thứ 30 vấp chỉ mục duy nhất
-                # (ai đó vừa tạo cùng email ở tab khác) chỉ cuộn lại đúng dòng
-                # đó — 29 tài khoản trước vẫn còn, và mật khẩu tạm của chúng vẫn
-                # nằm trong phản hồi. Bọc chung một giao dịch thì một va chạm
-                # xoá sạch công của cả mẻ.
-                with transaction.atomic():
-                    row = q1('INSERT INTO users (name, email, phone, role, password, '
-                             'must_change_password, created_at) '
-                             'VALUES (%s, %s, %s, %s, %s, TRUE, %s) RETURNING id',
-                             (name, email, phone, role,
-                              make_werkzeug_password(temp), now))
-            except IntegrityError:
-                entry['status'] = 'skipped'
-                entry['reason'] = ('Email hoặc số điện thoại vừa bị tài khoản khác '
-                                   'chiếm mất trong lúc đang tạo. Kiểm tra lại rồi '
-                                   'dán riêng dòng này.')
-                continue
-
-            uid = row['id']
-            created_ids.append(uid)
-            entry['userId'] = uid
-            entry['studentCode'] = cap_ma_hoc_vien(uid)
-            entry['tempPassword'] = temp
-
-            audit.record(
-                request, audit.USER_CREATE, target_type='user', target_id=uid,
-                target_label=name,
-                summary=('Cấp tài khoản "%s" (%s) bằng nhập hàng loạt%s.'
-                         % (name, role, ' — xếp vào lớp "%s"' % klass['name'] if klass else '')),
-                # KHÔNG có mật khẩu tạm ở đây và không bao giờ được có: nhật ký
-                # kiểm toán đọc được bởi mọi quản trị viên và giữ vĩnh viễn.
-                detail={'bulk': True, 'line': entry['line'], 'email': email,
-                        'phone': phone, 'role': role, 'classId': class_id})
-
-        # Xếp lớp bằng MỘT câu cho cả mẻ thay vì một câu mỗi em: 50 em là 50 vòng
-        # gọi = 12 giây, đủ để đẩy request qua mốc timeout. Đặt sau vòng ghi và
-        # ngoài các giao dịch riêng là có chủ ý — xếp lớp hỏng thì tài khoản vẫn
-        # còn (thêm vào lớp lại được bất cứ lúc nào), còn tài khoản hỏng thì
-        # không có gì để xếp.
-        added_to_class = False
-        if class_id and created_ids:
-            xep = created_ids
-            with transaction.atomic():
-                if klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT:
-                    # Đếm lại DƯỚI KHOÁ (§54): phép kiểm chỗ ở trên chạy TRƯỚC vòng cấp
-                    # tài khoản — một em được thêm vào lớp trong lúc ấy (tab khác) thì
-                    # giờ còn ít chỗ hơn. Tài khoản đã cấp vẫn giữ; em thừa được nêu tên.
-                    q1('SELECT id FROM classes WHERE id=%s FOR UPDATE', (class_id,))
-                    con_cho = max(vocab.TRAN_GIA_SU - q1(
-                        'SELECT count(*) AS n FROM class_members m JOIN users mu ON mu.id = m.user_id '
-                        'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + vocab.chi_hoc_vien('mu'),
-                        (class_id,))['n'], 0)
-                    if len(xep) > con_cho:
-                        thua = [r['email'] for r in rows if r.get('userId') in set(xep[con_cho:])]
-                        warnings.append('Lớp gia sư "%s" vừa hết chỗ trong lúc cấp tài khoản — %d em đã có '
-                                        'tài khoản nhưng chưa vào lớp: %s. Xếp các em vào lớp khác.'
-                                        % (klass['name'], len(thua), ', '.join(thua)))
-                        xep = xep[:con_cho]
-                # `WHERE left_at IS NULL` trỏ đúng chỉ mục duy nhất một phần của
-                # §36 (thiếu nó Postgres từ chối cả câu). Kèm theo là đổi hành vi có
-                # chủ đích: người ĐÃ RỜI lớp mà được nhập lại sẽ sinh một dòng MỚI —
-                # một lượt học mới — thay vì hồi sinh dòng cũ và xoá trắng mốc rời
-                # lớp lần trước.
-                if xep:
-                    x('''INSERT INTO class_members (class_id, user_id, joined_at)
-                         SELECT %s, uid, %s FROM unnest(%s::int[]) AS uid
-                         ON CONFLICT (class_id, user_id) WHERE left_at IS NULL DO NOTHING''',
-                      (class_id, vao or now, xep))
-                    added_to_class = True
+        # ── Vòng 2: ghi — `cap_tai_khoan` (dùng CHUNG với nhập từ tệp mẫu, V-j) ──
+        created_ids, added_to_class, canh_bao = cap_tai_khoan(request, to_create, role, klass, vao)
+        warnings += canh_bao
 
         return Response({
             'ok': True,

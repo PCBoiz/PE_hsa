@@ -13,6 +13,7 @@ from teaching import (
                       lien_he_phu_huynh,
                       lop_cua_toi,
                       lop_gia_su,
+                      nhap_hoc_vien,
                       overview,
                       parent_link,
                       parent_report,
@@ -124,6 +125,9 @@ urlpatterns = [
     path('api/admin/classes/gia-su', lop_gia_su.TaoLopGiaSuView.as_view()),
     path('api/admin/classes/<int:class_id>', views.AdminClassDetailView.as_view()),
     path('api/admin/classes/<int:class_id>/members', views.AdminClassMembersView.as_view()),
+    # Nhập học viên vào lớp từ tệp mẫu (V-j): POST tệp (xem trước / nhập), GET tệp mẫu.
+    path('api/admin/classes/<int:class_id>/nhap-hoc-vien', nhap_hoc_vien.NhapHocVienView.as_view()),
+    path('api/admin/classes/<int:class_id>/nhap-hoc-vien/mau', nhap_hoc_vien.TepMauNhapHocVienView.as_view()),
     # Chuyển lớp MỘT bước (§55): rời lớp này + vào lớp kia + nối hai lượt, một giao dịch.
     path('api/admin/classes/<int:class_id>/members/<int:user_id>/transfer',
          chuyen_lop.ChuyenLopView.as_view()),

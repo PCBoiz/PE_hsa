@@ -222,6 +222,11 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Em chỉ học được môn của lớp đang học (lớp để trống môn = cả ba môn). Lớp gia sư nhận tối đa 3 em; trợ giảng không tính.',
       },
       {
+        lam: 'Cả danh sách một lúc: bấm "Học viên" của lớp → "Tải tệp mẫu (.xlsx)", điền mỗi dòng một em (họ tên, email, số điện thoại — em đã có tài khoản thì chỉ cần mã HSA), chọn tệp → "Kiểm tra tệp" → "Nhập … em vào lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Bước kiểm tra chưa ghi gì: dòng nào sai hiện lý do ngay trên dòng ấy. Em chưa có tài khoản được cấp mật khẩu tạm — chép bảng mật khẩu ngay, rời trang là mất. Tối đa 50 em mỗi tệp.',
+      },
+      {
         lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Một lượt tạo cả lớp, xếp em vào lớp và sinh buổi. Xem trước báo trùng giờ với lớp khác của giảng viên hoặc của em.',

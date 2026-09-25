@@ -111,7 +111,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Tạo / sửa / xoá lớp | CÓ | `api/admin/classes`; xoá có xác nhận |
-| Thêm từng HS / import DS theo **biểu mẫu** | MỘT PHẦN | dán danh sách CÓ; tải TỆP mẫu CHƯA → **V-j** |
+| Thêm từng HS / import DS theo **biểu mẫu** | CÓ (V-j) | dán email CÓ; "Nhập học viên từ tệp mẫu" ở Học viên của lớp: tải mẫu .xlsx → kiểm tra từng dòng → nhập (em có sẵn vào lớp, em mới được cấp tài khoản qua cùng hàm `cap_tai_khoan` với ô dán; trần 50, lớp gia sư 3) — `teaching/nhap_hoc_vien.py`, `teaching/tests_nhap_hoc_vien.py` |
 | Thêm / xoá HS khỏi lớp | CÓ | `api/admin/classes/<id>/members` |
 | Chuyển HS giữa các lớp | CÓ | một thao tác (1.2c, `teaching/chuyen_lop.py`) |
 | Thiết lập môn, thời gian bắt đầu / kết thúc | CÓ | `course_id`, `starts_on`, `ends_on` |

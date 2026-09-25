@@ -54,6 +54,10 @@ CLASS_MEMBER_REMOVE = 'class.member.remove'
 #: Chuyển lớp MỘT bước (§55, 24/09/2026): đóng lượt ở lớp cũ + mở lượt ở lớp mới trong
 #: một giao dịch. `target` là lớp MỚI; `detail` giữ cả hai lớp và hai lượt.
 CLASS_MEMBER_TRANSFER = 'class.member.transfer'
+#: Nhập học viên vào lớp TỪ TỆP MẪU (V-j, 25/09/2026). MỘT dòng cho cả lượt (như
+#: `send_all`): `detail` mang tên tệp, id tài khoản mới + id em có sẵn, số dòng lỗi. Từng
+#: tài khoản mới vẫn có dòng `user.create`, từng em có sẵn vẫn có `class.member.add`.
+CLASS_MEMBER_IMPORT = 'class.member.import'
 #: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
 #: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
 #: dán nhầm cột.

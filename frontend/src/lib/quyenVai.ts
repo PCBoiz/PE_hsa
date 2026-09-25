@@ -200,6 +200,13 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Lớp & đợt học',
+    nhan: 'Nhập cả danh sách học viên vào lớp từ tệp mẫu',
+    giaiThich: 'Tải tệp mẫu Excel, điền, tải lên: hệ thống kiểm từng dòng trước khi ghi. Em đã có tài khoản được thêm vào lớp; em chưa có được cấp tài khoản mới. Tối đa 50 em mỗi tệp.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/nhap_hoc_vien.py::NhapHocVienView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
     nhan: 'Mở và đóng đợt học',
     giaiThich: 'Đợt là khung thời gian để so sánh giữ chân giữa các khoá tuyển sinh.',
     lopQuyen: 'IsAdminOrAcademic',
