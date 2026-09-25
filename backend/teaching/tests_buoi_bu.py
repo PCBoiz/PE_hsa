@@ -167,8 +167,9 @@ def test_hoc_phi_va_so_diem_danh_csv_chi_tinh_em_tham_gia(canh):
     của Bình ở cột buổi bù trong sổ CSV là "—" (không phải ô trống "chưa tick")."""
     import csv
     import io
-    from datetime import date
-    hom_nay = date.today()
+
+    from common.clock import local_today
+    hom_nay = local_today()
     dot = q1("INSERT INTO terms (name, starts_on, ends_on, status) VALUES ('Dot BB', %s, %s, 'active') "
              'RETURNING id', (hom_nay - timedelta(days=30), hom_nay + timedelta(days=30)))['id']
     x('UPDATE classes SET term_id = %s WHERE id = %s', (dot, canh['lop']))

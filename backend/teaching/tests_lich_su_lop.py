@@ -48,7 +48,11 @@ def canh(db):
 def test_lich_su_lop_gom_dung_viec_cua_lop_moi_nhat_truoc(canh):
     from teaching.chuyen_lop import ChuyenLopView
     from teaching.lich_su_lop import LichSuLopView
-    from teaching.sessions import ClassSessionDetailView, ClassSessionsView, SessionAttendanceView
+    from teaching.sessions import (
+        ClassSessionDetailView,
+        ClassSessionsView,
+        SessionAttendanceView,
+    )
     from teaching.views import (
         AdminClassDetailView,
         AdminClassMembersView,

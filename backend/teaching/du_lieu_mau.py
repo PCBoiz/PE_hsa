@@ -56,6 +56,7 @@ from datetime import datetime, time, timedelta
 from django.db import transaction
 
 from accounts.hashers import make_werkzeug_password
+from chuong_trinh.du_lieu_mau import MON_MAU, dung_khung_mau
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import (
@@ -200,6 +201,9 @@ TEN_PHAN = {1: 'Định lượng và Xử lí số liệu', 2: 'Định tính', 
 BANG_DEM = (
     ('tài khoản mẫu', 'SELECT COUNT(*) FROM users WHERE is_demo'),
     ('lớp mẫu', 'SELECT COUNT(*) FROM classes WHERE is_demo'),
+    ('khung chương trình mẫu', 'SELECT COUNT(*) FROM syllabus_versions WHERE is_demo'),
+    ('sổ đầu bài', 'SELECT COUNT(*) FROM session_logs l JOIN class_sessions s ON s.id = l.session_id '
+                   'JOIN classes c ON c.id = s.class_id WHERE c.is_demo'),
     ('buổi học', 'SELECT COUNT(*) FROM class_sessions s JOIN classes c ON c.id = s.class_id WHERE c.is_demo'),
     ('điểm danh', 'SELECT COUNT(*) FROM attendance a JOIN users u ON u.id = a.user_id WHERE u.is_demo'),
     ('bài tập', 'SELECT COUNT(*) FROM assignments a JOIN classes c ON c.id = a.class_id WHERE c.is_demo'),
@@ -419,6 +423,9 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
                  SELECT t.s, t.u, t.tt, %s, t.luc
                    FROM unnest(%s::int[], %s::int[], %s::text[], %s::timestamp[]) AS t(s, u, tt, luc)''',
               (gv, [r[0] for r in dd], [r[1] for r in dd], [r[2] for r in dd], [r[3] for r in dd]))
+
+        # ── Khung chương trình + sổ đầu bài mẫu (E1) — mô-đun của miền ──
+        dung_khung_mau([lop['id'] for lop in ke if lop['khoa'] == MON_MAU], gv, bay_gio)
 
         # ── Bài tự luận + bài nộp ────────────────────────────────────────
         bai = []
@@ -720,6 +727,7 @@ def go():
         x('DELETE FROM parent_report_sends WHERE requested_by IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM parent_report_links WHERE created_by IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM classes WHERE is_demo')
+        x('DELETE FROM syllabus_versions WHERE is_demo')
         x('DELETE FROM users WHERE is_demo')
         sau = dem()
     return truoc, sau

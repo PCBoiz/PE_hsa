@@ -146,6 +146,11 @@ SYLLABUS_UPDATE = 'syllabus.update'
 SYLLABUS_DELETE = 'syllabus.delete'
 SYLLABUS_PUBLISH = 'syllabus.publish'
 CLASS_SYLLABUS_ASSIGN = 'class.syllabus.assign'
+#: Gắn tay MỘT buổi học với một buổi khung (E1, 25/09/2026) — `detail` giữ gắn CŨ.
+SESSION_SYLLABUS = 'session.syllabus'
+#: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
+#: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
+SESSION_LOG = 'session.log'
 
 
 def _client_ip(request):

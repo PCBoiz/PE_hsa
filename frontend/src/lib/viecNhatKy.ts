@@ -75,6 +75,9 @@ export const VIEC: Record<string, string> = {
   'syllabus.delete': 'Xoá khung chương trình',
   'syllabus.publish': 'Xuất bản khung chương trình',
   'class.syllabus.assign': 'Gán khung chương trình cho lớp',
+  // Gắn tay một buổi với buổi khung + sổ đầu bài (E1, §70, 25/09/2026).
+  'session.syllabus': 'Gắn buổi học với buổi khung',
+  'session.log': 'Ghi sổ đầu bài',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'course.publish': 'Mở / chuyển nháp khoá học',

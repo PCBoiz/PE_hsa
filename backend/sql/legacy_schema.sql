@@ -2004,6 +2004,24 @@ ALTER TABLE syllabus_versions DROP CONSTRAINT IF EXISTS syllabus_versions_status
 ALTER TABLE syllabus_versions ADD CONSTRAINT syllabus_versions_status_check
     CHECK (status IN ('nhap', 'xuat_ban', 'ngung'));
 CREATE INDEX IF NOT EXISTS idx_syllabus_versions_course ON syllabus_versions(course_id);
+-- §64g · CHUỖI PHIÊN BẢN (E1, sửa tại chỗ 25/09/2026 — §64 chưa lên production, 0 dòng).
+-- Một môn có thể có NHIỀU khung độc lập (lớp nhóm 24 buổi, lớp gia sư 12 buổi), nên
+-- luật "một bản nháp, một bản đang dùng" đặt theo CHUỖI chứ không theo môn: `lineage_id`
+-- = id bản ĐẦU của chuỗi (NULL = chính nó là bản đầu), khoá chuỗi = COALESCE(lineage_id, id).
+-- Nhân bản (`duplicateFrom`) chép khoá chuỗi của bản nguồn. CỐ Ý không khoá ngoại: bản đầu
+-- xoá được (khi không lớp nào dùng) mà các bản sau vẫn là MỘT chuỗi — SET NULL sẽ tách
+-- chúng thành nhiều chuỗi, mỗi chuỗi lại được một bản nháp.
+-- Xuất bản một bản = bản đang dùng cũ CÙNG CHUỖI chuyển sang 'ngung' trong cùng giao dịch
+-- (`courseadmin/syllabus.py`) — hai chỉ mục dưới giữ bất biến ở CSDL khi hai lượt đua nhau.
+-- `is_demo`: khung của bộ dữ liệu trình diễn (`teaching/du_lieu_mau.py` gỡ đúng các dòng này).
+ALTER TABLE syllabus_versions ADD COLUMN IF NOT EXISTS lineage_id INTEGER;
+ALTER TABLE syllabus_versions ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_chuoi
+    ON syllabus_versions ((COALESCE(lineage_id, id)));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_nhap
+    ON syllabus_versions ((COALESCE(lineage_id, id))) WHERE status = 'nhap';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_xuat_ban
+    ON syllabus_versions ((COALESCE(lineage_id, id))) WHERE status = 'xuat_ban';
 
 CREATE TABLE IF NOT EXISTS syllabus_sessions (
     id                SERIAL PRIMARY KEY,
@@ -2023,11 +2041,20 @@ CREATE TABLE IF NOT EXISTS syllabus_items (
     kind       TEXT NOT NULL,
     lesson_id  INTEGER REFERENCES lessons(id) ON DELETE SET NULL,
     title      TEXT NOT NULL,
-    weight     NUMERIC
+    weight     NUMERIC NOT NULL DEFAULT 1
 );
 ALTER TABLE syllabus_items DROP CONSTRAINT IF EXISTS syllabus_items_kind_check;
 ALTER TABLE syllabus_items ADD CONSTRAINT syllabus_items_kind_check
     CHECK (kind IN ('bai_hoc', 'chu_de', 'bai_tap', 'kiem_tra'));
+-- §64h · TRỌNG SỐ bắt buộc, > 0 (E1, sửa tại chỗ 25/09/2026). Tiến độ lớp chia cho trọng
+-- số trung bình một buổi (`chuong_trinh/tien_do.py`): NULL làm cả buổi nặng 0, 0 làm phép
+-- chia vô nghĩa. Thiếu = 1. Ba câu dưới đưa bảng đã dựng theo bản đầu của §64 về cùng
+-- dạng, điền ngược CHỈ dòng còn NULL hoặc không dương (đo 25/09 trên dev: 0 dòng).
+ALTER TABLE syllabus_items ALTER COLUMN weight SET DEFAULT 1;
+UPDATE syllabus_items SET weight = 1 WHERE weight IS NULL OR weight <= 0;
+ALTER TABLE syllabus_items ALTER COLUMN weight SET NOT NULL;
+ALTER TABLE syllabus_items DROP CONSTRAINT IF EXISTS syllabus_items_weight_check;
+ALTER TABLE syllabus_items ADD CONSTRAINT syllabus_items_weight_check CHECK (weight > 0);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_items_thu_tu
     ON syllabus_items(session_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_syllabus_items_lesson ON syllabus_items(lesson_id);
@@ -2063,3 +2090,48 @@ CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabu
 CREATE INDEX IF NOT EXISTS idx_audit_lop_buoi
     ON admin_audit ((detail->>'class_id'), occurred_at DESC)
     WHERE target_type = 'class_session';
+
+-- ── §70 · SỔ ĐẦU BÀI BUỔI HỌC (E1, 25/09/2026) ───────────────────────────────
+-- Bảng yêu cầu TopHSA dòng 15, 16: nội dung đã / chưa hoàn thành từng buổi, mức tiếp
+-- thu, em cần hỗ trợ, đề xuất học bù / điều chỉnh. Tình hình lớp VẪN là cột sẵn có
+-- `class_sessions.note` (sửa qua màn buổi học như cũ) — không chép sang đây. Là nguồn
+-- của tiến độ lớp và % hoàn thành của từng em (`chuong_trinh/tien_do.py`).
+-- Mọi bảng xoá theo buổi (CASCADE): xoá buổi là xoá sổ của buổi ấy, như điểm danh.
+--
+-- §70a · Một dòng cho mỗi buổi ĐÃ GHI SỔ. Không có dòng = "đã dạy mà chưa ghi sổ".
+CREATE TABLE IF NOT EXISTS session_logs (
+    session_id    INTEGER   PRIMARY KEY REFERENCES class_sessions(id) ON DELETE CASCADE,
+    comprehension SMALLINT,
+    de_xuat       TEXT,
+    logged_by     INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    logged_at     TIMESTAMP NOT NULL,
+    CONSTRAINT session_logs_comprehension_check
+        CHECK (comprehension IS NULL OR comprehension BETWEEN 1 AND 5)
+);
+CREATE INDEX IF NOT EXISTS idx_session_logs_logged_by ON session_logs (logged_by);
+-- §70b · Từng mục của buổi: đã dạy / dạy một phần / chưa dạy. `label` là bản CHÉP tên
+-- mục lúc ghi (mục khung đổi tên hay bị xoá thì sổ vẫn đọc được), `item_id` NULL = mục
+-- giảng viên tự thêm, không có trong khung (không tính vào tiến độ).
+CREATE TABLE IF NOT EXISTS session_log_items (
+    id         SERIAL  PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    item_id    INTEGER REFERENCES syllabus_items(id) ON DELETE SET NULL,
+    label      TEXT    NOT NULL,
+    status     TEXT    NOT NULL,
+    note       TEXT,
+    CONSTRAINT session_log_items_status_check CHECK (status IN ('done', 'partial', 'not_done')),
+    CONSTRAINT session_log_items_mot_muc UNIQUE (session_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_log_items_item
+    ON session_log_items (item_id) WHERE item_id IS NOT NULL;
+-- §70c · Em cần hỗ trợ sau buổi này (nội bộ — không in lên tờ phụ huynh).
+CREATE TABLE IF NOT EXISTS session_support (
+    session_id INTEGER   NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    note       TEXT,
+    created_by INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
+CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);

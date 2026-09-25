@@ -8,18 +8,18 @@ làm trên lớp, giảng viên nhập điểm tay — một LOẠI bài giao (`
 Chạy trên DB thật, giao dịch CUỘN LẠI (`conftest.py`) — dòng 'kiem_tra' không sống quá
 phép kiểm. Đi qua URL thật.
 """
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from common.clock import local_now
+from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT, ROLE_STUDENT, ROLE_TEACHER
 
 pytestmark = pytest.mark.django_db
-NGAY = date.today() - timedelta(days=2)
+NGAY = local_today() - timedelta(days=2)
 
 
 def _nguoi(ten, vai):

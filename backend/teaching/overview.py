@@ -62,6 +62,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.hoat_dong import sql_hoat_dong
+from chuong_trinh.dich_vu import tien_do_lop
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_ATTENDANCE
@@ -425,6 +426,24 @@ def tong_quan(term_id=None, tu=None, den=None, tran_lop=None):
         thieu.append('accounts')
         ngu = None
 
+    # ── Tiến độ chương trình (E1) — MỘT câu cho mọi lớp, qua cửa dịch vụ của miền ──
+    try:
+        tien_do = tien_do_lop([c['id'] for c in ra_lop if c['status'] == 'active'], nay)
+        for c in ra_lop:
+            td = tien_do.get(c['id'])
+            c['chuongTrinh'] = None if not td else {
+                k: td[k] for k in ('pct', 'keHoachPct', 'treBuoi', 'cham', 'chuaGhiSo')}
+        chuong_trinh = {
+            'lopCoKhung': len(tien_do),
+            'lopCham': sum(1 for t in tien_do.values() if t['cham']),
+            'lopChuaGhiSo': sum(1 for t in tien_do.values() if t['chuaGhiSo']),
+            'buoiChuaGhiSo': sum(t['chuaGhiSo'] for t in tien_do.values()),
+        }
+    except DatabaseError:
+        logger.error('[overview] KHÔNG đọc được tiến độ chương trình', exc_info=True)
+        thieu.append('chuongTrinh')
+        chuong_trinh = None
+
     tong_ghi_danh = sum(c['enrolledEver'] for c in ra_lop)
     tong_xong = sum(c['completed'] for c in ra_lop)
     tong_bo = sum(c['dropped'] for c in ra_lop)
@@ -468,6 +487,7 @@ def tong_quan(term_id=None, tu=None, den=None, tran_lop=None):
                        'lateHours': TRE_DIEM_DANH_GIO},
         'roiLop': roi_lop,
         'giangVien': giang_vien,
+        'chuongTrinh': chuong_trinh,
         'taiKhoanNgu': ngu,
         # Giờ VN, naive — màn hình in nguyên giờ này, không quy đổi múi giờ.
         'generatedAt': nay.isoformat(timespec='seconds'),

@@ -31,6 +31,7 @@ from datetime import timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from chuong_trinh.dich_vu import tien_do_em
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.permissions import IsSeniorTeachingStaff, can_see_class
@@ -648,6 +649,8 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         'topics': _chu_de(user_id, lop['course_id']),
         'assignments': _bai_tap_lop(class_id, user_id, tu, den),
         'kiemTra': _kiem_tra_lop(class_id, user_id, tu, den),
+        # Tiến độ chương trình của em tới hôm nay (E1); None khi lớp chưa nhận khung.
+        'chuongTrinh': tien_do_em(user_id, [class_id]).get(class_id),
         'warnings': canh_bao,
     }, None
 
