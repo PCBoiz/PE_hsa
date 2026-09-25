@@ -17,20 +17,27 @@ và cho anh Sơn: đọc xong tệp này là bắt tay làm được, không ph�
 | 6 | `docs/THIET_KE_HE_THONG.md` | vai × phạm vi, trang theo vai, 10 miền (§4), luật thiết kế (§8), việc kiến trúc S1–S7 |
 | 7 | `docs/CAU_TRUC_MA.md`, `docs/CAU_TRUC_DU_LIEU.md` (tự sinh) | tệp nào thuộc miền nào, bảng/cột/khoá theo miền, sổ nợ ghi chéo |
 | 8 | `REVIEW.md`, `RULES.md` | soát trước khi đẩy; luật kèm lý do |
-| 9 | `docs/cloud/BAO_CAO_*.md` | báo cáo các phiên cloud (A1, A2, E1, cấu trúc, pytest) |
+| 9 | `docs/cloud/BAO_CAO_*.md` | báo cáo của A1, A2, E1, cấu trúc (hunk tệp dùng chung, việc còn sót) |
 
 ## 2. Trạng thái lúc bàn giao (26/09/2026 sáng)
 
-**Nhánh** (repo công khai `PCBoiz/PE_hsa`):
+**Nhánh trên GitHub** (repo công khai `PCBoiz/PE_hsa`) — **anh chốt 26/09: chỉ giữ đúng BA nhánh**, không đẩy nhánh
+nào khác lên GitHub (nhánh làm việc của agent để CỤC BỘ, gộp vào `erp` rồi mới đẩy):
 
 | Nhánh | Là gì | Trạng thái |
 |---|---|---|
 | `master` | **production** (Vercel + Render tự deploy) | `bd58824` (24/09) — **chậm erp 113 commit**. Có lỗi rò ghi chú chuyển lớp lên tờ phụ huynh; bản vá đã ở erp |
 | `erp` | nhánh thử nghiệm — MỌI việc commit ở đây | đã gộp A1 + A2 + E1 + cấu trúc; cổng pre-push ĐẠT |
 | `erp-DB` | nhánh CSDL riêng của Cao Văn Nhân | **không đụng** (anh chốt: Nhân làm CSDL ở nhánh riêng) |
-| `cloud/e2-b`, `cloud/e3-b` | phiên cloud E2 (thông báo) / E3 (hộp Yêu cầu) | đã đẩy BACKEND rồi dừng; chưa giao diện, chưa báo cáo — xem việc 1–2 |
-| `agent/luong-a1`, `agent/luong-a2`, `agent/e1`, `cloud/cau-truc-b` | đã gộp vào erp | xoá được |
-| `cloud/pytest-d255ca8` | báo cáo pytest cũ | xoá được |
+
+**Nhánh CỤC BỘ đáng chú ý** (chỉ trong `D:\pe_hsa`, không có trên GitHub):
+
+| Nhánh | Là gì |
+|---|---|
+| `luu/e2-backend` | E2 (thông báo): §61 + hộp thư đi + chuông/thông báo trung tâm — BACKEND xong, chưa giao diện, chưa kiểm đủ (4 commit) |
+| `luu/e3-backend` | E3 (hộp Yêu cầu): §65 + miền `yeu_cau` — BACKEND xong, chưa giao diện, chưa kiểm đủ (2 commit) |
+| `luu/bao-cao-pytest` | một commit báo cáo pytest 25/09 (tham khảo, không cần gộp) |
+| `agent/*` + worktree ở `D:\pe_hsa_wt\` | nhánh agent cũ, đã gộp vào erp — dọn được (`git worktree remove`, `git branch -d`) |
 
 **CSDL**: máy dev nối Neon nhánh **dev** (máy chủ `ep-little-water`, trong `backend/.env` — đừng in, đừng sửa). Production
 là `ep-billowing-fog`. Lược đồ dev: `bootstrap_schema` ×2 → 0/64 mục, `kiem_luoc_do` 63/63. Mục § đang có: tới §70
@@ -42,23 +49,14 @@ chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong 
 
 ## 3. Việc làm tiếp — theo thứ tự
 
-0. **(anh Sơn) Đăng nhập lại tài khoản cloud** (việc C2-cloud) — 26/09 06:15 mọi lượt mở phiên cloud trả **401** dù
-   `auth status` báo đã đăng nhập (thẻ hết hạn; tiện ích VS Code vừa lên 2.1.282). Trong PowerShell:
-   ```powershell
-   $env:CLAUDE_CONFIG_DIR = "$HOME\.claude-son"
-   $bin = (Get-ChildItem "$HOME\.vscode\extensions\anthropic.claude-code-*\resources\native-binary\claude.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
-   & $bin auth logout; & $bin auth login
-   ```
-   (đăng nhập trên trình duyệt bằng tài khoản claude.ai dùng cho cloud). Cloud credits hết hạn 05/11/2026.
-1. **Mở lại phiên cloud nối tiếp E2 và E3** (sau việc 0). Cách làm ở mục 5 "Claude cloud". Nội dung việc: làm TIẾP trên
-   `cloud/e2-b` / `cloud/e3-b` (không làm lại backend): gộp `origin/erp` trước; thêm bảng mới vào `scripts/so_mien.json`
-   (E2 → miền `thong_bao`: outbox, announcements; E3 → miền `yeu_cau`: yeu_cau, yeu_cau_su_kien) vì cổng f7 sẽ đòi;
-   giao diện React + test đỏ-trước + đột biến + hướng dẫn/quyền + NGHIEM_THU; báo cáo `docs/cloud/BAO_CAO_E2.md` /
-   `BAO_CAO_E3.md`. Brief chi tiết = mục "Luồng B" / "Luồng C" của kế hoạch v2 + `docs/THIET_KE_HE_THONG.md`.
-2. **Gộp E2, E3 khi có báo cáo** — `git fetch` NGAY trước khi gộp (26/09 gộp thiếu 8 commit vì fetch sớm); giải xung đột
-   giữ cả hai phía; `bootstrap_schema` ×2 + `kiem_luoc_do` trên dev; pytest từng mô-đun đã chạm TRÊN NEON (máy cloud
-   không có bài học → ~70 test luôn đỏ ở đó vì môi trường); e2e hai khổ `E2E_GHI=1`; `do_axe` + `do_giao_dien`
-   (`--tu-kiem` trước); thêm màn mới vào danh sách trang của hai bộ đo.
+1. **Làm nốt E2 và E3 tại máy** (anh chốt 26/09: bỏ phần Claude cloud). Rẽ worktree cục bộ từ `luu/e2-backend` /
+   `luu/e3-backend` (KHÔNG đẩy lên GitHub), làm TIẾP, không làm lại backend: gộp `erp` trước; soát lại backend (chưa ai
+   kiểm trên Neon); thêm bảng mới vào `scripts/so_mien.json` (E2 → miền `thong_bao`: outbox, announcements; E3 → miền
+   `yeu_cau`: yeu_cau, yeu_cau_su_kien) vì cổng f7 sẽ đòi; giao diện React + test đỏ-trước + đột biến + hướng dẫn/quyền
+   + NGHIEM_THU. Đặc tả = mục "Luồng B" / "Luồng C" của kế hoạch v2 + `docs/THIET_KE_HE_THONG.md`. Tối đa 3 agent cục bộ.
+2. **Gộp E2, E3 vào erp khi xong** — giải xung đột giữ cả hai phía; `bootstrap_schema` ×2 + `kiem_luoc_do` trên dev;
+   pytest từng mô-đun đã chạm trên Neon; e2e hai khổ `E2E_GHI=1`; `do_axe` + `do_giao_dien` (`--tu-kiem` trước); thêm màn
+   mới vào danh sách trang của hai bộ đo. Rồi mới đẩy `erp`.
 3. **Cổng cho N4** (gộp erp → master = deploy production): pytest đủ bộ trên Neon dev (~54 phút, từng mô-đun), e2e
    đủ bộ hai khổ, `do_axe`, `do_giao_dien`. Xanh hết → báo anh **"erp đã thử xong"** kèm số đo. Trước đó anh phải làm
    **N6** (xếp lớp cho mọi học viên thật — bản mới khoá môn theo lớp). Thứ tự deploy: backend + lược đồ (Render) trước,
@@ -78,12 +76,13 @@ chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong 
      `so_mien.json`.
    - Rà giao diện bằng Chrome DevTools MCP theo TỪNG VAI (GV, TG, học vụ, biên tập — hai bộ đo hiện chỉ đi thẻ quản trị
      + học viên): mở từng màn hai khổ, soi ảnh, console, mạng.
-5. **Việc của anh đang chờ** (bảng đầu `docs/VIEC_CUA_ANH.md`): C2-cloud (việc 0), N6, N4 (khi tôi báo), N7, K2 (4 câu hỏi
+5. **Việc của anh đang chờ** (bảng đầu `docs/VIEC_CUA_ANH.md`): N6, N4 (khi tôi báo), N7, K2 (4 câu hỏi
    TopHSA + NGÀY buổi xem lại), K1 (một khung chương trình thật), N3, A7, N5, T6, C1–C8…, Z1, D1.
 
 ## 4. Luật đang hiệu lực (không được quên)
 
 - Chỉ làm trong `D:\pe_hsa`. Mọi commit lên **`erp`**; KHÔNG commit/đẩy `master` — anh gộp khi tôi báo.
+- GitHub chỉ có ĐÚNG ba nhánh `master`, `erp`, `erp-DB`. Không đẩy nhánh agent/nháp lên GitHub; không dùng Claude cloud.
 - `.env` không bao giờ commit/in/sửa: `git diff --cached --name-only | grep -i "\.env$"` trước MỖI commit.
 - Repo CÔNG KHAI: không bí mật, token, JWT, chìa link phụ huynh, mật khẩu tạm; không đưa PDF/DOCX của khách, giá, hợp
   đồng, email/tên khách, link bảng tính của khách vào repo (tệp khách trong `docs/` để untracked).
@@ -93,7 +92,7 @@ chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong 
   thêm lại ràng buộc cùng tên khác nội dung); vocab = CHECK; `bootstrap_schema` hai lần.
 - Test ĐỎ trước trên mã cũ + đột biến (nền xanh, mỗi đột biến mã 1); đi đúng đường thật; thước báo oan cũng là lỗi.
 - Không hardcode px (clamp/rem/vw/ch); tầng JS cũ chỉ co; mã mới đặt đúng miền, không ghi bảng miền khác.
-- Tối đa 3 agent cục bộ (hạn mức tuần); việc nặng → phiên cloud.
+- Tối đa 3 agent cục bộ (hạn mức tuần), mỗi agent một worktree cục bộ.
 - Việc cần anh → MỘT bảng lời thường ở đầu `docs/VIEC_CUA_ANH.md`.
 - Mọi số báo ra phải tự đo (không mượn số của agent/phiên khác mà không ghi rõ); số hiệu năng chỉ sau A/B xen kẽ.
 - Commit tiếng Việt, dòng cuối `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
@@ -128,31 +127,20 @@ python scripts/cau_truc.py --kiem ; node scripts/ban_do.mjs --kiem ; python scri
 `graphify update frontend/src`, `graphify update frontend/public/static/js`; tổng hợp `python scripts/tong_hop_graphify.py`
 → `docs/BAN_DO_MA.md`.
 
-**Claude cloud** — tài khoản cloud riêng của anh (Pro, 100 USD credits tới 05/11/2026), đăng nhập ở `%USERPROFILE%\.claude-son`;
-trình mở phiên `%USERPROFILE%\cloud-son.ps1` (ngoài repo, không commit). Quy trình:
-1. Bản clone SẠCH (không `.env`): `git clone https://github.com/PCBoiz/PE_hsa <thư mục nháp>`; mỗi nhánh một worktree
-   `git worktree add ../cloud_<nhánh> origin/<nhánh> -B <nhánh>` — phiên cloud clone đúng nhánh của thư mục.
-2. Viết brief ra tệp .txt. Đầu brief: nhánh làm tiếp, gộp `origin/erp`, CSDL Postgres 16 cục bộ của máy cloud
-   (`postgres://postgres:postgres@localhost:5432/pe_hsa`, bảng `lessons` trống), danh sách kiểm cuối, báo cáo
-   `docs/cloud/BAO_CAO_*.md`, đẩy sau MỖI commit, không đẩy erp/master. KHÔNG dán bí mật hay DATABASE_URL thật.
-3. Mở bằng cửa sổ riêng (`--cloud` đòi terminal thật):
-   `Start-Process powershell -ArgumentList '-ExecutionPolicy','Bypass','-File',"$HOME\cloud-son.ps1",'-ViecFile',<brief>,'-ThuMuc',<worktree>,'-GhiRa',<log>`
-   — log chứa `session_…`; tiêu đề phiên bị cắt = brief bị cắt ở dấu `"`; log báo 401 = việc 0.
-4. Phiên cloud không hiện ở phiên cục bộ (khác tài khoản) → nhận kết quả qua nhánh; canh bằng vòng `git ls-remote` tìm
-   tên tệp báo cáo CỤ THỂ (nhánh mới thừa hưởng báo cáo cũ từ erp → canh "có BAO_CAO bất kỳ" sẽ báo nhầm).
-   Phiên có thể dừng giữa chừng không báo (E2/E3 25/09): quá ~1 giờ không commit mới → mở phiên nối tiếp.
+**Agent cục bộ** (tối đa 3): mỗi agent một worktree `git worktree add D:\pe_hsa_wt\<tên> -b agent/<tên> erp`, làm và
+commit trên nhánh cục bộ ấy (KHÔNG đẩy lên GitHub); lead gộp vào `erp`, kiểm, rồi mới đẩy `erp`.
 
 ## 6. Bẫy đã gặp (đừng mắc lại)
 
-- Gộp nhánh cloud khi `D:\pe_hsa` chưa fetch lại → thiếu commit; `ban_do --kiem` bắt được qua "tuyến không ai gọi".
-- Test lõi ở máy cloud đỏ ~70 cái vì bảng `lessons` trống — so tên với erp trên cùng máy trước khi kết luận.
+- Gộp nhánh khi bản cục bộ chưa cập nhật → thiếu commit; `ban_do --kiem` bắt được qua "tuyến không ai gọi".
+- CSDL không có bài học (bảng `lessons` trống) làm ~70 test lõi đỏ vì môi trường — chạy test trên Neon dev.
 - Neon dev có thể ĐI TRƯỚC mã erp (agent cục bộ đã bootstrap lược đồ của nhánh mình) → test đỏ "NOT NULL" giả.
 - Trên dev, một lượt ghi tới Neon mất ~5 s → e2e chờ xác nhận ghi bằng `timeout: 20_000`.
 - `getByLabel('Tháng')` khớp cả `aria-label` chứa "tháng" → dùng `{ exact: true }`.
 - `next dev` tự ghi lại khối trong `frontend/AGENTS.md` → commit nó cùng việc, đừng hoàn nguyên.
 - Tài khoản e2e phải có lớp thì trang Bài học mới đo được (quyền môn theo lớp).
 - Python tạm: viết ra tệp rồi chạy; heredoc làm hỏng dấu `\`; tệp CRLF làm `sed`/so chuỗi không khớp → dùng Edit.
-- Ruff trên cloud có thể dễ hơn máy dev (DTZ011 `date.today()` → `common.clock.local_today()`).
+- Ruff bắt DTZ011 `date.today()` → dùng `common.clock.local_today()` (giờ Việt Nam; Render chạy UTC).
 
 ## 7. Nguồn tham khảo
 

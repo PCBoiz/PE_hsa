@@ -4,7 +4,8 @@ Next.js (Vercel) → Django + SQL thuần (Render) → Postgres (Neon). Viết, 
 
 ## Nhánh
 - Làm trên `erp` (Preview Vercel tự dựng) hoặc nhánh con của nó. `master` = production — CHỈ chủ dự án gộp.
-- Không đẩy `erp` / `master` khi không được giao; phiên cloud đẩy nhánh riêng, lead gộp.
+- GitHub chỉ có ĐÚNG ba nhánh: `master`, `erp`, `erp-DB` (nhánh CSDL của Nhân — không đụng). Nhánh agent để CỤC BỘ
+  (worktree), lead gộp vào `erp` rồi mới đẩy; không đẩy nhánh nào khác lên GitHub.
 
 ## Đọc trước (theo thứ tự)
 1. `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md` — kế hoạch v2, bảng theo dõi việc.

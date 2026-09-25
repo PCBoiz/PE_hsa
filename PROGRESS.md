@@ -93,6 +93,14 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 26/09/2026 (sáng) — BỎ Claude cloud; GitHub còn đúng ba nhánh
+
+- Anh chốt: bỏ phần Claude cloud; GitHub chỉ giữ `master`, `erp`, `erp-DB`. Đã xoá 7 nhánh (`agent/e1`, `agent/luong-a1`,
+  `agent/luong-a2`, `cloud/cau-truc-b` — đã gộp erp; `cloud/e2-b`, `cloud/e3-b`, `cloud/pytest-d255ca8` — CHƯA gộp, giữ
+  bản cục bộ `luu/e2-backend`, `luu/e3-backend`, `luu/bao-cao-pytest` trong `D:\pe_hsa`).
+- E2/E3: backend có trên hai nhánh `luu/*` (chưa kiểm trên Neon, chưa giao diện) → làm nốt tại máy (xem `BAN-GIAO-PHIEN.md` mục 3).
+- `BAN-GIAO-PHIEN.md` viết lại cho phiên mới (trạng thái, việc theo thứ tự, luật, lệnh, bẫy, nguồn tham khảo).
+
 ## 26/09/2026 (rạng sáng) — A1 + A2 + E1 + cấu trúc từ PHIÊN CLOUD gộp vào erp (c278691)
 
 - Agent cục bộ hết hạn mức tuần → việc dở của A1/A2/E1 giao cho phiên cloud (sonthaiha07), mỗi phiên một worktree sạch
