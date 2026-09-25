@@ -432,7 +432,7 @@ export function TheChuongTrinh({ c, termId }: { c: ChuongTrinh; termId?: string 
       {c.lopCoKhung === 0 ? (
         <p className="text-body text-ink-3">
           Chưa lớp nào nhận khung.{' '}
-          <Link href="/giao-trinh/khung-chuong-trinh" className="text-brand-ink underline">Soạn khung</Link>
+          <Link href="/giao-trinh/khung-chuong-trinh" className="inline-flex min-h-11 items-center text-brand-ink underline">Soạn khung</Link>
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

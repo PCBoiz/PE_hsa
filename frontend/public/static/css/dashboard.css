@@ -3902,7 +3902,9 @@ body.dark .prof-post-stats {
 .lct-huy { color: var(--danger-ink); }
 .lct-cc b { color: var(--t1); }
 .lct-bt { color: var(--t1); }
-.lct-link { color: var(--brand-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+/* Vùng chạm đủ 2,75rem ở màn cảm ứng, 1,5rem khi có chuột (bộ đo 26/09: "Làm bài →" cao 16px). */
+.lct-link { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--brand-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+@media (pointer: fine) { .lct-link { min-height: 1.5rem; } }
 .lct-lech {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
   margin-top: 12px; padding: 10px 14px; border-radius: 12px;
