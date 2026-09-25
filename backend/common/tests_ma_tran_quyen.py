@@ -72,6 +72,8 @@ MONG_DOI = {
     'IsSeniorTeachingStaff': {ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER},
     'IsTeachingStaff': {ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT},
     'IsContentEditor': {ROLE_ADMIN, ROLE_EDITOR},
+    # Khung chương trình theo buổi (E1, 25/09/2026): cắt ngang hai trục lớp và giáo trình.
+    'IsCurriculumPlanner': {ROLE_ADMIN, ROLE_ACADEMIC, ROLE_EDITOR},
 }
 
 

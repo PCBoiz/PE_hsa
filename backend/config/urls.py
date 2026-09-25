@@ -43,6 +43,7 @@ urlpatterns = [
     # tuyến riêng `config/urls_thi_da_thao.py`.
     path('', include('chatbot.urls')),
     path('', include('teaching.urls')),
+    path('', include('chuong_trinh.urls')),
     path('accounts/', include('allauth.urls')),  # /accounts/google/login/ ...
 ]
 

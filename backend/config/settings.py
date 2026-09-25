@@ -123,6 +123,8 @@ INSTALLED_APPS = [
     'chatbot',
     # Lớp học + báo cáo giảng viên (bước đầu thành ERP, 2026-08-24).
     'teaching',
+    # Khung chương trình theo buổi + sổ đầu bài (E1, 25/09/2026) — miền riêng, luật S4.
+    'chuong_trinh',
 ]
 
 MIDDLEWARE = [

@@ -111,6 +111,17 @@ const VIEC: Record<string, string> = {
   // Một mã cho cả hai chiều (xem `mockexam/quan_tri.py`) — cột "Nội dung" nói
   // rõ là xuất bản hay ẩn.
   'mock_exam.publish': 'Xuất bản / ẩn đề thi thử',
+  // Khung chương trình theo buổi + sổ đầu bài (25/09/2026).
+  'syllabus.create': 'Tạo khung chương trình',
+  'syllabus.update': 'Sửa khung chương trình',
+  'syllabus.delete': 'Xoá khung chương trình',
+  'syllabus.version.create': 'Tạo bản mới của khung',
+  'syllabus.version.edit': 'Sửa bản nháp của khung',
+  'syllabus.version.publish': 'Xuất bản khung chương trình',
+  'syllabus.version.delete': 'Xoá một bản của khung',
+  'class.syllabus': 'Lớp nhận khung chương trình',
+  'session.syllabus': 'Gắn buổi học với buổi khung',
+  'session.log': 'Ghi sổ đầu bài',
 };
 
 /**

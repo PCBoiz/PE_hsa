@@ -190,6 +190,26 @@ MUC = [
                            LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
     ('§62a', 'class_members.teacher_comment (nhận xét GV gửi phụ huynh)',
      lambda: _cot('class_members', 'teacher_comment')),
+    # §63–§64: khung chương trình theo buổi + sổ đầu bài (E1, 25/09/2026). Một dòng một
+    # tiểu mục; phép kiểm khoá ngoại chỉ chạy khi bảng đã có (không thì `::regclass` ném
+    # lỗi — `common/tests.py::test_kiem_luoc_do_moi_muc_deu_CHAY_DUOC`).
+    ('§63a', 'bảng syllabi (khung chương trình của môn), xoá theo môn',
+     lambda: _fk('syllabi', 'syllabi_course_id_fkey', 'CASCADE')
+     if _cot('syllabi', 'is_demo')[0] else (False, 'chưa có bảng')),
+    ('§63b', 'syllabus_versions: mỗi khung nhiều nhất một bản nháp',
+     lambda: _chi_muc('idx_syllabus_versions_mot_nhap')),
+    ('§63c', 'syllabus_items (mục của buổi khung, CHECK trọng số > 0)',
+     lambda: _check_co_gia_tri('syllabus_items_weight_check', 'weight > ')),
+    ('§63d', 'classes.syllabus_version_id ON DELETE SET NULL',
+     lambda: _fk('classes', 'classes_syllabus_version_id_fkey', 'SET NULL')),
+    ('§63e', 'class_sessions.syllabus_session_id ON DELETE SET NULL',
+     lambda: _fk('class_sessions', 'class_sessions_syllabus_session_id_fkey', 'SET NULL')),
+    ('§64a', 'bảng session_logs (sổ đầu bài, mức tiếp thu 1–5)',
+     lambda: _check_co_gia_tri('session_logs_comprehension_check', 'comprehension')),
+    ('§64b', 'session_log_items (đã dạy / dạy một phần / chưa dạy)',
+     lambda: _check_co_gia_tri('session_log_items_status_check', 'partial')),
+    ('§64c', 'bảng session_support (em cần hỗ trợ sau buổi)',
+     lambda: _chi_muc('idx_session_support_user')),
 ]
 
 

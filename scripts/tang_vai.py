@@ -26,6 +26,7 @@ LOP = {
     'IsSeniorTeachingStaff': ['admin', 'Quản lý học vụ', 'Giảng viên'],
     'IsTeachingStaff': ['admin', 'Quản lý học vụ', 'Giảng viên', 'Trợ giảng'],
     'IsContentEditor': ['admin', 'Biên tập nội dung'],
+    'IsCurriculumPlanner': ['admin', 'Quản lý học vụ', 'Biên tập nội dung'],
     '(mặc định: IsAuthenticated)': TAT_CA, 'AllowAny': TAT_CA + ['(khách)'],
 }
 

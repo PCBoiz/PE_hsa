@@ -127,6 +127,24 @@ MOCK_EXAM_CREATE = 'mock_exam.create'
 MOCK_EXAM_UPDATE = 'mock_exam.update'
 MOCK_EXAM_PUBLISH = 'mock_exam.publish'
 
+#: Khung chương trình theo buổi (E1, §63, 25/09/2026). Khung dùng chung cho mọi lớp
+#: của một môn: xuất bản một bản là đổi kế hoạch của mọi lớp nhận nó về sau, nên "ai
+#: xuất bản bản này, lúc nào" phải trả lời được. Sửa nội dung bản NHÁP ghi một dòng
+#: cho cả lượt lưu (số buổi, số mục), không phải mỗi mục một dòng.
+SYLLABUS_CREATE = 'syllabus.create'
+SYLLABUS_UPDATE = 'syllabus.update'
+SYLLABUS_DELETE = 'syllabus.delete'
+SYLLABUS_VERSION_CREATE = 'syllabus.version.create'
+SYLLABUS_VERSION_EDIT = 'syllabus.version.edit'
+SYLLABUS_VERSION_PUBLISH = 'syllabus.version.publish'
+SYLLABUS_VERSION_DELETE = 'syllabus.version.delete'
+#: Lớp nhận một phiên bản khung (gắn buổi học với buổi khung) và gắn tay một buổi.
+CLASS_SYLLABUS = 'class.syllabus'
+SESSION_SYLLABUS = 'session.syllabus'
+#: Sổ đầu bài (§64). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
+#: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
+SESSION_LOG = 'session.log'
+
 
 def _client_ip(request):
     """IP thật sau proxy — nay đi qua `common.net.client_ip`.

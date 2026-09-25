@@ -1815,3 +1815,138 @@ UPDATE roadmaps
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment    TEXT;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;
+
+-- ── §63 · KHUNG CHƯƠNG TRÌNH THEO BUỔI (E1, 25/09/2026) ──────────────────────
+-- Bảng yêu cầu TopHSA dòng 5 ("tiến trình theo số buổi kèm tên bài", phiên bản
+-- chương trình), 9, 15, 28. Tới hôm nay chương trình chỉ là danh sách BÀI của môn
+-- (`lessons`) — không trả lời được "buổi 7 lớp này phải dạy gì", nên không đo được
+-- lớp nhanh hay chậm so với kế hoạch.
+--
+-- Bốn tầng: khung (của một môn) → phiên bản (nháp / xuất bản / ngừng) → buổi khung
+-- (buổi số 1..N) → mục (bài học / chủ đề / bài về nhà / kiểm tra, có trọng số).
+-- CHỈ bản nháp sửa được (luật ở `chuong_trinh/khung.py`, sửa bản đã xuất bản → 409).
+-- Lớp GHIM phiên bản đã nhận (`classes.syllabus_version_id`): xuất bản bản 2 không
+-- đổi gì ở lớp đang học bản 1.
+-- Miền `chuong_trinh` (luật S4) sở hữu mọi bảng ở đây và đúng HAI cột trên bảng của
+-- miền khác: `classes.syllabus_version_id`, `class_sessions.syllabus_session_id`.
+--
+-- §63a · Khung chương trình của một môn. `is_demo`: khung mẫu của bộ dữ liệu trình
+-- diễn (`teaching/du_lieu_mau.py`) — lệnh gỡ dữ liệu mẫu xoá đúng những dòng này.
+CREATE TABLE IF NOT EXISTS syllabi (
+    id          SERIAL PRIMARY KEY,
+    course_id   TEXT      NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    name        TEXT      NOT NULL,
+    created_by  INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT now(),
+    archived_at TIMESTAMP,
+    is_demo     BOOLEAN   NOT NULL DEFAULT FALSE
+);
+CREATE INDEX IF NOT EXISTS idx_syllabi_course ON syllabi (course_id);
+CREATE INDEX IF NOT EXISTS idx_syllabi_created_by ON syllabi (created_by);
+-- §63b · Phiên bản. Hai chỉ mục duy nhất một phần giữ hai bất biến ở CHÍNH CSDL: mỗi
+-- khung nhiều nhất MỘT bản nháp và MỘT bản đang xuất bản (xuất bản bản mới = ngừng
+-- bản cũ trong cùng giao dịch — hai lượt bấm song song thì một lượt vấp chỉ mục).
+CREATE TABLE IF NOT EXISTS syllabus_versions (
+    id           SERIAL PRIMARY KEY,
+    syllabus_id  INTEGER   NOT NULL REFERENCES syllabi(id) ON DELETE CASCADE,
+    version      INTEGER   NOT NULL,
+    status       TEXT      NOT NULL DEFAULT 'draft',
+    note         TEXT,
+    created_by   INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT now(),
+    published_by INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    published_at TIMESTAMP,
+    CONSTRAINT syllabus_versions_status_check CHECK (status IN ('draft', 'published', 'retired')),
+    CONSTRAINT syllabus_versions_so_unique UNIQUE (syllabus_id, version)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_nhap
+    ON syllabus_versions (syllabus_id) WHERE status = 'draft';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_xuat_ban
+    ON syllabus_versions (syllabus_id) WHERE status = 'published';
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_created_by ON syllabus_versions (created_by);
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_published_by ON syllabus_versions (published_by);
+-- §63c · Buổi khung (buổi số N của phiên bản) và mục của buổi. Trọng số > 0: tiến độ
+-- chia cho trọng số trung bình một buổi, một mục nặng 0 làm phép chia vô nghĩa.
+CREATE TABLE IF NOT EXISTS syllabus_sessions (
+    id               SERIAL PRIMARY KEY,
+    version_id       INTEGER NOT NULL REFERENCES syllabus_versions(id) ON DELETE CASCADE,
+    so_buoi          INTEGER NOT NULL,
+    title            TEXT    NOT NULL,
+    duration_minutes INTEGER,
+    homework         TEXT,
+    test_title       TEXT,
+    CONSTRAINT syllabus_sessions_so_buoi_check CHECK (so_buoi > 0),
+    CONSTRAINT syllabus_sessions_duration_check
+        CHECK (duration_minutes IS NULL OR duration_minutes BETWEEN 1 AND 600),
+    CONSTRAINT syllabus_sessions_so_unique UNIQUE (version_id, so_buoi)
+);
+CREATE TABLE IF NOT EXISTS syllabus_items (
+    id             SERIAL PRIMARY KEY,
+    syl_session_id INTEGER      NOT NULL REFERENCES syllabus_sessions(id) ON DELETE CASCADE,
+    sort           INTEGER      NOT NULL DEFAULT 0,
+    kind           TEXT         NOT NULL DEFAULT 'topic',
+    lesson_id      INTEGER      REFERENCES lessons(id) ON DELETE SET NULL,
+    label          TEXT         NOT NULL,
+    weight         NUMERIC(6,2) NOT NULL DEFAULT 1,
+    CONSTRAINT syllabus_items_kind_check CHECK (kind IN ('lesson', 'topic', 'homework', 'test')),
+    CONSTRAINT syllabus_items_weight_check CHECK (weight > 0)
+);
+CREATE INDEX IF NOT EXISTS idx_syllabus_items_session ON syllabus_items (syl_session_id, sort);
+CREATE INDEX IF NOT EXISTS idx_syllabus_items_lesson
+    ON syllabus_items (lesson_id) WHERE lesson_id IS NOT NULL;
+-- §63d · Lớp nhận một phiên bản. SET NULL: xoá khung (chỉ được khi không lớp nào
+-- dùng) hay xoá môn không kéo mất lớp.
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS syllabus_version_id INTEGER
+    REFERENCES syllabus_versions(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_classes_syllabus_version
+    ON classes (syllabus_version_id) WHERE syllabus_version_id IS NOT NULL;
+-- §63e · Buổi học của lớp gắn một buổi khung. Gắn tự động khi lớp nhận khung (buổi
+-- chưa gắn, chưa huỷ, theo thứ tự ngày), sửa tay từng buổi được, không bao giờ đè gắn tay.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
+    REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus_session
+    ON class_sessions (syllabus_session_id) WHERE syllabus_session_id IS NOT NULL;
+
+-- ── §64 · SỔ ĐẦU BÀI BUỔI HỌC (E1, 25/09/2026) ───────────────────────────────
+-- Bảng yêu cầu TopHSA dòng 15, 16: nội dung đã / chưa hoàn thành từng buổi, mức tiếp
+-- thu, em cần hỗ trợ, đề xuất học bù / điều chỉnh. Tình hình lớp VẪN là cột sẵn có
+-- `class_sessions.note` (sửa qua màn buổi học như cũ) — không chép sang đây.
+-- Mọi bảng xoá theo buổi (CASCADE): xoá buổi là xoá sổ của buổi ấy, như điểm danh.
+--
+-- §64a · Một dòng cho mỗi buổi ĐÃ GHI SỔ. Không có dòng = "đã dạy mà chưa ghi sổ".
+CREATE TABLE IF NOT EXISTS session_logs (
+    session_id    INTEGER   PRIMARY KEY REFERENCES class_sessions(id) ON DELETE CASCADE,
+    comprehension SMALLINT,
+    de_xuat       TEXT,
+    logged_by     INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    logged_at     TIMESTAMP NOT NULL,
+    CONSTRAINT session_logs_comprehension_check
+        CHECK (comprehension IS NULL OR comprehension BETWEEN 1 AND 5)
+);
+CREATE INDEX IF NOT EXISTS idx_session_logs_logged_by ON session_logs (logged_by);
+-- §64b · Từng mục của buổi: đã dạy / dạy một phần / chưa dạy. `label` là bản CHÉP tên
+-- mục lúc ghi (mục khung đổi tên hay bị xoá thì sổ vẫn đọc được), `item_id` NULL = mục
+-- giảng viên tự thêm, không có trong khung (không tính vào tiến độ).
+CREATE TABLE IF NOT EXISTS session_log_items (
+    id         SERIAL  PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    item_id    INTEGER REFERENCES syllabus_items(id) ON DELETE SET NULL,
+    label      TEXT    NOT NULL,
+    status     TEXT    NOT NULL,
+    note       TEXT,
+    CONSTRAINT session_log_items_status_check CHECK (status IN ('done', 'partial', 'not_done')),
+    CONSTRAINT session_log_items_mot_muc UNIQUE (session_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_log_items_item
+    ON session_log_items (item_id) WHERE item_id IS NOT NULL;
+-- §64c · Em cần hỗ trợ sau buổi này (nội bộ — không in lên tờ phụ huynh).
+CREATE TABLE IF NOT EXISTS session_support (
+    session_id INTEGER   NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    note       TEXT,
+    created_by INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
+CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);
