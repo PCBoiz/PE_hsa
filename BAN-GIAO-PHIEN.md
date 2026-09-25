@@ -18,6 +18,9 @@ và cho anh Sơn: đọc xong tệp này là bắt tay làm được, không ph�
 | 7 | `docs/CAU_TRUC_MA.md`, `docs/CAU_TRUC_DU_LIEU.md` (tự sinh) | tệp nào thuộc miền nào, bảng/cột/khoá theo miền, sổ nợ ghi chéo |
 | 8 | `REVIEW.md`, `RULES.md` | soát trước khi đẩy; luật kèm lý do |
 | 9 | `docs/cloud/BAO_CAO_*.md` | báo cáo của A1, A2, E1, cấu trúc (hunk tệp dùng chung, việc còn sót) |
+| 10 | Bộ nhớ phiên trước: `%USERPROFILE%\.claude\projects\d--PE-test\memory\` (`MEMORY.md` + từng tệp) | LÝ DO đằng sau luật, bài học đã trả giá, bẫy máy dev. Danh sách tệp cần đọc: `docs/PROMPT_PHIEN_MOI.md` mục 1.2. Lệch với repo → tin repo, sửa bộ nhớ |
+
+Phiên mới: làm theo `docs/PROMPT_PHIEN_MOI.md` (cách nạp bối cảnh, thứ tự việc, vòng làm việc, luật).
 
 ## 2. Trạng thái lúc bàn giao (26/09/2026 sáng)
 
