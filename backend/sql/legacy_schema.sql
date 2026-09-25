@@ -2142,3 +2142,81 @@ CREATE TABLE IF NOT EXISTS session_support (
 );
 CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
 CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);
+
+-- ── §65 · HỘP YÊU CẦU (E3, bảng TopHSA dòng 11, 12, 20, 25, 32 — 25/09/2026) ──
+-- Một hộp chung cho hỗ trợ học tập / lịch / kỹ thuật / tài khoản, câu hỏi học viên gửi
+-- giảng viên, trợ giảng báo lên, phụ huynh gửi qua link, báo lỗi bản ghi buổi học, và
+-- xin–duyệt thay đổi học tập. Miền riêng `backend/yeu_cau/` (luật S4) sở hữu hai bảng
+-- này — miền khác chỉ đọc. Danh mục loại ở `yeu_cau/loai.py`, phép kiểm khớp CHECK.
+--
+-- §65a · Một dòng cho mỗi yêu cầu. `du_lieu` là tham số của việc xin (lớp tới, hạn bảo
+-- lưu …), `thuc_thi` là kết quả việc hệ thống đã làm khi duyệt (một lần duy nhất).
+-- `hoc_vien_id` CASCADE: xoá tài khoản em là xoá yêu cầu về em. Mọi người khác SET NULL
+-- để nhân sự nghỉ việc không kéo mất lịch sử xử lý.
+CREATE TABLE IF NOT EXISTS yeu_cau (
+    id          SERIAL    PRIMARY KEY,
+    loai        TEXT      NOT NULL,
+    trang_thai  TEXT      NOT NULL DEFAULT 'moi',
+    nguon       TEXT      NOT NULL,
+    nguoi_tao   INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    link_id     INTEGER   REFERENCES parent_report_links(id) ON DELETE SET NULL,
+    hoc_vien_id INTEGER   REFERENCES users(id) ON DELETE CASCADE,
+    class_id    INTEGER   REFERENCES classes(id) ON DELETE SET NULL,
+    session_id  INTEGER   REFERENCES class_sessions(id) ON DELETE SET NULL,
+    nguoi_xu_ly INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    tieu_de     TEXT      NOT NULL,
+    noi_dung    TEXT,
+    du_lieu     JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    ket_qua     TEXT,
+    nguoi_duyet INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    duyet_luc   TIMESTAMP,
+    thuc_thi    JSONB,
+    created_at  TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMP NOT NULL DEFAULT now(),
+    closed_at   TIMESTAMP
+);
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_loai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
+    'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
+    'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
+    'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa'));
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_trang_thai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_trang_thai_check CHECK (trang_thai IN (
+    'moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy'));
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_nguon_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_nguon_check CHECK (nguon IN (
+    'hoc_vien', 'phu_huynh', 'tro_giang', 'giang_vien', 'hoc_vu'));
+-- Báo lỗi bản ghi buổi học bắt buộc chỉ ra buổi nào — kiểm ở `yeu_cau/dich_vu.py::tao`,
+-- KHÔNG bằng CHECK: `session_id` SET NULL khi buổi bị xoá, một CHECK sẽ chặn luôn việc xoá buổi.
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_tao   ON yeu_cau (nguoi_tao);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_link        ON yeu_cau (link_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_hoc_vien    ON yeu_cau (hoc_vien_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_lop         ON yeu_cau (class_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_buoi        ON yeu_cau (session_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_xu_ly ON yeu_cau (nguoi_xu_ly);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_duyet ON yeu_cau (nguoi_duyet);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_trang_thai  ON yeu_cau (trang_thai, created_at);
+-- §65b · MỘT bảng cho cả trả lời lẫn lịch sử. `noi_bo` = ghi chú nội bộ, ẩn với học viên
+-- và phụ huynh. `actor_ten` / `actor_vai` là bản CHÉP lúc xảy ra (như `admin_audit`).
+-- `tu` / `den` = trạng thái hoặc người xử lý trước và sau (chuyển, giao, chuyển tiếp).
+CREATE TABLE IF NOT EXISTS yeu_cau_su_kien (
+    id         BIGSERIAL PRIMARY KEY,
+    yeu_cau_id INTEGER   NOT NULL REFERENCES yeu_cau(id) ON DELETE CASCADE,
+    kieu       TEXT      NOT NULL,
+    noi_bo     BOOLEAN   NOT NULL DEFAULT FALSE,
+    actor_id   INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    actor_ten  TEXT,
+    actor_vai  TEXT,
+    tu         TEXT,
+    den        TEXT,
+    noi_dung   TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+ALTER TABLE yeu_cau_su_kien DROP CONSTRAINT IF EXISTS yeu_cau_su_kien_kieu_check;
+ALTER TABLE yeu_cau_su_kien ADD CONSTRAINT yeu_cau_su_kien_kieu_check CHECK (kieu IN (
+    'tao', 'tra_loi', 'ghi_chu', 'trang_thai', 'giao', 'chuyen_tiep', 'duyet', 'tu_choi',
+    'thuc_thi', 'loi'));
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_yc    ON yeu_cau_su_kien (yeu_cau_id, id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_actor ON yeu_cau_su_kien (actor_id);
+-- §65c · Bảo lưu tới ngày nào (lý do rời lớp 'reserved' đã có ở §36). NULL = chưa hẹn.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS reserve_until DATE;
