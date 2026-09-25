@@ -287,7 +287,33 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
             />
             <dl className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
               <ChiDoc nhan="Tình trạng học tập" giaTri={tinhTrangHoc} />
+              {goc.enrolledCourses !== undefined && (
+                <ChiDoc
+                  nhan="Môn đang học (mở qua lớp)"
+                  giaTri={goc.enrolledCourses.map((c) => c.title).join(', ') || null}
+                />
+              )}
             </dl>
+            {goc.classes !== undefined && (
+              <div className="mt-4">
+                <p className="text-label text-ink-3">Lớp đang học</p>
+                {goc.classes.length === 0 ? (
+                  <p className="mt-1 text-body text-ink">Chưa xếp lớp nào</p>
+                ) : (
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {goc.classes.map((l) => (
+                      <li key={l.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-ink">
+                        <span>{l.name}</span>
+                        {l.classType === 'gia_su' && <Chip tone="brand">Gia sư</Chip>}
+                        <span className="text-small text-ink-3">
+                          {l.siSo} học viên{l.teacherName ? ` · ${l.teacherName}` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             {coHocPhi && (
               <div className="mt-4 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                 <OChon id="hs-tuitionStatus" nhan="Tình trạng học phí" giaTri={form.tuitionStatus}

@@ -38,6 +38,21 @@ export type HoSo = {
   tuitionStatus?: string | null;
   /** Tình trạng học tập TÍNH ở máy chủ (`teaching/tinh_trang.py`); null = nhân sự. */
   tinhTrangHoc?: string | null;
+  /** Lớp trung tâm ĐANG học, kèm sĩ số thật (học viên đang học) — `ho_so._lop_hien_tai`. */
+  classes?: LopHienTai[];
+  /** Môn đang mở cho em QUA LỚP (trừ khoá nháp) — `truy_cap.cac_mon_da_mo`. */
+  enrolledCourses?: { id: string; title: string }[];
+};
+
+export type LopHienTai = {
+  id: number;
+  name: string;
+  classType: string | null;
+  capacity: number | null;
+  status: string | null;
+  teacherId: number | null;
+  teacherName: string | null;
+  siSo: number;
 };
 
 /** Một lựa chọn có mã + nhãn, máy chủ gửi kèm (nguồn tuyển sinh, học phí, tình trạng học). */
@@ -79,6 +94,11 @@ const HD_HO_SO = z.looseObject({
   parentEmail: chu,
   tuitionStatus: z.optional(chu),
   tinhTrangHoc: z.optional(chu),
+  classes: z.optional(z.array(z.looseObject({
+    id: z.number(), name: z.string(), classType: chu, capacity: z.nullable(z.number()), status: chu,
+    teacherId: z.nullable(z.number()), teacherName: chu, siSo: z.number(),
+  }))),
+  enrolledCourses: z.optional(z.array(z.looseObject({ id: z.string(), title: z.string() }))),
 }) satisfies HinhDang<HoSo>;
 
 /** `GET /api/admin/users/<id>/profile`. */

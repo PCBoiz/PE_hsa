@@ -164,3 +164,26 @@ def test_loc_hoc_phi_o_danh_sach():
     assert [o['ma'] for o in r['hocPhiOptions']] == ['da_dong', 'sap_het', 'het', 'bao_luu']
     r = _goi(AdminUsersView, 'get', ai=hv, qs='?hoc_phi=chua_dat&q=' + d).data
     assert [u['id'] for u in r['users']] == [b.id], 'ô "chưa đặt" = học phí trống'
+
+
+# ── Lớp trung tâm + môn đã mở trên hồ sơ (giữ từ b3316cb) ────────────────────
+
+def test_ho_so_si_so_chi_dem_hoc_vien_va_mon_da_mo_tru_khoa_nhap():
+    """Sĩ số THẬT của lớp = học viên đang học (trợ giảng trong lớp không tính — cùng luật
+    trần lớp gia sư). "Môn đã mở" = đúng thứ cổng mở môn mở cho em: khoá nháp không có."""
+    from teaching.ho_so import HoSoHocVienView
+    ad = _nguoi(ROLE_ADMIN)
+    em = _nguoi(ROLE_STUDENT)
+    lop = q1("INSERT INTO classes (name, course_id, status) VALUES (%s, 'hsa_verbal', 'active') RETURNING id",
+             ('TT sĩ số %s' % uuid.uuid4().hex[:6],))['id']
+    _vao(lop, em)
+    _vao(lop, _nguoi('Trợ giảng'))
+    nhap = 'tt_nhap_%s' % uuid.uuid4().hex[:6]
+    x("INSERT INTO courses (id, title, is_published) VALUES (%s, 'TT khoá nháp', FALSE)", (nhap,))
+    lop2 = q1("INSERT INTO classes (name, course_id, status) VALUES (%s, %s, 'active') RETURNING id",
+              ('TT nháp %s' % uuid.uuid4().hex[:6], nhap))['id']
+    _vao(lop2, em)
+    hs = _goi(HoSoHocVienView, 'get', ai=ad, user_id=em.id).data['profile']
+    so = {c['id']: c['siSo'] for c in hs['classes']}
+    assert so[lop] == 1, 'trợ giảng bị đếm vào sĩ số: %r' % so
+    assert {c['id'] for c in hs['enrolledCourses']} == {'hsa_verbal'}, hs['enrolledCourses']
