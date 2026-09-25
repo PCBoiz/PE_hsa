@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, Card, CardHead, Chip, Field } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { kiemHinhDang } from '@/lib/kiemDang';
+import { TINH_THANH, laTinhThanh } from '@/lib/tinhThanh';
 
 import { HD_DA_LUU, type HoSo, type HoSoPayload } from './hoSo';
 
@@ -13,11 +14,22 @@ import { HD_DA_LUU, type HoSo, type HoSoPayload } from './hoSo';
 const O_SUA = [
   'name', 'birthday', 'username',
   'school', 'schoolGrade', 'region', 'studyGoal', 'aspiration',
-  'consultantId', 'enrollSource',
+  'consultantId', 'enrollSource', 'tuitionStatus',
   'parentName', 'parentPhone', 'parentEmail',
 ] as const;
 type OSua = (typeof O_SUA)[number];
 type Form = Record<OSua, string>;
+
+/** Nhãn tình trạng học tập / học phí khi backend cũ chưa gửi danh sách (ĐƯỜNG LÙI — nguồn
+    là `teaching/tinh_trang.py`, máy chủ gửi kèm `tinhTrangHocOptions` / `hocPhiOptions`). */
+const TINH_TRANG_DUONG_LUI: Record<string, string> = {
+  dang_hoc: 'Đang học', tam_dung: 'Tạm dừng', da_hoc_xong: 'Đã học xong', bao_luu: 'Bảo lưu',
+  da_nghi: 'Đã nghỉ', chua_xep_lop: 'Chưa xếp lớp',
+};
+const TONE_HOC: Record<string, 'good' | 'warn' | 'neutral' | 'bad'> = {
+  dang_hoc: 'good', tam_dung: 'warn', da_hoc_xong: 'neutral', bao_luu: 'warn', da_nghi: 'bad',
+  chua_xep_lop: 'warn',
+};
 
 /** Chỉ các ô này có nghĩa với tài khoản nhân sự (quản trị viên mở hồ sơ nhân sự). */
 const O_NHAN_SU: readonly OSua[] = ['name', 'birthday', 'username'];
@@ -36,6 +48,7 @@ function tuHoSo(p: HoSo): Form {
     aspiration: p.aspiration ?? '',
     consultantId: p.consultantId == null ? '' : String(p.consultantId),
     enrollSource: p.enrollSource ?? '',
+    tuitionStatus: p.tuitionStatus ?? '',
     parentName: p.parentName ?? '',
     parentPhone: p.parentPhone ?? '',
     parentEmail: p.parentEmail ?? '',
@@ -129,6 +142,13 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
   }
 
   const ten = goc.name || goc.email || goc.phone || `#${goc.id}`;
+  const nhanHoc = Object.fromEntries((initial.tinhTrangHocOptions ?? []).map((o) => [o.ma, o.nhan]));
+  const tinhTrangHoc = goc.tinhTrangHoc
+    ? nhanHoc[goc.tinhTrangHoc] ?? TINH_TRANG_DUONG_LUI[goc.tinhTrangHoc] ?? goc.tinhTrangHoc
+    : null;
+  /* Backend cũ (Vercel lên trước Render) không gửi hai khoá này → không vẽ ô học phí:
+     vẽ ra là một ô "chưa đặt" mà bấm Lưu thì máy chủ cũ lặng lẽ bỏ qua. */
+  const coHocPhi = goc.tuitionStatus !== undefined;
 
   return (
     <form
@@ -155,6 +175,9 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
           )}
           {!laHocVien && <Chip tone="neutral">{goc.role === 'admin' ? 'Quản trị viên' : goc.role}</Chip>}
           {goc.status === 'suspended' && <Chip tone="bad">Đã khoá</Chip>}
+          {tinhTrangHoc && (
+            <Chip tone={TONE_HOC[goc.tinhTrangHoc ?? ''] ?? 'neutral'}>Học tập: {tinhTrangHoc}</Chip>
+          )}
           {/* Lịch tuần này của RIÊNG em — gộp mọi lớp em đang học (`/giang-day/lich`
               lọc theo tư cách thành viên tại giờ từng buổi). Học vụ hay được hỏi
               "tối nay em học lớp nào, phòng nào" khi phụ huynh gọi tới. */}
@@ -234,8 +257,20 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
                 onChange={(e) => dat('school', e.target.value)} maxLength={200} />
               <Field id="hs-schoolGrade" label="Lớp" value={form.schoolGrade} error={loi.schoolGrade}
                 onChange={(e) => dat('schoolGrade', e.target.value)} maxLength={20} hint="Ví dụ: 12A1" />
-              <Field id="hs-region" label="Khu vực" value={form.region} error={loi.region}
-                onChange={(e) => dat('region', e.target.value)} maxLength={100} hint="Tỉnh / thành phố" />
+              <OChon id="hs-region" nhan="Tỉnh / thành phố" giaTri={form.region} loi={loi.region}
+                doi={(v) => dat('region', v)}>
+                <option value="">Chưa chọn</option>
+                {TINH_THANH.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+                {/* Giá trị CŨ gõ tay (trước khi có danh sách 34 tỉnh/thành): hiện nguyên văn
+                    để không bị xoá lặng ở lần Lưu sau; chọn một tỉnh là thay nó. */}
+                {goc.region && !laTinhThanh(goc.region) && (
+                  <option value={goc.region}>{goc.region} (ghi tay trước đây)</option>
+                )}
+              </OChon>
             </div>
             <div className="mt-4 grid gap-4">
               <OChu id="hs-studyGoal" nhan="Mục tiêu học tập" giaTri={form.studyGoal} loi={loi.studyGoal}
@@ -244,6 +279,55 @@ export default function HoSoClient({ initial }: { initial: HoSoPayload }) {
                 loi={loi.aspiration} doi={(v) => dat('aspiration', v)}
                 goiY="Giảng viên của lớp em cũng cập nhật được hai ô này." />
             </div>
+          </Card>
+
+          <Card>
+            <CardHead
+              title="Tình trạng"
+              hint="Tình trạng học tập tự tính từ các lớp em đang và đã học. Học phí do học vụ chọn."
+            />
+            <dl className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
+              <ChiDoc nhan="Tình trạng học tập" giaTri={tinhTrangHoc} />
+              {goc.enrolledCourses !== undefined && (
+                <ChiDoc
+                  nhan="Môn đang học (mở qua lớp)"
+                  giaTri={goc.enrolledCourses.map((c) => c.title).join(', ') || null}
+                />
+              )}
+            </dl>
+            {goc.classes !== undefined && (
+              <div className="mt-4">
+                <p className="text-label text-ink-3">Lớp đang học</p>
+                {goc.classes.length === 0 ? (
+                  <p className="mt-1 text-body text-ink">Chưa xếp lớp nào</p>
+                ) : (
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {goc.classes.map((l) => (
+                      <li key={l.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-ink">
+                        <span>{l.name}</span>
+                        {l.classType === 'gia_su' && <Chip tone="brand">Gia sư</Chip>}
+                        <span className="text-small text-ink-3">
+                          {l.siSo} học viên{l.teacherName ? ` · ${l.teacherName}` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {coHocPhi && (
+              <div className="mt-4 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
+                <OChon id="hs-tuitionStatus" nhan="Tình trạng học phí" giaTri={form.tuitionStatus}
+                  loi={loi.tuitionStatus} doi={(v) => dat('tuitionStatus', v)}>
+                  <option value="">Chưa đặt</option>
+                  {(initial.hocPhiOptions ?? []).map((o) => (
+                    <option key={o.ma} value={o.ma}>
+                      {o.nhan}
+                    </option>
+                  ))}
+                </OChon>
+              </div>
+            )}
           </Card>
 
           <Card>

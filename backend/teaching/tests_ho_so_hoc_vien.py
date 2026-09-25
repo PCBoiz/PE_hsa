@@ -303,9 +303,10 @@ def test_ho_so_co_lop_khoa_da_mo_va_trang_thai_hoc_tap(canh):
     assert lop['siSo'] == 1
     assert lop['teacherId'] == canh['gv'].id
     assert {c['id'] for c in hs['enrolledCourses']} == {'hsa_quantitative'}
-    assert hs['studyStatus'] == 'Đang học'
+    # V-m (lead chốt 25/09): tình trạng học tập + học phí lưu/trả MÃ, nhãn đi kèm danh sách.
+    assert hs['tinhTrangHoc'] == 'dang_hoc'
     assert hs['tuitionStatus'] is None
-    assert set(r.data['tuitionStatuses']) == {'Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu'}
+    assert [o['ma'] for o in r.data['hocPhiOptions']] == ['da_dong', 'sap_het', 'het', 'bao_luu']
 
 
 def test_ho_so_khong_co_lop_thi_chua_xep_lop(canh):
@@ -315,20 +316,20 @@ def test_ho_so_khong_co_lop_thi_chua_xep_lop(canh):
     assert r.status_code == 200, r.data
     hs = r.data['profile']
     assert hs['classes'] == [] and hs['enrolledCourses'] == []
-    assert hs['studyStatus'] == 'Chưa xếp lớp'
+    assert hs['tinhTrangHoc'] == 'chua_xep_lop'
 
 
 def test_lop_tam_dung_thi_hoc_vien_tam_dung(canh):
     q1("UPDATE classes SET status='paused' WHERE id=%s RETURNING id", (canh['lop'],))
     from teaching.ho_so import HoSoHocVienView
     r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
-    assert r.data['profile']['studyStatus'] == 'Tạm dừng'
+    assert r.data['profile']['tinhTrangHoc'] == 'tam_dung'
 
 
 @pytest.mark.parametrize('leave_reason,ky_vong', [
-    ('completed', 'Đã xong'),
-    ('reserved', 'Bảo lưu'),
-    ('dropped', 'Đã nghỉ học'),
+    ('completed', 'da_hoc_xong'),
+    ('reserved', 'bao_luu'),
+    ('dropped', 'da_nghi'),
 ])
 def test_trang_thai_hoc_tap_theo_ly_do_roi_lop(canh, leave_reason, ky_vong):
     q1("UPDATE class_members SET left_at=now(), leave_reason=%s "
@@ -336,7 +337,7 @@ def test_trang_thai_hoc_tap_theo_ly_do_roi_lop(canh, leave_reason, ky_vong):
        (leave_reason, canh['lop'], canh['em'].id))
     from teaching.ho_so import HoSoHocVienView
     r = _goi(HoSoHocVienView, 'get', ai=canh['hocvu'], user_id=canh['em'].id)
-    assert r.data['profile']['studyStatus'] == ky_vong
+    assert r.data['profile']['tinhTrangHoc'] == ky_vong
     assert r.data['profile']['classes'] == [], 'đã rời lớp thì không còn trong danh sách lớp hiện tại'
 
 
@@ -352,12 +353,12 @@ def test_khoa_hoc_da_dang_ky_khi_lop_khong_gan_mon_la_ca_ba_mon(canh):
 
 def test_hoc_vu_sua_tinh_trang_hoc_phi(canh):
     from teaching.ho_so import HoSoHocVienView
-    r = _goi(HoSoHocVienView, 'patch', {'tuitionStatus': 'Sắp hết'},
+    r = _goi(HoSoHocVienView, 'patch', {'tuitionStatus': 'sap_het'},
              ai=canh['hocvu'], user_id=canh['em'].id)
     assert r.status_code == 200, r.data
     assert q1('SELECT tuition_status FROM users WHERE id=%s',
-              (canh['em'].id,))['tuition_status'] == 'Sắp hết'
-    assert r.data['profile']['tuitionStatus'] == 'Sắp hết'
+              (canh['em'].id,))['tuition_status'] == 'sap_het'
+    assert r.data['profile']['tuitionStatus'] == 'sap_het'
 
 
 def test_tinh_trang_hoc_phi_tu_choi_gia_tri_ngoai_danh_sach(canh):

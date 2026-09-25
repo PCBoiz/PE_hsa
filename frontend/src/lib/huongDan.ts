@@ -187,6 +187,10 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Người tư vấn và nguồn tuyển sinh chọn từ danh sách, không gõ tay — để còn thống kê được.',
       },
       {
+        lam: 'Mục "Tình trạng": tình trạng học tập tự tính từ các lớp em học (đang học, tạm dừng, đã học xong, bảo lưu, đã nghỉ, chưa xếp lớp); tình trạng học phí thì chọn tay (Đã đóng / Sắp hết / Hết / Bảo lưu).',
+        luu_y: 'Ở trang Tài khoản lọc được theo hai ô này — ví dụ tìm mọi em học phí "Sắp hết" để nhắc.',
+      },
+      {
         lam: 'Liên hệ phụ huynh lưu ở đây là "trung tâm đã nhập": từ đó em chỉ còn điền được ô trống trong Cài đặt, muốn sửa phải qua học vụ.',
         luu_y: 'Mã học viên không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi trong Cài đặt.',
       },
@@ -227,6 +231,11 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Em chỉ học được môn của lớp đang học (lớp để trống môn = cả ba môn). Lớp gia sư nhận tối đa 3 em; trợ giảng không tính.',
       },
       {
+        lam: 'Cả danh sách một lúc: bấm "Học viên" của lớp → "Tải tệp mẫu (.xlsx)", điền mỗi dòng một em (họ tên, email, số điện thoại — em đã có tài khoản thì chỉ cần mã HSA), chọn tệp → "Kiểm tra tệp" → "Nhập … em vào lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Bước kiểm tra chưa ghi gì: dòng nào sai hiện lý do ngay trên dòng ấy. Em chưa có tài khoản được cấp mật khẩu tạm — chép bảng mật khẩu ngay, rời trang là mất. Tối đa 50 em mỗi tệp.',
+      },
+      {
         lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Một lượt tạo cả lớp, xếp em vào lớp và sinh buổi. Xem trước báo trùng giờ với lớp khác của giảng viên hoặc của em.',
@@ -240,6 +249,11 @@ export const HUONG_DAN: readonly Bai[] = [
         lam: 'Chuyển lớp: mở "Học viên" của lớp cũ, ở dòng của em chọn "Chuyển sang lớp khác…", tìm lớp mới rồi bấm "Chuyển lớp".',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Một thao tác: em rời lớp cũ và vào lớp mới cùng lúc, hồ sơ em ghi "Chuyển từ lớp A sang lớp B".',
+      },
+      {
+        lam: 'Cần biết ai đã đổi gì ở một lớp: mở "Học viên" của lớp → "Lịch sử thay đổi của lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Có sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi. Điểm danh từng buổi xem ở sổ buổi học.',
       },
       {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',
@@ -479,11 +493,33 @@ export const HUONG_DAN: readonly Bai[] = [
     buoc: [
       { lam: 'Mở khu Giáo trình.', o: '/giao-trinh' },
       { lam: 'Chọn khoá, bấm "Mở bài" để xem danh sách bài của khoá ấy.' },
+      {
+        lam: 'Khoá chưa sẵn sàng cho học viên thì bấm "Chuyển về nháp"; soạn xong bấm "Mở cho học viên". Cột "Trạng thái" cho biết khoá đang mở hay nháp.',
+        luu_y: 'Khoá nháp biến mất với MỌI học viên ngay lập tức, kể cả học viên của lớp đang học khoá ấy. Giảng viên và học vụ vẫn xem được.',
+      },
       { lam: 'Bấm "Soạn nội dung" ở bài cần sửa. Bài mới thêm bằng ô "Thêm bài mới" phía trên danh sách.' },
       {
         lam: 'Cần nhập cả khoá một lần thì bấm "Nhập từ file JSON".',
         luu_y: 'Hệ thống kiểm toàn bộ trước khi ghi: sai một bài thì không bài nào được ghi. Nhập lại cùng một file là cập nhật, không nhân đôi.',
       },
+    ],
+  },
+
+  {
+    ma: 'cham-cong',
+    tieu_de: 'Xem chấm công giảng viên và trợ giảng',
+    vai: [VAI_QUAN_TRI, VAI_HOC_VU],
+    khi_nao: 'Cuối tháng, trước khi tính công.',
+    buoc: [
+      {
+        lam: 'Mở "Chấm công", chọn tháng rồi bấm "Xem".',
+        o: '/quan-tri/cham-cong',
+        luu_y: 'Chỉ tính buổi đã điểm danh hoặc đã đánh dấu xong. Buổi đã dạy mà chưa ai điểm danh sẽ THIẾU ở đây — nhắc giảng viên điểm danh trước.',
+      },
+      {
+        lam: 'Trợ giảng được tính buổi của lớp mình đang được gán lúc buổi diễn ra. Gán vào lớp giữa tháng thì chỉ tính các buổi sau ngày gán.',
+      },
+      { lam: 'Bấm "Tải Excel" để gửi cho người tính công.' },
     ],
   },
 

@@ -138,7 +138,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Xem và sửa hồ sơ học viên',
-    giaiThich: 'Trường, lớp, khu vực, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
+    giaiThich: 'Trường, lớp, tỉnh / thành phố, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập, tình trạng học phí. Tình trạng học tập tự tính từ lớp em học. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/ho_so.py::HoSoHocVienView',
     chan_them: 'học vụ: chỉ tài khoản vai Học viên',
@@ -197,6 +197,27 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Ghi lý do rời lớp là bắt buộc để tỉ lệ giữ chân có nghĩa.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/views.py::AdminClassMembersView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
+    nhan: 'Nhập cả danh sách học viên vào lớp từ tệp mẫu',
+    giaiThich: 'Tải tệp mẫu Excel, điền, tải lên: hệ thống kiểm từng dòng trước khi ghi. Em đã có tài khoản được thêm vào lớp; em chưa có được cấp tài khoản mới. Tối đa 50 em mỗi tệp.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/nhap_hoc_vien.py::NhapHocVienView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
+    nhan: 'Xem lịch sử thay đổi của một lớp',
+    giaiThich: 'Ai sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi — mới nhất trước. Chỉ phần của lớp ấy; nhật ký đầy đủ vẫn chỉ quản trị viên xem.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/lich_su_lop.py::LichSuLopView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
+    nhan: 'Xem chấm công giảng viên và trợ giảng theo tháng',
+    giaiThich: 'Số buổi đã dạy, tổng giờ, số buổi tự điểm danh và điểm danh muộn của từng người; tải được Excel. Chỉ xem — chưa khoá tháng.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/cham_cong.py::ChamCongView',
   },
   {
     nhom: 'Lớp & đợt học',
@@ -296,8 +317,8 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
-    nhan: 'Xuất CSV chuyên cần / tiến độ',
-    giaiThich: 'Để đối chiếu ngoài hệ thống hoặc gửi cho kế toán.',
+    nhan: 'Tải bảng tính chuyên cần / tiến độ (Excel hoặc CSV)',
+    giaiThich: 'Để đối chiếu ngoài hệ thống hoặc gửi cho kế toán. Chuyên cần lọc được theo khoảng ngày. Trợ giảng tải được nhưng tệp không có email và số điện thoại.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/exports.py::ClassAttendanceCsvView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -343,6 +364,13 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Trục KHÁC hẳn bốn vai trên: biên tập viên không đụng tới con người, và người quản lý con người không nhất thiết soạn được bài.',
     lopQuyen: 'IsContentEditor',
     nguon: 'courseadmin/views.py::AdminBase',
+  },
+  {
+    nhom: 'Nội dung',
+    nhan: 'Mở khoá học cho học viên / chuyển về nháp',
+    giaiThich: 'Khoá nháp: học viên không thấy, kể cả học viên của lớp đang học khoá ấy. Giảng viên và học vụ vẫn xem được.',
+    lopQuyen: 'IsContentEditor',
+    nguon: 'courseadmin/views.py::AdminBase',   // AdminCourseDetailView kế thừa cổng này
   },
   // "Nhập và xuất bản đề thi thử" (`mockexam/quan_tri.py`) GỠ 24/09/2026 — bỏ thi,
   // pha A: tuyến của khu soạn đề đã tháo, không vai nào còn làm được việc ấy.

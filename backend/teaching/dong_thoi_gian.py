@@ -43,7 +43,7 @@ _TEN_COT = {
     'school_grade': 'lớp ở trường', 'region': 'khu vực', 'consultant_id': 'người tư vấn',
     'enroll_source': 'nguồn tuyển sinh', 'study_goal': 'mục tiêu học tập',
     'aspiration': 'nguyện vọng', 'parent_name': 'tên phụ huynh', 'parent_phone': 'số Zalo phụ huynh',
-    'parent_email': 'email phụ huynh',
+    'parent_email': 'email phụ huynh', 'tuition_status': 'tình trạng học phí',
 }
 
 _KENH = {'email': 'email', 'zalo': 'Zalo', 'zns': 'Zalo', 'sms': 'tin nhắn'}

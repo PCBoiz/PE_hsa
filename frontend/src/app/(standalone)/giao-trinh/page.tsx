@@ -50,6 +50,8 @@ const HD_KHOA = z.looseObject({
   courses: z.array(z.looseObject({
     id: z.string(), title: z.string(),
     subtitle: z.string().nullable().optional(), lessons: z.number().nullable().optional(),
+    // V-i: TUỲ CHỌN — Vercel lên trước Render, backend cũ vẫn gửi (cột có sẵn từ đầu).
+    is_published: z.boolean().nullable().optional(),
   })),
 }) satisfies HinhDang<{ courses: KhoaRow[] }>;
 

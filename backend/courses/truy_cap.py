@@ -59,43 +59,49 @@ def la_nhan_su(user):
     return (getattr(user, 'role', None) or ROLE_STUDENT) != ROLE_STUDENT
 
 
-def _da_xuat_ban():
-    """Course id nào ĐÃ xuất bản (`is_published IS NOT FALSE` — NULL tính là
-    xuất bản, cùng luật với `CoursesView` công khai). Đệm riêng, cùng TTL: cột
-    này đổi hiếm (giáo vụ bấm nút), không đáng một câu SQL mỗi lần hỏi quyền."""
-    ds = cache.get('coursesxb')
-    if ds is None:
-        ds = {r['id'] for r in q('SELECT id FROM courses WHERE is_published IS NOT FALSE')}
-        cache.set('coursesxb', ds, TTL)
-    return ds
+def _mon_hoc_vien(user_id):
+    """Môn đang mở cho MỘT học viên qua lớp, TRỪ khoá nháp — MỘT câu (danh sách khoá nháp
+    đi chung câu, câu con không tương quan nên Postgres tính một lần). Lõi của cổng
+    (`quyen_khoa`, có đệm) và của màn hiển thị (`cac_mon_da_mo`, không đệm)."""
+    rows = q('SELECT DISTINCT c.course_id, '
+             'ARRAY(SELECT id FROM courses WHERE is_published IS FALSE) AS nhap '
+             'FROM class_members m JOIN classes c ON c.id = m.class_id '
+             'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user_id,))
+    nhap = set(rows[0]['nhap'] or ()) if rows else set()
+    return sorted(mon_mo(r['course_id'] for r in rows) - nhap)
 
 
 def quyen_khoa(user):
-    """`{course_id: 'hoc' | 'xem'}` — môn KHÔNG có trong dict là môn chưa mở."""
+    """`{course_id: 'hoc' | 'xem'}` — môn KHÔNG có trong dict là môn chưa mở.
+
+    Khoá NHÁP (`courses.is_published = FALSE`, V-i 25/09/2026) không mở cho học viên,
+    kể cả khi lớp em đang học mang khoá ấy; nhân sự vẫn xem được. Danh sách khoá nháp
+    đi CHUNG câu với lớp của em (câu con không tương quan — Postgres tính một lần), nên
+    lượt hỏi khi đệm nguội vẫn là một câu. `NULL` = đang mở (dữ liệu trước cột này)."""
     if la_nhan_su(user):
         return {r['id']: XEM for r in q('SELECT id FROM courses ORDER BY id')}
     khoa = _khoa(user.id)
     ds = cache.get(khoa)
     if ds is None:
-        # Khoá NHÁP không mở cho học viên (V-i, 25/09/2026) dù lớp em có gán
-        # course_id trỏ tới nó — is_published mới sửa được từ hôm nay, trước đó
-        # mọi khoá coi như đã xuất bản nên chưa ai cần lọc.
-        ds = sorted(c for c in mon_mo(r['course_id'] for r in q(
-            'SELECT DISTINCT c.course_id FROM class_members m JOIN classes c ON c.id = m.class_id '
-            'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user.id,))) if c in _da_xuat_ban())
+        ds = _mon_hoc_vien(user.id)
         cache.set(khoa, ds, TTL)
     return {m: HOC for m in ds}
 
 
+def an_voi(user, course_row):
+    """Khoá này có phải GIẤU khỏi `user` không — khoá nháp, người xem là học viên.
+
+    Dùng ở các danh sách khoá (`courses/views.py`): học viên không thấy khoá nháp
+    trong danh sách, nhân sự vẫn thấy (chế độ chỉ-xem)."""
+    return course_row.get('is_published') is False and not la_nhan_su(user)
+
+
 def cac_mon_da_mo(user_id):
-    """Course id đã mở cho MỘT học viên qua lớp — cho màn HIỂN THỊ (hồ sơ học
-    viên, yêu cầu TopHSA 3.2 "khóa học đã đăng ký"), không phải cổng chặn nên
-    KHÔNG cache, KHÔNG rẽ nhánh nhân sự. Dùng lại `mon_mo()` + `LOP_DANG_HOC`
-    — cùng cặp mà nhánh học viên của `quyen_khoa()` và màn Tài khoản (1.4b)
-    dùng, đừng để ba nơi cùng trả lời "em học được môn nào" rồi lệch nhau."""
-    return sorted(mon_mo(r['course_id'] for r in q(
-        'SELECT DISTINCT c.course_id FROM class_members m JOIN classes c ON c.id = m.class_id '
-        'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user_id,))))
+    """Course id đã mở cho MỘT học viên qua lớp — cho màn HIỂN THỊ (hồ sơ học viên, yêu
+    cầu TopHSA 3.2 "khóa học đã đăng ký"), không phải cổng chặn nên KHÔNG đệm, KHÔNG rẽ
+    nhánh nhân sự. CÙNG hàm lõi với nhánh học viên của `quyen_khoa()` (kể cả trừ khoá
+    nháp) — hồ sơ nói "em học được môn X" đúng khi và chỉ khi cổng mở môn X cho em."""
+    return _mon_hoc_vien(user_id)
 
 
 def che_do(user, course_id):
@@ -112,6 +118,19 @@ def quen_truy_cap_lop(class_id):
     """Xoá đệm quyền của mọi thành viên một lớp — đổi môn, trạng thái, hay xoá lớp."""
     for r in q('SELECT DISTINCT user_id FROM class_members WHERE class_id = %s', (class_id,)):
         quen_truy_cap(r['user_id'])
+
+
+def quen_truy_cap_khoa(course_id):
+    """Xoá đệm quyền của mọi em đang học một lớp MANG khoá này — đổi "Đang mở / Nháp".
+
+    Lớp để trống môn học cả ba môn HSA (`mon_mo`), nên khoá thuộc `BA_MON` kéo theo cả
+    các lớp ấy. MỘT câu + MỘT lệnh xoá nhiều khoá đệm (`delete_many`): khoá phổ biến là
+    hàng trăm em, xoá từng khoá một là hàng trăm lượt gọi Redis."""
+    rows = q('SELECT DISTINCT m.user_id FROM class_members m JOIN classes c ON c.id = m.class_id '
+             'WHERE ' + LOP_DANG_HOC + ' AND (c.course_id = %s OR (c.course_id IS NULL AND %s))',
+             (course_id, course_id in BA_MON))
+    if rows:
+        cache.delete_many([_khoa(r['user_id']) for r in rows])
 
 
 #: Câu từ chối dùng chung — một câu, mọi cửa nói giống nhau.

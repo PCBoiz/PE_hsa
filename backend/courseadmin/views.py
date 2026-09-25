@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from common import audit
 from common.db import q, q1, x
 from common.permissions import IsContentEditor, IsCourseOwner, is_admin
+from courses.truy_cap import quen_truy_cap_khoa
 from lessons import luoc_do
 from lessons.content import loi_html, validate_lesson
 from lessons.grading import quen_dap_an
@@ -105,6 +106,9 @@ def _clean_course_payload(data):
     updates = {f: data[f] for f in _COURSE_FIELDS if f in data}
     for truong, gia in list(updates.items()):
         if gia is None:
+            if truong == 'is_published':
+                # NULL đọc là "đang mở" ở mọi cổng — nhận nó là lặng lẽ mở khoá.
+                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false).'
             continue
         chuoi = str(gia)
         if truong in ('color', 'accent_color'):
@@ -123,13 +127,15 @@ def _clean_course_payload(data):
             # không API nào sửa được — khoá nháp chỉ tạo được rồi kẹt vĩnh viễn
             # ở is_published=TRUE (mặc định cột). Ép về bool THẬT, không lưu
             # chuỗi 'true'/'1': cột là boolean, và một chuỗi lọt qua đây sẽ so
-            # sánh sai ở mọi câu `WHERE is_published` sau này.
+            # sánh sai ở mọi câu `WHERE is_published` sau này. Chuỗi LẠ ("no", "nháp")
+            # → 400: ép kiểu kiểu Python thì mọi chuỗi khác rỗng là TRUE, tức bấm
+            # "chuyển về nháp" lại MỞ khoá cho mọi học viên, không một lời báo.
             if gia in _BOOL_THAT:
                 updates[truong] = True
             elif gia in _BOOL_GIA:
                 updates[truong] = False
             else:
-                return None, '"is_published" phải là true/false (đang nhận %r).' % chuoi[:20]
+                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false) — đang nhận %r.' % chuoi[:20]
         else:
             e = loi_html(chuoi, truong)
             if e:
@@ -209,12 +215,18 @@ class AdminCoursesView(_ChuKhoa, AdminBase):
         if q1('SELECT id FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Id khóa học đã tồn tại'}, status=400)
 
-        _, loi = _clean_course_payload(data)
+        sach, loi = _clean_course_payload(data)
         if loi:
             return Response({'error': loi}, status=400)
 
-        cols = ['id', 'title'] + [f for f in _COURSE_FIELDS if f != 'title']
-        vals = [course_id, title] + [data.get(f) for f in _COURSE_FIELDS if f != 'title']
+        # `is_published` chỉ ghi khi người gửi CHỌN (đã ép về bool ở `sach`): không gửi thì
+        # để mặc định của lược đồ (đang mở), không ghi NULL.
+        khac = [f for f in _COURSE_FIELDS if f not in ('title', 'is_published')]
+        cols = ['id', 'title'] + khac
+        vals = [course_id, title] + [data.get(f) for f in khac]
+        if 'is_published' in sach:
+            cols.append('is_published')
+            vals.append(sach['is_published'])
         placeholders = ', '.join(['%s'] * len(cols))
         x(f'INSERT INTO courses ({", ".join(cols)}) VALUES ({placeholders})', tuple(vals))
         audit.record(request, audit.COURSE_CREATE, target_type='course',
@@ -234,16 +246,37 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
         if not updates:
             return Response({'error': 'Không có dữ liệu để cập nhật'}, status=400)
 
-        if not q1('SELECT id FROM courses WHERE id=%s', (course_id,)):
+        cu = q1('SELECT id, title, is_published FROM courses WHERE id=%s', (course_id,))
+        if not cu:
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
+
+        # "Đang mở / Nháp": NULL (dữ liệu trước cột) đọc là đang mở — cùng luật với cổng.
+        mo_cu = cu['is_published'] is not False
+        if 'is_published' in updates and updates['is_published'] == mo_cu:
+            del updates['is_published']          # gửi lại đúng giá trị đang có: không đổi gì
+            if not updates:
+                return Response({'ok': True})
 
         set_clause = ', '.join(f'{col}=%s' for col in updates)
         x(f'UPDATE courses SET {set_clause} WHERE id=%s',
           tuple(updates.values()) + (course_id,))
-        audit.record(request, audit.COURSE_UPDATE, target_type='course',
-                     target_id=course_id, target_label=updates.get('title') or course_id,
-                     summary='Sửa khoá học %s (%s).' % (course_id, ', '.join(updates)),
-                     detail={k: str(v)[:200] for k, v in updates.items()})
+        ten = updates.get('title') or cu['title'] or course_id
+        khac = {k: v for k, v in updates.items() if k != 'is_published'}
+        if khac:
+            audit.record(request, audit.COURSE_UPDATE, target_type='course',
+                         target_id=course_id, target_label=ten,
+                         summary='Sửa khoá học %s (%s).' % (course_id, ', '.join(khac)),
+                         detail={k: str(v)[:200] for k, v in khac.items()})
+        if 'is_published' in updates:
+            mo = updates['is_published']
+            # Quên đệm quyền của mọi em đang học lớp mang khoá này — không chờ 60 giây.
+            quen_truy_cap_khoa(course_id)
+            audit.record(request, audit.COURSE_PUBLISH, target_type='course',
+                         target_id=course_id, target_label=ten,
+                         summary=('Mở khoá học "%s" cho học viên.' if mo else
+                                  'Chuyển khoá học "%s" về nháp — học viên không còn thấy khoá.')
+                         % ten,
+                         detail={'cu': mo_cu, 'moi': mo})
         return Response({'ok': True})
 
     def delete(self, request, course_id):

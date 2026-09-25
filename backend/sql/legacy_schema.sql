@@ -1944,10 +1944,14 @@ ALTER TABLE submissions ADD CONSTRAINT submissions_absent_score_check
 -- HỌC PHÍ — một ô CHỌN TAY của giáo vụ, KHÔNG suy ra từ đâu: hệ này không có
 -- sổ tiền (chốt 25/09: "không sổ tiền, không doanh thu"). NULL = chưa ai đặt;
 -- KHÔNG mặc định 'Đã đóng' vì sẽ nói sai cho mọi tài khoản có trước cột này.
+-- SỬA TẠI CHỖ 25/09/2026 (luồng A2, V-m, lead chốt): CHECK lưu MÃ (da_dong, sap_het, het,
+-- bao_luu), nhãn ở `teaching/tinh_trang.py::HOC_PHI` — đổi chữ hiển thị không phải chạy
+-- lại dữ liệu. Chưa lên production, mọi dòng đang NULL. Đây là câu DUY NHẤT khai
+-- `users_tuition_status_check` (§69 không khai lại).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tuition_status TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_tuition_status_check;
 ALTER TABLE users ADD CONSTRAINT users_tuition_status_check CHECK (tuition_status IS NULL OR
-    tuition_status IN ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu'));
+    tuition_status IN ('da_dong', 'sap_het', 'het', 'bao_luu'));
 
 -- HỌC TẬP — KHÔNG thêm cột: trạng thái này TÍNH lúc đọc, từ `class_members` +
 -- `classes` (`teaching/ho_so.py::_tinh_trang_hoc_tap`) — giữ luật "một con số
@@ -2047,3 +2051,15 @@ CREATE INDEX IF NOT EXISTS idx_classes_syllabus_version ON classes(syllabus_vers
 ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
     REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabus_session_id);
+
+-- ── §69 · HỒ SƠ, BÁO CÁO, NHẬP XUẤT (luồng A2, kế hoạch v2) ──────
+-- (Tình trạng học phí của V-m nằm ở §63, sửa tại chỗ — xem đó. §69 chỉ giữ phần của A2 không
+-- trùng mục nào khác.)
+-- §69b · Chỉ mục cho LỊCH SỬ MỘT LỚP (V-n, `teaching/lich_su_lop.py`, bảng TopHSA dòng 4 + 10).
+-- Dòng nhật ký của BUỔI HỌC có đích là buổi (`target_type = 'class_session'`), lớp nằm ở
+-- `detail.class_id` — `idx_audit_target` không phục vụ được điều kiện ấy. Chỉ mục biểu thức
+-- phần nhỏ, chỉ trên dòng của buổi học. Chuyển lớp RA (`detail.fromClassId`) đi
+-- `idx_audit_action` (ít dòng), dòng đích là lớp đi `idx_audit_target`.
+CREATE INDEX IF NOT EXISTS idx_audit_lop_buoi
+    ON admin_audit ((detail->>'class_id'), occurred_at DESC)
+    WHERE target_type = 'class_session';

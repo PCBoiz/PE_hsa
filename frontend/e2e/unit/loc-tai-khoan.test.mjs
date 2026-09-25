@@ -36,7 +36,10 @@ const quaUrl = (loc) => {
 
 console.log('Vòng đi–về URL giữ nguyên từng ô lọc');
 /* Mỗi ô một giá trị KHÁC rỗng — ô nào để rỗng thì vòng đi–về đúng một cách tình cờ. */
-const MAU = { q: 'Nguyễn An', role: 'Học viên', status: 'suspended', lop: '42', khongHoatDong: '14' };
+const MAU = {
+  q: 'Nguyễn An', role: 'Học viên', status: 'suspended', lop: '42', khongHoatDong: '14',
+  tinhTrangHoc: 'da_nghi', hocPhi: 'sap_het',
+};
 check('mẫu phủ MỌI ô của LOC_RONG', Object.keys(LOC_RONG).every((k) => MAU[k]),
   Object.keys(LOC_RONG).filter((k) => !MAU[k]).join(', '));
 for (const k of Object.keys(LOC_RONG)) {

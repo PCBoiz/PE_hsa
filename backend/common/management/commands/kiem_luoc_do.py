@@ -224,8 +224,8 @@ MUC = [
      lambda: _check_co_gia_tri('classes_status_check', 'paused')),
     ('§63a', 'users.tuition_status (tình trạng học phí)',
      lambda: _cot('users', 'tuition_status')),
-    ('§63b', 'CHECK users_tuition_status_check nhận "Bảo lưu"',
-     lambda: _check_co_gia_tri('users_tuition_status_check', 'Bảo lưu')),
+    ('§63b', 'CHECK users_tuition_status_check nhận bao_luu (lưu MÃ, nhãn ở teaching/tinh_trang.py)',
+     lambda: _check_co_gia_tri('users_tuition_status_check', 'bao_luu')),
     # 'reserved' sửa TẠI CHỖ ở §36 (25/09 tối) — thay dòng §63d cũ; 'paused' đã có dòng §35p ở trên.
     ('§36r', 'CHECK class_members_leave_reason_check nhận "reserved" (bảo lưu)',
      lambda: _check_co_gia_tri('class_members_leave_reason_check', 'reserved')),
@@ -241,6 +241,8 @@ MUC = [
      lambda: _cot('classes', 'syllabus_version_id')),
     ('§64f', 'class_sessions.syllabus_session_id (buổi thật khớp buổi khung)',
      lambda: _cot('class_sessions', 'syllabus_session_id')),
+    ('§69b', 'chỉ mục admin_audit(detail->>class_id) cho lịch sử một lớp (V-n)',
+     lambda: _chi_muc('idx_audit_lop_buoi')),
 ]
 
 

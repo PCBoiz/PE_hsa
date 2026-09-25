@@ -98,26 +98,26 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 |---|---|---|
 | Tìm theo họ tên, email, username, SĐT | CÓ | `q` ở `teaching/admin_users.py:113` (chuẩn hoá SĐT, khớp mã HSA) |
 | Mã học viên, họ tên, ngày sinh, trường, lớp, SĐT, email | CÓ | `users.*` (§51), trang Hồ sơ |
-| Tỉnh/Thành phố | MỘT PHẦN | ô chữ tự do `users.region` → **V-m** danh sách 34 tỉnh/thành |
+| Tỉnh/Thành phố | CÓ (V-m) | ô chọn 34 tỉnh/thành sau sáp nhập 2025 (`teaching/tinh_thanh.py` = `src/lib/tinhThanh.ts`, guard `tinh-thanh.test.mjs`); giá trị cũ gõ tay vẫn hiện nguyên văn tới khi chọn lại |
 | Thông tin / SĐT / email phụ huynh | CÓ | `parent_name/phone/email` |
 | Người tư vấn, nguồn tuyển sinh | CÓ | chọn từ danh sách (§51) |
 | Khoá học đã đăng ký | CÓ | môn mở theo lớp (1.3) |
 | Mục tiêu học tập, nguyện vọng trường/ngành | CÓ | `study_goal`, `aspiration` |
-| Tình trạng học tập | MỘT PHẦN | chỉ trạng thái tài khoản + lớp → **V-m** ô TÍNH (đang học / tạm dừng / bảo lưu / đã xong) |
-| Tình trạng học phí | THAY | **V-m** một ô chọn tay (Đã đóng / Sắp hết / Hết / Bảo lưu) — K2 |
+| Tình trạng học tập | CÓ (V-m) | TÍNH, không lưu: đang học / tạm dừng / đã học xong / bảo lưu / đã nghỉ / chưa xếp lớp (`teaching/tinh_trang.py`, một biểu thức SQL cho hồ sơ, cột + ô lọc ở Tài khoản, tệp xuất); hồ sơ kèm lớp đang học (sĩ số thật) + môn mở qua lớp — `teaching/tests_tinh_trang_hoc_vien.py` |
+| Tình trạng học phí | THAY (V-m làm xong) | một ô chọn tay trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu; `users.tuition_status`, CHECK §63 lưu mã), có nhật ký, lọc được ở Tài khoản — khách phải đồng ý (K2) |
 
 ## Dòng 4 — Quản lý lớp học (Quản trị viên) · MỘT PHẦN
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Tạo / sửa / xoá lớp | CÓ | `api/admin/classes`; xoá có xác nhận |
-| Thêm từng HS / import DS theo **biểu mẫu** | MỘT PHẦN | dán danh sách CÓ; tải TỆP mẫu CHƯA → **V-j** |
+| Thêm từng HS / import DS theo **biểu mẫu** | CÓ (V-j) | dán email CÓ; "Nhập học viên từ tệp mẫu" ở Học viên của lớp: tải mẫu .xlsx → kiểm tra từng dòng → nhập (em có sẵn vào lớp, em mới được cấp tài khoản qua cùng hàm `cap_tai_khoan` với ô dán; trần 50, lớp gia sư 3) — `teaching/nhap_hoc_vien.py`, `teaching/tests_nhap_hoc_vien.py` |
 | Thêm / xoá HS khỏi lớp | CÓ | `api/admin/classes/<id>/members` |
 | Chuyển HS giữa các lớp | CÓ | một thao tác (1.2c, `teaching/chuyen_lop.py`) |
 | Thiết lập môn, thời gian bắt đầu / kết thúc | CÓ | `course_id`, `starts_on`, `ends_on` |
 | Trạng thái đang học / kết thúc / **tạm dừng** | CÓ (V-c) | `classes_status_check` §35 thêm `paused`; `teaching/vocab.py::TRANG_THAI_LOP`; nhãn "Tạm dừng" `quan-tri/lop-hoc/lop.ts`. Em giữ quyền môn (`courses/truy_cap.py` chỉ chặn lớp huỷ — test `courses/tests_truy_cap.py::test_lop_tam_dung_van_giu_quyen_mon`); không vào "chưa điểm danh" (`teaching/viec_hom_nay.py::_chua_diem_danh`); không sinh lịch (`teaching/sinh_buoi.py` 409). Demo: học vụ → Lớp học → Sửa lớp → Trạng thái "Tạm dừng" → bộ lọc Trạng thái có "Tạm dừng"; giảng viên mở Buổi học của lớp ấy thấy "Lớp đang tạm dừng…" thay khối sinh lịch |
 | Phân công GV, giáo vụ, TG | MỘT PHẦN | GV + TG CÓ; học vụ thấy mọi lớp, không gán riêng |
-| Lịch sử thay đổi / phân công lớp | MỘT PHẦN | Nhật ký chỉ quản trị viên đọc → **V-n** mở cho học vụ theo lớp |
+| Lịch sử thay đổi / phân công lớp | CÓ (V-n) | "Lịch sử thay đổi của lớp" ở Học viên của lớp: sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi, mới nhất trước — chỉ phần của lớp ấy (`GET /api/admin/classes/<id>/lich-su`, IsAdminOrAcademic; nhật ký đầy đủ vẫn chỉ quản trị viên) — `teaching/tests_lich_su_lop.py` |
 | Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | "Kiểm tra / Thi thử / Kết quả" CÓ (V-h): mốc "Bài kiểm tra: …" theo NGÀY làm bài, điểm hoặc "Vắng" (`teaching/dong_thoi_gian.py`, loại `kiem-tra`); "Đăng ký" tự đăng ký → **E5** |
 | Đang học lớp nào, đã học / nghỉ bao nhiêu buổi, có phép / không | CÓ | tờ báo cáo từng em (`present/late/absent/excused`) |
 | Tiến độ chương trình | CHƯA | → **E1** |
@@ -132,7 +132,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | **Tiến trình theo số buổi kèm tên bài**, chia theo buổi | CHƯA | không có bảng khung chương trình → **E1** |
 | Thời lượng buổi | MỘT PHẦN | có ở LỚP (sinh lịch), không ở khoá → **E1** |
 | Gán khoá cho lớp | CÓ | `classes.course_id` |
-| Trạng thái khoá | MỘT PHẦN | `is_published` có nhưng không sửa được → **V-i** |
+| Trạng thái khoá | CÓ (V-i) | nút "Chuyển về nháp / Mở cho học viên" + cột Trạng thái ở khu Giáo trình (`courseadmin/views.py`, nhật ký `course.publish`); cổng `courses/truy_cap.py` giấu khoá nháp với học viên NGAY (quên đệm), nhân sự vẫn xem — `courses/tests_khoa_nhap.py` |
 | Phiên bản / lịch sử chỉnh sửa chương trình | CHƯA | → **E1** (bản nháp / xuất bản, lớp giữ bản đã nhận) |
 | Gắn bài giảng | CÓ | bài học trực tuyến |
 | Gắn video record | MỘT PHẦN | link theo buổi, học viên không thấy → **V-l**, **E4** |
@@ -146,13 +146,13 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 |---|---|---|
 | 6.1 Tổng quan học tập, số học sinh, số lớp | CÓ | "Toàn trung tâm" (`teaching/overview.py`) |
 | 6.2 Doanh thu | BỎ | anh chốt 23/09 |
-| 6.3 Chấm công GV/TG | MỘT PHẦN | "Toàn trung tâm" đếm buổi đã dạy / đã điểm danh theo GV chủ lớp, KHÔNG có TG → **V-o** (+ khoá tháng **Đ2 §59**) |
+| 6.3 Chấm công GV/TG | CÓ, chỉ xem (V-o) | trang "Chấm công" (Vận hành, quản trị viên + học vụ): theo tháng, từng giảng viên VÀ trợ giảng — buổi đã dạy, tổng giờ, tự điểm danh, điểm danh muộn, tải Excel (`teaching/cham_cong.py`, `teaching/tests_cham_cong.py`). Khoá tháng + chỉnh tay → **Đ2 §59** |
 | Điểm danh HS, tiến độ, kết quả theo lớp | CÓ | CSV điểm danh + tiến độ; báo cáo lớp PDF |
 | Kết quả theo môn, hoàn thành bài tập (tổng) | MỘT PHẦN | theo khoá / từng bài; chưa báo cáo chéo |
-| Hoạt động GV/TG | MỘT PHẦN | → **V-o** |
+| Hoạt động GV/TG | MỘT PHẦN | buổi dạy / điểm danh theo tháng CÓ (V-o); các hoạt động khác (chấm bài, nhắn tin) chưa gộp |
 | HS nghỉ nhiều / chậm tiến độ | MỘT PHẦN | nghỉ nhiều CÓ; chậm tiến độ → **E1** |
-| Bộ lọc thời gian / lớp / môn / khoá | MỘT PHẦN | tổng quan lọc đợt + ngày → **V-k** |
-| Xuất Excel / CSV | MỘT PHẦN | CSV CÓ; .xlsx CHƯA → **V-k** |
+| Bộ lọc thời gian / lớp / môn / khoá | CÓ (V-k) | tổng quan lọc đợt + ngày; tải chuyên cần lọc khoảng ngày; tải danh sách tài khoản lọc thêm đợt học, môn, ngày cấp (`teaching/exports.py`, `admin_users.build_user_filters`) — `teaching/tests_xuat_excel.py` |
+| Xuất Excel / CSV | CÓ (V-k) | hộp "Tải bảng tính" (sổ buổi học của lớp) và "Tải danh sách" (Tài khoản): chọn Excel (.xlsx) hoặc CSV; một bộ ghi `common/bangtinh.ghi_xlsx` (ô chữ không bao giờ thành công thức), trợ giảng không nhận cột liên lạc |
 
 ## Dòng 7 — Kế toán · học phí · THAY
 
@@ -181,7 +181,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Tạo / quản lý Zoom | MỘT PHẦN | dán link (lớp + buổi) → **E4** |
 | Lịch theo lớp / GV / HS / toàn trung tâm | CÓ | màn "Lịch học" |
 | Thông báo khi lịch đổi | CÓ | chuông + email học viên (không gửi phụ huynh — anh chốt) |
-| Lưu lịch sử thay đổi | MỘT PHẦN | Nhật ký (quản trị viên) → **V-n** |
+| Lưu lịch sử thay đổi | CÓ (V-n) | lịch sử thay đổi của lớp cho học vụ (tạo / sửa / huỷ / sinh buổi) — như dòng 4 |
 | Cảnh báo trùng GV / phòng / lớp / HS | CÓ | `teaching/trung_lich.py` (cảnh báo, không chặn) |
 
 ## Dòng 11 — Hỗ trợ lớp học · CHƯA → E3

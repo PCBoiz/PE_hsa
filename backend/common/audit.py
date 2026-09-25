@@ -54,6 +54,10 @@ CLASS_MEMBER_REMOVE = 'class.member.remove'
 #: Chuyển lớp MỘT bước (§55, 24/09/2026): đóng lượt ở lớp cũ + mở lượt ở lớp mới trong
 #: một giao dịch. `target` là lớp MỚI; `detail` giữ cả hai lớp và hai lượt.
 CLASS_MEMBER_TRANSFER = 'class.member.transfer'
+#: Nhập học viên vào lớp TỪ TỆP MẪU (V-j, 25/09/2026). MỘT dòng cho cả lượt (như
+#: `send_all`): `detail` mang tên tệp, id tài khoản mới + id em có sẵn, số dòng lỗi. Từng
+#: tài khoản mới vẫn có dòng `user.create`, từng em có sẵn vẫn có `class.member.add`.
+CLASS_MEMBER_IMPORT = 'class.member.import'
 #: Đánh giá một em trong lớp (25/09/2026, `teaching/danh_gia.py`): nhận xét gửi phụ
 #: huynh, cờ "cần hỗ trợ" + lý do, đề xuất hướng học. `target` là EM (target_type
 #: 'user') để dòng thời gian của em đọc được cả lịch sử đánh dấu; `detail.classId`.
@@ -118,6 +122,10 @@ COURSE_CREATE = 'course.create'
 COURSE_UPDATE = 'course.update'
 COURSE_DELETE = 'course.delete'
 COURSE_IMPORT = 'course.import'
+#: Trạng thái khoá "Đang mở / Nháp" (V-i, bảng TopHSA dòng 5, 25/09/2026). Tách khỏi
+#: `COURSE_UPDATE` vì hậu quả khác hẳn: chuyển về nháp là mọi học viên của khoá mất bài
+#: NGAY. `detail` giữ `cu` + `moi` để trả lời "ai đóng khoá này, lúc nào".
+COURSE_PUBLISH = 'course.publish'
 LESSON_CREATE = 'lesson.create'
 LESSON_UPDATE = 'lesson.update'
 LESSON_DELETE = 'lesson.delete'
