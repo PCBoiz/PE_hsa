@@ -241,6 +241,22 @@ MUC = [
      lambda: _cot('classes', 'syllabus_version_id')),
     ('§64f', 'class_sessions.syllabus_session_id (buổi thật khớp buổi khung)',
      lambda: _cot('class_sessions', 'syllabus_session_id')),
+    # §64g–h sửa TẠI CHỖ (E1, 25/09/2026): chuỗi phiên bản + trọng số bắt buộc > 0.
+    ('§64g', 'syllabus_versions: mỗi chuỗi nhiều nhất một bản nháp, một bản đang dùng',
+     lambda: _ca(lambda: _cot('syllabus_versions', 'lineage_id'),
+                 lambda: _chi_muc('idx_syllabus_versions_mot_nhap'),
+                 lambda: _chi_muc('idx_syllabus_versions_mot_xuat_ban'))),
+    ('§64h', 'syllabus_items.weight bắt buộc, CHECK > 0',
+     lambda: _check_co_gia_tri('syllabus_items_weight_check', 'weight > ')),
+    # §70: sổ đầu bài (E1). Kiểm cột trước khoá ngoại — bảng chưa có thì `::regclass` ném lỗi.
+    ('§70a', 'bảng session_logs (sổ đầu bài, mức tiếp thu 1–5), xoá theo buổi',
+     lambda: _fk('session_logs', 'session_logs_session_id_fkey', 'CASCADE')
+     if _cot('session_logs', 'comprehension')[0] else (False, 'chưa có bảng')),
+    ('§70b', 'session_log_items → syllabus_items ON DELETE SET NULL',
+     lambda: _fk('session_log_items', 'session_log_items_item_id_fkey', 'SET NULL')
+     if _cot('session_log_items', 'item_id')[0] else (False, 'chưa có bảng')),
+    ('§70c', 'bảng session_support (em cần hỗ trợ sau buổi)',
+     lambda: _chi_muc('idx_session_support_user')),
 ]
 
 

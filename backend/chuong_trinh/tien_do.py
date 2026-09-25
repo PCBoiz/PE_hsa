@@ -21,10 +21,8 @@ Mỗi buổi khung nặng bằng TỔNG trọng số các mục của nó.
     cho mọi buổi từ đầu khoá.
   · % CỦA MỘT EM = trọng số đã xong trong các buổi em CÓ MẶT hoặc MUỘN (điểm danh)
     ÷ tổng trọng số của phiên bản. Buổi em vắng không tính cho em, dù lớp đã dạy.
-
-TODO (V-g, luồng A1): "buổi bù tính cho buổi gốc" cần cột `class_sessions.makeup_for`
-— CHƯA có trên nhánh này, nên hôm nay buổi bù chỉ được tính khi chính nó được ghi sổ
-với các mục của khung (sổ đầu bài cho chọn mục của mọi buổi khung).
+    BUỔI BÙ TÍNH CHO BUỔI GỐC (§62e `makeup_for`): em có mặt ở buổi bù của buổi X thì
+    được tính như có mặt ở X — sổ của X (và của chính buổi bù, nếu có) cộng cho em.
 
 ── SỐ CÂU TRUY VẤN KHÔNG THEO SỐ LỚP ───────────────────────────────────────────
 
@@ -51,6 +49,16 @@ def sql_tin_chi(cot):
         cot, ' '.join("WHEN '%s' THEN %s" % (k, v) for k, v in TIN_CHI.items()))
 
 
+#: (em, buổi được tính là em CÓ MẶT): buổi em có mặt / muộn, CỘNG buổi GỐC của mọi buổi
+#: bù em có mặt (§62e) — buổi bù dạy lại nội dung buổi gốc. `dieu_kien` lọc trên
+#: `a` (attendance) và `cs` (buổi em điểm danh); là chuỗi hằng trong mã, không phải dữ liệu.
+_CO_MAT = """
+    SELECT DISTINCT a.user_id, b.sid AS session_id
+      FROM attendance a
+      JOIN class_sessions cs ON cs.id = a.session_id
+      CROSS JOIN LATERAL (VALUES (cs.id), (cs.makeup_for)) AS b(sid)
+     WHERE a.status IN ('present', 'late') AND b.sid IS NOT NULL AND {dieu_kien}"""
+
 #: CTE dùng chung: lớp có khung, trọng số từng buổi khung, tổng của phiên bản, phần
 #: phải xong tới `nay`. Tham số có tên `ids`, `nay`.
 _CTE = '''
@@ -62,7 +70,7 @@ lop AS (
 buoi_khung AS (
     SELECT ss.id, ss.version_id, COALESCE(SUM(i.weight), 0) AS w
       FROM syllabus_sessions ss
-      LEFT JOIN syllabus_items i ON i.syl_session_id = ss.id
+      LEFT JOIN syllabus_items i ON i.session_id = ss.id
      WHERE ss.version_id IN (SELECT vid FROM lop)
      GROUP BY ss.id, ss.version_id
 ),
@@ -130,7 +138,7 @@ tin_chi AS (
       JOIN class_sessions cs ON cs.class_id = l.class_id
       JOIN session_log_items li ON li.session_id = cs.id
       JOIN syllabus_items i ON i.id = li.item_id
-      JOIN syllabus_sessions ss ON ss.id = i.syl_session_id AND ss.version_id = l.vid
+      JOIN syllabus_sessions ss ON ss.id = i.session_id AND ss.version_id = l.vid
      GROUP BY l.class_id, li.item_id
 ),
 da_xong AS (
@@ -147,15 +155,13 @@ so_ghi AS (
      WHERE cs.status <> 'cancelled' AND cs.starts_at <= %(nay)s
      GROUP BY cs.class_id
 )
-SELECT l.class_id, l.vid, l.trang_thai, v.version, v.status AS trang_thai_ban,
-       s.id AS syllabus_id, s.name AS ten_khung,
+SELECT l.class_id, l.vid, l.trang_thai, v.status AS trang_thai_ban, v.name AS ten_khung,
        COALESCE(t.tong_w, 0) AS tong_w, COALESCE(t.so_buoi_khung, 0) AS so_buoi_khung,
        COALESCE(d.phai_w, 0) AS phai_w, COALESCE(d.so_den_han, 0) AS so_den_han,
        COALESCE(x.xong_w, 0) AS xong_w,
        COALESCE(g.da_day, 0) AS da_day, COALESCE(g.chua_ghi, 0) AS chua_ghi
   FROM lop l
   JOIN syllabus_versions v ON v.id = l.vid
-  JOIN syllabi s ON s.id = v.syllabus_id
   LEFT JOIN tong t ON t.version_id = l.vid
   LEFT JOIN den_han d ON d.class_id = l.class_id
   LEFT JOIN da_xong x ON x.class_id = l.class_id
@@ -165,8 +171,7 @@ SELECT l.class_id, l.vid, l.trang_thai, v.version, v.status AS trang_thai_ban,
     for r in rows:
         d = danh_gia(r['tong_w'], r['so_buoi_khung'], r['phai_w'], r['xong_w'])
         d.update({
-            'versionId': r['vid'], 'version': r['version'], 'syllabusId': r['syllabus_id'],
-            'tenKhung': r['ten_khung'], 'trangThaiBan': r['trang_thai_ban'],
+            'versionId': r['vid'], 'tenKhung': r['ten_khung'], 'trangThaiBan': r['trang_thai_ban'],
             'trangThaiLop': r['trang_thai'],
             'soBuoiKhung': r['so_buoi_khung'], 'soBuoiDenHan': r['so_den_han'],
             'buoiDaDay': r['da_day'], 'chuaGhiSo': r['chua_ghi'],
@@ -207,13 +212,7 @@ def tien_do_em(user_id, class_ids, nay=None):
         return {}
     nay = nay or local_now()
     rows = q('WITH ' + _CTE + ''',
-co_mat AS (
-    SELECT a.session_id
-      FROM attendance a
-      JOIN class_sessions cs ON cs.id = a.session_id
-     WHERE a.user_id = %(uid)s AND a.status IN ('present', 'late')
-       AND cs.class_id IN (SELECT class_id FROM lop)
-),
+co_mat AS (''' + _CO_MAT.format(dieu_kien='a.user_id = %(uid)s AND cs.class_id IN (SELECT class_id FROM lop)') + '''),
 tin_chi AS (
     SELECT l.class_id, li.item_id, MAX(''' + sql_tin_chi('li.status') + ''') AS tc
       FROM lop l
@@ -221,7 +220,7 @@ tin_chi AS (
       JOIN co_mat m ON m.session_id = cs.id
       JOIN session_log_items li ON li.session_id = cs.id
       JOIN syllabus_items i ON i.id = li.item_id
-      JOIN syllabus_sessions ss ON ss.id = i.syl_session_id AND ss.version_id = l.vid
+      JOIN syllabus_sessions ss ON ss.id = i.session_id AND ss.version_id = l.vid
      GROUP BY l.class_id, li.item_id
 ),
 da_xong AS (
@@ -231,7 +230,7 @@ da_xong AS (
 )
 SELECT l.class_id, COALESCE(t.tong_w, 0) AS tong_w, COALESCE(d.phai_w, 0) AS phai_w,
        COALESCE(x.xong_w, 0) AS xong_w, COALESCE(x.so_muc, 0) AS so_muc,
-       (SELECT COUNT(*) FROM syllabus_items i JOIN syllabus_sessions ss ON ss.id = i.syl_session_id
+       (SELECT COUNT(*) FROM syllabus_items i JOIN syllabus_sessions ss ON ss.id = i.session_id
          WHERE ss.version_id = l.vid) AS tong_muc
   FROM lop l
   LEFT JOIN tong t ON t.version_id = l.vid
@@ -254,24 +253,23 @@ SELECT l.class_id, COALESCE(t.tong_w, 0) AS tong_w, COALESCE(d.phai_w, 0) AS pha
 def tien_do_tung_em(class_id, nay=None):
     """[{userId, name, pct}] cho mọi HỌC VIÊN đang học lớp CÓ khung — MỘT câu. Nội bộ
     miền (màn "Chương trình lớp"); miền khác cần % của một em thì gọi `tien_do_em`.
-    Cùng luật với `tien_do_em`: chỉ buổi em có mặt / muộn."""
+    Cùng luật với `tien_do_em`: chỉ buổi em có mặt / muộn (buổi bù tính cho buổi gốc)."""
     rows = q('''WITH lop AS (
                     SELECT syllabus_version_id AS vid FROM classes
                      WHERE id = %(cid)s AND syllabus_version_id IS NOT NULL),
                 tong AS (
                     SELECT COALESCE(SUM(i.weight), 0) AS tong_w
-                      FROM syllabus_items i JOIN syllabus_sessions ss ON ss.id = i.syl_session_id
+                      FROM syllabus_items i JOIN syllabus_sessions ss ON ss.id = i.session_id
                      WHERE ss.version_id = (SELECT vid FROM lop)),
+                co_mat AS (''' + _CO_MAT.format(dieu_kien='cs.class_id = %(cid)s') + '''),
                 tin_chi AS (
-                    SELECT a.user_id, li.item_id, MAX(''' + sql_tin_chi('li.status') + ''') AS tc
-                      FROM attendance a
-                      JOIN class_sessions cs ON cs.id = a.session_id AND cs.class_id = %(cid)s
-                      JOIN session_log_items li ON li.session_id = cs.id
+                    SELECT m.user_id, li.item_id, MAX(''' + sql_tin_chi('li.status') + ''') AS tc
+                      FROM co_mat m
+                      JOIN session_log_items li ON li.session_id = m.session_id
                       JOIN syllabus_items i ON i.id = li.item_id
-                      JOIN syllabus_sessions ss ON ss.id = i.syl_session_id
+                      JOIN syllabus_sessions ss ON ss.id = i.session_id
                                                AND ss.version_id = (SELECT vid FROM lop)
-                     WHERE a.status IN ('present', 'late')
-                     GROUP BY a.user_id, li.item_id)
+                     GROUP BY m.user_id, li.item_id)
                 SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS ten,
                        COALESCE(SUM(t.tc * i.weight), 0) AS xong_w, (SELECT tong_w FROM tong) AS tong_w
                   FROM class_members m

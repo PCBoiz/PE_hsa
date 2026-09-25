@@ -44,32 +44,39 @@ def _chu(v, tran):
 
 
 def _buoi(session_id):
+    """Buổi + lớp + buổi khung KẾ HOẠCH của nó. Buổi bù (§62e) chưa gắn riêng thì kế hoạch
+    là buổi khung của buổi GỐC — buổi bù dạy lại nội dung ấy."""
     return q1('''SELECT cs.id, cs.class_id, cs.starts_at, cs.duration_minutes, cs.topic,
-                        cs.status, cs.note, cs.syllabus_session_id,
+                        cs.status, cs.note, cs.makeup_for,
+                        COALESCE(cs.syllabus_session_id, goc.syllabus_session_id) AS ke_hoach_ss,
                         c.name AS class_name, c.syllabus_version_id,
-                        ss.so_buoi, ss.title AS khung_title, ss.homework, ss.test_title,
-                        ss.version_id AS ban_cua_buoi
+                        ss.name AS khung_name, ss.homework, ss.version_id AS ban_cua_buoi,
+                        goc.starts_at AS goc_starts_at
                    FROM class_sessions cs
                    JOIN classes c ON c.id = cs.class_id
-                   LEFT JOIN syllabus_sessions ss ON ss.id = cs.syllabus_session_id
+                   LEFT JOIN class_sessions goc ON goc.id = cs.makeup_for
+                   LEFT JOIN syllabus_sessions ss
+                          ON ss.id = COALESCE(cs.syllabus_session_id, goc.syllabus_session_id)
                   WHERE cs.id = %s''', (session_id,))
 
 
 def _muc_cua_ban(version_id):
-    """Mọi mục của phiên bản, kèm số buổi — MỘT câu."""
+    """Mọi mục của phiên bản, kèm SỐ buổi (hạng theo `sort_order`) — MỘT câu."""
     if not version_id:
         return []
-    return q('''SELECT i.id, i.label, i.kind, i.weight, i.sort, ss.id AS ss_id, ss.so_buoi
-                  FROM syllabus_items i JOIN syllabus_sessions ss ON ss.id = i.syl_session_id
-                 WHERE ss.version_id = %s
-                 ORDER BY ss.so_buoi, i.sort, i.id''', (version_id,))
+    return q('''SELECT i.id, i.title AS label, i.kind, i.weight, i.sort_order,
+                       ss.id AS ss_id, ss.so AS so_buoi
+                  FROM syllabus_items i
+                  JOIN (SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order, id) AS so
+                          FROM syllabus_sessions WHERE version_id = %s) ss ON ss.id = i.session_id
+                 ORDER BY ss.so, i.sort_order, i.id''', (version_id,))
 
 
 def _doc(b):
     """Toàn bộ sổ của buổi `b` (dòng `_buoi`) — số câu cố định."""
     sid, vid = b['id'], b['syllabus_version_id']
     muc_ban = _muc_cua_ban(vid)
-    ke_hoach_ss = b['syllabus_session_id'] if b['ban_cua_buoi'] == vid else None
+    ke_hoach_ss = b['ke_hoach_ss'] if b['ban_cua_buoi'] == vid else None
     so = q1('''SELECT sl.comprehension, sl.de_xuat, sl.logged_at,
                       COALESCE(NULLIF(u.name, ''), u.email) AS logged_by_name
                  FROM session_logs sl LEFT JOIN users u ON u.id = sl.logged_by
@@ -109,8 +116,11 @@ def _doc(b):
         },
         'lopCoKhung': bool(vid),
         'buoiKhung': None if not ke_hoach_ss else {
-            'id': ke_hoach_ss, 'soBuoi': b['so_buoi'], 'title': b['khung_title'],
-            'homework': b['homework'], 'testTitle': b['test_title']},
+            'id': ke_hoach_ss, 'soBuoi': next((m['so_buoi'] for m in muc_ban
+                                               if m['ss_id'] == ke_hoach_ss), None),
+            'name': b['khung_name'], 'homework': b['homework']},
+        # Buổi bù: sổ này ghi cho nội dung của buổi gốc (ngày gốc để giảng viên nhận ra).
+        'buBuoiGoc': (b['goc_starts_at'].isoformat() if b['goc_starts_at'] else None),
         'mucKeHoach': ke_hoach,
         'mucNgoaiKeHoach': ngoai_ke_hoach + mo_coi,
         'mucTuThem': [{'label': r['label'], 'status': r['status'], 'note': r['note']}
