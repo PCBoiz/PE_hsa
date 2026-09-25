@@ -131,8 +131,8 @@ export default function SoDauBaiClient({ initial }: { initial: SoDauBai }) {
           <ul className="space-y-3">
             {muc.map((m, i) => (
               <li key={`${m.itemId ?? 'tu'}-${i}`} className="rounded-md border border-line p-3">
-                <fieldset>
-                  <legend className="text-body font-medium text-ink">
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="p-0 text-body font-medium text-ink">
                     {m.label}
                     {m.soBuoi && d.buoiKhung?.soBuoi !== m.soBuoi && (
                       <span className="ml-2 text-small font-normal text-ink-3">(buổi {m.soBuoi} của khung)</span>
