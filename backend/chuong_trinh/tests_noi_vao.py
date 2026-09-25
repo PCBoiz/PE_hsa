@@ -111,3 +111,20 @@ def test_to_phu_huynh_co_dong_tien_do(dung):
     assert r.status_code == 200, r.data
     assert r.data['chuongTrinh']['pct'] == 25.0
     assert r.data['chuongTrinh']['keHoachPct'] == 50.0
+
+
+def test_du_lieu_mau_co_khung_so_dau_bai_va_go_sach(db):
+    from accounts.models import User
+    from teaching import du_lieu_mau as M
+    M.go()
+    gv = q1("INSERT INTO users (name, email, password, role) "
+            "VALUES ('GV CT mẫu', 'gv_ct_mau@example.com', 'x', 'Giảng viên') RETURNING id")['id']
+    so = M.tao(giang_vien_id=User.objects.get(id=gv).id, so_em_moi_lop=2)
+    assert so['khung chương trình mẫu'] == 1 and so['sổ đầu bài'] > 0
+    lop = q1("SELECT id FROM classes WHERE is_demo AND course_id = 'hsa_quantitative'")['id']
+    from chuong_trinh.dich_vu import tien_do_lop
+    td = tien_do_lop([lop])[lop]
+    assert td['chuaGhiSo'] == 1, 'buổi gần nhất cố ý chưa ghi sổ'
+    assert td['soBuoiKhung'] == 24 and 0 < td['daXong'] < td['phaiXong']
+    M.go()
+    assert not q1('SELECT 1 FROM syllabus_versions WHERE is_demo')
