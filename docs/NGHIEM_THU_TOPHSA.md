@@ -39,7 +39,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
 | 15 | Giáo viên · chương trình + tiến độ | CHƯA phần lớn | E1, Đ2 §60 | — |
 | 16 | Giáo viên · quản lý buổi học | MỘT PHẦN | E1 | — |
-| 17 | Giáo viên · giao bài | gần đủ | V-e, V-h | — |
+| 17 | Giáo viên · giao bài | CÓ (V-e, V-h) | V-e, V-h | — |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
@@ -118,11 +118,11 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Trạng thái đang học / kết thúc / **tạm dừng** | CÓ (V-c) | `classes_status_check` §35 thêm `paused`; `teaching/vocab.py::TRANG_THAI_LOP`; nhãn "Tạm dừng" `quan-tri/lop-hoc/lop.ts`. Em giữ quyền môn (`courses/truy_cap.py` chỉ chặn lớp huỷ — test `courses/tests_truy_cap.py::test_lop_tam_dung_van_giu_quyen_mon`); không vào "chưa điểm danh" (`teaching/viec_hom_nay.py::_chua_diem_danh`); không sinh lịch (`teaching/sinh_buoi.py` 409). Demo: học vụ → Lớp học → Sửa lớp → Trạng thái "Tạm dừng" → bộ lọc Trạng thái có "Tạm dừng"; giảng viên mở Buổi học của lớp ấy thấy "Lớp đang tạm dừng…" thay khối sinh lịch |
 | Phân công GV, giáo vụ, TG | MỘT PHẦN | GV + TG CÓ; học vụ thấy mọi lớp, không gán riêng |
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | Nhật ký chỉ quản trị viên đọc → **V-n** mở cho học vụ theo lớp |
-| Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | CÓ trừ "Kiểm tra / Thi thử / Kết quả" → **V-h** điểm kiểm tra GV nhập tay; "Đăng ký" tự đăng ký → **E5** |
+| Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | "Kiểm tra / Thi thử / Kết quả" CÓ (V-h): mốc "Bài kiểm tra: …" theo NGÀY làm bài, điểm hoặc "Vắng" (`teaching/dong_thoi_gian.py`, loại `kiem-tra`); "Đăng ký" tự đăng ký → **E5** |
 | Đang học lớp nào, đã học / nghỉ bao nhiêu buổi, có phép / không | CÓ | tờ báo cáo từng em (`present/late/absent/excused`) |
 | Tiến độ chương trình | CHƯA | → **E1** |
 | Bài đã / chưa hoàn thành, điểm mạnh / yếu, lịch sử chuyển lớp | CÓ | bài tập + bản đồ kỹ năng + dòng thời gian |
-| Điểm kiểm tra, điểm thi thử | CHƯA (thi thử online đã bỏ) | → **V-h** |
+| Điểm kiểm tra, điểm thi thử | CÓ (V-h; thi thử online đã bỏ) | Bài kiểm tra trên lớp = một loại bài giao: `assignments.kind = 'kiem_tra'` + `held_on`, `submissions.absent` (§62f). Giảng viên / trợ giảng nhập điểm cả lớp trên một bảng, ghi "Vắng" (`teaching/assignments.py::AssignmentGradingView`); học viên không nộp được (409) và không bị tính "chưa nộp". Điểm lên sổ điểm (loại "Bài kiểm tra", `stats/gradebook.py`), dòng thời gian hồ sơ, tờ phụ huynh khối "Bài kiểm tra" (`teaching/parent_report.py::_kiem_tra_lop`, PDF `teaching/bao_cao_pdf.py`). Test `teaching/tests_kiem_tra.py` (6) + `tests_bao_cao_pdf.py` (2). Demo: giảng viên → Bài tập của lớp → "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)" + ngày → "Nhập điểm" → gõ điểm / tick "Vắng" → Lưu → mở tờ báo cáo của em |
 
 ## Dòng 5 + "Quản lý chương trình học" — Khoá học + chương trình · MỘT PHẦN
 
@@ -167,7 +167,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Tạo / cập nhật lớp, thông tin HS, xếp lớp, điều chuyển | CÓ | như dòng 4 |
 | Theo dõi tham gia, thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | báo cáo lớp; "Việc hôm nay" (vắng liền ≥ 2 buổi) |
 | Điểm danh có mặt / vắng / muộn, cập nhật | CÓ | 4 trạng thái (`teaching/sessions.py:57`) |
-| Xem lịch sử điểm danh | MỘT PHẦN | chỉ người sửa cuối + Nhật ký (quản trị viên) → **V-d** |
+| Xem lịch sử điểm danh | CÓ (V-d) | bảng `attendance_history` (§62c) ghi trong cùng giao dịch lưu điểm danh (`teaching/sessions.py::SessionAttendanceView.post`), điền ngược từ nhật ký; `GET /api/teach/sessions/<id>/attendance/history` (`SessionAttendanceHistoryView`). Test `teaching/tests_lich_su_diem_danh.py` (4). Demo: học vụ/giảng viên → Buổi học → Điểm danh một buổi → sửa một em, Lưu → mở "Lịch sử sửa điểm danh" dưới sổ |
 | Tiến độ lớp so với khung, cảnh báo chậm | CHƯA | → **E1** |
 
 ## Dòng 10 — Giáo vụ · lịch học · gần đủ
@@ -175,7 +175,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Tạo / sửa / huỷ / dời, định kỳ, tự sinh buổi, bỏ ngày nghỉ | CÓ | `sinh_buoi.py`, màn Buổi học |
-| Tạo lịch học bù | MỘT PHẦN | thêm buổi lẻ; chưa gắn "bù cho buổi nào" → **V-g** |
+| Tạo lịch học bù | CÓ (V-g) | `POST /api/teach/sessions/<id>/buoi-bu` (`teaching/buoi_bu.py::BuoiBuView`): `class_sessions.makeup_for` + `session_participants` (§62e); sổ điểm danh, chuyên cần, "chưa điểm danh", học phí, lịch em, báo đổi lịch chỉ tính các em của buổi (`teaching/nguoi_buoi.thuoc_buoi`); chuông + thư `hoc_bu` sau khi lưu. Test `teaching/tests_buoi_bu.py` (5). Demo: giáo vụ/giảng viên → Buổi học của lớp → "Tạo buổi bù" trên buổi gốc → chọn giờ + em (em vắng tick sẵn) → dòng mới mang chip "học bù · N em" |
 | Đổi GV / TG cho một buổi | CHƯA | GV gắn theo lớp → **Đ2 §58** |
 | Đổi phòng, online / offline | CÓ | ở lớp làm mặc định, buổi đặt riêng |
 | Tạo / quản lý Zoom | MỘT PHẦN | dán link (lớp + buổi) → **E4** |
@@ -203,7 +203,7 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Cập nhật mục tiêu, nguyện vọng HS | CÓ | tờ báo cáo từng em (`teaching/ho_so.py`) |
 | Điểm danh có mặt / vắng / muộn / xin phép, cập nhật | CÓ | màn Buổi học |
 | Người được phép sửa | CÓ | GV lớp mình, TG lớp được gán, học vụ, quản trị viên |
-| Lưu lịch sử chỉnh sửa | MỘT PHẦN | → **V-d** |
+| Lưu lịch sử chỉnh sửa | CÓ (V-d) | như dòng 9: mỗi lần ĐỔI một dòng (ai, từ gì → gì, lúc nào); lưu lại y hệt ghi 0 dòng. Demo: giảng viên/trợ giảng → Buổi học → Điểm danh → "Lịch sử sửa điểm danh" |
 | Thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | |
 
 ## Dòng 15 — Giáo viên · chương trình + tiến độ · CHƯA phần lớn
@@ -225,11 +225,16 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Đề xuất HS cần hỗ trợ | MỘT PHẦN (hệ thống tự báo) | **E1** / **V-f** |
 | Đề xuất học bù / điều chỉnh tiến độ | CHƯA | **E1** + **E3** |
 
-## Dòng 17 — Giáo viên · giao bài · gần đủ
+## Dòng 17 — Giáo viên · giao bài · CÓ
 
 Tạo, hạn, sửa, xoá / đóng, danh sách, xem bài nộp, chấm, nhập điểm, nhận xét, trả bài, ai chưa nộp:
-CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CHƯA → **V-e**.
-Bài kiểm tra ngoại tuyến GV nhập điểm → **V-h**.
+CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CÓ (V-e) —
+`assignments.target_mode` + `assignment_targets` (§62d); MỘT hàm lọc `teaching/nhan_bai.giao_cho` ở mọi chỗ
+đọc bài (danh sách + sĩ số từng bài, bảng chấm, bài của học viên, nộp bài, thẻ lớp, tờ phụ huynh, Việc hôm
+nay, chuông "bài mới"). Test `teaching/tests_nhan_bai.py` (10). Demo: giảng viên → Bài tập của lớp → "Giao bài
+mới" → "Giao cho: Chọn học viên" → tick 2 em → Giao bài; em thứ ba không thấy bài ở mục Bài tập.
+Bài kiểm tra ngoại tuyến GV nhập điểm: CÓ (V-h) — Loại "Bài kiểm tra trên lớp (nhập điểm)" khi giao bài,
+nút "Nhập điểm" mở bảng cả lớp có ô "Vắng" (xem dòng 4, "Điểm kiểm tra"). Test `teaching/tests_kiem_tra.py` (6).
 
 ## Dòng 18 — Giáo viên · theo dõi học sinh · MỘT PHẦN
 
@@ -304,7 +309,7 @@ lớp, nguồn "Tự đăng ký", hàng chờ "Đăng ký mới" cho giáo vụ.
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Buổi tham gia / vắng / muộn (số đếm) | CÓ ("Lớp của tôi") | — |
-| Lịch sử điểm danh từng buổi, tổng số buổi | MỘT PHẦN | **V-d** |
+| Lịch sử điểm danh từng buổi, tổng số buổi | CÓ (V-d) | `GET /api/lop-cua-toi` → `lop[].diemDanh` (`teaching/lop_cua_toi.py`, cùng `_buoi_cua_em` với chuyên cần); thẻ "Lớp của bạn" → "Điểm danh từng buổi" (`components/LopCuaToi.tsx`). Demo: học viên → Trang của tôi → thẻ lớp → mở "Điểm danh từng buổi" |
 | % hoàn thành chương trình, bài / chuyên đề đã / chưa, tiến độ theo môn | MỘT PHẦN (bài tự học trực tuyến) | **E1** (theo khung của lớp) |
 | So sánh thực tế với kế hoạch | MỘT PHẦN (kế hoạch tự học cá nhân) | **E1** |
 

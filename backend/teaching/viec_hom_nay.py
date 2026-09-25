@@ -41,6 +41,8 @@ from rest_framework.views import APIView
 from common.clock import local_now, local_today
 from common.db import q
 from common.permissions import IsTeachingStaff, is_assistant, visible_class_ids
+from teaching.nguoi_buoi import thuoc_buoi
+from teaching.nhan_bai import giao_cho
 from teaching.reports import _last_activity, canh_bao_muc_cao
 from teaching.sessions import DEFAULT_SESSION_MINUTES
 from teaching.vocab import LOP_TAM_DUNG, chi_hoc_vien
@@ -106,6 +108,7 @@ def _chua_diem_danh(ids, lop, nay):
     thieu = '''(SELECT COUNT(*) FROM class_members m JOIN users u ON u.id = m.user_id
                  WHERE m.class_id = s.class_id AND m.left_at IS NULL
                    AND m.joined_at::date <= s.starts_at::date AND ''' + chi_hoc_vien('u') + '''
+                   AND ''' + thuoc_buoi('s.id', 'm.user_id') + '''
                    AND NOT EXISTS (SELECT 1 FROM attendance a
                                    WHERE a.session_id = s.id AND a.user_id = m.user_id))'''
     rows = q('''SELECT * FROM (
@@ -137,6 +140,7 @@ def _chua_cham(ids, lop, nay):
                 JOIN users u ON u.id = s.user_id
                 WHERE a.class_id = ANY(%s) AND s.submitted_at IS NOT NULL
                   AND s.graded_at IS NULL AND ''' + chi_hoc_vien('u') + '''
+                  AND ''' + giao_cho('a', 's.user_id') + '''
                 GROUP BY a.id
                 ORDER BY MIN(s.submitted_at) LIMIT %s''', (ids, TRAN))
     ra = []

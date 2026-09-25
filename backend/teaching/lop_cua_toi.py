@@ -30,7 +30,9 @@ from common.clock import local_now
 from common.db import q
 from common.views import NguoiDungView
 from stats.goals import as_date, read_goals
-from teaching.parent_report import _chuyen_can
+from teaching.nguoi_buoi import thuoc_buoi
+from teaching.nhan_bai import giao_cho
+from teaching.parent_report import _buoi_cua_em, _chuyen_can
 from teaching.sessions import DEFAULT_SESSION_MINUTES
 
 #: Số buổi sắp tới hiện ra — tuần này và đầu tuần sau là đủ.
@@ -38,6 +40,9 @@ SO_SAP_TOI = 3
 #: Buổi ĐÃ HUỶ trong ngần này ngày tới thì nêu tên. Huỷ mà chỉ lặng lẽ biến
 #: khỏi "buổi tới" thì em vẫn tưởng tối đó có học — hoặc tưởng lớp quên xếp lịch.
 NGAY_NEU_BUOI_HUY = 7
+#: Số buổi gần nhất trong danh sách điểm danh TỪNG buổi (V-d) — một đợt ba tháng hai
+#: buổi/tuần là ~26; trần để thẻ lớp không thành sổ cái khi em học cả năm.
+SO_BUOI_DIEM_DANH = 60
 
 
 def _iso(v):
@@ -89,8 +94,9 @@ class LopCuaToiView(NguoiDungView):
                           FROM class_sessions
                           WHERE class_id = ANY(%s) AND status = 'cancelled'
                             AND starts_at >= %s AND starts_at < %s
+                            AND ''' + thuoc_buoi('class_sessions.id', '%s') + '''
                           ORDER BY starts_at''',
-                       (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY))):
+                       (ids, nay, nay + timedelta(days=NGAY_NEU_BUOI_HUY), uid)):
                 da_huy.setdefault(r['class_id'], []).append(r)
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
                                  mode, room
@@ -99,9 +105,10 @@ class LopCuaToiView(NguoiDungView):
                                 FROM class_sessions
                                 WHERE class_id = ANY(%s) AND status <> 'cancelled'
                                   AND starts_at + (COALESCE(duration_minutes, %s)
-                                                   * INTERVAL '1 minute') > %s) s
+                                                   * INTERVAL '1 minute') > %s
+                                  AND ''' + thuoc_buoi('class_sessions.id', '%s') + ''') s
                           WHERE tt <= %s ORDER BY class_id, starts_at''',
-                       (ids, DEFAULT_SESSION_MINUTES, nay, SO_SAP_TOI)):
+                       (ids, DEFAULT_SESSION_MINUTES, nay, uid, SO_SAP_TOI)):
                 sap_toi.setdefault(r['class_id'], []).append(r)
             # MỌI lượt em ở lớp (kể cả lượt đã đóng) — mẫu số chuyên cần chỉ
             # gồm buổi trong thời gian em ở lớp, xem `_chuyen_can`.
@@ -112,13 +119,15 @@ class LopCuaToiView(NguoiDungView):
             # Rà trên điện thoại 390px: Trang của tôi không có chữ "bài tập" nào
             # trong khi mục Bài tập nói "còn 1 bài chưa nộp" — thanh trên ở khổ
             # điện thoại không có mục ấy, nên em không có đường biết. Thẻ lớp là
-            # chỗ đúng: bài tập là quan hệ giữa em và LỚP.
+            # chỗ đúng: bài tập là quan hệ giữa em và LỚP. Bài kiểm tra (V-h) làm
+            # trên lớp, em không nộp được — không bao giờ là "chưa nộp".
             for r in q('''SELECT a.class_id, COUNT(*) AS chua_nop, MIN(a.due_at) AS han_som
                             FROM assignments a
                             LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
                            WHERE a.class_id = ANY(%s) AND a.status = 'open'
-                             AND s.submitted_at IS NULL
-                           GROUP BY a.class_id''', (uid, ids)):
+                             AND s.submitted_at IS NULL AND a.kind <> 'kiem_tra'
+                             AND ''' + giao_cho('a', '%s') + '''
+                           GROUP BY a.class_id''', (uid, ids, uid)):
                 bai_tap[r['class_id']] = {'chuaNop': r['chua_nop'],
                                           'hanSom': _iso(r['han_som'])}
 
@@ -134,6 +143,10 @@ class LopCuaToiView(NguoiDungView):
             # trong `parent_report._buoi_cua_em`, 20/09/2026).
             vao = min(d[0] for d in cac_dot[cid]).date()
             vao = min(vao, r['tick_som'].date()) if r.get('tick_som') else vao
+            # MỘT lượt đọc buổi cho cả chuyên cần lẫn danh sách từng buổi (V-d, bảng
+            # TopHSA dòng 28): cùng ba bộ lọc (buổi đã diễn ra, chưa huỷ, trong thời
+            # gian em ở lớp), nên đếm và liệt kê không thể lệch nhau.
+            du = _buoi_cua_em(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid])
             lop.append({
                 'id': cid, 'name': r['name'], 'code': r['code'], 'schedule': r['schedule'],
                 'teacherName': r['teacher_name'], 'meetingUrl': r['meeting_url'],
@@ -144,7 +157,17 @@ class LopCuaToiView(NguoiDungView):
                 'buoiToi': ds[0] if ds else None,
                 'sapToi': ds,
                 'daHuy': [_buoi_dict(b, r, nay) for b in da_huy.get(cid, [])],
-                'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), cac_dot=cac_dot[cid]),
+                'chuyenCan': _chuyen_can(cid, uid, vao, nay.date(), du_lieu=du),
+                # Điểm danh TỪNG buổi, mới nhất trước. `daDiemDanh` False = giảng viên
+                # chưa mở sổ buổi ấy (không phải em vắng); True mà `trangThai` null =
+                # sổ đã lưu nhưng không có dòng của em. Chỉ trạng thái của CHÍNH em.
+                'diemDanh': [{
+                    'sessionId': b['id'], 'startsAt': _iso(b['starts_at']), 'topic': b['topic'],
+                    'daDiemDanh': bool(b['attendance_taken_at']),
+                    'trangThai': (du['trang_thai'].get(b['id'])
+                                  if b['attendance_taken_at'] else None),
+                } for b in sorted(du['da_dien_ra'], key=lambda b: b['starts_at'],
+                                  reverse=True)[:SO_BUOI_DIEM_DANH]],
                 'baiTap': bai_tap.get(cid, {'chuaNop': 0, 'hanSom': None}),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),

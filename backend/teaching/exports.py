@@ -465,13 +465,16 @@ def dem_chuyen_can(class_id):
         # sổ mở được cho buổi sắp tới, nên có dấu tick TRƯỚC giờ. Đếm cả chúng
         # thì CSV/PDF ghi "Có mặt 4" khi lớp mới dạy 3 buổi, và dấu tick tương
         # lai còn bù `chuaTick` về 0 — che đúng buổi đã qua mà chưa ai tick.
-        for s in held:
+        # Buổi bù (V-g): buổi có danh sách riêng mà em không có tên thì không phải
+        # buổi của em — không tính "chưa tick" cho em ấy.
+        cua_em = [s for s in held if not s['tham_gia'] or uid in s['tham_gia']]
+        for s in cua_em:
             st = marks.get((s['id'], uid))
             if st in counts:
                 counts[st] += 1
                 da_tick += 1
         r = ti_le(counts['present'] + counts['late'], sum(counts.values()))
-        ra[uid] = dict(counts, chuaTick=max(0, len(held) - da_tick), tiLe=r)
+        ra[uid] = dict(counts, chuaTick=max(0, len(cua_em) - da_tick), tiLe=r)
     return ra, True
 
 
@@ -536,7 +539,11 @@ class ClassAttendanceCsvView(APIView):
                 # Ô TRỐNG khi chưa có dòng điểm danh — và đó là thông tin khác
                 # hẳn "Vắng". Lấp trống bằng "Vắng" là vu cho học viên một buổi
                 # nghỉ mà giảng viên chỉ đơn giản là chưa tick.
-                row.append(ATTENDANCE_LABELS.get(marks.get((s['id'], uid)), ''))
+                # Buổi bù không có em này: "—", KHÁC ô trống "chưa tick".
+                if s['tham_gia'] and uid not in s['tham_gia']:
+                    row.append('—')
+                else:
+                    row.append(ATTENDANCE_LABELS.get(marks.get((s['id'], uid)), ''))
             # Phần TỔNG lấy từ `dem_chuyen_can` — CÙNG hàm mà tờ PDF cấp lớp
             # dùng. Vòng lặp trên chỉ còn dựng ô THEO BUỔI (việc riêng của bảng
             # chéo này) và KHÔNG tự cộng nữa: hai chỗ cộng là hai chỗ sẽ lệch.
@@ -565,10 +572,16 @@ class ClassAttendanceCsvView(APIView):
         đó là trạng thái của MỌI lớp trong tuần đầu dùng mô-đun điểm danh.
         """
         try:
-            sessions = q('''SELECT id, starts_at, topic, status
+            # `tham_gia`: tập em của buổi có danh sách riêng (buổi bù, V-g), rỗng =
+            # cả lớp. Một câu con, không thêm lượt gọi.
+            sessions = q('''SELECT id, starts_at, topic, status, makeup_for,
+                                   ARRAY(SELECT sp.user_id FROM session_participants sp
+                                         WHERE sp.session_id = class_sessions.id) AS tham_gia
                             FROM class_sessions
                             WHERE class_id = %s
                             ORDER BY starts_at, id''', (class_id,))
+            for s in sessions:
+                s['tham_gia'] = set(s['tham_gia'] or [])
             rows = q('''SELECT a.session_id, a.user_id, a.status
                         FROM attendance a
                         JOIN class_sessions s ON s.id = a.session_id
@@ -594,6 +607,8 @@ class ClassAttendanceCsvView(APIView):
             label += ' · ' + topic
         if s['status'] == 'cancelled':
             label += ' (đã huỷ)'
+        if s.get('makeup_for'):
+            label += ' (học bù)'
         return label
 
     @staticmethod

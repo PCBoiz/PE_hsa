@@ -75,6 +75,10 @@ export const HD_BAO_CAO = z.looseObject({
     id: so, title: z.string(), topic: chu, dueAt: chu, maxScore: z.number().nullable(),
     submittedAt: chu, score: z.number().nullable(), feedback: chu, gradedAt: chu,
   })).optional(),
+  kiemTra: z.array(z.looseObject({
+    id: so, title: z.string(), topic: chu, heldOn: z.string(), maxScore: z.number().nullable(),
+    score: z.number().nullable(), absent: z.boolean(), feedback: chu,
+  })).optional(),
   topics: z.looseObject({
     weak: z.array(CHU_DE),
     strong: z.array(CHU_DE),

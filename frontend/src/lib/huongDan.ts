@@ -267,6 +267,10 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       { lam: 'Tick từng em (hoặc "Đánh dấu cả lớp có mặt" rồi sửa em vắng), bấm lưu.' },
       {
+        lam: 'Sửa lại điểm danh thì cứ tick lại rồi lưu. Mở "Lịch sử sửa điểm danh" ngay dưới sổ để xem ai đã đổi em nào, từ gì sang gì, lúc nào.',
+        luu_y: 'Lưu lại y hệt không ghi thêm dòng lịch sử nào — chỉ lần ĐỔI mới được ghi. Học viên xem được điểm danh từng buổi của chính mình ở "Lớp của bạn".',
+      },
+      {
         lam: 'Buổi chưa có trong danh sách thì tạo buổi trước — hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
         luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG được tính vào mẫu số chuyên cần — nó bị báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
       },
@@ -337,6 +341,10 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Đặt hình thức (trực tuyến / tại trung tâm) và phòng cho LỚP một lần ở Quản trị → Lớp học. Buổi để trống là theo lớp; chỉ buổi lệch (học bù online, mượn phòng khác) mới cần đặt riêng.',
         o: '/quan-tri/lop-hoc',
+      },
+      {
+        lam: 'Học bù: ở sổ buổi học của lớp, bấm "Tạo buổi bù" trên dòng của buổi cần bù, chọn giờ và các em học bù (em vắng / có phép được tick sẵn), rồi "Tạo buổi bù".',
+        luu_y: 'Chỉ các em được chọn thấy buổi bù, có tên trong sổ điểm danh của buổi ấy và nhận thông báo; em khác không bị tính buổi này vào chuyên cần hay học phí.',
       },
       {
         lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác — cùng giảng viên, cùng học viên, hay cùng phòng — máy báo bằng dải vàng. Buổi VẪN được lưu.',
@@ -446,8 +454,15 @@ export const HUONG_DAN: readonly Bai[] = [
     vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG],
     khi_nao: 'Khi cần bài tự luận hoặc bài nộp ảnh — bài trắc nghiệm thì hệ thống tự chấm.',
     buoc: [
-      { lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp.' },
+      {
+        lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp. Ô "Giao cho": Cả lớp, hoặc "Chọn học viên" rồi tick từng em.',
+        luu_y: 'Em không được chọn không thấy bài, không nhận thông báo và không bị tính "chưa nộp". Đổi người nhận sau bằng nút "Đổi người nhận" trên dòng của bài — em mới thêm được báo ngay.',
+      },
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
+      {
+        lam: 'Bài kiểm tra làm trên lớp: "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)", chọn ngày kiểm tra. Sau buổi, bấm "Nhập điểm" trên dòng của bài, gõ điểm từng em (em vắng thì tick "Vắng") rồi Lưu.',
+        luu_y: 'Học viên không nộp bài kiểm tra qua hệ thống và không bị tính "chưa nộp". Điểm hiện ở mục Bài tập của em, sổ điểm (loại "Bài kiểm tra"), dòng thời gian trên hồ sơ và tờ báo cáo gửi phụ huynh.',
+      },
       {
         lam: 'Chấm điểm và ghi nhận xét.',
         luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc về bài này. Nhận xét chung gửi phụ huynh nằm ở khối "Đánh giá của giảng viên" trên tờ báo cáo của em.',

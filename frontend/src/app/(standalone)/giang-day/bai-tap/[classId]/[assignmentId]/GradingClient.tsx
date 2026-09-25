@@ -30,6 +30,8 @@ export type HocVien = {
   feedback: string | null;
   gradedAt: string | null;
   gradedByName: string | null;
+  /** Vắng buổi kiểm tra (V-h) — đã ghi nhận, không có điểm. */
+  absent?: boolean;
 };
 
 function fmt(iso: string | null) {
@@ -40,8 +42,9 @@ function fmt(iso: string | null) {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)} · ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-/** Ô nhập của một em, trước khi bấm Lưu. Chuỗi rỗng = CHƯA chấm, không phải 0. */
-type Nhap = { score: string; feedback: string };
+/** Ô nhập của một em, trước khi bấm Lưu. Chuỗi rỗng = CHƯA chấm, không phải 0.
+ *  `vang` chỉ có ở bài kiểm tra trên lớp (V-h): tick = em vắng, không có điểm. */
+type Nhap = { score: string; feedback: string; vang?: boolean };
 
 /**
  * Chuỗi người dùng gõ → số, hoặc `null` nếu không đọc được.
@@ -83,6 +86,7 @@ export default function GradingClient({
   topic,
   students,
   loiTai,
+  kiemTra = false,
 }: {
   assignmentId: number;
   title: string;
@@ -90,6 +94,8 @@ export default function GradingClient({
   topic: string | null;
   students: HocVien[];
   loiTai?: string | null;
+  /** Bài kiểm tra trên lớp (V-h): nhập điểm tay, có ô "Vắng", không có bài nộp. */
+  kiemTra?: boolean;
 }) {
   return (
     <ToastProvider>
@@ -100,6 +106,7 @@ export default function GradingClient({
         topic={topic}
         students={students}
         loiTai={loiTai}
+        kiemTra={kiemTra}
       />
     </ToastProvider>
   );
@@ -112,6 +119,7 @@ function Bang({
   topic,
   students,
   loiTai,
+  kiemTra,
 }: {
   assignmentId: number;
   title: string;
@@ -119,6 +127,7 @@ function Bang({
   topic: string | null;
   students: HocVien[];
   loiTai?: string | null;
+  kiemTra: boolean;
 }) {
   const [ds, setDs] = useState<HocVien[]>(students);
   const [nhap, setNhap] = useState<Record<number, Nhap>>({});
@@ -155,6 +164,7 @@ function Bang({
 
   const daNop = ds.filter((s) => s.submittedAt).length;
   const daCham = ds.filter((s) => s.gradedAt).length;
+  const soVang = ds.filter((s) => s.absent).length;
 
   /**
    * Những ô giảng viên THỰC SỰ vừa gõ, và giá trị của chúng hợp lệ.
@@ -164,9 +174,14 @@ function Bang({
    * ta ngại bấm.
    */
   const sapLuu = useMemo(() => {
-    const ra: { user_id: number; score: number; feedback: string }[] = [];
+    const ra: ({ user_id: number; score: number; feedback: string } | { user_id: number; absent: true; feedback: string })[] = [];
     for (const [uid, v] of Object.entries(nhap)) {
       const id = Number(uid);
+      // Tick "Vắng" (bài kiểm tra): gửi vắng, KHÔNG kèm điểm — máy chủ từ chối cả hai.
+      if (v.vang) {
+        ra.push({ user_id: id, absent: true, feedback: v.feedback.trim() });
+        continue;
+      }
       const n = doSo(v.score);
       if (n !== null && (n < 0 || n > maxScore)) continue;   // ô hỏng, đếm riêng
       if (n !== null) {
@@ -180,7 +195,9 @@ function Bang({
       // Chỉ làm được khi em ấy ĐÃ có điểm: máy chủ từ chối `score` rỗng, và
       // đúng như vậy — "chưa chấm" phải được giữ nguyên là chưa chấm.
       const cu = ds.find((x) => x.userId === id);
-      if (v.feedback !== '' && cu && cu.score !== null) {
+      if (v.feedback !== '' && cu && cu.absent) {
+        ra.push({ user_id: id, absent: true, feedback: v.feedback.trim() });
+      } else if (v.feedback !== '' && cu && cu.score !== null) {
         ra.push({ user_id: id, score: cu.score, feedback: v.feedback.trim() });
       }
     }
@@ -191,7 +208,7 @@ function Bang({
   const oHong = useMemo(
     () =>
       Object.entries(nhap).filter(([, v]) => {
-        if (v.score.trim() === '') return false;
+        if (v.vang || v.score.trim() === '') return false;
         const n = doSo(v.score);
         return n === null || n < 0 || n > maxScore;
       }).length,
@@ -262,15 +279,23 @@ function Bang({
               : 'Bài này CHƯA gắn chủ đề nên điểm không vào bản đồ năng lực. Sửa bài để gắn chủ đề.'
           }
         />
-        <TileRow>
-          <Tile value={`${daNop}/${ds.length}`} label="Đã nộp" />
-          <Tile
-            value={`${daCham}/${ds.length}`}
-            label="Đã chấm"
-            tone={daCham < daNop ? 'warn' : 'good'}
-          />
-          <Tile value={maxScore} label="Thang điểm" />
-        </TileRow>
+        {kiemTra ? (
+          <TileRow>
+            <Tile value={`${daCham}/${ds.length}`} label="Đã nhập" tone={daCham < ds.length ? 'warn' : 'good'} />
+            <Tile value={soVang} label="Vắng" />
+            <Tile value={maxScore} label="Thang điểm" />
+          </TileRow>
+        ) : (
+          <TileRow>
+            <Tile value={`${daNop}/${ds.length}`} label="Đã nộp" />
+            <Tile
+              value={`${daCham}/${ds.length}`}
+              label="Đã chấm"
+              tone={daCham < daNop ? 'warn' : 'good'}
+            />
+            <Tile value={maxScore} label="Thang điểm" />
+          </TileRow>
+        )}
       </Card>
 
       {ds.length === 0 ? (
@@ -291,12 +316,14 @@ function Bang({
                 <li key={s.userId} className="rounded-md border border-line bg-surface px-4 py-3">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="text-subhead text-ink">{s.name || s.email}</span>
-                    {nop ? (
+                    {kiemTra ? (
+                      s.absent ? <Chip tone="warn">Vắng</Chip> : !s.gradedAt ? <Chip tone="neutral">Chưa nhập điểm</Chip> : null
+                    ) : nop ? (
                       <Chip tone="good">Nộp {nop}</Chip>
                     ) : (
                       <Chip tone="neutral">Chưa nộp</Chip>
                     )}
-                    {s.gradedAt && (
+                    {s.gradedAt && !s.absent && (
                       <Chip tone="brand">
                         {s.score}/{maxScore}
                         {s.scorePct !== null ? ` · ${Math.round(s.scorePct)}%` : ''}
@@ -358,6 +385,7 @@ function Bang({
                         autoComplete="off"
                         value={v?.score ?? ''}
                         placeholder={s.score !== null ? String(s.score) : '—'}
+                        disabled={!!v?.vang}
                         onChange={(e) => sua(s.userId, { score: e.target.value })}
                         aria-invalid={sai || undefined}
                         className={[
@@ -366,6 +394,18 @@ function Bang({
                         ].join(' ')}
                       />
                     </div>
+                    {kiemTra && (
+                      <label className="flex min-h-11 items-center gap-2 text-body text-ink-2">
+                        <input
+                          type="checkbox"
+                          className="size-5 accent-brand"
+                          checked={!!v?.vang}
+                          onChange={(e) => sua(s.userId, { vang: e.target.checked, score: '' })}
+                          aria-label={`Vắng — ${s.name || s.email}`}
+                        />
+                        Vắng
+                      </label>
+                    )}
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor={`nx-${s.userId}`}
@@ -415,7 +455,7 @@ function Bang({
           <div className="sticky bottom-0 -mx-4 border-t border-line bg-surface px-4 py-3">
             <div className="flex flex-wrap items-center gap-3">
               <Button onClick={() => void luu()} loading={dangLuu} disabled={sapLuu.length === 0}>
-                {sapLuu.length > 0 ? `Lưu ${sapLuu.length} bài chấm` : 'Chưa gõ điểm nào'}
+                {sapLuu.length > 0 ? `Lưu ${sapLuu.length} ${kiemTra ? 'điểm' : 'bài chấm'}` : 'Chưa gõ điểm nào'}
               </Button>
               {oHong > 0 && (
                 <span className="text-small text-danger-ink">

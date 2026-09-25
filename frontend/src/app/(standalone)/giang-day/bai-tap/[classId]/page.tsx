@@ -7,14 +7,14 @@ import { VAI_TRO_GIANG } from '@/lib/vaiTro';
 import { z } from 'zod';
 
 import { layVai } from '../../../quan-tri/layVai';
-import AssignmentsClient, { type Assignment } from './AssignmentsClient';
+import AssignmentsClient, { type Assignment, type HocVienLop } from './AssignmentsClient';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Bài tập & chấm bài | TopHSA' };
 
 /** Xem chú thích ở `buoi-hoc/[classId]/page.tsx`: khoá là `class`, KHÔNG phải `klass`. */
 type ClassDetail = ChiTietLop;
-type DsBai = { assignments: Assignment[]; topics: string[] };
+type DsBai = { assignments: Assignment[]; topics: string[]; hocVien?: HocVienLop[] };
 /* Hình dạng `/api/teach/classes/<id>/assignments` (T18 mức 2). */
 const HD_BAI = z.looseObject({
   assignments: z.array(z.looseObject({
@@ -25,8 +25,12 @@ const HD_BAI = z.looseObject({
     createdAt: z.string().nullable(),
     submitted: z.number().optional(), graded: z.number().optional(),
     ungraded: z.number().optional(), members: z.number().optional(),
+    // V-e (25/09/2026) — tuỳ chọn: Vercel lên trước Render, máy chủ cũ không trả.
+    targetMode: z.string().optional(), targetUserIds: z.array(z.number()).optional(),
+    kind: z.string().optional(), heldOn: z.string().nullable().optional(),
   })),
   topics: z.array(z.string()),
+  hocVien: z.array(z.looseObject({ id: z.number(), name: z.string().nullable() })).optional(),
 }) satisfies HinhDang<DsBai>;
 
 /**
@@ -104,6 +108,7 @@ export default async function BaiTapPage({
           className={klass.name}
           initial={list.ok ? list.data.assignments : []}
           topics={list.ok ? (list.data.topics ?? []) : []}
+          hocVien={list.ok ? list.data.hocVien : undefined}
           // KHÔNG nuốt lỗi bằng `initial={ok ? … : []}`. Danh sách rỗng vì chưa
           // có bài, và danh sách rỗng vì không đọc được, trông y hệt nhau — và
           // ở trường hợp thứ hai giảng viên sẽ giao lại một bài đã có.

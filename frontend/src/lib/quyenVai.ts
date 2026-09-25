@@ -225,8 +225,28 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Xem lịch sử sửa điểm danh của một buổi',
+    // Kế hoạch v2 V-d, 25/09/2026 (bảng TopHSA dòng 9, 14).
+    giaiThich: 'Ai đổi điểm danh của em nào, từ gì sang gì, lúc nào. Cùng cửa với điểm danh — ai điểm danh được thì xem được, kể cả trợ giảng.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/sessions.py::SessionAttendanceHistoryView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
+    nhan: 'Tạo buổi bù cho một buổi',
+    // Kế hoạch v2 V-g, 25/09/2026 (bảng TopHSA dòng 10). Cùng cổng với tạo một buổi thường.
+    giaiThich: 'Chọn giờ và các em học bù; chỉ các em ấy thấy buổi, được điểm danh ở buổi ấy và nhận thông báo. Trợ giảng cũng tạo được, như tạo một buổi thường.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/buoi_bu.py::BuoiBuView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Giao bài và chấm tay',
-    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài.',
+    // "Giao cho: cả lớp / chọn học viên" từ 25/09/2026 (V-e, bảng TopHSA dòng 17).
+    // Bài kiểm tra trên lớp, nhập điểm tay (V-h, bảng TopHSA dòng 4, 17).
+    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài và nhập điểm bài kiểm tra trên lớp (kể cả ghi "vắng"). Giao bài hoặc bài kiểm tra (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/assignments.py::AssignmentGradingView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',

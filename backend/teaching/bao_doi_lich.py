@@ -27,6 +27,7 @@ from common import mail
 from common.clock import local_now
 from common.db import q
 from notifications.service import notify
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.vocab import chi_hoc_vien
 
 log = logging.getLogger(__name__)
@@ -104,8 +105,10 @@ def bao_doi_lich(truoc, sau, lop):
         ds = q('''SELECT u.id, u.email, coalesce(ns.email_notif, 1) AS nhan_thu
                     FROM class_members m JOIN users u ON u.id = m.user_id
                     LEFT JOIN notification_settings ns ON ns.user_id = u.id
-                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u'),
-               (lop['id'],))
+                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u')
+               # Buổi bù (V-g): chỉ báo các em của buổi ấy, không báo cả lớp.
+               + ' AND ' + thuoc_buoi('%s', 'm.user_id'),
+               (lop['id'], truoc['id']))
         for r in ds:
             notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
 

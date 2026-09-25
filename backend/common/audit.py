@@ -157,11 +157,16 @@ def _client_ip(request):
 
 
 def record(request, action, *, target_type=None, target_id=None, target_label=None,
-           summary=None, detail=None, actor=None):
+           summary=None, detail=None, actor=None, luc=None):
     """Ghi một hành động sửa. Trả True nếu ghi được; không bao giờ ném lỗi.
 
     ``request`` để lấy người thực hiện và IP. Truyền ``actor`` riêng khi hành
     động do lệnh quản trị chạy nền gây ra (không có request).
+
+    ``luc`` (25/09/2026): mốc `occurred_at` do bên gọi đưa — CHỈ khi dòng nhật ký
+    phải trùng đúng mốc của một bản ghi khác cùng lượt. Điểm danh truyền mốc của
+    `attendance_history` để phần điền ngược §62 (`NOT EXISTS … changed_at =
+    occurred_at`) nhận ra dòng đã có. Mặc định `local_now()` như trước.
     """
     who = actor if actor is not None else getattr(request, 'user', None)
     actor_id = getattr(who, 'id', None) if getattr(who, 'is_authenticated', False) else None
@@ -180,7 +185,7 @@ def record(request, action, *, target_type=None, target_id=None, target_label=No
               (actor_id, actor_name, actor_role, action, target_type,
                None if target_id is None else str(target_id), target_label, summary,
                json.dumps(detail, ensure_ascii=False) if detail is not None else None,
-               _client_ip(request), local_now()))
+               _client_ip(request), luc or local_now()))
         return True
     except (DatabaseError, TypeError, ValueError) as exc:
         # Mức ERROR kèm nguyên nội dung: nhật ký kiểm toán mất một dòng thì ít

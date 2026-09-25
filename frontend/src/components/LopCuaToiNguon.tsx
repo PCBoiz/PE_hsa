@@ -50,6 +50,10 @@ const HINH_DANG = z.looseObject({
     }),
     ngayThiLech: z.boolean(),
     baiTap: z.looseObject({ chuaNop: z.number(), hanSom: chu }),
+    // V-d (25/09/2026) — tuỳ chọn: Vercel lên trước Render, máy chủ cũ không trả.
+    diemDanh: z.array(z.looseObject({
+      sessionId: z.number(), startsAt: chu, topic: chu, daDiemDanh: z.boolean(), trangThai: chu,
+    })).optional(),
   })),
   mucTieu: z.looseObject({ examDate: chu }),
 }) satisfies HinhDang<DuLieu>;

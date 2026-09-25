@@ -47,6 +47,7 @@ from common.permissions import (
 )
 from stats.goals import as_date
 from teaching.bao_doi_lich import bao_doi_lich
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.trung_lich import cau_canh_bao, tim_trung
 from teaching.vocab import chi_hoc_vien
 
@@ -292,11 +293,12 @@ def _overlap_warning(class_id, starts_at, minutes, exclude_id=None):
             'kiểm tra lại nếu không cố ý.' % which)
 
 
-def _session_dict(r, counts=None, member_count=None, lop=None):
+def _session_dict(r, counts=None, member_count=None, lop=None, so_tham_gia=None):
     """Một buổi học ở dạng JSON. Khoá camelCase cho khớp teaching/reports.py.
 
     `lop` (dict có `mode`, `room`) để tính hình thức / phòng HIỆU LỰC khi dòng
     buổi không mang sẵn cột của lớp (§53: buổi để trống = theo lớp).
+    `so_tham_gia`: số em của buổi có danh sách riêng (buổi bù, V-g); None = cả lớp.
     """
     bat_dau = bool(r['starts_at'] and r['starts_at'] <= local_now())
     lop_mode = r.get('class_mode') if 'class_mode' in r else (lop or {}).get('mode')
@@ -335,6 +337,9 @@ def _session_dict(r, counts=None, member_count=None, lop=None):
         'attendanceTakenAt': (r['attendance_taken_at'].isoformat()
                               if r.get('attendance_taken_at') else None),
         'attendanceTakenBy': r.get('attendance_taken_by'),
+        # Buổi bù (V-g, §62e): trỏ buổi gốc; danh sách em riêng thì nói bao nhiêu em.
+        'makeupFor': r.get('makeup_for'),
+        'soNguoiThamGia': so_tham_gia,
     }
     if 'class_name' in r:
         out['className'] = r['class_name']
@@ -415,6 +420,17 @@ class ClassSessionsView(APIView):
         # MỘT câu đếm cho TOÀN BỘ buổi vừa lấy, không phải mỗi buổi một câu.
         counts = _attendance_counts(class_id, [r['id'] for r in rows])
         members = int(info['members'] or 0)
+        # Buổi có danh sách riêng (buổi bù, V-g): mẫu số "còn N chưa tick" là số em
+        # ĐANG học trong danh sách ấy, không phải sĩ số lớp. MỘT câu cho mọi buổi.
+        tham_gia = {r['session_id']: int(r['n']) for r in q(
+            '''SELECT sp.session_id,
+                      COUNT(m.user_id) FILTER (WHERE ''' + chi_hoc_vien('u') + ''') AS n
+               FROM session_participants sp
+               LEFT JOIN class_members m ON m.class_id = %s AND m.user_id = sp.user_id
+                                        AND m.left_at IS NULL
+               LEFT JOIN users u ON u.id = m.user_id
+               WHERE sp.session_id = ANY(%s)
+               GROUP BY sp.session_id''', (class_id, [r['id'] for r in rows]))} if rows else {}
 
         # Người gọi làm được gì Ở MÀN NÀY — để giao diện đừng dựng nút mà bấm
         # vào mới biết là không được phép. Rà luồng trợ giảng 14/09/2026: thấy ba
@@ -429,7 +445,8 @@ class ClassSessionsView(APIView):
                 'mode': info['mode'], 'room': info['room'],
             },
             'quyen': {'xoaBuoi': senior, 'baoCaoPhuHuynh': senior},
-            'sessions': [_session_dict(r, counts.get(r['id']), members, lop=info) for r in rows],
+            'sessions': [_session_dict(r, counts.get(r['id']), tham_gia.get(r['id'], members), lop=info,
+                                       so_tham_gia=tham_gia.get(r['id'])) for r in rows],
             'statuses': list(SESSION_STATUS),
             'attendanceStatuses': list(ATTENDANCE_STATUS),
         })
@@ -678,7 +695,8 @@ class SessionAttendanceView(APIView):
                       LEFT JOIN users mb ON mb.id = a.marked_by
                       WHERE m.class_id = %s AND m.left_at IS NULL
                         AND ''' + chi_hoc_vien('u') + '''
-                      ORDER BY u.name, m.user_id''', (session_id, class_id))
+                        AND ''' + thuoc_buoi('%s', 'm.user_id') + '''
+                      ORDER BY u.name, m.user_id''', (session_id, class_id, session_id))
 
         # Câu 2: chuyên cần luỹ kế trong CHÍNH lớp này, một câu cho cả lớp.
         # Bỏ buổi đã HUỶ: lớp nghỉ vì giảng viên ốm mà tính vào số buổi vắng của
@@ -746,10 +764,12 @@ class SessionAttendanceView(APIView):
         # chấp nhận được phải là MỘT. Lệch nhau thì có người hiện trên màn hình
         # mà gửi lên lại bị báo "không thuộc lớp này" — hoặc ngược lại, tick
         # được cho người không hề hiện ra.
+        # Buổi bù (V-g): chỉ em trong danh sách của buổi — `thuoc_buoi`.
         members = {r['user_id'] for r in q(
             'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
-            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
-            (row['class_id'],))}
+            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+            + ' AND ' + thuoc_buoi('%s', 'm.user_id'),
+            (row['class_id'], session_id))}
 
         # GOM HẾT lỗi rồi báo MỘT LẦN, kèm số thứ tự dòng (T24).
         #
@@ -831,14 +851,6 @@ class SessionAttendanceView(APIView):
         rows = list(clean.values())
         now = local_now()
 
-        # Đọc trạng thái CŨ trước khi ghi đè. Đây là thứ nhật ký kiểm toán đang
-        # thiếu: hôm nay nó chỉ nói "buổi X: 12 có mặt, 3 vắng", nên khi phụ
-        # huynh khiếu nại "hôm đó cháu có đi học" thì không đối chiếu được ai đã
-        # sửa trạng thái của em từ gì sang gì. openSIS giữ cả `attendance_code`
-        # lẫn `attendance_teacher_code` chính vì tình huống này.
-        truoc = {r['user_id']: r['status'] for r in
-                 q('SELECT user_id, status FROM attendance WHERE session_id=%s', (session_id,))}
-
         params = []
         for m in rows:
             params += [session_id, m['user_id'], m['status'], m['minutes'], m['note'],
@@ -846,6 +858,18 @@ class SessionAttendanceView(APIView):
         values = ', '.join(['(%s, %s, %s, %s, %s, %s, %s)'] * len(rows))
 
         with transaction.atomic():
+            # Đọc trạng thái CŨ trước khi ghi đè. Đây là thứ nhật ký kiểm toán
+            # đang thiếu: hôm nay nó chỉ nói "buổi X: 12 có mặt, 3 vắng", nên khi
+            # phụ huynh khiếu nại "hôm đó cháu có đi học" thì không đối chiếu được
+            # ai đã sửa trạng thái của em từ gì sang gì. openSIS giữ cả
+            # `attendance_code` lẫn `attendance_teacher_code` chính vì tình huống này.
+            #
+            # TRONG giao dịch, khoá dòng (V-d, 25/09/2026): từ nay "cũ" đi thẳng vào
+            # `attendance_history` — hai người lưu cùng buổi cùng lúc mà đọc "cũ"
+            # ngoài khoá thì cả hai ghi cùng một "từ", và một lần đổi biến mất.
+            truoc = {r['user_id']: r['status'] for r in
+                     q('SELECT user_id, status FROM attendance WHERE session_id=%s '
+                       'FOR UPDATE', (session_id,))}
             # MỘT câu cho cả lớp: 30 câu UPSERT riêng là 30 lượt Neon ≈ 7 giây
             # cho một lần bấm Lưu.
             #
@@ -867,6 +891,21 @@ class SessionAttendanceView(APIView):
               '  note      = COALESCE(EXCLUDED.note, attendance.note),'
               '  marked_by = EXCLUDED.marked_by,'
               '  marked_at = EXCLUDED.marked_at', tuple(params))
+
+            # LỊCH SỬ SỬA (V-d, §62c): MỘT câu nhiều dòng, chỉ em THẬT SỰ đổi (kể cả
+            # lần tick đầu, `tu` NULL). Lưu lại y hệt → danh sách rỗng → 0 dòng.
+            # Cùng giao dịch với dòng điểm danh: lịch sử không được nói một chuyện
+            # mà bảng điểm danh nói chuyện khác. `now` cũng là mốc của dòng nhật ký
+            # bên dưới (`luc=now`) — phần điền ngược §62 so đúng mốc ấy.
+            doi = [m for m in rows if truoc.get(m['user_id']) != m['status']]
+            if doi:
+                ls = []
+                for m in doi:
+                    ls += [session_id, m['user_id'], truoc.get(m['user_id']), m['status'],
+                           request.user.id, now]
+                x('INSERT INTO attendance_history '
+                  '(session_id, user_id, tu, den, changed_by, changed_at) VALUES '
+                  + ', '.join(['(%s, %s, %s, %s, %s, %s)'] * len(doi)), tuple(ls))
 
             # Đóng dấu "buổi này ĐÃ được điểm danh". Không có hai cột này thì
             # "buổi X không có dòng attendance nào" mơ hồ giữa hai chuyện khác
@@ -918,7 +957,8 @@ class SessionAttendanceView(APIView):
                target_label=label, summary=summary,
                detail={'class_id': row['class_id'], 'counts': counts,
                        'marked': len(rows), 'skipped': skipped,
-                       'firstTime': not truoc, 'changed': changed})
+                       'firstTime': not truoc, 'changed': changed},
+               luc=now)
 
         return Response({
             'ok': True,
@@ -978,3 +1018,42 @@ class SessionAttendanceView(APIView):
                      'class_id': session['class_id']},
         } for m in marks])
 
+
+# ── 4. Lịch sử sửa điểm danh (V-d, 25/09/2026) ─────────────────────────────
+
+#: Trần dòng một lượt đọc — một buổi 30 em sửa vài lần là vài chục dòng; hàng trăm là
+#: dấu hiệu bất thường, không phải thứ màn hình cần vẽ hết.
+TRAN_LICH_SU = 500
+
+
+class SessionAttendanceHistoryView(APIView):
+    """GET /api/teach/sessions/<session_id>/attendance/history — ai sửa điểm danh của
+    em nào, từ gì sang gì, lúc nào (bảng TopHSA dòng 9, 14: "xem / lưu lịch sử điểm danh").
+
+    Cùng cổng với bảng tick (`IsTeachingStaff` + `can_see_class` qua buổi, 404 chung cho
+    "không có buổi" và "không phải lớp mình"): ai điểm danh được thì xem được lịch sử —
+    trợ giảng cũng cần biết ai đã sửa dòng mình tick. Chỉ đọc; mới nhất trước.
+    `nguon = 'nhat_ky'`: dòng điền ngược từ nhật ký kiểm toán (trước khi có bảng này).
+    """
+    permission_classes = [IsTeachingStaff]
+
+    def get(self, request, session_id):
+        row = _session_row(session_id)
+        if not row or not can_see_class(request.user, row['class_id']):
+            return Response(_NOT_FOUND_SESSION, status=404)
+        ds = q('''SELECT h.user_id, u.name, u.email, h.tu, h.den, h.changed_at, h.nguon,
+                         b.name AS boi
+                  FROM attendance_history h
+                  JOIN users u ON u.id = h.user_id
+                  LEFT JOIN users b ON b.id = h.changed_by
+                  WHERE h.session_id = %s
+                  ORDER BY h.changed_at DESC, h.id DESC
+                  LIMIT %s''', (session_id, TRAN_LICH_SU))
+        return Response({
+            'lichSu': [{'userId': r['user_id'], 'name': r['name'] or r['email'],
+                        'tu': r['tu'], 'den': r['den'],
+                        'luc': r['changed_at'].isoformat() if r['changed_at'] else None,
+                        'boi': r['boi'], 'nguon': r['nguon']} for r in ds],
+            'labels': dict(ATTENDANCE_LABEL),
+            'catBot': len(ds) >= TRAN_LICH_SU,
+        })

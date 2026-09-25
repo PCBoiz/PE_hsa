@@ -20,6 +20,7 @@ trong vòng lặp tốn ba lượt tới Neon cho mỗi em. Giảng viên chấm
 rồi bấm Lưu một lần, và đang chờ trước màn hình.
 """
 import logging
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
@@ -33,12 +34,19 @@ from common.events import KIND_ASSIGNMENT, SOURCE_SYSTEM, forget_events, pct, re
 from common.permissions import IsTeachingStaff, can_see_class, is_assistant
 from common.views import NguoiDungView
 from notifications.service import notify
+from teaching.nhan_bai import CA_LOP, CHE_DO_GIAO, NHOM, giao_cho
 from teaching.vocab import chi_hoc_vien
 
 #: Vòng đời một bài tập. Khớp `assignments_status_check` ở §38.
 #: 'draft' = đang soạn, học viên CHƯA thấy. Có trạng thái này vì soạn đề tự luận
 #: mất thời gian, và một bài soạn dở mà học viên đã thấy thì họ hỏi ngay.
 ASSIGNMENT_STATUS = ('draft', 'open', 'closed')
+
+#: Loại bài (V-h, §62f `assignments_kind_check`). 'kiem_tra' = bài kiểm tra LÀM TRÊN
+#: LỚP, giảng viên nhập điểm tay ("điểm thi thử" của bảng TopHSA — anh Sơn chốt
+#: 25/09): học viên không nộp qua hệ thống, em vắng buổi kiểm tra ghi `absent`.
+ASSIGNMENT_KINDS = ('bai_tap', 'kiem_tra')
+BAI_TAP, KIEM_TRA = ASSIGNMENT_KINDS
 
 TEXT_FIELDS = {'title': 200, 'description': 4000, 'attachment_url': 400}
 
@@ -60,18 +68,24 @@ def _han(v):
     return v.strftime('%d/%m %H:%M') if v else ''
 
 
-def _bao_bai_moi(assignment_id, class_id, title, due_at):
-    """Chuông cho MỌI học viên đang học lớp: "Bài tập mới".
+def _bao_bai_moi(assignment_id, class_id, title, due_at, chi=None):
+    """Chuông cho mọi học viên đang học lớp ĐƯỢC GIAO bài: "Bài tập mới".
 
     Thêm 20/09/2026 sau lượt rà sáu vai: tới hôm đó `notifications` chỉ có
     bình luận diễn đàn; giảng viên giao bài xong, em chỉ biết nếu tự mở mục
     Bài tập (điện thoại không có mục ấy trên thanh). Thất bại ở đây KHÔNG được
     làm hỏng việc giao bài — chuông là tiện ích, bài đã vào CSDL rồi.
+
+    V-e (25/09/2026): chỉ em trong đối tượng nhận (`giao_cho`); `chi` = tập em
+    được báo (đổi người nhận chỉ báo em MỚI thêm, không báo lại em cũ).
     """
     try:
         ds = q('SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
-               'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
-               (class_id,))
+               'JOIN assignments a ON a.id = %s '
+               'WHERE m.class_id = a.class_id AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+               + ' AND ' + giao_cho('a', 'm.user_id'), (assignment_id,))
+        if chi is not None:
+            ds = [r for r in ds if r['user_id'] in chi]
         han = _han(due_at)
         for r in ds:
             notify(r['user_id'], 'assignment_new', 'Bài tập mới: %s' % title,
@@ -108,15 +122,21 @@ def _bao_da_nop(bai, em):
         return 0
 
 
-def _bao_da_cham(assignment_id, title, thang, rows):
-    """Chuông cho từng em vừa được chấm: điểm + câu nhận xét đầu."""
+def _bao_da_cham(assignment_id, title, thang, rows, kiem_tra=False):
+    """Chuông cho từng em vừa được chấm: điểm + câu nhận xét đầu.
+
+    Bài kiểm tra (V-h): "Điểm bài kiểm tra …"; em VẮNG không có điểm nên không báo.
+    """
     try:
         for g in rows:
+            if g.get('absent'):
+                continue
             diem = g['score']
             diem_chu = ('%g' % float(diem)) if diem is not None else '—'
             nx = (g.get('feedback') or '').strip()
             notify(g['user_id'], 'assignment_graded',
-                   'Bài "%s" đã chấm: %s/%g' % (title, diem_chu, float(thang)),
+                   ('Điểm bài kiểm tra "%s": %s/%g' if kiem_tra else 'Bài "%s" đã chấm: %s/%g')
+                   % (title, diem_chu, float(thang)),
                    nx[:120] if nx else 'Giảng viên chưa ghi nhận xét',
                    'assignment', assignment_id, coalesce_minutes=0)
         return len(rows)
@@ -265,6 +285,23 @@ def _clean(body, class_id):
                           % (DIEM_MIN, DIEM_MAX))
         data['max_score'] = v
 
+    if 'kind' in body:
+        loai = str(body['kind'] or '').strip() or BAI_TAP
+        if loai not in ASSIGNMENT_KINDS:
+            return None, 'Loại bài phải là bài tập hoặc bài kiểm tra trên lớp.'
+        data['kind'] = loai
+
+    if 'held_on' in body:
+        raw = body['held_on']
+        if raw in (None, ''):
+            data['held_on'] = None
+        else:
+            from datetime import date
+            try:
+                data['held_on'] = date.fromisoformat(str(raw).strip()[:10])
+            except ValueError:
+                return None, 'Ngày kiểm tra phải có dạng YYYY-MM-DD.'
+
     if 'status' in body:
         st = str(body['status'] or '').strip()
         if st not in ASSIGNMENT_STATUS:
@@ -273,6 +310,68 @@ def _clean(body, class_id):
         data['status'] = st
 
     return data, None
+
+
+def _hoc_vien_dang_hoc(class_id):
+    """``{user_id: tên}`` — học viên đang học lớp (cùng bộ lọc với bảng chấm)."""
+    return {r['user_id']: r['name'] for r in q(
+        'SELECT m.user_id, u.name FROM class_members m JOIN users u ON u.id = m.user_id '
+        'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+        + ' ORDER BY u.name, m.user_id', (class_id,))}
+
+
+def _doc_doi_tuong(body, class_id, mode_cu=CA_LOP):
+    """Thân request → ``(mode, ids, lỗi)``. ``mode`` None = không gửi gì về người nhận.
+
+    ``target_mode``: 'lop' | 'nhom'. ``target_user_ids``: danh sách id học viên ĐANG
+    học lớp — bắt buộc, không rỗng khi 'nhom'. Chỉ gửi ``target_user_ids`` (sửa bài)
+    thì hiểu là 'nhom'. Id lạ báo ĐÚNG id ấy, không lẳng lặng bỏ: giao cho một nhóm
+    thiếu người mà không ai biết là em ấy không có bài.
+    """
+    if 'target_mode' not in body and 'target_user_ids' not in body:
+        return None, None, None
+    mode = body.get('target_mode') or (NHOM if 'target_user_ids' in body else mode_cu)
+    if mode not in CHE_DO_GIAO:
+        return None, None, 'Giao cho phải là "lop" (cả lớp) hoặc "nhom" (chọn học viên).'
+    if mode == CA_LOP:
+        return mode, [], None
+    raw = body.get('target_user_ids')
+    if not isinstance(raw, list) or not raw:
+        return None, None, 'Chọn ít nhất một học viên nhận bài, hoặc giao cho cả lớp.'
+    try:
+        ids = sorted({int(v) for v in raw})
+    except (TypeError, ValueError):
+        return None, None, 'Danh sách học viên nhận bài phải là các số id.'
+    dang_hoc = _hoc_vien_dang_hoc(class_id)
+    la = [i for i in ids if i not in dang_hoc]
+    if la:
+        return None, None, ('Học viên %s không đang học lớp này — bỏ ra khỏi danh sách nhận '
+                            'bài rồi gửi lại.' % ', '.join('#%d' % i for i in la))
+    return mode, ids, None
+
+
+def _ghi_doi_tuong(assignment_id, mode, ids):
+    """Thay TRỌN danh sách người nhận (gọi trong giao dịch của bên gọi)."""
+    x('UPDATE assignments SET target_mode = %s WHERE id = %s', (mode, assignment_id))
+    x('DELETE FROM assignment_targets WHERE assignment_id = %s', (assignment_id,))
+    if mode == NHOM and ids:
+        x('INSERT INTO assignment_targets (assignment_id, user_id) VALUES '
+          + ', '.join(['(%s, %s)'] * len(ids)),
+          tuple(v for i in ids for v in (assignment_id, i)))
+
+
+def _nguoi_nhan(assignment_id, class_id):
+    """Tập em ĐANG được giao bài (sau `giao_cho`) — để biết ai là người nhận MỚI."""
+    return {r['user_id'] for r in q(
+        'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
+        'JOIN assignments a ON a.id = %s '
+        'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+        + ' AND ' + giao_cho('a', 'm.user_id'), (assignment_id, class_id))}
+
+
+#: Mảnh SELECT cho danh sách người nhận của bài `a` — một câu con, không thêm lượt gọi.
+_CHON_NGUOI_NHAN = ('ARRAY(SELECT gt.user_id FROM assignment_targets gt '
+                    'WHERE gt.assignment_id = a.id ORDER BY gt.user_id) AS target_ids')
 
 
 def _dict(r):
@@ -285,7 +384,15 @@ def _dict(r):
         'maxScore': float(r['max_score']) if r.get('max_score') is not None else None,
         'attachmentUrl': r['attachment_url'],
         'createdAt': r['created_at'].isoformat() if r.get('created_at') else None,
+        # Bài kiểm tra trên lớp (V-h): loại + ngày làm bài.
+        'kind': r.get('kind') or BAI_TAP,
+        'heldOn': r['held_on'].isoformat() if r.get('held_on') else None,
+        # Đối tượng nhận (V-e). Danh sách id CHỈ có ở đường của nhân sự (câu đọc có
+        # `target_ids`) — phía học viên không được biết bạn nào nhận bài.
+        'targetMode': r.get('target_mode') or CA_LOP,
     }
+    if 'target_ids' in r:
+        out['targetUserIds'] = list(r['target_ids'] or [])
     for k in ('submitted', 'graded', 'members'):
         if k in r:
             out[k] = r[k] or 0
@@ -307,7 +414,7 @@ def _load(request, assignment_id):
     Trả 404 chứ không 403 cho lớp không phụ trách — cùng quy ước với cả module
     `teaching/`: 403 là tự thú nhận "lớp đó có tồn tại".
     """
-    row = q1('''SELECT a.*, c.name AS class_name, c.code AS class_code
+    row = q1('''SELECT a.*, c.name AS class_name, c.code AS class_code, ''' + _CHON_NGUOI_NHAN + '''
                 FROM assignments a JOIN classes c ON c.id = a.class_id
                 WHERE a.id = %s''', (assignment_id,))
     if not row or not can_see_class(request.user, row['class_id']):
@@ -334,7 +441,12 @@ class ClassAssignmentsView(APIView):
         # BAO GIỜ TẮT và không có ô nào để bấm, vì bảng chấm đã giấu em ấy đi.
         # Sau vài ngày giảng viên học cách bỏ qua nó, và bỏ qua luôn những bài
         # chưa chấm THẬT. Phân số 36/35 còn tự tố cáo là số liệu hỏng.
-        rows = q('''SELECT a.*,
+        # Sĩ số của TỪNG bài (V-e): bài giao cho nhóm có mẫu số là nhóm ấy — một câu
+        # con trong cùng câu, không thêm lượt gọi cho mỗi bài.
+        rows = q('''SELECT a.*, ''' + _CHON_NGUOI_NHAN + ''',
+                           (SELECT COUNT(*) FROM class_members m2 JOIN users u2 ON u2.id = m2.user_id
+                             WHERE m2.class_id = a.class_id AND m2.left_at IS NULL
+                               AND ''' + chi_hoc_vien('u2') + ''' AND ''' + giao_cho('a', 'm2.user_id') + ''') AS members,
                            COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL) AS submitted,
                            COUNT(s.user_id) FILTER (WHERE s.graded_at IS NOT NULL)    AS graded,
                            COUNT(s.user_id) FILTER (WHERE s.submitted_at IS NOT NULL
@@ -346,16 +458,15 @@ class ClassAssignmentsView(APIView):
                                             JOIN users u ON u.id = m.user_id
                                             WHERE m.class_id = a.class_id
                                               AND m.left_at IS NULL
-                                              AND ''' + chi_hoc_vien('u') + ''')
+                                              AND ''' + chi_hoc_vien('u') + '''
+                                              AND ''' + giao_cho('a', 'm.user_id') + ''')
                     WHERE a.class_id = %s
                     GROUP BY a.id
                     ORDER BY a.due_at DESC NULLS LAST, a.id DESC''', (class_id,))
-        si_so = q1('''SELECT COUNT(*) AS n FROM class_members m
-                      JOIN users u ON u.id = m.user_id
-                      WHERE m.class_id = %s AND m.left_at IS NULL
-                        AND ''' + chi_hoc_vien('u'), (class_id,))['n']
         return Response({
-            'assignments': [dict(_dict(r), members=si_so) for r in rows],
+            'assignments': [_dict(r) for r in rows],
+            # Học viên đang học — cho ô "Giao cho: chọn học viên" (V-e). Chỉ tên và id.
+            'hocVien': [{'id': k, 'name': v} for k, v in _hoc_vien_dang_hoc(class_id).items()],
             'statuses': list(ASSIGNMENT_STATUS),
             # Danh mục chủ đề gửi kèm để màn hình vẽ ô CHỬN thay vì ô gõ — xem
             # `chu_de_cua_lop`. Gửi từ máy chủ chứ không viết cứng ở màn hình: danh
@@ -381,19 +492,29 @@ class ClassAssignmentsView(APIView):
         if not data.get('title'):
             return Response({'error': 'Bài tập phải có tiêu đề.'}, status=400)
 
+        mode, ids, loi = _doc_doi_tuong(body, class_id)
+        if loi:
+            return Response({'error': loi}, status=400)
+
         data['class_id'] = class_id
         data['created_by'] = request.user.id
         data.setdefault('created_at', local_now())
         cols = list(data)
-        row = q1('INSERT INTO assignments (%s) VALUES (%s) RETURNING id'
-                 % (', '.join(cols), ', '.join(['%s'] * len(cols))),
-                 tuple(data[c] for c in cols))
+        # Bài + người nhận trong MỘT giao dịch: bài 'nhom' mà thiếu dòng người nhận là
+        # bài không ai thấy — và chuông bên dưới cũng không tới ai.
+        with transaction.atomic():
+            row = q1('INSERT INTO assignments (%s) VALUES (%s) RETURNING id'
+                     % (', '.join(cols), ', '.join(['%s'] * len(cols))),
+                     tuple(data[c] for c in cols))
+            if mode is not None:
+                _ghi_doi_tuong(row['id'], mode, ids)
 
         audit.record(request, audit.ASSIGNMENT_CREATE, target_type='assignment',
                      target_id=row['id'], target_label=data['title'],
                      summary='Giao bài "%s" cho lớp.' % data['title'],
                      detail={'classId': class_id, 'topic': data.get('topic'),
-                             'maxScore': str(data.get('max_score') or '')})
+                             'maxScore': str(data.get('max_score') or ''),
+                             'targetMode': mode or CA_LOP, 'targetUserIds': ids or []})
         # Bản nháp thì em chưa thấy — chuông đi cùng lúc bài ĐƯỢC MỞ (xem `patch`).
         da_bao = (_bao_bai_moi(row['id'], class_id, data['title'], data.get('due_at'))
                   if (data.get('status') or 'open') == 'open' else 0)
@@ -411,16 +532,32 @@ class AssignmentDetailView(APIView):
         if not before:
             return Response(_NOT_FOUND, status=404)
         body = request.data if isinstance(request.data, dict) else {}
+        # Đổi người nhận = giao lại bài cho người khác — việc của người GIAO bài, không
+        # phải trợ giảng (cùng luật với `ClassAssignmentsView.post`). Mở / đóng bài thì
+        # trợ giảng vẫn làm được như trước.
+        if is_assistant(request.user) and ('target_mode' in body or 'target_user_ids' in body):
+            return Response({'error': 'Trợ giảng không đổi được người nhận bài. Nhờ giảng viên '
+                                      'phụ trách lớp hoặc quản lý học vụ đổi giúp.'}, status=403)
         data, err = _clean(body, before['class_id'])
         if err:
             return Response({'error': err}, status=400)
-        if not data:
+        mode, ids, err = _doc_doi_tuong(body, before['class_id'], before.get('target_mode') or CA_LOP)
+        if err:
+            return Response({'error': err}, status=400)
+        if not data and mode is None:
             return Response({'error': 'Không có trường hợp lệ để cập nhật.'}, status=400)
 
+        nhan_truoc = _nguoi_nhan(assignment_id, before['class_id']) if mode is not None else set()
         data['updated_at'] = local_now()
         cols = list(data)
-        x('UPDATE assignments SET %s WHERE id=%%s' % ', '.join('%s=%%s' % c for c in cols),
-          tuple(data[c] for c in cols) + (assignment_id,))
+        with transaction.atomic():
+            x('UPDATE assignments SET %s WHERE id=%%s' % ', '.join('%s=%%s' % c for c in cols),
+              tuple(data[c] for c in cols) + (assignment_id,))
+            if mode is not None:
+                _ghi_doi_tuong(assignment_id, mode, ids)
+        if mode is not None:
+            data['target_mode'] = mode
+            data['target_user_ids'] = ids
 
         canh_bao = None
         # Đổi thang điểm SAU khi đã chấm là đổi ý nghĩa của mọi điểm đã cho.
@@ -445,6 +582,14 @@ class AssignmentDetailView(APIView):
             _bao_bai_moi(assignment_id, before['class_id'],
                          data.get('title') or before['title'],
                          data.get('due_at', before.get('due_at')))
+        elif mode is not None and before['status'] == 'open' and data.get('status', 'open') == 'open':
+            # Đổi người nhận của bài ĐANG MỞ (V-e): chỉ em MỚI được thêm nhận chuông —
+            # em đã nhận từ trước không bị báo lần hai.
+            moi = _nguoi_nhan(assignment_id, before['class_id']) - nhan_truoc
+            if moi:
+                _bao_bai_moi(assignment_id, before['class_id'],
+                             data.get('title') or before['title'],
+                             data.get('due_at', before.get('due_at')), chi=moi)
         after = _load(request, assignment_id)
         out = {'ok': True, 'assignment': _dict(after)}
         if canh_bao:
@@ -519,17 +664,19 @@ class AssignmentGradingView(APIView):
                          s.submitted_at,
                          left(s.content, %s) AS content,
                          length(s.content)   AS content_len,
-                         s.file_url, s.score, s.feedback,
+                         s.file_url, s.score, s.feedback, s.absent,
                          s.graded_at, gb.name AS graded_by_name
                   FROM class_members m
                   JOIN users u ON u.id = m.user_id
                   LEFT JOIN submissions s
                          ON s.assignment_id = %s AND s.user_id = m.user_id
                   LEFT JOIN users gb ON gb.id = s.graded_by
+                  JOIN assignments a ON a.id = %s
                   WHERE m.class_id = %s AND m.left_at IS NULL
                     AND ''' + chi_hoc_vien('u') + '''
+                    AND ''' + giao_cho('a', 'm.user_id') + '''
                   ORDER BY u.name, m.user_id''',
-               (XEM_TRUOC, assignment_id, row['class_id']))
+               (XEM_TRUOC, assignment_id, assignment_id, row['class_id']))
 
         thang = float(row['max_score'])
         return Response({
@@ -550,6 +697,8 @@ class AssignmentGradingView(APIView):
                 'feedback': r['feedback'],
                 'gradedAt': r['graded_at'].isoformat() if r['graded_at'] else None,
                 'gradedByName': r['graded_by_name'],
+                # Vắng buổi kiểm tra (V-h) — đã ghi nhận, không có điểm.
+                'absent': bool(r['absent']),
             } for r in hs],
         })
 
@@ -569,10 +718,8 @@ class AssignmentGradingView(APIView):
                                       % MAX_GRADE_PER_BATCH}, status=400)
 
         thang = Decimal(str(row['max_score']))
-        members = {r['user_id'] for r in q(
-            'SELECT m.user_id FROM class_members m JOIN users u ON u.id = m.user_id '
-            'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u'),
-            (row['class_id'],))}
+        # Chỉ em được GIAO bài (V-e): chấm cho em ngoài nhóm là bỏ qua và báo lại.
+        members = _nguoi_nhan(assignment_id, row['class_id'])
 
         sach, bo_qua = {}, []
         for g in grades:
@@ -588,11 +735,20 @@ class AssignmentGradingView(APIView):
                 # để người gửi biết chứ không tưởng là đã lưu.
                 bo_qua.append(uid)
                 continue
-            diem = _so(g.get('score'))
-            if diem is None:
+            # VẮNG (V-h): chỉ bài kiểm tra trên lớp; vắng thì KHÔNG có điểm — gửi cả
+            # hai là hai lời khai trái nhau, không đoán hộ bên nào đúng.
+            vang = g.get('absent') is True
+            if vang and row.get('kind') != KIEM_TRA:
+                return Response({'error': 'Chỉ bài kiểm tra trên lớp mới ghi được "vắng". '
+                                          'Bài tập thì bỏ em đó ra khỏi danh sách chấm.'}, status=400)
+            if vang and g.get('score') not in (None, ''):
+                return Response({'error': 'Em vắng buổi kiểm tra thì không có điểm — bỏ ô '
+                                          'điểm hoặc bỏ đánh dấu vắng.'}, status=400)
+            diem = None if vang else _so(g.get('score'))
+            if diem is None and not vang:
                 return Response({'error': 'Điểm phải là số. Chưa chấm thì bỏ em đó ra '
                                           'khỏi danh sách gửi lên.'}, status=400)
-            if diem < 0 or diem > thang:
+            if not vang and (diem < 0 or diem > thang):
                 return Response({'error': 'Điểm phải trong khoảng 0–%s theo thang của bài này.'
                                           % thang}, status=400)
             # PHÂN BIỆT "không gửi trường" với "gửi chuỗi rỗng".
@@ -610,7 +766,7 @@ class AssignmentGradingView(APIView):
             # Trùng user_id trong cùng mẻ: giữ dòng CUỐI. Bắt buộc — Postgres ném
             # "ON CONFLICT DO UPDATE command cannot affect row a second time".
             sach[uid] = {'user_id': uid, 'score': diem, 'feedback': nx,
-                         'doi_nx': doi_nx}
+                         'doi_nx': doi_nx, 'absent': vang}
 
         if not sach:
             return Response({'error': 'Không có học viên hợp lệ nào trong danh sách '
@@ -625,7 +781,7 @@ class AssignmentGradingView(APIView):
         # dòng này giữ nhận xét cũ còn dòng kia xoá nó thì phải quyết trong
         # Python rồi mới gửi xuống.
         cu_dong = {r['user_id']: r for r in q(
-            'SELECT user_id, feedback, score, graded_at FROM submissions WHERE assignment_id=%s '
+            'SELECT user_id, feedback, score, graded_at, absent FROM submissions WHERE assignment_id=%s '
             'AND user_id = ANY(%s)', (assignment_id, [g['user_id'] for g in rows]))}
         cu = {uid: r['feedback'] for uid, r in cu_dong.items()}
         for g in rows:
@@ -641,13 +797,14 @@ class AssignmentGradingView(APIView):
                     if g['user_id'] not in cu_dong
                     or cu_dong[g['user_id']]['graded_at'] is None
                     or _f(cu_dong[g['user_id']]['score']) != _f(g['score'])
+                    or bool(cu_dong[g['user_id']]['absent']) != g['absent']
                     or (cu_dong[g['user_id']]['feedback'] or '') != (g['feedback'] or '')]
 
         params = []
         for g in rows:
-            params += [assignment_id, g['user_id'], g['score'], g['feedback'],
+            params += [assignment_id, g['user_id'], g['score'], g['absent'], g['feedback'],
                        request.user.id, now]
-        values = ', '.join(['(%s, %s, %s, %s, %s, %s)'] * len(rows))
+        values = ', '.join(['(%s, %s, %s, %s, %s, %s, %s)'] * len(rows))
 
         with transaction.atomic():
             # MỘT câu cho cả lớp, cùng lý do với điểm danh (T41).
@@ -656,10 +813,11 @@ class AssignmentGradingView(APIView):
             # Giảng viên chấm một bài nộp trên giấy thì dòng vẫn phải ghi rõ là
             # em chưa nộp qua hệ thống — đó là hai sự kiện khác nhau.
             x('INSERT INTO submissions '
-              '(assignment_id, user_id, score, feedback, graded_by, graded_at) '
+              '(assignment_id, user_id, score, absent, feedback, graded_by, graded_at) '
               'VALUES ' + values +
               ' ON CONFLICT (assignment_id, user_id) DO UPDATE SET '
               '  score     = EXCLUDED.score,'
+              '  absent    = EXCLUDED.absent,'
               # KHÔNG `COALESCE`: giá trị gửi xuống ĐÃ là giá trị cuối cùng
               # (xem chỗ dựng `cu` ở trên). COALESCE ở đây biến "xoá nhận xét"
               # thành "giữ nguyên nhận xét cũ", vĩnh viễn.
@@ -669,7 +827,13 @@ class AssignmentGradingView(APIView):
 
         # Sự kiện học tập nằm NGOÀI khối atomic, có chủ đích — cùng lý do đã ghi
         # ở `sessions.py`: điểm đã chốt, sự kiện là việc ghi thêm.
-        so_su_kien = self._emit(row, rows, now)
+        co_diem = [g for g in rows if not g['absent']]
+        so_su_kien = self._emit(row, co_diem, now) if co_diem else 0
+        # Em VẮNG (V-h): điểm cũ (nếu từng có) phải rời sổ điểm và bản đồ năng lực —
+        # cùng khoá (em, bài) với đường nộp lại. Vài em mỗi lượt, mỗi em một câu.
+        for g in rows:
+            if g['absent']:
+                forget_events(user_id=g['user_id'], dedup_key='assignment:%s' % row['id'])
 
         label = row['title']
         summary = 'Chấm %d bài của "%s" (lớp %s).' % (len(rows), label, row['class_name'])
@@ -680,7 +844,7 @@ class AssignmentGradingView(APIView):
         #
         # Chấm lại chính là đường sửa (sự kiện quay lại), nhưng người ta chỉ
         # chấm lại nếu BIẾT là cần.
-        thieu = len(rows) - so_su_kien
+        thieu = len(co_diem) - so_su_kien
         if thieu > 0:
             logger.error('[assignments] bài %s: chấm %d nhưng chỉ ghi được %d sự kiện '
                          'học tập — điểm KHÔNG vào bản đồ năng lực của %d em',
@@ -689,7 +853,7 @@ class AssignmentGradingView(APIView):
                      target_id=assignment_id, target_label=label, summary=summary,
                      detail={'classId': row['class_id'], 'graded': len(rows),
                              'skipped': bo_qua, 'maxScore': str(thang)})
-        _bao_da_cham(assignment_id, label, thang, doi_that)
+        _bao_da_cham(assignment_id, label, thang, doi_that, kiem_tra=row.get('kind') == KIEM_TRA)
         ra = {'ok': True, 'graded': len(rows), 'events': so_su_kien,
               'skipped': bo_qua, 'summary': summary}
         if thieu > 0:
@@ -711,17 +875,24 @@ class AssignmentGradingView(APIView):
         điểm) nhưng không vào được ô nào — và đó là lý do màn hình nhắc giảng
         viên gắn chủ đề khi tạo bài.
         """
+        # Bài kiểm tra (V-h): mốc là NGÀY LÀM BÀI, không phải lúc nhập điểm — nhập bù
+        # hôm sau không được đẩy bài kiểm tra sang ngày hôm sau trên sổ điểm.
+        kt = row.get('kind') == KIEM_TRA
+        ngay = row.get('held_on') if kt and row.get('held_on') else now.date()
+        luc = datetime.combine(ngay, now.time()) if kt and row.get('held_on') else now
         return record_events([{
             'uid': g['user_id'], 'kind': KIND_ASSIGNMENT,
             'dedup_key': 'assignment:%s' % row['id'],
-            'occurred_at': now, 'event_date': now.date(),
+            'occurred_at': luc, 'event_date': ngay,
             'course_id': row['course_id'], 'topic': row['topic'],
             'ref_type': 'assignment', 'ref_id': row['id'],
             'score': g['score'], 'max_score': row['max_score'],
             # CỐ Ý để `minutes=None`: thời gian em bỏ ra làm bài tự luận không ai
             # đo được, và bịa ra một con số sẽ trộn vào chỉ tiêu tuần.
             'minutes': None, 'xp': 0, 'source': SOURCE_SYSTEM,
-            'meta': {'title': row['title'], 'classId': row['class_id']},
+            # `loai` cho sổ điểm (`stats/gradebook`) tách "Bài kiểm tra" khỏi bài tập.
+            'meta': {'title': row['title'], 'classId': row['class_id'],
+                     'loai': row.get('kind') or BAI_TAP},
         } for g in rows])
 
 
@@ -746,13 +917,14 @@ class MyAssignmentsView(NguoiDungView):
     def get(self, request):
         uid = request.user.id
         rows = q('''SELECT a.*, c.name AS class_name,
-                           s.submitted_at, s.content, s.score, s.feedback, s.graded_at
+                           s.submitted_at, s.content, s.score, s.feedback, s.graded_at,
+                           s.absent
                     FROM assignments a
                     JOIN classes c ON c.id = a.class_id
                     JOIN class_members m ON m.class_id = a.class_id AND m.user_id = %s
                     LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
-                    WHERE a.status <> 'draft'
-                    ORDER BY a.due_at NULLS LAST, a.id DESC''', (uid, uid))
+                    WHERE a.status <> 'draft' AND ''' + giao_cho('a', '%s') + '''
+                    ORDER BY a.due_at NULLS LAST, a.id DESC''', (uid, uid, uid))
         return Response({'assignments': [dict(
             _dict(r), className=r['class_name'],
             submittedAt=r['submitted_at'].isoformat() if r['submitted_at'] else None,
@@ -761,6 +933,7 @@ class MyAssignmentsView(NguoiDungView):
             scorePct=(pct(r['score'], r['max_score']) if r['score'] is not None else None),
             feedback=r['feedback'],
             gradedAt=r['graded_at'].isoformat() if r['graded_at'] else None,
+            absent=bool(r['absent']),
         ) for r in rows]})
 
     def post(self, request):
@@ -771,15 +944,20 @@ class MyAssignmentsView(NguoiDungView):
         except (TypeError, ValueError):
             return Response({'error': 'Thiếu assignment_id.'}, status=400)
 
-        bai = q1('''SELECT a.id, a.status, a.title, a.class_id, c.teacher_id
+        bai = q1('''SELECT a.id, a.status, a.title, a.class_id, a.kind, c.teacher_id
                     FROM assignments a
                     JOIN classes c ON c.id = a.class_id
                     JOIN class_members m ON m.class_id = a.class_id
                                         AND m.user_id = %s AND m.left_at IS NULL
-                    WHERE a.id = %s''', (uid, aid))
+                    WHERE a.id = %s AND ''' + giao_cho('a', '%s'), (uid, aid, uid))
         if not bai:
             return Response({'error': 'Không tìm thấy bài tập này trong lớp của bạn.'},
                             status=404)
+        # Bài kiểm tra trên lớp (V-h): làm trên giấy, giảng viên nhập điểm — không có
+        # đường nộp. 409: yêu cầu hợp lệ, xung đột với loại bài.
+        if bai['kind'] == KIEM_TRA:
+            return Response({'error': 'Đây là bài kiểm tra làm trên lớp — giảng viên nhập điểm, '
+                                      'không nộp bài qua hệ thống.'}, status=409)
         if bai['status'] != 'open':
             return Response({'error': 'Bài này đã đóng, không nhận bài nộp nữa. '
                                       'Liên hệ giảng viên nếu bạn nộp muộn có lý do.'},
