@@ -48,6 +48,11 @@ def _vao(lop, u, vao='2026-01-01', roi=None, ly_do=None):
       (lop, u.id, vao, roi, ly_do))
 
 
+def _cho_phep_bao_luu():
+    r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = 'class_members_leave_reason_check'")
+    return bool(r) and 'reserved' in r['d']
+
+
 def _cho_phep_tam_dung():
     r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = 'classes_status_check'")
     return bool(r) and 'paused' in r['d']
@@ -128,6 +133,12 @@ def test_tinh_trang_hoc_tinh_tu_luot_hoc_o_ho_so_danh_sach_va_tep_xuat():
     _vao(_lop('active'), em['dang_va_nghi'], vao='2026-06-01')
     mong = {'dang': 'dang_hoc', 'chua': 'chua_xep_lop', 'xong': 'da_hoc_xong', 'xong_lop_ket_thuc': 'da_hoc_xong',
             'nghi': 'da_nghi', 'xong_roi_nghi': 'da_nghi', 'chi_lop_huy': 'chua_xep_lop', 'dang_va_nghi': 'dang_hoc'}
+    if _cho_phep_bao_luu():
+        # Bảo lưu (lý do rời `reserved`) KHÁC bỏ học — và lượt GẦN NHẤT quyết định.
+        em['bao_luu'] = _nguoi(ROLE_STUDENT, 'TT bl %s' % d)
+        _vao(_lop('active'), em['bao_luu'], vao='2026-01-01', roi='2026-03-01', ly_do='dropped')
+        _vao(_lop('active'), em['bao_luu'], vao='2026-04-01', roi='2026-06-01', ly_do='reserved')
+        mong['bao_luu'] = 'bao_luu'
     if _cho_phep_tam_dung():
         em['dung'] = _nguoi(ROLE_STUDENT, 'TT dung %s' % d)
         _vao(_lop('paused'), em['dung'])

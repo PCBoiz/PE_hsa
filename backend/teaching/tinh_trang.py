@@ -15,7 +15,9 @@ khoản (cột + ô lọc) và tệp xuất. Thứ tự ưu tiên:
   3. ``chua_xep_lop`` chưa từng có lượt học nào ở lớp không huỷ;
   4. ``da_hoc_xong``  lượt học GẦN NHẤT kết thúc bằng "học xong", hoặc lớp ấy đã kết thúc
                       mà em chưa bị cho rời;
-  5. ``da_nghi``      còn lại — lượt gần nhất là bỏ giữa chừng, chuyển lớp (không còn lớp
+  5. ``bao_luu``      lượt học GẦN NHẤT đóng với lý do BẢO LƯU (`leave_reason = 'reserved'`,
+                      luồng C / §63) — em tạm nghỉ có hẹn quay lại, KHÁC bỏ học;
+  6. ``da_nghi``      còn lại — lượt gần nhất là bỏ giữa chừng, chuyển lớp (không còn lớp
                       nào đang học) hay rời không ghi lý do.
 
 Lớp đã HUỶ không tính ở mọi bước — như cổng mở môn (`courses/truy_cap.LOP_DANG_HOC`).
@@ -29,6 +31,7 @@ TINH_TRANG_HOC = (
     ('dang_hoc', 'Đang học'),
     ('tam_dung', 'Tạm dừng'),
     ('da_hoc_xong', 'Đã học xong'),
+    ('bao_luu', 'Bảo lưu'),
     ('da_nghi', 'Đã nghỉ'),
     ('chua_xep_lop', 'Chưa xếp lớp'),
 )
@@ -60,5 +63,8 @@ def sql_tinh_trang_hoc(u='u'):
         WHEN (SELECT (m.left_at IS NULL OR m.leave_reason = 'completed') {lop}
                ORDER BY COALESCE(m.left_at, m.joined_at) DESC NULLS LAST, m.id DESC LIMIT 1)
              THEN 'da_hoc_xong'
+        WHEN (SELECT m.leave_reason = 'reserved' {lop}
+               ORDER BY COALESCE(m.left_at, m.joined_at) DESC NULLS LAST, m.id DESC LIMIT 1)
+             THEN 'bao_luu'
         ELSE 'da_nghi'
     END''').format(u=u, hv=ROLE_STUDENT, lop=lop)

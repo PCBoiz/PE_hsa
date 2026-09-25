@@ -138,7 +138,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Xem và sửa hồ sơ học viên',
-    giaiThich: 'Trường, lớp, khu vực, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
+    giaiThich: 'Trường, lớp, tỉnh / thành phố, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập, tình trạng học phí. Tình trạng học tập tự tính từ lớp em học. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/ho_so.py::HoSoHocVienView',
     chan_them: 'học vụ: chỉ tài khoản vai Học viên',
@@ -204,6 +204,20 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Tải tệp mẫu Excel, điền, tải lên: hệ thống kiểm từng dòng trước khi ghi. Em đã có tài khoản được thêm vào lớp; em chưa có được cấp tài khoản mới. Tối đa 50 em mỗi tệp.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/nhap_hoc_vien.py::NhapHocVienView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
+    nhan: 'Xem lịch sử thay đổi của một lớp',
+    giaiThich: 'Ai sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi — mới nhất trước. Chỉ phần của lớp ấy; nhật ký đầy đủ vẫn chỉ quản trị viên xem.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/lich_su_lop.py::LichSuLopView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
+    nhan: 'Xem chấm công giảng viên và trợ giảng theo tháng',
+    giaiThich: 'Số buổi đã dạy, tổng giờ, số buổi tự điểm danh và điểm danh muộn của từng người; tải được Excel. Chỉ xem — chưa khoá tháng.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'teaching/cham_cong.py::ChamCongView',
   },
   {
     nhom: 'Lớp & đợt học',

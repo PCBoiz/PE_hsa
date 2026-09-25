@@ -4,12 +4,14 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      cham_cong,
                       chuyen_lop,
                       co_so_hoc_phi,
                       dong_thoi_gian,
                       exports,
                       ho_so,
                       lich,
+                      lich_su_lop,
                       lien_he_phu_huynh,
                       lop_cua_toi,
                       lop_gia_su,
@@ -128,6 +130,8 @@ urlpatterns = [
     # Nhập học viên vào lớp từ tệp mẫu (V-j): POST tệp (xem trước / nhập), GET tệp mẫu.
     path('api/admin/classes/<int:class_id>/nhap-hoc-vien', nhap_hoc_vien.NhapHocVienView.as_view()),
     path('api/admin/classes/<int:class_id>/nhap-hoc-vien/mau', nhap_hoc_vien.TepMauNhapHocVienView.as_view()),
+    # Lịch sử thay đổi của MỘT lớp cho học vụ (V-n) — phần của lớp trong nhật ký, chỉ đọc.
+    path('api/admin/classes/<int:class_id>/lich-su', lich_su_lop.LichSuLopView.as_view()),
     # Chuyển lớp MỘT bước (§55): rời lớp này + vào lớp kia + nối hai lượt, một giao dịch.
     path('api/admin/classes/<int:class_id>/members/<int:user_id>/transfer',
          chuyen_lop.ChuyenLopView.as_view()),
@@ -152,4 +156,6 @@ urlpatterns = [
     path('api/admin/do-proxy', do_proxy.DoProxyView.as_view()),
     # CƠ SỞ TÍNH học phí — không có trường tiền nào, xem co_so_hoc_phi.py
     path('api/admin/co-so-hoc-phi', co_so_hoc_phi.AdminBillingBasisView.as_view()),
+    # Chấm công theo tháng — giảng viên VÀ trợ giảng (V-o). Chỉ đọc; `?dinh_dang=xlsx`.
+    path('api/admin/cham-cong', cham_cong.ChamCongView.as_view()),
 ]
