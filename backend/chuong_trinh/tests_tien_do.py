@@ -3,7 +3,6 @@ import pytest
 
 from chuong_trinh.tien_do import danh_gia, tien_do_em, tien_do_lop
 
-
 # ── Luật thuần: ngưỡng CHẬM ở biên ─────────────────────────────────────────────
 
 def test_tre_dung_hai_buoi_la_CHAM():

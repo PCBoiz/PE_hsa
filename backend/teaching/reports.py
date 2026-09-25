@@ -48,6 +48,7 @@ import logging
 
 from django.db import DatabaseError
 
+from chuong_trinh.dich_vu import tien_do_lop
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
@@ -610,7 +611,8 @@ def class_list(class_ids):
 
 
 def class_page(class_ids, params):
-    """Danh sách lớp CÓ LỌC + PHÂN TRANG ở máy chủ (§54, 24/09/2026) — cố định 3 câu.
+    """Danh sách lớp CÓ LỌC + PHÂN TRANG ở máy chủ (§54, 24/09/2026) — cố định 3 câu
+    (+1 tiến độ chương trình E1 khi trang có lớp).
 
     Lọc: `q` (tên / mã lớp, tên giảng viên, tên hoặc mã HSA của em ĐANG học),
     `type` (nhom / gia_su), `status`, `term_id`, `teacher_id` (giảng viên chính
@@ -672,9 +674,14 @@ def class_page(class_ids, params):
                (ids,)):
         dem['byType'][r['class_type']] = dem['byType'].get(r['class_type'], 0) + r['n']
         dem['byStatus'][r['status']] = dem['byStatus'].get(r['status'], 0) + r['n']
+    # Tiến độ chương trình (E1) của lớp TRÊN TRANG — một câu, qua cửa dịch vụ của miền.
+    tien_do = tien_do_lop(tren_trang)
     lop = []
     for r in rows:
         d = _lop_dict(r)
+        td = tien_do.get(r['id'])
+        d['chuongTrinh'] = None if not td else {
+            k: td[k] for k in ('pct', 'keHoachPct', 'treBuoi', 'cham', 'chuaGhiSo')}
         tl = ten.get(r['id'], {})
         d['assistantNames'] = tl.get('tro_giang', [])
         # Tên em hiện ngay dưới tên lớp GIA SƯ — với lớp 1–3 em, tên em mới là

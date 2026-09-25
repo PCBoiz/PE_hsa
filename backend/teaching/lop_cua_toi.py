@@ -26,6 +26,7 @@ from datetime import timedelta
 
 from rest_framework.response import Response
 
+from chuong_trinh.dich_vu import tien_do_em
 from common.clock import local_now
 from common.db import q
 from common.views import NguoiDungView
@@ -122,6 +123,8 @@ class LopCuaToiView(NguoiDungView):
                 bai_tap[r['class_id']] = {'chuaNop': r['chua_nop'],
                                           'hanSom': _iso(r['han_som'])}
 
+        # % chương trình của em (E1) — một câu, qua cửa dịch vụ của miền.
+        chuong_trinh = tien_do_em(uid, ids, nay) if ids else {}
         muc_tieu = read_goals(uid)
         ngay_thi_em = as_date(muc_tieu.get('examDate'))
 
@@ -148,5 +151,6 @@ class LopCuaToiView(NguoiDungView):
                 'baiTap': bai_tap.get(cid, {'chuaNop': 0, 'hanSom': None}),
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),
+                'chuongTrinh': chuong_trinh.get(cid),
             })
         return Response({'lop': lop, 'mucTieu': {'examDate': muc_tieu.get('examDate')}})
