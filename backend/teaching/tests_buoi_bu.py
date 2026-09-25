@@ -154,6 +154,13 @@ def test_buoi_toi_cua_hoc_vien_chi_khi_tham_gia(canh):
     assert bu in toi(canh['an'])
     assert bu not in toi(canh['binh'])
 
+    # Buổi bù bị HUỶ: chỉ em học bù thấy dòng "buổi đã huỷ" — em khác chưa từng có buổi ấy.
+    x("UPDATE class_sessions SET status = 'cancelled' WHERE id = %s", (bu,))
+    huy = lambda u: [b['sessionId'] for b in  # noqa: E731
+                     _api(u).get('/api/lop-cua-toi').json()['lop'][0]['daHuy']]
+    assert bu in huy(canh['an'])
+    assert bu not in huy(canh['binh'])
+
 
 def test_hoc_phi_va_so_diem_danh_csv_chi_tinh_em_tham_gia(canh):
     """Buổi bù của An không thành một buổi "đã mở" trong cơ sở học phí của Bình, và ô
