@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -506,6 +505,14 @@ export default function SessionsClient({
                             {buId === s.id ? 'Đóng buổi bù' : 'Tạo buổi bù'}
                           </Button>
                         )}
+                        {s.status !== 'cancelled' && !n.sapToi && (
+                          <Link
+                            href={`/giang-day/so-dau-bai/${s.id}`}
+                            className="inline-flex min-h-11 items-center rounded-md border border-line px-3 text-small text-ink-2 hover:border-brand hover:text-brand-ink [@media(pointer:fine)]:min-h-9"
+                          >
+                            Sổ đầu bài
+                          </Link>
+                        )}
                         {quyen.xoaBuoi && (
                           <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
                             Xoá
@@ -725,7 +732,9 @@ function SuaBuoi({
       </div>
 
       <label className="mt-3 flex flex-col gap-1">
-        <span className="text-label text-ink-3">Sổ đầu bài</span>
+        {/* "Tình hình lớp" từ 25/09/2026 (E1): SỔ ĐẦU BÀI nay là màn riêng từng mục
+            đã dạy / chưa dạy (`/giang-day/so-dau-bai/<id>`); cột `note` vẫn là ô này. */}
+        <span className="text-label text-ink-3">Tình hình lớp</span>
         {/* `whitespace-pre-wrap` ở chỗ đọc, và textarea ở chỗ ghi: sổ đầu bài là
             văn xuôi nhiều dòng — "em A vắng có phép, lớp chậm 10 phút vì mạng" —
             chứ không phải một nhãn ngắn. */}
@@ -734,7 +743,7 @@ function SuaBuoi({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={2000}
-          placeholder="Đã dạy tới đâu, lớp gặp khó ở chỗ nào, việc giao về nhà…"
+          placeholder="Lớp gặp khó ở chỗ nào, em nào vắng, việc cần nhớ…"
           className="w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 py-2 text-input text-ink placeholder:text-ink-3/70"
         />
         {/* `maxLength` chặn gõ thêm, nhưng chặn IM LẶNG: người viết đang gõ dở

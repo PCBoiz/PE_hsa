@@ -7,6 +7,7 @@ import { BieuTuong } from '@/components/bieuTuong';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { lucVN } from '@/lib/gioVN';
 import { noiHoc } from '@/lib/noiHoc';
+import { cauTienDoEm } from '@/lib/tienDoChu';
 
 /**
  * LỚP CỦA BẠN — khối đầu tiên trên bảng điều khiển của học viên đang ở trong lớp.
@@ -63,6 +64,8 @@ type Lop = {
   baiTap: { chuaNop: number; hanSom: string | null };
   /** Điểm danh TỪNG buổi đã diễn ra, mới nhất trước (V-d, 25/09/2026). `?`: máy chủ cũ không trả. */
   diemDanh?: DongDiemDanh[];
+  /** % chương trình của em (E1). null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
+  chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
 };
 
 type DongDiemDanh = {
@@ -260,6 +263,7 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 </ol>
               </details>
             )}
+            {l.chuongTrinh && <p className="lct-cc">{cauTienDoEm(l.chuongTrinh)}</p>}
 
             {/* Bài tập chưa nộp. Ở điện thoại thanh trên không có mục Bài tập,
                 nên không có dòng này thì em không biết thầy vừa giao bài. */}

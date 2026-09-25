@@ -12,6 +12,14 @@ def test_tre_dung_hai_buoi_la_CHAM():
     assert d['cham'] is True
 
 
+def test_tre_dung_hai_buoi_ti_le_van_du_80_CHAM_chi_nho_ve_tre():
+    # 20 buổi khung trọng số 1: phải xong 10, xong 8 → trễ đúng 2 buổi, tỉ lệ đúng 80 %
+    # (không chậm theo tỉ lệ) — chỉ vế "trễ ≥ 2" bắt được: đổi ≥ thành > là đỏ.
+    d = danh_gia(tong_w=20, so_buoi_khung=20, phai_w=10, xong_w=8)
+    assert d['treBuoi'] == 2.0 and d['tiLe'] == 80.0
+    assert d['cham'] is True
+
+
 def test_tre_duoi_hai_buoi_va_ti_le_du_80_la_KHONG_cham():
     # phải xong 5, xong 4 → trễ 1, tỉ lệ đúng 80 % (biên < 0,8 là chậm) → không chậm.
     d = danh_gia(tong_w=10, so_buoi_khung=10, phai_w=5, xong_w=4)

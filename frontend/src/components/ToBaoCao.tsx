@@ -20,6 +20,8 @@
  * này không đọc tới chúng, nên nới kiểu là đúng — và nếu ai đó thêm một chỗ
  * hiển thị email vào đây, `tsc` sẽ bắt ngay vì kiểu nói rõ nó có thể vắng.
  */
+import { cauTienDoEm } from '@/lib/tienDoChu';
+
 export type BaoCao = {
   student: { id: number; name: string | null; email?: string | null; phone?: string | null };
   /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. `phone`/`email` vắng ở tờ đi qua chìa. */
@@ -118,6 +120,8 @@ export type BaoCao = {
     absent: boolean;
     feedback: string | null;
   }[];
+  /** % chương trình em đã học tới hôm nay (E1). null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
+  chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -247,6 +251,15 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
                 con số này đầy đủ.
               </p>
             ))}
+          </>
+        )}
+
+        {/* ── Tiến độ chương trình (E1, 25/09/2026) — tính tới hôm nay, chỉ buổi em có
+            mặt hoặc đi muộn (`chuong_trinh/tien_do.py`). Lớp chưa có khung: không vẽ. */}
+        {bc.chuongTrinh && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Tiến độ chương trình</h3>
+            <p className="mt-2 text-body text-ink-2">{cauTienDoEm(bc.chuongTrinh)}</p>
           </>
         )}
 

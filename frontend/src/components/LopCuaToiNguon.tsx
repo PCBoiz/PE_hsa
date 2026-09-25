@@ -3,6 +3,7 @@ import { z } from 'zod';
 import LopCuaToi, { type DuLieu } from '@/components/LopCuaToi';
 import type { HinhDang } from '@/lib/kiemDang';
 import { serverJson } from '@/lib/server-api';
+import { HD_TIEN_DO_EM } from '@/lib/chuongTrinh';
 
 /**
  * Lấy dữ liệu "Lớp của bạn" Ở MÁY CHỦ rồi đưa xuống khối hiển thị.
@@ -54,6 +55,7 @@ const HINH_DANG = z.looseObject({
     diemDanh: z.array(z.looseObject({
       sessionId: z.number(), startsAt: chu, topic: chu, daDiemDanh: z.boolean(), trangThai: chu,
     })).optional(),
+    chuongTrinh: HD_TIEN_DO_EM,
   })),
   mucTieu: z.looseObject({ examDate: chu }),
 }) satisfies HinhDang<DuLieu>;
