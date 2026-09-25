@@ -37,8 +37,8 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 12 | Giáo vụ · thay đổi học tập | CHƯA | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
-| 15 | Giáo viên · chương trình + tiến độ | CHƯA phần lớn | E1, Đ2 §60 | — |
-| 16 | Giáo viên · quản lý buổi học | MỘT PHẦN | E1 | — |
+| 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong (chờ gộp), còn tài liệu | Đ2 §60, E3 | — |
+| 16 | Giáo viên · quản lý buổi học | gần đủ — E1 xong (chờ gộp), đề xuất → E3 | E3 | — |
 | 17 | Giáo viên · giao bài | gần đủ | V-e, V-h | — |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
@@ -120,7 +120,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Lịch sử thay đổi / phân công lớp | MỘT PHẦN | Nhật ký chỉ quản trị viên đọc → **V-n** mở cho học vụ theo lớp |
 | Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | CÓ trừ "Kiểm tra / Thi thử / Kết quả" → **V-h** điểm kiểm tra GV nhập tay; "Đăng ký" tự đăng ký → **E5** |
 | Đang học lớp nào, đã học / nghỉ bao nhiêu buổi, có phép / không | CÓ | tờ báo cáo từng em (`present/late/absent/excused`) |
-| Tiến độ chương trình | CHƯA | → **E1** |
+| Tiến độ chương trình | CÓ (E1, `agent/e1`, chờ gộp) | màn **Chương trình lớp** `/giang-day/chuong-trinh/<lớp>` (đã dạy / kế hoạch / trễ / chưa ghi sổ, % từng em) — `chuong_trinh/tien_do.py`; chip ở Lớp học. Demo: học vụ → Lớp học → nút "Chương trình" |
 | Bài đã / chưa hoàn thành, điểm mạnh / yếu, lịch sử chuyển lớp | CÓ | bài tập + bản đồ kỹ năng + dòng thời gian |
 | Điểm kiểm tra, điểm thi thử | CHƯA (thi thử online đã bỏ) | → **V-h** |
 
@@ -129,16 +129,16 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Quản lý môn trong khoá, chuyên đề / bài học, thứ tự | CÓ | khu Giáo trình (Biên tập nội dung) |
-| **Tiến trình theo số buổi kèm tên bài**, chia theo buổi | CHƯA | không có bảng khung chương trình → **E1** |
-| Thời lượng buổi | MỘT PHẦN | có ở LỚP (sinh lịch), không ở khoá → **E1** |
+| **Tiến trình theo số buổi kèm tên bài**, chia theo buổi | CÓ (E1, `agent/e1`, chờ gộp) | §64 + màn **Khung chương trình** `/giao-trinh/khung-chuong-trinh` (học vụ, biên tập, quản trị): buổi, nội dung từng buổi, trọng số, học liệu |
+| Thời lượng buổi | CÓ (E1, `agent/e1`, chờ gộp) | `syllabus_sessions.duration_minutes`, ô "Thời lượng (phút)" ở màn Khung chương trình |
 | Gán khoá cho lớp | CÓ | `classes.course_id` |
 | Trạng thái khoá | MỘT PHẦN | `is_published` có nhưng không sửa được → **V-i** |
-| Phiên bản / lịch sử chỉnh sửa chương trình | CHƯA | → **E1** (bản nháp / xuất bản, lớp giữ bản đã nhận) |
+| Phiên bản / lịch sử chỉnh sửa chương trình | CÓ (E1, `agent/e1`, chờ gộp) | bản nháp → xuất bản (bản cũ cùng chuỗi "Đã thay"), "Tạo bản mới" chép cả cây, lớp giữ bản đã nhận; mọi thao tác vào Nhật ký (`syllabus.*`). Test `tests_khung_chuoi.py` |
 | Gắn bài giảng | CÓ | bài học trực tuyến |
 | Gắn video record | MỘT PHẦN | link theo buổi, học viên không thấy → **V-l**, **E4** |
 | Gắn tài liệu | CHƯA | → **Đ2 §60** |
-| Gắn bài tập, bài kiểm tra | MỘT PHẦN | bài tập theo lớp, không gắn vào khung → **E1** + **V-h** |
-| Điều kiện hoàn thành | MỘT PHẦN | cố định trong mã (bài xong / khoá 100%) → **E1** |
+| Gắn bài tập, bài kiểm tra | MỘT PHẦN | khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1, `agent/e1`, chờ gộp); bài tập giao cho lớp chưa trỏ về mục khung; điểm kiểm tra → **V-h** |
+| Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1, `agent/e1`, chờ gộp); chưa có ngưỡng "hoàn thành khoá" riêng |
 
 ## Dòng 6 — Báo cáo · MỘT PHẦN
 
@@ -150,7 +150,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Điểm danh HS, tiến độ, kết quả theo lớp | CÓ | CSV điểm danh + tiến độ; báo cáo lớp PDF |
 | Kết quả theo môn, hoàn thành bài tập (tổng) | MỘT PHẦN | theo khoá / từng bài; chưa báo cáo chéo |
 | Hoạt động GV/TG | MỘT PHẦN | → **V-o** |
-| HS nghỉ nhiều / chậm tiến độ | MỘT PHẦN | nghỉ nhiều CÓ; chậm tiến độ → **E1** |
+| HS nghỉ nhiều / chậm tiến độ | CÓ (E1, `agent/e1`, chờ gộp) | nghỉ nhiều CÓ; lớp chậm tiến độ + lớp chưa ghi sổ: ô "Tiến độ chương trình" ở Toàn trung tâm (`overview.py` khoá `chuongTrinh`) |
 | Bộ lọc thời gian / lớp / môn / khoá | MỘT PHẦN | tổng quan lọc đợt + ngày → **V-k** |
 | Xuất Excel / CSV | MỘT PHẦN | CSV CÓ; .xlsx CHƯA → **V-k** |
 
@@ -168,7 +168,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Theo dõi tham gia, thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | báo cáo lớp; "Việc hôm nay" (vắng liền ≥ 2 buổi) |
 | Điểm danh có mặt / vắng / muộn, cập nhật | CÓ | 4 trạng thái (`teaching/sessions.py:57`) |
 | Xem lịch sử điểm danh | MỘT PHẦN | chỉ người sửa cuối + Nhật ký (quản trị viên) → **V-d** |
-| Tiến độ lớp so với khung, cảnh báo chậm | CHƯA | → **E1** |
+| Tiến độ lớp so với khung, cảnh báo chậm | CÓ (E1, `agent/e1`, chờ gộp) | chậm = trễ ≥ 2 buổi HOẶC xong < 80 % phần phải xong (`chuong_trinh/tu_vung.py`); chip đỏ ở Lớp học, ô ở Toàn trung tâm, màn Chương trình lớp |
 
 ## Dòng 10 — Giáo vụ · lịch học · gần đủ
 
@@ -206,24 +206,24 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Lưu lịch sử chỉnh sửa | MỘT PHẦN | → **V-d** |
 | Thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | |
 
-## Dòng 15 — Giáo viên · chương trình + tiến độ · CHƯA phần lớn
+## Dòng 15 — Giáo viên · chương trình + tiến độ · MỘT PHẦN
 
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
-| Soạn / chuẩn bị nội dung buổi | MỘT PHẦN (`topic`, `note`) | **E1** |
+| Soạn / chuẩn bị nội dung buổi | CÓ (E1, `agent/e1`, chờ gộp) | buổi học gắn buổi khung (tự động theo ngày, gắn tay được); sổ đầu bài hiện nội dung kế hoạch + bài về nhà |
 | Đính kèm tài liệu | CHƯA | **Đ2 §60** |
-| Nội dung đã / chưa hoàn thành | CHƯA | **E1** sổ đầu bài |
+| Nội dung đã / chưa hoàn thành | CÓ (E1, `agent/e1`, chờ gộp) | **Sổ đầu bài** `/giang-day/so-dau-bai/<buổi>`: từng nội dung đã dạy / một phần / chưa dạy + ghi chú |
 | Ghi chú sau buổi | CÓ (`class_sessions.note`) | — |
-| Tiến độ thực tế vs kế hoạch, đề xuất điều chỉnh | CHƯA | **E1** (+ **E3** cho đề xuất) |
+| Tiến độ thực tế vs kế hoạch, đề xuất điều chỉnh | MỘT PHẦN (E1, `agent/e1`, chờ gộp) | tiến độ vs kế hoạch CÓ (màn Chương trình lớp); ô "Đề xuất" trong sổ là chữ tự do — biến thành yêu cầu ở **E3** |
 
-## Dòng 16 — Giáo viên · quản lý buổi học · MỘT PHẦN
+## Dòng 16 — Giáo viên · quản lý buổi học · gần đủ
 
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Buổi đã diễn ra, tình hình lớp | CÓ (trạng thái `done`, điểm danh, `note`) | — |
-| Nội dung thực tế / chưa hoàn thành, mức tiếp thu | CHƯA | **E1** |
-| Đề xuất HS cần hỗ trợ | MỘT PHẦN (hệ thống tự báo) | **E1** / **V-f** |
-| Đề xuất học bù / điều chỉnh tiến độ | CHƯA | **E1** + **E3** |
+| Nội dung thực tế / chưa hoàn thành, mức tiếp thu | CÓ (E1, `agent/e1`, chờ gộp) | sổ đầu bài: từng nội dung + mức tiếp thu 1–5 |
+| Đề xuất HS cần hỗ trợ | CÓ (E1, `agent/e1`, chờ gộp) | sổ đầu bài: đánh dấu em cần hỗ trợ + ghi chú (`session_support`, nội bộ); cờ theo em **V-f** |
+| Đề xuất học bù / điều chỉnh tiến độ | MỘT PHẦN (E1, `agent/e1`, chờ gộp) | ô "Đề xuất" trong sổ đầu bài; luồng duyệt → **E3** |
 
 ## Dòng 17 — Giáo viên · giao bài · gần đủ
 
@@ -305,8 +305,8 @@ lớp, nguồn "Tự đăng ký", hàng chờ "Đăng ký mới" cho giáo vụ.
 |---|---|---|
 | Buổi tham gia / vắng / muộn (số đếm) | CÓ ("Lớp của tôi") | — |
 | Lịch sử điểm danh từng buổi, tổng số buổi | MỘT PHẦN | **V-d** |
-| % hoàn thành chương trình, bài / chuyên đề đã / chưa, tiến độ theo môn | MỘT PHẦN (bài tự học trực tuyến) | **E1** (theo khung của lớp) |
-| So sánh thực tế với kế hoạch | MỘT PHẦN (kế hoạch tự học cá nhân) | **E1** |
+| % hoàn thành chương trình, bài / chuyên đề đã / chưa, tiến độ theo môn | CÓ (E1, `agent/e1`, chờ gộp) | "Lớp của tôi": "Đã học X% chương trình" — chỉ buổi em có mặt / muộn, buổi bù tính cho buổi gốc; tờ phụ huynh cùng dòng |
+| So sánh thực tế với kế hoạch | CÓ (E1, `agent/e1`, chờ gộp) | cùng dòng: "(kế hoạch tới nay: Y%)" |
 
 ## Dòng 29 — Học sinh · record · CHƯA → V-l, E4
 
