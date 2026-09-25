@@ -122,7 +122,9 @@ class CachedJWTAuthentication(JWTAuthentication):
             iat = int(token['iat'])
         except (KeyError, TypeError, ValueError):
             return False
-        return iat < _epoch_vn(moc)
+        # So với mốc CẮT về giây: `iat` là giây nguyên, mốc có micro giây — không cắt thì token cấp
+        # sau mốc nhưng cùng giây bị coi là đã thu hồi (25/09/2026).
+        return iat < int(_epoch_vn(moc))
 
     def get_user(self, validated_token):
         try:
