@@ -68,6 +68,8 @@ const VIEC: Record<string, string> = {
   'class.member.add': 'Thêm vào lớp',
   'class.member.remove': 'Cho rời lớp',
   'class.member.transfer': 'Chuyển lớp',
+  // 25/09/2026 (V-a, V-f): nhận xét gửi phụ huynh, cờ cần hỗ trợ, đề xuất hướng học.
+  'class.member.assess': 'Đánh giá học viên',
   'class.parent_contacts': 'Nhập liên hệ phụ huynh',
   'session.create': 'Tạo buổi học',
   'session.update': 'Sửa buổi học',
@@ -100,6 +102,12 @@ const VIEC: Record<string, string> = {
   'assignment.grade': 'Chấm bài',
   'course.create': 'Tạo khoá học',
   'course.update': 'Sửa khoá học',
+  // Khung chương trình theo buổi (§64, 25/09/2026).
+  'syllabus.create': 'Tạo khung chương trình',
+  'syllabus.update': 'Sửa khung chương trình',
+  'syllabus.delete': 'Xoá khung chương trình',
+  'syllabus.publish': 'Xuất bản khung chương trình',
+  'class.syllabus.assign': 'Gán khung chương trình cho lớp',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'lesson.create': 'Thêm bài học',
@@ -111,15 +119,7 @@ const VIEC: Record<string, string> = {
   // Một mã cho cả hai chiều (xem `mockexam/quan_tri.py`) — cột "Nội dung" nói
   // rõ là xuất bản hay ẩn.
   'mock_exam.publish': 'Xuất bản / ẩn đề thi thử',
-  // Khung chương trình theo buổi + sổ đầu bài (25/09/2026).
-  'syllabus.create': 'Tạo khung chương trình',
-  'syllabus.update': 'Sửa khung chương trình',
-  'syllabus.delete': 'Xoá khung chương trình',
-  'syllabus.version.create': 'Tạo bản mới của khung',
-  'syllabus.version.edit': 'Sửa bản nháp của khung',
-  'syllabus.version.publish': 'Xuất bản khung chương trình',
-  'syllabus.version.delete': 'Xoá một bản của khung',
-  'class.syllabus': 'Lớp nhận khung chương trình',
+  // Gắn tay một buổi với buổi khung + sổ đầu bài (E1, §70, 25/09/2026).
   'session.syllabus': 'Gắn buổi học với buổi khung',
   'session.log': 'Ghi sổ đầu bài',
 };

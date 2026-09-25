@@ -177,5 +177,29 @@ check('ba dấu ngăn khác nhau ra cùng danh sách, chữ thường, không tr
 check('chuỗi trống ra danh sách rỗng', tachEmail('  \n ').length === 0);
 check('một email trần vẫn ra một phần tử', JSON.stringify(tachEmail('em@x.com')) === '["em@x.com"]');
 
+/* ── Trạng thái lớp: nhãn ở màn hình = từ vựng ở máy chủ (25/09/2026, V-c) ─────
+   Thêm 'paused' ở `vocab.py` mà quên nhãn ở `lop.ts` thì bảng lớp và bộ lọc in
+   mã máy "paused". Đọc THẲNG tệp .py (không chép danh sách sang đây — bản chép
+   thứ hai sẽ xanh về đúng những giá trị nó biết). Chiều ngược: nhãn cho một
+   trạng thái máy chủ không còn nhận là rác, và che việc một mã đã đổi tên. */
+console.log('\ntrạng thái lớp:');
+{
+  const { TRANG_THAI, TRANG_THAI_DU_PHONG } = await import(
+    'file://' + join(THU_MUC, 'lop.ts').replace(/\\/g, '/')
+  );
+  const vocab = readFileSync(join(GOC, '..', 'backend', 'teaching', 'vocab.py'), 'utf8');
+  const m = /^TRANG_THAI_LOP\s*=\s*\(([^)]*)\)/m.exec(vocab);
+  const mayChu = m ? [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]) : [];
+  check('đọc được TRANG_THAI_LOP từ vocab.py', mayChu.length >= 3, JSON.stringify(mayChu));
+  for (const s of mayChu) {
+    check(`trạng thái "${s}" có nhãn tiếng Việt`, typeof TRANG_THAI[s]?.nhan === 'string');
+  }
+  const thua = Object.keys(TRANG_THAI).filter((k) => !mayChu.includes(k));
+  check('không có nhãn cho trạng thái máy chủ không nhận', thua.length === 0, thua.join(', '));
+  check('danh sách dự phòng = đúng thứ tự máy chủ',
+    JSON.stringify(TRANG_THAI_DU_PHONG) === JSON.stringify(mayChu), JSON.stringify(TRANG_THAI_DU_PHONG));
+  check('"Tạm dừng" là nhãn của paused', TRANG_THAI.paused?.nhan === 'Tạm dừng', TRANG_THAI.paused?.nhan);
+}
+
 console.log(failures === 0 ? '\nOK — sửa lớp không xoá trắng trường nào' : `\n${failures} lỗi`);
 process.exitCode = failures === 0 ? 0 : 1;

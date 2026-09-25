@@ -30,8 +30,13 @@ from lessons.grading import quen_dap_an
 
 _COURSE_FIELDS = (
     'title', 'subtitle', 'description', 'image', 'level',
-    'duration', 'students', 'color', 'accent_color', 'tag',
+    'duration', 'students', 'color', 'accent_color', 'tag', 'is_published',
 )
+
+#: Chấp nhận từ cả body JSON thật (bool) lẫn form-data (chuỗi) — frontend cũ
+#: gửi form ở vài màn, frontend mới gửi JSON.
+_BOOL_THAT = {True, 'true', 'True', '1'}
+_BOOL_GIA = {False, 'false', 'False', '0'}
 
 # ── KIỂM TRƯỜNG KHOÁ HỌC TRƯỚC KHI GHI (vá 04/09/2026) ──────────────────────
 #
@@ -113,6 +118,18 @@ def _clean_course_payload(data):
         elif truong == 'students':
             if chuoi and not chuoi.isdigit():
                 return None, '"students" phải là số.'
+        elif truong == 'is_published':
+            # V-i (kế hoạch v2, 25/09/2026): trước hôm nay cột này CÓ nhưng
+            # không API nào sửa được — khoá nháp chỉ tạo được rồi kẹt vĩnh viễn
+            # ở is_published=TRUE (mặc định cột). Ép về bool THẬT, không lưu
+            # chuỗi 'true'/'1': cột là boolean, và một chuỗi lọt qua đây sẽ so
+            # sánh sai ở mọi câu `WHERE is_published` sau này.
+            if gia in _BOOL_THAT:
+                updates[truong] = True
+            elif gia in _BOOL_GIA:
+                updates[truong] = False
+            else:
+                return None, '"is_published" phải là true/false (đang nhận %r).' % chuoi[:20]
         else:
             e = loi_html(chuoi, truong)
             if e:

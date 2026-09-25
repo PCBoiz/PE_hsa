@@ -91,6 +91,16 @@ def _khong_con(sql, vi_sao):
     return (not q1(sql)), vi_sao
 
 
+def _ca(*kiem):
+    """Nhiều phép kiểm cho MỘT tiểu mục: tới nơi khi mọi phép tới nơi. Nhận HÀM (gọi
+    lần lượt, dừng ở phép đầu hỏng) — phép sau có thể cần bảng mà phép trước kiểm."""
+    for k in kiem:
+        ok, vi_sao = k()
+        if not ok:
+            return ok, vi_sao
+    return True, ''
+
+
 #: MỘT DÒNG MỘT MỤC của `legacy_schema.sql`. Thêm mục mới thì thêm dòng ở đây —
 #: nếu không, lệnh này im lặng báo "sạch" cho một mục nó chưa hề nhìn tới, đúng
 #: cái bẫy mà bộ đo giao diện đã mắc (danh sách trang thiếu ba màn).
@@ -190,26 +200,47 @@ MUC = [
                            LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
     ('§62a', 'class_members.teacher_comment (nhận xét GV gửi phụ huynh)',
      lambda: _cot('class_members', 'teacher_comment')),
-    # §63–§64: khung chương trình theo buổi + sổ đầu bài (E1, 25/09/2026). Một dòng một
-    # tiểu mục; phép kiểm khoá ngoại chỉ chạy khi bảng đã có (không thì `::regclass` ném
-    # lỗi — `common/tests.py::test_kiem_luoc_do_moi_muc_deu_CHAY_DUOC`).
-    ('§63a', 'bảng syllabi (khung chương trình của môn), xoá theo môn',
-     lambda: _fk('syllabi', 'syllabi_course_id_fkey', 'CASCADE')
-     if _cot('syllabi', 'is_demo')[0] else (False, 'chưa có bảng')),
-    ('§63b', 'syllabus_versions: mỗi khung nhiều nhất một bản nháp',
-     lambda: _chi_muc('idx_syllabus_versions_mot_nhap')),
-    ('§63c', 'syllabus_items (mục của buổi khung, CHECK trọng số > 0)',
-     lambda: _check_co_gia_tri('syllabus_items_weight_check', 'weight > ')),
-    ('§63d', 'classes.syllabus_version_id ON DELETE SET NULL',
-     lambda: _fk('classes', 'classes_syllabus_version_id_fkey', 'SET NULL')),
-    ('§63e', 'class_sessions.syllabus_session_id ON DELETE SET NULL',
-     lambda: _fk('class_sessions', 'class_sessions_syllabus_session_id_fkey', 'SET NULL')),
-    ('§64a', 'bảng session_logs (sổ đầu bài, mức tiếp thu 1–5)',
-     lambda: _check_co_gia_tri('session_logs_comprehension_check', 'comprehension')),
-    ('§64b', 'session_log_items (đã dạy / dạy một phần / chưa dạy)',
-     lambda: _check_co_gia_tri('session_log_items_status_check', 'partial')),
-    ('§64c', 'bảng session_support (em cần hỗ trợ sau buổi)',
-     lambda: _chi_muc('idx_session_support_user')),
+    # §62b–§62f: luồng A1 (V-a…V-h, 25/09/2026). Mã dòng = mã tiểu mục (một chữ cái
+    # cuối — `tests_luoc_do_muc` đòi thế), nên mỗi tiểu mục một dòng gom mọi phép kiểm.
+    ('§62b', 'class_members.can_ho_tro + de_xuat_huong_hoc + chỉ mục cờ (cần hỗ trợ, hướng học)',
+     lambda: _ca(lambda: _cot('class_members', 'de_xuat_huong_hoc_at'),
+                 lambda: _chi_muc('idx_class_members_can_ho_tro'))),
+    ('§62c', 'bảng attendance_history + khoá ngoại tới buổi ON DELETE CASCADE',
+     lambda: _ca(lambda: _cot('attendance_history', 'nguon'),
+                 lambda: _fk('attendance_history', 'attendance_history_session_id_fkey',
+                             'CASCADE'))),
+    ('§62d', 'assignments.target_mode (CHECK nhận nhom) + bảng assignment_targets',
+     lambda: _ca(lambda: _cot('assignment_targets', 'user_id'),
+                 lambda: _check_co_gia_tri('assignments_target_mode_check', 'nhom'))),
+    ('§62e', 'class_sessions.makeup_for ON DELETE SET NULL + bảng session_participants',
+     lambda: _ca(lambda: _cot('session_participants', 'user_id'),
+                 lambda: _fk('class_sessions', 'class_sessions_makeup_for_fkey', 'SET NULL'))),
+    ('§62f', 'assignments.kind (CHECK nhận kiem_tra) + held_on, submissions.absent',
+     lambda: _ca(lambda: _cot('submissions', 'absent'),
+                 lambda: _check_co_gia_tri('assignments_kind_check', 'kiem_tra'))),
+    # Sửa TẠI CHỖ ở §35 (V-c): nhánh khác chạy lại §35 bản cũ thì mất 'paused' — dòng
+    # này nói ra ngay, trước khi màn Lớp học trả 500 khi chọn "Tạm dừng".
+    ('§35p', 'CHECK classes_status_check nhận paused (lớp tạm dừng)',
+     lambda: _check_co_gia_tri('classes_status_check', 'paused')),
+    ('§63a', 'users.tuition_status (tình trạng học phí)',
+     lambda: _cot('users', 'tuition_status')),
+    ('§63b', 'CHECK users_tuition_status_check nhận "Bảo lưu"',
+     lambda: _check_co_gia_tri('users_tuition_status_check', 'Bảo lưu')),
+    # 'reserved' sửa TẠI CHỖ ở §36 (25/09 tối) — thay dòng §63d cũ; 'paused' đã có dòng §35p ở trên.
+    ('§36r', 'CHECK class_members_leave_reason_check nhận "reserved" (bảo lưu)',
+     lambda: _check_co_gia_tri('class_members_leave_reason_check', 'reserved')),
+    ('§64a', 'bảng syllabus_versions (phiên bản chương trình)',
+     lambda: _cot('syllabus_versions', 'status')),
+    ('§64b', 'bảng syllabus_sessions (buổi học theo kế hoạch)',
+     lambda: _cot('syllabus_sessions', 'sort_order')),
+    ('§64c', 'bảng syllabus_items (nội dung từng buổi)',
+     lambda: _cot('syllabus_items', 'kind')),
+    ('§64d', 'bảng syllabus_materials (học liệu)',
+     lambda: _cot('syllabus_materials', 'file_url')),
+    ('§64e', 'classes.syllabus_version_id (lớp nhận khung nào)',
+     lambda: _cot('classes', 'syllabus_version_id')),
+    ('§64f', 'class_sessions.syllabus_session_id (buổi thật khớp buổi khung)',
+     lambda: _cot('class_sessions', 'syllabus_session_id')),
 ]
 
 

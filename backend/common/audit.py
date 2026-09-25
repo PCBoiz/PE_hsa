@@ -54,6 +54,10 @@ CLASS_MEMBER_REMOVE = 'class.member.remove'
 #: Chuyển lớp MỘT bước (§55, 24/09/2026): đóng lượt ở lớp cũ + mở lượt ở lớp mới trong
 #: một giao dịch. `target` là lớp MỚI; `detail` giữ cả hai lớp và hai lượt.
 CLASS_MEMBER_TRANSFER = 'class.member.transfer'
+#: Đánh giá một em trong lớp (25/09/2026, `teaching/danh_gia.py`): nhận xét gửi phụ
+#: huynh, cờ "cần hỗ trợ" + lý do, đề xuất hướng học. `target` là EM (target_type
+#: 'user') để dòng thời gian của em đọc được cả lịch sử đánh dấu; `detail.classId`.
+CLASS_MEMBER_ASSESS = 'class.member.assess'
 #: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
 #: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
 #: dán nhầm cột.
@@ -127,21 +131,16 @@ MOCK_EXAM_CREATE = 'mock_exam.create'
 MOCK_EXAM_UPDATE = 'mock_exam.update'
 MOCK_EXAM_PUBLISH = 'mock_exam.publish'
 
-#: Khung chương trình theo buổi (E1, §63, 25/09/2026). Khung dùng chung cho mọi lớp
-#: của một môn: xuất bản một bản là đổi kế hoạch của mọi lớp nhận nó về sau, nên "ai
-#: xuất bản bản này, lúc nào" phải trả lời được. Sửa nội dung bản NHÁP ghi một dòng
-#: cho cả lượt lưu (số buổi, số mục), không phải mỗi mục một dòng.
+#: Khung chương trình theo buổi (E1, §64, 25/09/2026) — cùng lý do với COURSE_*:
+#: sửa thứ dùng chung cho mọi lớp thì phải trả lời được "ai đổi, lúc nào".
 SYLLABUS_CREATE = 'syllabus.create'
 SYLLABUS_UPDATE = 'syllabus.update'
 SYLLABUS_DELETE = 'syllabus.delete'
-SYLLABUS_VERSION_CREATE = 'syllabus.version.create'
-SYLLABUS_VERSION_EDIT = 'syllabus.version.edit'
-SYLLABUS_VERSION_PUBLISH = 'syllabus.version.publish'
-SYLLABUS_VERSION_DELETE = 'syllabus.version.delete'
-#: Lớp nhận một phiên bản khung (gắn buổi học với buổi khung) và gắn tay một buổi.
-CLASS_SYLLABUS = 'class.syllabus'
+SYLLABUS_PUBLISH = 'syllabus.publish'
+CLASS_SYLLABUS_ASSIGN = 'class.syllabus.assign'
+#: Gắn tay MỘT buổi học với một buổi khung (E1, 25/09/2026) — `detail` giữ gắn CŨ.
 SESSION_SYLLABUS = 'session.syllabus'
-#: Sổ đầu bài (§64). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
+#: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
 #: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
 SESSION_LOG = 'session.log'
 

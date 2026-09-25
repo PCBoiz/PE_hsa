@@ -54,6 +54,7 @@ from common.permissions import (
     can_see_class,
     is_admin,
 )
+from courses.truy_cap import cac_mon_da_mo
 
 #: Khớp CHECK `users_enroll_source_check` (§51). Thứ tự = thứ tự trên ô chọn.
 NGUON_TUYEN_SINH = (
@@ -67,6 +68,10 @@ NGUON_TUYEN_SINH = (
     ('khac', 'Khác'),
 )
 _MA_NGUON = {m for m, _ in NGUON_TUYEN_SINH}
+
+#: Khớp CHECK `users_tuition_status_check` (§63, 25/09/2026). Một ô CHỌN TAY
+#: của giáo vụ — hệ này không có sổ tiền nên không suy ra được, chốt 25/09.
+TINH_TRANG_HOC_PHI = ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu')
 
 #: Vai được chọn làm người tư vấn: mọi vai NHÂN SỰ.
 VAI_NHAN_SU = (ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT, ROLE_EDITOR)
@@ -113,6 +118,71 @@ def kiem_username(u, bo_qua_id=None):
     return u, None
 
 
+def _lop_hien_tai(user_id):
+    """Lớp trung tâm em ĐANG học — mảng vì hiếm khi một em ở hai lớp cùng lúc,
+    nhưng dữ liệu không cấm điều đó nên không giả định chỉ một dòng.
+
+    `si_so` ĐẾM thành viên đang học (`left_at IS NULL`), không đọc `capacity`
+    (sĩ số DỰ KIẾN, có thể NULL) — đây là cách duy nhất phân biệt lớp gia sư
+    1-1/1-3/1-6 khỏi lớp nhóm ~20 em (yêu cầu TopHSA 25/09, `class_type` đã có
+    từ §54). Không lưu tỉ lệ thành cột riêng: một con số suy ra được từ
+    `class_members` mà lưu thêm là hai nơi cùng nói một chuyện, có ngày lệch.
+    """
+    rows = q('''SELECT c.id, c.name, c.class_type, c.capacity, c.status,
+                       t.name AS teacher_name, t.id AS teacher_id,
+                       (SELECT count(*) FROM class_members m2
+                         WHERE m2.class_id = c.id AND m2.left_at IS NULL) AS si_so
+                  FROM class_members m
+                  JOIN classes c ON c.id = m.class_id
+                  LEFT JOIN users t ON t.id = c.teacher_id
+                 WHERE m.user_id = %s AND m.left_at IS NULL
+                 ORDER BY c.id''', (user_id,))
+    return [{
+        'id': r['id'], 'name': r['name'], 'classType': r['class_type'],
+        'capacity': r['capacity'], 'status': r['status'],
+        'teacherId': r['teacher_id'], 'teacherName': r['teacher_name'],
+        'siSo': r['si_so'],
+    } for r in rows]
+
+
+def _khoa_da_mo(user_id):
+    """"Khóa học đã đăng ký" (yêu cầu TopHSA 3.2) — LẤY QUA LỚP, không đọc
+    `enrollments`: từ 1.3 (24/09) bảng đó chỉ còn là sổ tiến độ, không còn là
+    nguồn xác định môn nào đã mở. Dùng lại đúng câu của `courses/truy_cap.py`
+    (`cac_mon_da_mo`) — cổng DUY NHẤT trả lời "em học được môn nào"."""
+    ids = cac_mon_da_mo(user_id)
+    if not ids:
+        return []
+    return [{'id': r['id'], 'title': r['title']} for r in
+            q('SELECT id, title FROM courses WHERE id = ANY(%s) ORDER BY title', (ids,))]
+
+
+#: Năm trạng thái thô cho MỘT Ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ.
+#: Bốn trạng thái đầu khớp đúng yêu cầu TopHSA (đang học/tạm dừng/bảo lưu/đã
+#: xong); 'Đã nghỉ học' và 'Chưa xếp lớp' là hai trường hợp thật sự tồn tại
+#: trong dữ liệu mà bốn cái kia không có chỗ chứa — bỏ qua sẽ ép chúng vào một
+#: nhãn sai. Bộ đo TIẾN ĐỘ đầy đủ (khung chương trình, % hoàn thành theo buổi)
+#: để dành cho E1 (`teaching/tien_do_chuong_trinh.py`, kế hoạch v2, chưa viết)
+#: — cố ý không làm sớm ở đây để khỏi có hai nơi cùng tính rồi lệch nhau.
+def _tinh_trang_hoc_tap(user_id):
+    dang = q1('''SELECT c.status FROM class_members m JOIN classes c ON c.id = m.class_id
+                  WHERE m.user_id=%s AND m.left_at IS NULL
+                  ORDER BY m.joined_at DESC LIMIT 1''', (user_id,))
+    if dang:
+        if dang['status'] == 'paused':
+            return 'Tạm dừng'
+        if dang['status'] == 'cancelled':
+            # Lớp bị huỷ trong lúc em còn đang học — không phải "đã xong".
+            return 'Đã nghỉ học'
+        return 'Đang học'
+    cu = q1('''SELECT leave_reason FROM class_members
+                WHERE user_id=%s AND left_at IS NOT NULL
+                ORDER BY left_at DESC LIMIT 1''', (user_id,))
+    if not cu:
+        return 'Chưa xếp lớp'
+    return {'completed': 'Đã xong', 'reserved': 'Bảo lưu'}.get(cu['leave_reason'], 'Đã nghỉ học')
+
+
 def _dict(r):
     return {
         'id': r['id'],
@@ -138,6 +208,10 @@ def _dict(r):
         'parentName': r['parent_name'],
         'parentPhone': r['parent_phone'],
         'parentEmail': r['parent_email'],
+        'tuitionStatus': r['tuition_status'],
+        'studyStatus': _tinh_trang_hoc_tap(r['id']),
+        'classes': _lop_hien_tai(r['id']),
+        'enrolledCourses': _khoa_da_mo(r['id']),
     }
 
 
@@ -186,6 +260,7 @@ class HoSoHocVienView(APIView):
             'sources': [{'ma': m, 'nhan': n} for m, n in NGUON_TUYEN_SINH],
             'consultants': [{'id': c['id'], 'name': c['name'] or c['email'], 'role': c['role']}
                             for c in tu_van],
+            'tuitionStatuses': list(TINH_TRANG_HOC_PHI),
         })
 
     def patch(self, request, user_id):
@@ -207,6 +282,13 @@ class HoSoHocVienView(APIView):
                 errors['enrollSource'] = 'Nguồn tuyển sinh phải chọn từ danh sách.'
             else:
                 doi['enroll_source'] = v
+
+        if 'tuitionStatus' in body:
+            v = (body['tuitionStatus'] or '').strip() or None
+            if v and v not in TINH_TRANG_HOC_PHI:
+                errors['tuitionStatus'] = 'Tình trạng học phí phải chọn từ danh sách.'
+            else:
+                doi['tuition_status'] = v
 
         if 'consultantId' in body:
             v = body['consultantId']

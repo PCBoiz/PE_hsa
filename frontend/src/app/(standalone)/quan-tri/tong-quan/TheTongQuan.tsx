@@ -24,7 +24,8 @@ const so = z.number();
 const soHoacTrong = z.number().nullable();
 const chu = z.string().nullable();
 
-export const LOP_THEO_LOAI = z.record(z.string(), z.looseObject({ total: so, active: so }));
+// `paused` (V-c, 25/09/2026) tuỳ chọn: máy chủ cũ không có trạng thái ấy.
+export const LOP_THEO_LOAI = z.record(z.string(), z.looseObject({ total: so, active: so, paused: so.optional() }));
 export const ROI_LOP = z.looseObject({
   tu: z.string(),
   den: z.string(),
@@ -130,6 +131,7 @@ export function TheLop({ theoLoai, termId }: { theoLoai: LopTheoLoai; termId?: s
                   <b className="text-title text-ink tabular-nums">{o?.active ?? 0}</b>{' '}
                   <span className="text-small text-ink-3">
                     đang chạy{o && o.total !== o.active ? ` / ${o.total}` : ''}
+                    {o?.paused ? ` · ${o.paused} tạm dừng` : ''}
                   </span>
                 </span>
               </Link>

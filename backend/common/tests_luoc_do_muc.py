@@ -296,16 +296,20 @@ XUONG = chr(10)
 def test_sua_TAI_CHO_check_o_35_va_36_chay_lai_tu_35_toi_het():
     """Kế hoạch đợt tới sửa TẠI CHỖ: §35 thêm 'paused' vào CHECK trạng thái lớp, §36 thêm
     'reserved' vào CHECK lý do rời lớp. Hai mục ấy đổi checksum → lượt kế chạy §35, §36 VÀ
-    mọi mục sau (§36 gỡ khoá chính CASCADE, chỉ §55 gắn lại khoá ngoại)."""
+    mọi mục sau (§36 gỡ khoá chính CASCADE, chỉ §55 gắn lại khoá ngoại).
+
+    'paused' ĐÃ vào §35 (luồng A1, V-c) và 'reserved' ĐÃ vào §36 (lead, 25/09/2026 tối): phép
+    kiểm nay giả lập thêm một lần nới nữa (`x_thu`, `y_thu`) trên bản đang có, để vẫn đo đúng luật
+    "sửa §35/§36 tại chỗ → chạy từ §35"."""
     a = ('ALTER TABLE classes ADD CONSTRAINT classes_status_check' + XUONG
-         + "    CHECK (status IN ('active', 'finished', 'cancelled'));")
-    b = "leave_reason IN ('completed', 'dropped', 'transferred'))"
+         + "    CHECK (status IN ('active', 'paused', 'finished', 'cancelled'));")
+    b = "leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'))"
 
     def sua(raw):
         raw = XUONG.join(raw.splitlines())
         assert raw.count(a) == 1 and raw.count(b) == 1, 'CHECK trong tệp đã đổi — sửa phép kiểm'
-        raw = raw.replace(a, a.replace("'cancelled'", "'cancelled', 'paused'"))
-        return raw.replace(b, b.replace("'transferred'", "'transferred', 'reserved'"))
+        raw = raw.replace(a, a.replace("'cancelled'", "'cancelled', 'x_thu'"))
+        return raw.replace(b, b.replace("'reserved'", "'reserved', 'y_thu'"))
 
     goc, viec = _ke_hoach_sau_khi_sua(sua)
     khoa = [m.khoa for m in goc]
@@ -314,7 +318,7 @@ def test_sua_TAI_CHO_check_o_35_va_36_chay_lai_tu_35_toi_het():
     ly_do = {v.muc.ma: v.ly_do for v in viec if v.muc.tep == 'legacy_schema.sql'}
     assert ly_do['§35'] == ly_do['§36'] == 'đổi nội dung'
     assert ly_do['§55'] == 'đứng sau legacy_schema.sql §35'
-    assert "'paused'" in ' '.join(viec[0].muc.cau)
+    assert "'x_thu'" in ' '.join(viec[0].muc.cau)
 
 
 def test_sua_chu_thich_muc_cu_khong_chay_lai_gi():

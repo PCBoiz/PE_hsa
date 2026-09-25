@@ -93,6 +93,22 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 25/09/2026 (chiều) — CLAUDE CLOUD bằng tài khoản sonthaiha07 + thiết kế hệ thống + S3/S5
+
+- **Cloud**: đăng nhập RIÊNG cho sonthaiha07@gmail.com ở `%USERPROFILE%\.claude-son` (biến `CLAUDE_CONFIG_DIR`) —
+  VS Code + agent cục bộ vẫn ở tài khoản kia, không bị ngắt. `claude.exe` của tiện ích VS Code (2.1.281) có `--cloud`
+  / `--teleport` (bản trên PATH 2.1.150 không có). `--cloud` đòi terminal thật → mở qua `%USERPROFILE%\cloud-son.ps1`
+  (cửa sổ PowerShell, `-GhiRa` ghi mã phiên; từ chối chạy ở thư mục có `.env` — trên Windows gói tải lên có thể kèm
+  `.env`), chạy từ bản clone SẠCH ở scratchpad. Ba phiên mở 25/09: pytest đầy đủ trên Postgres cục bộ của máy cloud
+  (`session_01MAPupTtP5zqCpAczYtKoGV`), E2 (`session_017vNv7YgYzMa8gxzX5X38Qe`), E3 (`session_01UbA4ua69der6eBv9JtYTZm`).
+  **Chưa phiên nào đẩy được** (GitHub chỉ có master, erp) → việc C1-cloud của anh: cài Claude GitHub App cho PE_hsa.
+- **Thiết kế hệ thống** `docs/THIET_KE_HE_THONG.md` dựng trên graphify (mức tệp: `docs/BAN_DO_MA.md`) + tầng vai
+  (`docs/BAN_DO_VAI.md`). Thước tầng vai bản đầu báo 19 "lệch" — soi tay: 16 thước sai (không hiểu `chanTu`), 2 trang
+  thiếu móc chặn (vá `afa612e`), 1 chặn mức nút. Bài học ghi bộ nhớ "đo trước khi báo số".
+- **S3** `tang_vai.py --kiem` = bước f6 cổng pre-push (`c39fedc`). **S5** phá vòng `stats ↔ chatbot` (`887e435`).
+- Agent cục bộ A1/A2/E1 dừng vì hạn mức (03:4x) → gửi tiếp 16:10. Bộ test đủ trên `erp` chạy lại 16:12 (lượt trước
+  chết theo phiên).
+
 ## 25/09/2026 — KẾ HOẠCH v2 theo bảng yêu cầu 24/09 + Ngày 0 (P0.1–P0.3, P0.5)
 
 - **Kế hoạch v2** (mục đầu `docs/KE_HOACH_TOPHSA_THU_NGHIEM_2026-09-24.md`): bảng "Phân rã tính năng — Updated 24.9"

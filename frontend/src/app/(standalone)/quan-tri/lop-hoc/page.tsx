@@ -6,6 +6,7 @@ import { layVai } from '../layVai';
 import { VAI_HOC_VU, VAI_QUAN_TRI, duocVao } from '../vai';
 
 import { BoLocLop, PhanTrangLop, type LocLop } from './BoLocLop';
+import { TRANG_THAI_DU_PHONG } from './lop';
 import LopHocClient, { type ChonKhoa, type ChonNguoi, type LopRow } from './LopHocClient';
 
 export const dynamic = 'force-dynamic';
@@ -124,7 +125,7 @@ export default async function LopHocPage({
       dangLoc={Boolean(loc.q || loc.loai || loc.tt || loc.dot || loc.gv)}
       boLoc={
         <BoLocLop loc={loc} dem={d?.counts ?? null} dotHoc={dotHoc} nguoi={nguoi}
-          trangThai={d?.statuses ?? ['active', 'finished', 'cancelled']} />
+          trangThai={d?.statuses ?? TRANG_THAI_DU_PHONG} />
       }
       phanTrang={
         d && typeof d.total === 'number'
@@ -133,7 +134,7 @@ export default async function LopHocPage({
       }
       giangVien={lop.ok ? lop.data.teachers : []}
       troGiang={lop.ok ? lop.data.assistants : []}
-      trangThai={lop.ok ? lop.data.statuses : ['active', 'finished', 'cancelled']}
+      trangThai={lop.ok ? lop.data.statuses : TRANG_THAI_DU_PHONG}
       // Đợt và khoá chỉ là ô CHỌN. Không đọc được thì trang vẫn phải dùng được
       // để tạo lớp — nên không cho hỏng cả trang vì một danh sách phụ.
       dotHoc={dot.ok ? dot.data.terms : []}
