@@ -36,6 +36,9 @@ def test_gan_theo_thu_tu_ngay_bo_buoi_huy_va_buoi_bu_dien_ten_khi_trong(dung):
         'SELECT id, topic FROM class_sessions WHERE class_id = %s', (lop,))}
     assert ten[b1] == 'Buổi khung 1' and ten[b2] == 'Giảng viên tự đặt tên', ten
     assert r.json()['boQuaBuoiHuy'] == 1 and r.json()['boQuaBuoiBu'] == 1
+    # Con số báo cho học vụ ở bước xem trước phải khớp việc thật: 2 buổi trống tên
+    # (b1, b3) — không tính b2 đã có tên.
+    assert r.json()['dienTen'] == 2
 
 
 def test_khong_de_gan_tay_va_khong_phat_lai_buoi_khung_da_co_nguoi_giu(dung):
