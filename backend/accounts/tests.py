@@ -351,11 +351,11 @@ def test_token_cap_CUNG_GIAY_voi_moc_thu_hoi_van_dung_duoc():
     """`iat` là số giây NGUYÊN, mốc thu hồi có phần lẻ micro giây. Token cấp SAU mốc nhưng cùng
     giây từng bị coi là đã thu hồi → đăng nhập lại ngay sau đặt/đổi mật khẩu nhận token chết
     (phiên cloud 25/09 bắt được; trên Neon độ trễ mạng che mất). Token cấp giây TRƯỚC vẫn bị thu hồi."""
-    from datetime import datetime
+    from datetime import date, datetime, time
     from types import SimpleNamespace
 
     from accounts.authentication import CachedJWTAuthentication, _epoch_vn
-    moc = datetime(2026, 9, 25, 10, 0, 0, 900000)
+    moc = datetime.combine(date(2026, 9, 25), time(10, 0, 0, 900000))
     giay = int(_epoch_vn(moc))
     nguoi = SimpleNamespace(tokens_valid_from=moc)
     assert not CachedJWTAuthentication._da_thu_hoi(nguoi, {'iat': giay}), 'cùng giây với mốc phải còn dùng được'
