@@ -2142,3 +2142,81 @@ CREATE TABLE IF NOT EXISTS session_support (
 );
 CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
 CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);
+
+-- ── §61 · HỘP THƯ ĐI + THÔNG BÁO TRUNG TÂM (E2, 25/09/2026) ─────────────────
+-- Bảng yêu cầu TopHSA dòng 20, 22, 27 + "Phân hệ thông báo chung". Trước mục này thư
+-- đi trên một luồng rời trong tiến trình web: lỗi SMTP chỉ vào nhật ký, worker khởi
+-- động lại là mất thư. Từ đây mọi thư ghi một dòng `outbox` TRONG CÙNG giao dịch với
+-- việc chính, và người gửi (`notifications/hop_thu.py`) nhận việc, gửi, thử lại.
+--
+-- §61a · HỘP THƯ ĐI. Một dòng = một thư (email) hoặc một tin (Zalo ZNS) tới MỘT người.
+-- `dedup_key` UNIQUE (NULL không đụng nhau): cùng một việc xếp hai lần thì chỉ một dòng
+-- (nhắc hạn `nhac_han:{bài}:{em}`, thông báo trung tâm `thong_bao:{id}:{em}`).
+-- Trạng thái: queued (chờ) → sending (đã nhận, đang gửi) → sent | failed (chờ thử lại
+-- lúc `next_try_at`) | dropped (bỏ hẳn, lý do ở `error`). `params` giữ phần cần để dựng
+-- lại thư lúc gửi (HTML, tham số mẫu ZNS, loại thư có tệp đính kèm) — không giữ tệp.
+CREATE TABLE IF NOT EXISTS outbox (
+    id          BIGSERIAL PRIMARY KEY,
+    channel     TEXT      NOT NULL,
+    user_id     INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    to_addr     TEXT      NOT NULL,
+    subject     TEXT      NOT NULL DEFAULT '',
+    body        TEXT      NOT NULL DEFAULT '',
+    params      JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    source_type TEXT,
+    source_id   BIGINT,
+    dedup_key   TEXT      UNIQUE,
+    status      TEXT      NOT NULL DEFAULT 'queued',
+    attempts    INTEGER   NOT NULL DEFAULT 0,
+    next_try_at TIMESTAMP NOT NULL DEFAULT now(),
+    claimed_at  TIMESTAMP,
+    sent_at     TIMESTAMP,
+    error       TEXT,
+    provider_id TEXT,
+    created_at  TIMESTAMP NOT NULL DEFAULT now()
+);
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_channel_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_channel_check CHECK (channel IN ('email', 'zalo'));
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_status_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_status_check
+    CHECK (status IN ('queued', 'sending', 'sent', 'failed', 'dropped'));
+-- Chỉ mục phần: người gửi chỉ hỏi dòng CÒN phải gửi — dòng đã xong (đa số) không vào.
+CREATE INDEX IF NOT EXISTS idx_outbox_cho_gui
+    ON outbox (next_try_at) WHERE status IN ('queued', 'failed');
+CREATE INDEX IF NOT EXISTS idx_outbox_dang_gui
+    ON outbox (claimed_at) WHERE status = 'sending';
+CREATE INDEX IF NOT EXISTS idx_outbox_nguon ON outbox (source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_outbox_user ON outbox (user_id);
+-- §61b · THÔNG BÁO TRUNG TÂM. `audience` = {classIds, courseIds, userIds, groupName}
+-- (groupName chỉ là tên nhóm chọn tay, người nhận nằm ở userIds). Nháp → đã gửi | huỷ.
+CREATE TABLE IF NOT EXISTS announcements (
+    id              SERIAL    PRIMARY KEY,
+    title           TEXT      NOT NULL,
+    body            TEXT      NOT NULL DEFAULT '',
+    audience        JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    send_email      BOOLEAN   NOT NULL DEFAULT FALSE,
+    send_zalo       BOOLEAN   NOT NULL DEFAULT FALSE,
+    status          TEXT      NOT NULL DEFAULT 'draft',
+    recipient_count INTEGER   NOT NULL DEFAULT 0,
+    created_by      INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT now(),
+    sent_at         TIMESTAMP
+);
+ALTER TABLE announcements DROP CONSTRAINT IF EXISTS announcements_status_check;
+ALTER TABLE announcements ADD CONSTRAINT announcements_status_check
+    CHECK (status IN ('draft', 'sent', 'cancelled'));
+CREATE INDEX IF NOT EXISTS idx_announcements_created_by ON announcements (created_by);
+CREATE INDEX IF NOT EXISTS idx_announcements_time ON announcements (created_at DESC);
+-- §61c · CHUÔNG: thông báo trung tâm nào, bấm vào mở đâu, đọc lúc nào. `read_at` đi cùng
+-- `is_read` (cột cũ giữ nguyên — mã cũ còn đọc nó). Điền ngược: dòng đã đọc mà chưa có
+-- `read_at` lấy tạm `created_at` (không biết lúc đọc thật), chỉ đụng dòng còn thiếu.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS announcement_id INTEGER
+    REFERENCES announcements(id) ON DELETE CASCADE;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMP;
+UPDATE notifications SET read_at = created_at
+ WHERE is_read AND read_at IS NULL AND created_at IS NOT NULL;
+-- Phân trang theo khoá (`truoc=<id>`) của `/api/notifications/feed`.
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_desc ON notifications (user_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_announcement
+    ON notifications (announcement_id) WHERE announcement_id IS NOT NULL;

@@ -259,6 +259,18 @@ MUC = [
      if _cot('session_log_items', 'item_id')[0] else (False, 'chưa có bảng')),
     ('§70c', 'bảng session_support (em cần hỗ trợ sau buổi)',
      lambda: _chi_muc('idx_session_support_user')),
+    # §61: hộp thư đi + thông báo trung tâm (E2).
+    ('§61a', 'bảng outbox (hộp thư đi) + chỉ mục phần việc chờ gửi + CHECK trạng thái',
+     lambda: _ca(lambda: _cot('outbox', 'dedup_key'),
+                 lambda: _chi_muc('idx_outbox_cho_gui'),
+                 lambda: _check_co_gia_tri('outbox_status_check', 'dropped'))),
+    ('§61b', 'bảng announcements (thông báo trung tâm, nháp/đã gửi/huỷ)',
+     lambda: _check_co_gia_tri('announcements_status_check', 'cancelled')),
+    ('§61c', 'notifications.announcement_id ON DELETE CASCADE + link + read_at + chỉ mục (user_id, id DESC)',
+     lambda: _ca(lambda: _cot('notifications', 'read_at'),
+                 lambda: _cot('notifications', 'link'),
+                 lambda: _chi_muc('idx_notifications_user_id_desc'),
+                 lambda: _fk('notifications', 'notifications_announcement_id_fkey', 'CASCADE'))),
 ]
 
 
