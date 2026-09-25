@@ -15,7 +15,6 @@ chỉ đọc khi cần tra.
 | **N7** | **Sau khi đẩy — một bài học bị trùng.** Hỏi chị biên tập nội dung của TopHSA: bài **"Chương 1: Xác suất thống kê"** (chị thêm sáng 23/09 vào khoá **Tư duy Định lượng**, chưa có nội dung) là để làm gì. **Thêm nhầm** → vào **Giáo trình** → khoá Tư duy Định lượng → dòng bài ấy → **Xoá**. **Muốn giữ** → cũng Xoá, rồi gõ lại tên ở ô "Thêm bài mới" → **Thêm bài**: bản mới tự xếp nó xuống cuối khoá. | Bài ấy bị đặt trùng số thứ tự 1 với bài "Tỉ lệ & phần trăm" (lỗi của bộ soạn cũ, đã vá). Vì trùng số, em làm xong bài 1 thì có lúc tiến độ bị ghi sang bài trống. Bản mới đã tự chọn đúng bài có nội dung, nhưng dòng trùng vẫn nằm trong dữ liệu — đó là nội dung của khách nên tôi không tự xoá. | 3 phút |
 | **K2** | **Hỏi TopHSA bốn điểm, nhắn lại tôi câu trả lời.** (1) Phụ huynh xem qua **link riêng** (không tạo tài khoản) — dòng 23 của bảng có chấp nhận thay như vậy không? (2) Học phí chỉ cần **một ô "Tình trạng học phí"** trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu) — dòng 7 có đủ không? (3) "Thi thử / điểm thi thử" = **bài kiểm tra làm ở trung tâm, giáo viên nhập điểm** — đúng ý không? (4) **Ngày** buổi xem lại. | Bảng 24/09 là danh mục nghiệm thu (cột TRUE = đã duyệt). Ba dòng trên tôi làm KHÁC chữ trong bảng theo quyết định của anh — khách phải đồng ý trước buổi xem, không thì dòng ấy không được tick. Ngày buổi xem quyết định làm được bao nhiêu mục. | 10 phút |
 | **K1** | **Xin TopHSA MỘT khung chương trình thật theo buổi** của một môn (ví dụ Tư duy định lượng: buổi 1 … buổi N — mỗi buổi học bài/chủ đề gì, bài về nhà, bài kiểm tra nếu có). File Word/Excel/ảnh chụp đều được, gửi tôi. | Dòng 5, 9, 15, 16, 28 của bảng đều đòi "tiến độ so với khung chương trình". Có khung thật thì buổi demo cho khách thấy lớp của chính họ đang nhanh hay chậm; không có thì tôi demo bằng khung tự soạn — kém thuyết phục. | 5 phút nhắn |
-| **C1-cloud** | **Cho phiên Claude cloud quyền ĐẨY code lên repo.** Mở claude.ai/code (đang đăng nhập sonthaiha07@gmail.com) → biểu tượng GitHub / Settings → **Connect GitHub** (hoặc "Install GitHub App") → chọn tài khoản GitHub **PCBoiz** → cho phép repo **PE_hsa** → Save. | Các phiên cloud tôi mở 25/09 (chạy test, E2 thông báo, E3 hộp Yêu cầu, sổ miền + cấu trúc dữ liệu/mã) clone được repo (công khai) nhưng KHÔNG đẩy được kết quả lên (GitHub chỉ có master, erp). Có quyền thì mỗi phiên đẩy một nhánh `cloud/...`, tôi xem và gộp vào `erp`. Tiền tính vào 100 USD "Cloud session credits" của tài khoản sonthaiha07 (hết hạn 05/11). | 3 phút |
 
 ### B. Nên làm, không gấp — không chặn gì
 
@@ -52,6 +51,8 @@ B1 một lớp thật chạy thử một đợt · B3 liên hệ phụ huynh c�
 B5 làm mới dữ liệu mẫu: `python manage.py du_lieu_mau --lam-moi` (hoặc nhắn tôi).
 
 ### Đã xong / không cần làm nữa
+
+- **C1-cloud — XONG 25/09**: anh kết nối GitHub + cài Claude GitHub App cho PE_hsa; phiên cloud thử đẩy nhánh `cloud/thu-quyen` thành công.
 
 - **N2 — BỎ (25/09).** Trước đây tôi nhờ anh thêm một dòng vào `backend/.env` để "hàng rào" biết đâu là CSDL thật, chặn
   máy dev lỡ ghi vào dữ liệu học viên. Nay hàng rào tự nhận ra CSDL thật qua tên máy chủ của nó, anh không phải làm gì.
