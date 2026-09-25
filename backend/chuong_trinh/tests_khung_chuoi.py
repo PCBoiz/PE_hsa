@@ -119,3 +119,29 @@ def test_thieu_trong_so_la_1(dung):
     assert a.put('/api/admin/syllabus-items/%s' % iid, {'weight': None},
                  format='json').status_code == 200
     assert float(q1('SELECT weight FROM syllabus_items WHERE id = %s', (iid,))['weight']) == 1.0
+
+
+def test_muc_luc_khung_hoc_vu_bien_tap_doc_duoc_giang_vien_khong(dung):
+    k = dung.khoa()
+    b = dung.ban(k, [[1], [1]])
+    dung.lop(k, vid=b['id'])
+    for vai in ('Quản lý học vụ', 'Biên tập nội dung', 'admin'):
+        r = dung.api(vai).get('/api/admin/chuong-trinh/khung')
+        assert r.status_code == 200, vai
+    (mon,) = [m for m in r.data['mon'] if m['id'] == k]
+    assert [(v['id'], v['soBuoi'], v['soLop'], v['statusLabel']) for v in mon['versions']] == [
+        (b['id'], 2, 1, 'Đang dùng')]
+    for vai in ('Giảng viên', 'Trợ giảng', 'Học viên'):
+        assert dung.api(vai).get('/api/admin/chuong-trinh/khung').status_code == 403, vai
+
+
+def test_loi_soan_khung_bang_chu_nguoi_dung(dung):
+    a = dung.api('admin')
+    k = dung.khoa()
+    b = dung.ban(k, [[1]])
+    r = a.post('/api/admin/syllabus/%s/sessions' % b['id'], {'name': 'X'}, format='json')
+    assert r.status_code == 409 and 'Tạo bản mới' in r.data['error']
+    nhap = dung.ban(k, [[1]], status='nhap')
+    r = a.post('/api/admin/syllabus-sessions/%s/items' % nhap['buoi'][0],
+               {'title': 'Mục', 'kind': 'x'}, format='json')
+    assert r.status_code == 400 and 'kind' not in r.data['error']

@@ -92,6 +92,7 @@ export const VAI_CUA_LOP_QUYEN: Record<string, readonly string[]> = {
   IsSeniorTeachingStaff: [VAI_QUAN_TRI, VAI_HOC_VU, VAI_GIANG_VIEN],
   IsTeachingStaff: [VAI_QUAN_TRI, VAI_HOC_VU, VAI_GIANG_VIEN, VAI_TRO_GIANG],
   IsContentEditor: [VAI_QUAN_TRI, VAI_BIEN_TAP],
+  IsCurriculumPlanner: [VAI_QUAN_TRI, VAI_HOC_VU, VAI_BIEN_TAP],
 };
 
 export type Viec = {
@@ -200,6 +201,13 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Lớp & đợt học',
+    nhan: 'Cho lớp nhận khung chương trình',
+    giaiThich: 'Gắn các buổi của lớp vào khung theo thứ tự ngày; xem trước rồi mới lưu. Không đè buổi đã gắn tay, không đổi tên buổi đã đặt.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'chuong_trinh/lop.py::NhanKhungView',
+  },
+  {
+    nhom: 'Lớp & đợt học',
     nhan: 'Mở và đóng đợt học',
     giaiThich: 'Đợt là khung thời gian để so sánh giữ chân giữa các khoá tuyển sinh.',
     lopQuyen: 'IsAdminOrAcademic',
@@ -268,6 +276,15 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Ghi sổ đầu bài của buổi',
+    // Kế hoạch v2 E1, 25/09/2026 (bảng TopHSA dòng 15, 16).
+    giaiThich: 'Nội dung đã dạy / dạy một phần / chưa dạy, mức tiếp thu, em cần hỗ trợ, đề xuất. Trợ giảng ghi được — cùng cửa với điểm danh. Tiến độ lớp tính từ sổ này.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'chuong_trinh/so_dau_bai.py::SoDauBaiView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Xem lịch học gộp theo tuần',
     giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc — sửa buổi vẫn ở sổ buổi học của từng lớp.',
     lopQuyen: 'IsTeachingStaff',
@@ -323,6 +340,14 @@ export const VIEC: readonly Viec[] = [
     giaiThich: 'Trục KHÁC hẳn bốn vai trên: biên tập viên không đụng tới con người, và người quản lý con người không nhất thiết soạn được bài.',
     lopQuyen: 'IsContentEditor',
     nguon: 'courseadmin/views.py::AdminBase',
+  },
+  {
+    nhom: 'Nội dung',
+    nhan: 'Soạn khung chương trình theo buổi',
+    // Kế hoạch v2 E1, 25/09/2026: học vụ soạn được (anh Sơn chốt).
+    giaiThich: 'Buổi, nội dung từng buổi, trọng số, phiên bản. Học vụ cũng soạn được: khung là thứ họ giao cho lớp và đối chiếu tiến độ. Giảng viên không sửa: một khung dùng chung cho mọi lớp của môn.',
+    lopQuyen: 'IsCurriculumPlanner',
+    nguon: 'courseadmin/syllabus.py::SyllabusVersionsView',
   },
   // "Nhập và xuất bản đề thi thử" (`mockexam/quan_tri.py`) GỠ 24/09/2026 — bỏ thi,
   // pha A: tuyến của khu soạn đề đã tháo, không vai nào còn làm được việc ấy.

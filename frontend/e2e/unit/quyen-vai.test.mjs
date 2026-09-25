@@ -93,7 +93,7 @@ const KHAI = [...BANG.matchAll(/^ {2}(Is\w+): \[([^\]]*)\],$/gm)].map((m) => ({
   // chính `vaiTro.ts` để không chép lần thứ ba.
   bien: m[2].split(',').map((s) => s.trim()).filter(Boolean),
 }));
-check('đọc được bảng lớp quyền ở quyenVai.ts', KHAI.length === 6, String(KHAI.length));
+check('đọc được bảng lớp quyền ở quyenVai.ts', KHAI.length === 7, String(KHAI.length));
 
 const TEN_VAI = Object.fromEntries(
   [...doc(join(GOC, 'src', 'lib', 'vaiTro.ts'))

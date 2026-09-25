@@ -53,9 +53,9 @@ def _trong_so(gia_tri):
     try:
         w = float(gia_tri)
     except (TypeError, ValueError):
-        return None, 'weight phải là số.'
+        return None, 'Trọng số phải là một con số.'
     if not w > 0 or w > 100:
-        return None, 'weight phải lớn hơn 0 và không quá 100.'
+        return None, 'Trọng số phải lớn hơn 0 và không quá 100.'
     return w, None
 _DAI_TEN = 200
 _DAI_GHI_CHU = 2000
@@ -86,8 +86,8 @@ def _buoi(sid):
 def _khoa_neu_khong_nhap(trang_thai):
     """Response 409 nếu phiên bản KHÔNG còn là nháp, None nếu sửa được."""
     if trang_thai != 'nhap':
-        return Response({'error': 'Phiên bản đã xuất bản/ngừng — không sửa được. '
-                                  'Nhân bản (POST kèm duplicate_from) rồi sửa bản mới.'},
+        return Response({'error': 'Bản này đã xuất bản — không sửa được nữa. Bấm "Tạo bản '
+                                  'mới" để sửa trên một bản chép của nó.'},
                         status=409)
     return None
 
@@ -152,7 +152,7 @@ class SyllabusVersionsView(APIView):
         if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Không tìm thấy khóa học'}, status=404)
         body = request.data if isinstance(request.data, dict) else {}
-        ten, loi = _loi_chu(body.get('name'), 'name')
+        ten, loi = _loi_chu(body.get('name'), 'Tên')
         if loi:
             return Response({'error': loi}, status=400)
 
@@ -234,7 +234,7 @@ class SyllabusVersionDetailView(APIView):
             chan = _khoa_neu_khong_nhap(v['status'])
             if chan:
                 return chan
-            ten, loi = _loi_chu(body['name'], 'name')
+            ten, loi = _loi_chu(body['name'], 'Tên')
             if loi:
                 return Response({'error': loi}, status=400)
             doi['name'] = ten
@@ -323,7 +323,7 @@ class SyllabusSessionsView(APIView):
         if chan:
             return chan
         body = request.data if isinstance(request.data, dict) else {}
-        ten, loi = _loi_chu(body.get('name'), 'name')
+        ten, loi = _loi_chu(body.get('name'), 'Tên')
         if loi:
             return Response({'error': loi}, status=400)
         thoi_luong = body.get('durationMinutes')
@@ -331,10 +331,10 @@ class SyllabusSessionsView(APIView):
             try:
                 thoi_luong = int(thoi_luong)
             except (TypeError, ValueError):
-                return Response({'error': 'durationMinutes phải là số phút.'}, status=400)
+                return Response({'error': 'Thời lượng phải là số phút.'}, status=400)
             if thoi_luong <= 0:
-                return Response({'error': 'durationMinutes phải lớn hơn 0.'}, status=400)
-        bai_ve_nha, loi = _loi_chu(body.get('homework'), 'homework', _DAI_GHI_CHU, bat_buoc=False)
+                return Response({'error': 'Thời lượng phải lớn hơn 0 phút.'}, status=400)
+        bai_ve_nha, loi = _loi_chu(body.get('homework'), 'Bài về nhà', _DAI_GHI_CHU, bat_buoc=False)
         if loi:
             return Response({'error': loi}, status=400)
 
@@ -365,7 +365,7 @@ class SyllabusSessionDetailView(APIView):
         body = request.data if isinstance(request.data, dict) else {}
         doi = {}
         if 'name' in body:
-            ten, loi = _loi_chu(body['name'], 'name')
+            ten, loi = _loi_chu(body['name'], 'Tên')
             if loi:
                 return Response({'error': loi}, status=400)
             doi['name'] = ten
@@ -377,12 +377,12 @@ class SyllabusSessionDetailView(APIView):
                 try:
                     tl = int(tl)
                 except (TypeError, ValueError):
-                    return Response({'error': 'durationMinutes phải là số phút.'}, status=400)
+                    return Response({'error': 'Thời lượng phải là số phút.'}, status=400)
                 if tl <= 0:
-                    return Response({'error': 'durationMinutes phải lớn hơn 0.'}, status=400)
+                    return Response({'error': 'Thời lượng phải lớn hơn 0 phút.'}, status=400)
                 doi['duration_minutes'] = tl
         if 'homework' in body:
-            bvn, loi = _loi_chu(body['homework'], 'homework', _DAI_GHI_CHU, bat_buoc=False)
+            bvn, loi = _loi_chu(body['homework'], 'Bài về nhà', _DAI_GHI_CHU, bat_buoc=False)
             if loi:
                 return Response({'error': loi}, status=400)
             doi['homework'] = bvn or None
@@ -423,12 +423,13 @@ class SyllabusItemsView(APIView):
         if chan:
             return chan
         body = request.data if isinstance(request.data, dict) else {}
-        ten, loi = _loi_chu(body.get('title'), 'title')
+        ten, loi = _loi_chu(body.get('title'), 'Tên nội dung')
         if loi:
             return Response({'error': loi}, status=400)
         kind = (body.get('kind') or '').strip()
         if kind not in KIND:
-            return Response({'error': 'kind phải là một trong %s.' % (KIND,)}, status=400)
+            return Response({'error': 'Chọn loại nội dung: bài học, chủ đề, bài về nhà '
+                                          'hoặc kiểm tra.'}, status=400)
         lesson_id = body.get('lessonId')
         if lesson_id is not None:
             if not q1('SELECT 1 FROM lessons WHERE id=%s AND course_id=%s', (lesson_id, s['course_id'])):
@@ -470,14 +471,15 @@ class SyllabusItemDetailView(APIView):
         body = request.data if isinstance(request.data, dict) else {}
         doi = {}
         if 'title' in body:
-            ten, loi = _loi_chu(body['title'], 'title')
+            ten, loi = _loi_chu(body['title'], 'Tên nội dung')
             if loi:
                 return Response({'error': loi}, status=400)
             doi['title'] = ten
         if 'kind' in body:
             kind = (body['kind'] or '').strip()
             if kind not in KIND:
-                return Response({'error': 'kind phải là một trong %s.' % (KIND,)}, status=400)
+                return Response({'error': 'Chọn loại nội dung: bài học, chủ đề, bài về nhà '
+                                          'hoặc kiểm tra.'}, status=400)
             doi['kind'] = kind
         if 'lessonId' in body:
             lid = body['lessonId']
@@ -525,7 +527,7 @@ class SyllabusMaterialsView(APIView):
         if chan:
             return chan
         body = request.data if isinstance(request.data, dict) else {}
-        ten, loi = _loi_chu(body.get('title'), 'title')
+        ten, loi = _loi_chu(body.get('title'), 'Tên nội dung')
         if loi:
             return Response({'error': loi}, status=400)
         file_url = (body.get('fileUrl') or '').strip() or None
