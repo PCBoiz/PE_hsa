@@ -48,7 +48,7 @@ def canh(db):
 def test_lich_su_lop_gom_dung_viec_cua_lop_moi_nhat_truoc(canh):
     from teaching.chuyen_lop import ChuyenLopView
     from teaching.lich_su_lop import LichSuLopView
-    from teaching.sessions import ClassSessionsView, SessionAttendanceView
+    from teaching.sessions import ClassSessionDetailView, ClassSessionsView, SessionAttendanceView
     from teaching.views import (
         AdminClassDetailView,
         AdminClassMembersView,
@@ -65,6 +65,16 @@ def test_lich_su_lop_gom_dung_viec_cua_lop_moi_nhat_truoc(canh):
     r = _goi(SessionAttendanceView, 'post', {'marks': [{'user_id': em.id, 'status': 'present'}]},
              ai=hv, session_id=buoi)
     assert r.status_code == 200, r.data
+    # Sửa buổi rồi HUỶ buổi: nhật ký `session.update` không mang lớp trong `detail` — vẫn phải
+    # hiện ở lịch sử lớp (nhận qua id buổi).
+    r = _goi(ClassSessionDetailView, 'patch', {'room': 'P305'}, ai=hv, session_id=buoi)
+    assert r.status_code == 200, r.data
+    r = _goi(ClassSessionDetailView, 'patch', {'status': 'cancelled'}, ai=hv, session_id=buoi)
+    assert r.status_code == 200, r.data
+    # Buổi đã XOÁ: không còn trong `class_sessions` — nhận qua `detail.class_id`.
+    r = _goi(ClassSessionsView, 'post', {'starts_at': '2031-05-11T19:00', 'topic': 'Buổi xoá'}, ai=hv, class_id=a)
+    assert r.status_code == 201, r.data
+    assert _goi(ClassSessionDetailView, 'delete', ai=hv, session_id=r.data['id']).status_code in (200, 204)
     r = _goi(ChuyenLopView, 'post', {'to_class_id': b}, ai=hv, class_id=a, user_id=em2.id)
     assert r.status_code == 200, r.data
     assert _goi(AdminClassDetailView, 'put', {'room': 'P999'}, ai=hv, class_id=b).status_code == 200
@@ -73,9 +83,10 @@ def test_lich_su_lop_gom_dung_viec_cua_lop_moi_nhat_truoc(canh):
     r = _goi(LichSuLopView, 'get', ai=hv, class_id=a)
     assert r.status_code == 200, r.data
     viec = [e['action'] for e in r.data['entries']]
-    assert viec == ['class.member.transfer', 'session.create', 'class.member.add', 'class.member.add',
+    assert viec == ['class.member.transfer', 'session.delete', 'session.create', 'session.update',
+                    'session.update', 'session.create', 'class.member.add', 'class.member.add',
                     'class.update', 'class.create'], viec
-    assert r.data['total'] == 6
+    assert r.data['total'] == 10
     assert all(set(e) == {'id', 'actorName', 'actorRole', 'action', 'summary', 'occurredAt'}
                for e in r.data['entries']), 'không lộ ip / detail'
     assert r.data['entries'][0]['summary'].startswith('Chuyển'), r.data['entries'][0]
@@ -83,9 +94,9 @@ def test_lich_su_lop_gom_dung_viec_cua_lop_moi_nhat_truoc(canh):
     vb = [e['action'] for e in _goi(LichSuLopView, 'get', ai=hv, class_id=b).data['entries']]
     assert vb == ['class.update', 'class.member.transfer', 'class.create'], vb
     # Phân trang: tổng giữ nguyên, trang 2 tiếp đúng chỗ trang 1 dừng.
-    t1 = _goi(LichSuLopView, 'get', ai=hv, qs='?per_page=4', class_id=a).data
-    t2 = _goi(LichSuLopView, 'get', ai=hv, qs='?per_page=4&page=2', class_id=a).data
-    assert t1['total'] == t2['total'] == 6
+    t1 = _goi(LichSuLopView, 'get', ai=hv, qs='?per_page=6', class_id=a).data
+    t2 = _goi(LichSuLopView, 'get', ai=hv, qs='?per_page=6&page=2', class_id=a).data
+    assert t1['total'] == t2['total'] == 10
     assert [e['action'] for e in t1['entries'] + t2['entries']] == viec
 
 

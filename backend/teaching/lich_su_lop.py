@@ -11,14 +11,17 @@ CÁC DÒNG CỦA MỘT LỚP (đọc `common/audit.py` + từng chỗ gọi `aud
     giảng (`class.member.*`), chuyển lớp VÀO lớp này, nhập học viên từ tệp, sinh buổi
     hàng loạt, dán liên hệ phụ huynh, gửi báo cáo cả lớp;
   · chuyển lớp RA khỏi lớp này — dòng ấy đích là lớp MỚI, lớp cũ nằm ở `detail.fromClassId`;
-  · buổi học (`session.create/update/delete`) — đích là BUỔI, lớp nằm ở `detail.class_id`.
+  · buổi học (`session.create/update/delete`) — đích là BUỔI. Tạo và xoá ghi lớp ở
+    `detail.class_id`; SỬA buổi (kể cả huỷ buổi — đổi `status`) KHÔNG ghi lớp vào `detail`
+    (`teaching/sessions.py`, tệp luồng A1 — không sửa ở đây), nên dòng sửa được nhận qua
+    buổi còn tồn tại của lớp (`target_id` ∈ các buổi của lớp).
 
 KHÔNG gồm điểm danh từng buổi (`attendance.mark`): một lớp 3 buổi/tuần là hàng chục dòng mỗi
 tháng che mất mọi thay đổi khác — lịch sử điểm danh có màn riêng (V-d). Không trả `ip` và
 `detail` (liên hệ phụ huynh cũ nằm trong `detail`); câu tóm tắt đã dựng sẵn lúc ghi.
 
-MỘT câu (đếm + trang, `trang_kem_tong`); ba nhánh OR đi ba chỉ mục (`idx_audit_target`,
-`idx_audit_lop_buoi` của §69b, `idx_audit_action`).
+MỘT câu (đếm + trang, `trang_kem_tong`); các nhánh OR đi chỉ mục `idx_audit_target` (lớp, và
+buổi theo id), `idx_audit_lop_buoi` của §69b, `idx_audit_action`.
 """
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,10 +47,12 @@ class LichSuLopView(APIView):
             '''SELECT id, actor_name, actor_role, action, target_type, target_label, summary, occurred_at
                  FROM admin_audit
                 WHERE (target_type = 'class' AND target_id = %s)
-                   OR (target_type = 'class_session' AND detail->>'class_id' = %s AND action <> %s)
+                   OR (target_type = 'class_session' AND action <> %s
+                       AND (detail->>'class_id' = %s
+                            OR target_id IN (SELECT id::text FROM class_sessions WHERE class_id = %s)))
                    OR (action = %s AND detail->>'fromClassId' = %s)''',
             'ORDER BY occurred_at DESC, id DESC',
-            [lop, lop, ATTENDANCE_MARK, CLASS_MEMBER_TRANSFER, lop], per_page, offset)
+            [lop, ATTENDANCE_MARK, lop, class_id, CLASS_MEMBER_TRANSFER, lop], per_page, offset)
         return Response({
             'entries': [{
                 'id': r['id'], 'actorName': r['actor_name'], 'actorRole': r['actor_role'],

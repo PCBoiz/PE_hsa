@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Button, Chip } from '@/components/ui';
 import { layJson, loiBatDuoc } from '@/lib/api';
+import { lucVN } from '@/lib/gioVN';
 import { nhanViec } from '@/lib/viecNhatKy';
 import * as z from 'zod/mini';
 
@@ -13,7 +14,8 @@ import * as z from 'zod/mini';
  * Ai sửa lớp, thêm / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi — mới nhất
  * trước. Đọc `GET /api/admin/classes/<id>/lich-su` (chỉ phần của lớp này; Nhật ký đầy đủ
  * vẫn chỉ quản trị viên xem). Tải khi MỞ khối, không tải lúc mở danh sách học viên: lịch
- * sử là thứ tra khi có chuyện, không phải thứ đọc mỗi lần.
+ * sử là thứ tra khi có chuyện, không phải thứ đọc mỗi lần. Giờ ghi là giờ VN ngây thơ →
+ * `lucVN` (tách chuỗi, không qua `Date`).
  */
 type Dong = {
   id: number;
@@ -39,13 +41,6 @@ const HD = z.looseObject({
 });
 
 const VAI: Record<string, string> = { admin: 'Quản trị viên' };
-
-function luc(iso: string | null) {
-  if (!iso) return '—';
-  const [ngay, gio] = iso.split('T');
-  const [y, m, d] = ngay.split('-');
-  return `${d}/${m}/${y} ${(gio ?? '').slice(0, 5)}`.trim();
-}
 
 export default function LichSuLop({ classId }: { classId: number }) {
   const [dong, setDong] = useState<Dong[] | null>(null);
@@ -100,7 +95,7 @@ export default function LichSuLop({ classId }: { classId: number }) {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Chip>{nhanViec(d.action)}</Chip>
                     <span className="text-small text-ink-3">
-                      {luc(d.occurredAt)} · {d.actorName || '(tài khoản đã xoá)'}
+                      {lucVN(d.occurredAt)} · {d.actorName || '(tài khoản đã xoá)'}
                       {d.actorRole ? ` (${VAI[d.actorRole] ?? d.actorRole})` : ''}
                     </span>
                   </div>
