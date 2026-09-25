@@ -405,10 +405,14 @@ export default async function TongQuanPage({
           điểm danh) nên form kỳ xem nằm ngay trên nó. Thẻ nào máy chủ không trả
           (máy chủ cũ, hoặc khối ấy hỏng — tên đã nằm trong dòng "Chưa đọc được"
           ở trên) thì không vẽ. */}
-      {(s.classesByType || taiKhoanNgu || chuongTrinh) && (
+      {/* Hàng RIÊNG, không chen vào hàng dưới: ba thẻ một hàng làm bảng "Tài khoản lâu
+          không vào" hẹp lại thành vùng cuộn ngang (axe scrollable-region-focusable, đo
+          25/09/2026 khi thêm thẻ này). */}
+      {chuongTrinh && <TheChuongTrinh c={chuongTrinh} termId={term_id} />}
+
+      {(s.classesByType || taiKhoanNgu) && (
         <div className="grid items-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
           {s.classesByType && <TheLop theoLoai={s.classesByType} termId={term_id} />}
-          {chuongTrinh && <TheChuongTrinh c={chuongTrinh} termId={term_id} />}
           {taiKhoanNgu && (
             <TheTaiKhoanNgu t={taiKhoanNgu} homNay={(generatedAt ?? '').slice(0, 10)} />
           )}
