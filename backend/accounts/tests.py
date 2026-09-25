@@ -345,3 +345,18 @@ def test_needs_questionnaire_chi_bat_cho_hoc_vien(db):
         assert res.status_code == 200, res.content[:200]
         assert res.json()['needs_questionnaire'] is mong, f'{vai}: needs_questionnaire phải là {mong}'
         assert res.json()['role'] == vai, 'phản hồi đăng nhập phải nói vai để chọn trang đích'
+
+
+def test_token_cap_CUNG_GIAY_voi_moc_thu_hoi_van_dung_duoc():
+    """`iat` là số giây NGUYÊN, mốc thu hồi có phần lẻ micro giây. Token cấp SAU mốc nhưng cùng
+    giây từng bị coi là đã thu hồi → đăng nhập lại ngay sau đặt/đổi mật khẩu nhận token chết
+    (phiên cloud 25/09 bắt được; trên Neon độ trễ mạng che mất). Token cấp giây TRƯỚC vẫn bị thu hồi."""
+    from datetime import datetime
+    from types import SimpleNamespace
+
+    from accounts.authentication import CachedJWTAuthentication, _epoch_vn
+    moc = datetime(2026, 9, 25, 10, 0, 0, 900000)
+    giay = int(_epoch_vn(moc))
+    nguoi = SimpleNamespace(tokens_valid_from=moc)
+    assert not CachedJWTAuthentication._da_thu_hoi(nguoi, {'iat': giay}), 'cùng giây với mốc phải còn dùng được'
+    assert CachedJWTAuthentication._da_thu_hoi(nguoi, {'iat': giay - 1}), 'giây trước mốc phải bị thu hồi'
