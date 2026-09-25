@@ -79,6 +79,21 @@ def test_roi_lop_hay_lop_huy_thi_mat_quyen():
     assert _quyen(em3).get(KHOA) == 'hoc'
 
 
+def test_lop_tam_dung_van_giu_quyen_mon():
+    """V-c (25/09/2026): học vụ chuyển lớp sang TẠM DỪNG → em VẪN mở được bài (ôn tiếp
+    trong lúc lớp nghỉ). Chỉ lớp HUỶ mới đóng môn. Đi qua view thật cả hai phía."""
+    from lessons.views import CourseContentView
+    from teaching.views import AdminClassDetailView
+    em = _nguoi(ROLE_STUDENT)
+    lop = _lop(KHOA)
+    _vao(lop, em)
+    r = _goi(AdminClassDetailView, 'put', {'status': 'paused'}, ai=_nguoi(ROLE_ACADEMIC), class_id=lop)
+    assert r.status_code == 200, r.data
+    _quyen(em)
+    r = _goi(CourseContentView, 'get', ai=em, qs='?lesson=1', course_id=KHOA)
+    assert r.status_code == 200 and r.data.get('cheDo') == 'hoc', (r.status_code, r.data.get('cheDo'))
+
+
 def test_nhan_su_moi_vai_xem_duoc_moi_mon():
     for vai in (ROLE_TEACHER, ROLE_ASSISTANT, ROLE_ACADEMIC, 'admin', 'Biên tập nội dung'):
         q = _quyen(_nguoi(vai))

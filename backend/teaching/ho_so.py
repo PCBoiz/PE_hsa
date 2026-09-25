@@ -30,7 +30,7 @@ viên có đủ các trường trên; `users` chưa có trường nào. Lược 
 V-m (25/09/2026, bảng TopHSA dòng 3 + 7): "Tỉnh/Thành phố" chọn từ 34 đơn vị
 (`teaching/tinh_thanh.py`; giá trị cũ gõ tay vẫn hiện nguyên văn tới khi có người chọn lại);
 "Tình trạng học tập" TÍNH từ lượt học (`teaching/tinh_trang.py`, không lưu); "Tình trạng học
-phí" là MỘT ô chọn tay (`users.tuition_status`, §69a) — học vụ / quản trị viên đặt, có nhật ký.
+phí" là MỘT ô chọn tay (`users.tuition_status`, §63) — học vụ / quản trị viên đặt, có nhật ký.
 
 Email và số điện thoại của EM không sửa ở đây: đó là hai cách ĐĂNG NHẬP, em tự
 đổi ở Cài đặt (có kiểm trùng). Tên đăng nhập thì học vụ đặt được — đó là đường
@@ -59,6 +59,7 @@ from common.permissions import (
     can_see_class,
     is_admin,
 )
+from courses.truy_cap import cac_mon_da_mo
 from teaching.tinh_thanh import TINH_THANH
 from teaching.tinh_trang import HOC_PHI, MA_HOC_PHI, TINH_TRANG_HOC, sql_tinh_trang_hoc
 
@@ -121,6 +122,47 @@ def kiem_username(u, bo_qua_id=None):
     return u, None
 
 
+def _lop_hien_tai(user_id):
+    """Lớp trung tâm em ĐANG học — mảng vì hiếm khi một em ở hai lớp cùng lúc,
+    nhưng dữ liệu không cấm điều đó nên không giả định chỉ một dòng.
+
+    `si_so` ĐẾM HỌC VIÊN đang học (`left_at IS NULL`; trợ giảng không tính — cùng luật
+    trần lớp gia sư), không đọc `capacity`
+    (sĩ số DỰ KIẾN, có thể NULL) — đây là cách duy nhất phân biệt lớp gia sư
+    1-1/1-3/1-6 khỏi lớp nhóm ~20 em (yêu cầu TopHSA 25/09, `class_type` đã có
+    từ §54). Không lưu tỉ lệ thành cột riêng: một con số suy ra được từ
+    `class_members` mà lưu thêm là hai nơi cùng nói một chuyện, có ngày lệch.
+    """
+    rows = q('''SELECT c.id, c.name, c.class_type, c.capacity, c.status,
+                       t.name AS teacher_name, t.id AS teacher_id,
+                       (SELECT count(*) FROM class_members m2 JOIN users u2 ON u2.id = m2.user_id
+                         WHERE m2.class_id = c.id AND m2.left_at IS NULL
+                           AND u2.role = %s) AS si_so
+                  FROM class_members m
+                  JOIN classes c ON c.id = m.class_id
+                  LEFT JOIN users t ON t.id = c.teacher_id
+                 WHERE m.user_id = %s AND m.left_at IS NULL
+                 ORDER BY c.id''', (ROLE_STUDENT, user_id))
+    return [{
+        'id': r['id'], 'name': r['name'], 'classType': r['class_type'],
+        'capacity': r['capacity'], 'status': r['status'],
+        'teacherId': r['teacher_id'], 'teacherName': r['teacher_name'],
+        'siSo': r['si_so'],
+    } for r in rows]
+
+
+def _khoa_da_mo(user_id):
+    """"Khóa học đã đăng ký" (yêu cầu TopHSA 3.2) — LẤY QUA LỚP, không đọc
+    `enrollments`: từ 1.3 (24/09) bảng đó chỉ còn là sổ tiến độ, không còn là
+    nguồn xác định môn nào đã mở. Dùng lại đúng câu của `courses/truy_cap.py`
+    (`cac_mon_da_mo`) — cổng DUY NHẤT trả lời "em học được môn nào"."""
+    ids = cac_mon_da_mo(user_id)
+    if not ids:
+        return []
+    return [{'id': r['id'], 'title': r['title']} for r in
+            q('SELECT id, title FROM courses WHERE id = ANY(%s) ORDER BY title', (ids,))]
+
+
 def _dict(r):
     return {
         'id': r['id'],
@@ -149,6 +191,9 @@ def _dict(r):
         # V-m: học phí chọn tay (NULL = chưa đặt); tình trạng học tập TÍNH (NULL = nhân sự).
         'tuitionStatus': r.get('tuition_status'),
         'tinhTrangHoc': r.get('tinh_trang_hoc'),
+        # Giữ từ b3316cb (§63): lớp TRUNG TÂM đang học kèm sĩ số thật, môn đã mở QUA LỚP.
+        'classes': _lop_hien_tai(r['id']),
+        'enrolledCourses': _khoa_da_mo(r['id']),
     }
 
 
@@ -227,7 +272,7 @@ class HoSoHocVienView(APIView):
                 errors['region'] = 'Chọn tỉnh / thành phố từ danh sách.'
 
         if 'tuitionStatus' in body:
-            # Tình trạng học phí (V-m, §69a) — cùng danh sách với CHECK của cột.
+            # Tình trạng học phí (V-m, §63) — cùng danh sách với CHECK của cột.
             v = str(body['tuitionStatus'] or '').strip() or None
             if v is not None and v not in MA_HOC_PHI:
                 errors['tuitionStatus'] = 'Tình trạng học phí phải chọn từ danh sách.'
@@ -240,6 +285,7 @@ class HoSoHocVienView(APIView):
                 errors['enrollSource'] = 'Nguồn tuyển sinh phải chọn từ danh sách.'
             else:
                 doi['enroll_source'] = v
+
 
         if 'consultantId' in body:
             v = body['consultantId']

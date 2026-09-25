@@ -31,8 +31,13 @@ from lessons.grading import quen_dap_an
 
 _COURSE_FIELDS = (
     'title', 'subtitle', 'description', 'image', 'level',
-    'duration', 'students', 'color', 'accent_color', 'tag',
+    'duration', 'students', 'color', 'accent_color', 'tag', 'is_published',
 )
+
+#: Chấp nhận từ cả body JSON thật (bool) lẫn form-data (chuỗi) — frontend cũ
+#: gửi form ở vài màn, frontend mới gửi JSON.
+_BOOL_THAT = {True, 'true', 'True', '1'}
+_BOOL_GIA = {False, 'false', 'False', '0'}
 
 # ── KIỂM TRƯỜNG KHOÁ HỌC TRƯỚC KHI GHI (vá 04/09/2026) ──────────────────────
 #
@@ -101,6 +106,9 @@ def _clean_course_payload(data):
     updates = {f: data[f] for f in _COURSE_FIELDS if f in data}
     for truong, gia in list(updates.items()):
         if gia is None:
+            if truong == 'is_published':
+                # NULL đọc là "đang mở" ở mọi cổng — nhận nó là lặng lẽ mở khoá.
+                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false).'
             continue
         chuoi = str(gia)
         if truong in ('color', 'accent_color'):
@@ -114,19 +122,26 @@ def _clean_course_payload(data):
         elif truong == 'students':
             if chuoi and not chuoi.isdigit():
                 return None, '"students" phải là số.'
+        elif truong == 'is_published':
+            # V-i (kế hoạch v2, 25/09/2026): trước hôm nay cột này CÓ nhưng
+            # không API nào sửa được — khoá nháp chỉ tạo được rồi kẹt vĩnh viễn
+            # ở is_published=TRUE (mặc định cột). Ép về bool THẬT, không lưu
+            # chuỗi 'true'/'1': cột là boolean, và một chuỗi lọt qua đây sẽ so
+            # sánh sai ở mọi câu `WHERE is_published` sau này. Chuỗi LẠ ("no", "nháp")
+            # → 400: ép kiểu kiểu Python thì mọi chuỗi khác rỗng là TRUE, tức bấm
+            # "chuyển về nháp" lại MỞ khoá cho mọi học viên, không một lời báo.
+            if gia in _BOOL_THAT:
+                updates[truong] = True
+            elif gia in _BOOL_GIA:
+                updates[truong] = False
+            else:
+                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false) — đang nhận %r.' % chuoi[:20]
         else:
             e = loi_html(chuoi, truong)
             if e:
                 return None, e[0]
             if len(chuoi) > 2000:
                 return None, '"%s" dài %d ký tự, tối đa 2000.' % (truong, len(chuoi))
-    if 'is_published' in data:
-        # "Đang mở / Nháp" (V-i, 25/09/2026). CHỈ nhận true/false thật: chuỗi "false"
-        # là chuỗi khác rỗng, ép kiểu kiểu Python thì nó thành TRUE — tức bấm "chuyển
-        # về nháp" lại MỞ khoá cho mọi học viên, không một lời báo.
-        if not isinstance(data['is_published'], bool):
-            return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false).'
-        updates['is_published'] = data['is_published']
     return updates, None
 
 
@@ -200,16 +215,18 @@ class AdminCoursesView(_ChuKhoa, AdminBase):
         if q1('SELECT id FROM courses WHERE id=%s', (course_id,)):
             return Response({'error': 'Id khóa học đã tồn tại'}, status=400)
 
-        _, loi = _clean_course_payload(data)
+        sach, loi = _clean_course_payload(data)
         if loi:
             return Response({'error': loi}, status=400)
 
-        cols = ['id', 'title'] + [f for f in _COURSE_FIELDS if f != 'title']
-        vals = [course_id, title] + [data.get(f) for f in _COURSE_FIELDS if f != 'title']
-        if isinstance(data.get('is_published'), bool):
-            # Chỉ khi người gửi CHỌN: không gửi thì để mặc định của lược đồ (đang mở).
+        # `is_published` chỉ ghi khi người gửi CHỌN (đã ép về bool ở `sach`): không gửi thì
+        # để mặc định của lược đồ (đang mở), không ghi NULL.
+        khac = [f for f in _COURSE_FIELDS if f not in ('title', 'is_published')]
+        cols = ['id', 'title'] + khac
+        vals = [course_id, title] + [data.get(f) for f in khac]
+        if 'is_published' in sach:
             cols.append('is_published')
-            vals.append(data['is_published'])
+            vals.append(sach['is_published'])
         placeholders = ', '.join(['%s'] * len(cols))
         x(f'INSERT INTO courses ({", ".join(cols)}) VALUES ({placeholders})', tuple(vals))
         audit.record(request, audit.COURSE_CREATE, target_type='course',

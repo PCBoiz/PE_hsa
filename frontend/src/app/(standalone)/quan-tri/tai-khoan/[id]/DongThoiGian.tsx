@@ -11,6 +11,8 @@ const LOAI: Record<string, { nhan: string; tong: 'neutral' | 'brand' | 'good' | 
   thi: { nhan: 'Thi', tong: 'good' },
   'bao-cao': { nhan: 'Phụ huynh', tong: 'warn' },
   'ho-so': { nhan: 'Hồ sơ', tong: 'neutral' },
+  // Giảng viên / trợ giảng đánh dấu cần hỗ trợ, đề xuất hướng học, ghi nhận xét (V-f).
+  'theo-doi': { nhan: 'Theo dõi', tong: 'warn' },
 };
 
 /**
@@ -36,7 +38,7 @@ export default function DongThoiGian({ duLieu }: { duLieu: DuLieu }) {
       <Card>
         <CardHead
           title="Dòng thời gian"
-          hint="Mọi mốc của em, mới nhất ở trên: vào lớp, chuyển lớp, thi, báo cáo phụ huynh, sửa hồ sơ."
+          hint="Mọi mốc của em, mới nhất ở trên: vào lớp, chuyển lớp, thi, báo cáo phụ huynh, cần hỗ trợ."
         />
         {duLieu.events.length === 0 ? (
           <EmptyState title="Chưa có mốc nào" hint="Em vừa được cấp tài khoản và chưa vào lớp nào." />

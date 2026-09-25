@@ -15,7 +15,7 @@ from common.permissions import ROLE_STUDENT
 
 #: Lý do rời lớp. NULL nghĩa là đang học; xem `sql/legacy_schema.sql` §36 —
 #: `class_members_leave_reason_check` phải liệt kê đúng ba giá trị này.
-LEAVE_REASONS = ('completed', 'dropped', 'transferred')
+LEAVE_REASONS = ('completed', 'dropped', 'transferred', 'reserved')
 
 
 def chi_hoc_vien(alias):
@@ -44,6 +44,8 @@ LEAVE_LABEL = {
     'completed': 'học xong',
     'dropped': 'bỏ giữa chừng',
     'transferred': 'chuyển lớp',
+    # Bảo lưu (25/09/2026, bảng TopHSA dòng 12): rời lớp TẠM, giữ chỗ quay lại — khác "bỏ giữa chừng".
+    'reserved': 'bảo lưu',
 }
 
 #: Dùng cho cột trạng thái trong báo cáo và CSV. Đã rời lớp mà KHÔNG ghi lý do
@@ -60,7 +62,10 @@ def trang_thai(left_at, leave_reason=None):
 
 #: Trạng thái lớp = `classes_status_check` (T42). Dời từ `views.py` 24/09/2026 để
 #: `reports.py` lọc được mà không import vòng; `views.CLASS_STATUS` là bí danh.
-TRANG_THAI_LOP = ('active', 'finished', 'cancelled')
+#: 'paused' = TẠM DỪNG (25/09/2026, kế hoạch v2 V-c): em giữ quyền mở môn, lớp
+#: không vào "chưa điểm danh" (`viec_hom_nay`) và không sinh lịch (`sinh_buoi`).
+TRANG_THAI_LOP = ('active', 'paused', 'finished', 'cancelled')
+LOP_TAM_DUNG = 'paused'
 
 #: Loại lớp (§54, 24/09/2026) — `classes_class_type_check` phải liệt kê đúng hai giá trị này.
 #: TopHSA có ~400 lớp GIA SƯ cá nhân hoá (1 tới 3 em) bên cạnh lớp NHÓM.

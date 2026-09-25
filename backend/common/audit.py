@@ -58,6 +58,10 @@ CLASS_MEMBER_TRANSFER = 'class.member.transfer'
 #: `send_all`): `detail` mang tên tệp, id tài khoản mới + id em có sẵn, số dòng lỗi. Từng
 #: tài khoản mới vẫn có dòng `user.create`, từng em có sẵn vẫn có `class.member.add`.
 CLASS_MEMBER_IMPORT = 'class.member.import'
+#: Đánh giá một em trong lớp (25/09/2026, `teaching/danh_gia.py`): nhận xét gửi phụ
+#: huynh, cờ "cần hỗ trợ" + lý do, đề xuất hướng học. `target` là EM (target_type
+#: 'user') để dòng thời gian của em đọc được cả lịch sử đánh dấu; `detail.classId`.
+CLASS_MEMBER_ASSESS = 'class.member.assess'
 #: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
 #: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
 #: dán nhầm cột.
@@ -134,6 +138,14 @@ LESSON_CONTENT_UPDATE = 'lesson.content'
 MOCK_EXAM_CREATE = 'mock_exam.create'
 MOCK_EXAM_UPDATE = 'mock_exam.update'
 MOCK_EXAM_PUBLISH = 'mock_exam.publish'
+
+#: Khung chương trình theo buổi (E1, §64, 25/09/2026) — cùng lý do với COURSE_*:
+#: sửa thứ dùng chung cho mọi lớp thì phải trả lời được "ai đổi, lúc nào".
+SYLLABUS_CREATE = 'syllabus.create'
+SYLLABUS_UPDATE = 'syllabus.update'
+SYLLABUS_DELETE = 'syllabus.delete'
+SYLLABUS_PUBLISH = 'syllabus.publish'
+CLASS_SYLLABUS_ASSIGN = 'class.syllabus.assign'
 
 
 def _client_ip(request):

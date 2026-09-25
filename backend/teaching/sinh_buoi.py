@@ -44,6 +44,7 @@ from stats.goals import as_date
 from teaching.ngay_le import le_co_dinh_trong
 from teaching.sessions import DEFAULT_SESSION_MINUTES, MAX_SESSION_MINUTES
 from teaching.trung_lich import tim_trung_nhieu
+from teaching.vocab import LOP_TAM_DUNG
 
 #: Trần buổi tạo MỘT lần. Một đợt ba tháng hai buổi/tuần là ~26; năm buổi/tuần
 #: cả năm học là ~200. Quá số đó gần như chắc chắn là chọn nhầm khoảng ngày, và
@@ -93,7 +94,7 @@ def doan_lich(mo_ta):
 
 def _lop(class_id):
     return q1('''SELECT c.id, c.name, c.schedule, c.meeting_url, c.starts_on, c.ends_on,
-                        c.term_id, t.name AS term_name,
+                        c.status, c.term_id, t.name AS term_name,
                         t.starts_on AS term_starts_on, t.ends_on AS term_ends_on
                  FROM classes c LEFT JOIN terms t ON t.id = c.term_id
                  WHERE c.id = %s''', (class_id,))
@@ -312,7 +313,9 @@ class GenerateSessionsView(APIView):
             'goiY': {'weekdays': thu, 'startTime': gio, 'durationMinutes': phut,
                      'from': tu.isoformat(),
                      'to': den.isoformat() if den and den >= tu else None},
-            'coTheSinh': not is_assistant(request.user),
+            'coTheSinh': not is_assistant(request.user) and lop['status'] != LOP_TAM_DUNG,
+            # Màn hình nói VÌ SAO không có khối sinh lịch, thay vì lặng lẽ giấu nó.
+            'tamDung': lop['status'] == LOP_TAM_DUNG,
             'tranBuoi': MAX_BUOI_MOI_LAN,
         })
 
@@ -326,6 +329,13 @@ class GenerateSessionsView(APIView):
         lop = _lop(class_id)
         if not lop:
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
+        # Lớp TẠM DỪNG (V-c, 25/09/2026) không sinh lịch — kể cả xem trước: buổi
+        # sinh ra cho một lớp đang nghỉ là hàng loạt buổi "chưa điểm danh" giả,
+        # và em nhận lịch học mà không buổi nào diễn ra. 409: yêu cầu hợp lệ, chỉ
+        # xung đột với trạng thái lớp.
+        if lop['status'] == LOP_TAM_DUNG:
+            return Response({'error': 'Lớp đang tạm dừng nên chưa sinh lịch được. Học vụ đổi '
+                                      'trạng thái lớp sang "Đang học" rồi sinh lịch.'}, status=409)
 
         body = request.data if isinstance(request.data, dict) else {}
         ts, loi = _doc_than(body)

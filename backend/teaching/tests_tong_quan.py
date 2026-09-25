@@ -92,7 +92,7 @@ def test_roi_lop_chi_dem_trong_khoang_ca_hai_bien_va_tach_ly_do_loai():
     r = tong_quan(term_id=dot, tu=tu, den=den)['roiLop']
     assert (r['tu'], r['den']) == (tu.isoformat(), den.isoformat())
     assert r['tong'] == 5, r
-    assert r['theoLyDo'] == {'completed': 1, 'dropped': 2, 'transferred': 1, 'chuaGhi': 1}, r
+    assert r['theoLyDo'] == {'completed': 1, 'dropped': 2, 'transferred': 1, 'reserved': 0, 'chuaGhi': 1}, r
     assert r['theoLoai'] == {'nhom': 3, 'gia_su': 2}, r
     assert [d['leftOn'] for d in r['ds']][0] == den.isoformat(), 'mới nhất lên đầu'
     assert len(r['ds']) == 5 and {d['reason'] for d in r['ds']} == {
@@ -219,8 +219,8 @@ def test_bang_lop_cat_dong_xep_theo_van_de_nhung_so_dem_tren_TOAN_BO():
     assert s['classCount'] == 5
     assert s['activeNoTeacher'] == 2, 'đếm trên MỌI lớp, không trên phần đã cắt'
     assert s['classesByType'] == {
-        'nhom': {'total': 3, 'active': 3, 'finished': 0, 'cancelled': 0},
-        'gia_su': {'total': 2, 'active': 1, 'finished': 1, 'cancelled': 0},
+        'nhom': {'total': 3, 'active': 3, 'paused': 0, 'finished': 0, 'cancelled': 0},
+        'gia_su': {'total': 2, 'active': 1, 'paused': 0, 'finished': 1, 'cancelled': 0},
     }, s['classesByType']
 
 

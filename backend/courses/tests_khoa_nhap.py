@@ -74,10 +74,24 @@ def test_sua_duoc_is_published_va_ghi_nhat_ky():
     assert _dat(ma, False, ad).status_code == 200
     assert q1("SELECT count(*) AS n FROM admin_audit WHERE target_type='course' AND target_id=%s",
               (ma,))['n'] == dem
-    # Chỉ nhận đúng/sai — chuỗi "false" không được lặng lẽ thành TRUE.
+    # Nhận đúng/sai và chuỗi true/false/1/0 (biểu mẫu cũ gửi chuỗi) — ép về BOOL THẬT;
+    # chuỗi "false" không được lặng lẽ thành TRUE, chuỗi lạ và NULL bị từ chối.
+    r = _goi(AdminCourseDetailView, 'put', {'is_published': '1'}, ai=ad, course_id=ma)
+    assert r.status_code == 200, r.data
+    assert q1('SELECT is_published FROM courses WHERE id=%s', (ma,))['is_published'] is True
     r = _goi(AdminCourseDetailView, 'put', {'is_published': 'false'}, ai=ad, course_id=ma)
-    assert r.status_code == 400, r.data
+    assert r.status_code == 200, r.data
     assert q1('SELECT is_published FROM courses WHERE id=%s', (ma,))['is_published'] is False
+    for la in ('nháp', None, 'no'):
+        r = _goi(AdminCourseDetailView, 'put', {'is_published': la}, ai=ad, course_id=ma)
+        assert r.status_code == 400, (la, r.data)
+    assert q1('SELECT is_published FROM courses WHERE id=%s', (ma,))['is_published'] is False
+    # Tạo khoá kèm trạng thái: ghi đúng một lần (cột không lặp trong câu INSERT).
+    from courseadmin.views import AdminCoursesView
+    moi = 'kn_%s' % uuid.uuid4().hex[:8]
+    r = _goi(AdminCoursesView, 'post', {'id': moi, 'title': 'KN mới', 'is_published': 'false'}, ai=ad)
+    assert r.status_code == 200, r.data
+    assert q1('SELECT is_published FROM courses WHERE id=%s', (moi,))['is_published'] is False
 
 
 def test_hoc_vien_mat_khoa_nhap_ngay_nhan_su_van_xem():

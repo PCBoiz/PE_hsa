@@ -7,7 +7,7 @@ import { Button, Modal } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 import { ngayVN } from '@/lib/gioVN';
 
-import { LOAI_LOP } from './lop';
+import { LOAI_LOP, TRANG_THAI } from './lop';
 
 /**
  * CHUYỂN LỚP MỘT THAO TÁC (§55, mục 1.2c — 24/09/2026).
@@ -117,7 +117,8 @@ export default function ChuyenLop({
                       className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 rounded-md border border-line bg-surface px-3 py-1 text-left text-body text-ink hover:border-brand">
                       <span>{c.name}</span>
                       <span className="text-small text-ink-3">
-                        {[c.classType ? LOAI_LOP[c.classType] : null, c.termName, c.status === 'finished' ? 'đã kết thúc' : null]
+                        {[c.classType ? LOAI_LOP[c.classType] : null, c.termName,
+                          c.status !== 'active' ? (TRANG_THAI[c.status]?.nhan ?? c.status).toLowerCase() : null]
                           .filter(Boolean).join(' · ')}
                       </span>
                     </button>

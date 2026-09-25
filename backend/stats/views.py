@@ -5,7 +5,6 @@ from django.db import transaction
 from rest_framework.response import Response
 
 from achievements.services import check_and_award_achievements
-from chatbot import profile as chat_profile
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import KIND_MISSION, record_event
@@ -13,6 +12,7 @@ from common.views import NguoiDungView
 from stats import competency, gradebook, journal, plan
 from stats.goals import as_date as _as_date
 from stats.goals import read_goals
+from stats.tin_hieu import nhat_ky_doi
 
 
 def _json_rows(value):
@@ -446,8 +446,8 @@ class JournalView(NguoiDungView):
         row, err = journal.save_log(request.user.id, body)
         if err:
             return Response({'error': err}, status=400)
-        # Trợ lý AI đọc nhật ký để tư vấn — bỏ đệm để nó thấy ngay bản vừa ghi.
-        chat_profile.invalidate(request.user.id)
+        # Trợ lý AI đọc nhật ký để tư vấn — báo "nhật ký đổi" để nó bỏ đệm (chatbot tự nghe).
+        nhat_ky_doi.send(sender=JournalView, user_id=request.user.id)
         return Response({'ok': True, 'log': row,
                          'week': journal.week_progress(request.user.id,
                                                        journal.read_target(request.user.id))})
@@ -456,7 +456,7 @@ class JournalView(NguoiDungView):
         day = request.query_params.get('date') or (request.data or {}).get('date')
         if not journal.delete_log(request.user.id, day):
             return Response({'error': 'Ngày không hợp lệ.'}, status=400)
-        chat_profile.invalidate(request.user.id)
+        nhat_ky_doi.send(sender=JournalView, user_id=request.user.id)
         return Response({'ok': True})
 
 

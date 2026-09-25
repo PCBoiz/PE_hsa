@@ -37,7 +37,7 @@ TINH_TRANG_HOC = (
 )
 NHAN_TINH_TRANG_HOC = dict(TINH_TRANG_HOC)
 
-#: Tình trạng học phí — khớp CHECK `users_tuition_status_check` (§69a). Thứ tự = ô chọn.
+#: Tình trạng học phí — khớp CHECK `users_tuition_status_check` (§63). Thứ tự = ô chọn.
 HOC_PHI = (
     ('da_dong', 'Đã đóng'),
     ('sap_het', 'Sắp hết'),

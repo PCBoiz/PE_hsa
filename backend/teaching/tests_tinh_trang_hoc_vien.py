@@ -5,7 +5,7 @@ dòng 3 + 7.
     nguyên văn và vẫn "giữ nguyên" được khi sửa ô khác — chỉ không GHI MỚI được ngoài danh sách.
   · Tình trạng học tập TÍNH từ lượt học (`teaching/tinh_trang.py`) — cùng một biểu thức ở
     hồ sơ, danh sách tài khoản (cột + ô lọc) và tệp xuất.
-  · Tình trạng học phí: MỘT ô chọn tay (§69a), học vụ / quản trị viên đặt, có nhật ký.
+  · Tình trạng học phí: MỘT ô chọn tay (§63), học vụ / quản trị viên đặt, có nhật ký.
 
 Đi qua VIEW THẬT; CSDL cuộn lại sau mỗi test (`conftest.py`).
 """
@@ -48,22 +48,12 @@ def _vao(lop, u, vao='2026-01-01', roi=None, ly_do=None):
       (lop, u.id, vao, roi, ly_do))
 
 
-def _cho_phep_bao_luu():
-    r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = 'class_members_leave_reason_check'")
-    return bool(r) and 'reserved' in r['d']
-
-
-def _cho_phep_tam_dung():
-    r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = 'classes_status_check'")
-    return bool(r) and 'paused' in r['d']
-
-
 # ── Học phí: vocab = CHECK ─────────────────────────────────────────────────
 
 def test_hoc_phi_khop_rang_buoc_CSDL():
     from teaching.tinh_trang import MA_HOC_PHI
     r = q1("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = 'users_tuition_status_check'")
-    assert r, 'chưa có CHECK users_tuition_status_check (§69a)'
+    assert r, 'chưa có CHECK users_tuition_status_check (§63)'
     import re
     assert set(re.findall(r"'([a-z_]+)'", r['d'])) == set(MA_HOC_PHI), r['d']
 
@@ -133,17 +123,15 @@ def test_tinh_trang_hoc_tinh_tu_luot_hoc_o_ho_so_danh_sach_va_tep_xuat():
     _vao(_lop('active'), em['dang_va_nghi'], vao='2026-06-01')
     mong = {'dang': 'dang_hoc', 'chua': 'chua_xep_lop', 'xong': 'da_hoc_xong', 'xong_lop_ket_thuc': 'da_hoc_xong',
             'nghi': 'da_nghi', 'xong_roi_nghi': 'da_nghi', 'chi_lop_huy': 'chua_xep_lop', 'dang_va_nghi': 'dang_hoc'}
-    if _cho_phep_bao_luu():
-        # Bảo lưu (lý do rời `reserved`) KHÁC bỏ học — và lượt GẦN NHẤT quyết định.
-        em['bao_luu'] = _nguoi(ROLE_STUDENT, 'TT bl %s' % d)
-        _vao(_lop('active'), em['bao_luu'], vao='2026-01-01', roi='2026-03-01', ly_do='dropped')
-        _vao(_lop('active'), em['bao_luu'], vao='2026-04-01', roi='2026-06-01', ly_do='reserved')
-        mong['bao_luu'] = 'bao_luu'
-    if _cho_phep_tam_dung():
-        em['dung'] = _nguoi(ROLE_STUDENT, 'TT dung %s' % d)
-        _vao(_lop('paused'), em['dung'])
-        _vao(_lop('active'), em['dung'], roi='2026-05-01', ly_do='completed')
-        mong['dung'] = 'tam_dung'
+    # Bảo lưu (lý do rời `reserved`) KHÁC bỏ học — và lượt GẦN NHẤT quyết định.
+    em['bao_luu'] = _nguoi(ROLE_STUDENT, 'TT bl %s' % d)
+    _vao(_lop('active'), em['bao_luu'], vao='2026-01-01', roi='2026-03-01', ly_do='dropped')
+    _vao(_lop('active'), em['bao_luu'], vao='2026-04-01', roi='2026-06-01', ly_do='reserved')
+    mong['bao_luu'] = 'bao_luu'
+    em['dung'] = _nguoi(ROLE_STUDENT, 'TT dung %s' % d)
+    _vao(_lop('paused'), em['dung'])
+    _vao(_lop('active'), em['dung'], roi='2026-05-01', ly_do='completed')
+    mong['dung'] = 'tam_dung'
     for k, u in em.items():
         r = _goi(HoSoHocVienView, 'get', ai=ad, user_id=u.id)
         assert r.data['profile']['tinhTrangHoc'] == mong[k], (k, r.data['profile']['tinhTrangHoc'])

@@ -2,9 +2,11 @@ import Link from 'next/link';
 
 import { Card, CardHead, Chip, EmptyState, Tile, TileRow } from '@/components/ui';
 import { chanTu } from '@/lib/chanTu';
-import { ngayDayDuVN } from '@/lib/gioVN';
+import { lucVN, ngayDayDuVN } from '@/lib/gioVN';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
+
+import NutCanHoTro from './NutCanHoTro';
 
 /**
  * VIỆC HÔM NAY — trang đầu của khu Giảng dạy, gom mọi lớp của người đang đăng nhập.
@@ -48,13 +50,19 @@ type ViecHomNay = {
     choNgay: number;
     quaHan: boolean;
   }[];
-  /** Vắng mặt với trợ giảng — không phải rỗng, mà KHÔNG CÓ. */
+  /** Từ 25/09/2026 (V-b) trợ giảng cũng nhận hai khối này. Vẫn `?`: máy chủ cũ
+   *  (Vercel lên trước Render) không gửi chúng cho trợ giảng. */
   vangLien?: { userId: number; name: string | null; classId: number; className: string; soBuoi: number }[];
   canChuY?: { userId: number; name: string | null; classId: number; className: string; lyDo: string }[];
+  /** Em được giảng viên / trợ giảng ĐÁNH DẤU cần hỗ trợ (V-f, 25/09/2026). `?`: máy chủ cũ không gửi. */
+  canHoTro?: {
+    userId: number; name: string | null; classId: number; className: string;
+    lyDo: string | null; luc: string | null; boi: string | null;
+  }[];
 };
 
 /* Hình dạng `/api/teach/viec-hom-nay` (T18 mức 2). Hai khoá về từng em là
-   `optional` đúng nghĩa: trợ giảng KHÔNG có chúng — không phải rỗng. */
+   `optional` vì máy chủ trước 25/09/2026 không gửi chúng cho trợ giảng. */
 const BUOI = {
   sessionId: z.number(), classId: z.number(), className: z.string(),
   startsAt: z.string().nullable(), topic: z.string().nullable(),
@@ -75,6 +83,9 @@ const HINH_DANG = z.looseObject({
   })),
   vangLien: z.array(z.looseObject({ ...EM, soBuoi: z.number() })).optional(),
   canChuY: z.array(z.looseObject({ ...EM, lyDo: z.string() })).optional(),
+  canHoTro: z.array(z.looseObject({
+    ...EM, lyDo: z.string().nullable(), luc: z.string().nullable(), boi: z.string().nullable(),
+  })).optional(),
 }) satisfies HinhDang<ViecHomNay>;
 
 function gio(iso: string | null) {
@@ -87,16 +98,34 @@ function gio(iso: string | null) {
 
 const LINK = 'inline-flex min-h-11 items-center font-semibold text-brand-ink underline';
 
-/** Một dòng việc: chữ bên trái, lối vào bên phải; xuống hàng ở khổ hẹp. */
-function Dong({ children, den, nhan }: { children: React.ReactNode; den: string; nhan: string }) {
+/**
+ * Lối vào cho một dòng về MỘT em. Giảng viên / học vụ: tờ báo cáo của em. Trợ
+ * giảng KHÔNG mở được tờ ấy (in liên lạc của em — `IsSeniorTeachingStaff`), nên
+ * dẫn về sổ buổi học của lớp, nơi trợ giảng làm việc hằng ngày. Dựng lối dẫn tới
+ * một trang 403 là đúng lỗi rà luồng trợ giảng 14/09 đã gỡ ở màn Buổi học.
+ */
+function loiVaoEm(troGiang: boolean, e: { classId: number; userId: number }) {
+  return troGiang
+    ? { den: `/giang-day/buoi-hoc/${e.classId}`, nhan: 'Mở lớp' }
+    : { den: `/giang-day/bao-cao/${e.classId}/${e.userId}`, nhan: 'Xem tờ báo cáo' };
+}
+
+/** Một dòng việc: chữ bên trái, lối vào bên phải; xuống hàng ở khổ hẹp.
+ *  `them`: thao tác làm NGAY trên dòng (đánh dấu cần hỗ trợ — V-f), đứng trước lối vào. */
+function Dong({ children, den, nhan, them }: {
+  children: React.ReactNode; den: string; nhan: string; them?: React.ReactNode;
+}) {
   return (
     // Khổ hẹp: lối vào xuống DƯỚI câu việc. Để cạnh nhau thì câu bị ép vào
     // nửa bên trái và gãy làm bốn dòng (ảnh chụp 390px, 14/09/2026).
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line/50 py-2 last:border-b-0 max-sm:flex-col max-sm:items-start">
       <div className="min-w-0 flex-1 text-body text-ink-2">{children}</div>
-      <Link href={den} className={LINK}>
-        {nhan} →
-      </Link>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:w-full">
+        {them}
+        <Link href={den} className={LINK}>
+          {nhan} →
+        </Link>
+      </div>
     </li>
   );
 }
@@ -120,7 +149,16 @@ export default async function ViecHomNayPage() {
 
   const d = kq.data;
   const soViec =
-    d.chuaDiemDanh.tong + d.chuaCham.length + (d.vangLien?.length ?? 0) + (d.canChuY?.length ?? 0);
+    d.chuaDiemDanh.tong + d.chuaCham.length + (d.vangLien?.length ?? 0) + (d.canChuY?.length ?? 0) +
+    (d.canHoTro?.length ?? 0);
+  // Em đã được đánh dấu ở lớp nào — dòng vắng liền / cần chú ý của em ấy không mời đánh dấu lại.
+  const daDanhDau = new Set((d.canHoTro ?? []).map((e) => `${e.classId}-${e.userId}`));
+  /* Nút đánh dấu chỉ khi máy chủ có khối `canHoTro` (tức có đường ghi) — máy chủ cũ
+     thì không dựng một nút bấm vào mới báo lỗi. */
+  const nutDanhDau = (e: { classId: number; userId: number; name: string | null }) =>
+    d.canHoTro && !daDanhDau.has(`${e.classId}-${e.userId}`) ? (
+      <NutCanHoTro classId={e.classId} userId={e.userId} ten={e.name || `#${e.userId}`} dangDanhDau={false} />
+    ) : null;
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6">
@@ -147,7 +185,36 @@ export default async function ViecHomNayPage() {
         {d.canChuY && (
           <Tile value={d.canChuY.length} label="em cần chú ý ngay" tone={d.canChuY.length > 0 ? 'warn' : 'neutral'} />
         )}
+        {d.canHoTro && (
+          <Tile value={d.canHoTro.length} label="em được báo cần hỗ trợ" tone={d.canHoTro.length > 0 ? 'warn' : 'neutral'} />
+        )}
       </TileRow>
+
+      {d.canHoTro && d.canHoTro.length > 0 && (
+        <Card>
+          <CardHead
+            title={`Cần hỗ trợ (${d.canHoTro.length})`}
+            hint="Em được giảng viên hoặc trợ giảng đánh dấu, kèm lý do. Hỗ trợ xong thì bỏ đánh dấu."
+          />
+          <ul className="flex flex-col">
+            {d.canHoTro.map((e) => (
+              <Dong
+                key={`${e.classId}-${e.userId}`}
+                {...loiVaoEm(d.troGiang, e)}
+                them={<NutCanHoTro classId={e.classId} userId={e.userId} ten={e.name || `#${e.userId}`} dangDanhDau />}
+              >
+                <span className="font-semibold text-ink">{e.name || `#${e.userId}`}</span>
+                {' · '}
+                {e.className}
+                {e.lyDo && <> · {e.lyDo}</>}
+                <span className="block text-small text-ink-3">
+                  {[e.boi ? `báo bởi ${e.boi}` : null, e.luc ? lucVN(e.luc) : null].filter(Boolean).join(' · ')}
+                </span>
+              </Dong>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {soViec === 0 && d.sapToi.length === 0 && (
         <Card>
@@ -253,11 +320,15 @@ export default async function ViecHomNayPage() {
         <Card>
           <CardHead
             title={`Vắng liền từ ${d.nguong.vangLien} buổi (${d.vangLien.length})`}
-            hint="Vắng không phép ở mọi buổi đã điểm danh gần đây. Nên gọi phụ huynh ngay."
+            hint={
+              d.troGiang
+                ? 'Vắng không phép ở mọi buổi đã điểm danh gần đây. Báo giảng viên phụ trách lớp.'
+                : 'Vắng không phép ở mọi buổi đã điểm danh gần đây. Nên gọi phụ huynh ngay.'
+            }
           />
           <ul className="flex flex-col">
             {d.vangLien.map((e) => (
-              <Dong key={`${e.classId}-${e.userId}`} den={`/giang-day/bao-cao/${e.classId}/${e.userId}`} nhan="Xem tờ báo cáo">
+              <Dong key={`${e.classId}-${e.userId}`} {...loiVaoEm(d.troGiang, e)} them={nutDanhDau(e)}>
                 <span className="font-semibold text-ink">{e.name || `#${e.userId}`}</span>
                 {' · '}
                 {e.className} · <Chip tone="bad">vắng {e.soBuoi} buổi liền</Chip>
@@ -275,7 +346,7 @@ export default async function ViecHomNayPage() {
           />
           <ul className="flex flex-col">
             {d.canChuY.map((e) => (
-              <Dong key={`${e.classId}-${e.userId}`} den={`/giang-day/bao-cao/${e.classId}/${e.userId}`} nhan="Xem tờ báo cáo">
+              <Dong key={`${e.classId}-${e.userId}`} {...loiVaoEm(d.troGiang, e)} them={nutDanhDau(e)}>
                 <span className="font-semibold text-ink">{e.name || `#${e.userId}`}</span>
                 {' · '}
                 {e.className} · {e.lyDo}

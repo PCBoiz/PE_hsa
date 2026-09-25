@@ -59,6 +59,18 @@ def la_nhan_su(user):
     return (getattr(user, 'role', None) or ROLE_STUDENT) != ROLE_STUDENT
 
 
+def _mon_hoc_vien(user_id):
+    """Môn đang mở cho MỘT học viên qua lớp, TRỪ khoá nháp — MỘT câu (danh sách khoá nháp
+    đi chung câu, câu con không tương quan nên Postgres tính một lần). Lõi của cổng
+    (`quyen_khoa`, có đệm) và của màn hiển thị (`cac_mon_da_mo`, không đệm)."""
+    rows = q('SELECT DISTINCT c.course_id, '
+             'ARRAY(SELECT id FROM courses WHERE is_published IS FALSE) AS nhap '
+             'FROM class_members m JOIN classes c ON c.id = m.class_id '
+             'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user_id,))
+    nhap = set(rows[0]['nhap'] or ()) if rows else set()
+    return sorted(mon_mo(r['course_id'] for r in rows) - nhap)
+
+
 def quyen_khoa(user):
     """`{course_id: 'hoc' | 'xem'}` — môn KHÔNG có trong dict là môn chưa mở.
 
@@ -71,12 +83,7 @@ def quyen_khoa(user):
     khoa = _khoa(user.id)
     ds = cache.get(khoa)
     if ds is None:
-        rows = q('SELECT DISTINCT c.course_id, '
-                 'ARRAY(SELECT id FROM courses WHERE is_published IS FALSE) AS nhap '
-                 'FROM class_members m JOIN classes c ON c.id = m.class_id '
-                 'WHERE m.user_id = %s AND ' + LOP_DANG_HOC, (user.id,))
-        nhap = set(rows[0]['nhap'] or ()) if rows else set()
-        ds = sorted(mon_mo(r['course_id'] for r in rows) - nhap)
+        ds = _mon_hoc_vien(user.id)
         cache.set(khoa, ds, TTL)
     return {m: HOC for m in ds}
 
@@ -87,6 +94,14 @@ def an_voi(user, course_row):
     Dùng ở các danh sách khoá (`courses/views.py`): học viên không thấy khoá nháp
     trong danh sách, nhân sự vẫn thấy (chế độ chỉ-xem)."""
     return course_row.get('is_published') is False and not la_nhan_su(user)
+
+
+def cac_mon_da_mo(user_id):
+    """Course id đã mở cho MỘT học viên qua lớp — cho màn HIỂN THỊ (hồ sơ học viên, yêu
+    cầu TopHSA 3.2 "khóa học đã đăng ký"), không phải cổng chặn nên KHÔNG đệm, KHÔNG rẽ
+    nhánh nhân sự. CÙNG hàm lõi với nhánh học viên của `quyen_khoa()` (kể cả trừ khoá
+    nháp) — hồ sơ nói "em học được môn X" đúng khi và chỉ khi cổng mở môn X cho em."""
+    return _mon_hoc_vien(user_id)
 
 
 def che_do(user, course_id):

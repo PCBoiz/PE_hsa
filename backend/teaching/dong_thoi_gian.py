@@ -12,7 +12,9 @@ kiện đọc thẳng từ bảng gốc của nó, nên không có bản sao nà
   ket_qua_thi_ngoai           kết quả kỳ thi ở hệ thống khảo thí ngoài
   parent_report_sends         gửi báo cáo cho phụ huynh (kênh — KHÔNG kèm địa chỉ)
   admin_audit (target = em)   cấp lại mật khẩu, tự đặt lại, sửa hồ sơ, khoá/mở,
-                              đổi vai, cấp/thu hồi đường dẫn báo cáo
+                              đổi vai, cấp/thu hồi đường dẫn báo cáo, và (25/09/2026)
+                              đánh giá của giảng viên / trợ giảng: cần hỗ trợ, hướng
+                              học, nhận xét gửi phụ huynh (`class.member.assess`)
 
 Quyền: cùng hàng rào với trang hồ sơ (`ho_so.chan_pham_vi`) — quản trị viên mọi
 tài khoản, học vụ chỉ học viên.
@@ -61,6 +63,33 @@ def _doc_luc_chu(s):
         return datetime.datetime.fromisoformat(str(s).replace('Z', '+00:00')).replace(tzinfo=None)
     except (TypeError, ValueError):
         return None
+
+
+def _danh_gia(ds, r):
+    """Một lần giảng viên / trợ giảng đánh giá em (`teaching/danh_gia.py`, V-f) → mỗi ô
+    đã đổi một mốc. Đọc từ NHẬT KÝ chứ không từ cột hiện tại: cột chỉ giữ lần cuối,
+    còn dòng thời gian cần cả "ai đánh dấu, lúc nào, rồi ai bỏ"."""
+    d = r['detail'] if isinstance(r['detail'], dict) else json.loads(r['detail'] or '{}')
+    lop = 'Lớp %s' % d['className'] if d.get('className') else None
+
+    def _noi(*phan):
+        return ' · '.join(p for p in phan if p) or None
+
+    if 'canHoTro' in d:
+        if d['canHoTro']:
+            _su_kien(ds, r['occurred_at'], 'theo-doi', 'Được đánh dấu cần hỗ trợ',
+                     chi_tiet=_noi(lop, d.get('lyDo')), boi=r['actor_name'])
+        else:
+            _su_kien(ds, r['occurred_at'], 'theo-doi', 'Bỏ đánh dấu cần hỗ trợ',
+                     chi_tiet=lop, boi=r['actor_name'])
+    if d.get('deXuatHuongHoc'):
+        _su_kien(ds, r['occurred_at'], 'theo-doi', 'Đề xuất hướng học',
+                 chi_tiet=_noi(lop, d['deXuatHuongHoc']), boi=r['actor_name'])
+    if 'teacherComment' in d:
+        # Không in lại cả đoạn nhận xét — nó nằm trên tờ phụ huynh; ở đây chỉ cần MỐC.
+        _su_kien(ds, r['occurred_at'], 'theo-doi',
+                 'Cập nhật nhận xét gửi phụ huynh' if d['teacherComment'] else 'Xoá nhận xét gửi phụ huynh',
+                 chi_tiet=lop, boi=r['actor_name'])
 
 
 def dong_thoi_gian(uid, tao_luc):
@@ -140,8 +169,12 @@ def dong_thoi_gian(uid, tao_luc):
     for r in q('''SELECT action, actor_name, summary, detail, occurred_at FROM admin_audit
                    WHERE target_type='user' AND target_id=%s AND action = ANY(%s)''',
                (str(uid), ['user.password_reset', 'user.password_self_reset', 'user.profile',
-                           'user.status', 'user.role', 'parent_link.create', 'parent_link.revoke'])):
+                           'user.status', 'user.role', 'parent_link.create', 'parent_link.revoke',
+                           'class.member.assess'])):
         a = r['action']
+        if a == 'class.member.assess':
+            _danh_gia(ds, r)
+            continue
         if a == 'user.password_reset':
             _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Được cấp lại mật khẩu tạm', boi=r['actor_name'])
         elif a == 'user.password_self_reset':

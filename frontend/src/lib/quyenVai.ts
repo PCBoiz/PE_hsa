@@ -254,6 +254,15 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Dạy học',
+    nhan: 'Xem em vắng liền và em cần chú ý',
+    // Trợ giảng thấy từ 25/09/2026 (kế hoạch v2, V-b — bảng TopHSA dòng 21).
+    giaiThich: 'Ở "Việc hôm nay". Trợ giảng cũng thấy, chỉ tên em và lớp — không có liên lạc phụ huynh; gọi phụ huynh vẫn là việc của giảng viên.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/viec_hom_nay.py::ViecHomNayView',
+    chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
+  },
+  {
+    nhom: 'Dạy học',
     nhan: 'Xem hồ sơ học tập của một em',
     giaiThich: 'Tiến độ, điểm, chuyên cần — không gồm nhật ký em tự ghi.',
     lopQuyen: 'IsTeachingStaff',
@@ -267,6 +276,16 @@ export const VIEC: readonly Viec[] = [
     lopQuyen: 'IsSeniorTeachingStaff',
     nguon: 'teaching/ho_so.py::MucTieuHocVienView',
     chan_them: 'chỉ lớp mình phụ trách, chỉ em đang học lớp ấy',
+  },
+  {
+    nhom: 'Dạy học',
+    nhan: 'Đánh giá một em: cần hỗ trợ, nhận xét, hướng học',
+    // Kế hoạch v2 V-a + V-f, 25/09/2026 (bảng TopHSA dòng 18, 21). Một cửa; vai được ghi
+    // ô nào là hàng rào TRONG view (`danh_gia.CHI_GIANG_VIEN`).
+    giaiThich: 'Trợ giảng đánh dấu được "cần hỗ trợ" kèm lý do (ở Việc hôm nay). Nhận xét gửi phụ huynh (in lên tờ báo cáo) và đề xuất hướng học (nội bộ) chỉ giảng viên, học vụ, quản trị viên ghi.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'teaching/danh_gia.py::DanhGiaHocVienView',
+    chan_them: 'trợ giảng chỉ đặt cờ cần hỗ trợ; chỉ lớp mình phụ trách hoặc được gán',
   },
   {
     nhom: 'Dạy học',

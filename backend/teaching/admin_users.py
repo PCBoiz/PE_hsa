@@ -252,7 +252,7 @@ def build_user_filters(params):
             args.append(tth)
         else:
             where.append('FALSE')
-    # TÌNH TRẠNG HỌC PHÍ (V-m, §69a): một mã của CHECK, hoặc "chưa đặt" (NULL).
+    # TÌNH TRẠNG HỌC PHÍ (V-m, §63): một mã của CHECK, hoặc "chưa đặt" (NULL).
     hp = (params.get('hoc_phi') or '').strip()
     if hp:
         if hp == HOC_PHI_CHUA_DAT:
