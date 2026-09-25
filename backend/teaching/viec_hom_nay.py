@@ -46,6 +46,7 @@ from teaching.nhan_bai import giao_cho
 from teaching.reports import _last_activity, canh_bao_muc_cao
 from teaching.sessions import DEFAULT_SESSION_MINUTES
 from teaching.vocab import LOP_TAM_DUNG, chi_hoc_vien
+from yeu_cau.dich_vu import dem_viec as dem_yeu_cau
 
 #: Bài nộp chờ chấm quá ngần này ngày thì tô đỏ (mốc các LMS hay dùng).
 CHAM_QUA_NGAY = 5
@@ -263,4 +264,6 @@ class ViecHomNayView(APIView):
             'vangLien': _vang_lien(ids, lop, hoc_vien) if ids else [],
             'canChuY': _can_chu_y(lop, hoc_vien, nay) if ids else [],
             'canHoTro': _can_ho_tro(ids, lop) if ids else [],
+            # Hộp Yêu cầu (E3): số đang mở trong phạm vi + số chờ duyệt (chỉ học vụ / QT) — 1 câu.
+            'yeuCau': dem_yeu_cau(request.user),
         })

@@ -151,6 +151,13 @@ SESSION_SYLLABUS = 'session.syllabus'
 #: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
 #: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
 SESSION_LOG = 'session.log'
+#: Hộp Yêu cầu (E3, §65). Duyệt ghi cả việc đã thực thi (`detail.thucThi`) — một dòng trả
+#: lời được "ai duyệt, lúc nào, hệ thống đã làm gì".
+REQUEST_CREATE = 'request.create'
+REQUEST_STATUS = 'request.status'
+REQUEST_ASSIGN = 'request.assign'
+REQUEST_APPROVE = 'request.approve'
+REQUEST_REJECT = 'request.reject'
 
 
 def _client_ip(request):
