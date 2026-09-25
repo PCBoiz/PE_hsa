@@ -96,6 +96,22 @@ def test_so_buoi_phut_diem_danh_va_muon_tung_nguoi(canh):
     assert canh['em'].id not in ds and canh['hv'].id not in ds, 'học viên / học vụ không có dòng chấm công'
     r = _goi(canh['hv'], '?thang=2031-03')
     assert r.data['tu'] == '2031-03-01' and r.data['den'] == '2031-03-31' and r.data['lateHours'] == 24
+    # Tháng NGẮN: tháng 2 dừng đúng 28/02 — buổi 00:00 ngày 01/03 không lọt sang.
+    r = _goi(canh['hv'], '?thang=2031-02')
+    assert r.data['den'] == '2031-02-28', r.data['den']
+    assert _theo_id(r)[canh['gv'].id]['soBuoi'] == 0
+
+
+def test_tro_giang_dung_lop_va_o_trong_lop_chi_tinh_mot_lan(canh):
+    """Trợ giảng được đặt làm giảng viên chủ lớp VÀ vẫn là thành viên lớp ấy: mỗi buổi
+    một lần, không hai."""
+    tg = _nguoi(ROLE_ASSISTANT, 'CC TG đứng lớp')
+    lop = _lop(tg)
+    _vao(lop, tg, '2031-01-01T00:00')
+    _buoi(lop, '2031-03-03T08:00', 90, 'done')
+    _buoi(lop, '2031-03-10T08:00', 90, 'done')
+    n = _theo_id(_goi(canh['hv'], '?thang=2031-03'))[tg.id]
+    assert (n['soBuoi'], n['soPhut']) == (2, 180), n
 
 
 def test_mot_cau_SQL_bat_ke_so_lop_va_so_buoi(canh):

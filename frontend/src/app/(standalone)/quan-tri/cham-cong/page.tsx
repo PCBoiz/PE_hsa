@@ -1,4 +1,4 @@
-import { Card, CardHead, EmptyState, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import { Button, Card, CardHead, EmptyState, Field, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
@@ -84,22 +84,9 @@ export default async function ChamCongPage({
         }
       />
 
-      <form method="get" className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="flex min-w-0 flex-col gap-1">
-          <span className="text-label text-ink-3">Tháng</span>
-          <input
-            type="month"
-            name="thang"
-            defaultValue={d?.thang ?? thangUrl}
-            className="min-h-11 min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
-          />
-        </label>
-        <button
-          type="submit"
-          className="min-h-11 rounded-md bg-brand-fill px-4 text-body font-semibold text-white hover:brightness-110"
-        >
-          Xem
-        </button>
+      <form method="get" role="search" aria-label="Chọn tháng chấm công" className="mb-4 flex flex-wrap items-end gap-2">
+        <Field id="cc-thang" label="Tháng" type="month" name="thang" defaultValue={d?.thang ?? thangUrl} />
+        <Button type="submit">Xem</Button>
       </form>
 
       {!kq.ok ? (
