@@ -93,6 +93,24 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 25/09/2026 (tối) — NGƯỜI THỨ HAI ĐẨY LÊN erp (Cao Văn Nhân) → hoà nhánh, erp đỏ → xanh
+
+- 3 commit của Cao Văn Nhân (nhanhuy2005@gmail.com, Claude Sonnet 5) trên `origin/erp` (03:28–14:33): §63 hồ sơ (tình trạng học
+  tập/học phí, 'paused', 'reserved'), §64 khung chương trình (chỉ backend, `courseadmin/syllabus.py`), V-i. Trùng việc của A1
+  (V-c), A2 (V-i, V-m), E1. **Anh chốt: Nhân tạm dừng, tôi làm tiếp theo kế hoạch, GIỮ phần đã đẩy; Nhân sẽ dùng nhánh CSDL
+  riêng.**
+- erp của Nhân ĐỎ 2 test (§63 thêm LẠI hai ràng buộc cùng tên, khác nội dung; không sửa vocab) + 2 guard (5 mã nhật ký chưa
+  có nhãn; 9 tuyến chưa có giao diện) — máy Nhân không bật cổng pre-push. Vá ở `b9a78d3` + `f0b55a0`: gộp A1 (§62a–f),
+  'paused' tại chỗ §35, 'reserved' tại chỗ §36 + vocab + nhãn, gỡ hai lần thêm lại khỏi §63, nhãn nhật ký, lý do tạm cho 9 tuyến.
+  CSDL dev: `bootstrap_schema --tu §35` → 57/57.
+- E1 soi mã Nhân (chưa chạy): truy vấn gán khung dùng `makeup_for` (chỉ có ở §62e của A1) → 500 trên mọi CSDL dựng từ erp
+  cũ; ghép buổi theo vị trí; đổi bản khung giữ ánh xạ cũ; lớp không có môn không nhận được khung. Quyết: E1 dựng TIẾP trên bảng
+  của Nhân (logic nhận khung của E1 thay vòng ghép của Nhân; sổ đầu bài §70; học vụ soạn được; tách chuỗi phiên bản — phương
+  án B). A2: V-m/V-i theo thiết kế A2 + giữ phần hay của Nhân (lớp đang học + sĩ số thật, "Bảo lưu").
+- A2 lỡ chạy bootstrap với §69 đè CHECK học phí của Nhân trên dev (0 dòng dữ liệu) — đã chạy lại từ erp.
+- Bài học: nhánh chung + CSDL chung + người thứ hai không có cổng kiểm = đỏ lọt trong vài giờ. Cổng pre-push chặn đúng lượt
+  đẩy của tôi (thước sổ lược đồ cũ) — nó làm việc.
+
 ## 25/09/2026 (chiều) — CLAUDE CLOUD bằng tài khoản sonthaiha07 + thiết kế hệ thống + S3/S5
 
 - **Cloud**: đăng nhập RIÊNG cho sonthaiha07@gmail.com ở `%USERPROFILE%\.claude-son` (biến `CLAUDE_CONFIG_DIR`) —
