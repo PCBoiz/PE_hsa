@@ -93,10 +93,10 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | P0.5 | 1.3 phần còn (nút Đăng ký ở `main.js`/`DashboardClient`), 1.4a `sangLop`, 1.1d CSS chết | [x] `ad92e17` (e2e đỏ trên JS cũ → xanh, 14/14 hai khổ; trần tầng cũ 6533 → 6449) + `cf2ace3` (sangLop: đỏ trước, đột biến 2/2, soi ảnh hai khổ) |
 | P0.6 | Mở màn: khung dùng chung cho 3 luồng | [x] `60d33a9` mặt tiền `notifications/gui.py` (4 test, đột biến 4/4). BỎ bước "neo §" + "sửa CHECK hộ": sổ mục lược đồ (H3) coi số § là TÊN, không phải thứ tự; mỗi luồng tự sửa CHECK của mình ở DÒNG KHÁC nhau (A: §35 `paused` + `TRANG_THAI_LOP`; C: §36 `reserved` + `LEAVE_REASONS`) → git gộp không đụng; xung đột "cùng nối cuối tệp" lead giải lúc gộp như §56/§57 |
 | N | Ma trận nghiệm thu 32 dòng thay DOI_CHIEU + bộ e2e `nghiem-thu/` | [~] `docs/NGHIEM_THU_TOPHSA.md` viết 25/09 (32 dòng + thông báo chung, sửa 5 chỗ DOI_CHIEU báo quá tay); CÒN: kịch bản demo từng dòng + bộ e2e `nghiem-thu/` |
-| V | Mẻ vá rẻ a–o (luồng A) | [~] tách hai: **A1** = V a–h (agent, nhánh `agent/luong-a1`, cổng 9100/3200 — dừng vì hết hạn mức 25/09 01:00, đã gửi tiếp); **A2** = V i, j, k, m, n, o (§69, cổng 9141/3241 — chạy sau khi gộp 1.4b vì cùng sửa `teaching/exports.py`); **V-l** (học viên xem record) dời sang E4 vì đụng `lop_cua_toi.py`/`LopCuaToi.tsx` mà A1 đang sửa |
-| E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [~] agent chạy từ 25/09 ~03:30, nhánh `agent/e1`, cổng 9151/3251, miền riêng `backend/chuong_trinh/` (luật S4) |
-| E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [ ] |
-| E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [ ] |
+| V | Mẻ vá rẻ a–o (luồng A) | [x] gộp erp 26/09 (`c278691`): A1 V a–h + A2 V i–o (phiên cloud làm nốt, báo cáo `docs/cloud/BAO_CAO_A1.md`, `BAO_CAO_A2.md`); pytest Neon dev 30 mô-đun xanh, e2e hai khổ xanh, axe 0/104, bộ đo giao diện 0 mọi luật |
+| E1 | Khung chương trình theo buổi + sổ đầu bài + tiến độ (luồng A) → mở 1.5B | [x] gộp erp 26/09 (`8bc4873`): khung chương trình trên §64 + sổ đầu bài §70 + tiến độ (app `backend/chuong_trinh/`), đột biến 30/30, e2e `chuong-trinh` hai khổ xanh (`docs/cloud/BAO_CAO_E1.md`). Còn: bài tập trỏ mục khung, sửa mục trên màn, "buổi chưa ghi sổ" ở Việc hôm nay |
+| E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [~] phiên cloud `cloud/e2-b`: §61 + hộp thư đi + chuông/thông báo trung tâm (backend) đã đẩy; giao diện + báo cáo chưa |
+| E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [~] phiên cloud `cloud/e3-b`: §65 + miền `yeu_cau` backend đã đẩy; giao diện + báo cáo chưa |
 | E4 | Zoom: record tự gắn + HS xem record + thử "% đã xem" | [ ] |
 | E5 | Tự đăng ký + hàng chờ xếp lớp | [ ] |
 | 1.5B | Thay khối thi bằng tiến trình (thẻ 4 "Tiến độ chương trình" từ E1 + điểm kiểm tra từ V-h) | [ ] |

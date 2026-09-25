@@ -93,6 +93,28 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 26/09/2026 (rạng sáng) — A1 + A2 + E1 + cấu trúc từ PHIÊN CLOUD gộp vào erp (c278691)
+
+- Agent cục bộ hết hạn mức tuần → việc dở của A1/A2/E1 giao cho phiên cloud (sonthaiha07), mỗi phiên một worktree sạch
+  theo nhánh. Cả ba xong + báo cáo `docs/cloud/BAO_CAO_{A1,A2,E1}.md`. Phiên cấu trúc/E2/E3 lượt đầu (trước khi có GitHub
+  App) không đẩy được gì → giao lại trên nhánh `cloud/*-b`.
+- Gộp: xung đột ở `exports.py`, `urls.py`, `SessionsClient.tsx`, §69/§70, `kiem_luoc_do`, `parent_report`, `quyenVai`,
+  `huongDan`, `hinhDang`, `LopCuaToi*`, `ToBaoCao`, NGHIEM_THU — giữ cả hai phía; bảng nhãn nhật ký nay ở `lib/viecNhatKy.ts`.
+  BẪY: `D:\pe_hsa` fetch trước khi phiên cloud đẩy xong → lượt gộp đầu thiếu 2 commit A2 + 6 commit E1; `ban_do --kiem` bắt
+  được (4 tuyến E1 "không ai gọi"). **Fetch lại ngay trước khi gộp nhánh cloud.**
+- Đo trên Neon dev (có bài thật — phần cloud không đo được): 30 mô-đun xanh, gồm `teaching/tests.py` 71, `tests_bao_cao_tuan`
+  79, `courses/tests_truy_cap` 12, `courseadmin/tests_syllabus` 19. `bootstrap_schema` ×2 → 0/64; `kiem_luoc_do` 63/63.
+- e2e hai khổ (`E2E_GHI=1`): chuong-trinh, van-hanh-a2, ho-so-hoc-vien, danh-sach-hoc-vien, vai-tro-cong → 2 lỗi THƯỚC (ô
+  "Tháng" trùng nhãn form; lưu sổ đầu bài 5,15 s trên dev > 5 s mặc định) → vá spec, 10/10 + 46 cũ xanh.
+- Giao diện: `do_axe` 0 vi phạm / 104 lượt (thêm 4 màn mới); `do_giao_dien` 36 trang × 2 khổ → 6 vùng chạm nhỏ → vá → 0 mọi
+  luật; tự kiểm của thước mù độ đục ở trang ngắn → vá thước, 72/72 đỏ. Tài khoản e2e (36029) nay ở lớp mẫu 7322 (trước đó
+  không lớp nào → trang Bài học không đo được).
+- Cấu trúc (`cloud/cau-truc-b`): `scripts/so_mien.json` + `scripts/cau_truc.py --kiem` (bước f7 pre-push) + `docs/CAU_TRUC_*`
+  tự sinh + `CLAUDE.md` + `REVIEW.md`. 16 miền, 54 bảng, 0 tệp không miền, 11 nợ ghi chéo (chỉ được co).
+  Khi gộp E2/E3: thêm bảng mới (outbox, announcements, yeu_cau*) vào `so_mien.json` — cổng f7 sẽ đòi.
+- `tang_vai.py` đường dẫn `/` (chạy được trên Linux/cloud).
+- Còn: E2/E3 (`cloud/e2-b`, `cloud/e3-b`) đẩy xong backend rồi dừng ~2 giờ, chưa giao diện/báo cáo.
+
 ## 25/09/2026 (tối) — NGƯỜI THỨ HAI ĐẨY LÊN erp (Cao Văn Nhân) → hoà nhánh, erp đỏ → xanh
 
 - 3 commit của Cao Văn Nhân (nhanhuy2005@gmail.com, Claude Sonnet 5) trên `origin/erp` (03:28–14:33): §63 hồ sơ (tình trạng học
