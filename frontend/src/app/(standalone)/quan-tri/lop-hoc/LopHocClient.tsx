@@ -25,6 +25,7 @@ import * as z from 'zod/mini';
 
 import { LOAI_LOP, TRANG_THAI, type Form, type LopRow, formRong, formTuLop, tachEmail, thanForm } from './lop';
 import ChuyenLop from './ChuyenLop';
+import LichSuLop from './LichSuLop';
 import NhapTuTep from './NhapTuTep';
 import TaoLopGiaSu from './TaoLopGiaSu';
 
@@ -839,6 +840,9 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
               </p>
             )}
           </div>
+
+          {/* Ai sửa lớp, xếp / cho rời / chuyển em, tạo / sửa buổi — cho học vụ (V-n). */}
+          <LichSuLop key={`ls-${lopMoRong.id}`} classId={lopMoRong.id} />
 
           {hocVien === null ? (
             <p className="text-small text-ink-3">Đang tải danh sách học viên…</p>

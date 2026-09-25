@@ -190,6 +190,8 @@ MUC = [
                            LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
     ('§62a', 'class_members.teacher_comment (nhận xét GV gửi phụ huynh)',
      lambda: _cot('class_members', 'teacher_comment')),
+    ('§69a', 'users.tuition_status (tình trạng học phí) + CHECK nhận bao_luu',
+     lambda: _check_co_gia_tri('users_tuition_status_check', 'bao_luu')),
 ]
 
 

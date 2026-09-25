@@ -27,6 +27,11 @@ viên có đủ các trường trên; `users` chưa có trường nào. Lược 
                   trợ giảng vốn không vào được (`IsSeniorTeachingStaff`, anh Sơn
                   chốt 01/09) — mở API rộng hơn màn hình là quyền không ai dùng.
 
+V-m (25/09/2026, bảng TopHSA dòng 3 + 7): "Tỉnh/Thành phố" chọn từ 34 đơn vị
+(`teaching/tinh_thanh.py`; giá trị cũ gõ tay vẫn hiện nguyên văn tới khi có người chọn lại);
+"Tình trạng học tập" TÍNH từ lượt học (`teaching/tinh_trang.py`, không lưu); "Tình trạng học
+phí" là MỘT ô chọn tay (`users.tuition_status`, §69a) — học vụ / quản trị viên đặt, có nhật ký.
+
 Email và số điện thoại của EM không sửa ở đây: đó là hai cách ĐĂNG NHẬP, em tự
 đổi ở Cài đặt (có kiểm trùng). Tên đăng nhập thì học vụ đặt được — đó là đường
 để học vụ cấp lối vào cho em không nhớ email nào.
@@ -54,6 +59,8 @@ from common.permissions import (
     can_see_class,
     is_admin,
 )
+from teaching.tinh_thanh import TINH_THANH
+from teaching.tinh_trang import HOC_PHI, MA_HOC_PHI, TINH_TRANG_HOC, sql_tinh_trang_hoc
 
 #: Khớp CHECK `users_enroll_source_check` (§51). Thứ tự = thứ tự trên ô chọn.
 NGUON_TUYEN_SINH = (
@@ -79,8 +86,9 @@ USERNAME_RE = re.compile(r'^[a-z0-9][a-z0-9.]{2,29}$')
 #: Độ dài tối đa của trường chữ tự do.
 _DAI = {'school': 200, 'school_grade': 20, 'region': 100, 'study_goal': 500, 'aspiration': 500}
 
-#: Khoá API (camelCase) ↔ cột CSDL cho các trường chữ tự do.
-_TRUONG_CHU = {'school': 'school', 'schoolGrade': 'school_grade', 'region': 'region',
+#: Khoá API (camelCase) ↔ cột CSDL cho các trường chữ tự do. `region` KHÔNG còn ở đây từ
+#: V-m: nó chọn từ danh sách tỉnh/thành, kiểm riêng trong `patch`.
+_TRUONG_CHU = {'school': 'school', 'schoolGrade': 'school_grade',
                'studyGoal': 'study_goal', 'aspiration': 'aspiration'}
 
 
@@ -138,11 +146,14 @@ def _dict(r):
         'parentName': r['parent_name'],
         'parentPhone': r['parent_phone'],
         'parentEmail': r['parent_email'],
+        # V-m: học phí chọn tay (NULL = chưa đặt); tình trạng học tập TÍNH (NULL = nhân sự).
+        'tuitionStatus': r.get('tuition_status'),
+        'tinhTrangHoc': r.get('tinh_trang_hoc'),
     }
 
 
 def _doc(user_id):
-    return q1('''SELECT u.*, c.name AS consultant_name
+    return q1('''SELECT u.*, c.name AS consultant_name, ''' + sql_tinh_trang_hoc('u') + ''' AS tinh_trang_hoc
                    FROM users u LEFT JOIN users c ON c.id = u.consultant_id
                   WHERE u.id=%s''', (user_id,))
 
@@ -184,6 +195,9 @@ class HoSoHocVienView(APIView):
         return Response({
             'profile': _dict(r),
             'sources': [{'ma': m, 'nhan': n} for m, n in NGUON_TUYEN_SINH],
+            # V-m: nhãn hai ô tình trạng — màn hình dựng từ đây, không gõ lại chữ.
+            'hocPhiOptions': [{'ma': m, 'nhan': n} for m, n in HOC_PHI],
+            'tinhTrangHocOptions': [{'ma': m, 'nhan': n} for m, n in TINH_TRANG_HOC],
             'consultants': [{'id': c['id'], 'name': c['name'] or c['email'], 'role': c['role']}
                             for c in tu_van],
         })
@@ -200,6 +214,25 @@ class HoSoHocVienView(APIView):
             if khoa in body:
                 v = (str(body[khoa]).strip() if body[khoa] is not None else '')
                 doi[cot] = v[:_DAI[cot]] or None
+
+        if 'region' in body:
+            # Tỉnh/Thành phố (V-m): chọn từ 34 đơn vị. Gửi lại ĐÚNG giá trị cũ gõ tay (form
+            # gửi cả ô chưa đổi) thì giữ nguyên — không bắt người sửa ô khác phải chọn lại.
+            v = str(body['region'] or '').strip()
+            if not v:
+                doi['region'] = None
+            elif v in TINH_THANH or v == (r['region'] or ''):
+                doi['region'] = v
+            else:
+                errors['region'] = 'Chọn tỉnh / thành phố từ danh sách.'
+
+        if 'tuitionStatus' in body:
+            # Tình trạng học phí (V-m, §69a) — cùng danh sách với CHECK của cột.
+            v = str(body['tuitionStatus'] or '').strip() or None
+            if v is not None and v not in MA_HOC_PHI:
+                errors['tuitionStatus'] = 'Tình trạng học phí phải chọn từ danh sách.'
+            else:
+                doi['tuition_status'] = v
 
         if 'enrollSource' in body:
             v = (body['enrollSource'] or '').strip() or None

@@ -78,6 +78,7 @@ from stats.goals import as_date
 from teaching import reports
 from teaching.admin_users import any_user_filter, build_user_filters
 from teaching.attendance import dem_theo_hoc_vien, ti_le
+from teaching.tinh_trang import NHAN_HOC_PHI, NHAN_TINH_TRANG_HOC, sql_tinh_trang_hoc
 
 #: Ô ghi khi KHÔNG ĐỌC ĐƯỢC dữ liệu — không bao giờ để trống và không bao giờ
 #: in 0. Ô trống và số 0 đều đọc được thành "không có gì", mà "không đọc được"
@@ -737,8 +738,10 @@ class AdminUsersCsvView(APIView):
         # Cột lớp: CÙNG mệnh đề "lớp đang học" với cột Lớp của màn hình (1.4b) —
         # lớp đã huỷ không còn là lớp em đang theo học.
 
-        rows = q('''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
+        # Ngoặc bao cả câu: `%` phải thay trên câu ĐÃ NỐI (biểu thức tình trạng học không có `%`).
+        rows = q(('''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
                            u.created_at, u.password_changed_at, u.must_change_password,
+                           u.tuition_status, ''' + sql_tinh_trang_hoc('u') + ''' AS tinh_trang_hoc,
                            (SELECT string_agg(COALESCE(NULLIF(c.code, ''), c.name),
                                               ' · ' ORDER BY c.name)
                               FROM class_members m
@@ -746,10 +749,11 @@ class AdminUsersCsvView(APIView):
                              WHERE m.user_id = u.id AND %s) AS classes
                     FROM users u
                     WHERE %s
-                    ORDER BY lower(coalesce(u.name, '')), u.id''' % (LOP_DANG_HOC, where), params)
+                    ORDER BY lower(coalesce(u.name, '')), u.id''') % (LOP_DANG_HOC, where), params)
 
         header = ['Họ tên', 'Email', 'Số điện thoại', 'Vai trò', 'Trạng thái',
-                  'Lớp đang theo học', 'Ngày tạo', 'Đã đổi mật khẩu chưa']
+                  'Lớp đang theo học', 'Tình trạng học tập', 'Học phí',
+                  'Ngày tạo', 'Đã đổi mật khẩu chưa']
         data = [[
             r['name'],
             r['email'],
@@ -757,6 +761,8 @@ class AdminUsersCsvView(APIView):
             ROLE_LABELS.get(r['role'], r['role']),
             USER_STATUS_LABELS.get(r['status'], r['status']),
             r['classes'] or '',
+            NHAN_TINH_TRANG_HOC.get(r['tinh_trang_hoc'], ''),     # V-m: tính, nhân sự để trống
+            NHAN_HOC_PHI.get(r['tuition_status'], ''),
             r['created_at'],
             self._password_state(r),
         ] for r in rows]

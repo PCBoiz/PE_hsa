@@ -1815,3 +1815,14 @@ UPDATE roadmaps
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment    TEXT;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;
+
+-- ── §69 · HỒ SƠ, BÁO CÁO, NHẬP XUẤT (luồng A2, kế hoạch v2) ──────
+-- §69a · Tình trạng học phí của học viên (V-m, bảng TopHSA dòng 3 + 7).
+-- Anh Sơn chốt 25/09/2026: KHÔNG sổ tiền, không doanh thu — chỉ MỘT ô chọn tay trên hồ sơ,
+-- học vụ hoặc quản trị viên đặt. NULL = chưa đặt. Danh sách PHẢI khớp
+-- `teaching/tinh_trang.py::HOC_PHI` (phép kiểm đọc thẳng ràng buộc trên CSDL).
+-- "Tình trạng học tập" KHÔNG có cột: nó tính từ lượt học (`teaching/tinh_trang.py`).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tuition_status TEXT;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_tuition_status_check;
+ALTER TABLE users ADD CONSTRAINT users_tuition_status_check
+    CHECK (tuition_status IS NULL OR tuition_status IN ('da_dong', 'sap_het', 'het', 'bao_luu'));

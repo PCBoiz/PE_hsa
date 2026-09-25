@@ -47,7 +47,7 @@ const EM = 'audit2009.hv3@example.com';
 /** Ô spec này có thể đổi — đọc lúc đầu, trả lại ở cuối. */
 const O_TRA_LAI = [
   'username', 'school', 'schoolGrade', 'region', 'studyGoal', 'aspiration',
-  'enrollSource', 'consultantId', 'parentName', 'parentPhone', 'parentEmail',
+  'enrollSource', 'consultantId', 'parentName', 'parentPhone', 'parentEmail', 'tuitionStatus',
 ] as const;
 
 let emId: number | null = null;
@@ -174,7 +174,10 @@ test('học vụ sửa hồ sơ bằng giao diện: lưu thật, form lấy lạ
   const dau = Date.now().toString(36);
   await page.fill('#hs-school', `THPT E2E ${dau}`);
   await page.fill('#hs-schoolGrade', '12A1');
-  await page.fill('#hs-region', 'Hà Nội');
+  // Tỉnh / thành phố: ô CHỌN từ 34 đơn vị (V-m), không còn gõ tay.
+  await page.selectOption('#hs-region', 'Hà Nội');
+  // Học phí: ô chọn tay (V-m) — trả lại ở `afterAll` như mọi ô khác.
+  await page.selectOption('#hs-tuitionStatus', 'sap_het');
   await page.fill('#hs-studyGoal', `Mục tiêu E2E ${dau}`);
   await page.fill('#hs-aspiration', 'ĐH Bách khoa — CNTT');
   await page.selectOption('#hs-enrollSource', 'gioi_thieu');
@@ -196,6 +199,10 @@ test('học vụ sửa hồ sơ bằng giao diện: lưu thật, form lấy lạ
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('#hs-school')).toHaveValue(`THPT E2E ${dau}`);
   await expect(page.locator('#hs-enrollSource')).toHaveValue('gioi_thieu');
+  await expect(page.locator('#hs-region')).toHaveValue('Hà Nội');
+  await expect(page.locator('#hs-tuitionStatus')).toHaveValue('sap_het');
+  // Tình trạng học tập: TÍNH ở máy chủ, chỉ đọc — em rà soát đang học một lớp.
+  await expect(page.getByText(/^Học tập: /)).toBeVisible();
   await expect(page.locator('#hs-studyGoal')).toHaveValue(`Mục tiêu E2E ${dau}`);
   await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
 });
@@ -207,7 +214,7 @@ test('tên đăng nhập sai dạng: lỗi ngay dưới ô, con trỏ nhảy t�
   await page.goto(`/quan-tri/tai-khoan/${emId}`, { waitUntil: 'domcontentloaded' });
 
   await page.fill('#hs-username', 'ab');
-  await page.fill('#hs-region', 'Huế');           // con trỏ đang ở ô KHÁC khi bấm Lưu
+  await page.selectOption('#hs-region', 'Huế');   // con trỏ đang ở ô KHÁC khi bấm Lưu
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
   await expect(page.locator('#hs-username-error')).toBeVisible();
   await expect(page.locator('#hs-username')).toBeFocused();

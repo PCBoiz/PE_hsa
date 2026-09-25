@@ -56,6 +56,13 @@ from stats.goals import as_date
 from teaching import vocab
 from teaching.overview import NGUONG_NGU
 from teaching.reports import _progress_by_user, tong_bai_theo_khoa
+from teaching.tinh_trang import (
+    HOC_PHI,
+    MA_HOC_PHI,
+    NHAN_TINH_TRANG_HOC,
+    TINH_TRANG_HOC,
+    sql_tinh_trang_hoc,
+)
 
 # Dùng lại của teaching/views.py, không viết bản thứ hai: mật khẩu tạm sinh hai
 # kiểu khác nhau thì trợ giảng đọc cho học viên hai dạng chuỗi khác nhau, còn
@@ -94,7 +101,11 @@ _page_with_total = trang_kem_tong
 #: "người dùng có lọc gì không" không bao giờ lệch nhau.
 USER_FILTER_PARAMS = ('q', 'role', 'status', 'class_id', 'chua_xep_lop', 'khong_hoat_dong',
                       # V-k (25/09/2026): đợt, môn, ngày cấp tài khoản.
-                      'term_id', 'course_id', 'tu', 'den')
+                      'term_id', 'course_id', 'tu', 'den',
+                      # V-m (25/09/2026): tình trạng học tập (tính), tình trạng học phí.
+                      'tinh_trang_hoc', 'hoc_phi')
+#: Giá trị ô lọc "Học phí" nghĩa là CHƯA ĐẶT (cột NULL) — không phải một mã của CHECK.
+HOC_PHI_CHUA_DAT = 'chua_dat'
 #: Ô lọc dạng CÔNG TẮC: chỉ đang lọc khi giá trị là "có" — `chua_xep_lop=0` (bỏ tích) thì không.
 _CONG_TAC = ('chua_xep_lop',)
 #: Trần của ô "không hoạt động ≥ N ngày". Không kẹp thì `N = 10**9` tràn `timedelta` → 500.
@@ -232,6 +243,27 @@ def build_user_filters(params):
         where.append('u.created_at %s %%s' % phep)
         args.append(ngay + timedelta(days=1) if khoa == 'den' else ngay)
 
+    # TÌNH TRẠNG HỌC TẬP (V-m): CÙNG biểu thức với cột của màn hình và tệp xuất
+    # (`teaching/tinh_trang.py`). Mã lạ → không ai khớp (cùng luật mã lớp sai).
+    tth = (params.get('tinh_trang_hoc') or '').strip()
+    if tth:
+        if tth in NHAN_TINH_TRANG_HOC:
+            where.append('(' + sql_tinh_trang_hoc('u') + ') = %s')
+            args.append(tth)
+        else:
+            where.append('FALSE')
+    # TÌNH TRẠNG HỌC PHÍ (V-m, §69a): một mã của CHECK, hoặc "chưa đặt" (NULL).
+    hp = (params.get('hoc_phi') or '').strip()
+    if hp:
+        if hp == HOC_PHI_CHUA_DAT:
+            where.append(vocab.chi_hoc_vien('u'))
+            where.append('u.tuition_status IS NULL')
+        elif hp in MA_HOC_PHI:
+            where.append('u.tuition_status = %s')
+            args.append(hp)
+        else:
+            where.append('FALSE')
+
     return ' AND '.join(where), args
 
 
@@ -329,7 +361,8 @@ class AdminUsersView(APIView):
         total, rows = _page_with_total(
             '''SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
                       u.must_change_password, u.password_changed_at, u.created_at,
-                      u.student_code, u.username
+                      u.student_code, u.username, u.tuition_status,
+                      ''' + sql_tinh_trang_hoc('u') + ''' AS tinh_trang_hoc
                  FROM users u
                 WHERE ''' + where,
             # Xếp theo tên chứ không theo id giảm dần: đây là danh sách để TRA
@@ -358,6 +391,9 @@ class AdminUsersView(APIView):
                 'hoatDongCuoi': them[r['id']]['lan_cuoi'],
                 'ngayKhongHoatDong': them[r['id']]['so_ngay'],
                 'tienDo': them[r['id']]['tien_do'],
+                # V-m: tình trạng học tập TÍNH (None = nhân sự), học phí chọn tay (None = chưa đặt).
+                'tinhTrangHoc': r['tinh_trang_hoc'],
+                'hocPhi': r['tuition_status'],
             } for r in rows],
             'total': total,
             'page': page,
@@ -370,6 +406,9 @@ class AdminUsersView(APIView):
             # Mốc của ô "Không hoạt động ≥ N ngày" — CÙNG mốc với thẻ Tổng quan; màn
             # hình dựng ô chọn từ đây, không gõ lại 7/14/30.
             'nguongNgu': list(NGUONG_NGU),
+            # V-m: nhãn hai ô lọc / cột mới — màn hình dựng từ đây, không gõ lại chữ.
+            'tinhTrangHocOptions': [{'ma': m, 'nhan': n} for m, n in TINH_TRANG_HOC],
+            'hocPhiOptions': [{'ma': m, 'nhan': n} for m, n in HOC_PHI],
         })
 
 

@@ -33,7 +33,15 @@ export type HoSo = {
   parentName: string | null;
   parentPhone: string | null;
   parentEmail: string | null;
+  /* V-m — TUỲ CHỌN: Vercel lên trước Render, backend cũ không gửi hai khoá này. */
+  /** Học phí chọn tay: da_dong | sap_het | het | bao_luu; null = chưa đặt. */
+  tuitionStatus?: string | null;
+  /** Tình trạng học tập TÍNH ở máy chủ (`teaching/tinh_trang.py`); null = nhân sự. */
+  tinhTrangHoc?: string | null;
 };
+
+/** Một lựa chọn có mã + nhãn, máy chủ gửi kèm (nguồn tuyển sinh, học phí, tình trạng học). */
+export type LuaChon = { ma: string; nhan: string };
 
 export type NguonTuyenSinh = { ma: string; nhan: string };
 export type NguoiTuVan = { id: number; name: string | null; role: string };
@@ -42,6 +50,8 @@ export type HoSoPayload = {
   profile: HoSo;
   sources: NguonTuyenSinh[];
   consultants: NguoiTuVan[];
+  hocPhiOptions?: LuaChon[];
+  tinhTrangHocOptions?: LuaChon[];
 };
 
 const chu = z.nullable(z.string());
@@ -67,6 +77,8 @@ const HD_HO_SO = z.looseObject({
   parentName: chu,
   parentPhone: chu,
   parentEmail: chu,
+  tuitionStatus: z.optional(chu),
+  tinhTrangHoc: z.optional(chu),
 }) satisfies HinhDang<HoSo>;
 
 /** `GET /api/admin/users/<id>/profile`. */
@@ -74,6 +86,8 @@ export const HD_TRANG_HO_SO = z.looseObject({
   profile: HD_HO_SO,
   sources: z.array(z.looseObject({ ma: z.string(), nhan: z.string() })),
   consultants: z.array(z.looseObject({ id: z.number(), name: chu, role: z.string() })),
+  hocPhiOptions: z.optional(z.array(z.looseObject({ ma: z.string(), nhan: z.string() }))),
+  tinhTrangHocOptions: z.optional(z.array(z.looseObject({ ma: z.string(), nhan: z.string() }))),
 }) satisfies HinhDang<HoSoPayload>;
 
 /** `PATCH` cùng đường — máy chủ trả lại hồ sơ SAU khi ghi (đã chuẩn hoá). */
