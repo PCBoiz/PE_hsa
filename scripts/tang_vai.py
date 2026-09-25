@@ -12,7 +12,7 @@ import re
 import sys
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-APP = os.path.join(GOC, r'frontend\src\app')
+APP = os.path.join(GOC, 'frontend/src/app')
 
 VAI = {'VAI_QUAN_TRI': 'admin', 'VAI_HOC_VU': 'Quản lý học vụ', 'VAI_BIEN_TAP': 'Biên tập nội dung',
        'VAI_GIANG_VIEN': 'Giảng viên', 'VAI_TRO_GIANG': 'Trợ giảng', 'VAI_HOC_VIEN': 'Học viên'}
@@ -46,7 +46,7 @@ for goc, _, tep in os.walk(APP):
         tuyen = '/' + '/'.join(p for p in rel.split('/') if p != '.' and not p.startswith('('))
         trang.append((tuyen.rstrip('/') or '/', goc))
 
-VAO_KHU = ds_vai(re.search(r'VAI_VAO_KHU[^=]*=\s*\[([^\]]*)\]', doc(os.path.join(APP, r'(standalone)\quan-tri\vai.ts'))).group(1))
+VAO_KHU = ds_vai(re.search(r'VAI_VAO_KHU[^=]*=\s*\[([^\]]*)\]', doc(os.path.join(APP, '(standalone)/quan-tri/vai.ts'))).group(1))
 
 
 def cong(goc):
@@ -71,23 +71,23 @@ def cong(goc):
 
 # ── Menu theo vai ────────────────────────────────────────────────────────────
 menu = collections.defaultdict(list)   # tuyến → [(nguồn, nhãn, vai)]
-s = doc(os.path.join(APP, r'(standalone)\quan-tri\vai.ts'))
+s = doc(os.path.join(APP, '(standalone)/quan-tri/vai.ts'))
 for m in re.finditer(r"href:\s*'([^']+)',\s*label:\s*'([^']+)'[^}]*vai:\s*\[([^\]]*)\]", s):
     menu[m.group(1)].append(('quan-tri/vai.ts', m.group(2), ds_vai(m.group(3))))
-s = doc(os.path.join(GOC, r'frontend\src\lib\khuTheoVai.ts'))
+s = doc(os.path.join(GOC, 'frontend/src/lib/khuTheoVai.ts'))
 hang = {'DAY': ds_vai('VAI_GIANG_VIEN VAI_TRO_GIANG VAI_HOC_VU VAI_QUAN_TRI')}
 hang['MOI_NHAN_SU'] = hang['DAY'] + ['Biên tập nội dung']
 for m in re.finditer(r"nhan:\s*'([^']+)'[^}]*?(url|tab):\s*'([^']+)'[^}]*?vai:\s*(\[[^\]]*\]|[A-Z_]+)", s, re.S):
     v = ds_vai(m.group(4)) if m.group(4).startswith('[') else hang.get(m.group(4), [])
     dich = m.group(3) if m.group(2) == 'url' else '/dashboard#' + m.group(3)
     menu[dich].append(('khuTheoVai.ts', m.group(1), v))
-s = doc(os.path.join(APP, r'(standalone)\giang-day\KhungGiangDay.tsx'))
+s = doc(os.path.join(APP, '(standalone)/giang-day/KhungGiangDay.tsx'))
 for m in re.finditer(r"doan:\s*'([^']+)',\s*nhan:\s*'([^']+)'[^}]*troGiang:\s*(true|false)", s):
     v = hang['DAY'] if m.group(3) == 'true' else [x for x in hang['DAY'] if x != 'Trợ giảng']
     menu['/giang-day/%s/[classId]' % m.group(1)].append(('KhungGiangDay.tsx', m.group(2), v))
 
 # ── API của từng trang (ban_do) ──────────────────────────────────────────────
-g = json.load(io.open(os.path.join(GOC, r'ban_do\graph.json'), encoding='utf-8'))
+g = json.load(io.open(os.path.join(GOC, 'ban_do/graph.json'), encoding='utf-8'))
 ra_di = collections.defaultdict(list)
 for e in g['edges']:
     ra_di[e['tu']].append(e)
