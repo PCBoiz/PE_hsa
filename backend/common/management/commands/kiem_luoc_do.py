@@ -271,6 +271,8 @@ MUC = [
                  lambda: _cot('notifications', 'link'),
                  lambda: _chi_muc('idx_notifications_user_id_desc'),
                  lambda: _fk('notifications', 'notifications_announcement_id_fkey', 'CASCADE'))),
+    ('§61d', 'chỉ mục duy nhất phần notifications nhắc hạn nộp (mỗi em mỗi bài một chuông)',
+     lambda: _chi_muc('idx_notifications_nhac_han_mot_lan')),
 ]
 
 

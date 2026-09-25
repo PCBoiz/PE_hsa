@@ -2220,3 +2220,7 @@ UPDATE notifications SET read_at = created_at
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id_desc ON notifications (user_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_announcement
     ON notifications (announcement_id) WHERE announcement_id IS NOT NULL;
+-- §61d · NHẮC HẠN NỘP (`notifications/nhac_han.py`): mỗi em mỗi bài đúng MỘT chuông, kể cả
+-- khi hai nhịp chạy chồng nhau — chỉ mục duy nhất phần, INSERT … ON CONFLICT DO NOTHING.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_nhac_han_mot_lan
+    ON notifications (user_id, ref_type, ref_id) WHERE type = 'nhac_han';
