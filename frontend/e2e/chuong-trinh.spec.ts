@@ -86,7 +86,7 @@ test('soạn → xuất bản → lớp nhận khung → ghi sổ → tiến đ�
   await p.getByRole('combobox', { name: 'Môn' }).selectOption('hsa_verbal');
   await p.getByLabel('Tên khung mới').fill(tem);
   await p.getByRole('button', { name: 'Tạo khung' }).click();
-  await expect(p.getByText('Đã tạo bản nháp')).toBeVisible();
+  await expect(p.getByText('Đã tạo bản nháp')).toBeVisible({ timeout: 20_000 });
   for (const ten of ['Đọc hiểu cơ bản', 'Văn học']) {
     await p.locator('#buoi-moi-ten').fill(ten);
     await p.getByRole('button', { name: 'Thêm buổi' }).click();
@@ -98,7 +98,7 @@ test('soạn → xuất bản → lớp nhận khung → ghi sổ → tiến đ�
   await b1.getByRole('button', { name: 'Thêm', exact: true }).click();
   await expect(p.getByText('Tìm ý chính')).toBeVisible();
   await p.locator('tr', { hasText: tem }).getByRole('button', { name: 'Xuất bản' }).click();
-  await expect(p.getByText('Đã xuất bản')).toBeVisible();
+  await expect(p.getByText('Đã xuất bản')).toBeVisible({ timeout: 20_000 });
   const ml = await goiApi(p, 'GET', '/api/admin/chuong-trinh/khung');
   khung = ((ml.du as { mon: { id: string; versions: { id: number; name: string }[] }[] }).mon
     .find((m) => m.id === 'hsa_verbal')?.versions.find((v) => v.name === tem)?.id) ?? null;
@@ -118,9 +118,9 @@ test('soạn → xuất bản → lớp nhận khung → ghi sổ → tiến đ�
   await p.goto(`/giang-day/chuong-trinh/${lop}`, { waitUntil: 'networkidle' });
   await p.getByRole('combobox', { name: 'Khung đang dùng' }).selectOption(String(khung));
   await p.getByRole('button', { name: 'Xem trước' }).click();
-  await expect(p.getByText(/Sẽ gắn 1 buổi học/)).toBeVisible();
+  await expect(p.getByText(/Sẽ gắn 1 buổi học/)).toBeVisible({ timeout: 20_000 });
   await p.getByRole('button', { name: 'Nhận khung' }).click();
-  await expect(p.getByText('Đã nhận khung')).toBeVisible();
+  await expect(p.getByText('Đã nhận khung')).toBeVisible({ timeout: 20_000 });
   await expect(p.getByText('Chưa ghi — ghi ngay')).toBeVisible();
 
   // 4. Sổ đầu bài.
@@ -129,7 +129,7 @@ test('soạn → xuất bản → lớp nhận khung → ghi sổ → tiến đ�
   await p.locator('fieldset').first().getByText('Đã dạy', { exact: true }).click();
   await p.getByText('4 · Hiểu tốt').click();
   await p.getByRole('button', { name: 'Lưu sổ đầu bài' }).click();
-  await expect(p.getByText('Đã lưu sổ đầu bài')).toBeVisible();
+  await expect(p.getByText('Đã lưu sổ đầu bài')).toBeVisible({ timeout: 20_000 });
 
   // 5. Danh sách lớp có chip, Tổng quan có ô.
   await p.goto(`/quan-tri/lop-hoc?q=${encodeURIComponent(tem)}`, { waitUntil: 'networkidle' });

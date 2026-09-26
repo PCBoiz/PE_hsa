@@ -53,6 +53,10 @@ const TRANG = [
   ['/quan-tri/tai-khoan/35695', 'QT hồ sơ học viên', AD], ['/giang-day/bao-cao/7322/35695', 'GD tờ một em', AD],
   // Thêm 24/09/2026 (§53): lịch gộp theo tuần.
   ['/giang-day/lich', 'GD lịch học', AD],
+  // Gộp A2 + E1 (26/09/2026): chấm công theo tháng, soạn khung, chương trình một lớp, sổ đầu
+  // bài một buổi. 8004 là buổi đã dạy của lớp 7322 trên Neon dev.
+  ['/quan-tri/cham-cong', 'QT chấm công', AD], ['/giao-trinh/khung-chuong-trinh', 'Khung chương trình', AD],
+  ['/giang-day/chuong-trinh/7322', 'GD chương trình lớp', AD], ['/giang-day/so-dau-bai/8004', 'GD sổ đầu bài', AD],
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
 
 /* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──
