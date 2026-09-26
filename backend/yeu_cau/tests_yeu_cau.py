@@ -335,6 +335,9 @@ def test_duyet_hai_lan_chi_chuyen_mot_lan(d, canh):
     assert hv.post('/api/admin/yeu-cau/%d/duyet' % yid, {'den_lop_id': canh['b']}, format='json').status_code == 200
     r = hv.post('/api/admin/yeu-cau/%d/duyet' % yid, {'den_lop_id': canh['b']}, format='json')
     assert r.status_code == 409
+    # Câu chữ, không chỉ mã: gỡ hai hàng rào của `duyet()` thì việc chuyển lớp (lớp thứ ba)
+    # CŨNG trả 409, nhưng bằng một câu nói về lớp. Giáo vụ phải đọc được "đã được duyệt".
+    assert 'đã được duyệt' in r.data['error'], r.data
     assert len(_luot(canh['b'], canh['em'])) == 1 and len(_luot(canh['a'], canh['em'])) == 1
     assert q1("SELECT count(*) AS n FROM admin_audit WHERE action='class.member.transfer' "
               "AND detail->>'userId'=%s", (str(canh['em']),))['n'] == 1
@@ -559,7 +562,12 @@ def test_lua_chon_em_chi_cho_lop_trong_pham_vi_va_khong_lien_lac(d, canh):
     r = tg.get('/api/teach/yeu-cau/lua-chon', {'class_id': canh['a']})
     assert {h['id'] for h in r.data['hocVien']} == {canh['em'], canh['em2']}, r.data
     assert all(set(h) == {'id', 'ten'} for h in r.data['hocVien']), 'chỉ tên em — không liên lạc'
-    # Lớp ngoài phạm vi: không lộ sĩ số.
+    # Lớp ngoài phạm vi: không lộ sĩ số. Lớp B phải CÓ em thì phép kiểm mới có răng — bản đầu
+    # đòi rỗng trên một lớp vốn rỗng, nên bỏ hẳn hàng rào phạm vi nó vẫn xanh (đột biến 26/09).
+    em_b = d.nguoi('Học viên')
+    d.vao(canh['b'], em_b)
+    assert {h['id'] for h in d.api(canh['gv_b']).get(
+        '/api/teach/yeu-cau/lua-chon', {'class_id': canh['b']}).data['hocVien']} == {em_b},         'GV lớp B phải thấy em của lớp B — không thì phép kiểm dưới rỗng vì lý do khác'
     assert tg.get('/api/teach/yeu-cau/lua-chon', {'class_id': canh['b']}).data['hocVien'] == []
 
 

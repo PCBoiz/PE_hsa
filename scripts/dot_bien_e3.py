@@ -42,7 +42,8 @@ M = [
      'hai_lan', 'hai lớp chặn'),
     ('duyệt hai lần: gỡ CẢ kiểm "đã duyệt" lẫn máy trạng thái',
      [(DV, "if yc['trang_thai'] in ('da_duyet', 'da_xong') or yc['thuc_thi'] is not None:", 'if False:'),
-      (DV, "if L.ai_duoc_chuyen(yc['loai'], yc['trang_thai'], 'da_duyet') != L.DUYET:", 'if False:')], 'hai_lan'),
+      (DV, "if L.ai_duoc_chuyen(yc['loai'], yc['trang_thai'], 'da_duyet') != L.DUYET:", 'if False:')],
+     'hai_lan'),
     ('TG / GV duyệt: gỡ lớp quyền view (còn kiểm ở dịch vụ — phải sống)',
      [(VW, 'permission_classes = [IsAdminOrAcademic]\n\n    def get(self, request, yc_id):\n        p = request.query_params',
        'permission_classes = [IsTeachingStaff]\n\n    def get(self, request, yc_id):\n        p = request.query_params')],
@@ -55,8 +56,15 @@ M = [
     ('nhân sự tạo yêu cầu cho lớp không phụ trách',
      [(DV, "if class_id is not None and not can_see_class(nguoi.user, class_id):\n            raise LoiYeuCau(404, 'Không tìm thấy lớp này.')",
        "if False:\n            raise LoiYeuCau(404, 'Không tìm thấy lớp này.')")], 'bao_len_giang_vien'),
-    ('PH chọn được em / lớp khác qua thân request',
+    ('PH chọn được em / lớp khác: gỡ lớp dịch vụ (view vẫn không chuyển khoá xuống — phải sống)',
      [(DV, "hoc_vien_id, class_id = nguoi.link['user_id'], nguoi.link['class_id']",
+       "hoc_vien_id, class_id = hoc_vien_id or nguoi.link['user_id'], class_id or nguoi.link['class_id']")],
+     'phu_huynh_chi_thay_yeu_cau_phu_huynh', 'hai lớp chặn'),
+    ('PH chọn được em / lớp khác: gỡ CẢ lớp view lẫn lớp dịch vụ',
+     [(VW, """                                   noi_dung=b.get('noi_dung'), du_lieu=du_lieu, request=request),""",
+       """                                   noi_dung=b.get('noi_dung'), du_lieu=du_lieu, request=request,
+                                   hoc_vien_id=b.get('hoc_vien_id'), class_id=b.get('class_id')),"""),
+      (DV, "hoc_vien_id, class_id = nguoi.link['user_id'], nguoi.link['class_id']",
        "hoc_vien_id, class_id = hoc_vien_id or nguoi.link['user_id'], class_id or nguoi.link['class_id']")],
      'phu_huynh_chi_thay_yeu_cau_phu_huynh'),
     ('TG mở lại lượt xin đã bị từ chối',
@@ -98,6 +106,26 @@ M = [
     ('học viên gửi vào lớp không học',
      [(DV, "if class_id is not None and not _tung_hoc(nguoi.id, class_id):\n            raise LoiYeuCau(404, 'Em không học lớp này.')",
        "if False:\n            raise LoiYeuCau(404, 'Em không học lớp này.')")], 'lop_minh_khong_toi_gv_lop_khac'),
+    # ── Buổi bù (V-g, §62e) — vá 26/09/2026 ────────────────────────────────
+    ('ô chọn buổi đưa buổi bù cho cả lớp',
+     [(VW, """                      AND ''' + thuoc_buoi('s.id', '%s') + '''
+""", ''),
+      (VW, '                 (dang, local_now(), request.user.id)) if dang else []',
+       '                 (dang, local_now())) if dang else []')], 'buoi_bu'),
+    ('học viên báo lỗi bản ghi của buổi bù mình không dự',
+     [(DV, """        if nguon == 'hoc_vien' and not _du_buoi(nguoi.id, session_id):
+            raise LoiYeuCau(404, 'Không tìm thấy buổi học này.')
+""", '')], 'buoi_bu'),
+    ('nhân sự gõ hộ em vào buổi bù em không dự',
+     [(DV, """        if session_id is not None and not _du_buoi(hoc_vien_id, session_id):
+            raise LoiYeuCau(400, 'Em này không dự buổi học đã chọn.')
+""", '')], 'khong_du_buoi_bu'),
+    ('đảo THỨ TỰ tham số thuoc_buoi (uid ↔ sid) — bẫy của mệnh đề dùng chung',
+     [(DV, "thuoc_buoi('%s', '%s'), (uid, session_id))", "thuoc_buoi('%s', '%s'), (session_id, uid))")],
+     'buoi_bu'),
+    ('/nguoi-nhan trả email cho MỌI vai (trợ giảng đọc được)',
+     [(VW, "            return r['email'] if nguoi.la_duyet else '%s #%d' % (vai.get(r['role'], 'Nhân sự'), r['id'])",
+       "            return r['email']")], 'nguoi_nhan_khong_lo_email'),
     ('nhãn lịch sử mất (mã trần lên màn)',
      [(DV, "'tuNhan': _nhan_moc(r['kieu'], r['tu']), 'denNhan': _nhan_moc(r['kieu'], r['den']),",
        "'tuNhan': r['tu'], 'denNhan': r['den'],")], 'lich_su_co_nhan'),
@@ -123,7 +151,12 @@ for muc in M:
         hong = False
         for tep, cu, moi in cap:
             p = GOC + tep
-            noi = goc.get(p) or open(p, encoding='utf-8', newline='').read()
+            # ĐỌC LẠI TỪ ĐĨA mỗi cặp, chỉ LƯU bản gốc ở cặp đầu. Bản cũ viết
+            # `noi = goc.get(p) or open(...)`, tức cặp thứ hai trong CÙNG một tệp được áp lên
+            # bản GỐC — cặp đầu bị xoá sạch. Mọi đột biến "gỡ CẢ hai lớp" nằm trong một tệp
+            # thật ra chỉ gỡ MỘT, rồi báo "SỐNG" vì lớp kia vẫn chặn (đo được 26/09/2026 ở
+            # mục "duyệt hai lần: gỡ CẢ …").
+            noi = open(p, encoding='utf-8', newline='').read()
             goc.setdefault(p, noi)
             # Tệp làm việc có thể là CRLF (Windows, autocrlf) — so theo \n rồi ghi lại đúng kiểu dòng.
             crlf = '\r\n' in noi
