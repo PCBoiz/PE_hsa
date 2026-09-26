@@ -244,6 +244,39 @@ lượt TRỢ GIẢNG tự báo lỗi.
 nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
 
 
+## 26/09/2026 (khuya) — E2 đã GỘP: hộp thư đi §61 về nhà, và hàng rào thư bắt được năm bộ kiểm
+
+`agent/e2` gộp vào `erp` (`79b82e5`): 29 tệp, hộp thư đi `outbox` + thông báo trung tâm
+`announcements` + hàng rào thư máy dev. Bảy xung đột, không cái nào là xung đột thật về
+hành vi — §65 và §61 cùng nối vào cuối lược đồ, hai danh mục việc nhật ký cùng thêm dòng,
+hai tệp `CAU_TRUC_*` tự sinh (sinh lại bằng `scripts/cau_truc.py`). Chỉ dòng 20 của bảng
+nghiệm thu phải trộn tay: hai nhánh đo HAI NỬA khác nhau của cùng một dòng — E3 đo nửa
+"trợ giảng báo lên", E2 đo nửa "nhắn cho lớp" — nên dòng mới ghi cả hai kèm số đo riêng.
+
+Số: lược đồ **0/68 mục ngay lượt đầu** (E2 đã dựng trên Neon dev), `kiem_luoc_do` **75/75**,
+`notifications/` **108/108 xanh**, `ruff` + `manage.py check` sạch.
+
+**Hàng rào thư làm đúng việc của nó, và việc đầu tiên nó làm là bắt lỗi của chính ta.**
+Năm bộ kiểm trong `tests_parent_send.py` đỏ sau khi gộp. Không phải hồi quy: từ §61, thư
+báo cáo phụ huynh đi qua hộp thư đi, và hàng rào chặn ZNS tới MỌI số không khai trong
+`OUTBOX_SO_CHO_PHEP` — số điện thoại không có "tên miền ví dụ" như `@example.com`. Thư
+dừng ở hàng rào TRƯỚC khi tới bản giả `zalo.gui_zns`, nên thay bản giả là không đủ.
+
+Sửa ở phía BỘ KIỂM (`mo_hang_rao_zns`), không nới hàng rào: "mặc định TỪ CHỐI" chính là
+điều hàng rào sinh ra để làm, và trên máy dev CSDL là bản chép của production — trong đó
+có số điện thoại thật của phụ huynh TopHSA. Một bộ kiểm tự mở đường cho mình thì phải nói
+rõ nó đang mở cái gì. → 22/22 xanh.
+
+**Dòng 20 và 27 vẫn chưa đóng, và nay bảng nói đúng lý do**: trong 29 tệp E2 viết chỉ có
+ĐÚNG MỘT tệp frontend. `/thong-bao` và `/notifications` đều trả "Không có trang này";
+không tệp nào trong `frontend/src` gọi `/api/admin/thong-bao` hay
+`/api/teach/classes/<id>/thong-bao`. Backend xong không phải là tính năng xong — `ban_do.mjs`
+nay có danh sách thứ ba **CHỜ MÀN** để bảy tuyến ấy không nằm im như một ngoại lệ vĩnh viễn.
+
+Nợ mới, nhỏ: `scripts/dot_bien_e2.py` trùng việc với `scripts/dot_bien.py` (bản chung đã có
+`--loat <json>` và trường `cho`). Chuyển 16 đột biến E2 sang JSON rồi bỏ tệp riêng.
+
+
 ## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
 
 Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.
