@@ -25,8 +25,11 @@ Next.js (Vercel) → Django + SQL thuần (Render) → Postgres (Neon). Viết, 
 - Không hardcode px trong giao diện: clamp / rem / vw / ch, token màu có sẵn.
 - Tầng JS cũ `frontend/public/static/js` chỉ được CO (trần ở `e2e/unit/chot-ham-tang-cu.test.mjs`); chạm mục
   học viên nào thì dời sang React.
-- Không ghi vào tài khoản người dùng thử nghiệm của TopHSA; e2e ghi dùng tài khoản riêng + `E2E_GHI=1`.
-  Không gửi thư / Zalo tới phụ huynh thật.
+- **Mọi dữ liệu hiện có — kể cả trên production — đều là GIẢ** (anh Sơn 26/09: TopHSA chưa đưa dữ liệu thật nào,
+  "cho đến khi tôi báo thì tất cả dữ liệu là giả"). Được ghi thử, chạy e2e trọn luồng trên cả dev lẫn production,
+  kể cả tài khoản/lớp thử nghiệm của TopHSA. Đổi lại: hạ tầng, bảo mật, phân quyền phải làm như thật.
+- Thư và tin nhắn thì KHÁC: ra khỏi hệ thống là không cuộn lại được → chỉ gửi tới địa chỉ thử
+  (`@example.com`, tài khoản e2e). Không gửi tới hộp thư / Zalo của người ngoài.
 - Mã mới đặt ĐÚNG miền (`scripts/so_mien.json`); không INSERT/UPDATE/DELETE bảng miền khác — gọi hàm dịch vụ.
   Sổ nợ ghi chéo chỉ được co.
 - Chữ trên giao diện: tiếng Việt của người dùng, không mã kỹ thuật (RULES §10).
