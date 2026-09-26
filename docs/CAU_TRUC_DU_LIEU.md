@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 56 bảng, 102 khoá ngoài, 12 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
+Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 58 bảng, 105 khoá ngoài, 12 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
 
 | Miền | Bảng |
 |---|---|
@@ -15,7 +15,7 @@ Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ t
 | [phu_huynh](#phu_huynh) | `parent_report_links`, `parent_report_sends`, `parent_report_optout` |
 | [ho_so](#ho_so) | — |
 | [yeu_cau](#yeu_cau) | — |
-| [thong_bao](#thong_bao) | `notifications`, `notification_settings` |
+| [thong_bao](#thong_bao) | `notifications`, `notification_settings`, `outbox`, `announcements` |
 | [tai_khoan](#tai_khoan) | `users`, `password_reset_tokens` |
 | [chung](#chung) | `admin_audit`, `learning_events` |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | `courses`, `lessons`, `lesson_progress`, `enrollments`, `quizzes`, `review_quiz_results`, `topic_self_marks`, `course_ratings`, `surveys`, `roadmaps`, `roadmap_progress`, `study_logs`, `study_plans`, `study_plan_items`, `missions`, `user_missions`, `achievements`, `user_achievements`, `user_daily_xp_logs` |
@@ -859,7 +859,7 @@ Không sở hữu bảng.
 
 ## thong_bao
 
-**Thông báo** — Chuông trong ứng dụng, cài đặt nhận tin, mặt tiền gửi `gui` / `gui_sau_commit`, báo đổi lịch. Sắp có (E2): hộp thư đi (outbox), thông báo lớp / trung tâm (announcements).
+**Thông báo** — Chuông trong ứng dụng, cài đặt nhận tin, mặt tiền gửi `gui` / `gui_sau_commit`, báo đổi lịch. Hộp thư đi `outbox` (§61, E2): mọi thư/ZNS đi qua đây — xếp một dòng, luồng nền gửi, thử lại khi lỗi, ưu tiên giao dịch trước hàng loạt, hàng rào chặn địa chỉ thật trên máy dev. Thông báo lớp / trung tâm `announcements` (§61, E2): học vụ gửi mọi đối tượng, giảng viên và trợ giảng gửi lớp mình.
 
 ```mermaid
 erDiagram
@@ -874,6 +874,9 @@ erDiagram
         boolean is_read
         integer coalesce_count
         timestamp created_at
+        integer announcement_id FK
+        text link
+        timestamp read_at
     }
     notification_settings {
         integer user_id PK,FK
@@ -882,11 +885,48 @@ erDiagram
         integer study_remind
         integer content_update
     }
+    outbox {
+        bigserial id PK
+        text channel
+        integer user_id FK
+        text to_addr
+        text subject
+        text body
+        jsonb params
+        text source_type
+        bigint source_id
+        text dedup_key
+        text status
+        smallint priority
+        integer attempts
+        timestamp next_try_at
+        timestamp claimed_at
+        timestamp sent_at
+        text error
+        text provider_id
+        timestamp created_at
+    }
+    announcements {
+        serial id PK
+        text title
+        text body
+        jsonb audience
+        boolean send_email
+        boolean send_zalo
+        text status
+        integer recipient_count
+        integer created_by FK
+        timestamp created_at
+        timestamp sent_at
+    }
     users {
         serial id PK
     }
     notifications }o--o| users : "user_id"
+    notifications }o--o| announcements : "announcement_id"
     notification_settings |o--|| users : "user_id"
+    outbox }o--o| users : "user_id"
+    announcements }o--o| users : "created_by"
 ```
 
 Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan).
@@ -905,6 +945,9 @@ Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan).
 | `is_read` | boolean | mặc định `FALSE` | §17 |
 | `coalesce_count` | integer | NOT NULL · mặc định `1` | §17 |
 | `created_at` | timestamp | mặc định `now()` | §17 |
+| `announcement_id` | integer | → `announcements.id` (cascade) | §61 |
+| `link` | text |  | §61 |
+| `read_at` | timestamp |  | §61 |
 
 ### `notification_settings` · §18
 
@@ -915,6 +958,56 @@ Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan).
 | `push_notif` | integer | mặc định `0` | §18 |
 | `study_remind` | integer | mặc định `1` | §18 |
 | `content_update` | integer | mặc định `0` | §18 |
+
+### `outbox` · §61
+
+| Cột | Kiểu | Ràng buộc | § |
+|---|---|---|---|
+| `id` | bigserial | PK | §61 |
+| `channel` | text | NOT NULL | §61 |
+| `user_id` | integer | → `users.id` (set null) | §61 |
+| `to_addr` | text | NOT NULL | §61 |
+| `subject` | text | NOT NULL · mặc định `''` | §61 |
+| `body` | text | NOT NULL · mặc định `''` | §61 |
+| `params` | jsonb | NOT NULL · mặc định `'{}' ::jsonb` | §61 |
+| `source_type` | text |  | §61 |
+| `source_id` | bigint |  | §61 |
+| `dedup_key` | text | UNIQUE | §61 |
+| `status` | text | NOT NULL · mặc định `'queued'` | §61 |
+| `priority` | smallint | NOT NULL · mặc định `0` | §61 |
+| `attempts` | integer | NOT NULL · mặc định `0` | §61 |
+| `next_try_at` | timestamp | NOT NULL · mặc định `now()` | §61 |
+| `claimed_at` | timestamp |  | §61 |
+| `sent_at` | timestamp |  | §61 |
+| `error` | text |  | §61 |
+| `provider_id` | text |  | §61 |
+| `created_at` | timestamp | NOT NULL · mặc định `now()` | §61 |
+
+CHECK:
+
+- `outbox_channel_check` (§61): `channel` ∈ {'email', 'zalo'}
+- `outbox_status_check` (§61): `status` ∈ {'queued', 'sending', 'sent', 'failed', 'dropped'}
+- `outbox_priority_check` (§61): `priority IN (0, 1)`
+
+### `announcements` · §61
+
+| Cột | Kiểu | Ràng buộc | § |
+|---|---|---|---|
+| `id` | serial | PK | §61 |
+| `title` | text | NOT NULL | §61 |
+| `body` | text | NOT NULL · mặc định `''` | §61 |
+| `audience` | jsonb | NOT NULL · mặc định `'{}' ::jsonb` | §61 |
+| `send_email` | boolean | NOT NULL · mặc định `FALSE` | §61 |
+| `send_zalo` | boolean | NOT NULL · mặc định `FALSE` | §61 |
+| `status` | text | NOT NULL · mặc định `'draft'` | §61 |
+| `recipient_count` | integer | NOT NULL · mặc định `0` | §61 |
+| `created_by` | integer | → `users.id` (set null) | §61 |
+| `created_at` | timestamp | NOT NULL · mặc định `now()` | §61 |
+| `sent_at` | timestamp |  | §61 |
+
+CHECK:
+
+- `announcements_status_check` (§61): `status` ∈ {'draft', 'sent', 'cancelled'}
 
 ## tai_khoan
 
@@ -1035,7 +1128,7 @@ CHECK:
 - `users_username_format_check` (§51): `username IS NULL OR (username ~ '^[a-z0-9][a-z0-9.]{2,29}$' AND username ~ '[a-z]')`
 - `users_tuition_status_check` (§63): `tuition_status` ∈ {'da_dong', 'sap_het', 'het', 'bao_luu'}
 
-Miền khác trỏ vào: `admin_audit.actor_id`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `recording_views.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`
+Miền khác trỏ vào: `admin_audit.actor_id`, `announcements.created_by`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `outbox.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `recording_views.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`
 
 ### `password_reset_tokens` · §52
 

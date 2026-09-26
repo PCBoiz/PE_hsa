@@ -42,14 +42,14 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. |
 | 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
-| 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
+| 20 | Trợ giảng · nhắn / nhắc | MỘT PHẦN — backend E2 xong, **chưa có màn soạn** | E3 (nhắn hai chiều), E2-GD (màn) | Đo 26/09 qua API thật (Django 9500, thẻ trợ giảng id 36882, lớp 7586): xem trước lớp mình `{"tong":3,"chuong":3}`; gửi lớp mình **201**; gửi lớp KHÔNG phải của mình **404** `"Không tìm thấy lớp này."`; gọi tuyến học vụ cả khối **403**. Thư đi qua hộp thư đi §61. **Còn thiếu: màn soạn** — không tệp nào trong `frontend/src` gọi `/api/teach/classes/<id>/thong-bao`. |
 | 21 | Trợ giảng · theo dõi | MỘT PHẦN | V-b, V-l, E3 | — |
 | 22 | Trợ giảng · record Zoom | CÓ | — | §72 (26/09): em xem lại được và đánh dấu "đã mở"; TG thấy ai chưa mở, nhắc được, thấy buổi còn thiếu bản ghi; em báo được link hỏng. Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (Z1). |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
 | 24 | Phụ huynh · xem | MỘT PHẦN | §66, V-a | — |
 | 25 | Phụ huynh · gửi yêu cầu | CHƯA | E3 qua link | — |
 | 26 | Học sinh · tài khoản + tự đăng ký | MỘT PHẦN | E5 | — |
-| 27 | Học sinh · thông báo | MỘT PHẦN | E2 | — |
+| 27 | Học sinh · thông báo | MỘT PHẦN — chuông CHẠY THẬT, **màn "Thông báo" chưa có** | E2-GD (màn danh sách) | Đo 26/09 trên màn thật, đã soi ảnh (Next 3600 → Django 9500, thẻ học viên id 36884): học vụ gửi thông báo lớp → chuông hiện badge **4**, panel mở ra có đúng thông báo vừa gửi ở dòng đầu kèm "(chưa đọc)"; `/api/notifications/badge` → `{"unread":4,"latest":3945}`. Thư §61 đi kèm: 3 dòng `outbox` `priority=1`, cả 3 `status='sent'`. Ruột mới đã chạy đúng qua API (phân trang theo khoá: trang 1 `[3945,586]`, trang 2 `truoc=586` → `[585,584]`, **không trùng**; `?chuaDoc=1` → 4 dòng, 0 dòng đã đọc; `?loai=thong_bao` → chỉ loại ấy). **Còn thiếu: màn** — `/thong-bao` và `/notifications` đều trả "Không có trang này", nên phân trang / bộ lọc / `cacLoai` chưa ai bấm tới được. |
 | 28 | Học sinh · chương trình + lộ trình | MỘT PHẦN | E1, V-d | — |
 | 29 | Học sinh · record | CÓ | — | §72 (26/09): thẻ lớp có "Xem lại: 24/09 22/09", bấm là mở và ghi nhận. |
 | 30 | Học sinh · học liệu | CHƯA | Đ2 §60 | — |
