@@ -127,7 +127,14 @@ class LopCuaToiView(NguoiDungView):
                                 FROM hoc_lieu
                                 WHERE class_id = ANY(%s) AND NOT an
                                   AND (session_id IS NULL
-                                       OR ''' + thuoc_buoi('session_id', '%s') + ''')) h
+                                       -- `hoc_lieu.session_id`, KHÔNG phải `session_id` trần:
+                                       -- câu con của `thuoc_buoi` có bảng `sp` riêng, nên một
+                                       -- tên không tiền tố bị hiểu là cột CỦA NÓ và điều kiện
+                                       -- thành `sp.session_id = sp.session_id` — luôn đúng, câu
+                                       -- con quét cả bảng, và tài liệu của buổi thường biến mất
+                                       -- với mọi em chưa từng có dòng `session_participants` nào
+                                       -- (đo 27/09: 329 test xanh, đúng test này đỏ).
+                                       OR ''' + thuoc_buoi('hoc_lieu.session_id', '%s') + ''')) h
                           WHERE tt <= %s ORDER BY class_id, created_at DESC''',
                        (ids, uid, SO_HOC_LIEU)):
                 hoc_lieu.setdefault(r['class_id'], []).append(r)

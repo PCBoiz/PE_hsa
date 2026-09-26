@@ -12,7 +12,15 @@ def thuoc_buoi(sid, uid):
     """Mệnh đề SQL: em ``uid`` thuộc buổi ``sid``.
 
     Hai tham số là BIỂU THỨC SQL (tên cột như ``s.id``/``m.user_id``, hoặc ``%s``) —
-    chuỗi trong mã, không phải dữ liệu người dùng. Viết bằng MỘT câu con
+    chuỗi trong mã, không phải dữ liệu người dùng.
+
+    **TÊN CỘT PHẢI CÓ TIỀN TỐ BẢNG.** Câu con dưới đây có bảng ``sp`` của riêng nó, nên một
+    tên trần như ``session_id`` bị Postgres hiểu là cột CỦA ``sp`` — điều kiện thành
+    ``sp.session_id = sp.session_id``, luôn đúng, câu con quét cả bảng, và hàm trả "em có
+    thuộc buổi NÀO ĐÓ không" thay vì "em có thuộc buổi NÀY không". Không lỗi cú pháp, không
+    cảnh báo; chỉ sai lặng lẽ. Đo 27/09/2026: tài liệu gắn vào buổi thường biến mất khỏi thẻ
+    lớp của mọi em chưa từng có dòng ``session_participants`` nào — 329 test xanh, đúng một
+    test đỏ. Chín chỗ gọi khác trong repo đều đã có tiền tố; chỗ thứ mười thì không. Viết bằng MỘT câu con
     (`bool_or` trên tập rỗng là NULL → COALESCE thành TRUE) để mỗi biểu thức chỉ xuất
     hiện một lần: dùng ``%s`` thì truyền tham số theo thứ tự chữ — ``uid`` TRƯỚC ``sid``.
     """
