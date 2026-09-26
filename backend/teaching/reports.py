@@ -53,7 +53,7 @@ from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
 from common.params import doc_trang, mau_like, so_nguyen, trang_kem_tong
-from common.permissions import ROLE_ASSISTANT, ROLE_STUDENT
+from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT, ROLE_STUDENT
 from stats.competency import (
     COURSE_ORDER,
     HALF_LIFE_DAYS,
@@ -526,6 +526,8 @@ def class_report(class_id):
         # viên, nhưng bị `chi_hoc_vien` lọc khỏi sĩ số). Màn Lớp học của học
         # vụ và trang lớp của giảng viên đều cần nhìn thấy họ (20/09/2026).
         'assistants': tro_giang_cua_lop(class_id),
+        # Học vụ được phân công cho lớp (dòng 4). Cùng cơ chế với trợ giảng.
+        'hocVuPhuTrach': hoc_vu_cua_lop(class_id),
         'topics': topics,
         'summary': {
             # `students` = sĩ số ĐANG học, cùng nghĩa với mọi chỉ số bên dưới.
@@ -566,13 +568,29 @@ def class_report(class_id):
     }
 
 
-def tro_giang_cua_lop(class_id):
-    """Trợ giảng đang được gán vào lớp — cùng luật với `_la_tro_giang_cua_lop`."""
+def _nhan_su_cua_lop(class_id, vai):
+    """Người của một VAI đang được gán vào lớp — cùng luật với `_la_tro_giang_cua_lop`."""
     return [{'userId': t['id'], 'name': t['name'], 'email': t['email']} for t in q(
         '''SELECT u.id, u.name, u.email FROM class_members m
                JOIN users u ON u.id = m.user_id
               WHERE m.class_id = %s AND m.left_at IS NULL AND u.role = %s
-              ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
+              ORDER BY u.name''', (class_id, vai))]
+
+
+def tro_giang_cua_lop(class_id):
+    return _nhan_su_cua_lop(class_id, ROLE_ASSISTANT)
+
+
+def hoc_vu_cua_lop(class_id):
+    """Quản lý học vụ được PHÂN CÔNG cho lớp (bảng TopHSA dòng 4).
+
+    Đây là một dòng phân công, KHÔNG phải hàng rào quyền: học vụ vẫn thấy mọi lớp như
+    trước. Cái còn thiếu chỉ là câu trả lời cho "lớp này ai phụ trách" — trung tâm có
+    nhiều học vụ, và khi một lớp có chuyện thì phải biết gọi ai.
+
+    Dùng lại `class_members` vì đó đã là cách hệ thống biết "trợ giảng X phụ trách lớp Y".
+    Một khái niệm đã có tên thì đừng đặt cho nó cái tên thứ hai."""
+    return _nhan_su_cua_lop(class_id, ROLE_ACADEMIC)
 
 
 #: Cột của một dòng lớp — DÙNG CHUNG cho `class_list` và `class_page`, để biểu mẫu

@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 219 tệp backend · 205 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 219 tệp backend · 206 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -16,12 +16,12 @@
 
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
-| [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2600 dòng | 18 tệp · 3811 dòng |
+| [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2611 dòng | 19 tệp · 3940 dòng |
 | [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2603 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
-| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3978 dòng | 14 tệp · 2528 dòng |
+| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3996 dòng | 14 tệp · 2528 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1878 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1517 dòng | 10 tệp · 1514 dòng |
@@ -72,7 +72,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/nhap_hoc_vien.py` | 242 dòng | — |
 | `backend/teaching/roi_lop.py` | 54 dòng | `class_members` |
 | `backend/teaching/terms.py` | 357 dòng | `term_holidays`, `terms` |
-| `backend/teaching/views.py` | 1004 dòng | `class_members`, `classes`, *`users`* |
+| `backend/teaching/views.py` | 1015 dòng | `class_members`, `classes`, *`users`* |
 
 | Tệp frontend | Dòng |
 |---|---|
@@ -84,13 +84,14 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/quan-tri/dot-hoc/page.tsx` | 37 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/BoLocLop.tsx` | 146 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/ChuyenLop.tsx` | 146 dòng |
+| `frontend/src/app/(standalone)/quan-tri/lop-hoc/KhoiNhanSuLop.tsx` | 94 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/LichSuLop.tsx` | 116 dòng |
-| `frontend/src/app/(standalone)/quan-tri/lop-hoc/LopHocClient.tsx` | 962 dòng |
+| `frontend/src/app/(standalone)/quan-tri/lop-hoc/LopHocClient.tsx` | 993 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/NhapTuTep.tsx` | 216 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/TaoLopGiaSu.tsx` | 263 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/giaSu.ts` | 94 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/lop.ts` | 219 dòng |
-| `frontend/src/app/(standalone)/quan-tri/lop-hoc/page.tsx` | 147 dòng |
+| `frontend/src/app/(standalone)/quan-tri/lop-hoc/page.tsx` | 151 dòng |
 | `frontend/src/components/LopCuaToi.tsx` | 458 dòng |
 | `frontend/src/components/LopCuaToiKhung.tsx` | 44 dòng |
 | `frontend/src/components/LopCuaToiNguon.tsx` | 72 dòng |
@@ -226,7 +227,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/co_so_hoc_phi.py` | 267 dòng | — |
 | `backend/teaching/exports.py` | 851 dòng | — |
 | `backend/teaching/overview.py` | 749 dòng | — |
-| `backend/teaching/reports.py` | 738 dòng | — |
+| `backend/teaching/reports.py` | 756 dòng | — |
 | `backend/teaching/viec_hom_nay.py` | 269 dòng | — |
 
 | Tệp frontend | Dòng |

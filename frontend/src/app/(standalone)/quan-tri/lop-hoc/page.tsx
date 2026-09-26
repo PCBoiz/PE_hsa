@@ -14,7 +14,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Lớp học | TopHSA' };
 
 type DsLop = {
-  classes: LopRow[]; teachers: ChonNguoi[]; assistants: ChonNguoi[]; statuses: string[];
+  classes: LopRow[]; teachers: ChonNguoi[]; assistants: ChonNguoi[];
+  /** Tài khoản Quản lý học vụ (dòng 4). `?`: máy chủ cũ không trả. */
+  academics?: ChonNguoi[]; statuses: string[];
   /* §54 (24/09/2026): lọc + phân trang ở máy chủ. Tuỳ chọn — backend cũ không trả. */
   total?: number; page?: number; per_page?: number;
   counts?: { byType: Record<string, number>; byStatus: Record<string, number> };
@@ -45,6 +47,7 @@ const HD_LOP = z.looseObject({
   }).optional(),
   teachers: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
   assistants: z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() })),
+  academics: z.optional(z.array(z.looseObject({ id: z.number(), name: chu, email: z.string() }))),
   statuses: z.array(z.string()),
 }) satisfies HinhDang<DsLop>;
 const HD_DOT = z.looseObject({
@@ -136,6 +139,7 @@ export default async function LopHocPage({
       }
       giangVien={lop.ok ? lop.data.teachers : []}
       troGiang={lop.ok ? lop.data.assistants : []}
+      hocVu={lop.ok ? (lop.data.academics ?? []) : []}
       trangThai={lop.ok ? lop.data.statuses : TRANG_THAI_DU_PHONG}
       // Đợt và khoá chỉ là ô CHỌN. Không đọc được thì trang vẫn phải dùng được
       // để tạo lớp — nên không cho hỏng cả trang vì một danh sách phụ.

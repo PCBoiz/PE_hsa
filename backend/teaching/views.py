@@ -20,6 +20,7 @@ from common.identity import norm_email, norm_phone
 from common.params import kiem_lien_ket
 from common.permissions import (
     ASSIGNABLE_ROLES,
+    ROLE_ACADEMIC,
     ROLE_ADMIN,
     ROLE_ASSISTANT,
     ROLE_STUDENT,
@@ -283,6 +284,7 @@ class AdminClassesView(APIView):
             # Ô "Trợ giảng" của bảng lớp (20/09/2026): trước đây màn Lớp học
             # không có chữ "trợ giảng" nào, học vụ không biết gán ở đâu.
             'assistants': [dict(r) for r in _assistants()],
+            'academics': [dict(r) for r in _academics()],
             'statuses': list(CLASS_STATUS),
             'classTypes': [{'value': k, 'label': NHAN_LOAI_LOP[k]} for k in LOAI_LOP],
         })
@@ -328,6 +330,15 @@ def _teachers():
 def _assistants():
     return q('SELECT id, name, email FROM users WHERE role = %s ORDER BY name',
              (ROLE_ASSISTANT,))
+
+
+def _academics():
+    """Quản lý học vụ — để màn Lớp học gán người PHỤ TRÁCH lớp (bảng dòng 4).
+
+    Gán là phân công, không phải hàng rào: học vụ vẫn thấy mọi lớp. Cái còn thiếu chỉ là
+    câu trả lời cho "lớp này ai phụ trách" khi trung tâm có nhiều người."""
+    return q('SELECT id, name, email FROM users WHERE role = %s ORDER BY name',
+             (ROLE_ACADEMIC,))
 
 
 class AdminClassDetailView(APIView):
