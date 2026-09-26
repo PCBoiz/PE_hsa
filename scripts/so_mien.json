@@ -63,6 +63,7 @@
         "backend/teaching/ngay_le.py",
         "backend/teaching/buoi_bu.py",
         "backend/teaching/nguoi_buoi.py",
+        "backend/teaching/ban_ghi.py",
         "backend/lich/**/*.py"
       ],
       "frontend": [
@@ -74,6 +75,7 @@
       ],
       "bang": [
         "calendar_links",
+        "recording_views",
         "class_sessions",
         "session_participants"
       ],

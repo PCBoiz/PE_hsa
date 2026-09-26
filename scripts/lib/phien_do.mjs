@@ -55,6 +55,7 @@ const THU_MUC_THE = process.env.PE_THE || 'D:/pe_hsa/.the';
 export const THE_VAI = {
   hv: `${THU_MUC_THE}/tokens_hv.json`,
   gv: `${THU_MUC_THE}/tokens_gv.json`,
+  tg: `${THU_MUC_THE}/tokens_tg.json`,
   ad: `${THU_MUC_THE}/tokens_ad.json`,
   // Quản lý học vụ — vai DUYỆT của hộp Yêu cầu (§65). Đo bằng thẻ quản trị thì không thấy
   // được chỗ nào học vụ bị chặn mà quản trị thì không.
@@ -141,11 +142,24 @@ async function moPhien({ goc = 'http://localhost:3100', kho = { width: 1440, hei
     return page;
   }
 
-  /** Chụp ảnh — không làm gì nếu phiên không bật `anh` (kỹ thuật ②). */
-  async function chup(page, ten) {
+  /**
+   * Chụp ảnh — không làm gì nếu phiên không bật `anh` (kỹ thuật ②).
+   *
+   * `toanTrang` chụp cả trang, `toi` cuộn tới một phần tử rồi mới chụp. Không có
+   * hai thứ này thì ảnh chỉ bắt được phần đầu màn, và một khối nằm dưới nếp gấp
+   * trông y hệt như một khối không dựng — đã mất một lượt đo vì nhầm thế
+   * (26/09/2026).
+   */
+  async function chup(page, ten, { toanTrang = false, toi = null } = {}) {
     if (!anh) return null;
+    if (toi) {
+      await page.evaluate((s) => {
+        document.querySelector(s)?.scrollIntoView({ block: 'center' });
+      }, toi).catch(() => {});
+      await page.waitForTimeout(300);
+    }
     const d = `${anh}/${ten}.png`;
-    await page.screenshot({ path: d }).catch(() => {});
+    await page.screenshot({ path: d, fullPage: toanTrang }).catch(() => {});
     return d;
   }
 

@@ -49,6 +49,7 @@ cd frontend && npx --yes pnpm@11.12.0 e2e                # E2E_GHI=1 cho luồng
 python scripts/cau_truc.py [--kiem]                      # sinh / kiểm docs CAU_TRUC_* + ghi chéo miền
 node scripts/ban_do.mjs --kiem && python scripts/tang_vai.py --kiem
 powershell -File scripts/don_may.ps1 [-Don]              # xem / dọn tiến trình dev mồ côi
+powershell -File scripts/nap_lai_be.ps1 [-Cong N]        # nạp lại Django (--noreload KHÔNG tự nạp mã mới)
 python scripts/quet_bi_mat.py [--tat-ca|--tu-kiem]       # quét bí mật lọt vào repo công khai
 bash .githooks/pre-push < /dev/null                      # cổng kiểm đủ (bật: git config core.hooksPath .githooks)
 ```

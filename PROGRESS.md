@@ -7,6 +7,105 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (tối) — soát lại bảng nghiệm thu: hai dòng bị ghi THẤP hơn thực tế
+
+Không viết thêm mã, chỉ ĐO. Bảng nghiệm thu là thứ khách đọc; ghi sai theo hướng
+nào cũng hại — nói quá thì mất tin, nói thiếu thì công đã làm không ai thấy.
+
+**Dòng 21 (trợ giảng · theo dõi)**: ghi chú 23/09 nói *"TG không nhận
+`vangLien`/`canChuY`"*, mà chú thích trong `viec_hom_nay.py` lại nói ngược. Đo:
+dựng một em vắng 3 buổi liền ở lớp mẫu 7322 (ghi sổ trạng thái gốc ra JSON
+trước), gọi API bằng thẻ TG và thẻ GV **cùng lớp** → cả hai `vangLien=1`, cùng
+tên em; soi màn TG → *"Vắng liền từ 2 buổi (1)"*, *"Đỗ Đức Tùng · vắng 3 buổi
+liền"*, nút *"Báo cần hỗ trợ"*. Hoàn nguyên 3/3 khớp gốc. Ghi chú đã lỗi thời.
+
+**Dòng 17 (giáo viên · giao bài)**: ghi *"MỘT PHẦN — không sửa được bài đã
+giao"*, và kế hoạch ghi V-e *"thiếu đối tượng nhận bài"*. Đo trên màn: nút **Đổi
+người nhận** đã có từ trước (`target_mode` + bảng `assignment_targets`), ô **Sửa
+bài** thêm sáng nay, bảng chấm cả lớp ghi rõ từng em *"Chưa nộp"* / *"Nộp
+18/09"* kèm tổng *"9/27 đã nộp"* — đủ cả mười hai gạch của khách. **MỘT PHẦN →
+CÓ**, V-e gạch khỏi kế hoạch.
+
+Suýt sai: lượt dựng dữ liệu đầu lỗi lược đồ giữa chừng (`attendance` không có
+cột `class_id`) nhưng đã kịp đổi một dòng, nên sổ hoàn nguyên ghi `absent` trong
+khi gốc là `present`. Sửa sổ trước khi hoàn nguyên — không thì lớp mẫu của khách
+bị để lại một buổi vắng oan.
+
+Còn chờ anh Sơn: tick `G24` (STT 22) và `G19` (STT 17). Ba đường tự tick đều bị
+chặn — xem `docs/VIEC_CUA_ANH.md` mục K3.
+
+
+## 26/09/2026 (chiều muộn) — dòng 4: hai mốc còn thiếu trong hành trình của em
+
+Khách viết rõ chuỗi phải theo dõi được: *"Đăng ký → Xếp lớp → Khai giảng → Làm
+bài → Kiểm tra → Thi thử → Kết quả → Báo cáo → Hoàn thành khóa học"*. Đối chiếu
+`teaching/dong_thoi_gian.py`: bảy mốc đã có, **hai mốc chưa** — dòng thời gian
+biết em VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào;
+và biết điểm bài KIỂM TRA mà không biết em có làm bài tập hay không.
+
+- **Khai giảng** = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính:
+  lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù.
+- **Làm bài** = lần nộp bài tập đầu tiên, chi tiết "Đã nộp N bài". MỘT mốc cho
+  cả khoá chứ không liệt kê từng bài: trần dòng thời gian là 300 sự kiện, một em
+  học lâu nộp hàng trăm bài thì mọi mốc khác bị đẩy ra ngoài. Bài `kiem_tra`
+  không đếm ở đây vì đã có mốc riêng.
+
+Đo trên màn thật (tài khoản 35704, đã soi ảnh): *Được cấp tài khoản → Bắt đầu
+khoá Tư duy Định lượng → Vào lớp → **Lớp … khai giảng** (03/08) → **Bắt đầu làm
+bài tập · Đã nộp 5 bài** (10/08) → Nộp bài thi thử 8/9*. Test 9/9 xanh, 4 đột
+biến giết 4.
+
+**Bẫy vấp BA lần trong một ngày**: `runserver --noreload` không nạp mã mới, nên
+bộ đo báo "tính năng không dựng" trong khi mã đúng hoàn toàn. Mỗi lần mất mươi
+phút. Đã viết `scripts/nap_lai_be.ps1` — dừng CẢ CẶP tiến trình của runserver,
+bật lại, và chờ tới khi `/health` trả 200 chứ không chỉ tới khi tiến trình sinh
+ra. Một bẫy đã ghi trong brief mà vẫn vấp lại thì nó cần một lệnh, không cần một
+lời nhắc.
+
+
+## 26/09/2026 (chiều) — §72 bản ghi buổi học: tính năng đang ĐỨT ở giữa
+
+Anh Sơn: *"cứ tiếp tục làm theo bảng phân rã tính năng đó"*. Lấy **dòng 22**
+(trợ giảng · quản lý record Zoom) vì nó trùng đúng tích hợp Zoom anh chọn sáng nay.
+
+**Đo trước, và đo mới thấy**: `class_sessions.recording_url` cùng ô nhập ở màn
+Buổi học đã có từ lâu, nên tưởng chỉ còn thiếu phần thống kê. Thật ra
+`recording_url` **không xuất hiện ở BẤT KỲ màn nào của học viên** — trợ giảng dán
+link, không em nào mở được, và cũng không ai biết là không mở được. Lỗ to hơn cái
+thống kê chính là đường cho em xem lại bài.
+
+**Đã làm** — §72 `recording_views` (một dòng mỗi buổi+người, mở lại thì cộng
+`lan_mo`), `backend/teaching/ban_ghi.py` với bốn cửa:
+- `POST /api/sessions/<s>/ban-ghi/da-mo` — em bấm mở, ghi nhận;
+- `POST /api/sessions/<s>/ban-ghi/bao-loi` — em báo link hỏng, chuông về cho
+  người DẠY (giảng viên + trợ giảng), không gửi cho bạn cùng lớp;
+- `GET /api/teach/classes/<c>/ban-ghi` — ai đã mở / chưa mở, **kèm danh sách buổi
+  đã học mà chưa ai dán link** (không nêu ra thì một buổi bị quên cứ nằm im);
+- `POST /api/teach/classes/<c>/ban-ghi/<s>/nhac` — gọi chuông cho em chưa mở.
+
+Giao diện: thẻ lớp của em có dòng `Xem lại: 24/09 22/09`, bấm là mở và đánh dấu
+✓; sau khi bấm mới hiện `Không mở được?`. Màn Buổi học có khối *Bản ghi buổi học*
+với `1/2 em đã mở · Chưa mở: 1 · [Nhắc em chưa mở]`.
+
+**Cố ý KHÔNG đo cái không đo được**: bản ghi nằm trên Zoom/Drive, hệ thống chỉ
+biết em đã BẤM mở. Chữ trên màn nói đúng bấy nhiêu — "đã mở", không phải "đã xem
+xong". Một con số hứa nhiều hơn nó đo được thì lần sau không ai tin nó nữa.
+
+**Đo thật trên màn (26/09, đã soi ảnh)**: em bấm → `24/09` thành `24/09 ✓`, trợ
+giảng thấy `1/2 em đã mở`, bấm nhắc → `Đã nhắc 1 em`. Nút chạm 44 px ở khổ 390,
+không tràn ngang. Ba lỗi tự bắt được khi soi màn thật: ngày hiện ra
+`24T19:30:00/09/2026` (dùng nhầm hàm chỉ ăn `YYYY-MM-DD`), `toLocaleDateString`
+nhả `24-09` thay vì `24/09`, và `text-muted` không phải lớp Tailwind có thật.
+
+**Test**: 15/15 xanh, **10 đột biến giết 10**. Ba đột biến LỌT ở lượt đầu — test
+yếu, đã siết: lớp thử không có buổi tương lai nên luật "chỉ tính buổi đã học"
+không được chạm; và luật "người báo không tự gọi mình" là mã chết cho tới khi có
+lượt TRỢ GIẢNG tự báo lỗi.
+
+**Còn thiếu của dòng 22**: không có. Bốn gạch đầu dòng còn lại (dán link, record
+nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
+
+
 ## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
 
 Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.

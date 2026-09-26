@@ -38,6 +38,10 @@ from teaching.sessions import DEFAULT_SESSION_MINUTES
 
 #: Số buổi sắp tới hiện ra — tuần này và đầu tuần sau là đủ.
 SO_SAP_TOI = 3
+
+#: Bản ghi buổi đã học hiện trên thẻ lớp — đủ để xem lại tuần vừa rồi,
+#: không thành một danh sách dài (§72, 26/09/2026).
+SO_BAN_GHI = 4
 #: Buổi ĐÃ HUỶ trong ngần này ngày tới thì nêu tên. Huỷ mà chỉ lặng lẽ biến
 #: khỏi "buổi tới" thì em vẫn tưởng tối đó có học — hoặc tưởng lớp quên xếp lịch.
 NGAY_NEU_BUOI_HUY = 7
@@ -89,7 +93,25 @@ class LopCuaToiView(NguoiDungView):
         da_huy = {}
         cac_dot = {}
         bai_tap = {}
+        ban_ghi = {}
         if ids:
+            # §72 (26/09/2026) — BẢN GHI buổi đã học. Trợ giảng dán link vào từ lâu
+            # (`recording_url`, bảng phân rã dòng 22) nhưng chưa màn nào của EM hiện nó
+            # ra, nên link nằm đó không ai mở. `da_mo` để màn nói được "bạn đã xem lại"
+            # mà không phải hỏi thêm một lượt nữa.
+            for r in q('''SELECT id, class_id, starts_at, topic, recording_url,
+                                 EXISTS (SELECT 1 FROM recording_views v
+                                          WHERE v.session_id = s.id AND v.user_id = %s) AS da_mo
+                          FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY class_id
+                                                             ORDER BY starts_at DESC) AS tt
+                                FROM class_sessions
+                                WHERE class_id = ANY(%s) AND status <> 'cancelled'
+                                  AND recording_url IS NOT NULL AND recording_url <> ''
+                                  AND starts_at < %s
+                                  AND ''' + thuoc_buoi('class_sessions.id', '%s') + ''') s
+                          WHERE tt <= %s ORDER BY class_id, starts_at DESC''',
+                       (uid, ids, nay, uid, SO_BAN_GHI)):
+                ban_ghi.setdefault(r['class_id'], []).append(r)
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
                                  mode, room
                           FROM class_sessions
@@ -175,5 +197,12 @@ class LopCuaToiView(NguoiDungView):
                 'ngayThiLech': bool(r['exam_date'] and ngay_thi_em
                                     and r['exam_date'] != ngay_thi_em),
                 'chuongTrinh': chuong_trinh.get(cid),
+                # Buổi đã học có bản ghi để em xem lại (§72). `daMo` là em đã BẤM mở
+                # — không phải đã xem hết; bản ghi nằm trên Zoom, ngoài tầm đo.
+                'banGhiGanDay': [{
+                    'sessionId': b['id'], 'startsAt': _iso(b['starts_at']),
+                    'topic': b['topic'], 'recordingUrl': b['recording_url'],
+                    'daMo': b['da_mo'],
+                } for b in ban_ghi.get(cid, [])],
             })
         return Response({'lop': lop, 'mucTieu': {'examDate': muc_tieu.get('examDate')}})
