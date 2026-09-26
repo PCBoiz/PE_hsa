@@ -44,14 +44,14 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
 | 21 | Trợ giảng · theo dõi | MỘT PHẦN | V-b, V-l, E3 | — |
-| 22 | Trợ giảng · record Zoom | MỘT PHẦN | E4, V-l, E3, E2 | — |
+| 22 | Trợ giảng · record Zoom | CÓ | — | §72 (26/09): em xem lại được và đánh dấu "đã mở"; TG thấy ai chưa mở, nhắc được, thấy buổi còn thiếu bản ghi; em báo được link hỏng. Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (Z1). |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
 | 24 | Phụ huynh · xem | MỘT PHẦN | §66, V-a | — |
 | 25 | Phụ huynh · gửi yêu cầu | CHƯA | E3 qua link | — |
 | 26 | Học sinh · tài khoản + tự đăng ký | MỘT PHẦN | E5 | — |
 | 27 | Học sinh · thông báo | MỘT PHẦN | E2 | — |
 | 28 | Học sinh · chương trình + lộ trình | MỘT PHẦN | E1, V-d | — |
-| 29 | Học sinh · record | CHƯA | V-l, E4 | — |
+| 29 | Học sinh · record | CÓ | — | §72 (26/09): thẻ lớp có "Xem lại: 24/09 22/09", bấm là mở và ghi nhận. |
 | 30 | Học sinh · học liệu | CHƯA | Đ2 §60 | — |
 | 31 | Học sinh · bài tập | CÓ (nộp chữ) | Đ2 §60 (nộp tệp) | — |
 | 32 | Học sinh · trao đổi | MỘT PHẦN | E3 | — |
@@ -61,7 +61,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 màn nào ghi được `class_members.note`, và cột ấy còn bị ghi chú chuyển lớp dùng chung → lỗi rò đã vá
 `e328ade`; (2) TG "dấu hiệu bỏ học — MỘT PHẦN": TG không nhận `vangLien`/`canChuY`
 (`teaching/viec_hom_nay.py:225`) → với TG là CHƯA; (3) "record — CÓ": chỉ phía nhân sự, API học viên không
-trả `recording_url` (`teaching/lop_cua_toi.py`); (4) "soạn nội dung buổi … `lesson_refs`": không màn nào
+trả `recording_url` — **đã vá 26/09, §72**; (4) "soạn nội dung buổi … `lesson_refs`": không màn nào
 dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không sửa được qua API
 (`courseadmin/views.py:31`).
 
@@ -135,7 +135,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Trạng thái khoá | CÓ (V-i) | nút "Chuyển về nháp / Mở cho học viên" + cột Trạng thái ở khu Giáo trình (`courseadmin/views.py`, nhật ký `course.publish`); cổng `courses/truy_cap.py` giấu khoá nháp với học viên NGAY (quên đệm), nhân sự vẫn xem — `courses/tests_khoa_nhap.py` |
 | Phiên bản / lịch sử chỉnh sửa chương trình | CÓ (E1) | bản nháp → xuất bản (bản cũ cùng chuỗi "Đã thay"), "Tạo bản mới" chép cả cây, lớp giữ bản đã nhận; mọi thao tác vào Nhật ký (`syllabus.*`). Test `tests_khung_chuoi.py` |
 | Gắn bài giảng | CÓ | bài học trực tuyến |
-| Gắn video record | MỘT PHẦN | link theo buổi, học viên không thấy → **V-l**, **E4** |
+| Gắn video record | CÓ | link theo buổi; học viên xem lại được (§72, 26/09). Bản ghi tự gắn từ Zoom vẫn chờ khoá (Z1) |
 | Gắn tài liệu | CHƯA | → **Đ2 §60** |
 | Gắn bài tập, bài kiểm tra | MỘT PHẦN | khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1); bài tập giao cho lớp chưa trỏ về mục khung; điểm kiểm tra → **V-h** |
 | Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1); chưa có ngưỡng "hoàn thành khoá" riêng |

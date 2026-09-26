@@ -135,6 +135,35 @@ def dong_thoi_gian(uid, tao_luc):
             # Lớp đã kết thúc khi em CÒN học — đây là mốc "hoàn thành" của em.
             _su_kien(ds, r['ends_on'], 'lop-hoc', 'Học hết lớp %s' % r['name'])
 
+    # KHAI GIẢNG — mốc thứ ba trong chuỗi khách yêu cầu (bảng phân rã dòng 4):
+    # "Đăng ký → Xếp lớp → Khai giảng → Làm bài → …". Dòng thời gian vốn biết em
+    # VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào.
+    #
+    # Khai giảng = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính: một
+    # lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù, không
+    # phải ngày ghi trên lịch cũ.
+    for r in q("""SELECT c.name, min(s.starts_at) AS dau
+                    FROM class_members m
+                    JOIN classes c ON c.id = m.class_id
+                    JOIN class_sessions s ON s.class_id = c.id AND s.status <> 'cancelled'
+                   WHERE m.user_id = %s
+                   GROUP BY c.id, c.name""", (uid,)):
+        _su_kien(ds, r['dau'], 'lop-hoc', 'Lớp %s khai giảng' % r['name'])
+
+    # LÀM BÀI — mốc thứ tư. Trước đây chỉ có điểm bài KIỂM TRA, nên một em chăm
+    # nộp bài tập suốt khoá mà chưa tới kỳ kiểm tra thì dòng thời gian im lặng.
+    #
+    # MỘT mốc cho cả khoá, không liệt kê từng bài: trần dòng thời gian là 300 sự
+    # kiện, mà một em học lâu nộp hàng trăm bài — liệt kê hết thì mọi mốc khác bị
+    # đẩy ra ngoài. Bài `kiem_tra` không đếm ở đây vì nó đã có mốc riêng bên dưới.
+    bai = q("""SELECT min(s.submitted_at) AS dau, count(*) AS n
+                 FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                WHERE s.user_id = %s AND s.submitted_at IS NOT NULL
+                  AND coalesce(a.kind, 'bai_tap') <> 'kiem_tra'""", (uid,))
+    if bai and bai[0]['dau'] is not None:
+        _su_kien(ds, bai[0]['dau'], 'bai-tap', 'Bắt đầu làm bài tập',
+                 chi_tiet='Đã nộp %d bài' % int(bai[0]['n']))
+
     for r in q('''SELECT a.submitted_at, a.score, a.total, coalesce(x.title, 'đề #' || a.exam_id) AS ten
                     FROM mock_attempts a LEFT JOIN mock_exams x ON x.id = a.exam_id
                    WHERE a.user_id=%s AND a.submitted_at IS NOT NULL''', (uid,)):

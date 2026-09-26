@@ -7,6 +7,34 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (chiều muộn) — dòng 4: hai mốc còn thiếu trong hành trình của em
+
+Khách viết rõ chuỗi phải theo dõi được: *"Đăng ký → Xếp lớp → Khai giảng → Làm
+bài → Kiểm tra → Thi thử → Kết quả → Báo cáo → Hoàn thành khóa học"*. Đối chiếu
+`teaching/dong_thoi_gian.py`: bảy mốc đã có, **hai mốc chưa** — dòng thời gian
+biết em VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào;
+và biết điểm bài KIỂM TRA mà không biết em có làm bài tập hay không.
+
+- **Khai giảng** = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính:
+  lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù.
+- **Làm bài** = lần nộp bài tập đầu tiên, chi tiết "Đã nộp N bài". MỘT mốc cho
+  cả khoá chứ không liệt kê từng bài: trần dòng thời gian là 300 sự kiện, một em
+  học lâu nộp hàng trăm bài thì mọi mốc khác bị đẩy ra ngoài. Bài `kiem_tra`
+  không đếm ở đây vì đã có mốc riêng.
+
+Đo trên màn thật (tài khoản 35704, đã soi ảnh): *Được cấp tài khoản → Bắt đầu
+khoá Tư duy Định lượng → Vào lớp → **Lớp … khai giảng** (03/08) → **Bắt đầu làm
+bài tập · Đã nộp 5 bài** (10/08) → Nộp bài thi thử 8/9*. Test 9/9 xanh, 4 đột
+biến giết 4.
+
+**Bẫy vấp BA lần trong một ngày**: `runserver --noreload` không nạp mã mới, nên
+bộ đo báo "tính năng không dựng" trong khi mã đúng hoàn toàn. Mỗi lần mất mươi
+phút. Đã viết `scripts/nap_lai_be.ps1` — dừng CẢ CẶP tiến trình của runserver,
+bật lại, và chờ tới khi `/health` trả 200 chứ không chỉ tới khi tiến trình sinh
+ra. Một bẫy đã ghi trong brief mà vẫn vấp lại thì nó cần một lệnh, không cần một
+lời nhắc.
+
+
 ## 26/09/2026 (chiều) — §72 bản ghi buổi học: tính năng đang ĐỨT ở giữa
 
 Anh Sơn: *"cứ tiếp tục làm theo bảng phân rã tính năng đó"*. Lấy **dòng 22**

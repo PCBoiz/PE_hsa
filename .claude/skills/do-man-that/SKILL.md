@@ -77,7 +77,18 @@ powershell -File scripts/don_may.ps1 -Don
 
 - **`next start` cũ giữ cổng** làm mọi tuyến mới trả 500, trông hệt như mã mới
   hỏng. Trước khi nghi mã, xem ai giữ cổng và nó chạy `start` hay `dev`.
-- **Django `--noreload` không nạp tuyến mới** — thêm tuyến thì tắt/bật lại.
+- **Django `--noreload` không nạp mã mới.** Sửa backend xong mà quên tắt/bật lại
+  thì màn hình chạy mã CŨ, và bộ đo báo "tính năng không dựng" trong khi mã đúng
+  hoàn toàn. Vấp BA lần trong ngày 26/09, mỗi lần mươi phút. Nay có một lệnh:
+
+  ```bash
+  powershell -File scripts/nap_lai_be.ps1            # cổng 9000
+  powershell -File scripts/nap_lai_be.ps1 -Cong 9600 # cổng worktree agent
+  ```
+
+  Nó dừng CẢ CẶP tiến trình của `runserver` (giết mỗi cái giữ cổng thì cái kia
+  chiếm lại ngay) và chờ tới khi `/health` trả 200 — không chỉ tới khi tiến
+  trình sinh ra. **Chạy nó sau MỌI lần sửa backend, trước mọi lượt đo.**
 - **Đừng tự gọi `chromium.launch()`** trong bộ đo mới. Gọi `chay()` của
   `scripts/lib/phien_do.mjs`: nó đóng trình duyệt cả khi lỗi lẫn khi bị Ctrl-C.
   Sáu bộ đo cũ quên `finally`, và đó là nguyên nhân máy sập.
