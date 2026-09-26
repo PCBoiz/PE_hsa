@@ -47,6 +47,8 @@ export const HD_YEU_CAU = z.looseObject({
   loaiNhan: chu,
   nhom: chu,
   canDuyet: co,
+  /** Loại này phải CHỌN LỚP khi duyệt (máy chủ quyết, xem `loai.chon_lop_toi`). */
+  chonLopToi: co,
   trangThai: chu,
   trangThaiNhan: chu,
   nguon: chu,
@@ -173,6 +175,10 @@ export const NHOM_LOAI: { ma: string; nhan: string }[] = [
 /** Khoá `duLieu` hiện trên thẻ chi tiết (nhân sự) — nhãn người đọc. */
 export const NHAN_DU_LIEU: Record<string, string> = {
   sdt: 'Số điện thoại liên hệ',
+  // §73 · những gì em khai trên phiếu tự đăng ký.
+  nguon: 'Biết TopHSA từ',
+  truong: 'Trường đang học',
+  lop_o_truong: 'Lớp ở trường',
   ngay_mong_muon: 'Ngày mong muốn',
   lop_mong_muon: 'Lớp / lịch mong muốn',
   den_ngay: 'Bảo lưu tới ngày',

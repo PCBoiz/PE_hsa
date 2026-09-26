@@ -313,6 +313,17 @@ MUC = [
      lambda: _check_co_gia_tri('hoc_lieu_du_nguon_check', 'r2_key')),
     ('§60d', 'mở một lớp ra xem có gì — chỉ mục (lớp, buổi, mới nhất trước)',
      lambda: _chi_muc('idx_hoc_lieu_lop')),
+    # §73: học viên tự đăng ký (E5). Hàng rào đăng nhập đọc `self_registered`, nên
+    # thiếu cột này là mọi lượt đăng nhập đổ lỗi — kiểm trước hết.
+    ('§73a', 'cột users.self_registered (tài khoản sinh ra ở cửa công khai)',
+     lambda: _cot('users', 'self_registered')),
+    ('§73b', 'chỉ mục hàng chờ "Đăng ký mới"', lambda: _chi_muc('idx_users_tu_dang_ky')),
+    ('§73c', 'password_reset_tokens.purpose = reset | verify (một bảng chìa, hai việc)',
+     lambda: _ca(lambda: _cot('password_reset_tokens', 'purpose'),
+                 lambda: _check_co_gia_tri('prt_purpose_check', "'verify'"),
+                 lambda: _chi_muc('idx_prt_purpose'))),
+    ('§73d', 'loại yêu cầu tk_dang_ky (hàng chờ xếp lớp dùng lại hộp §65)',
+     lambda: _check_co_gia_tri('yeu_cau_loai_check', "'tk_dang_ky'")),
 ]
 
 

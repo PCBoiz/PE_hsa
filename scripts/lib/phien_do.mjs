@@ -41,8 +41,20 @@
  */
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const require = createRequire('D:/pe_hsa/frontend/package.json');
+/* Playwright nạp từ `frontend/` của CHÍNH kho đang chạy, không từ một đường tuyệt đối.
+   Bản trước ghim `D:/pe_hsa/frontend/package.json`; trong worktree agent thì `do_axe.mjs`
+   (tự nạp `@playwright/test` theo đường tương đối) và tệp này nạp HAI bản khác nhau, và
+   Playwright chết ngay với "Requiring @playwright/test second time" — đo 27/09/2026 ở
+   `D:/pe_hsa_wt/e2`. Ở kho chính hai đường trỏ cùng một chỗ nên lỗi chỉ lộ ra trong
+   worktree, tức đúng chỗ agent làm việc. Không có `node_modules` riêng thì lùi về kho
+   chính, vì worktree mới dựng chưa kịp cài. */
+const _day = dirname(fileURLToPath(import.meta.url));
+const _goi = [join(_day, '..', '..', 'frontend', 'package.json'), 'D:/pe_hsa/frontend/package.json']
+  .find((p) => existsSync(p)) || 'D:/pe_hsa/frontend/package.json';
+const require = createRequire(_goi);
 const { chromium } = require('@playwright/test');
 
 /**

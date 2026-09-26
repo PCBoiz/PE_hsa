@@ -994,9 +994,9 @@ Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan), `parent_repo
 
 CHECK:
 
-- `yeu_cau_loai_check` (§65): `loai` ∈ {'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len', 'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu', 'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa'}
 - `yeu_cau_trang_thai_check` (§65): `trang_thai` ∈ {'moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy'}
 - `yeu_cau_nguon_check` (§65): `nguon` ∈ {'hoc_vien', 'phu_huynh', 'tro_giang', 'giang_vien', 'hoc_vu'}
+- `yeu_cau_loai_check` (§73): `loai` ∈ {'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len', 'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu', 'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa', 'tk_dang_ky'}
 
 ### `yeu_cau_su_kien` · §65
 
@@ -1219,6 +1219,7 @@ erDiagram
         text aspiration
         timestamp last_seen_at
         text tuition_status
+        boolean self_registered
     }
     password_reset_tokens {
         serial id PK
@@ -1228,6 +1229,7 @@ erDiagram
         timestamp expires_at
         timestamp used_at
         text requested_ip
+        text purpose
     }
     users }o--o| users : "parent_contact_locked_by"
     users }o--o| users : "consultant_id"
@@ -1280,6 +1282,7 @@ erDiagram
 | `aspiration` | text |  | §51 |
 | `last_seen_at` | timestamp |  | §56 |
 | `tuition_status` | text |  | §63 |
+| `self_registered` | boolean | NOT NULL · mặc định `FALSE` | §73 |
 
 CHECK:
 
@@ -1302,6 +1305,11 @@ Miền khác trỏ vào: `admin_audit.actor_id`, `announcements.created_by`, `as
 | `expires_at` | timestamp | NOT NULL | §52 |
 | `used_at` | timestamp |  | §52 |
 | `requested_ip` | text |  | §52 |
+| `purpose` | text | NOT NULL · mặc định `'reset'` | §73 |
+
+CHECK:
+
+- `prt_purpose_check` (§73): `purpose` ∈ {'reset', 'verify'}
 
 ## chung
 

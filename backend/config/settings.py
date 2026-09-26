@@ -309,6 +309,10 @@ REST_FRAMEWORK = {
         # Quên / đặt lại mật khẩu (§52): chung một bộ đếm theo IP cho ba cửa.
         # 30/giờ đủ cho cả một lớp sau một NAT; trần theo TÀI KHOẢN nằm ở CSDL.
         'quen_mk': '30/hour',
+        # Tự đăng ký (§73): chung một bộ đếm theo IP cho ba cửa. 20/giờ đủ cho một
+        # buổi tư vấn cả lớp ngồi sau một NAT cùng điền phiếu; trần theo TÀI KHOẢN và
+        # theo IP-mỗi-ngày nằm ở CSDL (`accounts/tu_dang_ky.py`).
+        'dang_ky': '20/hour',
         # Tệp lịch .ics (§71): ứng dụng lịch hỏi lại vài giờ một lần, nên 120 lượt
         # một giờ trên MỘT chìa đã rộng gấp nhiều lần nhu cầu thật; ai vượt là đang dò.
         'lich_ics': '120/hour',
@@ -324,6 +328,7 @@ if not IS_PRODUCTION:
         'login': '100/min',
         'register': '100/min',
         'quen_mk': '600/hour',
+        'dang_ky': '600/hour',
     })
 
 # ── Bộ đệm ───────────────────────────────────────────────────────────────────

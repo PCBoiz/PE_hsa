@@ -279,7 +279,10 @@
         "frontend/src/app/(standalone)/quen-mat-khau/**",
         "frontend/src/app/auth/**",
         "frontend/src/lib/auth.ts",
-        "frontend/src/lib/phienGhiNho.ts"
+        "frontend/src/lib/phienGhiNho.ts",
+        "frontend/src/app/(standalone)/dang-ky/**",
+        "frontend/src/app/(standalone)/xac-thuc-email/**",
+        "frontend/src/lib/dangKy.ts"
       ],
       "bang": [
         "users",

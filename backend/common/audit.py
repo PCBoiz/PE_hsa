@@ -163,6 +163,14 @@ REQUEST_CLASSIFY = 'request.classify'
 #: Thông báo trung tâm (§61, E2): học vụ / giảng viên gửi cho lớp, môn, nhóm, cá nhân.
 ANNOUNCEMENT_SEND = 'announcement.send'
 
+# §73 · Học viên tự đăng ký (E5, 27/09/2026). Hai dòng, không một dòng: "ai mở tài
+# khoản này" và "ai chứng minh giữ được hộp thư ấy" là hai câu hỏi khác nhau, và
+# khoảng cách giữa hai mốc chính là thứ học vụ cần khi một lượt đăng ký trông đáng
+# ngờ. `USER_CREATE` vẫn dành riêng cho nhân sự cấp tài khoản — trộn hai đường vào
+# một mã là mất khả năng đếm "bao nhiêu em tự vào" so với "bao nhiêu em được cấp".
+USER_SELF_REGISTER = 'user.self_register'
+USER_VERIFY_EMAIL = 'user.verify_email'
+
 
 def _client_ip(request):
     """IP thật sau proxy — nay đi qua `common.net.client_ip`.

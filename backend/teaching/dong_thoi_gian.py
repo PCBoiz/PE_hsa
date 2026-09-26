@@ -4,7 +4,9 @@
 ở bảy nơi, chỉ chưa ai gom lại. View này CHỈ ĐỌC và không lưu gì mới — mỗi sự
 kiện đọc thẳng từ bảng gốc của nó, nên không có bản sao nào để lệch.
 
-  users.created_at            được cấp tài khoản (người cấp: nhật ký `user.create`)
+  users.created_at            được cấp tài khoản, HOẶC em tự đăng ký (`self_registered`,
+                              §73) — đây là mốc "Đăng ký" của dòng 4; người cấp đọc từ
+                              nhật ký `user.create`
   surveys                     làm khảo sát đầu vào (lần đầu)
   enrollments                 bắt đầu / hoàn thành một khoá
   class_members + classes     vào lớp · rời lớp (kèm lý do) · lớp kết thúc khi em còn học
@@ -15,7 +17,8 @@ kiện đọc thẳng từ bảng gốc của nó, nên không có bản sao nà
   admin_audit (target = em)   cấp lại mật khẩu, tự đặt lại, sửa hồ sơ, khoá/mở,
                               đổi vai, cấp/thu hồi đường dẫn báo cáo, và (25/09/2026)
                               đánh giá của giảng viên / trợ giảng: cần hỗ trợ, hướng
-                              học, nhận xét gửi phụ huynh (`class.member.assess`)
+                              học, nhận xét gửi phụ huynh (`class.member.assess`), và
+                              (27/09/2026, §73) xác nhận email lúc tự đăng ký
 
 Quyền: cùng hàng rào với trang hồ sơ (`ho_so.chan_pham_vi`) — quản trị viên mọi
 tài khoản, học vụ chỉ học viên.
@@ -29,7 +32,7 @@ import json
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.db import q
+from common.db import q, q1
 from common.permissions import IsAdminOrAcademic
 from teaching.ho_so import _doc, chan_pham_vi
 from teaching.vocab import LEAVE_LABEL
@@ -96,9 +99,16 @@ def _danh_gia(ds, r):
 def dong_thoi_gian(uid, tao_luc):
     ds = []
 
-    tao = q("SELECT actor_name FROM admin_audit WHERE action='user.create' AND target_id=%s "
-            'ORDER BY id LIMIT 1', (str(uid),))
-    _su_kien(ds, tao_luc, 'tai-khoan', 'Được cấp tài khoản', boi=tao[0]['actor_name'] if tao else None)
+    # §73 · Mốc đầu dòng thời gian nói ĐÚNG cách tài khoản ra đời. "Được cấp tài khoản"
+    # cho một em tự đăng ký là một câu sai ở đúng chỗ học vụ tra xem em từ đâu tới.
+    tu = q1('SELECT self_registered FROM users WHERE id=%s', (uid,))
+    if tu and tu['self_registered']:
+        _su_kien(ds, tao_luc, 'tai-khoan', 'Tự đăng ký tài khoản trên website')
+    else:
+        tao = q("SELECT actor_name FROM admin_audit WHERE action='user.create' AND target_id=%s "
+                'ORDER BY id LIMIT 1', (str(uid),))
+        _su_kien(ds, tao_luc, 'tai-khoan', 'Được cấp tài khoản',
+                 boi=tao[0]['actor_name'] if tao else None)
 
     ks = q('SELECT created_at FROM surveys WHERE user_id=%s ORDER BY id LIMIT 1', (uid,))
     if ks:
@@ -214,7 +224,7 @@ def dong_thoi_gian(uid, tao_luc):
                    WHERE target_type='user' AND target_id=%s AND action = ANY(%s)''',
                (str(uid), ['user.password_reset', 'user.password_self_reset', 'user.profile',
                            'user.status', 'user.role', 'parent_link.create', 'parent_link.revoke',
-                           'class.member.assess'])):
+                           'class.member.assess', 'user.verify_email'])):
         a = r['action']
         if a == 'class.member.assess':
             _danh_gia(ds, r)
@@ -223,6 +233,10 @@ def dong_thoi_gian(uid, tao_luc):
             _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Được cấp lại mật khẩu tạm', boi=r['actor_name'])
         elif a == 'user.password_self_reset':
             _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Tự đặt lại mật khẩu qua email')
+        elif a == 'user.verify_email':
+            # Mốc riêng, không gộp vào mốc đăng ký: khoảng cách giữa hai mốc chính là thứ
+            # học vụ cần khi một lượt đăng ký trông đáng ngờ (§73).
+            _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Xác nhận địa chỉ email')
         elif a == 'user.profile':
             d = r['detail'] if isinstance(r['detail'], dict) else json.loads(r['detail'] or '{}')
             o = [_TEN_COT.get(k, k) for k in (d.get('moi') or {})]

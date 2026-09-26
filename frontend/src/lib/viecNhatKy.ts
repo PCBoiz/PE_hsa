@@ -28,6 +28,11 @@ export const VIEC: Record<string, string> = {
   'user.profile': 'Sửa hồ sơ học viên',
   // §52: chủ tài khoản tự đặt lại qua đường dẫn trong email (người làm = người bị đổi).
   'user.password_self_reset': 'Tự đặt lại mật khẩu qua email',
+  // §73 (27/09/2026): học viên tự mở tài khoản ở /dang-ky, rồi bấm thư xác nhận. Hai
+  // dòng chứ không một — khoảng cách giữa chúng là thứ học vụ đọc khi một lượt đăng ký
+  // trông đáng ngờ. Người làm ở cả hai dòng là chính em (không có nhân sự nào).
+  'user.self_register': 'Tự đăng ký tài khoản',
+  'user.verify_email': 'Xác nhận email đăng ký',
   'class.create': 'Tạo lớp',
   'class.update': 'Sửa lớp',
   'class.delete': 'Xoá lớp',

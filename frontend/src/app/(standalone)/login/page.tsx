@@ -93,9 +93,15 @@ export default async function LoginPage({
               </Link>{' '}
               — hoặc nhắn giảng viên phụ trách lớp, học vụ.
             </p>
+            {/* §73 (27/09/2026) · Từ đây học viên mới TỰ mở được tài khoản (dòng 26).
+                Câu cũ ("tài khoản do TopHSA cấp") vẫn đúng với một nửa người tới đây —
+                nhân sự và những em trung tâm đã cấp sẵn — nên giữ cả hai đường. */}
             <p className="mt-3 text-small text-ink-3">
-              <b className="text-ink-2">Chưa có tài khoản?</b> Tài khoản do TopHSA cấp khi bạn
-              đăng ký học. Liên hệ trung tâm để được cấp.
+              <b className="text-ink-2">Chưa có tài khoản?</b>{' '}
+              <Link href="/dang-ky" className="-my-3 inline-block py-3 text-brand-ink underline">
+                Đăng ký học
+              </Link>{' '}
+              — hoặc liên hệ trung tâm để được cấp.
             </p>
           </div>
         </div>

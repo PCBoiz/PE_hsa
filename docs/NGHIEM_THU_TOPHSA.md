@@ -65,7 +65,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
 | 24 | Phụ huynh · xem | **CÓ** | — | Đo 27/09 trên tờ thật: lịch buổi, tiến độ học tập, **và tên trợ giảng** (§66 — thứ cuối cùng còn thiếu, làm xong 27/09). Trợ giảng đã rời lớp không còn trên tờ; lớp có hai người kèm thì cả hai lên. Tên đi qua được cả đường mở bằng chìa của phụ huynh, còn liên lạc của em thì không. Bộ kiểm 7/7. |
 | 25 | Phụ huynh · gửi yêu cầu | CÓ qua link (E3, chờ khách xem) | — | `e2e/yeu-cau.spec.ts` |
-| 26 | Học sinh · tài khoản + tự đăng ký | MỘT PHẦN | E5 | — |
+| 26 | Học sinh · tài khoản + tự đăng ký | CÓ (E5) | — | `scripts/do_dang_ky.mjs` 20/20 |
 | 27 | Học sinh · thông báo | **CÓ** | — | Màn `/thong-bao` dựng xong 26/09 và đo trên màn thật bằng `scripts/do_thong_bao.mjs` — **12/12 bước ĐẠT, bấm chuột chứ không gọi API tay**: mở được · có dòng · **không một mã kỹ thuật nào lọt lên màn** (nhãn loại do máy chủ trả, `notifications/loai.py`) · lọc theo loại (20 → 15 dòng, mọi dòng đúng loại) · lọc "Chưa đọc" (20 dòng, tất cả chưa đọc) · số trên ô lọc khớp · đánh dấu đã đọc (24 → 23) · đánh dấu **chưa** đọc (23 → 24) · "Xem thêm" nối 20 → 24 dòng, **0 trùng** (phân trang theo khoá). Chuông ở mọi trang có chân "Xem tất cả thông báo" dẫn sang đây. **Chiều GỬI xong nốt 26/09 (E2-GD)**: `/quan-tri/thong-bao` — học vụ soạn, xem trước, lưu nháp, gửi nháp, huỷ nháp; đo bằng thẻ HỌC VỤ, 11/11 bước của màn ấy ĐẠT (ô chọn lớp dựng từ danh mục máy chủ trả — 6 lớp; ba môn mang nhãn tiếng Việt, không mã `hsa_*`; xem trước theo môn đếm 58 em; đổi ô "Gửi kèm email" làm bản xem trước cũ hết hạn; huỷ nháp đổi nhãn sang "Đã huỷ" và mất nút Gửi). |
 | 28 | Học sinh · chương trình + lộ trình | **CÓ** (khi lớp đã nhận khung) | — | Đo 27/09: màn 574 từ, "Điểm danh từng buổi" mở được, % chương trình kèm "(kế hoạch tới nay…)". **Điều kiện**: lớp phải có khung chương trình — xem cảnh báo dữ liệu ở đầu tài liệu. |
 | 29 | Học sinh · record | CÓ | — | §72 (26/09): thẻ lớp có "Xem lại: 24/09 22/09", bấm là mở và ghi nhận. |
@@ -135,7 +135,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Trạng thái đang học / kết thúc / **tạm dừng** | CÓ (V-c) | `classes_status_check` §35 thêm `paused`; `teaching/vocab.py::TRANG_THAI_LOP`; nhãn "Tạm dừng" `quan-tri/lop-hoc/lop.ts`. Em giữ quyền môn (`courses/truy_cap.py` chỉ chặn lớp huỷ — test `courses/tests_truy_cap.py::test_lop_tam_dung_van_giu_quyen_mon`); không vào "chưa điểm danh" (`teaching/viec_hom_nay.py::_chua_diem_danh`); không sinh lịch (`teaching/sinh_buoi.py` 409). Demo: học vụ → Lớp học → Sửa lớp → Trạng thái "Tạm dừng" → bộ lọc Trạng thái có "Tạm dừng"; giảng viên mở Buổi học của lớp ấy thấy "Lớp đang tạm dừng…" thay khối sinh lịch |
 | Phân công GV, giáo vụ, TG | MỘT PHẦN | GV + TG CÓ; học vụ thấy mọi lớp, không gán riêng |
 | Lịch sử thay đổi / phân công lớp | CÓ (V-n) | "Lịch sử thay đổi của lớp" ở Học viên của lớp: sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi, mới nhất trước — chỉ phần của lớp ấy (`GET /api/admin/classes/<id>/lich-su`, IsAdminOrAcademic; nhật ký đầy đủ vẫn chỉ quản trị viên) — `teaching/tests_lich_su_lop.py` |
-| Dòng thời gian Đăng ký → … → Hoàn thành | MỘT PHẦN | "Kiểm tra / Thi thử / Kết quả" CÓ (V-h): mốc "Bài kiểm tra: …" theo NGÀY làm bài, điểm hoặc "Vắng" (`teaching/dong_thoi_gian.py`, loại `kiem-tra`); "Đăng ký" tự đăng ký → **E5** |
+| Dòng thời gian Đăng ký → … → Hoàn thành | CÓ | "Kiểm tra / Thi thử / Kết quả" (V-h): mốc "Bài kiểm tra: …" theo NGÀY làm bài, điểm hoặc "Vắng" (`teaching/dong_thoi_gian.py`, loại `kiem-tra`). Mốc **"Đăng ký"** (E5, §73): em tự mở tài khoản → "Tự đăng ký tài khoản trên website" thay cho "Được cấp tài khoản", rồi "Xác nhận địa chỉ email" (nhật ký `user.self_register` / `user.verify_email`). Hai mốc chứ không một — khoảng cách giữa chúng là thứ học vụ đọc khi một lượt đăng ký trông đáng ngờ |
 | Đang học lớp nào, đã học / nghỉ bao nhiêu buổi, có phép / không | CÓ | tờ báo cáo từng em (`present/late/absent/excused`) |
 | Tiến độ chương trình | CÓ (E1) | màn **Chương trình lớp** `/giang-day/chuong-trinh/<lớp>` (đã dạy / kế hoạch / trễ / chưa ghi sổ, % từng em) — `chuong_trinh/tien_do.py`; chip ở Lớp học. Demo: học vụ → Lớp học → nút "Chương trình" |
 | Bài đã / chưa hoàn thành, điểm mạnh / yếu, lịch sử chuyển lớp | CÓ | bài tập + bản đồ kỹ năng + dòng thời gian |
@@ -365,11 +365,31 @@ yêu cầu mới), link "sống" §66 (sau buổi xem).
 khác → cuối trang chọn "Hỗ trợ lịch học", gõ tóm tắt, số điện thoại → Gửi yêu cầu. Học vụ → Yêu cầu
 thấy "Phụ huynh gửi"; trả lời → phụ huynh tải lại link thấy trả lời.
 
-## Dòng 26 — Học sinh · tài khoản · MỘT PHẦN
+## Dòng 26 — Học sinh · tài khoản · CÓ
 
-Đăng nhập / ghi nhớ / quên mật khẩu / đăng xuất: CÓ (như dòng 1). **Tự đăng ký + email xác nhận**:
-CHƯA (`RegisterView` chỉ quản trị viên, `users.is_verified` chưa ai ghi) → **E5**: tài khoản chờ xếp
-lớp, nguồn "Tự đăng ký", hàng chờ "Đăng ký mới" cho giáo vụ.
+Đăng nhập / ghi nhớ / quên mật khẩu / đăng xuất: CÓ (như dòng 1).
+
+**Tự đăng ký + email xác nhận: CÓ** (E5, §73 — 27/09/2026). Trang `/dang-ky` không cần đăng nhập:
+họ tên, email, số điện thoại, mật khẩu, "biết TopHSA từ đâu" (danh mục §51, máy chủ trả), trường /
+lớp / mục tiêu (không bắt buộc). Máy chủ gửi thư xác nhận (hộp thư đi §61, mã băm trong
+`password_reset_tokens.purpose='verify'`, hạn 72 giờ, dùng một lần, đi trong `#…`).
+
+**Tài khoản chưa bấm thư là tài khoản chết**: `LoginView` chặn `self_registered AND NOT is_verified`
+(tài khoản trung tâm cấp không đổi hành vi), và dòng `yeu_cau` chỉ sinh ra KHI ĐÃ xác nhận — hộp
+việc của học vụ không có rác. Không lộ ai có tài khoản: email trùng, số điện thoại trùng, quá trần
+đều nhận CÙNG một câu 200.
+
+**Hàng chờ "Đăng ký mới" = hộp Yêu cầu (§65)**, loại `tk_dang_ky` — không dựng hộp mới. Học vụ mở
+yêu cầu → Duyệt → chọn lớp → "Duyệt và thực hiện" xếp em vào lớp trong MỘT giao dịch
+(`yeu_cau/thuc_thi.py`, qua `_ghi_thanh_vien` nên trần lớp gia sư vẫn nguyên); duyệt hai lần chỉ xếp
+một lần. Mốc "Tự đăng ký tài khoản trên website" + "Xác nhận địa chỉ email" lên dòng thời gian của em.
+
+Bằng chứng: `backend/accounts/tu_dang_ky.py`, `backend/accounts/tests_tu_dang_ky.py` (28 phép kiểm),
+`scripts/do_dang_ky.mjs` (20/20 bước ĐẠT, 27/09/2026).
+
+**Demo**: mở `/dang-ky` ở cửa sổ ẩn danh → điền phiếu → Gửi → thử đăng nhập ngay (bị chặn, có nút
+"Gửi lại thư xác nhận") → mở đường dẫn trong thư → "Đã xác nhận email" → đăng nhập được → học vụ →
+Yêu cầu thấy "Đăng ký mới: <tên em>" → Duyệt → chọn lớp → Duyệt và thực hiện.
 
 ## Dòng 27 — Học sinh · thông báo · MỘT PHẦN
 
