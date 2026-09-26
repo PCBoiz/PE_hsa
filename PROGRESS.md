@@ -7,6 +7,46 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (đêm) — cắt chỗ đốt token, và hai lỗi trong chính công cụ vừa viết
+
+Anh Sơn: *"Tiến độ hơi chậm… có cách nào đẩy nhanh mà không đốt tokens quá
+nhanh không"*. Đo bảng nghiệm thu trước khi trả lời, và con số nói một điều khác
+hẳn cảm giác: **tiến độ chậm không phải vì thiếu mã, mà vì mã đã viết xong đang
+nằm im.** Nhánh `agent/e3` chặn 7 dòng (11, 12, 15, 16, 20, 21, 25), `agent/e2`
+chặn 2 dòng (20, 27), và bốn việc V-a/V-d/V-e/V-f vừa xong chưa ai đi nâng các
+dòng phụ thuộc chúng.
+
+**Hai công cụ cắt token**, anh chọn làm cả bốn hướng nên đây là hướng "tối ưu
+cách làm" làm trước để mọi việc sau rẻ hơn:
+
+- `scripts/dot_bien.py` — chạy CẢ LOẠT đột biến trong một lượt, in MỘT bảng.
+  Trước: 8 đột biến = 8 vòng lệnh + 8 lần đọc. Nó còn kiểm mẫu trước khi chạy
+  (`--xem`) và nói rõ mỗi đột biến giết ĐÚNG test nào — thứ cách làm tay không
+  cho biết. Đo trên §72: **7/7 giết đúng chỗ**.
+- `scripts/do_man_hang_loat.mjs` — mở nhiều màn trong MỘT phiên trình duyệt, trả
+  JSON gọn thay vì dump cả trang.
+
+**Hai lỗi trong chính hai công cụ ấy, tự bắt được:**
+
+1. Phiên đứt giữa loạt đột biến → `ban_ghi.py` nằm lại trên đĩa với
+   `daMo = len(xong)`. `atexit` và bẫy tín hiệu KHÔNG cứu được khi tiến trình bị
+   kết liễu cứng. Nếu không nhìn `git status` thì đột biến ấy đã đi thẳng vào
+   commit sau. Vá: sổ cứu hộ ghi ra đĩa, phục hồi lúc KHỞI ĐỘNG — cách duy nhất
+   chịu được kill cứng. Đã thử lại bằng cách dựng đúng cảnh ấy.
+2. Chạy loạt đột biến SONG SONG với cổng pre-push → cổng đọc phải bản đang bị
+   thay, `ruff` đỏ vì lý do không có thật, mất một lượt đi tìm lỗi không tồn tại.
+   Vá: công cụ tự in cảnh báo; luật ghi vào `CLAUDE.md`.
+
+**Soát bảng lượt đầu (9 màn)**: dòng 26 và 28 đạt hết câu hỏi → ứng viên nâng
+hạng; dòng 4, 5, 6, 7, 9, 10 mỗi dòng thiếu 2 mục TRÊN MÀN ĐẦU — chưa kết luận,
+thứ thiếu có thể nằm ở màn con.
+
+Lượt đo đầu trả về 9/9 màn "0 từ" vì hai máy chủ dev chết theo phiên. Một bảng
+đầy dấu ✗ trông y hệt sản phẩm thiếu cả chục tính năng — nên thêm trạng thái thứ
+ba **KHÔNG ĐO ĐƯỢC**, tách khỏi "thiếu". Đây là dương tính giả nguy hiểm nhất
+khi soát bằng máy: nó khiến người đọc kết luận ngược hẳn sự thật.
+
+
 ## 26/09/2026 (tối muộn) — thêm hai dòng nữa bị ghi thấp hơn thực tế
 
 Cùng cách làm với dòng 17 và 21: không viết mã, chỉ mở màn thật và đối chiếu

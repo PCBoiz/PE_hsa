@@ -1,0 +1,105 @@
+[
+ {
+  "dong": 4,
+  "ten": "QTV · quản lý lớp học",
+  "duong": "/quan-tri/lop-hoc",
+  "vai": "ad",
+  "hoi": {
+   "taoLop": "Thêm lớp|Tạo lớp",
+   "themHocVien": "Học viên|Thêm vào lớp",
+   "chuyenLop": "Chuyển lớp",
+   "trangThaiLop": "Đang học|Kết thúc|Tạm dừng",
+   "lichSuLop": "Lịch sử"
+  }
+ },
+ {
+  "dong": 5,
+  "ten": "QTV · khoá học + chương trình",
+  "duong": "/giao-trinh",
+  "vai": "ad",
+  "hoi": {
+   "quanLyMon": "Môn học|Khoá",
+   "chuyenDe": "Chuyên đề|Bài học",
+   "thuTu": "Thứ tự|sắp xếp",
+   "phienBan": "Bản nháp|Xuất bản|Tạo bản mới"
+  }
+ },
+ {
+  "dong": 6,
+  "ten": "QTV · báo cáo",
+  "duong": "/quan-tri/tong-quan",
+  "vai": "ad",
+  "hoi": {
+   "diemDanh": "điểm danh|chuyên cần",
+   "tienDo": "tiến độ",
+   "chamCong": "chấm công",
+   "nghiNhieu": "vắng|nghỉ nhiều",
+   "xuatTep": "Tải|Xuất|CSV|bảng tính"
+  }
+ },
+ {
+  "dong": 7,
+  "ten": "Kế toán · học phí",
+  "duong": "/quan-tri/co-so-hoc-phi",
+  "vai": "ad",
+  "hoi": {
+   "soBuoiDaDong": "buổi|học phí",
+   "canhBaoHet": "sắp hết|hết học phí",
+   "baoLuu": "Bảo lưu"
+  }
+ },
+ {
+  "dong": 9,
+  "ten": "Giáo vụ · lớp học",
+  "duong": "/quan-tri/lop-hoc",
+  "vai": "ad",
+  "hoi": {
+   "diemDanh": "điểm danh",
+   "thongKeThamGia": "chuyên cần|tỉ lệ|tỷ lệ",
+   "canhBaoChamTienDo": "chậm tiến độ|tiến độ"
+  }
+ },
+ {
+  "dong": 10,
+  "ten": "Giáo vụ · lịch học",
+  "duong": "/giang-day/lich",
+  "vai": "ad",
+  "hoi": {
+   "xemTheoLop": "lớp",
+   "doiGiaoVien": "giảng viên|giáo viên",
+   "canhBaoTrung": "trùng|xung đột",
+   "themVaoLich": "Thêm vào lịch|lịch điện thoại"
+  }
+ },
+ {
+  "dong": 26,
+  "ten": "Học sinh · tài khoản",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "lopCuaToi": "Lớp của bạn|Lớp của tôi",
+   "buoiToi": "Buổi tới|buổi học"
+  }
+ },
+ {
+  "dong": 28,
+  "ten": "Học sinh · chương trình + lộ trình",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "tienDoChuongTrinh": "tiến độ|hoàn thành",
+   "diemDanhTungBuoi": "Điểm danh từng buổi|điểm danh",
+   "soVoiKeHoach": "kế hoạch|so với"
+  }
+ },
+ {
+  "dong": 30,
+  "ten": "Học sinh · học liệu",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "taiLieu": "Tài liệu|học liệu|tệp",
+   "banGhi": "Xem lại|bản ghi"
+  }
+ }
+]

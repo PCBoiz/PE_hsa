@@ -21,6 +21,10 @@ Next.js (Vercel) → Django + SQL thuần (Render) → Postgres (Neon). Viết, 
   ở cuối `backend/sql/legacy_schema.sql` + dòng kiểm trong `kiem_luoc_do.py`. Không `DO $$`, không `SET`.
 - Test ĐỎ trước (trên mã cũ) rồi mới sửa; báo số đột biến bị giết. Test backend chạy trong giao dịch cuộn lại,
   chỉ đếm dữ liệu của chính nó.
+- Chạy đột biến bằng `scripts/dot_bien.py` (loạt JSON), ĐỪNG sửa tay rồi `cp` phục hồi ở lệnh sau: lệnh
+  ấy không chạy nếu phiên đứt, và tệp nằm lại ở trạng thái đột biến (26/09 suýt commit nhầm một cái).
+  Trong lúc loạt chạy, KHÔNG chạy cổng pre-push hay pytest khác trên cùng tệp — chúng đọc phải bản
+  đang bị thay và báo hỏng vì lý do không có thật.
 - Không đọc / in / commit `.env`, khoá, mật khẩu.
 - Không hardcode px trong giao diện: clamp / rem / vw / ch, token màu có sẵn.
 - Tầng JS cũ `frontend/public/static/js` chỉ được CO (trần ở `e2e/unit/chot-ham-tang-cu.test.mjs`); chạm mục
@@ -50,6 +54,8 @@ python scripts/cau_truc.py [--kiem]                      # sinh / kiểm docs CA
 node scripts/ban_do.mjs --kiem && python scripts/tang_vai.py --kiem
 powershell -File scripts/don_may.ps1 [-Don]              # xem / dọn tiến trình dev mồ côi
 powershell -File scripts/nap_lai_be.ps1 [-Cong N]        # nạp lại Django (--noreload KHÔNG tự nạp mã mới)
+python scripts/dot_bien.py <tệp> --test <đường> --loat <json> [--xem]  # cả loạt đột biến, MỘT bảng
+node scripts/do_man_hang_loat.mjs --man scripts/man/nghiem_thu.json     # soát nhiều màn trong MỘT phiên
 python scripts/quet_bi_mat.py [--tat-ca|--tu-kiem]       # quét bí mật lọt vào repo công khai
 bash .githooks/pre-push < /dev/null                      # cổng kiểm đủ (bật: git config core.hooksPath .githooks)
 ```
