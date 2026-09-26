@@ -244,6 +244,48 @@ lượt TRỢ GIẢNG tự báo lỗi.
 nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
 
 
+## 26/09/2026 (khuya) — Dòng 27 ĐÓNG: trang "Thông báo" dựng xong, 12/12 bước trên màn thật
+
+Backend §61 đã xong từ E2; thiếu đúng một cái màn. Nay có: `/thong-bao` với lọc theo loại,
+lọc chưa đọc, đánh dấu đọc/chưa đọc từng dòng, và "Xem thêm" phân trang theo khoá. Chuông
+ở mọi trang có chân "Xem tất cả thông báo" dẫn sang.
+
+Đo bằng `scripts/do_thong_bao.mjs` — bấm chuột, không gọi API tay: **12/12 ĐẠT**, trong đó
+"Xem thêm" nối 20 → 24 dòng với **0 trùng**.
+
+**Ba thứ hỏng mà chỉ màn thật mới lộ ra, không phép kiểm nào bắt được:**
+
+① **Ô lọc bấm vào hư không.** Trang dựng ở máy chủ nên ô lọc HIỆN RA trước khi React gắn
+  vào. Bộ đo bấm ô lọc đầu tiên: không lời gọi mạng, `aria-pressed` không đổi, danh sách
+  không nhúc nhích — còn những bước sau lại chạy tốt vì lúc ấy React đã gắn. Tôi suýt đi
+  tìm lỗi trong `duongTrang` và trong proxy của Next; máy chủ trả đúng 3 dòng khi gọi bằng
+  curl, nên lỗi "phải" nằm ở chỗ khác. Thật ra nó nằm ở chỗ không ai nghĩ tới: khoảng thời
+  gian giữa lúc nút hiện ra và lúc nó sống. `useDaGan` khoá nút tới khi gắn xong — nút mờ
+  một khoảnh khắc là câu trả lời trung thực, một nút trông bấm được mà không làm gì thì không.
+
+② **Thước đo sai hai lần, và cả hai lần đều suýt đổ lỗi cho sản phẩm.** Bộ đo ngủ cứng 900 ms
+  sau mỗi cú bấm → lượt gọi ĐẦU (Next dev còn phải biên dịch tuyến proxy) chưa kịp, báo
+  "màn không lọc". Rồi so trùng dòng bằng 40 ký tự đầu của chữ → mấy dòng cùng loại mở đầu
+  y hệt nhau, báo "20 trùng" cho một danh sách không trùng dòng nào. Nay chờ theo DẤU HIỆU
+  có trần, và so bằng `data-id`.
+
+③ **Tài khoản bị đẩy sang `/doi-mat-khau?lan-dau=1`** làm ba bước đầu báo HỎNG oan. Bộ đo
+  nay có trạng thái **KHÔNG ĐO ĐƯỢC** (mã thoát 2) cho mọi kiểu chuyển hướng, không chỉ
+  `/login` — cùng bài học với `do_man_hang_loat.mjs`.
+
+**Sổ nhãn loại chuông** (`notifications/loai.py`): `type` là mã kỹ thuật, nên ô lọc phải nói
+"Bài tập mới" chứ không phải `assignment_new`, và nhãn nằm ở máy chủ vì ba chỗ cùng cần một
+câu chữ. `tests_loai.py` quét bằng AST mọi lời gọi sinh chuông và đòi mỗi mã có nhãn.
+
+Cái thước ấy tự bắt mình ngay lượt đầu: bản đầu chỉ nhìn `gui`/`gui_sau_commit` và tìm thấy
+ĐÚNG MỘT mã trong cả backend — trong khi CSDL có tám. Cửa thật là `notify()`. Đó chính là
+việc của `test_bo_quet_thay_ma_that_cua_backend`: một cái thước báo 0 lần đầu chưa chứng
+minh được gì. Cửa thứ tư (`thong_bao.gui` ghi thẳng bằng một câu INSERT) thì AST không thấy
+được, nên khai rõ trong `GUI_NOI_KHAC` kèm một phép kiểm ghim riêng, thay vì giả vờ đo được.
+
+`ban_do.mjs` mất một dòng **CHỜ MÀN** — `/api/notifications/feed/*/unread` nay đã có người gọi.
+
+
 ## 26/09/2026 (khuya) — E2 đã GỘP: hộp thư đi §61 về nhà, và hàng rào thư bắt được năm bộ kiểm
 
 `agent/e2` gộp vào `erp` (`79b82e5`): 29 tệp, hộp thư đi `outbox` + thông báo trung tâm

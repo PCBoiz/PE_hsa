@@ -249,7 +249,10 @@
         "backend/teaching/bao_doi_lich.py",
         "backend/thong_bao/**/*.py"
       ],
-      "frontend": [],
+      "frontend": [
+        "frontend/src/app/(standalone)/thong-bao/**",
+        "frontend/src/lib/thongBao.ts"
+      ],
       "bang": [
         "notifications",
         "notification_settings",

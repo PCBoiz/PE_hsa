@@ -76,3 +76,37 @@ def test_limit_bi_kep(auth_api, temp_user):
     _tao(temp_user, 3)
     assert len(auth_api.get('/api/notifications/feed?limit=0').json()['items']) == 1
     assert auth_api.get('/api/notifications/feed?limit=abc&truoc=xyz').status_code == 200
+
+
+# ── Nhãn tiếng Việt cho bộ lọc theo loại (trang "Thông báo", dòng 27) ────────
+
+def test_moi_dong_mang_nhan_tieng_viet_cua_loai(auth_api, temp_user):
+    """Màn hình KHÔNG gõ lại danh mục loại (RULES §7) — nhãn đi kèm từng dòng."""
+    _tao(temp_user, 1, loai='assignment_new')
+    d = auth_api.get('/api/notifications/feed?limit=5').json()
+    assert d['items'][0]['loaiNhan'] == 'Bài tập mới', d['items'][0]
+
+def test_bo_loc_loai_mang_nhan_chu_khong_phai_ma(auth_api, temp_user):
+    """Ô lọc phải đọc được: "Bài tập mới", không phải `assignment_new` (RULES §10)."""
+    _tao(temp_user, 2, loai='assignment_new')
+    _tao(temp_user, 1, loai='lich_doi')
+    d = auth_api.get('/api/notifications/feed?limit=50').json()
+    theo_ma = {r['loai']: r for r in d['cacLoai']}
+    assert theo_ma['assignment_new']['nhan'] == 'Bài tập mới', d['cacLoai']
+    assert theo_ma['lich_doi']['nhan'] == 'Đổi lịch học', d['cacLoai']
+
+def test_ma_la_van_co_nhan_doc_duoc(auth_api, temp_user):
+    """Dữ liệu cũ mang mã không còn trong sổ: ô lọc hiện "Khác", KHÔNG hiện ô trống.
+
+    Một ô lọc trống trông y như màn hình hỏng, và người dùng không bấm được vào nó."""
+    _tao(temp_user, 1, loai='ma_da_bo_tu_doi_nao')
+    d = auth_api.get('/api/notifications/feed?limit=50').json()
+    theo_ma = {r['loai']: r for r in d['cacLoai']}
+    assert theo_ma['ma_da_bo_tu_doi_nao']['nhan'] == 'Khác', d['cacLoai']
+    assert d['items'][0]['loaiNhan'] == 'Khác'
+
+def test_tuyen_cu_cung_mang_nhan(auth_api, temp_user):
+    """Panel chuông (tuyến không tham số) hiện cùng câu chữ với trang Thông báo."""
+    _tao(temp_user, 1, loai='ban_ghi_nhac')
+    d = auth_api.get('/api/notifications/feed').json()
+    assert d['items'][0]['loaiNhan'] == 'Nhắc xem bản ghi', d['items'][0]

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from common.db import q, q1, x
 from common.views import NguoiDungView
+from notifications import loai as sol
 from notifications.service import unread_state
 
 
@@ -56,6 +57,9 @@ def _hinh(r):
     r['link'] = r.get('link') or None
     r['announcementId'] = r.pop('announcement_id', None)
     r['readAt'] = r.pop('read_at', None)
+    # Nhãn đi KÈM từng dòng chứ không để màn hình tra: `type` là mã kỹ thuật, và ba chỗ
+    # hiện nó (panel chuông, ô lọc trang Thông báo, danh sách) phải nói cùng một câu.
+    r['loaiNhan'] = sol.nhan(r.get('type'))
     return r
 
 
@@ -101,7 +105,8 @@ class FeedView(NguoiDungView):
         unread, _ = unread_state(uid)
         ra = {'items': [_hinh(r) for r in rows[:n]], 'unread': unread, 'tiep': tiep}
         if cac_loai is not None:
-            ra['cacLoai'] = [{'loai': r['loai'], 'so': r['so'], 'chuaDoc': r['chua_doc']} for r in cac_loai]
+            ra['cacLoai'] = [{'loai': r['loai'], 'nhan': sol.nhan(r['loai']),
+                              'so': r['so'], 'chuaDoc': r['chua_doc']} for r in cac_loai]
         return Response(ra)
 
 

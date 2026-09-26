@@ -513,7 +513,9 @@ const CHO_MAN = {
   '/api/admin/thong-bao/*/huy': 'như trên — nút Huỷ bản nháp',
   '/api/teach/classes/*/thong-bao': 'màn soạn thông báo cho LỚP (giảng viên / trợ giảng) chưa dựng (E2-GD)',
   '/api/teach/classes/*/thong-bao/preview': 'như trên — ô xem trước người nhận',
-  '/api/notifications/feed/*/unread': 'nút "đánh dấu CHƯA đọc" thuộc màn "Thông báo" chưa dựng (E2-GD)',
+  // `/api/notifications/feed/*/unread` ĐÃ RỜI danh sách này 26/09: trang `/thong-bao` dựng
+  // xong, nút "Đánh dấu chưa đọc" gọi nó, đo được 12/12 bước bằng `scripts/do_thong_bao.mjs`.
+  // Một dòng ở đây biến mất là cách duy nhất danh sách này khác một ngoại lệ vĩnh viễn.
 };
 
 /* ỨNG VIÊN GỠ — soi TAY từng tuyến ngày 23/09/2026: không nơi nào trong

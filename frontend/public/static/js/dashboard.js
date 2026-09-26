@@ -105,7 +105,7 @@ function _renderBellItems() {
   var body = document.getElementById('bell-panel-body');
   if (!body) return;
   if (!_bellNotifs.length) {
-    body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div>';
+    body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div><a class="bell-all" href="/thong-bao">Xem tất cả thông báo</a>';
     return;
   }
   /* Mục là <button> THẬT (22/09/2026, agent tiếp cận F8). Bản cũ là
@@ -125,7 +125,7 @@ function _renderBellItems() {
       + '</span>'
       + (n.unread ? '<span class="bell-unread-dot"><span class="sr-only">(chưa đọc)</span></span>' : '')
       + '</button>';
-  }).join('');
+  }).join('') + '<a class="bell-all" href="/thong-bao">Xem tất cả thông báo</a>';
   if (body.children[dangO]) body.children[dangO].focus();
 }
 
