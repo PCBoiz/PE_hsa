@@ -250,8 +250,11 @@
         "backend/thong_bao/**/*.py"
       ],
       "frontend": [
+        "frontend/src/app/(standalone)/giang-day/thong-bao/**",
+        "frontend/src/app/(standalone)/quan-tri/thong-bao/**",
         "frontend/src/app/(standalone)/thong-bao/**",
-        "frontend/src/lib/thongBao.ts"
+        "frontend/src/lib/thongBao.ts",
+        "frontend/src/lib/thongBaoSoan.ts"
       ],
       "bang": [
         "notifications",

@@ -36,6 +36,13 @@ const TAB = [
   // Trợ giảng không mở được báo cáo phụ huynh (`IsSeniorTeachingStaff`) — không
   // dựng tab dẫn tới một trang 403. Hàng rào thật vẫn ở máy chủ.
   { doan: 'bao-cao', nhan: 'Báo cáo phụ huynh', icon: 'file-text', troGiang: false },
+  // Nhắc cả lớp (§61, dòng 20 — E2-GD 26/09/2026). `troGiang: true`: anh Sơn chốt
+  // trợ giảng gửi thông báo cho lớp MÌNH y như giảng viên, kể cả kèm email
+  // (`views_thong_bao.py`, quyết định số 1) — trợ giảng chính là người nhắc học
+  // viên hằng ngày. `bell` chứ không `inbox`: `inbox` đã là hình của tab "Yêu cầu"
+  // ngay bên cạnh, và dưới 70rem `shell.css` ẩn nhãn chữ nên hai tab cùng hình là
+  // hai ô y hệt nhau.
+  { doan: 'thong-bao', nhan: 'Thông báo lớp', icon: 'bell', troGiang: true },
 ] as const;
 
 export default function KhungGiangDay({

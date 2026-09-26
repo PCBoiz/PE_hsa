@@ -63,6 +63,11 @@ export const TABS: readonly Tab[] = [
   // chuông trỏ về đó) nhưng là việc hằng ngày của học vụ nên có tab ở đây. `inbox`: không trùng
   // hình tab nào bên cạnh.
   { href: '/yeu-cau', label: 'Yêu cầu', icon: 'inbox', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // Thông báo trung tâm (§61, E2-GD 26/09/2026) — `IsAdminOrAcademic`
+  // (`notifications/views_thong_bao.py::AdminThongBaoView` và ba cửa cùng cụm).
+  // `bell`: không trùng hình tab nào bên cạnh (dưới 70rem `shell.css` ẩn nhãn chữ,
+  // nên hai tab cùng hình là hai ô y hệt nhau).
+  { href: '/quan-tri/thong-bao', label: 'Thông báo', icon: 'bell', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — cơ sở tính học phí (teaching/co_so_hoc_phi.py). Gộp dữ
   // liệu cả trung tâm, cùng loại với "Toàn trung tâm". Xem chú thích trong
   // `co-so-hoc-phi/layout.tsx` về việc có nên mở cho học vụ hay không.

@@ -31,7 +31,15 @@ $py = Join-Path $goc 'backend\.venv\Scripts\python.exe'
 if (-not (Test-Path $py)) {
   $chung = (& git -C $goc rev-parse --git-common-dir 2>$null)
   if ($chung) {
-    $chung = (Resolve-Path (Join-Path (Join-Path $goc $chung) '..') -ErrorAction SilentlyContinue)
+    # `Join-Path` của PowerShell 5.1 KHÔNG bỏ qua phần con khi phần con là đường
+    # dẫn TUYỆT ĐỐI — `Join-Path 'D:\pe_hsa_wt\e2' 'D:/pe_hsa/.git'` ra
+    # `D:\pe_hsa_wt\e2\D:/pe_hsa/.git`, một đường không tồn tại. Và
+    # `--git-common-dir` trả về đường TUYỆT ĐỐI trong worktree (đo 26/09/2026:
+    # `D:/pe_hsa/.git`), nên nhánh cứu hộ này rơi đúng vào chỗ ấy: script báo
+    # "Không thấy python của backend (thử cả repo chính)" ở CHÍNH tình huống nó
+    # sinh ra để cứu. Tự kiểm gốc trước khi ghép.
+    $tho = if ([System.IO.Path]::IsPathRooted($chung)) { $chung } else { Join-Path $goc $chung }
+    $chung = (Resolve-Path (Join-Path $tho '..') -ErrorAction SilentlyContinue)
     if ($chung) {
       $thu = Join-Path $chung 'backend\.venv\Scripts\python.exe'
       if (Test-Path $thu) { $py = $thu; "dùng venv của repo chính: $py" }

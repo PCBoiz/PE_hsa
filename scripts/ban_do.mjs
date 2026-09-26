@@ -507,15 +507,16 @@ const KHONG_CAN_NGUOI_GOI = {
    nhãn nhật ký). Đây chính là lý do dòng 20 và dòng 27 của bảng nghiệm thu vẫn
    "MỘT PHẦN" dù backend đã đo được trên màn thật. Việc dựng màn: E2-GD. */
 const CHO_MAN = {
-  '/api/admin/thong-bao': 'màn soạn thông báo của học vụ chưa dựng (E2-GD)',
-  '/api/admin/thong-bao/preview': 'như trên — ô xem trước người nhận',
-  '/api/admin/thong-bao/*/gui': 'như trên — nút Gửi',
-  '/api/admin/thong-bao/*/huy': 'như trên — nút Huỷ bản nháp',
-  '/api/teach/classes/*/thong-bao': 'màn soạn thông báo cho LỚP (giảng viên / trợ giảng) chưa dựng (E2-GD)',
-  '/api/teach/classes/*/thong-bao/preview': 'như trên — ô xem trước người nhận',
-  // `/api/notifications/feed/*/unread` ĐÃ RỜI danh sách này 26/09: trang `/thong-bao` dựng
-  // xong, nút "Đánh dấu chưa đọc" gọi nó, đo được 12/12 bước bằng `scripts/do_thong_bao.mjs`.
+  // TRỐNG từ 26/09/2026 (E2-GD) — và đó là trạng thái ĐÚNG của danh sách này.
+  //
+  // Bảy dòng đã rời khỏi đây trong ngày, mỗi dòng khi màn gọi nó dựng xong:
+  //   · `/api/notifications/feed/*/unread`              → `/thong-bao` (12/12 bước đo)
+  //   · `/api/teach/classes/*/thong-bao` (+ `/preview`) → `/giang-day/thong-bao/<lớp>`
+  //   · `/api/admin/thong-bao` (+ `/preview`, `/*/gui`, `/*/huy`) → `/quan-tri/thong-bao`
+  //
   // Một dòng ở đây biến mất là cách duy nhất danh sách này khác một ngoại lệ vĩnh viễn.
+  // Thêm dòng mới vào đây thì kèm TÊN việc sẽ dựng màn — "chưa dựng" không có người nhận
+  // là một tuyến sẽ nằm lại mãi.
 };
 
 /* ỨNG VIÊN GỠ — soi TAY từng tuyến ngày 23/09/2026: không nơi nào trong

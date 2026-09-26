@@ -9873,3 +9873,41 @@ chất lượng) · Phần D cần gì từ TopHSA · Phần E làm tiếp đư�
 
 Quét tài liệu tìm tên, email, số điện thoại và mật khẩu thật: **không cái nào
 lọt vào**. Email duy nhất trong tài liệu là chỗ trống mẫu `tên@tophsa.vn`.
+
+---
+
+## 26/09/2026 · GD — màn soạn thông báo (§61): dòng 20 nửa "nhắc" đóng, dòng 27 xong chiều GỬI
+
+Sáu tuyến backend E2 viết xong từ sáng mà **không màn nào gọi** — `CHO_MAN` trong
+`ban_do.mjs` giữ đúng sáu dòng ấy. Nay cả sáu có người gọi và danh sách `CHO_MAN` **trống**.
+
+**Hai màn.** `/giang-day/thong-bao/<lớp>` (tab "Thông báo lớp", giảng viên + TRỢ GIẢNG) và
+`/quan-tri/thong-bao` (học vụ: danh sách + soạn + xem trước + lưu nháp + gửi nháp + huỷ nháp).
+
+**Đo trên màn thật, bấm chuột:** `scripts/do_thong_bao_lop.mjs` → **24/24 bước ĐẠT**
+(13 bước thẻ TRỢ GIẢNG trên màn lớp, 11 bước thẻ HỌC VỤ trên màn trung tâm).
+`do_axe.mjs --chi "thông báo"` → **0 vi phạm / 4 lượt** (2 màn × 2 khổ). Cổng pre-push ĐẠT.
+
+**Backend đổi một chỗ, test ĐỎ trước:** `GET /api/admin/thong-bao` trả thêm `chon`
+(lớp chưa huỷ kèm sĩ số + ba môn kèm nhãn tiếng Việt). Hai phép kiểm đỏ trên mã cũ
+(`KeyError: 'chon'`), một phép kiểm xanh sẵn được GIỮ vì nó ghim hàng rào 403. Sau vá: 23 passed.
+Màn KHÔNG gõ lại danh mục môn — bảng ấy sống ở `courses.truy_cap.BA_MON` (RULES §7).
+
+**Ba thứ tìm được trong mã có sẵn:**
+1. `scripts/nap_lai_be.ps1` — nhánh cứu hộ cho worktree không chạy TRONG worktree:
+   `Join-Path` của PS 5.1 không bỏ qua phần con tuyệt đối, mà `--git-common-dir` trả về
+   đường tuyệt đối. Script chết ở đúng chỗ nó sinh ra để cứu. **Đã vá.**
+2. `scripts/do_axe.mjs` vẫn tự `chromium.launch()` (luật `phien_do.mjs` cấm) và một lượt
+   đầy đủ vượt 10 phút. Chưa đổi cách mở trình duyệt; **đã thêm cờ `--chi <chuỗi>`** để đo
+   đúng màn vừa dựng.
+3. Trang `/thong-bao` của lead: soi ba chỗ dễ sai nhất, **không tìm được lỗi**.
+
+**RAM.** Lượt đầu bị ngắt vì `next dev` 3600 chiếm 3.047 MB (máy còn 1,5/15,9 GB). Đặt
+`NODE_OPTIONS=--max-old-space-size=1536` → **813 MB**, cắt ~73%, không hỏng lượt đo nào.
+Lưu ý: `don_may.ps1 -Don` chỉ dọn tiến trình MỒ CÔI, **không** giết server đang giữ cổng —
+đo xong phải dừng hẳn cổng của mình.
+
+**Còn thiếu, nói thẳng:** trợ giảng vẫn không nhắn được RIÊNG một em (dòng 20 vẫn MỘT PHẦN,
+không tick lên CÓ) · chưa có ô "chọn tay người nhận" (`userIds`) · chưa có ô Zalo ZNS ·
+chưa có spec `nghiem-thu/dong-20.spec.ts` · chưa chạy axe lượt ĐẦY ĐỦ.
+Chi tiết: `docs/agent/BAO_CAO_GD.md`.

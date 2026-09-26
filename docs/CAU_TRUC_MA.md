@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 218 tệp backend · 197 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 218 tệp backend · 203 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -25,9 +25,9 @@
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1895 dòng | 10 tệp · 1796 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1878 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1517 dòng | 10 tệp · 1514 dòng |
-| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1596 dòng | 4 tệp · 425 dòng |
+| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1631 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1607 dòng | 14 tệp · 1432 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6267 dòng | 67 tệp · 6880 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6267 dòng | 67 tệp · 6892 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -340,7 +340,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 - Bảng sở hữu: `notifications`, `notification_settings`, `outbox`, `announcements`
 - Miền khác được ghi bảng của miền này: cong_cu (mọi bảng) — dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng
-- Glob: `backend/notifications/**/*.py`, `backend/teaching/bao_doi_lich.py`, `backend/thong_bao/**/*.py`, `frontend/src/app/(standalone)/thong-bao/**`, `frontend/src/lib/thongBao.ts`
+- Glob: `backend/notifications/**/*.py`, `backend/teaching/bao_doi_lich.py`, `backend/thong_bao/**/*.py`, `frontend/src/app/(standalone)/giang-day/thong-bao/**`, `frontend/src/app/(standalone)/quan-tri/thong-bao/**`, `frontend/src/app/(standalone)/thong-bao/**`, `frontend/src/lib/thongBao.ts`, `frontend/src/lib/thongBaoSoan.ts`
 
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
@@ -356,19 +356,25 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/notifications/models.py` | 31 dòng | — |
 | `backend/notifications/nhac_han.py` | 80 dòng | `notifications`, `outbox` |
 | `backend/notifications/service.py` | 80 dòng | `notifications` |
-| `backend/notifications/thong_bao.py` | 167 dòng | `announcements`, `notifications`, `outbox` |
+| `backend/notifications/thong_bao.py` | 198 dòng | `announcements`, `notifications`, `outbox` |
 | `backend/notifications/urls.py` | 23 dòng | — |
 | `backend/notifications/views.py` | 155 dòng | `notification_settings`, `notifications` |
 | `backend/notifications/views_hop_thu.py` | 45 dòng | — |
-| `backend/notifications/views_thong_bao.py` | 153 dòng | `announcements` |
+| `backend/notifications/views_thong_bao.py` | 157 dòng | `announcements` |
 | `backend/teaching/bao_doi_lich.py` | 150 dòng | — |
 
 | Tệp frontend | Dòng |
 |---|---|
+| `frontend/src/app/(standalone)/giang-day/thong-bao/[classId]/SoanThongBaoLop.tsx` | 293 dòng |
+| `frontend/src/app/(standalone)/giang-day/thong-bao/[classId]/page.tsx` | 96 dòng |
+| `frontend/src/app/(standalone)/quan-tri/thong-bao/ThongBaoTrungTam.tsx` | 441 dòng |
+| `frontend/src/app/(standalone)/quan-tri/thong-bao/layout.tsx` | 23 dòng |
+| `frontend/src/app/(standalone)/quan-tri/thong-bao/page.tsx` | 30 dòng |
 | `frontend/src/app/(standalone)/thong-bao/DanhSachThongBao.tsx` | 235 dòng |
 | `frontend/src/app/(standalone)/thong-bao/layout.tsx` | 44 dòng |
 | `frontend/src/app/(standalone)/thong-bao/page.tsx` | 39 dòng |
 | `frontend/src/lib/thongBao.ts` | 107 dòng |
+| `frontend/src/lib/thongBaoSoan.ts` | 168 dòng |
 
 ## tai_khoan
 
@@ -470,7 +476,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|
 | `frontend/src/app/(base)/layout.tsx` | 44 dòng |
 | `frontend/src/app/(base)/page.tsx` | 27 dòng |
-| `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx` | 83 dòng |
+| `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx` | 90 dòng |
 | `frontend/src/app/(standalone)/giang-day/layout.tsx` | 42 dòng |
 | `frontend/src/app/(standalone)/huong-dan/layout.tsx` | 52 dòng |
 | `frontend/src/app/(standalone)/huong-dan/page.tsx` | 27 dòng |
@@ -486,7 +492,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/SoDoVaiTro.tsx` | 208 dòng |
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/layout.tsx` | 23 dòng |
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/page.tsx` | 192 dòng |
-| `frontend/src/app/(standalone)/quan-tri/vai.ts` | 111 dòng |
+| `frontend/src/app/(standalone)/quan-tri/vai.ts` | 116 dòng |
 | `frontend/src/app/(standalone)/thiet-ke/page.tsx` | 266 dòng |
 | `frontend/src/app/api/[...path]/route.ts` | 28 dòng |
 | `frontend/src/app/error.tsx` | 61 dòng |
