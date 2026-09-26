@@ -67,6 +67,8 @@
       "frontend": [
         "frontend/src/app/(standalone)/giang-day/lich/**",
         "frontend/src/app/(standalone)/giang-day/buoi-hoc/**",
+        "frontend/src/app/lich/**",
+        "frontend/src/components/ThemVaoLich.tsx",
         "frontend/src/lib/noiHoc.ts"
       ],
       "bang": [

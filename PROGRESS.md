@@ -6,6 +6,55 @@ Sổ này KHÔNG chép lại `git log` — git đã ghi từng thay đổi và l
 kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
+
+## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
+
+Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.
+
+**Đo trước** (máy 15,9 GB): 12 tiến trình Python — bốn cái cùng đòi cổng 9300 mà
+chỉ một bind được; 10 Node — hai bộ `next dev`, bộ 3500 thuộc worktree của một
+agent đã dừng từ sáng; 11 Chromium giữ **788 MB cho MỘT tab trống**. Dừng phần mồ
+côi trả lại 0,63 GB ngay.
+
+**Gốc rễ, không phải "mở nhiều tab"**: 8 trên 9 bộ đo trong `scripts/` gọi
+`chromium.launch()` ở thân tệp và `close()` ở dòng cuối, **không `finally`**. Một
+lỗi giữa chừng — trang 500, thẻ hết hạn, chờ quá giờ — là Chromium sống tới lúc
+tắt máy, và mỗi lượt chạy lại cộng thêm một bộ.
+
+**Đã làm**
+- `scripts/lib/phien_do.mjs` — vòng đời trình duyệt dùng chung: một trình duyệt
+  cho cả lượt, mỗi vai một trang dùng lại, đóng cả khi lỗi lẫn khi Ctrl-C /
+  `taskkill`. Ba kỹ thuật lấy từ browser-use/jev-ultrafast (tái dùng thay vì mở
+  mới; không chụp ảnh khi không cần; chờ theo dấu hiệu, có trần).
+- `scripts/do_mat_do_chu.mjs` viết lại theo mô-đun ấy, gộp thêm ý của agent
+  `gop-y` (cổng + thư mục thẻ đọc từ môi trường, thêm màn giảng viên). **Đo
+  thật**: 5 màn trong 17,8 s, Chromium còn sót **0** — kể cả khi cố tình trỏ vào
+  cổng chết.
+- `scripts/don_may.ps1` — tìm và dừng tiến trình dev mồ côi. Mặc định CHỈ XEM.
+  Bản đầu xếp nhầm hai tiến trình con của `next dev` đang chạy vào nhóm mồ côi
+  (chỉ nhìn lên cha một nấc); sửa thành lan hai chiều trong cây tiến trình.
+- `scripts/quet_bi_mat.py` + bước **f8** của `pre-push` — repo CÔNG KHAI mà 13
+  bước trước đó không bước nào đọc nội dung tệp sắp đẩy. Bản đầu kêu oan cả 7
+  chỗ (`user:password@`, `u:matkhau@`, `postgres:tam@localhost`); siết lại còn
+  **0 báo oan trên 698 tệp**, vẫn bắt đủ 4 loại bí mật thật trên tệp thử.
+- **Rò rỉ đã có thật**: `PROGRESS.md` trên GitHub — cả `erp` lẫn `master` — mang
+  đường dẫn `C:/Users/<tên tài khoản>/…` ở hai chỗ, `scripts/do_mat_do_chu.mjs`
+  một chỗ nữa. Không phải khoá hay mật khẩu, nhưng RULES §10 cấm. Đã thay bằng
+  `%TEMP%` / `%USERPROFILE%`. Lịch sử `master` vẫn còn vết — chỉ anh Sơn gộp được
+  `master`, nên việc có xoá lịch sử hay không để anh quyết.
+- `.claude/skills/` — ba kỹ năng (`do-man-that`, `soat-bao-mat`,
+  `giao-viec-agent`) + `README.md` giải thích SOLID áp vào kỹ năng thế nào. Hai ý
+  lấy của cloudflare/security-audit-skill: *người tìm khác người xác minh*, và
+  *phát hiện không có vết nguồn thì chưa phải phát hiện*.
+- Trả nợ §71 mà cổng bắt được: hai tệp frontend chưa thuộc miền nào
+  (`so_mien.json`), hai tuyến `.ics` chưa khai lý do (`ban_do.mjs`) — chúng CÓ
+  người gọi, chỉ là người gọi là Google Calendar / Lịch iPhone, không phải
+  frontend. Cổng đủ: **ĐẠT, 14 bước, 57 s**.
+
+**Chưa làm**: 8 worktree đã gộp xong vẫn nằm trên đĩa (874 MB trong 1,2 GB) —
+chưa xoá vì xoá là không lùi được, chờ anh Sơn gật. LightRAG đọc rồi nhưng CHƯA
+dựng, lý do ở `docs/VIEC_CUA_ANH.md`.
+
 hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
 lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
 
@@ -912,7 +961,7 @@ Ba mẻ A1–A3 bên dưới + vá thêm: thanh trên đếm cả nút nhân s�
 
 **Chưa commit, chưa deploy — mọi thứ dưới đây nằm trong cây làm việc** (`git status`: 23 tệp sửa, HEAD
 `3a4e649`). Thư mục làm việc của đợt audit (kịch bản đo, báo cáo agent, ảnh):
-`C:/Users/sonkh/AppData/Local/Temp/claude/d--PE-test/5192ee2d-32a6-400e-b0de-d9b2020fb7a3/scratchpad/audit/`
+`%TEMP%/claude/<phiên>/scratchpad/audit/`
 (gọi tắt `audit/` bên dưới; nằm trong %TEMP% — có thể bị dọn, nên phần cần thiết đã chép vào đây).
 
 ### A · Ba mẻ sửa đang nằm trong cây làm việc
@@ -8937,7 +8986,7 @@ tay. Lỗi ở cách Windows sinh tiến trình:
 
 `npx` trên Windows là `npx.cmd`, một shim chứ không phải tệp thực thi; spawn
 không qua shell không tìm ra → tiến trình chết ngay → `CONNECTION_CLOSED`.
-Sửa ở `C:\Users\sonkh\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
+Sửa ở `%USERPROFILE%\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
 chờ vẫn đo bằng chính CDP nằm dưới MCP ấy qua Playwright.
 
 ### Vẽ phân quyền — hình dạng có thật, và tôi đã vẽ ngược một lần
