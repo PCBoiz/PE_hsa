@@ -34,7 +34,7 @@ from rest_framework.views import APIView
 from chuong_trinh.dich_vu import tien_do_em
 from common.clock import local_now, local_today
 from common.db import q, q1
-from common.permissions import IsSeniorTeachingStaff, can_see_class
+from common.permissions import ROLE_ASSISTANT, IsSeniorTeachingStaff, can_see_class
 from stats import competency
 from teaching.attendance import ti_le
 from teaching.nguoi_buoi import thuoc_buoi
@@ -601,6 +601,18 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
     if not lop:
         return None, 'Không tìm thấy lớp này.'
     gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],))         if lop['teacher_id'] else None
+    # Trợ giảng của lớp (§66, bảng TopHSA dòng 24: phụ huynh xem được "giảng viên, trợ giảng").
+    #
+    # `left_at IS NULL` không phải chi tiết vặt: gỡ một trợ giảng khỏi lớp là ghi `left_at`,
+    # nên thiếu vế đó thì tên họ còn nằm trên giấy đã gửi phụ huynh — một lời giới thiệu sai
+    # mà không ai gỡ lại được. Cùng luật với `permissions._la_tro_giang_cua_lop`.
+    #
+    # Lọc theo VAI chứ không phải "có mặt trong class_members": học viên cũng nằm ở bảng ấy.
+    tro_giang = [r['name'] for r in q('''SELECT u.name FROM class_members m
+                                           JOIN users u ON u.id = m.user_id
+                                          WHERE m.class_id = %s AND m.left_at IS NULL
+                                            AND u.role = %s
+                                       ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
     em = q1('''SELECT id, name, email, phone, parent_name, parent_phone, parent_email
                 FROM users WHERE id=%s''', (user_id,))
     if not em:
@@ -622,7 +634,9 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
                    'phone': em['parent_phone'] or '',
                    'email': em['parent_email'] or ''},
         'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
-                  'teacher': gv['name'] if gv else None},
+                  'teacher': gv['name'] if gv else None,
+                  # Danh sách, không phải một tên: TopHSA có lớp đông hai người kèm.
+                  'assistants': tro_giang},
         'membership': {
             'joinedAt': thanh_vien['joined_at'].isoformat()
                         if thanh_vien['joined_at'] else None,

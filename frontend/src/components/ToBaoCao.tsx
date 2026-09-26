@@ -26,7 +26,11 @@ export type BaoCao = {
   student: { id: number; name: string | null; email?: string | null; phone?: string | null };
   /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. `phone`/`email` vắng ở tờ đi qua chìa. */
   parent: { name: string; phone?: string; email?: string };
-  class: { id: number; name: string; code: string | null; teacher: string | null };
+  class: {
+    id: number; name: string; code: string | null; teacher: string | null;
+    /** Trợ giảng đang phụ trách lớp (§66, dòng 24). `?`: máy chủ cũ không trả. */
+    assistants?: string[];
+  };
   membership: { joinedAt: string | null; leftAt: string | null; status: string; teacherNote: string | null };
   period: { from: string; to: string; weeks: number };
   attendance: {
@@ -186,6 +190,11 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
         <p className="mt-1 text-body text-ink-2">
           Lớp {bc.class.name}
           {bc.class.teacher && ` · Giảng viên ${bc.class.teacher}`}
+          {/* Trợ giảng là người nhắc bài hằng ngày và là người phụ huynh nhắn khi con
+              nghỉ — tờ chỉ có tên giảng viên thì họ nhắn nhầm chỗ, và lời nhắn tới
+              muộn một ngày (§66, bảng dòng 24). */}
+          {(bc.class.assistants?.length ?? 0) > 0 &&
+            ` · Trợ giảng ${bc.class.assistants!.join(', ')}`}
         </p>
         {/* Lời chào trên tờ IN. Chỉ hiện khi đã biết tên: "Kính gửi quý phụ
             huynh" thì thừa — người nhận biết tờ này gửi cho mình. */}
