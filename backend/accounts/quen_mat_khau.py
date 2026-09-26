@@ -160,7 +160,43 @@ class QuenMatKhauView(APIView):
                                               'het_han': (timezone.now()
                                                           + timedelta(minutes=HAN_PHUT)).isoformat()})
                 hop_thu.day_di([oid], ngay=GUI_NGAY)
+        else:
+            _can_dong_ho()
         return Response({'ok': True, 'message': CAU_CHUNG})
+
+
+def _can_dong_ho():
+    """Soạn một lá thư rồi VỨT ĐI — chỉ để cân đồng hồ, như `_DUMMY_HASH` ở `LoginView`.
+
+    ĐO ĐƯỢC 27/09/2026 (máy dev, VN → Neon us-east-2): email CÓ tài khoản mất 2,03–2,29 s,
+    email KHÔNG có mất 0,25–0,36 s. Thân phản hồi giống hệt nhau — đó là chủ ý — nhưng
+    ĐỒNG HỒ thì khai ra địa chỉ nào đã có tài khoản ở TopHSA. Người dùng ở đây là trẻ vị
+    thành niên, và danh sách "em nào học TopHSA" không phải thứ để ai cầm đồng hồ bấm giây
+    cũng lấy được.
+
+    Câu này trả lại phần CPU (dựng HTML lá thư) cho nhánh không gửi gì.
+
+    ĐO LẠI SAU KHI VÁ, và con số nói thẳng rằng câu này CHƯA ĐỦ: có tài khoản 2,04–2,54 s,
+    không có 0,254–0,263 s (ba lượt mỗi bên, email khác nhau để không chạm trần 3 chìa/giờ).
+    Phần nặng KHÔNG phải CPU mà là SỐ VÒNG gọi CSDL — nhánh có tài khoản đi khoảng chín
+    vòng (đếm chìa, huỷ chìa cũ, ghi chìa mới, xếp hộp thư, đánh thức luồng gửi), nhánh này
+    đi một. Trên máy dev mỗi vòng VN → Neon us-east-2 mất ~250 ms, nên chín vòng thành hơn
+    hai giây.
+
+    Vì sao vẫn giữ câu này: nó đúng hướng và rẻ, và trên production phần CPU mới là phần
+    KHÔNG tự nhỏ đi — Render `ohio` cùng vùng với Neon nên mỗi vòng chỉ vài mili giây và
+    chín vòng chìm dưới nhiễu mạng, còn thời gian dựng HTML thì y nguyên.
+
+    Vì sao CHƯA xoá hết: xoá nốt nghĩa là đưa cả nhánh gửi (sinh chìa, ghi, xếp thư) ra
+    khỏi đường trả lời để hai nhánh cùng đúng MỘT vòng CSDL. Việc ấy làm được, nhưng nó
+    đổi thứ tự bảo đảm của một cửa đang chạy — và nên làm khi có số đo TỪ production, vì
+    số đo dev ở đây đo độ trễ đường truyền VN → Mỹ chứ không đo cái sẽ xảy ra với người
+    dùng thật. Ghi ra để không ai đọc hàm này rồi tưởng khe hở đã đóng.
+
+    Cùng khe hở này đã được cân ở cửa tự đăng ký §73 (`tu_dang_ky._can_dong_ho`), nơi phần
+    nặng là scrypt chứ không phải HTML.
+    """
+    _soan_thu('Người dùng', '%s/dat-lai-mat-khau#chia=%s' % (_goc(), 'x' * SO_BYTE))
 
 
 def _chia_con_dung(chia):
