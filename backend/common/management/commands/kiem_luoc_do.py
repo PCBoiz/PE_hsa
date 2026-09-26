@@ -313,6 +313,13 @@ MUC = [
      lambda: _check_co_gia_tri('hoc_lieu_du_nguon_check', 'r2_key')),
     ('§60d', 'mở một lớp ra xem có gì — chỉ mục (lớp, buổi, mới nhất trước)',
      lambda: _chi_muc('idx_hoc_lieu_lop')),
+    # §58: ai dạy MỘT buổi cụ thể. NULL = theo lớp.
+    ('§58a', 'class_sessions.teacher_id / assistant_id (dạy thay một buổi)',
+     lambda: _ca(lambda: _cot('class_sessions', 'teacher_id'),
+                 lambda: _cot('class_sessions', 'assistant_id'))),
+    ('§58b', 'lối vào bảng chấm công: buổi theo người dạy',
+     lambda: _ca(lambda: _chi_muc('idx_sessions_nguoi_day'),
+                 lambda: _chi_muc('idx_sessions_tro_giang'))),
 ]
 
 

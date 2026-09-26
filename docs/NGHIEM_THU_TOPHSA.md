@@ -49,7 +49,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 7 | Kế toán · học phí | THAY (V-m xong) | V-m (một ô tình trạng), K2 | — |
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
 | 9 | Giáo vụ · lớp học | **CÓ** | — | Đo 27/09 bằng **thẻ học vụ**, không mượn thẻ quản trị: bấm "Điểm danh" một buổi → màn 1.159 từ, đủ Có mặt · Vắng · Đi muộn · Xin phép · **Lịch sử sửa điểm danh** · Lưu. |
-| 10 | Giáo vụ · lịch học | gần đủ | V-g, V-n, E4, Đ2 §58 | — |
+| 10 | Giáo vụ · lịch học | gần đủ — chỉ còn Zoom | V-n, E4 (Zoom) | **§58 xong 27/09**: đổi giảng viên / trợ giảng cho MỘT buổi, để trống = theo lớp. Đo **7/7 bước trên màn thật**, đã soi ảnh. Quan trọng: **chấm công đi theo người dạy thật** (`COALESCE(s.teacher_id, c.teacher_id)`) — dạy thay mà lương chảy về người đứng tên lớp là lỗi chỉ lộ ra vào cuối tháng. Bộ kiểm 10/10, **3/3 đột biến bị giết**, 37 test buổi học cũ vẫn xanh. Còn lại: tạo/quản lý phòng Zoom (E4 — chờ khoá anh Sơn). |
 | 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | — | §65 **đã gộp vào `erp` 26/09** (`61d42ec`). Bảy trên bảy gạch đầu dòng chạy được trên màn thật: `scripts/do_yeu_cau.mjs` **17/17 bước ĐẠT**, bấm chuột chứ không gọi API tay. Kèm ba hàng rào đã đo: học viên không thấy thẻ Xử lý · ghi chú nội bộ ẩn với học viên · phụ huynh gửi được qua link tờ báo cáo. Còn sót (ngoài phạm vi dòng 11): hạn xử lý / cờ quá hạn, ô tìm theo chữ. |
 | 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |

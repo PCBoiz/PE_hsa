@@ -7,6 +7,32 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 27/09/2026 — §58 dạy thay một buổi, và một cách mất việc mà tôi chưa từng gặp
+
+Giảng viên gắn theo LỚP, nhưng một buổi lẻ có thể do người khác đứng. `class_sessions.
+teacher_id` / `assistant_id`: NULL = theo lớp. **Không sao chép giảng viên lớp vào mọi buổi
+lúc tạo** — làm vậy thì đổi giảng viên của lớp sẽ không đổi các buổi tương lai, và không ai
+nhận ra cho tới lúc nhìn bảng lương.
+
+Phép kiểm chấm công nằm CHUNG tệp với phép kiểm đổi người, vì đó là chỗ lỗi này thành tiền:
+`COALESCE(s.teacher_id, c.teacher_id)`. Ai sửa một bên mà quên bên kia thì đỏ ngay.
+
+Số: lược đồ 0/70 lượt hai, `kiem_luoc_do` 81/81, bộ kiểm **10/10**, **3/3 đột biến bị giết**,
+37 test buổi học cũ vẫn xanh, bộ đo màn thật **7/7 bước**, cổng ĐẠT 72 s.
+
+**Một đột biến LỌT hoá ra là đột biến tương đương**: nó đổi `data[o] = None` thành
+`data.get(o)`, mà khoá chưa có nên vẫn ra `None` — hành vi không đổi, test không có gì để
+bắt. Nhắm lại vào đúng chỗ (bỏ hẳn việc đặt khoá) thì nó chết ngay. Đột biến lọt không phải
+lúc nào cũng có nghĩa test yếu; đôi khi là cái thước chĩa sai hướng.
+
+**Và một cách mất việc tôi chưa từng gặp.** Tôi sửa `sessions.py` trong lúc loạt đột biến
+đang chạy trên chính tệp ấy. Loạt phục hồi bằng bản gốc đọc lúc KHỞI ĐỘNG, nên phần vừa
+thêm bị ghi đè mất — API thiếu một khoá suốt hai lượt đo, và tôi đi tìm lỗi ở proxy, ở zod,
+ở Django `--noreload`, trước khi nghĩ tới chỗ thật. `dot_bien.py` nay so tệp trên đĩa với
+bản đột biến nó vừa đặt và **nói ra** khi thấy có người khác sửa. Cảnh báo ấy chỉ tới sau
+khi việc đã mất, nên luật trong CLAUDE.md vẫn là: chờ bảng in ra rồi hãy sửa tệp ấy.
+
+
 ## 27/09/2026 — Dòng 30 (học liệu §60) chạy được, và ba cái thước tự bắt được mình
 
 Anh Sơn chốt: làm **liên kết ngoài trước** (không chờ khoá R2), gắn được vào **cả kho

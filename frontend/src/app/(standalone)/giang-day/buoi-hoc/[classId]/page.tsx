@@ -6,7 +6,7 @@ import { noiHoc } from '@/lib/noiHoc';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
-import SessionsClient, { type SessionRow } from './SessionsClient';
+import SessionsClient, { type NguoiChon, type SessionRow } from './SessionsClient';
 import type { GoiYSinh } from './SinhBuoi';
 import HocLieuLop from './HocLieuLop';
 
@@ -32,6 +32,8 @@ type DsBuoi = {
   sessions: SessionRow[];
   quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean };
   class?: { mode?: string | null; room?: string | null };
+  /** §58 — ai có thể đứng thay một buổi (máy chủ trả, màn không gõ lại danh mục). */
+  nguoiChon?: NguoiChon;
 };
 const HD_BUOI = z.looseObject({
   sessions: z.array(z.looseObject({
@@ -45,6 +47,9 @@ const HD_BUOI = z.looseObject({
     recordingUrl: z.string().nullable().optional(),
     mode: z.string().nullable().optional(),
     room: z.string().nullable().optional(),
+    // §58 — ai dạy buổi này. null = theo lớp.
+    teacherId: z.number().nullable().optional(),
+    assistantId: z.number().nullable().optional(),
     modeHieuLuc: z.string().nullable().optional(),
     roomHieuLuc: z.string().nullable().optional(),
     attendanceTakenAt: z.string().nullable().optional(),
@@ -58,6 +63,11 @@ const HD_BUOI = z.looseObject({
     soNguoiThamGia: z.number().nullable().optional(),
   })),
   quyen: z.looseObject({ xoaBuoi: z.boolean(), baoCaoPhuHuynh: z.boolean() }).optional(),
+  // §58 — người có thể đứng thay một buổi. `optional`: máy chủ cũ không trả.
+  nguoiChon: z.optional(z.looseObject({
+    giangVien: z.array(z.looseObject({ id: z.number(), ten: z.string() })),
+    troGiang: z.array(z.looseObject({ id: z.number(), ten: z.string() })),
+  })),
   class: z.looseObject({
     mode: z.string().nullable().optional(),
     room: z.string().nullable().optional(),
@@ -163,6 +173,7 @@ export default async function BuoiHocPage({
         <div className="mx-auto max-w-5xl px-4 py-6">
         <SessionsClient
           classId={Number(classId)}
+          nguoiChon={list.ok ? (list.data.nguoiChon ?? null) : null}
           className={klass.name}
           initial={list.ok ? list.data.sessions : []}
           goiYSinh={sinh.ok ? sinh.data : null}

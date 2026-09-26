@@ -47,6 +47,7 @@ _KHONG_TINH = ', '.join("'%s'" % t for t in KHONG_TINH)   # hằng trong mã, kh
 _SQL = '''
 WITH buoi AS (
     SELECT s.id, s.class_id, s.starts_at, s.attendance_taken_by,
+           s.teacher_id, s.assistant_id,
            COALESCE(s.duration_minutes, %(phut)s::int) AS phut,
            s.attendance_taken_at > s.starts_at
                + COALESCE(s.duration_minutes, %(phut)s::int) * INTERVAL '1 minute'
@@ -57,15 +58,24 @@ WITH buoi AS (
        AND s.starts_at >= %(tu)s AND s.starts_at < %(den)s
 ),
 day AS (
-    SELECT c.teacher_id AS uid, b.id AS buoi_id
+    -- §58 (27/09/2026): `COALESCE(s.teacher_id, c.teacher_id)` — buổi có người dạy thay thì
+    -- công về người ấy, KHÔNG về người đứng tên lớp. Dạy thay mà lương chảy nhầm chỗ là lỗi
+    -- chỉ lộ ra vào cuối tháng, lúc đã trả tiền.
+    SELECT COALESCE(b.teacher_id, c.teacher_id) AS uid, b.id AS buoi_id
       FROM buoi b JOIN classes c ON c.id = b.class_id
-     WHERE c.teacher_id IS NOT NULL
+     WHERE COALESCE(b.teacher_id, c.teacher_id) IS NOT NULL
+    UNION
+    -- Trợ giảng: buổi có `assistant_id` thì CHỈ người ấy, không phải mọi trợ giảng của lớp.
+    SELECT b.assistant_id, b.id
+      FROM buoi b
+     WHERE b.assistant_id IS NOT NULL
     UNION
     SELECT m.user_id, b.id
       FROM buoi b
       JOIN class_members m ON m.class_id = b.class_id
       JOIN users tg ON tg.id = m.user_id AND tg.role = %(tro_giang)s
-     WHERE m.joined_at <= b.starts_at AND (m.left_at IS NULL OR m.left_at > b.starts_at)
+     WHERE b.assistant_id IS NULL
+       AND m.joined_at <= b.starts_at AND (m.left_at IS NULL OR m.left_at > b.starts_at)
 ),
 tong AS (
     SELECT d.uid, count(*) AS so_buoi, sum(b.phut) AS so_phut,

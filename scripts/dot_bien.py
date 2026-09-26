@@ -67,14 +67,38 @@ _DANG_THAY: dict[Path, str] = {}
 SO_CUU_HO = GOC / '.dot_bien_cuu_ho.json'
 
 
+#: Bản đột biến mới nhất mà loạt đã GHI ra đĩa, theo tệp. Khác với `_DANG_THAY` (giữ bản
+#: GỐC để phục hồi): cái này để nhận ra tệp đã bị người khác sửa giữa chừng.
+_BAN_DOT_BIEN: dict = {}
+
+
 def _ghi_so(duong: Path, goc: str) -> None:
     SO_CUU_HO.write_text(json.dumps({'tep': str(duong), 'goc': goc}, ensure_ascii=False),
                          encoding='utf-8')
 
 
 def _phuc_hoi() -> None:
+    """Trả tệp về bản gốc.
+
+    NÓI RA khi tệp trên đĩa không phải bản đột biến mình vừa đặt: nghĩa là có người khác
+    sửa tệp trong lúc loạt chạy, và phục hồi im lặng sẽ NUỐT MẤT việc của họ. Xảy ra thật
+    ngày 27/09: lead thêm một khoá vào `sessions.py` trong lúc loạt đang chạy trên chính
+    tệp ấy; loạt xong, ghi đè bản gốc, và phần vừa thêm biến mất — API thiếu khoá suốt hai
+    lượt đo mà không dấu hiệu nào chỉ tới nguyên nhân.
+
+    Vẫn phục hồi (để tệp không nằm lại ở trạng thái đột biến), nhưng in ĐỦ to để người ta
+    biết mình vừa mất gì và lấy lại được từ đâu."""
     for duong, goc in list(_DANG_THAY.items()):
         try:
+            nay = io.open(duong, encoding='utf-8', newline='').read()
+            cho = _BAN_DOT_BIEN.get(duong)
+            if cho is not None and nay != cho:
+                print('', file=sys.stderr)
+                print('!! %s ĐÃ BỊ SỬA trong lúc loạt đột biến chạy.' % Path(duong).name, file=sys.stderr)
+                print('   Loạt sắp ghi đè bằng bản gốc — mọi thay đổi vừa rồi sẽ MẤT.',
+                      file=sys.stderr)
+                print('   Đừng sửa tệp đang chạy đột biến; chờ bảng in ra rồi hãy sửa.',
+                      file=sys.stderr)
             io.open(duong, 'w', encoding='utf-8', newline='').write(goc)
         except OSError as e:                                  # noqa: PERF203
             print('!! KHÔNG phục hồi được %s: %s' % (duong, e), file=sys.stderr)
@@ -182,7 +206,9 @@ def main() -> int:
     for m in loat:
         _DANG_THAY[duong] = goc
         _ghi_so(duong, goc)
-        io.open(duong, 'w', encoding='utf-8', newline='').write(goc.replace(m['cu'], m['moi'], 1))
+        ban = goc.replace(m['cu'], m['moi'], 1)
+        _BAN_DOT_BIEN[duong] = ban        # để `_phuc_hoi` biết ai đã sửa tệp giữa chừng
+        io.open(duong, 'w', encoding='utf-8', newline='').write(ban)
         try:
             do = _ten_test_do(a.test, a.chi)
         finally:

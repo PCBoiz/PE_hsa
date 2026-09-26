@@ -2432,3 +2432,20 @@ ALTER TABLE hoc_lieu ADD CONSTRAINT hoc_lieu_du_nguon_check CHECK (
 CREATE INDEX IF NOT EXISTS idx_hoc_lieu_lop   ON hoc_lieu (class_id, session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hoc_lieu_buoi  ON hoc_lieu (session_id);
 CREATE INDEX IF NOT EXISTS idx_hoc_lieu_nguoi ON hoc_lieu (nguoi_tao);
+
+-- ── §58 · AI DẠY MỘT BUỔI CỤ THỂ (Đ2, bảng TopHSA dòng 10 — 27/09/2026) ──────
+-- Giảng viên và trợ giảng gắn theo LỚP (`classes.teacher_id`, `class_members`), nhưng một
+-- buổi lẻ có thể do người khác đứng: giảng viên ốm, trợ giảng bận, trung tâm đổi người.
+--
+-- NULL = theo lớp như trước. Có giá trị = buổi NÀY người ấy dạy. Không sao chép giảng viên
+-- lớp vào mọi buổi lúc tạo: làm vậy thì đổi giảng viên của lớp sẽ KHÔNG đổi các buổi tương
+-- lai, và không ai nhận ra cho tới lúc nhìn bảng lương. Một ô trống nói "theo lớp" thì luôn
+-- đúng, kể cả khi lớp đổi người.
+--
+-- Chấm công (§59) phải đọc `COALESCE(s.teacher_id, c.teacher_id)` — dạy thay mà lương vẫn
+-- chảy về người đứng tên lớp là một lỗi người ta chỉ phát hiện vào cuối tháng.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS teacher_id   INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS assistant_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+-- Lối vào của bảng chấm công: "những buổi người này dạy trong tháng".
+CREATE INDEX IF NOT EXISTS idx_sessions_nguoi_day ON class_sessions (teacher_id, starts_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_tro_giang ON class_sessions (assistant_id, starts_at);

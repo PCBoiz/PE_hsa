@@ -40,6 +40,8 @@ from common.db import q, q1, x
 from common.events import KIND_ATTENDANCE, SOURCE_SYSTEM, forget_events, record_events
 from common.params import kiem_lien_ket, so_nguyen
 from common.permissions import (
+    ROLE_ASSISTANT,
+    ROLE_TEACHER,
     IsSeniorTeachingStaff,
     IsTeachingStaff,
     can_see_class,
@@ -174,6 +176,30 @@ def _clean_session_payload(body):
         else:
             return None, ('lesson_refs phải là danh sách id bài học, '
                           'ví dụ ["hsa_q_01", "hsa_q_02"].')
+
+    # §58 (27/09/2026) — ai dạy MỘT buổi cụ thể. `null` = theo lớp.
+    #
+    # Kiểm VAI ở máy chủ chứ không tin ô chọn trên màn: một ô thả xuống có thể bị gửi kèm
+    # id bất kỳ, và một học viên đứng tên giảng viên của buổi sẽ đi thẳng vào bảng chấm
+    # công. Cửa này chỉ nhận đúng vai của từng ô.
+    for o, vai, nhan in (('teacher_id', ROLE_TEACHER, 'giảng viên'),
+                         ('assistant_id', ROLE_ASSISTANT, 'trợ giảng')):
+        khoa = 'teacherId' if o == 'teacher_id' else 'assistantId'
+        if khoa not in body:
+            continue
+        v = body[khoa]
+        if v in (None, '', 0):
+            data[o] = None
+            continue
+        try:
+            uid = int(v)
+        except (TypeError, ValueError):
+            return None, 'Chọn %s từ danh sách.' % nhan
+        if not q1('SELECT 1 FROM users WHERE id = %s AND role = %s', (uid, vai)):
+            # Không nói "người này không tồn tại" — câu ấy là một cách dò xem id nào có
+            # thật. Nói đúng thứ người trực cần làm.
+            return None, 'Người được chọn không phải %s.' % nhan
+        data[o] = uid
 
     if 'mode' in body:
         md = str(body['mode'] or '').strip() or None
@@ -318,6 +344,10 @@ def _session_dict(r, counts=None, member_count=None, lop=None, so_tham_gia=None)
         'lessonRefs': r['lesson_refs'],
         'meetingUrl': r['meeting_url'],
         'recordingUrl': r['recording_url'],
+        # §58: null = theo lớp. Màn hình tự đổ tên giảng viên của lớp vào chỗ trống —
+        # sao chép sẵn vào đây thì đổi giảng viên của lớp sẽ không đổi các buổi tương lai.
+        'teacherId': r.get('teacher_id'),
+        'assistantId': r.get('assistant_id'),
         # "Đã dạy" SUY từ dữ liệu: đã bắt đầu + đã điểm danh (22/09/2026, agent
         # GV→PH F13). Cờ lưu `done` chỉ đúng với buổi tick SAU bản vá 20/09;
         # buổi tick trước đó đứng im "Đã lên lịch" dù đã dạy. Buổi huỷ giữ nguyên.
@@ -449,6 +479,20 @@ class ClassSessionsView(APIView):
                                        so_tham_gia=tham_gia.get(r['id'])) for r in rows],
             'statuses': list(SESSION_STATUS),
             'attendanceStatuses': list(ATTENDANCE_STATUS),
+            # §58: ai có thể đứng thay một buổi. Máy chủ trả danh sách, màn KHÔNG gõ lại
+            # danh mục (RULES §7) và cũng không tự lọc theo vai — vai là luật, và luật
+            # nằm ở đây. Bỏ người đã bị khoá: gán một tài khoản không đăng nhập được vào
+            # buổi là dựng sẵn một ô trống trong bảng lương.
+            'nguoiChon': {
+                'giangVien': [{'id': r['id'], 'ten': r['name'] or r['email']} for r in
+                              q('''SELECT id, name, email FROM users WHERE role = %s
+                                    AND coalesce(status, 'active') <> 'suspended'
+                                  ORDER BY name''', (ROLE_TEACHER,))],
+                'troGiang': [{'id': r['id'], 'ten': r['name'] or r['email']} for r in
+                             q('''SELECT id, name, email FROM users WHERE role = %s
+                                   AND coalesce(status, 'active') <> 'suspended'
+                                 ORDER BY name''', (ROLE_ASSISTANT,))],
+            },
         })
 
     def post(self, request, class_id):

@@ -42,11 +42,19 @@ import XuatLop from './XuatLop';
  * KHÔNG BAO GIỜ hiện. Cả màn hình chết mà tsc/eslint/pytest đều xanh.
  * Đổi tên khoá ở đây thì phải mở trang thật trong trình duyệt xem lại.
  */
+export type NguoiChon = {
+  giangVien: { id: number; ten: string }[];
+  troGiang: { id: number; ten: string }[];
+};
+
 export type SessionRow = {
   id: number;
   startsAt: string | null;
   durationMinutes: number | null;
   topic: string | null;
+  /** §58 — ai dạy buổi NÀY. null = theo lớp. `?`: máy chủ cũ không trả. */
+  teacherId?: number | null;
+  assistantId?: number | null;
   status: string;
   note: string | null;
   meetingUrl?: string | null;
@@ -219,10 +227,13 @@ export default function SessionsClient({
   moBuoi = null,
   quyen,
   lop = { mode: null, room: null },
+  nguoiChon = null,
 }: {
   classId: number;
   className: string;
   initial: SessionRow[];
+  /** §58 — ai có thể đứng thay một buổi. null: máy chủ cũ không trả, hai ô chỉ có "Theo lớp". */
+  nguoiChon?: NguoiChon | null;
   /** Hình thức / phòng của lớp — buổi để trống thì theo lớp (§53). */
   lop?: NoiLop;
   goiYSinh: GoiYSinh | null;
@@ -562,6 +573,7 @@ export default function SessionsClient({
                       <SuaBuoi
                         buoi={s}
                         lop={lop}
+                        nguoiChon={nguoiChon}
                         onXong={(d) => { setSuaId(null); baoSauLuu(d.warning, d.daBao); void reload(); }}
                         onError={(m) => { setErr(m); if (m === null) setThongBao(null); }}
                       />
@@ -607,11 +619,13 @@ export default function SessionsClient({
 function SuaBuoi({
   buoi,
   lop,
+  nguoiChon,
   onXong,
   onError,
 }: {
   buoi: SessionRow;
   lop: NoiLop;
+  nguoiChon: NguoiChon | null;
   onXong: (d: { warning?: string; daBao?: number }) => void;
   onError: (m: string | null) => void;
 }) {
@@ -626,6 +640,8 @@ function SuaBuoi({
   const [status, setStatus] = useState(buoi.status || 'planned');
   const [mode, setMode] = useState(buoi.mode ?? '');
   const [room, setRoom] = useState(buoi.room ?? '');
+  const [teacherId, setTeacherId] = useState(buoi.teacherId ?? '');
+  const [assistantId, setAssistantId] = useState(buoi.assistantId ?? '');
   const [busy, setBusy] = useState(false);
 
   /* CHỈ GỬI TRƯỜNG ĐÃ ĐỔI.
@@ -652,6 +668,10 @@ function SuaBuoi({
   if (status !== (buoi.status || 'planned')) doi.status = status;
   if (mode !== (buoi.mode ?? '')) doi.mode = mode || null;
   if (room !== (buoi.room ?? '')) doi.room = room.trim() || null;
+  /* §58 — người dạy buổi này. So với `?? ''` để ô trống (theo lớp) và "chưa đổi" là hai
+     chuyện khác nhau: bỏ chọn phải gửi `null` đi, không thì buổi đông cứng người dạy thay. */
+  if (String(teacherId) !== String(buoi.teacherId ?? '')) doi.teacherId = teacherId || null;
+  if (String(assistantId) !== String(buoi.assistantId ?? '')) doi.assistantId = assistantId || null;
   const soDoi = Object.keys(doi).length;
 
   async function luu() {
@@ -682,6 +702,37 @@ function SuaBuoi({
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Chủ đề buổi</span>
           <input value={topic} onChange={(e) => setTopic(e.target.value)} className={o} />
+        </label>
+        {/* §58 — buổi này ai đứng. Để trống = theo lớp; không đổ sẵn tên giảng viên của
+            lớp vào đây, vì như thế là đông cứng người ấy vào buổi và đổi giảng viên của
+            lớp sẽ không đổi các buổi tương lai. Danh sách do máy chủ trả (RULES §7). */}
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Giảng viên buổi này</span>
+          <select
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value ? Number(e.target.value) : '')}
+            className={o}
+            data-o="gv-buoi"
+          >
+            <option value="">Theo lớp</option>
+            {(nguoiChon?.giangVien ?? []).map((n) => (
+              <option key={n.id} value={n.id}>{n.ten}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Trợ giảng buổi này</span>
+          <select
+            value={assistantId}
+            onChange={(e) => setAssistantId(e.target.value ? Number(e.target.value) : '')}
+            className={o}
+            data-o="tg-buoi"
+          >
+            <option value="">Theo lớp</option>
+            {(nguoiChon?.troGiang ?? []).map((n) => (
+              <option key={n.id} value={n.id}>{n.ten}</option>
+            ))}
+          </select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Bắt đầu lúc</span>

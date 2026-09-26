@@ -1,0 +1,20 @@
+[
+ {
+  "ten": "không kiểm vai — gán ai cũng được làm giảng viên buổi",
+  "cu": "        if not q1('SELECT 1 FROM users WHERE id = %s AND role = %s', (uid, vai)):",
+  "moi": "        if not q1('SELECT 1 FROM users WHERE id = %s OR %s IS NULL', (uid, vai)):",
+  "cho": "test_khong_gan_hoc_vien_lam_giang_vien_buoi"
+ },
+ {
+  "ten": "ô trống bị BỎ QUA (đông cứng người dạy thay, không gỡ lại được)",
+  "cu": "            data[o] = None",
+  "moi": "            pass",
+  "cho": "test_bo_trong_thi_ve_lai_theo_lop"
+ },
+ {
+  "ten": "trả về bỏ teacherId (màn không biết buổi ai dạy)",
+  "cu": "        'teacherId': r.get('teacher_id'),",
+  "moi": "        'teacherId': None,",
+  "cho": "test_dat_nguoi_day_thay_cho_mot_buoi"
+ }
+]
