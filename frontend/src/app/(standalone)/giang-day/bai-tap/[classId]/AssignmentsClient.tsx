@@ -51,6 +51,14 @@ type NguoiNhan = { mode: 'lop' | 'nhom'; chon: number[] };
  * thấy bài, không nhận chuông, không bị đếm "chưa nộp" — máy chủ lọc bằng MỘT hàm
  * (`teaching/nhan_bai.py`), ô này chỉ gửi lựa chọn lên.
  */
+/** Thân PATCH khi sửa bài đã giao — snake_case đúng như `assignments.py::_clean`. */
+type SuaBai = {
+  title: string;
+  description: string | null;
+  due_at: string | null;
+  max_score: number | null;
+};
+
 function ChonNguoiNhan({ hocVien, gia, onDoi, ten }: {
   hocVien: HocVienLop[];
   gia: NguoiNhan;
@@ -165,6 +173,9 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, 
   const [moForm, setMoForm] = useState(false);
   /** Bài đang mở ô "Đổi người nhận" (một bài một lúc). */
   const [suaNhan, setSuaNhan] = useState<{ id: number; gia: NguoiNhan } | null>(null);
+  /** Bài đang mở ô sửa (tiêu đề / đề bài / hạn / thang điểm) — dòng 17 bảng khách. */
+  const [suaBai, setSuaBai] = useState<number | null>(null);
+  const [dangLuuBai, setDangLuuBai] = useState(false);
   const [dangLuuNhan, setDangLuuNhan] = useState(false);
   const tenHv = new Map((hocVien ?? []).map((h) => [h.id, h.name || `#${h.id}`]));
 
@@ -203,6 +214,39 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, 
    * Không gửi sẵn `confirm=1`: hàng rào ấy sinh ra để chặn một cú bấm nhầm, gửi
    * kèm sẵn là tự tháo nó ra. Bài chưa ai nộp thì xoá luôn không hỏi.
    */
+  /**
+   * Sửa bài ĐÃ GIAO (dòng 17 bảng yêu cầu TopHSA: "Chỉnh sửa bài tập").
+   *
+   * Máy chủ nhận sửa đủ trường từ lâu (`assignments.py::AssignmentDetailView`)
+   * nhưng KHÔNG màn nào gọi tới — đo 26/09. Hệ quả: gõ nhầm hạn nộp là phải xoá
+   * bài giao lại, mà xoá bài thì mất luôn bài các em đã nộp.
+   *
+   * Gửi đúng những ô người dùng đổi, `null` cho ô xoá trắng — cột để trống và
+   * cột chứa chuỗi rỗng là hai chuyện khác nhau khi đọc lại.
+   */
+  async function luuBai(a: Assignment, than: SuaBai) {
+    setErr(null);
+    setDangLuuBai(true);
+    try {
+      const r = await apiFetch(`/api/teach/assignments/${a.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(than),
+      });
+      const d = (await r.json().catch(() => ({}))) as { assignment?: Partial<Assignment> };
+      if (!r.ok) throw new Error(errorText(r.status, d));
+      setDs((cu) => cu.map((x) => (x.id === a.id
+        ? { ...x, title: than.title, description: than.description,
+            dueAt: than.due_at, maxScore: than.max_score, ...(d.assignment ?? {}) }
+        : x)));
+      setSuaBai(null);
+      toast(`Đã lưu bài "${than.title}".`, 'ok');
+    } catch (e) {
+      setErr(loiBatDuoc(e, 'Không lưu được bài'));
+    } finally {
+      setDangLuuBai(false);
+    }
+  }
+
   async function xoa(a: Assignment) {
     setErr(null);
     try {
@@ -373,6 +417,12 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, 
                     {/* "Xoá" là ghost chữ đỏ, đẩy về mép phải: nút phá huỷ đứng
                         cùng cỡ, cùng màu đậm ngay cạnh "Chấm bài" là bấm nhầm chờ
                         sẵn. Trợ giảng không thấy nút này (máy chủ cũng trả 403). */}
+                    {!laTroGiang && (
+                      <Button size="sm" variant="ghost"
+                        onClick={() => { setSuaBai(suaBai === a.id ? null : a.id); setSuaNhan(null); }}>
+                        {suaBai === a.id ? 'Đóng' : 'Sửa bài'}
+                      </Button>
+                    )}
                     {!laTroGiang && hocVien && (
                       <Button size="sm" variant="ghost" onClick={() => setSuaNhan(suaNhan?.id === a.id ? null : {
                         id: a.id,
@@ -387,6 +437,56 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, 
                       </Button>
                     )}
                   </div>
+                  {suaBai === a.id && (
+                    <form
+                      className="mt-3 flex flex-col gap-3 border-t border-line pt-3"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const fd = new FormData(e.currentTarget);
+                        const chu = (k: string) => oChu(fd, k).trim();
+                        void luuBai(a, {
+                          title: chu('title'),
+                          description: chu('description') || null,
+                          due_at: chu('due_at') || null,
+                          max_score: Number(chu('max_score')) || null,
+                        });
+                      }}
+                    >
+                      <label className="flex flex-col gap-1">
+                        <span className="text-label text-ink-3">Tiêu đề</span>
+                        <input name="title" required maxLength={200} defaultValue={a.title}
+                          className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink" />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-label text-ink-3">Đề bài</span>
+                        <textarea name="description" rows={3} maxLength={4000}
+                          defaultValue={a.description ?? ''}
+                          className="w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 py-2 text-input text-ink" />
+                      </label>
+                      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))]">
+                        {!kiemTra && (
+                          <label className="flex flex-col gap-1">
+                            <span className="text-label text-ink-3">Hạn nộp</span>
+                            <input type="datetime-local" name="due_at"
+                              defaultValue={(a.dueAt ?? '').slice(0, 16)}
+                              className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink" />
+                          </label>
+                        )}
+                        <label className="flex flex-col gap-1">
+                          <span className="text-label text-ink-3">Thang điểm</span>
+                          <input type="number" name="max_score" min={1} max={100}
+                            defaultValue={a.maxScore ?? 10}
+                            className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink" />
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" type="submit" loading={dangLuuBai}>Lưu bài</Button>
+                        <Button size="sm" variant="ghost" type="button" onClick={() => setSuaBai(null)}>
+                          Thôi
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                   {suaNhan?.id === a.id && hocVien && (
                     <div className="mt-3 flex flex-col gap-3 border-t border-line pt-3">
                       <ChonNguoiNhan hocVien={hocVien} ten={`bai-${a.id}`} gia={suaNhan.gia}

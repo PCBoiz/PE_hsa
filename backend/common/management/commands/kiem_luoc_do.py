@@ -284,6 +284,12 @@ MUC = [
      lambda: _check_co_gia_tri('calendar_links_scope_check', 'trung_tam')),
     ('§71c', 'mỗi người mỗi phạm vi chỉ MỘT chìa còn sống',
      lambda: _chi_muc('idx_calendar_links_mot_chia_song')),
+    # §72: ai đã mở bản ghi buổi học. Một dòng mỗi (buổi, người); mở lại thì cộng lần.
+    ('§72a', 'bảng recording_views (ai đã mở bản ghi), xoá theo buổi',
+     lambda: _fk('recording_views', 'recording_views_session_id_fkey', 'CASCADE')
+     if _cot('recording_views', 'lan_mo')[0] else (False, 'chưa có bảng')),
+    ('§72b', 'mỗi (buổi, người) chỉ MỘT dòng — mở lại thì cộng lần',
+     lambda: _chi_muc('idx_recording_views_buoi_nguoi')),
 ]
 
 

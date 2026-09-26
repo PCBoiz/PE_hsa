@@ -15,6 +15,9 @@ const LOAI: Record<string, { nhan: string; tong: 'neutral' | 'brand' | 'good' | 
   'theo-doi': { nhan: 'Theo dõi', tong: 'warn' },
   // Điểm bài kiểm tra làm trên lớp, giảng viên nhập (V-h).
   'kiem-tra': { nhan: 'Bài kiểm tra', tong: 'good' },
+  // Mốc "Làm bài" trong chuỗi khách yêu cầu (bảng phân rã dòng 4, 26/09/2026):
+  // lần em nộp bài tập đầu tiên, kèm tổng số bài đã nộp.
+  'bai-tap': { nhan: 'Bài tập', tong: 'brand' },
 };
 
 /**

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { BieuTuong } from '@/components/bieuTuong';
+import ThemVaoLich from '@/components/ThemVaoLich';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { lucVN } from '@/lib/gioVN';
@@ -39,6 +40,15 @@ type Buoi = {
   dangDienRa: boolean;
 };
 
+/** Bản ghi một buổi ĐÃ HỌC (§72). `daMo` = em đã bấm mở, không phải đã xem hết. */
+type BanGhi = {
+  sessionId: number;
+  startsAt: string | null;
+  topic: string | null;
+  recordingUrl: string;
+  daMo: boolean;
+};
+
 type Lop = {
   id: number;
   name: string;
@@ -66,6 +76,8 @@ type Lop = {
   diemDanh?: DongDiemDanh[];
   /** % chương trình của em (E1). null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
   chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
+  /** Buổi đã học có bản ghi để xem lại (§72). `?`: máy chủ cũ không trả. */
+  banGhiGanDay?: BanGhi[];
 };
 
 type DongDiemDanh = {
@@ -110,6 +122,21 @@ function ngay(iso: string | null) {
 }
 
 /**
+ * "24/09" — ngày ngắn từ một MỐC THỜI GIAN đầy đủ.
+ *
+ * `ngay()` ở trên chỉ ăn được chuỗi `YYYY-MM-DD` (ngày thi). Đưa cho nó
+ * `2026-09-24T19:30:00` thì nó cắt theo dấu `-` và nhả ra `24T19:30:00/09/2026`
+ * — đúng thứ hiện trên màn thật lúc 10:5x ngày 26/09, trước khi có hàm này.
+ */
+function ngayNgan(iso: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+}
+
+/**
  * DỮ LIỆU NAY DO MÁY CHỦ ĐƯA XUỐNG (14/09/2026), không tự gọi trong `useEffect`.
  *
  * Trước đó khối này chỉ hiện sau khi React hydrate rồi chờ thêm một lượt mạng —
@@ -118,9 +145,69 @@ function ngay(iso: string | null) {
  * liệu qua prop thì khối nằm sẵn trong HTML đầu tiên — không còn cú nhảy nào,
  * và em thấy buổi tới ngay lượt sơn đầu.
  */
+/**
+ * Một bản ghi để em bấm mở. Mở link ở tab mới, đồng thời báo cho máy chủ là em
+ * đã mở — để trợ giảng biết ai chưa xem lại mà nhắc (§72).
+ *
+ * Việc báo chạy NGẦM và không chặn đường đi: máy chủ lỗi thì em vẫn mở được
+ * bản ghi. Thống kê hỏng còn hơn em không xem lại được bài.
+ */
+function NutBanGhi({ b, onMo }: { b: BanGhi; onMo: () => void }) {
+  const [daMo, setDaMo] = useState(b.daMo);
+  return (
+    <a
+      className={`lct-link lct-bg-nut${daMo ? ' lct-bg-da' : ''}`}
+      href={b.recordingUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={b.topic ?? undefined}
+      onClick={() => {
+        setDaMo(true);
+        onMo();
+        void apiFetch(`/api/sessions/${b.sessionId}/ban-ghi/da-mo`, { method: 'POST' })
+          .catch(() => {});
+      }}
+    >
+      {ngayNgan(b.startsAt)}
+      {daMo && <span className="lct-bg-dau" aria-label="bạn đã mở"> ✓</span>}
+    </a>
+  );
+}
+
+/**
+ * Báo link bản ghi hỏng (§72 · bảng phân rã dòng 22 "Báo lỗi record").
+ *
+ * Chỉ hiện SAU khi em vừa bấm mở một bản ghi: người chưa thử mở thì chưa biết
+ * nó hỏng, và một nút cho mọi buổi lúc nào cũng nằm đó chỉ làm màn dài thêm.
+ */
+function BaoLoiBanGhi({ sessionId }: { sessionId: number }) {
+  const [trangThai, setTrangThai] = useState<'chua' | 'dang' | 'xong' | 'loi'>('chua');
+  if (trangThai === 'xong') return <span className="lct-bg-da">Đã báo, cảm ơn em.</span>;
+  return (
+    <button
+      type="button"
+      className="lct-link lct-bg-bao"
+      disabled={trangThai === 'dang'}
+      onClick={() => {
+        // CHỜ máy chủ trả lời rồi mới nói "đã báo". Bản đầu đặt cờ trước rồi
+        // `.catch(() => {})` — nên 400, 403 hay mạng rớt cũng ra "Đã báo, cảm ơn
+        // em." trong khi người dạy chẳng nhận được gì (agent soát 26/09).
+        setTrangThai('dang');
+        void apiFetch(`/api/sessions/${sessionId}/ban-ghi/bao-loi`, { method: 'POST' })
+          .then((r) => setTrangThai(r.ok ? 'xong' : 'loi'))
+          .catch(() => setTrangThai('loi'));
+      }}
+    >
+      {trangThai === 'dang' ? 'Đang báo…' : trangThai === 'loi' ? 'Chưa báo được — thử lại?' : 'Không mở được?'}
+    </button>
+  );
+}
+
 export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
   const [loi, setLoi] = useState<string | null>(null);
   const [dangDoi, setDangDoi] = useState(false);
+  // Buổi em vừa bấm mở — để nút báo link hỏng gắn đúng buổi ấy (§72).
+  const [vuaMo, setVuaMo] = useState<number | null>(null);
   const d = dl;
 
   if (!d || d.lop.length === 0) return null;
@@ -265,6 +352,22 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
             )}
             {l.chuongTrinh && <p className="lct-cc">{cauTienDoEm(l.chuongTrinh)}</p>}
 
+            {/* Bản ghi buổi đã học (§72, 26/09/2026). Trợ giảng dán link từ lâu
+                nhưng chưa màn nào của em hiện nó ra — link nằm đó, không ai mở. */}
+            {(l.banGhiGanDay?.length ?? 0) > 0 && (
+              <p className="lct-cc lct-bg">
+                Xem lại:{' '}
+                {l.banGhiGanDay!.map((b) => (
+                  <NutBanGhi key={b.sessionId} b={b} onMo={() => setVuaMo(b.sessionId)} />
+                ))}
+                {/* `key` là bắt buộc: không có nó, React giữ nguyên instance khi
+                    em mở sang bản ghi khác, nên cờ "đã báo" của buổi trước còn
+                    nguyên và em không báo được link thứ hai — màn vẫn nói "Đã
+                    báo, cảm ơn em." mà chẳng gửi gì (agent soát 26/09). */}
+                {vuaMo !== null && <BaoLoiBanGhi key={vuaMo} sessionId={vuaMo} />}
+              </p>
+            )}
+
             {/* Bài tập chưa nộp. Ở điện thoại thanh trên không có mục Bài tập,
                 nên không có dòng này thì em không biết thầy vừa giao bài. */}
             {l.baiTap?.chuaNop > 0 && (
@@ -291,6 +394,9 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
           </section>
         );
       })}
+      {/* Lịch học sang điện thoại (§71). Đặt SAU các thẻ lớp: em vào đây trước hết
+          để xem buổi tới và bài phải làm; việc thêm lịch chỉ làm một lần. */}
+      <ThemVaoLich />
     </>
   );
 }

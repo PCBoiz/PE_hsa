@@ -119,13 +119,23 @@ nhom_frontend() {
   # Sổ miền + cấu trúc (25/09/2026): tệp không miền, bảng không chủ, GHI chéo miền mới, nợ đã hết mà
   # chưa xoá, docs/CAU_TRUC_*.md cũ — xem scripts/cau_truc.py.
   buoc f7 "cấu trúc --kiem" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/cau_truc.py --kiem
+  # f8 (26/09/2026): repo CÔNG KHAI, mà 13 bước trước đó không bước nào đọc NỘI DUNG tệp sắp đẩy.
+  # `.gitignore` chặn được tệp `.env`, không chặn được một JWT dán vào tài liệu. Đo hôm ấy: PROGRESS.md
+  # trên GitHub (cả erp lẫn master) mang đường dẫn `C:/Users/<tên>/…` ở hai chỗ. Chạy < 2 giây.
+  buoc f8 "quét bí mật" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/quet_bi_mat.py
   if [ ! -d "$GOC/frontend/node_modules" ]; then
     bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
     echo "1 0" > "$TAM/f1.kq"
     return
   fi
   buoc f1 "tsc --noEmit" "$GOC/frontend" node node_modules/typescript/bin/tsc --noEmit
-  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" node node_modules/eslint/bin/eslint.js --max-warnings 0
+  # `--max-old-space-size` ĐẶT TRẦN cho V8, không phải xin thêm bộ nhớ: không có nó, V8 tự chọn trần theo
+  # RAM tổng của máy (15,9 GB ở đây) rồi đòi tới khi hệ điều hành từ chối — eslint chết mã 134 (SIGABRT)
+  # giữa lượt, và bảng chỉ hiện một dãy địa chỉ hex không nói gì. Đo 26/09: chạy riêng thì eslint SẠCH,
+  # chỉ hỏng khi hai nhóm của cổng chạy song song cùng một agent đang giữ 2,3 GB. Trần thấp buộc V8 dọn
+  # rác sớm và đi tới nơi, chậm hơn vài giây nhưng không bao giờ chết.
+  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" \
+    node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js --max-warnings 0
   buoc f3 "node --check public/static" "$GOC/frontend" kiem_cu_phap_js
   buoc f4 "unit Node (e2e/unit)" "$GOC/frontend" unit_node
   buoc f5 "ban_do --kiem" "$GOC" node scripts/ban_do.mjs --kiem

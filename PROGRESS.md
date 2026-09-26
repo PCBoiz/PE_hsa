@@ -6,6 +6,221 @@ Sổ này KHÔNG chép lại `git log` — git đã ghi từng thay đổi và l
 kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
+
+## 26/09/2026 (tối muộn) — thêm hai dòng nữa bị ghi thấp hơn thực tế
+
+Cùng cách làm với dòng 17 và 21: không viết mã, chỉ mở màn thật và đối chiếu
+từng gạch của khách.
+
+- **Dòng 14 (giáo viên · điểm danh)** — ghi "gần đủ, thiếu lịch sử sửa từng
+  buổi (V-d)". Đo: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại
+  được, và `LichSuDiemDanh` hiện ngay dưới sổ. **gần đủ → CÓ**, V-d gạch.
+- **Dòng 18 (giáo viên · theo dõi học sinh)** — ghi "MỘT PHẦN: nhận xét GV không
+  có chỗ ghi; thiếu cờ cần hỗ trợ, đề xuất hướng học (V-a P0, V-f)". Đo và soi
+  ảnh: trang từng em có đủ ô **Nhận xét**, **Đánh dấu em cần hỗ trợ**, **Đề xuất
+  hướng học**, cùng lịch sử điểm danh, bài tập, điểm từng bài. **MỘT PHẦN → CÓ**,
+  V-a + V-f gạch.
+
+Bốn dòng trong một ngày (17, 21, 14, 18) bị ghi thấp hơn thực tế — đều vì việc
+đã làm xong mà không ai quay lại gạch khỏi kế hoạch. Đáng rút ra: **kế hoạch và
+bảng nghiệm thu phải được ĐO lại, không chỉ được viết thêm vào.**
+
+Ảnh dòng 18 còn xác nhận một việc khác: em Đỗ Đức Tùng hiện `7/7 · 100%` — đúng
+trạng thái gốc, tức lượt hoàn nguyên sau khi dựng dữ liệu vắng liên tiếp đã sạch
+thật, không để lại buổi vắng oan nào trong lớp mẫu.
+
+Việc của anh Sơn (K3) nay là bốn ô: `G24` (STT 22), `G19` (17), `G16` (14),
+`G20` (18).
+
+
+## 26/09/2026 (tối) — agent soát tìm ra sáu lỗi trong §72, đã vá năm
+
+Gọi hai agent theo mô hình anh Sơn yêu cầu: một làm (E3), một **đi chứng minh
+việc vừa làm là sai**. Agent soát trả về sáu mục có vết nguồn và số đo — đây là
+lần đầu mô hình ấy bắt được thứ mà chính người làm không thấy.
+
+**① Buổi bù — §72 tự cãi nhau.** `lop_cua_toi.py` lọc bằng `thuoc_buoi` (V-g,
+§62e), `ban_ghi.py` thì không. Hậu quả đo được: thống kê lấy sĩ số CẢ LỚP làm
+mẫu số, nút Nhắc gọi chuông cho 26 em chưa từng dự buổi bù — và màn "Lớp của
+tôi" của chính họ lại ẩn đúng buổi ấy. Em làm đúng lời nhắc rồi mở ra không thấy
+gì. Đã vá cả ba cửa (`_thuoc_lop`, thống kê, nhắc).
+
+**② Nút báo lỗi thiếu `key`.** React giữ nguyên instance khi `sessionId` đổi,
+nên cờ "đã báo" của buổi trước còn nguyên: em báo được ĐÚNG MỘT link mỗi phiên,
+từ link thứ hai màn nói "Đã báo, cảm ơn em." mà không gửi gì. Kèm theo:
+`setState(true)` chạy TRƯỚC `.catch(() => {})` nên 400/403/mạng rớt cũng ra câu
+ấy. Nay chờ máy chủ trả lời rồi mới nói, và có trạng thái "Chưa báo được — thử
+lại?".
+
+**③ Chuông gộp xoá mất số em báo.** `coalesce_count=3` nằm trong CSDL mà người
+dạy chỉ đọc được "1 em báo" — đúng thứ view ấy sinh ra để phân biệt (một em báo
+có thể là mạng nhà em ấy). Thêm `title_multi`.
+
+**④ Bốn đột biến agent soát chạy mà bộ test của tôi KHÔNG giết**: người đã rời
+lớp vẫn ghi được, `bao-loi` không canh `recording_url`, `thieuBanGhi` gồm cả
+buổi đã huỷ, `daMo` đếm phồng. Mã ba chỗ ĐÚNG — chỉ test không canh. Đã thêm bảy
+test; giờ **8/8 đột biến bị giết** (4 của agent + 4 của tôi cho phần vừa vá).
+
+Một test của tôi xanh vì LÝ DO SAI: `'3' in title` — mà tiêu đề có sẵn "23/09",
+cũng chứa chữ số 3. Siết thành `'3 em'`.
+
+**⑤ và ⑥ thuộc nhánh e3**, chưa gộp: §65 mắc cùng lỗi buổi bù, và "báo lỗi bản
+ghi" sẽ có HAI hộp thư nếu gộp (chuông §72 vs hộp Yêu cầu §65). Mục sau cần anh
+Sơn quyết — đã ghi K4 trong `docs/VIEC_CUA_ANH.md`, tôi đề xuất dùng hộp Yêu cầu
+vì "link hỏng" là việc phải có người nhận và đóng lại.
+
+Đo lại trên màn thật sau khi vá: em báo được CẢ HAI bản ghi
+(`/api/sessions/1544/ban-ghi/bao-loi` gọi được), API trả 200 sau 1,9 s rồi màn
+chuyển "Đã báo, cảm ơn em.". Test 23/23 xanh.
+
+
+## 26/09/2026 (tối) — soát lại bảng nghiệm thu: hai dòng bị ghi THẤP hơn thực tế
+
+Không viết thêm mã, chỉ ĐO. Bảng nghiệm thu là thứ khách đọc; ghi sai theo hướng
+nào cũng hại — nói quá thì mất tin, nói thiếu thì công đã làm không ai thấy.
+
+**Dòng 21 (trợ giảng · theo dõi)**: ghi chú 23/09 nói *"TG không nhận
+`vangLien`/`canChuY`"*, mà chú thích trong `viec_hom_nay.py` lại nói ngược. Đo:
+dựng một em vắng 3 buổi liền ở lớp mẫu 7322 (ghi sổ trạng thái gốc ra JSON
+trước), gọi API bằng thẻ TG và thẻ GV **cùng lớp** → cả hai `vangLien=1`, cùng
+tên em; soi màn TG → *"Vắng liền từ 2 buổi (1)"*, *"Đỗ Đức Tùng · vắng 3 buổi
+liền"*, nút *"Báo cần hỗ trợ"*. Hoàn nguyên 3/3 khớp gốc. Ghi chú đã lỗi thời.
+
+**Dòng 17 (giáo viên · giao bài)**: ghi *"MỘT PHẦN — không sửa được bài đã
+giao"*, và kế hoạch ghi V-e *"thiếu đối tượng nhận bài"*. Đo trên màn: nút **Đổi
+người nhận** đã có từ trước (`target_mode` + bảng `assignment_targets`), ô **Sửa
+bài** thêm sáng nay, bảng chấm cả lớp ghi rõ từng em *"Chưa nộp"* / *"Nộp
+18/09"* kèm tổng *"9/27 đã nộp"* — đủ cả mười hai gạch của khách. **MỘT PHẦN →
+CÓ**, V-e gạch khỏi kế hoạch.
+
+Suýt sai: lượt dựng dữ liệu đầu lỗi lược đồ giữa chừng (`attendance` không có
+cột `class_id`) nhưng đã kịp đổi một dòng, nên sổ hoàn nguyên ghi `absent` trong
+khi gốc là `present`. Sửa sổ trước khi hoàn nguyên — không thì lớp mẫu của khách
+bị để lại một buổi vắng oan.
+
+Còn chờ anh Sơn: tick `G24` (STT 22) và `G19` (STT 17). Ba đường tự tick đều bị
+chặn — xem `docs/VIEC_CUA_ANH.md` mục K3.
+
+
+## 26/09/2026 (chiều muộn) — dòng 4: hai mốc còn thiếu trong hành trình của em
+
+Khách viết rõ chuỗi phải theo dõi được: *"Đăng ký → Xếp lớp → Khai giảng → Làm
+bài → Kiểm tra → Thi thử → Kết quả → Báo cáo → Hoàn thành khóa học"*. Đối chiếu
+`teaching/dong_thoi_gian.py`: bảy mốc đã có, **hai mốc chưa** — dòng thời gian
+biết em VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào;
+và biết điểm bài KIỂM TRA mà không biết em có làm bài tập hay không.
+
+- **Khai giảng** = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính:
+  lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù.
+- **Làm bài** = lần nộp bài tập đầu tiên, chi tiết "Đã nộp N bài". MỘT mốc cho
+  cả khoá chứ không liệt kê từng bài: trần dòng thời gian là 300 sự kiện, một em
+  học lâu nộp hàng trăm bài thì mọi mốc khác bị đẩy ra ngoài. Bài `kiem_tra`
+  không đếm ở đây vì đã có mốc riêng.
+
+Đo trên màn thật (tài khoản 35704, đã soi ảnh): *Được cấp tài khoản → Bắt đầu
+khoá Tư duy Định lượng → Vào lớp → **Lớp … khai giảng** (03/08) → **Bắt đầu làm
+bài tập · Đã nộp 5 bài** (10/08) → Nộp bài thi thử 8/9*. Test 9/9 xanh, 4 đột
+biến giết 4.
+
+**Bẫy vấp BA lần trong một ngày**: `runserver --noreload` không nạp mã mới, nên
+bộ đo báo "tính năng không dựng" trong khi mã đúng hoàn toàn. Mỗi lần mất mươi
+phút. Đã viết `scripts/nap_lai_be.ps1` — dừng CẢ CẶP tiến trình của runserver,
+bật lại, và chờ tới khi `/health` trả 200 chứ không chỉ tới khi tiến trình sinh
+ra. Một bẫy đã ghi trong brief mà vẫn vấp lại thì nó cần một lệnh, không cần một
+lời nhắc.
+
+
+## 26/09/2026 (chiều) — §72 bản ghi buổi học: tính năng đang ĐỨT ở giữa
+
+Anh Sơn: *"cứ tiếp tục làm theo bảng phân rã tính năng đó"*. Lấy **dòng 22**
+(trợ giảng · quản lý record Zoom) vì nó trùng đúng tích hợp Zoom anh chọn sáng nay.
+
+**Đo trước, và đo mới thấy**: `class_sessions.recording_url` cùng ô nhập ở màn
+Buổi học đã có từ lâu, nên tưởng chỉ còn thiếu phần thống kê. Thật ra
+`recording_url` **không xuất hiện ở BẤT KỲ màn nào của học viên** — trợ giảng dán
+link, không em nào mở được, và cũng không ai biết là không mở được. Lỗ to hơn cái
+thống kê chính là đường cho em xem lại bài.
+
+**Đã làm** — §72 `recording_views` (một dòng mỗi buổi+người, mở lại thì cộng
+`lan_mo`), `backend/teaching/ban_ghi.py` với bốn cửa:
+- `POST /api/sessions/<s>/ban-ghi/da-mo` — em bấm mở, ghi nhận;
+- `POST /api/sessions/<s>/ban-ghi/bao-loi` — em báo link hỏng, chuông về cho
+  người DẠY (giảng viên + trợ giảng), không gửi cho bạn cùng lớp;
+- `GET /api/teach/classes/<c>/ban-ghi` — ai đã mở / chưa mở, **kèm danh sách buổi
+  đã học mà chưa ai dán link** (không nêu ra thì một buổi bị quên cứ nằm im);
+- `POST /api/teach/classes/<c>/ban-ghi/<s>/nhac` — gọi chuông cho em chưa mở.
+
+Giao diện: thẻ lớp của em có dòng `Xem lại: 24/09 22/09`, bấm là mở và đánh dấu
+✓; sau khi bấm mới hiện `Không mở được?`. Màn Buổi học có khối *Bản ghi buổi học*
+với `1/2 em đã mở · Chưa mở: 1 · [Nhắc em chưa mở]`.
+
+**Cố ý KHÔNG đo cái không đo được**: bản ghi nằm trên Zoom/Drive, hệ thống chỉ
+biết em đã BẤM mở. Chữ trên màn nói đúng bấy nhiêu — "đã mở", không phải "đã xem
+xong". Một con số hứa nhiều hơn nó đo được thì lần sau không ai tin nó nữa.
+
+**Đo thật trên màn (26/09, đã soi ảnh)**: em bấm → `24/09` thành `24/09 ✓`, trợ
+giảng thấy `1/2 em đã mở`, bấm nhắc → `Đã nhắc 1 em`. Nút chạm 44 px ở khổ 390,
+không tràn ngang. Ba lỗi tự bắt được khi soi màn thật: ngày hiện ra
+`24T19:30:00/09/2026` (dùng nhầm hàm chỉ ăn `YYYY-MM-DD`), `toLocaleDateString`
+nhả `24-09` thay vì `24/09`, và `text-muted` không phải lớp Tailwind có thật.
+
+**Test**: 15/15 xanh, **10 đột biến giết 10**. Ba đột biến LỌT ở lượt đầu — test
+yếu, đã siết: lớp thử không có buổi tương lai nên luật "chỉ tính buổi đã học"
+không được chạm; và luật "người báo không tự gọi mình" là mã chết cho tới khi có
+lượt TRỢ GIẢNG tự báo lỗi.
+
+**Còn thiếu của dòng 22**: không có. Bốn gạch đầu dòng còn lại (dán link, record
+nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
+
+
+## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
+
+Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.
+
+**Đo trước** (máy 15,9 GB): 12 tiến trình Python — bốn cái cùng đòi cổng 9300 mà
+chỉ một bind được; 10 Node — hai bộ `next dev`, bộ 3500 thuộc worktree của một
+agent đã dừng từ sáng; 11 Chromium giữ **788 MB cho MỘT tab trống**. Dừng phần mồ
+côi trả lại 0,63 GB ngay.
+
+**Gốc rễ, không phải "mở nhiều tab"**: 8 trên 9 bộ đo trong `scripts/` gọi
+`chromium.launch()` ở thân tệp và `close()` ở dòng cuối, **không `finally`**. Một
+lỗi giữa chừng — trang 500, thẻ hết hạn, chờ quá giờ — là Chromium sống tới lúc
+tắt máy, và mỗi lượt chạy lại cộng thêm một bộ.
+
+**Đã làm**
+- `scripts/lib/phien_do.mjs` — vòng đời trình duyệt dùng chung: một trình duyệt
+  cho cả lượt, mỗi vai một trang dùng lại, đóng cả khi lỗi lẫn khi Ctrl-C /
+  `taskkill`. Ba kỹ thuật lấy từ browser-use/jev-ultrafast (tái dùng thay vì mở
+  mới; không chụp ảnh khi không cần; chờ theo dấu hiệu, có trần).
+- `scripts/do_mat_do_chu.mjs` viết lại theo mô-đun ấy, gộp thêm ý của agent
+  `gop-y` (cổng + thư mục thẻ đọc từ môi trường, thêm màn giảng viên). **Đo
+  thật**: 5 màn trong 17,8 s, Chromium còn sót **0** — kể cả khi cố tình trỏ vào
+  cổng chết.
+- `scripts/don_may.ps1` — tìm và dừng tiến trình dev mồ côi. Mặc định CHỈ XEM.
+  Bản đầu xếp nhầm hai tiến trình con của `next dev` đang chạy vào nhóm mồ côi
+  (chỉ nhìn lên cha một nấc); sửa thành lan hai chiều trong cây tiến trình.
+- `scripts/quet_bi_mat.py` + bước **f8** của `pre-push` — repo CÔNG KHAI mà 13
+  bước trước đó không bước nào đọc nội dung tệp sắp đẩy. Bản đầu kêu oan cả 7
+  chỗ (`user:password@`, `u:matkhau@`, `postgres:tam@localhost`); siết lại còn
+  **0 báo oan trên 698 tệp**, vẫn bắt đủ 4 loại bí mật thật trên tệp thử.
+- **Rò rỉ đã có thật**: `PROGRESS.md` trên GitHub — cả `erp` lẫn `master` — mang
+  đường dẫn `C:/Users/<tên tài khoản>/…` ở hai chỗ, `scripts/do_mat_do_chu.mjs`
+  một chỗ nữa. Không phải khoá hay mật khẩu, nhưng RULES §10 cấm. Đã thay bằng
+  `%TEMP%` / `%USERPROFILE%`. Lịch sử `master` vẫn còn vết — chỉ anh Sơn gộp được
+  `master`, nên việc có xoá lịch sử hay không để anh quyết.
+- `.claude/skills/` — ba kỹ năng (`do-man-that`, `soat-bao-mat`,
+  `giao-viec-agent`) + `README.md` giải thích SOLID áp vào kỹ năng thế nào. Hai ý
+  lấy của cloudflare/security-audit-skill: *người tìm khác người xác minh*, và
+  *phát hiện không có vết nguồn thì chưa phải phát hiện*.
+- Trả nợ §71 mà cổng bắt được: hai tệp frontend chưa thuộc miền nào
+  (`so_mien.json`), hai tuyến `.ics` chưa khai lý do (`ban_do.mjs`) — chúng CÓ
+  người gọi, chỉ là người gọi là Google Calendar / Lịch iPhone, không phải
+  frontend. Cổng đủ: **ĐẠT, 14 bước, 57 s**.
+
+**Chưa làm**: 8 worktree đã gộp xong vẫn nằm trên đĩa (874 MB trong 1,2 GB) —
+chưa xoá vì xoá là không lùi được, chờ anh Sơn gật. LightRAG đọc rồi nhưng CHƯA
+dựng, lý do ở `docs/VIEC_CUA_ANH.md`.
+
 hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
 lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
 
@@ -912,7 +1127,7 @@ Ba mẻ A1–A3 bên dưới + vá thêm: thanh trên đếm cả nút nhân s�
 
 **Chưa commit, chưa deploy — mọi thứ dưới đây nằm trong cây làm việc** (`git status`: 23 tệp sửa, HEAD
 `3a4e649`). Thư mục làm việc của đợt audit (kịch bản đo, báo cáo agent, ảnh):
-`C:/Users/sonkh/AppData/Local/Temp/claude/d--PE-test/5192ee2d-32a6-400e-b0de-d9b2020fb7a3/scratchpad/audit/`
+`%TEMP%/claude/<phiên>/scratchpad/audit/`
 (gọi tắt `audit/` bên dưới; nằm trong %TEMP% — có thể bị dọn, nên phần cần thiết đã chép vào đây).
 
 ### A · Ba mẻ sửa đang nằm trong cây làm việc
@@ -8937,7 +9152,7 @@ tay. Lỗi ở cách Windows sinh tiến trình:
 
 `npx` trên Windows là `npx.cmd`, một shim chứ không phải tệp thực thi; spawn
 không qua shell không tìm ra → tiến trình chết ngay → `CONNECTION_CLOSED`.
-Sửa ở `C:\Users\sonkh\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
+Sửa ở `%USERPROFILE%\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
 chờ vẫn đo bằng chính CDP nằm dưới MCP ấy qua Playwright.
 
 ### Vẽ phân quyền — hình dạng có thật, và tôi đã vẽ ngược một lần

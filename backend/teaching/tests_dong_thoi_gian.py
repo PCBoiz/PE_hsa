@@ -141,3 +141,60 @@ def test_hoc_vu_khong_xem_duoc_nhan_su_va_giang_vien_khong_vao(canh):
     assert _goi(DongThoiGianView, 'get', ai=canh['hocvu'], user_id=canh['gv'].id).status_code == 403
     assert _goi(DongThoiGianView, 'get', ai=canh['gv'], user_id=canh['em'].id).status_code == 403
     assert _goi(DongThoiGianView, 'get', ai=canh['hocvu'], user_id=999999999).status_code == 404
+
+
+# ── Hai mốc còn thiếu trong chuỗi khách yêu cầu (bảng phân rã dòng 4, 26/09) ──
+#
+# Khách viết rõ hành trình phải theo dõi được: "Đăng ký → Xếp lớp → **Khai giảng**
+# → **Làm bài** → Kiểm tra → Thi thử → Kết quả → Báo cáo → Hoàn thành khóa học".
+#
+# Đối chiếu 26/09: bảy mốc đã có. Hai mốc in đậm thì chưa — dòng thời gian biết
+# em VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào; và
+# biết điểm bài KIỂM TRA mà không biết em có làm bài tập hay không.
+
+def _buoi(lop, luc, huy=False):
+    return q1("INSERT INTO class_sessions (class_id, starts_at, duration_minutes, topic, status) "
+              "VALUES (%s, %s, 90, 'Buổi đầu', %s) RETURNING id",
+              (lop, luc, 'cancelled' if huy else 'planned'))['id']
+
+
+def _bai_tap(lop, gv, tieu_de, kind='bai_tap'):
+    return q1("INSERT INTO assignments (class_id, title, kind, created_by, max_score) "
+              "VALUES (%s, %s, %s, %s, 10) RETURNING id", (lop, tieu_de, kind, gv.id))['id']
+
+
+def test_moc_khai_giang_lay_buoi_dau_tien_khong_tinh_buoi_da_huy(canh):
+    """"Khai giảng" = buổi học ĐẦU TIÊN của lớp thật sự diễn ra."""
+    _buoi(canh['b'], _l('2026-08-21T19:30'), huy=True)   # buổi huỷ: không phải khai giảng
+    _buoi(canh['b'], _l('2026-08-23T19:30'))             # buổi đầu THẬT
+    _buoi(canh['b'], _l('2026-08-25T19:30'))
+    ev = _lay(canh).data['events']
+    kg = [e for e in ev if e['tieuDe'].startswith('Lớp Lop B TG khai giảng')]
+    assert len(kg) == 1, ('phải có đúng một mốc khai giảng', [e['tieuDe'] for e in ev])
+    assert kg[0]['luc'].startswith('2026-08-23'), 'buổi đã huỷ không được tính là khai giảng'
+
+
+def test_moc_lam_bai_dem_bai_em_da_nop(canh):
+    """"Làm bài" = lần em nộp bài tập ĐẦU TIÊN, kèm số bài đã nộp."""
+    b1 = _bai_tap(canh['b'], canh['gv'], 'Bài 1 — hàm số')
+    b2 = _bai_tap(canh['b'], canh['gv'], 'Bài 2 — logarit')
+    kt = _bai_tap(canh['b'], canh['gv'], 'Kiểm tra giữa kỳ', kind='kiem_tra')
+    q1('INSERT INTO submissions (assignment_id, user_id, submitted_at) VALUES (%s, %s, %s) '
+       'RETURNING user_id', (b1, canh['em'].id, _l('2026-08-26T21:00')))
+    q1('INSERT INTO submissions (assignment_id, user_id, submitted_at) VALUES (%s, %s, %s) '
+       'RETURNING user_id', (b2, canh['em'].id, _l('2026-08-28T21:00')))
+    # Bài KIỂM TRA không đếm vào "làm bài": nó đã là mốc "Kiểm tra" riêng.
+    q1('INSERT INTO submissions (assignment_id, user_id, submitted_at) VALUES (%s, %s, %s) '
+       'RETURNING user_id', (kt, canh['em'].id, _l('2026-08-30T21:00')))
+
+    ev = _lay(canh).data['events']
+    lb = [e for e in ev if e['tieuDe'].startswith('Bắt đầu làm bài')]
+    assert len(lb) == 1, ('phải có đúng một mốc làm bài', [e['tieuDe'] for e in ev])
+    assert lb[0]['luc'].startswith('2026-08-26'), 'mốc là lần nộp ĐẦU TIÊN'
+    assert '2 bài' in (lb[0]['chiTiet'] or ''), \
+        'đếm bài tập đã nộp, KHÔNG tính bài kiểm tra (đã có mốc riêng)'
+
+
+def test_em_chua_nop_bai_nao_thi_khong_bia_ra_moc_lam_bai(canh):
+    ev = _lay(canh).data['events']
+    assert not [e for e in ev if e['tieuDe'].startswith('Bắt đầu làm bài')]

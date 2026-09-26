@@ -92,18 +92,23 @@ def _soan_thu(ten, duong_dan):
     """(chữ thuần, html) của thư đặt lại mật khẩu."""
     goi = (ten or '').strip() or 'bạn'
     chu = ('Chào %s,\n\n'
-           'Có người (có thể là chính bạn) vừa xin đặt lại mật khẩu cho tài khoản TopHSA '
-           'gắn với địa chỉ này. Mở đường dẫn dưới đây trong %d phút để đặt mật khẩu mới — '
-           'đường dẫn chỉ dùng được một lần:\n\n%s\n\n'
-           'Nếu bạn không xin, cứ bỏ qua thư này: mật khẩu hiện tại vẫn giữ nguyên.\n\n'
-           '— TopHSA\n' % (goi, HAN_PHUT, duong_dan))
+           'Mình nhận được yêu cầu đặt lại mật khẩu cho tài khoản TopHSA của bạn. '
+           'Bấm vào đường dẫn dưới đây để chọn mật khẩu mới:\n\n%s\n\n'
+           'Đường dẫn dùng được một lần và sống trong %d phút. Quá giờ thì bạn xin lại '
+           'một cái mới, cũng nhanh thôi.\n\n'
+           'Nếu không phải bạn xin thì cứ bỏ qua thư này — mật khẩu cũ vẫn dùng bình thường.\n\n'
+           'Thân mến,\nTopHSA\n' % (goi, duong_dan, HAN_PHUT))
     trang = ('<p>Chào %s,</p>'
-             '<p>Có người (có thể là chính bạn) vừa xin đặt lại mật khẩu cho tài khoản TopHSA '
-             'gắn với địa chỉ này. Mở đường dẫn dưới đây trong %d phút để đặt mật khẩu mới — '
-             'đường dẫn chỉ dùng được một lần:</p>'
-             '<p><a href="%s">Đặt mật khẩu mới</a></p>'
-             '<p>Nếu bạn không xin, cứ bỏ qua thư này: mật khẩu hiện tại vẫn giữ nguyên.</p>'
-             '<p>— TopHSA</p>' % (html.escape(goi), HAN_PHUT, html.escape(duong_dan, quote=True)))
+             '<p>Mình nhận được yêu cầu đặt lại mật khẩu cho tài khoản TopHSA của bạn. '
+             'Bấm nút dưới đây để chọn mật khẩu mới:</p>'
+             '<p><a href="%s" style="display:inline-block;padding:10px 18px;border-radius:8px;'
+             'background:#4f46e5;color:#fff;text-decoration:none;font-weight:600">'
+             'Đặt mật khẩu mới</a></p>'
+             '<p style="color:#6b7280">Đường dẫn dùng được một lần và sống trong %d phút. '
+             'Quá giờ thì bạn xin lại một cái mới, cũng nhanh thôi.</p>'
+             '<p>Nếu không phải bạn xin thì cứ bỏ qua thư này — mật khẩu cũ vẫn dùng bình thường.</p>'
+             '<p style="color:#6b7280">Thân mến,<br>TopHSA</p>'
+             % (html.escape(goi), html.escape(duong_dan, quote=True), HAN_PHUT))
     return chu, trang
 
 

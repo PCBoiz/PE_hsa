@@ -62,15 +62,19 @@
         "backend/teaching/ngay_le.py",
         "backend/teaching/buoi_bu.py",
         "backend/teaching/nguoi_buoi.py",
+        "backend/teaching/ban_ghi.py",
         "backend/lich/**/*.py"
       ],
       "frontend": [
         "frontend/src/app/(standalone)/giang-day/lich/**",
         "frontend/src/app/(standalone)/giang-day/buoi-hoc/**",
+        "frontend/src/app/lich/**",
+        "frontend/src/components/ThemVaoLich.tsx",
         "frontend/src/lib/noiHoc.ts"
       ],
       "bang": [
         "calendar_links",
+        "recording_views",
         "class_sessions",
         "session_participants"
       ],

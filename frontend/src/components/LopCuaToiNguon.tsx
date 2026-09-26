@@ -56,6 +56,12 @@ const HINH_DANG = z.looseObject({
       sessionId: z.number(), startsAt: chu, topic: chu, daDiemDanh: z.boolean(), trangThai: chu,
     })).optional(),
     chuongTrinh: HD_TIEN_DO_EM,
+    // §72 (26/09/2026) — bản ghi buổi đã học. Tuỳ chọn vì Vercel lên trước
+    // Render: máy chủ cũ chưa trả khoá này.
+    banGhiGanDay: z.array(z.looseObject({
+      sessionId: z.number(), startsAt: chu, topic: chu,
+      recordingUrl: z.string(), daMo: z.boolean(),
+    })).optional(),
   })),
   mucTieu: z.looseObject({ examDate: chu }),
 }) satisfies HinhDang<DuLieu>;

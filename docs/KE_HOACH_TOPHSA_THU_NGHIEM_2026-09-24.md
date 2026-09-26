@@ -62,10 +62,10 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | 9 | Lớp (giáo vụ) | thiếu lịch sử điểm danh, tiến độ vs khung, cảnh báo chậm | V-d, E1 |
 | 10 | Lịch học | gần đủ; thiếu buổi bù gắn buổi gốc, đổi GV/TG một buổi, Zoom | V-g, Đ2 §58, E4 |
 | 11, 12 | Hỗ trợ lớp + thay đổi học tập có duyệt | CHƯA | E3 |
-| 14 | GV điểm danh | thiếu lịch sử sửa từng buổi | V-d |
+| 14 | GV điểm danh | ĐỦ (đo 26/09) — lịch sử sửa từng buổi đã có (`LichSuDiemDanh`) | ~~V-d~~ xong |
 | 15, 16 | GV chương trình, sổ đầu bài buổi học | CHƯA phần lớn | E1 (+ tài liệu: Đ2 §60) |
-| 17 | Giao bài | thiếu "đối tượng nhận bài" | V-e |
-| 18 | Theo dõi HS | **nhận xét GV: không có chỗ ghi + đang lỗi rò ghi chú chuyển lớp**; thiếu cờ "cần hỗ trợ", đề xuất hướng học | V-a (P0), V-f |
+| 17 | Giao bài | ĐỦ (đo 26/09) — "đối tượng nhận bài" đã có từ trước (`target_mode` + `assignment_targets`, nút "Đổi người nhận"); ô Sửa bài thêm 26/09 | ~~V-e~~ xong |
+| 18 | Theo dõi HS | ĐỦ (đo 26/09, soi ảnh) — nhận xét (§62a `teacher_comment`, hết rò), cờ "cần hỗ trợ", đề xuất hướng học đều có trên trang từng em | ~~V-a~~ ~~V-f~~ xong |
 | 20 | TG nhắn / nhắc | CHƯA | E3 (trao đổi) + E2 (nhắc) |
 | 21 | TG theo dõi | TG KHÔNG nhận `vangLien`/`canChuY` (`viec_hom_nay.py:225`) | V-b, E4 |
 | 22 | TG record | dán link CÓ; đã/chưa có, HS đã xem, báo lỗi: CHƯA | E4, V-l, E3 |
