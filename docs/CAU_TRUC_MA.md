@@ -24,7 +24,7 @@
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3968 dòng | 14 tệp · 2528 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1838 dòng | 10 tệp · 1793 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1878 dòng | 11 tệp · 2497 dòng |
-| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1480 dòng | 10 tệp · 1514 dòng |
+| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1517 dòng | 10 tệp · 1514 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 456 dòng | 0 tệp · 0 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1602 dòng | 14 tệp · 1432 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6248 dòng | 67 tệp · 6879 dòng |
@@ -315,11 +315,11 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|---|
 | `backend/yeu_cau/__init__.py` | 0 dòng | — |
 | `backend/yeu_cau/apps.py` | 11 dòng | — |
-| `backend/yeu_cau/dich_vu.py` | 701 dòng | `yeu_cau`, `yeu_cau_su_kien` |
+| `backend/yeu_cau/dich_vu.py` | 724 dòng | `yeu_cau`, `yeu_cau_su_kien` |
 | `backend/yeu_cau/loai.py` | 141 dòng | — |
 | `backend/yeu_cau/thuc_thi.py` | 180 dòng | — |
 | `backend/yeu_cau/urls.py` | 31 dòng | — |
-| `backend/yeu_cau/views.py` | 416 dòng | — |
+| `backend/yeu_cau/views.py` | 430 dòng | — |
 
 | Tệp frontend | Dòng |
 |---|---|

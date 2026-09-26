@@ -23,6 +23,7 @@ from common.permissions import (
     visible_class_ids,
 )
 from common.throttling import _IPKhach
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.parent_link import _cua_ai
 from teaching.vocab import chi_hoc_vien
 from yeu_cau import dich_vu as dv
@@ -97,11 +98,16 @@ class LuaChonHocVienView(APIView):
                    FROM class_members m JOIN classes c ON c.id = m.class_id
                    WHERE m.user_id = %s ORDER BY c.id, (m.left_at IS NULL) DESC''', (request.user.id,))
         dang = [r['id'] for r in lop if r['dang_hoc']]
+        # BUỔI BÙ (V-g, §62e): buổi có `session_participants` thì chỉ mấy em ấy thuộc
+        # buổi. Thiếu `thuoc_buoi` ở đây thì ô chọn đưa buổi bù của bạn khác cho cả lớp,
+        # và em báo "bản ghi hỏng" về một buổi mình chưa từng dự (agent soát 26/09).
         buoi = q('''SELECT s.id, s.class_id, s.starts_at, s.topic, (s.recording_url IS NOT NULL
                            AND s.recording_url <> '') AS co_ban_ghi
                     FROM class_sessions s
                     WHERE s.class_id = ANY(%s) AND s.starts_at <= %s AND s.status <> 'cancelled'
-                    ORDER BY s.starts_at DESC LIMIT 30''', (dang, local_now())) if dang else []
+                      AND ''' + thuoc_buoi('s.id', '%s') + '''
+                    ORDER BY s.starts_at DESC LIMIT 30''',
+                 (dang, local_now(), request.user.id)) if dang else []
         return Response({
             'loai': _lua_chon_loai('hoc_vien'),
             'lop': [{'id': r['id'], 'ten': r['name'], 'dangHoc': r['dang_hoc']} for r in lop],
@@ -276,7 +282,15 @@ class NguoiNhanView(APIView):
                     (yc['lop']['id'], yc['lop']['id'], ROLE_ASSISTANT))
         vai = {ROLE_ADMIN: 'Quản trị viên', ROLE_ACADEMIC: 'Học vụ', ROLE_TEACHER: 'Giảng viên',
                ROLE_ASSISTANT: 'Trợ giảng'}
-        return Response({'nguoi': [{'id': r['id'], 'ten': r['name'] or r['email'],
+        # Người chưa đặt tên: chỉ học vụ / quản trị đọc email thay tên. Tuyến này trợ
+        # giảng cũng gọi được, mà `r['name'] or r['email']` đưa email cho tất cả — đúng
+        # cái lỗ `dich_vu._ten_em` đã bịt cho phía học viên (soát 26/09/2026).
+        def ten(r):
+            if r['name']:
+                return r['name']
+            return r['email'] if nguoi.la_duyet else '%s #%d' % (vai.get(r['role'], 'Nhân sự'), r['id'])
+
+        return Response({'nguoi': [{'id': r['id'], 'ten': ten(r),
                                     'vai': vai.get(r['role'], r['role'])} for r in ds]})
 
 

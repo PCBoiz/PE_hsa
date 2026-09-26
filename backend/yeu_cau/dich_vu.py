@@ -35,6 +35,7 @@ from common.permissions import (
     visible_class_ids,
 )
 from notifications.gui import gui_sau_commit
+from teaching.nguoi_buoi import thuoc_buoi
 from yeu_cau import loai as L
 
 VAI_PHU_HUYNH = 'Phụ huynh'
@@ -374,6 +375,20 @@ def _tung_hoc(uid, class_id):
                    (uid, class_id)))
 
 
+def _du_buoi(uid, session_id):
+    """Em ``uid`` có thuộc buổi ``session_id`` không (BUỔI BÙ, V-g / §62e).
+
+    "Có trong lớp" KHÔNG đủ: buổi bù chỉ vài em, mà một buổi bù cho hai em thì
+    26 em còn lại chưa từng dự. Hỏi đúng bằng `teaching.nguoi_buoi.thuoc_buoi`,
+    cùng mệnh đề với lịch, học phí, tờ phụ huynh và §72 — một chỗ định nghĩa
+    "ai thuộc buổi", không có bản thứ hai để lệch.
+
+    Thứ tự tham số là cái bẫy: chuỗi `thuoc_buoi` sinh ra có ``uid`` đứng TRƯỚC
+    ``sid``, nên truyền ``(uid, session_id)`` chứ không phải ngược lại.
+    """
+    return bool(q1('SELECT 1 AS c WHERE ' + thuoc_buoi('%s', '%s'), (uid, session_id)))
+
+
 def _nguoi_nhan_khi_tao(yc, nguoi):
     """Ai được báo khi có yêu cầu mới."""
     nhom = L.nhom(yc['loai'])
@@ -432,6 +447,10 @@ def tao(nguoi, *, loai, tieu_de, noi_dung=None, class_id=None, session_id=None, 
         class_id = buoi['class_id']
         if nguon == 'hoc_vien' and not _tung_hoc(nguoi.id, class_id):
             raise LoiYeuCau(404, 'Không tìm thấy buổi học này.')
+        # Buổi BÙ: ở trong lớp chưa đủ, phải có tên trong buổi ấy. 404 chứ không 403 —
+        # cùng câu với "buổi của lớp khác", để không lộ buổi bù của bạn khác có tồn tại.
+        if nguon == 'hoc_vien' and not _du_buoi(nguoi.id, session_id):
+            raise LoiYeuCau(404, 'Không tìm thấy buổi học này.')
         if nguon not in ('hoc_vien', 'phu_huynh') and not can_see_class(nguoi.user, class_id):
             raise LoiYeuCau(404, 'Không tìm thấy buổi học này.')
     if thong_tin.get('can_buoi') and session_id is None:
@@ -446,6 +465,10 @@ def tao(nguoi, *, loai, tieu_de, noi_dung=None, class_id=None, session_id=None, 
             raise LoiYeuCau(404, 'Không tìm thấy học viên này.')
         if class_id is not None and not _tung_hoc(hoc_vien_id, class_id):
             raise LoiYeuCau(400, 'Em này không học lớp đã chọn.')
+        # Nhân sự gõ hộ em cũng phải qua cùng hàng rào buổi bù: không thì hàng rào ở
+        # màn học viên chỉ là một cửa, còn cửa kia vẫn để ngỏ cho đúng dòng dữ liệu ấy.
+        if session_id is not None and not _du_buoi(hoc_vien_id, session_id):
+            raise LoiYeuCau(400, 'Em này không dự buổi học đã chọn.')
         if class_id is None and not nguoi.la_duyet:
             raise LoiYeuCau(400, 'Chọn lớp.')
 

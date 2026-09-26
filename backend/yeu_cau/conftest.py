@@ -37,9 +37,15 @@ class Dung:
         x("INSERT INTO class_members (class_id, user_id, joined_at) VALUES (%s, %s, now() - interval '20 days')",
           (lop, uid))
 
-    def buoi(self, lop):
-        return q1("INSERT INTO class_sessions (class_id, starts_at, recording_url) "
-                  "VALUES (%s, now() - interval '1 day', 'https://zoom.example/rec') RETURNING id", (lop,))['id']
+    def buoi(self, lop, rieng=None):
+        """Một buổi đã diễn ra của lớp. `rieng` = danh sách em → BUỔI BÙ (V-g, §62e):
+        chỉ mấy em ấy thuộc buổi, cả lớp còn lại không."""
+        sid = q1("INSERT INTO class_sessions (class_id, starts_at, recording_url) "
+                 "VALUES (%s, now() - interval '1 day', 'https://zoom.example/rec') RETURNING id",
+                 (lop,))['id']
+        for uid in rieng or ():
+            x('INSERT INTO session_participants (session_id, user_id) VALUES (%s, %s)', (sid, uid))
+        return sid
 
     def link(self, lop, em, tao, han="now() + interval '10 days'", thu_hoi=None):
         tk = secrets.token_urlsafe(32)

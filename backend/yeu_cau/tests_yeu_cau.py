@@ -140,6 +140,78 @@ def test_bao_loi_ban_ghi_bat_buoc_buoi(d, canh):
     assert r.status_code == 404
 
 
+def test_nguoi_nhan_khong_lo_email_voi_tro_giang(d, canh):
+    """`/nguoi-nhan` — nhân sự chưa đặt tên thì trợ giảng KHÔNG được đọc email của họ.
+
+    Bản đầu viết `r['name'] or r['email']` nên một giảng viên chưa đặt tên là một
+    email nằm trong ô chọn "Chuyển tiếp…" của trợ giảng. Cùng ranh giới với
+    `dich_vu._ten_em` phía học viên (soát 26/09/2026).
+    """
+    gv_khong_ten = d.nguoi('Giảng viên')
+    # `Dung.nguoi` luôn đặt một tên; ở đây cần đúng trường hợp hồ sơ CHƯA có tên.
+    x('UPDATE users SET name = NULL WHERE id = %s', (gv_khong_ten,))
+    lop = d.lop(gv=gv_khong_ten)
+    d.vao(lop, canh['tg'])
+    d.vao(lop, canh['em'])
+    yid = _tao(d.api(canh['em']), {'loai': 'hoi_dap', 'tieu_de': 'Câu 5', 'class_id': lop}).data['id']
+
+    email = q1('SELECT email FROM users WHERE id = %s', (gv_khong_ten,))['email']
+    tg = d.api(canh['tg']).get('/api/teach/yeu-cau/%d/nguoi-nhan' % yid)
+    assert tg.status_code == 200, tg.data
+    ten_tg = [n['ten'] for n in tg.data['nguoi']]
+    assert email not in ten_tg, 'trợ giảng không được đọc email nhân sự chưa đặt tên'
+    assert any(t.startswith('Giảng viên #') for t in ten_tg), 'vẫn phải gọi được tên để chuyển tiếp'
+
+    # Học vụ thì đọc được email thay tên — họ là người sửa hồ sơ ấy.
+    hv = d.api(canh['hv']).get('/api/teach/yeu-cau/%d/nguoi-nhan' % yid)
+    assert email in [n['ten'] for n in hv.data['nguoi']]
+
+
+def test_buoi_bu_chi_em_du_moi_bao_loi_duoc(d, canh):
+    """BUỔI BÙ (V-g, §62e) — §65 phải hỏi `thuoc_buoi`, không phải "có trong lớp không".
+
+    Buổi bù cho MỘT em: ô chọn buổi của em kia không được có nó, và POST thẳng
+    `session_id` ấy phải 404. Bản đầu chỉ kiểm `_tung_hoc(uid, class_id)` nên em
+    không dự buổi vẫn báo lỗi bản ghi của buổi ấy được (agent soát 26/09, yêu cầu
+    id 377 trên Neon dev) — một buổi bù hai em hoá thành việc của cả lớp.
+    """
+    bu = d.buoi(canh['a'], rieng=[canh['em2']])
+    du, khong_du = d.api(canh['em2']), d.api(canh['em'])
+
+    # Ô chọn: em dự thấy buổi bù, em không dự thì không.
+    assert bu in [b['id'] for b in du.get('/api/yeu-cau/lua-chon').data['buoi']]
+    assert bu not in [b['id'] for b in khong_du.get('/api/yeu-cau/lua-chon').data['buoi']]
+
+    # POST thẳng: em dự được 201, em không dự 404 (không lộ buổi có tồn tại).
+    assert _tao(du, {'loai': 'bao_loi_ban_ghi', 'tieu_de': 'Record im tiếng', 'session_id': bu}
+                ).status_code == 201
+    r = _tao(khong_du, {'loai': 'bao_loi_ban_ghi', 'tieu_de': 'Record im tiếng', 'session_id': bu})
+    assert r.status_code == 404, r.data
+
+    # Buổi thường (không có `session_participants`) thì cả lớp vẫn như cũ.
+    thuong = d.buoi(canh['a'])
+    assert thuong in [b['id'] for b in khong_du.get('/api/yeu-cau/lua-chon').data['buoi']]
+    assert _tao(khong_du, {'loai': 'bao_loi_ban_ghi', 'tieu_de': 'x', 'session_id': thuong}
+                ).status_code == 201
+
+
+def test_nhan_su_tao_ho_em_khong_du_buoi_bu_thi_chan(d, canh):
+    """Học vụ gõ hộ em: cũng phải hỏi buổi, không chỉ hỏi lớp.
+
+    Không thì hàng rào ở màn học viên thành vô nghĩa — cùng một dòng dữ liệu sai
+    vẫn vào bảng, chỉ là qua một cửa khác.
+    """
+    bu = d.buoi(canh['a'], rieng=[canh['em2']])
+    hv = d.api(canh['hv'])
+    ok = _tao(hv, {'loai': 'bao_loi_ban_ghi', 'tieu_de': 'Record im tiếng', 'session_id': bu,
+                   'hoc_vien_id': canh['em2']}, '/api/teach/yeu-cau')
+    assert ok.status_code == 201, ok.data
+    r = _tao(hv, {'loai': 'bao_loi_ban_ghi', 'tieu_de': 'Record im tiếng', 'session_id': bu,
+                  'hoc_vien_id': canh['em']}, '/api/teach/yeu-cau')
+    assert r.status_code == 400, r.data
+    assert 'buổi' in r.data['error'].lower()
+
+
 def test_tro_giang_bao_len_giang_vien(d, canh):
     tg = d.api(canh['tg'])
     r = _tao(tg, {'loai': 'bao_cao_len', 'tieu_de': 'Em A không phản hồi', 'class_id': canh['a'],
