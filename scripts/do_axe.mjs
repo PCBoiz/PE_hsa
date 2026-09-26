@@ -62,6 +62,9 @@ const TRANG = [
   // xin chuyển lớp chưa duyệt). 176 / 177 = yêu cầu của tài khoản e2e ở lớp mẫu 7322 (Neon dev).
   ['/yeu-cau', 'Hỏi & yêu cầu', HV], ['/yeu-cau/176', 'Một yêu cầu (HV)', HV],
   ['/yeu-cau', 'Hộp yêu cầu (nhân sự)', AD], ['/yeu-cau/177', 'Xin chuyển lớp (nhân sự)', AD],
+  // Màn soạn thông báo (§61, E2-GD 26/09/2026): biểu mẫu có ô tick nhóm (`fieldset`/`legend`)
+  // và nút khoá tới khi React gắn — hai thứ axe hay bắt nhất ở một màn nhập liệu mới.
+  ['/giang-day/thong-bao/7322', 'GD soạn thông báo lớp', AD], ['/quan-tri/thong-bao', 'QT thông báo trung tâm', AD],
   // Tờ phụ huynh — nay có khối gửi yêu cầu. Cần chìa lớp mẫu (`scripts/cap_chia_mau.py`); thiếu tệp
   // thì bỏ trang này (xem sau mảng) — cùng quy ước với `do_giao_dien.mjs`.
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
@@ -108,7 +111,21 @@ for (const cheDo of ['light', 'dark']) {
   }
 }
 const chiThem = process.argv.includes('--chi-them');
-const LUOT = chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM];
+/* `--chi <chuỗi>` — chỉ chạy những lượt có TÊN chứa chuỗi ấy (không phân biệt hoa thường).
+   Thêm 26/09/2026: một lượt đầy đủ là ~60 lần tải trang và vượt 10 phút trên máy dev, nên
+   sau khi thêm MỘT màn mới người ta hoặc chạy cả bộ (rồi Ctrl-C giữa chừng — một trong bốn
+   đường mà `finally` KHÔNG chạy, xem `lib/phien_do.mjs`), hoặc không đo gì cả. Cờ này để
+   đo đúng màn vừa dựng. Nó KHÔNG thay lượt đầy đủ: cổng RULES §4 vẫn chạy không cờ. */
+const chi = process.argv.includes('--chi')
+  ? String(process.argv[process.argv.indexOf('--chi') + 1] || '').toLowerCase()
+  : null;
+const LUOT = (chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM])
+  .filter((l) => !chi || l.ten.toLowerCase().includes(chi));
+if (chi && LUOT.length === 0) {
+  // Lọc không khớp gì mà vẫn in "0 vi phạm" là cách chắc chắn nhất để tin rằng đã đo.
+  console.error(`--chi "${chi}" không khớp lượt nào. Xem tên lượt trong mảng TRANG / LUOT_THEM.`);
+  process.exit(2);
+}
 
 const AXE = 'https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js';
 const b = await chromium.launch();

@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from common.db import q, q1, x
 from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT, ROLE_STUDENT, ROLE_TEACHER
+from courses.truy_cap import BA_MON
 
 pytestmark = pytest.mark.django_db
 
@@ -240,3 +241,34 @@ def test_xem_truoc_khong_khai_sendEmail_thi_dem_email_bang_0(canh):
                         ('/api/teach/classes/%d/thong-bao/preview' % canh['lop'], {})):
         d = _api(canh['hv']).post(duong, than, format='json').json()
         assert d['tong'] == 4 and d['email'] == 0, duong
+
+
+# ── DANH MỤC ĐỐI TƯỢNG cho MÀN SOẠN (E2-GD, 26/09/2026) ───────────────────
+#
+# Màn soạn của học vụ phải hỏi máy chủ "có những lớp nào, những môn nào" chứ
+# KHÔNG gõ lại danh mục vào mã giao diện (RULES §7). Một bảng môn chép sang
+# React là bảng sẽ trôi khỏi `courses.truy_cap.BA_MON` ngay lần TopHSA mở môn
+# thứ tư, và không ai biết bản nào đúng.
+
+def test_get_tra_ve_danh_muc_lop_va_mon_cho_man_soan(canh):
+    d = _api(canh['hv']).get('/api/admin/thong-bao').json()
+    assert 'chon' in d, 'GET phải kèm danh mục đối tượng cho màn soạn'
+    lop = {l['id']: l for l in d['chon']['lop']}
+    assert canh['lop'] in lop and canh['lop_khac'] in lop
+    assert lop[canh['lop']]['name'], 'ô chọn lớp cần TÊN lớp, không phải id'
+    assert lop[canh['lop']]['soEm'] == 4, 'kèm sĩ số để người gửi biết mình sắp báo cho bao nhiêu em'
+    mon = d['chon']['mon']
+    assert [m['id'] for m in mon] == list(BA_MON), 'môn lấy từ cổng mở môn, không gõ lại ở màn'
+    assert all(m['nhan'] for m in mon), 'mỗi môn phải có nhãn tiếng Việt'
+
+
+def test_danh_muc_lop_khong_gom_lop_da_huy(canh):
+    x("UPDATE classes SET status = 'cancelled' WHERE id = %s", (canh['lop_khac'],))
+    d = _api(canh['hv']).get('/api/admin/thong-bao').json()
+    ids = [l['id'] for l in d['chon']['lop']]
+    assert canh['lop'] in ids and canh['lop_khac'] not in ids
+
+
+def test_giang_vien_khong_doc_duoc_danh_muc_ca_trung_tam(canh):
+    """Danh mục nằm sau `IsAdminOrAcademic` — nó liệt kê MỌI lớp của trung tâm."""
+    assert _api(canh['gv']).get('/api/admin/thong-bao').status_code == 403

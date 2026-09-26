@@ -22,6 +22,7 @@ from django.db import transaction
 
 from common import zalo
 from common.db import q, q1
+from courses.truy_cap import BA_MON
 from notifications import hop_thu
 from teaching.vocab import chi_hoc_vien
 
@@ -165,3 +166,33 @@ def danh_sach(gioi_han=50, lop=None):
                            AND n.is_read) AS da_doc
                   FROM announcements a LEFT JOIN users u ON u.id = a.created_by ''' + dk + '''
                  ORDER BY a.id DESC LIMIT %s''', ts + [gioi_han])
+
+
+def danh_muc():
+    """Lớp và môn để MÀN SOẠN dựng ô chọn đối tượng — không màn nào gõ lại danh mục.
+
+    RULES §7 (không hai nguồn sự thật): bảng ba môn HSA sống ở `courses.truy_cap.BA_MON`,
+    nhãn tiếng Việt của chúng sống ở `courses.title`. Chép sang React là hai bảng sẽ trôi
+    khỏi nhau ngay lần TopHSA mở môn thứ tư, và không ai biết bản nào đúng.
+
+    Lớp ĐÃ HUỶ không có mặt: `_NHAN` loại chúng khỏi người nhận (`c.status <> 'cancelled'`),
+    nên một ô chọn bày lớp đã huỷ là một ô chọn hứa gửi cho 0 người mà không nói ra. Sĩ số
+    đếm CÙNG luật với người nhận (học viên chưa rời lớp) để con số trên ô chọn và con số
+    trong bản xem trước không lệch nhau.
+    """
+    lop = q('''SELECT c.id, c.name, c.code, c.status,
+                      (SELECT count(*) FROM class_members m JOIN users u ON u.id = m.user_id
+                        WHERE m.class_id = c.id AND m.left_at IS NULL
+                          AND coalesce(u.status, 'active') <> 'suspended'
+                          AND ''' + chi_hoc_vien('u') + ''') AS so_em
+                 FROM classes c WHERE c.status <> 'cancelled' ORDER BY c.name, c.id''')
+    mon = q('SELECT id, title FROM courses WHERE id = ANY(%s::text[])', (list(BA_MON),))
+    nhan = {r['id']: r['title'] for r in mon}
+    return {
+        'lop': [{'id': r['id'], 'name': r['name'], 'code': r['code'], 'status': r['status'],
+                 'soEm': r['so_em']} for r in lop],
+        # Thứ tự của `BA_MON`, không thứ tự SQL trả về: cùng thứ tự với mọi màn khác.
+        # Môn chưa có dòng trong `courses` thì nhãn là mã — thà thấy mã lạ còn hơn thấy một
+        # ô chọn RỖNG không ai giải thích được (RULES §8).
+        'mon': [{'id': m, 'nhan': nhan.get(m) or m} for m in BA_MON],
+    }

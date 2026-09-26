@@ -88,7 +88,11 @@ class AdminThongBaoView(APIView):
     permission_classes = [IsAdminOrAcademic]
 
     def get(self, request):
+        # `chon` = danh mục lớp + môn cho ô chọn đối tượng của màn soạn (RULES §7: màn không
+        # gõ lại danh mục). Trả CÙNG lượt với danh sách vì màn soạn cần cả hai để vẽ được
+        # lần đầu, và hai lượt gọi cho một màn là hai lần chờ máy chủ gói miễn phí thức dậy.
         return Response({'items': [_hinh(a) for a in tb.danh_sach()],
+                         'chon': tb.danh_muc(),
                          'zalo': dict(zip(('sanSang', 'lyDo'), tb.zalo_san_sang(), strict=True))})
 
     def post(self, request):
