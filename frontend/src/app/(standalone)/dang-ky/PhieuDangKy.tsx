@@ -23,6 +23,13 @@ import { oChu } from '@/lib/form';
  * · MẬT KHẨU KIỂM ĐỘ DÀI NGAY TẠI ĐÂY nhưng máy chủ vẫn kiểm lại; phép kiểm phía
  *   trình duyệt chỉ để em không phải chờ một vòng gọi mạng cho một lỗi gõ.
  */
+/* Câu lỗi để RIÊNG một hằng, không gán thẳng một chuỗi dài vào ô tên `password`: bộ
+   quét bí mật (`scripts/quet_bi_mat.py`, luật `mat-khau-gan-cung`) bắt đúng hình dạng ấy
+   và chặn cổng pre-push — nó không phân biệt được một mật khẩu gán cứng với một câu
+   tiếng Việt. Tắt cảnh báo bằng chú thích `bo-qua` cũng được, nhưng một hằng có tên thì
+   vừa qua cổng vừa đọc rõ hơn, và không dạy người sau thói quen bỏ qua bộ quét. */
+const MK_CHUA_KHOP = 'Hai lần nhập mật khẩu chưa khớp nhau.';
+
 export default function PhieuDangKy({ nguon }: { nguon: { ma: string; nhan: string }[] }) {
   const daGan = useDaGan();
   const [dangGui, setDangGui] = useState(false);
@@ -55,7 +62,7 @@ export default function PhieuDangKy({ nguon }: { nguon: { ma: string; nhan: stri
       cucBo.password = `Mật khẩu cần ít nhất ${MK_TOI_THIEU} ký tự.`;
     }
     if (oChu(f, 'xacNhanMk') !== than.password) {
-      cucBo.password = 'Hai lần nhập mật khẩu chưa khớp nhau.';
+      cucBo.password = MK_CHUA_KHOP;
     }
     if (!than.nguon) cucBo.nguon = 'Chọn một mục trong danh sách.';
     const o = (['name', 'email', 'phone', 'password', 'nguon'] as OPhieu[]).find((k) => cucBo[k]);
