@@ -144,6 +144,9 @@ nhập.
 | `pnpm lint` (`eslint --max-warnings 0`) · `pnpm build` | xanh · `✓ Compiled successfully in 36.8s` |
 | `python scripts/cau_truc.py` | 16 miền, 61 bảng, **0 lỗi**, ghi chéo giữ nguyên 11 (không thêm nợ) |
 | `quet_bi_mat.py --tat-ca` · `--tu-kiem` | 790 tệp sạch · 6/6 quy tắc đỏ đúng chỗ |
+| axe-core 4.10.3 trên `/dang-ky` + `/xac-thuc-email` | **0 vi phạm** × 4 tổ hợp (1440 và 390 px, sáng và tối) |
+| Tràn ngang ở khổ điện thoại | `scrollWidth = 390` = `innerWidth` — không tràn |
+| Cổng `bash .githooks/pre-push` | **Cổng kiểm ĐẠT** (15 bước, 108 s) |
 
 Ảnh đã XEM (không chỉ tạo): phiếu đăng ký, màn "đã gửi", màn bị chặn ở đăng nhập, màn xác
 nhận xong, hàng chờ của học vụ, màn duyệt kèm ô "Xếp vào lớp" và câu xem trước
@@ -247,7 +250,16 @@ Không phải lỗi sản phẩm, nhưng đã ăn **bốn lượt đo** của t�
 — bộ đo đọc chuỗi rỗng rồi chấm HỎNG cho một màn hoàn toàn đúng. Cùng phép đo với bộ chọn
 ĐƠN: **880 ms, ĐẠT**. Đã ghi vào chú thích `scripts/do_dang_ky.mjs`.
 
-### 6.6 React StrictMode gọi effect hai lần — màn đọc mã trong `#…` hỏng ở dev
+### 6.6 `scripts/lib/phien_do.mjs:44` — đường dẫn Playwright ghim cứng, chỉ chết trong worktree
+
+`createRequire('D:/pe_hsa/frontend/package.json')`. Trong worktree agent, `do_axe.mjs` tự
+nạp `@playwright/test` theo đường TƯƠNG ĐỐI (kho của worktree) còn `phien_do.mjs` nạp theo
+đường TUYỆT ĐỐI (kho chính) — hai bản khác nhau, và Playwright chết ngay:
+`Error: Requiring @playwright/test second time`. Ở kho chính hai đường trỏ cùng một chỗ
+nên lỗi **chỉ lộ ra trong worktree**, tức đúng chỗ agent làm việc. **Đã vá**: nạp từ
+`frontend/` của chính kho đang chạy, lùi về kho chính nếu worktree chưa cài `node_modules`.
+
+### 6.7 React StrictMode gọi effect hai lần — màn đọc mã trong `#…` hỏng ở dev
 
 `XacThucForm` (mã tôi vừa viết, nhưng cùng hình dạng với `DatLaiForm` có sẵn): lần một đọc
 mã rồi `replaceState` xoá `#chia=…`; lần hai không còn thấy mã và ghi đè trạng thái thành
