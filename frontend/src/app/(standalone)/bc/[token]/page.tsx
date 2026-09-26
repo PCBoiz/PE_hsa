@@ -81,7 +81,10 @@ export default async function BaoCaoTheoChiaPage({
           lưu tờ này thành PDF để giữ lại hoặc gửi tiếp cho người nhà. */}
       <header className="border-b border-line bg-surface print:hidden">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
-          <span className="flex-1 text-section text-ink">Báo cáo học tập</span>
+          {/* `h1`, không phải `span`: tờ này có `h2` (tên em) và `h3` (từng mục), nên
+              thiếu cấp một là axe báo `page-has-heading-one` — đo 26/09/2026, 2 lượt trang.
+              `m-0` giữ nguyên chỗ đứng; cỡ chữ vẫn do `text-section`. */}
+          <h1 className="m-0 flex-1 text-section text-ink">Báo cáo học tập</h1>
           <NutIn />
         </div>
       </header>
