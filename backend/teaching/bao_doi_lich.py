@@ -39,8 +39,31 @@ PHUT_MAC_DINH = 90
 GUI_NGAY = False
 
 
+#: Thứ trong tuần, viết như người Việt nói. `weekday()` 0 = thứ Hai.
+THU = ('thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy', 'Chủ nhật')
+
+
 def _gio(dt):
     return dt.strftime('%d/%m %H:%M')
+
+
+def _gio_dep(dt):
+    """'thứ Hai 29/09, 10:26' — cách một người nhắn cho người khác.
+
+    `_gio` giữ nguyên cho tiêu đề (ngắn, để không tràn trên điện thoại); chữ
+    trong thân thư dùng bản này. Thêm THỨ vì người ta nhớ buổi học theo thứ chứ
+    không theo ngày: "thứ Năm tuần này" nghe ra ngay, "02/10" thì phải mở lịch.
+    """
+    return '%s %s, %s' % (THU[dt.weekday()], dt.strftime('%d/%m'), dt.strftime('%H:%M'))
+
+
+def _ten(lop):
+    """Tên lớp để ghép vào câu. Tên đã bắt đầu bằng 'Lớp' thì không thêm nữa —
+    nếu không ra 'Lớp Lớp thử thư 26/09' (đo thật 26/09/2026)."""
+    t = (lop.get('name') or '').strip()
+    if not t:
+        return 'lớp của em'
+    return t if t.lower().startswith('lớp') else 'lớp %s' % t
 
 
 def _noi(buoi, lop):
@@ -86,21 +109,25 @@ def bao_doi_lich(truoc, sau, lop):
         if not kieu:
             return 0
         ten_lop = lop.get('name') or 'của bạn'
+        ten_cau = _ten(lop)          # ghép vào giữa câu, không lặp chữ "Lớp"
         if kieu == 'huy':
             tieu_de = 'Lớp %s: buổi %s đã huỷ' % (ten_lop, _gio(truoc['starts_at']))
-            chu = 'Buổi học ngày %s của lớp %s không diễn ra nữa.' % (_gio(truoc['starts_at']), ten_lop)
+            chu = ('Buổi học %s vào %s sẽ không diễn ra. Khi có lịch học bù, '
+                   'trung tâm báo em ngay.' % (ten_cau, _gio_dep(truoc['starts_at'])))
         elif kieu == 'doi-gio':
             noi = _noi(sau, lop)
             tieu_de = 'Lớp %s dời buổi %s sang %s' % (ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']))
-            chu = 'Buổi học lớp %s chuyển từ %s sang %s (%d phút)%s.' % (
-                ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']),
-                sau['duration_minutes'] or PHUT_MAC_DINH, (' · ' + noi) if noi else '')
+            chu = ('Buổi học %s đổi giờ: thay vì %s như cũ, buổi này bắt đầu lúc %s và '
+                   'học trong %d phút%s. Em nhớ vào đúng giờ mới nhé.' % (
+                       ten_cau, _gio_dep(truoc['starts_at']), _gio_dep(sau['starts_at']),
+                       sau['duration_minutes'] or PHUT_MAC_DINH,
+                       (', %s' % noi) if noi else ''))
         else:
             noi = _noi(sau, lop) or 'nơi học mới'
             tieu_de = 'Lớp %s, buổi %s: %s' % (ten_lop, _gio(sau['starts_at']), noi)
-            chu = 'Buổi học lớp %s lúc %s đổi nơi học: %s.%s' % (
-                ten_lop, _gio(sau['starts_at']), noi,
-                (' Link phòng học mới: %s' % sau['meeting_url']) if sau.get('meeting_url') else '')
+            chu = ('Buổi học %s vào %s đổi chỗ: buổi này %s.%s' % (
+                ten_cau, _gio_dep(sau['starts_at']), noi,
+                (' Link vào lớp: %s' % sau['meeting_url']) if sau.get('meeting_url') else ''))
 
         ds = q('''SELECT u.id, u.email, coalesce(ns.email_notif, 1) AS nhan_thu
                     FROM class_members m JOIN users u ON u.id = m.user_id
@@ -114,7 +141,14 @@ def bao_doi_lich(truoc, sau, lop):
 
         thu = [r['email'] for r in ds if r['email'] and r['nhan_thu']]
         if thu:
-            chu_thu = '%s\n\nXem lịch đầy đủ ở mục "Lớp của tôi" trên TopHSA.\n\n— TopHSA\n' % chu
+            # Thư mở bằng lời chào, kết bằng lời chúc; CHUÔNG thì để trần vì nó chỉ
+            # có một dòng. Anh Sơn 26/09, sau khi đọc thư thật: "văn phong cứng quá"
+            # — chữ cũ là "chuyển từ X sang Y (90 phút) · học trực tuyến", đúng
+            # nhưng đọc như máy đọc cho máy nghe.
+            chu_thu = ('Chào em,\n\n%s\n\n'
+                       'Lịch đầy đủ của lớp nằm ở mục "Lớp của tôi" trên TopHSA. '
+                       'Có gì chưa rõ, em nhắn lại cho trợ giảng của lớp nhé.\n\n'
+                       'Chúc em học tốt,\nTopHSA\n' % chu)
             if GUI_NGAY:
                 _gui_thu(thu, tieu_de, chu_thu)
             else:
