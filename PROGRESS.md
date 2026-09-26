@@ -7,6 +7,37 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (khuya) — E3 về đích và đã GỘP: dòng 11 xong, mở khoá phần còn lại
+
+Đúng như con số đã chỉ ra lúc chiều: việc mở khoá nhiều nhất không phải viết
+thêm mã mà là đưa nhánh đã xong về `erp`. `agent/e3` gộp xong, đẩy ở `61d42ec`.
+
+**Dòng 11 (giáo vụ · hỗ trợ lớp): CHƯA → CÓ.** Bảy trên bảy gạch đầu dòng chạy
+được trên màn thật — bộ đo `scripts/do_yeu_cau.mjs` đi trọn luồng bằng chuột,
+**17/17 bước ĐẠT**, cộng ba bước hàng rào (học viên không thấy thẻ Xử lý, ghi
+chú nội bộ ẩn, phụ huynh gửi qua link tờ báo cáo). Lược đồ 0/67 cả hai lượt,
+`kiem_luoc_do` **71/71**, cổng ĐẠT 114 s.
+
+Agent E3 còn tự tìm và vá hai lỗi ngoài phần được giao: tờ phụ huynh thiếu tiêu
+đề cấp một (axe `page-has-heading-one`), và `/nguoi-nhan` lộ email nhân sự chưa
+đặt tên với trợ giảng.
+
+**Bốn cái vướng của CÔNG CỤ, không phải sản phẩm** — agent báo, lead vá:
+1. `nap_lai_be.ps1` đòi venv trong worktree, mà worktree dùng venv repo chính →
+   chạy ở gốc, đổ ở mọi worktree. Nay tìm sang repo chính bằng
+   `git rev-parse --git-common-dir`.
+2. `don_may.ps1` ném "Key cannot be null" khi danh sách rỗng — theo lời agent:
+   *"chạy được lúc máy sạch, đổ lúc cần nó nhất"*.
+3. `next dev` mặc định không chạy trong worktree (junction + Turbopack) → phải
+   `--webpack`. Ghi vào kỹ năng `giao-viec-agent` cùng hai bẫy kia.
+4. Agent nghi `dot_bien.py` mang lỗi tích luỹ đột biến như bộ chạy của nó. Kiểm:
+   không — `goc` đọc một lần trước vòng lặp, mỗi đột biến ghi từ bản gốc. Nghi
+   đúng chỗ đáng nghi, chỉ là hai công cụ dựng khác nhau.
+
+Mô hình hai agent đã trả công hai lượt liền: lượt trước agent soát tìm 6 lỗi
+trong §72, lượt này agent làm tìm 3 lỗi trong công cụ của lead.
+
+
 ## 26/09/2026 (đêm) — cắt chỗ đốt token, và hai lỗi trong chính công cụ vừa viết
 
 Anh Sơn: *"Tiến độ hơi chậm… có cách nào đẩy nhanh mà không đốt tokens quá

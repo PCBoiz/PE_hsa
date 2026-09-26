@@ -33,7 +33,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
 | 9 | Giáo vụ · lớp học | MỘT PHẦN | V-d, E1 | — |
 | 10 | Giáo vụ · lịch học | gần đủ | V-g, V-n, E4, Đ2 §58 | — |
-| 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | E3 | `e2e/yeu-cau.spec.ts` (một phần) |
+| 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | — | §65 **đã gộp vào `erp` 26/09** (`61d42ec`). Bảy trên bảy gạch đầu dòng chạy được trên màn thật: `scripts/do_yeu_cau.mjs` **17/17 bước ĐẠT**, bấm chuột chứ không gọi API tay. Kèm ba hàng rào đã đo: học viên không thấy thẻ Xử lý · ghi chú nội bộ ẩn với học viên · phụ huynh gửi được qua link tờ báo cáo. Còn sót (ngoài phạm vi dòng 11): hạn xử lý / cờ quá hạn, ô tìm theo chữ. |
 | 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
 | 14 | Giáo viên · lớp + điểm danh | CÓ | — | Đo 26/09 trên màn thật: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại được, và **lịch sử sửa từng buổi** (`LichSuDiemDanh`, V-d) hiện ngay dưới sổ. Tỉ lệ chuyên cần + cảnh báo nghỉ nhiều nằm ở tờ báo cáo và "Việc hôm nay". |
