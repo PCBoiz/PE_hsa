@@ -7,6 +7,47 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 27/09/2026 — Dòng 30 (học liệu §60) chạy được, và ba cái thước tự bắt được mình
+
+Anh Sơn chốt: làm **liên kết ngoài trước** (không chờ khoá R2), gắn được vào **cả kho
+chung của lớp lẫn từng buổi**. Lược đồ §60 một bảng cho cả hai nguồn — `nguon='r2'` là chỗ
+chừa sẵn, vì tách hai bảng thì mọi câu đọc, mọi màn, mọi phép kiểm phải viết hai lần, và
+ngày thêm R2 sẽ là ngày sửa hết những chỗ ấy lúc không ai còn nhớ chúng nằm đâu.
+
+Số: lược đồ **0/69 lượt hai**, `kiem_luoc_do` **79/79**, bộ kiểm **27/27**, **7/7 đột biến
+bị giết**, bộ đo màn thật **11/11 bước** (hai vai, đã soi ảnh), cổng ĐẠT 67 s.
+
+**Phép kiểm buổi bù viết TRƯỚC khi viết mã.** §72 đã mắc lỗ ấy một lần — bốn cửa của một
+tính năng, ba cửa quên `thuoc_buoi`, nên thống kê đếm cả lớp còn màn của em lại ẩn đúng
+buổi ấy. Lần này `tests_hoc_lieu.py` §4 có sẵn phép kiểm trước khi có dòng mã nào.
+
+**Ba lần cái thước tự bắt được mình trong một buổi** — đáng ghi vì cả ba đều suýt đổ lỗi
+cho sản phẩm:
+
+① Loạt đột biến lần đầu để LỌT 3/7. Hai cái là test yếu thật (không ca nào đòi tên miền,
+  không test nào gắn tài liệu vào buổi của lớp khác). Cái thứ ba thì ngược lại: đột biến
+  nhắm vào câu `DELETE`, mà lớp phòng thủ thật nằm ở câu `SELECT` phía trước — đột biến
+  tương đương, không phải test yếu. Nhắm lại cho đúng lớp phòng thủ thì nó chết ngay.
+
+② Phép kiểm "mọi bộ đo phải đóng trình duyệt" XANH OAN ngay lần thử ngược đầu tiên: nó lọc
+  chú thích khi tìm `chromium.launch(` nhưng dùng `includes()` cho `baoHiem(`, nên
+  `// baoHiem(b);` vẫn tính là có. Một cái thước chỉ nghiêm ở nửa nó đang nhìn thì nửa kia
+  là chỗ lỗi sẽ chui qua.
+
+③ Bộ đo báo "0 khối" cho một màn dựng hoàn toàn đúng — hai lần, hai lý do khác nhau:
+  `data-khu` đặt lên `Card` không bao giờ tới DOM (component chỉ nhận năm prop, không
+  spread), và khối "Lớp của bạn" tải bằng JS sau khi HTML tới nơi nên `phien.man` trả về
+  trước khi nó kịp hiện.
+
+**Và một cái bẫy của chính bộ kiểm**: `test_khong_xoa_duoc_tai_lieu_cua_lop_khac` xanh khi
+chạy riêng, đỏ khi chạy cả bộ. Không phải rò rỉ dữ liệu — câu `SELECT` của phép kiểm đi
+bằng kết nối KHÁC với lời gọi API, nên nó thấy hay không thấy dòng vừa ghi là tuỳ lượt.
+Đo qua chính cửa API thì câu trả lời thôi phụ thuộc vào chuyện ấy. 27/27 ổn định từ đó.
+
+**Dữ liệu mẫu**: `du_lieu_mau --lam-moi` đã chạy — khung chương trình **0 → 1**, sổ đầu bài
+**0 → 13**. Sáu ô của bảng nghiệm thu nay có thứ để trình diễn.
+
+
 ## 26/09/2026 (khuya) — E3 về đích và đã GỘP: dòng 11 xong, mở khoá phần còn lại
 
 Đúng như con số đã chỉ ra lúc chiều: việc mở khoá nhiều nhất không phải viết

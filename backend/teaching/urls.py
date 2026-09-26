@@ -13,6 +13,7 @@ from teaching import (
                       dong_thoi_gian,
                       exports,
                       ho_so,
+                      hoc_lieu,
                       lich,
                       lich_su_lop,
                       lien_he_phu_huynh,
@@ -96,6 +97,10 @@ urlpatterns = [
     path('api/sessions/<int:session_id>/ban-ghi/da-mo', ban_ghi.GhiLuotMoView.as_view()),
     path('api/sessions/<int:session_id>/ban-ghi/bao-loi', ban_ghi.BaoLoiBanGhiView.as_view()),
     path('api/teach/classes/<int:class_id>/ban-ghi', ban_ghi.ThongKeBanGhiView.as_view()),
+    # §60 · học liệu của lớp (Đ2, dòng 30). Cùng đường cho cả người gắn lẫn người xem —
+    # cổng quyền trong thân hàm, vì nó phải phân biệt "giảng viên của lớp" với "em đang học".
+    path('api/teach/classes/<int:class_id>/hoc-lieu', hoc_lieu.HocLieuLopView.as_view()),
+    path('api/teach/classes/<int:class_id>/hoc-lieu/<int:tid>', hoc_lieu.HocLieuMotView.as_view()),
     path('api/teach/classes/<int:class_id>/ban-ghi/<int:session_id>/nhac',
          ban_ghi.NhacXemBanGhiView.as_view()),
 

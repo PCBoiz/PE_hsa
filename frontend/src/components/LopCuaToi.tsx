@@ -7,6 +7,7 @@ import ThemVaoLich from '@/components/ThemVaoLich';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { lucVN } from '@/lib/gioVN';
+import { tenMien } from '@/lib/hocLieu';
 import { noiHoc } from '@/lib/noiHoc';
 import { cauTienDoEm } from '@/lib/tienDoChu';
 
@@ -78,6 +79,20 @@ type Lop = {
   chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
   /** Buổi đã học có bản ghi để xem lại (§72). `?`: máy chủ cũ không trả. */
   banGhiGanDay?: BanGhi[];
+  /** Tài liệu giảng viên đã mở cho em (§60). `?`: máy chủ cũ không trả. */
+  hocLieuGanDay?: TaiLieuNgan[];
+};
+
+/** Một tài liệu trên thẻ lớp. Bản gọn của `lib/hocLieu.ts::TaiLieu` — thẻ lớp chỉ cần
+    đủ để bấm mở, phần mô tả và người gắn nằm ở trang tài liệu của lớp. */
+type TaiLieuNgan = {
+  id: number;
+  ten: string;
+  url: string | null;
+  /** 'link' = địa chỉ ngoài. 'r2' = tệp tải lên (chờ khoá R2 của anh Sơn, chưa dựng). */
+  nguon: string;
+  sessionId: number | null;
+  luc: string | null;
 };
 
 type DongDiemDanh = {
@@ -170,6 +185,34 @@ function NutBanGhi({ b, onMo }: { b: BanGhi; onMo: () => void }) {
     >
       {ngayNgan(b.startsAt)}
       {daMo && <span className="lct-bg-dau" aria-label="bạn đã mở"> ✓</span>}
+    </a>
+  );
+}
+
+/**
+ * Một tài liệu trên thẻ lớp (§60).
+ *
+ * Mở ra TAB MỚI kèm `rel="noopener noreferrer"`: đường dẫn do giảng viên dán vào, trỏ ra
+ * ngoài TopHSA. Thiếu `noopener` thì trang đích với tới được `window.opener` và đổi được
+ * địa chỉ tab gốc — cách dựng một màn đăng nhập giả mà người dùng không thấy gì bất thường.
+ *
+ * Tên miền hiện cạnh tên tài liệu vì người bấm nên biết mình sắp đi đâu TRƯỚC khi bấm.
+ */
+function NutTaiLieu({ t }: { t: TaiLieuNgan }) {
+  const mien = tenMien(t.url);
+  return (
+    <a
+      className="lct-link lct-hl-nut"
+      href={t.url ?? undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={mien ? `${t.ten} — mở ở ${mien}` : t.ten}
+    >
+      {t.ten}
+      {/* `&nbsp;` chứ không phải dấu cách thường: dấu cách ở ĐẦU một phần tử JSX bị gộp mất
+          khi dựng, nên trên màn thật tên miền dính liền tên tài liệu — "…định lượng(drive.google.com)"
+          (đo 27/09, đã soi ảnh). */}
+      {mien && <span className="lct-hl-mien">&nbsp;({mien})</span>}
     </a>
   );
 }
@@ -365,6 +408,19 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                     nguyên và em không báo được link thứ hai — màn vẫn nói "Đã
                     báo, cảm ơn em." mà chẳng gửi gì (agent soát 26/09). */}
                 {vuaMo !== null && <BaoLoiBanGhi key={vuaMo} sessionId={vuaMo} />}
+              </p>
+            )}
+
+            {/* Học liệu (§60, 26/09/2026). Cùng lý do với bản ghi ở trên: giảng viên
+                gắn tài liệu vào lớp mà không màn nào của em hiện ra thì tài liệu ấy
+                coi như không tồn tại. Chỉ hiện thứ giảng viên ĐÃ MỞ (`an = FALSE`) và
+                của buổi em THUỘC — máy chủ đã lọc, màn không lọc lại. */}
+            {(l.hocLieuGanDay?.length ?? 0) > 0 && (
+              <p className="lct-cc lct-hl">
+                Tài liệu:{' '}
+                {l.hocLieuGanDay!.map((t) => (
+                  <NutTaiLieu key={t.id} t={t} />
+                ))}
               </p>
             )}
 

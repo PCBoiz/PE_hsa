@@ -209,3 +209,52 @@ def test_ngay_thi_lech_muc_tieu(canh):
     assert d['lop'][0]['ngayThiLech'] is True
     x("UPDATE surveys SET data_json=%s WHERE user_id=%s", ('{"exam_date": "2026-12-06"}', canh['em'].id))
     assert _goi(canh['em']).json()['lop'][0]['ngayThiLech'] is False
+
+
+# ── 5. Học liệu trên thẻ lớp (§60, 26/09/2026) ─────────────────────────────
+
+def _tai_lieu(lop, ten, an=False, buoi=None):
+    return q1('''INSERT INTO hoc_lieu (class_id, session_id, ten, nguon, url, an)
+                 VALUES (%s, %s, %s, 'link', %s, %s) RETURNING id''',
+              (lop, buoi, ten, 'https://drive.google.com/file/d/%s/view' % ten.replace(' ', '-'),
+               an))['id']
+
+
+def _hl(ai):
+    return [t['ten'] for t in _goi(ai).json()['lop'][0].get('hocLieuGanDay', [])]
+
+
+def test_the_lop_hien_tai_lieu_giang_vien_da_mo(canh):
+    """Giảng viên gắn tài liệu mà không màn nào của em hiện ra thì tài liệu ấy coi như
+    không tồn tại — đúng chuyện đã xảy ra với link bản ghi trước §72."""
+    _tai_lieu(canh['lop'], 'So tay ca khoa')
+    assert _hl(canh['em']) == ['So tay ca khoa']
+
+
+def test_tai_lieu_dang_an_khong_hien_cho_em(canh):
+    _tai_lieu(canh['lop'], 'De thi thu chua mo', an=True)
+    assert _hl(canh['em']) == []
+
+
+def test_tai_lieu_cua_buoi_bu_khong_hien_cho_em_khong_thuoc_buoi(canh):
+    """Buổi bù hai em thì tài liệu chữa bài của buổi ấy không phải việc của cả lớp."""
+    bu = _buoi(canh['lop'], -48, status='done')
+    x('INSERT INTO session_participants (session_id, user_id) VALUES (%s, %s)',
+      (bu, canh['em'].id))
+    _tai_lieu(canh['lop'], 'Bai chua buoi bu', buoi=bu)
+    assert _hl(canh['em']) == ['Bai chua buoi bu']
+    assert _hl(canh['khac']) == [], 'em KHÔNG thuộc buổi bù vẫn thấy tài liệu của buổi ấy'
+
+
+def test_tai_lieu_buoi_thuong_hien_cho_ca_lop(canh):
+    b = _buoi(canh['lop'], -24, status='done')
+    _tai_lieu(canh['lop'], 'Slide buoi thuong', buoi=b)
+    assert _hl(canh['em']) == ['Slide buoi thuong']
+    assert _hl(canh['khac']) == ['Slide buoi thuong']
+
+
+def test_the_lop_chi_hien_bon_tai_lieu_moi_nhat(canh):
+    """Thẻ lớp không phải cái kho — phần còn lại nằm ở trang tài liệu của lớp."""
+    for i in range(6):
+        _tai_lieu(canh['lop'], 'Tai lieu %d' % i)
+    assert len(_hl(canh['em'])) == 4

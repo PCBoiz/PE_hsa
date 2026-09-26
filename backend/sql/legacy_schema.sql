@@ -2388,3 +2388,47 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_views_buoi_nguoi
 -- Trợ giảng mở màn "ai chưa xem" theo LỚP, nên lối vào là buổi.
 CREATE INDEX IF NOT EXISTS idx_recording_views_buoi
     ON recording_views (session_id);
+
+-- ── §60 · HỌC LIỆU CỦA LỚP (Đ2, bảng TopHSA dòng 30 và phần tài liệu của 15 — 26/09/2026) ──
+-- Anh Sơn chốt 26/09: làm phần LIÊN KẾT NGOÀI trước (Drive, YouTube, link đề), vì nó không
+-- chờ khoá Cloudflare R2; và gắn được vào CẢ HAI chỗ — kho chung của lớp, và từng buổi.
+--
+-- MỘT bảng cho cả hai nguồn, không phải hai bảng. `nguon='link'` là thứ chạy được hôm nay;
+-- `nguon='r2'` là chỗ đã chừa sẵn cho tệp tải lên khi anh cấp khoá (mục D1). Tách hai bảng
+-- thì mọi câu đọc, mọi màn, mọi phép kiểm đều phải viết hai lần rồi hợp lại — và cái ngày
+-- thêm R2 sẽ là ngày sửa hết những chỗ ấy, đúng lúc không ai còn nhớ chúng nằm đâu.
+--
+-- `session_id NULL` = tài liệu của CẢ LỚP (kho chung). Có `session_id` = tài liệu của riêng
+-- buổi ấy. Cùng một bảng nên một câu `WHERE class_id = %s` lấy được cả hai, và màn tự nhóm.
+CREATE TABLE IF NOT EXISTS hoc_lieu (
+    id         SERIAL    PRIMARY KEY,
+    class_id   INTEGER   NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    session_id INTEGER   REFERENCES class_sessions(id) ON DELETE CASCADE,
+    ten        TEXT      NOT NULL,
+    mo_ta      TEXT,
+    nguon      TEXT      NOT NULL DEFAULT 'link',
+    url        TEXT,
+    r2_key     TEXT,
+    kieu_tep   TEXT,
+    so_byte    BIGINT,
+    -- Giảng viên soạn trước cả khoá rồi mở dần theo tiến độ: `an = TRUE` là đã gắn nhưng
+    -- học viên chưa thấy. Xoá rồi gắn lại thì mất cả thứ tự lẫn ngày gắn.
+    an         BOOLEAN   NOT NULL DEFAULT FALSE,
+    nguoi_tao  INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+ALTER TABLE hoc_lieu DROP CONSTRAINT IF EXISTS hoc_lieu_nguon_check;
+ALTER TABLE hoc_lieu ADD CONSTRAINT hoc_lieu_nguon_check CHECK (nguon IN ('link', 'r2'));
+-- Mỗi nguồn phải có ĐÚNG thứ nó cần. Không có CHECK này thì một dòng 'link' mà `url` rỗng
+-- vẫn vào được bảng, và màn sẽ dựng một mục bấm vào không đi đâu cả — loại hỏng chỉ lộ ra
+-- khi có học viên thật bấm vào nó.
+ALTER TABLE hoc_lieu DROP CONSTRAINT IF EXISTS hoc_lieu_du_nguon_check;
+ALTER TABLE hoc_lieu ADD CONSTRAINT hoc_lieu_du_nguon_check CHECK (
+    (nguon = 'link' AND url IS NOT NULL AND url <> '')
+ OR (nguon = 'r2'   AND r2_key IS NOT NULL AND r2_key <> ''));
+-- Lối vào chính: mở một lớp ra xem có gì. Kèm `session_id` để nhóm theo buổi không phải
+-- quét lại, và `created_at` để "mới gắn" nằm trên.
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_lop   ON hoc_lieu (class_id, session_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_buoi  ON hoc_lieu (session_id);
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_nguoi ON hoc_lieu (nguoi_tao);

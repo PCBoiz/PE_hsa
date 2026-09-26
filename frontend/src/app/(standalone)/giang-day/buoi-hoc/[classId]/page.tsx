@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import SessionsClient, { type SessionRow } from './SessionsClient';
 import type { GoiYSinh } from './SinhBuoi';
+import HocLieuLop from './HocLieuLop';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Buổi học & điểm danh | TopHSA' };
@@ -169,6 +170,14 @@ export default async function BuoiHocPage({
           lop={noiLop}
           /* Thiếu (API cũ) thì coi như được — máy chủ vẫn là hàng rào thật. */
           quyen={list.ok ? (list.data.quyen ?? { xoaBuoi: true, baoCaoPhuHuynh: true }) : { xoaBuoi: true, baoCaoPhuHuynh: true }}
+        />
+        {/* Tài liệu của lớp (§60). Đặt SAU danh sách buổi vì nó nói về cả lớp, và vì
+            người vừa dựng xong buổi là người có slide của buổi ấy trong tay. */}
+        <HocLieuLop
+          classId={Number(classId)}
+          buoi={(list.ok ? list.data.sessions : []).map((b) => ({
+            id: b.id, luc: b.startsAt ?? null, chuDe: b.topic ?? null,
+          }))}
         />
         </div>
       </main>

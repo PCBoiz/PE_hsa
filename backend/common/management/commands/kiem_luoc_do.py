@@ -302,6 +302,17 @@ MUC = [
      if _cot('recording_views', 'lan_mo')[0] else (False, 'chưa có bảng')),
     ('§72b', 'mỗi (buổi, người) chỉ MỘT dòng — mở lại thì cộng lần',
      lambda: _chi_muc('idx_recording_views_buoi_nguoi')),
+    # §60: học liệu của lớp. MỘT bảng cho cả liên kết ngoài lẫn tệp R2 (chỗ chừa sẵn).
+    ('§60a', 'bảng hoc_lieu (học liệu lớp / buổi), xoá theo lớp',
+     lambda: _fk('hoc_lieu', 'hoc_lieu_class_id_fkey', 'CASCADE')
+     if _cot('hoc_lieu', 'nguon')[0] else (False, 'chưa có bảng')),
+    ('§60b', "nguồn CHECK link | r2 — chỗ chừa sẵn cho tệp R2",
+     lambda: _ca(lambda: _check_co_gia_tri('hoc_lieu_nguon_check', "'link'"),
+                 lambda: _check_co_gia_tri('hoc_lieu_nguon_check', "'r2'"))),
+    ('§60c', 'mỗi nguồn phải có đủ thứ nó cần (link → url, r2 → r2_key)',
+     lambda: _check_co_gia_tri('hoc_lieu_du_nguon_check', 'r2_key')),
+    ('§60d', 'mở một lớp ra xem có gì — chỉ mục (lớp, buổi, mới nhất trước)',
+     lambda: _chi_muc('idx_hoc_lieu_lop')),
 ]
 
 

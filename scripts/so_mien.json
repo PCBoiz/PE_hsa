@@ -13,7 +13,7 @@
   "mien": {
     "lop_hoc": {
       "ten": "Lớp học",
-      "mo_ta": "Lớp, thành viên lớp (xếp lớp, chuyển lớp, rời lớp, nhận xét từng em), đợt học và ngày nghỉ của đợt, lớp gia sư.",
+      "mo_ta": "Lớp, thành viên lớp (xếp lớp, chuyển lớp, rời lớp, nhận xét từng em), đợt học và ngày nghỉ của đợt, lớp gia sư. Học liệu `hoc_lieu` (§60, Đ2): giảng viên gắn liên kết ngoài vào kho chung của lớp hoặc vào một buổi; chỗ chừa sẵn cho tệp tải lên khi có khoá R2.",
       "backend": [
         "backend/teaching/views.py",
         "backend/teaching/chuyen_lop.py",
@@ -24,6 +24,7 @@
         "backend/teaching/lich_su_lop.py",
         "backend/teaching/danh_gia.py",
         "backend/teaching/lop_cua_toi.py",
+        "backend/teaching/hoc_lieu.py",
         "backend/lop_hoc/**/*.py"
       ],
       "frontend": [
@@ -37,7 +38,8 @@
         "classes",
         "class_members",
         "terms",
-        "term_holidays"
+        "term_holidays",
+        "hoc_lieu"
       ],
       "cho_ghi": {
         "classes": [

@@ -42,6 +42,10 @@ SO_SAP_TOI = 3
 #: Bản ghi buổi đã học hiện trên thẻ lớp — đủ để xem lại tuần vừa rồi,
 #: không thành một danh sách dài (§72, 26/09/2026).
 SO_BAN_GHI = 4
+
+#: Số tài liệu mới nhất hiện thẳng trên thẻ lớp (§60). Bốn là đủ để em thấy "có cái mới"
+#: mà không biến thẻ lớp thành một cái kho — phần còn lại nằm ở trang tài liệu của lớp.
+SO_HOC_LIEU = 4
 #: Buổi ĐÃ HUỶ trong ngần này ngày tới thì nêu tên. Huỷ mà chỉ lặng lẽ biến
 #: khỏi "buổi tới" thì em vẫn tưởng tối đó có học — hoặc tưởng lớp quên xếp lịch.
 NGAY_NEU_BUOI_HUY = 7
@@ -94,6 +98,7 @@ class LopCuaToiView(NguoiDungView):
         cac_dot = {}
         bai_tap = {}
         ban_ghi = {}
+        hoc_lieu = {}
         if ids:
             # §72 (26/09/2026) — BẢN GHI buổi đã học. Trợ giảng dán link vào từ lâu
             # (`recording_url`, bảng phân rã dòng 22) nhưng chưa màn nào của EM hiện nó
@@ -112,6 +117,20 @@ class LopCuaToiView(NguoiDungView):
                           WHERE tt <= %s ORDER BY class_id, starts_at DESC''',
                        (uid, ids, nay, uid, SO_BAN_GHI)):
                 ban_ghi.setdefault(r['class_id'], []).append(r)
+            # Học liệu §60. Cùng ba hàng rào với bản ghi ở trên, và vì cùng một lý do:
+            # `NOT an` (giảng viên chưa mở thì em chưa thấy), và `thuoc_buoi` cho tài liệu
+            # gắn vào một BUỔI — buổi bù chỉ có hai em thì tài liệu chữa bài của buổi ấy
+            # không phải việc của cả lớp.
+            for r in q('''SELECT id, class_id, ten, url, nguon, session_id, created_at
+                          FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY class_id
+                                                             ORDER BY created_at DESC) AS tt
+                                FROM hoc_lieu
+                                WHERE class_id = ANY(%s) AND NOT an
+                                  AND (session_id IS NULL
+                                       OR ''' + thuoc_buoi('session_id', '%s') + ''')) h
+                          WHERE tt <= %s ORDER BY class_id, created_at DESC''',
+                       (ids, uid, SO_HOC_LIEU)):
+                hoc_lieu.setdefault(r['class_id'], []).append(r)
             for r in q('''SELECT id, class_id, starts_at, duration_minutes, topic, meeting_url,
                                  mode, room
                           FROM class_sessions
@@ -204,5 +223,11 @@ class LopCuaToiView(NguoiDungView):
                     'topic': b['topic'], 'recordingUrl': b['recording_url'],
                     'daMo': b['da_mo'],
                 } for b in ban_ghi.get(cid, [])],
+                # Tài liệu giảng viên đã mở cho em (§60). `nguon` để màn biết đây là liên
+                # kết ngoài hay tệp tải lên — hôm nay mới có 'link', 'r2' chờ khoá R2.
+                'hocLieuGanDay': [{
+                    'id': t['id'], 'ten': t['ten'], 'url': t['url'], 'nguon': t['nguon'],
+                    'sessionId': t['session_id'], 'luc': _iso(t['created_at']),
+                } for t in hoc_lieu.get(cid, [])],
             })
         return Response({'lop': lop, 'mucTieu': {'examDate': muc_tieu.get('examDate')}})

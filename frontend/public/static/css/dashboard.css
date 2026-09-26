@@ -3915,6 +3915,14 @@ body.dark .prof-post-stats {
    không đi tới đâu). Không viền, không nền: nó là lối thoát hiểm, không phải
    việc chính của dòng này. */
 .lct-bg-bao { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+/* §60 (26/09/2026) — học liệu lớp. Cùng cách sắp với khối bản ghi ngay trên: nhiều mục
+   trên MỘT dòng, mỗi mục là một ô chạm riêng. Khác một chỗ: tên tài liệu do giảng viên
+   gõ nên dài ngắn tuỳ người, và một tên dài không được đẩy vỡ thẻ lớp trên điện thoại. */
+.lct-hl { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.lct-hl-nut { padding-inline: 0.25rem; max-width: 100%; overflow-wrap: anywhere; }
+/* Tên miền: người bấm nên biết mình sắp rời TopHSA đi đâu. Nhạt hơn tên tài liệu vì nó
+   là lời chú, không phải thứ để bấm vào. */
+.lct-hl-mien { color: var(--t3); font-weight: 400; text-decoration: none; }
 .lct-lech {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
   margin-top: 12px; padding: 10px 14px; border-radius: 12px;
