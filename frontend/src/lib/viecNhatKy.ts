@@ -79,6 +79,8 @@ export const VIEC: Record<string, string> = {
   'session.syllabus': 'Gắn buổi học với buổi khung',
   'session.log': 'Ghi sổ đầu bài',
   'announcement.send': 'Gửi thông báo',
+  'calendar.link.new': 'Cấp địa chỉ lịch riêng',
+  'calendar.link.revoke': 'Thu hồi địa chỉ lịch riêng',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'course.publish': 'Mở / chuyển nháp khoá học',

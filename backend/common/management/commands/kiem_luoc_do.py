@@ -273,6 +273,14 @@ MUC = [
                  lambda: _fk('notifications', 'notifications_announcement_id_fkey', 'CASCADE'))),
     ('§61d', 'chỉ mục duy nhất phần notifications nhắc hạn nộp (mỗi em mỗi bài một chuông)',
      lambda: _chi_muc('idx_notifications_nhac_han_mot_lan')),
+    # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
+    ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
+     lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')
+     if _cot('calendar_links', 'token_hash')[0] else (False, 'chưa có bảng')),
+    ('§71b', 'calendar_links.scope CHECK toi | trung_tam',
+     lambda: _check_co_gia_tri('calendar_links_scope_check', 'trung_tam')),
+    ('§71c', 'mỗi người mỗi phạm vi chỉ MỘT chìa còn sống',
+     lambda: _chi_muc('idx_calendar_links_mot_chia_song')),
 ]
 
 

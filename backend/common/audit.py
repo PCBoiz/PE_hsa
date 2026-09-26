@@ -208,3 +208,8 @@ def record(request, action, *, target_type=None, target_id=None, target_label=No
         logger.error('[audit] KHÔNG ghi được: %s | action=%s actor=%s target=%s/%s | %s',
                      exc, action, actor_id, target_type, target_id, summary)
         return False
+
+# §71 · Địa chỉ lịch riêng (.ics, 26/09/2026). Chìa mở lịch mà không cần đăng
+# nhập, nên cấp và thu hồi đều phải để lại dấu vết.
+CALENDAR_LINK_NEW = 'calendar.link.new'
+CALENDAR_LINK_REVOKE = 'calendar.link.revoke'

@@ -39,7 +39,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
 | 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong, còn tài liệu | Đ2 §60, E3 | — |
 | 16 | Giáo viên · quản lý buổi học | gần đủ — E1 xong, đề xuất → E3 | E3 | — |
-| 17 | Giáo viên · giao bài | CÓ (V-e, V-h) | V-e, V-h | — |
+| 17 | Giáo viên · giao bài | MỘT PHẦN — không sửa được bài đã giao | V-e, V-h + ô sửa bài | — |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
@@ -226,10 +226,14 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Đề xuất HS cần hỗ trợ | CÓ (E1) | sổ đầu bài: đánh dấu em cần hỗ trợ + ghi chú (`session_support`, nội bộ); cờ theo em **V-f** |
 | Đề xuất học bù / điều chỉnh tiến độ | MỘT PHẦN (E1) | ô "Đề xuất" trong sổ đầu bài; luồng duyệt → **E3** |
 
-## Dòng 17 — Giáo viên · giao bài · CÓ
+## Dòng 17 — Giáo viên · giao bài · MỘT PHẦN (sửa 26/09: trước ghi "CÓ" là quá tay)
 
-Tạo, hạn, sửa, xoá / đóng, danh sách, xem bài nộp, chấm, nhập điểm, nhận xét, trả bài, ai chưa nộp:
-CÓ (`teaching/assignments.py`). **Thiết lập đối tượng nhận bài** (một nhóm em): CÓ (V-e) —
+Tạo, hạn lúc TẠO, xoá / đóng / mở lại, danh sách, xem bài nộp, chấm, nhập điểm, nhận xét, trả bài, ai chưa nộp:
+CÓ (`teaching/assignments.py`). **"Chỉnh sửa bài tập" thì CHƯA**: sau khi đã giao, màn của giảng viên chỉ gửi
+được hai thứ — đổi người nhận và đóng/mở bài (`giang-day/bai-tap/[classId]/AssignmentsClient.tsx:176, 238` —
+đo 26/09, không có lời gọi nào mang `title`/`dueAt`/thang điểm). Backend `assignments.py:530` nhận sửa đầy đủ
+nhưng KHÔNG màn nào gọi tới, nên gõ nhầm hạn nộp là phải xoá bài giao lại. Việc đóng dòng này: thêm ô sửa bài
+đã giao trên màn giảng viên. **Thiết lập đối tượng nhận bài** (một nhóm em): CÓ (V-e) —
 `assignments.target_mode` + `assignment_targets` (§62d); MỘT hàm lọc `teaching/nhan_bai.giao_cho` ở mọi chỗ
 đọc bài (danh sách + sĩ số từng bài, bảng chấm, bài của học viên, nộp bài, thẻ lớp, tờ phụ huynh, Việc hôm
 nay, chuông "bài mới"). Test `teaching/tests_nhan_bai.py` (10). Demo: giảng viên → Bài tập của lớp → "Giao bài
