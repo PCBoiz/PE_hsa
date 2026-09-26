@@ -42,6 +42,14 @@ Next.js (Vercel) → Django + SQL thuần (Render) → Postgres (Neon). Viết, 
   máy anh Sơn đứng vì 22 tiến trình mồ côi + 11 Chromium giữ 788 MB cho một tab trống.)
 - Repo CÔNG KHAI: không bí mật, khoá, JWT, và không đường dẫn mang tên tài khoản Windows. Cổng `pre-push`
   bước f8 (`scripts/quet_bi_mat.py`) canh chỗ này.
+- **Máy anh Sơn có 15,9 GB — đếm máy chủ dev trước khi mở thêm.** Kiểm bằng `don_may.ps1` (chỉ xem);
+  RAM trống dưới **3 GB** thì dọn trước, đừng chạy tiếp. Agent chỉ ĐO thì dùng CHUNG bản dev chính
+  (Django 9000, Next 3100), không dựng bộ riêng; agent có sửa mã mới cần cổng riêng, và phải đặt trần
+  `NODE_OPTIONS=--max-old-space-size=1536` cho `next dev`. Agent xong lượt nào thì lead chạy
+  `don_may.ps1 -Don -Worktree` ngay lượt ấy. (27/09: sáu máy chủ dev cùng sống — ba Django, ba Next,
+  riêng một `next dev` của worktree giữ 3.047 MB — máy còn 1,5 GB trống và phiên chết. **Giữ cổng là
+  bằng chứng tiến trình còn SỐNG, không phải bằng chứng còn ai CẦN nó** — đó đúng là chỗ `don_may.ps1`
+  bản đầu nhìn sót.)
 
 ## Lệnh
 ```bash
@@ -52,7 +60,7 @@ cd backend && python -m ruff check . && python manage.py check
 cd frontend && npx --yes pnpm@11.12.0 e2e                # E2E_GHI=1 cho luồng có ghi
 python scripts/cau_truc.py [--kiem]                      # sinh / kiểm docs CAU_TRUC_* + ghi chéo miền
 node scripts/ban_do.mjs --kiem && python scripts/tang_vai.py --kiem
-powershell -File scripts/don_may.ps1 [-Don]              # xem / dọn tiến trình dev mồ côi
+powershell -File scripts/don_may.ps1 [-Don] [-Worktree]  # xem / dọn tiến trình dev; -Worktree: dọn cả máy chủ của agent
 powershell -File scripts/nap_lai_be.ps1 [-Cong N]        # nạp lại Django (--noreload KHÔNG tự nạp mã mới)
 python scripts/dot_bien.py <tệp> --test <đường> --loat <json> [--xem]  # cả loạt đột biến, MỘT bảng
 node scripts/do_man_hang_loat.mjs --man scripts/man/nghiem_thu.json     # soát nhiều màn trong MỘT phiên
