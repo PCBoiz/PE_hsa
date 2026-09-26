@@ -309,6 +309,29 @@ def _clean(body, class_id):
                           % ', '.join(ASSIGNMENT_STATUS))
         data['status'] = st
 
+    # §74 (27/09/2026) — bài này thuộc mục nào của khung chương trình. NULL là trạng thái
+    # BÌNH THƯỜNG: phần lớn bài giao rời, và bắt buộc trường này sẽ chặn đúng giảng viên
+    # đang vội giao bài trước giờ lên lớp. Chỉ thêm một đường nối, không bắt ai phải dùng.
+    if 'syllabus_item_id' in body:
+        raw_m = body['syllabus_item_id']
+        if raw_m in (None, '', 0):
+            data['syllabus_item_id'] = None
+        else:
+            try:
+                mid = int(raw_m)
+            except (TypeError, ValueError):
+                return None, 'Chọn mục khung chương trình từ danh sách.'
+            # Mục phải thuộc khung của ĐÚNG khoá lớp đang học — không nối bừa hai chương
+            # trình. Kiểm ở máy chủ vì một ô chọn trên màn có thể bị gửi kèm id bất kỳ.
+            hop = q1('''SELECT 1 FROM syllabus_items i
+                          JOIN syllabus_sessions s ON s.id = i.session_id
+                          JOIN syllabus_versions v ON v.id = s.version_id
+                          JOIN classes c ON c.id = %s
+                         WHERE i.id = %s AND v.course_id = c.course_id''', (class_id, mid))
+            if not hop:
+                return None, 'Mục khung chương trình này không thuộc khoá của lớp.'
+            data['syllabus_item_id'] = mid
+
     return data, None
 
 

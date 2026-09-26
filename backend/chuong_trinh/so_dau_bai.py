@@ -94,11 +94,27 @@ def _doc(b):
                      WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u') + '''
                      ORDER BY 2''', (sid, sid, b['class_id']))
 
+    # §74 (27/09/2026) — mục loại "bài tập" / "kiểm tra" của khung đã có bài giao chưa.
+    # Đây chính là câu hỏi cột `assignments.syllabus_item_id` sinh ra để trả lời: khung nói
+    # "buổi 3 có bài về nhà", và cho tới hôm nay không gì nói được bài ấy đã giao hay chưa.
+    ids_muc = [m['id'] for m in muc_ban]
+    bai_theo_muc = {}
+    if ids_muc:
+        for r in q('''SELECT syllabus_item_id AS muc, id, title FROM assignments
+                       WHERE class_id = %s AND syllabus_item_id = ANY(%s)
+                    ORDER BY created_at''', (b['class_id'], ids_muc)):
+            bai_theo_muc.setdefault(r['muc'], []).append({'id': r['id'], 'tieuDe': r['title']})
+
     def dong(m):
         g = ghi_theo_muc.get(m['id'])
-        return {'itemId': m['id'], 'label': m['label'], 'kind': m['kind'],
-                'weight': float(m['weight']), 'soBuoi': m['so_buoi'],
-                'status': g['status'] if g else None, 'note': g['note'] if g else None}
+        d = {'itemId': m['id'], 'label': m['label'], 'kind': m['kind'],
+             'weight': float(m['weight']), 'soBuoi': m['so_buoi'],
+             'status': g['status'] if g else None, 'note': g['note'] if g else None}
+        if m['kind'] in ('bai_tap', 'kiem_tra'):
+            # Danh sách rỗng KHÁC với khoá vắng mặt: rỗng nghĩa là "mục này cần bài mà chưa
+            # giao", còn vắng mặt nghĩa là "mục này không phải loại cần bài".
+            d['baiDaGiao'] = bai_theo_muc.get(m['id'], [])
+        return d
 
     ke_hoach = [dong(m) for m in muc_ban if m['ss_id'] == ke_hoach_ss]
     ngoai_ke_hoach = [dong(m) for m in muc_ban if m['ss_id'] != ke_hoach_ss and m['id'] in ghi_theo_muc]

@@ -19,15 +19,15 @@
 | [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2611 dòng | 19 tệp · 3940 dòng |
 | [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2644 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
-| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
-| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
+| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1081 dòng | 7 tệp · 1788 dòng |
+| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1819 dòng | 8 tệp · 1399 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1678 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2147 dòng | 19 tệp · 2015 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6334 dòng | 68 tệp · 6983 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6339 dòng | 68 tệp · 6983 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -164,7 +164,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
-| `backend/teaching/assignments.py` | 1028 dòng | `assignment_targets`, `assignments`, `submissions` |
+| `backend/teaching/assignments.py` | 1051 dòng | `assignment_targets`, `assignments`, `submissions` |
 | `backend/teaching/nhan_bai.py` | 30 dòng | — |
 
 | Tệp frontend | Dòng |
@@ -193,7 +193,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/chuong_trinh/du_lieu_mau.py` | 111 dòng | `session_log_items`, `session_logs`, `syllabus_items`, `syllabus_sessions`, `syllabus_versions` |
 | `backend/chuong_trinh/khung.py` | 44 dòng | — |
 | `backend/chuong_trinh/lop.py` | 231 dòng | *`class_sessions`* |
-| `backend/chuong_trinh/so_dau_bai.py` | 290 dòng | `session_log_items`, `session_logs`, `session_support` |
+| `backend/chuong_trinh/so_dau_bai.py` | 306 dòng | `session_log_items`, `session_logs`, `session_support` |
 | `backend/chuong_trinh/tien_do.py` | 284 dòng | — |
 | `backend/chuong_trinh/tu_vung.py` | 38 dòng | — |
 | `backend/chuong_trinh/urls.py` | 22 dòng | — |
@@ -457,7 +457,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/common/management/commands/backfill_learning_events.py` | 252 dòng | — |
 | `backend/common/management/commands/bootstrap_schema.py` | 135 dòng | — |
 | `backend/common/management/commands/chan_doan_oa.py` | 173 dòng | — |
-| `backend/common/management/commands/kiem_luoc_do.py` | 374 dòng | — |
+| `backend/common/management/commands/kiem_luoc_do.py` | 379 dòng | — |
 | `backend/common/management/commands/thu_email.py` | 160 dòng | — |
 | `backend/common/management/commands/thu_zns.py` | 98 dòng | — |
 | `backend/common/management/commands/ve_erd.py` | 217 dòng | — |

@@ -105,8 +105,8 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Xem trạng thái | CÓ | cột trạng thái + lý do khoá |
 | Quan hệ Giáo viên – Học sinh | CÓ (qua lớp) | giáo viên ↔ lớp ↔ học viên; người tư vấn trên hồ sơ |
 | Thông tin theo loại user | CÓ | trang Hồ sơ theo vai |
-| Admin + GV reset mật khẩu | MỘT PHẦN — đã nghiệm thu | quản trị viên + học vụ reset; giảng viên không (`teaching/views.py:806`) |
-| Admin + GV import | MỘT PHẦN — đã nghiệm thu | quản trị viên + học vụ (học vụ chỉ vai Học viên); giảng viên không |
+| Admin + GV reset mật khẩu | THAY — **chờ anh quyết, không phải thiếu mã** | Quản trị viên + học vụ reset được; giảng viên thì không (`teaching/views.py`). Mở cho giảng viên là quyết định về QUYỀN chứ không phải việc viết thêm mã: reset mật khẩu của một em kéo theo quyền chạm tài khoản ấy. Cùng nhóm câu hỏi với **C8**. Khách đã nghiệm thu ô này ở trạng thái hiện tại. |
+| Admin + GV import | THAY — **chờ anh quyết, không phải thiếu mã** | Quản trị viên + học vụ nhập được (học vụ chỉ vai Học viên); giảng viên thì không. Cùng lý do trên. Khách đã nghiệm thu ô này. |
 | Admin import + export | CÓ | dán danh sách có xem trước (trần 50/lượt); `api/admin/export/users.csv` |
 
 ## Dòng 3 — Tìm kiếm + hồ sơ học viên · CÓ (V-m, chờ e2e hai khổ)
@@ -154,7 +154,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Gắn bài giảng | CÓ | bài học trực tuyến |
 | Gắn video record | CÓ | link theo buổi; học viên xem lại được (§72, 26/09). Bản ghi tự gắn từ Zoom vẫn chờ khoá (Z1) |
 | Gắn tài liệu | **CÓ** | **§60 xong 27/09** — giảng viên gắn liên kết ngoài (Drive, YouTube, link đề) vào **kho chung của lớp** hoặc **một buổi cụ thể**, ẩn/hiện theo tiến độ, gỡ được; học viên thấy trên thẻ lớp. Đo 11/11 bước trên màn thật, 27/27 test, 7/7 đột biến bị giết. Còn thiếu: **tải TỆP thẳng lên** — chờ khoá R2 (việc D1 của anh); lược đồ đã chừa sẵn `nguon='r2'`. |
-| Gắn bài tập, bài kiểm tra | MỘT PHẦN | khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1); bài tập giao cho lớp chưa trỏ về mục khung; điểm kiểm tra → **V-h** |
+| Gắn bài tập, bài kiểm tra | **CÓ** | Khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1). **§74 (27/09)**: bài giao cho lớp nay TRỎ VỀ mục khung — màn Chương trình trả lời được "bài về nhà của buổi 3 đã giao chưa" (`baiDaGiao` mỗi mục). NULL vẫn là trạng thái bình thường: phần lớn bài giao rời, và bắt buộc trường này sẽ chặn giảng viên đang vội. Xoá mục khung KHÔNG kéo mất bài đã giao (§29). Bộ kiểm 5/5 + 57 test chương trình vẫn xanh. |
 | Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1); chưa có ngưỡng "hoàn thành khoá" riêng |
 
 ## Dòng 6 — Báo cáo · MỘT PHẦN (còn báo cáo chéo môn × lớp)

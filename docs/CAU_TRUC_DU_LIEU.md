@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 61 bảng, 119 khoá ngoài, 13 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
+Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 61 bảng, 120 khoá ngoài, 13 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
 
 | Miền | Bảng |
 |---|---|
@@ -499,6 +499,7 @@ erDiagram
         text target_mode
         text kind
         date held_on
+        integer syllabus_item_id FK
     }
     submissions {
         integer assignment_id PK,FK
@@ -525,9 +526,13 @@ erDiagram
     users {
         serial id PK
     }
+    syllabus_items {
+        serial id PK
+    }
     assignments }o--|| classes : "class_id"
     assignments }o--o| courses : "course_id"
     assignments }o--o| users : "created_by"
+    assignments }o--o| syllabus_items : "syllabus_item_id"
     submissions }o--|| assignments : "assignment_id"
     submissions }o--|| users : "user_id"
     submissions }o--o| users : "graded_by"
@@ -535,7 +540,7 @@ erDiagram
     assignment_targets }o--|| users : "user_id"
 ```
 
-Bảng khách (miền khác, vẽ rút gọn): `classes` (lop_hoc), `courses` (hoc_truc_tuyen), `users` (tai_khoan).
+Bảng khách (miền khác, vẽ rút gọn): `classes` (lop_hoc), `courses` (hoc_truc_tuyen), `users` (tai_khoan), `syllabus_items` (chuong_trinh).
 
 ### `assignments` · §38
 
@@ -557,6 +562,7 @@ Bảng khách (miền khác, vẽ rút gọn): `classes` (lop_hoc), `courses` (h
 | `target_mode` | text | NOT NULL · mặc định `'lop'` | §62 |
 | `kind` | text | NOT NULL · mặc định `'bai_tap'` | §62 |
 | `held_on` | date |  | §62 |
+| `syllabus_item_id` | integer | → `syllabus_items.id` (set null) | §74 |
 
 CHECK:
 
@@ -736,6 +742,8 @@ CHECK:
 
 - `syllabus_items_kind_check` (§64): `kind` ∈ {'bai_hoc', 'chu_de', 'bai_tap', 'kiem_tra'}
 - `syllabus_items_weight_check` (§64): `weight > 0`
+
+Miền khác trỏ vào: `assignments.syllabus_item_id`
 
 ### `syllabus_materials` · §64
 

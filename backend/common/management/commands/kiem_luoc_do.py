@@ -331,6 +331,11 @@ MUC = [
                  lambda: _chi_muc('idx_prt_purpose'))),
     ('§73d', 'loại yêu cầu tk_dang_ky (hàng chờ xếp lớp dùng lại hộp §65)',
      lambda: _check_co_gia_tri('yeu_cau_loai_check', "'tk_dang_ky'")),
+    # §74: bài tập trỏ về mục khung chương trình. NULL = bài giao rời.
+    ('§74a', 'assignments.syllabus_item_id (bài thuộc mục khung nào)',
+     lambda: _cot('assignments', 'syllabus_item_id')),
+    ('§74b', 'lối vào: mở một mục khung ra hỏi đã giao bài chưa',
+     lambda: _chi_muc('idx_assignments_muc_khung')),
 ]
 
 

@@ -2490,3 +2490,20 @@ ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
     'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
     'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
     'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa', 'tk_dang_ky'));
+
+-- ── §74 · BÀI TẬP TRỎ VỀ MỤC KHUNG CHƯƠNG TRÌNH (bảng TopHSA dòng 5 — 27/09/2026) ──
+-- Khung chương trình đã có mục loại `bai_tap` / `kiem_tra` (§64), và giảng viên đã giao
+-- được bài cho lớp (`assignments`). Nhưng hai thứ ấy KHÔNG nối với nhau: khung nói "buổi 3
+-- có bài về nhà", bài giao nói "bài tập X hạn thứ Sáu", và không gì trả lời được "bài về
+-- nhà của buổi 3 đã giao chưa".
+--
+-- NULL = bài giao rời, không thuộc mục khung nào — đó là phần lớn bài hiện có, và vẫn phải
+-- giao được như thế. Cột này chỉ THÊM một đường nối, không bắt ai phải dùng.
+--
+-- SET NULL: sửa khung (xoá một mục) KHÔNG được kéo mất bài giảng viên đã giao và các em đã
+-- nộp — cùng nguyên tắc với §29 (giữ lịch sử thay vì xoá dòng).
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS syllabus_item_id INTEGER
+    REFERENCES syllabus_items(id) ON DELETE SET NULL;
+-- Lối vào: mở một mục khung ra hỏi "đã giao bài nào cho mục này chưa".
+CREATE INDEX IF NOT EXISTS idx_assignments_muc_khung
+    ON assignments (syllabus_item_id) WHERE syllabus_item_id IS NOT NULL;
