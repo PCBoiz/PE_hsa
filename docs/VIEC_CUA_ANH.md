@@ -1,5 +1,62 @@
 # Việc của anh — pe_hsa
 
+## ⚡ LÀM NHANH — gom theo NƠI BẤM (27/09/2026)
+
+Anh bảo "tổng hợp hết việc cần tôi lại làm cho nhanh". Đây là cùng những việc ở bảng dưới,
+nhưng xếp theo **chỗ phải mở ra** thay vì theo mã việc — mở một nơi thì làm hết việc ở nơi ấy.
+Cột "chặn gì" nói việc ấy đang giữ dòng nghiệm thu nào.
+
+### 1 · Mở Render (một lượt, ~6 phút) — `pe-hsa-backend` → Environment
+
+| Đặt / sửa | Giá trị | Chặn gì |
+|---|---|---|
+| `FRONTEND_URL` | đúng địa chỉ Vercel đang chạy (không phải localhost) | **N3** — link trong thư gửi ra ngoài đang trỏ sai |
+| `DEEPSEEK_MODEL` | **XOÁ** nếu có | **A7** |
+| `OUTBOX_TICK_SECRET` | chuỗi ngẫu nhiên ≥ 32 ký tự | **E2a** — chỉ cần nếu muốn cron ngoài đẩy thư; không đặt vẫn chạy |
+
+### 2 · Mở bảng phân rã của TopHSA (~2 phút) — tick những ô đã đo được
+
+**K3**: `G24` (STT 22 · record Zoom), `G19` (17 · giao bài), `G16` (14 · điểm danh), `G20` (18 · theo dõi HS).
+Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi không đụng.
+
+### 3 · Nhắn TopHSA (~10 phút, một tin nhắn gộp)
+
+| Hỏi gì | Vì sao cần | Mã |
+|---|---|---|
+| Xin **một khung chương trình thật** theo buổi của một môn | Khung mẫu hiện là do tôi dựng để thử; buổi nghiệm thu nên chạy trên khung thật | **K1** |
+| Bốn điểm về phụ huynh / học phí | Quyết cách làm, không đoán hộ khách | **K2** |
+| Bài **"Chương trình con"** trùng vị trí 1 của Tư duy Định lượng — giữ bài nào | Hai bài cùng đứng đầu một khoá | **N7** |
+| Trung tâm dùng **pháp nhân nào** (để mở Zalo OA) | Không có pháp nhân thì không đăng ký được ZNS | **D2** |
+
+### 4 · Quyết ba câu (nhắn một dòng là xong)
+
+| Câu | Đề xuất của tôi | Mã |
+|---|---|---|
+| Em báo "bản ghi hỏng" ở MỘT chỗ: chuông hay hộp Yêu cầu? | **hộp Yêu cầu** — link hỏng là việc phải có người nhận và đóng lại, không phải tin nhắn đọc rồi thôi | **K4** |
+| Quản lý học vụ có được xem liên hệ phụ huynh không? | ảnh hưởng luôn việc học vụ có tải được danh sách tài khoản (hiện chỉ quản trị viên) | **C8** |
+| Hai mặc định tôi tự chọn (im lặng = đồng ý) | — | **N5** |
+
+### 5 · Mở tài khoản bên ngoài (làm khi rảnh, không chặn buổi nghiệm thu)
+
+| Việc | Chặn gì | Mất |
+|---|---|---|
+| **Cloudflare R2** → bucket + API token → 4 biến trên Render | Tải TỆP lên (dòng 30 phần tệp, dòng 31 nộp bài). **Liên kết ngoài đã chạy rồi** nên dòng 30 không còn chờ việc này | **D1** · 10 phút |
+| **Zoom** — nhờ quản trị tài khoản Zoom bật ghi tự động + cấp khoá | Bản ghi tự vào buổi, % đã xem (dòng 10, 22) | **Z1** |
+| **cron-job.org** — một cron gọi `/api/noi-bo/tick` | Thư không nằm chờ khi máy chủ gói miễn phí ngủ | **T6** · 5 phút |
+
+### 6 · NGAY TRƯỚC buổi nghiệm thu (bắt buộc, 2 phút)
+
+Chạy trên **production**: `python manage.py du_lieu_mau --lam-moi`.
+Đo 27/09 trên dev: khung chương trình **0 → 1**, sổ đầu bài **0 → 13**. Không chạy thì khách bấm
+"Chương trình" sẽ thấy *"Lớp chưa nhận khung chương trình"* — cho **sáu ô** của bảng, dù mã đúng hết.
+Lệnh chỉ gỡ và dựng lại dữ liệu `is_demo`, trong MỘT giao dịch.
+
+### 7 · Khi tôi báo "erp đã thử xong"
+
+**N4** — gộp `erp` → `master` (gộp = deploy production). Cách gộp ghi ở bảng dưới.
+
+---
+
 ## ★ BẢNG TỔNG HỢP — mọi việc cần anh (cập nhật 25/09/2026)
 
 **Đây là chỗ DUY NHẤT tôi ghi việc cần anh.** Việc mới phát sinh tôi thêm vào bảng này. Anh làm xong việc
