@@ -27,6 +27,7 @@ const DAY = dirname(fileURLToPath(import.meta.url));
 const GOC = (process.env.PE_URL || 'http://localhost:3100').replace(/\/$/, '');
 const TOKEN = process.env.PE_TOKENS || '';
 const { chromium } = createRequire(join(DAY, '..', 'frontend', 'package.json'))('@playwright/test');
+import { baoHiem } from './lib/phien_do.mjs';
 
 let hong = 0;
 const dat = (ok, ten, chiTiet = '') => {
@@ -53,6 +54,7 @@ for (const duong of ['/', '/login', '/api/user', '/static/js/main.js']) {
 
 /* ── 2. Trình duyệt: CHẶN đúng thứ cần chặn ── */
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const c = await b.newContext();
 await c.route('**/api/**', (r, req) => (['GET', 'HEAD'].includes(req.method()) ? r.fallback() : r.abort()));
 const loiCsp = (p) => {

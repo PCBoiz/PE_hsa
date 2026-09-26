@@ -200,4 +200,37 @@ export async function chay(tuyChon, viec) {
   }
 }
 
-export default { chay, THE_VAI };
+/**
+ * BẢO HIỂM cho bộ đo CHƯA chuyển sang `chay()`.
+ *
+ * Bảy bộ đo vẫn tự `chromium.launch()` (đo 27/09). Chuyển hết sang `chay()` là việc đúng
+ * nhưng không nhỏ: mỗi bộ đo là một cổng của RULES §4, đổi cách nó mở trình duyệt thì phải
+ * đo lại cả bộ để biết con số có còn nghĩa cũ không. Trong lúc chưa làm xong, thứ nguy
+ * hiểm không phải là "mở kiểu nào" mà là "có đóng không".
+ *
+ *     const b = await chromium.launch();
+ *     baoHiem(b);                        // ← một dòng, ngay sau launch
+ *
+ * Đóng trình duyệt trên bốn đường mà `finally` KHÔNG chạy: Ctrl-C, `taskkill`, lỗi không ai
+ * bắt, hứa bị bỏ rơi. Đúng bốn cách Chromium mồ côi đã sinh ra trên máy anh Sơn — ngày
+ * 26/09 là 11 tiến trình giữ 788 MB cho một tab trống, và 27/09 lại góp phần làm máy còn
+ * 1,5 GB. `e2e/unit/bo-do-phai-dong-trinh-duyet.test.mjs` canh để không ai quên dòng này.
+ */
+export function baoHiem(browser) {
+  let xong = false;
+  const dong = () => {
+    if (xong) return Promise.resolve();
+    xong = true;
+    return browser.close().catch(() => {});
+  };
+  const thoat = () => { dong().finally(() => process.exit(130)); };
+  process.once('SIGINT', thoat);
+  process.once('SIGTERM', thoat);
+  process.once('uncaughtException', (e) => { console.error(e); thoat(); });
+  process.once('unhandledRejection', (e) => { console.error(e); thoat(); });
+  // Thoát bình thường mà quên `close()` cũng để lại tiến trình: đóng nốt ở đây.
+  process.once('beforeExit', () => { void dong(); });
+  return dong;
+}
+
+export default { chay, THE_VAI, baoHiem };

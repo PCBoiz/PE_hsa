@@ -38,6 +38,7 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { baoHiem } from './lib/phien_do.mjs';
 
 const DAY = dirname(fileURLToPath(import.meta.url));
 
@@ -872,6 +873,7 @@ const i_json = process.argv.indexOf('--json');
 const ra_json = i_json >= 0 ? process.argv[i_json + 1] : null;
 
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const ket = [];
 let ghiLen = 0;
 /* Lời gọi ghi do CHÍNH bộ đo bấm ra khi đi bài học (nộp bài kiểm tra đầu bài).

@@ -123,6 +123,11 @@ nhom_frontend() {
   # `.gitignore` chặn được tệp `.env`, không chặn được một JWT dán vào tài liệu. Đo hôm ấy: PROGRESS.md
   # trên GitHub (cả erp lẫn master) mang đường dẫn `C:/Users/<tên>/…` ở hai chỗ. Chạy < 2 giây.
   buoc f8 "quét bí mật" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/quet_bi_mat.py
+  # f9 (27/09/2026): một loạt đột biến đứt giữa chừng để lại mã ĐỘT BIẾN trong tệp — mã ấy chạy
+  # được, ruff sạch, manage.py check sạch, và cổng không chạy pytest theo mặc định. Đêm 26/09 phiên
+  # chết vì máy hết RAM và teaching/hoc_lieu.py sáng ra vẫn mang đột biến "bỏ kiểm buổi bù". Sổ cứu
+  # hộ đã ghi đủ để bắt; thiếu đúng một người đọc nó trước lúc đẩy. Chạy < 1 giây.
+  buoc f9 "đột biến còn sót" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/kiem_dot_bien_con_sot.py
   if [ ! -d "$GOC/frontend/node_modules" ]; then
     bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
     echo "1 0" > "$TAM/f1.kq"

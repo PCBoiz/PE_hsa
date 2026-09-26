@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const DAY = dirname(fileURLToPath(import.meta.url));
 const { chromium } = createRequire(join(DAY, '..', 'frontend', 'package.json'))('@playwright/test');
+import { baoHiem } from './lib/phien_do.mjs';
 const doc = (t) => JSON.parse(fs.readFileSync(process.env[t] || join(DAY, '..', '.the', t === 'PE_TOKENS' ? 'tokens_ad.json' : 'tokens_hv.json'), 'utf8')).access;
 const AD = doc('PE_TOKENS');
 const HV = doc('PE_TOKENS_HV');
@@ -111,6 +112,7 @@ const LUOT = chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM];
 
 const AXE = 'https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js';
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const tong = new Map(); // rule → { impact, help, trang: Set, mau }
 const theoTrang = [];
 for (const w of [390, 1366]) {

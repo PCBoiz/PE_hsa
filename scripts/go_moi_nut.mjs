@@ -28,6 +28,7 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { baoHiem } from './lib/phien_do.mjs';
 
 const DAY = dirname(fileURLToPath(import.meta.url));
 const _doi = createRequire(join(DAY, '..', 'frontend', 'package.json'));
@@ -83,6 +84,7 @@ if (!tk) {
 }
 
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const c = await b.newContext({ viewport: { width: 1440, height: 900 } });
 let ghiLen = 0;
 await c.route('**/api/**', (r, req) => {

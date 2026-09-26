@@ -1,4 +1,5 @@
 /* ĐO HIỆU NĂNG bằng chính giao thức DevTools (CDP), qua Playwright.
+import { baoHiem } from './lib/phien_do.mjs';
  *
  * ── VÌ SAO CÓ TỆP NÀY (07/09/2026) ────────────────────────────────────────
  *
@@ -110,6 +111,7 @@ const MAN = [
 ];
 
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
 await ctx.addCookies([{name:'pe_at',value:the.access,domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
 

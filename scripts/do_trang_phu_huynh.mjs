@@ -51,6 +51,7 @@
  */
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { baoHiem } from './lib/phien_do.mjs';
 
 const _doi = createRequire('D:/pe_hsa/frontend/package.json');
 let chromium = null;
@@ -66,6 +67,7 @@ const GOC = process.env.PE_GOC || 'https://pe-hsa.vercel.app';
 const SO_LUOT = 5;
 
 const b = await chromium.launch({ channel: 'chrome' });
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const ctx = await b.newContext({
   viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true,
 });
