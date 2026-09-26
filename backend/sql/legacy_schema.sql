@@ -2142,3 +2142,35 @@ CREATE TABLE IF NOT EXISTS session_support (
 );
 CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
 CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);
+
+-- ── §71 · ĐỊA CHỈ LỊCH RIÊNG (.ics) — 26/09/2026 ─────────────────────────────
+-- Anh Sơn chốt 26/09: mỗi người một địa chỉ lịch riêng, thêm vào Google Calendar /
+-- Lịch iPhone / Outlook MỘT lần rồi mọi đổi lịch, học bù, huỷ buổi tự chảy về. Chọn
+-- đường này thay cho Google Calendar API vì nó không đòi Google xác minh ứng dụng,
+-- không đòi người dùng có tài khoản Google, và chạy được cho cả phụ huynh (phụ huynh
+-- đi bằng chìa tờ báo cáo sẵn có, không cần dòng nào ở bảng này).
+--
+-- Chỉ lưu BĂM của chìa, không lưu chìa: máy chủ chỉ cần so băm để biết chìa có thật,
+-- còn người xem đã dán chìa vào ứng dụng lịch của họ rồi. Ai đọc được bảng này cũng
+-- KHÔNG dựng lại được địa chỉ lịch của người khác. Muốn xem lại địa chỉ thì cấp lại
+-- chìa mới (chìa cũ thu hồi ngay) — cùng cách §66 định làm cho link phụ huynh.
+--
+-- `scope`: 'toi' = buổi của chính người ấy (học viên: lớp em đang học; giảng viên và
+-- trợ giảng: buổi họ phụ trách) · 'trung_tam' = MỌI buổi, chỉ cấp cho quản trị viên và
+-- quản lý học vụ. Mỗi người mỗi phạm vi nhiều nhất một chìa còn sống.
+CREATE TABLE IF NOT EXISTS calendar_links (
+    id            SERIAL    PRIMARY KEY,
+    user_id       INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scope         TEXT      NOT NULL DEFAULT 'toi',
+    token_hash    TEXT      NOT NULL UNIQUE,
+    created_at    TIMESTAMP NOT NULL DEFAULT now(),
+    revoked_at    TIMESTAMP,
+    last_fetch_at TIMESTAMP,
+    fetch_count   INTEGER   NOT NULL DEFAULT 0
+);
+ALTER TABLE calendar_links DROP CONSTRAINT IF EXISTS calendar_links_scope_check;
+ALTER TABLE calendar_links ADD CONSTRAINT calendar_links_scope_check
+    CHECK (scope IN ('toi', 'trung_tam'));
+-- Một chìa còn sống cho mỗi (người, phạm vi): cấp lại là thu hồi cái cũ rồi mới thêm.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_links_mot_chia_song
+    ON calendar_links (user_id, scope) WHERE revoked_at IS NULL;

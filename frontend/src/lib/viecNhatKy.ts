@@ -78,6 +78,8 @@ export const VIEC: Record<string, string> = {
   // Gắn tay một buổi với buổi khung + sổ đầu bài (E1, §70, 25/09/2026).
   'session.syllabus': 'Gắn buổi học với buổi khung',
   'session.log': 'Ghi sổ đầu bài',
+  'calendar.link.new': 'Cấp địa chỉ lịch riêng',
+  'calendar.link.revoke': 'Thu hồi địa chỉ lịch riêng',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'course.publish': 'Mở / chuyển nháp khoá học',

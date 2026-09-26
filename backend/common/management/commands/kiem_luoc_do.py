@@ -259,6 +259,14 @@ MUC = [
      if _cot('session_log_items', 'item_id')[0] else (False, 'chưa có bảng')),
     ('§70c', 'bảng session_support (em cần hỗ trợ sau buổi)',
      lambda: _chi_muc('idx_session_support_user')),
+    # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
+    ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
+     lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')
+     if _cot('calendar_links', 'token_hash')[0] else (False, 'chưa có bảng')),
+    ('§71b', 'calendar_links.scope CHECK toi | trung_tam',
+     lambda: _check_co_gia_tri('calendar_links_scope_check', 'trung_tam')),
+    ('§71c', 'mỗi người mỗi phạm vi chỉ MỘT chìa còn sống',
+     lambda: _chi_muc('idx_calendar_links_mot_chia_song')),
 ]
 
 
