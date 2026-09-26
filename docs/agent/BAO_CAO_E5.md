@@ -259,7 +259,20 @@ nạp `@playwright/test` theo đường TƯƠNG ĐỐI (kho của worktree) còn
 nên lỗi **chỉ lộ ra trong worktree**, tức đúng chỗ agent làm việc. **Đã vá**: nạp từ
 `frontend/` của chính kho đang chạy, lùi về kho chính nếu worktree chưa cài `node_modules`.
 
-### 6.7 React StrictMode gọi effect hai lần — màn đọc mã trong `#…` hỏng ở dev
+### 6.7 Bộ quét bí mật chỉ nhìn tệp GIT ĐÃ THEO DÕI — "sạch trước khi commit" không phải bằng chứng
+
+`python scripts/quet_bi_mat.py` (không cờ) quét *tệp khác `origin/master`*, tức tệp đã
+được git biết tới. Tôi chạy nó trước lúc `git add`, nhận "790 tệp sạch", rồi cổng
+pre-push chạy sau commit và **đỏ** ở đúng tệp mới. Không phải lỗi của bộ quét — nó là
+móc *pre-push*, đứng sau commit — nhưng là một cách đọc sai dễ mắc, nên ghi ra.
+
+Cái nó bắt cũng đáng ghi: `cucBo.password = 'Hai lần nhập mật khẩu chưa khớp nhau.'` —
+một câu tiếng Việt khớp đúng hình dạng luật `mat-khau-gan-cung` canh. Tôi **không nới
+luật** (nới là mở đúng cái khe nó sinh ra để bịt) và **không dùng chú thích `bo-qua`**
+(tắt cảnh báo thì người sau học được thói quen tắt cảnh báo) — đưa câu ra một hằng có
+tên là xong.
+
+### 6.8 React StrictMode gọi effect hai lần — màn đọc mã trong `#…` hỏng ở dev
 
 `XacThucForm` (mã tôi vừa viết, nhưng cùng hình dạng với `DatLaiForm` có sẵn): lần một đọc
 mã rồi `replaceState` xoá `#chia=…`; lần hai không còn thấy mã và ghi đè trạng thái thành
