@@ -64,7 +64,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | 11, 12 | Hỗ trợ lớp + thay đổi học tập có duyệt | CHƯA | E3 |
 | 14 | GV điểm danh | thiếu lịch sử sửa từng buổi | V-d |
 | 15, 16 | GV chương trình, sổ đầu bài buổi học | CHƯA phần lớn | E1 (+ tài liệu: Đ2 §60) |
-| 17 | Giao bài | thiếu "đối tượng nhận bài" | V-e |
+| 17 | Giao bài | ĐỦ (đo 26/09) — "đối tượng nhận bài" đã có từ trước (`target_mode` + `assignment_targets`, nút "Đổi người nhận"); ô Sửa bài thêm 26/09 | ~~V-e~~ xong |
 | 18 | Theo dõi HS | **nhận xét GV: không có chỗ ghi + đang lỗi rò ghi chú chuyển lớp**; thiếu cờ "cần hỗ trợ", đề xuất hướng học | V-a (P0), V-f |
 | 20 | TG nhắn / nhắc | CHƯA | E3 (trao đổi) + E2 (nhắc) |
 | 21 | TG theo dõi | TG KHÔNG nhận `vangLien`/`canChuY` (`viec_hom_nay.py:225`) | V-b, E4 |

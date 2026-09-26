@@ -39,7 +39,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
 | 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong, còn tài liệu | Đ2 §60, E3 | — |
 | 16 | Giáo viên · quản lý buổi học | gần đủ — E1 xong, đề xuất → E3 | E3 | — |
-| 17 | Giáo viên · giao bài | MỘT PHẦN — không sửa được bài đã giao | V-e, V-h + ô sửa bài | — |
+| 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |

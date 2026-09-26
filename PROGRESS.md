@@ -7,6 +7,34 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (tối) — soát lại bảng nghiệm thu: hai dòng bị ghi THẤP hơn thực tế
+
+Không viết thêm mã, chỉ ĐO. Bảng nghiệm thu là thứ khách đọc; ghi sai theo hướng
+nào cũng hại — nói quá thì mất tin, nói thiếu thì công đã làm không ai thấy.
+
+**Dòng 21 (trợ giảng · theo dõi)**: ghi chú 23/09 nói *"TG không nhận
+`vangLien`/`canChuY`"*, mà chú thích trong `viec_hom_nay.py` lại nói ngược. Đo:
+dựng một em vắng 3 buổi liền ở lớp mẫu 7322 (ghi sổ trạng thái gốc ra JSON
+trước), gọi API bằng thẻ TG và thẻ GV **cùng lớp** → cả hai `vangLien=1`, cùng
+tên em; soi màn TG → *"Vắng liền từ 2 buổi (1)"*, *"Đỗ Đức Tùng · vắng 3 buổi
+liền"*, nút *"Báo cần hỗ trợ"*. Hoàn nguyên 3/3 khớp gốc. Ghi chú đã lỗi thời.
+
+**Dòng 17 (giáo viên · giao bài)**: ghi *"MỘT PHẦN — không sửa được bài đã
+giao"*, và kế hoạch ghi V-e *"thiếu đối tượng nhận bài"*. Đo trên màn: nút **Đổi
+người nhận** đã có từ trước (`target_mode` + bảng `assignment_targets`), ô **Sửa
+bài** thêm sáng nay, bảng chấm cả lớp ghi rõ từng em *"Chưa nộp"* / *"Nộp
+18/09"* kèm tổng *"9/27 đã nộp"* — đủ cả mười hai gạch của khách. **MỘT PHẦN →
+CÓ**, V-e gạch khỏi kế hoạch.
+
+Suýt sai: lượt dựng dữ liệu đầu lỗi lược đồ giữa chừng (`attendance` không có
+cột `class_id`) nhưng đã kịp đổi một dòng, nên sổ hoàn nguyên ghi `absent` trong
+khi gốc là `present`. Sửa sổ trước khi hoàn nguyên — không thì lớp mẫu của khách
+bị để lại một buổi vắng oan.
+
+Còn chờ anh Sơn: tick `G24` (STT 22) và `G19` (STT 17). Ba đường tự tick đều bị
+chặn — xem `docs/VIEC_CUA_ANH.md` mục K3.
+
+
 ## 26/09/2026 (chiều muộn) — dòng 4: hai mốc còn thiếu trong hành trình của em
 
 Khách viết rõ chuỗi phải theo dõi được: *"Đăng ký → Xếp lớp → Khai giảng → Làm
