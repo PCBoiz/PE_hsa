@@ -93,6 +93,11 @@ function Split-MoCoi {
   # Bản đầu của hàm này chỉ nhìn lên cha một nấc, và xếp nhầm hai tiến trình của
   # `next dev` cổng 3100 đang chạy vào nhóm mồ côi (đo 26/09, trước khi sửa).
   param([object[]]$Ds)
+  # `$Ds` rỗng, hoặc một phần tử null lọt vào, thì `ContainsKey($null)` ném
+  # "Key cannot be null" và cả script đổ — đúng lúc máy đang bẩn và người ta
+  # cần nó nhất (agent E3 báo 26/09: "chạy được lúc máy sạch, đổ lúc cần").
+  $Ds = @($Ds | Where-Object { $null -ne $_ -and $null -ne $_.Pid })
+  if ($Ds.Count -eq 0) { return @{ Song = @(); Coi = @() } }
   $dung = @{}
   foreach ($t in $Ds) { if ($t.Cong) { $dung[$t.Pid] = $true } }
   for ($i = 0; $i -lt 8; $i++) {           # trần vòng lặp: cây tiến trình không sâu

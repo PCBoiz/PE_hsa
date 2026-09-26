@@ -57,6 +57,20 @@ Mỗi agent MỘT cặp cổng riêng, không dùng chung: Django 9400/9500/9600
 - Không đụng `master` (production) hay `erp-DB` (của Nhân).
 - Thư và tin nhắn chỉ gửi tới địa chỉ thử.
 
+## Ba cái vướng riêng của worktree (agent E3 báo 26/09/2026)
+
+1. **`next dev` mặc định KHÔNG chạy trong worktree.** `frontend/node_modules` là
+   junction trỏ ra ngoài gốc, Turbopack coi đó là lỗi và tắt máy chủ:
+   *"Symlink [project]/node_modules is invalid, it points out of the filesystem
+   root"*. Dùng **`next dev --webpack -p <cổng>`**. Mọi agent dùng worktree đều
+   vấp chỗ này.
+2. **Worktree không có `.venv` riêng** — nó dùng venv của repo chính. Gọi python
+   bằng đường dẫn tuyệt đối `D:/pe_hsa/backend/.venv/Scripts/python.exe`.
+   `scripts/nap_lai_be.ps1` nay tự tìm sang repo chính khi không thấy venv tại chỗ.
+3. **Ảnh chụp mang tên học viên của lớp mẫu** — để trong thư mục nháp của phiên,
+   ĐỪNG commit. Báo cáo chỉ ghi tên tệp và nói soi thấy gì.
+
+
 ## Dọn sau khi xong — phần hay bị quên nhất
 
 ```bash

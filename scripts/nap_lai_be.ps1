@@ -22,8 +22,23 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $goc = Split-Path $PSScriptRoot -Parent
+
+# Worktree của agent KHÔNG có `.venv` riêng — nó dùng venv của repo chính, và
+# `git rev-parse --git-common-dir` là chỗ duy nhất biết repo chính nằm đâu (cổng
+# pre-push cũng tìm bằng đúng câu ấy). Thiếu bước này thì script chạy ở gốc mà
+# đổ ở mọi worktree — tức đổ đúng chỗ agent cần nó nhất (agent E3 báo 26/09).
 $py = Join-Path $goc 'backend\.venv\Scripts\python.exe'
-if (-not (Test-Path $py)) { Write-Error "Không thấy $py"; exit 1 }
+if (-not (Test-Path $py)) {
+  $chung = (& git -C $goc rev-parse --git-common-dir 2>$null)
+  if ($chung) {
+    $chung = (Resolve-Path (Join-Path (Join-Path $goc $chung) '..') -ErrorAction SilentlyContinue)
+    if ($chung) {
+      $thu = Join-Path $chung 'backend\.venv\Scripts\python.exe'
+      if (Test-Path $thu) { $py = $thu; "dùng venv của repo chính: $py" }
+    }
+  }
+}
+if (-not (Test-Path $py)) { Write-Error "Không thấy python của backend (thử cả repo chính)"; exit 1 }
 
 # ── Dừng cái đang giữ cổng, và cả tiến trình cha của nó ──────────────────────
 $giu = Get-NetTCPConnection -State Listen -LocalPort $Cong -ErrorAction SilentlyContinue
