@@ -1,0 +1,151 @@
+[
+ {
+  "dong": 5,
+  "ten": "QTV · mở một khung (buổi, thời lượng, trọng số, học liệu)",
+  "duong": "/giao-trinh/khung-chuong-trinh",
+  "vai": "ad",
+  "cho": 5000,
+  "chon": [
+   [
+    "chon-mon",
+    "hsa_quantitative"
+   ]
+  ],
+  "bam": [
+   "Xem"
+  ],
+  "choSauBam": 3500,
+  "hoi": {
+   "buoi": "Buổi",
+   "thoiLuong": "Thời lượng",
+   "trongSo": "Trọng số",
+   "hocLieu": "Học liệu|Tài liệu",
+   "baiVeNha": "Bài về nhà",
+   "themBuoi": "Thêm buổi|Thêm",
+   "taoBanMoi": "Tạo bản mới"
+  }
+ },
+ {
+  "dong": 31,
+  "ten": "Học sinh · mở một bài (nộp, điểm, nhận xét)",
+  "duong": "/bai-tap",
+  "vai": "hv",
+  "cho": 5000,
+  "bam": [
+   "Làm bài"
+  ],
+  "choSauBam": 3500,
+  "hoi": {
+   "oNop": "Nộp|bài làm",
+   "diem": "Điểm|điểm",
+   "nhanXet": "Nhận xét",
+   "han": "Hạn",
+   "nopTep": "Chọn tệp|đính kèm|Tải tệp"
+  }
+ },
+ {
+  "dong": 22,
+  "ten": "GV · biểu mẫu Sửa buổi (ô bản ghi / phòng / online)",
+  "duong": "/giang-day/buoi-hoc/1",
+  "vai": "gv",
+  "cho": 5000,
+  "bam": [
+   "Sửa"
+  ],
+  "choSauBam": 3000,
+  "hoi": {
+   "oBanGhi": "Bản ghi|bản ghi|recording",
+   "zoom": "Zoom|Link phòng|Đường dẫn phòng",
+   "phong": "Phòng",
+   "online": "Trực tuyến|Online",
+   "ngayGio": "Giờ|ngày"
+  }
+ },
+ {
+  "dong": 10,
+  "ten": "Giáo vụ · Lịch học (xem toàn bộ nút)",
+  "duong": "/giang-day/lich",
+  "vai": "hvu",
+  "cho": 6000,
+  "hoi": {
+   "theoLop": "Lớp|lớp",
+   "theoGV": "Giảng viên|giảng viên",
+   "themVaoLich": "Thêm vào lịch",
+   "trung": "trùng|xung đột"
+  }
+ },
+ {
+  "dong": 11,
+  "ten": "Giáo vụ · một yêu cầu (toàn bộ nút)",
+  "duong": "/yeu-cau/176",
+  "vai": "hvu",
+  "cho": 6000,
+  "hoi": {
+   "doiLoai": "Đổi loại",
+   "giao": "Giao",
+   "chuyenTiep": "Chuyển tiếp",
+   "noiBo": "Ghi chú nội bộ",
+   "xong": "Đã xong",
+   "tuChoi": "Từ chối"
+  }
+ },
+ {
+  "dong": 21,
+  "ten": "TG · Tạo yêu cầu (Báo lên, Em không phản hồi)",
+  "duong": "/yeu-cau",
+  "vai": "tg",
+  "cho": 5000,
+  "bam": [
+   "Tạo yêu cầu"
+  ],
+  "choSauBam": 3000,
+  "hoi": {
+   "baoLen": "Báo lên",
+   "khongPhanHoi": "không phản hồi",
+   "chonLop": "Lớp",
+   "chonEm": "Học viên|em",
+   "gui": "Gửi"
+  }
+ },
+ {
+  "dong": 2,
+  "ten": "Giáo vụ · Tài khoản (nút tải danh sách / nhập)",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "hvu",
+  "cho": 6000,
+  "hoi": {
+   "taiDanhSach": "Tải danh sách|Xuất",
+   "capTaiKhoan": "Cấp tài khoản|Mở ô nhập|Thêm",
+   "datLaiMatKhau": "Đặt lại mật khẩu",
+   "khoa": "Khoá|Mở khoá"
+  }
+ },
+ {
+  "dong": 30,
+  "ten": "Học sinh · học liệu trên thẻ lớp (§60 mới)",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "cho": 8000,
+  "hoi": {
+   "taiLieu": "Tài liệu|Học liệu|Tệp",
+   "taiVe": "Tải|Mở"
+  }
+ },
+ {
+  "dong": 12,
+  "ten": "Giáo vụ · xem trước 'Hệ thống sẽ…' khi duyệt",
+  "duong": "/yeu-cau/177",
+  "vai": "hvu",
+  "cho": 5000,
+  "bam": [
+   "Duyệt"
+  ],
+  "choSauBam": 3500,
+  "hoi": {
+   "heThongSe": "Hệ thống sẽ",
+   "chonLopToi": "lớp",
+   "duyetVaThucHien": "Duyệt và thực hiện|Duyệt",
+   "huy": "Huỷ|Đóng"
+  }
+ }
+]

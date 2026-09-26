@@ -60,6 +60,11 @@ export const THE_VAI = {
   // Quản lý học vụ — vai DUYỆT của hộp Yêu cầu (§65). Đo bằng thẻ quản trị thì không thấy
   // được chỗ nào học vụ bị chặn mà quản trị thì không.
   hvu: `${THU_MUC_THE}/tokens_hvu.json`,
+  // Học viên THỨ HAI — cần khi một tính năng chỉ có dữ liệu ở lớp khác (bản ghi
+  // Zoom nằm ở lớp 1, còn lớp mẫu 7322 không có buổi nào có `recording_url`).
+  // Đo dòng 29 bằng thẻ `hv` của lớp 7322 thì ra "không có bản ghi" — đúng với
+  // lớp ấy, sai với sản phẩm.
+  hv2: `${THU_MUC_THE}/tokens_hv2.json`,
 };
 
 /** Chờ trang "đứng yên" lâu nhất bấy nhiêu mili giây rồi đo, dù chưa yên hẳn. */
@@ -120,7 +125,14 @@ async function moPhien({ goc = 'http://localhost:3100', kho = { width: 1440, hei
    */
   async function man(duong, vai = 'ad') {
     const { page } = await choVai(vai);
-    await page.goto(goc + duong, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {});
+    /* GIỮ MÃ HTTP. `goto` nuốt lỗi bằng `.catch` để một màn hỏng không giết cả
+       lượt — nhưng nuốt luôn cả mã trạng thái thì bộ đo không phân biệt được
+       "trang 500 của máy chủ dev" với "trang thật thiếu tính năng". Đo 26/09:
+       `/giang-day/bai-tap/7322` trả 500 (`__webpack_modules__[moduleId] is not
+       a function`) mà bộ đo vẫn chấm ✗ cho ba câu hỏi, y như sản phẩm thiếu ba
+       tính năng. `page.maHTTP` là 0 khi chính `goto` ném. */
+    const traLoi = await page.goto(goc + duong, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => null);
+    page.maHTTP = traLoi ? traLoi.status() : 0;
     const het = Date.now() + TRAN_CHO;
     let truoc = -1;
     while (Date.now() < het) {

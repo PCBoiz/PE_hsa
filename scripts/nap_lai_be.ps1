@@ -31,7 +31,13 @@ $py = Join-Path $goc 'backend\.venv\Scripts\python.exe'
 if (-not (Test-Path $py)) {
   $chung = (& git -C $goc rev-parse --git-common-dir 2>$null)
   if ($chung) {
-    $chung = (Resolve-Path (Join-Path (Join-Path $goc $chung) '..') -ErrorAction SilentlyContinue)
+    # `--git-common-dir` trả đường TUYỆT ĐỐI ở worktree (`D:/pe_hsa/.git`) và
+    # đường TƯƠNG ĐỐI ở repo thường (`.git`). Bản cũ nối thẳng vào $goc cho cả
+    # hai, nên ở worktree ra `D:\pe_hsa_wt\soat\D:/pe_hsa/.git` — Resolve-Path
+    # trả rỗng và script chết đúng chỗ nó sinh ra để cứu (đo 26/09: raw
+    # `D:/pe_hsa/.git`, resolved rỗng).
+    if (-not [System.IO.Path]::IsPathRooted($chung)) { $chung = Join-Path $goc $chung }
+    $chung = (Resolve-Path (Join-Path $chung '..') -ErrorAction SilentlyContinue)
     if ($chung) {
       $thu = Join-Path $chung 'backend\.venv\Scripts\python.exe'
       if (Test-Path $thu) { $py = $thu; "dùng venv của repo chính: $py" }
