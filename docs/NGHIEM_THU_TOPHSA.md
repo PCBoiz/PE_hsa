@@ -36,11 +36,11 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | E3 | `e2e/yeu-cau.spec.ts` (một phần) |
 | 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
-| 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
+| 14 | Giáo viên · lớp + điểm danh | CÓ | — | Đo 26/09 trên màn thật: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại được, và **lịch sử sửa từng buổi** (`LichSuDiemDanh`, V-d) hiện ngay dưới sổ. Tỉ lệ chuyên cần + cảnh báo nghỉ nhiều nằm ở tờ báo cáo và "Việc hôm nay". |
 | 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong, còn tài liệu | Đ2 §60, E3 | — |
 | 16 | Giáo viên · quản lý buổi học | CÓ — E1 xong; đề xuất của GV thành yêu cầu gửi học vụ (E3) | — | — |
 | 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. |
-| 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
+| 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | MỘT PHẦN — E3: TG báo lên học vụ và gắn cờ "Em không phản hồi"; nhắn thẳng cho HS thì chưa | E3 (TG nhắn HS — chờ anh Sơn quyết), E2 | Đo 26/09 trên hộp Yêu cầu của học vụ: yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". |
 | 21 | Trợ giảng · theo dõi | MỘT PHẦN | V-b, V-l | E3 (26/09): TG giải đáp và báo lên trong hộp Yêu cầu, lịch sử trao đổi lưu đủ. |

@@ -7,6 +7,32 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (tối muộn) — thêm hai dòng nữa bị ghi thấp hơn thực tế
+
+Cùng cách làm với dòng 17 và 21: không viết mã, chỉ mở màn thật và đối chiếu
+từng gạch của khách.
+
+- **Dòng 14 (giáo viên · điểm danh)** — ghi "gần đủ, thiếu lịch sử sửa từng
+  buổi (V-d)". Đo: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại
+  được, và `LichSuDiemDanh` hiện ngay dưới sổ. **gần đủ → CÓ**, V-d gạch.
+- **Dòng 18 (giáo viên · theo dõi học sinh)** — ghi "MỘT PHẦN: nhận xét GV không
+  có chỗ ghi; thiếu cờ cần hỗ trợ, đề xuất hướng học (V-a P0, V-f)". Đo và soi
+  ảnh: trang từng em có đủ ô **Nhận xét**, **Đánh dấu em cần hỗ trợ**, **Đề xuất
+  hướng học**, cùng lịch sử điểm danh, bài tập, điểm từng bài. **MỘT PHẦN → CÓ**,
+  V-a + V-f gạch.
+
+Bốn dòng trong một ngày (17, 21, 14, 18) bị ghi thấp hơn thực tế — đều vì việc
+đã làm xong mà không ai quay lại gạch khỏi kế hoạch. Đáng rút ra: **kế hoạch và
+bảng nghiệm thu phải được ĐO lại, không chỉ được viết thêm vào.**
+
+Ảnh dòng 18 còn xác nhận một việc khác: em Đỗ Đức Tùng hiện `7/7 · 100%` — đúng
+trạng thái gốc, tức lượt hoàn nguyên sau khi dựng dữ liệu vắng liên tiếp đã sạch
+thật, không để lại buổi vắng oan nào trong lớp mẫu.
+
+Việc của anh Sơn (K3) nay là bốn ô: `G24` (STT 22), `G19` (17), `G16` (14),
+`G20` (18).
+
+
 ## 26/09/2026 (tối) — agent soát tìm ra sáu lỗi trong §72, đã vá năm
 
 Gọi hai agent theo mô hình anh Sơn yêu cầu: một làm (E3), một **đi chứng minh

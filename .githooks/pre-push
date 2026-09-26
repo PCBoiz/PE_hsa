@@ -129,7 +129,13 @@ nhom_frontend() {
     return
   fi
   buoc f1 "tsc --noEmit" "$GOC/frontend" node node_modules/typescript/bin/tsc --noEmit
-  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" node node_modules/eslint/bin/eslint.js --max-warnings 0
+  # `--max-old-space-size` ĐẶT TRẦN cho V8, không phải xin thêm bộ nhớ: không có nó, V8 tự chọn trần theo
+  # RAM tổng của máy (15,9 GB ở đây) rồi đòi tới khi hệ điều hành từ chối — eslint chết mã 134 (SIGABRT)
+  # giữa lượt, và bảng chỉ hiện một dãy địa chỉ hex không nói gì. Đo 26/09: chạy riêng thì eslint SẠCH,
+  # chỉ hỏng khi hai nhóm của cổng chạy song song cùng một agent đang giữ 2,3 GB. Trần thấp buộc V8 dọn
+  # rác sớm và đi tới nơi, chậm hơn vài giây nhưng không bao giờ chết.
+  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" \
+    node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js --max-warnings 0
   buoc f3 "node --check public/static" "$GOC/frontend" kiem_cu_phap_js
   buoc f4 "unit Node (e2e/unit)" "$GOC/frontend" unit_node
   buoc f5 "ban_do --kiem" "$GOC" node scripts/ban_do.mjs --kiem
