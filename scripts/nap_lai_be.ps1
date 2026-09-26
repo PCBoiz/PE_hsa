@@ -31,15 +31,17 @@ $py = Join-Path $goc 'backend\.venv\Scripts\python.exe'
 if (-not (Test-Path $py)) {
   $chung = (& git -C $goc rev-parse --git-common-dir 2>$null)
   if ($chung) {
-    # `Join-Path` của PowerShell 5.1 KHÔNG bỏ qua phần con khi phần con là đường
-    # dẫn TUYỆT ĐỐI — `Join-Path 'D:\pe_hsa_wt\e2' 'D:/pe_hsa/.git'` ra
-    # `D:\pe_hsa_wt\e2\D:/pe_hsa/.git`, một đường không tồn tại. Và
-    # `--git-common-dir` trả về đường TUYỆT ĐỐI trong worktree (đo 26/09/2026:
-    # `D:/pe_hsa/.git`), nên nhánh cứu hộ này rơi đúng vào chỗ ấy: script báo
-    # "Không thấy python của backend (thử cả repo chính)" ở CHÍNH tình huống nó
-    # sinh ra để cứu. Tự kiểm gốc trước khi ghép.
-    $tho = if ([System.IO.Path]::IsPathRooted($chung)) { $chung } else { Join-Path $goc $chung }
-    $chung = (Resolve-Path (Join-Path $tho '..') -ErrorAction SilentlyContinue)
+    # `--git-common-dir` trả đường TUYỆT ĐỐI ở worktree (`D:/pe_hsa/.git`) và đường TƯƠNG
+    # ĐỐI ở repo thường (`.git`). Bản cũ nối thẳng vào `$goc` cho cả hai — mà `Join-Path`
+    # của PowerShell 5.1 KHÔNG bỏ qua phần con khi phần con là đường tuyệt đối, nên ở
+    # worktree ra một đường không tồn tại: `Resolve-Path` trả rỗng và script chết với
+    # "Không thấy python của backend" ở CHÍNH tình huống nó sinh ra để cứu.
+    #
+    # Hai agent tìm ra chỗ này độc lập trong cùng một ngày, mỗi bên ở worktree của mình.
+    # Một lệnh viết ra để chặn bẫy "`--noreload` không nạp mã mới" mà lại hỏng ở đúng
+    # người cần nó nhất thì tệ hơn là không có lệnh ấy.
+    if (-not [System.IO.Path]::IsPathRooted($chung)) { $chung = Join-Path $goc $chung }
+    $chung = (Resolve-Path (Join-Path $chung '..') -ErrorAction SilentlyContinue)
     if ($chung) {
       $thu = Join-Path $chung 'backend\.venv\Scripts\python.exe'
       if (Test-Path $thu) { $py = $thu; "dùng venv của repo chính: $py" }

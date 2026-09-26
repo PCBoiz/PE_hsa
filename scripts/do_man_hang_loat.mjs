@@ -51,8 +51,14 @@ const DOC = (hoi) => {
     const s = getComputedStyle(e);
     return s.display !== 'none' && s.visibility !== 'hidden' && e.getBoundingClientRect().width > 0;
   };
-  const nut = [...new Set([...document.querySelectorAll('button, a[href]')]
-    .filter(hien).map((e) => (e.textContent || '').trim()).filter(Boolean))];
+  // Nhãn của một nút KHÔNG chỉ nằm trong `textContent`: nút mắt ở ô mật khẩu
+  // chỉ có `aria-label="Hiện mật khẩu"` và một hình vẽ bên trong. Bản cũ đọc
+  // riêng `textContent` nên trả "không có" cho một tính năng đang dựng đúng —
+  // đúng loại dương tính giả mà tệp này viết ra để tránh (đo 26/09, dòng 1).
+  const nut = [...new Set([...document.querySelectorAll('button, a[href], [role="button"]')]
+    .filter(hien)
+    .flatMap((e) => [e.textContent || '', e.getAttribute('aria-label') || '', e.getAttribute('title') || ''])
+    .map((t) => t.trim()).filter(Boolean))];
   const tra = {};
   for (const [k, mau] of Object.entries(hoi || {})) {
     const re = new RegExp(mau, 'i');
@@ -67,18 +73,84 @@ const DOC = (hoi) => {
   };
 };
 
+/**
+ * BẤM một nút theo NHÃN, sau khi nó thật sự bấm được.
+ *
+ * Trang dựng ở máy chủ hiện nút ra TRƯỚC khi React gắn vào; bấm trong khoảng ấy
+ * thì không có gì xảy ra và màn trông như "không phản ứng". Đã mất một lượt đo
+ * vì chuyện này (26/09). Nên: chờ phần tử có nhãn ấy hiện ra VÀ hết `disabled`,
+ * trần 8 giây, rồi mới bấm; chờ xong thì chờ tiếp một nhịp cho khối mới nạp.
+ *
+ * Trả về `null` khi bấm được, hoặc một câu vì sao không bấm được — câu ấy đi
+ * thẳng vào cột "KHÔNG ĐO ĐƯỢC", không thành dấu ✗.
+ */
+async function bam(page, nhan, choSau = 2000) {
+  const o = page.locator(
+    `button:has-text("${nhan}"), a:has-text("${nhan}"), summary:has-text("${nhan}"), [role="button"]:has-text("${nhan}")`,
+  ).first();
+  try {
+    await o.waitFor({ state: 'visible', timeout: 8000 });
+  } catch {
+    return `không thấy nút "${nhan}"`;
+  }
+  const het = Date.now() + 8000;
+  while (Date.now() < het && (await o.isDisabled().catch(() => false))) {
+    await page.waitForTimeout(150);
+  }
+  try {
+    await o.click({ timeout: 5000 });
+  } catch (e) {
+    return `bấm "${nhan}" không được: ${String(e).slice(0, 90)}`;
+  }
+  await page.waitForTimeout(choSau);
+  return null;
+}
+
 const anh = sau('--anh');
 const ra = await chay({ goc: GOC, anh }, async (phien) => {
   const ds = [];
+  let thuTu = 0;
   for (const m of MAN) {
+    thuTu += 1;
     const page = await phien.man(m.duong, m.vai || 'ad');
     // Màn nào tải dữ liệu sau khi dựng thì cần thêm một nhịp; `phien.man` đã chờ
     // tới lúc chiều cao thôi đổi, nhịp này là cho khối nạp bằng `useEffect`.
     await page.waitForTimeout(m.cho ?? 2500);
+    /* `bam` = dãy nhãn phải bấm trước khi đo. Nhiều thứ bảng nghiệm thu đòi nằm
+       SAU một cú bấm (sổ điểm danh của một buổi, "Lịch sử thay đổi của lớp",
+       khối học viên của lớp). Đo màn ngoài rồi kết luận "không có" là cách chắc
+       nhất để ghi CHƯA cho một tính năng đang chạy. */
+    /* `chon` = [[id-ô-select, giá-trị]…]: vài màn chỉ nạp dữ liệu SAU khi chọn
+       một mục trong ô thả xuống (Khung chương trình mở ra ở môn đầu bảng chữ
+       cái, không phải môn mình cần). Không chọn được thì màn đứng ở trạng thái
+       rỗng, và bộ đo chấm "không có" cho cả một màn đang chạy. */
+    let loiChon = null;
+    for (const [oId, gt] of m.chon || []) {
+      try {
+        await page.selectOption(`#${oId}`, gt, { timeout: 8000 });
+        await page.waitForTimeout(m.choSauChon ?? 2500);
+      } catch (e) {
+        loiChon = `không chọn được "${gt}" ở ô #${oId}: ${String(e).slice(0, 80)}`;
+        break;
+      }
+    }
+    let loiBam = loiChon;
+    for (const nhan of loiChon ? [] : (m.bam || [])) {
+      loiBam = await bam(page, nhan, m.choSauBam ?? 2000);
+      if (loiBam) break;
+    }
     const d = await page.evaluate(DOC, m.hoi || {});
+    d.loiBam = loiBam;
     d.dong = m.dong;
     d.ten = m.ten;
-    if (anh) await phien.chup(page, `man_${m.dong}_${m.vai || 'ad'}`, { toi: 'main' });
+    d.ma = page.maHTTP;
+    d.xin = m.duong;
+    /* Tên ảnh mang SỐ THỨ TỰ, không chỉ dòng + vai: một dòng nghiệm thu thường
+       cần hai màn (dòng 15 = Chương trình lớp + Sổ đầu bài), và tên trùng thì
+       ảnh sau đè ảnh trước — soát lại còn đúng một nửa bằng chứng. */
+    if (anh) {
+      await phien.chup(page, `man_${String(thuTu).padStart(2, '0')}_d${m.dong}_${m.vai || 'ad'}`, { toi: 'main' });
+    }
     ds.push(d);
   }
   return ds;
@@ -94,9 +166,27 @@ const ra = await chay({ goc: GOC, anh }, async (phien) => {
  * một kết quả xấu.
  */
 function khongDoDuoc(d, m) {
+  if (d.loiBam) return `${d.loiBam} — chưa vào được chỗ cần đo`;
+  // Đường dẫn XIN, đã bỏ phần truy vấn — `location.pathname` không mang `?lop=7322`,
+  // nên so nguyên chuỗi thì mọi màn có tham số đều bị báo "đi lạc".
+  const xin = (m.duong || '/').split('?')[0].replace(/\/$/, '') || '/';
+  const den = (d.url || '/').replace(/\/$/, '') || '/';
   if (d.soTu === 0) return 'trang rỗng — máy chủ dev có đang chạy không?';
-  if (d.url === '/' && m.duong !== '/') return `bị đẩy về trang chủ (xin ${m.duong})`;
-  if (d.url.includes('/login')) return 'bị đẩy về màn đăng nhập — thẻ hết hạn, cấp lại rồi đo lại';
+  if (d.ma === 0) return 'không mở nổi trang (goto ném / quá 30 giây) — máy chủ dev có đang chạy không?';
+  if (d.ma >= 500) return `máy chủ trả ${d.ma} — lỗi của máy chủ dev, chưa kết luận gì về màn này`;
+  if (/doi-mat-khau/.test(den)) return 'bị đẩy sang đổi mật khẩu lần đầu — chọn tài khoản đã đổi mật khẩu';
+  // `/login` là một màn ĐÁNG ĐO (dòng 1 · 8 · 13 · 19). Chỉ coi là hỏng khi
+  // KHÔNG PHẢI màn mình xin — bản cũ gạch luôn cả lượt đo màn đăng nhập.
+  if (/\/login$/.test(den) && !/\/login$/.test(xin)) {
+    return 'bị đẩy về màn đăng nhập — thẻ hết hạn, cấp lại rồi đo lại';
+  }
+  // Đi lạc sang MỘT đường khác (không chỉ trang chủ). `phien.man` dùng lại một
+  // trang cho mỗi vai, nên một `goto` bị huỷ để trang NẰM LẠI màn trước — và
+  // bộ đo chấm điểm màn trước dưới tên màn sau. Đo 26/09: xin `/giao-trinh`,
+  // đo được `/quan-tri/lop-hoc`, báo dòng 5 thiếu hai tính năng đang có.
+  if (den !== xin && !(m.chapNhan && new RegExp(m.chapNhan).test(den))) {
+    return `đi lạc sang ${den} (xin ${xin}) — trang nằm lại màn trước, chưa kết luận gì`;
+  }
   if (/không có trang này/i.test(d.tieuDe)) return 'đường dẫn không tồn tại';
   return null;
 }

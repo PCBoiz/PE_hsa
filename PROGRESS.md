@@ -9911,3 +9911,31 @@ Lưu ý: `don_may.ps1 -Don` chỉ dọn tiến trình MỒ CÔI, **không** gi�
 không tick lên CÓ) · chưa có ô "chọn tay người nhận" (`userIds`) · chưa có ô Zalo ZNS ·
 chưa có spec `nghiem-thu/dong-20.spec.ts` · chưa chạy axe lượt ĐẦY ĐỦ.
 Chi tiết: `docs/agent/BAO_CAO_GD.md`.
+## 26/09/2026 — Soát lại 30 dòng nghiệm thu trên màn thật (agent SOÁT2)
+
+Đo 73 lượt mở màn trong 6 phiên trình duyệt, năm vai (quản trị · học vụ · giảng
+viên · trợ giảng · học viên), trên bản dev chính 9000/3100. Báo cáo đầy đủ:
+`docs/agent/BAO_CAO_SOAT2.md`.
+
+**Sáu dòng nâng hạng được ngay** — 22 và 21 (theo dõi ai đã mở bản ghi + nút
+"Nhắc em chưa mở" đã dựng, bảng vẫn ghi là việc phải làm), 9 (đo đủ bằng thẻ
+học vụ chứ không mượn thẻ quản trị), 28 (đủ khi lớp có khung), 24 (tờ phụ huynh
+CÓ lịch buổi), 17 (mục chi tiết còn ghi "sửa bài CHƯA" trong khi nút "Sửa bài"
+đã có). **Không dòng nào phải hạ hạng.**
+
+**Thứ chắn đường nghiệm thu không phải mã, là dữ liệu.** `syllabus_versions` = 0,
+`session_logs` = 0, không bài nào `kind='kiem_tra'` — nên sáu ô của bảng (dòng 5,
+15, 16, và ô tiến độ chương trình ở 4/6/9) mở ra chỉ thấy trạng thái rỗng.
+`teaching/du_lieu_mau.py:428` có dựng khung mẫu; bộ dữ liệu trong CSDL cũ hơn E1.
+Chạy `python manage.py du_lieu_mau --lam-moi` trước buổi trình diễn. Đã chứng minh
+bằng cách dựng một khung thật qua đúng các cửa API: màn Chương trình lớp từ 69 từ
+lên 812 từ, có "1 đã dạy", "0 đã dạy, 1 một phần", "Chưa ghi — ghi ngay".
+
+**Sáu lỗi trong mã** (chi tiết + vết nguồn trong báo cáo). Đáng nói nhất là bốn lỗ
+trong chính `do_man_hang_loat.mjs`: nó gạch `/login` là "không đo được" dù đó là màn
+phải đo (dòng 1·8·13·19), không bắt được lúc trang nằm lại màn trước, chấm một trang
+**500** như "thiếu ba tính năng", và chỉ đọc `textContent` nên bỏ sót nút chỉ có
+`aria-label`. Một bộ đo báo sai thì tệ hơn không đo: bốn lỗ ấy đều đẩy kết luận về
+phía "sản phẩm thiếu tính năng". Đã vá cả bốn, thêm `bam`/`chon` để đo được thứ nằm
+sau một cú bấm, và `scripts/nap_lai_be.ps1` chết ở đúng worktree mà nó sinh ra để cứu
+(`--git-common-dir` trả đường tuyệt đối ở worktree, mã cũ nối nó vào `$goc`).

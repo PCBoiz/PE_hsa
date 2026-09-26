@@ -1,84 +1,384 @@
 [
  {
+  "dong": 1,
+  "ten": "Tài khoản · đăng nhập (dòng 1 · 8 · 13 · 19)",
+  "duong": "/login",
+  "vai": "khach",
+  "hoi": {
+   "oEmailHoacTen": "Email|tên đăng nhập|số điện thoại",
+   "hienAnMatKhau": "Hiện mật khẩu|Ẩn mật khẩu",
+   "ghiNhoDangNhap": "Ghi nhớ đăng nhập",
+   "quenMatKhau": "Quên mật khẩu|Đặt lại qua email"
+  }
+ },
+ {
+  "dong": 2,
+  "ten": "QTV · quản lý người dùng",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "ad",
+  "hoi": {
+   "capTaiKhoan": "Cấp tài khoản|Thêm người|Tạo tài khoản",
+   "khoaMoKhoa": "Khoá|Mở khoá",
+   "cotTrangThai": "Trạng thái",
+   "nhapDanhSach": "Nhập|dán danh sách",
+   "taiDanhSach": "Tải danh sách|Xuất",
+   "loVai": "Vai|vai trò"
+  }
+ },
+ {
+  "dong": 3,
+  "ten": "QTV · tìm kiếm học viên (màn Tài khoản)",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "hvu",
+  "hoi": {
+   "oTim": "Tìm|tìm kiếm",
+   "locTinhTrangHocTap": "Đang học|Chưa xếp lớp|Bảo lưu",
+   "locHocPhi": "học phí|Học phí",
+   "locDotHoc": "Đợt|đợt học",
+   "locMon": "Môn|môn học"
+  }
+ },
+ {
+  "dong": 3,
+  "ten": "QTV · hồ sơ học viên",
+  "duong": "/quan-tri/tai-khoan/35695",
+  "vai": "hvu",
+  "hoi": {
+   "tinhThanh": "Tỉnh|Thành phố",
+   "thongTinPhuHuynh": "phụ huynh|Phụ huynh",
+   "nguoiTuVanNguon": "tư vấn|Nguồn",
+   "mucTieuNguyenVong": "Mục tiêu|nguyện vọng",
+   "tinhTrangHocTap": "Tình trạng học|Đang học",
+   "tinhTrangHocPhi": "Đã đóng|Sắp hết|Bảo lưu",
+   "lopDangHoc": "Lớp|lớp đang học"
+  }
+ },
+ {
   "dong": 4,
   "ten": "QTV · quản lý lớp học",
   "duong": "/quan-tri/lop-hoc",
   "vai": "ad",
   "hoi": {
    "taoLop": "Thêm lớp|Tạo lớp",
-   "themHocVien": "Học viên|Thêm vào lớp",
+   "trangThaiTamDung": "Tạm dừng",
+   "locTrangThai": "Đang học|Kết thúc",
+   "chuongTrinhLop": "Chương trình",
+   "monKhoa": "Môn|Khoá"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 4,
+  "ten": "QTV · học viên của lớp (nhập DS, lịch sử, chuyển lớp)",
+  "duong": "/quan-tri/lop-hoc?lop=7322",
+  "vai": "ad",
+  "hoi": {
+   "themHocVien": "Thêm|Xếp vào lớp|dán",
+   "nhapTuTepMau": "tệp mẫu|Nhập học viên",
    "chuyenLop": "Chuyển lớp",
-   "trangThaiLop": "Đang học|Kết thúc|Tạm dừng",
-   "lichSuLop": "Lịch sử"
+   "lichSuLop": "Lịch sử thay đổi|Lịch sử",
+   "phanCongTroGiang": "Trợ giảng|trợ giảng"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 5,
+  "ten": "QTV · khu Giáo trình (khoá học)",
+  "duong": "/giao-trinh",
+  "vai": "ad",
+  "hoi": {
+   "monKhoa": "Môn|Khoá",
+   "chuyenDeBaiHoc": "Chuyên đề|Bài học",
+   "trangThaiKhoa": "Nháp|Mở cho học viên|Xuất bản|Trạng thái",
+   "khungChuongTrinh": "Khung chương trình"
   }
  },
  {
   "dong": 5,
-  "ten": "QTV · khoá học + chương trình",
-  "duong": "/giao-trinh",
+  "ten": "QTV · Khung chương trình theo buổi",
+  "duong": "/giao-trinh/khung-chuong-trinh",
   "vai": "ad",
   "hoi": {
-   "quanLyMon": "Môn học|Khoá",
-   "chuyenDe": "Chuyên đề|Bài học",
-   "thuTu": "Thứ tự|sắp xếp",
-   "phienBan": "Bản nháp|Xuất bản|Tạo bản mới"
+   "buoi": "Buổi",
+   "noiDungBuoi": "Nội dung|nội dung",
+   "thoiLuong": "Thời lượng",
+   "trongSo": "Trọng số",
+   "hocLieu": "Học liệu|Tài liệu",
+   "baiVeNha": "Bài về nhà",
+   "taoBanMoi": "Tạo bản mới|bản nháp"
   }
  },
  {
   "dong": 6,
-  "ten": "QTV · báo cáo",
+  "ten": "QTV · báo cáo Toàn trung tâm",
   "duong": "/quan-tri/tong-quan",
   "vai": "ad",
   "hoi": {
+   "soHocSinhSoLop": "học viên|lớp",
    "diemDanh": "điểm danh|chuyên cần",
-   "tienDo": "tiến độ",
-   "chamCong": "chấm công",
+   "tienDoChuongTrinh": "Tiến độ chương trình|tiến độ",
    "nghiNhieu": "vắng|nghỉ nhiều",
+   "locThoiGian": "Đợt|Từ ngày|ngày",
    "xuatTep": "Tải|Xuất|CSV|bảng tính"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 6,
+  "ten": "QTV · Chấm công GV/TG",
+  "duong": "/quan-tri/cham-cong",
+  "vai": "ad",
+  "hoi": {
+   "theoThang": "Tháng|tháng",
+   "giangVien": "Giảng viên",
+   "troGiang": "Trợ giảng",
+   "tongGio": "giờ",
+   "taiExcel": "Excel|Tải"
   }
  },
  {
   "dong": 7,
-  "ten": "Kế toán · học phí",
+  "ten": "Kế toán · Cơ sở học phí (THAY)",
   "duong": "/quan-tri/co-so-hoc-phi",
   "vai": "ad",
   "hoi": {
-   "soBuoiDaDong": "buổi|học phí",
-   "canhBaoHet": "sắp hết|hết học phí",
-   "baoLuu": "Bảo lưu"
+   "soBuoi": "buổi",
+   "coMatVang": "có mặt|vắng",
+   "theoEm": "Học viên|học viên",
+   "xuatTep": "Tải|Xuất|CSV"
   }
  },
  {
   "dong": 9,
-  "ten": "Giáo vụ · lớp học",
+  "ten": "Giáo vụ · lớp học (chậm tiến độ, sĩ số)",
   "duong": "/quan-tri/lop-hoc",
-  "vai": "ad",
+  "vai": "hvu",
   "hoi": {
-   "diemDanh": "điểm danh",
-   "thongKeThamGia": "chuyên cần|tỉ lệ|tỷ lệ",
-   "canhBaoChamTienDo": "chậm tiến độ|tiến độ"
+   "siSo": "Sĩ số|sĩ số",
+   "chamTienDo": "chậm|Tiến độ|tiến độ",
+   "suaLop": "Sửa",
+   "buoiHoc": "Buổi học|buổi"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 9,
+  "ten": "Giáo vụ · điểm danh + lịch sử sửa (buổi học của lớp)",
+  "duong": "/giang-day/buoi-hoc/7322",
+  "vai": "hvu",
+  "hoi": {
+   "diemDanh": "Điểm danh|điểm danh",
+   "bonTrangThai": "Có mặt|Vắng|Đi muộn|Xin phép",
+   "lichSuSuaDiemDanh": "Lịch sử sửa điểm danh|Lịch sử",
+   "taoBuoiBu": "Tạo buổi bù|buổi bù",
+   "sinhBuoi": "Sinh buổi|Tạo buổi|Thêm buổi"
   }
  },
  {
   "dong": 10,
   "ten": "Giáo vụ · lịch học",
   "duong": "/giang-day/lich",
-  "vai": "ad",
+  "vai": "hvu",
   "hoi": {
    "xemTheoLop": "lớp",
-   "doiGiaoVien": "giảng viên|giáo viên",
+   "xemTheoGiangVien": "giảng viên|Giảng viên",
    "canhBaoTrung": "trùng|xung đột",
    "themVaoLich": "Thêm vào lịch|lịch điện thoại"
   }
  },
  {
+  "dong": 11,
+  "ten": "Giáo vụ · hộp Yêu cầu",
+  "duong": "/yeu-cau",
+  "vai": "hvu",
+  "hoi": {
+   "danhSachYeuCau": "Yêu cầu|yêu cầu",
+   "locTrangThai": "Mới|Đang xử lý|Đã xong",
+   "locLoai": "Hỗ trợ|loại|Học tập",
+   "nguoiGui": "gửi|Người gửi",
+   "taoYeuCau": "Tạo yêu cầu"
+  }
+ },
+ {
+  "dong": 11,
+  "ten": "Giáo vụ · một yêu cầu (phân loại, giao, kết quả)",
+  "duong": "/yeu-cau/176",
+  "vai": "hvu",
+  "hoi": {
+   "doiLoai": "Đổi loại",
+   "giaoNguoiXuLy": "Giao người xử lý|Giao",
+   "chuyenTiep": "Chuyển tiếp",
+   "ghiChuNoiBo": "Ghi chú nội bộ",
+   "traLoi": "Trả lời|Gửi trả lời",
+   "daXong": "Đã xong",
+   "lichSu": "Lịch sử|Diễn biến|diễn biến"
+  }
+ },
+ {
+  "dong": 12,
+  "ten": "Giáo vụ · duyệt thay đổi học tập (xin chuyển lớp)",
+  "duong": "/yeu-cau/177",
+  "vai": "hvu",
+  "hoi": {
+   "nutDuyet": "Duyệt",
+   "xemTruocHeThongLam": "Hệ thống sẽ|Hệ thống",
+   "tuChoi": "Từ chối",
+   "nguoiDuyet": "duyệt"
+  }
+ },
+ {
+  "dong": 14,
+  "ten": "GV · lớp + điểm danh",
+  "duong": "/giang-day/buoi-hoc/7322",
+  "vai": "gv",
+  "hoi": {
+   "diemDanh": "Điểm danh|điểm danh",
+   "bonTrangThai": "Có mặt|Vắng|Đi muộn|Xin phép",
+   "lichSuSua": "Lịch sử",
+   "luu": "Lưu"
+  }
+ },
+ {
+  "dong": 14,
+  "ten": "GV · Việc hôm nay (danh sách lớp, cảnh báo)",
+  "duong": "/giang-day",
+  "vai": "gv",
+  "hoi": {
+   "danhSachLop": "Lớp|lớp",
+   "chuaDiemDanh": "chưa điểm danh|Chưa điểm danh",
+   "vangLien": "Vắng liền|vắng liền",
+   "canHoTro": "Cần hỗ trợ|cần hỗ trợ",
+   "tabYeuCau": "Yêu cầu"
+  }
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Chương trình lớp (tiến độ vs kế hoạch)",
+  "duong": "/giang-day/chuong-trinh/7322",
+  "vai": "gv",
+  "hoi": {
+   "daDay": "Đã dạy|đã dạy",
+   "keHoach": "kế hoạch|Kế hoạch",
+   "tre": "trễ|chậm",
+   "phanTramTungEm": "%",
+   "chuaGhiSo": "chưa ghi sổ|Chưa ghi"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Sổ đầu bài một buổi",
+  "duong": "/giang-day/so-dau-bai/8004",
+  "vai": "gv",
+  "hoi": {
+   "noiDungTungMuc": "Đã dạy|Một phần|Chưa dạy",
+   "mucTiepThu": "tiếp thu",
+   "ghiChuSauBuoi": "Ghi chú|ghi chú",
+   "deXuat": "Đề xuất",
+   "guiDeXuatChoHocVu": "Gửi đề xuất",
+   "emCanHoTro": "cần hỗ trợ",
+   "dinhKemTaiLieu": "Đính kèm|Tải tệp|Chọn tệp"
+  }
+ },
+ {
+  "dong": 17,
+  "ten": "GV · giao bài của lớp",
+  "duong": "/giang-day/bai-tap/7322",
+  "vai": "gv",
+  "hoi": {
+   "giaoBaiMoi": "Giao bài mới",
+   "suaBai": "Sửa bài",
+   "doiNguoiNhan": "Đổi người nhận",
+   "dongMoNhanBai": "Đóng nhận bài|Mở nhận bài",
+   "xoaBai": "Xoá",
+   "daNopChuaNop": "đã nộp|Chưa nộp",
+   "hanNop": "Hạn|hạn nộp",
+   "nhapDiemKiemTra": "Nhập điểm"
+  }
+ },
+ {
+  "dong": 17,
+  "ten": "GV · bảng chấm một bài",
+  "duong": "/giang-day/cham/3358",
+  "vai": "gv",
+  "hoi": {
+   "oDiem": "Điểm|điểm",
+   "nhanXet": "Nhận xét|nhận xét",
+   "traBai": "Trả bài|Lưu",
+   "aiChuaNop": "Chưa nộp|chưa nộp"
+  },
+  "chapNhan": "/giang-day/bai-tap/7322/3358"
+ },
+ {
+  "dong": 18,
+  "ten": "GV · theo dõi một học sinh (tờ báo cáo)",
+  "duong": "/giang-day/bao-cao/7322/35695",
+  "vai": "gv",
+  "hoi": {
+   "nhanXetGuiPhuHuynh": "Nhận xét",
+   "danhDauCanHoTro": "cần hỗ trợ",
+   "deXuatHuongHoc": "Đề xuất hướng học",
+   "lichSuDiemDanh": "điểm danh|Điểm danh",
+   "baiTapVaDiem": "Bài tập|điểm",
+   "tienBo": "tiến bộ"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 19,
+  "ten": "TG · khu Giảng dạy (tài khoản + phạm vi lớp)",
+  "duong": "/giang-day",
+  "vai": "tg",
+  "hoi": {
+   "danhSachLop": "Lớp|lớp",
+   "tabYeuCau": "Yêu cầu"
+  }
+ },
+ {
+  "dong": 21,
+  "ten": "TG · theo dõi (Việc hôm nay: vắng liền, cần chú ý)",
+  "duong": "/giang-day",
+  "vai": "tg",
+  "hoi": {
+   "vangLien": "Vắng liền|vắng liền",
+   "canChuY": "Cần chú ý|cần chú ý|Cần hỗ trợ",
+   "baoCanHoTro": "Báo cần hỗ trợ",
+   "chuaDiemDanh": "chưa điểm danh|Chưa điểm danh"
+  }
+ },
+ {
+  "dong": 21,
+  "ten": "TG · theo dõi bài tập + điểm danh của lớp",
+  "duong": "/giang-day/bai-tap/7322",
+  "vai": "tg",
+  "hoi": {
+   "thayBaiTap": "Bài tập|bài",
+   "thayAiChuaNop": "đã nộp|Chưa nộp",
+   "theoDoiXemRecord": "đã mở|chưa mở|xem lại"
+  }
+ },
+ {
+  "dong": 22,
+  "ten": "TG/GV · bản ghi Zoom theo buổi (lớp có bản ghi)",
+  "duong": "/giang-day/buoi-hoc/1",
+  "vai": "gv",
+  "hoi": {
+   "oLinkRecord": "Bản ghi|record|Zoom|Xem lại",
+   "buoiThieuBanGhi": "chưa có bản ghi|thiếu bản ghi|Chưa có",
+   "aiChuaMo": "chưa mở|đã mở",
+   "nhacEmChuaMo": "Nhắc"
+  }
+ },
+ {
   "dong": 26,
-  "ten": "Học sinh · tài khoản",
+  "ten": "Học sinh · trang của tôi",
   "duong": "/dashboard",
   "vai": "hv",
   "hoi": {
    "lopCuaToi": "Lớp của bạn|Lớp của tôi",
-   "buoiToi": "Buổi tới|buổi học"
+   "buoiToi": "Buổi tới|buổi học",
+   "menuTaiKhoan": "Hồ sơ|Đăng xuất|Tài khoản",
+   "tuDangKy": "Tự đăng ký|Đăng ký"
   }
  },
  {
@@ -87,9 +387,21 @@
   "duong": "/dashboard",
   "vai": "hv",
   "hoi": {
-   "tienDoChuongTrinh": "tiến độ|hoàn thành",
-   "diemDanhTungBuoi": "Điểm danh từng buổi|điểm danh",
-   "soVoiKeHoach": "kế hoạch|so với"
+   "tienDoChuongTrinh": "% chương trình|Đã học",
+   "soVoiKeHoach": "kế hoạch",
+   "diemDanhTungBuoi": "Điểm danh từng buổi",
+   "demBuoi": "vắng|muộn|có mặt"
+  }
+ },
+ {
+  "dong": 29,
+  "ten": "Học sinh · bản ghi (thẻ lớp có Xem lại)",
+  "duong": "/dashboard",
+  "vai": "hv2",
+  "hoi": {
+   "xemLai": "Xem lại",
+   "danhDauDaMo": "đã mở|Đã mở",
+   "baoLinkLoi": "Báo|lỗi"
   }
  },
  {
@@ -98,8 +410,33 @@
   "duong": "/dashboard",
   "vai": "hv",
   "hoi": {
-   "taiLieu": "Tài liệu|học liệu|tệp",
-   "banGhi": "Xem lại|bản ghi"
+   "taiLieuCuaBuoi": "Tài liệu|Học liệu|Tệp đính kèm",
+   "taiVe": "Tải về|Tải xuống"
+  }
+ },
+ {
+  "dong": 31,
+  "ten": "Học sinh · bài tập",
+  "duong": "/bai-tap",
+  "vai": "hv",
+  "hoi": {
+   "danhSachBai": "Bài|bài tập",
+   "hanNop": "Hạn|hạn",
+   "nopBai": "Nộp|nộp bài",
+   "ketQuaNhanXet": "Điểm|Nhận xét",
+   "nopTep": "Chọn tệp|Tải tệp|đính kèm"
+  }
+ },
+ {
+  "dong": 32,
+  "ten": "Học sinh · Hỏi & yêu cầu",
+  "duong": "/yeu-cau",
+  "vai": "hv",
+  "hoi": {
+   "hoiGiangVien": "Hỏi giảng viên",
+   "hoTro": "Hỗ trợ",
+   "taoYeuCau": "Tạo yêu cầu|Gửi yêu cầu",
+   "thayYeuCauCuaMinh": "Mới|Đang xử lý|Đã xong"
   }
  }
 ]
