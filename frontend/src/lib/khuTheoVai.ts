@@ -56,6 +56,10 @@ export const KHU_VIEC: readonly KhuViec[] = [
     moTa: 'Danh sách lớp, ai đang cần chú ý, hồ sơ học tập của từng em.',
   },
   {
+    nhan: 'Yêu cầu', icon: 'inbox', url: '/yeu-cau', cong: 'IsTeachingStaff', vai: DAY,
+    moTa: 'Câu hỏi của học viên, phụ huynh gửi, xin chuyển lớp / bảo lưu — trả lời, giao, duyệt.',
+  },
+  {
     nhan: 'Vận hành trung tâm', icon: 'shield', url: '/quan-tri/tong-quan', cong: 'van-hanh',
     vai: [VAI_HOC_VU, VAI_QUAN_TRI],
     moTa: 'Tài khoản, lớp, đợt học, liên hệ phụ huynh, nhật ký thao tác.',

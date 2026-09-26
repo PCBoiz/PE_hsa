@@ -259,6 +259,18 @@ MUC = [
      if _cot('session_log_items', 'item_id')[0] else (False, 'chưa có bảng')),
     ('§70c', 'bảng session_support (em cần hỗ trợ sau buổi)',
      lambda: _chi_muc('idx_session_support_user')),
+    # §65: hộp Yêu cầu (E3). Kiểm cột trước khoá ngoại — bảng chưa có thì `::regclass` ném lỗi.
+    ('§65a', 'bảng yeu_cau, CHECK loại nhận tt_huy_khoa, xoá theo học viên',
+     lambda: _ca(lambda: _check_co_gia_tri('yeu_cau_loai_check', 'tt_huy_khoa'),
+                 lambda: _fk('yeu_cau', 'yeu_cau_hoc_vien_id_fkey', 'CASCADE'),
+                 lambda: _chi_muc('idx_yeu_cau_trang_thai'))
+     if _cot('yeu_cau', 'thuc_thi')[0] else (False, 'chưa có bảng')),
+    ('§65b', 'bảng yeu_cau_su_kien (trả lời + lịch sử), xoá theo yêu cầu, CHECK kiểu nhận phan_loai',
+     lambda: _ca(lambda: _fk('yeu_cau_su_kien', 'yeu_cau_su_kien_yeu_cau_id_fkey', 'CASCADE'),
+                 lambda: _check_co_gia_tri('yeu_cau_su_kien_kieu_check', 'phan_loai'))
+     if _cot('yeu_cau_su_kien', 'noi_bo')[0] else (False, 'chưa có bảng')),
+    ('§65c', 'class_members.reserve_until (bảo lưu tới ngày)',
+     lambda: _cot('class_members', 'reserve_until')),
     # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
     ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
      lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')

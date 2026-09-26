@@ -44,6 +44,7 @@ urlpatterns = [
     path('', include('chatbot.urls')),
     path('', include('teaching.urls')),
     path('', include('chuong_trinh.urls')),
+    path('', include('yeu_cau.urls')),
     path('', include('lich.urls')),
     path('accounts/', include('allauth.urls')),  # /accounts/google/login/ ...
 ]

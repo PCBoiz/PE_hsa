@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 56 bảng, 102 khoá ngoài, 12 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
+Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 58 bảng, 111 khoá ngoài, 13 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
 
 | Miền | Bảng |
 |---|---|
@@ -14,7 +14,7 @@ Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ t
 | [bao_cao](#bao_cao) | — |
 | [phu_huynh](#phu_huynh) | `parent_report_links`, `parent_report_sends`, `parent_report_optout` |
 | [ho_so](#ho_so) | — |
-| [yeu_cau](#yeu_cau) | — |
+| [yeu_cau](#yeu_cau) | `yeu_cau`, `yeu_cau_su_kien` |
 | [thong_bao](#thong_bao) | `notifications`, `notification_settings` |
 | [tai_khoan](#tai_khoan) | `users`, `password_reset_tokens` |
 | [chung](#chung) | `admin_audit`, `learning_events` |
@@ -71,6 +71,7 @@ erDiagram
         text de_xuat_huong_hoc
         integer de_xuat_huong_hoc_by FK
         timestamp de_xuat_huong_hoc_at
+        date reserve_until
     }
     terms {
         serial id PK
@@ -148,7 +149,7 @@ CHECK:
 - `classes_mode_check` (§53): `mode` ∈ {'online', 'offline'}
 - `classes_class_type_check` (§54): `class_type` ∈ {'nhom', 'gia_su'}
 
-Miền khác trỏ vào: `assignments.class_id`, `class_sessions.class_id`, `parent_report_links.class_id`
+Miền khác trỏ vào: `assignments.class_id`, `class_sessions.class_id`, `parent_report_links.class_id`, `yeu_cau.class_id`
 
 ### `class_members` · §29
 
@@ -172,6 +173,7 @@ Miền khác trỏ vào: `assignments.class_id`, `class_sessions.class_id`, `par
 | `de_xuat_huong_hoc` | text |  | §62 |
 | `de_xuat_huong_hoc_by` | integer | → `users.id` (set null) | §62 |
 | `de_xuat_huong_hoc_at` | timestamp |  | §62 |
+| `reserve_until` | date |  | §65 |
 
 CHECK:
 
@@ -337,7 +339,7 @@ CHECK:
 - `class_sessions_mode_check` (§53): `mode` ∈ {'online', 'offline'}
 - `class_sessions_makeup_not_self_check` (§62): `makeup_for IS NULL OR makeup_for <> id`
 
-Miền khác trỏ vào: `attendance.session_id`, `attendance_history.session_id`, `session_log_items.session_id`, `session_logs.session_id`, `session_support.session_id`
+Miền khác trỏ vào: `attendance.session_id`, `attendance_history.session_id`, `session_log_items.session_id`, `session_logs.session_id`, `session_support.session_id`, `yeu_cau.session_id`
 
 ### `session_participants` · §62
 
@@ -816,6 +818,8 @@ Bảng khách (miền khác, vẽ rút gọn): `classes` (lop_hoc), `users` (tai
 | `opened_count` | integer | NOT NULL · mặc định `0` | §45 |
 | `last_opened_at` | timestamp |  | §45 |
 
+Miền khác trỏ vào: `yeu_cau.link_id`
+
 ### `parent_report_sends` · §45
 
 | Cột | Kiểu | Ràng buộc | § |
@@ -853,9 +857,120 @@ Không sở hữu bảng.
 
 ## yeu_cau
 
-**Yêu cầu (E3, sắp có)** — Yêu cầu của HS / PH / TG → học vụ duyệt trong MỘT giao dịch → gọi dịch vụ miền (chuyển lớp, buổi bù, bảo lưu). Chưa có mã, chưa có bảng.
+**Yêu cầu** — Hộp Yêu cầu chung (E3, §65): hỗ trợ học tập / lịch / kỹ thuật / tài khoản, câu hỏi gửi GV–TG, TG báo lên, báo lỗi bản ghi buổi học, phụ huynh gửi qua link tờ báo cáo; xin → học vụ DUYỆT trong MỘT giao dịch → gọi dịch vụ miền lớp học (chuyển lớp / môn, bảo lưu, huỷ khoá, học lại). Trả lời + lịch sử một bảng, ghi chú nội bộ ẩn với HS / PH.
 
-Không sở hữu bảng.
+```mermaid
+erDiagram
+    yeu_cau {
+        serial id PK
+        text loai
+        text trang_thai
+        text nguon
+        integer nguoi_tao FK
+        integer link_id FK
+        integer hoc_vien_id FK
+        integer class_id FK
+        integer session_id FK
+        integer nguoi_xu_ly FK
+        text tieu_de
+        text noi_dung
+        jsonb du_lieu
+        text ket_qua
+        integer nguoi_duyet FK
+        timestamp duyet_luc
+        jsonb thuc_thi
+        timestamp created_at
+        timestamp updated_at
+        timestamp closed_at
+    }
+    yeu_cau_su_kien {
+        bigserial id PK
+        integer yeu_cau_id FK
+        text kieu
+        boolean noi_bo
+        integer actor_id FK
+        text actor_ten
+        text actor_vai
+        text tu
+        text den
+        text noi_dung
+        timestamp created_at
+    }
+    users {
+        serial id PK
+    }
+    parent_report_links {
+        serial id PK
+    }
+    classes {
+        serial id PK
+    }
+    class_sessions {
+        serial id PK
+    }
+    yeu_cau }o--o| users : "nguoi_tao"
+    yeu_cau }o--o| parent_report_links : "link_id"
+    yeu_cau }o--o| users : "hoc_vien_id"
+    yeu_cau }o--o| classes : "class_id"
+    yeu_cau }o--o| class_sessions : "session_id"
+    yeu_cau }o--o| users : "nguoi_xu_ly"
+    yeu_cau }o--o| users : "nguoi_duyet"
+    yeu_cau_su_kien }o--|| yeu_cau : "yeu_cau_id"
+    yeu_cau_su_kien }o--o| users : "actor_id"
+```
+
+Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan), `parent_report_links` (phu_huynh), `classes` (lop_hoc), `class_sessions` (lich).
+
+### `yeu_cau` · §65
+
+| Cột | Kiểu | Ràng buộc | § |
+|---|---|---|---|
+| `id` | serial | PK | §65 |
+| `loai` | text | NOT NULL | §65 |
+| `trang_thai` | text | NOT NULL · mặc định `'moi'` | §65 |
+| `nguon` | text | NOT NULL | §65 |
+| `nguoi_tao` | integer | → `users.id` (set null) | §65 |
+| `link_id` | integer | → `parent_report_links.id` (set null) | §65 |
+| `hoc_vien_id` | integer | → `users.id` (cascade) | §65 |
+| `class_id` | integer | → `classes.id` (set null) | §65 |
+| `session_id` | integer | → `class_sessions.id` (set null) | §65 |
+| `nguoi_xu_ly` | integer | → `users.id` (set null) | §65 |
+| `tieu_de` | text | NOT NULL | §65 |
+| `noi_dung` | text |  | §65 |
+| `du_lieu` | jsonb | NOT NULL · mặc định `'{}' ::jsonb` | §65 |
+| `ket_qua` | text |  | §65 |
+| `nguoi_duyet` | integer | → `users.id` (set null) | §65 |
+| `duyet_luc` | timestamp |  | §65 |
+| `thuc_thi` | jsonb |  | §65 |
+| `created_at` | timestamp | NOT NULL · mặc định `now()` | §65 |
+| `updated_at` | timestamp | NOT NULL · mặc định `now()` | §65 |
+| `closed_at` | timestamp |  | §65 |
+
+CHECK:
+
+- `yeu_cau_loai_check` (§65): `loai` ∈ {'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len', 'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu', 'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa'}
+- `yeu_cau_trang_thai_check` (§65): `trang_thai` ∈ {'moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy'}
+- `yeu_cau_nguon_check` (§65): `nguon` ∈ {'hoc_vien', 'phu_huynh', 'tro_giang', 'giang_vien', 'hoc_vu'}
+
+### `yeu_cau_su_kien` · §65
+
+| Cột | Kiểu | Ràng buộc | § |
+|---|---|---|---|
+| `id` | bigserial | PK | §65 |
+| `yeu_cau_id` | integer | NOT NULL · → `yeu_cau.id` (cascade) | §65 |
+| `kieu` | text | NOT NULL | §65 |
+| `noi_bo` | boolean | NOT NULL · mặc định `FALSE` | §65 |
+| `actor_id` | integer | → `users.id` (set null) | §65 |
+| `actor_ten` | text |  | §65 |
+| `actor_vai` | text |  | §65 |
+| `tu` | text |  | §65 |
+| `den` | text |  | §65 |
+| `noi_dung` | text |  | §65 |
+| `created_at` | timestamp | NOT NULL · mặc định `now()` | §65 |
+
+CHECK:
+
+- `yeu_cau_su_kien_kieu_check` (§65): `kieu` ∈ {'tao', 'tra_loi', 'ghi_chu', 'trang_thai', 'giao', 'chuyen_tiep', 'duyet', 'tu_choi', 'thuc_thi', 'loi', 'phan_loai'}
 
 ## thong_bao
 
@@ -1035,7 +1150,7 @@ CHECK:
 - `users_username_format_check` (§51): `username IS NULL OR (username ~ '^[a-z0-9][a-z0-9.]{2,29}$' AND username ~ '[a-z]')`
 - `users_tuition_status_check` (§63): `tuition_status` ∈ {'da_dong', 'sap_het', 'het', 'bao_luu'}
 
-Miền khác trỏ vào: `admin_audit.actor_id`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `recording_views.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`
+Miền khác trỏ vào: `admin_audit.actor_id`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `recording_views.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`, `yeu_cau.hoc_vien_id`, `yeu_cau.nguoi_duyet`, `yeu_cau.nguoi_tao`, `yeu_cau.nguoi_xu_ly`, `yeu_cau_su_kien.actor_id`
 
 ### `password_reset_tokens` · §52
 

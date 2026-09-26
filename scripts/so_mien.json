@@ -17,6 +17,7 @@
       "backend": [
         "backend/teaching/views.py",
         "backend/teaching/chuyen_lop.py",
+        "backend/teaching/roi_lop.py",
         "backend/teaching/lop_gia_su.py",
         "backend/teaching/terms.py",
         "backend/teaching/nhap_hoc_vien.py",
@@ -229,15 +230,15 @@
       "cho_ghi": {}
     },
     "yeu_cau": {
-      "ten": "Yêu cầu (E3, sắp có)",
-      "mo_ta": "Yêu cầu của HS / PH / TG → học vụ duyệt trong MỘT giao dịch → gọi dịch vụ miền (chuyển lớp, buổi bù, bảo lưu). Chưa có mã, chưa có bảng.",
-      "backend": [
-        "backend/yeu_cau/**/*.py"
-      ],
+      "ten": "Yêu cầu",
+      "mo_ta": "Hộp Yêu cầu chung (E3, §65): hỗ trợ học tập / lịch / kỹ thuật / tài khoản, câu hỏi gửi GV–TG, TG báo lên, báo lỗi bản ghi buổi học, phụ huynh gửi qua link tờ báo cáo; xin → học vụ DUYỆT trong MỘT giao dịch → gọi dịch vụ miền lớp học (chuyển lớp / môn, bảo lưu, huỷ khoá, học lại). Trả lời + lịch sử một bảng, ghi chú nội bộ ẩn với HS / PH.",
+      "backend": ["backend/yeu_cau/**/*.py"],
       "frontend": [
-        "frontend/src/app/(standalone)/yeu-cau/**"
+        "frontend/src/app/(standalone)/yeu-cau/**",
+        "frontend/src/components/YeuCau*.tsx",
+        "frontend/src/lib/yeuCau*.ts"
       ],
-      "bang": [],
+      "bang": ["yeu_cau", "yeu_cau_su_kien"],
       "cho_ghi": {}
     },
     "thong_bao": {

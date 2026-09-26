@@ -341,6 +341,30 @@ export const VIEC: readonly Viec[] = [
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
   },
 
+  // ── Yêu cầu (E3, §65 — bảng TopHSA dòng 11, 12, 20, 25, 32; anh Sơn chốt 25–26/09/2026) ──
+  {
+    nhom: 'Yêu cầu',
+    nhan: 'Đọc, trả lời, ghi chú nội bộ, đổi trạng thái yêu cầu',
+    giaiThich: 'Một hộp chung cho câu hỏi của học viên, yêu cầu phụ huynh gửi qua đường dẫn tờ báo cáo, trợ giảng báo lên. Ghi chú nội bộ: học viên, phụ huynh không thấy. Trợ giảng không thấy số điện thoại phụ huynh để lại.',
+    lopQuyen: 'IsTeachingStaff',
+    nguon: 'yeu_cau/views.py::NhanSuTraLoiView',
+    chan_them: 'giảng viên, trợ giảng: chỉ yêu cầu của lớp mình hoặc giao cho mình; không thấy hỗ trợ tài khoản',
+  },
+  {
+    nhom: 'Yêu cầu',
+    nhan: 'Giao người xử lý và đổi loại yêu cầu',
+    giaiThich: 'Học vụ phân loại (học tập / lịch học / kỹ thuật / tài khoản) và giao cho giảng viên, trợ giảng của lớp. Giảng viên, trợ giảng chỉ chuyển tiếp được việc đang cầm.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'yeu_cau/views.py::GiaoView',
+  },
+  {
+    nhom: 'Yêu cầu',
+    nhan: 'Duyệt thay đổi học tập (hệ thống tự làm)',
+    giaiThich: 'Chuyển lớp, chuyển môn, bảo lưu, huỷ khoá, học lại: duyệt là hệ thống làm ngay, ghi người duyệt; duyệt hai lần chỉ làm một lần. Chuyển lịch, học bù, nghỉ học: duyệt ghi quyết định, học vụ làm tay trên màn Buổi học.',
+    lopQuyen: 'IsAdminOrAcademic',
+    nguon: 'yeu_cau/views.py::DuyetView',
+  },
+
   // ── Báo cáo phụ huynh ──
   {
     nhom: 'Báo cáo phụ huynh',

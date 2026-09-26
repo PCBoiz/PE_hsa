@@ -565,6 +565,48 @@ export const HUONG_DAN: readonly Bai[] = [
         lam: 'Chọn mức tiếp thu, ghi tình hình lớp, đề xuất và đánh dấu em cần hỗ trợ, rồi bấm "Lưu sổ đầu bài".',
         luu_y: 'Tiến độ lớp và % của từng em tính từ sổ này. Nội dung chưa đánh dấu không được lưu.',
       },
+      {
+        lam: 'Đề xuất cần học vụ quyết (học bù, đổi tiến độ) thì bấm "Gửi đề xuất cho học vụ" ngay dưới ô Đề xuất.',
+        luu_y: 'Đề xuất thành một yêu cầu trong hộp Yêu cầu — học vụ trả lời ở đó, bạn nhận chuông.',
+      },
+    ],
+  },
+
+  {
+    ma: 'yeu-cau',
+    // E3, 26/09/2026 — bảng TopHSA dòng 11, 12, 20, 25, 32.
+    tieu_de: 'Xử lý yêu cầu của học viên, phụ huynh và trợ giảng',
+    vai: [VAI_HOC_VU, VAI_QUAN_TRI, VAI_GIANG_VIEN, VAI_TRO_GIANG],
+    khi_nao: 'Khi chuông báo "Yêu cầu mới", hoặc Việc hôm nay có yêu cầu đang mở.',
+    buoc: [
+      { lam: 'Mở Yêu cầu. Mặc định chỉ hiện yêu cầu đang mở; lọc theo loại, lớp, hoặc "Chỉ việc giao cho tôi".', o: '/yeu-cau' },
+      {
+        lam: 'Mở một yêu cầu. Học vụ: "Đổi loại" nếu em chọn nhầm loại, "Giao người xử lý" cho giảng viên / trợ giảng của lớp.',
+        luu_y: 'Giảng viên, trợ giảng không thấy yêu cầu hỗ trợ tài khoản — việc ấy chỉ học vụ làm.',
+      },
+      {
+        lam: 'Trả lời ở ô "Trả lời". Việc chỉ nhân sự nên biết thì tick "Ghi chú nội bộ".',
+        luu_y: 'Học viên và phụ huynh không bao giờ thấy ghi chú nội bộ. Trả lời đầu tiên của nhân sự chuyển yêu cầu sang "Đang xử lý".',
+      },
+      { lam: 'Xong việc thì bấm "Đã xong…", ghi kết quả — người gửi đọc được kết quả này.' },
+      {
+        lam: 'Xin chuyển lớp, bảo lưu, huỷ khoá, học lại: học vụ bấm "Duyệt…", chọn lớp / ngày, đọc dòng "Hệ thống sẽ…" rồi bấm "Duyệt và thực hiện".',
+        luu_y: 'Duyệt là hệ thống LÀM NGAY (chuyển lớp, cho rời lớp). Chuyển lịch, học bù, nghỉ học: duyệt chỉ ghi quyết định — tự làm trên màn Buổi học rồi bấm "Đã xong…".',
+      },
+      {
+        lam: 'Trợ giảng báo một em không phản hồi: Yêu cầu → "Tạo yêu cầu", loại "Báo lên", chọn lớp và em, tick "Em không phản hồi".',
+        o: '/yeu-cau',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Bấm "Duyệt và thực hiện" báo lớp gia sư đã đủ em.',
+        xu_ly: 'Không có gì thay đổi. Chọn lớp khác, hoặc từ chối kèm lý do.',
+      },
+      {
+        trieu_chung: 'Phụ huynh báo không gửi thêm được yêu cầu.',
+        xu_ly: 'Mỗi đường dẫn tờ báo cáo chỉ có 5 yêu cầu đang chờ. Trả lời và đóng các yêu cầu cũ.',
+      },
     ],
   },
 

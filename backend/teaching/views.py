@@ -35,8 +35,8 @@ from courses.truy_cap import quen_truy_cap, quen_truy_cap_lop
 from stats import competency, gradebook, journal, plan
 from stats.goals import read_goals
 from teaching import reports
+from teaching.roi_lop import roi_lop
 from teaching.vocab import (
-    LEAVE_LABEL,
     LEAVE_REASONS,
     LOAI_LOP,
     NHAN_LOAI_LOP,
@@ -646,36 +646,14 @@ class AdminClassMembersView(APIView):
                                       % ', '.join(LEAVE_REASONS)}, status=400)
 
         # Đánh dấu rời lớp, KHÔNG xoá: học viên nghỉ giữa chừng vẫn phải còn
-        # trong báo cáo của kỳ đó.
-        #
-        # `AND left_at IS NULL` là BẮT BUỘC từ §36. Trước đây mỗi cặp lớp–người
-        # chỉ có đúng một dòng nên không cần lọc; nay một em học lại lớp cũ sẽ
-        # có nhiều dòng, và câu không lọc sẽ dập mốc rời lớp lên CẢ những lượt
-        # học đã đóng từ đợt trước — ghi đè lịch sử bằng ngày hôm nay.
-        rows = q('''UPDATE class_members SET left_at=%s, leave_reason=%s
-                    WHERE class_id=%s AND user_id=%s AND left_at IS NULL
-                    RETURNING id''',
-                 (local_now(), ly_do, class_id, uid))
+        # trong báo cáo của kỳ đó. Câu đóng lượt + nhật ký ở `teaching/roi_lop.py`
+        # (25/09/2026, dùng chung với hộp Yêu cầu khi duyệt bảo lưu / huỷ khoá).
+        da_dong = roi_lop(request, class_id, uid, ly_do)
         quen_truy_cap(uid)   # rời lớp là mất môn của lớp (1.3)
-        if not rows:
+        if da_dong is None:
             # Trước đây câu UPDATE không khớp dòng nào vẫn trả `{'ok': True}` —
             # giao diện báo "đã cho rời lớp" cho một em không hề ở trong lớp.
             return Response({'error': 'Học viên này không đang học lớp đó.'}, status=404)
-
-        klass = q1('SELECT id, name FROM classes WHERE id=%s', (class_id,))
-        row = q1('SELECT id, name, email, role FROM users WHERE id=%s', (uid,))
-        ten = _user_label(row, uid)
-        ten_lop = klass['name'] if klass else '#%s' % class_id
-        if row and row.get('role') == ROLE_ASSISTANT:
-            tom_tat = 'Gỡ trợ giảng "%s" khỏi lớp "%s".' % (ten, ten_lop)
-        else:
-            tom_tat = ('Cho "%s" rời lớp "%s"%s. Dữ liệu học của em giữ nguyên.'
-                       % (ten, ten_lop, ' (%s)' % LEAVE_LABEL[ly_do] if ly_do else ''))
-        audit.record(request, audit.CLASS_MEMBER_REMOVE, target_type='class',
-                     target_id=class_id, target_label=ten_lop,
-                     summary=tom_tat,
-                     detail={'userId': uid, 'userName': ten, 'classId': class_id,
-                             'leaveReason': ly_do})
         return Response({'ok': True, 'leaveReason': ly_do})
 
 

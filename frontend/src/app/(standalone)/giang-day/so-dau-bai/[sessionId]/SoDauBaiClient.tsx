@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 
+import YeuCauDeXuat from '@/components/YeuCauDeXuat';
 import { Button, Card, CardHead, Chip, EmptyState } from '@/components/ui';
 import { apiFetch, errorText, ghiJson, loiBatDuoc } from '@/lib/api';
 import { HD_SO_DAU_BAI, type MucSo, type SoDauBai } from '@/lib/chuongTrinh';
@@ -224,6 +225,8 @@ export default function SoDauBaiClient({ initial }: { initial: SoDauBai }) {
           <span className="text-label text-ink-3">Đề xuất (học bù, điều chỉnh nội dung…)</span>
           <textarea rows={2} className={O_CHU} value={deXuat} maxLength={2000} onChange={(e) => setDeXuat(e.target.value)} />
         </label>
+        {/* Đề xuất cần học vụ quyết (học bù, đổi tiến độ) → một yêu cầu trong hộp Yêu cầu (E3). */}
+        <YeuCauDeXuat sessionId={d.session.id} startsAt={d.session.startsAt} deXuat={deXuat} />
       </Card>
 
       <Card>

@@ -151,6 +151,15 @@ SESSION_SYLLABUS = 'session.syllabus'
 #: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
 #: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
 SESSION_LOG = 'session.log'
+#: Hộp Yêu cầu (E3, §65). Duyệt ghi cả việc đã thực thi (`detail.thucThi`) — một dòng trả
+#: lời được "ai duyệt, lúc nào, hệ thống đã làm gì".
+REQUEST_CREATE = 'request.create'
+REQUEST_STATUS = 'request.status'
+REQUEST_ASSIGN = 'request.assign'
+REQUEST_APPROVE = 'request.approve'
+REQUEST_REJECT = 'request.reject'
+#: Học vụ đổi loại một yêu cầu hỗ trợ (bảng TopHSA dòng 11 "phân loại", 26/09/2026).
+REQUEST_CLASSIFY = 'request.classify'
 
 
 def _client_ip(request):

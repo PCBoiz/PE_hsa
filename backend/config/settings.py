@@ -125,6 +125,8 @@ INSTALLED_APPS = [
     'teaching',
     # Khung chương trình theo buổi + sổ đầu bài (E1, 25/09/2026) — miền riêng, luật S4.
     'chuong_trinh',
+    # Hộp Yêu cầu: hỗ trợ + xin–duyệt thay đổi học tập (E3, 25/09/2026) — miền riêng, luật S4.
+    'yeu_cau',
     'lich',
 ]
 

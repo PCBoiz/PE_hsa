@@ -1,7 +1,9 @@
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
+import YeuCauPhuHuynh from '@/components/YeuCauPhuHuynh';
 import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
+import { HD_PHU_HUYNH, type PhuHuynhDS } from '@/lib/yeuCau';
 
 /**
  * Trang PHỤ HUYNH mở từ tin Zalo — không tài khoản, không đăng nhập.
@@ -42,11 +44,12 @@ export default async function BaoCaoTheoChiaPage({
      về `/login` — đúng thứ cần ở đây. Nếu người mở tình cờ đang đăng nhập
      (giảng viên tự kiểm lại link chẳng hạn) thì thẻ vẫn được gắn vào, nhưng
      máy chủ khai `authentication_classes = []` nên nó bị bỏ qua hoàn toàn. */
-  const kq = await serverJson<BaoCao>(
-    `/api/public/parent-report/${encodeURIComponent(token)}`,
-    {},
-    HD_BAO_CAO,
-  );
+  /* Tờ báo cáo và hộp yêu cầu của link (E3) gọi SONG SONG. Hộp yêu cầu hỏng (máy chủ cũ
+     chưa có tuyến — Vercel lên trước Render) thì tờ vẫn hiện, chỉ thiếu khối gửi yêu cầu. */
+  const [kq, yc] = await Promise.all([
+    serverJson<BaoCao>(`/api/public/parent-report/${encodeURIComponent(token)}`, {}, HD_BAO_CAO),
+    serverJson<PhuHuynhDS>(`/api/public/phu-huynh/${encodeURIComponent(token)}/yeu-cau`, {}, HD_PHU_HUYNH),
+  ]);
 
   if (!kq.ok) {
     return (
@@ -78,13 +81,17 @@ export default async function BaoCaoTheoChiaPage({
           lưu tờ này thành PDF để giữ lại hoặc gửi tiếp cho người nhà. */}
       <header className="border-b border-line bg-surface print:hidden">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
-          <span className="flex-1 text-section text-ink">Báo cáo học tập</span>
+          {/* `h1`, không phải `span`: tờ này có `h2` (tên em) và `h3` (từng mục), nên
+              thiếu cấp một là axe báo `page-has-heading-one` — đo 26/09/2026, 2 lượt trang.
+              `m-0` giữ nguyên chỗ đứng; cỡ chữ vẫn do `text-section`. */}
+          <h1 className="m-0 flex-1 text-section text-ink">Báo cáo học tập</h1>
           <NutIn />
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
         <ToBaoCao bc={bc} choPhuHuynh />
+        {yc.ok && <YeuCauPhuHuynh token={token} initial={yc.data} />}
       </main>
     </div>
   );

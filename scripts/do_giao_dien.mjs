@@ -164,6 +164,13 @@ const TRANG = [
   ['/giao-trinh/khung-chuong-trinh', 'Giáo trình · khung chương trình'],
   ['/giang-day/chuong-trinh/7322', 'Giảng dạy · chương trình lớp'],
   ['/giang-day/so-dau-bai/8004', 'Giảng dạy · sổ đầu bài'],
+  // Hộp Yêu cầu (E3, 26/09/2026) — một đường cho mọi vai: thẻ học viên thấy màn gửi + theo dõi,
+  // thẻ quản trị thấy hộp nhân sự. 176 = câu hỏi của tài khoản e2e (lớp mẫu 7322), 177 = lượt
+  // xin chuyển lớp CHƯA duyệt của cùng em (Neon dev) — màn có khối Xử lý đầy đủ nút.
+  ['/yeu-cau', 'Hỏi & yêu cầu'],
+  ['/yeu-cau/176', 'Hỏi & yêu cầu · một yêu cầu'],
+  ['/yeu-cau', 'Yêu cầu · hộp nhân sự'],
+  ['/yeu-cau/177', 'Yêu cầu · xin chuyển lớp (nhân sự)'],
 ];
 /* Trang phụ huynh — bề mặt DUY NHẤT người ngoài hệ thống nhìn thấy, mở trên điện
    thoại từ tin nhắn. Mỗi lượt quét là một lượt "mở" (tăng opened_count của chìa
@@ -848,6 +855,7 @@ const TOKEN_HV = process.env.PE_TOKENS_HV || join(DAY, '..', '.the', 'tokens_hv.
 let tokHv = null;
 try { tokHv = JSON.parse(readFileSync(TOKEN_HV, 'utf8')); } catch (e) { /* chưa cấp */ }
 const TRANG_HOC_VIEN = new Set(['Dashboard', 'Chi tiết khoá', 'Bài học', 'Thi thử', 'Bài tập của tôi', 'Khảo sát', 'Đổi mật khẩu',
+  'Hỏi & yêu cầu', 'Hỏi & yêu cầu · một yêu cầu',
   'View · Khoá học', 'View · Kế hoạch', 'View · Lộ trình', 'View · Kỹ năng', 'View · Diễn đàn', 'View · Cài đặt', 'View · Hồ sơ']);
 /* Đường gõ → id view SPA (khối `#page-<id>`). Dùng để KIỂM view đã mở thật. */
 const VIEW_SPA = { '/courses': 'courses', '/plan': 'plan', '/roadmap': 'roadmap', '/skills': 'skills',
