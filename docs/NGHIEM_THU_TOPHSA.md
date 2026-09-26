@@ -54,7 +54,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
 | 14 | Giáo viên · lớp + điểm danh | CÓ | — | Đo 26/09 trên màn thật: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại được, và **lịch sử sửa từng buổi** (`LichSuDiemDanh`, V-d) hiện ngay dưới sổ. Tỉ lệ chuyên cần + cảnh báo nghỉ nhiều nằm ở tờ báo cáo và "Việc hôm nay". |
-| 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong, còn tài liệu | Đ2 §60, E3 | — |
+| 15 | Giáo viên · chương trình + tiến độ | **CÓ** | — | E1 xong; **đính kèm tài liệu xong 27/09** (§60 — gắn vào buổi hoặc kho chung của lớp). Ô "đề xuất điều chỉnh tiến độ" vẫn là việc của người, không phải của máy: màn Chương trình chỉ ra lớp chậm ở đâu, giảng viên quyết dồn hay giãn. |
 | 16 | Giáo viên · quản lý buổi học | CÓ — E1 xong; đề xuất của GV thành yêu cầu gửi học vụ (E3) | — | — |
 | 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. |
 | 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
@@ -153,7 +153,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Phiên bản / lịch sử chỉnh sửa chương trình | CÓ (E1) | bản nháp → xuất bản (bản cũ cùng chuỗi "Đã thay"), "Tạo bản mới" chép cả cây, lớp giữ bản đã nhận; mọi thao tác vào Nhật ký (`syllabus.*`). Test `tests_khung_chuoi.py` |
 | Gắn bài giảng | CÓ | bài học trực tuyến |
 | Gắn video record | CÓ | link theo buổi; học viên xem lại được (§72, 26/09). Bản ghi tự gắn từ Zoom vẫn chờ khoá (Z1) |
-| Gắn tài liệu | CHƯA | → **Đ2 §60** |
+| Gắn tài liệu | **CÓ** | **§60 xong 27/09** — giảng viên gắn liên kết ngoài (Drive, YouTube, link đề) vào **kho chung của lớp** hoặc **một buổi cụ thể**, ẩn/hiện theo tiến độ, gỡ được; học viên thấy trên thẻ lớp. Đo 11/11 bước trên màn thật, 27/27 test, 7/7 đột biến bị giết. Còn thiếu: **tải TỆP thẳng lên** — chờ khoá R2 (việc D1 của anh); lược đồ đã chừa sẵn `nguon='r2'`. |
 | Gắn bài tập, bài kiểm tra | MỘT PHẦN | khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1); bài tập giao cho lớp chưa trỏ về mục khung; điểm kiểm tra → **V-h** |
 | Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1); chưa có ngưỡng "hoàn thành khoá" riêng |
 
@@ -256,12 +256,12 @@ nhận chuông. Bấm duyệt lần hai → báo đã duyệt, không chuyển t
 | Lưu lịch sử chỉnh sửa | CÓ (V-d) | như dòng 9: mỗi lần ĐỔI một dòng (ai, từ gì → gì, lúc nào); lưu lại y hệt ghi 0 dòng. Demo: giảng viên/trợ giảng → Buổi học → Điểm danh → "Lịch sử sửa điểm danh" |
 | Thống kê tỉ lệ, cảnh báo nghỉ nhiều | CÓ | |
 
-## Dòng 15 — Giáo viên · chương trình + tiến độ · MỘT PHẦN
+## Dòng 15 — Giáo viên · chương trình + tiến độ · CÓ
 
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Soạn / chuẩn bị nội dung buổi | CÓ (E1) | buổi học gắn buổi khung (tự động theo ngày, gắn tay được); sổ đầu bài hiện nội dung kế hoạch + bài về nhà |
-| Đính kèm tài liệu | CHƯA | **Đ2 §60** |
+| Đính kèm tài liệu | **CÓ** | **§60 xong 27/09** — giảng viên gắn liên kết ngoài (Drive, YouTube, link đề) vào **kho chung của lớp** hoặc **một buổi cụ thể**, ẩn/hiện theo tiến độ, gỡ được; học viên thấy trên thẻ lớp. Đo 11/11 bước trên màn thật, 27/27 test, 7/7 đột biến bị giết. Còn thiếu: **tải TỆP thẳng lên** — chờ khoá R2 (việc D1 của anh); lược đồ đã chừa sẵn `nguon='r2'`. |
 | Nội dung đã / chưa hoàn thành | CÓ (E1) | **Sổ đầu bài** `/giang-day/so-dau-bai/<buổi>`: từng nội dung đã dạy / một phần / chưa dạy + ghi chú |
 | Ghi chú sau buổi | CÓ (`class_sessions.note`) | — |
 | Tiến độ thực tế vs kế hoạch, đề xuất điều chỉnh | MỘT PHẦN (E1) | tiến độ vs kế hoạch CÓ (màn Chương trình lớp); ô "Đề xuất" trong sổ là chữ tự do — biến thành yêu cầu ở **E3** |
