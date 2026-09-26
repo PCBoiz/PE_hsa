@@ -19,6 +19,23 @@ công khoá tháng, §60 tài liệu R2).
 **Spec nghiệm thu**: mỗi dòng sẽ có `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng kịch bản demo;
 một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh hai khổ. Cột "Spec" = `—` là chưa có.
 
+## ⚠ TRƯỚC BUỔI NGHIỆM THU: chạy `python manage.py du_lieu_mau --lam-moi`
+
+Đo 27/09/2026: `syllabus_versions` = **0**, `syllabus_sessions` = 0, `session_logs` = **0**, không
+bài nào `kind='kiem_tra'`. Bộ dữ liệu mẫu trong CSDL cũ hơn mã — `teaching/du_lieu_mau.py` CÓ dựng
+khung chương trình, chỉ là chưa ai chạy lại từ khi E1 về.
+
+**Đây không phải lỗi mã, nhưng nó hỏng buổi nghiệm thu y như một lỗi.** Khách bấm nút "Chương
+trình" ở màn Lớp học sẽ thấy *"Lớp chưa nhận khung chương trình"* (đo: màn 69 từ), và "Khung chương
+trình" thì *"Môn này chưa có khung nào"* — cho SÁU ô của bảng: dòng 5, 15, 16, và ô tiến độ ở dòng
+4, 6, 9. Nút "Nhập điểm" (V-h) cũng không bao giờ hiện, vì không có bài kiểm tra nào để nhập.
+
+Đã kiểm tính năng CÓ chạy, bằng cách dựng một khung thật qua đúng các cửa API rồi gắn vào một lớp:
+màn nhảy từ 69 lên **812 từ**, hiện "1 đã dạy", "0 đã dạy, 1 một phần", "Chưa ghi — ghi ngay"; "Toàn
+trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên hiện % chương trình kèm kế hoạch.
+
+`--lam-moi` chỉ gỡ dòng `is_demo` và dựng lại trong MỘT giao dịch, nên dựng hỏng thì bộ cũ còn nguyên.
+
 ## Tóm tắt
 
 | Dòng | Vai · phân hệ | Hiện nay | Việc đóng chính | Spec |
@@ -31,7 +48,7 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 6 | Quản trị viên · báo cáo | MỘT PHẦN | V-k, V-o, E1 | — |
 | 7 | Kế toán · học phí | THAY (V-m xong) | V-m (một ô tình trạng), K2 | — |
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
-| 9 | Giáo vụ · lớp học | MỘT PHẦN | V-d, E1 | — |
+| 9 | Giáo vụ · lớp học | **CÓ** | — | Đo 27/09 bằng **thẻ học vụ**, không mượn thẻ quản trị: bấm "Điểm danh" một buổi → màn 1.159 từ, đủ Có mặt · Vắng · Đi muộn · Xin phép · **Lịch sử sửa điểm danh** · Lưu. |
 | 10 | Giáo vụ · lịch học | gần đủ | V-g, V-n, E4, Đ2 §58 | — |
 | 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | — | §65 **đã gộp vào `erp` 26/09** (`61d42ec`). Bảy trên bảy gạch đầu dòng chạy được trên màn thật: `scripts/do_yeu_cau.mjs` **17/17 bước ĐẠT**, bấm chuột chứ không gọi API tay. Kèm ba hàng rào đã đo: học viên không thấy thẻ Xử lý · ghi chú nội bộ ẩn với học viên · phụ huynh gửi được qua link tờ báo cáo. Còn sót (ngoài phạm vi dòng 11): hạn xử lý / cờ quá hạn, ô tìm theo chữ. |
 | 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
@@ -43,14 +60,14 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
 | 20 | Trợ giảng · nhắn / nhắc | MỘT PHẦN — **nhắc CẢ LỚP nay bấm được**, nhắn RIÊNG một em thì chưa | E3 (TG nhắn riêng một em — chờ anh Sơn quyết) | Ba nửa, đo riêng 26/09. **Nửa báo lên (E3, chạy được):** hộp Yêu cầu của học vụ nhận yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". **Nửa nhắc cả lớp (E2 backend + E2-GD màn — XONG 26/09):** màn `/giang-day/thong-bao/<lớp>`, tab "Thông báo lớp" trong khu Giảng dạy, đo trên màn thật bằng `scripts/do_thong_bao_lop.mjs` với **thẻ TRỢ GIẢNG** — 13/13 bước của màn lớp ĐẠT, **bấm chuột chứ không gọi API tay**: mở được · tab dẫn tới · ô mở khoá sau khi React gắn · xem trước nói "Sẽ báo cho 3 em qua chuông, 3 em nhận email" · bước hỏi lại nêu ĐÚNG SỐ ("Gửi ngay cho 3 em của lớp …?") · gửi xong "Đã báo cho 3 em" · dòng mới vào danh sách (3 → 4) kèm "3 em nhận" · ô soạn được dọn · **lớp KHÔNG phụ trách → "Không mở được lớp này", không hiện ô soạn** · không một mã kỹ thuật nào lọt lên màn. **Còn thiếu (nói thẳng):** trợ giảng vẫn **không nhắn được RIÊNG một em** — hộp Yêu cầu là kênh do HỌC VIÊN mở trước, và thông báo lớp thì cả lớp cùng nhận. Đó là nửa "nhắn" mà anh Sơn chưa quyết. |
-| 21 | Trợ giảng · theo dõi | MỘT PHẦN | V-b, V-l | E3 (26/09): TG giải đáp và báo lên trong hộp Yêu cầu, lịch sử trao đổi lưu đủ. |
-| 22 | Trợ giảng · record Zoom | CÓ | — | §72 (26/09): em xem lại được và đánh dấu "đã mở"; TG thấy ai chưa mở, nhắc được, thấy buổi còn thiếu bản ghi; em báo được link hỏng. Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (Z1). |
+| 21 | Trợ giảng · theo dõi | **CÓ** | — | Ô "Theo dõi việc xem record" (V-l) nay có thật — xem dòng 22. Ba ô còn lại đo 27/09 bằng thẻ trợ giảng. E3: TG giải đáp và báo lên trong hộp Yêu cầu, lịch sử trao đổi lưu đủ. |
+| 22 | Trợ giảng · record Zoom | **CÓ** | — | Đo 27/09 trên `/giang-day/buoi-hoc/1`: khối "Bản ghi buổi học" hiện **"1/2 em đã mở"** · mục gập "Chưa mở: 1" liệt kê tên · nút **"Nhắc em chưa mở"** · dòng **"Chưa có bản ghi: 17/09 · 15/09"**. Học viên xem lại được và đánh dấu "đã mở" (§72). Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (E4). |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
-| 24 | Phụ huynh · xem | MỘT PHẦN | §66, V-a | — |
+| 24 | Phụ huynh · xem | MỘT PHẦN — chỉ thiếu tên trợ giảng | §66 | Đo 27/09 trên tờ thật: **CÓ** lịch buổi (bảng từng ghi "không lịch" — sai) và **CÓ** tiến độ học tập. Còn thiếu đúng một thứ: trợ giảng chưa có trên tờ. |
 | 25 | Phụ huynh · gửi yêu cầu | CÓ qua link (E3, chờ khách xem) | — | `e2e/yeu-cau.spec.ts` |
 | 26 | Học sinh · tài khoản + tự đăng ký | MỘT PHẦN | E5 | — |
 | 27 | Học sinh · thông báo | **CÓ** | — | Màn `/thong-bao` dựng xong 26/09 và đo trên màn thật bằng `scripts/do_thong_bao.mjs` — **12/12 bước ĐẠT, bấm chuột chứ không gọi API tay**: mở được · có dòng · **không một mã kỹ thuật nào lọt lên màn** (nhãn loại do máy chủ trả, `notifications/loai.py`) · lọc theo loại (20 → 15 dòng, mọi dòng đúng loại) · lọc "Chưa đọc" (20 dòng, tất cả chưa đọc) · số trên ô lọc khớp · đánh dấu đã đọc (24 → 23) · đánh dấu **chưa** đọc (23 → 24) · "Xem thêm" nối 20 → 24 dòng, **0 trùng** (phân trang theo khoá). Chuông ở mọi trang có chân "Xem tất cả thông báo" dẫn sang đây. **Chiều GỬI xong nốt 26/09 (E2-GD)**: `/quan-tri/thong-bao` — học vụ soạn, xem trước, lưu nháp, gửi nháp, huỷ nháp; đo bằng thẻ HỌC VỤ, 11/11 bước của màn ấy ĐẠT (ô chọn lớp dựng từ danh mục máy chủ trả — 6 lớp; ba môn mang nhãn tiếng Việt, không mã `hsa_*`; xem trước theo môn đếm 58 em; đổi ô "Gửi kèm email" làm bản xem trước cũ hết hạn; huỷ nháp đổi nhãn sang "Đã huỷ" và mất nút Gửi). |
-| 28 | Học sinh · chương trình + lộ trình | MỘT PHẦN | E1, V-d | — |
+| 28 | Học sinh · chương trình + lộ trình | **CÓ** (khi lớp đã nhận khung) | — | Đo 27/09: màn 574 từ, "Điểm danh từng buổi" mở được, % chương trình kèm "(kế hoạch tới nay…)". **Điều kiện**: lớp phải có khung chương trình — xem cảnh báo dữ liệu ở đầu tài liệu. |
 | 29 | Học sinh · record | CÓ | — | §72 (26/09): thẻ lớp có "Xem lại: 24/09 22/09", bấm là mở và ghi nhận. |
 | 30 | Học sinh · học liệu | CHƯA | Đ2 §60 | — |
 | 31 | Học sinh · bài tập | CÓ (nộp chữ) | Đ2 §60 (nộp tệp) | — |
