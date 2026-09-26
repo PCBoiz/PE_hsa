@@ -71,7 +71,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | 22 | TG record | dán link CÓ; đã/chưa có, HS đã xem, báo lỗi: CHƯA | E4, V-l, E3 |
 | 23 | PH tài khoản | thay bằng link (chờ khách đồng ý) | K2 (việc anh) |
 | 24, 25 | PH xem + gửi yêu cầu | tờ báo cáo kỳ cố định; không lịch, không gửi | E3 §66 link sống |
-| 26 | HS tự đăng ký | CHƯA (`RegisterView` chỉ admin; `users.is_verified` chưa ai ghi) | E5 |
+| 26 | HS tự đăng ký | **CÓ** (E5 §73, 27/09: `/dang-ky` + xác nhận email + hàng chờ `tk_dang_ky` trong hộp Yêu cầu) | — |
 | 27 + ghi chú | Thông báo chung | MỘT PHẦN: chuông + 4 loại; không thông báo trung tâm, không theo nhóm, không đánh dấu chưa đọc, không lịch sử đủ | E2 |
 | 28 | HS tiến độ | chỉ bài tự học; không điểm danh từng buổi, không so kế hoạch | E1, V-d |
 | 29 | HS record | CHƯA (API học viên không trả `recording_url`) | V-l, E4 |
@@ -98,7 +98,7 @@ sau sáp nhập 2025 (ô cũ `users.region` giữ làm giá trị tự do cho d�
 | E2 | Hộp thư đi + trung tâm thông báo (luồng B) — thay §61 cũ | [~] phiên cloud `cloud/e2-b`: §61 + hộp thư đi + chuông/thông báo trung tâm (backend) đã đẩy; giao diện + báo cáo chưa |
 | E3 | Hộp "Yêu cầu" + link phụ huynh sống (luồng C) | [~] phiên cloud `cloud/e3-b`: §65 + miền `yeu_cau` backend đã đẩy; giao diện + báo cáo chưa |
 | E4 | Zoom: record tự gắn + HS xem record + thử "% đã xem" | [ ] |
-| E5 | Tự đăng ký + hàng chờ xếp lớp | [ ] |
+| E5 | Tự đăng ký + hàng chờ xếp lớp | [x] nhánh `agent/e5`: §73 (`users.self_registered`, `password_reset_tokens.purpose`, loại yêu cầu `tk_dang_ky`) + `backend/accounts/tu_dang_ky.py` + trang `/dang-ky`, `/xac-thuc-email`; 28 pytest, bộ đo `scripts/do_dang_ky.mjs` 20/20, `docs/agent/BAO_CAO_E5.md`. Còn: chặn tần suất theo số điện thoại, dọn tài khoản chưa xác nhận quá hạn |
 | 1.5B | Thay khối thi bằng tiến trình (thẻ 4 "Tiến độ chương trình" từ E1 + điểm kiểm tra từ V-h) | [ ] |
 | 1.5C | Xoá mã thi — HOÃN tới khi V-h chạy thật | [ ] |
 | 1.6 | "Môn học"/"phân môn", bỏ "Mọi …", guard thuật ngữ | [ ] |

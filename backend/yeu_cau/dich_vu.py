@@ -122,8 +122,11 @@ def pham_vi_yeu_cau(user=None, link=None):
     if is_admin(user) or is_academic(user):
         return ('TRUE', [], True)
     if is_teacher(user) or is_assistant(user):
-        return ("y.loai <> 'ht_tai_khoan' AND (y.class_id = ANY(%s) OR y.nguoi_xu_ly = %s "
-                'OR y.nguoi_tao = %s)', [visible_class_ids(user), user.id, user.id], True)
+        # `L.CHI_HOC_VU` thay chuỗi 'ht_tai_khoan' gõ tay (§73): danh sách "loại chỉ học vụ
+        # thấy" nay có hai mục, và mục thứ hai (`tk_dang_ky`) mang số điện thoại của em.
+        return ('y.loai <> ALL(%s) AND (y.class_id = ANY(%s) OR y.nguoi_xu_ly = %s '
+                'OR y.nguoi_tao = %s)',
+                [list(L.CHI_HOC_VU), visible_class_ids(user), user.id, user.id], True)
     if user is not None and getattr(user, 'is_authenticated', False):
         return ('y.nguoi_tao = %s', [user.id], False)
     return ('FALSE', [], False)
@@ -227,6 +230,9 @@ def dung(nguoi, yc, su_kien=None):
     ra = {
         'id': yc['id'], 'loai': yc['loai'], 'loaiNhan': thong_tin['nhan'], 'nhom': thong_tin['nhom'],
         'canDuyet': L.la_thay_doi(yc['loai']),
+        # Màn duyệt cần biết "loại này phải chọn lớp tới" — MÁY CHỦ nói, màn không tự so
+        # danh sách mã loại (RULES §7; xem chú thích `chon_lop_toi` ở `loai.py`).
+        'chonLopToi': bool(thong_tin.get('chon_lop_toi')),
         'trangThai': yc['trang_thai'], 'trangThaiNhan': L.NHAN_TRANG_THAI[yc['trang_thai']],
         'nguon': yc['nguon'], 'tieuDe': yc['tieu_de'], 'noiDung': yc['noi_dung'],
         'duLieu': _du_lieu_cho(nguoi, yc['du_lieu']), 'ketQua': yc['ket_qua'],
@@ -409,14 +415,24 @@ def _nguoi_nhan_khi_tao(yc, nguoi):
 
 
 def tao(nguoi, *, loai, tieu_de, noi_dung=None, class_id=None, session_id=None, hoc_vien_id=None,
-        du_lieu=None, request=None):
-    """Tạo một yêu cầu. Trả JSON của yêu cầu vừa tạo. Ném `LoiYeuCau` khi không hợp lệ."""
+        du_lieu=None, request=None, he_thong=False):
+    """Tạo một yêu cầu. Trả JSON của yêu cầu vừa tạo. Ném `LoiYeuCau` khi không hợp lệ.
+
+    `he_thong=True` (§73): lượt tạo do CHÍNH hệ thống sinh ra, không do ai bấm — chỉ
+    `accounts/tu_dang_ky.py` truyền, cho loại trong `L.CHI_HE_THONG`. Nó bỏ qua ĐÚNG một
+    phép kiểm (`TAO_DUOC`, tức "nguồn này được gửi loại nào") và không bỏ qua gì khác.
+    Cửa tạo yêu cầu vẫn là MỘT (RULES §6): thêm một hàm `tao_he_thong` riêng là thêm một
+    đường ghi `yeu_cau` mà mọi hàng rào sau này phải được nhớ dựng ở hai nơi.
+    """
     nguon = nguoi.nguon
     if nguon is None:
         raise LoiYeuCau(403, 'Tài khoản này không gửi được yêu cầu.')
     if loai not in L.LOAI:
         raise LoiYeuCau(400, 'Loại yêu cầu không hợp lệ.')
-    if loai not in L.TAO_DUOC[nguon]:
+    if loai in L.CHI_HE_THONG and not he_thong:
+        # Không nói "loại chỉ hệ thống tạo" — người gửi tay không cần biết loại ấy tồn tại.
+        raise LoiYeuCau(400, 'Loại yêu cầu không hợp lệ.')
+    if loai not in L.TAO_DUOC[nguon] and not he_thong:
         raise LoiYeuCau(400, 'Bạn không gửi được loại yêu cầu "%s".' % L.LOAI[loai]['nhan'])
     tieu_de = _chu(tieu_de, L.TRAN_TIEU_DE, 'tiêu đề', bat_buoc=True)
     noi_dung = _chu(noi_dung, L.TRAN_NOI_DUNG, 'nội dung')

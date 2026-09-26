@@ -9,7 +9,11 @@ miền khác):
 - huỷ khoá → `roi_lop(..., 'dropped')`;
 - học lại → `AdminClassMembersView._ghi_thanh_vien` (giữ trần gia sư);
 - chuyển lịch / học bù / nghỉ học → v1 CHỈ ghi quyết định (`{"cach": "tay"}`): học vụ tự làm
-  trên màn Buổi học (tạo buổi bù, đổi lịch, điểm danh "có phép").
+  trên màn Buổi học (tạo buổi bù, đổi lịch, điểm danh "có phép");
+- đăng ký mới (`tk_dang_ky`, §73) → cùng `_ghi_thanh_vien`: duyệt = XẾP LỚP cho em vừa tự đăng
+  ký. Khác `tt_hoc_lai` ở chỗ lớp không nằm ở `yeu_cau.class_id` (lúc gửi em chưa có lớp nào)
+  mà ở `den_lop_id` học vụ chọn lúc duyệt — nên nhánh này phải đứng TRƯỚC câu kiểm
+  "yêu cầu chưa gắn lớp".
 
 Xoá đệm quyền môn: `dich_vu.duyet()` hẹn `quen_truy_cap` SAU commit.
 """
@@ -51,16 +55,26 @@ def _lop(class_id, ten='lớp'):
     return lop
 
 
-def _den_lop(yc, tham_so):
+def _den_lop(yc, tham_so, cau='Chọn lớp chuyển tới.'):
+    """Mã lớp đích: học vụ chọn lúc duyệt, hoặc người gửi đã ghi sẵn trong `du_lieu`.
+
+    `cau` là câu lỗi khi chưa chọn — `tk_dang_ky` nói "Chọn lớp để xếp em vào" chứ không
+    "lớp chuyển tới": em chưa học lớp nào thì không có chỗ nào để "chuyển" đi (RULES §10).
+    Một hàm chứ không hai bản gần giống nhau — bản thứ hai là bản sẽ trôi (RULES §7).
+    """
     raw = tham_so.get('den_lop_id')
     if raw in (None, ''):
         raw = (yc['du_lieu'] or {}).get('den_lop_id')
     if raw in (None, ''):
-        raise LoiYeuCau(400, 'Chọn lớp chuyển tới.')
+        raise LoiYeuCau(400, cau)
     try:
         return int(raw)
     except (TypeError, ValueError) as e:
-        raise LoiYeuCau(400, 'Chọn lớp chuyển tới.') from e
+        raise LoiYeuCau(400, cau) from e
+
+
+#: Câu lỗi khi học vụ bấm Duyệt một lượt đăng ký mà chưa chọn lớp.
+CHUA_CHON_LOP = 'Chọn lớp để xếp em vào.'
 
 
 def _den_ngay(yc, tham_so):
@@ -96,6 +110,16 @@ def xem_truoc(yc, tham_so):
     try:
         em = _em(yc)
         lop = _lop(yc['class_id']) if yc['class_id'] else None
+        if loai == 'tk_dang_ky':
+            den = _lop(_den_lop(yc, tham_so, CHUA_CHON_LOP), 'lớp đã chọn')
+            mo_ta = 'Xếp %s vào lớp "%s"%s.' % (
+                _ten(em), den['name'],
+                ' (môn %s)' % den['course_title'] if den['course_title'] else '')
+            if den['class_type'] == 'gia_su':
+                canh_bao.append('Lớp gia sư — tối đa 3 em; đủ thì duyệt sẽ bị từ chối.')
+            if _dang_hoc(em['id'], den['id']):
+                canh_bao.append('Em đang học lớp này rồi.')
+            return {'cach': 'tu_dong', 'moTa': mo_ta, 'canhBao': canh_bao}
         if loai in ('tt_chuyen_lop', 'tt_chuyen_mon'):
             den = _lop(_den_lop(yc, tham_so), 'lớp chuyển tới')
             mo_ta = 'Chuyển %s từ lớp "%s" sang lớp "%s"%s.' % (
@@ -133,6 +157,20 @@ def thuc_hien(yc, tham_so, request):
     if L.LOAI[loai].get('viec') == 'tay':
         return {'cach': 'tay', 'mo_ta': 'Đã duyệt. ' + VIEC_TAY[loai]}
     em = _em(yc)
+    if loai == 'tk_dang_ky':
+        # ĐỨNG TRƯỚC câu kiểm dưới: lượt đăng ký không có `class_id` và không bao giờ có —
+        # lớp là thứ học vụ chọn ở đây. Đi qua `_ghi_thanh_vien` của miền lớp học (luật S4)
+        # nên trần lớp gia sư và mọi hàng rào xếp lớp khác vẫn nguyên.
+        den = _lop(_den_lop(yc, tham_so, CHUA_CHON_LOP), 'lớp đã chọn')
+        if den['status'] == 'cancelled':
+            raise LoiYeuCau(400, 'Lớp "%s" đã huỷ — không xếp vào được.' % den['name'])
+        kq = AdminClassMembersView._ghi_thanh_vien(request, den, em)
+        if kq == 'day':
+            raise LoiYeuCau(409, 'Lớp gia sư "%s" đã đủ em.' % den['name'])
+        if kq == 'da_co':
+            raise LoiYeuCau(409, 'Em đang học lớp "%s" rồi.' % den['name'])
+        return {'cach': 'tu_dong', 'viec': 'xep_lop_dang_ky', 'lop': den['id'],
+                'mo_ta': 'Đã xếp %s vào lớp "%s".' % (_ten(em), den['name'])}
     if not yc['class_id']:
         raise LoiYeuCau(400, 'Yêu cầu chưa gắn lớp.')
     lop = _lop(yc['class_id'])

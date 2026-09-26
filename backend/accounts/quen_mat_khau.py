@@ -128,8 +128,11 @@ class QuenMatKhauView(APIView):
         u = q1('SELECT id, name, email, status FROM users WHERE lower(email)=%s', (email,))
         if u and (u['status'] or 'active') != 'suspended':
             bay_gio = local_now()
+            # `purpose='reset'` KHÔNG phải trang trí (§73b, 27/09/2026): bảng này nay
+            # giữ cả mã XÁC THỰC EMAIL của người mới đăng ký. Không lọc thì mã xác thực
+            # bị tính vào trần 3 chìa/giờ của việc khác.
             da_xin = q1('SELECT count(*) AS n FROM password_reset_tokens '
-                        'WHERE user_id=%s AND created_at > %s',
+                        "WHERE user_id=%s AND purpose='reset' AND created_at > %s",
                         (u['id'], bay_gio - timedelta(hours=1)))['n']
             if da_xin < TRAN_MOI_GIO:
                 chia = secrets.token_urlsafe(SO_BYTE)
@@ -137,11 +140,15 @@ class QuenMatKhauView(APIView):
                 with transaction.atomic():
                     # Chìa MỚI thay chìa cũ: chỉ đường dẫn trong lá thư gần nhất
                     # còn dùng được — em bấm nhầm thư cũ thì nhận câu "hết hạn".
-                    x('UPDATE password_reset_tokens SET used_at=%s '
-                      'WHERE user_id=%s AND used_at IS NULL', (bay_gio, u['id']))
+                    # LỌC `purpose` (§73b): không có nó thì một lượt xin đặt lại mật
+                    # khẩu HUỶ luôn mã xác thực email em chưa bấm, và em vừa đăng ký
+                    # xong mất đường vào. `accounts/tests_tu_dang_ky.py` giữ chỗ này.
+                    x("UPDATE password_reset_tokens SET used_at=%s "
+                      "WHERE user_id=%s AND purpose='reset' AND used_at IS NULL",
+                      (bay_gio, u['id']))
                     x('INSERT INTO password_reset_tokens '
-                      '(user_id, token_hash, created_at, expires_at, requested_ip) '
-                      'VALUES (%s, %s, %s, %s, %s)',
+                      "(user_id, token_hash, purpose, created_at, expires_at, requested_ip) "
+                      "VALUES (%s, %s, 'reset', %s, %s, %s)",
                       (u['id'], _bam(chia), bay_gio, bay_gio + timedelta(minutes=HAN_PHUT),
                        client_ip(request)))
                     # Thư chưa đi được trong hạn của chìa thì bỏ (`het_han`); đi hay bỏ
@@ -162,7 +169,8 @@ def _chia_con_dung(chia):
         return None
     return q1('''SELECT t.id, t.user_id, t.expires_at, u.email, u.name, u.status
                    FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
-                  WHERE t.token_hash=%s AND t.used_at IS NULL AND t.expires_at > %s''',
+                  WHERE t.token_hash=%s AND t.purpose='reset'
+                    AND t.used_at IS NULL AND t.expires_at > %s''',
               (_bam(chia), local_now()))
 
 
@@ -207,8 +215,9 @@ class DatLaiMatKhauView(APIView):
             # ghi (hai câu) là để hở một khe cho cả hai cùng qua.
             d = q1('''UPDATE password_reset_tokens t SET used_at=%s
                         FROM users u
-                       WHERE u.id = t.user_id AND t.token_hash=%s AND t.used_at IS NULL
-                         AND t.expires_at > %s AND coalesce(u.status, 'active') <> 'suspended'
+                       WHERE u.id = t.user_id AND t.token_hash=%s AND t.purpose='reset'
+                         AND t.used_at IS NULL AND t.expires_at > %s
+                         AND coalesce(u.status, 'active') <> 'suspended'
                    RETURNING t.user_id''',
                    (bay_gio, _bam(chia), bay_gio)) if chia and len(chia) <= 200 else None
             if not d:
@@ -218,8 +227,8 @@ class DatLaiMatKhauView(APIView):
               'password_changed_at=%s, tokens_valid_from=%s WHERE id=%s',
               (make_werkzeug_password(mat_khau), bay_gio, bay_gio, uid))
             # Mọi chìa khác của em (thư cũ hơn) cũng chết theo.
-            x('UPDATE password_reset_tokens SET used_at=%s WHERE user_id=%s AND used_at IS NULL',
-              (bay_gio, uid))
+            x("UPDATE password_reset_tokens SET used_at=%s "
+              "WHERE user_id=%s AND purpose='reset' AND used_at IS NULL", (bay_gio, uid))
 
         from accounts.authentication import invalidate_user_cache
         invalidate_user_cache(uid)

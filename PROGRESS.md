@@ -32,6 +32,55 @@ thêm bị ghi đè mất — API thiếu một khoá suốt hai lượt đo, v�
 bản đột biến nó vừa đặt và **nói ra** khi thấy có người khác sửa. Cảnh báo ấy chỉ tới sau
 khi việc đã mất, nên luật trong CLAUDE.md vẫn là: chờ bảng in ra rồi hãy sửa tệp ấy.
 
+## 27/09/2026 — Dòng 26 đóng: em tự mở được tài khoản, và học vụ xếp lớp ngay trong hộp Yêu cầu
+
+Nhánh cục bộ `agent/e5`, §73. Trước hôm nay `RegisterView` đòi `IsAdminRole` (đổi 27/08 để
+bịt lỗ "một lệnh curl là có tài khoản kèm quyền gọi `/api/chat`") — nên dòng 26 nằm im từ
+đó. Mở lại cửa mà KHÔNG mở lại lỗ: tài khoản chưa bấm thư xác nhận **không đăng nhập
+được**, nên nó không có token, không gọi được API nào, không đốt được một xu tiền trợ lý.
+
+**Ba quyết định đáng nhớ.**
+
+1. **Hàng chờ "Đăng ký mới" dùng lại hộp Yêu cầu §65**, loại `tk_dang_ky` — không dựng
+   bảng mới. Nó thừa hưởng nguyên máy trạng thái, giao việc, ghi chú nội bộ, nhật ký, và
+   "duyệt = thực thi trong MỘT giao dịch": học vụ chọn lớp rồi bấm Duyệt là em vào lớp,
+   duyệt hai lần chỉ xếp một lần. Dựng bảng riêng là dựng bản thứ hai của cùng một máy
+   trạng thái.
+2. **Dòng `yeu_cau` chỉ sinh ra ở cửa XÁC NHẬN EMAIL**, không ở cửa đăng ký. Ai bơm địa
+   chỉ bừa cũng không làm bẩn hộp việc của học vụ — chỉ để lại vài dòng `users` trơ, mà
+   những dòng ấy còn **nhận lại được**: người thật đăng ký lại trên chính dòng ấy. Không
+   có luật đó thì bất kỳ ai cũng khoá vĩnh viễn một địa chỉ email khỏi TopHSA bằng một
+   lượt POST.
+3. **Hàng rào đăng nhập đọc `self_registered`, không đọc `is_verified` trần.** Cột
+   `is_verified` có trong lược đồ từ đầu nhưng chưa ai từng ghi, nên với toàn bộ học viên
+   hiện có nó là FALSE — chặn theo nó là khoá cửa cả TopHSA.
+
+**Số đo:** `scripts/do_dang_ky.mjs` 20/20 bước ĐẠT trên màn thật (khách + học vụ);
+`accounts/tests_tu_dang_ky.py` 28/28 (đỏ trước: 27 hỏng trên mã cũ); hồi quy `yeu_cau` +
+`quen_mat_khau` + `accounts` + `ho_so` 110/110; `bootstrap_schema` lượt 2 `0/70`;
+`kiem_luoc_do` 83/83.
+
+**Bốn thứ tìm được trong mã có sẵn** (chi tiết + vết nguồn: `docs/agent/BAO_CAO_E5.md` §6):
+
+- `scripts/quet_quyen.py:80` chỉ quét `api/`, nên **bảy cửa công khai `/auth/*`** — bốn
+  cửa quên mật khẩu §52 và ba cửa mới — nằm ngoài tầm mắt của chính cái báo cáo in ra
+  "mỗi dòng ở đây là một bề mặt công khai". Trước 4 dòng, sau khi vá **12**. Đã vá.
+- `ChiTietYeuCau.tsx:341` so tay `yc.loai === 'tt_chuyen_lop' || …` — danh mục loại có bản
+  thứ hai ở phía màn; loại thứ ba thêm vào MẤT ô chọn lớp và học vụ nhận 400. Đã dời cờ về
+  máy chủ (`chonLopToi`).
+- `quen_mat_khau.py` sáu câu chạm `password_reset_tokens` không lọc `purpose`. Đã vá cả sáu.
+- **Đồng hồ khai ra ai có tài khoản**: đo được 3,82–4,00 s (tạo mới) so với 1,43–1,96 s
+  ("email đã có tài khoản") trong khi nội dung phản hồi giống hệt nhau. Đã cân phần scrypt
+  bằng `_can_dong_ho()`; phần dư (số vòng gọi CSDL) ghi thẳng trong chú thích chứ không nói
+  dối là đã xoá. **Cửa §52 còn nguyên khe ấy — chưa vá.**
+
+**Chờ anh Sơn:** mục **E5a** ở `docs/VIEC_CUA_ANH.md` — (1) giữ "bắt xác nhận email trước
+khi vào học" không, (2) số điện thoại trùng thì nói thẳng hay im. Cả hai tôi đã làm theo
+phương án an toàn hơn.
+
+**Còn thiếu, nói thẳng:** chưa chặn tần suất theo số điện thoại; chưa dọn tài khoản chưa
+xác thực quá hạn (dòng ở lại, giữ email trong chỉ mục duy nhất); mỗi lượt đăng ký tiêu một
+số của `student_code_seq` nên mã HV sẽ có lỗ nếu bị spam trong trần.
 
 ## 27/09/2026 — Dòng 30 (học liệu §60) chạy được, và ba cái thước tự bắt được mình
 

@@ -37,6 +37,10 @@ const TRANG = [
   // Quên mật khẩu (§52, 23/09/2026): hai trang KHÔNG cần đăng nhập. Trang đặt lại mở
   // không kèm chìa → đúng trạng thái 'đường dẫn hỏng' mà người bấm thư cũ sẽ thấy.
   ['/quen-mat-khau', 'Quên mật khẩu', null], ['/dat-lai-mat-khau', 'Đặt lại (đường dẫn hỏng)', null],
+  // Tự đăng ký (§73, 27/09/2026): hai trang KHÔNG cần đăng nhập — bề mặt công khai mới,
+  // nên phải nằm trong bộ đo trợ năng như /login. Trang xác nhận mở không kèm mã → đúng
+  // trạng thái "đường dẫn hỏng" mà người bấm thư cũ sẽ thấy.
+  ['/dang-ky', 'Đăng ký học', null], ['/xac-thuc-email', 'Xác nhận email (mã hỏng)', null],
   ['/dashboard', 'Dashboard', HV], ['/courses/hsa_quantitative', 'Chi tiết khoá', HV],
   // `/mock` (Thi thử) và `/giang-day/ket-qua-thi/…` (nhập PDF) ra khỏi danh sách
   // 24/09/2026 — bỏ thi, pha A: hai đường nay chỉ chuyển hướng (next.config.ts).

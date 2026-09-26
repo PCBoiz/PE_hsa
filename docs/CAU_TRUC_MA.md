@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 219 tệp backend · 206 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 220 tệp backend · 211 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -23,11 +23,11 @@
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
-| [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1878 dòng | 11 tệp · 2497 dòng |
-| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1517 dòng | 10 tệp · 1514 dòng |
+| [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
+| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1598 dòng | 10 tệp · 1526 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1631 dòng | 10 tệp · 1476 dòng |
-| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1607 dòng | 14 tệp · 1432 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6290 dòng | 68 tệp · 6978 dòng |
+| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2111 dòng | 19 tệp · 1999 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6334 dòng | 68 tệp · 6983 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -287,7 +287,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
 | `backend/teaching/admin_users.py` | 1059 dòng | *`class_members`*, *`users`* |
-| `backend/teaching/dong_thoi_gian.py` | 255 dòng | — |
+| `backend/teaching/dong_thoi_gian.py` | 269 dòng | — |
 | `backend/teaching/ho_so.py` | 443 dòng | *`users`* |
 | `backend/teaching/tinh_thanh.py` | 51 dòng | — |
 | `backend/teaching/tinh_trang.py` | 70 dòng | — |
@@ -318,9 +318,9 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|---|
 | `backend/yeu_cau/__init__.py` | 0 dòng | — |
 | `backend/yeu_cau/apps.py` | 11 dòng | — |
-| `backend/yeu_cau/dich_vu.py` | 724 dòng | `yeu_cau`, `yeu_cau_su_kien` |
-| `backend/yeu_cau/loai.py` | 141 dòng | — |
-| `backend/yeu_cau/thuc_thi.py` | 180 dòng | — |
+| `backend/yeu_cau/dich_vu.py` | 740 dòng | `yeu_cau`, `yeu_cau_su_kien` |
+| `backend/yeu_cau/loai.py` | 168 dòng | — |
+| `backend/yeu_cau/thuc_thi.py` | 218 dòng | — |
 | `backend/yeu_cau/urls.py` | 31 dòng | — |
 | `backend/yeu_cau/views.py` | 430 dòng | — |
 
@@ -328,14 +328,14 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|
 | `frontend/src/app/(standalone)/yeu-cau/HopHocVien.tsx` | 230 dòng |
 | `frontend/src/app/(standalone)/yeu-cau/HopNhanSu.tsx` | 267 dòng |
-| `frontend/src/app/(standalone)/yeu-cau/[id]/ChiTietYeuCau.tsx` | 413 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/[id]/ChiTietYeuCau.tsx` | 419 dòng |
 | `frontend/src/app/(standalone)/yeu-cau/[id]/page.tsx` | 44 dòng |
 | `frontend/src/app/(standalone)/yeu-cau/layout.tsx` | 43 dòng |
 | `frontend/src/app/(standalone)/yeu-cau/page.tsx` | 88 dòng |
 | `frontend/src/components/YeuCauDeXuat.tsx` | 66 dòng |
 | `frontend/src/components/YeuCauDongThoiGian.tsx` | 48 dòng |
 | `frontend/src/components/YeuCauPhuHuynh.tsx` | 129 dòng |
-| `frontend/src/lib/yeuCau.ts` | 186 dòng |
+| `frontend/src/lib/yeuCau.ts` | 192 dòng |
 
 ## thong_bao
 
@@ -385,7 +385,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 - Bảng sở hữu: `users`, `password_reset_tokens`
 - Miền khác được ghi bảng của miền này: ho_so ghi `users` — cột HỒ SƠ (mã HV, trường, tỉnh, tư vấn, mục tiêu, tình trạng — §51, V-m) + học vụ cấp tài khoản Học viên (`admin_users`) — thiết kế §4: ho_so sở hữu cột hồ sơ trên `users`; cong_cu (mọi bảng) — dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng; *nợ*: `backend/common/streak.py` ghi `users`; *nợ*: `backend/stats/views.py` ghi `users`; *nợ*: `backend/teaching/lien_he_phu_huynh.py` ghi `users`; *nợ*: `backend/teaching/views.py` ghi `users`
-- Glob: `backend/accounts/**/*.py`, `frontend/src/app/(standalone)/login/**`, `frontend/src/app/(standalone)/doi-mat-khau/**`, `frontend/src/app/(standalone)/dat-lai-mat-khau/**`, `frontend/src/app/(standalone)/quen-mat-khau/**`, `frontend/src/app/auth/**`, `frontend/src/lib/auth.ts`, `frontend/src/lib/phienGhiNho.ts`
+- Glob: `backend/accounts/**/*.py`, `frontend/src/app/(standalone)/login/**`, `frontend/src/app/(standalone)/doi-mat-khau/**`, `frontend/src/app/(standalone)/dat-lai-mat-khau/**`, `frontend/src/app/(standalone)/quen-mat-khau/**`, `frontend/src/app/auth/**`, `frontend/src/lib/auth.ts`, `frontend/src/lib/phienGhiNho.ts`, `frontend/src/app/(standalone)/dang-ky/**`, `frontend/src/app/(standalone)/xac-thuc-email/**`, `frontend/src/lib/dangKy.ts`
 
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
@@ -397,26 +397,32 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/accounts/hoat_dong.py` | 79 dòng | `users` |
 | `backend/accounts/models.py` | 123 dòng | — |
 | `backend/accounts/oauth.py` | 94 dòng | `users` |
-| `backend/accounts/quen_mat_khau.py` | 231 dòng | `password_reset_tokens`, `users` |
-| `backend/accounts/urls.py` | 23 dòng | — |
+| `backend/accounts/quen_mat_khau.py` | 240 dòng | `password_reset_tokens`, `users` |
+| `backend/accounts/tu_dang_ky.py` | 477 dòng | `password_reset_tokens`, `users` |
+| `backend/accounts/urls.py` | 29 dòng | — |
 | `backend/accounts/validators.py` | 54 dòng | — |
-| `backend/accounts/views.py` | 670 dòng | *`roadmaps`*, *`surveys`*, *`user_follows`*, `users` |
+| `backend/accounts/views.py` | 682 dòng | *`roadmaps`*, *`surveys`*, *`user_follows`*, `users` |
 
 | Tệp frontend | Dòng |
 |---|---|
+| `frontend/src/app/(standalone)/dang-ky/PhieuDangKy.tsx` | 245 dòng |
+| `frontend/src/app/(standalone)/dang-ky/page.tsx` | 69 dòng |
 | `frontend/src/app/(standalone)/dat-lai-mat-khau/DatLaiForm.tsx` | 172 dòng |
 | `frontend/src/app/(standalone)/dat-lai-mat-khau/page.tsx` | 29 dòng |
 | `frontend/src/app/(standalone)/doi-mat-khau/ChangePasswordForm.tsx` | 163 dòng |
 | `frontend/src/app/(standalone)/doi-mat-khau/page.tsx` | 61 dòng |
-| `frontend/src/app/(standalone)/login/LoginForm.tsx` | 293 dòng |
-| `frontend/src/app/(standalone)/login/page.tsx` | 107 dòng |
+| `frontend/src/app/(standalone)/login/LoginForm.tsx` | 361 dòng |
+| `frontend/src/app/(standalone)/login/page.tsx` | 113 dòng |
 | `frontend/src/app/(standalone)/quen-mat-khau/QuenMatKhauForm.tsx` | 87 dòng |
 | `frontend/src/app/(standalone)/quen-mat-khau/page.tsx` | 44 dòng |
+| `frontend/src/app/(standalone)/xac-thuc-email/XacThucForm.tsx` | 112 dòng |
+| `frontend/src/app/(standalone)/xac-thuc-email/page.tsx` | 33 dòng |
 | `frontend/src/app/auth/[...path]/route.ts` | 111 dòng |
 | `frontend/src/app/auth/callback/page.tsx` | 51 dòng |
 | `frontend/src/app/auth/logout/route.ts` | 42 dòng |
 | `frontend/src/app/auth/session/route.ts` | 67 dòng |
 | `frontend/src/lib/auth.ts` | 157 dòng |
+| `frontend/src/lib/dangKy.ts` | 34 dòng |
 | `frontend/src/lib/phienGhiNho.ts` | 48 dòng |
 
 ## chung
@@ -433,7 +439,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|---|
 | `backend/common/__init__.py` | 0 dòng | — |
 | `backend/common/apps.py` | 46 dòng | — |
-| `backend/common/audit.py` | 224 dòng | `admin_audit` |
+| `backend/common/audit.py` | 232 dòng | `admin_audit` |
 | `backend/common/bangtinh.py` | 484 dòng | — |
 | `backend/common/clock.py` | 30 dòng | — |
 | `backend/common/db.py` | 200 dòng | — |
@@ -451,7 +457,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/common/management/commands/backfill_learning_events.py` | 252 dòng | — |
 | `backend/common/management/commands/bootstrap_schema.py` | 135 dòng | — |
 | `backend/common/management/commands/chan_doan_oa.py` | 173 dòng | — |
-| `backend/common/management/commands/kiem_luoc_do.py` | 363 dòng | — |
+| `backend/common/management/commands/kiem_luoc_do.py` | 374 dòng | — |
 | `backend/common/management/commands/thu_email.py` | 160 dòng | — |
 | `backend/common/management/commands/thu_zns.py` | 98 dòng | — |
 | `backend/common/management/commands/ve_erd.py` | 217 dòng | — |
@@ -460,12 +466,12 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/common/params.py` | 133 dòng | — |
 | `backend/common/permissions.py` | 268 dòng | — |
 | `backend/common/streak.py` | 65 dòng | *`user_daily_xp_logs`*, *`users`* |
-| `backend/common/throttling.py` | 149 dòng | — |
+| `backend/common/throttling.py` | 169 dòng | — |
 | `backend/common/views.py` | 52 dòng | — |
 | `backend/common/zalo.py` | 291 dòng | — |
 | `backend/config/__init__.py` | 0 dòng | — |
 | `backend/config/asgi.py` | 16 dòng | — |
-| `backend/config/settings.py` | 492 dòng | — |
+| `backend/config/settings.py` | 497 dòng | — |
 | `backend/config/urls.py` | 53 dòng | — |
 | `backend/config/wsgi.py` | 16 dòng | — |
 | `backend/inspectdb_snapshot.py` | 340 dòng | — |
@@ -543,7 +549,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/lib/server-api.ts` | 193 dòng |
 | `frontend/src/lib/useVaiHienTai.ts` | 47 dòng |
 | `frontend/src/lib/vaiTro.ts` | 43 dòng |
-| `frontend/src/lib/viecNhatKy.ts` | 108 dòng |
+| `frontend/src/lib/viecNhatKy.ts` | 113 dòng |
 | `frontend/src/proxy.ts` | 146 dòng |
 
 ## hoc_truc_tuyen

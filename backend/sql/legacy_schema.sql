@@ -2449,3 +2449,44 @@ ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS assistant_id INTEGER REFEREN
 -- Lối vào của bảng chấm công: "những buổi người này dạy trong tháng".
 CREATE INDEX IF NOT EXISTS idx_sessions_nguoi_day ON class_sessions (teacher_id, starts_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_tro_giang ON class_sessions (assistant_id, starts_at);
+-- ── §73 · HỌC VIÊN TỰ ĐĂNG KÝ (E5, bảng TopHSA dòng 26 + mốc "Đăng ký" dòng 4 — 27/09/2026) ──
+-- Từ 27/08/2026 trung tâm tự cấp mọi tài khoản (`RegisterView` đòi `IsAdminRole`). Dòng 26 của
+-- bảng khách đòi ngược lại: em mới tự mở được tài khoản, rồi học vụ duyệt và xếp lớp. Mục này
+-- thêm ĐÚNG hai thứ cần để làm việc ấy mà không mở một lỗ nào:
+--
+-- §73a · `users.self_registered` — tài khoản này SINH RA ở cửa công khai hay do trung tâm cấp.
+-- Hàng rào đăng nhập chỉ chặn `self_registered AND NOT is_verified`, nên 100% tài khoản cũ
+-- (self_registered = FALSE) không đổi hành vi một li nào — kể cả những tài khoản `is_verified`
+-- đang là FALSE/NULL vì chưa ai từng ghi cột ấy. Không có cột này thì hàng rào phải đọc
+-- `is_verified` trần và sẽ khoá cửa với toàn bộ học viên hiện có.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS self_registered BOOLEAN NOT NULL DEFAULT FALSE;
+-- Hàng chờ "Đăng ký mới" của học vụ = mới nhất trước. Chỉ mục PHẦN (WHERE self_registered) nên
+-- nó nhỏ bằng số em tự đăng ký, không bằng cả bảng users.
+CREATE INDEX IF NOT EXISTS idx_users_tu_dang_ky ON users (created_at DESC) WHERE self_registered;
+
+-- §73b · `password_reset_tokens.purpose` — MỘT bảng chìa cho hai việc: đặt lại mật khẩu
+-- (`reset`) và xác thực email lúc đăng ký (`verify`). Dùng lại bảng vì mọi tính chất đã đúng
+-- sẵn: chỉ lưu băm, dùng một lần, có hạn, có `requested_ip`, có chỉ mục để đếm tần suất.
+--
+-- BẪY (đã xảy ra trong lúc viết mục này): `accounts/quen_mat_khau.py` có BA câu chạm bảng theo
+-- `user_id` mà không lọc `purpose` — đếm trần 3 chìa/giờ, "chìa mới thay chìa cũ", và "đặt
+-- xong thì mọi chìa khác chết". Để nguyên thì một lượt xin đặt lại mật khẩu sẽ HUỶ mã xác
+-- thực email em chưa bấm, và em vừa đăng ký xong mất luôn đường vào. Cả ba câu nay lọc
+-- `purpose = 'reset'`; `accounts/tests_tu_dang_ky.py` giữ chỗ ấy.
+ALTER TABLE password_reset_tokens ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT 'reset';
+ALTER TABLE password_reset_tokens DROP CONSTRAINT IF EXISTS prt_purpose_check;
+ALTER TABLE password_reset_tokens ADD CONSTRAINT prt_purpose_check CHECK (purpose IN ('reset', 'verify'));
+-- Trần tần suất và "thay chìa cũ" đều tra theo (người, việc, lúc) — chỉ mục §52b chỉ có
+-- (user_id, created_at) nên sau khi thêm `purpose` nó không còn đủ chọn lọc.
+CREATE INDEX IF NOT EXISTS idx_prt_purpose ON password_reset_tokens (user_id, purpose, created_at);
+
+-- §73c · Loại yêu cầu `tk_dang_ky` — hàng chờ xếp lớp KHÔNG phải một hộp mới. Hộp Yêu cầu
+-- (§65) đã có đủ: máy trạng thái, giao việc, trả lời, ghi chú nội bộ, nhật ký, và "duyệt =
+-- thực thi trong MỘT giao dịch". Duyệt một `tk_dang_ky` = xếp em vào lớp đã chọn
+-- (`yeu_cau/thuc_thi.py` gọi `AdminClassMembersView._ghi_thanh_vien`, giữ trần lớp gia sư).
+-- Dựng một bảng "đăng ký chờ duyệt" riêng là dựng bản thứ hai của cùng một máy trạng thái.
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_loai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
+    'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
+    'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
+    'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa', 'tk_dang_ky'));

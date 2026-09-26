@@ -338,7 +338,11 @@ function PhanLoai({ yc, busy, ghi, xong }: PhanHanhDong) {
 }
 
 function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
-  const canLop = yc.loai === 'tt_chuyen_lop' || yc.loai === 'tt_chuyen_mon';
+  /* MÁY CHỦ nói loại này có phải chọn lớp hay không (`chonLopToi`, §73 27/09/2026).
+     Bản trước so tay `yc.loai === 'tt_chuyen_lop' || yc.loai === 'tt_chuyen_mon'` — một
+     bản thứ hai của danh mục loại (RULES §7), và loại thứ ba ("Đăng ký mới — chờ xếp
+     lớp") thêm vào sẽ lặng lẽ MẤT ô chọn lớp: học vụ bấm Duyệt và nhận 400. */
+  const canLop = yc.chonLopToi;
   const canNgay = yc.loai === 'tt_bao_luu';
   const [lopDs, setLopDs] = useState<{ id: number; ten: string; giaSu: boolean; mon: string | null }[] | null>(null);
   const [denLop, setDenLop] = useState(typeof yc.duLieu.den_lop_id === 'number' ? String(yc.duLieu.den_lop_id) : '');
@@ -378,7 +382,9 @@ function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
       {loi && <p role="alert" className="text-small text-danger-ink">{loi}</p>}
       {canLop && (
         <label className="flex flex-col gap-1">
-          <span className="text-label text-ink-3">Chuyển tới lớp</span>
+          <span className="text-label text-ink-3">
+            {yc.loai === 'tk_dang_ky' ? 'Xếp vào lớp' : 'Chuyển tới lớp'}
+          </span>
           <select className={O_CHON} value={denLop} onChange={(e) => setDenLop(e.target.value)} required>
             <option value="">{lopDs ? '— Chọn lớp —' : 'Đang tải…'}</option>
             {(lopDs ?? []).map((l) => (

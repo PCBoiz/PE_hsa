@@ -20,15 +20,36 @@ LOAI = {
     'bao_cao_len':     {'nhan': 'Báo lên', 'nhom': BAO_CAO, 'can_lop': True},
     'bao_loi_ban_ghi': {'nhan': 'Báo lỗi bản ghi buổi học', 'nhom': BAO_LOI, 'can_lop': True,
                         'can_buoi': True},
-    'tt_chuyen_lop':   {'nhan': 'Xin chuyển lớp', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
-    'tt_chuyen_mon':   {'nhan': 'Xin chuyển môn', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
+    # `chon_lop_toi`: màn duyệt phải hiện ô chọn lớp. Cờ này ở ĐÂY chứ không phải trong
+    # `ChiTietYeuCau.tsx` — bản đầu (26/09) so tay `yc.loai === 'tt_chuyen_lop' || …` ở
+    # phía màn, tức danh mục loại có bản thứ hai (RULES §7) và loại thứ ba thêm vào sẽ
+    # lặng lẽ mất ô chọn lớp. Nay máy chủ trả `chonLopToi` trong mỗi yêu cầu.
+    'tt_chuyen_lop':   {'nhan': 'Xin chuyển lớp', 'nhom': THAY_DOI, 'can_lop': True,
+                        'viec': 'tu_dong', 'chon_lop_toi': True},
+    'tt_chuyen_mon':   {'nhan': 'Xin chuyển môn', 'nhom': THAY_DOI, 'can_lop': True,
+                        'viec': 'tu_dong', 'chon_lop_toi': True},
     'tt_chuyen_lich':  {'nhan': 'Xin chuyển lịch', 'nhom': THAY_DOI, 'viec': 'tay'},
     'tt_bao_luu':      {'nhan': 'Xin bảo lưu', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
     'tt_hoc_bu':       {'nhan': 'Xin học bù', 'nhom': THAY_DOI, 'viec': 'tay'},
     'tt_hoc_lai':      {'nhan': 'Xin học lại', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
     'tt_nghi_hoc':     {'nhan': 'Xin nghỉ học', 'nhom': THAY_DOI, 'viec': 'tay'},
     'tt_huy_khoa':     {'nhan': 'Xin huỷ khoá', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
+    # §73 (E5, 27/09/2026) — hàng chờ xếp lớp của học viên TỰ đăng ký. Nằm trong nhóm
+    # THAY_DOI vì nó cần đúng bộ luật của nhóm ấy: chỉ học vụ / quản trị duyệt và từ
+    # chối, duyệt = thực thi trong MỘT giao dịch, duyệt hai lần chỉ xếp lớp một lần.
+    # KHÔNG `can_lop`: lúc gửi em chưa có lớp nào — lớp là thứ học vụ CHỌN khi duyệt
+    # (`chon_lop_toi`), như `tt_chuyen_lop` chọn lớp tới.
+    'tk_dang_ky':      {'nhan': 'Đăng ký mới — chờ xếp lớp', 'nhom': THAY_DOI,
+                        'viec': 'tu_dong', 'chon_lop_toi': True},
 }
+#: Loại CHỈ hệ thống sinh ra, không ai gửi tay được (kể cả học vụ). `tk_dang_ky` chỉ ra
+#: đời ở cửa xác thực email (`accounts/tu_dang_ky.py`): mở cho người gửi tay thì hàng chờ
+#: xếp lớp thành một đường ai cũng nhét việc vào được, và một em có thể tự nhân bản mình
+#: thành mười lượt "chờ xếp lớp".
+CHI_HE_THONG = ('tk_dang_ky',)
+#: Loại CHỈ học vụ / quản trị thấy — giảng viên và trợ giảng không bao giờ. Cùng ranh giới
+#: với báo cáo phụ huynh: lượt đăng ký mang số điện thoại và email của em.
+CHI_HOC_VU = ('ht_tai_khoan', 'tk_dang_ky')
 
 TRANG_THAI = ('moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy')
 NHAN_TRANG_THAI = {
@@ -111,12 +132,13 @@ def ai_duoc_chuyen(loai, tu, den):
 
 
 #: Loại mỗi nguồn được TẠO. Học vụ tạo mọi loại (thay mặt em / phụ huynh gọi điện tới).
+_TAY = tuple(k for k in LOAI if k not in CHI_HE_THONG)
 TAO_DUOC = {
-    'hoc_vien': tuple(k for k in LOAI if k != 'bao_cao_len'),
-    'phu_huynh': tuple(k for k in LOAI if k not in ('ht_tai_khoan', 'bao_cao_len', 'bao_loi_ban_ghi')),
-    'tro_giang': ('bao_cao_len', 'bao_loi_ban_ghi') + tuple(k for k in LOAI if la_thay_doi(k)),
-    'giang_vien': ('bao_cao_len', 'bao_loi_ban_ghi') + tuple(k for k in LOAI if la_thay_doi(k)),
-    'hoc_vu': tuple(LOAI),
+    'hoc_vien': tuple(k for k in _TAY if k != 'bao_cao_len'),
+    'phu_huynh': tuple(k for k in _TAY if k not in ('ht_tai_khoan', 'bao_cao_len', 'bao_loi_ban_ghi')),
+    'tro_giang': ('bao_cao_len', 'bao_loi_ban_ghi') + tuple(k for k in _TAY if la_thay_doi(k)),
+    'giang_vien': ('bao_cao_len', 'bao_loi_ban_ghi') + tuple(k for k in _TAY if la_thay_doi(k)),
+    'hoc_vu': _TAY,
 }
 
 #: Khoá trong `du_lieu` là liên lạc của phụ huynh — ẩn với trợ giảng (cùng ranh giới với báo
@@ -127,6 +149,11 @@ LIEN_LAC_PH = ('sdt', 'sdt_phu_huynh', 'email_phu_huynh')
 #: bản đầu in thẳng mã khoá ("Sdt tối đa 20 ký tự."), trái RULES §10.
 CHU_DU_LIEU = {
     'sdt': (20, 'số điện thoại'),
+    # §73 · những gì em khai trên phiếu đăng ký. Hiện nguyên trên thẻ chi tiết để học vụ
+    # gọi lại và xếp lớp mà không phải mở thêm màn hồ sơ.
+    'nguon': (40, 'nguồn biết tới trung tâm'),
+    'truong': (200, 'trường đang học'),
+    'lop_o_truong': (40, 'lớp ở trường'),
     'ngay_mong_muon': (100, 'ngày mong muốn'),
     'lop_mong_muon': (200, 'lớp mong muốn'),
 }
