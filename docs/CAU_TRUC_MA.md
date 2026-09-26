@@ -19,14 +19,14 @@
 | [lop_hoc](#lop_hoc) | Lớp học | 4 | 9 tệp · 2357 dòng | 18 tệp · 3647 dòng |
 | [lich](#lich) | Lịch & buổi học | 3 | 14 tệp · 2304 dòng | 9 tệp · 2384 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
-| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1688 dòng |
+| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3968 dòng | 14 tệp · 2528 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1838 dòng | 10 tệp · 1793 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1849 dòng | 11 tệp · 2494 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1480 dòng | 10 tệp · 1514 dòng |
-| [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 405 dòng | 0 tệp · 0 dòng |
-| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1597 dòng | 14 tệp · 1432 dòng |
+| [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 456 dòng | 0 tệp · 0 dòng |
+| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1602 dòng | 14 tệp · 1432 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6235 dòng | 67 tệp · 6879 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
@@ -166,7 +166,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|
 | `frontend/src/app/(standalone)/bai-tap/MyAssignmentsClient.tsx` | 267 dòng |
 | `frontend/src/app/(standalone)/bai-tap/page.tsx` | 86 dòng |
-| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/AssignmentsClient.tsx` | 598 dòng |
+| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/AssignmentsClient.tsx` | 698 dòng |
 | `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/[assignmentId]/GradingClient.tsx` | 471 dòng |
 | `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/[assignmentId]/page.tsx` | 115 dòng |
 | `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/page.tsx` | 121 dòng |
@@ -346,10 +346,10 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/notifications/apps.py` | 6 dòng | — |
 | `backend/notifications/gui.py` | 78 dòng | — |
 | `backend/notifications/models.py` | 31 dòng | — |
-| `backend/notifications/service.py` | 63 dòng | `notifications` |
+| `backend/notifications/service.py` | 80 dòng | `notifications` |
 | `backend/notifications/urls.py` | 12 dòng | — |
 | `backend/notifications/views.py` | 90 dòng | `notification_settings`, `notifications` |
-| `backend/teaching/bao_doi_lich.py` | 125 dòng | — |
+| `backend/teaching/bao_doi_lich.py` | 159 dòng | — |
 
 ## tai_khoan
 
@@ -369,7 +369,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/accounts/hoat_dong.py` | 79 dòng | `users` |
 | `backend/accounts/models.py` | 123 dòng | — |
 | `backend/accounts/oauth.py` | 94 dòng | `users` |
-| `backend/accounts/quen_mat_khau.py` | 221 dòng | `password_reset_tokens`, `users` |
+| `backend/accounts/quen_mat_khau.py` | 226 dòng | `password_reset_tokens`, `users` |
 | `backend/accounts/urls.py` | 23 dòng | — |
 | `backend/accounts/validators.py` | 54 dòng | — |
 | `backend/accounts/views.py` | 670 dòng | *`roadmaps`*, *`surveys`*, *`user_follows`*, `users` |

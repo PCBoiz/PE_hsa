@@ -9,9 +9,9 @@
 
 var ROADMAP_LIST = [
   { name: "Lộ trình tổng HSA",     icon: "target", group: "Tổng quan",     desc: "Lộ trình luyện thi Đánh giá năng lực ĐHQG Hà Nội từ chẩn đoán đến về đích", isNew: true },
-  { name: "Tư duy Định lượng",     icon: "bar-chart", group: "Hợp phần HSA",  desc: "Toán học & xử lý số liệu — Phần 1 (50 câu, 75 phút, bắt buộc)" },
-  { name: "Tư duy Định tính",      icon: "pencil", group: "Hợp phần HSA",  desc: "Ngôn ngữ – Văn học — Phần 2 (50 câu, 60 phút, bắt buộc)" },
-  { name: "Khoa học",              icon: "microscope", group: "Hợp phần HSA",  desc: "Lý · Hóa · Sinh · Sử · Địa — Phần 3 (chọn 3/5, 50 câu, 60 phút)" },
+  { name: "Tư duy Định lượng",     icon: "bar-chart", group: "Môn học HSA",  desc: "Toán học & xử lý số liệu — Phần 1 (50 câu, 75 phút, bắt buộc)" },
+  { name: "Tư duy Định tính",      icon: "pencil", group: "Môn học HSA",  desc: "Ngôn ngữ – Văn học — Phần 2 (50 câu, 60 phút, bắt buộc)" },
+  { name: "Khoa học",              icon: "microscope", group: "Môn học HSA",  desc: "Lý · Hóa · Sinh · Sử · Địa — Phần 3 (chọn 3/5, 50 câu, 60 phút)" },
 ];
 
 var ROADMAP_DATA = {
@@ -21,7 +21,7 @@ var ROADMAP_DATA = {
   "Lộ trình tổng HSA": [
     { group: "Giai đoạn 1 · Biết mình đang ở đâu",
       main: ["1. Chẩn đoán đầu vào", "active"], right: [["Làm bài khảo sát năng lực", "active"], "Xác định điểm mạnh – yếu", "Nhận lộ trình cá nhân hoá"] },
-    { group: "Giai đoạn 2 · Ba hợp phần của đề thi",
+    { group: "Giai đoạn 2 · Ba môn học của đề thi",
       main: "2. Tư duy Định lượng (Phần 1)", left: ["Số & Đại số nền tảng", "Hàm số & Giải tích", "Hình học & Đo lường", "Thống kê & Xác suất", "Xử lý số liệu"] },
     { main: "3. Tư duy Định tính (Phần 2)", right: ["Từ vựng & Ngữ pháp", "Đọc hiểu", "Văn học", "Ngôn ngữ – Văn hóa – Xã hội"] },
     { main: "4. Khoa học (Phần 3 · chọn 3/5)", left: ["Vật lý", "Hóa học", "Sinh học", "Lịch sử", "Địa lý"] },

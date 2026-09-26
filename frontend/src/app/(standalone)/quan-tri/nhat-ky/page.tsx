@@ -125,7 +125,7 @@ export default async function NhatKyPage({
             defaultValue={one('action')}
             className="min-h-11 w-full max-w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
           >
-            <option value="">Mọi hành động</option>
+            <option value="">Tất cả</option>
             {/* Ô LỌC cũng phải dịch, không chỉ chip trong bảng. Chip đọc được
                 tiếng Việt mà ô lọc bên trên vẫn liệt kê `attendance.mark` thì
                 người dùng không nối được hai thứ đó với nhau — và ô lọc mới là

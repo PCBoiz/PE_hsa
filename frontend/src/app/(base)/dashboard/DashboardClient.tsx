@@ -202,10 +202,10 @@ export default function DashboardClient(
               <span>Bắt đầu hành trình HSA</span>
             </div>
             <p className="dash-bat-dau-sub">
-              Chọn một hợp phần để mở bài học, lộ trình và tiến độ của riêng bạn. Cả ba hợp phần đều miễn phí.
+              Chọn một môn học để mở bài học, lộ trình và tiến độ của riêng bạn. Cả ba môn đều miễn phí.
             </p>
             <ol className="dash-bat-dau-buoc">
-              <li>Chọn hợp phần bạn muốn chắc trước — Định lượng, Định tính hoặc Khoa học &amp; Tiếng Anh.</li>
+              <li>Chọn môn học bạn muốn chắc trước — Định lượng, Định tính hoặc Khoa học &amp; Tiếng Anh.</li>
               <li>Làm bài kiểm tra đầu vào ba câu; hệ thống chấm rồi chọn bản lý thuyết vừa sức bạn.</li>
               <li>Lộ trình, tiến độ và phần &ldquo;nên ôn tiếp&rdquo; sẽ hiện ngay tại trang này.</li>
             </ol>
@@ -322,7 +322,7 @@ export default function DashboardClient(
               <div className="section-card fx-fade-up" id="the-tien-do-hop-phan" style={{ animationDelay: '.12s' }}>
                 <div className="section-title" style={{ marginBottom: 14 }}>
                   <span className="title-icon-blue"><BieuTuong ten="bar-chart" co={16} /></span>
-                  <span>Tiến độ theo hợp phần</span>
+                  <span>Tiến độ theo môn học</span>
                 </div>
                 {/* Dựng ở máy chủ (`components/TienDoHopPhan.tsx`, 14/09/2026 tối). */}
                 <div className="hsa-sections" id="hsa-sections">{tienDo}</div>
@@ -444,7 +444,7 @@ export default function DashboardClient(
                 type="text"
                 id="course-search-input"
                 className="courses-search-bar-input"
-                placeholder="Tìm khóa học, hợp phần, chủ đề..."
+                placeholder="Tìm khóa học, môn học, chủ đề..."
                 autoComplete="off"
                 onClick={() => W().cshOpen()}
                 onInput={(e) => W().cshInput(e.currentTarget.value)}
@@ -471,7 +471,7 @@ export default function DashboardClient(
             {/* Bộ lọc theo hợp phần HSA (đã bỏ 'Cấp độ' + 'Ngôn ngữ' lập trình pe_test) */}
             <div className="course-filter-panel">
               <div className="filter-pill-row" id="section-filter-row">
-                <span className="pill-label">Hợp phần</span>
+                <span className="pill-label">Môn học</span>
                 <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Định lượng')}>Định lượng</button>
                 <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Định tính')}>Định tính</button>
                 <button className="pill-btn" onClick={(e) => W().toggleLanguageFilter(e.currentTarget, 'Khoa học')}>Khoa học</button>
@@ -725,7 +725,7 @@ export default function DashboardClient(
               </div>
 
               <div className="goal-field">
-                <span className="field-label" id="lbl-goal-sec3">Hợp phần thứ 3</span>
+                <span className="field-label" id="lbl-goal-sec3">Môn học thứ 3</span>
                 <div className="goal-chips" role="radiogroup" aria-labelledby="lbl-goal-sec3">
                   {['Khoa học', 'Tiếng Anh', 'Chưa quyết định'].map((v) => (
                     <label className="goal-chip" key={v}>

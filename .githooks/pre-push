@@ -119,6 +119,10 @@ nhom_frontend() {
   # Sổ miền + cấu trúc (25/09/2026): tệp không miền, bảng không chủ, GHI chéo miền mới, nợ đã hết mà
   # chưa xoá, docs/CAU_TRUC_*.md cũ — xem scripts/cau_truc.py.
   buoc f7 "cấu trúc --kiem" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/cau_truc.py --kiem
+  # f8 (26/09/2026): repo CÔNG KHAI, mà 13 bước trước đó không bước nào đọc NỘI DUNG tệp sắp đẩy.
+  # `.gitignore` chặn được tệp `.env`, không chặn được một JWT dán vào tài liệu. Đo hôm ấy: PROGRESS.md
+  # trên GitHub (cả erp lẫn master) mang đường dẫn `C:/Users/<tên>/…` ở hai chỗ. Chạy < 2 giây.
+  buoc f8 "quét bí mật" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/quet_bi_mat.py
   if [ ! -d "$GOC/frontend/node_modules" ]; then
     bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
     echo "1 0" > "$TAM/f1.kq"

@@ -484,6 +484,12 @@ const KHONG_CAN_NGUOI_GOI = {
   '/auth/refresh': 'proxy Next tự gọi phía máy chủ khi thẻ hết hạn',
   '/auth/register': 'màn đăng ký đã gỡ — tài khoản do trung tâm cấp',
   '/health': 'Render gọi để kiểm sức khoẻ dịch vụ',
+  // §71 (26/09/2026). Hai tuyến này CÓ người gọi, chỉ là người gọi không nằm
+  // trong mã của mình: Google Calendar và Lịch iPhone tự ghé lấy tệp .ics vài
+  // giờ một lần, bằng địa chỉ học viên đã dán vào ứng dụng lịch của họ. Frontend
+  // chỉ đưa địa chỉ cho người ta chép, không bao giờ fetch nó.
+  '/lich/*.ics': 'ứng dụng lịch ngoài (Google Calendar / Lịch iPhone) tự ghé lấy, không phải fetch từ trang',
+  '/lich/*': 'cửa proxy của Next cho tuyến .ics — ứng dụng lịch gọi thẳng vào đây',
 };
 
 /* ỨNG VIÊN GỠ — soi TAY từng tuyến ngày 23/09/2026: không nơi nào trong
