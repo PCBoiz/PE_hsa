@@ -49,6 +49,8 @@ export const HD_YEU_CAU = z.looseObject({
   canDuyet: co,
   /** Loại này phải CHỌN LỚP khi duyệt (máy chủ quyết, xem `loai.chon_lop_toi`). */
   chonLopToi: co,
+  /** Loại này phải chọn BUỔI BÙ lúc duyệt (học bù). */
+  chonBuoiBu: z.optional(co),
   trangThai: chu,
   trangThaiNhan: chu,
   nguon: chu,
@@ -116,6 +118,11 @@ export const HD_NGUOI_NHAN = z.looseObject({
 });
 export const HD_LOP_CHUYEN = z.looseObject({
   lop: z.array(z.looseObject({ id: so, ten: chu, giaSu: co, mon: chuNull })),
+  /** Buổi BÙ của lớp em đang học, còn ở tương lai — để duyệt "xin học bù" (27/09/2026).
+      `optional`: máy chủ chỉ trả khi yêu cầu có gắn lớp. */
+  buoiBu: z.optional(z.array(z.looseObject({
+    id: so, luc: chuNull, chuDe: chuNull, soEm: so,
+  }))),
 });
 
 /* ── Cách nói ──────────────────────────────────────────────────────────── */

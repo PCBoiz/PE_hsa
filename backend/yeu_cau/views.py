@@ -310,15 +310,18 @@ class GiaoView(APIView):
 
 
 class DuyetView(APIView):
-    """GET  /api/admin/yeu-cau/<id>/duyet?den_lop_id=&den_ngay= — xem trước việc sẽ làm.
-    POST /api/admin/yeu-cau/<id>/duyet {den_lop_id?, den_ngay?, ket_qua?} — duyệt = thực thi."""
+    """GET  /api/admin/yeu-cau/<id>/duyet?den_lop_id=&den_ngay=&session_id= — xem trước việc sẽ làm.
+    POST /api/admin/yeu-cau/<id>/duyet {den_lop_id?, den_ngay?, session_id?, ket_qua?} — duyệt = thực thi."""
     permission_classes = [IsAdminOrAcademic]
 
     def get(self, request, yc_id):
         p = request.query_params
         try:
             return Response(dv.xem_truoc(dv.NguoiLam(user=request.user), yc_id,
-                                         {'den_lop_id': p.get('den_lop_id'), 'den_ngay': p.get('den_ngay')}))
+                                         {'den_lop_id': p.get('den_lop_id'),
+                                          'den_ngay': p.get('den_ngay'),
+                                          # Học bù (27/09): buổi học vụ chọn lúc duyệt.
+                                          'session_id': p.get('session_id')}))
         except dv.LoiYeuCau as e:
             return _loi(e)
 
@@ -326,7 +329,8 @@ class DuyetView(APIView):
         b = _body(request)
         try:
             return Response(dv.duyet(dv.NguoiLam(user=request.user), yc_id,
-                                     {'den_lop_id': b.get('den_lop_id'), 'den_ngay': b.get('den_ngay')},
+                                     {'den_lop_id': b.get('den_lop_id'), 'den_ngay': b.get('den_ngay'),
+                                      'session_id': b.get('session_id')},
                                      ket_qua=b.get('ket_qua'), request=request))
         except dv.LoiYeuCau as e:
             return _loi(e)
@@ -357,19 +361,40 @@ class TuChoiView(APIView):
 
 
 class LopChuyenToiView(APIView):
-    """GET /api/admin/yeu-cau/<id>/lop — lớp đang mở để chọn khi duyệt chuyển lớp / môn."""
+    """GET /api/admin/yeu-cau/<id>/lop — thứ học vụ phải CHỌN khi duyệt.
+
+    Trả cả `lop` (chuyển lớp / môn, xếp lớp cho em mới đăng ký) lẫn `buoiBu` (học bù).
+    MỘT cửa chứ không hai: màn duyệt chỉ gọi một lượt, và hai danh sách này luôn đi cùng
+    một câu hỏi — "duyệt xong thì xếp em vào đâu".
+    """
     permission_classes = [IsAdminOrAcademic]
 
     def get(self, request, yc_id):
         try:
-            dv.chi_tiet(dv.NguoiLam(user=request.user), yc_id)
+            yc = dv.chi_tiet(dv.NguoiLam(user=request.user), yc_id)
         except dv.LoiYeuCau as e:
             return _loi(e)
         rows = q('''SELECT c.id, c.name, c.class_type, c.status, co.title AS mon
                     FROM classes c LEFT JOIN courses co ON co.id = c.course_id
                     WHERE c.status NOT IN ('cancelled', 'finished') ORDER BY c.name''')
-        return Response({'lop': [{'id': r['id'], 'ten': r['name'], 'giaSu': r['class_type'] == 'gia_su',
-                                  'mon': r['mon']} for r in rows]})
+        ra = {'lop': [{'id': r['id'], 'ten': r['name'], 'giaSu': r['class_type'] == 'gia_su',
+                       'mon': r['mon']} for r in rows]}
+
+        # Buổi BÙ của lớp em đang học, còn ở tương lai. Dấu hiệu của buổi bù: `makeup_for`
+        # trỏ buổi gốc, HOẶC đã có `session_participants` — buổi thường không có dòng nào
+        # (cả lớp thuộc buổi), và xếp thêm một em vào đó sẽ biến nó thành buổi của riêng em.
+        lop_id = (yc.get('lop') or {}).get('id') if isinstance(yc, dict) else None
+        if lop_id:
+            ra['buoiBu'] = [{'id': r['id'], 'luc': r['starts_at'].isoformat() if r['starts_at'] else None,
+                             'chuDe': r['topic'], 'soEm': r['so_em']} for r in q(
+                '''SELECT s.id, s.starts_at, s.topic,
+                          (SELECT COUNT(*) FROM session_participants p WHERE p.session_id = s.id) AS so_em
+                     FROM class_sessions s
+                    WHERE s.class_id = %s AND s.status <> 'cancelled' AND s.starts_at >= now()
+                      AND (s.makeup_for IS NOT NULL
+                           OR EXISTS (SELECT 1 FROM session_participants p2 WHERE p2.session_id = s.id))
+                 ORDER BY s.starts_at''', (lop_id,))]
+        return Response(ra)
 
 
 # ── Phụ huynh (link, không tài khoản) ─────────────────────────────────────

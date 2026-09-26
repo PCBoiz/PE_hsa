@@ -94,3 +94,39 @@ def dem_theo_hoc_vien(class_id, uids):
     except DatabaseError:
         return {}, False
     return {r['user_id']: r for r in rows}, True
+
+
+def ghi_co_phep(class_id, user_id, tu_ngay, den_ngay, *, boi=None):
+    """Ghi "có phép" cho MỌI buổi của em trong khoảng ngày. Trả (số buổi, số lượt ghi đè).
+
+    Hàm DỊCH VỤ của miền điểm danh: miền Yêu cầu gọi vào đây khi học vụ duyệt đơn "xin nghỉ
+    học", thay vì tự `INSERT INTO attendance` (luật S4 — không ghi thẳng bảng miền khác).
+
+    ── HAI QUYẾT ĐỊNH ĐÁNG NÓI ────────────────────────────────────────────────
+
+    ① GHI ĐÈ lượt điểm danh đã có, và ĐẾM số lần ghi đè. Học vụ duyệt đơn nghỉ phép là
+      quyết định cuối cùng — nhưng một buổi đã tick "có mặt" mà bị đổi lặng lẽ thành "có
+      phép" là thứ không ai lần lại được. Số đếm đi vào `yeu_cau.thuc_thi` để dòng ấy trả
+      lời được "hệ thống đã làm gì".
+
+    ② Buổi HUỶ không tính. Lớp nghỉ vì giảng viên ốm thì em không cần xin phép, và một
+      lượt "có phép" ở đó sẽ chảy vào mẫu số chuyên cần của tờ gửi phụ huynh.
+    """
+    from common.db import q, q1, x
+    buoi = [r['id'] for r in q(
+        '''SELECT id FROM class_sessions
+            WHERE class_id = %s AND status <> 'cancelled'
+              AND starts_at::date >= %s AND starts_at::date <= %s
+         ORDER BY starts_at''', (class_id, tu_ngay, den_ngay))]
+    if not buoi:
+        return 0, 0
+    ghi_de = q1("SELECT COUNT(*) AS n FROM attendance WHERE user_id = %s "
+                "AND session_id = ANY(%s) AND status <> 'excused'",
+                (user_id, buoi))['n']
+    for sid in buoi:
+        x('''INSERT INTO attendance (session_id, user_id, status, marked_by)
+             VALUES (%s, %s, 'excused', %s)
+             ON CONFLICT (session_id, user_id)
+             DO UPDATE SET status = 'excused', marked_by = EXCLUDED.marked_by''',
+          (sid, user_id, boi))
+    return len(buoi), ghi_de

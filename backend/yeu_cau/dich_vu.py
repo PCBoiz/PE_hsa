@@ -233,6 +233,9 @@ def dung(nguoi, yc, su_kien=None):
         # Màn duyệt cần biết "loại này phải chọn lớp tới" — MÁY CHỦ nói, màn không tự so
         # danh sách mã loại (RULES §7; xem chú thích `chon_lop_toi` ở `loai.py`).
         'chonLopToi': bool(thong_tin.get('chon_lop_toi')),
+        # Học bù (27/09): màn duyệt phải hiện ô chọn BUỔI BÙ. Cùng lý do với
+        # `chonLopToi` — danh mục loại không được có bản thứ hai ở phía màn.
+        'chonBuoiBu': bool(thong_tin.get('chon_buoi_bu')),
         'trangThai': yc['trang_thai'], 'trangThaiNhan': L.NHAN_TRANG_THAI[yc['trang_thai']],
         'nguon': yc['nguon'], 'tieuDe': yc['tieu_de'], 'noiDung': yc['noi_dung'],
         'duLieu': _du_lieu_cho(nguoi, yc['du_lieu']), 'ketQua': yc['ket_qua'],

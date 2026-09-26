@@ -30,9 +30,15 @@ LOAI = {
                         'viec': 'tu_dong', 'chon_lop_toi': True},
     'tt_chuyen_lich':  {'nhan': 'Xin chuyển lịch', 'nhom': THAY_DOI, 'viec': 'tay'},
     'tt_bao_luu':      {'nhan': 'Xin bảo lưu', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
-    'tt_hoc_bu':       {'nhan': 'Xin học bù', 'nhom': THAY_DOI, 'viec': 'tay'},
+    # KHÔNG `can_buoi`: lúc em (hoặc giảng viên) xin học bù thì buổi bù thường CHƯA tồn
+    # tại — học vụ tạo nó trên màn Buổi học rồi mới duyệt. Buổi là thứ học vụ CHỌN lúc
+    # duyệt (`chon_buoi_bu`), như `tt_chuyen_lop` chọn lớp tới. Đòi buổi ngay lúc gửi là
+    # chặn đúng người cần gửi nhất.
+    'tt_hoc_bu':       {'nhan': 'Xin học bù', 'nhom': THAY_DOI, 'viec': 'tu_dong',
+                        'chon_buoi_bu': True},
     'tt_hoc_lai':      {'nhan': 'Xin học lại', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
-    'tt_nghi_hoc':     {'nhan': 'Xin nghỉ học', 'nhom': THAY_DOI, 'viec': 'tay'},
+    'tt_nghi_hoc':     {'nhan': 'Xin nghỉ học', 'nhom': THAY_DOI, 'can_lop': True,
+                    'viec': 'tu_dong'},
     'tt_huy_khoa':     {'nhan': 'Xin huỷ khoá', 'nhom': THAY_DOI, 'can_lop': True, 'viec': 'tu_dong'},
     # §73 (E5, 27/09/2026) — hàng chờ xếp lớp của học viên TỰ đăng ký. Nằm trong nhóm
     # THAY_DOI vì nó cần đúng bộ luật của nhóm ấy: chỉ học vụ / quản trị duyệt và từ

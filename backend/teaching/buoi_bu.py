@@ -132,3 +132,33 @@ class BuoiBuView(APIView):
         if warning:
             out['warning'] = warning
         return Response(out, status=201)
+
+
+def them_vao_buoi_bu(session_id, user_id):
+    """Xếp thêm MỘT em vào một buổi bù ĐÃ CÓ. Trả dict mô tả, hoặc ném `ValueError`.
+
+    Hàm DỊCH VỤ của miền lịch: miền Yêu cầu gọi vào đây khi học vụ duyệt đơn "xin học bù",
+    thay vì tự `INSERT INTO session_participants` (luật S4).
+
+    ĐÒI buổi ấy phải ĐÃ LÀ buổi bù — tức đã có ít nhất một dòng `session_participants`.
+    Xếp một em vào buổi THƯỜNG không phải là vô hại: buổi thường không có dòng nào nghĩa
+    là CẢ LỚP thuộc buổi (`teaching/nguoi_buoi.py::thuoc_buoi`), nên thêm đúng một dòng sẽ
+    biến buổi của cả lớp thành buổi của riêng em ấy — và 29 em còn lại lặng lẽ rơi khỏi
+    điểm danh, khỏi mẫu số chuyên cần, khỏi tờ gửi phụ huynh.
+    """
+    from common.db import q1, x
+    b = q1('SELECT id, class_id, starts_at, makeup_for FROM class_sessions WHERE id = %s',
+           (session_id,))
+    if not b:
+        raise ValueError('Không tìm thấy buổi học này.')
+    la_bu = bool(b['makeup_for']) or bool(
+        q1('SELECT 1 AS c FROM session_participants WHERE session_id = %s', (session_id,)))
+    if not la_bu:
+        raise ValueError('Buổi %s không phải buổi bù — cả lớp đã thuộc buổi này rồi.' % session_id)
+    if q1('SELECT 1 AS c FROM session_participants WHERE session_id = %s AND user_id = %s',
+          (session_id, user_id)):
+        raise ValueError('Em đã có tên trong buổi bù này.')
+    x('INSERT INTO session_participants (session_id, user_id) VALUES (%s, %s)',
+      (session_id, user_id))
+    return {'buoi': session_id, 'lop': b['class_id'],
+            'luc': b['starts_at'].isoformat() if b['starts_at'] else None}

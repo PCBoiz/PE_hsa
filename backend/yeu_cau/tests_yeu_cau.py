@@ -375,14 +375,20 @@ def test_hoc_lai_them_luot_moi(d, canh):
     assert len(luot) == 2 and luot[1]['left_at'] is None
 
 
-def test_hoc_bu_v1_chi_ghi_quyet_dinh_roi_hoc_vu_dong(d, canh):
+def test_hoc_bu_doi_hoc_vu_CHON_buoi_bu(d, canh):
+    """Từ 27/09/2026 học bù TỰ LÀM — nhưng phải có buổi bù để xếp em vào.
+
+    Trước đó duyệt chỉ ghi `{"cach": "tay"}` rồi học vụ tự làm trên màn Buổi học, và
+    KHÔNG gì bắt họ nhớ: yêu cầu đóng lại, còn việc thì chưa ai làm. Nay duyệt mà không
+    chọn buổi thì bị từ chối kèm câu nói rõ phải làm gì — thà chặn còn hơn đóng một yêu
+    cầu chẳng thay đổi gì."""
     yid = _xin(d, canh, 'tt_hoc_bu')
     hv = d.api(canh['hv'])
     r = hv.post('/api/admin/yeu-cau/%d/duyet' % yid, {}, format='json')
-    assert r.status_code == 200 and r.data['trangThai'] == 'da_duyet', r.data
-    assert r.data['thucThi']['cach'] == 'tay'
-    r = hv.post('/api/teach/yeu-cau/%d/trang-thai' % yid, {'den': 'da_xong'}, format='json')
-    assert r.data['trangThai'] == 'da_xong'
+    assert r.status_code == 400, r.data
+    assert 'buổi bù' in str(r.data).lower()
+    # Yêu cầu KHÔNG bị đóng: việc chưa làm thì trạng thái không được nhúc nhích.
+    assert d.api(canh['hv']).get('/api/teach/yeu-cau/%d' % yid).data['trangThai'] == 'moi'
 
 
 def test_tu_choi_chi_hoc_vu(d, canh):

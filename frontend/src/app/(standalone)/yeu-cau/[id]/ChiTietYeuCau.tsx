@@ -343,7 +343,13 @@ function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
      bản thứ hai của danh mục loại (RULES §7), và loại thứ ba ("Đăng ký mới — chờ xếp
      lớp") thêm vào sẽ lặng lẽ MẤT ô chọn lớp: học vụ bấm Duyệt và nhận 400. */
   const canLop = yc.chonLopToi;
+  /* Học bù (27/09/2026): buổi bù thường được tạo SAU khi em xin, nên buổi là thứ học vụ
+     CHỌN lúc duyệt — không phải thứ em phải biết lúc gửi. Cờ do MÁY CHỦ trả, cùng lý do
+     với `chonLopToi`: danh mục loại không được có bản thứ hai ở phía màn. */
+  const canBuoi = Boolean(yc.chonBuoiBu);
   const canNgay = yc.loai === 'tt_bao_luu';
+  const [buoiDs, setBuoiDs] = useState<{ id: number; luc: string | null; chuDe: string | null; soEm: number }[]>([]);
+  const [denBuoi, setDenBuoi] = useState('');
   const [lopDs, setLopDs] = useState<{ id: number; ten: string; giaSu: boolean; mon: string | null }[] | null>(null);
   const [denLop, setDenLop] = useState(typeof yc.duLieu.den_lop_id === 'number' ? String(yc.duLieu.den_lop_id) : '');
   const [denNgay, setDenNgay] = useState(typeof yc.duLieu.den_ngay === 'string' ? yc.duLieu.den_ngay : '');
@@ -352,31 +358,38 @@ function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
   const [loi, setLoi] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canLop) return;
+    if (!canLop && !canBuoi) return;
+    // MỘT lượt gọi cho cả hai danh sách: chúng luôn trả lời cùng một câu hỏi — "duyệt
+    // xong thì xếp em vào đâu".
     layJson(`/api/admin/yeu-cau/${yc.id}/lop`, HD_LOP_CHUYEN)
-      .then((d) => setLopDs(d.lop.filter((l) => l.id !== yc.lop?.id)))
+      .then((d) => {
+        setLopDs(d.lop.filter((l) => l.id !== yc.lop?.id));
+        setBuoiDs(d.buoiBu ?? []);
+      })
       .catch((e) => setLoi(loiBatDuoc(e, 'Không tải được danh sách lớp.')));
-  }, [canLop, yc.id, yc.lop?.id]);
+  }, [canLop, canBuoi, yc.id, yc.lop?.id]);
 
   // Xem trước mỗi lần đổi tham số — GET, máy chủ không ghi gì.
-  const choLop = canLop && !denLop;
+  const choLop = (canLop && !denLop) || (canBuoi && !denBuoi);
   useEffect(() => {
     if (choLop) return;
     const p = new URLSearchParams();
     if (denLop) p.set('den_lop_id', denLop);
+    if (denBuoi) p.set('session_id', denBuoi);
     if (denNgay) p.set('den_ngay', denNgay);
     let bo = false;
     layJson(`/api/admin/yeu-cau/${yc.id}/duyet?${p}`, HD_XEM_TRUOC)
       .then((d) => { if (!bo) setXt(d); })
       .catch((e) => { if (!bo) setLoi(loiBatDuoc(e, 'Không xem trước được.')); });
     return () => { bo = true; };
-  }, [choLop, denLop, denNgay, yc.id]);
+  }, [choLop, denLop, denBuoi, denNgay, yc.id]);
 
   return (
     <form className="mt-4 flex flex-col gap-3 border-t border-line pt-4" onSubmit={(e) => {
       e.preventDefault();
       void ghi('duyet', `/api/admin/yeu-cau/${yc.id}/duyet`, {
-        den_lop_id: denLop ? Number(denLop) : null, den_ngay: denNgay || null, ket_qua: ketQua.trim() || null,
+        den_lop_id: denLop ? Number(denLop) : null, session_id: denBuoi ? Number(denBuoi) : null,
+        den_ngay: denNgay || null, ket_qua: ketQua.trim() || null,
       }, 'Đã duyệt.').then((ok) => { if (ok) xong(); });
     }}>
       {loi && <p role="alert" className="text-small text-danger-ink">{loi}</p>}
@@ -389,6 +402,21 @@ function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
             <option value="">{lopDs ? '— Chọn lớp —' : 'Đang tải…'}</option>
             {(lopDs ?? []).map((l) => (
               <option key={l.id} value={String(l.id)}>{l.ten}{l.mon ? ` · ${l.mon}` : ''}{l.giaSu ? ' · gia sư' : ''}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      {canBuoi && (
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Xếp vào buổi bù</span>
+          <select className={O_CHON} value={denBuoi} onChange={(e) => setDenBuoi(e.target.value)} required>
+            <option value="">
+              {buoiDs.length ? '— Chọn buổi bù —' : 'Lớp chưa có buổi bù nào — tạo ở màn Buổi học'}
+            </option>
+            {buoiDs.map((b) => (
+              <option key={b.id} value={String(b.id)}>
+                {(b.luc ?? '').slice(0, 16).replace('T', ' ')}{b.chuDe ? ` · ${b.chuDe}` : ''} · {b.soEm} em
+              </option>
             ))}
           </select>
         </label>

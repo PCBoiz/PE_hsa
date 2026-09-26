@@ -51,7 +51,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 9 | Giáo vụ · lớp học | **CÓ** | — | Đo 27/09 bằng **thẻ học vụ**, không mượn thẻ quản trị: bấm "Điểm danh" một buổi → màn 1.159 từ, đủ Có mặt · Vắng · Đi muộn · Xin phép · **Lịch sử sửa điểm danh** · Lưu. |
 | 10 | Giáo vụ · lịch học | gần đủ — chỉ còn Zoom | V-n, E4 (Zoom) | **§58 xong 27/09**: đổi giảng viên / trợ giảng cho MỘT buổi, để trống = theo lớp. Đo **7/7 bước trên màn thật**, đã soi ảnh. Quan trọng: **chấm công đi theo người dạy thật** (`COALESCE(s.teacher_id, c.teacher_id)`) — dạy thay mà lương chảy về người đứng tên lớp là lỗi chỉ lộ ra vào cuối tháng. Bộ kiểm 10/10, **3/3 đột biến bị giết**, 37 test buổi học cũ vẫn xanh. Còn lại: tạo/quản lý phòng Zoom (E4 — chờ khoá anh Sơn). |
 | 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | — | §65 **đã gộp vào `erp` 26/09** (`61d42ec`). Bảy trên bảy gạch đầu dòng chạy được trên màn thật: `scripts/do_yeu_cau.mjs` **17/17 bước ĐẠT**, bấm chuột chứ không gọi API tay. Kèm ba hàng rào đã đo: học viên không thấy thẻ Xử lý · ghi chú nội bộ ẩn với học viên · phụ huynh gửi được qua link tờ báo cáo. Còn sót (ngoài phạm vi dòng 11): hạn xử lý / cờ quá hạn, ô tìm theo chữ. |
-| 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
+| 12 | Giáo vụ · thay đổi học tập | **CÓ** (7/8 loại tự làm) | — | Duyệt = hệ thống TỰ THỰC HIỆN trong một giao dịch, ghi rõ đã làm gì. Bảy loại tự làm: chuyển lớp, chuyển môn, bảo lưu, huỷ khoá, học lại, **nghỉ học**, **học bù** (hai loại sau thêm 27/09). "Chuyển lịch" để tay có chủ ý — xem mục chi tiết. |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
 | 14 | Giáo viên · lớp + điểm danh | CÓ | — | Đo 26/09 trên màn thật: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại được, và **lịch sử sửa từng buổi** (`LichSuDiemDanh`, V-d) hiện ngay dưới sổ. Tỉ lệ chuyên cần + cảnh báo nghỉ nhiều nằm ở tờ báo cáo và "Việc hôm nay". |
 | 15 | Giáo viên · chương trình + tiến độ | **CÓ** | — | E1 xong; **đính kèm tài liệu xong 27/09** (§60 — gắn vào buổi hoặc kho chung của lớp). Ô "đề xuất điều chỉnh tiến độ" vẫn là việc của người, không phải của máy: màn Chương trình chỉ ra lớp chậm ở đâu, giảng viên quyết dồn hay giãn. |
@@ -194,7 +194,7 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 |---|---|---|
 | Tạo / sửa / huỷ / dời, định kỳ, tự sinh buổi, bỏ ngày nghỉ | CÓ | `sinh_buoi.py`, màn Buổi học |
 | Tạo lịch học bù | CÓ (V-g) | `POST /api/teach/sessions/<id>/buoi-bu` (`teaching/buoi_bu.py::BuoiBuView`): `class_sessions.makeup_for` + `session_participants` (§62e); sổ điểm danh, chuyên cần, "chưa điểm danh", học phí, lịch em, báo đổi lịch chỉ tính các em của buổi (`teaching/nguoi_buoi.thuoc_buoi`); chuông + thư `hoc_bu` sau khi lưu. Test `teaching/tests_buoi_bu.py` (5). Demo: giáo vụ/giảng viên → Buổi học của lớp → "Tạo buổi bù" trên buổi gốc → chọn giờ + em (em vắng tick sẵn) → dòng mới mang chip "học bù · N em" |
-| Đổi GV / TG cho một buổi | CHƯA | GV gắn theo lớp → **Đ2 §58** |
+| Đổi GV / TG cho một buổi | **CÓ** | **§58 xong 27/09**: ô "Giảng viên buổi này" / "Trợ giảng buổi này" ở form sửa buổi, để trống = theo lớp. **Chấm công đi theo người dạy thật** (`COALESCE(buổi, lớp)`). Đo 7/7 bước trên màn thật, 10/10 test, 3/3 đột biến bị giết. |
 | Đổi phòng, online / offline | CÓ | ở lớp làm mặc định, buổi đặt riêng |
 | Tạo / quản lý Zoom | MỘT PHẦN | dán link (lớp + buổi) → **E4** |
 | Lịch theo lớp / GV / HS / toàn trung tâm | CÓ | màn "Lịch học" |
@@ -238,7 +238,7 @@ lần chỉ làm một lần (409). Xem trước "Hệ thống sẽ…" trước
 | Bảo lưu | CÓ — rời lớp lý do "bảo lưu" + `reserve_until` (§65c); em mất quyền vào môn | `teaching/roi_lop.py::roi_lop` |
 | Huỷ khoá | CÓ — rời lớp lý do "bỏ giữa chừng" | `roi_lop` |
 | Học lại | CÓ — lượt học mới ở lớp cũ (giữ trần gia sư) | `AdminClassMembersView._ghi_thanh_vien` |
-| Chuyển lịch, học bù, nghỉ học | MỘT PHẦN — duyệt ghi QUYẾT ĐỊNH + người duyệt; học vụ tự làm trên màn Buổi học (buổi bù / đổi lịch / "có phép") rồi bấm "Đã xong…" | — (tự động hoá: việc sót, xem báo cáo E3) |
+| Chuyển lịch, học bù, nghỉ học | **CÓ** (2 trên 3 tự làm) | **27/09**: duyệt "xin nghỉ học" → hệ thống ghi **"có phép"** cho mọi buổi trong khoảng ngày và nói rõ đã ghi đè mấy lượt điểm danh; duyệt "xin học bù" → học vụ **chọn buổi bù** rồi bấm, em vào `session_participants` của buổi ấy. Đo 6/6 bước trên màn thật, 10/10 test. **"Chuyển lịch" vẫn để tay có chủ ý**: đổi giờ cho một em phụ thuộc lớp nào còn chỗ, giờ nào em học được, giảng viên nào dạy — ba thứ hệ thống không biết, và tự đoán rồi xếp em vào là làm hỏng nhiều hơn làm được. |
 
 **Demo**: học viên → "Hỏi & yêu cầu" → "Xin chuyển lớp", gõ lớp mong muốn → Gửi. Học vụ → Yêu cầu →
 mở → "Duyệt…" → chọn lớp tới → đọc "Hệ thống sẽ: Chuyển … sang lớp …" → "Duyệt và thực hiện". Mở
@@ -322,7 +322,7 @@ không phản hồi" → Gửi. Học vụ thấy yêu cầu với chip "Em khô
 |---|---|---|
 | Điểm danh, theo dõi bài tập, tiến độ | CÓ | — |
 | Hỗ trợ giải đáp | CÓ (E3) | câu hỏi của em tới hộp Yêu cầu của GV + TG lớp; TG trả lời, chuyển tiếp hoặc báo lên. Demo: như dòng 32 rồi đăng nhập trợ giảng lớp → Yêu cầu |
-| Theo dõi việc xem record | CHƯA | **V-l** (mở / chưa mở), **E4** (% đã xem) |
+| Theo dõi việc xem record | **CÓ** | Đo 27/09 trên `/giang-day/buoi-hoc/1`: khối "Bản ghi buổi học" hiện "1/2 em đã mở", mục gập "Chưa mở: 1" liệt kê tên. |
 | Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | CÓ phần theo dõi (V-b) + báo "cần hỗ trợ" (V-f); trao đổi hai chiều chờ **E3** | `teaching/viec_hom_nay.py` `ViecHomNayView.get` trả `vangLien` + `canChuY` cho mọi vai, phạm vi `_lop_cua`; test `tests_viec_hom_nay.py::test_tro_giang_thay_vang_lien_chi_lop_minh`. Demo: đăng nhập trợ giảng → "Việc hôm nay" → khối "Vắng liền" / "Cần chú ý ngay" của lớp mình, dòng dẫn về sổ buổi học |
 
 ## Dòng 22 — Trợ giảng · record Zoom · MỘT PHẦN
@@ -330,10 +330,10 @@ không phản hồi" → Gửi. Học vụ thấy yêu cầu với chip "Em khô
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | TG dán link record vào buổi, record thuộc buổi nào, link, giáo vụ / TG cập nhật | CÓ | `class_sessions.recording_url` (màn Buổi học) |
-| Đã upload / chưa upload | MỘT PHẦN (suy từ link có / không) | **E4** tự gắn từ Zoom + danh sách buổi thiếu record |
-| HS đã xem / chưa xem | CHƯA | **V-l**, **E4** |
-| Nhắc HS chưa xem | CHƯA | **E2** |
-| Báo lỗi record | CHƯA | **E3** |
+| Đã upload / chưa upload | **CÓ** | §72 — dòng "Chưa có bản ghi: 17/09 · 15/09" trên màn Buổi học, đo 27/09. |
+| HS đã xem / chưa xem | **CÓ** | §72 — bảng "ai đã mở" theo từng buổi, đo được "1/2 em đã mở" (27/09). |
+| Nhắc HS chưa xem | **CÓ** | §72 — nút "Nhắc em chưa mở" trên màn Buổi học, gửi chuông cho đúng những em chưa mở. |
+| Báo lỗi record | **CÓ** | §72 — nút "Không mở được?" trên thẻ lớp của học viên; chuông gộp nói rõ mấy em báo. Chỗ nhận báo (chuông hay hộp Yêu cầu) còn chờ anh chốt — mục K4. |
 
 ## Dòng 23 — Phụ huynh · tài khoản · THAY
 
@@ -344,7 +344,7 @@ Khách phải đồng ý (K2). Nâng link thành "link theo dõi" sống → **�
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
-| Lịch học, lớp, môn, GV, TG | MỘT PHẦN | tờ báo cáo có lớp + GV; không lịch, không TG → **§66** |
+| Lịch học, lớp, môn, GV, TG | **CÓ** | Tờ phụ huynh có lịch buổi, lớp, môn, giảng viên — và **trợ giảng** (thêm 27/09, §66). Trợ giảng đã rời lớp không còn trên tờ. |
 | Thông báo khi lịch đổi | THAY | không gửi phụ huynh (anh chốt); link sống hiện "thay đổi gần đây" → **§66** |
 | Tình trạng tham gia | CÓ (tổng số theo kỳ) | `parent_report.py::_chuyen_can` |
 | Bài tập, hạn, đã / chưa nộp; điểm | CÓ | `_bai_tap_lop` |
@@ -397,8 +397,8 @@ Yêu cầu thấy "Đăng ký mới: <tên em>" → Duyệt → chọn lớp →
 |---|---|---|
 | Thay đổi lịch, bài tập mới, kết quả | CÓ (`lich_doi`, `assignment_new`, `assignment_graded`) | — |
 | Lịch học (buổi mới) | CHƯA | **E2** |
-| Thông báo từ trung tâm | CHƯA | **E2** |
-| Đánh dấu đã đọc / chưa đọc | MỘT PHẦN (chỉ "đã đọc") | **E2** |
+| Thông báo từ trung tâm | **CÓ** | §61 — học vụ soạn và gửi ở `/quan-tri/thong-bao` (11/11 bước đo được); học viên đọc ở `/thong-bao` (12/12 bước). |
+| Đánh dấu đã đọc / chưa đọc | **CÓ** | Trang `/thong-bao`: đánh dấu đã đọc **và chưa đọc** từng dòng, đo được số trên ô lọc tụt 24 → 23 rồi về lại 24. |
 
 ## Dòng 28 — Học sinh · chương trình + lộ trình · MỘT PHẦN
 
