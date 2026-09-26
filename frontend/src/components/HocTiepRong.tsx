@@ -25,7 +25,7 @@ export default function HocTiepRong() {
       <div className="hsa-cont-ic"><BieuTuong ten="compass" co={26} /></div>
       <div>
         <b>Bắt đầu hành trình HSA</b>
-        <p>Chọn một hợp phần để vào bài học đầu tiên.</p>
+        <p>Chọn một môn học để vào bài học đầu tiên.</p>
       </div>
       <button className="hsa-cont-btn" onClick={() => W().navigate('courses')}>
         Khám phá khoá học
