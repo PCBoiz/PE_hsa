@@ -17,7 +17,7 @@
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
 | [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2611 dòng | 19 tệp · 3940 dòng |
-| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2633 dòng | 11 tệp · 2818 dòng |
+| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2644 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
@@ -25,7 +25,7 @@
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
-| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1631 dòng | 10 tệp · 1476 dòng |
+| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1678 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2147 dòng | 19 tệp · 2015 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6334 dòng | 68 tệp · 6983 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
@@ -120,8 +120,8 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/lich.py` | 117 dòng | — |
 | `backend/teaching/ngay_le.py` | 37 dòng | — |
 | `backend/teaching/nguoi_buoi.py` | 20 dòng | — |
-| `backend/teaching/sessions.py` | 1103 dòng | *`attendance`*, *`attendance_history`*, `class_sessions` |
-| `backend/teaching/sinh_buoi.py` | 349 dòng | `class_sessions` |
+| `backend/teaching/sessions.py` | 1108 dòng | *`attendance`*, *`attendance_history`*, `class_sessions` |
+| `backend/teaching/sinh_buoi.py` | 355 dòng | `class_sessions` |
 | `backend/teaching/trung_lich.py` | 152 dòng | — |
 
 | Tệp frontend | Dòng |
@@ -352,7 +352,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/notifications/gui.py` | 98 dòng | `notifications`, `outbox` |
 | `backend/notifications/hang_rao_thu.py` | 135 dòng | — |
 | `backend/notifications/hop_thu.py` | 391 dòng | `outbox` |
-| `backend/notifications/loai.py` | 47 dòng | — |
+| `backend/notifications/loai.py` | 48 dòng | — |
 | `backend/notifications/management/__init__.py` | 0 dòng | — |
 | `backend/notifications/management/commands/__init__.py` | 0 dòng | — |
 | `backend/notifications/management/commands/gui_hop_thu.py` | 17 dòng | — |
@@ -364,7 +364,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/notifications/views.py` | 155 dòng | `notification_settings`, `notifications` |
 | `backend/notifications/views_hop_thu.py` | 45 dòng | — |
 | `backend/notifications/views_thong_bao.py` | 157 dòng | `announcements` |
-| `backend/teaching/bao_doi_lich.py` | 150 dòng | — |
+| `backend/teaching/bao_doi_lich.py` | 196 dòng | `notifications` |
 
 | Tệp frontend | Dòng |
 |---|---|

@@ -278,6 +278,12 @@ def tao_buoi(request, class_id, lop, ts, dry_run):
                            'nghi_le': [b['ngay'] for b in buoi if b['trangThai'] == 'nghi_le'],
                            'trung': [b['ngay'] for b in buoi if b['trangThai'] == 'trung']})
 
+    # MỘT chuông cho cả lượt sinh (dòng 27). Mỗi buổi một chuông là 12–30 chuông trong một
+    # giây cho mỗi em, và cái thứ hai đã đủ làm em thôi đọc chuông nữa.
+    if ids and not dry_run:
+        from teaching.bao_doi_lich import bao_buoi_moi
+        bao_buoi_moi(lop, ids)
+
     return {'ok': True, 'dryRun': dry_run, 'dem': dem, 'buoi': buoi,
             'canhBao': canh_bao, 'ids': ids}, None
 

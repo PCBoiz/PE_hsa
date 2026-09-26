@@ -26,7 +26,7 @@ import logging
 from django.db import transaction
 
 from common.clock import local_now
-from common.db import q
+from common.db import q, q1, x
 from notifications import hop_thu
 from notifications.gui import xep_thu
 from notifications.service import notify
@@ -147,4 +147,50 @@ def bao_doi_lich(truoc, sau, lop):
         return len(ds)
     except Exception:            # noqa: BLE001 — báo không được chặn việc chính
         log.exception('[bao_doi_lich] không báo được đổi lịch buổi %s', truoc.get('id'))
+        return 0
+
+
+def bao_buoi_moi(lop, buoi_ids, luc_dau=None):
+    """Báo cho mọi em ĐANG HỌC lớp rằng lịch vừa có buổi mới. Trả số em được báo.
+
+    `buoi_ids`: các buổi vừa tạo trong CÙNG một lượt. `luc_dau`: giờ bắt đầu của buổi sớm
+    nhất (chỉ dùng khi tạo lẻ một buổi, để câu chuông nói được ngày giờ).
+
+    ── VÌ SAO GỘP THEO LƯỢT, KHÔNG THEO BUỔI ────────────────────────────────
+
+    "Sinh lịch cả kỳ" tạo một lượt hàng chục buổi. Bắn mỗi buổi một chuông là 12–30 chuông
+    trong một giây cho mỗi em — và cái chuông thứ hai đã đủ làm em thôi đọc chuông nữa.
+    Nên một lượt là MỘT chuông: tạo lẻ thì nói đúng buổi ấy, sinh hàng loạt thì nói số buổi.
+
+    Không bao giờ ném lỗi: báo không được thì không được chặn việc xếp lịch.
+    """
+    try:
+        ids = [i for i in (buoi_ids or ()) if i]
+        if not ids:
+            return 0
+        ten_lop = lop.get('name') or 'của bạn'
+        if len(ids) == 1 and luc_dau:
+            tieu_de = 'Lớp %s có buổi mới: %s' % (ten_lop, luc_dau.strftime('%d/%m %H:%M'))
+            chu = 'Lịch lớp vừa thêm một buổi. Xem ở mục "Lớp của tôi".'
+        else:
+            tieu_de = 'Lớp %s vừa có %d buổi mới trên lịch' % (ten_lop, len(ids))
+            chu = 'Trung tâm vừa xếp thêm %d buổi cho lớp. Xem ở mục "Lớp của tôi".' % len(ids)
+        ds = q('''SELECT u.id FROM class_members m JOIN users u ON u.id = m.user_id
+                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u'),
+               (lop['id'],))
+        if not ds:
+            return 0
+        with transaction.atomic():
+            for r in ds:
+                # Gộp trong 10 phút như `lich_doi`: người xếp lịch hay sửa vài lượt liền
+                # nhau, và em không cần biết từng lượt sửa nháp.
+                notify(r['id'], 'buoi_moi', tieu_de, chu, 'class_session', ids[0],
+                       coalesce_minutes=10)
+                x('UPDATE notifications SET link = %s WHERE id = %s',
+                  ('/dashboard', q1('SELECT id FROM notifications WHERE user_id = %s '
+                                    "AND type = 'buoi_moi' ORDER BY id DESC LIMIT 1",
+                                    (r['id'],))['id']))
+        return len(ds)
+    except Exception:            # noqa: BLE001 — báo không được chặn việc chính
+        log.exception('[bao_buoi_moi] không báo được buổi mới của lớp %s', lop.get('id'))
         return 0

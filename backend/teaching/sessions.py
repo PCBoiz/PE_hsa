@@ -48,7 +48,7 @@ from common.permissions import (
     is_assistant,
 )
 from stats.goals import as_date
-from teaching.bao_doi_lich import bao_doi_lich
+from teaching.bao_doi_lich import bao_buoi_moi, bao_doi_lich
 from teaching.nguoi_buoi import thuoc_buoi
 from teaching.trung_lich import cau_canh_bao, tim_trung
 from teaching.vocab import chi_hoc_vien
@@ -540,6 +540,11 @@ class ClassSessionsView(APIView):
                detail={'class_id': class_id, 'starts_at': row['starts_at'].isoformat(),
                        'duration_minutes': row['duration_minutes'],
                        'status': row['status'], 'warning': warning})
+
+        # Báo em có buổi mới (dòng 27). Buổi tạo sẵn ở trạng thái huỷ thì không báo —
+        # không ai cần biết về một buổi đã huỷ ngay lúc sinh ra.
+        if row['status'] != 'cancelled':
+            bao_buoi_moi(info, [row['id']], row['starts_at'])
 
         out = {'ok': True, 'id': row['id'], 'session': _session_dict(row, lop=info), 'conflicts': trung}
         if warning:

@@ -23,6 +23,7 @@ NHAN = {
     'ban_ghi_nhac': 'Nhắc xem bản ghi',
     'ban_ghi_loi': 'Báo hỏng bản ghi',
     'hoc_bu': 'Buổi học bù',
+    'buoi_moi': 'Buổi mới trên lịch',
     'post_comment': 'Bình luận trong diễn đàn',
 }
 

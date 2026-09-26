@@ -396,7 +396,7 @@ Yêu cầu thấy "Đăng ký mới: <tên em>" → Duyệt → chọn lớp →
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Thay đổi lịch, bài tập mới, kết quả | CÓ (`lich_doi`, `assignment_new`, `assignment_graded`) | — |
-| Lịch học (buổi mới) | CHƯA | **E2** |
+| Lịch học (buổi mới) | **CÓ** | **27/09** — chuông `buoi_moi` khi lịch lớp có buổi mới. Tạo lẻ một buổi thì nói đúng ngày giờ buổi ấy; **sinh lịch cả kỳ thì MỘT chuông nói số buổi**, không phải mỗi buổi một chuông (12–30 chuông trong một giây thì cái thứ hai đã đủ làm em thôi đọc chuông nữa). Em đã rời lớp không nhận; buổi tạo sẵn ở trạng thái huỷ không báo. Bộ kiểm 5/5. |
 | Thông báo từ trung tâm | **CÓ** | §61 — học vụ soạn và gửi ở `/quan-tri/thong-bao` (11/11 bước đo được); học viên đọc ở `/thong-bao` (12/12 bước). |
 | Đánh dấu đã đọc / chưa đọc | **CÓ** | Trang `/thong-bao`: đánh dấu đã đọc **và chưa đọc** từng dòng, đo được số trên ô lọc tụt 24 → 23 rồi về lại 24. |
 
