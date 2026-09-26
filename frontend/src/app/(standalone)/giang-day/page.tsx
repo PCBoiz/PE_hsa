@@ -59,6 +59,9 @@ type ViecHomNay = {
     userId: number; name: string | null; classId: number; className: string;
     lyDo: string | null; luc: string | null; boi: string | null;
   }[];
+  /** Hộp Yêu cầu (E3, 26/09/2026): số đang mở trong phạm vi + số chờ duyệt (chỉ học vụ / QT).
+   *  `?`: máy chủ cũ (Vercel lên trước Render) không gửi. */
+  yeuCau?: { mo: number; choDuyet: number };
 };
 
 /* Hình dạng `/api/teach/viec-hom-nay` (T18 mức 2). Hai khoá về từng em là
@@ -86,6 +89,7 @@ const HINH_DANG = z.looseObject({
   canHoTro: z.array(z.looseObject({
     ...EM, lyDo: z.string().nullable(), luc: z.string().nullable(), boi: z.string().nullable(),
   })).optional(),
+  yeuCau: z.looseObject({ mo: z.number(), choDuyet: z.number() }).optional(),
 }) satisfies HinhDang<ViecHomNay>;
 
 function gio(iso: string | null) {
@@ -150,7 +154,7 @@ export default async function ViecHomNayPage() {
   const d = kq.data;
   const soViec =
     d.chuaDiemDanh.tong + d.chuaCham.length + (d.vangLien?.length ?? 0) + (d.canChuY?.length ?? 0) +
-    (d.canHoTro?.length ?? 0);
+    (d.canHoTro?.length ?? 0) + (d.yeuCau?.mo ?? 0);
   // Em đã được đánh dấu ở lớp nào — dòng vắng liền / cần chú ý của em ấy không mời đánh dấu lại.
   const daDanhDau = new Set((d.canHoTro ?? []).map((e) => `${e.classId}-${e.userId}`));
   /* Nút đánh dấu chỉ khi máy chủ có khối `canHoTro` (tức có đường ghi) — máy chủ cũ
@@ -188,7 +192,25 @@ export default async function ViecHomNayPage() {
         {d.canHoTro && (
           <Tile value={d.canHoTro.length} label="em được báo cần hỗ trợ" tone={d.canHoTro.length > 0 ? 'warn' : 'neutral'} />
         )}
+        {d.yeuCau && (
+          <Tile value={d.yeuCau.mo} label="yêu cầu đang mở" tone={d.yeuCau.mo > 0 ? 'warn' : 'neutral'} />
+        )}
       </TileRow>
+
+      {/* Hộp Yêu cầu (E3): một dòng dẫn vào hộp — danh sách đầy đủ ở `/yeu-cau`. Học vụ / quản
+          trị thấy thêm số lượt xin thay đổi đang chờ DUYỆT (chỉ họ duyệt được). */}
+      {d.yeuCau && d.yeuCau.mo > 0 && (
+        <Card>
+          <CardHead title={`Yêu cầu đang mở (${d.yeuCau.mo})`} hint="Câu hỏi của học viên, phụ huynh gửi, việc được giao cho bạn." />
+          <ul className="flex flex-col">
+            <Dong den="/yeu-cau" nhan="Mở hộp yêu cầu">
+              {d.yeuCau.choDuyet > 0
+                ? <>{d.yeuCau.mo} yêu cầu đang mở · <Chip tone="brand">{d.yeuCau.choDuyet} chờ bạn duyệt</Chip></>
+                : `${d.yeuCau.mo} yêu cầu đang chờ trả lời hoặc xử lý.`}
+            </Dong>
+          </ul>
+        </Card>
+      )}
 
       {d.canHoTro && d.canHoTro.length > 0 && (
         <Card>

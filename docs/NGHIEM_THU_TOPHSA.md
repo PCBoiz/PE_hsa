@@ -33,28 +33,28 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
 | 9 | Giáo vụ · lớp học | MỘT PHẦN | V-d, E1 | — |
 | 10 | Giáo vụ · lịch học | gần đủ | V-g, V-n, E4, Đ2 §58 | — |
-| 11 | Giáo vụ · hỗ trợ lớp | CHƯA | E3 | — |
-| 12 | Giáo vụ · thay đổi học tập | CHƯA | E3 | — |
+| 11 | Giáo vụ · hỗ trợ lớp | CÓ (E3, chờ khách xem) | E3 | `e2e/yeu-cau.spec.ts` (một phần) |
+| 12 | Giáo vụ · thay đổi học tập | MỘT PHẦN (E3: duyệt = tự làm 5/8 loại) | E3 | — |
 | 13 | Giáo viên · tài khoản | CÓ | — | — |
 | 14 | Giáo viên · lớp + điểm danh | gần đủ | V-d | — |
 | 15 | Giáo viên · chương trình + tiến độ | MỘT PHẦN — E1 xong, còn tài liệu | Đ2 §60, E3 | — |
-| 16 | Giáo viên · quản lý buổi học | gần đủ — E1 xong, đề xuất → E3 | E3 | — |
+| 16 | Giáo viên · quản lý buổi học | CÓ (E1 + E3 đề xuất → yêu cầu) | — | — |
 | 17 | Giáo viên · giao bài | MỘT PHẦN — không sửa được bài đã giao | V-e, V-h + ô sửa bài | — |
 | 18 | Giáo viên · theo dõi học sinh | MỘT PHẦN | V-a, V-f | — |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
-| 20 | Trợ giảng · nhắn / nhắc | CHƯA | E3, E2 | — |
-| 21 | Trợ giảng · theo dõi | MỘT PHẦN | V-b, V-l, E3 | — |
+| 20 | Trợ giảng · nhắn / nhắc | MỘT PHẦN (E3: báo lên, em không phản hồi) | E3 (TG nhắn HS — chờ quyết), E2 | — |
+| 21 | Trợ giảng · theo dõi | MỘT PHẦN (E3 giải đáp xong) | V-l, E4 | — |
 | 22 | Trợ giảng · record Zoom | MỘT PHẦN | E4, V-l, E3, E2 | — |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
 | 24 | Phụ huynh · xem | MỘT PHẦN | §66, V-a | — |
-| 25 | Phụ huynh · gửi yêu cầu | CHƯA | E3 qua link | — |
+| 25 | Phụ huynh · gửi yêu cầu | CÓ qua link (E3, chờ khách xem) | — | `e2e/yeu-cau.spec.ts` |
 | 26 | Học sinh · tài khoản + tự đăng ký | MỘT PHẦN | E5 | — |
 | 27 | Học sinh · thông báo | MỘT PHẦN | E2 | — |
 | 28 | Học sinh · chương trình + lộ trình | MỘT PHẦN | E1, V-d | — |
 | 29 | Học sinh · record | CHƯA | V-l, E4 | — |
 | 30 | Học sinh · học liệu | CHƯA | Đ2 §60 | — |
 | 31 | Học sinh · bài tập | CÓ (nộp chữ) | Đ2 §60 (nộp tệp) | — |
-| 32 | Học sinh · trao đổi | MỘT PHẦN | E3 | — |
+| 32 | Học sinh · trao đổi | CÓ (E3, chờ khách xem) | — | `e2e/yeu-cau.spec.ts` |
 | * | Phân hệ thông báo chung | MỘT PHẦN | E2 | — |
 
 **Năm chỗ DOI_CHIEU 23/09 báo quá tay** (đã sửa trong bảng dưới): (1) "nhận xét học sinh — CÓ": không
@@ -185,16 +185,48 @@ theo em) đã có cho quản trị viên ở "Cơ sở học phí".
 | Lưu lịch sử thay đổi | CÓ (V-n) | lịch sử thay đổi của lớp cho học vụ (tạo / sửa / huỷ / sinh buổi) — như dòng 4 |
 | Cảnh báo trùng GV / phòng / lớp / HS | CÓ | `teaching/trung_lich.py` (cảnh báo, không chặn) |
 
-## Dòng 11 — Hỗ trợ lớp học · CHƯA → E3
+## Dòng 11 — Hỗ trợ lớp học · CÓ (E3, 26/09/2026 — chờ khách xem)
 
-Tiếp nhận, phân loại (học tập / lịch học / kỹ thuật / tài khoản), phân công, trạng thái, kết quả,
-chuyển GV/TG, lịch sử — không có bảng hay màn nào. **E3** hộp "Yêu cầu".
+Hộp "Yêu cầu" chung (`backend/yeu_cau/`, bảng §65 `yeu_cau` + `yeu_cau_su_kien`), màn `/yeu-cau`
+(học vụ: tab "Yêu cầu" ở khu Vận hành; GV / TG: tab "Yêu cầu" ở khu Giảng dạy; "Việc hôm nay" có ô
+"yêu cầu đang mở" + số chờ duyệt).
 
-## Dòng 12 — Quản lý thay đổi học tập · CHƯA → E3
+| Ý trong bảng | Trạng thái | Bằng chứng |
+|---|---|---|
+| Tiếp nhận yêu cầu hỗ trợ | CÓ | học viên (`/api/yeu-cau`), phụ huynh qua link (dòng 25), trợ giảng / giảng viên báo lên, học vụ tạo thay khi em gọi điện (`dich_vu.tao`) |
+| Phân loại học tập / lịch học / kỹ thuật / tài khoản | CÓ | người gửi chọn loại; học vụ "Đổi loại…" (`dich_vu.phan_loai`, sự kiện `phan_loai`) — sang "hỗ trợ tài khoản" thì GV / TG thôi thấy |
+| Phân công người xử lý | CÓ | "Giao người xử lý…" (`/api/admin/yeu-cau/<id>/giao`) — chỉ GV / TG của lớp, hoặc học vụ |
+| Theo dõi trạng thái | CÓ | Mới → Đang xử lý → Đã xong / Từ chối; mở lại; người gửi rút khi còn "Mới" (`loai.CHUYEN`, một hàm `chuyen_trang_thai`) |
+| Ghi nhận kết quả | CÓ | "Đã xong…" kèm kết quả — người gửi đọc được |
+| Chuyển cho GV / TG | CÓ | "Chuyển tiếp…" (GV / TG) và "Giao…" (học vụ) — ghi chú giao việc là nội bộ |
+| Lưu lịch sử | CÓ | `yeu_cau_su_kien`: mọi trả lời, ghi chú nội bộ, đổi trạng thái, giao, duyệt, việc hệ thống đã làm — ai, lúc nào; nhật ký `request.*` |
 
-Có thao tác TRỰC TIẾP (chuyển lớp một thao tác, rời lớp kèm lý do `completed/dropped/transferred`)
-nhưng không có luồng xin → duyệt → ghi người duyệt. **E3**: chuyển lớp, chuyển lịch, chuyển môn, bảo
-lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ thống tự làm việc ấy.
+Test `yeu_cau/tests_yeu_cau.py` (36, Neon dev 26/09); đột biến `scripts/dot_bien_e3.py`; e2e
+`frontend/e2e/yeu-cau.spec.ts` hai khổ. **Demo** (≈3 phút): học viên → "Hỏi & yêu cầu" → chọn "Hỗ trợ
+học tập", gõ tóm tắt → Gửi yêu cầu. Học vụ → Vận hành → tab "Yêu cầu" → mở yêu cầu → "Đổi loại…"
+sang "Hỗ trợ lịch học" → "Giao người xử lý…" cho trợ giảng lớp → trợ giảng (khu Giảng dạy → Yêu cầu)
+tick "Ghi chú nội bộ" ghi một dòng, bỏ tick rồi trả lời → "Đã xong…" kèm kết quả. Học viên mở lại:
+thấy trả lời + kết quả, KHÔNG thấy dòng nội bộ.
+
+## Dòng 12 — Quản lý thay đổi học tập · MỘT PHẦN (E3, 26/09/2026)
+
+Xin → duyệt → ghi người duyệt → hệ thống tự làm, trong MỘT giao dịch (`yeu_cau/dich_vu.py::duyet`:
+khoá dòng, kiểm trạng thái, thực thi, ghi `nguoi_duyet` + `duyet_luc`; xoá đệm quyền môn + thông báo
+SAU commit). Chỉ học vụ / quản trị viên duyệt (`IsAdminOrAcademic` + kiểm lại ở dịch vụ); duyệt hai
+lần chỉ làm một lần (409). Xem trước "Hệ thống sẽ…" trước khi bấm (GET, không ghi).
+
+| Loại | Duyệt xong hệ thống làm gì | Qua hàm của miền lớp học |
+|---|---|---|
+| Chuyển lớp, chuyển môn | CÓ — đóng lượt lớp cũ (`transferred`), mở lượt lớp mới, nối hai lượt; giữ trần lớp gia sư 3 em | `teaching/chuyen_lop.py::ChuyenLopView._chuyen` |
+| Bảo lưu | CÓ — rời lớp lý do "bảo lưu" + `reserve_until` (§65c); em mất quyền vào môn | `teaching/roi_lop.py::roi_lop` |
+| Huỷ khoá | CÓ — rời lớp lý do "bỏ giữa chừng" | `roi_lop` |
+| Học lại | CÓ — lượt học mới ở lớp cũ (giữ trần gia sư) | `AdminClassMembersView._ghi_thanh_vien` |
+| Chuyển lịch, học bù, nghỉ học | MỘT PHẦN — duyệt ghi QUYẾT ĐỊNH + người duyệt; học vụ tự làm trên màn Buổi học (buổi bù / đổi lịch / "có phép") rồi bấm "Đã xong…" | — (tự động hoá: việc sót, xem báo cáo E3) |
+
+**Demo**: học viên → "Hỏi & yêu cầu" → "Xin chuyển lớp", gõ lớp mong muốn → Gửi. Học vụ → Yêu cầu →
+mở → "Duyệt…" → chọn lớp tới → đọc "Hệ thống sẽ: Chuyển … sang lớp …" → "Duyệt và thực hiện". Mở
+Lớp học: em đã ở lớp mới; lịch sử yêu cầu có dòng "Duyệt yêu cầu" + "Hệ thống đã làm"; học viên
+nhận chuông. Bấm duyệt lần hai → báo đã duyệt, không chuyển thêm.
 
 ## Dòng 14 — Giáo viên · lớp + điểm danh · gần đủ
 
@@ -224,7 +256,7 @@ lưu, học bù, học lại, nghỉ học, huỷ khoá — duyệt xong hệ th
 | Buổi đã diễn ra, tình hình lớp | CÓ (trạng thái `done`, điểm danh, `note`) | — |
 | Nội dung thực tế / chưa hoàn thành, mức tiếp thu | CÓ (E1) | sổ đầu bài: từng nội dung + mức tiếp thu 1–5 |
 | Đề xuất HS cần hỗ trợ | CÓ (E1) | sổ đầu bài: đánh dấu em cần hỗ trợ + ghi chú (`session_support`, nội bộ); cờ theo em **V-f** |
-| Đề xuất học bù / điều chỉnh tiến độ | MỘT PHẦN (E1) | ô "Đề xuất" trong sổ đầu bài; luồng duyệt → **E3** |
+| Đề xuất học bù / điều chỉnh tiến độ | CÓ (E1 + E3) | ô "Đề xuất" trong sổ đầu bài + nút "Gửi đề xuất cho học vụ" → một yêu cầu "Báo lên" gắn buổi (`components/YeuCauDeXuat.tsx`); học vụ trả lời / tạo buổi bù ở hộp Yêu cầu. Demo: sổ đầu bài một buổi → gõ Đề xuất → "Gửi đề xuất cho học vụ" → "Xem yêu cầu →" |
 
 ## Dòng 17 — Giáo viên · giao bài · MỘT PHẦN (sửa 26/09: trước ghi "CÓ" là quá tay)
 
@@ -251,18 +283,28 @@ nút "Nhập điểm" mở bảng cả lớp có ô "Vắng" (xem dòng 4, "Đi�
 | Đánh dấu cần hỗ trợ | CÓ (V-f) | `class_members.can_ho_tro` + lý do (§62b), cùng đường `danh-gia` (trợ giảng đặt được); hiện ở "Việc hôm nay" khối "Cần hỗ trợ" (`viec_hom_nay._can_ho_tro`) và dòng thời gian (`dong_thoi_gian._danh_gia`, nhật ký `class.member.assess`). Demo: giảng viên tick "Đánh dấu em cần hỗ trợ" trên tờ của em, hoặc trợ giảng bấm "Báo cần hỗ trợ" trên dòng em vắng liền ở Việc hôm nay |
 | Đề xuất hướng học tập | CÓ (V-f) | `class_members.de_xuat_huong_hoc` (§62b), chỉ giảng viên trở lên, nội bộ (không lên tờ phụ huynh). Demo: ô "Đề xuất hướng học" trong khối "Đánh giá của giảng viên"; học vụ thấy mốc "Đề xuất hướng học" trên dòng thời gian của em |
 
-## Dòng 20 — Trợ giảng · nhắn tin / nhắc · CHƯA
+## Dòng 20 — Trợ giảng · nhắn tin / nhắc · MỘT PHẦN
 
-Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý). Nhắn tin / nhận / lịch sử, ghi nhận em
-không phản hồi, chuyển vấn đề cho GV / giáo vụ → **E3**. Nhắc học bài / làm bài / vào lớp → **E2**.
-Chat thời gian thực: không làm (anh chốt 25/09 — Zalo vẫn để chat).
+Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý). Chat thời gian thực: không làm (anh chốt
+25/09 — Zalo vẫn để chat). Nhắc học bài / làm bài / vào lớp → **E2**.
+
+| Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
+|---|---|---|
+| Nhận tin, lịch sử trao đổi | CÓ (E3) | câu hỏi học viên gửi lớp → GV + TG lớp nhận chuông; trả lời + lịch sử ở `/yeu-cau/<id>` |
+| Ghi nhận HS không phản hồi | CÓ (E3) | "Tạo yêu cầu" → "Báo lên", chọn lớp + em, tick "Em không phản hồi" (`du_lieu.khong_phan_hoi`, chip trên hộp) |
+| Chuyển vấn đề cho GV / giáo vụ | CÓ (E3) | "Báo lên" tới GV lớp + học vụ; "Chuyển tiếp…" một yêu cầu đang cầm |
+| TG CHỦ ĐỘNG nhắn một HS | CHƯA — **cần anh quyết** | hộp hiện chỉ cho HS gửi trước; xem câu hỏi trong `docs/agent/BAO_CAO_E3.md` |
+
+SĐT phụ huynh để lại trong yêu cầu ẩn với trợ giảng (test `test_tro_giang_khong_thay_sdt_phu_huynh`).
+**Demo**: trợ giảng → khu Giảng dạy → Yêu cầu → "Tạo yêu cầu" → loại "Báo lên", lớp, em, tick "Em
+không phản hồi" → Gửi. Học vụ thấy yêu cầu với chip "Em không phản hồi".
 
 ## Dòng 21 — Trợ giảng · theo dõi · MỘT PHẦN
 
 | Ý trong bảng | Trạng thái | Việc đóng |
 |---|---|---|
 | Điểm danh, theo dõi bài tập, tiến độ | CÓ | — |
-| Hỗ trợ giải đáp | CHƯA | **E3** |
+| Hỗ trợ giải đáp | CÓ (E3) | câu hỏi của em tới hộp Yêu cầu của GV + TG lớp; TG trả lời, chuyển tiếp hoặc báo lên. Demo: như dòng 32 rồi đăng nhập trợ giảng lớp → Yêu cầu |
 | Theo dõi việc xem record | CHƯA | **V-l** (mở / chưa mở), **E4** (% đã xem) |
 | Dấu hiệu bỏ học, danh sách cần nhắc / cần báo | CÓ phần theo dõi (V-b) + báo "cần hỗ trợ" (V-f); trao đổi hai chiều chờ **E3** | `teaching/viec_hom_nay.py` `ViecHomNayView.get` trả `vangLien` + `canChuY` cho mọi vai, phạm vi `_lop_cua`; test `tests_viec_hom_nay.py::test_tro_giang_thay_vang_lien_chi_lop_minh`. Demo: đăng nhập trợ giảng → "Việc hôm nay" → khối "Vắng liền" / "Cần chú ý ngay" của lớp mình, dòng dẫn về sổ buổi học |
 
@@ -292,7 +334,19 @@ Khách phải đồng ý (K2). Nâng link thành "link theo dõi" sống → **�
 | Nhận xét của GV | CÓ (V-a) | nhận xét bài CÓ; nhận xét chung = `membership.teacherNote` từ `teacher_comment` (giảng viên ghi ở khối "Đánh giá của giảng viên"), đi cả đường dẫn phụ huynh (`rut_gon_cho_link` giữ khoá này) |
 | Tiến độ học tập | CÓ (theo kỳ cố định của link) | → link sống **§66** |
 
-## Dòng 25 — Phụ huynh · gửi yêu cầu · CHƯA → E3 qua link
+## Dòng 25 — Phụ huynh · gửi yêu cầu · CÓ qua link (E3, 26/09/2026 — chờ khách xem)
+
+Phụ huynh KHÔNG có tài khoản (anh chốt 25/09): cuối tờ báo cáo `/bc/<chìa>` có khối "Gửi yêu cầu cho
+trung tâm" + "Yêu cầu đã gửi qua đường dẫn này" kèm trạng thái, kết quả và trả lời (không có ghi chú
+nội bộ). Máy chủ lấy em + lớp từ chìa, không từ biểu mẫu; chìa lạ / hết hạn / thu hồi → cùng một câu
+404; tối đa 5 yêu cầu đang chờ mỗi link; giới hạn 20 lượt gửi / giờ / máy (`PhuHuynhYeuCauView`).
+Liên hệ giáo vụ = loại hỗ trợ (tới học vụ); liên hệ GV / TG = "Hỏi giảng viên" (tới GV + TG lớp).
+Theo dõi + nhận phản hồi: mở lại chính link. Chưa có: phụ huynh trả lời tiếp trong một yêu cầu (gửi
+yêu cầu mới), link "sống" §66 (sau buổi xem).
+
+**Demo**: giảng viên → Báo cáo phụ huynh → tờ một em → cấp đường dẫn → mở đường dẫn ở trình duyệt
+khác → cuối trang chọn "Hỗ trợ lịch học", gõ tóm tắt, số điện thoại → Gửi yêu cầu. Học vụ → Yêu cầu
+thấy "Phụ huynh gửi"; trả lời → phụ huynh tải lại link thấy trả lời.
 
 ## Dòng 26 — Học sinh · tài khoản · MỘT PHẦN
 
@@ -329,9 +383,16 @@ tài khoản Zoom thật trước: Zoom chỉ trả tên người xem khi ngư�
 
 Nhận bài, làm và nộp, xem kết quả + nhận xét: CÓ (`/bai-tap`, chuông). Nộp chữ; nộp tệp → **Đ2 §60**.
 
-## Dòng 32 — Học sinh · trao đổi · MỘT PHẦN → E3
+## Dòng 32 — Học sinh · trao đổi · CÓ (E3, 26/09/2026 — chờ khách xem)
 
-Có diễn đàn (mục câu hỏi) và trợ lý AI; không có kênh gửi thẳng GV / TG, không yêu cầu hỗ trợ.
+Mục "Hỏi & yêu cầu" trên thanh học viên (`/yeu-cau`): "Hỏi giảng viên" (tới GV + TG của lớp em —
+GV lớp khác không thấy, test `test_hoi_dap_toi_gv_lop_minh_khong_toi_gv_lop_khac`), "Hỗ trợ học tập
+/ lịch / kỹ thuật / tài khoản" (tới học vụ), báo lỗi bản ghi một buổi, xin thay đổi (dòng 12). Em chỉ
+thấy yêu cầu mình gửi, không thấy ghi chú nội bộ; trả lời tiếp được khi yêu cầu còn mở; rút được khi
+còn "Mới". Diễn đàn và trợ lý AI giữ nguyên.
+
+**Demo**: học viên → "Hỏi & yêu cầu" → "Hỏi giảng viên" → Gửi. Trợ giảng lớp → Yêu cầu → trả lời.
+Học viên mở lại: thấy trả lời, gõ tiếp một câu.
 
 ## * Phân hệ thông báo chung · MỘT PHẦN → E2
 

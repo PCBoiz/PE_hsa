@@ -1,7 +1,9 @@
 import NutIn from '@/components/NutIn';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
+import YeuCauPhuHuynh from '@/components/YeuCauPhuHuynh';
 import { HD_BAO_CAO } from '@/lib/hinhDang';
 import { serverJson } from '@/lib/server-api';
+import { HD_PHU_HUYNH, type PhuHuynhDS } from '@/lib/yeuCau';
 
 /**
  * Trang PHỤ HUYNH mở từ tin Zalo — không tài khoản, không đăng nhập.
@@ -42,11 +44,12 @@ export default async function BaoCaoTheoChiaPage({
      về `/login` — đúng thứ cần ở đây. Nếu người mở tình cờ đang đăng nhập
      (giảng viên tự kiểm lại link chẳng hạn) thì thẻ vẫn được gắn vào, nhưng
      máy chủ khai `authentication_classes = []` nên nó bị bỏ qua hoàn toàn. */
-  const kq = await serverJson<BaoCao>(
-    `/api/public/parent-report/${encodeURIComponent(token)}`,
-    {},
-    HD_BAO_CAO,
-  );
+  /* Tờ báo cáo và hộp yêu cầu của link (E3) gọi SONG SONG. Hộp yêu cầu hỏng (máy chủ cũ
+     chưa có tuyến — Vercel lên trước Render) thì tờ vẫn hiện, chỉ thiếu khối gửi yêu cầu. */
+  const [kq, yc] = await Promise.all([
+    serverJson<BaoCao>(`/api/public/parent-report/${encodeURIComponent(token)}`, {}, HD_BAO_CAO),
+    serverJson<PhuHuynhDS>(`/api/public/phu-huynh/${encodeURIComponent(token)}/yeu-cau`, {}, HD_PHU_HUYNH),
+  ]);
 
   if (!kq.ok) {
     return (
@@ -85,6 +88,7 @@ export default async function BaoCaoTheoChiaPage({
 
       <main className="mx-auto max-w-3xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
         <ToBaoCao bc={bc} choPhuHuynh />
+        {yc.ok && <YeuCauPhuHuynh token={token} initial={yc.data} />}
       </main>
     </div>
   );

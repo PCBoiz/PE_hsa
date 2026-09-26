@@ -57,6 +57,12 @@ const TRANG = [
   // bài một buổi. 8004 là buổi đã dạy của lớp 7322 trên Neon dev.
   ['/quan-tri/cham-cong', 'QT chấm công', AD], ['/giao-trinh/khung-chuong-trinh', 'Khung chương trình', AD],
   ['/giang-day/chuong-trinh/7322', 'GD chương trình lớp', AD], ['/giang-day/so-dau-bai/8004', 'GD sổ đầu bài', AD],
+  // Hộp Yêu cầu (E3, 26/09/2026): học viên (gửi + một yêu cầu của mình) và nhân sự (hộp + một lượt
+  // xin chuyển lớp chưa duyệt). 176 / 177 = yêu cầu của tài khoản e2e ở lớp mẫu 7322 (Neon dev).
+  ['/yeu-cau', 'Hỏi & yêu cầu', HV], ['/yeu-cau/176', 'Một yêu cầu (HV)', HV],
+  ['/yeu-cau', 'Hộp yêu cầu (nhân sự)', AD], ['/yeu-cau/177', 'Xin chuyển lớp (nhân sự)', AD],
+  // Tờ phụ huynh — nay có khối gửi yêu cầu. Cần chìa lớp mẫu (`scripts/cap_chia_mau.py`); thiếu tệp
+  // thì bỏ trang này (xem sau mảng) — cùng quy ước với `do_giao_dien.mjs`.
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
 
 /* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──
@@ -72,6 +78,14 @@ const TRANG = [
    `#page-<v>.active`, chủ đề phải khớp `body.dark`, trạng thái mở phải thấy bộ
    chọn của nó. Không khớp → lượt ấy "không đo được" và cổng thoát 1 — không
    bao giờ chạy axe trên trạng thái sai rồi in 0 dưới tên trạng thái kia. */
+{
+  const TEP_CHIA = join(DAY, '..', '.the', 'chia_mau.json');
+  if (fs.existsSync(TEP_CHIA)) {
+    TRANG.push({ url: `/bc/${JSON.parse(fs.readFileSync(TEP_CHIA, 'utf8')).token}`, ten: 'Phụ huynh · tờ báo cáo', the: null, cheDo: 'light' });
+  } else {
+    console.log('⚠ Không có .the/chia_mau.json → BỎ QUA trang phụ huynh /bc/<chìa> (cấp: scripts/cap_chia_mau.py).');
+  }
+}
 const VIEW = ['courses', 'plan', 'roadmap', 'skills', 'forum', 'settings', 'profile'];
 const MO = [
   // [tên, view chứa nó, bộ chọn để bấm, bộ chọn chứng minh đã mở]

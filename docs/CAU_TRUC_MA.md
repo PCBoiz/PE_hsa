@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 207 tệp backend · 182 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 207 tệp backend · 192 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -20,14 +20,14 @@
 | [lich](#lich) | Lịch & buổi học | 3 | 14 tệp · 2304 dòng | 9 tệp · 2384 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1688 dòng |
-| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1396 dòng |
-| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3968 dòng | 14 tệp · 2506 dòng |
-| [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1838 dòng | 10 tệp · 1789 dòng |
+| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
+| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3968 dòng | 14 tệp · 2528 dòng |
+| [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1838 dòng | 10 tệp · 1793 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1849 dòng | 11 tệp · 2494 dòng |
-| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1480 dòng | 0 tệp · 0 dòng |
+| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1480 dòng | 10 tệp · 1514 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 405 dòng | 0 tệp · 0 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1597 dòng | 14 tệp · 1432 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6235 dòng | 67 tệp · 6795 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6235 dòng | 67 tệp · 6879 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -198,7 +198,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|
 | `frontend/src/app/(standalone)/giang-day/chuong-trinh/[classId]/ChuongTrinhLopClient.tsx` | 276 dòng |
 | `frontend/src/app/(standalone)/giang-day/chuong-trinh/[classId]/page.tsx` | 54 dòng |
-| `frontend/src/app/(standalone)/giang-day/so-dau-bai/[sessionId]/SoDauBaiClient.tsx` | 273 dòng |
+| `frontend/src/app/(standalone)/giang-day/so-dau-bai/[sessionId]/SoDauBaiClient.tsx` | 276 dòng |
 | `frontend/src/app/(standalone)/giang-day/so-dau-bai/[sessionId]/page.tsx` | 56 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/khung-chuong-trinh/KhungClient.tsx` | 485 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/khung-chuong-trinh/page.tsx` | 80 dòng |
@@ -230,7 +230,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/loading.tsx` | 28 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/page.tsx` | 166 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/page.tsx` | 253 dòng |
-| `frontend/src/app/(standalone)/giang-day/page.tsx` | 360 dòng |
+| `frontend/src/app/(standalone)/giang-day/page.tsx` | 382 dòng |
 | `frontend/src/app/(standalone)/quan-tri/cham-cong/layout.tsx` | 17 dòng |
 | `frontend/src/app/(standalone)/quan-tri/cham-cong/page.tsx` | 146 dòng |
 | `frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/BangCoSo.tsx` | 178 dòng |
@@ -261,7 +261,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | Tệp frontend | Dòng |
 |---|---|
 | `frontend/src/app/(standalone)/bc/[token]/loading.tsx` | 74 dòng |
-| `frontend/src/app/(standalone)/bc/[token]/page.tsx` | 91 dòng |
+| `frontend/src/app/(standalone)/bc/[token]/page.tsx` | 95 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/DanLienHe.tsx` | 299 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/GuiCaLop.tsx` | 203 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/DuongDanDaCap.tsx` | 258 dòng |
@@ -318,6 +318,19 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/yeu_cau/thuc_thi.py` | 180 dòng | — |
 | `backend/yeu_cau/urls.py` | 31 dòng | — |
 | `backend/yeu_cau/views.py` | 416 dòng | — |
+
+| Tệp frontend | Dòng |
+|---|---|
+| `frontend/src/app/(standalone)/yeu-cau/HopHocVien.tsx` | 230 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/HopNhanSu.tsx` | 267 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/[id]/ChiTietYeuCau.tsx` | 413 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/[id]/page.tsx` | 44 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/layout.tsx` | 43 dòng |
+| `frontend/src/app/(standalone)/yeu-cau/page.tsx` | 88 dòng |
+| `frontend/src/components/YeuCauDeXuat.tsx` | 66 dòng |
+| `frontend/src/components/YeuCauDongThoiGian.tsx` | 48 dòng |
+| `frontend/src/components/YeuCauPhuHuynh.tsx` | 129 dòng |
+| `frontend/src/lib/yeuCau.ts` | 186 dòng |
 
 ## thong_bao
 
@@ -438,7 +451,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|
 | `frontend/src/app/(base)/layout.tsx` | 44 dòng |
 | `frontend/src/app/(base)/page.tsx` | 27 dòng |
-| `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx` | 80 dòng |
+| `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx` | 83 dòng |
 | `frontend/src/app/(standalone)/giang-day/layout.tsx` | 42 dòng |
 | `frontend/src/app/(standalone)/huong-dan/layout.tsx` | 52 dòng |
 | `frontend/src/app/(standalone)/huong-dan/page.tsx` | 27 dòng |
@@ -454,7 +467,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/SoDoVaiTro.tsx` | 208 dòng |
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/layout.tsx` | 23 dòng |
 | `frontend/src/app/(standalone)/quan-tri/vai-tro/page.tsx` | 192 dòng |
-| `frontend/src/app/(standalone)/quan-tri/vai.ts` | 106 dòng |
+| `frontend/src/app/(standalone)/quan-tri/vai.ts` | 111 dòng |
 | `frontend/src/app/(standalone)/thiet-ke/page.tsx` | 266 dòng |
 | `frontend/src/app/api/[...path]/route.ts` | 28 dòng |
 | `frontend/src/app/error.tsx` | 61 dòng |
@@ -470,7 +483,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/components/NutIn.tsx` | 24 dòng |
 | `frontend/src/components/PageStyles.tsx` | 14 dòng |
 | `frontend/src/components/bieuTuong.tsx` | 83 dòng |
-| `frontend/src/components/navMuc.ts` | 95 dòng |
+| `frontend/src/components/navMuc.ts` | 101 dòng |
 | `frontend/src/components/ui/Button.tsx` | 92 dòng |
 | `frontend/src/components/ui/Card.tsx` | 93 dòng |
 | `frontend/src/components/ui/Chip.tsx` | 56 dòng |
@@ -492,12 +505,12 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/lib/gioVN.ts` | 56 dòng |
 | `frontend/src/lib/goiLegacy.ts` | 82 dòng |
 | `frontend/src/lib/hinhDang.ts` | 121 dòng |
-| `frontend/src/lib/huongDan.ts` | 594 dòng |
-| `frontend/src/lib/khuTheoVai.ts` | 108 dòng |
+| `frontend/src/lib/huongDan.ts` | 636 dòng |
+| `frontend/src/lib/khuTheoVai.ts` | 112 dòng |
 | `frontend/src/lib/kiemDang.ts` | 61 dòng |
 | `frontend/src/lib/nhomVai.ts` | 59 dòng |
 | `frontend/src/lib/proxy.ts` | 227 dòng |
-| `frontend/src/lib/quyenVai.ts` | 532 dòng |
+| `frontend/src/lib/quyenVai.ts` | 556 dòng |
 | `frontend/src/lib/server-api.ts` | 193 dòng |
 | `frontend/src/lib/useVaiHienTai.ts` | 47 dòng |
 | `frontend/src/lib/vaiTro.ts` | 43 dòng |

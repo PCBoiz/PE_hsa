@@ -65,6 +65,9 @@ export default function KhungGiangDay({
         // nên có mặt cả khi đang ở trong một lớp. Trợ giảng cũng xem được
         // (`LichView` là `IsTeachingStaff`), phạm vi là lớp được gán.
         { trang: null, nhan: 'Lịch học', icon: 'calendar', emoji: '', url: '/giang-day/lich' },
+        // Hộp Yêu cầu (E3, 26/09/2026) — cấp KHU như "Lịch học": câu hỏi của em, việc được giao /
+        // chuyển tiếp, báo lên. Máy chủ lọc lớp mình + việc giao cho mình.
+        { trang: null, nhan: 'Yêu cầu', icon: 'inbox', emoji: '', url: '/yeu-cau' },
         ...(lop
           ? TAB.filter((t) => !troGiang || t.troGiang).map((t) => ({
             trang: null,

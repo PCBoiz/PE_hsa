@@ -58,6 +58,11 @@ export const TABS: readonly Tab[] = [
   { href: '/quan-tri/lop-hoc', label: 'Lớp học', icon: 'graduation-cap', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/terms.py.
   { href: '/quan-tri/dot-hoc', label: 'Đợt học', icon: 'calendar', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // Hộp Yêu cầu (E3, 26/09/2026) — `IsTeachingStaff` + `IsAdminOrAcademic` cho duyệt / giao /
+  // phân loại (yeu_cau/views.py). Trang nằm NGOÀI `/quan-tri` (`/yeu-cau`: một đường cho mọi vai,
+  // chuông trỏ về đó) nhưng là việc hằng ngày của học vụ nên có tab ở đây. `inbox`: không trùng
+  // hình tab nào bên cạnh.
+  { href: '/yeu-cau', label: 'Yêu cầu', icon: 'inbox', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — cơ sở tính học phí (teaching/co_so_hoc_phi.py). Gộp dữ
   // liệu cả trung tâm, cùng loại với "Toàn trung tâm". Xem chú thích trong
   // `co-so-hoc-phi/layout.tsx` về việc có nên mở cho học vụ hay không.
