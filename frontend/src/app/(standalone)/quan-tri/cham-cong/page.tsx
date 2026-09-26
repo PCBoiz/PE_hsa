@@ -22,6 +22,9 @@ type Nguoi = {
   soPhut: number;
   daDiemDanh: number;
   diemDanhMuon: number;
+  /** Hoạt động ngoài buổi dạy (dòng 6). `?`: máy chủ cũ không trả. */
+  daCham?: number;
+  daGuiThongBao?: number;
   lop: string[];
 };
 type Payload = { thang: string; tu: string; den: string; lateHours: number; nguoi: Nguoi[] };
@@ -34,6 +37,7 @@ const HINH_DANG = z.looseObject({
   nguoi: z.array(z.looseObject({
     id: z.number(), name: z.string().nullable(), email: z.string().nullable(), vai: z.string(),
     soBuoi: z.number(), soPhut: z.number(), daDiemDanh: z.number(), diemDanhMuon: z.number(),
+    daCham: z.optional(z.number()), daGuiThongBao: z.optional(z.number()),
     lop: z.array(z.string()),
   })),
 }) satisfies HinhDang<Payload>;
@@ -115,7 +119,7 @@ export default async function ChamCongPage({
             </Thead>
             <Tbody>
               {d.nguoi.map((n) => (
-                <Tr key={n.id} dim={n.soBuoi === 0}>
+                <Tr key={n.id} dim={n.soBuoi === 0 && !n.daCham && !n.daGuiThongBao}>
                   <Td label="Người dạy">
                     <span className="block font-semibold text-ink">{n.name || n.email || `#${n.id}`}</span>
                     <span className="block text-small text-ink-3">{n.vai}</span>
@@ -131,6 +135,12 @@ export default async function ChamCongPage({
                   </Td>
                   <Td label="Điểm danh muộn" num>
                     {n.diemDanhMuon}
+                  </Td>
+                  <Td label="Bài đã chấm" num>
+                    {n.daCham ?? 0}
+                  </Td>
+                  <Td label="Thông báo đã gửi" num>
+                    {n.daGuiThongBao ?? 0}
                   </Td>
                   <Td label="Lớp" muted>
                     {n.lop.length ? n.lop.join(', ') : '—'}

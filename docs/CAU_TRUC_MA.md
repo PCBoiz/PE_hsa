@@ -21,7 +21,7 @@
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
-| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 3996 dòng | 14 tệp · 2528 dòng |
+| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1878 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1517 dòng | 10 tệp · 1514 dòng |
@@ -223,7 +223,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 |---|---|---|
 | `backend/teaching/bao_cao_lop_pdf.py` | 307 dòng | — |
 | `backend/teaching/bao_cao_pdf.py` | 636 dòng | — |
-| `backend/teaching/cham_cong.py` | 161 dòng | — |
+| `backend/teaching/cham_cong.py` | 193 dòng | — |
 | `backend/teaching/co_so_hoc_phi.py` | 267 dòng | — |
 | `backend/teaching/exports.py` | 851 dòng | — |
 | `backend/teaching/overview.py` | 749 dòng | — |
@@ -237,7 +237,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/page.tsx` | 253 dòng |
 | `frontend/src/app/(standalone)/giang-day/page.tsx` | 382 dòng |
 | `frontend/src/app/(standalone)/quan-tri/cham-cong/layout.tsx` | 17 dòng |
-| `frontend/src/app/(standalone)/quan-tri/cham-cong/page.tsx` | 146 dòng |
+| `frontend/src/app/(standalone)/quan-tri/cham-cong/page.tsx` | 156 dòng |
 | `frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/BangCoSo.tsx` | 178 dòng |
 | `frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/layout.tsx` | 21 dòng |
 | `frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/page.tsx` | 154 dòng |

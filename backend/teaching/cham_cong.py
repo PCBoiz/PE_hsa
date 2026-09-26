@@ -11,8 +11,11 @@ khi trung tâm trả công cho cả hai.
   · Buổi ĐÃ DẠY trong tháng = buổi không huỷ (`attendance.KHONG_TINH`), bắt đầu trong tháng,
     và ĐÃ DIỄN RA theo sổ: trạng thái `done` HOẶC đã có người điểm danh. Buổi `planned` chưa
     ai mở sổ thì chưa tính — không có dấu vết nào nói buổi ấy đã dạy.
-  · Buổi của GIẢNG VIÊN = buổi của lớp có `teacher_id` là người ấy (giảng viên gắn theo lớp;
-    đổi giảng viên từng buổi là Đ2 §58 — khi ấy đổi thành COALESCE(buổi, lớp) ở đây).
+  · Buổi của GIẢNG VIÊN = `COALESCE(buổi.teacher_id, lớp.teacher_id)` — từ §58 (27/09/2026)
+    một buổi lẻ có thể do người khác đứng, và công phải về người dạy THẬT. Dạy thay mà lương
+    chảy về người đứng tên lớp là lỗi chỉ lộ ra vào cuối tháng, lúc đã trả tiền.
+  · Hoạt động NGOÀI buổi dạy: bài đã chấm (`submissions.graded_at` trong tháng) và thông báo
+    đã gửi (`announcements` trạng thái `sent`). Với trợ giảng, đây mới là phần lớn công việc.
   · Buổi của TRỢ GIẢNG = buổi của lớp mà trợ giảng là thành viên ĐANG Ở LỚP lúc buổi bắt đầu
     (`joined_at ≤ giờ học` và chưa rời hoặc rời SAU giờ học) — gán vào lớp giữa tháng thì
     chỉ các buổi sau ngày gán được tính.
@@ -87,14 +90,36 @@ tick AS (
     SELECT attendance_taken_by AS uid, count(*) AS so_tick, count(*) FILTER (WHERE muon) AS so_muon
       FROM buoi WHERE attendance_taken_by IS NOT NULL
      GROUP BY attendance_taken_by
+),
+-- Hoạt động NGOÀI buổi dạy (bảng TopHSA dòng 6, ô "Hoạt động GV/TG"). Với trợ giảng thì
+-- đây mới là phần lớn công việc — bỏ ra là bảng chỉ nói được một nửa.
+--
+-- Mốc là NGÀY CHẤM (`graded_at`), không phải hạn nộp: bảng này trả lời "tháng vừa rồi
+-- người này làm được gì", nên một bài nộp tháng trước mà chấm tháng này là công tháng này.
+cham AS (
+    SELECT graded_by AS uid, count(*) AS so_cham
+      FROM submissions
+     WHERE graded_by IS NOT NULL AND graded_at >= %(tu)s AND graded_at < %(den)s
+     GROUP BY graded_by
+),
+-- Chỉ thông báo ĐÃ GỬI. Soạn nháp chưa phải là đã nhắn cho ai.
+nhan AS (
+    SELECT created_by AS uid, count(*) AS so_tb
+      FROM announcements
+     WHERE created_by IS NOT NULL AND status = 'sent'
+       AND sent_at >= %(tu)s AND sent_at < %(den)s
+     GROUP BY created_by
 )
 SELECT u.id, u.name, u.email, u.role,
        COALESCE(t.so_buoi, 0) AS so_buoi, COALESCE(t.so_phut, 0) AS so_phut,
        COALESCE(k.so_tick, 0) AS so_tick, COALESCE(k.so_muon, 0) AS so_muon,
-       COALESCE(t.lop, ARRAY[]::text[]) AS lop
+       COALESCE(t.lop, ARRAY[]::text[]) AS lop,
+       COALESCE(ch.so_cham, 0) AS so_cham, COALESCE(nh.so_tb, 0) AS so_tb
   FROM users u
   LEFT JOIN tong t ON t.uid = u.id
   LEFT JOIN tick k ON k.uid = u.id
+  LEFT JOIN cham ch ON ch.uid = u.id
+  LEFT JOIN nhan nh ON nh.uid = u.id
  WHERE t.uid IS NOT NULL
     OR (u.role IN (%(giang_vien)s, %(tro_giang)s) AND COALESCE(u.status, 'active') = 'active')
  ORDER BY CASE u.role WHEN %(giang_vien)s THEN 0 WHEN %(tro_giang)s THEN 1 ELSE 2 END,
@@ -128,6 +153,9 @@ def cham_cong(tu, den):
         'vai': NHAN_VAI.get(r['role'], r['role']),
         'soBuoi': r['so_buoi'], 'soPhut': int(r['so_phut'] or 0),
         'daDiemDanh': r['so_tick'], 'diemDanhMuon': r['so_muon'],
+        # Hoạt động ngoài buổi dạy (dòng 6). Đặt cạnh số buổi vì trung tâm đọc chúng
+        # cùng lúc để trả lời "tháng vừa rồi người này làm được gì".
+        'daCham': r['so_cham'], 'daGuiThongBao': r['so_tb'],
         'lop': list(r['lop'] or []),
     } for r in rows]
 
@@ -145,10 +173,14 @@ class ChamCongView(APIView):
         dd = (request.query_params.get('dinh_dang') or '').strip().lower()
         if dd == 'xlsx':
             from teaching.exports import xuat_bang
+            # Bảng tính phải mang ĐÚNG những cột màn hình có — người ta tải về để tính
+            # công, và hai bản lệch nhau thì bản nào cũng không tin được.
             header = ['Họ tên', 'Email', 'Vai trò', 'Số buổi đã dạy', 'Tổng số phút', 'Số giờ',
-                      'Buổi đã điểm danh', 'Điểm danh muộn (quá %d giờ)' % TRE_DIEM_DANH_GIO, 'Lớp']
+                      'Buổi đã điểm danh', 'Điểm danh muộn (quá %d giờ)' % TRE_DIEM_DANH_GIO,
+                      'Bài đã chấm', 'Thông báo đã gửi', 'Lớp']
             rows = [[n['name'], n['email'], n['vai'], n['soBuoi'], n['soPhut'], round(n['soPhut'] / 60, 2),
-                     n['daDiemDanh'], n['diemDanhMuon'], ' · '.join(n['lop'])] for n in nguoi]
+                     n['daDiemDanh'], n['diemDanhMuon'], n['daCham'], n['daGuiThongBao'],
+                     ' · '.join(n['lop'])] for n in nguoi]
             return xuat_bang('xlsx', 'Chấm công tháng %s' % tu.strftime('%m-%Y'), header, rows, 'Chấm công')
         if dd not in ('', 'json'):
             return Response({'error': 'Định dạng tải về chỉ nhận xlsx.'}, status=400)

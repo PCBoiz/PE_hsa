@@ -157,7 +157,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Gắn bài tập, bài kiểm tra | MỘT PHẦN | khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1); bài tập giao cho lớp chưa trỏ về mục khung; điểm kiểm tra → **V-h** |
 | Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1); chưa có ngưỡng "hoàn thành khoá" riêng |
 
-## Dòng 6 — Báo cáo · MỘT PHẦN
+## Dòng 6 — Báo cáo · MỘT PHẦN (còn báo cáo chéo môn × lớp)
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
@@ -166,10 +166,10 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | 6.3 Chấm công GV/TG | CÓ, chỉ xem (V-o) | trang "Chấm công" (Vận hành, quản trị viên + học vụ): theo tháng, từng giảng viên VÀ trợ giảng — buổi đã dạy, tổng giờ, tự điểm danh, điểm danh muộn, tải Excel (`teaching/cham_cong.py`, `teaching/tests_cham_cong.py`). Khoá tháng + chỉnh tay → **Đ2 §59** |
 | Điểm danh HS, tiến độ, kết quả theo lớp | CÓ | CSV điểm danh + tiến độ; báo cáo lớp PDF |
 | Kết quả theo môn, hoàn thành bài tập (tổng) | MỘT PHẦN | theo khoá / từng bài; chưa báo cáo chéo |
-| Hoạt động GV/TG | MỘT PHẦN | buổi dạy / điểm danh theo tháng CÓ (V-o); các hoạt động khác (chấm bài, nhắn tin) chưa gộp |
+| Hoạt động GV/TG | **CÓ** | Buổi dạy / điểm danh theo tháng (V-o) + **bài đã chấm** và **thông báo đã gửi** (27/09) — cùng MỘT câu SQL, cùng bảng, và cùng có trong bản tải .xlsx. Với trợ giảng thì hai cột sau mới là phần lớn công việc. Mốc là NGÀY CHẤM (`graded_at`), không phải hạn nộp; bản nháp chưa gửi không tính. Người không làm gì vẫn có dòng, số 0 — dòng biến mất trông như đã nghỉ việc. Bộ kiểm 6/6. |
 | HS nghỉ nhiều / chậm tiến độ | CÓ (E1) | nghỉ nhiều CÓ; lớp chậm tiến độ + lớp chưa ghi sổ: ô "Tiến độ chương trình" ở Toàn trung tâm (`overview.py` khoá `chuongTrinh`) |
 | Bộ lọc thời gian / lớp / môn / khoá | CÓ (V-k) | tổng quan lọc đợt + ngày; tải chuyên cần lọc khoảng ngày; tải danh sách tài khoản lọc thêm đợt học, môn, ngày cấp (`teaching/exports.py`, `admin_users.build_user_filters`) — `teaching/tests_xuat_excel.py` |
-| Xuất Excel / CSV | CÓ (V-k) | hộp "Tải bảng tính" (sổ buổi học của lớp) và "Tải danh sách" (Tài khoản): chọn Excel (.xlsx) hoặc CSV; một bộ ghi `common/bangtinh.ghi_xlsx` (ô chữ không bao giờ thành công thức), trợ giảng không nhận cột liên lạc |
+| Xuất Excel / CSV | CÓ (V-k) | hộp "Tải bảng tính" (sổ buổi học của lớp) và "Tải danh sách" (Tài khoản): chọn Excel (.xlsx) hoặc CSV; một bộ ghi `common/bangtinh.ghi_xlsx` (ô chữ không bao giờ thành công thức), trợ giảng không nhận cột liên lạc **Lưu ý (đo 27/09)**: hộp "Tải danh sách" ở trang Tài khoản CHỈ quản trị viên thấy — học vụ mở cùng trang thì không có hộp ấy (`exports.py` là `IsAdminRole`). Có chủ ý hay không thì chờ anh quyết ở mục **C8** (học vụ có được xem liên hệ phụ huynh không); bảng không được ghi "CÓ" trống như thể mọi vai đều tải được. |
 
 ## Dòng 7 — Kế toán · học phí · THAY
 
