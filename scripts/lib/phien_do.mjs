@@ -56,6 +56,9 @@ export const THE_VAI = {
   hv: `${THU_MUC_THE}/tokens_hv.json`,
   gv: `${THU_MUC_THE}/tokens_gv.json`,
   ad: `${THU_MUC_THE}/tokens_ad.json`,
+  // Quản lý học vụ — vai DUYỆT của hộp Yêu cầu (§65). Đo bằng thẻ quản trị thì không thấy
+  // được chỗ nào học vụ bị chặn mà quản trị thì không.
+  hvu: `${THU_MUC_THE}/tokens_hvu.json`,
 };
 
 /** Chờ trang "đứng yên" lâu nhất bấy nhiêu mili giây rồi đo, dù chưa yên hẳn. */
