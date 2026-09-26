@@ -265,8 +265,9 @@ MUC = [
                  lambda: _fk('yeu_cau', 'yeu_cau_hoc_vien_id_fkey', 'CASCADE'),
                  lambda: _chi_muc('idx_yeu_cau_trang_thai'))
      if _cot('yeu_cau', 'thuc_thi')[0] else (False, 'chưa có bảng')),
-    ('§65b', 'bảng yeu_cau_su_kien (trả lời + lịch sử), xoá theo yêu cầu',
-     lambda: _fk('yeu_cau_su_kien', 'yeu_cau_su_kien_yeu_cau_id_fkey', 'CASCADE')
+    ('§65b', 'bảng yeu_cau_su_kien (trả lời + lịch sử), xoá theo yêu cầu, CHECK kiểu nhận phan_loai',
+     lambda: _ca(lambda: _fk('yeu_cau_su_kien', 'yeu_cau_su_kien_yeu_cau_id_fkey', 'CASCADE'),
+                 lambda: _check_co_gia_tri('yeu_cau_su_kien_kieu_check', 'phan_loai'))
      if _cot('yeu_cau_su_kien', 'noi_bo')[0] else (False, 'chưa có bảng')),
     ('§65c', 'class_members.reserve_until (bảo lưu tới ngày)',
      lambda: _cot('class_members', 'reserve_until')),

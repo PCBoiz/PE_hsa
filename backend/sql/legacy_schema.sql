@@ -2212,10 +2212,12 @@ CREATE TABLE IF NOT EXISTS yeu_cau_su_kien (
     noi_dung   TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
+-- 'phan_loai' (26/09/2026): học vụ đổi loại một yêu cầu hỗ trợ, bảng TopHSA dòng 11 "phân
+-- loại". `tu` / `den` = mã loại cũ / mới.
 ALTER TABLE yeu_cau_su_kien DROP CONSTRAINT IF EXISTS yeu_cau_su_kien_kieu_check;
 ALTER TABLE yeu_cau_su_kien ADD CONSTRAINT yeu_cau_su_kien_kieu_check CHECK (kieu IN (
     'tao', 'tra_loi', 'ghi_chu', 'trang_thai', 'giao', 'chuyen_tiep', 'duyet', 'tu_choi',
-    'thuc_thi', 'loi'));
+    'thuc_thi', 'loi', 'phan_loai'));
 CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_yc    ON yeu_cau_su_kien (yeu_cau_id, id);
 CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_actor ON yeu_cau_su_kien (actor_id);
 -- §65c · Bảo lưu tới ngày nào (lý do rời lớp 'reserved' đã có ở §36). NULL = chưa hẹn.

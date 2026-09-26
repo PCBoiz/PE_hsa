@@ -78,6 +78,13 @@ export const VIEC: Record<string, string> = {
   // Gắn tay một buổi với buổi khung + sổ đầu bài (E1, §70, 25/09/2026).
   'session.syllabus': 'Gắn buổi học với buổi khung',
   'session.log': 'Ghi sổ đầu bài',
+  // Hộp Yêu cầu (E3, §65, 25–26/09/2026).
+  'request.create': 'Gửi yêu cầu',
+  'request.status': 'Đổi trạng thái yêu cầu',
+  'request.assign': 'Giao người xử lý yêu cầu',
+  'request.approve': 'Duyệt yêu cầu (hệ thống tự làm)',
+  'request.reject': 'Từ chối yêu cầu',
+  'request.classify': 'Đổi loại yêu cầu',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'course.publish': 'Mở / chuyển nháp khoá học',

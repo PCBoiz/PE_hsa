@@ -238,11 +238,14 @@ def test_lop_gia_su_du_ba_em_409_va_khong_gi_doi(d, canh):
         d.vao(gs, d.nguoi())
     yid = _xin(d, canh, 'tt_chuyen_lop')
     truoc = q1('SELECT * FROM yeu_cau WHERE id=%s', (yid,))
-    so_luot = q1('SELECT count(*) AS n FROM class_members')['n']
+    # Chỉ đếm lượt của CHÍNH phép kiểm (hai lớp + em) — đếm cả bảng thì đỏ oan khi lead / agent
+    # khác đang ghi `class_members` song song trên cùng nhánh Neon (soát 26/09/2026).
+    dem = 'SELECT count(*) AS n FROM class_members WHERE class_id = ANY(%s) OR user_id = %s'
+    so_luot = q1(dem, ([canh['a'], gs], canh['em']))['n']
     r = d.api(canh['hv']).post('/api/admin/yeu-cau/%d/duyet' % yid, {'den_lop_id': gs}, format='json')
     assert r.status_code == 409, r.data
     assert _luot(canh['a'], canh['em'])[0]['left_at'] is None and not _luot(gs, canh['em'])
-    assert q1('SELECT count(*) AS n FROM class_members')['n'] == so_luot
+    assert q1(dem, ([canh['a'], gs], canh['em']))['n'] == so_luot
     sau = q1('SELECT * FROM yeu_cau WHERE id=%s', (yid,))
     for k in ('trang_thai', 'nguoi_duyet', 'duyet_luc', 'thuc_thi', 'closed_at'):
         assert sau[k] == truoc[k], k
@@ -377,3 +380,133 @@ def test_phu_huynh_chi_thay_yeu_cau_phu_huynh_khong_thay_noi_bo(d, canh):
                {'loai': 'ht_hoc_tap', 'tieu_de': 'x', 'hoc_vien_id': canh['em2'], 'class_id': canh['b']},
                format='json')
     assert r.data['hocVien']['id'] == canh['em'] and r.data['lop']['id'] == canh['a']
+
+
+# ── Soát 26/09/2026 (E3 lượt 2): phạm vi học viên / phụ huynh, phân loại, mở lại, chữ lỗi ──
+
+def test_hoc_vien_chi_thay_yeu_cau_minh_gui(d, canh):
+    """Học viên KHÔNG thấy trợ giảng báo lên về em, phụ huynh gửi về em, giảng viên xin thay đổi
+    cho em — "của mình" là mình GỬI. Bản đầu lọc `hoc_vien_id = em OR nguoi_tao = em`: em đọc
+    được cả lời trợ giảng báo "em không phản hồi" lẫn điều phụ huynh nhờ trung tâm để ý."""
+    bl = _tao(d.api(canh['tg']), {'loai': 'bao_cao_len', 'tieu_de': 'Em không trả lời tin nhắn',
+                                  'class_id': canh['a'], 'hoc_vien_id': canh['em']},
+              '/api/teach/yeu-cau')
+    assert bl.status_code == 201, bl.data
+    tk = d.link(canh['a'], canh['em'], canh['gv'])
+    ph = APIClient().post('/api/public/phu-huynh/%s/yeu-cau' % tk,
+                          {'loai': 'ht_hoc_tap', 'tieu_de': 'Nhờ thầy cô để ý cháu'}, format='json')
+    assert ph.status_code == 201, ph.data
+    gv = _tao(d.api(canh['gv']), {'loai': 'tt_hoc_bu', 'tieu_de': 'Đề xuất học bù', 'class_id': canh['a'],
+                                  'hoc_vien_id': canh['em']}, '/api/teach/yeu-cau')
+    assert gv.status_code == 201, gv.data
+    hs = d.api(canh['em'])
+    cua_em = _tao(hs, {'loai': 'ht_hoc_tap', 'tieu_de': 'Xin tài liệu'}).data['id']
+    assert [y['id'] for y in hs.get('/api/yeu-cau').data['yeuCau']] == [cua_em]
+    for r in (bl, ph, gv):
+        assert hs.get('/api/yeu-cau/%d' % r.data['id']).status_code == 404
+        assert hs.post('/api/yeu-cau/%d/tra-loi' % r.data['id'], {'noi_dung': 'x'},
+                       format='json').status_code == 404
+
+
+def test_phu_huynh_chi_thay_yeu_cau_gui_qua_chinh_link(d, canh):
+    """Danh sách trên tờ báo cáo = yêu cầu gửi QUA LINK ẤY (lời giao việc 26/09) — link thứ hai
+    của cùng em (bố / mẹ, kỳ khác) không đọc được lời trung tâm trả lời qua link thứ nhất."""
+    a = d.link(canh['a'], canh['em'], canh['gv'])
+    b = d.link(canh['a'], canh['em'], canh['gv'])
+    c = APIClient()
+    ya = c.post('/api/public/phu-huynh/%s/yeu-cau' % a, {'loai': 'ht_hoc_tap', 'tieu_de': 'Qua link A'},
+                format='json').data['id']
+    assert [y['id'] for y in c.get('/api/public/phu-huynh/%s/yeu-cau' % b).data['yeuCau']] == []
+    assert [y['id'] for y in c.get('/api/public/phu-huynh/%s/yeu-cau' % a).data['yeuCau']] == [ya]
+
+
+def test_hoc_vu_phan_loai_ghi_lich_su_giang_vien_khong_duoc(d, canh):
+    yid = _tao(d.api(canh['em']), {'loai': 'ht_hoc_tap', 'tieu_de': 'Không vào được phòng Zoom',
+                                   'class_id': canh['a']}).data['id']
+    duong = '/api/admin/yeu-cau/%d/phan-loai' % yid
+    assert d.api(canh['gv']).post(duong, {'loai': 'ht_ky_thuat'}, format='json').status_code == 403
+    hv = d.api(canh['hv'])
+    r = hv.post(duong, {'loai': 'ht_ky_thuat'}, format='json')
+    assert r.status_code == 200 and r.data['loai'] == 'ht_ky_thuat', r.data
+    sk = [s for s in r.data['suKien'] if s['kieu'] == 'phan_loai']
+    assert len(sk) == 1 and (sk[0]['tu'], sk[0]['den']) == ('ht_hoc_tap', 'ht_ky_thuat')
+    # Phân loại là việc của yêu cầu HỖ TRỢ — không biến nó thành một lượt xin–duyệt.
+    assert hv.post(duong, {'loai': 'tt_chuyen_lop'}, format='json').status_code == 400
+    # Sang "hỗ trợ tài khoản" thì giảng viên / trợ giảng thôi thấy (luật phạm vi đi theo loại).
+    assert hv.post(duong, {'loai': 'ht_tai_khoan'}, format='json').status_code == 200
+    assert d.api(canh['gv']).get('/api/teach/yeu-cau/%d' % yid).status_code == 404
+    assert d.api(canh['em']).get('/api/yeu-cau/%d' % yid).data['loai'] == 'ht_tai_khoan'
+
+
+def test_mo_lai_yeu_cau_thay_doi_bi_tu_choi_chi_hoc_vu(d, canh):
+    yid = _xin(d, canh, 'tt_chuyen_lop')
+    hv = d.api(canh['hv'])
+    assert hv.post('/api/admin/yeu-cau/%d/tu-choi' % yid, {'ket_qua': 'Lớp kín'}, format='json').status_code == 200
+    for ai in (canh['tg'], canh['gv']):
+        r = d.api(ai).post('/api/teach/yeu-cau/%d/trang-thai' % yid, {'den': 'dang_xu_ly'}, format='json')
+        assert r.status_code == 403, r.data
+    r = hv.post('/api/teach/yeu-cau/%d/trang-thai' % yid, {'den': 'dang_xu_ly'}, format='json')
+    assert r.status_code == 200 and r.data['trangThai'] == 'dang_xu_ly'
+
+
+def test_loi_du_lieu_noi_bang_chu_nguoi_dung(d, canh):
+    r = _tao(d.api(canh['em']), {'loai': 'ht_lich_hoc', 'tieu_de': 'x', 'du_lieu': {'sdt': '0' * 30}})
+    assert r.status_code == 400 and 'Số điện thoại' in r.data['error'], r.data
+    assert 'sdt' not in r.data['error'].lower()
+
+
+def test_duyet_khi_em_da_roi_lop_la_409_khong_phai_404(d, canh):
+    """404 ở đường duyệt đọc thành "không có yêu cầu này" — sai: yêu cầu có, chỉ việc không làm được."""
+    yid = _xin(d, canh, 'tt_chuyen_lop')
+    x("UPDATE class_members SET left_at = now(), leave_reason = 'dropped' WHERE class_id=%s AND user_id=%s",
+      (canh['a'], canh['em']))
+    r = d.api(canh['hv']).post('/api/admin/yeu-cau/%d/duyet' % yid, {'den_lop_id': canh['b']}, format='json')
+    assert r.status_code == 409 and 'không đang học' in r.data['error'], r.data
+    assert q1('SELECT trang_thai FROM yeu_cau WHERE id=%s', (yid,))['trang_thai'] == 'moi'
+
+
+def test_tro_giang_khong_thay_email_em_chua_co_ten(d, canh):
+    x("UPDATE users SET name = '' WHERE id = %s", (canh['em'],))
+    yid = _tao(d.api(canh['em']), {'loai': 'hoi_dap', 'tieu_de': 'Câu 3 bài tập'}).data['id']
+    email = q1('SELECT email FROM users WHERE id=%s', (canh['em'],))['email']
+    tg = d.api(canh['tg'])
+    ct = tg.get('/api/teach/yeu-cau/%d' % yid).data
+    ds = [y for y in tg.get('/api/teach/yeu-cau').data['yeuCau'] if y['id'] == yid]
+    assert ds and email not in json.dumps([ct, ds], ensure_ascii=False, default=str)
+
+
+def test_tro_giang_bao_em_khong_phan_hoi(d, canh):
+    r = _tao(d.api(canh['tg']), {'loai': 'bao_cao_len', 'tieu_de': 'Em không phản hồi 3 ngày',
+                                 'class_id': canh['a'], 'hoc_vien_id': canh['em'],
+                                 'du_lieu': {'khong_phan_hoi': True}}, '/api/teach/yeu-cau')
+    assert r.status_code == 201 and r.data['duLieu'].get('khong_phan_hoi') is True, r.data
+
+
+def test_lua_chon_em_chi_cho_lop_trong_pham_vi_va_khong_lien_lac(d, canh):
+    tg = d.api(canh['tg'])
+    r = tg.get('/api/teach/yeu-cau/lua-chon', {'class_id': canh['a']})
+    assert {h['id'] for h in r.data['hocVien']} == {canh['em'], canh['em2']}, r.data
+    assert all(set(h) == {'id', 'ten'} for h in r.data['hocVien']), 'chỉ tên em — không liên lạc'
+    # Lớp ngoài phạm vi: không lộ sĩ số.
+    assert tg.get('/api/teach/yeu-cau/lua-chon', {'class_id': canh['b']}).data['hocVien'] == []
+
+
+def test_lich_su_co_nhan_trang_thai_va_loai(d, canh):
+    yid = _tao(d.api(canh['em']), {'loai': 'ht_hoc_tap', 'tieu_de': 'x'}).data['id']
+    hv = d.api(canh['hv'])
+    hv.post('/api/teach/yeu-cau/%d/trang-thai' % yid, {'den': 'dang_xu_ly'}, format='json')
+    r = hv.post('/api/admin/yeu-cau/%d/phan-loai' % yid, {'loai': 'ht_lich_hoc'}, format='json')
+    sk = {s['kieu']: s for s in r.data['suKien']}
+    assert (sk['trang_thai']['tuNhan'], sk['trang_thai']['denNhan']) == ('Mới', 'Đang xử lý')
+    assert (sk['phan_loai']['tuNhan'], sk['phan_loai']['denNhan']) == ('Hỗ trợ học tập', 'Hỗ trợ lịch học')
+
+
+def test_moi_nguon_chi_gui_duoc_loai_cua_minh(d, canh):
+    assert _tao(d.api(canh['em']), {'loai': 'bao_cao_len', 'tieu_de': 'x',
+                                    'class_id': canh['a']}).status_code == 400
+    tk = d.link(canh['a'], canh['em'], canh['gv'])
+    r = APIClient().post('/api/public/phu-huynh/%s/yeu-cau' % tk, {'loai': 'ht_tai_khoan', 'tieu_de': 'x'},
+                         format='json')
+    assert r.status_code == 400
+    assert _tao(d.api(canh['tg']), {'loai': 'ht_hoc_tap', 'tieu_de': 'x', 'class_id': canh['a']},
+                '/api/teach/yeu-cau').status_code == 400

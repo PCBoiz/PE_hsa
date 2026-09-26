@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/admin/yeu-cau/<int:yc_id>/giao', v.GiaoView.as_view()),
     path('api/admin/yeu-cau/<int:yc_id>/duyet', v.DuyetView.as_view()),
     path('api/admin/yeu-cau/<int:yc_id>/tu-choi', v.TuChoiView.as_view()),
+    path('api/admin/yeu-cau/<int:yc_id>/phan-loai', v.PhanLoaiView.as_view()),
     path('api/admin/yeu-cau/<int:yc_id>/lop', v.LopChuyenToiView.as_view()),
     # ── Phụ huynh (link) ──
     path('api/public/phu-huynh/<str:token>/yeu-cau', v.PhuHuynhYeuCauView.as_view()),

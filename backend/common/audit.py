@@ -158,6 +158,8 @@ REQUEST_STATUS = 'request.status'
 REQUEST_ASSIGN = 'request.assign'
 REQUEST_APPROVE = 'request.approve'
 REQUEST_REJECT = 'request.reject'
+#: Học vụ đổi loại một yêu cầu hỗ trợ (bảng TopHSA dòng 11 "phân loại", 26/09/2026).
+REQUEST_CLASSIFY = 'request.classify'
 
 
 def _client_ip(request):

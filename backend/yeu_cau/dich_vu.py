@@ -4,6 +4,7 @@
     tra_loi()            — trả lời / ghi chú nội bộ
     chuyen_trang_thai()  — MỘT hàm cho mọi lần đổi trạng thái, theo `loai.CHUYEN`
     giao()               — giao / chuyển tiếp người xử lý
+    phan_loai()          — học vụ đổi loại một yêu cầu hỗ trợ (bảng TopHSA dòng 11)
     duyet()              — duyệt loại thay đổi = THỰC THI trong cùng một giao dịch
     pham_vi_yeu_cau()    — ai thấy yêu cầu nào (MỘT nguồn cho danh sách, chi tiết, ghi)
 
@@ -71,9 +72,12 @@ class NguoiLam:
 
     @property
     def ten(self):
+        """Tên CHÉP vào `yeu_cau_su_kien.actor_ten` — mọi người thấy yêu cầu đều đọc được, kể cả
+        trợ giảng. Không lấy email thay tên (soát 26/09/2026): em chưa có tên thì bản đầu chép
+        email của em vào lịch sử, trợ giảng đọc được liên lạc của em."""
         if self.link:
             return VAI_PHU_HUYNH
-        return getattr(self.user, 'name', None) or getattr(self.user, 'email', None) or '—'
+        return getattr(self.user, 'name', None) or ('#%s' % self.id if self.id else '—')
 
     @property
     def la_duyet(self):
@@ -100,19 +104,27 @@ def pham_vi_yeu_cau(user=None, link=None):
     - học vụ / quản trị: mọi yêu cầu;
     - GV / TG: loại gắn lớp trong `visible_class_ids` + việc giao cho mình + việc mình tạo,
       KHÔNG BAO GIỜ `ht_tai_khoan`;
-    - học viên: yêu cầu về mình hoặc do mình tạo; không thấy ghi chú nội bộ;
-    - phụ huynh (qua link): yêu cầu về em của link DO PHỤ HUYNH tạo; không thấy nội bộ;
+    - học viên: CHỈ yêu cầu em tự gửi; không thấy ghi chú nội bộ;
+    - phụ huynh (qua link): CHỈ yêu cầu gửi qua CHÍNH link ấy; không thấy nội bộ;
     - ai khác: không gì cả.
+
+    Soát 26/09/2026 — hai chỗ bản đầu rộng hơn quyết định:
+    · học viên từng thấy mọi yêu cầu có `hoc_vien_id` là mình, tức cả trợ giảng "báo lên" về
+      em ("em không phản hồi"), cả điều phụ huynh nhờ trung tâm để ý, cả lượt giảng viên xin
+      thay đổi cho em. "Của mình" = mình GỬI (`nguoi_tao`).
+    · phụ huynh từng thấy mọi yêu cầu nguồn phụ huynh của em, qua MỌI link — link thứ hai (bố /
+      mẹ, kỳ báo cáo khác) đọc được trả lời gửi cho link thứ nhất. Lời giao việc: danh sách
+      trên tờ = yêu cầu "đã gửi qua link ấy".
     """
     if link is not None:
-        return ("y.hoc_vien_id = %s AND y.nguon = 'phu_huynh'", [link['user_id']], False)
+        return ("y.link_id = %s AND y.nguon = 'phu_huynh'", [link['id']], False)
     if is_admin(user) or is_academic(user):
         return ('TRUE', [], True)
     if is_teacher(user) or is_assistant(user):
         return ("y.loai <> 'ht_tai_khoan' AND (y.class_id = ANY(%s) OR y.nguoi_xu_ly = %s "
                 'OR y.nguoi_tao = %s)', [visible_class_ids(user), user.id, user.id], True)
     if user is not None and getattr(user, 'is_authenticated', False):
-        return ('(y.hoc_vien_id = %s OR y.nguoi_tao = %s)', [user.id, user.id], False)
+        return ('y.nguoi_tao = %s', [user.id], False)
     return ('FALSE', [], False)
 
 
@@ -196,7 +208,16 @@ def co_the(nguoi, yc):
         'duyet': thay_doi and nguoi.la_duyet and duoc('da_duyet'),
         'giao': nguoi.la_duyet and tt not in DONG,
         'chuyenTiep': nguoi.la_nhan_su and tt not in DONG,
+        'phanLoai': nguoi.la_duyet and tt not in DONG and loai in L.PHAN_LOAI_DUOC,
     }
+
+
+def _ten_em(nguoi, yc):
+    """Tên em của yêu cầu. Em chưa có tên: chỉ học vụ / quản trị đọc email thay tên — bản đầu
+    lấy email cho mọi người, trợ giảng đọc được liên lạc của em (soát 26/09/2026)."""
+    if not yc['hoc_vien_id']:
+        return None
+    return yc['hv_ten'] or (yc['hv_email'] if nguoi.la_duyet else 'Học viên #%d' % yc['hoc_vien_id'])
 
 
 def dung(nguoi, yc, su_kien=None):
@@ -208,7 +229,7 @@ def dung(nguoi, yc, su_kien=None):
         'trangThai': yc['trang_thai'], 'trangThaiNhan': L.NHAN_TRANG_THAI[yc['trang_thai']],
         'nguon': yc['nguon'], 'tieuDe': yc['tieu_de'], 'noiDung': yc['noi_dung'],
         'duLieu': _du_lieu_cho(nguoi, yc['du_lieu']), 'ketQua': yc['ket_qua'],
-        'hocVien': _nguoi_json(yc['hoc_vien_id'], yc['hv_ten'] or yc['hv_email']),
+        'hocVien': _nguoi_json(yc['hoc_vien_id'], _ten_em(nguoi, yc)),
         'lop': _nguoi_json(yc['class_id'], yc['lop_ten']),
         'buoi': {'id': yc['session_id'], 'luc': _iso(yc['buoi_luc'])} if yc['session_id'] else None,
         'nguoiTao': (_nguoi_json(yc['nguoi_tao'], yc['nt_ten'])
@@ -229,6 +250,16 @@ def dung(nguoi, yc, su_kien=None):
     return ra
 
 
+def _nhan_moc(kieu, ma):
+    """Nhãn người đọc của `tu` / `den`: mã trạng thái / mã loại → chữ ở `loai.py` (MỘT nguồn nhãn
+    cho mọi màn); giao / chuyển tiếp đã chép sẵn TÊN người nên giữ nguyên."""
+    if ma is None:
+        return None
+    if kieu == 'phan_loai':
+        return L.LOAI.get(ma, {}).get('nhan', ma)
+    return L.NHAN_TRANG_THAI.get(ma, ma)
+
+
 def su_kien_cua(nguoi, yc_id):
     _, _, xem_noi_bo = _pham_vi(nguoi)
     rows = q('SELECT * FROM yeu_cau_su_kien WHERE yeu_cau_id = %s'
@@ -236,7 +267,9 @@ def su_kien_cua(nguoi, yc_id):
     return [{'id': r['id'], 'kieu': r['kieu'], 'noiBo': r['noi_bo'],
              'ai': {'id': r['actor_id'] if xem_noi_bo else None, 'ten': r['actor_ten'],
                     'vai': r['actor_vai']},
-             'tu': r['tu'], 'den': r['den'], 'noiDung': r['noi_dung'], 'luc': _iso(r['created_at'])}
+             'tu': r['tu'], 'den': r['den'],
+             'tuNhan': _nhan_moc(r['kieu'], r['tu']), 'denNhan': _nhan_moc(r['kieu'], r['den']),
+             'noiDung': r['noi_dung'], 'luc': _iso(r['created_at'])}
             for r in rows]
 
 
@@ -322,9 +355,12 @@ def _lam_sach_du_lieu(du_lieu):
             ra['den_ngay'] = date.fromisoformat(str(d['den_ngay'])[:10]).isoformat()
         except ValueError as e:
             raise LoiYeuCau(400, 'Ngày phải ở dạng YYYY-MM-DD.') from e
-    for k, tran in (('sdt', 20), ('ngay_mong_muon', 100), ('lop_mong_muon', 200)):
+    for k, (tran, nhan) in L.CHU_DU_LIEU.items():
         if d.get(k) not in (None, ''):
-            ra[k] = _chu(d[k], tran, k)
+            ra[k] = _chu(d[k], tran, nhan)
+    for k in L.CO_DU_LIEU:
+        if d.get(k) is True:
+            ra[k] = True
     return ra
 
 
@@ -540,6 +576,40 @@ def giao(nguoi, yc_id, nguoi_xu_ly_id, *, ghi_chu=None, request=None):
         if dich is not None and dich != nguoi.id:
             gui_sau_commit([dich], LOAI_THONG_BAO, 'Yêu cầu được giao cho bạn: %s' % yc['tieu_de'],
                            ghi_chu or '', ref=('yeu_cau', yc_id))
+    return chi_tiet(nguoi, yc_id)
+
+
+def phan_loai(nguoi, yc_id, loai_moi, *, request=None):
+    """Học vụ ĐỔI LOẠI một yêu cầu hỗ trợ chưa đóng (bảng TopHSA dòng 11 "phân loại").
+
+    Chỉ trong `loai.PHAN_LOAI_DUOC`; loại mới đòi lớp / buổi thì yêu cầu phải có sẵn. Sang
+    "hỗ trợ tài khoản" mà người xử lý là GV / TG → trả về học vụ: phạm vi GV / TG không bao
+    giờ gồm loại ấy, để nguyên là giao việc cho người không còn mở được nó."""
+    if not nguoi.la_duyet:
+        raise LoiYeuCau(403, 'Chỉ học vụ hoặc quản trị viên phân loại được.')
+    if loai_moi not in L.PHAN_LOAI_DUOC:
+        raise LoiYeuCau(400, 'Chỉ đổi được giữa các loại hỗ trợ và câu hỏi.')
+    moi = L.LOAI[loai_moi]
+    with transaction.atomic():
+        yc = _doc(nguoi, yc_id, khoa=True)
+        if yc['trang_thai'] in DONG:
+            raise LoiYeuCau(409, 'Yêu cầu đã đóng.')
+        if yc['loai'] not in L.PHAN_LOAI_DUOC:
+            raise LoiYeuCau(400, 'Loại "%s" không đổi được.' % L.LOAI[yc['loai']]['nhan'])
+        if yc['loai'] == loai_moi:
+            return chi_tiet(nguoi, yc_id)
+        if moi.get('can_lop') and not yc['class_id']:
+            raise LoiYeuCau(400, 'Yêu cầu chưa gắn lớp — không đổi sang "%s" được.' % moi['nhan'])
+        if moi.get('can_buoi') and not yc['session_id']:
+            raise LoiYeuCau(400, 'Yêu cầu chưa gắn buổi học — không đổi sang "%s" được.' % moi['nhan'])
+        tra_ve_hoc_vu = loai_moi == 'ht_tai_khoan' and yc['nx_vai'] in (ROLE_TEACHER, ROLE_ASSISTANT)
+        x('UPDATE yeu_cau SET loai = %s, updated_at = %s, '
+          'nguoi_xu_ly = CASE WHEN %s THEN NULL ELSE nguoi_xu_ly END WHERE id = %s',
+          (loai_moi, local_now(), tra_ve_hoc_vu, yc_id))
+        _ghi_su_kien(yc_id, nguoi, 'phan_loai', tu=yc['loai'], den=loai_moi)
+        _audit(request, nguoi, audit.REQUEST_CLASSIFY, yc,
+               'Đổi loại yêu cầu "%s": %s → %s.' % (yc['tieu_de'], L.LOAI[yc['loai']]['nhan'], moi['nhan']),
+               {'tu': yc['loai'], 'den': loai_moi})
     return chi_tiet(nguoi, yc_id)
 
 

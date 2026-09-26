@@ -28,10 +28,16 @@ VIEC_TAY = {
 }
 
 
+#: Lỗi của VIỆC khi duyệt không bao giờ là 404: đường duyệt trả 404 đọc thành "không có yêu cầu
+#: này" (màn chặn `khong-thay`), trong khi yêu cầu có thật — chỉ việc không làm được. Bản đầu
+#: chuyển nguyên 404 của `ChuyenLopView._chuyen` ("Em không đang học lớp …") ra ngoài (soát 26/09).
+MA_VIEC_HONG = 409
+
+
 def _em(yc):
     em = q1('SELECT id, name, email, role FROM users WHERE id = %s', (yc['hoc_vien_id'],))
     if not em:
-        raise LoiYeuCau(404, 'Không tìm thấy học viên của yêu cầu.')
+        raise LoiYeuCau(MA_VIEC_HONG, 'Không tìm thấy học viên của yêu cầu.')
     if em['role'] != ROLE_STUDENT:
         raise LoiYeuCau(400, 'Tài khoản của yêu cầu không phải học viên.')
     return em
@@ -41,7 +47,7 @@ def _lop(class_id, ten='lớp'):
     lop = q1('SELECT c.id, c.name, c.status, c.class_type, c.course_id, co.title AS course_title '
              'FROM classes c LEFT JOIN courses co ON co.id = c.course_id WHERE c.id = %s', (class_id,))
     if not lop:
-        raise LoiYeuCau(404, 'Không tìm thấy %s.' % ten)
+        raise LoiYeuCau(MA_VIEC_HONG, 'Không tìm thấy %s.' % ten)
     return lop
 
 
@@ -139,7 +145,9 @@ def thuc_hien(yc, tham_so, request):
         try:
             kq = ChuyenLopView._chuyen(request, lop['id'], den_id, em, _ten(em), local_now(), ghi_chu)
         except _Huy as h:
-            raise LoiYeuCau(h.phan_hoi.status_code, h.phan_hoi.data.get('error') or 'Không chuyển được.') from h
+            ma = h.phan_hoi.status_code
+            raise LoiYeuCau(MA_VIEC_HONG if ma == 404 else ma,
+                            h.phan_hoi.data.get('error') or 'Không chuyển được.') from h
         den = _lop(den_id)
         return {'cach': 'tu_dong', 'viec': 'chuyen_lop', 'tuLop': lop['id'], 'denLop': den_id,
                 'tuLuot': kq['fromMemberId'], 'denLuot': kq['toMemberId'], 'canhBao': kq['warnings'],

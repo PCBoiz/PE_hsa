@@ -2,7 +2,7 @@
 
 - học viên   `/api/yeu-cau…`                          (`LaHocVien`)
 - nhân sự    `/api/teach/yeu-cau…`                    (`IsTeachingStaff`, lọc `pham_vi_yeu_cau`)
-- học vụ     `/api/admin/yeu-cau/<id>/(giao|duyet|tu-choi)` (`IsAdminOrAcademic`)
+- học vụ     `/api/admin/yeu-cau/<id>/(giao|duyet|tu-choi|phan-loai|lop)` (`IsAdminOrAcademic`)
 - phụ huynh  `/api/public/phu-huynh/<token>/yeu-cau`  (không tài khoản, tra chìa như tờ báo cáo)
 """
 from rest_framework.permissions import AllowAny, BasePermission
@@ -24,6 +24,7 @@ from common.permissions import (
 )
 from common.throttling import _IPKhach
 from teaching.parent_link import _cua_ai
+from teaching.vocab import chi_hoc_vien
 from yeu_cau import dich_vu as dv
 from yeu_cau import loai as L
 
@@ -168,18 +169,36 @@ class YeuCauNhanSuView(APIView):
 
 
 class LuaChonNhanSuView(APIView):
-    """GET /api/teach/yeu-cau/lua-chon — loại tạo được, lớp trong phạm vi, nhãn trạng thái."""
+    """GET /api/teach/yeu-cau/lua-chon[?class_id=] — loại tạo được, lớp trong phạm vi, nhãn
+    trạng thái. Có `class_id` (lớp trong phạm vi) thì thêm em ĐANG học + buổi đã diễn ra của lớp
+    ấy — để trợ giảng "Báo lên" về một em, hay báo lỗi bản ghi một buổi. Chỉ tên em, không liên
+    lạc (trợ giảng cũng gọi đường này)."""
     permission_classes = [IsTeachingStaff]
 
     def get(self, request):
         ids = visible_class_ids(request.user)
         lop = q('SELECT id, name FROM classes WHERE id = ANY(%s) ORDER BY name', (ids,)) if ids else []
+        try:
+            cid = int(request.query_params.get('class_id') or 0)
+        except ValueError:
+            cid = 0
+        hoc_vien, buoi = [], []
+        if cid and cid in ids:
+            hoc_vien = q('SELECT u.id, u.name FROM class_members m JOIN users u ON u.id = m.user_id '
+                         'WHERE m.class_id = %s AND m.left_at IS NULL AND ' + chi_hoc_vien('u')
+                         + ' ORDER BY u.name', (cid,))
+            buoi = q("SELECT id, starts_at, topic FROM class_sessions WHERE class_id = %s "
+                     "AND starts_at <= %s AND status <> 'cancelled' ORDER BY starts_at DESC LIMIT 30",
+                     (cid, local_now()))
         return Response({
             'loai': _lua_chon_loai(_nguon_nhan_su(request.user)),
-            'tatCaLoai': [{'code': k, 'nhan': v['nhan'], 'canDuyet': L.la_thay_doi(k)}
+            'tatCaLoai': [{'code': k, 'nhan': v['nhan'], 'canDuyet': L.la_thay_doi(k),
+                           'phanLoai': k in L.PHAN_LOAI_DUOC}
                           for k, v in L.LOAI.items()],
             'trangThai': [{'code': k, 'nhan': L.NHAN_TRANG_THAI[k]} for k in L.TRANG_THAI],
             'lop': [{'id': r['id'], 'ten': r['name']} for r in lop],
+            'hocVien': [{'id': r['id'], 'ten': r['name'] or 'Học viên #%d' % r['id']} for r in hoc_vien],
+            'buoi': [{'id': r['id'], 'luc': r['starts_at'].isoformat(), 'chuDe': r['topic']} for r in buoi],
         })
 
 
@@ -295,6 +314,18 @@ class DuyetView(APIView):
             return Response(dv.duyet(dv.NguoiLam(user=request.user), yc_id,
                                      {'den_lop_id': b.get('den_lop_id'), 'den_ngay': b.get('den_ngay')},
                                      ket_qua=b.get('ket_qua'), request=request))
+        except dv.LoiYeuCau as e:
+            return _loi(e)
+
+
+class PhanLoaiView(APIView):
+    """POST /api/admin/yeu-cau/<id>/phan-loai {loai} — đổi loại một yêu cầu hỗ trợ (dòng 11)."""
+    permission_classes = [IsAdminOrAcademic]
+
+    def post(self, request, yc_id):
+        try:
+            return Response(dv.phan_loai(dv.NguoiLam(user=request.user), yc_id, _body(request).get('loai'),
+                                         request=request))
         except dv.LoiYeuCau as e:
             return _loi(e)
 

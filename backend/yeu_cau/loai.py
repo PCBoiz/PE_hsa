@@ -41,7 +41,7 @@ MO = ('moi', 'dang_xu_ly', 'da_duyet')
 NGUON = ('hoc_vien', 'phu_huynh', 'tro_giang', 'giang_vien', 'hoc_vu')
 
 KIEU_SU_KIEN = ('tao', 'tra_loi', 'ghi_chu', 'trang_thai', 'giao', 'chuyen_tiep', 'duyet',
-                'tu_choi', 'thuc_thi', 'loi')
+                'tu_choi', 'thuc_thi', 'loi', 'phan_loai')
 
 #: Loại người làm, suy từ vai trong `dich_vu.NguoiLam`.
 NGUOI_TAO = 'nguoi_tao'   # chính người đã tạo (học viên / phụ huynh qua link / nhân sự)
@@ -70,11 +70,21 @@ CHUYEN = {
     ('da_huy', 'dang_xu_ly'): (NHAN_SU, None),
 }
 #: Từ chối loại thay đổi = việc của người duyệt (thêm vào bảng, không đè dòng 'khac' ở trên).
+#: Mở lại một lượt xin đã bị từ chối / đã rút cũng thế (soát 26/09/2026): bản đầu để mọi nhân
+#: sự mở lại — trợ giảng mở lại được một lượt xin chuyển lớp học vụ vừa từ chối.
 CHUYEN_THAY_DOI = {
     ('moi', 'tu_choi'): DUYET,
     ('dang_xu_ly', 'tu_choi'): DUYET,
+    ('tu_choi', 'dang_xu_ly'): DUYET,
+    ('da_huy', 'dang_xu_ly'): DUYET,
 }
 CHI_QUA_DUYET = 'da_duyet'
+
+#: PHÂN LOẠI (bảng TopHSA dòng 11): học vụ đổi loại một yêu cầu CHƯA ĐÓNG trong nhóm này — em
+#: chọn "học tập" mà thật ra là lỗi kỹ thuật. Không gồm loại xin–duyệt (đổi sang đó là biến một
+#: câu hỏi thành một lượt thực thi) và không gồm "báo lên" (việc nội bộ của nhân sự).
+PHAN_LOAI_DUOC = ('ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap',
+                  'bao_loi_ban_ghi')
 
 
 def nhom(loai):
@@ -112,6 +122,17 @@ TAO_DUOC = {
 #: Khoá trong `du_lieu` là liên lạc của phụ huynh — ẩn với trợ giảng (cùng ranh giới với báo
 #: cáo phụ huynh, `common/permissions.py`).
 LIEN_LAC_PH = ('sdt', 'sdt_phu_huynh', 'email_phu_huynh')
+
+#: Khoá chữ nhận trong `du_lieu` → (trần ký tự, nhãn người dùng đọc). Nhãn đi vào câu lỗi —
+#: bản đầu in thẳng mã khoá ("Sdt tối đa 20 ký tự."), trái RULES §10.
+CHU_DU_LIEU = {
+    'sdt': (20, 'số điện thoại'),
+    'ngay_mong_muon': (100, 'ngày mong muốn'),
+    'lop_mong_muon': (200, 'lớp mong muốn'),
+}
+#: Khoá cờ (đúng / sai) trong `du_lieu`. `khong_phan_hoi`: trợ giảng báo em không phản hồi
+#: (bảng TopHSA dòng 20 "ghi nhận HS không phản hồi").
+CO_DU_LIEU = ('khong_phan_hoi',)
 
 #: Trần độ dài.
 TRAN_TIEU_DE = 200
