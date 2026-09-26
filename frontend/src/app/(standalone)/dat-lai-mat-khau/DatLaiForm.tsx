@@ -25,6 +25,7 @@ type TrangThai = 'dang-kiem' | 'hop-le' | 'het-han';
 export default function DatLaiForm() {
   const daGan = useDaGan();
   const chia = useRef<string>('');
+  const daDoc = useRef(false);
   const [trangThai, setTrangThai] = useState<TrangThai>('dang-kiem');
   const [emailChe, setEmailChe] = useState<string>('');
   const [cauHetHan, setCauHetHan] = useState<string>('');
@@ -33,10 +34,25 @@ export default function DatLaiForm() {
   const [loiChung, setLoiChung] = useState<string | null>(null);
 
   useEffect(() => {
-    const m = /(?:^|&)chia=([A-Za-z0-9_-]+)/.exec(window.location.hash.slice(1));
-    chia.current = m ? m[1] : '';
-    if (window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname);
+    // Chốt: chỉ ĐỌC CHÌA một lần. React StrictMode — bật mặc định ở App Router khi chạy
+    // dev — gọi effect hai lượt; lượt một đọc chìa rồi `replaceState` xoá `#chia=…`, lượt
+    // hai không còn thấy gì và GHI ĐÈ `chia.current` thành rỗng, nên màn báo "hết hạn" cho
+    // một đường dẫn hoàn toàn đúng. Cùng hình dạng với `XacThucForm` (§73), khác một chỗ:
+    // ở đây lượt gọi tiếp theo là `/kiem` (chỉ đọc) nên nó không đốt mất chìa — hỏng nhẹ
+    // hơn, nhưng vẫn là "màn nói sai về một thứ còn dùng được".
+    //
+    // ĐO HAI CHIỀU trên màn thật với một chìa còn sống (27/09/2026):
+    //   · bỏ chốt → 1 lượt POST, máy chủ trả `{"hopLe":true,…}`, màn nói "Đường dẫn này
+    //     đã hết hạn hoặc đã được dùng". Máy chủ nói CÓ, màn nói KHÔNG.
+    //   · có chốt → 2 lượt POST (StrictMode), cả hai `hopLe:true`, màn hiện ô đặt mật khẩu.
+    // Agent E5 nêu chỗ này khi vá `XacThucForm` nhưng chưa đo được; đây là số đo.
+    if (!daDoc.current) {
+      daDoc.current = true;
+      const m = /(?:^|&)chia=([A-Za-z0-9_-]+)/.exec(window.location.hash.slice(1));
+      chia.current = m ? m[1] : '';
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
     }
     let huy = false;
     void (async () => {
