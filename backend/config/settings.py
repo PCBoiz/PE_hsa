@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'chuong_trinh',
     # Hộp Yêu cầu: hỗ trợ + xin–duyệt thay đổi học tập (E3, 25/09/2026) — miền riêng, luật S4.
     'yeu_cau',
+    'lich',
 ]
 
 MIDDLEWARE = [
@@ -308,6 +309,9 @@ REST_FRAMEWORK = {
         # Quên / đặt lại mật khẩu (§52): chung một bộ đếm theo IP cho ba cửa.
         # 30/giờ đủ cho cả một lớp sau một NAT; trần theo TÀI KHOẢN nằm ở CSDL.
         'quen_mk': '30/hour',
+        # Tệp lịch .ics (§71): ứng dụng lịch hỏi lại vài giờ một lần, nên 120 lượt
+        # một giờ trên MỘT chìa đã rộng gấp nhiều lần nhu cầu thật; ai vượt là đang dò.
+        'lich_ics': '120/hour',
     },
     'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
 }

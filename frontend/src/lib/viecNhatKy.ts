@@ -85,6 +85,8 @@ export const VIEC: Record<string, string> = {
   'request.approve': 'Duyệt yêu cầu (hệ thống tự làm)',
   'request.reject': 'Từ chối yêu cầu',
   'request.classify': 'Đổi loại yêu cầu',
+  'calendar.link.new': 'Cấp địa chỉ lịch riêng',
+  'calendar.link.revoke': 'Thu hồi địa chỉ lịch riêng',
   'course.delete': 'Xoá khoá học',
   'course.import': 'Nhập giáo trình',
   'course.publish': 'Mở / chuyển nháp khoá học',

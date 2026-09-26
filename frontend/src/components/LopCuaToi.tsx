@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { BieuTuong } from '@/components/bieuTuong';
+import ThemVaoLich from '@/components/ThemVaoLich';
 
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
 import { lucVN } from '@/lib/gioVN';
@@ -291,6 +292,9 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
           </section>
         );
       })}
+      {/* Lịch học sang điện thoại (§71). Đặt SAU các thẻ lớp: em vào đây trước hết
+          để xem buổi tới và bài phải làm; việc thêm lịch chỉ làm một lần. */}
+      <ThemVaoLich />
     </>
   );
 }

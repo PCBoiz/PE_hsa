@@ -89,13 +89,18 @@ chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong 
 - `.env` không bao giờ commit/in/sửa: `git diff --cached --name-only | grep -i "\.env$"` trước MỖI commit.
 - Repo CÔNG KHAI: không bí mật, token, JWT, chìa link phụ huynh, mật khẩu tạm; không đưa PDF/DOCX của khách, giá, hợp
   đồng, email/tên khách, link bảng tính của khách vào repo (tệp khách trong `docs/` để untracked).
-- Không gửi email/Zalo tới phụ huynh thật. Không ghi vào tài khoản/lớp thử nghiệm của TopHSA (42409, 42843–42850, lớp 7586).
-- Neon = mock production = buổi TỔNG DUYỆT: ghi thử thoải mái, nhưng hạ tầng/bảo mật/phân quyền phải như thật.
+- **Dữ liệu ở MỌI nơi, kể cả production, đều là GIẢ cho tới khi anh Sơn báo** (anh nói rõ 26/09: TopHSA chưa đưa
+  dữ liệu thật nào). Được ghi thử và chạy e2e trọn luồng trên cả hai nhánh CSDL, kể cả tài khoản/lớp thử nghiệm
+  của TopHSA (42409, 42843–42850, lớp 7586) — luật cấm ghi vào chúng đã HẾT hiệu lực. Khi anh báo "có dữ liệu
+  thật", luật cũ quay lại.
+- Vẫn giữ: mock production = buổi TỔNG DUYỆT, hạ tầng/bảo mật/phân quyền phải như thật; và **thư/Zalo chỉ gửi tới
+  địa chỉ thử** (`@example.com`, tài khoản e2e) vì thư đã ra khỏi hệ thống thì không cuộn lại được.
 - DDL chỉ cộng thêm; mục mới `-- ── §NN · TÊN ──` + dòng trong `kiem_luoc_do.py`; nới CHECK thì SỬA TẠI CHỖ (test cấm
   thêm lại ràng buộc cùng tên khác nội dung); vocab = CHECK; `bootstrap_schema` hai lần.
 - Test ĐỎ trước trên mã cũ + đột biến (nền xanh, mỗi đột biến mã 1); đi đúng đường thật; thước báo oan cũng là lỗi.
 - Không hardcode px (clamp/rem/vw/ch); tầng JS cũ chỉ co; mã mới đặt đúng miền, không ghi bảng miền khác.
-- Tối đa 3 agent cục bộ (hạn mức tuần), mỗi agent một worktree cục bộ.
+- **Tối đa 2 agent cục bộ cùng lúc** (anh chốt 26/09 sau khi agent thứ ba chết vì hạn mức phiên 429), mỗi agent
+  một worktree cục bộ; brief để ra TỆP rồi trỏ tới, đừng nhồi vào prompt (đốt token của cả phiên chính).
 - Việc cần anh → MỘT bảng lời thường ở đầu `docs/VIEC_CUA_ANH.md`.
 - Mọi số báo ra phải tự đo (không mượn số của agent/phiên khác mà không ghi rõ); số hiệu năng chỉ sau A/B xen kẽ.
 - Commit tiếng Việt, dòng cuối `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.

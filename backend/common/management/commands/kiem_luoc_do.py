@@ -271,6 +271,14 @@ MUC = [
      if _cot('yeu_cau_su_kien', 'noi_bo')[0] else (False, 'chưa có bảng')),
     ('§65c', 'class_members.reserve_until (bảo lưu tới ngày)',
      lambda: _cot('class_members', 'reserve_until')),
+    # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
+    ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
+     lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')
+     if _cot('calendar_links', 'token_hash')[0] else (False, 'chưa có bảng')),
+    ('§71b', 'calendar_links.scope CHECK toi | trung_tam',
+     lambda: _check_co_gia_tri('calendar_links_scope_check', 'trung_tam')),
+    ('§71c', 'mỗi người mỗi phạm vi chỉ MỘT chìa còn sống',
+     lambda: _chi_muc('idx_calendar_links_mot_chia_song')),
 ]
 
 
