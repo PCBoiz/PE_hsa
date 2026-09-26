@@ -2,12 +2,12 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 55 bảng, 100 khoá ngoài, 12 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
+Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 56 bảng, 102 khoá ngoài, 12 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
 
 | Miền | Bảng |
 |---|---|
 | [lop_hoc](#lop_hoc) | `classes`, `class_members`, `terms`, `term_holidays` |
-| [lich](#lich) | `calendar_links`, `class_sessions`, `session_participants` |
+| [lich](#lich) | `calendar_links`, `recording_views`, `class_sessions`, `session_participants` |
 | [diem_danh](#diem_danh) | `attendance`, `attendance_history` |
 | [bai_tap](#bai_tap) | `assignments`, `submissions`, `assignment_targets` |
 | [chuong_trinh](#chuong_trinh) | `syllabus_versions`, `syllabus_sessions`, `syllabus_items`, `syllabus_materials`, `session_logs`, `session_log_items`, `session_support` |
@@ -223,6 +223,14 @@ erDiagram
         timestamp last_fetch_at
         integer fetch_count
     }
+    recording_views {
+        serial id PK
+        integer session_id FK
+        integer user_id FK
+        timestamp mo_lan_dau
+        timestamp mo_gan_nhat
+        integer lan_mo
+    }
     class_sessions {
         serial id PK
         integer class_id FK
@@ -258,6 +266,8 @@ erDiagram
         serial id PK
     }
     calendar_links }o--|| users : "user_id"
+    recording_views }o--|| class_sessions : "session_id"
+    recording_views }o--|| users : "user_id"
     class_sessions }o--|| classes : "class_id"
     class_sessions }o--o| users : "created_by"
     class_sessions }o--o| users : "attendance_taken_by"
@@ -285,6 +295,17 @@ Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan), `classes` (l
 CHECK:
 
 - `calendar_links_scope_check` (§71): `scope` ∈ {'toi', 'trung_tam'}
+
+### `recording_views` · §72
+
+| Cột | Kiểu | Ràng buộc | § |
+|---|---|---|---|
+| `id` | serial | PK | §72 |
+| `session_id` | integer | NOT NULL · → `class_sessions.id` (cascade) | §72 |
+| `user_id` | integer | NOT NULL · → `users.id` (cascade) | §72 |
+| `mo_lan_dau` | timestamp | NOT NULL · mặc định `now()` | §72 |
+| `mo_gan_nhat` | timestamp | NOT NULL · mặc định `now()` | §72 |
+| `lan_mo` | integer | NOT NULL · mặc định `1` | §72 |
 
 ### `class_sessions` · §33
 
@@ -1014,7 +1035,7 @@ CHECK:
 - `users_username_format_check` (§51): `username IS NULL OR (username ~ '^[a-z0-9][a-z0-9.]{2,29}$' AND username ~ '[a-z]')`
 - `users_tuition_status_check` (§63): `tuition_status` ∈ {'da_dong', 'sap_het', 'het', 'bao_luu'}
 
-Miền khác trỏ vào: `admin_audit.actor_id`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`
+Miền khác trỏ vào: `admin_audit.actor_id`, `assignment_targets.user_id`, `assignments.created_by`, `attendance.marked_by`, `attendance.user_id`, `attendance_history.changed_by`, `attendance_history.user_id`, `calendar_links.user_id`, `class_members.can_ho_tro_by`, `class_members.de_xuat_huong_hoc_by`, `class_members.teacher_comment_by`, `class_members.user_id`, `class_sessions.attendance_taken_by`, `class_sessions.created_by`, `classes.teacher_id`, `comment_likes.user_id`, `comments.user_id`, `course_ratings.user_id`, `courses.instructor_id`, `enrollments.user_id`, `ket_qua_thi_ngoai.nhap_boi`, `ket_qua_thi_ngoai.user_id`, `learning_events.user_id`, `lesson_progress.user_id`, `mock_attempts.user_id`, `notification_settings.user_id`, `notifications.user_id`, `parent_report_links.created_by`, `parent_report_links.user_id`, `parent_report_optout.by_user_id`, `parent_report_optout.user_id`, `parent_report_sends.requested_by`, `post_likes.user_id`, `posts.user_id`, `quizzes.user_id`, `recording_views.user_id`, `roadmap_progress.user_id`, `roadmaps.user_id`, `session_logs.logged_by`, `session_participants.user_id`, `session_support.created_by`, `session_support.user_id`, `study_logs.user_id`, `study_plans.user_id`, `submissions.graded_by`, `submissions.user_id`, `surveys.user_id`, `syllabus_materials.uploaded_by`, `syllabus_versions.created_by`, `term_holidays.created_by`, `topic_self_marks.user_id`, `user_daily_xp_logs.user_id`, `user_follows.followee_id`, `user_follows.follower_id`, `user_missions.user_id`
 
 ### `password_reset_tokens` · §52
 

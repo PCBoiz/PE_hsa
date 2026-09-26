@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 199 tệp backend · 182 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 200 tệp backend · 183 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -16,8 +16,8 @@
 
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
-| [lop_hoc](#lop_hoc) | Lớp học | 4 | 8 tệp · 2325 dòng | 18 tệp · 3647 dòng |
-| [lich](#lich) | Lịch & buổi học | 3 | 14 tệp · 2304 dòng | 9 tệp · 2384 dòng |
+| [lop_hoc](#lop_hoc) | Lớp học | 4 | 8 tệp · 2354 dòng | 18 tệp · 3746 dòng |
+| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2530 dòng | 10 tệp · 2529 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1396 dòng |
@@ -25,9 +25,9 @@
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1838 dòng | 10 tệp · 1789 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1849 dòng | 11 tệp · 2494 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu (E3, sắp có) | 0 | 0 tệp · 0 dòng | 0 tệp · 0 dòng |
-| [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 439 dòng | 0 tệp · 0 dòng |
+| [thong_bao](#thong_bao) | Thông báo | 2 | 8 tệp · 456 dòng | 0 tệp · 0 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 12 tệp · 1602 dòng | 14 tệp · 1432 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6211 dòng | 67 tệp · 6788 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6224 dòng | 67 tệp · 6788 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -66,7 +66,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/chuyen_lop.py` | 155 dòng | `class_members` |
 | `backend/teaching/danh_gia.py` | 181 dòng | `class_members` |
 | `backend/teaching/lich_su_lop.py` | 63 dòng | — |
-| `backend/teaching/lop_cua_toi.py` | 179 dòng | — |
+| `backend/teaching/lop_cua_toi.py` | 208 dòng | — |
 | `backend/teaching/lop_gia_su.py` | 122 dòng | `classes` |
 | `backend/teaching/nhap_hoc_vien.py` | 242 dòng | — |
 | `backend/teaching/terms.py` | 357 dòng | `term_holidays`, `terms` |
@@ -89,17 +89,17 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/giaSu.ts` | 94 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/lop.ts` | 219 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/page.tsx` | 147 dòng |
-| `frontend/src/components/LopCuaToi.tsx` | 300 dòng |
+| `frontend/src/components/LopCuaToi.tsx` | 393 dòng |
 | `frontend/src/components/LopCuaToiKhung.tsx` | 44 dòng |
-| `frontend/src/components/LopCuaToiNguon.tsx` | 66 dòng |
+| `frontend/src/components/LopCuaToiNguon.tsx` | 72 dòng |
 
 ## lich
 
 **Lịch & buổi học** — Buổi học (tạo, sửa, huỷ, sinh hàng loạt, buổi bù), người thuộc buổi, trùng lịch, lịch gộp, ngày lễ gợi ý; địa chỉ lịch riêng .ics đưa lịch ra Google Calendar / Lịch iPhone (§71).
 
-- Bảng sở hữu: `calendar_links`, `class_sessions`, `session_participants`
+- Bảng sở hữu: `calendar_links`, `recording_views`, `class_sessions`, `session_participants`
 - Miền khác được ghi bảng của miền này: chuong_trinh ghi `class_sessions` — cột gắn khung `class_sessions.syllabus_session_id` + điền `topic` còn trống khi nhận khung (§64) — chỉ `chuong_trinh` ghi, qua `dich_vu` / gắn tay ở `lop.py`; cong_cu (mọi bảng) — dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng
-- Glob: `backend/teaching/sessions.py`, `backend/teaching/sinh_buoi.py`, `backend/teaching/trung_lich.py`, `backend/teaching/lich.py`, `backend/teaching/ngay_le.py`, `backend/teaching/buoi_bu.py`, `backend/teaching/nguoi_buoi.py`, `backend/lich/**/*.py`, `frontend/src/app/(standalone)/giang-day/lich/**`, `frontend/src/app/(standalone)/giang-day/buoi-hoc/**`, `frontend/src/app/lich/**`, `frontend/src/components/ThemVaoLich.tsx`, `frontend/src/lib/noiHoc.ts`
+- Glob: `backend/teaching/sessions.py`, `backend/teaching/sinh_buoi.py`, `backend/teaching/trung_lich.py`, `backend/teaching/lich.py`, `backend/teaching/ngay_le.py`, `backend/teaching/buoi_bu.py`, `backend/teaching/nguoi_buoi.py`, `backend/teaching/ban_ghi.py`, `backend/lich/**/*.py`, `frontend/src/app/(standalone)/giang-day/lich/**`, `frontend/src/app/(standalone)/giang-day/buoi-hoc/**`, `frontend/src/app/lich/**`, `frontend/src/components/ThemVaoLich.tsx`, `frontend/src/lib/noiHoc.ts`
 - Tách khi chạm — `backend/teaching/sessions.py`: TRỘN: buổi (lich) + điểm danh + lịch sử điểm danh (diem_danh). Tách `SessionAttendanceView`, `SessionAttendanceHistoryView` sang diem_danh khi chạm.
 - Tách khi chạm — `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/SessionsClient.tsx`: TRỘN: danh sách buổi + bảng điểm danh; tách phần điểm danh khi chạm.
 
@@ -112,6 +112,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/lich/ics.py` | 152 dòng | — |
 | `backend/lich/urls.py` | 11 dòng | — |
 | `backend/lich/views.py` | 121 dòng | — |
+| `backend/teaching/ban_ghi.py` | 226 dòng | `recording_views` |
 | `backend/teaching/buoi_bu.py` | 134 dòng | `class_sessions`, `session_participants` |
 | `backend/teaching/lich.py` | 117 dòng | — |
 | `backend/teaching/ngay_le.py` | 37 dòng | — |
@@ -122,7 +123,8 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 | Tệp frontend | Dòng |
 |---|---|
-| `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/SessionsClient.tsx` | 1113 dòng |
+| `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/BanGhiLop.tsx` | 140 dòng |
+| `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/SessionsClient.tsx` | 1118 dòng |
 | `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/SinhBuoi.tsx` | 345 dòng |
 | `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/TaoBuoiBu.tsx` | 146 dòng |
 | `frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/XuatLop.tsx` | 69 dòng |
@@ -324,7 +326,7 @@ Chưa có tệp (glob chờ sẵn cho mã mới).
 | `backend/notifications/apps.py` | 6 dòng | — |
 | `backend/notifications/gui.py` | 78 dòng | — |
 | `backend/notifications/models.py` | 31 dòng | — |
-| `backend/notifications/service.py` | 63 dòng | `notifications` |
+| `backend/notifications/service.py` | 80 dòng | `notifications` |
 | `backend/notifications/urls.py` | 12 dòng | — |
 | `backend/notifications/views.py` | 90 dòng | `notification_settings`, `notifications` |
 | `backend/teaching/bao_doi_lich.py` | 159 dòng | — |
@@ -401,7 +403,7 @@ Chưa có tệp (glob chờ sẵn cho mã mới).
 | `backend/common/management/commands/backfill_learning_events.py` | 252 dòng | — |
 | `backend/common/management/commands/bootstrap_schema.py` | 135 dòng | — |
 | `backend/common/management/commands/chan_doan_oa.py` | 173 dòng | — |
-| `backend/common/management/commands/kiem_luoc_do.py` | 310 dòng | — |
+| `backend/common/management/commands/kiem_luoc_do.py` | 316 dòng | — |
 | `backend/common/management/commands/thu_email.py` | 160 dòng | — |
 | `backend/common/management/commands/thu_zns.py` | 98 dòng | — |
 | `backend/common/management/commands/ve_erd.py` | 217 dòng | — |
@@ -422,7 +424,7 @@ Chưa có tệp (glob chờ sẵn cho mã mới).
 | `backend/manage.py` | 22 dòng | — |
 | `backend/teaching/__init__.py` | 0 dòng | — |
 | `backend/teaching/apps.py` | 5 dòng | — |
-| `backend/teaching/urls.py` | 172 dòng | — |
+| `backend/teaching/urls.py` | 179 dòng | — |
 | `backend/teaching/vocab.py` | 75 dòng | — |
 
 | Tệp frontend | Dòng |

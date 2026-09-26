@@ -138,11 +138,24 @@ async function moPhien({ goc = 'http://localhost:3100', kho = { width: 1440, hei
     return page;
   }
 
-  /** Chụp ảnh — không làm gì nếu phiên không bật `anh` (kỹ thuật ②). */
-  async function chup(page, ten) {
+  /**
+   * Chụp ảnh — không làm gì nếu phiên không bật `anh` (kỹ thuật ②).
+   *
+   * `toanTrang` chụp cả trang, `toi` cuộn tới một phần tử rồi mới chụp. Không có
+   * hai thứ này thì ảnh chỉ bắt được phần đầu màn, và một khối nằm dưới nếp gấp
+   * trông y hệt như một khối không dựng — đã mất một lượt đo vì nhầm thế
+   * (26/09/2026).
+   */
+  async function chup(page, ten, { toanTrang = false, toi = null } = {}) {
     if (!anh) return null;
+    if (toi) {
+      await page.evaluate((s) => {
+        document.querySelector(s)?.scrollIntoView({ block: 'center' });
+      }, toi).catch(() => {});
+      await page.waitForTimeout(300);
+    }
     const d = `${anh}/${ten}.png`;
-    await page.screenshot({ path: d }).catch(() => {});
+    await page.screenshot({ path: d, fullPage: toanTrang }).catch(() => {});
     return d;
   }
 

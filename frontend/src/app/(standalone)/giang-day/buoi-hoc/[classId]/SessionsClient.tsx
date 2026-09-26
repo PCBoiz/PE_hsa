@@ -23,6 +23,7 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 // `.optional()`). Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
 import * as z from 'zod/mini';
 
+import BanGhiLop from './BanGhiLop';
 import LichSuDiemDanh from './LichSuDiemDanh';
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
 import TaoBuoiBu from './TaoBuoiBu';
@@ -346,6 +347,10 @@ export default function SessionsClient({
         onError={(m) => { setErr(m); if (m === null) setThongBao(null); }}
       />
       {goiYSinh && <SinhBuoi classId={classId} data={goiYSinh} onDone={() => void reload()} />}
+
+      {/* §72 — ai đã mở bản ghi, và nút nhắc em chưa mở. Tự ẩn khi lớp chưa
+          buổi nào có bản ghi. */}
+      <BanGhiLop classId={classId} />
 
       {err && (
         <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-small text-danger-ink">

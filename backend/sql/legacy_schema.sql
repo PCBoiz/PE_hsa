@@ -2174,3 +2174,35 @@ ALTER TABLE calendar_links ADD CONSTRAINT calendar_links_scope_check
 -- Một chìa còn sống cho mỗi (người, phạm vi): cấp lại là thu hồi cái cũ rồi mới thêm.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_links_mot_chia_song
     ON calendar_links (user_id, scope) WHERE revoked_at IS NULL;
+
+-- ── §72 · AI ĐÃ XEM LẠI BẢN GHI BUỔI HỌC (26/09/2026) ────────────────────────
+-- Bảng phân rã tính năng dòng 22 (trợ giảng): "Học sinh đã xem/chưa xem · Nhắc
+-- học sinh chưa xem"; dòng 21: "Theo dõi việc xem record".
+--
+-- Chỗ dán link bản ghi đã có từ trước (`class_sessions.recording_url`, màn Buổi
+-- học). Đo 26/09 mới lộ ra tính năng đang đứt ở giữa: **học viên không thấy link
+-- ấy ở bất cứ màn nào**. Trợ giảng dán vào rồi không ai xem được, mà cũng chẳng
+-- ai biết là không xem được. Mục này làm nốt nửa sau: em xem được, và trợ giảng
+-- biết em nào chưa xem để nhắc.
+--
+-- ĐO ĐƯỢC CÁI GÌ, và cố ý KHÔNG đo cái gì. Bản ghi nằm trên Zoom hoặc Drive,
+-- ngoài tầm hệ thống — không biết em xem bao nhiêu phút, xem hết hay tua qua.
+-- Thứ duy nhất biết chắc: em đã BẤM mở link, lúc nào, mấy lần. Nên bảng này chỉ
+-- ghi bấy nhiêu, và chữ trên màn cũng nói đúng bấy nhiêu ("đã mở" chứ không phải
+-- "đã xem xong"). Đếm một thứ mình không đo được là cách nhanh nhất để có một
+-- con số không ai tin.
+--
+-- Một dòng cho mỗi (buổi, người): bấm lại thì cộng `lan_mo`, không thêm dòng.
+CREATE TABLE IF NOT EXISTS recording_views (
+    id         SERIAL    PRIMARY KEY,
+    session_id INTEGER   NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mo_lan_dau TIMESTAMP NOT NULL DEFAULT now(),
+    mo_gan_nhat TIMESTAMP NOT NULL DEFAULT now(),
+    lan_mo     INTEGER   NOT NULL DEFAULT 1
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_views_buoi_nguoi
+    ON recording_views (session_id, user_id);
+-- Trợ giảng mở màn "ai chưa xem" theo LỚP, nên lối vào là buổi.
+CREATE INDEX IF NOT EXISTS idx_recording_views_buoi
+    ON recording_views (session_id);

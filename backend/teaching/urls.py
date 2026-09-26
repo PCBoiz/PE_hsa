@@ -4,6 +4,7 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      ban_ghi,
                       buoi_bu,
                       cham_cong,
                       chuyen_lop,
@@ -91,6 +92,12 @@ urlpatterns = [
          sessions.SessionAttendanceHistoryView.as_view()),
     # Tạo buổi BÙ cho một buổi, chỉ cho các em được chọn (V-g, 25/09/2026).
     path('api/teach/sessions/<int:session_id>/buoi-bu', buoi_bu.BuoiBuView.as_view()),
+    # §72 (26/09/2026) — bản ghi buổi học: em mở được, trợ giảng biết ai chưa mở.
+    path('api/sessions/<int:session_id>/ban-ghi/da-mo', ban_ghi.GhiLuotMoView.as_view()),
+    path('api/sessions/<int:session_id>/ban-ghi/bao-loi', ban_ghi.BaoLoiBanGhiView.as_view()),
+    path('api/teach/classes/<int:class_id>/ban-ghi', ban_ghi.ThongKeBanGhiView.as_view()),
+    path('api/teach/classes/<int:class_id>/ban-ghi/<int:session_id>/nhac',
+         ban_ghi.NhacXemBanGhiView.as_view()),
 
     # ── Giao bài & chấm tay (đặc tả ERP §5) ──
     path('api/teach/classes/<int:class_id>/assignments',

@@ -7,6 +7,49 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (chiều) — §72 bản ghi buổi học: tính năng đang ĐỨT ở giữa
+
+Anh Sơn: *"cứ tiếp tục làm theo bảng phân rã tính năng đó"*. Lấy **dòng 22**
+(trợ giảng · quản lý record Zoom) vì nó trùng đúng tích hợp Zoom anh chọn sáng nay.
+
+**Đo trước, và đo mới thấy**: `class_sessions.recording_url` cùng ô nhập ở màn
+Buổi học đã có từ lâu, nên tưởng chỉ còn thiếu phần thống kê. Thật ra
+`recording_url` **không xuất hiện ở BẤT KỲ màn nào của học viên** — trợ giảng dán
+link, không em nào mở được, và cũng không ai biết là không mở được. Lỗ to hơn cái
+thống kê chính là đường cho em xem lại bài.
+
+**Đã làm** — §72 `recording_views` (một dòng mỗi buổi+người, mở lại thì cộng
+`lan_mo`), `backend/teaching/ban_ghi.py` với bốn cửa:
+- `POST /api/sessions/<s>/ban-ghi/da-mo` — em bấm mở, ghi nhận;
+- `POST /api/sessions/<s>/ban-ghi/bao-loi` — em báo link hỏng, chuông về cho
+  người DẠY (giảng viên + trợ giảng), không gửi cho bạn cùng lớp;
+- `GET /api/teach/classes/<c>/ban-ghi` — ai đã mở / chưa mở, **kèm danh sách buổi
+  đã học mà chưa ai dán link** (không nêu ra thì một buổi bị quên cứ nằm im);
+- `POST /api/teach/classes/<c>/ban-ghi/<s>/nhac` — gọi chuông cho em chưa mở.
+
+Giao diện: thẻ lớp của em có dòng `Xem lại: 24/09 22/09`, bấm là mở và đánh dấu
+✓; sau khi bấm mới hiện `Không mở được?`. Màn Buổi học có khối *Bản ghi buổi học*
+với `1/2 em đã mở · Chưa mở: 1 · [Nhắc em chưa mở]`.
+
+**Cố ý KHÔNG đo cái không đo được**: bản ghi nằm trên Zoom/Drive, hệ thống chỉ
+biết em đã BẤM mở. Chữ trên màn nói đúng bấy nhiêu — "đã mở", không phải "đã xem
+xong". Một con số hứa nhiều hơn nó đo được thì lần sau không ai tin nó nữa.
+
+**Đo thật trên màn (26/09, đã soi ảnh)**: em bấm → `24/09` thành `24/09 ✓`, trợ
+giảng thấy `1/2 em đã mở`, bấm nhắc → `Đã nhắc 1 em`. Nút chạm 44 px ở khổ 390,
+không tràn ngang. Ba lỗi tự bắt được khi soi màn thật: ngày hiện ra
+`24T19:30:00/09/2026` (dùng nhầm hàm chỉ ăn `YYYY-MM-DD`), `toLocaleDateString`
+nhả `24-09` thay vì `24/09`, và `text-muted` không phải lớp Tailwind có thật.
+
+**Test**: 15/15 xanh, **10 đột biến giết 10**. Ba đột biến LỌT ở lượt đầu — test
+yếu, đã siết: lớp thử không có buổi tương lai nên luật "chỉ tính buổi đã học"
+không được chạm; và luật "người báo không tự gọi mình" là mã chết cho tới khi có
+lượt TRỢ GIẢNG tự báo lỗi.
+
+**Còn thiếu của dòng 22**: không có. Bốn gạch đầu dòng còn lại (dán link, record
+nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
+
+
 ## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
 
 Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.
