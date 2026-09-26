@@ -7,6 +7,47 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 26/09/2026 (tối) — agent soát tìm ra sáu lỗi trong §72, đã vá năm
+
+Gọi hai agent theo mô hình anh Sơn yêu cầu: một làm (E3), một **đi chứng minh
+việc vừa làm là sai**. Agent soát trả về sáu mục có vết nguồn và số đo — đây là
+lần đầu mô hình ấy bắt được thứ mà chính người làm không thấy.
+
+**① Buổi bù — §72 tự cãi nhau.** `lop_cua_toi.py` lọc bằng `thuoc_buoi` (V-g,
+§62e), `ban_ghi.py` thì không. Hậu quả đo được: thống kê lấy sĩ số CẢ LỚP làm
+mẫu số, nút Nhắc gọi chuông cho 26 em chưa từng dự buổi bù — và màn "Lớp của
+tôi" của chính họ lại ẩn đúng buổi ấy. Em làm đúng lời nhắc rồi mở ra không thấy
+gì. Đã vá cả ba cửa (`_thuoc_lop`, thống kê, nhắc).
+
+**② Nút báo lỗi thiếu `key`.** React giữ nguyên instance khi `sessionId` đổi,
+nên cờ "đã báo" của buổi trước còn nguyên: em báo được ĐÚNG MỘT link mỗi phiên,
+từ link thứ hai màn nói "Đã báo, cảm ơn em." mà không gửi gì. Kèm theo:
+`setState(true)` chạy TRƯỚC `.catch(() => {})` nên 400/403/mạng rớt cũng ra câu
+ấy. Nay chờ máy chủ trả lời rồi mới nói, và có trạng thái "Chưa báo được — thử
+lại?".
+
+**③ Chuông gộp xoá mất số em báo.** `coalesce_count=3` nằm trong CSDL mà người
+dạy chỉ đọc được "1 em báo" — đúng thứ view ấy sinh ra để phân biệt (một em báo
+có thể là mạng nhà em ấy). Thêm `title_multi`.
+
+**④ Bốn đột biến agent soát chạy mà bộ test của tôi KHÔNG giết**: người đã rời
+lớp vẫn ghi được, `bao-loi` không canh `recording_url`, `thieuBanGhi` gồm cả
+buổi đã huỷ, `daMo` đếm phồng. Mã ba chỗ ĐÚNG — chỉ test không canh. Đã thêm bảy
+test; giờ **8/8 đột biến bị giết** (4 của agent + 4 của tôi cho phần vừa vá).
+
+Một test của tôi xanh vì LÝ DO SAI: `'3' in title` — mà tiêu đề có sẵn "23/09",
+cũng chứa chữ số 3. Siết thành `'3 em'`.
+
+**⑤ và ⑥ thuộc nhánh e3**, chưa gộp: §65 mắc cùng lỗi buổi bù, và "báo lỗi bản
+ghi" sẽ có HAI hộp thư nếu gộp (chuông §72 vs hộp Yêu cầu §65). Mục sau cần anh
+Sơn quyết — đã ghi K4 trong `docs/VIEC_CUA_ANH.md`, tôi đề xuất dùng hộp Yêu cầu
+vì "link hỏng" là việc phải có người nhận và đóng lại.
+
+Đo lại trên màn thật sau khi vá: em báo được CẢ HAI bản ghi
+(`/api/sessions/1544/ban-ghi/bao-loi` gọi được), API trả 200 sau 1,9 s rồi màn
+chuyển "Đã báo, cảm ơn em.". Test 23/23 xanh.
+
+
 ## 26/09/2026 (tối) — soát lại bảng nghiệm thu: hai dòng bị ghi THẤP hơn thực tế
 
 Không viết thêm mã, chỉ ĐO. Bảng nghiệm thu là thứ khách đọc; ghi sai theo hướng

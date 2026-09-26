@@ -16,8 +16,8 @@
 
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
-| [lop_hoc](#lop_hoc) | Lớp học | 4 | 9 tệp · 2386 dòng | 18 tệp · 3746 dòng |
-| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2530 dòng | 10 tệp · 2529 dòng |
+| [lop_hoc](#lop_hoc) | Lớp học | 4 | 9 tệp · 2386 dòng | 18 tệp · 3755 dòng |
+| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2559 dòng | 10 tệp · 2529 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 96 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1058 dòng | 7 tệp · 1788 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1803 dòng | 8 tệp · 1399 dòng |
@@ -90,7 +90,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/giaSu.ts` | 94 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/lop.ts` | 219 dòng |
 | `frontend/src/app/(standalone)/quan-tri/lop-hoc/page.tsx` | 147 dòng |
-| `frontend/src/components/LopCuaToi.tsx` | 393 dòng |
+| `frontend/src/components/LopCuaToi.tsx` | 402 dòng |
 | `frontend/src/components/LopCuaToiKhung.tsx` | 44 dòng |
 | `frontend/src/components/LopCuaToiNguon.tsx` | 72 dòng |
 
@@ -113,7 +113,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/lich/ics.py` | 152 dòng | — |
 | `backend/lich/urls.py` | 11 dòng | — |
 | `backend/lich/views.py` | 121 dòng | — |
-| `backend/teaching/ban_ghi.py` | 226 dòng | `recording_views` |
+| `backend/teaching/ban_ghi.py` | 255 dòng | `recording_views` |
 | `backend/teaching/buoi_bu.py` | 134 dòng | `class_sessions`, `session_participants` |
 | `backend/teaching/lich.py` | 117 dòng | — |
 | `backend/teaching/ngay_le.py` | 37 dòng | — |
