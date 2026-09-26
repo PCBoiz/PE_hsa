@@ -176,7 +176,67 @@ def test_hoc_vien_tro_giang_giang_vien_khong_vao_khu_hoc_vu(canh, duong):
     assert _api(canh['bat']).get('/api/admin/thong-bao').status_code == 403
 
 
-def test_hoc_vien_va_tro_giang_khong_gui_duoc_cho_lop(canh):
-    for vai in ('bat', 'tg'):
-        assert _api(canh[vai]).post('/api/teach/classes/%d/thong-bao' % canh['lop'],
-                                    {'title': 'T', 'body': 'x'}, format='json').status_code == 403
+def test_hoc_vien_khong_gui_duoc_cho_lop(canh):
+    assert _api(canh['bat']).post('/api/teach/classes/%d/thong-bao' % canh['lop'],
+                                  {'title': 'T', 'body': 'x'}, format='json').status_code == 403
+
+
+# ── Trợ giảng gửi lớp mình (anh Sơn chốt 26/09/2026, quyết định 1) ──────────
+
+def test_tro_giang_gui_duoc_LOP_MINH_nhu_giang_vien(canh):
+    """Trợ giảng là người nhắc học viên hằng ngày (bảng yêu cầu dòng 20) — không bắt họ
+    nhờ giảng viên bấm hộ. Kèm email cũng được."""
+    r = _api(canh['tg']).post('/api/teach/classes/%d/thong-bao' % canh['lop'],
+                              {'title': 'Nhớ làm bài', 'body': 'Hạn 21h nay.', 'sendEmail': True},
+                              format='json')
+    assert r.status_code == 201, r.content
+    assert len(_chuong(canh['bat'])) == 1 and len(_thu(canh['bat'])) == 1
+    a = q1('SELECT audience, created_by FROM announcements WHERE id = %s', (r.json()['id'],))
+    assert json.loads(a['audience'])['classIds'] == [canh['lop']] and a['created_by'] == canh['tg']
+
+
+def test_tro_giang_gui_lop_khac_404_va_khong_ai_nhan_gi(canh):
+    r = _api(canh['tg']).post('/api/teach/classes/%d/thong-bao' % canh['lop_khac'],
+                              {'title': 'T', 'body': 'x'}, format='json')
+    assert r.status_code == 404, 'không lộ ra lớp ấy có tồn tại'
+    assert q1('SELECT count(*) AS n FROM notifications n JOIN class_members m ON m.user_id = n.user_id '
+              "WHERE m.class_id = %s AND n.type = 'thong_bao'", (canh['lop_khac'],))['n'] == 0
+
+
+def test_tro_giang_xem_truoc_lop_minh_va_khong_xem_lop_khac(canh):
+    c = _api(canh['tg'])
+    assert c.post('/api/teach/classes/%d/thong-bao/preview' % canh['lop'], {}, format='json').json()['tong'] == 4
+    assert c.post('/api/teach/classes/%d/thong-bao/preview' % canh['lop_khac'], {},
+                  format='json').status_code == 404
+
+
+def test_tro_giang_roi_lop_thi_khong_gui_duoc_nua(canh):
+    x('UPDATE class_members SET left_at = now() WHERE class_id = %s AND user_id = %s',
+      (canh['lop'], canh['tg']))
+    assert _api(canh['tg']).post('/api/teach/classes/%d/thong-bao' % canh['lop'],
+                                 {'title': 'T', 'body': 'x'}, format='json').status_code == 404
+
+
+def test_tro_giang_van_khong_vao_duoc_khu_hoc_vu(canh):
+    """Gửi cả khối / chọn tay người nhận vẫn chỉ học vụ + quản trị."""
+    assert _api(canh['tg']).post('/api/admin/thong-bao', {'title': 'T', 'body': 'x',
+                                 'audience': {'userIds': [canh['bat']]}}, format='json').status_code == 403
+
+
+# ── Ô "Gửi kèm email" MẶC ĐỊNH TẮT (quyết định 2) ──────────────────────────
+
+def test_khong_khai_sendEmail_thi_KHONG_co_thu(canh):
+    r = _api(canh['hv']).post('/api/admin/thong-bao', {
+        'title': 'Chỉ chuông', 'body': 'x', 'audience': {'classIds': [canh['lop']]}, 'gui': True},
+        format='json')
+    assert r.status_code == 201, r.content
+    assert len(_chuong(canh['bat'])) == 1, 'chuông vẫn có'
+    assert _thu(canh['bat']) == [], 'không khai sendEmail thì không xếp thư nào'
+    assert q1('SELECT send_email FROM announcements WHERE id = %s', (r.json()['id'],))['send_email'] is False
+
+
+def test_xem_truoc_khong_khai_sendEmail_thi_dem_email_bang_0(canh):
+    for duong, than in (('/api/admin/thong-bao/preview', {'audience': {'classIds': [canh['lop']]}}),
+                        ('/api/teach/classes/%d/thong-bao/preview' % canh['lop'], {})):
+        d = _api(canh['hv']).post(duong, than, format='json').json()
+        assert d['tong'] == 4 and d['email'] == 0, duong

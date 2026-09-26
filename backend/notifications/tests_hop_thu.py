@@ -101,6 +101,13 @@ def test_email_chua_cau_hinh_thi_bo_kem_ly_do(monkeypatch):
     from notifications.hop_thu import gui_ngay, xep
     monkeypatch.setattr(mail, 'da_cau_hinh', lambda: False)
     monkeypatch.setattr(mail, 'che_do_thu', lambda: False)
+    # `mail.gui` PHẢI là bản giả (sửa 26/09/2026). Bản đầu chỉ vá `da_cau_hinh` và
+    # `che_do_thu` — hai cờ mà `mail.gui` KHÔNG hỏi lại: nó tự đọc biến môi trường. Đo trên
+    # máy dev 26/09: `da_cau_hinh()` thật = True, `che_do_thu()` thật = False, nên lời gọi
+    # đi TRỌN tới Gmail và phép kiểm này là chỗ DUY NHẤT trong repo mở kết nối SMTP thật.
+    # Nó đỏ ('sent' thay vì 'dropped') đúng vì lá thư đã gửi được. Bản giả trả về đúng thứ
+    # `mail.gui` thật trả khi thiếu thông số.
+    monkeypatch.setattr(mail, 'gui', lambda *a, **k: (False, None, 'Chưa cấu hình email (EMAIL_USER).'))
     oid = xep('email', 'a@example.com', 'T', 'N')
     gui_ngay([oid])
     d = _dong(oid)
@@ -123,6 +130,9 @@ def test_zalo_chua_co_OA_thi_bo_kem_ly_do(monkeypatch):
 def test_zalo_co_OA_thi_gui_tham_so_mau(monkeypatch):
     from common import zalo
     from notifications.hop_thu import gui_ngay, xep
+    # Hàng rào thư máy dev (26/09/2026) chặn ZNS theo SỐ: cho đúng số của phép kiểm vào
+    # danh sách, để phép kiểm này vẫn đo đường gửi thật chứ không đo hàng rào.
+    monkeypatch.setenv('OUTBOX_SO_CHO_PHEP', '0900000000')
     goi = []
     monkeypatch.setattr(zalo, 'da_cau_hinh', lambda: True)
     monkeypatch.setattr(zalo, 'che_do_thu', lambda: False)
@@ -191,9 +201,11 @@ def dong_that():
             c.execute('DELETE FROM outbox WHERE source_type = %s', (dau,))
 
 
-def _nhan(conn, ids, n=20):
-    from notifications.hop_thu import CAU_NHAN, TREO_PHUT
-    return [r[0] for r in conn.execute(CAU_NHAN, {'n': n, 'ids': ids, 'treo': TREO_PHUT}).fetchall()]
+def _nhan(conn, ids, n=20, uu_tien=None):
+    from notifications.hop_thu import CAU_NHAN, GIAO_DICH, TREO_PHUT
+    return [r[0] for r in conn.execute(
+        CAU_NHAN, {'n': n, 'ids': ids, 'treo': TREO_PHUT,
+                   'uu_tien': GIAO_DICH if uu_tien is None else uu_tien}).fetchall()]
 
 
 def test_hai_may_nhan_viec_khong_trung_dong(dong_that):
@@ -290,3 +302,127 @@ def test_q_khong_dung_khoa_tu_van():
 
     from notifications import hop_thu
     assert 'pg_advisory' not in inspect.getsource(hop_thu).lower()
+
+
+# ── ƯU TIÊN + TRẦN NGÀY (quyết định 4 của anh Sơn, 26/09/2026) ──────────────
+
+@pytest.fixture
+def khong_hang_rao(monkeypatch):
+    """Tắt hàng rào thư máy dev cho các phép kiểm về ƯU TIÊN — hai việc khác nhau, một
+    phép kiểm chỉ đo một việc. (Hàng rào có bộ riêng: `tests_hang_rao_thu.py`.)"""
+    from notifications import hang_rao_thu
+    monkeypatch.setattr(hang_rao_thu, 'bat', lambda: False)
+
+
+def _xep(uu_tien, den='a@example.com'):
+    from notifications.hop_thu import xep
+    return xep('email', den, 'T', 'N', uu_tien=uu_tien, dedup='ut:%s' % uuid.uuid4().hex)
+
+
+def test_xep_mac_dinh_la_thu_giao_dich():
+    from notifications.hop_thu import GIAO_DICH, xep
+    oid = xep('email', 'a@example.com', 'T', 'N')
+    assert _dong(oid)['priority'] == GIAO_DICH, 'không khai thì là thư một người đang chờ'
+
+
+def test_thu_giao_dich_nhan_truoc_thu_hang_loat(khong_hang_rao, thu):
+    """Một lượt chỉ nhận được 1 việc: phải là việc GIAO DỊCH, dù nó xếp SAU."""
+    from notifications.hop_thu import GIAO_DICH, HANG_LOAT, nhan_viec
+    hl = _xep(HANG_LOAT)
+    x("UPDATE outbox SET next_try_at = now() - interval '5 minutes' WHERE id = %s", (hl,))
+    gd = _xep(GIAO_DICH)
+    ds = nhan_viec(1, ids=[hl, gd])
+    assert [d['id'] for d in ds] == [gd], 'thư quên mật khẩu không được chờ sau thư cả khối'
+
+
+def test_mot_luot_lay_du_thi_lay_ca_hai_loai(khong_hang_rao, thu):
+    from notifications.hop_thu import GIAO_DICH, HANG_LOAT, nhan_viec
+    ids = [_xep(HANG_LOAT), _xep(GIAO_DICH)]
+    ds = nhan_viec(20, ids=ids)
+    assert sorted(d['id'] for d in ds) == sorted(ids)
+    assert [d['priority'] for d in ds] == [GIAO_DICH, HANG_LOAT], 'giao dịch đứng trước trong lượt'
+
+
+def _da_gui_hang_loat_hom_nay(n):
+    """Ghi `n` dòng hàng loạt ĐÃ GỬI hôm nay (giờ VN) để ăn hết trần."""
+    from notifications.hop_thu import HANG_LOAT
+    for _ in range(n):
+        x('''INSERT INTO outbox (channel, to_addr, priority, status, sent_at, dedup_key)
+             VALUES ('email', 'x@example.com', %s, 'sent', now(), %s)''',
+          (HANG_LOAT, 'tran:%s' % uuid.uuid4().hex))
+
+
+def test_tran_ngay_het_thi_thu_hang_loat_NAM_LAI_queued(khong_hang_rao, thu, monkeypatch):
+    from notifications.hop_thu import BIEN_TRAN, HANG_LOAT, gui_het
+    monkeypatch.setenv(BIEN_TRAN, '2')
+    _da_gui_hang_loat_hom_nay(2)
+    oid = _xep(HANG_LOAT)
+    gui_het()
+    d = _dong(oid)
+    assert d['status'] == 'queued', 'vượt trần thì CHỜ sang ngày sau, không bỏ'
+    assert d['attempts'] == 0 and d['error'] is None and thu['da_gui'] == []
+
+
+def test_tran_ngay_khong_chan_thu_giao_dich(khong_hang_rao, thu, monkeypatch):
+    from notifications.hop_thu import BIEN_TRAN, GIAO_DICH, gui_het
+    monkeypatch.setenv(BIEN_TRAN, '0')
+    oid = _xep(GIAO_DICH)
+    gui_het()
+    assert _dong(oid)['status'] == 'sent', 'trần chỉ chặn thư hàng loạt'
+
+
+def test_tran_0_thi_khong_thu_hang_loat_nao_di(khong_hang_rao, thu, monkeypatch):
+    from notifications.hop_thu import BIEN_TRAN, HANG_LOAT, con_lai_hang_loat, gui_het
+    monkeypatch.setenv(BIEN_TRAN, '0')
+    assert con_lai_hang_loat() == 0
+    oid = _xep(HANG_LOAT)
+    gui_het()
+    assert _dong(oid)['status'] == 'queued' and thu['da_gui'] == []
+
+
+def test_con_lai_hang_loat_tru_dan_va_khong_am(khong_hang_rao, monkeypatch):
+    from notifications.hop_thu import BIEN_TRAN, con_lai_hang_loat
+    monkeypatch.setenv(BIEN_TRAN, '3')
+    dau = con_lai_hang_loat()
+    _da_gui_hang_loat_hom_nay(1)
+    assert con_lai_hang_loat() == max(0, dau - 1)
+    _da_gui_hang_loat_hom_nay(10)
+    assert con_lai_hang_loat() == 0, 'không bao giờ âm'
+
+
+def test_con_lai_hang_loat_dem_theo_NGAY_GIO_VIET_NAM(khong_hang_rao, monkeypatch):
+    """Ranh giới ngày là 0h giờ VN, không phải 0h UTC — `sent_at` ghi theo đồng hồ phiên
+    (UTC), nên một dòng gửi 22h VN hôm qua (15h UTC hôm qua) KHÔNG được tính vào hôm nay,
+    còn dòng gửi 1h VN hôm nay (18h UTC hôm qua) THÌ CÓ."""
+    from notifications.hop_thu import BIEN_TRAN, DAU_NGAY_VN, HANG_LOAT, con_lai_hang_loat
+    monkeypatch.setenv(BIEN_TRAN, '100')
+    dau = con_lai_hang_loat()
+    for lech in ("- interval '1 hour'", "+ interval '1 hour'"):
+        x('''INSERT INTO outbox (channel, to_addr, priority, status, sent_at, dedup_key)
+             VALUES ('email', 'x@example.com', %%s, 'sent', %s %s, %%s)''' % (DAU_NGAY_VN, lech),
+          (HANG_LOAT, 'ranh:%s' % uuid.uuid4().hex))
+    assert con_lai_hang_loat() == dau - 1, 'chỉ dòng SAU 0h VN mới tính vào hôm nay'
+
+
+def test_tran_bien_hong_thi_dung_mac_dinh(monkeypatch):
+    from notifications.hop_thu import BIEN_TRAN, TRAN_HANG_LOAT_MAC_DINH, tran_hang_loat
+    monkeypatch.delenv(BIEN_TRAN, raising=False)
+    assert tran_hang_loat() == TRAN_HANG_LOAT_MAC_DINH
+    for xau in ('ba tram', '', '-5'):
+        monkeypatch.setenv(BIEN_TRAN, xau)
+        assert tran_hang_loat() == TRAN_HANG_LOAT_MAC_DINH, xau
+    monkeypatch.setenv(BIEN_TRAN, '7')
+    assert tran_hang_loat() == 7
+
+
+def test_thong_bao_trung_tam_va_nhac_han_la_thu_HANG_LOAT():
+    """Đường nào xếp thư cả lớp thì phải đánh dấu hàng loạt — đọc mã, không đoán."""
+    import inspect
+
+    from notifications import gui as mat_tien
+    from notifications import nhac_han, thong_bao
+    for m in (thong_bao, nhac_han):
+        ma = inspect.getsource(m)
+        assert 'uu_tien' in ma and 'HANG_LOAT' in ma, m.__name__
+    assert 'HANG_LOAT if len(ids)' in inspect.getsource(mat_tien.xep_thu) \
+        or 'len(ids) <= 1' in inspect.getsource(mat_tien.xep_thu)

@@ -78,8 +78,12 @@ def zalo_san_sang():
     return False, 'Chưa có Zalo OA đã xác thực — thông báo chỉ đi qua chuông và email.'
 
 
-def xem_truoc(aud, gui_email=True):
-    """Đếm người nhận theo kênh, ai thiếu email. Không ghi gì."""
+def xem_truoc(aud, gui_email=False):
+    """Đếm người nhận theo kênh, ai thiếu email. Không ghi gì.
+
+    `gui_email` mặc định FALSE (anh Sơn chốt 26/09/2026, quyết định số 2): ô "Gửi kèm
+    email" trên màn soạn để TRỐNG, nên bản xem trước phải đếm đúng thứ sắp xảy ra nếu bấm
+    Gửi ngay lúc ấy. Mặc định True là một bản xem trước hứa nhiều hơn thứ nó làm."""
     ts = _ts(aud)
     ds = q('''SELECT u.id, u.name, u.email, u.phone, u.is_demo, coalesce(ns.email_notif, 1) AS nhan_thu
                 FROM users u LEFT JOIN notification_settings ns ON ns.user_id = u.id
@@ -114,7 +118,8 @@ def gui(aid):
         if not a:
             return None
         aud = a['audience'] if isinstance(a['audience'], dict) else json.loads(a['audience'])
-        ts = dict(_ts(aud), aid=aid, loai=LOAI, link=LINK, tieu_de=a['title'], noi_dung=a['body'])
+        ts = dict(_ts(aud), aid=aid, loai=LOAI, link=LINK, tieu_de=a['title'], noi_dung=a['body'],
+                  uu_tien=hop_thu.HANG_LOAT)
         nhan = q('''INSERT INTO notifications (user_id, type, title, body, ref_type, ref_id,
                                                announcement_id, link)
                     SELECT n.id, %(loai)s, %(tieu_de)s, %(noi_dung)s, 'announcement', %(aid)s, %(aid)s, %(link)s
@@ -123,10 +128,11 @@ def gui(aid):
         thu = []
         if a['send_email']:
             thu += [r['id'] for r in q('''
-                INSERT INTO outbox (channel, user_id, to_addr, subject, body, source_type, source_id, dedup_key)
+                INSERT INTO outbox (channel, user_id, to_addr, subject, body, source_type,
+                                    source_id, dedup_key, priority)
                 SELECT 'email', u.id, u.email, %(tieu_de)s,
                        %(noi_dung)s || E'\\n\\nXem ở mục "Thông báo" trên TopHSA.\\n\\n— TopHSA\\n',
-                       'announcement', %(aid)s, 'thong_bao:' || %(aid)s || ':' || u.id
+                       'announcement', %(aid)s, 'thong_bao:' || %(aid)s || ':' || u.id, %(uu_tien)s
                   FROM users u LEFT JOIN notification_settings ns ON ns.user_id = u.id
                  WHERE u.id IN (''' + _NHAN + ''')
                    AND u.email LIKE '%%@%%' AND coalesce(ns.email_notif, 1) = 1 AND NOT u.is_demo
@@ -134,11 +140,12 @@ def gui(aid):
                 ON CONFLICT (dedup_key) DO NOTHING RETURNING id''', ts)]
         if a['send_zalo']:
             thu += [r['id'] for r in q('''
-                INSERT INTO outbox (channel, user_id, to_addr, params, source_type, source_id, dedup_key)
+                INSERT INTO outbox (channel, user_id, to_addr, params, source_type, source_id,
+                                    dedup_key, priority)
                 SELECT 'zalo', u.id, u.phone,
                        jsonb_build_object('zns', jsonb_build_object('tieu_de', %(tieu_de)s::text,
                                                                     'noi_dung', left(%(noi_dung)s::text, 400))),
-                       'announcement', %(aid)s, 'thong_bao_zalo:' || %(aid)s || ':' || u.id
+                       'announcement', %(aid)s, 'thong_bao_zalo:' || %(aid)s || ':' || u.id, %(uu_tien)s
                   FROM users u
                  WHERE u.id IN (''' + _NHAN + ''') AND coalesce(u.phone, '') <> '' AND NOT u.is_demo
                 ON CONFLICT (dedup_key) DO NOTHING RETURNING id''', ts)]

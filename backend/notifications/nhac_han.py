@@ -26,6 +26,7 @@ from django.db import transaction
 
 from common.clock import local_now
 from common.db import q
+from notifications import hop_thu
 from teaching.nhan_bai import giao_cho
 from teaching.vocab import chi_hoc_vien
 
@@ -58,7 +59,7 @@ def quet(bay_gio=None):
     """Một lượt quét. Trả số chuông MỚI (lời nhắc đã có thì không tính)."""
     bay_gio = bay_gio or local_now()
     ts = {'tu': bay_gio + timedelta(hours=TU_GIO), 'den': bay_gio + timedelta(hours=DEN_GIO),
-          'loai': LOAI, 'link': LINK}
+          'loai': LOAI, 'link': LINK, 'uu_tien': hop_thu.HANG_LOAT}
     with transaction.atomic():
         moi = q('''INSERT INTO notifications (user_id, type, title, body, ref_type, ref_id, link)
                    SELECT DISTINCT u.id, %(loai)s, ''' + _TIEU_DE + ', ' + _NOI_DUNG + ''',
@@ -66,10 +67,11 @@ def quet(bay_gio=None):
                    ON CONFLICT (user_id, ref_type, ref_id) WHERE type = 'nhac_han' DO NOTHING
                    RETURNING id''', ts)
         q('''INSERT INTO outbox (channel, user_id, to_addr, subject, body, source_type,
-                                      source_id, dedup_key)
+                                      source_id, dedup_key, priority)
                    SELECT DISTINCT 'email', u.id, u.email, ''' + _TIEU_DE + ', ' + _NOI_DUNG + '''
                           || E'\\n\\nXem và nộp bài ở mục "Bài tập" trên TopHSA.\\n\\n— TopHSA\\n',
-                          'assignment', a.id, 'nhac_han:' || a.id || ':' || u.id ''' + _NGUON + '''
+                          'assignment', a.id, 'nhac_han:' || a.id || ':' || u.id,
+                          %(uu_tien)s ''' + _NGUON + '''
                      AND coalesce(ns.email_notif, 1) = 1 AND NOT u.is_demo
                      AND u.email IS NOT NULL AND u.email LIKE '%%@%%'
                    ON CONFLICT (dedup_key) DO NOTHING

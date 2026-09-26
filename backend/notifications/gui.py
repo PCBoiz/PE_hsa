@@ -32,20 +32,29 @@ GUI_NGAY = False
 CHAN_THU = '\n\n— TopHSA\n'
 
 
-def xep_thu(ids, tieu_de, chu_thu, ref=(None, None), dedup=None):
+def xep_thu(ids, tieu_de, chu_thu, ref=(None, None), dedup=None, uu_tien=None):
     """Ghi thư vào hộp thư đi cho người trong `ids` có email, bật `email_notif`, không
     phải tài khoản mẫu — MỘT câu INSERT…SELECT. Trả id các thư vừa xếp (dedup trùng thì
-    không có). `dedup` là TIỀN TỐ: khoá của từng người = `{dedup}:{user_id}`."""
+    không có). `dedup` là TIỀN TỐ: khoá của từng người = `{dedup}:{user_id}`.
+
+    `uu_tien` (§61a): None = SUY theo số người nhận — một người là thư GIAO DỊCH (người ấy
+    đang chờ đúng lá thư này: đơn "Yêu cầu" vừa được duyệt), nhiều người là thư HÀNG LOẠT
+    (báo đổi lịch cả lớp) nên chịu trần ngày và đi sau thư giao dịch. Suy chứ không bắt mọi
+    nơi gọi khai: luồng A và C chỉ gọi mặt tiền này, và chữ ký của nó không được đổi."""
+    ids = list(ids)
+    if uu_tien is None:
+        uu_tien = hop_thu.GIAO_DICH if len(ids) <= 1 else hop_thu.HANG_LOAT
     return [r['id'] for r in q(
-        '''INSERT INTO outbox (channel, user_id, to_addr, subject, body, source_type, source_id, dedup_key)
+        '''INSERT INTO outbox (channel, user_id, to_addr, subject, body, source_type, source_id,
+                               dedup_key, priority)
            SELECT 'email', u.id, u.email, %s, %s, %s, %s,
-                  CASE WHEN %s::text IS NULL THEN NULL ELSE %s::text || ':' || u.id END
+                  CASE WHEN %s::text IS NULL THEN NULL ELSE %s::text || ':' || u.id END, %s
              FROM users u LEFT JOIN notification_settings ns ON ns.user_id = u.id
             WHERE u.id = ANY(%s) AND u.email IS NOT NULL AND u.email LIKE '%%@%%'
               AND coalesce(ns.email_notif, 1) = 1 AND NOT u.is_demo
             ORDER BY u.id
            ON CONFLICT (dedup_key) DO NOTHING RETURNING id''',
-        (tieu_de, chu_thu, ref[0], ref[1], dedup, dedup, list(ids)))]
+        (tieu_de, chu_thu, ref[0], ref[1], dedup, dedup, uu_tien, ids))]
 
 
 def gui(user_ids, loai, tieu_de, noi_dung, ref=(None, None), email=False,

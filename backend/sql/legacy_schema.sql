@@ -2155,6 +2155,18 @@ CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (cr
 -- Trạng thái: queued (chờ) → sending (đã nhận, đang gửi) → sent | failed (chờ thử lại
 -- lúc `next_try_at`) | dropped (bỏ hẳn, lý do ở `error`). `params` giữ phần cần để dựng
 -- lại thư lúc gửi (HTML, tham số mẫu ZNS, loại thư có tệp đính kèm) — không giữ tệp.
+--
+-- `priority` (thêm TẠI CHỖ 26/09/2026 theo quyết định số 4 của anh Sơn): 0 = thư GIAO
+-- DỊCH, có MỘT người đang chờ đúng lá thư ấy (đặt lại mật khẩu, báo cáo gửi từng em);
+-- 1 = thư HÀNG LOẠT (thông báo cả lớp / cả khối, nhắc hạn nộp, báo đổi lịch). Gmail cho
+-- ~500 thư/ngày mà một lớp TopHSA có 35–100 em: một lượt "thông báo cả khối" xếp trước
+-- thư quên mật khẩu thì em ấy chờ tới nhịp sau, nên câu nhận việc sắp `priority` trước
+-- `next_try_at` và chỉ mục phần dẫn đầu bằng `priority` (khỏi sắp cả hộp thư).
+--
+-- Vì sao sửa TẠI CHỖ chứ không thêm §61e: đo 26/09/2026 trên Neon dev — bảng `outbox`
+-- CHƯA tồn tại, §61 chưa lên production, nên không có dòng nào phải chuyển. Thêm mục mới
+-- thì phải `DROP INDEX idx_outbox_cho_gui` của chính mình rồi dựng lại — một mục đi dỡ đồ
+-- của mục trước là thứ luật DDL cộng-thêm tránh. Cùng lý lẽ §63, §64g, §64h.
 CREATE TABLE IF NOT EXISTS outbox (
     id          BIGSERIAL PRIMARY KEY,
     channel     TEXT      NOT NULL,
@@ -2167,6 +2179,7 @@ CREATE TABLE IF NOT EXISTS outbox (
     source_id   BIGINT,
     dedup_key   TEXT      UNIQUE,
     status      TEXT      NOT NULL DEFAULT 'queued',
+    priority    SMALLINT  NOT NULL DEFAULT 0,
     attempts    INTEGER   NOT NULL DEFAULT 0,
     next_try_at TIMESTAMP NOT NULL DEFAULT now(),
     claimed_at  TIMESTAMP,
@@ -2175,14 +2188,23 @@ CREATE TABLE IF NOT EXISTS outbox (
     provider_id TEXT,
     created_at  TIMESTAMP NOT NULL DEFAULT now()
 );
+-- Câu này phải CÓ dù bảng ở trên đã khai `priority`: một CSDL đã dựng bảng theo bản §61a
+-- đầu (nhánh khác đã bootstrap) thì `CREATE TABLE IF NOT EXISTS` bỏ qua cả bảng, và cột
+-- mới sẽ không bao giờ tới. Trên CSDL mới thì câu này không làm gì.
+ALTER TABLE outbox ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_channel_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_channel_check CHECK (channel IN ('email', 'zalo'));
 ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_status_check;
 ALTER TABLE outbox ADD CONSTRAINT outbox_status_check
     CHECK (status IN ('queued', 'sending', 'sent', 'failed', 'dropped'));
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_priority_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_priority_check CHECK (priority IN (0, 1));
 -- Chỉ mục phần: người gửi chỉ hỏi dòng CÒN phải gửi — dòng đã xong (đa số) không vào.
 CREATE INDEX IF NOT EXISTS idx_outbox_cho_gui
-    ON outbox (next_try_at) WHERE status IN ('queued', 'failed');
+    ON outbox (priority, next_try_at) WHERE status IN ('queued', 'failed');
+-- Đếm thư HÀNG LOẠT đã đi trong ngày, cho trần ngày (`hop_thu.con_lai_hang_loat`).
+CREATE INDEX IF NOT EXISTS idx_outbox_hang_loat_ngay
+    ON outbox (sent_at) WHERE priority = 1 AND status = 'sent';
 CREATE INDEX IF NOT EXISTS idx_outbox_dang_gui
     ON outbox (claimed_at) WHERE status = 'sending';
 CREATE INDEX IF NOT EXISTS idx_outbox_nguon ON outbox (source_type, source_id);

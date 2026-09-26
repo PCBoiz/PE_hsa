@@ -4,12 +4,26 @@
   POST     /api/admin/thong-bao/preview         — đếm người nhận theo kênh, ai thiếu email
   POST     /api/admin/thong-bao/<id>/gui        — gửi bản nháp (409 nếu đã gửi / đã huỷ)
   POST     /api/admin/thong-bao/<id>/huy        — huỷ bản nháp
-  POST     /api/teach/classes/<id>/thong-bao    — giảng viên (và học vụ) gửi cho MỘT lớp mình thấy
+  POST     /api/teach/classes/<id>/thong-bao    — giảng viên, TRỢ GIẢNG (và học vụ) gửi cho MỘT
+                                                  lớp mình phụ trách
   POST     /api/teach/classes/<id>/thong-bao/preview
 
-Học vụ gửi được MỌI đối tượng (`IsAdminOrAcademic`). Giảng viên chỉ lớp mình
-(`IsSeniorTeachingStaff` + `can_see_class`; lớp khác → 404, không lộ lớp có tồn tại).
-Trợ giảng không gửi thông báo (nhắn/nhắc hai chiều của trợ giảng là việc của E3).
+Học vụ gửi được MỌI đối tượng (`IsAdminOrAcademic`). Khu giảng dạy chỉ gửi được LỚP MÌNH
+(`IsTeachingStaff` + `can_see_class`; lớp khác → 404, không lộ lớp có tồn tại).
+
+── VÌ SAO TRỢ GIẢNG GỬI ĐƯỢC (anh Sơn chốt 26/09/2026, quyết định số 1) ─────
+
+Bản đầu gác cửa lớp bằng `IsSeniorTeachingStaff` (loại trợ giảng), theo lệ "trợ giảng
+không chạm dữ liệu liên lạc". Nhưng ở TopHSA trợ giảng là người NHẮC học viên hằng ngày
+(bảng yêu cầu dòng 20: nhắc học bài / làm bài / vào lớp) — bắt họ nhờ giảng viên bấm hộ
+thì lời nhắc tới muộn, hoặc không tới. Anh Sơn chốt: trợ giảng gửi thông báo cho lớp MÌNH
+y như giảng viên, KỂ CẢ kèm email.
+
+Hàng rào còn lại vẫn siết: `can_see_class` với trợ giảng là "lớp có phân công mình"
+(`_la_tro_giang_cua_lop`), nên trợ giảng KHÔNG gửi được lớp khác, và tuyến `/api/admin/…`
+(gửi cả khối, chọn tay người nhận) vẫn chỉ học vụ + quản trị. Cửa này KHÔNG trả về, và
+không gửi tới, email / số điện thoại của phụ huynh — nó chỉ báo cho học viên của lớp, nên
+không mở lại thứ `IsSeniorTeachingStaff` đang canh (báo cáo phụ huynh, xoá buổi học).
 """
 import json
 
@@ -18,7 +32,7 @@ from rest_framework.views import APIView
 
 from common import audit
 from common.db import q1
-from common.permissions import IsAdminOrAcademic, IsSeniorTeachingStaff, can_see_class
+from common.permissions import IsAdminOrAcademic, IsTeachingStaff, can_see_class
 from notifications import thong_bao as tb
 
 
@@ -86,7 +100,7 @@ class AdminThongBaoXemTruocView(APIView):
 
     def post(self, request):
         d = _body(request)
-        return Response(tb.xem_truoc(tb.doi_tuong(d.get('audience')), bool(d.get('sendEmail', True))))
+        return Response(tb.xem_truoc(tb.doi_tuong(d.get('audience')), bool(d.get('sendEmail'))))
 
 
 class AdminThongBaoGuiView(APIView):
@@ -115,8 +129,8 @@ class AdminThongBaoHuyView(APIView):
 
 
 class LopThongBaoView(APIView):
-    """Giảng viên gửi cho LỚP MÌNH — đối tượng cố định là lớp trên đường dẫn."""
-    permission_classes = [IsSeniorTeachingStaff]
+    """Giảng viên / trợ giảng gửi cho LỚP MÌNH — đối tượng cố định là lớp trên đường dẫn."""
+    permission_classes = [IsTeachingStaff]
 
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
@@ -131,9 +145,9 @@ class LopThongBaoView(APIView):
 
 
 class LopThongBaoXemTruocView(APIView):
-    permission_classes = [IsSeniorTeachingStaff]
+    permission_classes = [IsTeachingStaff]
 
     def post(self, request, class_id):
         if not can_see_class(request.user, class_id):
             return Response({'error': 'Không tìm thấy lớp này.'}, status=404)
-        return Response(tb.xem_truoc({'classIds': [class_id]}, bool(_body(request).get('sendEmail', True))))
+        return Response(tb.xem_truoc({'classIds': [class_id]}, bool(_body(request).get('sendEmail'))))

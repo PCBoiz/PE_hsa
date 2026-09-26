@@ -22,8 +22,23 @@ thể đi HAI lần trong ca ấy — chấp nhận: mất thư tệ hơn trùng
 ── THỬ LẠI ─────────────────────────────────────────────────────────────────
 
 Lỗi lần n → 'failed', thử lại sau `BACKOFF_PHUT[n-1]` phút (1', 5', 30', 2h, 6h). Hết
-lượt lùi → 'dropped'. Lỗi VĨNH VIỄN (địa chỉ hỏng, kênh chưa cấu hình, thư quá hạn) →
-'dropped' ngay, lý do ở `error`. Zalo ZNS chỉ đi khi đã có OA (`zalo.da_cau_hinh`).
+lượt lùi → 'dropped'. Lỗi VĨNH VIỄN (địa chỉ hỏng, kênh chưa cấu hình, thư quá hạn, hàng
+rào máy dev) → 'dropped' ngay, lý do ở `error`. Zalo ZNS chỉ đi khi đã có OA
+(`zalo.da_cau_hinh`).
+
+── ƯU TIÊN + TRẦN NGÀY (anh Sơn chốt 26/09/2026) ────────────────────────────
+
+`outbox.priority`: 0 = thư GIAO DỊCH (một người đang chờ đúng lá thư ấy), 1 = thư HÀNG
+LOẠT. Mỗi lượt nhận việc lấy hết phần giao dịch tới lượt TRƯỚC, chỗ còn lại mới tới hàng
+loạt — và chỉ tới phần `con_lai_hang_loat()` của trần ngày (`OUTBOX_TRAN_HANG_LOAT_NGAY`,
+mặc định 300, dưới hạn Gmail ~500). Vượt trần thì dòng NẰM LẠI 'queued', sang ngày sau đi
+tiếp; không `dropped` — một thông báo cả khối bị bỏ im lặng tệ hơn là tới muộn một ngày.
+
+── HÀNG RÀO THƯ Ở MÁY DEV ──────────────────────────────────────────────────
+
+CSDL đang nối không phải production → thư CHỈ đi tới địa chỉ an toàn, còn lại 'dropped'
+kèm lý do tiếng Việt. Luật và lý lẽ: `notifications/hang_rao_thu.py`. Hàng rào nằm ở
+`_gui_email` / `_gui_zalo`, TRƯỚC khi dựng thư và trước khi mở SMTP.
 
 ── NGƯỜI CHẠY ──────────────────────────────────────────────────────────────
 
@@ -52,6 +67,7 @@ from django.utils import timezone
 
 from common import mail, zalo
 from common.db import q, q1
+from notifications import hang_rao_thu
 
 log = logging.getLogger(__name__)
 
@@ -64,10 +80,28 @@ MOT_LUOT = 20
 #: Chu kỳ luồng nền (giây).
 CHU_KY_GIAY = 60
 
+#: `outbox.priority` — xem §61a. GIAO_DỊCH đi TRƯỚC trong mỗi lượt nhận việc.
+GIAO_DICH = 0
+HANG_LOAT = 1
+#: Trần thư HÀNG LOẠT mỗi ngày (giờ VN). Đặt 0 = hôm nay không gửi thư hàng loạt nào.
+BIEN_TRAN = 'OUTBOX_TRAN_HANG_LOAT_NGAY'
+TRAN_HANG_LOAT_MAC_DINH = 300
+
 #: Loại thư dựng lại lúc gửi → mô-đun có `dung_thu_outbox` (xem chú thích đầu tệp).
 LOAI = {
     'bao_cao_phu_huynh': 'teaching.thu_bao_cao',
 }
+
+#: 0h00 hôm nay GIỜ VIỆT NAM, đổi về ĐÚNG đồng hồ mà `sent_at`/`claimed_at` đang ghi.
+#:
+#: Không viết mốc này ở Python: `sent_at = now()` đi qua `SET TIME ZONE` của phiên (Django
+#: đặt UTC vì `USE_TZ=True`), nên cột giữ giờ UTC không múi — đo 26/09/2026: phiên `UTC`,
+#: `now()` = 00:41 ngày 26 trong khi `local_now()` = 07:41. So một mốc naive dựng ở Python
+#: theo giờ VN với cột ấy là lệch 7 tiếng, đúng cái lỗi `common/clock.py` mô tả. Câu dưới
+#: đi VÒNG QUA cùng một phép đổi: giờ VN → mốc tuyệt đối → giờ của phiên. Đúng với mọi
+#: `TimeZone` của phiên, không cắm cứng số 7.
+DAU_NGAY_VN = ("(date_trunc('day', now() AT TIME ZONE 'Asia/Ho_Chi_Minh')"
+               " AT TIME ZONE 'Asia/Ho_Chi_Minh')::timestamp")
 
 CAU_NHAN = '''
     UPDATE outbox SET status = 'sending', claimed_at = now(), attempts = attempts + 1
@@ -76,6 +110,7 @@ CAU_NHAN = '''
             WHERE ((status IN ('queued', 'failed') AND next_try_at <= now())
                    OR (status = 'sending' AND claimed_at < now() - make_interval(mins => %(treo)s)))
               AND (%(ids)s::bigint[] IS NULL OR id = ANY(%(ids)s::bigint[]))
+              AND priority = %(uu_tien)s
             ORDER BY next_try_at, id
             LIMIT %(n)s
               FOR UPDATE SKIP LOCKED)
@@ -83,23 +118,75 @@ CAU_NHAN = '''
 
 
 def xep(channel, to_addr, subject='', body='', *, user_id=None, params=None,
-        source=(None, None), dedup=None):
+        source=(None, None), dedup=None, uu_tien=GIAO_DICH):
     """Ghi MỘT việc gửi. Trả id, hoặc None khi `dedup` đã có (việc ấy đã xếp rồi).
+
+    `uu_tien`: `GIAO_DICH` (mặc định — một người đang chờ đúng lá thư này) hoặc
+    `HANG_LOAT` (thư cả lớp / cả khối, chịu trần ngày). Xem §61a.
 
     Gọi TRONG giao dịch của việc chính; sau commit gọi `day_di([id])` để gửi sớm."""
     r = q1('''INSERT INTO outbox (channel, user_id, to_addr, subject, body, params,
-                                  source_type, source_id, dedup_key)
-              VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s)
+                                  source_type, source_id, dedup_key, priority)
+              VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s)
               ON CONFLICT (dedup_key) DO NOTHING RETURNING id''',
            (channel, user_id, to_addr or '', subject or '', body or '',
-            json.dumps(params or {}, ensure_ascii=False), source[0], source[1], dedup))
+            json.dumps(params or {}, ensure_ascii=False), source[0], source[1], dedup,
+            HANG_LOAT if uu_tien == HANG_LOAT else GIAO_DICH))
     return r['id'] if r else None
+
+
+def tran_hang_loat():
+    """Trần thư HÀNG LOẠT mỗi ngày. Biến hỏng / âm → mặc định (thà gửi đúng luật hơn là
+    mở toang vì một biến gõ sai)."""
+    v = (os.environ.get(BIEN_TRAN) or '').strip()
+    if not v:
+        return TRAN_HANG_LOAT_MAC_DINH
+    try:
+        n = int(v)
+    except ValueError:
+        log.warning('[hop_thu] %s = %r không phải số — dùng mặc định %d',
+                    BIEN_TRAN, v, TRAN_HANG_LOAT_MAC_DINH)
+        return TRAN_HANG_LOAT_MAC_DINH
+    return n if n >= 0 else TRAN_HANG_LOAT_MAC_DINH
+
+
+def con_lai_hang_loat():
+    """Hôm nay (giờ VN) còn gửi thêm được bao nhiêu thư HÀNG LOẠT.
+
+    Đếm cả dòng 'sending' đã nhận trong ngày: hai máy chạy cùng lúc thì mỗi máy thấy phần
+    máy kia ĐANG gửi, nên không cùng nhau vượt trần. Vẫn còn khe hở đúng bằng một lượt
+    (`MOT_LUOT`) khi hai máy hỏi trước khi cả hai kịp nhận — trần 300 nằm dưới hạn Gmail
+    ~500 chính là để chỗ cho khe ấy."""
+    tran = tran_hang_loat()
+    if tran <= 0:
+        return 0
+    da = q1('''SELECT count(*) AS n FROM outbox
+                WHERE priority = %%s
+                  AND ((status = 'sent' AND sent_at >= %s)
+                       OR (status = 'sending' AND claimed_at >= %s))''' % (DAU_NGAY_VN, DAU_NGAY_VN),
+            (HANG_LOAT,))['n']
+    return max(0, tran - da)
+
+
+def _nhan_theo_uu_tien(uu_tien, n, ids):
+    if n <= 0:
+        return []
+    return q(CAU_NHAN, {'n': n, 'ids': list(ids) if ids is not None else None,
+                        'treo': TREO_PHUT, 'uu_tien': uu_tien})
 
 
 def nhan_viec(n=MOT_LUOT, ids=None):
     """Nhận tối đa `n` việc tới lượt (chỉ trong `ids` nếu truyền). Câu tự commit khi
-    đứng ngoài giao dịch — máy khác thấy ngay trạng thái 'sending'."""
-    ds = q(CAU_NHAN, {'n': n, 'ids': list(ids) if ids is not None else None, 'treo': TREO_PHUT})
+    đứng ngoài giao dịch — máy khác thấy ngay trạng thái 'sending'.
+
+    HAI câu, GIAO_DICH trước: một lượt "thông báo cả khối" (100 thư) xếp trước thư quên
+    mật khẩu thì em ấy chờ tới nhịp sau (quyết định 4 của anh Sơn 26/09/2026). Chỗ còn
+    lại mới tới thư hàng loạt, và chỉ tới phần trần ngày còn cho phép — vượt trần thì
+    dòng NẰM LẠI 'queued' (không `dropped`): sang ngày sau trần mở lại, thư vẫn đi."""
+    ds = _nhan_theo_uu_tien(GIAO_DICH, n, ids)
+    con = n - len(ds)
+    if con > 0:
+        ds += _nhan_theo_uu_tien(HANG_LOAT, min(con, con_lai_hang_loat()), ids)
     for d in ds:
         d['params'] = _params(d)      # Django trả jsonb dạng chuỗi — đọc một lần ở đây
     return ds
@@ -132,6 +219,10 @@ def _gui_email(d, p, san):
     den = (d['to_addr'] or '').strip()
     if not den or '@' not in den or any(c in den for c in mail._XUONG_DONG):
         return 'bo', None, 'Địa chỉ email không hợp lệ: %r' % den
+    # HÀNG RÀO MÁY DEV — trước khi dựng thư và trước khi mở SMTP (§61, quyết định 3).
+    chan = hang_rao_thu.ly_do_chan('email', den)
+    if chan:
+        return 'bo', None, chan
     tieu_de, chu, html, dinh_kem = san if san else _dung(d, p)
     # Chỉ truyền html/tệp khi có: giữ đúng lời gọi ba đối số của các nơi gửi chữ thuần.
     thua = (html, tuple(dinh_kem or ())) if (html or dinh_kem) else ()
@@ -150,6 +241,9 @@ def _gui_zalo(d, p):
         return 'bo', None, 'Kênh Zalo chưa sẵn sàng: chưa có Zalo OA (%s).' % ', '.join(zalo.thieu_gi())
     if not (d['to_addr'] or '').strip():
         return 'bo', None, 'Chưa có số điện thoại người nhận.'
+    chan = hang_rao_thu.ly_do_chan('zalo', d['to_addr'])
+    if chan:
+        return 'bo', None, chan
     ok, dau_vet, loi = zalo.gui_zns(d['to_addr'], p.get('zns') or {})
     return ('xong' if ok else 'loi'), dau_vet, loi
 
