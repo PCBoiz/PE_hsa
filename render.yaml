@@ -53,6 +53,8 @@ services:
         value: "1"                  # bật luồng ping giữ Neon ấm dưới gunicorn
       - key: ENABLE_OUTBOX
         value: "1"                  # luồng gửi hộp thư đi mỗi 60s (§61, notifications/hop_thu.py)
+      - key: OUTBOX_TRAN_HANG_LOAT_NGAY
+        value: "300"                # trần thư HÀNG LOẠT mỗi ngày (= mặc định trong mã); giao dịch không tính
       - key: DB_POOL_MIN
         value: "2"
       - key: DB_POOL_MAX

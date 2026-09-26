@@ -65,8 +65,16 @@ def bat() -> bool:
     return not dang_tro_production()
 
 
-def _danh_sach(bien):
-    return [m.strip().lower() for m in (os.environ.get(bien) or '').split(',') if m.strip()]
+def _tach(chuoi):
+    """Cắt một chuỗi ngăn bằng dấu phẩy thành danh sách đã hạ chữ.
+
+    Nhận GIÁ TRỊ chứ không nhận TÊN biến, để mỗi lần đọc môi trường nằm ngay tại chỗ gọi
+    với một hằng đọc ra được. Bản đầu nhận tên (`os.environ.get(bien)`) và cổng pre-push
+    bắt được: bộ soát `common/tests_cau_hinh.py` đọc tên biến bằng AST để đối chiếu với
+    `render.yaml`, nên một tên đi qua tham số là một biến KHÔNG ai soát — đúng lớp biến
+    dễ bị quên khai nhất khi lên production.
+    """
+    return [m.strip().lower() for m in (chuoi or '').split(',') if m.strip()]
 
 
 def _email_e2e():
@@ -89,7 +97,7 @@ def _email_e2e():
 
 def dia_chi_cho_phep():
     """Mọi địa chỉ / tên miền email đi được khi hàng rào bật (đã hạ chữ)."""
-    return list(DUOI_VI_DU) + _email_e2e() + _danh_sach(BIEN_DIA_CHI)
+    return list(DUOI_VI_DU) + _email_e2e() + _tach(os.environ.get(BIEN_DIA_CHI))
 
 
 def _khop(dia_chi, cho_phep):
@@ -104,7 +112,7 @@ def ly_do_chan(channel, dia_chi):
     if not bat():
         return None
     if channel == 'zalo':
-        if _khop(dia_chi, _danh_sach(BIEN_SO)):
+        if _khop(dia_chi, _tach(os.environ.get(BIEN_SO))):
             return None
         return ('Máy này không nối CSDL production nên hàng rào thư đang bật: tin Zalo chỉ '
                 'đi tới số trong %s. Số %s không có trong danh sách nên không gửi.'

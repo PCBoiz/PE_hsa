@@ -28,6 +28,9 @@ CHI_DEV = {
     'ZALO_CHE_DO_THU': 'đi trọn luồng ZNS mà không gọi Zalo — để soát nội dung ở máy dev',
     'ZALO_ZNS_API': 'trỏ bộ kiểm sang máy chủ Zalo giả; production dùng địa chỉ thật mặc định',
     'ZALO_OA_API': 'như trên, cho Open API của OA',
+    'OUTBOX_DIA_CHI_CHO_PHEP': 'địa chỉ email hàng rào thư máy dev cho đi (notifications/hang_rao_thu.py); production không qua hàng rào',
+    'OUTBOX_SO_CHO_PHEP': 'như trên, cho số Zalo — số không có tên miền ví dụ như @example.com',
+    'E2E_EMAIL': 'email tài khoản kiểm thử, hàng rào thư cho đi; chỉ có ở máy dev',
     'FLASK_ENV': 'tên cũ thời Flask, chỉ đọc khi thiếu DJANGO_ENV (render.yaml đặt DJANGO_ENV)',
     'FLASK_DEBUG': 'tên cũ thời Flask, chỉ đọc khi thiếu DJANGO_DEBUG (render.yaml đặt DJANGO_DEBUG)',
 }
