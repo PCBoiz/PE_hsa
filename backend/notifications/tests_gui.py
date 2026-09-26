@@ -72,3 +72,63 @@ def test_sau_commit_chi_bao_khi_giao_dich_xong(thu, django_capture_on_commit_cal
     for f in cho:
         f()
     assert len(_chuong(a)) == 1
+
+
+# ── Từ E2 (§61): thư vào HỘP THƯ ĐI trong cùng giao dịch với chuông ─────────
+
+def _hop_thu(uid):
+    return q("SELECT channel, to_addr, subject, body, status, dedup_key FROM outbox WHERE user_id = %s", (uid,))
+
+
+def test_thu_nam_trong_hop_thu_di_khi_khong_gui_ngay(django_capture_on_commit_callbacks):
+    """Không gửi ngay (đường thật): lời gọi chỉ GHI thư — chưa commit thì chưa đi đâu cả."""
+    from notifications.gui import gui
+    bat, tat = _nguoi(nhan_thu=1), _nguoi(nhan_thu=0)
+    with django_capture_on_commit_callbacks(execute=False) as cho:
+        assert gui([bat, tat], 'thu_nghiem', 'Tiêu đề', 'Nội dung', email=True) == 2
+    thu = _hop_thu(bat)
+    assert len(thu) == 1 and thu[0]['status'] == 'queued' and thu[0]['subject'] == 'Tiêu đề'
+    assert thu[0]['body'].startswith('Nội dung')
+    assert _hop_thu(tat) == [], 'tắt email thì chỉ có chuông'
+    assert len(cho) == 1, 'phải hẹn một lượt gửi sau commit'
+
+
+def test_tai_khoan_mau_khong_co_thu(thu):
+    from notifications.gui import gui
+    mau = _nguoi()
+    x('UPDATE users SET is_demo = TRUE WHERE id = %s', (mau,))
+    gui([mau], 'thu_nghiem', 'T', 'N', email=True)
+    assert len(_chuong(mau)) == 1 and _hop_thu(mau) == [] and thu == []
+
+
+def test_dedup_mot_thu_moi_nguoi(thu):
+    from notifications.gui import gui
+    a = _nguoi()
+    gui([a], 'thu_nghiem', 'T', 'N', email=True, dedup='viec:1')
+    gui([a], 'thu_nghiem', 'T', 'N', email=True, dedup='viec:1')
+    assert [r['dedup_key'] for r in _hop_thu(a)] == ['viec:1:%d' % a]
+    assert len(thu) == 1
+
+
+def test_chuong_va_thu_cung_giao_dich(monkeypatch):
+    """Hỏng giữa chừng thì không còn chuông nào, không còn thư nào (không nửa vời)."""
+    from notifications import gui as mo_dun
+    a, b = _nguoi(), _nguoi()
+    that = mo_dun.notify
+    lan = []
+
+    def hong_lan_hai(*ar, **kw):
+        lan.append(1)
+        if len(lan) == 2:
+            raise RuntimeError('CSDL đứt')
+        return that(*ar, **kw)
+    monkeypatch.setattr(mo_dun, 'notify', hong_lan_hai)
+    assert mo_dun.gui([a, b], 'thu_nghiem', 'T', 'N', email=True) == 0
+    assert _chuong(a) == [] and _hop_thu(a) == []
+
+
+def test_link_gan_vao_chuong(thu):
+    from notifications.gui import gui
+    a = _nguoi()
+    gui([a], 'thu_nghiem', 'T', 'N', link='/bai-tap')
+    assert q1('SELECT link FROM notifications WHERE user_id = %s', (a,))['link'] == '/bai-tap'

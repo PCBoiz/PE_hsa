@@ -14,18 +14,21 @@ huynh.
 ── VÌ SAO CHUÔNG VÀ THƯ KHÔNG ĐƯỢC LÀM HỎNG VIỆC CHÍNH ────────────────────
 
 Buổi đã lưu vào CSDL rồi mới báo. Chuông lỗi, SMTP chậm hay sập — giảng viên
-vẫn phải thấy "đã lưu". Thư gửi trên luồng riêng (Gmail mất 1–3 giây mỗi lá,
-một lớp ba mươi em là cả phút) và mọi lỗi chỉ vào nhật ký ứng dụng.
+vẫn phải thấy "đã lưu". Từ E2 (§61) thư vào HỘP THƯ ĐI cùng giao dịch với chuông
+(`notifications/gui.py::xep_thu`), gửi sau commit trên luồng riêng (Gmail mất 1–3
+giây mỗi lá); SMTP sập thì thư nằm lại và được thử lại, không còn mất.
 
 Em tắt "Nhận thông báo qua email" ở Cài đặt (`notification_settings.email_notif`)
 thì chỉ có chuông, không có thư.
 """
 import logging
-import threading
 
-from common import mail
+from django.db import transaction
+
 from common.clock import local_now
 from common.db import q
+from notifications import hop_thu
+from notifications.gui import xep_thu
 from notifications.service import notify
 from teaching.nguoi_buoi import thuoc_buoi
 from teaching.vocab import chi_hoc_vien
@@ -91,13 +94,6 @@ def _kieu(truoc, sau, lop):
     return None
 
 
-def _gui_thu(ds, tieu_de, chu):
-    for den in ds:
-        ok, _, loi = mail.gui(den, tieu_de, chu)
-        if not ok:
-            log.warning('[bao_doi_lich] không gửi được thư đổi lịch: %s', loi)
-
-
 def bao_doi_lich(truoc, sau, lop):
     """Báo cho mọi em ĐANG HỌC lớp. `truoc`/`sau`: dòng `class_sessions` trước và
     sau khi sửa (`sau=None` là xoá buổi). `lop`: dict có `id`, `name`, `mode`,
@@ -129,30 +125,25 @@ def bao_doi_lich(truoc, sau, lop):
                 ten_cau, _gio_dep(sau['starts_at']), noi,
                 (' Link vào lớp: %s' % sau['meeting_url']) if sau.get('meeting_url') else ''))
 
-        ds = q('''SELECT u.id, u.email, coalesce(ns.email_notif, 1) AS nhan_thu
-                    FROM class_members m JOIN users u ON u.id = m.user_id
-                    LEFT JOIN notification_settings ns ON ns.user_id = u.id
+        ds = q('''SELECT u.id FROM class_members m JOIN users u ON u.id = m.user_id
                    WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u')
                # Buổi bù (V-g): chỉ báo các em của buổi ấy, không báo cả lớp.
                + ' AND ' + thuoc_buoi('%s', 'm.user_id'),
                (lop['id'], truoc['id']))
-        for r in ds:
-            notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
-
-        thu = [r['email'] for r in ds if r['email'] and r['nhan_thu']]
-        if thu:
-            # Thư mở bằng lời chào, kết bằng lời chúc; CHUÔNG thì để trần vì nó chỉ
-            # có một dòng. Anh Sơn 26/09, sau khi đọc thư thật: "văn phong cứng quá"
-            # — chữ cũ là "chuyển từ X sang Y (90 phút) · học trực tuyến", đúng
-            # nhưng đọc như máy đọc cho máy nghe.
-            chu_thu = ('Chào em,\n\n%s\n\n'
-                       'Lịch đầy đủ của lớp nằm ở mục "Lớp của tôi" trên TopHSA. '
-                       'Có gì chưa rõ, em nhắn lại cho trợ giảng của lớp nhé.\n\n'
-                       'Chúc em học tốt,\nTopHSA\n' % chu)
-            if GUI_NGAY:
-                _gui_thu(thu, tieu_de, chu_thu)
-            else:
-                threading.Thread(target=_gui_thu, args=(thu, tieu_de, chu_thu), daemon=True).start()
+        # Thư mở bằng lời chào, kết bằng lời chúc; CHUÔNG thì để trần vì nó chỉ
+        # có một dòng. Anh Sơn 26/09, sau khi đọc thư thật: "văn phong cứng quá"
+        # — chữ cũ là "chuyển từ X sang Y (90 phút) · học trực tuyến", đúng
+        # nhưng đọc như máy đọc cho máy nghe.
+        chu_thu = ('Chào em,\n\n%s\n\n'
+                   'Lịch đầy đủ của lớp nằm ở mục "Lớp của tôi" trên TopHSA. '
+                   'Có gì chưa rõ, em nhắn lại cho trợ giảng của lớp nhé.\n\n'
+                   'Chúc em học tốt,\nTopHSA\n' % chu)
+        with transaction.atomic():
+            for r in ds:
+                notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
+            # `xep_thu` tự lọc: có email, bật `email_notif`, không phải tài khoản mẫu.
+            thu = xep_thu([r['id'] for r in ds], tieu_de, chu_thu, ('class_session', truoc['id']))
+            hop_thu.day_di(thu, ngay=GUI_NGAY)
         return len(ds)
     except Exception:            # noqa: BLE001 — báo không được chặn việc chính
         log.exception('[bao_doi_lich] không báo được đổi lịch buổi %s', truoc.get('id'))

@@ -160,6 +160,8 @@ REQUEST_APPROVE = 'request.approve'
 REQUEST_REJECT = 'request.reject'
 #: Học vụ đổi loại một yêu cầu hỗ trợ (bảng TopHSA dòng 11 "phân loại", 26/09/2026).
 REQUEST_CLASSIFY = 'request.classify'
+#: Thông báo trung tâm (§61, E2): học vụ / giảng viên gửi cho lớp, môn, nhóm, cá nhân.
+ANNOUNCEMENT_SEND = 'announcement.send'
 
 
 def _client_ip(request):

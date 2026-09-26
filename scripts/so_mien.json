@@ -243,7 +243,7 @@
     },
     "thong_bao": {
       "ten": "Thông báo",
-      "mo_ta": "Chuông trong ứng dụng, cài đặt nhận tin, mặt tiền gửi `gui` / `gui_sau_commit`, báo đổi lịch. Sắp có (E2): hộp thư đi (outbox), thông báo lớp / trung tâm (announcements).",
+      "mo_ta": "Chuông trong ứng dụng, cài đặt nhận tin, mặt tiền gửi `gui` / `gui_sau_commit`, báo đổi lịch. Hộp thư đi `outbox` (§61, E2): mọi thư/ZNS đi qua đây — xếp một dòng, luồng nền gửi, thử lại khi lỗi, ưu tiên giao dịch trước hàng loạt, hàng rào chặn địa chỉ thật trên máy dev. Thông báo lớp / trung tâm `announcements` (§61, E2): học vụ gửi mọi đối tượng, giảng viên và trợ giảng gửi lớp mình.",
       "backend": [
         "backend/notifications/**/*.py",
         "backend/teaching/bao_doi_lich.py",
@@ -252,7 +252,9 @@
       "frontend": [],
       "bang": [
         "notifications",
-        "notification_settings"
+        "notification_settings",
+        "outbox",
+        "announcements"
       ],
       "cho_ghi": {}
     },

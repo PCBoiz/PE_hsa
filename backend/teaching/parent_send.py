@@ -40,6 +40,7 @@ from common import audit, mail, zalo
 from common.clock import local_today
 from common.db import q, q1, x
 from common.permissions import IsSeniorTeachingStaff, can_see_class
+from notifications import hop_thu
 from teaching.parent_link import HAN_NGAY, SO_BYTE
 from teaching.parent_report import dau_ky_mac_dinh, dung_bao_cao
 from teaching.thu_bao_cao import soan_thu
@@ -248,8 +249,8 @@ class ParentReportSendAllView(APIView):
                     ket.append({'id': e['id'], 'name': e['name'], 'trangThai': 'loi',
                                 'kenh': 'email', 'duongDan': duong_dan, 'loi': loi_bc})
                     continue
-                tieu_de, chu, html, dinh_kem = soan_thu(bc, duong_dan)
-                ok, dau_vet, loi = mail.gui(dia_chi, tieu_de, chu, html, dinh_kem)
+                thu = soan_thu(bc, duong_dan)
+                tieu_de, chu, html, dinh_kem = thu
                 thu_kenh, nguoi_nhan = mail.che_do_thu(), dia_chi
                 # Thứ người bấm cần DUYỆT ở kênh email. Không đưa phần HTML
                 # vào: nó vài nghìn ký tự và không ai đọc được nó trong một ô
@@ -259,13 +260,14 @@ class ParentReportSendAllView(APIView):
                             'dinhKem': [{'ten': t, 'kb': round(len(d) / 1024, 1)}
                                         for t, _k, d in dinh_kem]}
             else:
+                thu = None
                 noi_dung = {'ten_hoc_vien': e['name'] or '', 'ten_lop': ten_lop,
                             'ky': ky_chu, 'duong_dan': duong_dan}
-                ok, dau_vet, loi = zalo.gui_zns(so, noi_dung)
                 thu_kenh, nguoi_nhan = zalo.che_do_thu(), so
 
             if thu_kenh:
-                # CHẾ ĐỘ THỬ: KHÔNG ghi `parent_report_sends`.
+                # CHẾ ĐỘ THỬ: gửi thẳng (ghi `.eml` / nhật ký), KHÔNG qua hộp thư đi,
+                # KHÔNG ghi `parent_report_sends`.
                 #
                 # Sổ ấy là sổ của những tin ĐÃ ĐI. Một dòng 'da_gui' cho tin
                 # chưa từng rời máy chủ là loại nói dối khó thấy nhất: lần sau
@@ -274,6 +276,10 @@ class ParentReportSendAllView(APIView):
                 # phải duyệt được ĐÚNG thứ sẽ đi. Bản viết lại hôm nay lỡ bỏ
                 # nó đi và `tests_parent_send` bắt được ngay — gỡ một năng lực
                 # trong lúc đổi hình dạng dữ liệu là kiểu hỏng dễ lọt nhất.
+                if kenh == 'email':
+                    ok, dau_vet, loi = mail.gui(dia_chi, tieu_de, chu, html, dinh_kem)
+                else:
+                    ok, dau_vet, loi = zalo.gui_zns(so, noi_dung)
                 ket.append({'id': e['id'], 'name': e['name'], 'trangThai': 'thu',
                             'kenh': kenh, 'duongDan': duong_dan, 'loi': None,
                             'soNhan': nguoi_nhan, 'noiDung': noi_dung,
@@ -284,13 +290,27 @@ class ParentReportSendAllView(APIView):
             # Vào sổ CẢ lượt hỏng. Một lượt gửi lỗi mà không ghi lại thì lần
             # sau không ai biết em nào đã thử và trượt — còn phụ huynh thì chỉ
             # biết là họ chưa nhận được gì.
-            x('''INSERT INTO parent_report_sends
-                     (link_id, phone, email, channel, status, provider_id, error,
-                      requested_by, sent_at)
-                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s, CASE WHEN %s THEN now() ELSE NULL END)''',
-              (link['id'], so if kenh == 'zns' else '',
-               dia_chi if kenh == 'email' else '', kenh,
-               'da_gui' if ok else 'loi', dau_vet, loi, request.user.id, ok))
+            #
+            # Từ E2 (§61): dòng sổ ghi 'cho' TRƯỚC, thư vào HỘP THƯ ĐI trỏ về dòng
+            # sổ ấy, rồi gửi ngay trong lượt bấm này (như trước — người bấm thấy
+            # kết quả từng em). Mỗi lượt gửi (kể cả lượt thử lại sau khi SMTP sập)
+            # ghi kết quả vào sổ qua `thu_bao_cao.sau_gui_outbox`.
+            so_gui = q1('''INSERT INTO parent_report_sends
+                              (link_id, phone, email, channel, status, requested_by)
+                          VALUES (%s,%s,%s,%s,'cho',%s) RETURNING id''',
+                        (link['id'], so if kenh == 'zns' else '',
+                         dia_chi if kenh == 'email' else '', kenh, request.user.id))['id']
+            p = {'loai': 'bao_cao_phu_huynh', 'class_id': class_id, 'user_id': e['id'],
+                 'tu': tu.isoformat(), 'den': den.isoformat(), 'duong_dan': duong_dan}
+            if kenh == 'email':
+                oid = hop_thu.xep('email', dia_chi, tieu_de, chu, user_id=e['id'], params=p,
+                                  source=('parent_report_sends', so_gui))
+            else:
+                oid = hop_thu.xep('zalo', so, user_id=e['id'], params=dict(p, zns=noi_dung),
+                                  source=('parent_report_sends', so_gui))
+            kq = hop_thu.gui_ngay([oid], san={oid: thu} if thu else None).get(oid)
+            ok = bool(kq) and kq[0] == 'sent'
+            loi = None if ok else (kq[2] if kq else 'Chưa gửi được — thư nằm trong hộp thư đi.')
             ket.append({'id': e['id'], 'name': e['name'],
                         'trangThai': 'da_gui' if ok else 'loi',
                         'kenh': kenh, 'duongDan': duong_dan, 'loi': loi})

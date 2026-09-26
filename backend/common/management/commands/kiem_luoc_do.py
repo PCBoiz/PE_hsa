@@ -271,6 +271,23 @@ MUC = [
      if _cot('yeu_cau_su_kien', 'noi_bo')[0] else (False, 'chưa có bảng')),
     ('§65c', 'class_members.reserve_until (bảo lưu tới ngày)',
      lambda: _cot('class_members', 'reserve_until')),
+    # §61: hộp thư đi + thông báo trung tâm (E2).
+    ('§61a', 'bảng outbox (hộp thư đi) + ưu tiên giao dịch/hàng loạt + chỉ mục phần việc chờ gửi',
+     lambda: _ca(lambda: _cot('outbox', 'dedup_key'),
+                 lambda: _cot('outbox', 'priority'),
+                 lambda: _chi_muc('idx_outbox_cho_gui'),
+                 lambda: _chi_muc('idx_outbox_hang_loat_ngay'),
+                 lambda: _check_co_gia_tri('outbox_status_check', 'dropped'),
+                 lambda: _check_co_gia_tri('outbox_priority_check', '1'))),
+    ('§61b', 'bảng announcements (thông báo trung tâm, nháp/đã gửi/huỷ)',
+     lambda: _check_co_gia_tri('announcements_status_check', 'cancelled')),
+    ('§61c', 'notifications.announcement_id ON DELETE CASCADE + link + read_at + chỉ mục (user_id, id DESC)',
+     lambda: _ca(lambda: _cot('notifications', 'read_at'),
+                 lambda: _cot('notifications', 'link'),
+                 lambda: _chi_muc('idx_notifications_user_id_desc'),
+                 lambda: _fk('notifications', 'notifications_announcement_id_fkey', 'CASCADE'))),
+    ('§61d', 'chỉ mục duy nhất phần notifications nhắc hạn nộp (mỗi em mỗi bài một chuông)',
+     lambda: _chi_muc('idx_notifications_nhac_han_mot_lan')),
     # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
     ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
      lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')
