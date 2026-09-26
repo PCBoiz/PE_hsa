@@ -1,0 +1,417 @@
+{
+  "_doc": [
+    "SỔ MIỀN — MỘT nguồn cho: miền → tệp mã (backend + frontend) → bảng sở hữu → ai được ghi bảng ấy.",
+    "Chủ dự án chốt 25/09/2026: chia 10 miền vận hành + 6 miền nền; bản đồ + cổng kiểm NGAY, dời tệp DẦN.",
+    "Đọc: docs/THIET_KE_HE_THONG.md §4. Sinh ra: docs/CAU_TRUC_MA.md, docs/CAU_TRUC_DU_LIEU.md (python scripts/cau_truc.py).",
+    "Cổng: python scripts/cau_truc.py --kiem (pre-push bước f7).",
+    "Glob tính từ gốc repo; `*` không qua `/`, `**` qua nhiều thư mục; `[` `]` là chữ thường (tên thư mục Next).",
+    "Một tệp khớp nhiều glob → glob CỤ THỂ nhất thắng (đường dẫn đủ > glob; rồi glob có phần chữ dài hơn). Hai miền hoà nhau → cổng đỏ.",
+    "cho_ghi: đặt ở miền CHỦ bảng — miền khác được phép ghi bảng ấy, kèm lý do. Miền có ghi_moi_bang được ghi mọi bảng.",
+    "no_ghi_cheo: vi phạm CŨ (tệp → bảng miền khác) — chỉ được CO: mục không còn xảy ra thì cổng đỏ cho tới khi xoá mục ấy.",
+    "Mã mới đặt đúng miền; tệp cũ trộn nhiều miền ghi `tach_khi_cham` — tách khi đang sửa chính chỗ ấy."
+  ],
+  "mien": {
+    "lop_hoc": {
+      "ten": "Lớp học",
+      "mo_ta": "Lớp, thành viên lớp (xếp lớp, chuyển lớp, rời lớp, nhận xét từng em), đợt học và ngày nghỉ của đợt, lớp gia sư.",
+      "backend": [
+        "backend/teaching/views.py",
+        "backend/teaching/chuyen_lop.py",
+        "backend/teaching/lop_gia_su.py",
+        "backend/teaching/terms.py",
+        "backend/teaching/nhap_hoc_vien.py",
+        "backend/teaching/lich_su_lop.py",
+        "backend/teaching/danh_gia.py",
+        "backend/teaching/lop_cua_toi.py",
+        "backend/lop_hoc/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/quan-tri/lop-hoc/**",
+        "frontend/src/app/(standalone)/quan-tri/dot-hoc/**",
+        "frontend/src/app/(standalone)/giang-day/NutCanHoTro.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/DanhGiaEm.tsx",
+        "frontend/src/components/LopCuaToi*.tsx"
+      ],
+      "bang": ["classes", "class_members", "terms", "term_holidays"],
+      "cho_ghi": {
+        "classes": [
+          {"mien": "chuong_trinh", "ly_do": "cột gắn khung `classes.syllabus_version_id` (§64) — chỉ `chuong_trinh.dich_vu.nhan_khung` ghi, trong cùng giao dịch gắn buổi"}
+        ]
+      },
+      "tach_khi_cham": {
+        "backend/teaching/views.py": "TRỘN: lớp + thành viên (lop_hoc) với tạo tài khoản / đổi vai / đặt lại mật khẩu (tai_khoan, ho_so) và hồ sơ học viên cho GV (bao_cao). Tách phần users sang ho_so khi chạm.",
+        "backend/teaching/lop_cua_toi.py": "màn học viên CHỈ ĐỌC gom lớp + buổi + chuyên cần + tiến độ; để ở lop_hoc vì trục là 'lớp của em'."
+      }
+    },
+    "lich": {
+      "ten": "Lịch & buổi học",
+      "mo_ta": "Buổi học (tạo, sửa, huỷ, sinh hàng loạt, buổi bù), người thuộc buổi, trùng lịch, lịch gộp, ngày lễ gợi ý.",
+      "backend": [
+        "backend/teaching/sessions.py",
+        "backend/teaching/sinh_buoi.py",
+        "backend/teaching/trung_lich.py",
+        "backend/teaching/lich.py",
+        "backend/teaching/ngay_le.py",
+        "backend/teaching/buoi_bu.py",
+        "backend/teaching/nguoi_buoi.py",
+        "backend/lich/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/giang-day/lich/**",
+        "frontend/src/app/(standalone)/giang-day/buoi-hoc/**",
+        "frontend/src/lib/noiHoc.ts"
+      ],
+      "bang": ["class_sessions", "session_participants"],
+      "cho_ghi": {
+        "class_sessions": [
+          {"mien": "chuong_trinh", "ly_do": "cột gắn khung `class_sessions.syllabus_session_id` + điền `topic` còn trống khi nhận khung (§64) — chỉ `chuong_trinh` ghi, qua `dich_vu` / gắn tay ở `lop.py`"}
+        ]
+      },
+      "tach_khi_cham": {
+        "backend/teaching/sessions.py": "TRỘN: buổi (lich) + điểm danh + lịch sử điểm danh (diem_danh). Tách `SessionAttendanceView`, `SessionAttendanceHistoryView` sang diem_danh khi chạm.",
+        "frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/SessionsClient.tsx": "TRỘN: danh sách buổi + bảng điểm danh; tách phần điểm danh khi chạm."
+      }
+    },
+    "diem_danh": {
+      "ten": "Điểm danh",
+      "mo_ta": "Điểm danh từng buổi, lịch sử sửa điểm danh, luật đếm vắng (nơi DUY NHẤT).",
+      "backend": [
+        "backend/teaching/attendance.py",
+        "backend/diem_danh/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/giang-day/buoi-hoc/[classId]/LichSuDiemDanh.tsx"
+      ],
+      "bang": ["attendance", "attendance_history"],
+      "cho_ghi": {}
+    },
+    "bai_tap": {
+      "ten": "Bài tập & kiểm tra",
+      "mo_ta": "Giao bài, đối tượng nhận bài, nộp bài, chấm tay; bài kiểm tra ngoại tuyến (V-h).",
+      "backend": [
+        "backend/teaching/assignments.py",
+        "backend/teaching/nhan_bai.py",
+        "backend/bai_tap/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/giang-day/bai-tap/**",
+        "frontend/src/app/(standalone)/giang-day/cham/**",
+        "frontend/src/app/(standalone)/bai-tap/**"
+      ],
+      "bang": ["assignments", "submissions", "assignment_targets"],
+      "cho_ghi": {}
+    },
+    "chuong_trinh": {
+      "ten": "Chương trình (E1)",
+      "mo_ta": "Khung chương trình theo buổi (phiên bản, nội dung, tài liệu), lớp nhận khung, sổ đầu bài (§70), tiến độ lớp / em.",
+      "backend": [
+        "backend/chuong_trinh/**/*.py",
+        "backend/courseadmin/syllabus.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/giang-day/chuong-trinh/**",
+        "frontend/src/app/(standalone)/giang-day/so-dau-bai/**",
+        "frontend/src/app/(standalone)/giao-trinh/khung-chuong-trinh/**",
+        "frontend/src/lib/chuongTrinh.ts",
+        "frontend/src/lib/tienDoChu.ts"
+      ],
+      "bang": ["syllabus_versions", "syllabus_sessions", "syllabus_items", "syllabus_materials",
+               "session_logs", "session_log_items", "session_support"],
+      "cho_ghi": {}
+    },
+    "bao_cao": {
+      "ten": "Báo cáo",
+      "mo_ta": "CHỈ ĐỌC: báo cáo lớp, tổng quan trung tâm, xuất CSV/Excel/PDF, cơ sở học phí, chấm công, việc hôm nay. Không sở hữu bảng — đọc qua dịch vụ các miền.",
+      "backend": [
+        "backend/teaching/reports.py",
+        "backend/teaching/overview.py",
+        "backend/teaching/exports.py",
+        "backend/teaching/bao_cao_pdf.py",
+        "backend/teaching/bao_cao_lop_pdf.py",
+        "backend/teaching/co_so_hoc_phi.py",
+        "backend/teaching/cham_cong.py",
+        "backend/teaching/viec_hom_nay.py",
+        "backend/bao_cao/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/giang-day/page.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/**",
+        "frontend/src/app/(standalone)/quan-tri/tong-quan/**",
+        "frontend/src/app/(standalone)/quan-tri/cham-cong/**",
+        "frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/**",
+        "frontend/src/components/ChonDinhDang.tsx"
+      ],
+      "bang": [],
+      "cho_ghi": {},
+      "tach_khi_cham": {
+        "backend/teaching/bao_cao_pdf.py": "PDF tờ PHỤ HUYNH — §4 xếp vào bao_cao (cùng bộ dựng PDF với báo cáo lớp); nếu chỉ phu_huynh dùng thì dời sang phu_huynh khi chạm."
+      }
+    },
+    "phu_huynh": {
+      "ten": "Phụ huynh",
+      "mo_ta": "Tờ báo cáo phụ huynh, đường dẫn riêng (không mật khẩu), gửi cả lớp, thư báo cáo, liên hệ phụ huynh, từ chối nhận.",
+      "backend": [
+        "backend/teaching/parent_report.py",
+        "backend/teaching/parent_link.py",
+        "backend/teaching/parent_send.py",
+        "backend/teaching/lien_he_phu_huynh.py",
+        "backend/teaching/thu_bao_cao.py",
+        "backend/phu_huynh/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/bc/**",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/DanLienHe.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/GuiCaLop.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/DuongDanDaCap.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/KhoiDuongDan.tsx",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/TaoDuongDan.tsx",
+        "frontend/src/components/ToBaoCao.tsx",
+        "frontend/src/components/KhungToBaoCao.tsx",
+        "frontend/src/components/KhoaLienHePhuHuynh.tsx"
+      ],
+      "bang": ["parent_report_links", "parent_report_sends", "parent_report_optout"],
+      "cho_ghi": {}
+    },
+    "ho_so": {
+      "ten": "Hồ sơ học viên",
+      "mo_ta": "Hồ sơ mở rộng (mã HV, trường, tỉnh, người tư vấn, mục tiêu, tình trạng), học vụ cấp tài khoản / nhập hàng loạt, dòng thời gian. Không bảng riêng — ghi cột hồ sơ của `users` qua cho_ghi.",
+      "backend": [
+        "backend/teaching/ho_so.py",
+        "backend/teaching/admin_users.py",
+        "backend/teaching/dong_thoi_gian.py",
+        "backend/teaching/tinh_trang.py",
+        "backend/teaching/tinh_thanh.py",
+        "backend/ho_so/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(standalone)/quan-tri/tai-khoan/**",
+        "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/MucTieuEm.tsx",
+        "frontend/src/lib/tinhThanh.ts"
+      ],
+      "bang": [],
+      "cho_ghi": {}
+    },
+    "yeu_cau": {
+      "ten": "Yêu cầu (E3, sắp có)",
+      "mo_ta": "Yêu cầu của HS / PH / TG → học vụ duyệt trong MỘT giao dịch → gọi dịch vụ miền (chuyển lớp, buổi bù, bảo lưu). Chưa có mã, chưa có bảng.",
+      "backend": ["backend/yeu_cau/**/*.py"],
+      "frontend": ["frontend/src/app/(standalone)/yeu-cau/**"],
+      "bang": [],
+      "cho_ghi": {}
+    },
+    "thong_bao": {
+      "ten": "Thông báo",
+      "mo_ta": "Chuông trong ứng dụng, cài đặt nhận tin, mặt tiền gửi `gui` / `gui_sau_commit`, báo đổi lịch. Sắp có (E2): hộp thư đi (outbox), thông báo lớp / trung tâm (announcements).",
+      "backend": [
+        "backend/notifications/**/*.py",
+        "backend/teaching/bao_doi_lich.py",
+        "backend/thong_bao/**/*.py"
+      ],
+      "frontend": [],
+      "bang": ["notifications", "notification_settings"],
+      "cho_ghi": {}
+    },
+    "tai_khoan": {
+      "ten": "Tài khoản",
+      "mo_ta": "Người dùng, đăng nhập (mật khẩu, OAuth, ghi nhớ), quên / đổi mật khẩu, hoạt động gần nhất. Chủ bảng `users`.",
+      "backend": ["backend/accounts/**/*.py"],
+      "frontend": [
+        "frontend/src/app/(standalone)/login/**",
+        "frontend/src/app/(standalone)/doi-mat-khau/**",
+        "frontend/src/app/(standalone)/dat-lai-mat-khau/**",
+        "frontend/src/app/(standalone)/quen-mat-khau/**",
+        "frontend/src/app/auth/**",
+        "frontend/src/lib/auth.ts",
+        "frontend/src/lib/phienGhiNho.ts"
+      ],
+      "bang": ["users", "password_reset_tokens"],
+      "cho_ghi": {
+        "users": [
+          {"mien": "ho_so", "ly_do": "cột HỒ SƠ (mã HV, trường, tỉnh, tư vấn, mục tiêu, tình trạng — §51, V-m) + học vụ cấp tài khoản Học viên (`admin_users`) — thiết kế §4: ho_so sở hữu cột hồ sơ trên `users`"}
+        ]
+      }
+    },
+    "chung": {
+      "ten": "Chung (hạt nhân)",
+      "mo_ta": "Hạ tầng dùng chung: truy cập CSDL, đồng hồ giờ VN, quyền, nhật ký quản trị, sự kiện học tập, thư, lược đồ; cấu hình; khung giao diện, thành phần UI, thư viện frontend dùng chung.",
+      "backend": [
+        "backend/common/**/*.py",
+        "backend/config/**/*.py",
+        "backend/manage.py",
+        "backend/inspectdb_snapshot.py",
+        "backend/teaching/__init__.py",
+        "backend/teaching/apps.py",
+        "backend/teaching/urls.py",
+        "backend/teaching/vocab.py"
+      ],
+      "frontend": [
+        "frontend/src/*.ts",
+        "frontend/src/app/*.tsx",
+        "frontend/src/app/api/**",
+        "frontend/src/app/(base)/layout.tsx",
+        "frontend/src/app/(base)/page.tsx",
+        "frontend/src/app/(standalone)/layout.tsx",
+        "frontend/src/app/(standalone)/huong-dan/**",
+        "frontend/src/app/(standalone)/thiet-ke/**",
+        "frontend/src/app/(standalone)/giang-day/layout.tsx",
+        "frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx",
+        "frontend/src/app/(standalone)/quan-tri/*.ts",
+        "frontend/src/app/(standalone)/quan-tri/*.tsx",
+        "frontend/src/app/(standalone)/quan-tri/huong-dan/**",
+        "frontend/src/app/(standalone)/quan-tri/vai-tro/**",
+        "frontend/src/app/(standalone)/quan-tri/nhat-ky/**",
+        "frontend/src/components/ui/**",
+        "frontend/src/components/AppShell.tsx",
+        "frontend/src/components/navMuc.ts",
+        "frontend/src/components/bieuTuong.tsx",
+        "frontend/src/components/PageStyles.tsx",
+        "frontend/src/components/NutIn.tsx",
+        "frontend/src/components/BangHuongDan.tsx",
+        "frontend/src/components/KhuNhanSu.tsx",
+        "frontend/src/components/LegacyScripts.tsx",
+        "frontend/src/components/NapTruocScript.tsx",
+        "frontend/src/components/NapTruocDuLieu.tsx",
+        "frontend/src/lib/*.ts"
+      ],
+      "bang": ["admin_audit", "learning_events"],
+      "cho_ghi": {},
+      "tach_khi_cham": {
+        "backend/teaching/vocab.py": "từ vựng trạng thái dùng bởi NHIỀU miền của teaching — dời sang common/ khi chạm.",
+        "backend/teaching/urls.py": "tuyến gộp của mọi miền teaching — mỗi miền mới có urls.py riêng (như chuong_trinh/)."
+      }
+    },
+    "hoc_truc_tuyen": {
+      "ten": "Học trực tuyến",
+      "mo_ta": "Sản phẩm học: khoá, bài học, tiến độ bài, trắc nghiệm, lộ trình, khảo sát, nhật ký / kế hoạch học, năng lực, nhiệm vụ, thành tích, XP, bảng xếp hạng, trợ lý AI; soạn khoá (courseadmin). Tầng JS cũ `public/static/js` (chỉ co).",
+      "backend": [
+        "backend/courses/**/*.py",
+        "backend/lessons/**/*.py",
+        "backend/quizzes/**/*.py",
+        "backend/roadmap/**/*.py",
+        "backend/stats/**/*.py",
+        "backend/achievements/**/*.py",
+        "backend/leaderboard/**/*.py",
+        "backend/chatbot/**/*.py",
+        "backend/courseadmin/**/*.py"
+      ],
+      "frontend": [
+        "frontend/src/app/(base)/dashboard/**",
+        "frontend/src/app/(standalone)/courses/**",
+        "frontend/src/app/(standalone)/lesson/**",
+        "frontend/src/app/(standalone)/questionaire/**",
+        "frontend/src/app/(standalone)/giao-trinh/**",
+        "frontend/src/components/BaHopPhan.tsx",
+        "frontend/src/components/Chatbot.tsx",
+        "frontend/src/components/HocTiep*.tsx",
+        "frontend/src/components/LessonHsa.tsx",
+        "frontend/src/components/NhiemVu*.tsx",
+        "frontend/src/components/RoadmapSection.tsx",
+        "frontend/src/components/TheSoHsa*.tsx",
+        "frontend/src/components/TienDoHopPhan.tsx",
+        "frontend/src/lib/duLieuHsa.ts",
+        "frontend/src/lib/nguCanhBaiHoc.ts",
+        "frontend/src/lib/soanBai.ts",
+        "frontend/src/lib/dinhDangTinNhan.ts",
+        "frontend/public/static/js/**"
+      ],
+      "bang": ["courses", "lessons", "lesson_progress", "enrollments", "quizzes", "review_quiz_results",
+               "topic_self_marks", "course_ratings", "surveys", "roadmaps", "roadmap_progress",
+               "study_logs", "study_plans", "study_plan_items", "missions", "user_missions",
+               "achievements", "user_achievements", "user_daily_xp_logs"],
+      "cho_ghi": {},
+      "tach_khi_cham": {
+        "frontend/src/app/(base)/dashboard/DashboardClient.tsx": "trang đầu dùng chung mọi vai (1.031 dòng) — mỗi vai nhận 'Việc hôm nay' riêng khi chạm (THIET_KE §3)."
+      }
+    },
+    "dien_dan": {
+      "ten": "Diễn đàn",
+      "mo_ta": "Bài viết, bình luận, thích, theo dõi người dùng.",
+      "backend": ["backend/forum/**/*.py"],
+      "frontend": [],
+      "bang": ["posts", "comments", "post_likes", "comment_likes", "user_follows"],
+      "cho_ghi": {}
+    },
+    "thi_cu": {
+      "ten": "Thi thử (ĐÓNG BĂNG)",
+      "mo_ta": "Thi thử trực tuyến (đã tháo tuyến, giữ dữ liệu) + nhập kết quả thi ngoài từ PDF. ĐÓNG BĂNG: không thêm tính năng, chỉ vá.",
+      "backend": [
+        "backend/mockexam/**/*.py",
+        "backend/teaching/nhap_ket_qua*.py",
+        "backend/config/urls_thi_da_thao.py"
+      ],
+      "frontend": [],
+      "bang": ["mock_exams", "mock_attempts", "ket_qua_thi_ngoai"],
+      "cho_ghi": {}
+    },
+    "cong_cu": {
+      "ten": "Công cụ dữ liệu mẫu",
+      "mo_ta": "Bộ dữ liệu trình diễn (§49) và lệnh nạp dữ liệu mẫu — dựng / gỡ một trung tâm giả.",
+      "backend": [
+        "backend/teaching/du_lieu_mau.py",
+        "backend/common/management/commands/du_lieu_mau.py",
+        "backend/common/management/commands/seed_data.py"
+      ],
+      "frontend": [],
+      "bang": [],
+      "cho_ghi": {},
+      "ghi_moi_bang": "dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng"
+    }
+  },
+  "no_ghi_cheo": [
+      {
+          "tep": "backend/accounts/views.py",
+          "bang": "roadmaps",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: đăng ký / khảo sát đầu vào sinh lộ trình mặc định `u<id>_generated` — chuyển thành hàm dịch vụ của roadmap"
+      },
+      {
+          "tep": "backend/accounts/views.py",
+          "bang": "surveys",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: lưu khảo sát đầu vào ngay trong luồng tài khoản — chuyển thành hàm dịch vụ của stats/roadmap"
+      },
+      {
+          "tep": "backend/accounts/views.py",
+          "bang": "user_follows",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: theo dõi người dùng nằm ở accounts — dời view sang forum/"
+      },
+      {
+          "tep": "backend/common/streak.py",
+          "bang": "user_daily_xp_logs",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: streak / XP là trò chơi hoá của học trực tuyến mà nằm ở common/ — dời tệp sang miền hoc_truc_tuyen"
+      },
+      {
+          "tep": "backend/common/streak.py",
+          "bang": "users",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: cột streak / xp / gems trên users — dời tệp sang hoc_truc_tuyen rồi xin `cho_ghi` cột trò chơi hoá"
+      },
+      {
+          "tep": "backend/stats/views.py",
+          "bang": "users",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: nhận thưởng nhiệm vụ cộng xp / gems thẳng vào users — gọi `common.streak.award_xp` thay vì lặp câu"
+      },
+      {
+          "tep": "backend/teaching/admin_users.py",
+          "bang": "class_members",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: nhập tài khoản hàng loạt kèm xếp lớp — gọi dịch vụ xếp lớp của lop_hoc"
+      },
+      {
+          "tep": "backend/teaching/lien_he_phu_huynh.py",
+          "bang": "users",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: cột liên hệ phụ huynh trên users (§47) — đưa vào dịch vụ hồ sơ (ho_so)"
+      },
+      {
+          "tep": "backend/teaching/sessions.py",
+          "bang": "attendance",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: tệp TRỘN buổi + điểm danh — tách `SessionAttendanceView` sang miền diem_danh"
+      },
+      {
+          "tep": "backend/teaching/sessions.py",
+          "bang": "attendance_history",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: tệp TRỘN buổi + điểm danh — tách cùng `SessionAttendanceView`"
+      },
+      {
+          "tep": "backend/teaching/views.py",
+          "bang": "users",
+          "ly_do": "có sẵn 25/09 — tách khi chạm: tệp TRỘN: đổi vai / đặt lại mật khẩu / tạo tài khoản nằm ở views lớp — tách sang ho_so / accounts"
+      }
+  ]
+}

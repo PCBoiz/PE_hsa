@@ -52,7 +52,9 @@ B5 làm mới dữ liệu mẫu: `python manage.py du_lieu_mau --lam-moi` (hoặ
 
 ### Đã xong / không cần làm nữa
 
-- **C1-cloud — XONG 25/09**: anh kết nối GitHub + cài Claude GitHub App cho PE_hsa; phiên cloud thử đẩy nhánh `cloud/thu-quyen` thành công.
+- **Claude cloud — BỎ (26/09, anh chốt).** Việc làm tại máy bằng agent cục bộ. GitHub đã dọn (26/09) còn đúng ba nhánh
+  `master`, `erp`, `erp-DB` — tôi không đẩy nhánh nào khác lên nữa. (Nếu muốn, anh gỡ Claude GitHub App khỏi PE_hsa ở GitHub →
+  Settings → Integrations → Applications; không bắt buộc.)
 
 - **N2 — BỎ (25/09).** Trước đây tôi nhờ anh thêm một dòng vào `backend/.env` để "hàng rào" biết đâu là CSDL thật, chặn
   máy dev lỡ ghi vào dữ liệu học viên. Nay hàng rào tự nhận ra CSDL thật qua tên máy chủ của nó, anh không phải làm gì.

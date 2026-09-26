@@ -113,7 +113,7 @@ export default function ChuongTrinhLopClient({ initial }: { initial: CtLop }) {
           {d.luaChon.length === 0 ? (
             <p className="text-body text-ink-3">
               Chưa có khung nào đang dùng cho môn của lớp.{' '}
-              <Link href="/giao-trinh/khung-chuong-trinh" className="text-brand-ink underline">Soạn khung</Link>
+              <Link href="/giao-trinh/khung-chuong-trinh" className="inline-flex min-h-11 items-center text-brand-ink underline">Soạn khung</Link>
             </p>
           ) : (
             <div className="flex flex-wrap items-end gap-3">

@@ -159,6 +159,11 @@ const TRANG = [
   ['/giang-day', 'Giảng dạy · việc hôm nay'],
   // Thêm 24/09/2026 cùng ngày dựng (§53) — lịch gộp theo tuần, bảy dòng ngày.
   ['/giang-day/lich', 'Giảng dạy · lịch học'],
+  // Gộp A2 + E1 (26/09/2026). 7322 = lớp mẫu, 8004 = buổi đã dạy của lớp ấy (Neon dev).
+  ['/quan-tri/cham-cong', 'Quản trị · chấm công'],
+  ['/giao-trinh/khung-chuong-trinh', 'Giáo trình · khung chương trình'],
+  ['/giang-day/chuong-trinh/7322', 'Giảng dạy · chương trình lớp'],
+  ['/giang-day/so-dau-bai/8004', 'Giảng dạy · sổ đầu bài'],
 ];
 /* Trang phụ huynh — bề mặt DUY NHẤT người ngoài hệ thống nhìn thấy, mở trên điện
    thoại từ tin nhắn. Mỗi lượt quét là một lượt "mở" (tăng opened_count của chìa
@@ -1010,6 +1015,11 @@ for (const kho of KHO) {
         const daHong = await p.evaluate(() => {
           const { hien, co_chu, nen } = globalThis.__pe;
           let n = 0;
+          /* Xen kẽ TRONG SỐ phần tử nền trong suốt, không theo thứ tự mọi phần tử: trang
+             ngắn ("Đặt lại mật khẩu — đường dẫn hỏng", 26/09/2026) có mọi phần tử lẻ mang
+             nền riêng → không phần tử nào bị nhét độ đục → tự kiểm "HỎNG (độ đục)" dù
+             bước soi không mù. Đếm riêng thì có ≥ 1 phần tử nền trong là có ≥ 1 lượt mờ. */
+          let trong = 0;
           for (const el of document.querySelectorAll('body *')) {
             if (!hien(el) || !co_chu(el)) continue;
             const bg = (nen(el) || [])[0];
@@ -1022,7 +1032,7 @@ for (const kho of KHO) {
             const csEl = getComputedStyle(el);
             const nenTrong = /rgba\(0, 0, 0, 0\)|transparent/.test(csEl.backgroundColor)
               && csEl.backgroundImage === 'none';
-            if (n % 2 && nenTrong) el.style.setProperty('opacity', '0.12', 'important');
+            if (nenTrong && trong++ % 2 === 0) el.style.setProperty('opacity', '0.12', 'important');
             else el.style.setProperty('color', `rgb(${Math.round(bg[0])},${Math.round(bg[1])},${Math.round(bg[2])})`, 'important');
             n++;
           }
