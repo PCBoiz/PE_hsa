@@ -39,6 +39,7 @@ from rest_framework.views import APIView
 from common.db import q, q1
 from common.permissions import IsTeachingStaff, can_see_class
 from notifications.service import notify
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.vocab import chi_hoc_vien
 
 #: Trợ giảng nhìn lại bấy nhiêu buổi gần nhất có bản ghi — đủ để nhắc, không
@@ -51,12 +52,19 @@ NHAC_GOP_PHUT = 120
 
 
 def _thuoc_lop(user_id, session_id):
-    """Người ấy có đang học lớp của buổi này không. None = buổi không tồn tại."""
+    """Buổi này có phải buổi CỦA EM không. None = buổi không tồn tại.
+
+    Hai điều kiện, không phải một: em đang học lớp ấy, VÀ em thuộc buổi ấy. Buổi
+    bù (V-g, §62e `session_participants`) chỉ có vài em — cả lớp vẫn "đang học"
+    nhưng buổi ấy không phải của họ.
+    """
     r = q1('''SELECT s.id, s.class_id, s.recording_url,
-                     EXISTS (SELECT 1 FROM class_members m
-                              WHERE m.class_id = s.class_id AND m.user_id = %s
-                                AND m.left_at IS NULL) AS trong_lop
-                FROM class_sessions s WHERE s.id = %s''', (user_id, session_id))
+                     (EXISTS (SELECT 1 FROM class_members m
+                               WHERE m.class_id = s.class_id AND m.user_id = %s
+                                 AND m.left_at IS NULL)
+                      AND ''' + thuoc_buoi('s.id', '%s') + ''') AS trong_lop
+                FROM class_sessions s WHERE s.id = %s''',
+           (user_id, user_id, session_id))
     return r
 
 
@@ -130,16 +138,28 @@ class ThongKeBanGhiView(APIView):
                        'WHERE session_id = ANY(%s)', (ids,)):
                 da_mo.setdefault(v['session_id'], set()).add(v['user_id'])
 
+        # BUỔI BÙ (V-g, §62e): buổi có `session_participants` thì mẫu số là mấy em
+        # ấy, không phải sĩ số lớp. Thiếu chỗ này thì một buổi bù cho hai em hiện
+        # thành "0/28 đã mở", và nút Nhắc gọi chuông cho 26 em chưa từng dự buổi —
+        # họ mở "Lớp của tôi" ra sẽ không thấy bản ghi nào, vì `lop_cua_toi.py` lọc
+        # đúng bằng `thuoc_buoi`. §72 tự cãi nhau ở chính chỗ này (agent soát 26/09).
+        rieng = {}
+        for r in q('SELECT session_id, user_id FROM session_participants '
+                   'WHERE session_id = ANY(%s)', (ids,)):
+            rieng.setdefault(r['session_id'], set()).add(r['user_id'])
+
         ra = []
         for b in buoi:
             xong = da_mo.get(b['id'], set())
-            chua = [e for e in hoc_vien if e['id'] not in xong]
+            thuoc = rieng.get(b['id'])
+            trong_buoi = [e for e in hoc_vien if thuoc is None or e['id'] in thuoc]
+            chua = [e for e in trong_buoi if e['id'] not in xong]
             ra.append({
                 'sessionId': b['id'],
                 'startsAt': b['starts_at'].isoformat(),
                 'topic': b['topic'],
                 'recordingUrl': b['recording_url'],
-                'daMo': len(hoc_vien) - len(chua),
+                'daMo': len(trong_buoi) - len(chua),
                 'chuaMo': len(chua),
                 'dsChuaMo': [{'id': e['id'], 'name': e['name']} for e in chua],
             })
@@ -168,11 +188,14 @@ class NhacXemBanGhiView(APIView):
         if not (buoi['recording_url'] or '').strip():
             return Response({'detail': 'Buổi này chưa có bản ghi.'}, status=400)
 
+        # Chỉ em THUỘC BUỔI: nhắc một em chưa từng dự buổi bù đi "xem lại buổi
+        # 23/09" là chỉ em ấy tới một trang không có gì (agent soát 26/09).
         chua = q('''SELECT u.id FROM class_members m JOIN users u ON u.id = m.user_id
                      WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u') + '''
+                       AND ''' + thuoc_buoi('%s', 'u.id') + '''
                        AND NOT EXISTS (SELECT 1 FROM recording_views v
                                         WHERE v.session_id = %s AND v.user_id = u.id)''',
-                 (class_id, session_id))
+                 (class_id, session_id, session_id))
 
         ngay = buoi['starts_at'].strftime('%d/%m')
         chu_de = (buoi['topic'] or '').strip()
@@ -220,7 +243,13 @@ class BaoLoiBanGhiView(APIView):
         for n in nguoi_day:
             if n['id'] == request.user.id:
                 continue
+            # `title_multi` để cửa gộp ĐẾM thay vì đè: một em báo có thể là mạng
+            # nhà em ấy, ba em báo cùng một buổi là link hỏng thật — và đó đúng là
+            # điều view này sinh ra để phân biệt. Không có nó, `coalesce_count`
+            # nằm im trong CSDL còn người dạy chỉ đọc được "1 em báo" (agent soát
+            # 26/09); `notifications/service.py` đã đỡ sẵn nhánh đếm.
             notify(n['id'], 'ban_ghi_loi', 'Bản ghi buổi %s bị báo hỏng' % ngay,
                    '%s báo không mở được bản ghi buổi %s. Kiểm lại link giúp em nhé.' % (ten, ngay),
-                   'class_session', session_id, coalesce_minutes=NHAC_GOP_PHUT)
+                   'class_session', session_id, coalesce_minutes=NHAC_GOP_PHUT,
+                   title_multi='Bản ghi buổi %s: {n} em báo hỏng' % ngay)
         return Response({'daBao': True})

@@ -181,19 +181,24 @@ function NutBanGhi({ b, onMo }: { b: BanGhi; onMo: () => void }) {
  * nó hỏng, và một nút cho mọi buổi lúc nào cũng nằm đó chỉ làm màn dài thêm.
  */
 function BaoLoiBanGhi({ sessionId }: { sessionId: number }) {
-  const [daBao, setDaBao] = useState(false);
-  if (daBao) return <span className="lct-bg-da">Đã báo, cảm ơn em.</span>;
+  const [trangThai, setTrangThai] = useState<'chua' | 'dang' | 'xong' | 'loi'>('chua');
+  if (trangThai === 'xong') return <span className="lct-bg-da">Đã báo, cảm ơn em.</span>;
   return (
     <button
       type="button"
       className="lct-link lct-bg-bao"
+      disabled={trangThai === 'dang'}
       onClick={() => {
-        setDaBao(true);
+        // CHỜ máy chủ trả lời rồi mới nói "đã báo". Bản đầu đặt cờ trước rồi
+        // `.catch(() => {})` — nên 400, 403 hay mạng rớt cũng ra "Đã báo, cảm ơn
+        // em." trong khi người dạy chẳng nhận được gì (agent soát 26/09).
+        setTrangThai('dang');
         void apiFetch(`/api/sessions/${sessionId}/ban-ghi/bao-loi`, { method: 'POST' })
-          .catch(() => {});
+          .then((r) => setTrangThai(r.ok ? 'xong' : 'loi'))
+          .catch(() => setTrangThai('loi'));
       }}
     >
-      Không mở được?
+      {trangThai === 'dang' ? 'Đang báo…' : trangThai === 'loi' ? 'Chưa báo được — thử lại?' : 'Không mở được?'}
     </button>
   );
 }
@@ -355,7 +360,11 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 {l.banGhiGanDay!.map((b) => (
                   <NutBanGhi key={b.sessionId} b={b} onMo={() => setVuaMo(b.sessionId)} />
                 ))}
-                {vuaMo !== null && <BaoLoiBanGhi sessionId={vuaMo} />}
+                {/* `key` là bắt buộc: không có nó, React giữ nguyên instance khi
+                    em mở sang bản ghi khác, nên cờ "đã báo" của buổi trước còn
+                    nguyên và em không báo được link thứ hai — màn vẫn nói "Đã
+                    báo, cảm ơn em." mà chẳng gửi gì (agent soát 26/09). */}
+                {vuaMo !== null && <BaoLoiBanGhi key={vuaMo} sessionId={vuaMo} />}
               </p>
             )}
 

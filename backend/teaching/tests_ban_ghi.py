@@ -308,3 +308,155 @@ def test_nguoi_ngoai_lop_khong_bao_loi_duoc():
 
     assert _the(ngoai).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 403
     assert _chuong(gv.id) == []
+
+
+# ── Lỗ agent soát tìm ra (26/09/2026) ────────────────────────────────────────
+#
+# Agent soát chạy đột biến của RIÊNG nó trên bộ test này và bốn cái KHÔNG bị
+# giết. Ba lỗ trắng: người đã rời lớp, buổi đã huỷ, và cửa `recording_url` của
+# đường báo lỗi. Cộng một lỗi thật: §72 không biết tới BUỔI BÙ.
+#
+# Buổi bù (V-g, §62e `session_participants`): buổi chỉ có vài em, không phải cả
+# lớp. `lop_cua_toi.py` đã lọc đúng bằng `thuoc_buoi`, nhưng `ban_ghi.py` thì
+# không — nên §72 tự cãi nhau: thống kê và chuông đếm CẢ LỚP, còn màn của em lại
+# ẩn đúng buổi ấy. Hai em nhận chuông "xem lại buổi 23/09" mà `banGhiGanDay` của
+# chính họ rỗng: làm đúng lời nhắc rồi không thấy gì.
+
+
+def _buoi_bu(lop, ds_em, cach_ngay=3, link=LINK):
+    """Buổi CHỈ dành cho `ds_em` — §62e: có `session_participants` thì chỉ họ thuộc buổi."""
+    sid = _buoi(lop, cach_ngay=cach_ngay, link=link)
+    for u in ds_em:
+        q1('INSERT INTO session_participants (session_id, user_id) VALUES (%s, %s) '
+           'RETURNING session_id', (sid, u.id))
+    return sid
+
+
+def test_buoi_bu_chi_dem_em_thuoc_buoi():
+    gv = _nguoi('GV Bu Dem', ROLE_TEACHER)
+    du = _nguoi('Em Du Buoi Bu', ROLE_STUDENT)
+    khong = _nguoi('Em Khong Du Bu', ROLE_STUDENT)
+    lop = _lop('Lớp có buổi bù', gv)
+    for u in (du, khong):
+        _vao(lop, u)
+    buoi = _buoi_bu(lop, [du])
+
+    res = _the(gv).get('/api/teach/classes/%d/ban-ghi' % lop)
+    b = next(x for x in res.json()['buoi'] if x['sessionId'] == buoi)
+    assert b['daMo'] + b['chuaMo'] == 1, \
+        'buổi bù chỉ có một em — không được lấy sĩ số cả lớp làm mẫu số'
+    assert [e['name'] for e in b['dsChuaMo']] == ['Em Du Buoi Bu']
+
+
+def test_buoi_bu_chi_nhac_em_thuoc_buoi():
+    gv = _nguoi('GV Bu Nhac', ROLE_TEACHER)
+    du = _nguoi('Em Du Nhac', ROLE_STUDENT)
+    khong = _nguoi('Em Ngoai Buoi Bu', ROLE_STUDENT)
+    lop = _lop('Lớp bù nhắc', gv)
+    for u in (du, khong):
+        _vao(lop, u)
+    buoi = _buoi_bu(lop, [du])
+
+    res = _the(gv).post('/api/teach/classes/%d/ban-ghi/%d/nhac' % (lop, buoi))
+    assert res.json()['daNhac'] == 1
+    assert _chuong(khong.id) == [], \
+        'em không dự buổi bù mà bị nhắc xem lại thì em ấy mở ra không thấy gì'
+
+
+def test_buoi_bu_em_khong_du_thi_khong_ghi_duoc_luot_mo():
+    gv = _nguoi('GV Bu Mo', ROLE_TEACHER)
+    du = _nguoi('Em Du Mo Bu', ROLE_STUDENT)
+    khong = _nguoi('Em Khong Du Mo', ROLE_STUDENT)
+    lop = _lop('Lớp bù mở', gv)
+    for u in (du, khong):
+        _vao(lop, u)
+    buoi = _buoi_bu(lop, [du])
+
+    assert _the(du).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 200
+    assert _the(khong).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 403
+    assert _so_dong(buoi) == 1
+
+
+def test_em_da_roi_lop_khong_con_ghi_duoc_gi():
+    """Đột biến A của agent soát: bỏ `left_at IS NULL` mà 15/15 test vẫn xanh."""
+    gv = _nguoi('GV Da Roi', ROLE_TEACHER)
+    em = _nguoi('Em Da Roi Lop', ROLE_STUDENT)
+    lop = _lop('Lớp em đã rời', gv)
+    _vao(lop, em)
+    q1("UPDATE class_members SET left_at = now(), leave_reason = 'dropped' "
+       'WHERE class_id = %s AND user_id = %s RETURNING id', (lop, em.id))
+    buoi = _buoi(lop)
+
+    assert _the(em).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 403
+    assert _the(em).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 403
+    assert _so_dong(buoi) == 0
+
+
+def test_bao_loi_buoi_chua_co_ban_ghi_thi_tu_choi():
+    """Đột biến B: cửa `recording_url` chỉ được canh cho `da-mo`, không cho `bao-loi`."""
+    gv = _nguoi('GV Bao Trong', ROLE_TEACHER)
+    em = _nguoi('Em Bao Trong', ROLE_STUDENT)
+    lop = _lop('Lớp báo lỗi buổi trống', gv)
+    _vao(lop, em)
+    buoi = _buoi(lop, link=None)
+
+    assert _the(em).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 400
+    assert _chuong(gv.id) == [], 'không có bản ghi thì không có gì để báo hỏng'
+
+
+def test_buoi_da_huy_khong_bi_doi_dan_ban_ghi():
+    """Đột biến C: `thieuBanGhi` bỏ `status <> 'cancelled'`."""
+    gv = _nguoi('GV Huy', ROLE_TEACHER)
+    lop = _lop('Lớp có buổi huỷ', gv)
+    thuong = _buoi(lop, cach_ngay=4, link=None)
+    huy = q1("INSERT INTO class_sessions (class_id, starts_at, duration_minutes, topic, status) "
+             "VALUES (%s, %s, 90, 'Buổi huỷ', 'cancelled') RETURNING id",
+             (lop, local_now() - timedelta(days=5)))['id']
+
+    d = _the(gv).get('/api/teach/classes/%d/ban-ghi' % lop).json()
+    thieu = [b['sessionId'] for b in d.get('thieuBanGhi', [])]
+    assert thuong in thieu
+    assert huy not in thieu, 'buổi đã huỷ thì không ai phải dán bản ghi cho nó'
+
+
+def test_so_da_mo_cong_chua_mo_bang_si_so_that():
+    """Đột biến D: `daMo` tính bằng `len(xong)` — phồng số khi có người ngoài diện."""
+    gv = _nguoi('GV Dem', ROLE_TEACHER)
+    tg = _nguoi('TG Khong Tinh', ROLE_ASSISTANT)
+    a = _nguoi('Em Dem A', ROLE_STUDENT)
+    b = _nguoi('Em Dem B', ROLE_STUDENT)
+    lop = _lop('Lớp đếm', gv)
+    for u in (tg, a, b):
+        _vao(lop, u)
+    buoi = _buoi(lop)
+    _the(a).post('/api/sessions/%d/ban-ghi/da-mo' % buoi)
+    # Trợ giảng CŨNG mở bản ghi. `recording_views` vì thế có 2 dòng, nhưng mẫu số
+    # chỉ gồm HỌC VIÊN — nên `daMo` phải là 1, không phải 2. Thiếu lượt mở này thì
+    # đột biến `daMo = len(xong)` lọt qua (agent soát 26/09 chỉ đúng chỗ).
+    _the(tg).post('/api/sessions/%d/ban-ghi/da-mo' % buoi)
+
+    x = next(k for k in _the(gv).get('/api/teach/classes/%d/ban-ghi' % lop).json()['buoi']
+             if k['sessionId'] == buoi)
+    assert x['daMo'] == 1 and x['chuaMo'] == 1, 'chỉ đếm HỌC VIÊN thuộc buổi'
+    assert x['daMo'] + x['chuaMo'] == 2, 'tổng phải bằng sĩ số thật, không phồng'
+
+
+def test_nhieu_em_bao_hong_thi_chuong_noi_ro_may_em():
+    """Agent soát mục 3: gộp 120 phút xoá mất `coalesce_count`, còn lại "1 em báo"."""
+    gv = _nguoi('GV Dem Bao', ROLE_TEACHER)
+    ds = [_nguoi('Em Bao So %d' % i, ROLE_STUDENT) for i in range(3)]
+    lop = _lop('Lớp nhiều em báo', gv)
+    for u in ds:
+        _vao(lop, u)
+    buoi = _buoi(lop)
+    for u in ds:
+        _the(u).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi)
+
+    ch = _chuong(gv.id)
+    assert len(ch) == 1, 'ba lượt báo cùng một buổi thì gộp làm một dòng chuông'
+    # KHÔNG so bằng `'3' in title`: tiêu đề có sẵn ngày tháng, và "23/09" cũng chứa
+    # chữ số 3 — thước ấy xanh cả khi mã không đếm gì (đo 26/09).
+    assert '3 em' in ch[0]['title'], \
+        ('một em báo có thể là mạng nhà em ấy, ba em báo là link hỏng thật — '
+         'tiêu đề phải nói ra con số', ch[0]['title'])
+    assert ch[0]['type'] == 'ban_ghi_loi'
