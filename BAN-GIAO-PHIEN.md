@@ -95,7 +95,8 @@ chuong-trinh / van-hanh-a2 / ho-so-hoc-vien / danh-sach-hoc-vien / vai-tro-cong 
   thêm lại ràng buộc cùng tên khác nội dung); vocab = CHECK; `bootstrap_schema` hai lần.
 - Test ĐỎ trước trên mã cũ + đột biến (nền xanh, mỗi đột biến mã 1); đi đúng đường thật; thước báo oan cũng là lỗi.
 - Không hardcode px (clamp/rem/vw/ch); tầng JS cũ chỉ co; mã mới đặt đúng miền, không ghi bảng miền khác.
-- Tối đa 3 agent cục bộ (hạn mức tuần), mỗi agent một worktree cục bộ.
+- **Tối đa 2 agent cục bộ cùng lúc** (anh chốt 26/09 sau khi agent thứ ba chết vì hạn mức phiên 429), mỗi agent
+  một worktree cục bộ; brief để ra TỆP rồi trỏ tới, đừng nhồi vào prompt (đốt token của cả phiên chính).
 - Việc cần anh → MỘT bảng lời thường ở đầu `docs/VIEC_CUA_ANH.md`.
 - Mọi số báo ra phải tự đo (không mượn số của agent/phiên khác mà không ghi rõ); số hiệu năng chỉ sau A/B xen kẽ.
 - Commit tiếng Việt, dòng cuối `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
