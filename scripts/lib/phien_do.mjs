@@ -55,6 +55,7 @@ const THU_MUC_THE = process.env.PE_THE || 'D:/pe_hsa/.the';
 export const THE_VAI = {
   hv: `${THU_MUC_THE}/tokens_hv.json`,
   gv: `${THU_MUC_THE}/tokens_gv.json`,
+  tg: `${THU_MUC_THE}/tokens_tg.json`,
   ad: `${THU_MUC_THE}/tokens_ad.json`,
 };
 

@@ -59,8 +59,8 @@ một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh
 
 **Năm chỗ DOI_CHIEU 23/09 báo quá tay** (đã sửa trong bảng dưới): (1) "nhận xét học sinh — CÓ": không
 màn nào ghi được `class_members.note`, và cột ấy còn bị ghi chú chuyển lớp dùng chung → lỗi rò đã vá
-`e328ade`; (2) TG "dấu hiệu bỏ học — MỘT PHẦN": TG không nhận `vangLien`/`canChuY`
-(`teaching/viec_hom_nay.py:225`) → với TG là CHƯA; (3) "record — CÓ": chỉ phía nhân sự, API học viên không
+`e328ade`; (2) TG "dấu hiệu bỏ học — MỘT PHẦN": lúc ấy TG không nhận `vangLien`/`canChuY`
+— **đã vá; đo lại 26/09 thì TG thấy đúng như giảng viên trên cùng lớp: dựng một em vắng 3 buổi liền ở lớp 7322, cả hai vai đều nhận `vangLien=1`, và màn TG hiện "Vắng liền từ 2 buổi (1)" kèm nút "Báo cần hỗ trợ"** (dữ liệu đã hoàn nguyên sau khi đo); (3) "record — CÓ": chỉ phía nhân sự, API học viên không
 trả `recording_url` — **đã vá 26/09, §72**; (4) "soạn nội dung buổi … `lesson_refs`": không màn nào
 dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không sửa được qua API
 (`courseadmin/views.py:31`).
