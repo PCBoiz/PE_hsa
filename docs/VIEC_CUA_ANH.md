@@ -98,6 +98,27 @@ nộp. Hai gạch "ghi nhận không phản hồi" và "chuyển vấn đề" đ
 
 **Câu hỏi cũ "TG có được chủ động nhắn riêng một em không" coi như đã trả lời — tôi bỏ khỏi danh sách chờ.**
 
+### 4e · GẤP — GitHub Actions đang bị khoá vì vấn đề thanh toán
+
+Đo 27/09/2026 bằng chú giải công khai của chính GitHub, trên cả ba workflow:
+
+> *"The job was not started because your account is locked due to a billing issue."*
+
+Ba thứ đang KHÔNG chạy, và không cái nào tự báo:
+
+| Hỏng | Hậu quả hôm nay | Hậu quả khi có dữ liệu thật |
+|---|---|---|
+| **Sao lưu CSDL** (mỗi ngày 03:00 VN) | chưa mất gì, dữ liệu là giả | **không có bản sao lưu nào** — mất là mất hẳn |
+| **CI** (mọi lượt đẩy) | pytest toàn bộ, `pnpm build`, `pip-audit`, `pnpm audit` không ai chạy | lỗi lọt lên bản thật mà cổng cục bộ không bắt |
+| **Giữ ấm** | production ngủ thường xuyên hơn; đo được lượt gọi đầu mất **63 giây** | khách bấm vào đúng lúc ngủ thì tưởng hệ thống hỏng |
+
+Anh mở **GitHub → Settings → Billing and plans** xem vướng gì. Kho này CÔNG KHAI nên
+Actions lẽ ra miễn phí — nhiều khi chỉ là một thẻ hết hạn hoặc một hạn mức chi tiêu đặt
+về 0 từ lâu.
+
+Trong lúc chờ, tôi đã dựng `node scripts/kiem_production.mjs` để thay phần kiểm được từ
+ngoài (sống · kín · đủ dữ liệu). Nó KHÔNG thay được sao lưu.
+
 ### 5 · Mở tài khoản bên ngoài (làm khi rảnh, không chặn buổi nghiệm thu)
 
 | Việc | Chặn gì | Mất |

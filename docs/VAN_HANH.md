@@ -147,3 +147,41 @@ Hai nhóm backend | frontend chạy song song; đo trên máy dev: **49–51 s**
   hỏng DỮ LIỆU thì khôi phục nhánh Neon về một thời điểm trước đó
   (trong hạn lưu lịch sử của gói Neon) — việc của chủ dự án, xem `docs/VIEC_CUA_ANH.md`.
 - Lùi bằng mã: `git revert <commit>` trên `master` rồi đẩy (qua cổng pre-push như thường).
+
+## Kiểm production — chạy TRƯỚC buổi trình diễn và sau mỗi lượt đẩy `master`
+
+```bash
+node scripts/kiem_production.mjs                      # phần công khai
+PE_THE=<thư mục thẻ ngoài repo> node scripts/kiem_production.mjs   # thêm phần cần đăng nhập
+```
+
+Ba nhóm câu hỏi, và mỗi nhóm trả lời một loại lo khác nhau:
+
+| Nhóm | Hỏi gì | Hỏng nghĩa là |
+|---|---|---|
+| **SỐNG** | máy chủ trả lời chưa, mất bao lâu; màn mở được chưa; proxy nối được chưa | production đang chết, hoặc đang thức dậy (xem số giây) |
+| **KÍN** | những cửa PHẢI đóng có đóng không; cửa cần đăng nhập có đòi đăng nhập không | một lỗ bảo mật đã lọt lên bản thật |
+| **DỮ LIỆU** | sáu khối làm buổi demo trông như "chưa làm" nếu rỗng | mã đúng, dữ liệu thiếu — chạy `du_lieu_mau --lam-moi` |
+
+Đo 27/09/2026, lượt đầu tiên: **13/19 ĐẠT**. Ba câu SỐNG và tám câu KÍN đạt hết; sáu câu
+DỮ LIỆU hỏng — production khi ấy **không có một khung chương trình nào** (bộ dữ liệu ở đó
+có từ trước E1), không bài kiểm tra, không bản ghi, không học liệu, không yêu cầu.
+
+**Con số đáng nhớ: lượt gọi đầu mất 63,0 giây** vì Render vừa ngủ. Khách bấm vào lúc ấy
+cũng chờ đúng chừng ấy. Màn đăng nhập có gõ cửa trước khi người ta kịp gõ mật khẩu, nhưng
+người mở thẳng một đường khác (ví dụ link báo cáo phụ huynh) thì không có ai gõ cửa hộ.
+
+### Vì sao cần công cụ này, chứ không dựa vào CI
+
+Đo 27/09: **cả ba workflow trên GitHub đều hỏng ở MỌI lượt**, và chú giải công khai của
+GitHub nói thẳng lý do — *"The job was not started because your account is locked due to a
+billing issue."* Tức từ lúc ấy:
+
+* **CI không chạy** → bốn thứ nó vẫn làm mà cổng `pre-push` không làm đã không còn ai làm:
+  `pytest` toàn bộ · `pnpm build` thật · `pip-audit` · `pnpm audit`;
+* **giữ ấm không chạy** → production ngủ thường xuyên hơn;
+* **sao lưu CSDL không chạy** → **không có bản sao lưu nào**. Hôm nay dữ liệu là giả nên
+  chưa mất gì; ngày TopHSA đưa dữ liệu thật mà việc này chưa mở lại thì đó là rủi ro lớn
+  nhất của cả hệ thống.
+
+Việc mở lại là của chủ dự án (GitHub → Settings → Billing) — ghi ở `docs/VIEC_CUA_ANH.md`.
