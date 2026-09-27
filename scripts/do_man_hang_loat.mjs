@@ -85,9 +85,14 @@ const DOC = (hoi) => {
  * thẳng vào cột "KHÔNG ĐO ĐƯỢC", không thành dấu ✗.
  */
 async function bam(page, nhan, choSau = 2000) {
-  const o = page.locator(
-    `button:has-text("${nhan}"), a:has-text("${nhan}"), summary:has-text("${nhan}"), [role="button"]:has-text("${nhan}")`,
-  ).first();
+  // Nhãn bắt đầu bằng `#` hoặc `.` là một BỘ CHỌN CSS, không phải chữ trên nút (27/09/2026).
+  // Có những nút không mang chữ cố định: nút mở menu tài khoản mang TÊN NGƯỜI đang đăng
+  // nhập (`#user-chip-btn`), nên hỏi theo chữ thì mỗi thẻ thử lại phải sửa sổ một lần.
+  const o = /^[#.]/.test(nhan)
+    ? page.locator(nhan).first()
+    : page.locator(
+      `button:has-text("${nhan}"), a:has-text("${nhan}"), summary:has-text("${nhan}"), [role="button"]:has-text("${nhan}")`,
+    ).first();
   try {
     await o.waitFor({ state: 'visible', timeout: 8000 });
   } catch {

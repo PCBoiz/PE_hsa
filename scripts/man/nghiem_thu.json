@@ -414,9 +414,12 @@
   "hoi": {
    "lopCuaToi": "Lớp của bạn|Lớp của tôi",
    "buoiToi": "Buổi tới|buổi học",
-   "menuTaiKhoan": "Hồ sơ|Đăng xuất|Tài khoản",
-   "tuDangKy": "Tự đăng ký|Đăng ký"
-  }
+   "menuTaiKhoan": "Hồ sơ|Đăng xuất|Tài khoản"
+  },
+  "bam": [
+   "#user-chip-btn"
+  ],
+  "ghiChu": "Hai chỗ sửa 27/09: (1) câu \"tự đăng ký\" chuyển sang mục /dang-ky — nó là cửa cho người CHƯA có tài khoản; (2) menu tài khoản bung ra sau một cú bấm, và nút mở nó mang TÊN người đang đăng nhập nên phải bấm theo bộ chọn `#user-chip-btn`."
  },
  {
   "dong": 28,
@@ -475,5 +478,18 @@
    "taoYeuCau": "Tạo yêu cầu|Gửi yêu cầu",
    "thayYeuCauCuaMinh": "Mới|Đang xử lý|Đã xong"
   }
+ },
+ {
+  "dong": 26,
+  "ten": "Khách · tự đăng ký (§73)",
+  "duong": "/dang-ky",
+  "vai": "khach",
+  "hoi": {
+   "phieuDangKy": "Đăng ký|đăng ký",
+   "oEmail": "Email|email",
+   "oMatKhau": "Mật khẩu|mật khẩu",
+   "nguonBietToi": "Biết tới|nguồn|Facebook|Zalo"
+  },
+  "ghiChu": "Cửa cho người CHƯA có tài khoản — đo bằng vai `khach`, không phải bằng thẻ học viên."
  }
 ]

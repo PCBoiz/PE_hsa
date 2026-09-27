@@ -77,6 +77,24 @@ function Get-CongDangGiu {
   return $b
 }
 
+function Test-CuaAgent {
+  # Tiến trình này thuộc một worktree agent, hay là bản dev CHÍNH?
+  #
+  # ĐO 27/09/2026, SAU khi bản trước đã chạy cả ngày: `next dev -p 3100` của bản dev CHÍNH
+  # giữ hai cổng — 3100 VÀ một cổng phù du (51525 hôm nay, đổi mỗi lượt chạy). Luật cũ là
+  # "có BẤT KỲ cổng nào ngoài danh sách chính → của agent", nên nó xếp máy chủ chính vào
+  # nhóm agent, và `-Don -Worktree` sẽ giết đúng thứ người ta đang dùng. Cái chổi quét nhầm
+  # còn tệ hơn cái chổi bỏ sót: bỏ sót thì tốn RAM, quét nhầm thì mất việc đang làm.
+  #
+  # Luật đúng: của agent khi KHÔNG giữ cổng chính nào. Giữ 3100 (dù kèm mười cổng phù du
+  # khác) thì đó là bản chính.
+  param($T)
+  if ($T.Lenh -match $MAU_WT) { return $true }
+  if (-not $T.Cong) { return $false }
+  $cong = ($T.Cong -split ',') | ForEach-Object { [int]$_ }
+  return -not ($cong | Where-Object { $CONG_CHINH -contains $_ })
+}
+
 function Get-TienTrinhDuAn {
   # Mọi node/python/chromium thuộc pe_hsa, kèm cổng đang giữ. CHỈ ĐỌC.
   param([hashtable]$Cong)
@@ -193,8 +211,7 @@ if ($troneGB -lt $NGUONG_GB) {
 }
 
 $cuaWt = @($ds | Where-Object {
-  $_.Lenh -match $MAU_WT -or
-  ($_.Cong -and (($_.Cong -split ',') | Where-Object { $CONG_CHINH -notcontains [int]$_ }))
+  Test-CuaAgent $_
 })
 if ($cuaWt.Count -gt 0) {
   Write-Host "`n== CỦA WORKTREE AGENT (giữ cổng nhưng có thể không ai dùng) =="
@@ -225,8 +242,7 @@ if ($Worktree) {
   # Dọn cả cái ĐANG giữ cổng, miễn là của worktree agent. Lead gọi cái này sau mỗi lượt
   # agent; bỏ qua nó là cách 3,9 GB nằm lại trong máy suốt buổi mà không ai thấy.
   $tra += Stop-Nhom -Ds @($chia.Song | Where-Object {
-    $_.Lenh -match $MAU_WT -or
-    ($_.Cong -and (($_.Cong -split ',') | Where-Object { $CONG_CHINH -notcontains [int]$_ }))
+    Test-CuaAgent $_
   }) -Nhan 'worktree agent'
 }
 if ($CaCong) { $tra += Stop-Nhom -Ds $chia.Song -Nhan 'đang giữ cổng' }

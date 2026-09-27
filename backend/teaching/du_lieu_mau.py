@@ -207,6 +207,10 @@ BANG_DEM = (
     ('buổi học', 'SELECT COUNT(*) FROM class_sessions s JOIN classes c ON c.id = s.class_id WHERE c.is_demo'),
     ('điểm danh', 'SELECT COUNT(*) FROM attendance a JOIN users u ON u.id = a.user_id WHERE u.is_demo'),
     ('bài tập', 'SELECT COUNT(*) FROM assignments a JOIN classes c ON c.id = a.class_id WHERE c.is_demo'),
+    ('yêu cầu', 'SELECT COUNT(*) FROM yeu_cau y JOIN users u ON u.id = y.hoc_vien_id WHERE u.is_demo'),
+    ('bản ghi buổi học', 'SELECT COUNT(*) FROM class_sessions s JOIN classes c ON c.id = s.class_id '
+                         'WHERE c.is_demo AND s.recording_url IS NOT NULL'),
+    ('học liệu', 'SELECT COUNT(*) FROM hoc_lieu h JOIN classes c ON c.id = h.class_id WHERE c.is_demo'),
     ('bài nộp', 'SELECT COUNT(*) FROM submissions s JOIN users u ON u.id = s.user_id WHERE u.is_demo'),
     ('tiến độ bài học', 'SELECT COUNT(*) FROM lesson_progress p JOIN users u ON u.id = p.user_id WHERE u.is_demo'),
     ('ghi danh', 'SELECT COUNT(*) FROM enrollments e JOIN users u ON u.id = e.user_id WHERE u.is_demo'),
@@ -449,6 +453,66 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [b['lop']['id'] for b in bai], [b['tieu_de'] for b in bai], [b['cd'] for b in bai],
              [b['khoa'] for b in bai], [b['han'] for b in bai], [b['tt'] for b in bai],
              [b['tao_luc'] for b in bai]))}
+        # ── Hộp YÊU CẦU (dòng 11, 12, 25, 32) ────────────────────────────
+        #
+        # Đo 27/09 trước khi dựng: 0 yêu cầu của lớp mẫu. Trên dev hộp trông có dữ liệu chỉ
+        # vì hai yêu cầu tạo tay lúc thử — chúng KHÔNG mang dấu `is_demo`, nên trên
+        # production sau `--lam-moi` hộp ấy TRẮNG. Bốn dòng nghiệm thu mở ra là trống.
+        #
+        # Ba trạng thái, vì một hộp toàn "mới" không cho thấy việc được xử lý tới đâu; và ít
+        # nhất một yêu cầu có TRẢ LỜI, vì "theo dõi lịch sử trao đổi" là một gạch của bảng.
+        hvu_id = nhan_su.get(ROLE_ACADEMIC)
+        yc = []
+        for lop in ke:
+            em = lop['hoc_vien']
+            if len(em) < 2:
+                continue
+            yc.append({'lop': lop['id'], 'em': em[0]['id'], 'loai': 'hoi_dap',
+                       'tt': 'moi', 'ngay': 1,
+                       'tieu_de': 'Em chưa hiểu phần bất phương trình bậc hai',
+                       'noi_dung': 'Buổi trước em nghe chưa kịp đoạn xét dấu ạ. Thầy chỉ em thêm được không?',
+                       'tra_loi': None})
+            yc.append({'lop': lop['id'], 'em': em[1]['id'], 'loai': 'ht_lich_hoc',
+                       'tt': 'dang_xu_ly', 'ngay': 3,
+                       'tieu_de': 'Buổi thứ Tư tuần sau em bận, xin học bù',
+                       'noi_dung': 'Em có lịch thi ở trường đúng giờ học ạ.',
+                       'tra_loi': 'Chị đã ghi nhận, đang xếp buổi bù cho em vào thứ Bảy.'})
+            yc.append({'lop': lop['id'], 'em': em[-1]['id'], 'loai': 'tt_hoc_bu',
+                       'tt': 'da_xong', 'ngay': 9,
+                       'tieu_de': 'Xin học bù buổi 24/09',
+                       'noi_dung': 'Hôm ấy em ốm, đã xin phép qua điện thoại ạ.',
+                       'tra_loi': 'Đã xếp em vào buổi bù ngày 30/09. Em nhớ vào đúng giờ nhé.'})
+        if yc and hvu_id:
+            id_yc = [r['id'] for r in q(
+                '''INSERT INTO yeu_cau (loai, trang_thai, nguon, nguoi_tao, hoc_vien_id, class_id,
+                                       nguoi_xu_ly, tieu_de, noi_dung, created_at, updated_at,
+                                       closed_at)
+                   SELECT t.loai, t.tt, 'hoc_vien', t.em, t.em, t.lop,
+                          CASE WHEN t.tt = 'moi' THEN NULL ELSE %s END,
+                          t.td, t.nd, t.luc, t.luc,
+                          CASE WHEN t.tt = 'da_xong' THEN t.luc + interval '2 days' ELSE NULL END
+                     FROM unnest(%s::text[], %s::text[], %s::int[], %s::int[], %s::text[],
+                                 %s::text[], %s::timestamp[])
+                            AS t(loai, tt, em, lop, td, nd, luc)
+                   RETURNING id''',
+                (hvu_id, [r['loai'] for r in yc], [r['tt'] for r in yc], [r['em'] for r in yc],
+                 [r['lop'] for r in yc], [r['tieu_de'] for r in yc], [r['noi_dung'] for r in yc],
+                 [bay_gio - timedelta(days=r['ngay']) for r in yc]))]
+            sk = []
+            for i, r in enumerate(yc):
+                luc = bay_gio - timedelta(days=r['ngay'])
+                sk.append((id_yc[i], 'tao', r['em'], 'Học viên', r['noi_dung'], luc))
+                if r['tra_loi']:
+                    sk.append((id_yc[i], 'tra_loi', hvu_id, ROLE_ACADEMIC, r['tra_loi'],
+                               luc + timedelta(hours=5)))
+            x('''INSERT INTO yeu_cau_su_kien (yeu_cau_id, kieu, actor_id, actor_vai, noi_dung,
+                                             created_at)
+                 SELECT t.yc, t.k, t.a, t.v, t.nd, t.luc
+                   FROM unnest(%s::int[], %s::text[], %s::int[], %s::text[], %s::text[],
+                               %s::timestamp[]) AS t(yc, k, a, v, nd, luc)''',
+              ([r[0] for r in sk], [r[1] for r in sk], [r[2] for r in sk],
+               [r[3] for r in sk], [r[4] for r in sk], [r[5] for r in sk]))
+
         # ── Bản ghi buổi học + học liệu (dòng 22, 29, 30) ───────────────
         #
         # Mã của cả ba dòng ấy chạy từ 26–27/09, nhưng bộ mẫu KHÔNG dựng dữ liệu cho chúng:
@@ -867,6 +931,16 @@ def go():
         # không tự tạo ra chúng — xoá trước vẫn cần, để `--go` không bao giờ gãy giữa chừng.
         x('DELETE FROM parent_report_sends WHERE requested_by IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM parent_report_links WHERE created_by IN (SELECT id FROM users WHERE is_demo)')
+        # Yêu cầu mẫu phải xoá TRƯỚC `users` (27/09/2026). Một lượt `DELETE FROM users WHERE
+        # is_demo` vừa CASCADE xoá `yeu_cau` (qua `hoc_vien_id`) vừa SET NULL
+        # `yeu_cau_su_kien.actor_id` — và Postgres kiểm lại khoá ngoại trên chính dòng nó
+        # vừa SET NULL, lúc ấy cha `yeu_cau` đã biến mất trong cùng câu lệnh:
+        #   "insert or update on table yeu_cau_su_kien violates foreign key constraint".
+        # Ba phép kiểm đỏ vì chuyện này ngay lượt đầu. Cùng họ với hai dòng
+        # `parent_report_*` ở trên, chỉ khác là ở đây khoá ngoại CÓ ON DELETE — có mà vẫn
+        # gãy, vì hai hành vi khác nhau chạm cùng một dòng trong một câu.
+        x('DELETE FROM yeu_cau WHERE hoc_vien_id IN (SELECT id FROM users WHERE is_demo) '
+          'OR nguoi_tao IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM classes WHERE is_demo')
         x('DELETE FROM syllabus_versions WHERE is_demo')
         x('DELETE FROM users WHERE is_demo')

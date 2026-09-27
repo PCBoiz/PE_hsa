@@ -299,3 +299,32 @@ def test_bo_mau_co_BAN_GHI_va_HOC_LIEU_de_ba_dong_nghiem_thu_khong_trong_rong(sa
     assert any(r['session_id'] for r in hl), 'không tài liệu nào gắn vào một buổi'
     assert any(not r['session_id'] for r in hl), 'không tài liệu nào ở kho chung của lớp'
     assert any(r['an'] for r in hl), 'không tài liệu nào đang ẩn — không thấy việc mở dần'
+
+
+def test_bo_mau_co_YEU_CAU_de_hop_cua_hoc_vu_khong_trong(sach):
+    """Dòng 11, 12, 25 và 32 của bảng khách đều mở ra một hộp Yêu cầu.
+
+    Đo trên dev 27/09 trước khi vá: **0** yêu cầu của học viên lớp mẫu. Hộp của học vụ trên
+    dev trông có dữ liệu chỉ vì hai yêu cầu người ta tạo tay khi thử — chúng KHÔNG mang dấu
+    `is_demo`, nên trên production sau `du_lieu_mau --lam-moi` hộp ấy trắng trơn.
+
+    Bộ mẫu phải cho thấy một hộp ĐANG CHẠY, không phải một hộp rỗng:
+      · đủ **ba trạng thái** (mới · đang xử lý · đã xong) — một hộp toàn "mới" không cho
+        thấy việc được xử lý tới đâu;
+      · có **lịch sử trao đổi** (ít nhất một yêu cầu có trả lời) — đó chính là gạch "theo
+        dõi lịch sử trao đổi" của bảng;
+      · có yêu cầu **loại thay đổi học tập** (`tt_*`) để màn Duyệt của học vụ có cái để duyệt.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+    yc = q('''SELECT y.id, y.loai, y.trang_thai, y.nguon FROM yeu_cau y
+                JOIN classes c ON c.id = y.class_id AND c.is_demo''')
+    assert yc, 'bộ mẫu không có yêu cầu nào — hộp của học vụ mở ra là trắng'
+    tt = {r['trang_thai'] for r in yc}
+    assert {'moi', 'dang_xu_ly'} <= tt, 'thiếu trạng thái: %s' % sorted(tt)
+    assert tt & {'da_xong', 'da_duyet'}, 'không yêu cầu nào đã đóng — không thấy việc chạy hết vòng'
+    assert any(r['loai'].startswith('tt_') for r in yc), 'không có yêu cầu thay đổi học tập để duyệt'
+    co_tra_loi = q1('''SELECT COUNT(*) AS n FROM yeu_cau_su_kien s
+                         JOIN yeu_cau y ON y.id = s.yeu_cau_id
+                         JOIN classes c ON c.id = y.class_id AND c.is_demo
+                        WHERE s.kieu = 'tra_loi' ''')['n']
+    assert co_tra_loi > 0, 'không yêu cầu nào có trả lời — thiếu "lịch sử trao đổi"'

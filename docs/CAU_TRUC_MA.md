@@ -31,7 +31,7 @@
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 612 dòng | 4 tệp · 477 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
-| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1311 dòng | 0 tệp · 0 dòng |
+| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1385 dòng | 0 tệp · 0 dòng |
 
 ## Sổ nợ ghi chéo (chỉ được co)
 
@@ -717,4 +717,4 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 |---|---|---|
 | `backend/common/management/commands/du_lieu_mau.py` | 81 dòng | — |
 | `backend/common/management/commands/seed_data.py` | 356 dòng | *`achievements`*, *`courses`*, *`missions`*, *`mock_exams`*, *`posts`*, *`roadmaps`* |
-| `backend/teaching/du_lieu_mau.py` | 874 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`hoc_lieu`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`recording_views`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`* |
+| `backend/teaching/du_lieu_mau.py` | 948 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`hoc_lieu`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`recording_views`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`*, *`yeu_cau`*, *`yeu_cau_su_kien`* |
