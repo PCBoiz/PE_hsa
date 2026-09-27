@@ -2507,3 +2507,24 @@ ALTER TABLE assignments ADD COLUMN IF NOT EXISTS syllabus_item_id INTEGER
 -- Lối vào: mở một mục khung ra hỏi "đã giao bài nào cho mục này chưa".
 CREATE INDEX IF NOT EXISTS idx_assignments_muc_khung
     ON assignments (syllabus_item_id) WHERE syllabus_item_id IS NOT NULL;
+
+-- ── §75 · DIỄN ĐÀN RIÊNG CỦA LỚP (bảng TopHSA dòng 20 — 27/09/2026) ──
+-- Anh Sơn chốt 27/09: *"Những phần như này thì mình biến thành nhắn tin qua Zalo hoặc qua
+-- diễn đàn riêng của lớp, không làm thành 1 messenger trong ứng dụng mình đâu"*. Tức ba
+-- gạch "nhắn tin cho học sinh / nhận tin nhắn / theo dõi lịch sử trao đổi" của ô STT 20
+-- đóng bằng diễn đàn khoanh theo lớp, không bằng một hộp chat.
+--
+-- Diễn đàn tới nay là một SÂN CHUNG: `posts` không có cột nào nói bài thuộc phạm vi nào
+-- ngoài `course_id`/`lesson_no` (bài học tự luyện). Cột này khoanh phạm vi thứ hai.
+--
+-- NULL = bài của sân chung, đọc được như trước — mọi bài đang có đều thuộc nhóm ấy, nên
+-- thêm cột không đổi hành vi của một dòng dữ liệu nào.
+--
+-- CASCADE chứ không SET NULL: lớp bị xoá mà bài ở lại thì trao đổi riêng của một lớp rơi
+-- thẳng ra sân chung — đúng cái rò rỉ mà cột này sinh ra để chặn. Khác §74 (bài tập giữ
+-- lại khi mục khung mất) vì ở đó mất liên kết là mất thông tin, còn ở đây là mất hàng rào.
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS class_id INTEGER
+    REFERENCES classes(id) ON DELETE CASCADE;
+-- Lối vào: mở diễn đàn của MỘT lớp, bài mới nhất trước.
+CREATE INDEX IF NOT EXISTS idx_posts_lop
+    ON posts (class_id, created_at DESC) WHERE class_id IS NOT NULL;

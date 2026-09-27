@@ -26,12 +26,12 @@
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
-| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2147 dòng | 19 tệp · 2015 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6339 dòng | 68 tệp · 6983 dòng |
+| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2161 dòng | 19 tệp · 2015 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6345 dòng | 68 tệp · 6983 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
-| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 525 dòng | 0 tệp · 0 dòng |
+| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 606 dòng | 0 tệp · 0 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
-| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1170 dòng | 0 tệp · 0 dòng |
+| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1241 dòng | 0 tệp · 0 dòng |
 
 ## Sổ nợ ghi chéo (chỉ được co)
 
@@ -397,7 +397,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/accounts/hoat_dong.py` | 79 dòng | `users` |
 | `backend/accounts/models.py` | 123 dòng | — |
 | `backend/accounts/oauth.py` | 94 dòng | `users` |
-| `backend/accounts/quen_mat_khau.py` | 276 dòng | `password_reset_tokens`, `users` |
+| `backend/accounts/quen_mat_khau.py` | 290 dòng | `password_reset_tokens`, `users` |
 | `backend/accounts/tu_dang_ky.py` | 477 dòng | `password_reset_tokens`, `users` |
 | `backend/accounts/urls.py` | 29 dòng | — |
 | `backend/accounts/validators.py` | 54 dòng | — |
@@ -457,7 +457,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/common/management/commands/backfill_learning_events.py` | 252 dòng | — |
 | `backend/common/management/commands/bootstrap_schema.py` | 135 dòng | — |
 | `backend/common/management/commands/chan_doan_oa.py` | 173 dòng | — |
-| `backend/common/management/commands/kiem_luoc_do.py` | 379 dòng | — |
+| `backend/common/management/commands/kiem_luoc_do.py` | 385 dòng | — |
 | `backend/common/management/commands/thu_email.py` | 160 dòng | — |
 | `backend/common/management/commands/thu_zns.py` | 98 dòng | — |
 | `backend/common/management/commands/ve_erd.py` | 217 dòng | — |
@@ -670,7 +670,7 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 | `backend/forum/apps.py` | 6 dòng | — |
 | `backend/forum/models.py` | 57 dòng | — |
 | `backend/forum/urls.py` | 12 dòng | — |
-| `backend/forum/views.py` | 450 dòng | `comments`, `posts` |
+| `backend/forum/views.py` | 531 dòng | `comments`, `posts` |
 
 ## thi_cu
 
@@ -706,4 +706,4 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 |---|---|---|
 | `backend/common/management/commands/du_lieu_mau.py` | 81 dòng | — |
 | `backend/common/management/commands/seed_data.py` | 356 dòng | *`achievements`*, *`courses`*, *`missions`*, *`mock_exams`*, *`posts`*, *`roadmaps`* |
-| `backend/teaching/du_lieu_mau.py` | 733 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`* |
+| `backend/teaching/du_lieu_mau.py` | 804 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`* |

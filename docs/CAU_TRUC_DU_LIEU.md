@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 61 bảng, 120 khoá ngoài, 13 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
+Dựng từ `backend/sql/*.sql` (CREATE TABLE + ALTER TABLE, theo đúng thứ tự mục) — không cần CSDL. 61 bảng, 121 khoá ngoài, 13 miền có bảng. Sổ miền: `scripts/so_mien.json`; luật: `docs/THIET_KE_HE_THONG.md` §4 (khoá ngoài giữa miền: GIỮ; chỉ cấm GHI chéo). § = mục lược đồ tạo ra bảng / cột.
 
 | Miền | Bảng |
 |---|---|
@@ -171,7 +171,7 @@ CHECK:
 - `classes_mode_check` (§53): `mode` ∈ {'online', 'offline'}
 - `classes_class_type_check` (§54): `class_type` ∈ {'nhom', 'gia_su'}
 
-Miền khác trỏ vào: `assignments.class_id`, `class_sessions.class_id`, `parent_report_links.class_id`, `yeu_cau.class_id`
+Miền khác trỏ vào: `assignments.class_id`, `class_sessions.class_id`, `parent_report_links.class_id`, `posts.class_id`, `yeu_cau.class_id`
 
 ### `class_members` · §29
 
@@ -1920,6 +1920,7 @@ erDiagram
         text course_id
         integer lesson_no
         boolean is_sample
+        integer class_id FK
     }
     comments {
         serial id PK
@@ -1950,7 +1951,11 @@ erDiagram
     users {
         serial id PK
     }
+    classes {
+        serial id PK
+    }
     posts }o--o| users : "user_id"
+    posts }o--o| classes : "class_id"
     comments }o--o| posts : "post_id"
     comments }o--o| users : "user_id"
     comments }o--o| comments : "parent_comment_id"
@@ -1962,7 +1967,7 @@ erDiagram
     user_follows }o--|| users : "followee_id"
 ```
 
-Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan).
+Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan), `classes` (lop_hoc).
 
 ### `posts` · §13
 
@@ -1979,6 +1984,7 @@ Bảng khách (miền khác, vẽ rút gọn): `users` (tai_khoan).
 | `course_id` | text |  | §24 |
 | `lesson_no` | integer |  | §24 |
 | `is_sample` | boolean | NOT NULL · mặc định `FALSE` | §24 |
+| `class_id` | integer | → `classes.id` (cascade) | §75 |
 
 ### `comments` · §14
 

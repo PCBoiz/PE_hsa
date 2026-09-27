@@ -1,0 +1,32 @@
+[
+ {
+  "ten": "sân chung không lọc lớp — trao đổi riêng của mọi lớp hiện cho mọi người",
+  "cu": "            conds.append('p.class_id IS NULL')",
+  "moi": "            pass",
+  "cho": "test_bai_cua_lop_KHONG_lot_ra_san_chung"
+ },
+ {
+  "ten": "cửa một bài không hỏi hàng rào — đoán id là đọc được",
+  "cu": "    if not co or not vao_duoc_dien_dan_lop(user, lop):",
+  "moi": "    if not co:",
+  "cho": "test_nguoi_ngoai_lop_khong_doc_duoc_bai_cua_lop"
+ },
+ {
+  "ten": "em đã RỜI lớp vẫn được tính là thành viên",
+  "cu": "                   'AND left_at IS NULL', (class_id, user.id)))",
+  "moi": "                   '', (class_id, user.id)))",
+  "cho": "test_em_da_ROI_lop_khong_doc_duoc_nua"
+ },
+ {
+  "ten": "quên gắn lớp cho bài — bài của lớp rơi thẳng ra sân chung",
+  "cu": "        raw_lop = data.get('class_id') or data.get('lop')",
+  "moi": "        raw_lop = None",
+  "cho": "test_giang_vien_dang_duoc_bai_cho_rieng_lop"
+ },
+ {
+  "ten": "mọi bài đều bị coi là bài sân chung",
+  "cu": "    return (r is not None, r['class_id'] if r else None)",
+  "moi": "    return (r is not None, None)",
+  "cho": "test_binh_luan_cua_bai_lop_khong_doc_duoc_tu_ngoai"
+ }
+]

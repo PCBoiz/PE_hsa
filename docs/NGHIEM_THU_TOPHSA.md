@@ -346,12 +346,31 @@ Tức tám gạch đầu dòng của ô này KHÔNG đóng bằng một hộp ch
 
 | Kênh | Đóng được gạch nào | Trạng thái |
 |---|---|---|
-| **Diễn đàn riêng của lớp** | nhắn tin cho học sinh · nhận tin nhắn · theo dõi lịch sử trao đổi | **đang làm** — diễn đàn hiện là một sân CHUNG toàn hệ thống (`backend/forum/`, bảng `posts` không có cột lớp); cần khoanh theo lớp + quyền theo lớp |
+| **Diễn đàn riêng của lớp** | nhắn tin cho học sinh · nhận tin nhắn · theo dõi lịch sử trao đổi | **máy chủ XONG 27/09 (§75)**, màn còn thiếu — xem dưới |
 | **Zalo** | nhắn riêng ngoài giờ, nhắc gấp | chờ **D2** (pháp nhân để mở Zalo OA) — mã ZNS đã có, chưa bật |
 
 Ba gạch "nhắc học bài / làm bài / tham gia lớp" đã chạy bằng **thông báo lớp** (E2-GD) và chuông tự
 động nhắc hạn nộp — không cần chat. Hai gạch "ghi nhận em không phản hồi" và "chuyển vấn đề cho
 GV/giáo vụ" đã chạy bằng hộp Yêu cầu (E3).
+
+**§75 · máy chủ đã khoanh diễn đàn theo lớp (27/09)**. `posts.class_id`: NULL = bài sân chung
+(mọi bài đang có), có số = bài riêng của lớp ấy. Một hàng rào duy nhất
+(`forum/views.py::vao_duoc_dien_dan_lop`) quyết ai vào được: người phụ trách lớp (hỏi
+`can_see_class`, không viết lại luật) và học viên **đang** học lớp (`class_members.left_at IS
+NULL`). Người ngoài nhận **404**, không 403 — không lộ lớp nào tồn tại.
+
+Ba chỗ dễ rò, mỗi chỗ một phép kiểm và một đột biến:
+· sân chung `/api/posts` KHÔNG kèm `lop` chỉ trả bài không thuộc lớp nào — bỏ điều kiện ấy là
+  mọi trao đổi riêng của mọi lớp hiện nguyên văn cho bất kỳ ai đăng nhập;
+· đoán id bài qua `/api/posts/<id>` — mọi cửa con của một bài (xem, bình luận, thả cảm xúc)
+  đều đi qua cùng hàng rào, không sót cửa nào;
+· em **đã rời lớp** không đọc tiếp được.
+
+Bộ kiểm `forum/tests_dien_dan_lop.py` **7/7**, **5/5 đột biến bị giết**, 20 test diễn đàn cũ vẫn
+xanh. Lược đồ: `bootstrap_schema` hai lượt (lượt 2 = 0 mục), `kiem_luoc_do` §75a/§75b ✓.
+
+**Còn thiếu**: MÀN. Chưa có chỗ nào trên giao diện mở diễn đàn của lớp — cửa API chạy rồi nhưng
+người dùng chưa bấm được, nên ô này CHƯA đóng.
 
 Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý).
 
