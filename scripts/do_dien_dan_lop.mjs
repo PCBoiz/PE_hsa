@@ -44,7 +44,12 @@ await chay({ goc: WEB, anh }, async (phien) => {
     process.exitCode = 2;
     return;
   }
-  const lop = await timLop(gvDau);
+  // `PE_LOP` ép một lớp cụ thể — cần khi đo PRODUCTION: người dạy của thẻ có thể phụ trách
+  // nhiều lớp, mà em thử chỉ học MỘT lớp. Chọn nhầm lớp thì em bị chặn đúng luật, và bộ đo
+  // đọc ra như "em không vào được" (đo 27/09 trên production: lớp 7586 so với 7322).
+  const lop = process.env.PE_LOP
+    ? { id: Number(process.env.PE_LOP), name: '(ép bằng PE_LOP)' }
+    : await timLop(gvDau);
   if (!lop) {
     console.log('\nKHÔNG ĐO ĐƯỢC — thẻ giảng viên không phụ trách lớp nào.');
     process.exitCode = 2;

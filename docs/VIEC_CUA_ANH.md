@@ -49,15 +49,22 @@ Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi 
 
 ### 4c · Hai việc trên production (tôi làm không được — không có thẻ quản trị prod)
 
-**(a) Chạy lại bộ dữ liệu trình diễn.** Sau lượt đẩy 27/09 tối, production đang chạy mã mới
-nhưng dữ liệu mẫu vẫn là bộ CŨ — nó không có bài kiểm tra, không bản ghi buổi học, không học
-liệu, không yêu cầu nào. Sáu dòng nghiệm thu sẽ mở ra trống. Vào Render → `pe-hsa-backend` →
+**(a) Chạy lại bộ dữ liệu trình diễn — ĐÃ ĐO TRÊN PRODUCTION 27/09 TỐI, nặng hơn tôi tưởng.**
+Đăng nhập bằng thẻ quản trị anh gửi rồi hỏi thẳng máy chủ:
+
+    /api/admin/chuong-trinh/khung  → cả BA môn đều `versions: []`
+    /api/teach/classes/7322/chuong-trinh → khung: None · 0 buổi khung · 25 buổi lớp
+
+Tức bộ dữ liệu trên production có từ TRƯỚC E1: **không một khung chương trình nào tồn tại**.
+Kéo theo: màn "Chương trình lớp" trống, §74 "buổi này đã giao bài chưa" không có gì để hiện,
+sổ đầu bài không có mục nào để tick — cộng với bài kiểm tra, bản ghi buổi học, học liệu và
+hộp Yêu cầu đều rỗng. Sáu dòng nghiệm thu mở ra sẽ trống dù mã chạy đúng. Vào Render → `pe-hsa-backend` →
 Shell → `python manage.py du_lieu_mau --lam-moi` (khoảng 80 giây, chỉ gỡ và dựng lại dòng
 `is_demo` trong MỘT giao dịch).
 
 **(b) Xoá hai tài khoản thử tôi mở trên production** (dưới đây).
 
-Hai tài khoản thử tôi mở trên production, đều `@example.com`, đều chưa xác thực, không thuộc lớp nào: `do.dong.ho.43e24089@example.com` ("Tài khoản đo đồng hồ") và một tài khoản `thu.prod.*@example.com` ("Thử production", mở tối 27/09 để kiểm luồng tự đăng ký sau khi đẩy). Anh mở **Quản trị → Tài khoản**, tìm "đo đồng hồ" và "Thử production", xoá là xong. `du_lieu_mau --lam-moi` KHÔNG gỡ chúng vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người thật.
+Hai tài khoản thử tôi mở trên production, đều `@example.com`, đều chưa xác thực, không thuộc lớp nào: `do.dong.ho.43e24089@example.com` ("Tài khoản đo đồng hồ") và một tài khoản `thu.prod.*@example.com` ("Thử production"), và `do.man.*@example.com` ("Học viên thử (đo màn)" — tài khoản tôi tạo bằng thẻ quản trị anh gửi để đo màn học viên trên production, đã xếp vào lớp 7322). Tài khoản thứ hai mở tối 27/09 để kiểm luồng tự đăng ký sau khi đẩy). Anh mở **Quản trị → Tài khoản**, tìm "đo đồng hồ" và "Thử production", xoá là xong. `du_lieu_mau --lam-moi` KHÔNG gỡ chúng vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người thật.
 
 Lượt đo khe hở đồng hồ cửa quên mật khẩu 27/09 phải tự mở **một tài khoản thử** trên production để
 có nhánh "email CÓ tài khoản" mà bấm giờ: `do.dong.ho.43e24089@example.com`, tên hiển thị **"Tài

@@ -117,9 +117,16 @@ async function moPhien({ goc = 'http://localhost:3100', kho = { width: 1440, hei
     });
     const the = docThe(vai);
     if (the) {
+      /* TÊN MIỀN LẤY TỪ `goc`, không ghim 'localhost' (27/09/2026). Thư viện nhận `goc` để
+         đo bất kỳ bản nào, nhưng cookie thì đóng đinh vào localhost — nên mọi lượt đo
+         PRODUCTION đều bị đẩy về màn đăng nhập, và đọc ra như "production hỏng" trong khi
+         production chạy tốt. Đo được bản thật là việc anh Sơn vừa hỏi thẳng: "erp ổn nhưng
+         nếu production chưa thì cũng như không".
+         `secure` bật theo giao thức: cookie không có nó sẽ bị Chromium bỏ qua trên HTTPS. */
+      const u = new URL(goc);
       await ctx.addCookies([{
-        name: 'pe_at', value: the, domain: 'localhost', path: '/',
-        httpOnly: true, sameSite: 'Lax',
+        name: 'pe_at', value: the, domain: u.hostname, path: '/',
+        httpOnly: true, sameSite: 'Lax', secure: u.protocol === 'https:',
       }]);
     }
     const page = await ctx.newPage();
