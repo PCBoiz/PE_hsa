@@ -237,13 +237,18 @@
     "yeu_cau": {
       "ten": "Yêu cầu",
       "mo_ta": "Hộp Yêu cầu chung (E3, §65): hỗ trợ học tập / lịch / kỹ thuật / tài khoản, câu hỏi gửi GV–TG, TG báo lên, báo lỗi bản ghi buổi học, phụ huynh gửi qua link tờ báo cáo; xin → học vụ DUYỆT trong MỘT giao dịch → gọi dịch vụ miền lớp học (chuyển lớp / môn, bảo lưu, huỷ khoá, học lại). Trả lời + lịch sử một bảng, ghi chú nội bộ ẩn với HS / PH.",
-      "backend": ["backend/yeu_cau/**/*.py"],
+      "backend": [
+        "backend/yeu_cau/**/*.py"
+      ],
       "frontend": [
         "frontend/src/app/(standalone)/yeu-cau/**",
         "frontend/src/components/YeuCau*.tsx",
         "frontend/src/lib/yeuCau*.ts"
       ],
-      "bang": ["yeu_cau", "yeu_cau_su_kien"],
+      "bang": [
+        "yeu_cau",
+        "yeu_cau_su_kien"
+      ],
       "cho_ghi": {}
     },
     "thong_bao": {
@@ -414,11 +419,16 @@
     },
     "dien_dan": {
       "ten": "Diễn đàn",
-      "mo_ta": "Bài viết, bình luận, thích, theo dõi người dùng.",
+      "mo_ta": "Bài viết, bình luận, thích, theo dõi người dùng. Từ §75 (27/09/2026) diễn đàn khoanh được theo LỚP — anh Sơn chốt trao đổi của lớp đi qua đây hoặc Zalo, không dựng messenger trong ứng dụng.",
       "backend": [
         "backend/forum/**/*.py"
       ],
-      "frontend": [],
+      "frontend": [
+        "frontend/src/components/DienDanLop.tsx",
+        "frontend/src/lib/dienDan.ts",
+        "frontend/src/app/(standalone)/trao-doi/**/*.tsx",
+        "frontend/src/app/(standalone)/giang-day/trao-doi/**/*.tsx"
+      ],
       "bang": [
         "posts",
         "comments",

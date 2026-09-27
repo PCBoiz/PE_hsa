@@ -120,3 +120,15 @@ def test_binh_luan_cua_bai_lop_khong_doc_duoc_tu_ngoai(canh):
     pid = _dang(canh['gv'], canh['lop']).data['id']
     canh['em'].post('/api/posts/%d/comments' % pid, {'content': 'Em rõ rồi ạ'}, format='json')
     assert canh['la'].get('/api/posts/%d/comments' % pid).status_code == 404
+
+
+def test_cua_dien_dan_lop_tra_ten_lop_de_man_khoi_phai_hoi_hai_lan(canh):
+    """Màn cần tên lớp để đặt tiêu đề. Không trả kèm thì màn phải gọi thêm một cửa nữa —
+    mà học viên KHÔNG có cửa nào đọc được thông tin lớp (những cửa ấy là `IsTeachingStaff`).
+    """
+    r = canh['em'].get('/api/posts?lop=%d' % canh['lop'])
+    assert r.status_code == 200
+    assert r.data['lop']['id'] == canh['lop']
+    assert r.data['lop']['ten'], 'thiếu tên lớp'
+    # Sân chung thì KHÔNG có khối ấy — không có lớp nào để đặt tên.
+    assert 'lop' not in canh['la'].get('/api/posts').data

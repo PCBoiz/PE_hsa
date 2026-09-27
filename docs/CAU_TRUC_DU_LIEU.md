@@ -1904,7 +1904,7 @@ UNIQUE nhiều cột: `user_daily_xp_logs_user_id_log_date_key` (user_id, log_da
 
 ## dien_dan
 
-**Diễn đàn** — Bài viết, bình luận, thích, theo dõi người dùng.
+**Diễn đàn** — Bài viết, bình luận, thích, theo dõi người dùng. Từ §75 (27/09/2026) diễn đàn khoanh được theo LỚP — anh Sơn chốt trao đổi của lớp đi qua đây hoặc Zalo, không dựng messenger trong ứng dụng.
 
 ```mermaid
 erDiagram

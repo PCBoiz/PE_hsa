@@ -256,3 +256,46 @@ def test_bo_mau_co_BAI_KIEM_TRA_de_nut_nhap_diem_hien_ra(sach):
                    FROM submissions s WHERE s.assignment_id = ANY(%s)''',
               ([r['id'] for r in kt],))
     assert diem['da_cham'] > 0, 'bài kiểm tra mẫu chưa có điểm nào'
+
+
+def test_bo_mau_co_BAN_GHI_va_HOC_LIEU_de_ba_dong_nghiem_thu_khong_trong_rong(sach):
+    """Dòng 22, 29, 30 của bảng khách đều đọc từ dữ liệu — mã chạy mà bộ mẫu rỗng thì khách
+    mở ra thấy trống, và kết luận là chưa làm.
+
+    Đo trên dev 27/09 trước khi vá: lớp mẫu có **0** buổi mang link bản ghi, **0** lượt xem,
+    **0** học liệu. Cùng loại lỗi với bài kiểm tra vắng mặt — không phải lỗi mã, nhưng nó
+    hỏng buổi nghiệm thu y như một lỗi.
+
+    Ba con số phải có, không chỉ "khác 0":
+      · **bản ghi** gắn vào buổi ĐÃ DẠY (gắn vào buổi chưa diễn ra là nói dối);
+      · **lượt xem chưa đủ cả lớp** — trợ giảng cần thấy "còn N em chưa mở", và một lớp
+        100 % đã xem thì không cho thấy việc còn phải làm;
+      · **học liệu** có cả loại gắn vào buổi lẫn loại ở kho chung của lớp, và có ít nhất
+        một mục ĐANG ẨN để cho thấy việc mở dần theo tiến độ.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+
+    bg = q('''SELECT s.id, s.starts_at FROM class_sessions s
+                JOIN classes c ON c.id = s.class_id AND c.is_demo
+               WHERE s.recording_url IS NOT NULL''')
+    assert bg, 'bộ mẫu không có bản ghi nào — dòng 22 và 29 mở ra là trống'
+    chua_dien_ra = q1('''SELECT COUNT(*) AS n FROM class_sessions s
+                           JOIN classes c ON c.id = s.class_id AND c.is_demo
+                          WHERE s.recording_url IS NOT NULL AND s.starts_at > now()''')['n']
+    assert chua_dien_ra == 0, 'có bản ghi gắn vào buổi CHƯA diễn ra'
+
+    xem = q1('''SELECT COUNT(*) AS n FROM recording_views v
+                  JOIN class_sessions s ON s.id = v.session_id
+                  JOIN classes c ON c.id = s.class_id AND c.is_demo''')['n']
+    assert xem > 0, 'không em nào đã mở bản ghi — khối "ai chưa mở" không có gì để đếm'
+    thanh_vien = q1('''SELECT COUNT(*) AS n FROM class_members m
+                         JOIN classes c ON c.id = m.class_id AND c.is_demo
+                        WHERE m.left_at IS NULL''')['n']
+    assert xem < thanh_vien * len(bg), 'mọi em đều đã xem mọi buổi — không còn ai để nhắc'
+
+    hl = q('''SELECT h.id, h.session_id, h.an FROM hoc_lieu h
+                JOIN classes c ON c.id = h.class_id AND c.is_demo''')
+    assert hl, 'bộ mẫu không có học liệu nào — dòng 30 mở ra là trống'
+    assert any(r['session_id'] for r in hl), 'không tài liệu nào gắn vào một buổi'
+    assert any(not r['session_id'] for r in hl), 'không tài liệu nào ở kho chung của lớp'
+    assert any(r['an'] for r in hl), 'không tài liệu nào đang ẩn — không thấy việc mở dần'

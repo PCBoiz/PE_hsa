@@ -449,6 +449,76 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [b['lop']['id'] for b in bai], [b['tieu_de'] for b in bai], [b['cd'] for b in bai],
              [b['khoa'] for b in bai], [b['han'] for b in bai], [b['tt'] for b in bai],
              [b['tao_luc'] for b in bai]))}
+        # ── Bản ghi buổi học + học liệu (dòng 22, 29, 30) ───────────────
+        #
+        # Mã của cả ba dòng ấy chạy từ 26–27/09, nhưng bộ mẫu KHÔNG dựng dữ liệu cho chúng:
+        # đo 27/09 trên dev thấy 0 bản ghi, 0 lượt xem, 0 học liệu. Khách mở ra thấy trống và
+        # kết luận là chưa làm — cùng loại hỏng với bài kiểm tra vắng mặt, và cũng không phải
+        # lỗi mã.
+        #
+        # `example.com` là tên miền DÀNH RIÊNG cho ví dụ (RFC 2606). Dán một địa chỉ Zoom hay
+        # Drive trông thật vào đây thì trong buổi demo sẽ có người bấm, và nó dẫn tới hư không
+        # — thà nói rõ ngay trên màn rằng đây là liên kết mẫu.
+        buoi_da_day = [b for b in buoi if b['trang_thai'] == 'done']
+        bg = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']]
+            # Sáu buổi gần nhất có bản ghi: đủ để màn "xem lại" có gì mà cuộn, và vẫn còn
+            # buổi KHÔNG có bản ghi để khối "Chưa có bản ghi: …" nói được điều gì đó.
+            for b in cua_lop[-6:]:
+                bg.append((lop['id'], b['bat']))
+        if bg:
+            x('''UPDATE class_sessions s SET recording_url = %s || s.id
+                   FROM unnest(%s::int[], %s::timestamp[]) AS t(c, bat)
+                  WHERE s.class_id = t.c AND s.starts_at = t.bat''',
+              ('https://example.com/ban-ghi-mau/', [r[0] for r in bg], [r[1] for r in bg]))
+
+        # Ai đã mở bản ghi: KHÔNG phải tất cả. Trợ giảng mở màn lên là để thấy "còn ai chưa
+        # mở" — một lớp 100 % đã xem thì màn ấy không cho thấy việc gì phải làm.
+        da_mo = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']][-6:]
+            for b in cua_lop:
+                for e in lop['hoc_vien']:
+                    if rng.random() < 0.55 + 0.35 * e['chuyen_can']:
+                        luc = b['bat'] + timedelta(days=rng.randint(1, 4), hours=rng.randint(0, 9))
+                        if luc < bay_gio:
+                            da_mo.append((lop['id'], b['bat'], e['id'], luc))
+        if da_mo:
+            x('''INSERT INTO recording_views (session_id, user_id, mo_lan_dau, mo_gan_nhat, lan_mo)
+                 SELECT s.id, t.u, t.luc, t.luc, 1
+                   FROM unnest(%s::int[], %s::timestamp[], %s::int[], %s::timestamp[])
+                          AS t(c, bat, u, luc)
+                   JOIN class_sessions s ON s.class_id = t.c AND s.starts_at = t.bat
+                 ON CONFLICT DO NOTHING''',
+              ([r[0] for r in da_mo], [r[1] for r in da_mo],
+               [r[2] for r in da_mo], [r[3] for r in da_mo]))
+
+        # Học liệu: có cả tài liệu của MỘT BUỔI lẫn của KHO CHUNG lớp, và một mục đang ẨN —
+        # giảng viên soạn trước cả khoá rồi mở dần theo tiến độ (§60), và bộ mẫu phải cho
+        # thấy đúng điều ấy chứ không chỉ cho thấy "có tài liệu".
+        hl = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']][-4:]
+            for i, b in enumerate(cua_lop, 1):
+                hl.append((lop['id'], b['bat'], 'Slide buổi %d — %s' % (i, b['chu_de']),
+                           'https://example.com/hoc-lieu-mau/slide-%d' % i, False))
+            hl.append((lop['id'], None, 'Đề luyện tổng hợp cả khoá',
+                       'https://example.com/hoc-lieu-mau/de-luyen', False))
+            hl.append((lop['id'], None, 'Đề thi thử cuối khoá (mở sau)',
+                       'https://example.com/hoc-lieu-mau/de-thi-thu', True))
+        if hl:
+            x('''INSERT INTO hoc_lieu (class_id, session_id, ten, url, an, nguoi_tao, created_at)
+                 SELECT t.c,
+                        CASE WHEN t.bat IS NULL THEN NULL
+                             ELSE (SELECT id FROM class_sessions s
+                                    WHERE s.class_id = t.c AND s.starts_at = t.bat) END,
+                        t.ten, t.url, t.an, %s, %s
+                   FROM unnest(%s::int[], %s::timestamp[], %s::text[], %s::text[], %s::bool[])
+                          AS t(c, bat, ten, url, an)''',
+              (gv, bay_gio, [r[0] for r in hl], [r[1] for r in hl], [r[2] for r in hl],
+               [r[3] for r in hl], [r[4] for r in hl]))
+
         # ── Bài KIỂM TRA TRÊN LỚP (V-h) — một bài mỗi lớp ───────────────
         #
         # Không có bài `kiem_tra` thì nút "Nhập điểm" KHÔNG BAO GIỜ hiện, và một ô của

@@ -216,6 +216,10 @@ class PostsView(NguoiDungView):
                 return Response(_KHONG_THAY, status=404)
             conds.append('p.class_id = %s')
             params.append(lop_id)
+            # Tên lớp trả KÈM: học viên không có cửa nào khác đọc được thông tin lớp (những
+            # cửa ấy đều là `IsTeachingStaff`), nên thiếu khoá này thì màn của em không đặt
+            # nổi tiêu đề — hoặc tệ hơn, phải gõ lại tên lớp trong mã (RULES §7).
+            lop_ten = q1('SELECT name FROM classes WHERE id=%s', (lop_id,))
         else:
             conds.append('p.class_id IS NULL')
         if category and category in _CATEGORIES:
@@ -287,7 +291,9 @@ class PostsView(NguoiDungView):
             p['reactions'] = reactions
             p['comment_count'] = p['comment_count'] or 0
 
+        ra_lop = {'lop': {'id': lop_id, 'ten': lop_ten['name']}} if raw_lop else {}
         return Response({
+            **ra_lop,
             'posts': posts,
             'page': page,
             'per_page': per_page,

@@ -43,6 +43,11 @@ const TAB = [
   // ngay bên cạnh, và dưới 70rem `shell.css` ẩn nhãn chữ nên hai tab cùng hình là
   // hai ô y hệt nhau.
   { doan: 'thong-bao', nhan: 'Thông báo lớp', icon: 'bell', troGiang: true },
+  // Diễn đàn riêng của lớp (§75, dòng 20 — 27/09/2026). Anh Sơn chốt: trao đổi đi qua
+  // diễn đàn của lớp hoặc Zalo, KHÔNG dựng messenger. Khác tab "Thông báo lớp" ngay bên
+  // cạnh: thông báo là một chiều và gửi kèm email, còn đây là chỗ em trả lời lại được.
+  // Trợ giảng vào được — cùng lý do với thông báo lớp: họ là người trao đổi hằng ngày.
+  { doan: 'trao-doi', nhan: 'Trao đổi', icon: 'chat', troGiang: true },
 ] as const;
 
 export default function KhungGiangDay({

@@ -27,11 +27,11 @@
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2161 dòng | 19 tệp · 2015 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6349 dòng | 69 tệp · 7069 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6349 dòng | 68 tệp · 6988 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
-| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 612 dòng | 0 tệp · 0 dòng |
+| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 612 dòng | 4 tệp · 477 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
-| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1241 dòng | 0 tệp · 0 dòng |
+| [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1311 dòng | 0 tệp · 0 dòng |
 
 ## Sổ nợ ghi chéo (chỉ được co)
 
@@ -538,7 +538,6 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/lib/chuDe.ts` | 62 dòng |
 | `frontend/src/lib/coAnh.ts` | 35 dòng |
 | `frontend/src/lib/daGan.ts` | 20 dòng |
-| `frontend/src/lib/dienDan.ts` | 81 dòng |
 | `frontend/src/lib/dieuHuong.ts` | 21 dòng |
 | `frontend/src/lib/form.ts` | 20 dòng |
 | `frontend/src/lib/gioVN.ts` | 56 dòng |
@@ -663,11 +662,11 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 
 ## dien_dan
 
-**Diễn đàn** — Bài viết, bình luận, thích, theo dõi người dùng.
+**Diễn đàn** — Bài viết, bình luận, thích, theo dõi người dùng. Từ §75 (27/09/2026) diễn đàn khoanh được theo LỚP — anh Sơn chốt trao đổi của lớp đi qua đây hoặc Zalo, không dựng messenger trong ứng dụng.
 
 - Bảng sở hữu: `posts`, `comments`, `post_likes`, `comment_likes`, `user_follows`
 - Miền khác được ghi bảng của miền này: cong_cu (mọi bảng) — dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng; *nợ*: `backend/accounts/views.py` ghi `user_follows`
-- Glob: `backend/forum/**/*.py`
+- Glob: `backend/forum/**/*.py`, `frontend/src/components/DienDanLop.tsx`, `frontend/src/lib/dienDan.ts`, `frontend/src/app/(standalone)/trao-doi/**/*.tsx`, `frontend/src/app/(standalone)/giang-day/trao-doi/**/*.tsx`
 
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
@@ -676,6 +675,13 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 | `backend/forum/models.py` | 57 dòng | — |
 | `backend/forum/urls.py` | 12 dòng | — |
 | `backend/forum/views.py` | 537 dòng | `comments`, `posts` |
+
+| Tệp frontend | Dòng |
+|---|---|
+| `frontend/src/app/(standalone)/giang-day/trao-doi/[classId]/page.tsx` | 64 dòng |
+| `frontend/src/app/(standalone)/trao-doi/[classId]/page.tsx` | 64 dòng |
+| `frontend/src/components/DienDanLop.tsx` | 268 dòng |
+| `frontend/src/lib/dienDan.ts` | 81 dòng |
 
 ## thi_cu
 
@@ -711,4 +717,4 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 |---|---|---|
 | `backend/common/management/commands/du_lieu_mau.py` | 81 dòng | — |
 | `backend/common/management/commands/seed_data.py` | 356 dòng | *`achievements`*, *`courses`*, *`missions`*, *`mock_exams`*, *`posts`*, *`roadmaps`* |
-| `backend/teaching/du_lieu_mau.py` | 804 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`* |
+| `backend/teaching/du_lieu_mau.py` | 874 dòng | *`assignments`*, *`attendance`*, *`class_members`*, *`class_sessions`*, *`classes`*, *`enrollments`*, *`hoc_lieu`*, *`ket_qua_thi_ngoai`*, *`lesson_progress`*, *`mock_attempts`*, *`parent_report_links`*, *`parent_report_sends`*, *`recording_views`*, *`submissions`*, *`syllabus_versions`*, *`user_daily_xp_logs`*, *`users`* |
