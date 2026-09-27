@@ -20,7 +20,7 @@
 | [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2652 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1108 dòng | 7 tệp · 1858 dòng |
-| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1835 dòng | 8 tệp · 1440 dòng |
+| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1856 dòng | 8 tệp · 1440 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
@@ -28,7 +28,7 @@
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2161 dòng | 19 tệp · 2015 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6349 dòng | 68 tệp · 6988 dòng |
-| [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
+| [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13781 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 612 dòng | 4 tệp · 477 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
 | [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1385 dòng | 0 tệp · 0 dòng |
@@ -194,7 +194,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/chuong_trinh/__init__.py` | 0 dòng | — |
 | `backend/chuong_trinh/apps.py` | 11 dòng | — |
 | `backend/chuong_trinh/dich_vu.py` | 206 dòng | *`class_sessions`*, *`classes`*, `session_log_items` |
-| `backend/chuong_trinh/du_lieu_mau.py` | 111 dòng | `session_log_items`, `session_logs`, `syllabus_items`, `syllabus_sessions`, `syllabus_versions` |
+| `backend/chuong_trinh/du_lieu_mau.py` | 132 dòng | `session_log_items`, `session_logs`, `syllabus_items`, `syllabus_materials`, `syllabus_sessions`, `syllabus_versions` |
 | `backend/chuong_trinh/khung.py` | 44 dòng | — |
 | `backend/chuong_trinh/lop.py` | 245 dòng | *`class_sessions`* |
 | `backend/chuong_trinh/so_dau_bai.py` | 303 dòng | `session_log_items`, `session_logs`, `session_support` |
@@ -639,7 +639,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/courses/[courseId]/page.tsx` | 403 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/NoiDungBai.tsx` | 808 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/SoanClient.tsx` | 699 dòng |
-| `frontend/src/app/(standalone)/giao-trinh/page.tsx` | 123 dòng |
+| `frontend/src/app/(standalone)/giao-trinh/page.tsx` | 131 dòng |
 | `frontend/src/app/(standalone)/lesson/[courseId]/page.tsx` | 24 dòng |
 | `frontend/src/app/(standalone)/questionaire/page.tsx` | 302 dòng |
 | `frontend/src/components/BaHopPhan.tsx` | 145 dòng |

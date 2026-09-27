@@ -4,6 +4,9 @@ Ba ca then chốt đỏ trên bản ghép theo VỊ TRÍ của 3f47421 (`ClassSy
 buổi khung đã có gắn tay bị phát lần hai; lớp đổi bản giữ gắn vào bản cũ; lớp không môn
 không nhận được khung.
 """
+import pytest
+
+from common.clock import local_now
 from common.db import q, q1, x
 
 
@@ -165,3 +168,29 @@ def test_gan_tay_giang_vien_lop_khac_nhan_404(dung):
     r = dung.api('Giảng viên').patch('/api/teach/sessions/%s/chuong-trinh' % s,
                                      {'syllabusSessionId': b['buoi'][0]}, format='json')
     assert r.status_code == 404
+
+
+def test_khung_mau_co_HOC_LIEU_de_man_khung_khong_trong_muc_ay(dung):
+    """Khung mẫu phải có học liệu gắn vào buổi khung (§64) — nếu không, màn "Khung chương
+    trình theo buổi" mở ra không có mục nào về tài liệu, và khách kết luận là chưa làm.
+
+    Đo 27/09 trước khi vá: `syllabus_materials` của khung mẫu = **0**. Màn CÓ dựng khối ấy
+    (`KhungClient.tsx:417` chỉ hiện khi `materials.length > 0`), chỉ là chưa ai gắn gì.
+    Cùng loại hỏng với bản ghi và yêu cầu: không phải lỗi mã, nhưng hỏng buổi demo y như lỗi.
+    """
+    # Khung mẫu chỉ dựng cho đúng môn của nó; đổi id môn thì hàm bỏ qua — nên phép kiểm
+    # này chạy trên chính môn ấy nếu CSDL có, và bỏ qua nếu chưa seed (như hàm vẫn làm).
+    from chuong_trinh.du_lieu_mau import MON_MAU, dung_khung_mau
+    from common.db import q, q1
+    if not q1('SELECT 1 FROM courses WHERE id = %s', (MON_MAU,)):
+        pytest.skip('CSDL chưa có môn %s' % MON_MAU)
+    gv = dung.api('Giảng viên')
+    lop = dung.lop(khoa=MON_MAU, gv=gv.uid)
+    vid = dung_khung_mau([lop], gv.uid, local_now())
+    assert vid, 'không dựng được khung mẫu'
+    hl = q('''SELECT m.id, m.title, m.file_url FROM syllabus_materials m
+                JOIN syllabus_sessions ss ON ss.id = m.session_id
+               WHERE ss.version_id = %s''', (vid,))
+    assert hl, 'khung mẫu không có học liệu nào — màn khung mở ra thiếu hẳn một khối'
+    assert all(r['file_url'] for r in hl), 'học liệu khung phải có địa chỉ mở được'
+    assert len({r['title'] for r in hl}) == len(hl), 'tên tài liệu trùng nhau'

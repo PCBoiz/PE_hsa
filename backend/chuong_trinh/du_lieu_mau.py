@@ -82,6 +82,27 @@ def dung_khung_mau(lop_ids, nguoi_ghi, bay_gio):
          SELECT * FROM unnest(%s::int[], %s::int[], %s::text[], %s::text[], %s::numeric[])''',
       tuple(list(c) for c in zip(*muc, strict=True)))
 
+    # Học liệu gắn vào BUỔI KHUNG (§64). Màn "Khung chương trình theo buổi" đã dựng sẵn
+    # khối này (`KhungClient.tsx:417`) nhưng nó chỉ hiện khi buổi CÓ tài liệu — và khung mẫu
+    # trước 27/09 không có cái nào, nên khách mở ra thấy thiếu hẳn một mục. Cùng loại hỏng
+    # với bản ghi buổi học và hộp Yêu cầu: mã chạy, dữ liệu rỗng.
+    #
+    # `example.com` là tên miền dành riêng cho ví dụ (RFC 2606) — dán địa chỉ trông thật vào
+    # bộ trình diễn thì trong buổi demo sẽ có người bấm, và nó dẫn tới hư không.
+    hoc_lieu = [(ss_ids[i], ten, url)
+                for i, (ten, url) in enumerate([
+                    ('Slide buổi 1 — cấu trúc đề', 'https://example.com/khung-mau/slide-1'),
+                    ('Bảng công thức số học', 'https://example.com/khung-mau/cong-thuc-so-hoc'),
+                    ('Đề luyện đại số có lời giải', 'https://example.com/khung-mau/de-dai-so'),
+                ]) if i < len(ss_ids)]
+    if hoc_lieu:
+        x('''INSERT INTO syllabus_materials (session_id, title, file_url, file_type, sort_order,
+                                            uploaded_by, uploaded_at)
+             SELECT t.ss, t.ten, t.url, 'link', 1, %s, %s
+               FROM unnest(%s::int[], %s::text[], %s::text[]) AS t(ss, ten, url)''',
+          (nguoi_ghi, bay_gio, [r[0] for r in hoc_lieu], [r[1] for r in hoc_lieu],
+           [r[2] for r in hoc_lieu]))
+
     for lop in lop_ids:
         nhan_khung(lop, vid)
     # Buổi đã dạy, đã gắn khung: sổ mẫu (xem docstring đầu tệp).

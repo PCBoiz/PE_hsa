@@ -111,7 +111,15 @@ export default async function SoanGiaoTrinhPage() {
         /* KHÔNG còn nút "Khu vận hành" ở đây (24/09/2026, góp ý TopHSA #4): khách đọc
            hai khu nối nhau thành "soạn giáo trình nằm trong vận hành". Quản trị viên
            sang Vận hành bằng nút trên thanh chính như mọi khu khác. */
-        muc={[{ trang: null, nhan: 'Giáo trình', icon: 'book-open', emoji: '', url: '/giao-trinh' }]}
+        /* Đường sang KHUNG CHƯƠNG TRÌNH (27/09/2026). Trang khung đã dựng đường ngược lại
+           về đây từ đầu, nhưng chiều này thì không — người đang soạn giáo trình muốn xếp
+           nội dung ấy vào buổi phải tự gõ đường dẫn. Đo bằng sổ soát màn: câu "Khung chương
+           trình" vắng mặt trên `/giao-trinh`, và đó là một cụt đường thật, không phải một
+           câu hỏi sai chỗ. Cùng bộ vai với trang đích (`DUOC_VAO` ở trang ấy). */
+        muc={[
+          { trang: null, nhan: 'Giáo trình', icon: 'book-open', emoji: '', url: '/giao-trinh' },
+          { trang: null, nhan: 'Khung chương trình', icon: 'calendar', emoji: '', url: '/giao-trinh/khung-chuong-trinh' },
+        ]}
       />
       <SoanClient
         initial={kq.ok ? kq.data.courses : []}

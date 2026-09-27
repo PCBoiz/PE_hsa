@@ -29,14 +29,18 @@
   "dong": 3,
   "ten": "QTV · tìm kiếm học viên (màn Tài khoản)",
   "duong": "/quan-tri/tai-khoan",
-  "vai": "hvu",
+  "vai": "ad",
   "hoi": {
    "oTim": "Tìm|tìm kiếm",
    "locTinhTrangHocTap": "Đang học|Chưa xếp lớp|Bảo lưu",
    "locHocPhi": "học phí|Học phí",
    "locDotHoc": "Đợt|đợt học",
    "locMon": "Môn|môn học"
-  }
+  },
+  "bam": [
+   "Tải danh sách"
+  ],
+  "ghiChu": "Ô lọc MÔN nằm trong hộp \"Tải danh sách\", và hộp ấy CHỈ quản trị viên thấy (`teaching/exports.py` là `IsAdminRole`). Đo bằng thẻ học vụ thì câu `locMon` luôn hỏng — không phải vì thiếu tính năng mà vì đo sai vai. Học vụ có mở được hộp ấy hay không là việc C8 anh Sơn chưa quyết."
  },
  {
   "dong": 3,
@@ -70,16 +74,21 @@
  {
   "dong": 4,
   "ten": "QTV · học viên của lớp (nhập DS, lịch sử, chuyển lớp)",
-  "duong": "/quan-tri/lop-hoc?lop=7322",
+  "duong": "/quan-tri/lop-hoc?lop={LOP_MAU}",
   "vai": "ad",
   "hoi": {
    "themHocVien": "Thêm|Xếp vào lớp|dán",
    "nhapTuTepMau": "tệp mẫu|Nhập học viên",
-   "chuyenLop": "Chuyển lớp",
+   "chuyenLop": "Chuyển lớp|Chuyển sang lớp khác",
    "lichSuLop": "Lịch sử thay đổi|Lịch sử",
    "phanCongTroGiang": "Trợ giảng|trợ giảng"
   },
-  "cho": 4000
+  "cho": 4000,
+  "bam": [
+   "Học viên"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Khối học viên của lớp (nhập từ tệp, chuyển lớp, lịch sử) mở ra SAU khi bấm \"Học viên\" ở dòng lớp. Màn ngoài chỉ là danh sách lớp. Nhãn thật trong ô lý do rời lớp là \"Chuyển sang lớp khác…\" (§55) — mẫu cũ đòi đúng chữ \"Chuyển lớp\" nên không khớp."
  },
  {
   "dong": 5,
@@ -101,12 +110,17 @@
   "hoi": {
    "buoi": "Buổi",
    "noiDungBuoi": "Nội dung|nội dung",
-   "thoiLuong": "Thời lượng",
+   "thoiLuong": "Thời lượng|\\d+ phút",
    "trongSo": "Trọng số",
    "hocLieu": "Học liệu|Tài liệu",
    "baiVeNha": "Bài về nhà",
    "taoBanMoi": "Tạo bản mới|bản nháp"
-  }
+  },
+  "bam": [
+   "Xem"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Nội dung từng buổi (thời lượng, học liệu, bài về nhà) chỉ hiện SAU khi bấm \"Xem\" một khung — màn ngoài chỉ là danh sách khung của môn. Đo 27/09. Thời lượng hiện là \"90 phút\" cạnh tên buổi, không có chữ \"Thời lượng\"."
  },
  {
   "dong": 6,
@@ -117,11 +131,11 @@
    "soHocSinhSoLop": "học viên|lớp",
    "diemDanh": "điểm danh|chuyên cần",
    "tienDoChuongTrinh": "Tiến độ chương trình|tiến độ",
-   "nghiNhieu": "vắng|nghỉ nhiều",
    "locThoiGian": "Đợt|Từ ngày|ngày",
-   "xuatTep": "Tải|Xuất|CSV|bảng tính"
+   "emBoGiuaChung": "Học 7 ngày|Bỏ giữa chừng"
   },
-  "cho": 4000
+  "cho": 4000,
+  "ghiChu": "Hai câu bỏ đi vì hỏi sai màn, không phải vì thiếu tính năng: (1) TẢI BẢNG TÍNH nằm ở sổ buổi học của lớp và ở trang Tài khoản, không ở Toàn trung tâm; (2) \"nghỉ nhiều\" nằm ở \"Việc hôm nay\" của giảng viên và trong tờ báo cáo. Thay bằng thứ màn này THẬT SỰ có: ngưỡng không hoạt động 7/14/30 ngày. Cột thật trên bảng Từng lớp là \"Học 7 ngày\" và \"Bỏ giữa chừng\" — hỏi đúng chữ màn đang hiện."
  },
  {
   "dong": 6,
@@ -144,9 +158,9 @@
   "hoi": {
    "soBuoi": "buổi",
    "coMatVang": "có mặt|vắng",
-   "theoEm": "Học viên|học viên",
-   "xuatTep": "Tải|Xuất|CSV"
-  }
+   "theoEm": "Học viên|học viên"
+  },
+  "ghiChu": "Bỏ câu \"xuất tệp\": đọc lại đúng chữ trong bảng của khách (STT 7) — ô ấy đòi theo dõi tình trạng đóng, đếm ngược số buổi, cảnh báo sắp hết, bảo lưu, gia hạn và lịch sử tham gia. KHÔNG đòi xuất tệp. Câu ấy là do mình tự thêm."
  },
  {
   "dong": 9,
@@ -172,7 +186,12 @@
    "lichSuSuaDiemDanh": "Lịch sử sửa điểm danh|Lịch sử",
    "taoBuoiBu": "Tạo buổi bù|buổi bù",
    "sinhBuoi": "Sinh buổi|Tạo buổi|Thêm buổi"
-  }
+  },
+  "bam": [
+   "Điểm danh"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Sổ điểm danh nằm SAU một cú bấm (`SessionsClient.tsx:500` gập/mở). Hỏi ở màn ngoài thì \"Lịch sử sửa điểm danh\" và nút \"Lưu\" đều vắng — đo 27/09 chấm hỏng cho hai thứ đã tự tay mở ra xem sáng cùng ngày."
  },
  {
   "dong": 10,
@@ -182,9 +201,9 @@
   "hoi": {
    "xemTheoLop": "lớp",
    "xemTheoGiangVien": "giảng viên|Giảng viên",
-   "canhBaoTrung": "trùng|xung đột",
-   "themVaoLich": "Thêm vào lịch|lịch điện thoại"
-  }
+   "themVaoLich": "Thêm lịch.*điện thoại|Thêm vào lịch"
+  },
+  "ghiChu": "(1) Nhãn thật là \"Thêm lịch dạy vào điện thoại\" — mẫu cũ đòi đúng chữ \"lịch điện thoại\" nên không khớp. (2) Bỏ câu \"cảnh báo trùng\": dòng ấy CHỈ hiện khi có buổi trùng thật (`lich/page.tsx:174`), hỏi trên một lịch sạch là đòi màn phải ở trạng thái hỏng mới ĐẠT. Hàng rào trùng lịch có bộ kiểm riêng (`teaching/trung_lich.py`)."
  },
  {
   "dong": 11,
@@ -206,13 +225,13 @@
   "vai": "hvu",
   "hoi": {
    "doiLoai": "Đổi loại",
-   "giaoNguoiXuLy": "Giao người xử lý|Giao",
-   "chuyenTiep": "Chuyển tiếp",
+   "giaoNguoiXuLy": "Giao người xử lý|Chuyển tiếp",
    "ghiChuNoiBo": "Ghi chú nội bộ",
    "traLoi": "Trả lời|Gửi trả lời",
    "daXong": "Đã xong",
    "lichSu": "Lịch sử|Diễn biến|diễn biến"
-  }
+  },
+  "ghiChu": "\"Giao người xử lý…\" và \"Chuyển tiếp…\" là MỘT nút ở hai chế độ (`ChiTietYeuCau.tsx:219-221`): ai giao được thì thấy chữ đầu, ai chỉ chuyển tiếp được thì thấy chữ sau. Hỏi cả hai trên một màn thì một câu luôn hỏng."
  },
  {
   "dong": 12,
@@ -236,7 +255,12 @@
    "bonTrangThai": "Có mặt|Vắng|Đi muộn|Xin phép",
    "lichSuSua": "Lịch sử",
    "luu": "Lưu"
-  }
+  },
+  "bam": [
+   "Điểm danh"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Sổ điểm danh nằm SAU một cú bấm (`SessionsClient.tsx:500` gập/mở). Hỏi ở màn ngoài thì \"Lịch sử sửa điểm danh\" và nút \"Lưu\" đều vắng — đo 27/09 chấm hỏng cho hai thứ đã tự tay mở ra xem sáng cùng ngày."
  },
  {
   "dong": 14,

@@ -59,10 +59,19 @@ const DOC = (hoi) => {
     .filter(hien)
     .flatMap((e) => [e.textContent || '', e.getAttribute('aria-label') || '', e.getAttribute('title') || ''])
     .map((t) => t.trim()).filter(Boolean))];
+  // MỤC TRONG Ô THẢ XUỐNG cũng là thứ người dùng chọn được (27/09/2026). Chromium KHÔNG
+  // đưa chữ của `<option>` chưa chọn vào `innerText`, nên sổ soát mù với mọi danh mục nằm
+  // trong `<select>` — mà theo RULES §7 thì danh mục CHÍNH LÀ chỗ chúng phải nằm. Đo hôm
+  // nay: "Chuyển lớp" là một lý do rời lớp trong ô thả xuống (`LopHocClient.tsx:958`), và
+  // bộ đo chấm THIẾU cho một tính năng bấm được bình thường.
+  const muc = [...document.querySelectorAll('select')]
+    .filter(hien)
+    .flatMap((e) => [...e.options].map((o) => (o.textContent || '').trim()))
+    .filter(Boolean);
   const tra = {};
   for (const [k, mau] of Object.entries(hoi || {})) {
     const re = new RegExp(mau, 'i');
-    tra[k] = re.test(t) || nut.some((n) => re.test(n));
+    tra[k] = re.test(t) || nut.some((n) => re.test(n)) || muc.some((n) => re.test(n));
   }
   return {
     tieuDe: (document.querySelector('h1, h2')?.textContent || '').trim().slice(0, 80),
