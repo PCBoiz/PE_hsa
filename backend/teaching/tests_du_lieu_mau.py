@@ -233,3 +233,26 @@ def test_bo_mau_co_bai_NOI_VAO_khung_de_man_chuong_trinh_noi_duoc_ca_hai_ve(sach
                    AND NOT EXISTS (SELECT 1 FROM assignments a
                                     WHERE a.class_id = c.id AND a.syllabus_item_id = i.id)''')['n']
     assert con > 0, 'nối hết thì không còn vế "Chưa giao bài" để cho khách thấy'
+
+
+def test_bo_mau_co_BAI_KIEM_TRA_de_nut_nhap_diem_hien_ra(sach):
+    """Không có bài `kiem_tra` thì nút "Nhập điểm" (V-h) không bao giờ hiện trong buổi demo.
+
+    Đo trên dev 27/09 trước khi vá: bài mẫu toàn bộ là `bai_tap`, **0** bài `kiem_tra`. Màn
+    bài tập chỉ hiện "Nhập điểm" cho bài kiểm tra trên lớp — tức một ô của bảng nghiệm thu
+    trông như chưa làm, dù mã đã chạy từ 25/09.
+
+    Bài kiểm tra mẫu còn phải có ĐIỂM (khách mở ra mà bảng trống thì cũng như không) và
+    còn chừa ít nhất một em chưa chấm, để con số "còn N bài chưa chấm" có thật.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+    kt = q('''SELECT a.id, a.class_id, a.held_on, a.syllabus_item_id
+                FROM assignments a JOIN classes c ON c.id = a.class_id AND c.is_demo
+               WHERE a.kind = 'kiem_tra' ''')
+    assert kt, 'bộ mẫu không có bài kiểm tra nào — nút "Nhập điểm" không hiện'
+    assert all(r['held_on'] for r in kt), 'bài kiểm tra trên lớp phải có ngày kiểm tra'
+    diem = q1('''SELECT COUNT(*) FILTER (WHERE s.score IS NOT NULL) AS da_cham,
+                        COUNT(*) FILTER (WHERE s.score IS NULL) AS chua_cham
+                   FROM submissions s WHERE s.assignment_id = ANY(%s)''',
+              ([r['id'] for r in kt],))
+    assert diem['da_cham'] > 0, 'bài kiểm tra mẫu chưa có điểm nào'

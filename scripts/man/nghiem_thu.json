@@ -276,9 +276,20 @@
    "ghiChuSauBuoi": "Ghi chú|ghi chú",
    "deXuat": "Đề xuất",
    "guiDeXuatChoHocVu": "Gửi đề xuất",
-   "emCanHoTro": "cần hỗ trợ",
-   "dinhKemTaiLieu": "Đính kèm|Tải tệp|Chọn tệp"
-  }
+   "emCanHoTro": "cần hỗ trợ"
+  },
+  "ghiChu": "Câu \"đính kèm tài liệu\" ĐÃ CHUYỂN sang mục dưới: §60 gắn học liệu ở màn BUỔI HỌC và kho chung của lớp, không ở sổ đầu bài. Hỏi sai chỗ thì bộ đo báo thiếu cho một tính năng đang chạy (đo 27/09)."
+ },
+ {
+  "dong": 15,
+  "ten": "GV · học liệu của lớp / của buổi (§60)",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "khoiTaiLieu": "Tài liệu",
+   "ganTaiLieu": "Thêm tài liệu|Gắn tài liệu|Đính kèm"
+  },
+  "cho": 3500
  },
  {
   "dong": 17,
@@ -325,15 +336,15 @@
  {
   "dong": 17,
   "ten": "GV · bảng chấm một bài",
-  "duong": "/giang-day/cham/{BAI_MAU}",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}/{BAI_MAU}",
   "vai": "gv",
   "hoi": {
    "oDiem": "Điểm|điểm",
    "nhanXet": "Nhận xét|nhận xét",
-   "traBai": "Trả bài|Lưu",
+   "traBai": "Lưu \\d+|Chưa gõ điểm nào",
    "aiChuaNop": "Chưa nộp|chưa nộp"
   },
-  "chapNhan": "/giang-day/bai-tap/7322/3358"
+  "ghiChu": "Hai chỗ sửa 27/09: (1) tuyến `/giang-day/cham/<id>` đã dời sang `/giang-day/bai-tap/<lớp>/<bài>`; (2) nút lưu mang nhãn \"Chưa gõ điểm nào\" cho tới khi giảng viên gõ điểm đầu tiên — hỏi đúng chữ \"Lưu\" trên màn vừa mở là bắt một nút đang có mặt phải vắng."
  },
  {
   "dong": 18,

@@ -449,6 +449,52 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [b['lop']['id'] for b in bai], [b['tieu_de'] for b in bai], [b['cd'] for b in bai],
              [b['khoa'] for b in bai], [b['han'] for b in bai], [b['tt'] for b in bai],
              [b['tao_luc'] for b in bai]))}
+        # ── Bài KIỂM TRA TRÊN LỚP (V-h) — một bài mỗi lớp ───────────────
+        #
+        # Không có bài `kiem_tra` thì nút "Nhập điểm" KHÔNG BAO GIỜ hiện, và một ô của
+        # bảng nghiệm thu trông như chưa làm dù mã đã chạy từ 25/09. Khác bài tự luận ở
+        # chỗ: học viên không nộp gì, giảng viên nhập thẳng điểm — nên `held_on` (ngày
+        # kiểm tra) có, `due_at` không; điểm ghi vào `submissions` như một lượt chấm.
+        kt = []
+        for lop in ke:
+            ngay_kt = hom_nay - timedelta(days=9)
+            kt.append({'lop': lop,
+                       'tieu_de': 'Kiểm tra giữa chặng — 45 phút',
+                       'ngay': ngay_kt,
+                       'tao': datetime.combine(ngay_kt, time(7, 0))})
+        id_kt = {r['class_id']: r['id'] for r in q(
+            '''INSERT INTO assignments (class_id, title, description, course_id, held_on,
+                                        max_score, status, kind, created_by, created_at)
+               SELECT t.c, t.td, %s, t.k, t.ngay, 10, 'closed', 'kiem_tra', %s, t.tao
+                 FROM unnest(%s::int[], %s::text[], %s::text[], %s::date[], %s::timestamp[])
+                        AS t(c, td, k, ngay, tao)
+               RETURNING id, class_id''',
+            ('Bài kiểm tra trên lớp trong bộ dữ liệu trình diễn.', gv,
+             [b['lop']['id'] for b in kt], [b['tieu_de'] for b in kt],
+             [b['lop']['khoa'] for b in kt], [b['ngay'] for b in kt], [b['tao'] for b in kt]))}
+        cham_kt = []
+        for b in kt:
+            em = b['lop']['hoc_vien']
+            for j, e in enumerate(em):
+                aid = id_kt[b['lop']['id']]
+                # Chừa em CUỐI chưa chấm: con số "còn N bài chưa chấm" phải có thật, và
+                # một bảng chấm đủ 100 % thì không cho thấy việc còn phải làm.
+                if j == len(em) - 1 and len(em) > 2:
+                    cham_kt.append((aid, e['id'], None, None))
+                    continue
+                diem = _kep(round((e['nang_luc'] + rng.gauss(0, 0.1)) * 20) / 2, 2.0, 10.0)
+                cham_kt.append((aid, e['id'], diem,
+                                datetime.combine(b['ngay'] + timedelta(days=2), time(20, 0))))
+        if cham_kt:
+            x('''INSERT INTO submissions (assignment_id, user_id, submitted_at, score,
+                                          graded_by, graded_at)
+                 SELECT t.a, t.u, t.cham, t.diem,
+                        CASE WHEN t.cham IS NULL THEN NULL ELSE %s END, t.cham
+                   FROM unnest(%s::int[], %s::int[], %s::numeric[], %s::timestamp[])
+                          AS t(a, u, diem, cham)''',
+              (gv, [r[0] for r in cham_kt], [r[1] for r in cham_kt],
+               [r[2] for r in cham_kt], [r[3] for r in cham_kt]))
+
         # §74 — nối MỘT bài của mỗi lớp mẫu vào mục "bài về nhà" ĐẦU TIÊN của khung.
         #
         # Không nối thì màn Chương trình lớp chỉ nói được một vế: mọi mục đều "Chưa giao
@@ -464,6 +510,15 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
                       WHERE c.is_demo
                    ORDER BY c.id, ss.sort_order, i.sort_order) m
               WHERE a.id = m.bai_id''')
+        x('''UPDATE assignments a SET syllabus_item_id = m.item_id
+               FROM (SELECT DISTINCT ON (c.id) c.id AS class_id, i.id AS item_id
+                       FROM classes c
+                       JOIN syllabus_sessions ss ON ss.version_id = c.syllabus_version_id
+                       JOIN syllabus_items i ON i.session_id = ss.id AND i.kind = 'kiem_tra'
+                      WHERE c.is_demo
+                   ORDER BY c.id, ss.sort_order, i.sort_order) m
+              WHERE a.class_id = m.class_id AND a.kind = 'kiem_tra'
+                AND a.syllabus_item_id IS NULL''')
 
         nop = []
         for b in bai:
