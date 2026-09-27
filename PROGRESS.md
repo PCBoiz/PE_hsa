@@ -43,6 +43,22 @@ cần `node_modules`. Tôi nối cả hai bằng junction tới bản chính; n�
 không dựng Django 9400 — bộ kiểm gọi view trực tiếp nên máy chủ HTTP là RAM tiêu không việc.
 Sáu bước cần đo ở `docs/agent/BAO_CAO_BAO_CAO_CHEO.md` §7; dòng 6 CHƯA được tick "CÓ".
 
+**Bàn giao giữa chừng, và số chốt (agent thứ hai).** Agent đầu hết hạn mức phiên khi mã còn
+NẰM NGOÀI GIT — 935 dòng chưa commit mà chưa ai biết có chạy được không. Lượt tiếp nhận:
+chạy thử TRƯỚC khi sửa, và bộ kiểm **19/19 xanh ngay** — không phải sửa một dòng mã nào.
+Thứ duy nhất hỏng là `cau_truc.py --kiem` ĐỎ vì `docs/CAU_TRUC_MA.md` chưa được sinh lại
+sau khi thêm tệp; sinh lại là xong, nợ ghi chéo vẫn 11 (không phình).
+
+Số chốt: **đột biến 14/14 bị giết đúng chỗ** (mỗi cái làm đỏ đúng test đã khai ở khoá
+`cho`, không cái nào lọt), **hồi quy `pytest teaching/` 661 xanh / 0 đỏ** (1 g 25 ph).
+
+**Bài học quy trình, không phải bài học kỹ thuật**: thứ suýt mất không phải mã khó viết —
+nó là mã ĐÚNG, xanh ngay lượt đầu — mà là mã chưa được `git add`. Hai lượt chạy dài của tôi
+tốn 2 g 45 ph; nếu commit đợi tới sau chúng thì một lần đứt phiên nữa là mất trắng lần thứ
+hai. Nên lượt này commit NGAY khi nhóm cổng nhanh (ruff, check, tsc, eslint, unit Node,
+bản đồ, tầng vai, cấu trúc) xanh, rồi mới chạy hai lượt dài. Đột biến và hồi quy xác nhận
+một commit đã có còn hơn bảo vệ một commit chưa tồn tại.
+
 ## 27/09/2026 — §58 dạy thay một buổi, và một cách mất việc mà tôi chưa từng gặp
 
 Giảng viên gắn theo LỚP, nhưng một buổi lẻ có thể do người khác đứng. `class_sessions.

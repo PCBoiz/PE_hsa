@@ -227,9 +227,11 @@ chưa đo được. `chiTiet` của thẻ nói đúng nghĩa ấy.
 | `scripts/tang_vai.py --kiem` | ĐẠT — 0 lệch chưa giải thích | tab mới khớp `IsAdminOrAcademic` |
 | `e2e/unit/*.test.mjs` (từng tệp, như pre-push) | ĐẠT sau khi sửa | **bắt hai lỗi thật của tôi**: `hint` 100 ký tự (trần 90) và chữ "hợp phần" (phải là "môn học") trong câu EmptyState |
 | `scripts/quet_bi_mat.py` | ĐẠT | |
-| `pytest teaching/tests_bao_cao_cheo.py` | *(§8)* | |
-| `pytest teaching/` (hồi quy) | *(§8)* | |
-| `scripts/cau_truc.py` | *(§8)* | sinh lại `docs/CAU_TRUC_*` sau khi thêm tệp |
+| `pytest teaching/tests_bao_cao_cheo.py` | **ĐẠT — 19/19** (5 ph 51, 27/09) | |
+| `pytest teaching/` (hồi quy) | **ĐẠT — 661/661**, 1 g 25 ph | 0 đỏ; xem ghi chú số đếm ở §8 |
+| `scripts/cau_truc.py` | **ĐẠT** | đã sinh lại `docs/CAU_TRUC_*`; 16 miền, 61 bảng, **0 lỗi**, nợ ghi chéo vẫn **11** (không phình) |
+| `scripts/dot_bien.py` (14 đột biến) | **ĐẠT — 14/14 giết đúng chỗ** | §8 |
+| `scripts/kiem_dot_bien_con_sot.py` (f9) | ĐẠT | tệp đã phục hồi sạch sau loạt |
 
 Sổ miền: tệp mới vào miền **`bao_cao`** (`scripts/so_mien.json`) — đúng miền cho việc CHỈ
 ĐỌC, không sở hữu bảng. **Không một lệnh INSERT / UPDATE / DELETE nào** trong tệp mới, nên
@@ -264,7 +266,82 @@ thanh cuộn ngang ở trang, và mỗi ô còn đọc được tên cột của
 
 ## 8 · Số chốt
 
-*(mục này điền sau khi hai lượt chạy dài xong — xem câu trả lời gửi lead)*
+Đo ngày **27/09/2026**, worktree `agent/bc`, CSDL Neon dev.
+
+### Bộ kiểm
+
+`pytest teaching/tests_bao_cao_cheo.py` → **19 xanh / 0 đỏ**, 5 ph 51.
+
+**Trạng thái NHẬN ĐƯỢC** (agent sau nhận bàn giao): mã nằm NGOÀI git, chưa ai chạy thử.
+Lượt chạy đầu tiên của tôi: **19/19 xanh ngay, không phải sửa một dòng mã nào.** Agent
+trước đã sửa xong lỗi `_cong`/`_chot` (xem PROGRESS) trước khi hết hạn mức phiên; thứ nó
+chưa kịp làm là **chạy loạt đột biến**, **sinh lại `docs/CAU_TRUC_*`** và **commit**.
+
+### Đột biến — 14/14 bị giết ĐÚNG CHỖ
+
+Nền xanh trước khi chạy (19 passed, 331 s). Mỗi đột biến làm đỏ đúng test đã khai ở khoá
+`cho`, không đột biến nào lọt:
+
+| # | Đột biến | Kết quả |
+|---|---|---|
+| 1 | cộng điểm THÔ, không chuẩn hoá theo thang | giết ✓ |
+| 2 | mẫu số của "đã chấm" là PHẢI NỘP thay vì ĐÃ NỘP | giết ✓ |
+| 3 | chia cho 0 ra `0 %` thay vì `—` | giết ✓ |
+| 4 | bỏ `left_at` ở mẫu số phải nộp | giết ✓ |
+| 5 | bỏ `left_at` ở câu ĐIỂM | giết ✓ |
+| 6 | hàng rào quyền mở cho mọi vai đã đăng nhập | giết ✓ |
+| 7 | bộ lọc MÔN bị bỏ qua | giết ✓ |
+| 8 | bộ lọc ĐỢT bị bỏ qua | giết ✓ |
+| 9 | bỏ mốc TRÊN của kỳ xem ở câu bài tập | giết ✓ |
+| 10 | bài NHÁP cũng vào mẫu số "phải nộp" | giết ✓ |
+| 11 | bài KIỂM TRA bị tính vào tỉ lệ nộp bài | giết ✓ |
+| 12 | chuyên cần bỏ lọc kỳ xem | giết ✓ |
+| 13 | `LATERAL` → `WHERE` (lớp chưa xếp em nào rơi khỏi báo cáo) | giết ✓ |
+| 14 | bản .xlsx KHÔNG theo bộ lọc của màn | giết ✓ |
+
+Đáng chú ý: đột biến 1, 2, 4, 5 mỗi cái làm đỏ **nhiều** test — đó là dấu hiệu tốt ở đây,
+vì các test ấy ghim cả tử số, mẫu số lẫn tỉ lệ, nên một phép cộng sai không trốn được vào
+một con số tình cờ bằng nhau. Cả 14 đều làm đỏ **đúng** test đã khai, không cái nào "giết
+nhầm chỗ".
+
+**Mẫu nhiều dòng CÓ khớp** ở tệp này (đột biến 5, 9, 13 đều có `
+`): `dot_bien.py` đếm
+trên toàn văn bản với `newline=''`, nên mẫu nhiều dòng chỉ gãy khi tệp có kết dòng CRLF.
+`bao_cao_cheo.py` là LF, và `--xem` xác nhận trước: *14 mẫu, mỗi mẫu khớp đúng một chỗ*.
+
+### Hồi quy
+
+`pytest teaching/ -q` → **661 xanh / 0 đỏ**, 1 giờ 25 phút (27/09/2026).
+
+**Về con số 661 chứ không 669**: worktree `agent/bc` mọc từ `198dc81`, còn `erp` lúc này ở
+`bbdd004` — ba commit sau đó (§75 màn trao đổi của lớp, học liệu cả khoá) mang theo test
+của chúng. Không phải test biến mất: **0 đỏ, 0 bỏ qua**. Sau khi lead gộp vào `erp` thì nên
+chạy lại một lượt trên `erp` để thấy con số hợp nhất — đó là lượt duy nhất chứng minh hai
+nhánh không cãi nhau.
+
+Tuyến mới cũng đi qua `common/tests_ma_tran_quyen.py`, tệp ấy **duyệt `get_resolver()`**
+nên tuyến mới tự động bị soi: mọi view ở khu `/api/admin/` phải có hàng rào sau vai.
+`IsAdminOrAcademic` đạt (cùng lớp quyền `cham_cong.ChamCongView` đã dùng cho một tuyến
+`/api/admin/` khác).
+
+---
+
+## 8b · Agent thứ hai đã làm gì (bàn giao 27/09)
+
+Agent đầu hết hạn mức phiên khi mã còn **nằm ngoài git**. Lượt này:
+
+1. **Chạy thử trước khi sửa** (V0) — `19/19 xanh ngay`. Không sửa một dòng mã nào của
+   `bao_cao_cheo.py` hay `tests_bao_cao_cheo.py`: thiết kế đọc kỹ thấy đúng, và bộ đột biến
+   sau đó chứng minh bộ kiểm thật sự canh được.
+2. **Commit sớm** (`5168509`) ngay khi các cổng nhanh xanh — trước hai lượt chạy dài, để
+   một lượt mất phiên nữa không xoá sạch việc.
+3. **Sinh lại `docs/CAU_TRUC_*`** — agent đầu chưa chạy, nên `cau_truc.py --kiem` đang ĐỎ
+   (`CAU_TRUC_MA.md` cũ so với sổ miền). Đây là thứ duy nhất "hỏng" mà tôi nhận được.
+4. **Chạy loạt 14 đột biến** → 14/14, và **hồi quy 661 test** → 0 đỏ.
+5. Kiểm hai chỗ nghi ngờ khi đọc mã, **cả hai đều không phải lỗi**: `tien_do_lop([])` có
+   chốt trả `{}` nên bộ lọc không khớp lớp nào KHÔNG gây lỗi; và liên kết tên lớp trỏ
+   `/giang-day/buoi-hoc/<id>` đúng bằng khuôn `quan-tri/tong-quan/page.tsx:506` đã dùng cho
+   cùng nhóm người đọc.
 
 ---
 
