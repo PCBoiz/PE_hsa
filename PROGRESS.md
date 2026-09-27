@@ -10055,3 +10055,47 @@ phải đo (dòng 1·8·13·19), không bắt được lúc trang nằm lại m�
 phía "sản phẩm thiếu tính năng". Đã vá cả bốn, thêm `bam`/`chon` để đo được thứ nằm
 sau một cú bấm, và `scripts/nap_lai_be.ps1` chết ở đúng worktree mà nó sinh ra để cứu
 (`--git-common-dir` trả đường tuyệt đối ở worktree, mã cũ nối nó vào `$goc`).
+
+## 27/09/2026 · chiều — production lên bản mới, §74 nối xong hai đầu, bảng phân rã dày thêm
+
+**Đẩy production.** Anh Sơn: *"trước mắt push lên production trước rồi tổng hợp lại những tính năng
+đã làm đã"*. `master` 4e78897 → `198dc81`, **63 commit**. Cổng kiểm ĐẠT 153 s trước khi gộp. Kiểm sau
+khi đẩy bằng lời gọi thật, không suy: `/api/health` 200 · `pe-hsa.vercel.app` mở được ·
+`/auth/dang-ky` (§73, cửa mới nhất trong lượt đẩy) trả **200** chứ không 404 → build xanh và
+`bootstrap_schema` đã chạy xong cột §74. Đường không tồn tại vẫn trả 404, nên 200 kia là thật.
+
+**Hai tài liệu mới.** `docs/TINH_NANG_DA_LAM.md` (người dùng bấm được gì, xếp theo vai — đưa TopHSA
+xem được) và `docs/SYSTEM_DESIGN.md` (as-built: bức tranh chạy, vì sao proxy ở Next, vì sao SQL thuần,
+luật miền, sổ lược đồ, kỷ luật kiểm, **và một mục "Nợ đã biết"** — trong đó đồng hồ cửa quên mật khẩu
+CHƯA cân, 2,04 s so với 0,254 s). Mọi số đo bằng lệnh, và tài liệu ghi kèm lệnh để đo lại.
+
+**§74 nay bấm được.** Hôm qua có cột, không có ô. Nay: ô "Mục khung chương trình" trong biểu mẫu Giao
+bài (danh mục máy chủ trả, nhãn mang số buổi, **không bắt buộc**), và mục cần bài trên màn Chương
+trình lớp mang chip "Chưa giao bài" / "Đã giao: <tên>" / "Đang soạn: <tên>". Câu SQL đặt ở miền bài
+tập (`teaching.assignments.bai_theo_muc_khung`), sổ đầu bài gọi chung hàm ấy.
+
+Đo: 7 test mới xanh · **6/6 đột biến bị giết** (hai loạt) · 32 test chương trình + bài tập xanh ·
+màn thật lớp mẫu **15/15 bước ĐẠT**, đã soi ảnh (6/42 mục mang chip, 36 mục chủ đề không mang, giao
+một bài thì "Chưa giao bài" 6 → 5).
+
+**Ba chỗ vấp, ghi lại vì cả ba đều im lặng:**
+1. Một đột biến LỌT — phép kiểm "mục kiểm tra cũng được hỏi" chỉ khẳng định `baiDaGiao == []`, mà mục
+   bị BỎ SÓT cũng ra `[]`. Cùng một kết quả vì hai lý do trái ngược. Siết test: mục kiểm tra phải CÓ
+   bài thật thì hai đường mới khác nhau. Sau đó 3/3.
+2. `text-warn-ink` KHÔNG tồn tại (token đúng là `text-warning-ink`). Tailwind v4 nuốt lặng lẽ: không
+   lỗi biên dịch, không cảnh báo, chỉ là chữ không có màu.
+3. Lượt đo đầu HỎNG 4 bước vì Django chạy `--noreload` — mã mới chưa nạp. Đúng cái bẫy CLAUDE.md đã
+   ghi, vẫn vấp.
+
+**Agent soát bảng phân rã** (gộp `agent/pr`): chín dòng trước chỉ có tiêu đề nay có bảng phân rã **75
+ý**, mỗi ý một ô bằng chứng `tệp:dòng`; **25 tính năng ngoài bảng** khách không kê; **16 ô ghi sai**
+đã sửa. Nặng nhất: **dòng 29 "CÓ" là quá tay** — thẻ lớp học viên chỉ lấy BỐN bản ghi và BỐN tài liệu
+gần nhất, không màn nào liệt kê đủ, không có ô tìm. Đã giao agent làm nốt.
+
+**Một lỗi agent tìm, tôi đo lại rồi vá**: chuông TỰ ĐỘNG "sắp hết hạn nộp" hiện nhãn **"Khác"** trên
+màn học viên (`nhan('nhac_han')` → `'Khác'`) vì nó ghi thẳng bằng INSERT nên bộ quét AST không thấy —
+đúng cái bẫy `GUI_NOI_KHAC` dựng ra để bịt, chỉ chưa ai ghim loại này vào. Nay có nhãn + dòng ghim.
+
+**RAM.** Đầu buổi còn 2,54 GB: ba `chrome-headless-shell` mồ côi từ 23:04 tối qua — `don_may.ps1`
+**không bắt loại tiến trình này**, quy tắc của nó chỉ có Django / Next / Playwright server / bộ đo.
+Chỗ cần vá tiếp.

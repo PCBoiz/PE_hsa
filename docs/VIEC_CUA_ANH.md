@@ -36,6 +36,17 @@ Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi 
 | Quản lý học vụ có được xem liên hệ phụ huynh không? | ảnh hưởng luôn việc học vụ có tải được danh sách tài khoản (hiện chỉ quản trị viên) | **C8** |
 | Hai mặc định tôi tự chọn (im lặng = đồng ý) | — | **N5** |
 
+### 4b · Sáu câu mới, từ lượt soát bảng phân rã 27/09 (nhắn một dòng mỗi câu là xong)
+
+| Câu | Đề xuất của tôi | Chặn gì |
+|---|---|---|
+| **"Hoàn thành khoá" là bao nhiêu?** Cần ba số: % buổi có mặt tối thiểu · % chương trình tối thiểu · có bắt buộc điểm kiểm tra không | chưa dám đoán — đây là quy định của trung tâm, không phải của phần mềm | ô cuối **dòng 5**. Kèm một câu: đủ ngưỡng thì máy TỰ đánh "đã học xong", hay chỉ gợi ý để học vụ bấm? |
+| **Hai số "lớp chậm tiến độ": chậm 2 buổi, hoặc dưới 80 %** — có đúng cách TopHSA quản lớp không? | giữ nguyên nếu anh thấy hợp | không chặn gì; đây là hai số đổi rẻ nhất hệ thống, màn hình đọc từ máy chủ chứ không gõ lại |
+| **Phụ huynh tự tắt nhận báo cáo — còn làm không?** | nếu còn thì cần biết: tắt ở đâu, tắt cho một em hay mọi em, tắt rồi trung tâm thấy gì | bảng `parent_report_optout` dựng từ §50 mà **chưa có một dòng mã nào dùng** — tôi đã ghi là CHƯA vào dòng 23 để không ai kể nó như tính năng đã có |
+| **Chuông cảnh báo lớp chậm tiến độ gửi cho ai, mấy ngày một lần?** | giảng viên của lớp + học vụ, **mỗi tuần một lần** | số đã tính được rồi, chỉ chưa ai được báo. Gửi mỗi ngày là 30 chuông cho cùng một việc |
+| **Duyệt "xin nghỉ học" có báo giảng viên của lớp không?** | **CÓ** — điểm danh của em bị ghi đè thành "có phép" mà người đứng lớp không biết là chỗ dễ sinh tranh luận nhất về sau | một loại chuông mới, nên chờ anh |
+| **Học viên có cần màn xem ĐỦ bản ghi + học liệu không?** | **CÓ — tôi đang làm rồi**, vì bảng của khách đòi thẳng ở dòng 29 ("danh sách record theo buổi, tìm kiếm"). Anh bảo dừng thì tôi dừng | hôm nay thẻ lớp chỉ hiện **4** bản ghi và **4** tài liệu gần nhất, không có ô tìm — lớp 24 buổi thì em mất hút 20 buổi |
+
 ### 5 · Mở tài khoản bên ngoài (làm khi rảnh, không chặn buổi nghiệm thu)
 
 | Việc | Chặn gì | Mất |

@@ -54,6 +54,8 @@ dữ liệu thật nào của TopHSA.
 | Sổ điểm danh từng buổi, sửa lại được, **lịch sử sửa** hiện ngay dưới sổ | Giảng dạy → Buổi học | |
 | **Sổ đầu bài**: từng mục của khung đánh "đã dạy / một phần / chưa dạy", mức tiếp thu 1–5, đề xuất, đánh dấu em cần hỗ trợ | Giảng dạy → Sổ đầu bài | hai người cùng mở sổ thì người sau bị chặn, không đè lặng lẽ |
 | Màn **Chương trình lớp**: % đã dạy từng buổi khung, lớp chậm ở đâu, tiến độ từng em | Giảng dạy → Chương trình | |
+| **Trả lời được "buổi này đã giao bài chưa"** — mỗi mục cần bài mang "Chưa giao bài" / "Đã giao: &lt;tên&gt;" / "Đang soạn: &lt;tên&gt;" | Giảng dạy → Chương trình | §74, 27/09. Bài đang soạn học viên CHƯA thấy nên KHÔNG bị gọi là đã giao |
+| Giao bài **gắn vào mục của khung chương trình** | Giảng dạy → Bài tập → Giao bài mới → "Mục khung chương trình" | không bắt buộc, có chủ ý: bắt chọn sẽ chặn giảng viên đang vội giao bài trước giờ lên lớp |
 | **Giao bài** (tự luận / kiểm tra trên lớp), hạn nộp, đổi người nhận (cả lớp hoặc một nhóm), sửa bài, đóng/mở nhận bài | Giảng dạy → Bài tập | |
 | Bảng chấm cả lớp: từng em "Chưa nộp" / "Nộp 18/09", tổng "9/27 đã nộp", nhập điểm, nhận xét | Giảng dạy → Bài tập → bài | thang điểm của riêng từng bài, hệ thống quy về % |
 | Theo dõi từng em: nhận xét (in lên tờ phụ huynh), đánh dấu **cần hỗ trợ** (nội bộ), đề xuất hướng học | Giảng dạy → Học viên | |
@@ -88,12 +90,30 @@ dữ liệu thật nào của TopHSA.
 | Đăng nhập bằng email / SĐT / tên đăng nhập, ghi nhớ 30 ngày, quên mật khẩu qua email | `/login` | link đặt lại sống 30 phút, dùng một lần |
 | Thẻ lớp của em: lịch buổi, % chương trình kèm kế hoạch, điểm danh từng buổi | Trang chủ | |
 | **Trang Thông báo** đầy đủ: lọc theo loại, lọc chưa đọc, đánh dấu đã / chưa đọc, "Xem thêm" | `/thong-bao` | 12/12 bước đo trên màn thật, không một mã kỹ thuật nào lọt lên màn |
+| Hệ thống **tự nhắc sắp hết hạn nộp bài**, 20–28 giờ trước hạn | chuông | không ai bấm gì; nhãn "Nhắc hạn nộp" — vá 27/09, trước đó hiện là "Khác" |
 | Xem lại **bản ghi buổi học**, hệ thống ghi nhận em đã mở | thẻ lớp → "Xem lại" | |
 | Mở **học liệu** của lớp / của buổi, thấy tên miền trước khi bấm | thẻ lớp → Học liệu | |
 | Nộp bài tự luận, xem điểm và nhận xét từng bài | `/bai-tap` | nộp bằng chữ; nộp tệp chờ khoá R2 |
 | Gửi yêu cầu (nghỉ học, học bù, chuyển lớp…) và trao đổi tới khi đóng | `/yeu-cau` | |
 
-## 7 · Phần nền không ai bấm thấy nhưng sai là chặn cả hệ thống
+
+## 7 · Có mà bảng phân rã của khách không kê — nói ở buổi demo thì được điểm
+
+Soát 27/09 bằng cách đối chiếu mã với bảng của khách. Hai mươi lăm thứ, đây là bảy cái đáng nói nhất:
+
+| Tính năng | Ai dùng |
+|---|---|
+| Đưa lịch học sang **Google Calendar / Lịch iPhone** bằng một địa chỉ `.ics` riêng | học viên, giảng viên |
+| **Tự nhắc** em sắp hết hạn nộp bài, 20–28 giờ trước hạn | học viên |
+| Hộp thư đi **bền**: gửi lỗi thì thử lại 1 / 5 / 30 / 120 / 360 phút; việc gấp đi trước việc hàng loạt | nền |
+| **Hàng rào chặn thư** ra địa chỉ thật khi đang chạy thử | nền |
+| **18 bài hướng dẫn vận hành ngay trong ứng dụng**, in được, lọc theo vai | mọi vai |
+| Đọc **PDF kết quả thi** của hệ thống khảo thí ngoài thành dữ liệu | học vụ |
+| Cả khu **học trực tuyến**: sổ điểm, bản đồ năng lực, lộ trình, nhiệm vụ + điểm thưởng + bảng xếp hạng, diễn đàn, trợ lý AI | học viên |
+
+Danh sách đủ 25 mục nằm ở cuối `docs/NGHIEM_THU_TOPHSA.md`, mỗi mục kèm bằng chứng `tệp:dòng`.
+
+## 8 · Phần nền không ai bấm thấy nhưng sai là chặn cả hệ thống
 
 - **Thư đi qua hộp chờ (outbox)**, không gửi thẳng trong lời gọi API — máy chủ gói miễn phí ngủ thì thư nằm chờ, không mất.
 - **Hàng rào thư**: chỉ gửi tới địa chỉ thử (`@example.com`, tài khoản e2e). Ra khỏi hệ thống là không cuộn lại được, nên hàng rào này không được nới trong lúc chưa có dữ liệu thật.
@@ -102,7 +122,7 @@ dữ liệu thật nào của TopHSA.
 - **Lược đồ CSDL chỉ cộng thêm**, chạy khi build. Mục nào hỏng thì build đỏ và **bản cũ vẫn phục vụ** — không có cửa sổ production nửa sống nửa chết.
 - **Nhật ký kiểm toán** cho mọi thao tác đổi dữ liệu, kèm bản cũ.
 
-## 8 · Đang chờ, nói thẳng
+## 9 · Đang chờ, nói thẳng
 
 | Thứ chưa làm được | Chờ gì | Mã việc |
 |---|---|---|
@@ -113,9 +133,11 @@ dữ liệu thật nào của TopHSA.
 | Ngưỡng "hoàn thành khoá" | con số của anh / của TopHSA | — |
 | Học phí, công nợ | bốn câu hỏi đang chờ TopHSA | K2 |
 | Báo cáo chéo môn × lớp | đang làm, không chờ ai | — |
+| Học viên xem **đủ** bản ghi và học liệu cả khoá (nay thẻ lớp chỉ hiện 4 cái gần nhất, không có ô tìm) | đang làm, không chờ ai | — |
+| Chuông cảnh báo **lớp chậm tiến độ** (số tính được rồi, chưa ai được báo) | anh quyết gửi cho ai, mấy ngày một lần | — |
 | Khung chương trình **thật** của một môn | TopHSA đưa | K1 |
 
-## 9 · Số đo của bản này (27/09/2026)
+## 10 · Số đo của bản này (27/09/2026)
 
 | Đo gì | Số |
 |---|---|

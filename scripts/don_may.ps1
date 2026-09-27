@@ -81,15 +81,23 @@ function Get-TienTrinhDuAn {
   # Mọi node/python/chromium thuộc pe_hsa, kèm cổng đang giữ. CHỈ ĐỌC.
   param([hashtable]$Cong)
   $ra = @()
-  $ds = Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='python.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue
+  # `chrome-headless-shell.exe` là MỘT TÊN KHÁC, không phải `chrome.exe` — và đó đúng là chỗ
+  # bản trước nhìn sót (27/09/2026): ba tiến trình ấy sống từ 23:04 tối hôm trước, giữ 328 MB,
+  # mà `don_may.ps1` báo "MỒ CÔI: (sạch)". Playwright bản mới chạy bộ đo bằng đúng tệp này.
+  $ds = Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='python.exe' OR Name='chrome.exe' OR Name='chrome-headless-shell.exe'" -ErrorAction SilentlyContinue
   foreach ($p in $ds) {
     $cmd = $p.CommandLine
     if (-not $cmd) { continue }
-    if ($cmd -notmatch 'pe_hsa|pe-hsa') { continue }
+    # Dòng lệnh của `chrome-headless-shell` KHÔNG mang chữ `pe_hsa`: Playwright trỏ nó vào một
+    # thư mục hồ sơ trong Temp. Nhận theo TÊN TỆP. Đánh đổi đã cân nhắc: nếu máy này còn dự án
+    # khác cũng dùng Playwright thì lượt `-Don` sẽ dọn cả của họ. Chấp nhận, vì trình duyệt
+    # người dùng là `chrome.exe` / `msedge.exe`, không bao giờ là tệp này — và một shell còn
+    # sống sau khi lượt đo kết thúc thì đằng nào cũng là rác.
+    if ($p.Name -ne 'chrome-headless-shell.exe' -and $cmd -notmatch 'pe_hsa|pe-hsa') { continue }
     if ($cmd -match $CAM) { continue }
     $loai = $null
     foreach ($r in $QUY_TAC) { if ($cmd -match $r.Dau) { $loai = $r; break } }
-    if (-not $loai -and $p.Name -eq 'chrome.exe') {
+    if (-not $loai -and ($p.Name -eq 'chrome.exe' -or $p.Name -eq 'chrome-headless-shell.exe')) {
       $loai = @{ Ten = 'Chromium (bộ đo)'; Cong = @() }
     }
     if (-not $loai) { continue }
