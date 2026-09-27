@@ -495,6 +495,13 @@ const KHONG_CAN_NGUOI_GOI = {
   // gõ vào đây kèm `X-Tick-Key` để chạy một nhịp hộp thư đi khi máy chủ gói miễn
   // phí vừa thức dậy. Không màn nào fetch nó, và không nên có màn nào fetch nó.
   '/api/noi-bo/tick': 'cron NGOÀI gọi kèm X-Tick-Key để chạy một nhịp hộp thư đi — không phải fetch từ trang',
+  // 27/09/2026, audit bảo mật. Hai đường BÁO LỖI của luồng đăng nhập Google: chính
+  // `django-allauth` `reverse` tới chúng khi lượt OAuth hỏng hoặc người dùng bấm huỷ ở
+  // màn của Google. Không màn nào của mình fetch chúng, và không nên có — nhưng gỡ đi
+  // thì một lỗi đăng nhập thành trang 500 không ai hiểu. Giữ đúng hai đường này là phần
+  // còn lại sau khi bỏ 26 đường tài khoản khác của thư viện (`config/urls.py`).
+  '/accounts/login/cancelled': 'allauth chuyển hướng tới khi người dùng huỷ ở màn Google',
+  '/accounts/login/error': 'allauth chuyển hướng tới khi lượt OAuth hỏng',
 };
 
 /* CHỜ MÀN — tuyến backend ĐÃ XONG và có phép kiểm, nhưng màn gọi nó CHƯA DỰNG.
