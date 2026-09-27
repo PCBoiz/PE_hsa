@@ -183,15 +183,29 @@ def _can_dong_ho():
     đi một. Trên máy dev mỗi vòng VN → Neon us-east-2 mất ~250 ms, nên chín vòng thành hơn
     hai giây.
 
-    Vì sao vẫn giữ câu này: nó đúng hướng và rẻ, và trên production phần CPU mới là phần
-    KHÔNG tự nhỏ đi — Render `ohio` cùng vùng với Neon nên mỗi vòng chỉ vài mili giây và
-    chín vòng chìm dưới nhiễu mạng, còn thời gian dựng HTML thì y nguyên.
+    ĐO TRÊN PRODUCTION 27/09/2026 — và đây là số đo đã còn thiếu:
 
-    Vì sao CHƯA xoá hết: xoá nốt nghĩa là đưa cả nhánh gửi (sinh chìa, ghi, xếp thư) ra
-    khỏi đường trả lời để hai nhánh cùng đúng MỘT vòng CSDL. Việc ấy làm được, nhưng nó
-    đổi thứ tự bảo đảm của một cửa đang chạy — và nên làm khi có số đo TỪ production, vì
-    số đo dev ở đây đo độ trễ đường truyền VN → Mỹ chứ không đo cái sẽ xảy ra với người
-    dùng thật. Ghi ra để không ai đọc hàm này rồi tưởng khe hở đã đóng.
+        nhánh CÓ tài khoản   : 0,422 · 0,456 · 0,865 s   (trung bình 0,581)
+        nhánh KHÔNG có       : 0,307 · 0,777 · 0,771 s   (trung bình 0,618)
+        khe hở               : −0,037 s
+
+    Nhánh gửi thư còn NHANH HƠN một chút, và độ tản trong chính mỗi nhánh (~0,45 s) lớn
+    gấp hơn mười lần khoảng cách giữa hai nhánh. Bấm giờ không tách được hai nhóm.
+
+    Tức là: con số 2 giây đo trên dev là ĐỘ TRỄ ĐƯỜNG TRUYỀN VN → Neon us-east-2 (~250 ms
+    một vòng, nhân chín vòng), không phải khe hở của mã. Trên production Render `ohio`
+    cùng vùng với Neon nên chín vòng ấy chìm dưới nhiễu mạng, đúng như dự đoán ghi ở đây
+    trước khi đo. Cách đo: mở một tài khoản thử `@example.com` bằng chính cửa đăng ký công
+    khai (dữ liệu production là giả, địa chỉ ấy nằm trong hàng rào thư) rồi bấm giờ ba lượt
+    mỗi nhánh, bỏ lượt mồi vì máy chủ gói miễn phí ngủ sau 15 phút.
+
+    Vì sao vẫn giữ câu này: trên máy dev — nơi mọi người trong nhóm thử tay — khe hở vẫn
+    còn, và phần CPU dựng HTML là phần KHÔNG tự nhỏ đi theo hạ tầng.
+
+    Vì sao KHÔNG viết lại nhánh gửi cho "sạch" hơn: viết lại nghĩa là đưa việc sinh chìa,
+    ghi chìa và xếp thư ra khỏi đường trả lời, tức đổi thứ tự bảo đảm của một cửa đang
+    chạy — để đổi lấy một khe hở mà số đo nói là không quan sát được ở nơi người dùng
+    thật đứng. Đó là đổi rủi ro thật lấy một cải thiện đo không ra.
 
     Cùng khe hở này đã được cân ở cửa tự đăng ký §73 (`tu_dang_ky._can_dong_ho`), nơi phần
     nặng là scrypt chứ không phải HTML.

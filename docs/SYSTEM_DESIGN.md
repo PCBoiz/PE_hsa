@@ -187,7 +187,12 @@ Mọi thứ khác sai thì sửa dữ liệu rồi chạy lại. Thư đã gửi
   cho giảng viên) — tách khi chạm.
 - **Chưa nối**: R2 (tải tệp), Zoom (bản ghi tự vào buổi), ZNS. Lược đồ đã chừa sẵn chỗ
   (`nguon='r2'`), nên nối vào là việc cấu hình, không phải việc thiết kế lại.
-- **Đồng hồ cửa quên mật khẩu chưa cân**: 2,04 s khi email có tài khoản so với 0,254 s khi không —
-  một người đo được thời gian vẫn suy ra được ai có tài khoản. Đã chặn phần lộ rõ nhất, phần còn
-  lại nằm ở 9 vòng gọi CSDL; ghi ở đây vì nó **chưa** xong, không phải đã xong.
+- ~~**Đồng hồ cửa quên mật khẩu chưa cân**~~ — **đã đo trên production 27/09 và khe hở không quan
+  sát được**: nhánh có tài khoản 0,581 s, nhánh không có 0,618 s, khe hở **−0,037 s**, trong khi độ
+  tản của chính mỗi nhánh là ~0,45 s. Con số 2,04 s so với 0,254 s đo trên **dev** là độ trễ đường
+  truyền VN → Neon us-east-2 (~250 ms một vòng × chín vòng), không phải khe hở của mã; trên Render
+  `ohio` cùng vùng với Neon thì chín vòng ấy chìm dưới nhiễu mạng. Giữ nguyên câu cân đồng hồ vì
+  trên máy dev khe hở vẫn còn. Số đo và cách đo ghi ở `backend/accounts/quen_mat_khau.py`.
+  **Một việc nhỏ còn lại**: lượt đo tự mở một tài khoản thử trên production
+  (`do.dong.ho.<mã>@example.com`, chưa xác thực) — xoá được bằng một lượt bấm ở màn Tài khoản.
 - **Học phí, công nợ** chưa làm — đang chờ bốn câu trả lời của TopHSA (việc K2).
