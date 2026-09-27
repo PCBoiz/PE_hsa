@@ -156,7 +156,15 @@ hiệu ứng lúc này là đi ngược điều người dùng vừa kêu.
 
 **Khi nào mở lại**: sau khi các màn đầu đạt chỉ tiêu ở
 `docs/HUONG_GIAO_DIEN_2026-09-26.md` §5 (Giảng dạy ≤ 450 từ, ≤ 6 ô số, 0 câu dài
-quá 12 từ). Lúc ấy chuyển động có chỗ đứng đúng của nó: dẫn mắt giữa hai trạng
+quá 12 từ).
+
+**Đo lại 27/09/2026 — vẫn CHƯA mở được, nhưng đã gần hơn một bước.** Màn Giảng dạy
+của giảng viên **456 → 434 từ** (đạt ≤ 450 lần đầu) sau khi bỏ dòng liệt kê tên sáu
+lớp ở đầu màn. Còn lại: Giảng dạy 584 từ · Toàn trung tâm 649 từ / 14 ô số đầu màn ·
+Trang của tôi 375 từ; câu dài quá 12 từ vẫn còn 21 · 13 · 4. Trong cùng lượt phải sửa
+chính THƯỚC ĐO: nó đếm mọi con số trong bảng thành "ô số", nên Toàn trung tâm bị chấm
+46 trong khi chỉ tiêu ≤ 6 — mà §4 của chính tài liệu ấy lại bảo GIỮ bảng. Thước đo đòi
+xoá đúng thứ thiết kế muốn giữ thì mọi lượt gọt sau đó đều gọt nhầm chỗ. Lúc ấy chuyển động có chỗ đứng đúng của nó: dẫn mắt giữa hai trạng
 thái, không phải trang trí. `emilkowalski/skills` là nguồn tốt nhất trong nhóm
 cho việc ấy.
 
