@@ -169,6 +169,7 @@
         "backend/teaching/bao_cao_lop_pdf.py",
         "backend/teaching/co_so_hoc_phi.py",
         "backend/teaching/cham_cong.py",
+        "backend/teaching/bao_cao_cheo.py",
         "backend/teaching/viec_hom_nay.py",
         "backend/bao_cao/**/*.py"
       ],
@@ -176,6 +177,7 @@
         "frontend/src/app/(standalone)/giang-day/page.tsx",
         "frontend/src/app/(standalone)/giang-day/bao-cao/**",
         "frontend/src/app/(standalone)/quan-tri/tong-quan/**",
+        "frontend/src/app/(standalone)/quan-tri/bao-cao-mon/**",
         "frontend/src/app/(standalone)/quan-tri/cham-cong/**",
         "frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/**",
         "frontend/src/components/ChonDinhDang.tsx"

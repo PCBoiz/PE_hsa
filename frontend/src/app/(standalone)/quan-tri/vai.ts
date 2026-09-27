@@ -49,6 +49,12 @@ export const TABS: readonly Tab[] = [
   // Học vụ vào được từ 14/09/2026, theo đúng quyết định 01/09 ("báo cáo trung
   // tâm"); trước đó mã khoá hẹp hơn quyết định. Xem docstring `AdminOverviewView`.
   { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // `IsAdminOrAcademic` — teaching/bao_cao_cheo.py::BaoCaoCheoView (27/09/2026, dòng 6):
+  // bảng chéo MÔN × LỚP, trả lời "môn nào đang tụt, lớp nào trong môn ấy". Đặt ngay sau
+  // "Toàn trung tâm" vì cùng loại (số gộp cả trung tâm) và người mở là cùng một người.
+  // `target` chứ không `bar-chart`: dưới 70rem `shell.css` ẩn nhãn chữ, nên hai tab liền
+  // nhau cùng hình là hai ô y hệt nhau.
+  { href: '/quan-tri/bao-cao-mon', label: 'Kết quả theo môn', icon: 'target', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/admin_users.py::AdminUsersView. Học vụ vào
   // được từ 23/09/2026 (anh Sơn chốt: học vụ TẠO tài khoản và SỬA hồ sơ học
   // viên), nhưng máy chủ chỉ trả tài khoản vai Học viên cho họ. Đổi vai trò và

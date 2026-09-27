@@ -7,6 +7,58 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 27/09/2026 — Trả lời được "môn nào đang tụt, lớp nào trong môn ấy"
+
+Nhánh cục bộ `agent/bc`. Ô CUỐI còn "MỘT PHẦN" của dòng 6: khách hỏi được "lớp này em nào
+chưa nộp bài" và "khoá này điểm thế nào", nhưng không hỏi được câu ở GIỮA — so MÔN với MÔN.
+Muốn biết thì phải mở ~400 lớp rồi tự gộp trong đầu, tức thực tế là không ai biết.
+
+`GET /api/admin/bao-cao-cheo` + trang "Kết quả theo môn". CHỈ ĐỌC, **không một dòng DDL** —
+mọi cột đã có, cái thiếu là một TRỤC.
+
+**Thứ đáng ghi lại là phép cộng.** `assignments.max_score` là thang của RIÊNG từng bài, nên
+cộng điểm thô rồi chia là sai theo một cách đặc biệt khó thấy: bài thang 10 được 10 (tuyệt
+đối) và bài thang 100 được 50 (nửa vời) cộng thô ra 30, sự thật là 75. Và con số sai ấy
+**chạy đúng hướng** — môn nào hay dùng thang 100 trông càng tệ — nên nó không trông như lỗi,
+nó trông như một phát hiện. Cùng lẽ ấy: dòng tổng cộng từ SỐ THÔ, không lấy trung bình các
+phần trăm cấp lớp (trung bình của trung bình cho mỗi lớp một phiếu bất kể lớp 3 em hay 30).
+
+**Bộ kiểm bắt được lỗi ở đúng chỗ nó tồn tại để bắt.** Lượt ĐỎ trước: 19/19 thất bại. Lượt
+đầu sau khi có mã: 16 đỏ / 3 xanh — và ba test xanh là ba test KHÔNG đi qua đường tính số
+(403, ngày sai dạng, `dinh_dang` lạ). Lỗi thật: `_cong` đọc `_tongDiemChuan` trên dòng đã
+qua `_chot`, mà hàm ấy lọc mọi khoá `_` → `KeyError` → HTTP 500 cho cả trang. Sửa bằng cách
+cho `_cong` nhận bộ đếm THÔ. Chốt 19/19.
+
+**Cổng unit Node bắt hai lỗi mà tôi tự tin là không có**: một `hint` 100 ký tự (trần 90) và
+chữ "hợp phần" trong câu EmptyState — cổng thuật ngữ đòi MỘT tên là "môn học". Cả hai nằm
+trong đúng một câu tôi viết cho tử tế.
+
+**Hai thứ worktree agent sẽ vấp lại**: `scripts/dot_bien.py` gọi `backend/.venv/Scripts/
+python.exe` tính từ gốc repo, mà worktree không có venv → `FileNotFoundError` ngay ở lượt
+nền, sau khi nó đã in cảnh báo "đang sửa tệp" (may là chưa ghi đột biến nào). `tsc` cũng
+cần `node_modules`. Tôi nối cả hai bằng junction tới bản chính; nếu chuyện này lặp lại thì
+`dot_bien.py` nên rơi về `sys.executable`.
+
+**Không đo màn, có chủ ý**: máy còn 2,3 GB trống, và một `next dev` đã từng giữ 3 GB. Cũng
+không dựng Django 9400 — bộ kiểm gọi view trực tiếp nên máy chủ HTTP là RAM tiêu không việc.
+Sáu bước cần đo ở `docs/agent/BAO_CAO_BAO_CAO_CHEO.md` §7; dòng 6 CHƯA được tick "CÓ".
+
+**Bàn giao giữa chừng, và số chốt (agent thứ hai).** Agent đầu hết hạn mức phiên khi mã còn
+NẰM NGOÀI GIT — 935 dòng chưa commit mà chưa ai biết có chạy được không. Lượt tiếp nhận:
+chạy thử TRƯỚC khi sửa, và bộ kiểm **19/19 xanh ngay** — không phải sửa một dòng mã nào.
+Thứ duy nhất hỏng là `cau_truc.py --kiem` ĐỎ vì `docs/CAU_TRUC_MA.md` chưa được sinh lại
+sau khi thêm tệp; sinh lại là xong, nợ ghi chéo vẫn 11 (không phình).
+
+Số chốt: **đột biến 14/14 bị giết đúng chỗ** (mỗi cái làm đỏ đúng test đã khai ở khoá
+`cho`, không cái nào lọt), **hồi quy `pytest teaching/` 661 xanh / 0 đỏ** (1 g 25 ph).
+
+**Bài học quy trình, không phải bài học kỹ thuật**: thứ suýt mất không phải mã khó viết —
+nó là mã ĐÚNG, xanh ngay lượt đầu — mà là mã chưa được `git add`. Hai lượt chạy dài của tôi
+tốn 2 g 45 ph; nếu commit đợi tới sau chúng thì một lần đứt phiên nữa là mất trắng lần thứ
+hai. Nên lượt này commit NGAY khi nhóm cổng nhanh (ruff, check, tsc, eslint, unit Node,
+bản đồ, tầng vai, cấu trúc) xanh, rồi mới chạy hai lượt dài. Đột biến và hồi quy xác nhận
+một commit đã có còn hơn bảo vệ một commit chưa tồn tại.
+
 ## 27/09/2026 — §58 dạy thay một buổi, và một cách mất việc mà tôi chưa từng gặp
 
 Giảng viên gắn theo LỚP, nhưng một buổi lẻ có thể do người khác đứng. `class_sessions.
