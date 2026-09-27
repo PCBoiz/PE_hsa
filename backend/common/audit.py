@@ -45,6 +45,11 @@ USER_PROFILE = 'user.profile'
 #: `USER_PASSWORD_RESET` (nhân sự cấp mật khẩu tạm cho người khác): ở đây
 #: người thực hiện chính là chủ tài khoản, nên `actor` = `target`.
 USER_PASSWORD_SELF_RESET = 'user.password_self_reset'
+#: Xoá CỨNG tài khoản (27/09/2026, `teaching/admin_users.py::AdminUserDeleteView`).
+#: Khác `USER_STATUS` (khoá — giữ nguyên dữ liệu): đây là DELETE thật, không có
+#: đường hoàn tác. `detail` giữ số dòng mất theo từng bảng để còn tra khi có
+#: khiếu nại "sao dữ liệu của em X biến mất".
+USER_DELETE = 'user.delete'
 
 CLASS_CREATE = 'class.create'
 CLASS_UPDATE = 'class.update'

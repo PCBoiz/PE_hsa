@@ -842,9 +842,14 @@ ALTER TABLE users ADD CONSTRAINT users_status_check
 -- 'finished' và 'cancelled' chưa có dòng nào dùng, nhưng để sẵn vì lớp kết thúc
 -- và lớp huỷ là hai con số khác nhau khi trung tâm báo tỉ lệ — cùng lý do đã
 -- ghi cho `class_members.leave_reason` ở §36.
+--
+-- 'paused' NỚI THÊM 25/09/2026 (§63) — SỬA NGAY TẠI ĐÂY chứ không chỉ ở §63:
+-- cùng bẫy đã ghi cho `users_role_check` ở trên (SỬA 18/09/2026) —
+-- `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau` (common/tests.py) đỏ nếu
+-- hai bản ADD CONSTRAINT cùng tên mà lệch chữ.
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
 ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled'));
+    CHECK (status IN ('active', 'finished', 'cancelled', 'paused'));
 
 -- ── Khoá ngoại còn thiếu ────────────────────────────────────────────────────
 -- Năm bảng dưới đây trỏ tới `users`/`courses`/`lessons` mà KHÔNG có khoá ngoại,
@@ -1011,10 +1016,13 @@ ALTER TABLE class_members ADD CONSTRAINT class_members_pkey PRIMARY KEY (id);
 -- §31 đã nhận ra đúng điều này cho `users.status` rồi tách ra; lý lẽ đó chưa
 -- được áp cho chỗ này.
 -- NULL = chưa rời lớp. 'transferred' = chuyển sang lớp khác, không phải bỏ.
+--
+-- 'reserved' NỚI THÊM 25/09/2026 (§63, bảo lưu) — SỬA NGAY TẠI ĐÂY, cùng lý do
+-- và cùng phép kiểm đã ghi ở `classes_status_check` phía trên.
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS leave_reason TEXT;
 ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
 ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
-    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred'));
+    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));
 
 -- ── Đợt học ─────────────────────────────────────────────────────────────────
 -- Chưa có khái niệm ĐỢT, nên "đợt 1/2027 so với đợt 2/2027" phải suy từ
@@ -1932,3 +1940,54 @@ CREATE INDEX IF NOT EXISTS idx_classes_syllabus_version ON classes(syllabus_vers
 ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
     REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabus_session_id);
+
+-- ── §75 · XOÁ TÀI KHOẢN — SỬA 3 KHOÁ NO ACTION CHẶN XOÁ CỨNG (Nhân, 27/09/2026) ──
+-- Yêu cầu TopHSA (quản lý người dùng): "Xóa tài khoản" — anh Sơn chốt XOÁ CỨNG
+-- (DELETE thật, không phải đánh dấu). Trước khi mở đường DELETE FROM users,
+-- rà lại TOÀN BỘ 56 khoá ngoại đang trỏ vào users(id) — con số đo ngày
+-- 27/09/2026, đã tăng nhiều so với lúc §42/§43 viết vì cả loạt tính năng của
+-- luồng khác đã thêm cột mới (`can_ho_tro_by`, `syllabus_materials.uploaded_by`...).
+--
+-- BA nhóm luật đã có từ trước ĐỀU ĐÚNG Ý NGHĨA, không đụng ở đây:
+--   · CASCADE (32 khoá) — dữ liệu CỦA CHÍNH người đó (điểm danh, tiến độ học,
+--     bài nộp, khảo sát...). Xoá tài khoản thì dữ liệu ấy xoá theo là đúng.
+--   · SET NULL (21 khoá) — cột "AI đã tạo/chấm/tải lên" một thứ KHÔNG THUỘC
+--     RIÊNG người đó (bài tập, buổi học, học liệu vẫn còn giá trị cho lớp
+--     dùng tiếp). Xoá người tạo chỉ nên mất dấu "ai tạo", không mất luôn bài.
+--
+-- BA khoá NO ACTION SAU ĐÂY đang SAI nhóm — cùng bản chất "ai đã tạo/gửi/từ
+-- chối" như nhóm SET NULL ở trên, nhưng bị bỏ sót khi viết (§47/§50 chỉ lo
+-- CASCADE theo EM học viên — `parent_report_links.user_id` — mà quên vế NHÂN
+-- SỰ tạo ra nó). Để NO ACTION thì CHẶN ĐỨNG mọi lần xoá một tài khoản nhân sự
+-- đã từng tạo/gửi dù chỉ một link/một lần gửi báo cáo — tức gần như không xoá
+-- được ai đang làm việc. Đổi sang SET NULL: xoá người tạo thì tờ báo cáo của
+-- EM vẫn còn nguyên (đã CASCADE đúng theo em), chỉ mất dấu "ai tạo/ai gửi".
+--
+-- CẢ BA CỘT ĐANG NOT NULL — phải nới trước, không thì SET NULL tự vỡ lúc chạy
+-- (đo trực tiếp trên dev 27/09/2026 trước khi viết, không đoán).
+ALTER TABLE parent_report_links ALTER COLUMN created_by DROP NOT NULL;
+ALTER TABLE parent_report_links DROP CONSTRAINT IF EXISTS parent_report_links_created_by_fkey;
+ALTER TABLE parent_report_links ADD CONSTRAINT parent_report_links_created_by_fkey
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE parent_report_optout ALTER COLUMN by_user_id DROP NOT NULL;
+ALTER TABLE parent_report_optout DROP CONSTRAINT IF EXISTS parent_report_optout_by_user_id_fkey;
+ALTER TABLE parent_report_optout ADD CONSTRAINT parent_report_optout_by_user_id_fkey
+    FOREIGN KEY (by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE parent_report_sends ALTER COLUMN requested_by DROP NOT NULL;
+ALTER TABLE parent_report_sends DROP CONSTRAINT IF EXISTS parent_report_sends_requested_by_fkey;
+ALTER TABLE parent_report_sends ADD CONSTRAINT parent_report_sends_requested_by_fkey
+    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL;
+
+-- BA khoá NO ACTION CÒN LẠI (account_emailaddress.user_id,
+-- socialaccount_socialaccount.user_id, token_blacklist_outstandingtoken
+-- .user_id) CỐ Ý KHÔNG đụng: đó là danh tính xác thực/token của CHÍNH người
+-- bị xoá (email xác minh, tài khoản Google/Facebook liên kết, JWT đã cấp) —
+-- không ai khác dùng chung nên CASCADE mới đúng nghĩa, không phải SET NULL.
+-- Ba bảng đó do allauth/SimpleJWT quản migration (managed=True, xem
+-- accounts.apps/token_blacklist trong INSTALLED_APPS) — sửa DDL của chúng ở
+-- legacy_schema.sql là để hai nguồn migration cãi nhau về cùng một bảng.
+-- Muốn đổi luật xoá của ba bảng ấy thì viết migration Django riêng, không
+-- phải một mục ở đây.
+

@@ -955,6 +955,142 @@ class AdminUserStatusView(APIView):
         })
 
 
+# ── 4. Xoá tài khoản ────────────────────────────────────────────────────────
+
+class AdminUserDeleteView(APIView):
+    """DELETE /api/admin/users/<id>?confirm=1 — xoá CỨNG tài khoản.
+
+    Yêu cầu TopHSA (quản lý người dùng, 2.x) "Xóa tài khoản" — anh Sơn chốt
+    27/09/2026: XOÁ CỨNG (DELETE thật), khác hẳn "khoá" ở ``AdminUserStatusView``
+    (giữ nguyên dữ liệu, chỉ chặn đăng nhập). Xem §75 trong
+    ``sql/legacy_schema.sql`` cho phần rà 56 khoá ngoại trỏ vào ``users(id)`` đã
+    làm trước khi mở đường này.
+
+    ĐÒI ``?confirm=1`` khi tài khoản còn dữ liệu — cùng khuôn với
+    ``AdminClassDetailView.delete()``: 32 bảng ``ON DELETE CASCADE`` nghĩa là
+    một câu DELETE này quét sạch điểm danh, bài nộp, kết quả thi thử, tiến độ
+    học... của CẢ ĐỜI tài khoản, không có bản sao. Không đếm đủ 32 bảng ở đây
+    (hộp thoại xác nhận dài 32 dòng không ai đọc); chỉ đếm những bảng người
+    dùng thật sự quan tâm khi cân nhắc bấm xoá, đủ để họ hình dung được sức
+    công phá của thao tác.
+
+    Ba khoá ``NO ACTION`` do Django/allauth/SimpleJWT quản (không đụng vào DDL
+    của họ, xem chú thích §75 trong ``legacy_schema.sql``) chặn thẳng câu DELETE
+    nếu còn dòng: mọi tài khoản từng đăng nhập đều có dòng trong
+    ``token_blacklist_outstandingtoken`` (SimpleJWT cấp access/refresh token),
+    và mọi tài khoản đăng ký qua allauth đều có dòng ``account_emailaddress`` —
+    tức HẦU HẾT tài khoản thật. Dọn tay ba bảng đó ngay trước câu DELETE cuối,
+    trong cùng một giao dịch: dữ liệu của chúng vô nghĩa khi chủ tài khoản đã
+    mất (không phải kiểu "ai đã làm" như các cột SET NULL), nên xoá theo là
+    đúng ngữ nghĩa, không phải phá luật.
+    """
+    permission_classes = [IsAdminRole]
+
+    def delete(self, request, user_id):
+        target = q1('SELECT id, name, email, role, status FROM users WHERE id=%s',
+                    (user_id,))
+        if not target:
+            return Response({'error': 'Không tìm thấy tài khoản này.'}, status=404)
+
+        if int(user_id) == request.user.id:
+            # Cùng lý do với AdminUserStatusView: xoá xong thì token của chính
+            # phiên đang gọi cũng biến mất theo, không còn cách nào gọi tiếp
+            # được nữa kể cả để huỷ thao tác.
+            return Response({'error': 'Không tự xoá tài khoản của chính mình được. '
+                                      'Nhờ một quản trị viên khác làm việc này.'},
+                            status=400)
+
+        if target['role'] == ROLE_ADMIN and last_active_admin(user_id):
+            return Response({'error': 'Đây là quản trị viên đang hoạt động cuối cùng. '
+                                      'Phong quyền cho một người khác trước đã.'},
+                            status=400)
+
+        # Đếm những bảng CASCADE người dùng thật sự cần biết trước khi bấm xoá
+        # hẳn — không phải cả 32 bảng, chỉ những gì đo được "sức nặng" của tài
+        # khoản: lớp đã tham gia, buổi đã điểm danh, bài đã nộp, kết quả thi
+        # thử (nội bộ lẫn nhập từ PDF), tiến độ học và tương tác cộng đồng.
+        # Alias SQL viết snake_case (Postgres hạ chữ hoa thành thường nếu không
+        # có dấu ngoặc kép quanh tên cột — camelCase không dấu ngoặc sẽ lặng lẽ
+        # méo thành chữ thường hết, ví dụ `mockAttempts` -> `mockattempts`), rồi
+        # đổi sang camelCase khi dựng JSON trả về, đúng quy ước phía trước.
+        dem = q1('''SELECT
+                (SELECT COUNT(*) FROM class_members WHERE user_id=%s)      AS class_memberships,
+                (SELECT COUNT(*) FROM attendance WHERE user_id=%s)         AS attendance,
+                (SELECT COUNT(*) FROM submissions WHERE user_id=%s)        AS submissions,
+                (SELECT COUNT(*) FROM mock_attempts WHERE user_id=%s)      AS mock_attempts,
+                (SELECT COUNT(*) FROM ket_qua_thi_ngoai WHERE user_id=%s)  AS external_exam_results,
+                (SELECT COUNT(*) FROM roadmap_progress WHERE user_id=%s)   AS roadmap_progress,
+                (SELECT COUNT(*) FROM notifications WHERE user_id=%s)     AS notifications,
+                (SELECT COUNT(*) FROM comments WHERE user_id=%s)          AS comments,
+                (SELECT COUNT(*) FROM posts WHERE user_id=%s)             AS posts
+            ''', (user_id,) * 9)
+        counts = {
+            'classMemberships': dem['class_memberships'],
+            'attendance': dem['attendance'],
+            'submissions': dem['submissions'],
+            'mockAttempts': dem['mock_attempts'],
+            'externalExamResults': dem['external_exam_results'],
+            'roadmapProgress': dem['roadmap_progress'],
+            'notifications': dem['notifications'],
+            'comments': dem['comments'],
+            'posts': dem['posts'],
+        }
+        loss = sum(counts.values())
+
+        # Hai chỗ SET NULL đáng nói ra dù không MẤT dữ liệu: lớp mất giảng
+        # viên (như AdminUserStatusView đã cảnh báo khi KHOÁ) và học viên mất
+        # người tư vấn (comment §51 trong legacy_schema.sql: cố ý SET NULL để
+        # "xoá tài khoản người tư vấn không được xoá mất hồ sơ học viên", nhưng
+        # cố ý không có nghĩa là im lặng — học vụ cần biết để gán lại).
+        orphaned_classes = q('SELECT id, code, name FROM classes WHERE teacher_id=%s '
+                             'ORDER BY name', (user_id,))
+        orphaned_students = q('SELECT id, name FROM users WHERE consultant_id=%s '
+                              'ORDER BY name', (user_id,))
+
+        confirm = str(request.query_params.get('confirm') or '').strip().lower() \
+            in ('1', 'true', 'yes')
+        if (loss or orphaned_classes or orphaned_students) and not confirm:
+            return Response({
+                'error': 'Tài khoản "%s" còn dữ liệu. Xoá là mất hẳn, không khôi phục '
+                         'được.' % (target['name'] or target['email']),
+                'willDelete': counts,
+                'orphanedClasses': [dict(c) for c in orphaned_classes],
+                'orphanedStudents': [dict(s) for s in orphaned_students],
+                'needsConfirm': True,
+                'hint': 'Muốn ngừng cho tài khoản đăng nhập mà vẫn giữ dữ liệu thì khoá '
+                        'tài khoản (PATCH .../status) thay vì xoá.',
+            }, status=409)
+
+        ten = _user_label(target, user_id)
+
+        with transaction.atomic():
+            # Ba bảng Django/allauth/SimpleJWT quản — xem docstring lớp này.
+            # Đặt TRƯỚC câu DELETE FROM users: khoá NO ACTION của chúng chặn
+            # thẳng câu đó nếu còn dòng, không tự dọn theo được.
+            x('DELETE FROM token_blacklist_outstandingtoken WHERE user_id=%s', (user_id,))
+            x('DELETE FROM socialaccount_socialaccount WHERE user_id=%s', (user_id,))
+            x('DELETE FROM account_emailaddress WHERE user_id=%s', (user_id,))
+            x('DELETE FROM users WHERE id=%s', (user_id,))
+
+            audit.record(request, audit.USER_DELETE, target_type='user', target_id=user_id,
+                         target_label=ten,
+                         summary='Xoá CỨNG tài khoản "%s" (%s) — mất %d dòng dữ liệu liên '
+                                 'quan, %d lớp mất giảng viên, %d học viên mất người tư vấn.'
+                                 % (ten, target['role'], loss, len(orphaned_classes),
+                                    len(orphaned_students)),
+                         detail=dict(role=target['role'], email=target['email'],
+                                     confirmed=confirm, **counts,
+                                     orphanedClasses=[c['id'] for c in orphaned_classes],
+                                     orphanedStudents=[s['id'] for s in orphaned_students]))
+
+        return Response({
+            'ok': True,
+            'deleted': counts,
+            'orphanedClasses': [dict(c) for c in orphaned_classes],
+            'orphanedStudents': [dict(s) for s in orphaned_students],
+        })
+
+
 # ── 5. Nhật ký kiểm toán ────────────────────────────────────────────────────
 
 class AdminAuditView(APIView):
