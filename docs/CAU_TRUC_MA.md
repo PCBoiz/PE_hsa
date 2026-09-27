@@ -17,7 +17,7 @@
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
 | [lop_hoc](#lop_hoc) | Lớp học | 5 | 11 tệp · 2825 dòng | 22 tệp · 4519 dòng |
-| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2652 dòng | 11 tệp · 2818 dòng |
+| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2667 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1108 dòng | 7 tệp · 1858 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1856 dòng | 8 tệp · 1440 dòng |
@@ -26,10 +26,10 @@
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
-| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2161 dòng | 19 tệp · 2015 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6349 dòng | 68 tệp · 6988 dòng |
+| [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2166 dòng | 19 tệp · 2015 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6402 dòng | 68 tệp · 6988 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13781 dòng |
-| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 612 dòng | 4 tệp · 477 dòng |
+| [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 628 dòng | 4 tệp · 477 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
 | [cong_cu](#cong_cu) | Công cụ dữ liệu mẫu | 0 | 3 tệp · 1385 dòng | 0 tệp · 0 dòng |
 
@@ -119,7 +119,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/lich/ics.py` | 152 dòng | — |
 | `backend/lich/urls.py` | 11 dòng | — |
 | `backend/lich/views.py` | 121 dòng | — |
-| `backend/teaching/ban_ghi.py` | 255 dòng | `recording_views` |
+| `backend/teaching/ban_ghi.py` | 270 dòng | `recording_views` |
 | `backend/teaching/buoi_bu.py` | 164 dòng | `class_sessions`, `session_participants` |
 | `backend/teaching/lich.py` | 117 dòng | — |
 | `backend/teaching/ngay_le.py` | 37 dòng | — |
@@ -402,7 +402,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/accounts/models.py` | 123 dòng | — |
 | `backend/accounts/oauth.py` | 94 dòng | `users` |
 | `backend/accounts/quen_mat_khau.py` | 290 dòng | `password_reset_tokens`, `users` |
-| `backend/accounts/tu_dang_ky.py` | 477 dòng | `password_reset_tokens`, `users` |
+| `backend/accounts/tu_dang_ky.py` | 482 dòng | `password_reset_tokens`, `users` |
 | `backend/accounts/urls.py` | 29 dòng | — |
 | `backend/accounts/validators.py` | 54 dòng | — |
 | `backend/accounts/views.py` | 682 dòng | *`roadmaps`*, *`surveys`*, *`user_follows`*, `users` |
@@ -455,7 +455,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/common/keepalive.py` | 40 dòng | — |
 | `backend/common/logging.py` | 82 dòng | — |
 | `backend/common/luoc_do_sql.py` | 587 dòng | — |
-| `backend/common/mail.py` | 234 dòng | — |
+| `backend/common/mail.py` | 266 dòng | — |
 | `backend/common/management/__init__.py` | 0 dòng | — |
 | `backend/common/management/commands/__init__.py` | 0 dòng | — |
 | `backend/common/management/commands/backfill_learning_events.py` | 252 dòng | — |
@@ -476,7 +476,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/config/__init__.py` | 0 dòng | — |
 | `backend/config/asgi.py` | 16 dòng | — |
 | `backend/config/settings.py` | 497 dòng | — |
-| `backend/config/urls.py` | 53 dòng | — |
+| `backend/config/urls.py` | 74 dòng | — |
 | `backend/config/wsgi.py` | 16 dòng | — |
 | `backend/inspectdb_snapshot.py` | 340 dòng | — |
 | `backend/manage.py` | 22 dòng | — |
@@ -674,7 +674,7 @@ JS cũ (chỉ co): 11 tệp · 8526 dòng — `course_detail.js`, `dashboard.js`
 | `backend/forum/apps.py` | 6 dòng | — |
 | `backend/forum/models.py` | 57 dòng | — |
 | `backend/forum/urls.py` | 12 dòng | — |
-| `backend/forum/views.py` | 537 dòng | `comments`, `posts` |
+| `backend/forum/views.py` | 553 dòng | `comments`, `posts` |
 
 | Tệp frontend | Dòng |
 |---|---|
