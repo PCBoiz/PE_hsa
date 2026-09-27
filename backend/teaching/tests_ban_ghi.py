@@ -17,8 +17,16 @@ biết là không xem được — đó mới là lỗ to hơn cái thống kê.
   2. Bấm mở thì ghi nhận; bấm lại KHÔNG đẻ dòng mới, chỉ cộng `lan_mo`.
   3. Buổi chưa có link thì không ghi nhận gì (không đếm lượt mở của một thứ
      không tồn tại).
-  4. Người ngoài lớp mở được đường dẫn ấy → 403, và KHÔNG có dòng nào được ghi.
-  5. Trợ giảng của lớp xem được ai đã mở / chưa mở. Người ngoài lớp → 403.
+  4. Người ngoài lớp mở được đường dẫn ấy → **404**, và KHÔNG có dòng nào được ghi.
+  5. Trợ giảng của lớp xem được ai đã mở / chưa mở. Người ngoài lớp → **404**.
+
+  (4 và 5 là 403 cho tới 27/09/2026. Audit bảo mật đo được: buổi CÓ THẬT của lớp
+  khác trả 403 trong khi buổi KHÔNG TỒN TẠI trả 404 — chênh lệch ấy đếm được từ
+  ngoài và nó nói ra buổi nào có thật. Luật của dự án là 404 cho cả hai
+  (`docs/ERP_TOPHSA_2026-08-24.md` dòng 48). Phép kiểm viết lại cho khớp luật
+  mới chứ KHÔNG xoá — nó vẫn là cái chốt giữ "người ngoài lớp không ghi được"
+  (RULES §13). Từ chối theo VAI thì vẫn 403: xem hai phép kiểm học viên gõ vào
+  cửa `IsTeachingStaff`.)
 
 Chạy trên CSDL thật, giao dịch CUỘN LẠI (`conftest.py`); chỉ đếm dữ liệu của
 chính mình, mọi lời gọi đi qua URL thật.
@@ -146,7 +154,7 @@ def test_nguoi_ngoai_lop_khong_ghi_duoc_luot_mo():
     lop = _lop('Lớp riêng', gv)
     buoi = _buoi(lop)
 
-    assert _the(ngoai).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 403
+    assert _the(ngoai).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 404
     assert _so_dong(buoi) == 0, 'bị từ chối thì không được ghi gì'
 
 
@@ -180,7 +188,7 @@ def test_nguoi_ngoai_lop_khong_xem_duoc_thong_ke():
     lop = _lop('Lớp không phải của TG ấy', gv)
     _buoi(lop)
 
-    assert _the(tg_ngoai).get('/api/teach/classes/%d/ban-ghi' % lop).status_code == 403
+    assert _the(tg_ngoai).get('/api/teach/classes/%d/ban-ghi' % lop).status_code == 404
 
 
 def test_em_khong_xem_duoc_thong_ke_cua_ca_lop():
@@ -306,7 +314,7 @@ def test_nguoi_ngoai_lop_khong_bao_loi_duoc():
     lop = _lop('Lớp kín báo lỗi', gv)
     buoi = _buoi(lop)
 
-    assert _the(ngoai).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 403
+    assert _the(ngoai).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 404
     assert _chuong(gv.id) == []
 
 
@@ -373,7 +381,7 @@ def test_buoi_bu_em_khong_du_thi_khong_ghi_duoc_luot_mo():
     buoi = _buoi_bu(lop, [du])
 
     assert _the(du).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 200
-    assert _the(khong).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 403
+    assert _the(khong).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 404
     assert _so_dong(buoi) == 1
 
 
@@ -387,8 +395,8 @@ def test_em_da_roi_lop_khong_con_ghi_duoc_gi():
        'WHERE class_id = %s AND user_id = %s RETURNING id', (lop, em.id))
     buoi = _buoi(lop)
 
-    assert _the(em).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 403
-    assert _the(em).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 403
+    assert _the(em).post('/api/sessions/%d/ban-ghi/da-mo' % buoi).status_code == 404
+    assert _the(em).post('/api/sessions/%d/ban-ghi/bao-loi' % buoi).status_code == 404
     assert _so_dong(buoi) == 0
 
 

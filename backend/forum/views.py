@@ -184,11 +184,27 @@ def _paging(request):
 
 
 def _can_modify(table, row_id, user):
-    """Chủ sở hữu HOẶC admin mới được sửa/xóa. Trả (row, (body, status)|None)."""
+    """Chủ sở hữu HOẶC admin mới được sửa/xóa. Trả (row, (body, status)|None).
+
+    HÀNG RÀO §75 CHẠY TRƯỚC HÀNG RÀO SỞ HỮU (vá 27/09/2026). Trước hôm nay hàm này
+    chỉ hỏi "có phải của anh không", nên bài trong diễn đàn RIÊNG của một lớp mà
+    người gọi không thuộc vẫn nhận 403 — trong khi một id không tồn tại nhận 404.
+    Đo được: em lớp A gõ `PUT /api/posts/<id bài lớp B>` ra 403, gõ id bịa ra 404.
+    Chênh lệch ấy đếm được bằng một vòng lặp và nó nói ra "bài này có thật", tức
+    đúng thứ mà chú thích `_KHONG_THAY` ở đầu tệp đã quyết là không nói.
+
+    Đặt ở ĐÂY chứ không ở bốn thân hàm gọi nó: mọi cửa SỬA/XOÁ của diễn đàn đều đi
+    qua hàm này, nên một cửa mới sau này tự có hàng rào (RULES §7 — không hai nguồn).
+    Cửa ĐỌC đã có `_chan_bai` riêng từ §75.
+    """
     row = q1(f'SELECT user_id FROM {table} WHERE id=%s', (row_id,))
     if not row:
         label = 'bài viết' if table == 'posts' else 'bình luận'
         return None, ({'error': f'Không tìm thấy {label}'}, 404)
+    chan = (_chan_bai(user, row_id) if table == 'posts'
+            else _chan_binh_luan(user, row_id))
+    if chan is not None:
+        return None, (chan.data, 404)
     if row['user_id'] != user.id and not is_admin(user):
         return None, ({'error': 'Không có quyền chỉnh sửa nội dung này'}, 403)
     return row, None
