@@ -14,6 +14,7 @@ from teaching import (
                       exports,
                       ho_so,
                       hoc_lieu,
+                      hv_xem_du,
                       lich,
                       lich_su_lop,
                       lien_he_phu_huynh,
@@ -119,6 +120,9 @@ urlpatterns = [
     path('api/assignments', assignments.MyAssignmentsView.as_view()),
     # Lớp của chính em: buổi tới, link phòng, chuyên cần của mình. Chỉ đọc.
     path('api/lop-cua-toi', lop_cua_toi.LopCuaToiView.as_view()),
+    # Xem lại ĐỦ cả khoá — bản ghi buổi học và học liệu, có ô tìm và phân trang theo khoá
+    # (bảng phân rã dòng 29, 30). Thẻ lớp ở trên chỉ giữ bốn dòng gần nhất. Chỉ đọc.
+    path('api/lop-cua-toi/<int:class_id>/xem-du', hv_xem_du.XemDuLopView.as_view()),
 
     # ── Xuất dữ liệu (đặc tả ERP §6) ──
     path('api/teach/classes/<int:class_id>/export/progress.csv',

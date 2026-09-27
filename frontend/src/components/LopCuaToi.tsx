@@ -408,6 +408,11 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                     nguyên và em không báo được link thứ hai — màn vẫn nói "Đã
                     báo, cảm ơn em." mà chẳng gửi gì (agent soát 26/09). */}
                 {vuaMo !== null && <BaoLoiBanGhi key={vuaMo} sessionId={vuaMo} />}
+                {' '}
+                {/* Thẻ chỉ giữ BỐN buổi gần nhất (`lop_cua_toi.py` SO_BAN_GHI) — lớp ba
+                    tháng thì buổi thứ năm trở về trước không còn đường nào mở lại. Đây là
+                    đường ấy (bảng phân rã dòng 29, 27/09/2026). */}
+                <a className="lct-link" href={`/lop/${l.id}/xem-lai`}>Xem tất cả →</a>
               </p>
             )}
 
@@ -421,6 +426,10 @@ export default function LopCuaToi({ dl }: { dl: DuLieu | null }) {
                 {l.hocLieuGanDay!.map((t) => (
                   <NutTaiLieu key={t.id} t={t} />
                 ))}
+                {' '}
+                {/* Cùng lý do với "Xem tất cả" của bản ghi: thẻ giữ bốn tài liệu mới nhất
+                    (`SO_HOC_LIEU`), phần còn lại nằm ở trang xem lại (dòng 30). */}
+                <a className="lct-link" href={`/lop/${l.id}/xem-lai?xem=tai-lieu`}>Xem tất cả →</a>
               </p>
             )}
 
