@@ -47,7 +47,17 @@ Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi 
 | **Duyệt "xin nghỉ học" có báo giảng viên của lớp không?** | **CÓ** — điểm danh của em bị ghi đè thành "có phép" mà người đứng lớp không biết là chỗ dễ sinh tranh luận nhất về sau | một loại chuông mới, nên chờ anh |
 | **Học viên có cần màn xem ĐỦ bản ghi + học liệu không?** | **CÓ — tôi đang làm rồi**, vì bảng của khách đòi thẳng ở dòng 29 ("danh sách record theo buổi, tìm kiếm"). Anh bảo dừng thì tôi dừng | hôm nay thẻ lớp chỉ hiện **4** bản ghi và **4** tài liệu gần nhất, không có ô tìm — lớp 24 buổi thì em mất hút 20 buổi |
 
-### 4c · Một lượt bấm 30 giây trên production (tôi làm không được — không có thẻ quản trị prod)
+### 4c · Hai việc trên production (tôi làm không được — không có thẻ quản trị prod)
+
+**(a) Chạy lại bộ dữ liệu trình diễn.** Sau lượt đẩy 27/09 tối, production đang chạy mã mới
+nhưng dữ liệu mẫu vẫn là bộ CŨ — nó không có bài kiểm tra, không bản ghi buổi học, không học
+liệu, không yêu cầu nào. Sáu dòng nghiệm thu sẽ mở ra trống. Vào Render → `pe-hsa-backend` →
+Shell → `python manage.py du_lieu_mau --lam-moi` (khoảng 80 giây, chỉ gỡ và dựng lại dòng
+`is_demo` trong MỘT giao dịch).
+
+**(b) Xoá hai tài khoản thử tôi mở trên production** (dưới đây).
+
+Hai tài khoản thử tôi mở trên production, đều `@example.com`, đều chưa xác thực, không thuộc lớp nào: `do.dong.ho.43e24089@example.com` ("Tài khoản đo đồng hồ") và một tài khoản `thu.prod.*@example.com` ("Thử production", mở tối 27/09 để kiểm luồng tự đăng ký sau khi đẩy). Anh mở **Quản trị → Tài khoản**, tìm "đo đồng hồ" và "Thử production", xoá là xong. `du_lieu_mau --lam-moi` KHÔNG gỡ chúng vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người thật.
 
 Lượt đo khe hở đồng hồ cửa quên mật khẩu 27/09 phải tự mở **một tài khoản thử** trên production để
 có nhánh "email CÓ tài khoản" mà bấm giờ: `do.dong.ho.43e24089@example.com`, tên hiển thị **"Tài
