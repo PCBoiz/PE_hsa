@@ -60,6 +60,27 @@ dấu `is_demo` — nó được mở qua đúng cửa đăng ký công khai nh�
 Đổi lại thì có câu trả lời: khe hở **không quan sát được** trên production (−0,037 s, trong khi độ
 tản mỗi nhánh ~0,45 s) — con số 2 giây trên dev là độ trễ đường truyền VN → Mỹ, không phải lỗi mã.
 
+### 4d · ĐÃ QUYẾT 27/09 — ghi lại để không ai hỏi anh lần nữa
+
+> **Anh Sơn**: *"Những phần như này thì mình biến thành nhắn tin qua Zalo hoặc qua diễn đàn riêng của
+> lớp, không làm thành 1 messenger trong ứng dụng mình đâu"*
+
+Áp cho **STT 20** của bảng phân rã (Trợ giảng · Quản lý lớp — tám gạch: nhắn tin cho học sinh, nhận
+tin nhắn, theo dõi lịch sử trao đổi, nhắc học bài / làm bài / tham gia lớp, ghi nhận em không phản
+hồi, chuyển vấn đề cho GV·giáo vụ).
+
+Hệ quả, để anh biết mình đang chờ gì:
+
+| Việc | Ai làm | Chặn gì |
+|---|---|---|
+| **Diễn đàn riêng của lớp** — khoanh diễn đàn hiện có theo lớp, chỉ thành viên lớp và người phụ trách vào được | tôi, đang làm | đóng ba gạch "nhắn / nhận / lịch sử trao đổi" |
+| **Zalo** cho nhắn riêng ngoài giờ | chờ anh — **D2**, cần pháp nhân để mở Zalo OA | mã ZNS đã viết, chưa bật được |
+
+Ba gạch "nhắc học bài / làm bài / tham gia lớp" đã chạy rồi bằng thông báo lớp và chuông tự nhắc hạn
+nộp. Hai gạch "ghi nhận không phản hồi" và "chuyển vấn đề" đã chạy bằng hộp Yêu cầu.
+
+**Câu hỏi cũ "TG có được chủ động nhắn riêng một em không" coi như đã trả lời — tôi bỏ khỏi danh sách chờ.**
+
 ### 5 · Mở tài khoản bên ngoài (làm khi rảnh, không chặn buổi nghiệm thu)
 
 | Việc | Chặn gì | Mất |

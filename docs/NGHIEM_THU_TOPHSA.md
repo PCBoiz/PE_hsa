@@ -59,7 +59,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. **Thêm 27/09 (§74)**: ô "Mục khung chương trình" nối bài vào đúng mục của khung — danh mục do máy chủ trả, nhãn mang số buổi ("Buổi 4 · Bài về nhà: Luyện tập hệ"), **không bắt buộc** vì bắt chọn sẽ chặn đúng giảng viên đang vội giao bài trước giờ lên lớp. |
 | 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
-| 20 | Trợ giảng · nhắn / nhắc | MỘT PHẦN — **nhắc CẢ LỚP nay bấm được**, nhắn RIÊNG một em thì chưa | E3 (TG nhắn riêng một em — chờ anh Sơn quyết) | Ba nửa, đo riêng 26/09. **Nửa báo lên (E3, chạy được):** hộp Yêu cầu của học vụ nhận yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". **Nửa nhắc cả lớp (E2 backend + E2-GD màn — XONG 26/09):** màn `/giang-day/thong-bao/<lớp>`, tab "Thông báo lớp" trong khu Giảng dạy, đo trên màn thật bằng `scripts/do_thong_bao_lop.mjs` với **thẻ TRỢ GIẢNG** — 13/13 bước của màn lớp ĐẠT, **bấm chuột chứ không gọi API tay**: mở được · tab dẫn tới · ô mở khoá sau khi React gắn · xem trước nói "Sẽ báo cho 3 em qua chuông, 3 em nhận email" · bước hỏi lại nêu ĐÚNG SỐ ("Gửi ngay cho 3 em của lớp …?") · gửi xong "Đã báo cho 3 em" · dòng mới vào danh sách (3 → 4) kèm "3 em nhận" · ô soạn được dọn · **lớp KHÔNG phụ trách → "Không mở được lớp này", không hiện ô soạn** · không một mã kỹ thuật nào lọt lên màn. **Còn thiếu (nói thẳng):** trợ giảng vẫn **không nhắn được RIÊNG một em** — hộp Yêu cầu là kênh do HỌC VIÊN mở trước, và thông báo lớp thì cả lớp cùng nhận. Đó là nửa "nhắn" mà anh Sơn chưa quyết. |
+| 20 | Trợ giảng · nhắn / nhắc | **THAY** — anh Sơn chốt 27/09: nhắn qua **Zalo** hoặc **diễn đàn riêng của lớp**, KHÔNG dựng messenger trong ứng dụng | diễn đàn lớp (đang làm) · Zalo chờ pháp nhân **D2** | Ba nửa, đo riêng 26/09. **Nửa báo lên (E3, chạy được):** hộp Yêu cầu của học vụ nhận yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". **Nửa nhắc cả lớp (E2 backend + E2-GD màn — XONG 26/09):** màn `/giang-day/thong-bao/<lớp>`, tab "Thông báo lớp" trong khu Giảng dạy, đo trên màn thật bằng `scripts/do_thong_bao_lop.mjs` với **thẻ TRỢ GIẢNG** — 13/13 bước của màn lớp ĐẠT, **bấm chuột chứ không gọi API tay**: mở được · tab dẫn tới · ô mở khoá sau khi React gắn · xem trước nói "Sẽ báo cho 3 em qua chuông, 3 em nhận email" · bước hỏi lại nêu ĐÚNG SỐ ("Gửi ngay cho 3 em của lớp …?") · gửi xong "Đã báo cho 3 em" · dòng mới vào danh sách (3 → 4) kèm "3 em nhận" · ô soạn được dọn · **lớp KHÔNG phụ trách → "Không mở được lớp này", không hiện ô soạn** · không một mã kỹ thuật nào lọt lên màn. **Còn thiếu (nói thẳng):** trợ giảng vẫn **không nhắn được RIÊNG một em** — hộp Yêu cầu là kênh do HỌC VIÊN mở trước, và thông báo lớp thì cả lớp cùng nhận. Đó là nửa "nhắn" mà anh Sơn chưa quyết. |
 | 21 | Trợ giảng · theo dõi | **CÓ** | — | Ô "Theo dõi việc xem record" (V-l) nay có thật — xem dòng 22. Ba ô còn lại đo 27/09 bằng thẻ trợ giảng. E3: TG giải đáp và báo lên trong hộp Yêu cầu, lịch sử trao đổi lưu đủ. |
 | 22 | Trợ giảng · record Zoom | **CÓ** | — | Đo 27/09 trên `/giang-day/buoi-hoc/1`: khối "Bản ghi buổi học" hiện **"1/2 em đã mở"** · mục gập "Chưa mở: 1" liệt kê tên · nút **"Nhắc em chưa mở"** · dòng **"Chưa có bản ghi: 17/09 · 15/09"**. Học viên xem lại được và đánh dấu "đã mở" (§72). Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (E4). |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
@@ -335,17 +335,32 @@ Phân rã chi tiết (bổ sung 27/09/2026 — trước đây dòng này chỉ c
 | Đánh dấu cần hỗ trợ | CÓ (V-f) | `class_members.can_ho_tro` + lý do (§62b), cùng đường `danh-gia` (trợ giảng đặt được); hiện ở "Việc hôm nay" khối "Cần hỗ trợ" (`viec_hom_nay._can_ho_tro`) và dòng thời gian (`dong_thoi_gian._danh_gia`, nhật ký `class.member.assess`). Demo: giảng viên tick "Đánh dấu em cần hỗ trợ" trên tờ của em, hoặc trợ giảng bấm "Báo cần hỗ trợ" trên dòng em vắng liền ở Việc hôm nay |
 | Đề xuất hướng học tập | CÓ (V-f) | `class_members.de_xuat_huong_hoc` (§62b), chỉ giảng viên trở lên, nội bộ (không lên tờ phụ huynh). Demo: ô "Đề xuất hướng học" trong khối "Đánh giá của giảng viên"; học vụ thấy mốc "Đề xuất hướng học" trên dòng thời gian của em |
 
-## Dòng 20 — Trợ giảng · nhắn tin / nhắc · MỘT PHẦN
+## Dòng 20 — Trợ giảng · nhắn tin / nhắc · THAY (anh Sơn chốt 27/09)
 
-Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý). Chat thời gian thực: không làm (anh chốt
-25/09 — Zalo vẫn để chat). Nhắc học bài / làm bài / vào lớp → **E2**.
+**QUYẾT ĐỊNH CỦA CHỦ DỰ ÁN, 27/09/2026** — nguyên văn:
+
+> *"Những phần như này thì mình biến thành nhắn tin qua Zalo hoặc qua diễn đàn riêng của lớp,
+> không làm thành 1 messenger trong ứng dụng mình đâu"*
+
+Tức tám gạch đầu dòng của ô này KHÔNG đóng bằng một hộp chat trong ứng dụng. Hai kênh thay thế:
+
+| Kênh | Đóng được gạch nào | Trạng thái |
+|---|---|---|
+| **Diễn đàn riêng của lớp** | nhắn tin cho học sinh · nhận tin nhắn · theo dõi lịch sử trao đổi | **đang làm** — diễn đàn hiện là một sân CHUNG toàn hệ thống (`backend/forum/`, bảng `posts` không có cột lớp); cần khoanh theo lớp + quyền theo lớp |
+| **Zalo** | nhắn riêng ngoài giờ, nhắc gấp | chờ **D2** (pháp nhân để mở Zalo OA) — mã ZNS đã có, chưa bật |
+
+Ba gạch "nhắc học bài / làm bài / tham gia lớp" đã chạy bằng **thông báo lớp** (E2-GD) và chuông tự
+động nhắc hạn nộp — không cần chat. Hai gạch "ghi nhận em không phản hồi" và "chuyển vấn đề cho
+GV/giáo vụ" đã chạy bằng hộp Yêu cầu (E3).
+
+Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý).
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
 | Nhận tin, lịch sử trao đổi | CÓ (E3) | câu hỏi học viên gửi lớp → GV + TG lớp nhận chuông; trả lời + lịch sử ở `/yeu-cau/<id>` |
 | Ghi nhận HS không phản hồi | CÓ (E3) | "Tạo yêu cầu" → "Báo lên", chọn lớp + em, tick "Em không phản hồi" (`du_lieu.khong_phan_hoi`, chip trên hộp) |
 | Chuyển vấn đề cho GV / giáo vụ | CÓ (E3) | "Báo lên" tới GV lớp + học vụ; "Chuyển tiếp…" một yêu cầu đang cầm |
-| TG CHỦ ĐỘNG nhắn một HS | CHƯA — **cần anh quyết** | hộp hiện chỉ cho HS gửi trước; xem câu hỏi trong `docs/agent/BAO_CAO_E3.md` |
+| TG CHỦ ĐỘNG nhắn một HS | **THAY** (anh chốt 27/09) | không làm messenger trong ứng dụng. Nhắn riêng đi qua **Zalo** (chờ D2); trao đổi có lưu vết đi qua **diễn đàn riêng của lớp** (đang làm). Câu hỏi cũ trong `docs/agent/BAO_CAO_E3.md` coi như đã trả lời. |
 
 SĐT phụ huynh để lại trong yêu cầu ẩn với trợ giảng (test `test_tro_giang_khong_thay_sdt_phu_huynh`).
 **Demo**: trợ giảng → khu Giảng dạy → Yêu cầu → "Tạo yêu cầu" → loại "Báo lên", lớp, em, tick "Em
