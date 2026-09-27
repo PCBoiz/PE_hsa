@@ -22,12 +22,13 @@ cách nhanh nhất để có một con số không ai tin.
 
 ── AI XEM ĐƯỢC GÌ ────────────────────────────────────────────────────────────
 
-  · Ghi nhận lượt mở: em CỦA LỚP ẤY. Người ngoài lớp mở đường dẫn → 403 và không
-    ghi dòng nào (một yêu cầu bị từ chối mà vẫn đổi dữ liệu là thứ người gửi
-    không biết).
+  · Ghi nhận lượt mở: em CỦA LỚP ẤY. Người ngoài lớp mở đường dẫn → **404** (sửa
+    27/09/2026; trước đó 403) và không ghi dòng nào — một yêu cầu bị từ chối mà
+    vẫn đổi dữ liệu là thứ người gửi không biết. 404 chứ không 403 vì buổi không
+    tồn tại cũng trả 404: hai câu trả lời khác nhau là một cách đếm buổi có thật.
   · Xem ai đã mở / chưa mở: `IsTeachingStaff` của lớp — giảng viên, trợ giảng,
-    học vụ, quản trị. KHÔNG cho học viên: ai đã xem bài là việc của người dạy,
-    không phải của bạn cùng lớp.
+    học vụ, quản trị. KHÔNG cho học viên (403 theo vai, do `permission_classes`);
+    người CÓ vai mà không phụ trách lớp thì 404, như mọi cửa khác của `teaching/`.
 
 Danh sách "chưa mở" chỉ đếm HỌC VIÊN (`chi_hoc_vien`); trợ giảng cũng nằm trong
 `class_members` nhưng không phải người phải xem lại bài.
@@ -81,7 +82,10 @@ class GhiLuotMoView(APIView):
         if not r:
             return Response({'detail': 'Không tìm thấy buổi học.'}, status=404)
         if not r['trong_lop']:
-            return Response({'detail': 'Bạn không học lớp này.'}, status=403)
+            # CÙNG câu, CÙNG mã với buổi không tồn tại (audit 27/09/2026): trả 403 ở đây
+            # là nói "buổi này có thật", và id buổi là số nguyên tăng dần nên một vòng lặp
+            # đếm được cả lịch dạy của trung tâm mà không đọc nổi một chữ nội dung nào.
+            return Response({'detail': 'Không tìm thấy buổi học.'}, status=404)
         if not (r['recording_url'] or '').strip():
             # Không đếm lượt mở của một thứ không tồn tại: con số ấy sẽ nói dối
             # trợ giảng rằng em đã xem lại bài.
@@ -106,7 +110,11 @@ class ThongKeBanGhiView(APIView):
 
     def get(self, request, class_id):
         if not can_see_class(request.user, class_id):
-            return Response({'detail': 'Bạn không phụ trách lớp này.'}, status=403)
+            # 404 chứ không 403 (audit 27/09/2026): `can_see_class` trả False cho CẢ
+            # "lớp không có" lẫn "lớp có mà không phải của anh", nên 403 ở đây là một
+            # câu trả lời khác 404 của lớp không tồn tại — tức một cách đếm số lớp của
+            # trung tâm từ ngoài. Quy ước chung của `teaching/`: `sessions.py:17`.
+            return Response({'detail': 'Không tìm thấy lớp này.'}, status=404)
 
         buoi = q('''SELECT id, starts_at, topic, recording_url
                       FROM class_sessions
@@ -180,7 +188,11 @@ class NhacXemBanGhiView(APIView):
 
     def post(self, request, class_id, session_id):
         if not can_see_class(request.user, class_id):
-            return Response({'detail': 'Bạn không phụ trách lớp này.'}, status=403)
+            # 404 chứ không 403 (audit 27/09/2026): `can_see_class` trả False cho CẢ
+            # "lớp không có" lẫn "lớp có mà không phải của anh", nên 403 ở đây là một
+            # câu trả lời khác 404 của lớp không tồn tại — tức một cách đếm số lớp của
+            # trung tâm từ ngoài. Quy ước chung của `teaching/`: `sessions.py:17`.
+            return Response({'detail': 'Không tìm thấy lớp này.'}, status=404)
         buoi = q1('''SELECT id, starts_at, topic, recording_url FROM class_sessions
                       WHERE id = %s AND class_id = %s''', (session_id, class_id))
         if not buoi:
@@ -226,7 +238,10 @@ class BaoLoiBanGhiView(APIView):
         if not r:
             return Response({'detail': 'Không tìm thấy buổi học.'}, status=404)
         if not r['trong_lop']:
-            return Response({'detail': 'Bạn không học lớp này.'}, status=403)
+            # CÙNG câu, CÙNG mã với buổi không tồn tại (audit 27/09/2026): trả 403 ở đây
+            # là nói "buổi này có thật", và id buổi là số nguyên tăng dần nên một vòng lặp
+            # đếm được cả lịch dạy của trung tâm mà không đọc nổi một chữ nội dung nào.
+            return Response({'detail': 'Không tìm thấy buổi học.'}, status=404)
         if not (r['recording_url'] or '').strip():
             return Response({'detail': 'Buổi này chưa có bản ghi.'}, status=400)
 

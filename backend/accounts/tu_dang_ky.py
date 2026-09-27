@@ -70,6 +70,7 @@ from common import audit
 from common.clock import local_now
 from common.db import q1, x
 from common.identity import norm_email, norm_phone
+from common.mail import ten_goi_trong_thu
 from common.net import client_ip
 from common.permissions import ROLE_STUDENT
 from common.throttling import DangKyThrottle
@@ -122,7 +123,9 @@ def chua_xac_thuc(user) -> bool:
 
 def _soan_thu(ten, duong_dan):
     """(chữ thuần, html) của thư xác nhận địa chỉ email."""
-    goi = (ten or '').strip() or 'bạn'
+    # MỘT DÒNG NGẮN, không phải chuỗi thô: `ten` ở cửa này là chữ người chưa đăng
+    # nhập tự gõ, và địa chỉ nhận cũng vậy — xem `common/mail.ten_goi_trong_thu`.
+    goi = ten_goi_trong_thu(ten)
     chu = ('Chào %s,\n\n'
            'Bạn vừa đăng ký tài khoản học tại TopHSA. Bấm vào đường dẫn dưới đây để xác '
            'nhận đây đúng là địa chỉ email của bạn:\n\n%s\n\n'
@@ -150,7 +153,9 @@ def _soan_thu_da_co(ten):
     """Thư gửi khi địa chỉ này ĐÃ có tài khoản. Không nói gì về vai, lớp hay tình trạng —
     chỉ chỉ đường về. Gửi tới địa chỉ CỦA CHÍNH tài khoản ấy nên không phải một đường
     bơm thư tới người lạ."""
-    goi = (ten or '').strip() or 'bạn'
+    # MỘT DÒNG NGẮN, không phải chuỗi thô: `ten` ở cửa này là chữ người chưa đăng
+    # nhập tự gõ, và địa chỉ nhận cũng vậy — xem `common/mail.ten_goi_trong_thu`.
+    goi = ten_goi_trong_thu(ten)
     goc = _goc()
     chu = ('Chào %s,\n\n'
            'Vừa có một lượt đăng ký tài khoản TopHSA bằng địa chỉ email này, nhưng địa chỉ '

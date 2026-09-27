@@ -130,6 +130,38 @@ def don_header(v) -> str:
     return ''.join(c for c in ('' if v is None else str(v)) if c not in _XUONG_DONG)
 
 
+#: Câu chào dài nhất chấp nhận được. 40 ký tự đủ rộng cho một họ tên Việt đầy đủ mà
+#: vẫn không đủ chỗ cho một câu dụ ("Tài khoản của bạn sẽ bị khoá, xác minh tại…"
+#: đã là 45).
+TRAN_TEN_GOI = 40
+
+
+def ten_goi_trong_thu(ten, tran: int = TRAN_TEN_GOI, mac_dinh: str = 'bạn') -> str:
+    r"""Tên người, đã ép về MỘT DÒNG NGẮN, để đặt vào câu chào `Chào %s,` của THÂN thư.
+
+    ── VÌ SAO CẦN (audit bảo mật 27/09/2026) ────────────────────────────────
+
+    `don_header` ngay trên canh HEADER. Nhưng §73 mở một cửa mà THÂN thư cũng thành
+    chỗ nguy: `POST /auth/dang-ky` nhận CẢ địa chỉ nhận LẪN tên, cả hai do một người
+    chưa đăng nhập tự gõ, rồi máy chủ TopHSA gửi lá thư ấy đi bằng SMTP thật. Tên
+    tới 100 ký tự và không lọc xuống dòng, nên đo được 27/09/2026: gõ tên
+    ``"ban,\n\nCANH BAO: … https://gia-mao.example.com/khan\n\nTopHSA"`` là có một lá
+    thư mang mấy dòng chữ của kẻ gửi ở ĐẦU thân, đi từ tên miền thật của trung tâm,
+    qua SPF/DKIM thật — tức vượt bộ lọc rác tốt hơn hẳn một thư giả mạo.
+
+    Ba việc, theo đúng thứ tự: gộp mọi khoảng trắng (kể cả xuống dòng) về MỘT dấu
+    cách · bỏ ký tự không in được (``\x01`` không phải khoảng trắng nên lọt lưới
+    trên) · cắt về `tran`. Cắt độ dài là phần không được bỏ: bỏ xuống dòng mà vẫn
+    giữ 100 ký tự thì còn nguyên chỗ cho một câu dụ nằm trên cùng một dòng.
+
+    KHÔNG dùng cho tên đặt vào HEADER — ở đó `don_header` giữ nguyên độ dài, vì cắt
+    tên trong `From:`/`Subject:` là làm hỏng một lá thư thật.
+    """
+    s = ' '.join(str('' if ten is None else ten).split())
+    s = ''.join(c for c in s if c.isprintable())
+    return s[:tran].strip() or mac_dinh
+
+
 def soan(den: str, tieu_de: str, chu: str, html: str | None = None,
          dinh_kem: tuple = ()) -> EmailMessage:
     """Dựng thư. Dùng CHUNG cho cả gửi thật lẫn chế độ thử.

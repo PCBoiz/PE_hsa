@@ -10187,3 +10187,63 @@ trống — mỗi chỗ đủ làm khách kết luận "chưa làm".
 **Hai agent chết vì hết hạn mức phiên** (429, đặt lại 21:10) — một đang soát ô trợ giảng, một
 làm báo cáo chéo (để lại 935 dòng chưa commit, đã gọi agent khác cứu). Bài học ghi vào brief
 từ lượt sau: **commit sớm và nhỏ**, mã treo ngoài git là mã có thể mất.
+---
+
+## 27/09/2026 · Audit bảo mật (agent `agent/sec`)
+
+Anh Sơn: *"audit kĩ để không có lỗ hổng"*. Soát 199 đường dẫn có lớp view (297 cửa nếu đếm theo
+phương thức) × 6 vai, cộng tầng React và tầng JS cũ. Báo cáo đủ:
+`docs/agent/AUDIT_BAO_MAT_2026-09-27.md`.
+
+**Nặng nhất, CHƯA VÁ, cần anh Sơn / lead quyết.** `config/urls.py:49` nạp cả `allauth.urls` để lấy
+`google/login/`, và kéo theo **28 đường** của thư viện trên tên miền backend. Đo bằng GET:
+`/accounts/login/` và `/accounts/password/reset/` trả **HTTP 200 kèm form HTML đầy đủ**
+(`/accounts/signup/` trả 500 — may, không phải hàng rào). Không một hàng rào nào của dự án chạm tới
+chúng: trần dò mật khẩu RIÊNG (10/phút/IP của allauth, độc lập với `LoginThrottle` 20/phút) · không
+`tokens_valid_from` · không `audit.record` · không `invalidate_user_cache` · không hàng rào thư §61 ·
+không hàng rào §73 · chữ tiếng Anh. Hệ quả chắc nhất: đăng nhập ở `/accounts/login/` rồi đổi mật khẩu
+ở `/accounts/password/change/` ghi mật khẩu mới ĐÚNG định dạng werkzeug (nên `LoginView` nhận ngay)
+mà **không thu hồi phiên nào và không để lại dòng nhật ký** — đi vòng qua đúng cơ chế mà cả ba đường
+đổi mật khẩu của dự án đều dựng. Thư của allauth đi bằng `django.core.mail` với `EMAIL_HOST='localhost'`
+nên hôm nay không gửi được; ai đặt biến ấy là đường thư thứ hai sống dậy, ngoài §61.
+
+**Hai nhóm đã vá, cả hai ĐỎ TRƯỚC.**
+
+1. **Thư đăng ký §73 là đường bơm chữ** (`933b7b6`). `POST /auth/dang-ky` nhận cả địa chỉ NHẬN lẫn
+   TÊN từ người chưa đăng nhập, và tên đi thẳng vào `Chào %s,` ở đầu thân thư, 100 ký tự, không lọc
+   xuống dòng. Đo: gõ tên có `\n` là có một lá thư mang bốn dòng chữ của kẻ gửi Ở TRÊN nội dung thật,
+   đi từ tên miền thật qua SPF/DKIM thật. Vá bằng `common/mail.ten_goi_trong_thu` (gộp khoảng trắng ·
+   bỏ ký tự không in được · **cắt 40 ký tự** — bỏ xuống dòng mà giữ 100 ký tự thì vẫn đủ chỗ cho một
+   câu dụ). 4 ĐỎ → 6 ĐẠT; hồi quy `accounts/` 96 ĐẠT.
+
+2. **Bảy cửa trả 403 ở chỗ luật dự án đòi 404** (`744194b`). Bốn cửa `ban_ghi` + hai cửa sửa/xoá bài
+   + một cửa sửa bình luận. Nội dung KHÔNG lộ (hàng rào §75 chặn đúng), cái lộ là SỰ TỒN TẠI — id là
+   số nguyên tăng dần nên một vòng lặp đếm được trung tâm có bao nhiêu lớp, bao nhiêu buổi, diễn đàn
+   riêng của lớp khác có bao nhiêu bài. `forum/views.py::_can_modify` nay chạy hàng rào §75 TRƯỚC hàng
+   rào sở hữu — đặt trong hàm dùng chung để cửa mới sau này tự có (RULES §7). Sáu `assert` khẳng định
+   luật CŨ trong `tests_ban_ghi.py` viết lại, không xoá (RULES §13). 7 ĐỎ → 7 ĐẠT; hồi quy 44 ĐẠT.
+
+**Bộ kiểm ma trận quyền ĐỎ SẴN trên HEAD `7f93250`: 2 HỎNG / 2.** Một do bốn cửa `ban_ghi` trên; cái
+còn lại là **phát hiện giả** — nó coi mọi mã khác 403 là "lọt", mà `hoc-lieu` cố ý gác trong thân hàm
+và trả 404, đúng luật. Một phép kiểm đỏ thường trực là chỗ một cửa THẬT SỰ quên `permission_classes`
+sẽ lẫn vào. Vá bằng `CONG_TRONG_THAN` (khai tường minh, kèm lý do) + một phép kiểm canh chính danh
+sách ấy (`fc52c34`). Nay **3 ĐẠT**. Báo cáo ghi rõ **bốn chỗ bộ kiểm ấy KHÔNG phủ** — chỉ hai tiền tố
+`admin/`+`teach/`, chỉ quyền theo VAI chứ không theo ĐỐI TƯỢNG, view không phải lớp bị bỏ im lặng,
+lớp quyền lạ (`LaHocVien`, gác 6 cửa) bị bỏ im lặng.
+
+**Sạch, có số đo:** 20/20 tuyến `class_id` dưới `api/teach/` có `can_see_class` · 18/18 chỗ gọi
+`thuoc_buoi` truyền hằng trong mã · 2 chỗ `ORDER BY` động đều danh sách trắng · 7 chỗ `UPDATE … SET`
+động đều lấy tên cột từ hằng · **0/45 dòng link trong CSDL lệch lược đồ http/https** · **0 thẻ
+`<a target="_blank">` thiếu `rel`** (grep một dòng cho kết quả SAI — `rel` nằm dòng kế; phải phân tích
+thẻ đa dòng) · **0 nội suy chưa thoát** trong 111 chỗ `innerHTML` của tầng JS cũ · token chỉ sống ở
+tầng máy chủ Next, không một chỗ nào trong `src/` hay `public/static/js/` đọc nó · 835 tệp không bí
+mật, `--tu-kiem` 6/6 · **`.env` chưa bao giờ vào lịch sử git** · hàng rào thư §61 đo được là ĐANG BẬT
+trên máy này.
+
+**Năm mục sổ nợ** (nặng nhất: `parent_report_links.token` là bảng chìa DUY NHẤT còn lưu THÔ, trong khi
+`password_reset_tokens` và `lich/chia.py` đều đã băm) và **hai mục "nghi, chưa chứng minh"** để riêng —
+xem báo cáo.
+
+**Không kịp soát:** `teaching/bao_cao_cheo.py` (chưa có trên `7f93250`) · luồng Google OAuth đi thật ·
+`chatbot/` (tiêm nhắc AI) · không mở màn nào trong trình duyệt (brief cấm dựng `next dev`, máy còn
+~3,1 GB; lượt này không sửa tệp `.tsx` nào).
