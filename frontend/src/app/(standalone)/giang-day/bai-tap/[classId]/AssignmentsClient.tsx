@@ -156,7 +156,17 @@ type Props = {
   loiTai?: string | null;
   /** Học viên đang học — máy chủ cũ không gửi thì ẩn phần "Chọn học viên". */
   hocVien?: HocVienLop[];
+  /**
+   * §74 — mục CẦN bài của khung chương trình lớp đang theo, để giao bài nối được vào khung.
+   * Rỗng = lớp chưa nhận khung (hoặc khung không có mục nào cần bài) → ô chọn không hiện.
+   */
+  mucKhung?: MucKhung[];
+  /** Đọc khung thất bại: nói ra ở biểu mẫu thay vì để ô chọn vắng mặt lặng lẽ. */
+  khungLoi?: string | null;
 };
+
+/** Một mục khung chọn được khi giao bài. `daGiao` để nhắc mục đã có bài rồi. */
+export type MucKhung = { id: number; nhan: string; daGiao: boolean };
 
 export default function AssignmentsClient(props: Props) {
   return (
@@ -166,7 +176,8 @@ export default function AssignmentsClient(props: Props) {
   );
 }
 
-function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, hocVien }: Props) {
+function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, hocVien,
+                      mucKhung, khungLoi }: Props) {
   const toast = useToast();
   const [ds, setDs] = useState<Assignment[]>(initial);
   const [err, setErr] = useState<string | null>(loiTai ?? null);
@@ -304,6 +315,8 @@ function DanhSachBai({ classId, className, initial, topics, loiTai, laTroGiang, 
           classId={classId}
           topics={topics}
           hocVien={hocVien}
+          mucKhung={mucKhung}
+          khungLoi={khungLoi}
           onXong={(tieuDe) => {
             setMoForm(false);
             // Biểu mẫu đóng lại và danh sách tải lại sau vài giây — không có
@@ -521,6 +534,8 @@ function FormBai({
   classId,
   topics,
   hocVien,
+  mucKhung,
+  khungLoi,
   onXong,
   onHuy,
   onLoi,
@@ -528,6 +543,8 @@ function FormBai({
   classId: number;
   topics: string[];
   hocVien?: HocVienLop[];
+  mucKhung?: MucKhung[];
+  khungLoi?: string | null;
   onXong: (tieuDe: string) => void;
   onHuy: () => void;
   onLoi: (s: string | null) => void;
@@ -557,6 +574,9 @@ function FormBai({
           due_at: loai === 'kiem_tra' ? null : lay('due_at') || null,
           status: lay('status') || 'open',
           kind: loai,
+          // §74 — để trống là BÌNH THƯỜNG: phần lớn bài giao rời. Gửi `null` chứ không gửi
+          // chuỗi rỗng, vì máy chủ đọc chuỗi rỗng là "không chọn mục" bằng một nhánh khác.
+          syllabus_item_id: lay('syllabus_item_id') || null,
           ...(loai === 'kiem_tra' ? { held_on: lay('held_on') || null } : {}),
           // Máy chủ cũ không gửi danh sách học viên → không có ô chọn → không gửi gì (cả lớp).
           ...(hocVien ? thanNguoiNhan(nhan) : {}),
@@ -634,6 +654,35 @@ function FormBai({
               ))}
             </select>
           </label>
+          {/* §74 · nối bài vào khung chương trình. Ô này KHÔNG bắt buộc, có chủ ý: bắt chọn
+              sẽ chặn đúng giảng viên đang vội giao bài trước giờ lên lớp. Danh sách do máy
+              chủ trả (RULES §7), nhãn mang số buổi vì id không nói gì cho người đọc. */}
+          {mucKhung && mucKhung.length > 0 && (
+            <label className="flex flex-col gap-1">
+              <span className="text-label text-ink-3">Mục khung chương trình</span>
+              <select
+                name="syllabus_item_id"
+                defaultValue=""
+                className="min-h-11 w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 text-input text-ink"
+              >
+                <option value="">Không gắn vào khung</option>
+                {mucKhung.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nhan}{m.daGiao ? ' — đã có bài' : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="text-small text-ink-3">
+                Gắn vào khung thì màn Chương trình lớp trả lời được &quot;buổi này đã giao bài chưa&quot;.
+              </span>
+            </label>
+          )}
+          {khungLoi && (
+            <p className="text-small text-warning-ink">
+              Chưa đọc được khung chương trình của lớp, nên lần này không chọn được mục. Bài vẫn giao được bình thường.
+            </p>
+          )}
+
           <label className="flex flex-col gap-1">
             <span className="text-label text-ink-3">Thang điểm</span>
             <input

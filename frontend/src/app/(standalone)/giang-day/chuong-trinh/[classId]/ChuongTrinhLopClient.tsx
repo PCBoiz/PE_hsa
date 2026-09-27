@@ -23,6 +23,7 @@ import {
   HD_CT_LOP,
   HD_NHAN_KHUNG,
   HD_OK,
+  nhanBaiDaGiao,
   phanTram,
   type CtLop,
   type NhanKhung,
@@ -249,7 +250,21 @@ export default function ChuongTrinhLopClient({ initial }: { initial: CtLop }) {
                     </span>
                   </div>
                   {k.items.length > 0 && (
-                    <p className="mt-1 text-small text-ink-2">{k.items.map((i) => i.title).join(' · ')}</p>
+                    <ul className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">
+                      {k.items.map((i) => {
+                        // `baiDaGiao` VẮNG = mục không thuộc loại cần bài (chủ đề, bài học) —
+                        // khác hẳn danh sách RỖNG, là mục cần bài mà chưa ai giao (§74).
+                        const bai = i.baiDaGiao && nhanBaiDaGiao(i.baiDaGiao);
+                        return (
+                          <li key={i.id} data-muc={i.id} className="flex items-center gap-1">
+                            <span>{i.title}</span>
+                            {bai && (
+                              <Chip tone={bai.xong ? 'good' : 'warn'}>{bai.chu}</Chip>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
                 </li>
               );

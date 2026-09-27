@@ -21,12 +21,13 @@ from rest_framework.views import APIView
 
 from chuong_trinh.dich_vu import LoiChuongTrinh, nhan_khung, tien_do_lop
 from chuong_trinh.tien_do import sql_tin_chi, tien_do_tung_em
-from chuong_trinh.tu_vung import BAN_XUAT_BAN, NHAN_LOAI_MUC, NHAN_TRANG_THAI_BAN
+from chuong_trinh.tu_vung import BAN_XUAT_BAN, MUC_CAN_BAI, NHAN_LOAI_MUC, NHAN_TRANG_THAI_BAN
 from common.audit import SESSION_SYLLABUS, record
 from common.clock import local_now
 from common.db import q, q1, x
 from common.params import so_nguyen
 from common.permissions import IsAdminOrAcademic, IsTeachingStaff, can_see_class
+from teaching.assignments import bai_theo_muc_khung
 
 _KHONG_THAY_LOP = {'error': 'Không tìm thấy lớp này.'}
 _KHONG_THAY_BUOI = {'error': 'Không tìm thấy buổi học này.'}
@@ -93,6 +94,19 @@ def chi_tiet_lop(class_id, co_the_nhan):
         w = sum(i['weight'] for i in k['items'])
         xong = sum(i['weight'] * tin_chi.get(i['id'], 0) for i in k['items'])
         k['pctDaDay'] = round(xong * 100 / w) if w else None
+
+    # §74 (27/09/2026) — mục CẦN bài (bài tập / kiểm tra) đã giao bài nào. Khung nói "buổi 3
+    # có bài về nhà"; cho tới đây màn này không trả lời được bài ấy đã giao hay chưa, và
+    # giảng viên phải mở tab Bài tập rồi tự đoán bài nào ứng với mục nào. Cùng một câu hỏi
+    # với sổ đầu bài, nên cùng một hàm — `teaching.assignments.bai_theo_muc_khung`.
+    bai_theo_muc = bai_theo_muc_khung(
+        class_id, [i['id'] for k in khung for i in k['items'] if i['kind'] in MUC_CAN_BAI])
+    for k in khung:
+        for i in k['items']:
+            if i['kind'] in MUC_CAN_BAI:
+                # Rỗng = "mục cần bài mà chưa giao"; khoá VẮNG = "mục không phải loại cần
+                # bài". Màn vẽ hai thứ ấy khác nhau, nên đừng gộp thành một.
+                i['baiDaGiao'] = bai_theo_muc.get(i['id'], [])
 
     buoi = q('''SELECT cs.id, cs.starts_at, cs.duration_minutes, cs.status, cs.topic,
                        cs.syllabus_session_id, cs.makeup_for, ss.version_id AS ban_cua_buoi,

@@ -17,6 +17,11 @@ LOAI_MUC = ('bai_hoc', 'chu_de', 'bai_tap', 'kiem_tra')
 NHAN_LOAI_MUC = {'bai_hoc': 'Bài học', 'chu_de': 'Chủ đề', 'bai_tap': 'Bài về nhà',
                  'kiem_tra': 'Kiểm tra'}
 
+#: Mục mà khung ĐÒI phải có một bài giao (§74). Hai cửa hỏi "mục này giao bài chưa" — sổ
+#: đầu bài và màn Chương trình lớp — nên danh sách nằm ở đây, không gõ lại ở từng cửa: thêm
+#: một loại mục cần bài mà quên một chỗ thì hai màn nói hai chuyện khác nhau.
+MUC_CAN_BAI = ('bai_tap', 'kiem_tra')
+
 #: Sổ đầu bài (§70): mỗi mục đã dạy / dạy một phần / chưa dạy.
 MUC_XONG, MUC_MOT_PHAN, MUC_CHUA = 'done', 'partial', 'not_done'
 TRANG_THAI_MUC = (MUC_XONG, MUC_MOT_PHAN, MUC_CHUA)

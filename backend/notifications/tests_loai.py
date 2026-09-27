@@ -157,3 +157,16 @@ def test_loai_cua_thong_bao_trung_tam_co_nhan():
     from notifications import thong_bao
     assert thong_bao.LOAI in sol.NHAN, thong_bao.LOAI
     assert sol.nhan(thong_bao.LOAI) != sol.KHAC
+
+
+def test_loai_nhac_han_co_nhan():
+    """Chuông "sắp hết hạn nộp" cũng ghi THẲNG bằng INSERT, nên bộ quét AST không thấy.
+
+    Đây là chuông TỰ ĐỘNG: không ai bấm gì, nhịp `nhac_han.chay()` tự gửi 20–28 giờ trước
+    hạn. Thiếu nhãn thì nó lên màn học viên là "Khác" — và "Khác" trong ô lọc trang Thông
+    báo thì không ai đoán được nó là cái gì. Đo 27/09 trước khi vá: `nhan('nhac_han')` trả
+    `'Khác'`, mã không có trong `NHAN` lẫn `GUI_NOI_KHAC`.
+    """
+    from notifications import nhac_han
+    assert nhac_han.LOAI in sol.NHAN, nhac_han.LOAI
+    assert sol.nhan(nhac_han.LOAI) != sol.KHAC

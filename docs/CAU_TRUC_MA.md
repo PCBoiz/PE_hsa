@@ -16,16 +16,16 @@
 
 | Miền | Việc | Bảng | Backend | Frontend (src + JS cũ) |
 |---|---|---|---|---|
-| [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2611 dòng | 19 tệp · 3940 dòng |
-| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2644 dòng | 11 tệp · 2818 dòng |
+| [lop_hoc](#lop_hoc) | Lớp học | 5 | 10 tệp · 2618 dòng | 19 tệp · 3940 dòng |
+| [lich](#lich) | Lịch & buổi học | 4 | 15 tệp · 2652 dòng | 11 tệp · 2818 dòng |
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
-| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1081 dòng | 7 tệp · 1788 dòng |
-| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1819 dòng | 8 tệp · 1399 dòng |
+| [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1108 dòng | 7 tệp · 1858 dòng |
+| [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1835 dòng | 8 tệp · 1440 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
-| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1678 dòng | 10 tệp · 1476 dòng |
+| [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2147 dòng | 19 tệp · 2015 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6339 dòng | 68 tệp · 6983 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13773 dòng |
@@ -67,7 +67,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/danh_gia.py` | 181 dòng | `class_members` |
 | `backend/teaching/hoc_lieu.py` | 189 dòng | `hoc_lieu` |
 | `backend/teaching/lich_su_lop.py` | 63 dòng | — |
-| `backend/teaching/lop_cua_toi.py` | 233 dòng | — |
+| `backend/teaching/lop_cua_toi.py` | 240 dòng | — |
 | `backend/teaching/lop_gia_su.py` | 122 dòng | `classes` |
 | `backend/teaching/nhap_hoc_vien.py` | 242 dòng | — |
 | `backend/teaching/roi_lop.py` | 54 dòng | `class_members` |
@@ -119,7 +119,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/teaching/buoi_bu.py` | 164 dòng | `class_sessions`, `session_participants` |
 | `backend/teaching/lich.py` | 117 dòng | — |
 | `backend/teaching/ngay_le.py` | 37 dòng | — |
-| `backend/teaching/nguoi_buoi.py` | 20 dòng | — |
+| `backend/teaching/nguoi_buoi.py` | 28 dòng | — |
 | `backend/teaching/sessions.py` | 1108 dòng | *`attendance`*, *`attendance_history`*, `class_sessions` |
 | `backend/teaching/sinh_buoi.py` | 355 dòng | `class_sessions` |
 | `backend/teaching/trung_lich.py` | 152 dòng | — |
@@ -164,17 +164,17 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 | Tệp backend | Dòng | Ghi bảng |
 |---|---|---|
-| `backend/teaching/assignments.py` | 1051 dòng | `assignment_targets`, `assignments`, `submissions` |
+| `backend/teaching/assignments.py` | 1078 dòng | `assignment_targets`, `assignments`, `submissions` |
 | `backend/teaching/nhan_bai.py` | 30 dòng | — |
 
 | Tệp frontend | Dòng |
 |---|---|
 | `frontend/src/app/(standalone)/bai-tap/MyAssignmentsClient.tsx` | 267 dòng |
 | `frontend/src/app/(standalone)/bai-tap/page.tsx` | 86 dòng |
-| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/AssignmentsClient.tsx` | 698 dòng |
+| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/AssignmentsClient.tsx` | 747 dòng |
 | `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/[assignmentId]/GradingClient.tsx` | 471 dòng |
 | `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/[assignmentId]/page.tsx` | 115 dòng |
-| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/page.tsx` | 121 dòng |
+| `frontend/src/app/(standalone)/giang-day/bai-tap/[classId]/page.tsx` | 142 dòng |
 | `frontend/src/app/(standalone)/giang-day/cham/[assignmentId]/page.tsx` | 30 dòng |
 
 ## chuong_trinh
@@ -192,22 +192,22 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/chuong_trinh/dich_vu.py` | 206 dòng | *`class_sessions`*, *`classes`*, `session_log_items` |
 | `backend/chuong_trinh/du_lieu_mau.py` | 111 dòng | `session_log_items`, `session_logs`, `syllabus_items`, `syllabus_sessions`, `syllabus_versions` |
 | `backend/chuong_trinh/khung.py` | 44 dòng | — |
-| `backend/chuong_trinh/lop.py` | 231 dòng | *`class_sessions`* |
-| `backend/chuong_trinh/so_dau_bai.py` | 306 dòng | `session_log_items`, `session_logs`, `session_support` |
+| `backend/chuong_trinh/lop.py` | 245 dòng | *`class_sessions`* |
+| `backend/chuong_trinh/so_dau_bai.py` | 303 dòng | `session_log_items`, `session_logs`, `session_support` |
 | `backend/chuong_trinh/tien_do.py` | 284 dòng | — |
-| `backend/chuong_trinh/tu_vung.py` | 38 dòng | — |
+| `backend/chuong_trinh/tu_vung.py` | 43 dòng | — |
 | `backend/chuong_trinh/urls.py` | 22 dòng | — |
 | `backend/courseadmin/syllabus.py` | 566 dòng | `syllabus_items`, `syllabus_materials`, `syllabus_sessions`, `syllabus_versions` |
 
 | Tệp frontend | Dòng |
 |---|---|
-| `frontend/src/app/(standalone)/giang-day/chuong-trinh/[classId]/ChuongTrinhLopClient.tsx` | 276 dòng |
+| `frontend/src/app/(standalone)/giang-day/chuong-trinh/[classId]/ChuongTrinhLopClient.tsx` | 291 dòng |
 | `frontend/src/app/(standalone)/giang-day/chuong-trinh/[classId]/page.tsx` | 54 dòng |
 | `frontend/src/app/(standalone)/giang-day/so-dau-bai/[sessionId]/SoDauBaiClient.tsx` | 276 dòng |
 | `frontend/src/app/(standalone)/giang-day/so-dau-bai/[sessionId]/page.tsx` | 56 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/khung-chuong-trinh/KhungClient.tsx` | 485 dòng |
 | `frontend/src/app/(standalone)/giao-trinh/khung-chuong-trinh/page.tsx` | 80 dòng |
-| `frontend/src/lib/chuongTrinh.ts` | 149 dòng |
+| `frontend/src/lib/chuongTrinh.ts` | 175 dòng |
 | `frontend/src/lib/tienDoChu.ts` | 23 dòng |
 
 ## bao_cao
@@ -352,7 +352,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/notifications/gui.py` | 98 dòng | `notifications`, `outbox` |
 | `backend/notifications/hang_rao_thu.py` | 135 dòng | — |
 | `backend/notifications/hop_thu.py` | 391 dòng | `outbox` |
-| `backend/notifications/loai.py` | 48 dòng | — |
+| `backend/notifications/loai.py` | 53 dòng | — |
 | `backend/notifications/management/__init__.py` | 0 dòng | — |
 | `backend/notifications/management/commands/__init__.py` | 0 dòng | — |
 | `backend/notifications/management/commands/gui_hop_thu.py` | 17 dòng | — |

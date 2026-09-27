@@ -24,11 +24,12 @@ from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from chuong_trinh.tu_vung import DAI, NHAN_TRANG_THAI_MUC, TRANG_THAI_MUC
+from chuong_trinh.tu_vung import DAI, MUC_CAN_BAI, NHAN_TRANG_THAI_MUC, TRANG_THAI_MUC
 from common.audit import SESSION_LOG, record
 from common.clock import local_now
 from common.db import q, q1, x
 from common.permissions import IsTeachingStaff, can_see_class
+from teaching.assignments import bai_theo_muc_khung
 from teaching.vocab import chi_hoc_vien
 
 _KHONG_THAY_BUOI = {'error': 'Không tìm thấy buổi học này.'}
@@ -97,20 +98,16 @@ def _doc(b):
     # §74 (27/09/2026) — mục loại "bài tập" / "kiểm tra" của khung đã có bài giao chưa.
     # Đây chính là câu hỏi cột `assignments.syllabus_item_id` sinh ra để trả lời: khung nói
     # "buổi 3 có bài về nhà", và cho tới hôm nay không gì nói được bài ấy đã giao hay chưa.
-    ids_muc = [m['id'] for m in muc_ban]
-    bai_theo_muc = {}
-    if ids_muc:
-        for r in q('''SELECT syllabus_item_id AS muc, id, title FROM assignments
-                       WHERE class_id = %s AND syllabus_item_id = ANY(%s)
-                    ORDER BY created_at''', (b['class_id'], ids_muc)):
-            bai_theo_muc.setdefault(r['muc'], []).append({'id': r['id'], 'tieuDe': r['title']})
+    # Câu SQL nằm ở miền bài tập (`teaching.assignments.bai_theo_muc_khung`): màn Chương
+    # trình lớp hỏi CÙNG câu này, và hai cửa trả lời khác nhau thì tệ hơn là không trả lời.
+    bai_theo_muc = bai_theo_muc_khung(b['class_id'], [m['id'] for m in muc_ban])
 
     def dong(m):
         g = ghi_theo_muc.get(m['id'])
         d = {'itemId': m['id'], 'label': m['label'], 'kind': m['kind'],
              'weight': float(m['weight']), 'soBuoi': m['so_buoi'],
              'status': g['status'] if g else None, 'note': g['note'] if g else None}
-        if m['kind'] in ('bai_tap', 'kiem_tra'):
+        if m['kind'] in MUC_CAN_BAI:
             # Danh sách rỗng KHÁC với khoá vắng mặt: rỗng nghĩa là "mục này cần bài mà chưa
             # giao", còn vắng mặt nghĩa là "mục này không phải loại cần bài".
             d['baiDaGiao'] = bai_theo_muc.get(m['id'], [])

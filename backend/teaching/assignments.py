@@ -335,6 +335,33 @@ def _clean(body, class_id):
     return data, None
 
 
+def bai_theo_muc_khung(class_id, item_ids):
+    """``{item_id: [{'id', 'tieuDe', 'nhap'}]}`` — bài LỚP NÀY đã giao cho từng mục khung (§74).
+
+    Miền chương trình gọi hàm này thay vì tự đọc `assignments`: hai cửa (sổ đầu bài và màn
+    Chương trình lớp) phải trả lời giống nhau, và bảng này là của miền bài tập.
+
+    Ba điều cố ý:
+
+    · **Lọc `class_id`, không chỉ lọc mục.** Hai lớp cùng môn dùng CHUNG một khung là chuyện
+      thường, nên một `syllabus_item_id` có bài của nhiều lớp. Quên điều kiện này thì lớp A
+      hiện bài của lớp B — và trông y như đã giao rồi, nên không ai đi kiểm.
+    · **Bài đang soạn vẫn trả về, mang cờ `nhap`.** `status='draft'` là học viên CHƯA thấy.
+      Gọi nó là "đã giao" thì giảng viên tin là xong; bỏ hẳn đi thì họ soạn lại bài thứ hai.
+    · **Khoá vắng mặt khác danh sách rỗng** — người gọi tự quyết: rỗng = "mục cần bài mà chưa
+      giao", vắng mặt = "mục không phải loại cần bài".
+    """
+    if not item_ids:
+        return {}
+    ra = {}
+    for r in q('''SELECT syllabus_item_id AS muc, id, title, status FROM assignments
+                   WHERE class_id = %s AND syllabus_item_id = ANY(%s)
+                ORDER BY created_at, id''', (class_id, list(item_ids))):
+        ra.setdefault(r['muc'], []).append({
+            'id': r['id'], 'tieuDe': r['title'], 'nhap': r['status'] == 'draft'})
+    return ra
+
+
 def _hoc_vien_dang_hoc(class_id):
     """``{user_id: tên}`` — học viên đang học lớp (cùng bộ lọc với bảng chấm)."""
     return {r['user_id']: r['name'] for r in q(

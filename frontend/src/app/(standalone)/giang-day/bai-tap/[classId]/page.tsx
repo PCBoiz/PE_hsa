@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { HD_CT_LOP, type CtLop } from '@/lib/chuongTrinh';
 import { HD_CHI_TIET_LOP, type ChiTietLop } from '@/lib/hinhDang';
 import { chanTu } from '@/lib/chanTu';
 import { serverJson, type HinhDang } from '@/lib/server-api';
@@ -46,10 +47,26 @@ export default async function BaiTapPage({
   params: Promise<{ classId: string }>;
 }) {
   const { classId } = await params;
-  const [detail, list] = await Promise.all([
+  const [detail, list, ct] = await Promise.all([
     serverJson<ClassDetail>(`/api/teach/classes/${classId}`, { requireAuth: true }, HD_CHI_TIET_LOP),
     serverJson<DsBai>(`/api/teach/classes/${classId}/assignments`, { requireAuth: true }, HD_BAI),
+    // §74 — mục khung để ô "Thuộc mục nào của khung" dựng từ DANH MỤC MÁY CHỦ TRẢ, không
+    // gõ lại trong màn (RULES §7). Lớp chưa nhận khung thì danh sách rỗng và ô không hiện.
+    serverJson<CtLop>(`/api/teach/classes/${classId}/chuong-trinh`, { requireAuth: true }, HD_CT_LOP),
   ]);
+
+  // Mục CẦN bài, phẳng ra thành một danh sách chọn được. Nhãn mang số buổi để giảng viên
+  // nhận ra ngay mục nào của buổi nào — id thì không nói gì cho người đọc.
+  const mucKhung = ct.ok
+    ? ct.data.buoiKhung.flatMap((k) =>
+        k.items
+          .filter((i) => i.baiDaGiao !== undefined)
+          .map((i) => ({
+            id: i.id,
+            nhan: `Buổi ${k.soBuoi} · ${i.kindLabel}: ${i.title}`,
+            daGiao: (i.baiDaGiao ?? []).length > 0,
+          })))
+    : [];
 
   // 404 = lớp không tồn tại HOẶC không phụ trách — backend cố ý trả cùng một mã
   // để không lộ ra lớp có tồn tại hay không. Mọi mã khác phải nói đúng câu của
@@ -113,6 +130,10 @@ export default async function BaiTapPage({
           // có bài, và danh sách rỗng vì không đọc được, trông y hệt nhau — và
           // ở trường hợp thứ hai giảng viên sẽ giao lại một bài đã có.
           loiTai={list.ok ? null : list.message}
+          mucKhung={mucKhung}
+          // Không đọc được khung thì NÓI ra ở biểu mẫu. Ô chọn vắng mặt lặng lẽ trông y
+          // như lớp chưa nhận khung, và giảng viên sẽ đi tìm ở chỗ khác.
+          khungLoi={ct.ok ? null : ct.message}
         />
         </div>
       </main>

@@ -1,0 +1,20 @@
+[
+ {
+  "ten": "bỏ lọc lớp — lớp A hiện bài của lớp B (hai lớp cùng khung)",
+  "cu": "                   WHERE class_id = %s AND syllabus_item_id = ANY(%s)",
+  "moi": "                   WHERE (class_id = %s OR TRUE) AND syllabus_item_id = ANY(%s)",
+  "cho": "test_bai_cua_lop_khac_dung_cung_khung_khong_lot_vao"
+ },
+ {
+  "ten": "bài đang soạn bị gọi là đã giao",
+  "cu": "            'id': r['id'], 'tieuDe': r['title'], 'nhap': r['status'] == 'draft'})",
+  "moi": "            'id': r['id'], 'tieuDe': r['title'], 'nhap': False})",
+  "cho": "test_bai_dang_soan_van_hien_nhung_mang_co_nhap"
+ },
+ {
+  "ten": "hàm trả rỗng bất chấp — mọi mục thành 'chưa giao'",
+  "cu": "    return ra",
+  "moi": "    return {}",
+  "cho": "test_muc_bai_tap_noi_ro_bai_da_giao"
+ }
+]

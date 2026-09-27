@@ -24,6 +24,7 @@ NHAN = {
     'ban_ghi_loi': 'Báo hỏng bản ghi',
     'hoc_bu': 'Buổi học bù',
     'buoi_moi': 'Buổi mới trên lịch',
+    'nhac_han': 'Nhắc hạn nộp',
     'post_comment': 'Bình luận trong diễn đàn',
 }
 
@@ -31,6 +32,10 @@ NHAN = {
 #: Mỗi dòng phải nói ai sinh ra nó — một ngoại lệ không có lý do là một nhãn rác.
 GUI_NOI_KHAC = {
     'thu_nghiem': 'phép kiểm và lệnh thử tay gửi; không bao giờ tới người thật',
+    'nhac_han': 'nhịp nhắc hạn nộp (`notifications/nhac_han.py::chay`) ghi THẲNG bằng '
+                'một câu INSERT … SELECT: một lượt quét cả trung tâm là một câu lệnh. '
+                'Không ai bấm gì để sinh ra nó, nên nếu thiếu nhãn thì lỗi hiện ra trên '
+                'màn học viên chứ không hiện ra cho người sửa mã.',
     'thong_bao': 'thông báo trung tâm ghi THẲNG vào `notifications` bằng một câu INSERT '
                  '(`notifications/thong_bao.py::gui`) để một lượt gửi cả khối là một câu '
                  'lệnh, không phải mười nghìn lời gọi `notify`. Bộ quét đọc lời gọi hàm '

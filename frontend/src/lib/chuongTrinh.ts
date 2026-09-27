@@ -83,13 +83,19 @@ const HD_TIEN_DO_LOP = z.looseObject({
   nguong: z.looseObject({ treBuoi: so, tiLe: so }),
 });
 
+/** §74 — bài đã giao cho một mục khung. Khoá VẮNG = mục không phải loại cần bài; danh
+ *  sách RỖNG = mục cần bài mà chưa giao. Màn vẽ hai thứ ấy khác nhau. */
+const HD_BAI_DA_GIAO = z.optional(z.array(z.looseObject({ id: so, tieuDe: chu, nhap: z.boolean() })));
+
 export const HD_CT_LOP = z.looseObject({
   class: z.looseObject({ id: so, name: chu, code: chuNull, courseId: chuNull, courseTitle: chuNull }),
   khung: z.nullable(z.looseObject({ versionId: so, name: chu, status: chu, statusLabel: chu })),
   buoiKhung: z.array(z.looseObject({
     id: so, soBuoi: so, name: chu, durationMinutes: soNull, homework: chuNull,
     pctDaDay: soNull,
-    items: z.array(z.looseObject({ id: so, kind: chu, kindLabel: chu, title: chu, weight: so })),
+    items: z.array(z.looseObject({
+      id: so, kind: chu, kindLabel: chu, title: chu, weight: so, baiDaGiao: HD_BAI_DA_GIAO,
+    })),
   })),
   buoi: z.array(z.looseObject({
     id: so, startsAt: chu, status: chu, topic: chuNull, started: z.boolean(),
@@ -122,6 +128,7 @@ export type NhanKhung = z.infer<typeof HD_NHAN_KHUNG>;
 const HD_MUC_SO = z.looseObject({
   itemId: so, label: chu, kind: z.optional(chu), weight: z.optional(so), soBuoi: z.optional(soNull),
   status: chuNull, note: chuNull, ngoaiBan: z.optional(z.boolean()),
+  baiDaGiao: HD_BAI_DA_GIAO,
 });
 export type MucSo = z.infer<typeof HD_MUC_SO>;
 
@@ -147,3 +154,22 @@ export const HD_SO_DAU_BAI = z.looseObject({
   ghiDuoc: z.boolean(),
 });
 export type SoDauBai = z.infer<typeof HD_SO_DAU_BAI>;
+
+/* ── §74 · "mục này giao bài chưa" ──────────────────────────────────────── */
+
+export type BaiDaGiao = { id: number; tieuDe: string; nhap: boolean };
+
+/**
+ * Câu hiện cạnh một mục khung cần bài. Ba trường hợp, ba câu khác nhau — gộp lại thì
+ * giảng viên không biết mình còn phải làm gì:
+ *   · chưa có bài nào       → "Chưa giao bài" (việc còn phải làm)
+ *   · có bài, còn là nháp   → "Đang soạn: <tên>" (học viên CHƯA thấy bài này)
+ *   · đã giao               → "Đã giao: <tên>", nhiều bài thì đếm
+ */
+export function nhanBaiDaGiao(ds: readonly BaiDaGiao[]): { chu: string; xong: boolean } {
+  if (ds.length === 0) return { chu: 'Chưa giao bài', xong: false };
+  const daGiao = ds.filter((b) => !b.nhap);
+  if (daGiao.length === 0) return { chu: `Đang soạn: ${ds[0].tieuDe}`, xong: false };
+  if (daGiao.length === 1) return { chu: `Đã giao: ${daGiao[0].tieuDe}`, xong: true };
+  return { chu: `Đã giao ${daGiao.length} bài`, xong: true };
+}

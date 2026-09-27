@@ -80,6 +80,16 @@ class Dung:
         x('INSERT INTO attendance (session_id, user_id, status) VALUES (%s, %s, %s)',
           (buoi, uid, status))
 
+    def loai_muc(self, item_id, loai):
+        """Đổi loại một mục khung (`ban()` dựng mọi mục là 'chu_de')."""
+        x('UPDATE syllabus_items SET kind = %s WHERE id = %s', (loai, item_id))
+
+    def bai(self, lop, muc=None, status='open', ten=None):
+        """Một bài tập của lớp, có thể nối vào mục khung (§74). Trả `id`."""
+        return q1("""INSERT INTO assignments (class_id, title, status, syllabus_item_id)
+                     VALUES (%s, %s, %s, %s) RETURNING id""",
+                  (lop, ten or 'Bài thử %s' % _hau_to(), status, muc))['id']
+
     def ghi_so(self, buoi, muc):
         """`muc`: [(item_id, status)] — ghi thẳng một sổ đầu bài."""
         x('INSERT INTO session_logs (session_id, logged_at) VALUES (%s, %s)', (buoi, self.nay))
