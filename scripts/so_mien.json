@@ -25,6 +25,7 @@
         "backend/teaching/danh_gia.py",
         "backend/teaching/lop_cua_toi.py",
         "backend/teaching/hoc_lieu.py",
+        "backend/teaching/hv_xem_du.py",
         "backend/lop_hoc/**/*.py"
       ],
       "frontend": [
@@ -32,7 +33,9 @@
         "frontend/src/app/(standalone)/quan-tri/dot-hoc/**",
         "frontend/src/app/(standalone)/giang-day/NutCanHoTro.tsx",
         "frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/DanhGiaEm.tsx",
-        "frontend/src/components/LopCuaToi*.tsx"
+        "frontend/src/components/LopCuaToi*.tsx",
+        "frontend/src/app/(standalone)/lop/**",
+        "frontend/src/lib/xemDu.ts"
       ],
       "bang": [
         "classes",

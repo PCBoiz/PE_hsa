@@ -570,6 +570,42 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 <!-- MỚI NHẤT -->
 
+## 27/09/2026 — Em xem lại được cả khoá, không chỉ bốn buổi gần nhất (agent HV2)
+
+Chỗ này do agent soát bảng phân rã tìm ra, không phải do ai báo lỗi: thẻ lớp của học viên chỉ
+lấy **bốn** bản ghi (`lop_cua_toi.py` `SO_BAN_GHI`) và **bốn** tài liệu (`SO_HOC_LIEU`), và
+ngoài thẻ ấy em không có màn nào khác. Lớp 24 buổi thì mười một buổi trước đó biến mất khỏi
+màn — nhân sự có danh sách đủ từ lâu, người PHẢI XEM LẠI BÀI thì không. Ô tóm tắt dòng 29 ghi
+"CÓ" là quá tay, và đã bị hạ xuống MỘT PHẦN hôm qua.
+
+Nay có `GET /api/lop-cua-toi/<lớp>/xem-du` (`backend/teaching/hv_xem_du.py`) và trang
+`/lop/<lớp>/xem-lai`: đủ cả khoá, sắp theo buổi, có ô tìm (chủ đề buổi hoặc NGÀY học · tên
+hoặc mô tả tài liệu), ô lọc ("chưa xem lại" · kho chung / theo buổi), phân trang theo khoá.
+Thẻ lớp giữ nguyên bốn dòng, thêm hai đường "Xem tất cả →".
+
+**Khoá phân trang là một CẶP `(thời điểm, id)`, không phải `id`.** Lịch sinh hàng loạt rồi
+chèn buổi bù cho ra lớp mà thứ tự `id` không trùng thứ tự thời gian — phân trang bằng `id` một
+mình nhảy dòng ở đúng những lớp ấy và không ở đâu khác. Mốc do máy chủ tự tra từ chính dòng
+cuối trang trước (phép so HÀNG của Postgres), nên trình duyệt chỉ gửi lại một số nguyên và
+không có chỗ nào để múi giờ làm lệch một dòng.
+
+**Bẫy `thuoc_buoi` phải nói lại lần thứ hai trong hai ngày:** tên cột truyền vào BẮT BUỘC có
+tiền tố bảng. Và phép kiểm bắt được nó không phải "buổi bù chỉ em trong buổi thấy" — mà là
+**"buổi THƯỜNG tới cả lớp"**. Bỏ tiền tố làm điều kiện luôn ĐÚNG với em đã có dòng
+`session_participants` và luôn SAI với em chưa có dòng nào; phép kiểm thứ nhất xanh suốt,
+chỉ phép kiểm thứ hai đỏ. Ai viết cửa thứ mười một nhớ viết cả hai.
+
+Số: bộ kiểm mới **27/27 xanh** (lượt ĐỎ trước khi viết mã: 24 đỏ / 3 xanh), **16/16 đột
+biến bị giết đúng chỗ**, hồi quy `teaching/` **669 xanh / 0 đỏ** (1:18:05), `tsc` + `eslint` + 38 bộ e2e/unit xanh,
+`ban_do --kiem` 0 chỗ gãy. **KHÔNG thêm DDL** — cửa chỉ đọc.
+
+Cổng `e2e/unit/chu-nguoi-dung.test.mjs` bắt được hai chuỗi của agent (ngày gõ cứng trong ô
+gợi ý ô tìm). Đúng loại lỗi không ai soi ra bằng mắt.
+
+**Lead còn phải tự đo trên màn thật** — agent không dựng máy chủ (máy còn 2,4 GB lúc nhận
+việc). Danh sách việc phải đo: `docs/agent/BAO_CAO_HV_XEM_DU.md`.
+
+
 ## 26/09/2026 (sáng) — BỎ Claude cloud; GitHub còn đúng ba nhánh
 
 - Anh chốt: bỏ phần Claude cloud; GitHub chỉ giữ `master`, `erp`, `erp-DB`. Đã xoá 7 nhánh (`agent/e1`, `agent/luong-a1`,
