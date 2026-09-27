@@ -21,7 +21,7 @@
 | [diem_danh](#diem_danh) | Điểm danh | 2 | 1 tệp · 132 dòng | 1 tệp · 81 dòng |
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1108 dòng | 7 tệp · 1858 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1856 dòng | 8 tệp · 1440 dòng |
-| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2538 dòng |
+| [bao_cao](#bao_cao) | Báo cáo | 0 | 8 tệp · 4028 dòng | 14 tệp · 2543 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
@@ -239,7 +239,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/loading.tsx` | 28 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/page.tsx` | 166 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/page.tsx` | 253 dòng |
-| `frontend/src/app/(standalone)/giang-day/page.tsx` | 382 dòng |
+| `frontend/src/app/(standalone)/giang-day/page.tsx` | 387 dòng |
 | `frontend/src/app/(standalone)/quan-tri/cham-cong/layout.tsx` | 17 dòng |
 | `frontend/src/app/(standalone)/quan-tri/cham-cong/page.tsx` | 156 dòng |
 | `frontend/src/app/(standalone)/quan-tri/co-so-hoc-phi/BangCoSo.tsx` | 178 dòng |

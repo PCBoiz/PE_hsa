@@ -172,9 +172,14 @@ export default async function ViecHomNayPage() {
           {/* Ngày HÔM NAY theo giờ VN, dựng ở máy chủ (22/09/2026, agent GV→PH F14). */}
           <span className="text-ink-2">{ngayDayDuVN()}</span>
           {' · '}
+          {/* CHỈ ĐẾM, KHÔNG LIỆT KÊ (27/09/2026 — góp ý khách 23/09: "màn hình đầu đã khá
+              nhiều thông tin nên đọc hơi rối"). Sáu lớp nối nhau bằng dấu "·" làm một dòng
+              dài 130 ký tự ngay dòng thứ hai của màn, và tên lớp thì lặp lại ở từng khối
+              bên dưới. Đo `do_mat_do_chu.mjs`: đây là dòng dài nhất của cả màn.
+              Tên lớp ai cần thì có ngay ở danh sách lớp phía dưới. */}
           {d.lop.length === 0
             ? 'Bạn chưa phụ trách lớp nào.'
-            : `${d.lop.length} lớp: ${d.lop.map((l) => l.name).join(' · ')}`}
+            : `${d.lop.length} lớp đang phụ trách`}
         </p>
       </div>
 

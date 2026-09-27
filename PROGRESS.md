@@ -10135,3 +10135,55 @@ màn học viên (`nhan('nhac_han')` → `'Khác'`) vì nó ghi thẳng bằng I
 **RAM.** Đầu buổi còn 2,54 GB: ba `chrome-headless-shell` mồ côi từ 23:04 tối qua — `don_may.ps1`
 **không bắt loại tiến trình này**, quy tắc của nó chỉ có Django / Next / Playwright server / bộ đo.
 Chỗ cần vá tiếp.
+
+## 27/09/2026 · tối — soát 38 màn: 22 ĐẠT → 35 ĐẠT, và hai thước đo tự nói dối
+
+**Sổ soát màn.** Lượt sáng ra 15 ô "thiếu". Đi hết từng ô, mở màn thật: **13 ô là bộ đo sai,
+2 ô thiếu thật** (tải tệp học liệu · nộp bài bằng tệp — cả hai chờ khoá R2). Con số cuối:
+**35 ĐẠT · 2 thiếu · 1 chưa đo được** (thẻ hết hạn giữa lượt — thẻ sống 30 phút, lượt 38 màn
+chạm trần ấy).
+
+Ba gốc rễ, không phải vá từng ô:
+1. **Thẻ thử trỏ nhầm người** — `cap_the.py` lấy `ORDER BY id` nên bốc trợ giảng CŨ NHẤT,
+   một người của lớp thử chứ không thuộc lớp mẫu. Mọi màn lớp mẫu trả 404: màn Bài tập của
+   trợ giảng ra **47 từ**. Nay ưu tiên tài khoản `is_demo`. Sau khi vá: **284 từ**.
+2. **Bộ đo mù với ô thả xuống** — Chromium không đưa chữ `<option>` chưa chọn vào
+   `innerText`, nên mọi danh mục nằm trong `<select>` là vô hình, mà theo RULES §7 đó chính
+   là chỗ danh mục phải nằm ("Chuyển sang lớp khác…", "Tạm dừng").
+3. **Khối tải sau khi React gắn cần thời gian** — 2,5 giây chưa đủ cho khối bản ghi.
+
+Chín câu hỏi sai chỗ, mỗi câu một lý do đã ghi thẳng vào `scripts/man/nghiem_thu.json`:
+hỏi trước khi bấm mở sổ điểm danh · hỏi ở màn ngoài khi nội dung nằm sau nút "Xem" · hỏi ô
+lọc Môn bằng thẻ học vụ trong khi hộp ấy chỉ quản trị viên thấy · hỏi cả "Giao người xử lý"
+lẫn "Chuyển tiếp" trong khi chúng là MỘT nút hai chế độ · hỏi "cảnh báo trùng lịch" trên một
+lịch sạch (đòi màn phải hỏng mới ĐẠT) · hỏi "Tải bảng tính" ở Toàn trung tâm trong khi nó ở
+sổ buổi học · và một câu MÌNH TỰ THÊM ở Cơ sở học phí mà bảng của khách không đòi.
+
+**Một lỗi sản phẩm thật**: màn "Soạn giáo trình" KHÔNG có đường sang "Khung chương trình" —
+trang khung dựng đường ngược về từ đầu, chiều này thì không. Đã thêm.
+
+**Thước đo thứ hai cũng sai.** `do_mat_do_chu.mjs` đếm "ô số" bằng mọi phần tử lá chỉ chứa
+một con số — nên một BẢNG sáu lớp × sáu cột thành 36 "ô số", và Toàn trung tâm bị chấm **46**
+trong khi chỉ tiêu là ≤ 6. Nhưng `docs/HUONG_GIAO_DIEN_2026-09-26.md` §4 lại bảo GIỮ bảng ấy.
+Thước đo đang đòi xoá đúng thứ tài liệu thiết kế muốn giữ. Nay số trong `table` đếm riêng.
+
+Số thật sau khi sửa thước đo (chỉ tiêu §5 trong ngoặc):
+
+| Màn | từ | ô số đầu màn | dòng > 12 từ |
+|---|---|---|---|
+| Giảng dạy | 584 (≤450) | 7 (≤6) | 21 (0) |
+| Giảng dạy · giảng viên | **434 ✓** | 7 | 15 |
+| Vận hành · Tổng quan | 649 (≤350) | 14 | 13 |
+| Học viên · Trang của tôi | 375 (≤300) | 4 ✓ | 4 |
+
+Đã gọt một chỗ: dòng "6 lớp: A · B · C…" ở đầu màn Giảng dạy (130 ký tự, dòng dài nhất cả
+màn, tên lớp lặp lại ngay bên dưới) → "6 lớp đang phụ trách". Màn giảng viên **456 → 434 từ**,
+đạt chỉ tiêu. Phần còn lại là việc gọt tiếp, có số để đo.
+
+**Bộ mẫu hết rỗng ở năm chỗ** (đếm cả lượt chiều): bài kiểm tra · bản ghi buổi học + lượt xem
+· học liệu của lớp · học liệu của KHUNG · hộp Yêu cầu. Cả năm đều là mã chạy đúng mà dữ liệu
+trống — mỗi chỗ đủ làm khách kết luận "chưa làm".
+
+**Hai agent chết vì hết hạn mức phiên** (429, đặt lại 21:10) — một đang soát ô trợ giảng, một
+làm báo cáo chéo (để lại 935 dòng chưa commit, đã gọi agent khác cứu). Bài học ghi vào brief
+từ lượt sau: **commit sớm và nhỏ**, mã treo ngoài git là mã có thể mất.

@@ -52,9 +52,18 @@ const DEM = () => {
   const cau = chu.split('\n').map((x) => x.trim()).filter(Boolean);
   const khoi = [...document.querySelectorAll('section, [class*=card], [class*=Card], [class*=tile]')].filter(hien);
   const nut = [...document.querySelectorAll('button, a[href]')].filter(hien);
-  // Ô số = phần tử lá chỉ chứa một con số (các thẻ thống kê trên đầu màn).
-  const oSo = [...document.querySelectorAll('*')].filter((e) =>
-    hien(e) && e.children.length === 0 && /^\d+([.,]\d+)?%?$/.test((e.textContent || '').trim()));
+  /* Ô SỐ = thẻ thống kê ở ĐẦU MÀN, không phải mọi con số trên trang (sửa 27/09/2026).
+     Bản trước đếm mọi phần tử lá chỉ chứa một con số, nên một BẢNG sáu lớp × sáu cột số
+     thành 36 "ô số" — và màn Toàn trung tâm bị chấm 46 trong khi chỉ tiêu là ≤ 6. Nhưng
+     chính `docs/HUONG_GIAO_DIEN_2026-09-26.md` §4 lại bảo GIỮ bảng ấy ("Bảng học viên: giữ
+     4 cột"). Tức thước đo đang đòi xoá đúng thứ tài liệu thiết kế muốn giữ — đo sai thì
+     mọi lượt "gọt" sau đó đều gọt nhầm chỗ.
+     Nay: số trong `table` đếm riêng, không tính vào chỉ tiêu. */
+  const laSo = (e) => hien(e) && e.children.length === 0
+    && /^\d+([.,]\d+)?%?$/.test((e.textContent || '').trim());
+  const moiSo = [...document.querySelectorAll('*')].filter(laSo);
+  const oSo = moiSo.filter((e) => !e.closest('table'));
+  const soTrongBang = moiSo.length - oSo.length;
   const cauDai = cau.filter((c) => c.split(/\s+/).length > 12);
   return {
     soTu: tu.length,
@@ -62,6 +71,7 @@ const DEM = () => {
     soKhoi: khoi.length,
     soNut: nut.length,
     soOSo: oSo.length,
+    soTrongBang,
     cauDai: cauDai.length,
     dongDaiNhat: cauDai.sort((a, b) => b.length - a.length).slice(0, 3),
     caoTrang: document.documentElement.scrollHeight,
@@ -81,10 +91,10 @@ const ra = await chay({ goc: WEB, anh: sau('--anh') }, async (phien) => {
   return ds;
 });
 
-console.log(`| Màn | từ | dòng | khối | nút | ô số | dòng >12 từ | cao (px) |`);
-console.log('|---|---|---|---|---|---|---|---|');
+console.log(`| Màn | từ | dòng | khối | nút | ô số đầu màn | số trong bảng | dòng >12 từ | cao (px) |`);
+console.log('|---|---|---|---|---|---|---|---|---|');
 for (const d of ra) {
-  console.log(`| ${d.man} | ${d.soTu} | ${d.soDong} | ${d.soKhoi} | ${d.soNut} | ${d.soOSo} | ${d.cauDai} | ${d.caoTrang} |`);
+  console.log(`| ${d.man} | ${d.soTu} | ${d.soDong} | ${d.soKhoi} | ${d.soNut} | ${d.soOSo} | ${d.soTrongBang} | ${d.cauDai} | ${d.caoTrang} |`);
 }
 console.log('\nBa dòng dài nhất mỗi màn:');
 for (const d of ra) {
