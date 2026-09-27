@@ -41,7 +41,7 @@
  {
   "dong": 3,
   "ten": "QTV · hồ sơ học viên",
-  "duong": "/quan-tri/tai-khoan/35695",
+  "duong": "/quan-tri/tai-khoan/{EM_MAU}",
   "vai": "hvu",
   "hoi": {
    "tinhThanh": "Tỉnh|Thành phố",
@@ -164,7 +164,7 @@
  {
   "dong": 9,
   "ten": "Giáo vụ · điểm danh + lịch sử sửa (buổi học của lớp)",
-  "duong": "/giang-day/buoi-hoc/7322",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
   "vai": "hvu",
   "hoi": {
    "diemDanh": "Điểm danh|điểm danh",
@@ -202,7 +202,7 @@
  {
   "dong": 11,
   "ten": "Giáo vụ · một yêu cầu (phân loại, giao, kết quả)",
-  "duong": "/yeu-cau/176",
+  "duong": "/yeu-cau/{YEU_CAU_MAU}",
   "vai": "hvu",
   "hoi": {
    "doiLoai": "Đổi loại",
@@ -217,7 +217,7 @@
  {
   "dong": 12,
   "ten": "Giáo vụ · duyệt thay đổi học tập (xin chuyển lớp)",
-  "duong": "/yeu-cau/177",
+  "duong": "/yeu-cau/{YEU_CAU_DUYET}",
   "vai": "hvu",
   "hoi": {
    "nutDuyet": "Duyệt",
@@ -229,7 +229,7 @@
  {
   "dong": 14,
   "ten": "GV · lớp + điểm danh",
-  "duong": "/giang-day/buoi-hoc/7322",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
   "vai": "gv",
   "hoi": {
    "diemDanh": "Điểm danh|điểm danh",
@@ -254,7 +254,7 @@
  {
   "dong": 15,
   "ten": "GV · Chương trình lớp (tiến độ vs kế hoạch)",
-  "duong": "/giang-day/chuong-trinh/7322",
+  "duong": "/giang-day/chuong-trinh/{LOP_MAU}",
   "vai": "gv",
   "hoi": {
    "daDay": "Đã dạy|đã dạy",
@@ -268,7 +268,7 @@
  {
   "dong": 15,
   "ten": "GV · Sổ đầu bài một buổi",
-  "duong": "/giang-day/so-dau-bai/8004",
+  "duong": "/giang-day/so-dau-bai/{BUOI_MAU}",
   "vai": "gv",
   "hoi": {
    "noiDungTungMuc": "Đã dạy|Một phần|Chưa dạy",
@@ -283,7 +283,7 @@
  {
   "dong": 17,
   "ten": "GV · giao bài của lớp",
-  "duong": "/giang-day/bai-tap/7322",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
   "vai": "gv",
   "hoi": {
    "giaoBaiMoi": "Giao bài mới",
@@ -297,9 +297,35 @@
   }
  },
  {
+  "dong": 15,
+  "ten": "GV · Chương trình lớp — mục nào đã giao bài (§74)",
+  "duong": "/giang-day/chuong-trinh/{LOP_MAU}",
+  "vai": "gv",
+  "ghiChu": "Lớp 22102 là lớp mẫu có khung ĐẦY ĐỦ; lớp 7322 và lớp 1 chỉ có khung thử, nên hai câu dưới đây hỏi ở đó sẽ hỏng vì thiếu dữ liệu chứ không vì thiếu tính năng.",
+  "hoi": {
+   "chuaGiaoBai": "Chưa giao bài",
+   "daGiaoHoacDangSoan": "Đã giao|Đang soạn"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 17,
+  "ten": "GV · giao bài — ô chọn mục khung (§74)",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
+  "vai": "gv",
+  "bam": [
+   "Giao bài mới"
+  ],
+  "hoi": {
+   "oMucKhung": "Mục khung chương trình",
+   "khongBatBuoc": "Không gắn vào khung",
+   "nhanMangSoBuoi": "Buổi \\d+ ·"
+  }
+ },
+ {
   "dong": 17,
   "ten": "GV · bảng chấm một bài",
-  "duong": "/giang-day/cham/3358",
+  "duong": "/giang-day/cham/{BAI_MAU}",
   "vai": "gv",
   "hoi": {
    "oDiem": "Điểm|điểm",
@@ -312,7 +338,7 @@
  {
   "dong": 18,
   "ten": "GV · theo dõi một học sinh (tờ báo cáo)",
-  "duong": "/giang-day/bao-cao/7322/35695",
+  "duong": "/giang-day/bao-cao/{LOP_MAU}/{EM_MAU}",
   "vai": "gv",
   "hoi": {
    "nhanXetGuiPhuHuynh": "Nhận xét",
@@ -349,7 +375,7 @@
  {
   "dong": 21,
   "ten": "TG · theo dõi bài tập + điểm danh của lớp",
-  "duong": "/giang-day/bai-tap/7322",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
   "vai": "tg",
   "hoi": {
    "thayBaiTap": "Bài tập|bài",
@@ -360,7 +386,7 @@
  {
   "dong": 22,
   "ten": "TG/GV · bản ghi Zoom theo buổi (lớp có bản ghi)",
-  "duong": "/giang-day/buoi-hoc/1",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
   "vai": "gv",
   "hoi": {
    "oLinkRecord": "Bản ghi|record|Zoom|Xem lại",

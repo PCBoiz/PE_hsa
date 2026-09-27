@@ -449,6 +449,22 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [b['lop']['id'] for b in bai], [b['tieu_de'] for b in bai], [b['cd'] for b in bai],
              [b['khoa'] for b in bai], [b['han'] for b in bai], [b['tt'] for b in bai],
              [b['tao_luc'] for b in bai]))}
+        # §74 — nối MỘT bài của mỗi lớp mẫu vào mục "bài về nhà" ĐẦU TIÊN của khung.
+        #
+        # Không nối thì màn Chương trình lớp chỉ nói được một vế: mọi mục đều "Chưa giao
+        # bài", và người xem kết luận tính năng chỉ biết nói "chưa". Một bài là đủ để cả
+        # hai vế cùng lên màn — mục ấy "Đã giao: <tên>", những mục còn lại vẫn "Chưa giao".
+        # Chỉ nối vào mục CẦN bài; nối vào mục chủ đề là nói sai về khung.
+        x('''UPDATE assignments a SET syllabus_item_id = m.item_id
+               FROM (SELECT DISTINCT ON (c.id) c.id AS class_id, i.id AS item_id,
+                            (SELECT min(id) FROM assignments WHERE class_id = c.id) AS bai_id
+                       FROM classes c
+                       JOIN syllabus_sessions ss ON ss.version_id = c.syllabus_version_id
+                       JOIN syllabus_items i ON i.session_id = ss.id AND i.kind = 'bai_tap'
+                      WHERE c.is_demo
+                   ORDER BY c.id, ss.sort_order, i.sort_order) m
+              WHERE a.id = m.bai_id''')
+
         nop = []
         for b in bai:
             aid = id_bai[(b['lop']['id'], b['tieu_de'])]

@@ -205,3 +205,31 @@ def test_lam_moi_dung_HONG_thi_bo_cu_con_nguyen(sach, monkeypatch):
     with pytest.raises(M.LoiDuLieuMau):
         M.lam_moi(so_em_moi_lop=2)
     assert M.dem() == truoc, 'dựng hỏng mà bộ cũ đã bị gỡ'
+
+
+def test_bo_mau_co_bai_NOI_VAO_khung_de_man_chuong_trinh_noi_duoc_ca_hai_ve(sach):
+    """§74 cần bộ mẫu có CẢ HAI trạng thái, không chỉ một.
+
+    Màn Chương trình lớp trả lời "buổi này đã giao bài chưa". Nếu bộ trình diễn không nối
+    bài nào vào khung thì mọi mục đều hiện "Chưa giao bài" — khách xem sẽ kết luận là tính
+    năng chỉ biết nói "chưa", vì họ không có cách nào thấy vế kia. Đo trên dev 27/09 trước
+    khi vá: 6 mục cần bài, **0** mục có bài nối vào.
+
+    Một bài là đủ: một mục "Đã giao", những mục còn lại "Chưa giao bài".
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=2)
+    noi = q('''SELECT a.class_id, a.syllabus_item_id, i.kind
+                 FROM assignments a
+                 JOIN classes c ON c.id = a.class_id AND c.is_demo
+                 JOIN syllabus_items i ON i.id = a.syllabus_item_id''')
+    assert noi, 'bộ mẫu không nối bài nào vào mục khung — màn Chương trình chỉ nói được "chưa"'
+    assert all(r['kind'] in ('bai_tap', 'kiem_tra') for r in noi), \
+        'chỉ nối vào mục CẦN bài, không nối vào mục chủ đề'
+    # Và vẫn còn mục chưa giao để hai vế cùng lên màn.
+    con = q1('''SELECT COUNT(*) AS n FROM syllabus_items i
+                  JOIN syllabus_sessions ss ON ss.id = i.session_id
+                  JOIN classes c ON c.syllabus_version_id = ss.version_id AND c.is_demo
+                 WHERE i.kind IN ('bai_tap', 'kiem_tra')
+                   AND NOT EXISTS (SELECT 1 FROM assignments a
+                                    WHERE a.class_id = c.id AND a.syllabus_item_id = i.id)''')['n']
+    assert con > 0, 'nối hết thì không còn vế "Chưa giao bài" để cho khách thấy'

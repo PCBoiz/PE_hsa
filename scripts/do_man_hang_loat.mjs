@@ -106,13 +106,96 @@ async function bam(page, nhan, choSau = 2000) {
   return null;
 }
 
+/**
+ * CHỖ TRỐNG trong đường dẫn — `{LOP_MAU}`, `{BUOI_MAU}`, `{EM_MAU}`, `{BAI_MAU}`.
+ *
+ * VÌ SAO (đo 27/09/2026). Sổ này từng ghi id thẳng: `/giang-day/chuong-trinh/7322`. Nhưng
+ * `du_lieu_mau --lam-moi` GỠ bộ mẫu rồi dựng lại với id MỚI — và đó là lệnh bắt buộc chạy
+ * trước mỗi buổi nghiệm thu. Đếm hôm nay: **11 trên 12 id trong sổ đã chết**. Chạy sổ ấy
+ * lúc này sẽ ra một bảng đầy dấu ✗ cho những tính năng đang chạy tốt — đúng thứ dương
+ * tính giả nguy hiểm nhất mà tệp này viết ra để tránh, chỉ là ở một chỗ khác.
+ *
+ * Nên: sổ ghi chỗ trống, máy hỏi máy chủ rồi điền. Sai một lần thì sai cả sổ, và sửa cũng
+ * chỉ một chỗ.
+ */
+async function dienChoTrong(phien) {
+  const page = await phien.man('/giang-day', 'gv');
+  const doc = (duong) => page.evaluate(async (d) => {
+    const r = await fetch(d);
+    return r.ok ? r.json() : null;
+  }, duong);
+
+  const lop = (await doc('/api/teach/classes'))?.classes || [];
+  // Lớp mẫu CÓ khung: mọi câu hỏi về chương trình / sổ đầu bài đều cần nó.
+  let chon = null;
+  for (const l of lop) {
+    const ct = await doc(`/api/teach/classes/${l.id}/chuong-trinh`);
+    if (ct?.buoiKhung?.length) { chon = { l, ct }; break; }
+  }
+  if (!chon) chon = { l: lop[0], ct: null };
+  if (!chon.l) return { loi: 'giảng viên của thẻ `gv` không phụ trách lớp nào' };
+
+  const buoi = (chon.ct?.buoi || []).filter((b) => b.started);
+  const em = (chon.ct?.tungEm || [])[0];
+  const bai = (await doc(`/api/teach/classes/${chon.l.id}/assignments`))?.assignments || [];
+
+  // Hộp Yêu cầu đọc bằng thẻ HỌC VỤ (giảng viên không thấy hộp của học vụ). Hai màn dòng
+  // 11 / 12 cần hai yêu cầu KHÁC loại: một cái thường, một cái "xin thay đổi học tập" —
+  // màn duyệt chỉ hiện nút Duyệt cho loại sau.
+  const hvu = await phien.man('/giang-day', 'hvu');
+  const dsYc = await hvu.evaluate(async () => {
+    const r = await fetch('/api/teach/yeu-cau?trang_thai=');
+    if (!r.ok) return [];
+    const d = await r.json();
+    return (d.items || d.yeuCau || d.results || []).map(
+      (y) => ({ id: y.id, loai: y.loai || y.kind || '' }));
+  });
+  const thayDoi = dsYc.find((y) => /chuyen|bao_luu|huy|hoc_lai|nghi_hoc|hoc_bu|tt_/.test(y.loai));
+
+  return {
+    LOP_MAU: String(chon.l.id),
+    BUOI_MAU: buoi.length ? String(buoi[buoi.length - 1].id) : null,
+    EM_MAU: em ? String(em.userId) : null,
+    BAI_MAU: bai.length ? String(bai[0].id) : null,
+    YEU_CAU_MAU: dsYc.length ? String(dsYc[0].id) : null,
+    YEU_CAU_DUYET: thayDoi ? String(thayDoi.id) : (dsYc.length ? String(dsYc[0].id) : null),
+  };
+}
+
+/** `/giang-day/chuong-trinh/{LOP_MAU}` → đường dẫn thật, hoặc `null` nếu thiếu chỗ điền. */
+function thay(duong, gia) {
+  let thieu = null;
+  const ra = duong.replace(/\{([A-Z_]+)\}/g, (_, ten) => {
+    const v = gia[ten];
+    if (!v) { thieu = ten; return '0'; }
+    return v;
+  });
+  return thieu ? { thieu } : { duong: ra };
+}
+
 const anh = sau('--anh');
 const ra = await chay({ goc: GOC, anh }, async (phien) => {
+  const gia = await dienChoTrong(phien);
+  if (gia.loi) {
+    console.error('KHÔNG ĐO ĐƯỢC — ' + gia.loi);
+    process.exitCode = 2;
+    return [];
+  }
+  console.log('Chỗ trống đã điền: '
+    + Object.entries(gia).map(([k, v]) => `${k}=${v ?? '(thiếu)'}`).join(' · ') + '\n');
   const ds = [];
   let thuTu = 0;
   for (const m of MAN) {
     thuTu += 1;
-    const page = await phien.man(m.duong, m.vai || 'ad');
+    const d0 = thay(m.duong, gia);
+    if (d0.thieu) {
+      // Thiếu chỗ điền KHÔNG phải "tính năng không có" — nói ra bằng trạng thái thứ ba.
+      ds.push({ dong: m.dong, ten: m.ten, xin: m.duong, ma: 0, soTu: 0, hoi: {},
+                loiBam: `thiếu ${d0.thieu} — bộ dữ liệu mẫu chưa dựng? chạy du_lieu_mau --lam-moi` });
+      continue;
+    }
+    const duongThat = d0.duong;
+    const page = await phien.man(duongThat, m.vai || 'ad');
     // Màn nào tải dữ liệu sau khi dựng thì cần thêm một nhịp; `phien.man` đã chờ
     // tới lúc chiều cao thôi đổi, nhịp này là cho khối nạp bằng `useEffect`.
     await page.waitForTimeout(m.cho ?? 2500);
@@ -144,7 +227,7 @@ const ra = await chay({ goc: GOC, anh }, async (phien) => {
     d.dong = m.dong;
     d.ten = m.ten;
     d.ma = page.maHTTP;
-    d.xin = m.duong;
+    d.xin = duongThat;
     /* Tên ảnh mang SỐ THỨ TỰ, không chỉ dòng + vai: một dòng nghiệm thu thường
        cần hai màn (dòng 15 = Chương trình lớp + Sổ đầu bài), và tên trùng thì
        ảnh sau đè ảnh trước — soát lại còn đúng một nửa bằng chứng. */
@@ -169,7 +252,7 @@ function khongDoDuoc(d, m) {
   if (d.loiBam) return `${d.loiBam} — chưa vào được chỗ cần đo`;
   // Đường dẫn XIN, đã bỏ phần truy vấn — `location.pathname` không mang `?lop=7322`,
   // nên so nguyên chuỗi thì mọi màn có tham số đều bị báo "đi lạc".
-  const xin = (m.duong || '/').split('?')[0].replace(/\/$/, '') || '/';
+  const xin = (d.xin || m.duong || '/').split('?')[0].replace(/\/$/, '') || '/';
   const den = (d.url || '/').replace(/\/$/, '') || '/';
   if (d.soTu === 0) return 'trang rỗng — máy chủ dev có đang chạy không?';
   if (d.ma === 0) return 'không mở nổi trang (goto ném / quá 30 giây) — máy chủ dev có đang chạy không?';

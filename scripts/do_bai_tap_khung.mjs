@@ -12,7 +12,8 @@
 import { chay } from './lib/phien_do.mjs';
 
 const WEB = process.env.PE_WEB || 'http://localhost:3100';
-const LOP = process.env.PE_LOP || '1';
+/** `PE_LOP` ép một lớp cụ thể; bỏ trống thì TỰ TÌM — xem `timLop`. */
+const LOP_EP = process.env.PE_LOP || null;
 const anh = process.argv.includes('--anh') ? process.argv[process.argv.indexOf('--anh') + 1] : null;
 const TEN_BAI = `Bài đo §74 ${new Date().toISOString().slice(11, 19)}`;
 
@@ -22,12 +23,55 @@ function ghi(ten, dat, chiTiet) {
   console.log(`${dat ? 'ĐẠT ' : 'HỎNG'} ${ten}${chiTiet ? ` — ${chiTiet}` : ''}`);
 }
 
+/**
+ * Lớp để đo: lớp đầu tiên của giảng viên CÓ mục khung cần bài.
+ *
+ * Trước đây id lớp gõ thẳng vào lệnh chạy, và `du_lieu_mau --lam-moi` dựng lại bộ mẫu với
+ * id MỚI — nên sau mỗi lượt làm mới, bộ đo trỏ vào một lớp đã bị gỡ và báo hỏng như thể
+ * tính năng hỏng. Hỏi máy chủ thì không bao giờ lệch.
+ */
+async function timLop(page) {
+  const ds = await page.evaluate(async () => {
+    const r = await fetch('/api/teach/classes');
+    if (!r.ok) return [];
+    return (await r.json()).classes || [];
+  });
+  for (const lop of ds) {
+    const soMuc = await page.evaluate(async (id) => {
+      const r = await fetch(`/api/teach/classes/${id}/chuong-trinh`);
+      if (!r.ok) return 0;
+      const d = await r.json();
+      return (d.buoiKhung || []).reduce(
+        (n, k) => n + k.items.filter((i) => i.baiDaGiao !== undefined).length, 0);
+    }, lop.id);
+    if (soMuc > 0) return { id: String(lop.id), ten: lop.name, soMuc };
+  }
+  return null;
+}
+
 /** Chữ của mọi mục trên màn Chương trình lớp — một lần đọc, nhiều lần hỏi. */
 async function chuMuc(page) {
   return (await page.locator('li[data-muc]').allInnerTexts()).map((s) => s.replace(/\s+/g, ' ').trim());
 }
 
 await chay({ goc: WEB, anh }, async (phien) => {
+  // ── 0 · Chọn lớp ─────────────────────────────────────────────────────────
+  const dau = await phien.man('/giang-day', 'gv');
+  if (dau.url().includes('/login')) {
+    console.log('\nKHÔNG ĐO ĐƯỢC — thẻ hết hạn. Cấp lại: python scripts/cap_the.py --vai "Giảng viên" --ra .the/tokens_gv.json');
+    process.exitCode = 2;
+    return;
+  }
+  const chon = LOP_EP ? { id: LOP_EP, ten: '(ép bằng PE_LOP)', soMuc: null } : await timLop(dau);
+  if (!chon) {
+    console.log('\nKHÔNG ĐO ĐƯỢC — không lớp nào của giảng viên này có mục khung cần bài.'
+                + '\nChạy `python manage.py du_lieu_mau --lam-moi` rồi đo lại.');
+    process.exitCode = 2;
+    return;
+  }
+  const LOP = chon.id;
+  ghi('chọn được lớp để đo', true, `${chon.ten} (lớp ${LOP}${chon.soMuc ? `, ${chon.soMuc} mục cần bài` : ''})`);
+
   // ── 1 · Màn Chương trình lớp: mục cần bài nói rõ đã giao hay chưa ─────────
   const ct = await phien.man(`/giang-day/chuong-trinh/${LOP}`, 'gv');
   if (!ct.url().includes('/chuong-trinh')) {

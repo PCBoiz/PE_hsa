@@ -84,6 +84,10 @@ function Get-TienTrinhDuAn {
   # `chrome-headless-shell.exe` là MỘT TÊN KHÁC, không phải `chrome.exe` — và đó đúng là chỗ
   # bản trước nhìn sót (27/09/2026): ba tiến trình ấy sống từ 23:04 tối hôm trước, giữ 328 MB,
   # mà `don_may.ps1` báo "MỒ CÔI: (sạch)". Playwright bản mới chạy bộ đo bằng đúng tệp này.
+  #
+  # ĐÃ KIỂM TRÊN TIẾN TRÌNH SỐNG (27/09, 16:19): mở một Chromium bằng `chromium.launch()` rồi
+  # chạy lệnh này — bản vá liệt kê ĐỦ BỐN tiến trình, 175 MB, đều đúng nhóm "Chromium (bộ đo)".
+  # Bản trước liệt kê 0. Đo chứ không suy, vì chính chỗ này đã sai một lần.
   $ds = Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='python.exe' OR Name='chrome.exe' OR Name='chrome-headless-shell.exe'" -ErrorAction SilentlyContinue
   foreach ($p in $ds) {
     $cmd = $p.CommandLine
