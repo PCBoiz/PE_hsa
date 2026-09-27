@@ -157,6 +157,31 @@ def test_moi_view_co_hang_rao_chan_dung_sau_vai(sau_vai):
     assert not sai, ('\n%d ô sai trong ma trận quyền:\n  ' % len(sai)) + '\n  '.join(sai)
 
 
+#: Cửa dưới `api/teach/` CỐ Ý gác trong THÂN HÀM, không bằng `permission_classes`.
+#:
+#: Mỗi mục phải nêu VÌ SAO, và phép kiểm bên dưới vẫn đòi cửa ấy TỪ CHỐI học viên
+#: lạ — chỉ nới đúng một điểm: nó được từ chối bằng **404** thay vì 403. Danh sách
+#: rỗng là trạng thái mong muốn; thêm một dòng vào đây là một quyết định, không
+#: phải một cách làm cho phép kiểm hết đỏ.
+#:
+#: Thêm 27/09/2026 (audit bảo mật). Trước hôm nay phép kiểm coi MỌI mã khác 403 là
+#: "lọt", nên `hoc-lieu` — cửa cố ý dùng chung cho cả người dạy lẫn em đang học, và
+#: trả 404 đúng như luật của dự án — làm nó ĐỎ trên HEAD. Một phép kiểm đỏ thường
+#: trực thì không canh được gì nữa: người sau đọc nó như một tiếng ồn, và cửa THẬT
+#: sự quên hàng rào sẽ lẫn vào đấy.
+CONG_TRONG_THAN = {
+    'api/teach/classes/<int:class_id>/hoc-lieu':
+        'Một cửa cho hai phía (teaching/hoc_lieu.py): người dạy thấy cả tài liệu đang '
+        'ẩn, em đang học chỉ thấy phần đã mở và chỉ buổi mình thuộc. `permission_classes` '
+        'không phân biệt nổi "giảng viên CỦA LỚP" với "em HỌC lớp", nên cổng nằm trong '
+        'thân hàm và trả 404 cho cả hai kiểu người ngoài.',
+}
+
+#: Mã tính là "đã từ chối" cho một cửa gác trong thân hàm. 404 chứ không 403 là luật
+#: của dự án cho cửa mang `class_id` (`docs/ERP_TOPHSA_2026-08-24.md` dòng 48).
+MA_TU_CHOI = (403, 404)
+
+
 @pytest.mark.django_db
 def test_khong_view_nao_bo_trong_hang_rao_o_khu_quan_tri(sau_vai):
     """Đường `admin/` hay `teach/` mà chỉ có `IsAuthenticated` là một lỗ hổng.
@@ -190,8 +215,50 @@ def test_khong_view_nao_bo_trong_hang_rao_o_khu_quan_tri(sau_vai):
             ma = cls.as_view()(req, **_tham_so(duong)).status_code
         except Exception:  # noqa: BLE001 — xem chú thích ở khối trên
             ma = 500
-        if ma != 403:
-            lot.append('%s → HTTP %s (%s)' % (duong, ma, cls.__name__))
+        cho_phep = MA_TU_CHOI if duong in CONG_TRONG_THAN else (403,)
+        if ma not in cho_phep:
+            lot.append('%s → HTTP %s (%s)%s' % (
+                duong, ma, cls.__name__,
+                '' if duong in CONG_TRONG_THAN else
+                ' — thiếu `permission_classes`? Cửa cố ý gác trong thân hàm thì khai vào '
+                '`CONG_TRONG_THAN` kèm lý do.'))
 
     assert not lot, ('học viên KHÔNG bị chặn ở %d đường quản trị:\n  ' % len(lot)
+                     + '\n  '.join(lot))
+
+
+@pytest.mark.django_db
+def test_cua_gac_trong_than_van_con_that(sau_vai):
+    """`CONG_TRONG_THAN` không được thành một danh sách miễn trừ đã chết.
+
+    Hai điều phải còn đúng cho mỗi dòng trong đó, nếu không thì dòng ấy là một lỗ
+    hổng đang được phép kiểm che: cửa phải CÒN TỒN TẠI (đổi tên đường rồi mà danh
+    sách vẫn giữ tên cũ là miễn trừ cho một thứ không có), và cửa phải THẬT SỰ từ
+    chối học viên lạ (không phải trả 200 rồi được tha vì có tên trong danh sách).
+    """
+    hoc_vien = sau_vai[ROLE_STUDENT]
+    def di(res, tien_to=''):
+        for p in res.url_patterns:
+            if hasattr(p, 'url_patterns'):
+                yield from di(p, tien_to + str(p.pattern))
+            else:
+                yield tien_to + str(p.pattern), p
+
+    co = {duong: p for duong, p in di(get_resolver())}
+    thieu = [d for d in CONG_TRONG_THAN if d not in co]
+    assert not thieu, ('`CONG_TRONG_THAN` còn giữ đường không tồn tại: %s' % thieu)
+
+    lot = []
+    for duong in CONG_TRONG_THAN:
+        cls = (getattr(co[duong].callback, 'cls', None)
+               or getattr(co[duong].callback, 'view_class', None))
+        req = f.get('/x')
+        force_authenticate(req, user=hoc_vien)
+        try:
+            ma = cls.as_view()(req, **_tham_so(duong)).status_code
+        except Exception:  # noqa: BLE001 — xem chú thích ở khối trên
+            ma = 500
+        if ma not in MA_TU_CHOI:
+            lot.append('%s → HTTP %s (%s)' % (duong, ma, cls.__name__))
+    assert not lot, ('cửa gác trong thân hàm KHÔNG từ chối học viên lạ:\n  '
                      + '\n  '.join(lot))
