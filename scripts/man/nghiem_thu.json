@@ -87,7 +87,7 @@
   "bam": [
    "Học viên"
   ],
-  "choSauBam": 3000,
+  "choSauBam": 6000,
   "ghiChu": "Khối học viên của lớp (nhập từ tệp, chuyển lớp, lịch sử) mở ra SAU khi bấm \"Học viên\" ở dòng lớp. Màn ngoài chỉ là danh sách lớp. Nhãn thật trong ô lý do rời lớp là \"Chuyển sang lớp khác…\" (§55) — mẫu cũ đòi đúng chữ \"Chuyển lớp\" nên không khớp."
  },
  {
@@ -414,9 +414,9 @@
   "vai": "tg",
   "hoi": {
    "thayBaiTap": "Bài tập|bài",
-   "thayAiChuaNop": "đã nộp|Chưa nộp",
-   "theoDoiXemRecord": "đã mở|chưa mở|xem lại"
-  }
+   "thayAiChuaNop": "đã nộp|Chưa nộp"
+  },
+  "ghiChu": "Bỏ câu \"theo dõi việc xem record\": nó nằm ở màn BUỔI HỌC (khối §72), không ở màn Bài tập. Ô ấy đã được đo ở mục dòng 22. Hỏi ở đây là hỏi sai màn."
  },
  {
   "dong": 22,
@@ -428,7 +428,13 @@
    "buoiThieuBanGhi": "chưa có bản ghi|thiếu bản ghi|Chưa có",
    "aiChuaMo": "chưa mở|đã mở",
    "nhacEmChuaMo": "Nhắc"
-  }
+  },
+  "cho": 6000,
+  "bam": [
+   "Sửa"
+  ],
+  "choSauBam": 2500,
+  "ghiChu": "Ô \"Link bản ghi\" nằm trong biểu mẫu SỬA một buổi, nên phải bấm \"Sửa\" trước. Khối \"ai đã mở / Nhắc em chưa mở\" tải bằng một lượt gọi riêng SAU khi React gắn — chờ 2,5 giây là chưa đủ, 6 giây thì đủ. Đo 27/09."
  },
  {
   "dong": 26,
