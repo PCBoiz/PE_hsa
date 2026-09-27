@@ -5,6 +5,7 @@ from teaching import (
                       admin_users,
                       assignments,
                       ban_ghi,
+                      bao_cao_cheo,
                       buoi_bu,
                       cham_cong,
                       chuyen_lop,
@@ -181,4 +182,7 @@ urlpatterns = [
     path('api/admin/co-so-hoc-phi', co_so_hoc_phi.AdminBillingBasisView.as_view()),
     # Chấm công theo tháng — giảng viên VÀ trợ giảng (V-o). Chỉ đọc; `?dinh_dang=xlsx`.
     path('api/admin/cham-cong', cham_cong.ChamCongView.as_view()),
+    # Báo cáo chéo MÔN × LỚP (dòng 6, 27/09/2026) — "môn nào đang tụt, lớp nào trong môn
+    # ấy". Chỉ đọc; `?dinh_dang=xlsx` dùng đúng bộ lọc của màn.
+    path('api/admin/bao-cao-cheo', bao_cao_cheo.BaoCaoCheoView.as_view()),
 ]

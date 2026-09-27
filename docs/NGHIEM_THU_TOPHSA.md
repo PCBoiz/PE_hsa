@@ -45,7 +45,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 3 | Quản trị viên · tìm kiếm + hồ sơ | CÓ (V-m xong, chờ e2e) | V-m | — |
 | 4 | Quản trị viên · lớp học | MỘT PHẦN | V-c, V-j, V-n, V-h, E1 | — |
 | 5 | Quản trị viên · khoá học + chương trình | MỘT PHẦN | E1, V-i | — |
-| 6 | Quản trị viên · báo cáo | MỘT PHẦN | V-k, V-o, E1 | — |
+| 6 | Quản trị viên · báo cáo | MỘT PHẦN — **ô cuối (báo cáo chéo môn × lớp) mã xong 27/09, chờ đo màn** | V-k, V-o, E1, báo cáo chéo | — |
 | 7 | Kế toán · học phí | THAY (V-m xong) | V-m (một ô tình trạng), K2 | — |
 | 8 | Giáo vụ · tài khoản | CÓ | — | — |
 | 9 | Giáo vụ · lớp học | **CÓ** | — | Đo 27/09 bằng **thẻ học vụ**, không mượn thẻ quản trị: bấm "Điểm danh" một buổi → màn 1.159 từ, đủ Có mặt · Vắng · Đi muộn · Xin phép · **Lịch sử sửa điểm danh** · Lưu. |
@@ -157,7 +157,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | Gắn bài tập, bài kiểm tra | **CÓ** | Khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1). **§74 (27/09)**: bài giao cho lớp nay TRỎ VỀ mục khung — màn Chương trình trả lời được "bài về nhà của buổi 3 đã giao chưa" (`baiDaGiao` mỗi mục). NULL vẫn là trạng thái bình thường: phần lớn bài giao rời, và bắt buộc trường này sẽ chặn giảng viên đang vội. Xoá mục khung KHÔNG kéo mất bài đã giao (§29). Bộ kiểm 5/5 + 57 test chương trình vẫn xanh. |
 | Điều kiện hoàn thành | MỘT PHẦN | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1); chưa có ngưỡng "hoàn thành khoá" riêng |
 
-## Dòng 6 — Báo cáo · MỘT PHẦN (còn báo cáo chéo môn × lớp)
+## Dòng 6 — Báo cáo · MỘT PHẦN (báo cáo chéo môn × lớp: mã xong 27/09, chờ đo màn)
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
@@ -165,7 +165,7 @@ dùng; (5) "trạng thái khoá — xuất bản/nháp": `is_published` không s
 | 6.2 Doanh thu | BỎ | anh chốt 23/09 |
 | 6.3 Chấm công GV/TG | CÓ, chỉ xem (V-o) | trang "Chấm công" (Vận hành, quản trị viên + học vụ): theo tháng, từng giảng viên VÀ trợ giảng — buổi đã dạy, tổng giờ, tự điểm danh, điểm danh muộn, tải Excel (`teaching/cham_cong.py`, `teaching/tests_cham_cong.py`). Khoá tháng + chỉnh tay → **Đ2 §59** |
 | Điểm danh HS, tiến độ, kết quả theo lớp | CÓ | CSV điểm danh + tiến độ; báo cáo lớp PDF |
-| Kết quả theo môn, hoàn thành bài tập (tổng) | MỘT PHẦN | theo khoá / từng bài; chưa báo cáo chéo |
+| Kết quả theo môn, hoàn thành bài tập (tổng) | **CÓ mã, CHỜ ĐO MÀN** | **Báo cáo chéo MÔN × LỚP xong 27/09** (`teaching/bao_cao_cheo.py`, trang "Kết quả theo môn" — quản trị viên + học vụ): một dòng một lớp, nhóm theo môn, có dòng tổng từng môn và dòng tổng trung tâm. Cột: đang học · tỉ lệ nộp bài · tỉ lệ đã chấm · **điểm trung bình chuẩn hoá theo thang từng bài** (bài thang 10 và bài thang 100 so được với nhau — cộng thô cho ra 30 ở chỗ sự thật là 75) · chuyên cần · tiến độ chương trình. Lọc môn / đợt / khoảng ngày, tải Excel cùng bộ lọc. Em đã rời lớp không tính; lớp chưa giao bài hiện `—` chứ không `0%`; lớp rỗng vẫn có dòng. Bộ kiểm **19/19** (`teaching/tests_bao_cao_cheo.py`), đột biến xem `docs/agent/BAO_CAO_BAO_CAO_CHEO.md`. **Chưa tick CÓ**: sáu bước trên màn thật còn chờ lead đo (§7 của báo cáo ấy) |
 | Hoạt động GV/TG | **CÓ** | Buổi dạy / điểm danh theo tháng (V-o) + **bài đã chấm** và **thông báo đã gửi** (27/09) — cùng MỘT câu SQL, cùng bảng, và cùng có trong bản tải .xlsx. Với trợ giảng thì hai cột sau mới là phần lớn công việc. Mốc là NGÀY CHẤM (`graded_at`), không phải hạn nộp; bản nháp chưa gửi không tính. Người không làm gì vẫn có dòng, số 0 — dòng biến mất trông như đã nghỉ việc. Bộ kiểm 6/6. |
 | HS nghỉ nhiều / chậm tiến độ | CÓ (E1) | nghỉ nhiều CÓ; lớp chậm tiến độ + lớp chưa ghi sổ: ô "Tiến độ chương trình" ở Toàn trung tâm (`overview.py` khoá `chuongTrinh`) |
 | Bộ lọc thời gian / lớp / môn / khoá | CÓ (V-k) | tổng quan lọc đợt + ngày; tải chuyên cần lọc khoảng ngày; tải danh sách tài khoản lọc thêm đợt học, môn, ngày cấp (`teaching/exports.py`, `admin_users.build_user_filters`) — `teaching/tests_xuat_excel.py` |
