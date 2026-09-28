@@ -59,6 +59,38 @@ kiem_cu_phap_js() {
   done
 }
 
+lint_js() {
+  # eslint CHẾT MÃ 134 (SIGABRT) khi V8 hết chỗ — và trên máy 15,9 GB này chuyện ấy do người
+  # dùng quyết định, không do mã: đo 28/09/2026, Chrome + VS Code giữ tới mức chỉ còn 1,96 GB
+  # trống, và eslint toàn dự án chết cả ở trần 2048 lẫn 1536. Cùng mã ấy lint SẠCH khi chia
+  # làm ba phần. Tức cổng đang chấm ĐỎ cho mã đúng, vì một lý do nằm ngoài mã.
+  #
+  # Nên: thử một lượt cho cả dự án (nhanh nhất khi máy rảnh); chết vì HẾT BỘ NHỚ thì chia phần
+  # rồi chạy lại. Chỉ lùi khi mã thoát ĐÚNG là 134 — mọi mã khác là lỗi lint thật và vẫn chặn
+  # đẩy như trước. Đây không phải nới hàng rào: cùng bộ luật, cùng `--max-warnings 0`, chỉ
+  # khác số tệp mỗi lượt.
+  #
+  # `--cache` cắt phần lớn việc ở lượt sau: eslint băm nội dung tệp + cấu hình, nên đổi tệp
+  # hay đổi cấu hình là tự lint lại — không có chuyện "sạch giả" vì bộ nhớ đệm cũ.
+  local C="--cache --cache-location node_modules/.cache/eslint/"
+  local ra ma phan hong=0
+  # shellcheck disable=SC2086
+  ra=$(node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js --max-warnings 0 $C . 2>&1)
+  ma=$?
+  if [ $ma -ne 134 ]; then
+    [ $ma -ne 0 ] && echo "$ra"
+    return $ma
+  fi
+  echo "(eslint hết bộ nhớ ở lượt cả dự án — chia phần chạy lại. RAM trống: xem don_may.ps1)"
+  for phan in "src/app" "src/components src/lib" "e2e public"; do
+    # shellcheck disable=SC2086
+    ra=$(node --max-old-space-size=1400 node_modules/eslint/bin/eslint.js --max-warnings 0 $C $phan 2>&1)
+    ma=$?
+    if [ $ma -ne 0 ]; then echo "── HỎNG ($phan, mã $ma)"; echo "$ra" | tail -20; hong=1; fi
+  done
+  return $hong
+}
+
 unit_node() {
   local f hong=0
   for f in e2e/unit/*.test.mjs; do
@@ -191,8 +223,7 @@ nhom_frontend() {
   # giữa lượt, và bảng chỉ hiện một dãy địa chỉ hex không nói gì. Đo 26/09: chạy riêng thì eslint SẠCH,
   # chỉ hỏng khi hai nhóm của cổng chạy song song cùng một agent đang giữ 2,3 GB. Trần thấp buộc V8 dọn
   # rác sớm và đi tới nơi, chậm hơn vài giây nhưng không bao giờ chết.
-  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" \
-    node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js --max-warnings 0
+  buoc f2 "eslint --max-warnings 0" "$GOC/frontend" lint_js
   buoc f3 "node --check public/static" "$GOC/frontend" kiem_cu_phap_js
   buoc f4 "unit Node (e2e/unit)" "$GOC/frontend" unit_node
   buoc f5 "ban_do --kiem" "$GOC" node scripts/ban_do.mjs --kiem

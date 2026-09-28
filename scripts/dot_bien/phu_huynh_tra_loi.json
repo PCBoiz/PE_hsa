@@ -1,0 +1,20 @@
+[
+ {
+  "ten": "nhận `noi_bo` từ thân yêu cầu — phụ huynh viết được vào ghi chú nội bộ",
+  "cu": "            return Response(dv.tra_loi(dv.NguoiLam(link=d), yc_id,",
+  "moi": "            return Response(dv.tra_loi(dv.NguoiLam(link=d), yc_id, noi_bo=bool(_body(request).get('noi_bo')), noi_dung=",
+  "cho": "test_loi_cua_phu_huynh_KHONG_phai_ghi_chu_noi_bo"
+ },
+ {
+  "ten": "dựng NguoiLam KHÔNG kèm chìa — phạm vi không còn buộc vào em nào",
+  "cu": "            return Response(dv.tra_loi(dv.NguoiLam(link=d), yc_id,",
+  "moi": "            return Response(dv.tra_loi(dv.NguoiLam(), yc_id,",
+  "cho": "test_phu_huynh_tra_loi_tiep_duoc_trong_yeu_cau_cua_minh"
+ },
+ {
+  "ten": "đọc sai khoá trong thân yêu cầu — lời của phụ huynh rơi mất, cửa trả 400",
+  "cu": "                                       _body(request).get('noi_dung'), request=request))",
+  "moi": "                                       _body(request).get('tieu_de'), request=request))",
+  "cho": "test_phu_huynh_tra_loi_tiep_duoc_trong_yeu_cau_cua_minh"
+ }
+]

@@ -28,4 +28,7 @@ urlpatterns = [
     path('api/admin/yeu-cau/<int:yc_id>/lop', v.LopChuyenToiView.as_view()),
     # ── Phụ huynh (link) ──
     path('api/public/phu-huynh/<str:token>/yeu-cau', v.PhuHuynhYeuCauView.as_view()),
+    # Nói TIẾP trong một yêu cầu đã gửi — không phải mở phiếu mới mỗi lượt hỏi qua đáp lại.
+    path('api/public/phu-huynh/<str:token>/yeu-cau/<int:yc_id>/tra-loi',
+         v.PhuHuynhTraLoiView.as_view()),
 ]

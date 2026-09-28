@@ -10439,3 +10439,62 @@ khỏi kế hoạch — và lần này là ba dòng.
 | 10, 22, 29 | khoá Zoom (Z1/E4) |
 | 30, 31 | khoá R2 (D1) |
 | 7, 20, 23 | khách xác nhận cách làm KHÁC chữ trong bảng (K2) |
+
+## 28/09/2026 · tối — phụ huynh nói tiếp được trong một yêu cầu; bốn nhãn cũ nữa
+
+Anh Sơn: *"tiếp tục cải tiến đi theo bảng phân rã tính năng"*.
+
+### Một ô thiếu thật: phụ huynh đọc được trả lời mà không nói lại được
+
+Phụ huynh mở tờ báo cáo bằng chìa, gửi được yêu cầu, ĐỌC được trả lời của trung tâm — nhưng
+cửa trả lời duy nhất (`HocVienTraLoiView`) gác bằng `LaHocVien`, tức đòi tài khoản đã đăng
+nhập, mà phụ huynh theo thiết kế thì không có tài khoản.
+
+Hậu quả: học vụ hỏi lại *"cháu nghỉ từ hôm nào ạ?"* thì phụ huynh phải mở một yêu cầu MỚI. Một
+cuộc trao đổi bốn lượt thành bốn phiếu rời nhau, không phiếu nào mang đủ câu chuyện, và trần 5
+phiếu đang mở (`TRAN_MO_PHU_HUYNH`) đầy sau hai câu hỏi qua lại.
+
+**Điều bất ngờ: tầng dịch vụ đã cho phép sẵn.** `dich_vu.tra_loi` gác bằng
+`la_nhan_su or _la_nguoi_tao`, và `_la_nguoi_tao` ĐÃ nhận phụ huynh cầm chìa. `chi_tiet` cũng
+đang trả `coThe.traLoi = true` cho họ. Tức máy chủ vẫn nói "bạn trả lời được" trong khi không
+có cửa nào để trả lời — thiếu đúng một tuyến HTTP và một ô gõ.
+
+Cửa mới KHÔNG có luật riêng: nó gọi đúng hàm mà học viên đang gọi, với `NguoiLam(link=…)`, nên
+mọi hàng rào sẵn có tự áp — chìa khác → 404, yêu cầu của chính em tự gửi → 404, phiếu đã đóng
+→ 409. `noi_bo` đóng cứng, không đọc từ thân yêu cầu.
+
+Gộp `_CuaPhuHuynh` làm nền chung cho hai cửa mở bằng chìa: ba thứ (`authentication_classes`,
+`permission_classes`, trần lượt gửi) là HÀNG RÀO, và hàng rào chép tay hai bản là hai bản sẽ
+trôi khỏi nhau (RULES §7).
+
+Bộ kiểm 10/10. Đột biến: lượt đầu **1/3**, và hai cái LỌT nói hai chuyện KHÁC nhau —
+
+- *"nhận `noi_bo` từ thân yêu cầu"* LỌT vì **test yếu thật**: nó chỉ đòi "không có sự kiện nội
+  bộ nào", mà với đột biến ấy máy chủ trả 403 và không ghi gì cả — vế phủ định vẫn đúng. Một
+  phép kiểm chỉ đòi "không có X" thì mọi cách làm hỏng đều qua được, kể cả cách làm cho không
+  có gì hết. Siết: đòi CẢ 200, CẢ có lời trả lời thường, CẢ không có sự kiện nội bộ.
+- *"tra chìa mà bỏ qua lý do từ chối"* LỌT vì **đột biến vô nghĩa**, không phải test yếu:
+  `_cua_ai` đã trả `(None, 'khong_thay')` cho chìa hết hạn / bị thu hồi, nên `return d` cũng ra
+  None. Đã thay bằng một đột biến quan sát được (đọc sai khoá trong thân yêu cầu). **3/3 giết.**
+
+### Cổng pre-push nay chạy được cả khi máy đang bận
+
+eslint chết mã 134 (SIGABRT, hết bộ nhớ V8) ở cả trần 2048 lẫn 1536 — Chrome + VS Code của anh
+Sơn giữ tới mức chỉ còn **1,96 GB trống**. Cùng mã ấy lint SẠCH khi chia làm ba phần. Tức cổng
+chấm ĐỎ cho mã đúng, vì một lý do nằm ngoài mã.
+
+`lint_js()`: thử một lượt cả dự án, chết ĐÚNG mã 134 thì chia phần chạy lại. Mọi mã thoát khác
+vẫn chặn đẩy — cùng bộ luật, cùng `--max-warnings 0`, chỉ khác số tệp mỗi lượt. Thêm `--cache`
+để lượt sau chỉ lint tệp đổi. Cổng ĐẠT 169s.
+
+### Bốn nhãn CŨ nữa trong sổ nghiệm thu
+
+| Chỗ | Nhãn cũ | Thật ra |
+|---|---|---|
+| Diễn đàn riêng của lớp (dòng 20) | "máy chủ xong, MÀN CÒN THIẾU" | màn dựng từ 27/09 tối — `DienDanLop.tsx` + hai trang, đo 14/14 trên dev VÀ production |
+| Danh sách bản ghi theo buổi (dòng 29) | CHƯA | trang `/lop/<id>/xem-lai` đã bỏ trần 4 từ 27/09 |
+| Tìm kiếm bản ghi (dòng 29) | CHƯA | ô tìm + lọc "Chưa xem lại" cùng trang ấy |
+| Phụ huynh trả lời tiếp (dòng 25) | CHƯA | đóng hôm nay |
+
+Ba nhãn đầu là việc làm rồi mà không ai quay lại gạch — cộng ba nhãn sửa buổi chiều là **sáu
+trong một ngày**. Đây đúng thứ `do_man_hang_loat.mjs` viết ra để chống.

@@ -413,12 +413,16 @@ class GuiYeuCauPhuHuynhThrottle(_IPKhach, SimpleRateThrottle):
         return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
 
-class PhuHuynhYeuCauView(APIView):
-    """GET/POST /api/public/phu-huynh/<token>/yeu-cau.
+class _CuaPhuHuynh(APIView):
+    """Nền chung cho mọi cửa mở bằng CHÌA của phụ huynh — không tài khoản, không đăng nhập.
 
     Tra chìa ĐÚNG như tờ báo cáo phụ huynh (`teaching/parent_link.py::_cua_ai`): chìa lạ, hết
     hạn, bị thu hồi → CÙNG MỘT câu 404. `authentication_classes = []` vì cùng lý do với tờ báo
     cáo (cookie hết hạn trên máy phụ huynh không được làm đổ 401).
+
+    Gộp về MỘT nơi (28/09/2026) khi cửa thứ hai ra đời: ba thứ dưới đây là hàng rào, và hàng
+    rào chép tay hai bản là hai bản sẽ trôi khỏi nhau (RULES §7). Cửa mới chỉ cần kế thừa là
+    có đủ — không ai phải nhớ chép lại `authentication_classes` hay cái trần lượt gửi.
     """
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -429,6 +433,10 @@ class PhuHuynhYeuCauView(APIView):
     def _link(self, token):
         d, tu_choi = _cua_ai(token)
         return None if tu_choi else d
+
+
+class PhuHuynhYeuCauView(_CuaPhuHuynh):
+    """GET/POST /api/public/phu-huynh/<token>/yeu-cau."""
 
     def get(self, request, token):
         d = self._link(token)
@@ -453,3 +461,41 @@ class PhuHuynhYeuCauView(APIView):
         except dv.LoiYeuCau as e:
             return _loi(e)
 
+
+
+class PhuHuynhTraLoiView(_CuaPhuHuynh):
+    """POST /api/public/phu-huynh/<token>/yeu-cau/<id>/tra-loi `{noi_dung}`.
+
+    ── VÌ SAO CÓ CỬA NÀY (28/09/2026) ───────────────────────────────────────
+
+    Phụ huynh gửi được yêu cầu và ĐỌC được trả lời, nhưng tới hôm nay không nói tiếp được:
+    cửa trả lời duy nhất (`HocVienTraLoiView`) gác bằng `LaHocVien`, tức đòi một tài khoản đã
+    đăng nhập — mà phụ huynh theo thiết kế thì không có tài khoản.
+
+    Nên học vụ hỏi lại "cháu nghỉ từ hôm nào ạ?" là phụ huynh phải mở một yêu cầu MỚI. Một
+    cuộc trao đổi bốn lượt thành bốn phiếu rời nhau, không phiếu nào mang đủ câu chuyện, và
+    trần 5 phiếu đang mở đầy sau hai câu hỏi qua lại.
+
+    ── KHÔNG MỞ THÊM QUYỀN NÀO ──────────────────────────────────────────────
+
+    Cửa này KHÔNG có luật riêng: nó gọi đúng `dich_vu.tra_loi` mà học viên đang gọi, với
+    `NguoiLam(link=…)`. Mọi hàng rào sẵn có do đó tự áp — `_doc` giới hạn phạm vi theo chìa
+    (yêu cầu của chìa khác, hay của chính em tự gửi khi đăng nhập, đều ra 404), yêu cầu đã
+    đóng ra 409, và `noi_bo` bị chặn vì `nguoi.la_nhan_su` là False khi có `link`.
+
+    **`noi_bo` KHÔNG nhận từ thân yêu cầu** — không phải vì tầng dưới hở, mà vì một cờ đọc từ
+    người ngoài rồi truyền xuống hàm quyền là thứ chỉ cần một lượt sửa cẩu thả nữa là thành
+    lỗ. Ở đây nó đóng cứng.
+
+    Trần lượt gửi đến từ `_CuaPhuHuynh`: chìa nằm trong địa chỉ, ai có địa chỉ là gõ được, nên
+    trần theo máy là hàng rào duy nhất chống spam vào hộp của học vụ.
+    """
+    def post(self, request, token, yc_id):
+        d = self._link(token)
+        if not d:
+            return Response({'error': KHONG_CON_DUNG}, status=404)
+        try:
+            return Response(dv.tra_loi(dv.NguoiLam(link=d), yc_id,
+                                       _body(request).get('noi_dung'), request=request))
+        except dv.LoiYeuCau as e:
+            return _loi(e)

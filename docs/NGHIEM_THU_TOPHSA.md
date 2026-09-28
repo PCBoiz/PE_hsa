@@ -90,7 +90,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 17 | Giáo viên · giao bài | CÓ | — | Đo 26/09 trên màn thật: Giao bài mới · hạn nộp · **Đổi người nhận** (V-e: `target_mode` + `assignment_targets`) · **Sửa bài** (26/09) · Đóng/Mở nhận bài · Xoá · bảng chấm cả lớp ghi rõ từng em "Chưa nộp" / "Nộp 18/09" kèm tổng "9/27 đã nộp" · nhập điểm · nhận xét. **Thêm 27/09 (§74)**: ô "Mục khung chương trình" nối bài vào đúng mục của khung — danh mục do máy chủ trả, nhãn mang số buổi ("Buổi 4 · Bài về nhà: Luyện tập hệ"), **không bắt buộc** vì bắt chọn sẽ chặn đúng giảng viên đang vội giao bài trước giờ lên lớp. |
 | 18 | Giáo viên · theo dõi học sinh | CÓ | — | Đo 26/09, đã soi ảnh: trang từng em có ô **Nhận xét** (in lên tờ phụ huynh), ô **Đánh dấu em cần hỗ trợ** (nội bộ — hiện ở "Việc hôm nay"), ô **Đề xuất hướng học** (nội bộ), cùng lịch sử điểm danh, bài tập và điểm từng bài. V-a + V-f xong. |
 | 19 | Trợ giảng · tài khoản | CÓ | — | — |
-| 20 | Trợ giảng · nhắn / nhắc | **THAY** — anh Sơn chốt 27/09: nhắn qua **Zalo** hoặc **diễn đàn riêng của lớp**, KHÔNG dựng messenger trong ứng dụng | diễn đàn lớp (đang làm) · Zalo chờ pháp nhân **D2** | Ba nửa, đo riêng 26/09. **Nửa báo lên (E3, chạy được):** hộp Yêu cầu của học vụ nhận yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". **Nửa nhắc cả lớp (E2 backend + E2-GD màn — XONG 26/09):** màn `/giang-day/thong-bao/<lớp>`, tab "Thông báo lớp" trong khu Giảng dạy, đo trên màn thật bằng `scripts/do_thong_bao_lop.mjs` với **thẻ TRỢ GIẢNG** — 13/13 bước của màn lớp ĐẠT, **bấm chuột chứ không gọi API tay**: mở được · tab dẫn tới · ô mở khoá sau khi React gắn · xem trước nói "Sẽ báo cho 3 em qua chuông, 3 em nhận email" · bước hỏi lại nêu ĐÚNG SỐ ("Gửi ngay cho 3 em của lớp …?") · gửi xong "Đã báo cho 3 em" · dòng mới vào danh sách (3 → 4) kèm "3 em nhận" · ô soạn được dọn · **lớp KHÔNG phụ trách → "Không mở được lớp này", không hiện ô soạn** · không một mã kỹ thuật nào lọt lên màn. **Còn thiếu (nói thẳng):** trợ giảng vẫn **không nhắn được RIÊNG một em** — hộp Yêu cầu là kênh do HỌC VIÊN mở trước, và thông báo lớp thì cả lớp cùng nhận. Đó là nửa "nhắn" mà anh Sơn chưa quyết. |
+| 20 | Trợ giảng · nhắn / nhắc | **THAY** — anh Sơn chốt 27/09: nhắn qua **Zalo** hoặc **diễn đàn riêng của lớp**, KHÔNG dựng messenger trong ứng dụng | **diễn đàn lớp XONG 27/09** (cả màn, đo 14/14 trên dev và production) · Zalo chờ pháp nhân **D2** | Ba nửa, đo riêng 26/09. **Nửa báo lên (E3, chạy được):** hộp Yêu cầu của học vụ nhận yêu cầu "Em không phản hồi tin nhắn 3 ngày" · nguồn "Trợ giảng báo" · chip "Em không phản hồi". **Nửa nhắc cả lớp (E2 backend + E2-GD màn — XONG 26/09):** màn `/giang-day/thong-bao/<lớp>`, tab "Thông báo lớp" trong khu Giảng dạy, đo trên màn thật bằng `scripts/do_thong_bao_lop.mjs` với **thẻ TRỢ GIẢNG** — 13/13 bước của màn lớp ĐẠT, **bấm chuột chứ không gọi API tay**: mở được · tab dẫn tới · ô mở khoá sau khi React gắn · xem trước nói "Sẽ báo cho 3 em qua chuông, 3 em nhận email" · bước hỏi lại nêu ĐÚNG SỐ ("Gửi ngay cho 3 em của lớp …?") · gửi xong "Đã báo cho 3 em" · dòng mới vào danh sách (3 → 4) kèm "3 em nhận" · ô soạn được dọn · **lớp KHÔNG phụ trách → "Không mở được lớp này", không hiện ô soạn** · không một mã kỹ thuật nào lọt lên màn. **Còn thiếu (nói thẳng):** trợ giảng vẫn **không nhắn được RIÊNG một em** — hộp Yêu cầu là kênh do HỌC VIÊN mở trước, và thông báo lớp thì cả lớp cùng nhận. Đó là nửa "nhắn" mà anh Sơn chưa quyết. |
 | 21 | Trợ giảng · theo dõi | **CÓ** | — | Ô "Theo dõi việc xem record" (V-l) nay có thật — xem dòng 22. Ba ô còn lại đo 27/09 bằng thẻ trợ giảng. E3: TG giải đáp và báo lên trong hộp Yêu cầu, lịch sử trao đổi lưu đủ. |
 | 22 | Trợ giảng · record Zoom | **CÓ** | — | Đo 27/09 trên `/giang-day/buoi-hoc/1`: khối "Bản ghi buổi học" hiện **"1/2 em đã mở"** · mục gập "Chưa mở: 1" liệt kê tên · nút **"Nhắc em chưa mở"** · dòng **"Chưa có bản ghi: 17/09 · 15/09"**. Học viên xem lại được và đánh dấu "đã mở" (§72). Bản ghi TỰ vào buổi vẫn chờ khoá Zoom (E4). |
 | 23 | Phụ huynh · tài khoản | THAY (link riêng) | K2, §66 | — |
@@ -377,7 +377,7 @@ Tức tám gạch đầu dòng của ô này KHÔNG đóng bằng một hộp ch
 
 | Kênh | Đóng được gạch nào | Trạng thái |
 |---|---|---|
-| **Diễn đàn riêng của lớp** | nhắn tin cho học sinh · nhận tin nhắn · theo dõi lịch sử trao đổi | **máy chủ XONG 27/09 (§75)**, màn còn thiếu — xem dưới |
+| **Diễn đàn riêng của lớp** | nhắn tin cho học sinh · nhận tin nhắn · theo dõi lịch sử trao đổi | **XONG cả máy chủ lẫn màn (27/09, §75)** — đo 14/14 bước trên dev và trên production |
 | **Zalo** | nhắn riêng ngoài giờ, nhắc gấp | chờ **D2** (pháp nhân để mở Zalo OA) — mã ZNS đã có, chưa bật |
 
 Ba gạch "nhắc học bài / làm bài / tham gia lớp" đã chạy bằng **thông báo lớp** (E2-GD) và chuông tự
@@ -400,8 +400,9 @@ Ba chỗ dễ rò, mỗi chỗ một phép kiểm và một đột biến:
 Bộ kiểm `forum/tests_dien_dan_lop.py` **7/7**, **5/5 đột biến bị giết**, 20 test diễn đàn cũ vẫn
 xanh. Lược đồ: `bootstrap_schema` hai lượt (lượt 2 = 0 mục), `kiem_luoc_do` §75a/§75b ✓.
 
-**Còn thiếu**: MÀN. Chưa có chỗ nào trên giao diện mở diễn đàn của lớp — cửa API chạy rồi nhưng
-người dùng chưa bấm được, nên ô này CHƯA đóng.
+**MÀN ĐÃ DỰNG (27/09 tối) — câu trên là nhãn CŨ, sửa 28/09.** `frontend/src/components/DienDanLop.tsx`
+cùng hai trang: `/giang-day/trao-doi/<lớp>` cho người dạy và `/trao-doi/<lớp>` cho học viên. Đo
+bằng `scripts/do_dien_dan_lop.mjs`: **14/14 bước ĐẠT trên dev VÀ trên production**.
 
 Danh sách lớp + thông tin HS: CÓ (cắt liên lạc — có chủ ý).
 
@@ -489,7 +490,7 @@ Phân rã chi tiết (bổ sung 27/09/2026 — trước đây dòng này chỉ c
 | Không thấy ghi chú nội bộ của trung tâm | CÓ — đã kiểm | phạm vi người đọc theo `NguoiLam(link=…)`; test `backend/yeu_cau/tests_yeu_cau.py` |
 | Chống gửi tràn | CÓ | tối đa **5** yêu cầu đang mở mỗi đường dẫn (`backend/yeu_cau/loai.py:174` `TRAN_MO_PHU_HUYNH = 5`) + trần lượt gửi theo giờ / theo máy (`GuiYeuCauPhuHuynhThrottle`, `backend/yeu_cau/views.py:426`) |
 | Chìa lạ / hết hạn / đã thu hồi | CÓ — cùng một câu 404 | `backend/yeu_cau/views.py:419`, dùng chung `_cua_ai` với tờ báo cáo |
-| Phụ huynh trả lời TIẾP trong một yêu cầu | CHƯA | phải gửi yêu cầu mới; cửa trả lời tiếp chỉ mở cho học viên đã đăng nhập (`backend/yeu_cau/views.py:130`) |
+| Phụ huynh trả lời TIẾP trong một yêu cầu | **CÓ** (28/09) | `POST /api/public/phu-huynh/<chìa>/yeu-cau/<id>/tra-loi` + ô "Nói thêm với trung tâm" dưới từng yêu cầu trên tờ báo cáo. Trước đó mỗi câu hỏi qua đáp lại là một phiếu MỚI: bốn lượt trao đổi thành bốn phiếu rời nhau, và trần 5 phiếu đang mở đầy sau hai câu. Cửa mới KHÔNG có luật riêng — nó gọi đúng `dich_vu.tra_loi` mà học viên đang gọi, nên mọi hàng rào sẵn có tự áp (chìa khác → 404, yêu cầu của chính em tự gửi → 404, phiếu đã đóng → 409, `noi_bo` bị chặn). Bộ kiểm 10/10 |
 | Đường dẫn "sống" sau buổi xem | CHƯA → §66 | như dòng 23 |
 
 ## Dòng 26 — Học sinh · tài khoản · CÓ
@@ -570,8 +571,8 @@ Phân rã chi tiết (bổ sung 27/09/2026 — trước đây dòng này không 
 |---|---|---|
 | Em mở lại được bản ghi buổi đã học | CÓ (§72) | thẻ lớp hiện "Xem lại: 24/09 22/09" (`frontend/src/components/LopCuaToi.tsx:400`), dữ liệu từ `backend/teaching/lop_cua_toi.py:107` |
 | Đánh dấu "đã xem" | CÓ | bảng `recording_views`, cửa `backend/teaching/ban_ghi.py:71` (`GhiLuotMoView`); tuyến `backend/teaching/urls.py:97`. Lưu ý: "đã MỞ" chứ không phải "đã xem hết" — bản ghi nằm trên Zoom, ngoài tầm đo |
-| **Danh sách bản ghi theo buổi (đủ, không chỉ mấy buổi cuối)** | **CHƯA** — sửa ô 27/09 | thẻ lớp chỉ lấy **4 bản ghi gần nhất** (`backend/teaching/lop_cua_toi.py:44` `SO_BAN_GHI = 4`); không tuyến nào và không màn nào của em liệt kê đủ. Lớp học ba tháng thì buổi thứ năm trở về trước em không còn đường mở lại |
-| **Tìm kiếm bản ghi** | **CHƯA** | không ô tìm nào ở phía em; `lop_cua_toi.py` không nhận tham số tìm |
+| **Danh sách bản ghi theo buổi (đủ, không chỉ mấy buổi cuối)** | **CÓ** (đóng chiều 27/09 — câu bên phải là bản ghi lúc còn thiếu, giữ theo RULES §29; trang `/lop/<id>/xem-lai` đã bỏ trần 4) | thẻ lớp chỉ lấy **4 bản ghi gần nhất** (`backend/teaching/lop_cua_toi.py:44` `SO_BAN_GHI = 4`); không tuyến nào và không màn nào của em liệt kê đủ. Lớp học ba tháng thì buổi thứ năm trở về trước em không còn đường mở lại |
+| **Tìm kiếm bản ghi** | **CÓ** (27/09) | ô tìm theo chủ đề / ngày + lọc "Chưa xem lại" ở `/lop/<id>/xem-lai`; câu cũ ("không ô tìm nào ở phía em") giữ theo RULES §29 |
 | Em báo "không mở được bản ghi" | CÓ (§72) | nút "Không mở được?" trên thẻ lớp → `backend/teaching/ban_ghi.py:211` (`BaoLoiBanGhiView`); chuông gộp nói rõ mấy em báo. Chỗ nhận báo (chuông hay hộp Yêu cầu) còn chờ anh chốt — **K4** |
 | Bản ghi TỰ vào buổi từ Zoom | CHƯA → E4 | hôm nay trợ giảng / học vụ dán link tay vào buổi (`class_sessions.recording_url`); chờ khoá Zoom của anh |
 | % đã xem cho trợ giảng | MỘT PHẦN | đếm được "ai đã MỞ" (`backend/teaching/ban_ghi.py:99`, xem dòng 22); % thời lượng đã xem thì Zoom mới trả được, và chỉ khi em đăng nhập Zoom → E4 |

@@ -24,7 +24,7 @@
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 9 tệp · 4573 dòng | 16 tệp · 2949 dòng |
 | [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1831 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
-| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1753 dòng | 10 tệp · 1561 dòng |
+| [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1802 dòng | 10 tệp · 1626 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 19 tệp · 1803 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2166 dòng | 19 tệp · 2015 dòng |
 | [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6410 dòng | 69 tệp · 7061 dòng |
@@ -329,8 +329,8 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `backend/yeu_cau/dich_vu.py` | 777 dòng | `yeu_cau`, `yeu_cau_su_kien` |
 | `backend/yeu_cau/loai.py` | 174 dòng | — |
 | `backend/yeu_cau/thuc_thi.py` | 305 dòng | — |
-| `backend/yeu_cau/urls.py` | 31 dòng | — |
-| `backend/yeu_cau/views.py` | 455 dòng | — |
+| `backend/yeu_cau/urls.py` | 34 dòng | — |
+| `backend/yeu_cau/views.py` | 501 dòng | — |
 
 | Tệp frontend | Dòng |
 |---|---|
@@ -342,7 +342,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/app/(standalone)/yeu-cau/page.tsx` | 88 dòng |
 | `frontend/src/components/YeuCauDeXuat.tsx` | 66 dòng |
 | `frontend/src/components/YeuCauDongThoiGian.tsx` | 48 dòng |
-| `frontend/src/components/YeuCauPhuHuynh.tsx` | 129 dòng |
+| `frontend/src/components/YeuCauPhuHuynh.tsx` | 194 dòng |
 | `frontend/src/lib/yeuCau.ts` | 199 dòng |
 
 ## thong_bao

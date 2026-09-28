@@ -26,6 +26,10 @@ export default function YeuCauPhuHuynh({ token, initial }: { token: string; init
   const [err, setErr] = useState<string | null>(null);
   const [bao, setBao] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Ô trả lời của TỪNG yêu cầu: một `id → chữ đang gõ`, không phải một ô dùng chung. Phụ huynh
+  // có thể đang theo hai việc cùng lúc, và một ô chung sẽ đổ lời của việc này sang việc kia.
+  const [loi, setLoi] = useState<Record<number, string>>({});
+  const [dangTraLoi, setDangTraLoi] = useState<number | null>(null);
   const dangGui = useRef(false);
   // Khoá nút gửi tới khi React gắn xong (điện thoại phụ huynh, 4G): bấm sớm là GET mặc định.
   const daGan = useDaGan();
@@ -59,6 +63,40 @@ export default function YeuCauPhuHuynh({ token, initial }: { token: string; init
     } finally {
       dangGui.current = false;
       setBusy(false);
+    }
+  }
+
+  /**
+   * Nói TIẾP trong một yêu cầu đã gửi.
+   *
+   * Trước 28/09 phụ huynh đọc được trả lời của trung tâm nhưng không nói lại được, nên mỗi
+   * câu hỏi qua đáp lại là một yêu cầu MỚI — bốn lượt trao đổi thành bốn phiếu rời nhau, và
+   * trần 5 phiếu đang mở đầy sau hai câu.
+   *
+   * Chỉ hiện khi máy chủ nói `coThe.traLoi` (yêu cầu chưa đóng). Màn KHÔNG tự đoán điều kiện
+   * ấy — đóng / mở là luật của máy chủ, chép lại ở đây là có bản thứ hai để trôi (RULES §7).
+   */
+  async function traLoi(id: number) {
+    const chu = (loi[id] || '').trim();
+    if (!chu) { setErr('Viết vài chữ trước khi gửi.'); return; }
+    if (dangGui.current) return;
+    dangGui.current = true;
+    setDangTraLoi(id);
+    setErr(null);
+    try {
+      await ghiJson(`${duong}/${id}/tra-loi`, {
+        method: 'POST', body: JSON.stringify({ noi_dung: chu }),
+      }, HD_YEU_CAU);
+      const moi = await ghiJson(duong, { method: 'GET' }, HD_PHU_HUYNH);
+      setDs(moi.yeuCau);
+      setLoi((cu) => ({ ...cu, [id]: '' }));
+      setBao('Đã gửi. Trung tâm sẽ thấy lời nhắn này trong cùng yêu cầu.');
+    } catch (e) {
+      setErr(loiBatDuoc(e, 'Chưa gửi được. Thử lại sau ít phút.'));
+      setBao(null);
+    } finally {
+      dangGui.current = false;
+      setDangTraLoi(null);
     }
   }
 
@@ -119,6 +157,33 @@ export default function YeuCauPhuHuynh({ token, initial }: { token: string; init
                 <div className="mt-3">
                   <YeuCauDongThoiGian suKien={y.suKien ?? []} />
                 </div>
+                {y.coThe?.traLoi && (
+                  <form
+                    className="mt-3 flex flex-col gap-2"
+                    onSubmit={(e) => { e.preventDefault(); void traLoi(y.id); }}
+                  >
+                    <label className="flex flex-col gap-1">
+                      <span className="text-label text-ink-3">Nói thêm với trung tâm</span>
+                      <textarea
+                        rows={2}
+                        className={O_CHU}
+                        maxLength={4000}
+                        value={loi[y.id] || ''}
+                        onChange={(e) => setLoi((cu) => ({ ...cu, [y.id]: e.target.value }))}
+                      />
+                    </label>
+                    <div>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        loading={dangTraLoi === y.id}
+                        disabled={!daGan || !(loi[y.id] || '').trim()}
+                      >
+                        {dangTraLoi === y.id ? 'Đang gửi…' : 'Gửi'}
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </li>
             ))}
           </ul>
