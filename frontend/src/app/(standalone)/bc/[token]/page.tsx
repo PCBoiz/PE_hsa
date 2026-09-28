@@ -1,4 +1,5 @@
 import NutIn from '@/components/NutIn';
+import TaiLaiTrang from '@/components/TaiLaiTrang';
 import { ToBaoCao, type BaoCao } from '@/components/ToBaoCao';
 import YeuCauPhuHuynh from '@/components/YeuCauPhuHuynh';
 import { HD_BAO_CAO } from '@/lib/hinhDang';
@@ -50,6 +51,31 @@ export default async function BaoCaoTheoChiaPage({
     serverJson<BaoCao>(`/api/public/parent-report/${encodeURIComponent(token)}`, {}, HD_BAO_CAO),
     serverJson<PhuHuynhDS>(`/api/public/phu-huynh/${encodeURIComponent(token)}/yeu-cau`, {}, HD_PHU_HUYNH),
   ]);
+
+  /* MÁY CHỦ NGỦ KHÁC CHÌA HỎNG — và nhầm hai thứ này đắt hơn nó trông (28/09/2026).
+     `serverJson` chỉ trả `status: null` khi KHÔNG với tới được máy chủ; mọi mã HTTP thật
+     (404 chìa sai, 410 thu hồi, 500 sập) đều là số. Đường này là đường công khai duy nhất
+     của hệ thống: phụ huynh mở từ một tin Zalo, không tài khoản, không ai gõ cửa đánh thức
+     máy chủ hộ — mà lượt gọi đầu khi Render vừa ngủ đo được 63–73 giây trên production.
+     `loading.tsx` lo phần CHỜ; đây là phần lượt gọi ấy THẤT BẠI.
+     Nói "Không mở được báo cáo này" ở đây là bảo người ta rằng chìa hỏng, trong khi chìa
+     vẫn tốt. Họ đóng tab, nhắn giảng viên xin link mới, link mới cũng không vào được vì
+     máy chủ vẫn đang ngủ — và không ai trong chuỗi ấy biết là không có gì hỏng. */
+  if (!kq.ok && kq.status === null) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-16">
+        <h1 className="text-title text-ink">Chưa tải được, thử lại sau một phút</h1>
+        <p className="mt-2 text-body text-ink-2">
+          Máy chủ đang thức dậy (hệ thống tạm dừng khi không ai dùng). Đường dẫn của bạn
+          <strong> vẫn dùng được</strong> — không cần xin đường dẫn mới.
+        </p>
+        <TaiLaiTrang />
+        <p className="mt-6 text-small text-ink-3">
+          Nếu sau vài phút vẫn chưa mở được, hãy nhắn giảng viên phụ trách lớp.
+        </p>
+      </main>
+    );
+  }
 
   if (!kq.ok) {
     return (
