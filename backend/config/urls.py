@@ -3,18 +3,41 @@ URL gốc — giữ NGUYÊN path/method của bản Flask (ràng buộc #2 MIGRA
 Mỗi app tự khai path đầy đủ (không prefix chung) vì path cũ không theo chuẩn
 router lồng (vd /api/course/rating số ít, /api/courses-enrolled).
 """
+import os
+
 from allauth.socialaccount import views as xh_views
 from django.http import JsonResponse
 from django.urls import include, path
 
 
+def _ban():
+    """Bảy ký tự đầu của commit đang chạy, hoặc chuỗi rỗng.
+
+    Render đặt `RENDER_GIT_COMMIT` cho mọi lượt deploy; `PE_BAN` là đường đặt tay (máy dev,
+    phép kiểm). Bảy ký tự vì đó là độ dài `git log --oneline` in ra — dán vào lệnh git là chạy.
+
+    Đọc mỗi lượt gọi chứ không ghim lúc nạp mô-đun: gunicorn giữ tiến trình sống qua nhiều
+    lượt, và một giá trị ghim lúc nạp sẽ nói dối nếu ai đó đổi biến rồi khởi động lại mềm.
+    """
+    return (os.environ.get('RENDER_GIT_COMMIT') or os.environ.get('PE_BAN') or '')[:7]
+
+
 def health(request):
     """Health check + giữ Neon ấm. Dùng common.db.q (retry + reset pool) để
     lúc deploy/cold-start Neon vừa được đánh thức vừa KHÔNG 500 làm hỏng
-    healthCheck của Render (MIGRATION_NOTES §Neon)."""
+    healthCheck của Render (MIGRATION_NOTES §Neon).
+
+    `ban` = commit đang chạy (28/09/2026). Đẩy `master` là Render dựng lại mất ~45 phút, và
+    trong 45 phút ấy câu "production đã lên bản mới chưa" chỉ trả lời được bằng cách đi thử
+    một tính năng CHỈ bản mới có — mỗi lượt đẩy phải nghĩ ra một phép thử mới, và nghĩ sai thì
+    kết luận sai theo cả hai chiều. Dấu bản biến câu hỏi ấy thành một lời gọi.
+
+    Repo CÔNG KHAI nên mã commit không phải bí mật. Thiếu biến thì trả chuỗi rỗng — cửa này là
+    health check của Render, nó ném là Render coi như dịch vụ chết và lăn ngược bản deploy.
+    """
     from common.db import q
     q('SELECT 1')
-    return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'ok', 'ban': _ban()})
 
 
 urlpatterns = [

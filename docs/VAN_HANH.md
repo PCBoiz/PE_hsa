@@ -148,6 +148,36 @@ Hai nhóm backend | frontend chạy song song; đo trên máy dev: **49–51 s**
   (trong hạn lưu lịch sử của gói Neon) — việc của chủ dự án, xem `docs/VIEC_CUA_ANH.md`.
 - Lùi bằng mã: `git revert <commit>` trên `master` rồi đẩy (qua cổng pre-push như thường).
 
+## VÒNG LẶP — một lệnh thay cho năm lệnh và một trí nhớ
+
+```bash
+PE_THE=<thư mục thẻ ngoài repo> node scripts/vong_lap.mjs            # đo · gieo nếu thiếu · đo lại · soát màn
+PE_THE=<thư mục thẻ ngoài repo> node scripts/vong_lap.mjs --chi-xem  # chỉ đo, không ghi gì
+PE_THE=… node scripts/vong_lap.mjs --cho-ban $(git rev-parse --short HEAD)   # NGAY SAU khi đẩy master
+PE_WEB=http://localhost:3100 PE_API=http://localhost:9000 node scripts/vong_lap.mjs   # trên dev
+```
+
+**`--cho-ban` là thứ phải dùng ngay sau mỗi lượt đẩy `master`.** Render dựng lại mất ~45 phút;
+đo trong khoảng ấy thì mọi con số đều THẬT nhưng là của **bản cũ** — cách sai đắt nhất, vì nó
+trông y hệt một lượt đo thành công. `/api/health` nay trả `ban` = bảy ký tự đầu của commit
+đang chạy (Render đặt `RENDER_GIT_COMMIT`; `PE_BAN` là đường đặt tay), nên câu "đã lên chưa"
+là một lời gọi thay vì một phép thử phải nghĩ mới sau mỗi lượt đẩy.
+
+**Đây là lệnh nên chạy sau mỗi lượt đẩy `master`, và trước mỗi buổi trình diễn.** Ba lệnh dưới
+đây vẫn chạy riêng được; vòng lặp chỉ xâu chúng lại đúng thứ tự và in MỘT bảng điểm.
+
+| Bước | Làm gì | Bẫy nó tránh |
+|---|---|---|
+| 0 | hỏi thẻ quản trị còn sống không | thẻ sống 30 phút; hết hạn giữa lượt thì MỌI phép đếm ra 0 và trông hệt như "chưa làm gì" |
+| 1 | `kiem_production.mjs` | — |
+| 2 | `gieo_trinh_dien.mjs --that`, **chỉ khi bước 1 đỏ** | chạy một bước GHI khi không có việc để ghi vẫn là một bước ghi vào production |
+| 3 | `kiem_production.mjs` lần nữa | bước 2 vừa đổi dữ liệu — không chấm lại thì đang đọc số cũ |
+| 4 | `do_man_hang_loat.mjs` trên 41 màn | — |
+
+**"Chưa đo được" là trạng thái THỨ BA, không phải "đỏ".** Thẻ hết hạn, máy chủ không trả lời,
+thiếu thẻ của một vai — cả ba đều không phải lỗi của sản phẩm, và gọi chúng là đỏ thì người
+đọc đi sửa nhầm chỗ. Mã thoát: **0** xanh hết · **1** có thứ đỏ thật · **2** có thứ chưa đo được.
+
 ## Kiểm production — chạy TRƯỚC buổi trình diễn và sau mỗi lượt đẩy `master`
 
 ```bash

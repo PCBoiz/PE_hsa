@@ -811,4 +811,39 @@ def test_api_health_mo_duoc_khong_can_dang_nhap(api):
     """
     r = api.get('/api/health')
     assert r.status_code == 200, r.content[:200]
-    assert r.json() == {'status': 'ok'}
+    # Câu cũ (giữ theo RULES §29) đòi ĐÚNG `{'status': 'ok'}`, và nó đỏ ngày 28/09/2026 khi
+    # cửa này mang thêm dấu bản đang chạy. Viết lại thay vì xoá (RULES §13): thứ nó canh —
+    # "cửa mở được, không cần đăng nhập, và nói ok" — vẫn phải đúng.
+    assert r.json()['status'] == 'ok', r.json()
+
+
+@pytest.mark.django_db
+def test_api_health_mang_dau_BAN_dang_chay(api, monkeypatch):
+    """`/api/health` phải nói nó đang chạy BẢN NÀO.
+
+    ── VÌ SAO (28/09/2026) ───────────────────────────────────────────────────
+
+    Đẩy `master` là Render dựng lại, mất ~45 phút. Trong 45 phút ấy không có cách nào hỏi
+    "production đã lên bản mới chưa" ngoài việc đi thử một tính năng CHỈ bản mới có — nghĩa là
+    mỗi lượt đẩy lại phải nghĩ ra một phép thử mới, và nghĩ sai thì kết luận sai theo cả hai
+    chiều: tưởng đã lên (rồi đo bản cũ và mừng), hoặc tưởng chưa lên (rồi ngồi đợi thêm).
+
+    Dấu bản biến câu hỏi ấy thành một lời gọi. Repo CÔNG KHAI nên mã commit không phải bí mật.
+    """
+    monkeypatch.setenv('PE_BAN', 'abcdef1234567890')
+    r = api.get('/api/health')
+    assert r.status_code == 200, r.content[:200]
+    assert r.json().get('ban') == 'abcdef1', r.json()
+
+
+@pytest.mark.django_db
+def test_api_health_KHONG_co_dau_ban_thi_van_200(api, monkeypatch):
+    """Máy dev không có biến ấy. Cửa này là health check của Render — nó 500 là Render coi
+
+    như dịch vụ chết và lăn ngược bản deploy. Thiếu dấu bản thì trả chuỗi rỗng, đừng ném.
+    """
+    monkeypatch.delenv('PE_BAN', raising=False)
+    monkeypatch.delenv('RENDER_GIT_COMMIT', raising=False)
+    r = api.get('/api/health')
+    assert r.status_code == 200, r.content[:200]
+    assert r.json() == {'status': 'ok', 'ban': ''}
