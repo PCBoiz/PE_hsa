@@ -7,6 +7,91 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 28/09/2026 — Hộp Yêu cầu biết việc nào bị bỏ quên; và vòng lặp có bước ĐỌC
+
+Hai ô cuối của dòng 11 — **hạn xử lý + cờ quá hạn** và **ô tìm theo chữ** — đóng nốt. Không
+một dòng DDL: hạn SUY RA từ `loai.HAN_GIO` (giờ theo nhóm) chứ không thêm cột, nên không ai
+phải đặt hạn bằng tay cho từng yêu cầu, và đổi ba con số là sửa đúng một dòng.
+
+**Điều đáng ghi lại là thứ tự cũ, chứ không phải cái cờ.** Hộp Yêu cầu xưa nay xếp theo
+`updated_at` giảm dần. Nghe thì hợp lý, nhưng nó có nghĩa đen là: yêu cầu càng bị bỏ quên —
+không ai trả lời, nên `updated_at` càng cũ — càng trôi sâu xuống đáy. Thứ tự ấy giấu đúng thứ
+nó phải phơi ra. Cùng lẽ ấy, hạn phải tính từ LÚC GỬI chứ không từ `updated_at`: tính từ
+`updated_at` thì mỗi lượt trả lời là một lượt dời hạn, và một yêu cầu bị hỏi tới hỏi lui suốt
+hai tuần sẽ không bao giờ quá hạn.
+
+Ba chỗ nữa mỗi chỗ một phép kiểm canh: việc **đã đóng thôi quá hạn** (cờ đỏ không ai gỡ được
+thì màn đỏ vĩnh viễn, và một màn lúc nào cũng đỏ thì hết ai nhìn) · đo bằng **giờ Việt Nam**
+chứ không bằng `now()` của Neon — `created_at` ghi bằng `local_now()`, so với `now()` là lệch
+đúng bảy tiếng và lệch về phía BỎ SÓT (`common/clock.py` chép lại nguyên cái lỗi này từ
+14/08) · ô tìm **thoát `%` và `_`** trước khi xuống ILIKE. Hạn KHÔNG gửi xuống màn học viên
+hay tờ phụ huynh: in nó ra là hứa với họ một điều TopHSA chưa hứa, và lời hứa ấy sẽ bị đem ra
+đối chất đúng vào hôm hệ thống trễ.
+
+**`scripts/con_sot.mjs` — bước NGHIÊN CỨU của vòng lặp.** Vì sao cần: hai ô vừa đóng đã nằm
+trong sổ từ 26/09 dưới dạng câu "Còn sót (ngoài phạm vi dòng 11): hạn xử lý / cờ quá hạn, ô
+tìm theo chữ", do chính tôi viết lúc đo. Hai ngày không ai quay lại — vì cột "Hiện nay" của
+dòng ấy ghi **CÓ**, và mắt đọc bảng thì dừng ở cột ấy. Công cụ moi mọi lời tự thú kiểu ấy ra
+khỏi văn xuôi và chia hai cột: **tôi làm được ngay** / **chờ người khác** (chờ anh Sơn, chờ
+khách, chờ khoá R2 · Zoom · Zalo). Gộp chung một cột thì thứ chỉ cần ngồi viết nằm cạnh thứ
+chờ pháp nhân, và kết luận tự nhiên khi đọc là "còn nhiều lắm, chờ anh Sơn đã".
+
+Phải lọc thêm một lớp: sổ giữ nguyên câu cũ theo RULES §29, nên lời tự thú hôm qua nằm ngay
+cạnh lời báo đóng hôm nay trong CÙNG một ô. Bản đầu in 30 chỗ "làm được", phần lớn là chuyện
+đã xong. Sau khi bỏ câu có kèm ngày đóng: **10 chỗ tự làm được · 17 chỗ vướng người khác**.
+
+`vong_lap.mjs` gọi nó ở bước cuối. Trước đó mỗi lượt kết thúc bằng một bảng điểm, và việc tiếp
+theo lại phải tìm bằng cách mở sổ đọc tay — đúng cách hai ô của dòng 11 nằm im hai ngày.
+
+**Công cụ bắt được hai việc thật ngay lượt chạy đầu.**
+
+*Một:* **dòng 30** mang nhãn "CHƯA — danh sách tài liệu đủ của lớp" trong khi mã đóng nó từ
+tối 27/09 (`hv_xem_du.py` phục vụ cả `?loai=hoc-lieu`, màn `/lop/<id>/xem-lai` có tab Tài
+liệu với ô tìm và ba nút lọc). Nhãn sai sống được vì **sổ soát màn chỉ hỏi dòng 30 ở
+`/dashboard`** — nơi thẻ lớp đúng là giữ 4 tài liệu — nên không lượt đo nào mâu thuẫn với nó.
+Vá bằng cách thêm **màn thứ 42** hỏi ba chuỗi CHỈ dựng khi tab Tài liệu mở; và cho vòng lặp
+tự ĐẾM số màn thay vì gõ "41" vào bốn chỗ.
+
+*Hai:* **§66 "link sống"** — ô cuối của cả dòng 23 lẫn dòng 24. Chìa sống 45 ngày nhưng
+`period_to` đóng băng lúc cấp, nên phụ huynh mở vào ngày thứ 40 đọc một tờ của 40 ngày trước:
+buổi con học tuần này không có trong bảng chuyên cần, lớp đổi lịch thì tờ vẫn in lịch cũ. Và
+trung tâm không thấy gì bất thường — chìa vẫn mở được, `opened_count` vẫn tăng.
+
+Nới **đúng một đầu**: `period_to` chạy tới hôm nay, `period_from` giữ nguyên. Nới cả đầu
+trước là cho một chìa cấp cho kỳ tháng 9 đọc ngược về tháng 6, mà chìa là chìa — chuyển tiếp
+trong nhóm chat là ai cũng mở được. Và "sống" nói về khoảng SỐ LIỆU, không nói về tuổi thọ
+chìa: hết hạn / thu hồi vẫn 404, có phép kiểm riêng canh, vì lẫn hai thứ ấy là làm mất đường
+rút lại duy nhất đang có.
+
+Phần thay cho "báo phụ huynh khi đổi lịch" (anh Sơn chốt 27/09: KHÔNG gửi tin): mục **"Lịch
+học có thay đổi"** ngay trên tờ. **Nêu ba thứ, cố ý không nêu thứ tư.** Buổi đã huỷ, buổi học
+bù, buổi mới xếp thêm — ba thứ đọc thẳng từ dữ liệu và không thể sai. *"Buổi thứ Tư dời từ
+19h sang 20h"* thì KHÔNG: `class_sessions` không có sổ ghi thay đổi, và `updated_at` nhúc
+nhích cả khi giảng viên chỉ dán link Zoom hay ghi sổ đầu bài. Đoán bằng nó là nói với phụ
+huynh một điều mình không biết, trên đúng tờ giấy trung tâm dùng để chứng minh mình minh bạch.
+Muốn có "đổi giờ" thì phải thêm sổ ghi thay đổi thật — một mục §NN riêng, không nhét vào đây.
+
+Đỏ trước **9/13**; bốn cái xanh sẵn là bốn cái canh hàng rào CŨ (hết hạn, thu hồi, tờ qua
+chìa không mang liên lạc của em) — đúng vai trò của chúng: canh hồi quy, không phải hành vi
+mới. Chốt 13/13.
+
+**Một đột biến LỌT, và nó dạy đúng thứ đáng học.** Phép "bỏ lọc lớp" (`WHERE s.class_id = %s`
+→ `WHERE (s.class_id = %s OR TRUE)`) làm ĐỎ hai phép kiểm khác, nhưng KHÔNG làm đỏ
+`test_buoi_cua_lop_KHAC_khong_lot_vao` — tức test canh đúng chỗ ấy đã ngủ quên trong khi hàng
+rào bị dỡ. Lý do: bỏ lọc lớp thì câu SQL kéo về buổi của CẢ CSDL, `LIMIT` cắt lấy 12 buổi sớm
+nhất, và buổi-của-lớp-khác mà test vừa tạo rơi ra NGOÀI trần. Test hỏi "buổi ấy có trong danh
+sách không", nhận về "không", và kết luận hàng rào còn nguyên.
+
+**Một phép kiểm mà TRẦN của câu truy vấn có thể làm cho xanh thì nó đang canh cái trần, không
+canh hàng rào.** Siết lại thành *"MỌI dòng trả về phải thuộc lớp của em"* — mệnh đề ấy không
+có cách nào đúng nhờ `LIMIT`.
+
+Và cùng phép đo ấy lộ ra một chỗ thật trong mã: `LIMIT` đang **cắt im lặng**. Lớp có nhiều
+hơn `TRAN` thay đổi thì tờ in 12 dòng và không nói gì về phần còn lại — đúng loại "êm ái nói
+dối" mà tờ báo cáo này không được phép có. Vá bằng cách lấy `TRAN + 1` dòng để BIẾT mình vừa
+cắt (không phải chạy thêm một câu `COUNT(*)` cho một con số không ai đọc), trả `conNua`, và
+tờ in thêm một dòng mời liên hệ trung tâm. Hai phép kiểm mới, đỏ trước; chốt 15/15.
+
 ## 27/09/2026 — Trả lời được "môn nào đang tụt, lớp nào trong môn ấy"
 
 Nhánh cục bộ `agent/bc`. Ô CUỐI còn "MỘT PHẦN" của dòng 6: khách hỏi được "lớp này em nào

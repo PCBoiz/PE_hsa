@@ -20,10 +20,14 @@
  *   2. `kiem_production.mjs` — sống / kín / đủ dữ liệu;
  *   3. `gieo_trinh_dien.mjs` — lấp chỗ dữ liệu còn thiếu;
  *   4. `kiem_production.mjs` LẦN NỮA — vì bước 3 vừa đổi dữ liệu;
- *   5. `do_man_hang_loat.mjs` — soát 41 màn bằng thẻ của năm vai.
+ *   5. `do_man_hang_loat.mjs` — soát cả sổ màn (`scripts/man/nghiem_thu.json`) bằng thẻ của năm vai.
  *
  * Làm tay thì quên bước, quên thứ tự, hoặc đọc kết quả cũ. Tệp này chạy cả năm, dừng đúng chỗ
  * đáng dừng, và in MỘT bảng điểm ở cuối.
+ *
+ * Bước cuối (`con_sot.mjs`) là chỗ vòng KHÉP LẠI: đo xong thì nói luôn vòng sau làm gì, đọc
+ * thẳng từ sổ nghiệm thu. Thiếu bước ấy thì mỗi lượt kết thúc ở một bảng điểm, và việc tiếp
+ * theo lại phải tìm bằng cách mở sổ đọc tay — đúng cách hai ô của dòng 11 nằm im hai ngày.
  *
  * ── KHÔNG ĐO ĐƯỢC LÀ TRẠNG THÁI THỨ BA ──────────────────────────────────────
  *
@@ -72,6 +76,15 @@ function chay(tep, tham = [], moi_truong = {}) {
 
 function tieu(n) {
   console.log(`\n${'─'.repeat(72)}\n  ${n}\n${'─'.repeat(72)}`);
+}
+
+/** Số màn trong sổ soát — đếm từ chính tệp, không gõ cứng vào câu thông báo. */
+function soMan() {
+  try {
+    return JSON.parse(readFileSync(join(GOC, 'man', 'nghiem_thu.json'), 'utf8')).length;
+  } catch {
+    return '?';
+  }
 }
 
 // ── −1 · Đợi bản mới lên (chỉ khi có `--cho-ban`) ───────────────────────────
@@ -178,10 +191,13 @@ if (existsSync(raJson)) {
     else man.dat += 1;
   }
 }
-// MỘT dòng cho bước này, không hai. Không dựng được phiên đo là "chưa biết gì về 41 màn" —
-// khác hẳn "41 màn đều xanh", mà `0/0 ĐẠT · 0 đỏ` thì đọc thoáng qua trông như vế sau.
+// MỘT dòng cho bước này, không hai. Không dựng được phiên đo là "chưa biết gì về CẢ SỔ" —
+// khác hẳn "mọi màn đều xanh", mà `0/0 ĐẠT · 0 đỏ` thì đọc thoáng qua trông như vế sau.
+// Số màn ĐẾM TỪ SỔ chứ không gõ vào đây: sổ dài thêm một màn mà câu này vẫn nói con số cũ
+// là một lời báo cáo sai, và là loại sai không ai kiểm vì nó nằm trong một câu thông báo.
 if (!man.tong) {
-  ghi('soát màn', 'chua', `không dựng được phiên đo (mã ${m.ma}) — chưa biết gì về 41 màn`);
+  ghi('soát màn', 'chua',
+      `không dựng được phiên đo (mã ${m.ma}) — chưa biết gì về ${soMan()} màn trong sổ`);
 } else {
   ghi('soát màn', man.do ? 'do' : (man.chua ? 'chua' : 'xanh'),
       `${man.dat}/${man.tong} ĐẠT · ${man.do} đỏ · ${man.chua} chưa đo được`);
@@ -203,6 +219,14 @@ if (man.chuaDs.length) {
 }
 console.log(`\n  Bản đo: ${WEB} → ${API}`);
 console.log(`  Chi tiết từng màn: ${raJson}`);
+
+// ── Vòng sau làm gì ─────────────────────────────────────────────────────────
+// Một lượt đo kết thúc bằng một bảng điểm thì vòng lặp đứt ngay chỗ ấy: biết hiện trạng rồi
+// vẫn phải mở sổ nghiệm thu đọc tay để tìm việc tiếp. Bước này khép vòng lại — và nó CHỈ in
+// phần không vướng ai, vì phần chờ anh Sơn hay chờ khoá ngoài thì đọc bao nhiêu lần cũng
+// không làm được, kể ra chỉ tổ làm danh sách dài ra rồi thôi ai đọc.
+tieu('VÒNG SAU LÀM GÌ — chỗ sổ nghiệm thu tự nhận là chưa xong');
+await chay('con_sot.mjs', ['--lam-duoc']);
 
 const coDo = buoc.some((b) => b.trang_thai === 'do');
 const coChua = buoc.some((b) => b.trang_thai === 'chua');

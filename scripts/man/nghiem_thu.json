@@ -501,6 +501,18 @@
   }
  },
  {
+  "dong": 30,
+  "ten": "Học sinh · trang Xem lại, tab Tài liệu (đủ học liệu + ô tìm + lọc)",
+  "duong": "/lop/{LOP_EM}/xem-lai?xem=tai-lieu",
+  "vai": "hv",
+  "hoi": {
+   "locCaKhoa": "Dùng cho cả khoá",
+   "locTheoBuoi": "Theo từng buổi",
+   "oTimTaiLieu": "Tìm theo tên hoặc mô tả tài liệu"
+  },
+  "ghiChu": "Ba câu này CHỈ dựng khi tab Tài liệu đang mở (`XemLaiClient.tsx:196-204` và placeholder ô tìm `:174`) — hỏi chữ \"Tài liệu\" trần thì nút tab lúc nào cũng có và câu hỏi sẽ XANH GIẢ dù tab kia đang mở. Vào thẳng bằng `?xem=tai-lieu` (`page.tsx:48`) thay vì bấm tab: bấm thì phải đợi React gắn xong, và một lượt đo hụt nhịp sẽ bị đọc thành \"chưa làm\". Vì sao có màn này: dòng 30 trước 28/09 CHỈ được soát trên `/dashboard`, nơi thẻ lớp giữ 4 tài liệu gần nhất — nên ô \"danh sách tài liệu đủ\" mang nhãn CHƯA suốt trong khi mã đã chạy từ 27/09."
+ },
+ {
   "dong": 31,
   "ten": "Học sinh · bài tập",
   "duong": "/bai-tap",

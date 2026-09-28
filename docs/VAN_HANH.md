@@ -172,7 +172,29 @@ là một lời gọi thay vì một phép thử phải nghĩ mới sau mỗi l�
 | 1 | `kiem_production.mjs` | — |
 | 2 | `gieo_trinh_dien.mjs --that`, **chỉ khi bước 1 đỏ** | chạy một bước GHI khi không có việc để ghi vẫn là một bước ghi vào production |
 | 3 | `kiem_production.mjs` lần nữa | bước 2 vừa đổi dữ liệu — không chấm lại thì đang đọc số cũ |
-| 4 | `do_man_hang_loat.mjs` trên 41 màn | — |
+| 4 | `do_man_hang_loat.mjs` trên cả sổ màn | — |
+| 5 | `con_sot.mjs --lam-duoc` — vòng sau làm gì | không có bước này thì mỗi lượt kết thúc ở một bảng điểm, và việc tiếp theo phải tìm bằng cách mở sổ nghiệm thu đọc tay |
+
+**Bước 5 là chỗ vòng KHÉP LẠI.** `scripts/con_sot.mjs` moi mọi câu sổ nghiệm thu tự nhận là
+chưa xong ("Còn thiếu…", "Còn sót…", "CHƯA…", ô trạng thái "MỘT PHẦN") ra khỏi văn xuôi và
+chia hai cột: **tôi làm được ngay** / **chờ người khác** (chờ anh Sơn, chờ khách, chờ khoá
+R2 · Zoom · Zalo). Gộp chung một cột thì thứ chỉ cần ngồi viết nằm cạnh thứ chờ pháp nhân, và
+kết luận tự nhiên khi đọc một danh sách như thế là "còn nhiều lắm, chờ anh Sơn đã".
+
+Vì sao cần: hai ô cuối của **dòng 11** nằm trong sổ từ 26/09 dưới dạng đúng một câu — "Còn
+sót: hạn xử lý / cờ quá hạn, ô tìm theo chữ" — và hai ngày không ai quay lại, vì cột "Hiện
+nay" của dòng ấy ghi **CÓ** và mắt đọc bảng thì dừng ở cột ấy. Chạy riêng được:
+
+```bash
+node scripts/con_sot.mjs              # cả hai cột
+node scripts/con_sot.mjs --lam-duoc   # chỉ thứ không vướng ai
+node scripts/con_sot.mjs --dong 11    # một dòng của bảng phân rã
+```
+
+Nó KHÔNG phải cổng kiểm và luôn thoát 0 — đây là bước ĐỌC. Lưu ý một chỗ đã phải vá: sổ giữ
+nguyên câu cũ theo RULES §29, nên lời tự thú hôm qua nằm ngay cạnh lời báo đóng hôm nay trong
+CÙNG một ô; bản đầu in 30 chỗ "làm được" mà phần lớn là chuyện đã xong. Câu có kèm ngày đóng
+(`xong 27/09`, `đóng nốt`, `đã vá`…) nay bị loại.
 
 **"Chưa đo được" là trạng thái THỨ BA, không phải "đỏ".** Thẻ hết hạn, máy chủ không trả lời,
 thiếu thẻ của một vai — cả ba đều không phải lỗi của sản phẩm, và gọi chúng là đỏ thì người

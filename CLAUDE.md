@@ -64,6 +64,8 @@ powershell -File scripts/don_may.ps1 [-Don] [-Worktree]  # xem / dọn tiến tr
 powershell -File scripts/nap_lai_be.ps1 [-Cong N]        # nạp lại Django (--noreload KHÔNG tự nạp mã mới)
 python scripts/dot_bien.py <tệp> --test <đường> --loat <json> [--xem]  # cả loạt đột biến, MỘT bảng
 node scripts/do_man_hang_loat.mjs --man scripts/man/nghiem_thu.json     # soát nhiều màn trong MỘT phiên
+node scripts/con_sot.mjs [--lam-duoc] [--dong N]         # sổ nghiệm thu tự nhận còn thiếu gì — BẮT ĐẦU MỖI VÒNG Ở ĐÂY
+PE_THE=<thư mục thẻ> node scripts/vong_lap.mjs [--chi-xem] [--cho-ban <sha>]  # đo production trọn lượt + việc vòng sau
 python scripts/quet_bi_mat.py [--tat-ca|--tu-kiem]       # quét bí mật lọt vào repo công khai
 bash .githooks/pre-push < /dev/null                      # cổng kiểm đủ (bật: git config core.hooksPath .githooks)
 ```

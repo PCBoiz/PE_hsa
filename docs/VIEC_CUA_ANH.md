@@ -11,24 +11,44 @@ mục đều có chi tiết ở dưới.
 |---|---|---|---|
 | **1** | **GitHub → Settings → Billing and plans** — gỡ khoá thanh toán | Ba workflow chết ở MỌI lượt: **không sao lưu CSDL**, không CI, không giữ ấm. Hôm nay chưa mất gì vì dữ liệu là giả; ngày TopHSA đưa dữ liệu thật mà chưa mở lại thì **mất là mất hẳn**. Chi tiết: mục 4e | 10 phút |
 | **2** | **Cloudflare R2** → bucket + API token → 4 biến trên Render | Hai ô CUỐI CÙNG của bảng nghiệm thu còn thiếu thật, và cả hai chờ đúng bộ khoá này: **tải tệp học liệu** (dòng 30) và **nộp bài bằng tệp** (dòng 31). Mọi dòng khác đã đo được trên production. Mã `D1` ở bảng dưới | 10 phút |
-| **3** | **Gộp `erp` → `master`** khi tôi báo xong | `erp` đang hơn `master` 8 commit. Mã `N4` | 5 phút |
+| **3** | **Gộp `erp` → `master`** khi tôi báo xong | Mã `N4`. Số commit đi trước thì chạy `git rev-list --count master..erp` mà xem — chép con số vào đây là chép một thứ cũ đi sau mỗi lượt đẩy (28/09: dòng này ghi 8 trong khi thực tế đã là 18) | 5 phút |
 
-**Một câu hỏi CHẶN một ô của bảng phân rã (28/09) — trả lời "có" hoặc "không" là đủ:**
+> **Ba dòng PowerShell, dán lần lượt** — Windows PowerShell 5.1 KHÔNG có `&&`, gõ một dòng
+> nối bằng `&&` là nó báo lỗi cú pháp và **không chạy lệnh nào**:
+>
+> ```powershell
+> git checkout master
+> git merge --ff-only erp
+> git push origin master
+> git checkout erp
+> ```
+>
+> Sau `git merge` phải thấy chữ **`Fast-forward`**. Thấy chữ khác thì DỪNG, đừng đẩy, báo tôi.
+> Dòng cuối đưa anh về nhánh làm việc. Đẩy xong, Render dựng lại ~45 phút — đo bằng
+> `PE_THE=<thư mục thẻ> node scripts/vong_lap.mjs --cho-ban <sha vừa gộp>`, nó tự đợi đúng bản
+> rồi mới chấm.
 
-> **Phụ huynh có nhận thông báo khi lớp đổi lịch không?**
+**Câu hỏi "phụ huynh có nhận tin đổi lịch không" — KHÔNG CÒN CHẶN bảng nữa (28/09):**
+
+> Ô ấy đã đóng theo đúng quyết định anh chốt **23/09** (*chuông + email đổi lịch cho HỌC VIÊN,
+> KHÔNG gửi phụ huynh* — ghi ở đầu `backend/teaching/bao_doi_lich.py`), mà không cần gửi thư
+> nào ra ngoài: **tờ báo cáo phụ huynh nay tự nêu phần đã đổi**. Mục "Lịch học có thay đổi"
+> liệt kê buổi đã huỷ · buổi học bù · buổi mới xếp thêm, tính từ ngày trung tâm cấp đường dẫn.
+> Và vì tờ ấy nay "sống" (số liệu chạy tới hôm nay, không đứng yên ở ngày cấp), phụ huynh mở
+> lại lúc nào cũng thấy bản mới nhất. Dòng 24 ghi **THAY**, kèm lý do; bảng hết ô treo.
 >
-> Đây là hai quyết định đang đối đầu nhau, và cả hai đều là của anh:
-> - **23/09** anh chốt: chuông + email đổi lịch **cho HỌC VIÊN, KHÔNG gửi phụ huynh**
->   (ghi ngay đầu `backend/teaching/bao_doi_lich.py`).
-> - **Bảng phân rã 24/09** của TopHSA, dòng 24, đòi phụ huynh *"Nhận thông báo khi có thay
->   đổi lịch"*. Anh để ô ấy TRỐNG — đúng, vì mình chưa làm.
+> **Vẫn còn một lựa chọn, nhưng nó không chặn gì** — anh chỉ trả lời khi nào muốn:
 >
-> Quyết định 23/09 có TRƯỚC bảng một ngày, nên rất có thể hai bên chưa gặp nhau. Tôi không tự
-> làm, vì đây là **thư đi ra ngoài tới người thật** — ra khỏi hệ thống là không cuộn lại được.
+> **Có muốn ĐẨY tin tới phụ huynh nữa không, hay để họ tự mở link?**
 >
-> Anh nhắn "có" thì tôi làm (mã gửi thư, hộp thư đi và liên hệ phụ huynh đều đã sẵn — ước
-> chừng nửa buổi, kèm test và đột biến); nhắn "không" thì tôi ghi dòng 24 là **THAY** kèm lý
-> do, và bảng hết ô treo vì lý do nội bộ.
+> Hôm nay là "tự mở": trung tâm không gửi gì thêm, phụ huynh vào link cũ là thấy. Muốn đẩy thì
+> mã gửi thư, hộp thư đi và liên hệ phụ huynh đều sẵn (ước chừng nửa buổi, kèm test và đột
+> biến) — nhưng tôi không tự làm, vì **thư ra khỏi hệ thống là không cuộn lại được**, và đây
+> sẽ là kênh đẩy đầu tiên của sản phẩm tới người ngoài.
+>
+> Một điều nên biết trước khi quyết: mục trên tờ **không** nêu được *"buổi thứ Tư dời từ 19h
+> sang 20h"*. `class_sessions` không có sổ ghi thay đổi, nên hệ thống thật sự không biết. Nếu
+> TopHSA cần đúng loại tin ấy thì phải thêm một sổ ghi thay đổi — việc riêng, nói tôi biết.
 
 **Một chuyện anh cần biết ngay — tài khoản học viên anh gửi không tồn tại:**
 
@@ -106,6 +126,7 @@ Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi 
 | **Chuông cảnh báo lớp chậm tiến độ gửi cho ai, mấy ngày một lần?** | giảng viên của lớp + học vụ, **mỗi tuần một lần** | số đã tính được rồi, chỉ chưa ai được báo. Gửi mỗi ngày là 30 chuông cho cùng một việc |
 | **Duyệt "xin nghỉ học" có báo giảng viên của lớp không?** | **CÓ** — điểm danh của em bị ghi đè thành "có phép" mà người đứng lớp không biết là chỗ dễ sinh tranh luận nhất về sau | một loại chuông mới, nên chờ anh |
 | **Học viên có cần màn xem ĐỦ bản ghi + học liệu không?** | **CÓ — tôi đang làm rồi**, vì bảng của khách đòi thẳng ở dòng 29 ("danh sách record theo buổi, tìm kiếm"). Anh bảo dừng thì tôi dừng | hôm nay thẻ lớp chỉ hiện **4** bản ghi và **4** tài liệu gần nhất, không có ô tìm — lớp 24 buổi thì em mất hút 20 buổi |
+| **Hạn xử lý một yêu cầu là bao lâu?** Tôi đặt tạm: hỏi bài / hỗ trợ / báo lỗi bản ghi **24 giờ** · báo lên **48 giờ** · xin–duyệt (chuyển lớp, bảo lưu, huỷ khoá) **72 giờ** | giữ nguyên nếu anh thấy hợp — đây là cam kết nội bộ của trung tâm với nhau, phần mềm chỉ đếm giờ hộ | không chặn gì. Ba số nằm ở **một chỗ duy nhất** (`backend/yeu_cau/loai.py::HAN_GIO`), đổi là sửa một dòng; câu SQL và màn hình đều đọc từ đó chứ không gõ lại. Hạn **không** hiện cho học viên hay phụ huynh: in nó ra là hứa với họ một điều TopHSA chưa hứa |
 
 ### 4c · Việc trên production
 
