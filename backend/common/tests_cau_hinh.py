@@ -33,6 +33,9 @@ CHI_DEV = {
     'E2E_EMAIL': 'email tài khoản kiểm thử, hàng rào thư cho đi; chỉ có ở máy dev',
     'FLASK_ENV': 'tên cũ thời Flask, chỉ đọc khi thiếu DJANGO_ENV (render.yaml đặt DJANGO_ENV)',
     'FLASK_DEBUG': 'tên cũ thời Flask, chỉ đọc khi thiếu DJANGO_DEBUG (render.yaml đặt DJANGO_DEBUG)',
+    'PE_BAN': 'đặt TAY dấu bản cho `/api/health` — máy dev và phép kiểm; trên Render thì '
+              'RENDER_GIT_COMMIT lo, và khai nó ở render.yaml sẽ ĐÈ giá trị nền tảng bằng một '
+              'chuỗi cố định, tức dấu bản nói dối ngay lượt deploy kế tiếp',
 }
 
 #: Biến NỀN TẢNG tự đặt — khai trong render.yaml là sai (Render đặt, hoặc Django đặt).
@@ -41,6 +44,8 @@ NEN_TANG = {
     'RUN_MAIN': 'bộ tự nạp lại của runserver đặt ở tiến trình con',
     'SERVER_SOFTWARE': 'máy chủ WSGI (nếu có) đặt; chỉ để nhận ra đang chạy dưới gunicorn',
     'DJANGO_SETTINGS_MODULE': 'manage.py / wsgi.py / asgi.py tự setdefault',
+    'RENDER_GIT_COMMIT': 'Render tự đặt commit của lượt deploy; `/api/health` trả bảy ký tự '
+                         'đầu để hỏi được "production đang chạy bản nào"',
 }
 
 #: Khai trong render.yaml mà mã backend KHÔNG đọc — chỉ được vì một bên khác đọc.
