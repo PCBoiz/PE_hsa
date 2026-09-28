@@ -4,11 +4,50 @@ from rest_framework.response import Response
 
 from common.db import q, q1, x
 from common.params import doc_trang
-from common.permissions import is_admin
+from common.permissions import can_see_class, is_admin
 from common.views import NguoiDungView
 from notifications.service import notify
 
 _CATEGORIES = ('question', 'share', 'discuss')
+
+#: Câu trả lời cho MỌI lượt hỏi về một lớp mình không thuộc: 404, không 403. Cùng luật với
+#: mọi cửa lớp khác — 403 nói "lớp này có thật, chỉ là anh không được vào", và đó là thứ
+#: không nên nói với người đang đoán id.
+_KHONG_THAY = {'error': 'Không tìm thấy bài viết'}
+
+
+def vao_duoc_dien_dan_lop(user, class_id):
+    """Người này có được đọc / viết trong diễn đàn riêng của lớp ấy không (§75)?
+
+    Hai nhóm, và CHỈ hai:
+      · **người phụ trách** — giảng viên, trợ giảng của lớp, học vụ, quản trị: hỏi
+        `can_see_class`, không tự viết lại luật ở đây;
+      · **học viên ĐANG học lớp** — `class_members.left_at IS NULL`. Em đã rời lớp thì thôi:
+        trao đổi riêng của một lớp không đi theo em sang lớp khác.
+
+    Trả False cả khi lớp không tồn tại — người gọi biến nó thành 404, nên hai trường hợp
+    "lớp không có" và "lớp có mà anh không thuộc" nhìn từ ngoài giống hệt nhau.
+    """
+    if not class_id:
+        return True                     # bài của sân chung — ai đăng nhập cũng đọc được
+    if can_see_class(user, class_id):
+        return True
+    return bool(q1('SELECT 1 FROM class_members WHERE class_id=%s AND user_id=%s '
+                   'AND left_at IS NULL', (class_id, user.id)))
+
+
+def _lop_cua_bai(post_id):
+    """`(tồn tại, class_id)` của một bài — một câu, dùng chung cho mọi cửa con của bài."""
+    r = q1('SELECT class_id FROM posts WHERE id=%s', (post_id,))
+    return (r is not None, r['class_id'] if r else None)
+
+
+def _chan_bai(user, post_id):
+    """`None` nếu được xem bài này, ngược lại là phản hồi 404 dựng sẵn."""
+    co, lop = _lop_cua_bai(post_id)
+    if not co or not vao_duoc_dien_dan_lop(user, lop):
+        return Response(_KHONG_THAY, status=404)
+    return None
 _REACTIONS = ('like', 'love', 'haha', 'wow', 'sad', 'angry')
 
 # Bảng/cột trong các helper dưới đây LUÔN là hằng nội bộ (không phải input user)
@@ -145,11 +184,27 @@ def _paging(request):
 
 
 def _can_modify(table, row_id, user):
-    """Chủ sở hữu HOẶC admin mới được sửa/xóa. Trả (row, (body, status)|None)."""
+    """Chủ sở hữu HOẶC admin mới được sửa/xóa. Trả (row, (body, status)|None).
+
+    HÀNG RÀO §75 CHẠY TRƯỚC HÀNG RÀO SỞ HỮU (vá 27/09/2026). Trước hôm nay hàm này
+    chỉ hỏi "có phải của anh không", nên bài trong diễn đàn RIÊNG của một lớp mà
+    người gọi không thuộc vẫn nhận 403 — trong khi một id không tồn tại nhận 404.
+    Đo được: em lớp A gõ `PUT /api/posts/<id bài lớp B>` ra 403, gõ id bịa ra 404.
+    Chênh lệch ấy đếm được bằng một vòng lặp và nó nói ra "bài này có thật", tức
+    đúng thứ mà chú thích `_KHONG_THAY` ở đầu tệp đã quyết là không nói.
+
+    Đặt ở ĐÂY chứ không ở bốn thân hàm gọi nó: mọi cửa SỬA/XOÁ của diễn đàn đều đi
+    qua hàm này, nên một cửa mới sau này tự có hàng rào (RULES §7 — không hai nguồn).
+    Cửa ĐỌC đã có `_chan_bai` riêng từ §75.
+    """
     row = q1(f'SELECT user_id FROM {table} WHERE id=%s', (row_id,))
     if not row:
         label = 'bài viết' if table == 'posts' else 'bình luận'
         return None, ({'error': f'Không tìm thấy {label}'}, 404)
+    chan = (_chan_bai(user, row_id) if table == 'posts'
+            else _chan_binh_luan(user, row_id))
+    if chan is not None:
+        return None, (chan.data, 404)
     if row['user_id'] != user.id and not is_admin(user):
         return None, ({'error': 'Không có quyền chỉnh sửa nội dung này'}, 403)
     return row, None
@@ -165,6 +220,24 @@ class PostsView(NguoiDungView):
 
         conds = []
         params = []
+        # §75 — KHOANH THEO LỚP. Không có `lop` thì đây là sân chung, và sân chung KHÔNG
+        # được trả bài của bất kỳ lớp nào: bỏ điều kiện này là mọi trao đổi riêng của mọi
+        # lớp hiện nguyên văn cho bất kỳ ai đăng nhập.
+        raw_lop = (request.query_params.get('lop') or '').strip()
+        if raw_lop:
+            if not raw_lop.isdigit():
+                return Response(_KHONG_THAY, status=404)
+            lop_id = int(raw_lop)
+            if not vao_duoc_dien_dan_lop(request.user, lop_id):
+                return Response(_KHONG_THAY, status=404)
+            conds.append('p.class_id = %s')
+            params.append(lop_id)
+            # Tên lớp trả KÈM: học viên không có cửa nào khác đọc được thông tin lớp (những
+            # cửa ấy đều là `IsTeachingStaff`), nên thiếu khoá này thì màn của em không đặt
+            # nổi tiêu đề — hoặc tệ hơn, phải gõ lại tên lớp trong mã (RULES §7).
+            lop_ten = q1('SELECT name FROM classes WHERE id=%s', (lop_id,))
+        else:
+            conds.append('p.class_id IS NULL')
         if category and category in _CATEGORIES:
             conds.append('p.category = %s')
             params.append(category)
@@ -215,6 +288,8 @@ class PostsView(NguoiDungView):
             total = posts[0]['_total']
         else:
             # Trang vượt quá dữ liệu (rows rỗng) → window không có total, đếm riêng
+            # `.replace('p.', '')` bỏ tiền tố bảng; `class_id IS NULL` / `= %s` đi qua nguyên
+            # vẹn nên tổng đếm vẫn nằm trong đúng phạm vi vừa lọc.
             count_where = where.replace('p.', '')
             total = q1(f'SELECT COUNT(*) AS n FROM posts {count_where}', tuple(params))['n']
 
@@ -232,7 +307,9 @@ class PostsView(NguoiDungView):
             p['reactions'] = reactions
             p['comment_count'] = p['comment_count'] or 0
 
+        ra_lop = {'lop': {'id': lop_id, 'ten': lop_ten['name']}} if raw_lop else {}
         return Response({
+            **ra_lop,
             'posts': posts,
             'page': page,
             'per_page': per_page,
@@ -277,14 +354,28 @@ class PostsView(NguoiDungView):
         except (TypeError, ValueError):
             lesson_no = None
 
-        row = q1('INSERT INTO posts (user_id, category, title, content, course_id, lesson_no) '
-                 'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                 (request.user.id, category, title, content, course_id, lesson_no))
+        # §75 — bài gửi vào diễn đàn của MỘT lớp. Thiếu khoá = bài sân chung, như trước.
+        raw_lop = data.get('class_id') or data.get('lop')
+        lop_id = None
+        if raw_lop not in (None, ''):
+            try:
+                lop_id = int(raw_lop)
+            except (TypeError, ValueError):
+                return Response(_KHONG_THAY, status=404)
+            if not vao_duoc_dien_dan_lop(request.user, lop_id):
+                # 404 chứ không 403: người ngoài không được biết lớp ấy có tồn tại.
+                return Response(_KHONG_THAY, status=404)
+
+        row = q1('INSERT INTO posts (user_id, category, title, content, course_id, lesson_no, '
+                 'class_id) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id',
+                 (request.user.id, category, title, content, course_id, lesson_no, lop_id))
         return Response({'ok': True, 'id': row['id']})
 
 
 class PostDetailView(NguoiDungView):
     def get(self, request, post_id):
+        if (chan := _chan_bai(request.user, post_id)) is not None:
+            return chan
         post = q1('''SELECT p.id, p.user_id, p.category, p.title, p.content,
                             p.like_count, p.created_at, p.updated_at,
                             p.course_id, p.lesson_no, p.is_sample,
@@ -338,6 +429,10 @@ class PostDetailView(NguoiDungView):
 
 class ReactPostView(NguoiDungView):
     def post(self, request, post_id):
+        # Thả cảm xúc KHÔNG đọc nội dung, nhưng nó ghi vào bài của một lớp và nói cho người
+        # ngoài biết bài ấy có thật. Cùng hàng rào với mọi cửa khác của bài.
+        if (chan := _chan_bai(request.user, post_id)) is not None:
+            return chan
         data = request.data if isinstance(request.data, dict) else {}
         reaction = (data.get('reaction') or '').strip()
         status, payload = _toggle_reaction('post_likes', 'post_id', 'posts',
@@ -350,9 +445,8 @@ class ReactPostView(NguoiDungView):
 class CommentsView(NguoiDungView):
     def get(self, request, post_id):
         page, per_page, offset = _paging(request)
-        post = q1('SELECT id FROM posts WHERE id=%s', (post_id,))
-        if not post:
-            return Response({'error': 'Không tìm thấy bài viết'}, status=404)
+        if (chan := _chan_bai(request.user, post_id)) is not None:
+            return chan
 
         # Phân trang 2 tầng: đếm/trang theo comment gốc, reply lấy kèm theo cha
         total = q1('SELECT COUNT(*) AS n FROM comments '
@@ -400,9 +494,8 @@ class CommentsView(NguoiDungView):
         parent_id = data.get('parent_comment_id')
 
         with transaction.atomic():
-            post = q1('SELECT id FROM posts WHERE id=%s', (post_id,))
-            if not post:
-                return Response({'error': 'Không tìm thấy bài viết'}, status=404)
+            if (chan := _chan_bai(request.user, post_id)) is not None:
+                return chan
             if parent_id is not None:
                 # Chỉ lồng 1 cấp: cha phải cùng post VÀ không phải là reply
                 parent = q1('SELECT parent_comment_id FROM comments WHERE id=%s AND post_id=%s',
@@ -419,8 +512,18 @@ class CommentsView(NguoiDungView):
         return Response({'ok': True, 'id': row['id']})
 
 
+def _chan_binh_luan(user, comment_id):
+    """Bình luận thuộc bài nào thì theo hàng rào của bài ấy (§75)."""
+    r = q1('SELECT post_id FROM comments WHERE id=%s', (comment_id,))
+    if not r:
+        return Response({'error': 'Không tìm thấy bình luận'}, status=404)
+    return _chan_bai(user, r['post_id'])
+
+
 class ReactCommentView(NguoiDungView):
     def post(self, request, comment_id):
+        if (chan := _chan_binh_luan(request.user, comment_id)) is not None:
+            return chan
         data = request.data if isinstance(request.data, dict) else {}
         reaction = (data.get('reaction') or '').strip()
         status, payload = _toggle_reaction('comment_likes', 'comment_id', 'comments',

@@ -48,11 +48,12 @@ import logging
 
 from django.db import DatabaseError
 
+from chuong_trinh.dich_vu import tien_do_lop
 from common.clock import local_now, local_today
 from common.db import q, q1
 from common.events import KIND_MOCK
 from common.params import doc_trang, mau_like, so_nguyen, trang_kem_tong
-from common.permissions import ROLE_ASSISTANT, ROLE_STUDENT
+from common.permissions import ROLE_ACADEMIC, ROLE_ASSISTANT, ROLE_STUDENT
 from stats.competency import (
     COURSE_ORDER,
     HALF_LIFE_DAYS,
@@ -62,7 +63,6 @@ from stats.competency import (
     TOPIC_SOURCES,
     chu_de_trong_giao_trinh,
 )
-from teaching.tien_do_chuong_trinh import tien_do_lop
 from teaching.vocab import LOAI_LOP, TRANG_THAI_LOP, chi_hoc_vien
 
 logger = logging.getLogger(__name__)
@@ -528,8 +528,10 @@ def class_report(class_id):
         'assistants': tro_giang_cua_lop(class_id),
         # Tiến độ CỦA LỚP theo khung chương trình (4.3, 25/09/2026) — khác
         # `avgProgress` ở dưới (đó là % bài học của TỪNG em). None = lớp chưa
-        # nhận phiên bản chương trình nào. Xem `teaching/tien_do_chuong_trinh.py`.
-        'syllabusProgress': tien_do_lop(class_id),
+        # nhận phiên bản chương trình nào. Xem `chuong_trinh/tien_do.py`.
+        'syllabusProgress': tien_do_lop([class_id]).get(class_id),
+        # Học vụ được phân công cho lớp (dòng 4). Cùng cơ chế với trợ giảng.
+        'hocVuPhuTrach': hoc_vu_cua_lop(class_id),
         'topics': topics,
         'summary': {
             # `students` = sĩ số ĐANG học, cùng nghĩa với mọi chỉ số bên dưới.
@@ -570,13 +572,29 @@ def class_report(class_id):
     }
 
 
-def tro_giang_cua_lop(class_id):
-    """Trợ giảng đang được gán vào lớp — cùng luật với `_la_tro_giang_cua_lop`."""
+def _nhan_su_cua_lop(class_id, vai):
+    """Người của một VAI đang được gán vào lớp — cùng luật với `_la_tro_giang_cua_lop`."""
     return [{'userId': t['id'], 'name': t['name'], 'email': t['email']} for t in q(
         '''SELECT u.id, u.name, u.email FROM class_members m
                JOIN users u ON u.id = m.user_id
               WHERE m.class_id = %s AND m.left_at IS NULL AND u.role = %s
-              ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
+              ORDER BY u.name''', (class_id, vai))]
+
+
+def tro_giang_cua_lop(class_id):
+    return _nhan_su_cua_lop(class_id, ROLE_ASSISTANT)
+
+
+def hoc_vu_cua_lop(class_id):
+    """Quản lý học vụ được PHÂN CÔNG cho lớp (bảng TopHSA dòng 4).
+
+    Đây là một dòng phân công, KHÔNG phải hàng rào quyền: học vụ vẫn thấy mọi lớp như
+    trước. Cái còn thiếu chỉ là câu trả lời cho "lớp này ai phụ trách" — trung tâm có
+    nhiều học vụ, và khi một lớp có chuyện thì phải biết gọi ai.
+
+    Dùng lại `class_members` vì đó đã là cách hệ thống biết "trợ giảng X phụ trách lớp Y".
+    Một khái niệm đã có tên thì đừng đặt cho nó cái tên thứ hai."""
+    return _nhan_su_cua_lop(class_id, ROLE_ACADEMIC)
 
 
 #: Cột của một dòng lớp — DÙNG CHUNG cho `class_list` và `class_page`, để biểu mẫu
@@ -615,7 +633,8 @@ def class_list(class_ids):
 
 
 def class_page(class_ids, params):
-    """Danh sách lớp CÓ LỌC + PHÂN TRANG ở máy chủ (§54, 24/09/2026) — cố định 3 câu.
+    """Danh sách lớp CÓ LỌC + PHÂN TRANG ở máy chủ (§54, 24/09/2026) — cố định 3 câu
+    (+1 tiến độ chương trình E1 khi trang có lớp).
 
     Lọc: `q` (tên / mã lớp, tên giảng viên, tên hoặc mã HSA của em ĐANG học),
     `type` (nhom / gia_su), `status`, `term_id`, `teacher_id` (giảng viên chính
@@ -677,9 +696,14 @@ def class_page(class_ids, params):
                (ids,)):
         dem['byType'][r['class_type']] = dem['byType'].get(r['class_type'], 0) + r['n']
         dem['byStatus'][r['status']] = dem['byStatus'].get(r['status'], 0) + r['n']
+    # Tiến độ chương trình (E1) của lớp TRÊN TRANG — một câu, qua cửa dịch vụ của miền.
+    tien_do = tien_do_lop(tren_trang)
     lop = []
     for r in rows:
         d = _lop_dict(r)
+        td = tien_do.get(r['id'])
+        d['chuongTrinh'] = None if not td else {
+            k: td[k] for k in ('pct', 'keHoachPct', 'treBuoi', 'cham', 'chuaGhiSo')}
         tl = ten.get(r['id'], {})
         d['assistantNames'] = tl.get('tro_giang', [])
         # Tên em hiện ngay dưới tên lớp GIA SƯ — với lớp 1–3 em, tên em mới là

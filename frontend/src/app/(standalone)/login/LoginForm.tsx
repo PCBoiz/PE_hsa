@@ -111,11 +111,17 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
     (oauthError && OAUTH_ERRORS[oauthError]) || null,
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  /* §73 · Tài khoản TỰ đăng ký mà chưa bấm thư xác nhận. Cờ `canXacThuc` do MÁY CHỦ
+     bật (`accounts/views.LoginView`), không suy từ câu chữ của thông báo: đọc chữ để
+     đoán ý là một bản thứ hai của cùng một luật, và nó trôi ngay lần sửa câu đầu tiên.
+     Giữ cả email em vừa gõ để không phải gõ lại ở bước gửi lại thư. */
+  const [choXacThuc, setChoXacThuc] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
     setFieldErrors({});
+    setChoXacThuc(null);
 
     const form = new FormData(e.currentTarget);
     const email = oChu(form, 'email').trim();
@@ -145,6 +151,11 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        if (res.status === 403 && data.canXacThuc) {
+          setFormError(typeof data.error === 'string' ? data.error : null);
+          setChoXacThuc(email);
+          return;
+        }
         if (data.errors) {
           setFieldErrors(data.errors as FieldErrors);
         } else if (typeof data.error === 'string' || data.error?.message) {
@@ -215,6 +226,8 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
           {formError}
         </p>
       )}
+
+      {choXacThuc && <GuiLaiThu email={choXacThuc} />}
 
       <Field
         id="login-email"
@@ -289,5 +302,60 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
         {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </Button>
     </form>
+  );
+}
+
+/**
+ * "Gửi lại thư xác nhận" — chỉ hiện sau khi máy chủ nói tài khoản này đang chờ xác
+ * nhận (§73). Không để sẵn trên trang: một nút "gửi thư tới địa chỉ tôi gõ" mà ai
+ * cũng bấm được là một đường bơm thư, và ở đây nó còn cho biết địa chỉ nào đang
+ * chờ xác nhận — tức một cách dò.
+ *
+ * Máy chủ trả MỘT câu cho mọi trường hợp; màn hiện nguyên câu ấy.
+ */
+function GuiLaiThu({ email }: { email: string }) {
+  const [dangGui, setDangGui] = useState(false);
+  const [cau, setCau] = useState<string | null>(null);
+
+  async function gui() {
+    setDangGui(true);
+    try {
+      const r = await fetch('/auth/gui-lai-xac-thuc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { message?: unknown };
+      setCau(
+        r.ok && typeof d?.message === 'string'
+          ? d.message
+          : 'Chưa gửi lại được thư. Thử lại sau ít phút, hoặc nhắn học vụ TopHSA.',
+      );
+    } catch {
+      setCau('Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.');
+    } finally {
+      setDangGui(false);
+    }
+  }
+
+  if (cau) {
+    return (
+      <p
+        role="status"
+        data-khu="da-gui-lai"
+        className="rounded-md border-l-[3px] border-brand bg-brand-soft px-4 py-3 text-body text-ink-2"
+      >
+        {cau}
+      </p>
+    );
+  }
+  return (
+    <div data-khu="cho-xac-thuc">
+      {/* `type="button"`: nằm trong <form> đăng nhập nên nút mặc định sẽ GỬI form. */}
+      <Button type="button" variant="ghost" full loading={dangGui} onClick={() => void gui()}>
+        {dangGui ? 'Đang gửi…' : 'Gửi lại thư xác nhận'}
+      </Button>
+    </div>
   );
 }

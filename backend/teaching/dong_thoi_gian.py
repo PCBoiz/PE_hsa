@@ -4,15 +4,21 @@
 ở bảy nơi, chỉ chưa ai gom lại. View này CHỈ ĐỌC và không lưu gì mới — mỗi sự
 kiện đọc thẳng từ bảng gốc của nó, nên không có bản sao nào để lệch.
 
-  users.created_at            được cấp tài khoản (người cấp: nhật ký `user.create`)
+  users.created_at            được cấp tài khoản, HOẶC em tự đăng ký (`self_registered`,
+                              §73) — đây là mốc "Đăng ký" của dòng 4; người cấp đọc từ
+                              nhật ký `user.create`
   surveys                     làm khảo sát đầu vào (lần đầu)
   enrollments                 bắt đầu / hoàn thành một khoá
   class_members + classes     vào lớp · rời lớp (kèm lý do) · lớp kết thúc khi em còn học
   mock_attempts + mock_exams  nộp bài thi thử (điểm)
   ket_qua_thi_ngoai           kết quả kỳ thi ở hệ thống khảo thí ngoài
+  submissions + assignments   điểm BÀI KIỂM TRA trên lớp giảng viên nhập (V-h, 25/09/2026)
   parent_report_sends         gửi báo cáo cho phụ huynh (kênh — KHÔNG kèm địa chỉ)
   admin_audit (target = em)   cấp lại mật khẩu, tự đặt lại, sửa hồ sơ, khoá/mở,
-                              đổi vai, cấp/thu hồi đường dẫn báo cáo
+                              đổi vai, cấp/thu hồi đường dẫn báo cáo, và (25/09/2026)
+                              đánh giá của giảng viên / trợ giảng: cần hỗ trợ, hướng
+                              học, nhận xét gửi phụ huynh (`class.member.assess`), và
+                              (27/09/2026, §73) xác nhận email lúc tự đăng ký
 
 Quyền: cùng hàng rào với trang hồ sơ (`ho_so.chan_pham_vi`) — quản trị viên mọi
 tài khoản, học vụ chỉ học viên.
@@ -26,7 +32,7 @@ import json
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.db import q
+from common.db import q, q1
 from common.permissions import IsAdminOrAcademic
 from teaching.ho_so import _doc, chan_pham_vi
 from teaching.vocab import LEAVE_LABEL
@@ -40,7 +46,7 @@ _TEN_COT = {
     'school_grade': 'lớp ở trường', 'region': 'khu vực', 'consultant_id': 'người tư vấn',
     'enroll_source': 'nguồn tuyển sinh', 'study_goal': 'mục tiêu học tập',
     'aspiration': 'nguyện vọng', 'parent_name': 'tên phụ huynh', 'parent_phone': 'số Zalo phụ huynh',
-    'parent_email': 'email phụ huynh',
+    'parent_email': 'email phụ huynh', 'tuition_status': 'tình trạng học phí',
 }
 
 _KENH = {'email': 'email', 'zalo': 'Zalo', 'zns': 'Zalo', 'sms': 'tin nhắn'}
@@ -63,12 +69,46 @@ def _doc_luc_chu(s):
         return None
 
 
+def _danh_gia(ds, r):
+    """Một lần giảng viên / trợ giảng đánh giá em (`teaching/danh_gia.py`, V-f) → mỗi ô
+    đã đổi một mốc. Đọc từ NHẬT KÝ chứ không từ cột hiện tại: cột chỉ giữ lần cuối,
+    còn dòng thời gian cần cả "ai đánh dấu, lúc nào, rồi ai bỏ"."""
+    d = r['detail'] if isinstance(r['detail'], dict) else json.loads(r['detail'] or '{}')
+    lop = 'Lớp %s' % d['className'] if d.get('className') else None
+
+    def _noi(*phan):
+        return ' · '.join(p for p in phan if p) or None
+
+    if 'canHoTro' in d:
+        if d['canHoTro']:
+            _su_kien(ds, r['occurred_at'], 'theo-doi', 'Được đánh dấu cần hỗ trợ',
+                     chi_tiet=_noi(lop, d.get('lyDo')), boi=r['actor_name'])
+        else:
+            _su_kien(ds, r['occurred_at'], 'theo-doi', 'Bỏ đánh dấu cần hỗ trợ',
+                     chi_tiet=lop, boi=r['actor_name'])
+    if d.get('deXuatHuongHoc'):
+        _su_kien(ds, r['occurred_at'], 'theo-doi', 'Đề xuất hướng học',
+                 chi_tiet=_noi(lop, d['deXuatHuongHoc']), boi=r['actor_name'])
+    if 'teacherComment' in d:
+        # Không in lại cả đoạn nhận xét — nó nằm trên tờ phụ huynh; ở đây chỉ cần MỐC.
+        _su_kien(ds, r['occurred_at'], 'theo-doi',
+                 'Cập nhật nhận xét gửi phụ huynh' if d['teacherComment'] else 'Xoá nhận xét gửi phụ huynh',
+                 chi_tiet=lop, boi=r['actor_name'])
+
+
 def dong_thoi_gian(uid, tao_luc):
     ds = []
 
-    tao = q("SELECT actor_name FROM admin_audit WHERE action='user.create' AND target_id=%s "
-            'ORDER BY id LIMIT 1', (str(uid),))
-    _su_kien(ds, tao_luc, 'tai-khoan', 'Được cấp tài khoản', boi=tao[0]['actor_name'] if tao else None)
+    # §73 · Mốc đầu dòng thời gian nói ĐÚNG cách tài khoản ra đời. "Được cấp tài khoản"
+    # cho một em tự đăng ký là một câu sai ở đúng chỗ học vụ tra xem em từ đâu tới.
+    tu = q1('SELECT self_registered FROM users WHERE id=%s', (uid,))
+    if tu and tu['self_registered']:
+        _su_kien(ds, tao_luc, 'tai-khoan', 'Tự đăng ký tài khoản trên website')
+    else:
+        tao = q("SELECT actor_name FROM admin_audit WHERE action='user.create' AND target_id=%s "
+                'ORDER BY id LIMIT 1', (str(uid),))
+        _su_kien(ds, tao_luc, 'tai-khoan', 'Được cấp tài khoản',
+                 boi=tao[0]['actor_name'] if tao else None)
 
     ks = q('SELECT created_at FROM surveys WHERE user_id=%s ORDER BY id LIMIT 1', (uid,))
     if ks:
@@ -105,6 +145,35 @@ def dong_thoi_gian(uid, tao_luc):
             # Lớp đã kết thúc khi em CÒN học — đây là mốc "hoàn thành" của em.
             _su_kien(ds, r['ends_on'], 'lop-hoc', 'Học hết lớp %s' % r['name'])
 
+    # KHAI GIẢNG — mốc thứ ba trong chuỗi khách yêu cầu (bảng phân rã dòng 4):
+    # "Đăng ký → Xếp lớp → Khai giảng → Làm bài → …". Dòng thời gian vốn biết em
+    # VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào.
+    #
+    # Khai giảng = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính: một
+    # lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù, không
+    # phải ngày ghi trên lịch cũ.
+    for r in q("""SELECT c.name, min(s.starts_at) AS dau
+                    FROM class_members m
+                    JOIN classes c ON c.id = m.class_id
+                    JOIN class_sessions s ON s.class_id = c.id AND s.status <> 'cancelled'
+                   WHERE m.user_id = %s
+                   GROUP BY c.id, c.name""", (uid,)):
+        _su_kien(ds, r['dau'], 'lop-hoc', 'Lớp %s khai giảng' % r['name'])
+
+    # LÀM BÀI — mốc thứ tư. Trước đây chỉ có điểm bài KIỂM TRA, nên một em chăm
+    # nộp bài tập suốt khoá mà chưa tới kỳ kiểm tra thì dòng thời gian im lặng.
+    #
+    # MỘT mốc cho cả khoá, không liệt kê từng bài: trần dòng thời gian là 300 sự
+    # kiện, mà một em học lâu nộp hàng trăm bài — liệt kê hết thì mọi mốc khác bị
+    # đẩy ra ngoài. Bài `kiem_tra` không đếm ở đây vì nó đã có mốc riêng bên dưới.
+    bai = q("""SELECT min(s.submitted_at) AS dau, count(*) AS n
+                 FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                WHERE s.user_id = %s AND s.submitted_at IS NOT NULL
+                  AND coalesce(a.kind, 'bai_tap') <> 'kiem_tra'""", (uid,))
+    if bai and bai[0]['dau'] is not None:
+        _su_kien(ds, bai[0]['dau'], 'bai-tap', 'Bắt đầu làm bài tập',
+                 chi_tiet='Đã nộp %d bài' % int(bai[0]['n']))
+
     for r in q('''SELECT a.submitted_at, a.score, a.total, coalesce(x.title, 'đề #' || a.exam_id) AS ten
                     FROM mock_attempts a LEFT JOIN mock_exams x ON x.id = a.exam_id
                    WHERE a.user_id=%s AND a.submitted_at IS NOT NULL''', (uid,)):
@@ -135,6 +204,20 @@ def dong_thoi_gian(uid, tao_luc):
         tieu_de = dot if dot.lower().startswith(('thi', 'kỳ thi')) else 'Thi %s' % dot
         _su_kien(ds, r['ngay_thi'], 'thi', tieu_de[:1].upper() + tieu_de[1:], chi_tiet=noi or None)
 
+    # Bài kiểm tra trên lớp (V-h) — "điểm kiểm tra, điểm thi thử" của bảng TopHSA dòng 4.
+    # Mốc = NGÀY làm bài (cả ngày); chưa ghi ngày thì lúc nhập điểm. Chỉ bài ĐÃ nhập
+    # (có điểm hoặc ghi vắng): bài chưa chấm chưa là một mốc của em.
+    for r in q('''SELECT a.title, a.held_on, a.max_score, s.score, s.absent, s.graded_at,
+                         c.name AS lop
+                    FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+                    JOIN classes c ON c.id = a.class_id
+                   WHERE s.user_id = %s AND a.kind = 'kiem_tra' AND s.graded_at IS NOT NULL''',
+               (uid,)):
+        ket = 'Vắng' if r['absent'] else (
+            '%g/%g điểm' % (float(r['score']), float(r['max_score'])) if r['score'] is not None else None)
+        _su_kien(ds, r['held_on'] or r['graded_at'], 'kiem-tra', 'Bài kiểm tra: %s' % r['title'],
+                 chi_tiet=' · '.join(x for x in (ket, 'Lớp %s' % r['lop']) if x))
+
     for r in q('''SELECT s.sent_at, s.created_at, s.status, s.channel
                     FROM parent_report_sends s JOIN parent_report_links l ON l.id = s.link_id
                    WHERE l.user_id=%s''', (uid,)):
@@ -154,12 +237,20 @@ def dong_thoi_gian(uid, tao_luc):
     for r in q('''SELECT action, actor_name, summary, detail, occurred_at FROM admin_audit
                    WHERE target_type='user' AND target_id=%s AND action = ANY(%s)''',
                (str(uid), ['user.password_reset', 'user.password_self_reset', 'user.profile',
-                           'user.status', 'user.role', 'parent_link.create', 'parent_link.revoke'])):
+                           'user.status', 'user.role', 'parent_link.create', 'parent_link.revoke',
+                           'class.member.assess', 'user.verify_email'])):
         a = r['action']
+        if a == 'class.member.assess':
+            _danh_gia(ds, r)
+            continue
         if a == 'user.password_reset':
             _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Được cấp lại mật khẩu tạm', boi=r['actor_name'])
         elif a == 'user.password_self_reset':
             _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Tự đặt lại mật khẩu qua email')
+        elif a == 'user.verify_email':
+            # Mốc riêng, không gộp vào mốc đăng ký: khoảng cách giữa hai mốc chính là thứ
+            # học vụ cần khi một lượt đăng ký trông đáng ngờ (§73).
+            _su_kien(ds, r['occurred_at'], 'tai-khoan', 'Xác nhận địa chỉ email')
         elif a == 'user.profile':
             d = r['detail'] if isinstance(r['detail'], dict) else json.loads(r['detail'] or '{}')
             o = [_TEN_COT.get(k, k) for k in (d.get('moi') or {})]

@@ -110,7 +110,13 @@ def main():
     elif a.id:
         row = q1('SELECT id, name, role FROM users WHERE id = %s', (a.id,))
     else:
-        row = q1('SELECT id, name, role FROM users WHERE role = %s ORDER BY id LIMIT 1',
+        # ƯU TIÊN TÀI KHOẢN MẪU (27/09/2026). Bộ đo màn chạy trên LỚP MẪU, mà mỗi vai
+        # thường có nhiều người: `ORDER BY id` bốc phải người cũ nhất — hôm nay là một
+        # trợ giảng của lớp thử AUDIT2009, không thuộc lớp mẫu. Mọi màn lớp mẫu trả 404
+        # và sổ soát chấm THIẾU cho ba tính năng đang chạy tốt. Người của bộ trình diễn
+        # mới là người đang đứng trong lớp mình sắp đo.
+        row = q1('SELECT id, name, role FROM users WHERE role = %s '
+                 'ORDER BY is_demo DESC NULLS LAST, id LIMIT 1',
                  (a.vai,))
     if not row:
         # Nói rõ CÁI GÌ không có, chứ không "không tìm thấy tài khoản": người đọc

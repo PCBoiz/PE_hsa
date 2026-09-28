@@ -24,6 +24,7 @@ from common.clock import local_today
 from common.db import q
 from common.permissions import IsTeachingStaff, is_academic, is_admin, visible_class_ids
 from stats.goals import as_date
+from teaching.nguoi_buoi import thuoc_buoi
 
 #: Xem tối đa hai tháng một lần — đủ cho tuần / tháng, không kéo cả năm.
 TRAN_NGAY = 62
@@ -69,7 +70,8 @@ class LichView(APIView):
             where.append('''EXISTS (SELECT 1 FROM class_members m
                                     WHERE m.class_id = s.class_id AND m.user_id = %(hoc_vien)s
                                       AND m.joined_at <= s.starts_at
-                                      AND (m.left_at IS NULL OR m.left_at > s.starts_at))''')
+                                      AND (m.left_at IS NULL OR m.left_at > s.starts_at))
+                             AND ''' + thuoc_buoi('s.id', '%(hoc_vien)s'))
             ts['hoc_vien'] = loc['hoc_vien']
 
         rows = q('''SELECT s.id, s.class_id, s.starts_at, s.duration_minutes, s.topic, s.status,

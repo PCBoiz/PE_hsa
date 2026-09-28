@@ -843,13 +843,17 @@ ALTER TABLE users ADD CONSTRAINT users_status_check
 -- và lớp huỷ là hai con số khác nhau khi trung tâm báo tỉ lệ — cùng lý do đã
 -- ghi cho `class_members.leave_reason` ở §36.
 --
--- 'paused' NỚI THÊM 25/09/2026 (§63) — SỬA NGAY TẠI ĐÂY chứ không chỉ ở §63:
--- cùng bẫy đã ghi cho `users_role_check` ở trên (SỬA 18/09/2026) —
--- `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau` (common/tests.py) đỏ nếu
--- hai bản ADD CONSTRAINT cùng tên mà lệch chữ.
+-- SỬA TẠI CHỖ 25/09/2026 — thêm 'paused' (lớp TẠM DỪNG, bảng TopHSA dòng 4; kế
+-- hoạch v2 V-c). Chỉ NỚI: không dòng nào đang có bị luật mới loại. Tạm dừng khác
+-- huỷ: em VẪN giữ quyền mở môn (`courses/truy_cap.py` chỉ chặn 'cancelled'), lớp
+-- không vào "chưa điểm danh" và không sinh lịch được. Danh sách PHẢI khớp
+-- `teaching/vocab.py::TRANG_THAI_LOP` (phép kiểm đọc thẳng ràng buộc trên CSDL).
+-- SỬA NGAY TẠI ĐÂY chứ không chỉ ở §63: cùng bẫy đã ghi cho `users_role_check`
+-- ở trên (SỬA 18/09/2026) — `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`
+-- (common/tests.py) đỏ nếu hai bản ADD CONSTRAINT cùng tên mà lệch chữ.
 ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
 ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled', 'paused'));
+    CHECK (status IN ('active', 'paused', 'finished', 'cancelled'));
 
 -- ── Khoá ngoại còn thiếu ────────────────────────────────────────────────────
 -- Năm bảng dưới đây trỏ tới `users`/`courses`/`lessons` mà KHÔNG có khoá ngoại,
@@ -1824,6 +1828,119 @@ ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment    TEXT;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;
 
+-- §62b · Cờ "CẦN HỖ TRỢ" đánh tay + ĐỀ XUẤT HƯỚNG HỌC (V-f, bảng TopHSA dòng 18).
+-- Ghi qua `PUT /api/teach/classes/<c>/students/<u>/danh-gia` (`teaching/danh_gia.py`)
+-- vào lượt học ĐANG MỞ của em (không có thì lượt mới nhất) — cùng chỗ với nhận xét ở
+-- tiểu mục a. Cờ khác "cần chú ý" tự tính ở báo cáo lớp: đây là một NGƯỜI (giảng viên
+-- hoặc trợ giảng) nói em cần giúp, kèm lý do. NỘI BỘ: không in lên tờ phụ huynh.
+-- Khoá ngoại trỏ `users`, không trỏ `class_members(id)`, nên §36 không đụng tới.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro           BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_ly_do     TEXT;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_by        INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS can_ho_tro_at        TIMESTAMP;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc    TEXT;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS de_xuat_huong_hoc_at TIMESTAMP;
+-- "Việc hôm nay" hỏi "em nào đang được đánh dấu" theo lớp — chỉ mục riêng phần nhỏ.
+CREATE INDEX IF NOT EXISTS idx_class_members_can_ho_tro
+    ON class_members (class_id) WHERE can_ho_tro;
+
+-- §62c · LỊCH SỬ SỬA ĐIỂM DANH (V-d, bảng TopHSA dòng 9, 14, 28).
+-- Trước hôm nay `attendance` chỉ giữ người sửa CUỐI, và dấu vết đổi từ gì sang gì
+-- nằm trong nhật ký kiểm toán (chỉ quản trị viên đọc). Mỗi lần lưu điểm danh ghi MỘT
+-- câu INSERT nhiều dòng — chỉ những em THẬT SỰ đổi (kể cả lần tick đầu, `tu` NULL) —
+-- trong CÙNG giao dịch với dòng điểm danh (`teaching/sessions.py`). Lưu lại y hệt ghi 0
+-- dòng. `changed_at` = đúng mốc của dòng nhật ký cùng lượt, để phần điền ngược dưới
+-- đây nhận ra dòng đã có và chạy lại không đẻ bản sao.
+-- nguon: 'diem_danh' (ghi trực tiếp) hoặc 'nhat_ky' (điền ngược từ `admin_audit`).
+CREATE TABLE IF NOT EXISTS attendance_history (
+    id          BIGSERIAL PRIMARY KEY,
+    session_id  INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tu          TEXT,
+    den         TEXT NOT NULL,
+    changed_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    changed_at  TIMESTAMP NOT NULL,
+    nguon       TEXT NOT NULL DEFAULT 'diem_danh',
+    CONSTRAINT attendance_history_tu_check
+        CHECK (tu IS NULL OR tu IN ('present', 'late', 'absent', 'excused')),
+    CONSTRAINT attendance_history_den_check
+        CHECK (den IN ('present', 'late', 'absent', 'excused')),
+    CONSTRAINT attendance_history_nguon_check
+        CHECK (nguon IN ('diem_danh', 'nhat_ky'))
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_buoi
+    ON attendance_history (session_id, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_user ON attendance_history (user_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_history_changed_by ON attendance_history (changed_by);
+-- Điền ngược từ nhật ký `attendance.mark` (khoá `detail.changed` = danh sách em đổi
+-- trạng thái, kèm giá trị cũ). So bằng CHUỖI (`s.id::text = a.target_id`) thay vì ép
+-- kiểu: một `target_id` lạ không làm hỏng cả mục. NOT EXISTS theo (buổi, em, mốc) nên
+-- chạy lại chỉ thêm dòng nhật ký chưa có bản sao — kể cả dòng do mã CŨ ghi trong lúc
+-- deploy (chạy `bootstrap_schema --tu §62` sau deploy để vá khoảng ấy).
+INSERT INTO attendance_history (session_id, user_id, tu, den, changed_by, changed_at, nguon)
+SELECT s.id, u.id, c.value->>'from', c.value->>'to', a.actor_id, a.occurred_at, 'nhat_ky'
+  FROM admin_audit a
+  CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(a.detail->'changed') = 'array' THEN a.detail->'changed'
+           ELSE '[]'::jsonb END) c
+  JOIN class_sessions s ON s.id::text = a.target_id
+  JOIN users u ON u.id::text = c.value->>'userId'
+ WHERE a.action = 'attendance.mark' AND a.target_type = 'class_session'
+   AND c.value->>'to' IN ('present', 'late', 'absent', 'excused')
+   AND (c.value->>'from' IS NULL OR c.value->>'from' IN ('present', 'late', 'absent', 'excused'))
+   AND NOT EXISTS (SELECT 1 FROM attendance_history h
+                    WHERE h.session_id = s.id AND h.user_id = u.id
+                      AND h.changed_at = a.occurred_at);
+
+-- §62d · ĐỐI TƯỢNG NHẬN BÀI (V-e, bảng TopHSA dòng 17).
+-- 'lop' = cả lớp (mọi bài cũ), 'nhom' = chỉ những em trong `assignment_targets`. MỘT
+-- hàm SQL lọc (`teaching/nhan_bai.py`) cho mọi chỗ đọc bài: em ngoài nhóm không thấy
+-- bài, không nhận chuông, không bị đếm "chưa nộp".
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS target_mode TEXT NOT NULL DEFAULT 'lop';
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_target_mode_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_target_mode_check
+    CHECK (target_mode IN ('lop', 'nhom'));
+CREATE TABLE IF NOT EXISTS assignment_targets (
+    assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (assignment_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_assignment_targets_user ON assignment_targets (user_id);
+
+-- §62e · BUỔI BÙ (V-g, bảng TopHSA dòng 10).
+-- `makeup_for` trỏ buổi GỐC. SET NULL: xoá buổi gốc không được kéo mất buổi bù đã dạy.
+-- `session_participants`: danh sách em của MỘT buổi — có dòng thì bảng điểm danh của
+-- buổi ấy là đúng những em này, không có thì là cả lớp như mọi buổi khác.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS makeup_for INTEGER
+    REFERENCES class_sessions(id) ON DELETE SET NULL;
+ALTER TABLE class_sessions DROP CONSTRAINT IF EXISTS class_sessions_makeup_not_self_check;
+ALTER TABLE class_sessions ADD CONSTRAINT class_sessions_makeup_not_self_check
+    CHECK (makeup_for IS NULL OR makeup_for <> id);
+CREATE INDEX IF NOT EXISTS idx_class_sessions_makeup_for
+    ON class_sessions (makeup_for) WHERE makeup_for IS NOT NULL;
+CREATE TABLE IF NOT EXISTS session_participants (
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_participants_user ON session_participants (user_id);
+
+-- §62f · BÀI KIỂM TRA NGOẠI TUYẾN, GIẢNG VIÊN NHẬP ĐIỂM (V-h, bảng TopHSA dòng 4, 17).
+-- Anh Sơn chốt 25/09: "điểm thi thử" = bài kiểm tra làm trên lớp, giảng viên nhập điểm
+-- tay — một LOẠI bài giao, không phải bảng mới. `held_on` = ngày làm bài. Học viên
+-- KHÔNG nộp được bài loại này (409). `submissions.absent` = em vắng buổi kiểm tra: có
+-- dòng đã chấm (để không bị đếm "chưa chấm") nhưng KHÔNG có điểm. KHÔNG đụng §48
+-- (kết quả thi ở hệ thống khảo thí ngoài).
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'bai_tap';
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_kind_check;
+ALTER TABLE assignments ADD CONSTRAINT assignments_kind_check
+    CHECK (kind IN ('bai_tap', 'kiem_tra'));
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS held_on DATE;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS absent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE submissions DROP CONSTRAINT IF EXISTS submissions_absent_score_check;
+ALTER TABLE submissions ADD CONSTRAINT submissions_absent_score_check
+    CHECK (NOT absent OR score IS NULL);
 -- ── §63 · TÌNH TRẠNG HỌC TẬP + HỌC PHÍ TRÊN HỒ SƠ HỌC VIÊN (25/09/2026) ────
 -- Bảng yêu cầu TopHSA dòng 3 (hồ sơ học viên) còn thiếu hai ô: "Tình trạng học
 -- tập" và "Tình trạng học phí". Số §63 theo đúng dải luồng A (§62–64) đã neo
@@ -1833,25 +1950,32 @@ ALTER TABLE class_members ADD COLUMN IF NOT EXISTS teacher_comment_at TIMESTAMP;
 -- HỌC PHÍ — một ô CHỌN TAY của giáo vụ, KHÔNG suy ra từ đâu: hệ này không có
 -- sổ tiền (chốt 25/09: "không sổ tiền, không doanh thu"). NULL = chưa ai đặt;
 -- KHÔNG mặc định 'Đã đóng' vì sẽ nói sai cho mọi tài khoản có trước cột này.
+-- SỬA TẠI CHỖ 25/09/2026 (luồng A2, V-m, lead chốt): CHECK lưu MÃ (da_dong, sap_het, het,
+-- bao_luu), nhãn ở `teaching/tinh_trang.py::HOC_PHI` — đổi chữ hiển thị không phải chạy
+-- lại dữ liệu. Chưa lên production. Đây là câu DUY NHẤT khai
+-- `users_tuition_status_check` (§69 không khai lại).
+-- Bản §63 TRƯỚC (erp tới 0544692) lưu NHÃN — CSDL dev nơi đã có người chọn học phí qua bản
+-- ấy mang 'Đã đóng'… và ADD CONSTRAINT theo mã sẽ hỏng cả lượt bootstrap. Câu UPDATE giữa
+-- DROP và ADD đổi nhãn → mã, có chặn WHERE (chạy lại không ghi gì).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tuition_status TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_tuition_status_check;
+UPDATE users SET tuition_status = CASE tuition_status
+        WHEN 'Đã đóng' THEN 'da_dong' WHEN 'Sắp hết' THEN 'sap_het'
+        WHEN 'Hết' THEN 'het' WHEN 'Bảo lưu' THEN 'bao_luu' END
+ WHERE tuition_status IN ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu');
 ALTER TABLE users ADD CONSTRAINT users_tuition_status_check CHECK (tuition_status IS NULL OR
-    tuition_status IN ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu'));
+    tuition_status IN ('da_dong', 'sap_het', 'het', 'bao_luu'));
 
 -- HỌC TẬP — KHÔNG thêm cột: trạng thái này TÍNH lúc đọc, từ `class_members` +
--- `classes` (`teaching/ho_so.py::_tinh_trang_hoc_tap`) — giữ luật "một con số
+-- `classes` (`teaching/tinh_trang.py::sql_tinh_trang_hoc`) — giữ luật "một con số
 -- chỉ tính ở một nơi". Hai dòng CHECK dưới mở khoá dữ liệu THÔ cần để tính:
 -- lớp "tạm dừng" và lý do rời lớp "bảo lưu". Đây là NĂM trạng thái thô cho một
 -- ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ; bộ đó (khung chương trình,
 -- % hoàn thành) vẫn để dành cho E1 (`teaching/tien_do_chuong_trinh.py`, chưa
 -- viết), tránh hai nơi cùng tính "đang học tới đâu" rồi lệch nhau.
-ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_status_check;
-ALTER TABLE classes ADD CONSTRAINT classes_status_check
-    CHECK (status IN ('active', 'finished', 'cancelled', 'paused'));
-
-ALTER TABLE class_members DROP CONSTRAINT IF EXISTS class_members_leave_reason_check;
-ALTER TABLE class_members ADD CONSTRAINT class_members_leave_reason_check
-    CHECK (leave_reason IS NULL OR leave_reason IN ('completed', 'dropped', 'transferred', 'reserved'));
+-- Hai giá trị thô 'paused' (lớp) và 'reserved' (lý do rời lớp) KHÔNG thêm lại ràng buộc ở đây (sửa 25/09 tối):
+-- thêm lại một ràng buộc CÙNG TÊN với nội dung khác làm đỏ `common/tests.py::test_rang_buoc_them_nhieu_lan_
+-- phai_GIONG_HET_nhau` và lệch `teaching/vocab.py`. Nay sửa TẠI CHỖ: 'paused' ở §35 (V-c), 'reserved' ở §36.
 
 -- ── §64 · KHUNG CHƯƠNG TRÌNH THEO BUỔI (E1, quản lý khóa học 5.2, 25/09/2026) ─
 -- Bảng yêu cầu TopHSA 5.2: "tiến trình học tập gồm số buổi kèm tên bài", "thời
@@ -1893,6 +2017,24 @@ ALTER TABLE syllabus_versions DROP CONSTRAINT IF EXISTS syllabus_versions_status
 ALTER TABLE syllabus_versions ADD CONSTRAINT syllabus_versions_status_check
     CHECK (status IN ('nhap', 'xuat_ban', 'ngung'));
 CREATE INDEX IF NOT EXISTS idx_syllabus_versions_course ON syllabus_versions(course_id);
+-- §64g · CHUỖI PHIÊN BẢN (E1, sửa tại chỗ 25/09/2026 — §64 chưa lên production, 0 dòng).
+-- Một môn có thể có NHIỀU khung độc lập (lớp nhóm 24 buổi, lớp gia sư 12 buổi), nên
+-- luật "một bản nháp, một bản đang dùng" đặt theo CHUỖI chứ không theo môn: `lineage_id`
+-- = id bản ĐẦU của chuỗi (NULL = chính nó là bản đầu), khoá chuỗi = COALESCE(lineage_id, id).
+-- Nhân bản (`duplicateFrom`) chép khoá chuỗi của bản nguồn. CỐ Ý không khoá ngoại: bản đầu
+-- xoá được (khi không lớp nào dùng) mà các bản sau vẫn là MỘT chuỗi — SET NULL sẽ tách
+-- chúng thành nhiều chuỗi, mỗi chuỗi lại được một bản nháp.
+-- Xuất bản một bản = bản đang dùng cũ CÙNG CHUỖI chuyển sang 'ngung' trong cùng giao dịch
+-- (`courseadmin/syllabus.py`) — hai chỉ mục dưới giữ bất biến ở CSDL khi hai lượt đua nhau.
+-- `is_demo`: khung của bộ dữ liệu trình diễn (`teaching/du_lieu_mau.py` gỡ đúng các dòng này).
+ALTER TABLE syllabus_versions ADD COLUMN IF NOT EXISTS lineage_id INTEGER;
+ALTER TABLE syllabus_versions ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_chuoi
+    ON syllabus_versions ((COALESCE(lineage_id, id)));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_nhap
+    ON syllabus_versions ((COALESCE(lineage_id, id))) WHERE status = 'nhap';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_versions_mot_xuat_ban
+    ON syllabus_versions ((COALESCE(lineage_id, id))) WHERE status = 'xuat_ban';
 
 CREATE TABLE IF NOT EXISTS syllabus_sessions (
     id                SERIAL PRIMARY KEY,
@@ -1912,11 +2054,20 @@ CREATE TABLE IF NOT EXISTS syllabus_items (
     kind       TEXT NOT NULL,
     lesson_id  INTEGER REFERENCES lessons(id) ON DELETE SET NULL,
     title      TEXT NOT NULL,
-    weight     NUMERIC
+    weight     NUMERIC NOT NULL DEFAULT 1
 );
 ALTER TABLE syllabus_items DROP CONSTRAINT IF EXISTS syllabus_items_kind_check;
 ALTER TABLE syllabus_items ADD CONSTRAINT syllabus_items_kind_check
     CHECK (kind IN ('bai_hoc', 'chu_de', 'bai_tap', 'kiem_tra'));
+-- §64h · TRỌNG SỐ bắt buộc, > 0 (E1, sửa tại chỗ 25/09/2026). Tiến độ lớp chia cho trọng
+-- số trung bình một buổi (`chuong_trinh/tien_do.py`): NULL làm cả buổi nặng 0, 0 làm phép
+-- chia vô nghĩa. Thiếu = 1. Ba câu dưới đưa bảng đã dựng theo bản đầu của §64 về cùng
+-- dạng, điền ngược CHỈ dòng còn NULL hoặc không dương (đo 25/09 trên dev: 0 dòng).
+ALTER TABLE syllabus_items ALTER COLUMN weight SET DEFAULT 1;
+UPDATE syllabus_items SET weight = 1 WHERE weight IS NULL OR weight <= 0;
+ALTER TABLE syllabus_items ALTER COLUMN weight SET NOT NULL;
+ALTER TABLE syllabus_items DROP CONSTRAINT IF EXISTS syllabus_items_weight_check;
+ALTER TABLE syllabus_items ADD CONSTRAINT syllabus_items_weight_check CHECK (weight > 0);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_syllabus_items_thu_tu
     ON syllabus_items(session_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_syllabus_items_lesson ON syllabus_items(lesson_id);
@@ -1941,6 +2092,452 @@ ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
     REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabus_session_id);
 
+-- ── §69 · HỒ SƠ, BÁO CÁO, NHẬP XUẤT (luồng A2, kế hoạch v2) ──────
+-- (Tình trạng học phí của V-m nằm ở §63, sửa tại chỗ — xem đó. §69 chỉ giữ phần của A2 không
+-- trùng mục nào khác.)
+-- §69b · Chỉ mục cho LỊCH SỬ MỘT LỚP (V-n, `teaching/lich_su_lop.py`, bảng TopHSA dòng 4 + 10).
+-- Dòng nhật ký của BUỔI HỌC có đích là buổi (`target_type = 'class_session'`), lớp nằm ở
+-- `detail.class_id` — `idx_audit_target` không phục vụ được điều kiện ấy. Chỉ mục biểu thức
+-- phần nhỏ, chỉ trên dòng của buổi học. Chuyển lớp RA (`detail.fromClassId`) đi
+-- `idx_audit_action` (ít dòng), dòng đích là lớp đi `idx_audit_target`.
+CREATE INDEX IF NOT EXISTS idx_audit_lop_buoi
+    ON admin_audit ((detail->>'class_id'), occurred_at DESC)
+    WHERE target_type = 'class_session';
+
+-- ── §70 · SỔ ĐẦU BÀI BUỔI HỌC (E1, 25/09/2026) ───────────────────────────────
+-- Bảng yêu cầu TopHSA dòng 15, 16: nội dung đã / chưa hoàn thành từng buổi, mức tiếp
+-- thu, em cần hỗ trợ, đề xuất học bù / điều chỉnh. Tình hình lớp VẪN là cột sẵn có
+-- `class_sessions.note` (sửa qua màn buổi học như cũ) — không chép sang đây. Là nguồn
+-- của tiến độ lớp và % hoàn thành của từng em (`chuong_trinh/tien_do.py`).
+-- Mọi bảng xoá theo buổi (CASCADE): xoá buổi là xoá sổ của buổi ấy, như điểm danh.
+--
+-- §70a · Một dòng cho mỗi buổi ĐÃ GHI SỔ. Không có dòng = "đã dạy mà chưa ghi sổ".
+CREATE TABLE IF NOT EXISTS session_logs (
+    session_id    INTEGER   PRIMARY KEY REFERENCES class_sessions(id) ON DELETE CASCADE,
+    comprehension SMALLINT,
+    de_xuat       TEXT,
+    logged_by     INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    logged_at     TIMESTAMP NOT NULL,
+    CONSTRAINT session_logs_comprehension_check
+        CHECK (comprehension IS NULL OR comprehension BETWEEN 1 AND 5)
+);
+CREATE INDEX IF NOT EXISTS idx_session_logs_logged_by ON session_logs (logged_by);
+-- §70b · Từng mục của buổi: đã dạy / dạy một phần / chưa dạy. `label` là bản CHÉP tên
+-- mục lúc ghi (mục khung đổi tên hay bị xoá thì sổ vẫn đọc được), `item_id` NULL = mục
+-- giảng viên tự thêm, không có trong khung (không tính vào tiến độ).
+CREATE TABLE IF NOT EXISTS session_log_items (
+    id         SERIAL  PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    item_id    INTEGER REFERENCES syllabus_items(id) ON DELETE SET NULL,
+    label      TEXT    NOT NULL,
+    status     TEXT    NOT NULL,
+    note       TEXT,
+    CONSTRAINT session_log_items_status_check CHECK (status IN ('done', 'partial', 'not_done')),
+    CONSTRAINT session_log_items_mot_muc UNIQUE (session_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_log_items_item
+    ON session_log_items (item_id) WHERE item_id IS NOT NULL;
+-- §70c · Em cần hỗ trợ sau buổi này (nội bộ — không in lên tờ phụ huynh).
+CREATE TABLE IF NOT EXISTS session_support (
+    session_id INTEGER   NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    note       TEXT,
+    created_by INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_support_user ON session_support (user_id);
+CREATE INDEX IF NOT EXISTS idx_session_support_created_by ON session_support (created_by);
+
+-- ── §65 · HỘP YÊU CẦU (E3, bảng TopHSA dòng 11, 12, 20, 25, 32 — 25/09/2026) ──
+-- Một hộp chung cho hỗ trợ học tập / lịch / kỹ thuật / tài khoản, câu hỏi học viên gửi
+-- giảng viên, trợ giảng báo lên, phụ huynh gửi qua link, báo lỗi bản ghi buổi học, và
+-- xin–duyệt thay đổi học tập. Miền riêng `backend/yeu_cau/` (luật S4) sở hữu hai bảng
+-- này — miền khác chỉ đọc. Danh mục loại ở `yeu_cau/loai.py`, phép kiểm khớp CHECK.
+--
+-- §65a · Một dòng cho mỗi yêu cầu. `du_lieu` là tham số của việc xin (lớp tới, hạn bảo
+-- lưu …), `thuc_thi` là kết quả việc hệ thống đã làm khi duyệt (một lần duy nhất).
+-- `hoc_vien_id` CASCADE: xoá tài khoản em là xoá yêu cầu về em. Mọi người khác SET NULL
+-- để nhân sự nghỉ việc không kéo mất lịch sử xử lý.
+CREATE TABLE IF NOT EXISTS yeu_cau (
+    id          SERIAL    PRIMARY KEY,
+    loai        TEXT      NOT NULL,
+    trang_thai  TEXT      NOT NULL DEFAULT 'moi',
+    nguon       TEXT      NOT NULL,
+    nguoi_tao   INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    link_id     INTEGER   REFERENCES parent_report_links(id) ON DELETE SET NULL,
+    hoc_vien_id INTEGER   REFERENCES users(id) ON DELETE CASCADE,
+    class_id    INTEGER   REFERENCES classes(id) ON DELETE SET NULL,
+    session_id  INTEGER   REFERENCES class_sessions(id) ON DELETE SET NULL,
+    nguoi_xu_ly INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    tieu_de     TEXT      NOT NULL,
+    noi_dung    TEXT,
+    du_lieu     JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    ket_qua     TEXT,
+    nguoi_duyet INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    duyet_luc   TIMESTAMP,
+    thuc_thi    JSONB,
+    created_at  TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMP NOT NULL DEFAULT now(),
+    closed_at   TIMESTAMP
+);
+-- 'tk_dang_ky' NỚI THÊM 27/09/2026 (§73c) — SỬA NGAY TẠI ĐÂY chứ không chỉ ở
+-- mục kia. Cùng bẫy đã ghi cho `users_role_check` (§44) và `classes_status_check`
+-- (§63) — `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau` (common/tests.py)
+-- đỏ nếu hai bản ADD CONSTRAINT cùng tên mà lệch chữ.
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_loai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
+    'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
+    'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
+    'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa', 'tk_dang_ky'));
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_trang_thai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_trang_thai_check CHECK (trang_thai IN (
+    'moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy'));
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_nguon_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_nguon_check CHECK (nguon IN (
+    'hoc_vien', 'phu_huynh', 'tro_giang', 'giang_vien', 'hoc_vu'));
+-- Báo lỗi bản ghi buổi học bắt buộc chỉ ra buổi nào — kiểm ở `yeu_cau/dich_vu.py::tao`,
+-- KHÔNG bằng CHECK: `session_id` SET NULL khi buổi bị xoá, một CHECK sẽ chặn luôn việc xoá buổi.
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_tao   ON yeu_cau (nguoi_tao);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_link        ON yeu_cau (link_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_hoc_vien    ON yeu_cau (hoc_vien_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_lop         ON yeu_cau (class_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_buoi        ON yeu_cau (session_id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_xu_ly ON yeu_cau (nguoi_xu_ly);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_nguoi_duyet ON yeu_cau (nguoi_duyet);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_trang_thai  ON yeu_cau (trang_thai, created_at);
+-- §65b · MỘT bảng cho cả trả lời lẫn lịch sử. `noi_bo` = ghi chú nội bộ, ẩn với học viên
+-- và phụ huynh. `actor_ten` / `actor_vai` là bản CHÉP lúc xảy ra (như `admin_audit`).
+-- `tu` / `den` = trạng thái hoặc người xử lý trước và sau (chuyển, giao, chuyển tiếp).
+CREATE TABLE IF NOT EXISTS yeu_cau_su_kien (
+    id         BIGSERIAL PRIMARY KEY,
+    yeu_cau_id INTEGER   NOT NULL REFERENCES yeu_cau(id) ON DELETE CASCADE,
+    kieu       TEXT      NOT NULL,
+    noi_bo     BOOLEAN   NOT NULL DEFAULT FALSE,
+    actor_id   INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    actor_ten  TEXT,
+    actor_vai  TEXT,
+    tu         TEXT,
+    den        TEXT,
+    noi_dung   TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+-- 'phan_loai' (26/09/2026): học vụ đổi loại một yêu cầu hỗ trợ, bảng TopHSA dòng 11 "phân
+-- loại". `tu` / `den` = mã loại cũ / mới.
+ALTER TABLE yeu_cau_su_kien DROP CONSTRAINT IF EXISTS yeu_cau_su_kien_kieu_check;
+ALTER TABLE yeu_cau_su_kien ADD CONSTRAINT yeu_cau_su_kien_kieu_check CHECK (kieu IN (
+    'tao', 'tra_loi', 'ghi_chu', 'trang_thai', 'giao', 'chuyen_tiep', 'duyet', 'tu_choi',
+    'thuc_thi', 'loi', 'phan_loai'));
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_yc    ON yeu_cau_su_kien (yeu_cau_id, id);
+CREATE INDEX IF NOT EXISTS idx_yeu_cau_su_kien_actor ON yeu_cau_su_kien (actor_id);
+-- §65c · Bảo lưu tới ngày nào (lý do rời lớp 'reserved' đã có ở §36). NULL = chưa hẹn.
+ALTER TABLE class_members ADD COLUMN IF NOT EXISTS reserve_until DATE;
+-- ── §61 · HỘP THƯ ĐI + THÔNG BÁO TRUNG TÂM (E2, 25/09/2026) ─────────────────
+-- Bảng yêu cầu TopHSA dòng 20, 22, 27 + "Phân hệ thông báo chung". Trước mục này thư
+-- đi trên một luồng rời trong tiến trình web: lỗi SMTP chỉ vào nhật ký, worker khởi
+-- động lại là mất thư. Từ đây mọi thư ghi một dòng `outbox` TRONG CÙNG giao dịch với
+-- việc chính, và người gửi (`notifications/hop_thu.py`) nhận việc, gửi, thử lại.
+--
+-- §61a · HỘP THƯ ĐI. Một dòng = một thư (email) hoặc một tin (Zalo ZNS) tới MỘT người.
+-- `dedup_key` UNIQUE (NULL không đụng nhau): cùng một việc xếp hai lần thì chỉ một dòng
+-- (nhắc hạn `nhac_han:{bài}:{em}`, thông báo trung tâm `thong_bao:{id}:{em}`).
+-- Trạng thái: queued (chờ) → sending (đã nhận, đang gửi) → sent | failed (chờ thử lại
+-- lúc `next_try_at`) | dropped (bỏ hẳn, lý do ở `error`). `params` giữ phần cần để dựng
+-- lại thư lúc gửi (HTML, tham số mẫu ZNS, loại thư có tệp đính kèm) — không giữ tệp.
+--
+-- `priority` (thêm TẠI CHỖ 26/09/2026 theo quyết định số 4 của anh Sơn): 0 = thư GIAO
+-- DỊCH, có MỘT người đang chờ đúng lá thư ấy (đặt lại mật khẩu, báo cáo gửi từng em);
+-- 1 = thư HÀNG LOẠT (thông báo cả lớp / cả khối, nhắc hạn nộp, báo đổi lịch). Gmail cho
+-- ~500 thư/ngày mà một lớp TopHSA có 35–100 em: một lượt "thông báo cả khối" xếp trước
+-- thư quên mật khẩu thì em ấy chờ tới nhịp sau, nên câu nhận việc sắp `priority` trước
+-- `next_try_at` và chỉ mục phần dẫn đầu bằng `priority` (khỏi sắp cả hộp thư).
+--
+-- Vì sao sửa TẠI CHỖ chứ không thêm §61e: đo 26/09/2026 trên Neon dev — bảng `outbox`
+-- CHƯA tồn tại, §61 chưa lên production, nên không có dòng nào phải chuyển. Thêm mục mới
+-- thì phải `DROP INDEX idx_outbox_cho_gui` của chính mình rồi dựng lại — một mục đi dỡ đồ
+-- của mục trước là thứ luật DDL cộng-thêm tránh. Cùng lý lẽ §63, §64g, §64h.
+CREATE TABLE IF NOT EXISTS outbox (
+    id          BIGSERIAL PRIMARY KEY,
+    channel     TEXT      NOT NULL,
+    user_id     INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    to_addr     TEXT      NOT NULL,
+    subject     TEXT      NOT NULL DEFAULT '',
+    body        TEXT      NOT NULL DEFAULT '',
+    params      JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    source_type TEXT,
+    source_id   BIGINT,
+    dedup_key   TEXT      UNIQUE,
+    status      TEXT      NOT NULL DEFAULT 'queued',
+    priority    SMALLINT  NOT NULL DEFAULT 0,
+    attempts    INTEGER   NOT NULL DEFAULT 0,
+    next_try_at TIMESTAMP NOT NULL DEFAULT now(),
+    claimed_at  TIMESTAMP,
+    sent_at     TIMESTAMP,
+    error       TEXT,
+    provider_id TEXT,
+    created_at  TIMESTAMP NOT NULL DEFAULT now()
+);
+-- Câu này phải CÓ dù bảng ở trên đã khai `priority`: một CSDL đã dựng bảng theo bản §61a
+-- đầu (nhánh khác đã bootstrap) thì `CREATE TABLE IF NOT EXISTS` bỏ qua cả bảng, và cột
+-- mới sẽ không bao giờ tới. Trên CSDL mới thì câu này không làm gì.
+ALTER TABLE outbox ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_channel_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_channel_check CHECK (channel IN ('email', 'zalo'));
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_status_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_status_check
+    CHECK (status IN ('queued', 'sending', 'sent', 'failed', 'dropped'));
+ALTER TABLE outbox DROP CONSTRAINT IF EXISTS outbox_priority_check;
+ALTER TABLE outbox ADD CONSTRAINT outbox_priority_check CHECK (priority IN (0, 1));
+-- Chỉ mục phần: người gửi chỉ hỏi dòng CÒN phải gửi — dòng đã xong (đa số) không vào.
+CREATE INDEX IF NOT EXISTS idx_outbox_cho_gui
+    ON outbox (priority, next_try_at) WHERE status IN ('queued', 'failed');
+-- Đếm thư HÀNG LOẠT đã đi trong ngày, cho trần ngày (`hop_thu.con_lai_hang_loat`).
+CREATE INDEX IF NOT EXISTS idx_outbox_hang_loat_ngay
+    ON outbox (sent_at) WHERE priority = 1 AND status = 'sent';
+CREATE INDEX IF NOT EXISTS idx_outbox_dang_gui
+    ON outbox (claimed_at) WHERE status = 'sending';
+CREATE INDEX IF NOT EXISTS idx_outbox_nguon ON outbox (source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_outbox_user ON outbox (user_id);
+-- §61b · THÔNG BÁO TRUNG TÂM. `audience` = {classIds, courseIds, userIds, groupName}
+-- (groupName chỉ là tên nhóm chọn tay, người nhận nằm ở userIds). Nháp → đã gửi | huỷ.
+CREATE TABLE IF NOT EXISTS announcements (
+    id              SERIAL    PRIMARY KEY,
+    title           TEXT      NOT NULL,
+    body            TEXT      NOT NULL DEFAULT '',
+    audience        JSONB     NOT NULL DEFAULT '{}'::jsonb,
+    send_email      BOOLEAN   NOT NULL DEFAULT FALSE,
+    send_zalo       BOOLEAN   NOT NULL DEFAULT FALSE,
+    status          TEXT      NOT NULL DEFAULT 'draft',
+    recipient_count INTEGER   NOT NULL DEFAULT 0,
+    created_by      INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT now(),
+    sent_at         TIMESTAMP
+);
+ALTER TABLE announcements DROP CONSTRAINT IF EXISTS announcements_status_check;
+ALTER TABLE announcements ADD CONSTRAINT announcements_status_check
+    CHECK (status IN ('draft', 'sent', 'cancelled'));
+CREATE INDEX IF NOT EXISTS idx_announcements_created_by ON announcements (created_by);
+CREATE INDEX IF NOT EXISTS idx_announcements_time ON announcements (created_at DESC);
+-- §61c · CHUÔNG: thông báo trung tâm nào, bấm vào mở đâu, đọc lúc nào. `read_at` đi cùng
+-- `is_read` (cột cũ giữ nguyên — mã cũ còn đọc nó). Điền ngược: dòng đã đọc mà chưa có
+-- `read_at` lấy tạm `created_at` (không biết lúc đọc thật), chỉ đụng dòng còn thiếu.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS announcement_id INTEGER
+    REFERENCES announcements(id) ON DELETE CASCADE;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMP;
+UPDATE notifications SET read_at = created_at
+ WHERE is_read AND read_at IS NULL AND created_at IS NOT NULL;
+-- Phân trang theo khoá (`truoc=<id>`) của `/api/notifications/feed`.
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_desc ON notifications (user_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_announcement
+    ON notifications (announcement_id) WHERE announcement_id IS NOT NULL;
+-- §61d · NHẮC HẠN NỘP (`notifications/nhac_han.py`): mỗi em mỗi bài đúng MỘT chuông, kể cả
+-- khi hai nhịp chạy chồng nhau — chỉ mục duy nhất phần, INSERT … ON CONFLICT DO NOTHING.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_nhac_han_mot_lan
+    ON notifications (user_id, ref_type, ref_id) WHERE type = 'nhac_han';
+-- ── §71 · ĐỊA CHỈ LỊCH RIÊNG (.ics) — 26/09/2026 ─────────────────────────────
+-- Anh Sơn chốt 26/09: mỗi người một địa chỉ lịch riêng, thêm vào Google Calendar /
+-- Lịch iPhone / Outlook MỘT lần rồi mọi đổi lịch, học bù, huỷ buổi tự chảy về. Chọn
+-- đường này thay cho Google Calendar API vì nó không đòi Google xác minh ứng dụng,
+-- không đòi người dùng có tài khoản Google, và chạy được cho cả phụ huynh (phụ huynh
+-- đi bằng chìa tờ báo cáo sẵn có, không cần dòng nào ở bảng này).
+--
+-- Chỉ lưu BĂM của chìa, không lưu chìa: máy chủ chỉ cần so băm để biết chìa có thật,
+-- còn người xem đã dán chìa vào ứng dụng lịch của họ rồi. Ai đọc được bảng này cũng
+-- KHÔNG dựng lại được địa chỉ lịch của người khác. Muốn xem lại địa chỉ thì cấp lại
+-- chìa mới (chìa cũ thu hồi ngay) — cùng cách §66 định làm cho link phụ huynh.
+--
+-- `scope`: 'toi' = buổi của chính người ấy (học viên: lớp em đang học; giảng viên và
+-- trợ giảng: buổi họ phụ trách) · 'trung_tam' = MỌI buổi, chỉ cấp cho quản trị viên và
+-- quản lý học vụ. Mỗi người mỗi phạm vi nhiều nhất một chìa còn sống.
+CREATE TABLE IF NOT EXISTS calendar_links (
+    id            SERIAL    PRIMARY KEY,
+    user_id       INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scope         TEXT      NOT NULL DEFAULT 'toi',
+    token_hash    TEXT      NOT NULL UNIQUE,
+    created_at    TIMESTAMP NOT NULL DEFAULT now(),
+    revoked_at    TIMESTAMP,
+    last_fetch_at TIMESTAMP,
+    fetch_count   INTEGER   NOT NULL DEFAULT 0
+);
+ALTER TABLE calendar_links DROP CONSTRAINT IF EXISTS calendar_links_scope_check;
+ALTER TABLE calendar_links ADD CONSTRAINT calendar_links_scope_check
+    CHECK (scope IN ('toi', 'trung_tam'));
+-- Một chìa còn sống cho mỗi (người, phạm vi): cấp lại là thu hồi cái cũ rồi mới thêm.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_links_mot_chia_song
+    ON calendar_links (user_id, scope) WHERE revoked_at IS NULL;
+
+-- ── §72 · AI ĐÃ XEM LẠI BẢN GHI BUỔI HỌC (26/09/2026) ────────────────────────
+-- Bảng phân rã tính năng dòng 22 (trợ giảng): "Học sinh đã xem/chưa xem · Nhắc
+-- học sinh chưa xem"; dòng 21: "Theo dõi việc xem record".
+--
+-- Chỗ dán link bản ghi đã có từ trước (`class_sessions.recording_url`, màn Buổi
+-- học). Đo 26/09 mới lộ ra tính năng đang đứt ở giữa: **học viên không thấy link
+-- ấy ở bất cứ màn nào**. Trợ giảng dán vào rồi không ai xem được, mà cũng chẳng
+-- ai biết là không xem được. Mục này làm nốt nửa sau: em xem được, và trợ giảng
+-- biết em nào chưa xem để nhắc.
+--
+-- ĐO ĐƯỢC CÁI GÌ, và cố ý KHÔNG đo cái gì. Bản ghi nằm trên Zoom hoặc Drive,
+-- ngoài tầm hệ thống — không biết em xem bao nhiêu phút, xem hết hay tua qua.
+-- Thứ duy nhất biết chắc: em đã BẤM mở link, lúc nào, mấy lần. Nên bảng này chỉ
+-- ghi bấy nhiêu, và chữ trên màn cũng nói đúng bấy nhiêu ("đã mở" chứ không phải
+-- "đã xem xong"). Đếm một thứ mình không đo được là cách nhanh nhất để có một
+-- con số không ai tin.
+--
+-- Một dòng cho mỗi (buổi, người): bấm lại thì cộng `lan_mo`, không thêm dòng.
+CREATE TABLE IF NOT EXISTS recording_views (
+    id         SERIAL    PRIMARY KEY,
+    session_id INTEGER   NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+    user_id    INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mo_lan_dau TIMESTAMP NOT NULL DEFAULT now(),
+    mo_gan_nhat TIMESTAMP NOT NULL DEFAULT now(),
+    lan_mo     INTEGER   NOT NULL DEFAULT 1
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_views_buoi_nguoi
+    ON recording_views (session_id, user_id);
+-- Trợ giảng mở màn "ai chưa xem" theo LỚP, nên lối vào là buổi.
+CREATE INDEX IF NOT EXISTS idx_recording_views_buoi
+    ON recording_views (session_id);
+
+-- ── §60 · HỌC LIỆU CỦA LỚP (Đ2, bảng TopHSA dòng 30 và phần tài liệu của 15 — 26/09/2026) ──
+-- Anh Sơn chốt 26/09: làm phần LIÊN KẾT NGOÀI trước (Drive, YouTube, link đề), vì nó không
+-- chờ khoá Cloudflare R2; và gắn được vào CẢ HAI chỗ — kho chung của lớp, và từng buổi.
+--
+-- MỘT bảng cho cả hai nguồn, không phải hai bảng. `nguon='link'` là thứ chạy được hôm nay;
+-- `nguon='r2'` là chỗ đã chừa sẵn cho tệp tải lên khi anh cấp khoá (mục D1). Tách hai bảng
+-- thì mọi câu đọc, mọi màn, mọi phép kiểm đều phải viết hai lần rồi hợp lại — và cái ngày
+-- thêm R2 sẽ là ngày sửa hết những chỗ ấy, đúng lúc không ai còn nhớ chúng nằm đâu.
+--
+-- `session_id NULL` = tài liệu của CẢ LỚP (kho chung). Có `session_id` = tài liệu của riêng
+-- buổi ấy. Cùng một bảng nên một câu `WHERE class_id = %s` lấy được cả hai, và màn tự nhóm.
+CREATE TABLE IF NOT EXISTS hoc_lieu (
+    id         SERIAL    PRIMARY KEY,
+    class_id   INTEGER   NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    session_id INTEGER   REFERENCES class_sessions(id) ON DELETE CASCADE,
+    ten        TEXT      NOT NULL,
+    mo_ta      TEXT,
+    nguon      TEXT      NOT NULL DEFAULT 'link',
+    url        TEXT,
+    r2_key     TEXT,
+    kieu_tep   TEXT,
+    so_byte    BIGINT,
+    -- Giảng viên soạn trước cả khoá rồi mở dần theo tiến độ: `an = TRUE` là đã gắn nhưng
+    -- học viên chưa thấy. Xoá rồi gắn lại thì mất cả thứ tự lẫn ngày gắn.
+    an         BOOLEAN   NOT NULL DEFAULT FALSE,
+    nguoi_tao  INTEGER   REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+ALTER TABLE hoc_lieu DROP CONSTRAINT IF EXISTS hoc_lieu_nguon_check;
+ALTER TABLE hoc_lieu ADD CONSTRAINT hoc_lieu_nguon_check CHECK (nguon IN ('link', 'r2'));
+-- Mỗi nguồn phải có ĐÚNG thứ nó cần. Không có CHECK này thì một dòng 'link' mà `url` rỗng
+-- vẫn vào được bảng, và màn sẽ dựng một mục bấm vào không đi đâu cả — loại hỏng chỉ lộ ra
+-- khi có học viên thật bấm vào nó.
+ALTER TABLE hoc_lieu DROP CONSTRAINT IF EXISTS hoc_lieu_du_nguon_check;
+ALTER TABLE hoc_lieu ADD CONSTRAINT hoc_lieu_du_nguon_check CHECK (
+    (nguon = 'link' AND url IS NOT NULL AND url <> '')
+ OR (nguon = 'r2'   AND r2_key IS NOT NULL AND r2_key <> ''));
+-- Lối vào chính: mở một lớp ra xem có gì. Kèm `session_id` để nhóm theo buổi không phải
+-- quét lại, và `created_at` để "mới gắn" nằm trên.
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_lop   ON hoc_lieu (class_id, session_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_buoi  ON hoc_lieu (session_id);
+CREATE INDEX IF NOT EXISTS idx_hoc_lieu_nguoi ON hoc_lieu (nguoi_tao);
+
+-- ── §58 · AI DẠY MỘT BUỔI CỤ THỂ (Đ2, bảng TopHSA dòng 10 — 27/09/2026) ──────
+-- Giảng viên và trợ giảng gắn theo LỚP (`classes.teacher_id`, `class_members`), nhưng một
+-- buổi lẻ có thể do người khác đứng: giảng viên ốm, trợ giảng bận, trung tâm đổi người.
+--
+-- NULL = theo lớp như trước. Có giá trị = buổi NÀY người ấy dạy. Không sao chép giảng viên
+-- lớp vào mọi buổi lúc tạo: làm vậy thì đổi giảng viên của lớp sẽ KHÔNG đổi các buổi tương
+-- lai, và không ai nhận ra cho tới lúc nhìn bảng lương. Một ô trống nói "theo lớp" thì luôn
+-- đúng, kể cả khi lớp đổi người.
+--
+-- Chấm công (§59) phải đọc `COALESCE(s.teacher_id, c.teacher_id)` — dạy thay mà lương vẫn
+-- chảy về người đứng tên lớp là một lỗi người ta chỉ phát hiện vào cuối tháng.
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS teacher_id   INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS assistant_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+-- Lối vào của bảng chấm công: "những buổi người này dạy trong tháng".
+CREATE INDEX IF NOT EXISTS idx_sessions_nguoi_day ON class_sessions (teacher_id, starts_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_tro_giang ON class_sessions (assistant_id, starts_at);
+-- ── §73 · HỌC VIÊN TỰ ĐĂNG KÝ (E5, bảng TopHSA dòng 26 + mốc "Đăng ký" dòng 4 — 27/09/2026) ──
+-- Từ 27/08/2026 trung tâm tự cấp mọi tài khoản (`RegisterView` đòi `IsAdminRole`). Dòng 26 của
+-- bảng khách đòi ngược lại: em mới tự mở được tài khoản, rồi học vụ duyệt và xếp lớp. Mục này
+-- thêm ĐÚNG hai thứ cần để làm việc ấy mà không mở một lỗ nào:
+--
+-- §73a · `users.self_registered` — tài khoản này SINH RA ở cửa công khai hay do trung tâm cấp.
+-- Hàng rào đăng nhập chỉ chặn `self_registered AND NOT is_verified`, nên 100% tài khoản cũ
+-- (self_registered = FALSE) không đổi hành vi một li nào — kể cả những tài khoản `is_verified`
+-- đang là FALSE/NULL vì chưa ai từng ghi cột ấy. Không có cột này thì hàng rào phải đọc
+-- `is_verified` trần và sẽ khoá cửa với toàn bộ học viên hiện có.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS self_registered BOOLEAN NOT NULL DEFAULT FALSE;
+-- Hàng chờ "Đăng ký mới" của học vụ = mới nhất trước. Chỉ mục PHẦN (WHERE self_registered) nên
+-- nó nhỏ bằng số em tự đăng ký, không bằng cả bảng users.
+CREATE INDEX IF NOT EXISTS idx_users_tu_dang_ky ON users (created_at DESC) WHERE self_registered;
+
+-- §73b · `password_reset_tokens.purpose` — MỘT bảng chìa cho hai việc: đặt lại mật khẩu
+-- (`reset`) và xác thực email lúc đăng ký (`verify`). Dùng lại bảng vì mọi tính chất đã đúng
+-- sẵn: chỉ lưu băm, dùng một lần, có hạn, có `requested_ip`, có chỉ mục để đếm tần suất.
+--
+-- BẪY (đã xảy ra trong lúc viết mục này): `accounts/quen_mat_khau.py` có BA câu chạm bảng theo
+-- `user_id` mà không lọc `purpose` — đếm trần 3 chìa/giờ, "chìa mới thay chìa cũ", và "đặt
+-- xong thì mọi chìa khác chết". Để nguyên thì một lượt xin đặt lại mật khẩu sẽ HUỶ mã xác
+-- thực email em chưa bấm, và em vừa đăng ký xong mất luôn đường vào. Cả ba câu nay lọc
+-- `purpose = 'reset'`; `accounts/tests_tu_dang_ky.py` giữ chỗ ấy.
+ALTER TABLE password_reset_tokens ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT 'reset';
+ALTER TABLE password_reset_tokens DROP CONSTRAINT IF EXISTS prt_purpose_check;
+ALTER TABLE password_reset_tokens ADD CONSTRAINT prt_purpose_check CHECK (purpose IN ('reset', 'verify'));
+-- Trần tần suất và "thay chìa cũ" đều tra theo (người, việc, lúc) — chỉ mục §52b chỉ có
+-- (user_id, created_at) nên sau khi thêm `purpose` nó không còn đủ chọn lọc.
+CREATE INDEX IF NOT EXISTS idx_prt_purpose ON password_reset_tokens (user_id, purpose, created_at);
+
+-- §73c · Loại yêu cầu `tk_dang_ky` — hàng chờ xếp lớp KHÔNG phải một hộp mới. Hộp Yêu cầu
+-- (§65) đã có đủ: máy trạng thái, giao việc, trả lời, ghi chú nội bộ, nhật ký, và "duyệt =
+-- thực thi trong MỘT giao dịch". Duyệt một `tk_dang_ky` = xếp em vào lớp đã chọn
+-- (`yeu_cau/thuc_thi.py` gọi `AdminClassMembersView._ghi_thanh_vien`, giữ trần lớp gia sư).
+-- Dựng một bảng "đăng ký chờ duyệt" riêng là dựng bản thứ hai của cùng một máy trạng thái.
+ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_loai_check;
+ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
+    'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
+    'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
+    'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa', 'tk_dang_ky'));
+
+-- ── §74 · BÀI TẬP TRỎ VỀ MỤC KHUNG CHƯƠNG TRÌNH (bảng TopHSA dòng 5 — 27/09/2026) ──
+-- Khung chương trình đã có mục loại `bai_tap` / `kiem_tra` (§64), và giảng viên đã giao
+-- được bài cho lớp (`assignments`). Nhưng hai thứ ấy KHÔNG nối với nhau: khung nói "buổi 3
+-- có bài về nhà", bài giao nói "bài tập X hạn thứ Sáu", và không gì trả lời được "bài về
+-- nhà của buổi 3 đã giao chưa".
+--
+-- NULL = bài giao rời, không thuộc mục khung nào — đó là phần lớn bài hiện có, và vẫn phải
+-- giao được như thế. Cột này chỉ THÊM một đường nối, không bắt ai phải dùng.
+--
+-- SET NULL: sửa khung (xoá một mục) KHÔNG được kéo mất bài giảng viên đã giao và các em đã
+-- nộp — cùng nguyên tắc với §29 (giữ lịch sử thay vì xoá dòng).
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS syllabus_item_id INTEGER
+    REFERENCES syllabus_items(id) ON DELETE SET NULL;
+-- Lối vào: mở một mục khung ra hỏi "đã giao bài nào cho mục này chưa".
+CREATE INDEX IF NOT EXISTS idx_assignments_muc_khung
+    ON assignments (syllabus_item_id) WHERE syllabus_item_id IS NOT NULL;
+
+-- ── §75 · DIỄN ĐÀN RIÊNG CỦA LỚP (bảng TopHSA dòng 20 — 27/09/2026) ──
+-- Anh Sơn chốt 27/09: *"Những phần như này thì mình biến thành nhắn tin qua Zalo hoặc qua
+-- diễn đàn riêng của lớp, không làm thành 1 messenger trong ứng dụng mình đâu"*. Tức ba
+-- gạch "nhắn tin cho học sinh / nhận tin nhắn / theo dõi lịch sử trao đổi" của ô STT 20
+-- đóng bằng diễn đàn khoanh theo lớp, không bằng một hộp chat.
+--
+-- Diễn đàn tới nay là một SÂN CHUNG: `posts` không có cột nào nói bài thuộc phạm vi nào
+-- ngoài `course_id`/`lesson_no` (bài học tự luyện). Cột này khoanh phạm vi thứ hai.
+--
+-- NULL = bài của sân chung, đọc được như trước — mọi bài đang có đều thuộc nhóm ấy, nên
+-- thêm cột không đổi hành vi của một dòng dữ liệu nào.
+--
+-- CASCADE chứ không SET NULL: lớp bị xoá mà bài ở lại thì trao đổi riêng của một lớp rơi
+-- thẳng ra sân chung — đúng cái rò rỉ mà cột này sinh ra để chặn. Khác §74 (bài tập giữ
+-- lại khi mục khung mất) vì ở đó mất liên kết là mất thông tin, còn ở đây là mất hàng rào.
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS class_id INTEGER
+    REFERENCES classes(id) ON DELETE CASCADE;
+-- Lối vào: mở diễn đàn của MỘT lớp, bài mới nhất trước.
+CREATE INDEX IF NOT EXISTS idx_posts_lop
+    ON posts (class_id, created_at DESC) WHERE class_id IS NOT NULL;
 -- ── §76 · XOÁ TÀI KHOẢN — SỬA 3 KHOÁ NO ACTION CHẶN XOÁ CỨNG (Nhân, 27/09/2026) ──
 -- Yêu cầu TopHSA (quản lý người dùng): "Xóa tài khoản" — anh Sơn chốt XOÁ CỨNG
 -- (DELETE thật, không phải đánh dấu). Trước khi mở đường DELETE FROM users,

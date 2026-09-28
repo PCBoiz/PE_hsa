@@ -1,0 +1,525 @@
+[
+ {
+  "dong": 1,
+  "ten": "Tài khoản · đăng nhập (dòng 1 · 8 · 13 · 19)",
+  "duong": "/login",
+  "vai": "khach",
+  "hoi": {
+   "oEmailHoacTen": "Email|tên đăng nhập|số điện thoại",
+   "hienAnMatKhau": "Hiện mật khẩu|Ẩn mật khẩu",
+   "ghiNhoDangNhap": "Ghi nhớ đăng nhập",
+   "quenMatKhau": "Quên mật khẩu|Đặt lại qua email"
+  }
+ },
+ {
+  "dong": 2,
+  "ten": "QTV · quản lý người dùng",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "ad",
+  "hoi": {
+   "capTaiKhoan": "Cấp tài khoản|Thêm người|Tạo tài khoản",
+   "khoaMoKhoa": "Khoá|Mở khoá",
+   "cotTrangThai": "Trạng thái",
+   "nhapDanhSach": "Nhập|dán danh sách",
+   "taiDanhSach": "Tải danh sách|Xuất",
+   "loVai": "Vai|vai trò"
+  }
+ },
+ {
+  "dong": 3,
+  "ten": "QTV · tìm kiếm học viên (màn Tài khoản)",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "ad",
+  "hoi": {
+   "oTim": "Tìm|tìm kiếm",
+   "locTinhTrangHocTap": "Đang học|Chưa xếp lớp|Bảo lưu",
+   "locHocPhi": "học phí|Học phí",
+   "locDotHoc": "Đợt|đợt học",
+   "locMon": "Môn|môn học"
+  },
+  "bam": [
+   "Tải danh sách"
+  ],
+  "ghiChu": "Ô lọc MÔN nằm trong hộp \"Tải danh sách\", và hộp ấy CHỈ quản trị viên thấy (`teaching/exports.py` là `IsAdminRole`). Đo bằng thẻ học vụ thì câu `locMon` luôn hỏng — không phải vì thiếu tính năng mà vì đo sai vai. Học vụ có mở được hộp ấy hay không là việc C8 anh Sơn chưa quyết."
+ },
+ {
+  "dong": 3,
+  "ten": "QTV · hồ sơ học viên",
+  "duong": "/quan-tri/tai-khoan/{EM_MAU}",
+  "vai": "hvu",
+  "hoi": {
+   "tinhThanh": "Tỉnh|Thành phố",
+   "thongTinPhuHuynh": "phụ huynh|Phụ huynh",
+   "nguoiTuVanNguon": "tư vấn|Nguồn",
+   "mucTieuNguyenVong": "Mục tiêu|nguyện vọng",
+   "tinhTrangHocTap": "Tình trạng học|Đang học",
+   "tinhTrangHocPhi": "Đã đóng|Sắp hết|Bảo lưu",
+   "lopDangHoc": "Lớp|lớp đang học"
+  }
+ },
+ {
+  "dong": 4,
+  "ten": "QTV · quản lý lớp học",
+  "duong": "/quan-tri/lop-hoc",
+  "vai": "ad",
+  "hoi": {
+   "taoLop": "Thêm lớp|Tạo lớp",
+   "trangThaiTamDung": "Tạm dừng",
+   "locTrangThai": "Đang học|Kết thúc",
+   "chuongTrinhLop": "Chương trình",
+   "monKhoa": "Môn|Khoá"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 4,
+  "ten": "QTV · học viên của lớp (nhập DS, lịch sử, chuyển lớp)",
+  "duong": "/quan-tri/lop-hoc?lop={LOP_MAU}",
+  "vai": "ad",
+  "hoi": {
+   "themHocVien": "Thêm|Xếp vào lớp|dán",
+   "nhapTuTepMau": "tệp mẫu|Nhập học viên",
+   "chuyenLop": "Chuyển lớp|Chuyển sang lớp khác",
+   "lichSuLop": "Lịch sử thay đổi|Lịch sử",
+   "phanCongTroGiang": "Trợ giảng|trợ giảng"
+  },
+  "cho": 4000,
+  "bam": [
+   "Học viên"
+  ],
+  "choSauBam": 6000,
+  "ghiChu": "Khối học viên của lớp (nhập từ tệp, chuyển lớp, lịch sử) mở ra SAU khi bấm \"Học viên\" ở dòng lớp. Màn ngoài chỉ là danh sách lớp. Nhãn thật trong ô lý do rời lớp là \"Chuyển sang lớp khác…\" (§55) — mẫu cũ đòi đúng chữ \"Chuyển lớp\" nên không khớp."
+ },
+ {
+  "dong": 5,
+  "ten": "QTV · khu Giáo trình (khoá học)",
+  "duong": "/giao-trinh",
+  "vai": "ad",
+  "hoi": {
+   "monKhoa": "Môn|Khoá",
+   "chuyenDeBaiHoc": "Chuyên đề|Bài học",
+   "trangThaiKhoa": "Nháp|Mở cho học viên|Xuất bản|Trạng thái",
+   "khungChuongTrinh": "Khung chương trình"
+  }
+ },
+ {
+  "dong": 5,
+  "ten": "QTV · Khung chương trình theo buổi",
+  "duong": "/giao-trinh/khung-chuong-trinh",
+  "vai": "ad",
+  "hoi": {
+   "buoi": "Buổi",
+   "noiDungBuoi": "Nội dung|nội dung",
+   "thoiLuong": "Thời lượng|\\d+ phút",
+   "trongSo": "Trọng số",
+   "hocLieu": "Học liệu|Tài liệu",
+   "baiVeNha": "Bài về nhà",
+   "taoBanMoi": "Tạo bản mới|bản nháp"
+  },
+  "bam": [
+   "Xem"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Nội dung từng buổi (thời lượng, học liệu, bài về nhà) chỉ hiện SAU khi bấm \"Xem\" một khung — màn ngoài chỉ là danh sách khung của môn. Đo 27/09. Thời lượng hiện là \"90 phút\" cạnh tên buổi, không có chữ \"Thời lượng\"."
+ },
+ {
+  "dong": 6,
+  "ten": "QTV · báo cáo Toàn trung tâm",
+  "duong": "/quan-tri/tong-quan",
+  "vai": "ad",
+  "hoi": {
+   "soHocSinhSoLop": "học viên|lớp",
+   "diemDanh": "điểm danh|chuyên cần",
+   "tienDoChuongTrinh": "Tiến độ chương trình|tiến độ",
+   "locThoiGian": "Đợt|Từ ngày|ngày",
+   "emBoGiuaChung": "Học 7 ngày|Bỏ giữa chừng"
+  },
+  "cho": 4000,
+  "ghiChu": "Hai câu bỏ đi vì hỏi sai màn, không phải vì thiếu tính năng: (1) TẢI BẢNG TÍNH nằm ở sổ buổi học của lớp và ở trang Tài khoản, không ở Toàn trung tâm; (2) \"nghỉ nhiều\" nằm ở \"Việc hôm nay\" của giảng viên và trong tờ báo cáo. Thay bằng thứ màn này THẬT SỰ có: ngưỡng không hoạt động 7/14/30 ngày. Cột thật trên bảng Từng lớp là \"Học 7 ngày\" và \"Bỏ giữa chừng\" — hỏi đúng chữ màn đang hiện."
+ },
+ {
+  "dong": 6,
+  "ten": "QTV · Chấm công GV/TG",
+  "duong": "/quan-tri/cham-cong",
+  "vai": "ad",
+  "hoi": {
+   "theoThang": "Tháng|tháng",
+   "giangVien": "Giảng viên",
+   "troGiang": "Trợ giảng",
+   "tongGio": "giờ",
+   "taiExcel": "Excel|Tải"
+  }
+ },
+ {
+  "dong": 7,
+  "ten": "Kế toán · Cơ sở học phí (THAY)",
+  "duong": "/quan-tri/co-so-hoc-phi",
+  "vai": "ad",
+  "hoi": {
+   "soBuoi": "buổi",
+   "coMatVang": "có mặt|vắng",
+   "theoEm": "Học viên|học viên"
+  },
+  "ghiChu": "Bỏ câu \"xuất tệp\": đọc lại đúng chữ trong bảng của khách (STT 7) — ô ấy đòi theo dõi tình trạng đóng, đếm ngược số buổi, cảnh báo sắp hết, bảo lưu, gia hạn và lịch sử tham gia. KHÔNG đòi xuất tệp. Câu ấy là do mình tự thêm."
+ },
+ {
+  "dong": 9,
+  "ten": "Giáo vụ · lớp học (chậm tiến độ, sĩ số)",
+  "duong": "/quan-tri/lop-hoc",
+  "vai": "hvu",
+  "hoi": {
+   "siSo": "Sĩ số|sĩ số",
+   "chamTienDo": "chậm|Tiến độ|tiến độ",
+   "suaLop": "Sửa",
+   "buoiHoc": "Buổi học|buổi"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 9,
+  "ten": "Giáo vụ · điểm danh + lịch sử sửa (buổi học của lớp)",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
+  "vai": "hvu",
+  "hoi": {
+   "diemDanh": "Điểm danh|điểm danh",
+   "bonTrangThai": "Có mặt|Vắng|Đi muộn|Xin phép",
+   "lichSuSuaDiemDanh": "Lịch sử sửa điểm danh|Lịch sử",
+   "taoBuoiBu": "Tạo buổi bù|buổi bù",
+   "sinhBuoi": "Sinh buổi|Tạo buổi|Thêm buổi"
+  },
+  "bam": [
+   "Điểm danh"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Sổ điểm danh nằm SAU một cú bấm (`SessionsClient.tsx:500` gập/mở). Hỏi ở màn ngoài thì \"Lịch sử sửa điểm danh\" và nút \"Lưu\" đều vắng — đo 27/09 chấm hỏng cho hai thứ đã tự tay mở ra xem sáng cùng ngày."
+ },
+ {
+  "dong": 10,
+  "ten": "Giáo vụ · lịch học",
+  "duong": "/giang-day/lich",
+  "vai": "hvu",
+  "hoi": {
+   "xemTheoLop": "lớp",
+   "xemTheoGiangVien": "giảng viên|Giảng viên",
+   "themVaoLich": "Thêm lịch.*điện thoại|Thêm vào lịch"
+  },
+  "ghiChu": "(1) Nhãn thật là \"Thêm lịch dạy vào điện thoại\" — mẫu cũ đòi đúng chữ \"lịch điện thoại\" nên không khớp. (2) Bỏ câu \"cảnh báo trùng\": dòng ấy CHỈ hiện khi có buổi trùng thật (`lich/page.tsx:174`), hỏi trên một lịch sạch là đòi màn phải ở trạng thái hỏng mới ĐẠT. Hàng rào trùng lịch có bộ kiểm riêng (`teaching/trung_lich.py`)."
+ },
+ {
+  "dong": 11,
+  "ten": "Giáo vụ · hộp Yêu cầu",
+  "duong": "/yeu-cau",
+  "vai": "hvu",
+  "hoi": {
+   "danhSachYeuCau": "Yêu cầu|yêu cầu",
+   "locTrangThai": "Mới|Đang xử lý|Đã xong",
+   "locLoai": "Hỗ trợ|loại|Học tập",
+   "nguoiGui": "gửi|Người gửi",
+   "taoYeuCau": "Tạo yêu cầu"
+  }
+ },
+ {
+  "dong": 11,
+  "ten": "Giáo vụ · một yêu cầu (phân loại, giao, kết quả)",
+  "duong": "/yeu-cau/{YEU_CAU_MAU}",
+  "vai": "hvu",
+  "hoi": {
+   "doiLoai": "Đổi loại",
+   "giaoNguoiXuLy": "Giao người xử lý|Chuyển tiếp",
+   "ghiChuNoiBo": "Ghi chú nội bộ",
+   "traLoi": "Trả lời|Gửi trả lời",
+   "daXong": "Đã xong",
+   "lichSu": "Lịch sử|Diễn biến|diễn biến"
+  },
+  "ghiChu": "\"Giao người xử lý…\" và \"Chuyển tiếp…\" là MỘT nút ở hai chế độ (`ChiTietYeuCau.tsx:219-221`): ai giao được thì thấy chữ đầu, ai chỉ chuyển tiếp được thì thấy chữ sau. Hỏi cả hai trên một màn thì một câu luôn hỏng."
+ },
+ {
+  "dong": 12,
+  "ten": "Giáo vụ · duyệt thay đổi học tập (xin chuyển lớp)",
+  "duong": "/yeu-cau/{YEU_CAU_DUYET}",
+  "vai": "hvu",
+  "hoi": {
+   "nutDuyet": "Duyệt",
+   "xemTruocHeThongLam": "Hệ thống sẽ|Hệ thống",
+   "tuChoi": "Từ chối",
+   "nguoiDuyet": "duyệt"
+  }
+ },
+ {
+  "dong": 14,
+  "ten": "GV · lớp + điểm danh",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "diemDanh": "Điểm danh|điểm danh",
+   "bonTrangThai": "Có mặt|Vắng|Đi muộn|Xin phép",
+   "lichSuSua": "Lịch sử",
+   "luu": "Lưu"
+  },
+  "bam": [
+   "Điểm danh"
+  ],
+  "choSauBam": 3000,
+  "ghiChu": "Sổ điểm danh nằm SAU một cú bấm (`SessionsClient.tsx:500` gập/mở). Hỏi ở màn ngoài thì \"Lịch sử sửa điểm danh\" và nút \"Lưu\" đều vắng — đo 27/09 chấm hỏng cho hai thứ đã tự tay mở ra xem sáng cùng ngày."
+ },
+ {
+  "dong": 14,
+  "ten": "GV · Việc hôm nay (danh sách lớp, cảnh báo)",
+  "duong": "/giang-day",
+  "vai": "gv",
+  "hoi": {
+   "danhSachLop": "Lớp|lớp",
+   "chuaDiemDanh": "chưa điểm danh|Chưa điểm danh",
+   "vangLien": "Vắng liền|vắng liền",
+   "canHoTro": "Cần hỗ trợ|cần hỗ trợ",
+   "tabYeuCau": "Yêu cầu"
+  }
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Chương trình lớp (tiến độ vs kế hoạch)",
+  "duong": "/giang-day/chuong-trinh/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "daDay": "Đã dạy|đã dạy",
+   "keHoach": "kế hoạch|Kế hoạch",
+   "tre": "trễ|chậm",
+   "phanTramTungEm": "%",
+   "chuaGhiSo": "chưa ghi sổ|Chưa ghi"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Sổ đầu bài một buổi",
+  "duong": "/giang-day/so-dau-bai/{BUOI_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "noiDungTungMuc": "Đã dạy|Một phần|Chưa dạy",
+   "mucTiepThu": "tiếp thu",
+   "ghiChuSauBuoi": "Ghi chú|ghi chú",
+   "deXuat": "Đề xuất",
+   "guiDeXuatChoHocVu": "Gửi đề xuất",
+   "emCanHoTro": "cần hỗ trợ"
+  },
+  "ghiChu": "Câu \"đính kèm tài liệu\" ĐÃ CHUYỂN sang mục dưới: §60 gắn học liệu ở màn BUỔI HỌC và kho chung của lớp, không ở sổ đầu bài. Hỏi sai chỗ thì bộ đo báo thiếu cho một tính năng đang chạy (đo 27/09)."
+ },
+ {
+  "dong": 15,
+  "ten": "GV · học liệu của lớp / của buổi (§60)",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "khoiTaiLieu": "Tài liệu",
+   "ganTaiLieu": "Thêm tài liệu|Gắn tài liệu|Đính kèm"
+  },
+  "cho": 3500
+ },
+ {
+  "dong": 17,
+  "ten": "GV · giao bài của lớp",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "giaoBaiMoi": "Giao bài mới",
+   "suaBai": "Sửa bài",
+   "doiNguoiNhan": "Đổi người nhận",
+   "dongMoNhanBai": "Đóng nhận bài|Mở nhận bài",
+   "xoaBai": "Xoá",
+   "daNopChuaNop": "đã nộp|Chưa nộp",
+   "hanNop": "Hạn|hạn nộp",
+   "nhapDiemKiemTra": "Nhập điểm"
+  }
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Chương trình lớp — mục nào đã giao bài (§74)",
+  "duong": "/giang-day/chuong-trinh/{LOP_MAU}",
+  "vai": "gv",
+  "ghiChu": "Lớp 22102 là lớp mẫu có khung ĐẦY ĐỦ; lớp 7322 và lớp 1 chỉ có khung thử, nên hai câu dưới đây hỏi ở đó sẽ hỏng vì thiếu dữ liệu chứ không vì thiếu tính năng.",
+  "hoi": {
+   "chuaGiaoBai": "Chưa giao bài",
+   "daGiaoHoacDangSoan": "Đã giao|Đang soạn"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 17,
+  "ten": "GV · giao bài — ô chọn mục khung (§74)",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
+  "vai": "gv",
+  "bam": [
+   "Giao bài mới"
+  ],
+  "hoi": {
+   "oMucKhung": "Mục khung chương trình",
+   "khongBatBuoc": "Không gắn vào khung",
+   "nhanMangSoBuoi": "Buổi \\d+ ·"
+  }
+ },
+ {
+  "dong": 17,
+  "ten": "GV · bảng chấm một bài",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}/{BAI_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "oDiem": "Điểm|điểm",
+   "nhanXet": "Nhận xét|nhận xét",
+   "traBai": "Lưu \\d+|Chưa gõ điểm nào",
+   "aiChuaNop": "Chưa nộp|chưa nộp"
+  },
+  "ghiChu": "Hai chỗ sửa 27/09: (1) tuyến `/giang-day/cham/<id>` đã dời sang `/giang-day/bai-tap/<lớp>/<bài>`; (2) nút lưu mang nhãn \"Chưa gõ điểm nào\" cho tới khi giảng viên gõ điểm đầu tiên — hỏi đúng chữ \"Lưu\" trên màn vừa mở là bắt một nút đang có mặt phải vắng."
+ },
+ {
+  "dong": 18,
+  "ten": "GV · theo dõi một học sinh (tờ báo cáo)",
+  "duong": "/giang-day/bao-cao/{LOP_MAU}/{EM_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "nhanXetGuiPhuHuynh": "Nhận xét",
+   "danhDauCanHoTro": "cần hỗ trợ",
+   "deXuatHuongHoc": "Đề xuất hướng học",
+   "lichSuDiemDanh": "điểm danh|Điểm danh",
+   "baiTapVaDiem": "Bài tập|điểm",
+   "tienBo": "tiến bộ"
+  },
+  "cho": 4000
+ },
+ {
+  "dong": 19,
+  "ten": "TG · khu Giảng dạy (tài khoản + phạm vi lớp)",
+  "duong": "/giang-day",
+  "vai": "tg",
+  "hoi": {
+   "danhSachLop": "Lớp|lớp",
+   "tabYeuCau": "Yêu cầu"
+  }
+ },
+ {
+  "dong": 21,
+  "ten": "TG · theo dõi (Việc hôm nay: vắng liền, cần chú ý)",
+  "duong": "/giang-day",
+  "vai": "tg",
+  "hoi": {
+   "vangLien": "Vắng liền|vắng liền",
+   "canChuY": "Cần chú ý|cần chú ý|Cần hỗ trợ",
+   "baoCanHoTro": "Báo cần hỗ trợ",
+   "chuaDiemDanh": "chưa điểm danh|Chưa điểm danh"
+  }
+ },
+ {
+  "dong": 21,
+  "ten": "TG · theo dõi bài tập + điểm danh của lớp",
+  "duong": "/giang-day/bai-tap/{LOP_MAU}",
+  "vai": "tg",
+  "hoi": {
+   "thayBaiTap": "Bài tập|bài",
+   "thayAiChuaNop": "đã nộp|Chưa nộp"
+  },
+  "ghiChu": "Bỏ câu \"theo dõi việc xem record\": nó nằm ở màn BUỔI HỌC (khối §72), không ở màn Bài tập. Ô ấy đã được đo ở mục dòng 22. Hỏi ở đây là hỏi sai màn."
+ },
+ {
+  "dong": 22,
+  "ten": "TG/GV · bản ghi Zoom theo buổi (lớp có bản ghi)",
+  "duong": "/giang-day/buoi-hoc/{LOP_MAU}",
+  "vai": "gv",
+  "hoi": {
+   "oLinkRecord": "Bản ghi|record|Zoom|Xem lại",
+   "buoiThieuBanGhi": "chưa có bản ghi|thiếu bản ghi|Chưa có",
+   "aiChuaMo": "chưa mở|đã mở",
+   "nhacEmChuaMo": "Nhắc"
+  },
+  "cho": 6000,
+  "bam": [
+   "Sửa"
+  ],
+  "choSauBam": 2500,
+  "ghiChu": "Ô \"Link bản ghi\" nằm trong biểu mẫu SỬA một buổi, nên phải bấm \"Sửa\" trước. Khối \"ai đã mở / Nhắc em chưa mở\" tải bằng một lượt gọi riêng SAU khi React gắn — chờ 2,5 giây là chưa đủ, 6 giây thì đủ. Đo 27/09."
+ },
+ {
+  "dong": 26,
+  "ten": "Học sinh · trang của tôi",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "lopCuaToi": "Lớp của bạn|Lớp của tôi",
+   "buoiToi": "Buổi tới|buổi học",
+   "menuTaiKhoan": "Hồ sơ|Đăng xuất|Tài khoản"
+  },
+  "bam": [
+   "#user-chip-btn"
+  ],
+  "ghiChu": "Hai chỗ sửa 27/09: (1) câu \"tự đăng ký\" chuyển sang mục /dang-ky — nó là cửa cho người CHƯA có tài khoản; (2) menu tài khoản bung ra sau một cú bấm, và nút mở nó mang TÊN người đang đăng nhập nên phải bấm theo bộ chọn `#user-chip-btn`."
+ },
+ {
+  "dong": 28,
+  "ten": "Học sinh · chương trình + lộ trình",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "tienDoChuongTrinh": "% chương trình|Đã học",
+   "soVoiKeHoach": "kế hoạch",
+   "diemDanhTungBuoi": "Điểm danh từng buổi",
+   "demBuoi": "vắng|muộn|có mặt"
+  }
+ },
+ {
+  "dong": 29,
+  "ten": "Học sinh · bản ghi (thẻ lớp có Xem lại)",
+  "duong": "/dashboard",
+  "vai": "hv2",
+  "hoi": {
+   "xemLai": "Xem lại",
+   "danhDauDaMo": "đã mở|Đã mở",
+   "baoLinkLoi": "Báo|lỗi"
+  }
+ },
+ {
+  "dong": 30,
+  "ten": "Học sinh · học liệu",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "hoi": {
+   "taiLieuCuaBuoi": "Tài liệu|Học liệu|Tệp đính kèm",
+   "taiVe": "Tải về|Tải xuống"
+  }
+ },
+ {
+  "dong": 31,
+  "ten": "Học sinh · bài tập",
+  "duong": "/bai-tap",
+  "vai": "hv",
+  "hoi": {
+   "danhSachBai": "Bài|bài tập",
+   "hanNop": "Hạn|hạn",
+   "nopBai": "Nộp|nộp bài",
+   "ketQuaNhanXet": "Điểm|Nhận xét",
+   "nopTep": "Chọn tệp|Tải tệp|đính kèm"
+  }
+ },
+ {
+  "dong": 32,
+  "ten": "Học sinh · Hỏi & yêu cầu",
+  "duong": "/yeu-cau",
+  "vai": "hv",
+  "hoi": {
+   "hoiGiangVien": "Hỏi giảng viên",
+   "hoTro": "Hỗ trợ",
+   "taoYeuCau": "Tạo yêu cầu|Gửi yêu cầu",
+   "thayYeuCauCuaMinh": "Mới|Đang xử lý|Đã xong"
+  }
+ },
+ {
+  "dong": 26,
+  "ten": "Khách · tự đăng ký (§73)",
+  "duong": "/dang-ky",
+  "vai": "khach",
+  "hoi": {
+   "phieuDangKy": "Đăng ký|đăng ký",
+   "oEmail": "Email|email",
+   "oMatKhau": "Mật khẩu|mật khẩu",
+   "nguonBietToi": "Biết tới|nguồn|Facebook|Zalo"
+  },
+  "ghiChu": "Cửa cho người CHƯA có tài khoản — đo bằng vai `khach`, không phải bằng thẻ học viên."
+ }
+]

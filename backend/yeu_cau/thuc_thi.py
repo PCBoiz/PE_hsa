@@ -1,0 +1,305 @@
+"""Việc hệ thống làm khi DUYỆT một yêu cầu thay đổi (E3) — chạy BÊN TRONG giao dịch của
+`dich_vu.duyet()`, nên việc nào ném `LoiYeuCau` là cả lần duyệt cuộn lại.
+
+Mọi việc đi qua hàm sẵn có của miền lớp học (luật S4 — `yeu_cau` không ghi thẳng bảng của
+miền khác):
+- chuyển lớp / chuyển môn → `teaching/chuyen_lop.py::ChuyenLopView._chuyen` (giữ trần lớp gia
+  sư, kiểm ngày, ghi `transferred_to`, nhật ký `class.member.transfer`);
+- bảo lưu → `teaching/roi_lop.py::roi_lop(..., 'reserved', reserve_until=…)`;
+- huỷ khoá → `roi_lop(..., 'dropped')`;
+- học lại → `AdminClassMembersView._ghi_thanh_vien` (giữ trần gia sư);
+- chuyển lịch / học bù / nghỉ học → v1 CHỈ ghi quyết định (`{"cach": "tay"}`): học vụ tự làm
+  trên màn Buổi học (tạo buổi bù, đổi lịch, điểm danh "có phép");
+- đăng ký mới (`tk_dang_ky`, §73) → cùng `_ghi_thanh_vien`: duyệt = XẾP LỚP cho em vừa tự đăng
+  ký. Khác `tt_hoc_lai` ở chỗ lớp không nằm ở `yeu_cau.class_id` (lúc gửi em chưa có lớp nào)
+  mà ở `den_lop_id` học vụ chọn lúc duyệt — nên nhánh này phải đứng TRƯỚC câu kiểm
+  "yêu cầu chưa gắn lớp".
+
+Xoá đệm quyền môn: `dich_vu.duyet()` hẹn `quen_truy_cap` SAU commit.
+"""
+from datetime import date
+
+from common.clock import local_now, local_today
+from common.db import q1
+from common.permissions import ROLE_STUDENT
+from yeu_cau import loai as L
+from yeu_cau.dich_vu import LoiYeuCau
+
+#: Loại mà DUYỆT chỉ ghi quyết định, người vẫn phải tự làm — và mỗi dòng phải nói RÕ làm gì.
+#:
+#: `tt_chuyen_lich` ở lại đây có chủ ý (27/09/2026): "chuyển lịch" ở TopHSA nghĩa là đổi giờ
+#: học của một em, mà đổi đi đâu thì phụ thuộc lớp nào còn chỗ, giờ nào em học được, giảng
+#: viên nào dạy — ba thứ hệ thống không biết. Tự đoán một lớp rồi xếp em vào là làm hỏng
+#: nhiều hơn làm được. Hai loại kia (`tt_hoc_bu`, `tt_nghi_hoc`) đã tự làm được từ 27/09.
+VIEC_TAY = {
+    'tt_chuyen_lich': 'Học vụ đổi lịch cho em trên màn Buổi học.',
+}
+
+
+#: Lỗi của VIỆC khi duyệt không bao giờ là 404: đường duyệt trả 404 đọc thành "không có yêu cầu
+#: này" (màn chặn `khong-thay`), trong khi yêu cầu có thật — chỉ việc không làm được. Bản đầu
+#: chuyển nguyên 404 của `ChuyenLopView._chuyen` ("Em không đang học lớp …") ra ngoài (soát 26/09).
+MA_VIEC_HONG = 409
+
+
+def _em(yc):
+    em = q1('SELECT id, name, email, role FROM users WHERE id = %s', (yc['hoc_vien_id'],))
+    if not em:
+        raise LoiYeuCau(MA_VIEC_HONG, 'Không tìm thấy học viên của yêu cầu.')
+    if em['role'] != ROLE_STUDENT:
+        raise LoiYeuCau(400, 'Tài khoản của yêu cầu không phải học viên.')
+    return em
+
+
+def _lop(class_id, ten='lớp'):
+    lop = q1('SELECT c.id, c.name, c.status, c.class_type, c.course_id, co.title AS course_title '
+             'FROM classes c LEFT JOIN courses co ON co.id = c.course_id WHERE c.id = %s', (class_id,))
+    if not lop:
+        raise LoiYeuCau(MA_VIEC_HONG, 'Không tìm thấy %s.' % ten)
+    return lop
+
+
+def _den_lop(yc, tham_so, cau='Chọn lớp chuyển tới.'):
+    """Mã lớp đích: học vụ chọn lúc duyệt, hoặc người gửi đã ghi sẵn trong `du_lieu`.
+
+    `cau` là câu lỗi khi chưa chọn — `tk_dang_ky` nói "Chọn lớp để xếp em vào" chứ không
+    "lớp chuyển tới": em chưa học lớp nào thì không có chỗ nào để "chuyển" đi (RULES §10).
+    Một hàm chứ không hai bản gần giống nhau — bản thứ hai là bản sẽ trôi (RULES §7).
+    """
+    raw = tham_so.get('den_lop_id')
+    if raw in (None, ''):
+        raw = (yc['du_lieu'] or {}).get('den_lop_id')
+    if raw in (None, ''):
+        raise LoiYeuCau(400, cau)
+    try:
+        return int(raw)
+    except (TypeError, ValueError) as e:
+        raise LoiYeuCau(400, cau) from e
+
+
+#: Câu lỗi khi học vụ bấm Duyệt một lượt đăng ký mà chưa chọn lớp.
+CHUA_CHON_LOP = 'Chọn lớp để xếp em vào.'
+
+
+def _khoang_nghi(yc, tham_so):
+    """(từ ngày, đến ngày) của đơn xin nghỉ. Thiếu thì lấy đúng MỘT ngày `tu_ngay`.
+
+    Không mặc định thành "cả tháng" hay "tới cuối khoá": một đơn nghỉ không ghi rõ ngày kết
+    thúc mà bị hiểu rộng ra sẽ ghi "có phép" cho những buổi em vẫn đi học."""
+    d = dict(yc['du_lieu'] or {})
+    d.update({k: v for k, v in (tham_so or {}).items() if v not in (None, '')})
+    try:
+        tu = date.fromisoformat(str(d.get('tu_ngay'))[:10])
+    except (ValueError, TypeError) as e:
+        raise LoiYeuCau(400, 'Đơn xin nghỉ phải ghi ngày bắt đầu (YYYY-MM-DD).') from e
+    raw_den = d.get('den_ngay')
+    try:
+        den = date.fromisoformat(str(raw_den)[:10]) if raw_den else tu
+    except ValueError as e:
+        raise LoiYeuCau(400, 'Ngày kết thúc phải ở dạng YYYY-MM-DD.') from e
+    if den < tu:
+        raise LoiYeuCau(400, 'Ngày kết thúc phải sau ngày bắt đầu.')
+    return tu, den
+
+
+def _den_ngay(yc, tham_so):
+    raw = tham_so.get('den_ngay')
+    if raw in (None, ''):
+        raw = (yc['du_lieu'] or {}).get('den_ngay')
+    if raw in (None, ''):
+        return None
+    try:
+        d = date.fromisoformat(str(raw)[:10])
+    except ValueError as e:
+        raise LoiYeuCau(400, 'Ngày bảo lưu phải ở dạng YYYY-MM-DD.') from e
+    if d < local_today():
+        raise LoiYeuCau(400, 'Ngày hết bảo lưu không được ở quá khứ.')
+    return d
+
+
+def _ten(r):
+    return r['name'] or r['email']
+
+
+def _dang_hoc(em_id, class_id):
+    return bool(q1('SELECT 1 AS c FROM class_members WHERE class_id = %s AND user_id = %s '
+                   'AND left_at IS NULL', (class_id, em_id)))
+
+
+def xem_truoc(yc, tham_so):
+    """`{cach, moTa, canhBao}` — việc sẽ làm, không ghi gì. Lỗi dữ liệu → `canhBao`, không ném."""
+    loai = yc['loai']
+    if L.LOAI[loai].get('viec') == 'tay':
+        return {'cach': 'tay', 'moTa': 'Chỉ ghi quyết định. ' + VIEC_TAY[loai], 'canhBao': []}
+    canh_bao = []
+    try:
+        em = _em(yc)
+        lop = _lop(yc['class_id']) if yc['class_id'] else None
+        if loai == 'tk_dang_ky':
+            den = _lop(_den_lop(yc, tham_so, CHUA_CHON_LOP), 'lớp đã chọn')
+            mo_ta = 'Xếp %s vào lớp "%s"%s.' % (
+                _ten(em), den['name'],
+                ' (môn %s)' % den['course_title'] if den['course_title'] else '')
+            if den['class_type'] == 'gia_su':
+                canh_bao.append('Lớp gia sư — tối đa 3 em; đủ thì duyệt sẽ bị từ chối.')
+            if _dang_hoc(em['id'], den['id']):
+                canh_bao.append('Em đang học lớp này rồi.')
+            return {'cach': 'tu_dong', 'moTa': mo_ta, 'canhBao': canh_bao}
+        if loai in ('tt_chuyen_lop', 'tt_chuyen_mon'):
+            den = _lop(_den_lop(yc, tham_so), 'lớp chuyển tới')
+            mo_ta = 'Chuyển %s từ lớp "%s" sang lớp "%s"%s.' % (
+                _ten(em), lop['name'] if lop else '?', den['name'],
+                ' (môn %s)' % (den['course_title'] or 'cả ba môn') if den['course_id'] != (lop or {}).get('course_id')
+                else '')
+            if den['class_type'] == 'gia_su':
+                canh_bao.append('Lớp gia sư — tối đa 3 em; đủ thì duyệt sẽ bị từ chối.')
+        elif loai == 'tt_bao_luu':
+            d = _den_ngay(yc, tham_so)
+            mo_ta = 'Cho %s rời lớp "%s" với lý do bảo lưu%s. Em mất quyền vào môn của lớp.' % (
+                _ten(em), lop['name'], ' tới %s' % d.strftime('%d/%m/%Y') if d else '')
+        elif loai == 'tt_huy_khoa':
+            mo_ta = 'Cho %s rời lớp "%s" với lý do bỏ giữa chừng. Em mất quyền vào môn của lớp.' % (
+                _ten(em), lop['name'])
+        elif loai == 'tt_nghi_hoc':
+            tu, den = _khoang_nghi(yc, tham_so)
+            from common.db import q as _q
+            so = len(_q("""SELECT 1 FROM class_sessions WHERE class_id = %s
+                             AND status <> 'cancelled'
+                             AND starts_at::date >= %s AND starts_at::date <= %s""",
+                        (lop['id'], tu, den)))
+            mo_ta = 'Ghi "có phép" cho %s ở %d buổi của lớp "%s" (%s – %s).' % (
+                _ten(em), so, lop['name'], tu.strftime('%d/%m'), den.strftime('%d/%m'))
+            if not so:
+                canh_bao.append('Lớp không có buổi nào trong khoảng ngày này — duyệt sẽ bị từ chối.')
+        elif loai == 'tt_hoc_bu':
+            sid = (tham_so or {}).get('session_id') or yc['session_id']
+            if not sid:
+                mo_ta = 'Chọn buổi bù để xếp %s vào.' % _ten(em)
+                canh_bao.append('Chưa chọn buổi bù.')
+            else:
+                b = q1('SELECT starts_at, topic FROM class_sessions WHERE id = %s', (int(sid),))
+                mo_ta = 'Xếp %s vào buổi bù %s.' % (
+                    _ten(em),
+                    b['starts_at'].strftime('%d/%m %H:%M') if b and b['starts_at'] else '#%s' % sid)
+        elif loai == 'tt_hoc_lai':
+            mo_ta = 'Xếp %s vào lại lớp "%s".' % (_ten(em), lop['name'])
+            if _dang_hoc(em['id'], lop['id']):
+                canh_bao.append('Em đang học lớp này rồi.')
+        else:
+            # KHÔNG để `else` bắt hết. Bản trước viết `else:  # tt_hoc_lai`, nên hai loại
+            # thêm ngày 27/09 rơi thẳng vào đó: màn duyệt "xin học bù" hiện câu "Xếp em vào
+            # LẠI lớp …" — xem trước nói một việc, duyệt xong làm việc khác. Người duyệt
+            # đọc câu sai rồi bấm, và không gì báo cho họ biết. Thà nổ ở đây.
+            raise LoiYeuCau(500, 'Chưa có bản xem trước cho loại "%s".' % loai)
+        if lop and loai in ('tt_chuyen_lop', 'tt_chuyen_mon', 'tt_bao_luu', 'tt_huy_khoa') \
+                and not _dang_hoc(em['id'], lop['id']):
+            canh_bao.append('Em không còn đang học lớp "%s".' % lop['name'])
+    except LoiYeuCau as e:
+        return {'cach': 'tu_dong', 'moTa': None, 'canhBao': [e.cau]}
+    return {'cach': 'tu_dong', 'moTa': mo_ta, 'canhBao': canh_bao}
+
+
+def thuc_hien(yc, tham_so, request):
+    """Làm việc của yêu cầu. Trả dict ghi vào `yeu_cau.thuc_thi` (`cach`, `mo_ta`, …)."""
+    from teaching.chuyen_lop import ChuyenLopView, _Huy
+    from teaching.roi_lop import roi_lop
+    from teaching.views import AdminClassMembersView
+
+    loai = yc['loai']
+    if L.LOAI[loai].get('viec') == 'tay':
+        return {'cach': 'tay', 'mo_ta': 'Đã duyệt. ' + VIEC_TAY[loai]}
+    em = _em(yc)
+    if loai == 'tk_dang_ky':
+        # ĐỨNG TRƯỚC câu kiểm dưới: lượt đăng ký không có `class_id` và không bao giờ có —
+        # lớp là thứ học vụ chọn ở đây. Đi qua `_ghi_thanh_vien` của miền lớp học (luật S4)
+        # nên trần lớp gia sư và mọi hàng rào xếp lớp khác vẫn nguyên.
+        den = _lop(_den_lop(yc, tham_so, CHUA_CHON_LOP), 'lớp đã chọn')
+        if den['status'] == 'cancelled':
+            raise LoiYeuCau(400, 'Lớp "%s" đã huỷ — không xếp vào được.' % den['name'])
+        kq = AdminClassMembersView._ghi_thanh_vien(request, den, em)
+        if kq == 'day':
+            raise LoiYeuCau(409, 'Lớp gia sư "%s" đã đủ em.' % den['name'])
+        if kq == 'da_co':
+            raise LoiYeuCau(409, 'Em đang học lớp "%s" rồi.' % den['name'])
+        return {'cach': 'tu_dong', 'viec': 'xep_lop_dang_ky', 'lop': den['id'],
+                'mo_ta': 'Đã xếp %s vào lớp "%s".' % (_ten(em), den['name'])}
+    if not yc['class_id']:
+        raise LoiYeuCau(400, 'Yêu cầu chưa gắn lớp.')
+    lop = _lop(yc['class_id'])
+    ghi_chu = 'Theo yêu cầu #%d' % yc['id']
+
+    if loai in ('tt_chuyen_lop', 'tt_chuyen_mon'):
+        den_id = _den_lop(yc, tham_so)
+        if den_id == lop['id']:
+            raise LoiYeuCau(400, 'Lớp chuyển tới phải khác lớp em đang học.')
+        try:
+            kq = ChuyenLopView._chuyen(request, lop['id'], den_id, em, _ten(em), local_now(), ghi_chu)
+        except _Huy as h:
+            ma = h.phan_hoi.status_code
+            raise LoiYeuCau(MA_VIEC_HONG if ma == 404 else ma,
+                            h.phan_hoi.data.get('error') or 'Không chuyển được.') from h
+        den = _lop(den_id)
+        return {'cach': 'tu_dong', 'viec': 'chuyen_lop', 'tuLop': lop['id'], 'denLop': den_id,
+                'tuLuot': kq['fromMemberId'], 'denLuot': kq['toMemberId'], 'canhBao': kq['warnings'],
+                'mo_ta': 'Đã chuyển %s từ lớp "%s" sang lớp "%s".' % (_ten(em), lop['name'], den['name'])}
+
+    if loai in ('tt_bao_luu', 'tt_huy_khoa'):
+        bao_luu = loai == 'tt_bao_luu'
+        d = _den_ngay(yc, tham_so) if bao_luu else None
+        luot = roi_lop(request, lop['id'], em['id'], 'reserved' if bao_luu else 'dropped', reserve_until=d)
+        if luot is None:
+            raise LoiYeuCau(409, 'Em không đang học lớp "%s".' % lop['name'])
+        ra = {'cach': 'tu_dong', 'viec': 'bao_luu' if bao_luu else 'huy_khoa', 'lop': lop['id'], 'luot': luot}
+        if bao_luu:
+            ra['denNgay'] = d.isoformat() if d else None
+            ra['mo_ta'] = 'Đã bảo lưu cho %s ở lớp "%s"%s.' % (
+                _ten(em), lop['name'], ' tới %s' % d.strftime('%d/%m/%Y') if d else '')
+        else:
+            ra['mo_ta'] = 'Đã huỷ khoá của %s ở lớp "%s".' % (_ten(em), lop['name'])
+        return ra
+
+    if loai == 'tt_nghi_hoc':
+        # Gọi hàm dịch vụ của miền ĐIỂM DANH (luật S4), không tự ghi bảng `attendance`.
+        from teaching.attendance import ghi_co_phep
+        tu, den = _khoang_nghi(yc, tham_so)
+        so, ghi_de = ghi_co_phep(lop['id'], em['id'], tu, den,
+                                 boi=getattr(getattr(request, 'user', None), 'id', None))
+        if not so:
+            # Đóng một yêu cầu mà không đổi gì là tệ hơn để nó mở: người gửi tưởng đã xong.
+            raise LoiYeuCau(409, 'Lớp "%s" không có buổi nào từ %s đến %s — chưa ghi được gì.'
+                                 % (lop['name'], tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y')))
+        return {'cach': 'tu_dong', 'viec': 'nghi_hoc', 'lop': lop['id'],
+                'tuNgay': tu.isoformat(), 'denNgay': den.isoformat(),
+                'soBuoi': so, 'ghiDe': ghi_de,
+                'mo_ta': 'Đã ghi "có phép" cho %s ở %d buổi (%s – %s)%s.'
+                         % (_ten(em), so, tu.strftime('%d/%m'), den.strftime('%d/%m'),
+                            ', trong đó %d buổi đã có điểm danh khác' % ghi_de if ghi_de else '')}
+
+    if loai == 'tt_hoc_bu':
+        # Gọi hàm dịch vụ của miền LỊCH (luật S4). Buổi bù phải có SẴN: tạo buổi mới là việc
+        # xếp lịch, cần người nhìn cả lớp và cả phòng học.
+        from teaching.buoi_bu import them_vao_buoi_bu
+        # Buổi học vụ CHỌN lúc duyệt đứng trước buổi gắn sẵn ở yêu cầu — cùng lối với
+        # `den_lop_id` của chuyển lớp: người duyệt là người biết buổi bù nào vừa tạo.
+        sid = (tham_so or {}).get('session_id') or yc['session_id']
+        if not sid:
+            raise LoiYeuCau(400, 'Chọn buổi bù để xếp em vào. Tạo buổi bù trên màn Buổi học '
+                                 'trước, rồi duyệt lại yêu cầu này.')
+        try:
+            kq = them_vao_buoi_bu(int(sid), em['id'])
+        except ValueError as e:
+            raise LoiYeuCau(409, str(e)) from e
+        return {'cach': 'tu_dong', 'viec': 'hoc_bu', 'lop': lop['id'], 'buoi': kq['buoi'],
+                'mo_ta': 'Đã xếp %s vào buổi bù %s.'
+                         % (_ten(em), (kq['luc'] or '')[:16].replace('T', ' '))}
+
+    # tt_hoc_lai
+    if lop['status'] == 'cancelled':
+        raise LoiYeuCau(400, 'Lớp "%s" đã huỷ — không xếp vào được.' % lop['name'])
+    kq = AdminClassMembersView._ghi_thanh_vien(request, lop, em)
+    if kq == 'day':
+        raise LoiYeuCau(409, 'Lớp gia sư "%s" đã đủ em.' % lop['name'])
+    if kq == 'da_co':
+        raise LoiYeuCau(409, 'Em đang học lớp "%s" rồi.' % lop['name'])
+    return {'cach': 'tu_dong', 'viec': 'hoc_lai', 'lop': lop['id'],
+            'mo_ta': 'Đã xếp %s vào lại lớp "%s".' % (_ten(em), lop['name'])}

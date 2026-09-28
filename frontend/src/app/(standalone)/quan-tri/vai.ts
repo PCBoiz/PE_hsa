@@ -49,6 +49,12 @@ export const TABS: readonly Tab[] = [
   // Học vụ vào được từ 14/09/2026, theo đúng quyết định 01/09 ("báo cáo trung
   // tâm"); trước đó mã khoá hẹp hơn quyết định. Xem docstring `AdminOverviewView`.
   { href: '/quan-tri/tong-quan', label: 'Toàn trung tâm', icon: 'bar-chart', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // `IsAdminOrAcademic` — teaching/bao_cao_cheo.py::BaoCaoCheoView (27/09/2026, dòng 6):
+  // bảng chéo MÔN × LỚP, trả lời "môn nào đang tụt, lớp nào trong môn ấy". Đặt ngay sau
+  // "Toàn trung tâm" vì cùng loại (số gộp cả trung tâm) và người mở là cùng một người.
+  // `target` chứ không `bar-chart`: dưới 70rem `shell.css` ẩn nhãn chữ, nên hai tab liền
+  // nhau cùng hình là hai ô y hệt nhau.
+  { href: '/quan-tri/bao-cao-mon', label: 'Kết quả theo môn', icon: 'target', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/admin_users.py::AdminUsersView. Học vụ vào
   // được từ 23/09/2026 (anh Sơn chốt: học vụ TẠO tài khoản và SỬA hồ sơ học
   // viên), nhưng máy chủ chỉ trả tài khoản vai Học viên cho họ. Đổi vai trò và
@@ -58,10 +64,23 @@ export const TABS: readonly Tab[] = [
   { href: '/quan-tri/lop-hoc', label: 'Lớp học', icon: 'graduation-cap', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminOrAcademic` — teaching/terms.py.
   { href: '/quan-tri/dot-hoc', label: 'Đợt học', icon: 'calendar', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // Hộp Yêu cầu (E3, 26/09/2026) — `IsTeachingStaff` + `IsAdminOrAcademic` cho duyệt / giao /
+  // phân loại (yeu_cau/views.py). Trang nằm NGOÀI `/quan-tri` (`/yeu-cau`: một đường cho mọi vai,
+  // chuông trỏ về đó) nhưng là việc hằng ngày của học vụ nên có tab ở đây. `inbox`: không trùng
+  // hình tab nào bên cạnh.
+  { href: '/yeu-cau', label: 'Yêu cầu', icon: 'inbox', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
+  // Thông báo trung tâm (§61, E2-GD 26/09/2026) — `IsAdminOrAcademic`
+  // (`notifications/views_thong_bao.py::AdminThongBaoView` và ba cửa cùng cụm).
+  // `bell`: không trùng hình tab nào bên cạnh (dưới 70rem `shell.css` ẩn nhãn chữ,
+  // nên hai tab cùng hình là hai ô y hệt nhau).
+  { href: '/quan-tri/thong-bao', label: 'Thông báo', icon: 'bell', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `IsAdminRole` — cơ sở tính học phí (teaching/co_so_hoc_phi.py). Gộp dữ
   // liệu cả trung tâm, cùng loại với "Toàn trung tâm". Xem chú thích trong
   // `co-so-hoc-phi/layout.tsx` về việc có nên mở cho học vụ hay không.
   { href: '/quan-tri/co-so-hoc-phi', label: 'Cơ sở học phí', icon: 'clock', vai: [VAI_QUAN_TRI] },
+  // `IsAdminOrAcademic` — teaching/cham_cong.py::ChamCongView (V-o): buổi dạy từng tháng
+  // của giảng viên VÀ trợ giảng. `check-circle-2`: không trùng hình tab nào bên cạnh.
+  { href: '/quan-tri/cham-cong', label: 'Chấm công', icon: 'check-circle-2', vai: [VAI_QUAN_TRI, VAI_HOC_VU] },
   // `clock` chứ KHÔNG phải `file-text`: `file-text` là biểu tượng của Nhật ký
   // ngay bên cạnh. Dưới 70rem `shell.css` ẩn nhãn chữ và chỉ còn biểu tượng —
   // hai tab liền nhau cùng hình thì ở khổ ấy chúng là hai ô y hệt nhau.

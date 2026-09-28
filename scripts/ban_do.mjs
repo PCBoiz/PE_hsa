@@ -484,6 +484,46 @@ const KHONG_CAN_NGUOI_GOI = {
   '/auth/refresh': 'proxy Next tự gọi phía máy chủ khi thẻ hết hạn',
   '/auth/register': 'màn đăng ký đã gỡ — tài khoản do trung tâm cấp',
   '/health': 'Render gọi để kiểm sức khoẻ dịch vụ',
+  // §71 (26/09/2026). Hai tuyến này CÓ người gọi, chỉ là người gọi không nằm
+  // trong mã của mình: Google Calendar và Lịch iPhone tự ghé lấy tệp .ics vài
+  // giờ một lần, bằng địa chỉ học viên đã dán vào ứng dụng lịch của họ. Frontend
+  // chỉ đưa địa chỉ cho người ta chép, không bao giờ fetch nó.
+  '/lich/*.ics': 'ứng dụng lịch ngoài (Google Calendar / Lịch iPhone) tự ghé lấy, không phải fetch từ trang',
+  '/lich/*': 'cửa proxy của Next cho tuyến .ics — ứng dụng lịch gọi thẳng vào đây',
+  // §61 (26/09/2026). Cùng loại với hai dòng .ics ngay trên: người gọi CÓ thật,
+  // chỉ là không nằm trong mã của mình — một cron NGOÀI (cron-job.org, việc T6)
+  // gõ vào đây kèm `X-Tick-Key` để chạy một nhịp hộp thư đi khi máy chủ gói miễn
+  // phí vừa thức dậy. Không màn nào fetch nó, và không nên có màn nào fetch nó.
+  '/api/noi-bo/tick': 'cron NGOÀI gọi kèm X-Tick-Key để chạy một nhịp hộp thư đi — không phải fetch từ trang',
+  // 27/09/2026, audit bảo mật. Hai đường BÁO LỖI của luồng đăng nhập Google: chính
+  // `django-allauth` `reverse` tới chúng khi lượt OAuth hỏng hoặc người dùng bấm huỷ ở
+  // màn của Google. Không màn nào của mình fetch chúng, và không nên có — nhưng gỡ đi
+  // thì một lỗi đăng nhập thành trang 500 không ai hiểu. Giữ đúng hai đường này là phần
+  // còn lại sau khi bỏ 26 đường tài khoản khác của thư viện (`config/urls.py`).
+  '/accounts/login/cancelled': 'allauth chuyển hướng tới khi người dùng huỷ ở màn Google',
+  '/accounts/login/error': 'allauth chuyển hướng tới khi lượt OAuth hỏng',
+};
+
+/* CHỜ MÀN — tuyến backend ĐÃ XONG và có phép kiểm, nhưng màn gọi nó CHƯA DỰNG.
+   Tách khỏi hai danh sách kia vì ý nghĩa khác hẳn: `KHONG_CAN_NGUOI_GOI` là cố ý
+   không bao giờ có người gọi, `UNG_VIEN_GO` là nợ chờ quyết gỡ hay nối lại, còn
+   đây là việc CÒN DỞ có người nhận — mỗi dòng phải biến mất khi màn ấy dựng xong.
+
+   §61 (E2, 26/09/2026): hộp thư đi + thông báo trung tâm là backend THUẦN — trong
+   29 tệp E2 viết chỉ có ĐÚNG MỘT tệp frontend (`src/lib/viecNhatKy.ts`, một dòng
+   nhãn nhật ký). Đây chính là lý do dòng 20 và dòng 27 của bảng nghiệm thu vẫn
+   "MỘT PHẦN" dù backend đã đo được trên màn thật. Việc dựng màn: E2-GD. */
+const CHO_MAN = {
+  // TRỐNG từ 26/09/2026 (E2-GD) — và đó là trạng thái ĐÚNG của danh sách này.
+  //
+  // Bảy dòng đã rời khỏi đây trong ngày, mỗi dòng khi màn gọi nó dựng xong:
+  //   · `/api/notifications/feed/*/unread`              → `/thong-bao` (12/12 bước đo)
+  //   · `/api/teach/classes/*/thong-bao` (+ `/preview`) → `/giang-day/thong-bao/<lớp>`
+  //   · `/api/admin/thong-bao` (+ `/preview`, `/*/gui`, `/*/huy`) → `/quan-tri/thong-bao`
+  //
+  // Một dòng ở đây biến mất là cách duy nhất danh sách này khác một ngoại lệ vĩnh viễn.
+  // Thêm dòng mới vào đây thì kèm TÊN việc sẽ dựng màn — "chưa dựng" không có người nhận
+  // là một tuyến sẽ nằm lại mãi.
 };
 
 /* ỨNG VIÊN GỠ — soi TAY từng tuyến ngày 23/09/2026: không nơi nào trong
@@ -512,7 +552,9 @@ const khongAiGoi = tuyen
   .filter((r) => !coNguoiGoi.has(`tuyen:${r.mau}`))
   .map((r) => ({
     ...r,
-    lyDo: KHONG_CAN_NGUOI_GOI[r.mau] || (UNG_VIEN_GO[r.mau] ? `ỨNG VIÊN GỠ — ${UNG_VIEN_GO[r.mau]}` : null),
+    lyDo: KHONG_CAN_NGUOI_GOI[r.mau]
+      || (CHO_MAN[r.mau] ? `CHỜ MÀN — ${CHO_MAN[r.mau]}` : null)
+      || (UNG_VIEN_GO[r.mau] ? `ỨNG VIÊN GỠ — ${UNG_VIEN_GO[r.mau]}` : null),
   }));
 
 /* Lý do trỏ vào tuyến KHÔNG còn gắn (24/09/2026): tháo tuyến mà quên dòng lý do
@@ -521,7 +563,8 @@ const khongAiGoi = tuyen
 const coTuyen = new Set(tuyen.map((r) => r.mau));
 const GIA_LY_DO = '/api/__tu_kiem__/da-thao';
 if (TU_KIEM) UNG_VIEN_GO[GIA_LY_DO] = 'lý do giả của tự kiểm';
-const lyDoMoCoi = [...Object.keys(KHONG_CAN_NGUOI_GOI), ...Object.keys(UNG_VIEN_GO)]
+const lyDoMoCoi = [...Object.keys(KHONG_CAN_NGUOI_GOI), ...Object.keys(CHO_MAN),
+                   ...Object.keys(UNG_VIEN_GO)]
   .filter((mau) => !coTuyen.has(mau));
 
 const bangCham = new Set(canh.filter((c) => c.quanHe === 'cham_bang').map((c) => c.toi.slice(5)));

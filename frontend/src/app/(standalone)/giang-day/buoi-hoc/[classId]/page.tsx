@@ -6,8 +6,9 @@ import { noiHoc } from '@/lib/noiHoc';
 import { serverJson, type HinhDang } from '@/lib/server-api';
 import { z } from 'zod';
 
-import SessionsClient, { type SessionRow } from './SessionsClient';
+import SessionsClient, { type NguoiChon, type SessionRow } from './SessionsClient';
 import type { GoiYSinh } from './SinhBuoi';
+import HocLieuLop from './HocLieuLop';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Buổi học & điểm danh | TopHSA' };
@@ -31,6 +32,8 @@ type DsBuoi = {
   sessions: SessionRow[];
   quyen?: { xoaBuoi: boolean; baoCaoPhuHuynh: boolean };
   class?: { mode?: string | null; room?: string | null };
+  /** §58 — ai có thể đứng thay một buổi (máy chủ trả, màn không gõ lại danh mục). */
+  nguoiChon?: NguoiChon;
 };
 const HD_BUOI = z.looseObject({
   sessions: z.array(z.looseObject({
@@ -44,6 +47,9 @@ const HD_BUOI = z.looseObject({
     recordingUrl: z.string().nullable().optional(),
     mode: z.string().nullable().optional(),
     room: z.string().nullable().optional(),
+    // §58 — ai dạy buổi này. null = theo lớp.
+    teacherId: z.number().nullable().optional(),
+    assistantId: z.number().nullable().optional(),
     modeHieuLuc: z.string().nullable().optional(),
     roomHieuLuc: z.string().nullable().optional(),
     attendanceTakenAt: z.string().nullable().optional(),
@@ -52,8 +58,16 @@ const HD_BUOI = z.looseObject({
       present: z.number(), late: z.number(), absent: z.number(), excused: z.number(),
       unmarked: z.number(),
     }).optional(),
+    // V-g (25/09/2026) — tuỳ chọn: Vercel lên trước Render, máy chủ cũ không trả.
+    makeupFor: z.number().nullable().optional(),
+    soNguoiThamGia: z.number().nullable().optional(),
   })),
   quyen: z.looseObject({ xoaBuoi: z.boolean(), baoCaoPhuHuynh: z.boolean() }).optional(),
+  // §58 — người có thể đứng thay một buổi. `optional`: máy chủ cũ không trả.
+  nguoiChon: z.optional(z.looseObject({
+    giangVien: z.array(z.looseObject({ id: z.number(), ten: z.string() })),
+    troGiang: z.array(z.looseObject({ id: z.number(), ten: z.string() })),
+  })),
   class: z.looseObject({
     mode: z.string().nullable().optional(),
     room: z.string().nullable().optional(),
@@ -73,6 +87,7 @@ const HD_GOI_Y = z.looseObject({
     to: z.string().nullable(),
   }),
   coTheSinh: z.boolean(),
+  tamDung: z.boolean().optional(),
 }) satisfies HinhDang<GoiYSinh>;
 
 export default async function BuoiHocPage({
@@ -147,11 +162,18 @@ export default async function BuoiHocPage({
             >
               Bài tập &amp; chấm bài
             </Link>
+            <Link
+              href={`/giang-day/chuong-trinh/${klass.id}`}
+              className="-my-3 py-3 text-small text-brand-ink underline"
+            >
+              Chương trình &amp; tiến độ
+            </Link>
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4 py-6">
         <SessionsClient
           classId={Number(classId)}
+          nguoiChon={list.ok ? (list.data.nguoiChon ?? null) : null}
           className={klass.name}
           initial={list.ok ? list.data.sessions : []}
           goiYSinh={sinh.ok ? sinh.data : null}
@@ -159,6 +181,14 @@ export default async function BuoiHocPage({
           lop={noiLop}
           /* Thiếu (API cũ) thì coi như được — máy chủ vẫn là hàng rào thật. */
           quyen={list.ok ? (list.data.quyen ?? { xoaBuoi: true, baoCaoPhuHuynh: true }) : { xoaBuoi: true, baoCaoPhuHuynh: true }}
+        />
+        {/* Tài liệu của lớp (§60). Đặt SAU danh sách buổi vì nó nói về cả lớp, và vì
+            người vừa dựng xong buổi là người có slide của buổi ấy trong tay. */}
+        <HocLieuLop
+          classId={Number(classId)}
+          buoi={(list.ok ? list.data.sessions : []).map((b) => ({
+            id: b.id, luc: b.startsAt ?? null, chuDe: b.topic ?? null,
+          }))}
         />
         </div>
       </main>

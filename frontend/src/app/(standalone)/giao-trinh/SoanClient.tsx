@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardHead,
+  Chip,
   EmptyState,
   Field,
   Modal,
@@ -25,7 +26,13 @@ export type KhoaRow = {
   title: string;
   subtitle?: string | null;
   lessons?: number | null;
+  /** "Đang mở / Nháp" (V-i). `false` = nháp: học viên không thấy. `null`/thiếu = đang mở
+      (khoá có từ trước cột này, và backend cũ không gửi). */
+  is_published?: boolean | null;
 };
+
+/** Khoá đang mở cho học viên không — cùng luật với cổng ở máy chủ (NULL = đang mở). */
+export const dangMo = (k: KhoaRow) => k.is_published !== false;
 
 export type BaiRow = {
   id: number;
@@ -248,6 +255,7 @@ function KhoiKhoa({
                   Mã là thông tin phụ — người soạn tìm khoá bằng TÊN. */}
               <Th>Khoá học</Th>
               <Th>Số bài</Th>
+              <Th>Trạng thái</Th>
               <Th>Thao tác</Th>
             </Tr>
           </Thead>
@@ -261,10 +269,45 @@ function KhoiKhoa({
                 <Td label="Số bài" num>
                   {k.lessons ?? 0}
                 </Td>
+                <Td label="Trạng thái">
+                  <Chip tone={dangMo(k) ? 'good' : 'warn'}>{dangMo(k) ? 'Đang mở' : 'Nháp'}</Chip>
+                </Td>
                 <Td label="Thao tác">
                   <div className="flex flex-wrap gap-2 [&_button]:whitespace-nowrap">
                     <Button size="sm" variant="ghost" onClick={() => onChon(k)}>
-                      {dangChon?.id === k.id ? 'Đang mở' : 'Mở bài'}
+                      {dangChon?.id === k.id ? 'Đang xem bài' : 'Mở bài'}
+                    </Button>
+                    {/* "Đang mở / Nháp" (V-i, bảng TopHSA dòng 5). Chuyển về nháp là mọi học
+                        viên mất khoá NGAY — hỏi lại trước, như nút Xoá. */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={dangMo(k) ? `Chuyển khoá ${k.title} về nháp` : `Mở khoá ${k.title} cho học viên`}
+                      onClick={() =>
+                        chay(async () => {
+                          const mo = !dangMo(k);
+                          if (
+                            !mo &&
+                            !window.confirm(
+                              `Chuyển khoá "${k.title}" về nháp?
+
+` +
+                                'Học viên sẽ không thấy khoá này nữa, kể cả học viên của lớp đang học khoá. ' +
+                                'Giảng viên và học vụ vẫn xem được. Mở lại lúc nào cũng được.',
+                            )
+                          ) {
+                            return;
+                          }
+                          await doc(`/api/admin/courses/${encodeURIComponent(k.id)}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ is_published: mo }),
+                          });
+                          onDoi();
+                        }, 'Không đổi được trạng thái khoá.')
+                      }
+                    >
+                      {dangMo(k) ? 'Chuyển về nháp' : 'Mở cho học viên'}
                     </Button>
                     {laQuanTri && (
                       <Button

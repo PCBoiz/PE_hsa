@@ -105,7 +105,7 @@ function _renderBellItems() {
   var body = document.getElementById('bell-panel-body');
   if (!body) return;
   if (!_bellNotifs.length) {
-    body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div>';
+    body.innerHTML = '<div class="bell-empty"><div class="bell-empty-icon">🔕</div><div>Chưa có thông báo nào</div></div><a class="bell-all" href="/thong-bao">Xem tất cả thông báo</a>';
     return;
   }
   /* Mục là <button> THẬT (22/09/2026, agent tiếp cận F8). Bản cũ là
@@ -125,7 +125,7 @@ function _renderBellItems() {
       + '</span>'
       + (n.unread ? '<span class="bell-unread-dot"><span class="sr-only">(chưa đọc)</span></span>' : '')
       + '</button>';
-  }).join('');
+  }).join('') + '<a class="bell-all" href="/thong-bao">Xem tất cả thông báo</a>';
   if (body.children[dangO]) body.children[dangO].focus();
 }
 
@@ -2215,7 +2215,7 @@ var _forumTextQ = '';
       canvas.innerHTML =
         '<div class="mini-rm-empty">' +
         '<div class="mini-rm-empty-icon" data-icon="map" data-size="30"></div>' +
-        '<div>Bạn chưa đăng ký khoá nào.<br>Chọn một hợp phần HSA để bắt đầu lộ trình của bạn.</div>' +
+        '<div>Bạn chưa đăng ký khoá nào.<br>Chọn một môn học HSA để bắt đầu lộ trình của bạn.</div>' +
         '<a class="mini-rm-empty-cta" href="#" onclick="navigate(\'courses\');return false;">Khám phá khoá học</a>' +
         '</div>';
       if (window.mountIcons) mountIcons(canvas);
@@ -3480,7 +3480,7 @@ var _forumTextQ = '';
         + (data.totals ? data.totals.all : 0) + '</b><span>việc đã xong</span></div>'
       + '</div>'
       + '<p class="pl-note">'
-        + 'Lịch xếp theo thứ tự giáo trình, ba hợp phần xen kẽ nhau' + weakTxt
+        + 'Lịch xếp theo thứ tự giáo trình, ba môn học xen kẽ nhau' + weakTxt
         + '. Hai tuần cuối chỉ luyện đề, không nạp bài mới.'
         + (b.usedTarget ? ' Số bài/tuần lấy theo mục tiêu bạn tự đặt.'
                         : ' Số bài/tuần do hệ thống tính từ ngày thi và sức học bạn khai.')

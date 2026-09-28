@@ -84,6 +84,12 @@ const TRANG = [
     view: 'AdminTermsView' },
   { href: '/quan-tri/nhat-ky', lop: 'IsAdminRole', tep: 'teaching/admin_users.py',
     view: 'AdminAuditView' },
+  // §61 (E2-GD, 26/09/2026): học vụ gửi thông báo cho cả khối. Ba cửa còn lại của cụm
+  // (`…/preview`, `…/<id>/gui`, `…/<id>/huy`) khai CÙNG lớp quyền — nếu một cửa bị nới
+  // riêng thì phép kiểm này không thấy, nên `notifications/tests_thong_bao.py` canh
+  // từng cửa bằng vai thật (giảng viên 403, trợ giảng 403).
+  { href: '/quan-tri/thong-bao', lop: 'IsAdminOrAcademic', tep: 'notifications/views_thong_bao.py',
+    view: 'AdminThongBaoView' },
 ];
 
 const PERM = readFileSync(join(BE, 'common', 'permissions.py'), 'utf8');

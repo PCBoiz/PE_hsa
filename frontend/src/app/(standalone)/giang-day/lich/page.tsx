@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import ThemVaoLich from '@/components/ThemVaoLich';
 import { Chip, EmptyState } from '@/components/ui';
 import { chanTu } from '@/lib/chanTu';
 import { ngayVN } from '@/lib/gioVN';
@@ -186,6 +187,11 @@ export default async function LichHocPage({
           </Link>
         </nav>
       </div>
+
+      {/* Lịch dạy đưa sang điện thoại (§71): giảng viên và trợ giảng là nhóm hỏi
+          "tuần này tôi dạy buổi nào" nhiều nhất, mà câu trả lời lại nằm sau một
+          lần đăng nhập. */}
+      <ThemVaoLich nhan="Thêm lịch dạy vào điện thoại" />
 
       {d.hocVien && (
         <p role="status" className="rounded-md bg-brand/5 px-3 py-2 text-small text-ink-2">

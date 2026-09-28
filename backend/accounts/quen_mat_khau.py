@@ -13,10 +13,13 @@ cũ: nhờ học vụ cấp lại mật khẩu tạm.
 ── NHỮNG ĐIỀU CỐ Ý ─────────────────────────────────────────────────────────
 
   · KHÔNG LỘ AI CÓ TÀI KHOẢN. Email có hay không, bị khoá hay không, đã quá
-    trần hay chưa — phản hồi y hệt nhau. Thư gửi trên một LUỒNG RIÊNG, để thời
-    gian trả lời cũng không khác nhau (SMTP Gmail mất 1–3 giây; chênh chừng ấy
-    là đủ để dò danh sách học viên).
-  · CHỈ LƯU BĂM của chìa (§52). Chìa nguyên văn chỉ nằm trong lá thư.
+    trần hay chưa — phản hồi y hệt nhau. Thư đi qua HỘP THƯ ĐI (§61, E2): ghi
+    cùng giao dịch với chìa, gửi sau commit trên một LUỒNG RIÊNG, để thời gian
+    trả lời cũng không khác nhau (SMTP Gmail mất 1–3 giây; chênh chừng ấy là đủ
+    để dò danh sách học viên). SMTP sập thì thư được thử lại — nhưng chỉ trong
+    hạn của chìa (`het_han`): quá 30 phút thì bỏ, đường dẫn trong đó đã chết.
+  · CHỈ LƯU BĂM của chìa (§52). Chìa nguyên văn chỉ nằm trong lá thư — và trong
+    thân thư CHỜ GỬI ở hộp thư đi; gửi xong (hoặc bỏ) là thân bị xoá (`xoa_than`).
   · Chìa đi trong phần `#…` của đường dẫn, không trong `?…`: phần sau dấu `#`
     không bao giờ được trình duyệt gửi lên máy chủ nào, không vào nhật ký truy
     cập, không đi theo header Referer — cùng lý do `oauth.py` dùng fragment.
@@ -32,11 +35,11 @@ import hashlib
 import html
 import logging
 import secrets
-import threading
 from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,12 +47,13 @@ from rest_framework.views import APIView
 from accounts.hashers import make_werkzeug_password
 from accounts.models import User
 from accounts.validators import validate_email_field, validate_password_field
-from common import audit, mail
+from common import audit
 from common.clock import local_now
 from common.db import q1, x
 from common.identity import norm_email
 from common.net import client_ip
 from common.throttling import QuenMatKhauThrottle
+from notifications import hop_thu
 
 log = logging.getLogger(__name__)
 
@@ -84,26 +88,28 @@ def _che(email):
     return '%s***@%s' % (ten[:1], mien) if mien else '***'
 
 
-def _gui_thu(den, ten, duong_dan):
+def _soan_thu(ten, duong_dan):
+    """(chữ thuần, html) của thư đặt lại mật khẩu."""
     goi = (ten or '').strip() or 'bạn'
     chu = ('Chào %s,\n\n'
-           'Có người (có thể là chính bạn) vừa xin đặt lại mật khẩu cho tài khoản TopHSA '
-           'gắn với địa chỉ này. Mở đường dẫn dưới đây trong %d phút để đặt mật khẩu mới — '
-           'đường dẫn chỉ dùng được một lần:\n\n%s\n\n'
-           'Nếu bạn không xin, cứ bỏ qua thư này: mật khẩu hiện tại vẫn giữ nguyên.\n\n'
-           '— TopHSA\n' % (goi, HAN_PHUT, duong_dan))
+           'Mình nhận được yêu cầu đặt lại mật khẩu cho tài khoản TopHSA của bạn. '
+           'Bấm vào đường dẫn dưới đây để chọn mật khẩu mới:\n\n%s\n\n'
+           'Đường dẫn dùng được một lần và sống trong %d phút. Quá giờ thì bạn xin lại '
+           'một cái mới, cũng nhanh thôi.\n\n'
+           'Nếu không phải bạn xin thì cứ bỏ qua thư này — mật khẩu cũ vẫn dùng bình thường.\n\n'
+           'Thân mến,\nTopHSA\n' % (goi, duong_dan, HAN_PHUT))
     trang = ('<p>Chào %s,</p>'
-             '<p>Có người (có thể là chính bạn) vừa xin đặt lại mật khẩu cho tài khoản TopHSA '
-             'gắn với địa chỉ này. Mở đường dẫn dưới đây trong %d phút để đặt mật khẩu mới — '
-             'đường dẫn chỉ dùng được một lần:</p>'
-             '<p><a href="%s">Đặt mật khẩu mới</a></p>'
-             '<p>Nếu bạn không xin, cứ bỏ qua thư này: mật khẩu hiện tại vẫn giữ nguyên.</p>'
-             '<p>— TopHSA</p>' % (html.escape(goi), HAN_PHUT, html.escape(duong_dan, quote=True)))
-    ok, _, loi = mail.gui(den, 'Đặt lại mật khẩu TopHSA', chu, trang)
-    if not ok:
-        # Ghi ĐỊA CHỈ ĐÃ CHE, không ghi đường dẫn: nhật ký ứng dụng đọc được
-        # nhiều người hơn hộp thư của em.
-        log.warning('[quen_mat_khau] không gửi được thư tới %s: %s', _che(den), loi)
+             '<p>Mình nhận được yêu cầu đặt lại mật khẩu cho tài khoản TopHSA của bạn. '
+             'Bấm nút dưới đây để chọn mật khẩu mới:</p>'
+             '<p><a href="%s" style="display:inline-block;padding:10px 18px;border-radius:8px;'
+             'background:#4f46e5;color:#fff;text-decoration:none;font-weight:600">'
+             'Đặt mật khẩu mới</a></p>'
+             '<p style="color:#6b7280">Đường dẫn dùng được một lần và sống trong %d phút. '
+             'Quá giờ thì bạn xin lại một cái mới, cũng nhanh thôi.</p>'
+             '<p>Nếu không phải bạn xin thì cứ bỏ qua thư này — mật khẩu cũ vẫn dùng bình thường.</p>'
+             '<p style="color:#6b7280">Thân mến,<br>TopHSA</p>'
+             % (html.escape(goi), html.escape(duong_dan, quote=True), HAN_PHUT))
+    return chu, trang
 
 
 class QuenMatKhauView(APIView):
@@ -122,28 +128,89 @@ class QuenMatKhauView(APIView):
         u = q1('SELECT id, name, email, status FROM users WHERE lower(email)=%s', (email,))
         if u and (u['status'] or 'active') != 'suspended':
             bay_gio = local_now()
+            # `purpose='reset'` KHÔNG phải trang trí (§73b, 27/09/2026): bảng này nay
+            # giữ cả mã XÁC THỰC EMAIL của người mới đăng ký. Không lọc thì mã xác thực
+            # bị tính vào trần 3 chìa/giờ của việc khác.
             da_xin = q1('SELECT count(*) AS n FROM password_reset_tokens '
-                        'WHERE user_id=%s AND created_at > %s',
+                        "WHERE user_id=%s AND purpose='reset' AND created_at > %s",
                         (u['id'], bay_gio - timedelta(hours=1)))['n']
             if da_xin < TRAN_MOI_GIO:
                 chia = secrets.token_urlsafe(SO_BYTE)
+                chu, trang = _soan_thu(u['name'], '%s/dat-lai-mat-khau#chia=%s' % (_goc(), chia))
                 with transaction.atomic():
                     # Chìa MỚI thay chìa cũ: chỉ đường dẫn trong lá thư gần nhất
                     # còn dùng được — em bấm nhầm thư cũ thì nhận câu "hết hạn".
-                    x('UPDATE password_reset_tokens SET used_at=%s '
-                      'WHERE user_id=%s AND used_at IS NULL', (bay_gio, u['id']))
+                    # LỌC `purpose` (§73b): không có nó thì một lượt xin đặt lại mật
+                    # khẩu HUỶ luôn mã xác thực email em chưa bấm, và em vừa đăng ký
+                    # xong mất đường vào. `accounts/tests_tu_dang_ky.py` giữ chỗ này.
+                    x("UPDATE password_reset_tokens SET used_at=%s "
+                      "WHERE user_id=%s AND purpose='reset' AND used_at IS NULL",
+                      (bay_gio, u['id']))
                     x('INSERT INTO password_reset_tokens '
-                      '(user_id, token_hash, created_at, expires_at, requested_ip) '
-                      'VALUES (%s, %s, %s, %s, %s)',
+                      "(user_id, token_hash, purpose, created_at, expires_at, requested_ip) "
+                      "VALUES (%s, %s, 'reset', %s, %s, %s)",
                       (u['id'], _bam(chia), bay_gio, bay_gio + timedelta(minutes=HAN_PHUT),
                        client_ip(request)))
-                duong_dan = '%s/dat-lai-mat-khau#chia=%s' % (_goc(), chia)
-                if GUI_NGAY:
-                    _gui_thu(u['email'], u['name'], duong_dan)
-                else:
-                    threading.Thread(target=_gui_thu, args=(u['email'], u['name'], duong_dan),
-                                     daemon=True).start()
+                    # Thư chưa đi được trong hạn của chìa thì bỏ (`het_han`); đi hay bỏ
+                    # xong là thân có chìa bị xoá (`xoa_than`). Địa chỉ không tự ghi
+                    # nhật ký ở đây — lỗi gửi nằm ở `outbox.error`, không kèm đường dẫn.
+                    oid = hop_thu.xep('email', u['email'], 'Đặt lại mật khẩu TopHSA', chu,
+                                      user_id=u['id'], source=('password_reset', None),
+                                      params={'html': trang, 'xoa_than': True,
+                                              'het_han': (timezone.now()
+                                                          + timedelta(minutes=HAN_PHUT)).isoformat()})
+                hop_thu.day_di([oid], ngay=GUI_NGAY)
+        else:
+            _can_dong_ho()
         return Response({'ok': True, 'message': CAU_CHUNG})
+
+
+def _can_dong_ho():
+    """Soạn một lá thư rồi VỨT ĐI — chỉ để cân đồng hồ, như `_DUMMY_HASH` ở `LoginView`.
+
+    ĐO ĐƯỢC 27/09/2026 (máy dev, VN → Neon us-east-2): email CÓ tài khoản mất 2,03–2,29 s,
+    email KHÔNG có mất 0,25–0,36 s. Thân phản hồi giống hệt nhau — đó là chủ ý — nhưng
+    ĐỒNG HỒ thì khai ra địa chỉ nào đã có tài khoản ở TopHSA. Người dùng ở đây là trẻ vị
+    thành niên, và danh sách "em nào học TopHSA" không phải thứ để ai cầm đồng hồ bấm giây
+    cũng lấy được.
+
+    Câu này trả lại phần CPU (dựng HTML lá thư) cho nhánh không gửi gì.
+
+    ĐO LẠI SAU KHI VÁ, và con số nói thẳng rằng câu này CHƯA ĐỦ: có tài khoản 2,04–2,54 s,
+    không có 0,254–0,263 s (ba lượt mỗi bên, email khác nhau để không chạm trần 3 chìa/giờ).
+    Phần nặng KHÔNG phải CPU mà là SỐ VÒNG gọi CSDL — nhánh có tài khoản đi khoảng chín
+    vòng (đếm chìa, huỷ chìa cũ, ghi chìa mới, xếp hộp thư, đánh thức luồng gửi), nhánh này
+    đi một. Trên máy dev mỗi vòng VN → Neon us-east-2 mất ~250 ms, nên chín vòng thành hơn
+    hai giây.
+
+    ĐO TRÊN PRODUCTION 27/09/2026 — và đây là số đo đã còn thiếu:
+
+        nhánh CÓ tài khoản   : 0,422 · 0,456 · 0,865 s   (trung bình 0,581)
+        nhánh KHÔNG có       : 0,307 · 0,777 · 0,771 s   (trung bình 0,618)
+        khe hở               : −0,037 s
+
+    Nhánh gửi thư còn NHANH HƠN một chút, và độ tản trong chính mỗi nhánh (~0,45 s) lớn
+    gấp hơn mười lần khoảng cách giữa hai nhánh. Bấm giờ không tách được hai nhóm.
+
+    Tức là: con số 2 giây đo trên dev là ĐỘ TRỄ ĐƯỜNG TRUYỀN VN → Neon us-east-2 (~250 ms
+    một vòng, nhân chín vòng), không phải khe hở của mã. Trên production Render `ohio`
+    cùng vùng với Neon nên chín vòng ấy chìm dưới nhiễu mạng, đúng như dự đoán ghi ở đây
+    trước khi đo. Cách đo: mở một tài khoản thử `@example.com` bằng chính cửa đăng ký công
+    khai (dữ liệu production là giả, địa chỉ ấy nằm trong hàng rào thư) rồi bấm giờ ba lượt
+    mỗi nhánh, bỏ lượt mồi vì máy chủ gói miễn phí ngủ sau 15 phút.
+
+    Vì sao vẫn giữ câu này: trên máy dev — nơi mọi người trong nhóm thử tay — khe hở vẫn
+    còn, và phần CPU dựng HTML là phần KHÔNG tự nhỏ đi theo hạ tầng.
+
+    Vì sao KHÔNG viết lại nhánh gửi cho "sạch" hơn: viết lại nghĩa là đưa việc sinh chìa,
+    ghi chìa và xếp thư ra khỏi đường trả lời, tức đổi thứ tự bảo đảm của một cửa đang
+    chạy — để đổi lấy một khe hở mà số đo nói là không quan sát được ở nơi người dùng
+    thật đứng. Đó là đổi rủi ro thật lấy một cải thiện đo không ra.
+
+    Cùng khe hở này đã được cân ở cửa tự đăng ký §73 (`tu_dang_ky._can_dong_ho`), nơi phần
+    nặng là scrypt chứ không phải HTML.
+    """
+    _soan_thu('Người dùng', '%s/dat-lai-mat-khau#chia=%s' % (_goc(), 'x' * SO_BYTE))
 
 
 def _chia_con_dung(chia):
@@ -152,7 +219,8 @@ def _chia_con_dung(chia):
         return None
     return q1('''SELECT t.id, t.user_id, t.expires_at, u.email, u.name, u.status
                    FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
-                  WHERE t.token_hash=%s AND t.used_at IS NULL AND t.expires_at > %s''',
+                  WHERE t.token_hash=%s AND t.purpose='reset'
+                    AND t.used_at IS NULL AND t.expires_at > %s''',
               (_bam(chia), local_now()))
 
 
@@ -197,8 +265,9 @@ class DatLaiMatKhauView(APIView):
             # ghi (hai câu) là để hở một khe cho cả hai cùng qua.
             d = q1('''UPDATE password_reset_tokens t SET used_at=%s
                         FROM users u
-                       WHERE u.id = t.user_id AND t.token_hash=%s AND t.used_at IS NULL
-                         AND t.expires_at > %s AND coalesce(u.status, 'active') <> 'suspended'
+                       WHERE u.id = t.user_id AND t.token_hash=%s AND t.purpose='reset'
+                         AND t.used_at IS NULL AND t.expires_at > %s
+                         AND coalesce(u.status, 'active') <> 'suspended'
                    RETURNING t.user_id''',
                    (bay_gio, _bam(chia), bay_gio)) if chia and len(chia) <= 200 else None
             if not d:
@@ -208,8 +277,8 @@ class DatLaiMatKhauView(APIView):
               'password_changed_at=%s, tokens_valid_from=%s WHERE id=%s',
               (make_werkzeug_password(mat_khau), bay_gio, bay_gio, uid))
             # Mọi chìa khác của em (thư cũ hơn) cũng chết theo.
-            x('UPDATE password_reset_tokens SET used_at=%s WHERE user_id=%s AND used_at IS NULL',
-              (bay_gio, uid))
+            x("UPDATE password_reset_tokens SET used_at=%s "
+              "WHERE user_id=%s AND purpose='reset' AND used_at IS NULL", (bay_gio, uid))
 
         from accounts.authentication import invalidate_user_cache
         invalidate_user_cache(uid)

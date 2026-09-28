@@ -70,6 +70,7 @@ from rest_framework.views import APIView
 from common.clock import local_now
 from common.db import q, q1
 from common.permissions import IsAdminRole
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.vocab import chi_hoc_vien
 
 # `present` và `late` đều là CÓ MẶT. Muộn vẫn ngồi trong lớp, và không trung
@@ -179,6 +180,7 @@ class AdminBillingBasisView(APIView):
                    (SELECT COUNT(*) FROM class_sessions s
                      WHERE s.class_id = m.class_id
                        AND s.status IS DISTINCT FROM 'cancelled'
+                       AND ''' + thuoc_buoi('s.id', 'm.user_id') + '''
                        AND s.starts_at >= m.joined_at
                        AND (m.left_at IS NULL OR s.starts_at <= m.left_at)
                        AND s.starts_at <= %s

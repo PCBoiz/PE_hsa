@@ -205,3 +205,126 @@ def test_lam_moi_dung_HONG_thi_bo_cu_con_nguyen(sach, monkeypatch):
     with pytest.raises(M.LoiDuLieuMau):
         M.lam_moi(so_em_moi_lop=2)
     assert M.dem() == truoc, 'dựng hỏng mà bộ cũ đã bị gỡ'
+
+
+def test_bo_mau_co_bai_NOI_VAO_khung_de_man_chuong_trinh_noi_duoc_ca_hai_ve(sach):
+    """§74 cần bộ mẫu có CẢ HAI trạng thái, không chỉ một.
+
+    Màn Chương trình lớp trả lời "buổi này đã giao bài chưa". Nếu bộ trình diễn không nối
+    bài nào vào khung thì mọi mục đều hiện "Chưa giao bài" — khách xem sẽ kết luận là tính
+    năng chỉ biết nói "chưa", vì họ không có cách nào thấy vế kia. Đo trên dev 27/09 trước
+    khi vá: 6 mục cần bài, **0** mục có bài nối vào.
+
+    Một bài là đủ: một mục "Đã giao", những mục còn lại "Chưa giao bài".
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=2)
+    noi = q('''SELECT a.class_id, a.syllabus_item_id, i.kind
+                 FROM assignments a
+                 JOIN classes c ON c.id = a.class_id AND c.is_demo
+                 JOIN syllabus_items i ON i.id = a.syllabus_item_id''')
+    assert noi, 'bộ mẫu không nối bài nào vào mục khung — màn Chương trình chỉ nói được "chưa"'
+    assert all(r['kind'] in ('bai_tap', 'kiem_tra') for r in noi), \
+        'chỉ nối vào mục CẦN bài, không nối vào mục chủ đề'
+    # Và vẫn còn mục chưa giao để hai vế cùng lên màn.
+    con = q1('''SELECT COUNT(*) AS n FROM syllabus_items i
+                  JOIN syllabus_sessions ss ON ss.id = i.session_id
+                  JOIN classes c ON c.syllabus_version_id = ss.version_id AND c.is_demo
+                 WHERE i.kind IN ('bai_tap', 'kiem_tra')
+                   AND NOT EXISTS (SELECT 1 FROM assignments a
+                                    WHERE a.class_id = c.id AND a.syllabus_item_id = i.id)''')['n']
+    assert con > 0, 'nối hết thì không còn vế "Chưa giao bài" để cho khách thấy'
+
+
+def test_bo_mau_co_BAI_KIEM_TRA_de_nut_nhap_diem_hien_ra(sach):
+    """Không có bài `kiem_tra` thì nút "Nhập điểm" (V-h) không bao giờ hiện trong buổi demo.
+
+    Đo trên dev 27/09 trước khi vá: bài mẫu toàn bộ là `bai_tap`, **0** bài `kiem_tra`. Màn
+    bài tập chỉ hiện "Nhập điểm" cho bài kiểm tra trên lớp — tức một ô của bảng nghiệm thu
+    trông như chưa làm, dù mã đã chạy từ 25/09.
+
+    Bài kiểm tra mẫu còn phải có ĐIỂM (khách mở ra mà bảng trống thì cũng như không) và
+    còn chừa ít nhất một em chưa chấm, để con số "còn N bài chưa chấm" có thật.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+    kt = q('''SELECT a.id, a.class_id, a.held_on, a.syllabus_item_id
+                FROM assignments a JOIN classes c ON c.id = a.class_id AND c.is_demo
+               WHERE a.kind = 'kiem_tra' ''')
+    assert kt, 'bộ mẫu không có bài kiểm tra nào — nút "Nhập điểm" không hiện'
+    assert all(r['held_on'] for r in kt), 'bài kiểm tra trên lớp phải có ngày kiểm tra'
+    diem = q1('''SELECT COUNT(*) FILTER (WHERE s.score IS NOT NULL) AS da_cham,
+                        COUNT(*) FILTER (WHERE s.score IS NULL) AS chua_cham
+                   FROM submissions s WHERE s.assignment_id = ANY(%s)''',
+              ([r['id'] for r in kt],))
+    assert diem['da_cham'] > 0, 'bài kiểm tra mẫu chưa có điểm nào'
+
+
+def test_bo_mau_co_BAN_GHI_va_HOC_LIEU_de_ba_dong_nghiem_thu_khong_trong_rong(sach):
+    """Dòng 22, 29, 30 của bảng khách đều đọc từ dữ liệu — mã chạy mà bộ mẫu rỗng thì khách
+    mở ra thấy trống, và kết luận là chưa làm.
+
+    Đo trên dev 27/09 trước khi vá: lớp mẫu có **0** buổi mang link bản ghi, **0** lượt xem,
+    **0** học liệu. Cùng loại lỗi với bài kiểm tra vắng mặt — không phải lỗi mã, nhưng nó
+    hỏng buổi nghiệm thu y như một lỗi.
+
+    Ba con số phải có, không chỉ "khác 0":
+      · **bản ghi** gắn vào buổi ĐÃ DẠY (gắn vào buổi chưa diễn ra là nói dối);
+      · **lượt xem chưa đủ cả lớp** — trợ giảng cần thấy "còn N em chưa mở", và một lớp
+        100 % đã xem thì không cho thấy việc còn phải làm;
+      · **học liệu** có cả loại gắn vào buổi lẫn loại ở kho chung của lớp, và có ít nhất
+        một mục ĐANG ẨN để cho thấy việc mở dần theo tiến độ.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+
+    bg = q('''SELECT s.id, s.starts_at FROM class_sessions s
+                JOIN classes c ON c.id = s.class_id AND c.is_demo
+               WHERE s.recording_url IS NOT NULL''')
+    assert bg, 'bộ mẫu không có bản ghi nào — dòng 22 và 29 mở ra là trống'
+    chua_dien_ra = q1('''SELECT COUNT(*) AS n FROM class_sessions s
+                           JOIN classes c ON c.id = s.class_id AND c.is_demo
+                          WHERE s.recording_url IS NOT NULL AND s.starts_at > now()''')['n']
+    assert chua_dien_ra == 0, 'có bản ghi gắn vào buổi CHƯA diễn ra'
+
+    xem = q1('''SELECT COUNT(*) AS n FROM recording_views v
+                  JOIN class_sessions s ON s.id = v.session_id
+                  JOIN classes c ON c.id = s.class_id AND c.is_demo''')['n']
+    assert xem > 0, 'không em nào đã mở bản ghi — khối "ai chưa mở" không có gì để đếm'
+    thanh_vien = q1('''SELECT COUNT(*) AS n FROM class_members m
+                         JOIN classes c ON c.id = m.class_id AND c.is_demo
+                        WHERE m.left_at IS NULL''')['n']
+    assert xem < thanh_vien * len(bg), 'mọi em đều đã xem mọi buổi — không còn ai để nhắc'
+
+    hl = q('''SELECT h.id, h.session_id, h.an FROM hoc_lieu h
+                JOIN classes c ON c.id = h.class_id AND c.is_demo''')
+    assert hl, 'bộ mẫu không có học liệu nào — dòng 30 mở ra là trống'
+    assert any(r['session_id'] for r in hl), 'không tài liệu nào gắn vào một buổi'
+    assert any(not r['session_id'] for r in hl), 'không tài liệu nào ở kho chung của lớp'
+    assert any(r['an'] for r in hl), 'không tài liệu nào đang ẩn — không thấy việc mở dần'
+
+
+def test_bo_mau_co_YEU_CAU_de_hop_cua_hoc_vu_khong_trong(sach):
+    """Dòng 11, 12, 25 và 32 của bảng khách đều mở ra một hộp Yêu cầu.
+
+    Đo trên dev 27/09 trước khi vá: **0** yêu cầu của học viên lớp mẫu. Hộp của học vụ trên
+    dev trông có dữ liệu chỉ vì hai yêu cầu người ta tạo tay khi thử — chúng KHÔNG mang dấu
+    `is_demo`, nên trên production sau `du_lieu_mau --lam-moi` hộp ấy trắng trơn.
+
+    Bộ mẫu phải cho thấy một hộp ĐANG CHẠY, không phải một hộp rỗng:
+      · đủ **ba trạng thái** (mới · đang xử lý · đã xong) — một hộp toàn "mới" không cho
+        thấy việc được xử lý tới đâu;
+      · có **lịch sử trao đổi** (ít nhất một yêu cầu có trả lời) — đó chính là gạch "theo
+        dõi lịch sử trao đổi" của bảng;
+      · có yêu cầu **loại thay đổi học tập** (`tt_*`) để màn Duyệt của học vụ có cái để duyệt.
+    """
+    M.tao(giang_vien_id=sach.id, so_em_moi_lop=3)
+    yc = q('''SELECT y.id, y.loai, y.trang_thai, y.nguon FROM yeu_cau y
+                JOIN classes c ON c.id = y.class_id AND c.is_demo''')
+    assert yc, 'bộ mẫu không có yêu cầu nào — hộp của học vụ mở ra là trắng'
+    tt = {r['trang_thai'] for r in yc}
+    assert {'moi', 'dang_xu_ly'} <= tt, 'thiếu trạng thái: %s' % sorted(tt)
+    assert tt & {'da_xong', 'da_duyet'}, 'không yêu cầu nào đã đóng — không thấy việc chạy hết vòng'
+    assert any(r['loai'].startswith('tt_') for r in yc), 'không có yêu cầu thay đổi học tập để duyệt'
+    co_tra_loi = q1('''SELECT COUNT(*) AS n FROM yeu_cau_su_kien s
+                         JOIN yeu_cau y ON y.id = s.yeu_cau_id
+                         JOIN classes c ON c.id = y.class_id AND c.is_demo
+                        WHERE s.kieu = 'tra_loi' ''')['n']
+    assert co_tra_loi > 0, 'không yêu cầu nào có trả lời — thiếu "lịch sử trao đổi"'

@@ -14,19 +14,23 @@ huynh.
 ── VÌ SAO CHUÔNG VÀ THƯ KHÔNG ĐƯỢC LÀM HỎNG VIỆC CHÍNH ────────────────────
 
 Buổi đã lưu vào CSDL rồi mới báo. Chuông lỗi, SMTP chậm hay sập — giảng viên
-vẫn phải thấy "đã lưu". Thư gửi trên luồng riêng (Gmail mất 1–3 giây mỗi lá,
-một lớp ba mươi em là cả phút) và mọi lỗi chỉ vào nhật ký ứng dụng.
+vẫn phải thấy "đã lưu". Từ E2 (§61) thư vào HỘP THƯ ĐI cùng giao dịch với chuông
+(`notifications/gui.py::xep_thu`), gửi sau commit trên luồng riêng (Gmail mất 1–3
+giây mỗi lá); SMTP sập thì thư nằm lại và được thử lại, không còn mất.
 
 Em tắt "Nhận thông báo qua email" ở Cài đặt (`notification_settings.email_notif`)
 thì chỉ có chuông, không có thư.
 """
 import logging
-import threading
 
-from common import mail
+from django.db import transaction
+
 from common.clock import local_now
-from common.db import q
+from common.db import q, q1, x
+from notifications import hop_thu
+from notifications.gui import xep_thu
 from notifications.service import notify
+from teaching.nguoi_buoi import thuoc_buoi
 from teaching.vocab import chi_hoc_vien
 
 log = logging.getLogger(__name__)
@@ -38,8 +42,31 @@ PHUT_MAC_DINH = 90
 GUI_NGAY = False
 
 
+#: Thứ trong tuần, viết như người Việt nói. `weekday()` 0 = thứ Hai.
+THU = ('thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy', 'Chủ nhật')
+
+
 def _gio(dt):
     return dt.strftime('%d/%m %H:%M')
+
+
+def _gio_dep(dt):
+    """'thứ Hai 29/09, 10:26' — cách một người nhắn cho người khác.
+
+    `_gio` giữ nguyên cho tiêu đề (ngắn, để không tràn trên điện thoại); chữ
+    trong thân thư dùng bản này. Thêm THỨ vì người ta nhớ buổi học theo thứ chứ
+    không theo ngày: "thứ Năm tuần này" nghe ra ngay, "02/10" thì phải mở lịch.
+    """
+    return '%s %s, %s' % (THU[dt.weekday()], dt.strftime('%d/%m'), dt.strftime('%H:%M'))
+
+
+def _ten(lop):
+    """Tên lớp để ghép vào câu. Tên đã bắt đầu bằng 'Lớp' thì không thêm nữa —
+    nếu không ra 'Lớp Lớp thử thư 26/09' (đo thật 26/09/2026)."""
+    t = (lop.get('name') or '').strip()
+    if not t:
+        return 'lớp của em'
+    return t if t.lower().startswith('lớp') else 'lớp %s' % t
 
 
 def _noi(buoi, lop):
@@ -67,13 +94,6 @@ def _kieu(truoc, sau, lop):
     return None
 
 
-def _gui_thu(ds, tieu_de, chu):
-    for den in ds:
-        ok, _, loi = mail.gui(den, tieu_de, chu)
-        if not ok:
-            log.warning('[bao_doi_lich] không gửi được thư đổi lịch: %s', loi)
-
-
 def bao_doi_lich(truoc, sau, lop):
     """Báo cho mọi em ĐANG HỌC lớp. `truoc`/`sau`: dòng `class_sessions` trước và
     sau khi sửa (`sau=None` là xoá buổi). `lop`: dict có `id`, `name`, `mode`,
@@ -85,38 +105,92 @@ def bao_doi_lich(truoc, sau, lop):
         if not kieu:
             return 0
         ten_lop = lop.get('name') or 'của bạn'
+        ten_cau = _ten(lop)          # ghép vào giữa câu, không lặp chữ "Lớp"
         if kieu == 'huy':
             tieu_de = 'Lớp %s: buổi %s đã huỷ' % (ten_lop, _gio(truoc['starts_at']))
-            chu = 'Buổi học ngày %s của lớp %s không diễn ra nữa.' % (_gio(truoc['starts_at']), ten_lop)
+            chu = ('Buổi học %s vào %s sẽ không diễn ra. Khi có lịch học bù, '
+                   'trung tâm báo em ngay.' % (ten_cau, _gio_dep(truoc['starts_at'])))
         elif kieu == 'doi-gio':
             noi = _noi(sau, lop)
             tieu_de = 'Lớp %s dời buổi %s sang %s' % (ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']))
-            chu = 'Buổi học lớp %s chuyển từ %s sang %s (%d phút)%s.' % (
-                ten_lop, _gio(truoc['starts_at']), _gio(sau['starts_at']),
-                sau['duration_minutes'] or PHUT_MAC_DINH, (' · ' + noi) if noi else '')
+            chu = ('Buổi học %s đổi giờ: thay vì %s như cũ, buổi này bắt đầu lúc %s và '
+                   'học trong %d phút%s. Em nhớ vào đúng giờ mới nhé.' % (
+                       ten_cau, _gio_dep(truoc['starts_at']), _gio_dep(sau['starts_at']),
+                       sau['duration_minutes'] or PHUT_MAC_DINH,
+                       (', %s' % noi) if noi else ''))
         else:
             noi = _noi(sau, lop) or 'nơi học mới'
             tieu_de = 'Lớp %s, buổi %s: %s' % (ten_lop, _gio(sau['starts_at']), noi)
-            chu = 'Buổi học lớp %s lúc %s đổi nơi học: %s.%s' % (
-                ten_lop, _gio(sau['starts_at']), noi,
-                (' Link phòng học mới: %s' % sau['meeting_url']) if sau.get('meeting_url') else '')
+            chu = ('Buổi học %s vào %s đổi chỗ: buổi này %s.%s' % (
+                ten_cau, _gio_dep(sau['starts_at']), noi,
+                (' Link vào lớp: %s' % sau['meeting_url']) if sau.get('meeting_url') else ''))
 
-        ds = q('''SELECT u.id, u.email, coalesce(ns.email_notif, 1) AS nhan_thu
-                    FROM class_members m JOIN users u ON u.id = m.user_id
-                    LEFT JOIN notification_settings ns ON ns.user_id = u.id
-                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u'),
-               (lop['id'],))
-        for r in ds:
-            notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
-
-        thu = [r['email'] for r in ds if r['email'] and r['nhan_thu']]
-        if thu:
-            chu_thu = '%s\n\nXem lịch đầy đủ ở mục "Lớp của tôi" trên TopHSA.\n\n— TopHSA\n' % chu
-            if GUI_NGAY:
-                _gui_thu(thu, tieu_de, chu_thu)
-            else:
-                threading.Thread(target=_gui_thu, args=(thu, tieu_de, chu_thu), daemon=True).start()
+        ds = q('''SELECT u.id FROM class_members m JOIN users u ON u.id = m.user_id
+                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u')
+               # Buổi bù (V-g): chỉ báo các em của buổi ấy, không báo cả lớp.
+               + ' AND ' + thuoc_buoi('%s', 'm.user_id'),
+               (lop['id'], truoc['id']))
+        # Thư mở bằng lời chào, kết bằng lời chúc; CHUÔNG thì để trần vì nó chỉ
+        # có một dòng. Anh Sơn 26/09, sau khi đọc thư thật: "văn phong cứng quá"
+        # — chữ cũ là "chuyển từ X sang Y (90 phút) · học trực tuyến", đúng
+        # nhưng đọc như máy đọc cho máy nghe.
+        chu_thu = ('Chào em,\n\n%s\n\n'
+                   'Lịch đầy đủ của lớp nằm ở mục "Lớp của tôi" trên TopHSA. '
+                   'Có gì chưa rõ, em nhắn lại cho trợ giảng của lớp nhé.\n\n'
+                   'Chúc em học tốt,\nTopHSA\n' % chu)
+        with transaction.atomic():
+            for r in ds:
+                notify(r['id'], 'lich_doi', tieu_de, chu, 'class_session', truoc['id'], coalesce_minutes=10)
+            # `xep_thu` tự lọc: có email, bật `email_notif`, không phải tài khoản mẫu.
+            thu = xep_thu([r['id'] for r in ds], tieu_de, chu_thu, ('class_session', truoc['id']))
+            hop_thu.day_di(thu, ngay=GUI_NGAY)
         return len(ds)
     except Exception:            # noqa: BLE001 — báo không được chặn việc chính
         log.exception('[bao_doi_lich] không báo được đổi lịch buổi %s', truoc.get('id'))
+        return 0
+
+
+def bao_buoi_moi(lop, buoi_ids, luc_dau=None):
+    """Báo cho mọi em ĐANG HỌC lớp rằng lịch vừa có buổi mới. Trả số em được báo.
+
+    `buoi_ids`: các buổi vừa tạo trong CÙNG một lượt. `luc_dau`: giờ bắt đầu của buổi sớm
+    nhất (chỉ dùng khi tạo lẻ một buổi, để câu chuông nói được ngày giờ).
+
+    ── VÌ SAO GỘP THEO LƯỢT, KHÔNG THEO BUỔI ────────────────────────────────
+
+    "Sinh lịch cả kỳ" tạo một lượt hàng chục buổi. Bắn mỗi buổi một chuông là 12–30 chuông
+    trong một giây cho mỗi em — và cái chuông thứ hai đã đủ làm em thôi đọc chuông nữa.
+    Nên một lượt là MỘT chuông: tạo lẻ thì nói đúng buổi ấy, sinh hàng loạt thì nói số buổi.
+
+    Không bao giờ ném lỗi: báo không được thì không được chặn việc xếp lịch.
+    """
+    try:
+        ids = [i for i in (buoi_ids or ()) if i]
+        if not ids:
+            return 0
+        ten_lop = lop.get('name') or 'của bạn'
+        if len(ids) == 1 and luc_dau:
+            tieu_de = 'Lớp %s có buổi mới: %s' % (ten_lop, luc_dau.strftime('%d/%m %H:%M'))
+            chu = 'Lịch lớp vừa thêm một buổi. Xem ở mục "Lớp của tôi".'
+        else:
+            tieu_de = 'Lớp %s vừa có %d buổi mới trên lịch' % (ten_lop, len(ids))
+            chu = 'Trung tâm vừa xếp thêm %d buổi cho lớp. Xem ở mục "Lớp của tôi".' % len(ids)
+        ds = q('''SELECT u.id FROM class_members m JOIN users u ON u.id = m.user_id
+                   WHERE m.class_id = %s AND m.left_at IS NULL AND ''' + chi_hoc_vien('u'),
+               (lop['id'],))
+        if not ds:
+            return 0
+        with transaction.atomic():
+            for r in ds:
+                # Gộp trong 10 phút như `lich_doi`: người xếp lịch hay sửa vài lượt liền
+                # nhau, và em không cần biết từng lượt sửa nháp.
+                notify(r['id'], 'buoi_moi', tieu_de, chu, 'class_session', ids[0],
+                       coalesce_minutes=10)
+                x('UPDATE notifications SET link = %s WHERE id = %s',
+                  ('/dashboard', q1('SELECT id FROM notifications WHERE user_id = %s '
+                                    "AND type = 'buoi_moi' ORDER BY id DESC LIMIT 1",
+                                    (r['id'],))['id']))
+        return len(ds)
+    except Exception:            # noqa: BLE001 — báo không được chặn việc chính
+        log.exception('[bao_buoi_moi] không báo được buổi mới của lớp %s', lop.get('id'))
         return 0

@@ -27,6 +27,11 @@ viên có đủ các trường trên; `users` chưa có trường nào. Lược 
                   trợ giảng vốn không vào được (`IsSeniorTeachingStaff`, anh Sơn
                   chốt 01/09) — mở API rộng hơn màn hình là quyền không ai dùng.
 
+V-m (25/09/2026, bảng TopHSA dòng 3 + 7): "Tỉnh/Thành phố" chọn từ 34 đơn vị
+(`teaching/tinh_thanh.py`; giá trị cũ gõ tay vẫn hiện nguyên văn tới khi có người chọn lại);
+"Tình trạng học tập" TÍNH từ lượt học (`teaching/tinh_trang.py`, không lưu); "Tình trạng học
+phí" là MỘT ô chọn tay (`users.tuition_status`, §63) — học vụ / quản trị viên đặt, có nhật ký.
+
 Email và số điện thoại của EM không sửa ở đây: đó là hai cách ĐĂNG NHẬP, em tự
 đổi ở Cài đặt (có kiểm trùng). Tên đăng nhập thì học vụ đặt được — đó là đường
 để học vụ cấp lối vào cho em không nhớ email nào.
@@ -55,6 +60,8 @@ from common.permissions import (
     is_admin,
 )
 from courses.truy_cap import cac_mon_da_mo
+from teaching.tinh_thanh import TINH_THANH
+from teaching.tinh_trang import HOC_PHI, MA_HOC_PHI, TINH_TRANG_HOC, sql_tinh_trang_hoc
 
 #: Khớp CHECK `users_enroll_source_check` (§51). Thứ tự = thứ tự trên ô chọn.
 NGUON_TUYEN_SINH = (
@@ -69,10 +76,6 @@ NGUON_TUYEN_SINH = (
 )
 _MA_NGUON = {m for m, _ in NGUON_TUYEN_SINH}
 
-#: Khớp CHECK `users_tuition_status_check` (§63, 25/09/2026). Một ô CHỌN TAY
-#: của giáo vụ — hệ này không có sổ tiền nên không suy ra được, chốt 25/09.
-TINH_TRANG_HOC_PHI = ('Đã đóng', 'Sắp hết', 'Hết', 'Bảo lưu')
-
 #: Vai được chọn làm người tư vấn: mọi vai NHÂN SỰ.
 VAI_NHAN_SU = (ROLE_ADMIN, ROLE_ACADEMIC, ROLE_TEACHER, ROLE_ASSISTANT, ROLE_EDITOR)
 
@@ -84,8 +87,9 @@ USERNAME_RE = re.compile(r'^[a-z0-9][a-z0-9.]{2,29}$')
 #: Độ dài tối đa của trường chữ tự do.
 _DAI = {'school': 200, 'school_grade': 20, 'region': 100, 'study_goal': 500, 'aspiration': 500}
 
-#: Khoá API (camelCase) ↔ cột CSDL cho các trường chữ tự do.
-_TRUONG_CHU = {'school': 'school', 'schoolGrade': 'school_grade', 'region': 'region',
+#: Khoá API (camelCase) ↔ cột CSDL cho các trường chữ tự do. `region` KHÔNG còn ở đây từ
+#: V-m: nó chọn từ danh sách tỉnh/thành, kiểm riêng trong `patch`.
+_TRUONG_CHU = {'school': 'school', 'schoolGrade': 'school_grade',
                'studyGoal': 'study_goal', 'aspiration': 'aspiration'}
 
 
@@ -122,7 +126,8 @@ def _lop_hien_tai(user_id):
     """Lớp trung tâm em ĐANG học — mảng vì hiếm khi một em ở hai lớp cùng lúc,
     nhưng dữ liệu không cấm điều đó nên không giả định chỉ một dòng.
 
-    `si_so` ĐẾM thành viên đang học (`left_at IS NULL`), không đọc `capacity`
+    `si_so` ĐẾM HỌC VIÊN đang học (`left_at IS NULL`; trợ giảng không tính — cùng luật
+    trần lớp gia sư), không đọc `capacity`
     (sĩ số DỰ KIẾN, có thể NULL) — đây là cách duy nhất phân biệt lớp gia sư
     1-1/1-3/1-6 khỏi lớp nhóm ~20 em (yêu cầu TopHSA 25/09, `class_type` đã có
     từ §54). Không lưu tỉ lệ thành cột riêng: một con số suy ra được từ
@@ -130,13 +135,14 @@ def _lop_hien_tai(user_id):
     """
     rows = q('''SELECT c.id, c.name, c.class_type, c.capacity, c.status,
                        t.name AS teacher_name, t.id AS teacher_id,
-                       (SELECT count(*) FROM class_members m2
-                         WHERE m2.class_id = c.id AND m2.left_at IS NULL) AS si_so
+                       (SELECT count(*) FROM class_members m2 JOIN users u2 ON u2.id = m2.user_id
+                         WHERE m2.class_id = c.id AND m2.left_at IS NULL
+                           AND u2.role = %s) AS si_so
                   FROM class_members m
                   JOIN classes c ON c.id = m.class_id
                   LEFT JOIN users t ON t.id = c.teacher_id
                  WHERE m.user_id = %s AND m.left_at IS NULL
-                 ORDER BY c.id''', (user_id,))
+                 ORDER BY c.id''', (ROLE_STUDENT, user_id))
     return [{
         'id': r['id'], 'name': r['name'], 'classType': r['class_type'],
         'capacity': r['capacity'], 'status': r['status'],
@@ -155,32 +161,6 @@ def _khoa_da_mo(user_id):
         return []
     return [{'id': r['id'], 'title': r['title']} for r in
             q('SELECT id, title FROM courses WHERE id = ANY(%s) ORDER BY title', (ids,))]
-
-
-#: Năm trạng thái thô cho MỘT Ô trên hồ sơ — không phải bộ đo tiến độ đầy đủ.
-#: Bốn trạng thái đầu khớp đúng yêu cầu TopHSA (đang học/tạm dừng/bảo lưu/đã
-#: xong); 'Đã nghỉ học' và 'Chưa xếp lớp' là hai trường hợp thật sự tồn tại
-#: trong dữ liệu mà bốn cái kia không có chỗ chứa — bỏ qua sẽ ép chúng vào một
-#: nhãn sai. Bộ đo TIẾN ĐỘ đầy đủ (khung chương trình, % hoàn thành theo buổi)
-#: để dành cho E1 (`teaching/tien_do_chuong_trinh.py`, kế hoạch v2, chưa viết)
-#: — cố ý không làm sớm ở đây để khỏi có hai nơi cùng tính rồi lệch nhau.
-def _tinh_trang_hoc_tap(user_id):
-    dang = q1('''SELECT c.status FROM class_members m JOIN classes c ON c.id = m.class_id
-                  WHERE m.user_id=%s AND m.left_at IS NULL
-                  ORDER BY m.joined_at DESC LIMIT 1''', (user_id,))
-    if dang:
-        if dang['status'] == 'paused':
-            return 'Tạm dừng'
-        if dang['status'] == 'cancelled':
-            # Lớp bị huỷ trong lúc em còn đang học — không phải "đã xong".
-            return 'Đã nghỉ học'
-        return 'Đang học'
-    cu = q1('''SELECT leave_reason FROM class_members
-                WHERE user_id=%s AND left_at IS NOT NULL
-                ORDER BY left_at DESC LIMIT 1''', (user_id,))
-    if not cu:
-        return 'Chưa xếp lớp'
-    return {'completed': 'Đã xong', 'reserved': 'Bảo lưu'}.get(cu['leave_reason'], 'Đã nghỉ học')
 
 
 def _dict(r):
@@ -208,15 +188,17 @@ def _dict(r):
         'parentName': r['parent_name'],
         'parentPhone': r['parent_phone'],
         'parentEmail': r['parent_email'],
-        'tuitionStatus': r['tuition_status'],
-        'studyStatus': _tinh_trang_hoc_tap(r['id']),
+        # V-m: học phí chọn tay (NULL = chưa đặt); tình trạng học tập TÍNH (NULL = nhân sự).
+        'tuitionStatus': r.get('tuition_status'),
+        'tinhTrangHoc': r.get('tinh_trang_hoc'),
+        # Giữ từ b3316cb (§63): lớp TRUNG TÂM đang học kèm sĩ số thật, môn đã mở QUA LỚP.
         'classes': _lop_hien_tai(r['id']),
         'enrolledCourses': _khoa_da_mo(r['id']),
     }
 
 
 def _doc(user_id):
-    return q1('''SELECT u.*, c.name AS consultant_name
+    return q1('''SELECT u.*, c.name AS consultant_name, ''' + sql_tinh_trang_hoc('u') + ''' AS tinh_trang_hoc
                    FROM users u LEFT JOIN users c ON c.id = u.consultant_id
                   WHERE u.id=%s''', (user_id,))
 
@@ -258,9 +240,11 @@ class HoSoHocVienView(APIView):
         return Response({
             'profile': _dict(r),
             'sources': [{'ma': m, 'nhan': n} for m, n in NGUON_TUYEN_SINH],
+            # V-m: nhãn hai ô tình trạng — màn hình dựng từ đây, không gõ lại chữ.
+            'hocPhiOptions': [{'ma': m, 'nhan': n} for m, n in HOC_PHI],
+            'tinhTrangHocOptions': [{'ma': m, 'nhan': n} for m, n in TINH_TRANG_HOC],
             'consultants': [{'id': c['id'], 'name': c['name'] or c['email'], 'role': c['role']}
                             for c in tu_van],
-            'tuitionStatuses': list(TINH_TRANG_HOC_PHI),
         })
 
     def patch(self, request, user_id):
@@ -276,19 +260,31 @@ class HoSoHocVienView(APIView):
                 v = (str(body[khoa]).strip() if body[khoa] is not None else '')
                 doi[cot] = v[:_DAI[cot]] or None
 
+        if 'region' in body:
+            # Tỉnh/Thành phố (V-m): chọn từ 34 đơn vị. Gửi lại ĐÚNG giá trị cũ gõ tay (form
+            # gửi cả ô chưa đổi) thì giữ nguyên — không bắt người sửa ô khác phải chọn lại.
+            v = str(body['region'] or '').strip()
+            if not v:
+                doi['region'] = None
+            elif v in TINH_THANH or v == (r['region'] or ''):
+                doi['region'] = v
+            else:
+                errors['region'] = 'Chọn tỉnh / thành phố từ danh sách.'
+
+        if 'tuitionStatus' in body:
+            # Tình trạng học phí (V-m, §63) — cùng danh sách với CHECK của cột.
+            v = str(body['tuitionStatus'] or '').strip() or None
+            if v is not None and v not in MA_HOC_PHI:
+                errors['tuitionStatus'] = 'Tình trạng học phí phải chọn từ danh sách.'
+            else:
+                doi['tuition_status'] = v
+
         if 'enrollSource' in body:
             v = (body['enrollSource'] or '').strip() or None
             if v and v not in _MA_NGUON:
                 errors['enrollSource'] = 'Nguồn tuyển sinh phải chọn từ danh sách.'
             else:
                 doi['enroll_source'] = v
-
-        if 'tuitionStatus' in body:
-            v = (body['tuitionStatus'] or '').strip() or None
-            if v and v not in TINH_TRANG_HOC_PHI:
-                errors['tuitionStatus'] = 'Tình trạng học phí phải chọn từ danh sách.'
-            else:
-                doi['tuition_status'] = v
 
         if 'consultantId' in body:
             v = body['consultantId']

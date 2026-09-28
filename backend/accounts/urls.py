@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts import ghi_nho, quen_mat_khau, views
+from accounts import ghi_nho, quen_mat_khau, tu_dang_ky, views
 from accounts.oauth import oauth_complete
 
 urlpatterns = [
@@ -15,6 +15,12 @@ urlpatterns = [
     path('auth/quen-mat-khau', quen_mat_khau.QuenMatKhauView.as_view()),
     path('auth/dat-lai-mat-khau', quen_mat_khau.DatLaiMatKhauView.as_view()),
     path('auth/dat-lai-mat-khau/kiem', quen_mat_khau.KiemChiaView.as_view()),
+    # Học viên TỰ đăng ký (§73, 27/09/2026). Ba cửa KHÔNG cần đăng nhập — xem
+    # docstring `accounts/tu_dang_ky.py`. `dang-ky` KHÔNG nằm trong `ISSUES_TOKENS`
+    # của proxy `/auth/[...path]`: đăng ký xong chưa được cấp phiên, phải bấm thư trước.
+    path('auth/dang-ky', tu_dang_ky.DangKyView.as_view()),
+    path('auth/xac-thuc-email', tu_dang_ky.XacThucEmailView.as_view()),
+    path('auth/gui-lai-xac-thuc', tu_dang_ky.GuiLaiXacThucView.as_view()),
     path('api/user', views.UserView.as_view()),
     path('api/user/password', views.PasswordView.as_view()),
     path('api/users/<int:user_id>/follow', views.FollowView.as_view()),

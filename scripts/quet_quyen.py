@@ -77,13 +77,20 @@ def quet():
             'auth_rong': 'authentication_classes' in cls.__dict__
                          and not cls.__dict__['authentication_classes'],
         })
-    return [r for r in ra if r['duong'].startswith('api/')]
+    # `auth/` CŨNG phải vào (27/09/2026). Trước hôm nay bộ quét chỉ lấy `api/`, nên
+    # BẢY cửa công khai không đăng nhập — bốn cửa quên / đặt lại mật khẩu (§52) và ba
+    # cửa tự đăng ký (§73) — nằm ngoài tầm mắt của chính cái báo cáo nói "mỗi dòng ở
+    # đây là một bề mặt công khai, đọc từng dòng". Một danh sách bề mặt công khai mà
+    # thiếu đúng nhóm cửa nguy hiểm nhất còn tệ hơn không có danh sách: nó làm người
+    # soát yên tâm. (Tìm ra khi soát E5; `scripts/kiem_ke_san_pham.py` chép lối này
+    # nhưng ở đó phạm vi `api/` là ĐÚNG — nó đếm tính năng, không đếm bề mặt.)
+    return [r for r in ra if r['duong'].startswith(('api/', 'auth/'))]
 
 
 def main():
     tat_ca = '--tat-ca' in sys.argv
     ds = quet()
-    print('tổng view api/:', len(ds))
+    print('tổng view api/ + auth/:', len(ds))
 
     mo = [r for r in ds if 'AllowAny' in r['quyen']]
     chi_dn = [r for r in ds if r['quyen'] == ['IsAuthenticated']]

@@ -1,0 +1,14 @@
+[
+ {
+  "ten": "thuoc_buoi mất tiền tố bảng — câu con quét cả bảng",
+  "cu": "                                       OR ''' + thuoc_buoi('hoc_lieu.session_id', '%s') + ''')) h",
+  "moi": "                                       OR ''' + thuoc_buoi('session_id', '%s') + ''')) h",
+  "cho": "test_tai_lieu_buoi_thuong_hien_cho_ca_lop"
+ },
+ {
+  "ten": "bỏ lọc tài liệu đang ẩn — em thấy thứ giảng viên chưa mở",
+  "cu": "                                WHERE class_id = ANY(%s) AND NOT an",
+  "moi": "                                WHERE class_id = ANY(%s) AND (an OR TRUE)",
+  "cho": "test_tai_lieu_dang_an_khong_hien_cho_em"
+ }
+]

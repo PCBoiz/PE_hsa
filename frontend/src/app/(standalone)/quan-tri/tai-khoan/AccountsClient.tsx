@@ -27,7 +27,18 @@ import type { HinhDang } from '@/lib/kiemDang';
 import ChuyenLop from '../lop-hoc/ChuyenLop';
 import { LOAI_LOP } from '../lop-hoc/lop';
 
-import { CHUA_XEP_LOP, LOC_RONG, NGUONG_NGU_DUONG_LUI, type LocTaiKhoan, nhanHoatDong, thamSoLoc } from './loc';
+import XuatTaiKhoan from './XuatTaiKhoan';
+import {
+  CHUA_XEP_LOP,
+  HOC_PHI_CHUA_DAT,
+  HOC_PHI_DUONG_LUI,
+  LOC_RONG,
+  NGUONG_NGU_DUONG_LUI,
+  TINH_TRANG_HOC_DUONG_LUI,
+  type LocTaiKhoan,
+  nhanHoatDong,
+  thamSoLoc,
+} from './loc';
 // `zod/mini` chứ KHÔNG `zod` (14/09/2026 tối): đây là mã chạy ở TRÌNH DUYỆT.
 // Bản đầy đủ không rung cây được — đo A/B trên Thi thử: 956 kB (zod) → 608 kB
 // (zod/mini), byte giải nén, ba lượt mỗi bên. Bản mini cùng luật
@@ -59,7 +70,14 @@ export type UserRow = {
   ngayKhongHoatDong?: number | null;
   /** Bài đã xong / tổng bài các môn đang mở qua lớp; null = chưa mở môn nào (hay nhân sự). */
   tienDo?: { xong: number; tong: number } | null;
+  /* V-m — TUỲ CHỌN (backend cũ không gửi). */
+  /** Tình trạng học tập TÍNH ở máy chủ; null = nhân sự. */
+  tinhTrangHoc?: string | null;
+  /** Học phí chọn tay; null = chưa đặt. */
+  hocPhi?: string | null;
 };
+
+export type LuaChon = { ma: string; nhan: string };
 
 export type LopDangHoc = { id: number; name: string; classType?: string | null };
 
@@ -73,6 +91,16 @@ type Payload = {
   chiHocVien?: boolean;
   /** Mốc của ô "Lâu không vào" — cùng mốc thẻ Tổng quan (1.4b). */
   nguongNgu?: number[];
+  /** V-m: nhãn hai ô lọc mới, dựng từ máy chủ. */
+  tinhTrangHocOptions?: LuaChon[];
+  hocPhiOptions?: LuaChon[];
+};
+
+const TONE_HOC: Record<string, 'good' | 'warn' | 'neutral' | 'bad'> = {
+  dang_hoc: 'good', tam_dung: 'warn', da_hoc_xong: 'neutral', bao_luu: 'warn', da_nghi: 'bad', chua_xep_lop: 'warn',
+};
+const TONE_HOC_PHI: Record<string, 'good' | 'warn' | 'neutral' | 'bad'> = {
+  da_dong: 'good', sap_het: 'warn', het: 'bad', bao_luu: 'neutral',
 };
 
 /** Một dòng trong kết quả nhập hàng loạt. */
@@ -203,6 +231,8 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
   /** '' · `CHUA_XEP_LOP` · id lớp — xem `loc.ts`. */
   const [lop, setLop] = useState(initialLoc.lop);
   const [khongHoatDong, setKhongHoatDong] = useState(initialLoc.khongHoatDong);
+  const [tinhTrangHoc, setTinhTrangHoc] = useState(initialLoc.tinhTrangHoc);
+  const [hocPhi, setHocPhi] = useState(initialLoc.hocPhi);
   const [page, setPage] = useState(1);
   /** Học viên đang được chuyển lớp; `tu` null = còn phải hỏi chuyển từ lớp nào. */
   const [chuyen, setChuyen] = useState<{ em: { userId: number; name: string }; lops: LopDangHoc[]; tu: LopDangHoc | null } | null>(null);
@@ -215,8 +245,8 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
 
   /* Tham số lọc dựng ở `loc.ts` — CÙNG hàm trang máy chủ dùng để đọc URL. */
   const loc = useCallback(
-    () => thamSoLoc({ q, role, status, lop, khongHoatDong }),
-    [q, role, status, lop, khongHoatDong],
+    () => thamSoLoc({ q, role, status, lop, khongHoatDong, tinhTrangHoc, hocPhi }),
+    [q, role, status, lop, khongHoatDong, tinhTrangHoc, hocPhi],
   );
   const query = useCallback(
     (p = page) => {
@@ -262,7 +292,7 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
     const t = setTimeout(() => void load(1), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, role, status, lop, khongHoatDong]);
+  }, [q, role, status, lop, khongHoatDong, tinhTrangHoc, hocPhi]);
 
   /* Tham số kiểu do NƠI GỌI đặt, không dùng `never`.
      Bản cũ khai `ok: (d: never) => void` rồi ép `ok(d as never)`. `never` nhận
@@ -368,7 +398,6 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
   }
 
   const pages = Math.max(1, Math.ceil(data.total / (data.per_page || 25)));
-  const exportHref = `/api/admin/export/users.csv?${query(1)}`;
   /* Học vụ (23/09/2026): máy chủ chỉ trả tài khoản Học viên và tự báo bằng cờ
      này. Ẩn đúng ba thứ còn `IsAdminRole` — đổi vai trò, khoá/mở lại, xuất
      CSV — thay vì để họ bấm vào một nút rồi nhận 403. Đọc CỜ CỦA MÁY CHỦ chứ
@@ -378,6 +407,11 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
   /* Cột 1.4b chỉ hiện khi máy chủ có gửi: backend cũ (deploy lệch) thì bảng giữ nguyên
      như trước, không mọc ba cột toàn "—". */
   const coCotMoi = data.users.some((u) => u.lopDangHoc !== undefined);
+  /* V-m: hai ô lọc chỉ hiện khi máy chủ biết chúng (gửi kèm danh sách nhãn). */
+  const dsHoc = data.tinhTrangHocOptions ?? (data.users.some((u) => u.tinhTrangHoc !== undefined) ? TINH_TRANG_HOC_DUONG_LUI : null);
+  const dsHocPhi = data.hocPhiOptions ?? (data.users.some((u) => u.hocPhi !== undefined) ? HOC_PHI_DUONG_LUI : null);
+  const nhanHoc = Object.fromEntries((dsHoc ?? TINH_TRANG_HOC_DUONG_LUI).map((o) => [o.ma, o.nhan]));
+  const nhanHocPhi = Object.fromEntries((dsHocPhi ?? HOC_PHI_DUONG_LUI).map((o) => [o.ma, o.nhan]));
 
   /** Chuyển lớp: đúng một lớp thì mở thẳng hộp; nhiều lớp thì hỏi từ lớp nào trước. */
   function moChuyen(u: UserRow) {
@@ -403,17 +437,9 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
               : `${data.total} ${chiHocVien ? 'học viên' : 'tài khoản'} khớp bộ lọc hiện tại · trang ${data.page}/${pages}`
           }
           action={
-            /* Thẻ neo thường, KHÔNG phải fetch rồi tự dựng file: cookie đăng
-               nhập đi kèm sẵn, và trình duyệt lo phần tải xuống — tự dựng thì
-               phải giữ cả tệp trong bộ nhớ trước khi lưu. */
-            chiHocVien ? undefined : (
-              <a
-                href={exportHref}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Tải Excel (CSV)
-              </a>
-            )
+            /* Hộp "Tải danh sách" (V-k): Excel hoặc CSV, lọc thêm đợt / môn / ngày cấp.
+               Liên kết tải vẫn là thẻ neo thường — cookie đi kèm sẵn, trình duyệt lo lưu. */
+            chiHocVien ? undefined : <XuatTaiKhoan loc={loc().toString()} />
           }
         />
 
@@ -472,6 +498,27 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
               </option>
             ))}
           </Select>
+          {dsHoc && (
+            <Select value={tinhTrangHoc} onChange={setTinhTrangHoc} label="Học tập">
+              <option value="">Tất cả</option>
+              {dsHoc.map((o) => (
+                <option key={o.ma} value={o.ma}>
+                  {o.nhan}
+                </option>
+              ))}
+            </Select>
+          )}
+          {dsHocPhi && (
+            <Select value={hocPhi} onChange={setHocPhi} label="Học phí">
+              <option value="">Tất cả</option>
+              {dsHocPhi.map((o) => (
+                <option key={o.ma} value={o.ma}>
+                  {o.nhan}
+                </option>
+              ))}
+              <option value={HOC_PHI_CHUA_DAT}>Chưa đặt</option>
+            </Select>
+          )}
         </div>
 
         {err && (
@@ -535,6 +582,12 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
                   )}
                   <Td label="Lớp" muted>
                     <OLop u={u} onChuyen={() => moChuyen(u)} />
+                    {/* Tình trạng học tập (V-m) GỘP vào cột Lớp — thêm cột là vỡ 1440 (1.4b). */}
+                    {u.tinhTrangHoc && (
+                      <span className="mt-1 block">
+                        <Chip tone={TONE_HOC[u.tinhTrangHoc] ?? 'neutral'}>{nhanHoc[u.tinhTrangHoc] ?? u.tinhTrangHoc}</Chip>
+                      </span>
+                    )}
                   </Td>
                   {coCotMoi && (
                     <Td label="Hoạt động cuối" muted={u.hoatDongCuoi === null}>
@@ -569,6 +622,10 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
                       ) : u.password_changed_at ? (
                         <Chip tone="good">Đã tự đổi mật khẩu</Chip>
                       ) : null}
+                      {/* Học phí (V-m) — cùng cột Trạng thái, chỉ khi đã đặt. */}
+                      {u.hocPhi && (
+                        <Chip tone={TONE_HOC_PHI[u.hocPhi] ?? 'neutral'}>Học phí: {nhanHocPhi[u.hocPhi] ?? u.hocPhi}</Chip>
+                      )}
                     </span>
                   </Td>
                   <Td label="Thao tác">

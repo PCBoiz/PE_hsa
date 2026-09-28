@@ -18,6 +18,8 @@ type Payload = {
     maxScore: number | null;
     status: string;
     dueAt: string | null;
+    kind?: string;
+    heldOn?: string | null;
   };
   className: string;
   students: HocVien[];
@@ -27,6 +29,8 @@ const HINH_DANG = z.looseObject({
   assignment: z.looseObject({
     id: z.number(), title: z.string(), topic: z.string().nullable(),
     maxScore: z.number().nullable(), status: z.string(), dueAt: z.string().nullable(),
+    // V-h (25/09/2026) — tuỳ chọn: máy chủ cũ không trả.
+    kind: z.string().optional(), heldOn: z.string().nullable().optional(),
   }),
   className: z.string(),
   students: z.array(z.looseObject({
@@ -36,6 +40,7 @@ const HINH_DANG = z.looseObject({
     score: z.number().nullable(), scorePct: z.number().nullable(),
     feedback: z.string().nullable(), gradedAt: z.string().nullable(),
     gradedByName: z.string().nullable(),
+    absent: z.boolean().optional(),
   })),
 }) satisfies HinhDang<Payload>;
 
@@ -101,6 +106,7 @@ export default async function ChamBaiPage({
           maxScore={bai.maxScore ?? 10}
           topic={bai.topic}
           students={students}
+          kiemTra={bai.kind === 'kiem_tra'}
         />
         </div>
       </main>

@@ -445,6 +445,16 @@ body.dark .theme-toggle-btn .shell-ic-trang { display: none; }
   width: 0.4375rem; height: 0.4375rem; border-radius: 50%;
   background: var(--brand); flex-shrink: 0; margin-top: 0.375rem;
 }
+/* Chân panel chuông → trang Thông báo đầy đủ (§61). Panel giữ 30 dòng mới nhất và biến
+   mất khi bấm ra ngoài; ai muốn tìm lại tin tuần trước thì đi qua đây. Cao 2.75rem = 44px,
+   đúng sàn vùng chạm của Button. */
+.bell-all {
+  display: block; padding: 0.75rem 1.25rem; min-height: 2.75rem;
+  text-align: center; font-size: 0.8rem; font-weight: 600;
+  color: var(--brand-ink, #4c3fb5); border-top: 1px solid var(--line, #e8e6f0);
+  text-decoration: none;
+}
+.bell-all:hover { background: var(--sunken, #f6f5fb); text-decoration: underline; }
 .bell-empty { padding: 2.125rem 1.25rem; text-align: center; color: var(--t3); font-size: 0.78rem; }
 .bell-empty-icon { font-size: 1.875rem; margin-bottom: 0.625rem; }
 

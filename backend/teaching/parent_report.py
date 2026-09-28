@@ -31,11 +31,14 @@ from datetime import timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from chuong_trinh.dich_vu import tien_do_em
 from common.clock import local_now, local_today
 from common.db import q, q1
-from common.permissions import IsSeniorTeachingStaff, can_see_class
+from common.permissions import ROLE_ASSISTANT, IsSeniorTeachingStaff, can_see_class
 from stats import competency
 from teaching.attendance import ti_le
+from teaching.nguoi_buoi import thuoc_buoi
+from teaching.nhan_bai import giao_cho
 from teaching.vocab import chi_hoc_vien, trang_thai
 
 #: Kỳ báo cáo mặc định. Bốn tuần vì trung tâm gửi báo cáo theo tháng, và một
@@ -230,7 +233,14 @@ def _buoi_cua_em(class_id, user_id, tu, den, cac_dot=()):
         args.append(user_id)
         dieu_kien.append('(' + ' OR '.join(khoang) + ')')
 
-    buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at '
+    # Buổi có danh sách riêng (buổi bù, V-g) mà em không có tên thì KHÔNG phải buổi
+    # của em — không thì mỗi buổi bù của bạn là một buổi "không có dòng" trên tờ gửi
+    # về nhà em.
+    dieu_kien.append(thuoc_buoi('s.id', '%s'))
+    args.append(user_id)
+
+    # `topic`: "Lớp của tôi" liệt kê điểm danh TỪNG buổi từ chính kết quả này (V-d).
+    buoi = q('SELECT s.id, s.attendance_taken_at, s.status, s.starts_at, s.topic '
              'FROM class_sessions s WHERE ' + ' AND '.join(dieu_kien), tuple(args))
 
     # Buổi đã huỷ: lớp nghỉ vì giảng viên ốm, không phải việc của em.
@@ -491,12 +501,13 @@ def _bai_tap_lop(class_id, user_id, tu, den):
                        s.submitted_at, s.score, s.feedback, s.graded_at
                   FROM assignments a
                   LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
-                 WHERE a.class_id = %s AND a.status <> 'draft'
+                 WHERE a.class_id = %s AND a.status <> 'draft' AND a.kind <> 'kiem_tra'
+                   AND ''' + giao_cho('a', '%s') + '''
                    AND (a.created_at::date BETWEEN %s AND %s
                         OR a.due_at::date BETWEEN %s AND %s
                         OR s.submitted_at::date BETWEEN %s AND %s)
                  ORDER BY COALESCE(a.due_at, a.created_at), a.id''',
-             (user_id, class_id, tu, den, tu, den, tu, den))
+             (user_id, class_id, user_id, tu, den, tu, den, tu, den))
     return [{
         'id': r['id'], 'title': r['title'], 'topic': r['topic'],
         'dueAt': r['due_at'].isoformat() if r['due_at'] else None,
@@ -505,6 +516,35 @@ def _bai_tap_lop(class_id, user_id, tu, den):
         'score': float(r['score']) if r['score'] is not None else None,
         'feedback': r['feedback'],
         'gradedAt': r['graded_at'].isoformat() if r['graded_at'] else None,
+    } for r in rows]
+
+
+def _kiem_tra_lop(class_id, user_id, tu, den):
+    """Bài KIỂM TRA làm trên lớp (V-h, §62f) có NGÀY LÀM BÀI trong kỳ — khối riêng
+    "Bài kiểm tra" trên tờ, tách khỏi bài tập (em không nộp bài loại này nên
+    "chưa nộp, hạn …" vô nghĩa với nó).
+
+    Chỉ bài ĐÃ nhập điểm cho em (hoặc ghi vắng): bài kiểm tra chưa ai nhập điểm thì
+    phụ huynh không có gì để đọc. Không có ngày làm bài thì lấy ngày tạo bài.
+    """
+    rows = q('''SELECT a.id, a.title, a.topic, a.max_score,
+                       COALESCE(a.held_on, a.created_at::date) AS ngay,
+                       s.score, s.absent, s.feedback
+                  FROM assignments a
+                  JOIN submissions s ON s.assignment_id = a.id AND s.user_id = %s
+                 WHERE a.class_id = %s AND a.kind = 'kiem_tra' AND a.status <> 'draft'
+                   AND s.graded_at IS NOT NULL
+                   AND ''' + giao_cho('a', '%s') + '''
+                   AND COALESCE(a.held_on, a.created_at::date) BETWEEN %s AND %s
+                 ORDER BY 5, a.id''',
+             (user_id, class_id, user_id, tu, den))
+    return [{
+        'id': r['id'], 'title': r['title'], 'topic': r['topic'],
+        'heldOn': r['ngay'].isoformat(),
+        'maxScore': float(r['max_score']) if r['max_score'] is not None else None,
+        'score': float(r['score']) if r['score'] is not None else None,
+        'absent': bool(r['absent']),
+        'feedback': r['feedback'],
     } for r in rows]
 
 
@@ -561,6 +601,18 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
     if not lop:
         return None, 'Không tìm thấy lớp này.'
     gv = q1('SELECT name FROM users WHERE id=%s', (lop['teacher_id'],))         if lop['teacher_id'] else None
+    # Trợ giảng của lớp (§66, bảng TopHSA dòng 24: phụ huynh xem được "giảng viên, trợ giảng").
+    #
+    # `left_at IS NULL` không phải chi tiết vặt: gỡ một trợ giảng khỏi lớp là ghi `left_at`,
+    # nên thiếu vế đó thì tên họ còn nằm trên giấy đã gửi phụ huynh — một lời giới thiệu sai
+    # mà không ai gỡ lại được. Cùng luật với `permissions._la_tro_giang_cua_lop`.
+    #
+    # Lọc theo VAI chứ không phải "có mặt trong class_members": học viên cũng nằm ở bảng ấy.
+    tro_giang = [r['name'] for r in q('''SELECT u.name FROM class_members m
+                                           JOIN users u ON u.id = m.user_id
+                                          WHERE m.class_id = %s AND m.left_at IS NULL
+                                            AND u.role = %s
+                                       ORDER BY u.name''', (class_id, ROLE_ASSISTANT))]
     em = q1('''SELECT id, name, email, phone, parent_name, parent_phone, parent_email
                 FROM users WHERE id=%s''', (user_id,))
     if not em:
@@ -582,7 +634,9 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
                    'phone': em['parent_phone'] or '',
                    'email': em['parent_email'] or ''},
         'class': {'id': lop['id'], 'name': lop['name'], 'code': lop['code'],
-                  'teacher': gv['name'] if gv else None},
+                  'teacher': gv['name'] if gv else None,
+                  # Danh sách, không phải một tên: TopHSA có lớp đông hai người kèm.
+                  'assistants': tro_giang},
         'membership': {
             'joinedAt': thanh_vien['joined_at'].isoformat()
                         if thanh_vien['joined_at'] else None,
@@ -608,6 +662,9 @@ def dung_bao_cao(class_id, user_id, tu, den, canh_bao=None):
         'centerExam': _thi_tai_trung_tam(user_id),
         'topics': _chu_de(user_id, lop['course_id']),
         'assignments': _bai_tap_lop(class_id, user_id, tu, den),
+        'kiemTra': _kiem_tra_lop(class_id, user_id, tu, den),
+        # Tiến độ chương trình của em tới hôm nay (E1); None khi lớp chưa nhận khung.
+        'chuongTrinh': tien_do_em(user_id, [class_id]).get(class_id),
         'warnings': canh_bao,
     }, None
 

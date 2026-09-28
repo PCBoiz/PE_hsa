@@ -25,7 +25,7 @@ const GOC = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // ── Tiến trình con: in kết quả cho các mốc rồi thoát ───────────────────────
 if (process.argv[2] === '--con') {
   register('./hooks-nap-nguon.mjs', import.meta.url);
-  const { thuTrongTuanVN } = await import(pathToFileURL(join(GOC, 'src', 'lib', 'gioVN.ts')).href);
+  const { thuTrongTuanVN, lucVN } = await import(pathToFileURL(join(GOC, 'src', 'lib', 'gioVN.ts')).href);
   const MOC = [
     '2026-09-13T20:00:00Z', // 03:00 thứ Hai 14/09 giờ VN — UTC vẫn là Chủ nhật
     '2026-09-13T16:59:59Z', // 23:59:59 Chủ nhật 13/09 giờ VN
@@ -33,6 +33,8 @@ if (process.argv[2] === '--con') {
     '2026-09-20T10:00:00Z', // 17:00 Chủ nhật 20/09 giờ VN
   ];
   const ra = MOC.map((m) => ({ moc: m, vn: thuTrongTuanVN(new Date(m)), ngayTho: (new Date(m).getDay() + 6) % 7 }));
+  // `lucVN` (25/09/2026): chuỗi giờ VN ngây thơ của máy chủ → chữ, KHÔNG qua Date.
+  ra.push({ luc: [lucVN('2026-09-25T20:15:03.123'), lucVN('2026-09-25'), lucVN(null), lucVN('hôm qua')] });
   process.stdout.write(JSON.stringify(ra));
   process.exit(0);
 }
@@ -46,8 +48,15 @@ const check = (ten, ok, ct = '') => {
 const chay = (tz) => JSON.parse(execFileSync(process.execPath, [fileURLToPath(import.meta.url), '--con'], {
   env: { ...process.env, TZ: tz }, encoding: 'utf8',
 }));
-const utc = chay('UTC');
-const vn = chay('Asia/Ho_Chi_Minh');
+const utcDu = chay('UTC');
+const vnDu = chay('Asia/Ho_Chi_Minh');
+const MONG_LUC = ['25/09/2026 20:15', '25/09/2026', '—', 'hôm qua'];
+for (const [tz, du] of [['UTC', utcDu], ['Asia/HCM', vnDu]]) {
+  const luc = du[du.length - 1].luc;
+  check(`lucVN không lệch múi (TZ=${tz})`, JSON.stringify(luc) === JSON.stringify(MONG_LUC), JSON.stringify(luc));
+}
+const utc = utcDu.slice(0, -1);
+const vn = vnDu.slice(0, -1);
 
 const MONG = [0, 6, 0, 6]; // thứ Hai=0 … Chủ nhật=6
 utc.forEach((x, i) => {

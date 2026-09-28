@@ -23,5 +23,6 @@ urlpatterns = [
          syllabus.SyllabusMaterialsView.as_view()),
     path('api/admin/syllabus-materials/<int:material_id>',
          syllabus.SyllabusMaterialDetailView.as_view()),
-    path('api/admin/classes/<int:class_id>/chuong-trinh', syllabus.ClassSyllabusView.as_view()),
+    # `api/admin/classes/<id>/chuong-trinh` (lớp nhận khung) nay ở `chuong_trinh/urls.py`
+    # — một nơi cho cả nhận khung, gắn tay từng buổi và tiến độ (E1, 25/09/2026).
 ]

@@ -3902,7 +3902,27 @@ body.dark .prof-post-stats {
 .lct-huy { color: var(--danger-ink); }
 .lct-cc b { color: var(--t1); }
 .lct-bt { color: var(--t1); }
-.lct-link { color: var(--brand-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+/* Vùng chạm đủ 2,75rem ở màn cảm ứng, 1,5rem khi có chuột (bộ đo 26/09: "Làm bài →" cao 16px). */
+.lct-link { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--brand-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+@media (pointer: fine) { .lct-link { min-height: 1.5rem; } }
+/* §72 (26/09/2026) — bản ghi buổi đã học. Nhiều ngày đứng cạnh nhau trên MỘT dòng,
+   nên mỗi cái là một ô chạm riêng, cách nhau đủ để ngón tay không bấm nhầm ngày. */
+.lct-bg { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.lct-bg-nut { padding-inline: 0.25rem; }
+.lct-bg-da { color: var(--t2); font-weight: 500; }
+.lct-bg-dau { font-weight: 700; }
+/* Nút "Không mở được?" — trông như liên kết nhưng là NÚT (nó gửi đi một việc,
+   không đi tới đâu). Không viền, không nền: nó là lối thoát hiểm, không phải
+   việc chính của dòng này. */
+.lct-bg-bao { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+/* §60 (26/09/2026) — học liệu lớp. Cùng cách sắp với khối bản ghi ngay trên: nhiều mục
+   trên MỘT dòng, mỗi mục là một ô chạm riêng. Khác một chỗ: tên tài liệu do giảng viên
+   gõ nên dài ngắn tuỳ người, và một tên dài không được đẩy vỡ thẻ lớp trên điện thoại. */
+.lct-hl { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.lct-hl-nut { padding-inline: 0.25rem; max-width: 100%; overflow-wrap: anywhere; }
+/* Tên miền: người bấm nên biết mình sắp rời TopHSA đi đâu. Nhạt hơn tên tài liệu vì nó
+   là lời chú, không phải thứ để bấm vào. */
+.lct-hl-mien { color: var(--t3); font-weight: 400; text-decoration: none; }
 .lct-lech {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
   margin-top: 12px; padding: 10px 14px; border-radius: 12px;

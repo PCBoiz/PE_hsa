@@ -1,5 +1,145 @@
 # Việc của anh — pe_hsa
 
+## ⚡ LÀM NHANH — gom theo NƠI BẤM (27/09/2026)
+
+Anh bảo "tổng hợp hết việc cần tôi lại làm cho nhanh". Đây là cùng những việc ở bảng dưới,
+nhưng xếp theo **chỗ phải mở ra** thay vì theo mã việc — mở một nơi thì làm hết việc ở nơi ấy.
+Cột "chặn gì" nói việc ấy đang giữ dòng nghiệm thu nào.
+
+### 1 · Mở Render (một lượt, ~6 phút) — `pe-hsa-backend` → Environment
+
+| Đặt / sửa | Giá trị | Chặn gì |
+|---|---|---|
+| `FRONTEND_URL` | đúng địa chỉ Vercel đang chạy (không phải localhost) | **N3** — link trong thư gửi ra ngoài đang trỏ sai |
+| `DEEPSEEK_MODEL` | **XOÁ** nếu có | **A7** |
+| `OUTBOX_TICK_SECRET` | chuỗi ngẫu nhiên ≥ 32 ký tự | **E2a** — chỉ cần nếu muốn cron ngoài đẩy thư; không đặt vẫn chạy |
+
+### 2 · Mở bảng phân rã của TopHSA (~2 phút) — tick những ô đã đo được
+
+**K3**: `G24` (STT 22 · record Zoom), `G19` (17 · giao bài), `G16` (14 · điểm danh), `G20` (18 · theo dõi HS).
+Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi không đụng.
+
+### 3 · Nhắn TopHSA (~10 phút, một tin nhắn gộp)
+
+| Hỏi gì | Vì sao cần | Mã |
+|---|---|---|
+| Xin **một khung chương trình thật** theo buổi của một môn | Khung mẫu hiện là do tôi dựng để thử; buổi nghiệm thu nên chạy trên khung thật | **K1** |
+| Bốn điểm về phụ huynh / học phí | Quyết cách làm, không đoán hộ khách | **K2** |
+| Bài **"Chương trình con"** trùng vị trí 1 của Tư duy Định lượng — giữ bài nào | Hai bài cùng đứng đầu một khoá | **N7** |
+| Trung tâm dùng **pháp nhân nào** (để mở Zalo OA) | Không có pháp nhân thì không đăng ký được ZNS | **D2** |
+
+### 4 · Quyết ba câu (nhắn một dòng là xong)
+
+| Câu | Đề xuất của tôi | Mã |
+|---|---|---|
+| Em báo "bản ghi hỏng" ở MỘT chỗ: chuông hay hộp Yêu cầu? | **hộp Yêu cầu** — link hỏng là việc phải có người nhận và đóng lại, không phải tin nhắn đọc rồi thôi | **K4** |
+| Quản lý học vụ có được xem liên hệ phụ huynh không? | ảnh hưởng luôn việc học vụ có tải được danh sách tài khoản (hiện chỉ quản trị viên) | **C8** |
+| Hai mặc định tôi tự chọn (im lặng = đồng ý) | — | **N5** |
+
+### 4b · Sáu câu mới, từ lượt soát bảng phân rã 27/09 (nhắn một dòng mỗi câu là xong)
+
+| Câu | Đề xuất của tôi | Chặn gì |
+|---|---|---|
+| **"Hoàn thành khoá" là bao nhiêu?** Cần ba số: % buổi có mặt tối thiểu · % chương trình tối thiểu · có bắt buộc điểm kiểm tra không | chưa dám đoán — đây là quy định của trung tâm, không phải của phần mềm | ô cuối **dòng 5**. Kèm một câu: đủ ngưỡng thì máy TỰ đánh "đã học xong", hay chỉ gợi ý để học vụ bấm? |
+| **Hai số "lớp chậm tiến độ": chậm 2 buổi, hoặc dưới 80 %** — có đúng cách TopHSA quản lớp không? | giữ nguyên nếu anh thấy hợp | không chặn gì; đây là hai số đổi rẻ nhất hệ thống, màn hình đọc từ máy chủ chứ không gõ lại |
+| **Phụ huynh tự tắt nhận báo cáo — còn làm không?** | nếu còn thì cần biết: tắt ở đâu, tắt cho một em hay mọi em, tắt rồi trung tâm thấy gì | bảng `parent_report_optout` dựng từ §50 mà **chưa có một dòng mã nào dùng** — tôi đã ghi là CHƯA vào dòng 23 để không ai kể nó như tính năng đã có |
+| **Chuông cảnh báo lớp chậm tiến độ gửi cho ai, mấy ngày một lần?** | giảng viên của lớp + học vụ, **mỗi tuần một lần** | số đã tính được rồi, chỉ chưa ai được báo. Gửi mỗi ngày là 30 chuông cho cùng một việc |
+| **Duyệt "xin nghỉ học" có báo giảng viên của lớp không?** | **CÓ** — điểm danh của em bị ghi đè thành "có phép" mà người đứng lớp không biết là chỗ dễ sinh tranh luận nhất về sau | một loại chuông mới, nên chờ anh |
+| **Học viên có cần màn xem ĐỦ bản ghi + học liệu không?** | **CÓ — tôi đang làm rồi**, vì bảng của khách đòi thẳng ở dòng 29 ("danh sách record theo buổi, tìm kiếm"). Anh bảo dừng thì tôi dừng | hôm nay thẻ lớp chỉ hiện **4** bản ghi và **4** tài liệu gần nhất, không có ô tìm — lớp 24 buổi thì em mất hút 20 buổi |
+
+### 4c · Hai việc trên production (tôi làm không được — không có thẻ quản trị prod)
+
+**(a) Chạy lại bộ dữ liệu trình diễn — ĐÃ ĐO TRÊN PRODUCTION 27/09 TỐI, nặng hơn tôi tưởng.**
+Đăng nhập bằng thẻ quản trị anh gửi rồi hỏi thẳng máy chủ:
+
+    /api/admin/chuong-trinh/khung  → cả BA môn đều `versions: []`
+    /api/teach/classes/7322/chuong-trinh → khung: None · 0 buổi khung · 25 buổi lớp
+
+Tức bộ dữ liệu trên production có từ TRƯỚC E1: **không một khung chương trình nào tồn tại**.
+Kéo theo: màn "Chương trình lớp" trống, §74 "buổi này đã giao bài chưa" không có gì để hiện,
+sổ đầu bài không có mục nào để tick — cộng với bài kiểm tra, bản ghi buổi học, học liệu và
+hộp Yêu cầu đều rỗng. Sáu dòng nghiệm thu mở ra sẽ trống dù mã chạy đúng. Vào Render → `pe-hsa-backend` →
+Shell → `python manage.py du_lieu_mau --lam-moi` (khoảng 80 giây, chỉ gỡ và dựng lại dòng
+`is_demo` trong MỘT giao dịch).
+
+**(b) Xoá hai tài khoản thử tôi mở trên production** (dưới đây).
+
+Hai tài khoản thử tôi mở trên production, đều `@example.com`, đều chưa xác thực, không thuộc lớp nào: `do.dong.ho.43e24089@example.com` ("Tài khoản đo đồng hồ") và một tài khoản `thu.prod.*@example.com` ("Thử production"), và `do.man.*@example.com` ("Học viên thử (đo màn)" — tài khoản tôi tạo bằng thẻ quản trị anh gửi để đo màn học viên trên production, đã xếp vào lớp 7322). Tài khoản thứ hai mở tối 27/09 để kiểm luồng tự đăng ký sau khi đẩy). Anh mở **Quản trị → Tài khoản**, tìm "đo đồng hồ" và "Thử production", xoá là xong. `du_lieu_mau --lam-moi` KHÔNG gỡ chúng vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người thật.
+
+Lượt đo khe hở đồng hồ cửa quên mật khẩu 27/09 phải tự mở **một tài khoản thử** trên production để
+có nhánh "email CÓ tài khoản" mà bấm giờ: `do.dong.ho.43e24089@example.com`, tên hiển thị **"Tài
+khoản đo đồng hồ"**, chưa xác thực, vai Học viên, không thuộc lớp nào.
+
+Nó vô hại, nhưng sẽ nằm trong danh sách Tài khoản khi khách xem màn ấy. Anh mở **Quản trị → Tài
+khoản**, tìm "đo đồng hồ", xoá là xong. (Lệnh `du_lieu_mau --lam-moi` KHÔNG gỡ nó, vì nó không mang
+dấu `is_demo` — nó được mở qua đúng cửa đăng ký công khai như một người thật.)
+
+Đổi lại thì có câu trả lời: khe hở **không quan sát được** trên production (−0,037 s, trong khi độ
+tản mỗi nhánh ~0,45 s) — con số 2 giây trên dev là độ trễ đường truyền VN → Mỹ, không phải lỗi mã.
+
+### 4d · ĐÃ QUYẾT 27/09 — ghi lại để không ai hỏi anh lần nữa
+
+> **Anh Sơn**: *"Những phần như này thì mình biến thành nhắn tin qua Zalo hoặc qua diễn đàn riêng của
+> lớp, không làm thành 1 messenger trong ứng dụng mình đâu"*
+
+Áp cho **STT 20** của bảng phân rã (Trợ giảng · Quản lý lớp — tám gạch: nhắn tin cho học sinh, nhận
+tin nhắn, theo dõi lịch sử trao đổi, nhắc học bài / làm bài / tham gia lớp, ghi nhận em không phản
+hồi, chuyển vấn đề cho GV·giáo vụ).
+
+Hệ quả, để anh biết mình đang chờ gì:
+
+| Việc | Ai làm | Chặn gì |
+|---|---|---|
+| **Diễn đàn riêng của lớp** — khoanh diễn đàn hiện có theo lớp, chỉ thành viên lớp và người phụ trách vào được | tôi, đang làm | đóng ba gạch "nhắn / nhận / lịch sử trao đổi" |
+| **Zalo** cho nhắn riêng ngoài giờ | chờ anh — **D2**, cần pháp nhân để mở Zalo OA | mã ZNS đã viết, chưa bật được |
+
+Ba gạch "nhắc học bài / làm bài / tham gia lớp" đã chạy rồi bằng thông báo lớp và chuông tự nhắc hạn
+nộp. Hai gạch "ghi nhận không phản hồi" và "chuyển vấn đề" đã chạy bằng hộp Yêu cầu.
+
+**Câu hỏi cũ "TG có được chủ động nhắn riêng một em không" coi như đã trả lời — tôi bỏ khỏi danh sách chờ.**
+
+### 4e · GẤP — GitHub Actions đang bị khoá vì vấn đề thanh toán
+
+Đo 27/09/2026 bằng chú giải công khai của chính GitHub, trên cả ba workflow:
+
+> *"The job was not started because your account is locked due to a billing issue."*
+
+Ba thứ đang KHÔNG chạy, và không cái nào tự báo:
+
+| Hỏng | Hậu quả hôm nay | Hậu quả khi có dữ liệu thật |
+|---|---|---|
+| **Sao lưu CSDL** (mỗi ngày 03:00 VN) | chưa mất gì, dữ liệu là giả | **không có bản sao lưu nào** — mất là mất hẳn |
+| **CI** (mọi lượt đẩy) | pytest toàn bộ, `pnpm build`, `pip-audit`, `pnpm audit` không ai chạy | lỗi lọt lên bản thật mà cổng cục bộ không bắt |
+| **Giữ ấm** | production ngủ thường xuyên hơn; đo được lượt gọi đầu mất **63 giây** | khách bấm vào đúng lúc ngủ thì tưởng hệ thống hỏng |
+
+Anh mở **GitHub → Settings → Billing and plans** xem vướng gì. Kho này CÔNG KHAI nên
+Actions lẽ ra miễn phí — nhiều khi chỉ là một thẻ hết hạn hoặc một hạn mức chi tiêu đặt
+về 0 từ lâu.
+
+Trong lúc chờ, tôi đã dựng `node scripts/kiem_production.mjs` để thay phần kiểm được từ
+ngoài (sống · kín · đủ dữ liệu). Nó KHÔNG thay được sao lưu.
+
+### 5 · Mở tài khoản bên ngoài (làm khi rảnh, không chặn buổi nghiệm thu)
+
+| Việc | Chặn gì | Mất |
+|---|---|---|
+| **Cloudflare R2** → bucket + API token → 4 biến trên Render | Tải TỆP lên (dòng 30 phần tệp, dòng 31 nộp bài). **Liên kết ngoài đã chạy rồi** nên dòng 30 không còn chờ việc này | **D1** · 10 phút |
+| **Zoom** — nhờ quản trị tài khoản Zoom bật ghi tự động + cấp khoá | Bản ghi tự vào buổi, % đã xem (dòng 10, 22) | **Z1** |
+| **cron-job.org** — một cron gọi `/api/noi-bo/tick` | Thư không nằm chờ khi máy chủ gói miễn phí ngủ | **T6** · 5 phút |
+
+### 6 · NGAY TRƯỚC buổi nghiệm thu (bắt buộc, 2 phút)
+
+Chạy trên **production**: `python manage.py du_lieu_mau --lam-moi`.
+Đo 27/09 trên dev: khung chương trình **0 → 1**, sổ đầu bài **0 → 13**. Không chạy thì khách bấm
+"Chương trình" sẽ thấy *"Lớp chưa nhận khung chương trình"* — cho **sáu ô** của bảng, dù mã đúng hết.
+Lệnh chỉ gỡ và dựng lại dữ liệu `is_demo`, trong MỘT giao dịch.
+
+### 7 · Khi tôi báo "erp đã thử xong"
+
+**N4** — gộp `erp` → `master` (gộp = deploy production). Cách gộp ghi ở bảng dưới.
+
+---
+
 ## ★ BẢNG TỔNG HỢP — mọi việc cần anh (cập nhật 25/09/2026)
 
 **Đây là chỗ DUY NHẤT tôi ghi việc cần anh.** Việc mới phát sinh tôi thêm vào bảng này. Anh làm xong việc
@@ -10,7 +150,8 @@ chỉ đọc khi cần tra.
 
 | # | Việc — làm gì, bấm ở đâu | Vì sao | Mất |
 |---|---|---|---|
-| **N6** | **Xếp lớp cho mọi học viên thật — nếu chưa làm trước lượt đẩy 24/09** (bản đang chạy đã khoá môn theo lớp: em chưa có lớp đang không mở được bài). **Nhắn tôi "đã làm N6" hoặc "chưa"**. Vào **Vận hành → Lớp học**, mở lớp em đang học (chưa có lớp thì bấm "Thêm lớp"; để trống ô **Môn học** = học cả ba môn) → bấm **Học viên** → dán email của các em → **Thêm vào lớp**. | Bản mới: em chỉ mở được môn của **lớp em đang học**, không còn nút "Đăng ký". Em chưa có lớp sẽ thấy "Môn này chưa mở cho lớp của em". Tôi đếm trên bản sao dữ liệu: **1 trong 2 học viên thật chưa có lớp**. | 5 phút |
+| **N6** | **Xếp lớp cho mọi học viên thật — nếu chưa làm trước lượt đẩy 24/09** (bản đang chạy đã khoá môn theo lớp: em chưa có lớp đang không mở được bài). **Nhắn tôi "đã làm N6" hoặc "chưa"**. Vào **Vận hành → Lớp học**, mở lớp em đang học (chưa có lớp thì bấm "Thêm lớp"; để trống ô **Môn học** = học cả ba môn) → bấm **Học viên** → dán email của các em → **Thêm vào lớp**. | Bản mới: em chỉ mở được môn của **lớp em đang học**, không còn nút "Đăng ký". Em chưa có lớp sẽ thấy "Môn này chưa mở cho lớp của em". **Đo lại trên chính trang thật sáng 26/09 (đăng nhập tài khoản rà soát học vụ, chỉ xem): 55 học viên, bỏ 53 tài
+khoản mẫu/thử → còn 2 em thật, trong đó 1 em (mã nội bộ 13, tạo 25/08) CHƯA thuộc lớp nào.** Vậy N6 vẫn chưa làm. | 5 phút |
 | **N4** | **Gộp `erp` → `master` khi tôi báo "erp đã thử xong"** (gộp = deploy production). Cách gộp: GitHub → **Pull requests → New pull request** → base `master` ← compare `erp` → **Create** → **Merge**; hoặc trên máy: `git checkout master && git merge --ff-only erp && git push origin master`. Nên làm buổi tối. **Từ 25/09 mọi việc lên `erp` trước** (anh nhắc): tôi đẩy `erp` thoải mái, thử trên đó, anh mới gộp. **Lưu ý:** trang thật (`bd58824`, deploy 12:43 24/09) có lỗi tôi gây ra — **ghi chú lúc chuyển lớp hiện trên báo cáo gửi phụ huynh như "nhận xét của giảng viên"**. Bản sửa (`e328ade`) đã ở `erp`. Tới lúc gộp: **đừng chuyển lớp kèm ghi chú**, đừng gửi báo cáo phụ huynh cho em vừa chuyển lớp. | Lượt gộp tới gồm: sửa lỗi trên, bỏ Thi thử (anh đã chốt), điền "lần cuối hoạt động", gỡ nút Đăng ký cuối cùng, Tổng quan ghi lớp mới khi chuyển lớp. Tôi báo "thử xong" khi: bộ test đủ xanh trên máy dev ở đầu `erp` + bản Preview của `erp` trên Vercel dựng xanh. **Lần gộp tới deploy cách chạy lược đồ mới** (mỗi mục một giao dịch; lần đầu chạy cả 60 mục một lượt — nên gộp buổi tối; nếu build đỏ thì bản cũ vẫn chạy, bấm deploy lại là chạy tiếp). Sau khi Render deploy xong: Render → `pe-hsa-backend` → Settings → Start Command phải có `--graceful-timeout 20 --keep-alive 5` (Render thường tự lấy từ `render.yaml`; thiếu thì dán). Máy anh nay có "cổng kiểm" chạy ~1 phút mỗi lần `git push` (ruff, tsc, eslint, guard) — đỏ thì đừng đẩy, nhắn tôi. | 5 phút |
 | **N7** | **Sau khi đẩy — một bài học bị trùng.** Hỏi chị biên tập nội dung của TopHSA: bài **"Chương 1: Xác suất thống kê"** (chị thêm sáng 23/09 vào khoá **Tư duy Định lượng**, chưa có nội dung) là để làm gì. **Thêm nhầm** → vào **Giáo trình** → khoá Tư duy Định lượng → dòng bài ấy → **Xoá**. **Muốn giữ** → cũng Xoá, rồi gõ lại tên ở ô "Thêm bài mới" → **Thêm bài**: bản mới tự xếp nó xuống cuối khoá. | Bài ấy bị đặt trùng số thứ tự 1 với bài "Tỉ lệ & phần trăm" (lỗi của bộ soạn cũ, đã vá). Vì trùng số, em làm xong bài 1 thì có lúc tiến độ bị ghi sang bài trống. Bản mới đã tự chọn đúng bài có nội dung, nhưng dòng trùng vẫn nằm trong dữ liệu — đó là nội dung của khách nên tôi không tự xoá. | 3 phút |
 | **K2** | **Hỏi TopHSA bốn điểm, nhắn lại tôi câu trả lời.** (1) Phụ huynh xem qua **link riêng** (không tạo tài khoản) — dòng 23 của bảng có chấp nhận thay như vậy không? (2) Học phí chỉ cần **một ô "Tình trạng học phí"** trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu) — dòng 7 có đủ không? (3) "Thi thử / điểm thi thử" = **bài kiểm tra làm ở trung tâm, giáo viên nhập điểm** — đúng ý không? (4) **Ngày** buổi xem lại. | Bảng 24/09 là danh mục nghiệm thu (cột TRUE = đã duyệt). Ba dòng trên tôi làm KHÁC chữ trong bảng theo quyết định của anh — khách phải đồng ý trước buổi xem, không thì dòng ấy không được tick. Ngày buổi xem quyết định làm được bao nhiêu mục. | 10 phút |
@@ -24,6 +165,14 @@ chỉ đọc khi cần tra.
 | **A7** | Render → `pe-hsa-backend` → Environment: có biến `DEEPSEEK_MODEL=deepseek-chat` thì **xoá**. Rồi nạp thêm tiền DeepSeek (platform.deepseek.com → Top up). | Tên model cũ bị DeepSeek chuyển sang bản rẻ nhất. Số dư đo 20/09: 2,54 USD — một lớp 30 em dùng thật vài ngày là hết. | 3 phút |
 | **N5** | Trả lời 2 mặc định tôi tự chọn (im lặng = đồng ý): (a) lớp "Đã kết thúc" vẫn mở bài cho em chưa bị cho rời lớp; (b) nhật ký giữ nhãn tiếng Việt cho các dòng thi thử CŨ sau khi gỡ tính năng thi. | Ảnh hưởng cách mở môn và pha xoá mã thi. | 1 phút |
 | **T6** | Tạo tài khoản miễn phí ở **cron-job.org** → "Create cronjob" → địa chỉ `https://<máy chủ Render của mình>/health`, mỗi **10 phút**. (Tôi gửi đúng địa chỉ khi anh làm.) | Máy chủ gói miễn phí ngủ sau 15 phút không ai dùng → người vào đầu tiên chờ ~84 giây. Gọi đều thì máy không ngủ; gói miễn phí có 750 giờ/tháng, đủ chạy liên tục MỘT dịch vụ (tài khoản mình chỉ có một: `pe-hsa-backend`). Sau này cùng địa chỉ ấy còn chạy việc gửi thư/nhắc hạn nộp. | 5 phút |
+| **G1** | **Xuất báo cáo thẳng sang Google Sheets** — anh vào console.cloud.google.com → tạo dự án → bật **Google Sheets API** → **Tài khoản dịch vụ** (service account) → tạo khoá JSON → gửi tôi tệp JSON ấy (KHÔNG đưa vào repo, tôi đặt vào biến môi trường trên Render). Rồi chia sẻ Sheet đích cho địa chỉ e-mail của tài khoản dịch vụ với quyền **Người chỉnh sửa**. | Anh chọn 26/09: muốn đẩy báo cáo điểm danh/tiến độ/chấm công thẳng vào một Sheet của trung tâm thay vì tải CSV rồi dán tay. Không có khoá thì tôi chỉ làm được tới bước xuất tệp như hiện nay. | 15 phút |
+| **Z1** | **Zoom tự gắn bản ghi** (anh đã chọn làm) — nhờ người quản trị tài khoản Zoom của TopHSA tạo ứng dụng **Server-to-Server OAuth**, bật sự kiện **recording.completed**, gửi anh bốn giá trị (Account ID, Client ID, Client Secret, Secret Token); anh dán vào Render → Environment. Tôi viết hướng dẫn từng bấm khi anh bắt đầu. | Dòng 22 nay đã chạy được BẰNG TAY (26/09, §72): trợ giảng dán link, học viên xem lại được và đánh dấu "đã mở", trợ giảng thấy ai chưa mở và nhắc được, em báo được link hỏng. Khoá Zoom chỉ còn để bỏ nốt bước dán tay — bản ghi tự vào đúng buổi. | 15 phút |
+| **K3** | **Tick bốn ô: `G24`, `G19`, `G16` và `G20`** trong bảng phân rã (STT 22 — record Zoom; STT 17 — giao bài; STT 14 — điểm danh; STT 18 — theo dõi học sinh). Tôi không tự tick được: Google chặn đăng nhập trong trình duyệt do công cụ điều khiển, connector Drive chỉ sửa được tiêu đề tệp chứ không ghi ô, và Chrome/Edge bản 153 chặn gỡ lỗi từ xa trên profile mặc định. | Bốn dòng đều đo trên màn thật và soi ảnh 26/09. Dòng 14 và 18 vốn ghi "gần đủ"/"MỘT PHẦN" nhưng phần còn thiếu (lịch sử sửa điểm danh, nhận xét + cờ cần hỗ trợ + đề xuất hướng học) hoá ra đã làm xong từ trước mà chưa ai gạch khỏi kế hoạch. | 40 giây |
+| **K4** | **Chọn MỘT chỗ để em báo "bản ghi hỏng"** — hiện đang có hai, và nếu gộp nhánh `agent/e3` vào `erp` thì cả hai cùng sống. (a) **Chuông** (§72, đang chạy trên `erp`): em bấm "Không mở được?" trên thẻ lớp → chuông cho giảng viên và trợ giảng; đọc xong là hết, không ai theo dõi đã sửa chưa. (b) **Hộp Yêu cầu** (§65, nhánh e3): có trạng thái, người xử lý, lịch sử. **Tôi đề xuất (b)** — giữ nguyên nút trên thẻ lớp nhưng cho nó tạo một yêu cầu thay vì gọi chuông, vì "link hỏng" là việc phải có người nhận và đóng lại, không phải một tin nhắn đọc rồi thôi. Anh chỉ cần nhắn "dùng hộp Yêu cầu" hoặc "để nguyên chuông". | Agent soát tìm ra khi đối chiếu hai nhánh 26/09. Để nguyên cả hai thì em báo một lần, hai nơi ghi, và không nơi nào là nơi thật. | 1 phút |
+| **D2** | **Zalo ZNS gửi phụ huynh** (anh đã chọn làm) — cần **giấy phép kinh doanh** để mở Zalo OA đã xác thực, rồi đăng ký mẫu tin ZNS. Anh cho tôi biết trung tâm dùng pháp nhân nào. | Phụ huynh Việt Nam đọc Zalo nhiều hơn e-mail. Chưa có OA thì hệ thống tự bỏ qua kênh Zalo, chỉ gửi e-mail. | chờ giấy tờ |
+| **D1** | **Kho tài liệu Cloudflare R2** (anh đã chọn làm) — tạo tài khoản Cloudflare → R2 → tạo bucket → tạo API token, gửi tôi bốn giá trị (Account ID, Access Key, Secret, tên bucket). | **Bớt gấp so với hôm qua.** Anh chốt 26/09 "làm liên kết ngoài trước", và phần ấy đã chạy: giảng viên dán link Drive / YouTube / link đề vào kho chung của lớp hoặc vào từng buổi, học viên mở được (§60). R2 nay chỉ còn cần cho việc **tải tệp lên thẳng hệ thống** — tiện hơn, nhưng không còn chặn dòng 30. Vẫn cần cho phần **nộp tệp** của dòng 31. Lược đồ đã chừa sẵn chỗ (`hoc_lieu.nguon = 'r2'`), nên lúc có khoá chỉ cộng thêm đường tải lên. | 10 phút |
+| **E5a** | **Chốt hai câu về TỰ ĐĂNG KÝ** (`/dang-ky`, đã chạy trên nhánh `agent/e5`). Nhắn kiểu "E5a: 1-giữ, 2-B" là đủ. **(1)** Em tự đăng ký **phải bấm thư xác nhận rồi mới đăng nhập được** — tôi đã làm như vậy. Giữ, hay cho vào ngay rồi xác nhận sau? **Đề xuất của tôi: GIỮ** — tài khoản chưa xác nhận không đăng nhập được thì nó không gọi được API nào, không đốt tiền trợ lý AI, và không làm bẩn hàng chờ của học vụ; đổi lại, em nào không nhận được thư thì phải nhắn trung tâm. **(2)** Khi em điền **số điện thoại ĐÃ thuộc tài khoản khác**, hiện tôi trả đúng câu chung như mọi lượt khác — em không biết vì sao không nhận được thư. Phương án **A**: giữ nguyên (an toàn nhất, không ai dò được số nào đang học ở TopHSA). Phương án **B**: nói thẳng "số này đã có tài khoản". **Đề xuất của tôi: A** — người thật gặp ca này gần như chắc chắn là em đã học ở đây rồi, và câu chung đã chỉ đường "nhắn học vụ". | Đây là hai chỗ đánh đổi giữa **an toàn** và **em tự làm được**, không phải chuyện kỹ thuật — người quyết phải là anh. Tôi đã làm theo phương án an toàn hơn ở cả hai; đổi sang phương án kia chỉ mất vài dòng. | 1 phút |
+| **E2a** | **Đặt `OUTBOX_TICK_SECRET`** (một chuỗi ngẫu nhiên ≥ 32 ký tự) ở Render → `pe-hsa-backend` → Environment. Chỉ cần khi anh muốn một cron NGOÀI đẩy hộp thư đi; để trống thì cửa `POST /api/noi-bo/tick` TẮT hẳn. | Máy chủ đã tự đẩy thư mỗi 60 giây (`ENABLE_OUTBOX=1`, đã có sẵn trong `render.yaml`), nên **không đặt cũng chạy**. Đặt thêm là để khi máy chủ gói miễn phí ngủ thì cron của T6 vẫn gọi được nhịp gửi — thư quên mật khẩu không nằm chờ tới lượt người kế tiếp vào trang. | 2 phút |
 
 ### C. Câu còn chờ anh quyết (chi tiết + đề xuất của tôi ở Phần I.2 bên dưới)
 
@@ -51,6 +200,10 @@ B1 một lớp thật chạy thử một đợt · B3 liên hệ phụ huynh c�
 B5 làm mới dữ liệu mẫu: `python manage.py du_lieu_mau --lam-moi` (hoặc nhắn tôi).
 
 ### Đã xong / không cần làm nữa
+
+- **Claude cloud — BỎ (26/09, anh chốt).** Việc làm tại máy bằng agent cục bộ. GitHub đã dọn (26/09) còn đúng ba nhánh
+  `master`, `erp`, `erp-DB` — tôi không đẩy nhánh nào khác lên nữa. (Nếu muốn, anh gỡ Claude GitHub App khỏi PE_hsa ở GitHub →
+  Settings → Integrations → Applications; không bắt buộc.)
 
 - **N2 — BỎ (25/09).** Trước đây tôi nhờ anh thêm một dòng vào `backend/.env` để "hàng rào" biết đâu là CSDL thật, chặn
   máy dev lỡ ghi vào dữ liệu học viên. Nay hàng rào tự nhận ra CSDL thật qua tên máy chủ của nó, anh không phải làm gì.

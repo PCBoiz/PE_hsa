@@ -44,7 +44,13 @@ MIN_POINTS_FOR_TREND = 3
 DEFAULT_ROWS = 40
 MAX_ROWS = 200
 
+#: Bài kiểm tra trên lớp giảng viên nhập điểm (V-h, 25/09/2026). Không phải một `kind`
+#: của `learning_events` — là sự kiện `assignment` mang `meta.loai = 'kiem_tra'`; sổ
+#: điểm tách nó ra một nhóm riêng. Bài tập thường vẫn KHÔNG vào sổ này như trước.
+KIND_KIEM_TRA = 'kiem_tra'
+
 KIND_LABELS = {
+    KIND_KIEM_TRA: 'Bài kiểm tra',
     KIND_LESSON: 'Kiểm tra đầu vào',
     KIND_DRILL: 'Phòng luyện tốc độ',
     KIND_REVIEW_QUIZ: 'Quiz ôn tập',
@@ -52,7 +58,13 @@ KIND_LABELS = {
     KIND_MISSION: 'Nhiệm vụ ngày',
 }
 #: Thứ tự các loại trong bảng tổng hợp — quan trọng nhất trước.
-KIND_ORDER = (KIND_MOCK, KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ)
+KIND_ORDER = (KIND_KIEM_TRA, KIND_MOCK, KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ)
+
+#: Loại HIỂN THỊ của một dòng sự kiện: bài kiểm tra tách khỏi `assignment`.
+_LOAI_SQL = ("CASE WHEN kind = 'assignment' AND meta->>'loai' = 'kiem_tra' "
+             "THEN 'kiem_tra' ELSE kind END")
+#: Dòng nào vào sổ: các loại cũ + bài kiểm tra (không phải mọi bài tập).
+_VAO_SO_SQL = "(kind = ANY(%s) OR (kind = 'assignment' AND meta->>'loai' = 'kiem_tra'))"
 
 
 def _as_json(value):
@@ -93,6 +105,8 @@ def _row_label(kind, meta):
         return 'Đề thi thử'
     if kind == KIND_REVIEW_QUIZ:
         return 'Quiz ôn tập'
+    if kind == KIND_KIEM_TRA:
+        return title or 'Bài kiểm tra'
     return KIND_LABELS.get(kind, kind)
 
 
@@ -105,19 +119,19 @@ def gradebook(uid, limit=DEFAULT_ROWS):
     limit = so_nguyen(limit, DEFAULT_ROWS, 1, MAX_ROWS)
     kinds = [KIND_MOCK, KIND_LESSON, KIND_DRILL, KIND_REVIEW_QUIZ]
     try:
-        rows = q('''SELECT kind, course_id, topic, score, max_score, minutes,
+        rows = q('''SELECT ''' + _LOAI_SQL + ''' AS kind, course_id, topic, score, max_score, minutes,
                            occurred_at, event_date, source, meta
                     FROM learning_events
-                    WHERE user_id = %s AND kind = ANY(%s)
+                    WHERE user_id = %s AND ''' + _VAO_SO_SQL + '''
                       AND max_score IS NOT NULL AND max_score > 0
                     ORDER BY occurred_at DESC
                     LIMIT %s''', (uid, kinds, limit))
-        totals = q('''SELECT kind, COUNT(*) AS n,
+        totals = q('''SELECT ''' + _LOAI_SQL + ''' AS kind, COUNT(*) AS n,
                              SUM(score) AS s, SUM(max_score) AS m
                       FROM learning_events
-                      WHERE user_id = %s AND kind = ANY(%s)
+                      WHERE user_id = %s AND ''' + _VAO_SO_SQL + '''
                         AND max_score IS NOT NULL AND max_score > 0
-                      GROUP BY kind''', (uid, kinds))
+                      GROUP BY 1''', (uid, kinds))
     except DatabaseError:
         return {'rows': [], 'byKind': [], 'hint': 'Chưa có dữ liệu học tập nào.'}
 

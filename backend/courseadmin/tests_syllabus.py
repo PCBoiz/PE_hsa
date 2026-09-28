@@ -252,7 +252,11 @@ def test_gan_khung_bao_thua_thieu(admin_api, khoa):
     admin_api.put('/api/admin/syllabus/%s' % vid, {'status': 'xuat_ban'}, format='json')
 
     r = admin_api.put('/api/admin/classes/%s/chuong-trinh' % lop, {'versionId': vid}, format='json')
-    assert r.json() == {'ok': True, 'daKhop': 1, 'thuaTrongKhung': 1, 'thieuTrongLop': 0, 'ghiThat': True}
+    # Bốn khoá gốc giữ nguyên nghĩa; từ E1 (25/09/2026) phản hồi có thêm danh sách buổi
+    # thừa / buổi khung thiếu (`chuong_trinh/dich_vu.py::nhan_khung`) — so từng khoá.
+    d = r.json()
+    assert {k: d[k] for k in ('ok', 'daKhop', 'thuaTrongKhung', 'thieuTrongLop', 'ghiThat')} ==         {'ok': True, 'daKhop': 1, 'thuaTrongKhung': 1, 'thieuTrongLop': 0, 'ghiThat': True}, d
+    assert [k['soBuoi'] for k in d['khungThieu']] == [2], d['khungThieu']
 
 
 def test_gan_khung_tu_choi_ban_nhap(admin_api, khoa):

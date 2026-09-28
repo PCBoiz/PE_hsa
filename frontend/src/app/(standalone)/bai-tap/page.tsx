@@ -22,6 +22,8 @@ const HINH_DANG = z.looseObject({
     submittedAt: z.string().nullable(), content: z.string().nullable(),
     score: z.number().nullable(), scorePct: z.number().nullable(),
     feedback: z.string().nullable(), gradedAt: z.string().nullable(),
+    // V-h (25/09/2026) — tuỳ chọn: Vercel lên trước Render, máy chủ cũ không trả.
+    kind: z.string().optional(), heldOn: z.string().nullable().optional(), absent: z.boolean().optional(),
   })),
 }) satisfies HinhDang<{ assignments: BaiCuaToi[] }>;
 

@@ -59,6 +59,14 @@ CLASS_MEMBER_REMOVE = 'class.member.remove'
 #: Chuyển lớp MỘT bước (§55, 24/09/2026): đóng lượt ở lớp cũ + mở lượt ở lớp mới trong
 #: một giao dịch. `target` là lớp MỚI; `detail` giữ cả hai lớp và hai lượt.
 CLASS_MEMBER_TRANSFER = 'class.member.transfer'
+#: Nhập học viên vào lớp TỪ TỆP MẪU (V-j, 25/09/2026). MỘT dòng cho cả lượt (như
+#: `send_all`): `detail` mang tên tệp, id tài khoản mới + id em có sẵn, số dòng lỗi. Từng
+#: tài khoản mới vẫn có dòng `user.create`, từng em có sẵn vẫn có `class.member.add`.
+CLASS_MEMBER_IMPORT = 'class.member.import'
+#: Đánh giá một em trong lớp (25/09/2026, `teaching/danh_gia.py`): nhận xét gửi phụ
+#: huynh, cờ "cần hỗ trợ" + lý do, đề xuất hướng học. `target` là EM (target_type
+#: 'user') để dòng thời gian của em đọc được cả lịch sử đánh dấu; `detail.classId`.
+CLASS_MEMBER_ASSESS = 'class.member.assess'
 #: Dán liên hệ phụ huynh cho cả lớp (13/09/2026). Ghi đè thông tin một em tự
 #: điền, nên `detail` giữ giá trị CŨ — đó là đường hoàn tác duy nhất của một lần
 #: dán nhầm cột.
@@ -119,6 +127,10 @@ COURSE_CREATE = 'course.create'
 COURSE_UPDATE = 'course.update'
 COURSE_DELETE = 'course.delete'
 COURSE_IMPORT = 'course.import'
+#: Trạng thái khoá "Đang mở / Nháp" (V-i, bảng TopHSA dòng 5, 25/09/2026). Tách khỏi
+#: `COURSE_UPDATE` vì hậu quả khác hẳn: chuyển về nháp là mọi học viên của khoá mất bài
+#: NGAY. `detail` giữ `cu` + `moi` để trả lời "ai đóng khoá này, lúc nào".
+COURSE_PUBLISH = 'course.publish'
 LESSON_CREATE = 'lesson.create'
 LESSON_UPDATE = 'lesson.update'
 LESSON_DELETE = 'lesson.delete'
@@ -139,6 +151,30 @@ SYLLABUS_UPDATE = 'syllabus.update'
 SYLLABUS_DELETE = 'syllabus.delete'
 SYLLABUS_PUBLISH = 'syllabus.publish'
 CLASS_SYLLABUS_ASSIGN = 'class.syllabus.assign'
+#: Gắn tay MỘT buổi học với một buổi khung (E1, 25/09/2026) — `detail` giữ gắn CŨ.
+SESSION_SYLLABUS = 'session.syllabus'
+#: Sổ đầu bài (§70). `detail` giữ cả bản CŨ: sổ là nguồn của tiến độ lớp và tờ phụ
+#: huynh, sửa nhầm thì đây là đường hoàn tác duy nhất.
+SESSION_LOG = 'session.log'
+#: Hộp Yêu cầu (E3, §65). Duyệt ghi cả việc đã thực thi (`detail.thucThi`) — một dòng trả
+#: lời được "ai duyệt, lúc nào, hệ thống đã làm gì".
+REQUEST_CREATE = 'request.create'
+REQUEST_STATUS = 'request.status'
+REQUEST_ASSIGN = 'request.assign'
+REQUEST_APPROVE = 'request.approve'
+REQUEST_REJECT = 'request.reject'
+#: Học vụ đổi loại một yêu cầu hỗ trợ (bảng TopHSA dòng 11 "phân loại", 26/09/2026).
+REQUEST_CLASSIFY = 'request.classify'
+#: Thông báo trung tâm (§61, E2): học vụ / giảng viên gửi cho lớp, môn, nhóm, cá nhân.
+ANNOUNCEMENT_SEND = 'announcement.send'
+
+# §73 · Học viên tự đăng ký (E5, 27/09/2026). Hai dòng, không một dòng: "ai mở tài
+# khoản này" và "ai chứng minh giữ được hộp thư ấy" là hai câu hỏi khác nhau, và
+# khoảng cách giữa hai mốc chính là thứ học vụ cần khi một lượt đăng ký trông đáng
+# ngờ. `USER_CREATE` vẫn dành riêng cho nhân sự cấp tài khoản — trộn hai đường vào
+# một mã là mất khả năng đếm "bao nhiêu em tự vào" so với "bao nhiêu em được cấp".
+USER_SELF_REGISTER = 'user.self_register'
+USER_VERIFY_EMAIL = 'user.verify_email'
 
 
 def _client_ip(request):
@@ -158,11 +194,16 @@ def _client_ip(request):
 
 
 def record(request, action, *, target_type=None, target_id=None, target_label=None,
-           summary=None, detail=None, actor=None):
+           summary=None, detail=None, actor=None, luc=None):
     """Ghi một hành động sửa. Trả True nếu ghi được; không bao giờ ném lỗi.
 
     ``request`` để lấy người thực hiện và IP. Truyền ``actor`` riêng khi hành
     động do lệnh quản trị chạy nền gây ra (không có request).
+
+    ``luc`` (25/09/2026): mốc `occurred_at` do bên gọi đưa — CHỈ khi dòng nhật ký
+    phải trùng đúng mốc của một bản ghi khác cùng lượt. Điểm danh truyền mốc của
+    `attendance_history` để phần điền ngược §62 (`NOT EXISTS … changed_at =
+    occurred_at`) nhận ra dòng đã có. Mặc định `local_now()` như trước.
     """
     who = actor if actor is not None else getattr(request, 'user', None)
     actor_id = getattr(who, 'id', None) if getattr(who, 'is_authenticated', False) else None
@@ -181,7 +222,7 @@ def record(request, action, *, target_type=None, target_id=None, target_label=No
               (actor_id, actor_name, actor_role, action, target_type,
                None if target_id is None else str(target_id), target_label, summary,
                json.dumps(detail, ensure_ascii=False) if detail is not None else None,
-               _client_ip(request), local_now()))
+               _client_ip(request), luc or local_now()))
         return True
     except (DatabaseError, TypeError, ValueError) as exc:
         # Mức ERROR kèm nguyên nội dung: nhật ký kiểm toán mất một dòng thì ít
@@ -189,3 +230,8 @@ def record(request, action, *, target_type=None, target_id=None, target_label=No
         logger.error('[audit] KHÔNG ghi được: %s | action=%s actor=%s target=%s/%s | %s',
                      exc, action, actor_id, target_type, target_id, summary)
         return False
+
+# §71 · Địa chỉ lịch riêng (.ics, 26/09/2026). Chìa mở lịch mà không cần đăng
+# nhập, nên cấp và thu hồi đều phải để lại dấu vết.
+CALENDAR_LINK_NEW = 'calendar.link.new'
+CALENDAR_LINK_REVOKE = 'calendar.link.revoke'

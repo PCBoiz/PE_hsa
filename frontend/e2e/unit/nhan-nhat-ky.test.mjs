@@ -21,8 +21,8 @@ import { fileURLToPath } from 'node:url';
 
 const GOC = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const AUDIT = readFileSync(join(GOC, '..', 'backend', 'common', 'audit.py'), 'utf8');
-const TRANG = readFileSync(
-  join(GOC, 'src', 'app', '(standalone)', 'quan-tri', 'nhat-ky', 'page.tsx'), 'utf8');
+// Bảng nhãn dời sang `src/lib/viecNhatKy.ts` (V-n, 25/09/2026) — Nhật ký VÀ lịch sử lớp cùng đọc.
+const TRANG = readFileSync(join(GOC, 'src', 'lib', 'viecNhatKy.ts'), 'utf8');
 
 let loi = 0;
 const check = (ten, ok, ct = '') => {
@@ -35,7 +35,7 @@ const check = (ten, ok, ct = '') => {
 const MA = [...AUDIT.matchAll(/^[A-Z][A-Z_]+ = '([a-z_]+(?:\.[a-z_]+)+)'/gm)].map((m) => m[1]);
 
 // Cắt đúng thân `const VIEC … };` — tệp còn bảng `VAI` cũng dạng khoá: giá trị.
-const iDau = TRANG.indexOf('const VIEC');
+const iDau = TRANG.indexOf('export const VIEC');
 const iCuoi = TRANG.indexOf('\n};', iDau);
 const THAN = iDau === -1 ? '' : TRANG.slice(iDau, iCuoi);
 const NHAN = new Set([...THAN.matchAll(/^\s*'([a-z_.]+)':\s*'[^']+'/gm)].map((m) => m[1]));

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Button, Card, CardHead, Chip, EmptyState, ToastProvider, useToast } from '@/components/ui';
 import { apiFetch, errorText, loiBatDuoc } from '@/lib/api';
+import { lucVN } from '@/lib/gioVN';
 
 export type BaiCuaToi = {
   id: number;
@@ -20,6 +21,11 @@ export type BaiCuaToi = {
   scorePct: number | null;
   feedback: string | null;
   gradedAt: string | null;
+  /** 'kiem_tra' = bài kiểm tra LÀM TRÊN LỚP, giảng viên nhập điểm (V-h) — không nộp ở đây. */
+  kind?: string;
+  heldOn?: string | null;
+  /** Vắng buổi kiểm tra — đã ghi nhận, không có điểm. */
+  absent?: boolean;
 };
 
 function fmt(iso: string | null) {
@@ -65,7 +71,7 @@ function DanhSach({ initial, loiTai }: { initial: BaiCuaToi[]; loiTai?: string |
   const [dangGui, setDangGui] = useState<number | null>(null);
   const toast = useToast();
 
-  const chuaNop = ds.filter((a) => a.status === 'open' && !a.submittedAt).length;
+  const chuaNop = ds.filter((a) => a.status === 'open' && !a.submittedAt && a.kind !== 'kiem_tra').length;
 
   async function nop(a: BaiCuaToi) {
     const noi_dung = (nhap[a.id] ?? '').trim();
@@ -137,11 +143,16 @@ function DanhSach({ initial, loiTai }: { initial: BaiCuaToi[]; loiTai?: string |
               const tre = a.status === 'open' && !a.submittedAt && quaHan(a.dueAt);
               const dangMo = mo === a.id;
               const thang = a.maxScore ?? 10;
+              const kiemTra = a.kind === 'kiem_tra';
               return (
                 <li key={a.id} className="rounded-md border border-line bg-surface px-4 py-3">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="text-subhead text-ink">{a.title}</span>
-                    {a.gradedAt ? (
+                    {kiemTra && a.absent ? (
+                      <Chip tone="warn">Vắng buổi kiểm tra</Chip>
+                    ) : kiemTra && !a.gradedAt ? (
+                      <Chip tone="neutral">Chưa có điểm</Chip>
+                    ) : a.gradedAt ? (
                       <Chip tone="good">
                         {a.score}/{thang}
                         {a.scorePct !== null ? ` · ${Math.round(a.scorePct)}%` : ''}
@@ -158,7 +169,8 @@ function DanhSach({ initial, loiTai }: { initial: BaiCuaToi[]; loiTai?: string |
 
                   <p className="mt-1 text-small text-ink-3">
                     {a.className}
-                    {han && (
+                    {kiemTra && <> · bài kiểm tra trên lớp{a.heldOn ? ` ngày ${lucVN(a.heldOn)}` : ''}</>}
+                    {han && !kiemTra && (
                       <>
                         {' · hạn '}
                         <span className={tre ? 'text-warning-ink' : undefined}>
@@ -191,7 +203,12 @@ function DanhSach({ initial, loiTai }: { initial: BaiCuaToi[]; loiTai?: string |
                     </p>
                   )}
 
-                  {a.status === 'open' ? (
+                  {kiemTra ? (
+                    // Bài kiểm tra làm trên giấy — không có ô nộp (máy chủ cũng trả 409).
+                    <p className="mt-3 text-small text-ink-3">
+                      Bài làm trên lớp. Giảng viên nhập điểm sau khi chấm — điểm hiện ở đây.
+                    </p>
+                  ) : a.status === 'open' ? (
                     <div className="mt-3">
                       {dangMo ? (
                         <>

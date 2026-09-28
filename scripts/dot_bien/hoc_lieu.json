@@ -1,0 +1,44 @@
+[
+ {
+  "ten": "bỏ kiểm buổi bù — tài liệu buổi bù tới cả lớp",
+  "cu": "        ' AND NOT h.an AND (h.session_id IS NULL OR ' + thuoc_buoi('h.session_id', '%s') + ')')",
+  "moi": "        ' AND NOT h.an AND (h.session_id IS NULL OR %s IS NOT NULL)')",
+  "cho": "test_tai_lieu_cua_buoi_bu_chi_toi_em_thuoc_buoi_ay"
+ },
+ {
+  "ten": "học viên thấy cả tài liệu đang ẩn",
+  "cu": "        ' AND NOT h.an AND (h.session_id IS NULL OR '",
+  "moi": "        ' AND (h.an OR TRUE) AND (h.session_id IS NULL OR '",
+  "cho": "test_tai_lieu_an_thi_hoc_vien_khong_thay_nhung_giang_vien_van_thay"
+ },
+ {
+  "ten": "em đã rời lớp vẫn xem được",
+  "cu": "                       WHERE class_id = %s AND user_id = %s AND left_at IS NULL''',",
+  "moi": "                       WHERE class_id = %s AND user_id = %s AND TRUE''',",
+  "cho": "test_em_da_roi_lop_khong_con_thay"
+ },
+ {
+  "ten": "danh sách cho phép thành vô nghĩa (nhận mọi lược đồ)",
+  "cu": "    return p.scheme.lower() in LUOC_DO and bool(p.netloc)",
+  "moi": "    return bool(p.scheme or p.path)",
+  "cho": "test_dia_chi_khong_phai_http_thi_tu_choi"
+ },
+ {
+  "ten": "bỏ đòi tên miền — https:/// lọt qua",
+  "cu": "    return p.scheme.lower() in LUOC_DO and bool(p.netloc)",
+  "moi": "    return p.scheme.lower() in LUOC_DO",
+  "cho": "test_dia_chi_khong_phai_http_thi_tu_choi"
+ },
+ {
+  "ten": "tìm tài liệu không đòi đúng lớp — chạm được tài liệu lớp khác",
+  "cu": "        return q1('SELECT * FROM hoc_lieu WHERE id = %s AND class_id = %s', (tid, class_id))",
+  "moi": "        return q1('SELECT * FROM hoc_lieu WHERE id = %s AND %s IS NOT NULL', (tid, class_id))",
+  "cho": "test_khong_xoa_duoc_tai_lieu_cua_lop_khac"
+ },
+ {
+  "ten": "gắn không kiểm buổi có thuộc lớp không",
+  "cu": "        if buoi and not q1('SELECT 1 FROM class_sessions WHERE id = %s AND class_id = %s',",
+  "moi": "        if False and not q1('SELECT 1 FROM class_sessions WHERE id = %s AND class_id = %s',",
+  "cho": "test_khong_gan_duoc_vao_buoi_cua_lop_khac"
+ }
+]

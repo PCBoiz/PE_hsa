@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts import tu_dang_ky
 from accounts.ghi_nho import cap_refresh, muon_ghi_nho
 from accounts.hashers import check_werkzeug_password, make_werkzeug_password
 from accounts.hoat_dong import danh_dau
@@ -148,6 +149,17 @@ class LoginView(APIView):
         if (user.get('status') or 'active') != 'active':
             return Response({'error': 'Tài khoản này đã được trung tâm khoá. '
                                       'Liên hệ TopHSA nếu bạn cần mở lại.'}, status=403)
+
+        # §73 — tài khoản TỰ đăng ký mà chưa bấm thư xác nhận. Đặt SAU khi kiểm mật
+        # khẩu, cùng lý do với hàng rào "đã khoá" ở trên: trả lời "chưa xác thực" trước
+        # khi biết người gõ có đúng là chủ tài khoản không thì ai cũng dò được địa chỉ
+        # nào vừa đăng ký ở TopHSA. `chua_xac_thuc` là MỘT nơi quyết định (RULES §7) và
+        # chỉ đúng khi `self_registered` — học viên hiện có (cột ấy FALSE) không đổi gì.
+        if tu_dang_ky.chua_xac_thuc(user):
+            return Response({'error': tu_dang_ky.CAU_CHUA_XAC_THUC,
+                             # Màn đăng nhập đọc cờ này để hiện nút "Gửi lại thư xác
+                             # nhận" — không tự suy từ câu chữ của thông báo.
+                             'canXacThuc': True}, status=403)
 
         # §56 — SAU cả hai hàng rào trên: sai mật khẩu hay tài khoản đã khoá thì
         # người ấy chưa vào, và không được rời danh sách "lâu không vào" chỉ vì

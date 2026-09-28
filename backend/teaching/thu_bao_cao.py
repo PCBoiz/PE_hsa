@@ -195,3 +195,40 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
 
 #: Tái xuất để nơi gọi khỏi phải nhập từ hai chỗ khi chỉ cần các dải nhận xét.
 __all__ = ['soan_thu', 'DAI']
+
+
+# ── Hộp thư đi (§61, E2) ────────────────────────────────────────────────────
+#
+# Thư báo cáo mang PDF vài chục KB — không lưu tệp trong `outbox`. Dòng hộp thư đi chỉ giữ
+# THAM SỐ (lớp, em, kỳ, đường dẫn); lượt gửi — kể cả lượt thử lại vài giờ sau — dựng lại
+# thư bằng đúng `dung_bao_cao` + `soan_thu`. Số liệu của lượt thử lại là số lúc thử lại:
+# cùng lẽ với đường dẫn "luôn mới" nói ở đầu tệp.
+
+
+def dung_thu_outbox(dong):
+    """Dựng lại (tiêu đề, chữ, html, đính kèm) từ `outbox.params` — `hop_thu` gọi lúc gửi."""
+    from datetime import date
+
+    from teaching.parent_report import dung_bao_cao
+    p = dong['params']
+    bc, loi = dung_bao_cao(p['class_id'], p['user_id'], date.fromisoformat(p['tu']),
+                           date.fromisoformat(p['den']))
+    if loi:
+        raise ValueError(loi)
+    return soan_thu(bc, p.get('duong_dan'))
+
+
+def sau_gui_outbox(dong, trang_thai, dau_vet, loi):
+    """Ghi kết quả từng lượt vào sổ gửi `parent_report_sends` (sổ của miền phụ huynh).
+
+    'failed' (còn thử lại) vẫn ghi 'loi' kèm câu lỗi: sổ nói đúng lúc này. Lượt sau gửi
+    được thì dòng ấy thành 'da_gui' — không ai phải bấm gửi lại."""
+    from common.db import x
+    if dong.get('source_type') != 'parent_report_sends' or not dong.get('source_id'):
+        return
+    ok = trang_thai == 'sent'
+    x('''UPDATE parent_report_sends
+            SET status = %s, provider_id = coalesce(%s, provider_id), error = %s,
+                sent_at = CASE WHEN %s THEN now() ELSE sent_at END
+          WHERE id = %s''',
+      ('da_gui' if ok else 'loi', dau_vet or None, None if ok else loi, ok, dong['source_id']))

@@ -6,6 +6,535 @@ Sổ này KHÔNG chép lại `git log` — git đã ghi từng thay đổi và l
 kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
+
+## 27/09/2026 — Trả lời được "môn nào đang tụt, lớp nào trong môn ấy"
+
+Nhánh cục bộ `agent/bc`. Ô CUỐI còn "MỘT PHẦN" của dòng 6: khách hỏi được "lớp này em nào
+chưa nộp bài" và "khoá này điểm thế nào", nhưng không hỏi được câu ở GIỮA — so MÔN với MÔN.
+Muốn biết thì phải mở ~400 lớp rồi tự gộp trong đầu, tức thực tế là không ai biết.
+
+`GET /api/admin/bao-cao-cheo` + trang "Kết quả theo môn". CHỈ ĐỌC, **không một dòng DDL** —
+mọi cột đã có, cái thiếu là một TRỤC.
+
+**Thứ đáng ghi lại là phép cộng.** `assignments.max_score` là thang của RIÊNG từng bài, nên
+cộng điểm thô rồi chia là sai theo một cách đặc biệt khó thấy: bài thang 10 được 10 (tuyệt
+đối) và bài thang 100 được 50 (nửa vời) cộng thô ra 30, sự thật là 75. Và con số sai ấy
+**chạy đúng hướng** — môn nào hay dùng thang 100 trông càng tệ — nên nó không trông như lỗi,
+nó trông như một phát hiện. Cùng lẽ ấy: dòng tổng cộng từ SỐ THÔ, không lấy trung bình các
+phần trăm cấp lớp (trung bình của trung bình cho mỗi lớp một phiếu bất kể lớp 3 em hay 30).
+
+**Bộ kiểm bắt được lỗi ở đúng chỗ nó tồn tại để bắt.** Lượt ĐỎ trước: 19/19 thất bại. Lượt
+đầu sau khi có mã: 16 đỏ / 3 xanh — và ba test xanh là ba test KHÔNG đi qua đường tính số
+(403, ngày sai dạng, `dinh_dang` lạ). Lỗi thật: `_cong` đọc `_tongDiemChuan` trên dòng đã
+qua `_chot`, mà hàm ấy lọc mọi khoá `_` → `KeyError` → HTTP 500 cho cả trang. Sửa bằng cách
+cho `_cong` nhận bộ đếm THÔ. Chốt 19/19.
+
+**Cổng unit Node bắt hai lỗi mà tôi tự tin là không có**: một `hint` 100 ký tự (trần 90) và
+chữ "hợp phần" trong câu EmptyState — cổng thuật ngữ đòi MỘT tên là "môn học". Cả hai nằm
+trong đúng một câu tôi viết cho tử tế.
+
+**Hai thứ worktree agent sẽ vấp lại**: `scripts/dot_bien.py` gọi `backend/.venv/Scripts/
+python.exe` tính từ gốc repo, mà worktree không có venv → `FileNotFoundError` ngay ở lượt
+nền, sau khi nó đã in cảnh báo "đang sửa tệp" (may là chưa ghi đột biến nào). `tsc` cũng
+cần `node_modules`. Tôi nối cả hai bằng junction tới bản chính; nếu chuyện này lặp lại thì
+`dot_bien.py` nên rơi về `sys.executable`.
+
+**Không đo màn, có chủ ý**: máy còn 2,3 GB trống, và một `next dev` đã từng giữ 3 GB. Cũng
+không dựng Django 9400 — bộ kiểm gọi view trực tiếp nên máy chủ HTTP là RAM tiêu không việc.
+Sáu bước cần đo ở `docs/agent/BAO_CAO_BAO_CAO_CHEO.md` §7; dòng 6 CHƯA được tick "CÓ".
+
+**Bàn giao giữa chừng, và số chốt (agent thứ hai).** Agent đầu hết hạn mức phiên khi mã còn
+NẰM NGOÀI GIT — 935 dòng chưa commit mà chưa ai biết có chạy được không. Lượt tiếp nhận:
+chạy thử TRƯỚC khi sửa, và bộ kiểm **19/19 xanh ngay** — không phải sửa một dòng mã nào.
+Thứ duy nhất hỏng là `cau_truc.py --kiem` ĐỎ vì `docs/CAU_TRUC_MA.md` chưa được sinh lại
+sau khi thêm tệp; sinh lại là xong, nợ ghi chéo vẫn 11 (không phình).
+
+Số chốt: **đột biến 14/14 bị giết đúng chỗ** (mỗi cái làm đỏ đúng test đã khai ở khoá
+`cho`, không cái nào lọt), **hồi quy `pytest teaching/` 661 xanh / 0 đỏ** (1 g 25 ph).
+
+**Bài học quy trình, không phải bài học kỹ thuật**: thứ suýt mất không phải mã khó viết —
+nó là mã ĐÚNG, xanh ngay lượt đầu — mà là mã chưa được `git add`. Hai lượt chạy dài của tôi
+tốn 2 g 45 ph; nếu commit đợi tới sau chúng thì một lần đứt phiên nữa là mất trắng lần thứ
+hai. Nên lượt này commit NGAY khi nhóm cổng nhanh (ruff, check, tsc, eslint, unit Node,
+bản đồ, tầng vai, cấu trúc) xanh, rồi mới chạy hai lượt dài. Đột biến và hồi quy xác nhận
+một commit đã có còn hơn bảo vệ một commit chưa tồn tại.
+
+## 27/09/2026 — §58 dạy thay một buổi, và một cách mất việc mà tôi chưa từng gặp
+
+Giảng viên gắn theo LỚP, nhưng một buổi lẻ có thể do người khác đứng. `class_sessions.
+teacher_id` / `assistant_id`: NULL = theo lớp. **Không sao chép giảng viên lớp vào mọi buổi
+lúc tạo** — làm vậy thì đổi giảng viên của lớp sẽ không đổi các buổi tương lai, và không ai
+nhận ra cho tới lúc nhìn bảng lương.
+
+Phép kiểm chấm công nằm CHUNG tệp với phép kiểm đổi người, vì đó là chỗ lỗi này thành tiền:
+`COALESCE(s.teacher_id, c.teacher_id)`. Ai sửa một bên mà quên bên kia thì đỏ ngay.
+
+Số: lược đồ 0/70 lượt hai, `kiem_luoc_do` 81/81, bộ kiểm **10/10**, **3/3 đột biến bị giết**,
+37 test buổi học cũ vẫn xanh, bộ đo màn thật **7/7 bước**, cổng ĐẠT 72 s.
+
+**Một đột biến LỌT hoá ra là đột biến tương đương**: nó đổi `data[o] = None` thành
+`data.get(o)`, mà khoá chưa có nên vẫn ra `None` — hành vi không đổi, test không có gì để
+bắt. Nhắm lại vào đúng chỗ (bỏ hẳn việc đặt khoá) thì nó chết ngay. Đột biến lọt không phải
+lúc nào cũng có nghĩa test yếu; đôi khi là cái thước chĩa sai hướng.
+
+**Và một cách mất việc tôi chưa từng gặp.** Tôi sửa `sessions.py` trong lúc loạt đột biến
+đang chạy trên chính tệp ấy. Loạt phục hồi bằng bản gốc đọc lúc KHỞI ĐỘNG, nên phần vừa
+thêm bị ghi đè mất — API thiếu một khoá suốt hai lượt đo, và tôi đi tìm lỗi ở proxy, ở zod,
+ở Django `--noreload`, trước khi nghĩ tới chỗ thật. `dot_bien.py` nay so tệp trên đĩa với
+bản đột biến nó vừa đặt và **nói ra** khi thấy có người khác sửa. Cảnh báo ấy chỉ tới sau
+khi việc đã mất, nên luật trong CLAUDE.md vẫn là: chờ bảng in ra rồi hãy sửa tệp ấy.
+
+## 27/09/2026 — Dòng 26 đóng: em tự mở được tài khoản, và học vụ xếp lớp ngay trong hộp Yêu cầu
+
+Nhánh cục bộ `agent/e5`, §73. Trước hôm nay `RegisterView` đòi `IsAdminRole` (đổi 27/08 để
+bịt lỗ "một lệnh curl là có tài khoản kèm quyền gọi `/api/chat`") — nên dòng 26 nằm im từ
+đó. Mở lại cửa mà KHÔNG mở lại lỗ: tài khoản chưa bấm thư xác nhận **không đăng nhập
+được**, nên nó không có token, không gọi được API nào, không đốt được một xu tiền trợ lý.
+
+**Ba quyết định đáng nhớ.**
+
+1. **Hàng chờ "Đăng ký mới" dùng lại hộp Yêu cầu §65**, loại `tk_dang_ky` — không dựng
+   bảng mới. Nó thừa hưởng nguyên máy trạng thái, giao việc, ghi chú nội bộ, nhật ký, và
+   "duyệt = thực thi trong MỘT giao dịch": học vụ chọn lớp rồi bấm Duyệt là em vào lớp,
+   duyệt hai lần chỉ xếp một lần. Dựng bảng riêng là dựng bản thứ hai của cùng một máy
+   trạng thái.
+2. **Dòng `yeu_cau` chỉ sinh ra ở cửa XÁC NHẬN EMAIL**, không ở cửa đăng ký. Ai bơm địa
+   chỉ bừa cũng không làm bẩn hộp việc của học vụ — chỉ để lại vài dòng `users` trơ, mà
+   những dòng ấy còn **nhận lại được**: người thật đăng ký lại trên chính dòng ấy. Không
+   có luật đó thì bất kỳ ai cũng khoá vĩnh viễn một địa chỉ email khỏi TopHSA bằng một
+   lượt POST.
+3. **Hàng rào đăng nhập đọc `self_registered`, không đọc `is_verified` trần.** Cột
+   `is_verified` có trong lược đồ từ đầu nhưng chưa ai từng ghi, nên với toàn bộ học viên
+   hiện có nó là FALSE — chặn theo nó là khoá cửa cả TopHSA.
+
+**Số đo:** `scripts/do_dang_ky.mjs` 20/20 bước ĐẠT trên màn thật (khách + học vụ);
+`accounts/tests_tu_dang_ky.py` 28/28 (đỏ trước: 27 hỏng trên mã cũ); hồi quy `yeu_cau` +
+`quen_mat_khau` + `accounts` + `ho_so` 110/110; `bootstrap_schema` lượt 2 `0/70`;
+`kiem_luoc_do` 83/83.
+
+**Bốn thứ tìm được trong mã có sẵn** (chi tiết + vết nguồn: `docs/agent/BAO_CAO_E5.md` §6):
+
+- `scripts/quet_quyen.py:80` chỉ quét `api/`, nên **bảy cửa công khai `/auth/*`** — bốn
+  cửa quên mật khẩu §52 và ba cửa mới — nằm ngoài tầm mắt của chính cái báo cáo in ra
+  "mỗi dòng ở đây là một bề mặt công khai". Trước 4 dòng, sau khi vá **12**. Đã vá.
+- `ChiTietYeuCau.tsx:341` so tay `yc.loai === 'tt_chuyen_lop' || …` — danh mục loại có bản
+  thứ hai ở phía màn; loại thứ ba thêm vào MẤT ô chọn lớp và học vụ nhận 400. Đã dời cờ về
+  máy chủ (`chonLopToi`).
+- `quen_mat_khau.py` sáu câu chạm `password_reset_tokens` không lọc `purpose`. Đã vá cả sáu.
+- **Đồng hồ khai ra ai có tài khoản**: đo được 3,82–4,00 s (tạo mới) so với 1,43–1,96 s
+  ("email đã có tài khoản") trong khi nội dung phản hồi giống hệt nhau. Đã cân phần scrypt
+  bằng `_can_dong_ho()`; phần dư (số vòng gọi CSDL) ghi thẳng trong chú thích chứ không nói
+  dối là đã xoá. **Cửa §52 còn nguyên khe ấy — chưa vá.**
+
+**Chờ anh Sơn:** mục **E5a** ở `docs/VIEC_CUA_ANH.md` — (1) giữ "bắt xác nhận email trước
+khi vào học" không, (2) số điện thoại trùng thì nói thẳng hay im. Cả hai tôi đã làm theo
+phương án an toàn hơn.
+
+**Còn thiếu, nói thẳng:** chưa chặn tần suất theo số điện thoại; chưa dọn tài khoản chưa
+xác thực quá hạn (dòng ở lại, giữ email trong chỉ mục duy nhất); mỗi lượt đăng ký tiêu một
+số của `student_code_seq` nên mã HV sẽ có lỗ nếu bị spam trong trần.
+
+## 27/09/2026 — Dòng 30 (học liệu §60) chạy được, và ba cái thước tự bắt được mình
+
+Anh Sơn chốt: làm **liên kết ngoài trước** (không chờ khoá R2), gắn được vào **cả kho
+chung của lớp lẫn từng buổi**. Lược đồ §60 một bảng cho cả hai nguồn — `nguon='r2'` là chỗ
+chừa sẵn, vì tách hai bảng thì mọi câu đọc, mọi màn, mọi phép kiểm phải viết hai lần, và
+ngày thêm R2 sẽ là ngày sửa hết những chỗ ấy lúc không ai còn nhớ chúng nằm đâu.
+
+Số: lược đồ **0/69 lượt hai**, `kiem_luoc_do` **79/79**, bộ kiểm **27/27**, **7/7 đột biến
+bị giết**, bộ đo màn thật **11/11 bước** (hai vai, đã soi ảnh), cổng ĐẠT 67 s.
+
+**Phép kiểm buổi bù viết TRƯỚC khi viết mã.** §72 đã mắc lỗ ấy một lần — bốn cửa của một
+tính năng, ba cửa quên `thuoc_buoi`, nên thống kê đếm cả lớp còn màn của em lại ẩn đúng
+buổi ấy. Lần này `tests_hoc_lieu.py` §4 có sẵn phép kiểm trước khi có dòng mã nào.
+
+**Ba lần cái thước tự bắt được mình trong một buổi** — đáng ghi vì cả ba đều suýt đổ lỗi
+cho sản phẩm:
+
+① Loạt đột biến lần đầu để LỌT 3/7. Hai cái là test yếu thật (không ca nào đòi tên miền,
+  không test nào gắn tài liệu vào buổi của lớp khác). Cái thứ ba thì ngược lại: đột biến
+  nhắm vào câu `DELETE`, mà lớp phòng thủ thật nằm ở câu `SELECT` phía trước — đột biến
+  tương đương, không phải test yếu. Nhắm lại cho đúng lớp phòng thủ thì nó chết ngay.
+
+② Phép kiểm "mọi bộ đo phải đóng trình duyệt" XANH OAN ngay lần thử ngược đầu tiên: nó lọc
+  chú thích khi tìm `chromium.launch(` nhưng dùng `includes()` cho `baoHiem(`, nên
+  `// baoHiem(b);` vẫn tính là có. Một cái thước chỉ nghiêm ở nửa nó đang nhìn thì nửa kia
+  là chỗ lỗi sẽ chui qua.
+
+③ Bộ đo báo "0 khối" cho một màn dựng hoàn toàn đúng — hai lần, hai lý do khác nhau:
+  `data-khu` đặt lên `Card` không bao giờ tới DOM (component chỉ nhận năm prop, không
+  spread), và khối "Lớp của bạn" tải bằng JS sau khi HTML tới nơi nên `phien.man` trả về
+  trước khi nó kịp hiện.
+
+**Và một cái bẫy của chính bộ kiểm**: `test_khong_xoa_duoc_tai_lieu_cua_lop_khac` xanh khi
+chạy riêng, đỏ khi chạy cả bộ. Không phải rò rỉ dữ liệu — câu `SELECT` của phép kiểm đi
+bằng kết nối KHÁC với lời gọi API, nên nó thấy hay không thấy dòng vừa ghi là tuỳ lượt.
+Đo qua chính cửa API thì câu trả lời thôi phụ thuộc vào chuyện ấy. 27/27 ổn định từ đó.
+
+**Dữ liệu mẫu**: `du_lieu_mau --lam-moi` đã chạy — khung chương trình **0 → 1**, sổ đầu bài
+**0 → 13**. Sáu ô của bảng nghiệm thu nay có thứ để trình diễn.
+
+
+## 26/09/2026 (khuya) — E3 về đích và đã GỘP: dòng 11 xong, mở khoá phần còn lại
+
+Đúng như con số đã chỉ ra lúc chiều: việc mở khoá nhiều nhất không phải viết
+thêm mã mà là đưa nhánh đã xong về `erp`. `agent/e3` gộp xong, đẩy ở `61d42ec`.
+
+**Dòng 11 (giáo vụ · hỗ trợ lớp): CHƯA → CÓ.** Bảy trên bảy gạch đầu dòng chạy
+được trên màn thật — bộ đo `scripts/do_yeu_cau.mjs` đi trọn luồng bằng chuột,
+**17/17 bước ĐẠT**, cộng ba bước hàng rào (học viên không thấy thẻ Xử lý, ghi
+chú nội bộ ẩn, phụ huynh gửi qua link tờ báo cáo). Lược đồ 0/67 cả hai lượt,
+`kiem_luoc_do` **71/71**, cổng ĐẠT 114 s.
+
+Agent E3 còn tự tìm và vá hai lỗi ngoài phần được giao: tờ phụ huynh thiếu tiêu
+đề cấp một (axe `page-has-heading-one`), và `/nguoi-nhan` lộ email nhân sự chưa
+đặt tên với trợ giảng.
+
+**Bốn cái vướng của CÔNG CỤ, không phải sản phẩm** — agent báo, lead vá:
+1. `nap_lai_be.ps1` đòi venv trong worktree, mà worktree dùng venv repo chính →
+   chạy ở gốc, đổ ở mọi worktree. Nay tìm sang repo chính bằng
+   `git rev-parse --git-common-dir`.
+2. `don_may.ps1` ném "Key cannot be null" khi danh sách rỗng — theo lời agent:
+   *"chạy được lúc máy sạch, đổ lúc cần nó nhất"*.
+3. `next dev` mặc định không chạy trong worktree (junction + Turbopack) → phải
+   `--webpack`. Ghi vào kỹ năng `giao-viec-agent` cùng hai bẫy kia.
+4. Agent nghi `dot_bien.py` mang lỗi tích luỹ đột biến như bộ chạy của nó. Kiểm:
+   không — `goc` đọc một lần trước vòng lặp, mỗi đột biến ghi từ bản gốc. Nghi
+   đúng chỗ đáng nghi, chỉ là hai công cụ dựng khác nhau.
+
+Mô hình hai agent đã trả công hai lượt liền: lượt trước agent soát tìm 6 lỗi
+trong §72, lượt này agent làm tìm 3 lỗi trong công cụ của lead.
+
+
+## 26/09/2026 (đêm) — cắt chỗ đốt token, và hai lỗi trong chính công cụ vừa viết
+
+Anh Sơn: *"Tiến độ hơi chậm… có cách nào đẩy nhanh mà không đốt tokens quá
+nhanh không"*. Đo bảng nghiệm thu trước khi trả lời, và con số nói một điều khác
+hẳn cảm giác: **tiến độ chậm không phải vì thiếu mã, mà vì mã đã viết xong đang
+nằm im.** Nhánh `agent/e3` chặn 7 dòng (11, 12, 15, 16, 20, 21, 25), `agent/e2`
+chặn 2 dòng (20, 27), và bốn việc V-a/V-d/V-e/V-f vừa xong chưa ai đi nâng các
+dòng phụ thuộc chúng.
+
+**Hai công cụ cắt token**, anh chọn làm cả bốn hướng nên đây là hướng "tối ưu
+cách làm" làm trước để mọi việc sau rẻ hơn:
+
+- `scripts/dot_bien.py` — chạy CẢ LOẠT đột biến trong một lượt, in MỘT bảng.
+  Trước: 8 đột biến = 8 vòng lệnh + 8 lần đọc. Nó còn kiểm mẫu trước khi chạy
+  (`--xem`) và nói rõ mỗi đột biến giết ĐÚNG test nào — thứ cách làm tay không
+  cho biết. Đo trên §72: **7/7 giết đúng chỗ**.
+- `scripts/do_man_hang_loat.mjs` — mở nhiều màn trong MỘT phiên trình duyệt, trả
+  JSON gọn thay vì dump cả trang.
+
+**Hai lỗi trong chính hai công cụ ấy, tự bắt được:**
+
+1. Phiên đứt giữa loạt đột biến → `ban_ghi.py` nằm lại trên đĩa với
+   `daMo = len(xong)`. `atexit` và bẫy tín hiệu KHÔNG cứu được khi tiến trình bị
+   kết liễu cứng. Nếu không nhìn `git status` thì đột biến ấy đã đi thẳng vào
+   commit sau. Vá: sổ cứu hộ ghi ra đĩa, phục hồi lúc KHỞI ĐỘNG — cách duy nhất
+   chịu được kill cứng. Đã thử lại bằng cách dựng đúng cảnh ấy.
+2. Chạy loạt đột biến SONG SONG với cổng pre-push → cổng đọc phải bản đang bị
+   thay, `ruff` đỏ vì lý do không có thật, mất một lượt đi tìm lỗi không tồn tại.
+   Vá: công cụ tự in cảnh báo; luật ghi vào `CLAUDE.md`.
+
+**Soát bảng lượt đầu (9 màn)**: dòng 26 và 28 đạt hết câu hỏi → ứng viên nâng
+hạng; dòng 4, 5, 6, 7, 9, 10 mỗi dòng thiếu 2 mục TRÊN MÀN ĐẦU — chưa kết luận,
+thứ thiếu có thể nằm ở màn con.
+
+Lượt đo đầu trả về 9/9 màn "0 từ" vì hai máy chủ dev chết theo phiên. Một bảng
+đầy dấu ✗ trông y hệt sản phẩm thiếu cả chục tính năng — nên thêm trạng thái thứ
+ba **KHÔNG ĐO ĐƯỢC**, tách khỏi "thiếu". Đây là dương tính giả nguy hiểm nhất
+khi soát bằng máy: nó khiến người đọc kết luận ngược hẳn sự thật.
+
+
+## 26/09/2026 (tối muộn) — thêm hai dòng nữa bị ghi thấp hơn thực tế
+
+Cùng cách làm với dòng 17 và 21: không viết mã, chỉ mở màn thật và đối chiếu
+từng gạch của khách.
+
+- **Dòng 14 (giáo viên · điểm danh)** — ghi "gần đủ, thiếu lịch sử sửa từng
+  buổi (V-d)". Đo: sổ điểm danh có Có mặt · Vắng · Đi muộn · Xin phép, sửa lại
+  được, và `LichSuDiemDanh` hiện ngay dưới sổ. **gần đủ → CÓ**, V-d gạch.
+- **Dòng 18 (giáo viên · theo dõi học sinh)** — ghi "MỘT PHẦN: nhận xét GV không
+  có chỗ ghi; thiếu cờ cần hỗ trợ, đề xuất hướng học (V-a P0, V-f)". Đo và soi
+  ảnh: trang từng em có đủ ô **Nhận xét**, **Đánh dấu em cần hỗ trợ**, **Đề xuất
+  hướng học**, cùng lịch sử điểm danh, bài tập, điểm từng bài. **MỘT PHẦN → CÓ**,
+  V-a + V-f gạch.
+
+Bốn dòng trong một ngày (17, 21, 14, 18) bị ghi thấp hơn thực tế — đều vì việc
+đã làm xong mà không ai quay lại gạch khỏi kế hoạch. Đáng rút ra: **kế hoạch và
+bảng nghiệm thu phải được ĐO lại, không chỉ được viết thêm vào.**
+
+Ảnh dòng 18 còn xác nhận một việc khác: em Đỗ Đức Tùng hiện `7/7 · 100%` — đúng
+trạng thái gốc, tức lượt hoàn nguyên sau khi dựng dữ liệu vắng liên tiếp đã sạch
+thật, không để lại buổi vắng oan nào trong lớp mẫu.
+
+Việc của anh Sơn (K3) nay là bốn ô: `G24` (STT 22), `G19` (17), `G16` (14),
+`G20` (18).
+
+
+## 26/09/2026 (tối) — agent soát tìm ra sáu lỗi trong §72, đã vá năm
+
+Gọi hai agent theo mô hình anh Sơn yêu cầu: một làm (E3), một **đi chứng minh
+việc vừa làm là sai**. Agent soát trả về sáu mục có vết nguồn và số đo — đây là
+lần đầu mô hình ấy bắt được thứ mà chính người làm không thấy.
+
+**① Buổi bù — §72 tự cãi nhau.** `lop_cua_toi.py` lọc bằng `thuoc_buoi` (V-g,
+§62e), `ban_ghi.py` thì không. Hậu quả đo được: thống kê lấy sĩ số CẢ LỚP làm
+mẫu số, nút Nhắc gọi chuông cho 26 em chưa từng dự buổi bù — và màn "Lớp của
+tôi" của chính họ lại ẩn đúng buổi ấy. Em làm đúng lời nhắc rồi mở ra không thấy
+gì. Đã vá cả ba cửa (`_thuoc_lop`, thống kê, nhắc).
+
+**② Nút báo lỗi thiếu `key`.** React giữ nguyên instance khi `sessionId` đổi,
+nên cờ "đã báo" của buổi trước còn nguyên: em báo được ĐÚNG MỘT link mỗi phiên,
+từ link thứ hai màn nói "Đã báo, cảm ơn em." mà không gửi gì. Kèm theo:
+`setState(true)` chạy TRƯỚC `.catch(() => {})` nên 400/403/mạng rớt cũng ra câu
+ấy. Nay chờ máy chủ trả lời rồi mới nói, và có trạng thái "Chưa báo được — thử
+lại?".
+
+**③ Chuông gộp xoá mất số em báo.** `coalesce_count=3` nằm trong CSDL mà người
+dạy chỉ đọc được "1 em báo" — đúng thứ view ấy sinh ra để phân biệt (một em báo
+có thể là mạng nhà em ấy). Thêm `title_multi`.
+
+**④ Bốn đột biến agent soát chạy mà bộ test của tôi KHÔNG giết**: người đã rời
+lớp vẫn ghi được, `bao-loi` không canh `recording_url`, `thieuBanGhi` gồm cả
+buổi đã huỷ, `daMo` đếm phồng. Mã ba chỗ ĐÚNG — chỉ test không canh. Đã thêm bảy
+test; giờ **8/8 đột biến bị giết** (4 của agent + 4 của tôi cho phần vừa vá).
+
+Một test của tôi xanh vì LÝ DO SAI: `'3' in title` — mà tiêu đề có sẵn "23/09",
+cũng chứa chữ số 3. Siết thành `'3 em'`.
+
+**⑤ và ⑥ thuộc nhánh e3**, chưa gộp: §65 mắc cùng lỗi buổi bù, và "báo lỗi bản
+ghi" sẽ có HAI hộp thư nếu gộp (chuông §72 vs hộp Yêu cầu §65). Mục sau cần anh
+Sơn quyết — đã ghi K4 trong `docs/VIEC_CUA_ANH.md`, tôi đề xuất dùng hộp Yêu cầu
+vì "link hỏng" là việc phải có người nhận và đóng lại.
+
+Đo lại trên màn thật sau khi vá: em báo được CẢ HAI bản ghi
+(`/api/sessions/1544/ban-ghi/bao-loi` gọi được), API trả 200 sau 1,9 s rồi màn
+chuyển "Đã báo, cảm ơn em.". Test 23/23 xanh.
+
+
+## 26/09/2026 (tối) — soát lại bảng nghiệm thu: hai dòng bị ghi THẤP hơn thực tế
+
+Không viết thêm mã, chỉ ĐO. Bảng nghiệm thu là thứ khách đọc; ghi sai theo hướng
+nào cũng hại — nói quá thì mất tin, nói thiếu thì công đã làm không ai thấy.
+
+**Dòng 21 (trợ giảng · theo dõi)**: ghi chú 23/09 nói *"TG không nhận
+`vangLien`/`canChuY`"*, mà chú thích trong `viec_hom_nay.py` lại nói ngược. Đo:
+dựng một em vắng 3 buổi liền ở lớp mẫu 7322 (ghi sổ trạng thái gốc ra JSON
+trước), gọi API bằng thẻ TG và thẻ GV **cùng lớp** → cả hai `vangLien=1`, cùng
+tên em; soi màn TG → *"Vắng liền từ 2 buổi (1)"*, *"Đỗ Đức Tùng · vắng 3 buổi
+liền"*, nút *"Báo cần hỗ trợ"*. Hoàn nguyên 3/3 khớp gốc. Ghi chú đã lỗi thời.
+
+**Dòng 17 (giáo viên · giao bài)**: ghi *"MỘT PHẦN — không sửa được bài đã
+giao"*, và kế hoạch ghi V-e *"thiếu đối tượng nhận bài"*. Đo trên màn: nút **Đổi
+người nhận** đã có từ trước (`target_mode` + bảng `assignment_targets`), ô **Sửa
+bài** thêm sáng nay, bảng chấm cả lớp ghi rõ từng em *"Chưa nộp"* / *"Nộp
+18/09"* kèm tổng *"9/27 đã nộp"* — đủ cả mười hai gạch của khách. **MỘT PHẦN →
+CÓ**, V-e gạch khỏi kế hoạch.
+
+Suýt sai: lượt dựng dữ liệu đầu lỗi lược đồ giữa chừng (`attendance` không có
+cột `class_id`) nhưng đã kịp đổi một dòng, nên sổ hoàn nguyên ghi `absent` trong
+khi gốc là `present`. Sửa sổ trước khi hoàn nguyên — không thì lớp mẫu của khách
+bị để lại một buổi vắng oan.
+
+Còn chờ anh Sơn: tick `G24` (STT 22) và `G19` (STT 17). Ba đường tự tick đều bị
+chặn — xem `docs/VIEC_CUA_ANH.md` mục K3.
+
+
+## 26/09/2026 (chiều muộn) — dòng 4: hai mốc còn thiếu trong hành trình của em
+
+Khách viết rõ chuỗi phải theo dõi được: *"Đăng ký → Xếp lớp → Khai giảng → Làm
+bài → Kiểm tra → Thi thử → Kết quả → Báo cáo → Hoàn thành khóa học"*. Đối chiếu
+`teaching/dong_thoi_gian.py`: bảy mốc đã có, **hai mốc chưa** — dòng thời gian
+biết em VÀO lớp và biết lớp KẾT THÚC, nhưng không biết lớp bắt đầu dạy hôm nào;
+và biết điểm bài KIỂM TRA mà không biết em có làm bài tập hay không.
+
+- **Khai giảng** = buổi học ĐẦU TIÊN thật sự diễn ra. Buổi đã huỷ không tính:
+  lớp dời buổi khai giảng vì bão thì ngày khai giảng là ngày dạy bù.
+- **Làm bài** = lần nộp bài tập đầu tiên, chi tiết "Đã nộp N bài". MỘT mốc cho
+  cả khoá chứ không liệt kê từng bài: trần dòng thời gian là 300 sự kiện, một em
+  học lâu nộp hàng trăm bài thì mọi mốc khác bị đẩy ra ngoài. Bài `kiem_tra`
+  không đếm ở đây vì đã có mốc riêng.
+
+Đo trên màn thật (tài khoản 35704, đã soi ảnh): *Được cấp tài khoản → Bắt đầu
+khoá Tư duy Định lượng → Vào lớp → **Lớp … khai giảng** (03/08) → **Bắt đầu làm
+bài tập · Đã nộp 5 bài** (10/08) → Nộp bài thi thử 8/9*. Test 9/9 xanh, 4 đột
+biến giết 4.
+
+**Bẫy vấp BA lần trong một ngày**: `runserver --noreload` không nạp mã mới, nên
+bộ đo báo "tính năng không dựng" trong khi mã đúng hoàn toàn. Mỗi lần mất mươi
+phút. Đã viết `scripts/nap_lai_be.ps1` — dừng CẢ CẶP tiến trình của runserver,
+bật lại, và chờ tới khi `/health` trả 200 chứ không chỉ tới khi tiến trình sinh
+ra. Một bẫy đã ghi trong brief mà vẫn vấp lại thì nó cần một lệnh, không cần một
+lời nhắc.
+
+
+## 26/09/2026 (chiều) — §72 bản ghi buổi học: tính năng đang ĐỨT ở giữa
+
+Anh Sơn: *"cứ tiếp tục làm theo bảng phân rã tính năng đó"*. Lấy **dòng 22**
+(trợ giảng · quản lý record Zoom) vì nó trùng đúng tích hợp Zoom anh chọn sáng nay.
+
+**Đo trước, và đo mới thấy**: `class_sessions.recording_url` cùng ô nhập ở màn
+Buổi học đã có từ lâu, nên tưởng chỉ còn thiếu phần thống kê. Thật ra
+`recording_url` **không xuất hiện ở BẤT KỲ màn nào của học viên** — trợ giảng dán
+link, không em nào mở được, và cũng không ai biết là không mở được. Lỗ to hơn cái
+thống kê chính là đường cho em xem lại bài.
+
+**Đã làm** — §72 `recording_views` (một dòng mỗi buổi+người, mở lại thì cộng
+`lan_mo`), `backend/teaching/ban_ghi.py` với bốn cửa:
+- `POST /api/sessions/<s>/ban-ghi/da-mo` — em bấm mở, ghi nhận;
+- `POST /api/sessions/<s>/ban-ghi/bao-loi` — em báo link hỏng, chuông về cho
+  người DẠY (giảng viên + trợ giảng), không gửi cho bạn cùng lớp;
+- `GET /api/teach/classes/<c>/ban-ghi` — ai đã mở / chưa mở, **kèm danh sách buổi
+  đã học mà chưa ai dán link** (không nêu ra thì một buổi bị quên cứ nằm im);
+- `POST /api/teach/classes/<c>/ban-ghi/<s>/nhac` — gọi chuông cho em chưa mở.
+
+Giao diện: thẻ lớp của em có dòng `Xem lại: 24/09 22/09`, bấm là mở và đánh dấu
+✓; sau khi bấm mới hiện `Không mở được?`. Màn Buổi học có khối *Bản ghi buổi học*
+với `1/2 em đã mở · Chưa mở: 1 · [Nhắc em chưa mở]`.
+
+**Cố ý KHÔNG đo cái không đo được**: bản ghi nằm trên Zoom/Drive, hệ thống chỉ
+biết em đã BẤM mở. Chữ trên màn nói đúng bấy nhiêu — "đã mở", không phải "đã xem
+xong". Một con số hứa nhiều hơn nó đo được thì lần sau không ai tin nó nữa.
+
+**Đo thật trên màn (26/09, đã soi ảnh)**: em bấm → `24/09` thành `24/09 ✓`, trợ
+giảng thấy `1/2 em đã mở`, bấm nhắc → `Đã nhắc 1 em`. Nút chạm 44 px ở khổ 390,
+không tràn ngang. Ba lỗi tự bắt được khi soi màn thật: ngày hiện ra
+`24T19:30:00/09/2026` (dùng nhầm hàm chỉ ăn `YYYY-MM-DD`), `toLocaleDateString`
+nhả `24-09` thay vì `24/09`, và `text-muted` không phải lớp Tailwind có thật.
+
+**Test**: 15/15 xanh, **10 đột biến giết 10**. Ba đột biến LỌT ở lượt đầu — test
+yếu, đã siết: lớp thử không có buổi tương lai nên luật "chỉ tính buổi đã học"
+không được chạm; và luật "người báo không tự gọi mình" là mã chết cho tới khi có
+lượt TRỢ GIẢNG tự báo lỗi.
+
+**Còn thiếu của dòng 22**: không có. Bốn gạch đầu dòng còn lại (dán link, record
+nào thuộc buổi nào, link record, giáo vụ/TG cập nhật) đã có từ trước.
+
+
+## 26/09/2026 (khuya) — Dòng 27 ĐÓNG: trang "Thông báo" dựng xong, 12/12 bước trên màn thật
+
+Backend §61 đã xong từ E2; thiếu đúng một cái màn. Nay có: `/thong-bao` với lọc theo loại,
+lọc chưa đọc, đánh dấu đọc/chưa đọc từng dòng, và "Xem thêm" phân trang theo khoá. Chuông
+ở mọi trang có chân "Xem tất cả thông báo" dẫn sang.
+
+Đo bằng `scripts/do_thong_bao.mjs` — bấm chuột, không gọi API tay: **12/12 ĐẠT**, trong đó
+"Xem thêm" nối 20 → 24 dòng với **0 trùng**.
+
+**Ba thứ hỏng mà chỉ màn thật mới lộ ra, không phép kiểm nào bắt được:**
+
+① **Ô lọc bấm vào hư không.** Trang dựng ở máy chủ nên ô lọc HIỆN RA trước khi React gắn
+  vào. Bộ đo bấm ô lọc đầu tiên: không lời gọi mạng, `aria-pressed` không đổi, danh sách
+  không nhúc nhích — còn những bước sau lại chạy tốt vì lúc ấy React đã gắn. Tôi suýt đi
+  tìm lỗi trong `duongTrang` và trong proxy của Next; máy chủ trả đúng 3 dòng khi gọi bằng
+  curl, nên lỗi "phải" nằm ở chỗ khác. Thật ra nó nằm ở chỗ không ai nghĩ tới: khoảng thời
+  gian giữa lúc nút hiện ra và lúc nó sống. `useDaGan` khoá nút tới khi gắn xong — nút mờ
+  một khoảnh khắc là câu trả lời trung thực, một nút trông bấm được mà không làm gì thì không.
+
+② **Thước đo sai hai lần, và cả hai lần đều suýt đổ lỗi cho sản phẩm.** Bộ đo ngủ cứng 900 ms
+  sau mỗi cú bấm → lượt gọi ĐẦU (Next dev còn phải biên dịch tuyến proxy) chưa kịp, báo
+  "màn không lọc". Rồi so trùng dòng bằng 40 ký tự đầu của chữ → mấy dòng cùng loại mở đầu
+  y hệt nhau, báo "20 trùng" cho một danh sách không trùng dòng nào. Nay chờ theo DẤU HIỆU
+  có trần, và so bằng `data-id`.
+
+③ **Tài khoản bị đẩy sang `/doi-mat-khau?lan-dau=1`** làm ba bước đầu báo HỎNG oan. Bộ đo
+  nay có trạng thái **KHÔNG ĐO ĐƯỢC** (mã thoát 2) cho mọi kiểu chuyển hướng, không chỉ
+  `/login` — cùng bài học với `do_man_hang_loat.mjs`.
+
+**Sổ nhãn loại chuông** (`notifications/loai.py`): `type` là mã kỹ thuật, nên ô lọc phải nói
+"Bài tập mới" chứ không phải `assignment_new`, và nhãn nằm ở máy chủ vì ba chỗ cùng cần một
+câu chữ. `tests_loai.py` quét bằng AST mọi lời gọi sinh chuông và đòi mỗi mã có nhãn.
+
+Cái thước ấy tự bắt mình ngay lượt đầu: bản đầu chỉ nhìn `gui`/`gui_sau_commit` và tìm thấy
+ĐÚNG MỘT mã trong cả backend — trong khi CSDL có tám. Cửa thật là `notify()`. Đó chính là
+việc của `test_bo_quet_thay_ma_that_cua_backend`: một cái thước báo 0 lần đầu chưa chứng
+minh được gì. Cửa thứ tư (`thong_bao.gui` ghi thẳng bằng một câu INSERT) thì AST không thấy
+được, nên khai rõ trong `GUI_NOI_KHAC` kèm một phép kiểm ghim riêng, thay vì giả vờ đo được.
+
+`ban_do.mjs` mất một dòng **CHỜ MÀN** — `/api/notifications/feed/*/unread` nay đã có người gọi.
+
+
+## 26/09/2026 (khuya) — E2 đã GỘP: hộp thư đi §61 về nhà, và hàng rào thư bắt được năm bộ kiểm
+
+`agent/e2` gộp vào `erp` (`79b82e5`): 29 tệp, hộp thư đi `outbox` + thông báo trung tâm
+`announcements` + hàng rào thư máy dev. Bảy xung đột, không cái nào là xung đột thật về
+hành vi — §65 và §61 cùng nối vào cuối lược đồ, hai danh mục việc nhật ký cùng thêm dòng,
+hai tệp `CAU_TRUC_*` tự sinh (sinh lại bằng `scripts/cau_truc.py`). Chỉ dòng 20 của bảng
+nghiệm thu phải trộn tay: hai nhánh đo HAI NỬA khác nhau của cùng một dòng — E3 đo nửa
+"trợ giảng báo lên", E2 đo nửa "nhắn cho lớp" — nên dòng mới ghi cả hai kèm số đo riêng.
+
+Số: lược đồ **0/68 mục ngay lượt đầu** (E2 đã dựng trên Neon dev), `kiem_luoc_do` **75/75**,
+`notifications/` **108/108 xanh**, `ruff` + `manage.py check` sạch.
+
+**Hàng rào thư làm đúng việc của nó, và việc đầu tiên nó làm là bắt lỗi của chính ta.**
+Năm bộ kiểm trong `tests_parent_send.py` đỏ sau khi gộp. Không phải hồi quy: từ §61, thư
+báo cáo phụ huynh đi qua hộp thư đi, và hàng rào chặn ZNS tới MỌI số không khai trong
+`OUTBOX_SO_CHO_PHEP` — số điện thoại không có "tên miền ví dụ" như `@example.com`. Thư
+dừng ở hàng rào TRƯỚC khi tới bản giả `zalo.gui_zns`, nên thay bản giả là không đủ.
+
+Sửa ở phía BỘ KIỂM (`mo_hang_rao_zns`), không nới hàng rào: "mặc định TỪ CHỐI" chính là
+điều hàng rào sinh ra để làm, và trên máy dev CSDL là bản chép của production — trong đó
+có số điện thoại thật của phụ huynh TopHSA. Một bộ kiểm tự mở đường cho mình thì phải nói
+rõ nó đang mở cái gì. → 22/22 xanh.
+
+**Dòng 20 và 27 vẫn chưa đóng, và nay bảng nói đúng lý do**: trong 29 tệp E2 viết chỉ có
+ĐÚNG MỘT tệp frontend. `/thong-bao` và `/notifications` đều trả "Không có trang này";
+không tệp nào trong `frontend/src` gọi `/api/admin/thong-bao` hay
+`/api/teach/classes/<id>/thong-bao`. Backend xong không phải là tính năng xong — `ban_do.mjs`
+nay có danh sách thứ ba **CHỜ MÀN** để bảy tuyến ấy không nằm im như một ngoại lệ vĩnh viễn.
+
+Nợ mới, nhỏ: `scripts/dot_bien_e2.py` trùng việc với `scripts/dot_bien.py` (bản chung đã có
+`--loat <json>` và trường `cho`). Chuyển 16 đột biến E2 sang JSON rồi bỏ tệp riêng.
+
+
+## 26/09/2026 (trưa) — máy anh Sơn đứng vì bộ đo của tôi; vá gốc, không vá ngọn
+
+Anh Sơn gửi ảnh Task Manager: *"chạy duplicate tabs liên tục gây sập máy tôi"*.
+
+**Đo trước** (máy 15,9 GB): 12 tiến trình Python — bốn cái cùng đòi cổng 9300 mà
+chỉ một bind được; 10 Node — hai bộ `next dev`, bộ 3500 thuộc worktree của một
+agent đã dừng từ sáng; 11 Chromium giữ **788 MB cho MỘT tab trống**. Dừng phần mồ
+côi trả lại 0,63 GB ngay.
+
+**Gốc rễ, không phải "mở nhiều tab"**: 8 trên 9 bộ đo trong `scripts/` gọi
+`chromium.launch()` ở thân tệp và `close()` ở dòng cuối, **không `finally`**. Một
+lỗi giữa chừng — trang 500, thẻ hết hạn, chờ quá giờ — là Chromium sống tới lúc
+tắt máy, và mỗi lượt chạy lại cộng thêm một bộ.
+
+**Đã làm**
+- `scripts/lib/phien_do.mjs` — vòng đời trình duyệt dùng chung: một trình duyệt
+  cho cả lượt, mỗi vai một trang dùng lại, đóng cả khi lỗi lẫn khi Ctrl-C /
+  `taskkill`. Ba kỹ thuật lấy từ browser-use/jev-ultrafast (tái dùng thay vì mở
+  mới; không chụp ảnh khi không cần; chờ theo dấu hiệu, có trần).
+- `scripts/do_mat_do_chu.mjs` viết lại theo mô-đun ấy, gộp thêm ý của agent
+  `gop-y` (cổng + thư mục thẻ đọc từ môi trường, thêm màn giảng viên). **Đo
+  thật**: 5 màn trong 17,8 s, Chromium còn sót **0** — kể cả khi cố tình trỏ vào
+  cổng chết.
+- `scripts/don_may.ps1` — tìm và dừng tiến trình dev mồ côi. Mặc định CHỈ XEM.
+  Bản đầu xếp nhầm hai tiến trình con của `next dev` đang chạy vào nhóm mồ côi
+  (chỉ nhìn lên cha một nấc); sửa thành lan hai chiều trong cây tiến trình.
+- `scripts/quet_bi_mat.py` + bước **f8** của `pre-push` — repo CÔNG KHAI mà 13
+  bước trước đó không bước nào đọc nội dung tệp sắp đẩy. Bản đầu kêu oan cả 7
+  chỗ (`user:password@`, `u:matkhau@`, `postgres:tam@localhost`); siết lại còn
+  **0 báo oan trên 698 tệp**, vẫn bắt đủ 4 loại bí mật thật trên tệp thử.
+- **Rò rỉ đã có thật**: `PROGRESS.md` trên GitHub — cả `erp` lẫn `master` — mang
+  đường dẫn `C:/Users/<tên tài khoản>/…` ở hai chỗ, `scripts/do_mat_do_chu.mjs`
+  một chỗ nữa. Không phải khoá hay mật khẩu, nhưng RULES §10 cấm. Đã thay bằng
+  `%TEMP%` / `%USERPROFILE%`. Lịch sử `master` vẫn còn vết — chỉ anh Sơn gộp được
+  `master`, nên việc có xoá lịch sử hay không để anh quyết.
+- `.claude/skills/` — ba kỹ năng (`do-man-that`, `soat-bao-mat`,
+  `giao-viec-agent`) + `README.md` giải thích SOLID áp vào kỹ năng thế nào. Hai ý
+  lấy của cloudflare/security-audit-skill: *người tìm khác người xác minh*, và
+  *phát hiện không có vết nguồn thì chưa phải phát hiện*.
+- Trả nợ §71 mà cổng bắt được: hai tệp frontend chưa thuộc miền nào
+  (`so_mien.json`), hai tuyến `.ics` chưa khai lý do (`ban_do.mjs`) — chúng CÓ
+  người gọi, chỉ là người gọi là Google Calendar / Lịch iPhone, không phải
+  frontend. Cổng đủ: **ĐẠT, 14 bước, 57 s**.
+
+**Chưa làm**: 8 worktree đã gộp xong vẫn nằm trên đĩa (874 MB trong 1,2 GB) —
+chưa xoá vì xoá là không lùi được, chờ anh Sơn gật. LightRAG đọc rồi nhưng CHƯA
+dựng, lý do ở `docs/VIEC_CUA_ANH.md`.
+
 hơn, từ 24/08 tới 07/09, vẫn theo thứ tự thời gian ở nửa dưới tệp — không đảo
 lại 5.800 dòng để khỏi phá liên kết trong `TODO.md`.
 
@@ -92,6 +621,106 @@ không nhận định) · `BAN-GIAO-PHIEN.md` (mở phiên mới thì đọc t�
 
 
 <!-- MỚI NHẤT -->
+
+## 27/09/2026 — Em xem lại được cả khoá, không chỉ bốn buổi gần nhất (agent HV2)
+
+Chỗ này do agent soát bảng phân rã tìm ra, không phải do ai báo lỗi: thẻ lớp của học viên chỉ
+lấy **bốn** bản ghi (`lop_cua_toi.py` `SO_BAN_GHI`) và **bốn** tài liệu (`SO_HOC_LIEU`), và
+ngoài thẻ ấy em không có màn nào khác. Lớp 24 buổi thì mười một buổi trước đó biến mất khỏi
+màn — nhân sự có danh sách đủ từ lâu, người PHẢI XEM LẠI BÀI thì không. Ô tóm tắt dòng 29 ghi
+"CÓ" là quá tay, và đã bị hạ xuống MỘT PHẦN hôm qua.
+
+Nay có `GET /api/lop-cua-toi/<lớp>/xem-du` (`backend/teaching/hv_xem_du.py`) và trang
+`/lop/<lớp>/xem-lai`: đủ cả khoá, sắp theo buổi, có ô tìm (chủ đề buổi hoặc NGÀY học · tên
+hoặc mô tả tài liệu), ô lọc ("chưa xem lại" · kho chung / theo buổi), phân trang theo khoá.
+Thẻ lớp giữ nguyên bốn dòng, thêm hai đường "Xem tất cả →".
+
+**Khoá phân trang là một CẶP `(thời điểm, id)`, không phải `id`.** Lịch sinh hàng loạt rồi
+chèn buổi bù cho ra lớp mà thứ tự `id` không trùng thứ tự thời gian — phân trang bằng `id` một
+mình nhảy dòng ở đúng những lớp ấy và không ở đâu khác. Mốc do máy chủ tự tra từ chính dòng
+cuối trang trước (phép so HÀNG của Postgres), nên trình duyệt chỉ gửi lại một số nguyên và
+không có chỗ nào để múi giờ làm lệch một dòng.
+
+**Bẫy `thuoc_buoi` phải nói lại lần thứ hai trong hai ngày:** tên cột truyền vào BẮT BUỘC có
+tiền tố bảng. Và phép kiểm bắt được nó không phải "buổi bù chỉ em trong buổi thấy" — mà là
+**"buổi THƯỜNG tới cả lớp"**. Bỏ tiền tố làm điều kiện luôn ĐÚNG với em đã có dòng
+`session_participants` và luôn SAI với em chưa có dòng nào; phép kiểm thứ nhất xanh suốt,
+chỉ phép kiểm thứ hai đỏ. Ai viết cửa thứ mười một nhớ viết cả hai.
+
+Số: bộ kiểm mới **27/27 xanh** (lượt ĐỎ trước khi viết mã: 24 đỏ / 3 xanh), **16/16 đột
+biến bị giết đúng chỗ**, hồi quy `teaching/` **669 xanh / 0 đỏ** (1:18:05), `tsc` + `eslint` + 38 bộ e2e/unit xanh,
+`ban_do --kiem` 0 chỗ gãy. **KHÔNG thêm DDL** — cửa chỉ đọc.
+
+Cổng `e2e/unit/chu-nguoi-dung.test.mjs` bắt được hai chuỗi của agent (ngày gõ cứng trong ô
+gợi ý ô tìm). Đúng loại lỗi không ai soi ra bằng mắt.
+
+**Lead còn phải tự đo trên màn thật** — agent không dựng máy chủ (máy còn 2,4 GB lúc nhận
+việc). Danh sách việc phải đo: `docs/agent/BAO_CAO_HV_XEM_DU.md`.
+
+
+## 26/09/2026 (sáng) — BỎ Claude cloud; GitHub còn đúng ba nhánh
+
+- Anh chốt: bỏ phần Claude cloud; GitHub chỉ giữ `master`, `erp`, `erp-DB`. Đã xoá 7 nhánh (`agent/e1`, `agent/luong-a1`,
+  `agent/luong-a2`, `cloud/cau-truc-b` — đã gộp erp; `cloud/e2-b`, `cloud/e3-b`, `cloud/pytest-d255ca8` — CHƯA gộp, giữ
+  bản cục bộ `luu/e2-backend`, `luu/e3-backend`, `luu/bao-cao-pytest` trong `D:\pe_hsa`).
+- E2/E3: backend có trên hai nhánh `luu/*` (chưa kiểm trên Neon, chưa giao diện) → làm nốt tại máy (xem `BAN-GIAO-PHIEN.md` mục 3).
+- `BAN-GIAO-PHIEN.md` viết lại cho phiên mới (trạng thái, việc theo thứ tự, luật, lệnh, bẫy, nguồn tham khảo).
+
+## 26/09/2026 (rạng sáng) — A1 + A2 + E1 + cấu trúc từ PHIÊN CLOUD gộp vào erp (c278691)
+
+- Agent cục bộ hết hạn mức tuần → việc dở của A1/A2/E1 giao cho phiên cloud (sonthaiha07), mỗi phiên một worktree sạch
+  theo nhánh. Cả ba xong + báo cáo `docs/cloud/BAO_CAO_{A1,A2,E1}.md`. Phiên cấu trúc/E2/E3 lượt đầu (trước khi có GitHub
+  App) không đẩy được gì → giao lại trên nhánh `cloud/*-b`.
+- Gộp: xung đột ở `exports.py`, `urls.py`, `SessionsClient.tsx`, §69/§70, `kiem_luoc_do`, `parent_report`, `quyenVai`,
+  `huongDan`, `hinhDang`, `LopCuaToi*`, `ToBaoCao`, NGHIEM_THU — giữ cả hai phía; bảng nhãn nhật ký nay ở `lib/viecNhatKy.ts`.
+  BẪY: `D:\pe_hsa` fetch trước khi phiên cloud đẩy xong → lượt gộp đầu thiếu 2 commit A2 + 6 commit E1; `ban_do --kiem` bắt
+  được (4 tuyến E1 "không ai gọi"). **Fetch lại ngay trước khi gộp nhánh cloud.**
+- Đo trên Neon dev (có bài thật — phần cloud không đo được): 30 mô-đun xanh, gồm `teaching/tests.py` 71, `tests_bao_cao_tuan`
+  79, `courses/tests_truy_cap` 12, `courseadmin/tests_syllabus` 19. `bootstrap_schema` ×2 → 0/64; `kiem_luoc_do` 63/63.
+- e2e hai khổ (`E2E_GHI=1`): chuong-trinh, van-hanh-a2, ho-so-hoc-vien, danh-sach-hoc-vien, vai-tro-cong → 2 lỗi THƯỚC (ô
+  "Tháng" trùng nhãn form; lưu sổ đầu bài 5,15 s trên dev > 5 s mặc định) → vá spec, 10/10 + 46 cũ xanh.
+- Giao diện: `do_axe` 0 vi phạm / 104 lượt (thêm 4 màn mới); `do_giao_dien` 36 trang × 2 khổ → 6 vùng chạm nhỏ → vá → 0 mọi
+  luật; tự kiểm của thước mù độ đục ở trang ngắn → vá thước, 72/72 đỏ. Tài khoản e2e (36029) nay ở lớp mẫu 7322 (trước đó
+  không lớp nào → trang Bài học không đo được).
+- Cấu trúc (`cloud/cau-truc-b`): `scripts/so_mien.json` + `scripts/cau_truc.py --kiem` (bước f7 pre-push) + `docs/CAU_TRUC_*`
+  tự sinh + `CLAUDE.md` + `REVIEW.md`. 16 miền, 54 bảng, 0 tệp không miền, 11 nợ ghi chéo (chỉ được co).
+  Khi gộp E2/E3: thêm bảng mới (outbox, announcements, yeu_cau*) vào `so_mien.json` — cổng f7 sẽ đòi.
+- `tang_vai.py` đường dẫn `/` (chạy được trên Linux/cloud).
+- Còn: E2/E3 (`cloud/e2-b`, `cloud/e3-b`) đẩy xong backend rồi dừng ~2 giờ, chưa giao diện/báo cáo.
+
+## 25/09/2026 (tối) — NGƯỜI THỨ HAI ĐẨY LÊN erp (Cao Văn Nhân) → hoà nhánh, erp đỏ → xanh
+
+- 3 commit của Cao Văn Nhân (nhanhuy2005@gmail.com, Claude Sonnet 5) trên `origin/erp` (03:28–14:33): §63 hồ sơ (tình trạng học
+  tập/học phí, 'paused', 'reserved'), §64 khung chương trình (chỉ backend, `courseadmin/syllabus.py`), V-i. Trùng việc của A1
+  (V-c), A2 (V-i, V-m), E1. **Anh chốt: Nhân tạm dừng, tôi làm tiếp theo kế hoạch, GIỮ phần đã đẩy; Nhân sẽ dùng nhánh CSDL
+  riêng.**
+- erp của Nhân ĐỎ 2 test (§63 thêm LẠI hai ràng buộc cùng tên, khác nội dung; không sửa vocab) + 2 guard (5 mã nhật ký chưa
+  có nhãn; 9 tuyến chưa có giao diện) — máy Nhân không bật cổng pre-push. Vá ở `b9a78d3` + `f0b55a0`: gộp A1 (§62a–f),
+  'paused' tại chỗ §35, 'reserved' tại chỗ §36 + vocab + nhãn, gỡ hai lần thêm lại khỏi §63, nhãn nhật ký, lý do tạm cho 9 tuyến.
+  CSDL dev: `bootstrap_schema --tu §35` → 57/57.
+- E1 soi mã Nhân (chưa chạy): truy vấn gán khung dùng `makeup_for` (chỉ có ở §62e của A1) → 500 trên mọi CSDL dựng từ erp
+  cũ; ghép buổi theo vị trí; đổi bản khung giữ ánh xạ cũ; lớp không có môn không nhận được khung. Quyết: E1 dựng TIẾP trên bảng
+  của Nhân (logic nhận khung của E1 thay vòng ghép của Nhân; sổ đầu bài §70; học vụ soạn được; tách chuỗi phiên bản — phương
+  án B). A2: V-m/V-i theo thiết kế A2 + giữ phần hay của Nhân (lớp đang học + sĩ số thật, "Bảo lưu").
+- A2 lỡ chạy bootstrap với §69 đè CHECK học phí của Nhân trên dev (0 dòng dữ liệu) — đã chạy lại từ erp.
+- Bài học: nhánh chung + CSDL chung + người thứ hai không có cổng kiểm = đỏ lọt trong vài giờ. Cổng pre-push chặn đúng lượt
+  đẩy của tôi (thước sổ lược đồ cũ) — nó làm việc.
+
+## 25/09/2026 (chiều) — CLAUDE CLOUD bằng tài khoản sonthaiha07 + thiết kế hệ thống + S3/S5
+
+- **Cloud**: đăng nhập RIÊNG cho sonthaiha07@gmail.com ở `%USERPROFILE%\.claude-son` (biến `CLAUDE_CONFIG_DIR`) —
+  VS Code + agent cục bộ vẫn ở tài khoản kia, không bị ngắt. `claude.exe` của tiện ích VS Code (2.1.281) có `--cloud`
+  / `--teleport` (bản trên PATH 2.1.150 không có). `--cloud` đòi terminal thật → mở qua `%USERPROFILE%\cloud-son.ps1`
+  (cửa sổ PowerShell, `-GhiRa` ghi mã phiên; từ chối chạy ở thư mục có `.env` — trên Windows gói tải lên có thể kèm
+  `.env`), chạy từ bản clone SẠCH ở scratchpad. Ba phiên mở 25/09: pytest đầy đủ trên Postgres cục bộ của máy cloud
+  (`session_01MAPupTtP5zqCpAczYtKoGV`), E2 (`session_017vNv7YgYzMa8gxzX5X38Qe`), E3 (`session_01UbA4ua69der6eBv9JtYTZm`).
+  **Chưa phiên nào đẩy được** (GitHub chỉ có master, erp) → việc C1-cloud của anh: cài Claude GitHub App cho PE_hsa.
+- **Thiết kế hệ thống** `docs/THIET_KE_HE_THONG.md` dựng trên graphify (mức tệp: `docs/BAN_DO_MA.md`) + tầng vai
+  (`docs/BAN_DO_VAI.md`). Thước tầng vai bản đầu báo 19 "lệch" — soi tay: 16 thước sai (không hiểu `chanTu`), 2 trang
+  thiếu móc chặn (vá `afa612e`), 1 chặn mức nút. Bài học ghi bộ nhớ "đo trước khi báo số".
+- **S3** `tang_vai.py --kiem` = bước f6 cổng pre-push (`c39fedc`). **S5** phá vòng `stats ↔ chatbot` (`887e435`).
+- Agent cục bộ A1/A2/E1 dừng vì hạn mức (03:4x) → gửi tiếp 16:10. Bộ test đủ trên `erp` chạy lại 16:12 (lượt trước
+  chết theo phiên).
 
 ## 25/09/2026 — KẾ HOẠCH v2 theo bảng yêu cầu 24/09 + Ngày 0 (P0.1–P0.3, P0.5)
 
@@ -848,7 +1477,7 @@ Ba mẻ A1–A3 bên dưới + vá thêm: thanh trên đếm cả nút nhân s�
 
 **Chưa commit, chưa deploy — mọi thứ dưới đây nằm trong cây làm việc** (`git status`: 23 tệp sửa, HEAD
 `3a4e649`). Thư mục làm việc của đợt audit (kịch bản đo, báo cáo agent, ảnh):
-`C:/Users/sonkh/AppData/Local/Temp/claude/d--PE-test/5192ee2d-32a6-400e-b0de-d9b2020fb7a3/scratchpad/audit/`
+`%TEMP%/claude/<phiên>/scratchpad/audit/`
 (gọi tắt `audit/` bên dưới; nằm trong %TEMP% — có thể bị dọn, nên phần cần thiết đã chép vào đây).
 
 ### A · Ba mẻ sửa đang nằm trong cây làm việc
@@ -8873,7 +9502,7 @@ tay. Lỗi ở cách Windows sinh tiến trình:
 
 `npx` trên Windows là `npx.cmd`, một shim chứ không phải tệp thực thi; spawn
 không qua shell không tìm ra → tiến trình chết ngay → `CONNECTION_CLOSED`.
-Sửa ở `C:\Users\sonkh\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
+Sửa ở `%USERPROFILE%\.claude.json` (ngoài repo, để anh Sơn tự đổi). Trong lúc
 chờ vẫn đo bằng chính CDP nằm dưới MCP ấy qua Playwright.
 
 ### Vẽ phân quyền — hình dạng có thật, và tôi đã vẽ ngược một lần
@@ -9448,3 +10077,225 @@ chất lượng) · Phần D cần gì từ TopHSA · Phần E làm tiếp đư�
 
 Quét tài liệu tìm tên, email, số điện thoại và mật khẩu thật: **không cái nào
 lọt vào**. Email duy nhất trong tài liệu là chỗ trống mẫu `tên@tophsa.vn`.
+
+---
+
+## 26/09/2026 · GD — màn soạn thông báo (§61): dòng 20 nửa "nhắc" đóng, dòng 27 xong chiều GỬI
+
+Sáu tuyến backend E2 viết xong từ sáng mà **không màn nào gọi** — `CHO_MAN` trong
+`ban_do.mjs` giữ đúng sáu dòng ấy. Nay cả sáu có người gọi và danh sách `CHO_MAN` **trống**.
+
+**Hai màn.** `/giang-day/thong-bao/<lớp>` (tab "Thông báo lớp", giảng viên + TRỢ GIẢNG) và
+`/quan-tri/thong-bao` (học vụ: danh sách + soạn + xem trước + lưu nháp + gửi nháp + huỷ nháp).
+
+**Đo trên màn thật, bấm chuột:** `scripts/do_thong_bao_lop.mjs` → **24/24 bước ĐẠT**
+(13 bước thẻ TRỢ GIẢNG trên màn lớp, 11 bước thẻ HỌC VỤ trên màn trung tâm).
+`do_axe.mjs --chi "thông báo"` → **0 vi phạm / 4 lượt** (2 màn × 2 khổ). Cổng pre-push ĐẠT.
+
+**Backend đổi một chỗ, test ĐỎ trước:** `GET /api/admin/thong-bao` trả thêm `chon`
+(lớp chưa huỷ kèm sĩ số + ba môn kèm nhãn tiếng Việt). Hai phép kiểm đỏ trên mã cũ
+(`KeyError: 'chon'`), một phép kiểm xanh sẵn được GIỮ vì nó ghim hàng rào 403. Sau vá: 23 passed.
+Màn KHÔNG gõ lại danh mục môn — bảng ấy sống ở `courses.truy_cap.BA_MON` (RULES §7).
+
+**Ba thứ tìm được trong mã có sẵn:**
+1. `scripts/nap_lai_be.ps1` — nhánh cứu hộ cho worktree không chạy TRONG worktree:
+   `Join-Path` của PS 5.1 không bỏ qua phần con tuyệt đối, mà `--git-common-dir` trả về
+   đường tuyệt đối. Script chết ở đúng chỗ nó sinh ra để cứu. **Đã vá.**
+2. `scripts/do_axe.mjs` vẫn tự `chromium.launch()` (luật `phien_do.mjs` cấm) và một lượt
+   đầy đủ vượt 10 phút. Chưa đổi cách mở trình duyệt; **đã thêm cờ `--chi <chuỗi>`** để đo
+   đúng màn vừa dựng.
+3. Trang `/thong-bao` của lead: soi ba chỗ dễ sai nhất, **không tìm được lỗi**.
+
+**RAM.** Lượt đầu bị ngắt vì `next dev` 3600 chiếm 3.047 MB (máy còn 1,5/15,9 GB). Đặt
+`NODE_OPTIONS=--max-old-space-size=1536` → **813 MB**, cắt ~73%, không hỏng lượt đo nào.
+Lưu ý: `don_may.ps1 -Don` chỉ dọn tiến trình MỒ CÔI, **không** giết server đang giữ cổng —
+đo xong phải dừng hẳn cổng của mình.
+
+**Còn thiếu, nói thẳng:** trợ giảng vẫn không nhắn được RIÊNG một em (dòng 20 vẫn MỘT PHẦN,
+không tick lên CÓ) · chưa có ô "chọn tay người nhận" (`userIds`) · chưa có ô Zalo ZNS ·
+chưa có spec `nghiem-thu/dong-20.spec.ts` · chưa chạy axe lượt ĐẦY ĐỦ.
+Chi tiết: `docs/agent/BAO_CAO_GD.md`.
+## 26/09/2026 — Soát lại 30 dòng nghiệm thu trên màn thật (agent SOÁT2)
+
+Đo 73 lượt mở màn trong 6 phiên trình duyệt, năm vai (quản trị · học vụ · giảng
+viên · trợ giảng · học viên), trên bản dev chính 9000/3100. Báo cáo đầy đủ:
+`docs/agent/BAO_CAO_SOAT2.md`.
+
+**Sáu dòng nâng hạng được ngay** — 22 và 21 (theo dõi ai đã mở bản ghi + nút
+"Nhắc em chưa mở" đã dựng, bảng vẫn ghi là việc phải làm), 9 (đo đủ bằng thẻ
+học vụ chứ không mượn thẻ quản trị), 28 (đủ khi lớp có khung), 24 (tờ phụ huynh
+CÓ lịch buổi), 17 (mục chi tiết còn ghi "sửa bài CHƯA" trong khi nút "Sửa bài"
+đã có). **Không dòng nào phải hạ hạng.**
+
+**Thứ chắn đường nghiệm thu không phải mã, là dữ liệu.** `syllabus_versions` = 0,
+`session_logs` = 0, không bài nào `kind='kiem_tra'` — nên sáu ô của bảng (dòng 5,
+15, 16, và ô tiến độ chương trình ở 4/6/9) mở ra chỉ thấy trạng thái rỗng.
+`teaching/du_lieu_mau.py:428` có dựng khung mẫu; bộ dữ liệu trong CSDL cũ hơn E1.
+Chạy `python manage.py du_lieu_mau --lam-moi` trước buổi trình diễn. Đã chứng minh
+bằng cách dựng một khung thật qua đúng các cửa API: màn Chương trình lớp từ 69 từ
+lên 812 từ, có "1 đã dạy", "0 đã dạy, 1 một phần", "Chưa ghi — ghi ngay".
+
+**Sáu lỗi trong mã** (chi tiết + vết nguồn trong báo cáo). Đáng nói nhất là bốn lỗ
+trong chính `do_man_hang_loat.mjs`: nó gạch `/login` là "không đo được" dù đó là màn
+phải đo (dòng 1·8·13·19), không bắt được lúc trang nằm lại màn trước, chấm một trang
+**500** như "thiếu ba tính năng", và chỉ đọc `textContent` nên bỏ sót nút chỉ có
+`aria-label`. Một bộ đo báo sai thì tệ hơn không đo: bốn lỗ ấy đều đẩy kết luận về
+phía "sản phẩm thiếu tính năng". Đã vá cả bốn, thêm `bam`/`chon` để đo được thứ nằm
+sau một cú bấm, và `scripts/nap_lai_be.ps1` chết ở đúng worktree mà nó sinh ra để cứu
+(`--git-common-dir` trả đường tuyệt đối ở worktree, mã cũ nối nó vào `$goc`).
+
+## 27/09/2026 · chiều — production lên bản mới, §74 nối xong hai đầu, bảng phân rã dày thêm
+
+**Đẩy production.** Anh Sơn: *"trước mắt push lên production trước rồi tổng hợp lại những tính năng
+đã làm đã"*. `master` 4e78897 → `198dc81`, **63 commit**. Cổng kiểm ĐẠT 153 s trước khi gộp. Kiểm sau
+khi đẩy bằng lời gọi thật, không suy: `/api/health` 200 · `pe-hsa.vercel.app` mở được ·
+`/auth/dang-ky` (§73, cửa mới nhất trong lượt đẩy) trả **200** chứ không 404 → build xanh và
+`bootstrap_schema` đã chạy xong cột §74. Đường không tồn tại vẫn trả 404, nên 200 kia là thật.
+
+**Hai tài liệu mới.** `docs/TINH_NANG_DA_LAM.md` (người dùng bấm được gì, xếp theo vai — đưa TopHSA
+xem được) và `docs/SYSTEM_DESIGN.md` (as-built: bức tranh chạy, vì sao proxy ở Next, vì sao SQL thuần,
+luật miền, sổ lược đồ, kỷ luật kiểm, **và một mục "Nợ đã biết"** — trong đó đồng hồ cửa quên mật khẩu
+CHƯA cân, 2,04 s so với 0,254 s). Mọi số đo bằng lệnh, và tài liệu ghi kèm lệnh để đo lại.
+
+**§74 nay bấm được.** Hôm qua có cột, không có ô. Nay: ô "Mục khung chương trình" trong biểu mẫu Giao
+bài (danh mục máy chủ trả, nhãn mang số buổi, **không bắt buộc**), và mục cần bài trên màn Chương
+trình lớp mang chip "Chưa giao bài" / "Đã giao: <tên>" / "Đang soạn: <tên>". Câu SQL đặt ở miền bài
+tập (`teaching.assignments.bai_theo_muc_khung`), sổ đầu bài gọi chung hàm ấy.
+
+Đo: 7 test mới xanh · **6/6 đột biến bị giết** (hai loạt) · 32 test chương trình + bài tập xanh ·
+màn thật lớp mẫu **15/15 bước ĐẠT**, đã soi ảnh (6/42 mục mang chip, 36 mục chủ đề không mang, giao
+một bài thì "Chưa giao bài" 6 → 5).
+
+**Ba chỗ vấp, ghi lại vì cả ba đều im lặng:**
+1. Một đột biến LỌT — phép kiểm "mục kiểm tra cũng được hỏi" chỉ khẳng định `baiDaGiao == []`, mà mục
+   bị BỎ SÓT cũng ra `[]`. Cùng một kết quả vì hai lý do trái ngược. Siết test: mục kiểm tra phải CÓ
+   bài thật thì hai đường mới khác nhau. Sau đó 3/3.
+2. `text-warn-ink` KHÔNG tồn tại (token đúng là `text-warning-ink`). Tailwind v4 nuốt lặng lẽ: không
+   lỗi biên dịch, không cảnh báo, chỉ là chữ không có màu.
+3. Lượt đo đầu HỎNG 4 bước vì Django chạy `--noreload` — mã mới chưa nạp. Đúng cái bẫy CLAUDE.md đã
+   ghi, vẫn vấp.
+
+**Agent soát bảng phân rã** (gộp `agent/pr`): chín dòng trước chỉ có tiêu đề nay có bảng phân rã **75
+ý**, mỗi ý một ô bằng chứng `tệp:dòng`; **25 tính năng ngoài bảng** khách không kê; **16 ô ghi sai**
+đã sửa. Nặng nhất: **dòng 29 "CÓ" là quá tay** — thẻ lớp học viên chỉ lấy BỐN bản ghi và BỐN tài liệu
+gần nhất, không màn nào liệt kê đủ, không có ô tìm. Đã giao agent làm nốt.
+
+**Một lỗi agent tìm, tôi đo lại rồi vá**: chuông TỰ ĐỘNG "sắp hết hạn nộp" hiện nhãn **"Khác"** trên
+màn học viên (`nhan('nhac_han')` → `'Khác'`) vì nó ghi thẳng bằng INSERT nên bộ quét AST không thấy —
+đúng cái bẫy `GUI_NOI_KHAC` dựng ra để bịt, chỉ chưa ai ghim loại này vào. Nay có nhãn + dòng ghim.
+
+**RAM.** Đầu buổi còn 2,54 GB: ba `chrome-headless-shell` mồ côi từ 23:04 tối qua — `don_may.ps1`
+**không bắt loại tiến trình này**, quy tắc của nó chỉ có Django / Next / Playwright server / bộ đo.
+Chỗ cần vá tiếp.
+
+## 27/09/2026 · tối — soát 38 màn: 22 ĐẠT → 35 ĐẠT, và hai thước đo tự nói dối
+
+**Sổ soát màn.** Lượt sáng ra 15 ô "thiếu". Đi hết từng ô, mở màn thật: **13 ô là bộ đo sai,
+2 ô thiếu thật** (tải tệp học liệu · nộp bài bằng tệp — cả hai chờ khoá R2). Con số cuối:
+**35 ĐẠT · 2 thiếu · 1 chưa đo được** (thẻ hết hạn giữa lượt — thẻ sống 30 phút, lượt 38 màn
+chạm trần ấy).
+
+Ba gốc rễ, không phải vá từng ô:
+1. **Thẻ thử trỏ nhầm người** — `cap_the.py` lấy `ORDER BY id` nên bốc trợ giảng CŨ NHẤT,
+   một người của lớp thử chứ không thuộc lớp mẫu. Mọi màn lớp mẫu trả 404: màn Bài tập của
+   trợ giảng ra **47 từ**. Nay ưu tiên tài khoản `is_demo`. Sau khi vá: **284 từ**.
+2. **Bộ đo mù với ô thả xuống** — Chromium không đưa chữ `<option>` chưa chọn vào
+   `innerText`, nên mọi danh mục nằm trong `<select>` là vô hình, mà theo RULES §7 đó chính
+   là chỗ danh mục phải nằm ("Chuyển sang lớp khác…", "Tạm dừng").
+3. **Khối tải sau khi React gắn cần thời gian** — 2,5 giây chưa đủ cho khối bản ghi.
+
+Chín câu hỏi sai chỗ, mỗi câu một lý do đã ghi thẳng vào `scripts/man/nghiem_thu.json`:
+hỏi trước khi bấm mở sổ điểm danh · hỏi ở màn ngoài khi nội dung nằm sau nút "Xem" · hỏi ô
+lọc Môn bằng thẻ học vụ trong khi hộp ấy chỉ quản trị viên thấy · hỏi cả "Giao người xử lý"
+lẫn "Chuyển tiếp" trong khi chúng là MỘT nút hai chế độ · hỏi "cảnh báo trùng lịch" trên một
+lịch sạch (đòi màn phải hỏng mới ĐẠT) · hỏi "Tải bảng tính" ở Toàn trung tâm trong khi nó ở
+sổ buổi học · và một câu MÌNH TỰ THÊM ở Cơ sở học phí mà bảng của khách không đòi.
+
+**Một lỗi sản phẩm thật**: màn "Soạn giáo trình" KHÔNG có đường sang "Khung chương trình" —
+trang khung dựng đường ngược về từ đầu, chiều này thì không. Đã thêm.
+
+**Thước đo thứ hai cũng sai.** `do_mat_do_chu.mjs` đếm "ô số" bằng mọi phần tử lá chỉ chứa
+một con số — nên một BẢNG sáu lớp × sáu cột thành 36 "ô số", và Toàn trung tâm bị chấm **46**
+trong khi chỉ tiêu là ≤ 6. Nhưng `docs/HUONG_GIAO_DIEN_2026-09-26.md` §4 lại bảo GIỮ bảng ấy.
+Thước đo đang đòi xoá đúng thứ tài liệu thiết kế muốn giữ. Nay số trong `table` đếm riêng.
+
+Số thật sau khi sửa thước đo (chỉ tiêu §5 trong ngoặc):
+
+| Màn | từ | ô số đầu màn | dòng > 12 từ |
+|---|---|---|---|
+| Giảng dạy | 584 (≤450) | 7 (≤6) | 21 (0) |
+| Giảng dạy · giảng viên | **434 ✓** | 7 | 15 |
+| Vận hành · Tổng quan | 649 (≤350) | 14 | 13 |
+| Học viên · Trang của tôi | 375 (≤300) | 4 ✓ | 4 |
+
+Đã gọt một chỗ: dòng "6 lớp: A · B · C…" ở đầu màn Giảng dạy (130 ký tự, dòng dài nhất cả
+màn, tên lớp lặp lại ngay bên dưới) → "6 lớp đang phụ trách". Màn giảng viên **456 → 434 từ**,
+đạt chỉ tiêu. Phần còn lại là việc gọt tiếp, có số để đo.
+
+**Bộ mẫu hết rỗng ở năm chỗ** (đếm cả lượt chiều): bài kiểm tra · bản ghi buổi học + lượt xem
+· học liệu của lớp · học liệu của KHUNG · hộp Yêu cầu. Cả năm đều là mã chạy đúng mà dữ liệu
+trống — mỗi chỗ đủ làm khách kết luận "chưa làm".
+
+**Hai agent chết vì hết hạn mức phiên** (429, đặt lại 21:10) — một đang soát ô trợ giảng, một
+làm báo cáo chéo (để lại 935 dòng chưa commit, đã gọi agent khác cứu). Bài học ghi vào brief
+từ lượt sau: **commit sớm và nhỏ**, mã treo ngoài git là mã có thể mất.
+---
+
+## 27/09/2026 · Audit bảo mật (agent `agent/sec`)
+
+Anh Sơn: *"audit kĩ để không có lỗ hổng"*. Soát 199 đường dẫn có lớp view (297 cửa nếu đếm theo
+phương thức) × 6 vai, cộng tầng React và tầng JS cũ. Báo cáo đủ:
+`docs/agent/AUDIT_BAO_MAT_2026-09-27.md`.
+
+**Nặng nhất, CHƯA VÁ, cần anh Sơn / lead quyết.** `config/urls.py:49` nạp cả `allauth.urls` để lấy
+`google/login/`, và kéo theo **28 đường** của thư viện trên tên miền backend. Đo bằng GET:
+`/accounts/login/` và `/accounts/password/reset/` trả **HTTP 200 kèm form HTML đầy đủ**
+(`/accounts/signup/` trả 500 — may, không phải hàng rào). Không một hàng rào nào của dự án chạm tới
+chúng: trần dò mật khẩu RIÊNG (10/phút/IP của allauth, độc lập với `LoginThrottle` 20/phút) · không
+`tokens_valid_from` · không `audit.record` · không `invalidate_user_cache` · không hàng rào thư §61 ·
+không hàng rào §73 · chữ tiếng Anh. Hệ quả chắc nhất: đăng nhập ở `/accounts/login/` rồi đổi mật khẩu
+ở `/accounts/password/change/` ghi mật khẩu mới ĐÚNG định dạng werkzeug (nên `LoginView` nhận ngay)
+mà **không thu hồi phiên nào và không để lại dòng nhật ký** — đi vòng qua đúng cơ chế mà cả ba đường
+đổi mật khẩu của dự án đều dựng. Thư của allauth đi bằng `django.core.mail` với `EMAIL_HOST='localhost'`
+nên hôm nay không gửi được; ai đặt biến ấy là đường thư thứ hai sống dậy, ngoài §61.
+
+**Hai nhóm đã vá, cả hai ĐỎ TRƯỚC.**
+
+1. **Thư đăng ký §73 là đường bơm chữ** (`933b7b6`). `POST /auth/dang-ky` nhận cả địa chỉ NHẬN lẫn
+   TÊN từ người chưa đăng nhập, và tên đi thẳng vào `Chào %s,` ở đầu thân thư, 100 ký tự, không lọc
+   xuống dòng. Đo: gõ tên có `\n` là có một lá thư mang bốn dòng chữ của kẻ gửi Ở TRÊN nội dung thật,
+   đi từ tên miền thật qua SPF/DKIM thật. Vá bằng `common/mail.ten_goi_trong_thu` (gộp khoảng trắng ·
+   bỏ ký tự không in được · **cắt 40 ký tự** — bỏ xuống dòng mà giữ 100 ký tự thì vẫn đủ chỗ cho một
+   câu dụ). 4 ĐỎ → 6 ĐẠT; hồi quy `accounts/` 96 ĐẠT.
+
+2. **Bảy cửa trả 403 ở chỗ luật dự án đòi 404** (`744194b`). Bốn cửa `ban_ghi` + hai cửa sửa/xoá bài
+   + một cửa sửa bình luận. Nội dung KHÔNG lộ (hàng rào §75 chặn đúng), cái lộ là SỰ TỒN TẠI — id là
+   số nguyên tăng dần nên một vòng lặp đếm được trung tâm có bao nhiêu lớp, bao nhiêu buổi, diễn đàn
+   riêng của lớp khác có bao nhiêu bài. `forum/views.py::_can_modify` nay chạy hàng rào §75 TRƯỚC hàng
+   rào sở hữu — đặt trong hàm dùng chung để cửa mới sau này tự có (RULES §7). Sáu `assert` khẳng định
+   luật CŨ trong `tests_ban_ghi.py` viết lại, không xoá (RULES §13). 7 ĐỎ → 7 ĐẠT; hồi quy 44 ĐẠT.
+
+**Bộ kiểm ma trận quyền ĐỎ SẴN trên HEAD `7f93250`: 2 HỎNG / 2.** Một do bốn cửa `ban_ghi` trên; cái
+còn lại là **phát hiện giả** — nó coi mọi mã khác 403 là "lọt", mà `hoc-lieu` cố ý gác trong thân hàm
+và trả 404, đúng luật. Một phép kiểm đỏ thường trực là chỗ một cửa THẬT SỰ quên `permission_classes`
+sẽ lẫn vào. Vá bằng `CONG_TRONG_THAN` (khai tường minh, kèm lý do) + một phép kiểm canh chính danh
+sách ấy (`fc52c34`). Nay **3 ĐẠT**. Báo cáo ghi rõ **bốn chỗ bộ kiểm ấy KHÔNG phủ** — chỉ hai tiền tố
+`admin/`+`teach/`, chỉ quyền theo VAI chứ không theo ĐỐI TƯỢNG, view không phải lớp bị bỏ im lặng,
+lớp quyền lạ (`LaHocVien`, gác 6 cửa) bị bỏ im lặng.
+
+**Sạch, có số đo:** 20/20 tuyến `class_id` dưới `api/teach/` có `can_see_class` · 18/18 chỗ gọi
+`thuoc_buoi` truyền hằng trong mã · 2 chỗ `ORDER BY` động đều danh sách trắng · 7 chỗ `UPDATE … SET`
+động đều lấy tên cột từ hằng · **0/45 dòng link trong CSDL lệch lược đồ http/https** · **0 thẻ
+`<a target="_blank">` thiếu `rel`** (grep một dòng cho kết quả SAI — `rel` nằm dòng kế; phải phân tích
+thẻ đa dòng) · **0 nội suy chưa thoát** trong 111 chỗ `innerHTML` của tầng JS cũ · token chỉ sống ở
+tầng máy chủ Next, không một chỗ nào trong `src/` hay `public/static/js/` đọc nó · 835 tệp không bí
+mật, `--tu-kiem` 6/6 · **`.env` chưa bao giờ vào lịch sử git** · hàng rào thư §61 đo được là ĐANG BẬT
+trên máy này.
+
+**Năm mục sổ nợ** (nặng nhất: `parent_report_links.token` là bảng chìa DUY NHẤT còn lưu THÔ, trong khi
+`password_reset_tokens` và `lich/chia.py` đều đã băm) và **hai mục "nghi, chưa chứng minh"** để riêng —
+xem báo cáo.
+
+**Không kịp soát:** `teaching/bao_cao_cheo.py` (chưa có trên `7f93250`) · luồng Google OAuth đi thật ·
+`chatbot/` (tiêm nhắc AI) · không mở màn nào trong trình duyệt (brief cấm dựng `next dev`, máy còn
+~3,1 GB; lượt này không sửa tệp `.tsx` nào).

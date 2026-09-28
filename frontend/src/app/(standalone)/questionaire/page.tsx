@@ -77,7 +77,7 @@ export default function QuestionairePage() {
           {/* Q4 — Chọn hợp phần 3 */}
           <div className="step">
             <div className="question-block">
-              <p className="question">4. Hợp phần thứ 3 bạn chọn làm bài là gì?</p>
+              <p className="question">4. Môn học thứ 3 bạn chọn làm bài là gì?</p>
               <label className="option"><input type="radio" name="section3_choice" value="Khoa học" /> Khoa học (Tự nhiên – Xã hội)</label>
               <label className="option"><input type="radio" name="section3_choice" value="Tiếng Anh" /> Tiếng Anh</label>
               <label className="option"><input type="radio" name="section3_choice" value="Chưa quyết định" /> Chưa quyết định</label>
@@ -106,7 +106,7 @@ export default function QuestionairePage() {
           {/* Q6 — Tự đánh giá hợp phần yếu */}
           <div className="step">
             <div className="question-block">
-              <p className="question">6. Bạn tự thấy mình yếu nhất ở hợp phần nào?
+              <p className="question">6. Bạn tự thấy mình yếu nhất ở môn học nào?
                 <span className="note">(Chọn tối đa 2)</span>
               </p>
               <label className="option"><input type="checkbox" name="self_weak" value="Định lượng" /> Tư duy Định lượng (Toán)</label>

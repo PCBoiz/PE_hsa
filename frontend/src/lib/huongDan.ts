@@ -95,6 +95,11 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Bấm thẳng vào dòng việc bên dưới — nó dẫn tới đúng lớp và đúng buổi, không phải tự đi tìm.',
+        luu_y: 'Trợ giảng cũng thấy em vắng liền và em cần chú ý của lớp mình. Dòng ấy dẫn về sổ buổi học của lớp; việc gọi phụ huynh vẫn là của giảng viên — báo giảng viên phụ trách.',
+      },
+      {
+        lam: 'Thấy em cần giúp: bấm "Báo cần hỗ trợ" ngay trên dòng của em, ghi một câu lý do. Em hiện ở khối "Cần hỗ trợ" cho giảng viên và trợ giảng của lớp; giúp xong thì bấm "Bỏ đánh dấu".',
+        luu_y: 'Lý do là để giảng viên đọc — không in lên tờ gửi phụ huynh.',
       },
       {
         lam: 'Làm hết phần "Chưa điểm danh xong" trước khi về.',
@@ -182,6 +187,10 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Người tư vấn và nguồn tuyển sinh chọn từ danh sách, không gõ tay — để còn thống kê được.',
       },
       {
+        lam: 'Mục "Tình trạng": tình trạng học tập tự tính từ các lớp em học (đang học, tạm dừng, đã học xong, bảo lưu, đã nghỉ, chưa xếp lớp); tình trạng học phí thì chọn tay (Đã đóng / Sắp hết / Hết / Bảo lưu).',
+        luu_y: 'Ở trang Tài khoản lọc được theo hai ô này — ví dụ tìm mọi em học phí "Sắp hết" để nhắc.',
+      },
+      {
         lam: 'Liên hệ phụ huynh lưu ở đây là "trung tâm đã nhập": từ đó em chỉ còn điền được ô trống trong Cài đặt, muốn sửa phải qua học vụ.',
         luu_y: 'Mã học viên không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi trong Cài đặt.',
       },
@@ -222,6 +231,11 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Em chỉ học được môn của lớp đang học (lớp để trống môn = cả ba môn). Lớp gia sư nhận tối đa 3 em; trợ giảng không tính.',
       },
       {
+        lam: 'Cả danh sách một lúc: bấm "Học viên" của lớp → "Tải tệp mẫu (.xlsx)", điền mỗi dòng một em (họ tên, email, số điện thoại — em đã có tài khoản thì chỉ cần mã HSA), chọn tệp → "Kiểm tra tệp" → "Nhập … em vào lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Bước kiểm tra chưa ghi gì: dòng nào sai hiện lý do ngay trên dòng ấy. Em chưa có tài khoản được cấp mật khẩu tạm — chép bảng mật khẩu ngay, rời trang là mất. Tối đa 50 em mỗi tệp.',
+      },
+      {
         lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Một lượt tạo cả lớp, xếp em vào lớp và sinh buổi. Xem trước báo trùng giờ với lớp khác của giảng viên hoặc của em.',
@@ -235,6 +249,11 @@ export const HUONG_DAN: readonly Bai[] = [
         lam: 'Chuyển lớp: mở "Học viên" của lớp cũ, ở dòng của em chọn "Chuyển sang lớp khác…", tìm lớp mới rồi bấm "Chuyển lớp".',
         o: '/quan-tri/lop-hoc',
         luu_y: 'Một thao tác: em rời lớp cũ và vào lớp mới cùng lúc, hồ sơ em ghi "Chuyển từ lớp A sang lớp B".',
+      },
+      {
+        lam: 'Cần biết ai đã đổi gì ở một lớp: mở "Học viên" của lớp → "Lịch sử thay đổi của lớp".',
+        o: '/quan-tri/lop-hoc',
+        luu_y: 'Có sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi. Điểm danh từng buổi xem ở sổ buổi học.',
       },
       {
         lam: 'Em nào rời lớp thì GHI LÝ DO ngay lúc cho rời.',
@@ -261,6 +280,10 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Giảng viên chỉ thấy lớp mình phụ trách; trợ giảng chỉ thấy lớp được gán. Trang này gom MỌI lớp — không phải mở từng lớp.',
       },
       { lam: 'Tick từng em (hoặc "Đánh dấu cả lớp có mặt" rồi sửa em vắng), bấm lưu.' },
+      {
+        lam: 'Sửa lại điểm danh thì cứ tick lại rồi lưu. Mở "Lịch sử sửa điểm danh" ngay dưới sổ để xem ai đã đổi em nào, từ gì sang gì, lúc nào.',
+        luu_y: 'Lưu lại y hệt không ghi thêm dòng lịch sử nào — chỉ lần ĐỔI mới được ghi. Học viên xem được điểm danh từng buổi của chính mình ở "Lớp của bạn".',
+      },
       {
         lam: 'Buổi chưa có trong danh sách thì tạo buổi trước — hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
         luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG được tính vào mẫu số chuyên cần — nó bị báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
@@ -334,6 +357,10 @@ export const HUONG_DAN: readonly Bai[] = [
         o: '/quan-tri/lop-hoc',
       },
       {
+        lam: 'Học bù: ở sổ buổi học của lớp, bấm "Tạo buổi bù" trên dòng của buổi cần bù, chọn giờ và các em học bù (em vắng / có phép được tick sẵn), rồi "Tạo buổi bù".',
+        luu_y: 'Chỉ các em được chọn thấy buổi bù, có tên trong sổ điểm danh của buổi ấy và nhận thông báo; em khác không bị tính buổi này vào chuyên cần hay học phí.',
+      },
+      {
         lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác — cùng giảng viên, cùng học viên, hay cùng phòng — máy báo bằng dải vàng. Buổi VẪN được lưu.',
         luu_y: 'Cảnh báo chứ không chặn: trung tâm có ca trùng cố ý. Phòng so không phân biệt hoa thường ("P201" = "p201") và chỉ so buổi tại trung tâm.',
       },
@@ -380,6 +407,29 @@ export const HUONG_DAN: readonly Bai[] = [
   },
 
   {
+    ma: 'danh-gia-em',
+    tieu_de: 'Nhận xét em, đánh dấu cần hỗ trợ, đề xuất hướng học',
+    // Kế hoạch v2 V-a + V-f (25/09/2026) — bảng TopHSA dòng 18. Trợ giảng chỉ đánh dấu,
+    // và làm ở "Việc hôm nay" (bài "Mở đầu ngày dạy").
+    vai: [VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Trước khi gửi báo cáo tháng, hoặc ngay khi thấy em cần giúp.',
+    buoc: [
+      {
+        lam: 'Vào lớp của em, bấm "Báo cáo phụ huynh", rồi "Xem tờ" trên dòng của em.',
+        o: '/giang-day',
+      },
+      {
+        lam: 'Khối "Đánh giá của giảng viên" nằm trên tờ báo cáo. Ghi nhận xét, tick "Đánh dấu em cần hỗ trợ" kèm lý do, ghi đề xuất hướng học, rồi bấm "Lưu đánh giá".',
+        luu_y: 'Chỉ NHẬN XÉT in lên tờ gửi phụ huynh. Cờ cần hỗ trợ và hướng học là nội bộ — cờ hiện ở "Việc hôm nay" của giảng viên và trợ giảng lớp.',
+      },
+      {
+        lam: 'Em được trợ giảng báo cần hỗ trợ hiện ở khối "Cần hỗ trợ" của "Việc hôm nay", kèm lý do và tên người báo. Giúp xong thì bấm "Bỏ đánh dấu".',
+        o: '/giang-day',
+      },
+    ],
+  },
+
+  {
     ma: 'bao-cao-phu-huynh',
     tieu_de: 'Gửi báo cáo cho phụ huynh',
     vai: [VAI_GIANG_VIEN, VAI_HOC_VU, VAI_QUAN_TRI],
@@ -418,11 +468,18 @@ export const HUONG_DAN: readonly Bai[] = [
     vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG],
     khi_nao: 'Khi cần bài tự luận hoặc bài nộp ảnh — bài trắc nghiệm thì hệ thống tự chấm.',
     buoc: [
-      { lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp.' },
+      {
+        lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp. Ô "Giao cho": Cả lớp, hoặc "Chọn học viên" rồi tick từng em.',
+        luu_y: 'Em không được chọn không thấy bài, không nhận thông báo và không bị tính "chưa nộp". Đổi người nhận sau bằng nút "Đổi người nhận" trên dòng của bài — em mới thêm được báo ngay.',
+      },
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
       {
+        lam: 'Bài kiểm tra làm trên lớp: "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)", chọn ngày kiểm tra. Sau buổi, bấm "Nhập điểm" trên dòng của bài, gõ điểm từng em (em vắng thì tick "Vắng") rồi Lưu.',
+        luu_y: 'Học viên không nộp bài kiểm tra qua hệ thống và không bị tính "chưa nộp". Điểm hiện ở mục Bài tập của em, sổ điểm (loại "Bài kiểm tra"), dòng thời gian trên hồ sơ và tờ báo cáo gửi phụ huynh.',
+      },
+      {
         lam: 'Chấm điểm và ghi nhận xét.',
-        luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc. Ghi chú riêng về em (dành cho giảng viên và cho tờ báo cáo phụ huynh) nằm ở hồ sơ học viên, chỗ khác.',
+        luu_y: 'Nhận xét ở đây là để HỌC VIÊN đọc về bài này. Nhận xét chung gửi phụ huynh nằm ở khối "Đánh giá của giảng viên" trên tờ báo cáo của em.',
       },
     ],
   },
@@ -436,10 +493,119 @@ export const HUONG_DAN: readonly Bai[] = [
     buoc: [
       { lam: 'Mở khu Giáo trình.', o: '/giao-trinh' },
       { lam: 'Chọn khoá, bấm "Mở bài" để xem danh sách bài của khoá ấy.' },
+      {
+        lam: 'Khoá chưa sẵn sàng cho học viên thì bấm "Chuyển về nháp"; soạn xong bấm "Mở cho học viên". Cột "Trạng thái" cho biết khoá đang mở hay nháp.',
+        luu_y: 'Khoá nháp biến mất với MỌI học viên ngay lập tức, kể cả học viên của lớp đang học khoá ấy. Giảng viên và học vụ vẫn xem được.',
+      },
       { lam: 'Bấm "Soạn nội dung" ở bài cần sửa. Bài mới thêm bằng ô "Thêm bài mới" phía trên danh sách.' },
       {
         lam: 'Cần nhập cả khoá một lần thì bấm "Nhập từ file JSON".',
         luu_y: 'Hệ thống kiểm toàn bộ trước khi ghi: sai một bài thì không bài nào được ghi. Nhập lại cùng một file là cập nhật, không nhân đôi.',
+      },
+    ],
+  },
+
+  {
+    ma: 'cham-cong',
+    tieu_de: 'Xem chấm công giảng viên và trợ giảng',
+    vai: [VAI_QUAN_TRI, VAI_HOC_VU],
+    khi_nao: 'Cuối tháng, trước khi tính công.',
+    buoc: [
+      {
+        lam: 'Mở "Chấm công", chọn tháng rồi bấm "Xem".',
+        o: '/quan-tri/cham-cong',
+        luu_y: 'Chỉ tính buổi đã điểm danh hoặc đã đánh dấu xong. Buổi đã dạy mà chưa ai điểm danh sẽ THIẾU ở đây — nhắc giảng viên điểm danh trước.',
+      },
+      {
+        lam: 'Trợ giảng được tính buổi của lớp mình đang được gán lúc buổi diễn ra. Gán vào lớp giữa tháng thì chỉ tính các buổi sau ngày gán.',
+      },
+      { lam: 'Bấm "Tải Excel" để gửi cho người tính công.' },
+    ],
+  },
+
+  {
+    ma: 'khung-chuong-trinh',
+    // E1, 25/09/2026 — bảng TopHSA dòng 4–6, 9, 15, 16.
+    tieu_de: 'Soạn khung chương trình và cho lớp nhận khung',
+    vai: [VAI_HOC_VU, VAI_BIEN_TAP, VAI_QUAN_TRI],
+    khi_nao: 'Trước khi lớp vào học, hoặc khi đổi nội dung chương trình của một môn.',
+    buoc: [
+      { lam: 'Mở Khung chương trình, chọn môn, gõ tên rồi bấm "Tạo khung".', o: '/giao-trinh/khung-chuong-trinh' },
+      {
+        lam: 'Thêm từng buổi, rồi mở "Thêm nội dung hoặc học liệu" để thêm nội dung của buổi kèm trọng số.',
+        luu_y: 'Trọng số là độ nặng của nội dung khi tính tiến độ. Để 1 nếu các nội dung nặng như nhau.',
+      },
+      {
+        lam: 'Bấm "Xuất bản". Muốn sửa bản đã xuất bản thì bấm "Tạo bản mới", sửa, rồi xuất bản bản ấy.',
+        luu_y: 'Lớp đã nhận bản cũ vẫn theo bản cũ cho tới khi học vụ cho lớp đổi khung.',
+      },
+      { lam: 'Ở Lớp học, bấm "Chương trình" của lớp, chọn khung, bấm "Xem trước" rồi "Nhận khung".', o: '/quan-tri/lop-hoc' },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Xem trước báo có buổi khung chưa có buổi học để gắn.',
+        xu_ly: 'Lớp chưa đủ buổi. Tạo thêm buổi học (Buổi học → Sinh lịch cả kỳ) rồi bấm "Nhận khung" lại — buổi đã gắn giữ nguyên.',
+      },
+      {
+        trieu_chung: 'Một buổi gắn nhầm buổi khung.',
+        xu_ly: 'Ở màn Chương trình của lớp, chọn lại buổi khung ở cột "Buổi khung" của buổi ấy.',
+      },
+    ],
+  },
+
+  {
+    ma: 'so-dau-bai',
+    tieu_de: 'Ghi sổ đầu bài sau buổi dạy',
+    vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG, VAI_HOC_VU, VAI_QUAN_TRI],
+    khi_nao: 'Ngay sau mỗi buổi dạy. Buổi chưa ghi sổ bị nhắc ở Tổng quan.',
+    buoc: [
+      { lam: 'Mở Việc hôm nay, vào lớp, bấm "Sổ đầu bài" ở buổi vừa dạy.', o: '/giang-day' },
+      { lam: 'Đánh dấu từng nội dung: đã dạy, dạy một phần hay chưa dạy. Dạy bù nội dung buổi trước thì chọn thêm ở ô "Thêm nội dung buổi khác".' },
+      {
+        lam: 'Chọn mức tiếp thu, ghi tình hình lớp, đề xuất và đánh dấu em cần hỗ trợ, rồi bấm "Lưu sổ đầu bài".',
+        luu_y: 'Tiến độ lớp và % của từng em tính từ sổ này. Nội dung chưa đánh dấu không được lưu.',
+      },
+      {
+        lam: 'Đề xuất cần học vụ quyết (học bù, đổi tiến độ) thì bấm "Gửi đề xuất cho học vụ" ngay dưới ô Đề xuất.',
+        luu_y: 'Đề xuất thành một yêu cầu trong hộp Yêu cầu — học vụ trả lời ở đó, bạn nhận chuông.',
+      },
+    ],
+  },
+
+  {
+    ma: 'yeu-cau',
+    // E3, 26/09/2026 — bảng TopHSA dòng 11, 12, 20, 25, 32.
+    tieu_de: 'Xử lý yêu cầu của học viên, phụ huynh và trợ giảng',
+    vai: [VAI_HOC_VU, VAI_QUAN_TRI, VAI_GIANG_VIEN, VAI_TRO_GIANG],
+    khi_nao: 'Khi chuông báo "Yêu cầu mới", hoặc Việc hôm nay có yêu cầu đang mở.',
+    buoc: [
+      { lam: 'Mở Yêu cầu. Mặc định chỉ hiện yêu cầu đang mở; lọc theo loại, lớp, hoặc "Chỉ việc giao cho tôi".', o: '/yeu-cau' },
+      {
+        lam: 'Mở một yêu cầu. Học vụ: "Đổi loại" nếu em chọn nhầm loại, "Giao người xử lý" cho giảng viên / trợ giảng của lớp.',
+        luu_y: 'Giảng viên, trợ giảng không thấy yêu cầu hỗ trợ tài khoản — việc ấy chỉ học vụ làm.',
+      },
+      {
+        lam: 'Trả lời ở ô "Trả lời". Việc chỉ nhân sự nên biết thì tick "Ghi chú nội bộ".',
+        luu_y: 'Học viên và phụ huynh không bao giờ thấy ghi chú nội bộ. Trả lời đầu tiên của nhân sự chuyển yêu cầu sang "Đang xử lý".',
+      },
+      { lam: 'Xong việc thì bấm "Đã xong…", ghi kết quả — người gửi đọc được kết quả này.' },
+      {
+        lam: 'Xin chuyển lớp, bảo lưu, huỷ khoá, học lại: học vụ bấm "Duyệt…", chọn lớp / ngày, đọc dòng "Hệ thống sẽ…" rồi bấm "Duyệt và thực hiện".',
+        luu_y: 'Duyệt là hệ thống LÀM NGAY (chuyển lớp, cho rời lớp). Chuyển lịch, học bù, nghỉ học: duyệt chỉ ghi quyết định — tự làm trên màn Buổi học rồi bấm "Đã xong…".',
+      },
+      {
+        lam: 'Trợ giảng báo một em không phản hồi: Yêu cầu → "Tạo yêu cầu", loại "Báo lên", chọn lớp và em, tick "Em không phản hồi".',
+        o: '/yeu-cau',
+      },
+    ],
+    hong_thi_sao: [
+      {
+        trieu_chung: 'Bấm "Duyệt và thực hiện" báo lớp gia sư đã đủ em.',
+        xu_ly: 'Không có gì thay đổi. Chọn lớp khác, hoặc từ chối kèm lý do.',
+      },
+      {
+        trieu_chung: 'Phụ huynh báo không gửi thêm được yêu cầu.',
+        xu_ly: 'Mỗi đường dẫn tờ báo cáo chỉ có 5 yêu cầu đang chờ. Trả lời và đóng các yêu cầu cũ.',
       },
     ],
   },

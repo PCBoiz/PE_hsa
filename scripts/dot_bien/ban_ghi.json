@@ -1,0 +1,44 @@
+[
+ {
+  "ten": "bỏ kiểm người đã rời lớp",
+  "cu": "                                 AND m.left_at IS NULL)",
+  "moi": "                                 AND TRUE)",
+  "cho": "test_em_da_roi_lop_khong_con_ghi_duoc_gi"
+ },
+ {
+  "ten": "_thuoc_lop bỏ kiểm buổi bù",
+  "cu": "                      AND ''' + thuoc_buoi('s.id', '%s') + ''') AS trong_lop",
+  "moi": "                      AND TRUE OR %s IS NULL) AS trong_lop",
+  "cho": "test_buoi_bu_em_khong_du_thi_khong_ghi_duoc_luot_mo"
+ },
+ {
+  "ten": "thống kê bỏ lọc buổi bù",
+  "cu": "trong_buoi = [e for e in hoc_vien if thuoc is None or e['id'] in thuoc]",
+  "moi": "trong_buoi = list(hoc_vien)",
+  "cho": "test_buoi_bu_chi_dem_em_thuoc_buoi"
+ },
+ {
+  "ten": "nhắc bỏ kiểm buổi bù",
+  "cu": "                       AND ''' + thuoc_buoi('%s', 'u.id') + '''",
+  "moi": "                       AND %s IS NOT NULL",
+  "cho": "test_buoi_bu_chi_nhac_em_thuoc_buoi"
+ },
+ {
+  "ten": "daMo đếm phồng (len(xong))",
+  "cu": "'daMo': len(trong_buoi) - len(chua),",
+  "moi": "'daMo': len(xong),",
+  "cho": "test_so_da_mo_cong_chua_mo_bang_si_so_that"
+ },
+ {
+  "ten": "thieuBanGhi gồm cả buổi đã huỷ",
+  "cu": "WHERE class_id = %s AND status <> 'cancelled'",
+  "moi": "WHERE class_id = %s AND status IS NOT NULL",
+  "cho": "test_buoi_da_huy_khong_bi_doi_dan_ban_ghi"
+ },
+ {
+  "ten": "bỏ title_multi (chuông thôi đếm số em báo)",
+  "cu": "                   title_multi='Bản ghi buổi %s: {n} em báo hỏng' % ngay)",
+  "moi": "                   )",
+  "cho": "test_nhieu_em_bao_hong_thi_chuong_noi_ro_may_em"
+ }
+]

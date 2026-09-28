@@ -1,0 +1,98 @@
+[
+ {
+  "ten": "bỏ lọc tài liệu đang ẩn — em thấy đề kiểm tra giảng viên chưa mở (§60)",
+  "cu": "       AND NOT h.an\n",
+  "moi": "       AND (NOT h.an OR TRUE)\n",
+  "cho": "test_tai_lieu_dang_an_khong_lot_toi_em"
+ },
+ {
+  "ten": "thuoc_buoi cho TÀI LIỆU mất tiền tố bảng — `sp.session_id = sp.session_id` luôn đúng",
+  "cu": "thuoc_buoi('h.session_id', '%s')",
+  "moi": "thuoc_buoi('session_id', '%s')",
+  "cho": "test_tai_lieu_buoi_thuong_toi_ca_lop"
+ },
+ {
+  "ten": "thuoc_buoi cho BẢN GHI mất tiền tố bảng — cùng cái bẫy, cửa khác",
+  "cu": "thuoc_buoi('s.id', '%s')",
+  "moi": "thuoc_buoi('id', '%s')",
+  "cho": "test_ban_ghi_buoi_thuong_toi_ca_lop"
+ },
+ {
+  "ten": "bỏ hàng rào buổi bù của bản ghi — cả lớp thấy bản ghi buổi bù của hai em",
+  "cu": "       AND ''' + thuoc_buoi('s.id', '%s') + '''\n",
+  "moi": "       AND (TRUE OR ''' + thuoc_buoi('s.id', '%s') + ''')\n",
+  "cho": "test_ban_ghi_buoi_bu_chi_em_trong_buoi_thay"
+ },
+ {
+  "ten": "khoá phân trang bản ghi thành `<=` — dòng cuối trang trước hiện LẠI ở trang sau",
+  "cu": "            OR (s.starts_at, s.id) < (SELECT k.starts_at, k.id FROM class_sessions k",
+  "moi": "            OR (s.starts_at, s.id) <= (SELECT k.starts_at, k.id FROM class_sessions k",
+  "cho": "test_phan_trang_ban_ghi_khong_trung_khong_sot"
+ },
+ {
+  "ten": "khoá phân trang bản ghi bỏ mốc thời gian, chỉ còn `id` — nhảy dòng ở lớp có buổi bù",
+  "cu": "            OR (s.starts_at, s.id) < (SELECT k.starts_at, k.id FROM class_sessions k",
+  "moi": "            OR (s.id, s.id) < (SELECT k.id, k.id FROM class_sessions k",
+  "cho": "test_phan_trang_ban_ghi_khong_trung_khong_sot"
+ },
+ {
+  "ten": "khoá phân trang học liệu thành `<=` — tài liệu hiện hai lần khi bấm Xem thêm",
+  "cu": "               < (SELECT COALESCE(ks.starts_at, k.created_at), k.id",
+  "moi": "               <= (SELECT COALESCE(ks.starts_at, k.created_at), k.id",
+  "cho": "test_phan_trang_hoc_lieu_khong_trung_khong_sot"
+ },
+ {
+  "ten": "bỏ lọc `left_at` — em đã rời lớp vẫn xem được cả khoá",
+  "cu": "                  WHERE c.id = %s AND m.user_id = %s AND m.left_at IS NULL''',",
+  "moi": "                  WHERE c.id = %s AND m.user_id = %s AND (m.left_at IS NULL OR TRUE)''',",
+  "cho": "test_em_da_roi_lop_khong_xem_duoc_nua"
+ },
+ {
+  "ten": "bỏ hàng rào lớp của bản ghi — lớp A hiện bản ghi của lớp B",
+  "cu": "     WHERE s.class_id = %s\n",
+  "moi": "     WHERE (s.class_id = %s OR TRUE)\n",
+  "cho": "test_ban_ghi_lop_khac_khong_lot_vao_danh_sach"
+ },
+ {
+  "ten": "bỏ hàng rào lớp của học liệu — em thấy tài liệu lớp khác",
+  "cu": "     WHERE h.class_id = %s\n",
+  "moi": "     WHERE (h.class_id = %s OR TRUE)\n",
+  "cho": "test_ban_ghi_lop_khac_khong_lot_vao_danh_sach"
+ },
+ {
+  "ten": "hàng rào thành viên trả dòng lớp bất chấp — em lớp khác vào được",
+  "cu": "        if not lop:\n            return Response({'error': 'Không tìm thấy lớp này.'}, status=404)",
+  "moi": "        if False:\n            return Response({'error': 'Không tìm thấy lớp này.'}, status=404)",
+  "cho": "test_em_lop_khac_nhan_404_chu_khong_403"
+ },
+ {
+  "ten": "ô tìm bị bỏ qua — gõ gì cũng ra cả kho",
+  "cu": "    return mau_like(s) if s else None",
+  "moi": "    return None",
+  "cho": "test_o_tim_ban_ghi_loc_theo_chu_de"
+ },
+ {
+  "ten": "ô tìm không thoát ký tự đại diện — một dấu % trả về cả kho",
+  "cu": "    return mau_like(s) if s else None",
+  "moi": "    return ('%' + s.lower() + '%') if s else None",
+  "cho": "test_o_tim_dau_phan_tram_khong_tra_ve_tat_ca"
+ },
+ {
+  "ten": "buổi ĐÃ HUỶ và buổi CHƯA HỌC cũng hiện — em bấm vào một bản ghi không có",
+  "cu": "       AND s.status <> 'cancelled'\n       AND s.recording_url IS NOT NULL AND s.recording_url <> ''\n       AND s.starts_at < %s\n",
+  "moi": "       AND (s.status <> 'cancelled' OR TRUE)\n       AND s.recording_url IS NOT NULL AND s.recording_url <> ''\n       AND (s.starts_at < %s OR TRUE)\n",
+  "cho": "test_buoi_da_huy_va_buoi_chua_dien_ra_khong_hien"
+ },
+ {
+  "ten": "`tiep` luôn null — nút Xem thêm không bao giờ hiện, em kẹt ở trang đầu",
+  "cu": "        tiep = rows[n - 1]['id'] if len(rows) > n else None",
+  "moi": "        tiep = None",
+  "cho": "test_phan_trang_ban_ghi_khong_trung_khong_sot"
+ },
+ {
+  "ten": "`daMo` luôn đúng — em tưởng đã xem lại hết cả khoá",
+  "cu": "            'daMo': r['lan_mo'] > 0, 'lanMo': r['lan_mo']}",
+  "moi": "            'daMo': True, 'lanMo': r['lan_mo']}",
+  "cho": "test_da_mo_va_loc_chi_buoi_chua_mo"
+ }
+]

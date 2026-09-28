@@ -196,6 +196,25 @@ class IsAdminOrAcademic(BasePermission):
         return is_admin(request.user) or is_academic(request.user)
 
 
+class IsCurriculumPlanner(BasePermission):
+    """Soạn KHUNG CHƯƠNG TRÌNH theo buổi (E1, 25/09/2026): quản trị viên, học vụ,
+    biên tập nội dung.
+
+    Lớp quyền DUY NHẤT cắt ngang hai trục: học vụ (trục LỚP) cần nó vì khung là thứ
+    họ giao cho từng lớp và đối chiếu tiến độ; biên tập nội dung (trục GIÁO TRÌNH)
+    cần nó vì khung là giáo trình xếp theo buổi. Không gồm giảng viên, trợ giảng:
+    khung dùng chung cho mọi lớp của một môn, sửa ở một lớp là đổi kế hoạch của mọi
+    lớp — họ ghi SỔ ĐẦU BÀI của buổi mình dạy (`IsTeachingStaff` + `can_see_class`).
+
+    Gắn khung cho MỘT lớp là việc khác, gác bằng `IsAdminOrAcademic` (biên tập nội
+    dung không đụng lớp).
+    """
+
+    def has_permission(self, request, view):
+        u = request.user
+        return is_admin(u) or is_academic(u) or is_editor(u)
+
+
 def can_see_class(user, class_id) -> bool:
     """Quản trị viên xem mọi lớp; giảng viên chỉ xem lớp mình phụ trách.
 

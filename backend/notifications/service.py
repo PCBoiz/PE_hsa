@@ -20,9 +20,24 @@ def notify(user_id, ntype, title, body, ref_type, ref_id,
 
     title       — tiêu đề khi đứng một mình ("A đã bình luận về bài viết của bạn")
     title_multi — template khi gộp, chứa '{n}' ("{n} bình luận mới trong bài viết
-                  của bạn"); None = không gộp title, chỉ tăng count + bump time.
+                  của bạn"). None = lần sau THAY lần trước: cả tiêu đề lẫn nội
+                  dung lấy của lần mới nhất.
     body        — snippet nội dung MỚI NHẤT (giữ của comment sau cùng).
     Trả về id của notification (mới hoặc được gộp).
+
+    HAI KIỂU GỘP, và vì sao phải phân biệt (26/09/2026)
+    ---------------------------------------------------
+    · TÍCH LUỸ (`title_multi` có): nhiều việc cùng loại cộng dồn — "3 bình luận
+      mới". Tiêu đề đếm số, thân giữ câu mới nhất.
+    · THAY THẾ (`title_multi` là None): việc sau ĐÈ việc trước. Buổi học dời lúc
+      10:00 rồi huỷ lúc 10:05 không phải "2 lần đổi lịch" — nó là một buổi, nay
+      đã huỷ.
+
+    Bản cũ thay `body` cho cả hai kiểu nhưng chỉ đổi `title` ở kiểu tích luỹ. Mà
+    `bao_doi_lich`, `assignments` và `notifications/gui.py` đều không truyền
+    `title_multi`, nên học viên nhận một dòng chuông mà tiêu đề nói "dời buổi
+    sang 10:40" còn thân nói "sẽ không diễn ra" — hai câu ngược nhau, và câu sai
+    lại là câu to hơn.
     """
     if coalesce_minutes and coalesce_minutes > 0:
         merged = q1(
@@ -41,9 +56,11 @@ def notify(user_id, ntype, title, body, ref_type, ref_id,
                RETURNING id, coalesce_count''',
             (body, user_id, ntype, ref_type, ref_id, coalesce_minutes))
         if merged:
-            if title_multi:
-                x('UPDATE notifications SET title = %s WHERE id = %s',
-                  (title_multi.format(n=merged['coalesce_count']), merged['id']))
+            # Tiêu đề phải đi cùng thân, luôn luôn: đếm số khi tích luỹ, lấy của
+            # lần mới nhất khi thay thế. Không nhánh nào để tiêu đề ở lại phía sau.
+            x('UPDATE notifications SET title = %s WHERE id = %s',
+              (title_multi.format(n=merged['coalesce_count']) if title_multi else title,
+               merged['id']))
             return merged['id']
 
     row = q1(

@@ -4,15 +4,24 @@ from common import do_proxy
 from teaching import (
                       admin_users,
                       assignments,
+                      ban_ghi,
+                      bao_cao_cheo,
+                      buoi_bu,
+                      cham_cong,
                       chuyen_lop,
                       co_so_hoc_phi,
+                      danh_gia,
                       dong_thoi_gian,
                       exports,
                       ho_so,
+                      hoc_lieu,
+                      hv_xem_du,
                       lich,
+                      lich_su_lop,
                       lien_he_phu_huynh,
                       lop_cua_toi,
                       lop_gia_su,
+                      nhap_hoc_vien,
                       overview,
                       parent_link,
                       parent_report,
@@ -37,6 +46,10 @@ urlpatterns = [
     # Giảng viên cập nhật MỤC TIÊU + NGUYỆN VỌNG của em trong lớp (23/09/2026).
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/profile',
          ho_so.MucTieuHocVienView.as_view()),
+    # Đánh giá em (kế hoạch v2 V-a + V-f, 25/09/2026): nhận xét gửi phụ huynh + đề xuất
+    # hướng học (giảng viên trở lên), cờ "cần hỗ trợ" (cả trợ giảng). Xem `danh_gia.py`.
+    path('api/teach/classes/<int:class_id>/students/<int:user_id>/danh-gia',
+         danh_gia.DanhGiaHocVienView.as_view()),
     # Báo cáo gửi phụ huynh (đặc tả ERP §6) — khác hồ sơ ở trên: ít số hơn, có
     # ranh giới riêng tư, và in ra giấy được.
     path('api/teach/classes/<int:class_id>/students/<int:user_id>/parent-report',
@@ -77,6 +90,21 @@ urlpatterns = [
     path('api/teach/sessions/<int:session_id>', sessions.ClassSessionDetailView.as_view()),
     path('api/teach/sessions/<int:session_id>/attendance',
          sessions.SessionAttendanceView.as_view()),
+    # Lịch sử sửa điểm danh của một buổi (V-d, 25/09/2026). Chỉ đọc.
+    path('api/teach/sessions/<int:session_id>/attendance/history',
+         sessions.SessionAttendanceHistoryView.as_view()),
+    # Tạo buổi BÙ cho một buổi, chỉ cho các em được chọn (V-g, 25/09/2026).
+    path('api/teach/sessions/<int:session_id>/buoi-bu', buoi_bu.BuoiBuView.as_view()),
+    # §72 (26/09/2026) — bản ghi buổi học: em mở được, trợ giảng biết ai chưa mở.
+    path('api/sessions/<int:session_id>/ban-ghi/da-mo', ban_ghi.GhiLuotMoView.as_view()),
+    path('api/sessions/<int:session_id>/ban-ghi/bao-loi', ban_ghi.BaoLoiBanGhiView.as_view()),
+    path('api/teach/classes/<int:class_id>/ban-ghi', ban_ghi.ThongKeBanGhiView.as_view()),
+    # §60 · học liệu của lớp (Đ2, dòng 30). Cùng đường cho cả người gắn lẫn người xem —
+    # cổng quyền trong thân hàm, vì nó phải phân biệt "giảng viên của lớp" với "em đang học".
+    path('api/teach/classes/<int:class_id>/hoc-lieu', hoc_lieu.HocLieuLopView.as_view()),
+    path('api/teach/classes/<int:class_id>/hoc-lieu/<int:tid>', hoc_lieu.HocLieuMotView.as_view()),
+    path('api/teach/classes/<int:class_id>/ban-ghi/<int:session_id>/nhac',
+         ban_ghi.NhacXemBanGhiView.as_view()),
 
     # ── Giao bài & chấm tay (đặc tả ERP §5) ──
     path('api/teach/classes/<int:class_id>/assignments',
@@ -93,6 +121,9 @@ urlpatterns = [
     path('api/assignments', assignments.MyAssignmentsView.as_view()),
     # Lớp của chính em: buổi tới, link phòng, chuyên cần của mình. Chỉ đọc.
     path('api/lop-cua-toi', lop_cua_toi.LopCuaToiView.as_view()),
+    # Xem lại ĐỦ cả khoá — bản ghi buổi học và học liệu, có ô tìm và phân trang theo khoá
+    # (bảng phân rã dòng 29, 30). Thẻ lớp ở trên chỉ giữ bốn dòng gần nhất. Chỉ đọc.
+    path('api/lop-cua-toi/<int:class_id>/xem-du', hv_xem_du.XemDuLopView.as_view()),
 
     # ── Xuất dữ liệu (đặc tả ERP §6) ──
     path('api/teach/classes/<int:class_id>/export/progress.csv',
@@ -126,12 +157,14 @@ urlpatterns = [
     # Lịch sử thay đổi/phân công MỘT lớp (4.1, V-n, 25/09/2026). Chỉ đọc.
     path('api/admin/classes/<int:class_id>/history', views.AdminClassHistoryView.as_view()),
     path('api/admin/classes/<int:class_id>/members', views.AdminClassMembersView.as_view()),
+    # Nhập học viên vào lớp từ tệp mẫu (V-j): POST tệp (xem trước / nhập), GET tệp mẫu.
+    path('api/admin/classes/<int:class_id>/nhap-hoc-vien', nhap_hoc_vien.NhapHocVienView.as_view()),
+    path('api/admin/classes/<int:class_id>/nhap-hoc-vien/mau', nhap_hoc_vien.TepMauNhapHocVienView.as_view()),
+    # Lịch sử thay đổi của MỘT lớp cho học vụ (V-n) — phần của lớp trong nhật ký, chỉ đọc.
+    path('api/admin/classes/<int:class_id>/lich-su', lich_su_lop.LichSuLopView.as_view()),
     # Chuyển lớp MỘT bước (§55): rời lớp này + vào lớp kia + nối hai lượt, một giao dịch.
     path('api/admin/classes/<int:class_id>/members/<int:user_id>/transfer',
          chuyen_lop.ChuyenLopView.as_view()),
-    # Nhập DS học viên từ bảng tính (.xlsx/.csv) THẲNG vào lớp (4.1, V-j, 25/09/2026).
-    path('api/admin/classes/<int:class_id>/nhap-hoc-vien',
-         admin_users.AdminClassImportStudentsView.as_view()),
 
     # ── Tài khoản ──
     path('api/admin/users', admin_users.AdminUsersView.as_view()),
@@ -155,4 +188,9 @@ urlpatterns = [
     path('api/admin/do-proxy', do_proxy.DoProxyView.as_view()),
     # CƠ SỞ TÍNH học phí — không có trường tiền nào, xem co_so_hoc_phi.py
     path('api/admin/co-so-hoc-phi', co_so_hoc_phi.AdminBillingBasisView.as_view()),
+    # Chấm công theo tháng — giảng viên VÀ trợ giảng (V-o). Chỉ đọc; `?dinh_dang=xlsx`.
+    path('api/admin/cham-cong', cham_cong.ChamCongView.as_view()),
+    # Báo cáo chéo MÔN × LỚP (dòng 6, 27/09/2026) — "môn nào đang tụt, lớp nào trong môn
+    # ấy". Chỉ đọc; `?dinh_dang=xlsx` dùng đúng bộ lọc của màn.
+    path('api/admin/bao-cao-cheo', bao_cao_cheo.BaoCaoCheoView.as_view()),
 ]

@@ -20,11 +20,17 @@
  * này không đọc tới chúng, nên nới kiểu là đúng — và nếu ai đó thêm một chỗ
  * hiển thị email vào đây, `tsc` sẽ bắt ngay vì kiểu nói rõ nó có thể vắng.
  */
+import { cauTienDoEm } from '@/lib/tienDoChu';
+
 export type BaoCao = {
   student: { id: number; name: string | null; email?: string | null; phone?: string | null };
   /** Người NHẬN tờ này. Chuỗi rỗng = chưa ai điền. `phone`/`email` vắng ở tờ đi qua chìa. */
   parent: { name: string; phone?: string; email?: string };
-  class: { id: number; name: string; code: string | null; teacher: string | null };
+  class: {
+    id: number; name: string; code: string | null; teacher: string | null;
+    /** Trợ giảng đang phụ trách lớp (§66, dòng 24). `?`: máy chủ cũ không trả. */
+    assistants?: string[];
+  };
   membership: { joinedAt: string | null; leftAt: string | null; status: string; teacherNote: string | null };
   period: { from: string; to: string; weeks: number };
   attendance: {
@@ -104,6 +110,22 @@ export type BaoCao = {
     feedback: string | null;
     gradedAt: string | null;
   }[];
+  /**
+   * Bài kiểm tra làm trên lớp, giảng viên nhập điểm — `parent_report._kiem_tra_lop`.
+   * `optional`: bản dựng cũ của máy chủ chưa gửi.
+   */
+  kiemTra?: {
+    id: number;
+    title: string;
+    topic: string | null;
+    heldOn: string;
+    maxScore: number | null;
+    score: number | null;
+    absent: boolean;
+    feedback: string | null;
+  }[];
+  /** % chương trình em đã học tới hôm nay (E1). null: lớp chưa nhận khung; thiếu: máy chủ cũ. */
+  chuongTrinh?: { pct: number | null; keHoachPct: number | null } | null;
   topics: {
     weak: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
     strong: { course: string; courseTitle: string | null; topic: string; mastery: number }[];
@@ -168,6 +190,11 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
         <p className="mt-1 text-body text-ink-2">
           Lớp {bc.class.name}
           {bc.class.teacher && ` · Giảng viên ${bc.class.teacher}`}
+          {/* Trợ giảng là người nhắc bài hằng ngày và là người phụ huynh nhắn khi con
+              nghỉ — tờ chỉ có tên giảng viên thì họ nhắn nhầm chỗ, và lời nhắn tới
+              muộn một ngày (§66, bảng dòng 24). */}
+          {(bc.class.assistants?.length ?? 0) > 0 &&
+            ` · Trợ giảng ${bc.class.assistants!.join(', ')}`}
         </p>
         {/* Lời chào trên tờ IN. Chỉ hiện khi đã biết tên: "Kính gửi quý phụ
             huynh" thì thừa — người nhận biết tờ này gửi cho mình. */}
@@ -233,6 +260,15 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
                 con số này đầy đủ.
               </p>
             ))}
+          </>
+        )}
+
+        {/* ── Tiến độ chương trình (E1, 25/09/2026) — tính tới hôm nay, chỉ buổi em có
+            mặt hoặc đi muộn (`chuong_trinh/tien_do.py`). Lớp chưa có khung: không vẽ. */}
+        {bc.chuongTrinh && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Tiến độ chương trình</h3>
+            <p className="mt-2 text-body text-ink-2">{cauTienDoEm(bc.chuongTrinh)}</p>
           </>
         )}
 
@@ -331,6 +367,50 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
                 </p>
               </>
             )}
+          </>
+        )}
+
+        {/* ── Bài kiểm tra trên lớp ───────────────────────────────────── */}
+        {/* Điểm giảng viên nhập tay cho bài làm tại lớp. Không có bài nào
+            trong kỳ thì giấu hẳn, cùng lẽ với khối bài tập bên dưới. */}
+        {bc.kiemTra && bc.kiemTra.length > 0 && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Bài kiểm tra</h3>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-small">
+                <thead>
+                  <tr className="text-left text-label text-ink-3">
+                    <th className="py-1 pr-3 font-medium">Bài</th>
+                    <th className="py-1 pr-3 font-medium">Ngày làm</th>
+                    <th className="py-1 text-right font-medium">Điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bc.kiemTra.map((k) => (
+                    <tr key={k.id} className="border-t border-line align-top">
+                      <td className="py-1.5 pr-3 text-ink">
+                        {k.title}
+                        {k.feedback && (
+                          <span className="block text-ink-2">
+                            Nhận xét: {k.feedback}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-3 text-ink-2 whitespace-nowrap">
+                        {ngayNgan(k.heldOn)}
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums text-ink whitespace-nowrap">
+                        {k.absent
+                          ? 'vắng'
+                          : k.score !== null
+                            ? `${k.score}/${k.maxScore ?? 10}`
+                            : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 

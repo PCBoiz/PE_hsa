@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -24,7 +23,11 @@ import { NHAN_HINH_THUC, noiHoc } from '@/lib/noiHoc';
 // `.optional()`). Mã máy chủ vẫn dùng `zod` đầy đủ — gói máy chủ không ai tải.
 import * as z from 'zod/mini';
 
+import BanGhiLop from './BanGhiLop';
+import LichSuDiemDanh from './LichSuDiemDanh';
 import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
+import TaoBuoiBu from './TaoBuoiBu';
+import XuatLop from './XuatLop';
 
 /**
  * CHÚ Ý — backend NHẬN và TRẢ hai quy ước khác nhau, đây không phải lỗi gõ:
@@ -39,11 +42,19 @@ import SinhBuoi, { type GoiYSinh } from './SinhBuoi';
  * KHÔNG BAO GIỜ hiện. Cả màn hình chết mà tsc/eslint/pytest đều xanh.
  * Đổi tên khoá ở đây thì phải mở trang thật trong trình duyệt xem lại.
  */
+export type NguoiChon = {
+  giangVien: { id: number; ten: string }[];
+  troGiang: { id: number; ten: string }[];
+};
+
 export type SessionRow = {
   id: number;
   startsAt: string | null;
   durationMinutes: number | null;
   topic: string | null;
+  /** §58 — ai dạy buổi NÀY. null = theo lớp. `?`: máy chủ cũ không trả. */
+  teacherId?: number | null;
+  assistantId?: number | null;
   status: string;
   note: string | null;
   meetingUrl?: string | null;
@@ -73,6 +84,9 @@ export type SessionRow = {
     excused: number;
     unmarked: number;
   };
+  /** Buổi bù (V-g): id buổi gốc; và số em nếu buổi có danh sách riêng. Máy chủ cũ không trả. */
+  makeupFor?: number | null;
+  soNguoiThamGia?: number | null;
 };
 
 type Mark = 'present' | 'late' | 'absent' | 'excused';
@@ -213,10 +227,13 @@ export default function SessionsClient({
   moBuoi = null,
   quyen,
   lop = { mode: null, room: null },
+  nguoiChon = null,
 }: {
   classId: number;
   className: string;
   initial: SessionRow[];
+  /** §58 — ai có thể đứng thay một buổi. null: máy chủ cũ không trả, hai ô chỉ có "Theo lớp". */
+  nguoiChon?: NguoiChon | null;
   /** Hình thức / phòng của lớp — buổi để trống thì theo lớp (§53). */
   lop?: NoiLop;
   goiYSinh: GoiYSinh | null;
@@ -239,6 +256,8 @@ export default function SessionsClient({
     moBuoi !== null && initial.some((s) => s.id === moBuoi) ? moBuoi : null,
   );
   const [suaId, setSuaId] = useState<number | null>(null);
+  /** Buổi đang mở ô "Tạo buổi bù" (V-g). */
+  const [buId, setBuId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [thongBao, setThongBao] = useState<ThongBao | null>(null);
   /* Sau một lần lưu: cảnh báo trùng lịch là VÀNG, không phải đỏ — buổi đã lưu.
@@ -340,6 +359,10 @@ export default function SessionsClient({
       />
       {goiYSinh && <SinhBuoi classId={classId} data={goiYSinh} onDone={() => void reload()} />}
 
+      {/* §72 — ai đã mở bản ghi, và nút nhắc em chưa mở. Tự ẩn khi lớp chưa
+          buổi nào có bản ghi. */}
+      <BanGhiLop classId={classId} />
+
       {err && (
         <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-small text-danger-ink">
           {err}
@@ -382,18 +405,8 @@ export default function SessionsClient({
                   Báo cáo phụ huynh
                 </Link>
               )}
-              <a
-                href={`/api/teach/classes/${classId}/export/attendance.csv`}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Xuất chuyên cần
-              </a>
-              <a
-                href={`/api/teach/classes/${classId}/export/progress.csv`}
-                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 text-small font-semibold text-ink-2 hover:border-brand hover:text-brand-ink"
-              >
-                Xuất tiến độ
-              </a>
+              {/* Chuyên cần + tiến độ: Excel hoặc CSV, chuyên cần lọc theo ngày (V-k). */}
+              <XuatLop classId={classId} />
               {/* PDF đứng RIÊNG và được nhấn mạnh, không xếp lẫn hai nút CSV:
                   nó dùng cho việc khác hẳn. Hai tệp CSV là bảng để LÀM VIỆC
                   trên đó (lọc, sắp, gọi điện theo danh sách); PDF là bản để
@@ -435,7 +448,11 @@ export default function SessionsClient({
                           "15/09/2026 · 19:30 · 90 phút" thành năm dòng (ảnh
                           chụp 390px, rà luồng trợ giảng 14/09/2026). */}
                       <div className="min-w-0 flex-1 max-sm:basis-full">
-                        <p className="text-subhead text-ink">{s.topic || 'Buổi học'}</p>
+                        <p className="text-subhead text-ink">
+                          {s.topic || 'Buổi học'}
+                          {/* Buổi bù chỉ của vài em — nói ra ngay trên dòng (V-g). */}
+                          {s.makeupFor ? <>{' '}<Chip tone="brand">học bù{s.soNguoiThamGia ? ` · ${s.soNguoiThamGia} em` : ''}</Chip></> : null}
+                        </p>
                         <p className="mt-0.5 text-small text-ink-3">
                           {fmt(s.startsAt)}
                           {s.durationMinutes ? ` · ${s.durationMinutes} phút` : ''}
@@ -499,6 +516,19 @@ export default function SessionsClient({
                         >
                           {suaId === s.id ? 'Đóng sửa' : 'Sửa'}
                         </Button>
+                        {s.status !== 'cancelled' && (
+                          <Button size="sm" variant="ghost" onClick={() => setBuId(buId === s.id ? null : s.id)}>
+                            {buId === s.id ? 'Đóng buổi bù' : 'Tạo buổi bù'}
+                          </Button>
+                        )}
+                        {s.status !== 'cancelled' && !n.sapToi && (
+                          <Link
+                            href={`/giang-day/so-dau-bai/${s.id}`}
+                            className="inline-flex min-h-11 items-center rounded-md border border-line px-3 text-small text-ink-2 hover:border-brand hover:text-brand-ink [@media(pointer:fine)]:min-h-9"
+                          >
+                            Sổ đầu bài
+                          </Link>
+                        )}
                         {quyen.xoaBuoi && (
                           <Button size="sm" variant="ghost" onClick={() => void xoaBuoi(s)}>
                             Xoá
@@ -524,10 +554,26 @@ export default function SessionsClient({
                       </>
                     )}
 
+                    {buId === s.id && (
+                      <TaoBuoiBu
+                        sessionId={s.id}
+                        tenBuoi={s.topic || fmt(s.startsAt)}
+                        phutMacDinh={s.durationMinutes}
+                        onHuy={() => setBuId(null)}
+                        onXong={(d) => {
+                          setBuId(null);
+                          const bao = `Đã tạo buổi bù và báo cho ${d.soEm} em (chuông trên trang và email).`;
+                          setThongBao({ tone: d.warning ? 'warn' : 'info', text: [d.warning, bao].filter(Boolean).join(' ') });
+                          void reload();
+                        }}
+                      />
+                    )}
+
                     {suaId === s.id && (
                       <SuaBuoi
                         buoi={s}
                         lop={lop}
+                        nguoiChon={nguoiChon}
                         onXong={(d) => { setSuaId(null); baoSauLuu(d.warning, d.daBao); void reload(); }}
                         onError={(m) => { setErr(m); if (m === null) setThongBao(null); }}
                       />
@@ -573,11 +619,13 @@ export default function SessionsClient({
 function SuaBuoi({
   buoi,
   lop,
+  nguoiChon,
   onXong,
   onError,
 }: {
   buoi: SessionRow;
   lop: NoiLop;
+  nguoiChon: NguoiChon | null;
   onXong: (d: { warning?: string; daBao?: number }) => void;
   onError: (m: string | null) => void;
 }) {
@@ -592,6 +640,8 @@ function SuaBuoi({
   const [status, setStatus] = useState(buoi.status || 'planned');
   const [mode, setMode] = useState(buoi.mode ?? '');
   const [room, setRoom] = useState(buoi.room ?? '');
+  const [teacherId, setTeacherId] = useState(buoi.teacherId ?? '');
+  const [assistantId, setAssistantId] = useState(buoi.assistantId ?? '');
   const [busy, setBusy] = useState(false);
 
   /* CHỈ GỬI TRƯỜNG ĐÃ ĐỔI.
@@ -618,6 +668,10 @@ function SuaBuoi({
   if (status !== (buoi.status || 'planned')) doi.status = status;
   if (mode !== (buoi.mode ?? '')) doi.mode = mode || null;
   if (room !== (buoi.room ?? '')) doi.room = room.trim() || null;
+  /* §58 — người dạy buổi này. So với `?? ''` để ô trống (theo lớp) và "chưa đổi" là hai
+     chuyện khác nhau: bỏ chọn phải gửi `null` đi, không thì buổi đông cứng người dạy thay. */
+  if (String(teacherId) !== String(buoi.teacherId ?? '')) doi.teacherId = teacherId || null;
+  if (String(assistantId) !== String(buoi.assistantId ?? '')) doi.assistantId = assistantId || null;
   const soDoi = Object.keys(doi).length;
 
   async function luu() {
@@ -648,6 +702,37 @@ function SuaBuoi({
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Chủ đề buổi</span>
           <input value={topic} onChange={(e) => setTopic(e.target.value)} className={o} />
+        </label>
+        {/* §58 — buổi này ai đứng. Để trống = theo lớp; không đổ sẵn tên giảng viên của
+            lớp vào đây, vì như thế là đông cứng người ấy vào buổi và đổi giảng viên của
+            lớp sẽ không đổi các buổi tương lai. Danh sách do máy chủ trả (RULES §7). */}
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Giảng viên buổi này</span>
+          <select
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value ? Number(e.target.value) : '')}
+            className={o}
+            data-o="gv-buoi"
+          >
+            <option value="">Theo lớp</option>
+            {(nguoiChon?.giangVien ?? []).map((n) => (
+              <option key={n.id} value={n.id}>{n.ten}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink-3">Trợ giảng buổi này</span>
+          <select
+            value={assistantId}
+            onChange={(e) => setAssistantId(e.target.value ? Number(e.target.value) : '')}
+            className={o}
+            data-o="tg-buoi"
+          >
+            <option value="">Theo lớp</option>
+            {(nguoiChon?.troGiang ?? []).map((n) => (
+              <option key={n.id} value={n.id}>{n.ten}</option>
+            ))}
+          </select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink-3">Bắt đầu lúc</span>
@@ -703,7 +788,9 @@ function SuaBuoi({
       </div>
 
       <label className="mt-3 flex flex-col gap-1">
-        <span className="text-label text-ink-3">Sổ đầu bài</span>
+        {/* "Tình hình lớp" từ 25/09/2026 (E1): SỔ ĐẦU BÀI nay là màn riêng từng mục
+            đã dạy / chưa dạy (`/giang-day/so-dau-bai/<id>`); cột `note` vẫn là ô này. */}
+        <span className="text-label text-ink-3">Tình hình lớp</span>
         {/* `whitespace-pre-wrap` ở chỗ đọc, và textarea ở chỗ ghi: sổ đầu bài là
             văn xuôi nhiều dòng — "em A vắng có phép, lớp chậm 10 phút vì mạng" —
             chứ không phải một nhãn ngắn. */}
@@ -712,7 +799,7 @@ function SuaBuoi({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={2000}
-          placeholder="Đã dạy tới đâu, lớp gặp khó ở chỗ nào, việc giao về nhà…"
+          placeholder="Lớp gặp khó ở chỗ nào, em nào vắng, việc cần nhớ…"
           className="w-full min-w-0 rounded-md border border-line-input bg-sunken px-3 py-2 text-input text-ink placeholder:text-ink-3/70"
         />
         {/* `maxLength` chặn gõ thêm, nhưng chặn IM LẶNG: người viết đang gõ dở
@@ -916,6 +1003,8 @@ function Attendance({
   const [rows, setRows] = useState<Student[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // Số lần Lưu trong phiên — làm `key` cho khối lịch sử để nó bỏ bản đã cũ (V-d).
+  const [soLanLuu, setSoLanLuu] = useState(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -961,6 +1050,7 @@ function Attendance({
         HD_LUU_DIEM_DANH,
       );
       setDirty(false);
+      setSoLanLuu((n) => n + 1);
       toast(cauDaLuu(d.counts, d.marked ?? 0), 'ok');
 
       // Backend CỐ Ý báo lại những id nó bỏ qua (xem chú thích ở
@@ -1071,6 +1161,9 @@ function Attendance({
           Đánh dấu cả lớp có mặt
         </Button>
       </div>
+
+      {/* Ai sửa điểm danh của em nào, từ gì sang gì (V-d, bảng TopHSA dòng 9, 14). */}
+      <LichSuDiemDanh key={soLanLuu} sessionId={sessionId} />
     </div>
   );
 }

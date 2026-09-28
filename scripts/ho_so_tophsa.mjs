@@ -37,6 +37,7 @@
 import { chromium } from 'file:///D:/pe_hsa/frontend/node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { baoHiem } from './lib/phien_do.mjs';
 
 const [, , nguonJson, raPdf] = process.argv;
 if (!nguonJson) {
@@ -731,6 +732,7 @@ ${BIA}${trang()}${MUC_LUC}${PHAN_A}${PHAN_B}${PHAN_C}${PHAN_D}${PHAN_E}
 
 /* ── dựng PDF ───────────────────────────────────────────────────────────── */
 const b = await chromium.launch({ channel: 'chrome' });
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const p = await b.newPage();
 await p.setContent(HTML, { waitUntil: 'networkidle' });
 // Đợi mermaid vẽ XONG. In trước khi nó vẽ thì mọi sơ đồ ra một khối chữ thô —

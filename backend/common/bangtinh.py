@@ -1,8 +1,13 @@
-"""Đọc một bảng tính thành các DÒNG — nơi duy nhất trong repo ĐỌC định dạng ấy.
+"""Đọc một bảng tính thành các DÒNG, và GHI một tệp .xlsx — hai cửa duy nhất của repo.
 
-Nói "đọc" chứ không nói "biết", vì hai chỗ khác cũng biết: `mockexam/quan_tri.py`
-DỰNG mẫu `.xlsx` và `teaching/exports.py` GHI `.csv`. Câu cũ ở đây nhận độc
-quyền cho cả ba việc — một lời hứa rộng hơn thứ tệp này thật sự giữ.
+ĐỌC: `doc()` + `thanh_ban_ghi()`. GHI: `ghi_xlsx()` (V-k, 25/09/2026) — mọi tệp .xlsx
+hệ thống sinh ra (bản xuất báo cáo, mẫu nhập học viên, mẫu đề thi thử) đi qua đây.
+`teaching/exports.py` vẫn tự GHI `.csv` (BOM, xuống dòng CRLF, chống công thức) — hai định
+dạng, cùng một bộ ký tự mở đầu công thức (`KY_TU_CONG_THUC`).
+
+Trước 25/09 bộ ghi .xlsx nằm riêng trong `mockexam/quan_tri.py` và chỉ dựng mẫu đề
+thi; khi bản xuất báo cáo cần .xlsx, một bản thứ hai sẽ mọc ra với luật chống công
+thức riêng của nó — đúng thứ tệp này tồn tại để chặn.
 
 ── VÌ SAO CÓ TỆP NÀY (04/09/2026) ──────────────────────────────────────────
 
@@ -374,3 +379,106 @@ def thanh_ban_ghi(hang, cot_bat_buoc=(), ten_khac=None):
                 ban[ten] = o
         ra.append((so_dong, ban))
     return ra
+
+
+# ── GHI .xlsx (V-k, 25/09/2026) ───────────────────────────────────────────────
+
+#: Ký tự mở đầu khiến Excel/LibreOffice coi ô là CÔNG THỨC. MỘT danh sách cho cả CSV
+#: (`teaching/exports._cell` chèn dấu nháy) lẫn .xlsx (`ghi_xlsx` ép kiểu chữ + nháy ẩn).
+KY_TU_CONG_THUC = ('=', '+', '-', '@')
+
+#: Trần của Excel cho một ô (32.767 ký tự). Vượt thì Excel báo tệp hỏng khi mở.
+_TRAN_O_EXCEL = 32767
+
+
+class Trang:
+    """Một trang của tệp .xlsx sắp ghi.
+
+    ``dong`` — các hàng, hàng đầu là TIÊU ĐỀ khi ``tieu_de`` (in đậm, cố định khi cuộn).
+    ``rong`` — độ rộng từng cột (đơn vị ký tự của Excel); thiếu thì tự ước theo nội dung.
+    """
+
+    def __init__(self, ten, dong, rong=None, tieu_de=True):
+        self.ten = ten
+        self.dong = dong
+        self.rong = rong
+        self.tieu_de = tieu_de
+
+
+def _o_xlsx(o, v):
+    """Đổ một giá trị Python vào ô ``o`` — ĐÚNG KIỂU, và chữ không bao giờ là công thức.
+
+    openpyxl coi mọi chuỗi mở đầu bằng ``=`` là CÔNG THỨC (đo: ``ws.append(['=1+1'])``
+    ra ô kiểu ``f``). Họ tên, ghi chú buổi học là ô người dùng gõ, nên một dòng
+    ``=HYPERLINK(...)`` sẽ thành công thức chạy trên máy người mở tệp. Ở đây mọi chuỗi
+    ép kiểu CHỮ (``s``); chuỗi mở đầu bằng ``KY_TU_CONG_THUC`` mang thêm DẤU NHÁY ẨN
+    (``quotePrefix``) — đúng thứ Excel tự làm khi người dùng gõ ``'=1+1`` — nên sửa ô
+    rồi Enter trong Excel cũng không biến nó thành công thức.
+
+    Số giữ là SỐ (lọc, cộng được), ngày giữ là NGÀY (sắp xếp được). Ký tự điều khiển
+    (dán từ web) bị bỏ: openpyxl ném ``IllegalCharacterError`` với chúng — tức 500.
+    """
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+    if v is None:
+        return
+    if isinstance(v, bool):                      # trước int: bool là lớp con của int
+        v = 'Có' if v else 'Không'
+    if isinstance(v, datetime.datetime):
+        o.value = v.replace(tzinfo=None)
+        o.number_format = ('dd/mm/yyyy hh:mm' if (v.hour or v.minute or v.second)
+                           else 'dd/mm/yyyy')
+        return
+    if isinstance(v, datetime.date):
+        o.value = v
+        o.number_format = 'dd/mm/yyyy'
+        return
+    if isinstance(v, (int, float)):
+        o.value = v
+        return
+    try:                                         # Decimal và các kiểu số khác
+        from decimal import Decimal
+        if isinstance(v, Decimal):
+            o.value = float(v)
+            return
+    except ImportError:                          # pragma: no cover
+        pass
+    chu = ILLEGAL_CHARACTERS_RE.sub('', str(v))[:_TRAN_O_EXCEL]
+    o.value = chu
+    o.data_type = 's'
+    if chu.lstrip()[:1] in KY_TU_CONG_THUC:
+        o.quotePrefix = True
+
+
+def ghi_xlsx(trang):
+    """Danh sách ``Trang`` → nội dung một tệp .xlsx (bytes)."""
+    import openpyxl
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    dam = Font(bold=True)
+    for t in trang:
+        # Tên trang: Excel cấm ``[]:*?/\`` và giới hạn 31 ký tự.
+        ws = wb.create_sheet(re.sub(r'[\[\]:*?/\\]', '-', t.ten)[:31] or 'Trang')
+        rong = {}
+        for i, hang in enumerate(t.dong, start=1):
+            for j, v in enumerate(hang, start=1):
+                o = ws.cell(row=i, column=j)
+                _o_xlsx(o, v)
+                if i == 1 and t.tieu_de:
+                    o.font = dam
+                if not t.rong and v is not None:
+                    rong[j] = max(rong.get(j, 0), min(len(str(v)), 60))
+        for j, w in (enumerate(t.rong, start=1) if t.rong else rong.items()):
+            ws.column_dimensions[get_column_letter(j)].width = max(8, (w or 8) + (0 if t.rong else 2))
+        if t.tieu_de and t.dong:
+            ws.freeze_panes = 'A2'
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+#: Kiểu nội dung của tệp .xlsx trong phản hồi HTTP.
+KIEU_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

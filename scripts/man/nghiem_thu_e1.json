@@ -1,0 +1,149 @@
+[
+ {
+  "dong": 5,
+  "ten": "QTV · Khung chương trình môn Toán (đã có khung)",
+  "duong": "/giao-trinh/khung-chuong-trinh",
+  "vai": "ad",
+  "cho": 6000,
+  "chon": [
+   [
+    "chon-mon",
+    "hsa_quantitative"
+   ]
+  ],
+  "hoi": {
+   "buoi": "Buổi",
+   "thoiLuong": "Thời lượng",
+   "trongSo": "Trọng số",
+   "hocLieu": "Học liệu|Tài liệu",
+   "baiVeNha": "Bài về nhà",
+   "trangThaiBan": "Bản nháp|Đang dùng|Xuất bản",
+   "taoBanMoi": "Tạo bản mới|Tạo khung"
+  }
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Chương trình lớp 1 (lớp ĐÃ nhận khung)",
+  "duong": "/giang-day/chuong-trinh/1",
+  "vai": "gv",
+  "cho": 7000,
+  "hoi": {
+   "daDay": "Đã dạy|đã dạy",
+   "keHoach": "kế hoạch|Kế hoạch",
+   "phanTram": "%",
+   "chuaGhiSo": "chưa ghi sổ|Chưa ghi",
+   "tungEm": "em|Học viên",
+   "tre": "trễ|chậm|đúng tiến độ"
+  }
+ },
+ {
+  "dong": 15,
+  "ten": "GV · Sổ đầu bài buổi 1542 (lớp có khung)",
+  "duong": "/giang-day/so-dau-bai/1542",
+  "vai": "gv",
+  "cho": 7000,
+  "hoi": {
+   "trangThaiMuc": "Đã dạy|Dạy một phần|Chưa dạy",
+   "mucTiepThu": "tiếp thu",
+   "deXuat": "Đề xuất",
+   "guiDeXuat": "Gửi đề xuất",
+   "canHoTro": "cần hỗ trợ",
+   "baiVeNha": "Bài về nhà",
+   "hocLieu": "Học liệu|Tài liệu"
+  }
+ },
+ {
+  "dong": 28,
+  "ten": "Học sinh lớp 1 · % chương trình + so với kế hoạch",
+  "duong": "/dashboard",
+  "vai": "hv2",
+  "cho": 8000,
+  "hoi": {
+   "tienDo": "chương trình",
+   "keHoach": "kế hoạch",
+   "xemLai": "Xem lại"
+  }
+ },
+ {
+  "dong": 6,
+  "ten": "QTV · Toàn trung tâm (đã có lớp mang khung)",
+  "duong": "/quan-tri/tong-quan",
+  "vai": "ad",
+  "cho": 9000,
+  "hoi": {
+   "tienDoChuongTrinh": "Tiến độ chương trình",
+   "chamTienDo": "chậm",
+   "chuaGhiSo": "chưa ghi sổ|Chưa ghi",
+   "nghiNhieu": "nghỉ nhiều|vắng liền|Vắng nhiều",
+   "xuatTep": "Tải|Xuất|CSV|bảng tính|Excel"
+  }
+ },
+ {
+  "dong": 4,
+  "ten": "QTV · Lớp học (chip tiến độ chương trình)",
+  "duong": "/quan-tri/lop-hoc",
+  "vai": "ad",
+  "cho": 6000,
+  "hoi": {
+   "chipTienDo": "tiến độ|Chương trình",
+   "siSo": "Sĩ số|/"
+  }
+ },
+ {
+  "dong": 3,
+  "ten": "Giáo vụ · bộ lọc Tài khoản (Lọc thêm)",
+  "duong": "/quan-tri/tai-khoan",
+  "vai": "hvu",
+  "cho": 6000,
+  "bam": [
+   "Lọc thêm"
+  ],
+  "choSauBam": 2500,
+  "hoi": {
+   "locMon": "Môn",
+   "locDot": "Đợt",
+   "locTinhTrang": "Tình trạng|Đang học",
+   "locHocPhi": "Học phí",
+   "locVai": "Vai"
+  }
+ },
+ {
+  "dong": 7,
+  "ten": "QTV · Cơ sở học phí",
+  "duong": "/quan-tri/co-so-hoc-phi",
+  "vai": "ad",
+  "cho": 7000,
+  "hoi": {
+   "soBuoi": "buổi",
+   "coMatVang": "có mặt|vắng",
+   "tai": "Tải|Xuất|CSV|Excel|bảng tính",
+   "theoLop": "Lớp"
+  }
+ },
+ {
+  "dong": 31,
+  "ten": "Học sinh · một bài tập đã chấm",
+  "duong": "/bai-tap",
+  "vai": "hv",
+  "cho": 7000,
+  "hoi": {
+   "nopBai": "Nộp",
+   "diem": "Điểm|điểm",
+   "nhanXet": "Nhận xét",
+   "han": "Hạn",
+   "nopTep": "Chọn tệp|đính kèm|Tải tệp"
+  }
+ },
+ {
+  "dong": 26,
+  "ten": "Học sinh · menu tài khoản / đăng xuất",
+  "duong": "/dashboard",
+  "vai": "hv",
+  "cho": 6000,
+  "hoi": {
+   "tenNguoi": "Đỗ Đức Tùng|Tùng",
+   "chuong": "Thông báo|thông báo",
+   "hoiYeuCau": "Hỏi|Yêu cầu"
+  }
+ }
+]

@@ -102,6 +102,16 @@ def _khong_con(sql, vi_sao):
     return (not q1(sql)), vi_sao
 
 
+def _ca(*kiem):
+    """Nhiều phép kiểm cho MỘT tiểu mục: tới nơi khi mọi phép tới nơi. Nhận HÀM (gọi
+    lần lượt, dừng ở phép đầu hỏng) — phép sau có thể cần bảng mà phép trước kiểm."""
+    for k in kiem:
+        ok, vi_sao = k()
+        if not ok:
+            return ok, vi_sao
+    return True, ''
+
+
 #: MỘT DÒNG MỘT MỤC của `legacy_schema.sql`. Thêm mục mới thì thêm dòng ở đây —
 #: nếu không, lệnh này im lặng báo "sạch" cho một mục nó chưa hề nhìn tới, đúng
 #: cái bẫy mà bộ đo giao diện đã mắc (danh sách trang thiếu ba màn).
@@ -201,13 +211,34 @@ MUC = [
                            LIMIT 1""", 'còn lộ trình mang nhãn cũ')),
     ('§62a', 'class_members.teacher_comment (nhận xét GV gửi phụ huynh)',
      lambda: _cot('class_members', 'teacher_comment')),
+    # §62b–§62f: luồng A1 (V-a…V-h, 25/09/2026). Mã dòng = mã tiểu mục (một chữ cái
+    # cuối — `tests_luoc_do_muc` đòi thế), nên mỗi tiểu mục một dòng gom mọi phép kiểm.
+    ('§62b', 'class_members.can_ho_tro + de_xuat_huong_hoc + chỉ mục cờ (cần hỗ trợ, hướng học)',
+     lambda: _ca(lambda: _cot('class_members', 'de_xuat_huong_hoc_at'),
+                 lambda: _chi_muc('idx_class_members_can_ho_tro'))),
+    ('§62c', 'bảng attendance_history + khoá ngoại tới buổi ON DELETE CASCADE',
+     lambda: _ca(lambda: _cot('attendance_history', 'nguon'),
+                 lambda: _fk('attendance_history', 'attendance_history_session_id_fkey',
+                             'CASCADE'))),
+    ('§62d', 'assignments.target_mode (CHECK nhận nhom) + bảng assignment_targets',
+     lambda: _ca(lambda: _cot('assignment_targets', 'user_id'),
+                 lambda: _check_co_gia_tri('assignments_target_mode_check', 'nhom'))),
+    ('§62e', 'class_sessions.makeup_for ON DELETE SET NULL + bảng session_participants',
+     lambda: _ca(lambda: _cot('session_participants', 'user_id'),
+                 lambda: _fk('class_sessions', 'class_sessions_makeup_for_fkey', 'SET NULL'))),
+    ('§62f', 'assignments.kind (CHECK nhận kiem_tra) + held_on, submissions.absent',
+     lambda: _ca(lambda: _cot('submissions', 'absent'),
+                 lambda: _check_co_gia_tri('assignments_kind_check', 'kiem_tra'))),
+    # Sửa TẠI CHỖ ở §35 (V-c): nhánh khác chạy lại §35 bản cũ thì mất 'paused' — dòng
+    # này nói ra ngay, trước khi màn Lớp học trả 500 khi chọn "Tạm dừng".
+    ('§35p', 'CHECK classes_status_check nhận paused (lớp tạm dừng)',
+     lambda: _check_co_gia_tri('classes_status_check', 'paused')),
     ('§63a', 'users.tuition_status (tình trạng học phí)',
      lambda: _cot('users', 'tuition_status')),
-    ('§63b', 'CHECK users_tuition_status_check nhận "Bảo lưu"',
-     lambda: _check_co_gia_tri('users_tuition_status_check', 'Bảo lưu')),
-    ('§63c', 'CHECK classes_status_check nhận "paused" (lớp tạm dừng)',
-     lambda: _check_co_gia_tri('classes_status_check', 'paused')),
-    ('§63d', 'CHECK class_members_leave_reason_check nhận "reserved" (bảo lưu)',
+    ('§63b', 'CHECK users_tuition_status_check nhận bao_luu (lưu MÃ, nhãn ở teaching/tinh_trang.py)',
+     lambda: _check_co_gia_tri('users_tuition_status_check', 'bao_luu')),
+    # 'reserved' sửa TẠI CHỖ ở §36 (25/09 tối) — thay dòng §63d cũ; 'paused' đã có dòng §35p ở trên.
+    ('§36r', 'CHECK class_members_leave_reason_check nhận "reserved" (bảo lưu)',
      lambda: _check_co_gia_tri('class_members_leave_reason_check', 'reserved')),
     ('§64a', 'bảng syllabus_versions (phiên bản chương trình)',
      lambda: _cot('syllabus_versions', 'status')),
@@ -221,6 +252,107 @@ MUC = [
      lambda: _cot('classes', 'syllabus_version_id')),
     ('§64f', 'class_sessions.syllabus_session_id (buổi thật khớp buổi khung)',
      lambda: _cot('class_sessions', 'syllabus_session_id')),
+    ('§69b', 'chỉ mục admin_audit(detail->>class_id) cho lịch sử một lớp (V-n)',
+     lambda: _chi_muc('idx_audit_lop_buoi')),
+    # §64g–h sửa TẠI CHỖ (E1, 25/09/2026): chuỗi phiên bản + trọng số bắt buộc > 0.
+    ('§64g', 'syllabus_versions: mỗi chuỗi nhiều nhất một bản nháp, một bản đang dùng',
+     lambda: _ca(lambda: _cot('syllabus_versions', 'lineage_id'),
+                 lambda: _chi_muc('idx_syllabus_versions_mot_nhap'),
+                 lambda: _chi_muc('idx_syllabus_versions_mot_xuat_ban'))),
+    ('§64h', 'syllabus_items.weight bắt buộc, CHECK > 0',
+     lambda: _check_co_gia_tri('syllabus_items_weight_check', 'weight > ')),
+    # §70: sổ đầu bài (E1). Kiểm cột trước khoá ngoại — bảng chưa có thì `::regclass` ném lỗi.
+    ('§70a', 'bảng session_logs (sổ đầu bài, mức tiếp thu 1–5), xoá theo buổi',
+     lambda: _fk('session_logs', 'session_logs_session_id_fkey', 'CASCADE')
+     if _cot('session_logs', 'comprehension')[0] else (False, 'chưa có bảng')),
+    ('§70b', 'session_log_items → syllabus_items ON DELETE SET NULL',
+     lambda: _fk('session_log_items', 'session_log_items_item_id_fkey', 'SET NULL')
+     if _cot('session_log_items', 'item_id')[0] else (False, 'chưa có bảng')),
+    ('§70c', 'bảng session_support (em cần hỗ trợ sau buổi)',
+     lambda: _chi_muc('idx_session_support_user')),
+    # §65: hộp Yêu cầu (E3). Kiểm cột trước khoá ngoại — bảng chưa có thì `::regclass` ném lỗi.
+    ('§65a', 'bảng yeu_cau, CHECK loại nhận tt_huy_khoa, xoá theo học viên',
+     lambda: _ca(lambda: _check_co_gia_tri('yeu_cau_loai_check', 'tt_huy_khoa'),
+                 lambda: _fk('yeu_cau', 'yeu_cau_hoc_vien_id_fkey', 'CASCADE'),
+                 lambda: _chi_muc('idx_yeu_cau_trang_thai'))
+     if _cot('yeu_cau', 'thuc_thi')[0] else (False, 'chưa có bảng')),
+    ('§65b', 'bảng yeu_cau_su_kien (trả lời + lịch sử), xoá theo yêu cầu, CHECK kiểu nhận phan_loai',
+     lambda: _ca(lambda: _fk('yeu_cau_su_kien', 'yeu_cau_su_kien_yeu_cau_id_fkey', 'CASCADE'),
+                 lambda: _check_co_gia_tri('yeu_cau_su_kien_kieu_check', 'phan_loai'))
+     if _cot('yeu_cau_su_kien', 'noi_bo')[0] else (False, 'chưa có bảng')),
+    ('§65c', 'class_members.reserve_until (bảo lưu tới ngày)',
+     lambda: _cot('class_members', 'reserve_until')),
+    # §61: hộp thư đi + thông báo trung tâm (E2).
+    ('§61a', 'bảng outbox (hộp thư đi) + ưu tiên giao dịch/hàng loạt + chỉ mục phần việc chờ gửi',
+     lambda: _ca(lambda: _cot('outbox', 'dedup_key'),
+                 lambda: _cot('outbox', 'priority'),
+                 lambda: _chi_muc('idx_outbox_cho_gui'),
+                 lambda: _chi_muc('idx_outbox_hang_loat_ngay'),
+                 lambda: _check_co_gia_tri('outbox_status_check', 'dropped'),
+                 lambda: _check_co_gia_tri('outbox_priority_check', '1'))),
+    ('§61b', 'bảng announcements (thông báo trung tâm, nháp/đã gửi/huỷ)',
+     lambda: _check_co_gia_tri('announcements_status_check', 'cancelled')),
+    ('§61c', 'notifications.announcement_id ON DELETE CASCADE + link + read_at + chỉ mục (user_id, id DESC)',
+     lambda: _ca(lambda: _cot('notifications', 'read_at'),
+                 lambda: _cot('notifications', 'link'),
+                 lambda: _chi_muc('idx_notifications_user_id_desc'),
+                 lambda: _fk('notifications', 'notifications_announcement_id_fkey', 'CASCADE'))),
+    ('§61d', 'chỉ mục duy nhất phần notifications nhắc hạn nộp (mỗi em mỗi bài một chuông)',
+     lambda: _chi_muc('idx_notifications_nhac_han_mot_lan')),
+    # §71: địa chỉ lịch riêng (.ics). Chìa chỉ lưu BĂM; một chìa còn sống mỗi (người, phạm vi).
+    ('§71a', 'bảng calendar_links (chìa lịch, chỉ lưu băm), xoá theo người',
+     lambda: _fk('calendar_links', 'calendar_links_user_id_fkey', 'CASCADE')
+     if _cot('calendar_links', 'token_hash')[0] else (False, 'chưa có bảng')),
+    ('§71b', 'calendar_links.scope CHECK toi | trung_tam',
+     lambda: _check_co_gia_tri('calendar_links_scope_check', 'trung_tam')),
+    ('§71c', 'mỗi người mỗi phạm vi chỉ MỘT chìa còn sống',
+     lambda: _chi_muc('idx_calendar_links_mot_chia_song')),
+    # §72: ai đã mở bản ghi buổi học. Một dòng mỗi (buổi, người); mở lại thì cộng lần.
+    ('§72a', 'bảng recording_views (ai đã mở bản ghi), xoá theo buổi',
+     lambda: _fk('recording_views', 'recording_views_session_id_fkey', 'CASCADE')
+     if _cot('recording_views', 'lan_mo')[0] else (False, 'chưa có bảng')),
+    ('§72b', 'mỗi (buổi, người) chỉ MỘT dòng — mở lại thì cộng lần',
+     lambda: _chi_muc('idx_recording_views_buoi_nguoi')),
+    # §60: học liệu của lớp. MỘT bảng cho cả liên kết ngoài lẫn tệp R2 (chỗ chừa sẵn).
+    ('§60a', 'bảng hoc_lieu (học liệu lớp / buổi), xoá theo lớp',
+     lambda: _fk('hoc_lieu', 'hoc_lieu_class_id_fkey', 'CASCADE')
+     if _cot('hoc_lieu', 'nguon')[0] else (False, 'chưa có bảng')),
+    ('§60b', "nguồn CHECK link | r2 — chỗ chừa sẵn cho tệp R2",
+     lambda: _ca(lambda: _check_co_gia_tri('hoc_lieu_nguon_check', "'link'"),
+                 lambda: _check_co_gia_tri('hoc_lieu_nguon_check', "'r2'"))),
+    ('§60c', 'mỗi nguồn phải có đủ thứ nó cần (link → url, r2 → r2_key)',
+     lambda: _check_co_gia_tri('hoc_lieu_du_nguon_check', 'r2_key')),
+    ('§60d', 'mở một lớp ra xem có gì — chỉ mục (lớp, buổi, mới nhất trước)',
+     lambda: _chi_muc('idx_hoc_lieu_lop')),
+    # §58: ai dạy MỘT buổi cụ thể. NULL = theo lớp.
+    ('§58a', 'class_sessions.teacher_id / assistant_id (dạy thay một buổi)',
+     lambda: _ca(lambda: _cot('class_sessions', 'teacher_id'),
+                 lambda: _cot('class_sessions', 'assistant_id'))),
+    ('§58b', 'lối vào bảng chấm công: buổi theo người dạy',
+     lambda: _ca(lambda: _chi_muc('idx_sessions_nguoi_day'),
+                 lambda: _chi_muc('idx_sessions_tro_giang'))),
+    # §73: học viên tự đăng ký (E5). Hàng rào đăng nhập đọc `self_registered`, nên
+    # thiếu cột này là mọi lượt đăng nhập đổ lỗi — kiểm trước hết.
+    ('§73a', 'cột users.self_registered (tài khoản sinh ra ở cửa công khai)',
+     lambda: _cot('users', 'self_registered')),
+    ('§73b', 'chỉ mục hàng chờ "Đăng ký mới"', lambda: _chi_muc('idx_users_tu_dang_ky')),
+    ('§73c', 'password_reset_tokens.purpose = reset | verify (một bảng chìa, hai việc)',
+     lambda: _ca(lambda: _cot('password_reset_tokens', 'purpose'),
+                 lambda: _check_co_gia_tri('prt_purpose_check', "'verify'"),
+                 lambda: _chi_muc('idx_prt_purpose'))),
+    ('§73d', 'loại yêu cầu tk_dang_ky (hàng chờ xếp lớp dùng lại hộp §65)',
+     lambda: _check_co_gia_tri('yeu_cau_loai_check', "'tk_dang_ky'")),
+    # §75: diễn đàn khoanh theo lớp. NULL = bài của sân chung.
+    ('§75a', 'posts.class_id (bài của riêng một lớp)',
+     lambda: _cot('posts', 'class_id')),
+    ('§75b', 'lối vào: mở diễn đàn của một lớp',
+     lambda: _chi_muc('idx_posts_lop')),
+
+    # §74: bài tập trỏ về mục khung chương trình. NULL = bài giao rời.
+    ('§74a', 'assignments.syllabus_item_id (bài thuộc mục khung nào)',
+     lambda: _cot('assignments', 'syllabus_item_id')),
+    ('§74b', 'lối vào: mở một mục khung ra hỏi đã giao bài chưa',
+     lambda: _chi_muc('idx_assignments_muc_khung')),
     ('§76a', 'parent_report_links.created_by đã nới NOT NULL',
      lambda: _cot_nullable('parent_report_links', 'created_by')),
     ('§76b', 'FK parent_report_links.created_by ON DELETE SET NULL',

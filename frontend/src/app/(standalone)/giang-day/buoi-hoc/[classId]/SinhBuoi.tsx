@@ -38,6 +38,8 @@ export type GoiYSinh = {
     to: string | null;
   };
   coTheSinh: boolean;
+  /** Lớp đang TẠM DỪNG (V-c, 25/09/2026) — không sinh lịch; tuỳ chọn vì máy chủ cũ không trả. */
+  tamDung?: boolean;
 };
 
 type DongSinh = {
@@ -104,7 +106,18 @@ export default function SinhBuoi({
   const [dangChay, setDangChay] = useState(false);
   const dangGui = useRef(false);
 
-  if (!data.coTheSinh) return null;
+  if (!data.coTheSinh) {
+    // Tạm dừng: nói ra vì sao không có khối sinh lịch — giấu im thì người sắp lịch
+    // tưởng trang lỗi. Trợ giảng (không tạm dừng) vẫn không thấy gì như trước.
+    return data.tamDung ? (
+      <Card tone="flat">
+        <p className="text-body text-ink-2">
+          Lớp đang <b>tạm dừng</b> nên chưa sinh lịch cả kỳ được. Học vụ đổi trạng thái lớp sang
+          “Đang học” ở trang Lớp học rồi sinh lịch.
+        </p>
+      </Card>
+    ) : null;
+  }
 
   /** Đổi bất kỳ ô nào là bỏ bản xem trước: tạo theo một bản khác với bản vừa
    *  duyệt là đúng thứ bước xem trước sinh ra để chặn. */

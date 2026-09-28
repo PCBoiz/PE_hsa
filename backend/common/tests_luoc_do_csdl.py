@@ -81,24 +81,21 @@ def test_sua_muc_cu_chay_lai_ca_muc_sau(db, monkeypatch):
     """Sửa TẠI CHỖ §36 (mục bỏ khoá chính class_members CASCADE) → CHECK mới có hiệu lực VÀ
     khoá ngoại §55b còn; lượt ĐỨT giữa §36 với §55 không được để sổ nói dối.
 
-    Phần 1 — mô phỏng một lần THÊM CÂU MỚI vào §36 (không sửa CHECK có sẵn): trước đây phần
-    này sửa TẠI CHỖ chuỗi CHECK `class_members_leave_reason_check` bằng cách thêm 'reserved' —
-    dùng đúng giá trị nghiệp vụ thật vì lúc viết test đó còn là việc "sắp làm". Rồi §63
-    (25/09/2026) làm thật VIỆC ĐÓ — nhưng bằng một khối DROP+ADD RIÊNG ở cuối file (đúng quy
-    ước đã có sẵn cho `users_role_check`/§44: một constraint có thể bị định nghĩa lại ở NHIỀU
-    mục, miễn giữ đồng bộ tay — xem `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`). Từ
-    đó `class_members_leave_reason_check` không còn do MỘT MÌNH §36 quyết định nữa: một lượt
-    đầy đủ chạy §36 RỒI §63, nên §63 (đứng sau) đè mất bất cứ giá trị nào phép kiểm này thêm
-    riêng vào §36. BÀI HỌC: phép kiểm cơ chế (cascade/sổ) không nên mượn một ràng buộc có thể
-    bị mục KHÁC định nghĩa lại làm dữ liệu mẫu. Đổi sang thêm hẳn MỘT CỘT BỊA — không mục nào
-    khác trong file đụng tới nó, nên không bao giờ bị đè kiểu này nữa.
+    Phần 1 — sửa TẠI CHỖ chuỗi CHECK `class_members_leave_reason_check` bằng cách thêm một
+    giá trị MỚI, BỊA ('y_thu' — không phải giá trị nghiệp vụ thật). Trước đây phần này dùng
+    chính 'reserved' làm ví dụ vì lúc viết test đó còn là việc "sắp làm" — rồi §63 (25/09/2026)
+    làm thật VIỆC ĐÓ, khiến ví dụ mẫu tự thành sự thật và làm test đỏ oan. Từ khi §63 hết còn
+    một khối DROP+ADD RIÊNG cho constraint này (gộp lại, sửa TẠI CHỖ ở §36 — xem
+    `test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`), `class_members_leave_reason_check`
+    lại do MỘT MÌNH §36 quyết định, nên sửa tại chỗ CHECK này an toàn trở lại — dùng giá trị
+    bịa để không bao giờ trùng một giá trị thật lên thẳng sau này nữa.
     Luật hậu tố: chỉ chạy lại riêng mục đổi thì CASCADE kéo mất
     `class_members_transferred_to_fk` và không mục nào gắn lại — mất trong im lặng.
     Phần 2 — tái hiện sự cố nhánh dev 24/09 (khoá ngoại §55b mất): lượt chạy §36 rồi hỏng
     ở §43. CSDL lúc ấy THIẾU khoá ngoại (không tránh được khi mỗi mục một giao dịch), nhưng
     sổ không được ghi §55 là đã chạy — lượt kế tiếp phải chạy lại §43..hết và gắn lại nó."""
     from common import luoc_do_sql
-    from common.management.commands.kiem_luoc_do import _fk
+    from common.management.commands.kiem_luoc_do import _check_co_gia_tri, _fk
 
     def fk55():
         return _fk('class_members', 'class_members_transferred_to_fk', 'SET NULL')
@@ -107,16 +104,17 @@ def test_sua_muc_cu_chay_lai_ca_muc_sau(db, monkeypatch):
     with schema_tam() as st:
         luot(cac_muc=cac_muc)
         assert fk55()[0]
-        assert not _cot('class_members', 'linh_tinh_thu_nghiem')
+        # 'reserved' ĐÃ vào §36 (25/09 tối) — giả lập thêm một giá trị mới nữa ('y_thu').
+        assert not _check_co_gia_tri('class_members_leave_reason_check', 'y_thu')[0]
 
         # ── Phần 1
-        i, sua = _sua_36(cac_muc, them=(
-            'ALTER TABLE class_members ADD COLUMN IF NOT EXISTS linh_tinh_thu_nghiem TEXT;'))
+        i, sua = _sua_36(cac_muc, cu="'transferred', 'reserved')",
+                         moi="'transferred', 'reserved', 'y_thu')")
         viec = luot(cac_muc=sua)
         assert viec[0].muc.khoa == 'legacy_schema.sql §36'
         assert [v.muc.khoa for v in viec] == [x.khoa for x in sua[i:]]
-        assert _cot('class_members', 'linh_tinh_thu_nghiem'), (
-            'thêm câu vào §36 mà CSDL chưa nhận cột mới')
+        assert _check_co_gia_tri('class_members_leave_reason_check', 'y_thu')[0], (
+            'sửa tại chỗ CHECK §36 mà CSDL chưa nhận giá trị mới')
         ok, vi_sao = fk55()
         assert ok, 'khoá ngoại §55 mất sau khi sửa §36: ' + vi_sao
 

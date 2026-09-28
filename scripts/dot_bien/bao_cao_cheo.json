@@ -1,0 +1,86 @@
+[
+ {
+  "ten": "cộng điểm THÔ, không chuẩn hoá theo thang (bài thang 10 + thang 100)",
+  "cu": "                                 SUM(s.score * 100.0 / NULLIF(a.max_score, 0)) AS tong_chuan",
+  "moi": "                                 SUM(s.score) AS tong_chuan",
+  "cho": "test_diem_trung_binh_chuan_hoa_theo_thang"
+ },
+ {
+  "ten": "mẫu số của 'đã chấm' là PHẢI NỘP thay vì ĐÃ NỘP",
+  "cu": "    ra['tiLeCham'] = _mot_phan_tram(o['daCham'], o['daNop'])",
+  "moi": "    ra['tiLeCham'] = _mot_phan_tram(o['daCham'], o['phaiNop'])",
+  "cho": "test_dong_tong_mon_cong_tu_so_tho_khong_phai_trung_binh_cua_phan_tram"
+ },
+ {
+  "ten": "chia cho 0 ra 0 % thay vì `—` (lớp chưa giao bài trông như lớp không ai nộp)",
+  "cu": "    ra['tiLeNop'] = _mot_phan_tram(o['daNop'], o['phaiNop'])",
+  "moi": "    ra['tiLeNop'] = _mot_phan_tram(o['daNop'], o['phaiNop']) or 0",
+  "cho": "test_lop_chua_giao_bai_thi_ti_le_la_gach_khong_phai_0"
+ },
+ {
+  "ten": "bỏ lọc `left_at` ở mẫu số phải nộp — bài của em đã rời lớp vẫn bị đếm",
+  "cu": "                          JOIN class_members m ON m.class_id = a.class_id AND m.left_at IS NULL",
+  "moi": "                          JOIN class_members m ON m.class_id = a.class_id AND TRUE",
+  "cho": "test_hoc_vien_da_roi_lop_khong_vao_tu_so_lan_mau_so"
+ },
+ {
+  "ten": "bỏ lọc `left_at` ở câu ĐIỂM — điểm 0 của em đã rời lớp kéo trung bình môn xuống",
+  "cu": "                                              AND m.left_at IS NULL\n                          JOIN users u ON u.id = s.user_id",
+  "moi": "                                              AND TRUE\n                          JOIN users u ON u.id = s.user_id",
+  "cho": "test_hoc_vien_da_roi_lop_khong_vao_tu_so_lan_mau_so"
+ },
+ {
+  "ten": "hàng rào quyền mở cho mọi vai đã đăng nhập (giảng viên xem được cả trung tâm)",
+  "cu": "    permission_classes = [IsAdminOrAcademic]",
+  "moi": "    permission_classes = []",
+  "cho": "test_giang_vien_tro_giang_hoc_vien_bi_403"
+ },
+ {
+  "ten": "bộ lọc MÔN bị bỏ qua",
+  "cu": "        loc.append('c.course_id = %(course_id)s')",
+  "moi": "        loc.append('c.course_id IS NOT NULL OR TRUE')",
+  "cho": "test_bo_loc_mon_that_su_loc"
+ },
+ {
+  "ten": "bộ lọc ĐỢT bị bỏ qua",
+  "cu": "        loc.append('c.term_id = %(term_id)s')",
+  "moi": "        loc.append('c.term_id IS NOT NULL OR TRUE')",
+  "cho": "test_bo_loc_dot_that_su_loc"
+ },
+ {
+  "ten": "bỏ mốc TRÊN của kỳ xem ở câu bài tập (bài tháng sau cũng bị đếm)",
+  "cu": "                            AND ''' + _MOC_BAI + ''' < %(den_sau)s\n                            AND ''' + chi_hoc_vien('u') + '''\n                            AND ''' + giao_cho('a', 'm.user_id') + '''",
+  "moi": "                            AND (''' + _MOC_BAI + ''' < %(den_sau)s OR TRUE)\n                            AND ''' + chi_hoc_vien('u') + '''\n                            AND ''' + giao_cho('a', 'm.user_id') + '''",
+  "cho": "test_bo_loc_ngay_that_su_loc"
+ },
+ {
+  "ten": "bài NHÁP cũng vào mẫu số 'phải nộp'",
+  "cu": "TRANG_THAI_BAI_DA_GIAO = ('open', 'closed')",
+  "moi": "TRANG_THAI_BAI_DA_GIAO = ('draft', 'open', 'closed')",
+  "cho": "test_bai_nhap_khong_vao_mau_so_phai_nop"
+ },
+ {
+  "ten": "bài KIỂM TRA trên lớp bị tính vào tỉ lệ nộp bài (không nộp được → luôn 0 %)",
+  "cu": "                            AND a.kind = %(loai)s AND a.status = ANY(%(trang_thai)s)",
+  "moi": "                            AND a.kind IS NOT NULL AND a.status = ANY(%(trang_thai)s)",
+  "cho": "test_bai_kiem_tra_tren_lop_khong_vao_ti_le_nop_nhung_diem_van_tinh"
+ },
+ {
+  "ten": "chuyên cần bỏ lọc kỳ xem (buổi tháng trước vẫn cộng vào)",
+  "cu": "                            AND s.starts_at >= %(tu)s AND s.starts_at < %(den_sau)s",
+  "moi": "                            AND (s.starts_at >= %(tu)s OR TRUE) AND s.starts_at < %(den_sau)s",
+  "cho": "test_chuyen_can_chi_dem_buoi_trong_ky_va_bo_buoi_huy"
+ },
+ {
+  "ten": "lọc học viên chuyển từ LATERAL sang WHERE — lớp chưa xếp em nào rơi khỏi báo cáo",
+  "cu": "               ) hvq ON TRUE\n               WHERE ''' + where + '''",
+  "moi": "               ) hvq ON TRUE\n               WHERE hv AND ''' + where + '''",
+  "cho": "test_lop_khong_co_hoc_vien_nao_van_co_mat"
+ },
+ {
+  "ten": "bản .xlsx KHÔNG theo bộ lọc của màn (dựng lại không tham số)",
+  "cu": "            header, rows = bang_xlsx(data)",
+  "moi": "            header, rows = bang_xlsx(bao_cao_cheo(tu=tu, den=den))",
+  "cho": "test_tai_xlsx_cung_bo_loc_va_o_chu_khong_thanh_cong_thuc"
+ }
+]

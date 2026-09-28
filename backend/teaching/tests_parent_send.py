@@ -76,12 +76,33 @@ def chua_oa(monkeypatch):
     monkeypatch.setattr(zalo, 'thieu_gi', lambda: ['ZALO_OA_ACCESS_TOKEN'])
 
 
+#: Số Zalo của em "HV Co So" trong `lop`. Một hằng vì nay có HAI chỗ phải nói cùng số:
+#: dữ liệu dựng lên, và hàng rào thư được mở cho đúng số ấy.
+SO_THU = '0912345678'
+
+
+def mo_hang_rao_zns(monkeypatch, so=SO_THU):
+    """Cho ZNS đi tới `so` khi hàng rào thư của máy dev đang bật (§61, E2).
+
+    Hàng rào (`notifications/hang_rao_thu.py`) chặn ZNS tới MỌI số không khai trong
+    `OUTBOX_SO_CHO_PHEP`, vì số điện thoại không có "tên miền ví dụ" như email. Nó bật
+    ngay trong pytest — CSDL kiểm thử không phải production — nên một bộ kiểm chỉ thay
+    `zalo.gui_zns` bằng bản giả vẫn nhận `dropped`: thư dừng ở hàng rào, TRƯỚC khi tới
+    bản giả. Năm bộ kiểm ở đây đỏ đúng vì lẽ đó lúc gộp §61 vào `erp` (26/09/2026).
+
+    Khai số ở phía BỘ KIỂM chứ không nới hàng rào: "mặc định TỪ CHỐI" là điều hàng rào
+    sinh ra để làm, và một bộ kiểm tự mở đường cho mình thì nói rõ nó đang mở cái gì.
+    """
+    monkeypatch.setenv('OUTBOX_SO_CHO_PHEP', so)
+
+
 @pytest.fixture
 def oa_gia(monkeypatch):
     """OA đã cấu hình, và `gui_zns` là bản GIẢ — không gọi mạng."""
     da_goi = []
     monkeypatch.setattr(zalo, 'da_cau_hinh', lambda: True)
     monkeypatch.setattr(zalo, 'thieu_gi', lambda: [])
+    mo_hang_rao_zns(monkeypatch)
 
     def gia(phone, tham_so):
         da_goi.append((phone, tham_so))
@@ -216,6 +237,7 @@ def test_luot_gui_HONG_van_vao_so(lop, monkeypatch):
     monkeypatch.setattr(zalo, 'thieu_gi', lambda: [])
     monkeypatch.setattr(zalo, 'gui_zns',
                         lambda p, t: (False, None, 'Zalo từ chối gửi (mã -124)'))
+    mo_hang_rao_zns(monkeypatch)
     kq = _goi('post', {}, ai=lop['gv'], class_id=lop['id'])
     theo_ten = {r['name']: r for r in kq.data['ketQua']}
     assert theo_ten['HV Co So']['trangThai'] == 'loi'

@@ -56,6 +56,7 @@ from datetime import datetime, time, timedelta
 from django.db import transaction
 
 from accounts.hashers import make_werkzeug_password
+from chuong_trinh.du_lieu_mau import MON_MAU, dung_khung_mau
 from common.clock import local_now, local_today
 from common.db import q, q1, x
 from common.events import (
@@ -200,9 +201,16 @@ TEN_PHAN = {1: 'Định lượng và Xử lí số liệu', 2: 'Định tính', 
 BANG_DEM = (
     ('tài khoản mẫu', 'SELECT COUNT(*) FROM users WHERE is_demo'),
     ('lớp mẫu', 'SELECT COUNT(*) FROM classes WHERE is_demo'),
+    ('khung chương trình mẫu', 'SELECT COUNT(*) FROM syllabus_versions WHERE is_demo'),
+    ('sổ đầu bài', 'SELECT COUNT(*) FROM session_logs l JOIN class_sessions s ON s.id = l.session_id '
+                   'JOIN classes c ON c.id = s.class_id WHERE c.is_demo'),
     ('buổi học', 'SELECT COUNT(*) FROM class_sessions s JOIN classes c ON c.id = s.class_id WHERE c.is_demo'),
     ('điểm danh', 'SELECT COUNT(*) FROM attendance a JOIN users u ON u.id = a.user_id WHERE u.is_demo'),
     ('bài tập', 'SELECT COUNT(*) FROM assignments a JOIN classes c ON c.id = a.class_id WHERE c.is_demo'),
+    ('yêu cầu', 'SELECT COUNT(*) FROM yeu_cau y JOIN users u ON u.id = y.hoc_vien_id WHERE u.is_demo'),
+    ('bản ghi buổi học', 'SELECT COUNT(*) FROM class_sessions s JOIN classes c ON c.id = s.class_id '
+                         'WHERE c.is_demo AND s.recording_url IS NOT NULL'),
+    ('học liệu', 'SELECT COUNT(*) FROM hoc_lieu h JOIN classes c ON c.id = h.class_id WHERE c.is_demo'),
     ('bài nộp', 'SELECT COUNT(*) FROM submissions s JOIN users u ON u.id = s.user_id WHERE u.is_demo'),
     ('tiến độ bài học', 'SELECT COUNT(*) FROM lesson_progress p JOIN users u ON u.id = p.user_id WHERE u.is_demo'),
     ('ghi danh', 'SELECT COUNT(*) FROM enrollments e JOIN users u ON u.id = e.user_id WHERE u.is_demo'),
@@ -420,6 +428,9 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
                    FROM unnest(%s::int[], %s::int[], %s::text[], %s::timestamp[]) AS t(s, u, tt, luc)''',
               (gv, [r[0] for r in dd], [r[1] for r in dd], [r[2] for r in dd], [r[3] for r in dd]))
 
+        # ── Khung chương trình + sổ đầu bài mẫu (E1) — mô-đun của miền ──
+        dung_khung_mau([lop['id'] for lop in ke if lop['khoa'] == MON_MAU], gv, bay_gio)
+
         # ── Bài tự luận + bài nộp ────────────────────────────────────────
         bai = []
         for lop in ke:
@@ -442,6 +453,207 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
              [b['lop']['id'] for b in bai], [b['tieu_de'] for b in bai], [b['cd'] for b in bai],
              [b['khoa'] for b in bai], [b['han'] for b in bai], [b['tt'] for b in bai],
              [b['tao_luc'] for b in bai]))}
+        # ── Hộp YÊU CẦU (dòng 11, 12, 25, 32) ────────────────────────────
+        #
+        # Đo 27/09 trước khi dựng: 0 yêu cầu của lớp mẫu. Trên dev hộp trông có dữ liệu chỉ
+        # vì hai yêu cầu tạo tay lúc thử — chúng KHÔNG mang dấu `is_demo`, nên trên
+        # production sau `--lam-moi` hộp ấy TRẮNG. Bốn dòng nghiệm thu mở ra là trống.
+        #
+        # Ba trạng thái, vì một hộp toàn "mới" không cho thấy việc được xử lý tới đâu; và ít
+        # nhất một yêu cầu có TRẢ LỜI, vì "theo dõi lịch sử trao đổi" là một gạch của bảng.
+        hvu_id = nhan_su.get(ROLE_ACADEMIC)
+        yc = []
+        for lop in ke:
+            em = lop['hoc_vien']
+            if len(em) < 2:
+                continue
+            yc.append({'lop': lop['id'], 'em': em[0]['id'], 'loai': 'hoi_dap',
+                       'tt': 'moi', 'ngay': 1,
+                       'tieu_de': 'Em chưa hiểu phần bất phương trình bậc hai',
+                       'noi_dung': 'Buổi trước em nghe chưa kịp đoạn xét dấu ạ. Thầy chỉ em thêm được không?',
+                       'tra_loi': None})
+            yc.append({'lop': lop['id'], 'em': em[1]['id'], 'loai': 'ht_lich_hoc',
+                       'tt': 'dang_xu_ly', 'ngay': 3,
+                       'tieu_de': 'Buổi thứ Tư tuần sau em bận, xin học bù',
+                       'noi_dung': 'Em có lịch thi ở trường đúng giờ học ạ.',
+                       'tra_loi': 'Chị đã ghi nhận, đang xếp buổi bù cho em vào thứ Bảy.'})
+            yc.append({'lop': lop['id'], 'em': em[-1]['id'], 'loai': 'tt_hoc_bu',
+                       'tt': 'da_xong', 'ngay': 9,
+                       'tieu_de': 'Xin học bù buổi 24/09',
+                       'noi_dung': 'Hôm ấy em ốm, đã xin phép qua điện thoại ạ.',
+                       'tra_loi': 'Đã xếp em vào buổi bù ngày 30/09. Em nhớ vào đúng giờ nhé.'})
+        if yc and hvu_id:
+            id_yc = [r['id'] for r in q(
+                '''INSERT INTO yeu_cau (loai, trang_thai, nguon, nguoi_tao, hoc_vien_id, class_id,
+                                       nguoi_xu_ly, tieu_de, noi_dung, created_at, updated_at,
+                                       closed_at)
+                   SELECT t.loai, t.tt, 'hoc_vien', t.em, t.em, t.lop,
+                          CASE WHEN t.tt = 'moi' THEN NULL ELSE %s END,
+                          t.td, t.nd, t.luc, t.luc,
+                          CASE WHEN t.tt = 'da_xong' THEN t.luc + interval '2 days' ELSE NULL END
+                     FROM unnest(%s::text[], %s::text[], %s::int[], %s::int[], %s::text[],
+                                 %s::text[], %s::timestamp[])
+                            AS t(loai, tt, em, lop, td, nd, luc)
+                   RETURNING id''',
+                (hvu_id, [r['loai'] for r in yc], [r['tt'] for r in yc], [r['em'] for r in yc],
+                 [r['lop'] for r in yc], [r['tieu_de'] for r in yc], [r['noi_dung'] for r in yc],
+                 [bay_gio - timedelta(days=r['ngay']) for r in yc]))]
+            sk = []
+            for i, r in enumerate(yc):
+                luc = bay_gio - timedelta(days=r['ngay'])
+                sk.append((id_yc[i], 'tao', r['em'], 'Học viên', r['noi_dung'], luc))
+                if r['tra_loi']:
+                    sk.append((id_yc[i], 'tra_loi', hvu_id, ROLE_ACADEMIC, r['tra_loi'],
+                               luc + timedelta(hours=5)))
+            x('''INSERT INTO yeu_cau_su_kien (yeu_cau_id, kieu, actor_id, actor_vai, noi_dung,
+                                             created_at)
+                 SELECT t.yc, t.k, t.a, t.v, t.nd, t.luc
+                   FROM unnest(%s::int[], %s::text[], %s::int[], %s::text[], %s::text[],
+                               %s::timestamp[]) AS t(yc, k, a, v, nd, luc)''',
+              ([r[0] for r in sk], [r[1] for r in sk], [r[2] for r in sk],
+               [r[3] for r in sk], [r[4] for r in sk], [r[5] for r in sk]))
+
+        # ── Bản ghi buổi học + học liệu (dòng 22, 29, 30) ───────────────
+        #
+        # Mã của cả ba dòng ấy chạy từ 26–27/09, nhưng bộ mẫu KHÔNG dựng dữ liệu cho chúng:
+        # đo 27/09 trên dev thấy 0 bản ghi, 0 lượt xem, 0 học liệu. Khách mở ra thấy trống và
+        # kết luận là chưa làm — cùng loại hỏng với bài kiểm tra vắng mặt, và cũng không phải
+        # lỗi mã.
+        #
+        # `example.com` là tên miền DÀNH RIÊNG cho ví dụ (RFC 2606). Dán một địa chỉ Zoom hay
+        # Drive trông thật vào đây thì trong buổi demo sẽ có người bấm, và nó dẫn tới hư không
+        # — thà nói rõ ngay trên màn rằng đây là liên kết mẫu.
+        buoi_da_day = [b for b in buoi if b['trang_thai'] == 'done']
+        bg = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']]
+            # Sáu buổi gần nhất có bản ghi: đủ để màn "xem lại" có gì mà cuộn, và vẫn còn
+            # buổi KHÔNG có bản ghi để khối "Chưa có bản ghi: …" nói được điều gì đó.
+            for b in cua_lop[-6:]:
+                bg.append((lop['id'], b['bat']))
+        if bg:
+            x('''UPDATE class_sessions s SET recording_url = %s || s.id
+                   FROM unnest(%s::int[], %s::timestamp[]) AS t(c, bat)
+                  WHERE s.class_id = t.c AND s.starts_at = t.bat''',
+              ('https://example.com/ban-ghi-mau/', [r[0] for r in bg], [r[1] for r in bg]))
+
+        # Ai đã mở bản ghi: KHÔNG phải tất cả. Trợ giảng mở màn lên là để thấy "còn ai chưa
+        # mở" — một lớp 100 % đã xem thì màn ấy không cho thấy việc gì phải làm.
+        da_mo = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']][-6:]
+            for b in cua_lop:
+                for e in lop['hoc_vien']:
+                    if rng.random() < 0.55 + 0.35 * e['chuyen_can']:
+                        luc = b['bat'] + timedelta(days=rng.randint(1, 4), hours=rng.randint(0, 9))
+                        if luc < bay_gio:
+                            da_mo.append((lop['id'], b['bat'], e['id'], luc))
+        if da_mo:
+            x('''INSERT INTO recording_views (session_id, user_id, mo_lan_dau, mo_gan_nhat, lan_mo)
+                 SELECT s.id, t.u, t.luc, t.luc, 1
+                   FROM unnest(%s::int[], %s::timestamp[], %s::int[], %s::timestamp[])
+                          AS t(c, bat, u, luc)
+                   JOIN class_sessions s ON s.class_id = t.c AND s.starts_at = t.bat
+                 ON CONFLICT DO NOTHING''',
+              ([r[0] for r in da_mo], [r[1] for r in da_mo],
+               [r[2] for r in da_mo], [r[3] for r in da_mo]))
+
+        # Học liệu: có cả tài liệu của MỘT BUỔI lẫn của KHO CHUNG lớp, và một mục đang ẨN —
+        # giảng viên soạn trước cả khoá rồi mở dần theo tiến độ (§60), và bộ mẫu phải cho
+        # thấy đúng điều ấy chứ không chỉ cho thấy "có tài liệu".
+        hl = []
+        for lop in ke:
+            cua_lop = [b for b in buoi_da_day if b['lop']['id'] == lop['id']][-4:]
+            for i, b in enumerate(cua_lop, 1):
+                hl.append((lop['id'], b['bat'], 'Slide buổi %d — %s' % (i, b['chu_de']),
+                           'https://example.com/hoc-lieu-mau/slide-%d' % i, False))
+            hl.append((lop['id'], None, 'Đề luyện tổng hợp cả khoá',
+                       'https://example.com/hoc-lieu-mau/de-luyen', False))
+            hl.append((lop['id'], None, 'Đề thi thử cuối khoá (mở sau)',
+                       'https://example.com/hoc-lieu-mau/de-thi-thu', True))
+        if hl:
+            x('''INSERT INTO hoc_lieu (class_id, session_id, ten, url, an, nguoi_tao, created_at)
+                 SELECT t.c,
+                        CASE WHEN t.bat IS NULL THEN NULL
+                             ELSE (SELECT id FROM class_sessions s
+                                    WHERE s.class_id = t.c AND s.starts_at = t.bat) END,
+                        t.ten, t.url, t.an, %s, %s
+                   FROM unnest(%s::int[], %s::timestamp[], %s::text[], %s::text[], %s::bool[])
+                          AS t(c, bat, ten, url, an)''',
+              (gv, bay_gio, [r[0] for r in hl], [r[1] for r in hl], [r[2] for r in hl],
+               [r[3] for r in hl], [r[4] for r in hl]))
+
+        # ── Bài KIỂM TRA TRÊN LỚP (V-h) — một bài mỗi lớp ───────────────
+        #
+        # Không có bài `kiem_tra` thì nút "Nhập điểm" KHÔNG BAO GIỜ hiện, và một ô của
+        # bảng nghiệm thu trông như chưa làm dù mã đã chạy từ 25/09. Khác bài tự luận ở
+        # chỗ: học viên không nộp gì, giảng viên nhập thẳng điểm — nên `held_on` (ngày
+        # kiểm tra) có, `due_at` không; điểm ghi vào `submissions` như một lượt chấm.
+        kt = []
+        for lop in ke:
+            ngay_kt = hom_nay - timedelta(days=9)
+            kt.append({'lop': lop,
+                       'tieu_de': 'Kiểm tra giữa chặng — 45 phút',
+                       'ngay': ngay_kt,
+                       'tao': datetime.combine(ngay_kt, time(7, 0))})
+        id_kt = {r['class_id']: r['id'] for r in q(
+            '''INSERT INTO assignments (class_id, title, description, course_id, held_on,
+                                        max_score, status, kind, created_by, created_at)
+               SELECT t.c, t.td, %s, t.k, t.ngay, 10, 'closed', 'kiem_tra', %s, t.tao
+                 FROM unnest(%s::int[], %s::text[], %s::text[], %s::date[], %s::timestamp[])
+                        AS t(c, td, k, ngay, tao)
+               RETURNING id, class_id''',
+            ('Bài kiểm tra trên lớp trong bộ dữ liệu trình diễn.', gv,
+             [b['lop']['id'] for b in kt], [b['tieu_de'] for b in kt],
+             [b['lop']['khoa'] for b in kt], [b['ngay'] for b in kt], [b['tao'] for b in kt]))}
+        cham_kt = []
+        for b in kt:
+            em = b['lop']['hoc_vien']
+            for j, e in enumerate(em):
+                aid = id_kt[b['lop']['id']]
+                # Chừa em CUỐI chưa chấm: con số "còn N bài chưa chấm" phải có thật, và
+                # một bảng chấm đủ 100 % thì không cho thấy việc còn phải làm.
+                if j == len(em) - 1 and len(em) > 2:
+                    cham_kt.append((aid, e['id'], None, None))
+                    continue
+                diem = _kep(round((e['nang_luc'] + rng.gauss(0, 0.1)) * 20) / 2, 2.0, 10.0)
+                cham_kt.append((aid, e['id'], diem,
+                                datetime.combine(b['ngay'] + timedelta(days=2), time(20, 0))))
+        if cham_kt:
+            x('''INSERT INTO submissions (assignment_id, user_id, submitted_at, score,
+                                          graded_by, graded_at)
+                 SELECT t.a, t.u, t.cham, t.diem,
+                        CASE WHEN t.cham IS NULL THEN NULL ELSE %s END, t.cham
+                   FROM unnest(%s::int[], %s::int[], %s::numeric[], %s::timestamp[])
+                          AS t(a, u, diem, cham)''',
+              (gv, [r[0] for r in cham_kt], [r[1] for r in cham_kt],
+               [r[2] for r in cham_kt], [r[3] for r in cham_kt]))
+
+        # §74 — nối MỘT bài của mỗi lớp mẫu vào mục "bài về nhà" ĐẦU TIÊN của khung.
+        #
+        # Không nối thì màn Chương trình lớp chỉ nói được một vế: mọi mục đều "Chưa giao
+        # bài", và người xem kết luận tính năng chỉ biết nói "chưa". Một bài là đủ để cả
+        # hai vế cùng lên màn — mục ấy "Đã giao: <tên>", những mục còn lại vẫn "Chưa giao".
+        # Chỉ nối vào mục CẦN bài; nối vào mục chủ đề là nói sai về khung.
+        x('''UPDATE assignments a SET syllabus_item_id = m.item_id
+               FROM (SELECT DISTINCT ON (c.id) c.id AS class_id, i.id AS item_id,
+                            (SELECT min(id) FROM assignments WHERE class_id = c.id) AS bai_id
+                       FROM classes c
+                       JOIN syllabus_sessions ss ON ss.version_id = c.syllabus_version_id
+                       JOIN syllabus_items i ON i.session_id = ss.id AND i.kind = 'bai_tap'
+                      WHERE c.is_demo
+                   ORDER BY c.id, ss.sort_order, i.sort_order) m
+              WHERE a.id = m.bai_id''')
+        x('''UPDATE assignments a SET syllabus_item_id = m.item_id
+               FROM (SELECT DISTINCT ON (c.id) c.id AS class_id, i.id AS item_id
+                       FROM classes c
+                       JOIN syllabus_sessions ss ON ss.version_id = c.syllabus_version_id
+                       JOIN syllabus_items i ON i.session_id = ss.id AND i.kind = 'kiem_tra'
+                      WHERE c.is_demo
+                   ORDER BY c.id, ss.sort_order, i.sort_order) m
+              WHERE a.class_id = m.class_id AND a.kind = 'kiem_tra'
+                AND a.syllabus_item_id IS NULL''')
+
         nop = []
         for b in bai:
             aid = id_bai[(b['lop']['id'], b['tieu_de'])]
@@ -719,7 +931,18 @@ def go():
         # không tự tạo ra chúng — xoá trước vẫn cần, để `--go` không bao giờ gãy giữa chừng.
         x('DELETE FROM parent_report_sends WHERE requested_by IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM parent_report_links WHERE created_by IN (SELECT id FROM users WHERE is_demo)')
+        # Yêu cầu mẫu phải xoá TRƯỚC `users` (27/09/2026). Một lượt `DELETE FROM users WHERE
+        # is_demo` vừa CASCADE xoá `yeu_cau` (qua `hoc_vien_id`) vừa SET NULL
+        # `yeu_cau_su_kien.actor_id` — và Postgres kiểm lại khoá ngoại trên chính dòng nó
+        # vừa SET NULL, lúc ấy cha `yeu_cau` đã biến mất trong cùng câu lệnh:
+        #   "insert or update on table yeu_cau_su_kien violates foreign key constraint".
+        # Ba phép kiểm đỏ vì chuyện này ngay lượt đầu. Cùng họ với hai dòng
+        # `parent_report_*` ở trên, chỉ khác là ở đây khoá ngoại CÓ ON DELETE — có mà vẫn
+        # gãy, vì hai hành vi khác nhau chạm cùng một dòng trong một câu.
+        x('DELETE FROM yeu_cau WHERE hoc_vien_id IN (SELECT id FROM users WHERE is_demo) '
+          'OR nguoi_tao IN (SELECT id FROM users WHERE is_demo)')
         x('DELETE FROM classes WHERE is_demo')
+        x('DELETE FROM syllabus_versions WHERE is_demo')
         x('DELETE FROM users WHERE is_demo')
         sau = dem()
     return truoc, sau

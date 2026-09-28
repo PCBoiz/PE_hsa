@@ -134,6 +134,26 @@ class RegisterThrottle(_IPKhach, SimpleRateThrottle):
         return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
 
 
+class DangKyThrottle(_IPKhach, SimpleRateThrottle):
+    """Giới hạn theo IP cho BA cửa tự đăng ký (§73, 27/09/2026): mở tài khoản, xác
+    thực email, gửi lại thư.
+
+    Dùng CHUNG một bộ đếm cho cả ba (khoá không mang tên view) — cùng lý lẽ với
+    `QuenMatKhauThrottle`: kẻ dò không được lợi thêm lượt bằng cách xen kẽ giữa "mở
+    tài khoản" và "thử mã". Mức ở `DEFAULT_THROTTLE_RATES['dang_ky']`.
+
+    Đây là lớp THỨ HAI, không phải lớp duy nhất. Bộ đếm này nằm trong bộ đệm, mà bộ
+    đệm dev là `LocMemCache` sống theo TỪNG tiến trình gunicorn — khởi động lại là
+    mất sạch. Lớp thứ nhất đếm trong CSDL: `tu_dang_ky.TRAN_IP_MOI_NGAY` (số tài
+    khoản chưa xác thực một IP mở được trong 24 giờ) và `TRAN_MOI_GIO` (số mã một
+    tài khoản xin được trong một giờ).
+    """
+    scope = 'dang_ky'
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {'scope': self.scope, 'ident': self.get_ident(request)}
+
+
 class QuenMatKhauThrottle(_IPKhach, SimpleRateThrottle):
     """Giới hạn theo IP cho ba cửa quên / đặt lại mật khẩu (§52, 23/09/2026).
 

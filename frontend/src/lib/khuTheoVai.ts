@@ -14,6 +14,8 @@
  *   · `van-hanh`         → `app/(standalone)/quan-tri/vai.ts` (`VAI_VAO_KHU`, hoặc
  *                          `TABS[href].vai` khi thẻ trỏ vào một trang cụ thể)
  *   · `soan-giao-trinh`  → `app/(standalone)/giao-trinh/page.tsx::DUOC_VAO`
+ *   · `IsCurriculumPlanner` → `lib/quyenVai.ts::VAI_CUA_LOP_QUYEN` (soạn khung chương
+ *                          trình, E1 — trang `/giao-trinh/khung-chuong-trinh` gác đúng bộ vai ấy)
  *   · `moi-nhan-su`      → cả năm vai nhân sự, không cổng
  * Thêm thẻ mới mà không có `cong` là phép kiểm đỏ. Thêm khu mới thì vẫn phải ĐI
  * THỬ bằng tài khoản của vai đó (lượt đi sáu vai 20/09) — phép kiểm giữ cho
@@ -27,7 +29,7 @@ import {
   VAI_TRO_GIANG,
 } from './vaiTro';
 
-export type CongKhu = 'IsTeachingStaff' | 'van-hanh' | 'soan-giao-trinh' | 'moi-nhan-su';
+export type CongKhu = 'IsTeachingStaff' | 'IsCurriculumPlanner' | 'van-hanh' | 'soan-giao-trinh' | 'moi-nhan-su';
 
 export type KhuViec = {
   nhan: string;
@@ -54,6 +56,10 @@ export const KHU_VIEC: readonly KhuViec[] = [
     moTa: 'Danh sách lớp, ai đang cần chú ý, hồ sơ học tập của từng em.',
   },
   {
+    nhan: 'Yêu cầu', icon: 'inbox', url: '/yeu-cau', cong: 'IsTeachingStaff', vai: DAY,
+    moTa: 'Câu hỏi của học viên, phụ huynh gửi, xin chuyển lớp / bảo lưu — trả lời, giao, duyệt.',
+  },
+  {
     nhan: 'Vận hành trung tâm', icon: 'shield', url: '/quan-tri/tong-quan', cong: 'van-hanh',
     vai: [VAI_HOC_VU, VAI_QUAN_TRI],
     moTa: 'Tài khoản, lớp, đợt học, liên hệ phụ huynh, nhật ký thao tác.',
@@ -62,6 +68,11 @@ export const KHU_VIEC: readonly KhuViec[] = [
     nhan: 'Giáo trình', icon: 'book-open', url: '/giao-trinh', cong: 'soan-giao-trinh',
     vai: [VAI_BIEN_TAP, VAI_QUAN_TRI],
     moTa: 'Khoá, bài, câu hỏi; nhập đề từ bảng tính.',
+  },
+  {
+    nhan: 'Khung chương trình', icon: 'calendar', url: '/giao-trinh/khung-chuong-trinh',
+    cong: 'IsCurriculumPlanner', vai: [VAI_BIEN_TAP, VAI_HOC_VU, VAI_QUAN_TRI],
+    moTa: 'Buổi nào học gì, trọng số, phiên bản — lớp nhận khung để theo dõi tiến độ.',
   },
   {
     nhan: 'Xem khoá học', icon: 'library', tab: 'courses', cong: 'moi-nhan-su', vai: MOI_NHAN_SU,

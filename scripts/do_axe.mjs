@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const DAY = dirname(fileURLToPath(import.meta.url));
 const { chromium } = createRequire(join(DAY, '..', 'frontend', 'package.json'))('@playwright/test');
+import { baoHiem } from './lib/phien_do.mjs';
 const doc = (t) => JSON.parse(fs.readFileSync(process.env[t] || join(DAY, '..', '.the', t === 'PE_TOKENS' ? 'tokens_ad.json' : 'tokens_hv.json'), 'utf8')).access;
 const AD = doc('PE_TOKENS');
 const HV = doc('PE_TOKENS_HV');
@@ -36,6 +37,10 @@ const TRANG = [
   // Quên mật khẩu (§52, 23/09/2026): hai trang KHÔNG cần đăng nhập. Trang đặt lại mở
   // không kèm chìa → đúng trạng thái 'đường dẫn hỏng' mà người bấm thư cũ sẽ thấy.
   ['/quen-mat-khau', 'Quên mật khẩu', null], ['/dat-lai-mat-khau', 'Đặt lại (đường dẫn hỏng)', null],
+  // Tự đăng ký (§73, 27/09/2026): hai trang KHÔNG cần đăng nhập — bề mặt công khai mới,
+  // nên phải nằm trong bộ đo trợ năng như /login. Trang xác nhận mở không kèm mã → đúng
+  // trạng thái "đường dẫn hỏng" mà người bấm thư cũ sẽ thấy.
+  ['/dang-ky', 'Đăng ký học', null], ['/xac-thuc-email', 'Xác nhận email (mã hỏng)', null],
   ['/dashboard', 'Dashboard', HV], ['/courses/hsa_quantitative', 'Chi tiết khoá', HV],
   // `/mock` (Thi thử) và `/giang-day/ket-qua-thi/…` (nhập PDF) ra khỏi danh sách
   // 24/09/2026 — bỏ thi, pha A: hai đường nay chỉ chuyển hướng (next.config.ts).
@@ -53,6 +58,19 @@ const TRANG = [
   ['/quan-tri/tai-khoan/35695', 'QT hồ sơ học viên', AD], ['/giang-day/bao-cao/7322/35695', 'GD tờ một em', AD],
   // Thêm 24/09/2026 (§53): lịch gộp theo tuần.
   ['/giang-day/lich', 'GD lịch học', AD],
+  // Gộp A2 + E1 (26/09/2026): chấm công theo tháng, soạn khung, chương trình một lớp, sổ đầu
+  // bài một buổi. 8004 là buổi đã dạy của lớp 7322 trên Neon dev.
+  ['/quan-tri/cham-cong', 'QT chấm công', AD], ['/giao-trinh/khung-chuong-trinh', 'Khung chương trình', AD],
+  ['/giang-day/chuong-trinh/7322', 'GD chương trình lớp', AD], ['/giang-day/so-dau-bai/8004', 'GD sổ đầu bài', AD],
+  // Hộp Yêu cầu (E3, 26/09/2026): học viên (gửi + một yêu cầu của mình) và nhân sự (hộp + một lượt
+  // xin chuyển lớp chưa duyệt). 176 / 177 = yêu cầu của tài khoản e2e ở lớp mẫu 7322 (Neon dev).
+  ['/yeu-cau', 'Hỏi & yêu cầu', HV], ['/yeu-cau/176', 'Một yêu cầu (HV)', HV],
+  ['/yeu-cau', 'Hộp yêu cầu (nhân sự)', AD], ['/yeu-cau/177', 'Xin chuyển lớp (nhân sự)', AD],
+  // Màn soạn thông báo (§61, E2-GD 26/09/2026): biểu mẫu có ô tick nhóm (`fieldset`/`legend`)
+  // và nút khoá tới khi React gắn — hai thứ axe hay bắt nhất ở một màn nhập liệu mới.
+  ['/giang-day/thong-bao/7322', 'GD soạn thông báo lớp', AD], ['/quan-tri/thong-bao', 'QT thông báo trung tâm', AD],
+  // Tờ phụ huynh — nay có khối gửi yêu cầu. Cần chìa lớp mẫu (`scripts/cap_chia_mau.py`); thiếu tệp
+  // thì bỏ trang này (xem sau mảng) — cùng quy ước với `do_giao_dien.mjs`.
 ].map(([url, ten, the]) => ({ url, ten, the, cheDo: 'light' }));
 
 /* ── LƯỢT THÊM (22/09/2026, agent thuoc-4, theo phát hiện F1 của agent tiếp cận) ──
@@ -68,6 +86,14 @@ const TRANG = [
    `#page-<v>.active`, chủ đề phải khớp `body.dark`, trạng thái mở phải thấy bộ
    chọn của nó. Không khớp → lượt ấy "không đo được" và cổng thoát 1 — không
    bao giờ chạy axe trên trạng thái sai rồi in 0 dưới tên trạng thái kia. */
+{
+  const TEP_CHIA = join(DAY, '..', '.the', 'chia_mau.json');
+  if (fs.existsSync(TEP_CHIA)) {
+    TRANG.push({ url: `/bc/${JSON.parse(fs.readFileSync(TEP_CHIA, 'utf8')).token}`, ten: 'Phụ huynh · tờ báo cáo', the: null, cheDo: 'light' });
+  } else {
+    console.log('⚠ Không có .the/chia_mau.json → BỎ QUA trang phụ huynh /bc/<chìa> (cấp: scripts/cap_chia_mau.py).');
+  }
+}
 const VIEW = ['courses', 'plan', 'roadmap', 'skills', 'forum', 'settings', 'profile'];
 const MO = [
   // [tên, view chứa nó, bộ chọn để bấm, bộ chọn chứng minh đã mở]
@@ -89,10 +115,25 @@ for (const cheDo of ['light', 'dark']) {
   }
 }
 const chiThem = process.argv.includes('--chi-them');
-const LUOT = chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM];
+/* `--chi <chuỗi>` — chỉ chạy những lượt có TÊN chứa chuỗi ấy (không phân biệt hoa thường).
+   Thêm 26/09/2026: một lượt đầy đủ là ~60 lần tải trang và vượt 10 phút trên máy dev, nên
+   sau khi thêm MỘT màn mới người ta hoặc chạy cả bộ (rồi Ctrl-C giữa chừng — một trong bốn
+   đường mà `finally` KHÔNG chạy, xem `lib/phien_do.mjs`), hoặc không đo gì cả. Cờ này để
+   đo đúng màn vừa dựng. Nó KHÔNG thay lượt đầy đủ: cổng RULES §4 vẫn chạy không cờ. */
+const chi = process.argv.includes('--chi')
+  ? String(process.argv[process.argv.indexOf('--chi') + 1] || '').toLowerCase()
+  : null;
+const LUOT = (chiThem ? LUOT_THEM : [...TRANG, ...LUOT_THEM])
+  .filter((l) => !chi || l.ten.toLowerCase().includes(chi));
+if (chi && LUOT.length === 0) {
+  // Lọc không khớp gì mà vẫn in "0 vi phạm" là cách chắc chắn nhất để tin rằng đã đo.
+  console.error(`--chi "${chi}" không khớp lượt nào. Xem tên lượt trong mảng TRANG / LUOT_THEM.`);
+  process.exit(2);
+}
 
 const AXE = 'https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js';
 const b = await chromium.launch();
+baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const tong = new Map(); // rule → { impact, help, trang: Set, mau }
 const theoTrang = [];
 for (const w of [390, 1366]) {

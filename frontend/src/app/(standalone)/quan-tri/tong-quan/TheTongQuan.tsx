@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Button, Card, CardHead, Chip, TableWrap, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 
 import { LOAI_LOP, NHAN_LY_DO_ROI } from '../lop-hoc/lop';
+import { HD_TONG_CHUONG_TRINH } from '@/lib/chuongTrinh';
 
 /**
  * BỐN THẺ của Tổng quan v2 (1.4a, 24/09/2026) — trả lời đúng bốn câu trong ghi
@@ -24,7 +25,8 @@ const so = z.number();
 const soHoacTrong = z.number().nullable();
 const chu = z.string().nullable();
 
-export const LOP_THEO_LOAI = z.record(z.string(), z.looseObject({ total: so, active: so }));
+// `paused` (V-c, 25/09/2026) tuỳ chọn: máy chủ cũ không có trạng thái ấy.
+export const LOP_THEO_LOAI = z.record(z.string(), z.looseObject({ total: so, active: so, paused: so.optional() }));
 export const ROI_LOP = z.looseObject({
   tu: z.string(),
   den: z.string(),
@@ -110,6 +112,9 @@ const TONE_LY_DO: Record<string, 'good' | 'bad' | 'neutral' | 'warn'> = {
   chuaGhi: 'warn',
 };
 
+export const CHUONG_TRINH = HD_TONG_CHUONG_TRINH;
+export type ChuongTrinh = NonNullable<z.infer<typeof HD_TONG_CHUONG_TRINH>>;
+
 // ── 1. Lớp học theo loại ────────────────────────────────────────────────────
 
 export function TheLop({ theoLoai, termId }: { theoLoai: LopTheoLoai; termId?: string }) {
@@ -130,6 +135,7 @@ export function TheLop({ theoLoai, termId }: { theoLoai: LopTheoLoai; termId?: s
                   <b className="text-title text-ink tabular-nums">{o?.active ?? 0}</b>{' '}
                   <span className="text-small text-ink-3">
                     đang chạy{o && o.total !== o.active ? ` / ${o.total}` : ''}
+                    {o?.paused ? ` · ${o.paused} tạm dừng` : ''}
                   </span>
                 </span>
               </Link>
@@ -401,5 +407,48 @@ export function TheDiemDanh({ gv, gioMuon }: { gv: GiangVien; gioMuon?: number }
         )}
       </Card>
     </div>
+  );
+}
+
+// ── 5. Tiến độ chương trình (E1, 25/09/2026 — bảng TopHSA dòng 9) ────────────
+
+/** Lớp chậm so với khung, và lớp có buổi đã dạy mà chưa ghi sổ đầu bài. Số tính
+ *  ở `chuong_trinh/tien_do.py` trên MỌI lớp đang chạy; bấm là tới danh sách lớp,
+ *  nơi mỗi lớp có chip tiến độ. */
+export function TheChuongTrinh({ c, termId }: { c: ChuongTrinh; termId?: string }) {
+  const qs = new URLSearchParams(termId ? { dot: termId } : {});
+  const dong = [
+    { nhan: 'Lớp chậm tiến độ', so: c.lopCham, tone: c.lopCham ? 'bad' : 'good' },
+    {
+      nhan: 'Lớp có buổi chưa ghi sổ đầu bài',
+      so: c.lopChuaGhiSo,
+      tone: c.lopChuaGhiSo ? 'warn' : 'good',
+      phu: c.buoiChuaGhiSo ? `${c.buoiChuaGhiSo} buổi` : undefined,
+    },
+  ] as const;
+  return (
+    <Card>
+      <CardHead title="Tiến độ chương trình" hint={`${c.lopCoKhung} lớp đang chạy có khung chương trình.`} />
+      {c.lopCoKhung === 0 ? (
+        <p className="text-body text-ink-3">
+          Chưa lớp nào nhận khung.{' '}
+          <Link href="/giao-trinh/khung-chuong-trinh" className="inline-flex min-h-11 items-center text-brand-ink underline">Soạn khung</Link>
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {dong.map((d) => (
+            <li key={d.nhan}>
+              <Link href={`/quan-tri/lop-hoc${qs.size ? `?${qs}` : ''}`} className={DONG_LINK}>
+                <span className="text-body text-ink">{d.nhan}</span>
+                <span className="flex items-center gap-2">
+                  {'phu' in d && d.phu && <span className="text-small text-ink-3">{d.phu}</span>}
+                  <Chip tone={d.tone}>{d.so}</Chip>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

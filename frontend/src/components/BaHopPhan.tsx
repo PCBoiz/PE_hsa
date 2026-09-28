@@ -117,7 +117,7 @@ export default function BaHopPhan() {
 
   return (
     <div ref={oRef} className="sk-hopphan fx-fade-up" id="sk-hopphan">
-      <div className="sk-hp-tit">Ba hợp phần — bạn đang dồn sức vào đâu</div>
+      <div className="sk-hp-tit">Ba môn học — bạn đang dồn sức vào đâu</div>
       <div className="sk-hp-ds">
         {ds.map((d) => (
           <div className="sk-hp-hang" key={d.ten}>
@@ -134,10 +134,10 @@ export default function BaHopPhan() {
       </div>
       <p className="sk-hp-luu">
         {tong === 0
-          ? 'Chưa hợp phần nào có bài hoàn thành.'
+          ? 'Chưa môn nào có bài hoàn thành.'
           : chuaBatDau.length > 0
-            ? <>Chưa đụng tới: <strong>{chuaBatDau.map((d) => d.ten).join(', ')}</strong>. Điểm HSA cộng cả ba hợp phần.</>
-            : 'Cả ba hợp phần đều đã có bài hoàn thành.'}
+            ? <>Chưa đụng tới: <strong>{chuaBatDau.map((d) => d.ten).join(', ')}</strong>. Điểm HSA cộng cả ba môn.</>
+            : 'Cả ba môn đều đã có bài hoàn thành.'}
         {' '}Con số này đếm XP của bài đã hoàn thành, không phải dự đoán điểm thi.
       </p>
     </div>

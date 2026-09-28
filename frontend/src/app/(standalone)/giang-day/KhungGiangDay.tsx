@@ -36,6 +36,18 @@ const TAB = [
   // Trợ giảng không mở được báo cáo phụ huynh (`IsSeniorTeachingStaff`) — không
   // dựng tab dẫn tới một trang 403. Hàng rào thật vẫn ở máy chủ.
   { doan: 'bao-cao', nhan: 'Báo cáo phụ huynh', icon: 'file-text', troGiang: false },
+  // Nhắc cả lớp (§61, dòng 20 — E2-GD 26/09/2026). `troGiang: true`: anh Sơn chốt
+  // trợ giảng gửi thông báo cho lớp MÌNH y như giảng viên, kể cả kèm email
+  // (`views_thong_bao.py`, quyết định số 1) — trợ giảng chính là người nhắc học
+  // viên hằng ngày. `bell` chứ không `inbox`: `inbox` đã là hình của tab "Yêu cầu"
+  // ngay bên cạnh, và dưới 70rem `shell.css` ẩn nhãn chữ nên hai tab cùng hình là
+  // hai ô y hệt nhau.
+  { doan: 'thong-bao', nhan: 'Thông báo lớp', icon: 'bell', troGiang: true },
+  // Diễn đàn riêng của lớp (§75, dòng 20 — 27/09/2026). Anh Sơn chốt: trao đổi đi qua
+  // diễn đàn của lớp hoặc Zalo, KHÔNG dựng messenger. Khác tab "Thông báo lớp" ngay bên
+  // cạnh: thông báo là một chiều và gửi kèm email, còn đây là chỗ em trả lời lại được.
+  // Trợ giảng vào được — cùng lý do với thông báo lớp: họ là người trao đổi hằng ngày.
+  { doan: 'trao-doi', nhan: 'Trao đổi', icon: 'chat', troGiang: true },
 ] as const;
 
 export default function KhungGiangDay({
@@ -65,6 +77,9 @@ export default function KhungGiangDay({
         // nên có mặt cả khi đang ở trong một lớp. Trợ giảng cũng xem được
         // (`LichView` là `IsTeachingStaff`), phạm vi là lớp được gán.
         { trang: null, nhan: 'Lịch học', icon: 'calendar', emoji: '', url: '/giang-day/lich' },
+        // Hộp Yêu cầu (E3, 26/09/2026) — cấp KHU như "Lịch học": câu hỏi của em, việc được giao /
+        // chuyển tiếp, báo lên. Máy chủ lọc lớp mình + việc giao cho mình.
+        { trang: null, nhan: 'Yêu cầu', icon: 'inbox', emoji: '', url: '/yeu-cau' },
         ...(lop
           ? TAB.filter((t) => !troGiang || t.troGiang).map((t) => ({
             trang: null,

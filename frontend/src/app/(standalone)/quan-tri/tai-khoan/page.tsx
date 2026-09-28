@@ -14,6 +14,8 @@ type UsersPayload = {
   roles: string[];
   chiHocVien?: boolean;
   nguongNgu?: number[];
+  tinhTrangHocOptions?: { ma: string; nhan: string }[];
+  hocPhiOptions?: { ma: string; nhan: string }[];
 };
 
 /* HÌNH DẠNG hai phản hồi trang này đọc. `satisfies HinhDang<…>`: kiểu đang
@@ -42,6 +44,9 @@ const HD_USERS = z.looseObject({
     hoatDongCuoi: z.string().nullable().optional(),
     ngayKhongHoatDong: z.number().nullable().optional(),
     tienDo: z.looseObject({ xong: z.number(), tong: z.number() }).nullable().optional(),
+    // V-m — TUỲ CHỌN (Vercel lên trước Render).
+    tinhTrangHoc: z.string().nullable().optional(),
+    hocPhi: z.string().nullable().optional(),
   })),
   total: z.number(),
   page: z.number(),
@@ -49,6 +54,8 @@ const HD_USERS = z.looseObject({
   roles: z.array(z.string()),
   chiHocVien: z.boolean().optional(),
   nguongNgu: z.array(z.number()).optional(),
+  tinhTrangHocOptions: z.array(z.looseObject({ ma: z.string(), nhan: z.string() })).optional(),
+  hocPhiOptions: z.array(z.looseObject({ ma: z.string(), nhan: z.string() })).optional(),
 }) satisfies HinhDang<UsersPayload>;
 const HD_CLASSES = z.looseObject({
   classes: z.array(z.looseObject({ id: z.number(), name: z.string(), code: z.string().nullable().optional(), startsOn: z.string().nullable().optional() })),

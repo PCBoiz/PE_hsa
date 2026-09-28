@@ -92,4 +92,10 @@ export const MUC_NAV: MucNav[] = [
       + 'bảng `class_members` với học viên, nên trang này mời trợ giảng "Làm bài" '
       + 'bài tập của chính lớp mình phụ trách. Nhân sự giao/chấm bài ở /giang-day.',
   },
+  {
+    trang: null, nhan: 'Hỏi & yêu cầu', icon: 'inbox', emoji: '📨', url: '/yeu-cau', chiHocVien: true,
+    ghi_chu: 'Hộp Yêu cầu (E3, bảng TopHSA dòng 32): em hỏi giảng viên / trợ giảng, xin hỗ trợ, '
+      + 'báo lỗi bản ghi buổi học, xin chuyển lớp / bảo lưu — và đọc trả lời. Nhân sự vào cùng '
+      + 'đường ấy từ khu của mình (Giảng dạy / Vận hành), nên mục này chỉ cho học viên.',
+  },
 ];

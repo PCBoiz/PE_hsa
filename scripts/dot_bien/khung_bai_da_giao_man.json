@@ -1,0 +1,20 @@
+[
+ {
+  "ten": "mọi mục đều mang khoá baiDaGiao — chủ đề cũng bị hỏi 'giao bài chưa'",
+  "cu": "            if i['kind'] in MUC_CAN_BAI:",
+  "moi": "            if i['kind'] in MUC_CAN_BAI or True:",
+  "cho": "test_muc_chu_de_khong_co_khoa_bai_da_giao"
+ },
+ {
+  "ten": "mục cần bài mà chưa giao trả None thay vì danh sách rỗng",
+  "cu": "                i['baiDaGiao'] = bai_theo_muc.get(i['id'], [])",
+  "moi": "                i['baiDaGiao'] = bai_theo_muc.get(i['id'])",
+  "cho": "test_muc_can_bai_ma_chua_giao_la_danh_sach_rong"
+ },
+ {
+  "ten": "chỉ hỏi mục bài tập, bỏ qua mục kiểm tra",
+  "cu": "        class_id, [i['id'] for k in khung for i in k['items'] if i['kind'] in MUC_CAN_BAI])",
+  "moi": "        class_id, [i['id'] for k in khung for i in k['items'] if i['kind'] == 'bai_tap'])",
+  "cho": "test_muc_kiem_tra_cung_duoc_hoi_da_giao_chua"
+ }
+]
