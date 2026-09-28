@@ -19,7 +19,28 @@ công khoá tháng, §60 tài liệu R2).
 **Spec nghiệm thu**: mỗi dòng sẽ có `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng kịch bản demo;
 một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh hai khổ. Cột "Spec" = `—` là chưa có.
 
-## ✅ 28/09/2026 — LẦN ĐẦU ĐO TRÊN CHÍNH BẢN PRODUCTION: 34/38 màn ĐẠT
+## ✅ 28/09/2026 — ĐO TRÊN CHÍNH BẢN PRODUCTION: 38/41 màn ĐẠT
+
+**Số chốt cuối ngày.** Sổ soát thêm ba màn chưa lượt nào chạm tới: **tờ báo cáo phụ huynh**
+(`/bc/<chìa>` — màn CÔNG KHAI duy nhất của hệ thống, người mở không có tài khoản), **khối gửi
+yêu cầu trên tờ ấy**, và **trang Xem lại của em** (`/lop/<lớp>/xem-lai`). Bộ soát tự lấy chìa
+phụ huynh (dùng lại chìa còn sống) và tự tìm LỚP CỦA EM — khác lớp của giảng viên, ghép nhầm
+thì màn ra 404 rồi bị đọc thành "chưa làm".
+
+Ba màn đỏ còn lại, và không màn nào đỏ vì mã sai:
+
+| Dòng | Đỏ vì | Ai gỡ |
+|---|---|---|
+| 30 · tải tệp học liệu | thiếu thật | khoá **R2** (việc `D1` của anh Sơn) |
+| 31 · nộp bài bằng tệp | thiếu thật | cùng bộ khoá ấy |
+| 25 · ô "Nói thêm với trung tâm" | **đã làm, chưa lên production** | gộp `erp` → `master` |
+
+**Một dấu XANH GIẢ bị bắt cùng lượt.** Câu hỏi "em báo được link bản ghi hỏng" dùng mẫu lỏng
+`Báo|lỗi` và ĐẠT suốt — trong khi nút thật mang chữ *"Không mở được?"* và **chỉ dựng sau khi
+em bấm vào một bản ghi** (`LopCuaToi.tsx:410`). Mẫu lỏng khớp nhầm chữ "Báo cáo" ở chỗ khác
+trên màn. Nay hỏi đúng chữ, và bấm trước rồi mới hỏi.
+
+## Lượt đo trước trong ngày — 34/38
 
 Mọi con số trước dòng này đều đo trên **dev**. Lý do thì tầm thường mà hậu quả thì không:
 thư viện đo ghim cookie vào `localhost`, nên chưa lượt nào chạm được bản thật (vá 27/09).

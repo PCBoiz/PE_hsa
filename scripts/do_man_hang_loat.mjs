@@ -168,6 +168,22 @@ async function dienChoTrong(phien) {
   const em = (chon.ct?.tungEm || [])[0];
   const bai = (await doc(`/api/teach/classes/${chon.l.id}/assignments`))?.assignments || [];
 
+  // CHÌA CỦA PHỤ HUYNH — màn `/bc/<chìa>` là màn CÔNG KHAI duy nhất của hệ thống (người mở
+  // không có tài khoản, mở từ một tin Zalo), và tới 28/09/2026 chưa lượt soát nào chạm tới nó.
+  // Đó đúng là màn đắt nhất nếu hỏng: nó đi ra ngoài trung tâm.
+  //
+  // DÙNG LẠI chìa còn sống, chỉ cấp mới khi chưa có. Cấp một chìa mỗi lượt soát là rác trên
+  // màn Báo cáo phụ huynh của giảng viên, mỗi cái sống 45 ngày.
+  const chiaPh = em ? await page.evaluate(async ({ lop, uid }) => {
+    const d = `/api/teach/classes/${lop}/students/${uid}/parent-report/link`;
+    const co = await fetch(d).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (co?.links?.length) return co.links[0].token;
+    const moi = await fetch(d, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    return moi?.token || null;
+  }, { lop: chon.l.id, uid: em.userId }) : null;
+
   // Hộp Yêu cầu đọc bằng thẻ HỌC VỤ (giảng viên không thấy hộp của học vụ). Hai màn dòng
   // 11 / 12 cần hai yêu cầu KHÁC loại: một cái thường, một cái "xin thay đổi học tập" —
   // màn duyệt chỉ hiện nút Duyệt cho loại sau.
@@ -186,11 +202,24 @@ async function dienChoTrong(phien) {
   // liên tiếp báo thiếu cho hai dòng KHÁC nhau chỉ vì yêu cầu đầu danh sách đổi loại.
   const thuong = dsYc.find((y) => !/chuyen|bao_luu|huy|hoc_lai|nghi_hoc|hoc_bu|tt_/.test(y.loai));
 
+  // LỚP CỦA EM — khác lớp của giảng viên. Thẻ `hv` và thẻ `gv` gần như không bao giờ gặp nhau
+  // ở cùng một lớp (đo 28/09: gv dạy lớp 7586, em học lớp 7322), nên mọi màn phía HỌC VIÊN có
+  // id lớp trong đường dẫn mà dùng `{LOP_MAU}` sẽ ra 404 — và 404 ấy bị đọc thành "chưa làm".
+  const trangEm = await phien.man('/dashboard', 'hv');
+  const lopEm = await trangEm.evaluate(async () => {
+    const r = await fetch('/api/lop-cua-toi');
+    if (!r.ok) return null;
+    const d = await r.json();
+    return (d.lop || d.classes || [])[0]?.id ?? null;
+  });
+
   return {
     LOP_MAU: String(chon.l.id),
+    LOP_EM: lopEm == null ? null : String(lopEm),
     BUOI_MAU: buoi.length ? String(buoi[buoi.length - 1].id) : null,
     EM_MAU: em ? String(em.userId) : null,
     BAI_MAU: bai.length ? String(bai[0].id) : null,
+    CHIA_PH: chiaPh,
     YEU_CAU_MAU: (thuong || dsYc[0]) ? String((thuong || dsYc[0]).id) : null,
     YEU_CAU_DUYET: thayDoi ? String(thayDoi.id) : (dsYc.length ? String(dsYc[0].id) : null),
   };

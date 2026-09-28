@@ -470,9 +470,25 @@
   "vai": "hv2",
   "hoi": {
    "xemLai": "Xem lại",
-   "danhDauDaMo": "đã mở|Đã mở",
-   "baoLinkLoi": "Báo|lỗi"
-  }
+   "baoLinkLoi": "Không mở được\\?"
+  },
+  "ghiChu": "Thẻ lớp trên bảng điều khiển có LỐI VÀO (\"Xem lại: 24/09 22/09\") và nút báo link hỏng — chữ đúng là \"Không mở được?\" (`LopCuaToi.tsx:244`), không phải \"Báo lỗi\". Dấu \"Bạn đã mở\" thì nằm ở trang `/lop/<lớp>/xem-lai`; hỏi nó ở đây là hỏi sai màn, và bộ đo đã chấm THIẾU cho một tính năng đang chạy (28/09). Nút ấy chỉ dựng SAU khi em bấm vào một bản ghi (`vuaMo !== null`, `LopCuaToi.tsx:410`), nên phải bấm trước rồi mới hỏi. Mẫu cũ \"Báo|lỗi\" từng XANH mà không bấm gì — đó là xanh giả, nó khớp chữ \"Báo cáo\" ở chỗ khác trên màn.",
+  "bam": [
+   ".lct-bg-nut"
+  ],
+  "choSauBam": 2500
+ },
+ {
+  "dong": 29,
+  "ten": "Học sinh · trang Xem lại (đủ bản ghi theo buổi + ô tìm)",
+  "duong": "/lop/{LOP_EM}/xem-lai",
+  "vai": "hv",
+  "hoi": {
+   "dsTheoBuoi": "Buổi|buổi",
+   "oTim": "Tìm|tìm",
+   "danhDauDaMo": "Bạn đã mở|Chưa xem lại"
+  },
+  "ghiChu": "Trang đóng chiều 27/09, bỏ trần 4 bản ghi của thẻ lớp. Dùng `{LOP_EM}` chứ KHÔNG `{LOP_MAU}`: lớp của giảng viên và lớp của em là hai lớp khác nhau, và ghép nhầm thì màn ra 404 rồi bị đọc thành \"chưa làm\"."
  },
  {
   "dong": 30,
@@ -508,6 +524,33 @@
    "taoYeuCau": "Tạo yêu cầu|Gửi yêu cầu",
    "thayYeuCauCuaMinh": "Mới|Đang xử lý|Đã xong"
   }
+ },
+ {
+  "dong": 24,
+  "ten": "Phụ huynh · tờ báo cáo mở bằng chìa",
+  "duong": "/bc/{CHIA_PH}",
+  "vai": "khach",
+  "hoi": {
+   "tenEm": "Báo cáo|báo cáo",
+   "chuyenCan": "chuyên cần|Có mặt|vắng",
+   "tienDo": "tiến độ|Tiến độ|chương trình",
+   "nguoiPhuTrach": "Giảng viên|Trợ giảng",
+   "luuPdf": "In|Lưu PDF"
+  },
+  "ghiChu": "Màn CÔNG KHAI duy nhất của hệ thống: người mở không có tài khoản, mở từ một tin Zalo. Đo bằng vai `khach` — gắn thẻ vào đây là đo nhầm một màn khác. Chìa do bộ soát tự lấy (dùng lại chìa còn sống, chỉ cấp mới khi chưa có)."
+ },
+ {
+  "dong": 25,
+  "ten": "Phụ huynh · gửi yêu cầu và NÓI TIẾP",
+  "duong": "/bc/{CHIA_PH}",
+  "vai": "khach",
+  "hoi": {
+   "guiYeuCau": "Gửi yêu cầu",
+   "chonLoai": "Anh / chị cần gì",
+   "danhSachDaGui": "Yêu cầu đã gửi|đã gửi qua đường dẫn",
+   "noiThem": "Nói thêm với trung tâm"
+  },
+  "ghiChu": "`noiThem` là ô mở 28/09: trước đó phụ huynh đọc được trả lời mà không nói lại được, nên mỗi câu hỏi qua đáp lại là một phiếu MỚI. Ô này chỉ hiện khi máy chủ nói `coThe.traLoi` — tức khi đường dẫn đã có ít nhất một yêu cầu CHƯA đóng. Chưa có yêu cầu nào thì câu này HỎNG đúng, không phải sai."
  },
  {
   "dong": 26,

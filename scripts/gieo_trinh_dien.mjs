@@ -268,15 +268,31 @@ if ((!doEm || !canDuyet) && !theHv) {
 // "ai chưa mở" với "chưa ai mở". Khoá vắng mặt khác danh sách rỗng — ở đây cũng vậy.
 // Thẻ học viên chỉ dùng được cho lớp em ĐANG HỌC. Gieo vào lớp khác thì mọi cửa trả 404 —
 // và 404 ấy là hàng rào làm đúng việc, không phải lỗi. Hỏi trước, đừng để nó thành dấu HỎNG.
-const lopCuaEm = theHv ? await (async () => {
-  const r = await fetch(`${API}/api/classes`, {
-    headers: { Authorization: `Bearer ${theHv}` }, signal: AbortSignal.timeout(180000) });
-  if (!r.ok) return [];
+//
+// THẺ HẾT HẠN KHÁC "KHÔNG HỌC LỚP NÀY". Bản đầu coi mọi lời gọi hỏng là danh sách rỗng, nên
+// thẻ sống 30 phút hết hạn giữa lượt là bộ gieo báo "em không học lớp #7322" — trong khi em
+// vẫn đang học ở đó (đo 28/09). Cùng cái bẫy đã sửa ở `kiem_production.mjs` sáng nay: đếm mà
+// không hỏi trước thì mọi thứ hỏng đều ra con số 0, và con số 0 trông hệt như sự thật.
+/** Lớp em ĐANG HỌC theo một thẻ. Trả `{ids, hetHan?, loi?}` — ba chuyện khác nhau, ba câu
+ *  trả lời khác nhau. Một hàm cho MỌI thẻ học viên: bản trước chép tay hai lần và bản thứ hai
+ *  đọc khoá `classes` trong khi máy chủ trả `lop`, nên em thứ hai luôn bị coi là ngoài lớp. */
+async function lopCuaThe(the) {
+  const r = await fetch(`${API}/api/lop-cua-toi`, {
+    headers: { Authorization: `Bearer ${the}` }, signal: AbortSignal.timeout(180000) });
+  if (r.status === 401 || r.status === 403) return { hetHan: true, ids: [] };
+  if (!r.ok) return { loi: r.status, ids: [] };
   const d = await r.json().catch(() => ({}));
-  return (d.classes || d.lop || []).map((c) => c.id);
-})() : [];
-const emTrongLop = theHv && lopCuaEm.includes(LOP.id);
-if (theHv && !emTrongLop) {
+  return { ids: (d.lop || d.classes || []).map((c) => c.id) };
+}
+
+const lopCuaEm = theHv ? await lopCuaThe(theHv) : { ids: [] };
+const emTrongLop = theHv && lopCuaEm.ids.includes(LOP.id);
+if (theHv && lopCuaEm.hetHan) {
+  console.log(`${DAU} THẺ HỌC VIÊN HẾT HẠN — bỏ qua phần của em. Cấp lại thẻ rồi gieo lại;`
+    + ' ĐỪNG kết luận là em không học lớp này.');
+} else if (theHv && lopCuaEm.loi) {
+  console.log(`${DAU} (không hỏi được lớp của em — HTTP ${lopCuaEm.loi}. Bỏ qua phần của em.)`);
+} else if (theHv && !emTrongLop) {
   console.log(`${DAU} (thẻ học viên không học lớp #${LOP.id} — bỏ qua phần nộp bài / mở bản ghi.)`);
 }
 if (emTrongLop) {
@@ -308,6 +324,93 @@ if (emTrongLop) {
   ghi('có buổi đã có em mở bản ghi', daMo > 0, `${daMo}/${buoiCoBanGhi.length} buổi`);
   if (buoiCoBanGhi.length && !daMo) {
     await emLam('em mở bản ghi', `/api/sessions/${buoiCoBanGhi[0].sessionId}/ban-ghi/da-mo`, {});
+  }
+
+  // EM THỨ HAI cũng phải có dấu vết. Không phải để bảng đẹp hơn: thẻ lớp của mỗi em hiện
+  // "Bạn đã mở" / "Chưa xem lại" theo CHÍNH em ấy, nên chỉ gieo cho một em thì mở màn bằng
+  // tài khoản em kia vẫn thấy trắng — và người xem sẽ kết luận là tính năng không chạy.
+  const theHv2 = existsSync(`${THE}/tokens_hv2.json`)
+    ? JSON.parse(readFileSync(`${THE}/tokens_hv2.json`, 'utf8')).access : null;
+  if (theHv2 && buoiCoBanGhi.length) {
+    const l2 = await lopCuaThe(theHv2);
+    if (l2.hetHan) {
+      console.log(`${DAU} (thẻ học viên thứ hai hết hạn — bỏ qua. ĐỪNG đọc thành "ngoài lớp".)`);
+    } else if (!l2.ids.includes(LOP.id)) {
+      console.log(`${DAU} (thẻ học viên thứ hai không học lớp #${LOP.id} — bỏ qua.)`);
+    } else if (THAT) {
+      const buoi = buoiCoBanGhi[buoiCoBanGhi.length - 1].sessionId;
+      const mo = await fetch(`${API}/api/sessions/${buoi}/ban-ghi/da-mo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${theHv2}`, 'Content-Type': 'application/json' },
+        body: '{}', signal: AbortSignal.timeout(180000) });
+      console.log(mo.ok ? '  ok  em thứ hai mở bản ghi'
+                        : `HỎNG em thứ hai mở bản ghi — HTTP ${mo.status}`);
+    } else {
+      console.log('     (sẽ POST ban-ghi/da-mo bằng vai học viên thứ hai)');
+    }
+  }
+}
+
+// ── 8 · Phụ huynh: một chìa còn sống, và một cuộc trao đổi qua chìa ấy ──────
+// Tờ báo cáo phụ huynh là màn CÔNG KHAI duy nhất của hệ thống, và cũng là màn khách quan tâm
+// nhất — nhưng mở nó ra mà khối "Yêu cầu đã gửi qua đường dẫn này" trống thì nửa dưới của
+// dòng 25 không có gì để trình bày, kể cả ô "Nói thêm với trung tâm" (ô ấy chỉ hiện khi có
+// một yêu cầu CHƯA đóng). Gieo một cuộc trao đổi thật: phụ huynh hỏi, rồi nói tiếp.
+const emDauLop = ((await goi(`/api/teach/classes/${LOP.id}/export/progress.csv`)).chu || '')
+  .split('\n')[1]?.split(',')[1]?.trim();
+if (!emDauLop) {
+  console.log(`${DAU} (không đọc được em nào của lớp — bỏ qua phần phụ huynh.)`);
+} else {
+  const tim = await goi(`/api/admin/users?q=${encodeURIComponent(emDauLop)}&per_page=1`);
+  const uid = tim.d?.users?.[0]?.id;
+  const duongChia = `/api/teach/classes/${LOP.id}/students/${uid}/parent-report/link`;
+  // Dùng lại chìa còn sống — mỗi chìa sống 45 ngày và nằm trên màn Báo cáo phụ huynh của
+  // giảng viên, nên cấp thêm mỗi lượt gieo là rác.
+  let chia = (await goi(duongChia)).d?.links?.[0]?.token;
+  if (!chia && uid) chia = (await viet('cấp chìa cho phụ huynh', duongChia, {}))?.token;
+  if (!chia) {
+    ghi('có chìa phụ huynh còn sống', false, 'chưa cấp được');
+  } else {
+    const hop = await goi(`/api/public/phu-huynh/${chia}/yeu-cau`);
+    const daCo = (hop.d?.yeuCau || []).length;
+    ghi('tờ báo cáo phụ huynh đã có trao đổi', daCo > 0, `${daCo} yêu cầu qua chìa này`);
+    if (!daCo) {
+      const guiPh = async (ten, duong, than) => {
+        if (!THAT) { console.log(`     (sẽ POST ${duong} bằng chìa phụ huynh)`); return null; }
+        const r = await fetch(`${API}${duong}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(than), signal: AbortSignal.timeout(180000),
+        });
+        const chu = await r.text();
+        if (r.status >= 400) { ghi(ten, false, `HTTP ${r.status} · ${chu.slice(0, 160)}`); return null; }
+        console.log(`  ok  ${ten}`);
+        try { return JSON.parse(chu); } catch { return null; }
+      };
+      const yc = await guiPh('phụ huynh gửi yêu cầu', `/api/public/phu-huynh/${chia}/yeu-cau`,
+                             { loai: 'ht_lich_hoc', tieu_de: 'Cháu nghỉ buổi hôm qua',
+                               noi_dung: 'Cháu bị sốt, gia đình xin phép cho cháu nghỉ ạ.' });
+      if (yc?.id && THAT) {
+        // Cửa "nói tiếp" mở ngày 28/09 và CHỈ có trên `erp`. Gieo lên một máy chủ đang chạy
+        // bản cũ thì nó trả 404 — đó là "chưa gộp", không phải "hỏng". Nói thẳng chuyện ấy,
+        // vì một dấu HỎNG trơ ở đây sẽ làm người đọc đi tìm lỗi không tồn tại.
+        const duong = `/api/public/phu-huynh/${chia}/yeu-cau/${yc.id}/tra-loi`;
+        const r = await fetch(`${API}${duong}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            noi_dung: 'Cháu đỡ rồi, mai đi học lại được ạ. Mong cô ghi có phép giúp.' }),
+          signal: AbortSignal.timeout(180000),
+        });
+        if (r.status === 404) {
+          console.log(`${DAU} (cửa "phụ huynh nói tiếp" chưa có trên máy chủ này — nó mở 28/09`
+            + ' và còn ở nhánh `erp`. Gộp vào `master` rồi gieo lại là đủ.)');
+        } else if (r.status >= 400) {
+          ghi('phụ huynh nói tiếp trong cùng yêu cầu', false,
+              `HTTP ${r.status} · ${(await r.text()).slice(0, 160)}`);
+        } else {
+          console.log('  ok  phụ huynh nói tiếp trong cùng yêu cầu');
+        }
+      }
+    }
   }
 }
 

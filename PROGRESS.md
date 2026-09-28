@@ -10498,3 +10498,45 @@ vẫn chặn đẩy — cùng bộ luật, cùng `--max-warnings 0`, chỉ khác
 
 Ba nhãn đầu là việc làm rồi mà không ai quay lại gạch — cộng ba nhãn sửa buổi chiều là **sáu
 trong một ngày**. Đây đúng thứ `do_man_hang_loat.mjs` viết ra để chống.
+
+## 28/09/2026 · khuya — ba màn chưa ai soát, và một dấu XANH GIẢ
+
+Soát 41 màn trên chính bản production: **38 ĐẠT**. Sổ soát thêm ba màn mà không lượt nào trước
+đây chạm tới:
+
+| Màn | Vì sao nó quan trọng |
+|---|---|
+| `/bc/<chìa>` — tờ báo cáo phụ huynh | **màn CÔNG KHAI duy nhất của hệ thống**: người mở không có tài khoản, mở từ một tin Zalo. Hỏng ở đây là hỏng trước mặt người ngoài trung tâm |
+| khối "Gửi yêu cầu" trên tờ ấy | nửa dưới của dòng 25 |
+| `/lop/<lớp>/xem-lai` | trang đóng chiều 27/09, bỏ trần 4 bản ghi — và chưa ai đo nó |
+
+Hai chỗ trống mới trong bộ soát: `{CHIA_PH}` (tự lấy chìa còn sống, chỉ cấp mới khi chưa có —
+mỗi chìa sống 45 ngày và nằm trên màn của giảng viên, nên cấp mỗi lượt là rác) và `{LOP_EM}`.
+Cái sau quan trọng hơn nó trông: **lớp của giảng viên và lớp của em là hai lớp khác nhau** (đo
+hôm nay: gv dạy 7586, em học 7322), nên mọi màn phía học viên có id lớp trong đường dẫn mà
+dùng `{LOP_MAU}` sẽ ra 404 — rồi bị đọc thành "chưa làm".
+
+### Một dấu XANH GIẢ
+
+Câu "em báo được link bản ghi hỏng" dùng mẫu lỏng `Báo|lỗi` và ĐẠT suốt các lượt trước. Nút
+thật mang chữ **"Không mở được?"** và **chỉ dựng sau khi em bấm vào một bản ghi**
+(`LopCuaToi.tsx:410`, `vuaMo !== null`). Mẫu lỏng khớp nhầm chữ "Báo cáo" ở chỗ khác trên màn.
+
+Đây là chiều NGƯỢC với sáu nhãn cũ sửa hôm nay: ở đó bộ đo báo THIẾU cho thứ đang chạy, ở đây
+nó báo CÓ cho thứ chưa bao giờ hiện ra. Cùng một gốc — hỏi không đúng chỗ.
+
+### Bốn lỗi trong chính bộ gieo, tìm ra bằng cách chạy nó
+
+1. `/api/classes` **không tồn tại** — đường đúng là `/api/lop-cua-toi`. Bản cũ nuốt lỗi thành
+   danh sách rỗng nên guard "em có học lớp này không" chưa bao giờ đúng.
+2. Máy chủ trả khoá `lop`, bản thứ hai của cùng đoạn mã đọc `classes` → em thứ hai luôn bị coi
+   là ngoài lớp. Gộp về MỘT hàm `lopCuaThe()` (RULES §7).
+3. Thẻ hết hạn bị báo thành "em không học lớp này" — đúng cái bẫy đã sửa ở
+   `kiem_production.mjs` sáng nay. Nay 401/403 nói thẳng là THẺ HẾT HẠN.
+4. Cửa "phụ huynh nói tiếp" trả 404 trên production — vì nó mới mở hôm nay và còn ở `erp`. Bộ
+   gieo nay nói "chưa gộp", không phải "hỏng": một dấu HỎNG trơ ở đây làm người đọc đi tìm lỗi
+   không tồn tại.
+
+### Cổng nhanh hơn
+
+`--cache` của eslint: 117s → **31s**. Cổng tổng 93s.
