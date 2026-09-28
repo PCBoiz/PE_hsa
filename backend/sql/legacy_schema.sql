@@ -2588,3 +2588,43 @@ ALTER TABLE parent_report_sends ADD CONSTRAINT parent_report_sends_requested_by_
 -- Muốn đổi luật xoá của ba bảng ấy thì viết migration Django riêng, không
 -- phải một mục ở đây.
 
+-- ── §77 · RÀ SOÁT DB — CHỈ MỤC KHOÁ NGOẠI CÒN THIẾU + KHOÁ CHECK CÒN HỞ (Nhân, 28/09/2026) ──
+-- Yêu cầu Nhân: rà nhánh Neon `dev` (đo trực tiếp `information_schema`/`pg_catalog`, xem
+-- `docs/CAI_TIEN_DB.md`), chỉ áp phần AN TOÀN (không đổi hành vi, không đụng dòng nào đang
+-- có) vào `dev test`.
+--
+-- CHỈ MỤC KHOÁ NGOẠI: Postgres không tự tạo chỉ mục cho cột khoá ngoại. Sáu cột dưới đây có
+-- FK nhưng chưa có chỉ mục nào đứng đầu bằng đúng cột đó — JOIN/ON DELETE phải quét toàn
+-- bảng cha. Rẻ khi bảng còn nhỏ (vài chục tới vài trăm dòng lúc đo 28/09); để lâu thành nợ.
+CREATE INDEX IF NOT EXISTS idx_class_members_can_ho_tro_by ON class_members (can_ho_tro_by);
+CREATE INDEX IF NOT EXISTS idx_class_members_de_xuat_huong_hoc_by
+    ON class_members (de_xuat_huong_hoc_by);
+CREATE INDEX IF NOT EXISTS idx_class_members_teacher_comment_by
+    ON class_members (teacher_comment_by);
+CREATE INDEX IF NOT EXISTS idx_recording_views_user ON recording_views (user_id);
+CREATE INDEX IF NOT EXISTS idx_syllabus_materials_uploaded_by ON syllabus_materials (uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_syllabus_versions_created_by ON syllabus_versions (created_by);
+
+-- CHECK CÒN HỞ: ba cột TEXT quyết định luồng nghiệp vụ mà tầng CSDL chưa chặn gì — cùng loại
+-- lỗ hổng audit T42 đã vá cho users.role/status. Đã ĐO GIÁ TRỊ THẬT trên `dev` trước khi khoá
+-- (28/09/2026) — không dòng nào phạm luật mới:
+--   lesson_progress.status   'completed' (1129), 'in_progress' (26)
+--   syllabus_materials.file_type   'link' (3), 'pdf' (3)
+--   missions.condition_type   'mocks_today'/'xp_today'/'lessons_today' (1 dòng mỗi loại)
+-- KHÔNG khoá admin_audit.actor_role/target_type, learning_events.ref_type,
+-- notifications.ref_type/type, outbox.source_type: đây là cột phân loại polymorphic, tập giá
+-- trị MỞ RỘNG theo tính năng mới — khoá CHECK ở đây là tự trói, mỗi tính năng mới lại phải sửa
+-- CSDL trước. Cũng không khoá users.status_note: đó là ô ghi chú tự do, không phải enum dù tên
+-- có chữ "status".
+ALTER TABLE lesson_progress DROP CONSTRAINT IF EXISTS lesson_progress_status_check;
+ALTER TABLE lesson_progress ADD CONSTRAINT lesson_progress_status_check
+    CHECK (status IS NULL OR status IN ('not_started', 'in_progress', 'completed'));
+
+ALTER TABLE syllabus_materials DROP CONSTRAINT IF EXISTS syllabus_materials_file_type_check;
+ALTER TABLE syllabus_materials ADD CONSTRAINT syllabus_materials_file_type_check
+    CHECK (file_type IS NULL OR file_type IN ('link', 'pdf'));
+
+ALTER TABLE missions DROP CONSTRAINT IF EXISTS missions_condition_type_check;
+ALTER TABLE missions ADD CONSTRAINT missions_condition_type_check
+    CHECK (condition_type IS NULL OR condition_type IN ('mocks_today', 'xp_today', 'lessons_today'));
+

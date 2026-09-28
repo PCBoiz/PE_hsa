@@ -365,6 +365,20 @@ MUC = [
      lambda: _cot_nullable('parent_report_sends', 'requested_by')),
     ('§76f', 'FK parent_report_sends.requested_by ON DELETE SET NULL',
      lambda: _fk('parent_report_sends', 'parent_report_sends_requested_by_fkey', 'SET NULL')),
+    ('§77a', 'chỉ mục 3 cột *_by của class_members (khoá ngoại còn thiếu chỉ mục)',
+     lambda: _ca(lambda: _chi_muc('idx_class_members_can_ho_tro_by'),
+                 lambda: _chi_muc('idx_class_members_de_xuat_huong_hoc_by'),
+                 lambda: _chi_muc('idx_class_members_teacher_comment_by'))),
+    ('§77b', 'chỉ mục recording_views.user_id / syllabus_materials.uploaded_by / syllabus_versions.created_by',
+     lambda: _ca(lambda: _chi_muc('idx_recording_views_user'),
+                 lambda: _chi_muc('idx_syllabus_materials_uploaded_by'),
+                 lambda: _chi_muc('idx_syllabus_versions_created_by'))),
+    ('§77c', 'CHECK lesson_progress_status_check nhận not_started/in_progress/completed',
+     lambda: _check_co_gia_tri('lesson_progress_status_check', 'not_started')),
+    ('§77d', 'CHECK syllabus_materials_file_type_check nhận link/pdf',
+     lambda: _check_co_gia_tri('syllabus_materials_file_type_check', 'pdf')),
+    ('§77e', 'CHECK missions_condition_type_check nhận mocks_today/xp_today/lessons_today',
+     lambda: _check_co_gia_tri('missions_condition_type_check', 'mocks_today')),
 ]
 
 
