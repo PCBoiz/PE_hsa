@@ -2,7 +2,7 @@
 
 > **Sinh tự động — đừng sửa tay.** Sinh lại: `python scripts/cau_truc.py` (sau khi sửa `scripts/so_mien.json`, lược đồ `backend/sql/*.sql` hay thêm / dời tệp). Cổng pre-push `python scripts/cau_truc.py --kiem` đỏ khi tệp này cũ.
 
-16 miền · 222 tệp backend · 220 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
+16 miền · 222 tệp backend · 221 tệp frontend (src) · 11 tệp JS cũ · 11 mục nợ ghi chéo. Mỗi tệp thuộc đúng MỘT miền (glob cụ thể nhất trong `scripts/so_mien.json` thắng). Cột "ghi bảng" = câu `INSERT/UPDATE/DELETE/TRUNCATE` trong chuỗi SQL của tệp; *nghiêng* = ghi bảng miền khác. Số dòng đo lúc sinh, không làm cổng đỏ khi lệch.
 
 ## Đặt mã mới ở đâu
 
@@ -22,12 +22,12 @@
 | [bai_tap](#bai_tap) | Bài tập & kiểm tra | 3 | 2 tệp · 1108 dòng | 7 tệp · 1858 dòng |
 | [chuong_trinh](#chuong_trinh) | Chương trình (E1) | 7 | 11 tệp · 1856 dòng | 8 tệp · 1440 dòng |
 | [bao_cao](#bao_cao) | Báo cáo | 0 | 9 tệp · 4573 dòng | 16 tệp · 2949 dòng |
-| [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1805 dòng |
+| [phu_huynh](#phu_huynh) | Phụ huynh | 3 | 5 tệp · 1909 dòng | 10 tệp · 1831 dòng |
 | [ho_so](#ho_so) | Hồ sơ học viên | 0 | 5 tệp · 1892 dòng | 11 tệp · 2497 dòng |
 | [yeu_cau](#yeu_cau) | Yêu cầu | 2 | 7 tệp · 1719 dòng | 10 tệp · 1561 dòng |
 | [thong_bao](#thong_bao) | Thông báo | 4 | 18 tệp · 1683 dòng | 10 tệp · 1476 dòng |
 | [tai_khoan](#tai_khoan) | Tài khoản | 2 | 13 tệp · 2166 dòng | 19 tệp · 2015 dòng |
-| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6406 dòng | 68 tệp · 6994 dòng |
+| [chung](#chung) | Chung (hạt nhân) | 2 | 43 tệp · 6406 dòng | 69 tệp · 7061 dòng |
 | [hoc_truc_tuyen](#hoc_truc_tuyen) | Học trực tuyến | 19 | 64 tệp · 8617 dòng | 34 tệp · 13781 dòng |
 | [dien_dan](#dien_dan) | Diễn đàn | 5 | 5 tệp · 628 dòng | 4 tệp · 477 dòng |
 | [thi_cu](#thi_cu) | Thi thử (ĐÓNG BĂNG) | 3 | 10 tệp · 1718 dòng | 0 tệp · 0 dòng |
@@ -273,7 +273,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | Tệp frontend | Dòng |
 |---|---|
 | `frontend/src/app/(standalone)/bc/[token]/loading.tsx` | 74 dòng |
-| `frontend/src/app/(standalone)/bc/[token]/page.tsx` | 98 dòng |
+| `frontend/src/app/(standalone)/bc/[token]/page.tsx` | 124 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/DanLienHe.tsx` | 299 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/GuiCaLop.tsx` | 203 dòng |
 | `frontend/src/app/(standalone)/giang-day/bao-cao/[classId]/[userId]/DuongDanDaCap.tsx` | 258 dòng |
@@ -438,7 +438,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 
 - Bảng sở hữu: `admin_audit`, `learning_events`
 - Miền khác được ghi bảng của miền này: cong_cu (mọi bảng) — dựng / gỡ dữ liệu trình diễn phải chạm mọi miền một lượt; chỉ chạy tay (lệnh quản trị), không nằm trên đường phục vụ người dùng
-- Glob: `backend/common/**/*.py`, `backend/config/**/*.py`, `backend/manage.py`, `backend/inspectdb_snapshot.py`, `backend/teaching/__init__.py`, `backend/teaching/apps.py`, `backend/teaching/urls.py`, `backend/teaching/vocab.py`, `frontend/src/*.ts`, `frontend/src/app/*.tsx`, `frontend/src/app/api/**`, `frontend/src/app/(base)/layout.tsx`, `frontend/src/app/(base)/page.tsx`, `frontend/src/app/(standalone)/layout.tsx`, `frontend/src/app/(standalone)/huong-dan/**`, `frontend/src/app/(standalone)/thiet-ke/**`, `frontend/src/app/(standalone)/giang-day/layout.tsx`, `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx`, `frontend/src/app/(standalone)/quan-tri/*.ts`, `frontend/src/app/(standalone)/quan-tri/*.tsx`, `frontend/src/app/(standalone)/quan-tri/huong-dan/**`, `frontend/src/app/(standalone)/quan-tri/vai-tro/**`, `frontend/src/app/(standalone)/quan-tri/nhat-ky/**`, `frontend/src/components/ui/**`, `frontend/src/components/AppShell.tsx`, `frontend/src/components/navMuc.ts`, `frontend/src/components/bieuTuong.tsx`, `frontend/src/components/PageStyles.tsx`, `frontend/src/components/NutIn.tsx`, `frontend/src/components/BangHuongDan.tsx`, `frontend/src/components/KhuNhanSu.tsx`, `frontend/src/components/LegacyScripts.tsx`, `frontend/src/components/NapTruocScript.tsx`, `frontend/src/components/NapTruocDuLieu.tsx`, `frontend/src/lib/*.ts`
+- Glob: `backend/common/**/*.py`, `backend/config/**/*.py`, `backend/manage.py`, `backend/inspectdb_snapshot.py`, `backend/teaching/__init__.py`, `backend/teaching/apps.py`, `backend/teaching/urls.py`, `backend/teaching/vocab.py`, `frontend/src/*.ts`, `frontend/src/app/*.tsx`, `frontend/src/app/api/**`, `frontend/src/app/(base)/layout.tsx`, `frontend/src/app/(base)/page.tsx`, `frontend/src/app/(standalone)/layout.tsx`, `frontend/src/app/(standalone)/huong-dan/**`, `frontend/src/app/(standalone)/thiet-ke/**`, `frontend/src/app/(standalone)/giang-day/layout.tsx`, `frontend/src/app/(standalone)/giang-day/KhungGiangDay.tsx`, `frontend/src/app/(standalone)/quan-tri/*.ts`, `frontend/src/app/(standalone)/quan-tri/*.tsx`, `frontend/src/app/(standalone)/quan-tri/huong-dan/**`, `frontend/src/app/(standalone)/quan-tri/vai-tro/**`, `frontend/src/app/(standalone)/quan-tri/nhat-ky/**`, `frontend/src/components/ui/**`, `frontend/src/components/AppShell.tsx`, `frontend/src/components/navMuc.ts`, `frontend/src/components/bieuTuong.tsx`, `frontend/src/components/PageStyles.tsx`, `frontend/src/components/NutIn.tsx`, `frontend/src/components/TaiLaiTrang.tsx`, `frontend/src/components/BangHuongDan.tsx`, `frontend/src/components/KhuNhanSu.tsx`, `frontend/src/components/LegacyScripts.tsx`, `frontend/src/components/NapTruocScript.tsx`, `frontend/src/components/NapTruocDuLieu.tsx`, `frontend/src/lib/*.ts`
 - Tách khi chạm — `backend/teaching/vocab.py`: từ vựng trạng thái dùng bởi NHIỀU miền của teaching — dời sang common/ khi chạm.
 - Tách khi chạm — `backend/teaching/urls.py`: tuyến gộp của mọi miền teaching — mỗi miền mới có urls.py riêng (như chuong_trinh/).
 
@@ -523,6 +523,7 @@ Vi phạm có sẵn ngày dựng sổ. Mục nào hết xảy ra thì cổng đ�
 | `frontend/src/components/NapTruocScript.tsx` | 48 dòng |
 | `frontend/src/components/NutIn.tsx` | 24 dòng |
 | `frontend/src/components/PageStyles.tsx` | 14 dòng |
+| `frontend/src/components/TaiLaiTrang.tsx` | 67 dòng |
 | `frontend/src/components/bieuTuong.tsx` | 83 dòng |
 | `frontend/src/components/navMuc.ts` | 101 dòng |
 | `frontend/src/components/ui/Button.tsx` | 92 dòng |

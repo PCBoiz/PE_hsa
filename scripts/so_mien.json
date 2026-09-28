@@ -342,6 +342,7 @@
         "frontend/src/components/bieuTuong.tsx",
         "frontend/src/components/PageStyles.tsx",
         "frontend/src/components/NutIn.tsx",
+        "frontend/src/components/TaiLaiTrang.tsx",
         "frontend/src/components/BangHuongDan.tsx",
         "frontend/src/components/KhuNhanSu.tsx",
         "frontend/src/components/LegacyScripts.tsx",
