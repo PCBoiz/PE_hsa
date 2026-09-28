@@ -13,6 +13,23 @@ mục đều có chi tiết ở dưới.
 | **2** | **Cloudflare R2** → bucket + API token → 4 biến trên Render | Hai ô CUỐI CÙNG của bảng nghiệm thu còn thiếu thật, và cả hai chờ đúng bộ khoá này: **tải tệp học liệu** (dòng 30) và **nộp bài bằng tệp** (dòng 31). Mọi dòng khác đã đo được trên production. Mã `D1` ở bảng dưới | 10 phút |
 | **3** | **Gộp `erp` → `master`** khi tôi báo xong | `erp` đang hơn `master` 8 commit. Mã `N4` | 5 phút |
 
+**Một câu hỏi CHẶN một ô của bảng phân rã (28/09) — trả lời "có" hoặc "không" là đủ:**
+
+> **Phụ huynh có nhận thông báo khi lớp đổi lịch không?**
+>
+> Đây là hai quyết định đang đối đầu nhau, và cả hai đều là của anh:
+> - **23/09** anh chốt: chuông + email đổi lịch **cho HỌC VIÊN, KHÔNG gửi phụ huynh**
+>   (ghi ngay đầu `backend/teaching/bao_doi_lich.py`).
+> - **Bảng phân rã 24/09** của TopHSA, dòng 24, đòi phụ huynh *"Nhận thông báo khi có thay
+>   đổi lịch"*. Anh để ô ấy TRỐNG — đúng, vì mình chưa làm.
+>
+> Quyết định 23/09 có TRƯỚC bảng một ngày, nên rất có thể hai bên chưa gặp nhau. Tôi không tự
+> làm, vì đây là **thư đi ra ngoài tới người thật** — ra khỏi hệ thống là không cuộn lại được.
+>
+> Anh nhắn "có" thì tôi làm (mã gửi thư, hộp thư đi và liên hệ phụ huynh đều đã sẵn — ước
+> chừng nửa buổi, kèm test và đột biến); nhắn "không" thì tôi ghi dòng 24 là **THAY** kèm lý
+> do, và bảng hết ô treo vì lý do nội bộ.
+
 **Một chuyện anh cần biết ngay — tài khoản học viên anh gửi không tồn tại:**
 
 > Anh gửi `demo.user@example.com` / mật khẩu. Tôi tra trên production: **không có tài khoản

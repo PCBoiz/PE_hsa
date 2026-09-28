@@ -10367,3 +10367,75 @@ rồi mới dùng được hệ thống. Bộ lấy thẻ phải đi qua `PUT /a
 `demo.user@example.com` — tra bằng thẻ quản trị: `total: 0`. Không phải sai mật khẩu. Nếu đã đưa
 cho TopHSA thì họ đăng nhập sẽ thất bại. Đã ghi vào `docs/VIEC_CUA_ANH.md` kèm tài khoản thay thế
 đã đo được (`hv.mau.104@example.com`, học lớp mẫu).
+
+## 28/09/2026 · chiều — phân hệ thông báo đóng nốt hai loại chuông; bộ kiểm TOÀN BỘ bắt một lỗi lược đồ
+
+Anh Sơn: *"tiếp tục cải tiến sao cho hoàn thiện bảng phân rã tính năng, hoạt động trơn tru và
+mượt mà trên erp rồi production"*.
+
+### Bộ kiểm toàn bộ: 1 hỏng / 1.625 xanh — và cái hỏng là thật
+
+Chạy tay 2 giờ 34 phút (CI chết vì khoá thanh toán, không còn ai chạy nó). Đúng một phép kiểm
+đỏ: `common/tests.py::test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau`.
+
+`yeu_cau_loai_check` được khai **HAI lần trong cùng một tệp với hai danh mục khác nhau** — bản
+ở §65 thiếu `tk_dang_ky`, bản ở §73c có. Cùng tệp nên §73c luôn chạy sau và luôn thắng, tức
+bản ở §65 **chưa bao giờ là bản đang chạy** — nó chỉ là một danh sách cũ trông như thật. Ai
+thêm một loại vào bản ấy sẽ thấy nó biến mất không dấu vết.
+
+Đỏ từ 27/09 (lúc §73c ra đời) tới 28/09. Cổng `pre-push` không chạy phép kiểm này, CI thì đã
+chết — đúng khoảng trống mà lượt chạy tay hôm nay lấp. Vá: gỡ bản cũ ở §65, để danh mục có
+ĐÚNG MỘT bản. `common/tests.py` nay 41/41.
+
+### Hai loại chuông cuối cùng của phân hệ thông báo
+
+**1 · Duyệt "xin nghỉ học" phải báo NGƯỜI ĐỨNG LỚP.** Duyệt ghi đè sổ điểm danh, kể cả buổi đã
+chấm `present`/`absent`. Việc ấy đúng — nhưng không ai báo người dạy. Giảng viên mở sổ tuần sau
+thấy một em "có phép" ở buổi mình nhớ rõ là vắng không lý do, và không có gì trên màn nói vì
+đơn nào. Đó là chỗ dễ sinh tranh luận nhất về sau, và tranh luận ấy không có bằng chứng để kết.
+
+Dựng `teaching/nhan_su_lop.py::nhan_su_cua_lop` — MỘT câu trả lời cho "ai đứng lớp này", để
+miền khác không tự đọc `class_members` (luật S4, RULES §7). Không gộp người nhìn thấy MỌI lớp:
+báo cho họ là mỗi đơn nghỉ của cả trung tâm rơi vào chuông của họ.
+
+Bộ kiểm 9/9. Đột biến hai loạt: lượt đầu **2/4 LỌT**, và cả hai đều vì test hỏi sai chỗ —
+người bấm duyệt trong test vốn KHÔNG thuộc lớp (nên trừ hay không cũng thế), và test "loại
+khác không báo" đi qua `tra_loi` chứ không qua `duyet` (nên không chạm dòng bị đột biến). Siết
+test → **7/7 giết**.
+
+**2 · Cảnh báo lớp chậm tiến độ.** Hệ thống tính được từ E1 và hiện trên màn, nhưng không mã
+nào đẩy nó tới người — người cần biết nhất là người bận nhất. `notifications/canh_bao_tien_do.py`
+quét lớp đang học đã nhận khung, lớp mang cờ `cham` thì báo người đứng lớp, **mỗi người mỗi lớp
+mỗi tuần một chuông**.
+
+Chống trùng bằng CHỈ MỤC §76 (`date_trunc('week', created_at)`, hàm bất biến nên dùng được
+trong chỉ mục) + `ON CONFLICT DO NOTHING` — KHÔNG đọc-rồi-ghi: nhịp chạy mỗi 60 giây, hai nhịp
+chồng nhau sẽ cùng thấy "tuần này chưa gửi". Đúng bài học của §61d.
+
+Chuông chứ không thư: người nhận là nhân sự, vào hệ thống hằng ngày; một lá thư mỗi tuần cho
+mỗi lớp chậm là thứ người ta lọc bỏ sau tháng đầu.
+
+Bộ kiểm 10/10. Đột biến lượt đầu 4/5 — "tiêu đề rỗng chữ" LỌT vì test gộp tiêu đề với nội
+dung, mà tên lớp vẫn còn ở nội dung. Panel chuông hiện TIÊU ĐỀ trước, nên đó đúng là chỗ phải
+canh riêng.
+
+### Ba nhãn CŨ trong sổ nghiệm thu, sửa bằng số đo chứ không bằng trí nhớ
+
+| Dòng | Nhãn cũ | Thật ra |
+|---|---|---|
+| 4 · Quản lý lớp học | MỘT PHẦN | **CÓ** — bảng chi tiết có mười hai ý, cả mười hai đều CÓ; năm việc đóng ghi ở cột bên đều xong 27/09. Hai màn của dòng này ĐẠT hết câu hỏi trên chính bản production 28/09 |
+| 6 · Báo cáo | MỘT PHẦN (chờ đo màn) | **CÓ** — đã đo màn 8/8 từ 27/09 |
+| 29 · Học sinh · record | MỘT PHẦN | **CÓ** trừ "% đã xem" — nhãn cũ hơn chính đoạn ngay bên dưới nó, nơi ghi trang `/lop/<id>/xem-lai` đã đóng cả hai thứ còn thiếu |
+
+Đây đúng thứ `do_man_hang_loat.mjs` viết ra để chống: việc làm rồi mà không ai quay lại gạch
+khỏi kế hoạch — và lần này là ba dòng.
+
+### Còn treo, và treo vì ai
+
+| Dòng | Chờ gì |
+|---|---|
+| 5 · điều kiện hoàn thành | ba con số của anh Sơn (% có mặt · % chương trình · có bắt buộc điểm kiểm tra) |
+| 24 · phụ huynh nhận tin đổi lịch | MỘT câu trả lời có/không — quyết định 23/09 của anh ("không gửi phụ huynh") đối đầu với bảng phân rã 24/09 |
+| 10, 22, 29 | khoá Zoom (Z1/E4) |
+| 30, 31 | khoá R2 (D1) |
+| 7, 20, 23 | khách xác nhận cách làm KHÁC chữ trong bảng (K2) |

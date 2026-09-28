@@ -521,6 +521,39 @@ def _bao_nguoi_gui(yc, nguoi, tieu_de, noi_dung):
     gui_sau_commit(ids, LOAI_THONG_BAO, tieu_de, noi_dung, ref=('yeu_cau', yc['id']))
 
 
+#: Loại mà DUYỆT xong thì người đứng lớp phải biết — vì việc ấy đổi sổ sách của lớp họ.
+#:
+#: Khai tường minh chứ không bắt hết bằng `else`: `thuc_thi.py` đã một lần để `else` gom, và
+#: hai loại thêm ngày 27/09 rơi thẳng vào nhánh sai mà không ai thấy. Thêm một loại vào đây
+#: là một dòng; để nó tự rơi vào là một lỗi im lặng.
+#:
+#: `tt_nghi_hoc` vào trước vì nó GHI ĐÈ điểm danh đã chấm: giảng viên mở sổ tuần sau, thấy một
+#: em "có phép" ở buổi mình nhớ rõ là vắng không lý do, và không có gì trên màn nói vì đơn nào.
+#: Anh Sơn 27/09 được hỏi và tôi đề xuất CÓ; chưa có trả lời tính tới 28/09, làm theo mặc định
+#: ấy — đổi ý thì xoá một dòng ở đây.
+BAO_NHAN_SU_LOP = ('tt_nghi_hoc',)
+
+
+def _bao_nhan_su_lop(yc, nguoi, viec):
+    """Báo người ĐỨNG LỚP sau khi duyệt xong — chỉ với loại đổi sổ sách của lớp.
+
+    Gọi SAU khi việc đã làm xong trong cùng giao dịch, nên việc hỏng thì giao dịch cuộn lại
+    và chuông cũng không đi (`gui_sau_commit` treo vào `on_commit`). Chuông trước, việc sau
+    là chuông nói dối.
+
+    Người nhận lấy từ hàm dịch vụ của miền giảng dạy — không tự đọc `class_members` ở đây.
+    """
+    if yc['loai'] not in BAO_NHAN_SU_LOP or not yc.get('class_id'):
+        return
+    from teaching.nhan_su_lop import nhan_su_cua_lop
+    ids = nhan_su_cua_lop(yc['class_id'], tru=nguoi.id)
+    if not ids:
+        return
+    gui_sau_commit(ids, LOAI_THONG_BAO,
+                   'Sổ điểm danh lớp vừa đổi theo một đơn đã duyệt',
+                   viec.get('mo_ta') or yc['tieu_de'], ref=('yeu_cau', yc['id']))
+
+
 def tra_loi(nguoi, yc_id, noi_dung, *, noi_bo=False, request=None):
     """Trả lời (mọi người trong phạm vi) hoặc ghi chú nội bộ (chỉ nhân sự)."""
     noi_dung = _chu(noi_dung, L.TRAN_NOI_DUNG, 'nội dung', bat_buoc=True)
@@ -704,6 +737,7 @@ def duyet(nguoi, yc_id, tham_so=None, *, ket_qua=None, request=None):
                 transaction.on_commit(lambda: _quen_truy_cap(em))
             _bao_nguoi_gui(yc, nguoi, 'Yêu cầu "%s" đã được duyệt' % yc['tieu_de'],
                            viec.get('mo_ta') or ket_qua or '')
+            _bao_nhan_su_lop(yc, nguoi, viec)
     except LoiYeuCau as e:
         if not isinstance(e, KhongThay) and e.ma != 403:
             # Ghi dấu lần duyệt hỏng — giao dịch trên đã cuộn lại, dòng này đứng riêng.

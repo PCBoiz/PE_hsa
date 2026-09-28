@@ -2175,11 +2175,14 @@ CREATE TABLE IF NOT EXISTS yeu_cau (
     updated_at  TIMESTAMP NOT NULL DEFAULT now(),
     closed_at   TIMESTAMP
 );
-ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_loai_check;
-ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_loai_check CHECK (loai IN (
-    'ht_hoc_tap', 'ht_lich_hoc', 'ht_ky_thuat', 'ht_tai_khoan', 'hoi_dap', 'bao_cao_len',
-    'bao_loi_ban_ghi', 'tt_chuyen_lop', 'tt_chuyen_mon', 'tt_chuyen_lich', 'tt_bao_luu',
-    'tt_hoc_bu', 'tt_hoc_lai', 'tt_nghi_hoc', 'tt_huy_khoa'));
+-- `yeu_cau_loai_check` KHÔNG khai ở đây nữa (28/09/2026). §73c bên dưới khai lại CÙNG TÊN
+-- với một danh mục dài hơn (thêm `tk_dang_ky`), và vì cùng tệp nên §73c luôn chạy sau và
+-- luôn thắng — bản ở đây chưa bao giờ là bản đang chạy, chỉ là một danh sách cũ trông như
+-- thật. Ai thêm một loại vào bản ấy sẽ thấy nó biến mất không dấu vết.
+-- `common/tests.py::test_rang_buoc_them_nhieu_lan_phai_GIONG_HET_nhau` canh đúng chỗ này và
+-- đã ĐỎ suốt từ §73c (27/09) tới khi bộ kiểm TOÀN BỘ được chạy tay 28/09 — cổng `pre-push`
+-- không chạy nó, và CI thì đã chết vì khoá thanh toán. Danh mục loại nay có ĐÚNG MỘT bản,
+-- ở §73c; thêm loại mới thì thêm một mục §NN ở cuối tệp như mọi thay đổi khác.
 ALTER TABLE yeu_cau DROP CONSTRAINT IF EXISTS yeu_cau_trang_thai_check;
 ALTER TABLE yeu_cau ADD CONSTRAINT yeu_cau_trang_thai_check CHECK (trang_thai IN (
     'moi', 'dang_xu_ly', 'da_duyet', 'da_xong', 'tu_choi', 'da_huy'));
@@ -2528,3 +2531,19 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS class_id INTEGER
 -- Lối vào: mở diễn đàn của MỘT lớp, bài mới nhất trước.
 CREATE INDEX IF NOT EXISTS idx_posts_lop
     ON posts (class_id, created_at DESC) WHERE class_id IS NOT NULL;
+
+-- ── §76 · CẢNH BÁO LỚP CHẬM TIẾN ĐỘ, MỖI TUẦN MỘT LẦN (bảng TopHSA, phân hệ thông báo — 28/09/2026) ──
+--
+-- Hệ thống TÍNH được lớp chậm tiến độ từ E1 và hiện nó trên màn, nhưng không ai được BÁO —
+-- người cần biết nhất là người bận nhất, và họ phải tự mở màn ra xem. `notifications/
+-- canh_bao_tien_do.py` đẩy nó tới người đứng lớp.
+--
+-- NHỊP: mỗi người, mỗi lớp, MỖI TUẦN một chuông. Nhịp `hop_thu` chạy mỗi 60 giây, nên không
+-- có hàng rào thì một tuần là hàng nghìn chuông cho cùng một việc.
+--
+-- Chống trùng bằng CHỈ MỤC chứ không đọc-rồi-ghi: hai nhịp chạy chồng nhau sẽ CÙNG thấy
+-- "tuần này chưa gửi" và cùng ghi (đúng bài học của §61d). `date_trunc('week', ...)` là hàm
+-- BẤT BIẾN trên `timestamp` nên dùng được trong chỉ mục; tuần theo chuẩn ISO, bắt đầu thứ Hai.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_cham_tien_do_moi_tuan
+    ON notifications (user_id, ref_id, (date_trunc('week', created_at)))
+ WHERE type = 'cham_tien_do';

@@ -1,0 +1,20 @@
+[
+ {
+  "ten": "người đã RỜI lớp vẫn nhận tin của lớp cũ",
+  "cu": "                   WHERE m.class_id = %s AND m.left_at IS NULL AND u.role <> %s\"\"\",",
+  "moi": "                   WHERE m.class_id = %s AND u.role <> %s\"\"\",",
+  "cho": "test_tro_giang_DA_ROI_lop_khong_nhan_nua"
+ },
+ {
+  "ten": "gửi cho HỌC VIÊN thay vì người đứng lớp — cả lớp biết đơn nghỉ của một em",
+  "cu": "                   WHERE m.class_id = %s AND m.left_at IS NULL AND u.role <> %s\"\"\",",
+  "moi": "                   WHERE m.class_id = %s AND m.left_at IS NULL AND u.role = %s\"\"\",",
+  "cho": "test_tro_giang_cua_lop_cung_duoc_bao"
+ },
+ {
+  "ten": "bỏ giảng viên phụ trách, chỉ còn người trong class_members",
+  "cu": "        ids.add(lop['teacher_id'])",
+  "moi": "        pass",
+  "cho": "test_duyet_nghi_hoc_bao_giang_vien_cua_lop"
+ }
+]

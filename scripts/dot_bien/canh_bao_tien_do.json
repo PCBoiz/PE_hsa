@@ -1,0 +1,32 @@
+[
+ {
+  "ten": "gửi cho MỌI lớp, không lọc cờ chậm — tuần nào cũng báo cả trung tâm",
+  "cu": "        if not t.get('cham'):",
+  "moi": "        if False:",
+  "cho": "test_lop_da_ghi_du_so_dau_bai_thi_khong_cham"
+ },
+ {
+  "ten": "lớp TẠM DỪNG cũng bị báo — chậm là đúng mà vẫn kêu mỗi tuần",
+  "cu": "                WHERE status = 'active' AND syllabus_version_id IS NOT NULL\"\"\")",
+  "moi": "                WHERE syllabus_version_id IS NOT NULL\"\"\")",
+  "cho": "test_lop_tam_dung_thi_khong_bao"
+ },
+ {
+  "ten": "bỏ ON CONFLICT — nhịp chạy mỗi phút thành hàng nghìn chuông một tuần",
+  "cu": "                   ON CONFLICT (user_id, ref_id, (date_trunc('week', created_at)))",
+  "moi": "                   ON CONFLICT (user_id, ref_id, (date_trunc('century', created_at)))",
+  "cho": "test_tuan_sau_bao_lai"
+ },
+ {
+  "ten": "chuông rỗng chữ — người đọc không biết lớp nào",
+  "cu": "    tieu_de = 'Lớp \"%s\" đang chậm tiến độ' % lop_ten",
+  "moi": "    tieu_de = 'Có lớp đang chậm tiến độ'",
+  "cho": "test_chuong_noi_ro_lop_nao_cham_bao_nhieu"
+ },
+ {
+  "ten": "gửi cho cả HỌC VIÊN của lớp, không chỉ người đứng lớp",
+  "cu": "        for uid in nhan_su_cua_lop(cid):",
+  "moi": "        for uid in nhan_su_cua_lop(cid) | {r['user_id'] for r in q('SELECT user_id FROM class_members WHERE class_id = %s AND left_at IS NULL', (cid,))}:",
+  "cho": "test_hoc_vien_KHONG_duoc_bao"
+ }
+]

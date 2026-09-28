@@ -331,6 +331,10 @@ MUC = [
                  lambda: _chi_muc('idx_prt_purpose'))),
     ('§73d', 'loại yêu cầu tk_dang_ky (hàng chờ xếp lớp dùng lại hộp §65)',
      lambda: _check_co_gia_tri('yeu_cau_loai_check', "'tk_dang_ky'")),
+    # §76: cảnh báo lớp chậm tiến độ, mỗi người mỗi lớp MỖI TUẦN một chuông.
+    ('§76', 'chống trùng theo tuần cho cảnh báo lớp chậm tiến độ',
+     lambda: _chi_muc('idx_notifications_cham_tien_do_moi_tuan')),
+
     # §75: diễn đàn khoanh theo lớp. NULL = bài của sân chung.
     ('§75a', 'posts.class_id (bài của riêng một lớp)',
      lambda: _cot('posts', 'class_id')),

@@ -26,12 +26,17 @@ NHAN = {
     'buoi_moi': 'Buổi mới trên lịch',
     'nhac_han': 'Nhắc hạn nộp',
     'post_comment': 'Bình luận trong diễn đàn',
+    'cham_tien_do': 'Lớp chậm tiến độ',
 }
 
 #: Mã có nhãn nhưng KHÔNG do `gui()` trong backend sinh ra, nên bộ quét không thấy.
 #: Mỗi dòng phải nói ai sinh ra nó — một ngoại lệ không có lý do là một nhãn rác.
 GUI_NOI_KHAC = {
     'thu_nghiem': 'phép kiểm và lệnh thử tay gửi; không bao giờ tới người thật',
+    'cham_tien_do': 'nhịp cảnh báo lớp chậm tiến độ (`notifications/canh_bao_tien_do.py::quet`) '
+                    'ghi THẲNG bằng một câu INSERT … SELECT, cùng lối với `nhac_han`: một lượt '
+                    'quét cả trung tâm là một câu lệnh, và chống trùng theo tuần nằm ở CHỈ MỤC '
+                    '(§76) chứ không ở Python. Không ai bấm gì để sinh ra nó.',
     'nhac_han': 'nhịp nhắc hạn nộp (`notifications/nhac_han.py::chay`) ghi THẲNG bằng '
                 'một câu INSERT … SELECT: một lượt quét cả trung tâm là một câu lệnh. '
                 'Không ai bấm gì để sinh ra nó, nên nếu thiếu nhãn thì lỗi hiện ra trên '

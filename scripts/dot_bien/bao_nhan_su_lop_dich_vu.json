@@ -1,0 +1,26 @@
+[
+ {
+  "ten": "không báo ai cả — quay về đúng lỗ đang vá",
+  "cu": "            _bao_nhan_su_lop(yc, nguoi, viec)",
+  "moi": "            pass",
+  "cho": "test_duyet_nghi_hoc_bao_giang_vien_cua_lop"
+ },
+ {
+  "ten": "quên trừ người vừa bấm duyệt — họ tự nhận chuông về việc mình vừa làm",
+  "cu": "    ids = nhan_su_cua_lop(yc['class_id'], tru=nguoi.id)",
+  "moi": "    ids = nhan_su_cua_lop(yc['class_id'])",
+  "cho": "test_nguoi_bam_duyet_khong_tu_nhan_chuong"
+ },
+ {
+  "ten": "mọi loại yêu cầu đều gọi chuông — hộp thư của người đứng lớp thành bãi rác",
+  "cu": "    if yc['loai'] not in BAO_NHAN_SU_LOP or not yc.get('class_id'):",
+  "moi": "    if not yc.get('class_id'):",
+  "cho": "test_loai_KHAC_duyet_xong_van_khong_bao_nguoi_dung_lop"
+ },
+ {
+  "ten": "chuông mang mô tả rỗng — giảng viên đọc xong không biết chuyện gì",
+  "cu": "                   viec.get('mo_ta') or yc['tieu_de'], ref=('yeu_cau', yc['id']))",
+  "moi": "                   '', ref=('yeu_cau', yc['id']))",
+  "cho": "test_chuong_noi_ro_em_nao_lop_nao_may_buoi"
+ }
+]

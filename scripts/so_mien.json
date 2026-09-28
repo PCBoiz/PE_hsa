@@ -26,6 +26,7 @@
         "backend/teaching/lop_cua_toi.py",
         "backend/teaching/hoc_lieu.py",
         "backend/teaching/hv_xem_du.py",
+        "backend/teaching/nhan_su_lop.py",
         "backend/lop_hoc/**/*.py"
       ],
       "frontend": [

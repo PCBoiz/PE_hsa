@@ -346,13 +346,22 @@ def day_di(ids, ngay=False):
 
 
 def nhip():
-    """MỘT nhịp: quét nhắc hạn nộp rồi gửi hết việc tới lượt."""
-    from notifications import nhac_han
-    dem = {'nhacHan': 0}
+    """MỘT nhịp: quét nhắc hạn nộp, quét lớp chậm tiến độ, rồi gửi hết việc tới lượt.
+
+    Mỗi lượt quét bọc `try` RIÊNG: một bộ quét hỏng không được kéo theo bộ kia, và tuyệt
+    đối không được chặn việc gửi thư — hộp thư đi là thứ giữ cho thư quên mật khẩu không
+    nằm lại. Lỗi đi vào log, nhịp sau thử lại.
+    """
+    from notifications import canh_bao_tien_do, nhac_han
+    dem = {'nhacHan': 0, 'chamTienDo': 0}
     try:
         dem['nhacHan'] = nhac_han.quet()
     except Exception:                # noqa: BLE001 — nhắc hỏng không chặn gửi thư
         log.exception('[hop_thu] quét nhắc hạn lỗi')
+    try:
+        dem['chamTienDo'] = canh_bao_tien_do.quet()
+    except Exception:                # noqa: BLE001 — cảnh báo hỏng không chặn gửi thư
+        log.exception('[hop_thu] quét lớp chậm tiến độ lỗi')
     dem.update(gui_het())
     return dem
 

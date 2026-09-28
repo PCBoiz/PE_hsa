@@ -74,7 +74,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 1 | Quản trị viên · tài khoản | CÓ — **khách đã nghiệm thu** | — | — |
 | 2 | Quản trị viên · người dùng | CÓ — **khách đã nghiệm thu** | — | — |
 | 3 | Quản trị viên · tìm kiếm + hồ sơ | CÓ (V-m xong, chờ e2e) | V-m | — |
-| 4 | Quản trị viên · lớp học | MỘT PHẦN | V-c, V-j, V-n, V-h, E1 | — |
+| 4 | Quản trị viên · lớp học | **CÓ** (sửa nhãn 28/09) | — | Nhãn "MỘT PHẦN" đã CŨ: bảng chi tiết bên dưới có **mười hai ý, cả mười hai đều CÓ**, và năm việc đóng ghi ở cột bên (V-c, V-j, V-n, V-h, E1) đều xong từ 27/09 — việc làm rồi mà không ai quay lại gạch khỏi kế hoạch. Đo lại 28/09 **trên chính bản production**, hai màn của dòng này ĐẠT hết câu hỏi: `/quan-tri/lop-hoc` (tạo lớp · trạng thái Tạm dừng · lọc trạng thái · nút Chương trình · môn của khoá) và màn Học viên của lớp (thêm em · nhập từ tệp mẫu · chuyển lớp · lịch sử lớp · phân công trợ giảng). |
 | 5 | Quản trị viên · khoá học + chương trình | MỘT PHẦN | E1, V-i | — |
 | 6 | Quản trị viên · báo cáo | **CÓ** — ô cuối (báo cáo chéo môn × lớp) đóng 27/09, đã đo màn | V-k, V-o, E1, báo cáo chéo | — |
 | 7 | Kế toán · học phí | THAY (V-m xong) | V-m (một ô tình trạng), K2 | — |
@@ -103,7 +103,7 @@ trung tâm" hiện "Lớp chậm tiến độ 1"; thẻ lớp của học viên 
 | 30 | Học sinh · học liệu | **CÓ** (liên kết ngoài) | D1 cho tệp tải lên | §60 (27/09), anh Sơn chốt "làm liên kết ngoài trước". Đo **11/11 bước trên màn thật**, đã soi ảnh: giảng viên gắn tài liệu vào **kho chung của lớp** hoặc **một buổi**, ẩn/hiện theo tiến độ, gỡ được; học viên thấy trên thẻ lớp kèm tên miền, mở tab mới có `noopener`. Địa chỉ `javascript:` bị từ chối, câu lỗi tiếng Việt cạnh đúng ô. Bộ kiểm 27/27, **7/7 đột biến bị giết**. Còn thiếu: **tải tệp thẳng lên** — chờ khoá R2 (D1); lược đồ đã chừa sẵn `nguon='r2'`. **Lưu ý thêm (đo 27/09, cùng lý do dòng 29)**: thẻ lớp chỉ hiện **4 tài liệu gần nhất** (`teaching/lop_cua_toi.py:48` `SO_HOC_LIEU = 4`), không có màn danh sách đủ hay lọc theo buổi — lớp học ba tháng thì tài liệu buổi đầu rơi khỏi thẻ. | **Trần 4 đã hết 27/09**: tab "Tài liệu" của trang `/lop/<id>/xem-lai` liệt kê đủ cả khoá, có ô tìm, tách rõ tài liệu của buổi và kho chung của lớp. |
 | 31 | Học sinh · bài tập | CÓ (nộp chữ) | Đ2 §60 (nộp tệp) | — |
 | 32 | Học sinh · trao đổi | CÓ (E3, chờ khách xem) | — | `e2e/yeu-cau.spec.ts` |
-| * | Phân hệ thông báo chung | MỘT PHẦN | E2 | — |
+| * | Phân hệ thông báo chung | **CÓ** (28/09) | — | Hai thứ cuối cùng đóng 28/09: **báo người đứng lớp khi duyệt "xin nghỉ học"** (duyệt ghi đè sổ điểm danh mà người dạy không biết) và **cảnh báo lớp chậm tiến độ** (số đã tính từ E1 nhưng chưa ai được báo — nay mỗi tuần một chuông cho người đứng lớp, chống trùng bằng chỉ mục §76). Bộ kiểm 19/19, **12/12 đột biến bị giết** trên ba loạt. |
 
 **Năm chỗ DOI_CHIEU 23/09 báo quá tay** (đã sửa trong bảng dưới): (1) "nhận xét học sinh — CÓ": không
 màn nào ghi được `class_members.note`, và cột ấy còn bị ghi chú chuyển lớp dùng chung → lỗi rò đã vá
@@ -161,7 +161,7 @@ Chi tiết lượt soát + câu hỏi chờ anh quyết: `docs/agent/BAO_CAO_PHA
 | Tình trạng học tập | CÓ (V-m) | TÍNH, không lưu: đang học / tạm dừng / đã học xong / bảo lưu / đã nghỉ / chưa xếp lớp (`teaching/tinh_trang.py`, một biểu thức SQL cho hồ sơ, cột + ô lọc ở Tài khoản, tệp xuất); hồ sơ kèm lớp đang học (sĩ số thật) + môn mở qua lớp — `teaching/tests_tinh_trang_hoc_vien.py` |
 | Tình trạng học phí | THAY (V-m làm xong) | một ô chọn tay trên hồ sơ (Đã đóng / Sắp hết / Hết / Bảo lưu; `users.tuition_status`, CHECK §63 lưu mã), có nhật ký, lọc được ở Tài khoản — khách phải đồng ý (K2) |
 
-## Dòng 4 — Quản lý lớp học (Quản trị viên) · MỘT PHẦN
+## Dòng 4 — Quản lý lớp học (Quản trị viên) · **CÓ** (nhãn sửa 28/09 — mọi ý bên dưới đều CÓ)
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
@@ -195,7 +195,7 @@ Chi tiết lượt soát + câu hỏi chờ anh quyết: `docs/agent/BAO_CAO_PHA
 | Gắn bài tập, bài kiểm tra | **CÓ** | Khung có mục loại "Bài về nhà" / "Kiểm tra" và ô bài về nhà mỗi buổi (E1). **§74 (27/09)**: bài giao cho lớp nay TRỎ VỀ mục khung — màn Chương trình trả lời được "bài về nhà của buổi 3 đã giao chưa" (`baiDaGiao` mỗi mục). NULL vẫn là trạng thái bình thường: phần lớn bài giao rời, và bắt buộc trường này sẽ chặn giảng viên đang vội. Xoá mục khung KHÔNG kéo mất bài đã giao (§29). Bộ kiểm 5/5 + 57 test chương trình vẫn xanh. |
 | Điều kiện hoàn thành | MỘT PHẦN — **chờ con số của anh Sơn** | % chương trình theo sổ đầu bài (đã dạy 1, một phần 0,5, trọng số) (E1). Dò lại 27/09: hệ thống có BỐN ngưỡng bằng số, và KHÔNG ngưỡng nào là "hoàn thành khoá". (1) lớp chậm tiến độ — trễ ≥ **2** buổi khung HOẶC xong < **80 %** phần phải xong tới hôm nay (`backend/chuong_trinh/tu_vung.py:34`; chú thích ngay đó ghi đây là GIẢ ĐỊNH của mình, để lộ ra để còn bàn lại); (2) vắng liền ≥ **2** buổi, bài chấm quá **5** ngày (`backend/teaching/viec_hom_nay.py:52`); (3) không hoạt động **7 / 14 / 30** ngày (`backend/teaching/overview.py:85`); (4) chủ đề yếu = dưới **60** điểm (`backend/teaching/reports.py:75`). "Đã học xong" hôm nay do NGƯỜI chọn chứ không do máy tính: học vụ cho em rời lớp với lý do "học xong" (`backend/teaching/vocab.py:44`), hoặc lớp đã qua ngày kết thúc mà em chưa bị cho rời (`backend/teaching/tinh_trang.py:64`). Cần anh cho ba con số: **% buổi có mặt tối thiểu**, **% chương trình tối thiểu**, và **có bắt buộc điểm bài kiểm tra hay không** — câu hỏi đầy đủ ở `docs/agent/BAO_CAO_PHAN_RA.md` |
 
-## Dòng 6 — Báo cáo · MỘT PHẦN (báo cáo chéo môn × lớp: mã xong 27/09, chờ đo màn)
+## Dòng 6 — Báo cáo · **CÓ** (ô cuối đóng 27/09, đã đo màn 8/8 — nhãn tiêu đề sửa 28/09)
 
 | Ý trong bảng | Trạng thái | Bằng chứng / việc đóng |
 |---|---|---|
@@ -552,7 +552,12 @@ Phân rã chi tiết (bổ sung 27/09/2026 — trước đây dòng này chỉ c
 | % hoàn thành chương trình, bài / chuyên đề đã / chưa, tiến độ theo môn | CÓ (E1) | "Lớp của tôi": "Đã học X% chương trình" — chỉ buổi em có mặt / muộn, buổi bù tính cho buổi gốc; tờ phụ huynh cùng dòng |
 | So sánh thực tế với kế hoạch | CÓ (E1) | cùng dòng: "(kế hoạch tới nay: Y%)" |
 
-## Dòng 29 — Học sinh · record · MỘT PHẦN (sửa nhãn 27/09: §72 đã mở phần xem lại; danh sách đủ + ô tìm thì chưa)
+## Dòng 29 — Học sinh · record · **CÓ** trừ "% đã xem" (nhãn sửa 28/09)
+
+Nhãn "MỘT PHẦN" ở đây CŨ hơn chính đoạn ngay bên dưới nó: hai thứ còn thiếu lúc ghi nhãn —
+danh sách đủ bản ghi theo buổi và ô tìm — đã đóng chiều 27/09 bằng trang `/lop/<id>/xem-lai`
+(đo 7/7 bước trên màn thật, 27/27 test, 16/16 đột biến bị giết). Còn đúng một gạch: bảng đòi
+xem được bao nhiêu **%**, và phần trăm phải lấy từ Zoom (việc **Z1**).
 
 Câu cũ (25/09, giữ theo RULES §29): "CHƯA → V-l, E4 — danh sách record theo buổi, tìm kiếm, đã xem /
 chưa xem (**V-l**), % đã xem cho TG (**E4** — thử trên tài khoản Zoom thật trước: Zoom chỉ trả tên
@@ -628,7 +633,7 @@ Phân rã chi tiết (bổ sung 27/09/2026 — trước đây dòng này chỉ c
 | Chuông khi trung tâm trả lời | CÓ | `backend/yeu_cau/dich_vu.py:517` |
 | Diễn đàn, trợ lý AI | CÓ — giữ nguyên, **bảng không kê** | xem mục "Ngoài bảng" ở cuối tài liệu |
 
-## * Phân hệ thông báo chung · CÓ phần nền, còn thiếu hai loại chuông (viết lại 27/09/2026)
+## * Phân hệ thông báo chung · **CÓ** — hai loại chuông cuối đóng 28/09/2026
 
 **Câu cũ (25/09) giữ theo RULES §29**: "Có: chuông + email cho đổi / huỷ lịch, bài tập mới, bài đã
 chấm. Thiếu: lịch mới, học bù, hạn nộp, nghỉ học, cảnh báo tiến độ, thông báo trung tâm; gửi theo lớp /
@@ -643,13 +648,13 @@ chuông.** Đây là ô dễ nói sai nhất khi trình bày với khách, nên 
 | Chuông "lịch mới" | CÓ (27/09) | loại `buoi_moi` (`backend/notifications/loai.py:26`), gộp cả kỳ thành MỘT chuông (`backend/teaching/bao_doi_lich.py:153`) |
 | Chuông "học bù" | CÓ | loại `hoc_bu` (`backend/notifications/loai.py:25`), gửi sau khi lưu buổi bù (`backend/teaching/buoi_bu.py`) |
 | Nhắc "hạn nộp" | CÓ | quét tự động 20–28 giờ trước hạn (`backend/notifications/nhac_han.py:35`), nối vào nhịp ở `backend/notifications/hop_thu.py:350` |
-| Báo "nghỉ học" | CÓ một nửa | người XIN nghỉ nhận chuông khi được duyệt (`backend/yeu_cau/dich_vu.py:705`); **giảng viên của lớp thì KHÔNG được báo** — đó là nửa còn thiếu |
+| Báo "nghỉ học" | **CÓ** (28/09) | người XIN nghỉ nhận chuông khi được duyệt; **người ĐỨNG LỚP nay cũng được báo** — `yeu_cau/dich_vu.py::_bao_nhan_su_lop` + `teaching/nhan_su_lop.py`. Duyệt "xin nghỉ học" GHI ĐÈ sổ điểm danh, kể cả buổi đã chấm `present`/`absent`; không báo thì giảng viên mở sổ tuần sau thấy một em "có phép" ở buổi mình nhớ rõ là vắng, và không có gì trên màn nói vì đơn nào. Bộ kiểm 9/9, **7/7 đột biến bị giết** (hai loạt) |
 | Thông báo trung tâm | CÓ (§61) | `backend/notifications/thong_bao.py:107` (soạn) + `:113` (gửi); màn `/quan-tri/thong-bao`, đo 11/11 bước |
 | Gửi theo lớp / môn / nhóm chọn tay / cá nhân | CÓ | `announcements.audience` nhận `classIds` / `courseIds` / `userIds` (`backend/notifications/thong_bao.py:67`) |
 | Lọc "chưa đọc", đánh dấu đã / chưa đọc | CÓ | `backend/notifications/views.py:95` |
 | Lịch sử đầy đủ, không còn trần 30 dòng | CÓ | phân trang THEO KHOÁ `id` giảm dần, không trùng không sót (`backend/notifications/views.py:95`); trần cũ 30 dòng chỉ còn là trang đầu của panel chuông |
 | Hộp thư đi (nền gửi tin cậy) | CÓ (§61a) | `backend/notifications/hop_thu.py:120` xếp dòng trong CÙNG giao dịch với việc chính; thử lại có giãn cách **1 / 5 / 30 / 120 / 360 phút** (`:75`); việc gấp đi trước việc hàng loạt (`:84`). Sáu mô-đun đang dùng: quên mật khẩu, tự đăng ký, nhắc hạn, thông báo trung tâm, báo đổi lịch, gửi báo cáo phụ huynh |
-| Cảnh báo tiến độ bằng chuông | **CHƯA** — còn lại thật | hệ thống TÍNH được lớp chậm tiến độ (`backend/chuong_trinh/tien_do.py:107`) và hiện ở "Toàn trung tâm" + chip lớp, nhưng không loại chuông nào đẩy nó tới người; không mã nào gửi |
+| Cảnh báo tiến độ bằng chuông | **CÓ** (28/09) | `backend/notifications/canh_bao_tien_do.py` — nhịp quét lớp ĐANG HỌC đã nhận khung, lớp nào mang cờ `cham` thì báo NGƯỜI ĐỨNG LỚP (giảng viên, trợ giảng, học vụ phụ trách), **mỗi người mỗi lớp mỗi tuần một chuông**. Chống trùng bằng CHỈ MỤC §76 (`date_trunc('week', created_at)`), không đọc-rồi-ghi — hai nhịp chồng nhau sẽ cùng thấy "tuần này chưa gửi". Không gửi học viên (lo mà không làm được gì) và không gửi học vụ chưa được gán vào lớp (mỗi tuần một chuông cho mỗi lớp chậm của cả trung tâm). Chuông chứ không thư: người nhận vào hệ thống hằng ngày. Bộ kiểm 10/10, **5/5 đột biến bị giết** |
 
 ---
 
