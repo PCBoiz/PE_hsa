@@ -70,7 +70,7 @@ def _loc(request):
     except ValueError:
         lop = None
     return {'loai': loai, 'trang_thai': tt, 'class_id': lop, 'cua_toi': p.get('cua_toi') == '1',
-            'mo': p.get('mo') == '1'}
+            'mo': p.get('mo') == '1', 'qua_han': p.get('qua_han') == '1', 'tim': p.get('tim')}
 
 
 # ── Học viên ──────────────────────────────────────────────────────────────

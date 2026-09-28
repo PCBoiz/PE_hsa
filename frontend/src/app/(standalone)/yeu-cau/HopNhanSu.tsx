@@ -28,7 +28,7 @@ import {
  * "Tạo yêu cầu": trợ giảng / giảng viên BÁO LÊN về một em (kể cả "em không phản hồi"), báo lỗi
  * bản ghi một buổi, hoặc xin thay đổi cho em; học vụ tạo thay em / phụ huynh gọi điện tới.
  */
-type Loc = { trangThai: string; loai: string; lop: string; cuaToi: boolean };
+type Loc = { trangThai: string; loai: string; lop: string; cuaToi: boolean; quaHan: boolean; tim: string };
 
 function duongLoc(l: Loc) {
   const p = new URLSearchParams();
@@ -37,6 +37,8 @@ function duongLoc(l: Loc) {
   if (l.loai) p.set('loai', l.loai);
   if (l.lop) p.set('class_id', l.lop);
   if (l.cuaToi) p.set('cua_toi', '1');
+  if (l.quaHan) p.set('qua_han', '1');
+  if (l.tim.trim()) p.set('tim', l.tim.trim());
   const s = p.toString();
   return `/api/teach/yeu-cau${s ? `?${s}` : ''}`;
 }
@@ -45,25 +47,42 @@ export default function HopNhanSu({
   initial, coTheDuyet, luaChon, loiTai,
 }: { initial: YeuCau[]; coTheDuyet: boolean; luaChon: LuaChonNS | null; loiTai: string | null }) {
   const [ds, setDs] = useState<YeuCau[]>(initial);
-  const [loc, setLoc] = useState<Loc>({ trangThai: 'mo', loai: '', lop: '', cuaToi: false });
+  const [loc, setLoc] = useState<Loc>({ trangThai: 'mo', loai: '', lop: '', cuaToi: false, quaHan: false, tim: '' });
   const [err, setErr] = useState<string | null>(loiTai);
   const [dangTai, setDangTai] = useState(false);
   const [moTao, setMoTao] = useState(false);
+  // Đánh số từng lượt hỏi. Gõ nhanh vào ô tìm là nhiều lượt cùng bay đi, và chúng KHÔNG
+  // về theo thứ tự gửi — lượt "th" về sau lượt "thứ sáu" sẽ đè kết quả đúng bằng kết quả cũ.
+  // Chỉ lượt mới nhất được phép ghi vào danh sách.
+  const luot = useRef(0);
+  const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function doiLoc(moi: Loc) {
     setLoc(moi);
+    const cua_toi = (luot.current += 1);
     setDangTai(true);
     try {
-      setDs((await layJson(duongLoc(moi), HD_DS)).yeuCau);
+      const d = await layJson(duongLoc(moi), HD_DS);
+      if (cua_toi !== luot.current) return;
+      setDs(d.yeuCau);
       setErr(null);
     } catch (e) {
+      if (cua_toi !== luot.current) return;
       setErr(loiBatDuoc(e, 'Không tải được danh sách yêu cầu.'));
     } finally {
-      setDangTai(false);
+      if (cua_toi === luot.current) setDangTai(false);
     }
   }
 
+  /** Ô tìm: đợi người gõ xong mới hỏi máy chủ — mỗi phím một lượt gọi là 12 lượt cho "thứ sáu". */
+  function doiTim(chu: string) {
+    setLoc((cu) => ({ ...cu, tim: chu }));
+    if (hen.current) clearTimeout(hen.current);
+    hen.current = setTimeout(() => void doiLoc({ ...loc, tim: chu }), 350);
+  }
+
   const choDuyet = ds.filter((y) => y.canDuyet && (y.trangThai === 'moi' || y.trangThai === 'dang_xu_ly')).length;
+  const soQuaHan = ds.filter((y) => y.quaHan === true).length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -72,12 +91,21 @@ export default function HopNhanSu({
       <Card as="section">
         <CardHead
           title={dangTai ? 'Đang tải…' : `${ds.length} yêu cầu`}
-          hint={coTheDuyet && choDuyet > 0 ? `${choDuyet} yêu cầu thay đổi đang chờ bạn duyệt.` : undefined}
+          hint={[
+            soQuaHan > 0 ? `${soQuaHan} yêu cầu đã quá hạn xử lý.` : null,
+            coTheDuyet && choDuyet > 0 ? `${choDuyet} yêu cầu thay đổi đang chờ bạn duyệt.` : null,
+          ].filter(Boolean).join(' ') || undefined}
           action={luaChon && luaChon.loai.length > 0
             ? <Button size="sm" onClick={() => setMoTao(true)}>Tạo yêu cầu</Button>
             : undefined}
         />
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy={dangTai || undefined}>
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy={dangTai || undefined}>
+          <label className="flex flex-col gap-1">
+            <span className="text-label text-ink-3">Tìm trong yêu cầu</span>
+            <input type="search" className={`min-h-11 ${O_CHU}`} value={loc.tim} maxLength={100}
+              placeholder="Tên, tóm tắt hay nội dung…"
+              onChange={(e) => doiTim(e.target.value)} />
+          </label>
           <label className="flex flex-col gap-1">
             <span className="text-label text-ink-3">Trạng thái</span>
             <select className={O_CHON} value={loc.trangThai} onChange={(e) => void doiLoc({ ...loc, trangThai: e.target.value })}>
@@ -105,6 +133,11 @@ export default function HopNhanSu({
               onChange={(e) => void doiLoc({ ...loc, cuaToi: e.target.checked })} />
             Chỉ việc giao cho tôi
           </label>
+          <label className="flex min-h-11 items-center gap-2 self-end text-body text-ink-2">
+            <input type="checkbox" className="size-5" checked={loc.quaHan}
+              onChange={(e) => void doiLoc({ ...loc, quaHan: e.target.checked })} />
+            Chỉ việc quá hạn
+          </label>
         </div>
 
         {ds.length === 0 ? (
@@ -123,6 +156,7 @@ export default function HopNhanSu({
                     <Chip tone={toneTrangThai(y.trangThai)}>{y.trangThaiNhan}</Chip>
                     <Chip tone={y.canDuyet ? 'brand' : 'neutral'}>{y.loaiNhan}</Chip>
                     {y.duLieu.khong_phan_hoi === true && <Chip tone="warn">Em không phản hồi</Chip>}
+                    {y.quaHan === true && <Chip tone="bad">Quá hạn</Chip>}
                   </span>
                   <span className="mt-1 block text-small text-ink-3">
                     {[
@@ -131,6 +165,9 @@ export default function HopNhanSu({
                       y.lop?.ten ?? null,
                       y.nguoiXuLy?.ten ? `xử lý: ${y.nguoiXuLy.ten}` : null,
                       `cập nhật ${lucVN(y.updatedAt)}`,
+                      // Hạn chỉ nói khi việc còn mở: trên một việc đã xong nó là con số không
+                      // còn nghĩa gì, chỉ tổ làm dòng chữ dài thêm.
+                      y.hanXuLy && y.closedAt === null ? `hạn ${lucVN(y.hanXuLy)}` : null,
                     ].filter(Boolean).join(' · ')}
                   </span>
                 </Link>

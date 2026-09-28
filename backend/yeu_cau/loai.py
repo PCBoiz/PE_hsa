@@ -167,6 +167,32 @@ CHU_DU_LIEU = {
 #: (bảng TopHSA dòng 20 "ghi nhận HS không phản hồi").
 CO_DU_LIEU = ('khong_phan_hoi',)
 
+#: HẠN XỬ LÝ (số giờ kể từ lúc gửi) theo NHÓM — quá ngần ấy mà yêu cầu chưa đóng thì hộp
+#: Yêu cầu gắn cờ "Quá hạn" và đẩy nó lên đầu danh sách.
+#:
+#: Mấy con số này là GIẢ ĐỊNH CỦA TÔI, không phải cam kết TopHSA đưa ra — cùng loại với bốn
+#: ngưỡng ở `chuong_trinh/tu_vung.py` và `teaching/viec_hom_nay.py` (dòng 5 của
+#: `docs/NGHIEM_THU_TOPHSA.md` kê cả bốn). Để lộ ở ĐÚNG MỘT chỗ để đổi là sửa một dòng, thay
+#: vì rải số giờ vào câu SQL rồi quên mất chúng nằm đâu.
+#:
+#: Vì sao lệch nhau: hỏi bài và hỗ trợ là thứ trả lời được ngay trong ngày làm việc; báo lên
+#: phải qua tay người thứ hai; còn xin–duyệt (chuyển lớp, bảo lưu, huỷ khoá) là một QUYẾT
+#: ĐỊNH có hậu quả lên sổ điểm danh và học phí, hối nó bằng cờ đỏ sau một ngày là ép người
+#: duyệt bấm cho xong cờ.
+HAN_GIO = {
+    HOI_DAP: 24,
+    HO_TRO: 24,
+    BAO_LOI: 24,
+    BAO_CAO: 48,
+    THAY_DOI: 72,
+}
+
+
+def han_gio(ma_loai):
+    """Số giờ được phép xử lý một yêu cầu loại `ma_loai`."""
+    return HAN_GIO[nhom(ma_loai)]
+
+
 #: Trần độ dài.
 TRAN_TIEU_DE = 200
 TRAN_NOI_DUNG = 4000

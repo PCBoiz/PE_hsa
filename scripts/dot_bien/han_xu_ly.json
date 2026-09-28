@@ -1,0 +1,50 @@
+[
+ {
+  "ten": "hạn tính từ updated_at — trả lời một lượt là dời hạn một lượt, không bao giờ quá hạn",
+  "cu": "    han = yc['created_at'] + timedelta(hours=L.han_gio(yc['loai']))",
+  "moi": "    han = yc['updated_at'] + timedelta(hours=L.han_gio(yc['loai']))",
+  "cho": "test_han_tinh_tu_luc_gui_chu_khong_phai_luc_cap_nhat"
+ },
+ {
+  "ten": "việc ĐÃ XONG vẫn đỏ — hộp Yêu cầu đỏ vĩnh viễn theo bề dày lịch sử",
+  "cu": "    return han, yc['trang_thai'] in L.MO and local_now() > han",
+  "moi": "    return han, local_now() > han",
+  "cho": "test_yeu_cau_da_dong_thi_khong_con_qua_han"
+ },
+ {
+  "ten": "so bằng now() của Neon (UTC) thay vì giờ Việt Nam — bỏ sót đúng bảy tiếng",
+  "cu": "    return han, yc['trang_thai'] in L.MO and local_now() > han",
+  "moi": "    return han, yc['trang_thai'] in L.MO and q1('SELECT now() AS n')['n'].replace(tzinfo=None) > han",
+  "cho": "test_qua_han_do_bang_gio_viet_nam"
+ },
+ {
+  "ten": "ô tìm không thoát ký tự đại diện — gõ % là khớp mọi yêu cầu trong phạm vi",
+  "cu": "    for k in ('\\\\', '%', '_'):",
+  "moi": "    for k in ():",
+  "cho": "test_tim_khong_de_ky_tu_dai_dien_lot_xuong_ilike"
+ },
+ {
+  "ten": "tìm chỉ trong tiêu đề — em viết rõ vấn đề ở phần nội dung thì không ai tìm ra",
+  "cu": "        them.append('(y.tieu_de ILIKE %s OR y.noi_dung ILIKE %s)')",
+  "moi": "        them.append('(y.tieu_de ILIKE %s OR y.tieu_de ILIKE %s)')",
+  "cho": "test_tim_theo_chu_trong_noi_dung"
+ },
+ {
+  "ten": "quá hạn xếp XUỐNG đáy — đúng việc cần chú ý nhất lại khuất tầm mắt",
+  "cu": "             + ' ORDER BY (y.trang_thai = ANY(%s)) DESC, ' + sql_qua_han + ' DESC,'",
+  "moi": "             + ' ORDER BY (y.trang_thai = ANY(%s)) DESC, ' + sql_qua_han + ' ASC,'",
+  "cho": "test_qua_han_xep_len_truoc_trong_danh_sach"
+ },
+ {
+  "ten": "ô lọc 'Quá hạn' không lọc gì — bấm vào vẫn ra nguyên cả hộp",
+  "cu": "        them.append(sql_qua_han)",
+  "moi": "        them.append('(TRUE OR ' + sql_qua_han + ')')",
+  "cho": "test_loc_qua_han_chi_tra_ve_yeu_cau_qua_han"
+ },
+ {
+  "ten": "hạn nội bộ rò sang màn của học viên — hứa với em điều trung tâm chưa hứa",
+  "cu": "        ra['coThe'] = {k: v for k, v in co_the(nguoi, yc).items() if k in ('traLoi', 'huy')}",
+  "moi": "        ra['coThe'] = {k: v for k, v in co_the(nguoi, yc).items() if k in ('traLoi', 'huy')}; ra['hanXuLy'], ra['quaHan'] = _iso(_han_xu_ly(yc)[0]), _han_xu_ly(yc)[1]",
+  "cho": "test_hoc_vien_khong_thay_han_cua_trung_tam"
+ }
+]

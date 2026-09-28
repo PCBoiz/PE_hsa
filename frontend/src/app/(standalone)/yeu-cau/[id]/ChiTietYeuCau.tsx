@@ -78,9 +78,13 @@ export default function ChiTietYeuCau({ initial, laHocVien }: { initial: YeuCau;
           <Chip tone={toneTrangThai(yc.trangThai)}>{yc.trangThaiNhan}</Chip>
           <Chip tone={yc.canDuyet ? 'brand' : 'neutral'}>{yc.loaiNhan}</Chip>
           {yc.duLieu.khong_phan_hoi === true && <Chip tone="warn">Em không phản hồi</Chip>}
+          {yc.quaHan === true && <Chip tone="bad">Quá hạn</Chip>}
         </div>
         <dl className="mt-3 grid gap-x-6 gap-y-1 text-small sm:grid-cols-2">
           <Dong nhan="Gửi">{[yc.nguoiTao?.ten, lucVN(yc.createdAt)].filter(Boolean).join(' · ')}</Dong>
+          {/* Hạn chỉ có nghĩa khi việc còn mở — và máy chủ chỉ gửi nó cho nhân sự, nên
+              học viên không bao giờ đi vào nhánh này. */}
+          {yc.hanXuLy && yc.closedAt === null && <Dong nhan="Hạn xử lý">{lucVN(yc.hanXuLy)}</Dong>}
           {!laHocVien && <Dong nhan="Nguồn">{NHAN_NGUON[yc.nguon] ?? '—'}</Dong>}
           {!laHocVien && yc.hocVien && <Dong nhan="Học viên">{yc.hocVien.ten ?? '—'}</Dong>}
           {yc.lop && <Dong nhan="Lớp">{yc.lop.ten ?? '—'}</Dong>}

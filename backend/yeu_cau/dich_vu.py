@@ -14,7 +14,7 @@ vi → `KhongThay` (view trả 404 — không lộ yêu cầu có tồn tại).
 """
 import json
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from django.db import transaction
 
@@ -178,6 +178,47 @@ def _iso(v):
     return v.isoformat() if v else None
 
 
+def _han_xu_ly(yc):
+    """(hạn, đã quá hạn chưa) của một yêu cầu — bảng TopHSA dòng 11.
+
+    Hạn tính từ LÚC GỬI, không từ `updated_at`. Tính từ `updated_at` thì mỗi lượt trả lời là
+    một lượt dời hạn, và một yêu cầu bị hỏi tới hỏi lui suốt hai tuần sẽ không bao giờ quá
+    hạn — đúng thứ cờ này sinh ra để bắt.
+
+    Đóng rồi thì thôi quá hạn: cờ đỏ trên một việc đã xong là cờ không ai gỡ được, và một
+    màn lúc nào cũng đỏ thì chẳng ai nhìn nữa.
+
+    So bằng `local_now()` chứ không bằng `now()` của Postgres: `created_at` ghi theo giờ
+    Việt Nam còn Neon trả UTC — lệch đúng bảy tiếng, và lệch về phía BỎ SÓT (`common/clock.py`).
+    """
+    han = yc['created_at'] + timedelta(hours=L.han_gio(yc['loai']))
+    return han, yc['trang_thai'] in L.MO and local_now() > han
+
+
+def _dieu_kien_qua_han(nay):
+    """(mảnh SQL "đang quá hạn", tham số) — dựng TỪ CHÍNH `L.HAN_GIO`, không gõ lại số giờ
+    vào câu SQL (RULES §7). Thêm một nhóm loại ở `loai.py` là câu này tự có thêm một vế."""
+    ve, ts = [], [list(L.MO)]
+    for nh in sorted(L.HAN_GIO):
+        ve.append("(y.loai = ANY(%s) AND y.created_at < %s - %s * INTERVAL '1 hour')")
+        ts += [[k for k in L.LOAI if L.nhom(k) == nh], nay, L.HAN_GIO[nh]]
+    return '(y.trang_thai = ANY(%s) AND (' + ' OR '.join(ve) + '))', ts
+
+
+def _tu_khoa(chu):
+    """Chữ người gõ → mẫu ILIKE, đã thoát `\\` `%` `_`.
+
+    Không thoát thì gõ `%` vào ô tìm là khớp MỌI yêu cầu trong phạm vi — một ô tìm trả về
+    đúng thứ nó vừa được bảo là đừng trả về — còn `_` khớp mọi ký tự đơn.
+    """
+    chu = (chu or '').strip()[:100]
+    if not chu:
+        return None
+    for k in ('\\', '%', '_'):
+        chu = chu.replace(k, '\\' + k)
+    return '%' + chu + '%'
+
+
 def _nguoi_json(i, ten):
     return {'id': i, 'ten': ten} if i else None
 
@@ -253,6 +294,12 @@ def dung(nguoi, yc, su_kien=None):
     if nguoi.la_nhan_su:
         ra['thucThi'] = yc['thuc_thi']
         ra['coThe'] = co_the(nguoi, yc)
+        # Hạn là cam kết NỘI BỘ của trung tâm với nhau. In nó lên màn của em hay lên tờ của
+        # phụ huynh là hứa với họ một điều TopHSA chưa hứa — và lời hứa ấy sẽ bị đem ra đối
+        # chất đúng vào hôm hệ thống trễ.
+        han, qua_han = _han_xu_ly(yc)
+        ra['hanXuLy'] = _iso(han)
+        ra['quaHan'] = qua_han
     else:
         ra['coThe'] = {k: v for k, v in co_the(nguoi, yc).items() if k in ('traLoi', 'huy')}
     if su_kien is not None:
@@ -288,9 +335,12 @@ def chi_tiet(nguoi, yc_id):
     return dung(nguoi, yc, su_kien_cua(nguoi, yc_id))
 
 
-def danh_sach(nguoi, *, loai=None, trang_thai=None, class_id=None, cua_toi=False, mo=False, tran=200):
+def danh_sach(nguoi, *, loai=None, trang_thai=None, class_id=None, cua_toi=False, mo=False,
+              qua_han=False, tim=None, tran=200):
     dk, ts, _ = _pham_vi(nguoi)
     them, ts2 = [], []
+    nay = local_now()
+    sql_qua_han, ts_qua_han = _dieu_kien_qua_han(nay)
     if loai:
         them.append('y.loai = %s')
         ts2.append(loai)
@@ -306,10 +356,24 @@ def danh_sach(nguoi, *, loai=None, trang_thai=None, class_id=None, cua_toi=False
     if cua_toi and nguoi.id:
         them.append('y.nguoi_xu_ly = %s')
         ts2.append(nguoi.id)
+    if qua_han:
+        them.append(sql_qua_han)
+        ts2 += ts_qua_han
+    mau = _tu_khoa(tim)
+    if mau:
+        # CHỈ tiêu đề và nội dung — hai thứ chính người gửi viết ra. KHÔNG tìm trong
+        # `yeu_cau_su_kien`: ghi chú nội bộ nằm ở đó, và một ô tìm chạy qua chúng là đường
+        # để học viên dò từng chữ ghi chú của trung tâm về mình mà không cần đọc được nó.
+        them.append('(y.tieu_de ILIKE %s OR y.noi_dung ILIKE %s)')
+        ts2 += [mau, mau]
+    # Còn mở lên trước, rồi QUÁ HẠN lên trước. Xếp theo `updated_at` không thôi thì yêu cầu
+    # bị bỏ quên — không ai trả lời, nên `updated_at` đứng yên — trôi xuống đáy danh sách:
+    # thứ tự cũ đẩy đúng việc cần chú ý nhất ra khỏi tầm mắt.
     rows = q('SELECT ' + _COT + ' ' + _TU + ' WHERE (' + dk + ')'
              + ''.join(' AND ' + t for t in them)
-             + ' ORDER BY (y.trang_thai = ANY(%s)) DESC, y.updated_at DESC LIMIT %s',
-             ts + ts2 + [list(L.MO), tran])
+             + ' ORDER BY (y.trang_thai = ANY(%s)) DESC, ' + sql_qua_han + ' DESC,'
+             + ' y.updated_at DESC LIMIT %s',
+             ts + ts2 + [list(L.MO)] + ts_qua_han + [tran])
     return [dung(nguoi, _chuan(r)) for r in rows]
 
 

@@ -1,0 +1,14 @@
+[
+ {
+  "ten": "mọi nhóm chung một hạn — bảng giờ chỉ còn là một con số, xin–duyệt bị hối như hỏi bài",
+  "cu": "    THAY_DOI: 72,",
+  "moi": "    THAY_DOI: 24,",
+  "cho": "test_moi_nhom_mot_han_rieng"
+ },
+ {
+  "ten": "hạn của nhóm nào cũng lấy của hỏi–đáp — `nhom()` bị bỏ qua",
+  "cu": "    return HAN_GIO[nhom(ma_loai)]",
+  "moi": "    return HAN_GIO[HOI_DAP]",
+  "cho": "test_moi_nhom_mot_han_rieng"
+ }
+]

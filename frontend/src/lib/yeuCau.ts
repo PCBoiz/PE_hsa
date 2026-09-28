@@ -69,6 +69,10 @@ export const HD_YEU_CAU = z.looseObject({
   updatedAt: chuNull,
   closedAt: chuNull,
   thucThi: z.optional(z.nullable(z.record(z.string(), z.unknown()))),
+  // Hạn xử lý là cam kết NỘI BỘ: máy chủ chỉ gửi hai khoá này cho nhân sự, nên chúng
+  // `optional` — màn của học viên và tờ của phụ huynh không bao giờ thấy.
+  hanXuLy: z.optional(chuNull),
+  quaHan: z.optional(co),
   coThe: HD_CO_THE,
   suKien: z.optional(z.array(HD_SU_KIEN)),
 });
