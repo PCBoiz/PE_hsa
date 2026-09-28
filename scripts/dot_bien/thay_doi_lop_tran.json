@@ -1,0 +1,14 @@
+[
+ {
+  "ten": "không lấy dư một dòng — không bao giờ biết mình vừa cắt bớt, và im lặng",
+  "cu": "    rows = q(_SQL, (class_id, user_id, tu_luc, tu_luc, TRAN + 1))",
+  "moi": "    rows = q(_SQL, (class_id, user_id, tu_luc, tu_luc, TRAN))",
+  "cho": "test_qua_tran_thi_to_phai_NOI_RA_la_con_nua"
+ },
+ {
+  "ten": "lúc nào cũng báo 'còn nữa' — dạy người đọc thôi tin dòng ấy",
+  "cu": "    return {'ds': ra, 'conNua': len(rows) > TRAN}",
+  "moi": "    return {'ds': ra, 'conNua': True}",
+  "cho": "test_du_cho_thi_khong_bao_con_nua"
+ }
+]

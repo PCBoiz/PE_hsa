@@ -33,6 +33,22 @@ export type BaoCao = {
   };
   membership: { joinedAt: string | null; leftAt: string | null; status: string; teacherNote: string | null };
   period: { from: string; to: string; weeks: number };
+  /**
+   * §66 · chỉ tờ mở bằng CHÌA mới có: chìa sống 45 ngày nên số liệu chạy tới hôm nay,
+   * còn `kyCap` là kỳ đóng băng lúc trung tâm cấp. Thiếu hai mốc này thì phụ huynh không
+   * phân biệt được tờ đang mở với tờ đã nhận tháng trước — cùng một đường link, số khác.
+   * `?` vì tờ của giảng viên (`/giang-day/bao-cao`) không đi qua chìa nào.
+   */
+  song?: { toiNgay: string; kyCap: { from: string; to: string } };
+  /**
+   * §66 · thay cho "báo phụ huynh khi đổi lịch" (anh Sơn chốt 27/09: KHÔNG gửi tin, tờ tự
+   * nêu). Mảng RỖNG nghĩa là "không có gì đổi" — khác hẳn `undefined` (máy chủ cũ, chưa có
+   * mục này), nên hai trường hợp phải vẽ khác nhau.
+   */
+  thayDoi?: { sessionId: number; kieu: string; nhan: string; luc: string | null; chuDe: string | null }[];
+  /** Danh sách trên đã bị CẮT vì quá trần máy chủ. Im lặng thì phụ huynh đếm được 12 dòng và
+   *  tưởng đó là tất cả, trong khi buổi ảnh hưởng tới con có thể nằm ở dòng 13. */
+  thayDoiConNua?: boolean;
   attendance: {
     sessionsTotal: number;
     sessionsCounted: number;
@@ -204,6 +220,42 @@ export function ToBaoCao({ bc, choPhuHuynh = false }: { bc: BaoCao; choPhuHuynh?
         <p className="mt-0.5 text-small text-ink-3">
           Kỳ báo cáo {ngay(bc.period.from)} – {ngay(bc.period.to)} · {bc.membership.status}
         </p>
+        {/* §66 · tờ mở bằng chìa thì SỐNG. Nói thẳng ra, vì cùng một đường link mở lại sau
+            ba tuần cho ra số khác — im lặng thì phụ huynh tưởng trung tâm sửa số cũ. */}
+        {bc.song && (
+          <p className="mt-0.5 text-small text-ink-3">
+            Số liệu cập nhật tới {ngay(bc.song.toiNgay)}. Trung tâm gửi đường dẫn này cho kỳ{' '}
+            {ngay(bc.song.kyCap.from)} – {ngay(bc.song.kyCap.to)}; mở lại lúc nào cũng thấy
+            số mới nhất.
+          </p>
+        )}
+
+        {/* ── Thay đổi lịch ──────────────────────────────────────────── */}
+        {bc.thayDoi && bc.thayDoi.length > 0 && (
+          <>
+            <h3 className="mt-6 text-subhead text-ink">Lịch học có thay đổi</h3>
+            <p className="mt-1 text-small text-ink-3">
+              Kể từ ngày trung tâm gửi đường dẫn này.
+            </p>
+            <ul className="mt-2 flex flex-col gap-1">
+              {bc.thayDoi.map((t) => (
+                <li key={t.sessionId} className="text-body text-ink-2">
+                  {/* Nhãn do MÁY CHỦ dựng (`thay_doi_lop.NHAN`): tờ này còn có bản PDF và
+                      bản thư, ba nơi tự dịch mã trạng thái là ba bản dịch sẽ lệch nhau. */}
+                  <strong className="text-ink">{t.nhan}</strong>
+                  {t.luc ? ` · ${ngay(t.luc)}` : ''}
+                  {t.chuDe ? ` · ${t.chuDe}` : ''}
+                </li>
+              ))}
+            </ul>
+            {bc.thayDoiConNua && (
+              <p className="mt-1 text-small text-ink-3">
+                Lịch lớp còn thay đổi ở một số buổi khác nữa. Liên hệ trung tâm nếu quý phụ
+                huynh cần danh sách đầy đủ.
+              </p>
+            )}
+          </>
+        )}
 
         {/* ── Chuyên cần ─────────────────────────────────────────────── */}
         <h3 className="mt-6 text-subhead text-ink">Con có đi học không</h3>

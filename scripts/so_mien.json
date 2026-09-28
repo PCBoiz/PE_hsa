@@ -195,6 +195,7 @@
       "backend": [
         "backend/teaching/parent_report.py",
         "backend/teaching/parent_link.py",
+        "backend/teaching/thay_doi_lop.py",
         "backend/teaching/parent_send.py",
         "backend/teaching/lien_he_phu_huynh.py",
         "backend/teaching/thu_bao_cao.py",

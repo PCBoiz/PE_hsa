@@ -1,0 +1,26 @@
+[
+ {
+  "ten": "kỳ vẫn đóng băng — chìa sống 45 ngày mà tờ đứng yên ở ngày cấp",
+  "cu": "        den = max(d['period_to'], local_today())",
+  "moi": "        den = d['period_to']",
+  "cho": "test_so_lieu_tinh_toi_hom_nay_du_ky_da_dong_bang"
+ },
+ {
+  "ten": "nới CẢ đầu trước — chìa cấp cho kỳ này đọc ngược về kỳ trước",
+  "cu": "        data, loi = dung_bao_cao(d['class_id'], d['user_id'], d['period_from'], den)",
+  "moi": "        data, loi = dung_bao_cao(d['class_id'], d['user_id'], d['period_from'].replace(year=d['period_from'].year - 1), den)",
+  "cho": "test_dau_ky_KHONG_bi_noi_nguoc_ve_truoc"
+ },
+ {
+  "ten": "kỳ đã cấp báo thành ngày hôm nay — mất mốc để phụ huynh đối chiếu tờ cũ",
+  "cu": "                                'to': d['period_to'].isoformat()}}",
+  "moi": "                                'to': den.isoformat()}}",
+  "cho": "test_to_noi_ro_ky_da_cap_ban_dau"
+ },
+ {
+  "ten": "chìa hết hạn vẫn mở được — 'sống' bị hiểu thành sống mãi",
+  "cu": "    if d['expires_at'] <= local_now().replace(tzinfo=None):",
+  "moi": "    if False:",
+  "cho": "test_chia_het_han_van_404_du_da_song"
+ }
+]

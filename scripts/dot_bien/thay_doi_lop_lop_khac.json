@@ -1,0 +1,8 @@
+[
+ {
+  "ten": "buổi của lớp KHÁC lọt vào tờ của em",
+  "cu": "     WHERE s.class_id = %s",
+  "moi": "     WHERE (s.class_id = %s OR TRUE)",
+  "cho": "test_buoi_cua_lop_KHAC_khong_lot_vao"
+ }
+]

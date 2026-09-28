@@ -1,0 +1,32 @@
+[
+ {
+  "ten": "bỏ hàng rào buổi bù — tờ của em này nêu buổi bù RIÊNG của bạn khác",
+  "cu": "       AND ''' + thuoc_buoi('s.id', '%s') + '''",
+  "moi": "       AND (%s::int IS NOT NULL)",
+  "cho": "test_buoi_bu_CUA_BAN_KHAC_khong_lo_ra"
+ },
+ {
+  "ten": "bỏ mốc ngày cấp chìa — mục 'thay đổi' thành bản sao của thời khoá biểu",
+  "cu": "       AND ((s.status = 'cancelled' AND s.starts_at >= %s) OR s.created_at > %s)",
+  "moi": "       AND ((s.status = 'cancelled' AND s.starts_at >= %s) OR s.created_at > %s - INTERVAL '3650 days')",
+  "cho": "test_buoi_co_TRUOC_khi_cap_chia_khong_bi_ke_la_moi"
+ },
+ {
+  "ten": "buổi ĐÃ HUỶ bị kể thành 'mới xếp thêm' — phụ huynh cho con đi học một buổi không có",
+  "cu": "    if r['status'] == 'cancelled':",
+  "moi": "    if False:",
+  "cho": "test_buoi_bi_huy_hien_trong_thay_doi_gan_day"
+ },
+ {
+  "ten": "in mã thô lên tờ gửi phụ huynh thay vì chữ tiếng Việt (RULES §10)",
+  "cu": "        ra.append({'sessionId': r['id'], 'kieu': k, 'nhan': NHAN[k],",
+  "moi": "        ra.append({'sessionId': r['id'], 'kieu': k, 'nhan': r['status'],",
+  "cho": "test_nhan_thay_doi_la_chu_tieng_viet_khong_phai_ma"
+ },
+ {
+  "ten": "buổi của lớp KHÁC lọt vào tờ của em",
+  "cu": "     WHERE s.class_id = %s",
+  "moi": "     WHERE (s.class_id = %s OR TRUE)",
+  "cho": "test_buoi_cua_lop_KHAC_khong_lot_vao"
+ }
+]

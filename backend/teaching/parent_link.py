@@ -53,6 +53,7 @@ from teaching.parent_report import (
     dung_bao_cao,
     rut_gon_cho_link,
 )
+from teaching.thay_doi_lop import thay_doi_gan_day
 
 #: Chìa sống bao lâu. 45 ngày vì trung tâm gửi báo cáo theo THÁNG: hạn phải
 #: qua được kỳ sau một chút để phụ huynh mở lại tờ cũ mà đối chiếu, nhưng
@@ -211,8 +212,18 @@ class PublicParentReportView(APIView):
                             status=404)
 
         # Kỳ lấy TỪ CHÌA, không từ query — ranh giới 2 ở đầu tệp.
-        data, loi = dung_bao_cao(d['class_id'], d['user_id'],
-                                 d['period_from'], d['period_to'])
+        #
+        # §66 · LINK SỐNG (28/09/2026, bảng phân rã dòng 23 + 24). Chìa sống `HAN_NGAY` = 45
+        # ngày nhưng `period_to` đóng băng lúc cấp, nên phụ huynh mở vào ngày thứ 40 đọc một
+        # tờ của 40 ngày trước: buổi con học tuần này không có trong bảng chuyên cần. Trung
+        # tâm thì tưởng đã gửi thông tin — chìa vẫn mở được, `opened_count` vẫn tăng.
+        #
+        # NỚI ĐÚNG MỘT ĐẦU. `period_from` giữ nguyên: nới cả đầu trước là cho một chìa cấp cho
+        # kỳ tháng 9 đọc ngược về tháng 6, mà chìa là chìa — ai cầm link cũng mở được.
+        # `max` chứ không phải gán thẳng `local_today()`: chìa cấp cho một kỳ kết thúc trong
+        # TƯƠNG LAI thì hôm nay không được rút ngắn nó lại.
+        den = max(d['period_to'], local_today())
+        data, loi = dung_bao_cao(d['class_id'], d['user_id'], d['period_from'], den)
         if loi:
             return Response({'error': loi}, status=404)
 
@@ -223,4 +234,17 @@ class PublicParentReportView(APIView):
              SET opened_count = opened_count + 1, last_opened_at = now()
              WHERE id = %s''', (d['id'],))
 
-        return Response(rut_gon_cho_link(data))
+        ra = rut_gon_cho_link(data)
+        # Nói rõ tờ này "sống": không có hai mốc dưới đây thì phụ huynh không phân biệt được
+        # tờ đang mở với tờ đã nhận tháng trước — cùng một đường link, số thì khác.
+        ra['song'] = {'toiNgay': den.isoformat(),
+                      'kyCap': {'from': d['period_from'].isoformat(),
+                                'to': d['period_to'].isoformat()}}
+        # §66 · phần thay cho "báo phụ huynh khi đổi lịch" (anh Sơn chốt 27/09: KHÔNG gửi
+        # tin, tờ tự nêu). Mốc là NGÀY CẤP CHÌA — buổi có từ trước đã nằm trong tờ gốc.
+        td = thay_doi_gan_day(d['class_id'], d['user_id'], d['created_at'])
+        ra['thayDoi'] = td['ds']
+        # Nói ra khi danh sách bị cắt: lớp sinh lại lịch cả kỳ là hàng chục buổi cùng lúc, và
+        # một tờ in 12 dòng rồi im lặng thì phụ huynh đếm được 12 và tưởng đó là tất cả.
+        ra['thayDoiConNua'] = td['conNua']
+        return Response(ra)

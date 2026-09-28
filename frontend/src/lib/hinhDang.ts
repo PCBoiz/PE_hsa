@@ -40,6 +40,17 @@ export const HD_BAO_CAO = z.looseObject({
     joinedAt: chu, leftAt: chu, status: z.string(), teacherNote: chu,
   }),
   period: z.looseObject({ from: z.string(), to: z.string(), weeks: so }),
+  // §66 · chỉ tờ mở bằng CHÌA mới có hai khoá này (`teaching/parent_link.py`); tờ của
+  // giảng viên không đi qua chìa nào, nên `optional` chứ không `nullable`.
+  song: z.optional(z.looseObject({
+    toiNgay: z.string(),
+    kyCap: z.looseObject({ from: z.string(), to: z.string() }),
+  })),
+  thayDoi: z.optional(z.array(z.looseObject({
+    sessionId: so, kieu: z.string(), nhan: z.string(), luc: chu, chuDe: chu,
+  }))),
+  // Danh sách trên đã bị cắt vì quá trần máy chủ — tờ phải nói ra, không im lặng.
+  thayDoiConNua: z.optional(z.boolean()),
   attendance: z.looseObject({
     sessionsTotal: so, sessionsCounted: so, sessionsUnmarked: so,
     present: so, late: so, absent: so, excused: so, noRecord: so,
