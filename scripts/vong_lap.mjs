@@ -81,22 +81,26 @@ if (CHO_BAN) {
   tieu(`−1 · Đợi production lên bản ${CHO_BAN}`);
   const het = Date.now() + CHO_TOI_DA_PHUT * 60_000;
   let ban = null;
+  let ta = '';
   let lan = 0;
   while (Date.now() < het) {
     lan += 1;
     const r = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(180000) })
       .then((x) => x.json()).catch(() => null);
     ban = r?.ban ?? null;
+    // BA chuyện khác nhau, ba câu khác nhau. Gộp chúng thành "(không hỏi được)" là chỗ người
+    // đọc đi mở Render Logs trong khi máy chủ vẫn khoẻ, chỉ là bản đang chạy chưa có dấu bản.
+    ta = ban ? `"${ban}"` : r ? 'một bản CŨ chưa có dấu bản (`/api/health` không trả `ban`)'
+      : 'không trả lời';
     if (ban === CHO_BAN) break;
     const con = Math.round((het - Date.now()) / 60_000);
-    console.log(`  lượt ${lan}: production đang chạy "${ban ?? '(không hỏi được)'}"`
-      + ` — chờ "${CHO_BAN}", còn tối đa ${con} phút`);
+    console.log(`  lượt ${lan}: production đang chạy ${ta} — chờ "${CHO_BAN}",`
+      + ` còn tối đa ${con} phút`);
     await new Promise((ok) => setTimeout(ok, 60_000));
   }
   if (ban !== CHO_BAN) {
     ghi(`bản ${CHO_BAN} đã lên production`, 'chua',
-        `sau ${CHO_TOI_DA_PHUT} phút vẫn thấy "${ban ?? '(không hỏi được)'}" —`
-        + ' mở Render → Logs xem lượt dựng có đỏ không');
+        `sau ${CHO_TOI_DA_PHUT} phút vẫn thấy ${ta} — mở Render → Logs xem lượt dựng có đỏ không`);
     process.exit(2);
   }
   ghi(`bản ${CHO_BAN} đã lên production`, 'xanh', `sau ${lan} lượt hỏi`);
