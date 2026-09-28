@@ -32,3 +32,14 @@ reportlab>=4.0
 # Chỉ dùng trong phép kiểm: đọc lại chính tệp PDF vừa dựng để canh thứ ĐÃ VẼ,
 # thay vì tin rằng mã vẽ đúng. Nhẹ, thuần Python.
 pypdf>=4.0
+
+# ── Ghim vì lỗ hổng, không vì tính năng ──────────────────────────────────────
+# `sqlparse` là gói CON của Django (Django chỉ đòi >=0.3.1), nên nó không có mặt
+# ở đây cho tới 28/09/2026. Hôm ấy `pip-audit` báo **9 lỗ hổng đã biết** trên bản
+# 0.5.5 (PYSEC-2026-3696/3697/3698/3699/3923), vá ở 0.6.0. Không ghim thì lượt
+# dựng kế tiếp trên Render lấy lại đúng bản hỏng.
+#
+# Tìm ra được vì CI đã chết từ lâu (khoá thanh toán GitHub) và `pip-audit` là một
+# trong bốn thứ CI làm mà cổng `pre-push` không làm. Bốn thứ ấy nay phải chạy tay
+# cho tới khi Actions sống lại — xem docs/VIEC_CUA_ANH.md mục 4e.
+sqlparse>=0.6.0

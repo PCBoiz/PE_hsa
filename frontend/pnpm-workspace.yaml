@@ -26,7 +26,23 @@ onlyBuiltDependencies:
 # `allowBuilds` ở trên PHẢI giữ nguyên: `sharp` là thư viện gốc (native), thiếu
 # script dựng thì phần tối ưu ảnh của Next hỏng. Tôi đã lỡ ghi đè cả tệp một
 # lần vì không đọc nó trước — pnpm báo "Ignored build scripts: sharp" ngay.
+#
+# 28/09/2026 — dòng `js-yaml`. `pnpm audit` báo 6 lỗ hổng HIGH, cả sáu trong chuỗi
+# công cụ lint (`eslint > @eslint/eslintrc > js-yaml`, và `brace-expansion` qua 38
+# đường). `pnpm audit --prod` SẠCH, tức không cái nào đi lên production — nhưng
+# chúng vẫn chạy trên máy người phát triển và trong CI, nơi có mã của bên thứ ba.
+# Ghim `js-yaml` + dựng lại khoá gói là **0 lỗ hổng**: `brace-expansion` tự lên bản
+# vá theo lượt giải lại, không cần ghim.
+#
+# ĐỪNG ghim `brace-expansion`. Đã thử 28/09 và ĐO được: mọi dải `>=1.1.18` đều rơi
+# vào nhánh 5.x, và với 5.x thì `minimatch` bên trong `@eslint/config-array` ném
+# ngay ở `match()` — **eslint chết**, cổng kiểm mất một bước. Một cổng không chạy
+# được nữa tệ hơn hai lỗ hổng chỉ có mặt lúc lint.
+#
+# Tìm ra được vì CI đã chết từ lâu (khoá thanh toán GitHub) và `pnpm audit` là một
+# trong bốn thứ CI làm mà cổng `pre-push` không làm.
 overrides:
   postcss: '>=8.5.23'
   browserslist: '>=4.28.7'
   sharp: '>=0.35.0'
+  js-yaml: '>=4.3.2'
