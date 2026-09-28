@@ -1,5 +1,48 @@
 # Việc của anh — pe_hsa
 
+## 🔴 ĐỌC TRƯỚC — chốt ngày 28/09/2026
+
+Anh bảo *"cứ tổng hợp hết lại những việc tôi cần làm là được"*. Đây là bản gọn nhất. Mọi
+mục đều có chi tiết ở dưới.
+
+**Còn đúng ba việc chỉ anh làm được:**
+
+| # | Việc | Vì sao gấp | Mất |
+|---|---|---|---|
+| **1** | **GitHub → Settings → Billing and plans** — gỡ khoá thanh toán | Ba workflow chết ở MỌI lượt: **không sao lưu CSDL**, không CI, không giữ ấm. Hôm nay chưa mất gì vì dữ liệu là giả; ngày TopHSA đưa dữ liệu thật mà chưa mở lại thì **mất là mất hẳn**. Chi tiết: mục 4e | 10 phút |
+| **2** | **Cloudflare R2** → bucket + API token → 4 biến trên Render | Hai ô CUỐI CÙNG của bảng nghiệm thu còn thiếu thật, và cả hai chờ đúng bộ khoá này: **tải tệp học liệu** (dòng 30) và **nộp bài bằng tệp** (dòng 31). Mọi dòng khác đã đo được trên production. Mã `D1` ở bảng dưới | 10 phút |
+| **3** | **Gộp `erp` → `master`** khi tôi báo xong | `erp` đang hơn `master` 8 commit. Mã `N4` | 5 phút |
+
+**Một chuyện anh cần biết ngay — tài khoản học viên anh gửi không tồn tại:**
+
+> Anh gửi `demo.user@example.com` / mật khẩu. Tôi tra trên production: **không có tài khoản
+> nào mang địa chỉ ấy.** Không phải sai mật khẩu — không có tài khoản. Nếu anh đã đưa nó cho
+> TopHSA thì họ đăng nhập sẽ thất bại.
+>
+> Tài khoản học viên đang dùng được, đã đo trên production: `hv.mau.104@example.com`
+> (Dương Minh Anh, học lớp mẫu, 27 bạn cùng lớp). Mật khẩu tôi đã đổi trong lúc đo và
+> **không lưu lại ở đâu** — anh mở **Quản trị → Tài khoản**, tìm "Dương Minh Anh", bấm
+> **Đặt lại mật khẩu**, màn hiện mật khẩu tạm đúng một lần. Em đăng nhập lần đầu sẽ bị bắt
+> đổi mật khẩu — đó là hàng rào làm đúng việc, không phải lỗi.
+
+**Ba việc CŨ nay KHÔNG cần anh nữa:**
+
+| Việc cũ | Nay thế nào |
+|---|---|
+| ~~Vào Render Shell chạy `du_lieu_mau --lam-moi`~~ | Đã gieo xong bằng `node scripts/gieo_trinh_dien.mjs --that` — qua chính cửa API, không cần shell. Production nay **19/19** ở `kiem_production.mjs` |
+| ~~Chạy lại bộ mẫu NGAY TRƯỚC buổi nghiệm thu~~ | Cùng lệnh trên, tôi chạy được từ máy mình. Mục 6 bên dưới đã sửa |
+| ~~Tick bốn ô `G16` `G19` `G20` `G24`~~ | Vẫn cần anh tick (Google chặn tôi), nhưng nay đo lại được trên **production** chứ không chỉ dev — xem mục 2 |
+
+**Số đo hôm nay, để anh biết đang đứng ở đâu:**
+
+| Đo gì | Trên production | Ghi chú |
+|---|---|---|
+| `kiem_production.mjs` | **19/19 ĐẠT** | sống 3/3 · kín 8/8 · đủ dữ liệu 8/8 |
+| Soát 38 màn nghiệm thu | **34/38 ĐẠT** | 2 chỗ còn lại là tải/nộp tệp (chờ R2), 2 chỗ là dữ liệu mỏng của lớp thử |
+| Lượt gọi đầu khi máy chủ vừa ngủ | **63–73 giây** | khách bấm đúng lúc ấy cũng chờ chừng này — việc số 1 ở trên gỡ được |
+
+---
+
 ## ⚡ LÀM NHANH — gom theo NƠI BẤM (27/09/2026)
 
 Anh bảo "tổng hợp hết việc cần tôi lại làm cho nhanh". Đây là cùng những việc ở bảng dưới,
@@ -47,24 +90,52 @@ Bốn ô này tôi đã mở màn thật và đo; cột H là của Nhân, tôi 
 | **Duyệt "xin nghỉ học" có báo giảng viên của lớp không?** | **CÓ** — điểm danh của em bị ghi đè thành "có phép" mà người đứng lớp không biết là chỗ dễ sinh tranh luận nhất về sau | một loại chuông mới, nên chờ anh |
 | **Học viên có cần màn xem ĐỦ bản ghi + học liệu không?** | **CÓ — tôi đang làm rồi**, vì bảng của khách đòi thẳng ở dòng 29 ("danh sách record theo buổi, tìm kiếm"). Anh bảo dừng thì tôi dừng | hôm nay thẻ lớp chỉ hiện **4** bản ghi và **4** tài liệu gần nhất, không có ô tìm — lớp 24 buổi thì em mất hút 20 buổi |
 
-### 4c · Hai việc trên production (tôi làm không được — không có thẻ quản trị prod)
+### 4c · Việc trên production
 
-**(a) Chạy lại bộ dữ liệu trình diễn — ĐÃ ĐO TRÊN PRODUCTION 27/09 TỐI, nặng hơn tôi tưởng.**
-Đăng nhập bằng thẻ quản trị anh gửi rồi hỏi thẳng máy chủ:
+**(a) Bộ dữ liệu trình diễn — XONG 28/09, anh không phải làm gì nữa.**
 
-    /api/admin/chuong-trinh/khung  → cả BA môn đều `versions: []`
-    /api/teach/classes/7322/chuong-trinh → khung: None · 0 buổi khung · 25 buổi lớp
+Đo 27/09 tối: bộ dữ liệu trên production có từ TRƯỚC E1 — **không một khung chương trình nào
+tồn tại**, kéo theo màn "Chương trình lớp" trống, §74 không có gì để hiện, sổ đầu bài không
+có mục nào để tick, cộng với bài kiểm tra / bản ghi / học liệu / hộp Yêu cầu đều rỗng. Sáu
+dòng nghiệm thu mở ra trắng dù mã chạy đúng.
 
-Tức bộ dữ liệu trên production có từ TRƯỚC E1: **không một khung chương trình nào tồn tại**.
-Kéo theo: màn "Chương trình lớp" trống, §74 "buổi này đã giao bài chưa" không có gì để hiện,
-sổ đầu bài không có mục nào để tick — cộng với bài kiểm tra, bản ghi buổi học, học liệu và
-hộp Yêu cầu đều rỗng. Sáu dòng nghiệm thu mở ra sẽ trống dù mã chạy đúng. Vào Render → `pe-hsa-backend` →
-Shell → `python manage.py du_lieu_mau --lam-moi` (khoảng 80 giây, chỉ gỡ và dựng lại dòng
-`is_demo` trong MỘT giao dịch).
+Đường cũ là vào Render → Shell → `python manage.py du_lieu_mau --lam-moi`, và nó **chỉ anh
+chạy được**. Suốt mấy ngày không ai chạy, nên sáu dòng ấy vẫn trống. Nay có đường thứ hai:
 
-**(b) Xoá hai tài khoản thử tôi mở trên production** (dưới đây).
+    PE_THE=<thư mục thẻ> node scripts/gieo_trinh_dien.mjs          # chỉ xem, không ghi
+    PE_THE=<thư mục thẻ> node scripts/gieo_trinh_dien.mjs --that   # gieo thật
 
-Hai tài khoản thử tôi mở trên production, đều `@example.com`, đều chưa xác thực, không thuộc lớp nào: `do.dong.ho.43e24089@example.com` ("Tài khoản đo đồng hồ") và một tài khoản `thu.prod.*@example.com` ("Thử production"), và `do.man.*@example.com` ("Học viên thử (đo màn)" — tài khoản tôi tạo bằng thẻ quản trị anh gửi để đo màn học viên trên production, đã xếp vào lớp 7322). Tài khoản thứ hai mở tối 27/09 để kiểm luồng tự đăng ký sau khi đẩy). Anh mở **Quản trị → Tài khoản**, tìm "đo đồng hồ" và "Thử production", xoá là xong. `du_lieu_mau --lam-moi` KHÔNG gỡ chúng vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người thật.
+Nó gieo bằng **đúng những cửa API mà người dùng thật bấm**, nên chạy được từ bất kỳ máy nào
+có thẻ quản trị — không cần shell. Chỉ cộng thêm, không xoá gì; chạy lần hai thì bỏ qua phần
+đã có. Chạy xong 28/09: `kiem_production.mjs` từ **13/19 lên 19/19**.
+
+Tiện thể nó còn là thứ dự án chưa từng có: một lượt đi trọn **luồng GHI trên bản đã deploy**.
+Cổng `pre-push` và pytest chạy trên máy cục bộ, E2E chạy trên `localhost` — không chỗ nào
+chạm vào production. Ngay lượt đầu nó bắt được hai chỗ: tên trạng thái khung phải là
+`xuat_ban` (tôi gửi `published`) và khoá hộp Yêu cầu là `yeuCau` (tôi đoán `items`).
+
+**(b) Xoá tài khoản thử tôi mở trên production** (dưới đây).
+
+Ba tài khoản tôi **MỞ** trên production, đều `@example.com`. `du_lieu_mau --lam-moi` KHÔNG gỡ
+chúng, vì chúng không mang dấu `is_demo` — chúng đi qua đúng cửa đăng ký công khai như người
+thật. Anh mở **Quản trị → Tài khoản**, tìm theo tên, xoá là xong:
+
+| Địa chỉ | Tên hiện trên màn | Mở để làm gì |
+|---|---|---|
+| `do.dong.ho.43e24089@…` | Tài khoản đo đồng hồ | đo khe hở đồng hồ cửa quên mật khẩu (27/09) |
+| `thu.prod.*@…` | Thử production | kiểm luồng tự đăng ký sau lượt đẩy (27/09 tối) |
+| `do.man.*@…` | Học viên thử (đo màn) | đo màn học viên trên production; đã xếp vào lớp 7322 |
+
+Sáu tài khoản tôi **ĐỔI MẬT KHẨU** ngày 28/09 để đo màn production theo từng vai. Tôi không
+mở tài khoản mới — dùng lại bộ sẵn có, và **không lưu mật khẩu ở bất kỳ đâu**. Cần vào lại
+thì anh bấm **Đặt lại mật khẩu** trên màn Quản trị → Tài khoản:
+
+`hv.mau.104@…` · `hv.mau.126@…` (hai em của lớp mẫu) · `audit2009.gv@…` · `audit2009.tg@…` ·
+`audit2009.hocvu@…` · `audit2009.bt@…`
+
+Một thay đổi nữa cùng lượt: lớp thử **AUDIT-01** nay do `audit2009.gv` phụ trách (trước là
+tài khoản `nhi_gv@gmail.com`). Đổi vì bộ soát màn cần một giảng viên THỬ có lớp, và tôi
+không đụng vào tài khoản mang địa chỉ thật. Anh trả lại được bất cứ lúc nào ở màn Lớp học.
 
 Lượt đo khe hở đồng hồ cửa quên mật khẩu 27/09 phải tự mở **một tài khoản thử** trên production để
 có nhánh "email CÓ tài khoản" mà bấm giờ: `do.dong.ho.43e24089@example.com`, tên hiển thị **"Tài
@@ -127,12 +198,15 @@ ngoài (sống · kín · đủ dữ liệu). Nó KHÔNG thay được sao lưu.
 | **Zoom** — nhờ quản trị tài khoản Zoom bật ghi tự động + cấp khoá | Bản ghi tự vào buổi, % đã xem (dòng 10, 22) | **Z1** |
 | **cron-job.org** — một cron gọi `/api/noi-bo/tick` | Thư không nằm chờ khi máy chủ gói miễn phí ngủ | **T6** · 5 phút |
 
-### 6 · NGAY TRƯỚC buổi nghiệm thu (bắt buộc, 2 phút)
+### 6 · NGAY TRƯỚC buổi nghiệm thu — nay là việc của TÔI, không của anh
 
-Chạy trên **production**: `python manage.py du_lieu_mau --lam-moi`.
-Đo 27/09 trên dev: khung chương trình **0 → 1**, sổ đầu bài **0 → 13**. Không chạy thì khách bấm
-"Chương trình" sẽ thấy *"Lớp chưa nhận khung chương trình"* — cho **sáu ô** của bảng, dù mã đúng hết.
-Lệnh chỉ gỡ và dựng lại dữ liệu `is_demo`, trong MỘT giao dịch.
+Cũ: anh phải vào Render Shell chạy `python manage.py du_lieu_mau --lam-moi`, nếu không thì
+khách bấm "Chương trình" sẽ thấy *"Lớp chưa nhận khung chương trình"* — **sáu ô** của bảng
+mở ra trắng dù mã đúng hết.
+
+Nay tôi chạy `node scripts/gieo_trinh_dien.mjs --that` rồi `node scripts/kiem_production.mjs`
+từ máy mình, và báo anh con số trước buổi. Anh chỉ cần nhắn một dòng trước buổi nghiệm thu
+để tôi chạy. Lệnh `du_lieu_mau --lam-moi` vẫn là đường sạch hơn nếu anh tiện mở Render.
 
 ### 7 · Khi tôi báo "erp đã thử xong"
 

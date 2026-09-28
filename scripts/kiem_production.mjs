@@ -118,7 +118,17 @@ if (!theAd) {
     try { return { ma: r.ma, d: JSON.parse(r.than) }; } catch { return { ma: r.ma, d: null }; }
   };
 
-  const lop = await json('/api/admin/classes');
+  // Thẻ hết hạn thì MỌI cửa trả 401, và nếu chỉ đếm phần tử thì màn hình nào cũng ra "0" —
+  // báo y hệt như dữ liệu rỗng thật. 28/09: đúng chuyện ấy xảy ra, suýt bảo anh Sơn chạy lại
+  // bộ mẫu trong khi bộ mẫu vẫn còn nguyên. Hỏi một câu trước, rồi mới đếm.
+  const thu = await json('/api/admin/classes');
+  if (thu.ma === 401 || thu.ma === 403) {
+    console.log(`\nKHÔNG ĐO ĐƯỢC nhóm DỮ LIỆU — thẻ quản trị hết hạn (HTTP ${thu.ma}).`
+      + '\nCấp lại thẻ rồi đo lại. ĐỪNG kết luận là dữ liệu rỗng: đây là hai chuyện khác nhau.');
+    process.exit(2);
+  }
+
+  const lop = thu;
   const dsLop = lop.d?.classes || [];
   ghi('DỮ LIỆU', 'có lớp để mở ra xem', dsLop.length > 0, `${dsLop.length} lớp`);
 

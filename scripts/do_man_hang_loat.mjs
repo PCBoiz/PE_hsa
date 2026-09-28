@@ -68,10 +68,20 @@ const DOC = (hoi) => {
     .filter(hien)
     .flatMap((e) => [...e.options].map((o) => (o.textContent || '').trim()))
     .filter(Boolean);
+  // Ô NHẬP nhiều khi chỉ mang nhãn ở `placeholder` hoặc ở một `<span class="sr-only">` —
+  // cả hai đều KHÔNG nằm trong `innerText`. Sổ đầu bài có ô "Ghi chú (không bắt buộc)" cho
+  // từng mục, và bộ đo 28/09 chấm THIẾU cho nó suốt ba lượt. Ô người ta gõ được là ô CÓ,
+  // dù nhãn của nó nằm ở đâu.
+  const o = [...document.querySelectorAll('input, textarea, select')]
+    .filter(hien)
+    .flatMap((e) => [e.getAttribute('placeholder') || '', e.getAttribute('aria-label') || '',
+                     (e.labels?.[0]?.textContent) || ''])
+    .map((x) => x.trim()).filter(Boolean);
   const tra = {};
   for (const [k, mau] of Object.entries(hoi || {})) {
     const re = new RegExp(mau, 'i');
-    tra[k] = re.test(t) || nut.some((n) => re.test(n)) || muc.some((n) => re.test(n));
+    tra[k] = re.test(t) || nut.some((n) => re.test(n)) || muc.some((n) => re.test(n))
+             || o.some((n) => re.test(n));
   }
   return {
     tieuDe: (document.querySelector('h1, h2')?.textContent || '').trim().slice(0, 80),
@@ -149,7 +159,12 @@ async function dienChoTrong(phien) {
   if (!chon) chon = { l: lop[0], ct: null };
   if (!chon.l) return { loi: 'giảng viên của thẻ `gv` không phụ trách lớp nào' };
 
-  const buoi = (chon.ct?.buoi || []).filter((b) => b.started);
+  // Buổi mẫu phải là buổi CÓ nội dung khung: màn Sổ đầu bài chỉ dựng ô trạng thái và ô ghi
+  // chú cho từng MỤC của khung, nên buổi nằm ngoài khung mở ra chỉ có "Chưa có nội dung
+  // nào." — và bộ đo chấm THIẾU cho một màn chạy đúng (28/09, lớp có 20 buổi mà khung 3).
+  const daBatDau = (chon.ct?.buoi || []).filter((b) => b.started);
+  const coKhung = daBatDau.filter((b) => b.syllabusSessionId || b.buoiKhung || b.soBuoiKhung);
+  const buoi = coKhung.length ? coKhung : daBatDau;
   const em = (chon.ct?.tungEm || [])[0];
   const bai = (await doc(`/api/teach/classes/${chon.l.id}/assignments`))?.assignments || [];
 
@@ -165,13 +180,18 @@ async function dienChoTrong(phien) {
       (y) => ({ id: y.id, loai: y.loai || y.kind || '' }));
   });
   const thayDoi = dsYc.find((y) => /chuyen|bao_luu|huy|hoc_lai|nghi_hoc|hoc_bu|tt_/.test(y.loai));
+  // Dòng 11 (một yêu cầu thường) và dòng 12 (yêu cầu CẦN DUYỆT) là hai màn khác nhau, và
+  // hai bộ nút khác nhau: yêu cầu cần duyệt không cho đổi loại hay đóng tay. Lấy chung một
+  // id cho cả hai thì một trong hai dòng luôn báo thiếu — 28/09 đúng chuyện ấy, hai lượt đo
+  // liên tiếp báo thiếu cho hai dòng KHÁC nhau chỉ vì yêu cầu đầu danh sách đổi loại.
+  const thuong = dsYc.find((y) => !/chuyen|bao_luu|huy|hoc_lai|nghi_hoc|hoc_bu|tt_/.test(y.loai));
 
   return {
     LOP_MAU: String(chon.l.id),
     BUOI_MAU: buoi.length ? String(buoi[buoi.length - 1].id) : null,
     EM_MAU: em ? String(em.userId) : null,
     BAI_MAU: bai.length ? String(bai[0].id) : null,
-    YEU_CAU_MAU: dsYc.length ? String(dsYc[0].id) : null,
+    YEU_CAU_MAU: (thuong || dsYc[0]) ? String((thuong || dsYc[0]).id) : null,
     YEU_CAU_DUYET: thayDoi ? String(thayDoi.id) : (dsYc.length ? String(dsYc[0].id) : null),
   };
 }
@@ -292,6 +312,10 @@ let hong = 0;
 for (let i = 0; i < ra.length; i++) {
   const d = ra[i];
   const vi_sao = khongDoDuoc(d, MAN[i]);
+  // Ghi cả vào bản JSON, không chỉ ra màn hình. 28/09: tệp JSON của một lượt đo trên
+  // production không mang dấu này, nên đọc lại thì mười màn bị thẻ hết hạn trông y hệt
+  // mười màn THIẾU tính năng — suýt thành mười dòng nghiệm thu bị hạ oan.
+  d.khongDoDuoc = vi_sao || null;
   if (vi_sao) {
     hong++;
     console.log(`? dòng ${d.dong} · ${d.ten} · KHÔNG ĐO ĐƯỢC — ${vi_sao}`);

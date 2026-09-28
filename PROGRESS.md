@@ -10299,3 +10299,71 @@ xem báo cáo.
 **Không kịp soát:** `teaching/bao_cao_cheo.py` (chưa có trên `7f93250`) · luồng Google OAuth đi thật ·
 `chatbot/` (tiêm nhắc AI) · không mở màn nào trong trình duyệt (brief cấm dựng `next dev`, máy còn
 ~3,1 GB; lượt này không sửa tệp `.tsx` nào).
+
+## 28/09/2026 — Gieo dữ liệu trình diễn QUA CỬA API: production 13/19 → 19/19, màn 22 → 34/38
+
+Anh Sơn: *"tiếp tục thử nghiệm, và rồi cải tiến lên từ đấy, cứ tổng hợp hết lại những việc tôi
+cần làm là được"*.
+
+### Việc bị kẹt vì chỉ một người mở được
+
+`kiem_production.mjs` báo sáu khối DỮ LIỆU rỗng từ 27/09, và cách chữa duy nhất ghi trong sổ là
+`python manage.py du_lieu_mau --lam-moi` **trên Render Shell** — tức phải chính chủ dự án ngồi
+vào máy. Nên suốt mấy ngày sáu dòng nghiệm thu vẫn mở ra trắng dù mã chạy đúng.
+
+Dựng `scripts/gieo_trinh_dien.mjs`: gieo bằng **đúng những cửa API mà người dùng thật bấm**, nên
+chạy được từ bất kỳ máy nào có thẻ quản trị. Chỉ cộng thêm, không xoá gì; chạy lần hai bỏ qua
+phần đã có (đo: lượt hai ghi 0 dòng, 6/6 ĐẠT).
+
+Nó còn là thứ dự án chưa từng có: **một lượt đi trọn luồng GHI trên bản đã deploy**. Cổng
+`pre-push` và pytest chạy trên máy cục bộ, E2E chạy trên `localhost` — không chỗ nào chạm
+production. Ngay lượt đầu nó bắt hai chỗ mà không bộ kiểm nào bắt được:
+
+- trạng thái khung phải là `xuat_ban`, tôi gửi `published` → HTTP 400;
+- hộp Yêu cầu trả khoá `yeuCau`, tôi đoán `items` → đếm ra 0 trong khi có 6.
+
+### Bốn lần thước đo tự nói dối, trong một buổi
+
+| Thước | Nói gì | Sự thật | Vá |
+|---|---|---|---|
+| `kiem_production.mjs` | "0 lớp" | thẻ hết hạn, mọi cửa trả 401 | hỏi một câu trước khi đếm; 401/403 → thoát mã 2, KHÔNG kết luận rỗng |
+| `do_man_hang_loat.mjs` | 10 màn "THIẾU" | thẻ hết hạn giữa lượt, cả 10 rơi về `/login` | ghi `khongDoDuoc` vào **tệp JSON**, không chỉ ra màn hình |
+| `do_man_hang_loat.mjs` | dòng 15 thiếu "ghi chú sau buổi" | ô có thật, nhãn nằm ở `placeholder` và `<span class="sr-only">` — cả hai KHÔNG vào `innerText` | đọc thêm `placeholder`, `aria-label`, `<label>` của mọi ô nhập |
+| `do_man_hang_loat.mjs` | hai lượt liên tiếp báo thiếu cho **hai dòng khác nhau** | dòng 11 và dòng 12 dùng CHUNG một id yêu cầu, mà hai màn ấy có hai bộ nút khác nhau | dòng 11 lấy yêu cầu thường, dòng 12 lấy yêu cầu cần duyệt |
+
+Thêm một chỗ nữa: bộ đo chọn "buổi mẫu" là buổi CUỐI của lớp. Lớp 20 buổi mà khung 3 buổi thì
+buổi cuối nằm ngoài khung, màn Sổ đầu bài mở ra đúng như thiết kế — *"Chưa có nội dung nào."* —
+và bị chấm THIẾU. Nay ưu tiên buổi CÓ `syllabusSessionId`.
+
+### Dữ liệu gieo: AI GỬI quan trọng hơn CÓ BAO NHIÊU DÒNG
+
+Lượt gieo đầu tạo ba yêu cầu bằng thẻ quản trị. Hộp đầy, nhưng cột "Người gửi" trống, màn "Hỏi &
+yêu cầu" của em vẫn trắng, và không yêu cầu nào có nút Duyệt — **ba dòng nghiệm thu trông như
+chưa làm**. Nay gieo gửi bằng vai học viên, kèm một loại `tt_chuyen_lop` (có `viec: 'tu_dong'`)
+để màn Duyệt hiện đủ nút Duyệt, ô chọn lớp tới và dòng "Hệ thống sẽ…".
+
+Cùng lý do, gieo thêm: bài gắn vào mục khung (§74 mới trả lời được nửa còn lại), một bài nháp,
+một bài em NỘP, một lượt em MỞ bản ghi. Khoá vắng mặt khác danh sách rỗng — bảng chấm phải phân
+biệt "ai chưa nộp" với "chưa ai nộp".
+
+### Số chốt
+
+| Đo | Trước | Sau |
+|---|---|---|
+| `kiem_production.mjs` | 13/19 | **19/19** |
+| 38 màn nghiệm thu trên **production** | 22 ĐẠT | **34 ĐẠT** |
+| Lượt gọi đầu khi máy chủ vừa ngủ | — | **63–73 giây** |
+
+Bốn màn còn lại: hai là thiếu thật (**tải tệp học liệu**, **nộp bài bằng tệp** — cả hai chờ khoá
+R2, mã `D1`), hai là dữ liệu mỏng của lớp thử.
+
+### Một hàng rào đang làm đúng việc
+
+Thẻ cấp bằng mật khẩu tạm bị chặn ở **mọi** cửa khác với `mustChangePassword` — phải đổi mật khẩu
+rồi mới dùng được hệ thống. Bộ lấy thẻ phải đi qua `PUT /api/user/password` như người thật.
+
+### Tài khoản học viên anh Sơn gửi KHÔNG tồn tại trên production
+
+`demo.user@example.com` — tra bằng thẻ quản trị: `total: 0`. Không phải sai mật khẩu. Nếu đã đưa
+cho TopHSA thì họ đăng nhập sẽ thất bại. Đã ghi vào `docs/VIEC_CUA_ANH.md` kèm tài khoản thay thế
+đã đo được (`hv.mau.104@example.com`, học lớp mẫu).

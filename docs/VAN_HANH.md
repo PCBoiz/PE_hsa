@@ -163,9 +163,41 @@ Ba nhóm câu hỏi, và mỗi nhóm trả lời một loại lo khác nhau:
 | **KÍN** | những cửa PHẢI đóng có đóng không; cửa cần đăng nhập có đòi đăng nhập không | một lỗ bảo mật đã lọt lên bản thật |
 | **DỮ LIỆU** | sáu khối làm buổi demo trông như "chưa làm" nếu rỗng | mã đúng, dữ liệu thiếu — chạy `du_lieu_mau --lam-moi` |
 
+**Thẻ hết hạn KHÔNG phải dữ liệu rỗng.** Nhóm DỮ LIỆU hỏi bằng thẻ quản trị; thẻ hết
+hạn thì mọi cửa trả 401 và mọi phép đếm ra 0 — trông y hệt như CSDL trống. Bộ kiểm hỏi một
+câu trước khi đếm và thoát mã **2** nếu gặp 401/403. Gặp mã 2 thì cấp lại thẻ, đừng đi chạy
+lại bộ dữ liệu (28/09: suýt bảo chủ dự án dựng lại bộ mẫu trong khi bộ mẫu vẫn còn nguyên).
+
 Đo 27/09/2026, lượt đầu tiên: **13/19 ĐẠT**. Ba câu SỐNG và tám câu KÍN đạt hết; sáu câu
 DỮ LIỆU hỏng — production khi ấy **không có một khung chương trình nào** (bộ dữ liệu ở đó
 có từ trước E1), không bài kiểm tra, không bản ghi, không học liệu, không yêu cầu.
+
+## Gieo dữ liệu trình diễn — khi không ai mở được shell của Render
+
+```bash
+PE_THE=<thư mục thẻ ngoài repo> node scripts/gieo_trinh_dien.mjs          # chỉ XEM
+PE_THE=<thư mục thẻ ngoài repo> node scripts/gieo_trinh_dien.mjs --that   # gieo THẬT
+PE_LOP=<id> …                                                            # ép một lớp khác
+```
+
+`python manage.py du_lieu_mau --lam-moi` vẫn là đường chính, và vẫn tốt hơn ở dev. Nhưng nó
+cần shell của Render, tức cần chính chủ dự án ngồi vào máy — nên suốt mấy ngày
+`kiem_production.mjs` báo sáu khối DỮ LIỆU rỗng mà không ai lấp được. Tệp này lấp bằng đúng
+những cửa mà người dùng thật bấm, nên chạy được từ bất kỳ máy nào có thẻ quản trị.
+
+Chỉ cộng thêm, không xoá gì. Chạy lần hai thì bỏ qua phần đã có.
+
+Nó còn là **lượt đi trọn luồng GHI trên bản đã deploy** — thứ mà cổng `pre-push`, pytest và
+E2E đều không làm (cả ba chạy trên máy cục bộ hoặc `localhost`). Một cửa ghi hỏng RIÊNG trên
+production — thiếu cột sau lượt `bootstrap_schema`, quyền lệch, biến môi trường vắng — thì
+đây là chỗ đầu tiên phát hiện ra.
+
+Có thẻ học viên (`tokens_hv.json`) thì nó gieo thêm phần chỉ em làm được: gửi yêu cầu **bằng
+vai em**, nộp một bài, mở một bản ghi. Quan trọng hơn số dòng: yêu cầu do quản trị tạo thì cột
+"Người gửi" trống, màn "Hỏi & yêu cầu" của em vẫn trắng, và không yêu cầu nào có nút Duyệt.
+
+Đo 28/09/2026: `kiem_production.mjs` **13/19 → 19/19**; soát 38 màn nghiệm thu trên production
+**22 → 34 ĐẠT**.
 
 **Con số đáng nhớ: lượt gọi đầu mất 63,0 giây** vì Render vừa ngủ. Khách bấm vào lúc ấy
 cũng chờ đúng chừng ấy. Màn đăng nhập có gõ cửa trước khi người ta kịp gõ mật khẩu, nhưng
