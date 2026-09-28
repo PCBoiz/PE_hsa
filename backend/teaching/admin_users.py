@@ -962,7 +962,7 @@ class AdminUserDeleteView(APIView):
 
     Yêu cầu TopHSA (quản lý người dùng, 2.x) "Xóa tài khoản" — anh Sơn chốt
     27/09/2026: XOÁ CỨNG (DELETE thật), khác hẳn "khoá" ở ``AdminUserStatusView``
-    (giữ nguyên dữ liệu, chỉ chặn đăng nhập). Xem §75 trong
+    (giữ nguyên dữ liệu, chỉ chặn đăng nhập). Xem §76 trong
     ``sql/legacy_schema.sql`` cho phần rà 56 khoá ngoại trỏ vào ``users(id)`` đã
     làm trước khi mở đường này.
 
@@ -975,7 +975,7 @@ class AdminUserDeleteView(APIView):
     công phá của thao tác.
 
     Ba khoá ``NO ACTION`` do Django/allauth/SimpleJWT quản (không đụng vào DDL
-    của họ, xem chú thích §75 trong ``legacy_schema.sql``) chặn thẳng câu DELETE
+    của họ, xem chú thích §76 trong ``legacy_schema.sql``) chặn thẳng câu DELETE
     nếu còn dòng: mọi tài khoản từng đăng nhập đều có dòng trong
     ``token_blacklist_outstandingtoken`` (SimpleJWT cấp access/refresh token),
     và mọi tài khoản đăng ký qua allauth đều có dòng ``account_emailaddress`` —

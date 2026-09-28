@@ -87,7 +87,7 @@ def _cot(bang, cot):
 
 
 def _cot_nullable(bang, cot):
-    """Cột `cot` của `bang` đã bỏ NOT NULL chưa? (§75 — SET NULL tự vỡ nếu quên
+    """Cột `cot` của `bang` đã bỏ NOT NULL chưa? (§76 — SET NULL tự vỡ nếu quên
     nới NOT NULL trước)."""
     r = q1("""SELECT is_nullable FROM information_schema.columns
               WHERE table_schema = current_schema() AND table_name = %s AND column_name = %s""",
@@ -221,17 +221,17 @@ MUC = [
      lambda: _cot('classes', 'syllabus_version_id')),
     ('§64f', 'class_sessions.syllabus_session_id (buổi thật khớp buổi khung)',
      lambda: _cot('class_sessions', 'syllabus_session_id')),
-    ('§75a', 'parent_report_links.created_by đã nới NOT NULL',
+    ('§76a', 'parent_report_links.created_by đã nới NOT NULL',
      lambda: _cot_nullable('parent_report_links', 'created_by')),
-    ('§75b', 'FK parent_report_links.created_by ON DELETE SET NULL',
+    ('§76b', 'FK parent_report_links.created_by ON DELETE SET NULL',
      lambda: _fk('parent_report_links', 'parent_report_links_created_by_fkey', 'SET NULL')),
-    ('§75c', 'parent_report_optout.by_user_id đã nới NOT NULL',
+    ('§76c', 'parent_report_optout.by_user_id đã nới NOT NULL',
      lambda: _cot_nullable('parent_report_optout', 'by_user_id')),
-    ('§75d', 'FK parent_report_optout.by_user_id ON DELETE SET NULL',
+    ('§76d', 'FK parent_report_optout.by_user_id ON DELETE SET NULL',
      lambda: _fk('parent_report_optout', 'parent_report_optout_by_user_id_fkey', 'SET NULL')),
-    ('§75e', 'parent_report_sends.requested_by đã nới NOT NULL',
+    ('§76e', 'parent_report_sends.requested_by đã nới NOT NULL',
      lambda: _cot_nullable('parent_report_sends', 'requested_by')),
-    ('§75f', 'FK parent_report_sends.requested_by ON DELETE SET NULL',
+    ('§76f', 'FK parent_report_sends.requested_by ON DELETE SET NULL',
      lambda: _fk('parent_report_sends', 'parent_report_sends_requested_by_fkey', 'SET NULL')),
 ]
 

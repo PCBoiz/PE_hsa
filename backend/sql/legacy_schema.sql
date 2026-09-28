@@ -1941,7 +1941,7 @@ ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS syllabus_session_id INTEGER
     REFERENCES syllabus_sessions(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_class_sessions_syllabus ON class_sessions(syllabus_session_id);
 
--- ── §75 · XOÁ TÀI KHOẢN — SỬA 3 KHOÁ NO ACTION CHẶN XOÁ CỨNG (Nhân, 27/09/2026) ──
+-- ── §76 · XOÁ TÀI KHOẢN — SỬA 3 KHOÁ NO ACTION CHẶN XOÁ CỨNG (Nhân, 27/09/2026) ──
 -- Yêu cầu TopHSA (quản lý người dùng): "Xóa tài khoản" — anh Sơn chốt XOÁ CỨNG
 -- (DELETE thật, không phải đánh dấu). Trước khi mở đường DELETE FROM users,
 -- rà lại TOÀN BỘ 56 khoá ngoại đang trỏ vào users(id) — con số đo ngày

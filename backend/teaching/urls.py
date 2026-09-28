@@ -139,7 +139,7 @@ urlpatterns = [
     path('api/admin/users/bulk', admin_users.AdminBulkCreateUsersView.as_view()),
     path('api/admin/users/<int:user_id>/role', views.AdminUserRoleView.as_view()),
     path('api/admin/users/<int:user_id>/status', admin_users.AdminUserStatusView.as_view()),
-    # Xoá CỨNG tài khoản (27/09/2026, §75) — khác /status (khoá, giữ dữ liệu).
+    # Xoá CỨNG tài khoản (27/09/2026, §76) — khác /status (khoá, giữ dữ liệu).
     path('api/admin/users/<int:user_id>', admin_users.AdminUserDeleteView.as_view()),
     path('api/admin/users/<int:user_id>/reset-password',
          views.AdminResetPasswordView.as_view()),

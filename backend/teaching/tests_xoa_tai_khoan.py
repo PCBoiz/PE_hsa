@@ -1,4 +1,4 @@
-"""Xoá CỨNG tài khoản (§75, 27/09/2026) — `teaching/admin_users.py::AdminUserDeleteView`."""
+"""Xoá CỨNG tài khoản (§76, 27/09/2026) — `teaching/admin_users.py::AdminUserDeleteView`."""
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -96,7 +96,7 @@ def test_xoa_nguoi_tu_van_canh_bao_va_bo_trong_hoc_vien(admin):
 
 
 def test_xoa_tai_khoan_da_tung_dang_nhap_khong_bi_chan_boi_bang_django(admin):
-    """Hồi quy cho đúng phát hiện của §75: tài khoản từng đăng nhập có dòng
+    """Hồi quy cho đúng phát hiện của §76: tài khoản từng đăng nhập có dòng
     trong `token_blacklist_outstandingtoken` (SimpleJWT) và `account_emailaddress`
     (allauth) — hai khoá NO ACTION đó phải được dọn tay TRƯỚC câu DELETE FROM
     users, không thì cả câu xoá ném IntegrityError."""
