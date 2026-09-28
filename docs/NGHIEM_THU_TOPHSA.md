@@ -19,7 +19,38 @@ công khoá tháng, §60 tài liệu R2).
 **Spec nghiệm thu**: mỗi dòng sẽ có `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng kịch bản demo;
 một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh hai khổ. Cột "Spec" = `—` là chưa có.
 
+## ✅ 28/09/2026 — LẦN ĐẦU ĐO TRÊN CHÍNH BẢN PRODUCTION: 34/38 màn ĐẠT
+
+Mọi con số trước dòng này đều đo trên **dev**. Lý do thì tầm thường mà hậu quả thì không:
+thư viện đo ghim cookie vào `localhost`, nên chưa lượt nào chạm được bản thật (vá 27/09).
+
+Đo hôm nay bằng `PE_WEB=https://pe-hsa.vercel.app node scripts/do_man_hang_loat.mjs`, thẻ của
+năm vai trên production:
+
+| | Số |
+|---|---|
+| Màn ĐẠT | **34 / 38** |
+| `kiem_production.mjs` | **19 / 19** (sống 3 · kín 8 · đủ dữ liệu 8) |
+| Lượt gọi đầu khi máy chủ vừa ngủ | **63–73 giây** |
+
+Bốn màn còn lại:
+
+| Dòng | Thiếu gì | Thật hay là dữ liệu mỏng |
+|---|---|---|
+| 30 | nút **Tải về** cho học liệu là tệp | **THIẾU THẬT** — chờ khoá R2 (việc `D1`). Liên kết ngoài đã chạy |
+| 31 | **nộp bài bằng tệp** | **THIẾU THẬT** — cùng khoá R2 |
+| 29 | dấu "đã mở" trên bản ghi | dữ liệu: em thứ hai chưa mở bản ghi nào |
+| 15 | ghi chú sau buổi ở Sổ đầu bài | dữ liệu: buổi được chọn nằm NGOÀI khung nên màn không có mục nào — đúng thiết kế |
+
+Tức **hai ô cuối cùng của bảng phân rã còn thiếu thật, và cả hai chờ đúng một bộ khoá.**
+
 ## ⚠ TRƯỚC BUỔI NGHIỆM THU: chạy `python manage.py du_lieu_mau --lam-moi`
+
+**Cập nhật 28/09: KHÔNG còn phải mở Render Shell.** `node scripts/gieo_trinh_dien.mjs --that`
+gieo cùng bộ dữ liệu qua chính các cửa API, chạy được từ máy bất kỳ có thẻ quản trị. Đã chạy
+trên production hôm nay: `kiem_production.mjs` từ 13/19 lên **19/19**. Lệnh `du_lieu_mau
+--lam-moi` vẫn sạch hơn nếu tiện mở Render.
+
 
 Đo 27/09/2026: `syllabus_versions` = **0**, `syllabus_sessions` = 0, `session_logs` = **0**, không
 bài nào `kind='kiem_tra'`. Bộ dữ liệu mẫu trong CSDL cũ hơn mã — `teaching/du_lieu_mau.py` CÓ dựng
