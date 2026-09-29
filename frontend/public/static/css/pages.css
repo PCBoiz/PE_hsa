@@ -509,7 +509,13 @@ body.dark .prof-avatar         { border-color: var(--card); }
   font-weight: 700; color: var(--brand-ink); text-decoration: none; white-space: nowrap;
 }
 .cmp-go:hover { text-decoration: underline; }
-.cmp-go.is-done { font-weight: 600; color: #0E7C6B; }
+/* `--success-ink` chứ KHÔNG `#0E7C6B` (30/09/2026, axe trên production).
+   Mã cũ đạt 4,62 trên nền ô mặc định `#F4F3F8` nhưng chỉ **4,40** trên nền ô bậc 3
+   `#EFECFD` — thiếu 0,1 so với chuẩn AA, và chỉ thiếu ở MỘT trong bốn bậc, nên nó sống
+   sót mọi lượt soi bằng mắt. Token này đạt 6,16 ở nền xấu nhất trong bốn.
+   Đúng bài học của dòng ngay trên: `.cmp-go` đã phải bỏ mã cứng vì lý do y hệt (22/09),
+   còn dòng này thì không ai sửa theo. */
+.cmp-go.is-done { font-weight: 600; color: var(--success-ink); }
 .cmp-sub { margin-top: 2px; font-size: 10.5px; color: var(--t3); }
 /* Con số CHỦ ĐỀ, hiện khi nó khác con số lớn (đã gộp điểm đề thi thử).
    Dẫn xuất từ currentColor để không phải khai lại cho nền tối. */
@@ -652,6 +658,10 @@ body.dark .cmp-warn    { background: rgba(255, 143, 163, .12); color: #FF9FB1; }
 .bk-sum-n   { display: block; font-size: 10.5px; color: var(--t3); }
 
 .bk-rows { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+/* Khung này nhận tiêu điểm để cuộn được bằng bàn phím (xem chú thích ở `DashboardClient`).
+   Nhận tiêu điểm mà không thấy viền thì người dùng bàn phím mất dấu con trỏ giữa trang —
+   đúng thứ hại hơn cả việc không cuộn được. `:focus-visible` nên chuột bấm vào không hiện. */
+.bk-rows:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 10px; }
 .bk-row {
   display: flex; align-items: center; gap: 9px;
   padding: 8px 10px; border-radius: 10px; background: #F9F9FC;

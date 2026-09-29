@@ -893,7 +893,14 @@ export default function DashboardClient(
                     <span className="prof-section-title">Sổ điểm</span>
                   </div>
                   <div className="bk-sums" id="book-sum"></div>
-                  <div className="bk-rows" id="book-rows">
+                  {/* `tabIndex={0}` + `role="region"` + nhãn: sổ điểm cuộn trong một khung
+                      cao 420px (`.bk-rows` ở pages.css), và từng dòng bên trong KHÔNG có gì
+                      nhận được tiêu điểm — nên người không dùng chuột không cuộn nổi tới
+                      dòng thứ mười. axe bắt được trên production 30/09 (`scrollable-region-
+                      focusable`, cả hai khổ, cả hai chủ đề). Đặt tiêu điểm lên chính khung
+                      là cách WCAG 2.1.1 chỉ ra: khung nhận tiêu điểm thì mũi tên cuộn được. */}
+                  <div className="bk-rows" id="book-rows" tabIndex={0} role="region"
+                       aria-label="Sổ điểm — danh sách hoạt động đã chấm">
                     <div className="prof-empty">Đang tải…</div>
                   </div>
                 </div>

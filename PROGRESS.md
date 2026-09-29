@@ -44,6 +44,28 @@ dán rồi thì kiểm bằng `grep -c $'\x08'`.
 Đo production sau khi gộp, sáu thẻ vai thật: **40/42 màn ĐẠT, 0 màn chưa đo được.** Hai ô đỏ
 còn lại đều chờ khoá R2. Màn thứ 42 (tab Tài liệu) ĐẠT ngay lượt đo đầu tiên của nó.
 
+── VÀ MỘT LỖI CÙNG HỌ, NẶNG HƠN: BỘ ĐO ĐO NHẦM TRANG ĐĂNG NHẬP ─────────────
+
+`do_axe.mjs` đọc thẻ từ `PE_TOKENS` (đường dẫn TỆP) trong khi sổ tay và mọi bộ khác dùng
+`PE_THE` (THƯ MỤC); không có thì nó lặng lẽ rơi về `.the/tokens_ad.json` cũ trên máy. Chạy
+đúng lệnh trong sổ tay là nó chạy **KHÔNG ĐĂNG NHẬP** và in ra **"0 nút vi phạm / 122 lượt"**.
+
+Đăng nhập thật thì con số là **12 nút vi phạm**. Hai lỗi, cả hai ở màn Hồ sơ, cả hai thật:
+
+  · **tương phản 4,40** ở chip "xong chủ đề" — mã cứng `#0E7C6B` đạt 4,62 trên nền ô mặc
+    định và trên BA trong BỐN bậc năng lực, chỉ thiếu ở bậc 3 (`#EFECFD`). Một lỗi chỉ hiện
+    ở một phần tư số ô thì soi bằng mắt gần như không bao giờ thấy. Đổi sang `--success-ink`
+    (6,16 ở nền xấu nhất). Đáng nhớ: dòng NGAY TRÊN nó mang chú thích kể `.cmp-go` đã phải
+    bỏ mã cứng vì lý do y hệt (22/09). Bài học có sẵn, cách đúng một dòng, vẫn không ai sửa
+    theo — đó là lý do phần vá lần này đi kèm một phép kiểm chứ không chỉ một chú thích.
+  · **sổ điểm cuộn được bằng chuột, không cuộn được bằng bàn phím** (WCAG 2.1.1). Khung cao
+    420px, từng dòng bên trong không nhận tiêu điểm. Thêm `tabIndex` + nhãn + viền tiêu điểm.
+
+`do_giao_dien.mjs` mang sẵn chú thích kể ĐÚNG lỗi "bộ đo rơi về màn đăng nhập mà vẫn in ra
+một bảng số trông rất bình thường" — lần ấy (trước 30/09) chỉ vá nửa: cho đổi đường dẫn,
+nhưng không ai hỏi "thẻ còn sống không". Lỗi quay lại qua cửa khác. Nay cả ba bộ **hỏi
+`/api/user` trước khi đo** và thoát mã 2 nếu thẻ chết — không in số nào.
+
 ## 29/09/2026 — Lượt lên production đầu tiên có DẤU BẢN, và lượt rà sau khi lên
 
 `master` = `4133758` đã lên. `GET /api/health` trả `{"status":"ok","ban":"4133758"}` — câu
