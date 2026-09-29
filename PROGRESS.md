@@ -7,6 +7,47 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 29/09/2026 — Lượt lên production đầu tiên có DẤU BẢN, và lượt rà sau khi lên
+
+`master` = `4133758` đã lên. `GET /api/health` trả `{"status":"ok","ban":"4133758"}` — câu
+"production đã lên bản mới chưa" nay là MỘT LỜI GỌI, không còn là một phép thử phải nghĩ ra
+sau mỗi lượt đẩy. Trước đó cùng ngày, chính dấu bản ấy chứng minh được điều ngược lại: anh Sơn
+đã gộp cục bộ nhưng `git push` chưa chạy, và production trả `{"status":"ok"}` KHÔNG có `ban` —
+ba bằng chứng độc lập (`origin/master` còn ở `b22235c`, đếm commit, và dấu bản) cùng chỉ một
+chuyện. Không có dấu bản thì chuyện ấy chỉ lộ ra khi ai đó đi thử một tính năng và thấy nó
+vắng, rồi đoán xem vì sao.
+
+**Deploy xanh là BẰNG CHỨNG cho lập luận về §76, không phải may.** §76 là
+`CREATE UNIQUE INDEX` trên `notifications` — đúng loại từng nổ ở dự án này
+(`users_role_check`). Ba tầng kiểm trước khi đẩy: chỉ mục là MỘT PHẦN
+(`WHERE type = 'cham_tien_do'`), và loại chuông ấy chưa từng tồn tại ở bản cũ (đối chứng bằng
+một chuỗi chắc chắn có: 3 khớp; `cham_tien_do`: 0 tệp ở `b22235c`, 5 tệp ở `4133758`) ⇒ tập
+con rỗng, không dòng nào trùng; `notifications` chỉ 201 dòng / 232 kB nên khoá lúc dựng không
+đáng kể; và `bootstrap_schema` chạy mỗi mục một giao dịch nên mục hỏng ⇒ build đỏ, bản cũ vẫn
+phục vụ. Sau khi đẩy: production phục vụ `4133758` ⇒ §76 đã chạy sạch trên CSDL thật.
+
+**Bộ kiểm backend TOÀN BỘ: 1.690 xanh / 0 đỏ** (2 giờ 42 phút) — thứ CI lẽ ra chạy. Lượt đầy
+đủ gần nhất (28/09) là 1 đỏ / 1.625 xanh.
+
+Đo trên chính production: bề mặt công khai **11/11**; ba màn mới trả 307 còn đường bịa trả 404
+(nên phép dò phân biệt được); cửa công khai MỚI `…/tra-loi` trả **405 cho GET** ⇒ tuyến có
+thật, chỉ nhận POST; `/bc/<chìa bịa>` hiện "Không mở được báo cáo này" và KHÔNG hiện hai câu
+của nhánh máy-chủ-ngủ ⇒ hai nhánh vẫn phân biệt được sau khi lên. `'unsafe-eval'` vắng mặt
+trên cả hai đầu — bản vá 25/09 sống sót.
+
+`next build` **bỏ có chủ ý**: Vercel đã dựng thật và thành công, đó là bằng chứng mạnh hơn một
+lượt dựng mô phỏng trên máy.
+
+**Hai chỗ nhỏ, có sẵn từ trước, không do lượt này**: Render thiếu đầu `permissions-policy`, và
+không khai `object-src` (rơi về `default-src 'self'`, nên không phải lỗ, chỉ là không siết hết).
+
+**Và một lỗi trong CÁCH TÔI ĐO, không phải trong sản phẩm.** `lệnh | tail; echo $?` trả mã
+thoát của `tail`. Mọi dòng "mã thoát" in qua ống hôm ấy đều vô nghĩa; đo lại đúng cách thì
+`kiem_production` trả **2** = "chưa đo được" (thẻ hết hạn), đúng như thiết kế. Các cổng khác
+vẫn tin được vì `pre-push` tự chấm ✓ từng bước bằng mã thoát của chính nó.
+
+CHƯA đo được: nhóm dữ liệu và 42 màn — thẻ production sống 30 phút và đã hết hạn.
+
 ## 28/09/2026 — Hộp Yêu cầu biết việc nào bị bỏ quên; và vòng lặp có bước ĐỌC
 
 Hai ô cuối của dòng 11 — **hạn xử lý + cờ quá hạn** và **ô tìm theo chữ** — đóng nốt. Không
