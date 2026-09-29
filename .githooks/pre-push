@@ -212,6 +212,11 @@ nhom_frontend() {
   # chết vì máy hết RAM và teaching/hoc_lieu.py sáng ra vẫn mang đột biến "bỏ kiểm buổi bù". Sổ cứu
   # hộ đã ghi đủ để bắt; thiếu đúng một người đọc nó trước lúc đẩy. Chạy < 1 giây.
   buoc f9 "đột biến còn sót" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/kiem_dot_bien_con_sot.py
+  # f11 (29/09/2026, RULES §23): anh Sơn đọc bản đang chạy và nói "nhìn là biết AI". Thứ lộ ra
+  # không phải từ ngữ mà là NHỊP LẶP — 436 câu cùng khuôn `<sự việc> — <hệ quả>` trong chữ người
+  # dùng đọc. Dọn một lượt thì hết, nhưng câu mới viết ra lại theo đúng khuôn cũ nếu không ai canh.
+  # Trần chỉ được HẠ; thêm một câu cùng khuôn là cổng đỏ. Chạy < 3 giây.
+  buoc f11 "văn phong --tran" "$GOC" "${PY:-$(command -v python3 || command -v python)}" scripts/soi_van_phong.py --tran
   if [ ! -d "$GOC/frontend/node_modules" ]; then
     bo_qua f1 "frontend (mọi bước)" "chưa có frontend/node_modules — pnpm install"
     echo "1 0" > "$TAM/f1.kq"

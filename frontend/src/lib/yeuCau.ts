@@ -166,7 +166,7 @@ export function cauSuKien(s: SuKien): string {
     case 'giao': return `Giao cho ${den || 'học vụ'}`;
     case 'chuyen_tiep': return `Chuyển tiếp cho ${den || 'học vụ'}`;
     case 'duyet': return 'Duyệt yêu cầu';
-    case 'thuc_thi': return 'Hệ thống đã làm';
+    case 'thuc_thi': return 'Đã thực hiện';
     case 'tu_choi': return 'Từ chối';
     case 'loi': return 'Duyệt không thành';
     case 'phan_loai': return `Đổi loại: ${s.tuNhan ?? s.tu ?? ''} → ${den}`;

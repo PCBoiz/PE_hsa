@@ -395,7 +395,7 @@ def _doc_doi_tuong(body, class_id, mode_cu=CA_LOP):
     dang_hoc = _hoc_vien_dang_hoc(class_id)
     la = [i for i in ids if i not in dang_hoc]
     if la:
-        return None, None, ('Học viên %s không đang học lớp này — bỏ ra khỏi danh sách nhận '
+        return None, None, ('Học viên %s không đang học lớp này, bỏ ra khỏi danh sách nhận '
                             'bài rồi gửi lại.' % ', '.join('#%d' % i for i in la))
     return mode, ids, None
 
@@ -679,7 +679,7 @@ class AssignmentDetailView(APIView):
 
         audit.record(request, audit.ASSIGNMENT_DELETE, target_type='assignment',
                      target_id=assignment_id, target_label=before['title'],
-                     summary='Xoá bài tập "%s" — mất theo %d bài đã nộp.'
+                     summary='Xoá bài tập "%s", mất theo %d bài đã nộp.'
                              % (before['title'], n),
                      detail={'classId': before['class_id'], 'submissions': n,
                              'forgottenEvents': quen, 'confirmed': confirm})
@@ -792,7 +792,7 @@ class AssignmentGradingView(APIView):
                 return Response({'error': 'Chỉ bài kiểm tra trên lớp mới ghi được "vắng". '
                                           'Bài tập thì bỏ em đó ra khỏi danh sách chấm.'}, status=400)
             if vang and g.get('score') not in (None, ''):
-                return Response({'error': 'Em vắng buổi kiểm tra thì không có điểm — bỏ ô '
+                return Response({'error': 'Em vắng buổi kiểm tra thì không có điểm, bỏ ô '
                                           'điểm hoặc bỏ đánh dấu vắng.'}, status=400)
             diem = None if vang else _so(g.get('score'))
             if diem is None and not vang:
@@ -908,7 +908,7 @@ class AssignmentGradingView(APIView):
               'skipped': bo_qua, 'summary': summary}
         if thieu > 0:
             ra['warning'] = ('Đã lưu %d điểm, nhưng %d điểm CHƯA vào được bản đồ năng '
-                             'lực. Bấm Lưu lại để thử — điểm trong sổ vẫn đúng.'
+                             'lực. Bấm Lưu lại để thử; điểm trong sổ vẫn đúng.'
                              % (len(rows), thieu))
         return Response(ra)
 
@@ -1006,7 +1006,7 @@ class MyAssignmentsView(NguoiDungView):
         # Bài kiểm tra trên lớp (V-h): làm trên giấy, giảng viên nhập điểm — không có
         # đường nộp. 409: yêu cầu hợp lệ, xung đột với loại bài.
         if bai['kind'] == KIEM_TRA:
-            return Response({'error': 'Đây là bài kiểm tra làm trên lớp — giảng viên nhập điểm, '
+            return Response({'error': 'Đây là bài kiểm tra làm trên lớp: giảng viên nhập điểm, '
                                       'không nộp bài qua hệ thống.'}, status=409)
         if bai['status'] != 'open':
             return Response({'error': 'Bài này đã đóng, không nhận bài nộp nữa. '

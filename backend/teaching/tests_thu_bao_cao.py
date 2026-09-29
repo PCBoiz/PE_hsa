@@ -146,3 +146,65 @@ def test_chu_thuan_khong_chua_the_html():
     _, chu, _, _ = soan_thu(CO_SO, LINK)
     for the in ('<p', '<div', '<table', '<a '):
         assert the not in chu, 'phần chữ thuần lọt thẻ %r' % the
+
+
+# ── GIỌNG VĂN (29/09/2026) ──────────────────────────────────────────────────
+#
+# Anh Sơn 29/09: *"cách hành văn trong bản production nhìn là biết AI"*. Lá thư này là chỗ
+# đắt nhất của nhận xét ấy — nó ra khỏi hệ thống, tới hộp thư của một phụ huynh thật, và
+# không cuộn lại được. Ba phép kiểm dưới đây chốt giọng thành ràng buộc, không để nó thành
+# sở thích của người sửa mã kế tiếp.
+#
+# `scripts/soi_van_phong.py` đo cùng ba luật này trên toàn sản phẩm.
+
+def test_thu_khong_dung_gach_ngang_noi_ve_cau():
+    """Khuôn `<sự việc> — <hệ quả>` lặp ở hàng trăm chỗ là dấu vết rõ nhất của chữ máy viết.
+
+    Một câu như thế thì hay. Cả lá thư viết bằng một nhịp thì người đọc cảm được ngay, kể cả
+    khi không chỉ tên được. Thư của trung tâm gửi phụ huynh thì xuống dòng, hoặc dùng dấu hai
+    chấm, hoặc bỏ hẳn vế sau nếu nó thừa.
+    """
+    tieu_de, chu, html, _ = soan_thu(CO_SO, LINK)
+    # Tên lớp mẫu có sẵn một dấu gạch ("… đợt 1/2027 — Ca tối") và đó là DỮ LIỆU của trung
+    # tâm, không phải câu của mình — bỏ nó ra trước khi đếm.
+    ten_lop = CO_SO['class']['name']
+    # Tiêu đề tính CẢ VÀO ĐÂY: đó là dòng duy nhất phụ huynh chắc chắn đọc, và là dòng nằm
+    # cạnh hàng chục thư khác trong hộp thư — chỗ giọng lạ lộ ra nhanh nhất.
+    for phan, ma in ((tieu_de, 'tiêu đề'), (chu, 'chữ thuần'), (html, 'HTML')):
+        con = phan.replace(ten_lop, '')
+        assert '—' not in con, 'còn dấu gạch nối vế trong phần %s' % ma
+
+
+def test_thu_khong_goi_minh_la_he_thong():
+    """Phần mềm tự xưng "hệ thống" ở ngôi thứ ba là giọng của máy nói về máy.
+
+    Trung tâm gửi thư thì trung tâm là người nói: "Trung tâm xin gửi…", hoặc viết câu không
+    cần chủ ngữ. RULES §10 đã cấm mã kỹ thuật lên màn; đây là cùng một lỗi ở dạng nhẹ hơn.
+    """
+    _, chu, html, _ = soan_thu(CO_SO, LINK)
+    for phan, ma in ((chu, 'chữ thuần'), (html, 'HTML')):
+        for tu in ('hệ thống', 'máy chủ', 'server'):
+            assert tu not in phan.lower(), 'phần %s còn chữ %r' % (ma, tu)
+
+
+def test_thu_co_loi_chao_va_loi_ket_theo_le_thuong():
+    """Thư Việt Nam gửi phụ huynh có lời chào đầu và lời kết cuối. Thiếu lời kết, chữ ký trơ
+    một chữ "TopHSA" đọc như một dòng hệ thống sinh ra, không như một người gửi."""
+    _, chu, _, _ = soan_thu(CO_SO, LINK)
+    assert chu.startswith('Kính gửi'), chu[:60]
+    assert 'Trân trọng' in chu, chu[-200:]
+
+
+def test_mot_buoi_thi_khong_viet_nhu_nhieu_buoi():
+    """"Lớp còn 1 buổi … chưa tính MẤY BUỔI đó" — số ít mà dùng từ số nhiều.
+
+    Bắt được khi đọc lá thư đã dựng ra chứ không phải khi viết nó (29/09). Đây đúng là loại
+    lỗi chỉ lộ khi có người đọc thành tiếng, và là loại làm một lá thư trông như máy ghép.
+    Câu mới không đếm số, nên đúng với mọi con số.
+    """
+    d = copy.deepcopy(CO_SO)
+    d['attendance']['sessionsUnmarked'] = 1
+    _, chu, html, _ = soan_thu(d, LINK)
+    for phan, ma in ((chu, 'chữ thuần'), (html, 'HTML')):
+        assert 'mấy buổi' not in phan, 'phần %s viết số ít như số nhiều' % ma
+        assert '1 buổi' in phan, 'phần %s mất luôn con số' % ma

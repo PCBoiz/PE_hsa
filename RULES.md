@@ -421,3 +421,45 @@ thức thì không.
 
 **Và sau MỖI phiên chạm đường ghi**, đếm lại số dòng CÙNG các CỘT VỪA THÊM —
 cột mới là chỗ dễ rò nhất vì chưa ai có thói quen nhìn nó.
+
+## §23 · Chữ trên sản phẩm không được có MỘT nhịp duy nhất
+
+Anh Sơn 29/09/2026, sau khi đọc bản đang chạy: *"cách hành văn trong bản production nhìn là
+biết AI"*.
+
+Nhận xét ấy đúng, và đo được. Thứ lộ ra **không phải từ ngữ** — từng câu một đều ổn. Thứ lộ ra
+là **nhịp lặp**: gần như mọi câu gợi ý trong sản phẩm đều dựng theo đúng một khuôn
+
+> `<sự việc> — <hệ quả>`
+
+Đo 29/09: **436 câu** cùng khuôn ấy trong chữ người dùng đọc, riêng `frontend/src/lib/huongDan.ts`
+có **48**. Một câu như thế thì hay. Bốn tám câu như thế, xếp liền nhau trên một trang, là thứ
+người đọc cảm được ngay cả khi không chỉ tên được — họ chỉ thấy "cái này máy viết".
+
+### Luật
+
+1. **Đổi chỗ nối mỗi câu một kiểu.** Dấu chấm, hai chấm, chấm phẩy, phẩy, "vì", "nên", ngoặc
+   đơn — và đôi khi vẫn cứ là dấu gạch. Thay đồng loạt `—` bằng `.` ở cả ba trăm chỗ chỉ là
+   đổi một nhịp máy lấy một nhịp máy khác; sau lượt dọn 29/09 `huongDan.ts` vẫn **cố ý giữ
+   lại một** dấu gạch, vì một tài liệu sạch bong cũng đều đặn y như một tài liệu đầy dấu gạch.
+2. **Vế sau thừa thì bỏ hẳn.** Phần lớn vế "— hệ quả" chỉ nói lại vế trước bằng chữ khác.
+3. **Phần mềm không tự xưng "hệ thống" hay "máy chủ".** Trung tâm gửi thư thì trung tâm là
+   người nói ("Trung tâm xin gửi…"), hoặc viết câu không cần chủ ngữ. Cùng ranh giới với §10.
+4. **Không dạy đời.** "Nghỉ càng lâu càng khó quay lại", "sửa sớm thì kỳ sau đúng" — phần mềm
+   quản lý trung tâm không có việc gì phải khuyên người dùng sống thế nào.
+5. **Đọc THÀNH TIẾNG cái đã dựng ra, đừng đọc cái mình vừa gõ.** Lá thư báo cáo 29/09 viết
+   "Lớp còn **1** buổi … chưa tính **mấy buổi** đó" — số ít mà dùng từ số nhiều. Nó chỉ lộ ra
+   lúc in lá thư đã dựng xong ra mà đọc, không lộ lúc viết dòng mã.
+
+### Cách canh
+
+`scripts/soi_van_phong.py` đếm ba luật trên **chỉ trong chữ người dùng đọc** — không tính chú
+thích, docstring, `PROGRESS.md` hay tài liệu nội bộ; chúng viết cho người lập trình và cố ý
+dài, đó là quy ước của kho này chứ không phải lỗi.
+
+Cổng `pre-push` chạy `--tran`: con số chỉ được **hạ**. Thêm một câu cùng khuôn là cổng đỏ, và
+hạ trần thì sửa `scripts/tran_van_phong.json` trong CÙNG commit đã dọn.
+
+Lá thư gửi phụ huynh bị canh chặt hơn — không dấu gạch nối vế nào, không chữ "hệ thống", phải
+có lời chào đầu và lời kết cuối (`teaching/tests_thu_bao_cao.py`). Nó là chữ **ra khỏi hệ
+thống**, tới một người thật, và không cuộn lại được.

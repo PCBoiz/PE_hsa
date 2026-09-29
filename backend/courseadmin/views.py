@@ -135,7 +135,7 @@ def _clean_course_payload(data):
             elif gia in _BOOL_GIA:
                 updates[truong] = False
             else:
-                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false) — đang nhận %r.' % chuoi[:20]
+                return None, 'Trạng thái khoá phải là đang mở (true) hoặc nháp (false), đang nhận %r.' % chuoi[:20]
         else:
             e = loi_html(chuoi, truong)
             if e:
@@ -274,7 +274,7 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
             audit.record(request, audit.COURSE_PUBLISH, target_type='course',
                          target_id=course_id, target_label=ten,
                          summary=('Mở khoá học "%s" cho học viên.' if mo else
-                                  'Chuyển khoá học "%s" về nháp — học viên không còn thấy khoá.')
+                                  'Chuyển khoá học "%s" về nháp; học viên không còn thấy khoá.')
                          % ten,
                          detail={'cu': mo_cu, 'moi': mo})
         return Response({'ok': True})
@@ -291,7 +291,7 @@ class AdminCourseDetailView(_ChuKhoa, AdminBase):
         x('DELETE FROM courses WHERE id=%s', (course_id,))
         audit.record(request, audit.COURSE_DELETE, target_type='course',
                      target_id=course_id, target_label=course_id,
-                     summary='Xoá khoá học %s — bài học của khoá bị xoá theo.' % course_id)
+                     summary='Xoá khoá học %s; bài học của khoá bị xoá theo.' % course_id)
         return Response({'ok': True})
 
 
@@ -608,7 +608,7 @@ class AdminCourseImportView(AdminBase):
         if body.get('total_lessons') is not None and not is_admin(request.user):
             return Response(
                 {'error': 'Chỉ quản trị viên đặt được tổng số bài của khoá. '
-                          'Bỏ trường "total_lessons" thì hệ thống tự nâng tổng '
+                          'Bỏ trường "total_lessons" thì tổng tự nâng '
                           'lên theo bài có số thứ tự lớn nhất.'}, status=403)
 
         if not q1('SELECT 1 FROM courses WHERE id=%s', (course_id,)):
@@ -673,7 +673,7 @@ class AdminCourseImportView(AdminBase):
 
         audit.record(request, audit.COURSE_IMPORT, target_type='course',
                      target_id=course_id, target_label=course_id,
-                     summary='Nhập giáo trình vào khoá %s — thêm %d bài, cập nhật %d bài.'
+                     summary='Nhập giáo trình vào khoá %s: thêm %d bài, cập nhật %d bài.'
                              % (course_id, created, updated),
                      detail={'created': created, 'updated': updated,
                              'totalLessons': body.get('total_lessons')})

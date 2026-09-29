@@ -167,7 +167,7 @@ export default function GuiCaLop({
                   cố ý không gửi (§49). Trình diễn trước người mua mà đọc câu ấy thì
                   tưởng tính năng gửi hỏng. */}
               {soMau > 0
-                ? 'Cả lớp là dữ liệu trình diễn — hệ thống không gửi tin cho học viên mẫu.'
+                ? 'Cả lớp là dữ liệu trình diễn, nên không tin nào được gửi cho học viên mẫu.'
                 : coKenh
                   ? 'Chưa em nào có email hoặc số Zalo của phụ huynh.'
                   : 'Lớp chưa có học viên nào đang học.'}

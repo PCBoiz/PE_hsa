@@ -86,7 +86,9 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
 
     ten = em.get('name') or 'học viên'
     ky_chu = '%s – %s' % (_ngay(ky.get('from')), _ngay(ky.get('to')))
-    tieu_de = 'Báo cáo học tập của %s — kỳ %s' % (ten, ky_chu)
+    # Tiêu đề: tên trung tâm trước, rồi tên con, rồi kỳ. Phụ huynh có hai đứa học ở đây thì
+    # phân biệt được ngay ở danh sách hộp thư mà không phải mở thư ra.
+    tieu_de = 'TopHSA: kết quả học tập của em %s, kỳ %s' % (ten, ky_chu)
 
     co_mat = (cc.get('present') or 0) + (cc.get('late') or 0)
     da_tick = cc.get('sessionsCounted') or 0
@@ -122,16 +124,18 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
 
     # ── phần CHỮ THUẦN ──────────────────────────────────────────────────
     d = ['Kính gửi phụ huynh em %s,' % ten, '',
-         'Đây là báo cáo học tập kỳ %s tại lớp %s.' % (ky_chu, lop.get('name') or ''), '']
+         'Trung tâm xin gửi kết quả học tập của em trong kỳ %s, lớp %s.'
+         % (ky_chu, lop.get('name') or ''), '']
     d += ['- %s: %s' % (a, b) for a, b in dong]
     if chua_tick:
-        d += ['', '(Lớp còn %d buổi đã diễn ra mà chưa điểm danh, nên chưa tính '
-              'vào con số chuyên cần trên.)' % chua_tick]
-    d += ['', 'Bản đầy đủ nằm trong tệp PDF đính kèm.']
+        d += ['', 'Lớp còn %d buổi đã dạy mà chưa điểm danh; phần chuyên cần ở trên chưa '
+              'tính số buổi này.' % chua_tick]
+    d += ['', 'Chi tiết từng buổi học và từng chủ đề nằm trong tệp PDF đính kèm.']
     if duong_dan:
-        d += ['Bản luôn cập nhật: %s' % duong_dan]
-    d += ['', 'Có chỗ nào chưa đúng, xin nhắn lại cho giảng viên phụ trách lớp.',
-          '', 'TopHSA']
+        d += ['', 'Phụ huynh cũng có thể mở đường dẫn riêng dưới đây để xem số liệu mới '
+              'nhất bất cứ lúc nào:', duong_dan]
+    d += ['', 'Nếu có chỗ nào chưa đúng, phụ huynh nhắn lại giúp giảng viên phụ trách lớp.',
+          '', 'Trân trọng,', 'TopHSA']
     chu = '\n'.join(d)
 
     # ── phần HTML ───────────────────────────────────────────────────────
@@ -148,8 +152,8 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
     luu_y = ''
     if chua_tick:
         luu_y = ('<p style="margin:14px 0 0;color:#6B6B78;font-size:13px;line-height:1.5">'
-                 'Lớp còn <b>%d buổi đã diễn ra mà giảng viên chưa điểm danh</b>, nên chưa '
-                 'tính vào con số chuyên cần ở trên.</p>' % chua_tick)
+                 'Lớp còn <b>%d buổi đã dạy mà giảng viên chưa điểm danh</b>; phần chuyên cần '
+                 'ở trên chưa tính số buổi này.</p>' % chua_tick)
 
     nut = ''
     if duong_dan:
@@ -158,7 +162,7 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
                'display:inline-block;padding:12px 20px;border-radius:6px;'
                'font-size:15px;font-weight:bold">Xem bản đầy đủ</a></p>'
                '<p style="margin:8px 0 0;color:#8A8A96;font-size:12px">'
-               'Đường dẫn này có hạn dùng và chỉ dành cho phụ huynh em %s.</p>'
+               'Đường dẫn riêng của phụ huynh em %s, có thời hạn sử dụng.</p>'
                % (e(duong_dan), e(ten)))
 
     html = (
@@ -177,14 +181,14 @@ def soan_thu(bc: dict, duong_dan: str | None = None):
         'width="100%%">%(hang)s</table>'
         '%(luu_y)s'
         '<p style="margin:18px 0 0;color:#2B2B33;font-size:14px;line-height:1.55">'
-        'Bản đầy đủ — chuyên cần từng buổi, tiến độ từng hợp phần và toàn bộ chủ đề '
-        'đã đo — nằm trong <b>tệp PDF đính kèm</b> thư này.</p>'
+        '<b>Tệp PDF đính kèm</b> có chi tiết từng buổi học, tiến độ từng hợp phần và '
+        'toàn bộ chủ đề đã đánh giá.</p>'
         '%(nut)s'
         '<p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #E6E6EE;'
         'color:#8A8A96;font-size:12px;line-height:1.55">'
-        'Số trong PDF là số tại thời điểm gửi; đường dẫn ở trên luôn hiện bản mới nhất. '
-        'Có chỗ nào chưa đúng, xin nhắn lại cho giảng viên phụ trách lớp — số liệu sai '
-        'sửa được, và sửa sớm thì kỳ sau đúng.</p>'
+        'Số liệu trong tệp PDF tính đến ngày gửi thư; đường dẫn ở trên luôn hiện bản mới '
+        'nhất. Nếu có chỗ nào chưa đúng, phụ huynh nhắn lại giúp giảng viên phụ trách lớp.'
+        '<br><br>Trân trọng,<br>TopHSA</p>'
         '</td></tr></table></div>'
     ) % {'ten': e(ten), 'lop': e(lop.get('name') or ''), 'ky': e(ky_chu),
          'hang': hang, 'luu_y': luu_y, 'nut': nut}

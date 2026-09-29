@@ -749,7 +749,7 @@ function BangLop({ initial, boLoc, phanTrang, dangLoc = false, giangVien, troGia
         }
       >
         <p className="mb-3 text-body text-ink-2">
-          Đọc chuỗi này cho em. Lần đăng nhập đầu, hệ thống bắt em đặt mật khẩu mới rồi mới vào học.
+          Đọc chuỗi này cho em. Lần đăng nhập đầu, em phải đặt mật khẩu mới rồi mới vào học.
         </p>
         <p className="rounded-md bg-sunken px-4 py-3 text-center font-mono text-title tracking-wide text-ink select-all">
           {mkTam?.matKhau}

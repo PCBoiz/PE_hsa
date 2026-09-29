@@ -210,7 +210,7 @@ function XuLy({
 
   return (
     <Card as="section">
-      <CardHead title="Xử lý" hint={yc.canDuyet ? 'Duyệt xong hệ thống tự làm việc được xin.' : undefined} />
+      <CardHead title="Xử lý" hint={yc.canDuyet ? 'Duyệt xong là việc được xin tự chạy.' : undefined} />
       <div className="flex flex-wrap gap-2">
         {c.duyet && <Button size="sm" onClick={() => doi('duyet')} aria-expanded={cheDo === 'duyet'}>Duyệt…</Button>}
         {c.nhan && (
@@ -433,7 +433,7 @@ function Duyet({ yc, busy, ghi, xong }: PhanHanhDong) {
       )}
       {xt && !choLop && (
         <div className="rounded-md bg-sunken px-3 py-2 text-small" aria-live="polite">
-          <p className="text-ink">{xt.cach === 'tay' ? '' : 'Hệ thống sẽ: '}{xt.moTa ?? 'Chưa làm được — xem cảnh báo bên dưới.'}</p>
+          <p className="text-ink">{xt.cach === 'tay' ? '' : 'Duyệt xong sẽ: '}{xt.moTa ?? 'Chưa làm được — xem cảnh báo bên dưới.'}</p>
           {xt.canhBao.map((c) => <p key={c} className="mt-1 text-warning-ink">{c}</p>)}
         </div>
       )}

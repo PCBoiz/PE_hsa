@@ -69,7 +69,7 @@ export const VAI_TRO: readonly { ma: string; nhan: string; mo_ta: string }[] = [
   {
     ma: VAI_BIEN_TAP,
     nhan: 'Biên tập nội dung',
-    mo_ta: 'Soạn khoá học và bài học. Đứng ở TRỤC KHÁC với bốn vai trên — không đụng tới con người.',
+    mo_ta: 'Soạn khoá học và bài học. Đứng ở TRỤC KHÁC với bốn vai trên, không đụng tới con người.',
   },
   {
     ma: VAI_HOC_VIEN,
@@ -139,7 +139,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Xem và sửa hồ sơ học viên',
-    giaiThich: 'Trường, lớp, tỉnh / thành phố, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập, tình trạng học phí. Tình trạng học tập tự tính từ lớp em học. Mã học viên do hệ thống cấp, không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi.',
+    giaiThich: 'Trường, lớp, tỉnh / thành phố, người tư vấn, nguồn tuyển sinh, mục tiêu, nguyện vọng, liên hệ phụ huynh, tên đăng nhập, tình trạng học phí. Tình trạng học tập tự tính từ lớp em học. Mã học viên cấp sẵn lúc tạo tài khoản, không ai sửa được. Email và số điện thoại là thông tin đăng nhập, em tự đổi.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/ho_so.py::HoSoHocVienView',
     chan_them: 'học vụ: chỉ tài khoản vai Học viên',
@@ -147,7 +147,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Tài khoản',
     nhan: 'Xem dòng thời gian của một em',
-    giaiThich: 'Vào lớp, chuyển lớp (kèm lý do), thi, báo cáo gửi phụ huynh, các lần sửa hồ sơ — gom từ nơi ghi gốc, chỉ đọc. Không hiện địa chỉ liên lạc của phụ huynh.',
+    giaiThich: 'Vào lớp, chuyển lớp (kèm lý do), thi, báo cáo gửi phụ huynh, các lần sửa hồ sơ. Gom từ nơi ghi gốc, chỉ đọc. Không hiện địa chỉ liên lạc của phụ huynh.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/dong_thoi_gian.py::DongThoiGianView',
     chan_them: 'học vụ: chỉ tài khoản vai Học viên',
@@ -165,7 +165,7 @@ export const VIEC: readonly Viec[] = [
     nhan: 'Đặt lại mật khẩu cho người khác',
     // Học vụ làm được với học viên và trợ giảng từ 20/09/2026.
     giaiThich:
-      'Đặt lại mật khẩu là chiếm được tài khoản đó. Học vụ làm được với HỌC VIÊN và TRỢ GIẢNG (nút ở màn Lớp học → Học viên); giảng viên, học vụ, biên tập, quản trị viên vẫn cần quản trị viên — hàng rào theo vai đích nằm trong view.',
+      'Đặt lại mật khẩu là chiếm được tài khoản đó. Học vụ làm được với HỌC VIÊN và TRỢ GIẢNG (nút ở màn Lớp học → Học viên); giảng viên, học vụ, biên tập, quản trị viên thì vẫn cần quản trị viên. Hàng rào theo vai đích nằm trong view.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/views.py::AdminResetPasswordView',
   },
@@ -188,7 +188,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Lớp & đợt học',
     nhan: 'Tạo và sửa lớp',
-    giaiThich: 'Việc HẰNG NGÀY của học vụ — đó là lý do vai ấy tồn tại, để không phải cấp quyền quản trị cho người xếp lớp.',
+    giaiThich: 'Việc HẰNG NGÀY của học vụ. Vai ấy có mặt chính vì chỗ này: để không phải cấp quyền quản trị cho người xếp lớp.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/views.py::AdminClassesView',
   },
@@ -209,14 +209,14 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Lớp & đợt học',
     nhan: 'Xem lịch sử thay đổi của một lớp',
-    giaiThich: 'Ai sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi — mới nhất trước. Chỉ phần của lớp ấy; nhật ký đầy đủ vẫn chỉ quản trị viên xem.',
+    giaiThich: 'Ai sửa lớp, xếp / cho rời / chuyển em, gán trợ giảng, tạo / sửa / huỷ buổi, mới nhất xếp trước. Chỉ phần của lớp ấy; nhật ký đầy đủ vẫn chỉ quản trị viên xem.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/lich_su_lop.py::LichSuLopView',
   },
   {
     nhom: 'Lớp & đợt học',
     nhan: 'Xem chấm công giảng viên và trợ giảng theo tháng',
-    giaiThich: 'Số buổi đã dạy, tổng giờ, số buổi tự điểm danh và điểm danh muộn của từng người; tải được Excel. Chỉ xem — chưa khoá tháng.',
+    giaiThich: 'Số buổi đã dạy, tổng giờ, số buổi tự điểm danh và điểm danh muộn của từng người; tải được Excel. Chỉ xem, chưa khoá tháng được.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/cham_cong.py::ChamCongView',
   },
@@ -238,7 +238,7 @@ export const VIEC: readonly Viec[] = [
     nhom: 'Lớp & đợt học',
     nhan: 'Xem bảng điều khiển toàn trung tâm',
     // Học vụ xem được: quyết định 01/09, mở cửa 14/09/2026.
-    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Số gộp theo lớp và đợt, không có liên lạc của em nào — học vụ cũng xem được.',
+    giaiThich: 'Cuộn số liệu mọi lớp lên một chỗ. Số gộp theo lớp và đợt, không có liên lạc của em nào, nên học vụ cũng xem được.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'teaching/overview.py::AdminOverviewView',
   },
@@ -256,7 +256,7 @@ export const VIEC: readonly Viec[] = [
     nhom: 'Dạy học',
     nhan: 'Xem lịch sử sửa điểm danh của một buổi',
     // Kế hoạch v2 V-d, 25/09/2026 (bảng TopHSA dòng 9, 14).
-    giaiThich: 'Ai đổi điểm danh của em nào, từ gì sang gì, lúc nào. Cùng cửa với điểm danh — ai điểm danh được thì xem được, kể cả trợ giảng.',
+    giaiThich: 'Ai đổi điểm danh của em nào, từ gì sang gì, lúc nào. Cùng cửa với điểm danh: ai điểm danh được thì xem được, kể cả trợ giảng.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/sessions.py::SessionAttendanceHistoryView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -275,7 +275,7 @@ export const VIEC: readonly Viec[] = [
     nhan: 'Giao bài và chấm tay',
     // "Giao cho: cả lớp / chọn học viên" từ 25/09/2026 (V-e, bảng TopHSA dòng 17).
     // Bài kiểm tra trên lớp, nhập điểm tay (V-h, bảng TopHSA dòng 4, 17).
-    giaiThich: 'Cùng cửa với điểm danh — trợ giảng chấm được bài và nhập điểm bài kiểm tra trên lớp (kể cả ghi "vắng"). Giao bài hoặc bài kiểm tra (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
+    giaiThich: 'Cùng cửa với điểm danh, nên trợ giảng chấm được bài và nhập điểm bài kiểm tra trên lớp (kể cả ghi "vắng"). Giao bài hoặc bài kiểm tra (cho cả lớp hoặc một nhóm em) và đổi người nhận: giảng viên, học vụ, quản trị viên.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/assignments.py::AssignmentGradingView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -284,7 +284,7 @@ export const VIEC: readonly Viec[] = [
     nhom: 'Dạy học',
     nhan: 'Xem em vắng liền và em cần chú ý',
     // Trợ giảng thấy từ 25/09/2026 (kế hoạch v2, V-b — bảng TopHSA dòng 21).
-    giaiThich: 'Ở "Việc hôm nay". Trợ giảng cũng thấy, chỉ tên em và lớp — không có liên lạc phụ huynh; gọi phụ huynh vẫn là việc của giảng viên.',
+    giaiThich: 'Ở "Việc hôm nay". Trợ giảng cũng thấy, chỉ tên em và lớp, không có liên lạc phụ huynh; gọi phụ huynh vẫn là việc của giảng viên.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/viec_hom_nay.py::ViecHomNayView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -292,7 +292,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Dạy học',
     nhan: 'Xem hồ sơ học tập của một em',
-    giaiThich: 'Tiến độ, điểm, chuyên cần — không gồm nhật ký em tự ghi.',
+    giaiThich: 'Tiến độ, điểm, chuyên cần. Không gồm nhật ký em tự ghi.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/views.py::TeachStudentView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -300,7 +300,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Dạy học',
     nhan: 'Cập nhật mục tiêu và nguyện vọng của một em',
-    giaiThich: 'Ngay trên tờ báo cáo phụ huynh của em. Ghi chú nội bộ: không in, không gửi phụ huynh. Trợ giảng không sửa — cùng cổng với tờ báo cáo.',
+    giaiThich: 'Ngay trên tờ báo cáo phụ huynh của em. Ghi chú nội bộ: không in, không gửi phụ huynh. Trợ giảng không sửa được, vì chỗ này chung cổng với tờ báo cáo.',
     lopQuyen: 'IsSeniorTeachingStaff',
     nguon: 'teaching/ho_so.py::MucTieuHocVienView',
     chan_them: 'chỉ lớp mình phụ trách, chỉ em đang học lớp ấy',
@@ -319,7 +319,7 @@ export const VIEC: readonly Viec[] = [
     nhom: 'Dạy học',
     nhan: 'Ghi sổ đầu bài của buổi',
     // Kế hoạch v2 E1, 25/09/2026 (bảng TopHSA dòng 15, 16).
-    giaiThich: 'Nội dung đã dạy / dạy một phần / chưa dạy, mức tiếp thu, em cần hỗ trợ, đề xuất. Trợ giảng ghi được — cùng cửa với điểm danh. Tiến độ lớp tính từ sổ này.',
+    giaiThich: 'Nội dung đã dạy / dạy một phần / chưa dạy, mức tiếp thu, em cần hỗ trợ, đề xuất. Trợ giảng ghi được, chung cửa với điểm danh. Tiến độ lớp tính từ sổ này.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'chuong_trinh/so_dau_bai.py::SoDauBaiView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán',
@@ -327,7 +327,7 @@ export const VIEC: readonly Viec[] = [
   {
     nhom: 'Dạy học',
     nhan: 'Xem lịch học gộp theo tuần',
-    giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc — sửa buổi vẫn ở sổ buổi học của từng lớp.',
+    giaiThich: 'Mọi buổi của các lớp mình thấy, kèm cờ trùng giờ giảng viên. Học vụ lọc thêm theo giảng viên hay theo một em. Chỉ đọc; sửa buổi vẫn ở sổ buổi học của từng lớp.',
     lopQuyen: 'IsTeachingStaff',
     nguon: 'teaching/lich.py::LichView',
     chan_them: 'chỉ lớp mình phụ trách hoặc được gán', // hàng rào: visible_class_ids
@@ -359,7 +359,7 @@ export const VIEC: readonly Viec[] = [
   },
   {
     nhom: 'Yêu cầu',
-    nhan: 'Duyệt thay đổi học tập (hệ thống tự làm)',
+    nhan: 'Duyệt thay đổi học tập (tự thực hiện)',
     giaiThich: 'Chuyển lớp, chuyển môn, bảo lưu, huỷ khoá, học lại: duyệt là hệ thống làm ngay, ghi người duyệt; duyệt hai lần chỉ làm một lần. Chuyển lịch, học bù, nghỉ học: duyệt ghi quyết định, học vụ làm tay trên màn Buổi học.',
     lopQuyen: 'IsAdminOrAcademic',
     nguon: 'yeu_cau/views.py::DuyetView',

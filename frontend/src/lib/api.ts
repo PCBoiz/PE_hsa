@@ -144,10 +144,10 @@ const HTTP_VI: Record<number, string> = {
   409: 'Dữ liệu vừa bị người khác thay đổi. Tải lại trang rồi thử lại.',
   413: 'Nội dung gửi lên quá lớn. Chia nhỏ ra rồi làm nhiều lần.',
   429: 'Bạn thao tác hơi nhanh. Chờ một phút rồi thử lại.',
-  500: 'Hệ thống gặp lỗi. Thử lại; nếu vẫn vậy thì báo kỹ thuật.',
-  502: 'Máy chủ đang khởi động lại. Chờ khoảng một phút rồi thử lại.',
-  503: 'Hệ thống đang bận. Chờ một chút rồi thử lại.',
-  504: 'Máy chủ trả lời quá chậm. Thử lại sau ít phút.',
+  500: 'Có lỗi xảy ra. Thử lại; vẫn vậy thì báo kỹ thuật.',
+  502: 'Dịch vụ đang khởi động lại. Chờ khoảng một phút rồi thử lại.',
+  503: 'Đang quá tải. Chờ một chút rồi thử lại.',
+  504: 'Chờ quá lâu chưa có trả lời. Thử lại sau ít phút.',
 };
 
 export function errorText(status: number, data: unknown): string {

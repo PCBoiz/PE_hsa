@@ -84,8 +84,8 @@ NEN_NHAT = colors.HexColor('#F4F3FA')
 #: không tồn tại.
 DAI = [
     (85, 100, 'Nắm chắc',
-     'Con làm đúng gần như mọi dạng đã gặp ở các chủ đề này. Việc cần làm chỉ '
-     'là giữ nhịp — ôn lại thưa hơn để dành thời gian cho phần còn yếu.'),
+     'Con làm đúng gần như mọi dạng đã gặp ở các chủ đề này. Phần này chỉ cần '
+     'ôn lại thưa hơn, để dành thời gian cho phần còn yếu.'),
     (75, 84, 'Khá vững',
      'Con hiểu bản chất và vận dụng được, chỉ còn sai ở câu khó hoặc khi vội. '
      'Luyện thêm đề có bấm giờ là đủ.'),
@@ -307,7 +307,7 @@ def dung_pdf(bc: dict) -> bytes:
         # hướng, trong khi mới có một điểm. Đo trên CSDL thật: em id 9 thi đúng
         # một lần và được 0/9 — và "Điểm thi thử TB: 0%" gửi về nhà là một bản
         # án cho một lượt bấm.
-        diem_tb = '%d%% — mới thi 1 lượt' % ht['mockAvg']
+        diem_tb = '%d%% (mới thi 1 lượt)' % ht['mockAvg']
     else:
         diem_tb = '%d%%' % ht['mockAvg']
     diem_cao = ('%d%%' % ht['mockBest']) if ht.get('mockBest') is not None else '—'
@@ -414,9 +414,9 @@ def dung_pdf(bc: dict) -> bytes:
             kq.append(Paragraph('Thấp nhất trong kỳ này: ' + ' &nbsp;·&nbsp; '.join(
                 '%s (%s%%)' % (an(v.get('ten')), v.get('pct')) for v in yeu), p))
         kq.append(Paragraph(
-            'Điểm mục này do hệ thống khảo thí của trung tâm chấm, thang %s. Khác '
-            'với "Điểm thi thử TB" ở mục I — đó là điểm luyện tập trong ứng dụng, '
-            'tính theo phần trăm.' % ktt.get('max'), nho))
+            'Điểm mục này do bộ phận khảo thí của trung tâm chấm, thang %s. Nó khác '
+            '"Điểm thi thử TB" ở mục I: chỗ đó là điểm luyện tập trong ứng dụng, tính '
+            'theo phần trăm.' % ktt.get('max'), nho))
 
     # ── TIẾN ĐỘ THEO HỢP PHẦN ───────────────────────────────────────────
     khoa = cd.get('courses') or []
@@ -445,8 +445,8 @@ def dung_pdf(bc: dict) -> bytes:
         # "hợp phần thấp nhất" cạnh một cột duy nhất là câu không nói gì.
         if len(khoa) > 1:
             kq.append(Paragraph(
-                'Điểm HSA cộng cả ba hợp phần, nên hợp phần thấp nhất là chỗ kéo '
-                'điểm xuống nhiều nhất — không phải hợp phần con thích học nhất.', nho))
+                'Điểm HSA cộng cả ba hợp phần. Hợp phần thấp nhất là chỗ kéo điểm '
+                'xuống nhiều nhất, không phải hợp phần con thích học nhất.', nho))
     else:
         kq.append(Paragraph('Chưa có dữ liệu tiến độ trong kỳ này.', p))
 
@@ -461,7 +461,7 @@ def dung_pdf(bc: dict) -> bytes:
                     or w.get('submissions')) for w in tuan):
             khoi.append(Paragraph(
                 'Trong kỳ này chưa có buổi học nào được điểm danh, và con chưa học bài '
-                'hay làm bài tập nào trên hệ thống.', p))
+                'hay làm bài tập nào trên ứng dụng.', p))
         else:
             hang = [['Tuần', 'Đi học', 'Bài học', 'Luyện tập', 'Bài tập']]
             for w in tuan:
@@ -572,7 +572,7 @@ def dung_pdf(bc: dict) -> bytes:
         de_muc('CHỦ ĐỀ ĐÃ ĐO ĐƯỢC'),
         Paragraph(
             'Đo trên %s chủ đề đã có bài làm, trên tổng %s chủ đề con đang học. '
-            'Chủ đề con chưa học tới thì không xuất hiện ở đây — chưa học không phải '
+            'Chủ đề con chưa học tới thì không xuất hiện ở đây; chưa học không phải '
             'là yếu.' % (cd.get('measured', 0), cd.get('total', 0)), nho),
     ]))
     kq.append(Spacer(1, 6))
@@ -629,8 +629,8 @@ def dung_pdf(bc: dict) -> bytes:
         'trong kỳ, không phải một lời hứa về kết quả kỳ thi.', nho))
     kq.append(Spacer(1, 3))
     kq.append(Paragraph(
-        'Có chỗ nào chưa đúng, xin nhắn lại cho giảng viên phụ trách lớp — số '
-        'liệu sai sửa được, và sửa sớm thì kỳ sau đúng.', nho))
+        'Nếu có chỗ nào chưa đúng, phụ huynh nhắn lại giúp giảng viên phụ trách '
+        'lớp.', nho))
 
     doc.build(kq)
     return dem.getvalue()

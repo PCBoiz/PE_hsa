@@ -123,7 +123,7 @@ export default async function BaoCaoCaLopPage({
       <Card>
         <CardHead
           title={`Kỳ ${ngay(d.period.from)} – ${ngay(d.period.to)}`}
-          hint="Hệ thống soạn sẵn cho từng em. Không có gì được gửi đi cho tới khi bạn bấm nút."
+          hint="Thư đã soạn sẵn cho từng em. Không có gì được gửi đi cho tới khi bạn bấm nút."
         />
 
         {/* Nói TRƯỚC ai sẽ bị bỏ qua. Để người ta bấm Gửi rồi mới đọc trong

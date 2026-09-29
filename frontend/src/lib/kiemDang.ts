@@ -55,7 +55,7 @@ export function kiemHinhDang<T>(
   return {
     ok: false,
     status,
-    message: `Máy chủ trả dữ liệu khác hình dạng màn hình này mong đợi (${o[0]}). `
-      + 'Mã màn hình và máy chủ đang lệch nhau — báo kỹ thuật giúp nhé.',
+    message: `Dữ liệu trả về khác hình dạng màn hình này mong đợi (${o[0]}). `
+      + 'Màn hình và máy chủ lệch bản, báo kỹ thuật giúp nhé.',
   };
 }

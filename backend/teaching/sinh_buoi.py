@@ -141,7 +141,7 @@ def _doc_than(body):
     if tu > den:
         return None, 'Ngày kết thúc phải sau ngày bắt đầu.'
     if (den - tu).days > MAX_KHOANG_NGAY:
-        return None, ('Một lần chỉ sinh được trong %d ngày — chia khoảng ngày làm nhiều lần.'
+        return None, ('Một lần chỉ sinh được trong %d ngày. Chia khoảng ngày làm nhiều lần.'
                       % MAX_KHOANG_NGAY)
     return {'thu': thu, 'gio': gio, 'phut': phut, 'tu': tu, 'den': den}, None
 
@@ -194,11 +194,11 @@ def _cham(class_id, lop, ts):
                 dong.update(trangThai='nghi_le', lyDo='Ngày nghỉ của đợt: %s.' % nghi[d])
             elif trung:
                 dong.update(trangThai='trung',
-                            lyDo='Đã có buổi #%d lúc %s — giữ nguyên, không tạo thêm.'
+                            lyDo='Đã có buổi #%d lúc %s, giữ nguyên và không tạo thêm.'
                                  % (trung['id'], trung['starts_at'].strftime('%H:%M')))
             else:
                 if d in le:
-                    dong['canhBao'] = ('%s là %s nhưng đợt chưa khai nghỉ — nếu lớp nghỉ, học '
+                    dong['canhBao'] = ('%s là %s nhưng đợt chưa khai nghỉ. Nếu lớp nghỉ, học '
                                        'vụ khai ở Đợt học rồi xem trước lại.' % (_ngay_vn(d), le[d]))
                 can_tao.append(bd)
             buoi.append(dong)
@@ -241,13 +241,13 @@ def tao_buoi(request, class_id, lop, ts, dry_run):
             b['trungLop'] = ds
             b['canhBao'] = ' '.join(filter(None, (b['canhBao'], _cau_trung_lop(ds))))
     if so_trung_lop:
-        canh_bao.append('%d buổi trùng giờ với lớp khác (xem cột ghi chú). Vẫn tạo được — kiểm '
+        canh_bao.append('%d buổi trùng giờ với lớp khác (xem cột ghi chú). Vẫn tạo được, nhưng kiểm '
                         'lại nếu không cố ý.' % so_trung_lop)
     if not lop['term_id']:
         canh_bao.append('Lớp chưa thuộc đợt học nào nên không có ngày nghỉ nào được bỏ.')
     qua_khu = sum(1 for bd in can_tao if bd < nay)
     if qua_khu:
-        canh_bao.append('%d buổi nằm trong quá khứ — chúng sẽ hiện ở mục "Đã diễn ra" và cần '
+        canh_bao.append('%d buổi nằm trong quá khứ. Chúng sẽ hiện ở mục "Đã diễn ra" và cần '
                         'điểm danh bù.' % qua_khu)
 
     ids = []

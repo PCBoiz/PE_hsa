@@ -253,7 +253,7 @@ def doc_cau_hoi(ban_ghi):
         ma = _ma_hop_le(b.get('mã câu', '')) or 'q_%s_%d' % (phan[:2], dong)
         if ma in ma_da_dung:
             sai('"mã câu" %r đã dùng ở dòng %d. Mã phải khác nhau, hoặc bỏ trống '
-                'để hệ thống tự đặt.' % (ma, ma_da_dung[ma]))
+                'để được đặt tự động.' % (ma, ma_da_dung[ma]))
             continue
         ma_da_dung[ma] = dong
 

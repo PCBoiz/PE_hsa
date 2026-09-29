@@ -141,7 +141,7 @@ def xem_truoc(yc, tham_so):
                 _ten(em), den['name'],
                 ' (môn %s)' % den['course_title'] if den['course_title'] else '')
             if den['class_type'] == 'gia_su':
-                canh_bao.append('Lớp gia sư — tối đa 3 em; đủ thì duyệt sẽ bị từ chối.')
+                canh_bao.append('Lớp gia sư tối đa 3 em; đủ chỗ thì duyệt sẽ bị từ chối.')
             if _dang_hoc(em['id'], den['id']):
                 canh_bao.append('Em đang học lớp này rồi.')
             return {'cach': 'tu_dong', 'moTa': mo_ta, 'canhBao': canh_bao}
@@ -152,7 +152,7 @@ def xem_truoc(yc, tham_so):
                 ' (môn %s)' % (den['course_title'] or 'cả ba môn') if den['course_id'] != (lop or {}).get('course_id')
                 else '')
             if den['class_type'] == 'gia_su':
-                canh_bao.append('Lớp gia sư — tối đa 3 em; đủ thì duyệt sẽ bị từ chối.')
+                canh_bao.append('Lớp gia sư tối đa 3 em; đủ chỗ thì duyệt sẽ bị từ chối.')
         elif loai == 'tt_bao_luu':
             d = _den_ngay(yc, tham_so)
             mo_ta = 'Cho %s rời lớp "%s" với lý do bảo lưu%s. Em mất quyền vào môn của lớp.' % (
@@ -170,7 +170,7 @@ def xem_truoc(yc, tham_so):
             mo_ta = 'Ghi "có phép" cho %s ở %d buổi của lớp "%s" (%s – %s).' % (
                 _ten(em), so, lop['name'], tu.strftime('%d/%m'), den.strftime('%d/%m'))
             if not so:
-                canh_bao.append('Lớp không có buổi nào trong khoảng ngày này — duyệt sẽ bị từ chối.')
+                canh_bao.append('Lớp không có buổi nào trong khoảng ngày này; duyệt sẽ bị từ chối.')
         elif loai == 'tt_hoc_bu':
             sid = (tham_so or {}).get('session_id') or yc['session_id']
             if not sid:
@@ -215,7 +215,7 @@ def thuc_hien(yc, tham_so, request):
         # nên trần lớp gia sư và mọi hàng rào xếp lớp khác vẫn nguyên.
         den = _lop(_den_lop(yc, tham_so, CHUA_CHON_LOP), 'lớp đã chọn')
         if den['status'] == 'cancelled':
-            raise LoiYeuCau(400, 'Lớp "%s" đã huỷ — không xếp vào được.' % den['name'])
+            raise LoiYeuCau(400, 'Lớp "%s" đã huỷ nên không xếp vào được.' % den['name'])
         kq = AdminClassMembersView._ghi_thanh_vien(request, den, em)
         if kq == 'day':
             raise LoiYeuCau(409, 'Lớp gia sư "%s" đã đủ em.' % den['name'])
@@ -266,7 +266,7 @@ def thuc_hien(yc, tham_so, request):
                                  boi=getattr(getattr(request, 'user', None), 'id', None))
         if not so:
             # Đóng một yêu cầu mà không đổi gì là tệ hơn để nó mở: người gửi tưởng đã xong.
-            raise LoiYeuCau(409, 'Lớp "%s" không có buổi nào từ %s đến %s — chưa ghi được gì.'
+            raise LoiYeuCau(409, 'Lớp "%s" không có buổi nào từ %s đến %s, chưa ghi được gì.'
                                  % (lop['name'], tu.strftime('%d/%m/%Y'), den.strftime('%d/%m/%Y')))
         return {'cach': 'tu_dong', 'viec': 'nghi_hoc', 'lop': lop['id'],
                 'tuNgay': tu.isoformat(), 'denNgay': den.isoformat(),
@@ -295,7 +295,7 @@ def thuc_hien(yc, tham_so, request):
 
     # tt_hoc_lai
     if lop['status'] == 'cancelled':
-        raise LoiYeuCau(400, 'Lớp "%s" đã huỷ — không xếp vào được.' % lop['name'])
+        raise LoiYeuCau(400, 'Lớp "%s" đã huỷ nên không xếp vào được.' % lop['name'])
     kq = AdminClassMembersView._ghi_thanh_vien(request, lop, em)
     if kq == 'day':
         raise LoiYeuCau(409, 'Lớp gia sư "%s" đã đủ em.' % lop['name'])

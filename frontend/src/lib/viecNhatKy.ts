@@ -87,7 +87,7 @@ export const VIEC: Record<string, string> = {
   'request.create': 'Gửi yêu cầu',
   'request.status': 'Đổi trạng thái yêu cầu',
   'request.assign': 'Giao người xử lý yêu cầu',
-  'request.approve': 'Duyệt yêu cầu (hệ thống tự làm)',
+  'request.approve': 'Duyệt yêu cầu (tự thực hiện)',
   'request.reject': 'Từ chối yêu cầu',
   'request.classify': 'Đổi loại yêu cầu',
   'announcement.send': 'Gửi thông báo',

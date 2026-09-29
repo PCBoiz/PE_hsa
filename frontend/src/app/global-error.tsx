@@ -18,7 +18,7 @@ export default function LoiToanCuc({
     <html lang="vi">
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#F7F7FB', color: '#141023' }}>
         <main style={{ maxWidth: '40rem', margin: '0 auto', padding: '4rem 1rem' }}>
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Hệ thống đang không mở được</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Trang đang không mở được</h1>
           <p style={{ lineHeight: 1.6 }}>
             Bấm “Thử lại”. Nếu vẫn vậy, báo cho người quản lý kèm mã bên dưới.
           </p>

@@ -31,7 +31,7 @@ export default function VaiTroPage() {
       <Card>
         <CardHead
           title="Ai làm được gì"
-          hint="Vai nào làm được việc nào. Máy chủ mới là nơi chặn; bảng này để đọc và bàn."
+          hint="Vai nào làm được việc nào. Chỗ chặn thật nằm ở phía máy chủ; bảng này để đọc và bàn."
           chiTiet="Bảng không tự cấp hay chặn quyền gì — việc ấy do máy chủ làm với từng yêu cầu. Một phép kiểm tự động so bảng với máy chủ từng vai, nên thứ đọc ở đây là thứ đang chạy thật."
         />
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]">

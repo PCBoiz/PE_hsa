@@ -33,7 +33,7 @@ const OAUTH_ERRORS: Record<string, string> = {
      xuất rồi mở lại trang cũ (đo 21/09/2026) — nói họ hết hạn là đổ lỗi sai. */
   het_han: 'Bạn chưa đăng nhập, hoặc phiên làm việc đã kết thúc. Đăng nhập lại để tiếp tục.',
   chua_co_tai_khoan:
-    'Email này chưa có tài khoản trên hệ thống. Liên hệ trung tâm để được cấp tài khoản.',
+    'Email này chưa có tài khoản. Liên hệ trung tâm để được cấp.',
 };
 
 type FieldErrors = { email?: string; password?: string };
@@ -183,7 +183,7 @@ export default function LoginForm({ oauthError }: { oauthError?: string | null }
            * và câu đổ lỗi ấy dẫn cả buổi đi tìm sai chỗ. */
           setFormError(
             res.status >= 500
-              ? `Máy chủ đang không phản hồi (lỗi ${res.status}). Đây KHÔNG phải lỗi mật khẩu — `
+              ? `Không nhận được trả lời từ máy chủ (lỗi ${res.status}). Đây KHÔNG phải lỗi mật khẩu — `
                 + 'thử lại sau vài phút, nếu vẫn vậy thì báo người quản trị hệ thống.'
               : 'Sai email/số điện thoại/tên đăng nhập hoặc mật khẩu.',
           );

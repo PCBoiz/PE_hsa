@@ -107,7 +107,7 @@ export default function SoDoVaiTro() {
           chỉ là các div lồng nhau không nghĩa. Câu tóm tắt này nói THÀNH LỜI
           đúng điều mà hình nói bằng mắt. */}
       <p className="sr-only">
-        {`Hệ thống quyền có ${vong.length} vòng lồng nhau, từ rộng tới hẹp: `}
+        {`Quyền xếp thành ${vong.length} vòng lồng nhau, từ rộng tới hẹp: `}
         {[...vong].reverse().map((v) => `${v.lopQuyen} cho ${v.vaiTatCa.map(nhanVai).join(', ')}`).join('; ')}
         {nhanh.length > 0
           ? `. Ngoài chuỗi ấy còn ${nhanh.length} lớp quyền ở trục khác: ${nhanh

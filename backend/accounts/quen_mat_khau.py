@@ -63,8 +63,8 @@ HAN_PHUT = 30
 TRAN_MOI_GIO = 3
 SO_BYTE = 32
 
-CAU_CHUNG = ('Nếu email này thuộc một tài khoản đang hoạt động, hệ thống vừa gửi tới đó một '
-             'đường dẫn đặt lại mật khẩu. Đường dẫn dùng được một lần, trong %d phút. '
+CAU_CHUNG = ('Nếu email này thuộc một tài khoản đang hoạt động, một đường dẫn đặt lại mật '
+             'khẩu vừa được gửi tới đó. Đường dẫn dùng được một lần, trong %d phút. '
              'Không thấy thư thì xem cả mục Thư rác.' % HAN_PHUT)
 CAU_HET_HAN = ('Đường dẫn này đã hết hạn hoặc đã được dùng. Xin một đường dẫn mới '
                'ở trang "Quên mật khẩu".')

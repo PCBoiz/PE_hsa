@@ -319,7 +319,7 @@ function KhoiKhoa({
                               !window.confirm(
                                 `Xoá khoá "${k.title}"?\n\n` +
                                   'Bài học của khoá bị xoá theo. Nếu còn học viên đã ghi danh ' +
-                                  'thì hệ thống sẽ từ chối.',
+                                  'thì lượt xoá bị từ chối.',
                               )
                             ) {
                               return;

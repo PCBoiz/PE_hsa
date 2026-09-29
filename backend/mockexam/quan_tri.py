@@ -109,7 +109,7 @@ class AdminMockExamTemplateView(_Base):
             ['Câu hỏi', 'Nội dung câu hỏi (bắt buộc)'],
             ['Lựa chọn A–D', 'Bỏ trống HẾT bốn cột này thì câu thành dạng ĐIỀN đáp án'],
             ['Đáp án', 'Chép nguyên văn phương án đúng, HOẶC ghi chữ cái A/B/C/D'],
-            ['Mã câu', 'Không bắt buộc. Bỏ trống thì hệ thống tự đặt.'],
+            ['Mã câu', 'Không bắt buộc. Bỏ trống thì mã được đặt tự động.'],
             ['Chủ đề', 'Không bắt buộc. Dùng cho phân tích mạnh–yếu.'],
             ['Giải thích', 'Không bắt buộc. Được lưu lại cho lần engine hiện lời giải.'],
             [''],

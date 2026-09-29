@@ -836,7 +836,7 @@ class AdminResetPasswordView(APIView):
         audit.record(request, audit.USER_PASSWORD_RESET, target_type='user',
                      target_id=user_id, target_label=ten,
                      summary='Đặt lại mật khẩu cho "%s". Mật khẩu cũ ngừng hiệu lực '
-                             'ngay, hệ thống bắt em đổi ở lần đăng nhập kế tiếp.' % ten,
+                             'ngay, và em phải đổi ở lần đăng nhập kế tiếp.' % ten,
                      # TUYỆT ĐỐI không có `temp` ở đây. Nhật ký kiểm toán mọi
                      # quản trị viên đều đọc được và giữ vĩnh viễn; ghi mật khẩu
                      # tạm vào đó là biến sổ kiểm toán thành kho mật khẩu dạng
@@ -850,7 +850,7 @@ class AdminResetPasswordView(APIView):
             'name': target['name'],
             'email': target['email'],
             'tempPassword': temp,
-            'note': 'Đọc mật khẩu này cho học viên. Hệ thống sẽ bắt đổi ngay lần '
+            'note': 'Đọc mật khẩu này cho học viên. Em sẽ phải đổi ngay lần '
                     'đăng nhập đầu tiên.',
         })
 
@@ -1010,6 +1010,6 @@ class AdminCreateUserView(APIView):
             'email': email,
             'addedToClass': added_to_class,
             'tempPassword': temp,
-            'note': 'Đọc mật khẩu này cho học viên. Hệ thống sẽ bắt đổi ngay lần '
+            'note': 'Đọc mật khẩu này cho học viên. Em sẽ phải đổi ngay lần '
                     'đăng nhập đầu tiên.',
         }, status=201)

@@ -188,7 +188,7 @@ function suyViec(
       nang: 'gap',
       icon: 'inbox',
       chu: `${s.leftUnknown} học viên rời lớp mà chưa ghi lý do`,
-      phu: 'Chưa ghi thì hệ thống không đoán, nên các em đó không nằm trong tỉ lệ giữ chân.',
+      phu: 'Chưa ghi thì không có gì để suy ra, nên các em đó không nằm trong tỉ lệ giữ chân.',
       href: '/quan-tri/lop-hoc',
     });
   }

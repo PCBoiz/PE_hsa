@@ -139,8 +139,8 @@ def _o(v, dinh_dang=None):
             # hỗn) lại ra `5/2` — cùng giá trị, KHÁC CHUỖI, và máy chấm so
             # chuỗi. Đọc lại gần đúng một đáp án còn tệ hơn từ chối nó: từ chối
             # thì người soạn sửa trong 10 giây, đọc sai thì cả lớp mất điểm.
-            raise _LoiO('ô đang định dạng Phân số. Hệ thống không đọc lại được '
-                        'đúng thứ bạn nhìn thấy — định dạng cột là Văn bản (Text) '
+            raise _LoiO('ô đang định dạng Phân số, nên giá trị đọc ra không đúng '
+                        'thứ bạn nhìn thấy. Đổi định dạng cột sang Văn bản (Text) '
                         'rồi gõ lại, ví dụ 1/2.')
         if _la_phan_tram(dinh_dang):
             pt = v * 100

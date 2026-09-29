@@ -341,8 +341,8 @@ function BangTaiKhoan({ initial, initialLoc = LOC_RONG, classes, loi }: Props) {
           // Không viết "học viên"/"em": nút này đặt lại cho cả giảng viên, học vụ
           // (đi thử 20/09/2026 — hộp bảo "đọc cho học viên" khi đang cấp cho học vụ).
           note: u.role === 'Học viên'
-            ? 'Đọc chuỗi này cho em. Lần đăng nhập đầu, hệ thống bắt em đặt mật khẩu mới rồi mới vào học.'
-            : `Gửi chuỗi này cho ${who}. Lần đăng nhập đầu, hệ thống bắt đặt mật khẩu mới rồi mới vào.`,
+            ? 'Đọc chuỗi này cho em. Lần đăng nhập đầu, em phải đặt mật khẩu mới rồi mới vào học.'
+            : `Gửi chuỗi này cho ${who}. Lần đăng nhập đầu, họ phải đặt mật khẩu mới rồi mới vào.`,
         });
         void load();   // cột "đổi mật khẩu lúc nào" phải cập nhật theo
       } catch (e) {

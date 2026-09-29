@@ -180,7 +180,7 @@ export async function serverJson<T>(
     return {
       ok: false,
       status: res.status,
-      message: 'Máy chủ trả về dữ liệu không đọc được. Báo kỹ thuật giúp nhé.',
+      message: 'Dữ liệu trả về không đọc được. Báo kỹ thuật giúp nhé.',
     };
   }
   if (hinhDang) return _kiem(path, body, res.status, hinhDang);

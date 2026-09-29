@@ -90,7 +90,7 @@ SO_BYTE = 32
 VIEC = 'verify'
 
 CAU_CHUNG = ('Đã nhận thông tin đăng ký. Nếu địa chỉ email này chưa có tài khoản TopHSA, '
-             'hệ thống vừa gửi tới đó một thư xác nhận — bấm vào đường dẫn trong thư để '
+             'một thư xác nhận vừa được gửi tới đó — bấm vào đường dẫn trong thư để '
              'kích hoạt tài khoản. Không thấy thư thì xem cả mục Thư rác. '
              'Sau %d giờ mà chưa bấm thì xin gửi lại thư ở trang đăng nhập.' % HAN_GIO)
 CAU_HET_HAN = ('Đường dẫn xác nhận này đã hết hạn hoặc đã được dùng. Xin một thư mới ở '

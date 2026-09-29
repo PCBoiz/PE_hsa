@@ -106,7 +106,7 @@ def _cham(ds, lop_id):
             entry.update(name=nguoi['name'] or ten or None, userId=nguoi['id'],
                          studentCode=nguoi['student_code'])
             if (nguoi['role'] or ROLE_STUDENT) != ROLE_STUDENT:
-                loi('"%s" là tài khoản nhân sự (%s) — tệp này chỉ nhập học viên.'
+                loi('"%s" là tài khoản nhân sự (%s); tệp này chỉ nhập học viên.'
                     % (_user_label(nguoi), nguoi['role']))
                 continue
             if nguoi['id'] in seen_uid:
@@ -114,9 +114,9 @@ def _cham(ds, lop_id):
                 continue
             seen_uid[nguoi['id']] = so_dong
             if nguoi['id'] in trong_lop:
-                rows.append(dict(entry, status=DA_TRONG_LOP, reason='Em đã ở trong lớp — không làm gì.'))
+                rows.append(dict(entry, status=DA_TRONG_LOP, reason='Em đã ở trong lớp, không làm gì thêm.'))
                 continue
-            rows.append(dict(entry, status=THEM_VAO_LOP, reason='Tài khoản có sẵn — sẽ thêm vào lớp.'))
+            rows.append(dict(entry, status=THEM_VAO_LOP, reason='Tài khoản có sẵn, sẽ thêm vào lớp.'))
             co_san.append((rows[-1], nguoi))
             continue
         # Chưa có tài khoản: CÙNG bộ kiểm với ô dán ở trang Tài khoản.
@@ -129,7 +129,7 @@ def _cham(ds, lop_id):
             seen_email[email] = so_dong
         if sdt:
             seen_phone[sdt] = so_dong
-        rows.append(dict(entry, status=TAO_MOI, reason='Chưa có tài khoản — sẽ cấp tài khoản mới.'))
+        rows.append(dict(entry, status=TAO_MOI, reason='Chưa có tài khoản, sẽ cấp mới.'))
         to_create.append((rows[-1], name, email, sdt))
     return rows, to_create, co_san
 
@@ -152,7 +152,7 @@ class NhapHocVienView(APIView):
         if not tep:
             return Response({'error': 'Chọn tệp danh sách (.xlsx hoặc .csv) trước khi tải lên.'}, status=400)
         if tep.size > MAX_BYTES:
-            return Response({'error': 'Tệp nặng %d kB, tối đa %d kB — có thể bạn chọn nhầm tệp.'
+            return Response({'error': 'Tệp nặng %d kB, tối đa %d kB. Có thể bạn chọn nhầm tệp.'
                                       % (tep.size // 1024, MAX_BYTES // 1024)}, status=400)
         dry_run = (request.data.get('dry_run') or '').strip().lower() in ('1', 'true', 'on', 'yes')
         vao, loi_ngay = _doc_ngay_vao_lop(request.data.get('joined_at'))
@@ -163,7 +163,7 @@ class NhapHocVienView(APIView):
         except LoiBangTinh as e:
             return Response({'error': str(e)}, status=400)
         if len(ds) > MAX_CREATE_PER_BATCH:
-            return Response({'error': 'Tệp có %d dòng, tối đa %d em mỗi lần nhập — chia tệp ra rồi '
+            return Response({'error': 'Tệp có %d dòng, tối đa %d em mỗi lần nhập. Chia tệp ra rồi '
                                       'nhập nhiều lần.' % (len(ds), MAX_CREATE_PER_BATCH)}, status=400)
 
         rows, to_create, co_san = _cham(ds, lop['id'])
@@ -172,7 +172,7 @@ class NhapHocVienView(APIView):
         if lop.get('class_type') == 'gia_su' and so_vao:
             con = cho_trong_gia_su(lop['id'])
             if so_vao > con:
-                cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em) — tệp có %d em sẽ vào lớp. '
+                cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em), mà tệp có %d em sẽ vào lớp. '
                        'Bớt dòng hoặc chọn lớp khác.' % (lop['name'], max(con, 0), vocab.TRAN_GIA_SU, so_vao))
                 if not dry_run:
                     return Response({'ok': False, 'error': cau, 'rows': rows, 'dem': _dem(rows)}, status=400)
@@ -188,9 +188,9 @@ class NhapHocVienView(APIView):
             if kq == 'them':
                 da_them.append(nguoi['id'])
             elif kq == 'day':
-                entry.update(status=LOI, reason='Lớp gia sư vừa đủ %d em — em chưa vào lớp.' % vocab.TRAN_GIA_SU)
+                entry.update(status=LOI, reason='Lớp gia sư vừa đủ %d em nên em chưa vào lớp.' % vocab.TRAN_GIA_SU)
             else:
-                entry.update(status=DA_TRONG_LOP, reason='Em đã ở trong lớp — không làm gì.')
+                entry.update(status=DA_TRONG_LOP, reason='Em đã ở trong lớp, không làm gì thêm.')
         created, _, canh_bao = cap_tai_khoan(request, to_create, ROLE_STUDENT, lop, vao,
                                              nguon='nhập từ tệp "%s"' % tep.name)
         warnings += canh_bao
@@ -204,7 +204,7 @@ class NhapHocVienView(APIView):
                      detail={'tep': tep.name, 'moi': created, 'coSan': da_them,
                              'loi': sum(1 for r in rows if r['status'] == LOI)})
         return Response({'ok': True, 'dryRun': False, 'rows': rows, 'dem': _dem(rows), 'warnings': warnings,
-                         'note': 'Mật khẩu tạm chỉ hiện MỘT lần ở đây — chép ra trước khi đóng.'},
+                         'note': 'Mật khẩu tạm chỉ hiện MỘT lần ở đây, chép ra trước khi đóng.'},
                         status=201)
 
 
@@ -223,19 +223,19 @@ class TepMauNhapHocVienView(APIView):
             list(COT_MAU),
             ['Nguyễn Văn An', 'an.nguyen@gmail.com', '0912345678', ''],
             ['Trần Thị Bình', '', '0987654321', ''],
-            ['(em đã có tài khoản — chỉ cần mã)', '', '', 'HSA-00012'],
+            ['(em đã có tài khoản thì chỉ cần mã)', '', '', 'HSA-00012'],
         ], rong=[30, 32, 18, 16])
         huong = Trang('Hướng dẫn', [
             ['Mỗi DÒNG là một học viên. Giữ nguyên dòng tiêu đề ở trang "Danh sách", xoá ba dòng ví dụ.'],
             [''],
             ['Họ và tên', 'Bắt buộc với em chưa có tài khoản.'],
-            ['Email', 'Không bắt buộc — nhưng mỗi dòng cần ít nhất email, số điện thoại hoặc mã học viên.'],
+            ['Email', 'Không bắt buộc, nhưng mỗi dòng cần ít nhất email, số điện thoại hoặc mã học viên.'],
             ['Số điện thoại', '10 số, ví dụ 0912345678. Định dạng cột là Văn bản để giữ số 0 đầu.'],
             ['Mã học viên', 'Chỉ điền cho em ĐÃ có tài khoản (HSA-xxxxx). Em có sẵn được thêm vào lớp, không cấp mới.'],
             [''],
             ['Tối đa %d dòng mỗi tệp.' % MAX_CREATE_PER_BATCH],
             ['Tải lên xong, hệ thống XEM TRƯỚC từng dòng; chỉ khi bấm "Nhập vào lớp" mới ghi.'],
-            ['Em mới nhận mật khẩu tạm — hiện MỘT lần sau khi nhập, chép ra ngay.'],
+            ['Em mới nhận mật khẩu tạm. Chuỗi ấy hiện MỘT lần sau khi nhập, chép ra ngay.'],
         ], rong=[18, 90], tieu_de=False)
         res = HttpResponse(ghi_xlsx([mau, huong]), content_type=KIEU_XLSX)
         res['Content-Disposition'] = _disposition('Mẫu nhập học viên vào lớp.xlsx')

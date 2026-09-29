@@ -59,15 +59,15 @@ export const HUONG_DAN: readonly Bai[] = [
     khi_nao: 'Mỗi sáng, trước khi làm gì khác.',
     buoc: [
       {
-        lam: 'Mở "Toàn trung tâm". Khối đầu tiên là "Hôm nay cần làm gì" — đó là danh sách việc còn tồn, không phải số liệu.',
+        lam: 'Mở "Toàn trung tâm". Khối đầu tiên là "Hôm nay cần làm gì": danh sách việc còn tồn, không phải số liệu.',
         o: '/quan-tri/tong-quan',
       },
       {
         lam: 'Bấm thẳng vào từng dòng: mỗi việc dẫn tới đúng chỗ để làm nó.',
-        luu_y: 'Danh sách trống nghĩa là hết việc tồn, không phải hệ thống chưa tải xong.',
+        luu_y: 'Danh sách trống nghĩa là hết việc tồn, không phải trang chưa tải xong.',
       },
       {
-        lam: 'Số liệu nằm ở khối bên dưới, để đối chiếu — không phải để bắt đầu.',
+        lam: 'Số liệu nằm ở khối bên dưới. Chúng để đối chiếu, không phải để bắt đầu.',
       },
     ],
     hong_thi_sao: [
@@ -77,7 +77,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         trieu_chung: 'Có dòng đỏ "Chưa đọc được: …".',
-        xu_ly: 'Máy chủ không đọc nổi một mảng dữ liệu. Tải lại trang; còn nguyên thì báo kỹ thuật — các cột liên quan đang KHÔNG đáng tin.',
+        xu_ly: 'Trang không đọc được một mảng dữ liệu. Tải lại thử; vẫn vậy thì báo kỹ thuật, vì các cột liên quan đang KHÔNG đáng tin.',
       },
     ],
   },
@@ -94,12 +94,12 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Ô nào khác 0 là có việc. Đây là danh sách việc còn tồn, không phải bảng thống kê.',
       },
       {
-        lam: 'Bấm thẳng vào dòng việc bên dưới — nó dẫn tới đúng lớp và đúng buổi, không phải tự đi tìm.',
-        luu_y: 'Trợ giảng cũng thấy em vắng liền và em cần chú ý của lớp mình. Dòng ấy dẫn về sổ buổi học của lớp; việc gọi phụ huynh vẫn là của giảng viên — báo giảng viên phụ trách.',
+        lam: 'Bấm thẳng vào dòng việc bên dưới. Nó dẫn tới đúng lớp và đúng buổi, khỏi phải tự đi tìm.',
+        luu_y: 'Trợ giảng cũng thấy em vắng liền và em cần chú ý của lớp mình. Dòng ấy dẫn về sổ buổi học của lớp; việc gọi phụ huynh vẫn là của giảng viên, nên báo lại giảng viên phụ trách.',
       },
       {
         lam: 'Thấy em cần giúp: bấm "Báo cần hỗ trợ" ngay trên dòng của em, ghi một câu lý do. Em hiện ở khối "Cần hỗ trợ" cho giảng viên và trợ giảng của lớp; giúp xong thì bấm "Bỏ đánh dấu".',
-        luu_y: 'Lý do là để giảng viên đọc — không in lên tờ gửi phụ huynh.',
+        luu_y: 'Lý do chỉ để giảng viên đọc, không in lên tờ gửi phụ huynh.',
       },
       {
         lam: 'Làm hết phần "Chưa điểm danh xong" trước khi về.',
@@ -109,7 +109,7 @@ export const HUONG_DAN: readonly Bai[] = [
     hong_thi_sao: [
       {
         trieu_chung: 'Không thấy lớp nào của mình.',
-        xu_ly: 'Giảng viên: lớp phải được PHÂN CÔNG cho bạn. Trợ giảng: bạn phải được XẾP VÀO lớp. Cả hai đều là việc của quản lý học vụ — nhắn họ kiểm tra.',
+        xu_ly: 'Giảng viên: lớp phải được PHÂN CÔNG cho bạn. Trợ giảng: bạn phải được XẾP VÀO lớp. Cả hai đều là việc của quản lý học vụ, nhắn họ kiểm tra giúp.',
       },
       {
         trieu_chung: 'Danh sách việc trống trơn.',
@@ -117,7 +117,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         trieu_chung: 'Mở lại trình duyệt là phải đăng nhập lại.',
-        xu_ly: 'Đúng thiết kế khi không tick "Ghi nhớ đăng nhập trên máy này" — an toàn cho máy dùng chung ở trung tâm. Máy riêng thì tick ô ấy lúc đăng nhập: giữ đăng nhập 30 ngày.',
+        xu_ly: 'Đúng thiết kế khi không tick "Ghi nhớ đăng nhập trên máy này". Cách đó an toàn cho máy dùng chung ở trung tâm. Máy riêng thì tick ô ấy lúc đăng nhập, phiên giữ được 30 ngày.',
       },
     ],
   },
@@ -138,17 +138,17 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         // KHÔNG có form cấp lẻ (đo 23/09/2026: không màn hình nào gọi đường
         // cấp lẻ) — bản trước viết "một người thì điền form".
-        lam: 'Bấm "Mở ô nhập" ở khối "Cấp tài khoản hàng loạt", dán danh sách: mỗi dòng một người — họ tên, email, số điện thoại. Một người thì dán một dòng.',
+        lam: 'Bấm "Mở ô nhập" ở khối "Cấp tài khoản hàng loạt", dán danh sách, mỗi dòng một người: họ tên, email, số điện thoại. Một người thì dán một dòng.',
         luu_y: 'Bấm "Kiểm tra trước" rồi mới bấm tạo. Danh sách trùng mà tạo luôn là hai tài khoản cho một người.',
       },
       {
         lam: 'Quản trị viên: chọn vai cho cả danh sách. Không chắc chọn vai nào thì mở bảng "Ai làm được gì". Học vụ: ô này chỉ có Học viên.',
         o: '/quan-tri/vai-tro',
-        luu_y: 'Cấp vai rộng hơn mức cần là mở dữ liệu của học viên cho thêm một người. Vai mặc định là Học viên — cứ để vậy nếu chưa chắc.',
+        luu_y: 'Cấp vai rộng hơn mức cần là mở dữ liệu của học viên cho thêm một người. Vai mặc định là Học viên; chưa chắc thì cứ để vậy.',
       },
       {
-        lam: 'Chép bảng mật khẩu tạm ngay, rồi báo cho từng người. Lần đăng nhập đầu hệ thống bắt đổi mật khẩu trước khi vào được bất cứ đâu.',
-        luu_y: 'Mỗi học viên có mã HSA-xxxxx ngay khi tạo — hiện dưới tên em trong danh sách. Mã này không đổi được.',
+        lam: 'Chép bảng mật khẩu tạm ngay, rồi báo cho từng người. Lần đăng nhập đầu, ai cũng phải đổi mật khẩu trước khi vào được bất cứ đâu.',
+        luu_y: 'Mỗi học viên có mã HSA-xxxxx ngay khi tạo, hiện dưới tên em trong danh sách. Mã này không đổi được.',
       },
     ],
     hong_thi_sao: [
@@ -159,7 +159,7 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         trieu_chung: 'Em quên mật khẩu.',
         // Từ 23/09/2026 (§52): tài khoản có email tự đặt lại được — chỉ đường ấy trước.
-        xu_ly: 'Tài khoản có email: em tự làm được — màn đăng nhập → "Đặt lại qua email", đường dẫn dùng một lần trong 30 phút. Không có email (hoặc em không mở được hộp thư): Tài khoản → tìm em → "Đặt lại mật khẩu" (học vụ: được với học viên; ở Lớp học → Học viên cũng có nút "Đặt lại", được cả với trợ giảng). Giảng viên, học vụ khác thì cần quản trị viên. Đọc chuỗi tạm cho em — hiện đúng một lần.',
+        xu_ly: 'Tài khoản có email: em tự làm được ở màn đăng nhập → "Đặt lại qua email", đường dẫn dùng một lần trong 30 phút. Không có email (hoặc em không mở được hộp thư): Tài khoản → tìm em → "Đặt lại mật khẩu" (học vụ: được với học viên; ở Lớp học → Học viên cũng có nút "Đặt lại", được cả với trợ giảng). Giảng viên, học vụ khác thì cần quản trị viên. Đọc chuỗi tạm cho em ngay, vì nó chỉ hiện một lần.',
       },
       {
         trieu_chung: 'Em không nhớ đã đăng ký bằng email nào.',
@@ -175,30 +175,30 @@ export const HUONG_DAN: readonly Bai[] = [
     khi_nao: 'Sau khi tư vấn một em, khi em đổi trường, mục tiêu, hoặc phụ huynh đổi số liên lạc.',
     buoc: [
       {
-        lam: 'Mở "Tài khoản" và tìm em — gõ tên, email, số điện thoại, mã học viên (HSA-…) hoặc tên đăng nhập đều được.',
+        lam: 'Mở "Tài khoản" và tìm em: gõ tên, email, số điện thoại, mã học viên (HSA-…) hoặc tên đăng nhập đều được.',
         o: '/quan-tri/tai-khoan',
       },
       {
         lam: 'Bấm "Hồ sơ" trên dòng của em. Trang hồ sơ có năm mục: thông tin cá nhân, tên đăng nhập, học tập, tuyển sinh, phụ huynh.',
-        luu_y: 'Cuối trang là DÒNG THỜI GIAN của em: vào lớp, chuyển lớp kèm lý do, các kỳ thi, báo cáo đã gửi phụ huynh, ai sửa hồ sơ lúc nào — mới nhất ở trên. Phụ huynh hỏi "con học ở trung tâm từ bao giờ, đã chuyển lớp mấy lần" thì tra ở đây.',
+        luu_y: 'Cuối trang là DÒNG THỜI GIAN của em: vào lớp, chuyển lớp kèm lý do, các kỳ thi, báo cáo đã gửi phụ huynh, ai sửa hồ sơ lúc nào, mới nhất xếp trên. Phụ huynh hỏi "con học ở trung tâm từ bao giờ, đã chuyển lớp mấy lần" thì tra ở đây.',
       },
       {
         lam: 'Sửa ô cần sửa rồi bấm "Lưu hồ sơ" ở thanh dưới cùng. Thanh ấy đếm số ô chưa lưu; ô nào sai thì báo ngay dưới ô đó.',
-        luu_y: 'Người tư vấn và nguồn tuyển sinh chọn từ danh sách, không gõ tay — để còn thống kê được.',
+        luu_y: 'Người tư vấn và nguồn tuyển sinh chọn từ danh sách, không gõ tay, để còn thống kê được.',
       },
       {
         lam: 'Mục "Tình trạng": tình trạng học tập tự tính từ các lớp em học (đang học, tạm dừng, đã học xong, bảo lưu, đã nghỉ, chưa xếp lớp); tình trạng học phí thì chọn tay (Đã đóng / Sắp hết / Hết / Bảo lưu).',
-        luu_y: 'Ở trang Tài khoản lọc được theo hai ô này — ví dụ tìm mọi em học phí "Sắp hết" để nhắc.',
+        luu_y: 'Ở trang Tài khoản lọc được theo hai ô này. Ví dụ: tìm mọi em học phí "Sắp hết" để nhắc.',
       },
       {
         lam: 'Liên hệ phụ huynh lưu ở đây là "trung tâm đã nhập": từ đó em chỉ còn điền được ô trống trong Cài đặt, muốn sửa phải qua học vụ.',
-        luu_y: 'Mã học viên không ai sửa được. Email và số điện thoại là thông tin đăng nhập — em tự đổi trong Cài đặt.',
+        luu_y: 'Mã học viên không ai sửa được. Email và số điện thoại là thông tin đăng nhập, em tự đổi trong Cài đặt.',
       },
     ],
     hong_thi_sao: [
       {
         trieu_chung: 'Báo "Tên đăng nhập này đã có người dùng."',
-        xu_ly: 'Chọn tên khác — thêm năm sinh hoặc một con số, ví dụ an.nguyen08.',
+        xu_ly: 'Chọn tên khác: thêm năm sinh hoặc một con số, ví dụ an.nguyen08.',
       },
       {
         trieu_chung: 'Không thấy người tư vấn trong danh sách chọn.',
@@ -227,13 +227,13 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Lớp chưa phân công giảng viên thì KHÔNG ai điểm danh và KHÔNG ai giao bài được cho lớp đó. "Hôm nay cần làm gì" sẽ nhắc.',
       },
       {
-        lam: 'Xếp học viên vào lớp — việc này MỞ MÔN của lớp cho em.',
+        lam: 'Xếp học viên vào lớp. Việc này MỞ MÔN của lớp cho em.',
         luu_y: 'Em chỉ học được môn của lớp đang học (lớp để trống môn = cả ba môn). Lớp gia sư nhận tối đa 3 em; trợ giảng không tính.',
       },
       {
-        lam: 'Cả danh sách một lúc: bấm "Học viên" của lớp → "Tải tệp mẫu (.xlsx)", điền mỗi dòng một em (họ tên, email, số điện thoại — em đã có tài khoản thì chỉ cần mã HSA), chọn tệp → "Kiểm tra tệp" → "Nhập … em vào lớp".',
+        lam: 'Cả danh sách một lúc: bấm "Học viên" của lớp → "Tải tệp mẫu (.xlsx)", điền mỗi dòng một em (họ tên, email, số điện thoại; em đã có tài khoản thì chỉ cần mã HSA), chọn tệp → "Kiểm tra tệp" → "Nhập … em vào lớp".',
         o: '/quan-tri/lop-hoc',
-        luu_y: 'Bước kiểm tra chưa ghi gì: dòng nào sai hiện lý do ngay trên dòng ấy. Em chưa có tài khoản được cấp mật khẩu tạm — chép bảng mật khẩu ngay, rời trang là mất. Tối đa 50 em mỗi tệp.',
+        luu_y: 'Bước kiểm tra chưa ghi gì: dòng nào sai hiện lý do ngay trên dòng ấy. Em chưa có tài khoản sẽ được cấp mật khẩu tạm; chép bảng mật khẩu ngay, rời trang là mất. Tối đa 50 em mỗi tệp.',
       },
       {
         lam: 'Lớp gia sư: bấm "Tạo lớp gia sư", tìm em, chọn giảng viên, thứ và giờ học → "Xem trước" → "Tạo lớp gia sư".',
@@ -243,7 +243,7 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Tìm lớp: gõ tên lớp, giáo viên hoặc tên em; bấm chip "Gia sư" / "Lớp nhóm" để lọc theo loại.',
         o: '/quan-tri/lop-hoc',
-        luu_y: 'Bộ lọc nằm trên đường dẫn — gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
+        luu_y: 'Bộ lọc nằm trên đường dẫn, nên gửi link cho đồng nghiệp là họ thấy đúng danh sách bạn đang xem.',
       },
       {
         lam: 'Chuyển lớp: mở "Học viên" của lớp cũ, ở dòng của em chọn "Chuyển sang lớp khác…", tìm lớp mới rồi bấm "Chuyển lớp".',
@@ -263,7 +263,7 @@ export const HUONG_DAN: readonly Bai[] = [
     hong_thi_sao: [
       {
         trieu_chung: 'Em báo "Môn này chưa mở cho lớp của em".',
-        xu_ly: 'Em chưa ở lớp nào có môn ấy. Xếp em vào lớp có môn đó (hoặc lớp để trống môn) — bài mở ngay, không cần em đăng ký gì.',
+        xu_ly: 'Em chưa ở lớp nào có môn ấy. Xếp em vào lớp có môn đó (hoặc lớp để trống môn). Bài mở ngay, em không phải đăng ký gì.',
       },
     ],
   },
@@ -277,26 +277,26 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Mở "Việc hôm nay" trong khu Giảng dạy. Buổi vừa dạy mà chưa mở sổ nằm ngay đó, kèm nút "Điểm danh" dẫn thẳng vào buổi ấy.',
         o: '/giang-day',
-        luu_y: 'Giảng viên chỉ thấy lớp mình phụ trách; trợ giảng chỉ thấy lớp được gán. Trang này gom MỌI lớp — không phải mở từng lớp.',
+        luu_y: 'Giảng viên chỉ thấy lớp mình phụ trách; trợ giảng chỉ thấy lớp được gán. Trang này gom MỌI lớp, khỏi phải mở từng lớp.',
       },
       { lam: 'Tick từng em (hoặc "Đánh dấu cả lớp có mặt" rồi sửa em vắng), bấm lưu.' },
       {
         lam: 'Sửa lại điểm danh thì cứ tick lại rồi lưu. Mở "Lịch sử sửa điểm danh" ngay dưới sổ để xem ai đã đổi em nào, từ gì sang gì, lúc nào.',
-        luu_y: 'Lưu lại y hệt không ghi thêm dòng lịch sử nào — chỉ lần ĐỔI mới được ghi. Học viên xem được điểm danh từng buổi của chính mình ở "Lớp của bạn".',
+        luu_y: 'Lưu lại y hệt thì không ghi thêm dòng lịch sử nào; chỉ lần ĐỔI mới được ghi. Học viên xem được điểm danh từng buổi của chính mình ở "Lớp của bạn".',
       },
       {
-        lam: 'Buổi chưa có trong danh sách thì tạo buổi trước — hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
-        luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG được tính vào mẫu số chuyên cần — nó bị báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
+        lam: 'Buổi chưa có trong danh sách thì tạo buổi trước, hoặc "Sinh lịch cả kỳ" một lần cho cả đợt (xem bài "Sinh lịch cả kỳ").',
+        luu_y: 'Buổi đã dạy mà không ai điểm danh thì KHÔNG tính vào mẫu số chuyên cần; nó được báo riêng là "chưa điểm danh". Đó là cố ý: chia vào mẫu số sẽ biến thành "con vắng" trong mắt phụ huynh.',
       },
     ],
     hong_thi_sao: [
       {
         trieu_chung: 'Chuyên cần của lớp thấp bất thường.',
-        xu_ly: 'Xem "Hôm nay cần làm gì" — thường là còn buổi đã dạy mà chưa ai điểm danh.',
+        xu_ly: 'Xem "Hôm nay cần làm gì". Thường là còn buổi đã dạy mà chưa ai điểm danh.',
       },
       {
         trieu_chung: 'Bốn ô (có mặt / muộn / vắng / có phép) cộng lại không bằng số buổi.',
-        xu_ly: 'Có buổi cả lớp đã tick nhưng riêng em đó bị sót dòng. Tờ báo cáo nói rõ số buổi ấy — vào buổi đó bổ sung.',
+        xu_ly: 'Có buổi cả lớp đã tick nhưng riêng em đó bị sót dòng. Tờ báo cáo nói rõ số buổi ấy; vào từng buổi bổ sung.',
       },
     ],
   },
@@ -308,16 +308,16 @@ export const HUONG_DAN: readonly Bai[] = [
     khi_nao: 'Đầu mỗi đợt, sau khi lớp đã có lịch học (thứ trong tuần và giờ).',
     buoc: [
       {
-        lam: 'Học vụ khai ngày nghỉ của ĐỢT trước: mở Đợt học, bấm "Ngày nghỉ". Hệ thống gợi ý lễ dương lịch cố định; Tết, Giỗ Tổ và ngày nghỉ bù thì nhập theo thông báo chính thức của năm đó.',
+        lam: 'Học vụ khai ngày nghỉ của ĐỢT trước: mở Đợt học, bấm "Ngày nghỉ". Lễ dương lịch cố định được gợi ý sẵn; Tết, Giỗ Tổ và ngày nghỉ bù thì nhập theo thông báo chính thức của năm đó.',
         o: '/quan-tri/dot-hoc',
-        luu_y: 'Hệ thống KHÔNG tự tính Tết — đoán sai một ngày là cả lớp vào phòng học trống. Ngày nghỉ lưu theo đợt, nên khai một lần là mọi lớp của đợt cùng bỏ.',
+        luu_y: 'Lịch nghỉ Tết phải khai tay, không có sẵn. Đoán sai một ngày là cả lớp vào phòng học trống. Ngày nghỉ lưu theo đợt, nên khai một lần là mọi lớp của đợt cùng bỏ.',
       },
       {
-        lam: 'Vào lớp → trang Buổi học → "Sinh lịch cả kỳ". Thứ, giờ, khoảng ngày đã điền sẵn theo lịch lớp — kiểm tra rồi bấm "Xem trước".',
+        lam: 'Vào lớp → trang Buổi học → "Sinh lịch cả kỳ". Thứ, giờ, khoảng ngày đã điền sẵn theo lịch lớp; kiểm lại rồi bấm "Xem trước".',
         luu_y: 'Bảng xem trước nói rõ ngày nào tạo, ngày nào nghỉ, ngày nào đã có buổi. Chỉ bấm "Tạo" sau khi đọc bảng ấy.',
       },
       {
-        lam: 'Bấm lại lần nữa không tạo buổi trùng — ngày đã có buổi được giữ nguyên. Sửa ngày kết thúc rồi sinh thêm là cách nối dài lịch.',
+        lam: 'Bấm lại lần nữa không tạo buổi trùng: ngày đã có buổi được giữ nguyên. Sửa ngày kết thúc rồi sinh thêm là cách nối dài lịch.',
       },
     ],
     hong_thi_sao: [
@@ -331,7 +331,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         trieu_chung: 'Dòng xem trước ghi "Trùng: giảng viên dạy lớp X…" hoặc "2 em học lớp Y".',
-        xu_ly: 'Ngày ấy đụng lịch một LỚP KHÁC. Máy vẫn tạo buổi — có ca trùng là cố ý (dạy ghép, học bù). Không cố ý thì đổi giờ trong form rồi "Xem trước" lại, hoặc tạo xong sửa riêng buổi đó.',
+        xu_ly: 'Ngày ấy đụng lịch một LỚP KHÁC. Buổi vẫn được tạo, vì có ca trùng là chuyện cố ý (dạy ghép, học bù). Không cố ý thì đổi giờ trong form rồi "Xem trước" lại, hoặc tạo xong sửa riêng buổi đó.',
       },
     ],
   },
@@ -347,7 +347,7 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Mở "Lịch học" trong khu Giảng dạy. Mỗi dòng là một ngày trong tuần, mỗi thẻ là một buổi: giờ, lớp, giảng viên, nơi học.',
         o: '/giang-day/lich',
-        luu_y: 'Học vụ lọc thêm theo giảng viên. Lịch của MỘT em mở từ hồ sơ của em ("Lịch học của em") — tính theo lớp em đang học tại giờ từng buổi.',
+        luu_y: 'Học vụ lọc thêm theo giảng viên. Lịch của MỘT em mở từ hồ sơ của em ("Lịch học của em"), tính theo lớp em đang học tại giờ từng buổi.',
       },
       {
         lam: 'Thẻ viền vàng "Trùng giờ giảng viên" là cùng giảng viên có hai buổi chồng giờ ở hai lớp. Bấm tên lớp để sang sổ buổi học của lớp đó mà sửa.',
@@ -361,7 +361,7 @@ export const HUONG_DAN: readonly Bai[] = [
         luu_y: 'Chỉ các em được chọn thấy buổi bù, có tên trong sổ điểm danh của buổi ấy và nhận thông báo; em khác không bị tính buổi này vào chuyên cần hay học phí.',
       },
       {
-        lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác — cùng giảng viên, cùng học viên, hay cùng phòng — máy báo bằng dải vàng. Buổi VẪN được lưu.',
+        lam: 'Tạo, sửa hay sinh lịch mà đụng lớp khác (cùng giảng viên, cùng học viên, hay cùng phòng) thì có dải vàng báo lại. Buổi VẪN được lưu.',
         luu_y: 'Cảnh báo chứ không chặn: trung tâm có ca trùng cố ý. Phòng so không phân biệt hoa thường ("P201" = "p201") và chỉ so buổi tại trung tâm.',
       },
       {
@@ -372,7 +372,7 @@ export const HUONG_DAN: readonly Bai[] = [
     hong_thi_sao: [
       {
         trieu_chung: 'Em nói không nhận được email đổi lịch.',
-        xu_ly: 'Em đã tắt "Nhận thông báo qua email" ở Cài đặt, hoặc tài khoản chưa có email. Chuông trên trang vẫn có — nhắc em mở chuông.',
+        xu_ly: 'Em đã tắt "Nhận thông báo qua email" ở Cài đặt, hoặc tài khoản chưa có email. Chuông trên trang vẫn có, nhắc em mở chuông xem.',
       },
       {
         trieu_chung: 'Hai lớp cùng phòng mà không thấy cảnh báo trùng phòng.',
@@ -420,7 +420,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Khối "Đánh giá của giảng viên" nằm trên tờ báo cáo. Ghi nhận xét, tick "Đánh dấu em cần hỗ trợ" kèm lý do, ghi đề xuất hướng học, rồi bấm "Lưu đánh giá".',
-        luu_y: 'Chỉ NHẬN XÉT in lên tờ gửi phụ huynh. Cờ cần hỗ trợ và hướng học là nội bộ — cờ hiện ở "Việc hôm nay" của giảng viên và trợ giảng lớp.',
+        luu_y: 'Chỉ NHẬN XÉT in lên tờ gửi phụ huynh. Cờ cần hỗ trợ và hướng học là nội bộ, hiện ở "Việc hôm nay" của giảng viên và trợ giảng lớp.',
       },
       {
         lam: 'Em được trợ giảng báo cần hỗ trợ hiện ở khối "Cần hỗ trợ" của "Việc hôm nay", kèm lý do và tên người báo. Giúp xong thì bấm "Bỏ đánh dấu".',
@@ -437,14 +437,14 @@ export const HUONG_DAN: readonly Bai[] = [
     buoc: [
       {
         lam: 'Vào lớp, bấm "Báo cáo phụ huynh". Trang hiện bản SOẠN SẴN: ai nhận được, ai chưa có số.',
-        luu_y: 'Mở trang này KHÔNG gửi gì cả. Chưa có gì rời khỏi hệ thống cho tới khi bấm nút.',
+        luu_y: 'Mở trang này KHÔNG gửi gì cả. Chưa có thư nào rời đi cho tới khi bấm nút.',
       },
       {
         lam: 'Em nào thiếu email hoặc số Zalo của phụ huynh: dán cả bảng đăng ký (kèm dòng tiêu đề) vào "Nhập liên hệ phụ huynh" ngay trên trang này → "Kiểm tra trước" → "Lưu". Hoặc để em tự điền ở Cài đặt → Liên hệ phụ huynh.',
-        luu_y: 'Trung tâm đã nhập thì học viên KHÔNG sửa được ô ấy nữa (chỉ điền được ô còn trống) — để không em nào đổi được địa chỉ nhận báo cáo về chính mình. Cần sửa thì học vụ dán lại.',
+        luu_y: 'Trung tâm đã nhập thì học viên KHÔNG sửa được ô ấy nữa (chỉ điền được ô còn trống), để không em nào đổi được địa chỉ nhận báo cáo về chính mình. Cần sửa thì học vụ dán lại.',
       },
       {
-        lam: 'Bấm nút và xác nhận. Cửa xác nhận nêu ĐÚNG SỐ người sẽ nhận — đọc con số đó trước khi gật.',
+        lam: 'Bấm nút và xác nhận. Cửa xác nhận nêu ĐÚNG SỐ người sẽ nhận; đọc con số đó trước khi gật.',
         luu_y: 'Tin đã tới Zalo phụ huynh thì KHÔNG thu về được, và mỗi tin đều tính phí.',
       },
       {
@@ -455,7 +455,7 @@ export const HUONG_DAN: readonly Bai[] = [
     hong_thi_sao: [
       {
         trieu_chung: 'Phụ huynh báo mở link không được.',
-        xu_ly: 'Đường dẫn sống 45 ngày và thu hồi được. Hết hạn hoặc đã thu hồi thì cấp lại đường dẫn mới — một câu báo lỗi duy nhất cho cả ba trường hợp, nên không đoán được là vì sao.',
+        xu_ly: 'Đường dẫn sống 45 ngày và thu hồi được. Hết hạn hoặc đã thu hồi thì cấp lại đường dẫn mới. Cả ba trường hợp dùng chung một câu báo lỗi, nên nhìn câu ấy không biết được là vì sao.',
       },
       // "Điểm trung bình 0%" (ô điểm thi thử trên tờ báo cáo) bỏ 24/09/2026 cùng ô ấy
       // — bỏ thi, pha A.
@@ -466,16 +466,16 @@ export const HUONG_DAN: readonly Bai[] = [
     ma: 'giao-bai',
     tieu_de: 'Giao bài và chấm tay',
     vai: [VAI_GIANG_VIEN, VAI_TRO_GIANG],
-    khi_nao: 'Khi cần bài tự luận hoặc bài nộp ảnh — bài trắc nghiệm thì hệ thống tự chấm.',
+    khi_nao: 'Khi cần bài tự luận hoặc bài nộp ảnh. Bài trắc nghiệm được chấm tự động.',
     buoc: [
       {
         lam: 'Vào lớp, mở "Bài tập", tạo bài và đặt hạn nộp. Ô "Giao cho": Cả lớp, hoặc "Chọn học viên" rồi tick từng em.',
-        luu_y: 'Em không được chọn không thấy bài, không nhận thông báo và không bị tính "chưa nộp". Đổi người nhận sau bằng nút "Đổi người nhận" trên dòng của bài — em mới thêm được báo ngay.',
+        luu_y: 'Em không được chọn không thấy bài, không nhận thông báo và không bị tính "chưa nộp". Đổi người nhận sau bằng nút "Đổi người nhận" trên dòng của bài; em mới thêm sẽ được báo ngay.',
       },
       { lam: 'Học viên nộp; danh sách bài nộp hiện ngay trong bài đó.' },
       {
         lam: 'Bài kiểm tra làm trên lớp: "Giao bài mới" → Loại "Bài kiểm tra trên lớp (nhập điểm)", chọn ngày kiểm tra. Sau buổi, bấm "Nhập điểm" trên dòng của bài, gõ điểm từng em (em vắng thì tick "Vắng") rồi Lưu.',
-        luu_y: 'Học viên không nộp bài kiểm tra qua hệ thống và không bị tính "chưa nộp". Điểm hiện ở mục Bài tập của em, sổ điểm (loại "Bài kiểm tra"), dòng thời gian trên hồ sơ và tờ báo cáo gửi phụ huynh.',
+        luu_y: 'Học viên không nộp bài kiểm tra trên ứng dụng và không bị tính "chưa nộp". Điểm hiện ở mục Bài tập của em, sổ điểm (loại "Bài kiểm tra"), dòng thời gian trên hồ sơ và tờ báo cáo gửi phụ huynh.',
       },
       {
         lam: 'Chấm điểm và ghi nhận xét.',
@@ -500,7 +500,7 @@ export const HUONG_DAN: readonly Bai[] = [
       { lam: 'Bấm "Soạn nội dung" ở bài cần sửa. Bài mới thêm bằng ô "Thêm bài mới" phía trên danh sách.' },
       {
         lam: 'Cần nhập cả khoá một lần thì bấm "Nhập từ file JSON".',
-        luu_y: 'Hệ thống kiểm toàn bộ trước khi ghi: sai một bài thì không bài nào được ghi. Nhập lại cùng một file là cập nhật, không nhân đôi.',
+        luu_y: 'Cả tệp được kiểm trước khi ghi: sai một bài thì không bài nào được ghi. Nhập lại cùng một file là cập nhật, không nhân đôi.',
       },
     ],
   },
@@ -514,7 +514,7 @@ export const HUONG_DAN: readonly Bai[] = [
       {
         lam: 'Mở "Chấm công", chọn tháng rồi bấm "Xem".',
         o: '/quan-tri/cham-cong',
-        luu_y: 'Chỉ tính buổi đã điểm danh hoặc đã đánh dấu xong. Buổi đã dạy mà chưa ai điểm danh sẽ THIẾU ở đây — nhắc giảng viên điểm danh trước.',
+        luu_y: 'Chỉ tính buổi đã điểm danh hoặc đã đánh dấu xong. Buổi đã dạy mà chưa ai điểm danh sẽ THIẾU ở đây, nên nhắc giảng viên điểm danh trước.',
       },
       {
         lam: 'Trợ giảng được tính buổi của lớp mình đang được gán lúc buổi diễn ra. Gán vào lớp giữa tháng thì chỉ tính các buổi sau ngày gán.',
@@ -544,7 +544,7 @@ export const HUONG_DAN: readonly Bai[] = [
     hong_thi_sao: [
       {
         trieu_chung: 'Xem trước báo có buổi khung chưa có buổi học để gắn.',
-        xu_ly: 'Lớp chưa đủ buổi. Tạo thêm buổi học (Buổi học → Sinh lịch cả kỳ) rồi bấm "Nhận khung" lại — buổi đã gắn giữ nguyên.',
+        xu_ly: 'Lớp chưa đủ buổi. Tạo thêm buổi học (Buổi học → Sinh lịch cả kỳ) rồi bấm "Nhận khung" lại; buổi đã gắn giữ nguyên.',
       },
       {
         trieu_chung: 'Một buổi gắn nhầm buổi khung.',
@@ -567,7 +567,7 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       {
         lam: 'Đề xuất cần học vụ quyết (học bù, đổi tiến độ) thì bấm "Gửi đề xuất cho học vụ" ngay dưới ô Đề xuất.',
-        luu_y: 'Đề xuất thành một yêu cầu trong hộp Yêu cầu — học vụ trả lời ở đó, bạn nhận chuông.',
+        luu_y: 'Đề xuất thành một yêu cầu trong hộp Yêu cầu. Học vụ trả lời ở đó, bạn nhận chuông.',
       },
     ],
   },
@@ -582,7 +582,7 @@ export const HUONG_DAN: readonly Bai[] = [
       { lam: 'Mở Yêu cầu. Mặc định chỉ hiện yêu cầu đang mở; lọc theo loại, lớp, hoặc "Chỉ việc giao cho tôi".', o: '/yeu-cau' },
       {
         lam: 'Mở một yêu cầu. Học vụ: "Đổi loại" nếu em chọn nhầm loại, "Giao người xử lý" cho giảng viên / trợ giảng của lớp.',
-        luu_y: 'Giảng viên, trợ giảng không thấy yêu cầu hỗ trợ tài khoản — việc ấy chỉ học vụ làm.',
+        luu_y: 'Giảng viên, trợ giảng không thấy yêu cầu hỗ trợ tài khoản, vì việc ấy chỉ học vụ làm.',
       },
       {
         lam: 'Trả lời ở ô "Trả lời". Việc chỉ nhân sự nên biết thì tick "Ghi chú nội bộ".',
@@ -590,8 +590,8 @@ export const HUONG_DAN: readonly Bai[] = [
       },
       { lam: 'Xong việc thì bấm "Đã xong…", ghi kết quả — người gửi đọc được kết quả này.' },
       {
-        lam: 'Xin chuyển lớp, bảo lưu, huỷ khoá, học lại: học vụ bấm "Duyệt…", chọn lớp / ngày, đọc dòng "Hệ thống sẽ…" rồi bấm "Duyệt và thực hiện".',
-        luu_y: 'Duyệt là hệ thống LÀM NGAY (chuyển lớp, cho rời lớp). Chuyển lịch, học bù, nghỉ học: duyệt chỉ ghi quyết định — tự làm trên màn Buổi học rồi bấm "Đã xong…".',
+        lam: 'Xin chuyển lớp, bảo lưu, huỷ khoá, học lại: học vụ bấm "Duyệt…", chọn lớp / ngày, đọc dòng "Duyệt xong sẽ…" rồi bấm "Duyệt và thực hiện".',
+        luu_y: 'Duyệt xong là việc được LÀM NGAY (chuyển lớp, cho rời lớp). Chuyển lịch, học bù, nghỉ học thì duyệt chỉ ghi quyết định: tự làm trên màn Buổi học rồi bấm "Đã xong…".',
       },
       {
         lam: 'Trợ giảng báo một em không phản hồi: Yêu cầu → "Tạo yêu cầu", loại "Báo lên", chọn lớp và em, tick "Em không phản hồi".',

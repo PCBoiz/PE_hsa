@@ -555,7 +555,7 @@ def _check_row(cand, by_email, by_phone, seen_email, seen_phone):
         # Họ tên thật không mở đầu bằng = + - @; một ô như thế là CÔNG THỨC dán từ bảng
         # tính (`=HYPERLINK(...)`) — để lọt thì nó thành công thức trong mọi bản xuất Excel
         # sau này của người khác (V-j, 25/09/2026: dùng chung cho ô dán và tệp mẫu).
-        return name, email, phone, ('Họ tên không được bắt đầu bằng dấu %s — ô này trông như '
+        return name, email, phone, ('Họ tên không được bắt đầu bằng dấu %s. Ô này trông như '
                                     'công thức bảng tính. Gõ lại họ tên.' % name[:1])
     if not email and not phone:
         return name, email, phone, 'Cần ít nhất email hoặc số điện thoại.'
@@ -615,7 +615,7 @@ def _cham_tung_dong(cands, by_email, by_phone, dry_run, truncated):
         if phone:
             seen_phone[phone] = cand['line']
         rows.append(dict(entry, status='created',
-                         reason='Hợp lệ — sẽ cấp tài khoản.' if dry_run else None))
+                         reason='Hợp lệ, sẽ cấp tài khoản.' if dry_run else None))
         to_create.append((rows[-1], name, email, phone))
 
     skipped = sum(1 for r in rows if r['status'] == 'skipped')
@@ -834,7 +834,7 @@ class AdminBulkCreateUsersView(APIView):
         if klass and klass.get('class_type') == 'gia_su' and role == ROLE_STUDENT and to_create:
             con_cho = cho_trong_gia_su(class_id)
             if len(to_create) > con_cho:
-                cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em) — danh sách có %d em mới. '
+                cau = ('Lớp gia sư "%s" chỉ còn %d chỗ (tối đa %d em), mà danh sách có %d em mới. '
                        'Chọn lớp khác hoặc bỏ ô lớp.' % (klass['name'], max(con_cho, 0), vocab.TRAN_GIA_SU,
                                                          len(to_create)))
                 if not dry_run:
@@ -861,7 +861,7 @@ class AdminBulkCreateUsersView(APIView):
                 'ok': False,
                 'error': ('Một lần chỉ cấp được %d tài khoản, danh sách này có %d dòng '
                           'hợp lệ. Sinh mật khẩu cho mỗi em tốn hơn một phần mười giây, '
-                          'quá số đó là máy chủ cắt ngang giữa chừng và danh sách mật '
+                          'quá số đó là lượt cấp bị cắt ngang giữa chừng và danh sách mật '
                           'khẩu tạm sẽ mất trong khi tài khoản thì đã tạo dở. Chia ra '
                           'dán làm nhiều lần — phần kiểm tra trước (dry_run) vẫn xem '
                           'được cả danh sách trong một lượt.'
@@ -885,7 +885,7 @@ class AdminBulkCreateUsersView(APIView):
             'className': klass['name'] if klass else None,
             'warnings': warnings,
             'rows': rows,
-            'note': 'Mật khẩu tạm chỉ hiện MỘT lần ở đây — máy chủ không lưu lại dạng '
+            'note': 'Mật khẩu tạm chỉ hiện MỘT lần ở đây, và không nơi nào lưu lại dạng '
                     'đọc được. Chép ra trước khi đóng cửa sổ; quên thì phải đặt lại.',
         }, status=201)
 
@@ -963,7 +963,7 @@ class AdminUserStatusView(APIView):
                              'role': target['role'],
                              'orphanedClasses': [c['id'] for c in orphaned]})
 
-        warnings = ['Lớp "%s" đang do tài khoản này phụ trách — khoá xong lớp sẽ không '
+        warnings = ['Lớp "%s" đang do tài khoản này phụ trách. Khoá xong thì lớp sẽ không '
                     'còn giảng viên. Gán người khác trước khi tới buổi kế tiếp.' % c['name']
                     for c in orphaned]
         return Response({
@@ -973,7 +973,7 @@ class AdminUserStatusView(APIView):
             'status': status,
             'warnings': warnings,
             'orphanedClasses': [dict(c) for c in orphaned],
-            'note': ('Tài khoản bị chặn ngay ở lời gọi API kế tiếp, kể cả khi em đang '
+            'note': ('Tài khoản bị chặn ngay ở lượt bấm kế tiếp, kể cả khi em đang '
                      'mở sẵn ứng dụng. Dữ liệu học giữ nguyên, mở lại là dùng tiếp.'
                      if status != 'active' else
                      'Tài khoản đăng nhập lại được ngay, không cần đặt lại mật khẩu.'),
