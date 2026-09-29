@@ -19,7 +19,29 @@ công khoá tháng, §60 tài liệu R2).
 **Spec nghiệm thu**: mỗi dòng sẽ có `frontend/e2e/nghiem-thu/dong-NN.spec.ts` đi đúng kịch bản demo;
 một dòng chỉ báo khách "sẵn sàng nghiệm thu" khi spec của nó xanh hai khổ. Cột "Spec" = `—` là chưa có.
 
-## ✅ 28/09/2026 — ĐO TRÊN CHÍNH BẢN PRODUCTION: 38/41 màn ĐẠT
+## ✅ 29/09/2026 — ĐO TRÊN CHÍNH BẢN PRODUCTION SAU KHI GỘP: 40/42 màn ĐẠT
+
+`master` = `4133758` đã lên; `GET /api/health` trả `{"status":"ok","ban":"4133758"}`. Đo bằng
+sáu thẻ vai thật (quản trị, giảng viên, trợ giảng, học vụ, hai học viên), **0 màn chưa đo
+được**.
+
+Còn đúng **hai** ô đỏ, và cả hai chờ cùng một bộ khoá:
+
+| Dòng | Đỏ vì | Ai gỡ |
+|---|---|---|
+| 30 · tải tệp học liệu | thiếu thật | khoá **R2** (việc `D1` của anh Sơn) |
+| 31 · nộp bài bằng tệp | thiếu thật | cùng bộ khoá ấy |
+
+Ô "Nói thêm với trung tâm" (dòng 25) nay **XANH** — nó đỏ hôm qua chỉ vì chưa gộp. Và **màn
+thứ 42** (tab Tài liệu của trang Xem lại, dòng 30) ĐẠT ngay lượt đo đầu tiên của nó: màn ấy
+thêm vào sổ 28/09 sau khi phát hiện dòng 30 xưa nay CHỈ được soát ở `/dashboard`, nơi thẻ lớp
+đúng là chỉ giữ bốn tài liệu — nên nhãn "CHƯA" sai không lượt đo nào từng mâu thuẫn.
+
+Cùng lượt, một lỗi trong chính bộ đo: bước cuối của vòng lặp in *"0 chỗ tự làm được · 0 chỗ
+vướng người khác"* trong khi sổ còn 15 chỗ đang chờ — cờ `--lam-duoc` lọc bỏ cột kia rồi đếm
+trên bản đã lọc. Đọc thoáng qua thành "hết sạch việc". Đã vá.
+
+## 28/09/2026 — ĐO TRÊN CHÍNH BẢN PRODUCTION: 38/41 màn ĐẠT
 
 **Số chốt cuối ngày.** Sổ soát thêm ba màn chưa lượt nào chạm tới: **tờ báo cáo phụ huynh**
 (`/bc/<chìa>` — màn CÔNG KHAI duy nhất của hệ thống, người mở không có tài khoản), **khối gửi

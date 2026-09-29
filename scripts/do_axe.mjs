@@ -30,7 +30,11 @@ import { baoHiem } from './lib/phien_do.mjs';
 const doc = (t) => JSON.parse(fs.readFileSync(process.env[t] || join(DAY, '..', '.the', t === 'PE_TOKENS' ? 'tokens_ad.json' : 'tokens_hv.json'), 'utf8')).access;
 const AD = doc('PE_TOKENS');
 const HV = doc('PE_TOKENS_HV');
-const GOC = process.env.PE_GOC || 'http://localhost:3100';
+// Xem chú thích cùng tên ở `do_giao_dien.mjs`: `PE_WEB` là tên chuẩn, `PE_GOC` giữ lại.
+const GOC = process.env.PE_WEB || process.env.PE_GOC || 'http://localhost:3100';
+/** Trần chờ mở một trang. Đích ở xa thì rộng hơn hẳn: lượt gọi đầu qua Vercel → Render lúc
+ *  nguội đo được 63–73 giây, nên 60 giây của bản cũ hụt ngay ở màn đầu tiên. */
+const CHO_MS = Number(process.env.PE_CHO_MS || (GOC.startsWith('http://localhost') ? 60000 : 180000));
 const TRANG = [
   // `/` bỏ 24/09/2026: chỉ còn chuyển hướng (trang quảng cáo đã gỡ).
   ['/login', 'Đăng nhập', null],
@@ -141,13 +145,34 @@ for (const w of [390, 1366]) {
     const { url, the, cheDo } = l;
     const ten = l.cheDo === 'dark' ? `${l.ten} (tối)` : l.ten;
     const ctx = await b.newContext({ viewport: { width: w, height: w === 390 ? 844 : 900 }, hasTouch: w === 390 });
-    if (the) await ctx.addCookies([{ name: 'pe_at', value: the, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    // Tên miền và cờ `secure` lấy TỪ ĐÍCH ĐO, không ghim 'localhost': ghim thì bộ đo này
+    // không bao giờ đăng nhập được khi trỏ ra production, và mọi màn sau thanh đăng nhập
+    // sẽ được chấm trên... trang đăng nhập (29/09). Chromium cũng bỏ qua cookie không
+    // `secure` trên HTTPS, nên thiếu cờ ấy là hỏng lặng lẽ y như ghim sai tên miền.
+    if (the) {
+      const u = new URL(GOC);
+      await ctx.addCookies([{ name: 'pe_at', value: the, domain: u.hostname, path: '/',
+        httpOnly: true, sameSite: 'Lax', secure: u.protocol === 'https:' }]);
+    }
     // Chủ đề đọc từ `localStorage.theme` lúc nạp — đặt TRƯỚC khi trang chạy.
     await ctx.addInitScript((m) => { try { localStorage.setItem('theme', m); } catch { /* riêng tư */ } }, cheDo);
     await ctx.route('**/api/**', (r) => (['GET', 'HEAD'].includes(r.request().method()) ? r.continue() : r.fulfill({ status: 200, contentType: 'application/json', body: '{}' })));
     const p = await ctx.newPage();
     try {
-      await p.goto(GOC + url, { waitUntil: url === '/login' ? 'domcontentloaded' : 'networkidle', timeout: 60000 });
+      /* `domcontentloaded` rồi mới CỐ chờ mạng rảnh, thay vì lấy `networkidle` làm điều kiện
+         của chính `goto` (29/09/2026). Hai lý do, cả hai đo được khi trỏ ra production:
+
+         · trang của dự án có nhịp hỏi nền (chuông, giữ ấm máy chủ), nên mạng KHÔNG BAO GIỜ
+           rảnh đủ 500 ms — `networkidle` hết giờ dù trang đã dựng xong từ lâu;
+         · chuỗi Vercel → Render lúc nguội mất tới 70 giây cho lượt gọi đầu, dài hơn cả trần.
+
+         Lượt đo 29/09 trên production vì thế báo **106/122 lượt KHÔNG ĐO ĐƯỢC**. Bộ đo trung
+         thực (không in số giả), nhưng một bộ đo không đo được thì cũng như không có.
+
+         Chờ mạng rảnh nay là bước RIÊNG và được phép hụt: hụt thì vẫn chấm trên trang đã
+         dựng, còn hơn bỏ trắng cả màn. */
+      await p.goto(GOC + url, { waitUntil: 'domcontentloaded', timeout: CHO_MS });
+      if (url !== '/login') await p.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
       if (url.startsWith('/lesson/')) {
         try {
           await p.waitForSelector('.hsa-q', { timeout: 15000 });

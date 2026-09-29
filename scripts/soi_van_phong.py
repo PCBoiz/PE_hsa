@@ -36,6 +36,18 @@ và bằng phép bóc chú thích cho TSX.
 
 Đếm, không tự sửa: câu nào sửa thế nào là việc của người, và sửa máy móc (thay `—` bằng `.`
 ở cả ba trăm chỗ) chỉ đổi một nhịp máy này lấy một nhịp máy khác.
+
+── MỘT LẦN TỆP NÀY TỰ NÓI DỐI (29/09/2026) ─────────────────────────────────
+
+Phép lọc "bỏ qua câu SQL" được dán vào bằng một heredoc của shell, và heredoc nuốt mất `\\b`
+cuối mẫu, biến nó thành **ký tự backspace 0x08** nằm ngay trong regex. Mẫu ấy không bao giờ
+khớp, nên phép lọc im lặng không lọc gì — mà một phép lọc không lọc gì trông y hệt một kho mã
+sạch. Mất bốn lượt đo mới tìm ra, vì `re.match` gõ tay ngoài mô-đun thì khớp, còn trong mô-đun
+thì không: hai mẫu NHÌN giống hệt nhau trên màn.
+
+Bài học cho người sửa tệp này: **đừng dán mã có dấu thoát bằng heredoc.** Trong cùng phiên ấy
+heredoc còn nuốt `\\n` và `\\\\` ở ba chỗ khác. Sửa bằng công cụ soạn tệp, hoặc kiểm lại bằng
+`grep -c $'\\x08' <tệp>` sau khi dán.
 """
 import argparse
 import ast
@@ -183,6 +195,10 @@ def quet(loc=None):
 def _cham(thay, p, dong, s):
     # Dòng ghi log mở đầu bằng `[tên]` — đọc bởi người trực máy chủ, không phải người dùng.
     if len(s) < 12 or not CO_DAU.search(s) or s.lstrip().startswith('['):
+        return
+    # Câu SQL không phải câu văn. Chú thích `--` trong SQL và chữ tiếng Việt trong tên cột
+    # làm nó lọt qua mọi phép lọc trên rồi bị chấm là văn phong (29/09).
+    if re.match(r'\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|ALTER)\b', s, re.I):
         return
     # Địa chỉ URL không phải câu văn. Một `?q=Học viên` trong đường dẫn có dấu tiếng Việt
     # nên lọt qua phép lọc trên, rồi bị chấm là 'chữ kỹ thuật lọt lên màn' (29/09).

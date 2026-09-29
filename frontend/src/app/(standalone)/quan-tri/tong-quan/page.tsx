@@ -247,7 +247,7 @@ function suyViec(
       nang: 'nhac',
       icon: 'user',
       chu: `${soNgu} học viên ≥${mocNgu} ngày không vào`,
-      phu: 'Nghỉ càng lâu càng khó quay lại — nên gọi hỏi thăm sớm.',
+      phu: 'Gọi hỏi thăm trước khi các em nghỉ hẳn.',
       href: '#tai-khoan-ngu',
     });
   }

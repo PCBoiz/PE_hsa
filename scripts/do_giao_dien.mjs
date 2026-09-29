@@ -67,7 +67,11 @@ if (!PW) {
    chưa từng được commit: công cụ chỉ người đọc tới một tệp không tồn tại, để
    sửa một đường dẫn không tồn tại. */
 const TOKEN = process.env.PE_TOKENS || join(DAY, '..', '.the', 'tokens_ad.json');
-const GOC = process.env.PE_URL || 'http://localhost:3100';
+// `PE_WEB` là tên CHUẨN cho đích đo ở mọi bộ đo (29/09). Tới hôm ấy ba bộ dùng ba tên
+// khác nhau — `PE_URL`, `PE_GOC`, `PE_WEB` — nên đặt đúng một biến rồi chạy cả ba là hai
+// bộ lặng lẽ đo localhost trong khi người chạy tưởng đang đo production. Tên cũ vẫn nhận,
+// để tài liệu và thói quen cũ không gãy.
+const GOC = process.env.PE_WEB || process.env.PE_URL || 'http://localhost:3100';
 
 const KHO = [
   // `cham` = `hasTouch`. BẮT BUỘC đúng cho từng khổ: thiếu nó Chromium báo

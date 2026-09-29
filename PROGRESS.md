@@ -7,6 +7,43 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 29–30/09/2026 — Giọng văn, và ba bộ đo không dùng được với production
+
+Anh Sơn: *"cách hành văn trong bản production nhìn là biết AI"*. Chi tiết ở RULES §23 và
+commit `9b9da99`; phần đáng giữ ở đây là **cách tìm ra nó**. Không đo được bằng cách đọc lại
+từng màn — sản phẩm hơn ba trăm câu, và người viết ra chúng là người kém nhất trong việc nhận
+ra giọng của chính mình. Đo bằng `scripts/soi_van_phong.py`, và thứ lộ ra không phải TỪ NGỮ
+mà là **nhịp lặp**: 436 câu cùng một khuôn `<sự việc> — <hệ quả>`.
+
+  nhịp gạch 436 → 246 · tự xưng 37 → 0 · dạy đời 2 → 0 · chữ kỹ thuật 5 → 3
+
+**Đo xong rồi ĐẾN LƯỢT BỘ ĐO bị soi.** Ba lỗi, cả ba chỉ lộ ra khi đem dùng thật:
+
+① **Vòng lặp in một số 0 đọc nhầm thành "xong hết".** Bước cuối báo *"0 chỗ tự làm được · 0
+chỗ vướng người khác"* trong khi sổ còn 15 chỗ chờ: cờ `--lam-duoc` lọc bỏ cột kia rồi đếm
+trên bản ĐÃ LỌC. Cùng họ với mọi lỗi "0 trông như xanh" mà kho này đã đi vá nhiều lần.
+
+② **Ba bộ đo giao diện, ba tên biến cho cùng một đích** (`PE_URL`, `PE_GOC`, `PE_WEB`), và
+`do_axe.mjs` còn ghim `domain: 'localhost'` cho thẻ đăng nhập. Đặt đúng một biến rồi chạy cả
+ba là hai bộ lặng lẽ đo localhost trong khi người chạy tưởng đang đo production.
+
+③ **`do_axe.mjs` chờ `networkidle` với trần 60 giây.** Trang của dự án có nhịp hỏi nền, nên
+mạng không bao giờ rảnh đủ 500 ms; cộng với 63–73 giây cold start của chuỗi Vercel → Render,
+lượt đo production đầu tiên ra **106/122 lượt KHÔNG ĐO ĐƯỢC**. Bộ đo trung thực — nó nói
+"không đo được" chứ không in số giả — nhưng một bộ đo không đo được thì cũng như không có.
+Nay `domcontentloaded` rồi mới CỐ chờ mạng rảnh (được phép hụt), trần theo đích đo.
+
+**Và thước văn phong tự nói dối một lượt.** Phép lọc "bỏ qua câu SQL" dán vào bằng heredoc,
+heredoc nuốt `\b` cuối mẫu và biến nó thành **ký tự backspace 0x08 nằm trong regex**. Mẫu ấy
+không bao giờ khớp, nên phép lọc im lặng không lọc gì — mà **một phép lọc không lọc gì trông y
+hệt một kho mã sạch**. Mất bốn lượt mới tìm ra: cùng một mẫu gõ ngoài mô-đun thì khớp, trong
+mô-đun thì không, và hai mẫu NHÌN giống hệt nhau trên màn. Trong cùng phiên heredoc còn nuốt
+`\n` và `\\` ở ba chỗ khác. Kết luận cho người sau: **đừng dán mã có dấu thoát bằng heredoc**;
+dán rồi thì kiểm bằng `grep -c $'\x08'`.
+
+Đo production sau khi gộp, sáu thẻ vai thật: **40/42 màn ĐẠT, 0 màn chưa đo được.** Hai ô đỏ
+còn lại đều chờ khoá R2. Màn thứ 42 (tab Tài liệu) ĐẠT ngay lượt đo đầu tiên của nó.
+
 ## 29/09/2026 — Lượt lên production đầu tiên có DẤU BẢN, và lượt rà sau khi lên
 
 `master` = `4133758` đã lên. `GET /api/health` trả `{"status":"ok","ban":"4133758"}` — câu

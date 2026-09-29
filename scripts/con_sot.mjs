@@ -159,5 +159,13 @@ function in_ra(ten, ds) {
 in_ra('TÔI LÀM ĐƯỢC NGAY — không vướng ai', lamDuoc);
 if (!CHI_LAM_DUOC) in_ra('CHỜ NGƯỜI KHÁC — anh Sơn, khách, hoặc khoá ngoài', choNguoi);
 
-console.log(`\n  Tổng: ${lamDuoc.length} chỗ tự làm được · ${choNguoi.length} chỗ vướng người khác.`);
+// `--lam-duoc` LỌC BỎ cột kia, nên `choNguoi` rỗng và dòng tổng từng in "0 chỗ vướng người
+// khác" — đọc thoáng qua thành "hết sạch việc". Bắt được 29/09: vòng lặp in đúng câu ấy ở
+// cuối một lượt đo production, trong khi sổ vẫn còn 15 chỗ đang chờ anh Sơn và chờ khoá ngoài.
+// Đếm trên bản CHƯA lọc, và nói rõ là đã bỏ qua.
+const daBo = thay.filter((x) => (!DONG || x.dong === DONG) && x.vuong).length;
+console.log(CHI_LAM_DUOC
+  ? `\n  Tổng: ${lamDuoc.length} chỗ tự làm được. (Bỏ qua ${daBo} chỗ vướng người khác`
+    + ' — bỏ cờ --lam-duoc để đọc.)'
+  : `\n  Tổng: ${lamDuoc.length} chỗ tự làm được · ${choNguoi.length} chỗ vướng người khác.`);
 console.log('  Đây là bước ĐỌC của vòng lặp — không phải cổng kiểm, nên luôn thoát 0.');
