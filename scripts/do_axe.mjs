@@ -27,7 +27,25 @@ import { fileURLToPath } from 'node:url';
 const DAY = dirname(fileURLToPath(import.meta.url));
 const { chromium } = createRequire(join(DAY, '..', 'frontend', 'package.json'))('@playwright/test');
 import { baoHiem } from './lib/phien_do.mjs';
-const doc = (t) => JSON.parse(fs.readFileSync(process.env[t] || join(DAY, '..', '.the', t === 'PE_TOKENS' ? 'tokens_ad.json' : 'tokens_hv.json'), 'utf8')).access;
+/* THẺ: `PE_THE` (THƯ MỤC) là đường chuẩn, giống mọi bộ đo khác của dự án.
+   Tới 30/09/2026 riêng tệp này đọc `PE_TOKENS` / `PE_TOKENS_HV` (đường dẫn TỆP), và khi
+   không có thì lặng lẽ rơi về `.the/tokens_*.json` trên máy — những thẻ đã chết từ lâu.
+   Hệ quả đo được hôm ấy: chạy với `PE_THE` như mọi lệnh khác thì bộ đo chạy KHÔNG ĐĂNG
+   NHẬP, mọi màn sau thanh đăng nhập rơi về trang đăng nhập, và nó vẫn in ra "0 nút vi
+   phạm / 122 lượt". Đúng cái bẫy `.claude/skills/do-man-that` đã cảnh báo, chỉ là lần này
+   không phải thẻ hết hạn mà là đọc nhầm chỗ. */
+const THU_MUC_THE = process.env.PE_THE || join(DAY, '..', '.the');
+const doc = (t) => {
+  const tep = process.env[t] || join(THU_MUC_THE, t === 'PE_TOKENS' ? 'tokens_ad.json' : 'tokens_hv.json');
+  try {
+    return JSON.parse(fs.readFileSync(tep, 'utf8')).access;
+  } catch {
+    console.error(`KHÔNG ĐỌC ĐƯỢC THẺ: ${tep}\n`
+      + 'Đặt PE_THE trỏ tới thư mục chứa tokens_ad.json và tokens_hv.json.');
+    process.exit(2);
+  }
+  return null;
+};
 const AD = doc('PE_TOKENS');
 const HV = doc('PE_TOKENS_HV');
 // Xem chú thích cùng tên ở `do_giao_dien.mjs`: `PE_WEB` là tên chuẩn, `PE_GOC` giữ lại.
@@ -136,6 +154,23 @@ if (chi && LUOT.length === 0) {
 }
 
 const AXE = 'https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js';
+/* HỎI THẺ TRƯỚC KHI ĐO. Không có bước này thì thẻ chết chỉ làm mọi màn rơi về trang đăng
+   nhập, và bộ đo vẫn in ra một con số trông rất đẹp — "0 nút vi phạm" của trang đăng nhập.
+   Một lời gọi rẻ đổi lấy việc không bao giờ phải phân vân con số ấy đo cái gì. */
+for (const [ten, t] of [['quản trị', AD], ['học viên', HV]]) {
+  const api = process.env.PE_API
+    || (GOC.includes('localhost') ? 'http://localhost:9000' : 'https://pe-hsa-backend.onrender.com');
+  const r = await fetch(`${api}/api/user`, {
+    headers: { Authorization: `Bearer ${t}` }, signal: AbortSignal.timeout(180000),
+  }).catch((e) => ({ ok: false, status: 0, loi: e.message }));
+  if (!r.ok) {
+    console.error(`THẺ ${ten.toUpperCase()} KHÔNG DÙNG ĐƯỢC (HTTP ${r.status}${r.loi ? ' — ' + r.loi : ''}).`
+      + '\nCấp lại thẻ rồi đo lại. ĐỪNG đọc số của lượt này: chưa đăng nhập thì mọi màn'
+      + '\nsau thanh đăng nhập đều rơi về trang đăng nhập, và trang ấy thì luôn sạch.');
+    process.exit(2);
+  }
+}
+
 const b = await chromium.launch();
 baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const tong = new Map(); // rule → { impact, help, trang: Set, mau }
@@ -184,8 +219,15 @@ for (const w of [390, 1366]) {
       if (l.view) {
         const daMo = () => p.evaluate((v) => !!document.querySelector(`#page-${v}.active`), l.view);
         if (!(await daMo())) {
+          /* CHỜ `window.navigate` CÓ RỒI MỚI GỌI (29/09/2026). Bản cũ gọi ngay rồi ngủ cứng
+             1500 ms: trên localhost tầng JS cũ nạp kịp, còn trỏ ra production thì chưa —
+             lệnh gọi rơi vào khoảng không (`typeof` khác 'function' nên lặng lẽ không làm
+             gì), ngủ xong view vẫn đóng, và 46 lượt bị chấm "KHÔNG ĐO ĐƯỢC" vì một lý do
+             không có thật. Chờ theo ĐIỀU KIỆN, đừng chờ theo đồng hồ. */
+          await p.waitForFunction(() => typeof window.navigate === 'function', null,
+                                  { timeout: 30000 }).catch(() => {});
           await p.evaluate((v) => { if (typeof window.navigate === 'function') window.navigate(v); }, l.view);
-          await p.waitForTimeout(1500);
+          await p.waitForSelector(`#page-${l.view}.active`, { timeout: 15000 }).catch(() => {});
         }
         if (!(await daMo())) throw new Error(`view "${l.view}" KHÔNG mở`);
         await p.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});

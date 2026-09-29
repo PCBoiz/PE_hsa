@@ -1,6 +1,33 @@
 # Việc của anh — pe_hsa
 
-## 🔴 ĐỌC TRƯỚC — chốt ngày 28/09/2026
+## 🔴 ĐỌC TRƯỚC — chốt ngày 30/09/2026
+
+### Việc MỚI, và nó đang chặn thứ lớn hơn cả ba việc bên dưới
+
+**Production KHÔNG GỬI ĐƯỢC THƯ NÀO.** Đo 30/09 trên chính production: Render thiếu
+`EMAIL_USER` và `EMAIL_APP_PASSWORD`, nên mọi thư đều bị bỏ ngay ở hộp thư đi với lý do
+"kênh chưa cấu hình" — **thư quên mật khẩu**, **báo cáo gửi phụ huynh**, **thông báo lớp gửi
+kèm email**. Ba tính năng ấy đã dựng xong, có phép kiểm, và không gửi đi đâu cả.
+
+Sổ này trước đó ghi *"App Password Gmail (07/09) — Xong từ trước"*. Nhãn ấy SAI: rất có thể
+khoá đã đặt trong `.env` của máy dev mà chưa bao giờ đặt trên Render (hai chỗ khác nhau).
+
+**Vì sao không ai thấy.** Cửa "quên mật khẩu" CỐ Ý trả một câu trung tính dù email có tồn tại
+hay không (chống dò tài khoản), nên người dùng nhận đúng câu trấn an rồi ngồi đợi một lá thư
+không bao giờ tới. Lý do thật nằm trong hộp thư đi, chỗ không ai mở. Nay `kiem_production.mjs`
+hỏi thẳng câu này mỗi lượt đo, nên nó không lặng lẽ hỏng lần nữa.
+
+> **Làm:** Render → `pe-hsa-backend` → **Environment** → thêm hai biến:
+> `EMAIL_USER` = gmail dùng để gửi · `EMAIL_APP_PASSWORD` = App Password 16 ký tự của gmail
+> ấy (Google Account → Security → 2-Step Verification → App passwords; **không phải** mật
+> khẩu Google thường). Chi tiết ở mục 18.1. Mất 2 phút.
+>
+> Kiểm xong bằng `node scripts/kiem_production.mjs` — dòng **GỬI ĐI** phải ĐẠT.
+
+Zalo ZNS cũng chưa bật (`ZALO_OA_ACCESS_TOKEN`, `ZALO_ZNS_TEMPLATE_ID`) nhưng đó là **hoãn có
+chủ ý**, chờ pháp nhân — không tính là hỏng.
+
+
 
 Anh bảo *"cứ tổng hợp hết lại những việc tôi cần làm là được"*. Đây là bản gọn nhất. Mọi
 mục đều có chi tiết ở dưới.
@@ -457,7 +484,8 @@ xếp hạng hay trợ lý AI; thanh trên bỏ Kế hoạch/Lộ trình/Kỹ n�
 | **4.1** · đợt học đầu tiên | Có đợt (07/09) |
 | **B4** · nhập kết quả thi thử từ PDF | Xong 16/09, dùng được ở Giảng dạy → Báo cáo phụ huynh |
 | **C5** · học viên không sửa liên hệ phụ huynh học vụ đã nhập | Anh chốt 14/09, đã làm |
-| Xoay `SECRET_KEY` (07/09) · gộp `master` (06/09) · App Password Gmail (07/09) · tài khoản e2e | Xong từ trước |
+| Xoay `SECRET_KEY` (07/09) · gộp `master` (06/09) · tài khoản e2e | Xong từ trước |
+| ~~App Password Gmail (07/09)~~ | **NHÃN SAI — bỏ 30/09.** Đo trên production: Render thiếu `EMAIL_USER` và `EMAIL_APP_PASSWORD`. Có lẽ khoá đặt ở `.env` máy dev chứ chưa bao giờ đặt trên Render. Xem mục đầu tài liệu |
 | **6.4** · cho tôi tự push · **16.1** · xem log deploy Render | Không còn cần: tôi đẩy được mã, và đã tự xác minh deploy 18/09 bằng dấu vết trên CSDL |
 
 **A6 nay ở bảng trên** — lần này có bằng chứng hai chiều (thẻ dev bị từ chối, thẻ production được nhận), không phải một lần đo ra 401 như hôm 17/09.

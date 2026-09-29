@@ -36,6 +36,16 @@ cd backend && .venv/Scripts/python.exe ../scripts/cap_the.py                    
 Thẻ hết hạn thì bộ đo rơi về màn đăng nhập và **vẫn in ra số** — số của trang
 đăng nhập. Đây là cách dễ nhất để tự lừa mình.
 
+**Từ 30/09/2026 ba bộ đo TỪ CHỐI chạy khi thẻ chết**: chúng gọi `/api/user` trước,
+thẻ hỏng thì thoát mã 2 kèm câu giải thích và không in số nào. Trước đó chỉ có dòng
+cảnh báo này, và nó không đủ: cùng ngày, `do_axe.mjs` chạy KHÔNG ĐĂNG NHẬP suốt một
+lượt và in ra "0 nút vi phạm / 122 lượt" — vì nó đọc thẻ từ `PE_TOKENS` trong khi
+lệnh trong sổ tay đặt `PE_THE`, rồi âm thầm rơi về `.the/tokens_ad.json` cũ.
+
+**Một biến cho đích đo, một biến cho thẻ**: `PE_WEB` (địa chỉ) và `PE_THE` (THƯ MỤC
+chứa `tokens_*.json`). Cả ba bộ nay nhận đúng hai tên ấy; tên cũ (`PE_URL`, `PE_GOC`,
+`PE_TOKENS`) vẫn chạy để không phá thói quen.
+
 ### 3 · Đo
 
 ```bash

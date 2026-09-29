@@ -66,7 +66,16 @@ if (!PW) {
    "cấp thẻ mới (mint_ad.py) rồi đo lại", nhưng `mint_ad.py` cũng là script nháp
    chưa từng được commit: công cụ chỉ người đọc tới một tệp không tồn tại, để
    sửa một đường dẫn không tồn tại. */
-const TOKEN = process.env.PE_TOKENS || join(DAY, '..', '.the', 'tokens_ad.json');
+/* 30/09/2026 — LỖI ẤY QUAY LẠI QUA MỘT CỬA KHÁC. Bản vá trên cho đổi đường dẫn nhưng vẫn
+   không ai hỏi "thẻ này còn sống không", và nó dùng `PE_TOKENS` (đường dẫn TỆP) trong khi
+   mọi bộ đo khác dùng `PE_THE` (THƯ MỤC). Chạy đúng lệnh trong sổ tay —
+   `PE_THE=… node scripts/do_axe.mjs` — là bộ đo âm thầm rơi về `.the/tokens_ad.json` cũ
+   trên máy, chạy KHÔNG ĐĂNG NHẬP, và in ra "0 nút vi phạm / 122 lượt".
+
+   Nên nay: nhận `PE_THE` như mọi bộ khác (tên cũ vẫn ưu tiên nếu ai đặt), và HỎI THẺ TRƯỚC
+   KHI ĐO — thẻ chết thì thoát mã 2 kèm câu giải thích, không in số nào. */
+const TOKEN = process.env.PE_TOKENS
+  || join(process.env.PE_THE || join(DAY, '..', '.the'), 'tokens_ad.json');
 // `PE_WEB` là tên CHUẨN cho đích đo ở mọi bộ đo (29/09). Tới hôm ấy ba bộ dùng ba tên
 // khác nhau — `PE_URL`, `PE_GOC`, `PE_WEB` — nên đặt đúng một biến rồi chạy cả ba là hai
 // bộ lặng lẽ đo localhost trong khi người chạy tưởng đang đo production. Tên cũ vẫn nhận,
@@ -856,7 +865,8 @@ const tok = JSON.parse(readFileSync(TOKEN, 'utf8'));
    .the/tokens_hv.json`), và xoá nhóm vai đã nhớ trước MỖI trang. Không có thẻ
    ấy thì nói to một lần rồi đo bằng thẻ quản trị — con số của các trang học
    viên khi đó KHÔNG gồm phần chỉ-học-viên. */
-const TOKEN_HV = process.env.PE_TOKENS_HV || join(DAY, '..', '.the', 'tokens_hv.json');
+const TOKEN_HV = process.env.PE_TOKENS_HV
+  || join(process.env.PE_THE || join(DAY, '..', '.the'), 'tokens_hv.json');
 let tokHv = null;
 try { tokHv = JSON.parse(readFileSync(TOKEN_HV, 'utf8')); } catch (e) { /* chưa cấp */ }
 const TRANG_HOC_VIEN = new Set(['Dashboard', 'Chi tiết khoá', 'Bài học', 'Thi thử', 'Bài tập của tôi', 'Khảo sát', 'Đổi mật khẩu',
@@ -875,6 +885,24 @@ const chu_de = process.argv.includes('--toi') ? 'dark' : 'light';
 const do_tt = process.argv.includes('--trang-thai');
 const i_json = process.argv.indexOf('--json');
 const ra_json = i_json >= 0 ? process.argv[i_json + 1] : null;
+
+/* HỎI THẺ TRƯỚC KHI ĐO — xem chú thích ở `TOKEN`. Thẻ chết chỉ làm mọi màn rơi về trang
+   đăng nhập, và bảng số in ra vẫn trông bình thường; đây là chỗ duy nhất chặn được. */
+for (const [ten, tep] of [['quản trị', TOKEN], ['học viên', TOKEN_HV]]) {
+  let t = null;
+  try { t = JSON.parse(readFileSync(tep, 'utf8')).access; } catch { /* báo bên dưới */ }
+  const api = process.env.PE_API
+    || (GOC.includes('localhost') ? 'http://localhost:9000' : 'https://pe-hsa-backend.onrender.com');
+  const r = t ? await fetch(`${api}/api/user`, {
+    headers: { Authorization: `Bearer ${t}` }, signal: AbortSignal.timeout(180000),
+  }).catch((e) => ({ ok: false, status: 0, loi: e.message })) : { ok: false, status: 0 };
+  if (!r.ok) {
+    console.error(`THẺ ${ten.toUpperCase()} KHÔNG DÙNG ĐƯỢC (${tep} — HTTP ${r.status}).`
+      + '\nCấp lại thẻ rồi đo lại. ĐỪNG đọc số của lượt này: chưa đăng nhập thì mọi màn'
+      + '\nsau thanh đăng nhập đều rơi về trang đăng nhập, và trang ấy thì luôn sạch.');
+    process.exit(2);
+  }
+}
 
 const b = await chromium.launch();
 baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt

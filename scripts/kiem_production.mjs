@@ -156,6 +156,29 @@ if (!theAd) {
 
     const hl = await json(`/api/teach/classes/${mau.id}/hoc-lieu`);
     ghi('DỮ LIỆU', 'có học liệu', (hl.d?.items || []).length > 0, `${(hl.d?.items || []).length} tài liệu`);
+
+    /* GỬI ĐƯỢC THƯ KHÔNG — câu này thiếu cho tới 30/09/2026, và chỗ thiếu ấy đắt.
+       Đo hôm ấy: production KHÔNG có `EMAIL_USER` và `EMAIL_APP_PASSWORD`, nên mọi thư đều
+       bị bỏ ngay ở hộp thư đi ("kênh chưa cấu hình") — thư quên mật khẩu, báo cáo phụ huynh,
+       thông báo lớp gửi kèm email. Trong khi `VIEC_CUA_ANH` ghi việc ấy "Xong từ trước".
+
+       Vì sao không ai thấy: cửa quên mật khẩu CỐ Ý trả một câu trung tính dù email có tồn
+       tại hay không (chống dò tài khoản), nên người dùng nhận đúng câu trấn an rồi ngồi đợi
+       một lá thư không bao giờ tới; còn lý do thật thì nằm trong hộp thư đi, chỗ không ai mở.
+
+       Dùng bản SOẠN SẴN của "gửi cả lớp" (GET — không gửi gì, không ghi gì): nó đã tính sẵn
+       `emailSanSang` / `emailThieu` cho màn hình. ZNS thì chỉ CẢNH BÁO: Zalo đang hoãn có
+       chủ ý (chờ pháp nhân), nên để nó làm đỏ cả lượt đo là dạy người đọc bỏ qua màu đỏ. */
+    const gui = await json(`/api/teach/classes/${mau.id}/parent-report/send-all`);
+    const thieu = gui.d?.emailThieu || [];
+    ghi('GỬI ĐI', 'gửi được EMAIL (quên mật khẩu, báo cáo phụ huynh)',
+        gui.d?.emailSanSang === true,
+        gui.d?.emailSanSang === true ? 'đã cấu hình'
+          : `THIẾU ${thieu.join(', ') || 'cấu hình email'} — mọi thư đều bị bỏ ở hộp thư đi`);
+    if (gui.d?.znsSanSang !== true) {
+      console.log(`  ·    GỬI ĐI · Zalo ZNS chưa bật (${(gui.d?.znsThieu || []).join(', ')})`
+        + ' — hoãn có chủ ý, chờ pháp nhân; không tính là hỏng.');
+    }
   }
 
   const yc = await json('/api/teach/yeu-cau');
