@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 
 import DashboardClient from './DashboardClient';
+import { layVai } from '../../(standalone)/quan-tri/layVai';
 import HocTiep from '@/components/HocTiep';
 import TheSoHsa from '@/components/TheSoHsa';
 import TheSoHsaClient from '@/components/TheSoHsaClient';
@@ -56,9 +57,19 @@ function KhungNhiemVu() {
   );
 }
 
-export default function DashboardPage() {
+/* Đọc vai Ở MÁY CHỦ để thanh điều hướng dựng ĐÚNG ngay từ HTML đầu (30/09/2026).
+   `layVai` có `cache()` của React nên không thêm lượt gọi backend nào trong cùng request —
+   khu Vận hành và khu Hướng dẫn đã gọi nó, và đúng hai khu ấy đo được CLS 0.
+   Hỏng thì BỎ QUA, không chặn trang: thanh rơi về đường cũ (tự hỏi sau khi sống dậy) và màn
+   vẫn mở được — một lỗi đọc vai không đáng đổi lấy một trang trắng. */
+export default async function DashboardPage() {
+  const kq = await layVai();
+  const vai = kq.ok ? kq.vai : undefined;
+  const ten = kq.ok ? kq.ten : undefined;
   return (
     <DashboardClient
+      vaiMayChu={vai}
+      tenMayChu={ten}
       hocTiep={(
         <Suspense fallback={<KhungHocTiep />}>
           <HocTiep />

@@ -46,15 +46,17 @@ const SCRIPTS = [
  * SPA cũ (`main.js::navigate`) đổi tab bằng class chứ không đổi route.
  */
 export default function DashboardClient(
-  { hocTiep, lopCuaBan, nhiemVu, theSo, tienDo }: {
+  { hocTiep, lopCuaBan, nhiemVu, theSo, tienDo, vaiMayChu, tenMayChu }: {
     hocTiep: React.ReactNode; lopCuaBan: React.ReactNode; nhiemVu: React.ReactNode;
     theSo: React.ReactNode; tienDo: React.ReactNode;
+    /** Vai + tên do MÁY CHỦ đọc sẵn — xem chú thích ở chỗ dựng `AppShell` bên dưới. */
+    vaiMayChu?: string; tenMayChu?: string;
   },
 ) {
   /* Vai thật cho nhãn ở Cài đặt (24/09/2026): nhãn từng gõ cứng "Học viên" nên
      quản trị viên, giảng viên mở Cài đặt cũng thấy mình là "Học viên" (khách thử
      tài khoản giáo viên thấy). Đọc từ `window.__currentUser` mà `main.js` đã nạp. */
-  const vai = useVaiHienTai(undefined, true);
+  const vai = useVaiHienTai(vaiMayChu, true);
   /* ── DỰNG LƯỜI BẢY TRANG CÒN LẠI + khối lộ trình (16/09/2026) ──────────
      Trang này là hub SPA cũ: chín "trang" nằm cùng một route, tám trong số đó
      `display:none`. Dựng sẵn cả chín nghĩa là React hydrate cả chín — chi phí
@@ -163,7 +165,17 @@ export default function DashboardClient(
           `spa`: trang này có main.js nên điều hướng bằng `navigate()`.
           `dieuKhien="legacy"`: dashboard.js sở hữu menu người dùng và
           chuông (kể cả bấm-ra-ngoài và phím Escape) — đừng dựng lại. */}
-      <AppShell trang="dashboard" spa dieuKhien="legacy" />
+      {/* `vai` + `ten` TỪ MÁY CHỦ (30/09/2026) — đây là bản vá CLS lớn nhất của màn này.
+          Không truyền thì `useVaiHienTai` chỉ biết vai SAU khi trang sống dậy (đợi
+          `window.__currentUser` của `main.js`, hoặc hỏi `/api/user`). Trước lúc đó thanh
+          dựng thiếu nút; vai về thì nút hiện thêm, và ở khổ 1024–1760 luật `:has(… :nth-child(7
+          of .nav-btn…))` trong `shell.css` lật `--topbar-h` thêm 2,75rem — cả trang nhảy 44px.
+
+          Đo trên production 30/09 bằng thẻ quản trị: CLS trung vị **0,134** (ba lượt 0,062 /
+          0,134 / 0,221), và bốn nguồn nhảy lớn nhất đúng là `button.nav-btn`,
+          `button.nav-btn.active`, `div.topbar-right`, `div#page-dashboard`. Khu Hướng dẫn có
+          truyền `vai` từ máy chủ và đo được CLS 0 — cùng thanh, cùng luật CSS. */}
+      <AppShell trang="dashboard" spa dieuKhien="legacy" vai={vaiMayChu} ten={tenMayChu} />
 
       {/* `<main>` chứ không `<div>`: mốc trang cho trình đọc màn hình (axe
           `landmark-one-main`, 20/09/2026). CSS/JS bám `#main` nên không đổi gì.

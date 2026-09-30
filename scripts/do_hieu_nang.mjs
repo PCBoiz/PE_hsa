@@ -1,5 +1,4 @@
 /* ĐO HIỆU NĂNG bằng chính giao thức DevTools (CDP), qua Playwright.
-import { baoHiem } from './lib/phien_do.mjs';
  *
  * ── VÌ SAO CÓ TỆP NÀY (07/09/2026) ────────────────────────────────────────
  *
@@ -95,6 +94,12 @@ import { baoHiem } from './lib/phien_do.mjs';
  *     cd frontend && npx next build && npx next start -p 3100
  *     node scripts/do_hieu_nang.mjs
  */
+/* `baoHiem` đóng trình duyệt cả khi lỗi lẫn khi Ctrl-C. Câu nhập này từng nằm LỌT VÀO
+   TRONG khối chú thích mở ở dòng 1 (commit 5f452f3, 26/09/2026 — chính commit đi ép luật
+   "không bỏ lại Chromium"), nên nó chưa bao giờ chạy và tệp này chết ngay ở `baoHiem(b)`.
+   Bốn ngày không ai chạy bộ đo hiệu năng nên không ai biết. `e2e/unit/bo-do-dong-trinh-
+   duyet.test.mjs` nay canh chỗ này bằng cách BÓC CHÚ THÍCH TRƯỚC KHI TÌM. */
+import { baoHiem } from './lib/phien_do.mjs';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -124,6 +129,16 @@ const MAN = [
    đo được máy mình — không có cách nào hỏi "production chậm chỗ nào", đúng câu duy nhất
    mà một bộ đo hiệu năng sinh ra để trả lời. */
 const GOC = (process.env.PE_WEB || 'http://localhost:3100').replace(/\/$/, '');
+/* Trần chờ mở trang. Đích ở xa rộng hơn hẳn: lượt gọi đầu qua Vercel → Render lúc nguội
+   đo được 63–73 giây, nên trần 30 giây của Playwright hụt ngay ở màn đầu tiên. */
+const CHO_MS = Number(process.env.PE_CHO_MS || (GOC.includes('localhost') ? 30000 : 180000));
+/* `domcontentloaded` rồi mới CỐ chờ mạng rảnh, và được phép hụt. Trang của dự án có nhịp
+   hỏi nền (chuông, giữ ấm máy chủ) nên `networkidle` KHÔNG BAO GIỜ đạt trên production —
+   lấy nó làm điều kiện của `goto` là bộ đo chết trước khi đo được gì (30/09/2026). */
+async function moTrang(trang, u) {
+  await trang.goto(u, { waitUntil: 'domcontentloaded', timeout: CHO_MS });
+  await trang.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+}
 const U = new URL(GOC);
 
 const b = await chromium.launch();
@@ -148,7 +163,7 @@ console.log('─'.repeat(66));
    đi tối ưu theo con số ấy suốt hai vòng. */
 {
   const nong = await ctx.newPage();
-  await nong.goto(GOC + '/login', { waitUntil: 'networkidle' });
+  await moTrang(nong, GOC + '/login');
   await nong.close();
 }
 
@@ -194,7 +209,7 @@ for (const [ten, url] of MAN) {
     }
   });
 
-  await p.goto(GOC + url, { waitUntil: 'networkidle' });
+  await moTrang(p, GOC + url);
   await p.waitForTimeout(1200);
 
   /* Rơi về màn đăng nhập thì mọi số bên dưới đều VÔ NGHĨA mà vẫn in ra đẹp —
@@ -211,14 +226,32 @@ for (const [ten, url] of MAN) {
     let lcp = 0, cls = 0;
     new PerformanceObserver((l) => { for (const e of l.getEntries()) lcp = e.startTime; })
       .observe({ type: 'largest-contentful-paint', buffered: true });
+    /* GIỮ CẢ NGUỒN GÂY NHẢY, không chỉ con số (30/09/2026). "CLS 0,221" nói trang nhảy
+       nhưng không nói NHẢY Ở ĐÂU, nên người đọc con số ấy vẫn phải ngồi đoán — và đoán sai
+       thì đi tối ưu nhầm khối. `sources[].node` của `layout-shift` chỉ thẳng phần tử bị đẩy. */
+    const nguon = new Map();
     new PerformanceObserver((l) => {
-      for (const e of l.getEntries()) if (!e.hadRecentInput) cls += e.value;
+      for (const e of l.getEntries()) {
+        if (e.hadRecentInput) continue;
+        cls += e.value;
+        for (const n of e.sources || []) {
+          const el = n.node;
+          if (!el || !el.tagName) continue;
+          const ten = el.tagName.toLowerCase()
+            + (el.id ? '#' + el.id : '')
+            + (typeof el.className === 'string' && el.className
+              ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '');
+          nguon.set(ten, (nguon.get(ten) || 0) + e.value);
+        }
+      }
     }).observe({ type: 'layout-shift', buffered: true });
     const chan = performance.getEntriesByType('longtask')
       .reduce((s, t) => s + t.duration, 0);
     setTimeout(() => res({
       lcp: Math.round(lcp), cls: Math.round(cls * 1000) / 1000,
       chan: Math.round(chan), dom: document.querySelectorAll('*').length,
+      nguonCls: [...nguon.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
+        .map(([t, v]) => `${t} (${Math.round(v * 1000) / 1000})`),
     }), 400);
   }));
 
@@ -233,11 +266,25 @@ for (const [ten, url] of MAN) {
   // Trung vị theo LCP; các cột khác lấy của đúng lượt ấy để bảng là MỘT lượt thật.
   cacLuot.sort((a, b) => a.lcp - b.lcp);
   const d = cacLuot[Math.floor(cacLuot.length / 2)];
-  ra.push({ ten, url, ...d, cacLcp: cacLuot.map((x) => x.lcp) });
+  /* CLS lấy TRUNG VỊ CỦA CHÍNH NÓ, không lấy của lượt có LCP trung vị (30/09/2026).
+     Bản cũ để cả hàng là một lượt thật — nghe hợp lý, nhưng CLS lắc mạnh hơn LCP nhiều, nên
+     con số in ra là CLS của một lượt tình cờ. Đo trên production cùng một bản, hai lượt liền
+     nhau: 0,221 rồi 0,018 — đủ để lật kết luận đạt/hỏng. Ai đọc một lượt sẽ hoặc đi đuổi một
+     con ma, hoặc bỏ qua một lỗi thật. Giữ cả dải để người đọc thấy nó lắc tới đâu. */
+  const cls = [...cacLuot].map((x) => x.cls).sort((a, b) => a - b);
+  const clsGiua = cls[Math.floor(cls.length / 2)];
+  const nguon = (cacLuot.find((x) => x.cls === cls[cls.length - 1]) || d).nguonCls;
+  ra.push({ ten, url, ...d, cls: clsGiua, clsMax: cls[cls.length - 1], cacCls: cls,
+            nguonCls: nguon, cacLcp: cacLuot.map((x) => x.lcp) });
   console.log(ten.padEnd(20), (d.lcp + 'ms').padStart(8), String(d.cls).padStart(7),
               (d.chan + 'ms').padStart(7), String(d.js).padStart(8),
               String(d.req).padStart(5), String(d.dom).padStart(6),
-              '  (' + cacLuot.map((x) => x.lcp).join(' / ') + ')');
+              '  (' + cacLuot.map((x) => x.lcp).join(' / ') + ')'
+              /* Dải CLS in LUÔN, không chỉ khi vượt ngưỡng (30/09/2026). CLS lắc mạnh hơn
+                 LCP nhiều, và một con số đơn thì không phân biệt được thật với nhiễu — đo
+                 cùng một bản hai lượt liền nhau từng ra 0,221 rồi 0,018. Ai so trước/sau mà
+                 chỉ có một số mỗi bên sẽ gán công hoặc gán tội cho một bản vá bằng nhiễu. */
+              + (cls.some((c) => c > 0) ? '  CLS ' + cls.join(' / ') : ''));
 }
 await b.close();
 
@@ -245,7 +292,13 @@ console.log('\n── Ngưỡng Core Web Vitals (máy CPU chậm 4×) ──');
 const xau = [];
 for (const r of ra) {
   if (r.lcp > 2500) xau.push(`${r.ten}: LCP ${r.lcp}ms > 2500ms`);
-  if (r.cls > 0.1) xau.push(`${r.ten}: CLS ${r.cls} > 0.1`);
+  // Ngưỡng xét trên TRUNG VỊ; nhưng lượt xấu nhất vượt xa thì vẫn phải nói ra, vì người dùng
+  // gặp đúng lượt ấy chứ không gặp trung vị.
+  if (r.cls > 0.1) xau.push(`${r.ten}: CLS ${r.cls} > 0.1 (ba lượt: ${r.cacCls.join(' / ')})`
+    + (r.nguonCls?.length ? `  ← ${r.nguonCls.join(' · ')}` : ''));
+  else if (r.clsMax > 0.1) xau.push(`${r.ten}: CLS trung vị ${r.cls} ĐẠT nhưng có lượt ${r.clsMax}`
+    + ` (ba lượt: ${r.cacCls.join(' / ')}) — lắc qua ngưỡng, đừng đọc một lượt`
+    + (r.nguonCls?.length ? `  ← ${r.nguonCls.join(' · ')}` : ''));
   if (r.dom > 1500) xau.push(`${r.ten}: ${r.dom} nút DOM (>1500)`);
 }
 console.log(xau.length ? xau.map(s => '  ⚠ ' + s).join('\n') : '  không màn nào vượt ngưỡng');

@@ -297,3 +297,47 @@ từ `master` (`4133758`), còn bản dựng tại chỗ là mã `erp` hiện t�
 Hai điểm mù của bộ đo đã vá trong lúc truy (`scripts/do_giao_dien.mjs`): nó từng **chỉ giữ lỗi
 CSP** trong console và bỏ mọi `console.error` khác — nên một lỗi đổi kênh báo là một lỗi biến
 mất khỏi thước; và nó **cắt câu lỗi ở 80 ký tự**, đúng chỗ React nói text nào lệch.
+
+## ĐO HIỆU NĂNG — số cục bộ KHÔNG so được với số production (30/09/2026)
+
+`scripts/do_hieu_nang.mjs` nay trỏ ra đâu cũng được (`PE_WEB`). Nhưng đừng đặt hai bảng cạnh
+nhau rồi trừ cho nhau — đo cùng một bản, cùng một ngày:
+
+| | LCP "Trang của tôi" | JS(kB) |
+|---|---|---|
+| production (Vercel + CDN) | 2532 ms | 996 |
+| cục bộ (`next start`, backend ở Render) | 4232 ms | 5392 |
+
+Máy dev không có CDN, và mọi lượt gọi API đi từ máy ra Render. **So hai cột ấy rồi gán công
+cho một bản vá là gán công cho hạ tầng.**
+
+### CLS ở máy chìm trong nhiễu — đừng dùng nó để nghiệm thu một bản vá CLS
+
+Đo "Trang của tôi" tại chỗ, cùng một buổi:
+
+    chưa vá   → 0,003
+    đã vá     → 0,067   (lượt 1)
+    đã vá     → 0,011   (lượt 2, ba lượt con: 0,008 / 0,011 / 0,062)
+
+Ba con số nằm lẫn vào nhau. Trên production cùng hôm ấy: **0,134** (0,062 / 0,134 / 0,221).
+Tức lỗi CLS lớn của màn này **không tái tạo được ở máy** — cùng cảnh với lỗi hydration ghi ở
+mục trên.
+
+Vì thế bộ đo nay **luôn in dải CLS**, không chỉ khi vượt ngưỡng: một con số đơn không phân
+biệt được thật với nhiễu, và ai so trước/sau mà mỗi bên chỉ có một số sẽ gán công hoặc gán
+tội cho một bản vá bằng nhiễu.
+
+### Bản vá CLS của "Trang của tôi" — CHƯA XÁC NHẬN
+
+`/dashboard` nay đọc vai ở MÁY CHỦ (`layVai`, có `cache()` nên không thêm lượt gọi nào) rồi
+truyền xuống `AppShell`, để thanh điều hướng dựng đúng ngay từ HTML đầu.
+
+Lý lẽ (đo được trên production, không phải suy): bốn nguồn nhảy lớn nhất là `button.nav-btn`,
+`button.nav-btn.active`, `div.topbar-right`, `div#page-dashboard`; ở khổ 1024–1760 `shell.css`
+có luật `:has(… :nth-child(7 of .nav-btn:not([style*="display: none"])))` cộng **2,75rem** vào
+`--topbar-h` khi đủ bảy nút — mà "còn hiện" do JS quyết SAU khi trang sống dậy. Khu Hướng dẫn
+dùng cùng thanh, cùng luật, có truyền `vai` từ máy chủ, và đo được **CLS 0**.
+
+**Nhưng chưa có số nào xác nhận bản vá**, vì lỗi không tái tạo được ở máy. Cách xác nhận: sau
+khi đẩy `erp`, đo màn ấy trên **Preview Vercel** rồi so với production. Tới lúc có số thì mới
+được nói "đã hết nhảy".
