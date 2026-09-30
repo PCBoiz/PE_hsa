@@ -276,8 +276,8 @@ def _chon_giang_vien(giang_vien_id):
     gv = q1('''SELECT id FROM users WHERE role=%s AND status='active' AND NOT is_demo
                ORDER BY id LIMIT 1''', (ROLE_TEACHER,))
     if not gv:
-        raise LoiDuLieuMau('Chưa có tài khoản Giảng viên nào để phụ trách lớp mẫu — '
-                           'tạo một tài khoản hoặc truyền --giang-vien.')
+        raise LoiDuLieuMau('Chưa có tài khoản Giảng viên nào để phụ trách lớp mẫu. '
+                           'Tạo một tài khoản, hoặc truyền --giang-vien.')
     return gv['id']
 
 
@@ -292,7 +292,7 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
     with transaction.atomic():
         co_san = dem()
         if co_san['tài khoản mẫu'] or co_san['lớp mẫu']:
-            raise LoiDuLieuMau('Đã có dữ liệu mẫu (%d tài khoản, %d lớp) — chạy --go trước.'
+            raise LoiDuLieuMau('Đã có dữ liệu mẫu (%d tài khoản, %d lớp); chạy --go trước.'
                                % (co_san['tài khoản mẫu'], co_san['lớp mẫu']))
         gv = _chon_giang_vien(giang_vien_id)
         dot = q1("SELECT id, exam_date FROM terms WHERE status='active' "
@@ -349,7 +349,7 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
                  FROM unnest(%s::text[], %s::text[], %s::text[], %s::text[]) AS t(ma, ten, khoa, lich)
                RETURNING id, code''',
             (gv, bat_dau, ket_thuc, (dot or {}).get('exam_date') or hom_nay + timedelta(days=80),
-             'Dữ liệu trình diễn — gỡ bằng: python manage.py du_lieu_mau --go',
+             'Dữ liệu trình diễn. Gỡ bằng: python manage.py du_lieu_mau --go',
              (dot or {}).get('id'),
              [lop['ma'] for lop in ke], [lop['ten'] for lop in ke],
              [lop['khoa'] for lop in ke], [lop['lich'] for lop in ke]))}
@@ -884,7 +884,7 @@ def tao(giang_vien_id=None, so_em_moi_lop=None, hom_nay=None, hat_giong=HAT_GION
         can_ghi = len({(e['uid'], e['dedup_key']) for e in su_kien})
         da_ghi = record_events(su_kien)
         if da_ghi != can_ghi:
-            raise LoiDuLieuMau('Chỉ ghi được %d/%d sự kiện học tập — đã huỷ toàn bộ, xem log.'
+            raise LoiDuLieuMau('Chỉ ghi được %d/%d sự kiện học tập, nên đã huỷ toàn bộ. Xem log.'
                                % (da_ghi, can_ghi))
         return dem()
 

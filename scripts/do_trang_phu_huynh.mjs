@@ -63,7 +63,8 @@ if (!['nhanh', '4g'].includes(CHE_DO)) {
   process.exit(2);
 }
 const { token } = JSON.parse(readFileSync('D:/pe_hsa/.the/chia_mau.json', 'utf8'));
-const GOC = process.env.PE_GOC || 'https://pe-hsa.vercel.app';
+// `PE_WEB` là tên CHUẨN cho đích đo ở mọi bộ đo (30/09/2026); `PE_GOC` giữ lại cho quen tay.
+const GOC = process.env.PE_WEB || process.env.PE_GOC || 'https://pe-hsa.vercel.app';
 const SO_LUOT = 5;
 
 const b = await chromium.launch({ channel: 'chrome' });

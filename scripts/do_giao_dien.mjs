@@ -928,11 +928,16 @@ for (const kho of KHO) {
   await c.addInitScript((t) => {
     try { localStorage.setItem('theme', t); } catch (e) { /* chế độ riêng tư */ }
   }, chu_de);
-  await c.addCookies([
-    { name: 'pe_at', value: tok.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' },
-    ...(tok.refresh
-      ? [{ name: 'pe_rt', value: tok.refresh, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]
-      : [])]);
+  /* Tên miền và cờ `secure` lấy TỪ ĐÍCH ĐO, không ghim 'localhost' (30/09/2026). Ghim thì
+     trỏ `PE_WEB` ra production là trình duyệt không nhận cookie, mọi trang bị đẩy về màn
+     đăng nhập, và bộ đo dừng với câu "thẻ hết hạn" — trong khi thẻ hoàn toàn còn sống.
+     Chromium cũng BỎ QUA cookie không `secure` trên HTTPS, nên thiếu cờ ấy hỏng lặng lẽ y
+     hệt. Cùng một bản vá đã làm cho `do_axe.mjs` và `lib/phien_do.mjs`. */
+  const _u = new URL(GOC);
+  const _ck = (ten, gia_tri) => ({ name: ten, value: gia_tri, domain: _u.hostname, path: '/',
+    httpOnly: true, sameSite: 'Lax', secure: _u.protocol === 'https:' });
+  await c.addCookies([_ck('pe_at', tok.access),
+    ...(tok.refresh ? [_ck('pe_rt', tok.refresh)] : [])]);
   const p = await c.newPage();
   await p.route('**/api/**', (r, req) => {
     const m = req.method();
@@ -946,21 +951,35 @@ for (const kho of KHO) {
     if (process.env.PE_CHI_TRANG && !ten.includes(process.env.PE_CHI_TRANG)) continue;
     // Thẻ theo trang (xem TOKEN_HV ở trên); cookie cùng tên ghi đè cookie cũ.
     const the = (TRANG_HOC_VIEN.has(ten) || VIEW_SPA[url]) && tokHv ? tokHv : tok;
-    await c.addCookies([{ name: 'pe_at', value: the.access, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }]);
+    await c.addCookies([_ck('pe_at', the.access)]);
     // Nhóm vai nhớ theo TAB — xoá để trang này tự hỏi vai của thẻ vừa đặt.
     await p.evaluate(() => { try { sessionStorage.removeItem('pe_nhom_vai'); } catch (e) { /* trang trống */ } }).catch(() => {});
     const loi = [];
     p.removeAllListeners('pageerror');
-    p.on('pageerror', (e) => loi.push(String(e.message).slice(0, 80)));
+    /* 300 ký tự chứ không 80 (30/09/2026). React nén lỗi thành một đường dẫn kèm tham số,
+       và phần NÓI RA chữ nào lệch nằm sau ký tự thứ 80 — cắt ở đó là giữ đúng phần vô dụng.
+       Đo hôm ấy trên production, màn Buổi học:
+         "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]"
+       Biết có lệch chữ giữa bản máy chủ dựng và bản trình duyệt dựng, không biết chữ nào. */
+    p.on('pageerror', (e) => loi.push(String(e.message).slice(0, 300)));
     /* VI PHẠM CSP (14/09/2026, cùng lúc Vercel bắt đầu gửi CSP). Trình duyệt
        KHÔNG ném `pageerror` khi chặn một script/ảnh/phông — nó chỉ in một dòng
        đỏ "Refused to … Content Security Policy" vào console, và trang trông
        vẫn bình thường tới lúc người dùng bấm đúng nút cần thứ bị chặn. Không
        đếm ở đây thì một CSP làm gãy tính năng vẫn ra "lỗiJS: 0". */
     const csp = [];
+    /* MỌI `console.error`, không chỉ CSP (30/09/2026). Tới hôm ấy bộ đo chỉ giữ dòng CSP và
+       bỏ hết phần còn lại, nên cả một lớp lỗi vô hình với nó: React ở bản dev báo lệch chữ
+       lúc hydrate bằng `console.error` (bản production thì ném hẳn ra, mã #418) — đo bản
+       production thấy "lỗiJS: 1" mà không biết chữ nào, đo bản dev thì thấy "0" và tưởng
+       đã hết. Một lỗi đổi kênh báo là một lỗi biến mất khỏi thước. */
+    const loi_console = [];
     p.removeAllListeners('console');
     p.on('console', (m) => {
-      if (m.type() === 'error' && /Content Security Policy/i.test(m.text())) csp.push(m.text().slice(0, 160));
+      if (m.type() !== 'error') return;
+      const t = m.text();
+      if (/Content Security Policy/i.test(t)) csp.push(t.slice(0, 160));
+      else if (loi_console.length < 8) loi_console.push(t.slice(0, 400));
     });
     try {
       await p.goto(GOC + url, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -1283,7 +1302,7 @@ for (const kho of KHO) {
       d.so_net_do = d.net_dau.length;
       d.so_tuong_tac = d.tuong_tac.length;
       delete d.dau; delete d.net_dau;
-      ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2), vi_pham_csp: csp.length, csp: csp.slice(0, 2) });
+      ket.push({ kho: kho.ten, chu_de, ten, url, ...d, loi_js: loi.length, loi: loi.slice(0, 2), vi_pham_csp: csp.length, csp: csp.slice(0, 2), loi_console: loi_console.length, console: loi_console.slice(0, 3) });
       console.log(`[${kho.ten}] ${ten.padEnd(22)} tương phản:${String(d.so_vi_pham).padStart(3)}`
         + `/${String(d.so_soi).padStart(3)}`
         + `  chạm nhỏ:${String(d.so_cham_nho).padStart(3)}/${String(d.so_cham).padStart(3)}`

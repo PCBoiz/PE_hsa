@@ -630,7 +630,7 @@ def tra_loi(nguoi, yc_id, noi_dung, *, noi_bo=False, request=None):
             if not (nguoi.la_nhan_su or la_tao):
                 raise LoiYeuCau(403, 'Bạn không trả lời được yêu cầu này.')
             if yc['trang_thai'] in DONG:
-                raise LoiYeuCau(409, 'Yêu cầu đã đóng — không trả lời thêm được.')
+                raise LoiYeuCau(409, 'Yêu cầu đã đóng, không trả lời thêm được.')
         _ghi_su_kien(yc_id, nguoi, 'ghi_chu' if noi_bo else 'tra_loi', noi_dung=noi_dung, noi_bo=noi_bo)
         if not noi_bo and nguoi.la_nhan_su and yc['trang_thai'] == 'moi':
             # Nhân sự trả lời = đã nhận việc.
@@ -667,7 +667,7 @@ def chuyen_trang_thai(nguoi, yc_id, den, *, ket_qua=None, request=None):
         yc = _doc(nguoi, yc_id, khoa=True)
         ai = L.ai_duoc_chuyen(yc['loai'], yc['trang_thai'], den)
         if ai is None:
-            raise LoiYeuCau(409, 'Yêu cầu đang "%s" — không chuyển sang "%s" được.'
+            raise LoiYeuCau(409, 'Yêu cầu đang "%s" nên không chuyển sang "%s" được.'
                                  % (L.NHAN_TRANG_THAI[yc['trang_thai']], L.NHAN_TRANG_THAI[den]))
         duoc = ((ai == L.NGUOI_TAO and _la_nguoi_tao(nguoi, yc)) or (ai == L.NHAN_SU and nguoi.la_nhan_su)
                 or (ai == L.DUYET and nguoi.la_duyet))
@@ -738,9 +738,9 @@ def phan_loai(nguoi, yc_id, loai_moi, *, request=None):
         if yc['loai'] == loai_moi:
             return chi_tiet(nguoi, yc_id)
         if moi.get('can_lop') and not yc['class_id']:
-            raise LoiYeuCau(400, 'Yêu cầu chưa gắn lớp — không đổi sang "%s" được.' % moi['nhan'])
+            raise LoiYeuCau(400, 'Yêu cầu chưa gắn lớp nào, chưa đổi sang "%s" được.' % moi['nhan'])
         if moi.get('can_buoi') and not yc['session_id']:
-            raise LoiYeuCau(400, 'Yêu cầu chưa gắn buổi học — không đổi sang "%s" được.' % moi['nhan'])
+            raise LoiYeuCau(400, 'Yêu cầu chưa gắn buổi học nào, chưa đổi sang "%s" được.' % moi['nhan'])
         tra_ve_hoc_vu = loai_moi == 'ht_tai_khoan' and yc['nx_vai'] in (ROLE_TEACHER, ROLE_ASSISTANT)
         x('UPDATE yeu_cau SET loai = %s, updated_at = %s, '
           'nguoi_xu_ly = CASE WHEN %s THEN NULL ELSE nguoi_xu_ly END WHERE id = %s',
@@ -776,7 +776,7 @@ def duyet(nguoi, yc_id, tham_so=None, *, ket_qua=None, request=None):
             if yc['trang_thai'] in ('da_duyet', 'da_xong') or yc['thuc_thi'] is not None:
                 raise LoiYeuCau(409, 'Yêu cầu này đã được duyệt.')
             if L.ai_duoc_chuyen(yc['loai'], yc['trang_thai'], 'da_duyet') != L.DUYET:
-                raise LoiYeuCau(409, 'Yêu cầu đang "%s" — không duyệt được.'
+                raise LoiYeuCau(409, 'Yêu cầu đang "%s": chưa tới bước duyệt.'
                                      % L.NHAN_TRANG_THAI[yc['trang_thai']])
             viec = thuc_thi.thuc_hien(yc, tham_so or {}, request)
             tu_dong = viec.get('cach') == 'tu_dong'

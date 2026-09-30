@@ -41,7 +41,7 @@ from lessons.content import loi_html
 #: Một nguồn cho hai bộ từ vựng: `chuong_trinh/tu_vung.py` (khớp CHECK §64).
 KIND = LOAI_MUC
 STATUS = TRANG_THAI_BAN
-_MOT_NHAP = ('Chuỗi khung này đã có một bản nháp — sửa tiếp bản nháp ấy, hoặc xuất bản '
+_MOT_NHAP = ('Chuỗi khung này đã có một bản nháp. Sửa tiếp bản nháp ấy, hoặc xuất bản '
              'nó rồi mới nhân bản tiếp.')
 
 
@@ -86,7 +86,7 @@ def _buoi(sid):
 def _khoa_neu_khong_nhap(trang_thai):
     """Response 409 nếu phiên bản KHÔNG còn là nháp, None nếu sửa được."""
     if trang_thai != 'nhap':
-        return Response({'error': 'Bản này đã xuất bản — không sửa được nữa. Bấm "Tạo bản '
+        return Response({'error': 'Bản này đã xuất bản nên không sửa được nữa. Bấm "Tạo bản '
                                   'mới" để sửa trên một bản chép của nó.'},
                         status=409)
     return None
@@ -280,7 +280,7 @@ class SyllabusVersionDetailView(APIView):
                               (BAN_NGUNG, v['lineage_id'] or v['id'], BAN_XUAT_BAN, version_id))
                 x('UPDATE syllabus_versions SET %s WHERE id=%%s' % set_clause, vals + (version_id,))
         except IntegrityError:
-            return Response({'error': 'Chuỗi khung này vừa có một bản khác được xuất bản — tải '
+            return Response({'error': 'Chuỗi khung này vừa có một bản khác được xuất bản. Tải '
                                       'lại trang rồi thử lại.'}, status=409)
 
         if xuat_ban:
@@ -301,7 +301,7 @@ class SyllabusVersionDetailView(APIView):
         if not v:
             return Response({'error': 'Không tìm thấy phiên bản'}, status=404)
         if q1('SELECT 1 FROM classes WHERE syllabus_version_id=%s', (version_id,)):
-            return Response({'error': 'Đang có lớp dùng phiên bản này — không xoá được. '
+            return Response({'error': 'Đang có lớp dùng phiên bản này, chưa xoá được. '
                                       'Đổi lớp sang phiên bản khác trước.'}, status=409)
         x('DELETE FROM syllabus_versions WHERE id=%s', (version_id,))
         audit.record(request, audit.SYLLABUS_DELETE, target_type='syllabus_version',

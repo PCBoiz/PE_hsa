@@ -24,8 +24,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DAY = dirname(fileURLToPath(import.meta.url));
-const GOC = (process.env.PE_URL || 'http://localhost:3100').replace(/\/$/, '');
-const TOKEN = process.env.PE_TOKENS || '';
+// `PE_WEB` là tên CHUẨN cho đích đo ở mọi bộ đo (30/09/2026); `PE_URL` giữ lại cho quen tay.
+const GOC = (process.env.PE_WEB || process.env.PE_URL || 'http://localhost:3100').replace(/\/$/, '');
+// Thẻ: `PE_THE` là THƯ MỤC chứa `tokens_*.json`, giống mọi bộ đo khác. Trước 30/09 tệp này
+// chỉ nhận `PE_TOKENS` (đường dẫn TỆP) — chạy đúng lệnh trong sổ tay là phần cần đăng nhập
+// lặng lẽ bị bỏ qua, và bảng kết quả trông như đã đo đủ.
+const TOKEN = process.env.PE_TOKENS
+  || (process.env.PE_THE ? process.env.PE_THE.replace(/[\/]$/, '') + '/tokens_ad.json' : '');
 const { chromium } = createRequire(join(DAY, '..', 'frontend', 'package.json'))('@playwright/test');
 import { baoHiem } from './lib/phien_do.mjs';
 

@@ -211,13 +211,19 @@ export default function ChuongTrinhLopClient({ initial }: { initial: CtLop }) {
                   </Td>
                   <Td label="Sổ đầu bài">
                     {b.soDauBai ? (
-                      <Link href={`/giang-day/so-dau-bai/${b.id}`} className="text-brand-ink underline">
+                      /* `min-h-11` cho vùng chạm 44px, `-my-3.5` trừ lại đúng phần đệm nên
+                         chiều cao hàng KHÔNG đổi. Đo 30/09 trên production: hai liên kết này
+                         cao 16px, 17 nút dưới sàn trên một màn, và là màn giảng viên bấm
+                         nhiều nhất trên điện thoại. */
+                      <Link href={`/giang-day/so-dau-bai/${b.id}`}
+                        className="-my-3.5 inline-flex min-h-11 items-center text-brand-ink underline">
                         {b.soDauBai.xong} đã dạy{b.soDauBai.motPhan ? `, ${b.soDauBai.motPhan} một phần` : ''}
                         {b.soDauBai.chua ? `, ${b.soDauBai.chua} chưa dạy` : ''}
                       </Link>
                     ) : b.started && b.status !== 'cancelled' ? (
-                      <Link href={`/giang-day/so-dau-bai/${b.id}`} className="font-medium text-warning-ink underline">
-                        Chưa ghi — ghi ngay
+                      <Link href={`/giang-day/so-dau-bai/${b.id}`}
+                        className="-my-3.5 inline-flex min-h-11 items-center font-medium text-warning-ink underline">
+                        Chưa ghi · ghi ngay
                       </Link>
                     ) : (
                       <span className="text-ink-3">—</span>
@@ -256,8 +262,12 @@ export default function ChuongTrinhLopClient({ initial }: { initial: CtLop }) {
                         // khác hẳn danh sách RỖNG, là mục cần bài mà chưa ai giao (§74).
                         const bai = i.baiDaGiao && nhanBaiDaGiao(i.baiDaGiao);
                         return (
-                          <li key={i.id} data-muc={i.id} className="flex items-center gap-1">
-                            <span>{i.title}</span>
+                          /* `min-w-0` + `break-words`: hộp flex mặc định KHÔNG co dưới bề
+                             rộng nội dung, nên một tên mục dài cộng thêm chip là tràn ra
+                             ngoài khung. Đo 30/09 trên production, khổ 390: thừa 2px — đủ
+                             để sinh thanh cuộn ngang cho cả trang. */
+                          <li key={i.id} data-muc={i.id} className="flex min-w-0 items-center gap-1">
+                            <span className="min-w-0 break-words">{i.title}</span>
                             {bai && (
                               <Chip tone={bai.xong ? 'good' : 'warn'}>{bai.chu}</Chip>
                             )}

@@ -269,3 +269,31 @@ billing issue."* Tức từ lúc ấy:
   nhất của cả hệ thống.
 
 Việc mở lại là của chủ dự án (GitHub → Settings → Billing) — ghi ở `docs/VIEC_CUA_ANH.md`.
+
+## Lỗi ĐANG TREO — lệch chữ lúc hydrate, màn Buổi học (30/09/2026)
+
+`GET /giang-day/buoi-hoc/<lớp>` trên **production** ném `React error #418` ở cả hai khổ:
+bản máy chủ dựng và bản trình duyệt dựng cho ra chữ khác nhau, React vứt HTML máy chủ rồi vẽ
+lại. Hậu quả người dùng thấy: một nhịp nháy ở lần tải đầu.
+
+**Đã loại trừ, mỗi cái bằng một phép đo:**
+
+| Giả thuyết | Cách thử | Kết quả |
+|---|---|---|
+| chuỗi thời gian mang múi giờ | hỏi API production | KHÔNG — `"2026-10-26T17:30:00"`, chuỗi trần, hai bên đọc như nhau |
+| `new Date()` chạy lúc dựng | đọc mã `SessionsClient` | hai chỗ duy nhất đều nằm trong trình xử lý sự kiện |
+| dữ liệu production khác dev | bản dev tại chỗ + `BACKEND_URL` trỏ production | 0 lỗi |
+| máy chủ Vercel chạy UTC | bản dev tại chỗ với `TZ=UTC` | 0 lỗi |
+| bản dựng production khác bản dev | `next build && next start` tại chỗ + dữ liệu production | 0 lỗi |
+
+**Chưa tìm ra**, và không đoán thêm. Khác biệt còn lại là chính bản Vercel đã deploy — nó dựng
+từ `master` (`4133758`), còn bản dựng tại chỗ là mã `erp` hiện tại.
+
+**Bước kế tiếp rẻ nhất**: `erp` có Preview Vercel tự dựng. Đo màn ấy trên Preview:
+· còn lỗi → bisect bằng các lượt Preview, vì môi trường Vercel là điều kiện cần;
+· hết lỗi → nó đã được sửa tình cờ giữa `4133758` và `erp`, và câu trả lời nằm trong khoảng
+  commit ấy.
+
+Hai điểm mù của bộ đo đã vá trong lúc truy (`scripts/do_giao_dien.mjs`): nó từng **chỉ giữ lỗi
+CSP** trong console và bỏ mọi `console.error` khác — nên một lỗi đổi kênh báo là một lỗi biến
+mất khỏi thước; và nó **cắt câu lỗi ở 80 ký tự**, đúng chỗ React nói text nào lệch.

@@ -132,15 +132,15 @@ def khop_ten(ho_ten, danh_sach):
     if len(hit) == 1:
         return hit[0]['id'], None
     if len(hit) > 1:
-        return None, 'Trong lớp có %d em cùng tên "%s" — chọn tay giúp tôi.' % (len(hit), ho_ten)
+        return None, 'Trong lớp có %d em cùng tên "%s". Chọn tay giúp tôi.' % (len(hit), ho_ten)
 
     khong_dau = _bo_dau(ho_ten)
     hit = [e for e in danh_sach if _bo_dau(e['name']) == khong_dau]
     if len(hit) == 1:
-        return hit[0]['id'], 'Khớp khi bỏ dấu ("%s" ↔ "%s") — kiểm lại giúp tôi.' % (
+        return hit[0]['id'], 'Khớp khi bỏ dấu ("%s" ↔ "%s"), kiểm lại giúp tôi.' % (
             ho_ten, hit[0]['name'])
     if len(hit) > 1:
-        return None, 'Bỏ dấu thì trùng %d em — chọn tay giúp tôi.' % len(hit)
+        return None, 'Bỏ dấu thì trùng %d em, phải chọn tay.' % len(hit)
     return None, 'Không có em nào tên "%s" trong lớp này.' % ho_ten
 
 
@@ -210,7 +210,7 @@ def danh_gia(to, chon, hoc_vien, da_co):
                 ly_do = 'Bỏ qua theo lựa chọn của bạn.'
             elif uid != tu_dong:
                 ly_do = ('Chọn tay.' if _chuan(d['hoTen']) == _chuan(ten_theo_id[uid]) else
-                         'Chọn tay — tên trên tờ khác tên trong hồ sơ, kiểm lại giúp tôi.')
+                         'Chọn tay: tên trên tờ khác tên trong hồ sơ, kiểm lại giúp tôi.')
         dong.append({
             'thuTu': i, 'tep': ten_tep,
             'trangThai': 'bo-qua' if chon_tay and not uid else 'san-sang' if uid else 'chua-khop',
@@ -233,7 +233,7 @@ def danh_gia(to, chon, hoc_vien, da_co):
     for r in dong:
         if r['trangThai'] == 'san-sang' and dem[khoa(r)] > 1:
             r['trangThai'] = 'trung'
-            r['ghiChu'] = ('%d tờ cùng rơi vào %s cho cùng kỳ thi — chọn lại cho đúng em.'
+            r['ghiChu'] = ('%d tờ cùng rơi vào %s cho cùng kỳ thi. Chọn lại cho đúng em.'
                            % (dem[khoa(r)], r['tenTrongLop']))
     return dong
 

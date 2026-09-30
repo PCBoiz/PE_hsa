@@ -147,7 +147,7 @@ def _cot_theo_tieu_de(dau):
             cot.setdefault(k, []).append(i)
     if not any(k.startswith('ph_') for k in cot):
         return None, mo_ta, ('Dòng tiêu đề không có cột nào của phụ huynh. Đặt tên cột kiểu '
-                             '"Tên phụ huynh", "SĐT phụ huynh", "Email phụ huynh" — hoặc bỏ '
+                             '"Tên phụ huynh", "SĐT phụ huynh", "Email phụ huynh", hoặc bỏ '
                              'dòng tiêu đề và dán mỗi dòng: em học viên trước, liên hệ phụ huynh sau.')
     if not any(k.startswith('hv_') for k in cot):
         return None, mo_ta, ('Dòng tiêu đề không có cột nào chỉ ra em học viên (họ tên, email '
@@ -185,7 +185,7 @@ def _tim_em(lop, email, so, ten):
         return None, ('Các ô của em trên dòng này trỏ tới %d em khác nhau (%s).'
                       % (len(thay), ', '.join(e['name'] or '#%d' % e['id'] for e in thay.values())))
     if trung_ten:
-        return None, ('Lớp có %d em tên "%s" — dùng email hoặc SĐT của em thay cho tên.'
+        return None, ('Lớp có %d em tên "%s". Dùng email hoặc SĐT của em thay cho tên.'
                       % (trung_ten, ten))
     return None, ('Không tìm thấy em "%s" trong danh sách đang học của lớp này.'
                   % (email or so or ten))
@@ -265,7 +265,7 @@ def _cham(dong, cot, lop):
         if ly_do is None:
             gia_tri, ly_do = _chuan_hoa(ph)
         if ly_do is None and em['id'] in da_gap:
-            ly_do = 'Em này đã có ở dòng %d — giữ dòng đầu, bỏ dòng này.' % da_gap[em['id']]
+            ly_do = 'Em này đã có ở dòng %d; giữ dòng đầu, bỏ dòng này.' % da_gap[em['id']]
         hoc_vien = {'id': em['id'], 'name': em['name']} if em else None
         if ly_do:
             rows.append({'line': so_dong, 'hocVien': hoc_vien, 'trangThai': 'bo_qua',
@@ -279,7 +279,7 @@ def _cham(dong, cot, lop):
                 doi[khoa] = {'cu': cu, 'moi': moi}
         rows.append({'line': so_dong, 'hocVien': hoc_vien,
                      'trangThai': 'doi' if doi else 'giu',
-                     'lyDo': None if doi else 'Trùng với thông tin đang lưu — không đổi gì.',
+                     'lyDo': None if doi else 'Trùng với thông tin đang lưu, không đổi gì.',
                      'doi': doi})
         if doi:
             ghi.append((em, doi))
@@ -321,7 +321,7 @@ class ParentContactsImportView(APIView):
         if not text.strip():
             return Response({'error': 'Chưa dán dòng nào.'}, status=400)
         if len(text) > MAX_KY_TU:
-            return Response({'error': 'Văn bản dài quá %d ký tự — dán từng lớp một.'
+            return Response({'error': 'Văn bản dài quá %d ký tự. Dán từng lớp một.'
                                       % MAX_KY_TU}, status=400)
 
         dau, dong, bi_cat = _doc(text)

@@ -4084,7 +4084,10 @@ body.dark .fpc-lesson-tag:hover { color: #fff; }
 .hsa-weak-pct i { font-size: 11px; font-weight: 700; font-style: normal; }
 .hsa-weak-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .hsa-weak-name { font-size: 13px; font-weight: 600; color: #16121F; overflow-wrap: anywhere; }
-.hsa-weak-sub  { font-size: 11px; color: #675F79; }
+/* Sàn 12px (30/09/2026, đo trên production). 11px là cỡ chữ người trên 40 tuổi phải
+   nheo mắt, và dòng này chính là dòng nói con YẾU CHỖ NÀO — thứ phụ huynh và giảng viên
+   đọc kỹ nhất trên thẻ ấy. Cùng sàn với `a11y.css`. */
+.hsa-weak-sub  { font-size: 12px; color: #675F79; }
 .hsa-weak-btn {
   flex-shrink: 0; padding: 7px 11px; border-radius: 9px;
   background: var(--brand-fill); color: #FFF;

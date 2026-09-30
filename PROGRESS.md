@@ -7,6 +7,34 @@ kho, và những kết luận đã kiểm chứng để khỏi kiểm lại.
 
 Từ 13/09/2026 mục **mới nhất ở TRÊN** (dưới vạch `<!-- MỚI NHẤT -->`). Phần cũ
 
+## 30/09/2026 — Bốn lỗi giao diện thật, và một lỗi tôi tự gây rồi tự bắt
+
+Sau khi ba bộ đo chịu đăng nhập và chịu trỏ ra production, chúng đo được **0 trang không đo
+được** và ra bốn lỗi thật. Bảng trước / sau ở `docs/VAN_HANH.md`; phần đáng giữ ở đây:
+
+**Vùng chạm 129×16 px, 17 nút trên MỘT màn** — cùng một liên kết ("Chưa ghi · ghi ngay") trên
+màn Chương trình lớp, tức thứ giảng viên bấm nhiều nhất trên điện thoại. Vá bằng đúng thủ
+thuật dự án đã có: đệm cho đủ 44px rồi trừ lại bằng lề âm, nên chiều cao hàng không đổi.
+
+**Tràn ngang 2px ở khổ 390** — hộp `flex` thiếu `min-w-0` nên tên mục dài không co được. Hai
+pixel đủ để sinh thanh cuộn ngang cho cả trang.
+
+**Chữ 11px ở hai chỗ**, một trong đó là dòng nói CON YẾU CHỖ NÀO. Nâng lên sàn 12px.
+
+**Tương phản 4,40** ở chip "xong chủ đề": mã cứng `#0E7C6B` đạt 4,62 trên nền ô mặc định và
+trên BA trong BỐN bậc năng lực, chỉ thiếu ở bậc 3. Một lỗi chỉ hiện ở một phần tư số ô thì soi
+bằng mắt gần như không bao giờ thấy — và dòng NGAY TRÊN nó đã mang chú thích kể `.cmp-go` phải
+bỏ mã cứng vì lý do y hệt (22/09). Bài học có sẵn, cách đúng một dòng, vẫn không ai sửa theo.
+
+**Tôi làm hỏng bản dựng production và biết muộn hơn đáng lẽ.** Chú thích `{/* … */}` đặt làm
+phần tử đầu của một nhánh ba ngôi — chỗ ấy phải cho ra đúng MỘT phần tử. Đáng nói không phải
+lỗi mà là thứ tự: sửa JSX xong tôi đi đo tiếp thay vì chạy `tsc`. Nên tôi kiểm luôn xem cổng
+có che được không — cố tình làm hỏng lại rồi chạy: **`tsc` mã 2, 15 lỗi**. Cổng bắt được; lỗ
+hổng không có, chỉ là tôi bỏ qua bước ấy.
+
+Lỗi hydration `#418` trên màn Buổi học: **năm phép loại trừ, chưa tìm ra**, ghi đủ ở
+`VAN_HANH.md` kèm bước kế tiếp rẻ nhất (đo trên Preview Vercel của `erp`). Không đoán thêm.
+
 ## 29–30/09/2026 — Giọng văn, và ba bộ đo không dùng được với production
 
 Anh Sơn: *"cách hành văn trong bản production nhìn là biết AI"*. Chi tiết ở RULES §23 và

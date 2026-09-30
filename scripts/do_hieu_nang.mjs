@@ -97,9 +97,18 @@ import { baoHiem } from './lib/phien_do.mjs';
  */
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
-const _doi = createRequire('D:/pe_hsa/frontend/package.json');
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+// Đường dẫn suy TỪ VỊ TRÍ TỆP NÀY, không gán cứng gốc kho: kho công khai, và một đường
+// dẫn tuyệt đối của một máy thì hỏng với mọi người khác mà không nói vì sao (30/09/2026).
+const _doi = createRequire(join(dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'package.json'));
 let chromium=null; for (const t of ['@playwright/test','playwright']) { try { ({chromium}=_doi(t)); break; } catch {} }
-const the = JSON.parse(readFileSync('D:/pe_hsa/.the/tokens_ad.json','utf8'));
+/* Thẻ: `PE_THE` là THƯ MỤC chứa `tokens_*.json`, mặc định `.the/` ở gốc kho. Tới
+   30/09/2026 dòng này gán CỨNG một đường dẫn tuyệt đối của MỘT máy — kho này công khai,
+   và một đường dẫn như thế thì hỏng với mọi người khác mà không nói vì sao. */
+const THU_MUC_THE = process.env.PE_THE
+  || join(dirname(fileURLToPath(import.meta.url)), '..', '.the');
+const the = JSON.parse(readFileSync(join(THU_MUC_THE, 'tokens_ad.json'), 'utf8'));
 
 const MAN = [
   ['Trang của tôi',      '/dashboard'],
@@ -110,10 +119,18 @@ const MAN = [
   ['Hướng dẫn',          '/quan-tri/huong-dan'],
 ];
 
+/* Đích đo: `PE_WEB` như mọi bộ đo khác của dự án (30/09/2026). Tới hôm ấy tệp này gán
+   CỨNG `http://localhost:3100` ở ba chỗ và `domain:'localhost'` cho cookie, nên nó chỉ
+   đo được máy mình — không có cách nào hỏi "production chậm chỗ nào", đúng câu duy nhất
+   mà một bộ đo hiệu năng sinh ra để trả lời. */
+const GOC = (process.env.PE_WEB || 'http://localhost:3100').replace(/\/$/, '');
+const U = new URL(GOC);
+
 const b = await chromium.launch();
 baoHiem(b);   // đóng trình duyệt cả khi Ctrl-C / lỗi không ai bắt
 const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
-await ctx.addCookies([{name:'pe_at',value:the.access,domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
+await ctx.addCookies([{ name: 'pe_at', value: the.access, domain: U.hostname, path: '/',
+  httpOnly: true, sameSite: 'Lax', secure: U.protocol === 'https:' }]);
 
 // "JS(kB)" = byte GIẢI NÉN của mọi tệp JS trong lượt dựng trang (xem chú thích
 // ở chỗ đếm) — lớn hơn số truyền qua mạng vì máy chủ nén gzip/brotli.
@@ -131,7 +148,7 @@ console.log('─'.repeat(66));
    đi tối ưu theo con số ấy suốt hai vòng. */
 {
   const nong = await ctx.newPage();
-  await nong.goto('http://localhost:3100/login', { waitUntil: 'networkidle' });
+  await nong.goto(GOC + '/login', { waitUntil: 'networkidle' });
   await nong.close();
 }
 
@@ -177,7 +194,7 @@ for (const [ten, url] of MAN) {
     }
   });
 
-  await p.goto('http://localhost:3100' + url, { waitUntil: 'networkidle' });
+  await p.goto(GOC + url, { waitUntil: 'networkidle' });
   await p.waitForTimeout(1200);
 
   /* Rơi về màn đăng nhập thì mọi số bên dưới đều VÔ NGHĨA mà vẫn in ra đẹp —

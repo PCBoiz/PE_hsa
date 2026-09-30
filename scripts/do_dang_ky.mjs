@@ -21,10 +21,18 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { chay } from './lib/phien_do.mjs';
 
-const WEB = process.env.PE_WEB || 'http://localhost:3600';
-const BE = process.env.PE_BE || 'D:/pe_hsa_wt/e2/backend';
+const GOC_KHO = join(dirname(fileURLToPath(import.meta.url)), '..');
+const WEB = process.env.PE_WEB || 'http://localhost:3100';
+/* Mặc định là backend CỦA CHÍNH KHO NÀY (30/09/2026). Trước đó nó ghim
+   `D:/pe_hsa_wt/e2/backend` — một worktree agent đã dọn từ lâu — nên chạy lệnh mặc định
+   là hỏng ngay, và hỏng vì một đường dẫn không còn tồn tại trên bất kỳ máy nào. Cổng đo
+   cũng sửa 3600 → 3100 cho khớp bản dev chính. */
+const BE = process.env.PE_BE || join(GOC_KHO, 'backend');
 const anh = process.argv.includes('--anh') ? process.argv[process.argv.indexOf('--anh') + 1] : null;
 
 const buoc = [];
@@ -37,7 +45,7 @@ function boQua(ten, viSao) {
 }
 
 /** Python của repo chính: worktree agent không có `.venv` riêng. */
-const PY = ['D:/pe_hsa/backend/.venv/Scripts/python.exe', `${BE}/.venv/Scripts/python.exe`]
+const PY = [join(GOC_KHO, 'backend', '.venv', 'Scripts', 'python.exe'), `${BE}/.venv/Scripts/python.exe`]
   .find((p) => existsSync(p));
 
 /* DỌN trước khi đo. Mỗi lượt đo hỏng giữa chừng để lại MỘT tài khoản chưa xác thực, và

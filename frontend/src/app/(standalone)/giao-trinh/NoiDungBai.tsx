@@ -200,7 +200,7 @@ export default function NoiDungBai({
     <Card as="section">
       <CardHead
         title={`Nội dung — ${ban.title}`}
-        hint={`Bài số ${ban.sort_order} của khoá ${ban.course_id}. Lưu là học viên thấy ngay — bấm “Xem thử” trước.`}
+        hint={`Bài số ${ban.sort_order} của khoá ${ban.course_id}. Lưu là học viên thấy ngay, nên bấm “Xem thử” trước.`}
         action={
           <div className="flex flex-wrap gap-2">
             <a
@@ -260,7 +260,7 @@ export default function NoiDungBai({
               id="nd-index"
               label="Số thứ tự (index)"
               hint={goiY(rb(ban?.schema, 'index'),
-                'PHẢI bằng số bài ở cột # — máy chủ từ chối nếu lệch.')}
+                'PHẢI bằng số bài ở cột #; lệch thì lượt lưu bị từ chối.')}
               type="number"
               min={rb(ban?.schema, 'index').min}
               max={rb(ban?.schema, 'index').max ?? undefined}
@@ -363,7 +363,7 @@ export default function NoiDungBai({
         {/* ── Ghi nhớ ── */}
         <Khoi
           ten="Bước 4 — Ghi nhớ"
-          ghi="Khối này engine đọc từ trường `notes`. Bộ soạn cũ ghi vào `note` số ít — một trường không bài nào có và engine không bao giờ đọc."
+          ghi="Khối này engine đọc từ trường `notes`. Bộ soạn cũ ghi vào `note` số ít, một trường không bài nào có và engine không bao giờ đọc."
         >
           <label className="flex flex-col gap-2">
             <span className="text-label text-ink-3">Mẹo</span>
@@ -410,7 +410,7 @@ export default function NoiDungBai({
               id="nd-dsec"
               label="Thời gian (giây)"
               hint={goiY(rb(ban?.schema, 'drill.time_seconds'),
-                'Ghi ra trường time_seconds — đúng tên engine đọc.')}
+                'Ghi ra trường time_seconds, đúng tên engine đọc.')}
               type="number"
               min={rb(ban?.schema, 'drill.time_seconds').min}
               max={rb(ban?.schema, 'drill.time_seconds').max ?? undefined}
@@ -522,7 +522,7 @@ function Khoi({
 function loiCau(c: CauHoi, i: number, ds: CauHoi[], maBatBuoc: boolean): string | null {
   const ma = (c.id || '').trim();
   if (maBatBuoc) {
-    if (!ma) return 'Thiếu mã câu — thiếu nó thì máy chủ KHÔNG chấm được câu này.';
+    if (!ma) return 'Thiếu mã câu. Không có nó thì câu này KHÔNG chấm được.';
     if (ds.some((k, j) => j !== i && (k.id || '').trim() === ma)) {
       return `Mã "${ma}" trùng với một câu khác trong khối này.`;
     }
