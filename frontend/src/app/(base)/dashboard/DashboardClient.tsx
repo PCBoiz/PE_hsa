@@ -900,7 +900,7 @@ export default function DashboardClient(
                       focusable`, cả hai khổ, cả hai chủ đề). Đặt tiêu điểm lên chính khung
                       là cách WCAG 2.1.1 chỉ ra: khung nhận tiêu điểm thì mũi tên cuộn được. */}
                   <div className="bk-rows" id="book-rows" tabIndex={0} role="region"
-                       aria-label="Sổ điểm — danh sách hoạt động đã chấm">
+                       aria-label="Sổ điểm: danh sách hoạt động đã chấm">
                     <div className="prof-empty">Đang tải…</div>
                   </div>
                 </div>
